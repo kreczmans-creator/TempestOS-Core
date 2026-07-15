@@ -5,44 +5,76 @@ TempestOS
 Platform
 
 Purpose:
-    Starts all Foundation Alpha Frameworks.
-
+    Starts and coordinates the TempestOS platform.
 ===============================================================================
 """
 
-from app.core.config import Config
-from app.core.logger import initialise_logging
+from app.core.framework_registry import FrameworkRegistry
+from app.core.work_package_registry import WorkPackageRegistry
+from app.models.work_package import WorkPackage
+
+from app.frameworks.configuration_framework import ConfigurationFramework
+from app.frameworks.logging_framework import LoggingFramework
 
 
 class Platform:
 
     def __init__(self):
 
-        self.config = Config()
-
-        self.logger = initialise_logging(
-            self.config.get("logging", "level")
-        )
+        self.frameworks = FrameworkRegistry()
+        self.work_packages = WorkPackageRegistry()
 
     def start(self):
 
-        self.logger.info("Starting TempestOS Platform")
+        # Register work packages
+        self.work_packages.add(
+            WorkPackage(
+                id="WP-0008.3.001",
+                title="Developer Framework",
+                purpose="Create TempestOS development infrastructure.",
+                status="In Progress",
+                dependencies=[],
+                acceptance_criteria=[
+                    "Model created",
+                    "Registry created",
+                    "Platform registered",
+                ],
+            )
+        )
 
+        # Register frameworks
+        self.frameworks.register(ConfigurationFramework())
+        self.frameworks.register(LoggingFramework())
+
+        # Initialise frameworks
+        self.frameworks.initialise_all()
+
+        # Startup banner
         print()
         print("=" * 60)
         print("TempestOS")
-        print(self.config.get("application", "version"))
+        print("Foundation Alpha Rev A")
         print("=" * 60)
-
-        print("✓ Configuration Framework")
-        print("✓ Logging Framework")
         print()
 
-        print("Foundation Alpha READY")
+        # Framework status
+        print("Frameworks")
+        for framework in self.frameworks.all():
+            health = framework.health()
+            print(f"✓ {health['name']} ({health['status']})")
+
+        print()
+
+        # Work packages
+        print("Work Packages")
+        for wp in self.work_packages.all():
+            print(f"• {wp.id} - {wp.title} ({wp.status})")
+
+        print()
+        print("Platform READY")
 
     def shutdown(self):
 
-        self.logger.info("Platform shutdown")
-
         print()
-        print("Goodbye.")
+        print("Platform shutdown complete.")
+    
