@@ -1,0 +1,15 @@
+application:
+  name: TempestOS
+  version: Foundation Alpha Rev A
+
+database:
+  engine: sqlite
+  filename: tempestos.db
+
+logging:
+  level: INFO
+
+platform:
+  academy: true
+  mission_control: true
+  
