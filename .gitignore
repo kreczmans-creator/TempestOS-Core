@@ -17,3 +17,30 @@ logs/
 # OS Files
 .DS_Store
 Thumbs.db
+
+# .NET build output
+[Bb]in/
+[Oo]bj/
+out/
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# .NET publish / packages
+*.nupkg
+*.snupkg
+**/[Pp]ackages/*
+!**/[Pp]ackages/build/
+*.nuget.props
+*.nuget.targets
+
+# Rider / other IDEs
+.idea/
+
+# MSBuild / test results
+TestResults/
+*.trx
