@@ -1,0 +1,16 @@
+{
+  "ExpandedNodes": [
+    "",
+    "\\Tempest.Core",
+    "\\Tempest.Core\\Common",
+    "\\Tempest.Core\\Configuration",
+    "\\Tempest.Core\\Hosting",
+    "\\Tempest.Core\\Logging",
+    "\\Tempest.Core\\Models",
+    "\\Tempest.Core\\obj\\Release",
+    "\\Tempest.Core\\Repositories",
+    "\\Tempest.Core\\Runtime"
+  ],
+  "SelectedNode": "\\Tempest.Core\\Configuration\\ApplicationConfiguration.cs",
+  "PreviewInSolutionExplorer": false
+}

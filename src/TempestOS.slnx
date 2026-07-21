@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="Tempest.App/Tempest.App.csproj" />
+  <Project Path="Tempest.Core/Tempest.Core.csproj" />
+</Solution>
