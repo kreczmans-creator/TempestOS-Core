@@ -88,6 +88,37 @@ internal sealed class ThrowingInitialiseLifecycleModule : IModule, IModuleLifecy
     public Task DisposeAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 }
 
+internal interface IUnregisteredLifecycleDependency
+{
+}
+
+/// <summary>
+/// A module whose constructor requires a dependency that is never registered with
+/// the service provider, used to verify that a resolution failure (as opposed to a
+/// failure inside the module's own lifecycle method) is still caught and marks the
+/// module <see cref="ModuleState.Failed"/>.
+/// </summary>
+internal sealed class ModuleWithMissingDependency : IModule, IModuleLifecycle
+{
+    public ModuleWithMissingDependency(IUnregisteredLifecycleDependency dependency)
+    {
+    }
+
+    public string Id => "lifecycle.missing-dependency";
+
+    public string Name => "Module With Missing Dependency";
+
+    public string Version => "1.0.0";
+
+    public Task InitialiseAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+
+    public Task StartAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+
+    public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+
+    public Task DisposeAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+}
+
 internal sealed class NoLifecycleModule : IModule
 {
     public string Id => "lifecycle.no-lifecycle";

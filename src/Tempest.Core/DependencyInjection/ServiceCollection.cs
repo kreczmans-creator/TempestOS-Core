@@ -1,0 +1,48 @@
+using Tempest.Core.Logging;
+
+namespace Tempest.Core.DependencyInjection;
+
+/// <summary>
+/// The concrete <see cref="IServiceCollection"/> implementation.
+/// </summary>
+public sealed class ServiceCollection : IServiceCollection
+{
+    private readonly Dictionary<Type, ServiceDescriptor> _descriptorsByType = new();
+    private readonly LoggingService? _logger;
+
+    /// <summary>
+    /// Initialises a new instance of the <see cref="ServiceCollection"/> class.
+    /// </summary>
+    /// <param name="logger">
+    /// An optional logger used to record registrations via the existing TempestOS
+    /// logging infrastructure. May be <see langword="null"/> if logging is not required.
+    /// </param>
+    public ServiceCollection(LoggingService? logger = null)
+    {
+        _logger = logger;
+    }
+
+    /// <inheritdoc />
+    public IReadOnlyList<ServiceDescriptor> Descriptors => _descriptorsByType.Values.ToList();
+
+    /// <inheritdoc />
+    public IServiceCollection Add(Type serviceType, Type implementationType, ServiceLifetime lifetime)
+    {
+        ArgumentNullException.ThrowIfNull(serviceType);
+        ArgumentNullException.ThrowIfNull(implementationType);
+
+        if (!serviceType.IsAssignableFrom(implementationType))
+        {
+            throw new ArgumentException(
+                $"'{implementationType.Name}' is not assignable to '{serviceType.Name}'.",
+                nameof(implementationType));
+        }
+
+        _descriptorsByType[serviceType] = new ServiceDescriptor(serviceType, implementationType, lifetime);
+
+        _logger?.Information(
+            $"Service registered: '{serviceType.Name}' -> '{implementationType.Name}' ({lifetime}).");
+
+        return this;
+    }
+}

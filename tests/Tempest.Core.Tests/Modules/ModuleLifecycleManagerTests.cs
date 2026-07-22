@@ -1,3 +1,4 @@
+using Tempest.Core.DependencyInjection;
 using Tempest.Core.Logging;
 using Tempest.Core.Modules;
 
@@ -13,25 +14,40 @@ public class ModuleLifecycleManagerTests
     private static ModuleDescriptor Describe<T>(string id) where T : IModule =>
         new(id, $"Module {id}", "1.0.0", typeof(T));
 
-    private static RuntimeModuleManager BuildRegisteredModules(params ModuleDescriptor[] descriptors)
+    /// <summary>
+    /// Builds a <see cref="ModuleLifecycleManager"/> wired the way a real composition
+    /// root would: descriptors registered with a <see cref="RuntimeModuleManager"/>,
+    /// their concrete types registered into a <see cref="ServiceCollection"/> via
+    /// <see cref="ModuleServiceCollectionExtensions.AddDiscoveredModules"/>, and a
+    /// <see cref="TempestServiceProvider"/> built from that collection. This is WP 2.4's
+    /// replacement for WP 2.3's direct <c>Activator.CreateInstance</c> call, so these
+    /// tests exercise the exact same construction path production code would use.
+    /// </summary>
+    private static ModuleLifecycleManager BuildLifecycleManager(LoggingService? logger, params ModuleDescriptor[] descriptors)
     {
-        var manager = new RuntimeModuleManager();
+        var runtimeManager = new RuntimeModuleManager();
 
         foreach (var descriptor in descriptors)
-            manager.Register(descriptor);
+            runtimeManager.Register(descriptor);
 
-        return manager;
+        var services = new ServiceCollection();
+        services.AddDiscoveredModules(runtimeManager.GetAll().Select(module => module.Descriptor));
+
+        var serviceProvider = new TempestServiceProvider(services);
+
+        return new ModuleLifecycleManager(runtimeManager, serviceProvider, logger);
     }
+
+    private static ModuleLifecycleManager BuildLifecycleManager(params ModuleDescriptor[] descriptors) =>
+        BuildLifecycleManager(logger: null, descriptors);
 
     [Fact]
     public async Task InitialiseAllAsync_RunsModulesInAscendingIdOrder()
     {
-        var runtimeManager = BuildRegisteredModules(
+        var lifecycleManager = BuildLifecycleManager(
             Describe<RecordingLifecycleModuleGamma>("lifecycle.gamma"),
             Describe<RecordingLifecycleModuleAlpha>("lifecycle.alpha"),
             Describe<RecordingLifecycleModuleBeta>("lifecycle.beta"));
-
-        var lifecycleManager = new ModuleLifecycleManager(runtimeManager);
 
         await lifecycleManager.InitialiseAllAsync(CancellationToken.None);
 
@@ -43,12 +59,10 @@ public class ModuleLifecycleManagerTests
     [Fact]
     public async Task StartAllAsync_RunsModulesInAscendingIdOrder_AfterInitialise()
     {
-        var runtimeManager = BuildRegisteredModules(
+        var lifecycleManager = BuildLifecycleManager(
             Describe<RecordingLifecycleModuleGamma>("lifecycle.gamma"),
             Describe<RecordingLifecycleModuleAlpha>("lifecycle.alpha"),
             Describe<RecordingLifecycleModuleBeta>("lifecycle.beta"));
-
-        var lifecycleManager = new ModuleLifecycleManager(runtimeManager);
 
         await lifecycleManager.InitialiseAllAsync(CancellationToken.None);
         LifecycleTestLog.Reset();
@@ -65,12 +79,10 @@ public class ModuleLifecycleManagerTests
     [Fact]
     public async Task StopAllAsync_RunsModulesInDescendingIdOrder()
     {
-        var runtimeManager = BuildRegisteredModules(
+        var lifecycleManager = BuildLifecycleManager(
             Describe<RecordingLifecycleModuleAlpha>("lifecycle.alpha"),
             Describe<RecordingLifecycleModuleBeta>("lifecycle.beta"),
             Describe<RecordingLifecycleModuleGamma>("lifecycle.gamma"));
-
-        var lifecycleManager = new ModuleLifecycleManager(runtimeManager);
 
         await lifecycleManager.InitialiseAllAsync(CancellationToken.None);
         await lifecycleManager.StartAllAsync(CancellationToken.None);
@@ -88,12 +100,10 @@ public class ModuleLifecycleManagerTests
     [Fact]
     public async Task DisposeAllAsync_RunsModulesInDescendingIdOrder()
     {
-        var runtimeManager = BuildRegisteredModules(
+        var lifecycleManager = BuildLifecycleManager(
             Describe<RecordingLifecycleModuleAlpha>("lifecycle.alpha"),
             Describe<RecordingLifecycleModuleBeta>("lifecycle.beta"),
             Describe<RecordingLifecycleModuleGamma>("lifecycle.gamma"));
-
-        var lifecycleManager = new ModuleLifecycleManager(runtimeManager);
 
         await lifecycleManager.InitialiseAllAsync(CancellationToken.None);
         await lifecycleManager.StartAllAsync(CancellationToken.None);
@@ -112,8 +122,7 @@ public class ModuleLifecycleManagerTests
     [Fact]
     public async Task FullLifecycle_TransitionsThroughEveryExpectedState()
     {
-        var runtimeManager = BuildRegisteredModules(Describe<RecordingLifecycleModuleAlpha>("lifecycle.alpha"));
-        var lifecycleManager = new ModuleLifecycleManager(runtimeManager);
+        var lifecycleManager = BuildLifecycleManager(Describe<RecordingLifecycleModuleAlpha>("lifecycle.alpha"));
 
         Assert.Equal(ModuleState.Registered, lifecycleManager.GetState("lifecycle.alpha"));
 
@@ -133,8 +142,7 @@ public class ModuleLifecycleManagerTests
     [Fact]
     public async Task InitialiseModuleAsync_ThrowsInvalidModuleLifecycleTransitionException_WhenAlreadyInitialised()
     {
-        var runtimeManager = BuildRegisteredModules(Describe<RecordingLifecycleModuleAlpha>("lifecycle.alpha"));
-        var lifecycleManager = new ModuleLifecycleManager(runtimeManager);
+        var lifecycleManager = BuildLifecycleManager(Describe<RecordingLifecycleModuleAlpha>("lifecycle.alpha"));
 
         await lifecycleManager.InitialiseModuleAsync("lifecycle.alpha", CancellationToken.None);
 
@@ -149,8 +157,7 @@ public class ModuleLifecycleManagerTests
     [Fact]
     public async Task StartModuleAsync_ThrowsInvalidModuleLifecycleTransitionException_WhenNotYetInitialised()
     {
-        var runtimeManager = BuildRegisteredModules(Describe<RecordingLifecycleModuleAlpha>("lifecycle.alpha"));
-        var lifecycleManager = new ModuleLifecycleManager(runtimeManager);
+        var lifecycleManager = BuildLifecycleManager(Describe<RecordingLifecycleModuleAlpha>("lifecycle.alpha"));
 
         var exception = await Assert.ThrowsAsync<InvalidModuleLifecycleTransitionException>(() =>
             lifecycleManager.StartModuleAsync("lifecycle.alpha", CancellationToken.None));
@@ -161,8 +168,7 @@ public class ModuleLifecycleManagerTests
     [Fact]
     public async Task DisposeModuleAsync_ThrowsInvalidModuleLifecycleTransitionException_WhenAlreadyDisposed()
     {
-        var runtimeManager = BuildRegisteredModules(Describe<RecordingLifecycleModuleAlpha>("lifecycle.alpha"));
-        var lifecycleManager = new ModuleLifecycleManager(runtimeManager);
+        var lifecycleManager = BuildLifecycleManager(Describe<RecordingLifecycleModuleAlpha>("lifecycle.alpha"));
 
         await lifecycleManager.DisposeModuleAsync("lifecycle.alpha", CancellationToken.None);
 
@@ -173,11 +179,9 @@ public class ModuleLifecycleManagerTests
     [Fact]
     public async Task InitialiseAllAsync_MarksThrowingModuleFailed_AndContinuesWithOtherModules()
     {
-        var runtimeManager = BuildRegisteredModules(
+        var lifecycleManager = BuildLifecycleManager(
             Describe<ThrowingInitialiseLifecycleModule>("lifecycle.throwing-initialise"),
             Describe<RecordingLifecycleModuleAlpha>("lifecycle.alpha"));
-
-        var lifecycleManager = new ModuleLifecycleManager(runtimeManager);
 
         await lifecycleManager.InitialiseAllAsync(CancellationToken.None);
 
@@ -191,10 +195,8 @@ public class ModuleLifecycleManagerTests
     [Fact]
     public async Task InitialiseModuleAsync_PropagatesException_WhenCalledDirectly()
     {
-        var runtimeManager = BuildRegisteredModules(
+        var lifecycleManager = BuildLifecycleManager(
             Describe<ThrowingInitialiseLifecycleModule>("lifecycle.throwing-initialise"));
-
-        var lifecycleManager = new ModuleLifecycleManager(runtimeManager);
 
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
             lifecycleManager.InitialiseModuleAsync("lifecycle.throwing-initialise", CancellationToken.None));
@@ -203,10 +205,25 @@ public class ModuleLifecycleManagerTests
     }
 
     [Fact]
+    public async Task InitialiseModuleAsync_MarksModuleFailed_WhenServiceProviderResolutionFails()
+    {
+        var lifecycleManager = BuildLifecycleManager(
+            Describe<ModuleWithMissingDependency>("lifecycle.missing-dependency"));
+
+        var exception = await Assert.ThrowsAsync<ServiceNotRegisteredException>(() =>
+            lifecycleManager.InitialiseModuleAsync("lifecycle.missing-dependency", CancellationToken.None));
+
+        Assert.Equal(typeof(IUnregisteredLifecycleDependency), exception.MissingServiceType);
+        Assert.Equal(ModuleState.Failed, lifecycleManager.GetState("lifecycle.missing-dependency"));
+
+        var status = lifecycleManager.Modules.Single(s => s.Descriptor.Id == "lifecycle.missing-dependency");
+        Assert.Same(exception, status.FailureReason);
+    }
+
+    [Fact]
     public async Task InitialiseAllAsync_ThrowsOperationCanceledException_WhenTokenAlreadyCancelled()
     {
-        var runtimeManager = BuildRegisteredModules(Describe<RecordingLifecycleModuleAlpha>("lifecycle.alpha"));
-        var lifecycleManager = new ModuleLifecycleManager(runtimeManager);
+        var lifecycleManager = BuildLifecycleManager(Describe<RecordingLifecycleModuleAlpha>("lifecycle.alpha"));
 
         using var cts = new CancellationTokenSource();
         cts.Cancel();
@@ -221,8 +238,7 @@ public class ModuleLifecycleManagerTests
     [Fact]
     public async Task NoLifecycleModule_ProgressesThroughStatesWithoutInvokingAnyMethod()
     {
-        var runtimeManager = BuildRegisteredModules(Describe<NoLifecycleModule>("lifecycle.no-lifecycle"));
-        var lifecycleManager = new ModuleLifecycleManager(runtimeManager);
+        var lifecycleManager = BuildLifecycleManager(Describe<NoLifecycleModule>("lifecycle.no-lifecycle"));
 
         await lifecycleManager.InitialiseAllAsync(CancellationToken.None);
         await lifecycleManager.StartAllAsync(CancellationToken.None);
@@ -236,8 +252,7 @@ public class ModuleLifecycleManagerTests
     [Fact]
     public void GetState_ThrowsArgumentException_WhenModuleUnknown()
     {
-        var runtimeManager = BuildRegisteredModules(Describe<RecordingLifecycleModuleAlpha>("lifecycle.alpha"));
-        var lifecycleManager = new ModuleLifecycleManager(runtimeManager);
+        var lifecycleManager = BuildLifecycleManager(Describe<RecordingLifecycleModuleAlpha>("lifecycle.alpha"));
 
         Assert.Throws<ArgumentException>(() => lifecycleManager.GetState("missing"));
     }
@@ -250,8 +265,7 @@ public class ModuleLifecycleManagerTests
         try
         {
             var logger = new LoggingService(logDirectory);
-            var runtimeManager = BuildRegisteredModules(Describe<RecordingLifecycleModuleAlpha>("lifecycle.alpha"));
-            var lifecycleManager = new ModuleLifecycleManager(runtimeManager, logger);
+            var lifecycleManager = BuildLifecycleManager(logger, Describe<RecordingLifecycleModuleAlpha>("lifecycle.alpha"));
 
             await lifecycleManager.InitialiseAllAsync(CancellationToken.None);
 

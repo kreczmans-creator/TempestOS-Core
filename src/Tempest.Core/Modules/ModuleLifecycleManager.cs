@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using Tempest.Core.DependencyInjection;
 using Tempest.Core.Logging;
 
 namespace Tempest.Core.Modules;
@@ -28,10 +29,13 @@ namespace Tempest.Core.Modules;
 /// A module implementing only <see cref="IModule"/> (not <see cref="IModuleLifecycle"/>)
 /// is still driven through <see cref="ModuleState"/>, but no instance is constructed for
 /// it and no lifecycle method is invoked — it is treated as having no lifecycle
-/// behaviour. An instance is created (via <see cref="Activator.CreateInstance(Type)"/>,
-/// matching the instantiation approach already used by
-/// <see cref="ReflectionFrameworkDiscoveryService"/>) once, the first time the module is
-/// initialised, and reused for its subsequent start, stop, and dispose calls.
+/// behaviour. An instance is resolved through the <see cref="ITempestServiceProvider"/>
+/// supplied at construction (WP 2.4: this manager no longer calls
+/// <c>Activator.CreateInstance</c> itself — instance construction, including any
+/// constructor dependencies, is entirely the service provider's responsibility) once,
+/// the first time the module is initialised, and the same resolved instance is reused
+/// for its subsequent start, stop, and dispose calls regardless of the lifetime it was
+/// registered with.
 /// </para>
 /// <para>
 /// <b>Failure handling:</b> if a module throws during a lifecycle operation, the failure
@@ -61,6 +65,7 @@ public sealed class ModuleLifecycleManager : IModuleLifecycleManager
     private readonly object _gate = new();
     private readonly List<TrackedModule> _orderedModules;
     private readonly Dictionary<string, TrackedModule> _modulesById;
+    private readonly ITempestServiceProvider _serviceProvider;
     private readonly LoggingService? _logger;
 
     /// <summary>
@@ -69,14 +74,25 @@ public sealed class ModuleLifecycleManager : IModuleLifecycleManager
     /// <paramref name="runtimeModuleManager"/>.
     /// </summary>
     /// <param name="runtimeModuleManager">The runtime module manager to source registered modules from.</param>
+    /// <param name="serviceProvider">
+    /// The service provider used to construct module instances. The caller is expected
+    /// to have registered every discoverable module's concrete type with it — see
+    /// <c>ModuleServiceCollectionExtensions.AddDiscoveredModules</c> — before passing it
+    /// here.
+    /// </param>
     /// <param name="logger">
     /// An optional logger used to record lifecycle transitions via the existing TempestOS
     /// logging infrastructure. May be <see langword="null"/> if logging is not required.
     /// </param>
-    public ModuleLifecycleManager(IRuntimeModuleManager runtimeModuleManager, LoggingService? logger = null)
+    public ModuleLifecycleManager(
+        IRuntimeModuleManager runtimeModuleManager,
+        ITempestServiceProvider serviceProvider,
+        LoggingService? logger = null)
     {
         ArgumentNullException.ThrowIfNull(runtimeModuleManager);
+        ArgumentNullException.ThrowIfNull(serviceProvider);
 
+        _serviceProvider = serviceProvider;
         _logger = logger;
 
         _orderedModules = runtimeModuleManager.GetAll()
@@ -275,15 +291,20 @@ public sealed class ModuleLifecycleManager : IModuleLifecycleManager
                 throw new InvalidModuleLifecycleTransitionException(moduleId, tracked.State, operationName);
 
             tracked.State = transitioningState;
-
-            if (createInstance)
-                tracked.Instance = CreateInstance(tracked.Descriptor);
         }
 
         _logger?.Information($"Module '{moduleId}' -> {transitioningState}.");
 
         try
         {
+            // Resolution happens inside this try block, not the lock above, so that a
+            // service-provider failure (missing dependency, circular dependency,
+            // ambiguous constructor) is caught and marks the module Failed exactly like
+            // a failure inside the module's own lifecycle method — instead of leaving it
+            // stuck in a transient state with no recorded failure reason.
+            if (createInstance)
+                tracked.Instance = ResolveInstance(tracked.Descriptor);
+
             if (tracked.Instance is not null)
                 await invoke(tracked.Instance, cancellationToken).ConfigureAwait(false);
 
@@ -311,12 +332,23 @@ public sealed class ModuleLifecycleManager : IModuleLifecycleManager
         }
     }
 
-    private static IModuleLifecycle? CreateInstance(ModuleDescriptor descriptor)
+    /// <summary>
+    /// Resolves a module's instance through the service provider, or returns
+    /// <see langword="null"/> if the module doesn't implement <see cref="IModuleLifecycle"/>
+    /// at all (in which case there is nothing useful to construct or invoke).
+    /// </summary>
+    /// <remarks>
+    /// WP 2.4: this is the only place <see cref="ModuleLifecycleManager"/> obtains a
+    /// module instance from. It no longer calls <c>Activator.CreateInstance</c> directly;
+    /// construction, including resolving the module's own constructor dependencies, is
+    /// entirely the service provider's responsibility.
+    /// </remarks>
+    private IModuleLifecycle? ResolveInstance(ModuleDescriptor descriptor)
     {
         if (!typeof(IModuleLifecycle).IsAssignableFrom(descriptor.ModuleType))
             return null;
 
-        return (IModuleLifecycle)Activator.CreateInstance(descriptor.ModuleType)!;
+        return (IModuleLifecycle)_serviceProvider.GetService(descriptor.ModuleType);
     }
 
     private TrackedModule GetTracked(string moduleId)
