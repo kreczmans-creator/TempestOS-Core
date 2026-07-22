@@ -24,8 +24,8 @@ of date is worse than no map at all, because it will be trusted.
 | Dependency Injection | Implemented (WP 2.4) | — | Lifecycle, any registered service |
 | Discovery | Implemented (WP 2.1) | Logging | Registration |
 | Registration | Implemented (WP 2.2) | Discovery, Logging | Lifecycle |
-| Lifecycle | Implemented (WP 2.3) | Registration, Dependency Injection, Logging | Host (planned) |
-| Host | Planned | Configuration, Logging, Discovery, Registration, Lifecycle, Dependency Injection | Tempest.App |
+| Lifecycle | Implemented (WP 2.3) | Registration, Dependency Injection, Logging | Host |
+| Host | Architected (WP 2.7), not implemented | Configuration, Logging, Discovery, Registration, Lifecycle, Dependency Injection | Tempest.App |
 | Project Engine | Planned | Undetermined | Undetermined |
 | Requirements Engine | Planned | Undetermined | Undetermined |
 
@@ -237,32 +237,46 @@ Is Always Legal*); Engineering Principle — State Machines.
 
 ---
 
-## Host *(planned)*
+## Host *(architected, not yet implemented — WP 2.7)*
 
-**Responsibility (anticipated).** The composition root: assembles
-Configuration, Logging, Discovery, Registration, Dependency Injection, and
-Lifecycle into one running instance, in the order *The Startup Sequence*
-documents, and owns the "Startup complete," "Shutdown initiated," and
-"Shutdown complete" diagnostic events — none of which any existing service can
-produce, because none of them represents the whole running instance.
+**Responsibility.** The composition root: assembles Configuration, Logging,
+Discovery, Registration, Dependency Injection, and Lifecycle into one running
+instance, and owns orchestration, startup, shutdown, cancellation, and
+disposal ordering. Does **not** own business logic, configuration parsing,
+module implementation, or logging implementation. Fully designed —
+responsibilities, a 13-phase lifecycle, complete startup/shutdown sequence
+diagrams, its own 7-state machine, and a full failure model — but not yet
+implemented; see *Runtime Host Architecture.md* and its companion documents.
 
-**Status.** Not implemented. Repeatedly flagged as a gap across the WP 2.4,
-WP 2.5, and WP 2.6 retrospectives, and named explicitly in *The Startup
-Sequence*'s own Trade-offs section: the documented sequence is currently
-*intent*, not yet enforced by any single piece of code that performs all of
-its steps in order.
+**Status.** Architecture complete (WP 2.7); implementation not started.
+Previously flagged as a gap across the WP 2.4, WP 2.5, and WP 2.6
+retrospectives, and in *The Startup Sequence*'s own Trade-offs section — this
+entry updates that gap from "not designed" to "designed, awaiting
+implementation."
 
-**Dependencies (anticipated).** Every implemented service above.
+**Dependencies.** Every implemented service above — Configuration and Logging
+first (constructed directly, outside the container), then Discovery and
+Registration (deliberately *before* the DI container is built — see
+ADR-0011), then Dependency Injection, then Lifecycle.
 
-**Consumers (anticipated).** `Tempest.App` / the process entry point.
+**Consumers (anticipated).** `Tempest.App` / the process entry point; future
+hosted services, background workers, and — pending their own classification
+under ADR-0013 — a Requirements Engine and/or Project Engine.
 
-**ADR references.** None yet — a strong candidate for a dedicated ADR once
-designed (in particular, how it reconciles with the pre-module-pipeline
-`BootstrapService`/`HostingService` that already exist and do a narrower
-version of this job for the platform's original bootstrap code).
+**ADR references.** ADR-0004 (disposal reused at Host level), ADR-0008
+(why Discovery/Registration precede DI — see ADR-0011), ADR-0009 (composition
+root pattern), ADR-0011 (*Discovery and Registration Precede DI Container
+Construction*), ADR-0012 (*The Runtime Host Owns an Independent State
+Machine*), ADR-0013 (*Platform-Service Failures Abort Startup; Module
+Failures Remain Isolated*), ADR-0014 (*Cancellation and Shutdown-Request Are
+Distinct Signals*).
 
-**Academy references.** *The Startup Sequence* (Runtime Architecture); the
-Future Evolution sections of the WP 2.4, WP 2.5, and WP 2.6 retrospectives.
+**Academy references.** WP 2.7 retrospective (*Runtime Host Architecture
+Review*, including its Open Questions, Risks, and Architectural Debt
+Assessment); *The Startup Sequence* (Runtime Architecture); *Runtime Host
+Architecture.md*, *Host Lifecycle.md*, *Startup Sequence.md*, *Shutdown
+Sequence.md*, *Runtime State Machine.md*, *Failure Behaviour.md* (all
+`docs/architecture/`).
 
 ---
 

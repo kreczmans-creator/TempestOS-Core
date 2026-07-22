@@ -5,6 +5,16 @@
 Accepted — WP 2.3 (Runtime Lifecycle), reviewed and confirmed under architectural
 review, 2026-07-22.
 
+**Update, WP 2.7 (Runtime Host Architecture):** this ADR's reasoning was
+reused, at the Host level, for the Host's own `Faulted → Disposed` transition
+in *Runtime State Machine.md* — a Host that faults during startup still
+attempts to dispose whatever platform services were already brought up,
+following exactly this ADR's logic (permissive disposal, restricted only
+against an already-`Disposed` terminal state) applied one level up from
+individual modules to the Host itself. No new ADR was created for this reuse;
+see ADR-0009's own WP 2.6 update for the precedent of citing rather than
+duplicating a reused principle.
+
 ## Context
 
 `Initialise`, `Start`, and `Stop` each have exactly one valid precondition state

@@ -49,7 +49,7 @@ what alternatives were weighed and why this one won.
   holistically: the whole module pipeline, how its stages relate, and why the
   boundaries between them sit where they do.
 - **03 Work Packages** — a detailed retrospective for each major piece of work
-  (currently WP 2.1 through WP 2.6), following a consistent thirteen-section
+  (currently WP 2.1 through WP 2.7), following a consistent thirteen-section
   template: introduction, purpose, background, the problem, the design,
   alternatives considered, why this solution was chosen, architectural
   principles, benefits, trade-offs, common mistakes, future evolution, and key
