@@ -5,6 +5,16 @@
 Accepted — WP 2.7 (Runtime Host Architecture), 2026-07-22. Architecture only;
 no code changes accompany this decision.
 
+**Update, WP 2.7 architectural review:** this ADR's Negative consequence —
+"what happens if a shutdown request arrives during `Starting`, before
+`Running` is reached" — was the one open question that survived this work
+package's initial review. It is now resolved by ADR-0018, *Startup
+Cancellation Transitions to Controlled Shutdown*: both signals, when they
+arrive during `Starting`, transition the Host to `Stopping` identically. The
+two signals remain conceptually distinct, exactly as this ADR decided — only
+their *handling once either fires during `Starting`* was left open, and is
+what ADR-0018 settles.
+
 ## Context
 
 Every lifecycle operation in the platform already accepts a

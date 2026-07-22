@@ -18,12 +18,12 @@ stateDiagram-v2
 
     Starting --> Running: All platform-service phases and\nModule Initialisation complete
     Starting --> Faulted: Platform-service failure\n(Configuration, Logging, DI,\nDiscovery, Registration - ADR-0013)
-    Starting --> Stopped: Startup cancellation token fires -\nattempt teardown of partial startup\n(not treated as a fault)
+    Starting --> Stopping: Startup cancellation OR an early\nshutdown request fires - not a fault\n(ADR-0018)
 
     Running --> Stopping: Shutdown requested (ADR-0014)
     Running --> Faulted: Unhandled runtime exception\n(no code path today - reserved for\nfuture hosted services)
 
-    Stopping --> Stopped: Module Disposal + Service Disposal\ncomplete (individual module failures\nalready isolated, WP 2.3)
+    Stopping --> Stopped: Module Disposal + Service Disposal\ncomplete (individual module failures\nalready isolated, WP 2.3) - the same\nprocedure regardless of whether Stopping\nwas entered from Running or Starting
     Stopping --> Faulted: Genuine Host-level defect during\nshutdown orchestration itself\n(not a module failure)
 
     Stopped --> Disposed: Dispose()
@@ -39,8 +39,8 @@ stateDiagram-v2
 | `Created` | The Host object exists; nothing has been built. |
 | `Starting` | Any of Configuration Built through Module Initialisation is in progress (see *Host Lifecycle.md*). |
 | `Running` | Module Initialisation completed; the platform is up. Does not imply every module succeeded — see ADR-0013. |
-| `Stopping` | Graceful shutdown in progress: Module Disposal, then Service Disposal. |
-| `Stopped` | Graceful shutdown completed normally, or startup was cancelled and partial teardown completed. |
+| `Stopping` | Controlled shutdown in progress: Module Disposal, then Service Disposal. Entered from `Running` (graceful shutdown) or from `Starting` (cancellation or an early shutdown request — ADR-0018); the procedure is identical either way. |
+| `Stopped` | Controlled shutdown completed — whether it was a graceful, post-`Running` shutdown or an interrupted startup torn down via `Stopping`. |
 | `Faulted` | A platform-service failure aborted startup, or a genuine Host-level defect occurred during Running or Stopping. |
 | `Disposed` | Terminal. Every resource that could be released has had release attempted. |
 
@@ -51,7 +51,7 @@ stateDiagram-v2
 | `Created` | `Starting` | The Host's run method is called. |
 | `Starting` | `Running` | Every platform-service phase and Module Initialisation completed (regardless of individual module outcomes). |
 | `Starting` | `Faulted` | A platform-service failure (Configuration/Logging/DI/Discovery/Registration) — ADR-0013. |
-| `Starting` | `Stopped` | The startup `CancellationToken` (ADR-0014) fired; partial teardown attempted; not treated as a fault. |
+| `Starting` | `Stopping` | The startup `CancellationToken` fires, **or** a shutdown request (ADR-0014) arrives early, before `Running` is reached; not treated as a fault — ADR-0018. |
 | `Running` | `Stopping` | A shutdown request (ADR-0014) is observed. |
 | `Running` | `Faulted` | An unhandled runtime exception (no producing code path exists yet — reserved for future hosted services). |
 | `Stopping` | `Stopped` | Module Disposal and Service Disposal both completed (individual module Stop/Dispose failures already isolated by WP 2.3 do not prevent this). |
@@ -77,6 +77,10 @@ reject them (with a dedicated exception, following the established
 - `Created → Running` (must pass through `Starting`).
 - `Created → Stopping` / `Created → Stopped` (nothing has started; there is
   nothing to stop).
+- `Starting → Stopped` **directly** (no longer legal since ADR-0018: any
+  cancellation or early shutdown request during `Starting` must pass through
+  `Stopping`, exactly as a graceful, post-`Running` shutdown does — there is
+  now exactly one path to `Stopped`, not two).
 - `Running → Starting` (no re-entrant or repeated startup — a Host instance
   runs once).
 - `Stopped → Starting` / `Stopped → Running` (no restart — **decided**, not

@@ -4,13 +4,18 @@
 
 ## Overview
 
-Shutdown has two entry points, not one: a **graceful** shutdown, triggered by
-the shutdown-request signal (ADR-0014) while the Host is `Running`, and a
-**post-fault teardown**, triggered when startup itself fails (see *Startup
-Sequence.md* and *Runtime State Machine.md*). Both converge on the same
-underlying steps — Module Disposal, then Service Disposal — but reach them
-from different states and, for a post-fault teardown, from a possibly
-incomplete set of platform services.
+Shutdown has two entry points, not three, since ADR-0018: a **controlled
+shutdown** via `Stopping` — entered either from `Running` (a graceful,
+post-startup shutdown request) or from `Starting` (startup cancellation, or an
+early shutdown request arriving before `Running` is reached — ADR-0018,
+resolving what was previously an open question) — and a **post-fault
+teardown**, entered only when a genuine platform-service failure aborts
+startup (ADR-0013), going directly to `Faulted` rather than through
+`Stopping`. Both converge on the same underlying steps — Module Disposal,
+then Service Disposal — but the controlled-shutdown path uses one, single,
+shared procedure regardless of which state it was entered from, while the
+post-fault path is a separate, distinct case (a fault is not a cancellation or
+a shutdown request, and is never routed through `Stopping`).
 
 ## Sequence Diagram
 
@@ -22,8 +27,8 @@ sequenceDiagram
     participant Provider as TempestServiceProvider
     participant Logger as ILogger
 
-    Note over Host: Running
-    Host->>Host: Shutdown requested (ADR-0014 signal)
+    Note over Host: Running (graceful path) OR Starting (cancelled/early<br/>shutdown request - ADR-0018) - this diagram is identical either way
+    Host->>Host: Shutdown request, or startup cancellation, observed
     Note over Host: -> Stopping
 
     Host->>Lifecycle: StopAllAsync(shutdownToken)
@@ -105,5 +110,5 @@ regardless — disposal is never skipped, only Stop may be cut short.
 
 `Host Disposed` is the sequence's terminal point — see *Runtime State
 Machine.md*. No further transitions are possible; a subsequent run requires a
-new Host instance (no restart is supported — see Open Questions, WP 2.7
-Academy review, for whether this should change).
+new `TempestHost` instance — restart is not supported, decided by ADR-0015,
+*Runtime Hosts Are Not Restartable*.

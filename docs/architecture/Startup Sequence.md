@@ -87,9 +87,9 @@ sequenceDiagram
     Host->>Lifecycle: InitialiseAllAsync(startupToken)
     Host->>Lifecycle: StartAllAsync(startupToken)
     Note over Lifecycle: Individual module failures are isolated (WP 2.3) -<br/>marked Failed, logged, batch continues. Does not fault the Host.
-    alt startupToken cancelled mid-phase
+    alt startupToken cancelled mid-phase, or an early shutdown request arrives (ADR-0018)
         Lifecycle--xHost: OperationCanceledException
-        Note over Host: -> attempt teardown of what exists -> Stopped
+        Note over Host: -> Stopping (same controlled shutdown as a graceful<br/>post-Running stop - see Shutdown Sequence.md) -> Stopped
     else Initialisation/Start phases complete (regardless of individual module outcomes)
         Lifecycle-->>Host: (returns normally)
         Note over Host: Module Initialisation complete
@@ -104,7 +104,9 @@ sequenceDiagram
   `InitialiseAllAsync`/`StartAllAsync`, which `ModuleLifecycleManager` already
   isolates internally and which never reach the Host as an exception at all —
   the Host only ever observes those via `IModuleLifecycleManager.GetState`/`Modules`
-  afterward, not as a thrown exception during this sequence.
+  afterward, not as a thrown exception during this sequence — and **except**
+  `OperationCanceledException`, which is never a fault (ADR-0013, ADR-0018)
+  and always routes to `Stopping`, never `Faulted`.
 - The startup `CancellationToken` (ADR-0014) is threaded through every
   `async` call in this diagram, not only the lifecycle calls shown — omitted
   from the other steps above for readability, since none of Configuration,
@@ -126,7 +128,7 @@ sequenceDiagram
 | Platform Services Registered | `ArgumentException` (malformed registration) | Host-fatal → `Faulted` |
 | Dependency Injection Built | (not expected to throw under normal conditions) | — |
 | Module Initialisation — individual module | (isolated internally by `ModuleLifecycleManager`) | Module `Failed`; Host continues to `Running` |
-| Module Initialisation — startup cancelled | `OperationCanceledException` | Host attempts teardown → `Stopped` (not `Faulted`) |
+| Module Initialisation — startup cancelled, or early shutdown request | `OperationCanceledException` | Host-fatal: no — `Starting → Stopping → Stopped` (ADR-0018), same procedure as a graceful shutdown |
 
 See *Failure Behaviour.md* for the full failure model, including shutdown-time
 and logging-time failures this diagram does not cover.

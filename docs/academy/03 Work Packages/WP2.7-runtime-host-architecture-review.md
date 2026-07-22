@@ -281,17 +281,18 @@ the Ownership Matrix for where each resolution now lives):
   modules, retriggering discovery), directly undermining the deterministic
   startup model this whole work package exists to establish.
 
-**Still genuinely open:**
+- ~~What happens if a shutdown request arrives during `Starting`, before
+  `Running` is ever reached?~~ **Resolved — ADR-0018**, *Startup Cancellation
+  Transitions to Controlled Shutdown*. Both the startup cancellation token and
+  an early shutdown request, whichever fires first, transition the Host
+  `Starting → Stopping` — the same controlled-shutdown procedure a graceful,
+  post-`Running` shutdown already uses, not a bespoke "partial teardown" path.
+  This was the one open question that survived the first round of
+  architectural review; none remain outstanding.
 
-1. **What happens if a shutdown request arrives during `Starting`, before
-   `Running` is ever reached?** *Shutdown Sequence.md* and *Runtime State
-   Machine.md* define shutdown from `Running`, and post-fault teardown from a
-   platform-service failure — but a *deliberate* shutdown request arriving
-   mid-startup (not a failure, not the startup cancellation token, but the
-   other, running-time signal, ADR-0014) is not yet defined. Left open,
-   deliberately, rather than guessed at — this is the one open question that
-   survived architectural review, and remains the top item for whichever
-   work package implements the Host next.
+**No open questions remain from WP 2.7's original four.** All were resolved
+under architectural review (ADR-0015 through ADR-0018) rather than deferred to
+implementation.
 
 ## Risks
 
@@ -314,9 +315,12 @@ the Ownership Matrix for where each resolution now lives):
    implementation — it is small, scoped, and directly protects the Host's own
    heaviest use case (logging throughout startup and shutdown, including
    failure paths).
-2. Resolve the one surviving open question (shutdown request during
-   `Starting`) before implementation, since it is a real, reachable scenario,
-   not a hypothetical edge case.
+2. Implement the controlled-shutdown procedure (Module Disposal + Service
+   Disposal) as a single, shared routine from the very first line of code,
+   invoked identically whether `Stopping` was entered from `Running` or from a
+   cancelled/interrupted `Starting` (ADR-0018) — do not let two separate
+   implementations of "tear down whatever exists" emerge during
+   implementation, even informally.
 3. Implement `TempestHost`/`TempestHostBuilder` in `Tempest.Core.Runtime`
    exactly as ADR-0016 names them, and keep Discovery/Registration/Lifecycle
    Host-held per ADR-0017 from the first line of code — these are decided, not

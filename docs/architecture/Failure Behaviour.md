@@ -87,7 +87,13 @@ Sequence.md* is attempted regardless of what failed before it.
 ## Partial Startup
 
 **Definition.** Any point where some, but not all, of Configuration Built
-through Module Initialisation completed before a Host-fatal failure occurred.
+through Module Initialisation completed before a Host-fatal *failure*
+occurred. This section is specifically about the **fault** case — a genuine
+platform-service exception. A startup interrupted by *cancellation* or an
+early shutdown request instead (not a failure at all) is the separate case
+ADR-0018 covers, routed through `Stopping`, not through this section's
+"Post-Fault Teardown" path — see *Shutdown Sequence.md* for both, side by
+side.
 
 **Required behaviour.** Whatever *was* built must have disposal attempted
 against it — see *Shutdown Sequence.md*'s "Post-Fault Teardown" diagram. Today
@@ -149,4 +155,4 @@ of caller this principle exists to protect.
 | Individual module shutdown failure | No | (none — `Stopping` proceeds to `Stopped`) |
 | Host-level defect during shutdown | Yes, but disposal still proceeds | `Stopping → Faulted → Disposed` |
 | Logging failure | **Must never be** (currently is — see above) | (none, once fixed) |
-| Startup cancellation | No (not a fault) | `Starting → Stopped` |
+| Startup cancellation, or an early shutdown request | No (not a fault) | `Starting → Stopping → Stopped` (ADR-0018 — same controlled shutdown procedure as a graceful, post-`Running` stop) |

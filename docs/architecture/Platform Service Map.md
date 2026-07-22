@@ -272,7 +272,8 @@ Failures Remain Isolated*), ADR-0014 (*Cancellation and Shutdown-Request Are
 Distinct Signals*), ADR-0015 (*Runtime Hosts Are Not Restartable*), ADR-0016
 (*The Host Lives in Tempest.Core.Runtime, Distinct From Tempest.Core.Hosting*),
 ADR-0017 (*Discovery, Registration, and Lifecycle Remain Host-Owned
-Collaborators, Not Public DI Services*).
+Collaborators, Not Public DI Services*), ADR-0018 (*Startup Cancellation
+Transitions to Controlled Shutdown*).
 
 **Academy references.** WP 2.7 retrospective (*Runtime Host Architecture
 Review*, including its Open Questions, Risks, and Architectural Debt

@@ -223,17 +223,25 @@ failure under ADR-0013.
 
 ### 10. Shutdown Requested
 
-**Purpose.** The moment a shutdown signal (ADR-0014's running-time signal,
-distinct from startup cancellation) is observed, and the Host begins its
-graceful teardown.
+**Purpose.** The moment a stop signal is observed and the Host begins its
+controlled teardown. Two distinct triggers lead here: a shutdown request
+(ADR-0014's running-time signal) while `Running`, or **either** signal —
+startup cancellation or an early shutdown request — while still `Starting`
+(ADR-0018). Both are handled identically from this point on; there is no
+separate "partial startup" variant of this phase.
 
-**Entry criteria.** The Host is `Running`.
+**Entry criteria.** The Host is `Running`, **or** the Host is `Starting` and
+either the startup cancellation token or a shutdown request has fired
+(ADR-0018).
 
 **Exit criteria.** The Host has transitioned to `Stopping` and begun Module
 Disposal.
 
-**Failure behaviour.** Not applicable — receiving a shutdown request is not
-itself a failure mode; see *Shutdown Sequence.md*.
+**Failure behaviour.** Not applicable — receiving a shutdown request, or
+being cancelled during startup, is not itself a failure mode; see *Shutdown
+Sequence.md*. This is explicitly distinct from a platform-service failure
+during `Starting`, which goes directly to `Faulted` (ADR-0013), not through
+this phase.
 
 ---
 
@@ -242,9 +250,12 @@ itself a failure mode; see *Shutdown Sequence.md*.
 **Purpose.** Stop and dispose every module, in reverse order, via
 `StopAllAsync` then `DisposeAllAsync`.
 
-**Entry criteria.** Shutdown Requested has occurred (or the Host is tearing
-down after a startup fault — see *Runtime State Machine.md*'s
-`Starting → Stopped`/`Faulted → Disposed` paths).
+**Entry criteria.** Shutdown Requested has occurred — whether triggered by a
+graceful shutdown request from `Running`, or by cancellation/an early
+shutdown request during `Starting` (ADR-0018; both now reach this phase via
+the same `Stopping` state) — or the Host is tearing down after a genuine
+startup fault (a separate path — see *Runtime State Machine.md*'s
+`Faulted → Disposed`).
 
 **Exit criteria.** `StopAllAsync` and `DisposeAllAsync` have both returned.
 Per WP 2.3's existing, unmodified design, this does not require every module
