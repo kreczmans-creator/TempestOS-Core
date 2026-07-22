@@ -45,4 +45,26 @@ public sealed class ServiceCollection : IServiceCollection
 
         return this;
     }
+
+    /// <inheritdoc />
+    public IServiceCollection AddInstance(Type serviceType, object instance)
+    {
+        ArgumentNullException.ThrowIfNull(serviceType);
+        ArgumentNullException.ThrowIfNull(instance);
+
+        if (!serviceType.IsInstanceOfType(instance))
+        {
+            throw new ArgumentException(
+                $"'{instance.GetType().Name}' is not assignable to '{serviceType.Name}'.",
+                nameof(instance));
+        }
+
+        _descriptorsByType[serviceType] =
+            new ServiceDescriptor(serviceType, instance.GetType(), ServiceLifetime.Singleton, instance);
+
+        _logger?.Information(
+            $"Service instance registered: '{serviceType.Name}' -> existing instance of '{instance.GetType().Name}'.");
+
+        return this;
+    }
 }

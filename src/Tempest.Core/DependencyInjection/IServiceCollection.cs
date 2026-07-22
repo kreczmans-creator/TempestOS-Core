@@ -39,4 +39,35 @@ public interface IServiceCollection
     /// <paramref name="implementationType"/> is not assignable to <paramref name="serviceType"/>.
     /// </exception>
     IServiceCollection Add(Type serviceType, Type implementationType, ServiceLifetime lifetime);
+
+    /// <summary>
+    /// Registers an already-constructed instance to satisfy requests for
+    /// <paramref name="serviceType"/>.
+    /// </summary>
+    /// <param name="serviceType">The type consumers will ask the container to resolve.</param>
+    /// <param name="instance">
+    /// The instance to hand out. Must be assignable to <paramref name="serviceType"/>.
+    /// </param>
+    /// <returns>This collection, to allow chaining.</returns>
+    /// <remarks>
+    /// <para>
+    /// For registrations the container can construct itself via reflection, prefer
+    /// <see cref="Add"/> (or the <c>Singleton</c>/<c>Transient</c> extension methods).
+    /// <see cref="AddInstance"/> exists for the opposite case: a value that has
+    /// already been built by something other than the container — most notably,
+    /// configuration (see <c>ConfigurationBuilder.Build</c>), which requires
+    /// runtime-supplied sources the container has no way to construct on its own.
+    /// </para>
+    /// <para>
+    /// An instance registration is always effectively a singleton: there is exactly
+    /// one instance, and every resolution of <paramref name="serviceType"/> returns
+    /// it. Registering the same <paramref name="serviceType"/> more than once
+    /// (whether via <see cref="Add"/> or <see cref="AddInstance"/>) replaces the
+    /// previous registration; the most recent registration wins.
+    /// </para>
+    /// </remarks>
+    /// <exception cref="ArgumentException">
+    /// <paramref name="instance"/> is not assignable to <paramref name="serviceType"/>.
+    /// </exception>
+    IServiceCollection AddInstance(Type serviceType, object instance);
 }

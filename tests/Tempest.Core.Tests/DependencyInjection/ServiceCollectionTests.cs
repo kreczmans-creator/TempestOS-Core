@@ -76,4 +76,36 @@ public class ServiceCollectionTests
         var descriptor = Assert.Single(services.Descriptors);
         Assert.Equal(ServiceLifetime.Transient, descriptor.Lifetime);
     }
+
+    [Fact]
+    public void AddInstance_RegistersExistingInstanceAsSingleton()
+    {
+        var services = new ServiceCollection();
+        var greeter = new Greeter();
+
+        services.AddInstance<IGreeter>(greeter);
+
+        var descriptor = Assert.Single(services.Descriptors);
+        Assert.Equal(typeof(IGreeter), descriptor.ServiceType);
+        Assert.Equal(typeof(Greeter), descriptor.ImplementationType);
+        Assert.Equal(ServiceLifetime.Singleton, descriptor.Lifetime);
+        Assert.Same(greeter, descriptor.ExistingInstance);
+    }
+
+    [Fact]
+    public void AddInstance_ThrowsArgumentException_WhenInstanceDoesNotSatisfyServiceType()
+    {
+        var services = new ServiceCollection();
+
+        Assert.Throws<ArgumentException>(() =>
+            services.AddInstance(typeof(IGreeter), new GreeterConsumer(new Greeter())));
+    }
+
+    [Fact]
+    public void AddInstance_ThrowsArgumentNullException_WhenInstanceIsNull()
+    {
+        var services = new ServiceCollection();
+
+        Assert.Throws<ArgumentNullException>(() => services.AddInstance<IGreeter>(null!));
+    }
 }

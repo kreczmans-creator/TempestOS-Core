@@ -12,11 +12,21 @@ public sealed class ServiceDescriptor
     /// <param name="serviceType">The type consumers ask the container to resolve.</param>
     /// <param name="implementationType">The concrete type to construct for <paramref name="serviceType"/>.</param>
     /// <param name="lifetime">How long the constructed instance is kept alive.</param>
-    public ServiceDescriptor(Type serviceType, Type implementationType, ServiceLifetime lifetime)
+    /// <param name="existingInstance">
+    /// An already-constructed instance to hand out instead of constructing one, or
+    /// <see langword="null"/> for a normal, reflection-constructed registration. See
+    /// <see cref="IServiceCollection.AddInstance"/>.
+    /// </param>
+    public ServiceDescriptor(
+        Type serviceType,
+        Type implementationType,
+        ServiceLifetime lifetime,
+        object? existingInstance = null)
     {
         ServiceType = serviceType;
         ImplementationType = implementationType;
         Lifetime = lifetime;
+        ExistingInstance = existingInstance;
     }
 
     /// <summary>
@@ -33,4 +43,11 @@ public sealed class ServiceDescriptor
     /// Gets how long the constructed instance is kept alive.
     /// </summary>
     public ServiceLifetime Lifetime { get; }
+
+    /// <summary>
+    /// Gets the already-constructed instance to hand out for this registration, if
+    /// this descriptor was created via <see cref="IServiceCollection.AddInstance"/>;
+    /// otherwise, <see langword="null"/>.
+    /// </summary>
+    public object? ExistingInstance { get; }
 }

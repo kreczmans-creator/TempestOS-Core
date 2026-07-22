@@ -52,4 +52,15 @@ public static class ServiceCollectionExtensions
         where TService : class
         where TImplementation : class, TService =>
         services.Transient(typeof(TService), typeof(TImplementation));
+
+    /// <summary>
+    /// Registers an already-constructed <typeparamref name="TService"/> instance.
+    /// </summary>
+    public static IServiceCollection AddInstance<TService>(this IServiceCollection services, TService instance)
+        where TService : class
+    {
+        ArgumentNullException.ThrowIfNull(instance);
+
+        return services.AddInstance(typeof(TService), instance);
+    }
 }

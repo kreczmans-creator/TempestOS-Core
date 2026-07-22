@@ -57,6 +57,17 @@ public sealed class TempestServiceProvider : ITempestServiceProvider
 
         _descriptorsByType = services.Descriptors.ToDictionary(descriptor => descriptor.ServiceType);
         _logger = logger;
+
+        // Registrations created via IServiceCollection.AddInstance already carry a
+        // fully-constructed instance. Seed the singleton cache with it directly, up
+        // front, so GetService returns it via the ordinary singleton-cache lookup
+        // below without ever calling Construct — no other change to Resolve/Construct
+        // is needed for instance registrations to work correctly.
+        foreach (var descriptor in services.Descriptors)
+        {
+            if (descriptor.ExistingInstance is not null)
+                _singletonInstances[descriptor.ServiceType] = descriptor.ExistingInstance;
+        }
     }
 
     /// <inheritdoc />

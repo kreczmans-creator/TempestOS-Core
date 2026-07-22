@@ -22,6 +22,35 @@ public class TempestServiceProviderTests
     }
 
     [Fact]
+    public void GetService_InstanceRegistration_ReturnsTheExactSameInstance()
+    {
+        var services = new ServiceCollection();
+        var greeter = new Greeter();
+        services.AddInstance<IGreeter>(greeter);
+
+        var provider = new TempestServiceProvider(services);
+
+        var resolved = provider.GetService<IGreeter>();
+
+        Assert.Same(greeter, resolved);
+    }
+
+    [Fact]
+    public void GetService_ConsumerDependingOnInstanceRegistration_ReceivesTheSameInstance()
+    {
+        var services = new ServiceCollection();
+        var greeter = new Greeter();
+        services.AddInstance<IGreeter>(greeter);
+        services.Transient<GreeterConsumer>();
+
+        var provider = new TempestServiceProvider(services);
+
+        var consumer = provider.GetService<GreeterConsumer>();
+
+        Assert.Same(greeter, consumer.Greeter);
+    }
+
+    [Fact]
     public void GetService_Transient_ReturnsDifferentInstanceEveryResolution()
     {
         var services = new ServiceCollection();
