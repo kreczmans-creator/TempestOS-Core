@@ -269,10 +269,21 @@ source that re-evaluates a lazy sequence on every `Load()` call risks producing
 - **Reload-on-change / file watching** were explicitly excluded from this work
   package and are a genuinely significant departure from "configuration is
   immutable once the runtime has started" — any future work package
-  introducing either would need to revisit that architectural principle
-  directly, not quietly work around it.
-- **The DI container's `AddInstance` capability** (ADR-0009) should be reused,
-  not reinvented, by any future work package needing to register a
+  introducing either should follow the path set out in Case Study 05, *Why
+  Isn't Configuration Mutable?*: a higher-level, reloadable service that swaps
+  entire immutable snapshots, rather than weakening
+  `IConfigurationProvider`'s own guarantees.
+- **The composition root's ordering** (build configuration, freeze it, register
+  it, then build the service provider, then start the runtime) is now named
+  explicitly in *The Startup Sequence* (Runtime Architecture) — any future
+  service with the same "must exist before DI" property as configuration
+  (logging, plugins, hosted services are all named candidates there) should be
+  slotted into that documented sequence, not given its own, independently
+  reasoned-about ordering.
+- **The DI container's `AddInstance` capability** (ADR-0009, reframed after
+  review as *Composition Root Owns Externally-Created Services* — the
+  principle, not just this one mechanism) should be reused, not reinvented, by
+  any future work package needing to register a
   runtime-supplied value — see that ADR's Future Considerations for the one
   known gap (disposal of registered instances is not tracked, mirroring the
   same gap already noted for constructed singletons in the WP 2.4
