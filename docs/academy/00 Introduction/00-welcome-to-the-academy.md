@@ -16,6 +16,17 @@ matter more. The Academy's job is to preserve that story before it lives only in
 the heads of whoever was in the room when the decision was made, and is lost the
 moment they move to a different project.
 
+## Read This First: Engineering Governance
+
+Before anything else in this Academy, read
+[`06 Engineering Standards/Engineering Governance.md`](../06%20Engineering%20Standards/Engineering%20Governance.md).
+It is the project's constitution: how a work package moves from brief to
+merge, what "Done" actually requires, when an ADR is mandatory, who has
+authority to decide what, and who has authority to approve a release. Every
+other document in this Academy describes *a* decision or *a* principle;
+Engineering Governance describes the *process* that produced all of them, and
+that every future one is expected to follow.
+
 ## Who This Is For
 
 Anyone joining TempestOS, at any level of seniority. A graduate engineer reading
