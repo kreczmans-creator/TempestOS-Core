@@ -39,7 +39,7 @@ public sealed class TempestServiceProvider : ITempestServiceProvider
     private readonly object _gate = new();
     private readonly Dictionary<Type, ServiceDescriptor> _descriptorsByType;
     private readonly Dictionary<Type, object> _singletonInstances = new();
-    private readonly LoggingService? _logger;
+    private readonly ILogger? _logger;
 
     /// <summary>
     /// Initialises a new instance of the <see cref="TempestServiceProvider"/> class from
@@ -48,10 +48,9 @@ public sealed class TempestServiceProvider : ITempestServiceProvider
     /// <param name="services">The service collection to build this provider from.</param>
     /// <param name="logger">
     /// An optional logger used to record resolutions and construction failures via the
-    /// existing TempestOS logging infrastructure. May be <see langword="null"/> if
-    /// logging is not required.
+    /// logging abstraction. May be <see langword="null"/> if logging is not required.
     /// </param>
-    public TempestServiceProvider(IServiceCollection services, LoggingService? logger = null)
+    public TempestServiceProvider(IServiceCollection services, ILogger? logger = null)
     {
         ArgumentNullException.ThrowIfNull(services);
 
@@ -68,6 +67,8 @@ public sealed class TempestServiceProvider : ITempestServiceProvider
             if (descriptor.ExistingInstance is not null)
                 _singletonInstances[descriptor.ServiceType] = descriptor.ExistingInstance;
         }
+
+        _logger?.Information($"Service provider built: {_descriptorsByType.Count} registration(s).");
     }
 
     /// <inheritdoc />

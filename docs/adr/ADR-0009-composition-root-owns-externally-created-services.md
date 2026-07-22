@@ -8,6 +8,18 @@ review: the original framing named the *implementation* (`AddInstance`)
 rather than the *architectural principle* it exists to serve. No behavioural
 change accompanies this reframing — `AddInstance`, `ExistingInstance`, and the
 `TempestServiceProvider` constructor change described below are unchanged from
+
+**Update, WP 2.6 (Logging & Diagnostics Framework):** this ADR's principle was
+applied a second time, exactly as anticipated below. `ILogSink`,
+`ILoggerFactory`, and the default `ILogger` are all constructed directly at the
+composition root (`LoggingServiceCollectionExtensions.AddLogging`) and
+registered via `AddInstance` — none of them are reflection-constructed by the
+container. The reason is the same one configuration established: producing the
+default `ILogger` requires *calling* `ILoggerFactory.CreateLogger(category)`, a
+method invocation the container has no way to perform on its own, exactly the
+category of need this ADR describes. See the WP 2.6 retrospective and
+`LoggingServiceCollectionExtensions`'s own XML documentation for the concrete
+details.
 when this ADR was first written; only the understanding of *why* they exist,
 and what else might someday satisfy the same need, has been made explicit.
 

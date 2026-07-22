@@ -1,5 +1,5 @@
-using Tempest.Core.Logging;
 using Tempest.Core.Modules;
+using Tempest.Core.Tests.Logging;
 
 namespace Tempest.Core.Tests.Modules;
 
@@ -82,21 +82,12 @@ public class ReflectionFrameworkDiscoveryServiceTests
     [Fact]
     public void DiscoverModules_WithLogger_DoesNotThrowAndRecordsProgress()
     {
-        var logDirectory = Path.Combine(Path.GetTempPath(), $"tempest-discovery-tests-{Guid.NewGuid():N}");
+        var logger = new RecordingLogger();
+        var service = new ReflectionFrameworkDiscoveryService(logger);
 
-        try
-        {
-            var logger = new LoggingService(logDirectory);
-            var service = new ReflectionFrameworkDiscoveryService(logger);
+        var result = service.DiscoverModules(new[] { typeof(SampleModuleA) });
 
-            var result = service.DiscoverModules(new[] { typeof(SampleModuleA) });
-
-            Assert.Single(result);
-        }
-        finally
-        {
-            if (Directory.Exists(logDirectory))
-                Directory.Delete(logDirectory, recursive: true);
-        }
+        Assert.Single(result);
+        Assert.NotEmpty(logger.Messages);
     }
 }

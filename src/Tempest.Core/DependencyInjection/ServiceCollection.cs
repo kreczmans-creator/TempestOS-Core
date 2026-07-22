@@ -8,16 +8,16 @@ namespace Tempest.Core.DependencyInjection;
 public sealed class ServiceCollection : IServiceCollection
 {
     private readonly Dictionary<Type, ServiceDescriptor> _descriptorsByType = new();
-    private readonly LoggingService? _logger;
+    private readonly ILogger? _logger;
 
     /// <summary>
     /// Initialises a new instance of the <see cref="ServiceCollection"/> class.
     /// </summary>
     /// <param name="logger">
-    /// An optional logger used to record registrations via the existing TempestOS
-    /// logging infrastructure. May be <see langword="null"/> if logging is not required.
+    /// An optional logger used to record registrations via the logging
+    /// abstraction. May be <see langword="null"/> if logging is not required.
     /// </param>
-    public ServiceCollection(LoggingService? logger = null)
+    public ServiceCollection(ILogger? logger = null)
     {
         _logger = logger;
     }

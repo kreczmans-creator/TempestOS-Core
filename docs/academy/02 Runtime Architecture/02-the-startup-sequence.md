@@ -58,13 +58,20 @@ Freeze configuration              (Build() already returns an immutable
 Register configuration            (services.AddInstance<IConfigurationProvider>(
    │                               provider) — see ADR-0009)
    ▼
+Build and register logging        (services.AddLogging(configuration) — reads
+   │                               Runtime:Logging:MinimumLevel from the
+   │                               now-registered configuration, constructs
+   │                               ConsoleLogSink/LoggerFactory/the default
+   │                               ILogger directly, registers all three via
+   │                               AddInstance — see ADR-0009's WP 2.6 update)
+   ▼
 Build service provider            (new TempestServiceProvider(services, ...))
    │
    ▼
 Runtime starts                    (discovery → registration → lifecycle,
-                                    all now able to resolve IConfigurationProvider,
-                                    and anything else registered alongside it,
-                                    through the container)
+                                    all now able to resolve IConfigurationProvider
+                                    and ILogger, and anything else registered
+                                    alongside them, through the container)
 ```
 
 **Build configuration** happens first, and happens exactly once: every
@@ -88,15 +95,28 @@ expression of a broader principle: some services must exist before dependency
 injection begins, and registering them is a distinct step from constructing
 the container itself.
 
+**Build and register logging** requires configuration to already be built (the
+minimum log level comes from it), which is why it comes after "Register
+configuration," not before. Like configuration, none of `ConsoleLogSink`,
+`LoggerFactory`, or the default `ILogger` are constructed by the container's
+own reflection-based resolution — the default logger specifically requires
+*calling* `ILoggerFactory.CreateLogger`, a method invocation the container
+cannot perform on its own, so all three are built directly at the composition
+root and registered via `AddInstance`, exactly as configuration was. From this
+point on, every diagnostic event any later step logs (module discovery, module
+registration, lifecycle transitions, and so on) flows through the now-active
+minimum-level filtering and the registered sink.
+
 **Build service provider** constructs the `TempestServiceProvider` from the
 now-populated `ServiceCollection` — at this point, and not before, anything
-registered (configuration included) becomes resolvable via constructor
-injection.
+registered (configuration, logging, and anything else) becomes resolvable via
+constructor injection.
 
 **Runtime starts** — only now does the module pipeline (discovery →
 registration → lifecycle) begin, with every module able to declare a
-constructor dependency on `IConfigurationProvider`, or on any other service
-registered before this point, and have it resolved automatically.
+constructor dependency on `IConfigurationProvider`, `ILogger`, or
+`ILoggerFactory`, or on any other service registered before this point, and
+have it resolved automatically.
 
 ## 6. Alternatives Considered
 
@@ -183,14 +203,17 @@ completed, regardless of which mechanism it uses to read it.
 
 ## 12. Future Evolution
 
-This document should be updated, not left as a four-work-package-old
-prediction, the moment any of the following are actually introduced:
+This document should be updated, not left as a stale prediction, the moment
+any of the following are actually introduced:
 
-- **Logging** — if TempestOS's logging infrastructure is ever reworked to be
-  configuration-driven (a minimum log level read from configuration, for
-  example), its initialisation slots in immediately after "build service
-  provider," since it would need to resolve `IConfigurationProvider` through
-  the container.
+- ~~**Logging** — if TempestOS's logging infrastructure is ever reworked to be
+  configuration-driven...~~ **Done, WP 2.6.** Logging now has its own explicit
+  step, "Build and register logging," documented above — it turned out to slot
+  in immediately *before* "build service provider," not after, since (like
+  configuration) its default logger has to be constructed at the composition
+  root rather than resolved through the container. This entry is left struck
+  through, rather than deleted, as a record that the prediction was correct in
+  substance but not in the exact position guessed.
 - **Plugins** — a plugin-loading mechanism (populating `src/Plugins/`,
   currently empty — see WP 2.1's own noted gap around external assembly
   loading) would need its own explicit slot in this sequence, most likely

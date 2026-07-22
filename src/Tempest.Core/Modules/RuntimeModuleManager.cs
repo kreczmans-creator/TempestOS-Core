@@ -30,17 +30,16 @@ public sealed class RuntimeModuleManager : IRuntimeModuleManager
     private readonly object _gate = new();
     private readonly Dictionary<string, RuntimeModule> _modulesById = new(StringComparer.Ordinal);
     private readonly List<RuntimeModule> _registrationOrder = new();
-    private readonly LoggingService? _logger;
+    private readonly ILogger? _logger;
 
     /// <summary>
     /// Initialises a new instance of the <see cref="RuntimeModuleManager"/> class.
     /// </summary>
     /// <param name="logger">
-    /// An optional logger used to record registration activity via the existing
-    /// TempestOS logging infrastructure. May be <see langword="null"/> if logging is
-    /// not required.
+    /// An optional logger used to record registration activity via the logging
+    /// abstraction. May be <see langword="null"/> if logging is not required.
     /// </param>
-    public RuntimeModuleManager(LoggingService? logger = null)
+    public RuntimeModuleManager(ILogger? logger = null)
     {
         _logger = logger;
     }

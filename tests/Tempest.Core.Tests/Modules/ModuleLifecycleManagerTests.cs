@@ -1,6 +1,7 @@
 using Tempest.Core.DependencyInjection;
 using Tempest.Core.Logging;
 using Tempest.Core.Modules;
+using Tempest.Core.Tests.Logging;
 
 namespace Tempest.Core.Tests.Modules;
 
@@ -23,7 +24,7 @@ public class ModuleLifecycleManagerTests
     /// replacement for WP 2.3's direct <c>Activator.CreateInstance</c> call, so these
     /// tests exercise the exact same construction path production code would use.
     /// </summary>
-    private static ModuleLifecycleManager BuildLifecycleManager(LoggingService? logger, params ModuleDescriptor[] descriptors)
+    private static ModuleLifecycleManager BuildLifecycleManager(ILogger? logger, params ModuleDescriptor[] descriptors)
     {
         var runtimeManager = new RuntimeModuleManager();
 
@@ -260,21 +261,12 @@ public class ModuleLifecycleManagerTests
     [Fact]
     public async Task InitialiseAllAsync_WithLogger_DoesNotThrowAndRecordsProgress()
     {
-        var logDirectory = Path.Combine(Path.GetTempPath(), $"tempest-lifecycle-tests-{Guid.NewGuid():N}");
+        var logger = new RecordingLogger();
+        var lifecycleManager = BuildLifecycleManager(logger, Describe<RecordingLifecycleModuleAlpha>("lifecycle.alpha"));
 
-        try
-        {
-            var logger = new LoggingService(logDirectory);
-            var lifecycleManager = BuildLifecycleManager(logger, Describe<RecordingLifecycleModuleAlpha>("lifecycle.alpha"));
+        await lifecycleManager.InitialiseAllAsync(CancellationToken.None);
 
-            await lifecycleManager.InitialiseAllAsync(CancellationToken.None);
-
-            Assert.Equal(ModuleState.Initialised, lifecycleManager.GetState("lifecycle.alpha"));
-        }
-        finally
-        {
-            if (Directory.Exists(logDirectory))
-                Directory.Delete(logDirectory, recursive: true);
-        }
+        Assert.Equal(ModuleState.Initialised, lifecycleManager.GetState("lifecycle.alpha"));
+        Assert.NotEmpty(logger.Messages);
     }
 }

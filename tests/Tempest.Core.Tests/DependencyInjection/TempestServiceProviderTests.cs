@@ -1,6 +1,6 @@
 using Tempest.Core.DependencyInjection;
-using Tempest.Core.Logging;
 using Tempest.Core.Modules;
+using Tempest.Core.Tests.Logging;
 using Tempest.Core.Tests.Modules;
 
 namespace Tempest.Core.Tests.DependencyInjection;
@@ -186,24 +186,15 @@ public class TempestServiceProviderTests
     [Fact]
     public void GetService_WithLogger_DoesNotThrowAndRecordsProgress()
     {
-        var logDirectory = Path.Combine(Path.GetTempPath(), $"tempest-di-tests-{Guid.NewGuid():N}");
+        var logger = new RecordingLogger();
+        var services = new ServiceCollection(logger);
+        services.Singleton<IGreeter, Greeter>();
 
-        try
-        {
-            var logger = new LoggingService(logDirectory);
-            var services = new ServiceCollection(logger);
-            services.Singleton<IGreeter, Greeter>();
+        var provider = new TempestServiceProvider(services, logger);
 
-            var provider = new TempestServiceProvider(services, logger);
+        var greeter = provider.GetService<IGreeter>();
 
-            var greeter = provider.GetService<IGreeter>();
-
-            Assert.Equal("Hello", greeter.Greet());
-        }
-        finally
-        {
-            if (Directory.Exists(logDirectory))
-                Directory.Delete(logDirectory, recursive: true);
-        }
+        Assert.Equal("Hello", greeter.Greet());
+        Assert.NotEmpty(logger.Messages);
     }
 }

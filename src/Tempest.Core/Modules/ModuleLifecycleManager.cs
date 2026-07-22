@@ -66,7 +66,7 @@ public sealed class ModuleLifecycleManager : IModuleLifecycleManager
     private readonly List<TrackedModule> _orderedModules;
     private readonly Dictionary<string, TrackedModule> _modulesById;
     private readonly ITempestServiceProvider _serviceProvider;
-    private readonly LoggingService? _logger;
+    private readonly ILogger? _logger;
 
     /// <summary>
     /// Initialises a new instance of the <see cref="ModuleLifecycleManager"/> class,
@@ -81,13 +81,13 @@ public sealed class ModuleLifecycleManager : IModuleLifecycleManager
     /// here.
     /// </param>
     /// <param name="logger">
-    /// An optional logger used to record lifecycle transitions via the existing TempestOS
-    /// logging infrastructure. May be <see langword="null"/> if logging is not required.
+    /// An optional logger used to record lifecycle transitions via the logging
+    /// abstraction. May be <see langword="null"/> if logging is not required.
     /// </param>
     public ModuleLifecycleManager(
         IRuntimeModuleManager runtimeModuleManager,
         ITempestServiceProvider serviceProvider,
-        LoggingService? logger = null)
+        ILogger? logger = null)
     {
         ArgumentNullException.ThrowIfNull(runtimeModuleManager);
         ArgumentNullException.ThrowIfNull(serviceProvider);

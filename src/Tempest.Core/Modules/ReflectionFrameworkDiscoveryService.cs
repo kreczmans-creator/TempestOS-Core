@@ -16,17 +16,17 @@ namespace Tempest.Core.Modules;
 public class ReflectionFrameworkDiscoveryService : IFrameworkDiscoveryService
 {
     private readonly IEnumerable<Assembly> _assemblies;
-    private readonly LoggingService? _logger;
+    private readonly ILogger? _logger;
 
     /// <summary>
     /// Initialises a new instance of the <see cref="ReflectionFrameworkDiscoveryService"/>
     /// class that scans all assemblies currently loaded into the application domain.
     /// </summary>
     /// <param name="logger">
-    /// An optional logger used to record discovery progress via the existing TempestOS
-    /// logging infrastructure. May be <see langword="null"/> if logging is not required.
+    /// An optional logger used to record discovery progress via the logging
+    /// abstraction. May be <see langword="null"/> if logging is not required.
     /// </param>
-    public ReflectionFrameworkDiscoveryService(LoggingService? logger = null)
+    public ReflectionFrameworkDiscoveryService(ILogger? logger = null)
         : this(AppDomain.CurrentDomain.GetAssemblies(), logger)
     {
     }
@@ -37,10 +37,10 @@ public class ReflectionFrameworkDiscoveryService : IFrameworkDiscoveryService
     /// </summary>
     /// <param name="assemblies">The assemblies to scan for <see cref="IModule"/> implementations.</param>
     /// <param name="logger">
-    /// An optional logger used to record discovery progress via the existing TempestOS
-    /// logging infrastructure. May be <see langword="null"/> if logging is not required.
+    /// An optional logger used to record discovery progress via the logging
+    /// abstraction. May be <see langword="null"/> if logging is not required.
     /// </param>
-    public ReflectionFrameworkDiscoveryService(IEnumerable<Assembly> assemblies, LoggingService? logger = null)
+    public ReflectionFrameworkDiscoveryService(IEnumerable<Assembly> assemblies, ILogger? logger = null)
     {
         _assemblies = assemblies;
         _logger = logger;

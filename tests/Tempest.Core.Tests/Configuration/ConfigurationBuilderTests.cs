@@ -1,5 +1,5 @@
 using Tempest.Core.Configuration;
-using Tempest.Core.Logging;
+using Tempest.Core.Tests.Logging;
 
 namespace Tempest.Core.Tests.Configuration;
 
@@ -185,22 +185,13 @@ public class ConfigurationBuilderTests
     [Fact]
     public void Build_WithLogger_DoesNotThrowAndRecordsProgress()
     {
-        var logDirectory = Path.Combine(Path.GetTempPath(), $"tempest-configuration-tests-{Guid.NewGuid():N}");
+        var logger = new RecordingLogger();
+        var builder = new ConfigurationBuilder(logger);
+        builder.AddSource(Source(("Runtime:Name", "TempestOS")));
 
-        try
-        {
-            var logger = new LoggingService(logDirectory);
-            var builder = new ConfigurationBuilder(logger);
-            builder.AddSource(Source(("Runtime:Name", "TempestOS")));
+        var provider = builder.Build();
 
-            var provider = builder.Build();
-
-            Assert.Equal("TempestOS", provider.Get("Runtime:Name"));
-        }
-        finally
-        {
-            if (Directory.Exists(logDirectory))
-                Directory.Delete(logDirectory, recursive: true);
-        }
+        Assert.Equal("TempestOS", provider.Get("Runtime:Name"));
+        Assert.NotEmpty(logger.Messages);
     }
 }

@@ -1,5 +1,5 @@
-using Tempest.Core.Logging;
 using Tempest.Core.Modules;
+using Tempest.Core.Tests.Logging;
 
 namespace Tempest.Core.Tests.Modules;
 
@@ -168,21 +168,12 @@ public class RuntimeModuleManagerTests
     [Fact]
     public void Register_WithLogger_DoesNotThrowAndRecordsProgress()
     {
-        var logDirectory = Path.Combine(Path.GetTempPath(), $"tempest-runtime-manager-tests-{Guid.NewGuid():N}");
+        var logger = new RecordingLogger();
+        var manager = new RuntimeModuleManager(logger);
 
-        try
-        {
-            var logger = new LoggingService(logDirectory);
-            var manager = new RuntimeModuleManager(logger);
+        var runtimeModule = manager.Register(CreateDescriptor("alpha"));
 
-            var runtimeModule = manager.Register(CreateDescriptor("alpha"));
-
-            Assert.Equal("alpha", runtimeModule.Descriptor.Id);
-        }
-        finally
-        {
-            if (Directory.Exists(logDirectory))
-                Directory.Delete(logDirectory, recursive: true);
-        }
+        Assert.Equal("alpha", runtimeModule.Descriptor.Id);
+        Assert.NotEmpty(logger.Messages);
     }
 }

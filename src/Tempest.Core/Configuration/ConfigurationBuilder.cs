@@ -25,17 +25,17 @@ namespace Tempest.Core.Configuration;
 public sealed class ConfigurationBuilder
 {
     private readonly List<IConfigurationSource> _sources = new();
-    private readonly LoggingService? _logger;
+    private readonly ILogger? _logger;
 
     /// <summary>
     /// Initialises a new instance of the <see cref="ConfigurationBuilder"/> class.
     /// </summary>
     /// <param name="logger">
     /// An optional logger used to record source registration, loading, duplicate key
-    /// detection, and build completion via the existing TempestOS logging
-    /// infrastructure. May be <see langword="null"/> if logging is not required.
+    /// detection, and build completion via the logging abstraction. May be
+    /// <see langword="null"/> if logging is not required.
     /// </param>
-    public ConfigurationBuilder(LoggingService? logger = null)
+    public ConfigurationBuilder(ILogger? logger = null)
     {
         _logger = logger;
     }
