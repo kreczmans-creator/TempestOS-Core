@@ -16,6 +16,15 @@ namespace Tempest.Core.Modules;
 /// management begins.
 /// </para>
 /// <para>
+/// Ordering currently uses <see cref="ModuleDescriptor.Id"/> because no explicit
+/// ordering metadata exists on a module today — this is an implementation
+/// convenience, not the intended long-term design. Future work may introduce a
+/// dedicated startup priority (for example, a <c>Priority</c> or <c>StartupOrder</c>
+/// property on <see cref="ModuleDescriptor"/>/<see cref="IModule"/>) by changing only
+/// the sort key used to build the snapshot above, without changing this class's
+/// public behaviour or contract.
+/// </para>
+/// <para>
 /// A module implementing only <see cref="IModule"/> (not <see cref="IModuleLifecycle"/>)
 /// is still driven through <see cref="ModuleState"/>, but no instance is constructed for
 /// it and no lifecycle method is invoked — it is treated as having no lifecycle
@@ -203,6 +212,12 @@ public sealed class ModuleLifecycleManager : IModuleLifecycleManager
         {
             tracked = GetTracked(moduleId);
 
+            // Disposal is intentionally permitted from any non-disposed state.
+            //
+            // Modules are not instantiated until InitialiseAsync(), therefore a
+            // Registered module has no runtime resources to release. Allowing disposal
+            // from all non-terminal states enables unconditional shutdown sweeps,
+            // regardless of how far startup progressed.
             if (tracked.State == ModuleState.Disposed)
                 throw new InvalidModuleLifecycleTransitionException(moduleId, tracked.State, "Dispose");
         }

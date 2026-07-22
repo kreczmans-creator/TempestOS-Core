@@ -14,6 +14,15 @@ namespace Tempest.Core.Modules;
 /// registration, and no dependency injection — it only drives the lifecycle of
 /// modules already registered with the <see cref="IRuntimeModuleManager"/> supplied
 /// at construction.
+/// <para>
+/// <b>Ordering is currently an implementation convenience, not a permanent design
+/// commitment:</b> ordering by <see cref="ModuleDescriptor.Id"/> was chosen because
+/// no dedicated ordering metadata exists on <see cref="IModule"/>/<see cref="ModuleDescriptor"/>
+/// today, and it mirrors the ordering convention <c>ReflectionFrameworkDiscoveryService</c>
+/// already uses. Future work may introduce dedicated startup-priority metadata (for
+/// example a <c>Priority</c> or <c>StartupOrder</c> property) without changing this
+/// manager's contract or behaviour — only the sort key it derives its order from.
+/// </para>
 /// </remarks>
 public interface IModuleLifecycleManager
 {
