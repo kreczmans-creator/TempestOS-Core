@@ -7,13 +7,30 @@ completes successfully or fails. External cancellation shall only be observed
 *between* phases, never in the middle of one — ensuring the system never
 occupies an indeterminate intermediate state.**
 
-A "phase" here is any named, discrete step in a sequenced lifecycle — a
-startup step, a shutdown step, a stage of a longer pipeline — that is small
-enough to reason about as a single unit, and whose *partial* completion would
-leave the system in a state nobody explicitly designed for. The principle
-says: don't let that partial state be reachable. A phase is either fully done
-or it never started; cancellation is a decision made at the boundary between
-phases, not an interruption injected into the middle of one.
+This principle draws a deliberate distinction between two terms that are easy
+to conflate, and conflating them is exactly what causes the false alarm this
+document originally raised (and ADR-0018 later resolved — see below):
+
+- A **lifecycle phase** is a named, ordered step in a sequence — a startup
+  step, a shutdown step, a stage of a longer pipeline. A phase answers "where
+  are we in the sequence"; it exists for scheduling and observability, and its
+  boundaries are drawn by whoever designs the sequence. A phase may be coarse
+  or fine, and — critically — a phase may itself be a *batch* of many smaller
+  units of work, not a single one.
+- An **atomic operation** is the actual indivisible unit of work this
+  principle governs: it either completes in full or fails in full, with no
+  observable intermediate state. It is the only granularity at which
+  "cancellation is observed only between, never during" is a meaningful,
+  checkable claim.
+
+A phase and an atomic operation coincide exactly when a phase's work is a
+single, indivisible call — in that case there is nothing smaller inside the
+phase for cancellation to land in the middle of. They do not coincide when a
+phase's work is a batch over multiple items: the phase, taken as a whole,
+need not be uninterruptible — what must be uninterruptible is each
+constituent atomic operation within it, with cancellation observed only at
+the boundary between them. The principle governs atomic operations. "Phase"
+is a label for how they're grouped and sequenced, not a synonym for them.
 
 ## Why
 
@@ -49,12 +66,14 @@ phase X" is rarely a state anyone sat down and thought through on purpose.
   fail) before it's honoured, even if the request to stop arrived near the
   very start of a slow phase. This is a real, deliberate trade of
   responsiveness for simplicity, not a free win.
-- **Phase boundaries have to be drawn deliberately, and can be drawn wrong.**
-  Too coarse, and a "phase" quietly contains a lot of internal structure
-  (multiple sub-operations over multiple items) that can *itself* be
-  interrupted partway through, silently reintroducing the exact problem the
-  principle exists to prevent — see this document's own honest account of
-  where that has already happened, below.
+- **Phase boundaries have to be drawn deliberately, and mistaking a phase for
+  an atomic operation is an easy way to draw them wrong.** A phase that is
+  actually a batch of many atomic operations does not, itself, need to be
+  uninterruptible — but each atomic operation within it does, and it is easy
+  to misjudge which of the two is being interrupted. See "How TempestOS
+  Applies It," below, for a worked example (`ModuleLifecycleManager`) where
+  getting this distinction right, rather than wrong, is what makes an
+  apparently coarse phase still fully compliant.
 - **Not free for genuinely long or genuinely resumable work.** An operation
   that is naturally idempotent, checkpoint-able, or expected to run for a very
   long time may be a poor fit for strict atomicity — forcing it to be atomic
@@ -80,27 +99,27 @@ this class of work trades away its main advantage — the ability to stop
 promptly and resume from where it left off — for a guarantee it doesn't
 actually need.
 
-## How TempestOS Applies It — Including an Honest Account of Where It Doesn't Yet, Fully
+## How TempestOS Applies It
 
-**The Host's own six coarse startup phases already satisfy this principle
-cleanly.** Configuration Built, Logging Built, Module Discovery, Module
+**The Host's own six coarse startup phases are each a single atomic
+operation.** Configuration Built, Logging Built, Module Discovery, Module
 Registration, Platform Services Registered, and Dependency Injection Built
-(*Host Lifecycle.md*) are each a single, indivisible operation from the
-Host's own point of view — `ConfigurationBuilder.Build()`,
-`LoggerFactory`'s construction, `DiscoverModules()`, and so on. None of them
-is a loop over many items that cancellation could land in the middle of; each
-either returns or throws, in full, with nothing in between. The Host's own
-7-state machine (ADR-0012) is, as a direct consequence, always in one of its
-seven well-defined states, and ADR-0018 gives cancellation arriving during
-`Starting` one single, deterministic reaction (transition to `Stopping`) —
-by every measure at the Host's own level of reasoning, this principle already
-holds.
+(*Host Lifecycle.md*) are each a single, indivisible call from the Host's own
+point of view — `ConfigurationBuilder.Build()`, `LoggerFactory`'s
+construction, `DiscoverModules()`, and so on. Phase and atomic operation
+coincide exactly here: none of them is a batch over many items that
+cancellation could land in the middle of; each either returns or throws, in
+full, with nothing in between. The Host's own 7-state machine (ADR-0012) is,
+as a direct consequence, always in one of its seven well-defined states, and
+ADR-0018 gives cancellation arriving during `Starting` one single,
+deterministic reaction (transition to `Stopping`).
 
-**Module Initialisation (and Stop/Dispose) is where this needs an honest
-flag, not a quiet assumption.** `ModuleLifecycleManager.RunBatchAsync` — the
-shared loop `InitialiseAllAsync`/`StartAllAsync`/`StopAllAsync`/`DisposeAllAsync`
-all funnel through (WP 2.3, already shipped) — checks the cancellation token
-at the top of *each iteration* of its loop over modules:
+**Module Initialisation is a phase that is a batch of atomic operations, not
+a single one — and that distinction is what resolves an apparent tension
+this document originally flagged.** `ModuleLifecycleManager.RunBatchAsync` —
+the shared loop `InitialiseAllAsync`/`StartAllAsync`/`StopAllAsync`/
+`DisposeAllAsync` all funnel through (WP 2.3, already shipped) — checks the
+cancellation token at the top of *each iteration* of its loop over modules:
 
 ```
 foreach (var tracked in modules)
@@ -110,51 +129,28 @@ foreach (var tracked in modules)
 }
 ```
 
-If cancellation fires after three of ten modules have been processed, the
-remaining seven are never even attempted — they stay `Registered`, untouched.
-Read strictly, against this principle's own wording ("once a phase begins, it
-either completes successfully or fails"), "Module Initialisation" — a single
-row in *Host Lifecycle.md*'s phase table — can be left exactly half-done. This
-is a genuine tension between an already-shipped design and a principle being
-adopted after the fact, not a hypothetical.
-
-There are two honest ways to read this, and this document takes a position on
-neither, deliberately:
-
-1. **The Host-level reading**, under which the principle is already
-   satisfied: the *Host's own* observable state is always one of its seven
-   well-defined values, and its reaction to cancellation is always
-   deterministic (ADR-0018) — `ModuleState` is explicitly independent of Host
-   state (ADR-0012), so a mix of `Initialised` and `Registered` modules is not
-   an "indeterminate Host state," it is simply module-level detail the Host
-   was never claiming to make uniform in the first place.
-2. **The strict, per-batch reading**, under which "Module Initialisation" as
-   named in *Host Lifecycle.md* is not atomic, and either the phase needs
-   redefining at a finer grain (each module's own turn *is* the atomic unit;
-   cancellation is observed *between* modules, which is arguably already what
-   `RunBatchAsync` does — cancellation is checked between iterations, not
-   mid-module), or `RunBatchAsync`'s cancellation check needs to move so that
-   an already-started batch always finishes every module's turn before
-   cancellation is honoured.
-
-**This is flagged here, deliberately, rather than resolved.** Reconciling it
-means either reinterpreting what "phase" means for a batch operation (a
-documentation-only decision) or changing already-shipped, tested
-`ModuleLifecycleManager` behaviour (a code decision, outside a documentation
-update's scope). It is recommended that this be settled by a dedicated ADR
-before any future work package (Project Engine, Requirements Engine, document
-processing, plugin execution) adopts this principle as settled fact for its
-own batch operations — adopting a principle without first resolving a known
-counterexample to it would undermine the very discipline the principle is
-meant to enforce.
+Read naively, treating "Module Initialisation" the phase as if it were itself
+one atomic operation, this looks like a violation: if cancellation fires
+after three of ten modules, the remaining seven are never attempted, leaving
+the phase "half-done." But that reading conflates phase with atomic
+operation. Read correctly — per ADR-0018's Terminology section — the atomic
+operation here is one module's own initialise call, not the whole batch. The
+loop's cancellation check sits *between* iterations, before the next atomic
+operation begins, never inside one. That is precisely what this principle
+requires: cancellation observed only at the boundary between atomic
+operations. `ModuleLifecycleManager` was already correct at the grain that
+matters; the earlier apparent conflict was a terminology gap, not a code
+defect, and `ModuleLifecycleManager` remains unchanged — see ADR-0018's
+2026-07-22 update for the full resolution.
 
 ## Key Takeaway
 
 This principle is valuable well beyond the Host — batch document processing,
 long-running calculations, and plugin execution are all named, up front, as
-places it should guide future design. But its value depends entirely on
-"phase" being defined at the right granularity every time it's applied, and
-on cancellation being checked *only* at those boundaries — get the boundary
-wrong even once, as `ModuleLifecycleManager`'s existing per-module loop
-arguably does, and the principle quietly stops holding without anyone having
-decided that it should.
+places it should guide future design. Applying it correctly depends on never
+conflating a *lifecycle phase* (a named step in a sequence, which may be a
+batch) with an *atomic operation* (the actual indivisible unit of work the
+principle governs). A phase built from many atomic operations is still
+principle-compliant so long as cancellation is observed only between those
+operations, never inside one — exactly what `ModuleLifecycleManager` already
+does.
