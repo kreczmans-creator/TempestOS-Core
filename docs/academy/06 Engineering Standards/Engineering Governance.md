@@ -222,6 +222,11 @@ Specifically:
   stable and should not be reorganised casually — a new category of document
   should fit into an existing folder's stated purpose before a new folder is
   proposed.
+- `docs/architecture/Platform Service Map.md` is maintained under this same
+  obligation, even though it lives outside `docs/academy/`: any work package
+  that adds, removes, or changes a platform service's responsibility,
+  dependencies, or consumers updates that service's entry as part of the same
+  work package's Definition of Done — never as a separate, later pass.
 
 ## 7. Release Approval Process
 
