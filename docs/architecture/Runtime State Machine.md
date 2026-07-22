@@ -79,9 +79,10 @@ reject them (with a dedicated exception, following the established
   nothing to stop).
 - `Running → Starting` (no re-entrant or repeated startup — a Host instance
   runs once).
-- `Stopped → Starting` / `Stopped → Running` (no restart — see Open Questions,
-  WP 2.7 Academy review, for whether a future work package should change
-  this).
+- `Stopped → Starting` / `Stopped → Running` (no restart — **decided**, not
+  open: see ADR-0015, *Runtime Hosts Are Not Restartable*. A `TempestHost`
+  instance is single-use; a second run means a new `TempestHostBuilder`
+  producing a new `TempestHost`, not a transition back to `Starting`).
 - `Faulted → Starting` / `Faulted → Running` (a faulted Host cannot resume;
   only `Faulted → Disposed` is legal, mirroring exactly how `Failed` modules
   can still be disposed but never re-initialised).

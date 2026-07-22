@@ -86,22 +86,36 @@ None of these six services need to change to support the Host. This is a
 direct, deliberate test of whether WP 2.1–2.6's separation-of-concerns
 discipline actually held — see the WP 2.7 Academy review for the verdict.
 
-## A Naming and Placement Risk Worth Flagging Now
+**Discovery, Registration, and Lifecycle are Host-owned collaborators, never
+DI-public — decided by ADR-0017.** `IFrameworkDiscoveryService`,
+`IRuntimeModuleManager`, and `IModuleLifecycleManager` are constructed
+directly by `TempestHost`/`TempestHostBuilder` and are never registered into
+the `ServiceCollection`. A module resolving them via constructor injection
+would be able to reach back into the machinery orchestrating it — registering
+new modules mid-startup, stopping other modules, retriggering discovery —
+which would break the deterministic startup model this document and its
+companions exist to establish. See the Ownership Matrix for the full,
+object-by-object breakdown this decision applies to.
 
-`Tempest.Core.Hosting` already exists — it is the platform's original,
-pre-module-pipeline `HostingService`, which creates a handful of workspace
-directories on disk (`Projects`, `Logs`, `Configuration`, and so on) and has
-nothing to do with the module pipeline. The new Runtime Host is a
-categorically bigger concept (platform orchestration, not directory creation),
-and giving it a name or namespace that collides with, or is easily confused
-with, the existing `HostingService` would be a genuine, avoidable source of
-confusion for a new contributor. This is flagged explicitly as an **open
-question** (see the WP 2.7 Academy review) for the implementation work package
-to resolve — candidates include a distinct namespace (for example,
-`Tempest.Core.Host`, deliberately singular and distinct from the existing
-plural `Hosting`) or resolving the two concepts' relationship outright (does
-the new Host absorb the old `HostingService`'s directory-creation
-responsibility, or do the two remain unrelated, coexisting concerns?).
+## Naming and Placement — Decided
+
+**Resolved by ADR-0016.** The Runtime Host lives in a new namespace,
+`Tempest.Core.Runtime`, distinct from the pre-existing `Tempest.Core.Hosting`
+(the platform's original, pre-module-pipeline `HostingService`, which creates
+a handful of workspace directories on disk and has nothing to do with the
+module pipeline). The governing rule: **Runtime = platform. Hosting =
+environment.** `Tempest.Core.Hosting`'s scope is reframed, not removed:
+environment and deployment adapters (console application, Windows Service,
+Linux daemon, container, embedded process) that embed and drive a
+`TempestHost` — never the platform's own orchestration, which belongs
+entirely to `Tempest.Core.Runtime`.
+
+Names (not yet implemented — no interface members are specified here, per
+this work package's own constraint): **`TempestHost`** (the running
+instance), **`TempestHostBuilder`** (assembles configuration sources and any
+other pre-registration inputs, then produces a `TempestHost`),
+**`ITempestHost`**, **`ITempestHostBuilder`** (the corresponding
+abstractions).
 
 ## Threading
 
@@ -163,6 +177,6 @@ requiring their own, separate entry point:
 
 *Host Lifecycle.md* (phase-by-phase detail) · *Startup Sequence.md* ·
 *Shutdown Sequence.md* · *Runtime State Machine.md* · *Failure Behaviour.md* ·
-*Platform Service Map.md* · *The Module Pipeline* and *The Startup Sequence*
-(Academy, Runtime Architecture) · ADR-0008, ADR-0009, ADR-0011 through
-ADR-0014.
+*Ownership Matrix.md* · *Platform Service Map.md* · *The Module Pipeline* and
+*The Startup Sequence* (Academy, Runtime Architecture) · ADR-0004, ADR-0008,
+ADR-0009, ADR-0011 through ADR-0017.

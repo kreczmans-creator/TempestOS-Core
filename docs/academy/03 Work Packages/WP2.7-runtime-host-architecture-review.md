@@ -255,28 +255,43 @@ document that suggested it.
 
 ## Open Questions
 
+**Resolved since this retrospective was first written**, under architectural
+review (see *Runtime Host Architecture.md*, *Runtime State Machine.md*, and
+the Ownership Matrix for where each resolution now lives):
+
+- ~~Should a `Stopped` or `Faulted` Host ever support being restarted?~~
+  **Resolved: no — ADR-0015**, *Runtime Hosts Are Not Restartable*. A
+  `TempestHost` is single-use; a second run means a new
+  `TempestHostBuilder`/`TempestHost` pair, never a transition back to
+  `Starting`. Reasoning: restart is not cheap to support — it would require
+  inventing reset semantics for at least three components
+  (`RuntimeModuleManager`, `TempestServiceProvider`, `ModuleLifecycleManager`)
+  that were never designed for it, none of which currently has a coherent
+  answer to "what does reset even mean here."
+- ~~Where, precisely, should the new Runtime Host live?~~ **Resolved —
+  ADR-0016**, *The Host Lives in Tempest.Core.Runtime, Distinct From
+  Tempest.Core.Hosting*. Names: `TempestHost`, `TempestHostBuilder`,
+  `ITempestHost`, `ITempestHostBuilder`. Governing rule: Runtime = platform,
+  Hosting = environment/deployment adapters.
+- ~~Should Discovery, Registration, and Lifecycle become resolvable via the DI
+  container?~~ **Resolved: no — ADR-0017**, *Discovery, Registration, and
+  Lifecycle Remain Host-Owned Collaborators, Not Public DI Services*.
+  Registering them would let a module reach back into the machinery
+  orchestrating it (registering new modules mid-startup, stopping other
+  modules, retriggering discovery), directly undermining the deterministic
+  startup model this whole work package exists to establish.
+
+**Still genuinely open:**
+
 1. **What happens if a shutdown request arrives during `Starting`, before
    `Running` is ever reached?** *Shutdown Sequence.md* and *Runtime State
    Machine.md* define shutdown from `Running`, and post-fault teardown from a
    platform-service failure — but a *deliberate* shutdown request arriving
    mid-startup (not a failure, not the startup cancellation token, but the
    other, running-time signal, ADR-0014) is not yet defined. Left open,
-   deliberately, rather than guessed at.
-2. **Should a `Stopped` or `Faulted` Host ever support being restarted**,
-   rather than requiring a new instance per run? *Runtime State Machine.md*
-   currently treats both as requiring a new Host instance for another run.
-   This is a real product question (does TempestOS ever need to restart the
-   platform in-process, or is process-level restart always sufficient?), not
-   an architectural one this work package can answer alone.
-3. **Where, precisely, should the new Runtime Host live** — a new namespace
-   (`Tempest.Core.Host`?), and what is its relationship to the existing,
-   unrelated `Tempest.Core.Hosting.HostingService`? See *Runtime Host
-   Architecture.md*'s naming/placement risk section.
-4. **Should Discovery, Registration, and Lifecycle themselves become
-   resolvable via the DI container** (for a future module wanting to depend on
-   `IRuntimeModuleManager` or `IModuleLifecycleManager` directly), or do they
-   remain Host-held, non-DI-registered orchestration components indefinitely?
-   Not decided here; the current design keeps them Host-held only.
+   deliberately, rather than guessed at — this is the one open question that
+   survived architectural review, and remains the top item for whichever
+   work package implements the Host next.
 
 ## Risks
 
@@ -289,9 +304,9 @@ document that suggested it.
   state transition here is a design intent, not a tested behaviour — the risk
   standard to any architecture-only work package: the design could still
   prove wrong or incomplete once real implementation and testing begin.
-- **Namespace collision risk** between the new Host and the existing
-  `HostingService`/`Tempest.Core.Hosting`, if not resolved deliberately before
-  implementation begins, could produce confusing, hard-to-search code.
+- ~~Namespace collision risk between the new Host and
+  `HostingService`/`Tempest.Core.Hosting`~~ — **resolved by ADR-0016**; no
+  longer a risk.
 
 ## Recommendations
 
@@ -299,12 +314,13 @@ document that suggested it.
    implementation — it is small, scoped, and directly protects the Host's own
    heaviest use case (logging throughout startup and shutdown, including
    failure paths).
-2. Resolve the Host's namespace/placement question explicitly, in writing (an
-   ADR or a short design note), before writing any Host code — not as an
-   incidental choice made while implementing something else.
-3. Resolve Open Question 1 (shutdown request during `Starting`) before
-   implementation, since it is a real, reachable scenario, not a hypothetical
-   edge case.
-4. Treat this retrospective's Open Questions and Risks as the starting agenda
-   for whichever work package designs or implements the Host next, rather
-   than re-deriving them from scratch.
+2. Resolve the one surviving open question (shutdown request during
+   `Starting`) before implementation, since it is a real, reachable scenario,
+   not a hypothetical edge case.
+3. Implement `TempestHost`/`TempestHostBuilder` in `Tempest.Core.Runtime`
+   exactly as ADR-0016 names them, and keep Discovery/Registration/Lifecycle
+   Host-held per ADR-0017 from the first line of code — these are decided, not
+   suggestions to reconsider mid-implementation.
+4. Use the Ownership Matrix as the first reference when any "who should do
+   this?" question comes up during implementation — it is designed to answer
+   most of them without needing to re-derive the reasoning from scratch.

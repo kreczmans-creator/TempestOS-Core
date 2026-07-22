@@ -269,14 +269,17 @@ root pattern), ADR-0011 (*Discovery and Registration Precede DI Container
 Construction*), ADR-0012 (*The Runtime Host Owns an Independent State
 Machine*), ADR-0013 (*Platform-Service Failures Abort Startup; Module
 Failures Remain Isolated*), ADR-0014 (*Cancellation and Shutdown-Request Are
-Distinct Signals*).
+Distinct Signals*), ADR-0015 (*Runtime Hosts Are Not Restartable*), ADR-0016
+(*The Host Lives in Tempest.Core.Runtime, Distinct From Tempest.Core.Hosting*),
+ADR-0017 (*Discovery, Registration, and Lifecycle Remain Host-Owned
+Collaborators, Not Public DI Services*).
 
 **Academy references.** WP 2.7 retrospective (*Runtime Host Architecture
 Review*, including its Open Questions, Risks, and Architectural Debt
 Assessment); *The Startup Sequence* (Runtime Architecture); *Runtime Host
 Architecture.md*, *Host Lifecycle.md*, *Startup Sequence.md*, *Shutdown
-Sequence.md*, *Runtime State Machine.md*, *Failure Behaviour.md* (all
-`docs/architecture/`).
+Sequence.md*, *Runtime State Machine.md*, *Failure Behaviour.md*, *Ownership
+Matrix.md* (all `docs/architecture/`).
 
 ---
 
