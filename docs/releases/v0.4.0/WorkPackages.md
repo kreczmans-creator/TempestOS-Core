@@ -186,6 +186,15 @@ defined there; it does not define its own.
 
 ## WP 4.2 — Plugin Manifest
 
+**Status note.** This work package's own design phase (architecture only)
+surfaced two prerequisites that turned into their own, separately tracked
+sub-work-packages before implementation could proceed: **WP 4.2A**
+(*Runtime Platform Version Infrastructure* — complete) and **WP 4.2B**
+(*ADR: Plugin Failure Classification* — complete). One prerequisite
+remains: an ADR for `Host Lifecycle.md` phase-table placement. See
+`Plugin Manifest Architecture.md`'s own Recommendation section for the
+current, authoritative status.
+
 ### Objective
 
 Define a manifest format describing a plugin before its assembly is

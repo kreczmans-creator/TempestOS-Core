@@ -214,9 +214,12 @@ package.
   verified directly to carry `AssemblyVersion 0.3.0.0`, matching the
   repository's own `VERSION` file exactly.
 - **Remaining blockers before WP 4.2 (Plugin Manifest) implementation**:
-  the two ADRs `Plugin Manifest Architecture.md` already named (plugin
-  failure classification; `Host Lifecycle.md` phase-table placement) —
-  unaffected by this work package, still outstanding.
+  at the time of this work package, the two ADRs `Plugin Manifest
+  Architecture.md` already named (plugin failure classification; `Host
+  Lifecycle.md` phase-table placement) — unaffected by this work package.
+  **Update, WP 4.2B**: plugin failure classification is now resolved
+  (ADR-0025). Phase-table placement remains the sole outstanding blocker.
 - **Readiness assessment**: WP 4.2A is complete. The platform-version
   prerequisite is fully resolved; Plugin Manifest implementation may
-  proceed once its own two remaining ADRs are written and ratified.
+  proceed once its remaining ADR (phase-table placement) is written and
+  ratified.

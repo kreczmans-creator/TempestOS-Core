@@ -118,6 +118,8 @@ implementation it describes, resolves that prerequisite:
 `IPlatformVersionProvider.Version.AssemblyVersion` (a comparable
 `System.Version`) is now exactly what a future `MinimumPlatformVersion`
 check would compare a plugin manifest's declared minimum against. Plugin
-Manifest implementation still requires its own two ADRs (failure
-classification; `Host Lifecycle.md` phase-table placement) before it may
-begin — this work package removes one blocker, not all of them.
+Manifest implementation still requires one further decision before it may
+begin — `Host Lifecycle.md` phase-table placement for the new Plugin
+Discovery/Loading steps. (Its other required decision, plugin failure
+classification, is resolved — see ADR-0025.) This work package removed one
+blocker; it was never responsible for either of the other two.

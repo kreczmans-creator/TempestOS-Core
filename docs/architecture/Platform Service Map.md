@@ -30,7 +30,7 @@ of date is worse than no map at all, because it will be trusted.
 | Event Bus | Contract implemented (WP 4.0: `IEvent`, `IEventHandler<T>`); service planned (WP 4.4) — placement decided, ADR-0020 | Dependency Injection | Any module |
 | Background Services | Contract implemented (WP 4.0: `IHostedService`, `ICriticalBackgroundService`); orchestration planned (WP 4.5) — failure model decided, ADR-0021 | Host, Dependency Injection | Any module declaring a hosted service |
 | Command Framework | Contract implemented (WP 4.0: `ICommand`); dispatcher planned (WP 4.7) — orthogonal to Navigation, ADR-0022 | Dependency Injection | Any module |
-| Plugin Manifest | Architected (WP 4.2), not implemented — 2 ADRs required first | Host (a pre-Discovery step) | Module Discovery (unchanged), any future plugin |
+| Plugin Manifest | Architected (WP 4.2), not implemented — 1 of 2 ADRs done (failure classification, ADR-0025); phase-table placement ADR still required | Host (a pre-Discovery step) | Module Discovery (unchanged), any future plugin |
 | Project Engine | Planned | Undetermined | Undetermined |
 | Requirements Engine | Planned | Undetermined | Undetermined |
 
@@ -473,12 +473,14 @@ Registration, and Lifecycle all remain unchanged — but not yet
 implemented; see *Plugin Manifest Architecture.md*.
 
 **Status.** Architecture complete (WP 4.2); implementation explicitly not
-recommended to begin yet. Two ADRs are still required first (plugin
-failure classification; `Host Lifecycle.md` phase-table placement). The
-cross-cutting gap this design surfaced — TempestOS had no queryable "what
-version am I" at runtime — is **resolved** (WP 4.2A, see the Platform
-Version entry, above); a future `MinimumPlatformVersion` check now has
-something authoritative to compare against.
+recommended to begin yet. Of the two required ADRs, one is now done:
+plugin failure classification (ADR-0025, WP 4.2B) — isolated for every
+failure category except a genuine Host-level defect in plugin-loading
+orchestration itself. `Host Lifecycle.md` phase-table placement remains
+outstanding. The cross-cutting gap this design surfaced — TempestOS had no
+queryable "what version am I" at runtime — is also **resolved** (WP 4.2A,
+see the Platform Version entry, above); a future `MinimumPlatformVersion`
+check now has something authoritative to compare against.
 
 **Dependencies (anticipated).** None for the manifest data itself. The
 future "Plugin Discovery"/"Plugin Loading" Host-level steps precede Module
@@ -491,13 +493,14 @@ assembly a future Plugin Loading step loads becomes visible to
 assembly. No change to `IFrameworkDiscoveryService`, `RuntimeModuleManager`,
 or `ModuleLifecycleManager` is proposed or required.
 
-**ADR references.** None yet — two are named as required before
-implementation; see *Plugin Manifest Architecture.md*'s "ADRs Required
-Before Implementation."
+**ADR references.** ADR-0025 (*Plugin Failure Classification*) — decided.
+One further ADR (phase-table placement) still required; see *Plugin
+Manifest Architecture.md*'s "ADRs Required Before Implementation."
 
 **Academy references.** WP 4.2 retrospective (*Plugin Manifest
-Architecture*); *Plugin Manifest Architecture.md*; Rejected Designs
-RD-0008, RD-0009.
+Architecture*); WP 4.2B retrospective (*ADR: Plugin Failure
+Classification*); *Plugin Manifest Architecture.md*; Rejected Designs
+RD-0008 through RD-0011.
 
 ---
 

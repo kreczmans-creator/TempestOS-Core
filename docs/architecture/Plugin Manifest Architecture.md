@@ -91,10 +91,21 @@ before WP 2.7B implemented either.
 | Candidate Type | Kind | Shape | Mirrors |
 |---|---|---|---|
 | `PluginManifest` | Sealed, immutable class | `Id`, `Name`, `Version`, `MinimumPlatformVersion`, `AssemblyFileName` — all get-only, set once at construction | `ModuleDescriptor` exactly |
-| `PluginManifestException` | Base exception | Message + optional inner exception | `ModuleDiscoveryException`'s existing base/subtype pattern |
-| `InvalidPluginManifestException : PluginManifestException` | Sealed exception | Malformed JSON, or a required field missing/empty/whitespace | `ModuleDiscoveryException`'s subtypes |
-| `IncompatiblePluginVersionException : PluginManifestException` | Sealed exception | A well-formed manifest whose `MinimumPlatformVersion` exceeds the running platform's own version | New shape, same base-plus-subtype pattern |
+| `PluginException` | Base exception | Message + optional inner exception | `ModuleDiscoveryException`'s existing base/subtype pattern |
+| `InvalidPluginManifestException : PluginException` | Sealed exception | Malformed JSON, or a required field missing/empty/whitespace | `ModuleDiscoveryException`'s subtypes |
+| `IncompatiblePluginVersionException : PluginException` | Sealed exception | A well-formed manifest whose `MinimumPlatformVersion` exceeds the running platform's own version | New shape, same base-plus-subtype pattern |
+| `DuplicatePluginIdException : PluginException` | Sealed exception | Two manifests declare the same `Id` (ADR-0025, category 3) | `DuplicateModuleRegistrationException`'s naming convention |
+| `PluginAssemblyNotFoundException : PluginException` | Sealed exception | The manifest's declared `AssemblyFileName` does not exist (ADR-0025, category 5) | Same base-plus-subtype pattern |
+| `PluginAssemblyLoadException : PluginException` | Sealed exception | `Assembly.LoadFrom` itself throws (ADR-0025, category 6) | Same base-plus-subtype pattern |
 | `IPluginManifestDiscoveryService` | Interface | One method, shaped like `IFrameworkDiscoveryService.DiscoverModules()`: scan, parse, validate, return `IReadOnlyList<PluginManifest>` | `IFrameworkDiscoveryService` directly — the same kind of service, one phase earlier |
+
+All six exception types share one base (`PluginException`), consistent
+with every other stage of the pipeline's own base-plus-subtype
+convention (`ConfigurationException`, `ModuleDiscoveryException`,
+`ModuleLifecycleException`) — a single `catch (PluginException)` at the
+Plugin Discovery/Loading call site is sufficient to implement ADR-0025's
+uniform "isolate, log, continue" handling for every category that ADR
+classifies as isolated, without needing to catch each subtype separately.
 
 **Not proposed**: an `IPluginManifestSource` abstraction generalising
 *where* a manifest comes from (filesystem today, something else
@@ -175,6 +186,7 @@ still remains open.
 | **Incompatible-but-well-formed values** | A `MinimumPlatformVersion` that parses correctly but exceeds the running platform's own version — `IncompatiblePluginVersionException`. Deliberately a *different* exception type from a malformed manifest: one is a defect in the manifest, the other is a true, expected "this plugin simply doesn't run here" outcome. |
 | **When** | At Plugin Discovery time — before any assembly is loaded, consistent with Fail Fast. |
 | **Who owns it** | The new Plugin Discovery component, Host-owned — not Module Discovery, not Registration, neither of which is touched by this design at all. |
+| **What happens on any of these failures** | **Fully classified — ADR-0025.** Every validation failure above is isolated to the one candidate plugin; the Host continues, every other plugin is still attempted. See that ADR for the complete, eleven-category table, including the failures that occur after a manifest is valid (missing/corrupt assembly, reflection failures, and so on). |
 
 ## Discovery Interaction — Direct Answers
 
@@ -214,9 +226,11 @@ inventing a second way to locate a module type is a direct application of
 this release's reuse-first mandate.
 
 **Treating an invalid or incompatible plugin as Host-fatal**, mirroring
-platform-service failures (ADR-0013). Considered, and this document
-recommends against it — see ADRs Required, below, for why this is flagged
-as a decision rather than settled here.
+platform-service failures (ADR-0013). Considered, and rejected — see
+ADR-0025, *Plugin Failure Classification*, which settles this decision in
+full (isolated, not Host-fatal, for every category except a genuine defect
+in the Host's own plugin-loading orchestration itself). Recorded
+permanently as Rejected Design RD-0010.
 
 ## Risks
 
@@ -224,10 +238,10 @@ as a decision rather than settled here.
   Versioning Strategy, above.
 - **Loading an untrusted or malformed assembly file** (`Assembly.LoadFrom`)
   can throw for reasons having nothing to do with the manifest itself
-  (a corrupt DLL, a missing native dependency). This must be caught and
-  treated consistently with whatever the Plugin Discovery/Loading failure
-  classification ADR decides — not left to propagate as an unhandled
-  exception.
+  (a corrupt DLL, a missing native dependency). Classification settled —
+  ADR-0025, category 6 (isolated, Error severity) — this must be caught
+  and treated exactly per that ADR's table, not left to propagate as an
+  unhandled exception.
 - **No assembly unloading support** (explicitly a non-goal) means a loaded
   plugin — bad or good — stays loaded for the process's entire life,
   consistent with, and no worse than, ADR-0015's existing "no restart"
@@ -240,23 +254,22 @@ as a decision rather than settled here.
 
 ## ADRs Required Before Implementation
 
-Two decisions this design deliberately does not settle, because both meet
+Two decisions this design deliberately did not settle, because both meet
 Engineering Governance §5's ADR criteria (a genuine alternative exists; the
 decision establishes a convention future plugin-related work depends on):
 
-1. **Plugin failure classification** — is an invalid or incompatible
-   plugin's failure Host-fatal (like a platform service, ADR-0013) or
-   isolated (like an individual module, ADR-0013's other half)? This
-   document's own reasoning leans toward isolated — a bad plugin should no
-   more take down the Host than a bad module does — but this is exactly
-   the kind of consequential, precedent-setting call ADR-0013 and ADR-0021
-   both received their own ADRs for, not a detail to settle informally.
+1. ~~**Plugin failure classification**~~ — **Resolved — ADR-0025**, *Plugin
+   Failure Classification*. Isolated for every category except a genuine
+   defect in the Host's own plugin-loading orchestration itself, which
+   remains Host-fatal — a full eleven-category classification table, not
+   merely the headline principle.
 2. **Where Plugin Discovery and Plugin Loading sit in `Host Lifecycle.md`'s
-   phase table.** This table was treated as complete and frozen after
-   WP 2.7A/B; inserting new phases before Module Discovery needs the same
-   rigour those phases originally received, not a quiet insertion. (Already
-   flagged, at the release level, in `docs/releases/v0.4.0/Risks.md`, R4 —
-   this document is the detailed design that risk anticipated.)
+   phase table.** Still outstanding. This table was treated as complete
+   and frozen after WP 2.7A/B; inserting new phases before Module
+   Discovery needs the same rigour those phases originally received, not
+   a quiet insertion. (Already flagged, at the release level, in
+   `docs/releases/v0.4.0/Risks.md`, R4 — this document is the detailed
+   design that risk anticipated.)
 
 ~~A third matter needs resolving but is not, itself, a Plugin-Manifest
 architectural decision: how the running platform's own version becomes
@@ -272,8 +285,9 @@ WP 2.7A preceding WP 2.7B, and the release's own Navigation split
 open decisions above are actually settled, not implied. Specifically,
 before an implementation work package begins:
 
-1. Write and ratify the two ADRs named above (failure classification;
-   phase-table placement) — still outstanding.
+1. ~~Write and ratify the two ADRs named above~~ — **one done**: failure
+   classification (ADR-0025, WP 4.2B). Phase-table placement remains
+   outstanding.
 2. ~~Resolve the platform-version-at-runtime gap~~ — **done, WP 4.2A.**
 3. Only then should a future work package implement `PluginManifest`,
    `IPluginManifestDiscoveryService`, and the corresponding

@@ -242,3 +242,57 @@ no existing field or consumer would need to change to add it later.
 design a ceiling policy against — not before, and not speculatively.
 
 **Source.** `Plugin Manifest Architecture.md`, Versioning Strategy.
+
+---
+
+## RD-0010 — Host-Fatal Plugin Failures
+
+**Considered during:** WP 4.2B (ADR-0025, Plugin Failure Classification).
+
+**Rejected because:** Module Discovery's own existing
+`DuplicateModuleIdException` is Host-fatal because it protects the
+integrity of the platform's foundational, non-optional module catalogue.
+A plugin is, by definition, optional add-on content — treating its
+failure as equivalent to a foundational platform-service failure would
+directly contradict this work package's own governing design principle,
+"fail one plugin, not the platform."
+
+**Reversibility.** Expensive to introduce later in the sense that matters
+most: it would be a behavioural regression, not an addition — any plugin
+author who had come to rely on "my plugin failing doesn't take down the
+platform" would be surprised by a later change to Host-fatal. Cheap only
+in the narrow sense that no code exists yet to migrate away from.
+
+**Revisit trigger.** Not expected to be revisited. If a future need
+arises for some plugins to be load-bearing, the correct mechanism is a
+new, explicit declaration a plugin makes for itself (see RD-0011's own
+revisit trigger) — not a change to this default.
+
+**Source.** ADR-0025, Alternatives Considered.
+
+---
+
+## RD-0011 — Per-Plugin `IsCritical` Manifest Opt-In
+
+**Considered during:** WP 4.2B (ADR-0025, Plugin Failure Classification).
+
+**Rejected because:** `ICriticalBackgroundService` (ADR-0021) is a
+meaningful opt-in specifically because a background service is a *live,
+running component* capable of making that self-assessment. Every failure
+category ADR-0025 governs happens *before* a plugin's module instance
+ever exists — there is no live component available to declare anything.
+A manifest-level `IsCritical` flag would also be exactly the kind of
+speculative field `Plugin Manifest Architecture.md` already declined to
+add (Author, Description, a version ceiling) without a real, demonstrated
+need driving its shape.
+
+**Reversibility.** Cheap — purely additive to the `PluginManifest` shape;
+no existing field or consumer would need to change to add it later, if a
+real need for it is ever demonstrated.
+
+**Revisit trigger.** If a genuine, demonstrated need arises for some
+plugins to be load-bearing enough that their failure should abort
+startup — not speculatively, and not merely because
+`ICriticalBackgroundService` happens to look like a reusable template.
+
+**Source.** ADR-0025, Alternatives Considered.
