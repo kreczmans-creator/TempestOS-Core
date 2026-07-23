@@ -131,9 +131,12 @@ started disagreeing.
 - **Two ADRs**, named explicitly in `Plugin Manifest Architecture.md`, must
   be written before implementation: plugin failure classification, and
   `Host Lifecycle.md` phase-table placement.
-- **The platform-version-at-runtime gap** should be resolved as its own,
-  small, Runtime-Foundation-level addition — not folded silently into
-  Plugin Manifest implementation as an afterthought.
+- ~~The platform-version-at-runtime gap should be resolved as its own,
+  small, Runtime-Foundation-level addition~~ — **done**: see WP 4.2A
+  (*Runtime Platform Version Infrastructure*), completed immediately
+  after this work package, resolving it exactly as recommended here —
+  as its own, separate, focused work package, not folded into Plugin
+  Manifest implementation.
 - **A future implementation work package** (not yet numbered) builds
   `PluginManifest`, `IPluginManifestDiscoveryService`, and the
   corresponding updates to `Host Lifecycle.md`, `Runtime State Machine.md`,
@@ -177,11 +180,13 @@ remains exactly as described.
 - **ADRs required, not yet written**: 2 (plugin failure classification;
   `Host Lifecycle.md` phase-table placement) — deliberately left open,
   not decided informally.
-- **Risks discovered**: the platform-version-at-runtime gap (see above);
-  loading an untrusted/malformed assembly file; no assembly-unloading
-  support (consistent with, not worse than, ADR-0015).
+- **Risks discovered**: the platform-version-at-runtime gap (resolved —
+  WP 4.2A, see that retrospective); loading an untrusted/malformed
+  assembly file; no assembly-unloading support (consistent with, not
+  worse than, ADR-0015).
 - **Readiness assessment**: the design is complete and sound. Per the
   architecture document's own Recommendation, **implementation should not
-  begin** until the two required ADRs are written and the platform-version
-  gap is resolved. This work package concludes here, deliberately, rather
+  begin** until the two required ADRs are written — the platform-version
+  gap this document originally named is now resolved (WP 4.2A). This work
+  package concludes here, deliberately, rather
   than proceeding into code.

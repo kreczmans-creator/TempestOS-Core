@@ -19,6 +19,7 @@ of date is worse than no map at all, because it will be trusted.
 
 | Service | Status | Depends on | Depended on by |
 |---|---|---|---|
+| Platform Version | Implemented (WP 4.2A) | — | Any current or future platform service (ADR-0023) |
 | Configuration | Implemented (WP 2.5) | — | Logging, any future config consumer |
 | Logging | Implemented (WP 2.6) | Configuration | Discovery, Registration, Lifecycle, DI, Configuration |
 | Dependency Injection | Implemented (WP 2.4) | — | Lifecycle, any registered service |
@@ -38,6 +39,41 @@ column as "the following depend on this row." "Depends on" and "Depended on
 by" are deliberately kept as separate columns rather than merged into one
 diagram, because — as *The Module Pipeline* explains — each of these
 dependencies is on an *interface*, never a concrete implementation.
+
+---
+
+## Platform Version
+
+**Responsibility.** Provides the single, authoritative version of the
+running platform, queryable from anywhere via ordinary constructor
+injection. Resolves its value exactly once, from the executing assembly's
+own build metadata — never a hand-typed, duplicated constant.
+
+**Key types.** `IPlatformVersionProvider`, `PlatformVersionProvider`,
+`PlatformVersion` (`Tempest.Core.Versioning`).
+
+**Dependencies.** None — deliberately a leaf. No current or future platform
+service may sit "below" it in ADR-0023's layering; its only optional input
+is `ILogger?` (diagnostics only, defaulting to `null`), matching every
+other platform service's own convention.
+
+**Consumers.** Any current or future platform service or module, resolved
+via `IPlatformVersionProvider`. First real consumer beyond its own tests:
+the Plugin Manifest's future `MinimumPlatformVersion` compatibility check
+(WP 4.2), once that work package's own remaining ADRs are settled.
+
+**Lifecycle.** Constructed directly by `TempestHost`, alongside
+Configuration and Logging, during the existing Platform Services
+Registered phase — no new `Host Lifecycle.md` phase was needed. Registered
+via `AddInstance` (ADR-0009) so the Host can resolve and log the version
+eagerly, every run, rather than lazily on first use.
+
+**ADR references.** ADR-0009 (Composition Root pattern, reused a third
+time); ADR-0023 (this service is a direct instance of "dependencies flow
+downward only" — everything may depend on it, it depends on nothing).
+
+**Academy references.** WP 4.2A retrospective (*Runtime Platform Version
+Infrastructure*); *Platform Version.md*.
 
 ---
 
@@ -437,11 +473,12 @@ Registration, and Lifecycle all remain unchanged — but not yet
 implemented; see *Plugin Manifest Architecture.md*.
 
 **Status.** Architecture complete (WP 4.2); implementation explicitly not
-recommended to begin yet. Two ADRs are required first (plugin failure
-classification; `Host Lifecycle.md` phase-table placement), and a
-cross-cutting gap this design surfaced — TempestOS has no queryable "what
-version am I" at runtime — must be resolved first as its own, separate
-addition.
+recommended to begin yet. Two ADRs are still required first (plugin
+failure classification; `Host Lifecycle.md` phase-table placement). The
+cross-cutting gap this design surfaced — TempestOS had no queryable "what
+version am I" at runtime — is **resolved** (WP 4.2A, see the Platform
+Version entry, above); a future `MinimumPlatformVersion` check now has
+something authoritative to compare against.
 
 **Dependencies (anticipated).** None for the manifest data itself. The
 future "Plugin Discovery"/"Plugin Loading" Host-level steps precede Module

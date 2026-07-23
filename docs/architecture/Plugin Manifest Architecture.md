@@ -150,16 +150,20 @@ assumed.
   minimum version exceeds its own" — this is the only guarantee v0.4.0
   needs.
 
-**A real, blocking gap this design surfaces, not owned by the Manifest
-itself**: TempestOS does not currently expose its own running version as
-anything queryable at runtime. No `<Version>` element exists in
-`Directory.Build.props` or either project's `.csproj`; compiled assemblies
-carry the SDK's own default version (`1.0.0.0`), completely disconnected
-from the real `VERSION` file (currently `0.4.0`). A `MinimumPlatformVersion`
-check is meaningless without something authoritative to compare it
-against. This is not the Plugin Manifest's own defect to fix, but
-implementation cannot proceed without fixing it first — see Risks and
-ADRs Required, below.
+**A real, blocking gap this design surfaced, not owned by the Manifest
+itself — now resolved (WP 4.2A).** At the time this document was first
+written, TempestOS did not expose its own running version as anything
+queryable at runtime: no `<Version>` element existed in
+`Directory.Build.props` or either project's `.csproj`, so compiled
+assemblies carried the SDK's own default version (`1.0.0.0`), completely
+disconnected from the real `VERSION` file (`0.3.0` at the time). A
+`MinimumPlatformVersion` check would have been meaningless without
+something authoritative to compare it against. **WP 4.2A** (*Runtime
+Platform Version Infrastructure* — see `Platform Version.md`) closed this
+gap directly: `IPlatformVersionProvider.Version.AssemblyVersion` is now
+exactly what a future `MinimumPlatformVersion` check compares a manifest's
+declared minimum against. See Risks and ADRs Required, below, for what
+still remains open.
 
 ## Validation Strategy
 
@@ -216,9 +220,8 @@ as a decision rather than settled here.
 
 ## Risks
 
-- **The platform-version-at-runtime gap** (Versioning Strategy, above) is
-  the single largest blocker to implementation as proposed — without it,
-  `MinimumPlatformVersion` cannot be checked against anything real.
+- ~~The platform-version-at-runtime gap~~ **Resolved — WP 4.2A.** See
+  Versioning Strategy, above.
 - **Loading an untrusted or malformed assembly file** (`Assembly.LoadFrom`)
   can throw for reasons having nothing to do with the manifest itself
   (a corrupt DLL, a missing native dependency). This must be caught and
@@ -255,14 +258,11 @@ decision establishes a convention future plugin-related work depends on):
    flagged, at the release level, in `docs/releases/v0.4.0/Risks.md`, R4 —
    this document is the detailed design that risk anticipated.)
 
-A third matter needs resolving but is not, itself, a Plugin-Manifest
-architectural decision: **how the running platform's own version becomes
-queryable at runtime** (Versioning Strategy, above). The likely shape — an
-assembly-level version attribute populated from the same `VERSION` file at
-build time, exposed through a small, new, queryable property — is a
-Runtime Foundation-level addition, not a Plugin Manifest one, and should be
-scoped and decided on its own terms before Plugin Manifest implementation
-can proceed.
+~~A third matter needs resolving but is not, itself, a Plugin-Manifest
+architectural decision: how the running platform's own version becomes
+queryable at runtime.~~ **Resolved — WP 4.2A**, `IPlatformVersionProvider`
+(`Tempest.Core.Versioning`), ahead of and independent of Plugin Manifest
+implementation itself. See `Platform Version.md`.
 
 ## Recommendation
 
@@ -273,9 +273,8 @@ open decisions above are actually settled, not implied. Specifically,
 before an implementation work package begins:
 
 1. Write and ratify the two ADRs named above (failure classification;
-   phase-table placement).
-2. Resolve the platform-version-at-runtime gap — a small, separate,
-   low-risk addition, but a real one, and a genuine prerequisite.
+   phase-table placement) — still outstanding.
+2. ~~Resolve the platform-version-at-runtime gap~~ — **done, WP 4.2A.**
 3. Only then should a future work package implement `PluginManifest`,
    `IPluginManifestDiscoveryService`, and the corresponding
    `Host Lifecycle.md`/`Runtime State Machine.md`/`Failure Behaviour.md`

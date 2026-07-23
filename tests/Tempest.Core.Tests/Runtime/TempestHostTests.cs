@@ -60,6 +60,7 @@ public class TempestHostTests
 
         Assert.Contains("Configuration Built", output);
         Assert.Contains("Logging Built", output);
+        Assert.Contains("Platform version resolved", output);
         Assert.Contains("Module Discovery", output);
         Assert.Contains("Module Registration", output);
         Assert.Contains("Platform Services Registered", output);

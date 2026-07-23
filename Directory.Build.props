@@ -9,4 +9,23 @@
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
   </PropertyGroup>
 
+  <!--
+    Single authoritative source of the platform's own version: the repository
+    root VERSION file (Engineering Governance §7 - the same file
+    scripts/New-Release.ps1 already validates against at release time). Read
+    once, here, at build time, rather than hand-typed into any individual
+    project - every assembly in the solution inherits the same <Version>,
+    and .NET's SDK derives AssemblyVersion/FileVersion/InformationalVersion
+    from it automatically. If the file is ever absent, <Version> is simply
+    left unset and the SDK falls back to its own default (1.0.0) rather than
+    failing the build - see docs/architecture/Platform Version.md.
+  -->
+  <PropertyGroup>
+    <TempestOSVersionFilePath>$(MSBuildThisFileDirectory)VERSION</TempestOSVersionFilePath>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="Exists('$(TempestOSVersionFilePath)')">
+    <Version>$([System.IO.File]::ReadAllText('$(TempestOSVersionFilePath)').Trim())</Version>
+  </PropertyGroup>
+
 </Project>

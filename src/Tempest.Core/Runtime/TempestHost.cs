@@ -2,6 +2,7 @@ using Tempest.Core.Configuration;
 using Tempest.Core.DependencyInjection;
 using Tempest.Core.Logging;
 using Tempest.Core.Modules;
+using Tempest.Core.Versioning;
 
 namespace Tempest.Core.Runtime;
 
@@ -158,11 +159,14 @@ public sealed class TempestHost : ITempestHost
 
         runToken.ThrowIfCancellationRequested();
 
+        IPlatformVersionProvider platformVersionProvider = new PlatformVersionProvider(logger);
+
         var services = new ServiceCollection(logger);
         services.AddInstance(configuration);
         services.AddInstance(sink);
         services.AddInstance(loggerFactory);
         services.AddInstance(logger);
+        services.AddInstance(platformVersionProvider);
         services.AddDiscoveredModules(moduleManager.GetAll().Select(module => module.Descriptor));
         logger.Information("Host lifecycle phase completed: Platform Services Registered.");
 
