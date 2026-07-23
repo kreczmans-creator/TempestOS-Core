@@ -153,7 +153,9 @@ alphabetical order. Answers exactly one question: what modules exist.
 
 **Key types.** `IModule`, `ModuleDescriptor`, `IFrameworkDiscoveryService`,
 `ReflectionFrameworkDiscoveryService`, `ModuleDiscoveryException`,
-`DuplicateModuleIdException`.
+`DuplicateModuleIdException`. `ModuleBase` (Module SDK, WP 4.1) is a
+convenience base implementation of `IModule` — see the Module SDK entry,
+below.
 
 **Dependencies.** `ILogger` (optional, for diagnostics). Deliberately **not**
 dependent on the DI container (see ADR-0008) or on Configuration.
@@ -215,7 +217,9 @@ failure isolation — "the single orchestration point for module execution."
 
 **Key types.** `IModuleLifecycle`, `ModuleLifecycleStatus`,
 `IModuleLifecycleManager`, `ModuleLifecycleManager`, `ModuleLifecycleException`,
-`InvalidModuleLifecycleTransitionException`.
+`InvalidModuleLifecycleTransitionException`. `ModuleLifecycleBase` (Module
+SDK, WP 4.1) is a convenience base implementation of `IModuleLifecycle` —
+see the Module SDK entry, below.
 
 **Dependencies.** `IRuntimeModuleManager` (the modules to orchestrate);
 `ITempestServiceProvider` (constructs module instances — see ADR-0007);
@@ -240,6 +244,50 @@ Provider Owns Construction*).
 **Academy references.** WP 2.3 retrospective (*Runtime Lifecycle*); Case
 Study 02 (*Why Lifecycle State Lives Externally*); Case Study 03 (*Why Dispose
 Is Always Legal*); Engineering Principle — State Machines.
+
+---
+
+## Module SDK *(implemented — v0.4.0, WP 4.1)*
+
+**Responsibility.** Reduces the repetitive boilerplate of writing a module —
+not a new platform service the Host orchestrates, but a developer-facing
+convenience layer over Discovery's and Lifecycle's existing contracts
+(`IModule`, `IModuleLifecycle`). Introduces no new runtime behaviour: a
+module built on the SDK is discovered, registered, and driven exactly like
+a hand-written `IModule`/`IModuleLifecycle` implementation, with no
+special-casing anywhere in the pipeline.
+
+**Key types.** `ModuleBase` (identity only — `Id`/`Name`/`Version` via
+constructor, for modules with no lifecycle), `ModuleLifecycleBase` (extends
+`ModuleBase` with four `virtual` lifecycle methods, each defaulting to a
+no-op, so a module overrides only the phase(s) it needs). Both in
+`Tempest.Core.Modules` — no new namespace or project; see the WP 4.1
+retrospective's Alternatives Considered for why.
+
+**Dependencies.** None beyond what `IModule`/`IModuleLifecycle` already
+require.
+
+**Consumers.** Any module author, from `WP 4.1` onward. The Sample Module
+(`WP 4.3`) is the SDK's first real, non-test consumer.
+
+**A known, pre-existing constraint the SDK does not change.** Because
+Discovery's metadata probe and `TempestServiceProvider`'s real construction
+both operate on the same concrete module type, and Discovery requires a
+public *parameterless* constructor while `TempestServiceProvider` requires
+*exactly one* public constructor, a normally-discovered module cannot
+currently receive constructor-injected dependencies — the two requirements
+only both hold when that one constructor takes zero arguments. This was
+identified during `WP 4.1`'s design review, not introduced by it; the SDK
+works within this constraint (a concrete module still needs its own public
+parameterless constructor) rather than attempting to lift it, which would
+require changing Discovery — explicitly out of this work package's scope.
+
+**ADR references.** None new — the SDK is a direct application of ADR-0003
+(constructor side-effect-freedom) and the existing `IModule`/
+`IModuleLifecycle` split; no new architectural decision was required.
+
+**Academy references.** WP 4.1 retrospective (*Module SDK*); *Building a
+Module* (Academy, new); WP 4.0 retrospective (*Platform Contracts*).
 
 ---
 
