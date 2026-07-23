@@ -196,3 +196,49 @@ time.
 
 **Source.** WP 4.1 retrospective, Alternatives Considered; Platform Service
 Map, Module SDK entry.
+
+---
+
+## RD-0008 — `IPluginManifestSource` Abstraction
+
+**Considered during:** WP 4.2 (Plugin Manifest architecture).
+
+**Rejected because:** generalising *where* a plugin manifest comes from
+(local filesystem today, something else hypothetically later) has no
+second source in view, and no near-universal multi-source expectation the
+way configuration does (files, environment variables, CLI arguments are
+all common in real software; alternative plugin-manifest sources are not a
+comparable, well-understood pattern). `IConfigurationSource` earned its
+abstraction on that basis; this would not.
+
+**Reversibility.** Cheap. A concrete manifest-discovery implementation can
+be refactored behind a new interface later without breaking any consumer
+that only ever depended on `IPluginManifestDiscoveryService`'s own output
+(`PluginManifest` values), not on how they were produced.
+
+**Revisit trigger.** If a second, genuinely different manifest source is
+actually needed (for example, manifests embedded in a different packaging
+format) — not before.
+
+**Source.** `Plugin Manifest Architecture.md`, Candidate Public API.
+
+---
+
+## RD-0009 — Maximum / "Tested Up To" Platform Version in the Manifest
+
+**Considered during:** WP 4.2 (Plugin Manifest architecture).
+
+**Rejected because:** a version *ceiling* raises real policy questions —
+warn, block, or allow-with-warning when the platform outgrows a plugin's
+tested range — that have no real-world experience behind them yet, since
+no plugin has ever existed. Designing that policy now would be guessing;
+`MinimumPlatformVersion` alone answers every compatibility question this
+release actually needs answered.
+
+**Reversibility.** Cheap — purely additive to the `PluginManifest` shape;
+no existing field or consumer would need to change to add it later.
+
+**Revisit trigger.** Once real plugins and real version history exist to
+design a ceiling policy against — not before, and not speculatively.
+
+**Source.** `Plugin Manifest Architecture.md`, Versioning Strategy.

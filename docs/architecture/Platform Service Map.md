@@ -29,6 +29,7 @@ of date is worse than no map at all, because it will be trusted.
 | Event Bus | Contract implemented (WP 4.0: `IEvent`, `IEventHandler<T>`); service planned (WP 4.4) — placement decided, ADR-0020 | Dependency Injection | Any module |
 | Background Services | Contract implemented (WP 4.0: `IHostedService`, `ICriticalBackgroundService`); orchestration planned (WP 4.5) — failure model decided, ADR-0021 | Host, Dependency Injection | Any module declaring a hosted service |
 | Command Framework | Contract implemented (WP 4.0: `ICommand`); dispatcher planned (WP 4.7) — orthogonal to Navigation, ADR-0022 | Dependency Injection | Any module |
+| Plugin Manifest | Architected (WP 4.2), not implemented — 2 ADRs required first | Host (a pre-Discovery step) | Module Discovery (unchanged), any future plugin |
 | Project Engine | Planned | Undetermined | Undetermined |
 | Requirements Engine | Planned | Undetermined | Undetermined |
 
@@ -422,6 +423,44 @@ Platform Services*), ADR-0023, ADR-0024.
 
 **Academy references.** WP 4.0 retrospective (*Platform Contracts*);
 `docs/releases/v0.4.0/WorkPackages.md` (`WP 4.7`).
+
+---
+
+## Plugin Manifest *(architected — WP 4.2, not implemented)*
+
+**Responsibility.** Describes a module before it is loaded — a
+pre-Discovery artifact, distinct from `ModuleDescriptor`, which describes a
+module already loaded and reflectable. The Manifest describes; the Runtime
+decides. Fully designed — required/excluded fields, validation and
+versioning strategy, a responsibilities matrix proving Discovery,
+Registration, and Lifecycle all remain unchanged — but not yet
+implemented; see *Plugin Manifest Architecture.md*.
+
+**Status.** Architecture complete (WP 4.2); implementation explicitly not
+recommended to begin yet. Two ADRs are required first (plugin failure
+classification; `Host Lifecycle.md` phase-table placement), and a
+cross-cutting gap this design surfaced — TempestOS has no queryable "what
+version am I" at runtime — must be resolved first as its own, separate
+addition.
+
+**Dependencies (anticipated).** None for the manifest data itself. The
+future "Plugin Discovery"/"Plugin Loading" Host-level steps precede Module
+Discovery in the startup sequence, analogous to how Configuration and
+Logging already precede it today.
+
+**Consumers (anticipated).** Module Discovery — unchanged, since any
+assembly a future Plugin Loading step loads becomes visible to
+`AppDomain.CurrentDomain.GetAssemblies()` exactly like any other loaded
+assembly. No change to `IFrameworkDiscoveryService`, `RuntimeModuleManager`,
+or `ModuleLifecycleManager` is proposed or required.
+
+**ADR references.** None yet — two are named as required before
+implementation; see *Plugin Manifest Architecture.md*'s "ADRs Required
+Before Implementation."
+
+**Academy references.** WP 4.2 retrospective (*Plugin Manifest
+Architecture*); *Plugin Manifest Architecture.md*; Rejected Designs
+RD-0008, RD-0009.
 
 ---
 
