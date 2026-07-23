@@ -165,7 +165,11 @@ a quiet exception.
   the first time. It is a record of a project that treated finding out it
   hadn't as valuable information, not an embarrassment to hide. Preserve
   that instinct specifically; it is worth more than any individual decision
-  it has produced.
+  it has produced. The Rejected Designs Log (`docs/architecture/Rejected
+  Designs.md`, Engineering Governance §10) is this same instinct applied to
+  the *opposite* case — not tensions found after the fact, but abstractions
+  deliberately not built, recorded at the moment they were declined so the
+  reasoning survives as well as the decision it produced.
 
 - **The Runtime Host as the canonical execution environment.** Every future
   capability — a Project Engine, a Requirements Engine, a plugin, a

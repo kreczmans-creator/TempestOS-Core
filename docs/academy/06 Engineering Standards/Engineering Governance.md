@@ -120,6 +120,8 @@ A work package is Done only when **all** of the following are true:
   identifiable, correctly-named test satisfying it.
 - A completion report has been produced (§4).
 - Any architectural decision meeting the ADR criteria in §5 has an ADR.
+- Any proposed design meeting the Rejected Designs criteria in §10 that was
+  considered and not built has an entry in the Rejected Designs Log.
 - Relevant Academy documentation (§6) has been created or updated to reflect the
   change — a work package that changes behaviour a prior Academy document
   describes, without updating that document, is not Done.
@@ -323,6 +325,38 @@ Review's sign-off by asserting its own decision is obviously correct. Technical
 Review cannot grant itself Product Approval's authority to merge or release,
 even after confirming a design is sound — review and release are different
 questions, and "this is well-designed" does not imply "this should ship now."
+
+---
+
+## 10. Rejected Designs Log
+
+An ADR records what was decided. A **Rejected Design** records the mirror
+image: an abstraction, pattern, or capability that was seriously considered
+during a work package's design phase and explicitly not built. Both exist
+for the same reason — so a future contributor's question already has a
+citable answer instead of depending on someone's memory of a conversation.
+
+**An entry is required** when a proposed design was a genuine candidate —
+not a passing idea dismissed in one sentence, but something weighed against
+real criteria — and a future contributor could plausibly propose it again
+without knowing it was already considered and declined. This is deliberately
+the mirror of §5's ADR criteria, not a lower bar: "we thought about X and
+said no, here's why" is exactly as citable, and exactly as easy to lose to
+time, as "we thought about X and said yes."
+
+**Format.** `docs/architecture/Rejected Designs.md`, sequential `RD-NNNN`
+entries, never renumbered and never deleted. Each entry states: the design
+considered, why it was rejected, how expensive it would be to introduce
+later (purely additive and cheap, versus a genuinely different shape that
+would require unwinding something), what — if anything — should prompt
+revisiting it, and which work package or retrospective it came from.
+
+**Maintenance.** An entry whose rejection is later reversed is marked
+**Superseded**, pointing at whatever ADR or retrospective reversed it —
+never silently removed, exactly as §5 already requires for a superseded
+ADR. A work package that rejects a genuine design candidate adds the entry
+as part of its own Definition of Done (§3); it is not a separate,
+optional follow-up task, any more than an ADR is.
 
 ---
 
