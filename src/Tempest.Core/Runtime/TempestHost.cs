@@ -1,0 +1,341 @@
+using Tempest.Core.Configuration;
+using Tempest.Core.DependencyInjection;
+using Tempest.Core.Logging;
+using Tempest.Core.Modules;
+
+namespace Tempest.Core.Runtime;
+
+/// <summary>
+/// The concrete <see cref="ITempestHost"/> implementation.
+/// </summary>
+/// <remarks>
+/// <para>
+/// Constructed only by <see cref="TempestHostBuilder"/> — the constructor is
+/// <see langword="internal"/>, so no other component can construct the
+/// runtime. Configuration, Logging, Discovery, Registration, and Dependency
+/// Injection are all constructed directly by this class, in that order,
+/// during <see cref="RunAsync"/> — see <c>Runtime Host Architecture.md</c>'s
+/// "Relationship to Existing Services" section. Discovery, Registration, and
+/// Lifecycle are held as private fields and never registered into the
+/// dependency injection container (ADR-0017): a module has no path back into
+/// the machinery orchestrating it.
+/// </para>
+/// <para>
+/// <b>Startup cancellation and shutdown requests</b> (ADR-0014) are observed
+/// through a single linked token for implementation simplicity — ADR-0014
+/// explicitly permits satisfying both signals through one underlying trigger
+/// without merging the concepts (see its Positive consequences) — but remain
+/// two distinct triggers: the caller's own <see cref="CancellationToken"/>
+/// passed to <see cref="RunAsync"/>, and an internal signal raised by
+/// <see cref="StopAsync"/>. Both are handled identically once observed during
+/// <see cref="HostState.Starting"/> (ADR-0018): control passes to the same
+/// controlled-shutdown procedure used by a graceful, post-<see cref="HostState.Running"/>
+/// stop. <see cref="RunAsync"/> only rethrows <see cref="OperationCanceledException"/>
+/// when the caller's own token was the trigger — a shutdown requested via
+/// <see cref="StopAsync"/> is a deliberate, successful stop, and
+/// <see cref="RunAsync"/> completes normally for it, matching the established
+/// .NET generic-host convention for exactly this scenario.
+/// </para>
+/// <para>
+/// <b>Disposal is always an explicit, separate call</b> (ADR-0019):
+/// <see cref="RunAsync"/> never disposes the host automatically, whether it
+/// ends at <see cref="HostState.Stopped"/> or <see cref="HostState.Faulted"/>.
+/// <see cref="DisposeAsync"/> is idempotent — safe to call more than once,
+/// including once the host is already <see cref="HostState.Disposed"/> —
+/// matching the standard <see cref="IAsyncDisposable"/> convention.
+/// </para>
+/// </remarks>
+public sealed class TempestHost : ITempestHost
+{
+    private readonly object _gate = new();
+    private readonly IReadOnlyList<IConfigurationSource> _configurationSources;
+    private readonly IEnumerable<Type>? _discoveryCandidateTypesOverride;
+    private readonly CancellationTokenSource _shutdownRequested = new();
+    private readonly CancellationTokenSource _stopEscalation = new();
+    private readonly TaskCompletionSource _runCompletion = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+    private HostState _state = HostState.Created;
+    private ILogger? _logger;
+    private IRuntimeModuleManager? _moduleManager;
+    private IModuleLifecycleManager? _lifecycleManager;
+
+    internal TempestHost(IReadOnlyList<IConfigurationSource> configurationSources, IEnumerable<Type>? discoveryCandidateTypesOverride)
+    {
+        _configurationSources = configurationSources;
+        _discoveryCandidateTypesOverride = discoveryCandidateTypesOverride;
+    }
+
+    /// <inheritdoc />
+    public HostState State
+    {
+        get
+        {
+            lock (_gate)
+                return _state;
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task RunAsync(CancellationToken cancellationToken = default)
+    {
+        EnterStarting();
+
+        using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _shutdownRequested.Token);
+        var runToken = linkedCts.Token;
+
+        try
+        {
+            await ExecuteStartupPhasesAsync(runToken).ConfigureAwait(false);
+
+            EnterRunning();
+
+            // Always throws: the only way out of Running is a cancellation,
+            // either the caller's own token or an internal shutdown request.
+            await AwaitShutdownSignalAsync(runToken).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException)
+        {
+            await StopInternalAsync().ConfigureAwait(false);
+
+            // The caller's own token, as opposed to an internal shutdown
+            // request raised via StopAsync(), is the only trigger this method
+            // treats as a cancellation to propagate — a StopAsync() shutdown
+            // is a deliberate, successful stop (ADR-0013, ADR-0018: never a
+            // fault), and RunAsync completes normally for it, matching the
+            // established .NET generic-host convention for this scenario.
+            if (cancellationToken.IsCancellationRequested)
+                throw;
+        }
+        catch (Exception ex)
+        {
+            EnterFaulted(ex);
+            throw;
+        }
+        finally
+        {
+            _runCompletion.TrySetResult();
+        }
+    }
+
+    private async Task ExecuteStartupPhasesAsync(CancellationToken runToken)
+    {
+        runToken.ThrowIfCancellationRequested();
+
+        var configurationBuilder = new ConfigurationBuilder();
+
+        foreach (var source in _configurationSources)
+            configurationBuilder.AddSource(source);
+
+        var configuration = configurationBuilder.Build();
+
+        ILogSink sink = new ConsoleLogSink();
+        ILoggerFactory loggerFactory = new LoggerFactory(configuration, sink);
+        var logger = loggerFactory.CreateLogger(LoggingServiceCollectionExtensions.DefaultLoggerCategory);
+        _logger = logger;
+
+        logger.Information("Host lifecycle phase completed: Configuration Built.");
+        logger.Information("Host lifecycle phase completed: Logging Built.");
+
+        runToken.ThrowIfCancellationRequested();
+
+        var discovery = new ReflectionFrameworkDiscoveryService(logger);
+
+        var descriptors = _discoveryCandidateTypesOverride is not null
+            ? discovery.DiscoverModules(_discoveryCandidateTypesOverride)
+            : discovery.DiscoverModules();
+
+        logger.Information("Host lifecycle phase completed: Module Discovery.");
+
+        runToken.ThrowIfCancellationRequested();
+
+        var moduleManager = new RuntimeModuleManager(logger);
+
+        foreach (var descriptor in descriptors)
+            moduleManager.Register(descriptor);
+
+        _moduleManager = moduleManager;
+        logger.Information("Host lifecycle phase completed: Module Registration.");
+
+        runToken.ThrowIfCancellationRequested();
+
+        var services = new ServiceCollection(logger);
+        services.AddInstance(configuration);
+        services.AddInstance(sink);
+        services.AddInstance(loggerFactory);
+        services.AddInstance(logger);
+        services.AddDiscoveredModules(moduleManager.GetAll().Select(module => module.Descriptor));
+        logger.Information("Host lifecycle phase completed: Platform Services Registered.");
+
+        runToken.ThrowIfCancellationRequested();
+
+        ITempestServiceProvider serviceProvider = new TempestServiceProvider(services, logger);
+        logger.Information("Host lifecycle phase completed: Dependency Injection Built.");
+
+        runToken.ThrowIfCancellationRequested();
+
+        var lifecycleManager = new ModuleLifecycleManager(moduleManager, serviceProvider, logger);
+        _lifecycleManager = lifecycleManager;
+
+        await lifecycleManager.InitialiseAllAsync(runToken).ConfigureAwait(false);
+        await lifecycleManager.StartAllAsync(runToken).ConfigureAwait(false);
+        logger.Information("Host lifecycle phase completed: Module Initialisation.");
+    }
+
+    private static async Task AwaitShutdownSignalAsync(CancellationToken runToken)
+    {
+        var signal = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        using (runToken.Register(() => signal.TrySetResult()))
+        {
+            await signal.Task.ConfigureAwait(false);
+        }
+
+        runToken.ThrowIfCancellationRequested();
+    }
+
+    /// <inheritdoc />
+    public async Task StopAsync()
+    {
+        bool alreadyTerminal;
+
+        lock (_gate)
+        {
+            if (_state == HostState.Created)
+                throw new InvalidHostStateTransitionException(_state, "Stop");
+
+            if (_state == HostState.Disposed)
+                throw new InvalidHostStateTransitionException(_state, "Stop");
+
+            alreadyTerminal = _state is HostState.Stopped or HostState.Faulted;
+        }
+
+        if (alreadyTerminal)
+            return;
+
+        try
+        {
+            if (!_shutdownRequested.IsCancellationRequested)
+                _shutdownRequested.Cancel();
+            else if (!_stopEscalation.IsCancellationRequested)
+                _stopEscalation.Cancel();
+        }
+        catch (ObjectDisposedException)
+        {
+            // The host finished disposing between the state check above and
+            // this call - nothing further to signal.
+            return;
+        }
+
+        await _runCompletion.Task.ConfigureAwait(false);
+    }
+
+    /// <inheritdoc />
+    public async ValueTask DisposeAsync()
+    {
+        HostState stateAtEntry;
+
+        lock (_gate)
+        {
+            stateAtEntry = _state;
+
+            if (stateAtEntry == HostState.Disposed)
+                return;
+        }
+
+        if (stateAtEntry is HostState.Starting or HostState.Running or HostState.Stopping)
+        {
+            try
+            {
+                if (!_shutdownRequested.IsCancellationRequested)
+                    _shutdownRequested.Cancel();
+            }
+            catch (ObjectDisposedException)
+            {
+            }
+
+            await _runCompletion.Task.ConfigureAwait(false);
+
+            lock (_gate)
+                stateAtEntry = _state;
+        }
+
+        if (stateAtEntry != HostState.Stopped && _lifecycleManager is not null)
+            await _lifecycleManager.DisposeAllAsync(CancellationToken.None).ConfigureAwait(false);
+
+        // Service Disposal: no-op today - Configuration, Logging, and the DI
+        // container implement no IDisposable/IAsyncDisposable (see
+        // Failure Behaviour.md and the WP 2.7 Architectural Debt Assessment).
+
+        lock (_gate)
+            _state = HostState.Disposed;
+
+        _logger?.Information("Host -> Disposed.");
+
+        _shutdownRequested.Dispose();
+        _stopEscalation.Dispose();
+    }
+
+    private void EnterStarting()
+    {
+        lock (_gate)
+        {
+            if (_state != HostState.Created)
+                throw new InvalidHostStateTransitionException(_state, "Run");
+
+            _state = HostState.Starting;
+        }
+    }
+
+    private void EnterRunning()
+    {
+        lock (_gate)
+            _state = HostState.Running;
+
+        _logger?.Information("Host -> Running.");
+    }
+
+    private void EnterFaulted(Exception exception)
+    {
+        lock (_gate)
+            _state = HostState.Faulted;
+
+        _logger?.Critical("Host -> Faulted.", exception);
+    }
+
+    private async Task StopInternalAsync()
+    {
+        lock (_gate)
+            _state = HostState.Stopping;
+
+        _logger?.Information("Host -> Stopping.");
+
+        if (_lifecycleManager is not null)
+        {
+            try
+            {
+                await _lifecycleManager.StopAllAsync(_stopEscalation.Token).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
+            {
+                _logger?.Information(
+                    "Module stop sequence escalated before every module finished stopping; " +
+                    "proceeding directly to disposal.");
+            }
+
+            _logger?.Information("Host lifecycle phase completed: Module Disposal (Stop).");
+
+            await _lifecycleManager.DisposeAllAsync(CancellationToken.None).ConfigureAwait(false);
+            _logger?.Information("Host lifecycle phase completed: Module Disposal (Dispose).");
+        }
+
+        // Service Disposal: no-op today - see the remarks on DisposeAsync above.
+        _logger?.Information("Host lifecycle phase completed: Service Disposal.");
+
+        _logger?.Information("Shutdown complete.");
+
+        lock (_gate)
+            _state = HostState.Stopped;
+
+        _logger?.Information("Host -> Stopped.");
+    }
+}

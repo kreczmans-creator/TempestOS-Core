@@ -17,6 +17,17 @@ namespace Tempest.Core.Logging;
 /// sink is never invoked for a filtered-out message.
 /// </para>
 /// <para>
+/// <b>Sink failures are isolated.</b> A logging failure must never terminate
+/// the runtime or propagate out of a logging call to affect whatever operation
+/// happened to be logging something. If <see cref="ILogSink.Write"/> throws,
+/// the exception is caught here, reported directly to <see cref="Console.Error"/>
+/// — bypassing the failed sink entirely — and never allowed to escape this
+/// class. This closes a gap identified during the WP 2.7 architectural review
+/// (see ADR-0010 and the Runtime Host architecture's Failure Behaviour
+/// document): the sink was previously invoked with no exception handling at
+/// all, contradicting this exact guarantee.
+/// </para>
+/// <para>
 /// <b>Thread safety</b> follows from immutability rather than locking: every
 /// field is set once, at construction, and never mutated afterward, so
 /// concurrent calls from multiple threads never contend over shared mutable
@@ -78,6 +89,17 @@ public sealed class Logger : ILogger
             properties ?? EmptyProperties,
             Environment.CurrentManagedThreadId);
 
-        _sink.Write(entry);
+        try
+        {
+            _sink.Write(entry);
+        }
+        catch (Exception ex)
+        {
+            // A sink failure must never terminate the runtime or propagate to the
+            // caller that happened to be logging something. Report it directly to
+            // the console, bypassing the failed sink, and swallow it here.
+            Console.Error.WriteLine(
+                $"[Logger] Sink '{_sink.GetType().Name}' failed while writing a log entry: {ex}");
+        }
     }
 }

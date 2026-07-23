@@ -1,6 +1,8 @@
 # Startup Sequence
 
-**Status: architecture only. No production code exists yet.**
+**Status: implemented — WP 2.7B (`Tempest.Core.Runtime`).** `TempestHost.RunAsync`
+implements this sequence, including its cancellation and failure paths,
+exactly as diagrammed below.
 
 ## Relationship to *The Startup Sequence* (Academy)
 

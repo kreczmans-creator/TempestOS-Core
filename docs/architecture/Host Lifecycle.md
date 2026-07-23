@@ -1,6 +1,7 @@
 # Host Lifecycle
 
-**Status: architecture only. No production code exists yet.**
+**Status: implemented — WP 2.7B (`Tempest.Core.Runtime`).** Every phase below
+is implemented by `TempestHost.RunAsync` exactly as described here.
 
 ## Purpose
 

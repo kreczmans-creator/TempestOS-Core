@@ -1,8 +1,19 @@
 # Runtime Host Architecture
 
-**Status: architecture only. No production code, and no interfaces intended
-for implementation, exist yet. Everything below is a design to be implemented
-by a future work package.**
+**Status: implemented — WP 2.7B.** `TempestHost`, `TempestHostBuilder`,
+`ITempestHost`, and `ITempestHostBuilder` implement this design in
+`Tempest.Core.Runtime`.
+
+**Clarification, WP 2.7B:** implementation confirmed that Configuration,
+Logging, Discovery, Registration, and Dependency Injection are constructed by
+`TempestHost` itself, directly, exactly as this document's "Relationship to
+Existing Services" section below already said — not by `TempestHostBuilder`,
+despite WP 2.7B's own brief summarising the composition root the other way
+around. `Host Lifecycle.md`'s Phase 1 ("Host Created… holding no platform
+service references yet") preceding Phase 2 ("Configuration Built") only holds
+if the Host itself builds these services after it exists, not before — see
+the WP 2.7B retrospective's Alternatives Considered section for the full
+reasoning, and ADR-0011 for the precedent this reconciliation follows.
 
 ## Overview
 

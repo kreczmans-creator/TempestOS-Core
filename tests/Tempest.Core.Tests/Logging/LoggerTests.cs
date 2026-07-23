@@ -149,6 +149,58 @@ public class LoggerTests
     }
 
     [Fact]
+    public void Log_SinkThrows_DoesNotPropagateToTheCaller()
+    {
+        var sink = new ThrowingLogSink();
+        var logger = new Logger("Category", LogLevel.Trace, sink);
+
+        var exception = Record.Exception(() => logger.Information("message"));
+
+        Assert.Null(exception);
+    }
+
+    [Fact]
+    public void Log_SinkThrows_ReportsTheFailureToConsoleError()
+    {
+        var sink = new ThrowingLogSink(new InvalidOperationException("simulated sink failure"));
+        var logger = new Logger("Category", LogLevel.Trace, sink);
+
+        var output = CaptureConsoleError(() => logger.Information("message"));
+
+        Assert.Contains(nameof(ThrowingLogSink), output);
+        Assert.Contains("simulated sink failure", output);
+    }
+
+    [Fact]
+    public void Log_SinkThrows_SubsequentLogCallsStillAttemptTheSink()
+    {
+        var sink = new ThrowingLogSink();
+        var logger = new Logger("Category", LogLevel.Trace, sink);
+
+        CaptureConsoleError(() =>
+        {
+            logger.Information("first");
+            logger.Information("second");
+        });
+
+        Assert.Equal(2, sink.WriteAttempts);
+    }
+
+    [Fact]
+    public void Log_SinkThrows_DoesNotPreventOtherLoggersSharingTheSameCategoryFromWorking()
+    {
+        var throwingSink = new ThrowingLogSink();
+        var recordingSink = new RecordingLogSink();
+        var failingLogger = new Logger("Category", LogLevel.Trace, throwingSink);
+        var healthyLogger = new Logger("Category", LogLevel.Trace, recordingSink);
+
+        CaptureConsoleError(() => failingLogger.Information("this sink is broken"));
+        healthyLogger.Information("this sink is fine");
+
+        Assert.Single(recordingSink.Entries);
+    }
+
+    [Fact]
     public void Log_FromMultipleThreadsConcurrently_RecordsEveryMessageWithoutError()
     {
         var sink = new RecordingLogSink();
@@ -164,6 +216,25 @@ public class LoggerTests
         });
 
         Assert.Equal(threadCount * messagesPerThread, sink.Entries.Count);
+    }
+
+    private static string CaptureConsoleError(Action action)
+    {
+        var originalError = Console.Error;
+
+        try
+        {
+            using var writer = new StringWriter();
+            Console.SetError(writer);
+
+            action();
+
+            return writer.ToString();
+        }
+        finally
+        {
+            Console.SetError(originalError);
+        }
     }
 
     private static void Invoke(ILogger logger, LogLevel level, string message)

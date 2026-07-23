@@ -1,6 +1,8 @@
 # Runtime State Machine
 
-**Status: architecture only. No production code exists yet.**
+**Status: implemented — WP 2.7B (`Tempest.Core.Runtime`).** `HostState` and
+`TempestHost` implement every state, transition, and illegal-transition guard
+described below exactly.
 
 ## Overview
 

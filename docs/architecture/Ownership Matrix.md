@@ -1,6 +1,8 @@
 # Ownership Matrix
 
-**Status: architecture only. No production code exists yet.**
+**Status: implemented — WP 2.7B (`Tempest.Core.Runtime`).** Every ownership
+relationship below is now enforced by working code (private fields, `internal`
+constructors, and ADR-0017's DI-exclusion), not only documented intent.
 
 ## Purpose
 

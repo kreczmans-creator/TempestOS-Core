@@ -1,6 +1,7 @@
 # Failure Behaviour
 
-**Status: architecture only. No production code exists yet.**
+**Status: implemented — WP 2.7B (`Tempest.Core.Runtime`).** Every rule below
+is now backed by working, tested code, not only design intent.
 
 ## Governing Principle
 

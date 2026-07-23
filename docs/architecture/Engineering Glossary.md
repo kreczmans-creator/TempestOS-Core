@@ -305,7 +305,7 @@ running state, and bring everything back down again, cleanly, whenever asked
 or whenever something goes wrong. Deliberately thin — it does not implement
 any of the six platform services, only calls them in order and owns the
 questions none of them individually answers. See *Runtime Host
-Architecture.md*, "Overview." Implemented (once built) as `TempestHost` /
+Architecture.md*, "Overview." Implemented (WP 2.7B) as `TempestHost` /
 `TempestHostBuilder` in the `Tempest.Core.Runtime` namespace (ADR-0016).
 
 ### Shutdown Request

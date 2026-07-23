@@ -15,6 +15,16 @@ individual modules to the Host itself. No new ADR was created for this reuse;
 see ADR-0009's own WP 2.6 update for the precedent of citing rather than
 duplicating a reused principle.
 
+**Update, WP 2.7B (Runtime Host Implementation):** implementing this reuse
+required one genuine deviation from a literal transplant of this ADR's
+wording — see ADR-0019, *Host Disposal Is Always an Explicit, Idempotent
+Call*. The Host reuses "permissive from every state but `Disposed`," but
+unlike `DisposeModuleAsync`, a second `TempestHost.DisposeAsync()` call once
+already `Disposed` does not throw — it is a safe no-op, matching the
+standard `IAsyncDisposable` convention. This ADR's own module-level
+behaviour (`DisposeModuleAsync` throwing on a repeated call) is unaffected
+and unchanged.
+
 ## Context
 
 `Initialise`, `Start`, and `Stop` each have exactly one valid precondition state

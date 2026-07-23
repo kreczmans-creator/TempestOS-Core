@@ -25,7 +25,7 @@ of date is worse than no map at all, because it will be trusted.
 | Discovery | Implemented (WP 2.1) | Logging | Registration |
 | Registration | Implemented (WP 2.2) | Discovery, Logging | Lifecycle |
 | Lifecycle | Implemented (WP 2.3) | Registration, Dependency Injection, Logging | Host |
-| Host | Architected (WP 2.7), not implemented | Configuration, Logging, Discovery, Registration, Lifecycle, Dependency Injection | Tempest.App |
+| Host | Implemented (WP 2.7B) | Configuration, Logging, Discovery, Registration, Lifecycle, Dependency Injection | Tempest.App |
 | Project Engine | Planned | Undetermined | Undetermined |
 | Requirements Engine | Planned | Undetermined | Undetermined |
 
@@ -73,7 +73,9 @@ Case Study 05 (*Why Isn't Configuration Mutable?*); *The Startup Sequence*
 
 **Responsibility.** Provides the `ILogger` abstraction every runtime component
 depends on for structured, filtered, append-only diagnostic output. No
-consumer of `ILogger` knows or can know where a message ultimately goes.
+consumer of `ILogger` knows or can know where a message ultimately goes. A
+sink failure is isolated inside `Logger` itself (fixed WP 2.7B) and never
+propagates to the caller that was logging something.
 
 **Key types.** `ILogger`, `ILoggerFactory`, `ILogSink`, `ConsoleLogSink`,
 `Logger`, `LoggerFactory`, `LogEntry`, `LogLevel`,
@@ -99,7 +101,8 @@ provider is built — see *The Startup Sequence*.
 Logger*).
 
 **Academy references.** WP 2.6 retrospective (*Logging & Diagnostics
-Framework*); *The Startup Sequence* (Runtime Architecture, updated for WP 2.6).
+Framework*); WP 2.7B retrospective (the sink-isolation fix); *The Startup
+Sequence* (Runtime Architecture, updated for WP 2.6).
 
 ---
 
@@ -237,50 +240,56 @@ Is Always Legal*); Engineering Principle — State Machines.
 
 ---
 
-## Host *(architected, not yet implemented — WP 2.7)*
+## Host *(implemented — WP 2.7B)*
 
 **Responsibility.** The composition root: assembles Configuration, Logging,
 Discovery, Registration, Dependency Injection, and Lifecycle into one running
 instance, and owns orchestration, startup, shutdown, cancellation, and
 disposal ordering. Does **not** own business logic, configuration parsing,
-module implementation, or logging implementation. Fully designed —
-responsibilities, a 13-phase lifecycle, complete startup/shutdown sequence
-diagrams, its own 7-state machine, and a full failure model — but not yet
-implemented; see *Runtime Host Architecture.md* and its companion documents.
+module implementation, or logging implementation. Implemented exactly as
+designed — responsibilities, a 13-phase lifecycle, complete startup/shutdown
+sequence diagrams, its own 7-state machine, and a full failure model; see
+*Runtime Host Architecture.md* and its companion documents, all now marked
+implemented.
 
-**Status.** Architecture complete (WP 2.7); implementation not started.
-Previously flagged as a gap across the WP 2.4, WP 2.5, and WP 2.6
-retrospectives, and in *The Startup Sequence*'s own Trade-offs section — this
-entry updates that gap from "not designed" to "designed, awaiting
-implementation."
+**Status.** Implemented (WP 2.7B), as `TempestHost`/`TempestHostBuilder` in
+`Tempest.Core.Runtime`. Previously flagged as a gap across the WP 2.4, WP
+2.5, and WP 2.6 retrospectives, then designed by WP 2.7A — this entry updates
+that gap from "designed, awaiting implementation" to implemented and tested.
 
 **Dependencies.** Every implemented service above — Configuration and Logging
 first (constructed directly, outside the container), then Discovery and
 Registration (deliberately *before* the DI container is built — see
 ADR-0011), then Dependency Injection, then Lifecycle.
 
+**Key types.** `ITempestHost`, `TempestHost`, `ITempestHostBuilder`,
+`TempestHostBuilder`, `HostState`, `HostException`,
+`InvalidHostStateTransitionException`.
+
 **Consumers (anticipated).** `Tempest.App` / the process entry point; future
 hosted services, background workers, and — pending their own classification
 under ADR-0013 — a Requirements Engine and/or Project Engine.
 
-**ADR references.** ADR-0004 (disposal reused at Host level), ADR-0008
-(why Discovery/Registration precede DI — see ADR-0011), ADR-0009 (composition
-root pattern), ADR-0011 (*Discovery and Registration Precede DI Container
-Construction*), ADR-0012 (*The Runtime Host Owns an Independent State
-Machine*), ADR-0013 (*Platform-Service Failures Abort Startup; Module
-Failures Remain Isolated*), ADR-0014 (*Cancellation and Shutdown-Request Are
-Distinct Signals*), ADR-0015 (*Runtime Hosts Are Not Restartable*), ADR-0016
-(*The Host Lives in Tempest.Core.Runtime, Distinct From Tempest.Core.Hosting*),
-ADR-0017 (*Discovery, Registration, and Lifecycle Remain Host-Owned
-Collaborators, Not Public DI Services*), ADR-0018 (*Startup Cancellation
-Transitions to Controlled Shutdown*).
+**ADR references.** ADR-0004 (disposal reused at Host level, and its WP 2.7B
+update), ADR-0008 (why Discovery/Registration precede DI — see ADR-0011),
+ADR-0009 (composition root pattern), ADR-0011 (*Discovery and Registration
+Precede DI Container Construction*), ADR-0012 (*The Runtime Host Owns an
+Independent State Machine*), ADR-0013 (*Platform-Service Failures Abort
+Startup; Module Failures Remain Isolated*), ADR-0014 (*Cancellation and
+Shutdown-Request Are Distinct Signals*), ADR-0015 (*Runtime Hosts Are Not
+Restartable*), ADR-0016 (*The Host Lives in Tempest.Core.Runtime, Distinct
+From Tempest.Core.Hosting*), ADR-0017 (*Discovery, Registration, and
+Lifecycle Remain Host-Owned Collaborators, Not Public DI Services*),
+ADR-0018 (*Startup Cancellation Transitions to Controlled Shutdown*),
+ADR-0019 (*Host Disposal Is Always an Explicit, Idempotent Call*).
 
 **Academy references.** WP 2.7 retrospective (*Runtime Host Architecture
-Review*, including its Open Questions, Risks, and Architectural Debt
-Assessment); *The Startup Sequence* (Runtime Architecture); *Runtime Host
-Architecture.md*, *Host Lifecycle.md*, *Startup Sequence.md*, *Shutdown
-Sequence.md*, *Runtime State Machine.md*, *Failure Behaviour.md*, *Ownership
-Matrix.md* (all `docs/architecture/`).
+Review*); WP 2.7B retrospective (*Runtime Host Implementation*, including its
+Alternatives Considered and Architectural Debt Assessment); Engineering
+Principle 11 (*Atomic Phase Principle*); *The Startup Sequence* (Runtime
+Architecture); *Runtime Host Architecture.md*, *Host Lifecycle.md*, *Startup
+Sequence.md*, *Shutdown Sequence.md*, *Runtime State Machine.md*, *Failure
+Behaviour.md*, *Ownership Matrix.md* (all `docs/architecture/`).
 
 ---
 

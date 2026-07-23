@@ -1,6 +1,16 @@
 # Shutdown Sequence
 
-**Status: architecture only. No production code exists yet.**
+**Status: implemented — WP 2.7B (`Tempest.Core.Runtime`).**
+
+**Clarification, WP 2.7B:** the Post-Fault Teardown diagram below shows
+`DisposeAllAsync`, Service Disposal, and `-> Disposed` as one continuous
+sequence for readability. Read literally, this could suggest disposal
+happens automatically the moment a fault is caught. It does not: per
+ADR-0019, *Host Disposal Is Always an Explicit, Idempotent Call*, reaching
+`Disposed` — from `Faulted` exactly as from `Stopped` — always requires an
+explicit `DisposeAsync()` call from the caller (typically via `await using`).
+The diagram illustrates what disposal *does* once invoked; it is not a claim
+that invocation is automatic.
 
 ## Overview
 
