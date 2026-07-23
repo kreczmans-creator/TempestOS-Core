@@ -2,6 +2,11 @@ using Tempest.Core.Modules;
 
 namespace Tempest.Core.Tests.Modules;
 
+// Shares SdkLifecycleLog's static state with ModuleSdkIntegrationTests, so
+// both are placed in the same xUnit collection to guarantee they never run
+// concurrently with each other - xUnit's default parallelism is per-class,
+// not per-log, and these two classes touch the same static log.
+[Collection("Module SDK lifecycle log")]
 public class ModuleLifecycleBaseTests
 {
     [Fact]

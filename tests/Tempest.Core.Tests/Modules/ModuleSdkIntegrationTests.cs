@@ -10,6 +10,9 @@ namespace Tempest.Core.Tests.Modules;
 /// <see cref="IModule"/>/<see cref="IModuleLifecycle"/> implementation — no
 /// special-casing, no behavioural difference, zero regression.
 /// </summary>
+// Shares SdkLifecycleLog's static state with ModuleLifecycleBaseTests, so
+// both are placed in the same xUnit collection - see that class for why.
+[Collection("Module SDK lifecycle log")]
 public class ModuleSdkIntegrationTests
 {
     public ModuleSdkIntegrationTests()
