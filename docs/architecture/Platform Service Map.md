@@ -26,6 +26,8 @@ of date is worse than no map at all, because it will be trusted.
 | Registration | Implemented (WP 2.2) | Discovery, Logging | Lifecycle |
 | Lifecycle | Implemented (WP 2.3) | Registration, Dependency Injection, Logging | Host |
 | Host | Implemented (WP 2.7B) | Configuration, Logging, Discovery, Registration, Lifecycle, Dependency Injection | Tempest.App |
+| Event Bus | Planned (v0.4.0, WP 4.0/4.4) — placement decided, ADR-0020 | Dependency Injection | Any module |
+| Background Services | Planned (v0.4.0, WP 4.0/4.5) — failure model decided, ADR-0021 | Host, Dependency Injection | Any module declaring a hosted service |
 | Project Engine | Planned | Undetermined | Undetermined |
 | Requirements Engine | Planned | Undetermined | Undetermined |
 

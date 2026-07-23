@@ -132,6 +132,16 @@ a quiet exception.
    sought explicitly, every time, never assumed from a prior occasion
    (Engineering Governance, §9).
 
+9. **Dependencies flow downward only, through exactly four layers: Modules,
+   Platform APIs, Platform Services, Runtime Host.** A module never depends
+   on another module directly (ADR-0020); a Platform Service never depends
+   on a specific module; the Runtime Host never contains business or
+   domain-specific logic. ADR-0023 names this as one general rule, but it
+   was never a new constraint — it is what ADR-0013, ADR-0017, and ADR-0020
+   already required, independently, before anyone had named the pattern
+   connecting them. Every future capability is checked against this one
+   question before it is built: *does this dependency point downward?*
+
 ---
 
 ## What Future Contributors Must Preserve

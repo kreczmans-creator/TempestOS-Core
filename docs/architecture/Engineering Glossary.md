@@ -93,6 +93,19 @@ deterministic order — answering exactly one question: what modules exist.
 Deliberately independent of the DI container (ADR-0008) and of Configuration.
 See the Platform Service Map's "Discovery" entry.
 
+### Event Bus *(planned — v0.4.0)*
+
+A DI-public platform service (`IEventBus`) letting modules publish and
+subscribe to events without depending on each other directly. Resolved via
+ordinary constructor injection, exactly like **Platform Service** examples
+Configuration and Logging — never a Host-owned collaborator like Discovery,
+Registration, or Lifecycle, since it carries no authority to register,
+initialise, start, stop, or dispose anything. Placement decided by
+ADR-0020, before implementation (v0.4.0, WP 4.0/4.4). Not to be confused
+with a **Command** (see Command Framework, v0.4.0 planning): an event has
+zero or more subscribers and no expected result; a command has exactly one
+handler and an expected result.
+
 ### Fail Fast
 
 The Engineering Principle (06) that a system should surface an invalid state
@@ -117,13 +130,28 @@ follow the identical procedure once `Stopping` begins (ADR-0018); "graceful"
 here describes only which state `Stopping` was entered from, not a different
 procedure.
 
-### Hosted Service *(planned)*
+### Critical Background Service *(planned — v0.4.0)*
 
-Background work that would start alongside, and stop symmetrically with, the
+A **Hosted Service** that has explicitly declared itself critical (the
+exact declaration mechanism is a v0.4.0 implementation decision, WP 4.0/
+4.5) — its failure is **Host-Fatal**, exactly like a platform-service
+failure, rather than isolated. The opt-in exception to a Hosted Service's
+default isolated-failure behaviour; see ADR-0021.
+
+### Hosted Service *(planned — v0.4.0; failure model decided)*
+
+Background work that starts alongside, and stops symmetrically with, the
 module pipeline — slotting in between Module Initialisation and Runtime
-Running at startup, and at the front of Shutdown. Not yet designed; named in
-*Runtime Host Architecture.md*'s Future Extensibility section as a seam the
-Host is designed to accept without requiring its own entry point.
+Running at startup, and at the front of Shutdown. Named in *Runtime Host
+Architecture.md*'s Future Extensibility section as a seam the Host is
+designed to accept without requiring its own entry point; not yet
+implemented (v0.4.0, WP 4.0/4.5). Its failure classification is decided —
+**isolated by default**, mirroring module failure isolation, unless
+declared a **Critical Background Service** (ADR-0021). This extends, but
+does not weaken or contradict, the platform-service/module **Host-Fatal**/
+**Isolated Failure** boundary ADR-0013 established — a Hosted Service is a
+third category with its own default, not a reclassification of either
+existing one.
 
 ### Host
 
@@ -165,7 +193,9 @@ Initialise/Start/Stop/Dispose — that is caught, logged, and marked against
 that module alone (`ModuleState.Failed`), without aborting the batch it
 occurred in or affecting the Runtime Host's own state. Established by WP 2.3
 (`ModuleLifecycleManager`'s per-module isolation) and elevated to an explicit
-platform-wide policy by ADR-0013. Contrasted with **Host-Fatal**.
+platform-wide policy by ADR-0013. Contrasted with **Host-Fatal**. A
+**Hosted Service**'s failure is isolated by this same default (ADR-0021,
+v0.4.0) unless it is a **Critical Background Service**.
 
 ### Lifecycle
 
