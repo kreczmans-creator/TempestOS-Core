@@ -93,7 +93,19 @@ deterministic order — answering exactly one question: what modules exist.
 Deliberately independent of the DI container (ADR-0008) and of Configuration.
 See the Platform Service Map's "Discovery" entry.
 
-### Event Bus *(planned — v0.4.0)*
+### Command *(contract implemented — v0.4.0, WP 4.0)*
+
+A discrete, named unit of application logic requested by a caller,
+implemented as data (`ICommand`, `Tempest.Core.Commands`): a concrete
+command type carries its own parameters as ordinary properties and is
+dispatched by its own type. Has exactly one handler and an expected
+result — contrasted with an **Event**, which has zero or more subscribers
+and no expected result. The handler contract and dispatcher are not yet
+defined (Command Framework's own work, WP 4.7) — only the command shape
+itself exists so far. Never depends on, or is invoked through, Navigation
+— see ADR-0022.
+
+### Event Bus *(contract implemented — v0.4.0, WP 4.0; service planned — WP 4.4)*
 
 A DI-public platform service (`IEventBus`) letting modules publish and
 subscribe to events without depending on each other directly. Resolved via
@@ -101,7 +113,10 @@ ordinary constructor injection, exactly like **Platform Service** examples
 Configuration and Logging — never a Host-owned collaborator like Discovery,
 Registration, or Lifecycle, since it carries no authority to register,
 initialise, start, stop, or dispose anything. Placement decided by
-ADR-0020, before implementation (v0.4.0, WP 4.0/4.4). Not to be confused
+ADR-0020. Its consumer-facing contracts, `IEvent` and `IEventHandler<T>`
+(`Tempest.Core.Events`), are implemented as of WP 4.0; the bus itself —
+the thing that actually dispatches a published event to its subscribers —
+is not yet implemented (`WP 4.4`). Not to be confused
 with a **Command** (see Command Framework, v0.4.0 planning): an event has
 zero or more subscribers and no expected result; a command has exactly one
 handler and an expected result.
@@ -130,22 +145,28 @@ follow the identical procedure once `Stopping` begins (ADR-0018); "graceful"
 here describes only which state `Stopping` was entered from, not a different
 procedure.
 
-### Critical Background Service *(planned — v0.4.0)*
+### Critical Background Service *(contract implemented — v0.4.0, WP 4.0)*
 
-A **Hosted Service** that has explicitly declared itself critical (the
-exact declaration mechanism is a v0.4.0 implementation decision, WP 4.0/
-4.5) — its failure is **Host-Fatal**, exactly like a platform-service
-failure, rather than isolated. The opt-in exception to a Hosted Service's
-default isolated-failure behaviour; see ADR-0021.
+A **Hosted Service** that has explicitly declared itself critical, via the
+`ICriticalBackgroundService` marker interface (`Tempest.Core.BackgroundServices`)
+— its failure is **Host-Fatal**, exactly like a platform-service failure,
+rather than isolated. The opt-in exception to a Hosted Service's default
+isolated-failure behaviour; see ADR-0021. The contract carries no members
+of its own — criticality is a declaration, not a configurable value.
+Declaring it today changes no runtime behaviour; no orchestration reads it
+yet (`WP 4.5`).
 
-### Hosted Service *(planned — v0.4.0; failure model decided)*
+### Hosted Service *(contract implemented — v0.4.0, WP 4.0; orchestration planned — WP 4.5)*
 
-Background work that starts alongside, and stops symmetrically with, the
-module pipeline — slotting in between Module Initialisation and Runtime
-Running at startup, and at the front of Shutdown. Named in *Runtime Host
-Architecture.md*'s Future Extensibility section as a seam the Host is
-designed to accept without requiring its own entry point; not yet
-implemented (v0.4.0, WP 4.0/4.5). Its failure classification is decided —
+Background work that will start alongside, and stop symmetrically with,
+the module pipeline — slotting in between Module Initialisation and
+Runtime Running at startup, and at the front of Shutdown. Named in
+*Runtime Host Architecture.md*'s Future Extensibility section as a seam
+the Host is designed to accept without requiring its own entry point. Its
+contract, `IHostedService` (`Tempest.Core.BackgroundServices`), is
+implemented as of WP 4.0; the Host-level wiring to actually start and stop
+one is not yet implemented (`WP 4.5`) — declaring the contract today
+changes no runtime behaviour. Its failure classification is decided —
 **isolated by default**, mirroring module failure isolation, unless
 declared a **Critical Background Service** (ADR-0021). This extends, but
 does not weaken or contradict, the platform-service/module **Host-Fatal**/
@@ -285,6 +306,18 @@ built anything past Configuration). This is what makes unconditional
 shutdown sweeps possible: a caller never needs to reason about how far
 startup progressed before disposing everything.
 
+### Platform API *(v0.4.0, ADR-0023)*
+
+A contract — an interface such as `IEvent`, `ICommand`, or `IHostedService`
+— as distinct from the **Platform Service** that implements it. The
+distinction was always implicit (`IConfigurationProvider` the contract vs.
+Configuration the service that builds it) but was not named as a general
+layer until ADR-0023's four-layer platform architecture: Modules → Platform
+APIs → Platform Services → Runtime Host, dependencies flowing downward
+only. `WP 4.0` (Platform Contracts) is where the platform's first several
+Platform APIs are defined, deliberately ahead of the Platform Services that
+will later implement them.
+
 ### Platform Service
 
 One of the components the Runtime Host assembles and orchestrates —
@@ -292,7 +325,9 @@ Configuration, Logging, Discovery, Registration, Dependency Injection,
 Lifecycle, and (once classified under ADR-0013) any future service such as a
 Requirements Engine or Project Engine. A platform service's failure is
 **Host-Fatal**; contrasted with a **Module**, whose failure is an **Isolated
-Failure**. See *Failure Behaviour.md*'s Governing Principle.
+Failure**. See *Failure Behaviour.md*'s Governing Principle. Distinguished
+from a **Platform API** (ADR-0023): a Platform Service is the concrete
+implementation; a Platform API is the contract it implements.
 
 ### Plugin *(planned)*
 

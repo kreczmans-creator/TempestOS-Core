@@ -26,8 +26,9 @@ of date is worse than no map at all, because it will be trusted.
 | Registration | Implemented (WP 2.2) | Discovery, Logging | Lifecycle |
 | Lifecycle | Implemented (WP 2.3) | Registration, Dependency Injection, Logging | Host |
 | Host | Implemented (WP 2.7B) | Configuration, Logging, Discovery, Registration, Lifecycle, Dependency Injection | Tempest.App |
-| Event Bus | Planned (v0.4.0, WP 4.0/4.4) — placement decided, ADR-0020 | Dependency Injection | Any module |
-| Background Services | Planned (v0.4.0, WP 4.0/4.5) — failure model decided, ADR-0021 | Host, Dependency Injection | Any module declaring a hosted service |
+| Event Bus | Contract implemented (WP 4.0: `IEvent`, `IEventHandler<T>`); service planned (WP 4.4) — placement decided, ADR-0020 | Dependency Injection | Any module |
+| Background Services | Contract implemented (WP 4.0: `IHostedService`, `ICriticalBackgroundService`); orchestration planned (WP 4.5) — failure model decided, ADR-0021 | Host, Dependency Injection | Any module declaring a hosted service |
+| Command Framework | Contract implemented (WP 4.0: `ICommand`); dispatcher planned (WP 4.7) — orthogonal to Navigation, ADR-0022 | Dependency Injection | Any module |
 | Project Engine | Planned | Undetermined | Undetermined |
 | Requirements Engine | Planned | Undetermined | Undetermined |
 
@@ -292,6 +293,87 @@ Principle 11 (*Atomic Phase Principle*); *The Startup Sequence* (Runtime
 Architecture); *Runtime Host Architecture.md*, *Host Lifecycle.md*, *Startup
 Sequence.md*, *Shutdown Sequence.md*, *Runtime State Machine.md*, *Failure
 Behaviour.md*, *Ownership Matrix.md* (all `docs/architecture/`).
+
+---
+
+## Event Bus *(contract implemented — WP 4.0; service planned — WP 4.4)*
+
+**Responsibility.** Lets modules publish and subscribe to events without
+depending on each other directly. `IEvent` marks a published fact; a
+concrete event type carries whatever data its subscribers need.
+`IEventHandler<T>` is the consumer-facing subscription contract. Neither
+contract does anything yet — no bus exists to publish through or dispatch
+from.
+
+**Key types.** `IEvent`, `IEventHandler<T>` (`Tempest.Core.Events`,
+implemented WP 4.0). `IEventBus` and its implementation — not yet defined;
+`WP 4.4`'s own deliverable.
+
+**Dependencies.** None for the contracts themselves. The future `IEventBus`
+will be DI-public (ADR-0020), resolved like `IConfigurationProvider`/
+`ILogger`.
+
+**Consumers.** Any module, once `WP 4.4` implements the bus.
+
+**ADR references.** ADR-0020 (*The Event Bus Is a DI-Public Platform
+Service*), ADR-0023 (*Platform Layering*), ADR-0024 (*Platform Contracts
+Are Packaged by Capability*).
+
+**Academy references.** WP 4.0 retrospective (*Platform Contracts*);
+`docs/releases/v0.4.0/WorkPackages.md` (`WP 4.4`).
+
+---
+
+## Background Services *(contract implemented — WP 4.0; orchestration planned — WP 4.5)*
+
+**Responsibility.** Background work that will start alongside, and stop
+symmetrically with, the module pipeline. `IHostedService` defines
+Start/Stop; `ICriticalBackgroundService` is the opt-in marker for a
+service whose failure should be Host-fatal rather than isolated. Neither
+contract is wired into the Runtime Host's startup/shutdown sequence yet —
+declaring them today changes no runtime behaviour.
+
+**Key types.** `IHostedService`, `ICriticalBackgroundService`
+(`Tempest.Core.BackgroundServices`, implemented WP 4.0). Host-level
+start/stop wiring — not yet implemented; `WP 4.5`'s own deliverable.
+
+**Dependencies.** None for the contracts themselves. The future
+orchestration will be Host-owned, per `Runtime Host Architecture.md`'s
+Future Extensibility section.
+
+**Consumers.** Any module declaring a hosted service, once `WP 4.5`
+implements the wiring.
+
+**ADR references.** ADR-0021 (*Background Service Failures Are Isolated by
+Default; Criticality Is Opt-In*), ADR-0023, ADR-0024.
+
+**Academy references.** WP 4.0 retrospective (*Platform Contracts*);
+`docs/releases/v0.4.0/WorkPackages.md` (`WP 4.5`).
+
+---
+
+## Command Framework *(contract implemented — WP 4.0; dispatcher planned — WP 4.7)*
+
+**Responsibility.** A uniform way to request a discrete unit of application
+logic. `ICommand` marks a concrete command type, which carries its own
+parameters as ordinary data. No dispatcher exists yet — a command type
+implementing this interface cannot currently be invoked by anything.
+
+**Key types.** `ICommand` (`Tempest.Core.Commands`, implemented WP 4.0). A
+handler contract and dispatcher — not yet defined; `WP 4.7`'s own design
+work, deliberately not speculated on ahead of it.
+
+**Dependencies.** None for the contract itself. **Explicitly orthogonal to
+Navigation** (ADR-0022) — neither this nor the future Navigation service
+depends on the other.
+
+**Consumers.** Any module, once `WP 4.7` implements the dispatcher.
+
+**ADR references.** ADR-0022 (*Navigation and Commands Are Orthogonal
+Platform Services*), ADR-0023, ADR-0024.
+
+**Academy references.** WP 4.0 retrospective (*Platform Contracts*);
+`docs/releases/v0.4.0/WorkPackages.md` (`WP 4.7`).
 
 ---
 
