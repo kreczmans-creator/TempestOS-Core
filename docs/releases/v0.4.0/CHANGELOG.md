@@ -26,11 +26,17 @@ reflected here.
   `<Version>` from the repository's own `VERSION` file.
 - **Plugin Failure Classification (WP 4.2B)** — architecture only; no
   code. ADR-0025.
+- **Plugin Discovery Lifecycle Placement (WP 4.2C)** — architecture only;
+  no code. ADR-0026. `Host Lifecycle.md` gains two new phases (`3.1 Plugin
+  Discovery`, `3.2 Plugin Loading`), inserted between Logging Built and
+  Module Discovery without renumbering the existing thirteen phases. This
+  was the last remaining prerequisite before `WP 4.2` implementation —
+  none remain.
 
 _Still planned, per `WorkPackages.md`:_
 
-- Plugin Manifest implementation (`WP 4.2`, blocked on one remaining ADR —
-  `Host Lifecycle.md` phase-table placement)
+- Plugin Manifest implementation (`WP 4.2` — no architectural blocker
+  remains; all prerequisite ADRs (0025, 0026) are resolved)
 - Sample Module (WP 4.3)
 - Event Bus (WP 4.4)
 - Background Services (WP 4.5)
@@ -67,9 +73,16 @@ _Nothing yet._
 - **ADR-0025** — Plugin Failure Classification. Decided during WP 4.2B —
   isolated for every plugin-loading failure category except a genuine
   Host-level defect in the loading orchestration itself.
-- Expected, not yet written: Plugin Manifest's phase-sequence placement
-  (`Host Lifecycle.md`, still blocking `WP 4.2` implementation) and
-  Navigation's `Tempest.Core` placement (`WP 4.6A`) — see `Architecture.md`.
+- **ADR-0026** — Plugin Discovery Lifecycle Placement. Decided during
+  WP 4.2C — two new decimal-numbered phases (`3.1 Plugin Discovery`,
+  `3.2 Plugin Loading`) inserted between Logging Built and Module
+  Discovery; `PlatformVersionProvider` construction moves earlier (its DI
+  registration does not); candidate folders sorted ordinally by name for
+  deterministic duplicate-identity resolution. This was the last
+  architectural blocker before `WP 4.2` implementation.
+- Expected, not yet written: Navigation's `Tempest.Core` placement
+  (`WP 4.6A`) — see `Architecture.md`. No further ADR is expected before
+  `WP 4.2` implementation.
 
 ---
 

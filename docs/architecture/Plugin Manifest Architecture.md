@@ -1,9 +1,12 @@
 # Plugin Manifest Architecture
 
-**Status: architecture only. No production code, and no interfaces intended
-for implementation, exist yet. Everything below is a design proposal — see
-this document's own Recommendation section for whether implementation
-should proceed as proposed.**
+**Status: architecture complete. No production code, and no interfaces
+intended for implementation, exist yet. All three prerequisites this
+document originally named are now resolved** (platform version — WP 4.2A;
+failure classification — ADR-0025, WP 4.2B; lifecycle placement —
+ADR-0026, WP 4.2C) **— no architectural blocker remains before Plugin
+Manifest implementation.** See this document's own Recommendation section,
+updated accordingly.
 
 ## Overview
 
@@ -33,8 +36,8 @@ this design rests on.
 
 | Component | Responsibility | Change from today |
 |---|---|---|
-| **Plugin Discovery** *(new, Host-owned)* | Scans a known plugins directory for manifest files, parses and validates each one, produces a list of `PluginManifest` values. Loads no assembly. | New |
-| **Plugin Loading** *(new, Host-owned)* | For each manifest that passes validation and the platform-version compatibility check, loads its declared assembly file into the process. | New |
+| **Plugin Discovery** *(new, Host-owned — Phase 3.1, ADR-0026)* | Scans a known plugins directory for manifest files, parses and validates each one, produces a list of `PluginManifest` values. Loads no assembly. | New |
+| **Plugin Loading** *(new, Host-owned — Phase 3.2, ADR-0026)* | For each manifest that passes validation and the platform-version compatibility check, loads its declared assembly file into the process. | New |
 | **Module Discovery** *(existing, `IFrameworkDiscoveryService`)* | Scans **all** loaded assemblies — including plugin assemblies Plugin Loading just loaded — for `IModule` types, exactly as today. | **Unchanged** |
 | **Module Registration** *(existing, `RuntimeModuleManager`)* | Registers whatever descriptors Module Discovery finds. Has no plugin-specific logic at all. | **Unchanged** |
 | **Module Lifecycle** *(existing, `ModuleLifecycleManager`)* | Drives registered modules through initialisation, startup, shutdown, disposal — a module that arrived via a plugin is indistinguishable from one that didn't. | **Unchanged** |
@@ -195,14 +198,16 @@ still remains open.
   exactly as today.
 - **Should Registration?** No. `RuntimeModuleManager` has no plugin-aware
   logic at all, before or after this design.
-- **Should Runtime (the Host)?** Yes — Plugin Discovery and Plugin Loading
-  are new, Host-owned steps, preceding Module Discovery in the startup
-  sequence, mirroring how Configuration and Logging are already
-  Host-constructed steps preceding Discovery today.
+- **Should Runtime (the Host)?** Yes — Plugin Discovery (Phase 3.1) and
+  Plugin Loading (Phase 3.2), both decided by ADR-0026, are new,
+  Host-owned steps between Logging Built and Module Discovery, mirroring
+  how Configuration and Logging are already Host-constructed steps
+  preceding Discovery today.
 - **Should nobody, until a later work package actually implements it?**
   Correct, and explicit: this document is a design proposal only. No
   component reads a manifest today. Implementation is a distinct, later
-  work package — see Recommendation, below.
+  work package — see Recommendation, below, which now confirms every
+  architectural prerequisite is resolved.
 
 ## Non-Goals (Restated From the Brief, Explicitly)
 
@@ -254,22 +259,24 @@ permanently as Rejected Design RD-0010.
 
 ## ADRs Required Before Implementation
 
-Two decisions this design deliberately did not settle, because both meet
-Engineering Governance §5's ADR criteria (a genuine alternative exists; the
-decision establishes a convention future plugin-related work depends on):
+Two decisions this design originally deliberately did not settle, because
+both met Engineering Governance §5's ADR criteria (a genuine alternative
+exists; the decision establishes a convention future plugin-related work
+depends on). **Both are now resolved:**
 
 1. ~~**Plugin failure classification**~~ — **Resolved — ADR-0025**, *Plugin
    Failure Classification*. Isolated for every category except a genuine
    defect in the Host's own plugin-loading orchestration itself, which
    remains Host-fatal — a full eleven-category classification table, not
    merely the headline principle.
-2. **Where Plugin Discovery and Plugin Loading sit in `Host Lifecycle.md`'s
-   phase table.** Still outstanding. This table was treated as complete
-   and frozen after WP 2.7A/B; inserting new phases before Module
-   Discovery needs the same rigour those phases originally received, not
-   a quiet insertion. (Already flagged, at the release level, in
-   `docs/releases/v0.4.0/Risks.md`, R4 — this document is the detailed
-   design that risk anticipated.)
+2. ~~**Where Plugin Discovery and Plugin Loading sit in `Host Lifecycle.md`'s
+   phase table.**~~ — **Resolved — ADR-0026**, *Plugin Discovery Lifecycle
+   Placement*. Two new decimal-numbered phases (`3.1` Plugin Discovery,
+   `3.2` Plugin Loading), inserted between Logging Built and Module
+   Discovery, with no renumbering of the existing thirteen phases and no
+   change to `Runtime State Machine.md`. (This was the risk already
+   flagged, at the release level, in `docs/releases/v0.4.0/Risks.md`, R4 —
+   now retired; see that register.)
 
 ~~A third matter needs resolving but is not, itself, a Plugin-Manifest
 architectural decision: how the running platform's own version becomes
@@ -279,20 +286,23 @@ implementation itself. See `Platform Version.md`.
 
 ## Recommendation
 
-**Design is sound; implementation should not begin yet.** This mirrors
-WP 2.7A preceding WP 2.7B, and the release's own Navigation split
-(`WP 4.6A`/`4.6B`) — architecture first, implementation only once the
-open decisions above are actually settled, not implied. Specifically,
-before an implementation work package begins:
+**Design is sound; all three prerequisites are resolved. Implementation
+may now proceed.** This closes the same two-phase pattern WP 2.7A/2.7B
+and the release's own Navigation split (`WP 4.6A`/`4.6B`) both
+established — architecture first, implementation only once every open
+decision is actually settled, never implied:
 
-1. ~~Write and ratify the two ADRs named above~~ — **one done**: failure
-   classification (ADR-0025, WP 4.2B). Phase-table placement remains
-   outstanding.
+1. ~~Write and ratify the two ADRs named above~~ — **both done**: failure
+   classification (ADR-0025, WP 4.2B) and lifecycle placement (ADR-0026,
+   WP 4.2C).
 2. ~~Resolve the platform-version-at-runtime gap~~ — **done, WP 4.2A.**
-3. Only then should a future work package implement `PluginManifest`,
+3. **A future work package may now implement** `PluginManifest`,
    `IPluginManifestDiscoveryService`, and the corresponding
    `Host Lifecycle.md`/`Runtime State Machine.md`/`Failure Behaviour.md`
-   updates this design anticipates.
+   updates this design anticipated — every one of those documents has
+   already been updated (ADR-0026) to describe exactly what that
+   implementation must satisfy.
 
 No code, interfaces, or tests accompany this document, per this work
-package's own scope.
+package's own scope. **`WP 4.2` implementation itself remains a separate,
+future work package — not begun by this one.**

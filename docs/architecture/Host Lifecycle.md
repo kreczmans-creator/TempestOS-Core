@@ -3,6 +3,11 @@
 **Status: implemented — WP 2.7B (`Tempest.Core.Runtime`).** Every phase below
 is implemented by `TempestHost.RunAsync` exactly as described here.
 
+**Update, WP 4.2C:** Phases 3.1 and 3.2 (Plugin Discovery, Plugin Loading)
+are architected — ADR-0026 — but not yet implemented; they will land with
+Plugin Manifest (`WP 4.2`). Decimal phase numbers mean "between 3 and 4" —
+no existing phase was renumbered; see ADR-0026 for why.
+
 ## Purpose
 
 This document defines every phase the Runtime Host passes through, from
@@ -25,6 +30,8 @@ Host is in the single `Starting` state.
 | 1 | Host Created | `Created` |
 | 2 | Configuration Built | `Starting` |
 | 3 | Logging Built | `Starting` |
+| 3.1 | Plugin Discovery *(architected, ADR-0026; not yet implemented)* | `Starting` |
+| 3.2 | Plugin Loading *(architected, ADR-0026; not yet implemented)* | `Starting` |
 | 4 | Module Discovery | `Starting` |
 | 5 | Module Registration | `Starting` |
 | 6 | Platform Services Registered | `Starting` |
@@ -93,13 +100,76 @@ subsequent phase for diagnostics.
 
 ---
 
+### 3.1. Plugin Discovery
+
+**Status: architected — ADR-0026. Not yet implemented; lands with Plugin
+Manifest (WP 4.2).**
+
+**Purpose.** Read and validate every plugin manifest found in the plugins
+directory, producing a deterministic, ordered list of eligible plugins.
+Loads no assembly — a pre-Discovery artifact describing a plugin, not yet
+touching it. See *Plugin Manifest Architecture.md*.
+
+**Entry criteria.** Logging Built has completed — a working `ILogger`
+exists. `PlatformVersionProvider` has been constructed (moved earlier than
+its original WP 4.2A position, per ADR-0026) so `IPlatformVersionProvider.Version`
+is available for the `MinimumPlatformVersion` compatibility check.
+Configuration Built has completed, though this phase has no hard
+dependency on it. Module Discovery, Registration, the DI container, and
+every module do not exist yet, and none is needed.
+
+**Exit criteria.** A deterministic (sorted ordinally by candidate folder
+name), possibly empty, list of valid, version-compatible plugin manifests
+exists. Every candidate that failed validation has been isolated per
+ADR-0025, logged at its assigned severity, and excluded.
+
+**Failure behaviour.** Fully governed by ADR-0025. Every plugin-scoped
+failure (malformed manifest, duplicate identity, incompatible version) is
+isolated — logged, that candidate excluded, this phase continues with the
+rest. Only a genuine defect in this phase's own orchestration (not
+attributable to any specific plugin) is Host-fatal — `Faulted`, exactly
+the same transition Configuration Built and Logging Built already use.
+
+---
+
+### 3.2. Plugin Loading
+
+**Status: architected — ADR-0026. Not yet implemented; lands with Plugin
+Manifest (WP 4.2).**
+
+**Purpose.** Load each eligible plugin's declared assembly file into the
+process, in the same deterministic order Plugin Discovery established.
+
+**Entry criteria.** Plugin Discovery has completed with its (possibly
+empty) list of validated manifests in hand.
+
+**Exit criteria.** Every eligible plugin's assembly has either been loaded
+into the process (now visible to
+`AppDomain.CurrentDomain.GetAssemblies()`, exactly like any other loaded
+assembly) or isolated per ADR-0025 (missing assembly file, load failure,
+or dependency load failure) and excluded. **This is the guarantee Module
+Discovery, entirely unchanged, depends on** — see Phase 4, below.
+
+**Failure behaviour.** Fully governed by ADR-0025, identical in shape to
+Plugin Discovery's own: plugin-scoped failures are isolated; a genuine
+defect in this phase's own orchestration is Host-fatal — `Faulted`.
+
+---
+
 ### 4. Module Discovery
 
 **Purpose.** Find every `IModule` implementation across loaded assemblies.
+**Requires no code change for plugin support** — any assembly Plugin
+Loading (Phase 3.2) loaded is already visible to this phase's own,
+unchanged `AppDomain.CurrentDomain.GetAssemblies()` default, exactly as any
+other loaded assembly already is. A run with zero plugins present behaves
+identically to today, byte-for-byte.
 
 **Entry criteria.** Logging Built has completed — Discovery takes an optional
 `ILogger` for diagnostics. Per ADR-0011 and ADR-0008, Discovery requires
 **no** DI container — none exists yet at this point, and none is needed.
+Plugin Loading (Phase 3.2) has completed, whether or not any plugin was
+actually present or eligible.
 
 **Exit criteria.** `IFrameworkDiscoveryService.DiscoverModules()` has returned
 an ordered list of `ModuleDescriptor` values with no exception thrown.

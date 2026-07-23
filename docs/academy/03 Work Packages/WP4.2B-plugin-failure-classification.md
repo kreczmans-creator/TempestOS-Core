@@ -138,9 +138,10 @@ things seem similar, so use the same mechanism" instinct.
 
 ## 12. Future Evolution
 
-- **The one remaining ADR** — `Host Lifecycle.md` phase-table placement —
+- ~~**The one remaining ADR** — `Host Lifecycle.md` phase-table placement —
   is now the sole remaining blocker before Plugin Manifest implementation
-  may begin.
+  may begin.~~ **Resolved, WP 4.2C — ADR-0026.** No ADR remains outstanding
+  before Plugin Manifest implementation.
 - **A future diagnostics capability** (`WP 4.8`) should be able to read
   "which plugins failed, and why" from whatever structure Plugin Manifest
   implementation ends up building — ADR-0025 requires this be possible
@@ -184,8 +185,11 @@ exactly as previously described.
   updated; this retrospective. Zero production code files touched.
 - **Remaining blocker before WP 4.2 implementation**: one ADR —
   `Host Lifecycle.md` phase-table placement for the new Plugin Discovery
-  and Plugin Loading steps.
+  and Plugin Loading steps. **Resolved, WP 4.2C — ADR-0026** (see that
+  retrospective). No ADR remains outstanding.
 - **Readiness assessment**: ADR-0025 is complete, self-consistent, and
   cross-referenced everywhere the original design document named it as
-  required. Plugin Manifest implementation remains correctly blocked on
-  exactly one remaining decision, not two.
+  required. Plugin Manifest implementation was correctly blocked on
+  exactly one remaining decision at the time of this work package;
+  **update, WP 4.2C**: that decision (ADR-0026) is now also resolved, and
+  Plugin Manifest implementation has no architectural blocker remaining.

@@ -117,9 +117,13 @@ Manifest implementation could begin. This document, and the
 implementation it describes, resolves that prerequisite:
 `IPlatformVersionProvider.Version.AssemblyVersion` (a comparable
 `System.Version`) is now exactly what a future `MinimumPlatformVersion`
-check would compare a plugin manifest's declared minimum against. Plugin
-Manifest implementation still requires one further decision before it may
-begin — `Host Lifecycle.md` phase-table placement for the new Plugin
-Discovery/Loading steps. (Its other required decision, plugin failure
-classification, is resolved — see ADR-0025.) This work package removed one
-blocker; it was never responsible for either of the other two.
+check would compare a plugin manifest's declared minimum against.
+
+**Update, WP 4.2C.** Plugin Manifest implementation's other two required
+decisions are now both resolved as well: plugin failure classification
+(ADR-0025) and `Host Lifecycle.md` phase-table placement (ADR-0026, which
+also moves `PlatformVersionProvider`'s *construction* — not its DI
+registration, which stays exactly where this work package placed it — to
+immediately follow Logging Built, ahead of the new Plugin Discovery
+phase). No architectural blocker remains before Plugin Manifest
+implementation.

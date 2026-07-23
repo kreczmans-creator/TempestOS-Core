@@ -187,13 +187,15 @@ defined there; it does not define its own.
 ## WP 4.2 — Plugin Manifest
 
 **Status note.** This work package's own design phase (architecture only)
-surfaced two prerequisites that turned into their own, separately tracked
-sub-work-packages before implementation could proceed: **WP 4.2A**
-(*Runtime Platform Version Infrastructure* — complete) and **WP 4.2B**
-(*ADR: Plugin Failure Classification* — complete). One prerequisite
-remains: an ADR for `Host Lifecycle.md` phase-table placement. See
-`Plugin Manifest Architecture.md`'s own Recommendation section for the
-current, authoritative status.
+surfaced three prerequisites that turned into their own, separately
+tracked sub-work-packages before implementation could proceed: **WP 4.2A**
+(*Runtime Platform Version Infrastructure* — complete), **WP 4.2B**
+(*ADR: Plugin Failure Classification* — complete, ADR-0025), and **WP
+4.2C** (*ADR: Plugin Discovery Lifecycle Placement* — complete,
+ADR-0026). **All three prerequisites are now resolved; no architectural
+blocker remains before implementation.** See `Plugin Manifest
+Architecture.md`'s own Recommendation section for the current,
+authoritative status.
 
 ### Objective
 
@@ -210,6 +212,8 @@ since WP 2.7A.
   range).
 - Design where manifest reading sits in the Host's sequence — logically
   before Module Discovery, per the existing architecture's own note.
+  **Decided — ADR-0026**: two new phases, `3.1 Plugin Discovery` and
+  `3.2 Plugin Loading`, between Logging Built and Module Discovery.
 - Out of scope unless this work package's own risk assessment concludes
   otherwise: dynamic assembly loading/unloading (`AssemblyLoadContext`
   isolation).
@@ -223,9 +227,8 @@ moving target.
 ### Deliverables
 
 - A versioned manifest schema.
-- A manifest-reading step in the Host's startup sequence design (`Host
-  Lifecycle.md` gains a new phase, or an existing phase's entry criteria
-  is extended — likely ADR-worthy per Governance §5).
+- A manifest-reading step in the Host's startup sequence design — **done**:
+  `Host Lifecycle.md` gains two new phases (`3.1`/`3.2`), per ADR-0026.
 - `src/Plugins/` (empty since WP 2.1) gains its first real content, or a
   documented reason it remains a placeholder a little longer.
 
@@ -243,9 +246,11 @@ moving target.
 ### Risks
 
 - Risk of quietly reopening `Host Lifecycle.md`'s frozen phase table
-  without WP 2.7A/B's original rigour. Coordinate explicitly with
+  without WP 2.7A/B's original rigour — **resolved via ADR-0026**, given
+  the same rigour as the original phase table. Coordinate explicitly with
   **WP 4.5 (Background Services)**, which also touches this table (see
-  `Risks.md`, R4).
+  `Risks.md`, R4) — WP 4.5 now has ADR-0026's decimal sub-numbering
+  precedent to follow.
 
 ---
 

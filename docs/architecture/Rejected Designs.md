@@ -296,3 +296,83 @@ startup — not speculatively, and not merely because
 `ICriticalBackgroundService` happens to look like a reusable template.
 
 **Source.** ADR-0025, Alternatives Considered.
+
+---
+
+## RD-0012 — A Single Combined Plugin Discovery/Loading Phase
+
+**Considered during:** WP 4.2C (ADR-0026, Plugin Discovery Lifecycle
+Placement).
+
+**Rejected because:** folding manifest validation (side-effect-free) and
+assembly loading (a real, harder-to-reverse side effect — no unloading
+support exists) into one phase would blur exactly the distinction Module
+Discovery/Module Registration's own existing two-phase split already
+protects: finding and validating candidates is kept separate from
+committing to something consequential. One phase would also make it
+harder to state precise entry/exit criteria for each half independently.
+
+**Reversibility.** Expensive to merge later in the sense that matters:
+once implemented as two phases, with their own distinct entry/exit
+criteria and failure semantics, collapsing them would be a real design
+change, not a trivial one. Cheap only because no code exists yet either
+way.
+
+**Revisit trigger.** Not expected to be revisited — this mirrors an
+already-established, working precedent (Module Discovery/Registration)
+rather than proposing something new and unproven.
+
+**Source.** ADR-0026, Alternatives Considered.
+
+---
+
+## RD-0013 — Renumbering All Thirteen Existing Host Lifecycle Phases
+
+**Considered during:** WP 4.2C (ADR-0026, Plugin Discovery Lifecycle
+Placement).
+
+**Rejected because:** inserting two new phases before the existing Module
+Discovery (Phase 4) would, under a strict sequential renumbering, shift
+every subsequent phase number by two — touching every existing
+cross-reference across `Host Lifecycle.md`, `Runtime State Machine.md`,
+`Startup Sequence.md`, `Failure Behaviour.md`, prior ADRs, and prior
+Academy retrospectives that cite a phase by number. That blast radius is
+entirely disproportionate to what is, architecturally, a pure insertion —
+decimal sub-numbering (`3.1`, `3.2`) says exactly the same thing without
+touching anything that already works.
+
+**Reversibility.** Cheap to *not* do (the option always remains open to
+renumber later if decimal numbering ever proves genuinely confusing in
+practice) — expensive to do preemptively, for a cost with no
+corresponding benefit today.
+
+**Revisit trigger.** If decimal phase numbers cause genuine, recurring
+confusion once Plugin Manifest (and later, potentially, Background
+Services — see ADR-0026's Future Considerations) actually implement
+against them — not speculatively.
+
+**Source.** ADR-0026, Alternatives Considered.
+
+---
+
+## RD-0014 — Plugin Discovery Reading Platform Version Metadata Independently
+
+**Considered during:** WP 4.2C (ADR-0026, Plugin Discovery Lifecycle
+Placement).
+
+**Rejected because:** WP 4.2A's own stated goal was "a single
+authoritative runtime platform version," queryable from exactly one
+place. Giving Plugin Discovery its own, separate way to read the
+executing assembly's version metadata would directly contradict that
+goal and risk two independent readings of the same underlying metadata
+silently diverging over time (for example, if one code path is updated
+to account for a future informational-version suffix and the other is
+not). Moving one already-existing constructor call earlier is cheaper,
+and strictly more correct, than maintaining two.
+
+**Reversibility.** N/A — rejected as the wrong shape of solution
+entirely, not deferred pending more information.
+
+**Revisit trigger.** Not expected to be revisited.
+
+**Source.** ADR-0026, Alternatives Considered.

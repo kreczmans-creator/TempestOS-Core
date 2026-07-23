@@ -3,6 +3,10 @@
 **Status: implemented — WP 2.7B (`Tempest.Core.Runtime`).** Every rule below
 is now backed by working, tested code, not only design intent.
 
+**Update, WP 4.2C:** a Plugin Discovery/Loading Failure section is added
+below (ADR-0025, ADR-0026) — architected, not yet implemented; lands with
+Plugin Manifest (`WP 4.2`).
+
 ## Governing Principle
 
 The boundary established by ADR-0013 governs every failure mode below:
@@ -22,6 +26,29 @@ a duplicate key within one source.
 **Required behaviour.** Host-fatal. Transition directly `Starting → Faulted`.
 Nothing else has been built yet; disposal is attempted for consistency but has
 nothing to release.
+
+## Plugin Discovery/Loading Failure *(architected — ADR-0025, ADR-0026; not yet implemented)*
+
+**Trigger.** Any of the eleven failure categories ADR-0025 classifies,
+occurring during the future Plugin Discovery (Phase 3.1) or Plugin
+Loading (Phase 3.2) phases — a malformed manifest, a duplicate plugin
+identity, an incompatible platform version, a missing or corrupt
+assembly, a dependency load failure, or a reflection/type load failure.
+
+**Required behaviour.** **Not** Host-fatal, for every category above —
+isolated to the one plugin, exactly like an individual module's failure
+(ADR-0013's other half): logged at the severity ADR-0025 assigns, that
+plugin excluded, the phase continues with every remaining candidate. The
+Host proceeds to Module Discovery regardless, even if every plugin fails
+or none is present at all — a zero-plugin run is indistinguishable from
+today's behaviour.
+
+**The one exception**: a genuine defect in Plugin Discovery's or Plugin
+Loading's own orchestration, not attributable to any specific plugin — a
+Host-level bug, not a plugin failure, and Host-fatal:
+`Starting → Faulted`, exactly the same transition Configuration Built,
+Logging Built, Module Discovery, and Module Registration already use for
+their own Host-fatal failures. No new transition is introduced.
 
 ## Discovery Failure
 
@@ -128,26 +155,22 @@ to be logging something — configuration building, module registration,
 lifecycle transitions, and the Host's own orchestration must all be able to
 proceed exactly as if the log call had succeeded, even if it didn't.
 
-**This is currently not true of the implemented code.** `Logger.Log()` calls
-`_sink.Write(entry)` with no exception handling — a sink failure propagates
-directly to whatever code just tried to log something. This is a genuine gap
-between WP 2.6's own stated principle and its shipped implementation,
-discovered during this architecture work, **not fixed here** (WP 2.7 is
-architecture-only and modifies no production code). It is flagged prominently
-in the WP 2.7 Academy review's Architectural Debt Assessment and in the
-completion report's Risks section, with a recommendation that a small, scoped
-fix (wrapping `_sink.Write(entry)` in a try/catch inside `Logger.Log()`,
-logging the sink failure's occurrence somewhere durable — even just to the
-console directly, bypassing the failed sink — without ever letting it
-propagate) be made before, or as part of, the Host's own implementation, since
-the Host's orchestration will call logging extensively and is exactly the kind
-of caller this principle exists to protect.
+**Fixed — WP 2.7B.** This was a genuine gap between WP 2.6's own stated
+principle and its shipped implementation, discovered during WP 2.7A's
+architecture-only review (which flagged it but, per its own scope, could
+not fix it) and closed as WP 2.7B's own first step, before the Host
+implementation that would become logging's heaviest caller. `Logger.Log()`
+now wraps `_sink.Write(entry)` in a `try`/`catch`; a sink failure is
+reported directly to `Console.Error` — bypassing the failed sink entirely
+— and never propagates to whatever code was logging something.
 
 ## Required Behaviour Summary
 
 | Failure | Host-fatal? | State transition |
 |---|---|---|
 | Configuration failure | Yes | `Starting → Faulted` |
+| Plugin Discovery/Loading — per-plugin failure *(architected, ADR-0025/0026)* | No | (none — that plugin isolated, phase continues) |
+| Plugin Discovery/Loading — Host-level defect *(architected, ADR-0025/0026)* | Yes | `Starting → Faulted` |
 | Discovery failure | Yes | `Starting → Faulted` |
 | Registration failure | Yes | `Starting → Faulted` |
 | Individual module initialisation failure | No | (none — Host proceeds to `Running`) |
@@ -155,5 +178,5 @@ of caller this principle exists to protect.
 | Runtime exception (Running) | Yes | `Running → Faulted` |
 | Individual module shutdown failure | No | (none — `Stopping` proceeds to `Stopped`) |
 | Host-level defect during shutdown | Yes, but disposal still proceeds | `Stopping → Faulted → Disposed` |
-| Logging failure | **Must never be** (currently is — see above) | (none, once fixed) |
+| Logging failure | **Fixed — WP 2.7B.** A sink failure is caught inside `Logger` itself and never propagates. | (none) |
 | Startup cancellation, or an early shutdown request | No (not a fault) | `Starting → Stopping → Stopped` (ADR-0018 — same controlled shutdown procedure as a graceful, post-`Running` stop) |

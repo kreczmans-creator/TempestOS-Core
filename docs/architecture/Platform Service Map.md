@@ -30,7 +30,7 @@ of date is worse than no map at all, because it will be trusted.
 | Event Bus | Contract implemented (WP 4.0: `IEvent`, `IEventHandler<T>`); service planned (WP 4.4) — placement decided, ADR-0020 | Dependency Injection | Any module |
 | Background Services | Contract implemented (WP 4.0: `IHostedService`, `ICriticalBackgroundService`); orchestration planned (WP 4.5) — failure model decided, ADR-0021 | Host, Dependency Injection | Any module declaring a hosted service |
 | Command Framework | Contract implemented (WP 4.0: `ICommand`); dispatcher planned (WP 4.7) — orthogonal to Navigation, ADR-0022 | Dependency Injection | Any module |
-| Plugin Manifest | Architected (WP 4.2), not implemented — 1 of 2 ADRs done (failure classification, ADR-0025); phase-table placement ADR still required | Host (a pre-Discovery step) | Module Discovery (unchanged), any future plugin |
+| Plugin Manifest | Architecture complete (WP 4.2/4.2A/4.2B/4.2C), not implemented — all prerequisite ADRs resolved | Host (Phases 3.1/3.2, ADR-0026 — a pre-Discovery step) | Module Discovery (unchanged), any future plugin |
 | Project Engine | Planned | Undetermined | Undetermined |
 | Requirements Engine | Planned | Undetermined | Undetermined |
 
@@ -462,45 +462,48 @@ Platform Services*), ADR-0023, ADR-0024.
 
 ---
 
-## Plugin Manifest *(architected — WP 4.2, not implemented)*
+## Plugin Manifest *(architecture complete — WP 4.2/4.2A/4.2B/4.2C, not implemented)*
 
 **Responsibility.** Describes a module before it is loaded — a
 pre-Discovery artifact, distinct from `ModuleDescriptor`, which describes a
 module already loaded and reflectable. The Manifest describes; the Runtime
 decides. Fully designed — required/excluded fields, validation and
 versioning strategy, a responsibilities matrix proving Discovery,
-Registration, and Lifecycle all remain unchanged — but not yet
-implemented; see *Plugin Manifest Architecture.md*.
+Registration, and Lifecycle all remain unchanged, exact lifecycle
+placement — but not yet implemented; see *Plugin Manifest Architecture.md*.
 
-**Status.** Architecture complete (WP 4.2); implementation explicitly not
-recommended to begin yet. Of the two required ADRs, one is now done:
-plugin failure classification (ADR-0025, WP 4.2B) — isolated for every
-failure category except a genuine Host-level defect in plugin-loading
-orchestration itself. `Host Lifecycle.md` phase-table placement remains
-outstanding. The cross-cutting gap this design surfaced — TempestOS had no
-queryable "what version am I" at runtime — is also **resolved** (WP 4.2A,
-see the Platform Version entry, above); a future `MinimumPlatformVersion`
-check now has something authoritative to compare against.
+**Status.** Architecture complete; **every architectural prerequisite is
+now resolved, and implementation may begin.** Plugin failure
+classification (ADR-0025, WP 4.2B) — isolated for every failure category
+except a genuine Host-level defect in plugin-loading orchestration
+itself. Lifecycle placement (ADR-0026, WP 4.2C) — two new phases, `3.1`
+Plugin Discovery and `3.2` Plugin Loading, between Logging Built and
+Module Discovery, no renumbering of the existing thirteen phases, no
+change to `Runtime State Machine.md`. The cross-cutting platform-version
+gap this design originally surfaced is also resolved (WP 4.2A, see the
+Platform Version entry, above).
 
-**Dependencies (anticipated).** None for the manifest data itself. The
-future "Plugin Discovery"/"Plugin Loading" Host-level steps precede Module
-Discovery in the startup sequence, analogous to how Configuration and
-Logging already precede it today.
+**Dependencies (anticipated).** Logging Built and `PlatformVersionProvider`
+(construction moved earlier per ADR-0026) must both exist before Plugin
+Discovery (Phase 3.1) begins. Plugin Loading (Phase 3.2) precedes Module
+Discovery (Phase 4), analogous to how Configuration and Logging already
+precede it today.
 
 **Consumers (anticipated).** Module Discovery — unchanged, since any
-assembly a future Plugin Loading step loads becomes visible to
+assembly Plugin Loading loads becomes visible to
 `AppDomain.CurrentDomain.GetAssemblies()` exactly like any other loaded
 assembly. No change to `IFrameworkDiscoveryService`, `RuntimeModuleManager`,
 or `ModuleLifecycleManager` is proposed or required.
 
 **ADR references.** ADR-0025 (*Plugin Failure Classification*) — decided.
-One further ADR (phase-table placement) still required; see *Plugin
-Manifest Architecture.md*'s "ADRs Required Before Implementation."
+ADR-0026 (*Plugin Discovery Lifecycle Placement*) — decided. No further
+ADR is required before implementation.
 
 **Academy references.** WP 4.2 retrospective (*Plugin Manifest
 Architecture*); WP 4.2B retrospective (*ADR: Plugin Failure
-Classification*); *Plugin Manifest Architecture.md*; Rejected Designs
-RD-0008 through RD-0011.
+Classification*); WP 4.2C retrospective (*ADR: Plugin Discovery Lifecycle
+Placement*); *Plugin Manifest Architecture.md*; Rejected Designs RD-0008
+through RD-0014.
 
 ---
 

@@ -179,16 +179,17 @@ remains exactly as described.
   this work package to touch.
 - **ADRs required**: 2 (plugin failure classification; `Host Lifecycle.md`
   phase-table placement) — deliberately left open, not decided informally.
-  **One resolved since**: failure classification, ADR-0025 (WP 4.2B, see
-  that retrospective). Phase-table placement remains outstanding.
+  **Both now resolved**: failure classification, ADR-0025 (WP 4.2B); phase-
+  table placement, ADR-0026 (WP 4.2C, see that retrospective). No ADR
+  remains outstanding.
 - **Risks discovered**: the platform-version-at-runtime gap (resolved —
   WP 4.2A, see that retrospective); loading an untrusted/malformed
   assembly file (classification now settled — ADR-0025, category 6); no
   assembly-unloading support (consistent with, not worse than, ADR-0015).
 - **Readiness assessment**: the design is complete and sound. Per the
-  architecture document's own Recommendation, **implementation should not
-  begin** until the two required ADRs are written. Two of the three
+  architecture document's own Recommendation, implementation was withheld
+  until the two required ADRs were written. **Update, WP 4.2C**: all three
   original prerequisites are now resolved — the platform-version gap
-  (WP 4.2A) and plugin failure classification (WP 4.2B, ADR-0025). Only
-  `Host Lifecycle.md` phase-table placement remains outstanding before
-  Plugin Manifest implementation may begin.
+  (WP 4.2A), plugin failure classification (WP 4.2B, ADR-0025), and phase-
+  table placement (WP 4.2C, ADR-0026). No architectural blocker remains;
+  Plugin Manifest implementation (`WP 4.2`) may now proceed.

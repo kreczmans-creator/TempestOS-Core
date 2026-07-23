@@ -218,8 +218,9 @@ package.
   Architecture.md` already named (plugin failure classification; `Host
   Lifecycle.md` phase-table placement) — unaffected by this work package.
   **Update, WP 4.2B**: plugin failure classification is now resolved
-  (ADR-0025). Phase-table placement remains the sole outstanding blocker.
+  (ADR-0025). **Update, WP 4.2C**: phase-table placement is now also
+  resolved (ADR-0026). No blocker remains.
 - **Readiness assessment**: WP 4.2A is complete. The platform-version
-  prerequisite is fully resolved; Plugin Manifest implementation may
-  proceed once its remaining ADR (phase-table placement) is written and
-  ratified.
+  prerequisite is fully resolved. **Update, WP 4.2C**: both remaining ADRs
+  (ADR-0025, ADR-0026) are now resolved; Plugin Manifest implementation
+  may proceed without further architectural prerequisites.
