@@ -376,3 +376,38 @@ entirely, not deferred pending more information.
 **Revisit trigger.** Not expected to be revisited.
 
 **Source.** ADR-0026, Alternatives Considered.
+
+---
+
+## RD-0015 — Packaging the WP 4.3 Sample Module Through the Plugin Manifest System
+
+**Considered during:** WP 4.3 (Sample Module, architecture phase).
+
+**Rejected because:** `WP 4.3`'s own approved scope explicitly names this
+as optional "if ready" — and `WP 4.2` has since made it ready — but two
+facts make it not worth doing now. First, `Tempest.App` does not run
+`TempestHost` at all today (a pre-existing condition, not introduced by
+this decision), so the packaging choice does not change whether a plugin
+can be observed loading in a genuinely running process — that benefit is
+unavailable either way until `Tempest.App` is separately wired to the
+Host. Second, the remaining benefit — proving Plugin Discovery/Loading
+against a real, non-synthetic assembly rather than a
+`PersistedAssemblyBuilder`-built test double — is already substantially
+covered by `WP 4.2`'s own test suite. The cost this option would add —
+genuine build/publish tooling to stage a compiled module and a
+hand-authored `plugin.manifest.json` into `Plugins/<name>/`, none of
+which exists in any form yet — is disproportionate to that incremental
+benefit for a work package estimated at **S** complexity.
+
+**Reversibility.** Cheap. Nothing about building the sample module as an
+ordinary, project-referenced module forecloses packaging it (or a copy of
+it) as a plugin later — the two are not mutually exclusive, and a plugin
+version could be added purely additively once the build tooling exists
+and `Tempest.App` has a reason to load it that way.
+
+**Revisit trigger.** Once `Tempest.App` is wired to `TempestHost` (making
+a real running-process demonstration possible), or once `WP 4.9`
+(Developer Experience) needs a real example plugin to scaffold a template
+from — not speculatively before either exists.
+
+**Source.** `Sample Module Architecture.md`, Alternatives Considered.

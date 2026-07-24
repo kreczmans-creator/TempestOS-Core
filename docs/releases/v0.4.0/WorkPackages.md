@@ -268,6 +268,16 @@ moving target.
 
 ## WP 4.3 — Sample Module
 
+**Status note.** This work package's own design phase (architecture only)
+is complete — see `Sample Module Architecture.md` and the WP 4.3
+architecture retrospective. No blocking prerequisite exists for `WP 4.3`
+itself; implementation may begin directly. The design phase did surface
+one significant finding relevant to `WP 4.4`: extending the sample module
+to publish an event via `IEventBus` requires resolving a real tension
+between Discovery's zero-argument metadata probe and constructor
+injection — identified as an ADR `WP 4.4` should resolve as its own first
+step, not decided or implemented here.
+
 ### Objective
 
 Build one concrete, non-trivial module against `WP 4.0`'s contracts and
@@ -328,6 +338,15 @@ Give modules a way to publish and subscribe to events without reaching
 into each other directly. **Placement decided — ADR-0020**: `IEventBus` is
 DI-public, resolved like `IConfigurationProvider`/`ILogger`, never a
 Host-owned collaborator.
+
+**Status note, from WP 4.3's own design phase.** Extending the sample
+module to publish an event (this work package's own Deliverable, below)
+requires constructor-injecting `IEventBus` into a normally-discovered
+module — which collides directly with the parameterless-constructor-only
+constraint `WP 4.1` documented and `WP 4.3`'s design phase traced to its
+exact cause (`Sample Module Architecture.md`, "Required ADRs"). Resolving
+this should be `WP 4.4`'s own first step, via its own ADR, before
+attempting the event-publishing extension itself.
 
 ### Scope
 

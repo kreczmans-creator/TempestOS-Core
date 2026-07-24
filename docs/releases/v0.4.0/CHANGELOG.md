@@ -40,9 +40,17 @@ reflected here.
   Logging Built and Module Discovery, exactly per ADR-0026; Module
   Discovery, Registration, and Lifecycle are unchanged. 27 new tests.
 
+- **Sample Module architecture (WP 4.3)** — design only; no code.
+  `Sample Module Architecture.md`. Found and named a real tension between
+  Discovery's zero-argument metadata probe and constructor-injecting a
+  DI-public service (`IEventBus`) into a module — an ADR `WP 4.4` should
+  resolve as its own first step. Recorded RD-0015 (deferring Plugin
+  Manifest packaging of the sample module).
+
 _Still planned, per `WorkPackages.md`:_
 
-- Sample Module (WP 4.3)
+- Sample Module implementation (WP 4.3 — design complete, no blocking
+  prerequisite; see `Sample Module Architecture.md`)
 - Event Bus (WP 4.4)
 - Background Services (WP 4.5)
 - Navigation Architecture (WP 4.6A), then Navigation Implementation
