@@ -223,7 +223,8 @@ by this work package.
   continued non-use of `TempestHost` (pre-existing, restated plainly so
   this design's own claims aren't read as stronger than they are).
 - **Readiness assessment**: the design is complete and sound. `WP 4.3`
-  itself has no blocking prerequisite and may proceed to implementation
-  directly. `WP 4.4`, when it begins, should treat the identified ADR as
-  its own first step before attempting to extend the sample module with
-  event publishing.
+  itself had no blocking prerequisite and proceeded to implementation
+  directly — **now complete, see the WP 4.3 implementation
+  retrospective.** `WP 4.4`, when it begins, should treat the identified
+  ADR as its own first step before attempting to extend the sample module
+  with event publishing.

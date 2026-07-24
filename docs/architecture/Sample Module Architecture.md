@@ -1,8 +1,13 @@
 # Sample Module Architecture
 
-**Status: architecture only. No production code exists yet.** This
-document is `WP 4.3`'s design phase — the same two-phase discipline
-`WP 2.7A`/`2.7B` established for the Runtime Host and `WP 4.2` just
+**Status: implemented — WP 4.3 (`Tempest.Samples`).** Every design
+decision below is now backed by working, tested code, not only design
+intent — see the WP 4.3 implementation retrospective for what was built
+and the two small corrections implementation surfaced (Testing Strategy,
+below).
+
+This document was originally `WP 4.3`'s design phase — the same two-phase
+discipline `WP 2.7A`/`2.7B` established for the Runtime Host and `WP 4.2`
 repeated for the Plugin Manifest: architecture first, implementation only
 once every open question is actually settled, never implied.
 
@@ -246,36 +251,63 @@ question — the existing module-failure model already covers it completely.
 
 ## Testing Strategy
 
-**A concrete, non-obvious risk this design phase found and corrects in
+**A concrete, non-obvious risk this design phase found and corrected in
 advance, rather than leaving for implementation to rediscover:** a
 Host-level integration test using a real, *unrestricted* `TempestHostBuilder()`
 (no `discoveryCandidateTypesOverride`) would perform a genuine, full
-`AppDomain.CurrentDomain.GetAssemblies()` scan — and the test assembly
-already contains multiple `internal`-visibility `IModule` fixtures across
-`HostTestFixtures.cs`/`ModuleFixtures.cs`/others that
-`ReflectionFrameworkDiscoveryService`, running from `Tempest.Core` with no
-`InternalsVisibleTo` back into the test assembly, cannot construct via
-reflection — and at least one fixture (`InvalidIdModule`) deliberately has
-an invalid `Id`. Either would fault a genuinely unrestricted scan for
-reasons having nothing to do with `ClockModule`. This exact hazard was
-found and avoided once already, during `WP 4.2`'s own test-writing (see
-that retrospective's Section 6) — this design applies the same lesson
-before implementation begins rather than after a flaky or failing test is
-discovered:
+`AppDomain.CurrentDomain.GetAssemblies()` scan, and the test assembly
+already contains a fixture (`InvalidIdModule`, `ModuleFixtures.cs`) with a
+deliberately invalid, empty `Id` — a real `ModuleDiscoveryException`,
+faulting a genuinely unrestricted scan for reasons having nothing to do
+with `ClockModule`. This exact hazard was found and avoided once already,
+during `WP 4.2`'s own test-writing (see that retrospective's Section 6) —
+this design applied the same lesson before implementation began rather
+than after a flaky or failing test was discovered. **Correction, made
+during implementation**: this design originally also attributed part of
+the same risk to `internal`-visibility `IModule` fixtures being
+unconstructible via reflection across the assembly boundary without
+`InternalsVisibleTo`. Implementation found this half of the claim to be
+incorrect — every existing `TempestHostTests` test already constructs
+`internal` fixtures such as `HealthyHostTestModuleAlpha` via
+`Activator.CreateInstance` from `Tempest.Core`, successfully, with no
+`InternalsVisibleTo` needed for that purpose; `Activator.CreateInstance`
+does not require the *type* to be public, only its constructor. The
+`InvalidIdModule` empty-`Id` fixture is the sole confirmed hazard — the
+scoping strategy below remains correct, only the reasoning for one part of
+it is now stated accurately rather than repeating the original,
+overstated claim.
 
 - **Discovery, proven precisely.** `new ReflectionFrameworkDiscoveryService([typeof(ClockModule).Assembly])`
   — scoped to exactly `Tempest.Samples`'s own compiled assembly, mirroring
   `PluginAssemblyLoaderTests.LoadPlugins_LoadedAssembly_IsVisibleToUnchangedModuleDiscovery`'s
   own proven pattern from `WP 4.2` — proves real, unmodified Discovery
   finds a real, production-built module, without the full-`AppDomain`
-  hazard.
-- **Full lifecycle, proven via the existing test seam.** `new
-  TempestHostBuilder([typeof(ClockModule)])` — the same
-  `discoveryCandidateTypesOverride` seam every existing `TempestHostTests`
-  already uses — drives a real Host run through `Running` and back to
-  `Stopped`, asserting `ClockModule.IsRunning`/`InitialisedAt`/`StartedAt`/
-  `StoppedAt` end up correct, proving the full pipeline without the
-  unrelated pollution risk.
+  hazard. Also proven discovering `ClockModule` alongside another,
+  unrelated real module type (`SampleModuleA`) via the internal
+  `DiscoverModules(IEnumerable<Type>)` seam, for isolation.
+- **Full lifecycle, proven by composing the real pipeline directly.**
+  `ITempestHost` deliberately exposes no way to reach a specific module's
+  own resolved instance (ADR-0017) — so proving `ClockModule`'s own
+  timestamps end up correct requires composing Discovery,
+  `RuntimeModuleManager`, `ServiceCollection.AddDiscoveredModules`,
+  `TempestServiceProvider`, and `ModuleLifecycleManager` directly in the
+  test, exactly mirroring `ModuleLifecycleManagerTests`' own established
+  composition-root pattern — then resolving `ClockModule` a second time
+  from the same provider (a singleton, so the same instance
+  `ModuleLifecycleManager` itself drove) to assert its timestamps and
+  ordering. **Correction, made during implementation**: this design
+  originally proposed asserting these properties through
+  `TempestHostBuilder` itself; implementation found `ITempestHost`'s
+  public surface does not expose this, by design, and used the composition
+  above instead — a stronger proof of the same claim, since it exercises
+  the identical, real, public pipeline pieces `TempestHost` itself
+  composes internally, not a wrapper around them.
+- **Host-level, black-box.** A separate, `TempestHostBuilder([typeof(ClockModule)])`
+  test — the same `discoveryCandidateTypesOverride` seam every existing
+  `TempestHostTests` already uses — proves the Host itself reaches
+  `Running` then `Stopped` with `ClockModule` registered, alongside
+  another module, with no special-casing, matching exactly how every
+  existing `TempestHostTests` test already proves Host-level behaviour.
 - **Unit-level.** `ClockModule`'s own lifecycle method bodies tested
   directly (construct, call `InitialiseAsync`/`StartAsync`/`StopAsync` in
   order, assert each timestamp/flag), mirroring `ModuleLifecycleBaseTests`'
@@ -424,20 +456,22 @@ does not already exist" — deferring costs nothing.
 
 ## Implementation Recommendation
 
-**Design is sound; implementation may begin once `WP 4.4`'s own required
-ADR (identified above) is at least acknowledged as that work package's
-first step** — `WP 4.3` itself has no blocking prerequisite of its own and
-does not need to wait. Concretely:
+**Implemented — WP 4.3.** Every step below is complete:
 
-1. Create `src/Samples/Tempest.Samples/Tempest.Samples.csproj`, referencing
-   `Tempest.Core` only.
-2. Implement `ClockModule` exactly as specified above.
-3. Add it to the solution (`TempestOS.slnx`) and to the test project's
-   references, so `ReflectionFrameworkDiscoveryService`/`TempestHostBuilder`
-   tests can exercise a real, compiled, non-test assembly.
-4. Write the three test tiers named in Testing Strategy, above — in that
-   order, scoped-Discovery first, since it is the cheapest, most precise
-   proof and the one this design phase specifically de-risked.
-5. Do **not** add a companion module, plugin packaging, or any constructor
-   dependency as part of this work package — each is either deferred to a
-   later work package or blocked on the identified ADR.
+1. ~~Create `src/Samples/Tempest.Samples/Tempest.Samples.csproj`~~ — done,
+   referencing `Tempest.Core` only.
+2. ~~Implement `ClockModule` exactly as specified above~~ — done, unchanged
+   from this document's own public-surface listing.
+3. ~~Add it to the solution and the test project's references~~ — done
+   (`TempestOS.slnx`; `Tempest.Core.Tests.csproj`).
+4. ~~Write the test tiers named in Testing Strategy~~ — done: 18 new
+   tests across `ClockModuleTests.cs` (unit-level), `ClockModuleDiscoveryTests.cs`
+   (scoped Discovery), and `ClockModulePipelineTests.cs` (real composed
+   pipeline + Host-level black-box).
+5. **No companion module, plugin packaging, or constructor dependency was
+   added** — exactly as recommended; each remains deferred to a later work
+   package or blocked on `WP 4.4`'s own identified ADR.
+
+No platform change of any kind was required — Discovery, Registration,
+`ModuleLifecycleManager`, and `TempestHost` are byte-for-byte unchanged.
+See the WP 4.3 implementation retrospective for full results.

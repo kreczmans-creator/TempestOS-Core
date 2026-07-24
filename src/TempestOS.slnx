@@ -1,5 +1,6 @@
 <Solution>
   <Project Path="../tests/Tempest.Core.Tests/Tempest.Core.Tests.csproj" />
+  <Project Path="Samples/Tempest.Samples/Tempest.Samples.csproj" />
   <Project Path="Tempest.App/Tempest.App.csproj" />
   <Project Path="Tempest.Core/Tempest.Core.csproj" />
 </Solution>

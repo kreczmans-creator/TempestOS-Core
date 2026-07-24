@@ -97,8 +97,20 @@ Nothing in the runtime treats an SDK-built module any differently from a
 hand-written one; Discovery, Registration, and Lifecycle cannot tell the
 difference, and neither should you need to.
 
+## A Real Example
+
+`Tempest.Samples.ClockModule` (`src/Samples/Tempest.Samples/ClockModule.cs`,
+`WP 4.3`) is a real, compiled, production module written exactly as this
+guide describes — a public, zero-argument constructor, `ModuleLifecycleBase`,
+and no constructor dependency of any kind. If this guide and the real code
+ever disagree, trust the code and raise it — a passing test suite
+(`ClockModuleTests`/`ClockModuleDiscoveryTests`/`ClockModulePipelineTests`)
+is this guide's own, ongoing proof of accuracy, not merely an aspiration.
+
 ## Related Documents
 
 *The Module Pipeline* (this folder) · WP 4.0 retrospective (*Platform
-Contracts*) · WP 4.1 retrospective (*Module SDK*) · `docs/architecture/
-Platform Service Map.md`'s Module SDK entry.
+Contracts*) · WP 4.1 retrospective (*Module SDK*) · WP 4.3 retrospectives
+(*Sample Module Architecture*, *Sample Module Implementation*) ·
+`docs/architecture/Platform Service Map.md`'s Module SDK entry ·
+`docs/architecture/Sample Module Architecture.md`.

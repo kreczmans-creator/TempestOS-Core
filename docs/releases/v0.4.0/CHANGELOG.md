@@ -46,11 +46,17 @@ reflected here.
   DI-public service (`IEventBus`) into a module — an ADR `WP 4.4` should
   resolve as its own first step. Recorded RD-0015 (deferring Plugin
   Manifest packaging of the sample module).
+- **Sample Module implementation (WP 4.3)** — `ClockModule`
+  (`Tempest.Samples`, new `src/Samples/` project), the living reference
+  `WP 4.4`–`WP 4.7` extend and validate against. Proven, with 18 new
+  tests, to travel through the complete, real, unmodified Platform
+  Services pipeline (Discovery, Registration, Dependency Injection,
+  Lifecycle) with no special-casing. No platform file was changed —
+  `ReflectionFrameworkDiscoveryService`, `RuntimeModuleManager`,
+  `ModuleLifecycleManager`, and `TempestHost` are byte-for-byte unchanged.
 
 _Still planned, per `WorkPackages.md`:_
 
-- Sample Module implementation (WP 4.3 — design complete, no blocking
-  prerequisite; see `Sample Module Architecture.md`)
 - Event Bus (WP 4.4)
 - Background Services (WP 4.5)
 - Navigation Architecture (WP 4.6A), then Navigation Implementation

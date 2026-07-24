@@ -268,15 +268,15 @@ moving target.
 
 ## WP 4.3 — Sample Module
 
-**Status note.** This work package's own design phase (architecture only)
-is complete — see `Sample Module Architecture.md` and the WP 4.3
-architecture retrospective. No blocking prerequisite exists for `WP 4.3`
-itself; implementation may begin directly. The design phase did surface
-one significant finding relevant to `WP 4.4`: extending the sample module
-to publish an event via `IEventBus` requires resolving a real tension
-between Discovery's zero-argument metadata probe and constructor
-injection — identified as an ADR `WP 4.4` should resolve as its own first
-step, not decided or implemented here.
+**Status note.** Both phases of this work package are now complete.
+Design: `Sample Module Architecture.md` and the WP 4.3 architecture
+retrospective. Implementation: `Tempest.Samples`/`ClockModule` and the WP
+4.3 implementation retrospective — 18 new tests, no platform file
+changed. The design phase surfaced one significant finding relevant to
+`WP 4.4`: extending the sample module to publish an event via `IEventBus`
+requires resolving a real tension between Discovery's zero-argument
+metadata probe and constructor injection — identified as an ADR `WP 4.4`
+should resolve as its own first step, not decided or implemented here.
 
 ### Objective
 
@@ -302,7 +302,8 @@ one-time proof written after everything else already exists.
 ### Deliverables
 
 - A working sample module, buildable and discoverable exactly as a
-  third-party module would be.
+  third-party module would be — **done**: `ClockModule`
+  (`src/Samples/Tempest.Samples`).
 - **An explicit commitment, binding on WP 4.4 onward**: later work
   packages extend this same module (or its small companion, where two
   parties are needed) rather than each writing their own disposable test
@@ -312,9 +313,13 @@ one-time proof written after everything else already exists.
 
 - The sample module builds, is discovered, registers, initialises, starts,
   and stops cleanly through the ordinary Runtime Host sequence, with no
-  special-casing.
+  special-casing — **verified**: `ClockModuleDiscoveryTests`,
+  `ClockModulePipelineTests` (18 new tests total).
 - Any gap found in `WP 4.0`/`WP 4.1`/`WP 4.2` as a result is fed back into
-  those work packages' own documentation, not silently worked around.
+  those work packages' own documentation, not silently worked around —
+  **done**: the parameterless-constructor/DI-access tension is fed
+  forward into `WP 4.4`'s own entry, below, since it was `WP 4.1` that
+  first documented the underlying constraint.
 
 ### Estimated Complexity
 
