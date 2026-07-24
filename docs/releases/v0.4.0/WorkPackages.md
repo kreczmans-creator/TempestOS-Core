@@ -355,11 +355,16 @@ exact cause (`Sample Module Architecture.md`, "Required ADRs").
 resolved.** ADR-0027, *A Declarative `ModuleMetadataAttribute` Decouples
 Discovery From Construction*, designs an optional, additive attribute
 letting a module declare its metadata without being instantiated, freeing
-it to declare a DI-resolvable constructor. Architecture only — not yet
-implemented. `WP 4.4`'s own first implementation step should be this
-design's realisation (see `Module Dependency Injection Architecture.md`),
-before attempting the event-publishing extension itself. No further ADR
-is expected before `WP 4.4` proceeds.
+it to declare a DI-resolvable constructor.
+
+**Update, WP 4.4B (ADR-0027 Implementation) — complete.**
+`ModuleMetadataAttribute` and `ReflectionFrameworkDiscoveryService`'s new,
+additive branch are implemented and tested (18 new tests), proven against
+dedicated test modules — never `ClockModule`, which remains untouched.
+Constructor injection into a discovered module now works end-to-end,
+including through the real, unmodified `TempestHost`. `WP 4.4`'s own
+event-publishing implementation may now begin. No further prerequisite
+remains.
 
 ### Scope
 

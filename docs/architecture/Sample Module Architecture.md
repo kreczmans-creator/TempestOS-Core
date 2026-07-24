@@ -356,13 +356,16 @@ already-approved deliverable** (extending the sample module to publish an
 event via the DI-public `IEventBus`): a decision on how a discovered
 module can obtain a constructor-injected, DI-public platform service
 without breaking Discovery's own zero-argument metadata probe. **Resolved
-— WP 4.4A, ADR-0027**, *A Declarative `ModuleMetadataAttribute` Decouples
-Discovery From Construction*: an optional, class-level attribute lets a
-module declare its metadata without being instantiated, leaving it free
-to declare a DI-resolvable constructor; every module without the
-attribute — including `ClockModule` itself, unmodified — keeps today's
-exact behaviour. See `Module Dependency Injection Architecture.md` for the
-complete design. No further ADR is expected before `WP 4.4` proceeds.
+and implemented — WP 4.4A/4.4B, ADR-0027**, *A Declarative
+`ModuleMetadataAttribute` Decouples Discovery From Construction*: an
+optional, class-level attribute lets a module declare its metadata
+without being instantiated, leaving it free to declare a DI-resolvable
+constructor; every module without the attribute — including `ClockModule`
+itself, unmodified — keeps today's exact behaviour, verified directly:
+`ClockModule` was not touched by `WP 4.4B`'s implementation, and every
+test covering it continues to pass. See `Module Dependency Injection
+Architecture.md` for the complete design. No further ADR is expected
+before `WP 4.4` proceeds.
 
 ## Alternatives Considered
 

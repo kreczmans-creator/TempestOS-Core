@@ -88,17 +88,45 @@ metadata, before discarding that instance. This means:
 This is documented here because it is exactly the kind of thing a module
 author discovers the hard way if it isn't written down.
 
-**Update, WP 4.4A — architected, not yet implemented.** ADR-0027 designs a
-way to lift this constraint for modules that genuinely need it: an
-optional, class-level `ModuleMetadataAttribute` letting Discovery read
-your module's `Id`/`Name`/`Version` without instantiating it at all — once
-implemented, a module carrying that attribute may declare any constructor
-`TempestServiceProvider` can resolve, including one requiring a DI-public
-platform service. **Nothing above changes today**: every module without
-the attribute — including every example on this page — keeps exactly the
+**Update, WP 4.4B — implemented.** ADR-0027's design is now real:
+`Tempest.Core.Modules.ModuleMetadataAttribute`, an optional, class-level
+attribute, lets Discovery read your module's `Id`/`Name`/`Version` without
+instantiating it at all. A module carrying it may declare any constructor
+`TempestServiceProvider` can resolve — including one requiring a
+DI-public platform service, such as `ILogger`:
+
+```csharp
+[ModuleMetadata("tempest.telemetry", "Telemetry Module", "1.0.0")]
+public sealed class TelemetryModule : ModuleLifecycleBase
+{
+    private readonly ILogger _logger;
+
+    public TelemetryModule(ILogger logger)
+        : base("tempest.telemetry", "Telemetry Module", "1.0.0")
+    {
+        _logger = logger;
+    }
+
+    public override Task StartAsync(CancellationToken cancellationToken)
+    {
+        _logger.Information("Telemetry module started.");
+        return Task.CompletedTask;
+    }
+}
+```
+
+The attribute's values and the base constructor's literal values must
+agree — Discovery reads the attribute alone and never cross-checks it
+against the eventually-constructed instance, so keeping them in sync is
+your own responsibility.
+
+**Nothing above changes for a module without the attribute**: every
+example earlier on this page — and every module already in this
+codebase, including the sample module (`ClockModule`) — keeps exactly the
 parameterless-constructor requirement described here, unchanged, forever.
-See `Module Dependency Injection Architecture.md` and ADR-0027 for the
-full design.
+The attribute is purely opt-in: add it only when your module genuinely
+needs a constructor-injected service. See `Module Dependency Injection
+Architecture.md` and ADR-0027 for the full design and reasoning.
 
 ## When Not to Use the SDK
 

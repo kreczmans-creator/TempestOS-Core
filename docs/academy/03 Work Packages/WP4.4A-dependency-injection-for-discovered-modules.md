@@ -223,4 +223,5 @@ moment of proposal rather than discovered later.
   first implementation step should be this design's own realisation
   (`ModuleMetadataAttribute` plus Discovery's new branch), proven against
   a dedicated test module, before extending the sample module with event
-  publishing.
+  publishing — **now complete, see the WP 4.4B implementation
+  retrospective.**

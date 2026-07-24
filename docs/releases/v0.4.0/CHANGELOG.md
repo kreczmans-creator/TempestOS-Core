@@ -60,8 +60,18 @@ reflected here.
   `ModuleMetadataAttribute` lets a module declare its metadata without
   being instantiated by Discovery, freeing it to declare a DI-resolvable
   constructor — every module without the attribute keeps today's exact
-  behaviour, unchanged. This was the last remaining prerequisite before
-  `WP 4.4` — none remain.
+  behaviour, unchanged.
+- **ADR-0027 implementation (WP 4.4B)** — `ModuleMetadataAttribute`
+  (`Tempest.Core.Modules`); `ReflectionFrameworkDiscoveryService` reads it
+  when present, skipping instantiation entirely, and falls back to its
+  original, unchanged behaviour when absent. Proven, with 18 new tests, at
+  three levels: Discovery alone, the real composed Discovery → Registration
+  → DI → Lifecycle pipeline, and the real, unmodified `TempestHost`
+  constructor-injecting a genuine platform service (`ILogger`). No other
+  production file was touched — `RuntimeModuleManager`,
+  `ModuleLifecycleManager`, `TempestHost`, `TempestServiceProvider`, and
+  `ClockModule` are byte-for-byte unchanged. This was the last remaining
+  prerequisite before `WP 4.4` — none remain.
 
 _Still planned, per `WorkPackages.md`:_
 

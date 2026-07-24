@@ -1,10 +1,14 @@
 # Module Dependency Injection Architecture
 
-**Status: architecture only — WP 4.4A. No production code exists yet.**
-This document is the design behind ADR-0027, produced the same way
-`WP 4.2A`–`4.2C` preceded `WP 4.2`'s own implementation: a prerequisite,
-architecture-only work package, resolved before the work package that
-actually needs it (`WP 4.4`) begins.
+**Status: implemented — WP 4.4B (`Tempest.Core.Modules.ModuleMetadataAttribute`).**
+Every design decision below is now backed by working, tested code, not
+only design intent — see the WP 4.4B implementation retrospective for
+what was built.
+
+This document was originally the design behind ADR-0027, produced the
+same way `WP 4.2A`–`4.2C` preceded `WP 4.2`'s own implementation: a
+prerequisite, architecture-only work package, resolved before the work
+package that actually needs it (`WP 4.4`) began.
 
 ## Objective
 
@@ -151,33 +155,46 @@ extension with the attribute once `IEventBus` itself exists.
 
 ## Testing Implications
 
-Prospective — no test is written by this work package. When implemented:
+**Implemented — WP 4.4B. 18 new tests**, exactly along the lines this
+section originally anticipated:
 
-- **Discovery, attribute-present.** A dedicated test module carrying
-  `[ModuleMetadata]` and a constructor whose parameterless invocation would
-  itself throw if ever attempted (proving, positively, that Discovery
-  never constructs it) is discovered correctly, with metadata read from
-  the attribute.
+- **Discovery, attribute-present.** `AttributeDeclaredModule` — carrying
+  `[ModuleMetadata]` and a constructor whose parameterless invocation
+  would itself throw if ever attempted — is discovered correctly, with
+  metadata read from the attribute, proving Discovery never constructs it.
 - **Discovery, attribute-absent (regression).** Every existing Discovery
   test continues to pass completely unmodified — the single strongest
   proof that this design is genuinely additive, not merely designed to be.
-- **Mixed batch.** Attribute-based and legacy modules discovered together,
-  in the same pass, with no interference — mirroring `WP 4.3`'s own
-  `DiscoverModules_AlongsideAnUnrelatedModule_FindsBothWithoutInterference`
-  pattern.
-- **Full pipeline, DI success.** An attribute-based module requiring a
-  registered dependency resolves correctly and reaches `Running` through
-  the real, composed pipeline — mirroring `WP 4.3`'s own
-  `ClockModulePipelineTests` composition pattern exactly.
-- **Full pipeline, isolated failure.** An attribute-based module requiring
-  an *unregistered* dependency fails in isolation (`ModuleState.Failed`,
-  the Host still reaching `Running`) rather than faulting the Host —
-  proving the "welcome side effect" ADR-0027 names is real, not merely
-  argued.
-- **Invalid attribute values.** Null/empty/whitespace `Id`/`Name`/`Version`
-  on the attribute produce the same `ModuleDiscoveryException` an invalid
-  instance property already does today — no new exception type, no new
-  failure category.
+- **Mixed batch, and mixed assemblies.** Attribute-based and legacy
+  modules discovered together, in the same pass — including `ClockModule`
+  itself (`Tempest.Samples`, a genuinely different compiled assembly),
+  proving no interference, mirroring `WP 4.3`'s own established pattern.
+- **Full pipeline, DI success.** `ConstructorInjectedModule`, requiring a
+  registered `ITestGreeter`, resolves correctly and completes
+  `InitialiseAsync` through the real, composed pipeline — mirroring
+  `WP 4.3`'s own `ClockModulePipelineTests` composition pattern exactly.
+- **Full pipeline, isolated failure.** The same module, with its
+  dependency deliberately left unregistered, fails in isolation
+  (`ModuleState.Failed`) without the batch aborting — proving the
+  "welcome side effect" ADR-0027 names is real, not merely argued.
+- **Host-level, black-box, real platform service.** `HostInjectedModule`
+  constructor-injects `ILogger` — a real, already-registered platform
+  service, no test-only wiring required — through the actual, unmodified
+  `TempestHost`, proving constructor injection into a discovered module
+  works end-to-end, in production code, for the first time.
+- **Invalid attribute values.** Empty `Id`, whitespace `Name`, and empty
+  `Version` on the attribute each produce the same `ModuleDiscoveryException`
+  an invalid instance property already does today — no new exception type,
+  no new failure category.
+- **Precedence.** A module carrying both the attribute and a working,
+  differently-valued parameterless constructor is discovered using the
+  attribute's own values — proving precedence, not merely availability.
+- **Duplicate identity**, both within the attribute-based mechanism and
+  across it and the legacy mechanism (an attribute-based module sharing an
+  `Id` with a legacy one) — both throw `DuplicateModuleIdException`,
+  unchanged.
+- **Deterministic ordering**, unchanged, across a mixed batch of
+  attribute-based and legacy modules.
 
 ## Validation Against Governing Documents
 
@@ -232,10 +249,11 @@ Prospective — no test is written by this work package. When implemented:
 
 ## Implementation Recommendation
 
-**Design is sound; `WP 4.4` may now begin, starting with exactly this
-design's own implementation** (`ModuleMetadataAttribute` and
-`ReflectionFrameworkDiscoveryService`'s new, additive branch) **before**
-attempting to extend the `WP 4.3` sample module with event publishing —
+**Implemented — WP 4.4B.** `ModuleMetadataAttribute` and
+`ReflectionFrameworkDiscoveryService`'s new, additive branch are complete,
+proven against dedicated test modules (never `ClockModule`, which remains
+untouched), exactly as recommended. `WP 4.4` may now begin extending the
+`WP 4.3` sample module (or its future companion) with event publishing —
 mirroring precisely how `ADR-0025`/`ADR-0026` were implemented as part of
-`WP 4.2`'s own implementation, immediately after being designed
-separately. No further ADR is anticipated before `WP 4.4` can proceed.
+`WP 4.2`'s own implementation. No further ADR is anticipated before
+`WP 4.4` proceeds.
