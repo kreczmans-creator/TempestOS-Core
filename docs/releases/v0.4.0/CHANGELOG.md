@@ -54,6 +54,14 @@ reflected here.
   Lifecycle) with no special-casing. No platform file was changed —
   `ReflectionFrameworkDiscoveryService`, `RuntimeModuleManager`,
   `ModuleLifecycleManager`, and `TempestHost` are byte-for-byte unchanged.
+- **Dependency Injection for Discovered Modules (WP 4.4A)** — design only;
+  no code. ADR-0027, `Module Dependency Injection Architecture.md`.
+  Resolves the tension `WP 4.3` identified: an optional, additive
+  `ModuleMetadataAttribute` lets a module declare its metadata without
+  being instantiated by Discovery, freeing it to declare a DI-resolvable
+  constructor — every module without the attribute keeps today's exact
+  behaviour, unchanged. This was the last remaining prerequisite before
+  `WP 4.4` — none remain.
 
 _Still planned, per `WorkPackages.md`:_
 
@@ -115,9 +123,16 @@ _Still planned, per `WorkPackages.md`:_
   registration does not); candidate folders sorted ordinally by name for
   deterministic duplicate-identity resolution. This was the last
   architectural blocker before `WP 4.2` implementation.
+- **ADR-0027** — A Declarative `ModuleMetadataAttribute` Decouples
+  Discovery From Construction. Decided during WP 4.4A — an optional,
+  class-level attribute lets Discovery read a module's `Id`/`Name`/
+  `Version` without instantiating it, so such a module may declare a
+  DI-resolvable constructor; every module without the attribute is
+  completely unaffected. This was the last architectural blocker before
+  `WP 4.4` implementation.
 - Expected, not yet written: Navigation's `Tempest.Core` placement
   (`WP 4.6A`) — see `Architecture.md`. No further ADR is expected before
-  `WP 4.2` implementation.
+  `WP 4.4` implementation.
 
 ---
 

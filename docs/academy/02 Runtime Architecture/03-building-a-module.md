@@ -88,6 +88,18 @@ metadata, before discarding that instance. This means:
 This is documented here because it is exactly the kind of thing a module
 author discovers the hard way if it isn't written down.
 
+**Update, WP 4.4A — architected, not yet implemented.** ADR-0027 designs a
+way to lift this constraint for modules that genuinely need it: an
+optional, class-level `ModuleMetadataAttribute` letting Discovery read
+your module's `Id`/`Name`/`Version` without instantiating it at all — once
+implemented, a module carrying that attribute may declare any constructor
+`TempestServiceProvider` can resolve, including one requiring a DI-public
+platform service. **Nothing above changes today**: every module without
+the attribute — including every example on this page — keeps exactly the
+parameterless-constructor requirement described here, unchanged, forever.
+See `Module Dependency Injection Architecture.md` and ADR-0027 for the
+full design.
+
 ## When Not to Use the SDK
 
 If your module's identity or lifecycle needs something genuinely different
@@ -111,6 +123,9 @@ is this guide's own, ongoing proof of accuracy, not merely an aspiration.
 
 *The Module Pipeline* (this folder) · WP 4.0 retrospective (*Platform
 Contracts*) · WP 4.1 retrospective (*Module SDK*) · WP 4.3 retrospectives
-(*Sample Module Architecture*, *Sample Module Implementation*) ·
+(*Sample Module Architecture*, *Sample Module Implementation*) · WP 4.4A
+retrospective (*Dependency Injection for Discovered Modules*) ·
 `docs/architecture/Platform Service Map.md`'s Module SDK entry ·
-`docs/architecture/Sample Module Architecture.md`.
+`docs/architecture/Sample Module Architecture.md` ·
+`docs/architecture/Module Dependency Injection Architecture.md` ·
+ADR-0027.

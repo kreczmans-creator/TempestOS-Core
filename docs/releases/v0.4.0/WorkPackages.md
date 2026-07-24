@@ -349,9 +349,17 @@ module to publish an event (this work package's own Deliverable, below)
 requires constructor-injecting `IEventBus` into a normally-discovered
 module — which collides directly with the parameterless-constructor-only
 constraint `WP 4.1` documented and `WP 4.3`'s design phase traced to its
-exact cause (`Sample Module Architecture.md`, "Required ADRs"). Resolving
-this should be `WP 4.4`'s own first step, via its own ADR, before
-attempting the event-publishing extension itself.
+exact cause (`Sample Module Architecture.md`, "Required ADRs").
+
+**Update, WP 4.4A (ADR: Dependency Injection for Discovered Modules) —
+resolved.** ADR-0027, *A Declarative `ModuleMetadataAttribute` Decouples
+Discovery From Construction*, designs an optional, additive attribute
+letting a module declare its metadata without being instantiated, freeing
+it to declare a DI-resolvable constructor. Architecture only — not yet
+implemented. `WP 4.4`'s own first implementation step should be this
+design's realisation (see `Module Dependency Injection Architecture.md`),
+before attempting the event-publishing extension itself. No further ADR
+is expected before `WP 4.4` proceeds.
 
 ### Scope
 

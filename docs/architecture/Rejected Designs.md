@@ -194,6 +194,15 @@ underlying constraint is ever lifted, it should be lifted at the Discovery/
 decision, with its own ADR), not worked around at the SDK level a second
 time.
 
+**Update, WP 4.4A.** The underlying constraint is now addressed —
+ADR-0027, *A Declarative `ModuleMetadataAttribute` Decouples Discovery
+From Construction* — exactly via the path this entry's own revisit
+trigger named: a Discovery-level decision, with its own ADR, not a second
+SDK-level workaround. This entry's own rejection is **not superseded**: a
+service-locator or post-construction resolution pattern remains exactly
+as rejected as it was when this entry was written; ADR-0027 solves the
+same underlying problem through ordinary constructor injection instead.
+
 **Source.** WP 4.1 retrospective, Alternatives Considered; Platform Service
 Map, Module SDK entry.
 
@@ -411,3 +420,92 @@ a real running-process demonstration possible), or once `WP 4.9`
 from — not speculatively before either exists.
 
 **Source.** `Sample Module Architecture.md`, Alternatives Considered.
+
+---
+
+## RD-0016 — Deferring Module Metadata Reading Until After Dependency Injection Is Built
+
+**Considered during:** WP 4.4A (ADR-0027, Dependency Injection for
+Discovered Modules).
+
+**Rejected because:** resolving every module's real instance first, then
+reading `Id`/`Name`/`Version` from it for both registration and lifecycle
+purposes, would eliminate Discovery's own throwaway instance entirely —
+but `RuntimeModuleManager.Register`'s duplicate-`Id` detection and
+`ServiceCollection.AddDiscoveredModules`'s own registration both need
+every module's `Id` and concrete type *before* the container is built.
+Deferring metadata reading until after Dependency Injection Built would
+require Discovery and Registration to follow, not precede, the container's
+own construction — directly inverting ADR-0011's already-decided ordering,
+itself a consequence of ADR-0008's independent-of-DI Discovery. Rejected
+as contradicting two already-settled decisions, not merely as a worse
+option among open ones.
+
+**Reversibility.** N/A — rejected as incompatible with existing, decided
+architecture, not deferred pending more information.
+
+**Revisit trigger.** Only if ADR-0011's own ordering is itself revisited
+from first principles — not expected, and not a reason this entry's own
+rejection should be read as provisional.
+
+**Source.** ADR-0027, Alternatives Considered.
+
+---
+
+## RD-0017 — A Second, Always-Parameterless "Descriptor" Type Per Module
+
+**Considered during:** WP 4.4A (ADR-0027, Dependency Injection for
+Discovered Modules).
+
+**Rejected because:** Discovery could instantiate a lightweight,
+always-parameterless descriptor type that names the module's real
+implementation type for DI to construct later — mirroring the Plugin
+Manifest/plugin-assembly split `WP 4.2` already established at the
+process-boundary level. At the single-assembly, single-module level this
+proposal operates at, it would require every module wanting DI access to
+author two classes instead of one, reintroducing exactly the per-module
+boilerplate `WP 4.1`'s SDK exists to eliminate — a materially heavier cost
+than one optional attribute, for the identical result.
+
+**Reversibility.** Cheap to avoid now; expensive to introduce later only
+in the sense that any module already migrated to the chosen
+(`ModuleMetadataAttribute`) approach would need rewriting to adopt this
+one instead — not expected to be worth that cost given the attribute
+already solves the same problem more cheaply.
+
+**Revisit trigger.** If a genuine need arises for Discovery to know more
+about a module than three strings and a type — a scenario broad enough to
+justify a real, separate descriptor type — not for this problem alone.
+
+**Source.** ADR-0027, Alternatives Considered.
+
+---
+
+## RD-0018 — Static Abstract Interface Members on `IModule` for Metadata
+
+**Considered during:** WP 4.4A (ADR-0027, Dependency Injection for
+Discovered Modules).
+
+**Rejected because:** C# 11's static abstract interface members
+(`static abstract string Id { get; }`) would let Discovery read metadata
+via reflection on the `Type` itself, with no instantiation and no
+attribute, at all. Rejected because it would require changing `IModule`'s
+own, long-settled instance-property contract for every module ever
+written — `ModuleBase`, `ClockModule`, every test fixture across the
+codebase — a breaking change of a scale this ADR's own problem does not
+justify, when an additive, opt-in attribute solves the identical problem
+for exactly the one category of module that actually needs it, without
+touching any existing module at all.
+
+**Reversibility.** Expensive to introduce later in the sense that matters:
+changing `IModule`'s own contract after every existing module already
+depends on its current, instance-property shape would be a breaking
+change regardless of when it happens — this is not a cost unique to
+rejecting it now.
+
+**Revisit trigger.** Not expected to be revisited. Would require a much
+larger, platform-wide justification than "modules should be able to use
+constructor injection," which the chosen, additive design already
+satisfies without it.
+
+**Source.** ADR-0027, Alternatives Considered.

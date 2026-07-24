@@ -206,7 +206,10 @@ alphabetical order. Answers exactly one question: what modules exist.
 `ReflectionFrameworkDiscoveryService`, `ModuleDiscoveryException`,
 `DuplicateModuleIdException`. `ModuleBase` (Module SDK, WP 4.1) is a
 convenience base implementation of `IModule` — see the Module SDK entry,
-below.
+below. `ModuleMetadataAttribute` *(architected — ADR-0027; not yet
+implemented)* — an optional, class-level alternative to instance-property
+metadata, letting Discovery read a module's `Id`/`Name`/`Version` without
+instantiating it; see `Module Dependency Injection Architecture.md`.
 
 **Dependencies.** `ILogger` (optional, for diagnostics). Deliberately **not**
 dependent on the DI container (see ADR-0008) or on Configuration.
@@ -215,16 +218,25 @@ dependent on the DI container (see ADR-0008) or on Configuration.
 future Host, which will need to invoke it during startup.
 
 **Lifecycle.** Runs once (or whenever explicitly invoked); does not persist
-any module instance — every candidate is instantiated transiently, purely to
-read metadata, then discarded. This is why module constructors must be
-side-effect-free (ADR-0003).
+any module instance for a module discovered the existing way — every such
+candidate is instantiated transiently, purely to read metadata, then
+discarded. This is why module constructors must be side-effect-free
+(ADR-0003). **Update, ADR-0027 (architected, not yet implemented):** a
+module carrying `ModuleMetadataAttribute` is not instantiated by Discovery
+at all — its metadata is read from the attribute directly, leaving
+constructor injection reachable for such a module's own, later, real
+construction (`TempestServiceProvider`, unchanged). Every module without
+the attribute keeps today's exact behaviour.
 
 **ADR references.** ADR-0003 (*Constructors Are Side-Effect-Free*); ADR-0008
-(*Discovery Does Not Depend on DI*).
+(*Discovery Does Not Depend on DI*); ADR-0027 (*A Declarative
+`ModuleMetadataAttribute` Decouples Discovery From Construction* —
+architected, not yet implemented).
 
 **Academy references.** WP 2.1 retrospective (*Module Discovery*); Case Study
 04 (*Why Discovery Is Isolated*); Engineering Principles — Deterministic
-Systems, Fail Fast, SOLID (Interface Segregation, Open/Closed).
+Systems, Fail Fast, SOLID (Interface Segregation, Open/Closed); WP 4.4A
+retrospective (*Dependency Injection for Discovered Modules*).
 
 ---
 

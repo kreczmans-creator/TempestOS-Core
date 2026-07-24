@@ -351,22 +351,18 @@ ADR-0023) — none meets Engineering Governance §5's bar (a genuine
 alternative existed *and* the decision establishes a convention future work
 depends on) the way, for example, ADR-0025/0026 did for Plugin Manifest.
 
-**One ADR is identified as required before `WP 4.4` can complete its own,
+**One ADR was identified as required before `WP 4.4` can complete its own,
 already-approved deliverable** (extending the sample module to publish an
 event via the DI-public `IEventBus`): a decision on how a discovered
 module can obtain a constructor-injected, DI-public platform service
-without breaking Discovery's own zero-argument metadata probe. Genuine
-alternatives exist (a non-exhaustive start: give Discovery a construction
-path for metadata that does not require instantiating the module at all;
-some other mechanism not yet evaluated) and whichever is chosen will govern
-every future module wanting the same access, not only the sample module —
-squarely meeting Governance §5's own bar. **Not designed, decided, or
-implemented here** — this document only identifies that the decision exists
-and names where it will first be needed, exactly as `WP 4.2`'s own
-architecture phase named `ADR-0025`/`ADR-0026` as required before its
-implementation could proceed, without writing either at that time. This
-should be `WP 4.4`'s own first order of business, mirroring how `WP 4.2A`–
-`4.2C` preceded `WP 4.2`'s implementation.
+without breaking Discovery's own zero-argument metadata probe. **Resolved
+— WP 4.4A, ADR-0027**, *A Declarative `ModuleMetadataAttribute` Decouples
+Discovery From Construction*: an optional, class-level attribute lets a
+module declare its metadata without being instantiated, leaving it free
+to declare a DI-resolvable constructor; every module without the
+attribute — including `ClockModule` itself, unmodified — keeps today's
+exact behaviour. See `Module Dependency Injection Architecture.md` for the
+complete design. No further ADR is expected before `WP 4.4` proceeds.
 
 ## Alternatives Considered
 
