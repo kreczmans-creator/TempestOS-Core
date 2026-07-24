@@ -16,15 +16,17 @@ public sealed class TempestHostBuilder : ITempestHostBuilder
 {
     private readonly List<IConfigurationSource> _configurationSources = [];
     private readonly IEnumerable<Type>? _discoveryCandidateTypesOverride;
+    private readonly string? _pluginsRootPathOverride;
     private bool _built;
 
     /// <summary>
     /// Initialises a new instance of the <see cref="TempestHostBuilder"/> class.
     /// The resulting host discovers modules from every assembly currently
-    /// loaded into the application domain.
+    /// loaded into the application domain, and discovers plugins from the
+    /// conventional plugins directory.
     /// </summary>
     public TempestHostBuilder()
-        : this(discoveryCandidateTypesOverride: null)
+        : this(discoveryCandidateTypesOverride: null, pluginsRootPathOverride: null)
     {
     }
 
@@ -48,8 +50,37 @@ public sealed class TempestHostBuilder : ITempestHostBuilder
     /// changing the public API surface.
     /// </remarks>
     internal TempestHostBuilder(IEnumerable<Type>? discoveryCandidateTypesOverride)
+        : this(discoveryCandidateTypesOverride, pluginsRootPathOverride: null)
+    {
+    }
+
+    /// <summary>
+    /// Initialises a new instance of the <see cref="TempestHostBuilder"/> class
+    /// whose host's discovery phase evaluates a specific, fixed set of
+    /// candidate types, and whose plugin discovery phase scans a specific
+    /// plugins root directory.
+    /// </summary>
+    /// <param name="discoveryCandidateTypesOverride">
+    /// The candidate types the resulting host's discovery phase evaluates, or
+    /// <see langword="null"/> to scan every assembly currently loaded into
+    /// the application domain.
+    /// </param>
+    /// <param name="pluginsRootPathOverride">
+    /// The plugins root directory the resulting host's Plugin Discovery phase
+    /// scans, or <see langword="null"/> to use the conventional
+    /// <c>Plugins</c> directory relative to the application's base directory.
+    /// </param>
+    /// <remarks>
+    /// Internal test seam — mirrors
+    /// <see cref="Plugins.PluginManifestDiscoveryService"/>'s own internal,
+    /// plugins-root-accepting constructor, so a host's Plugin Discovery phase
+    /// can be exercised deterministically against a controlled temporary
+    /// directory in tests, without changing the public API surface.
+    /// </remarks>
+    internal TempestHostBuilder(IEnumerable<Type>? discoveryCandidateTypesOverride, string? pluginsRootPathOverride)
     {
         _discoveryCandidateTypesOverride = discoveryCandidateTypesOverride;
+        _pluginsRootPathOverride = pluginsRootPathOverride;
     }
 
     /// <inheritdoc />
@@ -69,7 +100,7 @@ public sealed class TempestHostBuilder : ITempestHostBuilder
         ThrowIfAlreadyBuilt();
         _built = true;
 
-        return new TempestHost(_configurationSources, _discoveryCandidateTypesOverride);
+        return new TempestHost(_configurationSources, _discoveryCandidateTypesOverride, _pluginsRootPathOverride);
     }
 
     private void ThrowIfAlreadyBuilt()

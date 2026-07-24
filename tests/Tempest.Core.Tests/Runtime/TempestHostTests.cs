@@ -3,6 +3,13 @@ using Tempest.Core.Runtime;
 
 namespace Tempest.Core.Tests.Runtime;
 
+// Shares a collection with TempestHostPluginLifecycleTests: both redirect the
+// process-global Console.Out to capture log output, and xUnit test classes
+// run concurrently by default - without this, two classes' redirect/restore
+// calls can interleave and corrupt each other's captured output (the same
+// hazard already found and fixed for SdkLifecycleLog between
+// ModuleLifecycleBaseTests and ModuleSdkIntegrationTests).
+[Collection("Console output capture")]
 public class TempestHostTests
 {
     // ----------------------------------------------------------------

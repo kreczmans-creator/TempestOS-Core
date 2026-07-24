@@ -32,11 +32,16 @@ reflected here.
   Module Discovery without renumbering the existing thirteen phases. This
   was the last remaining prerequisite before `WP 4.2` implementation —
   none remain.
+- **Plugin Manifest implementation (WP 4.2)** — `PluginManifest`,
+  `PluginException` and five subtypes, `IPluginManifestDiscoveryService`/
+  `PluginManifestDiscoveryService`, `IPluginAssemblyLoader`/
+  `PluginAssemblyLoader` (`Tempest.Core.Plugins`). `TempestHost` now runs
+  Plugin Discovery (Phase 3.1) and Plugin Loading (Phase 3.2) between
+  Logging Built and Module Discovery, exactly per ADR-0026; Module
+  Discovery, Registration, and Lifecycle are unchanged. 27 new tests.
 
 _Still planned, per `WorkPackages.md`:_
 
-- Plugin Manifest implementation (`WP 4.2` — no architectural blocker
-  remains; all prerequisite ADRs (0025, 0026) are resolved)
 - Sample Module (WP 4.3)
 - Event Bus (WP 4.4)
 - Background Services (WP 4.5)
@@ -55,6 +60,15 @@ _Nothing yet._
 - A flaky test in WP 4.1's own test suite (`SdkLifecycleLog` shared static
   state across two xUnit classes that could run concurrently) — found and
   fixed during routine validation before WP 4.2 began.
+- Two test-only regressions found during WP 4.2's own implementation, both
+  fixed without touching production code: a cross-test dynamic assembly
+  identity collision (two test methods' dynamically-built plugin
+  assemblies shared a simple name, so `Assembly.LoadFrom` silently
+  resolved to whichever loaded first — fixed via GUID-suffixed assembly
+  identities); and the same `Console.Out`-redirection race pattern
+  already fixed once for `SdkLifecycleLog`, recurring between
+  `TempestHostTests` and the new `TempestHostPluginLifecycleTests` — fixed
+  via a shared `[Collection("Console output capture")]`.
 
 ### Architecture Decision Records
 

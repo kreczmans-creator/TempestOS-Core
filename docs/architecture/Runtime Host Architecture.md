@@ -182,7 +182,10 @@ requiring their own, separate entry point:
   Discovery in the Host's sequence, so that Discovery's
   `AppDomain.CurrentDomain.GetAssemblies()` default actually sees them. This
   is the Host's first legitimate opportunity to close that long-standing gap,
-  though doing so is out of WP 2.7's own scope.
+  though doing so is out of WP 2.7's own scope. **Closed — WP 4.2** (ADR-0026,
+  `Tempest.Core.Plugins`): Plugin Discovery and Plugin Loading now do exactly
+  this, immediately before Module Discovery, exactly as anticipated here —
+  see *Plugin Manifest Architecture.md* and *Host Lifecycle.md*.
 
 ## Related Documents
 

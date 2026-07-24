@@ -3,10 +3,10 @@
 **Status: implemented — WP 2.7B (`Tempest.Core.Runtime`).** Every phase below
 is implemented by `TempestHost.RunAsync` exactly as described here.
 
-**Update, WP 4.2C:** Phases 3.1 and 3.2 (Plugin Discovery, Plugin Loading)
-are architected — ADR-0026 — but not yet implemented; they will land with
-Plugin Manifest (`WP 4.2`). Decimal phase numbers mean "between 3 and 4" —
-no existing phase was renumbered; see ADR-0026 for why.
+**Update, WP 4.2:** Phases 3.1 and 3.2 (Plugin Discovery, Plugin Loading)
+are now implemented (`Tempest.Core.Plugins`), exactly as ADR-0026
+specified. Decimal phase numbers mean "between 3 and 4" — no existing
+phase was renumbered; see ADR-0026 for why.
 
 ## Purpose
 
@@ -30,8 +30,8 @@ Host is in the single `Starting` state.
 | 1 | Host Created | `Created` |
 | 2 | Configuration Built | `Starting` |
 | 3 | Logging Built | `Starting` |
-| 3.1 | Plugin Discovery *(architected, ADR-0026; not yet implemented)* | `Starting` |
-| 3.2 | Plugin Loading *(architected, ADR-0026; not yet implemented)* | `Starting` |
+| 3.1 | Plugin Discovery *(ADR-0026, implemented — WP 4.2)* | `Starting` |
+| 3.2 | Plugin Loading *(ADR-0026, implemented — WP 4.2)* | `Starting` |
 | 4 | Module Discovery | `Starting` |
 | 5 | Module Registration | `Starting` |
 | 6 | Platform Services Registered | `Starting` |
@@ -102,8 +102,8 @@ subsequent phase for diagnostics.
 
 ### 3.1. Plugin Discovery
 
-**Status: architected — ADR-0026. Not yet implemented; lands with Plugin
-Manifest (WP 4.2).**
+**Status: implemented — WP 4.2 (`PluginManifestDiscoveryService`,
+`Tempest.Core.Plugins`).**
 
 **Purpose.** Read and validate every plugin manifest found in the plugins
 directory, producing a deterministic, ordered list of eligible plugins.
@@ -134,8 +134,8 @@ the same transition Configuration Built and Logging Built already use.
 
 ### 3.2. Plugin Loading
 
-**Status: architected — ADR-0026. Not yet implemented; lands with Plugin
-Manifest (WP 4.2).**
+**Status: implemented — WP 4.2 (`PluginAssemblyLoader`,
+`Tempest.Core.Plugins`).**
 
 **Purpose.** Load each eligible plugin's declared assembly file into the
 process, in the same deterministic order Plugin Discovery established.

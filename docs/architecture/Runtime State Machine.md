@@ -4,13 +4,13 @@
 `TempestHost` implement every state, transition, and illegal-transition guard
 described below exactly.
 
-**Update, WP 4.2C:** ADR-0026 adds two new lifecycle *phases* (Plugin
-Discovery, Plugin Loading — see `Host Lifecycle.md`), both occurring
-entirely within the existing `Starting` state. **No new state and no new
-transition are introduced.** A phase is a finer-grained unit than a state
-(this document's own Overview already says so); this remains true with
-fifteen phases mapping onto seven states just as it was true with
-thirteen.
+**Update, WP 4.2:** ADR-0026's two new lifecycle *phases* (Plugin
+Discovery, Plugin Loading — see `Host Lifecycle.md`) are now implemented,
+both occurring entirely within the existing `Starting` state, exactly as
+designed. **No new state and no new transition were introduced.** A phase
+is a finer-grained unit than a state (this document's own Overview already
+says so); this remains true with fifteen phases mapping onto seven states
+just as it was true with thirteen.
 
 ## Overview
 

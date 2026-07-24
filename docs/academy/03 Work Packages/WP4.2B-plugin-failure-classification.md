@@ -190,6 +190,9 @@ exactly as previously described.
 - **Readiness assessment**: ADR-0025 is complete, self-consistent, and
   cross-referenced everywhere the original design document named it as
   required. Plugin Manifest implementation was correctly blocked on
-  exactly one remaining decision at the time of this work package;
-  **update, WP 4.2C**: that decision (ADR-0026) is now also resolved, and
-  Plugin Manifest implementation has no architectural blocker remaining.
+  exactly one remaining decision at the time of this work package; that
+  decision (ADR-0026, WP 4.2C) was subsequently resolved, and **Plugin
+  Manifest implementation is now complete (WP 4.2)** — every isolated/
+  Host-fatal category this ADR classifies is verified by a real,
+  dedicated test in `PluginManifestDiscoveryServiceTests`/
+  `PluginAssemblyLoaderTests`. See the WP 4.2 implementation retrospective.

@@ -3,9 +3,10 @@
 **Status: implemented — WP 2.7B (`Tempest.Core.Runtime`).** Every rule below
 is now backed by working, tested code, not only design intent.
 
-**Update, WP 4.2C:** a Plugin Discovery/Loading Failure section is added
-below (ADR-0025, ADR-0026) — architected, not yet implemented; lands with
-Plugin Manifest (`WP 4.2`).
+**Update, WP 4.2:** the Plugin Discovery/Loading Failure section below
+(ADR-0025, ADR-0026) is now implemented (`Tempest.Core.Plugins`) — every
+rule in it is backed by working, tested code (`PluginManifestDiscoveryServiceTests`,
+`PluginAssemblyLoaderTests`), not only design intent.
 
 ## Governing Principle
 
@@ -27,13 +28,13 @@ a duplicate key within one source.
 Nothing else has been built yet; disposal is attempted for consistency but has
 nothing to release.
 
-## Plugin Discovery/Loading Failure *(architected — ADR-0025, ADR-0026; not yet implemented)*
+## Plugin Discovery/Loading Failure *(ADR-0025, ADR-0026; implemented — WP 4.2)*
 
 **Trigger.** Any of the eleven failure categories ADR-0025 classifies,
-occurring during the future Plugin Discovery (Phase 3.1) or Plugin
-Loading (Phase 3.2) phases — a malformed manifest, a duplicate plugin
-identity, an incompatible platform version, a missing or corrupt
-assembly, a dependency load failure, or a reflection/type load failure.
+occurring during Plugin Discovery (Phase 3.1) or Plugin Loading
+(Phase 3.2) — a malformed manifest, a duplicate plugin identity, an
+incompatible platform version, a missing or corrupt assembly, a
+dependency load failure, or a reflection/type load failure.
 
 **Required behaviour.** **Not** Host-fatal, for every category above —
 isolated to the one plugin, exactly like an individual module's failure
@@ -169,8 +170,8 @@ reported directly to `Console.Error` — bypassing the failed sink entirely
 | Failure | Host-fatal? | State transition |
 |---|---|---|
 | Configuration failure | Yes | `Starting → Faulted` |
-| Plugin Discovery/Loading — per-plugin failure *(architected, ADR-0025/0026)* | No | (none — that plugin isolated, phase continues) |
-| Plugin Discovery/Loading — Host-level defect *(architected, ADR-0025/0026)* | Yes | `Starting → Faulted` |
+| Plugin Discovery/Loading — per-plugin failure *(ADR-0025/0026, implemented — WP 4.2)* | No | (none — that plugin isolated, phase continues) |
+| Plugin Discovery/Loading — Host-level defect *(ADR-0025/0026, implemented — WP 4.2)* | Yes | `Starting → Faulted` |
 | Discovery failure | Yes | `Starting → Faulted` |
 | Registration failure | Yes | `Starting → Faulted` |
 | Individual module initialisation failure | No | (none — Host proceeds to `Running`) |

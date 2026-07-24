@@ -192,10 +192,12 @@ tracked sub-work-packages before implementation could proceed: **WP 4.2A**
 (*Runtime Platform Version Infrastructure* — complete), **WP 4.2B**
 (*ADR: Plugin Failure Classification* — complete, ADR-0025), and **WP
 4.2C** (*ADR: Plugin Discovery Lifecycle Placement* — complete,
-ADR-0026). **All three prerequisites are now resolved; no architectural
-blocker remains before implementation.** See `Plugin Manifest
-Architecture.md`'s own Recommendation section for the current,
-authoritative status.
+ADR-0026). **Implementation is now complete** — `Tempest.Core.Plugins`
+(`PluginManifest`, `PluginManifestDiscoveryService`, `PluginAssemblyLoader`),
+wired into `TempestHost` exactly per ADR-0026, with 27 new tests. See
+`Plugin Manifest Architecture.md`'s own Recommendation section, and the
+WP 4.2 implementation retrospective, for the current, authoritative
+status.
 
 ### Objective
 
@@ -226,18 +228,22 @@ moving target.
 
 ### Deliverables
 
-- A versioned manifest schema.
+- A versioned manifest schema — **done**: `PluginManifest`
+  (`Tempest.Core.Plugins`), read from `plugin.manifest.json`.
 - A manifest-reading step in the Host's startup sequence design — **done**:
-  `Host Lifecycle.md` gains two new phases (`3.1`/`3.2`), per ADR-0026.
-- `src/Plugins/` (empty since WP 2.1) gains its first real content, or a
-  documented reason it remains a placeholder a little longer.
+  `Host Lifecycle.md` gains two new phases (`3.1`/`3.2`), per ADR-0026,
+  implemented by `PluginManifestDiscoveryService`/`PluginAssemblyLoader`.
+- `src/Plugins/` (empty since WP 2.1) remains a placeholder a little
+  longer, by design: this work package builds the runtime infrastructure
+  a plugin needs, not a first real plugin itself — that is `WP 4.3`'s own
+  scope ("optionally packaged via `WP 4.2`'s Plugin Manifest, if ready").
 
 ### Acceptance Criteria
 
 - A plugin manifest can be authored and read without loading the plugin's
-  assembly first.
+  assembly first — **verified**: `PluginManifestDiscoveryServiceTests`.
 - `Host Lifecycle.md` is updated to reflect exactly where manifest reading
-  occurs, with the same rigour every existing phase already has.
+  occurs, with the same rigour every existing phase already has — **done**.
 
 ### Estimated Complexity
 

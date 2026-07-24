@@ -4,9 +4,9 @@
 implements this sequence, including its cancellation and failure paths,
 exactly as diagrammed below.
 
-**Update, WP 4.2C:** the Plugin Discovery / Plugin Loading steps shown
-between Logging Built and Module Discovery are architected — ADR-0026 —
-but not yet implemented; they land with Plugin Manifest (`WP 4.2`).
+**Update, WP 4.2:** the Plugin Discovery / Plugin Loading steps shown
+between Logging Built and Module Discovery are now implemented
+(`Tempest.Core.Plugins`), exactly as ADR-0026 specified.
 
 ## Relationship to *The Startup Sequence* (Academy)
 
@@ -31,6 +31,7 @@ sequenceDiagram
     participant LogFactory as LoggerFactory
     participant VersionProvider as IPlatformVersionProvider
     participant PluginDiscovery as IPluginManifestDiscoveryService
+    participant PluginLoader as IPluginAssemblyLoader
     participant Discovery as IFrameworkDiscoveryService
     participant Registry as RuntimeModuleManager
     participant Services as ServiceCollection
@@ -61,7 +62,7 @@ sequenceDiagram
     end
 
     rect rgb(240, 240, 240)
-    Note over Host,PluginDiscovery: Architected (ADR-0026) - not yet implemented (lands with WP 4.2)
+    Note over Host,PluginLoader: Implemented - WP 4.2 (Tempest.Core.Plugins), per ADR-0026
     Host->>VersionProvider: new PlatformVersionProvider(logger)
     VersionProvider-->>Host: IPlatformVersionProvider
     Note over Host: (construction moved earlier than its original<br/>WP 4.2A position - registration into DI still<br/>happens later, at Platform Services Registered)
@@ -74,12 +75,14 @@ sequenceDiagram
     PluginDiscovery-->>Host: IReadOnlyList~PluginManifest~ (validated, eligible)
     Note over Host: Plugin Discovery
 
+    Host->>PluginLoader: LoadPlugins(manifests)
     loop for each eligible plugin, in the same order
-        Host->>Host: Assembly.LoadFrom(plugin's AssemblyFileName)
+        PluginLoader->>PluginLoader: Assembly.LoadFrom(manifest.AssemblyPath)
         alt load fails (missing file, corrupt assembly, dependency load failure)
-            Note over Host: that plugin isolated, logged per ADR-0025 - loading continues
+            Note over PluginLoader: that plugin isolated, logged per ADR-0025 - loading continues
         end
     end
+    PluginLoader-->>Host: IReadOnlyList~Assembly~ (successfully loaded)
     Note over Host: Plugin Loading complete - loaded assemblies now<br/>visible to Discovery's own, unchanged AppDomain scan
     end
 
@@ -161,10 +164,10 @@ sequenceDiagram
 |---|---|---|
 | Configuration Built | `ConfigurationException` | Host-fatal → `Faulted` |
 | Logging Built | `ConfigurationException` | Host-fatal → `Faulted` |
-| Plugin Discovery — per-plugin (malformed manifest, duplicate identity, incompatible version) *(architected, ADR-0026)* | `InvalidPluginManifestException`, `DuplicatePluginIdException`, `IncompatiblePluginVersionException` | Isolated (ADR-0025) — that plugin excluded; phase continues |
-| Plugin Discovery — Host-level defect *(architected, ADR-0026)* | (unattributable internal exception) | Host-fatal → `Faulted` |
-| Plugin Loading — per-plugin (missing/corrupt assembly, dependency load failure) *(architected, ADR-0026)* | `PluginAssemblyNotFoundException`, `PluginAssemblyLoadException` | Isolated (ADR-0025) — that plugin excluded; phase continues |
-| Plugin Loading — Host-level defect *(architected, ADR-0026)* | (unattributable internal exception) | Host-fatal → `Faulted` |
+| Plugin Discovery — per-plugin (malformed manifest, duplicate identity, incompatible version) *(ADR-0026, implemented — WP 4.2)* | `InvalidPluginManifestException`, `DuplicatePluginIdException`, `IncompatiblePluginVersionException` | Isolated (ADR-0025) — that plugin excluded; phase continues |
+| Plugin Discovery — Host-level defect *(ADR-0026, implemented — WP 4.2)* | (unattributable internal exception) | Host-fatal → `Faulted` |
+| Plugin Loading — per-plugin (missing/corrupt assembly, dependency load failure) *(ADR-0026, implemented — WP 4.2)* | `PluginAssemblyNotFoundException`, `PluginAssemblyLoadException` | Isolated (ADR-0025) — that plugin excluded; phase continues |
+| Plugin Loading — Host-level defect *(ADR-0026, implemented — WP 4.2)* | (unattributable internal exception) | Host-fatal → `Faulted` |
 | Module Discovery | `ModuleDiscoveryException`, `DuplicateModuleIdException` | Host-fatal → `Faulted` |
 | Module Registration | `DuplicateModuleRegistrationException` | Host-fatal → `Faulted` |
 | Platform Services Registered | `ArgumentException` (malformed registration) | Host-fatal → `Faulted` |

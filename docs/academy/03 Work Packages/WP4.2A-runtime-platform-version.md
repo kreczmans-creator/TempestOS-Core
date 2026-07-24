@@ -221,6 +221,9 @@ package.
   (ADR-0025). **Update, WP 4.2C**: phase-table placement is now also
   resolved (ADR-0026). No blocker remains.
 - **Readiness assessment**: WP 4.2A is complete. The platform-version
-  prerequisite is fully resolved. **Update, WP 4.2C**: both remaining ADRs
-  (ADR-0025, ADR-0026) are now resolved; Plugin Manifest implementation
-  may proceed without further architectural prerequisites.
+  prerequisite is fully resolved. Both remaining ADRs (ADR-0025, ADR-0026)
+  were subsequently resolved, and **Plugin Manifest implementation is now
+  complete (WP 4.2)** — including ADR-0026's own move of this work
+  package's `PlatformVersionProvider` construction to immediately follow
+  Logging Built (its DI registration unchanged from this work package's
+  own placement). See the WP 4.2 implementation retrospective.

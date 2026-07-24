@@ -104,15 +104,13 @@ per work package.
 
 ## Where a New Decision Is Still Needed
 
-1. **What does a Plugin Manifest add that `ModuleDescriptor` does not
-   already capture?** `ModuleDescriptor` is discovery-time metadata read
-   from a loaded, reflectable type. A Plugin Manifest is (implicitly)
-   metadata read from *disk*, *before* the containing assembly is
-   necessarily loaded at all. This is a materially different moment in the
-   sequence — likely inserted *before* Module Discovery, exactly as
-   `Runtime Host Architecture.md` already anticipated for plugins generally
-   — and needs its own design, not a reuse of `ModuleDescriptor`'s shape by
-   assumption. (`WP 4.2`.)
+1. ~~**What does a Plugin Manifest add that `ModuleDescriptor` does not
+   already capture?**~~ **Resolved — WP 4.2 (ADR-0025, ADR-0026).**
+   `PluginManifest` describes something read from *disk*, before the
+   containing assembly is loaded at all — a materially different moment
+   than `ModuleDescriptor`'s own discovery-time, already-reflectable
+   metadata — implemented as its own type in `Tempest.Core.Plugins`, not a
+   reuse of `ModuleDescriptor`'s shape.
 2. **Does Navigation belong in `Tempest.Core` at all?** Everything built so
    far is UI-agnostic; `Tempest.App` is a console loop. This remains the
    one objective in this release with the least existing architectural
@@ -139,7 +137,7 @@ not even provisionally. See `WorkPackages.md`'s `WP 4.0` entry.
 |---|---|---|
 | WP 4.0 Platform Contracts | Existing `IModule`/`IModuleLifecycle`; applies ADR-0020/0021 | Packaging/namespace decision only; scope deliberately narrowed |
 | WP 4.1 Module SDK | `IModule`, `IModuleLifecycle`, Discovery, Registration | Packaging/versioning story only |
-| WP 4.2 Plugin Manifest | `ModuleDescriptor`'s role as a model | **Open** — manifest-reading placement (see above) |
+| WP 4.2 Plugin Manifest | `ModuleDescriptor`'s role as a model | **Decided and implemented — ADR-0025, ADR-0026** |
 | WP 4.3 Sample Module | Everything from WP 4.0–4.2 | None — this is a proof, not a new component |
 | WP 4.4 Event Bus | Composition Root pattern, DI container | **Decided — ADR-0020** |
 | WP 4.5 Background Services | Runtime Host's named "hosted services" seam | **Decided — ADR-0021** |

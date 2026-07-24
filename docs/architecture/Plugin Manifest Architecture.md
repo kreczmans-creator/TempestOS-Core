@@ -1,12 +1,14 @@
 # Plugin Manifest Architecture
 
-**Status: architecture complete. No production code, and no interfaces
-intended for implementation, exist yet. All three prerequisites this
-document originally named are now resolved** (platform version — WP 4.2A;
-failure classification — ADR-0025, WP 4.2B; lifecycle placement —
-ADR-0026, WP 4.2C) **— no architectural blocker remains before Plugin
-Manifest implementation.** See this document's own Recommendation section,
-updated accordingly.
+**Status: implemented — WP 4.2 (`Tempest.Core.Plugins`).** Every type and
+behaviour this document describes is now backed by working, tested code,
+not only design intent. All three prerequisites this document originally
+named were resolved before implementation began (platform version —
+WP 4.2A; failure classification — ADR-0025, WP 4.2B; lifecycle placement —
+ADR-0026, WP 4.2C). See this document's own Recommendation section, and
+"Implementation Notes (WP 4.2)" below, for exactly what was built and where
+it differs in small, non-architectural ways from what was originally
+proposed.
 
 ## Overview
 
@@ -36,8 +38,8 @@ this design rests on.
 
 | Component | Responsibility | Change from today |
 |---|---|---|
-| **Plugin Discovery** *(new, Host-owned — Phase 3.1, ADR-0026)* | Scans a known plugins directory for manifest files, parses and validates each one, produces a list of `PluginManifest` values. Loads no assembly. | New |
-| **Plugin Loading** *(new, Host-owned — Phase 3.2, ADR-0026)* | For each manifest that passes validation and the platform-version compatibility check, loads its declared assembly file into the process. | New |
+| **Plugin Discovery** *(Host-owned — Phase 3.1, ADR-0026 — `PluginManifestDiscoveryService`)* | Scans a known plugins directory for manifest files, parses and validates each one, produces a list of `PluginManifest` values. Loads no assembly. | New — implemented |
+| **Plugin Loading** *(Host-owned — Phase 3.2, ADR-0026 — `PluginAssemblyLoader`)* | For each manifest that passes validation and the platform-version compatibility check, loads its declared assembly file into the process. | New — implemented |
 | **Module Discovery** *(existing, `IFrameworkDiscoveryService`)* | Scans **all** loaded assemblies — including plugin assemblies Plugin Loading just loaded — for `IModule` types, exactly as today. | **Unchanged** |
 | **Module Registration** *(existing, `RuntimeModuleManager`)* | Registers whatever descriptors Module Discovery finds. Has no plugin-specific logic at all. | **Unchanged** |
 | **Module Lifecycle** *(existing, `ModuleLifecycleManager`)* | Drives registered modules through initialisation, startup, shutdown, disposal — a module that arrived via a plugin is indistinguishable from one that didn't. | **Unchanged** |
@@ -84,23 +86,48 @@ Every excluded field is cheap to add later (purely additive to an
 immutable data type) — none was excluded because it would be expensive to
 introduce, all were excluded because nothing consumes them yet.
 
-## Candidate Public API
+## Public API — As Implemented (WP 4.2)
 
-No code, no interfaces — the shapes below describe what a later
-implementation work package would build, in the same spirit
-`Runtime Host Architecture.md` named `TempestHost`/`TempestHostBuilder`
-before WP 2.7B implemented either.
+Every type below is implemented, in `Tempest.Core.Plugins`, exactly as
+originally proposed — with one deliberate, non-architectural addition
+(`IPluginAssemblyLoader`/`PluginAssemblyLoader`, and `PluginManifest`
+carrying a resolved `AssemblyPath` alongside the declared
+`AssemblyFileName`) called out explicitly below.
 
-| Candidate Type | Kind | Shape | Mirrors |
+| Type | Kind | Shape | Mirrors |
 |---|---|---|---|
-| `PluginManifest` | Sealed, immutable class | `Id`, `Name`, `Version`, `MinimumPlatformVersion`, `AssemblyFileName` — all get-only, set once at construction | `ModuleDescriptor` exactly |
+| `PluginManifest` | Sealed, immutable class | `Id`, `Name`, `Version`, `MinimumPlatformVersion`, `AssemblyFileName`, `AssemblyPath` — all get-only, set once at construction | `ModuleDescriptor` exactly |
 | `PluginException` | Base exception | Message + optional inner exception | `ModuleDiscoveryException`'s existing base/subtype pattern |
 | `InvalidPluginManifestException : PluginException` | Sealed exception | Malformed JSON, or a required field missing/empty/whitespace | `ModuleDiscoveryException`'s subtypes |
 | `IncompatiblePluginVersionException : PluginException` | Sealed exception | A well-formed manifest whose `MinimumPlatformVersion` exceeds the running platform's own version | New shape, same base-plus-subtype pattern |
 | `DuplicatePluginIdException : PluginException` | Sealed exception | Two manifests declare the same `Id` (ADR-0025, category 3) | `DuplicateModuleRegistrationException`'s naming convention |
 | `PluginAssemblyNotFoundException : PluginException` | Sealed exception | The manifest's declared `AssemblyFileName` does not exist (ADR-0025, category 5) | Same base-plus-subtype pattern |
 | `PluginAssemblyLoadException : PluginException` | Sealed exception | `Assembly.LoadFrom` itself throws (ADR-0025, category 6) | Same base-plus-subtype pattern |
-| `IPluginManifestDiscoveryService` | Interface | One method, shaped like `IFrameworkDiscoveryService.DiscoverModules()`: scan, parse, validate, return `IReadOnlyList<PluginManifest>` | `IFrameworkDiscoveryService` directly — the same kind of service, one phase earlier |
+| `IPluginManifestDiscoveryService` / `PluginManifestDiscoveryService` | Interface / concrete service | One method, shaped like `IFrameworkDiscoveryService.DiscoverModules()`: scan, parse, validate, return `IReadOnlyList<PluginManifest>` | `IFrameworkDiscoveryService` directly — the same kind of service, one phase earlier |
+| `IPluginAssemblyLoader` / `PluginAssemblyLoader` | Interface / concrete service | One method: load each manifest's declared assembly, return the ones that loaded successfully | **Not originally named in this document** — added during implementation to keep Plugin Loading (Phase 3.2) a separate, independently-testable service from Plugin Discovery (Phase 3.1), mirroring `IFrameworkDiscoveryService`/`RuntimeModuleManager`'s own two-service split. An implementation detail, not an architectural decision — it does not change where either phase sits, what it depends on, or its failure behaviour. |
+
+**`AssemblyPath` was added to `PluginManifest`, beyond the fields originally
+proposed above.** It is not a manifest *content* field — it is the fully
+resolved, absolute form of the declared, manifest-relative
+`AssemblyFileName`, computed once at discovery time (folder + declared file
+name), exactly as `ModuleDescriptor.ModuleType` captures something derived
+at discovery time rather than declared directly in `IModule`. Plugin
+Loading needs an absolute path to call `Assembly.LoadFrom` against;
+resolving it once during Discovery (when the manifest's own folder is
+still in scope) rather than re-deriving it during Loading avoids passing
+the folder path around separately.
+
+**Two implementation-level conventions this document did not previously
+fix, decided during WP 4.2:**
+
+- **Manifest file name**: each plugin candidate folder must contain a file
+  named `plugin.manifest.json`. A data-file-naming convention, not an
+  architectural decision — no genuine alternative was contested.
+- **Plugins root directory**: `Plugins`, relative to the application's own
+  base directory (`AppContext.BaseDirectory`) — a fixed convention, per
+  ADR-0026's own note that Plugin Discovery has no hard dependency on
+  Configuration for this. A future work package may make this
+  configurable; nothing here forecloses it.
 
 All six exception types share one base (`PluginException`), consistent
 with every other stage of the pipeline's own base-plus-subtype
@@ -204,10 +231,10 @@ still remains open.
   how Configuration and Logging are already Host-constructed steps
   preceding Discovery today.
 - **Should nobody, until a later work package actually implements it?**
-  Correct, and explicit: this document is a design proposal only. No
-  component reads a manifest today. Implementation is a distinct, later
-  work package — see Recommendation, below, which now confirms every
-  architectural prerequisite is resolved.
+  This was true through WP 4.2A/B/C; **implemented — WP 4.2**:
+  `PluginManifestDiscoveryService` and `PluginAssemblyLoader`
+  (`Tempest.Core.Plugins`) now do exactly this, called from `TempestHost`
+  in the order this document and ADR-0026 specify.
 
 ## Non-Goals (Restated From the Brief, Explicitly)
 
@@ -241,12 +268,13 @@ permanently as Rejected Design RD-0010.
 
 - ~~The platform-version-at-runtime gap~~ **Resolved — WP 4.2A.** See
   Versioning Strategy, above.
-- **Loading an untrusted or malformed assembly file** (`Assembly.LoadFrom`)
-  can throw for reasons having nothing to do with the manifest itself
-  (a corrupt DLL, a missing native dependency). Classification settled —
-  ADR-0025, category 6 (isolated, Error severity) — this must be caught
-  and treated exactly per that ADR's table, not left to propagate as an
-  unhandled exception.
+- ~~**Loading an untrusted or malformed assembly file**~~ **Resolved —
+  WP 4.2.** `PluginAssemblyLoader` catches `BadImageFormatException`,
+  `FileLoadException`, and `IOException` around the `Assembly.LoadFrom`
+  call specifically and translates them to `PluginAssemblyLoadException`
+  (ADR-0025, category 6, Error severity) — proven directly by
+  `PluginAssemblyLoaderTests.LoadPlugins_CorruptAssembly_IsIsolated_ExcludedAndLoggedAsError`,
+  which loads a genuinely corrupt file (not a mock) and confirms isolation.
 - **No assembly unloading support** (explicitly a non-goal) means a loaded
   plugin — bad or good — stays loaded for the process's entire life,
   consistent with, and no worse than, ADR-0015's existing "no restart"
@@ -286,8 +314,7 @@ implementation itself. See `Platform Version.md`.
 
 ## Recommendation
 
-**Design is sound; all three prerequisites are resolved. Implementation
-may now proceed.** This closes the same two-phase pattern WP 2.7A/2.7B
+**Implemented — WP 4.2.** This closed the same two-phase pattern WP 2.7A/2.7B
 and the release's own Navigation split (`WP 4.6A`/`4.6B`) both
 established — architecture first, implementation only once every open
 decision is actually settled, never implied:
@@ -296,13 +323,16 @@ decision is actually settled, never implied:
    classification (ADR-0025, WP 4.2B) and lifecycle placement (ADR-0026,
    WP 4.2C).
 2. ~~Resolve the platform-version-at-runtime gap~~ — **done, WP 4.2A.**
-3. **A future work package may now implement** `PluginManifest`,
+3. ~~A future work package may now implement `PluginManifest`,
    `IPluginManifestDiscoveryService`, and the corresponding
    `Host Lifecycle.md`/`Runtime State Machine.md`/`Failure Behaviour.md`
-   updates this design anticipated — every one of those documents has
-   already been updated (ADR-0026) to describe exactly what that
-   implementation must satisfy.
+   updates this design anticipated~~ — **done, WP 4.2**: `Tempest.Core.Plugins`
+   implements every type this document named, `TempestHost` wires Plugin
+   Discovery and Plugin Loading exactly where ADR-0026 places them, and
+   every lifecycle document's own "architected, not yet implemented"
+   status is now "implemented" — see each document's own status banner.
 
-No code, interfaces, or tests accompany this document, per this work
-package's own scope. **`WP 4.2` implementation itself remains a separate,
-future work package — not begun by this one.**
+Implementation code, and a comprehensive test suite (27 tests — unit-level
+coverage of `PluginManifestDiscoveryService`/`PluginAssemblyLoader`, plus
+Host-level integration tests), now accompany this document. **`WP 4.2`
+is complete.**

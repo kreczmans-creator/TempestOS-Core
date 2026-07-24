@@ -2,6 +2,7 @@ using Tempest.Core.Configuration;
 using Tempest.Core.DependencyInjection;
 using Tempest.Core.Logging;
 using Tempest.Core.Modules;
+using Tempest.Core.Plugins;
 using Tempest.Core.Versioning;
 
 namespace Tempest.Core.Runtime;
@@ -51,6 +52,7 @@ public sealed class TempestHost : ITempestHost
     private readonly object _gate = new();
     private readonly IReadOnlyList<IConfigurationSource> _configurationSources;
     private readonly IEnumerable<Type>? _discoveryCandidateTypesOverride;
+    private readonly string? _pluginsRootPathOverride;
     private readonly CancellationTokenSource _shutdownRequested = new();
     private readonly CancellationTokenSource _stopEscalation = new();
     private readonly TaskCompletionSource _runCompletion = new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -60,10 +62,14 @@ public sealed class TempestHost : ITempestHost
     private IRuntimeModuleManager? _moduleManager;
     private IModuleLifecycleManager? _lifecycleManager;
 
-    internal TempestHost(IReadOnlyList<IConfigurationSource> configurationSources, IEnumerable<Type>? discoveryCandidateTypesOverride)
+    internal TempestHost(
+        IReadOnlyList<IConfigurationSource> configurationSources,
+        IEnumerable<Type>? discoveryCandidateTypesOverride,
+        string? pluginsRootPathOverride)
     {
         _configurationSources = configurationSources;
         _discoveryCandidateTypesOverride = discoveryCandidateTypesOverride;
+        _pluginsRootPathOverride = pluginsRootPathOverride;
     }
 
     /// <inheritdoc />
@@ -139,6 +145,29 @@ public sealed class TempestHost : ITempestHost
 
         runToken.ThrowIfCancellationRequested();
 
+        // ADR-0026: PlatformVersionProvider's construction moves here, ahead
+        // of Plugin Discovery, since the MinimumPlatformVersion compatibility
+        // check (ADR-0025, category 4) needs it. Its DI registration remains
+        // at Platform Services Registered, below - construction and
+        // registration are separable concerns, and only construction needed
+        // to move.
+        IPlatformVersionProvider platformVersionProvider = new PlatformVersionProvider(logger);
+
+        var pluginDiscoveryService = _pluginsRootPathOverride is not null
+            ? new PluginManifestDiscoveryService(_pluginsRootPathOverride, platformVersionProvider, logger)
+            : new PluginManifestDiscoveryService(platformVersionProvider, logger);
+
+        var pluginManifests = pluginDiscoveryService.DiscoverManifests();
+        logger.Information($"Host lifecycle phase completed: Plugin Discovery. {pluginManifests.Count} plugin(s) eligible.");
+
+        runToken.ThrowIfCancellationRequested();
+
+        IPluginAssemblyLoader pluginAssemblyLoader = new PluginAssemblyLoader(logger);
+        var loadedPluginAssemblies = pluginAssemblyLoader.LoadPlugins(pluginManifests);
+        logger.Information($"Host lifecycle phase completed: Plugin Loading. {loadedPluginAssemblies.Count} plugin assembly(ies) loaded.");
+
+        runToken.ThrowIfCancellationRequested();
+
         var discovery = new ReflectionFrameworkDiscoveryService(logger);
 
         var descriptors = _discoveryCandidateTypesOverride is not null
@@ -158,8 +187,6 @@ public sealed class TempestHost : ITempestHost
         logger.Information("Host lifecycle phase completed: Module Registration.");
 
         runToken.ThrowIfCancellationRequested();
-
-        IPlatformVersionProvider platformVersionProvider = new PlatformVersionProvider(logger);
 
         var services = new ServiceCollection(logger);
         services.AddInstance(configuration);

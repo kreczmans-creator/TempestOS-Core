@@ -188,8 +188,10 @@ remains exactly as described.
   assembly-unloading support (consistent with, not worse than, ADR-0015).
 - **Readiness assessment**: the design is complete and sound. Per the
   architecture document's own Recommendation, implementation was withheld
-  until the two required ADRs were written. **Update, WP 4.2C**: all three
-  original prerequisites are now resolved — the platform-version gap
-  (WP 4.2A), plugin failure classification (WP 4.2B, ADR-0025), and phase-
-  table placement (WP 4.2C, ADR-0026). No architectural blocker remains;
-  Plugin Manifest implementation (`WP 4.2`) may now proceed.
+  until the two required ADRs were written. All three original
+  prerequisites were resolved — the platform-version gap (WP 4.2A), plugin
+  failure classification (WP 4.2B, ADR-0025), and phase-table placement
+  (WP 4.2C, ADR-0026) — **and implementation is now complete: see the
+  WP 4.2 implementation retrospective.** This design's own Candidate Public
+  API, Manifest Content table, and Responsibilities Matrix were all
+  realised without a single architectural deviation.
