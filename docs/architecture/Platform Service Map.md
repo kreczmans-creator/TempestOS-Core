@@ -26,6 +26,7 @@ of date is worse than no map at all, because it will be trusted.
 | Discovery | Implemented (WP 2.1) | Logging | Registration |
 | Registration | Implemented (WP 2.2) | Discovery, Logging | Lifecycle |
 | Lifecycle | Implemented (WP 2.3) | Registration, Dependency Injection, Logging | Host |
+| Module SDK | Implemented (WP 4.1) — not Host-orchestrated; a developer-facing convenience layer, not a platform service in its own right | `IModule`, `IModuleLifecycle` | Any module author |
 | Host | Implemented (WP 2.7B) | Configuration, Logging, Discovery, Registration, Lifecycle, Dependency Injection | Tempest.App |
 | Event Bus | Contract implemented (WP 4.0: `IEvent`, `IEventHandler<T>`); service planned (WP 4.4) — placement decided, ADR-0020 | Dependency Injection | Any module |
 | Background Services | Contract implemented (WP 4.0: `IHostedService`, `ICriticalBackgroundService`); orchestration planned (WP 4.5) — failure model decided, ADR-0021 | Host, Dependency Injection | Any module declaring a hosted service |
@@ -93,8 +94,15 @@ business logic, and is loaded exactly once per running instance.
 `IConfigurationSource`, `MemoryConfigurationSource`, `ConfigurationBuilder`,
 `ConfigurationException` and subtypes.
 
-**Dependencies.** None. Configuration is the first service to exist during
-startup — nothing else needs to be built before it.
+**Dependencies.** None, functionally. `ConfigurationBuilder` accepts an
+optional `ILogger?` constructor parameter, matching the same optional-
+diagnostics convention every other platform service follows — but unlike
+Discovery, Registration, Lifecycle, and Platform Version (each of which
+*is* constructed by `TempestHost` with an already-built, real logger),
+Configuration is the first service to exist during startup, before Logging
+Built, so the Host's own real call site never actually has a logger to
+pass — the parameter exists on the type for any other caller (tests, a
+future standalone use) that does.
 
 **Consumers.** `LoggerFactory` (reads `Runtime:Logging:MinimumLevel`); any
 future runtime service depending on `IConfigurationProvider` via constructor
@@ -479,6 +487,13 @@ platform-version compatibility, producing a deterministic, ordered list of
 `PluginManifest` values; `PluginAssemblyLoader` (Phase 3.2) loads each
 eligible plugin's declared assembly. See *Plugin Manifest Architecture.md*
 for full detail, including its "Public API — As Implemented" section.
+
+**Key types.** `PluginManifest`, `PluginException` and five subtypes
+(`InvalidPluginManifestException`, `IncompatiblePluginVersionException`,
+`DuplicatePluginIdException`, `PluginAssemblyNotFoundException`,
+`PluginAssemblyLoadException`), `IPluginManifestDiscoveryService` /
+`PluginManifestDiscoveryService`, `IPluginAssemblyLoader` /
+`PluginAssemblyLoader` (`Tempest.Core.Plugins`).
 
 **Status.** Implemented — WP 4.2. Plugin failure classification
 (ADR-0025, WP 4.2B) — isolated for every failure category except a

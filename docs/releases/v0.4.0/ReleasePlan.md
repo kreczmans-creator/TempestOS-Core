@@ -2,10 +2,14 @@
 
 ## Status
 
-**Planning.** No implementation has begun. This document, and the rest of
-`docs/releases/v0.4.0/`, exist to scope the release before any code is
-written — per `docs/releases/FOUNDATION.md`, architecture precedes
-implementation for anything non-trivial, and this release is not trivial.
+**In progress.** `WP 4.0` through `WP 4.2` are complete (see `WorkPackages.md`
+and `CHANGELOG.md` for current, authoritative status); `WP 4.3` onward have
+not begun. This document, and the rest of `docs/releases/v0.4.0/`, exist to
+scope the release before any code is written — per
+`docs/releases/FOUNDATION.md`, architecture precedes implementation for
+anything non-trivial, and this release is not trivial. This document
+itself is not re-litigated as work lands; `WorkPackages.md`, `CHANGELOG.md`,
+and `Risks.md` are the living record of what has actually shipped.
 
 ## Branch
 

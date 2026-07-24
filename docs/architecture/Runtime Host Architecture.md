@@ -20,9 +20,10 @@ reasoning, and ADR-0011 for the precedent this reconciliation follows.
 The Runtime Host is the single entry point to TempestOS: the one component
 whose job is to bring every platform service up, in the right order, hold the
 platform in a running state, and bring everything back down again, cleanly,
-whenever asked or whenever something goes wrong. It is the "Host (planned)"
-entry in the Platform Service Map, and this document, together with the other
-five produced by WP 2.7, is that entry's design.
+whenever asked or whenever something goes wrong. It was the "Host (planned)"
+entry in the Platform Service Map when this document was first written; it
+is now the "Host *(implemented — WP 2.7B)*" entry, and this document,
+together with the other five produced by WP 2.7, is that entry's design.
 
 The Host is deliberately thin. It does not implement Configuration, Logging,
 Dependency Injection, Discovery, Registration, or Lifecycle — those are

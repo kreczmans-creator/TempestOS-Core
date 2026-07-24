@@ -118,10 +118,13 @@ a quiet exception.
 7. **Every decision that was not the only reasonable choice is recorded, in
    writing, at the time it is made.** An Architecture Decision Record is not
    retrospective paperwork; it is how the reasoning behind a decision
-   survives longer than the person who made it. Nineteen exist at the time
-   of this writing. The nineteenth will not be the last, and none of them is
-   ever silently reversed — a superseded decision is marked superseded, with
-   a new record pointing to it, so the history stays whole.
+   survives longer than the person who made it. Nineteen existed when this
+   document was first written, and twenty-six exist as of the WP 4.2D
+   architecture review — a count this document deliberately does not try to
+   keep current with a running number, since the count itself is not the
+   point. None of them is ever silently reversed — a superseded decision is
+   marked superseded, with a new record pointing to it, so the history stays
+   whole.
 
 8. **No tier of authority substitutes for another.** The engineer or agent
    implementing a work package has real authority over internal design

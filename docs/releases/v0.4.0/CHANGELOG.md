@@ -53,7 +53,14 @@ _Still planned, per `WorkPackages.md`:_
 
 ### Changed
 
-_Nothing yet._
+- **Platform Services Architecture Review (WP 4.2D)** — a formal review
+  and hardening pass over the whole `WP 4.0`–`WP 4.2` milestone before
+  `WP 4.3` began. No functionality changed; nine stale documentation
+  cross-references were found and corrected (`FOUNDATION.md`'s ADR count,
+  two stale "nothing has begun" status lines, the Engineering Glossary's
+  Plugin entry and its missing Plugin Manifest entry, and structural gaps
+  in the Platform Service Map). See `Platform Services Architecture
+  Review.md`.
 
 ### Fixed
 

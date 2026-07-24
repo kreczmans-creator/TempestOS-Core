@@ -329,13 +329,35 @@ Failure**. See *Failure Behaviour.md*'s Governing Principle. Distinguished
 from a **Platform API** (ADR-0023): a Platform Service is the concrete
 implementation; a Platform API is the contract it implements.
 
-### Plugin *(planned)*
+### Plugin
 
-An assembly loaded from disk (the still-empty `src/Plugins/` directory) to
-extend the platform with additional modules at runtime. Not yet implemented;
-would need to load *before* Module Discovery in the Host's sequence so that
-Discovery's default assembly scan actually sees the loaded plugin assemblies.
-Named in *Runtime Host Architecture.md*'s Future Extensibility section.
+An assembly loaded from disk at runtime (the still-empty `src/Plugins/`
+directory is where one would live) to extend the platform with additional
+modules, described beforehand by a **Plugin Manifest**. Loads *before*
+Module Discovery in the Host's sequence (Phase 3.2), so Discovery's default
+assembly scan sees it exactly like any other loaded assembly. Named in
+*Runtime Host Architecture.md*'s Future Extensibility section; the
+loading mechanism itself is implemented — see **Plugin Manifest**.
+
+### Plugin Manifest *(implemented — v0.4.0, WP 4.2)*
+
+A pre-discovery artifact describing a plugin *before* its assembly is
+loaded — as distinct from `ModuleDescriptor`, which describes a module
+*after* it is loaded and reflectable. Governing principle: "the Manifest
+describes; the Runtime decides." Read from a `plugin.manifest.json` file by
+**Plugin Discovery** (Phase 3.1, `PluginManifestDiscoveryService`), which
+validates it and checks its declared `MinimumPlatformVersion` against
+**Platform Version**, producing a deterministic, ordered list of eligible
+candidates (ADR-0026: sorted ordinally by candidate folder name). **Plugin
+Loading** (Phase 3.2, `PluginAssemblyLoader`) then loads each eligible
+candidate's declared assembly via `Assembly.LoadFrom`, immediately before
+Module Discovery. Every plugin-scoped failure across both phases is
+**Isolated Failure** (ADR-0025) — logged at a per-category severity, that
+candidate excluded, the batch continues; only a genuine, unattributable
+defect in either phase's own orchestration is **Host-Fatal**. Both phases
+are Host-owned collaborators (`Tempest.Core.Plugins`), never DI-public,
+mirroring Discovery/Registration/Lifecycle's own existing exclusion
+(ADR-0017). See *Plugin Manifest Architecture.md*, ADR-0025, ADR-0026.
 
 ### Post-Fault Teardown
 
@@ -420,6 +442,7 @@ ADR-0016, distinct from the pre-existing **Tempest.Core.Hosting**.
 
 *Runtime Host Architecture.md* · *Host Lifecycle.md* · *Runtime State
 Machine.md* · *Failure Behaviour.md* · *Shutdown Sequence.md* · *Startup
-Sequence.md* · *Ownership Matrix.md* · *Platform Service Map.md* · ADR-0001
-through ADR-0018 · `docs/academy/01 Engineering Principles/` · `docs/academy/
+Sequence.md* · *Ownership Matrix.md* · *Platform Service Map.md* · *Plugin
+Manifest Architecture.md* · ADR-0001 through ADR-0026 ·
+`docs/academy/01 Engineering Principles/` · `docs/academy/
 02 Runtime Architecture/`.

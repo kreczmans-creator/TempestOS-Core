@@ -43,7 +43,10 @@ enough understanding to make it stable.** `INavigationProvider` and
 `IDiagnosticsProvider` are not defined by `WP 4.0` at all, not even
 provisionally — see `WP 4.0`'s own Scope section.
 
-None of these work packages has begun implementation.
+**Update, WP 4.2D (Platform Services Architecture Review):** `WP 4.0`
+through `WP 4.2` are now complete — see each work package's own entry
+below, and its Academy retrospective(s), for current status. `WP 4.3`
+onward have not begun.
 
 ---
 
@@ -197,7 +200,10 @@ ADR-0026). **Implementation is now complete** — `Tempest.Core.Plugins`
 wired into `TempestHost` exactly per ADR-0026, with 27 new tests. See
 `Plugin Manifest Architecture.md`'s own Recommendation section, and the
 WP 4.2 implementation retrospective, for the current, authoritative
-status.
+status. **`WP 4.2D`** (*Platform Services Architecture Review*) then
+formally reviewed the entire `WP 4.0`–`WP 4.2` milestone before `WP 4.3`
+began — see `Platform Services Architecture Review.md`. No architectural
+issue was found; nine documentation cross-references were corrected.
 
 ### Objective
 
