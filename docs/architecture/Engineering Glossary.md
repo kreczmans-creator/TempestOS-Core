@@ -105,7 +105,7 @@ defined (Command Framework's own work, WP 4.7) — only the command shape
 itself exists so far. Never depends on, or is invoked through, Navigation
 — see ADR-0022.
 
-### Event Bus *(implemented — v0.4.0, WP 4.0 contracts; WP 4.4D bus, ADR-0028)*
+### Event Bus *(implemented — v0.4.0, WP 4.0 contracts; WP 4.4D bus, ADR-0028; WP 4.4E first real consumer)*
 
 A DI-public platform service (`IEventBus`) letting modules publish and
 subscribe to events without depending on each other directly. Resolved via
@@ -124,8 +124,10 @@ all decided by ADR-0028. Its consumer-facing contracts, `IEvent` and
 the bus itself — `IEventBus`/`EventBus`, the thing that actually dispatches
 a published event to its subscribers — is implemented as of `WP 4.4D`,
 registered as an ordinary singleton during Platform Services Registered.
-No module consumes it yet; `ClockModule`'s own extension is a separate,
-later work package. Not to be confused with a **Command** (see Command
+First real consumer, `WP 4.4E`: `ClockModule` publishes its own lifecycle
+transitions; a new companion module, `ClockLifecycleObserverModule`,
+subscribes, holding no reference to `ClockModule` itself. Not to be
+confused with a **Command** (see Command
 Framework, v0.4.0 planning): an event has zero or more subscribers and no
 expected result; a command has exactly one handler and an expected result.
 

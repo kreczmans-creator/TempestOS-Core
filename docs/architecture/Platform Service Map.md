@@ -28,7 +28,7 @@ of date is worse than no map at all, because it will be trusted.
 | Lifecycle | Implemented (WP 2.3) | Registration, Dependency Injection, Logging | Host |
 | Module SDK | Implemented (WP 4.1) — not Host-orchestrated; a developer-facing convenience layer, not a platform service in its own right | `IModule`, `IModuleLifecycle` | Any module author |
 | Host | Implemented (WP 2.7B) | Configuration, Logging, Discovery, Registration, Lifecycle, Dependency Injection | Tempest.App |
-| Event Bus | **Implemented — WP 4.4D** (`IEventBus`/`EventBus`, `Tempest.Core.Events`) — dispatch/subscription/failure model per ADR-0028 | Dependency Injection | Any module (none yet consumes it — `ClockModule` untouched) |
+| Event Bus | **Implemented — WP 4.4D** (`IEventBus`/`EventBus`, `Tempest.Core.Events`) — dispatch/subscription/failure model per ADR-0028; **consumed — WP 4.4E** | Dependency Injection | Any module — first real consumer: `ClockModule`/`ClockLifecycleObserverModule` (`WP 4.4E`) |
 | Background Services | Contract implemented (WP 4.0: `IHostedService`, `ICriticalBackgroundService`); orchestration planned (WP 4.5) — failure model decided, ADR-0021 | Host, Dependency Injection | Any module declaring a hosted service |
 | Command Framework | Contract implemented (WP 4.0: `ICommand`); dispatcher planned (WP 4.7) — orthogonal to Navigation, ADR-0022 | Dependency Injection | Any module |
 | Plugin Manifest | **Implemented — WP 4.2** (`Tempest.Core.Plugins`) | Host (Phases 3.1/3.2, ADR-0026 — a pre-Discovery step) | Module Discovery (unchanged), any real plugin |
@@ -409,7 +409,7 @@ Behaviour.md*, *Ownership Matrix.md* (all `docs/architecture/`).
 
 ---
 
-## Event Bus *(contract implemented — WP 4.0; implemented — WP 4.4D, ADR-0028)*
+## Event Bus *(contract implemented — WP 4.0; implemented — WP 4.4D, ADR-0028; consumed — WP 4.4E)*
 
 **Responsibility.** Lets modules publish and subscribe to events without
 depending on each other directly. `IEvent` marks a published fact; a
@@ -435,8 +435,11 @@ Root treatment and no new Dependency Injection capability (ADR-0028).
 
 **Consumers.** Any module — including a plugin-loaded module
 (`Tempest.Core.Plugins`, `WP 4.2`) and a future `IHostedService`
-(`WP 4.5`), neither of which requires any special-casing (ADR-0028). None
-yet subscribes or publishes; `ClockModule` remains untouched.
+(`WP 4.5`), neither of which requires any special-casing (ADR-0028). First
+real consumer, `WP 4.4E`: `ClockModule` publishes a
+`ClockModuleLifecycleEvent` from each lifecycle method;
+`ClockLifecycleObserverModule` (a new companion module) subscribes —
+proven end-to-end, including through the real, unmodified `TempestHost`.
 
 **ADR references.** ADR-0020 (*The Event Bus Is a DI-Public Platform
 Service*), ADR-0023 (*Platform Layering*), ADR-0024 (*Platform Contracts
@@ -445,8 +448,10 @@ and Failure Model* — fully realised, WP 4.4D).
 
 **Academy references.** WP 4.0 retrospective (*Platform Contracts*); WP 4.4
 architecture retrospective (*Event Bus Architecture*); WP 4.4D
-implementation retrospective; `Event Bus Architecture.md`; Rejected Designs
-RD-0019 through RD-0022; `docs/releases/v0.4.0/WorkPackages.md` (`WP 4.4`).
+implementation retrospective; WP 4.4E retrospective (*Sample Module Event
+Integration*); *Building an Event-Driven Module* (Academy); `Event Bus
+Architecture.md`; Rejected Designs RD-0019 through RD-0022;
+`docs/releases/v0.4.0/WorkPackages.md` (`WP 4.4`).
 
 ---
 

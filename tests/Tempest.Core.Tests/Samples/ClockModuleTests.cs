@@ -1,3 +1,4 @@
+using Tempest.Core.Events;
 using Tempest.Samples;
 
 namespace Tempest.Core.Tests.Samples;
@@ -11,7 +12,7 @@ public class ClockModuleTests
     [Fact]
     public void Constructor_SetsExpectedMetadata()
     {
-        var module = new ClockModule();
+        var module = new ClockModule(new EventBus());
 
         Assert.Equal("tempest.samples.clock", module.Id);
         Assert.Equal("System Clock", module.Name);
@@ -19,9 +20,13 @@ public class ClockModuleTests
     }
 
     [Fact]
+    public void Constructor_NullEventBus_ThrowsArgumentNullException() =>
+        Assert.Throws<ArgumentNullException>(() => new ClockModule(null!));
+
+    [Fact]
     public void Constructor_TimestampsAndStateAreInitiallyUnset()
     {
-        var module = new ClockModule();
+        var module = new ClockModule(new EventBus());
 
         Assert.Null(module.InitialisedAt);
         Assert.Null(module.StartedAt);
@@ -37,7 +42,7 @@ public class ClockModuleTests
     [Fact]
     public async Task InitialiseAsync_RecordsInitialisedAt()
     {
-        var module = new ClockModule();
+        var module = new ClockModule(new EventBus());
 
         await module.InitialiseAsync(CancellationToken.None);
 
@@ -48,7 +53,7 @@ public class ClockModuleTests
     [Fact]
     public async Task StartAsync_RecordsStartedAt_AndSetsIsRunning()
     {
-        var module = new ClockModule();
+        var module = new ClockModule(new EventBus());
 
         await module.StartAsync(CancellationToken.None);
 
@@ -59,7 +64,7 @@ public class ClockModuleTests
     [Fact]
     public async Task StopAsync_RecordsStoppedAt_AndClearsIsRunning()
     {
-        var module = new ClockModule();
+        var module = new ClockModule(new EventBus());
         await module.StartAsync(CancellationToken.None);
 
         await module.StopAsync(CancellationToken.None);
@@ -75,7 +80,7 @@ public class ClockModuleTests
     [Fact]
     public async Task FullLifecycle_RecordsTimestampsInNonDecreasingOrder()
     {
-        var module = new ClockModule();
+        var module = new ClockModule(new EventBus());
 
         await module.InitialiseAsync(CancellationToken.None);
         await module.StartAsync(CancellationToken.None);
@@ -92,7 +97,7 @@ public class ClockModuleTests
     [Fact]
     public void Uptime_BeforeStart_IsNull()
     {
-        var module = new ClockModule();
+        var module = new ClockModule(new EventBus());
 
         Assert.Null(module.Uptime);
     }
@@ -100,7 +105,7 @@ public class ClockModuleTests
     [Fact]
     public async Task Uptime_WhileRunning_IsNonNegative()
     {
-        var module = new ClockModule();
+        var module = new ClockModule(new EventBus());
 
         await module.StartAsync(CancellationToken.None);
 
@@ -111,7 +116,7 @@ public class ClockModuleTests
     [Fact]
     public async Task Uptime_AfterStop_IsNull()
     {
-        var module = new ClockModule();
+        var module = new ClockModule(new EventBus());
         await module.StartAsync(CancellationToken.None);
 
         await module.StopAsync(CancellationToken.None);

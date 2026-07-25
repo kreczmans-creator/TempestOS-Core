@@ -1,37 +1,51 @@
+using Tempest.Core.Events;
 using Tempest.Core.Modules;
 
 namespace Tempest.Samples;
 
 /// <summary>
 /// A small, self-contained reference module that tracks its own lifecycle
-/// timestamps and running state in memory.
+/// timestamps and running state in memory, and publishes each lifecycle
+/// transition through the Event Bus.
 /// </summary>
 /// <remarks>
 /// <para>
 /// The living reference module <c>WP 4.4</c> through <c>WP 4.7</c> extend
-/// and validate against — see <c>Sample Module Architecture.md</c>. Written
-/// exactly as <em>Building a Module</em> (Academy) documents: a public,
-/// zero-argument constructor calling <see cref="ModuleLifecycleBase"/>'s
-/// own constructor with literal values, since a normally-discovered module
-/// cannot receive any constructor-injected dependency (Discovery's own
-/// metadata probe requires a public parameterless constructor — see
-/// <c>Sample Module Architecture.md</c>'s Repository Investigation for the
-/// full reasoning).
+/// and validate against — see <c>Sample Module Architecture.md</c>. Carries
+/// <see cref="ModuleMetadataAttribute"/> so Discovery can read its identity
+/// without instantiating it (ADR-0027), freeing its constructor to request
+/// <see cref="IEventBus"/> — a DI-public platform service — via ordinary
+/// constructor injection, exactly as <c>Building a Module.md</c> documents
+/// for an attribute-carrying module. See ADR-0028 and <c>Event Bus
+/// Architecture.md</c> for the Event Bus's own dispatch and failure model.
 /// </para>
 /// <para>
-/// Consumes no platform service — not by choice, but because none is
-/// currently reachable from a discovered module at all. Each lifecycle
-/// method records real, observable state; none is an empty override.
+/// Each lifecycle method records real, observable state, then publishes a
+/// <see cref="ClockModuleLifecycleEvent"/> reporting the transition just
+/// completed. Publishing is fire-and-forget with respect to subscribers:
+/// per ADR-0028, a subscriber's own failure is isolated by the bus itself
+/// and never propagates back here.
 /// </para>
 /// </remarks>
+[ModuleMetadata("tempest.samples.clock", "System Clock", "1.0.0")]
 public sealed class ClockModule : ModuleLifecycleBase
 {
+    private readonly IEventBus _eventBus;
+    private readonly Guid _correlationId = Guid.NewGuid();
+
     /// <summary>
     /// Initialises a new instance of the <see cref="ClockModule"/> class.
     /// </summary>
-    public ClockModule()
+    /// <param name="eventBus">
+    /// The Event Bus this module publishes its lifecycle transitions
+    /// through, resolved via ordinary constructor injection.
+    /// </param>
+    public ClockModule(IEventBus eventBus)
         : base("tempest.samples.clock", "System Clock", "1.0.0")
     {
+        ArgumentNullException.ThrowIfNull(eventBus);
+
+        _eventBus = eventBus;
     }
 
     /// <summary>
@@ -69,31 +83,53 @@ public sealed class ClockModule : ModuleLifecycleBase
         : null;
 
     /// <inheritdoc />
-    /// <remarks>Records <see cref="InitialisedAt"/>.</remarks>
-    public override Task InitialiseAsync(CancellationToken cancellationToken)
+    /// <remarks>
+    /// Records <see cref="InitialisedAt"/>, then publishes a
+    /// <see cref="ClockModuleLifecycleTransition.Initialised"/> event.
+    /// </remarks>
+    public override async Task InitialiseAsync(CancellationToken cancellationToken)
     {
         InitialisedAt = DateTimeOffset.UtcNow;
 
-        return Task.CompletedTask;
+        await PublishLifecycleEventAsync(ClockModuleLifecycleTransition.Initialised, InitialisedAt.Value, cancellationToken)
+            .ConfigureAwait(false);
     }
 
     /// <inheritdoc />
-    /// <remarks>Records <see cref="StartedAt"/> and sets <see cref="IsRunning"/>.</remarks>
-    public override Task StartAsync(CancellationToken cancellationToken)
+    /// <remarks>
+    /// Records <see cref="StartedAt"/> and sets <see cref="IsRunning"/>,
+    /// then publishes a <see cref="ClockModuleLifecycleTransition.Started"/>
+    /// event.
+    /// </remarks>
+    public override async Task StartAsync(CancellationToken cancellationToken)
     {
         StartedAt = DateTimeOffset.UtcNow;
         IsRunning = true;
 
-        return Task.CompletedTask;
+        await PublishLifecycleEventAsync(ClockModuleLifecycleTransition.Started, StartedAt.Value, cancellationToken)
+            .ConfigureAwait(false);
     }
 
     /// <inheritdoc />
-    /// <remarks>Records <see cref="StoppedAt"/> and clears <see cref="IsRunning"/>.</remarks>
-    public override Task StopAsync(CancellationToken cancellationToken)
+    /// <remarks>
+    /// Records <see cref="StoppedAt"/> and clears <see cref="IsRunning"/>,
+    /// then publishes a <see cref="ClockModuleLifecycleTransition.Stopped"/>
+    /// event.
+    /// </remarks>
+    public override async Task StopAsync(CancellationToken cancellationToken)
     {
         StoppedAt = DateTimeOffset.UtcNow;
         IsRunning = false;
 
-        return Task.CompletedTask;
+        await PublishLifecycleEventAsync(ClockModuleLifecycleTransition.Stopped, StoppedAt.Value, cancellationToken)
+            .ConfigureAwait(false);
     }
+
+    private Task PublishLifecycleEventAsync(
+        ClockModuleLifecycleTransition transition,
+        DateTimeOffset timestamp,
+        CancellationToken cancellationToken) =>
+        _eventBus.PublishAsync(
+            new ClockModuleLifecycleEvent(Id, Name, transition, timestamp, _correlationId),
+            cancellationToken);
 }

@@ -1,10 +1,18 @@
 # Sample Module Architecture
 
-**Status: implemented — WP 4.3 (`Tempest.Samples`).** Every design
-decision below is now backed by working, tested code, not only design
-intent — see the WP 4.3 implementation retrospective for what was built
-and the two small corrections implementation surfaced (Testing Strategy,
-below).
+**Status: implemented — WP 4.3 (`Tempest.Samples`); extended — WP 4.4E.**
+Every design decision below is now backed by working, tested code, not
+only design intent — see the WP 4.3 implementation retrospective for what
+was built and the two small corrections implementation surfaced (Testing
+Strategy, below). **Update, WP 4.4E**: `ClockModule` now carries
+`[ModuleMetadata]` (ADR-0027) and constructor-injects `IEventBus`
+(ADR-0028), publishing each lifecycle transition through it; a new
+companion module, `ClockLifecycleObserverModule`, subscribes. This
+document's own original "consumes no platform service" finding was a
+statement about the pipeline's limits at the time `WP 4.3` ran, not a
+permanent property of `ClockModule` itself — see the WP 4.4E
+implementation retrospective for what changed and why nothing here needed
+to be redesigned to allow it.
 
 This document was originally `WP 4.3`'s design phase — the same two-phase
 discipline `WP 2.7A`/`2.7B` established for the Runtime Host and `WP 4.2`
@@ -167,22 +175,32 @@ told to avoid.
   — for direct unit testing today, and as the obvious surface a future
   command handler or navigation screen would read.
 
-**Explicit non-responsibilities.** Consumes no platform service (cannot,
-per the constraint above). Publishes nothing (no Event Bus exists yet).
-Does not read configuration (same reason — and nothing about a clock's own
-identity needs it). Does not persist anything. Does not know about, or
-depend on, any future companion module.
+**Explicit non-responsibilities (as of `WP 4.3`; revised, `WP 4.4E`).**
+Originally: consumes no platform service (could not, per the constraint
+above); publishes nothing (no Event Bus existed yet); does not read
+configuration; does not persist anything; does not know about, or depend
+on, any future companion module. **As of `WP 4.4E`**: `ClockModule` now
+consumes exactly one platform service, `IEventBus`, and publishes its own
+lifecycle transitions through it — the parameterless-constructor
+constraint that made this impossible at `WP 4.3` was itself lifted by
+`WP 4.4A`/`4.4B` (ADR-0027), a prerequisite this document's own Required
+ADRs section named and deferred. Still does not read configuration, still
+does not persist anything, and still does not hold any reference to its
+own companion module — only to the event type both share (see WP 4.4E's
+own architecture note in `Event Bus Architecture.md`).
 
-**Public surface.**
+**Public surface (as implemented, `WP 4.3`; extended, `WP 4.4E`).**
 
 ```csharp
 namespace Tempest.Samples;
 
+[ModuleMetadata("tempest.samples.clock", "System Clock", "1.0.0")]
 public sealed class ClockModule : ModuleLifecycleBase
 {
-    public ClockModule()
+    public ClockModule(IEventBus eventBus)
         : base("tempest.samples.clock", "System Clock", "1.0.0")
     {
+        /* eventBus stored; ArgumentNullException.ThrowIfNull(eventBus) */
     }
 
     public DateTimeOffset? InitialisedAt { get; private set; }
@@ -193,37 +211,54 @@ public sealed class ClockModule : ModuleLifecycleBase
         ? DateTimeOffset.UtcNow - started
         : null;
 
-    public override Task InitialiseAsync(CancellationToken cancellationToken) { /* records InitialisedAt */ }
-    public override Task StartAsync(CancellationToken cancellationToken) { /* records StartedAt; IsRunning = true */ }
-    public override Task StopAsync(CancellationToken cancellationToken) { /* records StoppedAt; IsRunning = false */ }
+    public override Task InitialiseAsync(CancellationToken cancellationToken) { /* records InitialisedAt; publishes Initialised */ }
+    public override Task StartAsync(CancellationToken cancellationToken) { /* records StartedAt; IsRunning = true; publishes Started */ }
+    public override Task StopAsync(CancellationToken cancellationToken) { /* records StoppedAt; IsRunning = false; publishes Stopped */ }
     // DisposeAsync: not overridden - nothing to release, inherits the SDK's no-op default,
     // consistent with every other lifecycle phase this module has nothing real to do in.
 }
 ```
 
-A public, zero-argument constructor calling the SDK base constructor with
-literal values — exactly `Building a Module`'s own documented shape,
-exactly the constraint above requires, and exactly what makes this module
-discoverable at all.
+`ModuleMetadataAttribute` (ADR-0027) lets Discovery read `Id`/`Name`/
+`Version` without instantiating this type at all, freeing its constructor
+to request `IEventBus` — a DI-public platform service — via ordinary
+constructor injection, exactly as `Building a Module.md` documents for an
+attribute-carrying module. Before `WP 4.4E`, this module's sole public
+constructor was zero-argument, exactly `Building a Module`'s pre-4.4B
+documented shape, because that was the only shape the pipeline's
+then-current constraint allowed — not a permanent design choice, as
+`WP 4.4E` demonstrates.
 
 ## Dependency Diagram
 
 ```mermaid
 graph TD
     ClockModule["Tempest.Samples.ClockModule"] --> ModuleLifecycleBase["Tempest.Core.Modules.ModuleLifecycleBase (WP 4.1 SDK)"]
+    ClockModule -->|constructor-injects| IEventBus["Tempest.Core.Events.IEventBus (WP 4.4D)"]
     ModuleLifecycleBase --> IModule["Tempest.Core.Modules.IModule / IModuleLifecycle"]
+    ClockModule -.publishes.-> ClockModuleLifecycleEvent["Tempest.Samples.ClockModuleLifecycleEvent"]
+    Observer["Tempest.Samples.ClockLifecycleObserverModule"] -->|constructor-injects| IEventBus
+    Observer -.subscribes to.-> ClockModuleLifecycleEvent
 
-    Discovery["ReflectionFrameworkDiscoveryService (unchanged)"] -.scans, finds.-> ClockModule
+    Discovery["ReflectionFrameworkDiscoveryService (unchanged)"] -.reads ModuleMetadataAttribute, never constructs.-> ClockModule
+    Discovery -.reads ModuleMetadataAttribute, never constructs.-> Observer
     Registration["RuntimeModuleManager (unchanged)"] -.registers.-> ClockModule
+    Registration -.registers.-> Observer
     Lifecycle["ModuleLifecycleManager (unchanged)"] -.drives.-> ClockModule
-    DI["TempestServiceProvider (unchanged)"] -.constructs, zero-arg.-> ClockModule
+    Lifecycle -.drives.-> Observer
+    DI["TempestServiceProvider (unchanged)"] -.constructs, resolves IEventBus.-> ClockModule
+    DI -.constructs, resolves IEventBus.-> Observer
 ```
 
-Every arrow *from* `ClockModule` points down into `Tempest.Core` (Platform
-APIs layer). Every arrow *into* `ClockModule` is an existing, unmodified
-platform service treating it exactly like any other discovered module —
-none of the four dashed relationships is new in kind, only in having a
-real, non-test module to point at for the first time.
+Every arrow *from* `ClockModule`/`Observer` points down into `Tempest.Core`
+(Platform APIs/Services layer) or across to the shared event type — never
+to each other's own module type, per ADR-0020. Every arrow *into* either
+module is an existing, unmodified platform service treating it exactly
+like any other discovered module — Discovery, Registration, and Lifecycle
+are unaffected in kind by `WP 4.4E`; only Discovery's own *mechanism* for
+reading these two modules' metadata changed (attribute, not construction),
+per ADR-0027, already proven by `WP 4.4B` against dedicated test modules
+before this document's own real consumer used it.
 
 ## Lifecycle Interaction
 
@@ -232,9 +267,9 @@ exactly the same phases every module already does:
 
 | Phase (`Host Lifecycle.md`) | What happens to `ClockModule` |
 |---|---|
-| 4. Module Discovery | Found by `ReflectionFrameworkDiscoveryService`'s unchanged `AppDomain` scan (once `Tempest.Samples` is referenced by whatever assembly is loaded — the test project, for now; see Testing Strategy). |
+| 4. Module Discovery | Found by `ReflectionFrameworkDiscoveryService`'s unchanged `AppDomain` scan (once `Tempest.Samples` is referenced by whatever assembly is loaded — the test project, for now; see Testing Strategy). **As of `WP 4.4E`**: read via `ModuleMetadataAttribute` (ADR-0027) — Discovery never constructs `ClockModule` or its companion. |
 | 5. Module Registration | Registered like any other descriptor; no plugin-awareness, no special-casing (`RuntimeModuleManager` is unaffected by this design in any way). |
-| 8. Module Initialisation | `ModuleLifecycleManager` resolves one instance via `TempestServiceProvider.GetService(typeof(ClockModule))` — trivial, zero-argument construction — then calls `InitialiseAsync` then `StartAsync`, exactly as for any other module. |
+| 8. Module Initialisation | `ModuleLifecycleManager` resolves one instance via `TempestServiceProvider.GetService(typeof(ClockModule))` then calls `InitialiseAsync` then `StartAsync`, exactly as for any other module. **As of `WP 4.4E`**: construction resolves `IEventBus` via ordinary constructor injection, not zero-argument construction — `TempestServiceProvider.Construct` already supported this (proven `WP 4.4A`); nothing here changed to allow it. |
 | 10–11. Shutdown / Module Disposal | `StopAsync` then (the inherited no-op) `DisposeAsync`, in the same reverse order every other module already follows. |
 
 A `ClockModule` failure (there is realistically nothing in this design that
@@ -323,25 +358,33 @@ overstated claim.
 |---|---|---|
 | `Tempest.Samples.ClockModule` | Sealed class, extends `ModuleLifecycleBase` | No — an ordinary SDK-built module |
 | `Tempest.Samples` (namespace/project) | New project, `src/Samples/` | Structural convention only (see Architecture, above) — not a new abstraction |
+| `Tempest.Samples.ClockLifecycleObserverModule` *(WP 4.4E)* | Sealed class, extends `ModuleLifecycleBase`, implements `IEventHandler<ClockModuleLifecycleEvent>` | No — an ordinary SDK-built module, the companion this document's own Alternatives Considered deferred |
+| `Tempest.Samples.ClockModuleLifecycleEvent` / `ClockModuleLifecycleTransition` *(WP 4.4E)* | Sealed class implementing `IEvent`; enum | No — an ordinary event data type, using `WP 4.0`'s existing `IEvent` contract exactly as documented |
 
 No new interface, no new exception type, no new base class. The SDK
-(`WP 4.1`) is used exactly as documented, unmodified.
+(`WP 4.1`) is used exactly as documented, unmodified. `WP 4.4E` adds one
+event type and one companion module, both ordinary applications of
+already-existing contracts (`IEvent`, `IEventHandler<T>`, `IEventBus`),
+not new abstractions in their own right.
 
 ## Risks
 
-- **The parameterless-constructor-only constraint blocks `WP 4.4`'s own
-  next deliverable, concretely and immediately** — see Repository
-  Investigation and Required ADRs. This is this design's most important
-  finding and the one genuine open question it does not resolve.
+- ~~**The parameterless-constructor-only constraint blocks `WP 4.4`'s own
+  next deliverable, concretely and immediately.**~~ **Resolved — ADR-0027
+  (`WP 4.4A`/`4.4B`), realised against `ClockModule` itself by `WP 4.4E`.**
+  `ClockModule` now carries `[ModuleMetadata]` and constructor-injects
+  `IEventBus`; the constraint this design worked within no longer applies
+  to it.
 - **`Tempest.App` still does not exercise `TempestHost`**, so this design's
   own proof of "discoverable exactly as a third-party module would be" is
   necessarily a test-suite proof, not an end-to-end running-application
   demonstration — a pre-existing condition, not introduced by this work
   package, but worth stating plainly rather than implying more than the
   implementation will actually show.
-- **A companion module is deliberately not designed here** (see
-  Alternatives Considered) — `WP 4.4` must still budget for adding one, per
-  its own already-approved Deliverables.
+- ~~**A companion module is deliberately not designed here.**~~ **Resolved
+  — `WP 4.4E`**: `ClockLifecycleObserverModule` now exists, subscribing to
+  `ClockModule`'s published events, holding no reference to `ClockModule`
+  itself.
 
 ## Required ADRs
 
@@ -404,7 +447,9 @@ second party (`WP 4.4`'s publish/subscribe proof) needs `IEventBus`, which
 does not exist yet — building a companion module with nothing to subscribe
 to would be exactly the speculative abstraction this work package is told
 to avoid. `WP 4.4`'s own Deliverables already account for adding one "if it
-does not already exist" — deferring costs nothing.
+does not already exist" — deferring costs nothing. **Built, `WP 4.4E`**:
+`ClockLifecycleObserverModule`, once `IEventBus` actually existed
+(`WP 4.4D`) and had something real to subscribe to.
 
 ## Documentation Impact
 
@@ -467,10 +512,17 @@ does not already exist" — deferring costs nothing.
    tests across `ClockModuleTests.cs` (unit-level), `ClockModuleDiscoveryTests.cs`
    (scoped Discovery), and `ClockModulePipelineTests.cs` (real composed
    pipeline + Host-level black-box).
-5. **No companion module, plugin packaging, or constructor dependency was
-   added** — exactly as recommended; each remains deferred to a later work
-   package or blocked on `WP 4.4`'s own identified ADR.
+5. ~~No companion module, plugin packaging, or constructor dependency was
+   added — exactly as recommended; each remains deferred to a later work
+   package or blocked on `WP 4.4`'s own identified ADR.~~ **Update,
+   `WP 4.4E`**: the constructor dependency (`IEventBus`) and the companion
+   module (`ClockLifecycleObserverModule`) are both now built — plugin
+   packaging remains deferred, per RD-0015, unaffected by this update.
 
-No platform change of any kind was required — Discovery, Registration,
-`ModuleLifecycleManager`, and `TempestHost` are byte-for-byte unchanged.
-See the WP 4.3 implementation retrospective for full results.
+No platform change of any kind was required at `WP 4.3`. **`WP 4.4E`
+required exactly one platform-adjacent change**: registering `IEventBus`
+during `TempestHost`'s existing Platform Services Registered phase
+(`WP 4.4D`, already complete before `WP 4.4E` began) — Discovery,
+Registration, `ModuleLifecycleManager`, and `TempestHost`'s own lifecycle
+sequencing are byte-for-byte unchanged by `WP 4.4E` itself. See the
+WP 4.3 and WP 4.4E implementation retrospectives for full results.

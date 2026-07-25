@@ -192,16 +192,44 @@ it.
    Registered block** — one new line
    (`services.Singleton<IEventBus, EventBus>();`), no other change to that
    method (`WP 4.4D`).
-3. **Extend `ClockModule`** (a separate, later work package — not
-   `WP 4.4D`'s own concern) to declare `[ModuleMetadata]`, accept
+3. ✅ **Extended `ClockModule`** to declare `[ModuleMetadata]`, accept
    `IEventBus` via constructor injection, and publish from its lifecycle
-   methods, exactly as `WP 4.4C`'s own original brief described — now
-   unblocked, with a real, tested bus to publish through.
-4. **Add a second, small module** (`WP 4.4`'s own Deliverable already
-   anticipates this — "its companion module... if one does not already
-   exist") that subscribes to prove the bus against two real,
-   SDK-conformant modules, not a synthetic fixture. Not `WP 4.4D`'s own
-   concern either.
+   methods, exactly as `WP 4.4C`'s own original brief described —
+   completed by `WP 4.4E`, a separate, later work package from `WP 4.4D`.
+4. ✅ **Added a second, small module**, `ClockLifecycleObserverModule`
+   (`WP 4.4`'s own Deliverable anticipated this — "its companion
+   module... if one does not already exist"), that subscribes — proving
+   the bus against two real, SDK-conformant modules, not a synthetic
+   fixture. Completed by `WP 4.4E`.
+
+## Real Consumer — `WP 4.4E`
+
+`ClockModule` (`Tempest.Samples`) is the Event Bus's first real consumer.
+It carries `[ModuleMetadata("tempest.samples.clock", "System Clock",
+"1.0.0")]` and constructor-injects `IEventBus`, publishing a
+`ClockModuleLifecycleEvent` from each of `InitialiseAsync`/`StartAsync`/
+`StopAsync` — the same pattern this document's own Component Design
+sketched, now proven end-to-end. `ClockLifecycleObserverModule`
+constructor-injects the same `IEventBus` and subscribes to
+`ClockModuleLifecycleEvent` during its own `InitialiseAsync`, holding no
+reference of any kind to `ClockModule` itself (ADR-0020) — only to the
+shared event type.
+
+A genuine, real finding surfaced by this first real usage, not anticipated
+by this document's own original design: because `ModuleLifecycleManager`
+initialises modules in ascending-Id order and `ClockModule`'s own Id
+("tempest.samples.clock") sorts before its companion's
+("tempest.samples.clock.observer"), `ClockModule` publishes its own
+`Initialised` event and completes before the companion's `InitialiseAsync`
+(where it subscribes) even runs — the companion never observes that one
+event. It reliably observes `Started` and `Stopped`, since Module
+Initialisation completes for every module, including the companion, before
+Module Start begins for any module. This is a real, load-bearing
+consequence of the module pipeline's own batch-per-phase shape (unchanged
+by `WP 4.4E`), not a defect in the Event Bus, `ClockModule`, or the
+companion — see *Building an Event-Driven Module* (Academy) for the full
+narrative, and `ClockModuleEventIntegrationTests.cs` for the tests proving
+it directly, including through the real, unmodified `TempestHost`.
 
 ## Testing Implications
 
@@ -310,10 +338,13 @@ entry. `Risks.md` R3 unchanged by the implementation itself.
 
 ## Implementation Recommendation
 
-**Implemented — `WP 4.4D`.** `IEventBus`/`EventBus` exist, are registered
-during the existing Platform Services Registered phase, and are proven by
-24 dedicated tests exercising `EventBus` directly (mirroring `WP 4.4B`'s
-own precedent exactly). `ClockModule` remains untouched. The bus is now
-ready for a consumer: extending `ClockModule` (and, if needed, adding its
-companion) to publish and subscribe for real — the original `WP 4.4C`
-brief's own objective — may proceed as a separate, later work package.
+**Implemented — `WP 4.4D`; consumed — `WP 4.4E`.** `IEventBus`/`EventBus`
+exist, are registered during the existing Platform Services Registered
+phase, and are proven by 24 dedicated tests exercising `EventBus` directly
+(mirroring `WP 4.4B`'s own precedent exactly). `ClockModule` and its new
+companion, `ClockLifecycleObserverModule`, now publish and subscribe for
+real — the original `WP 4.4C` brief's own objective, completed as its own,
+later work package (`WP 4.4E`) once a real, tested bus existed to build
+against. No further Event Bus work is anticipated; future work packages
+that need it (`WP 4.5`, `WP 4.7`) may now build against a real, proven
+implementation with a real, proven consumer, not only a design.

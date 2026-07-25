@@ -387,6 +387,27 @@ Rejected Designs entries recorded (RD-0019–RD-0022). No implementation
 yet exists; this work package's own implementation, then `ClockModule`'s
 extension (`WP 4.4C`'s original objective), may now begin.
 
+**Update, WP 4.4E (Sample Module Event Integration) — complete.**
+`ClockModule` now carries `[ModuleMetadata]` and constructor-injects
+`IEventBus`, publishing a `ClockModuleLifecycleEvent` from each of
+`InitialiseAsync`/`StartAsync`/`StopAsync` — `WP 4.4C`'s original objective,
+now realised against a real, tested Event Bus. A new companion module,
+`ClockLifecycleObserverModule`, subscribes, holding no reference to
+`ClockModule` itself. 8 new dedicated integration tests prove constructor
+injection, lifecycle event publication and ordering, multiple subscribers,
+event payload correctness, discovery of both modules, end-to-end delivery
+through the real, unmodified `TempestHost`, and deterministic repeated
+execution. A genuine finding — the companion, subscribing during its own
+`InitialiseAsync`, does not observe `ClockModule`'s own `Initialised` event
+because `ClockModule`'s Id sorts first in `ModuleLifecycleManager`'s
+ascending-order Initialise batch — was tested and documented rather than
+engineered around; see the WP 4.4E retrospective and the new Academy
+article, *Building an Event-Driven Module*. Zero Platform Service file was
+touched. A mandatory pre-implementation Academy review (this work
+package's own Definition of Done) found and fixed one gap: `WP 4.2D`
+(*Platform Services Architecture Review*) had no Academy retrospective of
+its own, unlike its precedent, `WP 2.7` — now written.
+
 **Update, WP 4.4D (Event Bus Implementation) — complete.**
 `IEventBus`/`EventBus` (`Tempest.Core.Events`) implemented exactly per
 ADR-0028, registered as an ordinary singleton

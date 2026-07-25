@@ -105,11 +105,30 @@ reflected here.
   propagation, and the DI registration itself. `ClockModule` remains
   completely untouched — no event publishing, no sample module
   integration.
+- **Sample Module Event Integration (WP 4.4E)** — `ClockModule`
+  (`Tempest.Samples`) now carries `[ModuleMetadata]` and
+  constructor-injects `IEventBus`, publishing a `ClockModuleLifecycleEvent`
+  from each of `InitialiseAsync`/`StartAsync`/`StopAsync` — `WP 4.4C`'s
+  original objective, completed against a real, tested Event Bus. A new
+  companion module, `ClockLifecycleObserverModule`, subscribes, holding no
+  reference to `ClockModule` itself (ADR-0020). 8 new dedicated tests
+  (`ClockModuleEventIntegrationTests.cs`) prove constructor injection,
+  lifecycle event publication/ordering, multiple subscribers, event
+  payload correctness, discovery of both modules, end-to-end delivery
+  through the real, unmodified `TempestHost`, and deterministic repeated
+  execution; 3 pre-existing sample-module test files updated for the new
+  constructor signature and the companion module now sharing
+  `Tempest.Samples`'s compiled assembly. A genuine finding — the
+  companion does not observe `ClockModule`'s own `Initialised` event,
+  because `ClockModule`'s Id sorts first in `ModuleLifecycleManager`'s
+  ascending-order Initialise batch — was tested and documented, not
+  engineered around. Zero Platform Service file was touched. A mandatory
+  pre-implementation Academy review found and fixed one gap: a new
+  `WP4.2D-platform-services-architecture-review.md` retrospective, and a
+  new Academy article, *Building an Event-Driven Module*.
 
 _Still planned, per `WorkPackages.md`:_
 
-- `ClockModule` extension to publish through the Event Bus (`WP 4.4C`'s
-  original objective, now unblocked)
 - Background Services (WP 4.5)
 - Navigation Architecture (WP 4.6A), then Navigation Implementation
   (WP 4.6B)

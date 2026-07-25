@@ -1,4 +1,6 @@
 using Tempest.Core.DependencyInjection;
+using Tempest.Core.Events;
+using Tempest.Core.Logging;
 using Tempest.Core.Modules;
 using Tempest.Core.Runtime;
 using Tempest.Core.Tests.Modules;
@@ -22,7 +24,7 @@ public class ClockModulePipelineTests
     public void RealDiscoveryOutput_RegistersSuccessfully()
     {
         var descriptor = Assert.Single(
-            new ReflectionFrameworkDiscoveryService([typeof(ClockModule).Assembly]).DiscoverModules());
+            new ReflectionFrameworkDiscoveryService([typeof(ClockModule).Assembly]).DiscoverModules([typeof(ClockModule)]));
 
         var runtimeManager = new RuntimeModuleManager();
 
@@ -42,12 +44,14 @@ public class ClockModulePipelineTests
     public async Task FullPipeline_DiscoveryThroughLifecycle_DrivesTheSameInstanceCorrectly()
     {
         var descriptor = Assert.Single(
-            new ReflectionFrameworkDiscoveryService([typeof(ClockModule).Assembly]).DiscoverModules());
+            new ReflectionFrameworkDiscoveryService([typeof(ClockModule).Assembly]).DiscoverModules([typeof(ClockModule)]));
 
         var runtimeManager = new RuntimeModuleManager();
         runtimeManager.Register(descriptor);
 
         var services = new ServiceCollection();
+        services.AddInstance<ILogger>(new Tempest.Core.Tests.Events.RecordingLevelLogger());
+        services.Singleton<IEventBus, EventBus>();
         services.AddDiscoveredModules(runtimeManager.GetAll().Select(module => module.Descriptor));
         var serviceProvider = new TempestServiceProvider(services);
 

@@ -140,20 +140,33 @@ difference, and neither should you need to.
 ## A Real Example
 
 `Tempest.Samples.ClockModule` (`src/Samples/Tempest.Samples/ClockModule.cs`,
-`WP 4.3`) is a real, compiled, production module written exactly as this
-guide describes — a public, zero-argument constructor, `ModuleLifecycleBase`,
-and no constructor dependency of any kind. If this guide and the real code
-ever disagree, trust the code and raise it — a passing test suite
-(`ClockModuleTests`/`ClockModuleDiscoveryTests`/`ClockModulePipelineTests`)
-is this guide's own, ongoing proof of accuracy, not merely an aspiration.
+`WP 4.3`; extended `WP 4.4E`) is a real, compiled, production module
+written exactly as this guide describes. Originally (`WP 4.3`) it used a
+public, zero-argument constructor and no constructor dependency of any
+kind — the only shape the pipeline allowed at the time. As of `WP 4.4E`,
+it carries `[ModuleMetadata]` and constructor-injects `IEventBus`,
+publishing its own lifecycle transitions through it — exactly the
+attribute-based, constructor-injected shape this guide's own "Update,
+WP 4.4B" section describes above, now exercised by real production code
+rather than only a documentation example. Its companion,
+`Tempest.Samples.ClockLifecycleObserverModule`, is a second real example
+of the same shape, subscribing to `ClockModule`'s published events. If
+this guide and the real code ever disagree, trust the code and raise it —
+a passing test suite (`ClockModuleTests`/`ClockModuleDiscoveryTests`/
+`ClockModulePipelineTests`/`ClockModuleEventIntegrationTests`) is this
+guide's own, ongoing proof of accuracy, not merely an aspiration. See
+*Building an Event-Driven Module* for the fuller narrative behind this
+specific extension.
 
 ## Related Documents
 
-*The Module Pipeline* (this folder) · WP 4.0 retrospective (*Platform
-Contracts*) · WP 4.1 retrospective (*Module SDK*) · WP 4.3 retrospectives
-(*Sample Module Architecture*, *Sample Module Implementation*) · WP 4.4A
-retrospective (*Dependency Injection for Discovered Modules*) ·
-`docs/architecture/Platform Service Map.md`'s Module SDK entry ·
-`docs/architecture/Sample Module Architecture.md` ·
+*The Module Pipeline* (this folder) · *Building an Event-Driven Module*
+(this folder) · WP 4.0 retrospective (*Platform Contracts*) · WP 4.1
+retrospective (*Module SDK*) · WP 4.3 retrospectives (*Sample Module
+Architecture*, *Sample Module Implementation*) · WP 4.4A retrospective
+(*Dependency Injection for Discovered Modules*) · WP 4.4D retrospective
+(*Event Bus Implementation*) · WP 4.4E retrospective (*Sample Module Event
+Integration*) · `docs/architecture/Platform Service Map.md`'s Module SDK
+entry · `docs/architecture/Sample Module Architecture.md` ·
 `docs/architecture/Module Dependency Injection Architecture.md` ·
-ADR-0027.
+`docs/architecture/Event Bus Architecture.md` · ADR-0027 · ADR-0028.
