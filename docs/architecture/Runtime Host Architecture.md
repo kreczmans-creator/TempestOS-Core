@@ -170,6 +170,9 @@ requiring their own, separate entry point:
   symmetrically with, the module pipeline) would slot in between Module
   Initialisation and Runtime Running at startup, and at the front of Shutdown
   — started after modules are initialised, stopped before modules are.
+  **Designed — WP 4.5** (ADR-0029, ADR-0030, `Background Services
+  Architecture.md`): exactly this placement, realised as decimal-numbered
+  phases `8.1`/`10.1`; not yet implemented.
 - **Requirements Engine** and **Project Engine** (Platform Service Map,
   planned) would each need to be classified, per ADR-0013, as either a
   platform service (Host-fatal on failure) or a set of modules (isolated
@@ -192,6 +195,7 @@ requiring their own, separate entry point:
 
 *Host Lifecycle.md* (phase-by-phase detail) · *Startup Sequence.md* ·
 *Shutdown Sequence.md* · *Runtime State Machine.md* · *Failure Behaviour.md* ·
-*Ownership Matrix.md* · *Platform Service Map.md* · *The Module Pipeline* and
-*The Startup Sequence* (Academy, Runtime Architecture) · ADR-0004, ADR-0008,
-ADR-0009, ADR-0011 through ADR-0017.
+*Ownership Matrix.md* · *Platform Service Map.md* · *Background Services
+Architecture.md* · *The Module Pipeline* and *The Startup Sequence*
+(Academy, Runtime Architecture) · ADR-0004, ADR-0008, ADR-0009, ADR-0011
+through ADR-0017, ADR-0021, ADR-0029, ADR-0030.

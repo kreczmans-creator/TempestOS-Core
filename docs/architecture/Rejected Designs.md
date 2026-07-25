@@ -629,3 +629,205 @@ startup or fault the Host — not speculatively, and not merely because
 (the same caution RD-0011 already named).
 
 **Source.** ADR-0028, Decision (Failure model).
+
+---
+
+## RD-0023 — DI Container Multi-Registration Resolution for Auto-Discovering Hosted Services
+
+**Considered during:** WP 4.5 (ADR-0029, Background Service Discovery,
+Ownership, and Orchestration).
+
+**Rejected because:** having `TempestServiceProvider` resolve "every
+registered `IHostedService`" (`IEnumerable<IHostedService>`) would let the
+Host skip its own reflection-based discovery step and simply ask the
+container for whatever was registered — but this requires a genuine new
+container capability (multi-registration resolution) `ADR-0005`'s
+deliberately minimal container has never needed and does not have,
+identically to RD-0019's own finding for the Event Bus. Reflection-based
+discovery, reusing the already-proven Module/Plugin Discovery pattern,
+achieves the same outcome with zero container changes.
+
+**Reversibility.** Cheap to add later, purely additively, if a real,
+demonstrated need for container-native multi-registration resolution ever
+emerges from an unrelated capability — not deferred specifically for this
+one.
+
+**Revisit trigger.** If a future capability (unrelated to background
+services specifically) demonstrates a real need for `IEnumerable<TService>`
+resolution — not speculatively now, with reflection-based discovery
+already solving this problem completely.
+
+**Source.** ADR-0029, Context and Decision (Discovery).
+
+---
+
+## RD-0024 — A Dedicated `HostedServiceDescriptor` Type
+
+**Considered during:** WP 4.5 (ADR-0029).
+
+**Rejected because:** `ModuleDescriptor` and `PluginManifest` both exist
+because their subjects carry real metadata (`Id`/`Name`/`Version`,
+`MinimumPlatformVersion`, and so on) a later pipeline stage needs.
+`IHostedService` carries none at all — there is no `Id` to catalogue, no
+version to compare, nothing beyond the discovered `Type` itself. A
+descriptor wrapping a bare `Type` would be ceremony mirroring an existing
+pattern's *shape* without the information that pattern exists to carry.
+
+**Reversibility.** Cheap — a descriptor type could be introduced later,
+purely additively, if a hosted service ever gains real metadata worth
+describing before construction.
+
+**Revisit trigger.** If a future need arises for a hosted service to
+declare metadata readable without constructing it (mirroring why
+`ModuleMetadataAttribute` exists for modules) — not before, since no
+current hosted service contract has any metadata to declare.
+
+**Source.** ADR-0029, Decision (Discovery).
+
+---
+
+## RD-0025 — Extending `ReflectionFrameworkDiscoveryService` to Also Discover Hosted Services
+
+**Considered during:** WP 4.5 (ADR-0029).
+
+**Rejected because:** having Module Discovery's own, already-frozen
+service scan for a second, unrelated candidate shape (`IHostedService`
+alongside `IModule`) would blur its single, established responsibility —
+"finds `IModule` implementations," unchanged since `WP 2.1` — and would
+require modifying a component every other work package since has
+deliberately left untouched. This mirrors exactly why Plugin Discovery
+(`WP 4.2`) received its own dedicated service rather than extending Module
+Discovery for a structurally similar reason.
+
+**Reversibility.** N/A — rejected as the wrong shape of solution entirely,
+not deferred pending more information.
+
+**Revisit trigger.** Not expected to be revisited. A future, genuinely
+shared discovery need (if one ever emerges) should be solved by a common,
+reusable discovery *algorithm* both services call — mirroring the pattern
+`docs/academy/04 Design Patterns/04-reflection-based-discovery.md` already
+names as reusable — not by one service scanning for two unrelated
+candidate interfaces.
+
+**Source.** ADR-0029, Decision (Discovery).
+
+---
+
+## RD-0026 — Active Host-Level Monitoring of a Hosted Service's Own Background Work
+
+**Considered during:** WP 4.5 (ADR-0029).
+
+**Rejected because:** once `StartAsync` returns, a hosted service's own
+ongoing work (a timer, an internal loop) runs independently, and nothing
+in `IHostedService`'s own contract (`WP 4.0`, not revisited here) exposes a
+`Task` handle, a health check, or any other surface the Host could
+actively monitor. Building a monitoring capability now would mean
+inventing a new contract member or a parallel tracking mechanism for a
+need no current or anticipated hosted service has demonstrated — exactly
+the kind of speculative design this release's own governing discipline
+(established `WP 4.0` onward) exists to prevent.
+
+**Reversibility.** Moderate — adding a monitoring surface later would
+likely require a new, additive member on `IHostedService` (or a separate,
+optional interface a service could implement), which every existing
+hosted service implementation would need to consider, though not
+necessarily adopt.
+
+**Revisit trigger.** If a genuine, demonstrated need arises for the Host
+(or a diagnostics capability, `WP 4.8`) to observe a hosted service's own
+later failure — the interim, already-available answer is for the service
+itself to publish an event via `IEventBus` from within its own defensive
+exception handling, reusing existing infrastructure rather than adding a
+new one.
+
+**Source.** ADR-0029, Decision (Interaction with existing services) and
+Future Considerations.
+
+---
+
+## RD-0027 — A New, Dedicated Host Lifecycle Phase for Hosted Service Discovery/Registration
+
+**Considered during:** WP 4.5 (ADR-0029, ADR-0030).
+
+**Rejected because:** discovering hosted service types and registering
+them into the `ServiceCollection` is cheap and side-effect-free relative
+to the container — exactly the same character as the existing
+`AddDiscoveredModules` call and the Event Bus's own `WP 4.4D` registration,
+both of which already fold into the existing Platform Services Registered
+phase (Phase 6) without redefining its meaning. A dedicated new phase for
+this step alone would proliferate the phase table for a step that changes
+nothing about when the DI container itself is built, unlike the two new
+phases this design *does* introduce (Hosted Services Started/Stopped),
+which have genuine new side effects and failure semantics.
+
+**Reversibility.** Cheap to introduce later if the registration step ever
+grows real complexity of its own worth naming as a separate phase — not
+expected, since registration here is, and is likely to remain, a single
+loop over already-discovered types.
+
+**Revisit trigger.** If discovering or registering hosted services ever
+grows a genuine, separate failure mode or ordering constraint relative to
+module registration — not speculatively now, since none exists.
+
+**Source.** ADR-0029, Decision (Registration); ADR-0030, Alternatives
+Considered.
+
+---
+
+## RD-0028 — Concurrent (Parallel) Start of Independent Hosted Services
+
+**Considered during:** WP 4.5 (ADR-0029).
+
+**Rejected because:** background services are, by nature, independent of
+each other once running — but starting them (the act of calling
+`StartAsync` itself, which is expected to be a bounded, quick operation)
+does not need to happen concurrently to achieve that independence: each
+service's own ongoing work becomes concurrent the moment its own
+`StartAsync` returns, regardless of whether the *calls* to `StartAsync`
+were made one at a time or all at once. Sequential, deterministic starting
+— mirroring `ModuleLifecycleManager.RunBatchAsync`'s own established
+shape — is easier to reason about, test, and diagnose than concurrent
+starting, for a benefit (faster aggregate startup) no current or
+anticipated hosted service count actually demonstrates a need for.
+
+**Reversibility.** Moderate cost to introduce later — would change
+`StartAllAsync`'s own observable behaviour (a failing service's log
+message and any subsequent service's own start could now interleave
+unpredictably), a real behavioural difference any existing test or
+consumer relying on today's deterministic ordering would need to account
+for.
+
+**Revisit trigger.** If a genuine, demonstrated need arises for faster
+aggregate startup with a large number of independent hosted services —
+not speculatively now, with zero hosted services yet built.
+
+**Source.** ADR-0029, Decision (Ordering and concurrency).
+
+---
+
+## RD-0029 — Automatic Restart/Backoff for Isolated Hosted Service Failures
+
+**Considered during:** WP 4.5 (ADR-0029), revisiting the question
+ADR-0021 explicitly left open.
+
+**Rejected because:** ADR-0021 already decided only that an isolated
+hosted service's failure does not stop the Host — it explicitly did not
+decide whether a failed service should be restarted, retried with
+backoff, or left failed permanently. Designing a restart/backoff policy
+now — how many attempts, what backoff curve, whether a repeatedly-failing
+service eventually escalates to critical — would be guessing at
+operational requirements with no real hosted service yet built to test
+any policy against.
+
+**Reversibility.** Cheap — purely additive to `HostedServiceManager`'s own
+internal behaviour if a real need for it emerges; no existing consumer's
+behaviour would need to change, since "no restart" is itself a valid,
+observable default a future opt-in policy would only extend, not replace.
+
+**Revisit trigger.** Once a real, demonstrated operational need for
+automatic recovery exists — not speculatively now, echoing ADR-0021's own
+Future Considerations, which named this exact question and left it
+explicitly open rather than silently implied.
+
+**Source.** ADR-0021, Future Considerations; ADR-0029, Decision
+(Failure model).

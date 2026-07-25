@@ -126,10 +126,45 @@ reflected here.
   pre-implementation Academy review found and fixed one gap: a new
   `WP4.2D-platform-services-architecture-review.md` retrospective, and a
   new Academy article, *Building an Event-Driven Module*.
+- **Academy & Documentation Baseline Audit (WP 4.4F)** — documentation
+  only; no production code touched. A complete audit of every document
+  produced across the Claude-developed history of TempestOS, determined
+  directly from git history (first Claude-authored commit: `7514b9d`)
+  rather than assumed. Found and fixed six genuine staleness findings
+  (Engineering Standards, Engineering Governance, `ReleasePlan.md`,
+  `Host Lifecycle.md`, `Ownership Matrix.md`, all understating how far the
+  project had actually progressed) and wrote five new concept guides:
+  *Working with the TempestOS Host*, *Platform Layering*, *Plugin
+  Architecture*, *Failure Isolation Across TempestOS*, and
+  *Reflection-Based Discovery*. `Academy Index.md`, `Academy Masterclass
+  Roadmap.md`, and `Academy Audit Report.md` are all new. No missing
+  retrospective, missing architecture document, or uncovered significant
+  ADR was found.
+- **Background Services Design (WP 4.5, architecture phase)** — design
+  only; no code. ADR-0029, *Background Service Discovery, Ownership, and
+  Orchestration Model*, and ADR-0030, *Background Service Host Lifecycle
+  Placement*, together with `Background Services Architecture.md`, design
+  the whole subsystem: a fourth, Host-owned runtime category (neither a
+  Platform Service nor a Module); a new, dedicated
+  `IHostedServiceDiscoveryService` that never instantiates a candidate,
+  since `IHostedService` carries no metadata to read (no
+  `ADR-0027`-style prerequisite ever arises); registration folded into the
+  existing Platform Services Registered phase, requiring no new DI
+  capability; a new, Host-owned `IHostedServiceManager` starting and
+  stopping every discovered service sequentially, in deterministic order
+  (reversed for stop), realising ADR-0021's isolated/critical failure
+  model exactly; two new, decimal-numbered Host Lifecycle phases (`8.1`
+  Hosted Services Started, `10.1` Hosted Services Stopped), following
+  ADR-0026's own precedent. Recorded RD-0023 (DI multi-registration
+  resolution), RD-0024 (a dedicated descriptor type), RD-0025 (extending
+  Module Discovery itself), RD-0026 (active Host-level monitoring),
+  RD-0027 (a new discovery/registration phase), RD-0028 (concurrent
+  service start), RD-0029 (automatic restart/backoff). No implementation
+  exists yet; `WP 4.5`'s own implementation may now begin.
 
 _Still planned, per `WorkPackages.md`:_
 
-- Background Services (WP 4.5)
+- Background Services implementation (WP 4.5)
 - Navigation Architecture (WP 4.6A), then Navigation Implementation
   (WP 4.6B)
 - Command Framework (WP 4.7)
@@ -200,9 +235,23 @@ _Still planned, per `WorkPackages.md`:_
   and registration as an ordinary container-constructed singleton needing
   no new DI capability. Fully realised by `WP 4.4D` — this was the last
   architectural blocker before `WP 4.4` implementation.
+- **ADR-0029** — Background Service Discovery, Ownership, and
+  Orchestration Model. Decided during `WP 4.5`'s own architecture phase —
+  a fourth, Host-owned runtime category; discovery via a new, dedicated
+  service that never instantiates a candidate; registration folded into
+  the existing Platform Services Registered phase; a new, Host-owned
+  manager starting/stopping every discovered service sequentially,
+  realising ADR-0021's failure model exactly. Not yet implemented.
+- **ADR-0030** — Background Service Host Lifecycle Placement. Decided
+  during `WP 4.5`'s own architecture phase — two new decimal-numbered
+  phases (`8.1 Hosted Services Started`, `10.1 Hosted Services Stopped`)
+  inserted between Module Initialisation/Runtime Running and Shutdown
+  Requested/Module Disposal respectively, following ADR-0026's own
+  precedent. This was the last architectural blocker before `WP 4.5`
+  implementation.
 - Expected, not yet written: Navigation's `Tempest.Core` placement
   (`WP 4.6A`) — see `Architecture.md`. No further ADR is expected before
-  `WP 4.4` implementation.
+  `WP 4.5` implementation.
 
 ---
 

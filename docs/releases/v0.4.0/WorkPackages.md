@@ -481,6 +481,24 @@ Architecture.md` named but left undesigned. **Failure classification
 decided — ADR-0021**: isolated by default; Host-fatal only if a service
 explicitly declares itself critical.
 
+**Update, WP 4.5 (Background Services Design, architecture phase) —
+resolved.** ADR-0029, *Background Service Discovery, Ownership, and
+Orchestration Model*, and ADR-0030, *Background Service Host Lifecycle
+Placement*, together with `Background Services Architecture.md`, design
+the whole subsystem in full: a fourth, Host-owned runtime category
+(neither a Platform Service nor a Module); discovery via a new, dedicated
+`IHostedServiceDiscoveryService` that never instantiates a candidate
+(a hosted service carries no metadata, so the `ADR-0027`-style
+constructor-injection prerequisite modules once needed never arises here);
+registration folded into the existing Platform Services Registered phase
+(no new DI capability); a new, Host-owned `IHostedServiceManager` starting
+and stopping every discovered service sequentially, in deterministic
+order (reversed for stop); two new, decimal-numbered Host Lifecycle phases
+(`8.1` Hosted Services Started, `10.1` Hosted Services Stopped), following
+`ADR-0026`'s own precedent exactly. Seven Rejected Designs entries recorded
+(RD-0023–RD-0029). No implementation yet exists; this work package's own
+implementation may now begin.
+
 ### Scope
 
 - Implement `IHostedService` (per `WP 4.0`) and the Host-level wiring to

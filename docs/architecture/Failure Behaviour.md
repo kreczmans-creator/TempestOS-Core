@@ -8,6 +8,10 @@ is now backed by working, tested code, not only design intent.
 rule in it is backed by working, tested code (`PluginManifestDiscoveryServiceTests`,
 `PluginAssemblyLoaderTests`), not only design intent.
 
+**Update, WP 4.5 (design phase):** the Hosted Service Failure section
+below (ADR-0021, ADR-0029, ADR-0030) is designed, not yet implemented —
+no test or working code backs it yet.
+
 ## Governing Principle
 
 The boundary established by ADR-0013 governs every failure mode below:
@@ -71,6 +75,28 @@ Registration ever sees them — Registration's own guard is not bypassed or
 relied upon as the sole protection, but its failure mode is still Host-fatal
 if somehow reached (for example, via a future path that registers descriptors
 not sourced from Discovery).
+
+## Hosted Service Failure *(ADR-0021, ADR-0029, ADR-0030; designed — WP 4.5, not yet implemented)*
+
+**Trigger.** A hosted service (`IHostedService`) throws during
+`StartAsync` (Phase 8.1, Hosted Services Started) or `StopAsync`
+(Phase 10.1, Hosted Services Stopped).
+
+**Required behaviour.** **Not** Host-fatal by default — isolated exactly
+like an individual module's failure (ADR-0013's own module half, extended
+by ADR-0021): logged at `Error`, that service's own status marked
+`Failed`, the batch continues with the next service. The Host proceeds to
+`Running` (from Phase 8.1) or to `Stopped` (from Phase 10.1) regardless.
+
+**The one exception**: a service implementing `ICriticalBackgroundService`
+has explicitly opted out of isolation. Its failure is Host-fatal —
+`Starting → Faulted` (from `StartAsync`) or `Stopping → Faulted` (from
+`StopAsync`) — exactly the same transitions already used for a
+platform-service failure and a genuine shutdown-time Host-level defect,
+respectively. No new transition is introduced. Cleanup guarantees hold
+regardless: `Faulted → Disposed` remains always legal, and disposal of
+every module and every hosted service that already started is still
+attempted afterward (ADR-0004, ADR-0019).
 
 ## Initialisation Failure
 
@@ -176,8 +202,12 @@ reported directly to `Console.Error` — bypassing the failed sink entirely
 | Registration failure | Yes | `Starting → Faulted` |
 | Individual module initialisation failure | No | (none — Host proceeds to `Running`) |
 | Host-level defect during Module Initialisation | Yes | `Starting → Faulted` |
+| Hosted service — isolated start failure *(ADR-0021/0029, designed — WP 4.5)* | No | (none — that service isolated, phase continues) |
+| Hosted service — critical start failure *(ADR-0021/0029, designed — WP 4.5)* | Yes | `Starting → Faulted` |
 | Runtime exception (Running) | Yes | `Running → Faulted` |
 | Individual module shutdown failure | No | (none — `Stopping` proceeds to `Stopped`) |
+| Hosted service — isolated stop failure *(ADR-0021/0029, designed — WP 4.5)* | No | (none — that service isolated, phase continues) |
+| Hosted service — critical stop failure *(ADR-0021/0029, designed — WP 4.5)* | Yes, but disposal still proceeds | `Stopping → Faulted → Disposed` |
 | Host-level defect during shutdown | Yes, but disposal still proceeds | `Stopping → Faulted → Disposed` |
 | Logging failure | **Fixed — WP 2.7B.** A sink failure is caught inside `Logger` itself and never propagates. | (none) |
 | Startup cancellation, or an early shutdown request | No (not a fault) | `Starting → Stopping → Stopped` (ADR-0018 — same controlled shutdown procedure as a graceful, post-`Running` stop) |

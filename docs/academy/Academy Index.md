@@ -67,7 +67,7 @@ span every individual service.
 - `docs/architecture/Platform Service Map.md` — the living, service-by-service index of what exists, what depends on what, and where to read more (outside the Academy folder, but maintained under the same obligation).
 - `docs/architecture/Engineering Glossary.md` — the project's own vocabulary, alphabetical, cross-referenced.
 - `docs/architecture/Rejected Designs.md` — the permanent record of designs seriously considered and declined; the mirror image of the ADR catalogue.
-- `docs/adr/` — the full Architecture Decision Record catalogue (ADR-0001 through ADR-0028 at time of writing).
+- `docs/adr/` — the full Architecture Decision Record catalogue (ADR-0001 through ADR-0030 at time of writing).
 
 ## Runtime
 
@@ -118,11 +118,12 @@ The module pipeline and the Runtime Host, holistically.
 
 ## Background Services
 
-Not yet implemented — planned as `WP 4.5`. `docs/architecture/Runtime Host
-Architecture.md`'s own Future Extensibility section, and ADR-0021
-(background service failure classification, already decided), are the
-current, authoritative starting points until that work package's own
-Academy coverage exists. See also [Failure Isolation Across TempestOS](02%20Runtime%20Architecture/08-failure-isolation.md) for how ADR-0021 fits alongside the platform's other three isolation decisions.
+Designed (`WP 4.5`, ADR-0029/ADR-0030); not yet implemented.
+
+- [WP 4.5 — Background Services Architecture](03%20Work%20Packages/WP4.5-background-services-architecture.md) — the design phase: classification, discovery, ownership, orchestration, ordering, failure model, and Host Lifecycle placement.
+- `docs/architecture/Background Services Architecture.md` — the full design document.
+- ADR-0021 (failure classification, decided during original v0.4.0 planning), ADR-0029 (discovery/ownership/orchestration model), ADR-0030 (Host Lifecycle placement).
+- See also [Failure Isolation Across TempestOS](02%20Runtime%20Architecture/08-failure-isolation.md) for how ADR-0021 fits alongside the platform's other three isolation decisions, and [Working with the TempestOS Host](02%20Runtime%20Architecture/05-the-runtime-host.md) for the two new phases (`8.1`, `10.1`) in context.
 
 ## Design Patterns
 
@@ -188,8 +189,9 @@ whatever you're about to change, before you change it.
 - [WP 4.4 — Event Bus Architecture](03%20Work%20Packages/WP4.4-event-bus-architecture.md) *(also covers WP 4.4C, which produced no code and no separate retrospective — see that document's own Background section)*
 - [WP 4.4D — Event Bus Implementation](03%20Work%20Packages/WP4.4D-event-bus-implementation.md)
 - [WP 4.4E — Sample Module Event Integration](03%20Work%20Packages/WP4.4E-sample-module-event-integration.md)
+- [WP 4.5 — Background Services Architecture](03%20Work%20Packages/WP4.5-background-services-architecture.md)
 
-Still to come: `WP 4.5` (Background Services) onward — see
+Still to come: `WP 4.5`'s own implementation onward — see
 `docs/releases/v0.4.0/WorkPackages.md` for the full, current plan.
 
 ## Reference Material

@@ -12,6 +12,13 @@ container-constructed singleton, owned by `TempestServiceProvider` itself,
 consistent with ADR-0020's decision that the Event Bus is DI-public rather
 than a Host-owned collaborator like Discovery, Registration, or Lifecycle).
 
+**Update, WP 4.5 (design phase):** two further rows added below,
+designed but not yet implemented (ADR-0029/ADR-0030) —
+`IHostedServiceDiscoveryService` and `IHostedServiceManager`, both
+Host-owned, mirroring Discovery and Lifecycle's own ADR-0017 status
+exactly, for a new, fourth kind of runtime component (neither a Platform
+Service nor a Module — see *Background Services Architecture.md*).
+
 ## Purpose
 
 One table, answering "who is responsible for this" for every significant
@@ -57,6 +64,8 @@ here at the level of individual objects rather than whole services.
 | Disposal (ordering and completion) | `TempestHost` | The Host alone decides the order Service Disposal happens in, and is the only thing that can declare the platform fully `Disposed` — see ADR-0004's Host-level reuse. |
 | Platform Version (`IPlatformVersionProvider` / `PlatformVersionProvider`) | `TempestHost` | Constructed directly, immediately after Logging Built (moved earlier by ADR-0026 so Plugin Discovery can use it), and registered via `AddInstance` — the same Composition Root pattern as Configuration and Logging (WP 4.2A). |
 | Event Bus (`IEventBus` / `EventBus`) | **`TempestServiceProvider`** | The one platform service in this table the Host does not construct directly — registered as an ordinary `services.Singleton<IEventBus, EventBus>()` (WP 4.4D) and constructed by the container like any other resolved service, the moment something first requests it. DI-public by design (ADR-0020): unlike every `TempestHost`-owned row above, a module may hold and resolve it directly. |
+| Hosted Service Discovery (`IHostedServiceDiscoveryService`) *(designed — WP 4.5, ADR-0029)* | `TempestHost` | Constructed directly; never registered in DI (ADR-0017, applied to a new component). Used once, during Platform Services Registered, then no longer needed — mirroring Discovery's own role exactly. |
+| Hosted Service orchestration (`IHostedServiceManager`) *(designed — WP 4.5, ADR-0029)* | `TempestHost` | Constructed directly, after the service provider exists; never registered in DI (ADR-0017, applied to a new component). Held for the Host's entire life, starting hosted services after Module Initialisation and stopping them before Module Disposal. |
 
 ## Reading the Matrix Alongside Other Documents
 
@@ -78,6 +87,13 @@ here at the level of individual objects rather than whole services.
   no orchestration authority — a module resolving it is not reaching back
   into anything the Host would need to keep private, unlike Discovery,
   Registration, or Lifecycle immediately above it in this table.
+- **The two Hosted Service rows** are `TempestHost`-owned, like Discovery,
+  Registration, and Lifecycle — deliberately the *opposite* pattern from
+  the Event Bus row immediately above them. A hosted service *instance*
+  may consume `IEventBus` and any other DI-public service exactly like a
+  module can; the *manager that starts and stops it* is kept Host-owned for
+  the identical reason Discovery/Registration/Lifecycle are — see
+  ADR-0029.
 - Every row implicitly cites ADR-0017 (Discovery/Registration/Lifecycle are
   Host-owned, never DI-public) and ADR-0011 (the order in which the
   `TempestHost`-owned objects come into existence).

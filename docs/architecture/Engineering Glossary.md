@@ -164,22 +164,28 @@ rather than isolated. The opt-in exception to a Hosted Service's default
 isolated-failure behaviour; see ADR-0021. The contract carries no members
 of its own — criticality is a declaration, not a configurable value.
 Declaring it today changes no runtime behaviour; no orchestration reads it
-yet (`WP 4.5`).
+yet — designed, ADR-0029, not yet implemented (`WP 4.5`).
 
-### Hosted Service *(contract implemented — v0.4.0, WP 4.0; orchestration planned — WP 4.5)*
+### Hosted Service *(contract implemented — v0.4.0, WP 4.0; discovery/ownership/orchestration designed — WP 4.5, ADR-0029/ADR-0030; not yet implemented)*
 
-Background work that will start alongside, and stop symmetrically with,
-the module pipeline — slotting in between Module Initialisation and
-Runtime Running at startup, and at the front of Shutdown. Named in
-*Runtime Host Architecture.md*'s Future Extensibility section as a seam
-the Host is designed to accept without requiring its own entry point. Its
-contract, `IHostedService` (`Tempest.Core.BackgroundServices`), is
-implemented as of WP 4.0; the Host-level wiring to actually start and stop
-one is not yet implemented (`WP 4.5`) — declaring the contract today
-changes no runtime behaviour. Its failure classification is decided —
-**isolated by default**, mirroring module failure isolation, unless
-declared a **Critical Background Service** (ADR-0021). This extends, but
-does not weaken or contradict, the platform-service/module **Host-Fatal**/
+Background work that starts after Module Initialisation and stops before
+Module Disposal — slotting in as decimal-numbered Host Lifecycle phases
+`8.1`/`10.1` (ADR-0030), between Module Initialisation and Runtime Running
+at startup, and between Shutdown Requested and Module Disposal at
+shutdown. Named in *Runtime Host Architecture.md*'s Future Extensibility
+section as a seam the Host is designed to accept without requiring its own
+entry point. Its contract, `IHostedService` (`Tempest.Core.BackgroundServices`),
+is implemented as of WP 4.0; carries no `Id`/`Name`/`Version`, unlike
+**Module**, so discovering one never requires instantiating it — a hosted
+service is constructor-injectable from its first implementation, with no
+`ModuleMetadataAttribute`-equivalent prerequisite. Discovered by a new,
+dedicated `IHostedServiceDiscoveryService`, orchestrated by a new,
+Host-owned `IHostedServiceManager` (never DI-public, per ADR-0017 applied
+to this new component) — both designed in full (ADR-0029), not yet
+implemented. Its failure classification is decided — **isolated by
+default**, mirroring module failure isolation, unless declared a
+**Critical Background Service** (ADR-0021). This extends, but does not
+weaken or contradict, the platform-service/module **Host-Fatal**/
 **Isolated Failure** boundary ADR-0013 established — a Hosted Service is a
 third category with its own default, not a reclassification of either
 existing one.
@@ -454,6 +460,7 @@ ADR-0016, distinct from the pre-existing **Tempest.Core.Hosting**.
 Machine.md* · *Failure Behaviour.md* · *Shutdown Sequence.md* · *Startup
 Sequence.md* · *Ownership Matrix.md* · *Platform Service Map.md* · *Plugin
 Manifest Architecture.md* · *Module Dependency Injection Architecture.md* ·
-*Event Bus Architecture.md* · ADR-0001 through ADR-0028 ·
+*Event Bus Architecture.md* · *Background Services Architecture.md* ·
+ADR-0001 through ADR-0030 ·
 `docs/academy/01 Engineering Principles/` · `docs/academy/
 02 Runtime Architecture/`.
