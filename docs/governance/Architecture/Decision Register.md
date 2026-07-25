@@ -10,7 +10,7 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | `docs/releases/v0.4.0/WorkPackages.md`, `docs/releases/v0.4.0/CHANGELOG.md`, and the individual Work Package retrospectives named in each entry below. |
 | **Review Frequency** | Updated whenever a Work Package makes a significant process or sequencing decision that is not itself ADR-eligible. |
-| **Last Reviewed** | 2026-07-25 (WP 4.5A). |
+| **Last Reviewed** | 2026-07-25 (WP 4.5B). |
 | **Related Documents** | `ADR Register.md`; `Rejected Designs Register.md`; `Governance Register.md`; `Engineering Evolution Register.md`. |
 | **Related ADRs** | None directly — by definition, every entry below was judged *not* to require one. Where a decision later hardened into an ADR-eligible one, this is noted per entry. |
 | **Related Academy Articles** | `docs/academy/06 Engineering Standards/Engineering Governance.md` (§5, the ADR/non-ADR boundary this register exists to respect). |
@@ -44,12 +44,14 @@ source document cited in its own row.
 | D-010 | Conduct `WP 4.2D` and `WP 4.4F` as dedicated, formal milestone review/audit Work Packages (Platform Services Architecture Review; Academy & Documentation Baseline Audit) rather than folding review into the next feature Work Package | 2026-07-24/25 | `WorkPackages.md`; `docs/academy/03 Work Packages/WP4.2D-platform-services-architecture-review.md`, `Academy Audit Report.md` | Process — periodic governance review cadence |
 | D-011 | Implement the WP 4.5 hosted service discovery service under the name `HostedServiceDiscoveryService`, a cosmetic rename from the design phase's working name `ReflectionHostedServiceDiscoveryService` | 2026-07-25 | `docs/academy/03 Work Packages/WP4.5-background-services-implementation.md`, Section 6 | Process — naming reconciliation, no behavioural change |
 | D-012 | Establish a Governance Register Baseline (`WP 4.5A`) as its own dedicated, documentation-only Work Package rather than folding governance-register creation into a feature Work Package | 2026-07-25 | This Work Package's own brief | Process — governance milestone |
+| D-013 | Formally close the Foundation phase as its own dedicated Work Package (`WP 4.5B`), producing `PROJECT_STATUS.md`, a Foundation Completion Report, a Contributor Learning Path, an Engineering Lifecycle document, and standing Future Work Package Guidelines, rather than letting the Foundation phase's end be implicit | 2026-07-25 | This Work Package's own brief | Process — milestone closeout |
+| D-014 | Extend `Engineering Governance.md` with two new sections (§11 Repository Organisation, §12 Naming Conventions) rather than create separate new standard documents, since both codify patterns already applied consistently since `WP 2.1` | 2026-07-25 | `Engineering Governance.md` §11/§12 | Process — standards consolidation, avoiding duplication |
 
-**Total: 12 entries.**
+**Total: 14 entries.**
 
 ## Common Pattern
 
-Nine of the twelve entries above are **process decisions** (how the
+Eleven of the fourteen entries above are **process decisions** (how the
 project works), not **architectural decisions** (how the software is
 built) — the correct classification under §5, since none introduced a
 genuine, seriously-considered-and-rejected technical alternative of its

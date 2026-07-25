@@ -43,10 +43,12 @@ enough understanding to make it stable.** `INavigationProvider` and
 `IDiagnosticsProvider` are not defined by `WP 4.0` at all, not even
 provisionally — see `WP 4.0`'s own Scope section.
 
-**Update, WP 4.2D (Platform Services Architecture Review):** `WP 4.0`
-through `WP 4.2` are now complete — see each work package's own entry
-below, and its Academy retrospective(s), for current status. `WP 4.3`
-onward have not begun.
+**Update, WP 4.5A (Governance Register Baseline):** `WP 4.0` through
+`WP 4.5` are now complete, including the milestone review/audit Work
+Packages (`WP 4.2D`, `WP 4.4F`) and the governance baseline itself
+(`WP 4.5A`) — see each work package's own entry below, its Academy
+retrospective(s), and `docs/governance/Delivery/Feature Register.md` for
+current, authoritative status. `WP 4.6A` onward have not begun.
 
 ---
 

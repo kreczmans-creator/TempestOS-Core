@@ -155,7 +155,7 @@ blocks any current capability.
 
 ## Academy
 
-**Status.** Mature. 62 articles across 7 categories, with a formal
+**Status.** Mature. 61 articles across 7 categories, with a formal
 maintenance obligation (Engineering Governance §6) that has, per this
 audit, actually been honoured — no Work Package that shipped code or an
 ADR lacks a retrospective, and no stale "Future Evolution" prediction was
@@ -272,3 +272,14 @@ Package set out to meet.
 
 **Outstanding Governance Debt: NONE** — see `Governance Audit
 Report.md` for the full verification.
+
+## Addendum — WP 4.5B (Platform Foundation Closeout)
+
+This assessment's own maturity claims held up under `WP 4.5B`'s Root
+Document Review — the only corrections found were small, mechanical
+staleness in cross-references and counts (see `Governance Audit
+Report.md`'s own addendum), not a maturity regression in any area above.
+The Foundation phase this report assessed is now formally closed — see
+`docs/releases/Platform Foundation Completion Report.md` for the closeout
+narrative, and `PROJECT_STATUS.md` for the current, living status
+dashboard this report's own point-in-time snapshot now hands off to.

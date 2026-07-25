@@ -38,7 +38,7 @@ capability this repository currently ships.
 | ADRs | 100% — all 30 indexed |
 | Rejected Designs | 100% — all 29 indexed |
 | Architecture documents | 100% — all 18 indexed (16 under `docs/architecture/`, 2 release-scoped) |
-| Academy articles | 100% — all 62 indexed |
+| Academy articles | 100% — all 61 indexed |
 | Platform services | 100% — all 15 indexed (11 Implemented, 1 contract-only, 2 not implemented, 1 developer-convenience layer) |
 | Production modules | 100% — both indexed |
 | Production events | 100% — the one indexed |
@@ -185,3 +185,24 @@ neither treated as a one-time deliverable.
    unexplained.
 4. **Do not begin `WP 4.6`** as part of, or immediately following, this
    Work Package — per this Work Package's own explicit instruction.
+
+## Addendum — WP 4.5B (Platform Foundation Closeout)
+
+This governance baseline held up well under its very next review: the
+Root Document Review performed as part of `WP 4.5B` found only small,
+mechanical drift, no structural governance defect. Specifically found and
+corrected: this register's own suite carried a self-inconsistent Academy
+article count (a double-counted formula that produced 62 instead of the
+correct 61, and predated `03-governance-registers.md`'s own addition);
+`Engineering Standards Register.md` undercounted itself for the same
+reason; `docs/releases/v0.4.0/WorkPackages.md`'s and `ReleasePlan.md`'s
+own top-level status lines still described `WP 4.3`/`WP 4.5` as "not
+begun"; and `Engineering Governance.md`'s own opening Status section
+cited "§9, Coding Standards Hierarchy" where §9 is actually Decision
+Authority (§8 is Coding Standards Hierarchy). None of these was a
+governance *debt* in the sense this report's own "Outstanding Governance
+Debt: NONE" finding addresses — each was a small, first-review
+correction of exactly the kind a governance suite's own existence is
+meant to surface. Outstanding Governance Debt remains **NONE** following
+these corrections. See `docs/releases/Platform Foundation Completion
+Report.md` for the full `WP 4.5B` account.

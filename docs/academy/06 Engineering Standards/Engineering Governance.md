@@ -5,17 +5,19 @@
 This document is normative. Where any other document in this repository —
 including other Academy documents — appears to conflict with it, this document
 governs, unless it has been explicitly and deliberately superseded (see
-§9, Coding Standards Hierarchy).
+§9, Decision Authority).
 
 This is not a description of process TempestOS aspires to one day follow. Every
 rule below codifies practice already exercised, consistently, across WP 2.1
 through WP 2.4 and the repository stabilisation work that preceded them —
-and, in every release since, through the whole of v0.4.0's Platform Services
-milestone (WP 4.0 through WP 4.4E at time of writing, including the Rejected
-Designs Log this document's own §10 formalised partway through that history).
-Nothing here is aspirational; it is a record of how TempestOS has actually
-been engineered, made explicit so it no longer depends on being remembered
-correctly.
+and, in every release since, through the whole of the Foundation phase (WP
+4.0 through WP 4.5B at time of writing) — including the Rejected Designs
+Log (§10), formalised partway through that history, and Repository
+Organisation and Naming Conventions (§11, §12), formalised at the
+Foundation phase's close once both had been observed consistently across
+every Work Package to date. Nothing here is aspirational; it is a record
+of how TempestOS has actually been engineered, made explicit so it no
+longer depends on being remembered correctly.
 
 ## Purpose
 
@@ -361,6 +363,90 @@ never silently removed, exactly as §5 already requires for a superseded
 ADR. A work package that rejects a genuine design candidate adds the entry
 as part of its own Definition of Done (§3); it is not a separate,
 optional follow-up task, any more than an ADR is.
+
+---
+
+## 11. Repository Organisation
+
+**Formalised at the close of the Foundation phase (`WP 4.5B`)**, codifying
+a structure every Work Package since `WP 2.1` has already followed
+consistently, rather than introducing a new one.
+
+- **`src/`** holds exactly one namespace tree per project:
+  `Tempest.Core` (the platform itself — Configuration, Logging,
+  Discovery, Registration, Lifecycle, Dependency Injection, Runtime,
+  Events, Plugins, BackgroundServices, Commands, Versioning, and the
+  pre-module-pipeline legacy code), `Tempest.App` (the thin console entry
+  point), `Samples/Tempest.Samples` (the living reference module set),
+  and `Plugins/` (empty by design until a real plugin ships — see
+  `docs/governance/Engineering/Plugin Register.md`). A new platform
+  capability gets its own namespace folder under `Tempest.Core`
+  (`Tempest.Core.BackgroundServices`, most recently) rather than being
+  folded into an existing, unrelated one.
+- **`tests/`** mirrors `src/`'s own namespace structure directory-for-
+  directory (`tests/Tempest.Core.Tests/Modules/` tests
+  `src/Tempest.Core/Modules/`, and so on) — a new namespace under `src/`
+  gets a matching directory under `tests/Tempest.Core.Tests/`, not tests
+  scattered across unrelated existing folders.
+- **`docs/`** has five top-level trees, each with one stated purpose:
+  `adr/` (Architecture Decision Records only), `architecture/` (standing,
+  living architecture reference documents), `academy/` (teaching
+  material, organised into the seven numbered categories `Academy
+  Index.md` describes), `releases/` (`FOUNDATION.md`, the permanent
+  constitution, plus one subtree per release), and `governance/` (the
+  register suite, `Governance Index.md`, and standing policy documents).
+  A new document belongs in the existing tree whose stated purpose
+  already covers it — a new category or top-level tree is proposed only
+  once an existing one's purpose genuinely does not fit, mirroring §6's
+  own rule that the Academy's folder hierarchy "should not be reorganised
+  casually."
+- **Repository root** carries only `README.md`, `PROJECT_STATUS.md`,
+  `LICENSE.md`, `VERSION`, `global.json`, `Directory.Build.props`, and
+  `.gitignore` — every other document lives under one of the five `docs/`
+  trees above, never loose at the root. `PROJECT_STATUS.md` is the one
+  addition this phase makes to that root list, specifically because it
+  must be the first thing a contributor sees, matching `README.md`'s own
+  visibility.
+- **`archive/`** holds retired, historical code (the Python prototype)
+  under its own `README.md` explaining its status — not part of the
+  active codebase, receives no further development, and is never
+  confused with `docs/releases/`'s own historical release notes.
+
+## 12. Naming Conventions
+
+**Formalised at the close of the Foundation phase (`WP 4.5B`)**, codifying
+patterns already applied consistently since `WP 2.1`.
+
+- **ADRs.** `ADR-NNNN-kebab-case-title.md`, sequential, zero-padded to
+  four digits, under `docs/adr/`. Never renumbered, never reused, even
+  for a superseded decision (§5).
+- **Rejected Designs.** `RD-NNNN`, sequential, referenced by number from
+  the Work Package retrospective and ADR that considered it — entries
+  live inside `docs/architecture/Rejected Designs.md`, not as separate
+  files (§10).
+- **Work Package retrospectives.** `WPX.Y[-Letter]-kebab-case-title.md`
+  under `docs/academy/03 Work Packages/` — matching the Work Package
+  number exactly as `WorkPackages.md` itself names it (`WP4.2C-plugin-
+  discovery-lifecycle-placement.md` for `WP 4.2C`, for example). A
+  Work Package with distinct architecture and implementation phases gets
+  two files sharing the same `WPX.Y-` prefix, distinguished by a
+  `-architecture`/`-implementation` (or equivalent) suffix.
+- **Governance registers.** `Title Case Register.md` (or `Catalogue.md`/
+  `Matrix.md` where that noun fits the register's own content better —
+  `Event Catalogue.md`, `Traceability Matrix.md`), one register per file,
+  under the appropriate `docs/governance/<Category>/` folder.
+- **C# types.** `PascalCase` throughout; an interface is its
+  implementation's name prefixed with `I` (`IEventBus`/`EventBus`,
+  `IHostedServiceManager`/`HostedServiceManager`); an exception type ends
+  in `Exception` and derives from its category's own base exception where
+  one exists (`PluginException` → `DuplicatePluginIdException`), per
+  `docs/academy/06 Engineering Standards/01-exception-design.md`.
+- **Test classes.** `<SubjectUnderTest>Tests.cs`, one class per subject,
+  under the mirrored `tests/` directory §11 describes — a test-only
+  fixture shared across several test classes lives in its own,
+  separately-named file (`HostedServiceFixtures.cs`,
+  `RecordingLevelLogger.cs`), never bundled inside a `*Tests.cs` file it
+  does not itself test.
 
 ---
 

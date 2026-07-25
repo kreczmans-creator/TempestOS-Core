@@ -204,6 +204,25 @@ reflected here.
   Versioning are all byte-for-byte unchanged. The implemented discovery
   service is named `HostedServiceDiscoveryService`, a cosmetic rename from
   the design phase's working name (`ReflectionHostedServiceDiscoveryService`).
+- **Governance Register Baseline (WP 4.5A)** — documentation and
+  governance only; no production code touched. The first complete
+  governance register suite TempestOS has produced: 27 registers across
+  Architecture (ADR, Rejected Designs, Architecture Document, Decision),
+  Engineering (Platform Services, Module, Hosted Services, Plugin, Event
+  Catalogue, Dependency Injection, Namespace, Interface, Exception,
+  Architectural Dependency), Quality (Risk, Technical Debt, Validation,
+  Test, Repository Metrics), Documentation (Documentation, Academy,
+  Engineering Standards, Governance), and Delivery (Feature, Release,
+  Engineering Evolution, Traceability Matrix) — plus `Governance
+  Index.md`, `Governance Philosophy.md`, `Governance Audit Report.md`,
+  and `Repository Maturity Report.md` (all `docs/governance/`). Every
+  register entry is marked Verified, Inferred, or Unknown against direct
+  repository evidence; genuine historical gaps (an unexplained empty
+  `docs/releases/v0.2.0/`, unattributed pre-Claude namespaces, a five-day
+  gap in earliest git history) are recorded honestly rather than
+  invented. One new Academy article
+  (`06 Engineering Standards/03-governance-registers.md`) teaches why and
+  how to maintain the suite. Outstanding Governance Debt: **NONE**.
 
 _Still planned, per `WorkPackages.md`:_
 

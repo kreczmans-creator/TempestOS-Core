@@ -10,7 +10,7 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | `docs/academy/` itself; `docs/academy/Academy Index.md` (the reader-facing navigation index this register cross-checks against). |
 | **Review Frequency** | Updated whenever a new Academy article is created — in practice, every Work Package (Engineering Governance §6). |
-| **Last Reviewed** | 2026-07-25 (WP 4.5A). |
+| **Last Reviewed** | 2026-07-25 (WP 4.5B). |
 | **Related Documents** | `docs/academy/Academy Index.md`; `docs/academy/Academy Audit Report.md`; `Engineering Standards Register.md`; `Feature Register.md`. |
 | **Related ADRs** | None directly — the Academy documents ADRs, it is not itself governed by one. |
 | **Related Academy Articles** | This register's entire scope. |
@@ -110,23 +110,26 @@ own deliverable *is* the audit report.
 | 04 | Why Discovery Is Isolated | ADR-0008 |
 | 05 | Why Isn't Configuration Mutable? | (general principle, no single paired ADR) |
 
-## 06 Engineering Standards (3 documents)
+## 06 Engineering Standards (5 documents)
 
 See `Engineering Standards Register.md` for the detailed index — not
-duplicated here.
+duplicated here. Grew from 3 to 4 documents during `WP 4.5A` (which added
+`03-governance-registers.md`), and from 4 to 5 during `WP 4.5B` (which
+added `Engineering Lifecycle.md`).
 
-## Top-Level Academy Meta-Documents (3)
+## Top-Level Academy Meta-Documents (4)
 
 | Document | Purpose |
 |---|---|
 | `Academy Index.md` | Reader-facing navigable table of contents |
 | `Academy Masterclass Roadmap.md` | Candidate long-form synthesis subjects, none yet written |
 | `Academy Audit Report.md` | `WP 4.4F`'s own audit deliverable |
+| `Contributor Learning Path.md` | Repository-wide onboarding sequence for a new contributor, added `WP 4.5B` |
 
-**Total: 1 + 11 + 8 + 25 + 4 + 5 + 3 + 3 = 60 articles/documents, plus the
-2 Engineering Standards documents indexed separately in
-`Engineering Standards Register.md` = 62 files under `docs/academy/`
-(Verified by direct file count).**
+**Total: 1 (Introduction) + 11 (Engineering Principles) + 8 (Runtime
+Architecture) + 25 (Work Packages) + 4 (Design Patterns) + 5 (Case
+Studies) + 5 (Engineering Standards) + 4 (top-level meta) = 63 files
+under `docs/academy/` (Verified by direct file count).**
 
 ## Governance Maintenance Check (Engineering Governance §6)
 

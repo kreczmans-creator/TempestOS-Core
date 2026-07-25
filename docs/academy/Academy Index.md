@@ -19,12 +19,18 @@ sections are noted inline.
 Start here if this is your first time in the Academy.
 
 - [Welcome to the TempestOS Academy](00%20Introduction/00-welcome-to-the-academy.md) — what the Academy is, who it's for, and how it's organised. Read this before anything else.
+- [`PROJECT_STATUS.md`](../../PROJECT_STATUS.md) — where the project stands *right now* (repo root). Read this alongside Welcome — it tells you what's currently true; the Academy tells you why.
+- [Contributor Learning Path](Contributor%20Learning%20Path.md) — the full, repository-wide onboarding sequence (README → FOUNDATION → PROJECT_STATUS → Academy → Architecture → Governance → ADRs → a real module and hosted service → contribution workflow), of which the Academy-internal path below is one step.
 - [Engineering Governance](06%20Engineering%20Standards/Engineering%20Governance.md) — the project's constitution: how a work package moves from brief to merge, what "Done" requires, when an ADR or a Rejected Design entry is mandatory. The Welcome article tells you to read this second; this index repeats that instruction because it is the single most important document in the Academy after the welcome page itself.
+- [Engineering Lifecycle](06%20Engineering%20Standards/Engineering%20Lifecycle.md) — the concrete Idea → Investigation → Architecture → ADR → Rejected Designs → Implementation → Testing → Architecture Review → Academy → Governance → Release → Maintenance pipeline every Work Package follows, elaborating Engineering Governance §1.
 
-## Learning Path
+## Learning Path (Academy-Internal)
 
-A suggested reading order for a new engineer with strong general software
-engineering ability but no prior TempestOS or modular-runtime experience:
+Once you've followed `Contributor Learning Path.md`'s own repository-wide
+sequence as far as "how the platform works," this is the reading order
+*within* the Academy specifically, for a new engineer with strong general
+software engineering ability but no prior TempestOS or modular-runtime
+experience:
 
 1. **Welcome**, above, and **Engineering Governance**.
 2. **Engineering Principles** (below) — the vocabulary the rest of the

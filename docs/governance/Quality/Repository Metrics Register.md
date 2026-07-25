@@ -10,7 +10,7 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | Direct repository inspection (`find`, `wc`, `git log`) performed as part of this Work Package. |
 | **Review Frequency** | Re-measured at each Governance Baseline review, or on request. |
-| **Last Reviewed** | 2026-07-25 (WP 4.5A). |
+| **Last Reviewed** | 2026-07-25 (WP 4.5B). |
 | **Related Documents** | `Test Register.md`; `Namespace Register.md`; `Engineering Evolution Register.md`. |
 | **Related ADRs** | None directly. |
 | **Related Academy Articles** | None directly — this is a raw metrics snapshot, not a teaching document. |
@@ -18,7 +18,7 @@
 
 ---
 
-## Snapshot: 2026-07-25
+## Snapshot: 2026-07-25 (WP 4.5A)
 
 | Metric | Value |
 |---|---|
@@ -38,7 +38,7 @@
 | ADRs | 30 (`ADR-0001`–`ADR-0030`), all Accepted |
 | Rejected Designs entries | 29 (`RD-0001`–`RD-0029`) |
 | Architecture documents (`docs/architecture/`) | 16 |
-| Academy articles (`docs/academy/`, all subfolders) | 62 |
+| Academy articles (`docs/academy/`, all subfolders) | 61 |
 | Public interfaces (`src/Tempest.Core/`) | 26 |
 | Custom exception types | 22 |
 | Production modules | 2 (`ClockModule`, `ClockLifecycleObserverModule`) |
@@ -52,6 +52,24 @@
 | Build errors | 0 |
 | Current `VERSION` | 0.3.0 (v0.4.0 not yet tagged) |
 | Current branch | `feature/v0.4.0-platform-services` |
+
+## Snapshot: 2026-07-25 (WP 4.5B — Platform Foundation Closeout)
+
+Documentation and governance only — no production or test code changed
+since the WP 4.5A snapshot above; every `src/`/`tests/` figure is
+unchanged. Shown here are only the metrics this Work Package's own
+additions moved.
+
+| Metric | WP 4.5A | WP 4.5B (current) |
+|---|---|---|
+| Root `.md` files | 2 (`README.md`, `LICENSE.md`) | 3 (adds `PROJECT_STATUS.md`) |
+| `docs/` `.md` files | 134 | 152 |
+| Academy articles (`docs/academy/`, all subfolders) | 61 | 63 (adds `Contributor Learning Path.md`, `06 Engineering Standards/Engineering Lifecycle.md`) |
+| Governance documents (`docs/governance/`, all subfolders) | 31 | 32 (adds `Future Work Package Guidelines.md`) |
+| `docs/releases/` documents | 6 | 7 (adds `Platform Foundation Completion Report.md`) |
+| Engineering Standards documents | 4 | 5 (adds `Engineering Lifecycle.md`) |
+| Executed tests (`dotnet test`) | 355, 0 failures | 355, 0 failures (unchanged) |
+| Build warnings/errors | 0/0 | 0/0 (unchanged) |
 
 ## Governance Suite Size (Introduced by This Work Package, WP 4.5A)
 

@@ -16,7 +16,7 @@ costs when it isn't.
 
 TempestOS already had, before this document existed, an unusually
 disciplined documentation culture: 30 ADRs, 29 Rejected Designs entries,
-62 Academy articles, and a Work Package retrospective for nearly every
+61 Academy articles, and a Work Package retrospective for nearly every
 piece of work — see `Engineering Evolution Register.md` for when each
 discipline was adopted. What it did not have, until `WP 4.5A`, was a
 single place that answered *aggregate* questions: how many ADRs exist and

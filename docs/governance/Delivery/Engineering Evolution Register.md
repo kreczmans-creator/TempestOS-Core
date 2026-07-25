@@ -10,7 +10,7 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | `git log` (full history, both pre- and post-Claude). |
 | **Review Frequency** | Updated at each major milestone (a new release, a new governance discipline adopted). |
-| **Last Reviewed** | 2026-07-25 (WP 4.5A). |
+| **Last Reviewed** | 2026-07-25 (WP 4.5B). |
 | **Related Documents** | `Decision Register.md`; `Release Register.md`; `Repository Metrics Register.md`. |
 | **Related ADRs** | None directly. |
 | **Related Academy Articles** | `docs/academy/00 Introduction/00-welcome-to-the-academy.md` ("Where This History Begins"). |
@@ -46,7 +46,8 @@ process exists to draw on. Everything from `7514b9d` onward is
 | 2026-07-23 | Rejected Designs Log adopted as a permanent engineering rule | Commit `466334c` |
 | 2026-07-23 – 2026-07-25 | Platform Services milestone: WP 4.0 through WP 4.5 (Platform Contracts, Module SDK, Plugin Manifest, Sample Module, Dependency Injection for Discovered Modules, Event Bus, Background Services) | Commits `cf58c7e` through `c460aaf` |
 | 2026-07-25 | Academy & Documentation Baseline Audit (`WP 4.4F`) — first formal, full-history documentation audit | Commit `c9aa96e` |
-| 2026-07-25 | **This Work Package** — Governance Register Baseline (`WP 4.5A`), the first complete governance register suite | This commit |
+| 2026-07-25 | Governance Register Baseline (`WP 4.5A`), the first complete governance register suite | `256afc8` |
+| 2026-07-25 | **This Work Package** — Platform Foundation Closeout (`WP 4.5B`): formally closes the Foundation phase, adds `PROJECT_STATUS.md`, `Platform Foundation Completion Report.md`, `Contributor Learning Path.md`, `Engineering Lifecycle.md`, `Future Work Package Guidelines.md`, and extends Engineering Governance with Repository Organisation (§11) and Naming Conventions (§12) | This commit |
 
 ## Observed Pattern
 

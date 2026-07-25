@@ -96,6 +96,13 @@ the project's own evolving discipline, and end-to-end traceability.
 - [Governance Philosophy](Governance%20Philosophy.md) — why this suite exists, why Unknown beats invented data, ownership and review expectations.
 - [Governance Audit Report](Governance%20Audit%20Report.md) — the validation performed when this suite was first built (`WP 4.5A`).
 - [Repository Maturity Report](Repository%20Maturity%20Report.md) — a point-in-time maturity assessment across every major repository area.
+- [Future Work Package Guidelines](Future%20Work%20Package%20Guidelines.md) — the standing, mandatory expectations for every Work Package from `WP 4.6A` onward, established at the Foundation phase's close (`WP 4.5B`).
+
+## Related to This Suite, Outside `docs/governance/`
+
+- [`PROJECT_STATUS.md`](../../PROJECT_STATUS.md) (repository root) — the primary status dashboard; its Repository Metrics and Governance Status sections are generated from this suite and should be updated together with it.
+- [`docs/releases/Platform Foundation Completion Report.md`](../releases/Platform%20Foundation%20Completion%20Report.md) — the Foundation phase closeout narrative (`WP 4.5B`), summarising everything this suite tracks in aggregate.
+- [`docs/academy/Contributor Learning Path.md`](../academy/Contributor%20Learning%20Path.md) — the repository-wide onboarding sequence, which routes a new contributor into this suite at the appropriate point.
 
 ## Maintaining This Suite
 

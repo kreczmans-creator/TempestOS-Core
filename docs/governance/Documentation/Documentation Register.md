@@ -10,7 +10,7 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | The `docs/` tree itself. |
 | **Review Frequency** | Updated whenever a new top-level documentation directory or document type is introduced. |
-| **Last Reviewed** | 2026-07-25 (WP 4.5A). |
+| **Last Reviewed** | 2026-07-25 (WP 4.5B). |
 | **Related Documents** | `ADR Register.md`; `Architecture Document Register.md`; `Academy Register.md`; `Release Register.md`; `Governance Index.md`. |
 | **Related ADRs** | None directly. |
 | **Related Academy Articles** | None directly. |
@@ -30,15 +30,17 @@
 | `docs/academy/03 Work Packages/` | 25 Work Package retrospectives | `Academy Register.md`; `Feature Register.md` |
 | `docs/academy/04 Design Patterns/` | 4 recurring structural pattern guides | `Academy Register.md` |
 | `docs/academy/05 Case Studies/` | 5 narrative decision deep-dives | `Academy Register.md` |
-| `docs/academy/06 Engineering Standards/` | Engineering Governance (the constitution) plus 2 coding standards | `Engineering Standards Register.md` |
-| `docs/academy/Academy Index.md`, `Academy Masterclass Roadmap.md`, `Academy Audit Report.md` | Academy's own meta-documents | `Academy Register.md` |
+| `docs/academy/06 Engineering Standards/` | Engineering Governance (the constitution, now 12 sections) plus 4 coding/process standards | `Engineering Standards Register.md` |
+| `docs/academy/Academy Index.md`, `Academy Masterclass Roadmap.md`, `Academy Audit Report.md`, `Contributor Learning Path.md` | Academy's own meta-documents | `Academy Register.md` |
 | `docs/releases/FOUNDATION.md` | Permanent, cross-release engineering constitution | `Architecture Document Register.md`; `Release Register.md` |
+| `docs/releases/Platform Foundation Completion Report.md` | Foundation phase closeout narrative (`WP 4.5B`) | `Release Register.md` |
 | `docs/releases/v0.2.0/` | Empty directory — **Unknown** why no content exists; no retrospective or CHANGELOG entry explains this gap | `Release Register.md` |
 | `docs/releases/v0.3.0.md` | v0.3.0 release notes (Runtime Foundation Complete) | `Release Register.md` |
 | `docs/releases/v0.4.0/` | The in-progress v0.4.0 release's own planning, architecture review, risk register, work packages, changelog, testing strategy, release checklist | `Release Register.md`; `Risk Register.md`; `Feature Register.md` |
 | `docs/roadmap/` | Empty directory — **Unknown** intended purpose; no document references it | Not applicable — see Coverage Note below |
 | `docs/diagrams/` | Empty directory — **Unknown** intended purpose; no document references it | Not applicable — see Coverage Note below |
-| `docs/governance/` | This governance suite (introduced by `WP 4.5A`) | `Governance Index.md` |
+| `docs/governance/` | This governance suite (introduced by `WP 4.5A`), plus `Future Work Package Guidelines.md` (added `WP 4.5B`) | `Governance Index.md` |
+| Repository root (`PROJECT_STATUS.md`) | Primary status dashboard, added `WP 4.5B` | This register; `PROJECT_STATUS.md` is its own source of truth |
 
 ## Coverage Note — Two Empty, Unreferenced Directories
 

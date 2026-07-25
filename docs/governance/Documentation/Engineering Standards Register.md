@@ -10,8 +10,8 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | `docs/academy/06 Engineering Standards/`. |
 | **Review Frequency** | Updated whenever a new coding standard is adopted or an existing one materially changes. |
-| **Last Reviewed** | 2026-07-25 (WP 4.5A). |
-| **Related Documents** | `Academy Register.md`; `Governance Register.md`; `Validation Register.md`. |
+| **Last Reviewed** | 2026-07-25 (WP 4.5B). |
+| **Related Documents** | `Academy Register.md`; `Governance Register.md`; `Validation Register.md`; `Future Work Package Guidelines.md`. |
 | **Related ADRs** | None directly — these are process/coding standards, not architectural decisions. |
 | **Related Academy Articles** | This register's entire scope, plus every retrospective that references Engineering Governance's own sections. |
 | **Coverage Status** | Complete. |
@@ -22,11 +22,17 @@
 
 | Document | Scope | Sections |
 |---|---|---|
-| `Engineering Governance.md` | The project's constitution — Work Package lifecycle, Review Gates, Definition of Done, Documentation Requirements, ADR Creation Rules, Academy Maintenance, Release Approval Process, Coding Standards Hierarchy, Decision Authority, Rejected Designs Log | 10 numbered sections (§1–§10) |
+| `Engineering Governance.md` | The project's constitution — Work Package lifecycle, Review Gates, Definition of Done, Documentation Requirements, ADR Creation Rules, Academy Maintenance, Release Approval Process, Coding Standards Hierarchy, Decision Authority, Rejected Designs Log, Repository Organisation, Naming Conventions | 12 numbered sections (§1–§12, extended `WP 4.5B` with §11/§12) |
 | `01-exception-design.md` | How and when to define a new custom exception type, and where it sits in a hierarchy | Standalone standard |
 | `02-testing-strategy.md` | The internal-test-seam pattern, test-double conventions, "prefer real implementations over mocks" | Standalone standard |
+| `03-governance-registers.md` | Why and how to maintain the governance register suite | Standalone standard, added `WP 4.5A` |
+| `Engineering Lifecycle.md` | The canonical Idea→...→Maintenance engineering pipeline, elaborating Governance §1 | Standalone standard, added `WP 4.5B` |
 
-**Total: 3 documents.**
+**Total: 5 documents.** (This register's own prior total of 3, recorded
+at `WP 4.5A`, already omitted `03-governance-registers.md` — added within
+that same Work Package but after this register was written — a small,
+now-corrected drift of exactly the kind `Governance Philosophy.md` warns
+against; `Engineering Lifecycle.md` is genuinely new this Work Package.)
 
 ## Coding Standards Hierarchy (Engineering Governance §8)
 
