@@ -9,9 +9,13 @@ governs, unless it has been explicitly and deliberately superseded (see
 
 This is not a description of process TempestOS aspires to one day follow. Every
 rule below codifies practice already exercised, consistently, across WP 2.1
-through WP 2.4 and the repository stabilisation work that preceded them. Nothing
-here is aspirational; it is a record of how TempestOS has actually been
-engineered, made explicit so it no longer depends on being remembered correctly.
+through WP 2.4 and the repository stabilisation work that preceded them —
+and, in every release since, through the whole of v0.4.0's Platform Services
+milestone (WP 4.0 through WP 4.4E at time of writing, including the Rejected
+Designs Log this document's own §10 formalised partway through that history).
+Nothing here is aspirational; it is a record of how TempestOS has actually
+been engineered, made explicit so it no longer depends on being remembered
+correctly.
 
 ## Purpose
 

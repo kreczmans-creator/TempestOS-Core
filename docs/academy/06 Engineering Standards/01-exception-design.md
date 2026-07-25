@@ -3,15 +3,17 @@
 ## Purpose
 
 This standard describes the consistent pattern TempestOS's runtime code follows
-for exceptions, established in WP 2.1 and applied without deviation through
-WP 2.4. Following it is not optional stylistic preference — it is what keeps
+for exceptions, established in WP 2.1 and applied without deviation ever since —
+through WP 2.4's own four hierarchies, and every capability the platform has
+added since (Configuration, Plugins, the Runtime Host itself, and beyond).
+Following it is not optional stylistic preference — it is what keeps
 `catch` blocks throughout the codebase meaningful, and what makes every failure
 message actually useful for debugging rather than merely present.
 
 ## The Rule
 
-**One dedicated exception hierarchy per pipeline stage, never shared across
-stages.**
+**One dedicated exception hierarchy per pipeline stage or capability, never
+shared across stages.**
 
 - Discovery (WP 2.1): `ModuleDiscoveryException` (base) →
   `DuplicateModuleIdException`.
@@ -22,14 +24,37 @@ stages.**
 - Dependency Injection (WP 2.4): `ServiceResolutionException` (base) →
   `ServiceNotRegisteredException`, `CircularServiceDependencyException`,
   `AmbiguousConstructorException`.
+- Configuration (WP 2.5): `ConfigurationException` (base) →
+  `InvalidConfigurationEntryException`, `DuplicateConfigurationKeyException`,
+  `ConfigurationKeyNotFoundException`.
+- The Runtime Host (WP 2.7B): `HostException` (base) →
+  `InvalidHostStateTransitionException`.
+- Plugins (WP 4.2): `PluginException` (base) → `InvalidPluginManifestException`,
+  `IncompatiblePluginVersionException`, `DuplicatePluginIdException`,
+  `PluginAssemblyNotFoundException`, `PluginAssemblyLoadException`.
+
+Two capabilities deliberately introduce **no** exception type at all —
+Logging (WP 2.6) and Platform Versioning (WP 4.2A) are both designed to
+*degrade* rather than throw (a sink failure is caught internally and reported
+to `Console.Error`; missing version metadata falls back to a documented
+default), which is a designed absence, not a gap in this standard's coverage.
+The Event Bus (WP 4.4D) is a third: a subscriber's own exception is caught,
+logged, and never rethrown — by design (ADR-0028) — so there is no failure
+category here that escapes containment and needs a dedicated exception type
+for anything to catch.
 
 Each hierarchy exists so a caller can `catch` the *base* type for that stage and
 handle "something went wrong during discovery" (or registration, or lifecycle,
-or resolution) as one category, without also silently catching failures that
-belong to an unrelated stage. This decision is deliberate and was reconsidered
-explicitly at least once (see WP 2.2's retrospective, "Alternatives Considered")
-— reusing an existing, superficially similar hierarchy was tempting each time and
-rejected every time, for the same reason.
+or resolution, or configuration, or plugin loading) as one category, without
+also silently catching failures that belong to an unrelated stage. This
+decision is deliberate and was reconsidered explicitly more than once (see
+WP 2.2's retrospective, "Alternatives Considered") — reusing an existing,
+superficially similar hierarchy was tempting each time and rejected every
+time, for the same reason. See `docs/architecture/Platform Service Map.md`'s
+own per-service entries for each capability's current exception types —
+this document explains the *rule*; that one documents each service's own
+detail, since a second, hand-maintained exhaustive list here would
+inevitably drift out of date as new capabilities are added.
 
 **Dedicated subtypes carry structured data, not just a message string.** Every
 subtype exposes the specific values relevant to that failure as real properties

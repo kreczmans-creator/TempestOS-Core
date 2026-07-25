@@ -8,6 +8,12 @@ are now implemented (`Tempest.Core.Plugins`), exactly as ADR-0026
 specified. Decimal phase numbers mean "between 3 and 4" — no existing
 phase was renumbered; see ADR-0026 for why.
 
+**Update, WP 4.4D:** Phase 6 (Platform Services Registered) gained one new
+registration — `IEventBus` as an ordinary container-constructed singleton
+— alongside the `IPlatformVersionProvider` registration WP 4.2A already
+added there. No new phase; see Phase 6, below, and *Event Bus
+Architecture.md*/ADR-0028.
+
 ## Purpose
 
 This document defines every phase the Runtime Host passes through, from
@@ -205,17 +211,23 @@ protection and is not bypassed.
 
 **Purpose.** Populate a `ServiceCollection` with everything the DI container
 needs before it is built: the `IConfigurationProvider` and logging instances
-(via `AddInstance`), and every discovered module's concrete type (via
-`AddDiscoveredModules`, keyed by the `ModuleDescriptor` values Registration
-just produced).
+and the already-constructed `IPlatformVersionProvider` (via `AddInstance`,
+per ADR-0009 — see *Platform Version.md*), `IEventBus` as an ordinary
+container-constructed singleton (`services.Singleton<IEventBus, EventBus>()`,
+added WP 4.4D — requiring no Composition Root treatment, per ADR-0028, since
+its own constructor needs nothing `AddInstance` provides), and every
+discovered module's concrete type (via `AddDiscoveredModules`, keyed by the
+`ModuleDescriptor` values Registration just produced).
 
-**Entry criteria.** Module Registration has completed; Configuration and
-Logging instances already exist.
+**Entry criteria.** Module Registration has completed; Configuration,
+Logging, and Platform Version instances already exist (Platform Version's
+own construction happens earlier, immediately after Logging Built, per
+ADR-0026 — only its DI registration happens here).
 
 **Exit criteria.** The `ServiceCollection` contains every registration the
 running instance needs — this phase adds no new capability to `ServiceCollection`
-itself; it is the Host's own act of calling `AddInstance`/`AddDiscoveredModules`
-in sequence.
+itself; it is the Host's own act of calling `AddInstance`/`Singleton`/
+`AddDiscoveredModules` in sequence.
 
 **Failure behaviour.** An `ArgumentException` from a malformed registration
 (for example, a type that doesn't satisfy the service type it's registered

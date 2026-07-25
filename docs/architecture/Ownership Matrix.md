@@ -4,6 +4,14 @@
 relationship below is now enforced by working code (private fields, `internal`
 constructors, and ADR-0017's DI-exclusion), not only documented intent.
 
+**Update, WP 4.2A/WP 4.4D:** two rows added below for platform services
+introduced since WP 2.7B — `IPlatformVersionProvider` (Host-owned,
+`AddInstance`, like Configuration and Logging) and `IEventBus` (the first
+row in this table that is *not* Host-owned: an ordinary,
+container-constructed singleton, owned by `TempestServiceProvider` itself,
+consistent with ADR-0020's decision that the Event Bus is DI-public rather
+than a Host-owned collaborator like Discovery, Registration, or Lifecycle).
+
 ## Purpose
 
 One table, answering "who is responsible for this" for every significant
@@ -47,6 +55,8 @@ here at the level of individual objects rather than whole services.
 | `CancellationToken`(s) | `TempestHost` | The Host owns both signals described in ADR-0014 — the startup token and the shutdown-request signal. Every collaborator only ever *receives* a token; none creates its own. |
 | Shutdown (initiation and sequencing) | `TempestHost` | The Host alone decides when `Stopping` begins and drives `StopAllAsync`/`DisposeAllAsync` in order — see *Shutdown Sequence.md*. |
 | Disposal (ordering and completion) | `TempestHost` | The Host alone decides the order Service Disposal happens in, and is the only thing that can declare the platform fully `Disposed` — see ADR-0004's Host-level reuse. |
+| Platform Version (`IPlatformVersionProvider` / `PlatformVersionProvider`) | `TempestHost` | Constructed directly, immediately after Logging Built (moved earlier by ADR-0026 so Plugin Discovery can use it), and registered via `AddInstance` — the same Composition Root pattern as Configuration and Logging (WP 4.2A). |
+| Event Bus (`IEventBus` / `EventBus`) | **`TempestServiceProvider`** | The one platform service in this table the Host does not construct directly — registered as an ordinary `services.Singleton<IEventBus, EventBus>()` (WP 4.4D) and constructed by the container like any other resolved service, the moment something first requests it. DI-public by design (ADR-0020): unlike every `TempestHost`-owned row above, a module may hold and resolve it directly. |
 
 ## Reading the Matrix Alongside Other Documents
 
@@ -62,6 +72,12 @@ here at the level of individual objects rather than whole services.
 - **The "Logger: Factory" row** is the one entry that isn't simply
   "`TempestHost`," and is worth re-reading if the rest of the table's pattern
   makes it look like an oversight — it isn't; see the Notes column.
+- **The "Event Bus" row** is the second entry that isn't `TempestHost`, and
+  for a genuinely different reason than the Logger row: it isn't Host-owned
+  at all. `IEventBus` is DI-public (ADR-0020) precisely because it carries
+  no orchestration authority — a module resolving it is not reaching back
+  into anything the Host would need to keep private, unlike Discovery,
+  Registration, or Lifecycle immediately above it in this table.
 - Every row implicitly cites ADR-0017 (Discovery/Registration/Lifecycle are
   Host-owned, never DI-public) and ADR-0011 (the order in which the
   `TempestHost`-owned objects come into existence).

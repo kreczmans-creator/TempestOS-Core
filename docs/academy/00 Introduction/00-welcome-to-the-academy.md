@@ -49,10 +49,12 @@ what alternatives were weighed and why this one won.
   holistically: the whole module pipeline, how its stages relate, and why the
   boundaries between them sit where they do.
 - **03 Work Packages** — a detailed retrospective for each major piece of work
-  (currently WP 2.1 through WP 2.7), following a consistent thirteen-section
-  template: introduction, purpose, background, the problem, the design,
-  alternatives considered, why this solution was chosen, architectural
-  principles, benefits, trade-offs, common mistakes, future evolution, and key
+  (currently WP 2.1 through WP 4.4E, spanning the Runtime Foundation and the
+  ongoing v0.4.0 Platform Services milestone — see `Academy Index.md` for the
+  complete, current list), following a consistent thirteen-section template:
+  introduction, purpose, background, the problem, the design, alternatives
+  considered, why this solution was chosen, architectural principles,
+  benefits, trade-offs, common mistakes, future evolution, and key
   takeaways. These are the deepest, most detailed documents in the Academy —
   read the work package retrospective for whatever you're about to change, before
   you change it.
@@ -86,6 +88,24 @@ decision, add a new ADR and update the relevant work package documentation and
 retrospective — this is not optional academic record-keeping; it is how the next
 person avoids re-deriving reasoning that already exists, or worse, silently
 undoing a decision that was made for a reason they can't see from the code alone.
+
+## Where This History Begins
+
+The Academy's own retrospectives begin at WP 2.1 (Framework Discovery), the
+first work package built to the engineering discipline this document
+describes. Before it, the repository already contained a small, pre-existing
+`Tempest.Core`/`Tempest.App` bootstrap (configuration, hosting, logging, and
+project-management services predating any notion of "modules") and a
+now-retired Python prototype, archived in favour of the C# implementation as
+part of a repository stabilisation pass. That stabilisation — cleaning up
+the repository structure, wiring the test project into the solution, adding
+standard `.gitignore`/`global.json`/`Directory.Build.props` conventions — is
+real, completed work, but it is housekeeping, not an architectural work
+package: it made no design decision meeting Engineering Governance §5's ADR
+bar, and introduced no runtime capability of its own for an Academy
+retrospective to document. It is recorded here, honestly, rather than
+silently treated as if the Academy's discipline had always been in place —
+consistent with the Note on Honesty below.
 
 ## A Note on Honesty
 

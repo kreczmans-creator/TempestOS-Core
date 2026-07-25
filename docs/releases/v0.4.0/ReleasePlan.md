@@ -2,8 +2,8 @@
 
 ## Status
 
-**In progress.** `WP 4.0` through `WP 4.2` are complete (see `WorkPackages.md`
-and `CHANGELOG.md` for current, authoritative status); `WP 4.3` onward have
+**In progress.** `WP 4.0` through `WP 4.4E` are complete (see `WorkPackages.md`
+and `CHANGELOG.md` for current, authoritative status); `WP 4.5` onward have
 not begun. This document, and the rest of `docs/releases/v0.4.0/`, exist to
 scope the release before any code is written — per
 `docs/releases/FOUNDATION.md`, architecture precedes implementation for

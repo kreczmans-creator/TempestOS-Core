@@ -3,9 +3,15 @@
 ## Purpose
 
 This standard describes the testing conventions consistently applied across
-WP 2.1 through WP 2.4's test suites (53 tests at time of writing, all passing,
-zero warnings on every build), so future work packages extend the existing
-approach rather than introducing an inconsistent one alongside it.
+every TempestOS work package, from WP 2.1's 53 tests through WP 4.4E's 313
+(all passing, zero warnings on every build, verified from a clean,
+fully-committed tree before any work package is reported done), so future
+work packages extend the existing approach rather than introducing an
+inconsistent one alongside it. The specific count is not the point — see
+`CHANGELOG.md`/`WorkPackages.md` for the current, authoritative total — the
+point is that the same disciplined approach below has now been applied,
+without deviation, across ten times as many tests as existed when this
+document was first written.
 
 ## The Internal Test Seam Pattern
 
@@ -55,6 +61,40 @@ Failed modules, Disposal order"). The standard is: every category in the brief
 gets at least one test whose name and assertions make clear which category it
 satisfies — a reviewer should be able to match every required category to a
 specific test without ambiguity.
+
+## Prefer the Real Implementation Over a Mock
+
+**Established from WP 2.1 onward and made explicit, as a named brief
+requirement, from WP 4.2 onward: use the real, production implementation
+under test wherever practical; reserve a test double for the one thing a
+real implementation genuinely cannot let a test observe or control.**
+
+- WP 4.2 (Plugin Manifest) built `DynamicPluginAssemblyBuilder`
+  (`System.Reflection.Emit.PersistedAssemblyBuilder`) to construct a
+  genuinely valid, loadable compiled assembly at test time, rather than a
+  test double standing in for "an assembly" — proving `PluginAssemblyLoader`
+  against a real `Assembly.LoadFrom` call, and proving Module Discovery's
+  own, completely unmodified `AppDomain.CurrentDomain.GetAssemblies()` scan
+  genuinely sees a plugin-loaded assembly, not merely a simulated one.
+- WP 4.4D (Event Bus) and WP 4.4E (Sample Module Event Integration) both
+  test against the real `EventBus` implementation throughout — subscription
+  ordering, snapshot semantics, re-entrant publishing, and failure isolation
+  are all proven by constructing a real `EventBus` and real event/handler
+  types, never a mocked `IEventBus`.
+- The one recurring, accepted exception is a **level-recording `ILogger`**
+  (`RecordingLogger`, `RecordingLevelLogger`), used specifically to observe
+  *what was logged, and at what severity* — a real `ILogger` implementation
+  cannot make its own internal log calls assertable any other way, and
+  substituting one here does not stand in for any production behaviour
+  under test; it exists purely to make an otherwise-unobservable side
+  effect (a log line) checkable.
+
+This is a stronger standard than "prefer integration tests" in the generic
+sense — it is a specific, repeatable rule: before reaching for a test
+double, ask whether the real type can be constructed and used directly in
+the test at acceptable cost. If it can, use it. If not, name specifically
+*why not* (as `RecordingLogger`'s own doc comment does), rather than
+defaulting to a mock as a matter of habit.
 
 ## Regression Tests for Discovered Bugs
 
