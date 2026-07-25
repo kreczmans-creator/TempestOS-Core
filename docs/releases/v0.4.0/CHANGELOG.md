@@ -72,10 +72,26 @@ reflected here.
   `ModuleLifecycleManager`, `TempestHost`, `TempestServiceProvider`, and
   `ClockModule` are byte-for-byte unchanged. This was the last remaining
   prerequisite before `WP 4.4` — none remain.
+- **Event Bus architecture (WP 4.4)** — design only; no code. ADR-0028,
+  `Event Bus Architecture.md`. A task assuming `IEventBus` already existed
+  (`WP 4.4C`, extending `ClockModule` to publish through it) was
+  investigated against the actual repository first and found no
+  `IEventBus` anywhere; this architecture phase was authorised instead of
+  building one under time pressure. Designs `IEventBus`/`EventBus` in
+  full: imperative `Subscribe`/`Unsubscribe`; sequential `PublishAsync`
+  dispatch in subscription order over a per-call snapshot, making
+  re-entrant publish safe without a deferred queue; unconditional
+  per-subscriber failure isolation with no critical opt-in; registration
+  as an ordinary container-constructed singleton, requiring no new DI
+  capability. Recorded RD-0019 (DI-auto-discovered handlers), RD-0020
+  (deferred/queued re-entrant publishing), RD-0021 (polymorphic event
+  dispatch), RD-0022 (a per-subscriber critical opt-in). `ClockModule`
+  remains completely untouched; its extension follows only after `WP 4.4`
+  implementation.
 
 _Still planned, per `WorkPackages.md`:_
 
-- Event Bus (WP 4.4)
+- Event Bus implementation (WP 4.4)
 - Background Services (WP 4.5)
 - Navigation Architecture (WP 4.6A), then Navigation Implementation
   (WP 4.6B)
@@ -139,6 +155,13 @@ _Still planned, per `WorkPackages.md`:_
   `Version` without instantiating it, so such a module may declare a
   DI-resolvable constructor; every module without the attribute is
   completely unaffected. This was the last architectural blocker before
+  `WP 4.4` implementation.
+- **ADR-0028** — Event Bus Dispatch, Subscription, and Failure Model.
+  Decided during `WP 4.4`'s own architecture phase — imperative
+  subscription, sequential snapshot-based dispatch in subscription order,
+  unconditional per-subscriber failure isolation with no critical opt-in,
+  and registration as an ordinary container-constructed singleton needing
+  no new DI capability. This was the last architectural blocker before
   `WP 4.4` implementation.
 - Expected, not yet written: Navigation's `Tempest.Core` placement
   (`WP 4.6A`) — see `Architecture.md`. No further ADR is expected before

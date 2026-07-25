@@ -366,6 +366,27 @@ including through the real, unmodified `TempestHost`. `WP 4.4`'s own
 event-publishing implementation may now begin. No further prerequisite
 remains.
 
+**Update, WP 4.4C — Event Bus Integration, stopped without
+implementation.** A task assuming `IEventBus` already existed (extending
+`ClockModule` to publish through it) was investigated against the actual
+repository first, per this release's own established discipline. No
+`IEventBus` existed anywhere — `WP 4.4A`/`4.4B` had resolved a real but
+different prerequisite (constructor injection into discovered modules),
+not `WP 4.4` itself. No code was written against the false premise;
+`ClockModule` remains completely untouched.
+
+**Update, WP 4.4 (Event Bus Design, architecture phase) — resolved.**
+ADR-0028, *Event Bus Dispatch, Subscription, and Failure Model*, and
+`Event Bus Architecture.md` design `IEventBus`/`EventBus` in full:
+imperative `Subscribe`/`Unsubscribe`, sequential `PublishAsync` dispatch
+in subscription order over a per-call snapshot (making re-entrant publish
+safe without a deferred queue), unconditional per-subscriber failure
+isolation with no critical opt-in, and registration as an ordinary
+container-constructed singleton needing no new DI capability. Four
+Rejected Designs entries recorded (RD-0019–RD-0022). No implementation
+yet exists; this work package's own implementation, then `ClockModule`'s
+extension (`WP 4.4C`'s original objective), may now begin.
+
 ### Scope
 
 - Implement `IEventBus` against `WP 4.0`'s `IEvent`/`IEventHandler<T>`

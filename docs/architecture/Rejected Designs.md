@@ -509,3 +509,123 @@ constructor injection," which the chosen, additive design already
 satisfies without it.
 
 **Source.** ADR-0027, Alternatives Considered.
+
+---
+
+## RD-0019 — DI-Auto-Discovered Event Handlers
+
+**Considered during:** WP 4.4 (ADR-0028, Event Bus Dispatch, Subscription,
+and Failure Model).
+
+**Rejected because:** letting the Event Bus discover every registered
+`IEventHandler<T>` implementation automatically, rather than requiring an
+explicit `Subscribe` call, would require `TempestServiceProvider` to
+resolve *every* registration for a given service type
+(`IEnumerable<IEventHandler<TEvent>>`) — a genuine new container
+capability. `ADR-0005`'s deliberately minimal container has never needed
+multi-registration resolution and does not have it; adding it would be a
+real Dependency Injection platform-service change, explicitly out of this
+work package's own scope, for a convenience no current consumer has asked
+for. Imperative `Subscribe`/`Unsubscribe` achieves the identical outcome
+with zero container changes.
+
+**Reversibility.** Cheap to add later, purely additively, alongside
+imperative subscription rather than replacing it, if a real need for
+auto-discovery ever emerges (for example, a future work package with many
+handlers where explicit `Subscribe` calls become genuinely repetitive
+boilerplate).
+
+**Revisit trigger.** If a real, demonstrated repetition problem emerges
+from imperative subscription across many modules — not speculatively now,
+with zero real subscribers yet built.
+
+**Source.** ADR-0028, Decision (Subscription model).
+
+---
+
+## RD-0020 — Deferred, Queued Re-Entrant Publishing
+
+**Considered during:** WP 4.4 (ADR-0028, Event Bus Dispatch, Subscription,
+and Failure Model).
+
+**Rejected because:** queueing a `PublishAsync` call made from within a
+handler's own `HandleAsync`, processing it only after the current dispatch
+completes, is a well-established pattern in other event-aggregator designs
+— but it requires real, new infrastructure (an internal queue, a
+"dispatch in progress" flag, and a draining loop) to solve a problem the
+chosen design does not actually have: because each `PublishAsync` call
+snapshots its own subscriber list independently, a nested call is already
+safe and well-defined as an ordinary nested method call, with no risk of
+mutating the outer dispatch's own iteration state. Building the queue
+machinery anyway would be speculative complexity for a correctness
+property the simpler design already provides.
+
+**Reversibility.** Moderate cost to introduce later — would change nested
+publishes from "resolved immediately, in-line" to "resolved after the
+current dispatch completes," a real behavioural difference any existing
+consumer would need to account for, not a purely additive change.
+
+**Revisit trigger.** If a genuine need arises for breadth-first,
+wave-by-wave event ordering across nested publishes (rather than
+depth-first, immediate resolution) — not speculatively, since no current
+consumer publishes re-entrantly at all yet.
+
+**Source.** ADR-0028, Decision (Dispatch: sequential, awaited,
+snapshot-based).
+
+---
+
+## RD-0021 — Polymorphic Event Dispatch
+
+**Considered during:** WP 4.4 (ADR-0028, Event Bus Dispatch, Subscription,
+and Failure Model).
+
+**Rejected because:** letting a subscriber of a base event type or shared
+interface also receive publications of a derived event type is a real,
+plausible future capability — but no current event has, or needs, a type
+hierarchy, and deciding a dispatch rule (does a subscriber of the base
+type receive the derived publication before or after the base type's own
+subscribers; does it receive it at all by default or only by explicit
+opt-in) for a hierarchy that does not exist would be guessing, not
+designing.
+
+**Reversibility.** Cheap — exact-type dispatch can be extended to also
+walk a type's own interface/base-class chain later, purely additively,
+without changing any existing subscriber's own behaviour (an exact-type
+subscription would continue to work exactly as it does today).
+
+**Revisit trigger.** Once a real event type hierarchy is actually
+proposed by a future work package — not before.
+
+**Source.** ADR-0028, Decision (Dispatch is by exact event type only).
+
+---
+
+## RD-0022 — A Per-Subscriber Critical Opt-In, Mirroring `ICriticalBackgroundService`
+
+**Considered during:** WP 4.4 (ADR-0028, Event Bus Dispatch, Subscription,
+and Failure Model).
+
+**Rejected because:** `ICriticalBackgroundService` (ADR-0021) is a
+meaningful opt-in specifically because a background service is a live,
+independently-running component capable of making its own self-assessment
+about how load-bearing it is. An event subscriber is invoked synchronously,
+by something that already exists and is already running, reacting to
+something that already happened — a different enough shape that the same
+opt-in pattern does not obviously transfer, echoing exactly the same
+reasoning RD-0011 already applied to reject an analogous opt-in for
+plugins. No current or anticipated subscriber has a demonstrated need to
+be load-bearing enough that its own failure should abort the entire
+platform.
+
+**Reversibility.** Cheap — purely additive to `IEventHandler<T>` or a
+future marker interface, if a real, demonstrated need for it ever
+emerges; no existing subscriber's behaviour would need to change.
+
+**Revisit trigger.** If a genuine, demonstrated need arises for some
+subscribers to be load-bearing enough that their failure should abort
+startup or fault the Host — not speculatively, and not merely because
+`ICriticalBackgroundService` happens to look like a reusable template
+(the same caution RD-0011 already named).
+
+**Source.** ADR-0028, Decision (Failure model).

@@ -409,30 +409,41 @@ Behaviour.md*, *Ownership Matrix.md* (all `docs/architecture/`).
 
 ---
 
-## Event Bus *(contract implemented — WP 4.0; service planned — WP 4.4)*
+## Event Bus *(contract implemented — WP 4.0; dispatch/subscription/failure model architected — WP 4.4, ADR-0028; service not yet implemented)*
 
 **Responsibility.** Lets modules publish and subscribe to events without
 depending on each other directly. `IEvent` marks a published fact; a
 concrete event type carries whatever data its subscribers need.
-`IEventHandler<T>` is the consumer-facing subscription contract. Neither
-contract does anything yet — no bus exists to publish through or dispatch
-from.
+`IEventHandler<T>` is the consumer-facing subscription contract. Publish
+is imperative (`Subscribe`/`Unsubscribe`/`PublishAsync`), dispatched
+sequentially in subscription order over a per-call snapshot, with every
+subscriber failure isolated unconditionally — see ADR-0028 and `Event Bus
+Architecture.md` for the complete design. No bus exists yet to publish
+through or dispatch from.
 
 **Key types.** `IEvent`, `IEventHandler<T>` (`Tempest.Core.Events`,
-implemented WP 4.0). `IEventBus` and its implementation — not yet defined;
-`WP 4.4`'s own deliverable.
+implemented WP 4.0). `IEventBus`/`EventBus` — designed in full (ADR-0028),
+not yet implemented; `WP 4.4`'s own implementation deliverable.
 
-**Dependencies.** None for the contracts themselves. The future `IEventBus`
-will be DI-public (ADR-0020), resolved like `IConfigurationProvider`/
-`ILogger`.
+**Dependencies.** None for the contracts themselves. `IEventBus` will be
+DI-public (ADR-0020), resolved like `IConfigurationProvider`/`ILogger` —
+registered as an ordinary container-constructed singleton
+(`services.Singleton<IEventBus, EventBus>()`), requiring no Composition
+Root treatment and no new Dependency Injection capability (ADR-0028).
 
-**Consumers.** Any module, once `WP 4.4` implements the bus.
+**Consumers.** Any module, once `WP 4.4` implements the bus — including a
+plugin-loaded module (`Tempest.Core.Plugins`, `WP 4.2`) and a future
+`IHostedService` (`WP 4.5`), neither of which requires any special-casing
+(ADR-0028).
 
 **ADR references.** ADR-0020 (*The Event Bus Is a DI-Public Platform
 Service*), ADR-0023 (*Platform Layering*), ADR-0024 (*Platform Contracts
-Are Packaged by Capability*).
+Are Packaged by Capability*), ADR-0028 (*Event Bus Dispatch, Subscription,
+and Failure Model* — architected, not yet implemented).
 
-**Academy references.** WP 4.0 retrospective (*Platform Contracts*);
+**Academy references.** WP 4.0 retrospective (*Platform Contracts*); WP 4.4
+retrospective (*Event Bus Architecture*); `Event Bus Architecture.md`;
+Rejected Designs RD-0019 through RD-0022;
 `docs/releases/v0.4.0/WorkPackages.md` (`WP 4.4`).
 
 ---
