@@ -88,10 +88,28 @@ reflected here.
   dispatch), RD-0022 (a per-subscriber critical opt-in). `ClockModule`
   remains completely untouched; its extension follows only after `WP 4.4`
   implementation.
+- **Event Bus implementation (WP 4.4D)** — `IEventBus`, `EventBus`
+  (`Tempest.Core.Events`), implemented exactly per ADR-0028. Imperative
+  `Subscribe`/`Unsubscribe`; `PublishAsync` dispatches sequentially, in
+  subscription order, over an immutable per-call snapshot; every
+  subscriber exception is caught, logged at `Error`, and never rethrown;
+  cancellation is checked between subscribers and propagates uncaught.
+  `TempestHost` now registers `EventBus` as an ordinary singleton
+  (`services.Singleton<IEventBus, EventBus>()`) in its existing Platform
+  Services Registered block — one new line; no other production file
+  changed. 24 new tests, exercising `EventBus` directly: subscribe/
+  unsubscribe, subscription-ordered sequential dispatch (proven via an
+  in-flight-concurrency counter), snapshot semantics under mid-dispatch
+  addition/removal, re-entrant publishing (same and different event
+  type), exception isolation and `Error`-level logging, cancellation
+  propagation, and the DI registration itself. `ClockModule` remains
+  completely untouched — no event publishing, no sample module
+  integration.
 
 _Still planned, per `WorkPackages.md`:_
 
-- Event Bus implementation (WP 4.4)
+- `ClockModule` extension to publish through the Event Bus (`WP 4.4C`'s
+  original objective, now unblocked)
 - Background Services (WP 4.5)
 - Navigation Architecture (WP 4.6A), then Navigation Implementation
   (WP 4.6B)
@@ -161,8 +179,8 @@ _Still planned, per `WorkPackages.md`:_
   subscription, sequential snapshot-based dispatch in subscription order,
   unconditional per-subscriber failure isolation with no critical opt-in,
   and registration as an ordinary container-constructed singleton needing
-  no new DI capability. This was the last architectural blocker before
-  `WP 4.4` implementation.
+  no new DI capability. Fully realised by `WP 4.4D` — this was the last
+  architectural blocker before `WP 4.4` implementation.
 - Expected, not yet written: Navigation's `Tempest.Core` placement
   (`WP 4.6A`) — see `Architecture.md`. No further ADR is expected before
   `WP 4.4` implementation.

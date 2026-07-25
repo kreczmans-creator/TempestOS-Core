@@ -105,7 +105,7 @@ defined (Command Framework's own work, WP 4.7) — only the command shape
 itself exists so far. Never depends on, or is invoked through, Navigation
 — see ADR-0022.
 
-### Event Bus *(contract implemented — v0.4.0, WP 4.0; dispatch/subscription/failure model architected — WP 4.4, ADR-0028; service not yet implemented)*
+### Event Bus *(implemented — v0.4.0, WP 4.0 contracts; WP 4.4D bus, ADR-0028)*
 
 A DI-public platform service (`IEventBus`) letting modules publish and
 subscribe to events without depending on each other directly. Resolved via
@@ -121,11 +121,13 @@ publishing") safe without any deferred-queue mechanism. Every subscriber
 failure is isolated unconditionally, with no critical-subscriber opt-in —
 all decided by ADR-0028. Its consumer-facing contracts, `IEvent` and
 `IEventHandler<T>` (`Tempest.Core.Events`), are implemented as of WP 4.0;
-the bus itself — the thing that actually dispatches a published event to
-its subscribers — is designed in full but not yet implemented (`WP 4.4`).
-Not to be confused with a **Command** (see Command Framework, v0.4.0
-planning): an event has zero or more subscribers and no expected result; a
-command has exactly one handler and an expected result.
+the bus itself — `IEventBus`/`EventBus`, the thing that actually dispatches
+a published event to its subscribers — is implemented as of `WP 4.4D`,
+registered as an ordinary singleton during Platform Services Registered.
+No module consumes it yet; `ClockModule`'s own extension is a separate,
+later work package. Not to be confused with a **Command** (see Command
+Framework, v0.4.0 planning): an event has zero or more subscribers and no
+expected result; a command has exactly one handler and an expected result.
 
 ### Fail Fast
 

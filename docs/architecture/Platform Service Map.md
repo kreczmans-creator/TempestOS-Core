@@ -28,7 +28,7 @@ of date is worse than no map at all, because it will be trusted.
 | Lifecycle | Implemented (WP 2.3) | Registration, Dependency Injection, Logging | Host |
 | Module SDK | Implemented (WP 4.1) — not Host-orchestrated; a developer-facing convenience layer, not a platform service in its own right | `IModule`, `IModuleLifecycle` | Any module author |
 | Host | Implemented (WP 2.7B) | Configuration, Logging, Discovery, Registration, Lifecycle, Dependency Injection | Tempest.App |
-| Event Bus | Contract implemented (WP 4.0: `IEvent`, `IEventHandler<T>`); service planned (WP 4.4) — placement decided, ADR-0020 | Dependency Injection | Any module |
+| Event Bus | **Implemented — WP 4.4D** (`IEventBus`/`EventBus`, `Tempest.Core.Events`) — dispatch/subscription/failure model per ADR-0028 | Dependency Injection | Any module (none yet consumes it — `ClockModule` untouched) |
 | Background Services | Contract implemented (WP 4.0: `IHostedService`, `ICriticalBackgroundService`); orchestration planned (WP 4.5) — failure model decided, ADR-0021 | Host, Dependency Injection | Any module declaring a hosted service |
 | Command Framework | Contract implemented (WP 4.0: `ICommand`); dispatcher planned (WP 4.7) — orthogonal to Navigation, ADR-0022 | Dependency Injection | Any module |
 | Plugin Manifest | **Implemented — WP 4.2** (`Tempest.Core.Plugins`) | Host (Phases 3.1/3.2, ADR-0026 — a pre-Discovery step) | Module Discovery (unchanged), any real plugin |
@@ -409,7 +409,7 @@ Behaviour.md*, *Ownership Matrix.md* (all `docs/architecture/`).
 
 ---
 
-## Event Bus *(contract implemented — WP 4.0; dispatch/subscription/failure model architected — WP 4.4, ADR-0028; service not yet implemented)*
+## Event Bus *(contract implemented — WP 4.0; implemented — WP 4.4D, ADR-0028)*
 
 **Responsibility.** Lets modules publish and subscribe to events without
 depending on each other directly. `IEvent` marks a published fact; a
@@ -418,33 +418,35 @@ concrete event type carries whatever data its subscribers need.
 is imperative (`Subscribe`/`Unsubscribe`/`PublishAsync`), dispatched
 sequentially in subscription order over a per-call snapshot, with every
 subscriber failure isolated unconditionally — see ADR-0028 and `Event Bus
-Architecture.md` for the complete design. No bus exists yet to publish
-through or dispatch from.
+Architecture.md` for the complete design. Built and tested; no module
+consumes it yet — `ClockModule`'s own extension is a separate, later work
+package.
 
 **Key types.** `IEvent`, `IEventHandler<T>` (`Tempest.Core.Events`,
-implemented WP 4.0). `IEventBus`/`EventBus` — designed in full (ADR-0028),
-not yet implemented; `WP 4.4`'s own implementation deliverable.
+implemented WP 4.0). `IEventBus`/`EventBus` (`Tempest.Core.Events`) —
+implemented WP 4.4D, per ADR-0028's design in full.
 
-**Dependencies.** None for the contracts themselves. `IEventBus` will be
+**Dependencies.** None for the contracts themselves. `IEventBus` is
 DI-public (ADR-0020), resolved like `IConfigurationProvider`/`ILogger` —
 registered as an ordinary container-constructed singleton
-(`services.Singleton<IEventBus, EventBus>()`), requiring no Composition
+(`services.Singleton<IEventBus, EventBus>()` in `TempestHost.cs`'s
+existing Platform Services Registered block), requiring no Composition
 Root treatment and no new Dependency Injection capability (ADR-0028).
 
-**Consumers.** Any module, once `WP 4.4` implements the bus — including a
-plugin-loaded module (`Tempest.Core.Plugins`, `WP 4.2`) and a future
-`IHostedService` (`WP 4.5`), neither of which requires any special-casing
-(ADR-0028).
+**Consumers.** Any module — including a plugin-loaded module
+(`Tempest.Core.Plugins`, `WP 4.2`) and a future `IHostedService`
+(`WP 4.5`), neither of which requires any special-casing (ADR-0028). None
+yet subscribes or publishes; `ClockModule` remains untouched.
 
 **ADR references.** ADR-0020 (*The Event Bus Is a DI-Public Platform
 Service*), ADR-0023 (*Platform Layering*), ADR-0024 (*Platform Contracts
 Are Packaged by Capability*), ADR-0028 (*Event Bus Dispatch, Subscription,
-and Failure Model* — architected, not yet implemented).
+and Failure Model* — fully realised, WP 4.4D).
 
 **Academy references.** WP 4.0 retrospective (*Platform Contracts*); WP 4.4
-retrospective (*Event Bus Architecture*); `Event Bus Architecture.md`;
-Rejected Designs RD-0019 through RD-0022;
-`docs/releases/v0.4.0/WorkPackages.md` (`WP 4.4`).
+architecture retrospective (*Event Bus Architecture*); WP 4.4D
+implementation retrospective; `Event Bus Architecture.md`; Rejected Designs
+RD-0019 through RD-0022; `docs/releases/v0.4.0/WorkPackages.md` (`WP 4.4`).
 
 ---
 

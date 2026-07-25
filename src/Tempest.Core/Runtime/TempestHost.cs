@@ -1,5 +1,6 @@
 using Tempest.Core.Configuration;
 using Tempest.Core.DependencyInjection;
+using Tempest.Core.Events;
 using Tempest.Core.Logging;
 using Tempest.Core.Modules;
 using Tempest.Core.Plugins;
@@ -194,6 +195,7 @@ public sealed class TempestHost : ITempestHost
         services.AddInstance(loggerFactory);
         services.AddInstance(logger);
         services.AddInstance(platformVersionProvider);
+        services.Singleton<IEventBus, EventBus>();
         services.AddDiscoveredModules(moduleManager.GetAll().Select(module => module.Descriptor));
         logger.Information("Host lifecycle phase completed: Platform Services Registered.");
 

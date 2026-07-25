@@ -387,6 +387,24 @@ Rejected Designs entries recorded (RD-0019–RD-0022). No implementation
 yet exists; this work package's own implementation, then `ClockModule`'s
 extension (`WP 4.4C`'s original objective), may now begin.
 
+**Update, WP 4.4D (Event Bus Implementation) — complete.**
+`IEventBus`/`EventBus` (`Tempest.Core.Events`) implemented exactly per
+ADR-0028, registered as an ordinary singleton
+(`services.Singleton<IEventBus, EventBus>()`) in `TempestHost.cs`'s
+existing Platform Services Registered block — one new line, no other
+production file touched. Proven with 24 new tests exercising `EventBus`
+directly: subscribe/unsubscribe, subscription-ordered sequential
+dispatch (proven via an in-flight-concurrency counter, not merely call
+order), snapshot semantics under mid-dispatch subscriber addition and
+removal, re-entrant publishing (same and different event type),
+unconditional per-subscriber exception isolation with `Error`-level
+logging, cancellation propagating uncaught between subscribers, and the
+DI registration itself. `ClockModule` remains completely untouched — no
+event publishing and no sample module integration were implemented here.
+The bus is now ready for a consumer; `ClockModule`'s own extension
+(`WP 4.4C`'s original objective) may begin as its own, separate work
+package.
+
 ### Scope
 
 - Implement `IEventBus` against `WP 4.0`'s `IEvent`/`IEventHandler<T>`

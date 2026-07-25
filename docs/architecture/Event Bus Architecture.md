@@ -1,14 +1,17 @@
 # Event Bus Architecture
 
-**Status: architecture only — WP 4.4. No production code exists yet.**
-This document is the design behind ADR-0028, produced the same way
-`WP 2.7A` preceded `WP 2.7B` and `WP 4.2`'s own architecture phase
-preceded its implementation: architecture first, implementation only once
-every open question is actually settled, never implied. It also closes
-out the `WP 4.4A`/`WP 4.4B` prerequisite chain: constructor injection into
-a discovered module now works (`WP 4.4B`), and this document designs the
-one thing that prerequisite chain existed to unblock — the Event Bus
-itself.
+**Status: implemented — WP 4.4D.** `IEventBus`/`EventBus`
+(`Tempest.Core.Events`) exist and are registered during the existing
+Platform Services Registered phase, exactly as designed below. This
+document was originally produced architecture-only, the same way `WP 2.7A`
+preceded `WP 2.7B` and `WP 4.2`'s own architecture phase preceded its
+implementation: architecture first, implementation only once every open
+question is actually settled, never implied. It also closed out the
+`WP 4.4A`/`WP 4.4B` prerequisite chain: constructor injection into a
+discovered module worked (`WP 4.4B`), and this document designed the one
+thing that prerequisite chain existed to unblock — the Event Bus itself,
+now built. `ClockModule` remains untouched; publishing through the bus is
+a separate, later work package's concern, not this one's.
 
 ## Objective
 
@@ -109,6 +112,18 @@ caught, logged, and never rethrown — there is no failure category here
 that escapes containment the way a Host-fatal platform-service failure
 does, so no new exception type needs to exist for anything to catch.
 
+**Implementation note (WP 4.4D).** Built exactly as sketched above: an
+internal `Dictionary<Type, List<object>>`, keyed by exact event type and
+guarded by a single `_gate` lock (mirroring `RuntimeModuleManager`'s own
+pattern), holds each event type's subscriber list. `Subscribe`/`Unsubscribe`
+mutate that list under the lock; `PublishAsync` takes an immutable
+`ToList()` snapshot under the lock, then dispatches sequentially outside
+it, exactly as designed. No new production capability was needed beyond
+what this document already specified — `TempestServiceProvider`,
+`ServiceCollection.Singleton<TService, TImplementation>()`, and
+`ModuleLifecycleManager.RunBatchAsync`'s own cancellation/isolation shape
+were all reused, not extended.
+
 ### Dependency Diagram
 
 ```mermaid
@@ -157,64 +172,79 @@ established cancellation boundary exactly.
 
 | Type | Kind | New? |
 |---|---|---|
-| `Tempest.Core.Events.IEventBus` | Interface | Yes — named by ADR-0020, designed in full here |
-| `Tempest.Core.Events.EventBus` | Sealed class | Yes — the concrete implementation |
+| `Tempest.Core.Events.IEventBus` | Interface | Yes — named by ADR-0020, designed in full here, **implemented WP 4.4D** |
+| `Tempest.Core.Events.EventBus` | Sealed class | Yes — the concrete implementation, **implemented WP 4.4D** |
 
 No change to `IEvent`, `IEventHandler<T>`, or any other existing public
-type. No new exception type (see Component Design, above).
+type. No new exception type (see Component Design, above) — none was
+needed; the implementation confirms this.
 
 ## Migration Strategy
 
-**Nothing migrates — this is new capability, not a change to existing
-behaviour.** No module today depends on `IEventBus` (none can, since it
-does not exist); nothing needs to be rewritten when it is built. For
-`WP 4.4`'s own implementation, once this design is realised:
+**Nothing migrated — this was new capability, not a change to existing
+behaviour.** No module depended on `IEventBus` before `WP 4.4D` (none
+could, since it did not exist); nothing needed to be rewritten to build
+it.
 
-1. Implement `IEventBus`/`EventBus` exactly as specified above.
-2. Register it in `TempestHost.cs`'s existing Platform Services Registered
-   block — one new line, no other change to that method.
-3. Extend `ClockModule` (a separate, later step — not this document's own
-   concern) to declare `[ModuleMetadata]`, accept `IEventBus` via
-   constructor injection, and publish from its lifecycle methods, exactly
-   as `WP 4.4C`'s own original brief described — now unblocked, with a
-   real bus to publish through.
-4. Add a second, small module (`WP 4.4`'s own Deliverable already
+1. ✅ **Implemented `IEventBus`/`EventBus` exactly as specified above**
+   (`WP 4.4D`).
+2. ✅ **Registered in `TempestHost.cs`'s existing Platform Services
+   Registered block** — one new line
+   (`services.Singleton<IEventBus, EventBus>();`), no other change to that
+   method (`WP 4.4D`).
+3. **Extend `ClockModule`** (a separate, later work package — not
+   `WP 4.4D`'s own concern) to declare `[ModuleMetadata]`, accept
+   `IEventBus` via constructor injection, and publish from its lifecycle
+   methods, exactly as `WP 4.4C`'s own original brief described — now
+   unblocked, with a real, tested bus to publish through.
+4. **Add a second, small module** (`WP 4.4`'s own Deliverable already
    anticipates this — "its companion module... if one does not already
    exist") that subscribes to prove the bus against two real,
-   SDK-conformant modules, not a synthetic fixture.
+   SDK-conformant modules, not a synthetic fixture. Not `WP 4.4D`'s own
+   concern either.
 
 ## Testing Implications
 
-Prospective — no test is written by this architecture-only work package.
-When implemented, at minimum:
+**Realised in full — `WP 4.4D`.** `tests/Tempest.Core.Tests/Events/
+EventBusTests.cs` (24 tests) proves every item this section originally
+anticipated, against the real `EventBus` implementation, no mocks except
+a level-recording `ILogger` used only to observe log output:
 
-- **Publish with zero subscribers** — a no-op, not an error (per `IEvent`'s
-  own existing documentation).
+- **Publish with zero subscribers** — a no-op, not an error.
 - **Publish with multiple subscribers** — all invoked, in subscription
-  order.
+  order, deterministically across repeated publishes.
+- **Sequential dispatch** — proven by an in-flight counter that never
+  exceeds one concurrent handler.
 - **A throwing subscriber does not prevent a sibling subscriber** from
-  receiving the same event, and does not fault the Host — `WP 4.4`'s own
-  pre-existing Acceptance Criteria, now precisely specified by this design.
-- **Re-entrant publish** — a handler publishing a new event (the same or a
-  different type) from within its own `HandleAsync` completes correctly,
-  proving the snapshot-based dispatch model is genuinely safe, not merely
-  argued to be.
-- **Unsubscribe** stops further delivery to that handler without affecting
-  other subscribers.
+  receiving the same event, and its exception never reaches the publisher.
+- **An isolated subscriber failure is logged at `Error`**, and nothing is
+  logged at `Error` when no subscriber throws.
+- **Re-entrant publish**, both of a different event type and of the same
+  event type (nested enter/exit ordering proven explicitly), completes
+  correctly over independent snapshots.
+- **Snapshot semantics**: a subscriber added or removed during dispatch
+  does not affect the in-flight publish, but is correctly reflected — added
+  or no longer invoked — on the next one.
+- **Unsubscribe** stops further delivery without affecting other
+  subscribers; unsubscribing a never-subscribed handler is a no-op.
 - **Cancellation** propagates to the publisher, uncaught, checked between
-  subscribers.
-- **Two real, SDK-conformant modules** (mirroring `WP 4.3`'s own
-  `ClockModulePipelineTests` composition pattern) — one publishing, one
-  subscribing, resolved entirely through constructor injection, with no
-  direct reference between them anywhere in the proof.
+  subscribers, never mid-`HandleAsync`.
+- **Platform Service registration**: `services.Singleton<IEventBus,
+  EventBus>()` resolves to the same `EventBus` singleton instance on every
+  call, through the real `TempestServiceProvider` — no new DI capability
+  was needed.
+
+No module, `ClockModule`, or event-publishing feature was exercised by any
+of these tests — only `EventBus` itself, exactly as `WP 4.4D`'s own scope
+required.
 
 ## Risks
 
-- **`WP 4.4`'s own implementation is the first time any of this design is
-  actually exercised** — same category of risk every architecture-only
-  phase in this release has carried, mitigated the same way: implement
-  against dedicated test modules first, exactly as `WP 4.4B` did for
-  `ModuleMetadataAttribute`, before touching `ClockModule`.
+- ~~**`WP 4.4`'s own implementation is the first time any of this design is
+  actually exercised**~~ **Retired, `WP 4.4D`** — implemented and proven
+  against 24 dedicated unit tests exercising `EventBus` directly, exactly
+  as `WP 4.4B` did for `ModuleMetadataAttribute`, before touching
+  `ClockModule` (still untouched).
 - **No automatic unsubscription on module stop/dispose** (ADR-0028's own
   named, accepted gap) — a module author who forgets to unsubscribe keeps
   receiving events for the Host's whole remaining run. Not a defect this
@@ -233,6 +263,8 @@ per-subscriber critical opt-in mirroring ADR-0021).
 
 ## Documentation Impact
 
+**As of the architecture phase (`WP 4.4`):**
+
 - **New**: ADR-0028; this document; a `WP 4.4` architecture-phase Academy
   retrospective; four new Rejected Designs entries (RD-0019–RD-0022).
 - **Updated**: `Platform Service Map.md`'s Event Bus entry (architected,
@@ -240,6 +272,11 @@ per-subscriber critical opt-in mirroring ADR-0021).
   `WorkPackages.md`'s `WP 4.4` entry; `Risks.md` R3 (annotated, not
   retired — the distinction is now documented, but `WP 4.7` itself has not
   happened yet).
+
+**As of implementation (`WP 4.4D`)**: both entries updated again to
+"implemented"; a `WP 4.4D` implementation Academy retrospective added;
+`WorkPackages.md` and `CHANGELOG.md` updated with the implementation's own
+entry. `Risks.md` R3 unchanged by the implementation itself.
 - **Not required**: no `Host Lifecycle.md`/`Runtime State Machine.md`/
   `Failure Behaviour.md` change — no new phase, state, or Host-level
   failure category is introduced.
@@ -273,10 +310,10 @@ per-subscriber critical opt-in mirroring ADR-0021).
 
 ## Implementation Recommendation
 
-**Design is sound; `WP 4.4` implementation may now begin.** No further
-ADR is anticipated before it does. Recommended order: implement
-`IEventBus`/`EventBus` and prove it against dedicated test modules first
-(mirroring `WP 4.4B`'s own precedent exactly); only then extend
-`ClockModule` (and, if needed, add its companion) to publish and
-subscribe for real — the original `WP 4.4C` brief's own objective,
-now fully unblocked.
+**Implemented — `WP 4.4D`.** `IEventBus`/`EventBus` exist, are registered
+during the existing Platform Services Registered phase, and are proven by
+24 dedicated tests exercising `EventBus` directly (mirroring `WP 4.4B`'s
+own precedent exactly). `ClockModule` remains untouched. The bus is now
+ready for a consumer: extending `ClockModule` (and, if needed, adding its
+companion) to publish and subscribe for real — the original `WP 4.4C`
+brief's own objective — may proceed as a separate, later work package.
