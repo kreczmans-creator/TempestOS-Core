@@ -14,12 +14,13 @@ registration — `IEventBus` as an ordinary container-constructed singleton
 added there. No new phase; see Phase 6, below, and *Event Bus
 Architecture.md*/ADR-0028.
 
-**Update, WP 4.5 (design phase):** Phases 8.1 and 10.1 (Hosted Services
-Started, Hosted Services Stopped) are designed — not yet implemented —
-per ADR-0029/ADR-0030. Phase 6 also gains one new registration step
-(discovered hosted service types) once implemented. Decimal phase numbers
-mean "between 8 and 9" / "between 10 and 11" — no existing phase is
-renumbered; see ADR-0030 for why.
+**Update, WP 4.5:** Phases 8.1 and 10.1 (Hosted Services Started, Hosted
+Services Stopped) are now implemented (`Tempest.Core.BackgroundServices`),
+exactly as ADR-0029/ADR-0030 specified. Phase 6 also gained one new
+registration step: every discovered hosted service type, registered as an
+ordinary self-referential singleton (`AddDiscoveredHostedServices`).
+Decimal phase numbers mean "between 8 and 9" / "between 10 and 11" — no
+existing phase was renumbered; see ADR-0030 for why.
 
 ## Purpose
 
@@ -50,10 +51,10 @@ Host is in the single `Starting` state.
 | 6 | Platform Services Registered | `Starting` |
 | 7 | Dependency Injection Built | `Starting` |
 | 8 | Module Initialisation | `Starting` |
-| 8.1 | Hosted Services Started *(ADR-0029/ADR-0030, designed — WP 4.5)* | `Starting` |
+| 8.1 | Hosted Services Started *(ADR-0029/ADR-0030, implemented — WP 4.5)* | `Starting` |
 | 9 | Runtime Running | `Running` |
 | 10 | Shutdown Requested | `Running` → `Stopping` |
-| 10.1 | Hosted Services Stopped *(ADR-0029/ADR-0030, designed — WP 4.5)* | `Stopping` |
+| 10.1 | Hosted Services Stopped *(ADR-0029/ADR-0030, implemented — WP 4.5)* | `Stopping` |
 | 11 | Module Disposal | `Stopping` |
 | 12 | Service Disposal | `Stopping` |
 | 13 | Host Disposed | `Disposed` |
@@ -226,11 +227,11 @@ container-constructed singleton (`services.Singleton<IEventBus, EventBus>()`,
 added WP 4.4D — requiring no Composition Root treatment, per ADR-0028, since
 its own constructor needs nothing `AddInstance` provides), every
 discovered module's concrete type (via `AddDiscoveredModules`, keyed by the
-`ModuleDescriptor` values Registration just produced), and — once WP 4.5 is
-implemented — every discovered hosted service type as an ordinary,
-self-referential singleton (`services.Singleton(type, type)`, the same
-Type-based overload `AddDiscoveredModules` already uses; designed —
-ADR-0029 — not yet implemented).
+`ModuleDescriptor` values Registration just produced), and every discovered
+hosted service type as an ordinary, self-referential singleton
+(`services.Singleton(type, type)` via `AddDiscoveredHostedServices`, the
+same Type-based overload `AddDiscoveredModules` already uses — implemented,
+WP 4.5, ADR-0029).
 
 **Entry criteria.** Module Registration has completed; Configuration,
 Logging, and Platform Version instances already exist (Platform Version's
@@ -298,8 +299,7 @@ not a module failure, and is Host-fatal.
 
 ### 8.1. Hosted Services Started
 
-**Status: designed — ADR-0029/ADR-0030 (`Tempest.Core.BackgroundServices`).
-Not yet implemented.**
+**Status: implemented — WP 4.5 (`Tempest.Core.BackgroundServices`).**
 
 **Purpose.** Construct `IHostedServiceManager` from the hosted service
 types discovered and registered during Platform Services Registered
@@ -333,15 +333,19 @@ exists, every module has been given the chance to start, every hosted
 service has been given the chance to start, and the Host waits for a
 shutdown request.
 
-**Entry criteria.** Module Initialisation, and (once implemented) Hosted
-Services Started, have both completed.
+**Entry criteria.** Module Initialisation and Hosted Services Started have
+both completed.
 
 **Exit criteria.** A shutdown request or a runtime exception is observed.
 
-**Failure behaviour.** Today, with hosted-service orchestration designed
-but not yet implemented, there is no code path that can fault the Host
-*during* Running — this phase's failure behaviour is defined now so that
-the `WP 4.5` implementation has an established policy to follow rather
+**Failure behaviour.** No code path produced by `WP 4.5` can fault the Host
+*during* Running — a hosted service's own failure is fully resolved at
+Phase 8.1 (isolated) or 10.1 (isolated, or Host-fatal if critical); `WP 4.5`
+implements no ongoing supervision, monitoring, or restart policy for a
+hosted service once it reaches `Running` (deliberately out of scope — see
+ADR-0029/ADR-0030's own stated exclusions). This phase's failure behaviour
+remains defined regardless, so any future work package that *does*
+introduce ongoing supervision has an established policy to follow rather
 than needing to invent one: an unhandled exception during Running is
 Host-fatal (`Running → Faulted`), on the same reasoning as any other
 platform-level failure under ADR-0013.
@@ -362,7 +366,7 @@ either the startup cancellation token or a shutdown request has fired
 (ADR-0018).
 
 **Exit criteria.** The Host has transitioned to `Stopping` and begun
-Hosted Services Stopped (once implemented), then Module Disposal.
+Hosted Services Stopped, then Module Disposal.
 
 **Failure behaviour.** Not applicable — receiving a shutdown request, or
 being cancelled during startup, is not itself a failure mode; see *Shutdown
@@ -374,8 +378,7 @@ this phase.
 
 ### 10.1. Hosted Services Stopped
 
-**Status: designed — ADR-0029/ADR-0030 (`Tempest.Core.BackgroundServices`).
-Not yet implemented.**
+**Status: implemented — WP 4.5 (`Tempest.Core.BackgroundServices`).**
 
 **Purpose.** Stop every started hosted service, in the reverse of Phase
 8.1's own order, before any module is stopped.

@@ -29,7 +29,7 @@ of date is worse than no map at all, because it will be trusted.
 | Module SDK | Implemented (WP 4.1) — not Host-orchestrated; a developer-facing convenience layer, not a platform service in its own right | `IModule`, `IModuleLifecycle` | Any module author |
 | Host | Implemented (WP 2.7B) | Configuration, Logging, Discovery, Registration, Lifecycle, Dependency Injection | Tempest.App |
 | Event Bus | **Implemented — WP 4.4D** (`IEventBus`/`EventBus`, `Tempest.Core.Events`) — dispatch/subscription/failure model per ADR-0028; **consumed — WP 4.4E** | Dependency Injection | Any module — first real consumer: `ClockModule`/`ClockLifecycleObserverModule` (`WP 4.4E`) |
-| Background Services | Contract implemented (WP 4.0: `IHostedService`, `ICriticalBackgroundService`); discovery/ownership/orchestration and Host Lifecycle placement designed (WP 4.5, ADR-0029/ADR-0030) — failure model decided, ADR-0021; implementation not yet begun | Host, Dependency Injection | Any module declaring a hosted service |
+| Background Services | **Implemented — WP 4.5** (`IHostedServiceDiscoveryService`/`HostedServiceDiscoveryService`, `IHostedServiceManager`/`HostedServiceManager`, `Tempest.Core.BackgroundServices`) — discovery, ownership, orchestration, and Host Lifecycle placement per ADR-0029/ADR-0030; failure model per ADR-0021 | Host, Dependency Injection | Any module declaring a hosted service |
 | Command Framework | Contract implemented (WP 4.0: `ICommand`); dispatcher planned (WP 4.7) — orthogonal to Navigation, ADR-0022 | Dependency Injection | Any module |
 | Plugin Manifest | **Implemented — WP 4.2** (`Tempest.Core.Plugins`) | Host (Phases 3.1/3.2, ADR-0026 — a pre-Discovery step) | Module Discovery (unchanged), any real plugin |
 | Project Engine | Planned | Undetermined | Undetermined |
@@ -455,7 +455,7 @@ Architecture.md`; Rejected Designs RD-0019 through RD-0022;
 
 ---
 
-## Background Services *(contract implemented — WP 4.0; discovery/ownership/orchestration and Host Lifecycle placement designed — WP 4.5, ADR-0029/ADR-0030; implementation not yet begun)*
+## Background Services *(implemented — WP 4.5, ADR-0029/ADR-0030; contracts WP 4.0)*
 
 **Responsibility.** Background work that starts after Module Initialisation
 and stops before Module Disposal. `IHostedService` defines Start/Stop;
@@ -467,28 +467,31 @@ registered as an ordinary self-referential singleton during the existing
 Platform Services Registered phase, and started/stopped by a new,
 Host-owned `IHostedServiceManager` in deterministic, sequential order
 (reverse order for stop) — see ADR-0029 and `Background Services
-Architecture.md` for the complete design. Neither contract is wired into
-the Runtime Host's startup/shutdown sequence yet — declaring them today
-changes no runtime behaviour.
+Architecture.md` for the complete design. Wired into the Runtime Host's
+startup/shutdown sequence as decimal-numbered phases `8.1`/`10.1` — see
+*Host Lifecycle.md*.
 
 **Key types.** `IHostedService`, `ICriticalBackgroundService`
 (`Tempest.Core.BackgroundServices`, implemented WP 4.0).
-`IHostedServiceDiscoveryService`/`ReflectionHostedServiceDiscoveryService`,
+`IHostedServiceDiscoveryService`/`HostedServiceDiscoveryService`,
 `IHostedServiceManager`/`HostedServiceManager`, `HostedServiceState`,
-`HostedServiceStatus` — designed in full (ADR-0029), not yet implemented;
-`WP 4.5`'s own implementation deliverable.
+`HostedServiceStatus` — implemented, WP 4.5, exactly per ADR-0029's
+design (the discovery service's implemented name,
+`HostedServiceDiscoveryService`, is a cosmetic rename from the design
+phase's working name, `ReflectionHostedServiceDiscoveryService` — no
+behavioural change).
 
 **Dependencies.** None for the contracts themselves. `IHostedServiceManager`
-and `IHostedServiceDiscoveryService` will be Host-owned (ADR-0017, applied
+and `IHostedServiceDiscoveryService` are Host-owned (ADR-0017, applied
 to a new component), constructed directly by `TempestHost`, never
 DI-public — a deliberate contrast with the Event Bus, immediately above:
 individual hosted service *instances* may consume `IEventBus` and any
 other DI-public service, but the *manager that starts and stops them* is
 kept as Host-owned as Discovery/Registration/Lifecycle are.
 
-**Consumers.** Any module declaring a hosted service, once `WP 4.5`
-implements the wiring. A hosted service instance may itself consume any
-DI-public Platform Service, including `IEventBus`, once implemented.
+**Consumers.** Any module declaring a hosted service. A hosted service
+instance may itself consume any DI-public Platform Service, including
+`IEventBus`, via ordinary constructor injection.
 
 **ADR references.** ADR-0021 (*Background Service Failures Are Isolated by
 Default; Criticality Is Opt-In*), ADR-0023, ADR-0024, ADR-0029 (*Background
@@ -496,9 +499,10 @@ Service Discovery, Ownership, and Orchestration Model*), ADR-0030
 (*Background Service Host Lifecycle Placement*).
 
 **Academy references.** WP 4.0 retrospective (*Platform Contracts*); WP 4.5
-architecture retrospective (*Background Services Design*); `Background
-Services Architecture.md`; Rejected Designs RD-0023 through RD-0029;
-`docs/releases/v0.4.0/WorkPackages.md` (`WP 4.5`).
+architecture retrospective (*Background Services Design*); WP 4.5
+implementation retrospective (*Background Services Implementation*);
+`Background Services Architecture.md`; Rejected Designs RD-0023 through
+RD-0029; `docs/releases/v0.4.0/WorkPackages.md` (`WP 4.5`).
 
 ---
 

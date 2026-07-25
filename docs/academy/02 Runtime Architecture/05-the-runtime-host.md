@@ -184,18 +184,24 @@ edge case to special-case away.
 ## 12. Future Evolution
 
 Everything the platform has added since the Host's own implementation
-(Plugin Discovery/Loading, Platform Version, the Event Bus) has slotted into
-this same design without requiring the Host's own state machine, failure
-model, or shutdown sequence to change — each new capability is either a new
-phase (Plugin Discovery/Loading, decimal-numbered, per ADR-0026's precedent)
-or a new DI-public service registered during the existing Platform Services
-Registered phase (Platform Version, the Event Bus). Any future capability —
-Background Services (`WP 4.5`), Navigation, Command Framework — should be
-evaluated against this same question first: does it need a new phase (it
-orchestrates something), or does it need a new registration (it's a service
-a module consumes)? See *Runtime Host Architecture.md*'s own Future
-Extensibility section for the current, specific answer for each named
-future capability.
+(Plugin Discovery/Loading, Platform Version, the Event Bus, Background
+Services) has slotted into this same design without requiring the Host's
+own state machine, failure model, or shutdown sequence to change — each
+new capability is either a new phase (Plugin Discovery/Loading,
+decimal-numbered, per ADR-0026's precedent), a new DI-public service
+registered during the existing Platform Services Registered phase
+(Platform Version, the Event Bus), or, in Background Services' case
+(`WP 4.5`), genuinely both at once: two new decimal-numbered phases
+(`8.1`/`10.1`, orchestrating start/stop) *and* a registration step folded
+into the existing Platform Services Registered phase (each discovered
+type, as an ordinary singleton) — proving the two categories this
+document names are not mutually exclusive, only the two independent
+questions any new capability should be asked. Any future capability —
+Navigation, Command Framework — should be evaluated against the same two
+questions first: does it need a new phase (it orchestrates something), and
+does it need a new registration (it's a service a module consumes)? See
+*Runtime Host Architecture.md*'s own Future Extensibility section for the
+current, specific answer for each named future capability.
 
 ## 13. Key Takeaways
 

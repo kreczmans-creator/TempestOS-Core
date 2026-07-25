@@ -1,3 +1,4 @@
+using Tempest.Core.BackgroundServices;
 using Tempest.Core.Configuration;
 using Tempest.Core.DependencyInjection;
 using Tempest.Core.Events;
@@ -54,6 +55,7 @@ public sealed class TempestHost : ITempestHost
     private readonly IReadOnlyList<IConfigurationSource> _configurationSources;
     private readonly IEnumerable<Type>? _discoveryCandidateTypesOverride;
     private readonly string? _pluginsRootPathOverride;
+    private readonly IEnumerable<Type>? _hostedServiceCandidateTypesOverride;
     private readonly CancellationTokenSource _shutdownRequested = new();
     private readonly CancellationTokenSource _stopEscalation = new();
     private readonly TaskCompletionSource _runCompletion = new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -62,15 +64,18 @@ public sealed class TempestHost : ITempestHost
     private ILogger? _logger;
     private IRuntimeModuleManager? _moduleManager;
     private IModuleLifecycleManager? _lifecycleManager;
+    private IHostedServiceManager? _hostedServiceManager;
 
     internal TempestHost(
         IReadOnlyList<IConfigurationSource> configurationSources,
         IEnumerable<Type>? discoveryCandidateTypesOverride,
-        string? pluginsRootPathOverride)
+        string? pluginsRootPathOverride,
+        IEnumerable<Type>? hostedServiceCandidateTypesOverride)
     {
         _configurationSources = configurationSources;
         _discoveryCandidateTypesOverride = discoveryCandidateTypesOverride;
         _pluginsRootPathOverride = pluginsRootPathOverride;
+        _hostedServiceCandidateTypesOverride = hostedServiceCandidateTypesOverride;
     }
 
     /// <inheritdoc />
@@ -103,7 +108,14 @@ public sealed class TempestHost : ITempestHost
         }
         catch (OperationCanceledException)
         {
-            await StopInternalAsync().ConfigureAwait(false);
+            var shutdownFault = await StopInternalAsync().ConfigureAwait(false);
+
+            // A critical hosted service's StopAsync failure (ADR-0021/0029)
+            // is Host-fatal and takes priority over the cancellation itself -
+            // the Host ended Faulted, not Stopped, so RunAsync must reflect
+            // that rather than completing as if shutdown succeeded.
+            if (shutdownFault is not null)
+                throw shutdownFault;
 
             // The caller's own token, as opposed to an internal shutdown
             // request raised via StopAsync(), is the only trigger this method
@@ -189,6 +201,12 @@ public sealed class TempestHost : ITempestHost
 
         runToken.ThrowIfCancellationRequested();
 
+        var hostedServiceDiscovery = new HostedServiceDiscoveryService(logger);
+
+        var hostedServiceTypes = _hostedServiceCandidateTypesOverride is not null
+            ? hostedServiceDiscovery.DiscoverHostedServiceTypes(_hostedServiceCandidateTypesOverride)
+            : hostedServiceDiscovery.DiscoverHostedServiceTypes();
+
         var services = new ServiceCollection(logger);
         services.AddInstance(configuration);
         services.AddInstance(sink);
@@ -197,7 +215,10 @@ public sealed class TempestHost : ITempestHost
         services.AddInstance(platformVersionProvider);
         services.Singleton<IEventBus, EventBus>();
         services.AddDiscoveredModules(moduleManager.GetAll().Select(module => module.Descriptor));
-        logger.Information("Host lifecycle phase completed: Platform Services Registered.");
+        services.AddDiscoveredHostedServices(hostedServiceTypes);
+        logger.Information(
+            $"Host lifecycle phase completed: Platform Services Registered. " +
+            $"{hostedServiceTypes.Count} hosted service(s) discovered.");
 
         runToken.ThrowIfCancellationRequested();
 
@@ -212,6 +233,14 @@ public sealed class TempestHost : ITempestHost
         await lifecycleManager.InitialiseAllAsync(runToken).ConfigureAwait(false);
         await lifecycleManager.StartAllAsync(runToken).ConfigureAwait(false);
         logger.Information("Host lifecycle phase completed: Module Initialisation.");
+
+        runToken.ThrowIfCancellationRequested();
+
+        var hostedServiceManager = new HostedServiceManager(hostedServiceTypes, serviceProvider, logger);
+        _hostedServiceManager = hostedServiceManager;
+
+        await hostedServiceManager.StartAllAsync(runToken).ConfigureAwait(false);
+        logger.Information("Host lifecycle phase completed: Hosted Services Started.");
     }
 
     private static async Task AwaitShutdownSignalAsync(CancellationToken runToken)
@@ -292,6 +321,26 @@ public sealed class TempestHost : ITempestHost
                 stateAtEntry = _state;
         }
 
+        if (stateAtEntry != HostState.Stopped && _hostedServiceManager is not null)
+        {
+            try
+            {
+                await _hostedServiceManager.StopAllAsync(CancellationToken.None).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                // A second, critical hosted-service failure discovered during
+                // post-fault teardown itself must not prevent the Host from
+                // still reaching Disposed - the original fault is already
+                // recorded; this is logged, not rethrown (FOUNDATION.md
+                // principle 5: cleanup is always guaranteed, never
+                // conditional on how far execution got).
+                _logger?.Critical(
+                    "A critical hosted service failed to stop during post-fault teardown.",
+                    ex);
+            }
+        }
+
         if (stateAtEntry != HostState.Stopped && _lifecycleManager is not null)
             await _lifecycleManager.DisposeAllAsync(CancellationToken.None).ConfigureAwait(false);
 
@@ -335,12 +384,41 @@ public sealed class TempestHost : ITempestHost
         _logger?.Critical("Host -> Faulted.", exception);
     }
 
-    private async Task StopInternalAsync()
+    private async Task<Exception?> StopInternalAsync()
     {
         lock (_gate)
             _state = HostState.Stopping;
 
         _logger?.Information("Host -> Stopping.");
+
+        Exception? criticalHostedServiceFault = null;
+
+        if (_hostedServiceManager is not null)
+        {
+            try
+            {
+                await _hostedServiceManager.StopAllAsync(_stopEscalation.Token).ConfigureAwait(false);
+                _logger?.Information("Host lifecycle phase completed: Hosted Services Stopped.");
+            }
+            catch (OperationCanceledException)
+            {
+                _logger?.Information(
+                    "Hosted service stop sequence escalated before every service finished " +
+                    "stopping; proceeding directly to module disposal.");
+            }
+            catch (Exception ex)
+            {
+                // A critical hosted service's StopAsync failure is Host-fatal
+                // (ADR-0021/ADR-0029) - recorded here, but the remainder of
+                // shutdown (module stop/dispose, service disposal) is still
+                // attempted, per ADR-0004/ADR-0019's cleanup guarantee.
+                criticalHostedServiceFault = ex;
+                _logger?.Critical(
+                    "A critical hosted service failed to stop; the Host will fault once " +
+                    "shutdown completes.",
+                    ex);
+            }
+        }
 
         if (_lifecycleManager is not null)
         {
@@ -366,9 +444,17 @@ public sealed class TempestHost : ITempestHost
 
         _logger?.Information("Shutdown complete.");
 
+        if (criticalHostedServiceFault is not null)
+        {
+            EnterFaulted(criticalHostedServiceFault);
+            return criticalHostedServiceFault;
+        }
+
         lock (_gate)
             _state = HostState.Stopped;
 
         _logger?.Information("Host -> Stopped.");
+
+        return null;
     }
 }

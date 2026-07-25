@@ -17,6 +17,14 @@ namespace Tempest.Core.Tests.Samples;
 // composes internally; nothing here is a mock or a test double standing in
 // for a real platform service, except a level-recording ILogger used only to
 // observe log output, mirroring WP 4.4D's own test conventions.
+//
+// Shares the "Console output capture" collection with every other test class
+// that redirects Console.Out (TempestHostTests and its siblings) - this
+// class's end-to-end test below holds that redirection open for the
+// duration of a real Host run, and without the shared collection xUnit's
+// default cross-class parallelism lets two redirections race, each
+// restoring Console.Out out from under the other.
+[Collection("Console output capture")]
 public class ClockModuleEventIntegrationTests
 {
     private static (RuntimeModuleManager RuntimeManager, TempestServiceProvider ServiceProvider) BuildPipeline(

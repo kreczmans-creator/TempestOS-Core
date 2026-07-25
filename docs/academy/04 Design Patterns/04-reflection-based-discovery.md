@@ -9,7 +9,9 @@ list of them anywhere? This document describes the general technique —
 reflection-based discovery — and the specific discipline TempestOS applies
 to keep it safe, deterministic, and testable, a discipline reused a second
 time, almost unchanged, when Plugin Discovery (WP 4.2) needed to find
-manifests on disk rather than types in memory.
+manifests on disk rather than types in memory, and a third time, with one
+genuine new wrinkle, when Hosted Service Discovery (WP 4.5) needed to find
+`IHostedService` implementations that carry no metadata at all.
 
 ## 2. Purpose
 
@@ -54,7 +56,14 @@ pattern:**
    `IsGenericTypeDefinition`, and `IsAssignableFrom` — in that order, cheap
    checks first — *before* attempting to construct anything. This keeps a
    scan from ever trying to instantiate something that structurally cannot
-   be a real candidate.
+   be a real candidate. Hosted Service Discovery (WP 4.5) takes this
+   discipline one step further: because `IHostedService` carries no
+   `Id`/`Name`/`Version` to read, there is nothing discovery would ever
+   need a live instance *for* — so it never instantiates a candidate at
+   all, filtering purely on type shape and moving straight to the result
+   list. This is not a special case of the discipline; it is the same
+   discipline taken to its logical conclusion once metadata itself turns
+   out to be unnecessary.
 2. **Impose a deterministic order explicitly.** Reflection's own
    enumeration order is an implementation detail, not a guarantee — TempestOS
    always sorts its own output (ascending, ordinal, by a stable key) rather
@@ -125,6 +134,12 @@ exactly the failure mode it exists to prevent.
 - The same four disciplines, applied a second time for Plugin Discovery
   (scanning folders for manifest files rather than types for interfaces),
   required no new pattern to be invented — only the same one, reused.
+- Applied a third time for Hosted Service Discovery (WP 4.5), the pattern
+  needed no new discipline either — only a simpler application of the
+  first one, since a hosted service's complete absence of metadata means
+  the `ModuleMetadataAttribute`-style prerequisite modules once needed
+  (ADR-0027, to avoid instantiating a module carrying constructor
+  dependencies) never arises at all.
 - Deterministic ordering, established here first, turned out to matter for
   more than discovery's own output — `ModuleLifecycleManager` (WP 2.3)
   needed its own ordering guarantee built directly on top of discovery's.
@@ -178,8 +193,12 @@ mechanism, not a simulation of it.
    itself is inherently safe.
 2. The same pattern, once proven correct in one place (Module Discovery),
    is worth reusing directly the next time a structurally similar problem
-   appears (Plugin Discovery) — rather than re-deriving a new discovery
-   mechanism from scratch.
+   appears (Plugin Discovery, Hosted Service Discovery) — rather than
+   re-deriving a new discovery mechanism from scratch. A third reuse that
+   requires *simplifying* the pattern rather than extending it (Hosted
+   Service Discovery never needing to instantiate anything) is still
+   evidence the original four disciplines were well-chosen, not a sign
+   the pattern needed to grow new cases to keep working.
 3. Testing "discovery finds the real thing" is only as convincing as what
    the test actually discovers — a genuinely loadable, dynamically-built
    assembly proves the claim; a synthetic stand-in does not.

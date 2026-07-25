@@ -474,6 +474,15 @@ building a new, disposable test fixture).
 
 ## WP 4.5 — Background Services
 
+**Status note.** Both phases of this work package are now complete.
+Design: ADR-0029, ADR-0030, `Background Services Architecture.md`, and the
+WP 4.5 architecture retrospective. **Implementation is now complete** —
+`Tempest.Core.BackgroundServices` (`IHostedServiceDiscoveryService`/
+`HostedServiceDiscoveryService`, `IHostedServiceManager`/
+`HostedServiceManager`), wired into `TempestHost` exactly per ADR-0029/
+ADR-0030, with 42 new tests. See the WP 4.5 implementation retrospective
+for the current, authoritative status.
+
 ### Objective
 
 Implement the hosted-service extensibility seam `Runtime Host
@@ -496,8 +505,34 @@ and stopping every discovered service sequentially, in deterministic
 order (reversed for stop); two new, decimal-numbered Host Lifecycle phases
 (`8.1` Hosted Services Started, `10.1` Hosted Services Stopped), following
 `ADR-0026`'s own precedent exactly. Seven Rejected Designs entries recorded
-(RD-0023–RD-0029). No implementation yet exists; this work package's own
-implementation may now begin.
+(RD-0023–RD-0029).
+
+**Update, WP 4.5 (implementation) — complete.**
+`IHostedServiceDiscoveryService`/`HostedServiceDiscoveryService`,
+`IHostedServiceManager`/`HostedServiceManager`, `HostedServiceState`,
+`HostedServiceStatus` (`Tempest.Core.BackgroundServices`) implement
+ADR-0029/ADR-0030 exactly: reflection-based discovery mirroring Module/
+Plugin Discovery but never instantiating a candidate; registration folded
+into the existing Platform Services Registered phase
+(`AddDiscoveredHostedServices`); `TempestHost` now runs Hosted Services
+Started (Phase 8.1) and Hosted Services Stopped (Phase 10.1), sequentially,
+deterministically (ascending `FullName`), reversed for stop, exactly per
+ADR-0030. ADR-0021's failure model is fully realised — isolated by default,
+Host-fatal (`Starting`/`Stopping → Faulted`) only for
+`ICriticalBackgroundService`, with disposal still always attempted
+afterward. No new `HostState`, no new transition, no scheduling, no
+monitoring, no restart policy were introduced — all explicitly out of this
+work package's own scope. 42 new tests. Two genuine pre-existing
+test-isolation gaps were found and fixed during validation (not an
+architectural change): the `TempestHostBuilder` test-seam constructors
+that scope module discovery now scope hosted service discovery to an
+empty candidate list too, by the same reasoning already applied to module
+and plugin discovery; and `ClockModuleEventIntegrationTests` was missing
+the shared `Console.Out`-capture test collection every other Host-running
+test class already carries. Module Discovery, `RuntimeModuleManager`,
+`ModuleLifecycleManager`, `EventBus`, Plugin infrastructure, constructor
+injection, and Runtime Versioning are all byte-for-byte unchanged. This
+was the last remaining prerequisite before `WP 4.6A` — none remain.
 
 ### Scope
 
@@ -517,22 +552,31 @@ Lifecycle.md`'s phase table (see `Risks.md`, R4).
 
 ### Deliverables
 
-- Hosted-service contract and Host-level start/stop wiring.
+- Hosted-service contract and Host-level start/stop wiring — **done**:
+  `HostedServiceManager`, wired into `TempestHost` at Phases 8.1/10.1.
 - `Host Lifecycle.md`, `Runtime State Machine.md`, and `Failure
   Behaviour.md` updated with the new phase(s) and ADR-0021's failure rule,
   including an explicit new row in `Failure Behaviour.md`'s Required
-  Behaviour Summary table.
-- The sample module set gains a background service demonstrating both the
-  isolated-failure default and the critical opt-in.
+  Behaviour Summary table — **done**.
+- ~~The sample module set gains a background service demonstrating both
+  the isolated-failure default and the critical opt-in.~~ **Not done, by
+  deliberate scope decision**: this work package's own brief narrowed
+  scope to Host infrastructure only ("do not yet build feature-rich
+  Background Services"); test-only fixtures (`tests/Tempest.Core.Tests/BackgroundServices/HostedServiceFixtures.cs`)
+  demonstrate both the isolated-failure default and the critical opt-in
+  instead. A real sample hosted service, if wanted, is left for a future
+  work package to scope deliberately, not retrofitted here.
 
 ### Acceptance Criteria
 
 - A background service starts after Module Initialisation and stops
-  before Module Disposal, observably, in a test.
+  before Module Disposal, observably, in a test — **verified**:
+  `TempestHostHostedServiceTests`.
 - An ordinary (non-critical) background service that throws is isolated —
-  the Host reaches or remains `Running` regardless.
+  the Host reaches or remains `Running` regardless — **verified**.
 - A service declared critical that throws is Host-fatal, mirroring a
-  platform-service failure.
+  platform-service failure — **verified**, for both `StartAsync` and
+  `StopAsync`.
 
 ### Estimated Complexity
 

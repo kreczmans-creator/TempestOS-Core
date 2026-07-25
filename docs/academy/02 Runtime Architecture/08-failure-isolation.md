@@ -56,13 +56,14 @@ continues, the Host still reaches `Running`. This is the foundational
 instance of the pattern; every later case either extends it directly or is
 measured against it.
 
-**Case 2 — Background Services (ADR-0021, planned `WP 4.5`).** Isolated by
-default, exactly like a module — but with a genuine, deliberate opt-in: a
+**Case 2 — Background Services (ADR-0021, implemented `WP 4.5`).** Isolated
+by default, exactly like a module — but with a genuine, deliberate opt-in: a
 service may declare itself `ICriticalBackgroundService`, escalating its own
-failure to Host-fatal. The opt-in exists here specifically because a
-background service is a live, running, self-supervising component capable
-of a real self-assessment ("my own failure means the platform itself is no
-longer trustworthy") — a precondition the next two cases do *not* share.
+failure to Host-fatal, for both `StartAsync` and `StopAsync` symmetrically.
+The opt-in exists here specifically because a background service is a live,
+running, self-supervising component capable of a real self-assessment ("my
+own failure means the platform itself is no longer trustworthy") — a
+precondition the next two cases do *not* share.
 
 **Case 3 — Plugins (ADR-0025, WP 4.2B/4.2).** Isolated for every one of
 eleven named failure categories (malformed manifest, incompatible version,

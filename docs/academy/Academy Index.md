@@ -118,12 +118,13 @@ The module pipeline and the Runtime Host, holistically.
 
 ## Background Services
 
-Designed (`WP 4.5`, ADR-0029/ADR-0030); not yet implemented.
+Implemented (`WP 4.5`, ADR-0029/ADR-0030) — `Tempest.Core.BackgroundServices`.
 
 - [WP 4.5 — Background Services Architecture](03%20Work%20Packages/WP4.5-background-services-architecture.md) — the design phase: classification, discovery, ownership, orchestration, ordering, failure model, and Host Lifecycle placement.
+- [WP 4.5 — Background Services Implementation](03%20Work%20Packages/WP4.5-background-services-implementation.md) — `IHostedServiceDiscoveryService`/`HostedServiceDiscoveryService`, `IHostedServiceManager`/`HostedServiceManager`, wired into `TempestHost` at Phases 8.1/10.1, built and proven.
 - `docs/architecture/Background Services Architecture.md` — the full design document.
 - ADR-0021 (failure classification, decided during original v0.4.0 planning), ADR-0029 (discovery/ownership/orchestration model), ADR-0030 (Host Lifecycle placement).
-- See also [Failure Isolation Across TempestOS](02%20Runtime%20Architecture/08-failure-isolation.md) for how ADR-0021 fits alongside the platform's other three isolation decisions, and [Working with the TempestOS Host](02%20Runtime%20Architecture/05-the-runtime-host.md) for the two new phases (`8.1`, `10.1`) in context.
+- See also [Failure Isolation Across TempestOS](02%20Runtime%20Architecture/08-failure-isolation.md) for how ADR-0021 fits alongside the platform's other three isolation decisions, [Working with the TempestOS Host](02%20Runtime%20Architecture/05-the-runtime-host.md) for the two new phases (`8.1`, `10.1`) in context, and [Reflection-Based Discovery](04%20Design%20Patterns/04-reflection-based-discovery.md) for hosted service discovery as a third application of that pattern.
 
 ## Design Patterns
 
@@ -190,8 +191,9 @@ whatever you're about to change, before you change it.
 - [WP 4.4D — Event Bus Implementation](03%20Work%20Packages/WP4.4D-event-bus-implementation.md)
 - [WP 4.4E — Sample Module Event Integration](03%20Work%20Packages/WP4.4E-sample-module-event-integration.md)
 - [WP 4.5 — Background Services Architecture](03%20Work%20Packages/WP4.5-background-services-architecture.md)
+- [WP 4.5 — Background Services Implementation](03%20Work%20Packages/WP4.5-background-services-implementation.md)
 
-Still to come: `WP 4.5`'s own implementation onward — see
+Still to come: `WP 4.6A` (Navigation Architecture) onward — see
 `docs/releases/v0.4.0/WorkPackages.md` for the full, current plan.
 
 ## Reference Material

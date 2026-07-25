@@ -174,12 +174,15 @@ runs — precisely the kind of boundary violation ADR-0017 exists to prevent.
 
 ## 12. Future Evolution
 
-Every future v0.4.0 capability — Background Services, Navigation, Command
-Framework — should be classified against this same model before its own
-design begins, exactly as the Event Bus and Plugin infrastructure already
-were. `Runtime Host Architecture.md`'s own Future Extensibility section
-already sketches a first-pass answer for several of these; each should be
-confirmed, not assumed, once that work package's own design phase begins.
+Background Services (`WP 4.5`) has since been classified and implemented —
+a fourth, Host-owned category, neither a Platform Service nor a Module
+(ADR-0029) — following exactly this discipline. Every remaining future
+v0.4.0 capability — Navigation, Command Framework — should be classified
+against this same model before its own design begins, exactly as the
+Event Bus, Plugin infrastructure, and Background Services already were.
+`Runtime Host Architecture.md`'s own Future Extensibility section already
+sketches a first-pass answer for each; it should be confirmed, not
+assumed, once that work package's own design phase begins.
 
 ## 13. Key Takeaways
 

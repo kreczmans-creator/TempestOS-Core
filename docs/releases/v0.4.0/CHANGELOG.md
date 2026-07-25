@@ -161,10 +161,52 @@ reflected here.
   RD-0027 (a new discovery/registration phase), RD-0028 (concurrent
   service start), RD-0029 (automatic restart/backoff). No implementation
   exists yet; `WP 4.5`'s own implementation may now begin.
+- **Background Services implementation (WP 4.5)** — `IHostedServiceDiscoveryService`/
+  `HostedServiceDiscoveryService`, `IHostedServiceManager`/
+  `HostedServiceManager`, `HostedServiceState`, `HostedServiceStatus`,
+  `HostedServiceCollectionExtensions.AddDiscoveredHostedServices`
+  (`Tempest.Core.BackgroundServices`), implemented exactly per ADR-0029/
+  ADR-0030. Discovery mirrors Module/Plugin Discovery's own reflection
+  pattern but never instantiates a candidate — a hosted service carries no
+  metadata to read. `TempestHost` now runs Hosted Services Started
+  (Phase 8.1) after Module Initialisation and Hosted Services Stopped
+  (Phase 10.1) before Module Disposal, starting/stopping every discovered
+  service sequentially, in deterministic (ascending `FullName`) order,
+  reversed for stop. ADR-0021's failure model is fully realised: an
+  isolated service's `StartAsync`/`StopAsync` failure is logged and does
+  not prevent the batch from completing; a service implementing
+  `ICriticalBackgroundService` instead faults the Host
+  (`Starting`/`Stopping → Faulted`), with disposal still always attempted
+  afterward. No new `HostState` and no new transition were introduced. 42
+  new tests, exercising discovery (deterministic ordering, never
+  instantiating a candidate, exclusion of interfaces/abstract/generic
+  types, repeatability), the manager directly (registration/constructor
+  injection, sequential dispatch, reverse stop order, isolated and
+  critical failure, cancellation, repeated start/stop), and the real,
+  unmodified `TempestHost` end-to-end (phase ordering against Module
+  Initialisation/Disposal, multiple services, isolated and critical
+  failure at the Host level, repeated execution, zero-hosted-service
+  regression safety). Two genuine pre-existing test-isolation gaps were
+  found and fixed during validation, not worked around: hosted service
+  discovery's default (no explicit candidate override) previously scanned
+  every loaded assembly, so several pre-existing `TempestHostBuilder`
+  test-seam constructors that only scoped *module* discovery were
+  unintentionally picking up this work package's own `IHostedService` test
+  fixtures — the 1-/2-argument `TempestHostBuilder` test constructors now
+  default hosted service discovery to an empty candidate list too, mirroring
+  the isolation already given to module and plugin discovery in those same
+  constructors; and `ClockModuleEventIntegrationTests`, which redirects
+  `Console.Out` for the duration of a real Host run, was missing the
+  shared `[Collection("Console output capture")]` attribute every other
+  such test class already carries, occasionally racing against it — added.
+  Module Discovery, `RuntimeModuleManager`, `ModuleLifecycleManager`,
+  `EventBus`, Plugin infrastructure, constructor injection, and Runtime
+  Versioning are all byte-for-byte unchanged. The implemented discovery
+  service is named `HostedServiceDiscoveryService`, a cosmetic rename from
+  the design phase's working name (`ReflectionHostedServiceDiscoveryService`).
 
 _Still planned, per `WorkPackages.md`:_
 
-- Background Services implementation (WP 4.5)
 - Navigation Architecture (WP 4.6A), then Navigation Implementation
   (WP 4.6B)
 - Command Framework (WP 4.7)
@@ -241,17 +283,16 @@ _Still planned, per `WorkPackages.md`:_
   service that never instantiates a candidate; registration folded into
   the existing Platform Services Registered phase; a new, Host-owned
   manager starting/stopping every discovered service sequentially,
-  realising ADR-0021's failure model exactly. Not yet implemented.
+  realising ADR-0021's failure model exactly. **Implemented — WP 4.5.**
 - **ADR-0030** — Background Service Host Lifecycle Placement. Decided
   during `WP 4.5`'s own architecture phase — two new decimal-numbered
   phases (`8.1 Hosted Services Started`, `10.1 Hosted Services Stopped`)
   inserted between Module Initialisation/Runtime Running and Shutdown
   Requested/Module Disposal respectively, following ADR-0026's own
-  precedent. This was the last architectural blocker before `WP 4.5`
-  implementation.
+  precedent. **Implemented — WP 4.5.**
 - Expected, not yet written: Navigation's `Tempest.Core` placement
   (`WP 4.6A`) — see `Architecture.md`. No further ADR is expected before
-  `WP 4.5` implementation.
+  `WP 4.6A` begins.
 
 ---
 

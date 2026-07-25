@@ -8,9 +8,11 @@ is now backed by working, tested code, not only design intent.
 rule in it is backed by working, tested code (`PluginManifestDiscoveryServiceTests`,
 `PluginAssemblyLoaderTests`), not only design intent.
 
-**Update, WP 4.5 (design phase):** the Hosted Service Failure section
-below (ADR-0021, ADR-0029, ADR-0030) is designed, not yet implemented —
-no test or working code backs it yet.
+**Update, WP 4.5:** the Hosted Service Failure section below (ADR-0021,
+ADR-0029, ADR-0030) is now implemented (`Tempest.Core.BackgroundServices`)
+— every rule in it is backed by working, tested code
+(`HostedServiceManagerTests`, `TempestHostHostedServiceTests`), not only
+design intent.
 
 ## Governing Principle
 
@@ -76,7 +78,7 @@ relied upon as the sole protection, but its failure mode is still Host-fatal
 if somehow reached (for example, via a future path that registers descriptors
 not sourced from Discovery).
 
-## Hosted Service Failure *(ADR-0021, ADR-0029, ADR-0030; designed — WP 4.5, not yet implemented)*
+## Hosted Service Failure *(ADR-0021, ADR-0029, ADR-0030; implemented — WP 4.5)*
 
 **Trigger.** A hosted service (`IHostedService`) throws during
 `StartAsync` (Phase 8.1, Hosted Services Started) or `StopAsync`
@@ -119,10 +121,12 @@ Host-fatal.
 **Trigger.** An unhandled exception during the `Running` state.
 
 **Required behaviour.** Host-fatal — `Running → Faulted`. No code path
-produces this today (no hosted services or background work exist yet); this
-policy is defined now specifically so a future hosted-service implementation
-has an established rule to follow rather than needing to invent one at that
-point.
+produces this today — `WP 4.5`'s hosted service orchestration is fully
+resolved by Phase 8.1/10.1 before or as `Running` is entered or left, and
+introduces no ongoing supervision of a hosted service once it is
+`Running`; this policy remains defined so any future work package that
+does introduce ongoing supervision has an established rule to follow
+rather than needing to invent one at that point.
 
 ## Shutdown Exception
 
@@ -202,12 +206,12 @@ reported directly to `Console.Error` — bypassing the failed sink entirely
 | Registration failure | Yes | `Starting → Faulted` |
 | Individual module initialisation failure | No | (none — Host proceeds to `Running`) |
 | Host-level defect during Module Initialisation | Yes | `Starting → Faulted` |
-| Hosted service — isolated start failure *(ADR-0021/0029, designed — WP 4.5)* | No | (none — that service isolated, phase continues) |
-| Hosted service — critical start failure *(ADR-0021/0029, designed — WP 4.5)* | Yes | `Starting → Faulted` |
+| Hosted service — isolated start failure *(ADR-0021/0029, implemented — WP 4.5)* | No | (none — that service isolated, phase continues) |
+| Hosted service — critical start failure *(ADR-0021/0029, implemented — WP 4.5)* | Yes | `Starting → Faulted` |
 | Runtime exception (Running) | Yes | `Running → Faulted` |
 | Individual module shutdown failure | No | (none — `Stopping` proceeds to `Stopped`) |
-| Hosted service — isolated stop failure *(ADR-0021/0029, designed — WP 4.5)* | No | (none — that service isolated, phase continues) |
-| Hosted service — critical stop failure *(ADR-0021/0029, designed — WP 4.5)* | Yes, but disposal still proceeds | `Stopping → Faulted → Disposed` |
+| Hosted service — isolated stop failure *(ADR-0021/0029, implemented — WP 4.5)* | No | (none — that service isolated, phase continues) |
+| Hosted service — critical stop failure *(ADR-0021/0029, implemented — WP 4.5)* | Yes, but disposal still proceeds | `Stopping → Faulted → Disposed` |
 | Host-level defect during shutdown | Yes, but disposal still proceeds | `Stopping → Faulted → Disposed` |
 | Logging failure | **Fixed — WP 2.7B.** A sink failure is caught inside `Logger` itself and never propagates. | (none) |
 | Startup cancellation, or an early shutdown request | No (not a fault) | `Starting → Stopping → Stopped` (ADR-0018 — same controlled shutdown procedure as a graceful, post-`Running` stop) |

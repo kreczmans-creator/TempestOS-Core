@@ -70,11 +70,11 @@ it casually.
 **What it would draw on.** Runtime Host Architecture.md, Host Lifecycle.md,
 Runtime State Machine.md, Shutdown Sequence.md, Failure Behaviour.md,
 Ownership Matrix.md, the WP 2.7/2.7B retrospectives, ADR-0011 through
-ADR-0019, and — once implemented — Background Services Architecture.md,
-the WP 4.5 retrospectives, and ADR-0021/ADR-0029/ADR-0030, which extend
-the Host's own phase table a second time and are a directly relevant
-worked example of inserting new phases into an already-frozen design
-without reopening it.
+ADR-0019, and Background Services Architecture.md, the WP 4.5 retrospectives
+(architecture and implementation), and ADR-0021/ADR-0029/ADR-0030, which
+extend the Host's own phase table a second time and are a directly
+relevant worked example of inserting new phases into an already-frozen
+design without reopening it.
 
 **Estimated scope.** Large, but self-contained — unlike Priority 1, this
 does not depend on every other subject being finished first.
