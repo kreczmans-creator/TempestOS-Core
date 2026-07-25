@@ -141,8 +141,10 @@ of the real code that uses them — not a generic patterns catalogue.
 - [Engineering Governance](06%20Engineering%20Standards/Engineering%20Governance.md) — the project's constitution.
 - [Engineering Standard: Exception Design](06%20Engineering%20Standards/01-exception-design.md)
 - [Engineering Standard: Testing Strategy](06%20Engineering%20Standards/02-testing-strategy.md)
+- [Working with TempestOS's Governance Registers](06%20Engineering%20Standards/03-governance-registers.md) — why the governance register suite exists, how to maintain one, common mistakes.
 - `docs/architecture/Rejected Designs.md` — the Rejected Designs Log (Governance §10).
 - `docs/adr/` — the ADR catalogue (Governance §5).
+- `docs/governance/Governance Index.md` — the full governance register suite (`WP 4.5A`): ADR, Rejected Designs, Architecture Document, Decision, Platform Services, Module, Hosted Services, Plugin, Event, Dependency Injection, Namespace, Interface, Exception, Architectural Dependency, Risk, Technical Debt, Validation, Test, Repository Metrics, Documentation, Academy, Engineering Standards, Governance, Feature, Release, Engineering Evolution, and Traceability Matrix registers, plus `Governance Philosophy.md`, `Governance Audit Report.md`, and `Repository Maturity Report.md`.
 
 ## Case Studies
 
@@ -208,3 +210,4 @@ Documents outside `docs/academy/` maintained under the same obligation:
 - `docs/releases/v0.4.0/Platform Services Architecture Review.md` — the WP 4.2D milestone review.
 - `docs/architecture/Platform Service Map.md`, `Engineering Glossary.md`, `Rejected Designs.md` — see Platform Architecture, above.
 - **This Academy audit's own deliverables**: [Academy Masterclass Roadmap](Academy%20Masterclass%20Roadmap.md), [Academy Audit Report](Academy%20Audit%20Report.md).
+- **The Governance Register suite's own deliverables (`WP 4.5A`)**: `docs/governance/Governance Index.md`, `Governance Philosophy.md`, `Governance Audit Report.md`, `Repository Maturity Report.md`.
