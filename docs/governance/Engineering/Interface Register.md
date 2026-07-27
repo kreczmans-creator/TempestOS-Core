@@ -10,7 +10,7 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | Direct source inspection (`grep -rhoP "^public interface" src/Tempest.Core`). |
 | **Review Frequency** | Updated whenever a new public interface is introduced. |
-| **Last Reviewed** | 2026-07-25 (WP 4.5A). |
+| **Last Reviewed** | 2026-07-27 (WP 5.0A). |
 | **Related Documents** | `docs/architecture/Ownership Matrix.md`; `Dependency Injection Register.md`; `Namespace Register.md`. |
 | **Related ADRs** | ADR-0006, ADR-0017, ADR-0020, ADR-0023, ADR-0024. |
 | **Related Academy Articles** | `docs/architecture/Engineering Glossary.md` (Platform API vs. Platform Service). |
@@ -62,6 +62,18 @@ directly.**
 | Discovered/registered but not itself a DI registration target | 3 |
 | Composition-time / not-DI-registered infrastructure | 4 |
 | Pre-module-pipeline, outside the platform-service model | 1 |
+
+## Note — Navigation (Designed, Not Yet Implemented)
+
+`INavigationProvider` (`Tempest.Core.Navigation`, designed `WP 5.0A`,
+`ADR-0031`/`ADR-0032`) is **deliberately not listed in the Entries table
+above** — this register's own scope is direct source inspection
+(`grep -rhoP "^public interface" src/Tempest.Core`), and no
+`Tempest.Core.Navigation` source file exists yet (Verified). Adding a
+row for an interface that is not yet real code would misrepresent this
+register's own Source of Truth. Once `WP 5.0B` implements it,
+`INavigationProvider` is added here as an ordinary entry, classified
+**DI-public** (per `ADR-0032`), alongside `IEventBus`.
 
 ## Cross-Reference Check
 

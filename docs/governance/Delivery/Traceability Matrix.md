@@ -10,21 +10,22 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | Every register in this governance suite; this matrix is the synthesis, not a new source of raw fact. |
 | **Review Frequency** | Updated whenever a new major capability completes its own Work Package. |
-| **Last Reviewed** | 2026-07-27 (v0.4.0 Release Engineering). |
+| **Last Reviewed** | 2026-07-27 (WP 5.0A, Navigation Framework Architecture). |
 | **Related Documents** | Every register in `docs/governance/`. |
-| **Related ADRs** | All 30 (see per-row detail). |
+| **Related ADRs** | All 32 (see per-row detail). |
 | **Related Academy Articles** | See `Academy Register.md`. |
-| **Coverage Status** | Complete for every Implemented capability. Not Yet Applicable for planned-but-unstarted capabilities (Navigation, Command Framework dispatcher, Diagnostics Improvements, Developer Experience) — see Reason/Review Trigger below. |
+| **Coverage Status** | Complete for every Implemented capability. Partial for Navigation (chain begun — Requirement through Architecture and Academy are complete; Implementation, Tests, and Release are pending `WP 5.0B`). Not Yet Applicable for planned-but-unstarted capabilities (Command Framework dispatcher, Diagnostics Improvements, Developer Experience) — see Reason/Review Trigger below. |
 
 ---
 
 ## Reason (Not Yet Applicable Capabilities)
 
-Navigation, the Command Framework dispatcher, Diagnostics Improvements,
-and Developer Experience Improvements have no Work Package started yet
-(`WP 4.6A` onward) — there is no Requirement→...→Release chain to trace
+The Command Framework dispatcher, Diagnostics Improvements, and
+Developer Experience Improvements have no Work Package started yet
+(`WP 5.1` onward) — there is no Requirement→...→Release chain to trace
 because no chain has begun. **Review Trigger.** The Work Package that
-begins each one.
+begins each one. Navigation is no longer in this category — its own
+chain began with `WP 5.0A`; see the Matrix's own Navigation row, below.
 
 ## Matrix
 
@@ -44,17 +45,22 @@ begins each one.
 | Dependency Injection for Discovered Modules | Let a discovered module accept constructor-injected dependencies | WP 4.4A, WP 4.4B | ADR-0027 | `Module Dependency Injection Architecture.md` | `ModuleMetadataAttribute` | `Modules/` test suite | WP4.4A, WP4.4B retrospectives | v0.4.0 (Released) |
 | Event Bus | Publish/subscribe without direct module-to-module coupling | WP 4.4, WP 4.4D, WP 4.4E | ADR-0020, ADR-0028 | `Event Bus Architecture.md` | `IEventBus`, `EventBus`, `ClockModuleLifecycleEvent` | `Events/`, `Samples/` test suites | WP4.4, WP4.4D, WP4.4E retrospectives; *Building an Event-Driven Module* | v0.4.0 (Released) |
 | Background Services | Host-orchestrated background work, isolated/critical failure model | WP 4.5 (×2) | ADR-0021, ADR-0029, ADR-0030 | `Background Services Architecture.md`, `Host Lifecycle.md` (8.1/10.1) | `HostedServiceDiscoveryService`, `HostedServiceManager` | `BackgroundServices/`, `Runtime/` test suites | WP4.5 (×2) retrospectives; *Reflection-Based Discovery* (expanded), *Failure Isolation Across TempestOS* (Case 2) | v0.4.0 (Released) |
+| Navigation | Coherent navigation between built-in pages, modules, and plugins, without touching the Runtime Host | WP 5.0A | ADR-0022, ADR-0031, ADR-0032 | `Navigation Framework Architecture.md` | *Pending — WP 5.0B* (`INavigationProvider`/`NavigationService`, `NavigationItem`, `NavigationRequestedEvent` designed, not yet coded) | *Pending — WP 5.0B* | WP5.0A retrospective; *Navigation Architecture* | v0.5.0 (in progress) |
 
-**Total: 13 fully-traced capabilities, each with a complete chain from
-requirement through release.**
+**Total: 13 fully-traced (Implemented) capabilities, plus 1 partially-traced
+capability (Navigation — chain begun, Implementation/Tests/Release pending).**
 
 ## Traceability Gaps Found
 
 **None** for any capability marked Implemented in `Feature Register.md`.
 Every capability above has at least one entry in every column — no
 Implemented capability lacks a test, an Academy retrospective, or a
-release association. The four Not-Yet-Applicable capabilities (see
-Reason, above) correctly have no chain, because no chain has begun.
+release association. Navigation's own Implementation/Tests/Release cells
+are explicitly marked "Pending — WP 5.0B," not left blank — a disclosed,
+expected gap for a capability whose architecture phase just completed,
+not a silently missing link. The three remaining Not-Yet-Applicable
+capabilities (see Reason, above) correctly have no chain, because no
+chain has begun.
 
 ## Cross-Reference Check
 

@@ -10,7 +10,7 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | Direct source inspection; `docs/architecture/Failure Behaviour.md`; `docs/academy/06 Engineering Standards/01-exception-design.md`. |
 | **Review Frequency** | Updated whenever a new exception type is introduced. |
-| **Last Reviewed** | 2026-07-25 (WP 4.5A). |
+| **Last Reviewed** | 2026-07-27 (WP 5.0A). |
 | **Related Documents** | `docs/architecture/Failure Behaviour.md`; `Architectural Dependency Register.md`. |
 | **Related ADRs** | ADR-0013, ADR-0021, ADR-0025. |
 | **Related Academy Articles** | `docs/academy/06 Engineering Standards/01-exception-design.md`. |
@@ -62,6 +62,20 @@ platform-defined one. Contrast with `PluginException` and
 `ModuleDiscoveryException`, which do wrap failures in a dedicated
 hierarchy.
 
+## Note — Navigation (Designed, Not Yet Implemented)
+
+`NavigationException` (base), `DuplicateNavigationItemException`, and
+`NavigationItemNotFoundException` (`Tempest.Core.Navigation`, designed
+`WP 5.0A`) are **deliberately not listed in the Entries table above** —
+no such source file exists yet (Verified). `Navigation Framework
+Architecture.md`'s own "Public Surface" section specifies the intended
+hierarchy (mirroring `PluginException`'s own base-plus-subtype shape);
+they are added here as ordinary entries once `WP 5.0B` implements them.
+Both are expected to be **isolated**, not Host-fatal: registration
+happens inside a module's own lifecycle method, already fully governed
+by `ModuleLifecycleException`'s existing isolation — see `ADR-0032`'s
+own Consequences.
+
 ## Distribution by Root Category
 
 | Root Category | Exception Count |
@@ -74,6 +88,7 @@ hierarchy.
 | Plugin Manifest | 6 |
 | Runtime Host | 2 |
 | Background Services | 0 (by design — see note above) |
+| Navigation | 0 (designed, not yet implemented — see note above) |
 
 ## Cross-Reference Check
 

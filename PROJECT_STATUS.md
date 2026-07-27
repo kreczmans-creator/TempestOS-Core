@@ -1,6 +1,6 @@
 # TempestOS — Project Status
 
-**Last Updated:** 2026-07-27 (v0.4.0 Release Engineering — "Platform Foundation")
+**Last Updated:** 2026-07-27 (WP 5.0A — Navigation Framework Architecture)
 
 This is the primary status dashboard for TempestOS. Read this first for
 "where does the project stand right now" — for "why is it built this
@@ -14,41 +14,45 @@ read `docs/academy/Contributor Learning Path.md`.
 **Developer Experience.** The Foundation phase is complete and closed —
 Platform Formation, Academy Formation, and Governance Formation are all
 done (see `docs/releases/Platform Foundation Completion Report.md`), and
-`v0.4.0` ("Platform Foundation") ships exactly that scope. TempestOS now
-enters the **Developer Experience** phase: building *on* the foundation —
-Navigation, a Command Framework, Diagnostics, and Developer Experience
-tooling itself — not revisiting it, absent evidence that requires
-otherwise (see `docs/governance/Future Work Package Guidelines.md`).
+`v0.4.0` ("Platform Foundation") shipped exactly that scope. TempestOS is
+now inside the **Developer Experience** phase: building *on* the
+foundation — Navigation, a Command Framework, Diagnostics, and Developer
+Experience tooling itself — not revisiting it, absent evidence that
+requires otherwise (see `docs/governance/Future Work Package
+Guidelines.md`). `WP 5.0A` (Navigation Framework Architecture) is this
+phase's first completed Work Package.
 
 ## Current Development Branch
 
-**`main` (post-release).** `v0.4.0` merges `feature/v0.4.0-platform-
-services` into `main` via an explicit `--no-ff` merge, tagged `v0.4.0`
-(Engineering Governance §7). The next feature branch is cut from `main`
-for whatever Work Package begins the Developer Experience phase,
-matching the same discipline used for every prior release (§1.3). See
-`docs/releases/v0.4.0/ReleaseChecklist.md`'s "Merge and Tag Sequence" for
-the exact, prepared command sequence this release used.
+**`feature/v0.5.0-developer-experience`**, cut from `main` after the
+`v0.4.0` tag. Carries `WP 5.0A` (architecture only — no production code).
+Unmerged into `main`; the merge/tag sequence for `v0.5.0` itself is not
+yet due, since the Developer Experience phase has only just begun (see
+`docs/releases/v0.5.0/WorkPackages.md`).
 
 ## Current Release
 
-**v0.4.0** ("Platform Foundation") — released 2026-07-27. Root `VERSION`
-reads `0.4.0`. `v0.3.0` ("Runtime Foundation Complete") is the prior
-tagged release.
+**v0.4.0** ("Platform Foundation") — released 2026-07-27, still the most
+recent tag. Root `VERSION` reads `0.4.0`; `v0.5.0` is in progress but not
+yet cut. `v0.3.0` ("Runtime Foundation Complete") is the release before
+that.
 
 ## Current Work Package
 
-None in progress — `v0.4.0` Release Engineering is complete. The branch
-is ready for merge into `main` (see "Current Development Branch," above,
-and `docs/releases/v0.4.0/ReleaseChecklist.md`).
+**`WP 5.0A` — Navigation Framework Architecture — complete** (this Work
+Package; architecture only, no production code). Produced
+`ADR-0031`, `ADR-0032`, `docs/architecture/Navigation Framework
+Architecture.md`, `RD-0030`–`RD-0033`, and the corresponding Academy and
+governance updates. See this Work Package's own retrospective:
+`docs/academy/03 Work Packages/WP5.0A-navigation-framework-architecture.md`.
 
 ## Next Planned Work Package
 
-`WP 4.6A` — Navigation Architecture (architecture-only phase; see
-`docs/releases/v0.4.0/WorkPackages.md`). Rescoped out of `v0.4.0` itself
-— see `docs/releases/v0.4.0/ReleasePlan.md`'s "Scope" section — it is the
-first Work Package of the Developer Experience phase, not part of the
-release just shipped.
+`WP 5.0B` — Navigation Framework Implementation (see
+`docs/releases/v0.5.0/WorkPackages.md`). Builds `Tempest.Core.Navigation`
+(`NavigationItem`, `INavigationProvider`, `NavigationRequestedEvent`, and
+its exception types) exactly as designed in `WP 5.0A`, with no open
+architectural questions remaining.
 
 ## Foundation Status
 
@@ -74,25 +78,27 @@ loading; the Event Bus (publish/subscribe between modules); and
 Background Services (Host-orchestrated hosted work with isolated/critical
 failure classification). Two real modules (`ClockModule`,
 `ClockLifecycleObserverModule`) exercise the complete pipeline end to end.
-Navigation and a Command Framework dispatcher remain unbuilt; their
-contracts exist, their implementations do not — both are rescoped out of
-`v0.4.0` and belong to the Developer Experience phase now beginning.
+Navigation and a Command Framework dispatcher remain unbuilt; Navigation
+is now fully *designed* (`WP 5.0A`: `ADR-0031`, `ADR-0032`, `Tempest.Core.
+Navigation`'s public surface), and the Command Framework's contract
+(`ICommand`) still exists from `v0.4.0` with its dispatcher pending
+`WP 5.1` — both belong to the Developer Experience phase now underway.
 
 ## Repository Metrics
 
 | Metric | Value |
 |---|---|
-| Automated tests | 355 (0 failures) |
-| ADRs | 30 (`ADR-0001`–`ADR-0030`), all Accepted |
-| Rejected Designs | 29 (`RD-0001`–`RD-0029`) |
-| Academy articles | 63 (see `docs/governance/Documentation/Academy Register.md`) |
-| Governance registers | 27 |
-| Architecture documents | 16 under `docs/architecture/` (18 including the two release-scoped documents) |
-| Platform services | 15 catalogued — 11 Implemented, 1 contract-only, 2 not implemented as platform services, 1 developer-convenience layer |
+| Automated tests | 355 (0 failures) — unchanged since `v0.4.0`; `WP 5.0A` is architecture-only |
+| ADRs | 32 (`ADR-0001`–`ADR-0032`), all Accepted |
+| Rejected Designs | 33 (`RD-0001`–`RD-0033`) |
+| Academy articles | 65 (see `docs/governance/Documentation/Academy Register.md`) |
+| Governance registers | 27 (32 governance documents total) |
+| Architecture documents | 17 under `docs/architecture/` (19 including the two release-scoped documents) |
+| Platform services | 16 catalogued — 11 Implemented, 1 Designed (Navigation), 1 contract-only, 2 not implemented as platform services, 1 developer-convenience layer |
 | Modules (production) | 2 (`ClockModule`, `ClockLifecycleObserverModule`) |
 | Hosted services (production) | 0 — infrastructure fully implemented and tested; zero shipped consumers by deliberate scope decision |
 | Plugins (production) | 0 — infrastructure fully implemented and tested; `src/Plugins/` empty by deliberate scope decision |
-| Commits (total / this release) | 50 total (45 Claude-authored) / 23 since `v0.3.0` |
+| Commits (total / since `v0.4.0` tag) | 52 total (47 Claude-authored) / 0 since `v0.4.0` (this Work Package not yet committed) |
 | Contributors | 1 (repository owner; all commits co-authored by Claude) |
 
 *(This table is generated from `docs/governance/Quality/Repository Metrics
@@ -112,27 +118,30 @@ three together.)*
 
 Mature and cross-referenced. Every architecture document, ADR, and
 Academy article is indexed in `docs/governance/` and cross-checked
-against its own source. Release Engineering for `v0.4.0` performed a
-full Pre-Release Review across architecture, documentation, Academy,
-governance, traceability, release documentation, repository standards,
-engineering standards, root documentation, cross references, and
-repository structure — no new documentation drift was found beyond what
-`WP 4.5B` had already corrected. `ReleasePlan.md` and `WorkPackages.md`
-were updated to reflect this release's actual, rescoped scope (Platform
-Foundation only), and every "planned"/"not yet begun" reference to
-`WP 4.0`–`WP 4.5B` was removed now that those work packages are shipped.
+against its own source. `WP 5.0A` added `Navigation Framework
+Architecture.md`, `ADR-0031`/`ADR-0032`, and a new Academy concept guide,
+each cross-referenced into the governance suite in the same commit that
+introduced it — no documentation drift was introduced. `docs/releases/
+v0.5.0/ReleasePlan.md` and `WorkPackages.md` were created to carry the
+renumbered Developer Experience scope (`WP 4.6A`–`WP 4.9` → `WP 5.0A`–
+`WP 5.3`) forward; the old `v0.4.0` entries were annotated with redirect
+notes rather than deleted, per this project's "never delete, mark
+superseded" convention.
 
 ## Academy Status
 
-63 articles across 7 categories (Introduction, Engineering Principles,
+65 articles across 7 categories (Introduction, Engineering Principles,
 Runtime Architecture, Work Package retrospectives, Design Patterns, Case
 Studies, Engineering Standards), plus `Academy Index.md`, `Academy
 Masterclass Roadmap.md`, `Academy Audit Report.md`, and `Contributor
 Learning Path.md`. Every completed Work Package has a matching
-retrospective. Maintenance obligation (Engineering Governance §6)
-verified honoured by two independent audits (`WP 4.4F`, and the Academy
-Register built during `WP 4.5A`), re-checked during `v0.4.0` Release
-Engineering with no new drift found.
+retrospective, including `WP 5.0A`. Maintenance obligation (Engineering
+Governance §6) verified honoured by two independent audits (`WP 4.4F`,
+and the Academy Register built during `WP 4.5A`); `WP 5.0A` additionally
+updated two existing articles' (`06-platform-layering.md`,
+`08-failure-isolation.md`) "Future Evolution" sections to reflect
+Navigation's actual classification rather than leaving a stale
+prediction in place.
 
 ## Governance Status
 
@@ -140,8 +149,14 @@ Engineering with no new drift found.
 Philosophy, Audit Report, Maturity Report, and Future Work Package
 Guidelines), fully cross-referenced, zero outstanding governance debt as
 of the `WP 4.5A` baseline (see `docs/governance/Governance Audit
-Report.md`), re-verified during `v0.4.0` Release Engineering. Traceability
-is complete for all 13 Implemented capabilities
+Report.md`), re-verified during `v0.4.0` Release Engineering and again
+during `WP 5.0A` (every register touched by Navigation's design was
+updated in the same commit, including the four registers whose own
+"Source of Truth" is direct source inspection — those add an explicit
+"Note — Navigation (Designed, Not Yet Implemented)" section rather than a
+row, to avoid misrepresenting their own stated scope). Traceability
+reflects Navigation's chain as begun but Pending (`WP 5.0B`) for
+Implementation/Tests — a disclosed partial, not silence
 (`docs/governance/Delivery/Traceability Matrix.md`).
 
 ## Known Unknowns
@@ -164,25 +179,25 @@ Governance Audit Report.md`:
 
 ## Current Priorities
 
-1. Merge `feature/v0.4.0-platform-services` into `main` and push the
-   `v0.4.0` tag, following the prepared command sequence in
-   `docs/releases/v0.4.0/ReleaseChecklist.md` — pending explicit,
-   separate approval before any push, per that checklist's own gate.
-2. Begin `WP 4.6A` (Navigation Architecture) on a new feature branch cut
-   from `main`, once the above is complete.
+1. Begin `WP 5.0B` (Navigation Framework Implementation) on
+   `feature/v0.5.0-developer-experience`, building `Tempest.Core.
+   Navigation` exactly to `WP 5.0A`'s design — no architectural
+   questions remain open.
+2. No merge to `main` is due yet — `v0.5.0` is not cut until the
+   Developer Experience phase's Work Packages are complete (see
+   `docs/releases/v0.5.0/WorkPackages.md`).
 
 ## Near-Term Roadmap
 
-Per `docs/releases/v0.4.0/WorkPackages.md`, the Developer Experience
-phase, in sequence — none of this is part of `v0.4.0`, which has already
-shipped:
+Per `docs/releases/v0.5.0/WorkPackages.md`, the Developer Experience
+phase, in sequence — `WP 5.0A` (below) is the only one complete so far:
 
-- `WP 4.6A` — Navigation Architecture (design only).
-- `WP 4.6B` — Navigation Implementation.
-- `WP 4.7` — Command Framework (dispatcher).
-- `WP 4.8` — Diagnostics Improvements (composite logging, health/status
+- `WP 5.0A` — Navigation Framework Architecture (design only). **Complete.**
+- `WP 5.0B` — Navigation Framework Implementation. Next planned.
+- `WP 5.1` — Command Framework (dispatcher).
+- `WP 5.2` — Diagnostics Improvements (composite logging, health/status
   reporting).
-- `WP 4.9` — Developer Experience Improvements (templates, scaffolding).
+- `WP 5.3` — Developer Experience Improvements (templates, scaffolding).
 
 ## Long-Term Vision
 

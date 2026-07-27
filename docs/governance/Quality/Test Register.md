@@ -10,7 +10,7 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | `tests/Tempest.Core.Tests/` (direct inspection); `dotnet test` output. |
 | **Review Frequency** | Updated whenever the test suite's total count changes materially (in practice, every Work Package). |
-| **Last Reviewed** | 2026-07-25 (WP 4.5A) — counts re-verified directly via a fresh `dotnet test` run. |
+| **Last Reviewed** | 2026-07-27 (WP 5.0A) — counts re-verified directly via a fresh `dotnet test` run; unchanged since WP 4.5A (355/355, no new test files — WP 5.0A is architecture-only, no production or test code). |
 | **Related Documents** | `docs/releases/v0.4.0/Testing.md`; `Validation Register.md`; `Repository Metrics Register.md`. |
 | **Related ADRs** | None directly. |
 | **Related Academy Articles** | `docs/academy/06 Engineering Standards/02-testing-strategy.md`. |

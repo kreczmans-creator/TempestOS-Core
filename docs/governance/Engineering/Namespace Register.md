@@ -10,7 +10,7 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | Direct source inspection (`grep -rhoP "^namespace" src/`). |
 | **Review Frequency** | Updated whenever a new namespace is introduced under `src/`. |
-| **Last Reviewed** | 2026-07-25 (WP 4.5A). |
+| **Last Reviewed** | 2026-07-27 (WP 5.0A). |
 | **Related Documents** | `docs/architecture/Engineering Glossary.md` (`Tempest.Core.Runtime` vs. `Tempest.Core.Hosting`, ADR-0016); `Interface Register.md`; `Exception Register.md`. |
 | **Related ADRs** | ADR-0016, ADR-0024. |
 | **Related Academy Articles** | `docs/academy/02 Runtime Architecture/06-platform-layering.md`. |
@@ -59,6 +59,15 @@ pre-Claude commits (`Engineering Evolution Register.md`) establish that
 themselves, prove which specific namespace originated in which commit
 without a deeper `git log --follow` per file, which was out of scope for
 this baseline.
+
+## Note — `Tempest.Core.Navigation` (Designed, Not Yet Implemented)
+
+`Tempest.Core.Navigation` (designed `WP 5.0A`, `ADR-0031`/`ADR-0032`,
+`ADR-0024`'s capability-packaging pattern) is **deliberately not listed
+in the Entries table above** — no `src/Tempest.Core/Navigation/`
+directory exists yet (Verified — `grep -rhoP "^namespace"
+src/Tempest.Core` finds no such declaration). It will be added as an
+ordinary entry once `WP 5.0B` creates the namespace for real.
 
 ## Cross-Reference Check
 

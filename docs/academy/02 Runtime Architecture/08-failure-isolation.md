@@ -164,14 +164,23 @@ one-off finding specific to plugins or to events.
 
 ## 12. Future Evolution
 
-Any future "thing that runs and can fail" — a Command Framework handler, a
-Navigation transition, a future Requirements/Project Engine capability —
-should be run through this same test before its own failure model is
-decided: is it isolated by default; does a genuine, stated precondition
-justify a critical opt-in; is there a residual, always-fatal category for a
-defect in the containment mechanism itself. All four existing cases answer
-these three questions explicitly, in writing, before implementation began —
-the next one should too.
+Navigation (`WP 5.0A`) has since been run through this same test, with a
+genuinely different outcome from all four cases above: it needs **no new
+failure model at all**. A module's own navigation-registration failure
+(a duplicate `Id`) happens *inside* that module's own `InitialiseAsync`,
+already fully governed by Case 1's own isolation — there is no fifth
+case to add, because Navigation introduces no new *kind* of failure, only
+a new call site for a kind this document already covers. This is itself
+a useful data point: not every new platform capability needs its own
+entry in this list — recognising when an existing case already applies is
+as valuable as correctly adding a new one. Any future "thing that runs
+and can fail" — a Command Framework handler, a future Requirements/Project
+Engine capability — should still be run through the same test before
+assuming either outcome: is it isolated by default; does a genuine,
+stated precondition justify a critical opt-in; is there a residual,
+always-fatal category for a defect in the containment mechanism itself;
+or, as Navigation just demonstrated, does an existing case already answer
+all three questions without needing a new one.
 
 ## 13. Key Takeaways
 

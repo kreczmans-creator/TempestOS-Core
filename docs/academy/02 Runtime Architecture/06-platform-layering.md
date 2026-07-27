@@ -176,13 +176,16 @@ runs — precisely the kind of boundary violation ADR-0017 exists to prevent.
 
 Background Services (`WP 4.5`) has since been classified and implemented —
 a fourth, Host-owned category, neither a Platform Service nor a Module
-(ADR-0029) — following exactly this discipline. Every remaining future
-v0.4.0 capability — Navigation, Command Framework — should be classified
-against this same model before its own design begins, exactly as the
-Event Bus, Plugin infrastructure, and Background Services already were.
-`Runtime Host Architecture.md`'s own Future Extensibility section already
-sketches a first-pass answer for each; it should be confirmed, not
-assumed, once that work package's own design phase begins.
+(ADR-0029) — following exactly this discipline. Navigation (`WP 5.0A`) has
+since been classified too — a DI-public Platform Service (ADR-0031,
+ADR-0032), its own worked example of a genuinely new wrinkle this model
+had not yet been tested against: a concept that *sounds* UI-shaped can
+still pass the same downward-dependency, no-orchestration-authority test
+every other Platform Service already passes, provided its *rendering*
+half is kept entirely out of `Tempest.Core` — see `09-navigation-
+architecture.md`. Command Framework remains the one capability from the
+original `v0.4.0` plan not yet classified; it should be, against this same
+model, before its own design begins.
 
 ## 13. Key Takeaways
 

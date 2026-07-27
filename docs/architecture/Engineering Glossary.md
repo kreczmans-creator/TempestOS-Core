@@ -101,9 +101,9 @@ command type carries its own parameters as ordinary properties and is
 dispatched by its own type. Has exactly one handler and an expected
 result — contrasted with an **Event**, which has zero or more subscribers
 and no expected result. The handler contract and dispatcher are not yet
-defined (Command Framework's own work, WP 4.7) — only the command shape
-itself exists so far. Never depends on, or is invoked through, Navigation
-— see ADR-0022.
+defined (Command Framework's own work, WP 5.1, formerly WP 4.7) — only
+the command shape itself exists so far. Never depends on, or is invoked
+through, Navigation — see ADR-0022 and, once designed, ADR-0031/ADR-0032.
 
 ### Event Bus *(implemented — v0.4.0, WP 4.0 contracts; WP 4.4D bus, ADR-0028; WP 4.4E first real consumer)*
 
@@ -289,6 +289,26 @@ state (ADR-0012). Ten values: `Discovered`, `Registered`, `Initialising`,
 `Disposed`, with `Failed` reachable from most non-terminal states. Not to be
 confused with **Host State** — a Host can be `Running` while individual
 modules sit in `Failed`, by design.
+
+### Navigation *(designed — v0.5.0, WP 5.0A, ADR-0031/ADR-0032)*
+
+The primary mechanism by which a user moves between built-in platform
+pages, module-contributed destinations, and plugin-contributed
+destinations. `NavigationItem` (`Tempest.Core.Navigation`) is pure data
+— identity, title, an optional symbolic icon key, ordering, grouping, a
+parent reference for hierarchy, an optional visibility predicate —
+carrying no rendering type of any kind.
+`INavigationProvider`/`NavigationService` holds a registry of these,
+populated imperatively (mirroring Event Bus subscription, not
+`ModuleMetadataAttribute`'s declarative pattern — see **Reflection-Based
+Discovery**), and exposes `Navigate(id)`, which publishes a
+`NavigationRequestedEvent` through the existing **Event Bus** — see
+Reuse Before Invention. **Explicitly orthogonal to Command** (ADR-0022):
+neither depends on the other. **The model is UI-agnostic; rendering is
+`Tempest.App`'s own responsibility** (ADR-0031) — the same
+platform/application split already proven by `ICommand`/`IEvent`, applied
+to a concept that sounds UI-shaped but does not require knowing how
+anything is drawn.
 
 ### Owner
 

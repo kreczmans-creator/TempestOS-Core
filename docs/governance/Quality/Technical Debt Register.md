@@ -10,7 +10,7 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | Every retrospective under `docs/academy/03 Work Packages/`; `docs/releases/v0.4.0/Platform Services Architecture Review.md`. |
 | **Review Frequency** | Updated whenever a Work Package resolves, worsens, or discloses a new debt item — every retrospective's own "Architectural Debt Assessment" section is the trigger. |
-| **Last Reviewed** | 2026-07-25 (WP 4.5A). |
+| **Last Reviewed** | 2026-07-27 (WP 5.0A) — no new debt introduced; WP 5.0A's own retrospective confirms its three disclosed deferrals (permission model, current-location/history tracking, declarative contribution) are accepted design exclusions, not debt. |
 | **Related Documents** | `docs/releases/v0.4.0/Risks.md`; `Validation Register.md`; `Hosted Services Register.md`; `Plugin Register.md`. |
 | **Related ADRs** | ADR-0009, ADR-0021, ADR-0024, ADR-0028, ADR-0029. |
 | **Related Academy Articles** | Every Work Package retrospective's own "Trade-offs" and "Architectural Debt Assessment" sections. |

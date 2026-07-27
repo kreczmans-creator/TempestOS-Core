@@ -6,13 +6,13 @@
 |---|---|
 | **Register Name** | Governance Register |
 | **Purpose** | Tracks, per Work Package, whether Engineering Governance's own obligations (§5 ADR criteria, §6 Academy maintenance, §10 Rejected Designs) were actually met — the compliance record, distinct from the Decision Register's record of *what* was decided. |
-| **Scope** | Every Work Package from `7514b9d` (first Claude-authored commit) through `v0.4.0` Release Engineering. |
+| **Scope** | Every Work Package from `7514b9d` (first Claude-authored commit) through `WP 5.0A`. |
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | Git history (`git log`); `docs/academy/06 Engineering Standards/Engineering Governance.md`; each Work Package's own retrospective. |
 | **Review Frequency** | Updated at the end of every Work Package. |
-| **Last Reviewed** | 2026-07-27 (v0.4.0 Release Engineering). |
+| **Last Reviewed** | 2026-07-27 (WP 5.0A, Navigation Framework Architecture). |
 | **Related Documents** | `Decision Register.md`; `ADR Register.md`; `Rejected Designs Register.md`; `Academy Register.md`; `Feature Register.md`. |
-| **Related ADRs** | All 30 — this register verifies each one's originating Work Package actually followed §5. |
+| **Related ADRs** | All 32 — this register verifies each one's originating Work Package actually followed §5. |
 | **Related Academy Articles** | `docs/academy/06 Engineering Standards/Engineering Governance.md`. |
 | **Coverage Status** | Complete. |
 
@@ -55,9 +55,10 @@ records an explicit judgement, never an omission.
 | WP 4.5 — Background Services Implementation | `c460aaf` | — | — | Yes |
 | WP 4.5A — Governance Register Baseline | `256afc8` | — | — | This Work Package's own governance material (see `Governance Philosophy.md`) |
 | WP 4.5B — Platform Foundation Closeout | `eb19605` | — | — | This Work Package's own closeout material (see `docs/releases/Platform Foundation Completion Report.md`) |
-| v0.4.0 Release Engineering | *(release-preparation commit)* | — | — | Not a Work Package in the numbered sequence — a Release Engineering activity, per Engineering Governance §7. `docs/releases/v0.4.0/Release Notes.md` and `docs/releases/v0.4.0.md` serve the retrospective role for this activity. |
+| v0.4.0 Release Engineering | `2c88c07`/`5802b92` | — | — | Not a Work Package in the numbered sequence — a Release Engineering activity, per Engineering Governance §7. `docs/releases/v0.4.0/Release Notes.md` and `docs/releases/v0.4.0.md` serve the retrospective role for this activity. |
+| WP 5.0A — Navigation Framework Architecture | *(this commit)* | ADR-0031, ADR-0032 | RD-0030–RD-0033 | Yes |
 
-**Total: 28 Work Packages tracked, plus `v0.4.0` Release Engineering,
+**Total: 29 Work Packages tracked, plus `v0.4.0` Release Engineering,
 100% Academy
 retrospective compliance for every Work Package that required one
 (housekeeping correctly excepted).**

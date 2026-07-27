@@ -831,3 +831,122 @@ explicitly open rather than silently implied.
 
 **Source.** ADR-0021, Future Considerations; ADR-0029, Decision
 (Failure model).
+
+---
+
+## RD-0030 — Declarative, Attribute-Based Navigation Contribution
+
+**Considered during:** WP 5.0A (ADR-0032, Navigation Framework
+Architecture).
+
+**Rejected because:** `ModuleMetadataAttribute` (`ADR-0027`) exists to
+solve one specific problem — letting Discovery read a module's identity
+*without instantiating it*, because Discovery runs before the DI
+container exists. Navigation registration happens *after* Dependency
+Injection Built, during Module Initialisation, when the module is
+already being constructed and driven through its own lifecycle — the
+instantiation-avoidance problem `ModuleMetadataAttribute` solves simply
+does not exist here. Introducing a `[NavigationItem]`-style attribute and
+a reflection pass to read it would duplicate real, working machinery to
+solve a problem this case never had.
+
+**Reversibility.** Cheap and purely additive — a declarative surface
+could be layered on top of the imperative one later (reading the
+attribute, then calling the same `Register` method internally) without
+changing `INavigationProvider`'s own contract.
+
+**Revisit trigger.** A real, demonstrated need for a module to declare
+navigation items without writing any lifecycle code at all — not
+speculatively now, with zero real navigation-contributing modules yet
+built.
+
+**Source.** ADR-0032, Decision (Registration model); Navigation Framework
+Architecture.md, "Registration Model."
+
+---
+
+## RD-0031 — A Dedicated Navigation Publish/Subscribe Mechanism, Separate From the Event Bus
+
+**Considered during:** WP 5.0A (ADR-0032, Navigation Framework
+Architecture).
+
+**Rejected because:** `IEventBus` already provides exactly what
+`NavigationService.Navigate(id)` needs to communicate a requested
+navigation to whatever is rendering — imperative subscribe/publish,
+sequential dispatch, unconditional per-subscriber failure isolation
+(`ADR-0028`), already implemented and tested. Building a second,
+Navigation-specific notification channel would duplicate that machinery
+for no reason beyond "it's a different kind of event," which the Event
+Bus's own design already accommodates (any `IEvent` subtype).
+
+**Reversibility.** Expensive to introduce later if genuinely needed —
+every existing subscriber would need to migrate from `IEventHandler<
+NavigationRequestedEvent>` to whatever new interface replaced it. This
+weighs directly against introducing it speculatively now.
+
+**Revisit trigger.** A demonstrated, structural reason `IEventBus`'s
+existing dispatch model cannot serve Navigation's own notification need —
+not identified during this Work Package's own design.
+
+**Source.** ADR-0032, Decision (Notification mechanism); Navigation
+Framework Architecture.md, "Rendering Boundary."
+
+---
+
+## RD-0032 — Navigation as a Host-Owned Collaborator
+
+**Considered during:** WP 5.0A (ADR-0032, Navigation Framework
+Architecture).
+
+**Rejected because:** Applying `ADR-0017`'s own test — does this
+component carry authority to register, initialise, start, stop, or
+dispose anything in the module pipeline — `NavigationService` does not:
+it holds a data registry and raises one notification, the same
+non-authority the Event Bus (DI-public, `ADR-0020`) already has and
+Discovery/Registration/Lifecycle (Host-owned) do not. Classifying it as
+Host-owned anyway would put a component with no orchestration authority
+behind the same access restriction as components that have real
+authority to reach back into, for no principled reason connected to what
+Navigation actually does.
+
+**Reversibility.** Expensive to reverse later — every module contributing
+navigation would need to change how it obtains `INavigationProvider` if
+this were reversed from DI-public to Host-owned after real consumers
+existed.
+
+**Revisit trigger.** A demonstrated need for `NavigationService` to gain
+real orchestration authority over the module pipeline — not currently
+imagined, and not a direction this design anticipates.
+
+**Source.** ADR-0032, Decision (Ownership); Navigation Framework
+Architecture.md, "Ownership."
+
+---
+
+## RD-0033 — A First-Class Permission/Role Model in Navigation
+
+**Considered during:** WP 5.0A (Navigation Framework Architecture).
+
+**Rejected because:** No authentication or authorization concept exists
+anywhere in this platform yet — no `IUser`, no `IPrincipal`, no
+permission or role type of any kind. Designing a permission model now,
+even narrowly scoped to "which navigation items a user can see," would
+be exactly the speculative-design-ahead-of-need pattern `ADR-0015`'s
+Future Considerations already warned against, and the same reasoning
+`RD-0002` already applied once to this release when it declined to
+define `INavigationProvider` before Navigation's own architecture existed.
+`NavigationItem.IsVisible` (a generic `Func<bool>?` predicate) is the
+seam a future permission system would plug into — Navigation itself
+remains permanently ignorant of what a permission is.
+
+**Reversibility.** Cheap and purely additive — a future permission system
+supplies predicates to the already-existing `IsVisible` seam; nothing
+about `NavigationItem`'s own shape needs to change to accommodate it.
+
+**Revisit trigger.** A real authentication/authorization system actually
+exists, or a genuine, demonstrated need for permission-gated navigation
+arises — not speculatively now, with zero users, roles, or permissions
+of any kind yet modelled anywhere in this platform.
+
+**Source.** Navigation Framework Architecture.md, "Required for v0.5 vs.
+Deferred Beyond v0.5."

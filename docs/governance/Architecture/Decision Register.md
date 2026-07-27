@@ -10,7 +10,7 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | `docs/releases/v0.4.0/WorkPackages.md`, `docs/releases/v0.4.0/CHANGELOG.md`, and the individual Work Package retrospectives named in each entry below. |
 | **Review Frequency** | Updated whenever a Work Package makes a significant process or sequencing decision that is not itself ADR-eligible. |
-| **Last Reviewed** | 2026-07-25 (WP 4.5B). |
+| **Last Reviewed** | 2026-07-27 (WP 5.0A). |
 | **Related Documents** | `ADR Register.md`; `Rejected Designs Register.md`; `Governance Register.md`; `Engineering Evolution Register.md`. |
 | **Related ADRs** | None directly — by definition, every entry below was judged *not* to require one. Where a decision later hardened into an ADR-eligible one, this is noted per entry. |
 | **Related Academy Articles** | `docs/academy/06 Engineering Standards/Engineering Governance.md` (§5, the ADR/non-ADR boundary this register exists to respect). |
@@ -46,8 +46,9 @@ source document cited in its own row.
 | D-012 | Establish a Governance Register Baseline (`WP 4.5A`) as its own dedicated, documentation-only Work Package rather than folding governance-register creation into a feature Work Package | 2026-07-25 | This Work Package's own brief | Process — governance milestone |
 | D-013 | Formally close the Foundation phase as its own dedicated Work Package (`WP 4.5B`), producing `PROJECT_STATUS.md`, a Foundation Completion Report, a Contributor Learning Path, an Engineering Lifecycle document, and standing Future Work Package Guidelines, rather than letting the Foundation phase's end be implicit | 2026-07-25 | This Work Package's own brief | Process — milestone closeout |
 | D-014 | Extend `Engineering Governance.md` with two new sections (§11 Repository Organisation, §12 Naming Conventions) rather than create separate new standard documents, since both codify patterns already applied consistently since `WP 2.1` | 2026-07-25 | `Engineering Governance.md` §11/§12 | Process — standards consolidation, avoiding duplication |
+| D-015 | Renumber the Developer Experience phase's four remaining Work Packages (`WP 4.6A`→`WP 5.0A`, `WP 4.6B`→`WP 5.0B`, `WP 4.7`→`WP 5.1`, `WP 4.8`→`WP 5.2`, `WP 4.9`→`WP 5.3`) to reflect that they now belong to the `v0.5.0` release, not `v0.4.0` — the old `v0.4.0/WorkPackages.md` entries are retained, each carrying a redirect note, per this project's own "never delete, mark superseded" convention | 2026-07-27 | `docs/releases/v0.5.0/ReleasePlan.md`'s "A Note on Renumbering" | Process — release-sequencing, no scope or objective change |
 
-**Total: 14 entries.**
+**Total: 15 entries.**
 
 ## Common Pattern
 

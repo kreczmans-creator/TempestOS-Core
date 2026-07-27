@@ -10,9 +10,9 @@
 | **Owner** | Project Maintainer (see `ADR Register.md` for the same ownership note — no separate review-board structure exists as of this baseline). |
 | **Source of Truth** | `docs/architecture/Rejected Designs.md`. This register indexes and cross-references that log; the full "Rejected because" reasoning, reversibility assessment, and revisit trigger for each entry live only there. |
 | **Review Frequency** | Updated whenever a new design is seriously considered and declined during a Work Package (Engineering Governance §10) — in practice, once per Work Package that surfaces a genuine alternative. |
-| **Last Reviewed** | 2026-07-25 (WP 4.5A). |
+| **Last Reviewed** | 2026-07-27 (WP 5.0A, Navigation Framework Architecture). |
 | **Related Documents** | `docs/architecture/Rejected Designs.md`; `ADR Register.md`; `Decision Register.md`. |
-| **Related ADRs** | ADR-0025 through ADR-0030 each have one or more directly-paired RD entries (see table); most earlier ADRs (ADR-0001–ADR-0019) predate the Rejected Designs Log's own introduction (WP 4.0-era, commit `466334c`) and so have no paired RD entry — this is expected, not a gap (see "Coverage Status" note below). |
+| **Related ADRs** | ADR-0025 through ADR-0032 each have one or more directly-paired RD entries (see table); most earlier ADRs (ADR-0001–ADR-0019) predate the Rejected Designs Log's own introduction (WP 4.0-era, commit `466334c`) and so have no paired RD entry — this is expected, not a gap (see "Coverage Status" note below). |
 | **Related Academy Articles** | Every Work Package retrospective that produced an RD entry cites it in its own "Alternatives Considered" section. |
 | **Coverage Status** | Complete for the period the Rejected Designs Log has existed (WP 4.0 onward). **Partial** relative to the Runtime Foundation (WP 2.1–2.7B): those work packages predate the Log's existence, so any alternatives they considered and declined were recorded only in prose, inside each retrospective's own "Alternatives Considered" section, never as a numbered RD entry — this is a real, disclosed gap in retroactive numbering, not a claim that no alternatives were considered during that period. |
 
@@ -30,7 +30,7 @@ would be recorded here as a new status column value, not a silent removal.
 | RD | Title | Considered During | Status |
 |---|---|---|---|
 | RD-0001 | `ICommand<TResult>` / `ICommandHandler<T>` Now | WP 4.0 | Rejected — deferral, revisit trigger WP 4.7 |
-| RD-0002 | `INavigationProvider` / `IDiagnosticsProvider` in WP 4.0 | WP 4.0 | Rejected — deferral, revisit trigger WP 4.6A/4.8 |
+| RD-0002 | `INavigationProvider` / `IDiagnosticsProvider` in WP 4.0 | WP 4.0 | Rejected — deferral; `INavigationProvider` half fulfilled by WP 5.0A (formerly WP 4.6A), `IDiagnosticsProvider` half still deferred to WP 5.2 (formerly WP 4.8) |
 | RD-0003 | Module Builder Pattern | WP 4.1 | Rejected |
 | RD-0004 | Registration Helpers | WP 4.1 | Rejected |
 | RD-0005 | Module Metadata / `ToString()` Convenience | WP 4.1 | Rejected |
@@ -58,8 +58,12 @@ would be recorded here as a new status column value, not a silent removal.
 | RD-0027 | A New, Dedicated Host Lifecycle Phase for Hosted Service Discovery/Registration | WP 4.5 (ADR-0029/0030) | Rejected |
 | RD-0028 | Concurrent (Parallel) Start of Independent Hosted Services | WP 4.5 (ADR-0029) | Rejected |
 | RD-0029 | Automatic Restart/Backoff for Isolated Hosted Service Failures | WP 4.5 (ADR-0029) | Rejected — deferral |
+| RD-0030 | Declarative, Attribute-Based Navigation Contribution | WP 5.0A (ADR-0032) | Rejected — deferral |
+| RD-0031 | A Dedicated Navigation Publish/Subscribe Mechanism, Separate From the Event Bus | WP 5.0A (ADR-0032) | Rejected |
+| RD-0032 | Navigation as a Host-Owned Collaborator | WP 5.0A (ADR-0032) | Rejected |
+| RD-0033 | A First-Class Permission/Role Model in Navigation | WP 5.0A | Rejected — deferral |
 
-**Total: 29 entries, all Rejected (none later reversed/adopted).**
+**Total: 33 entries, all Rejected (none later reversed/adopted).**
 
 ## Distribution by Work Package
 
@@ -72,6 +76,7 @@ would be recorded here as a new status column value, not a silent removal.
 | WP 4.4A | RD-0016–RD-0018 (3) |
 | WP 4.4 | RD-0019–RD-0022 (4) |
 | WP 4.5 | RD-0023–RD-0029 (7) |
+| WP 5.0A | RD-0030–RD-0033 (4) |
 
 No Rejected Design entry exists for WP 2.1 through WP 2.7B, WP 4.2A, WP
 4.2D, WP 4.4B, WP 4.4D, or WP 4.4E — **Inferred** to mean either (a) the
@@ -86,7 +91,7 @@ themselves note explicitly under "Alternatives Considered: None").
 ## Cross-Reference Check
 
 Every RD entry above traces to exactly one Work Package retrospective's
-own "Alternatives Considered" section, and every RD-0010 through RD-0029
-entry is also cited directly by the ADR (ADR-0025–ADR-0030) its own
+own "Alternatives Considered" section, and every RD-0010 through RD-0033
+entry is also cited directly by the ADR (ADR-0025–ADR-0032) its own
 Decision/Alternatives Considered section names. No RD entry was found
 that lacks a corresponding Work Package or ADR citation.

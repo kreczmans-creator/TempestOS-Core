@@ -73,7 +73,7 @@ span every individual service.
 - `docs/architecture/Platform Service Map.md` — the living, service-by-service index of what exists, what depends on what, and where to read more (outside the Academy folder, but maintained under the same obligation).
 - `docs/architecture/Engineering Glossary.md` — the project's own vocabulary, alphabetical, cross-referenced.
 - `docs/architecture/Rejected Designs.md` — the permanent record of designs seriously considered and declined; the mirror image of the ADR catalogue.
-- `docs/adr/` — the full Architecture Decision Record catalogue (ADR-0001 through ADR-0030 at time of writing).
+- `docs/adr/` — the full Architecture Decision Record catalogue (ADR-0001 through ADR-0032 at time of writing).
 
 ## Runtime
 
@@ -131,6 +131,17 @@ Implemented (`WP 4.5`, ADR-0029/ADR-0030) — `Tempest.Core.BackgroundServices`.
 - `docs/architecture/Background Services Architecture.md` — the full design document.
 - ADR-0021 (failure classification, decided during original v0.4.0 planning), ADR-0029 (discovery/ownership/orchestration model), ADR-0030 (Host Lifecycle placement).
 - See also [Failure Isolation Across TempestOS](02%20Runtime%20Architecture/08-failure-isolation.md) for how ADR-0021 fits alongside the platform's other three isolation decisions, [Working with the TempestOS Host](02%20Runtime%20Architecture/05-the-runtime-host.md) for the two new phases (`8.1`, `10.1`) in context, and [Reflection-Based Discovery](04%20Design%20Patterns/04-reflection-based-discovery.md) for hosted service discovery as a third application of that pattern.
+
+## Navigation
+
+Designed (`WP 5.0A`, ADR-0031/ADR-0032) — `Tempest.Core.Navigation`; not
+yet implemented.
+
+- [Navigation Architecture](02%20Runtime%20Architecture/09-navigation-architecture.md) — the concept guide: why a UI-adjacent concept can still be architecturally UI-agnostic, the platform/application rendering boundary, the contribution model, and common mistakes.
+- [WP 5.0A — Navigation Framework Architecture](03%20Work%20Packages/WP5.0A-navigation-framework-architecture.md) — the design phase: platform/application boundary, ownership, registration model, notification mechanism.
+- `docs/architecture/Navigation Framework Architecture.md` — the full design document.
+- ADR-0022 (Navigation/Command Framework orthogonality, decided during original v0.4.0 planning), ADR-0031 (Navigation belongs in `Tempest.Core`; rendering is an application responsibility), ADR-0032 (DI-public ownership, imperative registration, Event Bus reuse).
+- See also [Platform Layering](02%20Runtime%20Architecture/06-platform-layering.md) for Navigation as a worked example of the four-layer model, and [Failure Isolation Across TempestOS](02%20Runtime%20Architecture/08-failure-isolation.md) for why Navigation needed no new failure model at all.
 
 ## Design Patterns
 
@@ -200,12 +211,15 @@ whatever you're about to change, before you change it.
 - [WP 4.4E — Sample Module Event Integration](03%20Work%20Packages/WP4.4E-sample-module-event-integration.md)
 - [WP 4.5 — Background Services Architecture](03%20Work%20Packages/WP4.5-background-services-architecture.md)
 - [WP 4.5 — Background Services Implementation](03%20Work%20Packages/WP4.5-background-services-implementation.md)
+- WP 4.5A — Governance Register Baseline *(no dedicated retrospective — its own deliverable is the governance suite itself; see `docs/governance/Governance Index.md`)*
+- WP 4.5B — Platform Foundation Closeout *(no dedicated retrospective — its own deliverable is `docs/releases/Platform Foundation Completion Report.md`)*
 
-Still to come: `WP 4.6A` (Navigation Architecture) onward — the
-Developer Experience phase, not part of `v0.4.0` itself (rescoped out
-during Release Engineering; see `docs/releases/v0.4.0/ReleasePlan.md`'s
-"Scope" section) — see `docs/releases/v0.4.0/WorkPackages.md` for the
-full, current plan.
+**Developer Experience (v0.5.0, in progress):**
+
+- [WP 5.0A — Navigation Framework Architecture](03%20Work%20Packages/WP5.0A-navigation-framework-architecture.md)
+
+Still to come: `WP 5.0B` (Navigation Implementation) onward — see
+`docs/releases/v0.5.0/WorkPackages.md` for the full, current plan.
 
 ## Reference Material
 
