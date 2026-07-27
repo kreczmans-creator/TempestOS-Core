@@ -10,7 +10,7 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | The documents themselves, under `docs/architecture/` and `docs/releases/`. |
 | **Review Frequency** | Each document is updated as part of the Definition of Done for any Work Package that changes the subsystem it describes (Engineering Governance §6, extended explicitly to `Platform Service Map.md` and, by the same reasoning, every other architecture document). |
-| **Last Reviewed** | 2026-07-27 (WP 5.0A, Navigation Framework Architecture). |
+| **Last Reviewed** | 2026-07-27 (WP 5.0B, Navigation Framework Implementation). |
 | **Related Documents** | `Platform Services Register.md`; `Decision Register.md`; `Documentation Register.md` (the superset index, including Academy and release docs). |
 | **Related ADRs** | All 32 — every architecture document in this register is the realisation of one or more ADRs. |
 | **Related Academy Articles** | `docs/academy/02 Runtime Architecture/` mirrors much of this register's own subject matter at a teaching, rather than reference, depth — see the Academy Register for the pairing. |
@@ -38,7 +38,7 @@
 | `Event Bus Architecture.md` | `IEventBus`/`EventBus` dispatch/subscription/failure design (ADR-0028) | Implemented | WP 4.4 (design), WP 4.4D (implementation) |
 | `Background Services Architecture.md` | Hosted service discovery/ownership/orchestration/Host Lifecycle placement design (ADR-0029/0030) | Implemented | WP 4.5 (design), WP 4.5 (implementation) |
 | `Sample Module Architecture.md` | `ClockModule`/`ClockLifecycleObserverModule` design | Implemented | WP 4.3 (design and implementation) |
-| `Navigation Framework Architecture.md` | Navigation model, ownership, registration, and rendering boundary design (ADR-0031/0032) | Designed — not yet implemented | WP 5.0A (design); WP 5.0B implements |
+| `Navigation Framework Architecture.md` | Navigation model, ownership, registration, and rendering boundary design (ADR-0031/0032) | Implemented | WP 5.0A (design), WP 5.0B (implementation) |
 | `docs/releases/v0.4.0/Architecture.md` | The v0.4.0 release's own architecture review, decisions, and reuse map | Living document (release-scoped) | v0.4.0 planning; updated across the release |
 | `docs/releases/FOUNDATION.md` | Permanent, cross-release engineering constitution — what must never change | Permanent | Established at v0.1.0-era stabilisation; not release-scoped |
 
@@ -48,8 +48,7 @@
 
 | Status | Count | Documents |
 |---|---|---|
-| Implemented | 13 | Runtime Host Architecture, Host Lifecycle, Runtime State Machine, Startup Sequence, Shutdown Sequence, Failure Behaviour, Ownership Matrix, Platform Version, Plugin Manifest Architecture, Module Dependency Injection Architecture, Event Bus Architecture, Background Services Architecture, Sample Module Architecture |
-| Designed, not yet implemented | 1 | Navigation Framework Architecture (WP 5.0A; WP 5.0B implements) |
+| Implemented | 14 | Runtime Host Architecture, Host Lifecycle, Runtime State Machine, Startup Sequence, Shutdown Sequence, Failure Behaviour, Ownership Matrix, Platform Version, Plugin Manifest Architecture, Module Dependency Injection Architecture, Event Bus Architecture, Background Services Architecture, Sample Module Architecture, Navigation Framework Architecture |
 | Living document (continuously updated, not phase-gated) | 3 | Platform Service Map, Engineering Glossary, Rejected Designs |
 | Living document (release-scoped) | 1 | `docs/releases/v0.4.0/Architecture.md` |
 | Permanent (cross-release) | 1 | `docs/releases/FOUNDATION.md` |
@@ -57,10 +56,8 @@
 Every document in this register marked Implemented describes a subsystem
 this repository's Platform Services Register also lists as
 **Implemented** — no document describes a system that does not exist in
-code beyond the one, disclosed exception (`Navigation Framework
-Architecture.md`, itself marked accordingly, not miscategorised as
-Implemented). **Verified** by direct cross-check against `Platform
-Services Register.md`.
+code. **Verified** by direct cross-check against `Platform Services
+Register.md`.
 
 ## Cross-Reference Check
 
@@ -68,7 +65,8 @@ Services Register.md`.
   Package retrospective, and one entry in `Platform Service Map.md` or
   the Engineering Glossary — confirmed by direct grep of each document's
   own inbound references.
-- No stale "designed, not yet implemented" marker was found remaining for
-  any document that has since actually been implemented — `Navigation
-  Framework Architecture.md`'s own "designed, not yet implemented" marker
-  is current and correct, not stale, since `WP 5.0B` has not yet run.
+- No stale "designed, not yet implemented" marker remains for any
+  document that has since actually been implemented — `Navigation
+  Framework Architecture.md`'s own marker was updated to Implemented in
+  the same commit that moved `Platform Services Register.md`'s Navigation
+  row to Implemented, per this register's own cross-check discipline.

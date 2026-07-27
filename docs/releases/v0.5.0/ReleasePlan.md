@@ -2,8 +2,9 @@
 
 ## Status
 
-**In progress.** `WP 5.0A` (Navigation Framework Architecture) is
-complete. `WP 5.0B` onward have not begun. This document exists to scope
+**In progress.** `WP 5.0A` (Navigation Framework Architecture) and
+`WP 5.0B` (Navigation Framework Implementation) are complete. `WP 5.1`
+onward have not begun. This document exists to scope
 the release before any code is written — per `docs/releases/
 FOUNDATION.md`, architecture precedes implementation for anything
 non-trivial. `docs/releases/v0.5.0/WorkPackages.md` is the living record
@@ -62,7 +63,7 @@ See `docs/releases/v0.5.0/WorkPackages.md` for the full breakdown, in
 implementation order:
 
 - Navigation Framework Architecture (`WP 5.0A`) — **complete**.
-- Navigation Framework Implementation (`WP 5.0B`).
+- Navigation Framework Implementation (`WP 5.0B`) — **complete**.
 - Command Framework (`WP 5.1`).
 - Diagnostics Improvements (`WP 5.2`).
 - Developer Experience Improvements (`WP 5.3`).
@@ -76,9 +77,11 @@ implementation order:
   built *on*, not revisited, absent a specific, documented engineering
   reason (`docs/governance/Future Work Package Guidelines.md`).
 - A rendering/UI implementation of any kind. `WP 5.0A`'s own architecture
-  explicitly keeps rendering out of `Tempest.Core`; `Tempest.App`'s own
-  eventual navigation-aware console rendering is `WP 5.0B`'s
-  implementation concern, not a platform capability.
+  explicitly keeps rendering out of `Tempest.Core`, and `WP 5.0B`
+  implemented exactly that boundary — `Tempest.App` was left untouched.
+  `Tempest.App`'s own eventual navigation-aware console rendering remains
+  unscheduled, a future Work Package's own concern, not a platform
+  capability.
 - A permission/authorization model — `RD-0033` defers this explicitly
   until a real authentication/authorization concept exists anywhere in
   this platform.

@@ -49,7 +49,8 @@ process exists to draw on. Everything from `7514b9d` onward is
 | 2026-07-25 | Governance Register Baseline (`WP 4.5A`), the first complete governance register suite | `256afc8` |
 | 2026-07-25 | Platform Foundation Closeout (`WP 4.5B`): formally closes the Foundation phase, adds `PROJECT_STATUS.md`, `Platform Foundation Completion Report.md`, `Contributor Learning Path.md`, `Engineering Lifecycle.md`, `Future Work Package Guidelines.md`, and extends Engineering Governance with Repository Organisation (§11) and Naming Conventions (§12) | `eb19605` |
 | 2026-07-27 | `v0.4.0` "Platform Foundation" released — rescoped to the Foundation-phase scope, merged into `main`, tagged `v0.4.0` | `2c88c07` (prep), `5802b92` (merge) |
-| 2026-07-27 | **This Work Package** — Navigation Framework Architecture (`WP 5.0A`), the first Work Package of the `v0.5.0` "Developer Experience" release: `ADR-0031`/`ADR-0032`, `Navigation Framework Architecture.md`, `RD-0030`–`RD-0033`, and the `v0.4.0`→`v0.5.0` Developer Experience Work Package renumbering | This commit |
+| 2026-07-27 | Navigation Framework Architecture (`WP 5.0A`), the first Work Package of the `v0.5.0` "Developer Experience" release: `ADR-0031`/`ADR-0032`, `Navigation Framework Architecture.md`, `RD-0030`–`RD-0033`, and the `v0.4.0`→`v0.5.0` Developer Experience Work Package renumbering | `c3f9246` |
+| 2026-07-27 | **This Work Package** — Navigation Framework Implementation (`WP 5.0B`): `Tempest.Core.Navigation` (`NavigationItem`, `INavigationProvider`/`NavigationService`, `NavigationRequestedEvent`, exception hierarchy), three new `Tempest.Samples` reference modules, registered in `TempestHost`'s existing Platform Services Registered phase, 45 new tests (400 total) | This commit |
 
 ## Observed Pattern
 

@@ -10,7 +10,7 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | `src/Samples/Tempest.Samples/`; `docs/architecture/Sample Module Architecture.md`. |
 | **Review Frequency** | Updated whenever a new production module is added anywhere under `src/`. |
-| **Last Reviewed** | 2026-07-25 (WP 4.5A). |
+| **Last Reviewed** | 2026-07-27 (WP 5.0B). |
 | **Related Documents** | `docs/architecture/Sample Module Architecture.md`; `Platform Services Register.md`; `Event Catalogue.md`. |
 | **Related ADRs** | ADR-0001 through ADR-0004 (module identity, lifecycle, disposal), ADR-0027 (`ModuleMetadataAttribute`). |
 | **Related Academy Articles** | `docs/academy/02 Runtime Architecture/03-building-a-module.md`; `04-building-an-event-driven-module.md`; `docs/academy/03 Work Packages/WP4.3-sample-module-architecture.md`, `WP4.3-sample-module-implementation.md`, `WP4.4E-sample-module-event-integration.md`. |
@@ -24,8 +24,11 @@
 |---|---|---|---|---|---|
 | `ClockModule` | `Tempest.Samples` | `ModuleLifecycleBase` | Yes | `IEventBus` | WP 4.3 (created), WP 4.4E (extended to publish events) |
 | `ClockLifecycleObserverModule` | `Tempest.Samples` | `ModuleLifecycleBase` | Yes | `IEventBus` | WP 4.4E |
+| `NavigationSampleModule` | `Tempest.Samples` | `ModuleLifecycleBase` | Yes | `INavigationProvider` | WP 5.0B |
+| `SecondaryNavigationSampleModule` | `Tempest.Samples` | `ModuleLifecycleBase` | Yes | `INavigationProvider` | WP 5.0B |
+| `DuplicateNavigationSampleModule` | `Tempest.Samples` | `ModuleLifecycleBase` | Yes | `INavigationProvider` | WP 5.0B |
 
-**Total: 2 production modules — Verified directly against
+**Total: 5 production modules — Verified directly against
 `src/Samples/Tempest.Samples/*.cs`.**
 
 ## SDK Base Types (Not Modules Themselves)
@@ -51,8 +54,11 @@ here.
 
 ## Cross-Reference Check
 
-Both production modules are cited by name in `Platform Services Register.md`
-(Event Bus's "first real consumer"), `Event Catalogue.md` (as
-publisher/subscriber of `ClockModuleLifecycleEvent`), and at least one
-Work Package retrospective each. No production module exists that is not
-also covered by at least one test in `Test Register.md`.
+All five production modules are cited by name in `Platform Services
+Register.md` (Event Bus's "first real consumer"; Navigation's real
+contributors), `Event Catalogue.md` (`ClockModule`/`ClockLifecycleObserverModule`
+as publisher/subscriber of `ClockModuleLifecycleEvent`; the three
+Navigation sample modules as `NavigationRequestedEvent`'s real
+contributors), and at least one Work Package retrospective each. No
+production module exists that is not also covered by at least one test
+in `Test Register.md`.

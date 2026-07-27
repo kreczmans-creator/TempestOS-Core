@@ -1,6 +1,7 @@
 # Navigation Framework Architecture
 
-**Status: designed — WP 5.0A (ADR-0031, ADR-0032). Not yet implemented.**
+**Status: designed — WP 5.0A (ADR-0031, ADR-0032). Implemented — WP 5.0B,
+exactly as designed, with zero deviation from the Public Surface below.**
 
 ## Objective
 
@@ -293,11 +294,13 @@ public sealed class DuplicateNavigationItemException : NavigationException { }
 public sealed class NavigationItemNotFoundException : NavigationException { }
 ```
 
-Exact signatures may be refined during `WP 5.0B` implementation (per
-Engineering Governance §8's Architecture tier); the **shape, ownership,
-and dependency direction above are the approved design** and are not
-open for silent revision — any implementation-time deviation stops and
-reports, per this Work Package's own governing instruction.
+**Implemented in `WP 5.0B` with zero deviation from this shape** — every
+type above exists in `src/Tempest.Core/Navigation/` under exactly this
+signature; the only implementation-time refinement was ordinary
+constructor argument validation (`ArgumentException`/`ArgumentNullException`
+guards), which is not a shape, ownership, or dependency-direction change
+and required no conflict report per this Work Package's own governing
+instruction.
 
 **`Items` ordering.** Returned pre-sorted: ascending by `Group` (nulls
 first), then ascending by `Order`, then ascending ordinal by `Id` —
@@ -344,6 +347,11 @@ Event Bus already demonstrated, now proven true a second time for a
 structurally different capability.
 
 ## Testing Strategy
+
+**Realised in full by `WP 5.0B`** — every scenario below is proven by a
+real, passing test against the real `NavigationService`, `IEventBus`, and
+Runtime Host; none of it is aspirational. See `Test Register.md` for the
+complete file/count breakdown.
 
 Following this project's own established, "prefer real implementations
 over mocks" convention (`docs/academy/06 Engineering Standards/

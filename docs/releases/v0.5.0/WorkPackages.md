@@ -97,7 +97,10 @@ architectural reasoning.
 
 ## WP 5.0B — Navigation Framework Implementation
 
-**Status note.** Not started. Formerly `WP 4.6B` under the `v0.4.0` plan.
+**Status note.** Complete. Implementation:
+`src/Tempest.Core/Navigation/`, three new `Tempest.Samples` reference
+modules, 45 new tests (400 total), and the `WP 5.0B` Academy
+retrospective. Formerly `WP 4.6B` under the `v0.4.0` plan.
 
 ### Objective
 
@@ -106,9 +109,8 @@ Implement what `WP 5.0A` designed.
 ### Scope
 
 Defined entirely by `WP 5.0A`'s own deliverable
-(`docs/architecture/Navigation Framework Architecture.md`) — this entry
-is intentionally thin until implementation begins; the architecture
-itself, not this entry, is authoritative on shape.
+(`docs/architecture/Navigation Framework Architecture.md`) — realised
+with zero deviation from that design.
 
 ### Dependencies
 
@@ -116,30 +118,35 @@ itself, not this entry, is authoritative on shape.
 Framework) — `ADR-0022`; `WP 5.0B` may proceed regardless of whether
 `WP 5.1` has landed yet.
 
-### Deliverables
+### Deliverables — Done
 
-Whatever `WP 5.0A`'s architecture document specifies:
-`Tempest.Core.Navigation` (`NavigationItem`, `INavigationProvider`/
-`NavigationService`, `NavigationRequestedEvent`, and the exception
-hierarchy the architecture names), registered during the existing
-Platform Services Registered phase, plus at least one real, discovered
-module contributing a real navigation item.
+- `Tempest.Core.Navigation` (`NavigationItem`, `INavigationProvider`/
+  `NavigationService`, `NavigationRequestedEvent`, and the
+  `NavigationException` hierarchy), registered during the existing
+  Platform Services Registered phase.
+- Three real, discovered reference modules
+  (`NavigationSampleModule`, `SecondaryNavigationSampleModule`,
+  `DuplicateNavigationSampleModule`) each contributing a real navigation
+  item.
+- A real, dynamically-built, on-disk plugin assembly proving a
+  plugin-loaded module contributes navigation through the identical path
+  an ordinarily-discovered module uses.
 
-### Acceptance Criteria
+### Acceptance Criteria — Met
 
-Whatever `WP 5.0A`'s architecture document specifies, at minimum
-including: a real module registers a navigation item and a real
-`Navigate(...)` call is observed to publish `NavigationRequestedEvent`
-through the real, unmodified `IEventBus`.
+- A real module registers a navigation item and a real `Navigate(...)`
+  call is observed to publish `NavigationRequestedEvent` through the
+  real, unmodified `IEventBus`. **Met** — proven end to end through the
+  real Runtime Host.
 
 ### Estimated Complexity
 
-**M.**
+**Realised as M.**
 
 ### Risks
 
-Inherits any risk `WP 5.0A` did not fully resolve — none currently named;
-see the `WP 5.0A` retrospective's own "Readiness assessment."
+None materialised. `WP 5.0A`'s design required zero revision to
+implement; see the `WP 5.0B` retrospective's own "Readiness assessment."
 
 ---
 

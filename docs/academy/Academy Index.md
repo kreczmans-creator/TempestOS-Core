@@ -134,11 +134,12 @@ Implemented (`WP 4.5`, ADR-0029/ADR-0030) — `Tempest.Core.BackgroundServices`.
 
 ## Navigation
 
-Designed (`WP 5.0A`, ADR-0031/ADR-0032) — `Tempest.Core.Navigation`; not
-yet implemented.
+Implemented (`WP 5.0A` design, `WP 5.0B` implementation, ADR-0031/ADR-0032)
+— `Tempest.Core.Navigation`.
 
 - [Navigation Architecture](02%20Runtime%20Architecture/09-navigation-architecture.md) — the concept guide: why a UI-adjacent concept can still be architecturally UI-agnostic, the platform/application rendering boundary, the contribution model, and common mistakes.
 - [WP 5.0A — Navigation Framework Architecture](03%20Work%20Packages/WP5.0A-navigation-framework-architecture.md) — the design phase: platform/application boundary, ownership, registration model, notification mechanism.
+- [WP 5.0B — Navigation Framework Implementation](03%20Work%20Packages/WP5.0B-navigation-framework-implementation.md) — the implementation phase: `NavigationItem`/`NavigationService` built and proven against real modules, a real plugin assembly, and the real Host.
 - `docs/architecture/Navigation Framework Architecture.md` — the full design document.
 - ADR-0022 (Navigation/Command Framework orthogonality, decided during original v0.4.0 planning), ADR-0031 (Navigation belongs in `Tempest.Core`; rendering is an application responsibility), ADR-0032 (DI-public ownership, imperative registration, Event Bus reuse).
 - See also [Platform Layering](02%20Runtime%20Architecture/06-platform-layering.md) for Navigation as a worked example of the four-layer model, and [Failure Isolation Across TempestOS](02%20Runtime%20Architecture/08-failure-isolation.md) for why Navigation needed no new failure model at all.
@@ -217,8 +218,9 @@ whatever you're about to change, before you change it.
 **Developer Experience (v0.5.0, in progress):**
 
 - [WP 5.0A — Navigation Framework Architecture](03%20Work%20Packages/WP5.0A-navigation-framework-architecture.md)
+- [WP 5.0B — Navigation Framework Implementation](03%20Work%20Packages/WP5.0B-navigation-framework-implementation.md)
 
-Still to come: `WP 5.0B` (Navigation Implementation) onward — see
+Still to come: `WP 5.1` (Command Framework) onward — see
 `docs/releases/v0.5.0/WorkPackages.md` for the full, current plan.
 
 ## Reference Material

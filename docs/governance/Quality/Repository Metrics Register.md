@@ -10,7 +10,7 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | Direct repository inspection (`find`, `wc`, `git log`) performed as part of this Work Package. |
 | **Review Frequency** | Re-measured at each Governance Baseline review, or on request. |
-| **Last Reviewed** | 2026-07-27 (WP 5.0A, Navigation Framework Architecture). |
+| **Last Reviewed** | 2026-07-27 (WP 5.0B, Navigation Framework Implementation). |
 | **Related Documents** | `Test Register.md`; `Namespace Register.md`; `Engineering Evolution Register.md`. |
 | **Related ADRs** | None directly. |
 | **Related Academy Articles** | None directly — this is a raw metrics snapshot, not a teaching document. |
@@ -113,6 +113,30 @@ Package's own additions moved.
 | Executed tests (`dotnet test`) | 355, 0 failures | 355, 0 failures (unchanged — architecture-only, by design) |
 | Build warnings/errors | 0/0 | 0/0 (unchanged) |
 
+## Snapshot: 2026-07-27 (WP 5.0B — Navigation Framework Implementation)
+
+The first Work Package since `v0.4.0` Release Engineering to change
+`src/`/`tests/` — implements `Tempest.Core.Navigation`, three new
+`Tempest.Samples` reference modules, and 45 new tests.
+
+| Metric | WP 5.0A | WP 5.0B (current) |
+|---|---|---|
+| `src/` `.cs` files / lines | 106 / 6,603 | 116 / 7,231 (adds 7 `Tempest.Core.Navigation` files, 3 `Tempest.Samples` files) |
+| `tests/` `.cs` files / lines | 55 / 7,310 | 58 / 8,163 (adds 2 `Navigation/` test files, 1 `Samples/` test file; extends `DynamicPluginAssemblyBuilder.cs`) |
+| Executed tests (`dotnet test`) | 355, 0 failures | **400, 0 failures** (45 new) |
+| Namespaces under `src/` | 15 declared + 1 global | 16 declared + 1 global (adds `Tempest.Core.Navigation`) |
+| Public interfaces (`src/Tempest.Core/`) | 26 | 27 (adds `INavigationProvider`) |
+| Custom exception types | 22 | 25 (adds `NavigationException` and 2 subtypes) |
+| Production modules | 2 (`ClockModule`, `ClockLifecycleObserverModule`) | 5 (adds `NavigationSampleModule`, `SecondaryNavigationSampleModule`, `DuplicateNavigationSampleModule`) |
+| Production event types | 1 (`ClockModuleLifecycleEvent`) | 2 (adds `NavigationRequestedEvent`) |
+| Platform services (Register total) | 16 catalogued, 11 Implemented | 16 catalogued, **12 Implemented** (Navigation moves from Designed to Implemented) |
+| Architecture documents (`docs/architecture/`) | 17 | 17 (unchanged — no new document; `Navigation Framework Architecture.md`'s own status field updated in place) |
+| Academy articles (`docs/academy/`, all subfolders) | 65 | 66 (adds `WP5.0B-navigation-framework-implementation.md`) |
+| `docs/` `.md` files | 161 | 162 |
+| Governance documents (`docs/governance/`, all subfolders) | 32 | 32 (unchanged — updates existing registers rather than adding new ones) |
+| Total commits | 52 | 53 (before this Work Package's own commit) |
+| Build warnings/errors | 0/0 | 0/0 (unchanged) |
+
 ## Governance Suite Size (Introduced by This Work Package, WP 4.5A)
 
 | Metric | Value |
@@ -134,7 +158,7 @@ is offered.
 ## Cross-Reference Check
 
 The ADR count (32), Rejected Designs count (33), Academy article count
-(65), test count (355), and build status (0/0) above are each
+(66), test count (400), and build status (0/0) above are each
 cross-checked directly against `ADR Register.md`, `Rejected Designs
 Register.md`, `Academy Register.md`, `Test Register.md`, and `Validation
 Register.md` respectively — all consistent, no discrepancy found.

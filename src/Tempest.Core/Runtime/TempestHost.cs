@@ -4,6 +4,7 @@ using Tempest.Core.DependencyInjection;
 using Tempest.Core.Events;
 using Tempest.Core.Logging;
 using Tempest.Core.Modules;
+using Tempest.Core.Navigation;
 using Tempest.Core.Plugins;
 using Tempest.Core.Versioning;
 
@@ -214,6 +215,7 @@ public sealed class TempestHost : ITempestHost
         services.AddInstance(logger);
         services.AddInstance(platformVersionProvider);
         services.Singleton<IEventBus, EventBus>();
+        services.Singleton<INavigationProvider, NavigationService>();
         services.AddDiscoveredModules(moduleManager.GetAll().Select(module => module.Descriptor));
         services.AddDiscoveredHostedServices(hostedServiceTypes);
         logger.Information(

@@ -10,7 +10,7 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | `tests/Tempest.Core.Tests/` (direct inspection); `dotnet test` output. |
 | **Review Frequency** | Updated whenever the test suite's total count changes materially (in practice, every Work Package). |
-| **Last Reviewed** | 2026-07-27 (WP 5.0A) — counts re-verified directly via a fresh `dotnet test` run; unchanged since WP 4.5A (355/355, no new test files — WP 5.0A is architecture-only, no production or test code). |
+| **Last Reviewed** | 2026-07-27 (WP 5.0B) — counts re-verified directly via a fresh `dotnet test` run; 400/400, 45 new tests added (`Navigation/`, plus one new file in `Samples/`). |
 | **Related Documents** | `docs/releases/v0.4.0/Testing.md`; `Validation Register.md`; `Repository Metrics Register.md`. |
 | **Related ADRs** | None directly. |
 | **Related Academy Articles** | `docs/academy/06 Engineering Standards/02-testing-strategy.md`. |
@@ -29,25 +29,27 @@
 | `Events/` | 4 | 27 | Event Bus (WP 4.0 contracts, WP 4.4D bus) |
 | `Logging/` | 9 | 42 | Logging & Diagnostics Framework (WP 2.6) |
 | `Modules/` | 13 | 72 | Discovery, Registration, Lifecycle, Module SDK, `ModuleMetadataAttribute` (WP 2.1–2.3, WP 4.1, WP 4.4A/B) |
-| `Plugins/` | 6 | 19 | Plugin manifest, discovery, loading (WP 4.2) |
+| `Navigation/` | 2 | 31 | `NavigationItem`, `NavigationService` — registration, ordering, hierarchy, visibility, events, DI (WP 5.0B) |
+| `Plugins/` | 6 | 19 | Plugin manifest, discovery, loading (WP 4.2); extended `WP 5.0B` with a Navigation-registering dynamic plugin assembly builder |
 | `Runtime/` | 5 | 42 | `TempestHost`, `TempestHostBuilder`, plugin/hosted-service Host integration |
-| `Samples/` | 4 | 29 | `ClockModule`/`ClockLifecycleObserverModule` pipeline and event integration (WP 4.3, WP 4.4E) |
+| `Samples/` | 5 | 39 | `ClockModule`/`ClockLifecycleObserverModule` pipeline and event integration (WP 4.3, WP 4.4E); `NavigationSampleModule` and companions, module/host/plugin integration (WP 5.0B) |
 | `Versioning/` | 2 | 17 | Platform Version infrastructure (WP 4.2A) |
 
-**Total: 55 test files, 340 `[Fact]`/`[Theory]` attribute occurrences.**
+**Total: 58 test files, 381 `[Fact]`/`[Theory]` attribute occurrences.**
 
 ## Reconciling Attribute Count Against Executed Test Count
 
-`dotnet test` reports **355** executed tests, 15 more than the 340 raw
+`dotnet test` reports **400** executed tests, 19 more than the 381 raw
 `[Fact]`/`[Theory]` attribute occurrences above. This difference is
 **Verified** to be `[Theory]` methods with multiple `[InlineData]` rows
 executing as multiple tests at runtime from a single attribute occurrence
 — for example, the Plugin Manifest test suite's missing-required-field
 theory (one `[Theory]` attribute, five `InlineData` rows, one per
-required field). No discrepancy or missing test was found; the two counts
-measure different things (source attributes vs. runtime-executed cases)
-and both are reported here to avoid the false impression that they should
-match.
+required field), and, as of `WP 5.0B`, `NavigationItemTests`' own two
+`[Theory]` methods (invalid `Id`/`Title`, three `InlineData` rows each).
+No discrepancy or missing test was found; the two counts measure
+different things (source attributes vs. runtime-executed cases) and both
+are reported here to avoid the false impression that they should match.
 
 ## Historical Test Count Progression (Verified from CHANGELOG.md / Testing.md / Retrospectives)
 
@@ -59,7 +61,9 @@ match.
 | WP 4.3 (Sample Module implementation) | Unknown exact running total — 18 new tests added, base not restated in that retrospective |
 | WP 4.4D (Event Bus implementation) | 302 (278 pre-existing + 24 new) |
 | WP 4.5 (Background Services implementation) | 355 (313 pre-existing + 42 new) |
-| **Current (WP 4.5A)** | **355** — re-verified directly, 0 failures |
+| WP 4.5A (Governance Register Baseline) | 355 — re-verified directly, 0 failures, no code change |
+| WP 5.0B (Navigation Framework implementation) | 400 (355 pre-existing + 45 new) |
+| **Current (WP 5.0B)** | **400** — re-verified directly, 0 failures |
 
 Gaps in this progression are recorded as **Unknown**, not interpolated —
 several retrospectives report only the tests *they* added, not a running
@@ -69,7 +73,7 @@ this Work Package's own scope.
 
 ## Cross-Reference Check
 
-The 355 figure above is cross-checked directly against
-`Validation Register.md`'s own Test Gate row (also 355, from the same
+The 400 figure above is cross-checked directly against
+`Validation Register.md`'s own Test Gate row (also 400, from the same
 `dotnet test` run performed as part of this Work Package) — consistent,
 no discrepancy.

@@ -10,7 +10,7 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | The `.csproj` files themselves (project references); `docs/adr/ADR-0023-platform-layering-dependencies-flow-downward.md`; `docs/academy/02 Runtime Architecture/06-platform-layering.md`. |
 | **Review Frequency** | Updated whenever a project reference changes, or a new capability is classified against the four-layer model. |
-| **Last Reviewed** | 2026-07-25 (WP 4.5A). |
+| **Last Reviewed** | 2026-07-27 (WP 5.0B). |
 | **Related Documents** | `docs/architecture/Platform Service Map.md`; `Namespace Register.md`; `Interface Register.md`. |
 | **Related ADRs** | ADR-0016, ADR-0023. |
 | **Related Academy Articles** | `docs/academy/02 Runtime Architecture/06-platform-layering.md`. |
@@ -41,9 +41,9 @@ Service or the Runtime Host's own contracts; nothing depends upward.
 
 | Layer | Examples | Verified By |
 |---|---|---|
-| Modules | `ClockModule`, `ClockLifecycleObserverModule` | `Module Register.md` |
+| Modules | `ClockModule`, `ClockLifecycleObserverModule`, `NavigationSampleModule` and companions | `Module Register.md` |
 | Platform APIs (contracts) | `IEvent`, `IEventHandler<T>`, `ICommand`, `IHostedService`, `ICriticalBackgroundService` | `Interface Register.md`'s "Platform API" classification |
-| Platform Services (implementations) | Configuration, Logging, Discovery, Registration, Lifecycle, Dependency Injection, Event Bus, Background Services infrastructure, Plugin Manifest infrastructure | `Platform Services Register.md` |
+| Platform Services (implementations) | Configuration, Logging, Discovery, Registration, Lifecycle, Dependency Injection, Event Bus, Background Services infrastructure, Plugin Manifest infrastructure, Navigation Framework infrastructure | `Platform Services Register.md` |
 | Runtime Host | `TempestHost`, `TempestHostBuilder` | `Architecture Document Register.md` |
 
 ## Layering Violations Found
@@ -52,8 +52,10 @@ Service or the Runtime Host's own contracts; nothing depends upward.
 cross-module interaction observed — `ClockLifecycleObserverModule`
 subscribing to `ClockModule`'s event — passes through the Event Bus, a
 Platform Service, never a direct reference). No Platform Service depends
-upward on a Module. **Verified** by direct inspection of every Module
-Register/Event Catalogue entry's own dependency list.
+upward on a Module. `NavigationService`'s own dependency on `IEventBus`
+is Platform-Service-to-Platform-Service, confirmed downward-only and
+introducing no cycle (`ADR-0032`). **Verified** by direct inspection of
+every Module Register/Event Catalogue entry's own dependency list.
 
 ## Cross-Reference Check
 

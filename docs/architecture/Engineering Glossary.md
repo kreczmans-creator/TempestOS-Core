@@ -103,7 +103,7 @@ result — contrasted with an **Event**, which has zero or more subscribers
 and no expected result. The handler contract and dispatcher are not yet
 defined (Command Framework's own work, WP 5.1, formerly WP 4.7) — only
 the command shape itself exists so far. Never depends on, or is invoked
-through, Navigation — see ADR-0022 and, once designed, ADR-0031/ADR-0032.
+through, Navigation — see ADR-0022 and ADR-0031/ADR-0032.
 
 ### Event Bus *(implemented — v0.4.0, WP 4.0 contracts; WP 4.4D bus, ADR-0028; WP 4.4E first real consumer)*
 
@@ -290,7 +290,7 @@ state (ADR-0012). Ten values: `Discovered`, `Registered`, `Initialising`,
 confused with **Host State** — a Host can be `Running` while individual
 modules sit in `Failed`, by design.
 
-### Navigation *(designed — v0.5.0, WP 5.0A, ADR-0031/ADR-0032)*
+### Navigation *(implemented — v0.5.0, WP 5.0A design/WP 5.0B implementation, ADR-0031/ADR-0032)*
 
 The primary mechanism by which a user moves between built-in platform
 pages, module-contributed destinations, and plugin-contributed

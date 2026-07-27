@@ -2,14 +2,15 @@
 
 ## 1. Introduction
 
-`Tempest.Core.Navigation` (designed `WP 5.0A`, `ADR-0031`/`ADR-0032`) is
-TempestOS's answer to a question every application eventually faces: how
-do built-in pages, future modules, and future plugins all contribute to
-one coherent way of getting around, without the platform needing to know
-what any of them look like? This document teaches the reasoning behind
-that design — not its exact method signatures, which belong to
-`Navigation Framework Architecture.md` and will exist in code once
-`WP 5.0B` implements them.
+`Tempest.Core.Navigation` (designed `WP 5.0A`, implemented `WP 5.0B`,
+`ADR-0031`/`ADR-0032`) is TempestOS's answer to a question every
+application eventually faces: how do built-in pages, future modules, and
+future plugins all contribute to one coherent way of getting around,
+without the platform needing to know what any of them look like? This
+document teaches the reasoning behind that design — not its exact method
+signatures, which belong to `Navigation Framework Architecture.md` and
+now exist in code exactly as designed, with zero deviation, in
+`src/Tempest.Core/Navigation/`.
 
 ## 2. Purpose
 
@@ -154,9 +155,15 @@ Navigation's own design does not reopen this question; it inherits it.
 
 ## 12. Future Evolution
 
-- `WP 5.0B` implements this design against a real, discovered module
-  contributing a real navigation item, mirroring the Event Bus's own
-  implementation-then-proof sequence.
+- `WP 5.0B` implemented this design exactly as approved, against three
+  real, discovered sample modules (`NavigationSampleModule` and two
+  companions) each contributing a real navigation item — mirroring the
+  Event Bus's own implementation-then-proof sequence, and proving the
+  duplicate-ID failure is isolated by the existing, unmodified
+  `ModuleLifecycleManager` with no new Host failure policy required, and a
+  plugin-loaded module contributes navigation through the identical path
+  an ordinarily-discovered module uses, with zero plugin-specific
+  mechanism.
 - `WP 5.1` (Command Framework) is expected to call
   `NavigationService.Navigate(...)` from application logic without
   either service changing.

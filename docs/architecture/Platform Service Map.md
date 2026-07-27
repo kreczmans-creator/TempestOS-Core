@@ -31,7 +31,7 @@ of date is worse than no map at all, because it will be trusted.
 | Event Bus | **Implemented — WP 4.4D** (`IEventBus`/`EventBus`, `Tempest.Core.Events`) — dispatch/subscription/failure model per ADR-0028; **consumed — WP 4.4E** | Dependency Injection | Any module — first real consumer: `ClockModule`/`ClockLifecycleObserverModule` (`WP 4.4E`) |
 | Background Services | **Implemented — WP 4.5** (`IHostedServiceDiscoveryService`/`HostedServiceDiscoveryService`, `IHostedServiceManager`/`HostedServiceManager`, `Tempest.Core.BackgroundServices`) — discovery, ownership, orchestration, and Host Lifecycle placement per ADR-0029/ADR-0030; failure model per ADR-0021 | Host, Dependency Injection | Any module declaring a hosted service |
 | Command Framework | Contract implemented (WP 4.0: `ICommand`); dispatcher planned (WP 5.1, formerly WP 4.7) — orthogonal to Navigation, ADR-0022 | Dependency Injection | Any module |
-| Navigation | **Designed — WP 5.0A** (`INavigationProvider`/`NavigationService`, `Tempest.Core.Navigation`) — model, ownership, and rendering boundary per ADR-0031/ADR-0032; implementation planned (WP 5.0B) | Dependency Injection, Event Bus | Any module contributing a navigation item; `Tempest.App` (rendering) |
+| Navigation | **Implemented — WP 5.0A (design), WP 5.0B (implementation)** (`INavigationProvider`/`NavigationService`, `Tempest.Core.Navigation`) — model, ownership, and rendering boundary per ADR-0031/ADR-0032 | Dependency Injection, Event Bus | Any module contributing a navigation item; `Tempest.App` (rendering, not yet built) |
 | Plugin Manifest | **Implemented — WP 4.2** (`Tempest.Core.Plugins`) | Host (Phases 3.1/3.2, ADR-0026 — a pre-Discovery step) | Module Discovery (unchanged), any real plugin |
 | Project Engine | Planned | Undetermined | Undetermined |
 | Requirements Engine | Planned | Undetermined | Undetermined |
@@ -519,8 +519,8 @@ handler contract and dispatcher — not yet defined; `WP 5.1`'s own design
 work, deliberately not speculated on ahead of it.
 
 **Dependencies.** None for the contract itself. **Explicitly orthogonal to
-Navigation** (ADR-0022) — neither this nor `NavigationService` (designed,
-`WP 5.0A`; see below) depends on the other.
+Navigation** (ADR-0022) — neither this nor `NavigationService`
+(implemented, `WP 5.0B`; see below) depends on the other.
 
 **Consumers.** Any module, once `WP 5.1` implements the dispatcher.
 
@@ -532,7 +532,7 @@ Platform Services*), ADR-0023, ADR-0024.
 
 ---
 
-## Navigation *(designed — WP 5.0A, ADR-0031/ADR-0032; implementation planned — WP 5.0B)*
+## Navigation *(implemented — WP 5.0A design, WP 5.0B implementation, ADR-0031/ADR-0032)*
 
 **Responsibility.** The primary mechanism by which a user navigates the
 application — built-in platform pages, future engineering modules, and
@@ -551,10 +551,11 @@ complete design.
 **Key types.** `NavigationItem`, `INavigationProvider`/`NavigationService`,
 `NavigationRequestedEvent`, `NavigationException` and two subtypes
 (`DuplicateNavigationItemException`, `NavigationItemNotFoundException`) —
-all designed in full (`ADR-0031`, `ADR-0032`), not yet implemented;
-`WP 5.0B`'s own implementation deliverable, in a new
-`Tempest.Core.Navigation` namespace (`ADR-0024`'s established
-capability-packaging pattern).
+designed in full (`ADR-0031`, `ADR-0032`) and implemented with zero
+deviation in `WP 5.0B`, in a new `Tempest.Core.Navigation` namespace
+(`ADR-0024`'s established capability-packaging pattern). Registered as an
+ordinary DI-public singleton in `TempestHost`'s existing Platform Services
+Registered phase, alongside `IEventBus`.
 
 **Dependencies.** `IEventBus` (to publish `NavigationRequestedEvent`) —
 a platform-service-to-platform-service dependency with direct precedent
@@ -580,7 +581,8 @@ Platform Service, Registered Imperatively, Reusing the Event Bus*).
 **Academy references.** WP 4.0 retrospective (*Platform Contracts* —
 `ICommand`/`IEvent` as the precedent this design's own UI-agnosticism
 reasoning draws on); WP 5.0A retrospective (*Navigation Framework
-Architecture*); `Navigation Framework Architecture.md`; *Navigation
+Architecture*); WP 5.0B retrospective (*Navigation Framework
+Implementation*); `Navigation Framework Architecture.md`; *Navigation
 Architecture* (Academy concept guide); Rejected Designs RD-0030 through
 RD-0033; `docs/releases/v0.5.0/WorkPackages.md` (`WP 5.0A`/`WP 5.0B`).
 
