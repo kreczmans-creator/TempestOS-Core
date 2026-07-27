@@ -2,14 +2,91 @@
 
 ## Status
 
-**Unreleased.** Implementation is underway. Entries below are added as
-each work package actually lands — not written in advance as predictions.
-Compare against `WorkPackages.md` for what is planned but not yet
-reflected here.
+**Released — 2026-07-27.** `v0.4.0`, "Platform Foundation," ships the
+Foundation-phase scope described below and in `ReleasePlan.md`. Entries
+were added as each work package actually landed — not written in advance
+as predictions. `WP 4.6A` through `WP 4.9` (Navigation, Command
+Framework, Diagnostics, Developer Experience) are rescoped out of this
+release, deferred to the next milestone — see "Next Milestone," below,
+and `ReleasePlan.md`'s own "Scope" section for the rescoping decision.
 
 ---
 
-## [Unreleased]
+## Release Summary — v0.4.0 "Platform Foundation"
+
+**Major capabilities delivered.** Platform Contracts (`IHostedService`,
+`ICriticalBackgroundService`, `ICommand`, `IEvent`, `IEventHandler<T>`);
+Module SDK (`ModuleBase`, `ModuleLifecycleBase`); Plugin Manifest
+discovery and loading; a living Sample Module set (`ClockModule`,
+`ClockLifecycleObserverModule`); the Event Bus (`IEventBus`/`EventBus`);
+Background Services (`HostedServiceDiscoveryService`/
+`HostedServiceManager`), Host-orchestrated with isolated/critical failure
+classification.
+
+**Engineering improvements.** A fourth reflection-based discovery
+application (hosted services), reusing the same four disciplines Module
+and Plugin Discovery already established, rather than inventing a new
+mechanism. `ModuleMetadataAttribute` lets a discovered module declare a
+DI-resolvable constructor. Two genuine cross-test isolation hazards
+(dynamic-assembly identity collision; `Console.Out`-redirection races)
+were found and fixed as they recurred, always by extending an established
+fix pattern rather than inventing a new one each time.
+
+**Architecture improvements.** Decimal sub-numbered `Host Lifecycle.md`
+phases (`3.1`/`3.2` for Plugins, `8.1`/`10.1` for Background Services)
+proved the phase-table extension pattern composes cleanly a second time.
+The four-layer platform model (ADR-0023) absorbed six new capabilities
+without needing to change. 11 new ADRs (`ADR-0020`–`ADR-0030`) and 29
+Rejected Designs entries record every genuine alternative considered.
+
+**Testing growth.** 164 → 355 tests (+191), zero regressions at any Work
+Package boundary, verified stable across multiple consecutive full-suite
+runs at every milestone.
+
+**Documentation growth.** 8 → 16 architecture documents under
+`docs/architecture/` (18 including the two release-scoped documents); 19
+→ 30 ADRs; 0 → 29 Rejected Designs entries (the Log itself was introduced
+mid-release).
+
+**Governance growth.** 0 → 27 governance registers, a Governance Index,
+a Governance Philosophy, a Governance Audit Report, and a Repository
+Maturity Report — the first complete governance baseline TempestOS has
+produced, with Outstanding Governance Debt: **NONE**.
+
+**Breaking changes.** None. Every Runtime Foundation (v0.3.0) public
+contract — Configuration, Logging, Discovery, Registration, Dependency
+Injection, Lifecycle, the Runtime Host itself — is unchanged. This
+release extends the platform *around* those six services; it does not
+reopen them (see `ReleasePlan.md`'s "Explicitly Out of Scope").
+
+**Migration notes.** None required. A consumer of `v0.3.0` upgrading to
+`v0.4.0` needs no code changes — every new capability (Plugin Manifest,
+Event Bus, Background Services) is additive, opt-in, and inert until a
+module or hosted service actually uses it. `Tempest.App` continues to run
+unmodified, independent of the module pipeline (see Known Limitations).
+
+**Known limitations.** `Tempest.App` does not yet run through
+`TempestHost` — it remains the pre-module-pipeline console front end (a
+disclosed, pre-existing gap, not introduced by this release). Zero real
+plugins (`src/Plugins/` empty) and zero real hosted services ship in this
+release — both pieces of infrastructure are complete and tested; no
+Work Package has yet built a real consumer for either, by deliberate
+scope choice. `IHostedService`'s naming proximity to
+`Microsoft.Extensions.Hosting.IHostedService` remains an open question,
+revisit-triggered on real usage evidence that has not yet arrived. See
+`docs/governance/Quality/Technical Debt Register.md` for the complete,
+current list.
+
+**Next milestone.** `WP 4.6A` (Navigation Architecture) is the next
+planned Work Package, followed by `WP 4.6B` (Navigation Implementation),
+`WP 4.7` (Command Framework), `WP 4.8` (Diagnostics Improvements), and
+`WP 4.9` (Developer Experience Improvements) — none of which is part of
+`v0.4.0`. See `PROJECT_STATUS.md` for current status and
+`docs/releases/v0.4.0/WorkPackages.md` for the full scope of each.
+
+---
+
+## [0.4.0] - 2026-07-27
 
 ### Added
 
@@ -223,8 +300,34 @@ reflected here.
   invented. One new Academy article
   (`06 Engineering Standards/03-governance-registers.md`) teaches why and
   how to maintain the suite. Outstanding Governance Debt: **NONE**.
+- **Platform Foundation Closeout (WP 4.5B)** — documentation and
+  governance only; no production code touched. Formally closes the
+  Foundation phase: `PROJECT_STATUS.md` (repository root, primary status
+  dashboard), `docs/releases/Platform Foundation Completion Report.md`
+  (closeout narrative — Objectives, Milestones, Work Packages Completed,
+  Architectural/Engineering themes, Lessons Learned, growth tables,
+  Remaining Foundation Work: NONE), `docs/academy/Contributor Learning
+  Path.md` (repository-wide onboarding sequence), `docs/academy/06
+  Engineering Standards/Engineering Lifecycle.md` (the canonical
+  Idea→Investigation→Architecture→ADR→Rejected Designs→Implementation→
+  Testing→Architecture Review→Academy→Governance→Release→Maintenance
+  pipeline), and `docs/governance/Future Work Package Guidelines.md` (10
+  mandatory expectations for `WP 4.6A` onward). `Engineering
+  Governance.md` gained two new sections (§11 Repository Organisation,
+  §12 Naming Conventions) formalising practice already applied
+  consistently since `WP 2.1`. A full Root Document Review found and
+  repaired several genuine, mechanical documentation-drift issues:
+  `WorkPackages.md`'s and `ReleasePlan.md`'s own top-level status lines
+  still described `WP 4.3`/`WP 4.5` as "not begun"; `Engineering
+  Governance.md`'s own opening cross-reference cited the wrong section
+  title; the Academy Register and Engineering Standards Register both
+  mis-counted themselves following `WP 4.5A`'s own same-session
+  additions; `README.md` described a pre-module-pipeline repository
+  structure years out of date. All corrected.
 
-_Still planned, per `WorkPackages.md`:_
+_Rescoped out of `v0.4.0`, deferred to the next milestone (see
+`ReleasePlan.md`'s "Scope" and each work package's own status note in
+`WorkPackages.md`):_
 
 - Navigation Architecture (WP 4.6A), then Navigation Implementation
   (WP 4.6B)
@@ -310,8 +413,10 @@ _Still planned, per `WorkPackages.md`:_
   Requested/Module Disposal respectively, following ADR-0026's own
   precedent. **Implemented — WP 4.5.**
 - Expected, not yet written: Navigation's `Tempest.Core` placement
-  (`WP 4.6A`) — see `Architecture.md`. No further ADR is expected before
-  `WP 4.6A` begins.
+  (`WP 4.6A`) — see `Architecture.md`. `WP 4.6A` is rescoped out of
+  `v0.4.0` (see "Next Milestone," above); no further ADR was needed to
+  close this release, and none is expected until the next milestone's
+  own `WP 4.6A` actually begins.
 
 ---
 

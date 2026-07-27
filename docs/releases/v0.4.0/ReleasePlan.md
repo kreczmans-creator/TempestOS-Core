@@ -2,17 +2,22 @@
 
 ## Status
 
-**In progress.** `WP 4.0` through `WP 4.5A` are complete — Platform
-Contracts, Module SDK, Plugin Manifest, Sample Module, Event Bus,
-Background Services, two milestone reviews (`WP 4.2D`, `WP 4.4F`), and the
-Governance Register Baseline (`WP 4.5A`) — see `WorkPackages.md` and
-`CHANGELOG.md` for current, authoritative status; `WP 4.6A` onward have
-not begun. This document, and the rest of `docs/releases/v0.4.0/`, exist to
-scope the release before any code is written — per
-`docs/releases/FOUNDATION.md`, architecture precedes implementation for
-anything non-trivial, and this release is not trivial. This document
-itself is not re-litigated as work lands; `WorkPackages.md`, `CHANGELOG.md`,
-and `Risks.md` are the living record of what has actually shipped.
+**Released.** `v0.4.0` is rescoped and shipped as **"Platform
+Foundation"** — `WP 4.0` through `WP 4.5B` — Platform Contracts, Module
+SDK, Plugin Manifest, Sample Module, Event Bus, Background Services, two
+milestone reviews (`WP 4.2D`, `WP 4.4F`), the Governance Register
+Baseline (`WP 4.5A`), and the Foundation Closeout (`WP 4.5B`). This is a
+deliberate, documented rescoping (see "Scope," below) performed as part
+of Release Engineering for this version: `WP 4.6A` (Navigation
+Architecture) onward — Navigation, Command Framework, Diagnostics
+Improvements, and Developer Experience Improvements — do **not** ship in
+this release. They were part of this document's own original scope list
+below when first written, before implementation began; the Platform
+Foundation Completion Report (`docs/releases/Platform Foundation
+Completion Report.md`) confirms Remaining Foundation Work is NONE, which
+is what this release actually closes. See `WorkPackages.md` and
+`CHANGELOG.md` for current, authoritative status of what shipped in
+`v0.4.0` versus what remains for the next milestone.
 
 ## Branch
 
@@ -43,7 +48,9 @@ See `WorkPackages.md` for the full breakdown. Revised following planning
 review: a foundational contracts-first work package now precedes
 everything else, and the Sample Module moved from a closing proof to an
 early, living reference the rest of the release builds against and
-extends. In implementation order:
+extends.
+
+**Shipped in `v0.4.0` ("Platform Foundation"), in implementation order:**
 
 - Platform Contracts
 - Module SDK
@@ -51,10 +58,26 @@ extends. In implementation order:
 - Sample Module
 - Event Bus
 - Background Services
+- Two milestone reviews (Platform Services Architecture Review, Academy &
+  Documentation Baseline Audit)
+- Governance Register Baseline
+- Foundation Closeout
+
+**Rescoped out of `v0.4.0`, deferred to the next milestone** (this
+document's own scope list originally named these before implementation
+began; Release Engineering for `v0.4.0` formally deferred them once the
+Foundation-phase work above reached Remaining Foundation Work: NONE — see
+`docs/releases/Platform Foundation Completion Report.md`):
+
 - Navigation Architecture, then Navigation Implementation
 - Command Framework
 - Diagnostics Improvements
 - Developer Experience Improvements
+
+None of the four deferred items has begun (`WP 4.6A` is the next planned
+Work Package — see `PROJECT_STATUS.md`); deferring them is a scope
+decision, not a schedule slip against any commitment already made to
+ship them in this specific version.
 
 ## Explicitly Out of Scope
 
@@ -72,8 +95,10 @@ extends. In implementation order:
 
 ## Success Criteria
 
-- Every work package in `WorkPackages.md` reaches its own stated
-  Acceptance Criteria.
+- Every work package within this release's shipped scope (`WP 4.0`
+  through `WP 4.5B` — see "Scope," above) reaches its own stated
+  Acceptance Criteria. The four rescoped-out work packages are not a
+  criterion for this release — they are the next milestone's own scope.
 - The Build Gate and Test Gate (Engineering Governance §2) pass on every
   commit, exactly as they did throughout v0.3.0.
 - No Runtime Foundation ADR is silently contradicted; every genuinely new

@@ -10,7 +10,7 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | Direct repository inspection (`find`, `wc`, `git log`) performed as part of this Work Package. |
 | **Review Frequency** | Re-measured at each Governance Baseline review, or on request. |
-| **Last Reviewed** | 2026-07-25 (WP 4.5B). |
+| **Last Reviewed** | 2026-07-27 (v0.4.0 Release Engineering). |
 | **Related Documents** | `Test Register.md`; `Namespace Register.md`; `Engineering Evolution Register.md`. |
 | **Related ADRs** | None directly. |
 | **Related Academy Articles** | None directly — this is a raw metrics snapshot, not a teaching document. |
@@ -71,6 +71,23 @@ additions moved.
 | Executed tests (`dotnet test`) | 355, 0 failures | 355, 0 failures (unchanged) |
 | Build warnings/errors | 0/0 | 0/0 (unchanged) |
 
+## Snapshot: 2026-07-27 (v0.4.0 Release Engineering — "Platform Foundation")
+
+Release-preparation changes only — `VERSION`, `CHANGELOG.md`, release
+documentation, and governance-register updates; no production or test
+code changed since the WP 4.5B snapshot above.
+
+| Metric | WP 4.5B | v0.4.0 (current) |
+|---|---|---|
+| `docs/releases/` `.md` files | 6 | 13 (adds `v0.4.0.md`, `v0.4.0/Release Notes.md`) |
+| `docs/` `.md` files | 152 | 154 |
+| Governance documents (`docs/governance/`, all subfolders) | 32 | 32 (unchanged — this release updates existing registers rather than adding new ones) |
+| Root `VERSION` | `0.3.0` | **`0.4.0`** |
+| Total commits | 48 | 50 (45 Claude-authored, 5 pre-Claude) |
+| Commits since `v0.3.0` tag | — | 23 |
+| Executed tests (`dotnet test`) | 355, 0 failures | 355, 0 failures (unchanged) |
+| Build warnings/errors | 0/0 | 0/0 (unchanged) |
+
 ## Governance Suite Size (Introduced by This Work Package, WP 4.5A)
 
 | Metric | Value |
@@ -92,7 +109,7 @@ is offered.
 ## Cross-Reference Check
 
 The ADR count (30), Rejected Designs count (29), Academy article count
-(62), test count (355), and build status (0/0) above are each
+(63), test count (355), and build status (0/0) above are each
 cross-checked directly against `ADR Register.md`, `Rejected Designs
 Register.md`, `Academy Register.md`, `Test Register.md`, and `Validation
 Register.md` respectively — all consistent, no discrepancy found.

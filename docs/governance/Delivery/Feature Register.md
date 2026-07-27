@@ -10,7 +10,7 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | `docs/releases/v0.4.0/WorkPackages.md`; `docs/releases/v0.4.0/CHANGELOG.md`; `docs/releases/v0.3.0.md`. |
 | **Review Frequency** | Updated whenever a Work Package delivers or changes a major capability. |
-| **Last Reviewed** | 2026-07-25 (WP 4.5B). |
+| **Last Reviewed** | 2026-07-27 (v0.4.0 Release Engineering). |
 | **Related Documents** | `Platform Services Register.md`; `Release Register.md`; `Traceability Matrix.md`. |
 | **Related ADRs** | See `Platform Services Register.md` for the full per-service ADR list. |
 | **Related Academy Articles** | See `Academy Register.md`'s "03 Work Packages" table. |
@@ -30,7 +30,7 @@
 | Logging & Diagnostics Framework | Implemented | WP 2.6 |
 | Runtime Host & Composition Root | Implemented | WP 2.7 (design), WP 2.7B (implementation) |
 
-## Platform Services (v0.4.0, in progress)
+## Platform Foundation (v0.4.0, Released 2026-07-27)
 
 | Feature | Status | Work Package |
 |---|---|---|
@@ -45,15 +45,22 @@
 | Academy & Documentation Baseline Audit | Complete (audit, no code) | WP 4.4F |
 | Background Services (hosted service discovery/orchestration) | Implemented | WP 4.5 (design), WP 4.5 (implementation) |
 | Governance Register Baseline | Complete | WP 4.5A |
-| Platform Foundation Closeout | In progress (this Work Package) | WP 4.5B |
-| Navigation Architecture | Not started | WP 4.6A (planned) |
-| Navigation Implementation | Not started | WP 4.6B (planned, blocked on 4.6A) |
-| Command Framework (dispatcher) | Not started (contract only, WP 4.0) | WP 4.7 (planned) |
-| Diagnostics Improvements | Not started | WP 4.8 (planned) |
-| Developer Experience Improvements | Not started | WP 4.9 (planned) |
+| Platform Foundation Closeout | Complete | WP 4.5B |
 
-**Total: 24 features tracked — 16 Implemented/Complete, 1 In Progress, 5
-Not Started (planned), 2 audit/review milestones (no code by design).**
+## Developer Experience Phase (Next Milestone — Deferred Out of `v0.4.0`)
+
+| Feature | Status | Work Package |
+|---|---|---|
+| Navigation Architecture | Deferred to next milestone | WP 4.6A (planned, next) |
+| Navigation Implementation | Deferred to next milestone | WP 4.6B (planned, blocked on 4.6A) |
+| Command Framework (dispatcher) | Deferred to next milestone (contract only, WP 4.0) | WP 4.7 (planned) |
+| Diagnostics Improvements | Deferred to next milestone | WP 4.8 (planned) |
+| Developer Experience Improvements | Deferred to next milestone | WP 4.9 (planned) |
+
+**Total: 24 features tracked — 17 Implemented/Complete (all of `v0.4.0`'s
+own shipped scope), 5 Deferred to the next milestone (rescoped out of
+`v0.4.0` — see `ReleasePlan.md`'s "Scope" section), 2 audit/review
+milestones (no code by design).**
 
 ## Cross-Reference Check
 

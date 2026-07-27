@@ -181,7 +181,7 @@ whatever you're about to change, before you change it.
 - [WP 2.7 — Runtime Host Architecture Review](03%20Work%20Packages/WP2.7-runtime-host-architecture-review.md) (design phase, plus four ADRs and a real bug found in prior work)
 - [WP 2.7B — Runtime Host Implementation](03%20Work%20Packages/WP2.7B-runtime-host-implementation.md)
 
-**Platform Services (v0.4.0, in progress):**
+**Platform Foundation (v0.4.0, Released 2026-07-27):**
 
 - [WP 4.0 — Platform Contracts](03%20Work%20Packages/WP4.0-platform-contracts.md)
 - [WP 4.1 — Module SDK](03%20Work%20Packages/WP4.1-module-sdk.md)
@@ -201,8 +201,11 @@ whatever you're about to change, before you change it.
 - [WP 4.5 — Background Services Architecture](03%20Work%20Packages/WP4.5-background-services-architecture.md)
 - [WP 4.5 — Background Services Implementation](03%20Work%20Packages/WP4.5-background-services-implementation.md)
 
-Still to come: `WP 4.6A` (Navigation Architecture) onward — see
-`docs/releases/v0.4.0/WorkPackages.md` for the full, current plan.
+Still to come: `WP 4.6A` (Navigation Architecture) onward — the
+Developer Experience phase, not part of `v0.4.0` itself (rescoped out
+during Release Engineering; see `docs/releases/v0.4.0/ReleasePlan.md`'s
+"Scope" section) — see `docs/releases/v0.4.0/WorkPackages.md` for the
+full, current plan.
 
 ## Reference Material
 

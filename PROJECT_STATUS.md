@@ -1,6 +1,6 @@
 # TempestOS — Project Status
 
-**Last Updated:** 2026-07-25 (WP 4.5B — Platform Foundation Closeout)
+**Last Updated:** 2026-07-27 (v0.4.0 Release Engineering — "Platform Foundation")
 
 This is the primary status dashboard for TempestOS. Read this first for
 "where does the project stand right now" — for "why is it built this
@@ -11,45 +11,58 @@ read `docs/academy/Contributor Learning Path.md`.
 
 ## Current Repository Phase
 
-**Foundation phase — closing.** Platform Formation, Academy Formation, and
-Governance Formation are all complete (see `docs/releases/Platform
-Foundation Completion Report.md`). This Work Package (`WP 4.5B`) is the
-formal closeout. From `WP 4.6A` onward, TempestOS enters a **Capability
-Expansion** phase: building *on* the foundation (Navigation, Command
-Framework, Diagnostics, Developer Experience), not revisiting it, absent
-evidence that requires otherwise.
+**Developer Experience.** The Foundation phase is complete and closed —
+Platform Formation, Academy Formation, and Governance Formation are all
+done (see `docs/releases/Platform Foundation Completion Report.md`), and
+`v0.4.0` ("Platform Foundation") ships exactly that scope. TempestOS now
+enters the **Developer Experience** phase: building *on* the foundation —
+Navigation, a Command Framework, Diagnostics, and Developer Experience
+tooling itself — not revisiting it, absent evidence that requires
+otherwise (see `docs/governance/Future Work Package Guidelines.md`).
 
 ## Current Development Branch
 
-`feature/v0.4.0-platform-services` — cut from `main` at the `v0.3.0` tag.
-No work occurs directly on `main` (Engineering Governance §1.3).
+**`main` (post-release).** `v0.4.0` merges `feature/v0.4.0-platform-
+services` into `main` via an explicit `--no-ff` merge, tagged `v0.4.0`
+(Engineering Governance §7). The next feature branch is cut from `main`
+for whatever Work Package begins the Developer Experience phase,
+matching the same discipline used for every prior release (§1.3). See
+`docs/releases/v0.4.0/ReleaseChecklist.md`'s "Merge and Tag Sequence" for
+the exact, prepared command sequence this release used.
 
 ## Current Release
 
-**v0.3.0** is the most recent tagged release ("Runtime Foundation
-Complete") — the root `VERSION` file still reads `0.3.0`. **v0.4.0**
-("Platform Services") is in progress, unreleased, on the branch above.
+**v0.4.0** ("Platform Foundation") — released 2026-07-27. Root `VERSION`
+reads `0.4.0`. `v0.3.0` ("Runtime Foundation Complete") is the prior
+tagged release.
 
 ## Current Work Package
 
-`WP 4.5B` — Platform Foundation Closeout (documentation and governance
-only; formally closes the Foundation phase).
+None in progress — `v0.4.0` Release Engineering is complete. The branch
+is ready for merge into `main` (see "Current Development Branch," above,
+and `docs/releases/v0.4.0/ReleaseChecklist.md`).
 
 ## Next Planned Work Package
 
 `WP 4.6A` — Navigation Architecture (architecture-only phase; see
-`docs/releases/v0.4.0/WorkPackages.md`).
+`docs/releases/v0.4.0/WorkPackages.md`). Rescoped out of `v0.4.0` itself
+— see `docs/releases/v0.4.0/ReleasePlan.md`'s "Scope" section — it is the
+first Work Package of the Developer Experience phase, not part of the
+release just shipped.
 
 ## Foundation Status
+
+**Complete.**
 
 | Milestone | Status |
 |---|---|
 | Platform Formation (Runtime Host, six platform services, Plugins, Event Bus, Background Services) | Complete |
-| Academy Formation (61 articles across 7 categories, formal maintenance obligation) | Complete |
+| Academy Formation (63 articles across 7 categories, formal maintenance obligation) | Complete |
 | Governance Formation (27 registers, full traceability, zero outstanding debt) | Complete |
 
 See `docs/releases/Platform Foundation Completion Report.md` for the full
-closeout narrative.
+closeout narrative and `docs/releases/v0.4.0/Release Notes.md` for the
+release this milestone shipped as.
 
 ## Platform Summary
 
@@ -62,7 +75,8 @@ Background Services (Host-orchestrated hosted work with isolated/critical
 failure classification). Two real modules (`ClockModule`,
 `ClockLifecycleObserverModule`) exercise the complete pipeline end to end.
 Navigation and a Command Framework dispatcher remain unbuilt; their
-contracts exist, their implementations do not.
+contracts exist, their implementations do not — both are rescoped out of
+`v0.4.0` and belong to the Developer Experience phase now beginning.
 
 ## Repository Metrics
 
@@ -78,9 +92,12 @@ contracts exist, their implementations do not.
 | Modules (production) | 2 (`ClockModule`, `ClockLifecycleObserverModule`) |
 | Hosted services (production) | 0 — infrastructure fully implemented and tested; zero shipped consumers by deliberate scope decision |
 | Plugins (production) | 0 — infrastructure fully implemented and tested; `src/Plugins/` empty by deliberate scope decision |
+| Commits (total / this release) | 50 total (45 Claude-authored) / 23 since `v0.3.0` |
+| Contributors | 1 (repository owner; all commits co-authored by Claude) |
 
 *(This table is generated from `docs/governance/Quality/Repository Metrics
-Register.md` — update both together.)*
+Register.md` and `docs/releases/v0.4.0/Release Notes.md` — update all
+three together.)*
 
 ## Repository Health
 
@@ -95,29 +112,36 @@ Register.md` — update both together.)*
 
 Mature and cross-referenced. Every architecture document, ADR, and
 Academy article is indexed in `docs/governance/` and cross-checked
-against its own source. Two genuinely stale status lines were found and
-corrected during this Work Package (`WorkPackages.md`'s and
-`ReleasePlan.md`'s own top-level status notes, both still describing
-`WP 4.3`/`WP 4.5` as "not begun") — see `docs/releases/Platform
-Foundation Completion Report.md` for the full account. No other
-documentation drift is currently known.
+against its own source. Release Engineering for `v0.4.0` performed a
+full Pre-Release Review across architecture, documentation, Academy,
+governance, traceability, release documentation, repository standards,
+engineering standards, root documentation, cross references, and
+repository structure — no new documentation drift was found beyond what
+`WP 4.5B` had already corrected. `ReleasePlan.md` and `WorkPackages.md`
+were updated to reflect this release's actual, rescoped scope (Platform
+Foundation only), and every "planned"/"not yet begun" reference to
+`WP 4.0`–`WP 4.5B` was removed now that those work packages are shipped.
 
 ## Academy Status
 
 63 articles across 7 categories (Introduction, Engineering Principles,
 Runtime Architecture, Work Package retrospectives, Design Patterns, Case
 Studies, Engineering Standards), plus `Academy Index.md`, `Academy
-Masterclass Roadmap.md`, `Academy Audit Report.md`, and (new this Work
-Package) `Contributor Learning Path.md`. Every completed Work Package has
-a matching retrospective. Maintenance obligation (Engineering Governance
-§6) verified honoured by two independent audits (`WP 4.4F`, and the
-Academy Register built during `WP 4.5A`).
+Masterclass Roadmap.md`, `Academy Audit Report.md`, and `Contributor
+Learning Path.md`. Every completed Work Package has a matching
+retrospective. Maintenance obligation (Engineering Governance §6)
+verified honoured by two independent audits (`WP 4.4F`, and the Academy
+Register built during `WP 4.5A`), re-checked during `v0.4.0` Release
+Engineering with no new drift found.
 
 ## Governance Status
 
-27 registers, fully cross-referenced, zero outstanding governance debt as
+27 registers (32 governance documents total, including the Index,
+Philosophy, Audit Report, Maturity Report, and Future Work Package
+Guidelines), fully cross-referenced, zero outstanding governance debt as
 of the `WP 4.5A` baseline (see `docs/governance/Governance Audit
-Report.md`). Traceability is complete for all 13 Implemented capabilities
+Report.md`), re-verified during `v0.4.0` Release Engineering. Traceability
+is complete for all 13 Implemented capabilities
 (`docs/governance/Delivery/Traceability Matrix.md`).
 
 ## Known Unknowns
@@ -140,14 +164,18 @@ Governance Audit Report.md`:
 
 ## Current Priorities
 
-1. Complete `WP 4.5B` (this Work Package) — close the Foundation phase
-   formally, with a coherent, contributor-facing repository identity.
-2. Begin `WP 4.6A` (Navigation Architecture) once this Work Package is
-   merged and reviewed.
+1. Merge `feature/v0.4.0-platform-services` into `main` and push the
+   `v0.4.0` tag, following the prepared command sequence in
+   `docs/releases/v0.4.0/ReleaseChecklist.md` — pending explicit,
+   separate approval before any push, per that checklist's own gate.
+2. Begin `WP 4.6A` (Navigation Architecture) on a new feature branch cut
+   from `main`, once the above is complete.
 
 ## Near-Term Roadmap
 
-Per `docs/releases/v0.4.0/WorkPackages.md`, in sequence:
+Per `docs/releases/v0.4.0/WorkPackages.md`, the Developer Experience
+phase, in sequence — none of this is part of `v0.4.0`, which has already
+shipped:
 
 - `WP 4.6A` — Navigation Architecture (design only).
 - `WP 4.6B` — Navigation Implementation.
@@ -155,8 +183,6 @@ Per `docs/releases/v0.4.0/WorkPackages.md`, in sequence:
 - `WP 4.8` — Diagnostics Improvements (composite logging, health/status
   reporting).
 - `WP 4.9` — Developer Experience Improvements (templates, scaffolding).
-- v0.4.0 release tag, once all of the above meet their own Acceptance
-  Criteria (`docs/releases/v0.4.0/ReleaseChecklist.md`).
 
 ## Long-Term Vision
 

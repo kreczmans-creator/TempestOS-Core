@@ -43,12 +43,18 @@ enough understanding to make it stable.** `INavigationProvider` and
 `IDiagnosticsProvider` are not defined by `WP 4.0` at all, not even
 provisionally — see `WP 4.0`'s own Scope section.
 
-**Update, WP 4.5A (Governance Register Baseline):** `WP 4.0` through
-`WP 4.5` are now complete, including the milestone review/audit Work
-Packages (`WP 4.2D`, `WP 4.4F`) and the governance baseline itself
-(`WP 4.5A`) — see each work package's own entry below, its Academy
-retrospective(s), and `docs/governance/Delivery/Feature Register.md` for
-current, authoritative status. `WP 4.6A` onward have not begun.
+**Update, v0.4.0 Release ("Platform Foundation"):** `WP 4.0` through
+`WP 4.5B` are complete, including the milestone review/audit Work
+Packages (`WP 4.2D`, `WP 4.4F`), the governance baseline (`WP 4.5A`), and
+the Foundation Closeout (`WP 4.5B`) — see each work package's own entry
+below, its Academy retrospective(s), and `docs/governance/Delivery/
+Feature Register.md` for current, authoritative status. **`v0.4.0` ships
+as this Foundation-only scope** — `WP 4.6A` through `WP 4.9` (Navigation,
+Command Framework, Diagnostics, Developer Experience) are rescoped out of
+this release and deferred to the next milestone; none of them has begun.
+See `ReleasePlan.md`'s own "Scope" section and `docs/releases/Platform
+Foundation Completion Report.md` for the rescoping decision and its
+reasoning.
 
 ---
 
@@ -595,6 +601,11 @@ single riskiest touch-point in this release.
 
 ## WP 4.6A — Navigation Architecture
 
+**Status note.** Rescoped out of `v0.4.0` ("Platform Foundation") during
+Release Engineering for that release — see `ReleasePlan.md`'s "Scope"
+section. Not started. This is the next planned Work Package, targeting
+the milestone after `v0.4.0`, not a part of `v0.4.0` itself.
+
 ### Objective
 
 Decide what "navigation" means for TempestOS before writing any
@@ -658,6 +669,9 @@ decision, not on effort.
 
 ## WP 4.6B — Navigation Implementation
 
+**Status note.** Rescoped out of `v0.4.0` — see `WP 4.6A`'s own status
+note, above. Not started.
+
 ### Objective
 
 Implement what `WP 4.6A` designs.
@@ -694,6 +708,9 @@ Inherits every risk `WP 4.6A` does not fully resolve.
 ---
 
 ## WP 4.7 — Command Framework
+
+**Status note.** Rescoped out of `v0.4.0` — see `WP 4.6A`'s own status
+note, above. Not started; only its contract (`ICommand`, `WP 4.0`) exists.
 
 ### Objective
 
@@ -751,6 +768,9 @@ dependent on **WP 4.6A/4.6B (Navigation)** — ADR-0022.
 
 ## WP 4.8 — Diagnostics Improvements
 
+**Status note.** Rescoped out of `v0.4.0` — see `WP 4.6A`'s own status
+note, above. Not started.
+
 ### Objective
 
 Close existing, named diagnostics debt and extend health/status visibility
@@ -802,6 +822,9 @@ Services)** if health reporting runs as a periodic background check.
 ---
 
 ## WP 4.9 — Developer Experience Improvements
+
+**Status note.** Rescoped out of `v0.4.0` — see `WP 4.6A`'s own status
+note, above. Not started.
 
 ### Objective
 

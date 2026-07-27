@@ -48,7 +48,7 @@ capability this repository currently ships.
 | Exceptions | 100% — all 22 custom exception types indexed |
 | Namespaces | 100% — all 14 declared namespaces plus the global namespace indexed |
 | Test suite | 100% — 355/355 tests, cross-checked against a fresh `dotnet test` run performed as part of this audit |
-| Release documentation | Partial — v0.1.0 and v0.2.0 have Unknown/incomplete detail; v0.3.0 and v0.4.0 (in progress) are fully covered |
+| Release documentation | Partial — v0.1.0 and v0.2.0 have Unknown/incomplete detail; v0.3.0 and v0.4.0 (Released, 2026-07-27) are fully covered |
 
 ## Registers Created
 

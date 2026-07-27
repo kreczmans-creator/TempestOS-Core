@@ -6,11 +6,11 @@
 |---|---|
 | **Register Name** | Governance Register |
 | **Purpose** | Tracks, per Work Package, whether Engineering Governance's own obligations (§5 ADR criteria, §6 Academy maintenance, §10 Rejected Designs) were actually met — the compliance record, distinct from the Decision Register's record of *what* was decided. |
-| **Scope** | Every Work Package from `7514b9d` (first Claude-authored commit) through the current Work Package (`WP 4.5B`). |
+| **Scope** | Every Work Package from `7514b9d` (first Claude-authored commit) through `v0.4.0` Release Engineering. |
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | Git history (`git log`); `docs/academy/06 Engineering Standards/Engineering Governance.md`; each Work Package's own retrospective. |
 | **Review Frequency** | Updated at the end of every Work Package. |
-| **Last Reviewed** | 2026-07-25 (WP 4.5B). |
+| **Last Reviewed** | 2026-07-27 (v0.4.0 Release Engineering). |
 | **Related Documents** | `Decision Register.md`; `ADR Register.md`; `Rejected Designs Register.md`; `Academy Register.md`; `Feature Register.md`. |
 | **Related ADRs** | All 30 — this register verifies each one's originating Work Package actually followed §5. |
 | **Related Academy Articles** | `docs/academy/06 Engineering Standards/Engineering Governance.md`. |
@@ -54,9 +54,11 @@ records an explicit judgement, never an omission.
 | WP 4.5 — Background Services Design | `d903eed` | ADR-0021 (reaffirmed), ADR-0029, ADR-0030 | RD-0023–RD-0029 | Yes |
 | WP 4.5 — Background Services Implementation | `c460aaf` | — | — | Yes |
 | WP 4.5A — Governance Register Baseline | `256afc8` | — | — | This Work Package's own governance material (see `Governance Philosophy.md`) |
-| WP 4.5B — Platform Foundation Closeout | *(in progress)* | — | — | This Work Package's own closeout material (see `docs/releases/Platform Foundation Completion Report.md`) |
+| WP 4.5B — Platform Foundation Closeout | `eb19605` | — | — | This Work Package's own closeout material (see `docs/releases/Platform Foundation Completion Report.md`) |
+| v0.4.0 Release Engineering | *(release-preparation commit)* | — | — | Not a Work Package in the numbered sequence — a Release Engineering activity, per Engineering Governance §7. `docs/releases/v0.4.0/Release Notes.md` and `docs/releases/v0.4.0.md` serve the retrospective role for this activity. |
 
-**Total: 28 Work Packages tracked (including this one), 100% Academy
+**Total: 28 Work Packages tracked, plus `v0.4.0` Release Engineering,
+100% Academy
 retrospective compliance for every Work Package that required one
 (housekeeping correctly excepted).**
 
