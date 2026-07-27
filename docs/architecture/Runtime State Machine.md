@@ -4,6 +4,23 @@
 `TempestHost` implement every state, transition, and illegal-transition guard
 described below exactly.
 
+**Update, WP 4.2:** ADR-0026's two new lifecycle *phases* (Plugin
+Discovery, Plugin Loading — see `Host Lifecycle.md`) are now implemented,
+both occurring entirely within the existing `Starting` state, exactly as
+designed. **No new state and no new transition were introduced.** A phase
+is a finer-grained unit than a state (this document's own Overview already
+says so); this remains true with fifteen phases mapping onto seven states
+just as it was true with thirteen.
+
+**Update, WP 4.5:** ADR-0029/ADR-0030's two new lifecycle *phases* (Hosted
+Services Started, Hosted Services Stopped — see `Host Lifecycle.md`) are
+now implemented, occurring entirely within the existing `Starting`/
+`Stopping` states respectively. **No new state and no new transition were
+introduced.** A critical hosted service's failure uses exactly the
+`Starting → Faulted`/`Stopping → Faulted` transitions this document
+already defines for a platform-service failure and a genuine shutdown-time
+Host-level defect, respectively — not a new transition of its own.
+
 ## Overview
 
 The Runtime Host has its own state machine, independent of `ModuleState` (see
@@ -18,15 +35,15 @@ stateDiagram-v2
 
     Created --> Starting: Run() called
 
-    Starting --> Running: All platform-service phases and\nModule Initialisation complete
-    Starting --> Faulted: Platform-service failure\n(Configuration, Logging, DI,\nDiscovery, Registration - ADR-0013)
+    Starting --> Running: All platform-service phases,\nModule Initialisation, and Hosted\nServices Started complete
+    Starting --> Faulted: Platform-service failure\n(Configuration, Logging, DI,\nDiscovery, Registration - ADR-0013)\nor a critical hosted service's\nStartAsync failure (ADR-0021/0029,\nimplemented - WP 4.5)
     Starting --> Stopping: Startup cancellation OR an early\nshutdown request fires - not a fault\n(ADR-0018)
 
     Running --> Stopping: Shutdown requested (ADR-0014)
-    Running --> Faulted: Unhandled runtime exception\n(no code path today - reserved for\nfuture hosted services)
+    Running --> Faulted: Unhandled runtime exception\n(no code path today - WP 4.5\nintroduces no ongoing supervision\nof a running hosted service)
 
-    Stopping --> Stopped: Module Disposal + Service Disposal\ncomplete (individual module failures\nalready isolated, WP 2.3) - the same\nprocedure regardless of whether Stopping\nwas entered from Running or Starting
-    Stopping --> Faulted: Genuine Host-level defect during\nshutdown orchestration itself\n(not a module failure)
+    Stopping --> Stopped: Hosted Services Stopped + Module\nDisposal + Service Disposal complete\n(individual failures already isolated,\nWP 2.3/WP 4.5) - the same procedure\nregardless of whether Stopping was\nentered from Running or Starting
+    Stopping --> Faulted: Genuine Host-level defect during\nshutdown orchestration itself, or a\ncritical hosted service's StopAsync\nfailure (ADR-0021/0029, implemented -\nWP 4.5)\n(not an ordinary module failure)
 
     Stopped --> Disposed: Dispose()
     Faulted --> Disposed: Dispose() - always attempted,\nper ADR-0004's Host-level reuse
@@ -51,13 +68,13 @@ stateDiagram-v2
 | From | To | Trigger |
 |---|---|---|
 | `Created` | `Starting` | The Host's run method is called. |
-| `Starting` | `Running` | Every platform-service phase and Module Initialisation completed (regardless of individual module outcomes). |
-| `Starting` | `Faulted` | A platform-service failure (Configuration/Logging/DI/Discovery/Registration) — ADR-0013. |
+| `Starting` | `Running` | Every platform-service phase, Module Initialisation, and Hosted Services Started (ADR-0029/0030, implemented — WP 4.5) completed (regardless of individual module/hosted-service outcomes). |
+| `Starting` | `Faulted` | A platform-service failure (Configuration/Logging/DI/Discovery/Registration) — ADR-0013 — or a critical hosted service's `StartAsync` failure (ADR-0021/0029, implemented — WP 4.5). |
 | `Starting` | `Stopping` | The startup `CancellationToken` fires, **or** a shutdown request (ADR-0014) arrives early, before `Running` is reached; not treated as a fault — ADR-0018. |
 | `Running` | `Stopping` | A shutdown request (ADR-0014) is observed. |
-| `Running` | `Faulted` | An unhandled runtime exception (no producing code path exists yet — reserved for future hosted services). |
-| `Stopping` | `Stopped` | Module Disposal and Service Disposal both completed (individual module Stop/Dispose failures already isolated by WP 2.3 do not prevent this). |
-| `Stopping` | `Faulted` | A genuine Host-level defect in shutdown orchestration itself, not a module failure. |
+| `Running` | `Faulted` | An unhandled runtime exception (no producing code path exists today — `WP 4.5` introduces no ongoing supervision of a running hosted service). |
+| `Stopping` | `Stopped` | Hosted Services Stopped, Module Disposal, and Service Disposal all completed (individual module Stop/Dispose failures already isolated by WP 2.3, and individual hosted-service Stop failures per ADR-0021/0029, implemented — WP 4.5, do not prevent this). |
+| `Stopping` | `Faulted` | A genuine Host-level defect in shutdown orchestration itself, or a critical hosted service's `StopAsync` failure (ADR-0021/0029, implemented — WP 4.5) — not an ordinary module or isolated hosted-service failure. |
 | `Stopped` | `Disposed` | Disposal is invoked (the normal path). |
 | `Faulted` | `Disposed` | Disposal is invoked — always legal, per ADR-0004's Host-level reuse (WP 2.7 update); disposal must be attempted even after a fault. |
 

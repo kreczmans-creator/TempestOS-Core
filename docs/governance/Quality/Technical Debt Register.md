@@ -1,0 +1,66 @@
+# Technical Debt Register
+
+## Register Metadata
+
+| Field | Value |
+|---|---|
+| **Register Name** | Technical Debt Register |
+| **Purpose** | The single, consolidated list of every disclosed debt item across the entire Claude-developed history of TempestOS — pulled from each Work Package retrospective's own "Architectural Debt Assessment" section and `WP 4.2D`'s own consolidated review, updated to current status as of this baseline. |
+| **Scope** | Every debt item explicitly named in a Work Package retrospective's "Architectural Debt Assessment" section, `docs/releases/v0.4.0/Platform Services Architecture Review.md`'s "Remaining Technical Debt" section, or an ADR's own disclosed, accepted trade-off. |
+| **Owner** | Project Maintainer. |
+| **Source of Truth** | Every retrospective under `docs/academy/03 Work Packages/`; `docs/releases/v0.4.0/Platform Services Architecture Review.md`. |
+| **Review Frequency** | Updated whenever a Work Package resolves, worsens, or discloses a new debt item — every retrospective's own "Architectural Debt Assessment" section is the trigger. |
+| **Last Reviewed** | 2026-07-25 (WP 4.5A). |
+| **Related Documents** | `docs/releases/v0.4.0/Risks.md`; `Validation Register.md`; `Hosted Services Register.md`; `Plugin Register.md`. |
+| **Related ADRs** | ADR-0009, ADR-0021, ADR-0024, ADR-0028, ADR-0029. |
+| **Related Academy Articles** | Every Work Package retrospective's own "Trade-offs" and "Architectural Debt Assessment" sections. |
+| **Coverage Status** | Complete as of this baseline — every debt item disclosed by any retrospective through `WP 4.5`'s implementation is represented below, either as still Open or Resolved with the resolving Work Package named. |
+
+---
+
+## Governing Distinction
+
+This project consistently distinguishes **debt** (something that should
+eventually be fixed, currently costing nothing to leave alone) from a
+**disclosed, accepted trade-off** (a deliberate design exclusion, not
+expected to ever need fixing unless a real consumer need emerges). Both
+are tracked below, in separate tables, because conflating them would
+misrepresent deliberate, reasoned scope decisions as unaddressed problems.
+
+## Entries — Technical Debt (Expected to Eventually Be Addressed)
+
+| # | Debt Item | Since | Owning Work Package | Status |
+|---|---|---|---|---|
+| TD-01 | Two logging mechanisms coexist (`ILogger` vs. legacy `LoggingService`) | WP 2.6 | WP 4.8 (assess migration) | Open |
+| TD-02 | Single-sink logging (no composite `ILogSink` fan-out) | WP 2.6 | WP 4.8 | Open |
+| TD-03 | No disposal tracking for `AddInstance`-registered or reflection-constructed singletons implementing `IDisposable` | WP 2.4 / ADR-0009 | None named yet | Open — not urgent; no current platform service is disposable |
+| TD-04 | `IHostedService` naming proximity to `Microsoft.Extensions.Hosting.IHostedService` | WP 4.0 / ADR-0024 | Revisit trigger: real usage evidence | **Open — trigger not yet met.** WP 4.5 implemented the infrastructure but zero real hosted services exist yet (see `Hosted Services Register.md`); the "real usage evidence" this item's revisit trigger names has still not arrived. |
+| TD-05 | Parameterless-constructor-only constraint on discovered modules | WP 4.1 | Partially addressed — WP 4.4A/4.4B (ADR-0027) | **Partially resolved.** A module carrying `[ModuleMetadata]` may now declare a DI-resolvable constructor; a module without the attribute remains constrained exactly as before. This is a deliberate, additive lift, not a full removal of the constraint. |
+| TD-06 | Plugins root directory (`Plugins/`) and manifest file name (`plugin.manifest.json`) are fixed conventions, not configurable | WP 4.2 | None named yet | Open — disclosed as a purely additive future enhancement, not a current limitation with a known cost |
+| TD-07 | Navigation's `Tempest.Core` placement is an open architectural question | WP 4.2D (named), pre-existing since v0.4.0 planning | WP 4.6A | Open |
+| TD-08 | Background Services would need to extend `Host Lifecycle.md`'s phase table a second time | WP 4.2D (named as future work) | WP 4.5 | **Resolved** — WP 4.5 implemented Phases 8.1/10.1 exactly per ADR-0029/ADR-0030, no renumbering. See `Risks.md` R1/R4, both now Retired. |
+
+**Total: 8 tracked debt items — 1 Resolved, 1 Partially resolved, 6 Open.**
+
+## Entries — Disclosed, Accepted Trade-offs (Not Expected to Need Fixing Unless a Real Need Emerges)
+
+| # | Trade-off | Disclosed By | Revisit Trigger |
+|---|---|---|---|
+| AT-01 | No automatic unsubscription on module stop/dispose (Event Bus) | ADR-0028 / WP 4.4D | A real, demonstrated need |
+| AT-02 | Subscriber references held strongly for the Event Bus's whole lifetime | ADR-0028 / WP 4.4D | A real, demonstrated need |
+| AT-03 | Exact-event-type-only dispatch, no polymorphic dispatch (Event Bus) | RD-0021 / ADR-0028 | A real, demonstrated need |
+| AT-04 | No ongoing supervision/monitoring of a hosted service's own work after `StartAsync` returns | RD-0026 / ADR-0029 | A real, demonstrated need |
+| AT-05 | No automatic restart/backoff for an isolated hosted service failure | RD-0029 / ADR-0021/ADR-0029 | A real, demonstrated need |
+| AT-06 | `src/Plugins/` remains empty — no real plugin built yet | WP 4.2 (by design) | The first Work Package that ships a real plugin (see `Plugin Register.md`) |
+| AT-07 | Zero real hosted services exist beyond the infrastructure | WP 4.5 (by explicit scope decision) | The first Work Package that ships a real hosted service (see `Hosted Services Register.md`) |
+
+**Total: 7 disclosed trade-offs, none requiring action absent a real,
+demonstrated need.**
+
+## Cross-Reference Check
+
+Every item above is traceable to a specific retrospective or ADR cited in
+its own row. TD-08's resolution is cross-checked directly against
+`Risk Register.md`'s R1/R4 (both Retired on the same date, by the same
+Work Package) — consistent, no discrepancy. No debt item was found in any
+retrospective that is missing from this consolidated list.

@@ -1,0 +1,222 @@
+# TempestOS Academy — Index
+
+**Purpose.** One navigable table of contents for the entire Academy, so a
+reader can find the right document by *topic* rather than by knowing which
+numbered folder it happens to live in. This index is itself Academy
+material, subject to the same maintenance obligation as everything else it
+indexes (Engineering Governance §6): a work package that adds or rewrites an
+Academy document updates this index as part of the same change, not as a
+separate, later pass.
+
+Every document is listed exactly once, under the section where a new reader
+would most naturally look for it first; cross-references to other relevant
+sections are noted inline.
+
+---
+
+## Welcome
+
+Start here if this is your first time in the Academy.
+
+- [Welcome to the TempestOS Academy](00%20Introduction/00-welcome-to-the-academy.md) — what the Academy is, who it's for, and how it's organised. Read this before anything else.
+- [`PROJECT_STATUS.md`](../../PROJECT_STATUS.md) — where the project stands *right now* (repo root). Read this alongside Welcome — it tells you what's currently true; the Academy tells you why.
+- [Contributor Learning Path](Contributor%20Learning%20Path.md) — the full, repository-wide onboarding sequence (README → FOUNDATION → PROJECT_STATUS → Academy → Architecture → Governance → ADRs → a real module and hosted service → contribution workflow), of which the Academy-internal path below is one step.
+- [Engineering Governance](06%20Engineering%20Standards/Engineering%20Governance.md) — the project's constitution: how a work package moves from brief to merge, what "Done" requires, when an ADR or a Rejected Design entry is mandatory. The Welcome article tells you to read this second; this index repeats that instruction because it is the single most important document in the Academy after the welcome page itself.
+- [Engineering Lifecycle](06%20Engineering%20Standards/Engineering%20Lifecycle.md) — the concrete Idea → Investigation → Architecture → ADR → Rejected Designs → Implementation → Testing → Architecture Review → Academy → Governance → Release → Maintenance pipeline every Work Package follows, elaborating Engineering Governance §1.
+
+## Learning Path (Academy-Internal)
+
+Once you've followed `Contributor Learning Path.md`'s own repository-wide
+sequence as far as "how the platform works," this is the reading order
+*within* the Academy specifically, for a new engineer with strong general
+software engineering ability but no prior TempestOS or modular-runtime
+experience:
+
+1. **Welcome**, above, and **Engineering Governance**.
+2. **Engineering Principles** (below) — the vocabulary the rest of the
+   Academy assumes you already have.
+3. **Platform Architecture** (below) — how the whole platform fits
+   together, before any one piece of it.
+4. **Runtime** (below) — the module pipeline and the Host, in detail.
+5. Whichever of **Dependency Injection**, **Modules**, **Plugins**,
+   **Events** you're about to work on, in depth.
+6. The specific **Work Package Walkthrough** for whatever you're about to
+   change — always read this before changing existing, working code.
+7. **Case Studies** and **Design Patterns** as they're referenced from the
+   above — they reward reading in context, not cover to cover up front.
+
+## Engineering Principles
+
+General software-engineering principles, explained on their own terms
+first, then connected explicitly to how TempestOS applies them. Read these
+if you want the vocabulary the rest of the Academy assumes.
+
+- [SOLID](01%20Engineering%20Principles/01-solid.md)
+- [Separation of Concerns](01%20Engineering%20Principles/02-separation-of-concerns.md)
+- [Immutability](01%20Engineering%20Principles/03-immutability.md)
+- [Composition Over Inheritance](01%20Engineering%20Principles/04-composition-over-inheritance.md)
+- [Dependency Injection](01%20Engineering%20Principles/05-dependency-injection.md) — see also **Dependency Injection**, below, for the platform-specific deep dive.
+- [Fail Fast](01%20Engineering%20Principles/06-fail-fast.md)
+- [Deterministic Systems](01%20Engineering%20Principles/07-deterministic-systems.md)
+- [State Machines](01%20Engineering%20Principles/08-state-machines.md)
+- [Defensive Programming](01%20Engineering%20Principles/09-defensive-programming.md)
+- [Single Responsibility Principle](01%20Engineering%20Principles/10-single-responsibility.md)
+- [Atomic Phase Principle](01%20Engineering%20Principles/11-atomic-phase-principle.md)
+
+## Platform Architecture
+
+How TempestOS's platform is put together as a whole — the concepts that
+span every individual service.
+
+- [Platform Layering: Designing a Platform Service](02%20Runtime%20Architecture/06-platform-layering.md) — the four-layer model (Modules → Platform APIs → Platform Services → Runtime Host, ADR-0023) and how to classify a new capability against it.
+- [Failure Isolation Across TempestOS](02%20Runtime%20Architecture/08-failure-isolation.md) — the recurring platform-service/module/plugin/subscriber isolation question, all four worked examples side by side.
+- `docs/architecture/Platform Service Map.md` — the living, service-by-service index of what exists, what depends on what, and where to read more (outside the Academy folder, but maintained under the same obligation).
+- `docs/architecture/Engineering Glossary.md` — the project's own vocabulary, alphabetical, cross-referenced.
+- `docs/architecture/Rejected Designs.md` — the permanent record of designs seriously considered and declined; the mirror image of the ADR catalogue.
+- `docs/adr/` — the full Architecture Decision Record catalogue (ADR-0001 through ADR-0030 at time of writing).
+
+## Runtime
+
+The module pipeline and the Runtime Host, holistically.
+
+- [The Module Pipeline](02%20Runtime%20Architecture/01-the-module-pipeline.md) — Discovery → Registration → Lifecycle → Dependency Injection, as one connected system.
+- [The Startup Sequence](02%20Runtime%20Architecture/02-the-startup-sequence.md) — why configuration (and later, logging) must exist before dependency injection begins, and the ordering this forces.
+- [Working with the TempestOS Host](02%20Runtime%20Architecture/05-the-runtime-host.md) — a first-read guide to `TempestHost`, synthesising the six reference documents below into one narrative.
+- `docs/architecture/Runtime Host Architecture.md` — the Host's responsibilities and non-responsibilities.
+- `docs/architecture/Host Lifecycle.md` — every startup/shutdown phase, in order, with entry/exit/failure criteria.
+- `docs/architecture/Runtime State Machine.md` — the Host's own seven-state machine.
+- `docs/architecture/Shutdown Sequence.md` — controlled shutdown and post-fault teardown, side by side.
+- `docs/architecture/Failure Behaviour.md` — every named failure mode, classified.
+- `docs/architecture/Ownership Matrix.md` — who owns every significant runtime object.
+
+## Dependency Injection
+
+- [Dependency Injection](01%20Engineering%20Principles/05-dependency-injection.md) — the general principle and TempestOS's own container.
+- [WP 2.4 — Dependency Injection](03%20Work%20Packages/WP2.4-dependency-injection.md) — the container's own implementation retrospective, including a real bug found and fixed during the work.
+- [WP 4.4A — Dependency Injection for Discovered Modules](03%20Work%20Packages/WP4.4A-dependency-injection-for-discovered-modules.md) and [WP 4.4B — ADR-0027 Implementation](03%20Work%20Packages/WP4.4B-adr-0027-implementation.md) — how a discovered module gained the ability to request a DI-public service via constructor injection.
+- `docs/architecture/Module Dependency Injection Architecture.md` — the design document behind ADR-0027.
+
+## Modules
+
+- [Building a Module](02%20Runtime%20Architecture/03-building-a-module.md) — the practical, module-author-facing guide, including the parameterless-constructor constraint and its attribute-based lift.
+- [Building an Event-Driven Module](02%20Runtime%20Architecture/04-building-an-event-driven-module.md) — the same guide, extended for a module that publishes or subscribes to events.
+- [WP 4.1 — Module SDK](03%20Work%20Packages/WP4.1-module-sdk.md) — `ModuleBase`/`ModuleLifecycleBase`.
+- [WP 4.3 — Sample Module Architecture](03%20Work%20Packages/WP4.3-sample-module-architecture.md) and [Implementation](03%20Work%20Packages/WP4.3-sample-module-implementation.md) — `ClockModule`, the living reference module every later work package extends.
+- [WP 4.4E — Sample Module Event Integration](03%20Work%20Packages/WP4.4E-sample-module-event-integration.md) — `ClockModule` extended to publish, and its companion module built to subscribe.
+- `docs/architecture/Sample Module Architecture.md` — the full design document behind `ClockModule` and its companion.
+
+## Plugins
+
+- [Plugin Architecture](02%20Runtime%20Architecture/07-plugin-architecture.md) — the concept guide: what a plugin manifest is, why it's a pre-discovery artifact, and how loading one requires zero change to Module Discovery.
+- [WP 4.2 — Plugin Manifest Architecture](03%20Work%20Packages/WP4.2-plugin-manifest-architecture.md) and [Implementation](03%20Work%20Packages/WP4.2-plugin-manifest-implementation.md).
+- [WP 4.2A — Runtime Platform Version](03%20Work%20Packages/WP4.2A-runtime-platform-version.md) — the platform-version prerequisite the Plugin Manifest design found and required.
+- [WP 4.2B — Plugin Failure Classification](03%20Work%20Packages/WP4.2B-plugin-failure-classification.md) (ADR-0025).
+- [WP 4.2C — Plugin Discovery Lifecycle Placement](03%20Work%20Packages/WP4.2C-plugin-discovery-lifecycle-placement.md) (ADR-0026).
+- `docs/architecture/Plugin Manifest Architecture.md` and `docs/architecture/Platform Version.md` — the full design documents.
+
+## Events
+
+- [Building an Event-Driven Module](02%20Runtime%20Architecture/04-building-an-event-driven-module.md) — the practical guide to publishing and subscribing.
+- [WP 4.4 — Event Bus Architecture](03%20Work%20Packages/WP4.4-event-bus-architecture.md) — the design phase, including the WP 4.4C discovery-and-redirect story.
+- [WP 4.4D — Event Bus Implementation](03%20Work%20Packages/WP4.4D-event-bus-implementation.md) — `IEventBus`/`EventBus`, built and proven.
+- [WP 4.4E — Sample Module Event Integration](03%20Work%20Packages/WP4.4E-sample-module-event-integration.md) — the Event Bus's first real consumer.
+- `docs/architecture/Event Bus Architecture.md` — the full design document (ADR-0028).
+
+## Background Services
+
+Implemented (`WP 4.5`, ADR-0029/ADR-0030) — `Tempest.Core.BackgroundServices`.
+
+- [WP 4.5 — Background Services Architecture](03%20Work%20Packages/WP4.5-background-services-architecture.md) — the design phase: classification, discovery, ownership, orchestration, ordering, failure model, and Host Lifecycle placement.
+- [WP 4.5 — Background Services Implementation](03%20Work%20Packages/WP4.5-background-services-implementation.md) — `IHostedServiceDiscoveryService`/`HostedServiceDiscoveryService`, `IHostedServiceManager`/`HostedServiceManager`, wired into `TempestHost` at Phases 8.1/10.1, built and proven.
+- `docs/architecture/Background Services Architecture.md` — the full design document.
+- ADR-0021 (failure classification, decided during original v0.4.0 planning), ADR-0029 (discovery/ownership/orchestration model), ADR-0030 (Host Lifecycle placement).
+- See also [Failure Isolation Across TempestOS](02%20Runtime%20Architecture/08-failure-isolation.md) for how ADR-0021 fits alongside the platform's other three isolation decisions, [Working with the TempestOS Host](02%20Runtime%20Architecture/05-the-runtime-host.md) for the two new phases (`8.1`, `10.1`) in context, and [Reflection-Based Discovery](04%20Design%20Patterns/04-reflection-based-discovery.md) for hosted service discovery as a third application of that pattern.
+
+## Design Patterns
+
+Recurring structural patterns TempestOS actually uses, explained in terms
+of the real code that uses them — not a generic patterns catalogue.
+
+- [The Registry Pattern](04%20Design%20Patterns/01-the-registry-pattern.md)
+- [Descriptor and Snapshot Types](04%20Design%20Patterns/02-descriptor-and-snapshot-types.md)
+- [Minimal Interface, Extension-Method Sugar](04%20Design%20Patterns/03-minimal-interface-with-extension-sugar.md)
+- [Reflection-Based Discovery](04%20Design%20Patterns/04-reflection-based-discovery.md)
+
+## Engineering Governance
+
+- [Engineering Governance](06%20Engineering%20Standards/Engineering%20Governance.md) — the project's constitution.
+- [Engineering Standard: Exception Design](06%20Engineering%20Standards/01-exception-design.md)
+- [Engineering Standard: Testing Strategy](06%20Engineering%20Standards/02-testing-strategy.md)
+- [Working with TempestOS's Governance Registers](06%20Engineering%20Standards/03-governance-registers.md) — why the governance register suite exists, how to maintain one, common mistakes.
+- `docs/architecture/Rejected Designs.md` — the Rejected Designs Log (Governance §10).
+- `docs/adr/` — the ADR catalogue (Governance §5).
+- `docs/governance/Governance Index.md` — the full governance register suite (`WP 4.5A`): ADR, Rejected Designs, Architecture Document, Decision, Platform Services, Module, Hosted Services, Plugin, Event, Dependency Injection, Namespace, Interface, Exception, Architectural Dependency, Risk, Technical Debt, Validation, Test, Repository Metrics, Documentation, Academy, Engineering Standards, Governance, Feature, Release, Engineering Evolution, and Traceability Matrix registers, plus `Governance Philosophy.md`, `Governance Audit Report.md`, and `Repository Maturity Report.md`.
+
+## Case Studies
+
+Narrative deep-dives into individually significant decisions — shorter and
+more focused than a work package retrospective, longer and more narrative
+than an ADR. Each has a matching ADR; not every ADR has a matching case
+study.
+
+- [Why RuntimeModule Is Immutable](05%20Case%20Studies/01-why-runtimemodule-is-immutable.md) (ADR-0001)
+- [Why Lifecycle State Lives Externally](05%20Case%20Studies/02-why-lifecycle-state-lives-externally.md) (ADR-0002)
+- [Why Dispose Is Always Legal](05%20Case%20Studies/03-why-dispose-is-always-legal.md) (ADR-0004) — a preserved, real architectural review exchange.
+- [Why Discovery Is Isolated](05%20Case%20Studies/04-why-discovery-is-isolated.md) (ADR-0008)
+- [Why Isn't Configuration Mutable?](05%20Case%20Studies/05-why-isnt-configuration-mutable.md)
+
+## Work Package Walkthroughs
+
+Every retrospective, in chronological order. Read the retrospective for
+whatever you're about to change, before you change it.
+
+**Runtime Foundation (v0.3.0):**
+
+- [WP 2.1 — Module Discovery](03%20Work%20Packages/WP2.1-module-discovery.md)
+- [WP 2.2 — Runtime Registration](03%20Work%20Packages/WP2.2-runtime-registration.md)
+- [WP 2.3 — Runtime Lifecycle](03%20Work%20Packages/WP2.3-runtime-lifecycle.md)
+- [WP 2.4 — Dependency Injection](03%20Work%20Packages/WP2.4-dependency-injection.md)
+- [WP 2.5 — Configuration Framework](03%20Work%20Packages/WP2.5-configuration-framework.md)
+- [WP 2.6 — Logging & Diagnostics Framework](03%20Work%20Packages/WP2.6-logging-and-diagnostics-framework.md)
+- [WP 2.7 — Runtime Host Architecture Review](03%20Work%20Packages/WP2.7-runtime-host-architecture-review.md) (design phase, plus four ADRs and a real bug found in prior work)
+- [WP 2.7B — Runtime Host Implementation](03%20Work%20Packages/WP2.7B-runtime-host-implementation.md)
+
+**Platform Foundation (v0.4.0, Released 2026-07-27):**
+
+- [WP 4.0 — Platform Contracts](03%20Work%20Packages/WP4.0-platform-contracts.md)
+- [WP 4.1 — Module SDK](03%20Work%20Packages/WP4.1-module-sdk.md)
+- [WP 4.2 — Plugin Manifest Architecture](03%20Work%20Packages/WP4.2-plugin-manifest-architecture.md)
+- [WP 4.2A — Runtime Platform Version](03%20Work%20Packages/WP4.2A-runtime-platform-version.md)
+- [WP 4.2B — Plugin Failure Classification](03%20Work%20Packages/WP4.2B-plugin-failure-classification.md)
+- [WP 4.2C — Plugin Discovery Lifecycle Placement](03%20Work%20Packages/WP4.2C-plugin-discovery-lifecycle-placement.md)
+- [WP 4.2 — Plugin Manifest Implementation](03%20Work%20Packages/WP4.2-plugin-manifest-implementation.md)
+- [WP 4.2D — Platform Services Architecture Review](03%20Work%20Packages/WP4.2D-platform-services-architecture-review.md)
+- [WP 4.3 — Sample Module Architecture](03%20Work%20Packages/WP4.3-sample-module-architecture.md)
+- [WP 4.3 — Sample Module Implementation](03%20Work%20Packages/WP4.3-sample-module-implementation.md)
+- [WP 4.4A — Dependency Injection for Discovered Modules](03%20Work%20Packages/WP4.4A-dependency-injection-for-discovered-modules.md)
+- [WP 4.4B — ADR-0027 Implementation](03%20Work%20Packages/WP4.4B-adr-0027-implementation.md)
+- [WP 4.4 — Event Bus Architecture](03%20Work%20Packages/WP4.4-event-bus-architecture.md) *(also covers WP 4.4C, which produced no code and no separate retrospective — see that document's own Background section)*
+- [WP 4.4D — Event Bus Implementation](03%20Work%20Packages/WP4.4D-event-bus-implementation.md)
+- [WP 4.4E — Sample Module Event Integration](03%20Work%20Packages/WP4.4E-sample-module-event-integration.md)
+- [WP 4.5 — Background Services Architecture](03%20Work%20Packages/WP4.5-background-services-architecture.md)
+- [WP 4.5 — Background Services Implementation](03%20Work%20Packages/WP4.5-background-services-implementation.md)
+
+Still to come: `WP 4.6A` (Navigation Architecture) onward — the
+Developer Experience phase, not part of `v0.4.0` itself (rescoped out
+during Release Engineering; see `docs/releases/v0.4.0/ReleasePlan.md`'s
+"Scope" section) — see `docs/releases/v0.4.0/WorkPackages.md` for the
+full, current plan.
+
+## Reference Material
+
+Documents outside `docs/academy/` maintained under the same obligation:
+
+- `docs/releases/FOUNDATION.md` — what must never change, regardless of who's building.
+- `docs/releases/v0.4.0/Architecture.md` — the v0.4.0 release's own architecture review, decisions, and reuse map.
+- `docs/releases/v0.4.0/WorkPackages.md` — the authoritative, current work-package plan and status.
+- `docs/releases/v0.4.0/CHANGELOG.md` — the running record of what has actually landed.
+- `docs/releases/v0.4.0/Risks.md` — the release's own risk register.
+- `docs/releases/v0.4.0/Platform Services Architecture Review.md` — the WP 4.2D milestone review.
+- `docs/architecture/Platform Service Map.md`, `Engineering Glossary.md`, `Rejected Designs.md` — see Platform Architecture, above.
+- **This Academy audit's own deliverables**: [Academy Masterclass Roadmap](Academy%20Masterclass%20Roadmap.md), [Academy Audit Report](Academy%20Audit%20Report.md).
+- **The Governance Register suite's own deliverables (`WP 4.5A`)**: `docs/governance/Governance Index.md`, `Governance Philosophy.md`, `Governance Audit Report.md`, `Repository Maturity Report.md`.

@@ -214,11 +214,16 @@ any of the following are actually introduced:
   root rather than resolved through the container. This entry is left struck
   through, rather than deleted, as a record that the prediction was correct in
   substance but not in the exact position guessed.
-- **Plugins** — a plugin-loading mechanism (populating `src/Plugins/`,
+- ~~**Plugins** — a plugin-loading mechanism (populating `src/Plugins/`,
   currently empty — see WP 2.1's own noted gap around external assembly
   loading) would need its own explicit slot in this sequence, most likely
   before "runtime starts," since discovered plugin assemblies may themselves
-  need to be scanned by the Framework Discovery service.
+  need to be scanned by the Framework Discovery service.~~ **Done, WP 4.2
+  (ADR-0026).** Two explicit phases, Plugin Discovery and Plugin Loading,
+  slot in immediately before Framework Discovery — exactly the position
+  predicted here — so discovered plugin assemblies are already loaded and
+  visible by the time Discovery's own, unchanged scan runs. See
+  *Startup Sequence.md* (architecture) for the full, implemented sequence.
 - **Hosted services** — if TempestOS introduces a hosted-service concept
   (explicitly out of scope for WP 2.4's dependency injection work), its startup
   and shutdown ordering relative to the module pipeline's own lifecycle needs

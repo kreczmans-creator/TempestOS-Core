@@ -3,6 +3,17 @@
 **Status: implemented — WP 2.7B (`Tempest.Core.Runtime`).** Every rule below
 is now backed by working, tested code, not only design intent.
 
+**Update, WP 4.2:** the Plugin Discovery/Loading Failure section below
+(ADR-0025, ADR-0026) is now implemented (`Tempest.Core.Plugins`) — every
+rule in it is backed by working, tested code (`PluginManifestDiscoveryServiceTests`,
+`PluginAssemblyLoaderTests`), not only design intent.
+
+**Update, WP 4.5:** the Hosted Service Failure section below (ADR-0021,
+ADR-0029, ADR-0030) is now implemented (`Tempest.Core.BackgroundServices`)
+— every rule in it is backed by working, tested code
+(`HostedServiceManagerTests`, `TempestHostHostedServiceTests`), not only
+design intent.
+
 ## Governing Principle
 
 The boundary established by ADR-0013 governs every failure mode below:
@@ -22,6 +33,29 @@ a duplicate key within one source.
 **Required behaviour.** Host-fatal. Transition directly `Starting → Faulted`.
 Nothing else has been built yet; disposal is attempted for consistency but has
 nothing to release.
+
+## Plugin Discovery/Loading Failure *(ADR-0025, ADR-0026; implemented — WP 4.2)*
+
+**Trigger.** Any of the eleven failure categories ADR-0025 classifies,
+occurring during Plugin Discovery (Phase 3.1) or Plugin Loading
+(Phase 3.2) — a malformed manifest, a duplicate plugin identity, an
+incompatible platform version, a missing or corrupt assembly, a
+dependency load failure, or a reflection/type load failure.
+
+**Required behaviour.** **Not** Host-fatal, for every category above —
+isolated to the one plugin, exactly like an individual module's failure
+(ADR-0013's other half): logged at the severity ADR-0025 assigns, that
+plugin excluded, the phase continues with every remaining candidate. The
+Host proceeds to Module Discovery regardless, even if every plugin fails
+or none is present at all — a zero-plugin run is indistinguishable from
+today's behaviour.
+
+**The one exception**: a genuine defect in Plugin Discovery's or Plugin
+Loading's own orchestration, not attributable to any specific plugin — a
+Host-level bug, not a plugin failure, and Host-fatal:
+`Starting → Faulted`, exactly the same transition Configuration Built,
+Logging Built, Module Discovery, and Module Registration already use for
+their own Host-fatal failures. No new transition is introduced.
 
 ## Discovery Failure
 
@@ -44,6 +78,28 @@ relied upon as the sole protection, but its failure mode is still Host-fatal
 if somehow reached (for example, via a future path that registers descriptors
 not sourced from Discovery).
 
+## Hosted Service Failure *(ADR-0021, ADR-0029, ADR-0030; implemented — WP 4.5)*
+
+**Trigger.** A hosted service (`IHostedService`) throws during
+`StartAsync` (Phase 8.1, Hosted Services Started) or `StopAsync`
+(Phase 10.1, Hosted Services Stopped).
+
+**Required behaviour.** **Not** Host-fatal by default — isolated exactly
+like an individual module's failure (ADR-0013's own module half, extended
+by ADR-0021): logged at `Error`, that service's own status marked
+`Failed`, the batch continues with the next service. The Host proceeds to
+`Running` (from Phase 8.1) or to `Stopped` (from Phase 10.1) regardless.
+
+**The one exception**: a service implementing `ICriticalBackgroundService`
+has explicitly opted out of isolation. Its failure is Host-fatal —
+`Starting → Faulted` (from `StartAsync`) or `Stopping → Faulted` (from
+`StopAsync`) — exactly the same transitions already used for a
+platform-service failure and a genuine shutdown-time Host-level defect,
+respectively. No new transition is introduced. Cleanup guarantees hold
+regardless: `Faulted → Disposed` remains always legal, and disposal of
+every module and every hosted service that already started is still
+attempted afterward (ADR-0004, ADR-0019).
+
 ## Initialisation Failure
 
 **Trigger.** A module throws during `InitialiseAllAsync`/`StartAllAsync`.
@@ -65,10 +121,12 @@ Host-fatal.
 **Trigger.** An unhandled exception during the `Running` state.
 
 **Required behaviour.** Host-fatal — `Running → Faulted`. No code path
-produces this today (no hosted services or background work exist yet); this
-policy is defined now specifically so a future hosted-service implementation
-has an established rule to follow rather than needing to invent one at that
-point.
+produces this today — `WP 4.5`'s hosted service orchestration is fully
+resolved by Phase 8.1/10.1 before or as `Running` is entered or left, and
+introduces no ongoing supervision of a hosted service once it is
+`Running`; this policy remains defined so any future work package that
+does introduce ongoing supervision has an established rule to follow
+rather than needing to invent one at that point.
 
 ## Shutdown Exception
 
@@ -128,32 +186,32 @@ to be logging something — configuration building, module registration,
 lifecycle transitions, and the Host's own orchestration must all be able to
 proceed exactly as if the log call had succeeded, even if it didn't.
 
-**This is currently not true of the implemented code.** `Logger.Log()` calls
-`_sink.Write(entry)` with no exception handling — a sink failure propagates
-directly to whatever code just tried to log something. This is a genuine gap
-between WP 2.6's own stated principle and its shipped implementation,
-discovered during this architecture work, **not fixed here** (WP 2.7 is
-architecture-only and modifies no production code). It is flagged prominently
-in the WP 2.7 Academy review's Architectural Debt Assessment and in the
-completion report's Risks section, with a recommendation that a small, scoped
-fix (wrapping `_sink.Write(entry)` in a try/catch inside `Logger.Log()`,
-logging the sink failure's occurrence somewhere durable — even just to the
-console directly, bypassing the failed sink — without ever letting it
-propagate) be made before, or as part of, the Host's own implementation, since
-the Host's orchestration will call logging extensively and is exactly the kind
-of caller this principle exists to protect.
+**Fixed — WP 2.7B.** This was a genuine gap between WP 2.6's own stated
+principle and its shipped implementation, discovered during WP 2.7A's
+architecture-only review (which flagged it but, per its own scope, could
+not fix it) and closed as WP 2.7B's own first step, before the Host
+implementation that would become logging's heaviest caller. `Logger.Log()`
+now wraps `_sink.Write(entry)` in a `try`/`catch`; a sink failure is
+reported directly to `Console.Error` — bypassing the failed sink entirely
+— and never propagates to whatever code was logging something.
 
 ## Required Behaviour Summary
 
 | Failure | Host-fatal? | State transition |
 |---|---|---|
 | Configuration failure | Yes | `Starting → Faulted` |
+| Plugin Discovery/Loading — per-plugin failure *(ADR-0025/0026, implemented — WP 4.2)* | No | (none — that plugin isolated, phase continues) |
+| Plugin Discovery/Loading — Host-level defect *(ADR-0025/0026, implemented — WP 4.2)* | Yes | `Starting → Faulted` |
 | Discovery failure | Yes | `Starting → Faulted` |
 | Registration failure | Yes | `Starting → Faulted` |
 | Individual module initialisation failure | No | (none — Host proceeds to `Running`) |
 | Host-level defect during Module Initialisation | Yes | `Starting → Faulted` |
+| Hosted service — isolated start failure *(ADR-0021/0029, implemented — WP 4.5)* | No | (none — that service isolated, phase continues) |
+| Hosted service — critical start failure *(ADR-0021/0029, implemented — WP 4.5)* | Yes | `Starting → Faulted` |
 | Runtime exception (Running) | Yes | `Running → Faulted` |
 | Individual module shutdown failure | No | (none — `Stopping` proceeds to `Stopped`) |
+| Hosted service — isolated stop failure *(ADR-0021/0029, implemented — WP 4.5)* | No | (none — that service isolated, phase continues) |
+| Hosted service — critical stop failure *(ADR-0021/0029, implemented — WP 4.5)* | Yes, but disposal still proceeds | `Stopping → Faulted → Disposed` |
 | Host-level defect during shutdown | Yes, but disposal still proceeds | `Stopping → Faulted → Disposed` |
-| Logging failure | **Must never be** (currently is — see above) | (none, once fixed) |
+| Logging failure | **Fixed — WP 2.7B.** A sink failure is caught inside `Logger` itself and never propagates. | (none) |
 | Startup cancellation, or an early shutdown request | No (not a fault) | `Starting → Stopping → Stopped` (ADR-0018 — same controlled shutdown procedure as a graceful, post-`Running` stop) |

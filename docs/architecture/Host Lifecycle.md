@@ -3,6 +3,25 @@
 **Status: implemented — WP 2.7B (`Tempest.Core.Runtime`).** Every phase below
 is implemented by `TempestHost.RunAsync` exactly as described here.
 
+**Update, WP 4.2:** Phases 3.1 and 3.2 (Plugin Discovery, Plugin Loading)
+are now implemented (`Tempest.Core.Plugins`), exactly as ADR-0026
+specified. Decimal phase numbers mean "between 3 and 4" — no existing
+phase was renumbered; see ADR-0026 for why.
+
+**Update, WP 4.4D:** Phase 6 (Platform Services Registered) gained one new
+registration — `IEventBus` as an ordinary container-constructed singleton
+— alongside the `IPlatformVersionProvider` registration WP 4.2A already
+added there. No new phase; see Phase 6, below, and *Event Bus
+Architecture.md*/ADR-0028.
+
+**Update, WP 4.5:** Phases 8.1 and 10.1 (Hosted Services Started, Hosted
+Services Stopped) are now implemented (`Tempest.Core.BackgroundServices`),
+exactly as ADR-0029/ADR-0030 specified. Phase 6 also gained one new
+registration step: every discovered hosted service type, registered as an
+ordinary self-referential singleton (`AddDiscoveredHostedServices`).
+Decimal phase numbers mean "between 8 and 9" / "between 10 and 11" — no
+existing phase was renumbered; see ADR-0030 for why.
+
 ## Purpose
 
 This document defines every phase the Runtime Host passes through, from
@@ -25,13 +44,17 @@ Host is in the single `Starting` state.
 | 1 | Host Created | `Created` |
 | 2 | Configuration Built | `Starting` |
 | 3 | Logging Built | `Starting` |
+| 3.1 | Plugin Discovery *(ADR-0026, implemented — WP 4.2)* | `Starting` |
+| 3.2 | Plugin Loading *(ADR-0026, implemented — WP 4.2)* | `Starting` |
 | 4 | Module Discovery | `Starting` |
 | 5 | Module Registration | `Starting` |
 | 6 | Platform Services Registered | `Starting` |
 | 7 | Dependency Injection Built | `Starting` |
 | 8 | Module Initialisation | `Starting` |
+| 8.1 | Hosted Services Started *(ADR-0029/ADR-0030, implemented — WP 4.5)* | `Starting` |
 | 9 | Runtime Running | `Running` |
 | 10 | Shutdown Requested | `Running` → `Stopping` |
+| 10.1 | Hosted Services Stopped *(ADR-0029/ADR-0030, implemented — WP 4.5)* | `Stopping` |
 | 11 | Module Disposal | `Stopping` |
 | 12 | Service Disposal | `Stopping` |
 | 13 | Host Disposed | `Disposed` |
@@ -93,13 +116,76 @@ subsequent phase for diagnostics.
 
 ---
 
+### 3.1. Plugin Discovery
+
+**Status: implemented — WP 4.2 (`PluginManifestDiscoveryService`,
+`Tempest.Core.Plugins`).**
+
+**Purpose.** Read and validate every plugin manifest found in the plugins
+directory, producing a deterministic, ordered list of eligible plugins.
+Loads no assembly — a pre-Discovery artifact describing a plugin, not yet
+touching it. See *Plugin Manifest Architecture.md*.
+
+**Entry criteria.** Logging Built has completed — a working `ILogger`
+exists. `PlatformVersionProvider` has been constructed (moved earlier than
+its original WP 4.2A position, per ADR-0026) so `IPlatformVersionProvider.Version`
+is available for the `MinimumPlatformVersion` compatibility check.
+Configuration Built has completed, though this phase has no hard
+dependency on it. Module Discovery, Registration, the DI container, and
+every module do not exist yet, and none is needed.
+
+**Exit criteria.** A deterministic (sorted ordinally by candidate folder
+name), possibly empty, list of valid, version-compatible plugin manifests
+exists. Every candidate that failed validation has been isolated per
+ADR-0025, logged at its assigned severity, and excluded.
+
+**Failure behaviour.** Fully governed by ADR-0025. Every plugin-scoped
+failure (malformed manifest, duplicate identity, incompatible version) is
+isolated — logged, that candidate excluded, this phase continues with the
+rest. Only a genuine defect in this phase's own orchestration (not
+attributable to any specific plugin) is Host-fatal — `Faulted`, exactly
+the same transition Configuration Built and Logging Built already use.
+
+---
+
+### 3.2. Plugin Loading
+
+**Status: implemented — WP 4.2 (`PluginAssemblyLoader`,
+`Tempest.Core.Plugins`).**
+
+**Purpose.** Load each eligible plugin's declared assembly file into the
+process, in the same deterministic order Plugin Discovery established.
+
+**Entry criteria.** Plugin Discovery has completed with its (possibly
+empty) list of validated manifests in hand.
+
+**Exit criteria.** Every eligible plugin's assembly has either been loaded
+into the process (now visible to
+`AppDomain.CurrentDomain.GetAssemblies()`, exactly like any other loaded
+assembly) or isolated per ADR-0025 (missing assembly file, load failure,
+or dependency load failure) and excluded. **This is the guarantee Module
+Discovery, entirely unchanged, depends on** — see Phase 4, below.
+
+**Failure behaviour.** Fully governed by ADR-0025, identical in shape to
+Plugin Discovery's own: plugin-scoped failures are isolated; a genuine
+defect in this phase's own orchestration is Host-fatal — `Faulted`.
+
+---
+
 ### 4. Module Discovery
 
 **Purpose.** Find every `IModule` implementation across loaded assemblies.
+**Requires no code change for plugin support** — any assembly Plugin
+Loading (Phase 3.2) loaded is already visible to this phase's own,
+unchanged `AppDomain.CurrentDomain.GetAssemblies()` default, exactly as any
+other loaded assembly already is. A run with zero plugins present behaves
+identically to today, byte-for-byte.
 
 **Entry criteria.** Logging Built has completed — Discovery takes an optional
 `ILogger` for diagnostics. Per ADR-0011 and ADR-0008, Discovery requires
 **no** DI container — none exists yet at this point, and none is needed.
+Plugin Loading (Phase 3.2) has completed, whether or not any plugin was
+actually present or eligible.
 
 **Exit criteria.** `IFrameworkDiscoveryService.DiscoverModules()` has returned
 an ordered list of `ModuleDescriptor` values with no exception thrown.
@@ -135,17 +221,27 @@ protection and is not bypassed.
 
 **Purpose.** Populate a `ServiceCollection` with everything the DI container
 needs before it is built: the `IConfigurationProvider` and logging instances
-(via `AddInstance`), and every discovered module's concrete type (via
-`AddDiscoveredModules`, keyed by the `ModuleDescriptor` values Registration
-just produced).
+and the already-constructed `IPlatformVersionProvider` (via `AddInstance`,
+per ADR-0009 — see *Platform Version.md*), `IEventBus` as an ordinary
+container-constructed singleton (`services.Singleton<IEventBus, EventBus>()`,
+added WP 4.4D — requiring no Composition Root treatment, per ADR-0028, since
+its own constructor needs nothing `AddInstance` provides), every
+discovered module's concrete type (via `AddDiscoveredModules`, keyed by the
+`ModuleDescriptor` values Registration just produced), and every discovered
+hosted service type as an ordinary, self-referential singleton
+(`services.Singleton(type, type)` via `AddDiscoveredHostedServices`, the
+same Type-based overload `AddDiscoveredModules` already uses — implemented,
+WP 4.5, ADR-0029).
 
-**Entry criteria.** Module Registration has completed; Configuration and
-Logging instances already exist.
+**Entry criteria.** Module Registration has completed; Configuration,
+Logging, and Platform Version instances already exist (Platform Version's
+own construction happens earlier, immediately after Logging Built, per
+ADR-0026 — only its DI registration happens here).
 
 **Exit criteria.** The `ServiceCollection` contains every registration the
 running instance needs — this phase adds no new capability to `ServiceCollection`
-itself; it is the Host's own act of calling `AddInstance`/`AddDiscoveredModules`
-in sequence.
+itself; it is the Host's own act of calling `AddInstance`/`Singleton`/
+`AddDiscoveredModules` in sequence.
 
 **Failure behaviour.** An `ArgumentException` from a malformed registration
 (for example, a type that doesn't satisfy the service type it's registered
@@ -201,24 +297,58 @@ not a module failure, and is Host-fatal.
 
 ---
 
+### 8.1. Hosted Services Started
+
+**Status: implemented — WP 4.5 (`Tempest.Core.BackgroundServices`).**
+
+**Purpose.** Construct `IHostedServiceManager` from the hosted service
+types discovered and registered during Platform Services Registered
+(Phase 6), and start every one, in deterministic order — after every
+module has been given the chance to initialise and start, never
+interleaved with them.
+
+**Entry criteria.** Module Initialisation has completed, regardless of
+individual module outcomes (ADR-0013) — mirroring Plugin Loading's own
+"completed, whether or not anything was actually eligible" entry
+criterion.
+
+**Exit criteria.** `IHostedServiceManager.StartAllAsync` has returned. Does
+**not** require every hosted service to have started successfully — an
+isolated (non-critical) service's failure does not prevent this phase from
+completing, exactly as an individual module's failure does not prevent
+Module Initialisation from completing.
+
+**Failure behaviour.** Fully governed by ADR-0021/ADR-0029. An isolated
+service's `StartAsync` failure: logged, that service marked `Failed`,
+phase continues. A **critical** service's (`ICriticalBackgroundService`)
+failure: Host-fatal — `Starting → Faulted`, the identical transition every
+other startup phase already uses.
+
+---
+
 ### 9. Runtime Running
 
 **Purpose.** The steady state: the platform is up, every platform service
-exists, every module has been given the chance to start, and the Host waits
-for a shutdown request (or, in the future, hosts background work — see
-*Runtime Host Architecture.md*'s Future Extensibility section).
+exists, every module has been given the chance to start, every hosted
+service has been given the chance to start, and the Host waits for a
+shutdown request.
 
-**Entry criteria.** Module Initialisation has completed.
+**Entry criteria.** Module Initialisation and Hosted Services Started have
+both completed.
 
 **Exit criteria.** A shutdown request or a runtime exception is observed.
 
-**Failure behaviour.** Today, with no hosted services or background work yet
-implemented, there is no code path that can fault the Host *during* Running —
-this phase's failure behaviour is defined now so that a future hosted-service
-implementation has an established policy to follow rather than needing to
-invent one: an unhandled exception during Running is Host-fatal
-(`Running → Faulted`), on the same reasoning as any other platform-level
-failure under ADR-0013.
+**Failure behaviour.** No code path produced by `WP 4.5` can fault the Host
+*during* Running — a hosted service's own failure is fully resolved at
+Phase 8.1 (isolated) or 10.1 (isolated, or Host-fatal if critical); `WP 4.5`
+implements no ongoing supervision, monitoring, or restart policy for a
+hosted service once it reaches `Running` (deliberately out of scope — see
+ADR-0029/ADR-0030's own stated exclusions). This phase's failure behaviour
+remains defined regardless, so any future work package that *does*
+introduce ongoing supervision has an established policy to follow rather
+than needing to invent one: an unhandled exception during Running is
+Host-fatal (`Running → Faulted`), on the same reasoning as any other
+platform-level failure under ADR-0013.
 
 ---
 
@@ -235,14 +365,44 @@ separate "partial startup" variant of this phase.
 either the startup cancellation token or a shutdown request has fired
 (ADR-0018).
 
-**Exit criteria.** The Host has transitioned to `Stopping` and begun Module
-Disposal.
+**Exit criteria.** The Host has transitioned to `Stopping` and begun
+Hosted Services Stopped, then Module Disposal.
 
 **Failure behaviour.** Not applicable — receiving a shutdown request, or
 being cancelled during startup, is not itself a failure mode; see *Shutdown
 Sequence.md*. This is explicitly distinct from a platform-service failure
 during `Starting`, which goes directly to `Faulted` (ADR-0013), not through
 this phase.
+
+---
+
+### 10.1. Hosted Services Stopped
+
+**Status: implemented — WP 4.5 (`Tempest.Core.BackgroundServices`).**
+
+**Purpose.** Stop every started hosted service, in the reverse of Phase
+8.1's own order, before any module is stopped.
+
+**Entry criteria.** Shutdown Requested has occurred. **If
+`IHostedServiceManager` was never constructed** (the Host faulted, or was
+cancelled, before Phase 8.1 ever ran), this phase is a no-op — mirroring
+exactly how Module Disposal already tolerates `ModuleLifecycleManager`
+never having been constructed.
+
+**Exit criteria.** `IHostedServiceManager.StopAllAsync` has returned. Does
+**not** require every hosted service to have stopped cleanly — an
+individual service's isolated stop failure does not prevent this phase
+from completing.
+
+**Failure behaviour.** Fully governed by ADR-0021/ADR-0029. An isolated
+service's `StopAsync` failure: logged, phase continues — mirroring Module
+Disposal's own already-established policy for individual module stop
+failures. A **critical** service's failure: Host-fatal —
+`Stopping → Faulted`, the identical transition already defined for a
+genuine Host-level defect during shutdown orchestration. Cleanup
+guarantees are unaffected: `Faulted → Disposed` remains always legal and
+disposal of every module, and every hosted service already stopped, is
+still attempted afterward (ADR-0004, ADR-0019).
 
 ---
 

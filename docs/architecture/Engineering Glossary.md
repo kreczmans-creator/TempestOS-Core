@@ -93,6 +93,44 @@ deterministic order — answering exactly one question: what modules exist.
 Deliberately independent of the DI container (ADR-0008) and of Configuration.
 See the Platform Service Map's "Discovery" entry.
 
+### Command *(contract implemented — v0.4.0, WP 4.0)*
+
+A discrete, named unit of application logic requested by a caller,
+implemented as data (`ICommand`, `Tempest.Core.Commands`): a concrete
+command type carries its own parameters as ordinary properties and is
+dispatched by its own type. Has exactly one handler and an expected
+result — contrasted with an **Event**, which has zero or more subscribers
+and no expected result. The handler contract and dispatcher are not yet
+defined (Command Framework's own work, WP 4.7) — only the command shape
+itself exists so far. Never depends on, or is invoked through, Navigation
+— see ADR-0022.
+
+### Event Bus *(implemented — v0.4.0, WP 4.0 contracts; WP 4.4D bus, ADR-0028; WP 4.4E first real consumer)*
+
+A DI-public platform service (`IEventBus`) letting modules publish and
+subscribe to events without depending on each other directly. Resolved via
+ordinary constructor injection, exactly like **Platform Service** examples
+Configuration and Logging — never a Host-owned collaborator like Discovery,
+Registration, or Lifecycle, since it carries no authority to register,
+initialise, start, stop, or dispose anything. Placement decided by
+ADR-0020. Subscription is imperative (`Subscribe`/`Unsubscribe`, not
+DI-auto-discovered); dispatch is sequential, in subscription order, over
+an independent snapshot per publish call — which is what makes a handler
+publishing a further event from within its own handler ("re-entrant
+publishing") safe without any deferred-queue mechanism. Every subscriber
+failure is isolated unconditionally, with no critical-subscriber opt-in —
+all decided by ADR-0028. Its consumer-facing contracts, `IEvent` and
+`IEventHandler<T>` (`Tempest.Core.Events`), are implemented as of WP 4.0;
+the bus itself — `IEventBus`/`EventBus`, the thing that actually dispatches
+a published event to its subscribers — is implemented as of `WP 4.4D`,
+registered as an ordinary singleton during Platform Services Registered.
+First real consumer, `WP 4.4E`: `ClockModule` publishes its own lifecycle
+transitions; a new companion module, `ClockLifecycleObserverModule`,
+subscribes, holding no reference to `ClockModule` itself. Not to be
+confused with a **Command** (see Command
+Framework, v0.4.0 planning): an event has zero or more subscribers and no
+expected result; a command has exactly one handler and an expected result.
+
 ### Fail Fast
 
 The Engineering Principle (06) that a system should surface an invalid state
@@ -117,13 +155,43 @@ follow the identical procedure once `Stopping` begins (ADR-0018); "graceful"
 here describes only which state `Stopping` was entered from, not a different
 procedure.
 
-### Hosted Service *(planned)*
+### Critical Background Service *(implemented — v0.4.0, WP 4.0 contract; WP 4.5 orchestration)*
 
-Background work that would start alongside, and stop symmetrically with, the
-module pipeline — slotting in between Module Initialisation and Runtime
-Running at startup, and at the front of Shutdown. Not yet designed; named in
-*Runtime Host Architecture.md*'s Future Extensibility section as a seam the
-Host is designed to accept without requiring its own entry point.
+A **Hosted Service** that has explicitly declared itself critical, via the
+`ICriticalBackgroundService` marker interface (`Tempest.Core.BackgroundServices`)
+— its failure is **Host-Fatal**, exactly like a platform-service failure,
+rather than isolated. The opt-in exception to a Hosted Service's default
+isolated-failure behaviour; see ADR-0021. The contract carries no members
+of its own — criticality is a declaration, not a configurable value.
+`HostedServiceManager` (`WP 4.5`, ADR-0029) reads it at both Phase 8.1
+(`StartAsync`) and Phase 10.1 (`StopAsync`), rethrowing uncaught rather
+than isolating.
+
+### Hosted Service *(implemented — v0.4.0, WP 4.0 contract; WP 4.5 discovery/ownership/orchestration, ADR-0029/ADR-0030)*
+
+Background work that starts after Module Initialisation and stops before
+Module Disposal — slotting in as decimal-numbered Host Lifecycle phases
+`8.1`/`10.1` (ADR-0030), between Module Initialisation and Runtime Running
+at startup, and between Shutdown Requested and Module Disposal at
+shutdown. Named in *Runtime Host Architecture.md*'s Future Extensibility
+section as a seam the Host was designed to accept without requiring its
+own entry point. Its contract, `IHostedService` (`Tempest.Core.BackgroundServices`),
+is implemented as of WP 4.0; carries no `Id`/`Name`/`Version`, unlike
+**Module**, so discovering one never requires instantiating it — a hosted
+service is constructor-injectable from its first implementation, with no
+`ModuleMetadataAttribute`-equivalent prerequisite. Discovered by a
+dedicated `HostedServiceDiscoveryService`, orchestrated by a
+Host-owned `HostedServiceManager` (never DI-public, per ADR-0017 applied
+to this component) — both implemented in full (ADR-0029, WP 4.5). Its
+failure classification — **isolated by default**, mirroring module
+failure isolation, unless declared a **Critical Background Service**
+(ADR-0021) — extends, but does not weaken or contradict, the
+platform-service/module **Host-Fatal**/**Isolated Failure** boundary
+ADR-0013 established — a Hosted Service is a third category with its own
+default, not a reclassification of either existing one. `WP 4.5`
+implements no ongoing supervision, monitoring, or restart policy for a
+hosted service once it reaches `Running` — deliberately left to future
+work.
 
 ### Host
 
@@ -165,7 +233,9 @@ Initialise/Start/Stop/Dispose — that is caught, logged, and marked against
 that module alone (`ModuleState.Failed`), without aborting the batch it
 occurred in or affecting the Runtime Host's own state. Established by WP 2.3
 (`ModuleLifecycleManager`'s per-module isolation) and elevated to an explicit
-platform-wide policy by ADR-0013. Contrasted with **Host-Fatal**.
+platform-wide policy by ADR-0013. Contrasted with **Host-Fatal**. A
+**Hosted Service**'s failure is isolated by this same default (ADR-0021,
+v0.4.0) unless it is a **Critical Background Service**.
 
 ### Lifecycle
 
@@ -255,6 +325,18 @@ built anything past Configuration). This is what makes unconditional
 shutdown sweeps possible: a caller never needs to reason about how far
 startup progressed before disposing everything.
 
+### Platform API *(v0.4.0, ADR-0023)*
+
+A contract — an interface such as `IEvent`, `ICommand`, or `IHostedService`
+— as distinct from the **Platform Service** that implements it. The
+distinction was always implicit (`IConfigurationProvider` the contract vs.
+Configuration the service that builds it) but was not named as a general
+layer until ADR-0023's four-layer platform architecture: Modules → Platform
+APIs → Platform Services → Runtime Host, dependencies flowing downward
+only. `WP 4.0` (Platform Contracts) is where the platform's first several
+Platform APIs are defined, deliberately ahead of the Platform Services that
+will later implement them.
+
 ### Platform Service
 
 One of the components the Runtime Host assembles and orchestrates —
@@ -262,15 +344,39 @@ Configuration, Logging, Discovery, Registration, Dependency Injection,
 Lifecycle, and (once classified under ADR-0013) any future service such as a
 Requirements Engine or Project Engine. A platform service's failure is
 **Host-Fatal**; contrasted with a **Module**, whose failure is an **Isolated
-Failure**. See *Failure Behaviour.md*'s Governing Principle.
+Failure**. See *Failure Behaviour.md*'s Governing Principle. Distinguished
+from a **Platform API** (ADR-0023): a Platform Service is the concrete
+implementation; a Platform API is the contract it implements.
 
-### Plugin *(planned)*
+### Plugin
 
-An assembly loaded from disk (the still-empty `src/Plugins/` directory) to
-extend the platform with additional modules at runtime. Not yet implemented;
-would need to load *before* Module Discovery in the Host's sequence so that
-Discovery's default assembly scan actually sees the loaded plugin assemblies.
-Named in *Runtime Host Architecture.md*'s Future Extensibility section.
+An assembly loaded from disk at runtime (the still-empty `src/Plugins/`
+directory is where one would live) to extend the platform with additional
+modules, described beforehand by a **Plugin Manifest**. Loads *before*
+Module Discovery in the Host's sequence (Phase 3.2), so Discovery's default
+assembly scan sees it exactly like any other loaded assembly. Named in
+*Runtime Host Architecture.md*'s Future Extensibility section; the
+loading mechanism itself is implemented — see **Plugin Manifest**.
+
+### Plugin Manifest *(implemented — v0.4.0, WP 4.2)*
+
+A pre-discovery artifact describing a plugin *before* its assembly is
+loaded — as distinct from `ModuleDescriptor`, which describes a module
+*after* it is loaded and reflectable. Governing principle: "the Manifest
+describes; the Runtime decides." Read from a `plugin.manifest.json` file by
+**Plugin Discovery** (Phase 3.1, `PluginManifestDiscoveryService`), which
+validates it and checks its declared `MinimumPlatformVersion` against
+**Platform Version**, producing a deterministic, ordered list of eligible
+candidates (ADR-0026: sorted ordinally by candidate folder name). **Plugin
+Loading** (Phase 3.2, `PluginAssemblyLoader`) then loads each eligible
+candidate's declared assembly via `Assembly.LoadFrom`, immediately before
+Module Discovery. Every plugin-scoped failure across both phases is
+**Isolated Failure** (ADR-0025) — logged at a per-category severity, that
+candidate excluded, the batch continues; only a genuine, unattributable
+defect in either phase's own orchestration is **Host-Fatal**. Both phases
+are Host-owned collaborators (`Tempest.Core.Plugins`), never DI-public,
+mirroring Discovery/Registration/Lifecycle's own existing exclusion
+(ADR-0017). See *Plugin Manifest Architecture.md*, ADR-0025, ADR-0026.
 
 ### Post-Fault Teardown
 
@@ -355,6 +461,9 @@ ADR-0016, distinct from the pre-existing **Tempest.Core.Hosting**.
 
 *Runtime Host Architecture.md* · *Host Lifecycle.md* · *Runtime State
 Machine.md* · *Failure Behaviour.md* · *Shutdown Sequence.md* · *Startup
-Sequence.md* · *Ownership Matrix.md* · *Platform Service Map.md* · ADR-0001
-through ADR-0018 · `docs/academy/01 Engineering Principles/` · `docs/academy/
+Sequence.md* · *Ownership Matrix.md* · *Platform Service Map.md* · *Plugin
+Manifest Architecture.md* · *Module Dependency Injection Architecture.md* ·
+*Event Bus Architecture.md* · *Background Services Architecture.md* ·
+ADR-0001 through ADR-0030 ·
+`docs/academy/01 Engineering Principles/` · `docs/academy/
 02 Runtime Architecture/`.

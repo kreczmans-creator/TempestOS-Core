@@ -15,14 +15,25 @@ if the Host itself builds these services after it exists, not before — see
 the WP 2.7B retrospective's Alternatives Considered section for the full
 reasoning, and ADR-0011 for the precedent this reconciliation follows.
 
+**Update, WP 4.5:** Background Services (ADR-0029, ADR-0030) are now
+implemented in `Tempest.Core.BackgroundServices`, wired into `TempestHost`
+exactly as the Future Extensibility section below anticipated — see *Host
+Lifecycle.md* (phases `8.1`/`10.1`), *Runtime State Machine.md*, *Failure
+Behaviour.md*, and *Ownership Matrix.md* for the corresponding updates. The
+implemented discovery service is named `HostedServiceDiscoveryService`
+(`Tempest.Core.BackgroundServices`) — a cosmetic rename from the design
+phase's working name, `ReflectionHostedServiceDiscoveryService`; nothing
+about its behaviour changed.
+
 ## Overview
 
 The Runtime Host is the single entry point to TempestOS: the one component
 whose job is to bring every platform service up, in the right order, hold the
 platform in a running state, and bring everything back down again, cleanly,
-whenever asked or whenever something goes wrong. It is the "Host (planned)"
-entry in the Platform Service Map, and this document, together with the other
-five produced by WP 2.7, is that entry's design.
+whenever asked or whenever something goes wrong. It was the "Host (planned)"
+entry in the Platform Service Map when this document was first written; it
+is now the "Host *(implemented — WP 2.7B)*" entry, and this document,
+together with the other five produced by WP 2.7, is that entry's design.
 
 The Host is deliberately thin. It does not implement Configuration, Logging,
 Dependency Injection, Discovery, Registration, or Lifecycle — those are
@@ -166,9 +177,12 @@ The Host is designed as the seam future capabilities plug into, without
 requiring their own, separate entry point:
 
 - **Hosted services** (background work that starts alongside, and stops
-  symmetrically with, the module pipeline) would slot in between Module
+  symmetrically with, the module pipeline) slot in between Module
   Initialisation and Runtime Running at startup, and at the front of Shutdown
   — started after modules are initialised, stopped before modules are.
+  **Implemented — WP 4.5** (ADR-0029, ADR-0030, `Background Services
+  Architecture.md`, `Tempest.Core.BackgroundServices`): exactly this
+  placement, realised as decimal-numbered phases `8.1`/`10.1`.
 - **Requirements Engine** and **Project Engine** (Platform Service Map,
   planned) would each need to be classified, per ADR-0013, as either a
   platform service (Host-fatal on failure) or a set of modules (isolated
@@ -182,12 +196,16 @@ requiring their own, separate entry point:
   Discovery in the Host's sequence, so that Discovery's
   `AppDomain.CurrentDomain.GetAssemblies()` default actually sees them. This
   is the Host's first legitimate opportunity to close that long-standing gap,
-  though doing so is out of WP 2.7's own scope.
+  though doing so is out of WP 2.7's own scope. **Closed — WP 4.2** (ADR-0026,
+  `Tempest.Core.Plugins`): Plugin Discovery and Plugin Loading now do exactly
+  this, immediately before Module Discovery, exactly as anticipated here —
+  see *Plugin Manifest Architecture.md* and *Host Lifecycle.md*.
 
 ## Related Documents
 
 *Host Lifecycle.md* (phase-by-phase detail) · *Startup Sequence.md* ·
 *Shutdown Sequence.md* · *Runtime State Machine.md* · *Failure Behaviour.md* ·
-*Ownership Matrix.md* · *Platform Service Map.md* · *The Module Pipeline* and
-*The Startup Sequence* (Academy, Runtime Architecture) · ADR-0004, ADR-0008,
-ADR-0009, ADR-0011 through ADR-0017.
+*Ownership Matrix.md* · *Platform Service Map.md* · *Background Services
+Architecture.md* · *The Module Pipeline* and *The Startup Sequence*
+(Academy, Runtime Architecture) · ADR-0004, ADR-0008, ADR-0009, ADR-0011
+through ADR-0017, ADR-0021, ADR-0029, ADR-0030.

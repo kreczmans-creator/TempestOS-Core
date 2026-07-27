@@ -94,6 +94,21 @@ the container. Only module instances are. This is a conscious scope decision, no
 an oversight: WP 2.4's brief was explicit that DI's job was module construction,
 not a wholesale rewrite of how the rest of the runtime wires itself together.
 
+**Update, WP 4.4A/4.4B.** For nearly three releases, "module instances can be
+constructor-injected" had one hidden asterisk: `TempestServiceProvider` could
+always resolve a constructor's dependencies recursively, but Discovery's own
+metadata probe required calling a module's *parameterless* constructor first,
+which made a module with a dependency-requiring constructor crash Discovery
+before it was ever registered (see WP 4.3's own finding). ADR-0027's
+`ModuleMetadataAttribute` (`Tempest.Core.Modules`) closes that gap additively:
+a module carrying the attribute is never instantiated by Discovery at all, so
+its constructor is free to request any DI-public service — including
+`IEventBus` (ADR-0020), first exercised for real by `Tempest.Samples.ClockModule`
+(WP 4.4E). Every module without the attribute keeps the exact behaviour this
+document already describes, unchanged, forever — see *Building a Module*
+and *Building an Event-Driven Module* (Academy) for the module-author-facing
+version of this same story.
+
 ## Key Takeaway
 
 Dependency Injection is not "use a container everywhere" — it's "let something

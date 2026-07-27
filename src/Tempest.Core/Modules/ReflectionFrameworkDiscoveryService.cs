@@ -7,11 +7,20 @@ namespace Tempest.Core.Modules;
 /// Discovers <see cref="IModule"/> implementations by scanning assemblies with reflection.
 /// </summary>
 /// <remarks>
+/// <para>
 /// Discovery ignores interfaces, abstract classes, open generic type definitions, and any
-/// type that does not implement <see cref="IModule"/>. Every remaining candidate type is
-/// instantiated via its public parameterless constructor so its metadata can be validated.
-/// Discovered modules are returned in ascending, ordinal alphabetical order by
-/// <see cref="ModuleDescriptor.Id"/>.
+/// type that does not implement <see cref="IModule"/>. Discovered modules are returned in
+/// ascending, ordinal alphabetical order by <see cref="ModuleDescriptor.Id"/>.
+/// </para>
+/// <para>
+/// Each remaining candidate type is checked for <see cref="ModuleMetadataAttribute"/> first
+/// (ADR-0027). If present, metadata is read directly from the attribute and the type is
+/// never instantiated by discovery at all. If absent, discovery falls back to its original
+/// behaviour, unchanged: the type is instantiated via its public parameterless constructor
+/// purely to read its <see cref="IModule"/> instance properties, then the instance is
+/// discarded. See <c>Module Dependency Injection Architecture.md</c> for the complete design
+/// this enables.
+/// </para>
 /// </remarks>
 public class ReflectionFrameworkDiscoveryService : IFrameworkDiscoveryService
 {
@@ -79,17 +88,14 @@ public class ReflectionFrameworkDiscoveryService : IFrameworkDiscoveryService
             if (!IsValidModuleType(type))
                 continue;
 
-            var module = (IModule)Activator.CreateInstance(type)!;
+            var descriptor = CreateDescriptor(type);
 
-            ValidateMetadata(module, type);
-
-            if (descriptorsById.ContainsKey(module.Id))
+            if (descriptorsById.ContainsKey(descriptor.Id))
             {
-                _logger?.Information($"Duplicate module ID detected during discovery: '{module.Id}'.");
-                throw new DuplicateModuleIdException(module.Id);
+                _logger?.Information($"Duplicate module ID detected during discovery: '{descriptor.Id}'.");
+                throw new DuplicateModuleIdException(descriptor.Id);
             }
 
-            var descriptor = new ModuleDescriptor(module.Id, module.Name, module.Version, type);
             descriptorsById.Add(descriptor.Id, descriptor);
 
             _logger?.Information($"Discovered module '{descriptor.Id}' ({descriptor.Name} v{descriptor.Version}).");
@@ -115,21 +121,44 @@ public class ReflectionFrameworkDiscoveryService : IFrameworkDiscoveryService
         return true;
     }
 
-    private static void ValidateMetadata(IModule module, Type type)
+    /// <summary>
+    /// Builds a <see cref="ModuleDescriptor"/> for a candidate type — from its
+    /// <see cref="ModuleMetadataAttribute"/> if present (ADR-0027, no instantiation), or
+    /// otherwise by instantiating it via its public parameterless constructor and reading
+    /// its <see cref="IModule"/> instance properties, exactly as discovery has always done.
+    /// </summary>
+    private static ModuleDescriptor CreateDescriptor(Type type)
     {
-        if (string.IsNullOrWhiteSpace(module.Id))
+        var metadataAttribute = type.GetCustomAttribute<ModuleMetadataAttribute>();
+
+        if (metadataAttribute is not null)
+        {
+            ValidateMetadata(metadataAttribute.Id, metadataAttribute.Name, metadataAttribute.Version, type);
+            return new ModuleDescriptor(metadataAttribute.Id, metadataAttribute.Name, metadataAttribute.Version, type);
+        }
+
+        var module = (IModule)Activator.CreateInstance(type)!;
+
+        ValidateMetadata(module.Id, module.Name, module.Version, type);
+
+        return new ModuleDescriptor(module.Id, module.Name, module.Version, type);
+    }
+
+    private static void ValidateMetadata(string? id, string? name, string? version, Type type)
+    {
+        if (string.IsNullOrWhiteSpace(id))
         {
             throw new ModuleDiscoveryException(
                 $"Module type '{type.FullName}' has a null, empty, or whitespace Id.");
         }
 
-        if (string.IsNullOrWhiteSpace(module.Name))
+        if (string.IsNullOrWhiteSpace(name))
         {
             throw new ModuleDiscoveryException(
                 $"Module type '{type.FullName}' has a null, empty, or whitespace Name.");
         }
 
-        if (string.IsNullOrWhiteSpace(module.Version))
+        if (string.IsNullOrWhiteSpace(version))
         {
             throw new ModuleDiscoveryException(
                 $"Module type '{type.FullName}' has a null, empty, or whitespace Version.");
