@@ -1,7 +1,8 @@
 # Shell & Composition Framework Architecture
 
-**Status: designed — WP 5.0C (ADR-0033, ADR-0034, ADR-0035). Not yet
-implemented.**
+**Status: designed — WP 5.0C (ADR-0033, ADR-0034, ADR-0035). Implemented
+— WP 5.0D, exactly as designed, with zero deviation from the shape
+below.**
 
 ## Objective
 
@@ -306,11 +307,36 @@ lifecycle. The Shell's own three coarse stages — construct-and-start,
 present-while-running, request-shutdown-and-dispose — are described in
 "Composition Model," above, and require no new enum.
 
+## Implementation Note: Forcing `Tempest.Samples` to Load (`WP 5.0D`)
+
+A genuine, non-obvious finding from implementation, disclosed rather than
+silently worked around: `NavigationSampleModule.NavigationItemId` and
+`SecondaryNavigationSampleModule.NavigationItemId` are compile-time
+`const` fields — the C# compiler inlines their literal values directly
+into `Tempest.App`'s own IL at compile time. Referencing them alone,
+while sufficient to key the Shell's own page mapping, does **not** force
+the CLR to load `Tempest.Samples.dll` into the process at runtime,
+because no reference to the *type itself* is ever emitted. Without an
+explicit `typeof(NavigationSampleModule).Assembly` access forcing the
+load before `RunAsync` starts the Host's own Module Discovery phase,
+Discovery's `AppDomain.CurrentDomain.GetAssemblies()` scan finds **zero**
+`Tempest.Samples` modules — confirmed directly during implementation, by
+running the real application before this fix and observing "Framework
+discovery completed. 0 module(s) found." The fix is one explicit line in
+`TempestShell`'s own constructor, documented in place; this does not
+change any design decision this document or `ADR-0033`–`ADR-0035` make,
+only a genuinely non-obvious implementation-time correctness detail worth
+recording so a future contributor does not rediscover it the hard way.
+
 ## Testing Strategy
 
-Realised in `WP 5.0D`, following this project's own established "prefer
-real implementations over mocks" convention
-(`docs/academy/06 Engineering Standards/02-testing-strategy.md`):
+**Realised in full by `WP 5.0D`** — every scenario below is proven by a
+real, passing test against the real `TempestShell`, `TempestHost`, and
+`INavigationProvider`/`IEventBus`; a `StringWriter`/`StringReader` stands
+in for the console (a real implementation of both contracts, observing
+output exactly as a console would — not a mock). Following this
+project's own established "prefer real implementations over mocks"
+convention (`docs/academy/06 Engineering Standards/02-testing-strategy.md`):
 
 - **`ITempestHost.Services` availability**: `null` before Dependency
   Injection Built, non-`null` from then through `Disposed` — proven
@@ -337,15 +363,20 @@ real implementations over mocks" convention
 **Required for v0.5 (this design; implemented in `WP 5.0D`):**
 
 - The Shell as `Tempest.App`'s own composition root, replacing the
-  bootstrap-era console loop as the entry point's own job (the bootstrap-
-  era `ProjectService`/`BootstrapService`/`HostingService` code itself is
-  untouched by this design — migrating or retiring it is explicitly out
-  of this Work Package's scope, named here so it is not silently assumed).
-- `ITempestHost.Services`, additive and read-only.
-- Workspace, Navigation Region, and Content Region, populated.
-- A Status Bar region, reserved but unpopulated.
+  bootstrap-era console loop as the entry point's own job — **done**:
+  `Program.cs` now builds a `TempestHostBuilder`, constructs
+  `TempestShell`, and calls `RunAsync()`. The bootstrap-era
+  `ProjectService`/`BootstrapService`/`HostingService` code itself remains
+  untouched and unmigrated, exactly as scoped — `Program.cs` simply no
+  longer calls it.
+- `ITempestHost.Services`, additive and read-only — **done**.
+- Workspace, Navigation Region, and Content Region, populated — **done**,
+  proven against the real `NavigationSampleModule`/
+  `SecondaryNavigationSampleModule`.
+- A Status Bar region, reserved but unpopulated — **done**.
 - The Shell's own closed, hand-registered page mapping, with an honest
-  placeholder for unregistered items.
+  placeholder for unregistered items — **done**: `PlaceholderPage`
+  serves both the two built-in pages and the generic unknown-item case.
 
 **Explicitly deferred beyond v0.5 (named here so they are not silently
 forgotten, not because any of them is currently planned):**

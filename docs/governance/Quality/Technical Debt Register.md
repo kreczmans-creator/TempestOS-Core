@@ -10,7 +10,7 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | Every retrospective under `docs/academy/03 Work Packages/`; `docs/releases/v0.4.0/Platform Services Architecture Review.md`. |
 | **Review Frequency** | Updated whenever a Work Package resolves, worsens, or discloses a new debt item — every retrospective's own "Architectural Debt Assessment" section is the trigger. |
-| **Last Reviewed** | 2026-07-27 (WP 5.0B) — no new debt introduced; WP 5.0B's own retrospective confirms its two disclosed trade-offs (no automatic unregistration by the service itself; a mandatory `IEventBus` dependency) are `ADR-0032`'s own accepted trade-offs, not new debt. |
+| **Last Reviewed** | 2026-07-27 (WP 5.0D) — no new debt introduced; WP 5.0D's own retrospective confirms its disclosed trade-offs (no automatic Event Bus unsubscription on an ungraceful exit; module/plugin-contributed page rendering still unsolved; the bootstrap-era `BootstrapService`/`HostingService`/`ProjectService` code left unreferenced but unmigrated) are each `ADR-0028`'s, `ADR-0035`'s, or `WP 5.0C`'s own already-disclosed, accepted scope boundaries, not new debt. |
 | **Related Documents** | `docs/releases/v0.4.0/Risks.md`; `Validation Register.md`; `Hosted Services Register.md`; `Plugin Register.md`. |
 | **Related ADRs** | ADR-0009, ADR-0021, ADR-0024, ADR-0028, ADR-0029. |
 | **Related Academy Articles** | Every Work Package retrospective's own "Trade-offs" and "Architectural Debt Assessment" sections. |
@@ -37,10 +37,10 @@ misrepresent deliberate, reasoned scope decisions as unaddressed problems.
 | TD-04 | `IHostedService` naming proximity to `Microsoft.Extensions.Hosting.IHostedService` | WP 4.0 / ADR-0024 | Revisit trigger: real usage evidence | **Open — trigger not yet met.** WP 4.5 implemented the infrastructure but zero real hosted services exist yet (see `Hosted Services Register.md`); the "real usage evidence" this item's revisit trigger names has still not arrived. |
 | TD-05 | Parameterless-constructor-only constraint on discovered modules | WP 4.1 | Partially addressed — WP 4.4A/4.4B (ADR-0027) | **Partially resolved.** A module carrying `[ModuleMetadata]` may now declare a DI-resolvable constructor; a module without the attribute remains constrained exactly as before. This is a deliberate, additive lift, not a full removal of the constraint. |
 | TD-06 | Plugins root directory (`Plugins/`) and manifest file name (`plugin.manifest.json`) are fixed conventions, not configurable | WP 4.2 | None named yet | Open — disclosed as a purely additive future enhancement, not a current limitation with a known cost |
-| TD-07 | Navigation's `Tempest.Core` placement is an open architectural question | WP 4.2D (named), pre-existing since v0.4.0 planning | WP 4.6A | Open |
+| TD-07 | Navigation's `Tempest.Core` placement is an open architectural question | WP 4.2D (named), pre-existing since v0.4.0 planning | WP 5.0A (formerly WP 4.6A) | **Resolved** — WP 5.0A's own Repository Investigation and `ADR-0031` settle this: the Navigation *model* belongs in `Tempest.Core`; rendering is `Tempest.App`'s own responsibility. Stale "Open"/`WP 4.6A` labels found and corrected here, `WP 5.0D`, having survived unnoticed through three prior Work Packages (`WP 5.0A`–`WP 5.0C`) that each resolved or built on this exact question without this register being updated to match — a disclosed governance-debt finding in its own right, not a new architectural gap. |
 | TD-08 | Background Services would need to extend `Host Lifecycle.md`'s phase table a second time | WP 4.2D (named as future work) | WP 4.5 | **Resolved** — WP 4.5 implemented Phases 8.1/10.1 exactly per ADR-0029/ADR-0030, no renumbering. See `Risks.md` R1/R4, both now Retired. |
 
-**Total: 8 tracked debt items — 1 Resolved, 1 Partially resolved, 6 Open.**
+**Total: 8 tracked debt items — 2 Resolved, 1 Partially resolved, 5 Open.**
 
 ## Entries — Disclosed, Accepted Trade-offs (Not Expected to Need Fixing Unless a Real Need Emerges)
 

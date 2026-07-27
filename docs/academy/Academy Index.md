@@ -146,11 +146,13 @@ Implemented (`WP 5.0A` design, `WP 5.0B` implementation, ADR-0031/ADR-0032)
 
 ## Shell & Application Composition
 
-Designed (`WP 5.0C`, ADR-0033/ADR-0034/ADR-0035) — the application shell,
-`Tempest.App`'s own composition root; not yet implemented.
+Implemented (`WP 5.0C` design, `WP 5.0D` implementation,
+ADR-0033/ADR-0034/ADR-0035) — the application shell, `Tempest.App`'s own
+composition root.
 
 - [Shell & Application Composition](02%20Runtime%20Architecture/10-shell-and-application-composition.md) — the concept guide: why "the thing that runs the app" is not the same component as "the thing the app runs," the composition-root relationship to the Runtime Host, and common mistakes.
 - [WP 5.0C — Shell & Composition Framework Architecture](03%20Work%20Packages/WP5.0C-shell-and-composition-framework-architecture.md) — the design phase: platform/application boundary, composition model, `ITempestHost.Services`, page/view ownership.
+- [WP 5.0D — Shell & Composition Framework Implementation](03%20Work%20Packages/WP5.0D-shell-and-composition-framework-implementation.md) — the implementation phase: `TempestShell` built and proven against the real Host and sample modules; `Tempest.App` runs the real platform for the first time.
 - `docs/architecture/Shell & Composition Framework Architecture.md` — the full design document.
 - ADR-0033 (the Shell is a composition root, not a module or hosted service), ADR-0034 (`ITempestHost` exposes a read-only service resolution surface), ADR-0035 (the Shell owns page/view construction, independent of the DI container).
 - See also ADR-0009 for the forward reference this Work Package fulfils, and [Navigation Architecture](02%20Runtime%20Architecture/09-navigation-architecture.md) for the Rendering Boundary this design's own page ownership directly completes.
@@ -231,10 +233,10 @@ whatever you're about to change, before you change it.
 - [WP 5.0A — Navigation Framework Architecture](03%20Work%20Packages/WP5.0A-navigation-framework-architecture.md)
 - [WP 5.0B — Navigation Framework Implementation](03%20Work%20Packages/WP5.0B-navigation-framework-implementation.md)
 - [WP 5.0C — Shell & Composition Framework Architecture](03%20Work%20Packages/WP5.0C-shell-and-composition-framework-architecture.md)
+- [WP 5.0D — Shell & Composition Framework Implementation](03%20Work%20Packages/WP5.0D-shell-and-composition-framework-implementation.md)
 
-Still to come: `WP 5.0D` (Shell & Composition Framework Implementation),
-`WP 5.1` (Command Framework) onward — see `docs/releases/v0.5.0/
-WorkPackages.md` for the full, current plan.
+Still to come: `WP 5.1` (Command Framework) onward — see
+`docs/releases/v0.5.0/WorkPackages.md` for the full, current plan.
 
 ## Reference Material
 

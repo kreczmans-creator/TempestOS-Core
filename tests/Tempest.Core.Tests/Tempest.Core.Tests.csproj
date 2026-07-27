@@ -21,6 +21,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Tempest.Core\Tempest.Core.csproj" />
     <ProjectReference Include="..\..\src\Samples\Tempest.Samples\Tempest.Samples.csproj" />
+    <ProjectReference Include="..\..\src\Tempest.App\Tempest.App.csproj" />
   </ItemGroup>
 
 </Project>

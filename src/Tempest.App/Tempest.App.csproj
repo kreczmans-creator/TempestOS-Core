@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Tempest.Core\Tempest.Core.csproj" />
+    <ProjectReference Include="..\Samples\Tempest.Samples\Tempest.Samples.csproj" />
   </ItemGroup>
 
   <PropertyGroup>

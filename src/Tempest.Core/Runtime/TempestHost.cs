@@ -66,6 +66,7 @@ public sealed class TempestHost : ITempestHost
     private IRuntimeModuleManager? _moduleManager;
     private IModuleLifecycleManager? _lifecycleManager;
     private IHostedServiceManager? _hostedServiceManager;
+    private ITempestServiceProvider? _services;
 
     internal TempestHost(
         IReadOnlyList<IConfigurationSource> configurationSources,
@@ -86,6 +87,16 @@ public sealed class TempestHost : ITempestHost
         {
             lock (_gate)
                 return _state;
+        }
+    }
+
+    /// <inheritdoc />
+    public ITempestServiceProvider? Services
+    {
+        get
+        {
+            lock (_gate)
+                return _services;
         }
     }
 
@@ -225,6 +236,10 @@ public sealed class TempestHost : ITempestHost
         runToken.ThrowIfCancellationRequested();
 
         ITempestServiceProvider serviceProvider = new TempestServiceProvider(services, logger);
+
+        lock (_gate)
+            _services = serviceProvider;
+
         logger.Information("Host lifecycle phase completed: Dependency Injection Built.");
 
         runToken.ThrowIfCancellationRequested();

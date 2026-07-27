@@ -2,15 +2,15 @@
 
 ## 1. Introduction
 
-The Shell (designed `WP 5.0C`, `ADR-0033`/`ADR-0034`/`ADR-0035`) is
-TempestOS's answer to a question the platform has been able to avoid
-until now: once every platform capability exists — Discovery,
-Dependency Injection, the Event Bus, Navigation — *something* has to
-actually assemble a running instance and put it in front of a person.
-This document teaches the reasoning behind that something's design — not
-its exact method signatures, which belong to `Shell & Composition
-Framework Architecture.md` and will exist in code once `WP 5.0D`
-implements them.
+The Shell (designed `WP 5.0C`, implemented `WP 5.0D`,
+`ADR-0033`/`ADR-0034`/`ADR-0035`) is TempestOS's answer to a question the
+platform has been able to avoid until now: once every platform capability
+exists — Discovery, Dependency Injection, the Event Bus, Navigation —
+*something* has to actually assemble a running instance and put it in
+front of a person. This document teaches the reasoning behind that
+something's design — not its exact method signatures, which belong to
+`Shell & Composition Framework Architecture.md` and now exist in code,
+as `TempestShell` (`Tempest.App.Shell`), exactly as designed.
 
 ## 2. Purpose
 
@@ -162,11 +162,30 @@ ever registered in the container at all. Visibility of the container
 object and registration of a specific service are two separate
 questions; this design only changes the first.
 
+**Assuming referencing a type's `const` field loads its declaring
+assembly.** A genuine implementation-time finding (`WP 5.0D`): the
+Shell's own page mapping keys itself off
+`NavigationSampleModule.NavigationItemId` — a compile-time
+`const string`. The C# compiler inlines a `const`'s value directly into
+the *referencing* assembly's own IL; nothing about reading it requires
+the CLR to load the *declaring* assembly at runtime. Discovery only sees
+what `AppDomain.CurrentDomain.GetAssemblies()` already contains — so
+without an explicit `typeof(NavigationSampleModule).Assembly` access
+forcing the load first, `Tempest.Samples`'s own modules would never
+appear, and Discovery would silently find zero of them. The general
+lesson: a `const` reference and a `typeof`/instance reference look
+similar in source but carry a materially different runtime guarantee —
+worth knowing before assuming "I referenced the type, so its assembly
+must be loaded."
+
 ## 12. Future Evolution
 
-- `WP 5.0D` implements this design against the real `TempestHost` and
-  `INavigationProvider`, mirroring the Event Bus's and Navigation's own
-  implementation-then-proof sequence.
+- `WP 5.0D` implemented this design exactly as approved, against the real
+  `TempestHost`, `NavigationSampleModule`, and
+  `SecondaryNavigationSampleModule` — mirroring the Event Bus's and
+  Navigation's own implementation-then-proof sequence, and surfacing one
+  genuine, non-obvious finding along the way: see "Common Architectural
+  Mistakes," below, on `const` fields and assembly loading.
 - `WP 5.1` (Command Framework) becomes a new source of Shell input
   handling, wired exactly as `ADR-0022` already illustrates.
 - `WP 5.2` (Diagnostics) populates the Shell's already-reserved Status
@@ -186,6 +205,12 @@ questions; this design only changes the first.
    (`ADR-0009`'s own "eventually `Program.cs`") is worth revisiting
    deliberately once the platform is ready for it, rather than treating
    it as settled simply because time has passed since it was written.
+4. A `const` field is resolved entirely at compile time, in the
+   *referencing* assembly — reading one is not evidence the *declaring*
+   assembly has been, or ever will be, loaded at runtime. Where an
+   assembly's mere presence matters (as it does for reflection-based
+   discovery), force the load explicitly and say why, rather than relying
+   on an incidental-looking reference to do it implicitly.
 
 ## Related Documents
 

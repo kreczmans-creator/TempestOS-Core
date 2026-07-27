@@ -10,7 +10,7 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | Direct source inspection (`grep -rhoP "^namespace" src/`). |
 | **Review Frequency** | Updated whenever a new namespace is introduced under `src/`. |
-| **Last Reviewed** | 2026-07-27 (WP 5.0B). |
+| **Last Reviewed** | 2026-07-27 (WP 5.0D). |
 | **Related Documents** | `docs/architecture/Engineering Glossary.md` (`Tempest.Core.Runtime` vs. `Tempest.Core.Hosting`, ADR-0016); `Interface Register.md`; `Exception Register.md`. |
 | **Related ADRs** | ADR-0016, ADR-0024. |
 | **Related Academy Articles** | `docs/academy/02 Runtime Architecture/06-platform-layering.md`. |
@@ -38,12 +38,13 @@
 | `Tempest.Core.Hosting` | Tempest.Core | 1 | Pre-module-pipeline `HostingService` — environment/deployment adapters, reframed (not replaced) by ADR-0016 | Pre-dates Claude-developed history (Unknown exact origin) |
 | `Tempest.Core.Commands` | Tempest.Core | 1 | `ICommand` contract only — no dispatcher yet | WP 4.0 |
 | `Tempest.Core.Bootstrap` | Tempest.Core | 1 | Pre-module-pipeline `BootstrapService` | Pre-dates Claude-developed history (Unknown exact origin) |
-| *(no namespace declared — global namespace)* | Tempest.Core, Tempest.App | 7 | `AssemblyInfo.cs`, `Program.cs`, `ApplicationConfiguration.cs`, `ConfigurationService.cs`, `LoggingService.cs`, `ProjectModel.cs`, `ProjectNumberGenerator.cs` — all pre-module-pipeline, bootstrap-era types | Pre-dates Claude-developed history (Unknown exact origin) |
+| `Tempest.App.Shell` | Tempest.App | 3 | `IPage`, `PlaceholderPage`, `TempestShell` — the application shell, `Tempest.App`'s own composition root | WP 5.0C (design), WP 5.0D (implementation) |
+| *(no namespace declared — global namespace)* | Tempest.Core, Tempest.App | 7 | `AssemblyInfo.cs`, `Program.cs` (rewritten `WP 5.0D` as the real entry point; still top-level statements, still global namespace), `ApplicationConfiguration.cs`, `ConfigurationService.cs`, `LoggingService.cs`, `ProjectModel.cs`, `ProjectNumberGenerator.cs` — the latter five pre-module-pipeline, bootstrap-era types, now unreferenced by `Program.cs` but untouched and unmigrated (`WP 5.0C`'s own disclosed scope boundary) | Pre-dates Claude-developed history (Unknown exact origin) |
 
-**Total: 16 namespaces (15 declared + the global namespace) across 3
-projects, 116 `.cs` files under `src/` excluding generated `obj`/`bin`
-artifacts (Verified by direct count; adds `Tempest.Core.Navigation`'s 7
-files and 3 new `Tempest.Samples` files, `WP 5.0B`).**
+**Total: 17 namespaces (16 declared + the global namespace) across 3
+projects, 119 `.cs` files under `src/` excluding generated `obj`/`bin`
+artifacts (Verified by direct count; adds `Tempest.App.Shell`'s 3 files,
+`WP 5.0D`).**
 
 ## A Note on the Four Pre-Claude Namespaces
 

@@ -10,7 +10,7 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | Direct repository inspection (`find`, `wc`, `git log`) performed as part of this Work Package. |
 | **Review Frequency** | Re-measured at each Governance Baseline review, or on request. |
-| **Last Reviewed** | 2026-07-27 (WP 5.0C, Shell & Composition Framework Architecture). |
+| **Last Reviewed** | 2026-07-27 (WP 5.0D, Shell & Composition Framework Implementation). |
 | **Related Documents** | `Test Register.md`; `Namespace Register.md`; `Engineering Evolution Register.md`. |
 | **Related ADRs** | None directly. |
 | **Related Academy Articles** | None directly — this is a raw metrics snapshot, not a teaching document. |
@@ -160,6 +160,33 @@ additions moved.
 | Executed tests (`dotnet test`) | 400, 0 failures | 400, 0 failures (unchanged — architecture-only, by design) |
 | Build warnings/errors | 0/0 | 0/0 (unchanged) |
 
+## Snapshot: 2026-07-27 (WP 5.0D — Shell & Composition Framework Implementation)
+
+The first implementation Work Package since `WP 5.0B` to change
+`src/`/`tests/` — implements `ITempestHost.Services` and
+`Tempest.App.Shell` (`TempestShell`, `IPage`, `PlaceholderPage`), and
+rewrites `Program.cs` as the real entry point.
+
+| Metric | WP 5.0C | WP 5.0D (current) |
+|---|---|---|
+| `src/` `.cs` files / lines | 116 / 7,231 | 119 / 7,564 (adds 3 `Tempest.App.Shell` files; `Program.cs` rewritten in place) |
+| `tests/` `.cs` files / lines | 58 / 8,163 | 60 / 8,384 (adds `Shell/TempestShellTests.cs`, `PlaceholderPageTests.cs`; extends `Runtime/TempestHostTests.cs`) |
+| Executed tests (`dotnet test`) | 400, 0 failures | **446, 0 failures** (46 new) |
+| Namespaces under `src/` | 16 declared + 1 global | 17 declared + 1 global (adds `Tempest.App.Shell`) |
+| Project references | 4 projects, 4 edges | 4 projects, 6 edges (adds `Tempest.App` → `Tempest.Samples`; `Tempest.Core.Tests` → `Tempest.App`) |
+| Architecture documents (`docs/architecture/`) | 18 | 18 (unchanged — `Shell & Composition Framework Architecture.md`'s own status field updated in place, no new document) |
+| Academy articles (`docs/academy/`, all subfolders) | 68 | 69 (adds `WP5.0D-shell-and-composition-framework-implementation.md`) |
+| `docs/` `.md` files | 168 | 169 |
+| Governance documents (`docs/governance/`, all subfolders) | 32 | 32 (unchanged — updates existing registers rather than adding new ones) |
+| Total commits | 54 | 55 (before this Work Package's own commit) |
+| Build warnings/errors | 0/0 | 0/0 (unchanged) |
+
+**A genuine application behaviour change, not merely a code change:**
+running the built application (`dotnet run` against `Tempest.App`) now
+starts a real `TempestHost`, discovers all five `Tempest.Samples`
+modules, and presents a real, interactive Navigation/Content region —
+confirmed by direct execution, not merely by the test suite.
+
 ## Governance Suite Size (Introduced by This Work Package, WP 4.5A)
 
 | Metric | Value |
@@ -181,7 +208,7 @@ is offered.
 ## Cross-Reference Check
 
 The ADR count (35), Rejected Designs count (37), Academy article count
-(68), test count (400), and build status (0/0) above are each
+(69), test count (446), and build status (0/0) above are each
 cross-checked directly against `ADR Register.md`, `Rejected Designs
 Register.md`, `Academy Register.md`, `Test Register.md`, and `Validation
 Register.md` respectively — all consistent, no discrepancy found.

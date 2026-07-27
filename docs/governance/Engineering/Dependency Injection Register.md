@@ -10,7 +10,7 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | `src/Tempest.Core/Runtime/TempestHost.cs` (the registration call sites); `src/Tempest.Core/DependencyInjection/`. |
 | **Review Frequency** | Updated whenever `TempestHost`'s Platform Services Registered phase changes, or a new `IServiceCollection` extension method is added. |
-| **Last Reviewed** | 2026-07-27 (WP 5.0B). |
+| **Last Reviewed** | 2026-07-27 (WP 5.0D) — re-verified, unchanged: no new registration call site was added. |
 | **Related Documents** | `docs/architecture/Host Lifecycle.md` (Phase 6); `docs/architecture/Ownership Matrix.md`; `Interface Register.md`. |
 | **Related ADRs** | ADR-0005 through ADR-0009, ADR-0011, ADR-0017, ADR-0020. |
 | **Related Academy Articles** | `docs/academy/01 Engineering Principles/05-dependency-injection.md`; `docs/academy/03 Work Packages/WP2.4-dependency-injection.md`. |
@@ -51,6 +51,13 @@ no request/scope concept to justify one.
 **Total distinct registration call sites in `TempestHost.cs`: 9 (Verified
 by direct line count of Phase 6's own registration block; adds
 `INavigationProvider`, `WP 5.0B`).**
+
+**A new external consumption path, not a new registration (`WP 5.0D`).**
+`ITempestHost.Services` (ADR-0034) exposes read-only resolution against
+this exact same registration table to a caller that is not itself a
+module — `Tempest.App`'s own Shell, first implemented `WP 5.0D`. No new
+row belongs in the table above: `Services` changes *who can resolve*
+what is already registered, never *what is registered*.
 
 ## Host-Owned Collaborators Deliberately Never Registered (ADR-0017)
 

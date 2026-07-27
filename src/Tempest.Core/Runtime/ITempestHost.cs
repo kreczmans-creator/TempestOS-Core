@@ -1,3 +1,5 @@
+using Tempest.Core.DependencyInjection;
+
 namespace Tempest.Core.Runtime;
 
 /// <summary>
@@ -23,6 +25,34 @@ public interface ITempestHost : IAsyncDisposable
     /// Gets the host's current lifecycle state.
     /// </summary>
     HostState State { get; }
+
+    /// <summary>
+    /// Gets the platform's dependency injection container, or
+    /// <see langword="null"/> if the Dependency Injection Built phase has not
+    /// completed yet (before <see cref="RunAsync"/> has progressed far enough,
+    /// or before it has been called at all).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Additive, read-only, and DI-public-only (ADR-0034): resolves exactly
+    /// what a module could already resolve via ordinary constructor
+    /// injection — <see cref="Events.IEventBus"/>,
+    /// <see cref="Navigation.INavigationProvider"/>, and so on — for an
+    /// external consumer (the Shell) that is not itself a module. Discovery,
+    /// Registration, Lifecycle, and Hosted Service orchestration remain
+    /// exactly as unreachable as before (ADR-0017): none of them is ever
+    /// added to the underlying <see cref="IServiceCollection"/> in the first
+    /// place, so exposing this property cannot make any of them resolvable.
+    /// </para>
+    /// <para>
+    /// Once non-<see langword="null"/>, remains non-<see langword="null"/>
+    /// for the remainder of this instance's life, including after
+    /// <see cref="HostState.Disposed"/> — the container itself is not torn
+    /// down by <see cref="IAsyncDisposable.DisposeAsync"/>, since Service
+    /// Disposal is a no-op today (see <c>Failure Behaviour.md</c>).
+    /// </para>
+    /// </remarks>
+    ITempestServiceProvider? Services { get; }
 
     /// <summary>
     /// Runs the host: builds every platform service in order, drives every
