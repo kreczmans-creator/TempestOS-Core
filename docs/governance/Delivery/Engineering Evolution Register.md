@@ -10,7 +10,7 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | `git log` (full history, both pre- and post-Claude). |
 | **Review Frequency** | Updated at each major milestone (a new release, a new governance discipline adopted). |
-| **Last Reviewed** | 2026-07-27 (WP 5.0A). |
+| **Last Reviewed** | 2026-07-27 (WP 5.0C, Shell & Composition Framework Architecture). |
 | **Related Documents** | `Decision Register.md`; `Release Register.md`; `Repository Metrics Register.md`. |
 | **Related ADRs** | None directly. |
 | **Related Academy Articles** | `docs/academy/00 Introduction/00-welcome-to-the-academy.md` ("Where This History Begins"). |
@@ -50,7 +50,8 @@ process exists to draw on. Everything from `7514b9d` onward is
 | 2026-07-25 | Platform Foundation Closeout (`WP 4.5B`): formally closes the Foundation phase, adds `PROJECT_STATUS.md`, `Platform Foundation Completion Report.md`, `Contributor Learning Path.md`, `Engineering Lifecycle.md`, `Future Work Package Guidelines.md`, and extends Engineering Governance with Repository Organisation (§11) and Naming Conventions (§12) | `eb19605` |
 | 2026-07-27 | `v0.4.0` "Platform Foundation" released — rescoped to the Foundation-phase scope, merged into `main`, tagged `v0.4.0` | `2c88c07` (prep), `5802b92` (merge) |
 | 2026-07-27 | Navigation Framework Architecture (`WP 5.0A`), the first Work Package of the `v0.5.0` "Developer Experience" release: `ADR-0031`/`ADR-0032`, `Navigation Framework Architecture.md`, `RD-0030`–`RD-0033`, and the `v0.4.0`→`v0.5.0` Developer Experience Work Package renumbering | `c3f9246` |
-| 2026-07-27 | **This Work Package** — Navigation Framework Implementation (`WP 5.0B`): `Tempest.Core.Navigation` (`NavigationItem`, `INavigationProvider`/`NavigationService`, `NavigationRequestedEvent`, exception hierarchy), three new `Tempest.Samples` reference modules, registered in `TempestHost`'s existing Platform Services Registered phase, 45 new tests (400 total) | This commit |
+| 2026-07-27 | Navigation Framework Implementation (`WP 5.0B`): `Tempest.Core.Navigation` (`NavigationItem`, `INavigationProvider`/`NavigationService`, `NavigationRequestedEvent`, exception hierarchy), three new `Tempest.Samples` reference modules, registered in `TempestHost`'s existing Platform Services Registered phase, 45 new tests (400 total) | `df4cb45` |
+| 2026-07-27 | **This Work Package** — Shell & Composition Framework Architecture (`WP 5.0C`): `ADR-0033`/`ADR-0034`/`ADR-0035`, `Shell & Composition Framework Architecture.md`, `RD-0034`–`RD-0037` — the first Work Package inserted into the `v0.5.0` sequence beyond its own original renumbered scope, designing the composition root `Tempest.App` has never had | This commit |
 
 ## Observed Pattern
 

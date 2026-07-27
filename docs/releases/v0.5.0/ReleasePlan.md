@@ -2,9 +2,10 @@
 
 ## Status
 
-**In progress.** `WP 5.0A` (Navigation Framework Architecture) and
-`WP 5.0B` (Navigation Framework Implementation) are complete. `WP 5.1`
-onward have not begun. This document exists to scope
+**In progress.** `WP 5.0A` (Navigation Framework Architecture),
+`WP 5.0B` (Navigation Framework Implementation), and `WP 5.0C` (Shell &
+Composition Framework Architecture) are complete. `WP 5.0D` onward have
+not begun. This document exists to scope
 the release before any code is written — per `docs/releases/
 FOUNDATION.md`, architecture precedes implementation for anything
 non-trivial. `docs/releases/v0.5.0/WorkPackages.md` is the living record
@@ -28,11 +29,12 @@ plugins) is designed at all, not merely a runtime other things load into.
 
 ## Objective
 
-Design and implement the Navigation Framework, then build the remaining
-Developer Experience capabilities `v0.4.0` deliberately deferred —
-Command Framework, Diagnostics Improvements, and Developer Experience
-tooling itself — without weakening or redesigning any architectural
-guarantee the Platform Foundation (`v0.4.0`) established.
+Design and implement the Navigation Framework, design and implement the
+Shell that lets `Tempest.App` finally consume it, then build the
+remaining Developer Experience capabilities `v0.4.0` deliberately
+deferred — Command Framework, Diagnostics Improvements, and Developer
+Experience tooling itself — without weakening or redesigning any
+architectural guarantee the Platform Foundation (`v0.4.0`) established.
 
 ## A Note on Renumbering
 
@@ -64,9 +66,18 @@ implementation order:
 
 - Navigation Framework Architecture (`WP 5.0A`) — **complete**.
 - Navigation Framework Implementation (`WP 5.0B`) — **complete**.
+- Shell & Composition Framework Architecture (`WP 5.0C`) — **complete**.
+- Shell & Composition Framework Implementation (`WP 5.0D`).
 - Command Framework (`WP 5.1`).
 - Diagnostics Improvements (`WP 5.2`).
 - Developer Experience Improvements (`WP 5.3`).
+
+`WP 5.0C`/`WP 5.0D` were not part of this release's original scope list —
+Repository Investigation during `WP 5.0C` confirmed `Tempest.App` still
+does not consume the platform at all (a gap `WP 5.0A` first disclosed),
+and this release's own scope grew, deliberately, to include designing and
+building the thing that finally closes it, rather than leaving Navigation
+implemented with no real consumer for another full release.
 
 ## Explicitly Out of Scope
 
@@ -76,12 +87,11 @@ implementation order:
   `v0.3.0`/`v0.4.0` — the Platform Foundation is stable and is being
   built *on*, not revisited, absent a specific, documented engineering
   reason (`docs/governance/Future Work Package Guidelines.md`).
-- A rendering/UI implementation of any kind. `WP 5.0A`'s own architecture
-  explicitly keeps rendering out of `Tempest.Core`, and `WP 5.0B`
-  implemented exactly that boundary — `Tempest.App` was left untouched.
-  `Tempest.App`'s own eventual navigation-aware console rendering remains
-  unscheduled, a future Work Package's own concern, not a platform
-  capability.
+- A rendering/UI *implementation* of any kind in `WP 5.0C` specifically —
+  `WP 5.0A`'s own architecture keeps rendering out of `Tempest.Core`, and
+  `WP 5.0B` implemented exactly that boundary; `WP 5.0C` designs, but does
+  not build, the Shell that will eventually render into `Tempest.App` —
+  that implementation is `WP 5.0D`'s own, explicitly scheduled, concern.
 - A permission/authorization model — `RD-0033` defers this explicitly
   until a real authentication/authorization concept exists anywhere in
   this platform.
@@ -94,16 +104,21 @@ implementation order:
   commit, exactly as they did throughout the Platform Foundation.
 - No Platform Foundation ADR is silently contradicted; every genuinely
   new architectural decision this release requires gets its own ADR.
-  Two are already decided ahead of implementation: `ADR-0031` (Navigation
-  belongs in `Tempest.Core`; rendering is an application responsibility)
-  and `ADR-0032` (Navigation is DI-public, registered imperatively,
-  reusing the Event Bus).
+  Five are already decided ahead of implementation: `ADR-0031` (Navigation
+  belongs in `Tempest.Core`; rendering is an application responsibility),
+  `ADR-0032` (Navigation is DI-public, registered imperatively, reusing
+  the Event Bus), `ADR-0033` (the Shell is a composition root, not a
+  module or hosted service), `ADR-0034` (`ITempestHost` exposes a
+  read-only service resolution surface), and `ADR-0035` (the Shell owns
+  page/view construction, independent of the DI container).
 - The Academy gains a retrospective for every Work Package in this
   release, exactly as every prior release's Work Packages did.
 
 ## Related Documents
 
 `WorkPackages.md` · `docs/architecture/Navigation Framework
-Architecture.md` · `ADR-0022`, `ADR-0031`, `ADR-0032` ·
-`docs/releases/v0.4.0/ReleasePlan.md` · `docs/releases/v0.4.0/
-WorkPackages.md` · `../FOUNDATION.md` · `../v0.4.0.md`.
+Architecture.md` · `docs/architecture/Shell & Composition Framework
+Architecture.md` · `ADR-0022`, `ADR-0031`, `ADR-0032`, `ADR-0033`,
+`ADR-0034`, `ADR-0035` · `docs/releases/v0.4.0/ReleasePlan.md` ·
+`docs/releases/v0.4.0/WorkPackages.md` · `../FOUNDATION.md` ·
+`../v0.4.0.md`.

@@ -10,7 +10,7 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | `docs/releases/v0.5.0/WorkPackages.md`; `docs/releases/v0.4.0/WorkPackages.md`; `docs/releases/v0.4.0/CHANGELOG.md`; `docs/releases/v0.3.0.md`. |
 | **Review Frequency** | Updated whenever a Work Package delivers or changes a major capability. |
-| **Last Reviewed** | 2026-07-27 (WP 5.0B, Navigation Framework Implementation). |
+| **Last Reviewed** | 2026-07-27 (WP 5.0C, Shell & Composition Framework Architecture). |
 | **Related Documents** | `Platform Services Register.md`; `Release Register.md`; `Traceability Matrix.md`. |
 | **Related ADRs** | See `Platform Services Register.md` for the full per-service ADR list. |
 | **Related Academy Articles** | See `Academy Register.md`'s "03 Work Packages" table. |
@@ -53,14 +53,18 @@
 |---|---|---|
 | Navigation Framework Architecture | **Complete** | WP 5.0A (formerly WP 4.6A) |
 | Navigation Framework Implementation | **Implemented** | WP 5.0B (formerly WP 4.6B) |
+| Shell & Composition Framework Architecture | **Complete** | WP 5.0C (new — not part of the original `v0.4.0` plan) |
+| Shell & Composition Framework Implementation | Not started | WP 5.0D (new, planned, blocked on WP 5.0C) |
 | Command Framework (dispatcher) | Not started (contract only, WP 4.0) | WP 5.1 (formerly WP 4.7, planned) |
 | Diagnostics Improvements | Not started | WP 5.2 (formerly WP 4.8, planned) |
 | Developer Experience Improvements | Not started | WP 5.3 (formerly WP 4.9, planned) |
 
-**Total: 25 features tracked — 19 Implemented/Complete (17 from `v0.4.0`'s
-shipped scope, plus `WP 5.0A` and `WP 5.0B`), 3 Not Started (renumbered
-from `v0.4.0`'s deferred scope — see `docs/releases/v0.5.0/ReleasePlan.md`'s
-"A Note on Renumbering"), 2 audit/review milestones (no code by design).**
+**Total: 26 features tracked across all three phases (Verified by direct
+row count) — 22 Implemented/Complete (including 2 audit/review
+milestones with no code by design: Platform Services Architecture
+Review, Academy & Documentation Baseline Audit), 4 Not Started
+(`WP 5.0D`, new, plus 3 renumbered from `v0.4.0`'s deferred scope — see
+`docs/releases/v0.5.0/ReleasePlan.md`'s "A Note on Renumbering").**
 
 ## Cross-Reference Check
 

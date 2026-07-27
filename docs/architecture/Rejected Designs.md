@@ -950,3 +950,119 @@ of any kind yet modelled anywhere in this platform.
 
 **Source.** Navigation Framework Architecture.md, "Required for v0.5 vs.
 Deferred Beyond v0.5."
+
+---
+
+## RD-0034 — The Shell Implemented as a Module
+
+**Considered during:** WP 5.0C (Shell & Composition Framework
+Architecture).
+
+**Rejected because:** A module's `InitialiseAsync`/`StartAsync` are
+expected to *complete*, so `ModuleLifecycleManager`'s batch-per-phase
+orchestration can proceed to the next module and, eventually, so the
+Host can reach `Running`. A Shell whose own presentation loop blocks on
+console input has no natural completion point inside either lifecycle
+method — it would hang Host startup indefinitely, or be forced to spawn
+its own background thread from within a module anyway, at which point
+nothing about the module pipeline was actually serving the Shell's own
+purpose. A module is also, by construction, something the Host
+discovers, registers, and drives — the Shell must exist *before* the Host
+it presents even begins running, since it is the thing that constructs
+the Host in the first place, not something the Host constructs.
+
+**Reversibility.** Expensive to reverse later — every consumer of the
+Shell's own composition-root role would need to change if this were
+reversed after real implementation existed.
+
+**Revisit trigger.** None currently imagined. This would only become
+worth revisiting if TempestOS's own module lifecycle contract changed to
+support genuinely long-running, non-completing lifecycle methods — a
+change with much broader consequences than the Shell alone.
+
+**Source.** ADR-0033, Context and Decision; Shell & Composition Framework
+Architecture.md, "The Shell Is Not a Module or a Hosted Service."
+
+---
+
+## RD-0035 — The Shell Implemented as a Hosted Service
+
+**Considered during:** WP 5.0C (Shell & Composition Framework
+Architecture).
+
+**Rejected because:** `IHostedService.StartAsync`'s own contract states
+it is "invoked once, between Module Initialisation and Runtime Running" —
+`HostedServiceManager.StartAllAsync` must finish before the Host can
+reach `Running`, the identical bounded-completion expectation a module's
+own lifecycle methods carry. A blocking, interactive Shell cannot satisfy
+this any more than it could a module's `StartAsync`. Structurally, a
+hosted service is also something the Host constructs and starts *after*
+Module Initialisation — the Shell must exist before the Host it presents
+even begins running, which a hosted service, by definition, cannot.
+
+**Reversibility.** Expensive to reverse later, for the same reason as
+`RD-0034`.
+
+**Revisit trigger.** None currently imagined.
+
+**Source.** ADR-0033, Context and Decision; Shell & Composition Framework
+Architecture.md, "The Shell Is Not a Module or a Hosted Service."
+
+---
+
+## RD-0036 — Module/Plugin-Contributed Page Rendering via a DI-Routed or Reflection-Discovered View Registry
+
+**Considered during:** WP 5.0C (Shell & Composition Framework
+Architecture).
+
+**Rejected because:** Letting a module contribute its own page/view
+alongside the `NavigationItem` it registers would require that module to
+depend on some contract describing what a view is. That contract cannot
+live in `Tempest.Core.Navigation` without reintroducing the exact
+rendering-type leak `ADR-0031` forbids, and cannot live in `Tempest.App`
+either, since a module depending on `Tempest.App` would be a Module
+depending *upward* on the Shell's own layer, inverting `ADR-0023`'s
+downward-only four-layer model outright. No real plugin or module exists
+today that needs to contribute its own rendering — designing a
+contribution mechanism now, with zero real consumers, would be
+speculative capability.
+
+**Reversibility.** Purely additive and cheap to introduce later — a
+future, narrow `Tempest.App`-side contract a plugin's own assembly could
+implement without a compile-time dependency (mirroring how Plugin
+Manifest already separates "what a plugin declares" from "what the
+runtime decides") would not require changing anything about
+`Tempest.Core.Navigation`'s own, already-implemented shape.
+
+**Revisit trigger.** A real plugin or module with a genuine, demonstrated
+need to contribute its own page rendering, not a hypothetical one.
+
+**Source.** ADR-0035, Context and Decision; Shell & Composition Framework
+Architecture.md, "Page/View Construction."
+
+---
+
+## RD-0037 — Multiple Concurrent Workspaces
+
+**Considered during:** WP 5.0C (Shell & Composition Framework
+Architecture).
+
+**Rejected because:** A console shell has exactly one input stream and
+one output stream; there is no realistic `v0.5` need for more than one
+concurrent workspace, and no plausible near-term consumer. Unlike this
+document's usual "deferred, not rejected" treatment of capabilities with
+a plausible future need, this is rejected outright for the console
+shell this Work Package designs — a future, fundamentally different
+shell technology (a GUI, a web front end) would revisit multiple
+workspaces on its own terms, as its own architecture, not as an extension
+of this one.
+
+**Reversibility.** Not applicable to this shell — a genuinely different
+future shell would design its own answer from its own constraints, not
+inherit this one's.
+
+**Revisit trigger.** Not this shell. A future, structurally different
+shell technology, designed on its own merits.
+
+**Source.** Shell & Composition Framework Architecture.md, "Composition
+Model."

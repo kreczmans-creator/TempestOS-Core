@@ -359,8 +359,8 @@ Module* (Academy, new); WP 4.0 retrospective (*Platform Contracts*).
 
 ## Host *(implemented — WP 2.7B)*
 
-**Responsibility.** The composition root: assembles Configuration, Logging,
-Discovery, Registration, Dependency Injection, and Lifecycle into one running
+**Responsibility.** Assembles Configuration, Logging, Discovery,
+Registration, Dependency Injection, and Lifecycle into one running
 instance, and owns orchestration, startup, shutdown, cancellation, and
 disposal ordering. Does **not** own business logic, configuration parsing,
 module implementation, or logging implementation. Implemented exactly as
@@ -368,6 +368,20 @@ designed — responsibilities, a 13-phase lifecycle, complete startup/shutdown
 sequence diagrams, its own 7-state machine, and a full failure model; see
 *Runtime Host Architecture.md* and its companion documents, all now marked
 implemented.
+
+**A naming clarification, disclosed rather than left to collide
+silently** (`WP 5.0C`): earlier text here called the Host itself "the
+composition root," informally. `ADR-0009`'s own, authoritative definition
+is narrower and different in kind — "whatever code assembles a *running*
+TempestOS instance... eventually `Program.cs`" — which describes whatever
+*constructs* `ITempestHost` (today, test setup; designed, `WP 5.0C`, to
+become the Shell), not the Host's own internal wiring of its six
+constituent services. Both uses were accurate to what they described;
+only the shared label was ambiguous. See `Shell & Composition Framework
+Architecture.md` and `ADR-0033` for the Shell's own composition-root role
+in `ADR-0009`'s sense, and `ADR-0034` for the read-only `Services`
+property (designed, not yet implemented) that lets it reach
+`INavigationProvider`/`IEventBus` once built.
 
 **Status.** Implemented (WP 2.7B), as `TempestHost`/`TempestHostBuilder` in
 `Tempest.Core.Runtime`. Previously flagged as a gap across the WP 2.4, WP
@@ -383,9 +397,11 @@ ADR-0011), then Dependency Injection, then Lifecycle.
 `TempestHostBuilder`, `HostState`, `HostException`,
 `InvalidHostStateTransitionException`.
 
-**Consumers (anticipated).** `Tempest.App` / the process entry point; future
-hosted services, background workers, and — pending their own classification
-under ADR-0013 — a Requirements Engine and/or Project Engine.
+**Consumers (anticipated).** `Tempest.App`'s own Shell (designed, `WP
+5.0C`; not yet implemented) — the process entry point's own composition
+root, per `ADR-0033`; future hosted services, background workers, and —
+pending their own classification under ADR-0013 — a Requirements Engine
+and/or Project Engine.
 
 **ADR references.** ADR-0004 (disposal reused at Host level, and its WP 2.7B
 update), ADR-0008 (why Discovery/Registration precede DI — see ADR-0011),
@@ -398,7 +414,10 @@ Restartable*), ADR-0016 (*The Host Lives in Tempest.Core.Runtime, Distinct
 From Tempest.Core.Hosting*), ADR-0017 (*Discovery, Registration, and
 Lifecycle Remain Host-Owned Collaborators, Not Public DI Services*),
 ADR-0018 (*Startup Cancellation Transitions to Controlled Shutdown*),
-ADR-0019 (*Host Disposal Is Always an Explicit, Idempotent Call*).
+ADR-0019 (*Host Disposal Is Always an Explicit, Idempotent Call*),
+ADR-0033 (*The Shell Is a Composition Root Layered Above the Runtime
+Host*, designed — `WP 5.0C`), ADR-0034 (*`ITempestHost` Exposes a
+Read-Only Service Resolution Surface*, designed — `WP 5.0C`).
 
 **Academy references.** WP 2.7 retrospective (*Runtime Host Architecture
 Review*); WP 2.7B retrospective (*Runtime Host Implementation*, including its

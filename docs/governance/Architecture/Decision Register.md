@@ -10,7 +10,7 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | `docs/releases/v0.4.0/WorkPackages.md`, `docs/releases/v0.4.0/CHANGELOG.md`, and the individual Work Package retrospectives named in each entry below. |
 | **Review Frequency** | Updated whenever a Work Package makes a significant process or sequencing decision that is not itself ADR-eligible. |
-| **Last Reviewed** | 2026-07-27 (WP 5.0A). |
+| **Last Reviewed** | 2026-07-27 (WP 5.0C). |
 | **Related Documents** | `ADR Register.md`; `Rejected Designs Register.md`; `Governance Register.md`; `Engineering Evolution Register.md`. |
 | **Related ADRs** | None directly — by definition, every entry below was judged *not* to require one. Where a decision later hardened into an ADR-eligible one, this is noted per entry. |
 | **Related Academy Articles** | `docs/academy/06 Engineering Standards/Engineering Governance.md` (§5, the ADR/non-ADR boundary this register exists to respect). |
@@ -47,19 +47,20 @@ source document cited in its own row.
 | D-013 | Formally close the Foundation phase as its own dedicated Work Package (`WP 4.5B`), producing `PROJECT_STATUS.md`, a Foundation Completion Report, a Contributor Learning Path, an Engineering Lifecycle document, and standing Future Work Package Guidelines, rather than letting the Foundation phase's end be implicit | 2026-07-25 | This Work Package's own brief | Process — milestone closeout |
 | D-014 | Extend `Engineering Governance.md` with two new sections (§11 Repository Organisation, §12 Naming Conventions) rather than create separate new standard documents, since both codify patterns already applied consistently since `WP 2.1` | 2026-07-25 | `Engineering Governance.md` §11/§12 | Process — standards consolidation, avoiding duplication |
 | D-015 | Renumber the Developer Experience phase's four remaining Work Packages (`WP 4.6A`→`WP 5.0A`, `WP 4.6B`→`WP 5.0B`, `WP 4.7`→`WP 5.1`, `WP 4.8`→`WP 5.2`, `WP 4.9`→`WP 5.3`) to reflect that they now belong to the `v0.5.0` release, not `v0.4.0` — the old `v0.4.0/WorkPackages.md` entries are retained, each carrying a redirect note, per this project's own "never delete, mark superseded" convention | 2026-07-27 | `docs/releases/v0.5.0/ReleasePlan.md`'s "A Note on Renumbering" | Process — release-sequencing, no scope or objective change |
+| D-016 | Insert a new `WP 5.0C`/`WP 5.0D` pair (Shell & Composition Framework Architecture/Implementation) into the `v0.5.0` sequence, between `WP 5.0B` and `WP 5.1`, without renumbering `WP 5.1`–`WP 5.3` — grown beyond this release's original scope once `WP 5.0C`'s own Repository Investigation confirmed `Tempest.App` still had no composition root consuming the platform | 2026-07-27 | `docs/releases/v0.5.0/ReleasePlan.md`'s "Scope" section; `docs/academy/03 Work Packages/WP5.0C-shell-and-composition-framework-architecture.md` | Sequencing — mid-release scope growth, no renumbering of unrelated Work Packages |
 
-**Total: 15 entries.**
+**Total: 16 entries.**
 
 ## Common Pattern
 
-Eleven of the fourteen entries above are **process decisions** (how the
+Twelve of the sixteen entries above are **process decisions** (how the
 project works), not **architectural decisions** (how the software is
 built) — the correct classification under §5, since none introduced a
 genuine, seriously-considered-and-rejected technical alternative of its
-own. The three sequencing decisions (D-006, D-007, D-008) are downstream
-consequences of risk assessment recorded in `Risks.md`, not architecture
-in the ADR sense — reordering *when* something is built, not deciding
-*how*.
+own. The four sequencing decisions (D-006, D-007, D-008, D-016) are
+downstream consequences of risk assessment or investigation findings, not
+architecture in the ADR sense — reordering or extending *when* something
+is built, not deciding *how*.
 
 ## Cross-Reference Check
 

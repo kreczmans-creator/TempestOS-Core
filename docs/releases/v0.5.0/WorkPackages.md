@@ -150,6 +150,129 @@ implement; see the `WP 5.0B` retrospective's own "Readiness assessment."
 
 ---
 
+## WP 5.0C — Shell & Composition Framework Architecture
+
+**Status note.** Complete. Design: `docs/architecture/Shell &
+Composition Framework Architecture.md`, `ADR-0033`, `ADR-0034`,
+`ADR-0035`, and the `WP 5.0C` Academy retrospective. Not part of the
+original `v0.4.0` plan — a new Work Package this release's own sequence
+grew to need, inserted between `WP 5.0B` and `WP 5.1` without renumbering
+either.
+
+### Objective
+
+Design how `Tempest.App` consumes the platform: the Shell that becomes
+its own composition root, presenting Navigation and the Event Bus to a
+user, without becoming a second place platform behaviour is decided.
+
+### Scope
+
+- How `Tempest.App` currently works (confirmed: it does not construct or
+  run `TempestHost` at all — a bootstrap-era console loop, unchanged
+  since `WP 5.0A`'s own disclosure of the same fact).
+- The Shell's own structural classification (composition root, not a
+  module or hosted service) and the mechanism by which it reaches
+  DI-public platform services (`ITempestHost.Services`).
+- The application model: Workspace, Navigation Region, Content Region,
+  Status Bar, Dialogs, Notifications — which are required for `v0.5` and
+  which are explicitly deferred.
+- Page/view construction ownership, and whether dependency injection
+  participates in it.
+- **Explicitly out of scope**: any production code; migrating or
+  touching the bootstrap-era `BootstrapService`/`HostingService`/
+  `ProjectService` code itself.
+
+### Dependencies
+
+**`WP 5.0A`/`WP 5.0B`** (Navigation, complete — the first real platform
+capability the Shell consumes). Not dependent on **`WP 5.1`** (Command
+Framework) — the Shell's own composition model anticipates Commands as a
+future input source without requiring the dispatcher to exist yet.
+
+### Deliverables — Done
+
+- A written architecture document answering: what the Shell is
+  structurally; the platform/application boundary; the composition
+  model; how the Shell integrates with Navigation, the Event Bus, Hosted
+  Services, and (in future) Commands and Diagnostics.
+- Three new ADRs (`ADR-0033`, `ADR-0034`, `ADR-0035`); four new Rejected
+  Designs entries (`RD-0034`–`RD-0037`).
+
+### Acceptance Criteria — Met
+
+- A written architecture decision exists and was reviewed before
+  `WP 5.0D` begins. **Met.**
+- The design resolves how the Shell reaches a DI-public platform service
+  without weakening `ADR-0017`'s existing Host-owned/DI-public boundary.
+  **Met** — `ITempestHost.Services` (`ADR-0034`) exposes only what was
+  already DI-public; Discovery/Registration/Lifecycle/Hosted Service
+  orchestration remain unregistered and therefore unreachable.
+
+### Estimated Complexity
+
+**Realised as M** — three related mechanical questions (structural
+classification, service access, page ownership), each resolved by
+applying a test this release has now used repeatedly (does an
+already-proven pattern already answer this; does this dependency point
+downward), rather than requiring genuinely new architectural reasoning.
+
+### Risks
+
+None discovered. The central fact this Work Package designs around
+(`Tempest.App` never having constructed a real `ITempestHost`) was
+already disclosed once, during `WP 5.0A`'s own investigation — this Work
+Package is the designed response to it, not a newly found risk.
+
+---
+
+## WP 5.0D — Shell & Composition Framework Implementation
+
+**Status note.** Not started.
+
+### Objective
+
+Implement what `WP 5.0C` designed.
+
+### Scope
+
+Defined entirely by `WP 5.0C`'s own deliverable (`docs/architecture/Shell
+& Composition Framework Architecture.md`) — this entry is intentionally
+thin until implementation begins; the architecture itself, not this
+entry, is authoritative on shape.
+
+### Dependencies
+
+**`WP 5.0C`** (required, blocking; complete). **Not `WP 5.1`** (Command
+Framework) — `WP 5.0D` may proceed regardless of whether `WP 5.1` has
+landed yet, per the same orthogonality reasoning `ADR-0022` already
+established for Navigation.
+
+### Deliverables
+
+Whatever `WP 5.0C`'s architecture document specifies: `ITempestHost.Services`;
+the Shell itself as `Tempest.App`'s own composition root; Workspace,
+Navigation Region, and Content Region, populated; a reserved, unpopulated
+Status Bar region.
+
+### Acceptance Criteria
+
+Whatever `WP 5.0C`'s architecture document specifies, at minimum
+including: `Tempest.App` constructs and runs a real `ITempestHost`; the
+Shell resolves `INavigationProvider` through `Services` and renders its
+`Items`; selecting a navigation item is observed to update the Content
+Region via a real `NavigationRequestedEvent`.
+
+### Estimated Complexity
+
+**M.**
+
+### Risks
+
+Inherits any risk `WP 5.0C` did not fully resolve — none currently named;
+see the `WP 5.0C` retrospective's own "Readiness assessment."
+
+---
+
 ## WP 5.1 — Command Framework
 
 **Status note.** Not started; only its contract (`ICommand`, `WP 4.0`)

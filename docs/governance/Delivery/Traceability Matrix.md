@@ -10,11 +10,11 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | Every register in this governance suite; this matrix is the synthesis, not a new source of raw fact. |
 | **Review Frequency** | Updated whenever a new major capability completes its own Work Package. |
-| **Last Reviewed** | 2026-07-27 (WP 5.0B, Navigation Framework Implementation). |
+| **Last Reviewed** | 2026-07-27 (WP 5.0C, Shell & Composition Framework Architecture). |
 | **Related Documents** | Every register in `docs/governance/`. |
-| **Related ADRs** | All 32 (see per-row detail). |
+| **Related ADRs** | All 35 (see per-row detail). |
 | **Related Academy Articles** | See `Academy Register.md`. |
-| **Coverage Status** | Complete for every Implemented capability, including Navigation as of `WP 5.0B`. Not Yet Applicable for planned-but-unstarted capabilities (Command Framework dispatcher, Diagnostics Improvements, Developer Experience) — see Reason/Review Trigger below. |
+| **Coverage Status** | Complete for every Implemented capability, including Navigation as of `WP 5.0B`. Partial for the Shell (chain begun — Requirement through Architecture and Academy are complete; Implementation, Tests, and Release are pending `WP 5.0D`). Not Yet Applicable for planned-but-unstarted capabilities (Command Framework dispatcher, Diagnostics Improvements, Developer Experience) — see Reason/Review Trigger below. |
 
 ---
 
@@ -26,6 +26,9 @@ Developer Experience Improvements have no Work Package started yet
 because no chain has begun. **Review Trigger.** The Work Package that
 begins each one. Navigation is no longer in this category — its own
 chain is now fully traced; see the Matrix's own Navigation row, below.
+The Shell is also no longer in this category — its own chain began with
+`WP 5.0C`, though Implementation/Tests/Release remain pending `WP 5.0D`
+(see the Shell's own row, below, and the Coverage Status field above).
 
 ## Matrix
 
@@ -46,16 +49,23 @@ chain is now fully traced; see the Matrix's own Navigation row, below.
 | Event Bus | Publish/subscribe without direct module-to-module coupling | WP 4.4, WP 4.4D, WP 4.4E | ADR-0020, ADR-0028 | `Event Bus Architecture.md` | `IEventBus`, `EventBus`, `ClockModuleLifecycleEvent` | `Events/`, `Samples/` test suites | WP4.4, WP4.4D, WP4.4E retrospectives; *Building an Event-Driven Module* | v0.4.0 (Released) |
 | Background Services | Host-orchestrated background work, isolated/critical failure model | WP 4.5 (×2) | ADR-0021, ADR-0029, ADR-0030 | `Background Services Architecture.md`, `Host Lifecycle.md` (8.1/10.1) | `HostedServiceDiscoveryService`, `HostedServiceManager` | `BackgroundServices/`, `Runtime/` test suites | WP4.5 (×2) retrospectives; *Reflection-Based Discovery* (expanded), *Failure Isolation Across TempestOS* (Case 2) | v0.4.0 (Released) |
 | Navigation | Coherent navigation between built-in pages, modules, and plugins, without touching the Runtime Host | WP 5.0A, WP 5.0B | ADR-0022, ADR-0031, ADR-0032 | `Navigation Framework Architecture.md` | `NavigationItem`, `INavigationProvider`/`NavigationService`, `NavigationRequestedEvent`, `NavigationSampleModule` and companions | `Navigation/`, `Samples/` test suites | WP5.0A, WP5.0B retrospectives; *Navigation Architecture* | v0.5.0 (in progress) |
+| Shell & Composition Framework | Let `Tempest.App` consume the platform via its own composition root, presenting Navigation and the Event Bus to a user | WP 5.0C | ADR-0033, ADR-0034, ADR-0035 | `Shell & Composition Framework Architecture.md` | *Pending — WP 5.0D* (`ITempestHost.Services`, the Shell itself, designed, not yet coded) | *Pending — WP 5.0D* | WP5.0C retrospective; *Shell & Application Composition* | v0.5.0 (in progress) |
 
-**Total: 14 fully-traced (Implemented) capabilities.**
+**Total: 14 fully-traced (Implemented) capabilities, plus 1
+partially-traced capability (Shell & Composition Framework — chain begun,
+Implementation/Tests/Release pending).**
 
 ## Traceability Gaps Found
 
 **None** for any capability marked Implemented in `Feature Register.md`.
 Every capability above has at least one entry in every column — no
 Implemented capability lacks a test, an Academy retrospective, or a
-release association. The three remaining Not-Yet-Applicable capabilities
-(see Reason, above) correctly have no chain, because no chain has begun.
+release association. The Shell's own Implementation/Tests/Release cells
+are explicitly marked "Pending — WP 5.0D," not left blank — a disclosed,
+expected gap for a capability whose architecture phase just completed,
+not a silently missing link. The three remaining Not-Yet-Applicable
+capabilities (see Reason, above) correctly have no chain, because no
+chain has begun.
 
 ## Cross-Reference Check
 

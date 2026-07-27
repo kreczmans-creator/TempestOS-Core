@@ -10,7 +10,7 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | Direct repository inspection (`find`, `wc`, `git log`) performed as part of this Work Package. |
 | **Review Frequency** | Re-measured at each Governance Baseline review, or on request. |
-| **Last Reviewed** | 2026-07-27 (WP 5.0B, Navigation Framework Implementation). |
+| **Last Reviewed** | 2026-07-27 (WP 5.0C, Shell & Composition Framework Architecture). |
 | **Related Documents** | `Test Register.md`; `Namespace Register.md`; `Engineering Evolution Register.md`. |
 | **Related ADRs** | None directly. |
 | **Related Academy Articles** | None directly — this is a raw metrics snapshot, not a teaching document. |
@@ -137,6 +137,29 @@ The first Work Package since `v0.4.0` Release Engineering to change
 | Total commits | 52 | 53 (before this Work Package's own commit) |
 | Build warnings/errors | 0/0 | 0/0 (unchanged) |
 
+## Snapshot: 2026-07-27 (WP 5.0C — Shell & Composition Framework Architecture)
+
+Architecture-only Work Package — no production or test code changed
+since the WP 5.0B snapshot above; every `src/`/`tests/` figure is
+unchanged. Shown here are only the metrics this Work Package's own
+additions moved.
+
+| Metric | WP 5.0B | WP 5.0C (current) |
+|---|---|---|
+| `src/` `.cs` files / lines | 116 / 7,231 | 116 / 7,231 (unchanged) |
+| `tests/` `.cs` files / lines | 58 / 8,163 | 58 / 8,163 (unchanged) |
+| ADRs | 32 (`ADR-0001`–`ADR-0032`) | 35 (`ADR-0001`–`ADR-0035`, adds `ADR-0033`–`ADR-0035`) |
+| Rejected Designs entries | 33 (`RD-0001`–`RD-0033`) | 37 (`RD-0001`–`RD-0037`, adds `RD-0034`–`RD-0037`) |
+| Architecture documents (`docs/architecture/`) | 17 | 18 (adds `Shell & Composition Framework Architecture.md`) |
+| Academy articles (`docs/academy/`, all subfolders) | 66 | 68 (adds `10-shell-and-application-composition.md`, `WP5.0C-shell-and-composition-framework-architecture.md`) |
+| `docs/` `.md` files | 162 | 168 |
+| Governance documents (`docs/governance/`, all subfolders) | 32 | 32 (unchanged — this Work Package updates existing registers rather than adding new ones) |
+| Root `VERSION` | `0.4.0` | `0.4.0` (unchanged — v0.5.0 not yet tagged) |
+| Current branch | `feature/v0.5.0-developer-experience` | `feature/v0.5.0-developer-experience` (unchanged) |
+| Total commits | 53 | 54 (before this Work Package's own commit) |
+| Executed tests (`dotnet test`) | 400, 0 failures | 400, 0 failures (unchanged — architecture-only, by design) |
+| Build warnings/errors | 0/0 | 0/0 (unchanged) |
+
 ## Governance Suite Size (Introduced by This Work Package, WP 4.5A)
 
 | Metric | Value |
@@ -157,8 +180,8 @@ is offered.
 
 ## Cross-Reference Check
 
-The ADR count (32), Rejected Designs count (33), Academy article count
-(66), test count (400), and build status (0/0) above are each
+The ADR count (35), Rejected Designs count (37), Academy article count
+(68), test count (400), and build status (0/0) above are each
 cross-checked directly against `ADR Register.md`, `Rejected Designs
 Register.md`, `Academy Register.md`, `Test Register.md`, and `Validation
 Register.md` respectively — all consistent, no discrepancy found.
