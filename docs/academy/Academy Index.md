@@ -157,6 +157,18 @@ composition root.
 - ADR-0033 (the Shell is a composition root, not a module or hosted service), ADR-0034 (`ITempestHost` exposes a read-only service resolution surface), ADR-0035 (the Shell owns page/view construction, independent of the DI container).
 - See also ADR-0009 for the forward reference this Work Package fulfils, and [Navigation Architecture](02%20Runtime%20Architecture/09-navigation-architecture.md) for the Rendering Boundary this design's own page ownership directly completes.
 
+## Security
+
+The v0.5.0 Security Baseline (`WP 5.0S`) — the platform's first
+comprehensive security audit, and the standing reference every future
+Work Package's Definition of Done is checked against.
+
+- [WP 5.0S — Platform Security Baseline Audit](03%20Work%20Packages/WP5.0S-platform-security-baseline-audit.md) — the retrospective: threat modelling, secure platform design, secure plugin architecture, trust boundaries, least privilege, and secure engineering practice, taught from first principles.
+- `docs/security/Threat Model.md` — assets, actors, trust boundaries, and threat scenarios.
+- `docs/security/Security Principles.md` — the standing security principles the platform is designed against.
+- `docs/security/Platform Security Review v0.5.0.md` — the full audit findings; establishes the Security Baseline.
+- `docs/security/Security Roadmap.md` — prioritised future security work, sequenced against the Threat Model's own assumptions.
+
 ## Design Patterns
 
 Recurring structural patterns TempestOS actually uses, explained in terms
@@ -234,6 +246,7 @@ whatever you're about to change, before you change it.
 - [WP 5.0B — Navigation Framework Implementation](03%20Work%20Packages/WP5.0B-navigation-framework-implementation.md)
 - [WP 5.0C — Shell & Composition Framework Architecture](03%20Work%20Packages/WP5.0C-shell-and-composition-framework-architecture.md)
 - [WP 5.0D — Shell & Composition Framework Implementation](03%20Work%20Packages/WP5.0D-shell-and-composition-framework-implementation.md)
+- [WP 5.0S — Platform Security Baseline Audit](03%20Work%20Packages/WP5.0S-platform-security-baseline-audit.md)
 
 Still to come: `WP 5.1` (Command Framework) onward — see
 `docs/releases/v0.5.0/WorkPackages.md` for the full, current plan.
@@ -251,3 +264,4 @@ Documents outside `docs/academy/` maintained under the same obligation:
 - `docs/architecture/Platform Service Map.md`, `Engineering Glossary.md`, `Rejected Designs.md` — see Platform Architecture, above.
 - **This Academy audit's own deliverables**: [Academy Masterclass Roadmap](Academy%20Masterclass%20Roadmap.md), [Academy Audit Report](Academy%20Audit%20Report.md).
 - **The Governance Register suite's own deliverables (`WP 4.5A`)**: `docs/governance/Governance Index.md`, `Governance Philosophy.md`, `Governance Audit Report.md`, `Repository Maturity Report.md`.
+- **The v0.5.0 Security Baseline's own deliverables (`WP 5.0S`)**: `docs/security/Threat Model.md`, `Security Principles.md`, `Platform Security Review v0.5.0.md`, `Security Roadmap.md`.

@@ -81,6 +81,17 @@ lives and whether the Academy's own maintenance obligation is being met.
 - [Engineering Standards Register](Documentation/Engineering%20Standards%20Register.md)
 - [Governance Register](Documentation/Governance%20Register.md)
 
+## Security
+
+Standing documents tracking *what TempestOS protects, against whom, and
+to what standard* — the security baseline every future Work Package's
+Definition of Done is checked against.
+
+- [Threat Model](../security/Threat%20Model.md) — assets, actors, trust boundaries, and threat scenarios.
+- [Security Principles](../security/Security%20Principles.md) — the standing security principles the platform is designed against.
+- [Platform Security Review v0.5.0](../security/Platform%20Security%20Review%20v0.5.0.md) — the first comprehensive security audit; establishes the v0.5.0 Security Baseline.
+- [Security Roadmap](../security/Security%20Roadmap.md) — prioritised future security work, sequenced against the Threat Model's own assumptions.
+
 ## Delivery
 
 Registers tracking *what shipped, when, and why* — features, releases,

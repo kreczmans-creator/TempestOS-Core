@@ -10,7 +10,7 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | `docs/academy/` itself; `docs/academy/Academy Index.md` (the reader-facing navigation index this register cross-checks against). |
 | **Review Frequency** | Updated whenever a new Academy article is created — in practice, every Work Package (Engineering Governance §6). |
-| **Last Reviewed** | 2026-07-27 (WP 5.0D). |
+| **Last Reviewed** | 2026-07-28 (WP 5.0S). |
 | **Related Documents** | `docs/academy/Academy Index.md`; `docs/academy/Academy Audit Report.md`; `Engineering Standards Register.md`; `Feature Register.md`. |
 | **Related ADRs** | None directly — the Academy documents ADRs, it is not itself governed by one. |
 | **Related Academy Articles** | This register's entire scope. |
@@ -55,7 +55,7 @@
 | 09 | Navigation Architecture | WP 5.0A (new), WP 5.0B (implementation confirmed) |
 | 10 | Shell & Application Composition | WP 5.0C (new), WP 5.0D (implementation confirmed; `const`-field/assembly-loading finding added) |
 
-## 03 Work Packages (29 retrospectives)
+## 03 Work Packages (30 retrospectives)
 
 | Retrospective | Type |
 |---|---|
@@ -88,6 +88,7 @@
 | WP 5.0B — Navigation Framework Implementation | Implementation |
 | WP 5.0C — Shell & Composition Framework Architecture | Architecture (ADR-0033/0034/0035) |
 | WP 5.0D — Shell & Composition Framework Implementation | Implementation |
+| WP 5.0S — Platform Security Baseline Audit | Review/Audit |
 
 **Note.** `WP 4.4C` produced no code and no separate retrospective — its
 story is told inside the `WP 4.4` architecture retrospective's own
@@ -133,8 +134,8 @@ added `Engineering Lifecycle.md`).
 | `Contributor Learning Path.md` | Repository-wide onboarding sequence for a new contributor, added `WP 4.5B` |
 
 **Total: 1 (Introduction) + 11 (Engineering Principles) + 10 (Runtime
-Architecture) + 29 (Work Packages) + 4 (Design Patterns) + 5 (Case
-Studies) + 5 (Engineering Standards) + 4 (top-level meta) = 69 files
+Architecture) + 30 (Work Packages) + 4 (Design Patterns) + 5 (Case
+Studies) + 5 (Engineering Standards) + 4 (top-level meta) = 70 files
 under `docs/academy/` (Verified by direct file count).**
 
 ## Governance Maintenance Check (Engineering Governance §6)

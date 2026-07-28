@@ -10,7 +10,7 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | The `docs/` tree itself. |
 | **Review Frequency** | Updated whenever a new top-level documentation directory or document type is introduced. |
-| **Last Reviewed** | 2026-07-27 (WP 5.0C, Shell & Composition Framework Architecture) — counts refreshed; this register had drifted stale since WP 4.5B without any Work Package since having touched it. |
+| **Last Reviewed** | 2026-07-28 (WP 5.0S, Platform Security Baseline Audit) — added the new `docs/security/` directory, introduced by this Work Package. |
 | **Related Documents** | `ADR Register.md`; `Architecture Document Register.md`; `Academy Register.md`; `Release Register.md`; `Governance Index.md`. |
 | **Related ADRs** | None directly. |
 | **Related Academy Articles** | None directly. |
@@ -41,6 +41,7 @@
 | `docs/roadmap/` | Empty directory — **Unknown** intended purpose; no document references it | Not applicable — see Coverage Note below |
 | `docs/diagrams/` | Empty directory — **Unknown** intended purpose; no document references it | Not applicable — see Coverage Note below |
 | `docs/governance/` | This governance suite (introduced by `WP 4.5A`), plus `Future Work Package Guidelines.md` (added `WP 4.5B`) | `Governance Index.md` |
+| `docs/security/` | The v0.5.0 Security Baseline: `Threat Model.md`, `Security Principles.md`, `Platform Security Review v0.5.0.md`, `Security Roadmap.md` (all introduced by `WP 5.0S`) | `Governance Index.md` (Security section) |
 | Repository root (`PROJECT_STATUS.md`) | Primary status dashboard, added `WP 4.5B` | This register; `PROJECT_STATUS.md` is its own source of truth |
 
 ## Coverage Note — Two Empty, Unreferenced Directories

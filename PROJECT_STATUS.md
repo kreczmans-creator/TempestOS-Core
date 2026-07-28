@@ -1,6 +1,6 @@
 # TempestOS — Project Status
 
-**Last Updated:** 2026-07-27 (WP 5.0D — Shell & Composition Framework Implementation)
+**Last Updated:** 2026-07-28 (WP 5.0S — Platform Security Baseline Audit)
 
 This is the primary status dashboard for TempestOS. Read this first for
 "where does the project stand right now" — for "why is it built this
@@ -22,12 +22,16 @@ requires otherwise (see `docs/governance/Future Work Package
 Guidelines.md`). `WP 5.0A` through `WP 5.0D` are this phase's first four
 completed Work Packages — Navigation and the Shell are both fully
 implemented, and `Tempest.App` now runs the real platform for the first
-time in this project's history.
+time in this project's history. `WP 5.0S` (Platform Security Baseline
+Audit) followed as a dedicated, formal engineering audit — not a feature
+Work Package — establishing the v0.5.0 Security Baseline every future
+Work Package's Definition of Done is now checked against.
 
 ## Current Development Branch
 
 **`feature/v0.5.0-developer-experience`**, cut from `main` after the
-`v0.4.0` tag. Carries `WP 5.0A` through `WP 5.0D`. Unmerged into `main`;
+`v0.4.0` tag. Carries `WP 5.0A` through `WP 5.0D`, plus `WP 5.0S`.
+Unmerged into `main`;
 the merge/tag sequence for `v0.5.0` itself is not yet due, since the
 Developer Experience phase has only just begun (see `docs/releases/
 v0.5.0/WorkPackages.md`).
@@ -41,15 +45,20 @@ that.
 
 ## Current Work Package
 
-**`WP 5.0D` — Shell & Composition Framework Implementation — complete**
-(this Work Package). Implements `ITempestHost.Services` and
-`TempestShell`/`IPage`/`PlaceholderPage` (`Tempest.App.Shell`) exactly
-as `WP 5.0C` designed, with zero deviation. `Program.cs` now builds a
-`TempestHostBuilder`, constructs the Shell, and runs it — `Tempest.App`
-starts a real `TempestHost`, discovers all five `Tempest.Samples`
-modules, and presents a real, interactive Navigation/Content region,
-confirmed by direct execution. See this Work Package's own retrospective:
-`docs/academy/03 Work Packages/WP5.0D-shell-and-composition-framework-implementation.md`.
+**`WP 5.0S` — Platform Security Baseline Audit — complete** (this Work
+Package). The first comprehensive security audit of the entire platform
+— every production file across `Tempest.Core`, `Tempest.App`, and
+`Tempest.Samples` reviewed with a security lens across 15 audit areas.
+No Critical or High severity vulnerability found. One isolated, non-
+breaking fix applied (a plugin manifest `AssemblyFileName` path-
+containment check); two future security debt items disclosed (plugin
+trust boundary, Navigation ownership gap) and tracked in `Technical Debt
+Register.md`. No architecture was redesigned. Four new standing
+documents established under `docs/security/`: `Threat Model.md`,
+`Security Principles.md`, `Platform Security Review v0.5.0.md`, and
+`Security Roadmap.md` — together, the v0.5.0 Security Baseline. See this
+Work Package's own retrospective:
+`docs/academy/03 Work Packages/WP5.0S-platform-security-baseline-audit.md`.
 
 ## Next Planned Work Package
 
@@ -101,17 +110,17 @@ Diagnostics and DevEx tooling.
 
 | Metric | Value |
 |---|---|
-| Automated tests | 446 (0 failures) — 46 new (`WP 5.0D`: `ITempestHost.Services`, `Shell/`) |
-| ADRs | 35 (`ADR-0001`–`ADR-0035`), all Accepted |
+| Automated tests | 448 (0 failures) — 2 new (`WP 5.0S`: plugin manifest `AssemblyFileName` path-containment regression tests) |
+| ADRs | 35 (`ADR-0001`–`ADR-0035`), all Accepted — unchanged by `WP 5.0S` (no architecture redesigned) |
 | Rejected Designs | 37 (`RD-0001`–`RD-0037`) |
-| Academy articles | 69 (see `docs/governance/Documentation/Academy Register.md`) |
-| Governance registers | 27 (32 governance documents total) |
+| Academy articles | 70 (see `docs/governance/Documentation/Academy Register.md`) |
+| Governance registers | 27 (32 governance documents total), plus 4 new standing security documents under `docs/security/` (not governance registers themselves, indexed from `Governance Index.md`'s new Security section) |
 | Architecture documents | 18 under `docs/architecture/` (20 including the two release-scoped documents) |
 | Platform services | 16 catalogued — 12 Implemented (Navigation included; the Shell is `Tempest.App`'s own architecture, not a platform service, so it is intentionally not counted here), 1 contract-only, 2 not implemented as platform services, 1 developer-convenience layer |
 | Modules (production) | 5 (`ClockModule`, `ClockLifecycleObserverModule`, `NavigationSampleModule`, `SecondaryNavigationSampleModule`, `DuplicateNavigationSampleModule`) |
 | Hosted services (production) | 0 — infrastructure fully implemented and tested; zero shipped consumers by deliberate scope decision |
 | Plugins (production) | 0 — infrastructure fully implemented and tested; `src/Plugins/` empty by deliberate scope decision |
-| Commits (total / since `v0.4.0` tag) | 55 total (50 Claude-authored) / 3 since `v0.4.0` (`WP 5.0A`, `WP 5.0B`, `WP 5.0C`; this Work Package not yet committed) |
+| Commits (total / since `v0.4.0` tag) | 57 total (52 Claude-authored) / 5 since `v0.4.0` (`WP 5.0A`, `WP 5.0B`, `WP 5.0C`, `WP 5.0D`, `WP 5.0S`) |
 | Contributors | 1 (repository owner; all commits co-authored by Claude) |
 
 *(This table is generated from `docs/governance/Quality/Repository Metrics
@@ -121,7 +130,7 @@ three together.)*
 ## Repository Health
 
 - **Build:** Clean — 0 warnings, 0 errors (`dotnet build src/TempestOS.slnx`).
-- **Tests:** 446/446 passing, verified stable across multiple consecutive
+- **Tests:** 448/448 passing, verified stable across multiple consecutive
   full-suite runs at every major Work Package boundary.
 - **Known regressions:** None.
 - **Working tree:** Clean at every Work Package boundary — see
@@ -148,37 +157,49 @@ renumbered Developer Experience scope (`WP 4.6A`–`WP 4.9` → `WP 5.0A`–
 `WP 5.3`) forward, plus the new `WP 5.0C`/`WP 5.0D` pair inserted without
 renumbering anything else (`D-016`); the old `v0.4.0` entries were
 annotated with redirect notes rather than deleted, per this project's
-"never delete, mark superseded" convention.
+"never delete, mark superseded" convention. `WP 5.0S` added a new
+top-level documentation tree, `docs/security/` (four documents: `Threat
+Model.md`, `Security Principles.md`, `Platform Security Review
+v0.5.0.md`, `Security Roadmap.md`), indexed from `Governance Index.md`'s
+new Security section and `Documentation Register.md`'s Directory Map —
+the first new top-level `docs/` tree since `docs/governance/` itself
+(`WP 4.5A`).
 
 ## Academy Status
 
-69 articles across 7 categories (Introduction, Engineering Principles,
+70 articles across 7 categories (Introduction, Engineering Principles,
 Runtime Architecture, Work Package retrospectives, Design Patterns, Case
 Studies, Engineering Standards), plus `Academy Index.md`, `Academy
 Masterclass Roadmap.md`, `Academy Audit Report.md`, and `Contributor
 Learning Path.md`. Every completed Work Package has a matching
-retrospective, including `WP 5.0A` through `WP 5.0D`. Maintenance
+retrospective, including `WP 5.0A` through `WP 5.0S`. Maintenance
 obligation (Engineering Governance §6) verified honoured by two
 independent audits (`WP 4.4F`, and the Academy Register built during
 `WP 4.5A`); `WP 5.0A` updated two existing articles' (`06-platform-
 layering.md`, `08-failure-isolation.md`) "Future Evolution" sections,
 `WP 5.0B` confirmed those predictions against the real implementation
-with no correction needed, and `WP 5.0D` added a genuine, non-obvious
+with no correction needed, `WP 5.0D` added a genuine, non-obvious
 implementation finding (`const` fields not forcing assembly load) to the
-Shell's own concept guide.
+Shell's own concept guide, and `WP 5.0S` added a new "Security" category
+teaching threat modelling, secure plugin architecture, trust boundaries,
+and least privilege from first principles.
 
 ## Governance Status
 
 27 registers (32 governance documents total, including the Index,
 Philosophy, Audit Report, Maturity Report, and Future Work Package
-Guidelines), fully cross-referenced, zero outstanding governance debt as
-of the `WP 4.5A` baseline (see `docs/governance/Governance Audit
-Report.md`), re-verified during `v0.4.0` Release Engineering and every
-Work Package since. Traceability for both Navigation and the Shell is
-now complete end to end — no Pending cells remain
+Guidelines), fully cross-referenced, re-verified during `v0.4.0` Release
+Engineering and every Work Package since. Traceability for both
+Navigation and the Shell is complete end to end — no Pending cells remain
 (`docs/governance/Delivery/Traceability Matrix.md`). One stale, pre-
-existing entry unrelated to this Work Package's own scope was found and
-corrected along the way: `Technical Debt Register.md`'s TD-07.
+existing entry unrelated to `WP 5.0D`'s own scope was found and corrected
+along the way: `Technical Debt Register.md`'s TD-07. `WP 5.0S` added two
+new, disclosed debt items following its own security audit — `TD-09`
+(plugin trust boundary) and `TD-10` (Navigation ownership gap) — both
+Open, both requiring a future Architecture Work Package, neither a
+regression of anything previously Resolved. `Decision Register.md`
+gained `D-017` (conducting `WP 5.0S` as a dedicated security audit Work
+Package).
 
 ## Known Unknowns
 
@@ -211,12 +232,14 @@ Governance Audit Report.md`:
 ## Near-Term Roadmap
 
 Per `docs/releases/v0.5.0/WorkPackages.md`, the Developer Experience
-phase, in sequence — `WP 5.0A` through `WP 5.0D` are complete so far:
+phase, in sequence — `WP 5.0A` through `WP 5.0S` are complete so far:
 
 - `WP 5.0A` — Navigation Framework Architecture (design only). **Complete.**
 - `WP 5.0B` — Navigation Framework Implementation. **Complete.**
 - `WP 5.0C` — Shell & Composition Framework Architecture (design only). **Complete.**
 - `WP 5.0D` — Shell & Composition Framework Implementation. **Complete.**
+- `WP 5.0S` — Platform Security Baseline Audit (dedicated engineering
+  audit, not a feature Work Package). **Complete.**
 - `WP 5.1` — Command Framework (dispatcher). Next planned.
 - `WP 5.2` — Diagnostics Improvements (composite logging, health/status
   reporting).

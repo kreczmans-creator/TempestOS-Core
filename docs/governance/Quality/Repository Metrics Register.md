@@ -10,7 +10,7 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | Direct repository inspection (`find`, `wc`, `git log`) performed as part of this Work Package. |
 | **Review Frequency** | Re-measured at each Governance Baseline review, or on request. |
-| **Last Reviewed** | 2026-07-27 (WP 5.0D, Shell & Composition Framework Implementation). |
+| **Last Reviewed** | 2026-07-28 (WP 5.0S, Platform Security Baseline Audit). |
 | **Related Documents** | `Test Register.md`; `Namespace Register.md`; `Engineering Evolution Register.md`. |
 | **Related ADRs** | None directly. |
 | **Related Academy Articles** | None directly — this is a raw metrics snapshot, not a teaching document. |
@@ -187,6 +187,31 @@ starts a real `TempestHost`, discovers all five `Tempest.Samples`
 modules, and presents a real, interactive Navigation/Content region —
 confirmed by direct execution, not merely by the test suite.
 
+## Snapshot: 2026-07-28 (WP 5.0S — Platform Security Baseline Audit)
+
+The first dedicated security audit Work Package — no architecture
+redesigned, no new feature built. One isolated, non-breaking fix applied
+(`PluginManifestDiscoveryService`'s `AssemblyFileName` path-containment
+check) with two regression tests added; four new standing documents
+created under a new top-level `docs/security/` tree.
+
+| Metric | WP 5.0D | WP 5.0S (current) |
+|---|---|---|
+| `src/` `.cs` files / lines | 119 / 7,564 | 119 / 7,589 (unchanged file count; `PluginManifestDiscoveryService.cs` extended in place with the path-containment check) |
+| `tests/` `.cs` files / lines | 60 / 8,384 | 60 / 8,867 (unchanged file count; `PluginManifestDiscoveryServiceTests.cs` extended in place with 2 new regression tests) |
+| Executed tests (`dotnet test`) | 446, 0 failures | **448, 0 failures** (2 new) |
+| ADRs | 35 (`ADR-0001`–`ADR-0035`) | 35 (unchanged — no architecture redesigned, per this Work Package's own brief) |
+| Rejected Designs entries | 37 (`RD-0001`–`RD-0037`) | 37 (unchanged) |
+| Architecture documents (`docs/architecture/`) | 18 | 18 (unchanged — this Work Package's new documents live under `docs/security/`, a new top-level tree, not `docs/architecture/`) |
+| `docs/security/` documents (new top-level tree) | 0 | 4 (`Threat Model.md`, `Security Principles.md`, `Platform Security Review v0.5.0.md`, `Security Roadmap.md`) |
+| Academy articles (`docs/academy/`, all subfolders) | 69 | 70 (adds `WP5.0S-platform-security-baseline-audit.md`) |
+| `docs/` `.md` files | 169 | 174 (adds 4 `docs/security/` documents, 1 Academy retrospective) |
+| Governance documents (`docs/governance/`, all subfolders) | 32 | 32 (unchanged — updates existing registers rather than adding new ones) |
+| Technical Debt Register open items | 5 Open, 1 Partially resolved, 2 Resolved (8 total) | 7 Open, 1 Partially resolved, 2 Resolved (10 total — adds `TD-09`, `TD-10`) |
+| Decision Register entries | 16 | 17 (adds `D-017`) |
+| Total commits | 56 | 57 (before this Work Package's own commit) |
+| Build warnings/errors | 0/0 | 0/0 (unchanged) |
+
 ## Governance Suite Size (Introduced by This Work Package, WP 4.5A)
 
 | Metric | Value |
@@ -208,7 +233,7 @@ is offered.
 ## Cross-Reference Check
 
 The ADR count (35), Rejected Designs count (37), Academy article count
-(69), test count (446), and build status (0/0) above are each
+(70), test count (448), and build status (0/0) above are each
 cross-checked directly against `ADR Register.md`, `Rejected Designs
 Register.md`, `Academy Register.md`, `Test Register.md`, and `Validation
 Register.md` respectively — all consistent, no discrepancy found.

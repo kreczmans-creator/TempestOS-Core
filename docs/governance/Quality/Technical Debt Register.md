@@ -10,9 +10,9 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | Every retrospective under `docs/academy/03 Work Packages/`; `docs/releases/v0.4.0/Platform Services Architecture Review.md`. |
 | **Review Frequency** | Updated whenever a Work Package resolves, worsens, or discloses a new debt item — every retrospective's own "Architectural Debt Assessment" section is the trigger. |
-| **Last Reviewed** | 2026-07-27 (WP 5.0D) — no new debt introduced; WP 5.0D's own retrospective confirms its disclosed trade-offs (no automatic Event Bus unsubscription on an ungraceful exit; module/plugin-contributed page rendering still unsolved; the bootstrap-era `BootstrapService`/`HostingService`/`ProjectService` code left unreferenced but unmigrated) are each `ADR-0028`'s, `ADR-0035`'s, or `WP 5.0C`'s own already-disclosed, accepted scope boundaries, not new debt. |
-| **Related Documents** | `docs/releases/v0.4.0/Risks.md`; `Validation Register.md`; `Hosted Services Register.md`; `Plugin Register.md`. |
-| **Related ADRs** | ADR-0009, ADR-0021, ADR-0024, ADR-0028, ADR-0029. |
+| **Last Reviewed** | 2026-07-28 (WP 5.0S, Platform Security Baseline Audit) — two new debt items disclosed (TD-09, TD-10), both identified during the platform's first comprehensive security audit; no prior entry changed status. |
+| **Related Documents** | `docs/releases/v0.4.0/Risks.md`; `Validation Register.md`; `Hosted Services Register.md`; `Plugin Register.md`; `docs/security/Platform Security Review v0.5.0.md`; `docs/security/Security Roadmap.md`. |
+| **Related ADRs** | ADR-0009, ADR-0021, ADR-0024, ADR-0025, ADR-0026, ADR-0028, ADR-0029, ADR-0032. |
 | **Related Academy Articles** | Every Work Package retrospective's own "Trade-offs" and "Architectural Debt Assessment" sections. |
 | **Coverage Status** | Complete as of this baseline — every debt item disclosed by any retrospective through `WP 4.5`'s implementation is represented below, either as still Open or Resolved with the resolving Work Package named. |
 
@@ -39,8 +39,10 @@ misrepresent deliberate, reasoned scope decisions as unaddressed problems.
 | TD-06 | Plugins root directory (`Plugins/`) and manifest file name (`plugin.manifest.json`) are fixed conventions, not configurable | WP 4.2 | None named yet | Open — disclosed as a purely additive future enhancement, not a current limitation with a known cost |
 | TD-07 | Navigation's `Tempest.Core` placement is an open architectural question | WP 4.2D (named), pre-existing since v0.4.0 planning | WP 5.0A (formerly WP 4.6A) | **Resolved** — WP 5.0A's own Repository Investigation and `ADR-0031` settle this: the Navigation *model* belongs in `Tempest.Core`; rendering is `Tempest.App`'s own responsibility. Stale "Open"/`WP 4.6A` labels found and corrected here, `WP 5.0D`, having survived unnoticed through three prior Work Packages (`WP 5.0A`–`WP 5.0C`) that each resolved or built on this exact question without this register being updated to match — a disclosed governance-debt finding in its own right, not a new architectural gap. |
 | TD-08 | Background Services would need to extend `Host Lifecycle.md`'s phase table a second time | WP 4.2D (named as future work) | WP 4.5 | **Resolved** — WP 4.5 implemented Phases 8.1/10.1 exactly per ADR-0029/ADR-0030, no renumbering. See `Risks.md` R1/R4, both now Retired. |
+| TD-09 | No isolation boundary exists between a loaded plugin and a first-party module — a plugin gets identical DI-container trust once its assembly loads | Implicit since WP 4.2/ADR-0025/ADR-0026; named explicitly as security debt by WP 5.0S | None named yet — trigger: real third-party plugin support | Open — see `docs/security/Platform Security Review v0.5.0.md` Finding SEC-01, `Security Roadmap.md` item 1 |
+| TD-10 | `NavigationService.Unregister` performs no ownership check — any caller can unregister any other component's navigation item by ID | WP 5.0B/ADR-0032; named explicitly as security debt by WP 5.0S | None named yet — trigger: paired with TD-09's resolution | Open — see `docs/security/Platform Security Review v0.5.0.md` Finding NAV-1, `Security Roadmap.md` item 2 |
 
-**Total: 8 tracked debt items — 2 Resolved, 1 Partially resolved, 5 Open.**
+**Total: 10 tracked debt items — 2 Resolved, 1 Partially resolved, 7 Open.**
 
 ## Entries — Disclosed, Accepted Trade-offs (Not Expected to Need Fixing Unless a Real Need Emerges)
 
