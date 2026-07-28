@@ -65,8 +65,9 @@ records an explicit judgement, never an omission.
 | WP 5.1B — Command Framework Implementation | `3ef23a9` | — (implements ADR-0036–ADR-0038 exactly; no new ADR required) | — | Yes |
 | WP 5.2 — Diagnostics Improvements | `a0520d5` | ADR-0039 | RD-0042–RD-0044 | Yes |
 | WP 5.3 — Developer Experience Improvements | `10c5b14` | — (RD-0045 only; no ADR met §5's criteria) | RD-0045 | Yes |
+| WP 5.4 — v0.5.0 Release Candidate & Engineering Sign-Off | `d30e286` | — (verification only; no new ADR) | — | Yes — deliberately shaped around what a release-verification retrospective actually needs, not the standard 13-section template (disclosed in that document's own "What This Document Is") |
 
-**Total: 37 Work Packages tracked, plus `v0.4.0` Release Engineering,
+**Total: 38 Work Packages tracked, plus `v0.4.0` Release Engineering,
 100% Academy
 retrospective compliance for every Work Package that required one
 (housekeeping correctly excepted).**
