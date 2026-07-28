@@ -10,7 +10,7 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | Direct repository inspection (`find`, `wc`, `git log`) performed as part of this Work Package. |
 | **Review Frequency** | Re-measured at each Governance Baseline review, or on request. |
-| **Last Reviewed** | 2026-07-28 (WP 5.3, Developer Experience Improvements) — Developer Experience phase closed; every capability in `Feature Register.md` now Implemented/Complete. |
+| **Last Reviewed** | 2026-07-28 (WP 5.4, v0.5.0 Release Candidate & Engineering Sign-Off) — every count below independently re-derived from the file system directly, not carried forward from the previous snapshot's own arithmetic; two genuine, silent undercounts found and corrected (Exception Register total; Academy article/Work-Package-retrospective counts). |
 | **Related Documents** | `Test Register.md`; `Namespace Register.md`; `Engineering Evolution Register.md`. |
 | **Related ADRs** | None directly. |
 | **Related Academy Articles** | None directly — this is a raw metrics snapshot, not a teaching document. |
@@ -350,6 +350,44 @@ the same claim on every future `dotnet test` run without touching the
 shared, global template cache (see this Work Package's own retrospective
 for why).
 
+## Snapshot: 2026-07-28 (WP 5.4 — v0.5.0 Release Candidate & Engineering Sign-Off)
+
+Release verification and closeout — no feature added, no architecture
+redesigned. Every count below was independently re-derived directly from
+the file system (`find`, `grep -c`) rather than incremented from the
+previous snapshot's own stated number — the specific discipline this
+Work Package's own retrospective recommends as a standing practice going
+forward (see "Repository Maturity," `WP5.4-v0.5.0-release-candidate-and-
+engineering-sign-off.md`).
+
+| Metric | WP 5.3 | WP 5.4 (current) |
+|---|---|---|
+| `src/` `.cs` files / lines | 144 / 9,043 | 144 / 9,043 (unchanged — no production code changed) |
+| `tests/` `.cs` files / lines | 71 / 10,872 | 71 / 10,872 (unchanged — no test code changed) |
+| Executed tests (`dotnet test`) | 552, 0 failures | 552, 0 failures (unchanged — re-verified directly) |
+| ADRs | 39 (`ADR-0001`–`ADR-0039`) | 39 (unchanged — no new ADR; re-verified by direct file count) |
+| Rejected Designs entries | 45 (`RD-0001`–`RD-0045`) | 45 (unchanged — re-verified by direct `grep -c` against the source log) |
+| Decision Register entries | 20 | 20 (re-verified by direct `grep -c`) |
+| Academy articles (`docs/academy/`, all subfolders) | 76 *(stated — see correction)* | **77** (adds `WP5.4-v0.5.0-release-candidate-and-engineering-sign-off.md`; **corrects a silent undercount** — the "76" this row inherited from `WP 5.3`'s own snapshot had itself inherited an undercount from `WP 5.2`, neither independently re-derived from the file system; direct `find` count per subfolder now backs every figure) |
+| `docs/academy/03 Work Packages/` retrospectives | 34 *(stated — see correction)* | **35** (re-verified by direct `find`/`grep -c` against the actual folder — the stated count had undercounted its own table by one since at least `WP 5.2`) |
+| `docs/` `.md` files | 186 | 191 (adds `docs/releases/v0.5.0/CHANGELOG.md`, `Release Notes.md`, `ReleaseChecklist.md`, `docs/releases/v0.5.0.md`, and the `WP 5.4` retrospective) |
+| Governance documents (`docs/governance/`, all subfolders) | 32 | 32 (unchanged — updates existing registers rather than adding new ones) |
+| Custom exception types | 30 *(stated — see correction)* | **31** (**corrects a second silent undercount**, present since `WP 5.1B` first introduced it — `Exception Register.md`'s own Entries/Distribution tables had always summed to 31; direct `grep -rlP` against `src/Tempest.Core/` now confirms 31 files, matching) |
+| Feature Register | 27 Implemented/Complete, 0 Not Started | 27 Implemented/Complete, 0 Not Started (unchanged — the release plan was already fully complete as of `WP 5.3`) |
+| Traceability Matrix | 18 fully-traced capabilities | 18 fully-traced capabilities (unchanged — `WP 5.4` is a verification pass, not a new capability) |
+| `docs/releases/v0.4.0/Risks.md` | 10 risks, 6 Retired | 10 risks, **all 10 Retired** (`R5`, `R7`, `R8`, `R9` retired in full — each risk's own residual exposure, carried forward since `v0.4.0`, is now confirmed resolved by a specific, named `v0.5.0` Work Package) |
+| Total commits | 61 (before `WP 5.3`'s own commit) | 62 (before this Work Package's own commit; includes `WP 5.3`'s own small follow-up commit) |
+| Build warnings/errors | 0/0 | 0/0 (unchanged) |
+
+**Two genuine, silent arithmetic undercounts found and corrected, both of
+the identical shape**: a register's own summary line had been updated by
+incrementing the *previous* summary line's own stated number, rather than
+by re-counting the table or file system beneath it each time. Neither
+reflects an actual change in what exists — both are corrected
+documentation, not corrected reality. See this Work Package's own
+retrospective for the full discussion and the standing-practice
+recommendation this finding produced.
+
 ## Governance Suite Size (Introduced by This Work Package, WP 4.5A)
 
 | Metric | Value |
@@ -371,7 +409,8 @@ is offered.
 ## Cross-Reference Check
 
 The ADR count (39), Rejected Designs count (45), Academy article count
-(76), test count (552), and build status (0/0) above are each
+(77), test count (552), and build status (0/0) above are each
 cross-checked directly against `ADR Register.md`, `Rejected Designs
 Register.md`, `Academy Register.md`, `Test Register.md`, and `Validation
-Register.md` respectively — all consistent, no discrepancy found.
+Register.md` respectively — all consistent, no discrepancy found, as of
+`WP 5.4`'s own direct re-verification.

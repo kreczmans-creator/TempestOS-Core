@@ -267,7 +267,7 @@ whatever you're about to change, before you change it.
 - WP 4.5A — Governance Register Baseline *(no dedicated retrospective — its own deliverable is the governance suite itself; see `docs/governance/Governance Index.md`)*
 - WP 4.5B — Platform Foundation Closeout *(no dedicated retrospective — its own deliverable is `docs/releases/Platform Foundation Completion Report.md`)*
 
-**Developer Experience (v0.5.0, in progress):**
+**Developer Experience (v0.5.0, Release Candidate):**
 
 - [WP 5.0A — Navigation Framework Architecture](03%20Work%20Packages/WP5.0A-navigation-framework-architecture.md)
 - [WP 5.0B — Navigation Framework Implementation](03%20Work%20Packages/WP5.0B-navigation-framework-implementation.md)
@@ -278,9 +278,11 @@ whatever you're about to change, before you change it.
 - [WP 5.1B — Command Framework Implementation](03%20Work%20Packages/WP5.1B-command-framework-implementation.md)
 - [WP 5.2 — Diagnostics Improvements](03%20Work%20Packages/WP5.2-diagnostics-improvements.md)
 - [WP 5.3 — Developer Experience Improvements](03%20Work%20Packages/WP5.3-developer-experience-improvements.md)
+- [WP 5.4 — v0.5.0 Release Candidate & Engineering Sign-Off](03%20Work%20Packages/WP5.4-v0.5.0-release-candidate-and-engineering-sign-off.md) — the release-closing verification pass; not a feature Work Package. See also `docs/releases/v0.5.0.md`, `docs/releases/v0.5.0/CHANGELOG.md`, and `docs/releases/v0.5.0/Release Notes.md`.
 
 `docs/releases/v0.5.0/WorkPackages.md`'s own Developer Experience phase
-is now complete — see `PROJECT_STATUS.md` for what comes next.
+is complete and `v0.5.0` is a Release Candidate — see `PROJECT_STATUS.md`
+for current status and whether Product Approval has cut the release.
 
 ## Reference Material
 

@@ -10,7 +10,7 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | Direct source inspection; `docs/architecture/Failure Behaviour.md`; `docs/academy/06 Engineering Standards/01-exception-design.md`. |
 | **Review Frequency** | Updated whenever a new exception type is introduced. |
-| **Last Reviewed** | 2026-07-28 (WP 5.3, Developer Experience Improvements) — no new exception type introduced; `ModuleDiscoveryException`'s own Discovery-phase coverage extended with a clearer, more actionable message (see "A Note on Module Discovery" below). |
+| **Last Reviewed** | 2026-07-28 (WP 5.4, v0.5.0 Release Candidate) — corrected a Total-count arithmetic error found during this Work Package's own repository review (see Entries table, below): the stated total read "30," undercounting the Entries/Distribution tables' own, unchanged sum of 31. No new exception type introduced since `WP 5.3`. |
 | **Related Documents** | `docs/architecture/Failure Behaviour.md`; `Architectural Dependency Register.md`. |
 | **Related ADRs** | ADR-0013, ADR-0021, ADR-0025, ADR-0038. |
 | **Related Academy Articles** | `docs/academy/06 Engineering Standards/01-exception-design.md`. |
@@ -54,8 +54,14 @@
 | `CommandHandlerNotRegisteredException` | `CommandException` | Command Framework | Application logic's own error (not Host-level); thrown by `DispatchAsync`/`InvokeAsync` |
 | `CommandNotFoundException` | `CommandException` | Command Framework | Application logic's own error (not Host-level); thrown by `InvokeAsync` |
 
-**Total: 30 custom exception types — Verified directly (adds
-`CommandException` and four subtypes, `WP 5.1B`).**
+**Total: 31 custom exception types — Verified directly against
+`src/Tempest.Core/` (`grep -rlP "^public (sealed )?class \w+Exception\b"`
+returns exactly 31 files, matching the 31 rows in the Entries table
+above). Corrected, `WP 5.4`: this total previously read "30," undercounting
+by one against this register's own Entries table and Distribution table
+(both of which have always summed to 31) — a genuine, internal
+arithmetic drift found during `WP 5.4`'s own repository review, not a
+change in the actual exception count.**
 
 ## A Note on Background Services
 

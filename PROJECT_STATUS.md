@@ -1,6 +1,6 @@
 # TempestOS — Project Status
 
-**Last Updated:** 2026-07-28 (WP 5.3 — Developer Experience Improvements)
+**Last Updated:** 2026-07-28 (WP 5.4 — v0.5.0 Release Candidate & Engineering Sign-Off)
 
 This is the primary status dashboard for TempestOS. Read this first for
 "where does the project stand right now" — for "why is it built this
@@ -35,8 +35,13 @@ view of the Host's own current lifecycle state, without granting write
 access to the Host-owned machinery that state comes from. `WP 5.3`
 (Developer Experience Improvements) closes the phase out — a `dotnet new`
 module template, and a previously-only-documented Discovery pitfall now
-closed with a clear, actionable error message. See Current Priorities,
-below, for what this means for the release itself.
+closed with a clear, actionable error message. `WP 5.4` (v0.5.0 Release
+Candidate & Engineering Sign-Off) then verified the entire release
+directly — every ADR, every Work Package, every governance register —
+rather than trusting nine separate retrospectives' own say-so, and
+produced this release's own Release Candidate documentation. **`v0.5.0`
+is now a Release Candidate.** See Current Priorities, below, for what
+this means for the release itself.
 
 ## Current Development Branch
 
@@ -51,46 +56,48 @@ Work Package completion alone — see Current Priorities, below.
 ## Current Release
 
 **v0.4.0** ("Platform Foundation") — released 2026-07-27, still the most
-recent tag. Root `VERSION` reads `0.4.0`; `v0.5.0` is in progress but not
-yet cut. `v0.3.0` ("Runtime Foundation Complete") is the release before
-that.
+recent tag. Root `VERSION` reads `0.4.0`; `v0.5.0` ("Developer
+Experience") is a verified Release Candidate as of `WP 5.4`, not yet cut.
+`v0.3.0` ("Runtime Foundation Complete") is the release before that.
 
 ## Current Work Package
 
-**`WP 5.3` — Developer Experience Improvements — complete** (this Work
-Package). Unlike every implementation Work Package before it this
-release, `WP 5.3` has no preceding architecture phase — confirmed
-directly before any code was written (no design document or ADR was ever
-expected for a scoped tooling/polish pass; see this Work Package's own
-retrospective, Section 3). Delivers: `dotnet new tempest-module`
-(`src/Templates/Tempest.Templates.Module/`), generating a module shaped
-exactly as `Building a Module.md` describes, installed locally rather
-than as a NuGet package (`RD-0045`); and a clearer
-`ReflectionFrameworkDiscoveryService` failure — a module with no
-`[ModuleMetadata]` and no public parameterless constructor now raises a
-`ModuleDiscoveryException` naming the actual fix, instead of a raw
-`MissingMethodException`, closing a gap `Building a Module.md` has
-documented in prose since `WP 4.1` but the code itself never enforced.
-The template was verified twice: once manually, with the real `dotnet
-new` CLI (installed, generated, built with 0 warnings/errors, then
-uninstalled and removed, leaving no trace), and once by an automated
-test that substitutes, builds, and proves the result discoverable by the
-real, unmodified `ReflectionFrameworkDiscoveryService` on every future
-test run. A repository review found and corrected three genuine,
-pre-existing governance/documentation drifts, none caused by this Work
-Package's own changes — see Documentation Status and Governance Status,
-below. 10 new tests (552 total). See this Work Package's own
+**`WP 5.4` — v0.5.0 Release Candidate & Engineering Sign-Off —
+complete** (this Work Package). Not a feature Work Package — a full
+engineering verification and release-readiness review, confirming every
+ADR is implemented or intentionally deferred, every Work Package is
+closed, every governance register is internally consistent, and every
+piece of release documentation is current. Found and corrected two
+genuine, silent arithmetic undercounts (the Exception Register's own
+stated total, and the Academy Register's own Work-Package/article
+counts) that had each persisted, uncaught, across two or more prior Work
+Packages — neither reflects an actual change to the codebase, both are
+documentation corrections. Also found and corrected a stale
+`docs/releases/v0.5.0/ReleasePlan.md` (frozen at `WP 5.0C`'s own moment
+in time) and a stale `docs/academy/Contributor Learning Path.md` (still
+pointed a new contributor at `v0.4.0/WorkPackages.md`, cited a 30-ADR
+count, and never mentioned Navigation, the Shell, the Command Framework,
+Diagnostics, or the new module template). Retired all four remaining
+open release-level risks in `docs/releases/v0.4.0/Risks.md` (`R5`, `R7`,
+`R8`, `R9`) — every one of that register's ten risks is now Retired.
+Produced this release's own Release Candidate documentation:
+`docs/releases/v0.5.0/CHANGELOG.md`, `Release Notes.md`,
+`ReleaseChecklist.md`, and the top-level `docs/releases/v0.5.0.md`. No
+feature added; no architecture redesigned; `VERSION` deliberately left at
+`0.4.0`, pending Product Approval. See this Work Package's own
 retrospective:
-`docs/academy/03 Work Packages/WP5.3-developer-experience-improvements.md`.
+`docs/academy/03 Work Packages/WP5.4-v0.5.0-release-candidate-and-engineering-sign-off.md`.
 
 ## Next Planned Work Package
 
-**None named.** Every Work Package in `docs/releases/v0.5.0/
-WorkPackages.md` (`WP 5.0A` through `WP 5.3`) is now complete — the
-Developer Experience phase itself is done. Whether and when to cut the
-`v0.5.0` release (merge to `main`, tag, release notes) is a Product
-Approval decision (Engineering Governance §7), not one this Work Package
-makes for itself — see Current Priorities, below.
+**None named — v0.5.0 is a Release Candidate.** Every Work Package in
+`docs/releases/v0.5.0/WorkPackages.md` (`WP 5.0A` through `WP 5.3`) is
+complete, and `WP 5.4` has verified this directly rather than assumed it.
+Two decisions remain, both Product Approval's, not engineering's:
+whether and when to cut and tag `v0.5.0` (merge to `main`, bump
+`VERSION`, push — Engineering Governance §7), and what a future `v0.6.0`
+should contain — see Current Priorities, below, and this release's own
+Recommendation in `WP 5.4`'s retrospective.
 
 ## Foundation Status
 
@@ -152,17 +159,18 @@ Experience phase is now complete.
 
 | Metric | Value |
 |---|---|
-| Automated tests | 552 (0 failures) — 10 new (`WP 5.3`: `Modules/` and `Templates/` test suites) |
-| ADRs | 39 (`ADR-0001`–`ADR-0039`), all Accepted — unchanged by `WP 5.3` (no new ADR met §5's criteria) |
-| Rejected Designs | 45 (`RD-0001`–`RD-0045`) |
-| Academy articles | 76 (see `docs/governance/Documentation/Academy Register.md`) |
+| Automated tests | 552 (0 failures) — unchanged by `WP 5.4` (verification only; re-run and re-verified directly) |
+| ADRs | 39 (`ADR-0001`–`ADR-0039`), all Accepted — unchanged by `WP 5.4` (no new ADR; re-verified by direct file count) |
+| Rejected Designs | 45 (`RD-0001`–`RD-0045`) — re-verified by direct count against the source log |
+| Academy articles | 77 (see `docs/governance/Documentation/Academy Register.md`) — **corrected, `WP 5.4`**: previously stated as 76, itself an undercount inherited across two prior Work Packages; re-derived directly from the file system |
 | Governance registers | 27 (32 governance documents total), plus 4 standing security documents under `docs/security/` (not governance registers themselves, indexed from `Governance Index.md`'s Security section) |
 | Architecture documents | 20 under `docs/architecture/` (22 including the two release-scoped documents) |
-| Platform services | 17 catalogued — 14 Implemented (unchanged by `WP 5.3` — a template and a Discovery message, not a new platform service), 2 not implemented as platform services, 1 developer-convenience layer |
+| Platform services | 17 catalogued — 14 Implemented, 2 not implemented as platform services, 1 developer-convenience layer |
 | Modules (production) | 7 (`ClockModule`, `ClockLifecycleObserverModule`, `NavigationSampleModule`, `SecondaryNavigationSampleModule`, `DuplicateNavigationSampleModule`, `CommandSampleModule`, `DiagnosticsSampleModule`) |
 | Hosted services (production) | 0 — infrastructure fully implemented and tested; zero shipped consumers by deliberate scope decision |
 | Plugins (production) | 0 — infrastructure fully implemented and tested; `src/Plugins/` empty by deliberate scope decision |
-| Commits (total / since `v0.4.0` tag) | 61 total (56 Claude-authored) / 9 since `v0.4.0` (`WP 5.0A`, `WP 5.0B`, `WP 5.0C`, `WP 5.0D`, `WP 5.0S`, `WP 5.1A`, `WP 5.1B`, `WP 5.2`, `WP 5.3`) |
+| Custom exception types | 31 — **corrected, `WP 5.4`**: the Exception Register's own stated total previously read 30, undercounting its own Entries table since `WP 5.1B` first introduced the mismatch |
+| Commits (total / since `v0.4.0` tag) | 63 total (57 Claude-authored) / 11 since `v0.4.0` (`WP 5.0A`, `WP 5.0B`, `WP 5.0C`, `WP 5.0D`, `WP 5.0S`, `WP 5.1A`, `WP 5.1B`, `WP 5.2`, `WP 5.3` ×2, `WP 5.4`) |
 | Contributors | 1 (repository owner; all commits co-authored by Claude) |
 
 *(This table is generated from `docs/governance/Quality/Repository Metrics
@@ -173,9 +181,9 @@ three together.)*
 
 - **Build:** Clean — 0 warnings, 0 errors (`dotnet build src/TempestOS.slnx`).
 - **Tests:** 552/552 passing, verified stable across multiple consecutive
-  full-suite runs at every major Work Package boundary, including a
-  manual, direct execution of the real `dotnet new` CLI confirming the
-  module template installs, generates, and builds cleanly (`WP 5.3`).
+  full-suite runs at every major Work Package boundary, re-confirmed
+  directly one final time by `WP 5.4` as part of this release's own
+  sign-off.
 - **Known regressions:** None.
 - **Working tree:** Clean at every Work Package boundary — see
   `docs/governance/Quality/Validation Register.md`.
@@ -248,16 +256,29 @@ itself; `Engineering Governance.md` §11 had not been updated when
 `WP 5.2` added the `Tempest.Core.Diagnostics` namespace; and
 `Governance Register.md`'s own Compliance Matrix had not been updated
 since `WP 5.0D`, missing four completed Work Packages entirely (see
-Governance Status, below, for the full account).
+Governance Status, below, for the full account). `WP 5.4` produced this
+release's own Release Candidate documentation — `docs/releases/v0.5.0/
+CHANGELOG.md`, `Release Notes.md`, `ReleaseChecklist.md`, and the
+top-level `docs/releases/v0.5.0.md` — and found three further,
+significant, pre-existing drifts: `docs/releases/v0.5.0/ReleasePlan.md`
+had not been updated since `WP 5.0C` and still read "in progress" with
+only three of nine Work Packages marked complete; `docs/academy/
+Contributor Learning Path.md` — the document a *new contributor* reads
+first — still pointed at `v0.4.0/WorkPackages.md`, cited a 30-ADR count,
+and never mentioned Navigation, the Shell, the Command Framework,
+Diagnostics, or the new module template at all; and `docs/releases/
+v0.4.0/Risks.md`'s own `R5`/`R7`/`R8`/`R9` rows had each been carrying a
+"residual carries forward" caveat that was, by this point, already fully
+resolved by a specific, named `v0.5.0` Work Package — all corrected.
 
 ## Academy Status
 
-76 articles across 7 categories (Introduction, Engineering Principles,
+77 articles across 7 categories (Introduction, Engineering Principles,
 Runtime Architecture, Work Package retrospectives, Design Patterns, Case
 Studies, Engineering Standards), plus `Academy Index.md`, `Academy
 Masterclass Roadmap.md`, `Academy Audit Report.md`, and `Contributor
 Learning Path.md`. Every completed Work Package has a matching
-retrospective, including `WP 5.0A` through `WP 5.3`. Maintenance
+retrospective, including `WP 5.0A` through `WP 5.4`. Maintenance
 obligation (Engineering Governance §6) verified honoured by two
 independent audits (`WP 4.4F`, and the Academy Register built during
 `WP 4.5A`); `WP 5.0A` updated two existing articles' (`06-platform-
@@ -279,11 +300,17 @@ non-obvious implementation finding (`CommandHandlerTable`) added to both,
 `WP 5.2` added a new "Diagnostics" category (a new concept guide,
 `12-diagnostics-and-composite-logging.md`) plus its own retrospective,
 teaching the `Func<T>` lazy-accessor pattern and the two-named-debts
-decision from first principles, and `WP 5.3` updated `Building a
+decision from first principles, `WP 5.3` updated `Building a
 Module.md` in place (no new concept guide — this Work Package extends
 already-covered material, not a new platform capability) plus its own
 retrospective, teaching why a scoped tooling Work Package legitimately
-has no preceding architecture phase.
+has no preceding architecture phase, and `WP 5.4` added a `v0.5.0
+Release Retrospective` — deliberately shaped around what was achieved,
+architectural lessons, implementation lessons, repository maturity, and
+recommendations for `v0.6.0`, rather than the standard 13-section
+per-feature template, since a whole-release verification pass is not the
+same kind of document as a single capability's own design retrospective
+(disclosed explicitly in that document's own "What This Document Is").
 
 ## Governance Status
 
@@ -323,23 +350,38 @@ Document Register.md`'s stale Command Framework marker (see Documentation
 Status, above) was corrected during this Work Package's own repository
 review, unrelated to its own scope. `WP 5.3` added `RD-0045` (local-folder
 vs. NuGet-packaged template distribution) and touched no Technical Debt
-item (its own scope does not concern `TD-01`–`TD-11`). This Work
+item (its own scope does not concern `TD-01`–`TD-11`). That Work
 Package's own repository review found three further, genuine,
 pre-existing drifts: (1) `RD-0042`–`RD-0044` had been added to
 `Rejected Designs Register.md` during `WP 5.2` but never actually written
 into `docs/architecture/Rejected Designs.md` itself — the register's own
 declared Source of Truth — backfilled here, unchanged in content; (2)
 `Engineering Governance.md` §11 had not been updated when `WP 5.2` added
-the `Tempest.Core.Diagnostics` namespace; (3) most significantly,
-`Governance Register.md`'s own Compliance Matrix had not been updated
-since `WP 5.0D` — four completed Work Packages (`WP 5.0S`, `WP 5.1A`,
-`WP 5.1B`, `WP 5.2`) were missing entirely, and `WP 5.0D`'s own row still
-carried a `*(this commit)*` placeholder never backfilled with its real
-hash. All five rows backfilled, verified directly against `git log`. This
-is the third Work Package in a row to find a real, previously-unnoticed
-governance drift during its own repository review — see this Work
-Package's own retrospective, Observations, for the pattern this now
-represents.
+the `Tempest.Core.Diagnostics` namespace; (3) `Governance Register.md`'s
+own Compliance Matrix had not been updated since `WP 5.0D` — four
+completed Work Packages (`WP 5.0S`, `WP 5.1A`, `WP 5.1B`, `WP 5.2`) were
+missing entirely, and `WP 5.0D`'s own row still carried a
+`*(this commit)*` placeholder never backfilled with its real hash. All
+five rows backfilled, verified directly against `git log`.
+
+**`WP 5.4` (v0.5.0 Release Candidate & Engineering Sign-Off)** performed
+a full, independent repository review rather than a scope-limited one,
+and found two further, genuine, silent arithmetic undercounts: the
+Exception Register's own stated total (30) had never matched its own
+Entries table (31, true since `WP 5.1B` first introduced the mismatch);
+and the Academy Register's own "03 Work Packages" count had undercounted
+its own table by one for at least two consecutive Work Packages, with
+the academy-wide grand total inheriting the same undercount rather than
+being independently re-derived each time. Both are now corrected, backed
+by a direct file-system count rather than an incremented prior figure.
+`docs/releases/v0.4.0/Risks.md`'s remaining four risks with a "residual
+carries forward" caveat (`R5`, `R7`, `R8`, `R9`) were each confirmed
+resolved by a specific, named `v0.5.0` Work Package and retired in
+full — all ten risks in that register are now Retired. This is the
+fourth Work Package in a row to find real, previously-unnoticed
+governance drift during its own repository review — see `WP 5.4`'s own
+retrospective, "Repository Maturity," for the standing-practice
+recommendation this pattern produced.
 
 ## Known Unknowns
 
@@ -361,19 +403,23 @@ Governance Audit Report.md`:
 
 ## Current Priorities
 
-1. **Every Work Package in `docs/releases/v0.5.0/WorkPackages.md` is now
-   complete.** The next decision is Product Approval's, not an
-   engineering one: whether and when to cut the `v0.5.0` release
-   (Engineering Governance §7) — merge `feature/v0.5.0-developer-
-   experience` into `main`, tag `v0.5.0`, and write its release notes —
-   or whether to open a new Work Package first. Neither is assumed here;
-   both require explicit, per-occasion approval.
-2. No merge to `main` has occurred yet.
+1. **`v0.5.0` is a verified Release Candidate.** `WP 5.4` independently
+   confirmed every Work Package in `docs/releases/v0.5.0/WorkPackages.md`
+   is complete, every governance register is internally consistent, and
+   every piece of release documentation is current. The next decision is
+   Product Approval's, not an engineering one: whether and when to cut
+   the `v0.5.0` release (Engineering Governance §7) — merge
+   `feature/v0.5.0-developer-experience` into `main`, bump `VERSION` to
+   `0.5.0`, tag, and push — or whether to open a new Work Package first.
+   Neither is assumed here; both require explicit, per-occasion approval.
+   See `docs/releases/v0.5.0/ReleaseChecklist.md` for the full,
+   ready-to-execute merge/tag sequence.
+2. No merge to `main` has occurred yet. Root `VERSION` remains `0.4.0`.
 
 ## Near-Term Roadmap
 
 Per `docs/releases/v0.5.0/WorkPackages.md`, the Developer Experience
-phase is now complete, `WP 5.0A` through `WP 5.3`:
+phase is complete and verified, `WP 5.0A` through `WP 5.4`:
 
 - `WP 5.0A` — Navigation Framework Architecture (design only). **Complete.**
 - `WP 5.0B` — Navigation Framework Implementation. **Complete.**
@@ -387,6 +433,8 @@ phase is now complete, `WP 5.0A` through `WP 5.3`:
   reassessment, `IDiagnosticsProvider`). **Complete.**
 - `WP 5.3` — Developer Experience Improvements (module template,
   clearer Discovery message). **Complete.**
+- `WP 5.4` — v0.5.0 Release Candidate & Engineering Sign-Off (verification,
+  not a feature Work Package). **Complete.**
 
 No further Work Package is named in the current release plan. A future
 release's own scope (Project Engine, Requirements Engine, or anything
