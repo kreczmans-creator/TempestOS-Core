@@ -171,13 +171,14 @@ Work Package's Definition of Done is checked against.
 
 ## Command Framework
 
-Architected — `WP 5.1A` (ADR-0036–ADR-0038); dispatcher implementation
-pending `WP 5.1B`. `ICommand`'s own contract (`WP 4.0`) finally gains a
-handler contract and a dispatcher.
+Implemented — `WP 5.1A` design, `WP 5.1B` implementation
+(ADR-0036–ADR-0038). `ICommand`'s own contract (`WP 4.0`) now has a real
+handler contract and dispatcher, proven against a real sample module.
 
 - [Command Framework](02%20Runtime%20Architecture/11-command-framework.md) — the concept guide: why commands exist, the Command/Mediator pattern, why TempestOS didn't adopt CQRS, and how `ICommandDispatcher`/`ICommandRegistry` answer two genuinely different callers' needs.
 - [WP 5.1A — Command Framework Architecture](03%20Work%20Packages/WP5.1A-command-framework-architecture.md) — the design phase: registration model, dispatch model, the registration-order-squatting finding (`CMD-1`/`TD-11`), and why an implied prior direction (DI-resolved handlers) was resolved by reuse rather than a container redesign.
-- `docs/architecture/Command Framework Architecture.md` — the full design document.
+- [WP 5.1B — Command Framework Implementation](03%20Work%20Packages/WP5.1B-command-framework-implementation.md) — the implementation phase: `CommandDispatcher`/`CommandRegistry` built and proven against `CommandSampleModule`; the `CommandHandlerTable` sharing finding, resolved without reflection or a container redesign.
+- `docs/architecture/Command Framework Architecture.md` — the full design document, including its own Implementation Note and Security Review Update.
 - ADR-0022 (Navigation/Command orthogonality, decided during original v0.4.0 planning), ADR-0036 (Command Framework is DI-public), ADR-0037 (registration model), ADR-0038 (dispatch failure model — Case 5 of *Failure Isolation Across TempestOS*).
 - See also [Failure Isolation Across TempestOS](02%20Runtime%20Architecture/08-failure-isolation.md) (Case 5: propagate, don't isolate) and [Navigation Architecture](02%20Runtime%20Architecture/09-navigation-architecture.md) (the closest structural precedent).
 
@@ -260,8 +261,9 @@ whatever you're about to change, before you change it.
 - [WP 5.0D — Shell & Composition Framework Implementation](03%20Work%20Packages/WP5.0D-shell-and-composition-framework-implementation.md)
 - [WP 5.0S — Platform Security Baseline Audit](03%20Work%20Packages/WP5.0S-platform-security-baseline-audit.md)
 - [WP 5.1A — Command Framework Architecture](03%20Work%20Packages/WP5.1A-command-framework-architecture.md)
+- [WP 5.1B — Command Framework Implementation](03%20Work%20Packages/WP5.1B-command-framework-implementation.md)
 
-Still to come: `WP 5.1B` (Command Framework Implementation) onward — see
+Still to come: `WP 5.2` (Diagnostics Improvements) onward — see
 `docs/releases/v0.5.0/WorkPackages.md` for the full, current plan.
 
 ## Reference Material

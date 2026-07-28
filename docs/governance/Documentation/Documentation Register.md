@@ -10,7 +10,7 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | The `docs/` tree itself. |
 | **Review Frequency** | Updated whenever a new top-level documentation directory or document type is introduced. |
-| **Last Reviewed** | 2026-07-28 (WP 5.1A, Command Framework Architecture) — `docs/security/` row (added `WP 5.0S`) retained; ADR/architecture-document/Academy counts refreshed to current, having drifted stale (unrelated to this Work Package's own scope) since `WP 5.0D`. |
+| **Last Reviewed** | 2026-07-28 (WP 5.1B, Command Framework Implementation) — Academy count refreshed (adds the `WP 5.1B` retrospective). |
 | **Related Documents** | `ADR Register.md`; `Architecture Document Register.md`; `Academy Register.md`; `Release Register.md`; `Governance Index.md`. |
 | **Related ADRs** | None directly. |
 | **Related Academy Articles** | None directly. |
@@ -27,7 +27,7 @@
 | `docs/academy/00 Introduction/` | Academy welcome/orientation | `Academy Register.md` |
 | `docs/academy/01 Engineering Principles/` | 11 general software-engineering principles | `Academy Register.md` |
 | `docs/academy/02 Runtime Architecture/` | 11 concept guides synthesising the runtime | `Academy Register.md` |
-| `docs/academy/03 Work Packages/` | 31 Work Package retrospectives | `Academy Register.md`; `Feature Register.md` |
+| `docs/academy/03 Work Packages/` | 32 Work Package retrospectives | `Academy Register.md`; `Feature Register.md` |
 | `docs/academy/04 Design Patterns/` | 4 recurring structural pattern guides | `Academy Register.md` |
 | `docs/academy/05 Case Studies/` | 5 narrative decision deep-dives | `Academy Register.md` |
 | `docs/academy/06 Engineering Standards/` | Engineering Governance (the constitution, now 12 sections) plus 4 coding/process standards | `Engineering Standards Register.md` |

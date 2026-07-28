@@ -390,8 +390,11 @@ see `Technical Debt Register.md`.
 
 ## WP 5.1B — Command Framework Implementation
 
-**Status note.** Not started. Formerly the implementation half of a
-single `WP 5.1` entry, formerly `WP 4.7` under the `v0.4.0` plan.
+**Status note.** Complete. Implementation: `src/Tempest.Core/Commands/`,
+a new `Tempest.Samples` reference module (`CommandSampleModule`) plus two
+reference commands, 66 new tests (514 total), and the `WP 5.1B` Academy
+retrospective. Formerly the implementation half of a single `WP 5.1`
+entry, formerly `WP 4.7` under the `v0.4.0` plan.
 
 ### Objective
 
@@ -400,42 +403,59 @@ Implement exactly what `WP 5.1A` designed.
 ### Scope
 
 Defined entirely by `WP 5.1A`'s own deliverable (`docs/architecture/
-Command Framework Architecture.md`) — this entry is intentionally thin
-until implementation begins; the architecture itself, not this entry, is
-authoritative on shape.
+Command Framework Architecture.md`) — realised with zero deviation from
+that design's own approved public contracts. One genuine implementation
+finding (documented in that same architecture document's own
+"Implementation Note" section, added by this Work Package): two
+independent singleton registrations against the same concrete type do
+not share an instance in this container, resolved by introducing a
+small, shared, container-registered collaborator (`CommandHandlerTable`)
+rather than by reflection or a container redesign.
 
 ### Dependencies
 
-**`WP 5.1A`** (required, blocking; complete). **`WP 4.3`** (extend the
-sample module set with at least one registered command handler). Not
-dependent on **`WP 5.0A`/`WP 5.0B`** (Navigation) — `ADR-0022`.
+**`WP 5.1A`** (required, blocking; complete). **`WP 4.3`** (extended the
+sample module set with `CommandSampleModule`). Not dependent on
+**`WP 5.0A`/`WP 5.0B`** (Navigation) — `ADR-0022` — though
+`CommandSampleModule` does depend on `INavigationProvider` directly, as
+ordinary application logic, to realise ADR-0022's own illustration.
 
-### Deliverables
+### Deliverables — Done
 
-Whatever `WP 5.1A`'s architecture document specifies: `ICommandDispatcher`/
-`ICommandRegistry` and their concrete implementations, DI-resolvable
-like the Event Bus and Navigation; the sample module set extended with
-at least one registered command handler.
+- `ICommandDispatcher`/`CommandDispatcher`, `ICommandRegistry`/
+  `CommandRegistry`, `CommandDescriptor`, `CommandResult`,
+  `CommandHandlerTable`, and the `CommandException` hierarchy, registered
+  during the existing Platform Services Registered phase, exactly like
+  the Event Bus and Navigation.
+- `CommandSampleModule` (`Tempest.Samples`), registering
+  `IncrementCounterCommand` (successful execution and expected failure,
+  by amount) and `NavigateToSampleHomeCommand` (the first concrete
+  realisation of ADR-0022's own `OpenModuleCommand → NavigationService.
+  Navigate(...)` illustration).
 
-### Acceptance Criteria
+### Acceptance Criteria — Met
 
-Whatever `WP 5.1A`'s architecture document specifies, at minimum
-including: a module can register a command handler and have it invoked
-either by its concrete type or by a string Id, proven against the sample
-module set; duplicate registration is rejected, not silently overridden;
-a handler's own exception propagates to the caller.
+A module registers a command handler and has it invoked either by its
+concrete type (`ICommandDispatcher.DispatchAsync`) or by a string Id
+(`ICommandRegistry.InvokeAsync`), proven against `CommandSampleModule`
+and the real, unmodified `TempestHost`. Duplicate registration is
+rejected, not silently overridden (`DuplicateCommandHandlerException`/
+`DuplicateCommandIdException`). A handler's own exception propagates to
+the caller, proven directly, both for a synthetic fixture and for the
+real `CommandSampleModule`'s own negative-amount case (a `CommandResult.
+Failure`, not a thrown exception — the expected, foreseeable path).
 
 ### Estimated Complexity
 
-**M.**
+**Realised as M.**
 
 ### Risks
 
-Inherits any risk `WP 5.1A` did not fully resolve — `CMD-1`/`TD-11`
-(registration-order squatting) is explicitly not fixed by `WP 5.1A` and
-is not this Work Package's own scope to fix either, per `WP 5.1A`'s own
-Security Review; a regression test proving the current, disclosed
-behaviour is recommended, not a fix.
+`CMD-1`/`TD-11` (registration-order squatting) remains open, exactly as
+`WP 5.1A` disclosed and this Work Package's own brief scoped it — not
+fixed, since doing so requires an architectural ownership/priority
+model. Confirmed present in the real implementation by direct test,
+not merely asserted.
 
 ---
 

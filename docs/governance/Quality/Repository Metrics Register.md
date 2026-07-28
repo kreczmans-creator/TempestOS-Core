@@ -10,7 +10,7 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | Direct repository inspection (`find`, `wc`, `git log`) performed as part of this Work Package. |
 | **Review Frequency** | Re-measured at each Governance Baseline review, or on request. |
-| **Last Reviewed** | 2026-07-28 (WP 5.1A, Command Framework Architecture). |
+| **Last Reviewed** | 2026-07-28 (WP 5.1B, Command Framework Implementation). |
 | **Related Documents** | `Test Register.md`; `Namespace Register.md`; `Engineering Evolution Register.md`. |
 | **Related ADRs** | None directly. |
 | **Related Academy Articles** | None directly — this is a raw metrics snapshot, not a teaching document. |
@@ -241,6 +241,42 @@ additions moved.
 re-run to confirm this directly: identical 448/448 result to the
 `WP 5.0S` snapshot, since no `src/`/`tests/` file was touched.
 
+## Snapshot: 2026-07-28 (WP 5.1B — Command Framework Implementation)
+
+The first implementation Work Package since `WP 5.0D` to change
+`src/`/`tests/` — implements `ICommandDispatcher`/`CommandDispatcher`,
+`ICommandRegistry`/`CommandRegistry`, `CommandDescriptor`, `CommandResult`,
+`CommandHandlerTable`, and the `CommandException` hierarchy
+(`Tempest.Core.Commands`), and `CommandSampleModule` plus two reference
+commands (`Tempest.Samples`).
+
+| Metric | WP 5.1A | WP 5.1B (current) |
+|---|---|---|
+| `src/` `.cs` files / lines | 119 / 7,589 | 137 / 8,554 (adds 13 `Tempest.Core.Commands` files, 5 `Tempest.Samples` files) |
+| `tests/` `.cs` files / lines | 60 / 8,867 | 65 / 10,078 (adds `Commands/CommandFixtures.cs`, `CommandDispatcherTests.cs`, `CommandRegistryTests.cs`, `CommandDescriptorAndResultTests.cs`; `Samples/CommandSampleModuleIntegrationTests.cs`; extends `DynamicPluginAssemblyBuilder.cs`) |
+| Executed tests (`dotnet test`) | 448, 0 failures | **514, 0 failures** (66 new) |
+| Namespaces under `src/` | 17 declared + 1 global | 17 declared + 1 global (unchanged — extends the existing `Tempest.Core.Commands` namespace, introduced `WP 4.0`) |
+| ADRs | 38 (`ADR-0001`–`ADR-0038`) | 38 (unchanged — implementation realises `WP 5.1A`'s already-Accepted ADRs, no new ADR) |
+| Rejected Designs entries | 41 (`RD-0001`–`RD-0041`) | 41 (unchanged) |
+| Architecture documents (`docs/architecture/`) | 19 | 19 (unchanged — `Command Framework Architecture.md`'s own status updated in place, plus a new Implementation Note and Security Review Update section, no new document) |
+| Platform services (Register total) | 16 catalogued, 12 Implemented + 1 Architected | 16 catalogued, **13 Implemented** (Command Framework moves from Architected to Implemented) |
+| Public interfaces (`src/Tempest.Core/`) | 27 | 30 (adds `ICommandDispatcher`, `ICommandHandler<T>`, `ICommandRegistry`) |
+| Custom exception types | 25 | 30 (adds `CommandException` and four subtypes) |
+| Production modules | 5 | 6 (adds `CommandSampleModule`) |
+| Academy articles (`docs/academy/`, all subfolders) | 72 | 73 (adds `WP5.1B-command-framework-implementation.md`) |
+| `docs/` `.md` files | 180 | 181 |
+| Governance documents (`docs/governance/`, all subfolders) | 32 | 32 (unchanged — updates existing registers rather than adding new ones) |
+| Technical Debt Register open items | 8 Open, 1 Partially resolved, 2 Resolved (11 total) | 8 Open, 1 Partially resolved, 2 Resolved (11 total — unchanged; `TD-09`/`TD-11` confirmed present in the implementation, not newly introduced) |
+| Total commits | 58 | 59 (before this Work Package's own commit) |
+| Build warnings/errors | 0/0 | 0/0 (unchanged) |
+
+**A genuine application behaviour change, not merely a code change:**
+running the built application confirms `CommandSampleModule` discovered,
+registered, initialised, and disposed cleanly through the real
+`TempestHost`, and `ICommandDispatcher`/`ICommandRegistry` registered
+during the existing Platform Services Registered phase — confirmed by
+direct execution, not merely by the test suite.
+
 ## Governance Suite Size (Introduced by This Work Package, WP 4.5A)
 
 | Metric | Value |
@@ -262,7 +298,7 @@ is offered.
 ## Cross-Reference Check
 
 The ADR count (38), Rejected Designs count (41), Academy article count
-(72), test count (448), and build status (0/0) above are each
+(73), test count (514), and build status (0/0) above are each
 cross-checked directly against `ADR Register.md`, `Rejected Designs
 Register.md`, `Academy Register.md`, `Test Register.md`, and `Validation
 Register.md` respectively — all consistent, no discrepancy found.

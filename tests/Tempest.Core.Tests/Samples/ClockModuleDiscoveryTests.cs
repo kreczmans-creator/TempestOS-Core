@@ -66,12 +66,13 @@ public class ClockModuleDiscoveryTests
 
         var result = service.DiscoverModules();
 
-        Assert.Equal(5, result.Count);
+        Assert.Equal(6, result.Count);
         Assert.Contains(result, d => d.Id == "tempest.samples.clock" && d.ModuleType == typeof(ClockModule));
         Assert.Contains(result, d => d.Id == "tempest.samples.clock.observer" && d.ModuleType == typeof(ClockLifecycleObserverModule));
         Assert.Contains(result, d => d.Id == "tempest.samples.navigation" && d.ModuleType == typeof(NavigationSampleModule));
         Assert.Contains(result, d => d.Id == "tempest.samples.navigation.secondary" && d.ModuleType == typeof(SecondaryNavigationSampleModule));
         Assert.Contains(result, d => d.Id == "tempest.samples.navigation.zzz-duplicate" && d.ModuleType == typeof(DuplicateNavigationSampleModule));
+        Assert.Contains(result, d => d.Id == "tempest.samples.commands" && d.ModuleType == typeof(Tempest.Samples.CommandSampleModule));
     }
 
     // ----------------------------------------------------------------

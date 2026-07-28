@@ -1,7 +1,8 @@
 # Command Framework Architecture
 
-**Status: designed — WP 5.1A (ADR-0036, ADR-0037, ADR-0038). Not yet
-implemented — WP 5.1B.**
+**Status: designed — WP 5.1A (ADR-0036, ADR-0037, ADR-0038). Implemented
+— WP 5.1B, exactly as designed, with one small, disclosed implementation
+nuance — see "Implementation Note," below.**
 
 ## Objective
 
@@ -780,12 +781,122 @@ Package's own review (not new drift introduced by it):**
 Rejected Design was found to conflict with this Work Package's own
 conclusions.
 
-## Testing Strategy (For `WP 5.1B` — Not Exercised by This Work Package)
+## Implementation Note: The Shared Handler Table (`WP 5.1B`)
 
-No test is added by this Work Package (architecture only). The following
-is the testing strategy `WP 5.1B`'s own implementation should satisfy,
-following this project's own established "prefer real implementations
-over mocks" convention:
+A genuine, disclosed implementation finding, not anticipated by this
+document's own original "Component Design" sketch: `ICommandRegistry.
+InvokeAsync` must dispatch a command whose concrete type is known only
+at runtime (from `CommandDescriptor.CreateDefault`), but
+`ICommandDispatcher`'s own public contract is deliberately generic-only
+(`DispatchAsync<TCommand>`) — there is no way to call a generic method
+with a type parameter that is not known until runtime, short of
+reflection. Two independent `Singleton<TService, TImplementation>()`
+registrations against the same concrete type were also confirmed, by
+direct inspection of `TempestServiceProvider`'s own per-`ServiceType`
+singleton cache, to produce **two separate constructed instances** —
+not one shared instance — ruling out "make one class implement both
+interfaces, registered twice" as a solution.
+
+**Resolved by introducing `CommandHandlerTable`**: an internal-in-spirit
+collaborator holding the type-erased handler dictionary, registered as
+its own ordinary container-constructed singleton
+(`services.Singleton<CommandHandlerTable>()`) and constructor-injected
+into both `CommandDispatcher` and `CommandRegistry`. Because
+`CommandHandlerTable` is resolved under one single `ServiceType`, both
+consumers receive the identical, shared instance — proven directly by
+`CommandRegistryTests.InvokeAsync_DispatchesThroughTheSameHandlerTableCommandDispatcherPopulates`
+and its container-resolved counterpart. This uses **zero reflection**
+(the "no reflection anywhere" claim in this document's own Repository
+Investigation and Security Review holds true in the actual
+implementation) and requires **zero new Dependency Injection capability**
+— `CommandHandlerTable` is registered exactly like any other
+container-constructed singleton, no different from `EventBus` or
+`NavigationService` from `TempestServiceProvider`'s own point of view.
+
+**One small, disclosed nuance**: `CommandHandlerTable` had to be declared
+`public`, not `internal`, purely because C# does not allow a `public`
+constructor (required for the container's reflection-based construction,
+which only finds public constructors) to expose a parameter of a less
+visible type (CS0051). This does not change `ICommandDispatcher`'s or
+`ICommandRegistry`'s own public shape — both remain exactly as ADR-0036/
+ADR-0037 approved — and grants no caller any capability beyond what
+`ICommandDispatcher` already grants identically; only `CommandDispatcher`'s
+own logging wrapper could be bypassed by a caller that resolved
+`CommandHandlerTable` directly instead, which no first-party code does.
+See the Security Review update below (`WP 5.1B`) for the full assessment.
+This is **not** an architectural deviation — it does not change any
+decision ADR-0036, ADR-0037, or ADR-0038 actually made, only an internal
+collaborator's necessary visibility modifier — and did not warrant a STOP
+under this Work Package's own governing rule.
+
+## Security Review Update (`WP 5.1B` — Implementation)
+
+The Security Review above was conducted at the architecture phase
+(`WP 5.1A`); this Work Package's own mandatory review confirms it against
+the real, running implementation.
+
+**`CommandHandlerTable`'s public visibility (new since `WP 5.1A`).**
+Reviewed. Grants no new capability: any caller able to resolve
+`CommandHandlerTable` directly could already achieve the identical
+outcome via `ICommandDispatcher` — the only thing bypassed is
+`CommandDispatcher`'s own logging wrapper, an observability gap, not a
+privilege or trust-boundary change. No Technical Debt entry is warranted
+(`Security Principles.md` Principle 7 — do not double-count a
+capability-free implementation detail as debt).
+
+**`CMD-1`/`TD-11` (registration-order squatting).** Confirmed present in
+the implementation exactly as designed and disclosed at `WP 5.1A` — both
+`CommandHandlerTable.Register` and `CommandRegistry.RegisterDescriptor`
+reject a later duplicate but do not verify the first registrant's
+legitimacy. Not fixed here either, per this Work Package's own scope
+(an ownership/priority model is architectural). `TD-11` remains Open,
+unchanged.
+
+**`TD-09` (plugin trust boundary).** Confirmed present exactly as
+disclosed — `PluginLoadedModule_RegistersCommand_ThroughTheIdenticalPathAnOrdinaryModuleUses`
+proves a plugin-loaded module registers command handlers/descriptors
+through the identical, unmodified path an ordinary module uses, with
+full DI access. Not worsened; not fixed; `TD-09`'s own entry already
+names the Command Framework as an affected surface.
+
+**Thread safety.** Reviewed directly against the real implementation.
+`CommandHandlerTable` and `CommandRegistry` each use a single, private
+`_gate` lock guarding their own dictionary; neither ever calls into the
+other while holding its own lock (`CommandRegistry.InvokeAsync` releases
+its lock before calling `CommandHandlerTable.DispatchAsync`) — no
+nested-lock deadlock risk exists. Concurrent registration and concurrent
+dispatch are both exercised directly by
+`CommandDispatcherTests`'s own thread-safety tests, and complete without
+corruption.
+
+**Resource disposal.** Reviewed. Neither `CommandHandlerTable`,
+`CommandDispatcher`, nor `CommandRegistry` implements `IDisposable` or
+holds an unmanaged resource or event subscription requiring cleanup —
+there is nothing to dispose.
+
+**Reflection implications.** Reviewed. Confirmed zero reflection
+anywhere in the production Command Framework implementation (see
+Implementation Note, above). The dynamically-emitted plugin assembly
+used by `PluginLoadedModule_RegistersCommand_...`'s own test is
+test-only infrastructure (`DynamicPluginAssemblyBuilder`), not
+production code.
+
+**Summary.** No new security vulnerability or architectural security
+concern was introduced by this Work Package's implementation. Every
+already-disclosed finding from `WP 5.1A` (`TD-09`, `TD-11`) is confirmed
+present exactly as designed — neither worsened nor newly introduced. One
+immaterial implementation nuance (`CommandHandlerTable`'s necessary
+public visibility) is disclosed for completeness and requires no
+Technical Debt entry. **The Platform Security Baseline remains
+unchanged.**
+
+## Testing Strategy
+
+**Realised in full by `WP 5.1B`** — every scenario below is proven by a
+real, passing test against the real `CommandDispatcher`, `CommandRegistry`,
+and `CommandHandlerTable`; no mocks, except a level-recording `ILogger`
+used only to observe log output, following this project's own
+established "prefer real implementations over mocks" convention:
 
 - **Dispatch**: a registered handler is invoked with the exact command
   instance passed to `DispatchAsync`; its `CommandResult` is returned
@@ -820,12 +931,14 @@ over mocks" convention:
   through the identical path a normally-discovered module uses,
   mirroring `PluginAssemblyLoaderTests`'/`NavigationSampleModuleIntegrationTests`'
   own "prove the existing mechanism needs no change" methodology.
-- **Registration-order squatting (`CMD-1`)**: at minimum, a test proving
-  the *current, disclosed* behaviour (first registration wins,
-  regardless of which module is "the intended owner") so the finding
-  remains an honestly-documented, deliberately-accepted gap rather than
-  an untested assumption — not a fix, since `CMD-1` is explicitly
-  deferred.
+- **Registration-order squatting (`CMD-1`)**: the duplicate-rejection
+  tests above already prove the *current, disclosed* mechanism directly
+  — first registration wins, unconditionally, with no check of who the
+  registrant is — so the finding remains an honestly-documented,
+  deliberately-accepted gap rather than an untested assumption. No
+  additional, ownership-specific test was added, since fixing (rather
+  than merely documenting) `CMD-1` is explicitly out of this Work
+  Package's own scope.
 
 ## Required for v0.5 vs. Deferred Beyond v0.5
 

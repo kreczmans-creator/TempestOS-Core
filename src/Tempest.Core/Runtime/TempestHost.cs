@@ -1,4 +1,5 @@
 using Tempest.Core.BackgroundServices;
+using Tempest.Core.Commands;
 using Tempest.Core.Configuration;
 using Tempest.Core.DependencyInjection;
 using Tempest.Core.Events;
@@ -227,6 +228,9 @@ public sealed class TempestHost : ITempestHost
         services.AddInstance(platformVersionProvider);
         services.Singleton<IEventBus, EventBus>();
         services.Singleton<INavigationProvider, NavigationService>();
+        services.Singleton<CommandHandlerTable>();
+        services.Singleton<ICommandDispatcher, CommandDispatcher>();
+        services.Singleton<ICommandRegistry, CommandRegistry>();
         services.AddDiscoveredModules(moduleManager.GetAll().Select(module => module.Descriptor));
         services.AddDiscoveredHostedServices(hostedServiceTypes);
         logger.Information(

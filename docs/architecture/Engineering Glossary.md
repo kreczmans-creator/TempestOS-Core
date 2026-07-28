@@ -93,7 +93,7 @@ deterministic order — answering exactly one question: what modules exist.
 Deliberately independent of the DI container (ADR-0008) and of Configuration.
 See the Platform Service Map's "Discovery" entry.
 
-### Command *(contract implemented — v0.4.0, WP 4.0; architected — WP 5.1A, ADR-0036–ADR-0038; dispatcher implementation pending WP 5.1B)*
+### Command *(implemented — v0.4.0 WP 4.0 contract, WP 5.1A design, WP 5.1B dispatcher implementation, ADR-0036–ADR-0038)*
 
 A discrete, named unit of application logic requested by a caller,
 implemented as data (`ICommand`, `Tempest.Core.Commands`): a concrete

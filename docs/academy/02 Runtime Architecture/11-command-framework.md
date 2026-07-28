@@ -1,5 +1,9 @@
 # Command Framework
 
+**Status: designed — `WP 5.1A` (ADR-0036–ADR-0038). Implemented —
+`WP 5.1B`, exactly as designed; see that Work Package's own retrospective
+for the one small, disclosed implementation nuance (`CommandHandlerTable`).**
+
 ## 1. Introduction
 
 A **command** is a request to do one specific thing, packaged as an
@@ -202,7 +206,12 @@ Framework Architecture.md` — not designed now, because no real consumer
 needs any of them yet. The framework's own seams (`CommandResult`,
 `CanExecute`, the two-contract split) are deliberately shaped so that
 each of these can be added later without requiring either
-`ICommandDispatcher` or `ICommandRegistry` to change shape.
+`ICommandDispatcher` or `ICommandRegistry` to change shape. `WP 5.1B`
+implemented the design exactly as described here, with one internal
+collaborator this document did not need to anticipate —
+`CommandHandlerTable`, shared by the dispatcher and the registry so both
+operate against the identical handler set — see that Work Package's own
+retrospective for the full story.
 
 ## 13. Key Takeaways
 
@@ -224,4 +233,5 @@ each of these can be added later without requiring either
 Package's own decisions); `Navigation Architecture` (the closest
 structural precedent); `Failure Isolation Across TempestOS` (Case 5);
 `docs/academy/04 Design Patterns/01-the-registry-pattern.md`;
-`docs/academy/03 Work Packages/WP5.1A-command-framework-architecture.md`.
+`docs/academy/03 Work Packages/WP5.1A-command-framework-architecture.md`;
+`docs/academy/03 Work Packages/WP5.1B-command-framework-implementation.md`.

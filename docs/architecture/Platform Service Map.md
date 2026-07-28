@@ -30,7 +30,7 @@ of date is worse than no map at all, because it will be trusted.
 | Host | Implemented (WP 2.7B) | Configuration, Logging, Discovery, Registration, Lifecycle, Dependency Injection | Tempest.App |
 | Event Bus | **Implemented — WP 4.4D** (`IEventBus`/`EventBus`, `Tempest.Core.Events`) — dispatch/subscription/failure model per ADR-0028; **consumed — WP 4.4E** | Dependency Injection | Any module — first real consumer: `ClockModule`/`ClockLifecycleObserverModule` (`WP 4.4E`) |
 | Background Services | **Implemented — WP 4.5** (`IHostedServiceDiscoveryService`/`HostedServiceDiscoveryService`, `IHostedServiceManager`/`HostedServiceManager`, `Tempest.Core.BackgroundServices`) — discovery, ownership, orchestration, and Host Lifecycle placement per ADR-0029/ADR-0030; failure model per ADR-0021 | Host, Dependency Injection | Any module declaring a hosted service |
-| Command Framework | **Architected — WP 5.1A** (`ICommandDispatcher`/`ICommandRegistry`, ADR-0036–ADR-0038); dispatcher implementation pending WP 5.1B — orthogonal to Navigation, ADR-0022 | Dependency Injection | Any module contributing a command handler; `Tempest.App` (invocation, not yet built) |
+| Command Framework | **Implemented — WP 5.1A (design), WP 5.1B (implementation)** (`ICommandDispatcher`/`ICommandRegistry`, `Tempest.Core.Commands`) — orthogonal to Navigation, ADR-0022 | Dependency Injection | `CommandSampleModule` (real contributor); `Tempest.App` (invocation, not yet wired into the Shell's own input handling) |
 | Navigation | **Implemented — WP 5.0A (design), WP 5.0B (implementation)** (`INavigationProvider`/`NavigationService`, `Tempest.Core.Navigation`) — model, ownership, and rendering boundary per ADR-0031/ADR-0032 | Dependency Injection, Event Bus | Any module contributing a navigation item; `Tempest.App` (rendering, not yet built) |
 | Plugin Manifest | **Implemented — WP 4.2** (`Tempest.Core.Plugins`) | Host (Phases 3.1/3.2, ADR-0026 — a pre-Discovery step) | Module Discovery (unchanged), any real plugin |
 | Project Engine | Planned | Undetermined | Undetermined |
@@ -531,7 +531,7 @@ RD-0029; `docs/releases/v0.4.0/WorkPackages.md` (`WP 4.5`).
 
 ---
 
-## Command Framework *(architected — WP 5.1A, ADR-0036–ADR-0038; implementation pending WP 5.1B)*
+## Command Framework *(implemented — WP 5.1A design, WP 5.1B implementation, ADR-0036–ADR-0038)*
 
 **Responsibility.** A uniform, UI-agnostic way to request a discrete unit
 of application logic, invokable by a typed caller (`ICommandDispatcher.
@@ -544,12 +544,15 @@ handles it, and the caller receives a `CommandResult` (or a propagated
 exception) so it genuinely knows whether the command succeeded.
 
 **Key types.** `ICommand` (`Tempest.Core.Commands`, implemented WP 4.0,
-unchanged). `ICommandHandler<TCommand>`, `ICommandDispatcher`,
-`CommandDescriptor`, `ICommandRegistry`, `CommandResult`, and five
-exception types (`CommandException`, `DuplicateCommandHandlerException`,
-`DuplicateCommandIdException`, `CommandHandlerNotRegisteredException`,
-`CommandNotFoundException`) — designed WP 5.1A, implementation pending
-WP 5.1B.
+unchanged). `ICommandHandler<TCommand>`, `ICommandDispatcher`/
+`CommandDispatcher`, `CommandDescriptor`, `ICommandRegistry`/
+`CommandRegistry`, `CommandResult`, `CommandHandlerTable` (an internal-in-
+spirit, DI-registered collaborator shared by the dispatcher and the
+registry), and five exception types (`CommandException`,
+`DuplicateCommandHandlerException`, `DuplicateCommandIdException`,
+`CommandHandlerNotRegisteredException`, `CommandNotFoundException`) —
+designed WP 5.1A, implemented WP 5.1B with zero deviation from the
+approved public shape.
 
 **Dependencies.** None module-specific — depends on nothing but the
 handler/descriptor instances registered into it. **Explicitly orthogonal
@@ -558,9 +561,14 @@ depends on the other. **Never dispatched through the Event Bus**
 (ADR-0037, RD-0039) — a command handler may use `IEventBus` as an
 ordinary peer dependency, exactly as it may use `INavigationProvider`.
 
-**Consumers.** Any module contributing a command handler; `Tempest.App`'s
-Shell, once `WP 5.1B` implements the dispatcher and a later Work Package
-wires the Shell's own input handling to it.
+**Consumers.** `CommandSampleModule` (`Tempest.Samples`, WP 5.1B) — the
+real, first consumer, registering `IncrementCounterCommand` (success/
+failure) and `NavigateToSampleHomeCommand` (the first concrete
+realisation of ADR-0022's own `OpenModuleCommand → NavigationService.
+Navigate(...)` illustration). `Tempest.App`'s Shell can resolve both
+`ICommandDispatcher`/`ICommandRegistry` via `ITempestHost.Services`
+today; wiring the Shell's own input handling (menus, keyboard shortcuts)
+to them is a later Work Package's own scope.
 
 **ADR references.** ADR-0022 (*Navigation and Commands Are Orthogonal
 Platform Services*), ADR-0023, ADR-0024, ADR-0036 (*Command Framework Is
@@ -568,8 +576,9 @@ a DI-Public Platform Service*), ADR-0037 (*Command Registration Model*),
 ADR-0038 (*Command Dispatch Failure Model*).
 
 **Academy references.** WP 4.0 retrospective (*Platform Contracts*); WP
-5.1A retrospective (*Command Framework Architecture*);
-`docs/releases/v0.5.0/WorkPackages.md` (`WP 5.1`).
+5.1A retrospective (*Command Framework Architecture*); WP 5.1B
+retrospective (*Command Framework Implementation*);
+`docs/releases/v0.5.0/WorkPackages.md` (`WP 5.1B`).
 
 ---
 

@@ -10,9 +10,9 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | `src/Tempest.Core/Runtime/TempestHost.cs` (the registration call sites); `src/Tempest.Core/DependencyInjection/`. |
 | **Review Frequency** | Updated whenever `TempestHost`'s Platform Services Registered phase changes, or a new `IServiceCollection` extension method is added. |
-| **Last Reviewed** | 2026-07-27 (WP 5.0D) — re-verified, unchanged: no new registration call site was added. |
+| **Last Reviewed** | 2026-07-28 (WP 5.1B) — three new registration call sites added (`CommandHandlerTable`, `ICommandDispatcher`, `ICommandRegistry`). |
 | **Related Documents** | `docs/architecture/Host Lifecycle.md` (Phase 6); `docs/architecture/Ownership Matrix.md`; `Interface Register.md`. |
-| **Related ADRs** | ADR-0005 through ADR-0009, ADR-0011, ADR-0017, ADR-0020. |
+| **Related ADRs** | ADR-0005 through ADR-0009, ADR-0011, ADR-0017, ADR-0020, ADR-0036. |
 | **Related Academy Articles** | `docs/academy/01 Engineering Principles/05-dependency-injection.md`; `docs/academy/03 Work Packages/WP2.4-dependency-injection.md`. |
 | **Coverage Status** | Complete. |
 
@@ -45,12 +45,16 @@ no request/scope concept to justify one.
 | `IPlatformVersionProvider` | `AddInstance` | Pre-built instance |
 | `IEventBus` | `Singleton<IEventBus, EventBus>()` | Ordinary container-constructed singleton (ADR-0020) |
 | `INavigationProvider` | `Singleton<INavigationProvider, NavigationService>()` | Ordinary container-constructed singleton (ADR-0032), registered immediately after `IEventBus` |
+| `CommandHandlerTable` | `Singleton<CommandHandlerTable>()` | Ordinary container-constructed singleton — an implementation-supporting collaborator, not a documented Platform API, shared by `ICommandDispatcher` and `ICommandRegistry` so both operate against the identical handler set (see `Command Framework Architecture.md`'s Architecture Verification) |
+| `ICommandDispatcher` | `Singleton<ICommandDispatcher, CommandDispatcher>()` | Ordinary container-constructed singleton (ADR-0036), registered immediately after `INavigationProvider` |
+| `ICommandRegistry` | `Singleton<ICommandRegistry, CommandRegistry>()` | Ordinary container-constructed singleton (ADR-0036), registered immediately after `ICommandDispatcher` |
 | Every discovered module type | `AddDiscoveredModules` → `Singleton(type, type)` per type | Self-referential singleton |
 | Every discovered hosted service type | `AddDiscoveredHostedServices` → `Singleton(type, type)` per type | Self-referential singleton |
 
-**Total distinct registration call sites in `TempestHost.cs`: 9 (Verified
+**Total distinct registration call sites in `TempestHost.cs`: 12 (Verified
 by direct line count of Phase 6's own registration block; adds
-`INavigationProvider`, `WP 5.0B`).**
+`CommandHandlerTable`, `ICommandDispatcher`, `ICommandRegistry`,
+`WP 5.1B`).**
 
 **A new external consumption path, not a new registration (`WP 5.0D`).**
 `ITempestHost.Services` (ADR-0034) exposes read-only resolution against

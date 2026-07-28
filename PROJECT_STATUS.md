@@ -1,6 +1,6 @@
 # TempestOS — Project Status
 
-**Last Updated:** 2026-07-28 (WP 5.1A — Command Framework Architecture)
+**Last Updated:** 2026-07-28 (WP 5.1B — Command Framework Implementation)
 
 This is the primary status dashboard for TempestOS. Read this first for
 "where does the project stand right now" — for "why is it built this
@@ -26,16 +26,16 @@ time in this project's history. `WP 5.0S` (Platform Security Baseline
 Audit) followed as a dedicated, formal engineering audit — not a feature
 Work Package — establishing the v0.5.0 Security Baseline every future
 Work Package's Definition of Done is now checked against. `WP 5.1A`
-(Command Framework Architecture) is the phase's next completed Work
-Package — `ICommand`'s own contract (`WP 4.0`) finally has a handler
-contract and a dispatcher design; implementation (`WP 5.1B`) has not yet
-begun.
+(Command Framework Architecture) and `WP 5.1B` (Command Framework
+Implementation) followed — `ICommand`'s own contract (`WP 4.0`) now has
+a real handler contract and dispatcher, proven against a real sample
+module and the real Runtime Host.
 
 ## Current Development Branch
 
 **`feature/v0.5.0-developer-experience`**, cut from `main` after the
-`v0.4.0` tag. Carries `WP 5.0A` through `WP 5.0D`, plus `WP 5.0S` and
-`WP 5.1A`. Unmerged into `main`;
+`v0.4.0` tag. Carries `WP 5.0A` through `WP 5.0D`, plus `WP 5.0S`,
+`WP 5.1A`, and `WP 5.1B`. Unmerged into `main`;
 the merge/tag sequence for `v0.5.0` itself is not yet due, since the
 Developer Experience phase has only just begun (see `docs/releases/
 v0.5.0/WorkPackages.md`).
@@ -49,27 +49,32 @@ that.
 
 ## Current Work Package
 
-**`WP 5.1A` — Command Framework Architecture — complete** (this Work
-Package). Architecture only — no production code changed, no tests
-added. Designs `ICommandDispatcher`/`ICommandRegistry`/`CommandDescriptor`/
-`CommandResult`: a type-keyed dispatcher for callers with a concrete
-command instance, and an Id-keyed registry for callers with only a
-string (menus, toolbars, keyboard shortcuts, future automation/AI
-invocation) — both DI-public, both registered imperatively, mirroring
-the Event Bus and Navigation exactly (`ADR-0036`–`ADR-0038`). A
-mandatory security review against the `WP 5.0S` baseline surfaced one
-new, genuine finding — `CMD-1`/`TD-11`, "registration-order squatting,"
-which turns out to affect the already-implemented Navigation Framework
-too, not only the new Command Framework — disclosed, not fixed
-(architectural; deferred to a future Work Package). Risk R3 (`Risks.md`)
-is retired: the Event Bus/Command Framework cross-reference it required
-now exists. See this Work Package's own retrospective:
-`docs/academy/03 Work Packages/WP5.1A-command-framework-architecture.md`.
+**`WP 5.1B` — Command Framework Implementation — complete** (this Work
+Package). Implements exactly what `WP 5.1A` designed:
+`ICommandDispatcher`/`CommandDispatcher`, `ICommandRegistry`/
+`CommandRegistry`, `CommandDescriptor`, `CommandResult`, and the
+`CommandException` hierarchy — both DI-public, both registered
+imperatively, both confirmed to conform exactly to `ADR-0036`–`ADR-0038`.
+A genuine implementation-time finding (two independent singleton
+registrations against one concrete type do not share an instance in this
+container) was resolved by introducing a small, shared, container-
+registered collaborator (`CommandHandlerTable`) — zero reflection, zero
+new DI capability, zero change to either approved public contract. A new
+reference module, `CommandSampleModule` (`Tempest.Samples`), demonstrates
+successful execution, expected failure, and — for the first time —
+ADR-0022's own `OpenModuleCommand → NavigationService.Navigate(...)`
+illustration, proven end to end through the real, unmodified Runtime
+Host. A mandatory security review confirmed `TD-09`/`TD-11` (both
+disclosed at `WP 5.1A`) present in the implementation exactly as
+designed, neither worsened nor newly introduced; the Platform Security
+Baseline is unchanged. 66 new tests (514 total). See this Work Package's
+own retrospective:
+`docs/academy/03 Work Packages/WP5.1B-command-framework-implementation.md`.
 
 ## Next Planned Work Package
 
-`WP 5.1B` — Command Framework Implementation (see `docs/releases/v0.5.0/
-WorkPackages.md`). Implements exactly what `WP 5.1A` designed.
+`WP 5.2` — Diagnostics Improvements (see `docs/releases/v0.5.0/
+WorkPackages.md`). Composite logging, health/status reporting.
 
 ## Foundation Status
 
@@ -106,29 +111,32 @@ point builds a `TempestHostBuilder`, constructs the Shell
 interactive Navigation/Content region. The bootstrap-era
 `BootstrapService`/`HostingService`/`ProjectService` code remains in the
 repository, untouched and unmigrated, simply no longer referenced by
-`Program.cs`. The Command Framework's contract (`ICommand`, `v0.4.0`) now
-has a complete design (`ICommandDispatcher`/`ICommandRegistry`,
-`ADR-0036`–`ADR-0038`, `WP 5.1A`) — a type-keyed dispatcher and an
-Id-keyed registry, both DI-public, mirroring the Event Bus and
-Navigation; implementation (`WP 5.1B`) is the only remaining unbuilt
-piece of the Developer Experience phase's original scope besides
-Diagnostics and DevEx tooling.
+`Program.cs`. The Command Framework (`ICommand`, `v0.4.0`; `ICommandDispatcher`/
+`ICommandRegistry`, `ADR-0036`–`ADR-0038`, `WP 5.1A`/`WP 5.1B`) is now
+fully implemented — a type-keyed dispatcher and an Id-keyed registry,
+both DI-public, mirroring the Event Bus and Navigation — proven by a
+real reference module (`CommandSampleModule`) that also realises
+ADR-0022's own Navigation-integration illustration for the first time.
+Wiring the Shell's own input handling (keyboard shortcuts, a menu) to
+the Command Framework is deferred to a later Work Package; Diagnostics
+and DevEx tooling are the only remaining unbuilt pieces of the Developer
+Experience phase's original scope.
 
 ## Repository Metrics
 
 | Metric | Value |
 |---|---|
-| Automated tests | 448 (0 failures) — unchanged by `WP 5.1A` (architecture only, no tests added) |
-| ADRs | 38 (`ADR-0001`–`ADR-0038`), all Accepted — adds `ADR-0036`–`ADR-0038` (`WP 5.1A`) |
-| Rejected Designs | 41 (`RD-0001`–`RD-0041`) — adds `RD-0038`–`RD-0041` (`WP 5.1A`) |
-| Academy articles | 72 (see `docs/governance/Documentation/Academy Register.md`) |
+| Automated tests | 514 (0 failures) — 66 new (`WP 5.1B`: `Commands/` and `Samples/` test suites) |
+| ADRs | 38 (`ADR-0001`–`ADR-0038`), all Accepted — unchanged by `WP 5.1B` (implementation realises already-Accepted ADRs, no new ADR) |
+| Rejected Designs | 41 (`RD-0001`–`RD-0041`) |
+| Academy articles | 73 (see `docs/governance/Documentation/Academy Register.md`) |
 | Governance registers | 27 (32 governance documents total), plus 4 standing security documents under `docs/security/` (not governance registers themselves, indexed from `Governance Index.md`'s Security section) |
-| Architecture documents | 19 under `docs/architecture/` (21 including the two release-scoped documents) — adds `Command Framework Architecture.md` (`WP 5.1A`) |
-| Platform services | 16 catalogued — 12 Implemented, 1 **Architected** (Command Framework, `WP 5.1A`; implementation pending `WP 5.1B`, moved from "contract-only"), 2 not implemented as platform services, 1 developer-convenience layer |
-| Modules (production) | 5 (`ClockModule`, `ClockLifecycleObserverModule`, `NavigationSampleModule`, `SecondaryNavigationSampleModule`, `DuplicateNavigationSampleModule`) |
+| Architecture documents | 19 under `docs/architecture/` (21 including the two release-scoped documents) |
+| Platform services | 16 catalogued — **13 Implemented** (Command Framework moves from Architected to Implemented, `WP 5.1B`), 2 not implemented as platform services, 1 developer-convenience layer |
+| Modules (production) | 6 (`ClockModule`, `ClockLifecycleObserverModule`, `NavigationSampleModule`, `SecondaryNavigationSampleModule`, `DuplicateNavigationSampleModule`, `CommandSampleModule`) |
 | Hosted services (production) | 0 — infrastructure fully implemented and tested; zero shipped consumers by deliberate scope decision |
 | Plugins (production) | 0 — infrastructure fully implemented and tested; `src/Plugins/` empty by deliberate scope decision |
-| Commits (total / since `v0.4.0` tag) | 58 total (53 Claude-authored) / 6 since `v0.4.0` (`WP 5.0A`, `WP 5.0B`, `WP 5.0C`, `WP 5.0D`, `WP 5.0S`, `WP 5.1A`) |
+| Commits (total / since `v0.4.0` tag) | 59 total (54 Claude-authored) / 7 since `v0.4.0` (`WP 5.0A`, `WP 5.0B`, `WP 5.0C`, `WP 5.0D`, `WP 5.0S`, `WP 5.1A`, `WP 5.1B`) |
 | Contributors | 1 (repository owner; all commits co-authored by Claude) |
 
 *(This table is generated from `docs/governance/Quality/Repository Metrics
@@ -138,10 +146,11 @@ three together.)*
 ## Repository Health
 
 - **Build:** Clean — 0 warnings, 0 errors (`dotnet build src/TempestOS.slnx`).
-- **Tests:** 448/448 passing, verified stable across multiple consecutive
-  full-suite runs at every major Work Package boundary, including
-  `WP 5.1A` (architecture only — re-run to confirm no regression, none
-  expected or found).
+- **Tests:** 514/514 passing, verified stable across multiple consecutive
+  full-suite runs at every major Work Package boundary, including a
+  manual, direct execution of the real application confirming
+  `CommandSampleModule` discovers, registers, and disposes cleanly
+  (`WP 5.1B`).
 - **Known regressions:** None.
 - **Working tree:** Clean at every Work Package boundary — see
   `docs/governance/Quality/Validation Register.md`.
@@ -178,19 +187,31 @@ the first new top-level `docs/` tree since `docs/governance/` itself
 Service Map.md` and `Engineering Glossary.md` were updated in place,
 following the identical documentation shape Navigation's and the
 Shell's own design phases established. A genuine, pre-existing drift was
-found and corrected along the way, unrelated to this Work Package's own
-design work: `Ownership Matrix.md` had never received a row for
-Navigation, at either `WP 5.0A` or `WP 5.0B` — added now, alongside this
-Work Package's own new Command Framework row.
+found and corrected along the way, unrelated to `WP 5.1A`'s own design
+work: `Ownership Matrix.md` had never received a row for Navigation, at
+either `WP 5.0A` or `WP 5.0B` — added then, alongside `WP 5.1A`'s own new
+Command Framework row. `WP 5.1B` updated every "Command Framework" status
+line from "architected" to "implemented" (`Platform Service Map.md`,
+`Ownership Matrix.md`, `Engineering Glossary.md`, `Architecture Document
+Register.md`) and added an Implementation Note and Security Review
+Update to `Command Framework Architecture.md` itself. Further
+pre-existing drift was found and corrected during `WP 5.1B`'s own
+repository review: `docs/releases/v0.5.0/WorkPackages.md` had never
+gained an entry for `WP 5.0S`, and several Engineering registers
+(`Platform Services Register.md`, `Interface Register.md`, `Namespace
+Register.md`, `Dependency Injection Register.md`, `Exception Register.md`,
+`Module Register.md`) and Delivery registers (`Feature Register.md`,
+`Traceability Matrix.md`) had gone stale since `WP 5.0D` — all corrected
+in the same commit as the change that prompted noticing them.
 
 ## Academy Status
 
-72 articles across 7 categories (Introduction, Engineering Principles,
+73 articles across 7 categories (Introduction, Engineering Principles,
 Runtime Architecture, Work Package retrospectives, Design Patterns, Case
 Studies, Engineering Standards), plus `Academy Index.md`, `Academy
 Masterclass Roadmap.md`, `Academy Audit Report.md`, and `Contributor
 Learning Path.md`. Every completed Work Package has a matching
-retrospective, including `WP 5.0A` through `WP 5.1A`. Maintenance
+retrospective, including `WP 5.0A` through `WP 5.1B`. Maintenance
 obligation (Engineering Governance §6) verified honoured by two
 independent audits (`WP 4.4F`, and the Academy Register built during
 `WP 4.5A`); `WP 5.0A` updated two existing articles' (`06-platform-
@@ -200,12 +221,15 @@ with no correction needed, `WP 5.0D` added a genuine, non-obvious
 implementation finding (`const` fields not forcing assembly load) to the
 Shell's own concept guide, `WP 5.0S` added a new "Security" category
 teaching threat modelling, secure plugin architecture, trust boundaries,
-and least privilege from first principles, and `WP 5.1A` added a new
+and least privilege from first principles, `WP 5.1A` added a new
 "Command Framework" category (a new concept guide,
 `11-command-framework.md`) and updated `08-failure-isolation.md` with a
 genuinely new, fifth failure-isolation case (Case 5 — Command Dispatch:
 propagate, don't isolate) that document's own "Future Evolution" section
-had explicitly anticipated testing.
+had explicitly anticipated testing, and `WP 5.1B` added the matching
+implementation retrospective and confirmed the concept guide's own
+design against the real, working implementation, with one genuine,
+non-obvious implementation finding (`CommandHandlerTable`) added to both.
 
 ## Governance Status
 
@@ -227,7 +251,15 @@ squatting, `CMD-1`) and widened `TD-09`'s own scope to name the Command
 Framework as a second affected surface; `Decision Register.md` gained
 `D-018` (splitting `WP 5.1` into `WP 5.1A`/`WP 5.1B`); `Risks.md`'s R3 is
 now Retired (the Event Bus/Command Framework cross-reference it required
-now exists).
+now exists). `WP 5.1B` confirmed `TD-09`/`TD-11` present in the real
+implementation exactly as designed (neither worsened, neither newly
+introduced) and disclosed no new debt. Several Engineering and Delivery
+registers (`Platform Services Register.md`, `Interface Register.md`,
+`Namespace Register.md`, `Dependency Injection Register.md`, `Exception
+Register.md`, `Module Register.md`, `Feature Register.md`, `Traceability
+Matrix.md`) had drifted stale since `WP 5.0D` without any Work Package
+since having touched them — found and corrected during `WP 5.1B`'s own
+mandatory repository review.
 
 ## Known Unknowns
 
@@ -249,11 +281,10 @@ Governance Audit Report.md`:
 
 ## Current Priorities
 
-1. Begin `WP 5.1B` (Command Framework Implementation) on
-   `feature/v0.5.0-developer-experience`, implementing exactly what
-   `WP 5.1A` designed — `ICommandDispatcher`/`ICommandRegistry`, both
-   DI-public, both registered imperatively — and now able to wire into
-   the real Shell's own input handling once built.
+1. Begin `WP 5.2` (Diagnostics Improvements) on
+   `feature/v0.5.0-developer-experience` — composite logging, health/status
+   reporting; may register its own `NavigationItem` and, now that it
+   exists, could expose a command or two through the Command Framework.
 2. No merge to `main` is due yet — `v0.5.0` is not cut until the
    Developer Experience phase's Work Packages are complete (see
    `docs/releases/v0.5.0/WorkPackages.md`).
@@ -261,7 +292,7 @@ Governance Audit Report.md`:
 ## Near-Term Roadmap
 
 Per `docs/releases/v0.5.0/WorkPackages.md`, the Developer Experience
-phase, in sequence — `WP 5.0A` through `WP 5.1A` are complete so far:
+phase, in sequence — `WP 5.0A` through `WP 5.1B` are complete so far:
 
 - `WP 5.0A` — Navigation Framework Architecture (design only). **Complete.**
 - `WP 5.0B` — Navigation Framework Implementation. **Complete.**
@@ -270,7 +301,7 @@ phase, in sequence — `WP 5.0A` through `WP 5.1A` are complete so far:
 - `WP 5.0S` — Platform Security Baseline Audit (dedicated engineering
   audit, not a feature Work Package). **Complete.**
 - `WP 5.1A` — Command Framework Architecture (design only). **Complete.**
-- `WP 5.1B` — Command Framework Implementation (dispatcher). Next planned.
+- `WP 5.1B` — Command Framework Implementation. **Complete.**
 - `WP 5.2` — Diagnostics Improvements (composite logging, health/status
   reporting).
 - `WP 5.3` — Developer Experience Improvements (templates, scaffolding).

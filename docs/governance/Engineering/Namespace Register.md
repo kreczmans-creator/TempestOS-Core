@@ -10,9 +10,9 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | Direct source inspection (`grep -rhoP "^namespace" src/`). |
 | **Review Frequency** | Updated whenever a new namespace is introduced under `src/`. |
-| **Last Reviewed** | 2026-07-27 (WP 5.0D). |
+| **Last Reviewed** | 2026-07-28 (WP 5.1B). |
 | **Related Documents** | `docs/architecture/Engineering Glossary.md` (`Tempest.Core.Runtime` vs. `Tempest.Core.Hosting`, ADR-0016); `Interface Register.md`; `Exception Register.md`. |
-| **Related ADRs** | ADR-0016, ADR-0024. |
+| **Related ADRs** | ADR-0016, ADR-0024, ADR-0036, ADR-0037, ADR-0038. |
 | **Related Academy Articles** | `docs/academy/02 Runtime Architecture/06-platform-layering.md`. |
 | **Coverage Status** | Complete. |
 
@@ -31,20 +31,20 @@
 | `Tempest.Core.Runtime` | Tempest.Core | 7 | `TempestHost`, `TempestHostBuilder`, `HostState` | WP 2.7B; distinct from `Tempest.Core.Hosting` per ADR-0016 |
 | `Tempest.Core.Events` | Tempest.Core | 4 | `IEvent`, `IEventHandler<T>`, `IEventBus`, `EventBus` | WP 4.0 (contracts), WP 4.4D (bus) |
 | `Tempest.Core.Navigation` | Tempest.Core | 7 | `NavigationItem`, `INavigationProvider`/`NavigationService`, `NavigationRequestedEvent`, `NavigationException` and two subtypes | WP 5.0A (design), WP 5.0B (implementation) |
-| `Tempest.Samples` | Tempest.Samples | 6 | `ClockModule`, `ClockLifecycleObserverModule`, `ClockModuleLifecycleEvent`, `NavigationSampleModule`, `SecondaryNavigationSampleModule`, `DuplicateNavigationSampleModule` | WP 4.3, extended WP 4.4E, WP 5.0B |
+| `Tempest.Samples` | Tempest.Samples | 11 | `ClockModule`, `ClockLifecycleObserverModule`, `ClockModuleLifecycleEvent`, `NavigationSampleModule`, `SecondaryNavigationSampleModule`, `DuplicateNavigationSampleModule`, `CommandSampleModule`, `IncrementCounterCommand`/`Handler`, `NavigateToSampleHomeCommand`/`Handler` | WP 4.3, extended WP 4.4E, WP 5.0B, WP 5.1B |
 | `Tempest.Core.Versioning` | Tempest.Core | 3 | `IPlatformVersionProvider`, `PlatformVersionProvider`, `PlatformVersion` | WP 4.2A |
 | `Tempest.Core.Repositories` | Tempest.Core | 2 | Pre-module-pipeline project repository (`IProjectRepository`, `JsonProjectRepository`) | Pre-dates Claude-developed history (Unknown exact origin) |
 | `Tempest.Core.Projects` | Tempest.Core | 1 | Pre-module-pipeline project service | Pre-dates Claude-developed history (Unknown exact origin) |
 | `Tempest.Core.Hosting` | Tempest.Core | 1 | Pre-module-pipeline `HostingService` — environment/deployment adapters, reframed (not replaced) by ADR-0016 | Pre-dates Claude-developed history (Unknown exact origin) |
-| `Tempest.Core.Commands` | Tempest.Core | 1 | `ICommand` contract only — no dispatcher yet | WP 4.0 |
+| `Tempest.Core.Commands` | Tempest.Core | 14 | `ICommand` (`WP 4.0`), `ICommandHandler<T>`, `ICommandDispatcher`/`CommandDispatcher`, `ICommandRegistry`/`CommandRegistry`, `CommandDescriptor`, `CommandResult`, `CommandHandlerTable`, `CommandException` and four subtypes | WP 4.0 (contract), WP 5.1A (design), WP 5.1B (implementation) |
 | `Tempest.Core.Bootstrap` | Tempest.Core | 1 | Pre-module-pipeline `BootstrapService` | Pre-dates Claude-developed history (Unknown exact origin) |
 | `Tempest.App.Shell` | Tempest.App | 3 | `IPage`, `PlaceholderPage`, `TempestShell` — the application shell, `Tempest.App`'s own composition root | WP 5.0C (design), WP 5.0D (implementation) |
 | *(no namespace declared — global namespace)* | Tempest.Core, Tempest.App | 7 | `AssemblyInfo.cs`, `Program.cs` (rewritten `WP 5.0D` as the real entry point; still top-level statements, still global namespace), `ApplicationConfiguration.cs`, `ConfigurationService.cs`, `LoggingService.cs`, `ProjectModel.cs`, `ProjectNumberGenerator.cs` — the latter five pre-module-pipeline, bootstrap-era types, now unreferenced by `Program.cs` but untouched and unmigrated (`WP 5.0C`'s own disclosed scope boundary) | Pre-dates Claude-developed history (Unknown exact origin) |
 
 **Total: 17 namespaces (16 declared + the global namespace) across 3
-projects, 119 `.cs` files under `src/` excluding generated `obj`/`bin`
-artifacts (Verified by direct count; adds `Tempest.App.Shell`'s 3 files,
-`WP 5.0D`).**
+projects, 137 `.cs` files under `src/` excluding generated `obj`/`bin`
+artifacts (Verified by direct count; adds 13 new `Tempest.Core.Commands`
+files and 5 new `Tempest.Samples` files, `WP 5.1B`).**
 
 ## A Note on the Four Pre-Claude Namespaces
 

@@ -10,9 +10,9 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | Direct source inspection; `docs/architecture/Failure Behaviour.md`; `docs/academy/06 Engineering Standards/01-exception-design.md`. |
 | **Review Frequency** | Updated whenever a new exception type is introduced. |
-| **Last Reviewed** | 2026-07-27 (WP 5.0B). |
+| **Last Reviewed** | 2026-07-28 (WP 5.1B). |
 | **Related Documents** | `docs/architecture/Failure Behaviour.md`; `Architectural Dependency Register.md`. |
-| **Related ADRs** | ADR-0013, ADR-0021, ADR-0025. |
+| **Related ADRs** | ADR-0013, ADR-0021, ADR-0025, ADR-0038. |
 | **Related Academy Articles** | `docs/academy/06 Engineering Standards/01-exception-design.md`. |
 | **Coverage Status** | Complete. |
 
@@ -48,9 +48,14 @@
 | `NavigationException` | `Exception` | Navigation | Isolated per module (registration happens inside a module's own lifecycle method) |
 | `DuplicateNavigationItemException` | `NavigationException` | Navigation | Isolated per module — covered by `ModuleLifecycleException`'s existing isolation, no new Host policy (ADR-0032) |
 | `NavigationItemNotFoundException` | `NavigationException` | Navigation | Application logic's own error (not Host-level); thrown by `Navigate`, not during module lifecycle |
+| `CommandException` | `Exception` | Command Framework | Propagates to the caller — deliberately not isolated (ADR-0038); unlike every category above, this is neither Host-fatal nor per-module isolated |
+| `DuplicateCommandHandlerException` | `CommandException` | Command Framework | Propagates to the caller — thrown by `RegisterHandler`, typically during a module's own `InitialiseAsync`, so also covered by `ModuleLifecycleException`'s existing per-module isolation in that context |
+| `DuplicateCommandIdException` | `CommandException` | Command Framework | As above |
+| `CommandHandlerNotRegisteredException` | `CommandException` | Command Framework | Application logic's own error (not Host-level); thrown by `DispatchAsync`/`InvokeAsync` |
+| `CommandNotFoundException` | `CommandException` | Command Framework | Application logic's own error (not Host-level); thrown by `InvokeAsync` |
 
-**Total: 25 custom exception types — Verified directly (adds
-`NavigationException` and two subtypes, `WP 5.0B`).**
+**Total: 30 custom exception types — Verified directly (adds
+`CommandException` and four subtypes, `WP 5.1B`).**
 
 ## A Note on Background Services
 
@@ -66,6 +71,20 @@ platform-defined one. Contrast with `PluginException` and
 `ModuleDiscoveryException`, which do wrap failures in a dedicated
 hierarchy.
 
+## A Note on Command Framework
+
+`CommandException` and its four subtypes introduce a genuinely new
+Host-Fatal/Isolated classification (Case 5 of *Failure Isolation Across
+TempestOS*): **propagates to the caller** — neither Host-fatal (it does
+not fault the Host) nor per-module isolated in the general case (a
+handler's own exception, thrown from `DispatchAsync`/`InvokeAsync`, is
+not automatically caught by any existing mechanism unless the call
+happens to occur during a module's own lifecycle method, in which case
+`ModuleLifecycleException`'s existing isolation applies incidentally, not
+because the Command Framework itself isolates anything). This is a
+deliberate, reasoned divergence from every prior exception category in
+this register — see ADR-0038.
+
 ## Distribution by Root Category
 
 | Root Category | Exception Count |
@@ -79,6 +98,7 @@ hierarchy.
 | Runtime Host | 2 |
 | Background Services | 0 (by design — see note above) |
 | Navigation | 3 |
+| Command Framework | 5 |
 
 ## Cross-Reference Check
 
