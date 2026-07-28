@@ -10,7 +10,7 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | Direct repository inspection (`find`, `wc`, `git log`) performed as part of this Work Package. |
 | **Review Frequency** | Re-measured at each Governance Baseline review, or on request. |
-| **Last Reviewed** | 2026-07-28 (WP 5.2, Diagnostics Improvements). |
+| **Last Reviewed** | 2026-07-28 (WP 5.3, Developer Experience Improvements) — Developer Experience phase closed; every capability in `Feature Register.md` now Implemented/Complete. |
 | **Related Documents** | `Test Register.md`; `Namespace Register.md`; `Engineering Evolution Register.md`. |
 | **Related ADRs** | None directly. |
 | **Related Academy Articles** | None directly — this is a raw metrics snapshot, not a teaching document. |
@@ -315,6 +315,41 @@ Registered phase, and `GetDiagnosticsSummaryCommand` registered against
 the real `ICommandDispatcher`/`ICommandRegistry` — confirmed by direct
 execution, not merely by the test suite.
 
+## Snapshot: 2026-07-28 (WP 5.3 — Developer Experience Improvements)
+
+The Developer Experience release's own final Work Package — no new
+platform service, no new namespace under `src/Tempest.Core/`. Adds one
+`dotnet new` module template (`src/Templates/`, content only — not part
+of `TempestOS.slnx`) and one clarity fix to
+`ReflectionFrameworkDiscoveryService`'s own existing failure message.
+
+| Metric | WP 5.2 | WP 5.3 (current) |
+|---|---|---|
+| `src/` `.cs` files / lines | 143 / 8,986 | 144 / 9,043 (adds 1 template content file, `src/Templates/Tempest.Templates.Module/TempestSampleModule.cs` — deliberately not part of `TempestOS.slnx`; zero new *compiled* production files) |
+| `tests/` `.cs` files / lines | 68 / 10,628 | 71 / 10,872 (adds `Templates/RepositoryPaths.cs`, `ModuleTemplateManifestTests.cs`, `ModuleTemplateContentTests.cs`) |
+| Executed tests (`dotnet test`) | 542, 0 failures | **552, 0 failures** (10 new) |
+| Namespaces under `src/` | 18 declared + 1 global | 18 declared + 1 global (unchanged — `src/Templates/` is template content, not a compiled namespace; out of this register's own counted scope, matching `Namespace Register.md`'s own stated scope) |
+| ADRs | 39 (`ADR-0001`–`ADR-0039`) | 39 (unchanged — no new ADR; this Work Package's own template-packaging decision met the Rejected Designs bar, not the ADR bar) |
+| Rejected Designs entries | 44 (`RD-0001`–`RD-0044`) | 45 (`RD-0001`–`RD-0045`, adds `RD-0045`; also backfills `RD-0042`–`RD-0044`'s own full entries into the source log, missing since `WP 5.2` — see Repository Review) |
+| Architecture documents (`docs/architecture/`) | 20 | 20 (unchanged — `Sample Module Architecture.md`'s own status line updated in place, no new document) |
+| Academy articles (`docs/academy/`, all subfolders) | 75 | 76 (adds `WP5.3-developer-experience-improvements.md`; `03-building-a-module.md` updated in place, no new file) |
+| `docs/` `.md` files | 185 | 186 |
+| Governance documents (`docs/governance/`, all subfolders) | 32 | 32 (unchanged — updates existing registers rather than adding new ones) |
+| Feature Register | 26 Implemented/Complete, 1 Not Started | **27 Implemented/Complete, 0 Not Started** — every feature in the Developer Experience phase (and the release plan as a whole) is now complete |
+| Traceability Matrix | 17 fully-traced capabilities | 18 fully-traced capabilities (adds Developer Experience Improvements; "Not Yet Applicable" category now empty) |
+| Total commits | 60 | 61 (before this Work Package's own commit) |
+| Build warnings/errors | 0/0 | 0/0 (unchanged) |
+
+**A genuine, manually-verified capability, not merely a code change:**
+the real `dotnet new` CLI was used, once, to install the template,
+generate a module at its documented location, and build it successfully
+(0 warnings, 0 errors) — then the template was uninstalled and the
+generated files removed, leaving no trace, exactly as a real
+contributor's own first use would work. The automated test suite proves
+the same claim on every future `dotnet test` run without touching the
+shared, global template cache (see this Work Package's own retrospective
+for why).
+
 ## Governance Suite Size (Introduced by This Work Package, WP 4.5A)
 
 | Metric | Value |
@@ -335,8 +370,8 @@ is offered.
 
 ## Cross-Reference Check
 
-The ADR count (39), Rejected Designs count (44), Academy article count
-(75), test count (542), and build status (0/0) above are each
+The ADR count (39), Rejected Designs count (45), Academy article count
+(76), test count (552), and build status (0/0) above are each
 cross-checked directly against `ADR Register.md`, `Rejected Designs
 Register.md`, `Academy Register.md`, `Test Register.md`, and `Validation
 Register.md` respectively — all consistent, no discrepancy found.

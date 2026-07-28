@@ -10,7 +10,7 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | The `docs/` tree itself. |
 | **Review Frequency** | Updated whenever a new top-level documentation directory or document type is introduced. |
-| **Last Reviewed** | 2026-07-28 (WP 5.2, Diagnostics Improvements) — Academy count refreshed (adds the `WP 5.2` retrospective and concept guide); `docs/adr/` and `docs/architecture/` counts refreshed (adds `ADR-0039`, `Diagnostics Architecture.md`). |
+| **Last Reviewed** | 2026-07-28 (WP 5.3, Developer Experience Improvements) — Academy count refreshed (adds the `WP 5.3` retrospective); adds a new top-level-adjacent tree, `src/Templates/` (dotnet new template sources, indexed here since it is documentation/tooling content, not compiled platform code — see Directory Map). |
 | **Related Documents** | `ADR Register.md`; `Architecture Document Register.md`; `Academy Register.md`; `Release Register.md`; `Governance Index.md`. |
 | **Related ADRs** | None directly. |
 | **Related Academy Articles** | None directly. |
@@ -42,6 +42,7 @@
 | `docs/diagrams/` | Empty directory — **Unknown** intended purpose; no document references it | Not applicable — see Coverage Note below |
 | `docs/governance/` | This governance suite (introduced by `WP 4.5A`), plus `Future Work Package Guidelines.md` (added `WP 4.5B`) | `Governance Index.md` |
 | `docs/security/` | The v0.5.0 Security Baseline: `Threat Model.md`, `Security Principles.md`, `Platform Security Review v0.5.0.md`, `Security Roadmap.md` (all introduced by `WP 5.0S`) | `Governance Index.md` (Security section) |
+| `src/Templates/` | `dotnet new` template sources (`WP 5.3`) — not under `docs/`, but documentation/tooling content rather than compiled platform code, and indexed here for the same reason `docs/security/` earns its own row | `src/Templates/README.md` is its own source of truth; see `Engineering Governance.md` §11 |
 | Repository root (`PROJECT_STATUS.md`) | Primary status dashboard, added `WP 4.5B` | This register; `PROJECT_STATUS.md` is its own source of truth |
 
 ## Coverage Note — Two Empty, Unreferenced Directories

@@ -539,7 +539,12 @@ Services) if health reporting runs as a periodic background check.
 
 ## WP 5.3 — Developer Experience Improvements
 
-**Status note.** Not started. Formerly `WP 4.9` under the `v0.4.0` plan.
+**Status note.** Complete. Formerly `WP 4.9` under the `v0.4.0` plan.
+Unlike every implementation Work Package before it this release, this
+entry never had a preceding architecture phase — confirmed directly
+before implementation began (no design document or ADR was ever expected
+for a scoped tooling/polish pass; see this Work Package's own
+retrospective, Section 3).
 
 ### Objective
 
@@ -561,22 +566,41 @@ that make everything above approachable, not just possible.
 **`WP 4.0`, `WP 4.1`, `WP 4.2`, `WP 4.3`** — templates require the
 surfaces they template to be stable first.
 
-### Deliverables
+### Deliverables — Done
 
-- At least one project/module template.
-- A documentation pass across every new Academy/SDK document this
-  release produced.
+- `dotnet new tempest-module` (`src/Templates/Tempest.Templates.Module/`)
+  — one project/module template, generating a module shaped exactly as
+  `Building a Module.md` describes, installed locally (`dotnet new
+  install <path>`; see `RD-0045` for why not a NuGet package).
+- `ReflectionFrameworkDiscoveryService.CreateDescriptor` now checks for a
+  public parameterless constructor before calling
+  `Activator.CreateInstance`, raising a clear `ModuleDiscoveryException`
+  naming the actual fix instead of a raw `MissingMethodException` — the
+  one concrete "unclear diagnostic message" this Work Package's own
+  review found and closed.
+- A documentation pass: `Building a Module.md` and `Sample Module
+  Architecture.md` updated to reference the new template; three
+  genuine, pre-existing governance/documentation drifts found and
+  corrected along the way (see this Work Package's own retrospective,
+  Observations).
 
-### Acceptance Criteria
+### Acceptance Criteria — Met
 
-- A new contributor can scaffold a working module using a template alone,
-  without hand-copying the sample module.
+A new contributor scaffolds a working module using the template alone,
+without hand-copying the sample module — proven directly: the real
+`dotnet new` CLI generated a module at its documented location
+(`src/Samples/<Name>/`) and `dotnet build` succeeded with 0 warnings, 0
+errors, then the artifact was removed and the template uninstalled,
+leaving no trace. The automated test suite proves the same claim
+(substitution, build, and Discovery) on every future `dotnet test` run.
 
 ### Estimated Complexity
 
-**S–M.**
+**Realised as S–M.**
 
 ### Risks
 
 - Treated as a dumping ground for anything left unfinished elsewhere,
-  rather than a scoped polish pass.
+  rather than a scoped polish pass. **Avoided** — scope was held to
+  exactly the three items named above; no unrelated debt or feature was
+  folded in.

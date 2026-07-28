@@ -1,6 +1,8 @@
 # Sample Module Architecture
 
-**Status: implemented — WP 4.3 (`Tempest.Samples`); extended — WP 4.4E.**
+**Status: implemented — WP 4.3 (`Tempest.Samples`); extended — WP 4.4E;
+scaffolding template and a clearer Discovery failure message added —
+WP 5.3.**
 Every design decision below is now backed by working, tested code, not
 only design intent — see the WP 4.3 implementation retrospective for what
 was built and the two small corrections implementation surfaced (Testing
@@ -526,3 +528,22 @@ during `TempestHost`'s existing Platform Services Registered phase
 Registration, `ModuleLifecycleManager`, and `TempestHost`'s own lifecycle
 sequencing are byte-for-byte unchanged by `WP 4.4E` itself. See the
 WP 4.3 and WP 4.4E implementation retrospectives for full results.
+
+## Update, WP 5.3 — A Template, and a Clearer Discovery Failure
+
+Two additions, neither changing anything described above:
+
+- **`dotnet new tempest-module`** (`src/Templates/Tempest.Templates.Module/`)
+  generates a module written exactly to this document's own
+  `ClockModule` shape — `[ModuleMetadata]`, `ModuleLifecycleBase`, a
+  constructor free to request a DI-public platform service — so a new
+  contributor no longer needs to hand-copy `ClockModule` to get a
+  correctly-shaped starting point. See `src/Templates/README.md`.
+- **Discovery's own failure message improved**, not its behaviour: a
+  module type with no `[ModuleMetadata]` and no public parameterless
+  constructor previously surfaced as a raw, unhelpful
+  `MissingMethodException` from `Activator.CreateInstance` — exactly the
+  pitfall this document's own Repository Investigation named as "the
+  single most significant finding" back at `WP 4.3`, now finally enforced
+  with a clear, actionable `ModuleDiscoveryException` rather than merely
+  documented in prose. See `ReflectionFrameworkDiscoveryService.CreateDescriptor`.

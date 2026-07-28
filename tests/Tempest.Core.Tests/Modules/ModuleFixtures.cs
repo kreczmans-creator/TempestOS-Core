@@ -51,3 +51,18 @@ internal sealed class GenericModule<T> : IModule
 internal sealed class NotAModule
 {
 }
+
+// No [ModuleMetadata] attribute, and no public parameterless constructor -
+// the exact shape ReflectionFrameworkDiscoveryServiceTests' own
+// "unclear diagnostic message" fix (WP 5.3) targets.
+internal sealed class ConstructorDependencyModuleWithoutMetadata : IModule
+{
+    public ConstructorDependencyModuleWithoutMetadata(string dependency)
+    {
+        _ = dependency;
+    }
+
+    public string Id => "tempest.sample.no-parameterless-ctor";
+    public string Name => "No Parameterless Constructor";
+    public string Version => "1.0.0";
+}

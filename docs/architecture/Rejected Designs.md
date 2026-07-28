@@ -1189,3 +1189,114 @@ answer to command-Id ownership — see CMD-1/TD-11 for the registration-
 
 **Source.** ADR-0037, Context and Decision; Command Framework
 Architecture.md, "Registration Model" and "Security Review."
+
+---
+
+## RD-0042 — `IDiagnosticsProvider` Resolving `IModuleLifecycleManager`/`IHostedServiceManager` as Ordinary Constructor Parameters
+
+**Considered during:** WP 5.2 (Diagnostics Improvements).
+
+**Rejected because:** neither `IModuleLifecycleManager` nor
+`IHostedServiceManager` is ever registered in the dependency injection
+container — both are constructed directly by `TempestHost` and
+deliberately kept out of `ServiceCollection` (ADR-0017), so a module
+must never be able to reach the machinery orchestrating it. A
+constructor parameter of either type would not compile against the real
+`TempestServiceProvider`, and registering either type to make it compile
+would reopen ADR-0017 itself — a decision this Work Package has no
+standing to revisit.
+
+**Reversibility.** Not applicable in the ordinary sense — this was never
+a viable design to begin with, given the container's real, unmodified
+registration table; "reversing" it would mean reopening ADR-0017.
+
+**Revisit trigger.** None imagined. ADR-0017's own boundary is a
+standing, non-negotiable platform constraint (`FOUNDATION.md` §2), not a
+scope decision specific to Diagnostics.
+
+**Source.** ADR-0039, Alternatives Considered; `Diagnostics
+Architecture.md`.
+
+---
+
+## RD-0043 — Deferring `DiagnosticsProvider`'s Own DI Registration Until After Both Managers Exist
+
+**Considered during:** WP 5.2 (Diagnostics Improvements).
+
+**Rejected because:** `IServiceCollection.AddInstance`/`Singleton` have
+no effect once `TempestServiceProvider` has already been constructed
+from the collection — confirmed by direct inspection of
+`TempestServiceProvider`'s own construction, not assumed. Registration
+must happen during Phase 6 (Platform Services Registered), before the
+container is built, or not at all; there is no later point in the Host
+Lifecycle where a new DI registration can still take effect.
+
+**Reversibility.** Not applicable — this alternative does not work
+against the real container as built, regardless of preference.
+
+**Revisit trigger.** A future redesign of `TempestServiceProvider` itself
+to support post-construction registration — a much larger change than
+Diagnostics alone would ever justify, with no such need identified today.
+
+**Source.** ADR-0039, Alternatives Considered; `Diagnostics
+Architecture.md`.
+
+---
+
+## RD-0044 — Reordering the Host Lifecycle's Frozen Phase Table to Construct the Managers Earlier
+
+**Considered during:** WP 5.2 (Diagnostics Improvements).
+
+**Rejected because:** `Host Lifecycle.md`'s own phase table — Module
+Initialisation (Phase 8) before Hosted Services Started (Phase 10.1) —
+is frozen, already-approved architecture (ADR-0029/ADR-0030). Moving
+`IHostedServiceManager`'s own construction earlier so both managers
+exist by Phase 6 would mean reordering that table purely for one new
+feature's convenience — exactly the "redesign the framework" this Work
+Package's own brief prohibited absent a genuine implementation blocker,
+and no such blocker existed: the `Func<T>` accessor pattern (ADR-0039)
+solves the same problem without touching the phase table at all.
+
+**Reversibility.** Expensive to reverse if ever attempted regardless —
+reordering Host Lifecycle phases has historically required updating
+`Host Lifecycle.md`, `Runtime State Machine.md`, and every retrospective
+that documents today's ordering.
+
+**Revisit trigger.** A future need broad enough to justify renumbering
+Host Lifecycle phases on its own merits — not a reason specific to
+Diagnostics.
+
+**Source.** ADR-0039, Alternatives Considered; `Diagnostics
+Architecture.md`.
+
+---
+
+## RD-0045 — NuGet-Packaged Template Distribution
+
+**Considered during:** WP 5.3 (Developer Experience Improvements).
+
+**Rejected because:** this repository has no NuGet publishing pipeline
+of any kind today — no package feed, no versioned release-artifact
+process, nothing `dotnet new tempest-module`'s own template package
+could realistically be published through yet. Building one solely to
+distribute a single, small module-scaffolding template would be
+substantially more machinery than the template itself, disproportionate
+to this Work Package's own **S–M** complexity estimate — the same
+proportionality reasoning `WP 4.3`'s own Alternatives Considered applied
+to plugin-packaging the sample module (RD-0015). A local-folder template
+(`dotnet new install <path>`), installed directly from
+`src/Templates/Tempest.Templates.Module/`, gives every in-repository
+contributor the identical scaffolding result with zero packaging
+infrastructure.
+
+**Reversibility.** Purely additive and cheap to add later — packaging
+the same template content into a `.nupkg` for external distribution,
+once a real publishing pipeline exists, requires no change to the
+template's own content, only an additional `.csproj`/pack step wrapped
+around it.
+
+**Revisit trigger.** TempestOS gains a real NuGet publishing pipeline for
+any other reason, or a genuine need arises for a contributor outside
+this repository's own clone to install the template.
+
+**Source.** This Work Package's own brief; `src/Templates/README.md`.

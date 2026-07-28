@@ -10,7 +10,7 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | `docs/academy/` itself; `docs/academy/Academy Index.md` (the reader-facing navigation index this register cross-checks against). |
 | **Review Frequency** | Updated whenever a new Academy article is created — in practice, every Work Package (Engineering Governance §6). |
-| **Last Reviewed** | 2026-07-28 (WP 5.2, Diagnostics Improvements). |
+| **Last Reviewed** | 2026-07-28 (WP 5.3, Developer Experience Improvements). |
 | **Related Documents** | `docs/academy/Academy Index.md`; `docs/academy/Academy Audit Report.md`; `Engineering Standards Register.md`; `Feature Register.md`. |
 | **Related ADRs** | None directly — the Academy documents ADRs, it is not itself governed by one. |
 | **Related Academy Articles** | This register's entire scope. |
@@ -46,7 +46,7 @@
 |---|---|---|
 | 01 | The Module Pipeline | WP 2.x era |
 | 02 | The Startup Sequence | WP 2.6/2.7 era |
-| 03 | Building a Module | WP 4.1/4.4B |
+| 03 | Building a Module | WP 4.1/4.4B, WP 5.3 (scaffolding template added) |
 | 04 | Building an Event-Driven Module | WP 4.4E |
 | 05 | Working with the TempestOS Host | WP 4.5 (expanded) |
 | 06 | Platform Layering | WP 5.0A (Navigation worked example added) |
@@ -94,6 +94,7 @@
 | WP 5.1A — Command Framework Architecture | Architecture (ADR-0036/0037/0038) |
 | WP 5.1B — Command Framework Implementation | Implementation |
 | WP 5.2 — Diagnostics Improvements | Implementation (combined design + implementation, ADR-0039) |
+| WP 5.3 — Developer Experience Improvements | Implementation (scaffolding/tooling, no preceding architecture phase) |
 
 **Note.** `WP 4.4C` produced no code and no separate retrospective — its
 story is told inside the `WP 4.4` architecture retrospective's own
@@ -139,9 +140,10 @@ added `Engineering Lifecycle.md`).
 | `Contributor Learning Path.md` | Repository-wide onboarding sequence for a new contributor, added `WP 4.5B` |
 
 **Total: 1 (Introduction) + 11 (Engineering Principles) + 12 (Runtime
-Architecture) + 33 (Work Packages) + 4 (Design Patterns) + 5 (Case
-Studies) + 5 (Engineering Standards) + 4 (top-level meta) = 75 files
-under `docs/academy/` (Verified by direct file count).**
+Architecture) + 34 (Work Packages) + 4 (Design Patterns) + 5 (Case
+Studies) + 5 (Engineering Standards) + 4 (top-level meta) = 76 files
+under `docs/academy/` (Verified by direct file count; adds the `WP 5.3`
+retrospective).**
 
 ## Governance Maintenance Check (Engineering Governance §6)
 

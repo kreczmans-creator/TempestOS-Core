@@ -73,8 +73,9 @@ would be recorded here as a new status column value, not a silent removal.
 | RD-0042 | `IDiagnosticsProvider` Resolving `IModuleLifecycleManager`/`IHostedServiceManager` as Ordinary Constructor Parameters | WP 5.2 (ADR-0039) | Rejected |
 | RD-0043 | Deferring `DiagnosticsProvider`'s Own DI Registration Until After Both Managers Exist | WP 5.2 (ADR-0039) | Rejected |
 | RD-0044 | Reordering the Host Lifecycle's Frozen Phase Table to Construct the Managers Earlier | WP 5.2 (ADR-0039) | Rejected |
+| RD-0045 | NuGet-Packaged Template Distribution | WP 5.3 | Rejected — deferral |
 
-**Total: 44 entries, all Rejected (none later reversed/adopted).**
+**Total: 45 entries, all Rejected (none later reversed/adopted).**
 
 ## Distribution by Work Package
 
@@ -91,6 +92,7 @@ would be recorded here as a new status column value, not a silent removal.
 | WP 5.0C | RD-0034–RD-0037 (4) |
 | WP 5.1A | RD-0038–RD-0041 (4) |
 | WP 5.2 | RD-0042–RD-0044 (3) |
+| WP 5.3 | RD-0045 (1) |
 
 No Rejected Design entry exists for WP 2.1 through WP 2.7B, WP 4.2A, WP
 4.2D, WP 4.4B, WP 4.4D, or WP 4.4E — **Inferred** to mean either (a) the
@@ -107,5 +109,15 @@ themselves note explicitly under "Alternatives Considered: None").
 Every RD entry above traces to exactly one Work Package retrospective's
 own "Alternatives Considered" section, and every RD-0010 through RD-0044
 entry is also cited directly by the ADR (ADR-0025–ADR-0039) its own
-Decision/Alternatives Considered section names. No RD entry was found
-that lacks a corresponding Work Package or ADR citation.
+Decision/Alternatives Considered section names; RD-0045 is a process/
+proportionality decision with no paired ADR (see "Coverage Status," which
+already discloses this as an expected pattern, not a gap), the same shape
+RD-0015 established for WP 4.3's own plugin-packaging deferral. **Repository
+review correction (WP 5.3):** RD-0042 through RD-0044 had been added to
+this register during `WP 5.2` but the corresponding full entries were
+never actually written into `docs/architecture/Rejected Designs.md`
+itself, the register's own declared Source of Truth — a real drift
+between index and source, found and corrected here (all three entries
+backfilled into the source log, unchanged in content from what this
+register already described). No RD entry was found that lacks a
+corresponding Work Package or ADR citation.

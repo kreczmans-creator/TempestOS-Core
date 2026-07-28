@@ -1,6 +1,6 @@
 # TempestOS — Project Status
 
-**Last Updated:** 2026-07-28 (WP 5.2 — Diagnostics Improvements)
+**Last Updated:** 2026-07-28 (WP 5.3 — Developer Experience Improvements)
 
 This is the primary status dashboard for TempestOS. Read this first for
 "where does the project stand right now" — for "why is it built this
@@ -11,21 +11,20 @@ read `docs/academy/Contributor Learning Path.md`.
 
 ## Current Repository Phase
 
-**Developer Experience.** The Foundation phase is complete and closed —
-Platform Formation, Academy Formation, and Governance Formation are all
-done (see `docs/releases/Platform Foundation Completion Report.md`), and
-`v0.4.0` ("Platform Foundation") shipped exactly that scope. TempestOS is
-now inside the **Developer Experience** phase: building *on* the
-foundation — Navigation, a Command Framework, Diagnostics, and Developer
-Experience tooling itself — not revisiting it, absent evidence that
-requires otherwise (see `docs/governance/Future Work Package
-Guidelines.md`). `WP 5.0A` through `WP 5.0D` are this phase's first four
+**Developer Experience — complete.** The Foundation phase is complete and
+closed — Platform Formation, Academy Formation, and Governance Formation
+are all done (see `docs/releases/Platform Foundation Completion Report.md`),
+and `v0.4.0` ("Platform Foundation") shipped exactly that scope. TempestOS
+then built *on* the foundation — Navigation, a Command Framework,
+Diagnostics, and Developer Experience tooling itself — through the
+**Developer Experience** phase, whose every named Work Package is now
+complete. `WP 5.0A` through `WP 5.0D` were this phase's first four
 completed Work Packages — Navigation and the Shell are both fully
 implemented, and `Tempest.App` now runs the real platform for the first
 time in this project's history. `WP 5.0S` (Platform Security Baseline
 Audit) followed as a dedicated, formal engineering audit — not a feature
 Work Package — establishing the v0.5.0 Security Baseline every future
-Work Package's Definition of Done is now checked against. `WP 5.1A`
+Work Package's Definition of Done is checked against. `WP 5.1A`
 (Command Framework Architecture) and `WP 5.1B` (Command Framework
 Implementation) followed — `ICommand`'s own contract (`WP 4.0`) now has
 a real handler contract and dispatcher, proven against a real sample
@@ -33,16 +32,21 @@ module and the real Runtime Host. `WP 5.2` (Diagnostics Improvements)
 followed — a composite `ILogSink` closes a long-named debt (`TD-02`), and
 a new `IDiagnosticsProvider` gives any DI-resolving consumer a read-only
 view of the Host's own current lifecycle state, without granting write
-access to the Host-owned machinery that state comes from.
+access to the Host-owned machinery that state comes from. `WP 5.3`
+(Developer Experience Improvements) closes the phase out — a `dotnet new`
+module template, and a previously-only-documented Discovery pitfall now
+closed with a clear, actionable error message. See Current Priorities,
+below, for what this means for the release itself.
 
 ## Current Development Branch
 
 **`feature/v0.5.0-developer-experience`**, cut from `main` after the
 `v0.4.0` tag. Carries `WP 5.0A` through `WP 5.0D`, plus `WP 5.0S`,
-`WP 5.1A`, `WP 5.1B`, and `WP 5.2`. Unmerged into `main`;
-the merge/tag sequence for `v0.5.0` itself is not yet due, since the
-Developer Experience phase has only just begun (see `docs/releases/
-v0.5.0/WorkPackages.md`).
+`WP 5.1A`, `WP 5.1B`, `WP 5.2`, and `WP 5.3`. Unmerged into `main`; every
+Work Package in `docs/releases/v0.5.0/WorkPackages.md` is now complete,
+but the merge/tag sequence for `v0.5.0` itself is a separate, explicit
+Product Approval decision (Engineering Governance §7), not assumed from
+Work Package completion alone — see Current Priorities, below.
 
 ## Current Release
 
@@ -53,38 +57,40 @@ that.
 
 ## Current Work Package
 
-**`WP 5.2` — Diagnostics Improvements — complete** (this Work Package).
-This Work Package's own brief, as originally written, described an
-"Event Framework Implementation" against a non-existent architecture
-document; investigation before any code was written found the Event Bus
-has been fully implemented since `WP 4.4D`, and the real, current
-`WP 5.2` is Diagnostics Improvements — confirmed against
-`docs/releases/v0.5.0/WorkPackages.md`'s own entry, and redirected
-explicitly rather than assumed (`D-019`, mirroring `D-009`'s precedent).
-Delivers: `CompositeLogSink` (`Tempest.Core.Logging`), fanning a log
-entry out to any number of child sinks with per-child failure isolation —
-closes `TD-02` outright; a decision **not** to migrate the legacy
-`LoggingService` (`TD-01`), since `Program.cs` has not called it since
-`WP 5.0D` — re-scoped forward again rather than migrating dead code
-(`D-020`); and `IDiagnosticsProvider`/`DiagnosticsProvider`
-(`Tempest.Core.Diagnostics`), a read-only projection over
-`IModuleLifecycleManager`/`IHostedServiceManager`'s own existing snapshot
-data, registered via the Composition Root pattern with `Func<T>`
-accessors so it can be built before either manager exists yet at Phase 6
-(`ADR-0039`). A new reference module, `DiagnosticsSampleModule`
-(`Tempest.Samples`), demonstrates the Command Framework and Diagnostics
-interacting via `GetDiagnosticsSummaryCommand`, and discloses — rather
-than hides — that `HostedServices` is legitimately empty during Module
-Initialisation. A mandatory security review found no new debt: the
-plugin-visibility implication of `IDiagnosticsProvider` is fully subsumed
-by the already-tracked `TD-09`. 28 new tests (542 total). See this Work
-Package's own retrospective:
-`docs/academy/03 Work Packages/WP5.2-diagnostics-improvements.md`.
+**`WP 5.3` — Developer Experience Improvements — complete** (this Work
+Package). Unlike every implementation Work Package before it this
+release, `WP 5.3` has no preceding architecture phase — confirmed
+directly before any code was written (no design document or ADR was ever
+expected for a scoped tooling/polish pass; see this Work Package's own
+retrospective, Section 3). Delivers: `dotnet new tempest-module`
+(`src/Templates/Tempest.Templates.Module/`), generating a module shaped
+exactly as `Building a Module.md` describes, installed locally rather
+than as a NuGet package (`RD-0045`); and a clearer
+`ReflectionFrameworkDiscoveryService` failure — a module with no
+`[ModuleMetadata]` and no public parameterless constructor now raises a
+`ModuleDiscoveryException` naming the actual fix, instead of a raw
+`MissingMethodException`, closing a gap `Building a Module.md` has
+documented in prose since `WP 4.1` but the code itself never enforced.
+The template was verified twice: once manually, with the real `dotnet
+new` CLI (installed, generated, built with 0 warnings/errors, then
+uninstalled and removed, leaving no trace), and once by an automated
+test that substitutes, builds, and proves the result discoverable by the
+real, unmodified `ReflectionFrameworkDiscoveryService` on every future
+test run. A repository review found and corrected three genuine,
+pre-existing governance/documentation drifts, none caused by this Work
+Package's own changes — see Documentation Status and Governance Status,
+below. 10 new tests (552 total). See this Work Package's own
+retrospective:
+`docs/academy/03 Work Packages/WP5.3-developer-experience-improvements.md`.
 
 ## Next Planned Work Package
 
-`WP 5.3` — Developer Experience Improvements (see `docs/releases/v0.5.0/
-WorkPackages.md`).
+**None named.** Every Work Package in `docs/releases/v0.5.0/
+WorkPackages.md` (`WP 5.0A` through `WP 5.3`) is now complete — the
+Developer Experience phase itself is done. Whether and when to cut the
+`v0.5.0` release (merge to `main`, tag, release notes) is a Product
+Approval decision (Engineering Governance §7), not one this Work Package
+makes for itself — see Current Priorities, below.
 
 ## Foundation Status
 
@@ -134,25 +140,29 @@ is now implemented — a read-only projection over the Host's own current
 lifecycle state, constructed directly by `TempestHost` and registered via
 `AddInstance` with `Func<T>` accessors (`ADR-0039`), proven by
 `DiagnosticsSampleModule` and its `GetDiagnosticsSummaryCommand`. Logging
-also gained `CompositeLogSink`, closing `TD-02`. DevEx tooling
-(`WP 5.3`) is the only remaining unbuilt piece of the Developer
-Experience phase's original scope.
+also gained `CompositeLogSink`, closing `TD-02`. A `dotnet new
+tempest-module` template (`src/Templates/`) now lets a new contributor
+scaffold a correctly-shaped module without hand-copying an existing one,
+and Discovery's own long-documented parameterless-constructor pitfall now
+fails with a clear, actionable message instead of a raw runtime
+exception. Every Work Package originally scoped for the Developer
+Experience phase is now complete.
 
 ## Repository Metrics
 
 | Metric | Value |
 |---|---|
-| Automated tests | 542 (0 failures) — 28 new (`WP 5.2`: `Logging/`, `Diagnostics/`, and `Samples/` test suites) |
-| ADRs | 39 (`ADR-0001`–`ADR-0039`), all Accepted — adds `ADR-0039` (`WP 5.2`) |
-| Rejected Designs | 44 (`RD-0001`–`RD-0044`) |
-| Academy articles | 75 (see `docs/governance/Documentation/Academy Register.md`) |
+| Automated tests | 552 (0 failures) — 10 new (`WP 5.3`: `Modules/` and `Templates/` test suites) |
+| ADRs | 39 (`ADR-0001`–`ADR-0039`), all Accepted — unchanged by `WP 5.3` (no new ADR met §5's criteria) |
+| Rejected Designs | 45 (`RD-0001`–`RD-0045`) |
+| Academy articles | 76 (see `docs/governance/Documentation/Academy Register.md`) |
 | Governance registers | 27 (32 governance documents total), plus 4 standing security documents under `docs/security/` (not governance registers themselves, indexed from `Governance Index.md`'s Security section) |
 | Architecture documents | 20 under `docs/architecture/` (22 including the two release-scoped documents) |
-| Platform services | 17 catalogued — **14 Implemented** (Diagnostics added, `WP 5.2`), 2 not implemented as platform services, 1 developer-convenience layer |
+| Platform services | 17 catalogued — 14 Implemented (unchanged by `WP 5.3` — a template and a Discovery message, not a new platform service), 2 not implemented as platform services, 1 developer-convenience layer |
 | Modules (production) | 7 (`ClockModule`, `ClockLifecycleObserverModule`, `NavigationSampleModule`, `SecondaryNavigationSampleModule`, `DuplicateNavigationSampleModule`, `CommandSampleModule`, `DiagnosticsSampleModule`) |
 | Hosted services (production) | 0 — infrastructure fully implemented and tested; zero shipped consumers by deliberate scope decision |
 | Plugins (production) | 0 — infrastructure fully implemented and tested; `src/Plugins/` empty by deliberate scope decision |
-| Commits (total / since `v0.4.0` tag) | 60 total (55 Claude-authored) / 8 since `v0.4.0` (`WP 5.0A`, `WP 5.0B`, `WP 5.0C`, `WP 5.0D`, `WP 5.0S`, `WP 5.1A`, `WP 5.1B`, `WP 5.2`) |
+| Commits (total / since `v0.4.0` tag) | 61 total (56 Claude-authored) / 9 since `v0.4.0` (`WP 5.0A`, `WP 5.0B`, `WP 5.0C`, `WP 5.0D`, `WP 5.0S`, `WP 5.1A`, `WP 5.1B`, `WP 5.2`, `WP 5.3`) |
 | Contributors | 1 (repository owner; all commits co-authored by Claude) |
 
 *(This table is generated from `docs/governance/Quality/Repository Metrics
@@ -162,11 +172,10 @@ three together.)*
 ## Repository Health
 
 - **Build:** Clean — 0 warnings, 0 errors (`dotnet build src/TempestOS.slnx`).
-- **Tests:** 542/542 passing, verified stable across multiple consecutive
+- **Tests:** 552/552 passing, verified stable across multiple consecutive
   full-suite runs at every major Work Package boundary, including a
-  manual, direct execution of the real application confirming
-  `DiagnosticsSampleModule` discovers, registers, and reports live Host
-  state cleanly through the real `TempestHost` (`WP 5.2`).
+  manual, direct execution of the real `dotnet new` CLI confirming the
+  module template installs, generates, and builds cleanly (`WP 5.3`).
 - **Known regressions:** None.
 - **Working tree:** Clean at every Work Package boundary — see
   `docs/governance/Quality/Validation Register.md`.
@@ -227,16 +236,28 @@ A genuine, pre-existing drift was found and corrected along the way,
 unrelated to `WP 5.2`'s own scope: `Architecture Document Register.md`
 still read `Command Framework Architecture.md` as "implementation
 pending... not yet started," two Work Packages after `WP 5.1B` had
-actually completed it — corrected here.
+actually completed it — corrected here. `WP 5.3` updated `Building a
+Module.md` and `Sample Module Architecture.md` to reference the new
+scaffolding template, and amended `Engineering Governance.md` §11 to
+document `src/Templates/`. Three further, genuine, pre-existing drifts
+were found and corrected during this Work Package's own repository
+review, none related to its own scope: `Rejected Designs Register.md`
+had added `RD-0042`–`RD-0044` (`WP 5.2`) without the corresponding full
+entries ever being written into `docs/architecture/Rejected Designs.md`
+itself; `Engineering Governance.md` §11 had not been updated when
+`WP 5.2` added the `Tempest.Core.Diagnostics` namespace; and
+`Governance Register.md`'s own Compliance Matrix had not been updated
+since `WP 5.0D`, missing four completed Work Packages entirely (see
+Governance Status, below, for the full account).
 
 ## Academy Status
 
-75 articles across 7 categories (Introduction, Engineering Principles,
+76 articles across 7 categories (Introduction, Engineering Principles,
 Runtime Architecture, Work Package retrospectives, Design Patterns, Case
 Studies, Engineering Standards), plus `Academy Index.md`, `Academy
 Masterclass Roadmap.md`, `Academy Audit Report.md`, and `Contributor
 Learning Path.md`. Every completed Work Package has a matching
-retrospective, including `WP 5.0A` through `WP 5.2`. Maintenance
+retrospective, including `WP 5.0A` through `WP 5.3`. Maintenance
 obligation (Engineering Governance §6) verified honoured by two
 independent audits (`WP 4.4F`, and the Academy Register built during
 `WP 4.5A`); `WP 5.0A` updated two existing articles' (`06-platform-
@@ -255,10 +276,14 @@ had explicitly anticipated testing, `WP 5.1B` added the matching
 implementation retrospective and confirmed the concept guide's own
 design against the real, working implementation, with one genuine,
 non-obvious implementation finding (`CommandHandlerTable`) added to both,
-and `WP 5.2` added a new "Diagnostics" category (a new concept guide,
+`WP 5.2` added a new "Diagnostics" category (a new concept guide,
 `12-diagnostics-and-composite-logging.md`) plus its own retrospective,
 teaching the `Func<T>` lazy-accessor pattern and the two-named-debts
-decision from first principles.
+decision from first principles, and `WP 5.3` updated `Building a
+Module.md` in place (no new concept guide — this Work Package extends
+already-covered material, not a new platform capability) plus its own
+retrospective, teaching why a scoped tooling Work Package legitimately
+has no preceding architecture phase.
 
 ## Governance Status
 
@@ -296,7 +321,25 @@ Register, and every Engineering/Delivery register touched by this Work
 Package's own new types were updated in the same commit; `Architecture
 Document Register.md`'s stale Command Framework marker (see Documentation
 Status, above) was corrected during this Work Package's own repository
-review, unrelated to its own scope.
+review, unrelated to its own scope. `WP 5.3` added `RD-0045` (local-folder
+vs. NuGet-packaged template distribution) and touched no Technical Debt
+item (its own scope does not concern `TD-01`–`TD-11`). This Work
+Package's own repository review found three further, genuine,
+pre-existing drifts: (1) `RD-0042`–`RD-0044` had been added to
+`Rejected Designs Register.md` during `WP 5.2` but never actually written
+into `docs/architecture/Rejected Designs.md` itself — the register's own
+declared Source of Truth — backfilled here, unchanged in content; (2)
+`Engineering Governance.md` §11 had not been updated when `WP 5.2` added
+the `Tempest.Core.Diagnostics` namespace; (3) most significantly,
+`Governance Register.md`'s own Compliance Matrix had not been updated
+since `WP 5.0D` — four completed Work Packages (`WP 5.0S`, `WP 5.1A`,
+`WP 5.1B`, `WP 5.2`) were missing entirely, and `WP 5.0D`'s own row still
+carried a `*(this commit)*` placeholder never backfilled with its real
+hash. All five rows backfilled, verified directly against `git log`. This
+is the third Work Package in a row to find a real, previously-unnoticed
+governance drift during its own repository review — see this Work
+Package's own retrospective, Observations, for the pattern this now
+represents.
 
 ## Known Unknowns
 
@@ -318,17 +361,19 @@ Governance Audit Report.md`:
 
 ## Current Priorities
 
-1. Begin `WP 5.3` (Developer Experience Improvements) on
-   `feature/v0.5.0-developer-experience` — see `docs/releases/v0.5.0/
-   WorkPackages.md` for its own scope.
-2. No merge to `main` is due yet — `v0.5.0` is not cut until the
-   Developer Experience phase's Work Packages are complete (see
-   `docs/releases/v0.5.0/WorkPackages.md`).
+1. **Every Work Package in `docs/releases/v0.5.0/WorkPackages.md` is now
+   complete.** The next decision is Product Approval's, not an
+   engineering one: whether and when to cut the `v0.5.0` release
+   (Engineering Governance §7) — merge `feature/v0.5.0-developer-
+   experience` into `main`, tag `v0.5.0`, and write its release notes —
+   or whether to open a new Work Package first. Neither is assumed here;
+   both require explicit, per-occasion approval.
+2. No merge to `main` has occurred yet.
 
 ## Near-Term Roadmap
 
 Per `docs/releases/v0.5.0/WorkPackages.md`, the Developer Experience
-phase, in sequence — `WP 5.0A` through `WP 5.2` are complete so far:
+phase is now complete, `WP 5.0A` through `WP 5.3`:
 
 - `WP 5.0A` — Navigation Framework Architecture (design only). **Complete.**
 - `WP 5.0B` — Navigation Framework Implementation. **Complete.**
@@ -340,7 +385,12 @@ phase, in sequence — `WP 5.0A` through `WP 5.2` are complete so far:
 - `WP 5.1B` — Command Framework Implementation. **Complete.**
 - `WP 5.2` — Diagnostics Improvements (composite logging, `TD-01`
   reassessment, `IDiagnosticsProvider`). **Complete.**
-- `WP 5.3` — Developer Experience Improvements (templates, scaffolding).
+- `WP 5.3` — Developer Experience Improvements (module template,
+  clearer Discovery message). **Complete.**
+
+No further Work Package is named in the current release plan. A future
+release's own scope (Project Engine, Requirements Engine, or anything
+else) is a Product Approval decision, not one this document anticipates.
 
 ## Long-Term Vision
 

@@ -10,24 +10,23 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | Every register in this governance suite; this matrix is the synthesis, not a new source of raw fact. |
 | **Review Frequency** | Updated whenever a new major capability completes its own Work Package. |
-| **Last Reviewed** | 2026-07-28 (WP 5.2, Diagnostics Improvements). |
+| **Last Reviewed** | 2026-07-28 (WP 5.3, Developer Experience Improvements). |
 | **Related Documents** | Every register in `docs/governance/`. |
 | **Related ADRs** | All 39 (see per-row detail). |
 | **Related Academy Articles** | See `Academy Register.md`. |
-| **Coverage Status** | Complete for every Implemented capability, including Navigation as of `WP 5.0B`, the Shell as of `WP 5.0D`, the Command Framework as of `WP 5.1B`, and Diagnostics as of `WP 5.2`. Not Yet Applicable for the one remaining planned-but-unstarted capability (Developer Experience Improvements) — see Reason/Review Trigger below. The Platform Security Baseline (`WP 5.0S`) is an audit/governance milestone, not a code capability, and is intentionally not given its own matrix row — see `Feature Register.md`'s own entry for it instead. |
+| **Coverage Status** | Complete for every Implemented capability, including Navigation as of `WP 5.0B`, the Shell as of `WP 5.0D`, the Command Framework as of `WP 5.1B`, Diagnostics as of `WP 5.2`, and Developer Experience Improvements as of `WP 5.3` — every capability in `Feature Register.md` is now fully traced; no "Not Yet Applicable" category remains. The Platform Security Baseline (`WP 5.0S`) is an audit/governance milestone, not a code capability, and is intentionally not given its own matrix row — see `Feature Register.md`'s own entry for it instead. |
 
 ---
 
 ## Reason (Not Yet Applicable Capabilities)
 
-Developer Experience Improvements has no Work Package started yet
-(`WP 5.3`) — there is no Requirement→...→Release chain to trace because
-no chain has begun. **Review Trigger.** The Work Package that begins it.
-Navigation, the Shell, and the Command Framework are no longer in this
-category — each has its own fully-traced row below (`WP 5.0B`, `WP 5.0D`,
-`WP 5.1B` respectively). Diagnostics Improvements is also no longer in
-this category — its own chain is now fully traced, as of `WP 5.2` (see
-the Diagnostics row, below).
+**None remain.** Navigation, the Shell, the Command Framework,
+Diagnostics Improvements, and Developer Experience Improvements were
+each, in turn, the last capability in this category — each now has its
+own fully-traced row below (`WP 5.0B`, `WP 5.0D`, `WP 5.1B`, `WP 5.2`,
+`WP 5.3` respectively). This section is retained, rather than deleted,
+so a future release's own first not-yet-started capability has a
+documented place to land.
 
 ## Matrix
 
@@ -51,8 +50,9 @@ the Diagnostics row, below).
 | Shell & Composition Framework | Let `Tempest.App` consume the platform via its own composition root, presenting Navigation and the Event Bus to a user | WP 5.0C, WP 5.0D | ADR-0033, ADR-0034, ADR-0035 | `Shell & Composition Framework Architecture.md` | `ITempestHost.Services`, `TempestShell`, `IPage`/`PlaceholderPage` (`Tempest.App.Shell`) | `Shell/` test suite | WP5.0C, WP5.0D retrospectives; *Shell & Application Composition* | v0.5.0 (in progress) |
 | Command Framework | Invoke a discrete unit of application logic consistently from a typed caller or a string Id, without touching the Runtime Host, Event Bus, or Navigation | WP 4.0, WP 5.1A, WP 5.1B | ADR-0022, ADR-0036, ADR-0037, ADR-0038 | `Command Framework Architecture.md` | `ICommandDispatcher`/`CommandDispatcher`, `ICommandRegistry`/`CommandRegistry`, `CommandDescriptor`, `CommandResult`, `CommandHandlerTable`, `CommandSampleModule` and its two commands (`Tempest.Samples`) | `Commands/`, `Samples/` test suites | WP4.0, WP5.1A, WP5.1B retrospectives; *Command Framework* concept guide | v0.5.0 (in progress) |
 | Diagnostics Improvements | Close `TD-01`/`TD-02` logging debt and expose read-only Host/module/hosted-service state, without granting write access to Host-owned orchestration machinery | WP 5.2 | ADR-0009, ADR-0017, ADR-0034, ADR-0039 | `Diagnostics Architecture.md` | `CompositeLogSink`, `IDiagnosticsProvider`/`DiagnosticsProvider`, `DiagnosticsSampleModule` and its command (`Tempest.Samples`) | `Logging/`, `Diagnostics/`, `Samples/` test suites | WP5.2 retrospective; *Diagnostics & Composite Logging* concept guide | v0.5.0 (in progress) |
+| Developer Experience Improvements | Let a new contributor scaffold a working module without hand-copying an existing one, and close a previously-only-documented Discovery pitfall with a clear, actionable error message | WP 5.3 | — (no ADR met §5's criteria; RD-0045) | `src/Templates/README.md` | `dotnet new tempest-module` (`src/Templates/Tempest.Templates.Module/`); `ReflectionFrameworkDiscoveryService.CreateDescriptor`'s parameterless-constructor check | `Templates/`, `Modules/` test suites | WP5.3 retrospective; *Building a Module* (updated) | v0.5.0 (in progress) |
 
-**Total: 17 fully-traced (Implemented) capabilities.**
+**Total: 18 fully-traced (Implemented) capabilities.**
 
 ## Traceability Gaps Found
 

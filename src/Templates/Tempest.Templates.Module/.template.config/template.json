@@ -1,0 +1,37 @@
+{
+  "$schema": "http://json.schemastore.org/template",
+  "author": "TempestOS",
+  "classifications": [ "TempestOS", "Module" ],
+  "identity": "TempestOS.Templates.Module",
+  "name": "TempestOS Module",
+  "shortName": "tempest-module",
+  "sourceName": "TempestSampleModule",
+  "preferNameDirectory": true,
+  "tags": {
+    "language": "C#",
+    "type": "project"
+  },
+  "symbols": {
+    "ModuleId": {
+      "type": "parameter",
+      "datatype": "string",
+      "replaces": "TEMPEST_MODULE_ID",
+      "defaultValue": "your.module.id",
+      "description": "The module's stable, dotted Id (for example, 'tempest.samples.clock') - passed to [ModuleMetadataAttribute] and the base constructor. Discovery uses this to detect duplicate modules, so it must be unique across the whole platform."
+    },
+    "ModuleDisplayName": {
+      "type": "parameter",
+      "datatype": "string",
+      "replaces": "TEMPEST_MODULE_DISPLAY_NAME",
+      "defaultValue": "New Module",
+      "description": "The module's human-readable display name."
+    },
+    "ModuleVersion": {
+      "type": "parameter",
+      "datatype": "string",
+      "replaces": "TEMPEST_MODULE_VERSION",
+      "defaultValue": "1.0.0",
+      "description": "The module's own version string."
+    }
+  }
+}

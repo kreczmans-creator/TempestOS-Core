@@ -10,7 +10,7 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | Direct source inspection; `docs/architecture/Failure Behaviour.md`; `docs/academy/06 Engineering Standards/01-exception-design.md`. |
 | **Review Frequency** | Updated whenever a new exception type is introduced. |
-| **Last Reviewed** | 2026-07-28 (WP 5.2, Diagnostics Improvements) — no new exception type introduced; see "A Note on Diagnostics" below. |
+| **Last Reviewed** | 2026-07-28 (WP 5.3, Developer Experience Improvements) — no new exception type introduced; `ModuleDiscoveryException`'s own Discovery-phase coverage extended with a clearer, more actionable message (see "A Note on Module Discovery" below). |
 | **Related Documents** | `docs/architecture/Failure Behaviour.md`; `Architectural Dependency Register.md`. |
 | **Related ADRs** | ADR-0013, ADR-0021, ADR-0025, ADR-0038. |
 | **Related Academy Articles** | `docs/academy/06 Engineering Standards/01-exception-design.md`. |
@@ -84,6 +84,21 @@ happens to occur during a module's own lifecycle method, in which case
 because the Command Framework itself isolates anything). This is a
 deliberate, reasoned divergence from every prior exception category in
 this register — see ADR-0038.
+
+## A Note on Module Discovery (WP 5.3)
+
+`ModuleDiscoveryException`'s existing role is unchanged — Host-fatal,
+per ADR-0013, exactly as it has been since `WP 2.1`. What changed is
+*when* it is thrown: a module type with no `[ModuleMetadataAttribute]`
+and no public parameterless constructor previously fell through to
+`Activator.CreateInstance`, which throws a raw `MissingMethodException`
+with no actionable content. `ReflectionFrameworkDiscoveryService.
+CreateDescriptor` now checks for this precondition explicitly first,
+raising `ModuleDiscoveryException` with a message naming the actual fix
+(add the attribute, or add a parameterless constructor) — closing a gap
+`Building a Module.md` has documented in prose since `WP 4.1` but the
+code itself never enforced. No new exception type; no new failure
+category.
 
 ## A Note on Diagnostics
 

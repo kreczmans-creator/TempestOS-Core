@@ -103,7 +103,9 @@ The module pipeline and the Runtime Host, holistically.
 - [WP 4.1 — Module SDK](03%20Work%20Packages/WP4.1-module-sdk.md) — `ModuleBase`/`ModuleLifecycleBase`.
 - [WP 4.3 — Sample Module Architecture](03%20Work%20Packages/WP4.3-sample-module-architecture.md) and [Implementation](03%20Work%20Packages/WP4.3-sample-module-implementation.md) — `ClockModule`, the living reference module every later work package extends.
 - [WP 4.4E — Sample Module Event Integration](03%20Work%20Packages/WP4.4E-sample-module-event-integration.md) — `ClockModule` extended to publish, and its companion module built to subscribe.
+- [WP 5.3 — Developer Experience Improvements](03%20Work%20Packages/WP5.3-developer-experience-improvements.md) — the `dotnet new tempest-module` scaffolding template, and a Discovery pitfall closed with a clear error message instead of a raw runtime exception.
 - `docs/architecture/Sample Module Architecture.md` — the full design document behind `ClockModule` and its companion.
+- `src/Templates/README.md` — how to install and use the module template.
 
 ## Plugins
 
@@ -275,9 +277,10 @@ whatever you're about to change, before you change it.
 - [WP 5.1A — Command Framework Architecture](03%20Work%20Packages/WP5.1A-command-framework-architecture.md)
 - [WP 5.1B — Command Framework Implementation](03%20Work%20Packages/WP5.1B-command-framework-implementation.md)
 - [WP 5.2 — Diagnostics Improvements](03%20Work%20Packages/WP5.2-diagnostics-improvements.md)
+- [WP 5.3 — Developer Experience Improvements](03%20Work%20Packages/WP5.3-developer-experience-improvements.md)
 
-Still to come: `WP 5.3` (Developer Experience Improvements) — see
-`docs/releases/v0.5.0/WorkPackages.md` for the full, current plan.
+`docs/releases/v0.5.0/WorkPackages.md`'s own Developer Experience phase
+is now complete — see `PROJECT_STATUS.md` for what comes next.
 
 ## Reference Material
 
