@@ -4,12 +4,16 @@
 
 TempestOS has, by v0.4.0, made the same fundamental decision four separate
 times, in four separate contexts, and reached the same answer every time —
-without ever mechanically copying the previous decision. This document
-collects those four decisions together, side by side, because reading them
-in isolation (as four separate ADRs, in four separate work packages) hides
-something worth seeing clearly: a single, recurring engineering question,
-answered consistently, by actually re-deriving the reasoning each time
-rather than assuming the previous answer must transfer.
+without ever mechanically copying the previous decision. `WP 5.1A`
+(Command Framework Architecture) later ran a fifth case through the
+identical test and, for the first time, reached a genuinely *different*
+answer — see Case 5, below. This document collects all five decisions
+together, side by side, because reading them in isolation (as five
+separate ADRs, in five separate work packages) hides something worth
+seeing clearly: a single, recurring engineering question, answered
+honestly each time, by actually re-deriving the reasoning rather than
+assuming the previous answer must transfer — and, at least once,
+concluding that it should not.
 
 ## 2. Purpose
 
@@ -84,17 +88,34 @@ own (RD-0022): a synchronously-invoked event handler, called by something
 that already exists and is already running, does not have the "live,
 self-assessing component" quality that justifies Case 2's mechanism either.
 
+**Case 5 — Command Dispatch (ADR-0038, WP 5.1A).** The first case where
+the answer is neither "isolated" nor "no new case needed" (compare
+Navigation, below) but a third, deliberately different outcome:
+**propagate, do not isolate.** A command handler's own exception is
+*not* caught by `ICommandDispatcher`/`ICommandRegistry` — it propagates
+directly to whatever called `DispatchAsync`/`InvokeAsync`. The reasoning
+is the same three-question test as every prior case, honestly re-asked:
+is a command handler's failure isolated or fatal? Neither, in the sense
+Cases 1–4 mean it — it is the *caller's own concern*, because a command
+"has an expected result" (the property that already distinguishes it
+from an event, per the Engineering Glossary): the caller genuinely needs
+to know whether the command it asked for succeeded, in order to react.
+Isolating a command failure the way an event subscriber's is isolated
+would make "expected result" a fiction — the caller would never learn
+the command failed at all.
+
 ## 6. Alternatives Considered
 
-**One single, uniform isolation rule applied identically to all four
+**One single, uniform isolation rule applied identically to all five
 cases**, skipping the case-by-case analysis. Rejected, implicitly, every
 time: Case 2's opt-in exists precisely *because* a background service is
 shaped differently from a module in a way that matters (it runs
 unsupervised, indefinitely); Cases 3 and 4 each explicitly re-examined
 whether that same opt-in should transfer, and both times found it should
-not, for reasons specific to when and how the failure can occur. A single
-rule "applied by analogy" would have missed both of these genuine
-distinctions.
+not, for reasons specific to when and how the failure can occur. Case 5
+went further still — not merely declining an opt-in, but rejecting
+isolation itself as the default. A single rule "applied by analogy"
+would have missed all three of these genuine distinctions.
 
 **Escalating every module/plugin/subscriber failure to Host-fatal**, on the
 theory that "if it's broken, the platform shouldn't hide it." Considered
@@ -106,13 +127,17 @@ own fourth non-negotiable principle).
 
 ## 7. Why This Solution Was Chosen
 
-Every one of the four cases was decided by asking the same question freshly
+Every one of the five cases was decided by asking the same question freshly
 — *does this specific kind of failing thing have the properties that would
-justify a critical/non-critical distinction?* — rather than by pattern-
-matching against the most recent prior decision. Case 2 answered yes, for a
-stated, specific reason (self-supervision). Cases 3 and 4 each answered no,
-for their own stated, specific reason, arrived at independently even though
-both cases could easily have been assumed to "obviously" mirror Case 2.
+justify a critical/non-critical distinction, or isolation at all?* —
+rather than by pattern-matching against the most recent prior decision.
+Case 2 answered yes, for a stated, specific reason (self-supervision).
+Cases 3 and 4 each answered no, for their own stated, specific reason,
+arrived at independently even though both cases could easily have been
+assumed to "obviously" mirror Case 2. Case 5 asked the same question and
+found that isolation itself was the wrong default: a command's own
+"expected result" property means its caller must observe failure, not
+have it absorbed on their behalf.
 
 ## 8. Architectural Principles
 
@@ -134,17 +159,19 @@ both cases could easily have been assumed to "obviously" mirror Case 2.
   designed — and, just as importantly, has a concrete pattern (Cases 3/4)
   for recognising when the obvious-looking analogy (an opt-in "because
   background services have one") does not actually transfer.
-- Four independent decisions reaching a consistent, principled pattern —
-  rather than four unrelated, ad hoc rules — is itself evidence that
+- Five independent decisions reaching a consistent, principled pattern —
+  rather than five unrelated, ad hoc rules — is itself evidence that
   ADR-0013's original reasoning was sound enough to bear repeated, honest
-  re-examination rather than needing to be taken on faith each time.
+  re-examination rather than needing to be taken on faith each time, and
+  robust enough that a genuinely different answer (Case 5) could emerge
+  from the same test without the test itself needing to change.
 
 ## 10. Trade-offs
 
-- Four separate ADRs (0013, 0021, 0025, 0028) each carry their own version
-  of this reasoning — a reader wanting the complete picture has, until this
-  document, needed to read all four independently and notice the pattern
-  themselves.
+- Five separate ADRs (0013, 0021, 0025, 0028, 0038) each carry their own
+  version of this reasoning — a reader wanting the complete picture has,
+  until this document, needed to read all five independently and notice
+  the pattern themselves.
 - The asymmetry itself (Case 2 gets an opt-in; Cases 3 and 4 do not) is a
   genuine, ongoing cognitive cost for a new reader, exactly as ADR-0004's
   permissive-disposal asymmetry is (Case Study 03) — mitigated by
@@ -164,28 +191,39 @@ one-off finding specific to plugins or to events.
 
 ## 12. Future Evolution
 
-Navigation (`WP 5.0A`) has since been run through this same test, with a
-genuinely different outcome from all four cases above: it needs **no new
+Navigation (`WP 5.0A`) was run through this same test first, with a
+genuinely different outcome from Cases 1–4 above: it needs **no new
 failure model at all**. A module's own navigation-registration failure
 (a duplicate `Id`) happens *inside* that module's own `InitialiseAsync`,
-already fully governed by Case 1's own isolation — there is no fifth
-case to add, because Navigation introduces no new *kind* of failure, only
-a new call site for a kind this document already covers. This is itself
-a useful data point: not every new platform capability needs its own
-entry in this list — recognising when an existing case already applies is
-as valuable as correctly adding a new one. Any future "thing that runs
-and can fail" — a Command Framework handler, a future Requirements/Project
-Engine capability — should still be run through the same test before
-assuming either outcome: is it isolated by default; does a genuine,
-stated precondition justify a critical opt-in; is there a residual,
-always-fatal category for a defect in the containment mechanism itself;
-or, as Navigation just demonstrated, does an existing case already answer
-all three questions without needing a new one.
+already fully governed by Case 1's own isolation — Navigation introduces
+no new *kind* of failure, only a new call site for a kind this document
+already covered, so no new case was needed for it. Command dispatch
+(`WP 5.1A`) was run through the identical test next, and this time the
+outcome *was* a genuinely new case (Case 5, above) — a command handler's
+failure is neither isolated nor treated as Host-fatal; it propagates to
+the caller, because "an expected result" requires the caller to observe
+it. Together, Navigation and Commands are themselves a useful data
+point: not every new platform capability needs its own entry in this
+list, but assuming *in advance* which outcome a new capability will
+reach — "no new case" or "a genuinely new rule" — would have been
+guessing in both directions. Any future "thing that runs and can fail" —
+a future Requirements/Project Engine capability, a future Diagnostics
+background probe — should still be run through the same test before
+assuming any outcome: is it isolated by default; does a genuine, stated
+precondition justify a critical opt-in; is there a residual, always-fatal
+category for a defect in the containment mechanism itself; does an
+existing case already answer all three questions without needing a new
+one (Navigation's own outcome); or does the failure need to propagate to
+an observing caller instead of being isolated at all (Case 5's own,
+newest outcome).
 
 ## 13. Key Takeaways
 
 1. TempestOS has one recurring failure-isolation question, asked honestly
-   four separate times, not four unrelated rules that happen to rhyme.
+   five separate times, not five unrelated rules that happen to rhyme —
+   and the fifth asking (Case 5) is proof the question is still being
+   asked honestly, not merely repeated: it produced a genuinely different
+   answer.
 2. An opt-in escalation mechanism (Case 2's critical flag) is justified by
    a specific property (self-supervision) — not by "this concept feels
    similar to one that already has an opt-in."

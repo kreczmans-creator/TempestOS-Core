@@ -10,9 +10,9 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | The documents themselves, under `docs/architecture/` and `docs/releases/`. |
 | **Review Frequency** | Each document is updated as part of the Definition of Done for any Work Package that changes the subsystem it describes (Engineering Governance §6, extended explicitly to `Platform Service Map.md` and, by the same reasoning, every other architecture document). |
-| **Last Reviewed** | 2026-07-27 (WP 5.0D, Shell & Composition Framework Implementation). |
+| **Last Reviewed** | 2026-07-28 (WP 5.1A, Command Framework Architecture). |
 | **Related Documents** | `Platform Services Register.md`; `Decision Register.md`; `Documentation Register.md` (the superset index, including Academy and release docs). |
-| **Related ADRs** | All 35 — every architecture document in this register is the realisation of one or more ADRs. |
+| **Related ADRs** | All 38 — every architecture document in this register is the realisation of one or more ADRs. |
 | **Related Academy Articles** | `docs/academy/02 Runtime Architecture/` mirrors much of this register's own subject matter at a teaching, rather than reference, depth — see the Academy Register for the pairing. |
 | **Coverage Status** | Complete. |
 
@@ -40,10 +40,11 @@
 | `Sample Module Architecture.md` | `ClockModule`/`ClockLifecycleObserverModule` design | Implemented | WP 4.3 (design and implementation) |
 | `Navigation Framework Architecture.md` | Navigation model, ownership, registration, and rendering boundary design (ADR-0031/0032) | Implemented | WP 5.0A (design), WP 5.0B (implementation) |
 | `Shell & Composition Framework Architecture.md` | The application shell's composition-root role, `ITempestHost.Services`, and page/view ownership design (ADR-0033/0034/0035) | Implemented | WP 5.0C (design), WP 5.0D (implementation) |
+| `Command Framework Architecture.md` | `ICommandDispatcher`/`ICommandRegistry` dispatch/discovery/registration/failure design (ADR-0036/0037/0038) | **Designed** — implementation pending | WP 5.1A (design); WP 5.1B (implementation, not yet started) |
 | `docs/releases/v0.4.0/Architecture.md` | The v0.4.0 release's own architecture review, decisions, and reuse map | Living document (release-scoped) | v0.4.0 planning; updated across the release |
 | `docs/releases/FOUNDATION.md` | Permanent, cross-release engineering constitution — what must never change | Permanent | Established at v0.1.0-era stabilisation; not release-scoped |
 
-**Total: 20 documents (18 under `docs/architecture/`, 2 under `docs/releases/`).**
+**Total: 21 documents (19 under `docs/architecture/`, 2 under `docs/releases/`).**
 
 ## Coverage by Implementation Status
 

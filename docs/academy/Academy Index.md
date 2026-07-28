@@ -73,7 +73,7 @@ span every individual service.
 - `docs/architecture/Platform Service Map.md` — the living, service-by-service index of what exists, what depends on what, and where to read more (outside the Academy folder, but maintained under the same obligation).
 - `docs/architecture/Engineering Glossary.md` — the project's own vocabulary, alphabetical, cross-referenced.
 - `docs/architecture/Rejected Designs.md` — the permanent record of designs seriously considered and declined; the mirror image of the ADR catalogue.
-- `docs/adr/` — the full Architecture Decision Record catalogue (ADR-0001 through ADR-0032 at time of writing).
+- `docs/adr/` — the full Architecture Decision Record catalogue (ADR-0001 through ADR-0038 at time of writing).
 
 ## Runtime
 
@@ -169,6 +169,18 @@ Work Package's Definition of Done is checked against.
 - `docs/security/Platform Security Review v0.5.0.md` — the full audit findings; establishes the Security Baseline.
 - `docs/security/Security Roadmap.md` — prioritised future security work, sequenced against the Threat Model's own assumptions.
 
+## Command Framework
+
+Architected — `WP 5.1A` (ADR-0036–ADR-0038); dispatcher implementation
+pending `WP 5.1B`. `ICommand`'s own contract (`WP 4.0`) finally gains a
+handler contract and a dispatcher.
+
+- [Command Framework](02%20Runtime%20Architecture/11-command-framework.md) — the concept guide: why commands exist, the Command/Mediator pattern, why TempestOS didn't adopt CQRS, and how `ICommandDispatcher`/`ICommandRegistry` answer two genuinely different callers' needs.
+- [WP 5.1A — Command Framework Architecture](03%20Work%20Packages/WP5.1A-command-framework-architecture.md) — the design phase: registration model, dispatch model, the registration-order-squatting finding (`CMD-1`/`TD-11`), and why an implied prior direction (DI-resolved handlers) was resolved by reuse rather than a container redesign.
+- `docs/architecture/Command Framework Architecture.md` — the full design document.
+- ADR-0022 (Navigation/Command orthogonality, decided during original v0.4.0 planning), ADR-0036 (Command Framework is DI-public), ADR-0037 (registration model), ADR-0038 (dispatch failure model — Case 5 of *Failure Isolation Across TempestOS*).
+- See also [Failure Isolation Across TempestOS](02%20Runtime%20Architecture/08-failure-isolation.md) (Case 5: propagate, don't isolate) and [Navigation Architecture](02%20Runtime%20Architecture/09-navigation-architecture.md) (the closest structural precedent).
+
 ## Design Patterns
 
 Recurring structural patterns TempestOS actually uses, explained in terms
@@ -247,8 +259,9 @@ whatever you're about to change, before you change it.
 - [WP 5.0C — Shell & Composition Framework Architecture](03%20Work%20Packages/WP5.0C-shell-and-composition-framework-architecture.md)
 - [WP 5.0D — Shell & Composition Framework Implementation](03%20Work%20Packages/WP5.0D-shell-and-composition-framework-implementation.md)
 - [WP 5.0S — Platform Security Baseline Audit](03%20Work%20Packages/WP5.0S-platform-security-baseline-audit.md)
+- [WP 5.1A — Command Framework Architecture](03%20Work%20Packages/WP5.1A-command-framework-architecture.md)
 
-Still to come: `WP 5.1` (Command Framework) onward — see
+Still to come: `WP 5.1B` (Command Framework Implementation) onward — see
 `docs/releases/v0.5.0/WorkPackages.md` for the full, current plan.
 
 ## Reference Material

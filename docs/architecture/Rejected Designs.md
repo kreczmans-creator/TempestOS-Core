@@ -1066,3 +1066,126 @@ shell technology, designed on its own merits.
 
 **Source.** Shell & Composition Framework Architecture.md, "Composition
 Model."
+
+---
+
+## RD-0038 — Declarative/Attribute-Based Command Registration
+
+**Considered during:** WP 5.1A (Command Framework Architecture).
+
+**Rejected because:** `ModuleMetadataAttribute` (ADR-0027) exists
+specifically to let Discovery read a module's identity *without
+instantiating it* — a real constraint because Discovery runs before the
+DI container exists. Command registration happens *after* Dependency
+Injection Built, during Module Initialisation, when the module is
+already constructed and already being driven through its own lifecycle
+— there is no instantiation-avoidance problem here for a declarative,
+reflection-read mechanism to solve. Introducing one anyway would
+duplicate existing reflection-reading machinery for a case that does not
+need it, mirroring RD-0030's identical reasoning for Navigation.
+
+**Reversibility.** Purely additive and cheap to introduce later, exactly
+as RD-0030 already concludes for Navigation — imperative registration
+does not foreclose a future declarative convenience layered on top of
+it.
+
+**Revisit trigger.** A real, demonstrated need for declarative
+registration, not a hypothetical one.
+
+**Source.** ADR-0037, Context and Decision; Command Framework
+Architecture.md, "Registration Model."
+
+---
+
+## RD-0039 — Dispatching Commands Through the Event Bus
+
+**Considered during:** WP 5.1A (Command Framework Architecture).
+
+**Rejected because:** An event has zero or more subscribers and no
+expected result (ADR-0028); a command has exactly one handler and an
+expected result (`Risks.md` R3, Engineering Glossary). Reusing
+`IEventBus.PublishAsync` for command dispatch would isolate a command
+handler's own exception exactly like an isolated event-subscriber
+failure — caught, logged, and never rethrown — silently absorbing
+exactly the outcome information "an expected result" requires the
+caller to receive. The two mechanisms solve genuinely different
+problems; collapsing them into one would corrupt the semantics of
+whichever one borrowed the other's transport.
+
+**Reversibility.** Not applicable — the two mechanisms are not
+convertible into one another without abandoning one side's own defining
+property (arity, or expected-result semantics).
+
+**Revisit trigger.** None imagined. This is not a scope boundary that
+narrows a currently-unneeded capability; it is a rejected conflation of
+two contracts that must remain distinct for either to mean what it
+claims to mean.
+
+**Source.** ADR-0037, Context and Decision; Command Framework
+Architecture.md, "Repository Investigation" and "Dispatch Model."
+
+---
+
+## RD-0040 — `ICommandHandler<TCommand>` as a DI-Container-Resolved, Reflection-Discovered Service
+
+**Considered during:** WP 5.1A (Command Framework Architecture).
+
+**Rejected because:** `TempestServiceProvider` supports neither
+open-generic/keyed registration nor a mechanism for a module to add a
+new registration to the `ServiceCollection` after it has already been
+frozen into a provider — confirmed by direct inspection, not assumed.
+Making `ICommandHandler<TCommand>` a real, container-resolved service
+type would require either a new, Discovery-shaped reflection pass
+scanning every module for `ICommandHandler<T>` implementations before
+the container is built (a structurally invasive new mechanism, adding a
+capability nothing else in the platform needs), or extending the
+container itself with open-generic/keyed registration (a genuine
+container redesign, out of this Work Package's own scope per its own
+governing rule to recommend, not perform, an architectural change).
+Registering a handler *instance* directly with `ICommandDispatcher`
+achieves the identical "exactly one handler per command type" invariant
+`ICommand`'s own `WP 4.0` doc comment already committed to, needing zero
+new DI capability.
+
+**Reversibility.** Expensive to reverse later if a real need for
+container-resolved, reflection-discovered handlers ever emerged — every
+module registering a handler imperatively would need to migrate to
+whatever new discovery/registration convention replaced it. No such need
+exists today.
+
+**Revisit trigger.** A real, demonstrated need for the DI container
+itself to gain open-generic or keyed registration, arising from a
+requirement broader than the Command Framework alone — not a reason to
+extend the container for this one case in isolation.
+
+**Source.** ADR-0037, Context and Decision; Command Framework
+Architecture.md, "Repository Investigation" and "Registration Model."
+
+---
+
+## RD-0041 — Allowing a Later Command Registration to Silently Override an Earlier One
+
+**Considered during:** WP 5.1A (Command Framework Architecture).
+
+**Rejected because:** Every existing registry in this platform
+(`RuntimeModuleManager`, `NavigationService`) rejects, rather than
+silently accepts, a duplicate registration — a silent override would
+make a command Id or type collision (accidental, or, per this Work
+Package's own Security Review finding CMD-1, potentially adversarial)
+invisible rather than surfaced. First registration wins; a colliding,
+later registration is rejected (`DuplicateCommandHandlerException`/
+`DuplicateCommandIdException`) and isolated by the platform's existing,
+unmodified per-module isolation (ADR-0013).
+
+**Reversibility.** Expensive to reverse later — any consumer that had
+come to rely on override semantics would need to change if this were
+reversed.
+
+**Revisit trigger.** None imagined; this is a consistency-with-precedent
+decision, not a placeholder for a capability that might later be wanted.
+Note, however, that first-registration-wins is not itself a complete
+answer to command-Id ownership — see CMD-1/TD-11 for the registration-
+*order* squatting gap this rejection does not close.
+
+**Source.** ADR-0037, Context and Decision; Command Framework
+Architecture.md, "Registration Model" and "Security Review."

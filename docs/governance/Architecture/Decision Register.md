@@ -49,16 +49,17 @@ source document cited in its own row.
 | D-015 | Renumber the Developer Experience phase's four remaining Work Packages (`WP 4.6A`→`WP 5.0A`, `WP 4.6B`→`WP 5.0B`, `WP 4.7`→`WP 5.1`, `WP 4.8`→`WP 5.2`, `WP 4.9`→`WP 5.3`) to reflect that they now belong to the `v0.5.0` release, not `v0.4.0` — the old `v0.4.0/WorkPackages.md` entries are retained, each carrying a redirect note, per this project's own "never delete, mark superseded" convention | 2026-07-27 | `docs/releases/v0.5.0/ReleasePlan.md`'s "A Note on Renumbering" | Process — release-sequencing, no scope or objective change |
 | D-016 | Insert a new `WP 5.0C`/`WP 5.0D` pair (Shell & Composition Framework Architecture/Implementation) into the `v0.5.0` sequence, between `WP 5.0B` and `WP 5.1`, without renumbering `WP 5.1`–`WP 5.3` — grown beyond this release's original scope once `WP 5.0C`'s own Repository Investigation confirmed `Tempest.App` still had no composition root consuming the platform | 2026-07-27 | `docs/releases/v0.5.0/ReleasePlan.md`'s "Scope" section; `docs/academy/03 Work Packages/WP5.0C-shell-and-composition-framework-architecture.md` | Sequencing — mid-release scope growth, no renumbering of unrelated Work Packages |
 | D-017 | Insert `WP 5.0S` (Platform Security Baseline Audit) into the `v0.5.0` sequence as a dedicated, formal engineering audit — not a feature Work Package — establishing `docs/security/` as a new top-level documentation tree and the "v0.5.0 Security Baseline" as a standing Definition-of-Done check for every subsequent Work Package | 2026-07-28 | This Work Package's own brief; `docs/security/Platform Security Review v0.5.0.md` (Security Baseline Statement) | Process — governance/security discipline, mirrors D-012's "dedicated milestone Work Package" pattern |
+| D-018 | Split `WP 5.1` (Command Framework) into an architecture-only phase (`WP 5.1A`) and an implementation phase (`WP 5.1B`), mirroring the `WP 5.0A`/`WP 5.0B` (Navigation) and `WP 5.0C`/`WP 5.0D` (Shell) precedent exactly, rather than designing and implementing in one combined Work Package | 2026-07-28 | This Work Package's own brief; `docs/releases/v0.5.0/WorkPackages.md`'s original single `WP 5.1` entry, now superseded by the split | Sequencing — planning revision, consistent with this release's own established design-then-implementation pattern |
 
-**Total: 17 entries.**
+**Total: 18 entries.**
 
 ## Common Pattern
 
-Thirteen of the seventeen entries above are **process decisions** (how the
+Thirteen of the eighteen entries above are **process decisions** (how the
 project works), not **architectural decisions** (how the software is
 built) — the correct classification under §5, since none introduced a
 genuine, seriously-considered-and-rejected technical alternative of its
-own. The four sequencing decisions (D-006, D-007, D-008, D-016) are
+own. The five sequencing decisions (D-006, D-007, D-008, D-016, D-018) are
 downstream consequences of risk assessment or investigation findings, not
 architecture in the ADR sense — reordering or extending *when* something
 is built, not deciding *how*.

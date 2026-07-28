@@ -273,47 +273,109 @@ see the `WP 5.0C` retrospective's own "Readiness assessment."
 
 ---
 
-## WP 5.1 — Command Framework
+## WP 5.0S — Platform Security Baseline Audit
 
-**Status note.** Not started; only its contract (`ICommand`, `WP 4.0`)
-exists. Formerly `WP 4.7` under the `v0.4.0` plan.
+**Status note.** Complete. A dedicated, formal engineering audit — not a
+feature Work Package — inserted between `WP 5.0D` and `WP 5.1A` without
+renumbering anything else, mirroring `D-016`'s own precedent for
+mid-release scope growth. **This entry was missing from this document
+entirely until `WP 5.1A` found and corrected the gap** — disclosed here
+as pre-existing drift, not caused by `WP 5.1A`'s own scope.
 
 ### Objective
 
-Give the platform a uniform way to define and dispatch commands.
+Establish the first comprehensive security audit of the entire platform
+— every production file, across 15 audit areas — and produce the
+v0.5.0 Security Baseline every subsequent Work Package's Definition of
+Done is checked against.
 
 ### Scope
 
-- Implement `ICommand` (per `WP 4.0`) and a dispatcher.
-- **Document the command/event distinction explicitly**: a command has
-  exactly one handler and an expected result; an event has zero or more
-  subscribers and no expected result (`WP 4.4`'s Event Bus).
-- **Respect `ADR-0022`**: the command dispatcher never depends on, or
-  calls into, `INavigationProvider`/`NavigationService` directly. Where a
-  command's application logic needs to trigger navigation, it depends on
-  `NavigationService` itself, as a peer — not routed through the command
-  framework.
+No new feature; no architecture redesigned. One isolated, non-breaking
+fix (a plugin manifest `AssemblyFileName` path-containment check); two
+future security debt items disclosed (`TD-09`, `TD-10`) and deferred to
+a future Architecture Work Package.
 
 ### Dependencies
 
-**`WP 4.0`**, **`WP 4.3`** (extend the sample module set). Cross-reference
-**`WP 4.4`** (Event Bus) for the command/event distinction. Not dependent
-on **`WP 5.0A`/`WP 5.0B`** (Navigation) — `ADR-0022`.
+**`WP 5.0A`–`WP 5.0D`** (everything built so far — the audit's own
+scope).
 
-### Deliverables
+### Deliverables — Done
 
-- Command contract implementation and dispatcher, DI-resolvable like the
-  Event Bus.
-- The command/event distinction documented in the Engineering Glossary.
-- The sample module set extended with at least one registered command
-  handler.
+`docs/security/Threat Model.md`, `Security Principles.md`, `Platform
+Security Review v0.5.0.md`, `Security Roadmap.md`; `Technical Debt
+Register.md` (`TD-09`, `TD-10`); `Decision Register.md` (`D-017`).
 
-### Acceptance Criteria
+### Acceptance Criteria — Met
 
-- A module can register a command handler and have it invoked by ID with
-  typed parameters, proven against the sample module set.
-- The command/event distinction is documented clearly enough to resolve
-  `Risks.md`'s R3.
+No Critical or High severity vulnerability found; build clean, tests
+unchanged plus 2 new regression tests (448/448).
+
+### Estimated Complexity
+
+**L.**
+
+### Risks
+
+None named; see the `WP 5.0S` retrospective's own Security Baseline
+Statement.
+
+---
+
+## WP 5.1A — Command Framework Architecture
+
+**Status note.** Complete. Design: `docs/architecture/Command Framework
+Architecture.md`, `ADR-0036`–`ADR-0038`, and the `WP 5.1A` Academy
+retrospective. This Work Package split the originally single-phase
+`WP 5.1` entry into an architecture phase (`WP 5.1A`) and an
+implementation phase (`WP 5.1B`), mirroring the `WP 5.0A`/`WP 5.0B` and
+`WP 5.0C`/`WP 5.0D` precedent exactly (`D-018`).
+
+### Objective
+
+Decide what "Command Framework" means for TempestOS before writing any
+implementation — a handler contract and a dispatcher for `ICommand`
+(`WP 4.0`), integrating cleanly with the Runtime Host, Event Bus,
+Navigation, and Application Shell.
+
+### Scope
+
+- `ICommandDispatcher`, `ICommandRegistry`, `CommandDescriptor`,
+  `CommandResult`, and five exception types — designed in full.
+- **The command/event distinction, documented explicitly**: a command
+  has exactly one handler and an expected result; an event has zero or
+  more subscribers and no expected result — restated directly in
+  `Command Framework Architecture.md`'s own Repository Investigation,
+  resolving `Risks.md` R3.
+- **`ADR-0022` respected, not reopened**: the Command Framework never
+  depends on, or is invoked through, `INavigationProvider`/
+  `NavigationService`.
+- **Mandatory security review against the `WP 5.0S` baseline**,
+  surfacing one new finding (`CMD-1`/`TD-11`, registration-order
+  squatting — affecting both the new Command Framework and the
+  already-implemented Navigation Framework).
+
+### Dependencies
+
+**`WP 4.0`** (`ICommand`). Cross-reference **`WP 4.4`** (Event Bus) for
+the command/event distinction. Not dependent on **`WP 5.0A`/`WP 5.0B`**
+(Navigation) — `ADR-0022`. **`WP 5.0S`** (Platform Security Baseline —
+mandatory security review).
+
+### Deliverables — Done
+
+A written architecture document; three new ADRs (`ADR-0036`–`ADR-0038`);
+four new Rejected Designs entries (`RD-0038`–`RD-0041`); a new Academy
+concept guide (`11-command-framework.md`) and retrospective; `Risks.md`
+R3 retired; `Technical Debt Register.md` `TD-11` added, `TD-09` widened.
+
+### Acceptance Criteria — Met
+
+Every open question a `WP 5.1B` implementer would face is answered in
+writing: registration model, dispatch model, failure model, integration
+with every existing platform service, and a mandatory security review
+with no unresolved STOP condition.
 
 ### Estimated Complexity
 
@@ -321,10 +383,59 @@ on **`WP 5.0A`/`WP 5.0B`** (Navigation) — `ADR-0022`.
 
 ### Risks
 
-- See `Risks.md`, R3 — the sequence gap between the Event Bus and Command
-  Framework's own implementation increases the risk that nobody circles
-  back to cross-reference them explicitly. This Work Package's own
-  deliverables make that cross-reference mandatory, not optional.
+None named; `CMD-1`/`TD-11` is disclosed debt, not a Work Package risk —
+see `Technical Debt Register.md`.
+
+---
+
+## WP 5.1B — Command Framework Implementation
+
+**Status note.** Not started. Formerly the implementation half of a
+single `WP 5.1` entry, formerly `WP 4.7` under the `v0.4.0` plan.
+
+### Objective
+
+Implement exactly what `WP 5.1A` designed.
+
+### Scope
+
+Defined entirely by `WP 5.1A`'s own deliverable (`docs/architecture/
+Command Framework Architecture.md`) — this entry is intentionally thin
+until implementation begins; the architecture itself, not this entry, is
+authoritative on shape.
+
+### Dependencies
+
+**`WP 5.1A`** (required, blocking; complete). **`WP 4.3`** (extend the
+sample module set with at least one registered command handler). Not
+dependent on **`WP 5.0A`/`WP 5.0B`** (Navigation) — `ADR-0022`.
+
+### Deliverables
+
+Whatever `WP 5.1A`'s architecture document specifies: `ICommandDispatcher`/
+`ICommandRegistry` and their concrete implementations, DI-resolvable
+like the Event Bus and Navigation; the sample module set extended with
+at least one registered command handler.
+
+### Acceptance Criteria
+
+Whatever `WP 5.1A`'s architecture document specifies, at minimum
+including: a module can register a command handler and have it invoked
+either by its concrete type or by a string Id, proven against the sample
+module set; duplicate registration is rejected, not silently overridden;
+a handler's own exception propagates to the caller.
+
+### Estimated Complexity
+
+**M.**
+
+### Risks
+
+Inherits any risk `WP 5.1A` did not fully resolve — `CMD-1`/`TD-11`
+(registration-order squatting) is explicitly not fixed by `WP 5.1A` and
+is not this Work Package's own scope to fix either, per `WP 5.1A`'s own
+Security Review; a regression test proving the current, disclosed
+behaviour is recommended, not a fix.
 
 ---
 

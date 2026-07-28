@@ -93,17 +93,30 @@ deterministic order — answering exactly one question: what modules exist.
 Deliberately independent of the DI container (ADR-0008) and of Configuration.
 See the Platform Service Map's "Discovery" entry.
 
-### Command *(contract implemented — v0.4.0, WP 4.0)*
+### Command *(contract implemented — v0.4.0, WP 4.0; architected — WP 5.1A, ADR-0036–ADR-0038; dispatcher implementation pending WP 5.1B)*
 
 A discrete, named unit of application logic requested by a caller,
 implemented as data (`ICommand`, `Tempest.Core.Commands`): a concrete
 command type carries its own parameters as ordinary properties and is
-dispatched by its own type. Has exactly one handler and an expected
-result — contrasted with an **Event**, which has zero or more subscribers
-and no expected result. The handler contract and dispatcher are not yet
-defined (Command Framework's own work, WP 5.1, formerly WP 4.7) — only
-the command shape itself exists so far. Never depends on, or is invoked
-through, Navigation — see ADR-0022 and ADR-0031/ADR-0032.
+dispatched by its own type, to exactly one registered
+`ICommandHandler<TCommand>`, via `ICommandDispatcher.DispatchAsync`. A
+caller with only a string Id (a menu, a keyboard shortcut, a toolbar,
+future automation or AI invocation) instead uses `ICommandRegistry.
+InvokeAsync(id)`, resolved against a `CommandDescriptor` catalogue —
+the Command Framework's own Registry-pattern application, mirroring
+Navigation's. Has exactly one handler and an expected result,
+represented as a `CommandResult` — contrasted with an **Event**, which
+has zero or more subscribers and no expected result. A handler's own
+exception propagates directly to the caller rather than being isolated,
+a deliberate divergence from the Event Bus's own per-subscriber
+isolation (ADR-0038), since "an expected result" requires the caller to
+actually know whether the command succeeded. DI-public, registered as an
+ordinary singleton like the Event Bus and Navigation (ADR-0036).
+Registration is imperative, in two independent parts — a handler
+instance registered with the dispatcher, a descriptor registered with
+the registry (ADR-0037) — needing no new Dependency Injection capability.
+Never depends on, or is invoked through, Navigation — see ADR-0022 and
+ADR-0031/ADR-0032.
 
 ### Event Bus *(implemented — v0.4.0, WP 4.0 contracts; WP 4.4D bus, ADR-0028; WP 4.4E first real consumer)*
 

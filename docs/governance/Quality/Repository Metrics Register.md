@@ -10,7 +10,7 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | Direct repository inspection (`find`, `wc`, `git log`) performed as part of this Work Package. |
 | **Review Frequency** | Re-measured at each Governance Baseline review, or on request. |
-| **Last Reviewed** | 2026-07-28 (WP 5.0S, Platform Security Baseline Audit). |
+| **Last Reviewed** | 2026-07-28 (WP 5.1A, Command Framework Architecture). |
 | **Related Documents** | `Test Register.md`; `Namespace Register.md`; `Engineering Evolution Register.md`. |
 | **Related ADRs** | None directly. |
 | **Related Academy Articles** | None directly — this is a raw metrics snapshot, not a teaching document. |
@@ -212,6 +212,35 @@ created under a new top-level `docs/security/` tree.
 | Total commits | 56 | 57 (before this Work Package's own commit) |
 | Build warnings/errors | 0/0 | 0/0 (unchanged) |
 
+## Snapshot: 2026-07-28 (WP 5.1A — Command Framework Architecture)
+
+Architecture-only Work Package — no production or test code changed
+since the `WP 5.0S` snapshot above; every `src/`/`tests/` figure is
+unchanged. Shown here are only the metrics this Work Package's own
+additions moved.
+
+| Metric | WP 5.0S | WP 5.1A (current) |
+|---|---|---|
+| `src/` `.cs` files / lines | 119 / 7,589 | 119 / 7,589 (unchanged — architecture only) |
+| `tests/` `.cs` files / lines | 60 / 8,867 | 60 / 8,867 (unchanged — no tests added) |
+| Executed tests (`dotnet test`) | 448, 0 failures | 448, 0 failures (unchanged) |
+| ADRs | 35 (`ADR-0001`–`ADR-0035`) | 38 (`ADR-0001`–`ADR-0038`, adds `ADR-0036`–`ADR-0038`) |
+| Rejected Designs entries | 37 (`RD-0001`–`RD-0037`) | 41 (`RD-0001`–`RD-0041`, adds `RD-0038`–`RD-0041`) |
+| Architecture documents (`docs/architecture/`) | 18 | 19 (adds `Command Framework Architecture.md`) |
+| `docs/security/` documents | 4 | 4 (unchanged) |
+| Academy articles (`docs/academy/`, all subfolders) | 70 | 72 (adds `11-command-framework.md`, `WP5.1A-command-framework-architecture.md`) |
+| `docs/` `.md` files | 174 | 180 |
+| Governance documents (`docs/governance/`, all subfolders) | 32 | 32 (unchanged — updates existing registers rather than adding new ones) |
+| Technical Debt Register open items | 7 Open, 1 Partially resolved, 2 Resolved (10 total) | 8 Open, 1 Partially resolved, 2 Resolved (11 total — adds `TD-11`; `TD-09`'s own scope widened, not re-counted) |
+| Decision Register entries | 17 | 18 (adds `D-018`) |
+| Risk Register entries | 10 risks, 4 Retired | 10 risks, 5 Retired (R3 retired — see `Risks.md`) |
+| Total commits | 57 | 58 (before this Work Package's own commit) |
+| Build warnings/errors | 0/0 | 0/0 (unchanged) |
+
+**No production behaviour change.** `dotnet build`/`dotnet test` were
+re-run to confirm this directly: identical 448/448 result to the
+`WP 5.0S` snapshot, since no `src/`/`tests/` file was touched.
+
 ## Governance Suite Size (Introduced by This Work Package, WP 4.5A)
 
 | Metric | Value |
@@ -232,8 +261,8 @@ is offered.
 
 ## Cross-Reference Check
 
-The ADR count (35), Rejected Designs count (37), Academy article count
-(70), test count (448), and build status (0/0) above are each
+The ADR count (38), Rejected Designs count (41), Academy article count
+(72), test count (448), and build status (0/0) above are each
 cross-checked directly against `ADR Register.md`, `Rejected Designs
 Register.md`, `Academy Register.md`, `Test Register.md`, and `Validation
 Register.md` respectively — all consistent, no discrepancy found.

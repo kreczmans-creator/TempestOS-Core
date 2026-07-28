@@ -30,7 +30,7 @@ of date is worse than no map at all, because it will be trusted.
 | Host | Implemented (WP 2.7B) | Configuration, Logging, Discovery, Registration, Lifecycle, Dependency Injection | Tempest.App |
 | Event Bus | **Implemented — WP 4.4D** (`IEventBus`/`EventBus`, `Tempest.Core.Events`) — dispatch/subscription/failure model per ADR-0028; **consumed — WP 4.4E** | Dependency Injection | Any module — first real consumer: `ClockModule`/`ClockLifecycleObserverModule` (`WP 4.4E`) |
 | Background Services | **Implemented — WP 4.5** (`IHostedServiceDiscoveryService`/`HostedServiceDiscoveryService`, `IHostedServiceManager`/`HostedServiceManager`, `Tempest.Core.BackgroundServices`) — discovery, ownership, orchestration, and Host Lifecycle placement per ADR-0029/ADR-0030; failure model per ADR-0021 | Host, Dependency Injection | Any module declaring a hosted service |
-| Command Framework | Contract implemented (WP 4.0: `ICommand`); dispatcher planned (WP 5.1, formerly WP 4.7) — orthogonal to Navigation, ADR-0022 | Dependency Injection | Any module |
+| Command Framework | **Architected — WP 5.1A** (`ICommandDispatcher`/`ICommandRegistry`, ADR-0036–ADR-0038); dispatcher implementation pending WP 5.1B — orthogonal to Navigation, ADR-0022 | Dependency Injection | Any module contributing a command handler; `Tempest.App` (invocation, not yet built) |
 | Navigation | **Implemented — WP 5.0A (design), WP 5.0B (implementation)** (`INavigationProvider`/`NavigationService`, `Tempest.Core.Navigation`) — model, ownership, and rendering boundary per ADR-0031/ADR-0032 | Dependency Injection, Event Bus | Any module contributing a navigation item; `Tempest.App` (rendering, not yet built) |
 | Plugin Manifest | **Implemented — WP 4.2** (`Tempest.Core.Plugins`) | Host (Phases 3.1/3.2, ADR-0026 — a pre-Discovery step) | Module Discovery (unchanged), any real plugin |
 | Project Engine | Planned | Undetermined | Undetermined |
@@ -531,27 +531,44 @@ RD-0029; `docs/releases/v0.4.0/WorkPackages.md` (`WP 4.5`).
 
 ---
 
-## Command Framework *(contract implemented — WP 4.0; dispatcher planned — WP 5.1, formerly WP 4.7)*
+## Command Framework *(architected — WP 5.1A, ADR-0036–ADR-0038; implementation pending WP 5.1B)*
 
-**Responsibility.** A uniform way to request a discrete unit of application
-logic. `ICommand` marks a concrete command type, which carries its own
-parameters as ordinary data. No dispatcher exists yet — a command type
-implementing this interface cannot currently be invoked by anything.
+**Responsibility.** A uniform, UI-agnostic way to request a discrete unit
+of application logic, invokable by a typed caller (`ICommandDispatcher.
+DispatchAsync<TCommand>`) or by a caller with only a string Id
+(`ICommandRegistry.InvokeAsync`) — a menu, a toolbar, a keyboard
+shortcut, a future touch gesture, or a future automation/AI service.
+`ICommand` marks a concrete command type, which carries its own
+parameters as ordinary data; exactly one `ICommandHandler<TCommand>`
+handles it, and the caller receives a `CommandResult` (or a propagated
+exception) so it genuinely knows whether the command succeeded.
 
-**Key types.** `ICommand` (`Tempest.Core.Commands`, implemented WP 4.0). A
-handler contract and dispatcher — not yet defined; `WP 5.1`'s own design
-work, deliberately not speculated on ahead of it.
+**Key types.** `ICommand` (`Tempest.Core.Commands`, implemented WP 4.0,
+unchanged). `ICommandHandler<TCommand>`, `ICommandDispatcher`,
+`CommandDescriptor`, `ICommandRegistry`, `CommandResult`, and five
+exception types (`CommandException`, `DuplicateCommandHandlerException`,
+`DuplicateCommandIdException`, `CommandHandlerNotRegisteredException`,
+`CommandNotFoundException`) — designed WP 5.1A, implementation pending
+WP 5.1B.
 
-**Dependencies.** None for the contract itself. **Explicitly orthogonal to
-Navigation** (ADR-0022) — neither this nor `NavigationService`
-(implemented, `WP 5.0B`; see below) depends on the other.
+**Dependencies.** None module-specific — depends on nothing but the
+handler/descriptor instances registered into it. **Explicitly orthogonal
+to Navigation** (ADR-0022) — neither this nor `NavigationService`
+depends on the other. **Never dispatched through the Event Bus**
+(ADR-0037, RD-0039) — a command handler may use `IEventBus` as an
+ordinary peer dependency, exactly as it may use `INavigationProvider`.
 
-**Consumers.** Any module, once `WP 5.1` implements the dispatcher.
+**Consumers.** Any module contributing a command handler; `Tempest.App`'s
+Shell, once `WP 5.1B` implements the dispatcher and a later Work Package
+wires the Shell's own input handling to it.
 
 **ADR references.** ADR-0022 (*Navigation and Commands Are Orthogonal
-Platform Services*), ADR-0023, ADR-0024.
+Platform Services*), ADR-0023, ADR-0024, ADR-0036 (*Command Framework Is
+a DI-Public Platform Service*), ADR-0037 (*Command Registration Model*),
+ADR-0038 (*Command Dispatch Failure Model*).
 
-**Academy references.** WP 4.0 retrospective (*Platform Contracts*);
+**Academy references.** WP 4.0 retrospective (*Platform Contracts*); WP
+5.1A retrospective (*Command Framework Architecture*);
 `docs/releases/v0.5.0/WorkPackages.md` (`WP 5.1`).
 
 ---

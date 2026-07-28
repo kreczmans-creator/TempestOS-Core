@@ -19,6 +19,18 @@ Host-owned, mirroring Discovery and Lifecycle's own ADR-0017 status
 exactly, for a new, fourth kind of runtime component (neither a Platform
 Service nor a Module — see *Background Services Architecture.md*).
 
+**Update, WP 5.1A — drift found and corrected.** A Navigation
+(`INavigationProvider`/`NavigationService`) row was never added to this
+table at either `WP 5.0A` (design) or `WP 5.0B` (implementation) —
+confirmed by direct inspection: no reference to either type existed
+anywhere in this file before this Work Package. Added below now,
+disclosed here as pre-existing documentation drift found incidentally
+while adding this Work Package's own Command Framework row, not caused
+by this Work Package. A Command Framework (`ICommandDispatcher`/
+`ICommandRegistry`) row is also added, architected — not yet
+implemented — by `WP 5.1A` (ADR-0036–ADR-0038); implementation is
+`WP 5.1B`.
+
 ## Purpose
 
 One table, answering "who is responsible for this" for every significant
@@ -66,6 +78,8 @@ here at the level of individual objects rather than whole services.
 | Event Bus (`IEventBus` / `EventBus`) | **`TempestServiceProvider`** | The one platform service in this table the Host does not construct directly — registered as an ordinary `services.Singleton<IEventBus, EventBus>()` (WP 4.4D) and constructed by the container like any other resolved service, the moment something first requests it. DI-public by design (ADR-0020): unlike every `TempestHost`-owned row above, a module may hold and resolve it directly. |
 | Hosted Service Discovery (`IHostedServiceDiscoveryService`) *(implemented — WP 4.5, ADR-0029)* | `TempestHost` | Constructed directly; never registered in DI (ADR-0017, applied to a new component). Used once, during Platform Services Registered, then no longer needed — mirroring Discovery's own role exactly. |
 | Hosted Service orchestration (`IHostedServiceManager`) *(implemented — WP 4.5, ADR-0029)* | `TempestHost` | Constructed directly, after the service provider exists; never registered in DI (ADR-0017, applied to a new component). Held for the Host's entire life, starting hosted services after Module Initialisation and stopping them before Module Disposal. |
+| Navigation (`INavigationProvider` / `NavigationService`) *(implemented — WP 5.0A design, WP 5.0B implementation, ADR-0031/ADR-0032)* | **`TempestServiceProvider`** | Registered as an ordinary `services.Singleton<INavigationProvider, NavigationService>()`, constructed by the container the first time something resolves it — the same non-Host-owned shape the Event Bus row above already established. DI-public by design (ADR-0032): a module or plugin-loaded module may hold and resolve it directly, and registers its own `NavigationItem`s imperatively. This row was missing from this table until `WP 5.1A`; see the Update note above. |
+| Command Framework (`ICommandDispatcher` / `ICommandRegistry`) *(architected — WP 5.1A, ADR-0036–ADR-0038; implementation pending WP 5.1B)* | **`TempestServiceProvider`** | Registered as an ordinary singleton, mirroring the Event Bus and Navigation rows exactly (ADR-0036). A module or plugin-loaded module registers its own command handler(s)/descriptor(s) imperatively, during its own lifecycle, exactly as it already does for `IEventBus`/`INavigationProvider`. |
 
 ## Reading the Matrix Alongside Other Documents
 
@@ -81,19 +95,25 @@ here at the level of individual objects rather than whole services.
 - **The "Logger: Factory" row** is the one entry that isn't simply
   "`TempestHost`," and is worth re-reading if the rest of the table's pattern
   makes it look like an oversight — it isn't; see the Notes column.
-- **The "Event Bus" row** is the second entry that isn't `TempestHost`, and
-  for a genuinely different reason than the Logger row: it isn't Host-owned
-  at all. `IEventBus` is DI-public (ADR-0020) precisely because it carries
-  no orchestration authority — a module resolving it is not reaching back
-  into anything the Host would need to keep private, unlike Discovery,
-  Registration, or Lifecycle immediately above it in this table.
+- **The "Event Bus," "Navigation," and "Command Framework" rows** are the
+  entries that aren't `TempestHost`, and for a genuinely different reason
+  than the Logger row: none of the three is Host-owned at all. `IEventBus`
+  (ADR-0020), `INavigationProvider` (ADR-0032), and the Command Framework
+  (ADR-0036) are each DI-public precisely because none carries any
+  orchestration authority — a module resolving any of the three is not
+  reaching back into anything the Host would need to keep private, unlike
+  Discovery, Registration, or Lifecycle above them in this table. All
+  three were decided independently, at three different Work Packages, and
+  reached the identical conclusion — see `Failure Isolation Across
+  TempestOS`'s own "asked fresh each time" discipline, applied here to an
+  ownership question rather than a failure-isolation one.
 - **The two Hosted Service rows** are `TempestHost`-owned, like Discovery,
   Registration, and Lifecycle — deliberately the *opposite* pattern from
-  the Event Bus row immediately above them. A hosted service *instance*
-  may consume `IEventBus` and any other DI-public service exactly like a
-  module can; the *manager that starts and stops it* is kept Host-owned for
-  the identical reason Discovery/Registration/Lifecycle are — see
-  ADR-0029.
+  the Event Bus/Navigation/Command Framework rows immediately above them.
+  A hosted service *instance* may consume `IEventBus` and any other
+  DI-public service exactly like a module can; the *manager that starts
+  and stops it* is kept Host-owned for the identical reason
+  Discovery/Registration/Lifecycle are — see ADR-0029.
 - Every row implicitly cites ADR-0017 (Discovery/Registration/Lifecycle are
   Host-owned, never DI-public) and ADR-0011 (the order in which the
   `TempestHost`-owned objects come into existence).

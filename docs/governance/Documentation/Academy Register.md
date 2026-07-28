@@ -10,7 +10,7 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | `docs/academy/` itself; `docs/academy/Academy Index.md` (the reader-facing navigation index this register cross-checks against). |
 | **Review Frequency** | Updated whenever a new Academy article is created — in practice, every Work Package (Engineering Governance §6). |
-| **Last Reviewed** | 2026-07-28 (WP 5.0S). |
+| **Last Reviewed** | 2026-07-28 (WP 5.1A). |
 | **Related Documents** | `docs/academy/Academy Index.md`; `docs/academy/Academy Audit Report.md`; `Engineering Standards Register.md`; `Feature Register.md`. |
 | **Related ADRs** | None directly — the Academy documents ADRs, it is not itself governed by one. |
 | **Related Academy Articles** | This register's entire scope. |
@@ -40,7 +40,7 @@
 | 10 | Single Responsibility Principle |
 | 11 | Atomic Phase Principle |
 
-## 02 Runtime Architecture (10 articles)
+## 02 Runtime Architecture (11 articles)
 
 | # | Article | Last Materially Updated |
 |---|---|---|
@@ -51,11 +51,12 @@
 | 05 | Working with the TempestOS Host | WP 4.5 (expanded) |
 | 06 | Platform Layering | WP 5.0A (Navigation worked example added) |
 | 07 | Plugin Architecture | WP 4.2 |
-| 08 | Failure Isolation Across TempestOS | WP 5.0A (Navigation's "no new case needed" finding added) |
+| 08 | Failure Isolation Across TempestOS | WP 5.1A (Case 5 — Command Dispatch — added; WP 5.0A's Navigation "no new case needed" finding also present) |
 | 09 | Navigation Architecture | WP 5.0A (new), WP 5.0B (implementation confirmed) |
 | 10 | Shell & Application Composition | WP 5.0C (new), WP 5.0D (implementation confirmed; `const`-field/assembly-loading finding added) |
+| 11 | Command Framework | WP 5.1A (new) |
 
-## 03 Work Packages (30 retrospectives)
+## 03 Work Packages (31 retrospectives)
 
 | Retrospective | Type |
 |---|---|
@@ -89,6 +90,7 @@
 | WP 5.0C — Shell & Composition Framework Architecture | Architecture (ADR-0033/0034/0035) |
 | WP 5.0D — Shell & Composition Framework Implementation | Implementation |
 | WP 5.0S — Platform Security Baseline Audit | Review/Audit |
+| WP 5.1A — Command Framework Architecture | Architecture (ADR-0036/0037/0038) |
 
 **Note.** `WP 4.4C` produced no code and no separate retrospective — its
 story is told inside the `WP 4.4` architecture retrospective's own
@@ -133,9 +135,9 @@ added `Engineering Lifecycle.md`).
 | `Academy Audit Report.md` | `WP 4.4F`'s own audit deliverable |
 | `Contributor Learning Path.md` | Repository-wide onboarding sequence for a new contributor, added `WP 4.5B` |
 
-**Total: 1 (Introduction) + 11 (Engineering Principles) + 10 (Runtime
-Architecture) + 30 (Work Packages) + 4 (Design Patterns) + 5 (Case
-Studies) + 5 (Engineering Standards) + 4 (top-level meta) = 70 files
+**Total: 1 (Introduction) + 11 (Engineering Principles) + 11 (Runtime
+Architecture) + 31 (Work Packages) + 4 (Design Patterns) + 5 (Case
+Studies) + 5 (Engineering Standards) + 4 (top-level meta) = 72 files
 under `docs/academy/` (Verified by direct file count).**
 
 ## Governance Maintenance Check (Engineering Governance §6)

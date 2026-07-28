@@ -114,6 +114,31 @@ design exists — these capabilities are furthest from anything in the
 current codebase, and speculative design against them now would violate
 `Security Principles.md` Principle 7.
 
+### 10. Command and Navigation Id ownership/priority model — trigger: paired with item 1 (real third-party plugin support)
+
+**Finding:** `CMD-1` / `Technical Debt Register.md` TD-11, surfaced by
+`WP 5.1A`'s own Security Review (`docs/architecture/Command Framework
+Architecture.md`). "First registration wins" — the duplicate-rejection
+rule both `NavigationService.Register` (since `WP 5.0B`) and the newly-
+designed Command Framework (`WP 5.1A`) use — rejects a *later* duplicate
+but does not establish that the *first* registrant was the well-known
+Id's intended owner. Because `ModuleLifecycleManager` initialises
+modules in ascending-Id order, a plugin-loaded module whose own Id sorts
+earlier than a first-party module's can legitimately claim a well-known
+command or navigation Id before its real owner ever registers —
+entirely within each registry's own stated rules.
+
+Before third-party plugins are supported in practice (the same trigger
+as item 1, since this finding requires a plugin already loaded with full
+process trust to matter), design and implement an ownership/priority/
+reservation model for command and navigation Ids — for example,
+reserving a namespace prefix for first-party Ids, or giving a
+first-party registration explicit priority over a plugin-sourced one
+regardless of initialisation order. This should be designed alongside
+item 1's own isolation-boundary work, not as a separate, later effort,
+since both share the same root precondition and the same future
+Architecture Work Package is the natural place to resolve them together.
+
 ## Explicit Non-Recommendations
 
 This roadmap deliberately does **not** recommend, at this time:
