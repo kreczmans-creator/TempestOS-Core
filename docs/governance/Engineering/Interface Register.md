@@ -10,9 +10,9 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | Direct source inspection (`grep -rhoP "^public interface" src/Tempest.Core`). |
 | **Review Frequency** | Updated whenever a new public interface is introduced. |
-| **Last Reviewed** | 2026-07-28 (WP 5.1B). |
+| **Last Reviewed** | 2026-07-28 (WP 5.2, Diagnostics Improvements). |
 | **Related Documents** | `docs/architecture/Ownership Matrix.md`; `Dependency Injection Register.md`; `Namespace Register.md`. |
-| **Related ADRs** | ADR-0006, ADR-0017, ADR-0020, ADR-0023, ADR-0024, ADR-0036, ADR-0037. |
+| **Related ADRs** | ADR-0006, ADR-0009, ADR-0017, ADR-0020, ADR-0023, ADR-0024, ADR-0034, ADR-0036, ADR-0037, ADR-0039. |
 | **Related Academy Articles** | `docs/architecture/Engineering Glossary.md` (Platform API vs. Platform Service). |
 | **Coverage Status** | Complete. |
 
@@ -29,6 +29,7 @@
 | `IConfigurationProvider` | `Tempest.Core.Configuration` | DI-public (via `AddInstance`) | Read-only configuration access |
 | `IConfigurationSource` | `Tempest.Core.Configuration` | Not DI-registered (input to `ConfigurationBuilder`) | A source `ConfigurationBuilder` reads |
 | `ICriticalBackgroundService` | `Tempest.Core.BackgroundServices` | Platform API (marker) | Opt-in critical-failure escalation (ADR-0021) |
+| `IDiagnosticsProvider` | `Tempest.Core.Diagnostics` | DI-public (via `AddInstance`) | Read-only projection over Host/module/hosted-service lifecycle state (ADR-0039) |
 | `IEvent` | `Tempest.Core.Events` | Platform API (contract) | Marks a published fact |
 | `IEventBus` | `Tempest.Core.Events` | DI-public | Publish/subscribe dispatch (ADR-0020) |
 | `IEventHandler<T>` | `Tempest.Core.Events` | Platform API (contract) | Consumer-facing subscription contract |
@@ -53,15 +54,14 @@
 | `ITempestHostBuilder` | `Tempest.Core.Runtime` | Not DI-registered (the composition root's own entry point) | Assembles and produces a `TempestHost` |
 | `ITempestServiceProvider` | `Tempest.Core.DependencyInjection` | The container itself | Constructs and resolves service instances |
 
-**Total: 30 public interfaces under `src/Tempest.Core/` — Verified
-directly (adds `ICommandDispatcher`, `ICommandHandler<T>`,
-`ICommandRegistry`, `WP 5.1B`).**
+**Total: 31 public interfaces under `src/Tempest.Core/` — Verified
+directly (adds `IDiagnosticsProvider`, `WP 5.2`).**
 
 ## Classification Summary
 
 | Classification | Count |
 |---|---|
-| DI-public (`AddInstance` or container-constructed singleton) | 10 |
+| DI-public (`AddInstance` or container-constructed singleton) | 11 |
 | Host-owned, never DI-public (ADR-0017 and its extensions) | 6 |
 | Platform API / contract only (no dispatcher or orchestration yet, or consumer-facing marker) | 6 |
 | Discovered/registered but not itself a DI registration target | 3 |

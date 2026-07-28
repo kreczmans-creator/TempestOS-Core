@@ -10,7 +10,7 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | `docs/architecture/Platform Service Map.md` — the full responsibility/dependency/consumer/lifecycle detail for each service lives there; this register does not repeat it, only indexes it against governance status. |
 | **Review Frequency** | Updated whenever `Platform Service Map.md` itself is updated (Engineering Governance §6) — i.e., whenever a service is added, removed, or changes responsibility/dependencies/consumers. |
-| **Last Reviewed** | 2026-07-28 (WP 5.1B). |
+| **Last Reviewed** | 2026-07-28 (WP 5.2, Diagnostics Improvements). |
 | **Related Documents** | `docs/architecture/Platform Service Map.md`; `Architecture Document Register.md`; `Module Register.md`; `Hosted Services Register.md`; `Event Catalogue.md`. |
 | **Related ADRs** | ADR-0005 through ADR-0038 — nearly every ADR concerns one of these services directly or the boundary between them. |
 | **Related Academy Articles** | `docs/academy/02 Runtime Architecture/` (The Module Pipeline, The Startup Sequence, Working with the TempestOS Host, Platform Layering, Plugin Architecture, Failure Isolation Across TempestOS). |
@@ -36,10 +36,11 @@
 | Command Framework | Implemented | WP 4.0 (contract), WP 5.1A (design), WP 5.1B (implementation) | ADR-0022, ADR-0024, ADR-0036, ADR-0037, ADR-0038 |
 | Plugin Manifest | Implemented | WP 4.2 (design and implementation), WP 4.2A, WP 4.2B, WP 4.2C | ADR-0025, ADR-0026 |
 | Navigation | Implemented | WP 5.0A (design), WP 5.0B (implementation) | ADR-0022, ADR-0031, ADR-0032 |
+| Diagnostics | Implemented | WP 5.2 (design and implementation) | ADR-0009, ADR-0017, ADR-0034, ADR-0039 |
 | Project Engine | Not implemented as a platform service — bootstrap-era code (`Tempest.Core.Projects`, `ProjectService`, `JsonProjectRepository`) predates and is independent of the module pipeline | Planned, no Work Package assigned | None |
 | Requirements Engine | Not implemented — no code exists | Planned, no Work Package assigned | None |
 
-**Total: 16 entries — 13 Implemented, 2 planned with no code (Project
+**Total: 17 entries — 14 Implemented, 2 planned with no code (Project
 Engine, Requirements Engine), 1 developer-convenience layer (Module SDK).**
 
 ## Verification of "Implemented" Status
@@ -67,7 +68,15 @@ Registered phase. Command Framework is marked Implemented as of `WP
 `ICommandRegistry`/`CommandRegistry`, `CommandDescriptor`, `CommandResult`,
 and the `CommandException` hierarchy, exercised by 66 tests (`Test
 Register.md`) and registered as ordinary DI-public singletons in
-`TempestHost`'s existing Platform Services Registered phase.
+`TempestHost`'s existing Platform Services Registered phase. Diagnostics
+is marked Implemented as of `WP 5.2`: `src/Tempest.Core/Diagnostics/`
+contains `IDiagnosticsProvider`/`DiagnosticsProvider`, a read-only
+projection over `IModuleLifecycleManager`/`IHostedServiceManager`'s own
+existing snapshot data, registered via `AddInstance` (Composition Root
+pattern, `ADR-0009`) rather than a container-constructed singleton, and
+exercised by 17 tests (`Test Register.md`). The same Work Package also
+resolved `TD-02` with `CompositeLogSink` (`src/Tempest.Core/Logging/`),
+extending the existing Logging service rather than introducing a new one.
 
 ## Cross-Reference Check
 

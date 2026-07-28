@@ -10,7 +10,7 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | `docs/releases/v0.5.0/WorkPackages.md`; `docs/releases/v0.4.0/WorkPackages.md`; `docs/releases/v0.4.0/CHANGELOG.md`; `docs/releases/v0.3.0.md`. |
 | **Review Frequency** | Updated whenever a Work Package delivers or changes a major capability. |
-| **Last Reviewed** | 2026-07-28 (WP 5.1B, Command Framework Implementation) — had drifted stale since `WP 5.0D` (neither `WP 5.0S` nor `WP 5.1A` updated it); Command Framework row corrected from "Not started" to Implemented, and the Security Baseline (`WP 5.0S`) added as a row in its own right. |
+| **Last Reviewed** | 2026-07-28 (WP 5.2, Diagnostics Improvements) — Diagnostics Improvements row corrected from "Not started" to Implemented. |
 | **Related Documents** | `Platform Services Register.md`; `Release Register.md`; `Traceability Matrix.md`. |
 | **Related ADRs** | See `Platform Services Register.md` for the full per-service ADR list. |
 | **Related Academy Articles** | See `Academy Register.md`'s "03 Work Packages" table. |
@@ -57,14 +57,14 @@
 | Shell & Composition Framework Implementation | **Implemented** | WP 5.0D (new — not part of the original `v0.4.0` plan) |
 | Command Framework | **Implemented** | WP 4.0 (contract), WP 5.1A (design), WP 5.1B (implementation) (formerly WP 4.7) |
 | Platform Security Baseline | **Complete** | WP 5.0S (new — not part of the original `v0.4.0` plan) |
-| Diagnostics Improvements | Not started | WP 5.2 (formerly WP 4.8, planned) |
+| Diagnostics Improvements | **Implemented** | WP 5.2 (formerly WP 4.8) |
 | Developer Experience Improvements | Not started | WP 5.3 (formerly WP 4.9, planned) |
 
 **Total: 27 features tracked across all three phases (Verified by direct
-row count) — 25 Implemented/Complete (including 3 audit/review
+row count) — 26 Implemented/Complete (including 3 audit/review
 milestones with no code by design: Platform Services Architecture
 Review, Academy & Documentation Baseline Audit, Platform Security
-Baseline), 2 Not Started, all renumbered from `v0.4.0`'s deferred scope
+Baseline), 1 Not Started, all renumbered from `v0.4.0`'s deferred scope
 — see `docs/releases/v0.5.0/ReleasePlan.md`'s "A Note on Renumbering".**
 
 ## Cross-Reference Check

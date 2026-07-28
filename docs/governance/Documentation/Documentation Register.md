@@ -10,7 +10,7 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | The `docs/` tree itself. |
 | **Review Frequency** | Updated whenever a new top-level documentation directory or document type is introduced. |
-| **Last Reviewed** | 2026-07-28 (WP 5.1B, Command Framework Implementation) — Academy count refreshed (adds the `WP 5.1B` retrospective). |
+| **Last Reviewed** | 2026-07-28 (WP 5.2, Diagnostics Improvements) — Academy count refreshed (adds the `WP 5.2` retrospective and concept guide); `docs/adr/` and `docs/architecture/` counts refreshed (adds `ADR-0039`, `Diagnostics Architecture.md`). |
 | **Related Documents** | `ADR Register.md`; `Architecture Document Register.md`; `Academy Register.md`; `Release Register.md`; `Governance Index.md`. |
 | **Related ADRs** | None directly. |
 | **Related Academy Articles** | None directly. |
@@ -22,8 +22,8 @@
 
 | Directory | Contents | Detailed Index |
 |---|---|---|
-| `docs/adr/` | 38 Architecture Decision Records | `ADR Register.md` |
-| `docs/architecture/` | 19 standing architecture documents, including the Rejected Designs Log and Engineering Glossary | `Architecture Document Register.md`; `Rejected Designs Register.md` |
+| `docs/adr/` | 39 Architecture Decision Records | `ADR Register.md` |
+| `docs/architecture/` | 20 standing architecture documents, including the Rejected Designs Log and Engineering Glossary | `Architecture Document Register.md`; `Rejected Designs Register.md` |
 | `docs/academy/00 Introduction/` | Academy welcome/orientation | `Academy Register.md` |
 | `docs/academy/01 Engineering Principles/` | 11 general software-engineering principles | `Academy Register.md` |
 | `docs/academy/02 Runtime Architecture/` | 11 concept guides synthesising the runtime | `Academy Register.md` |

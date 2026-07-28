@@ -10,9 +10,9 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | The documents themselves, under `docs/architecture/` and `docs/releases/`. |
 | **Review Frequency** | Each document is updated as part of the Definition of Done for any Work Package that changes the subsystem it describes (Engineering Governance §6, extended explicitly to `Platform Service Map.md` and, by the same reasoning, every other architecture document). |
-| **Last Reviewed** | 2026-07-28 (WP 5.1A, Command Framework Architecture). |
+| **Last Reviewed** | 2026-07-28 (WP 5.2, Diagnostics Improvements) — corrected a stale marker found during this Work Package's own repository review: `Command Framework Architecture.md` still read "implementation pending... not yet started" despite `WP 5.1B` having completed it; also adds `Diagnostics Architecture.md`. |
 | **Related Documents** | `Platform Services Register.md`; `Decision Register.md`; `Documentation Register.md` (the superset index, including Academy and release docs). |
-| **Related ADRs** | All 38 — every architecture document in this register is the realisation of one or more ADRs. |
+| **Related ADRs** | All 39 — every architecture document in this register is the realisation of one or more ADRs. |
 | **Related Academy Articles** | `docs/academy/02 Runtime Architecture/` mirrors much of this register's own subject matter at a teaching, rather than reference, depth — see the Academy Register for the pairing. |
 | **Coverage Status** | Complete. |
 
@@ -40,17 +40,18 @@
 | `Sample Module Architecture.md` | `ClockModule`/`ClockLifecycleObserverModule` design | Implemented | WP 4.3 (design and implementation) |
 | `Navigation Framework Architecture.md` | Navigation model, ownership, registration, and rendering boundary design (ADR-0031/0032) | Implemented | WP 5.0A (design), WP 5.0B (implementation) |
 | `Shell & Composition Framework Architecture.md` | The application shell's composition-root role, `ITempestHost.Services`, and page/view ownership design (ADR-0033/0034/0035) | Implemented | WP 5.0C (design), WP 5.0D (implementation) |
-| `Command Framework Architecture.md` | `ICommandDispatcher`/`ICommandRegistry` dispatch/discovery/registration/failure design (ADR-0036/0037/0038) | **Designed** — implementation pending | WP 5.1A (design); WP 5.1B (implementation, not yet started) |
+| `Command Framework Architecture.md` | `ICommandDispatcher`/`ICommandRegistry` dispatch/discovery/registration/failure design (ADR-0036/0037/0038) | Implemented | WP 5.1A (design), WP 5.1B (implementation) |
+| `Diagnostics Architecture.md` | `CompositeLogSink`/`IDiagnosticsProvider` fan-out/read-only-projection design (ADR-0039) | Implemented | WP 5.2 (design and implementation) |
 | `docs/releases/v0.4.0/Architecture.md` | The v0.4.0 release's own architecture review, decisions, and reuse map | Living document (release-scoped) | v0.4.0 planning; updated across the release |
 | `docs/releases/FOUNDATION.md` | Permanent, cross-release engineering constitution — what must never change | Permanent | Established at v0.1.0-era stabilisation; not release-scoped |
 
-**Total: 21 documents (19 under `docs/architecture/`, 2 under `docs/releases/`).**
+**Total: 22 documents (20 under `docs/architecture/`, 2 under `docs/releases/`).**
 
 ## Coverage by Implementation Status
 
 | Status | Count | Documents |
 |---|---|---|
-| Implemented | 15 | Runtime Host Architecture, Host Lifecycle, Runtime State Machine, Startup Sequence, Shutdown Sequence, Failure Behaviour, Ownership Matrix, Platform Version, Plugin Manifest Architecture, Module Dependency Injection Architecture, Event Bus Architecture, Background Services Architecture, Sample Module Architecture, Navigation Framework Architecture, Shell & Composition Framework Architecture |
+| Implemented | 17 | Runtime Host Architecture, Host Lifecycle, Runtime State Machine, Startup Sequence, Shutdown Sequence, Failure Behaviour, Ownership Matrix, Platform Version, Plugin Manifest Architecture, Module Dependency Injection Architecture, Event Bus Architecture, Background Services Architecture, Sample Module Architecture, Navigation Framework Architecture, Shell & Composition Framework Architecture, Command Framework Architecture, Diagnostics Architecture |
 | Living document (continuously updated, not phase-gated) | 3 | Platform Service Map, Engineering Glossary, Rejected Designs |
 | Living document (release-scoped) | 1 | `docs/releases/v0.4.0/Architecture.md` |
 | Permanent (cross-release) | 1 | `docs/releases/FOUNDATION.md` |
@@ -76,3 +77,12 @@ Services Register.md`.
   row to Implemented, per this register's own cross-check discipline.
   `Shell & Composition Framework Architecture.md`'s own marker was
   updated to Implemented in this same commit, for the identical reason.
+  **One stale marker was found and corrected by `WP 5.2`'s own repository
+  review**: `Command Framework Architecture.md` still read "implementation
+  pending... not yet started" despite `WP 5.1B` having completed it two
+  Work Packages earlier — neither `WP 5.1B` nor any review since had
+  updated this specific register row, even though `Feature Register.md`
+  and `Traceability Matrix.md` were both updated correctly at the time.
+  Corrected here, consistent with this project's own practice of fixing
+  pre-existing governance drift found along the way, not only the drift a
+  Work Package's own brief names.

@@ -10,7 +10,7 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | `tests/Tempest.Core.Tests/` (direct inspection); `dotnet test` output. |
 | **Review Frequency** | Updated whenever the test suite's total count changes materially (in practice, every Work Package). |
-| **Last Reviewed** | 2026-07-28 (WP 5.1B) — counts re-verified directly via a fresh `dotnet test` run; 514/514, 66 new tests: `Commands/` extended with `CommandDispatcher`/`CommandRegistry`/`CommandDescriptor`/`CommandResult` coverage; `Samples/` extended with `CommandSampleModuleIntegrationTests.cs`. |
+| **Last Reviewed** | 2026-07-28 (WP 5.2, Diagnostics Improvements) — counts re-verified directly via a fresh `dotnet test` run; 542/542, 28 new tests: `Logging/` extended with `CompositeLogSinkTests.cs`; new `Diagnostics/` directory added (`DiagnosticsProviderTests.cs`); `Samples/` extended with `DiagnosticsSampleModuleIntegrationTests.cs`. |
 | **Related Documents** | `docs/releases/v0.4.0/Testing.md`; `Validation Register.md`; `Repository Metrics Register.md`. |
 | **Related ADRs** | None directly. |
 | **Related Academy Articles** | `docs/academy/06 Engineering Standards/02-testing-strategy.md`. |
@@ -26,21 +26,22 @@
 | `Commands/` | 5 | 54 | `ICommand` contract (WP 4.0); `CommandDispatcher`/`CommandRegistry`/`CommandHandlerTable` — registration, duplicate rejection, dispatch, failure propagation, cancellation, logging, thread safety, DI lifetime, shared-state sharing (WP 5.1B) |
 | `Configuration/` | 4 | 31 | Configuration Framework (WP 2.5) |
 | `DependencyInjection/` | 3 | 22 | Custom DI container (WP 2.4) |
+| `Diagnostics/` | 1 | 9 | `IDiagnosticsProvider`/`DiagnosticsProvider` — live accessor projection, empty-before-attached/populated-after-attached, construction validation (WP 5.2) |
 | `Events/` | 4 | 27 | Event Bus (WP 4.0 contracts, WP 4.4D bus) |
-| `Logging/` | 9 | 42 | Logging & Diagnostics Framework (WP 2.6) |
+| `Logging/` | 10 | 53 | Logging & Diagnostics Framework (WP 2.6); extended `WP 5.2` with `CompositeLogSinkTests.cs` — fan-out, per-child failure isolation, `Logger` integration |
 | `Modules/` | 13 | 72 | Discovery, Registration, Lifecycle, Module SDK, `ModuleMetadataAttribute` (WP 2.1–2.3, WP 4.1, WP 4.4A/B) |
 | `Navigation/` | 2 | 31 | `NavigationItem`, `NavigationService` — registration, ordering, hierarchy, visibility, events, DI (WP 5.0B) |
 | `Plugins/` | 6 | 21 | Plugin manifest, discovery, loading (WP 4.2); extended `WP 5.0B` with a Navigation-registering dynamic plugin assembly builder; extended `WP 5.0S` with 2 `AssemblyFileName` path-containment regression tests |
 | `Runtime/` | 5 | 50 | `TempestHost`, `TempestHostBuilder`, plugin/hosted-service Host integration; extended `WP 5.0D` with `ITempestHost.Services` availability, resolution, and Discovery/Registration/Lifecycle non-exposure tests |
-| `Samples/` | 6 | 47 | `ClockModule`/`ClockLifecycleObserverModule` pipeline and event integration (WP 4.3, WP 4.4E); `NavigationSampleModule` and companions, module/host/plugin integration (WP 5.0B); `CommandSampleModule`, module/host/plugin integration and Navigation-integration proof (WP 5.1B) |
+| `Samples/` | 7 | 55 | `ClockModule`/`ClockLifecycleObserverModule` pipeline and event integration (WP 4.3, WP 4.4E); `NavigationSampleModule` and companions, module/host/plugin integration (WP 5.0B); `CommandSampleModule`, module/host/plugin integration and Navigation-integration proof (WP 5.1B); `DiagnosticsSampleModule`, module/host/plugin integration and the disclosed "zero hosted services during Initialise" finding (WP 5.2) |
 | `Shell/` | 2 | 31 | `TempestShell`, `PlaceholderPage` — composition, Navigation/Content rendering, page selection, unknown-page placeholder, real Host/sample-module integration, full interactive sessions (WP 5.0D) |
 | `Versioning/` | 2 | 17 | Platform Version infrastructure (WP 4.2A) |
 
-**Total: 65 test files, 482 `[Fact]`/`[Theory]` attribute occurrences.**
+**Total: 68 test files, 510 `[Fact]`/`[Theory]` attribute occurrences.**
 
 ## Reconciling Attribute Count Against Executed Test Count
 
-`dotnet test` reports **514** executed tests, 32 more than the 482 raw
+`dotnet test` reports **542** executed tests, 32 more than the 510 raw
 `[Fact]`/`[Theory]` attribute occurrences above. This difference is
 **Verified** to be `[Theory]` methods with multiple `[InlineData]` rows
 executing as multiple tests at runtime from a single attribute occurrence
@@ -73,7 +74,8 @@ should match.
 | WP 5.0D (Shell & Composition Framework implementation) | 446 (400 pre-existing + 46 new) |
 | WP 5.0S (Platform Security Baseline Audit) | 448 (446 pre-existing + 2 new) |
 | WP 5.1B (Command Framework Implementation) | 514 (448 pre-existing + 66 new) |
-| **Current (WP 5.1B)** | **514** — re-verified directly, 0 failures |
+| WP 5.2 (Diagnostics Improvements) | 542 (514 pre-existing + 28 new) |
+| **Current (WP 5.2)** | **542** — re-verified directly, 0 failures |
 
 Gaps in this progression are recorded as **Unknown**, not interpolated —
 several retrospectives report only the tests *they* added, not a running
@@ -83,7 +85,7 @@ this Work Package's own scope.
 
 ## Cross-Reference Check
 
-The 514 figure above is cross-checked directly against
-`Validation Register.md`'s own Test Gate row (also 514, from the same
+The 542 figure above is cross-checked directly against
+`Validation Register.md`'s own Test Gate row (also 542, from the same
 `dotnet test` run performed as part of this Work Package) — consistent,
 no discrepancy.

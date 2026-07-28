@@ -85,6 +85,19 @@ or non-deterministic one. Cited throughout the Runtime Host architecture to
 justify single-threaded orchestration (*Runtime Host Architecture.md*,
 "Threading") and fixed startup/shutdown ordering.
 
+### Diagnostics *(implemented — v0.5.0, WP 5.2, ADR-0039)*
+
+The platform service exposing a read-only projection of the Host's own
+current lifecycle state — `HostState`, every registered module's
+`ModuleLifecycleStatus`, every hosted service's `HostedServiceStatus` —
+via `IDiagnosticsProvider`. Constructed directly by `TempestHost`
+(Composition Root, `ADR-0009`) and registered via `AddInstance`, yet
+DI-public — a combination made possible only because `DiagnosticsProvider`
+carries no orchestration authority of its own; it reads data
+`IModuleLifecycleManager`/`IHostedServiceManager` already produce, and
+never exposes either manager itself (`ADR-0017`). See the Platform
+Service Map's "Diagnostics" entry.
+
 ### Discovery
 
 The platform service that finds `IModule` implementations across loaded

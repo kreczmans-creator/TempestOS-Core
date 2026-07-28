@@ -10,7 +10,7 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | Direct repository inspection (`find`, `wc`, `git log`) performed as part of this Work Package. |
 | **Review Frequency** | Re-measured at each Governance Baseline review, or on request. |
-| **Last Reviewed** | 2026-07-28 (WP 5.1B, Command Framework Implementation). |
+| **Last Reviewed** | 2026-07-28 (WP 5.2, Diagnostics Improvements). |
 | **Related Documents** | `Test Register.md`; `Namespace Register.md`; `Engineering Evolution Register.md`. |
 | **Related ADRs** | None directly. |
 | **Related Academy Articles** | None directly — this is a raw metrics snapshot, not a teaching document. |
@@ -277,6 +277,44 @@ registered, initialised, and disposed cleanly through the real
 during the existing Platform Services Registered phase — confirmed by
 direct execution, not merely by the test suite.
 
+## Snapshot: 2026-07-28 (WP 5.2 — Diagnostics Improvements)
+
+The first implementation Work Package since `WP 5.1B` to change
+`src/`/`tests/` — implements `CompositeLogSink` (`Tempest.Core.Logging`),
+`IDiagnosticsProvider`/`DiagnosticsProvider` (the new
+`Tempest.Core.Diagnostics` namespace), and `DiagnosticsSampleModule` plus
+one reference command (`Tempest.Samples`). Also resolves `TD-02` and
+reassesses/re-scopes `TD-01` forward again.
+
+| Metric | WP 5.1B | WP 5.2 (current) |
+|---|---|---|
+| `src/` `.cs` files / lines | 137 / 8,554 | 143 / 8,986 (adds 3 `Tempest.Core.Diagnostics`/`Logging` files, 3 `Tempest.Samples` files) |
+| `tests/` `.cs` files / lines | 65 / 10,078 | 68 / 10,628 (adds `Logging/CompositeLogSinkTests.cs`, `Diagnostics/DiagnosticsProviderTests.cs`, `Samples/DiagnosticsSampleModuleIntegrationTests.cs`) |
+| Executed tests (`dotnet test`) | 514, 0 failures | **542, 0 failures** (28 new) |
+| Namespaces under `src/` | 17 declared + 1 global | 18 declared + 1 global (adds `Tempest.Core.Diagnostics`) |
+| ADRs | 38 (`ADR-0001`–`ADR-0038`) | 39 (`ADR-0001`–`ADR-0039`, adds `ADR-0039`) |
+| Rejected Designs entries | 41 (`RD-0001`–`RD-0041`) | 44 (`RD-0001`–`RD-0044`, adds `RD-0042`–`RD-0044`) |
+| Architecture documents (`docs/architecture/`) | 19 | 20 (adds `Diagnostics Architecture.md`; `Command Framework Architecture.md`'s own stale "implementation pending" marker also corrected in place, see this Work Package's own repository review) |
+| Platform services (Register total) | 16 catalogued, 13 Implemented | 17 catalogued, **14 Implemented** (Diagnostics moves from not-catalogued to Implemented) |
+| Public interfaces (`src/Tempest.Core/`) | 30 | 31 (adds `IDiagnosticsProvider`) |
+| Custom exception types | 30 | 30 (unchanged — no new exception type introduced; see `Exception Register.md`'s own "A Note on Diagnostics") |
+| Production modules | 6 | 7 (adds `DiagnosticsSampleModule`) |
+| Academy articles (`docs/academy/`, all subfolders) | 73 | 75 (adds `12-diagnostics-and-composite-logging.md`, `WP5.2-diagnostics-improvements.md`) |
+| `docs/` `.md` files | 181 | 185 |
+| Governance documents (`docs/governance/`, all subfolders) | 32 | 32 (unchanged — updates existing registers rather than adding new ones) |
+| Technical Debt Register open items | 8 Open, 1 Partially resolved, 2 Resolved (11 total) | 7 Open, 1 Partially resolved, **3 Resolved** (11 total — `TD-02` resolved; `TD-01` reassessed, remains Open) |
+| Decision Register entries | 18 | 20 (adds `D-019`, `D-020`) |
+| Total commits | 59 | 60 (before this Work Package's own commit) |
+| Build warnings/errors | 0/0 | 0/0 (unchanged) |
+
+**A genuine application behaviour change, not merely a code change:**
+running the built application confirms `DiagnosticsSampleModule`
+discovered, registered, and initialised through the real `TempestHost`,
+`IDiagnosticsProvider` registered during the existing Platform Services
+Registered phase, and `GetDiagnosticsSummaryCommand` registered against
+the real `ICommandDispatcher`/`ICommandRegistry` — confirmed by direct
+execution, not merely by the test suite.
+
 ## Governance Suite Size (Introduced by This Work Package, WP 4.5A)
 
 | Metric | Value |
@@ -297,8 +335,8 @@ is offered.
 
 ## Cross-Reference Check
 
-The ADR count (38), Rejected Designs count (41), Academy article count
-(73), test count (514), and build status (0/0) above are each
+The ADR count (39), Rejected Designs count (44), Academy article count
+(75), test count (542), and build status (0/0) above are each
 cross-checked directly against `ADR Register.md`, `Rejected Designs
 Register.md`, `Academy Register.md`, `Test Register.md`, and `Validation
 Register.md` respectively — all consistent, no discrepancy found.

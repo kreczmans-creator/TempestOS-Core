@@ -73,7 +73,7 @@ span every individual service.
 - `docs/architecture/Platform Service Map.md` — the living, service-by-service index of what exists, what depends on what, and where to read more (outside the Academy folder, but maintained under the same obligation).
 - `docs/architecture/Engineering Glossary.md` — the project's own vocabulary, alphabetical, cross-referenced.
 - `docs/architecture/Rejected Designs.md` — the permanent record of designs seriously considered and declined; the mirror image of the ADR catalogue.
-- `docs/adr/` — the full Architecture Decision Record catalogue (ADR-0001 through ADR-0038 at time of writing).
+- `docs/adr/` — the full Architecture Decision Record catalogue (ADR-0001 through ADR-0039 at time of writing).
 
 ## Runtime
 
@@ -182,6 +182,18 @@ handler contract and dispatcher, proven against a real sample module.
 - ADR-0022 (Navigation/Command orthogonality, decided during original v0.4.0 planning), ADR-0036 (Command Framework is DI-public), ADR-0037 (registration model), ADR-0038 (dispatch failure model — Case 5 of *Failure Isolation Across TempestOS*).
 - See also [Failure Isolation Across TempestOS](02%20Runtime%20Architecture/08-failure-isolation.md) (Case 5: propagate, don't isolate) and [Navigation Architecture](02%20Runtime%20Architecture/09-navigation-architecture.md) (the closest structural precedent).
 
+## Diagnostics
+
+Implemented (`WP 5.2`, `ADR-0039`) — `Tempest.Core.Diagnostics`, and the
+`CompositeLogSink` extension to `Tempest.Core.Logging`. Closes `TD-02`
+outright and re-scopes `TD-01` forward again.
+
+- [Diagnostics & Composite Logging](02%20Runtime%20Architecture/12-diagnostics-and-composite-logging.md) — the concept guide: why composite logging and read-only lifecycle-state visibility are the same underlying need, the `Func<T>` lazy-accessor pattern, and common mistakes.
+- [WP 5.2 — Diagnostics Improvements](03%20Work%20Packages/WP5.2-diagnostics-improvements.md) — the combined design-and-implementation retrospective, including the opening "Event Framework" premise mismatch and its redirect (`D-019`), and the `TD-01` re-scoping decision (`D-020`).
+- `docs/architecture/Diagnostics Architecture.md` — the full design document.
+- ADR-0009 (Composition Root, reused), ADR-0017 (Host-owned collaborators never DI-public, the boundary this design respects), ADR-0034 (the `null`/empty-before-ready convention this design reuses), ADR-0039 (this Work Package's own decision).
+- See also [Navigation Architecture](02%20Runtime%20Architecture/09-navigation-architecture.md) and [Shell & Application Composition](02%20Runtime%20Architecture/10-shell-and-application-composition.md) for `ITempestHost.Services`'s own precedent for the "not yet available" convention this design reuses.
+
 ## Design Patterns
 
 Recurring structural patterns TempestOS actually uses, explained in terms
@@ -262,8 +274,9 @@ whatever you're about to change, before you change it.
 - [WP 5.0S — Platform Security Baseline Audit](03%20Work%20Packages/WP5.0S-platform-security-baseline-audit.md)
 - [WP 5.1A — Command Framework Architecture](03%20Work%20Packages/WP5.1A-command-framework-architecture.md)
 - [WP 5.1B — Command Framework Implementation](03%20Work%20Packages/WP5.1B-command-framework-implementation.md)
+- [WP 5.2 — Diagnostics Improvements](03%20Work%20Packages/WP5.2-diagnostics-improvements.md)
 
-Still to come: `WP 5.2` (Diagnostics Improvements) onward — see
+Still to come: `WP 5.3` (Developer Experience Improvements) — see
 `docs/releases/v0.5.0/WorkPackages.md` for the full, current plan.
 
 ## Reference Material

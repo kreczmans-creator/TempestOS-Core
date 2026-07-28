@@ -227,7 +227,12 @@ Package is the designed response to it, not a newly found risk.
 
 ## WP 5.0D — Shell & Composition Framework Implementation
 
-**Status note.** Not started.
+**Status note.** Complete. Implementation: `src/Tempest.App/Shell/`.
+**Correction (found during `WP 5.2`'s own repository review):** this
+entry had read "Not started" since it was first written, even though
+this Work Package completed long ago (see `PROJECT_STATUS.md`, every
+governance register, and the codebase itself) — no Work Package since had
+touched this specific line. Corrected here.
 
 ### Objective
 
@@ -236,9 +241,8 @@ Implement what `WP 5.0C` designed.
 ### Scope
 
 Defined entirely by `WP 5.0C`'s own deliverable (`docs/architecture/Shell
-& Composition Framework Architecture.md`) — this entry is intentionally
-thin until implementation begins; the architecture itself, not this
-entry, is authoritative on shape.
+& Composition Framework Architecture.md`) — realised with zero deviation
+from that design's own approved shape.
 
 ### Dependencies
 
@@ -247,24 +251,24 @@ Framework) — `WP 5.0D` may proceed regardless of whether `WP 5.1` has
 landed yet, per the same orthogonality reasoning `ADR-0022` already
 established for Navigation.
 
-### Deliverables
+### Deliverables — Done
 
-Whatever `WP 5.0C`'s architecture document specifies: `ITempestHost.Services`;
-the Shell itself as `Tempest.App`'s own composition root; Workspace,
-Navigation Region, and Content Region, populated; a reserved, unpopulated
-Status Bar region.
+`ITempestHost.Services` (`ADR-0034`); the Shell itself
+(`TempestShell`, `IPage`/`PlaceholderPage`, `Tempest.App.Shell`) as
+`Tempest.App`'s own composition root; Workspace, Navigation Region, and
+Content Region, populated; a reserved, unpopulated Status Bar region.
 
-### Acceptance Criteria
+### Acceptance Criteria — Met
 
-Whatever `WP 5.0C`'s architecture document specifies, at minimum
-including: `Tempest.App` constructs and runs a real `ITempestHost`; the
-Shell resolves `INavigationProvider` through `Services` and renders its
+`Tempest.App` constructs and runs a real `ITempestHost`; the Shell
+resolves `INavigationProvider` through `Services` and renders its
 `Items`; selecting a navigation item is observed to update the Content
-Region via a real `NavigationRequestedEvent`.
+Region via a real `NavigationRequestedEvent` — all proven directly
+against the real, unmodified Host and sample modules.
 
 ### Estimated Complexity
 
-**M.**
+**Realised as M.**
 
 ### Risks
 
@@ -461,7 +465,14 @@ not merely asserted.
 
 ## WP 5.2 — Diagnostics Improvements
 
-**Status note.** Not started. Formerly `WP 4.8` under the `v0.4.0` plan.
+**Status note.** Complete. Formerly `WP 4.8` under the `v0.4.0` plan. This
+Work Package's own brief, as originally written, described an "Event
+Framework Implementation" against a non-existent architecture document;
+investigation before any code was written confirmed the Event Bus has
+been fully implemented since `WP 4.4D`, and the real, current `WP 5.2` —
+per this entry, unchanged since planning — is Diagnostics Improvements.
+Redirected explicitly (`D-019`), not assumed, mirroring `D-009`'s
+precedent.
 
 ### Objective
 
@@ -486,27 +497,43 @@ visibility using data the platform already produces.
 Benefits from, but does not strictly require, **`WP 4.5`** (Background
 Services) if health reporting runs as a periodic background check.
 
-### Deliverables
+### Deliverables — Done
 
-- Composite `ILogSink`.
-- A documented decision on the legacy `LoggingService` migration question.
-- A read-only health/status service, DI-resolvable.
+- `CompositeLogSink` (`Tempest.Core.Logging`) — fans a log entry out to
+  any number of child `ILogSink`s, isolating one child's own write
+  failure from every other. Closes `TD-02`.
+- The legacy `LoggingService` migration question — **decided, not
+  migrated**: `Program.cs` has not called this code since `WP 5.0D`;
+  migrating dead code was judged pure risk with no behavioural benefit.
+  `TD-01` re-scoped forward again (`D-020`).
+- `IDiagnosticsProvider`/`DiagnosticsProvider` (`Tempest.Core.Diagnostics`)
+  — a read-only, DI-resolvable projection over `IModuleLifecycleManager`/
+  `IHostedServiceManager`'s own existing snapshot data, registered via
+  the Composition Root pattern with `Func<T>` accessors (`ADR-0039`).
+- `DiagnosticsSampleModule` and `GetDiagnosticsSummaryCommand`
+  (`Tempest.Samples`), demonstrating the Command Framework and
+  Diagnostics interacting.
 
-### Acceptance Criteria
+### Acceptance Criteria — Met
 
 - Log output can be written to more than one sink simultaneously without
-  any consumer of `ILogger` changing.
+  any consumer of `ILogger` changing — proven directly by
+  `CompositeLogSinkTests.cs`'s own `Logger`-integration test.
 - A consumer can query every module's state without gaining write access
-  to `IRuntimeModuleManager`/`IModuleLifecycleManager` themselves.
+  to `IRuntimeModuleManager`/`IModuleLifecycleManager` themselves —
+  `IDiagnosticsProvider` exposes only read-only snapshot collections, no
+  method of either manager.
 
 ### Estimated Complexity
 
-**S–M.**
+**Realised as S–M.**
 
 ### Risks
 
 - Scope creep into a full legacy `LoggingService` migration larger than
-  this release can absorb alongside its other Work Packages.
+  this release can absorb alongside its other Work Packages. **Avoided**
+  — this Work Package deliberately decided not to migrate, rather than
+  attempting a partial migration.
 
 ---
 

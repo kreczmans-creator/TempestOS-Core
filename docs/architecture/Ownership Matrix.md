@@ -80,6 +80,7 @@ here at the level of individual objects rather than whole services.
 | Hosted Service orchestration (`IHostedServiceManager`) *(implemented — WP 4.5, ADR-0029)* | `TempestHost` | Constructed directly, after the service provider exists; never registered in DI (ADR-0017, applied to a new component). Held for the Host's entire life, starting hosted services after Module Initialisation and stopping them before Module Disposal. |
 | Navigation (`INavigationProvider` / `NavigationService`) *(implemented — WP 5.0A design, WP 5.0B implementation, ADR-0031/ADR-0032)* | **`TempestServiceProvider`** | Registered as an ordinary `services.Singleton<INavigationProvider, NavigationService>()`, constructed by the container the first time something resolves it — the same non-Host-owned shape the Event Bus row above already established. DI-public by design (ADR-0032): a module or plugin-loaded module may hold and resolve it directly, and registers its own `NavigationItem`s imperatively. This row was missing from this table until `WP 5.1A`; see the Update note above. |
 | Command Framework (`ICommandDispatcher` / `ICommandRegistry`) *(implemented — WP 5.1A design, WP 5.1B implementation, ADR-0036–ADR-0038)* | **`TempestServiceProvider`** | Registered as an ordinary singleton, mirroring the Event Bus and Navigation rows exactly (ADR-0036). A module or plugin-loaded module registers its own command handler(s)/descriptor(s) imperatively, during its own lifecycle, exactly as it already does for `IEventBus`/`INavigationProvider`. Both share a `CommandHandlerTable` collaborator (also container-constructed, its own singleton row not separately listed here — see `Dependency Injection Register.md`) so dispatch and Id-based invocation operate against the identical handler set. |
+| Diagnostics (`IDiagnosticsProvider` / `DiagnosticsProvider`) *(implemented — WP 5.2, ADR-0039)* | `TempestHost` | Constructed directly, alongside Platform Version — the Composition Root pattern (ADR-0009) — and registered via `AddInstance`, **not** container-constructed like the Event Bus/Navigation/Command Framework rows above. DI-public (a module may resolve it directly), yet Host-constructed: a novel combination for this table, made possible because `DiagnosticsProvider` itself carries no orchestration authority (it only *reads* `Modules`/`HostedServices` via `Func<T>` accessors) even though `TempestHost` is the one that builds it. `IModuleLifecycleManager`/`IHostedServiceManager` — the rows immediately above — remain exactly as Host-owned and non-DI-public as ever; Diagnostics reads their data, never reaches the managers themselves. |
 
 ## Reading the Matrix Alongside Other Documents
 
@@ -114,6 +115,13 @@ here at the level of individual objects rather than whole services.
   DI-public service exactly like a module can; the *manager that starts
   and stops it* is kept Host-owned for the identical reason
   Discovery/Registration/Lifecycle are — see ADR-0029.
+- **The "Diagnostics" row** is a genuinely new combination in this table:
+  DI-public, like the Event Bus/Navigation/Command Framework rows, *and*
+  constructed directly by `TempestHost`, like Configuration/Logging/
+  Platform Version. This is possible only because `DiagnosticsProvider`
+  itself carries no orchestration authority of its own — it is a
+  read-only projection over data two Host-owned managers already produce,
+  never a path back to either manager (ADR-0039).
 - Every row implicitly cites ADR-0017 (Discovery/Registration/Lifecycle are
   Host-owned, never DI-public) and ADR-0011 (the order in which the
   `TempestHost`-owned objects come into existence).

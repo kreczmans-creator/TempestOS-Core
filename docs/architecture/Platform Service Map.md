@@ -32,6 +32,7 @@ of date is worse than no map at all, because it will be trusted.
 | Background Services | **Implemented — WP 4.5** (`IHostedServiceDiscoveryService`/`HostedServiceDiscoveryService`, `IHostedServiceManager`/`HostedServiceManager`, `Tempest.Core.BackgroundServices`) — discovery, ownership, orchestration, and Host Lifecycle placement per ADR-0029/ADR-0030; failure model per ADR-0021 | Host, Dependency Injection | Any module declaring a hosted service |
 | Command Framework | **Implemented — WP 5.1A (design), WP 5.1B (implementation)** (`ICommandDispatcher`/`ICommandRegistry`, `Tempest.Core.Commands`) — orthogonal to Navigation, ADR-0022 | Dependency Injection | `CommandSampleModule` (real contributor); `Tempest.App` (invocation, not yet wired into the Shell's own input handling) |
 | Navigation | **Implemented — WP 5.0A (design), WP 5.0B (implementation)** (`INavigationProvider`/`NavigationService`, `Tempest.Core.Navigation`) — model, ownership, and rendering boundary per ADR-0031/ADR-0032 | Dependency Injection, Event Bus | Any module contributing a navigation item; `Tempest.App` (rendering, not yet built) |
+| Diagnostics | **Implemented — WP 5.2** (`IDiagnosticsProvider`/`DiagnosticsProvider`, `Tempest.Core.Diagnostics`) — read-only projection over Host/module/hosted-service lifecycle state per ADR-0039 | Dependency Injection (constructed directly by `TempestHost`, ADR-0009); reads live data from `IModuleLifecycleManager`/`IHostedServiceManager` via `Func<T>` accessors, never resolves either through the container (ADR-0017) | `DiagnosticsSampleModule` (real contributor); any future Shell status page or health-check command |
 | Plugin Manifest | **Implemented — WP 4.2** (`Tempest.Core.Plugins`) | Host (Phases 3.1/3.2, ADR-0026 — a pre-Discovery step) | Module Discovery (unchanged), any real plugin |
 | Project Engine | Planned | Undetermined | Undetermined |
 | Requirements Engine | Planned | Undetermined | Undetermined |
@@ -133,7 +134,9 @@ sink failure is isolated inside `Logger` itself (fixed WP 2.7B) and never
 propagates to the caller that was logging something.
 
 **Key types.** `ILogger`, `ILoggerFactory`, `ILogSink`, `ConsoleLogSink`,
-`Logger`, `LoggerFactory`, `LogEntry`, `LogLevel`,
+`CompositeLogSink` (`WP 5.2` — fans a log entry out to any number of
+child `ILogSink`s, isolating one child's own write failure from every
+other; closes `TD-02`), `Logger`, `LoggerFactory`, `LogEntry`, `LogLevel`,
 `LoggingServiceCollectionExtensions`.
 
 **Dependencies.** `IConfigurationProvider` (read once, at `LoggerFactory`
@@ -635,6 +638,57 @@ Architecture*); WP 5.0B retrospective (*Navigation Framework
 Implementation*); `Navigation Framework Architecture.md`; *Navigation
 Architecture* (Academy concept guide); Rejected Designs RD-0030 through
 RD-0033; `docs/releases/v0.5.0/WorkPackages.md` (`WP 5.0A`/`WP 5.0B`).
+
+---
+
+## Diagnostics *(implemented — WP 5.2, ADR-0039)*
+
+**Responsibility.** A read-only projection over the Host's own current
+lifecycle state — `HostState`, every registered module's
+`ModuleLifecycleStatus`, and every hosted service's `HostedServiceStatus`
+— exposed to any DI-resolving consumer, without granting that consumer
+write access to `IModuleLifecycleManager`/`IHostedServiceManager`
+themselves (both remain Host-owned, never DI-public, per `ADR-0017`). See
+`Diagnostics Architecture.md` for the complete design.
+
+**Key types.** `IDiagnosticsProvider`/`DiagnosticsProvider`
+(`Tempest.Core.Diagnostics`). Reuses `ModuleLifecycleStatus`
+(`Tempest.Core.Modules`) and `HostedServiceStatus`
+(`Tempest.Core.BackgroundServices`) exactly as they already exist —
+neither is duplicated or wrapped in a new type.
+
+**Dependencies.** None as ordinary constructor parameters — instead, three
+`Func<T>` accessors supplied by `TempestHost` at construction, closing
+over its own `State` property and `_lifecycleManager`/
+`_hostedServiceManager` private fields. This is deliberate: neither
+manager exists yet at Phase 6 (Platform Services Registered), where
+`DiagnosticsProvider` itself is registered, so a direct constructor
+reference would not compile. Before a referenced manager is actually
+constructed, its own accessor reports an empty collection — never an
+exception — mirroring `ITempestHost.Services`'s own "not yet available"
+convention (`ADR-0034`).
+
+**Consumers.** `DiagnosticsSampleModule` (real contributor and consumer);
+`GetDiagnosticsSummaryCommandHandler` (`Tempest.Samples`, demonstrating
+the Command Framework and Diagnostics interacting); any future Shell
+status page or health-check command.
+
+**Lifecycle.** Constructed directly by `TempestHost` and registered via
+`AddInstance` — the Composition Root pattern (`ADR-0009`) — immediately
+after the Command Framework's own three registrations, still within
+Phase 6 (Platform Services Registered). No new Host Lifecycle phase.
+
+**ADR references.** ADR-0009 (Composition Root, reused a fourth time);
+ADR-0017 (Host-owned collaborators never DI-public — the boundary this
+design's entire shape exists to respect); ADR-0034 (the
+`null`/empty-before-ready convention this design reuses); ADR-0039
+(*Diagnostics Is a DI-Public, Lazily-Projected Read-Only Service Over
+Host-Owned Lifecycle State*).
+
+**Academy references.** WP 5.2 retrospective (*Diagnostics
+Improvements*); *Diagnostics & Composite Logging* (Academy concept
+guide); Rejected Designs RD-0042 through RD-0044;
+`docs/releases/v0.5.0/WorkPackages.md` (`WP 5.2`).
 
 ---
 

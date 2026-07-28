@@ -10,7 +10,7 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | Direct source inspection; `docs/architecture/Failure Behaviour.md`; `docs/academy/06 Engineering Standards/01-exception-design.md`. |
 | **Review Frequency** | Updated whenever a new exception type is introduced. |
-| **Last Reviewed** | 2026-07-28 (WP 5.1B). |
+| **Last Reviewed** | 2026-07-28 (WP 5.2, Diagnostics Improvements) — no new exception type introduced; see "A Note on Diagnostics" below. |
 | **Related Documents** | `docs/architecture/Failure Behaviour.md`; `Architectural Dependency Register.md`. |
 | **Related ADRs** | ADR-0013, ADR-0021, ADR-0025, ADR-0038. |
 | **Related Academy Articles** | `docs/academy/06 Engineering Standards/01-exception-design.md`. |
@@ -84,6 +84,21 @@ happens to occur during a module's own lifecycle method, in which case
 because the Command Framework itself isolates anything). This is a
 deliberate, reasoned divergence from every prior exception category in
 this register — see ADR-0038.
+
+## A Note on Diagnostics
+
+`WP 5.2` introduces no new exception type — confirmed directly, not by
+omission. `DiagnosticsProvider`'s constructor throws only the ordinary
+`ArgumentNullException` already used throughout this codebase for
+constructor-parameter validation (`ArgumentNullException.ThrowIfNull`),
+and `IDiagnosticsProvider`'s three properties (`HostState`, `Modules`,
+`HostedServices`) have no failure mode of their own to raise — each
+either returns a live value or an empty collection, never throws (see
+`Diagnostics Architecture.md`'s own Failure Model). `CompositeLogSink`
+likewise introduces no new exception type: its own constructor reuses
+`ArgumentNullException`/`ArgumentException` for validation, and its
+`Write` method deliberately catches and reports every child sink's own
+exception rather than throwing a new, wrapping one.
 
 ## Distribution by Root Category
 
