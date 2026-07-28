@@ -64,7 +64,7 @@ records an explicit judgement, never an omission.
 | WP 5.1A — Command Framework Architecture | `8aad1f0` | ADR-0036, ADR-0037, ADR-0038 | RD-0038–RD-0041 | Yes |
 | WP 5.1B — Command Framework Implementation | `3ef23a9` | — (implements ADR-0036–ADR-0038 exactly; no new ADR required) | — | Yes |
 | WP 5.2 — Diagnostics Improvements | `a0520d5` | ADR-0039 | RD-0042–RD-0044 | Yes |
-| WP 5.3 — Developer Experience Improvements | *(this commit)* | — (RD-0045 only; no ADR met §5's criteria) | RD-0045 | Yes |
+| WP 5.3 — Developer Experience Improvements | `10c5b14` | — (RD-0045 only; no ADR met §5's criteria) | RD-0045 | Yes |
 
 **Total: 37 Work Packages tracked, plus `v0.4.0` Release Engineering,
 100% Academy
