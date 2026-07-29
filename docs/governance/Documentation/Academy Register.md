@@ -10,7 +10,7 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | `docs/academy/` itself; `docs/academy/Academy Index.md` (the reader-facing navigation index this register cross-checks against). |
 | **Review Frequency** | Updated whenever a new Academy article is created — in practice, every Work Package (Engineering Governance §6). |
-| **Last Reviewed** | 2026-07-28 (WP 5.4, v0.5.0 Release Candidate & Engineering Sign-Off). |
+| **Last Reviewed** | 2026-07-29 (WP 6.2, Notification Framework) — added `WP6.2-notification-framework-implementation.md`. This "Last Reviewed" line itself had drifted stale at "WP 5.4" across three intervening Work Packages (`WP 6.1`, `WP 6.4`, `WP 6.5`) that each correctly added their own row and updated the grand total, without this line being bumped to match — a disclosed governance-documentation finding, corrected here. |
 | **Related Documents** | `docs/academy/Academy Index.md`; `docs/academy/Academy Audit Report.md`; `Engineering Standards Register.md`; `Feature Register.md`. |
 | **Related ADRs** | None directly — the Academy documents ADRs, it is not itself governed by one. |
 | **Related Academy Articles** | This register's entire scope. |
@@ -57,7 +57,7 @@
 | 11 | Command Framework | WP 5.1A (new), WP 5.1B (implementation confirmed; `CommandHandlerTable` sharing finding added) |
 | 12 | Diagnostics & Composite Logging | WP 5.2 (new) |
 
-## 03 Work Packages (38 retrospectives)
+## 03 Work Packages (39 retrospectives)
 
 | Retrospective | Type |
 |---|---|
@@ -99,6 +99,7 @@
 | WP 6.1 — Permissions & Identity Implementation | Implementation (combined design + implementation, ADR-0043/0044 — implemented directly against the already-approved `v0.6.0` architecture and Contract Review packages, no separate architecture-phase retrospective) |
 | WP 6.4 — Settings Framework Implementation | Implementation (combined design + implementation, ADR-0041/0042 — implemented directly against the already-approved `v0.6.0` architecture and Contract Review packages, ahead of `WP 6.0`–`WP 6.3` per `Platform Service Implementation Order.md`) |
 | WP 6.5 — Audit Framework Implementation | Implementation (combined design + implementation, ADR-0045 — reuses `WP 6.4`'s own Persistence abstraction, validated as sufficient without speculative extension) |
+| WP 6.2 — Notification Framework Implementation | Implementation (combined design + implementation, ADR-0046 — built on the existing Event Bus's own proven dispatch model rather than a second, parallel publish/subscribe implementation) |
 
 **Note.** `WP 4.4C` produced no code and no separate retrospective — its
 story is told inside the `WP 4.4` architecture retrospective's own
@@ -144,19 +145,19 @@ added `Engineering Lifecycle.md`).
 | `Contributor Learning Path.md` | Repository-wide onboarding sequence for a new contributor, added `WP 4.5B` |
 
 **Total: 1 (Introduction) + 11 (Engineering Principles) + 12 (Runtime
-Architecture) + 38 (Work Packages) + 4 (Design Patterns) + 5 (Case
-Studies) + 5 (Engineering Standards) + 4 (top-level meta) = 80 files
+Architecture) + 39 (Work Packages) + 4 (Design Patterns) + 5 (Case
+Studies) + 5 (Engineering Standards) + 4 (top-level meta) = 81 files
 under `docs/academy/` — re-verified by direct `find` count against every
-subfolder individually (`WP 6.1`, `WP 6.4`, `WP 6.5`), not just the
-grand total, continuing the standing practice `WP 5.4`'s own repository
-review recommended. **Correction, `WP 5.4`**: the "03 Work Packages" count
-had read "33" (`WP 5.2`) then "34" (`WP 5.3`) while the section's own
-table already listed 34 and then 35 rows respectively — the stated count
-had undercounted its own table by one for at least two consecutive Work
-Packages, and the "76" grand total inherited the same undercount rather
-than being independently re-derived. Both figures are now re-verified
-directly against the real file system, not carried forward from the
-previous register's own arithmetic.**
+subfolder individually (`WP 6.1`, `WP 6.4`, `WP 6.5`, `WP 6.2`), not just
+the grand total, continuing the standing practice `WP 5.4`'s own
+repository review recommended. **Correction, `WP 5.4`**: the "03 Work
+Packages" count had read "33" (`WP 5.2`) then "34" (`WP 5.3`) while the
+section's own table already listed 34 and then 35 rows respectively —
+the stated count had undercounted its own table by one for at least two
+consecutive Work Packages, and the "76" grand total inherited the same
+undercount rather than being independently re-derived. Both figures are
+now re-verified directly against the real file system, not carried
+forward from the previous register's own arithmetic.**
 
 ## Governance Maintenance Check (Engineering Governance §6)
 

@@ -1,6 +1,6 @@
 # TempestOS — Project Status
 
-**Last Updated:** 2026-07-29 (`WP 6.5` — Audit Framework, implemented)
+**Last Updated:** 2026-07-29 (`WP 6.2` — Notification Framework, implemented)
 
 This is the primary status dashboard for TempestOS. Read this first for
 "where does the project stand right now" — for "why is it built this
@@ -41,21 +41,25 @@ released.** TempestOS is now in the **Platform Services** phase
 Release Architecture.md` and seven companion documents) and Contract
 Review package (`Platform Service Contracts.md` and four companion
 documents) were both produced and approved ahead of any implementation.
-`WP 6.1` (Permissions & Identity), `WP 6.4` (Settings Framework), and
-`WP 6.5` (Audit Framework) are now all implemented — each ahead of its
-own nominal numeric order (`WP 6.0` is listed first in
-`WorkPackages.md`), per `Platform Service Implementation Order.md`'s
-own explicit recommendation. `WP 6.5` reuses the Persistence abstraction
-`WP 6.4` established, exactly as that recommendation anticipated, rather
-than introducing a second storage mechanism. See Current Work Package,
-below.
+`WP 6.1` (Permissions & Identity), `WP 6.4` (Settings Framework), `WP
+6.5` (Audit Framework), and `WP 6.2` (Notification Framework) are now
+all implemented — each ahead of its own nominal numeric order (`WP 6.0`
+is listed first in `WorkPackages.md`), per `Platform Service
+Implementation Order.md`'s own explicit recommendation. `WP 6.5` reuses
+the Persistence abstraction `WP 6.4` established, exactly as that
+recommendation anticipated, rather than introducing a second storage
+mechanism. `WP 6.2` is built on top of the existing Event Bus's own
+proven dispatch model, exactly as `Required ADRs.md` anticipated for
+`ADR-0046`, rather than a second, parallel publish/subscribe
+implementation. See Current Work Package, below.
 
 ## Current Development Branch
 
 **`feature/v0.6.0-platform-services`**, cut from `main` at the `v0.5.0`
 tag. `WP 6.1` (Permissions & Identity), `WP 6.4` (Settings Framework),
-and `WP 6.5` (Audit Framework) are implemented on this branch; no other
-`v0.6.0` Work Package has begun. `feature/v0.5.0-developer-experience`
+`WP 6.5` (Audit Framework), and `WP 6.2` (Notification Framework) are
+implemented on this branch; no other `v0.6.0` Work Package has begun.
+`feature/v0.5.0-developer-experience`
 (`WP 5.0A` through `WP 5.4`) has been merged into `main` and is
 retained, unmerged branches are never deleted per this project's own
 convention.
@@ -68,34 +72,44 @@ before that; `v0.3.0` ("Runtime Foundation Complete") before that.
 
 ## Current Work Package
 
-**`WP 6.5` — Audit Framework — implemented.** The third Work Package of
-the Platform Services phase (`v0.6.0`) to ship real code, following
-`WP 6.1`/`WP 6.4`'s own precedent of implementing directly against the
-already-approved architecture and Contract Review packages, no separate
-architecture phase. Delivers `Tempest.Core.Audit`
-(`IAuditRecord`/`IAuditRecorder`/`IAuditQuery`/`AuditQueryCriteria`,
-exactly as approved), reusing `WP 6.4`'s own `IPersistenceStore` rather
-than introducing a second storage mechanism, exactly as directed.
-`AuditRecorder.RecordAsync` resolves the current principal automatically
-and is awaited (not literally fire-and-forget), so a storage failure
-always propagates; `IAuditQuery.QueryAsync` is permission-gated through
-the existing, single enforcement point (`IPermissionEvaluator`,
-`ADR-0044`). Correlation identifiers are carried in `Detail` under a
-well-known key, requiring no interface change. **Persistence Validation:**
-`IPersistenceStore` was judged adequate for this release's own
-correctness needs — no extension was made; `docs/releases/v0.6.0/Risk
-Register.md`'s own `R8` is confirmed, not retired, its revisit trigger
-now sharpened to a real, measured performance need. One new, permanent
-Technical Debt item (`TD-12`) discloses the client-side-filtering
-performance characteristic this confirms. One new ADR (`ADR-0045`),
-`AuditSampleModule` (the tenth production sample module), 55 new tests
-(773 total, 0 failures), 0 build warnings, both Debug and Release. This
-Work Package's own repository review also found and fixed a genuine,
-deterministic bug in `WP 6.1`/`WP 6.4`'s own already-committed
-Host-registration tests (a `using`-scoped resource disposed before its
-awaited operation actually completed) — see its own Lessons Learned. See
-its own retrospective: `docs/academy/03 Work Packages/
-WP6.5-audit-framework-implementation.md`.
+**`WP 6.2` — Notification Framework — implemented.** The fourth Work
+Package of the Platform Services phase (`v0.6.0`) to ship real code,
+following `WP 6.1`/`WP 6.4`/`WP 6.5`'s own precedent of implementing
+directly against the already-approved architecture and Contract Review
+packages, no separate architecture phase. Delivers
+`Tempest.Core.Notifications`
+(`INotification`/`INotificationHandler<T>`/`INotificationDispatcher`,
+exactly as approved), built on top of the existing Event Bus's own
+proven dispatch model (`ADR-0046`) rather than a second, parallel
+publish/subscribe implementation — the two types cannot literally share
+one implementation (their own generic constraints,
+`where TNotification : INotification` vs. `where TEvent : IEvent`, rule
+out delegation), so `NotificationDispatcher` mirrors `EventBus`'s
+internal shape instead. Additive `IPlatformNotification`/
+`PlatformNotification`/`NotificationSeverity` (`Information`, `Success`,
+`Warning`, `Error`) fill the "severity"/"category" gap this Work
+Package's own brief named but the original interface draft never gave
+members, without changing `INotification` itself. An isolated
+subscriber failure is logged at `Warning`, not `Error` — a deliberate,
+disclosed departure from the Event Bus's own convention, per
+`Platform Service Contracts.md`'s own Logging Requirements. Notifications
+are transient only this release — the approved contract's own
+Persistence Requirements state "None." "Background notifications" is
+proven with `NotificationSampleHostedService`, the codebase's first
+real, non-infrastructure `IHostedService` — disclosed as such, not
+claimed as `AT-07`'s own retirement (that remains assigned to `WP 6.3`).
+One new ADR (`ADR-0046`), `NotificationSampleModule` (the eleventh
+production sample module), 50 new tests (823 total, 0 failures), 0
+build warnings, both Debug and Release. This Work Package's own
+integration-test-writing phase found and fixed a genuine implementation
+defect in its own sample consumers: `INotificationDispatcher` dispatches
+by exact static generic type (mirroring the Event Bus), so publishing a
+notification typed as the concrete `PlatformNotification` never reaches
+a subscriber that subscribed against `IPlatformNotification` — fixed at
+every call site and documented on `IPlatformNotification`'s own remarks
+as calling guidance for every future consumer. See its own
+retrospective: `docs/academy/03 Work Packages/
+WP6.2-notification-framework-implementation.md`.
 
 ## Next Planned Work Package
 
@@ -167,19 +181,19 @@ Experience phase is now complete.
 
 | Metric | Value |
 |---|---|
-| Automated tests | 773 (0 failures) — **+55, `WP 6.5`**: unit, failure-injection, concurrency, query-filter, Host registration-validation, and sample-module integration/durability tests for Audit |
-| ADRs | 44 (`ADR-0001`–`ADR-0039`, `ADR-0041`–`ADR-0045`), all Accepted — **+1, `WP 6.5`**: `ADR-0045` (Audit — orthogonality, recording model, permission gating, Persistence sufficiency). `ADR-0040` and `ADR-0046`–`ADR-0051` remain reserved, not yet authored, per `docs/releases/v0.6.0/Required ADRs.md` |
-| Rejected Designs | 45 (`RD-0001`–`RD-0045`) — unchanged by `WP 6.5` (no rejected design produced; alternatives-considered sections recorded within `ADR-0045` itself) |
-| Academy articles | 80 (see `docs/governance/Documentation/Academy Register.md`) — **+1, `WP 6.5`**: `WP6.5-audit-framework-implementation.md` |
+| Automated tests | 823 (0 failures) — **+50, `WP 6.2`**: unit, failure-injection, concurrency, Host registration-validation, and sample-module integration tests for Notifications, including proving "Background notifications" end-to-end through the real Host |
+| ADRs | 45 (`ADR-0001`–`ADR-0039`, `ADR-0041`–`ADR-0046`), all Accepted — **+1, `WP 6.2`**: `ADR-0046` (Notifications — derived from Events not a replacement pub/sub, dispatch model, severity/category elaboration, logging level). `ADR-0040` and `ADR-0047`–`ADR-0051` remain reserved, not yet authored, per `docs/releases/v0.6.0/Required ADRs.md` |
+| Rejected Designs | 45 (`RD-0001`–`RD-0045`) — unchanged by `WP 6.2` (no rejected design produced; alternatives-considered sections recorded within `ADR-0046` itself) |
+| Academy articles | 81 (see `docs/governance/Documentation/Academy Register.md`) — **+1, `WP 6.2`**: `WP6.2-notification-framework-implementation.md` |
 | Governance registers | 27 (32 governance documents total), plus 4 standing security documents under `docs/security/` (not governance registers themselves, indexed from `Governance Index.md`'s Security section) |
-| Architecture documents | 20 under `docs/architecture/` (22 including the two release-scoped documents) — unchanged by `WP 6.5` (Platform Service Map.md updated in place, not a new document) |
-| Platform services | 21 catalogued — 18 Implemented, 2 not implemented as platform services, 1 developer-convenience layer — **+1, `WP 6.5`**: Audit |
-| Modules (production) | 10 (`ClockModule`, `ClockLifecycleObserverModule`, `NavigationSampleModule`, `SecondaryNavigationSampleModule`, `DuplicateNavigationSampleModule`, `CommandSampleModule`, `DiagnosticsSampleModule`, `IdentitySampleModule`, `SettingsSampleModule`, `AuditSampleModule`) |
-| Hosted services (production) | 0 — infrastructure fully implemented and tested; zero shipped consumers by deliberate scope decision |
+| Architecture documents | 20 under `docs/architecture/` (22 including the two release-scoped documents) — unchanged by `WP 6.2` (Platform Service Map.md updated in place, not a new document) |
+| Platform services | 22 catalogued — 19 Implemented, 2 not implemented as platform services, 1 developer-convenience layer — **+1, `WP 6.2`**: Notifications |
+| Modules (production) | 11 (`ClockModule`, `ClockLifecycleObserverModule`, `NavigationSampleModule`, `SecondaryNavigationSampleModule`, `DuplicateNavigationSampleModule`, `CommandSampleModule`, `DiagnosticsSampleModule`, `IdentitySampleModule`, `SettingsSampleModule`, `AuditSampleModule`, `NotificationSampleModule`) |
+| Hosted services (production) | 1 — **`NotificationSampleHostedService`, `WP 6.2`**: the codebase's first real, non-infrastructure `IHostedService`, built to prove "Background notifications" end-to-end; not a claim that `AT-07` is retired (assigned to `WP 6.3`) |
 | Plugins (production) | 0 — infrastructure fully implemented and tested; `src/Plugins/` empty by deliberate scope decision |
-| Custom exception types | 40 — **+1, `WP 6.5`**: `AuditException` (base only — every current Audit failure mode is already covered by an existing exception type from another namespace) |
-| Technical Debt Register items | 12 tracked — **+1, `WP 6.5`**: `TD-12` (`IPersistenceStore` has no native query/filter capability; disclosed, confirmed, not extended speculatively) |
-| Commits (this release, `v0.5.0` → `v0.6.0`, so far) | 5 (`v0.6.0` branch/documentation preparation, `WP 6.1` implementation, `WP 6.4` implementation, `WP 6.5` implementation, plus this update) |
+| Custom exception types | 41 — **+1, `WP 6.2`**: `NotificationException` (base only — every current Notification failure mode is already covered by an existing exception type) |
+| Technical Debt Register items | 12 tracked, 8 disclosed trade-offs — **`WP 6.2`**: no new tracked-debt item; two trade-off annotations (`AT-03`, `AT-07`) and one new trade-off (`AT-08`, no persistent notification model this release) |
+| Commits (this release, `v0.5.0` → `v0.6.0`, so far) | 7 — re-derived directly (`git log fd46905^..HEAD`), correcting a prior undercount ("5") that had bundled the Architecture and Contract Review packages into one "branch/documentation preparation" item when they are two distinct commits: branch/documentation preparation, Architecture Package, Contract Review Package, `WP 6.1` implementation, `WP 6.4` implementation, `WP 6.5` implementation, `WP 6.2` implementation (this one) |
 | Contributors | 1 (repository owner; all commits co-authored by Claude) |
 
 *(This table is generated from `docs/governance/Quality/Repository Metrics
@@ -188,17 +202,29 @@ three together.)*
 
 ## Repository Health
 
-- **Build:** Clean — 0 warnings, 0 errors (`dotnet build tests/Tempest.Core.Tests/Tempest.Core.Tests.csproj`, both Debug and Release configurations, verified directly by `WP 6.5`).
-- **Tests:** 773/773 passing (+55, `WP 6.5`), verified in both Debug and
-  Release configurations from a clean rebuild. This Work Package's own
-  repository review also found and fixed a genuine, deterministic bug in
-  two already-committed test files (`WP 6.1`'s `IdentityHostRegistrationTests.cs`
-  was unaffected; `WP 6.4`'s `SettingsHostRegistrationTests.cs` and this
-  Work Package's own `AuditHostRegistrationTests.cs` both had it) — a
-  `using`-scoped `TempDirectory` disposed the instant a non-`async` test
-  method returned its still-running `Task`, before the awaited operation
-  inside it actually completed. Fixed by making every affected test
-  method genuinely `async Task`, awaiting directly.
+- **Build:** Clean — 0 warnings, 0 errors (`dotnet build
+  tests/Tempest.Core.Tests/Tempest.Core.Tests.csproj`, both Debug and
+  Release configurations, from a fully-removed `bin`/`obj` tree —
+  verified directly by `WP 6.2`).
+- **Tests:** 823/823 passing (+50, `WP 6.2`), verified in both Debug and
+  Release configurations from a clean rebuild, and re-run three
+  consecutive times in Release to confirm stability. This Work
+  Package's own test-writing phase found and fixed a genuine
+  implementation defect in its own sample consumers
+  (`NotificationSampleHostedService`, `PublishSampleNotificationCommandHandler`):
+  `INotificationDispatcher` dispatches by exact static generic type
+  (mirroring the Event Bus), so publishing a notification typed as the
+  concrete `PlatformNotification` never reached a subscriber that
+  subscribed against `IPlatformNotification` — no notification was ever
+  observed until the integration tests caught it. Fixed at every
+  publish call site; see `ADR-0046`. One unrelated, pre-existing,
+  non-reproducible flake (`CompositeLogSinkTests.
+  Write_AllSinksThrow_ExceptionNeverPropagatesToTheCaller`, an
+  order-dependent `Console.Out` redirection issue in an unrelated
+  Logging test area) surfaced once during this Work Package's own
+  testing and did not recur across several repeated full-suite runs —
+  noted for disclosure, not chased further, since it is outside this
+  Work Package's own scope and does not touch Notifications.
 - **Known regressions:** None.
 - **Working tree:** Clean at every Work Package boundary — see
   `docs/governance/Quality/Validation Register.md`.
@@ -352,13 +378,48 @@ Package's own repository review also found and fixed a genuine,
 deterministic bug in `WP 6.1`/`WP 6.4`'s own already-committed
 Host-registration tests (see Repository Health, above).
 
+**`WP 6.2` (Notification Framework)** — implemented directly against the
+same, unrevised architecture and Contract Review packages.
+`docs/architecture/Platform Service Map.md` gained a new Notifications
+entry, following the identical documentation shape every prior new
+platform service's own entry has used. `ADR-0046` formally settles the
+Event-Bus-orthogonality question `Required ADRs.md` anticipated, plus
+the genuine C# generic-constraint impossibility implementation
+surfaced (literal delegation from `NotificationDispatcher` to
+`IEventBus` is not possible without illegally tightening a generic
+constraint or resorting to reflection — resolved by mirroring
+`EventBus`'s own internal shape instead), the additive
+`IPlatformNotification`/`NotificationSeverity`/`Category` elaboration,
+the deliberate `Warning`-vs-`Error` logging-level departure from the
+Event Bus's own convention, and the exact-static-type-dispatch defect
+found and fixed against this Work Package's own sample consumers (see
+Repository Health, above). `docs/governance/Quality/Technical Debt
+Register.md`'s `AT-03` and `AT-07` entries were each annotated in
+place — `AT-03` because the same exact-type-dispatch limitation now
+also applies to Notifications; `AT-07` to disclose that a real,
+non-infrastructure hosted service now exists without claiming its
+retirement, which remains assigned to `WP 6.3`. One new, disclosed
+trade-off (`AT-08`) records the deliberate absence of a persistent
+notification model this release, per the approved contract's own
+Persistence Requirements ("None"). This Work Package's own re-derivation
+of `Namespace Register.md`'s per-namespace file counts, directly via
+`grep` rather than trusting the existing table, found the `Tempest.Samples`
+row itself had drifted stale since `WP 5.2` — corrected in the same
+commit as the finding.
+
 ## Academy Status
 
-77 articles across 7 categories (Introduction, Engineering Principles,
+81 articles across 7 categories (Introduction, Engineering Principles,
 Runtime Architecture, Work Package retrospectives, Design Patterns, Case
 Studies, Engineering Standards), plus `Academy Index.md`, `Academy
 Masterclass Roadmap.md`, `Academy Audit Report.md`, and `Contributor
-Learning Path.md`. Every completed Work Package has a matching
+Learning Path.md` — re-derived directly (`find docs/academy -name
+"*.md"`) by `WP 6.2` rather than incremented from the prior figure,
+which found this section's own opening count had drifted stale at "77"
+since before `WP 6.1`, three Work Packages (`WP 6.1`, `WP 6.4`, `WP 6.5`)
+each having added one retrospective without this line being updated to
+match — corrected here as a disclosed governance-documentation finding,
+not a new article count. Every completed Work Package has a matching
 retrospective, including `WP 5.0A` through `WP 5.4`. Maintenance
 obligation (Engineering Governance §6) verified honoured by two
 independent audits (`WP 4.4F`, and the Academy Register built during
@@ -407,7 +468,16 @@ orthogonality decision, the fire-and-forget-vs-awaited recording-model
 tension and its resolution, the correlation-identifier-via-`Detail`
 convention, and — as a genuine, disclosed engineering-review finding,
 not a planned lesson — the premature-resource-disposal bug found in
-two prior Work Packages' own Host-registration tests.
+two prior Work Packages' own Host-registration tests. `WP 6.2` added
+`WP6.2-notification-framework-implementation.md`, teaching the
+Event-Bus-orthogonality decision, the genuine C# generic-constraint
+impossibility that prevented literal delegation to `IEventBus` and its
+resolution (mirror the internal shape instead), the additive
+severity/category elaboration, the deliberate `Warning`-vs-`Error`
+logging-level departure, and — as a genuine, disclosed engineering-review
+finding, not a planned lesson — the exact-static-type-dispatch defect
+found against this Work Package's own sample consumers while writing
+their integration tests.
 
 ## Governance Status
 
@@ -522,6 +592,26 @@ same commit as the finding, per this project's own standing practice of
 fixing drift encountered along the way, not only drift a Work Package's
 own brief names.
 
+**`WP 6.2` (Notification Framework)** added `ADR-0046` (Notifications
+derived from Events, not a replacement pub/sub — dispatch model,
+severity/category elaboration, logging level) — Accepted, formally
+authoring its own `Required ADRs.md` catalogue entry (`ADR-0040` and
+`ADR-0047`–`ADR-0051` remain reserved). `docs/governance/Quality/
+Technical Debt Register.md`'s `AT-03` and `AT-07` entries were each
+annotated in place (see Documentation Status, above); one new trade-off,
+`AT-08`, was added. This Work Package's own repository review, which
+re-derived every register touched directly rather than trusting the
+existing text, found and corrected three further, genuine, pre-existing
+drifts unrelated to its own scope: `ADR Register.md`'s own commit count
+("48") had not been re-derived since at least `WP 6.5`, undercounting
+the real, `git log`-verified figure; `Namespace Register.md`'s
+`Tempest.Samples` row had drifted stale at "14" since `WP 5.2`, three
+intervening Work Packages having each added files without the row being
+updated; and `PROJECT_STATUS.md`'s own Academy Status section had
+drifted stale at "77 articles" since before `WP 6.1`, for the identical
+reason. All three are corrected in this same commit, backed by direct
+repository counts, not incremented prior figures.
+
 ## Known Unknowns
 
 Recorded honestly, not guessed at — full detail in `docs/governance/
@@ -544,8 +634,9 @@ Governance Audit Report.md`:
 
 1. **Await engineering approval before any further `v0.6.0`
    implementation begins.** `WP 6.1` (Permissions & Identity), `WP 6.4`
-   (Settings Framework), and `WP 6.5` (Audit Framework) are all complete
-   on `feature/v0.6.0-platform-services`; per `WP 6.5`'s own explicit
+   (Settings Framework), `WP 6.5` (Audit Framework), and `WP 6.2`
+   (Notification Framework) are all complete on
+   `feature/v0.6.0-platform-services`; per `WP 6.2`'s own explicit
    closing instruction, no further Work Package is to begin next,
    regardless of `Platform Service Implementation Order.md`'s own
    recommended sequencing.
@@ -582,7 +673,7 @@ is under way:
 
 - `WP 6.0` — Reporting Framework. Not started.
 - `WP 6.1` — Permissions & Identity. **Complete.**
-- `WP 6.2` — Notification Framework. Not started.
+- `WP 6.2` — Notification Framework. **Complete.**
 - `WP 6.3` — REST API. Not started; blocked on `WP 6.1`, now satisfied.
 - `WP 6.4` — Settings Framework. **Complete.**
 - `WP 6.5` — Audit Framework. **Complete.**

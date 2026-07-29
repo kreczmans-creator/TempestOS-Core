@@ -10,9 +10,9 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | Every retrospective under `docs/academy/03 Work Packages/`; `docs/releases/v0.4.0/Platform Services Architecture Review.md`. |
 | **Review Frequency** | Updated whenever a Work Package resolves, worsens, or discloses a new debt item — every retrospective's own "Architectural Debt Assessment" section is the trigger. |
-| **Last Reviewed** | 2026-07-28 (WP 5.2, Diagnostics Improvements) — TD-02 resolved (`CompositeLogSink`); TD-01 reassessed and re-scoped forward again (not migrated — the legacy code it concerns remains dead). |
+| **Last Reviewed** | 2026-07-29 (WP 6.2, Notification Framework) — AT-07 annotated (a real, non-infrastructure hosted service now exists, `NotificationSampleHostedService`, but is not claimed as its retirement — that remains assigned to `WP 6.3`); AT-03 annotated (the same exact-type dispatch limitation now also applies to `NotificationDispatcher`); AT-08 added (no persistent/durable notification model this release). |
 | **Related Documents** | `docs/releases/v0.4.0/Risks.md`; `Validation Register.md`; `Hosted Services Register.md`; `Plugin Register.md`; `docs/security/Platform Security Review v0.5.0.md`; `docs/security/Security Roadmap.md`; `docs/architecture/Command Framework Architecture.md`; `docs/architecture/Diagnostics Architecture.md`. |
-| **Related ADRs** | ADR-0009, ADR-0021, ADR-0024, ADR-0025, ADR-0026, ADR-0028, ADR-0029, ADR-0032, ADR-0037, ADR-0039. |
+| **Related ADRs** | ADR-0009, ADR-0021, ADR-0024, ADR-0025, ADR-0026, ADR-0028, ADR-0029, ADR-0032, ADR-0037, ADR-0039, ADR-0046. |
 | **Related Academy Articles** | Every Work Package retrospective's own "Trade-offs" and "Architectural Debt Assessment" sections. |
 | **Coverage Status** | Complete as of this baseline — every debt item disclosed by any retrospective through `WP 4.5`'s implementation is represented below, either as still Open or Resolved with the resolving Work Package named. |
 
@@ -52,13 +52,14 @@ misrepresent deliberate, reasoned scope decisions as unaddressed problems.
 |---|---|---|---|
 | AT-01 | No automatic unsubscription on module stop/dispose (Event Bus) | ADR-0028 / WP 4.4D | A real, demonstrated need |
 | AT-02 | Subscriber references held strongly for the Event Bus's whole lifetime | ADR-0028 / WP 4.4D | A real, demonstrated need |
-| AT-03 | Exact-event-type-only dispatch, no polymorphic dispatch (Event Bus) | RD-0021 / ADR-0028 | A real, demonstrated need |
+| AT-03 | Exact-event-type-only dispatch, no polymorphic dispatch (Event Bus). **`WP 6.2`**: `NotificationDispatcher` mirrors this same design (`ADR-0046`), so the identical limitation now also applies to Notifications — a caller must publish against the same static type a subscriber subscribed to; found in practice against this Work Package's own sample consumers (see `ADR-0046`) | RD-0021 / ADR-0028; re-confirmed for Notifications, `WP 6.2`/`ADR-0046` | A real, demonstrated need |
 | AT-04 | No ongoing supervision/monitoring of a hosted service's own work after `StartAsync` returns | RD-0026 / ADR-0029 | A real, demonstrated need |
 | AT-05 | No automatic restart/backoff for an isolated hosted service failure | RD-0029 / ADR-0021/ADR-0029 | A real, demonstrated need |
 | AT-06 | `src/Plugins/` remains empty — no real plugin built yet | WP 4.2 (by design) | The first Work Package that ships a real plugin (see `Plugin Register.md`) |
-| AT-07 | Zero real hosted services exist beyond the infrastructure | WP 4.5 (by explicit scope decision) | The first Work Package that ships a real hosted service (see `Hosted Services Register.md`) |
+| AT-07 | Zero real hosted services exist beyond the infrastructure | WP 4.5 (by explicit scope decision) | The first Work Package that ships a real hosted service (see `Hosted Services Register.md`) — **`WP 6.2` note:** `NotificationSampleHostedService` is now a real, non-infrastructure `IHostedService`, built to prove the Notification Framework's own "Background notifications" deliverable end-to-end. This Work Package does **not** claim AT-07's own retirement — its revisit trigger was assigned in advance to `WP 6.3` (REST API, see `Required ADRs.md`'s own `ADR-0047` entry), and this Work Package's own brief did not authorise reassigning it. Disclosed here rather than silently claimed; see this Work Package's own Platform Impact Assessment. |
+| AT-08 | No persistent/durable notification model, no history or inbox capability — a notification is not retained after dispatch | WP 6.2 (by explicit, approved-contract scope decision — `Platform Service Contracts.md`'s own Persistence Requirements state "None" for Notifications) | A real, demonstrated need for notification history (a UI Shell's own notification centre, an audit-adjacent record of what was shown to a user) |
 
-**Total: 7 disclosed trade-offs, none requiring action absent a real,
+**Total: 8 disclosed trade-offs, none requiring action absent a real,
 demonstrated need.**
 
 ## Cross-Reference Check

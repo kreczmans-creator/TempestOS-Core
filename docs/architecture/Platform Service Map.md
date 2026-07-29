@@ -37,6 +37,7 @@ of date is worse than no map at all, because it will be trusted.
 | Persistence | **Implemented — WP 6.4** (`IPersistenceStore`/`PersistenceStore`, `Tempest.Core.Persistence`) — established as part of Settings' own scope per ADR-0041; file-backed, one file per `collection`/`key`, percent-encoded paths, per-key async locking | Dependency Injection, Configuration (root path) | Settings (real contributor via `SettingsProvider`); Audit (real contributor via `AuditRecorder`/`AuditQuery`, `WP 6.5`) — the reuse `ADR-0041` recommended, now confirmed in practice |
 | Settings | **Implemented — WP 6.4** (`ISettingDefinition`/`SettingDefinition`, `ISettingsProvider`/`SettingsProvider`, `ISettingsChangedEvent`/`SettingsChangedEvent`, `Tempest.Core.Settings`) — DI-public, distinct from Configuration per ADR-0042; in-memory cache over Persistence, invalidated on write | Dependency Injection, Persistence, Event Bus | `SettingsSampleModule` (real contributor); a plausible future `WP 6.3` (REST API) settings-management surface |
 | Audit | **Implemented — WP 6.5** (`IAuditRecord`/`AuditRecord`, `IAuditRecorder`/`AuditRecorder`, `IAuditQuery`/`AuditQuery`, `AuditQueryCriteria`, `Tempest.Core.Audit`) — durable, queryable, append-only history distinct from Logging/Diagnostics per ADR-0045; reuses Persistence, never a second storage mechanism; `IAuditQuery` permission-gated via `ADR-0044` | Dependency Injection, Persistence, Identity & Permissions | `AuditSampleModule` (real contributor); a plausible future consumer for Reporting, the REST API, Licensing, Export/Import, and any engineering module |
+| Notifications | **Implemented — WP 6.2** (`INotification`, `INotificationHandler<T>`, `INotificationDispatcher`/`NotificationDispatcher`, `Tempest.Core.Notifications`) — derived from, not a replacement for, the Event Bus per ADR-0046; transient only, no persistence this release; additive `IPlatformNotification`/`PlatformNotification`/`NotificationSeverity` general-purpose shape | Dependency Injection | `NotificationSampleModule` (real contributor); `NotificationSampleHostedService` (the platform's first real, non-infrastructure hosted service); a plausible future consumer for Reporting, the REST API, Export/Import, Licensing, any engineering module, and a future UI Shell |
 | Plugin Manifest | **Implemented — WP 4.2** (`Tempest.Core.Plugins`) | Host (Phases 3.1/3.2, ADR-0026 — a pre-Discovery step) | Module Discovery (unchanged), any real plugin |
 | Project Engine | Planned | Undetermined | Undetermined |
 | Requirements Engine | Planned | Undetermined | Undetermined |
@@ -955,6 +956,90 @@ Implementation*); `docs/releases/v0.6.0/Release Architecture.md` and
 companions; `Platform Service Contracts.md` and companions;
 `docs/governance/Quality/Technical Debt Register.md` (`TD-12`);
 `docs/releases/v0.6.0/Risk Register.md` (`R8`).
+
+---
+
+## Notifications *(implemented — WP 6.2, ADR-0046)*
+
+**Responsibility.** The standard platform mechanism for publishing
+user-facing and platform-generated notifications — `INotification`
+marks a published fact (mirroring `IEvent`'s own marker shape);
+`INotificationHandler<TNotification>` is the consumer-facing
+subscription contract; `INotificationDispatcher` subscribes and
+publishes, sequentially, in subscription order, isolating and logging
+(at `Warning`) every subscriber's own exception, never rethrowing it.
+Deliberately **not** a second, independent publish/subscribe
+implementation — built to mirror the Event Bus's own proven dispatch
+model exactly (`ADR-0028`/`ADR-0046`), since the two types' own,
+independently-approved generic constraints (`where TNotification :
+INotification` vs. `where TEvent : IEvent`) rule out literal
+delegation. Transient only this release — a notification is not
+retained after dispatch; no history or inbox capability exists yet.
+
+**Key types.** `INotification`, `INotificationHandler<TNotification>`,
+`INotificationDispatcher`/`NotificationDispatcher`,
+`NotificationException` — all `Tempest.Core.Notifications`, implemented
+with zero signature deviation from `Public Interface Catalogue.md`.
+`IPlatformNotification`/`PlatformNotification`/`NotificationSeverity`
+(`Information`, `Success`, `Warning`, `Error`) are additive elaborations
+this Work Package's own implementation phase introduced — "Notification
+severity" and "Notification categories" were named in this Work
+Package's own brief but never drafted as interface members;
+`IPlatformNotification` extends both `INotification` and `Events.IEvent`,
+concretely realising `INotification`'s own doc comment ("typically
+derived from... an `IEvent`") for this one general-purpose shape.
+
+**Dependencies.** Dependency Injection; `Tempest.Core.Events` (for
+`IPlatformNotification`'s own `IEvent` extension — a type-level
+relationship only, no runtime call into `IEventBus`); `Tempest.Core.Logging`
+(optional `ILogger`, the same convention every other platform service
+follows).
+
+**Consumers.** `NotificationSampleModule` (real contributor and
+consumer, the eleventh production sample module) — subscribes to
+`IPlatformNotification` during its own initialisation, registers a
+command (`PublishSampleNotificationCommand`) that publishes one on
+demand, and observes `NotificationSampleHostedService`'s own
+`StartAsync`/`StopAsync` notifications end-to-end, proving "Background
+notifications" concretely. Named as a plausible future consumer for
+Reporting, the REST API, Export/Import, Licensing, any engineering
+module, and a future UI Shell — none yet implemented.
+
+**Lifecycle.** Ordinary DI-public, container-constructed singleton
+(`INotificationDispatcher`), registered in `TempestHost`'s existing
+Platform Services Registered block (Phase 6), immediately after
+`IEventBus` — no new Host Lifecycle phase.
+
+**A genuine, first-of-its-kind hosted service, disclosed rather than
+overclaimed.** `NotificationSampleHostedService` is the codebase's
+first real, non-infrastructure `IHostedService` — every prior Work
+Package's own Background Services coverage (`WP 4.5`) proved the
+infrastructure itself but shipped with zero real consumers (`AT-07`).
+`AT-07`'s own revisit trigger names `WP 6.3` (REST API) as its intended
+retiree; this Work Package does not claim that milestone — see its own
+Platform Impact Assessment.
+
+**A genuine implementation-phase finding, disclosed rather than
+absorbed silently:** `INotificationDispatcher` dispatches by exact
+static generic type, the same design `IEventBus` already uses — a
+caller that publishes a notification typed as the concrete
+`PlatformNotification` will never be observed by a subscriber that
+subscribed against `IPlatformNotification`, since the two are different
+dictionary keys. Found and fixed against this Work Package's own sample
+consumers while writing their integration tests; documented directly on
+`IPlatformNotification`'s own remarks as calling guidance. See
+`ADR-0046`.
+
+**ADR references.** ADR-0028 (Event Bus dispatch/failure model, the
+design reused here); ADR-0046 (*Notifications Are Derived From Events,
+Not a Replacement Pub/Sub — Dispatch Model, Severity/Category
+Elaboration, and Logging Level*).
+
+**Academy references.** `WP 6.2` retrospective (*Notification
+Framework Implementation*); `docs/releases/v0.6.0/Release
+Architecture.md` and companions; `Platform Service Contracts.md` and
+companions; `docs/governance/Quality/Technical Debt Register.md`
+(`AT-07`).
 
 ---
 

@@ -9,6 +9,7 @@ using Tempest.Core.Identity;
 using Tempest.Core.Logging;
 using Tempest.Core.Modules;
 using Tempest.Core.Navigation;
+using Tempest.Core.Notifications;
 using Tempest.Core.Persistence;
 using Tempest.Core.Plugins;
 using Tempest.Core.Settings;
@@ -232,6 +233,7 @@ public sealed class TempestHost : ITempestHost
         services.AddInstance(logger);
         services.AddInstance(platformVersionProvider);
         services.Singleton<IEventBus, EventBus>();
+        services.Singleton<INotificationDispatcher, NotificationDispatcher>();
         services.Singleton<INavigationProvider, NavigationService>();
         services.Singleton<CommandHandlerTable>();
         services.Singleton<ICommandDispatcher, CommandDispatcher>();

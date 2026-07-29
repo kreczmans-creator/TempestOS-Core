@@ -10,9 +10,9 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | Direct source inspection; `docs/architecture/Failure Behaviour.md`; `docs/academy/06 Engineering Standards/01-exception-design.md`. |
 | **Review Frequency** | Updated whenever a new exception type is introduced. |
-| **Last Reviewed** | 2026-07-28 (WP 5.4, v0.5.0 Release Candidate) — corrected a Total-count arithmetic error found during this Work Package's own repository review (see Entries table, below): the stated total read "30," undercounting the Entries/Distribution tables' own, unchanged sum of 31. No new exception type introduced since `WP 5.3`. |
+| **Last Reviewed** | 2026-07-29 (WP 6.2, Notification Framework) — added `NotificationException` (see Entries table, below); no other change to prior entries. |
 | **Related Documents** | `docs/architecture/Failure Behaviour.md`; `Architectural Dependency Register.md`. |
-| **Related ADRs** | ADR-0013, ADR-0021, ADR-0025, ADR-0038. |
+| **Related ADRs** | ADR-0013, ADR-0021, ADR-0025, ADR-0038, ADR-0046. |
 | **Related Academy Articles** | `docs/academy/06 Engineering Standards/01-exception-design.md`. |
 | **Coverage Status** | Complete. |
 
@@ -62,11 +62,12 @@
 | `DuplicateSettingDefinitionException` | `SettingsException` | Settings | Application logic's own error (not Host-level); thrown by `RegisterDefinition` — first registration wins |
 | `SettingNotFoundException` | `SettingsException` | Settings | Application logic's own error (not Host-level); thrown by `GetValueAsync`/`SetValueAsync` for an unregistered key |
 | `AuditException` | `Exception` | Audit | Application logic's own error (not Host-level); base type, never thrown directly — every current Audit failure mode is already covered by an existing exception from another namespace (`ArgumentException`, `PersistenceStoreUnavailableException`, `PermissionDeniedException`) |
+| `NotificationException` | `Exception` | Notifications | Application logic's own error (not Host-level); base type, never thrown directly — every current Notification failure mode is already covered by an existing exception (`ArgumentException`, `ArgumentNullException`); see "A Note on Notifications" below |
 
-**Total: 40 custom exception types — Verified directly against
+**Total: 41 custom exception types — Verified directly against
 `src/Tempest.Core/` (`grep -rlP "^public (sealed )?class \w+Exception\b"`
-returns exactly 40 files, matching the 40 rows in the Entries table
-above, re-derived directly by `WP 6.5` rather than incremented from the
+returns exactly 41 files, matching the 41 rows in the Entries table
+above, re-derived directly by `WP 6.2` rather than incremented from the
 prior figure — the standing practice `WP 5.4` recommended). Corrected,
 `WP 5.4`: this total previously read "30," undercounting
 by one against this register's own Entries table and Distribution table
@@ -132,6 +133,20 @@ likewise introduces no new exception type: its own constructor reuses
 `Write` method deliberately catches and reports every child sink's own
 exception rather than throwing a new, wrapping one.
 
+## A Note on Notifications
+
+`NotificationException` mirrors `AuditException`'s own base-only
+precedent exactly: a concrete, single-constructor base type introduced
+for the approved contract's own sake, never thrown directly this
+release — every current Notification failure mode (a null handler, a
+null notification, an invalid `Category`/`Message` on
+`PlatformNotification`) is already fully covered by
+`ArgumentNullException`/`ArgumentException`. Application logic's own
+error (not Host-level); `NotificationDispatcher`'s own per-subscriber
+isolation (mirroring `EventBus`, `ADR-0028`/`ADR-0046`) catches and logs
+a subscriber's own exception at `Warning`, never rethrowing it, so no
+Notification-specific exception type was needed for that path either.
+
 ## Distribution by Root Category
 
 | Root Category | Exception Count |
@@ -150,6 +165,7 @@ exception rather than throwing a new, wrapping one.
 | Persistence | 2 |
 | Settings | 3 |
 | Audit | 1 |
+| Notifications | 1 |
 
 ## Cross-Reference Check
 

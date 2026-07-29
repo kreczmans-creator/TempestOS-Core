@@ -234,6 +234,22 @@ enforcement point Identity & Permissions established (`ADR-0044`).
 - [WP 6.5 — Audit Framework Implementation](03%20Work%20Packages/WP6.5-audit-framework-implementation.md) — implemented directly against the already-approved architecture and Contract Review packages, including the recording-model/permission-gating/Persistence-sufficiency decisions (`ADR-0045`) and a genuine, disclosed engineering-review finding: a premature-resource-disposal bug in two prior Work Packages' own Host-registration tests.
 - ADR-0045 (Audit Is a Durable, Queryable, Append-Only Record, Distinct From Logging and Diagnostics — Recording Model, Permission Gating, and Persistence Sufficiency).
 
+### Notifications
+
+Implemented (`WP 6.2`, `ADR-0046`) — `Tempest.Core.Notifications`: the
+standard platform mechanism for publishing user-facing and
+platform-generated notifications, built on top of the existing Event
+Bus's own proven dispatch model rather than a second, parallel
+publish/subscribe implementation. Additive
+`IPlatformNotification`/`NotificationSeverity`/`Category` fill the
+severity/category gap the original interface draft never gave members.
+Transient only this release; an isolated subscriber failure is logged
+at `Warning`, a deliberate departure from the Event Bus's own `Error`
+convention.
+
+- [WP 6.2 — Notification Framework Implementation](03%20Work%20Packages/WP6.2-notification-framework-implementation.md) — implemented directly against the already-approved architecture and Contract Review packages, including the genuine C# generic-constraint impossibility that prevented literal delegation to `IEventBus` (`ADR-0046`) and a genuine, disclosed engineering-review finding: an exact-static-type-dispatch defect in this Work Package's own sample consumers.
+- ADR-0046 (Notifications Are Derived From Events, Not a Replacement Pub/Sub — Dispatch Model, Severity/Category Elaboration, and Logging Level).
+
 ## Design Patterns
 
 Recurring structural patterns TempestOS actually uses, explained in terms
@@ -326,6 +342,7 @@ is complete and `v0.5.0` is released.
 - [WP 6.1 — Permissions & Identity Implementation](03%20Work%20Packages/WP6.1-permissions-and-identity-implementation.md) — implemented directly against the already-approved architecture and Contract Review packages; no separate architecture-phase retrospective, per direct instruction.
 - [WP 6.4 — Settings Framework Implementation](03%20Work%20Packages/WP6.4-settings-framework-implementation.md) — implemented ahead of `WP 6.0`–`WP 6.3` per `Platform Service Implementation Order.md`'s own recommendation; establishes the shared Persistence abstraction as part of its own scope.
 - [WP 6.5 — Audit Framework Implementation](03%20Work%20Packages/WP6.5-audit-framework-implementation.md) — implemented per the same recommendation; reuses `WP 6.4`'s own Persistence abstraction and validates it as sufficient, without extending it speculatively.
+- [WP 6.2 — Notification Framework Implementation](03%20Work%20Packages/WP6.2-notification-framework-implementation.md) — implemented per the same recommendation; builds on the existing Event Bus's own proven dispatch model rather than a second, parallel publish/subscribe implementation.
 
 See `PROJECT_STATUS.md` for current status and `docs/releases/v0.6.0/
 WorkPackages.md` for the full, nine-Work-Package plan.
