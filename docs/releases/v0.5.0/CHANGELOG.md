@@ -2,13 +2,12 @@
 
 ## Status
 
-**Release Candidate — 2026-07-28.** Every Work Package in this release's
-final scope (`WP 5.0A` through `WP 5.3`) is complete; this Changelog is
-finalised as part of `WP 5.4` (v0.5.0 Release Candidate & Engineering
-Sign-Off). Entries were added as each Work Package actually landed — not
-written in advance as predictions. `VERSION` remains `0.4.0` pending
-explicit Product Approval to cut and tag `v0.5.0` (Engineering Governance
-§7); nothing below assumes that approval has been given.
+**Released — 2026-07-29.** `v0.5.0`, "Developer Experience," ships every
+Work Package in this release's final scope (`WP 5.0A` through `WP 5.3`),
+verified complete by `WP 5.4` (v0.5.0 Release Candidate & Engineering
+Sign-Off) before Product Approval authorised the release itself. Entries
+were added as each Work Package actually landed — not written in advance
+as predictions.
 
 ---
 
@@ -106,7 +105,7 @@ current status.
 
 ---
 
-## [0.5.0] - Release Candidate, 2026-07-28
+## [0.5.0] - 2026-07-29
 
 ### Added
 

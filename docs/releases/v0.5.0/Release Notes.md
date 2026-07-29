@@ -1,8 +1,8 @@
 # TempestOS v0.5.0 — "Developer Experience"
 
-**Release Candidate date:** 2026-07-28
-**Tag:** not yet cut — pending Product Approval (Engineering Governance §7)
-**Branch:** `feature/v0.5.0-developer-experience` → `main` (not yet merged)
+**Release date:** 2026-07-29
+**Tag:** `v0.5.0`
+**Branch:** `feature/v0.5.0-developer-experience` → `main`
 
 ---
 
@@ -21,10 +21,10 @@ Package is checked against — not part of the original plan, but folded
 in as a dedicated, formal engineering milestone once the platform reached
 a size that warranted one.
 
-Every Work Package in this release's final scope is complete. This
-document, together with `CHANGELOG.md` and `docs/releases/v0.5.0.md`,
-constitutes the Release Candidate produced by `WP 5.4` — engineering
-verification and sign-off, not the release cut itself.
+Every Work Package in this release's final scope is complete, verified
+by `WP 5.4`'s own engineering sign-off before Product Approval authorised
+the release itself. This document, together with `CHANGELOG.md` and
+`docs/releases/v0.5.0.md`, is this release's own permanent record.
 
 ## Highlights
 
@@ -203,10 +203,12 @@ Full, current detail: `docs/governance/Quality/Technical Debt Register.md`.
 
 ## What's Next
 
-No Work Package is currently scoped beyond `v0.5.0`. Two decisions remain,
-both Product Approval's, not engineering's: whether and when to cut this
-release (merge to `main`, tag `v0.5.0`, push), and what a future `v0.6.0`
-should contain. See `PROJECT_STATUS.md` for current status.
+`v0.6.0` ("Platform Services") begins on `feature/v0.6.0-platform-services`,
+cut from `main` at the `v0.5.0` tag. See `docs/releases/v0.6.0/
+WorkPackages.md` for the agreed scope: Reporting, Permissions & Identity,
+Notifications, a REST API, Settings, Audit, Licensing, Export/Import, and
+a closing Platform Services Integration Review. No implementation has
+begun. See `PROJECT_STATUS.md` for current status.
 
 ## Acknowledgements
 

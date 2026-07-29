@@ -1,6 +1,6 @@
 # TempestOS — Project Status
 
-**Last Updated:** 2026-07-28 (WP 5.4 — v0.5.0 Release Candidate & Engineering Sign-Off)
+**Last Updated:** 2026-07-29 (v0.5.0 Release Engineering — "Developer Experience," released)
 
 This is the primary status dashboard for TempestOS. Read this first for
 "where does the project stand right now" — for "why is it built this
@@ -11,93 +11,72 @@ read `docs/academy/Contributor Learning Path.md`.
 
 ## Current Repository Phase
 
-**Developer Experience — complete.** The Foundation phase is complete and
-closed — Platform Formation, Academy Formation, and Governance Formation
-are all done (see `docs/releases/Platform Foundation Completion Report.md`),
-and `v0.4.0` ("Platform Foundation") shipped exactly that scope. TempestOS
-then built *on* the foundation — Navigation, a Command Framework,
-Diagnostics, and Developer Experience tooling itself — through the
-**Developer Experience** phase, whose every named Work Package is now
-complete. `WP 5.0A` through `WP 5.0D` were this phase's first four
-completed Work Packages — Navigation and the Shell are both fully
-implemented, and `Tempest.App` now runs the real platform for the first
-time in this project's history. `WP 5.0S` (Platform Security Baseline
-Audit) followed as a dedicated, formal engineering audit — not a feature
-Work Package — establishing the v0.5.0 Security Baseline every future
-Work Package's Definition of Done is checked against. `WP 5.1A`
-(Command Framework Architecture) and `WP 5.1B` (Command Framework
-Implementation) followed — `ICommand`'s own contract (`WP 4.0`) now has
-a real handler contract and dispatcher, proven against a real sample
-module and the real Runtime Host. `WP 5.2` (Diagnostics Improvements)
+**Developer Experience — complete and released as `v0.5.0`.** The
+Foundation phase is complete and closed — Platform Formation, Academy
+Formation, and Governance Formation are all done (see `docs/releases/
+Platform Foundation Completion Report.md`), and `v0.4.0` ("Platform
+Foundation") shipped exactly that scope. TempestOS then built *on* the
+foundation — Navigation, a Command Framework, Diagnostics, and Developer
+Experience tooling itself — through the **Developer Experience** phase.
+`WP 5.0A` through `WP 5.0D` were this phase's first four completed Work
+Packages — Navigation and the Shell are both fully implemented, and
+`Tempest.App` now runs the real platform for the first time in this
+project's history. `WP 5.0S` (Platform Security Baseline Audit) followed
+as a dedicated, formal engineering audit — not a feature Work Package —
+establishing the v0.5.0 Security Baseline every future Work Package's
+Definition of Done is checked against. `WP 5.1A`/`WP 5.1B` (Command
+Framework) followed — `ICommand`'s own contract (`WP 4.0`) now has a real
+handler contract and dispatcher. `WP 5.2` (Diagnostics Improvements)
 followed — a composite `ILogSink` closes a long-named debt (`TD-02`), and
 a new `IDiagnosticsProvider` gives any DI-resolving consumer a read-only
-view of the Host's own current lifecycle state, without granting write
-access to the Host-owned machinery that state comes from. `WP 5.3`
-(Developer Experience Improvements) closes the phase out — a `dotnet new`
-module template, and a previously-only-documented Discovery pitfall now
-closed with a clear, actionable error message. `WP 5.4` (v0.5.0 Release
+view of the Host's own current lifecycle state. `WP 5.3` (Developer
+Experience Improvements) closed the phase out — a `dotnet new` module
+template, and a previously-only-documented Discovery pitfall now closed
+with a clear, actionable error message. `WP 5.4` (v0.5.0 Release
 Candidate & Engineering Sign-Off) then verified the entire release
 directly — every ADR, every Work Package, every governance register —
-rather than trusting nine separate retrospectives' own say-so, and
-produced this release's own Release Candidate documentation. **`v0.5.0`
-is now a Release Candidate.** See Current Priorities, below, for what
-this means for the release itself.
+before Product Approval authorised the release itself. **`v0.5.0` is now
+released.** TempestOS is entering the **Platform Services** phase
+(`v0.6.0`) — see Current Priorities, below.
 
 ## Current Development Branch
 
-**`feature/v0.5.0-developer-experience`**, cut from `main` after the
-`v0.4.0` tag. Carries `WP 5.0A` through `WP 5.0D`, plus `WP 5.0S`,
-`WP 5.1A`, `WP 5.1B`, `WP 5.2`, and `WP 5.3`. Unmerged into `main`; every
-Work Package in `docs/releases/v0.5.0/WorkPackages.md` is now complete,
-but the merge/tag sequence for `v0.5.0` itself is a separate, explicit
-Product Approval decision (Engineering Governance §7), not assumed from
-Work Package completion alone — see Current Priorities, below.
+**`feature/v0.6.0-platform-services`**, cut from `main` at the `v0.5.0`
+tag. No implementation has begun. `feature/v0.5.0-developer-experience`
+(`WP 5.0A` through `WP 5.4`) has been merged into `main` and is retained,
+unmerged branches are never deleted per this project's own convention.
 
 ## Current Release
 
-**v0.4.0** ("Platform Foundation") — released 2026-07-27, still the most
-recent tag. Root `VERSION` reads `0.4.0`; `v0.5.0` ("Developer
-Experience") is a verified Release Candidate as of `WP 5.4`, not yet cut.
-`v0.3.0` ("Runtime Foundation Complete") is the release before that.
+**v0.5.0** ("Developer Experience") — released 2026-07-29. Root
+`VERSION` reads `0.5.0`. `v0.4.0` ("Platform Foundation") is the release
+before that; `v0.3.0` ("Runtime Foundation Complete") before that.
 
 ## Current Work Package
 
-**`WP 5.4` — v0.5.0 Release Candidate & Engineering Sign-Off —
-complete** (this Work Package). Not a feature Work Package — a full
-engineering verification and release-readiness review, confirming every
-ADR is implemented or intentionally deferred, every Work Package is
-closed, every governance register is internally consistent, and every
-piece of release documentation is current. Found and corrected two
-genuine, silent arithmetic undercounts (the Exception Register's own
+**None — between releases.** `WP 5.4` (v0.5.0 Release Candidate &
+Engineering Sign-Off) was the last Work Package of the Developer
+Experience phase, verifying every ADR implemented or intentionally
+deferred, every Work Package closed, and every governance register
+internally consistent before the release was cut. It found and corrected
+two genuine, silent arithmetic undercounts (the Exception Register's own
 stated total, and the Academy Register's own Work-Package/article
-counts) that had each persisted, uncaught, across two or more prior Work
-Packages — neither reflects an actual change to the codebase, both are
-documentation corrections. Also found and corrected a stale
-`docs/releases/v0.5.0/ReleasePlan.md` (frozen at `WP 5.0C`'s own moment
-in time) and a stale `docs/academy/Contributor Learning Path.md` (still
-pointed a new contributor at `v0.4.0/WorkPackages.md`, cited a 30-ADR
-count, and never mentioned Navigation, the Shell, the Command Framework,
-Diagnostics, or the new module template). Retired all four remaining
-open release-level risks in `docs/releases/v0.4.0/Risks.md` (`R5`, `R7`,
-`R8`, `R9`) — every one of that register's ten risks is now Retired.
-Produced this release's own Release Candidate documentation:
-`docs/releases/v0.5.0/CHANGELOG.md`, `Release Notes.md`,
-`ReleaseChecklist.md`, and the top-level `docs/releases/v0.5.0.md`. No
-feature added; no architecture redesigned; `VERSION` deliberately left at
-`0.4.0`, pending Product Approval. See this Work Package's own
-retrospective:
+counts), a stale `docs/releases/v0.5.0/ReleasePlan.md`, a stale
+`docs/academy/Contributor Learning Path.md`, and retired all four
+remaining open release-level risks in `docs/releases/v0.4.0/Risks.md`
+(`R5`, `R7`, `R8`, `R9`) — every one of that register's ten risks is now
+Retired. See its own retrospective:
 `docs/academy/03 Work Packages/WP5.4-v0.5.0-release-candidate-and-engineering-sign-off.md`.
+Release Engineering then merged `feature/v0.5.0-developer-experience`
+into `main`, tagged `v0.5.0`, and cut `feature/v0.6.0-platform-services`
+for what comes next.
 
 ## Next Planned Work Package
 
-**None named — v0.5.0 is a Release Candidate.** Every Work Package in
-`docs/releases/v0.5.0/WorkPackages.md` (`WP 5.0A` through `WP 5.3`) is
-complete, and `WP 5.4` has verified this directly rather than assumed it.
-Two decisions remain, both Product Approval's, not engineering's:
-whether and when to cut and tag `v0.5.0` (merge to `main`, bump
-`VERSION`, push — Engineering Governance §7), and what a future `v0.6.0`
-should contain — see Current Priorities, below, and this release's own
-Recommendation in `WP 5.4`'s retrospective.
+**`WP 6.0` — Reporting Framework**, the first Work Package of the
+Platform Services phase (`v0.6.0`) — see `docs/releases/v0.6.0/
+WorkPackages.md` for the full, nine-Work-Package plan (`WP 6.0` through
+`WP 6.8`). No implementation has begun.
 
 ## Foundation Status
 
@@ -170,7 +149,7 @@ Experience phase is now complete.
 | Hosted services (production) | 0 — infrastructure fully implemented and tested; zero shipped consumers by deliberate scope decision |
 | Plugins (production) | 0 — infrastructure fully implemented and tested; `src/Plugins/` empty by deliberate scope decision |
 | Custom exception types | 31 — **corrected, `WP 5.4`**: the Exception Register's own stated total previously read 30, undercounting its own Entries table since `WP 5.1B` first introduced the mismatch |
-| Commits (total / since `v0.4.0` tag) | 63 total (57 Claude-authored) / 11 since `v0.4.0` (`WP 5.0A`, `WP 5.0B`, `WP 5.0C`, `WP 5.0D`, `WP 5.0S`, `WP 5.1A`, `WP 5.1B`, `WP 5.2`, `WP 5.3` ×2, `WP 5.4`) |
+| Commits (this release, `v0.4.0` → `v0.5.0`) | 13 (`WP 5.0A`, `WP 5.0B`, `WP 5.0C`, `WP 5.0D`, `WP 5.0S`, `WP 5.1A`, `WP 5.1B`, `WP 5.2`, `WP 5.3` ×2, `WP 5.4` ×2, release-preparation) |
 | Contributors | 1 (repository owner; all commits co-authored by Claude) |
 
 *(This table is generated from `docs/governance/Quality/Repository Metrics
@@ -403,23 +382,18 @@ Governance Audit Report.md`:
 
 ## Current Priorities
 
-1. **`v0.5.0` is a verified Release Candidate.** `WP 5.4` independently
-   confirmed every Work Package in `docs/releases/v0.5.0/WorkPackages.md`
-   is complete, every governance register is internally consistent, and
-   every piece of release documentation is current. The next decision is
-   Product Approval's, not an engineering one: whether and when to cut
-   the `v0.5.0` release (Engineering Governance §7) — merge
-   `feature/v0.5.0-developer-experience` into `main`, bump `VERSION` to
-   `0.5.0`, tag, and push — or whether to open a new Work Package first.
-   Neither is assumed here; both require explicit, per-occasion approval.
-   See `docs/releases/v0.5.0/ReleaseChecklist.md` for the full,
-   ready-to-execute merge/tag sequence.
-2. No merge to `main` has occurred yet. Root `VERSION` remains `0.4.0`.
+1. **Begin `WP 6.0` (Reporting Framework)** on
+   `feature/v0.6.0-platform-services` — see `docs/releases/v0.6.0/
+   WorkPackages.md` for its own scope. No implementation has begun; the
+   branch and release documentation were prepared, deliberately, ahead of
+   any code.
+2. No merge to `main` is due until the Platform Services phase's Work
+   Packages are complete (see `docs/releases/v0.6.0/WorkPackages.md`).
 
 ## Near-Term Roadmap
 
 Per `docs/releases/v0.5.0/WorkPackages.md`, the Developer Experience
-phase is complete and verified, `WP 5.0A` through `WP 5.4`:
+phase is complete and released as `v0.5.0`, `WP 5.0A` through `WP 5.4`:
 
 - `WP 5.0A` — Navigation Framework Architecture (design only). **Complete.**
 - `WP 5.0B` — Navigation Framework Implementation. **Complete.**
@@ -436,25 +410,39 @@ phase is complete and verified, `WP 5.0A` through `WP 5.4`:
 - `WP 5.4` — v0.5.0 Release Candidate & Engineering Sign-Off (verification,
   not a feature Work Package). **Complete.**
 
-No further Work Package is named in the current release plan. A future
-release's own scope (Project Engine, Requirements Engine, or anything
-else) is a Product Approval decision, not one this document anticipates.
+Per `docs/releases/v0.6.0/WorkPackages.md`, the Platform Services phase
+now begins, none started:
+
+- `WP 6.0` — Reporting Framework.
+- `WP 6.1` — Permissions & Identity.
+- `WP 6.2` — Notification Framework.
+- `WP 6.3` — REST API.
+- `WP 6.4` — Settings Framework.
+- `WP 6.5` — Audit Framework.
+- `WP 6.6` — Licensing Framework.
+- `WP 6.7` — Export / Import.
+- `WP 6.8` — Platform Services Integration Review (closing milestone
+  audit, mirroring `WP 4.2D`/`WP 5.0S`'s own precedent).
 
 ## Long-Term Vision
 
 TempestOS aims to be an extensible platform other people build on, not
 merely a runtime that hosts a fixed set of built-in capabilities — see
 `docs/releases/v0.4.0/ReleasePlan.md`'s own "From Runtime to Platform"
-theme. Two named, not-yet-designed platform services (Project Engine,
-Requirements Engine) remain aspirational, each requiring its own
-classification under ADR-0013 before design begins. The governing
-constraint on all of it is `docs/releases/FOUNDATION.md`: every future
-capability is a module or platform service running inside the one Runtime
-Host this foundation established, never a second, parallel execution
-model — and every future Work Package is expected to build capability
-against that stable foundation rather than revisit it, absent evidence
-that requires otherwise (see `docs/governance/Future Work Package
-Guidelines.md`).
+theme. The Platform Services phase (`v0.6.0`) is the next concrete step:
+Reporting, Permissions & Identity, Notifications, a REST API, Settings,
+Audit, Licensing, and Export/Import, each a domain-facing capability
+built *on* the platform the first two releases established, not a
+redesign of it. Two further, not-yet-designed platform services (Project
+Engine, Requirements Engine) remain aspirational beyond that, each
+requiring its own classification under ADR-0013 before design begins.
+The governing constraint on all of it is `docs/releases/FOUNDATION.md`:
+every future capability is a module or platform service running inside
+the one Runtime Host this foundation established, never a second,
+parallel execution model — and every future Work Package is expected to
+build capability against that stable foundation rather than revisit it,
+absent evidence that requires otherwise (see `docs/governance/Future Work
+Package Guidelines.md`).
 
 ---
 

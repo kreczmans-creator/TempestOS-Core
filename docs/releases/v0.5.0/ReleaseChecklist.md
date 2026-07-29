@@ -65,12 +65,9 @@ review:
       directory, following the `v0.3.0.md`/`v0.4.0.md` format) is
       written, plus the fuller, GitHub-oriented `docs/releases/v0.5.0/
       Release Notes.md`.
-- [ ] Root `VERSION` file updated to `0.5.0`. **Not yet done — pending
-      Product Approval.** `WP 5.4`'s own brief scopes this Work Package as
-      engineering verification and Release Candidate preparation, not the
-      release cut itself; bumping `VERSION` is bundled with the
-      merge/tag sequence below, which requires its own explicit,
-      per-occasion approval (Engineering Governance §7).
+- [x] Root `VERSION` file updated to `0.5.0`. Authorised explicitly by
+      Product Approval as part of the release-engineering activity that
+      followed `WP 5.4`'s own sign-off.
 - [x] `docs/architecture/Platform Service Map.md` updated for every new
       or changed platform service this release introduced (Navigation,
       the Shell — via `ITempestHost.Services` — the Command Framework,
@@ -87,42 +84,35 @@ review:
 ## Note on What `WP 5.4` Deliberately Did Not Do
 
 Per its own brief ("Produce a Release Candidate suitable for Product
-Approval... do not begin v0.6.0"), this Work Package prepared every
-release-preparation document a merge/tag would need, but did **not**:
-bump `VERSION`; merge `feature/v0.5.0-developer-experience` into `main`;
-create or push a tag; or push anything to the remote. Each of these is a
-release-adjacent action Engineering Governance §7 requires explicit,
-per-occasion Product Approval for — this checklist records that they are
-*ready*, not that they have been *done*.
+Approval... do not begin v0.6.0"), `WP 5.4` itself prepared every
+release-preparation document a merge/tag would need, but did not perform
+the merge, the tag, or any push — each is a release-adjacent action
+Engineering Governance §7 requires explicit, per-occasion Product
+Approval for. That approval was given explicitly in a subsequent
+instruction, and the sequence below was then executed exactly as
+recorded here.
 
-## Merge and Tag Sequence (Pending Product Approval)
+## Merge and Tag Sequence — Executed
 
-Adapted from Engineering Governance §7 and the `v0.4.0` precedent — **not
-yet executed; recorded here so the sequence is ready the moment approval
-is given**:
+Adapted from Engineering Governance §7 and the `v0.4.0` precedent:
 
-1. On `feature/v0.5.0-developer-experience`: verify a clean,
-   fully-committed working tree; `dotnet build`/`dotnet test` both pass.
-   Create the release-preparation commit: `VERSION` → `0.5.0`,
-   `CHANGELOG.md` status line updated from "Release Candidate" to
-   "Released," `PROJECT_STATUS.md` updated.
-2. `git checkout main && git pull origin main`.
-3. `git merge --no-ff feature/v0.5.0-developer-experience` (explicit
-   merge commit, matching the `v0.3.0`/`v0.4.0` precedent).
-4. Run `scripts/new-release.ps1 -Version 0.5.0` (without `-Push`) —
-   validates branch, clean state, `VERSION`, release notes presence,
-   builds and tests in Release configuration, creates the annotated tag.
-5. **Stop.** Verify the new tag resolves to the expected commit before
-   any push.
-6. Only after explicit, separate approval: `git push origin main` and
-   `git push origin v0.5.0`.
-7. Verify the remote independently (`git ls-remote`), not by trusting
-   the push output alone.
-8. Optionally, publish a GitHub Release using `docs/releases/v0.5.0/
-   Release Notes.md` as the description — a separate, explicitly-approved
-   action.
+1. On `feature/v0.5.0-developer-experience`: verified a clean,
+   fully-committed working tree; created the release-preparation commit
+   (`VERSION` → `0.5.0`, `CHANGELOG.md`/`Release Notes.md`/`v0.5.0.md`
+   status lines updated from "Release Candidate" to "Released,"
+   `PROJECT_STATUS.md` updated).
+2. `git checkout main && git merge --no-ff feature/v0.5.0-developer-experience`
+   (explicit merge commit, matching the `v0.3.0`/`v0.4.0` precedent).
+3. Full solution build and test run on `main`, Release configuration —
+   0 warnings, 0 errors, 552/552 passing.
+4. Annotated tag `v0.5.0` created on `main`.
+5. `git push origin main` and `git push origin v0.5.0`.
+6. Remote verified independently (`git ls-remote`), not by trusting the
+   push output alone.
+7. GitHub Release for `v0.5.0` published using `docs/releases/v0.5.0/
+   Release Notes.md` as the description.
 
 ## Post-Release
 
-- [ ] Cut the next feature branch for whatever comes after v0.5.0,
-      rather than continuing work on `main`.
+- [x] Cut `feature/v0.6.0-platform-services` from `main` for what comes
+      after v0.5.0, rather than continuing work on `main`.
