@@ -40,6 +40,9 @@ namespace Tempest.Core.Tests.Samples;
 // total to eleven. (NotificationSampleHostedService, added the same Work
 // Package, is not a module - it is discovered separately, by hosted
 // service discovery, and does not affect this count.)
+//
+// WP 6.0: Tempest.Samples grew ReportingSampleModule, bringing the
+// total to twelve.
 public class ClockModuleDiscoveryTests
 {
     // ----------------------------------------------------------------
@@ -86,7 +89,7 @@ public class ClockModuleDiscoveryTests
 
         var result = service.DiscoverModules();
 
-        Assert.Equal(11, result.Count);
+        Assert.Equal(12, result.Count);
         Assert.Contains(result, d => d.Id == "tempest.samples.clock" && d.ModuleType == typeof(ClockModule));
         Assert.Contains(result, d => d.Id == "tempest.samples.clock.observer" && d.ModuleType == typeof(ClockLifecycleObserverModule));
         Assert.Contains(result, d => d.Id == "tempest.samples.navigation" && d.ModuleType == typeof(NavigationSampleModule));
@@ -98,6 +101,7 @@ public class ClockModuleDiscoveryTests
         Assert.Contains(result, d => d.Id == "tempest.samples.settings" && d.ModuleType == typeof(Tempest.Samples.SettingsSampleModule));
         Assert.Contains(result, d => d.Id == "tempest.samples.audit" && d.ModuleType == typeof(Tempest.Samples.AuditSampleModule));
         Assert.Contains(result, d => d.Id == "tempest.samples.notifications" && d.ModuleType == typeof(Tempest.Samples.NotificationSampleModule));
+        Assert.Contains(result, d => d.Id == "tempest.samples.reporting" && d.ModuleType == typeof(Tempest.Samples.ReportingSampleModule));
     }
 
     // ----------------------------------------------------------------

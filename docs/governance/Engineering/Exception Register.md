@@ -10,9 +10,9 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | Direct source inspection; `docs/architecture/Failure Behaviour.md`; `docs/academy/06 Engineering Standards/01-exception-design.md`. |
 | **Review Frequency** | Updated whenever a new exception type is introduced. |
-| **Last Reviewed** | 2026-07-29 (WP 6.2, Notification Framework) — added `NotificationException` (see Entries table, below); no other change to prior entries. |
+| **Last Reviewed** | 2026-07-29 (WP 6.0, Reporting Framework) — added `ReportingException`, `DuplicateReportDefinitionException`, `ReportDefinitionNotFoundException` (see Entries table, below); no other change to prior entries. |
 | **Related Documents** | `docs/architecture/Failure Behaviour.md`; `Architectural Dependency Register.md`. |
-| **Related ADRs** | ADR-0013, ADR-0021, ADR-0025, ADR-0038, ADR-0046. |
+| **Related ADRs** | ADR-0013, ADR-0021, ADR-0025, ADR-0038, ADR-0040, ADR-0046. |
 | **Related Academy Articles** | `docs/academy/06 Engineering Standards/01-exception-design.md`. |
 | **Coverage Status** | Complete. |
 
@@ -63,11 +63,14 @@
 | `SettingNotFoundException` | `SettingsException` | Settings | Application logic's own error (not Host-level); thrown by `GetValueAsync`/`SetValueAsync` for an unregistered key |
 | `AuditException` | `Exception` | Audit | Application logic's own error (not Host-level); base type, never thrown directly — every current Audit failure mode is already covered by an existing exception from another namespace (`ArgumentException`, `PersistenceStoreUnavailableException`, `PermissionDeniedException`) |
 | `NotificationException` | `Exception` | Notifications | Application logic's own error (not Host-level); base type, never thrown directly — every current Notification failure mode is already covered by an existing exception (`ArgumentException`, `ArgumentNullException`); see "A Note on Notifications" below |
+| `ReportingException` | `Exception` | Reporting | Application logic's own error (not Host-level); base-plus-subtype (mirroring `SettingsException`/`IdentityException`/`CommandException`), never thrown directly itself |
+| `DuplicateReportDefinitionException` | `ReportingException` | Reporting | Application logic's own error (not Host-level); thrown by `RegisterDefinition` — first registration wins |
+| `ReportDefinitionNotFoundException` | `ReportingException` | Reporting | Application logic's own error (not Host-level); thrown by `GenerateAsync` for an unregistered Id |
 
-**Total: 41 custom exception types — Verified directly against
+**Total: 44 custom exception types — Verified directly against
 `src/Tempest.Core/` (`grep -rlP "^public (sealed )?class \w+Exception\b"`
-returns exactly 41 files, matching the 41 rows in the Entries table
-above, re-derived directly by `WP 6.2` rather than incremented from the
+returns exactly 44 files, matching the 44 rows in the Entries table
+above, re-derived directly by `WP 6.0` rather than incremented from the
 prior figure — the standing practice `WP 5.4` recommended). Corrected,
 `WP 5.4`: this total previously read "30," undercounting
 by one against this register's own Entries table and Distribution table
@@ -147,6 +150,21 @@ isolation (mirroring `EventBus`, `ADR-0028`/`ADR-0046`) catches and logs
 a subscriber's own exception at `Warning`, never rethrowing it, so no
 Notification-specific exception type was needed for that path either.
 
+## A Note on Reporting
+
+`ReportingException`/`DuplicateReportDefinitionException`/
+`ReportDefinitionNotFoundException` mirror
+`SettingsException`/`DuplicateSettingDefinitionException`/
+`SettingNotFoundException`'s own base-plus-subtype shape exactly —
+`DuplicateReportDefinitionException` is thrown by `RegisterDefinition`
+(first registration wins), `ReportDefinitionNotFoundException` by
+`GenerateAsync` for an unregistered Id. Application logic's own error
+(not Host-level); a renderer's own exception, thrown from
+`RenderAsync`, propagates through `GenerateAsync` unmodified rather
+than being wrapped in a Reporting-specific type — mirroring the Command
+Framework's own dispatch failure model (`ADR-0038`), not the Event
+Bus's or Notification Dispatcher's own per-subscriber isolation.
+
 ## Distribution by Root Category
 
 | Root Category | Exception Count |
@@ -166,6 +184,7 @@ Notification-specific exception type was needed for that path either.
 | Settings | 3 |
 | Audit | 1 |
 | Notifications | 1 |
+| Reporting | 3 |
 
 ## Cross-Reference Check
 

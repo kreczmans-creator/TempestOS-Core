@@ -250,6 +250,22 @@ convention.
 - [WP 6.2 — Notification Framework Implementation](03%20Work%20Packages/WP6.2-notification-framework-implementation.md) — implemented directly against the already-approved architecture and Contract Review packages, including the genuine C# generic-constraint impossibility that prevented literal delegation to `IEventBus` (`ADR-0046`) and a genuine, disclosed engineering-review finding: an exact-static-type-dispatch defect in this Work Package's own sample consumers.
 - ADR-0046 (Notifications Are Derived From Events, Not a Replacement Pub/Sub — Dispatch Model, Severity/Category Elaboration, and Logging Level).
 
+### Reporting
+
+Implemented (`WP 6.0`, `ADR-0040`) — `Tempest.Core.Reporting`: the
+single reporting engine every future module can depend on, registered
+as an ordinary DI-public singleton with no permission-gating of its own
+(the caller enforces, mirroring Navigation/Command Framework). Additive
+`IReportTemplate<TDefinition>`/`PlainTextReportTemplate<TDefinition>`
+separate a renderer's own data-gathering from layout/rendering.
+Deliberately orthogonal to Export/Import (`WP 6.7`, not yet started) —
+no export interface was built inside Reporting. Cross-service
+integration (Identity, Settings, Audit, Notifications) is demonstrated
+entirely at the sample module's own calling layer.
+
+- [WP 6.0 — Reporting Framework Implementation](03%20Work%20Packages/WP6.0-reporting-framework-implementation.md) — implemented directly against the already-approved architecture and Contract Review packages, including the additive Template Strategy elaboration (`ADR-0040`) and a dedicated Platform Integration Demonstration assessing interactions with Identity, Settings, Persistence, Audit, and Notifications.
+- ADR-0040 (Reporting Is DI-Public and Orthogonal to Export/Import — Template Abstraction, Cross-Service Integration, and Scope Boundaries).
+
 ## Design Patterns
 
 Recurring structural patterns TempestOS actually uses, explained in terms
@@ -343,6 +359,7 @@ is complete and `v0.5.0` is released.
 - [WP 6.4 — Settings Framework Implementation](03%20Work%20Packages/WP6.4-settings-framework-implementation.md) — implemented ahead of `WP 6.0`–`WP 6.3` per `Platform Service Implementation Order.md`'s own recommendation; establishes the shared Persistence abstraction as part of its own scope.
 - [WP 6.5 — Audit Framework Implementation](03%20Work%20Packages/WP6.5-audit-framework-implementation.md) — implemented per the same recommendation; reuses `WP 6.4`'s own Persistence abstraction and validates it as sufficient, without extending it speculatively.
 - [WP 6.2 — Notification Framework Implementation](03%20Work%20Packages/WP6.2-notification-framework-implementation.md) — implemented per the same recommendation; builds on the existing Event Bus's own proven dispatch model rather than a second, parallel publish/subscribe implementation.
+- [WP 6.0 — Reporting Framework Implementation](03%20Work%20Packages/WP6.0-reporting-framework-implementation.md) — the first of `v0.6.0`'s five implemented Work Packages to match its own nominal numeric position; orthogonal to the not-yet-started `WP 6.7` (Export/Import).
 
 See `PROJECT_STATUS.md` for current status and `docs/releases/v0.6.0/
 WorkPackages.md` for the full, nine-Work-Package plan.

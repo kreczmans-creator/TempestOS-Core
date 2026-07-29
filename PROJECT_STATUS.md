@@ -1,6 +1,6 @@
 # TempestOS — Project Status
 
-**Last Updated:** 2026-07-29 (`WP 6.2` — Notification Framework, implemented)
+**Last Updated:** 2026-07-29 (`WP 6.0` — Reporting Framework, implemented)
 
 This is the primary status dashboard for TempestOS. Read this first for
 "where does the project stand right now" — for "why is it built this
@@ -42,24 +42,31 @@ Release Architecture.md` and seven companion documents) and Contract
 Review package (`Platform Service Contracts.md` and four companion
 documents) were both produced and approved ahead of any implementation.
 `WP 6.1` (Permissions & Identity), `WP 6.4` (Settings Framework), `WP
-6.5` (Audit Framework), and `WP 6.2` (Notification Framework) are now
-all implemented — each ahead of its own nominal numeric order (`WP 6.0`
-is listed first in `WorkPackages.md`), per `Platform Service
-Implementation Order.md`'s own explicit recommendation. `WP 6.5` reuses
-the Persistence abstraction `WP 6.4` established, exactly as that
-recommendation anticipated, rather than introducing a second storage
-mechanism. `WP 6.2` is built on top of the existing Event Bus's own
-proven dispatch model, exactly as `Required ADRs.md` anticipated for
-`ADR-0046`, rather than a second, parallel publish/subscribe
-implementation. See Current Work Package, below.
+6.5` (Audit Framework), `WP 6.2` (Notification Framework), and now `WP
+6.0` (Reporting Framework) are all implemented — `WP 6.0` is the first
+of these five to actually match its own nominal position in
+`WorkPackages.md`'s own numbering, the other four having each been
+implemented ahead of their own nominal numeric order, per `Platform
+Service Implementation Order.md`'s own explicit recommendation. `WP
+6.5` reuses the Persistence abstraction `WP 6.4` established, exactly
+as that recommendation anticipated, rather than introducing a second
+storage mechanism. `WP 6.2` is built on top of the existing Event Bus's
+own proven dispatch model, exactly as `Required ADRs.md` anticipated
+for `ADR-0046`, rather than a second, parallel publish/subscribe
+implementation. `WP 6.0` is explicitly orthogonal to the not-yet-started
+`WP 6.7` (Export/Import), per `ADR-0040`, and demonstrates real,
+working integration with four already-completed platform services
+(Identity, Settings, Audit, Notifications) entirely at its own sample
+module's calling layer, never inside `IReportingService` itself. See
+Current Work Package, below.
 
 ## Current Development Branch
 
 **`feature/v0.6.0-platform-services`**, cut from `main` at the `v0.5.0`
 tag. `WP 6.1` (Permissions & Identity), `WP 6.4` (Settings Framework),
-`WP 6.5` (Audit Framework), and `WP 6.2` (Notification Framework) are
-implemented on this branch; no other `v0.6.0` Work Package has begun.
-`feature/v0.5.0-developer-experience`
+`WP 6.5` (Audit Framework), `WP 6.2` (Notification Framework), and `WP
+6.0` (Reporting Framework) are implemented on this branch; no other
+`v0.6.0` Work Package has begun. `feature/v0.5.0-developer-experience`
 (`WP 5.0A` through `WP 5.4`) has been merged into `main` and is
 retained, unmerged branches are never deleted per this project's own
 convention.
@@ -72,54 +79,57 @@ before that; `v0.3.0` ("Runtime Foundation Complete") before that.
 
 ## Current Work Package
 
-**`WP 6.2` — Notification Framework — implemented.** The fourth Work
+**`WP 6.0` — Reporting Framework — implemented.** The fifth Work
 Package of the Platform Services phase (`v0.6.0`) to ship real code,
-following `WP 6.1`/`WP 6.4`/`WP 6.5`'s own precedent of implementing
-directly against the already-approved architecture and Contract Review
-packages, no separate architecture phase. Delivers
-`Tempest.Core.Notifications`
-(`INotification`/`INotificationHandler<T>`/`INotificationDispatcher`,
-exactly as approved), built on top of the existing Event Bus's own
-proven dispatch model (`ADR-0046`) rather than a second, parallel
-publish/subscribe implementation — the two types cannot literally share
-one implementation (their own generic constraints,
-`where TNotification : INotification` vs. `where TEvent : IEvent`, rule
-out delegation), so `NotificationDispatcher` mirrors `EventBus`'s
-internal shape instead. Additive `IPlatformNotification`/
-`PlatformNotification`/`NotificationSeverity` (`Information`, `Success`,
-`Warning`, `Error`) fill the "severity"/"category" gap this Work
-Package's own brief named but the original interface draft never gave
-members, without changing `INotification` itself. An isolated
-subscriber failure is logged at `Warning`, not `Error` — a deliberate,
-disclosed departure from the Event Bus's own convention, per
-`Platform Service Contracts.md`'s own Logging Requirements. Notifications
-are transient only this release — the approved contract's own
-Persistence Requirements state "None." "Background notifications" is
-proven with `NotificationSampleHostedService`, the codebase's first
-real, non-infrastructure `IHostedService` — disclosed as such, not
-claimed as `AT-07`'s own retirement (that remains assigned to `WP 6.3`).
-One new ADR (`ADR-0046`), `NotificationSampleModule` (the eleventh
-production sample module), 50 new tests (823 total, 0 failures), 0
-build warnings, both Debug and Release. This Work Package's own
-integration-test-writing phase found and fixed a genuine implementation
-defect in its own sample consumers: `INotificationDispatcher` dispatches
-by exact static generic type (mirroring the Event Bus), so publishing a
-notification typed as the concrete `PlatformNotification` never reaches
-a subscriber that subscribed against `IPlatformNotification` — fixed at
-every call site and documented on `IPlatformNotification`'s own remarks
-as calling guidance for every future consumer. See its own
-retrospective: `docs/academy/03 Work Packages/
-WP6.2-notification-framework-implementation.md`.
+following `WP 6.1`/`WP 6.4`/`WP 6.5`/`WP 6.2`'s own precedent of
+implementing directly against the already-approved architecture and
+Contract Review packages, no separate architecture phase — the first of
+the five to match its own nominal numeric position. Delivers
+`Tempest.Core.Reporting`
+(`IReportDefinition`/`IReportRenderer<TDefinition>`/`IReportingService`,
+exactly as approved), registered as an ordinary DI-public singleton
+with no dependency beyond Dependency Injection itself, consistent with
+`Platform Service Implementation Order.md`'s own "no hard proposed-
+service dependency" observation. `GenerateAsync` does not itself check
+permissions — the enforcement point is the caller, mirroring Navigation
+and the Command Framework (`ADR-0032`, `ADR-0037`). Additive
+`IReportTemplate<TDefinition>`/`PlainTextReportTemplate<TDefinition>`
+fill the "Template abstraction" gap this Work Package's own brief named
+but the original interface draft never gave members, cleanly separating
+a renderer's own data-gathering from a template's own layout/rendering,
+without changing any approved interface. "Export abstraction" is
+deliberately **not** built — `ADR-0040` confirms Reporting's own
+orthogonality to `WP 6.7` (Export/Import, not yet started); a dedicated
+export interface inside Reporting would duplicate that Work Package's
+own future scope. Cross-service integration (Identity, Settings, Audit,
+Notifications) is demonstrated entirely at the sample-module calling
+layer — `ReportingSampleModule`'s own command handler checks a
+permission, generates the report, records an audit entry, and publishes
+a completion notice, none of which `ReportingService` itself
+references; Persistence is deliberately not consumed, matching the
+approved contract's own "Persistence Requirements: None." The published
+notification carries only a fixed, non-identifying success message —
+never report content — per Notifications' own Security Considerations
+for exactly this scenario. One new ADR (`ADR-0040`, filling the last
+remaining reserved-ADR-number gap), `ReportingSampleModule` (the
+twelfth production sample module), 39 new tests (862 total, 0
+failures), 0 build warnings, both Debug and Release, stable across
+repeated runs in both configurations. See its own retrospective:
+`docs/academy/03 Work Packages/
+WP6.0-reporting-framework-implementation.md`, and its own dedicated
+`WP6.0 Platform Integration Demonstration.md` for the full,
+per-service account of every platform-service interaction assessed.
 
 ## Next Planned Work Package
 
-**`WP 6.0` — Reporting Framework**, next in `WorkPackages.md`'s own
-nominal numeric order — see `docs/releases/v0.6.0/WorkPackages.md` for
-the full, nine-Work-Package plan (`WP 6.0` through `WP 6.8`). Per this
-Work Package's own explicit closing instruction, implementation stops
-here pending engineering approval — no further Work Package is to begin
-regardless of `Platform Service Implementation Order.md`'s own
-recommended sequencing.
+Per this Work Package's own explicit closing instruction, implementation
+stops here pending engineering approval — no further Work Package is to
+begin regardless of `Platform Service Implementation Order.md`'s own
+recommended sequencing. `WP 6.1`, `WP 6.4`, `WP 6.5`, `WP 6.2`, and `WP
+6.0` are all now complete; `WP 6.3` (REST API), `WP 6.6` (Licensing),
+`WP 6.7` (Export/Import), and `WP 6.8` (Platform Services Integration
+Review) remain — see `docs/releases/v0.6.0/WorkPackages.md` for the
+full, nine-Work-Package plan.
 
 ## Foundation Status
 
@@ -181,19 +191,19 @@ Experience phase is now complete.
 
 | Metric | Value |
 |---|---|
-| Automated tests | 823 (0 failures) — **+50, `WP 6.2`**: unit, failure-injection, concurrency, Host registration-validation, and sample-module integration tests for Notifications, including proving "Background notifications" end-to-end through the real Host |
-| ADRs | 45 (`ADR-0001`–`ADR-0039`, `ADR-0041`–`ADR-0046`), all Accepted — **+1, `WP 6.2`**: `ADR-0046` (Notifications — derived from Events not a replacement pub/sub, dispatch model, severity/category elaboration, logging level). `ADR-0040` and `ADR-0047`–`ADR-0051` remain reserved, not yet authored, per `docs/releases/v0.6.0/Required ADRs.md` |
-| Rejected Designs | 45 (`RD-0001`–`RD-0045`) — unchanged by `WP 6.2` (no rejected design produced; alternatives-considered sections recorded within `ADR-0046` itself) |
-| Academy articles | 81 (see `docs/governance/Documentation/Academy Register.md`) — **+1, `WP 6.2`**: `WP6.2-notification-framework-implementation.md` |
+| Automated tests | 862 (0 failures) — **+39, `WP 6.0`**: unit, failure-injection, concurrency, Host registration-validation, and sample-module integration tests for Reporting, including a real permission-gated/Audit-recording/Notifications-publishing cross-service round trip |
+| ADRs | 46 (`ADR-0001`–`ADR-0046`, no gaps remaining), all Accepted — **+1, `WP 6.0`**: `ADR-0040` (Reporting — DI-public, orthogonal to Export/Import, template abstraction, cross-service integration, scope boundaries) — the last remaining reserved-ADR-number gap is now filled |
+| Rejected Designs | 45 (`RD-0001`–`RD-0045`) — unchanged by `WP 6.0` (no rejected design produced; alternatives-considered sections recorded within `ADR-0040` itself) |
+| Academy articles | 82 (see `docs/governance/Documentation/Academy Register.md`) — **+1, `WP 6.0`**: `WP6.0-reporting-framework-implementation.md` |
 | Governance registers | 27 (32 governance documents total), plus 4 standing security documents under `docs/security/` (not governance registers themselves, indexed from `Governance Index.md`'s Security section) |
-| Architecture documents | 20 under `docs/architecture/` (22 including the two release-scoped documents) — unchanged by `WP 6.2` (Platform Service Map.md updated in place, not a new document) |
-| Platform services | 22 catalogued — 19 Implemented, 2 not implemented as platform services, 1 developer-convenience layer — **+1, `WP 6.2`**: Notifications |
-| Modules (production) | 11 (`ClockModule`, `ClockLifecycleObserverModule`, `NavigationSampleModule`, `SecondaryNavigationSampleModule`, `DuplicateNavigationSampleModule`, `CommandSampleModule`, `DiagnosticsSampleModule`, `IdentitySampleModule`, `SettingsSampleModule`, `AuditSampleModule`, `NotificationSampleModule`) |
-| Hosted services (production) | 1 — **`NotificationSampleHostedService`, `WP 6.2`**: the codebase's first real, non-infrastructure `IHostedService`, built to prove "Background notifications" end-to-end; not a claim that `AT-07` is retired (assigned to `WP 6.3`) |
+| Architecture documents | 20 under `docs/architecture/` (22 including the two release-scoped documents) — unchanged by `WP 6.0` (Platform Service Map.md updated in place, not a new document) |
+| Platform services | 23 catalogued — 20 Implemented, 2 not implemented as platform services, 1 developer-convenience layer — **+1, `WP 6.0`**: Reporting |
+| Modules (production) | 12 (`ClockModule`, `ClockLifecycleObserverModule`, `NavigationSampleModule`, `SecondaryNavigationSampleModule`, `DuplicateNavigationSampleModule`, `CommandSampleModule`, `DiagnosticsSampleModule`, `IdentitySampleModule`, `SettingsSampleModule`, `AuditSampleModule`, `NotificationSampleModule`, `ReportingSampleModule`) |
+| Hosted services (production) | 1 — unchanged by `WP 6.0`; `NotificationSampleHostedService` (`WP 6.2`) remains the codebase's only real, non-infrastructure `IHostedService` |
 | Plugins (production) | 0 — infrastructure fully implemented and tested; `src/Plugins/` empty by deliberate scope decision |
-| Custom exception types | 41 — **+1, `WP 6.2`**: `NotificationException` (base only — every current Notification failure mode is already covered by an existing exception type) |
-| Technical Debt Register items | 12 tracked, 8 disclosed trade-offs — **`WP 6.2`**: no new tracked-debt item; two trade-off annotations (`AT-03`, `AT-07`) and one new trade-off (`AT-08`, no persistent notification model this release) |
-| Commits (this release, `v0.5.0` → `v0.6.0`, so far) | 7 — re-derived directly (`git log fd46905^..HEAD`), correcting a prior undercount ("5") that had bundled the Architecture and Contract Review packages into one "branch/documentation preparation" item when they are two distinct commits: branch/documentation preparation, Architecture Package, Contract Review Package, `WP 6.1` implementation, `WP 6.4` implementation, `WP 6.5` implementation, `WP 6.2` implementation (this one) |
+| Custom exception types | 44 — **+3, `WP 6.0`**: `ReportingException` (base-plus-subtype, mirroring `SettingsException`), `DuplicateReportDefinitionException`, `ReportDefinitionNotFoundException` |
+| Technical Debt Register items | 12 tracked, 9 disclosed trade-offs — **+1, `WP 6.0`**: `AT-09` (no delivery-channel abstraction or durable report history for Reporting this release, matching the approved contract's own Future Extension Points) |
+| Commits (this release, `v0.5.0` → `v0.6.0`, so far) | 8 — branch/documentation preparation, Architecture Package, Contract Review Package, `WP 6.1` implementation, `WP 6.4` implementation, `WP 6.5` implementation, `WP 6.2` implementation, `WP 6.0` implementation (this one) |
 | Contributors | 1 (repository owner; all commits co-authored by Claude) |
 
 *(This table is generated from `docs/governance/Quality/Repository Metrics
@@ -205,26 +215,18 @@ three together.)*
 - **Build:** Clean — 0 warnings, 0 errors (`dotnet build
   tests/Tempest.Core.Tests/Tempest.Core.Tests.csproj`, both Debug and
   Release configurations, from a fully-removed `bin`/`obj` tree —
-  verified directly by `WP 6.2`).
-- **Tests:** 823/823 passing (+50, `WP 6.2`), verified in both Debug and
+  verified directly by `WP 6.0`).
+- **Tests:** 862/862 passing (+39, `WP 6.0`), verified in both Debug and
   Release configurations from a clean rebuild, and re-run three
-  consecutive times in Release to confirm stability. This Work
-  Package's own test-writing phase found and fixed a genuine
-  implementation defect in its own sample consumers
-  (`NotificationSampleHostedService`, `PublishSampleNotificationCommandHandler`):
-  `INotificationDispatcher` dispatches by exact static generic type
-  (mirroring the Event Bus), so publishing a notification typed as the
-  concrete `PlatformNotification` never reached a subscriber that
-  subscribed against `IPlatformNotification` — no notification was ever
-  observed until the integration tests caught it. Fixed at every
-  publish call site; see `ADR-0046`. One unrelated, pre-existing,
-  non-reproducible flake (`CompositeLogSinkTests.
-  Write_AllSinksThrow_ExceptionNeverPropagatesToTheCaller`, an
-  order-dependent `Console.Out` redirection issue in an unrelated
-  Logging test area) surfaced once during this Work Package's own
-  testing and did not recur across several repeated full-suite runs —
-  noted for disclosure, not chased further, since it is outside this
-  Work Package's own scope and does not touch Notifications.
+  consecutive times in each configuration to confirm stability. Unlike
+  `WP 6.2`, this Work Package's own cross-service integration tests
+  (permission gate, Audit recording, Notifications publish, Settings
+  read) passed on first attempt — no repeat of the exact-static-type-
+  dispatch class of defect, since Reporting dispatches by string Id, not
+  generic type, and every cross-service call is made directly by the
+  sample module's own command handler rather than through a second
+  layer of type-parameterised dispatch. No flake recurred across any of
+  the six repeated full-suite runs.
 - **Known regressions:** None.
 - **Working tree:** Clean at every Work Package boundary — see
   `docs/governance/Quality/Validation Register.md`.
@@ -407,19 +409,41 @@ of `Namespace Register.md`'s per-namespace file counts, directly via
 row itself had drifted stale since `WP 5.2` — corrected in the same
 commit as the finding.
 
+**`WP 6.0` (Reporting Framework)** — implemented directly against the
+same, unrevised architecture and Contract Review packages, and the
+first of `v0.6.0`'s five implemented Work Packages to match its own
+nominal numeric position. `docs/architecture/Platform Service Map.md`
+gained a new Reporting entry, following the identical documentation
+shape every prior new platform service's own entry has used. `ADR-0040`
+formally settles the Reporting-vs-Export/Import orthogonality
+`Required ADRs.md` anticipated — the last remaining reserved-ADR-number
+gap (`ADR-0040`) is now filled, so `docs/adr/` runs `ADR-0001` through
+`ADR-0046` with no gaps at all — plus two genuine implementation-phase
+decisions the Contract Review left open: the additive
+`IReportTemplate<TDefinition>`/`PlainTextReportTemplate<TDefinition>`
+elaboration (filling the brief's own "Template abstraction" deliverable
+without touching any approved interface), and a deliberate decision
+*not* to build an "Export abstraction" despite the brief naming it as
+scope — doing so would duplicate `WP 6.7`'s own future scope and
+contradict this very ADR's own orthogonality decision.
+`docs/governance/Quality/Technical Debt Register.md` gained one new,
+disclosed trade-off (`AT-09`, no delivery-channel abstraction or
+durable report history this release) — matching the approved contract's
+own Future Extension Points exactly, not a newly-discovered gap. This
+Work Package's own dedicated `WP6.0 Platform Integration
+Demonstration.md` records, for each of Identity/Settings/Persistence/
+Audit/Notifications, whether it was used, why, and what the coupling
+rationale is — Persistence is the one deliberately not consumed,
+matching the approved contract's own "Persistence Requirements: None."
+
 ## Academy Status
 
-81 articles across 7 categories (Introduction, Engineering Principles,
+82 articles across 7 categories (Introduction, Engineering Principles,
 Runtime Architecture, Work Package retrospectives, Design Patterns, Case
 Studies, Engineering Standards), plus `Academy Index.md`, `Academy
 Masterclass Roadmap.md`, `Academy Audit Report.md`, and `Contributor
 Learning Path.md` — re-derived directly (`find docs/academy -name
-"*.md"`) by `WP 6.2` rather than incremented from the prior figure,
-which found this section's own opening count had drifted stale at "77"
-since before `WP 6.1`, three Work Packages (`WP 6.1`, `WP 6.4`, `WP 6.5`)
-each having added one retrospective without this line being updated to
-match — corrected here as a disclosed governance-documentation finding,
-not a new article count. Every completed Work Package has a matching
+"*.md"`) by `WP 6.0`, consistent with `WP 6.2`'s own prior pass. Every completed Work Package has a matching
 retrospective, including `WP 5.0A` through `WP 5.4`. Maintenance
 obligation (Engineering Governance §6) verified honoured by two
 independent audits (`WP 4.4F`, and the Academy Register built during
@@ -477,7 +501,16 @@ severity/category elaboration, the deliberate `Warning`-vs-`Error`
 logging-level departure, and — as a genuine, disclosed engineering-review
 finding, not a planned lesson — the exact-static-type-dispatch defect
 found against this Work Package's own sample consumers while writing
-their integration tests.
+their integration tests. `WP 6.0` added
+`WP6.0-reporting-framework-implementation.md`, teaching the
+Reporting-vs-Export/Import orthogonality decision, the additive
+Template Strategy elaboration (data/layout/rendering separation without
+touching any approved interface), the deliberate choice not to build an
+"Export abstraction" despite the brief naming it as scope, and the
+cross-service integration pattern (permission check, Audit record,
+Notifications publish, all at the calling layer, never inside
+`IReportingService` itself) as a concrete precedent any future
+Reporting consumer can copy directly.
 
 ## Governance Status
 
@@ -612,6 +645,22 @@ drifted stale at "77 articles" since before `WP 6.1`, for the identical
 reason. All three are corrected in this same commit, backed by direct
 repository counts, not incremented prior figures.
 
+**`WP 6.0` (Reporting Framework)** added `ADR-0040` (Reporting is
+DI-public and orthogonal to Export/Import — template abstraction,
+cross-service integration, scope boundaries) — Accepted, formally
+authoring its own `Required ADRs.md` catalogue entry and filling the
+last remaining reserved-ADR-number gap: `docs/adr/` now runs `ADR-0001`
+through `ADR-0046` with no gaps. `docs/governance/Quality/Technical
+Debt Register.md` gained one new, disclosed trade-off (`AT-09`) — no
+delivery-channel abstraction or durable report history this release,
+matching the approved contract's own Future Extension Points, not a
+newly-discovered gap. No existing Technical Debt item required
+annotation — Reporting introduces no instance of any previously-tracked
+gap (`TD-01` through `TD-12`, `AT-01` through `AT-08`). This Work
+Package's own repository review re-derived every touched register
+directly and found no further stale figures beyond what `WP 6.2`'s own
+review had already corrected.
+
 ## Known Unknowns
 
 Recorded honestly, not guessed at — full detail in `docs/governance/
@@ -634,17 +683,17 @@ Governance Audit Report.md`:
 
 1. **Await engineering approval before any further `v0.6.0`
    implementation begins.** `WP 6.1` (Permissions & Identity), `WP 6.4`
-   (Settings Framework), `WP 6.5` (Audit Framework), and `WP 6.2`
-   (Notification Framework) are all complete on
-   `feature/v0.6.0-platform-services`; per `WP 6.2`'s own explicit
-   closing instruction, no further Work Package is to begin next,
-   regardless of `Platform Service Implementation Order.md`'s own
+   (Settings Framework), `WP 6.5` (Audit Framework), `WP 6.2`
+   (Notification Framework), and `WP 6.0` (Reporting Framework) are all
+   complete on `feature/v0.6.0-platform-services`; per `WP 6.0`'s own
+   explicit closing instruction, no further Work Package is to begin
+   next, regardless of `Platform Service Implementation Order.md`'s own
    recommended sequencing.
-2. Once approved, the next Work Package is either `WP 6.0` (Reporting
-   Framework, next in `WorkPackages.md`'s own nominal numeric order) or
-   whichever Work Package engineering review directs — see
-   `docs/releases/v0.6.0/WorkPackages.md` for the full, nine-Work-Package
-   plan.
+2. Once approved, the next Work Package is whichever engineering review
+   directs among the four remaining — `WP 6.3` (REST API), `WP 6.6`
+   (Licensing), `WP 6.7` (Export/Import), or `WP 6.8` (Platform Services
+   Integration Review) — see `docs/releases/v0.6.0/WorkPackages.md` for
+   the full, nine-Work-Package plan.
 3. No merge to `main` is due until the Platform Services phase's Work
    Packages are complete (see `docs/releases/v0.6.0/WorkPackages.md`).
 
@@ -671,7 +720,7 @@ phase is complete and released as `v0.5.0`, `WP 5.0A` through `WP 5.4`:
 Per `docs/releases/v0.6.0/WorkPackages.md`, the Platform Services phase
 is under way:
 
-- `WP 6.0` — Reporting Framework. Not started.
+- `WP 6.0` — Reporting Framework. **Complete.**
 - `WP 6.1` — Permissions & Identity. **Complete.**
 - `WP 6.2` — Notification Framework. **Complete.**
 - `WP 6.3` — REST API. Not started; blocked on `WP 6.1`, now satisfied.

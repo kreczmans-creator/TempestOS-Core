@@ -10,9 +10,9 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | Every retrospective under `docs/academy/03 Work Packages/`; `docs/releases/v0.4.0/Platform Services Architecture Review.md`. |
 | **Review Frequency** | Updated whenever a Work Package resolves, worsens, or discloses a new debt item — every retrospective's own "Architectural Debt Assessment" section is the trigger. |
-| **Last Reviewed** | 2026-07-29 (WP 6.2, Notification Framework) — AT-07 annotated (a real, non-infrastructure hosted service now exists, `NotificationSampleHostedService`, but is not claimed as its retirement — that remains assigned to `WP 6.3`); AT-03 annotated (the same exact-type dispatch limitation now also applies to `NotificationDispatcher`); AT-08 added (no persistent/durable notification model this release). |
+| **Last Reviewed** | 2026-07-29 (WP 6.0, Reporting Framework) — AT-09 added (no delivery-channel abstraction or durable report history this release, matching the approved contract's own Future Extension Points). |
 | **Related Documents** | `docs/releases/v0.4.0/Risks.md`; `Validation Register.md`; `Hosted Services Register.md`; `Plugin Register.md`; `docs/security/Platform Security Review v0.5.0.md`; `docs/security/Security Roadmap.md`; `docs/architecture/Command Framework Architecture.md`; `docs/architecture/Diagnostics Architecture.md`. |
-| **Related ADRs** | ADR-0009, ADR-0021, ADR-0024, ADR-0025, ADR-0026, ADR-0028, ADR-0029, ADR-0032, ADR-0037, ADR-0039, ADR-0046. |
+| **Related ADRs** | ADR-0009, ADR-0021, ADR-0024, ADR-0025, ADR-0026, ADR-0028, ADR-0029, ADR-0032, ADR-0037, ADR-0038, ADR-0039, ADR-0040, ADR-0046. |
 | **Related Academy Articles** | Every Work Package retrospective's own "Trade-offs" and "Architectural Debt Assessment" sections. |
 | **Coverage Status** | Complete as of this baseline — every debt item disclosed by any retrospective through `WP 4.5`'s implementation is represented below, either as still Open or Resolved with the resolving Work Package named. |
 
@@ -58,8 +58,9 @@ misrepresent deliberate, reasoned scope decisions as unaddressed problems.
 | AT-06 | `src/Plugins/` remains empty — no real plugin built yet | WP 4.2 (by design) | The first Work Package that ships a real plugin (see `Plugin Register.md`) |
 | AT-07 | Zero real hosted services exist beyond the infrastructure | WP 4.5 (by explicit scope decision) | The first Work Package that ships a real hosted service (see `Hosted Services Register.md`) — **`WP 6.2` note:** `NotificationSampleHostedService` is now a real, non-infrastructure `IHostedService`, built to prove the Notification Framework's own "Background notifications" deliverable end-to-end. This Work Package does **not** claim AT-07's own retirement — its revisit trigger was assigned in advance to `WP 6.3` (REST API, see `Required ADRs.md`'s own `ADR-0047` entry), and this Work Package's own brief did not authorise reassigning it. Disclosed here rather than silently claimed; see this Work Package's own Platform Impact Assessment. |
 | AT-08 | No persistent/durable notification model, no history or inbox capability — a notification is not retained after dispatch | WP 6.2 (by explicit, approved-contract scope decision — `Platform Service Contracts.md`'s own Persistence Requirements state "None" for Notifications) | A real, demonstrated need for notification history (a UI Shell's own notification centre, an audit-adjacent record of what was shown to a user) |
+| AT-09 | No delivery-channel abstraction (email, webhook, push) and no durable report history for Reporting — a generated report is handed back to its caller and is not retained or delivered anywhere by the service itself | WP 6.0 (by explicit, approved-contract scope decision — `Platform Service Contracts.md`'s own Future Extension Points name both explicitly as future, not current, scope) | A real, demonstrated need for one or both (a future engineering module or `WP 6.3`'s own REST API naming a concrete delivery or history requirement) |
 
-**Total: 8 disclosed trade-offs, none requiring action absent a real,
+**Total: 9 disclosed trade-offs, none requiring action absent a real,
 demonstrated need.**
 
 ## Cross-Reference Check

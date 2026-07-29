@@ -38,6 +38,7 @@ of date is worse than no map at all, because it will be trusted.
 | Settings | **Implemented — WP 6.4** (`ISettingDefinition`/`SettingDefinition`, `ISettingsProvider`/`SettingsProvider`, `ISettingsChangedEvent`/`SettingsChangedEvent`, `Tempest.Core.Settings`) — DI-public, distinct from Configuration per ADR-0042; in-memory cache over Persistence, invalidated on write | Dependency Injection, Persistence, Event Bus | `SettingsSampleModule` (real contributor); a plausible future `WP 6.3` (REST API) settings-management surface |
 | Audit | **Implemented — WP 6.5** (`IAuditRecord`/`AuditRecord`, `IAuditRecorder`/`AuditRecorder`, `IAuditQuery`/`AuditQuery`, `AuditQueryCriteria`, `Tempest.Core.Audit`) — durable, queryable, append-only history distinct from Logging/Diagnostics per ADR-0045; reuses Persistence, never a second storage mechanism; `IAuditQuery` permission-gated via `ADR-0044` | Dependency Injection, Persistence, Identity & Permissions | `AuditSampleModule` (real contributor); a plausible future consumer for Reporting, the REST API, Licensing, Export/Import, and any engineering module |
 | Notifications | **Implemented — WP 6.2** (`INotification`, `INotificationHandler<T>`, `INotificationDispatcher`/`NotificationDispatcher`, `Tempest.Core.Notifications`) — derived from, not a replacement for, the Event Bus per ADR-0046; transient only, no persistence this release; additive `IPlatformNotification`/`PlatformNotification`/`NotificationSeverity` general-purpose shape | Dependency Injection | `NotificationSampleModule` (real contributor); `NotificationSampleHostedService` (the platform's first real, non-infrastructure hosted service); a plausible future consumer for Reporting, the REST API, Export/Import, Licensing, any engineering module, and a future UI Shell |
+| Reporting | **Implemented — WP 6.0** (`IReportDefinition`, `IReportRenderer<T>`, `IReportingService`/`ReportingService`, `Tempest.Core.Reporting`) — orthogonal to Export/Import per ADR-0040; no permission-gating of its own (caller enforces, mirroring Navigation/Command Framework); additive `IReportTemplate<T>`/`PlainTextReportTemplate<T>` general-purpose template shape | Dependency Injection | `ReportingSampleModule` (real contributor, also demonstrating Identity/Settings/Audit/Notifications integration at the calling layer); a plausible future consumer for the REST API and any engineering module |
 | Plugin Manifest | **Implemented — WP 4.2** (`Tempest.Core.Plugins`) | Host (Phases 3.1/3.2, ADR-0026 — a pre-Discovery step) | Module Discovery (unchanged), any real plugin |
 | Project Engine | Planned | Undetermined | Undetermined |
 | Requirements Engine | Planned | Undetermined | Undetermined |
@@ -1040,6 +1041,79 @@ Framework Implementation*); `docs/releases/v0.6.0/Release
 Architecture.md` and companions; `Platform Service Contracts.md` and
 companions; `docs/governance/Quality/Technical Debt Register.md`
 (`AT-07`).
+
+---
+
+## Reporting *(implemented — WP 6.0, ADR-0040)*
+
+**Responsibility.** Produces structured, formatted output from
+platform or module data via a registered definition/renderer pair.
+Registers report definitions and their renderers; dispatches a render
+request by definition Id; enumerates registered definitions. Does not
+persist generated output, does not schedule recurring generation, and
+does not itself provide a delivery mechanism — a generated report
+reaching a user is Notifications' or the REST API's own concern, not
+Reporting's (`ADR-0040`).
+
+**Key types.** `IReportDefinition`, `IReportRenderer<TDefinition>`,
+`IReportingService`/`ReportingService`, `ReportRequest`, `ReportResult`,
+`ReportingException` and two subtypes
+(`DuplicateReportDefinitionException`, `ReportDefinitionNotFoundException`)
+— all `Tempest.Core.Reporting`, implemented with zero signature
+deviation from `Public Interface Catalogue.md`.
+`IReportTemplate<TDefinition>`/`PlainTextReportTemplate<TDefinition>`
+are additive elaborations this Work Package's own implementation phase
+introduced — "Template abstraction" was named in this Work Package's
+own brief but never drafted as an interface member; entirely optional,
+`IReportingService` has no awareness of templates at all.
+
+**Dependencies.** Dependency Injection only — confirmed directly, and
+consistent with `Platform Service Implementation Order.md`'s own
+observation that "Reporting has no hard proposed-service dependency."
+
+**Consumers.** `ReportingSampleModule` (real contributor and consumer,
+the twelfth production sample module) — registers
+`SampleSummaryReportDefinition` and its own renderer, then registers a
+command (`GenerateSampleReportCommand`) whose handler checks a
+permission (Identity), generates the report (Reporting), records the
+action (Audit), and publishes a completion notice (Notifications) — see
+this Work Package's own Platform Integration Demonstration for the
+complete, per-service account. Named as a plausible future consumer for
+the REST API and any engineering module — none yet implemented.
+
+**Lifecycle.** Ordinary DI-public, container-constructed singleton,
+registered in `TempestHost`'s existing Platform Services Registered
+block (Phase 6), immediately after the Event Bus and before
+Notifications — matching `Service Registration Matrix.md`'s own
+recommended order. No new Host Lifecycle phase.
+
+**Security.** `GenerateAsync` does not itself check permissions — the
+enforcement point is the caller, mirroring how Navigation and the
+Command Framework themselves impose no authorization internally
+(`ADR-0032`, `ADR-0037`). `ReportingSampleModule`'s own command handler
+is that enforcement point, and its own published notification carries
+only a fixed, non-identifying success message — never report content —
+per Notifications' own Security Considerations for exactly this
+scenario.
+
+**A genuine implementation-phase decision, disclosed rather than
+absorbed silently:** "Export abstraction" was named in this Work
+Package's own brief but is explicitly **not** built — a dedicated
+export interface inside `Tempest.Core.Reporting` would duplicate `WP
+6.7` (Export/Import)'s own future scope and contradict this very ADR's
+own orthogonality decision. `ReportResult`'s own `ContentType`/`Content`
+shape is Reporting's own output mechanism, explicitly not guaranteed
+round-trip-safe or re-importable. See `ADR-0040`.
+
+**ADR references.** ADR-0038 (Command dispatch failure model, mirrored
+by `GenerateAsync`'s own renderer-failure propagation); ADR-0040
+(*Reporting Is DI-Public and Orthogonal to Export/Import — Template
+Abstraction, Cross-Service Integration, and Scope Boundaries*).
+
+**Academy references.** `WP 6.0` retrospective (*Reporting Framework
+Implementation*); `docs/releases/v0.6.0/Release Architecture.md` and
+companions; `Platform Service Contracts.md` and companions;
+`docs/governance/Quality/Technical Debt Register.md` (`AT-09`).
 
 ---
 

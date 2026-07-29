@@ -10,7 +10,7 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | `docs/architecture/Platform Service Map.md` — the full responsibility/dependency/consumer/lifecycle detail for each service lives there; this register does not repeat it, only indexes it against governance status. |
 | **Review Frequency** | Updated whenever `Platform Service Map.md` itself is updated (Engineering Governance §6) — i.e., whenever a service is added, removed, or changes responsibility/dependencies/consumers. |
-| **Last Reviewed** | 2026-07-29 (WP 6.2, Notification Framework). |
+| **Last Reviewed** | 2026-07-29 (WP 6.0, Reporting Framework). |
 | **Related Documents** | `docs/architecture/Platform Service Map.md`; `Architecture Document Register.md`; `Module Register.md`; `Hosted Services Register.md`; `Event Catalogue.md`. |
 | **Related ADRs** | ADR-0005 through ADR-0046 — nearly every ADR concerns one of these services directly or the boundary between them. |
 | **Related Academy Articles** | `docs/academy/02 Runtime Architecture/` (The Module Pipeline, The Startup Sequence, Working with the TempestOS Host, Platform Layering, Plugin Architecture, Failure Isolation Across TempestOS). |
@@ -42,10 +42,11 @@
 | Settings | Implemented | WP 6.4 (design and implementation, no separate architecture phase) | ADR-0041, ADR-0042 |
 | Audit | Implemented | WP 6.5 (design and implementation, no separate architecture phase) | ADR-0041, ADR-0044, ADR-0045 |
 | Notifications | Implemented | WP 6.2 (design and implementation, no separate architecture phase) | ADR-0028, ADR-0046 |
+| Reporting | Implemented | WP 6.0 (design and implementation, no separate architecture phase) | ADR-0038, ADR-0040 |
 | Project Engine | Not implemented as a platform service — bootstrap-era code (`Tempest.Core.Projects`, `ProjectService`, `JsonProjectRepository`) predates and is independent of the module pipeline | Planned, no Work Package assigned | None |
 | Requirements Engine | Not implemented — no code exists | Planned, no Work Package assigned | None |
 
-**Total: 22 entries — 19 Implemented, 2 planned with no code (Project
+**Total: 23 entries — 20 Implemented, 2 planned with no code (Project
 Engine, Requirements Engine), 1 developer-convenience layer (Module SDK).**
 
 ## Verification of "Implemented" Status
@@ -93,6 +94,19 @@ elaboration, registered as an ordinary DI-public singleton in
 after `IEventBus`, mirroring `ADR-0046`'s own "built on the Event Bus's
 own proven design" decision), and exercised by 54 tests (`Test
 Register.md`).
+Reporting is marked Implemented as of `WP 6.0`:
+`src/Tempest.Core/Reporting/` contains `IReportDefinition`,
+`IReportRenderer<TDefinition>`, `IReportingService`/`ReportingService`,
+`ReportingException` and two subtypes, and the additive
+`IReportTemplate<TDefinition>`/`PlainTextReportTemplate<TDefinition>`
+elaboration, registered as an ordinary DI-public singleton in
+`TempestHost`'s existing Platform Services Registered phase
+(immediately after `IEventBus` and before Notifications, matching
+`Service Registration Matrix.md`'s own recommended order), and
+exercised by 39 tests (`Test Register.md`). Depends on nothing but
+Dependency Injection itself — confirmed directly, consistent with
+`Platform Service Implementation Order.md`'s own "no hard proposed-
+service dependency" observation.
 
 ## Cross-Reference Check
 
