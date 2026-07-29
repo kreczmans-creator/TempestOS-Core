@@ -38,10 +38,12 @@
 | Navigation | Implemented | WP 5.0A (design), WP 5.0B (implementation) | ADR-0022, ADR-0031, ADR-0032 |
 | Diagnostics | Implemented | WP 5.2 (design and implementation) | ADR-0009, ADR-0017, ADR-0034, ADR-0039 |
 | Identity & Permissions | Implemented | WP 6.1 (design and implementation, no separate architecture phase per the release-wide `v0.6.0` architecture/contract review packages) | ADR-0043, ADR-0044 |
+| Persistence | Implemented | WP 6.4 (established as part of its own scope; design and implementation, no separate architecture phase) | ADR-0041 |
+| Settings | Implemented | WP 6.4 (design and implementation, no separate architecture phase) | ADR-0041, ADR-0042 |
 | Project Engine | Not implemented as a platform service — bootstrap-era code (`Tempest.Core.Projects`, `ProjectService`, `JsonProjectRepository`) predates and is independent of the module pipeline | Planned, no Work Package assigned | None |
 | Requirements Engine | Not implemented — no code exists | Planned, no Work Package assigned | None |
 
-**Total: 18 entries — 15 Implemented, 2 planned with no code (Project
+**Total: 20 entries — 17 Implemented, 2 planned with no code (Project
 Engine, Requirements Engine), 1 developer-convenience layer (Module SDK).**
 
 ## Verification of "Implemented" Status

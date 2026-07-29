@@ -34,6 +34,8 @@ of date is worse than no map at all, because it will be trusted.
 | Navigation | **Implemented — WP 5.0A (design), WP 5.0B (implementation)** (`INavigationProvider`/`NavigationService`, `Tempest.Core.Navigation`) — model, ownership, and rendering boundary per ADR-0031/ADR-0032 | Dependency Injection, Event Bus | Any module contributing a navigation item; `Tempest.App` (rendering, not yet built) |
 | Diagnostics | **Implemented — WP 5.2** (`IDiagnosticsProvider`/`DiagnosticsProvider`, `Tempest.Core.Diagnostics`) — read-only projection over Host/module/hosted-service lifecycle state per ADR-0039 | Dependency Injection (constructed directly by `TempestHost`, ADR-0009); reads live data from `IModuleLifecycleManager`/`IHostedServiceManager` via `Func<T>` accessors, never resolves either through the container (ADR-0017) | `DiagnosticsSampleModule` (real contributor); any future Shell status page or health-check command |
 | Identity & Permissions | **Implemented — WP 6.1** (`IIdentity`/`PlatformIdentity`, `IPrincipal`/`PlatformPrincipal`, `Permission`, `IRole`/`Role`, `IRoleProvider`/`RoleProvider`, `ICurrentPrincipalAccessor`/`CurrentPrincipalAccessor`, `IPermissionEvaluator`/`PermissionEvaluator`, `IIdentityService`/`IdentityService`, `Tempest.Core.Identity`) — local-only identity model per ADR-0043; single authorization enforcement point per ADR-0044 | Dependency Injection | `IdentitySampleModule` (real contributor); `TD-09`/`TD-10`/`TD-11` are now resolvable through this enforcement point, though none is retired by this Work Package itself; a plausible future `WP 6.3` (REST API) and `WP 6.5` (Audit) consumer |
+| Persistence | **Implemented — WP 6.4** (`IPersistenceStore`/`PersistenceStore`, `Tempest.Core.Persistence`) — established as part of Settings' own scope per ADR-0041; file-backed, one file per `collection`/`key`, percent-encoded paths, per-key async locking | Dependency Injection, Configuration (root path) | Settings (real contributor via `SettingsProvider`); a plausible future `WP 6.5` (Audit) consumer |
+| Settings | **Implemented — WP 6.4** (`ISettingDefinition`/`SettingDefinition`, `ISettingsProvider`/`SettingsProvider`, `ISettingsChangedEvent`/`SettingsChangedEvent`, `Tempest.Core.Settings`) — DI-public, distinct from Configuration per ADR-0042; in-memory cache over Persistence, invalidated on write | Dependency Injection, Persistence, Event Bus | `SettingsSampleModule` (real contributor); a plausible future `WP 6.3` (REST API) settings-management surface |
 | Plugin Manifest | **Implemented — WP 4.2** (`Tempest.Core.Plugins`) | Host (Phases 3.1/3.2, ADR-0026 — a pre-Discovery step) | Module Discovery (unchanged), any real plugin |
 | Project Engine | Planned | Undetermined | Undetermined |
 | Requirements Engine | Planned | Undetermined | Undetermined |
@@ -783,6 +785,109 @@ Matrix.md`, `Testing Strategy.md` (the Contract Review package);
 `TD-11`); `docs/security/Platform Security Review v0.5.0.md` (Findings
 SEC-01, NAV-1); `docs/architecture/Command Framework Architecture.md`
 (Finding CMD-1).
+
+---
+
+## Persistence *(implemented — WP 6.4, ADR-0041)*
+
+**Responsibility.** A minimal, internal, platform-owned durable store —
+store, retrieve, delete, and enumerate string values, scoped by a
+caller-supplied `collection` name and `key`. No schema, no querying
+beyond key lookup and full-collection key enumeration, no transactions
+across multiple keys. Established as part of `WP 6.4`'s own scope
+specifically so no other platform service invents an incompatible
+storage mechanism of its own (`ADR-0041`).
+
+**Key types.** `IPersistenceStore`/`PersistenceStore`,
+`PersistenceException` and one subtype
+(`PersistenceStoreUnavailableException`) — all `Tempest.Core.Persistence`.
+Reuses `Tempest.Core.Concurrency.AsyncKeyedLock` (internal, shared with
+Settings) for per-`collection`/`key` concurrency control.
+
+**Dependencies.** Dependency Injection; `IConfigurationProvider`, read
+once at construction for the storage root path
+(`Persistence:RootPath`, defaulting to `persistence-data`).
+
+**Consumers.** Settings (`WP 6.4`, its own originating Work Package),
+via `SettingsProvider`. A plausible future `WP 6.5` (Audit) consumer,
+per `ADR-0041`'s own title — not yet implemented or verified.
+
+**Lifecycle.** Ordinary DI-public, container-constructed singleton,
+registered in `TempestHost`'s existing Platform Services Registered
+block (Phase 6) — no new Host Lifecycle phase.
+
+**Storage.** One file per `collection`/`key` pair, under the configured
+root directory; both `collection` and `key` are percent-encoded
+(`Uri.EscapeDataString`) before becoming a path segment, so an arbitrary
+caller-supplied name can never produce an invalid or unintended
+file-system path. Every operation acquires a per-`collection`/`key`
+`AsyncKeyedLock` before touching the file system.
+
+**ADR references.** ADR-0041 (*A Shared Persistence Abstraction Serves
+Settings and Audit*).
+
+**Academy references.** `WP 6.4` retrospective (*Settings Framework
+Implementation*); `docs/releases/v0.6.0/Release Architecture.md` and
+companions (the architecture package this Work Package implemented);
+`Platform Service Contracts.md` and companions (the Contract Review
+package).
+
+---
+
+## Settings *(implemented — WP 6.4, ADR-0042)*
+
+**Responsibility.** User-changeable, runtime-mutable configuration,
+explicitly distinct from Configuration (`WP 2.5`), which is read-only,
+immutable, and loaded once at startup (`ADR-0009`, Case Study 05).
+Registers setting definitions with defaults; reads and writes current
+values; publishes `ISettingsChangedEvent` through the existing Event Bus
+on every successful write, including a write of the already-current
+value (`ADR-0042`'s own explicit default).
+
+**Key types.** `ISettingDefinition`/`SettingDefinition`,
+`ISettingsProvider`/`SettingsProvider`, `ISettingsChangedEvent`/
+`SettingsChangedEvent`, `SettingsException` and two subtypes
+(`DuplicateSettingDefinitionException`, `SettingNotFoundException`) —
+all `Tempest.Core.Settings`.
+
+**Dependencies.** Dependency Injection, Persistence (durable storage),
+Event Bus (change notification).
+
+**Consumers.** `SettingsSampleModule` (real contributor and consumer,
+the ninth production sample module) — registers a setting definition,
+subscribes to `ISettingsChangedEvent`, and registers two commands
+(get/set) demonstrating the Command Framework and Settings interacting.
+A plausible future `WP 6.3` (REST API) settings-management surface —
+not yet implemented.
+
+**Lifecycle.** Ordinary DI-public, container-constructed singleton,
+registered in `TempestHost`'s existing Platform Services Registered
+block (Phase 6), after Persistence and the Event Bus — no new Host
+Lifecycle phase.
+
+**Performance.** An in-memory cache sits over `IPersistenceStore`,
+invalidated only by this instance's own writes — `GetValueAsync` is a
+likely hot-path call; a cache hit never touches the file system. A
+per-key `AsyncKeyedLock` (shared implementation with Persistence)
+serialises the cache-populate-on-miss sequence against the
+write-then-cache-update sequence, for the same key, so a slow concurrent
+read can never overwrite a newer write's own cache entry with a stale
+value.
+
+**A disclosed, deliberate limitation.** No sensitive-value flag exists
+on `ISettingDefinition` in this release — every setting change is
+logged at Information level with both old and new values, unredacted.
+Named as a Future Extension Point, not a defect (`ADR-0042`).
+
+**ADR references.** ADR-0041 (Persistence, shared with Audit's future
+need), ADR-0042 (*Settings Is DI-Public and Distinct From
+Configuration*).
+
+**Academy references.** `WP 6.4` retrospective (*Settings Framework
+Implementation*); `docs/releases/v0.6.0/Release Architecture.md` and
+companions; `Platform Service Contracts.md` and companions;
+`docs/academy/05 Case Studies/` Case Study 05 (Configuration
+immutability, the distinction Settings exists to complement).
 
 ---
 

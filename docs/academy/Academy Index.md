@@ -210,6 +210,18 @@ retired by this Work Package itself.
 - `docs/releases/v0.6.0/Release Architecture.md` and companions — the architecture package this Work Package implemented.
 - ADR-0043 (Identity Model Scope Is Local-Only, Extensible), ADR-0044 (`IPermissionEvaluator` Is the Single Authorization Enforcement Point; `CurrentPrincipalAccessor` Is Ambient, Not Request-Scoped).
 
+### Persistence and Settings
+
+Implemented (`WP 6.4`, `ADR-0041`, `ADR-0042`) — `Tempest.Core.Persistence`:
+a minimal, file-backed key/value store established as part of Settings'
+own scope; `Tempest.Core.Settings`: user-changeable, runtime-mutable
+configuration, explicitly distinct from Configuration, with an
+in-memory cache and `ISettingsChangedEvent` published through the
+existing Event Bus.
+
+- [WP 6.4 — Settings Framework Implementation](03%20Work%20Packages/WP6.4-settings-framework-implementation.md) — implemented directly against the already-approved `v0.6.0` architecture and Contract Review packages, including the shared-Persistence-abstraction ratification (`ADR-0041`) and the deliberate choice not to add a sensitive-value flag to an approved interface (`ADR-0042`).
+- ADR-0041 (A Shared Persistence Abstraction Serves Settings and Audit), ADR-0042 (Settings Is DI-Public and Distinct From Configuration).
+
 ## Design Patterns
 
 Recurring structural patterns TempestOS actually uses, explained in terms
@@ -300,6 +312,7 @@ is complete and `v0.5.0` is released.
 **Platform Services (v0.6.0, in progress):**
 
 - [WP 6.1 — Permissions & Identity Implementation](03%20Work%20Packages/WP6.1-permissions-and-identity-implementation.md) — implemented directly against the already-approved architecture and Contract Review packages; no separate architecture-phase retrospective, per direct instruction.
+- [WP 6.4 — Settings Framework Implementation](03%20Work%20Packages/WP6.4-settings-framework-implementation.md) — implemented ahead of `WP 6.0`–`WP 6.3` per `Platform Service Implementation Order.md`'s own recommendation; establishes the shared Persistence abstraction as part of its own scope.
 
 See `PROJECT_STATUS.md` for current status and `docs/releases/v0.6.0/
 WorkPackages.md` for the full, nine-Work-Package plan.

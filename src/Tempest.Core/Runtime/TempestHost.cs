@@ -8,7 +8,9 @@ using Tempest.Core.Identity;
 using Tempest.Core.Logging;
 using Tempest.Core.Modules;
 using Tempest.Core.Navigation;
+using Tempest.Core.Persistence;
 using Tempest.Core.Plugins;
+using Tempest.Core.Settings;
 using Tempest.Core.Versioning;
 
 namespace Tempest.Core.Runtime;
@@ -248,6 +250,12 @@ public sealed class TempestHost : ITempestHost
         services.Singleton<IRoleProvider, RoleProvider>();
         services.Singleton<IPermissionEvaluator, PermissionEvaluator>();
         services.Singleton<IIdentityService, IdentityService>();
+
+        // ADR-0041: Persistence is established here, as part of Settings'
+        // own scope, ahead of Settings' own registration so the container
+        // can resolve IPersistenceStore for SettingsProvider's constructor.
+        services.Singleton<IPersistenceStore, PersistenceStore>();
+        services.Singleton<ISettingsProvider, SettingsProvider>();
 
         // Composition Root pattern (ADR-0009), like Configuration/Logging/
         // PlatformVersionProvider above: DiagnosticsProvider needs references

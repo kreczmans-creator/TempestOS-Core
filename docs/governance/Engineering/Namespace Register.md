@@ -41,19 +41,20 @@
 | `Tempest.App.Shell` | Tempest.App | 3 | `IPage`, `PlaceholderPage`, `TempestShell` — the application shell, `Tempest.App`'s own composition root | WP 5.0C (design), WP 5.0D (implementation) |
 | `Tempest.Core.Diagnostics` | Tempest.Core | 2 | `IDiagnosticsProvider`/`DiagnosticsProvider` — read-only projection over Host/module/hosted-service lifecycle state | WP 5.2 |
 | `Tempest.Core.Identity` | Tempest.Core | 18 | `IIdentity`/`PlatformIdentity`, `IPrincipal`/`PlatformPrincipal`, `Permission`, `IRole`/`Role`, `IRoleProvider`/`RoleProvider`, `ICurrentPrincipalAccessor`/`CurrentPrincipalAccessor`, `IPermissionEvaluator`/`PermissionEvaluator`, `IIdentityService`/`IdentityService`, `IdentityException` and two subtypes | WP 6.1 |
+| `Tempest.Core.Persistence` | Tempest.Core | 4 | `IPersistenceStore`/`PersistenceStore`, `PersistenceException` and one subtype — established as part of `WP 6.4`'s own scope (ADR-0041) | WP 6.4 |
+| `Tempest.Core.Settings` | Tempest.Core | 9 | `ISettingDefinition`/`SettingDefinition`, `ISettingsProvider`/`SettingsProvider`, `ISettingsChangedEvent`/`SettingsChangedEvent`, `SettingsException` and two subtypes | WP 6.4 |
+| `Tempest.Core.Concurrency` | Tempest.Core | 1 | `AsyncKeyedLock` (internal) — a small, shared, per-key async lock used by both Persistence and Settings | WP 6.4 |
 | *(no namespace declared — global namespace)* | Tempest.Core, Tempest.App | 7 | `AssemblyInfo.cs`, `Program.cs` (rewritten `WP 5.0D` as the real entry point; still top-level statements, still global namespace), `ApplicationConfiguration.cs`, `ConfigurationService.cs`, `LoggingService.cs`, `ProjectModel.cs`, `ProjectNumberGenerator.cs` — the latter five pre-module-pipeline, bootstrap-era types, now unreferenced by `Program.cs` but untouched and unmigrated (`WP 5.0C`'s own disclosed scope boundary; `WP 5.2` re-scoped `TD-01`'s own migration question forward again rather than touching these) | Pre-dates Claude-developed history (Unknown exact origin) |
 
-**Total: 19 namespaces (18 declared + the global namespace) across 4
-projects (`Tempest.Core`, `Tempest.App`, `Tempest.Samples`, and the new
+**Total: 22 namespaces (21 declared + the global namespace) across 4
+projects (`Tempest.Core`, `Tempest.App`, `Tempest.Samples`, and the
 `Tempest.Templates.Module` sample-only project `WP 5.3` added — not
 itself part of `Tempest.Core`'s own namespace count, but part of the
-`src/` file total below), 165 `.cs` files under `src/` excluding
-generated `obj`/`bin` artifacts — re-derived directly by `WP 6.1` rather
-than incremented from the prior figure. This also corrects a genuine,
-previously-undisclosed drift: `src/Templates/Tempest.Templates.Module/
-TempestSampleModule.cs` (added `WP 5.3`) was never counted in this
-register's own total, which had gone stale at 143 since `WP 5.2` through
-`WP 5.3` and `WP 5.4`. `WP 6.1` itself adds the new
+`src/` file total below), 184 `.cs` files under `src/` excluding
+generated `obj`/`bin` artifacts — re-derived directly by `WP 6.4` rather
+than incremented from the prior figure (165 + 4 Persistence + 9 Settings
++ 1 Concurrency + 5 new `Tempest.Samples` files = 184, confirmed by
+direct `find` count, not arithmetic alone). `WP 6.1` itself adds the new
 `Tempest.Core.Identity` namespace (18 files) and 3 new `Tempest.Samples`
 files (`IdentitySampleModule.cs`, `CheckSamplePermissionCommand.cs`,
 `CheckSamplePermissionCommandHandler.cs`).**
