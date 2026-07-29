@@ -10,9 +10,9 @@
 | **Owner** | Project Maintainer — sole contributor of record across all 48 repository commits (git author `kreczmans-creator`; no separate architecture-review board or team structure exists as of this baseline). |
 | **Source of Truth** | `docs/adr/` (the ADR files themselves). This register is a governance index over that source, not a replacement for it — the full Context/Decision/Consequences reasoning lives only in each ADR file. |
 | **Review Frequency** | Updated whenever a new ADR is created, superseded, or reversed (Engineering Governance §5) — in practice, once per Work Package that meets the §5 ADR criteria. |
-| **Last Reviewed** | 2026-07-28 (WP 5.2, Diagnostics Improvements). |
-| **Related Documents** | `docs/academy/06 Engineering Standards/Engineering Governance.md` (§5, ADR Creation Rules); `Decision Register.md`; `Rejected Designs Register.md`; `Traceability Matrix.md`. |
-| **Related ADRs** | All 39 — this register's entire subject matter. |
+| **Last Reviewed** | 2026-07-29 (WP 6.1, Permissions & Identity). |
+| **Related Documents** | `docs/academy/06 Engineering Standards/Engineering Governance.md` (§5, ADR Creation Rules); `Decision Register.md`; `Rejected Designs Register.md`; `Traceability Matrix.md`; `docs/releases/v0.6.0/Required ADRs.md`. |
+| **Related ADRs** | All 41 — this register's entire subject matter. |
 | **Related Academy Articles** | Every Work Package retrospective under `docs/academy/03 Work Packages/` cites the ADR(s) it produced or realised; see each retrospective's own "ADR references" or "Architectural Principles" section. |
 | **Coverage Status** | Complete — every ADR file present in `docs/adr/` at time of review is listed below. |
 
@@ -69,18 +69,30 @@ line, verified directly.
 | ADR-0037 | Commands Register Imperatively, in Two Parts — a Type-Keyed Handler and an Id-Keyed Descriptor | Accepted | WP 5.1A (Command Framework Architecture) | 2026-07-28 | Verified |
 | ADR-0038 | Command Dispatch Propagates Handler Exceptions to the Caller, Diverging Deliberately from the Event Bus's Per-Subscriber Isolation | Accepted | WP 5.1A (Command Framework Architecture) | 2026-07-28 | Verified |
 | ADR-0039 | Diagnostics Is a DI-Public, Lazily-Projected Read-Only Service Over Host-Owned Lifecycle State | Accepted | WP 5.2 (Diagnostics Improvements) | 2026-07-28 | Verified |
+| ADR-0043 | Identity Model Scope Is Local-Only, Extensible | Accepted | WP 6.1 (Permissions & Identity) | 2026-07-29 | Verified |
+| ADR-0044 | `IPermissionEvaluator` Is the Single Authorization Enforcement Point; `CurrentPrincipalAccessor` Is Ambient, Not Request-Scoped | Accepted | WP 6.1 (Permissions & Identity) | 2026-07-29 | Verified |
 
-**Total: 39 ADRs, all Accepted, none superseded or reversed (Verified — no
+**Total: 41 ADRs, all Accepted, none superseded or reversed (Verified — no
 ADR file in `docs/adr/` carries a Superseded/Deprecated/Rejected status
 line).**
 
 ## Numbering Integrity
 
-Sequential, `ADR-0001` through `ADR-0039`, no gaps, no reused numbers —
-Verified by direct enumeration of `docs/adr/`. Per Engineering Governance
-§5, a superseded ADR would be marked as such in its own Status section
-with a new ADR created referencing it, rather than renumbered or deleted;
-no such case exists yet in this repository.
+Sequential, `ADR-0001` through `ADR-0039`, then a **deliberate gap**,
+`ADR-0040`–`ADR-0042`, followed by `ADR-0043`–`ADR-0044` — not a
+numbering defect. `docs/releases/v0.6.0/Required ADRs.md` reserved
+`ADR-0040` through `ADR-0051` in advance, as a catalogue of anticipated
+decisions, one range per `v0.6.0` Work Package, before any of those Work
+Packages began implementation. `WP 6.1` is the first of those Work
+Packages to actually implement, and its own two reserved numbers
+(`ADR-0043`, `ADR-0044`) are now real, Accepted files; `ADR-0040`–
+`ADR-0042` and `ADR-0045`–`ADR-0051` remain reserved for their own
+originating Work Package's future implementation phase — see `Required
+ADRs.md`'s own Summary Table for which Work Package owns each. Verified
+by direct enumeration of `docs/adr/` cross-checked against that table.
+Per Engineering Governance §5, a superseded ADR would be marked as such
+in its own Status section with a new ADR created referencing it, rather
+than renumbered or deleted; no such case exists yet in this repository.
 
 ## Cross-Reference Check
 

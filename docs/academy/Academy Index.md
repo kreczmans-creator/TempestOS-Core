@@ -196,6 +196,20 @@ outright and re-scopes `TD-01` forward again.
 - ADR-0009 (Composition Root, reused), ADR-0017 (Host-owned collaborators never DI-public, the boundary this design respects), ADR-0034 (the `null`/empty-before-ready convention this design reuses), ADR-0039 (this Work Package's own decision).
 - See also [Navigation Architecture](02%20Runtime%20Architecture/09-navigation-architecture.md) and [Shell & Application Composition](02%20Runtime%20Architecture/10-shell-and-application-composition.md) for `ITempestHost.Services`'s own precedent for the "not yet available" convention this design reuses.
 
+### Identity & Permissions
+
+Implemented (`WP 6.1`, `ADR-0043`, `ADR-0044`) — `Tempest.Core.Identity`:
+a local-only identity model (`IIdentity`/`IPrincipal`), config-sourced
+roles (`IRole`/`IRoleProvider`), an identity-resolution service
+(`IIdentityService`), and a single authorization enforcement point
+(`IPermissionEvaluator`). The platform's first authorization concept —
+`TD-09`/`TD-10`/`TD-11` are now resolvable through it, though none is
+retired by this Work Package itself.
+
+- [WP 6.1 — Permissions & Identity Implementation](03%20Work%20Packages/WP6.1-permissions-and-identity-implementation.md) — implemented directly against the already-approved `v0.6.0` architecture and Contract Review packages, including the `AsyncLocal<T>`-vs-ambient-field finding (`ADR-0044`) and the honest disclosure that `TD-09`/`TD-10`/`TD-11` remain Open.
+- `docs/releases/v0.6.0/Release Architecture.md` and companions — the architecture package this Work Package implemented.
+- ADR-0043 (Identity Model Scope Is Local-Only, Extensible), ADR-0044 (`IPermissionEvaluator` Is the Single Authorization Enforcement Point; `CurrentPrincipalAccessor` Is Ambient, Not Request-Scoped).
+
 ## Design Patterns
 
 Recurring structural patterns TempestOS actually uses, explained in terms
@@ -281,8 +295,14 @@ whatever you're about to change, before you change it.
 - [WP 5.4 — v0.5.0 Release Candidate & Engineering Sign-Off](03%20Work%20Packages/WP5.4-v0.5.0-release-candidate-and-engineering-sign-off.md) — the release-closing verification pass; not a feature Work Package. See also `docs/releases/v0.5.0.md`, `docs/releases/v0.5.0/CHANGELOG.md`, and `docs/releases/v0.5.0/Release Notes.md`.
 
 `docs/releases/v0.5.0/WorkPackages.md`'s own Developer Experience phase
-is complete and `v0.5.0` is a Release Candidate — see `PROJECT_STATUS.md`
-for current status and whether Product Approval has cut the release.
+is complete and `v0.5.0` is released.
+
+**Platform Services (v0.6.0, in progress):**
+
+- [WP 6.1 — Permissions & Identity Implementation](03%20Work%20Packages/WP6.1-permissions-and-identity-implementation.md) — implemented directly against the already-approved architecture and Contract Review packages; no separate architecture-phase retrospective, per direct instruction.
+
+See `PROJECT_STATUS.md` for current status and `docs/releases/v0.6.0/
+WorkPackages.md` for the full, nine-Work-Package plan.
 
 ## Reference Material
 

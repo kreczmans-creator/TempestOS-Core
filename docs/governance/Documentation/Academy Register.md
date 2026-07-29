@@ -57,7 +57,7 @@
 | 11 | Command Framework | WP 5.1A (new), WP 5.1B (implementation confirmed; `CommandHandlerTable` sharing finding added) |
 | 12 | Diagnostics & Composite Logging | WP 5.2 (new) |
 
-## 03 Work Packages (35 retrospectives)
+## 03 Work Packages (36 retrospectives)
 
 | Retrospective | Type |
 |---|---|
@@ -96,6 +96,7 @@
 | WP 5.2 — Diagnostics Improvements | Implementation (combined design + implementation, ADR-0039) |
 | WP 5.3 — Developer Experience Improvements | Implementation (scaffolding/tooling, no preceding architecture phase) |
 | WP 5.4 — v0.5.0 Release Candidate & Engineering Sign-Off | Release verification/sign-off — not a feature Work Package; a departure from the standard 13-section template, disclosed in its own retrospective's "What This Document Is" |
+| WP 6.1 — Permissions & Identity Implementation | Implementation (combined design + implementation, ADR-0043/0044 — implemented directly against the already-approved `v0.6.0` architecture and Contract Review packages, no separate architecture-phase retrospective) |
 
 **Note.** `WP 4.4C` produced no code and no separate retrospective — its
 story is told inside the `WP 4.4` architecture retrospective's own
@@ -141,11 +142,12 @@ added `Engineering Lifecycle.md`).
 | `Contributor Learning Path.md` | Repository-wide onboarding sequence for a new contributor, added `WP 4.5B` |
 
 **Total: 1 (Introduction) + 11 (Engineering Principles) + 12 (Runtime
-Architecture) + 35 (Work Packages) + 4 (Design Patterns) + 5 (Case
-Studies) + 5 (Engineering Standards) + 4 (top-level meta) = 77 files
+Architecture) + 36 (Work Packages) + 4 (Design Patterns) + 5 (Case
+Studies) + 5 (Engineering Standards) + 4 (top-level meta) = 78 files
 under `docs/academy/` — re-verified by direct `find` count against every
-subfolder individually, not just the grand total, during `WP 5.4`'s own
-repository review. **Correction, `WP 5.4`**: the "03 Work Packages" count
+subfolder individually (`WP 6.1`), not just the grand total, continuing
+the standing practice `WP 5.4`'s own repository review recommended.
+**Correction, `WP 5.4`**: the "03 Work Packages" count
 had read "33" (`WP 5.2`) then "34" (`WP 5.3`) while the section's own
 table already listed 34 and then 35 rows respectively — the stated count
 had undercounted its own table by one for at least two consecutive Work

@@ -33,6 +33,7 @@ of date is worse than no map at all, because it will be trusted.
 | Command Framework | **Implemented — WP 5.1A (design), WP 5.1B (implementation)** (`ICommandDispatcher`/`ICommandRegistry`, `Tempest.Core.Commands`) — orthogonal to Navigation, ADR-0022 | Dependency Injection | `CommandSampleModule` (real contributor); `Tempest.App` (invocation, not yet wired into the Shell's own input handling) |
 | Navigation | **Implemented — WP 5.0A (design), WP 5.0B (implementation)** (`INavigationProvider`/`NavigationService`, `Tempest.Core.Navigation`) — model, ownership, and rendering boundary per ADR-0031/ADR-0032 | Dependency Injection, Event Bus | Any module contributing a navigation item; `Tempest.App` (rendering, not yet built) |
 | Diagnostics | **Implemented — WP 5.2** (`IDiagnosticsProvider`/`DiagnosticsProvider`, `Tempest.Core.Diagnostics`) — read-only projection over Host/module/hosted-service lifecycle state per ADR-0039 | Dependency Injection (constructed directly by `TempestHost`, ADR-0009); reads live data from `IModuleLifecycleManager`/`IHostedServiceManager` via `Func<T>` accessors, never resolves either through the container (ADR-0017) | `DiagnosticsSampleModule` (real contributor); any future Shell status page or health-check command |
+| Identity & Permissions | **Implemented — WP 6.1** (`IIdentity`/`PlatformIdentity`, `IPrincipal`/`PlatformPrincipal`, `Permission`, `IRole`/`Role`, `IRoleProvider`/`RoleProvider`, `ICurrentPrincipalAccessor`/`CurrentPrincipalAccessor`, `IPermissionEvaluator`/`PermissionEvaluator`, `IIdentityService`/`IdentityService`, `Tempest.Core.Identity`) — local-only identity model per ADR-0043; single authorization enforcement point per ADR-0044 | Dependency Injection | `IdentitySampleModule` (real contributor); `TD-09`/`TD-10`/`TD-11` are now resolvable through this enforcement point, though none is retired by this Work Package itself; a plausible future `WP 6.3` (REST API) and `WP 6.5` (Audit) consumer |
 | Plugin Manifest | **Implemented — WP 4.2** (`Tempest.Core.Plugins`) | Host (Phases 3.1/3.2, ADR-0026 — a pre-Discovery step) | Module Discovery (unchanged), any real plugin |
 | Project Engine | Planned | Undetermined | Undetermined |
 | Requirements Engine | Planned | Undetermined | Undetermined |
@@ -689,6 +690,99 @@ Host-Owned Lifecycle State*).
 Improvements*); *Diagnostics & Composite Logging* (Academy concept
 guide); Rejected Designs RD-0042 through RD-0044;
 `docs/releases/v0.5.0/WorkPackages.md` (`WP 5.2`).
+
+---
+
+## Identity & Permissions *(implemented — WP 6.1, ADR-0043/ADR-0044)*
+
+**Responsibility.** Answers who is performing an action, and whether
+they are allowed to. `IIdentity`/`IPrincipal` model a local-only actor
+(no authentication step, ADR-0043 — a caller-supplied identity id is
+trusted outright); `IRole`/`IRoleProvider` resolve config-sourced role
+definitions (`Identity:Roles:{RoleName}:Permissions`);
+`IIdentityService` resolves a principal by identity id (flattening its
+configured roles into permissions, fail-closed to zero permissions for
+an unrecognised id) and establishes it as current;
+`ICurrentPrincipalAccessor` exposes that current principal read-only;
+`IPermissionEvaluator` is the single, uniform authorization enforcement
+point (`RequirePermission` throws `PermissionDeniedException`;
+`HasPermission` is the non-throwing form) every future consumer is
+expected to call (ADR-0044). See `docs/releases/v0.6.0/Release
+Architecture.md` and companions for the full design, and `ADR-0043`/
+`ADR-0044` for what implementation confirmed, elaborated, or departed
+from in that design.
+
+**Key types.** `IIdentity`/`PlatformIdentity`, `IPrincipal`/
+`PlatformPrincipal`, `Permission`, `IRole`/`Role`, `IRoleProvider`/
+`RoleProvider`, `ICurrentPrincipalAccessor`/`CurrentPrincipalAccessor`,
+`IPermissionEvaluator`/`PermissionEvaluator`, `IIdentityService`/
+`IdentityService`, `IdentityException` and two subtypes
+(`PermissionDeniedException`, `RoleNotFoundException`) — all
+`Tempest.Core.Identity`. `IRole`/`IRoleProvider` and `IIdentityService`
+are additive elaborations the original architecture package deferred to
+this Work Package's own implementation phase, not part of its original
+`Public Interface Catalogue.md` draft; `IIdentity`, `IPrincipal`,
+`ICurrentPrincipalAccessor`, `IPermissionEvaluator`, and `Permission`
+are implemented with zero signature deviation from that draft.
+
+**Dependencies.** None beyond Dependency Injection and (for `RoleProvider`/
+`IdentityService`) `IConfigurationProvider`, read the same way every
+other config-sourced platform service reads it.
+
+**Consumers.** `IdentitySampleModule` (real contributor and consumer,
+the eighth production sample module) — establishes a default local
+principal during its own `InitialiseAsync` and registers a command
+(`CheckSamplePermissionCommand`) demonstrating both the granted and
+fail-closed-denied paths against the same, unmodified module, depending
+on configuration. `TD-09` (plugin isolation), `TD-10` (Navigation
+ownership), and `TD-11` (Command/Navigation registration-order
+squatting) are now *resolvable* through `IPermissionEvaluator` — **none
+is retired by this Work Package**: retrofitting an enforcement call into
+`NavigationService`, Command/Navigation registration, or plugin loading
+was explicitly out of this Work Package's own scope (see `ADR-0044`).
+Future, explicitly-scoped consumers: `WP 6.3` (REST API, a hard
+dependency per `docs/releases/v0.6.0/WorkPackages.md`) and `WP 6.5`
+(Audit, for attribution).
+
+**Lifecycle.** `CurrentPrincipalAccessor` is constructed directly by
+`TempestHost` (a plain `new` — it has no constructor dependencies) and
+registered via `AddInstance` under *both* `ICurrentPrincipalAccessor`
+and its own concrete type — the same already-built instance under two
+service-type keys, so `IdentityService` (which needs write access via
+the concrete type) and every ordinary consumer (which resolves only the
+read-only interface) share one object rather than two independently-
+constructed ones. `IRoleProvider`, `IPermissionEvaluator`, and
+`IIdentityService` are ordinary, container-constructed singletons,
+registered in `TempestHost`'s existing Platform Services Registered
+block (Phase 6) — no new Host Lifecycle phase.
+
+**A genuine implementation-phase departure from the architecture
+package, disclosed rather than absorbed silently:**
+`CurrentPrincipalAccessor` is backed by a single, `lock`-protected
+mutable field, not `AsyncLocal<T>` as `Platform Service Contracts.md`
+tentatively suggested — `AsyncLocal<T>` would make a principal
+established during Module Initialisation invisible to any later,
+unrelated caller (a dispatched command, a test), which does not fit
+this release's own local-only, single-ambient-principal need. See
+`ADR-0044` for the full reasoning and the regression test that proves
+it.
+
+**ADR references.** ADR-0043 (*Identity Model Scope Is Local-Only,
+Extensible*); ADR-0044 (*`IPermissionEvaluator` Is the Single
+Authorization Enforcement Point; `CurrentPrincipalAccessor` Is Ambient,
+Not Request-Scoped*).
+
+**Academy references.** `WP 6.1` retrospective (*Permissions & Identity
+Implementation*); `docs/releases/v0.6.0/Release Architecture.md`,
+`Platform Services Overview.md`, `Public Interface Catalogue.md`,
+`Service Lifecycle.md`, `Required ADRs.md` (the architecture package
+this Work Package implemented); `Platform Service Contracts.md`,
+`Platform Service Implementation Order.md`, `Service Registration
+Matrix.md`, `Testing Strategy.md` (the Contract Review package);
+`docs/governance/Quality/Technical Debt Register.md` (`TD-09`, `TD-10`,
+`TD-11`); `docs/security/Platform Security Review v0.5.0.md` (Findings
+SEC-01, NAV-1); `docs/architecture/Command Framework Architecture.md`
+(Finding CMD-1).
 
 ---
 

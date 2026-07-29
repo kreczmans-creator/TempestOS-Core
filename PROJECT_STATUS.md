@@ -1,6 +1,6 @@
 # TempestOS — Project Status
 
-**Last Updated:** 2026-07-29 (v0.5.0 Release Engineering — "Developer Experience," released)
+**Last Updated:** 2026-07-29 (`WP 6.1` — Permissions & Identity, implemented)
 
 This is the primary status dashboard for TempestOS. Read this first for
 "where does the project stand right now" — for "why is it built this
@@ -36,15 +36,29 @@ with a clear, actionable error message. `WP 5.4` (v0.5.0 Release
 Candidate & Engineering Sign-Off) then verified the entire release
 directly — every ADR, every Work Package, every governance register —
 before Product Approval authorised the release itself. **`v0.5.0` is now
-released.** TempestOS is entering the **Platform Services** phase
-(`v0.6.0`) — see Current Priorities, below.
+released.** TempestOS is now in the **Platform Services** phase
+(`v0.6.0`). The complete architecture package (`docs/releases/v0.6.0/
+Release Architecture.md` and seven companion documents) and Contract
+Review package (`Platform Service Contracts.md` and four companion
+documents) were both produced and approved ahead of any implementation.
+`WP 6.1` (Permissions & Identity) is now implemented — the first
+Work Package of this release to ship real code, deliberately out of its
+own nominal numeric order (`WP 6.0` is listed first in `WorkPackages.md`)
+per `Platform Service Implementation Order.md`'s own explicit
+recommendation: Identity & Permissions carries the release's highest
+architectural risk and is the most-depended-on new service (`WP 6.3`,
+`WP 6.5` both require it), so starting it first gives its own likely
+future architecture/implementation split the most schedule room. See
+Current Work Package, below.
 
 ## Current Development Branch
 
 **`feature/v0.6.0-platform-services`**, cut from `main` at the `v0.5.0`
-tag. No implementation has begun. `feature/v0.5.0-developer-experience`
-(`WP 5.0A` through `WP 5.4`) has been merged into `main` and is retained,
-unmerged branches are never deleted per this project's own convention.
+tag. `WP 6.1` (Permissions & Identity) is implemented on this branch;
+no other `v0.6.0` Work Package has begun.
+`feature/v0.5.0-developer-experience` (`WP 5.0A` through `WP 5.4`) has
+been merged into `main` and is retained, unmerged branches are never
+deleted per this project's own convention.
 
 ## Current Release
 
@@ -54,29 +68,38 @@ before that; `v0.3.0` ("Runtime Foundation Complete") before that.
 
 ## Current Work Package
 
-**None — between releases.** `WP 5.4` (v0.5.0 Release Candidate &
-Engineering Sign-Off) was the last Work Package of the Developer
-Experience phase, verifying every ADR implemented or intentionally
-deferred, every Work Package closed, and every governance register
-internally consistent before the release was cut. It found and corrected
-two genuine, silent arithmetic undercounts (the Exception Register's own
-stated total, and the Academy Register's own Work-Package/article
-counts), a stale `docs/releases/v0.5.0/ReleasePlan.md`, a stale
-`docs/academy/Contributor Learning Path.md`, and retired all four
-remaining open release-level risks in `docs/releases/v0.4.0/Risks.md`
-(`R5`, `R7`, `R8`, `R9`) — every one of that register's ten risks is now
-Retired. See its own retrospective:
-`docs/academy/03 Work Packages/WP5.4-v0.5.0-release-candidate-and-engineering-sign-off.md`.
-Release Engineering then merged `feature/v0.5.0-developer-experience`
-into `main`, tagged `v0.5.0`, and cut `feature/v0.6.0-platform-services`
-for what comes next.
+**`WP 6.1` — Permissions & Identity — implemented.** The first
+Work Package of the Platform Services phase (`v0.6.0`) to ship real
+code. Delivers `Tempest.Core.Identity`: `IIdentity`/`IPrincipal`/
+`Permission` exactly as the approved architecture drafted them, plus an
+additive Role model (`IRole`/`Role`/`IRoleProvider`/`RoleProvider`,
+config-sourced) and identity-resolution service (`IIdentityService`/
+`IdentityService`) the architecture package explicitly deferred to this
+Work Package's own implementation phase. `IPermissionEvaluator` is the
+single authorization enforcement point (`ADR-0044`); `TD-09`/`TD-10`/
+`TD-11` remain Open but are now, for the first time, resolvable by a
+small, targeted follow-on change rather than requiring their own
+mechanism to be invented — this Work Package deliberately did not
+retrofit an enforcement call into `NavigationService`, Command/
+Navigation registration, or plugin loading, since none of those three
+was named in its own brief. `CurrentPrincipalAccessor` is a single,
+`lock`-protected ambient value, not `AsyncLocal<T>`-backed — a
+deliberate, tested departure from the architecture package's own
+tentative language (`ADR-0044`). Two new ADRs (`ADR-0043`, `ADR-0044`),
+`IdentitySampleModule` (the eighth production sample module), 91 new
+tests (643 total, 0 failures), 0 build warnings. See its own
+retrospective: `docs/academy/03 Work Packages/
+WP6.1-permissions-and-identity-implementation.md`.
 
 ## Next Planned Work Package
 
-**`WP 6.0` — Reporting Framework**, the first Work Package of the
-Platform Services phase (`v0.6.0`) — see `docs/releases/v0.6.0/
-WorkPackages.md` for the full, nine-Work-Package plan (`WP 6.0` through
-`WP 6.8`). No implementation has begun.
+**`WP 6.0` — Reporting Framework**, next in `WorkPackages.md`'s own
+nominal numeric order — see `docs/releases/v0.6.0/WorkPackages.md` for
+the full, nine-Work-Package plan (`WP 6.0` through `WP 6.8`). Per this
+Work Package's own explicit closing instruction, implementation stops
+here pending engineering approval — `WP 6.4` is not to begin next
+regardless of `Platform Service Implementation Order.md`'s own
+recommended sequencing.
 
 ## Foundation Status
 
@@ -138,18 +161,18 @@ Experience phase is now complete.
 
 | Metric | Value |
 |---|---|
-| Automated tests | 552 (0 failures) — unchanged by `WP 5.4` (verification only; re-run and re-verified directly) |
-| ADRs | 39 (`ADR-0001`–`ADR-0039`), all Accepted — unchanged by `WP 5.4` (no new ADR; re-verified by direct file count) |
-| Rejected Designs | 45 (`RD-0001`–`RD-0045`) — re-verified by direct count against the source log |
-| Academy articles | 77 (see `docs/governance/Documentation/Academy Register.md`) — **corrected, `WP 5.4`**: previously stated as 76, itself an undercount inherited across two prior Work Packages; re-derived directly from the file system |
+| Automated tests | 643 (0 failures) — **+91, `WP 6.1`**: unit, failure-injection, configuration-validation, Host registration-validation, and sample-module integration tests for Identity & Permissions |
+| ADRs | 41 (`ADR-0001`–`ADR-0039`, `ADR-0043`, `ADR-0044`), all Accepted — **+2, `WP 6.1`**: `ADR-0043` (Identity Model Scope), `ADR-0044` (Authorization Enforcement Point). `ADR-0040`–`ADR-0042` and `ADR-0045`–`ADR-0051` remain reserved, not yet authored, per `docs/releases/v0.6.0/Required ADRs.md` — each is originating from a different, not-yet-implemented `v0.6.0` Work Package |
+| Rejected Designs | 45 (`RD-0001`–`RD-0045`) — unchanged by `WP 6.1` (no rejected design produced; both alternatives-considered sections in `ADR-0043`/`ADR-0044` are recorded within the ADRs themselves) |
+| Academy articles | 78 (see `docs/governance/Documentation/Academy Register.md`) — **+1, `WP 6.1`**: `WP6.1-permissions-and-identity-implementation.md` |
 | Governance registers | 27 (32 governance documents total), plus 4 standing security documents under `docs/security/` (not governance registers themselves, indexed from `Governance Index.md`'s Security section) |
-| Architecture documents | 20 under `docs/architecture/` (22 including the two release-scoped documents) |
-| Platform services | 17 catalogued — 14 Implemented, 2 not implemented as platform services, 1 developer-convenience layer |
-| Modules (production) | 7 (`ClockModule`, `ClockLifecycleObserverModule`, `NavigationSampleModule`, `SecondaryNavigationSampleModule`, `DuplicateNavigationSampleModule`, `CommandSampleModule`, `DiagnosticsSampleModule`) |
+| Architecture documents | 20 under `docs/architecture/` (22 including the two release-scoped documents) — unchanged by `WP 6.1` (Platform Service Map.md updated in place, not a new document) |
+| Platform services | 18 catalogued — 15 Implemented, 2 not implemented as platform services, 1 developer-convenience layer — **+1, `WP 6.1`**: Identity & Permissions |
+| Modules (production) | 8 (`ClockModule`, `ClockLifecycleObserverModule`, `NavigationSampleModule`, `SecondaryNavigationSampleModule`, `DuplicateNavigationSampleModule`, `CommandSampleModule`, `DiagnosticsSampleModule`, `IdentitySampleModule`) |
 | Hosted services (production) | 0 — infrastructure fully implemented and tested; zero shipped consumers by deliberate scope decision |
 | Plugins (production) | 0 — infrastructure fully implemented and tested; `src/Plugins/` empty by deliberate scope decision |
-| Custom exception types | 31 — **corrected, `WP 5.4`**: the Exception Register's own stated total previously read 30, undercounting its own Entries table since `WP 5.1B` first introduced the mismatch |
-| Commits (this release, `v0.4.0` → `v0.5.0`) | 13 (`WP 5.0A`, `WP 5.0B`, `WP 5.0C`, `WP 5.0D`, `WP 5.0S`, `WP 5.1A`, `WP 5.1B`, `WP 5.2`, `WP 5.3` ×2, `WP 5.4` ×2, release-preparation) |
+| Custom exception types | 34 — **+3, `WP 6.1`**: `IdentityException`, `PermissionDeniedException`, `RoleNotFoundException` |
+| Commits (this release, `v0.5.0` → `v0.6.0`, so far) | 2 (`v0.6.0` branch/documentation preparation, `WP 6.1` implementation) |
 | Contributors | 1 (repository owner; all commits co-authored by Claude) |
 
 *(This table is generated from `docs/governance/Quality/Repository Metrics
@@ -158,11 +181,9 @@ three together.)*
 
 ## Repository Health
 
-- **Build:** Clean — 0 warnings, 0 errors (`dotnet build src/TempestOS.slnx`).
-- **Tests:** 552/552 passing, verified stable across multiple consecutive
-  full-suite runs at every major Work Package boundary, re-confirmed
-  directly one final time by `WP 5.4` as part of this release's own
-  sign-off.
+- **Build:** Clean — 0 warnings, 0 errors (`dotnet build tests/Tempest.Core.Tests/Tempest.Core.Tests.csproj`, both Debug and Release configurations, verified directly by `WP 6.1`).
+- **Tests:** 643/643 passing (+91, `WP 6.1`), verified in both Debug and
+  Release configurations from a clean rebuild.
 - **Known regressions:** None.
 - **Working tree:** Clean at every Work Package boundary — see
   `docs/governance/Quality/Validation Register.md`.
@@ -250,6 +271,27 @@ v0.4.0/Risks.md`'s own `R5`/`R7`/`R8`/`R9` rows had each been carrying a
 "residual carries forward" caveat that was, by this point, already fully
 resolved by a specific, named `v0.5.0` Work Package — all corrected.
 
+**`WP 6.1` (Permissions & Identity)** — the release's own eight-document
+architecture package (`docs/releases/v0.6.0/Release Architecture.md` and
+companions) and five-document Contract Review package (`Platform Service
+Contracts.md` and companions) were both produced and approved before this
+Work Package began; neither was revised during implementation.
+`docs/architecture/Platform Service Map.md` gained a new Identity &
+Permissions entry, following the identical documentation shape every
+prior new platform service's own entry has used. Two genuine
+implementation-phase findings not anticipated by the architecture
+package are disclosed in `ADR-0043`/`ADR-0044` rather than silently
+absorbed: the config-sourced Role model and `IIdentityService` (neither
+drafted in the original `Public Interface Catalogue.md`), and the
+`CurrentPrincipalAccessor` ambient-field departure from that document's
+own tentative `AsyncLocal<T>` suggestion, proven by a dedicated
+regression test. `docs/governance/Quality/Technical Debt Register.md`'s
+`TD-09`/`TD-10`/`TD-11` entries were each updated in place to record that
+the authorization enforcement point now exists, without claiming any of
+the three is resolved — none is, since retrofitting an enforcement call
+into `NavigationService`, Command/Navigation registration, or plugin
+loading was explicitly out of this Work Package's own scope.
+
 ## Academy Status
 
 77 articles across 7 categories (Introduction, Engineering Principles,
@@ -290,6 +332,11 @@ recommendations for `v0.6.0`, rather than the standard 13-section
 per-feature template, since a whole-release verification pass is not the
 same kind of document as a single capability's own design retrospective
 (disclosed explicitly in that document's own "What This Document Is").
+`WP 6.1` added the 13-section `WP6.1-permissions-and-identity-
+implementation.md` retrospective — the first Academy retrospective of
+the Platform Services phase — teaching the config-sourced Role model,
+the fail-closed-by-default identity resolution decision, and the
+`AsyncLocal<T>`-vs-ambient-field finding from first principles.
 
 ## Governance Status
 
@@ -362,6 +409,18 @@ governance drift during its own repository review — see `WP 5.4`'s own
 retrospective, "Repository Maturity," for the standing-practice
 recommendation this pattern produced.
 
+**`WP 6.1` (Permissions & Identity)** added `ADR-0043` (Identity Model
+Scope) and `ADR-0044` (Authorization Enforcement Point) — both Accepted,
+both cross-referencing the `Required ADRs.md` catalogue entry each
+formally authors. `Technical Debt Register.md`'s `TD-09`, `TD-10`, and
+`TD-11` entries were each updated in place — none marked Resolved, since
+this Work Package deliberately built only the enforcement mechanism, not
+the three follow-on calls into `NavigationService`, Command/Navigation
+registration, and plugin loading that would actually close them; each
+entry now names `ADR-0044` as the mechanism a future, explicitly-scoped
+Work Package should use. No new Technical Debt item was found stale or
+drifted during this Work Package's own repository review.
+
 ## Known Unknowns
 
 Recorded honestly, not guessed at — full detail in `docs/governance/
@@ -382,12 +441,18 @@ Governance Audit Report.md`:
 
 ## Current Priorities
 
-1. **Begin `WP 6.0` (Reporting Framework)** on
-   `feature/v0.6.0-platform-services` — see `docs/releases/v0.6.0/
-   WorkPackages.md` for its own scope. No implementation has begun; the
-   branch and release documentation were prepared, deliberately, ahead of
-   any code.
-2. No merge to `main` is due until the Platform Services phase's Work
+1. **Await engineering approval before any further `v0.6.0`
+   implementation begins.** `WP 6.1` (Permissions & Identity) is
+   complete on `feature/v0.6.0-platform-services`; per its own explicit
+   closing instruction, `WP 6.4` is not to begin next, regardless of
+   `Platform Service Implementation Order.md`'s own recommended
+   sequencing.
+2. Once approved, the next Work Package is either `WP 6.0` (Reporting
+   Framework, next in `WorkPackages.md`'s own nominal numeric order) or
+   whichever Work Package engineering review directs — see
+   `docs/releases/v0.6.0/WorkPackages.md` for the full, nine-Work-Package
+   plan.
+3. No merge to `main` is due until the Platform Services phase's Work
    Packages are complete (see `docs/releases/v0.6.0/WorkPackages.md`).
 
 ## Near-Term Roadmap
@@ -411,18 +476,19 @@ phase is complete and released as `v0.5.0`, `WP 5.0A` through `WP 5.4`:
   not a feature Work Package). **Complete.**
 
 Per `docs/releases/v0.6.0/WorkPackages.md`, the Platform Services phase
-now begins, none started:
+is under way:
 
-- `WP 6.0` — Reporting Framework.
-- `WP 6.1` — Permissions & Identity.
-- `WP 6.2` — Notification Framework.
-- `WP 6.3` — REST API.
-- `WP 6.4` — Settings Framework.
-- `WP 6.5` — Audit Framework.
-- `WP 6.6` — Licensing Framework.
-- `WP 6.7` — Export / Import.
+- `WP 6.0` — Reporting Framework. Not started.
+- `WP 6.1` — Permissions & Identity. **Complete.**
+- `WP 6.2` — Notification Framework. Not started.
+- `WP 6.3` — REST API. Not started; blocked on `WP 6.1`, now satisfied.
+- `WP 6.4` — Settings Framework. Not started.
+- `WP 6.5` — Audit Framework. Not started; blocked on `WP 6.4` and
+  `WP 6.1`, the latter now satisfied.
+- `WP 6.6` — Licensing Framework. Not started.
+- `WP 6.7` — Export / Import. Not started.
 - `WP 6.8` — Platform Services Integration Review (closing milestone
-  audit, mirroring `WP 4.2D`/`WP 5.0S`'s own precedent).
+  audit, mirroring `WP 4.2D`/`WP 5.0S`'s own precedent). Not started.
 
 ## Long-Term Vision
 

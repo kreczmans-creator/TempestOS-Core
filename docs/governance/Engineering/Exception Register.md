@@ -53,13 +53,18 @@
 | `DuplicateCommandIdException` | `CommandException` | Command Framework | As above |
 | `CommandHandlerNotRegisteredException` | `CommandException` | Command Framework | Application logic's own error (not Host-level); thrown by `DispatchAsync`/`InvokeAsync` |
 | `CommandNotFoundException` | `CommandException` | Command Framework | Application logic's own error (not Host-level); thrown by `InvokeAsync` |
+| `IdentityException` | `Exception` | Identity & Permissions | Application logic's own error (not Host-level); base type, never thrown directly |
+| `PermissionDeniedException` | `IdentityException` | Identity & Permissions | Application logic's own error (not Host-level); thrown by `RequirePermission` — the single authorization enforcement point (ADR-0044) |
+| `RoleNotFoundException` | `IdentityException` | Identity & Permissions | Application logic's own error (not Host-level); thrown by `IIdentityService.GetPrincipal`/`EstablishCurrentPrincipal` for a configuration defect (a principal referencing an undefined role), distinct from an ordinary denied-permission case |
 
-**Total: 31 custom exception types — Verified directly against
+**Total: 34 custom exception types — Verified directly against
 `src/Tempest.Core/` (`grep -rlP "^public (sealed )?class \w+Exception\b"`
-returns exactly 31 files, matching the 31 rows in the Entries table
-above). Corrected, `WP 5.4`: this total previously read "30," undercounting
+returns exactly 34 files, matching the 34 rows in the Entries table
+above, re-derived directly by `WP 6.1` rather than incremented from the
+prior figure — the standing practice `WP 5.4` recommended). Corrected,
+`WP 5.4`: this total previously read "30," undercounting
 by one against this register's own Entries table and Distribution table
-(both of which have always summed to 31) — a genuine, internal
+(both of which had, at that point, always summed to 31) — a genuine, internal
 arithmetic drift found during `WP 5.4`'s own repository review, not a
 change in the actual exception count.**
 
@@ -135,6 +140,7 @@ exception rather than throwing a new, wrapping one.
 | Background Services | 0 (by design — see note above) |
 | Navigation | 3 |
 | Command Framework | 5 |
+| Identity & Permissions | 3 |
 
 ## Cross-Reference Check
 

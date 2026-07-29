@@ -4,6 +4,7 @@ using Tempest.Core.Configuration;
 using Tempest.Core.DependencyInjection;
 using Tempest.Core.Diagnostics;
 using Tempest.Core.Events;
+using Tempest.Core.Identity;
 using Tempest.Core.Logging;
 using Tempest.Core.Modules;
 using Tempest.Core.Navigation;
@@ -232,6 +233,21 @@ public sealed class TempestHost : ITempestHost
         services.Singleton<CommandHandlerTable>();
         services.Singleton<ICommandDispatcher, CommandDispatcher>();
         services.Singleton<ICommandRegistry, CommandRegistry>();
+
+        // ADR-0044: CurrentPrincipalAccessor is constructed directly, once,
+        // and registered under both its own concrete type and
+        // ICurrentPrincipalAccessor - the same already-built instance under
+        // two service-type keys - so IdentityService (which needs write
+        // access via the concrete type) and every ordinary consumer
+        // (which resolves only the read-only interface) share the exact
+        // same object, never two independently-constructed ones. See
+        // CurrentPrincipalAccessor's own remarks.
+        var currentPrincipalAccessor = new CurrentPrincipalAccessor();
+        services.AddInstance<ICurrentPrincipalAccessor>(currentPrincipalAccessor);
+        services.AddInstance(currentPrincipalAccessor);
+        services.Singleton<IRoleProvider, RoleProvider>();
+        services.Singleton<IPermissionEvaluator, PermissionEvaluator>();
+        services.Singleton<IIdentityService, IdentityService>();
 
         // Composition Root pattern (ADR-0009), like Configuration/Logging/
         // PlatformVersionProvider above: DiagnosticsProvider needs references
