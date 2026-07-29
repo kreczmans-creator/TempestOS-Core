@@ -10,7 +10,7 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | `docs/academy/` itself; `docs/academy/Academy Index.md` (the reader-facing navigation index this register cross-checks against). |
 | **Review Frequency** | Updated whenever a new Academy article is created — in practice, every Work Package (Engineering Governance §6). |
-| **Last Reviewed** | 2026-07-29 (WP 6.0, Reporting Framework) — added `WP6.0-reporting-framework-implementation.md`. |
+| **Last Reviewed** | 2026-07-29 (WP 6.3, REST API) — added `WP6.3-rest-api-implementation.md`. |
 | **Related Documents** | `docs/academy/Academy Index.md`; `docs/academy/Academy Audit Report.md`; `Engineering Standards Register.md`; `Feature Register.md`. |
 | **Related ADRs** | None directly — the Academy documents ADRs, it is not itself governed by one. |
 | **Related Academy Articles** | This register's entire scope. |
@@ -57,7 +57,7 @@
 | 11 | Command Framework | WP 5.1A (new), WP 5.1B (implementation confirmed; `CommandHandlerTable` sharing finding added) |
 | 12 | Diagnostics & Composite Logging | WP 5.2 (new) |
 
-## 03 Work Packages (40 retrospectives)
+## 03 Work Packages (41 retrospectives)
 
 | Retrospective | Type |
 |---|---|
@@ -101,6 +101,7 @@
 | WP 6.5 — Audit Framework Implementation | Implementation (combined design + implementation, ADR-0045 — reuses `WP 6.4`'s own Persistence abstraction, validated as sufficient without speculative extension) |
 | WP 6.2 — Notification Framework Implementation | Implementation (combined design + implementation, ADR-0046 — built on the existing Event Bus's own proven dispatch model rather than a second, parallel publish/subscribe implementation) |
 | WP 6.0 — Reporting Framework Implementation | Implementation (combined design + implementation, ADR-0040 — orthogonal to Export/Import; first of the five implemented `v0.6.0` Work Packages to match its own nominal numeric position) |
+| WP 6.3 — REST API Implementation | Implementation (combined design + implementation, ADR-0047/0048/0049/0052 — this platform's first substantial pre-built framework dependency, first genuinely concurrent per-request scenario, resolved without modifying `WP 6.1`'s own already-shipped `CurrentPrincipalAccessor`) |
 
 **Note.** `WP 4.4C` produced no code and no separate retrospective — its
 story is told inside the `WP 4.4` architecture retrospective's own
@@ -146,17 +147,17 @@ added `Engineering Lifecycle.md`).
 | `Contributor Learning Path.md` | Repository-wide onboarding sequence for a new contributor, added `WP 4.5B` |
 
 **Total: 1 (Introduction) + 11 (Engineering Principles) + 12 (Runtime
-Architecture) + 40 (Work Packages) + 4 (Design Patterns) + 5 (Case
-Studies) + 5 (Engineering Standards) + 4 (top-level meta) = 82 files
+Architecture) + 41 (Work Packages) + 4 (Design Patterns) + 5 (Case
+Studies) + 5 (Engineering Standards) + 4 (top-level meta) = 83 files
 under `docs/academy/` — re-verified by direct `find` count against every
 subfolder individually (`WP 6.1`, `WP 6.4`, `WP 6.5`, `WP 6.2`, `WP
-6.0`), not just the grand total, continuing the standing practice `WP
-5.4`'s own repository review recommended. **Correction, `WP 5.4`**: the
-"03 Work Packages" count had read "33" (`WP 5.2`) then "34" (`WP 5.3`)
-while the section's own table already listed 34 and then 35 rows
-respectively — the stated count had undercounted its own table by one
-for at least two consecutive Work Packages, and the "76" grand total
-inherited the same undercount rather than being independently
+6.0`, `WP 6.3`), not just the grand total, continuing the standing
+practice `WP 5.4`'s own repository review recommended. **Correction, `WP
+5.4`**: the "03 Work Packages" count had read "33" (`WP 5.2`) then "34"
+(`WP 5.3`) while the section's own table already listed 34 and then 35
+rows respectively — the stated count had undercounted its own table by
+one for at least two consecutive Work Packages, and the "76" grand
+total inherited the same undercount rather than being independently
 re-derived. Both figures are now re-verified directly against the real
 file system, not carried forward from the previous register's own
 arithmetic.**

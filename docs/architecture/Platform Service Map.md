@@ -39,6 +39,7 @@ of date is worse than no map at all, because it will be trusted.
 | Audit | **Implemented — WP 6.5** (`IAuditRecord`/`AuditRecord`, `IAuditRecorder`/`AuditRecorder`, `IAuditQuery`/`AuditQuery`, `AuditQueryCriteria`, `Tempest.Core.Audit`) — durable, queryable, append-only history distinct from Logging/Diagnostics per ADR-0045; reuses Persistence, never a second storage mechanism; `IAuditQuery` permission-gated via `ADR-0044` | Dependency Injection, Persistence, Identity & Permissions | `AuditSampleModule` (real contributor); a plausible future consumer for Reporting, the REST API, Licensing, Export/Import, and any engineering module |
 | Notifications | **Implemented — WP 6.2** (`INotification`, `INotificationHandler<T>`, `INotificationDispatcher`/`NotificationDispatcher`, `Tempest.Core.Notifications`) — derived from, not a replacement for, the Event Bus per ADR-0046; transient only, no persistence this release; additive `IPlatformNotification`/`PlatformNotification`/`NotificationSeverity` general-purpose shape | Dependency Injection | `NotificationSampleModule` (real contributor); `NotificationSampleHostedService` (the platform's first real, non-infrastructure hosted service); a plausible future consumer for Reporting, the REST API, Export/Import, Licensing, any engineering module, and a future UI Shell |
 | Reporting | **Implemented — WP 6.0** (`IReportDefinition`, `IReportRenderer<T>`, `IReportingService`/`ReportingService`, `Tempest.Core.Reporting`) — orthogonal to Export/Import per ADR-0040; no permission-gating of its own (caller enforces, mirroring Navigation/Command Framework); additive `IReportTemplate<T>`/`PlainTextReportTemplate<T>` general-purpose template shape | Dependency Injection | `ReportingSampleModule` (real contributor, also demonstrating Identity/Settings/Audit/Notifications integration at the calling layer); a plausible future consumer for the REST API and any engineering module |
+| REST API | **Implemented — WP 6.3** (`IApiEndpointRegistry`/`ApiEndpointRegistry`, `ApiRequestHandler`, `RestApiHostedService`, `Tempest.Core.Api`) — hosted on ASP.NET Core/Kestrel per ADR-0049, orchestrated as an ordinary hosted service per ADR-0047, dispatches every route through the existing, unmodified Command Framework per ADR-0048; identity resolved per-request without touching the shared ambient current principal per ADR-0052 | Dependency Injection, Identity & Permissions, Audit | `ApiSampleModule` (real contributor, exposing `ReportingSampleModule`'s own command with zero business logic of its own); any future engineering module wanting an HTTP-reachable route |
 | Plugin Manifest | **Implemented — WP 4.2** (`Tempest.Core.Plugins`) | Host (Phases 3.1/3.2, ADR-0026 — a pre-Discovery step) | Module Discovery (unchanged), any real plugin |
 | Project Engine | Planned | Undetermined | Undetermined |
 | Requirements Engine | Planned | Undetermined | Undetermined |
@@ -1114,6 +1115,105 @@ Abstraction, Cross-Service Integration, and Scope Boundaries*).
 Implementation*); `docs/releases/v0.6.0/Release Architecture.md` and
 companions; `Platform Service Contracts.md` and companions;
 `docs/governance/Quality/Technical Debt Register.md` (`AT-09`).
+
+---
+
+## REST API *(implemented — WP 6.3, ADR-0047/ADR-0048/ADR-0049/ADR-0052)*
+
+**Responsibility.** Lets an external HTTP client invoke platform
+capability from outside the running process. Hosts an HTTP listener;
+maps registered routes to Command Framework invocations; authorizes
+each request via Identity & Permissions before dispatch; returns a
+response reflecting the command's own `CommandResult`. Contains no
+business logic of its own — every route is a thin translation layer to
+an existing `ICommand`, per this Work Package's own Design Principles.
+
+**Key types.** `IApiEndpointRegistry`/`ApiEndpointRegistry`,
+`ApiRouteDescriptor`, `ApiException` and one subtype
+(`DuplicateApiRouteException`) — all `Tempest.Core.Api`, implemented
+with zero signature deviation from `Public Interface Catalogue.md`.
+`ApiRequestHandler` (the thin, Kestrel-independent request pipeline),
+`RestApiHostedService` (the Kestrel-backed hosted-service scaffold),
+`ApiResponse`, and `OpenApiDocumentGenerator` are additive
+implementation-phase types — the hosted-service scaffold itself was
+deliberately left undrafted in the architecture package, "pending
+`ADR-0049`'s ratification."
+
+**Dependencies.** Dependency Injection; Identity & Permissions
+(`IIdentityService`/`IPermissionEvaluator`, for per-request
+authorization); Audit (`IAuditRecorder`, for the Logging Requirement's
+own "the REST API should call `IAuditRecorder` explicitly"). Does
+**not** depend on Settings, Notifications, or Reporting directly — those
+three are consumed only at the sample-module calling layer
+(`ApiSampleModule` exposing `ReportingSampleModule`'s own command),
+exactly mirroring Reporting's own precedent of keeping cross-service
+integration outside the core service itself.
+
+**Consumers.** `ApiSampleModule` (real contributor and consumer, the
+thirteenth production sample module) — maps one route
+(`POST /api/v1/sample-report`) directly to
+`ReportingSampleModule.GenerateSampleReportCommandId`, containing zero
+business logic of its own whatsoever, the purest possible proof of this
+Work Package's own "no business logic inside controllers/endpoints"
+design principle. Named as a plausible future consumer for any
+engineering module wanting an HTTP-reachable route.
+
+**Lifecycle.** `IApiEndpointRegistry` is an ordinary DI-public,
+container-constructed Phase 6 singleton, registered immediately after
+Audit; `RestApiHostedService` is discovered and orchestrated identically
+to any other hosted service — started Phase 8.1, stopped Phase 10.1
+(`ADR-0030`), isolated by default, not critical (`ADR-0021`) — no new
+Host Lifecycle phase. Retires `AT-07` ("Zero real hosted services exist
+beyond the infrastructure") — the Work Package that trade-off's own
+revisit trigger explicitly named in advance.
+
+**Hosting.** ASP.NET Core/Kestrel, adopted via a `FrameworkReference` to
+the already-installed shared framework, confined entirely to
+`RestApiHostedService` — this platform's own DI container, Command
+Framework, and every other platform service remain entirely unchanged
+and unreplaced (`ADR-0049`). Binds to the loopback address only by
+default (`Api:Port` configuration key, default port `5080`); no TLS is
+configured this release (`TD-14`).
+
+**Security — a genuine, disclosed limitation, not a hidden one.** The
+platform's first network-facing attack surface. Identity is carried in
+an `X-Identity-Id` request header, trusted outright with no
+cryptographic verification — a mechanical extension of this release's
+own local-only identity model (`ADR-0043`) over HTTP, not a real
+authentication mechanism (`TD-13`). `ApiRequestHandler` never
+establishes the shared, ambient `ICurrentPrincipalAccessor` — a
+per-request `IPrincipal` is resolved via the pure, non-mutating
+`IIdentityService.GetPrincipal` and passed explicitly to
+`IPermissionEvaluator.HasPermission`, safe for concurrent requests by
+construction. This was empirically verified, not merely reasoned about:
+an `AsyncLocal<T>`-backed `CurrentPrincipalAccessor` was built and
+tested directly, and regressed 17 pre-existing tests — see `ADR-0052`.
+
+**A genuine implementation-phase finding, disclosed rather than
+absorbed silently:** because the REST pipeline never establishes the
+ambient current principal, a command handler relying on
+`IAuditRecorder`'s own ambient-attribution convention will record
+`"unknown"` when invoked via REST — the real caller identity is instead
+carried explicitly in the REST API's own `api.request` audit entry's
+own `Detail[CallerIdentityId]` (`TD-15`), mirroring `WP 6.5`'s own
+`Detail`-carried-attribute convention.
+
+**ADR references.** ADR-0038 (Command dispatch failure model, reused
+for renderer/handler-failure mapping); ADR-0044 (the enforcement point
+this Work Package's own permission checks reuse); ADR-0045 (the
+`Detail`-carried-attribute convention `TD-15`'s own resolution mirrors);
+ADR-0047 (*The REST API Is a Background Hosted Service*); ADR-0048
+(*REST Endpoints Dispatch Through the Existing Command Framework*);
+ADR-0049 (*Adopting ASP.NET Core/Kestrel for the REST API*); ADR-0052
+(*The REST API Resolves Identity Per-Request Without Touching the
+Ambient Current Principal*).
+
+**Academy references.** `WP 6.3` retrospective (*REST API
+Implementation*); `docs/releases/v0.6.0/Release Architecture.md` and
+companions; `Platform Service Contracts.md` and companions;
+`docs/releases/v0.6.0/Risk Register.md` (`R1`, `R2`, `R3`);
+`docs/governance/Quality/Technical Debt Register.md` (`AT-07`, retired;
+`AT-10`; `TD-04`; `TD-13`; `TD-14`; `TD-15`).
 
 ---
 

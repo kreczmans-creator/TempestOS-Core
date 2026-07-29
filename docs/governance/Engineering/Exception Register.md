@@ -10,9 +10,9 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | Direct source inspection; `docs/architecture/Failure Behaviour.md`; `docs/academy/06 Engineering Standards/01-exception-design.md`. |
 | **Review Frequency** | Updated whenever a new exception type is introduced. |
-| **Last Reviewed** | 2026-07-29 (WP 6.0, Reporting Framework) — added `ReportingException`, `DuplicateReportDefinitionException`, `ReportDefinitionNotFoundException` (see Entries table, below); no other change to prior entries. |
+| **Last Reviewed** | 2026-07-29 (WP 6.3, REST API) — added `ApiException`, `DuplicateApiRouteException` (see Entries table, below); no other change to prior entries. |
 | **Related Documents** | `docs/architecture/Failure Behaviour.md`; `Architectural Dependency Register.md`. |
-| **Related ADRs** | ADR-0013, ADR-0021, ADR-0025, ADR-0038, ADR-0040, ADR-0046. |
+| **Related ADRs** | ADR-0013, ADR-0021, ADR-0025, ADR-0038, ADR-0040, ADR-0046, ADR-0047, ADR-0048. |
 | **Related Academy Articles** | `docs/academy/06 Engineering Standards/01-exception-design.md`. |
 | **Coverage Status** | Complete. |
 
@@ -66,11 +66,13 @@
 | `ReportingException` | `Exception` | Reporting | Application logic's own error (not Host-level); base-plus-subtype (mirroring `SettingsException`/`IdentityException`/`CommandException`), never thrown directly itself |
 | `DuplicateReportDefinitionException` | `ReportingException` | Reporting | Application logic's own error (not Host-level); thrown by `RegisterDefinition` — first registration wins |
 | `ReportDefinitionNotFoundException` | `ReportingException` | Reporting | Application logic's own error (not Host-level); thrown by `GenerateAsync` for an unregistered Id |
+| `ApiException` | `Exception` | REST API | Application logic's own error (not Host-level); base-plus-subtype (mirroring `ReportingException`/`SettingsException`), never thrown directly itself |
+| `DuplicateApiRouteException` | `ApiException` | REST API | Application logic's own error (not Host-level); thrown by `MapCommand` — first registration wins |
 
-**Total: 44 custom exception types — Verified directly against
+**Total: 46 custom exception types — Verified directly against
 `src/Tempest.Core/` (`grep -rlP "^public (sealed )?class \w+Exception\b"`
-returns exactly 44 files, matching the 44 rows in the Entries table
-above, re-derived directly by `WP 6.0` rather than incremented from the
+returns exactly 46 files, matching the 46 rows in the Entries table
+above, re-derived directly by `WP 6.3` rather than incremented from the
 prior figure — the standing practice `WP 5.4` recommended). Corrected,
 `WP 5.4`: this total previously read "30," undercounting
 by one against this register's own Entries table and Distribution table
@@ -165,6 +167,22 @@ than being wrapped in a Reporting-specific type — mirroring the Command
 Framework's own dispatch failure model (`ADR-0038`), not the Event
 Bus's or Notification Dispatcher's own per-subscriber isolation.
 
+## A Note on the REST API
+
+`ApiException`/`DuplicateApiRouteException` mirror `ReportingException`/
+`DuplicateReportDefinitionException`'s own base-plus-subtype shape
+exactly — thrown by `IApiEndpointRegistry.MapCommand` for a colliding
+method + path, first registration wins. A request-time failure
+(unmapped route, missing/unauthorized identity, a dispatched command's
+own exception) is deliberately **not** modelled as a custom exception
+type at all — `ApiRequestHandler` maps each case directly to an HTTP
+status code (404/401/403/500) and returns it as an ordinary
+`ApiResponse`, never throwing across its own public `HandleAsync`
+boundary (`CommandNotFoundException`/`OperationCanceledException`
+aside, both already-existing types it catches or lets propagate,
+respectively). Application logic's own error (not Host-level); see
+`ADR-0048`.
+
 ## Distribution by Root Category
 
 | Root Category | Exception Count |
@@ -185,6 +203,7 @@ Bus's or Notification Dispatcher's own per-subscriber isolation.
 | Audit | 1 |
 | Notifications | 1 |
 | Reporting | 3 |
+| REST API | 2 |
 
 ## Cross-Reference Check
 

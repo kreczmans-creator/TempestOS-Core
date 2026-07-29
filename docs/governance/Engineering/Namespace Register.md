@@ -10,9 +10,9 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | Direct source inspection (`grep -rhoP "^namespace" src/`). |
 | **Review Frequency** | Updated whenever a new namespace is introduced under `src/`. |
-| **Last Reviewed** | 2026-07-29 (WP 6.0, Reporting Framework) — added `Tempest.Core.Reporting`; every row's own file count re-derived directly again (`grep -rl "^namespace X;"`), consistent with `WP 6.2`'s own prior pass. |
+| **Last Reviewed** | 2026-07-29 (WP 6.3, REST API) — added `Tempest.Core.Api`; every row's own file count re-derived directly again (`grep -rl "^namespace X;"`), consistent with `WP 6.0`'s/`WP 6.2`'s own prior passes. |
 | **Related Documents** | `docs/architecture/Engineering Glossary.md` (`Tempest.Core.Runtime` vs. `Tempest.Core.Hosting`, ADR-0016); `Interface Register.md`; `Exception Register.md`. |
-| **Related ADRs** | ADR-0016, ADR-0024, ADR-0036, ADR-0037, ADR-0038, ADR-0039, ADR-0040, ADR-0046. |
+| **Related ADRs** | ADR-0016, ADR-0024, ADR-0036, ADR-0037, ADR-0038, ADR-0039, ADR-0040, ADR-0046, ADR-0047, ADR-0048, ADR-0049. |
 | **Related Academy Articles** | `docs/academy/02 Runtime Architecture/06-platform-layering.md`. |
 | **Coverage Status** | Complete. |
 
@@ -31,7 +31,7 @@
 | `Tempest.Core.Runtime` | Tempest.Core | 7 | `TempestHost`, `TempestHostBuilder`, `HostState` | WP 2.7B; distinct from `Tempest.Core.Hosting` per ADR-0016 |
 | `Tempest.Core.Events` | Tempest.Core | 4 | `IEvent`, `IEventHandler<T>`, `IEventBus`, `EventBus` | WP 4.0 (contracts), WP 4.4D (bus) |
 | `Tempest.Core.Navigation` | Tempest.Core | 7 | `NavigationItem`, `INavigationProvider`/`NavigationService`, `NavigationRequestedEvent`, `NavigationException` and two subtypes | WP 5.0A (design), WP 5.0B (implementation) |
-| `Tempest.Samples` | Tempest.Samples | 36 | `ClockModule`, `ClockLifecycleObserverModule`, `ClockModuleLifecycleEvent`, `NavigationSampleModule`, `SecondaryNavigationSampleModule`, `DuplicateNavigationSampleModule`, `CommandSampleModule`, `IncrementCounterCommand`/`Handler`, `NavigateToSampleHomeCommand`/`Handler`, `DiagnosticsSampleModule`, `GetDiagnosticsSummaryCommand`/`Handler`, `IdentitySampleModule`, `CheckSamplePermissionCommand`/`Handler`, `SettingsSampleModule`, `GetSampleSettingCommand`/`Handler`, `SetSampleSettingCommand`/`Handler`, `AuditSampleModule`, `RecordSampleAuditActionCommand`/`Handler`, `QuerySampleAuditRecordsCommand`/`Handler`, `NotificationSampleModule`, `NotificationSampleHostedService`, `PublishSampleNotificationCommand`/`Handler`, `ReportingSampleModule`, `SampleSummaryReportDefinition`, `SampleSummaryReportRenderer`, `GenerateSampleReportCommand`/`Handler` | WP 4.3, extended WP 4.4E, WP 5.0B, WP 5.1B, WP 5.2, WP 6.1, WP 6.4, WP 6.5, WP 6.2, WP 6.0 |
+| `Tempest.Samples` | Tempest.Samples | 37 | `ClockModule`, `ClockLifecycleObserverModule`, `ClockModuleLifecycleEvent`, `NavigationSampleModule`, `SecondaryNavigationSampleModule`, `DuplicateNavigationSampleModule`, `CommandSampleModule`, `IncrementCounterCommand`/`Handler`, `NavigateToSampleHomeCommand`/`Handler`, `DiagnosticsSampleModule`, `GetDiagnosticsSummaryCommand`/`Handler`, `IdentitySampleModule`, `CheckSamplePermissionCommand`/`Handler`, `SettingsSampleModule`, `GetSampleSettingCommand`/`Handler`, `SetSampleSettingCommand`/`Handler`, `AuditSampleModule`, `RecordSampleAuditActionCommand`/`Handler`, `QuerySampleAuditRecordsCommand`/`Handler`, `NotificationSampleModule`, `NotificationSampleHostedService`, `PublishSampleNotificationCommand`/`Handler`, `ReportingSampleModule`, `SampleSummaryReportDefinition`, `SampleSummaryReportRenderer`, `GenerateSampleReportCommand`/`Handler`, `ApiSampleModule` | WP 4.3, extended WP 4.4E, WP 5.0B, WP 5.1B, WP 5.2, WP 6.1, WP 6.4, WP 6.5, WP 6.2, WP 6.0, WP 6.3 |
 | `Tempest.Core.Versioning` | Tempest.Core | 3 | `IPlatformVersionProvider`, `PlatformVersionProvider`, `PlatformVersion` | WP 4.2A |
 | `Tempest.Core.Repositories` | Tempest.Core | 2 | Pre-module-pipeline project repository (`IProjectRepository`, `JsonProjectRepository`) | Pre-dates Claude-developed history (Unknown exact origin) |
 | `Tempest.Core.Projects` | Tempest.Core | 1 | Pre-module-pipeline project service | Pre-dates Claude-developed history (Unknown exact origin) |
@@ -47,23 +47,21 @@
 | `Tempest.Core.Audit` | Tempest.Core | 9 | `IAuditRecord`/`AuditRecord`, `IAuditRecorder`/`AuditRecorder`, `IAuditQuery`/`AuditQuery`, `AuditQueryCriteria`, `AuditRecordDto` (internal), `AuditException` | WP 6.5 |
 | `Tempest.Core.Notifications` | Tempest.Core | 8 | `INotification`, `INotificationHandler<T>`, `INotificationDispatcher`/`NotificationDispatcher`, `NotificationException`, `NotificationSeverity`, `IPlatformNotification`/`PlatformNotification` | WP 6.2 |
 | `Tempest.Core.Reporting` | Tempest.Core | 11 | `IReportDefinition`, `IReportRenderer<T>`, `IReportingService`/`ReportingService`, `ReportRequest`, `ReportResult`, `ReportingException` and two subtypes, `IReportTemplate<T>`/`PlainTextReportTemplate<T>` | WP 6.0 |
+| `Tempest.Core.Api` | Tempest.Core | 9 | `IApiEndpointRegistry`/`ApiEndpointRegistry`, `ApiRouteDescriptor`, `ApiResponse`, `ApiRequestHandler`, `RestApiHostedService`, `OpenApiDocumentGenerator`, `ApiException` and one subtype | WP 6.3 |
 | *(no namespace declared — global namespace)* | Tempest.Core, Tempest.App | 7 | `AssemblyInfo.cs`, `Program.cs` (rewritten `WP 5.0D` as the real entry point; still top-level statements, still global namespace), `ApplicationConfiguration.cs`, `ConfigurationService.cs`, `LoggingService.cs`, `ProjectModel.cs`, `ProjectNumberGenerator.cs` — the latter five pre-module-pipeline, bootstrap-era types, now unreferenced by `Program.cs` but untouched and unmigrated (`WP 5.0C`'s own disclosed scope boundary; `WP 5.2` re-scoped `TD-01`'s own migration question forward again rather than touching these) | Pre-dates Claude-developed history (Unknown exact origin) |
 
-**Total: 26 namespaces (25 declared + the global namespace) across 3
+**Total: 27 namespaces (26 declared + the global namespace) across 3
 in-scope projects (`Tempest.Core`, `Tempest.App`, `Tempest.Samples`) —
 the `Tempest.Templates.Module` sample-only project `WP 5.3` added
 remains out of this register's own declared scope (its own
 `TempestSampleModule` namespace is not counted above), but its single
-`.cs` file is still part of the `src/` file total below. 226 `.cs` files
-under `src/` excluding generated `obj`/`bin` artifacts (225 across the
+`.cs` file is still part of the `src/` file total below. 236 `.cs` files
+under `src/` excluding generated `obj`/`bin` artifacts (235 across the
 3 in-scope projects + 1 in `Tempest.Templates.Module`) — re-derived
-directly by `WP 6.0`, per-namespace, via `grep -rl "^namespace X;"
+directly by `WP 6.3`, per-namespace, via `grep -rl "^namespace X;"
 src/` for every row above, not incremented from the prior figure. `WP
-6.0` itself adds the new `Tempest.Core.Reporting` namespace (11 files)
-and 5 new `Tempest.Samples` files (`ReportingSampleModule.cs`,
-`SampleSummaryReportDefinition.cs`, `SampleSummaryReportRenderer.cs`,
-`GenerateSampleReportCommand.cs`,
-`GenerateSampleReportCommandHandler.cs`).**
+6.3` itself adds the new `Tempest.Core.Api` namespace (9 files) and 1
+new `Tempest.Samples` file (`ApiSampleModule.cs`).**
 
 ## A Note on the Four Pre-Claude Namespaces
 

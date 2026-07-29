@@ -266,6 +266,23 @@ entirely at the sample module's own calling layer.
 - [WP 6.0 — Reporting Framework Implementation](03%20Work%20Packages/WP6.0-reporting-framework-implementation.md) — implemented directly against the already-approved architecture and Contract Review packages, including the additive Template Strategy elaboration (`ADR-0040`) and a dedicated Platform Integration Demonstration assessing interactions with Identity, Settings, Persistence, Audit, and Notifications.
 - ADR-0040 (Reporting Is DI-Public and Orthogonal to Export/Import — Template Abstraction, Cross-Service Integration, and Scope Boundaries).
 
+### REST API
+
+Implemented (`WP 6.3`, `ADR-0047`/`ADR-0048`/`ADR-0049`/`ADR-0052`) —
+`Tempest.Core.Api`: lets an external HTTP client invoke platform
+capability, hosted on ASP.NET Core/Kestrel confined to one type,
+dispatching every route through the existing, unmodified Command
+Framework with zero business logic of its own. This platform's first
+genuinely concurrent, per-request scenario is resolved without touching
+`CurrentPrincipalAccessor`'s own already-shipped ambient design — a
+decision verified empirically (an `AsyncLocal<T>` alternative was built
+and tested, and regressed 17 pre-existing tests) rather than reasoned
+about alone. No real authentication exists this release — a disclosed,
+deliberate limitation.
+
+- [WP 6.3 — REST API Implementation](03%20Work%20Packages/WP6.3-rest-api-implementation.md) — implemented directly against the already-approved architecture and Contract Review packages, including the empirically-verified identity-resolution decision (`ADR-0052`) and a dedicated Platform Integration Demonstration.
+- ADR-0047 (The REST API Is a Background Hosted Service), ADR-0048 (REST Endpoints Dispatch Through the Existing Command Framework), ADR-0049 (Adopting ASP.NET Core/Kestrel for the REST API), ADR-0052 (The REST API Resolves Identity Per-Request Without Touching the Ambient Current Principal — Empirically Verified).
+
 ## Design Patterns
 
 Recurring structural patterns TempestOS actually uses, explained in terms
@@ -360,6 +377,7 @@ is complete and `v0.5.0` is released.
 - [WP 6.5 — Audit Framework Implementation](03%20Work%20Packages/WP6.5-audit-framework-implementation.md) — implemented per the same recommendation; reuses `WP 6.4`'s own Persistence abstraction and validates it as sufficient, without extending it speculatively.
 - [WP 6.2 — Notification Framework Implementation](03%20Work%20Packages/WP6.2-notification-framework-implementation.md) — implemented per the same recommendation; builds on the existing Event Bus's own proven dispatch model rather than a second, parallel publish/subscribe implementation.
 - [WP 6.0 — Reporting Framework Implementation](03%20Work%20Packages/WP6.0-reporting-framework-implementation.md) — the first of `v0.6.0`'s five implemented Work Packages to match its own nominal numeric position; orthogonal to the not-yet-started `WP 6.7` (Export/Import).
+- [WP 6.3 — REST API Implementation](03%20Work%20Packages/WP6.3-rest-api-implementation.md) — this platform's first substantial dependency on a pre-built framework component (ASP.NET Core/Kestrel) and first genuinely concurrent, per-request scenario, resolved without modifying `WP 6.1`'s own already-shipped `CurrentPrincipalAccessor`.
 
 See `PROJECT_STATUS.md` for current status and `docs/releases/v0.6.0/
 WorkPackages.md` for the full, nine-Work-Package plan.

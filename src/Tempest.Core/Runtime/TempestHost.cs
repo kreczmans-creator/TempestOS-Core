@@ -1,3 +1,4 @@
+using Tempest.Core.Api;
 using Tempest.Core.Audit;
 using Tempest.Core.BackgroundServices;
 using Tempest.Core.Commands;
@@ -268,6 +269,14 @@ public sealed class TempestHost : ITempestHost
         // & Permissions, both of which it depends on.
         services.Singleton<IAuditRecorder, AuditRecorder>();
         services.Singleton<IAuditQuery, AuditQuery>();
+
+        // ADR-0047: the REST API's own hosted-service scaffold is
+        // registered separately, via hosted service discovery, below -
+        // IApiEndpointRegistry itself is an ordinary Phase 6 singleton,
+        // resolvable by any module wanting to map a route during its own
+        // initialisation, before the hosted service itself ever starts
+        // listening.
+        services.Singleton<IApiEndpointRegistry, ApiEndpointRegistry>();
 
         // Composition Root pattern (ADR-0009), like Configuration/Logging/
         // PlatformVersionProvider above: DiagnosticsProvider needs references

@@ -10,36 +10,38 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | `src/` (direct source inspection); `docs/academy/03 Work Packages/WP4.5-background-services-implementation.md`. |
 | **Review Frequency** | Updated whenever a new production hosted service is added anywhere under `src/`. |
-| **Last Reviewed** | 2026-07-25 (WP 4.5A). |
+| **Last Reviewed** | 2026-07-29 (WP 6.3, REST API) — populated for the first time since `WP 4.5A`; found and corrected a genuine, disclosed governance-documentation drift (see Coverage Note, below). |
 | **Related Documents** | `docs/architecture/Background Services Architecture.md`; `Platform Services Register.md`; `Module Register.md` (the same "real consumer vs. infrastructure" distinction applies). |
-| **Related ADRs** | ADR-0021, ADR-0029, ADR-0030. |
-| **Related Academy Articles** | `docs/academy/03 Work Packages/WP4.5-background-services-architecture.md`, `WP4.5-background-services-implementation.md`; `docs/academy/02 Runtime Architecture/08-failure-isolation.md` (Case 2). |
-| **Coverage Status** | Partial. |
+| **Related ADRs** | ADR-0021, ADR-0029, ADR-0030, ADR-0047. |
+| **Related Academy Articles** | `docs/academy/03 Work Packages/WP4.5-background-services-architecture.md`, `WP4.5-background-services-implementation.md`; `docs/academy/02 Runtime Architecture/08-failure-isolation.md` (Case 2); `WP6.2-notification-framework-implementation.md`; `WP6.3-rest-api-implementation.md`. |
+| **Coverage Status** | Complete. |
 
 ---
 
 ## Coverage Note
 
-**Reason for Partial coverage.** The Background Services *infrastructure*
+The Background Services *infrastructure*
 (`IHostedServiceDiscoveryService`/`HostedServiceDiscoveryService`,
-`IHostedServiceManager`/`HostedServiceManager`) is fully implemented and
-tested (WP 4.5) — see `Platform Services Register.md`. **Zero production
-hosted services exist** (**Verified** by direct grep of `src/` for
-concrete `IHostedService` implementations outside
-`Tempest.Core.BackgroundServices`'s own infrastructure types) — this is a
-deliberate scope decision recorded in the WP 4.5 implementation
-retrospective ("do not yet build feature-rich Background Services; any
-sample service should exist solely to validate the infrastructure"), not
-an oversight or gap.
-
-**Review Trigger.** The first Work Package that adds a real, shipped
-`IHostedService` implementation (to `Tempest.Samples` or elsewhere) must
-populate this register's Entries table with at least one row and update
-Coverage Status to Complete or the appropriate ongoing status.
+`IHostedServiceManager`/`HostedServiceManager`) has been fully
+implemented and tested since `WP 4.5` — see `Platform Services
+Register.md`. **A disclosed governance-documentation finding:** this
+register itself was never updated when `WP 6.2` added
+`NotificationSampleHostedService` — the first real, non-infrastructure
+`IHostedService` this codebase shipped — so its own "Zero production
+hosted services exist" text survived, stale, through an entire Work
+Package that directly contradicted it. Found and corrected here, during
+`WP 6.3`'s own repository review, at the same time this register gains
+its second real entry, `RestApiHostedService` — the Work Package
+`AT-07`'s own revisit trigger explicitly named in advance (`Required
+ADRs.md`'s `ADR-0047` entry). See `docs/governance/Quality/Technical
+Debt Register.md`'s own `AT-07` entry, now Retired.
 
 ## Entries
 
-*(none — see Coverage Note, above)*
+| Hosted Service | Namespace | Introduced | Critical? | Purpose |
+|---|---|---|---|---|
+| `NotificationSampleHostedService` | `Tempest.Samples` | WP 6.2 | No (isolated by default, ADR-0021) | Publishes an `IPlatformNotification` on `StartAsync`/`StopAsync`, proving the Notification Framework's own "Background notifications" deliverable end-to-end; the codebase's first real, non-infrastructure hosted service, though this Work Package explicitly did not claim `AT-07`'s own retirement. |
+| `RestApiHostedService` | `Tempest.Core.Api` | WP 6.3 | No (isolated by default, ADR-0021) | Hosts the REST API's own HTTP listener (ASP.NET Core/Kestrel, `ADR-0049`), started Phase 8.1, stopped Phase 10.1 (`ADR-0047`) — the Work Package `AT-07`'s own revisit trigger explicitly named. A start failure (for example, the configured port already in use) is isolated, proven directly by a dedicated test. |
 
 ## Test-Only Hosted Service Fixtures (Out of Scope, Noted for Completeness)
 

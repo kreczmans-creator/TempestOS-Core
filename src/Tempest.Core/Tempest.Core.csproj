@@ -6,4 +6,13 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <!-- ADR-0049: ASP.NET Core/Kestrel adopted for HTTP hosting only, via
+         the shared framework already bundled with the .NET SDK - not a
+         third-party NuGet package. Confined to Tempest.Core.Api's own
+         hosting boundary; this platform's own DI container and every
+         other platform service remain entirely unchanged. -->
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
 </Project>
