@@ -222,6 +222,18 @@ existing Event Bus.
 - [WP 6.4 — Settings Framework Implementation](03%20Work%20Packages/WP6.4-settings-framework-implementation.md) — implemented directly against the already-approved `v0.6.0` architecture and Contract Review packages, including the shared-Persistence-abstraction ratification (`ADR-0041`) and the deliberate choice not to add a sensitive-value flag to an approved interface (`ADR-0042`).
 - ADR-0041 (A Shared Persistence Abstraction Serves Settings and Audit), ADR-0042 (Settings Is DI-Public and Distinct From Configuration).
 
+### Audit
+
+Implemented (`WP 6.5`, `ADR-0045`) — `Tempest.Core.Audit`: a durable,
+queryable, append-only record of who did what, when, explicitly
+distinct from Logging and Diagnostics. Reuses the Persistence
+abstraction `WP 6.4` established rather than introducing a second
+storage mechanism; `IAuditQuery` is permission-gated through the same
+enforcement point Identity & Permissions established (`ADR-0044`).
+
+- [WP 6.5 — Audit Framework Implementation](03%20Work%20Packages/WP6.5-audit-framework-implementation.md) — implemented directly against the already-approved architecture and Contract Review packages, including the recording-model/permission-gating/Persistence-sufficiency decisions (`ADR-0045`) and a genuine, disclosed engineering-review finding: a premature-resource-disposal bug in two prior Work Packages' own Host-registration tests.
+- ADR-0045 (Audit Is a Durable, Queryable, Append-Only Record, Distinct From Logging and Diagnostics — Recording Model, Permission Gating, and Persistence Sufficiency).
+
 ## Design Patterns
 
 Recurring structural patterns TempestOS actually uses, explained in terms
@@ -313,6 +325,7 @@ is complete and `v0.5.0` is released.
 
 - [WP 6.1 — Permissions & Identity Implementation](03%20Work%20Packages/WP6.1-permissions-and-identity-implementation.md) — implemented directly against the already-approved architecture and Contract Review packages; no separate architecture-phase retrospective, per direct instruction.
 - [WP 6.4 — Settings Framework Implementation](03%20Work%20Packages/WP6.4-settings-framework-implementation.md) — implemented ahead of `WP 6.0`–`WP 6.3` per `Platform Service Implementation Order.md`'s own recommendation; establishes the shared Persistence abstraction as part of its own scope.
+- [WP 6.5 — Audit Framework Implementation](03%20Work%20Packages/WP6.5-audit-framework-implementation.md) — implemented per the same recommendation; reuses `WP 6.4`'s own Persistence abstraction and validates it as sufficient, without extending it speculatively.
 
 See `PROJECT_STATUS.md` for current status and `docs/releases/v0.6.0/
 WorkPackages.md` for the full, nine-Work-Package plan.

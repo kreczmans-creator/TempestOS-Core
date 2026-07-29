@@ -43,12 +43,23 @@ public class SettingsHostRegistrationTests
         }
     }
 
+    // Every test below is deliberately `async Task`, awaiting
+    // RunAgainstRunningHostAsync directly - not `Task` returning the call
+    // unawaited. With a `using` resource declared in the same method, an
+    // unawaited return disposes that resource (deleting the temp
+    // directory) the instant this method returns control to the caller,
+    // which happens well before the awaited body actually runs to
+    // completion - a real, found-and-fixed bug (see this Work Package's
+    // own Lessons Learned) that produced non-deterministic empty results
+    // for any test that actually depends on the directory surviving the
+    // full operation.
+
     [Fact]
-    public Task Host_RegistersIPersistenceStore_Resolvable()
+    public async Task Host_RegistersIPersistenceStore_Resolvable()
     {
         using var temp = new TempDirectory();
 
-        return RunAgainstRunningHostAsync(temp.Path, host =>
+        await RunAgainstRunningHostAsync(temp.Path, host =>
         {
             var store = host.Services!.GetService(typeof(IPersistenceStore));
 
@@ -59,11 +70,11 @@ public class SettingsHostRegistrationTests
     }
 
     [Fact]
-    public Task Host_RegistersISettingsProvider_Resolvable()
+    public async Task Host_RegistersISettingsProvider_Resolvable()
     {
         using var temp = new TempDirectory();
 
-        return RunAgainstRunningHostAsync(temp.Path, host =>
+        await RunAgainstRunningHostAsync(temp.Path, host =>
         {
             var provider = host.Services!.GetService(typeof(ISettingsProvider));
 
@@ -74,11 +85,11 @@ public class SettingsHostRegistrationTests
     }
 
     [Fact]
-    public Task Host_ResolvingIPersistenceStoreTwice_ReturnsTheSameInstance()
+    public async Task Host_ResolvingIPersistenceStoreTwice_ReturnsTheSameInstance()
     {
         using var temp = new TempDirectory();
 
-        return RunAgainstRunningHostAsync(temp.Path, host =>
+        await RunAgainstRunningHostAsync(temp.Path, host =>
         {
             var first = host.Services!.GetService(typeof(IPersistenceStore));
             var second = host.Services!.GetService(typeof(IPersistenceStore));
@@ -90,11 +101,11 @@ public class SettingsHostRegistrationTests
     }
 
     [Fact]
-    public Task Host_ResolvingISettingsProviderTwice_ReturnsTheSameInstance()
+    public async Task Host_ResolvingISettingsProviderTwice_ReturnsTheSameInstance()
     {
         using var temp = new TempDirectory();
 
-        return RunAgainstRunningHostAsync(temp.Path, host =>
+        await RunAgainstRunningHostAsync(temp.Path, host =>
         {
             var first = host.Services!.GetService(typeof(ISettingsProvider));
             var second = host.Services!.GetService(typeof(ISettingsProvider));
@@ -106,11 +117,11 @@ public class SettingsHostRegistrationTests
     }
 
     [Fact]
-    public Task Host_SettingsProvider_CanRoundTripAValueThroughTheRealPersistenceStore()
+    public async Task Host_SettingsProvider_CanRoundTripAValueThroughTheRealPersistenceStore()
     {
         using var temp = new TempDirectory();
 
-        return RunAgainstRunningHostAsync(temp.Path, async host =>
+        await RunAgainstRunningHostAsync(temp.Path, async host =>
         {
             var settingsProvider = (ISettingsProvider)host.Services!.GetService(typeof(ISettingsProvider));
             settingsProvider.RegisterDefinition(new SettingDefinition("registration-test.key", "Test", "default"));

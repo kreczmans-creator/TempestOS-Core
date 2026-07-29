@@ -61,11 +61,12 @@
 | `SettingsException` | `Exception` | Settings | Application logic's own error (not Host-level); base type, never thrown directly |
 | `DuplicateSettingDefinitionException` | `SettingsException` | Settings | Application logic's own error (not Host-level); thrown by `RegisterDefinition` — first registration wins |
 | `SettingNotFoundException` | `SettingsException` | Settings | Application logic's own error (not Host-level); thrown by `GetValueAsync`/`SetValueAsync` for an unregistered key |
+| `AuditException` | `Exception` | Audit | Application logic's own error (not Host-level); base type, never thrown directly — every current Audit failure mode is already covered by an existing exception from another namespace (`ArgumentException`, `PersistenceStoreUnavailableException`, `PermissionDeniedException`) |
 
-**Total: 39 custom exception types — Verified directly against
+**Total: 40 custom exception types — Verified directly against
 `src/Tempest.Core/` (`grep -rlP "^public (sealed )?class \w+Exception\b"`
-returns exactly 39 files, matching the 39 rows in the Entries table
-above, re-derived directly by `WP 6.4` rather than incremented from the
+returns exactly 40 files, matching the 40 rows in the Entries table
+above, re-derived directly by `WP 6.5` rather than incremented from the
 prior figure — the standing practice `WP 5.4` recommended). Corrected,
 `WP 5.4`: this total previously read "30," undercounting
 by one against this register's own Entries table and Distribution table
@@ -148,6 +149,7 @@ exception rather than throwing a new, wrapping one.
 | Identity & Permissions | 3 |
 | Persistence | 2 |
 | Settings | 3 |
+| Audit | 1 |
 
 ## Cross-Reference Check
 

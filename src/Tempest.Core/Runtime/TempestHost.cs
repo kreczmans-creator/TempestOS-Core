@@ -1,3 +1,4 @@
+using Tempest.Core.Audit;
 using Tempest.Core.BackgroundServices;
 using Tempest.Core.Commands;
 using Tempest.Core.Configuration;
@@ -256,6 +257,13 @@ public sealed class TempestHost : ITempestHost
         // can resolve IPersistenceStore for SettingsProvider's constructor.
         services.Singleton<IPersistenceStore, PersistenceStore>();
         services.Singleton<ISettingsProvider, SettingsProvider>();
+
+        // ADR-0041/ADR-0045: Audit reuses the same IPersistenceStore
+        // Settings established, rather than introducing a second
+        // storage mechanism - registered after Persistence and Identity
+        // & Permissions, both of which it depends on.
+        services.Singleton<IAuditRecorder, AuditRecorder>();
+        services.Singleton<IAuditQuery, AuditQuery>();
 
         // Composition Root pattern (ADR-0009), like Configuration/Logging/
         // PlatformVersionProvider above: DiagnosticsProvider needs references

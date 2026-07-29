@@ -1,6 +1,6 @@
 # TempestOS — Project Status
 
-**Last Updated:** 2026-07-29 (`WP 6.4` — Settings Framework, implemented)
+**Last Updated:** 2026-07-29 (`WP 6.5` — Audit Framework, implemented)
 
 This is the primary status dashboard for TempestOS. Read this first for
 "where does the project stand right now" — for "why is it built this
@@ -41,24 +41,24 @@ released.** TempestOS is now in the **Platform Services** phase
 Release Architecture.md` and seven companion documents) and Contract
 Review package (`Platform Service Contracts.md` and four companion
 documents) were both produced and approved ahead of any implementation.
-`WP 6.1` (Permissions & Identity) and `WP 6.4` (Settings Framework) are
-now both implemented — each ahead of its own nominal numeric order
-(`WP 6.0` is listed first in `WorkPackages.md`), per `Platform Service
-Implementation Order.md`'s own explicit recommendation: Identity &
-Permissions carries the release's highest architectural risk and is the
-most-depended-on new service, and Settings was the second Work Package
-in that same recommended first wave, since it establishes the shared
-Persistence abstraction (`ADR-0041`) `WP 6.5` (Audit) is expected to
-depend on. See Current Work Package, below.
+`WP 6.1` (Permissions & Identity), `WP 6.4` (Settings Framework), and
+`WP 6.5` (Audit Framework) are now all implemented — each ahead of its
+own nominal numeric order (`WP 6.0` is listed first in
+`WorkPackages.md`), per `Platform Service Implementation Order.md`'s
+own explicit recommendation. `WP 6.5` reuses the Persistence abstraction
+`WP 6.4` established, exactly as that recommendation anticipated, rather
+than introducing a second storage mechanism. See Current Work Package,
+below.
 
 ## Current Development Branch
 
 **`feature/v0.6.0-platform-services`**, cut from `main` at the `v0.5.0`
-tag. `WP 6.1` (Permissions & Identity) and `WP 6.4` (Settings Framework)
-are implemented on this branch; no other `v0.6.0` Work Package has
-begun. `feature/v0.5.0-developer-experience` (`WP 5.0A` through `WP 5.4`)
-has been merged into `main` and is retained, unmerged branches are never
-deleted per this project's own convention.
+tag. `WP 6.1` (Permissions & Identity), `WP 6.4` (Settings Framework),
+and `WP 6.5` (Audit Framework) are implemented on this branch; no other
+`v0.6.0` Work Package has begun. `feature/v0.5.0-developer-experience`
+(`WP 5.0A` through `WP 5.4`) has been merged into `main` and is
+retained, unmerged branches are never deleted per this project's own
+convention.
 
 ## Current Release
 
@@ -68,27 +68,34 @@ before that; `v0.3.0` ("Runtime Foundation Complete") before that.
 
 ## Current Work Package
 
-**`WP 6.4` — Settings Framework — implemented.** The second Work
-Package of the Platform Services phase (`v0.6.0`) to ship real code,
-following `WP 6.1`'s own precedent of implementing directly against the
+**`WP 6.5` — Audit Framework — implemented.** The third Work Package of
+the Platform Services phase (`v0.6.0`) to ship real code, following
+`WP 6.1`/`WP 6.4`'s own precedent of implementing directly against the
 already-approved architecture and Contract Review packages, no separate
-architecture phase. Delivers `Tempest.Core.Settings`
-(`ISettingDefinition`/`ISettingsProvider`/`ISettingsChangedEvent`,
-exactly as approved) and, as part of this Work Package's own scope per
-`ADR-0041`, `Tempest.Core.Persistence` (`IPersistenceStore`) — a
-file-backed, per-key-locked durable store, established specifically so
-Settings and the future Audit Framework (`WP 6.5`) share one storage
-mechanism rather than each inventing an incompatible one.
-`SettingsProvider` caches values in memory (invalidated on write) and
-always publishes `ISettingsChangedEvent` on a successful write,
-including a write of the already-current value — both explicit defaults
-`Platform Service Contracts.md` itself named. No sensitive-value
-redaction exists in this release — a disclosed, deliberate limitation,
-not a defect (`ADR-0042`). Two new ADRs (`ADR-0041`, `ADR-0042`),
-`SettingsSampleModule` (the ninth production sample module), 75 new
-tests (718 total, 0 failures), 0 build warnings, both Debug and Release.
-See its own retrospective: `docs/academy/03 Work Packages/
-WP6.4-settings-framework-implementation.md`.
+architecture phase. Delivers `Tempest.Core.Audit`
+(`IAuditRecord`/`IAuditRecorder`/`IAuditQuery`/`AuditQueryCriteria`,
+exactly as approved), reusing `WP 6.4`'s own `IPersistenceStore` rather
+than introducing a second storage mechanism, exactly as directed.
+`AuditRecorder.RecordAsync` resolves the current principal automatically
+and is awaited (not literally fire-and-forget), so a storage failure
+always propagates; `IAuditQuery.QueryAsync` is permission-gated through
+the existing, single enforcement point (`IPermissionEvaluator`,
+`ADR-0044`). Correlation identifiers are carried in `Detail` under a
+well-known key, requiring no interface change. **Persistence Validation:**
+`IPersistenceStore` was judged adequate for this release's own
+correctness needs — no extension was made; `docs/releases/v0.6.0/Risk
+Register.md`'s own `R8` is confirmed, not retired, its revisit trigger
+now sharpened to a real, measured performance need. One new, permanent
+Technical Debt item (`TD-12`) discloses the client-side-filtering
+performance characteristic this confirms. One new ADR (`ADR-0045`),
+`AuditSampleModule` (the tenth production sample module), 55 new tests
+(773 total, 0 failures), 0 build warnings, both Debug and Release. This
+Work Package's own repository review also found and fixed a genuine,
+deterministic bug in `WP 6.1`/`WP 6.4`'s own already-committed
+Host-registration tests (a `using`-scoped resource disposed before its
+awaited operation actually completed) — see its own Lessons Learned. See
+its own retrospective: `docs/academy/03 Work Packages/
+WP6.5-audit-framework-implementation.md`.
 
 ## Next Planned Work Package
 
@@ -160,18 +167,19 @@ Experience phase is now complete.
 
 | Metric | Value |
 |---|---|
-| Automated tests | 718 (0 failures) — **+75, `WP 6.4`**: unit, failure-injection (real file-lock/blocked-directory I/O failures, not simulated), configuration-validation, Host registration-validation, and sample-module integration tests for Persistence and Settings |
-| ADRs | 43 (`ADR-0001`–`ADR-0039`, `ADR-0041`–`ADR-0044`), all Accepted — **+2, `WP 6.4`**: `ADR-0041` (Shared Persistence Abstraction), `ADR-0042` (Settings Distinct From Configuration). `ADR-0040` and `ADR-0045`–`ADR-0051` remain reserved, not yet authored, per `docs/releases/v0.6.0/Required ADRs.md` |
-| Rejected Designs | 45 (`RD-0001`–`RD-0045`) — unchanged by `WP 6.4` (no rejected design produced; alternatives-considered sections recorded within `ADR-0041`/`ADR-0042` themselves) |
-| Academy articles | 79 (see `docs/governance/Documentation/Academy Register.md`) — **+1, `WP 6.4`**: `WP6.4-settings-framework-implementation.md` |
+| Automated tests | 773 (0 failures) — **+55, `WP 6.5`**: unit, failure-injection, concurrency, query-filter, Host registration-validation, and sample-module integration/durability tests for Audit |
+| ADRs | 44 (`ADR-0001`–`ADR-0039`, `ADR-0041`–`ADR-0045`), all Accepted — **+1, `WP 6.5`**: `ADR-0045` (Audit — orthogonality, recording model, permission gating, Persistence sufficiency). `ADR-0040` and `ADR-0046`–`ADR-0051` remain reserved, not yet authored, per `docs/releases/v0.6.0/Required ADRs.md` |
+| Rejected Designs | 45 (`RD-0001`–`RD-0045`) — unchanged by `WP 6.5` (no rejected design produced; alternatives-considered sections recorded within `ADR-0045` itself) |
+| Academy articles | 80 (see `docs/governance/Documentation/Academy Register.md`) — **+1, `WP 6.5`**: `WP6.5-audit-framework-implementation.md` |
 | Governance registers | 27 (32 governance documents total), plus 4 standing security documents under `docs/security/` (not governance registers themselves, indexed from `Governance Index.md`'s Security section) |
-| Architecture documents | 20 under `docs/architecture/` (22 including the two release-scoped documents) — unchanged by `WP 6.4` (Platform Service Map.md updated in place, not a new document) |
-| Platform services | 20 catalogued — 17 Implemented, 2 not implemented as platform services, 1 developer-convenience layer — **+2, `WP 6.4`**: Persistence, Settings |
-| Modules (production) | 9 (`ClockModule`, `ClockLifecycleObserverModule`, `NavigationSampleModule`, `SecondaryNavigationSampleModule`, `DuplicateNavigationSampleModule`, `CommandSampleModule`, `DiagnosticsSampleModule`, `IdentitySampleModule`, `SettingsSampleModule`) |
+| Architecture documents | 20 under `docs/architecture/` (22 including the two release-scoped documents) — unchanged by `WP 6.5` (Platform Service Map.md updated in place, not a new document) |
+| Platform services | 21 catalogued — 18 Implemented, 2 not implemented as platform services, 1 developer-convenience layer — **+1, `WP 6.5`**: Audit |
+| Modules (production) | 10 (`ClockModule`, `ClockLifecycleObserverModule`, `NavigationSampleModule`, `SecondaryNavigationSampleModule`, `DuplicateNavigationSampleModule`, `CommandSampleModule`, `DiagnosticsSampleModule`, `IdentitySampleModule`, `SettingsSampleModule`, `AuditSampleModule`) |
 | Hosted services (production) | 0 — infrastructure fully implemented and tested; zero shipped consumers by deliberate scope decision |
 | Plugins (production) | 0 — infrastructure fully implemented and tested; `src/Plugins/` empty by deliberate scope decision |
-| Custom exception types | 39 — **+5, `WP 6.4`**: `PersistenceException`, `PersistenceStoreUnavailableException`, `SettingsException`, `DuplicateSettingDefinitionException`, `SettingNotFoundException` |
-| Commits (this release, `v0.5.0` → `v0.6.0`, so far) | 4 (`v0.6.0` branch/documentation preparation, `WP 6.1` implementation, `WP 6.4` implementation, plus this update) |
+| Custom exception types | 40 — **+1, `WP 6.5`**: `AuditException` (base only — every current Audit failure mode is already covered by an existing exception type from another namespace) |
+| Technical Debt Register items | 12 tracked — **+1, `WP 6.5`**: `TD-12` (`IPersistenceStore` has no native query/filter capability; disclosed, confirmed, not extended speculatively) |
+| Commits (this release, `v0.5.0` → `v0.6.0`, so far) | 5 (`v0.6.0` branch/documentation preparation, `WP 6.1` implementation, `WP 6.4` implementation, `WP 6.5` implementation, plus this update) |
 | Contributors | 1 (repository owner; all commits co-authored by Claude) |
 
 *(This table is generated from `docs/governance/Quality/Repository Metrics
@@ -180,9 +188,17 @@ three together.)*
 
 ## Repository Health
 
-- **Build:** Clean — 0 warnings, 0 errors (`dotnet build tests/Tempest.Core.Tests/Tempest.Core.Tests.csproj`, both Debug and Release configurations, verified directly by `WP 6.4`).
-- **Tests:** 718/718 passing (+75, `WP 6.4`), verified in both Debug and
-  Release configurations from a clean rebuild.
+- **Build:** Clean — 0 warnings, 0 errors (`dotnet build tests/Tempest.Core.Tests/Tempest.Core.Tests.csproj`, both Debug and Release configurations, verified directly by `WP 6.5`).
+- **Tests:** 773/773 passing (+55, `WP 6.5`), verified in both Debug and
+  Release configurations from a clean rebuild. This Work Package's own
+  repository review also found and fixed a genuine, deterministic bug in
+  two already-committed test files (`WP 6.1`'s `IdentityHostRegistrationTests.cs`
+  was unaffected; `WP 6.4`'s `SettingsHostRegistrationTests.cs` and this
+  Work Package's own `AuditHostRegistrationTests.cs` both had it) — a
+  `using`-scoped `TempDirectory` disposed the instant a non-`async` test
+  method returned its still-running `Task`, before the awaited operation
+  inside it actually completed. Fixed by making every affected test
+  method genuinely `async Task`, awaiting directly.
 - **Known regressions:** None.
 - **Working tree:** Clean at every Work Package boundary — see
   `docs/governance/Quality/Validation Register.md`.
@@ -312,6 +328,30 @@ recommended), `R8` confirmed rather than retired (the minimal shape
 shipped exactly as anticipated; whether it suffices for `WP 6.5` remains
 open until that Work Package actually attempts to build against it).
 
+**`WP 6.5` (Audit Framework)** — implemented directly against the same,
+unrevised architecture and Contract Review packages, and directly
+against `WP 6.4`'s own shipped `IPersistenceStore` — no new persistence
+mechanism was introduced. `docs/architecture/Platform Service Map.md`
+gained a new Audit entry. `ADR-0045` formally settles the Logging/
+Diagnostics/Audit orthogonality `Required ADRs.md` anticipated, plus
+three genuine implementation-phase decisions the Contract Review left
+open: `RecordAsync` propagates failures rather than being literally
+fire-and-forget (the performance goal is met by keeping the write
+itself minimal, not by discarding the task); `IAuditQuery.QueryAsync`
+is permission-gated through the existing enforcement point
+(`IPermissionEvaluator`); and correlation identifiers are carried in
+`Detail` under a well-known key, requiring no interface change. This
+Work Package's own explicit Persistence Validation concluded
+`IPersistenceStore` is adequate for this release's own correctness
+needs — `docs/releases/v0.6.0/Risk Register.md`'s own `R8` is confirmed
+again, not retired, and `docs/governance/Quality/Technical Debt
+Register.md` gained a new, permanent item (`TD-12`) disclosing the
+same client-side-filtering performance characteristic as a
+cross-release concern, not merely a release-scoped risk. This Work
+Package's own repository review also found and fixed a genuine,
+deterministic bug in `WP 6.1`/`WP 6.4`'s own already-committed
+Host-registration tests (see Repository Health, above).
+
 ## Academy Status
 
 77 articles across 7 categories (Introduction, Engineering Principles,
@@ -361,7 +401,13 @@ added `WP6.4-settings-framework-implementation.md`, teaching the
 shared-Persistence-abstraction decision, the per-key async-lock pattern
 reused across two services, and the deliberate choice not to add a
 sensitive-value flag to an approved interface for a need this release
-does not yet have.
+does not yet have. `WP 6.5` added `WP6.5-audit-framework-
+implementation.md`, teaching the Logging/Diagnostics/Audit
+orthogonality decision, the fire-and-forget-vs-awaited recording-model
+tension and its resolution, the correlation-identifier-via-`Detail`
+convention, and — as a genuine, disclosed engineering-review finding,
+not a planned lesson — the premature-resource-disposal bug found in
+two prior Work Packages' own Host-registration tests.
 
 ## Governance Status
 
@@ -456,6 +502,26 @@ anticipated "minimal, key-lookup-only" limitation shipped exactly as
 predicted). No new Technical Debt item was found stale or drifted
 during this Work Package's own repository review.
 
+**`WP 6.5` (Audit Framework)** added `ADR-0045` (Audit orthogonality,
+recording model, permission gating, Persistence sufficiency) — Accepted,
+formally authoring its own `Required ADRs.md` catalogue entry.
+`docs/releases/v0.6.0/Risk Register.md`'s `R8` is confirmed a second
+time, still not retired — this Work Package's own explicit Persistence
+Validation judged `IPersistenceStore` adequate for correctness, with no
+extension made, and named a concrete revisit trigger (a measured
+performance problem or a named scale requirement) rather than leaving
+the risk vague. `docs/governance/Quality/Technical Debt Register.md`
+gained a new, permanent item, `TD-12`, disclosing the same
+client-side-filtering characteristic as an ongoing, cross-release
+concern. This Work Package's own repository review found and fixed a
+genuine, previously-uncaught bug in two already-committed Work
+Packages' own test files (`WP 6.4`'s `SettingsHostRegistrationTests.cs`;
+`WP 6.1`'s own `IdentityHostRegistrationTests.cs` was checked and found
+unaffected, since it never used a `TempDirectory`) — corrected in the
+same commit as the finding, per this project's own standing practice of
+fixing drift encountered along the way, not only drift a Work Package's
+own brief names.
+
 ## Known Unknowns
 
 Recorded honestly, not guessed at — full detail in `docs/governance/
@@ -477,9 +543,9 @@ Governance Audit Report.md`:
 ## Current Priorities
 
 1. **Await engineering approval before any further `v0.6.0`
-   implementation begins.** `WP 6.1` (Permissions & Identity) and
-   `WP 6.4` (Settings Framework) are both complete on
-   `feature/v0.6.0-platform-services`; per `WP 6.4`'s own explicit
+   implementation begins.** `WP 6.1` (Permissions & Identity), `WP 6.4`
+   (Settings Framework), and `WP 6.5` (Audit Framework) are all complete
+   on `feature/v0.6.0-platform-services`; per `WP 6.5`'s own explicit
    closing instruction, no further Work Package is to begin next,
    regardless of `Platform Service Implementation Order.md`'s own
    recommended sequencing.
@@ -519,8 +585,7 @@ is under way:
 - `WP 6.2` — Notification Framework. Not started.
 - `WP 6.3` — REST API. Not started; blocked on `WP 6.1`, now satisfied.
 - `WP 6.4` — Settings Framework. **Complete.**
-- `WP 6.5` — Audit Framework. Not started; blocked on `WP 6.4` and
-  `WP 6.1`, both now satisfied.
+- `WP 6.5` — Audit Framework. **Complete.**
 - `WP 6.6` — Licensing Framework. Not started.
 - `WP 6.7` — Export / Import. Not started.
 - `WP 6.8` — Platform Services Integration Review (closing milestone

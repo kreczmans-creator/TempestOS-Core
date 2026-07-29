@@ -34,8 +34,9 @@ of date is worse than no map at all, because it will be trusted.
 | Navigation | **Implemented — WP 5.0A (design), WP 5.0B (implementation)** (`INavigationProvider`/`NavigationService`, `Tempest.Core.Navigation`) — model, ownership, and rendering boundary per ADR-0031/ADR-0032 | Dependency Injection, Event Bus | Any module contributing a navigation item; `Tempest.App` (rendering, not yet built) |
 | Diagnostics | **Implemented — WP 5.2** (`IDiagnosticsProvider`/`DiagnosticsProvider`, `Tempest.Core.Diagnostics`) — read-only projection over Host/module/hosted-service lifecycle state per ADR-0039 | Dependency Injection (constructed directly by `TempestHost`, ADR-0009); reads live data from `IModuleLifecycleManager`/`IHostedServiceManager` via `Func<T>` accessors, never resolves either through the container (ADR-0017) | `DiagnosticsSampleModule` (real contributor); any future Shell status page or health-check command |
 | Identity & Permissions | **Implemented — WP 6.1** (`IIdentity`/`PlatformIdentity`, `IPrincipal`/`PlatformPrincipal`, `Permission`, `IRole`/`Role`, `IRoleProvider`/`RoleProvider`, `ICurrentPrincipalAccessor`/`CurrentPrincipalAccessor`, `IPermissionEvaluator`/`PermissionEvaluator`, `IIdentityService`/`IdentityService`, `Tempest.Core.Identity`) — local-only identity model per ADR-0043; single authorization enforcement point per ADR-0044 | Dependency Injection | `IdentitySampleModule` (real contributor); `TD-09`/`TD-10`/`TD-11` are now resolvable through this enforcement point, though none is retired by this Work Package itself; a plausible future `WP 6.3` (REST API) and `WP 6.5` (Audit) consumer |
-| Persistence | **Implemented — WP 6.4** (`IPersistenceStore`/`PersistenceStore`, `Tempest.Core.Persistence`) — established as part of Settings' own scope per ADR-0041; file-backed, one file per `collection`/`key`, percent-encoded paths, per-key async locking | Dependency Injection, Configuration (root path) | Settings (real contributor via `SettingsProvider`); a plausible future `WP 6.5` (Audit) consumer |
+| Persistence | **Implemented — WP 6.4** (`IPersistenceStore`/`PersistenceStore`, `Tempest.Core.Persistence`) — established as part of Settings' own scope per ADR-0041; file-backed, one file per `collection`/`key`, percent-encoded paths, per-key async locking | Dependency Injection, Configuration (root path) | Settings (real contributor via `SettingsProvider`); Audit (real contributor via `AuditRecorder`/`AuditQuery`, `WP 6.5`) — the reuse `ADR-0041` recommended, now confirmed in practice |
 | Settings | **Implemented — WP 6.4** (`ISettingDefinition`/`SettingDefinition`, `ISettingsProvider`/`SettingsProvider`, `ISettingsChangedEvent`/`SettingsChangedEvent`, `Tempest.Core.Settings`) — DI-public, distinct from Configuration per ADR-0042; in-memory cache over Persistence, invalidated on write | Dependency Injection, Persistence, Event Bus | `SettingsSampleModule` (real contributor); a plausible future `WP 6.3` (REST API) settings-management surface |
+| Audit | **Implemented — WP 6.5** (`IAuditRecord`/`AuditRecord`, `IAuditRecorder`/`AuditRecorder`, `IAuditQuery`/`AuditQuery`, `AuditQueryCriteria`, `Tempest.Core.Audit`) — durable, queryable, append-only history distinct from Logging/Diagnostics per ADR-0045; reuses Persistence, never a second storage mechanism; `IAuditQuery` permission-gated via `ADR-0044` | Dependency Injection, Persistence, Identity & Permissions | `AuditSampleModule` (real contributor); a plausible future consumer for Reporting, the REST API, Licensing, Export/Import, and any engineering module |
 | Plugin Manifest | **Implemented — WP 4.2** (`Tempest.Core.Plugins`) | Host (Phases 3.1/3.2, ADR-0026 — a pre-Discovery step) | Module Discovery (unchanged), any real plugin |
 | Project Engine | Planned | Undetermined | Undetermined |
 | Requirements Engine | Planned | Undetermined | Undetermined |
@@ -809,8 +810,11 @@ once at construction for the storage root path
 (`Persistence:RootPath`, defaulting to `persistence-data`).
 
 **Consumers.** Settings (`WP 6.4`, its own originating Work Package),
-via `SettingsProvider`. A plausible future `WP 6.5` (Audit) consumer,
-per `ADR-0041`'s own title — not yet implemented or verified.
+via `SettingsProvider`. Audit (`WP 6.5`), via `AuditRecorder`/
+`AuditQuery` — the reuse `ADR-0041`'s own title anticipated, now
+implemented and verified: each service owns its own, distinct
+collection name (`"Settings"`, `"Audit"`), proving collection-scoping
+isolation in practice, not merely in design.
 
 **Lifecycle.** Ordinary DI-public, container-constructed singleton,
 registered in `TempestHost`'s existing Platform Services Registered
@@ -888,6 +892,69 @@ Implementation*); `docs/releases/v0.6.0/Release Architecture.md` and
 companions; `Platform Service Contracts.md` and companions;
 `docs/academy/05 Case Studies/` Case Study 05 (Configuration
 immutability, the distinction Settings exists to complement).
+
+---
+
+## Audit *(implemented — WP 6.5, ADR-0045)*
+
+**Responsibility.** A durable, queryable, append-only record of who did
+what, when — explicitly distinct from Logging (developer-facing, not
+guaranteed durable) and Diagnostics (a live snapshot of *current*
+state). Records an attributable action with the current principal
+resolved automatically; answers filtered queries over previously
+recorded actions. Never modifies or deletes an existing record.
+
+**Key types.** `IAuditRecord`/`AuditRecord`, `IAuditRecorder`/
+`AuditRecorder`, `IAuditQuery`/`AuditQuery`, `AuditQueryCriteria`,
+`AuditException` — all `Tempest.Core.Audit`.
+
+**Dependencies.** Dependency Injection, Persistence (durable storage,
+reused from `WP 6.4`, never a second mechanism), Identity & Permissions
+(`ICurrentPrincipalAccessor` for attribution; `IPermissionEvaluator` for
+query-gating).
+
+**Consumers.** `AuditSampleModule` (real contributor and consumer, the
+tenth production sample module) — establishes its own principal, records
+an action during its own initialisation, and registers two commands
+(record/query) demonstrating both the recording path and the
+permission-gated query path. Named as a plausible future consumer for
+Reporting, the REST API, Licensing, Export/Import, and any engineering
+module — none yet implemented.
+
+**Lifecycle.** Ordinary DI-public, container-constructed singletons
+(`IAuditRecorder`, `IAuditQuery`), registered in `TempestHost`'s
+existing Platform Services Registered block (Phase 6), after
+Persistence and Identity & Permissions — no new Host Lifecycle phase.
+
+**Storage.** Every record is serialised to JSON (`System.Text.Json`,
+already used elsewhere in this codebase — `PluginManifestDiscoveryService`
+— introducing no new dependency) and stored in its own
+`IPersistenceStore` collection (`AuditRecorder.AuditCollectionName`,
+`"Audit"`), distinct from Settings' own `"Settings"` collection —
+proving Persistence's own collection-scoping isolation in practice.
+`IAuditQuery.QueryAsync` filters client-side, over
+`ListKeysAsync` plus a per-key `ReadAsync` — `IPersistenceStore` has no
+native query capability (`ADR-0041`, confirmed again here, `ADR-0045`);
+see `Technical Debt Register.md`'s `TD-12`.
+
+**A genuine implementation-phase finding, disclosed rather than
+absorbed silently:** `RecordAsync` is awaited, not literally
+fire-and-forget, so a storage failure always propagates — the
+Contract Review's own performance goal is met by keeping the write
+itself minimal (a single, append-only file write), not by discarding
+the returned `Task`. See `ADR-0045`'s own reasoning.
+
+**ADR references.** ADR-0041 (Persistence, reused not reinvented);
+ADR-0044 (the enforcement point Audit's own query-gating reuses);
+ADR-0045 (*Audit Is a Durable, Queryable, Append-Only Record, Distinct
+From Logging and Diagnostics — Recording Model, Permission Gating, and
+Persistence Sufficiency*).
+
+**Academy references.** `WP 6.5` retrospective (*Audit Framework
+Implementation*); `docs/releases/v0.6.0/Release Architecture.md` and
+companions; `Platform Service Contracts.md` and companions;
+`docs/governance/Quality/Technical Debt Register.md` (`TD-12`);
+`docs/releases/v0.6.0/Risk Register.md` (`R8`).
 
 ---
 

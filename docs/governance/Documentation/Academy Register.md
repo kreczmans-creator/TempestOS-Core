@@ -57,7 +57,7 @@
 | 11 | Command Framework | WP 5.1A (new), WP 5.1B (implementation confirmed; `CommandHandlerTable` sharing finding added) |
 | 12 | Diagnostics & Composite Logging | WP 5.2 (new) |
 
-## 03 Work Packages (37 retrospectives)
+## 03 Work Packages (38 retrospectives)
 
 | Retrospective | Type |
 |---|---|
@@ -98,6 +98,7 @@
 | WP 5.4 — v0.5.0 Release Candidate & Engineering Sign-Off | Release verification/sign-off — not a feature Work Package; a departure from the standard 13-section template, disclosed in its own retrospective's "What This Document Is" |
 | WP 6.1 — Permissions & Identity Implementation | Implementation (combined design + implementation, ADR-0043/0044 — implemented directly against the already-approved `v0.6.0` architecture and Contract Review packages, no separate architecture-phase retrospective) |
 | WP 6.4 — Settings Framework Implementation | Implementation (combined design + implementation, ADR-0041/0042 — implemented directly against the already-approved `v0.6.0` architecture and Contract Review packages, ahead of `WP 6.0`–`WP 6.3` per `Platform Service Implementation Order.md`) |
+| WP 6.5 — Audit Framework Implementation | Implementation (combined design + implementation, ADR-0045 — reuses `WP 6.4`'s own Persistence abstraction, validated as sufficient without speculative extension) |
 
 **Note.** `WP 4.4C` produced no code and no separate retrospective — its
 story is told inside the `WP 4.4` architecture retrospective's own
@@ -143,12 +144,12 @@ added `Engineering Lifecycle.md`).
 | `Contributor Learning Path.md` | Repository-wide onboarding sequence for a new contributor, added `WP 4.5B` |
 
 **Total: 1 (Introduction) + 11 (Engineering Principles) + 12 (Runtime
-Architecture) + 37 (Work Packages) + 4 (Design Patterns) + 5 (Case
-Studies) + 5 (Engineering Standards) + 4 (top-level meta) = 79 files
+Architecture) + 38 (Work Packages) + 4 (Design Patterns) + 5 (Case
+Studies) + 5 (Engineering Standards) + 4 (top-level meta) = 80 files
 under `docs/academy/` — re-verified by direct `find` count against every
-subfolder individually (`WP 6.1`, `WP 6.4`), not just the grand total,
-continuing the standing practice `WP 5.4`'s own repository review
-recommended. **Correction, `WP 5.4`**: the "03 Work Packages" count
+subfolder individually (`WP 6.1`, `WP 6.4`, `WP 6.5`), not just the
+grand total, continuing the standing practice `WP 5.4`'s own repository
+review recommended. **Correction, `WP 5.4`**: the "03 Work Packages" count
 had read "33" (`WP 5.2`) then "34" (`WP 5.3`) while the section's own
 table already listed 34 and then 35 rows respectively — the stated count
 had undercounted its own table by one for at least two consecutive Work
