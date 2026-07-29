@@ -10,9 +10,9 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | Direct source inspection; `docs/architecture/Failure Behaviour.md`; `docs/academy/06 Engineering Standards/01-exception-design.md`. |
 | **Review Frequency** | Updated whenever a new exception type is introduced. |
-| **Last Reviewed** | 2026-07-29 (WP 6.3, REST API) — added `ApiException`, `DuplicateApiRouteException` (see Entries table, below); no other change to prior entries. |
+| **Last Reviewed** | 2026-07-29 (WP 6.7, Export/Import) — added `ExportImportException`, `IncompatibleExportSchemaException`, `CorruptedExportArtifactException`, `DuplicateImportableKindException` (see Entries table, below); no other change to prior entries. |
 | **Related Documents** | `docs/architecture/Failure Behaviour.md`; `Architectural Dependency Register.md`. |
-| **Related ADRs** | ADR-0013, ADR-0021, ADR-0025, ADR-0038, ADR-0040, ADR-0046, ADR-0047, ADR-0048. |
+| **Related ADRs** | ADR-0013, ADR-0021, ADR-0025, ADR-0038, ADR-0040, ADR-0046, ADR-0047, ADR-0048, ADR-0051. |
 | **Related Academy Articles** | `docs/academy/06 Engineering Standards/01-exception-design.md`. |
 | **Coverage Status** | Complete. |
 
@@ -68,11 +68,15 @@
 | `ReportDefinitionNotFoundException` | `ReportingException` | Reporting | Application logic's own error (not Host-level); thrown by `GenerateAsync` for an unregistered Id |
 | `ApiException` | `Exception` | REST API | Application logic's own error (not Host-level); base-plus-subtype (mirroring `ReportingException`/`SettingsException`), never thrown directly itself |
 | `DuplicateApiRouteException` | `ApiException` | REST API | Application logic's own error (not Host-level); thrown by `MapCommand` — first registration wins |
+| `ExportImportException` | `Exception` | Export/Import | Application logic's own error (not Host-level); base-plus-subtype (mirroring `ReportingException`/`ApiException`), never thrown directly itself |
+| `IncompatibleExportSchemaException` | `ExportImportException` | Export/Import | Application logic's own error (not Host-level); thrown by `ImportAsync` for a schema-version mismatch or an unregistered section kind — approved by `Public Interface Catalogue.md` |
+| `CorruptedExportArtifactException` | `ExportImportException` | Export/Import | Application logic's own error (not Host-level); thrown by `JsonExportFormat.ReadAsync`/`JsonExportPayloadSerializer.Deserialize` for a malformed or truncated artifact — additive, not in the original catalogue (see `ADR-0051`) |
+| `DuplicateImportableKindException` | `ExportImportException` | Export/Import | Application logic's own error (not Host-level); thrown by `ImportService.RegisterImportable` — first registration wins, mirroring `DuplicateReportDefinitionException`/`DuplicateApiRouteException` |
 
-**Total: 46 custom exception types — Verified directly against
+**Total: 50 custom exception types — Verified directly against
 `src/Tempest.Core/` (`grep -rlP "^public (sealed )?class \w+Exception\b"`
-returns exactly 46 files, matching the 46 rows in the Entries table
-above, re-derived directly by `WP 6.3` rather than incremented from the
+returns exactly 50 files, matching the 50 rows in the Entries table
+above, re-derived directly by `WP 6.7` rather than incremented from the
 prior figure — the standing practice `WP 5.4` recommended). Corrected,
 `WP 5.4`: this total previously read "30," undercounting
 by one against this register's own Entries table and Distribution table
@@ -204,6 +208,7 @@ respectively). Application logic's own error (not Host-level); see
 | Notifications | 1 |
 | Reporting | 3 |
 | REST API | 2 |
+| Export/Import | 4 |
 
 ## Cross-Reference Check
 

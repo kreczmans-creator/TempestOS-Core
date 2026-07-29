@@ -10,11 +10,11 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | `src/Tempest.Core/Runtime/TempestHost.cs` (the registration call sites); `src/Tempest.Core/DependencyInjection/`. |
 | **Review Frequency** | Updated whenever `TempestHost`'s Platform Services Registered phase changes, or a new `IServiceCollection` extension method is added. |
-| **Last Reviewed** | 2026-07-28 (WP 5.2, Diagnostics Improvements) — one new registration call site added (`IDiagnosticsProvider`, via `AddInstance`). |
+| **Last Reviewed** | 2026-07-29 (WP 6.7, Export/Import) — four new registration call sites added (`IExportFormat`, `IExportService`, and `ImportService`'s own dual registration); see the disclosed gap under Coverage Status. |
 | **Related Documents** | `docs/architecture/Host Lifecycle.md` (Phase 6); `docs/architecture/Ownership Matrix.md`; `Interface Register.md`. |
-| **Related ADRs** | ADR-0005 through ADR-0009, ADR-0011, ADR-0017, ADR-0020, ADR-0036, ADR-0039. |
+| **Related ADRs** | ADR-0005 through ADR-0009, ADR-0011, ADR-0017, ADR-0020, ADR-0036, ADR-0039, ADR-0044, ADR-0051. |
 | **Related Academy Articles** | `docs/academy/01 Engineering Principles/05-dependency-injection.md`; `docs/academy/03 Work Packages/WP2.4-dependency-injection.md`. |
-| **Coverage Status** | Complete. |
+| **Coverage Status** | **Partial — a genuine, disclosed gap found during `WP 6.7`'s own repository review, not introduced by this Work Package.** This register's own `Last Reviewed` line read `WP 5.2` before this Work Package touched it — every Phase 6 registration `WP 6.1`, `WP 6.4`, `WP 6.5`, `WP 6.2`, `WP 6.0`, and `WP 6.3` each added was missing entirely (`TempestHost.cs`'s own registration block now has 27 call sites; only 13 were previously listed, plus this Work Package's own 4 new ones below = 17 listed, 10 still undocumented). `WP 6.7` adds only its own new registrations, correctly described, rather than retroactively backfilling six unrelated Work Packages' worth of rows under its own scope — a full backfill is recommended as `WP 6.8` (Platform Services Integration Review)'s own closing-audit task. |
 
 ---
 
@@ -51,10 +51,15 @@ no request/scope concept to justify one.
 | `IDiagnosticsProvider` | `AddInstance` | Pre-built instance (Composition Root, ADR-0009), constructed with `Func<T>` accessors closing over `TempestHost`'s own `_lifecycleManager`/`_hostedServiceManager` private fields — neither manager exists yet at this phase (ADR-0039) |
 | Every discovered module type | `AddDiscoveredModules` → `Singleton(type, type)` per type | Self-referential singleton |
 | Every discovered hosted service type | `AddDiscoveredHostedServices` → `Singleton(type, type)` per type | Self-referential singleton |
+| `IExportFormat` | `AddInstance` | Pre-built `JsonExportFormat` instance (Composition Root, ADR-0009), shared by both `ExportService` and `ImportService` |
+| `IExportService` | `Singleton<IExportService, ExportService>()` | Ordinary container-constructed singleton, registered immediately after `IApiEndpointRegistry` |
+| `IImportService` / `ImportService` | `AddInstance` (twice, under both keys) | The same already-built `ImportService` instance registered under both its own concrete type and `IImportService` — mirroring `ICurrentPrincipalAccessor`'s own dual-registration precedent (ADR-0044), so a module needing `RegisterImportable` resolves the concrete type while every ordinary consumer resolves only the interface (ADR-0051) |
 
-**Total distinct registration call sites in `TempestHost.cs`: 13 (Verified
-by direct line count of Phase 6's own registration block; adds
-`IDiagnosticsProvider`, `WP 5.2`).**
+**Total distinct registration call sites in `TempestHost.cs`: 17 listed
+above (adds `IExportFormat`, `IExportService`, `ImportService`'s own two
+`AddInstance` calls, `WP 6.7`) — 27 actually exist; the remaining 10,
+added by `WP 6.1`/`WP 6.4`/`WP 6.5`/`WP 6.2`/`WP 6.0`/`WP 6.3`, are the
+disclosed gap under Coverage Status, left for `WP 6.8`'s own backfill.**
 
 **A new external consumption path, not a new registration (`WP 5.0D`).**
 `ITempestHost.Services` (ADR-0034) exposes read-only resolution against

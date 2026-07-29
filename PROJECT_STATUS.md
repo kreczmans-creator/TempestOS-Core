@@ -1,6 +1,6 @@
 # TempestOS — Project Status
 
-**Last Updated:** 2026-07-29 (`WP 6.3` — REST API, implemented)
+**Last Updated:** 2026-07-29 (`WP 6.7` — Export/Import, implemented)
 
 This is the primary status dashboard for TempestOS. Read this first for
 "where does the project stand right now" — for "why is it built this
@@ -43,37 +43,45 @@ Review package (`Platform Service Contracts.md` and four companion
 documents) were both produced and approved ahead of any implementation.
 `WP 6.1` (Permissions & Identity), `WP 6.4` (Settings Framework), `WP
 6.5` (Audit Framework), `WP 6.2` (Notification Framework), `WP 6.0`
-(Reporting Framework), and now `WP 6.3` (REST API) are all implemented —
-`WP 6.0` and `WP 6.3` are the first two of these six to actually match
-their own nominal position in `WorkPackages.md`'s own numbering, the
-other four having each been implemented ahead of their own nominal
-numeric order, per `Platform Service Implementation Order.md`'s own
-explicit recommendation. `WP 6.5` reuses the Persistence abstraction
-`WP 6.4` established, exactly as that recommendation anticipated,
-rather than introducing a second storage mechanism. `WP 6.2` is built
-on top of the existing Event Bus's own proven dispatch model, exactly
-as `Required ADRs.md` anticipated for `ADR-0046`, rather than a second,
-parallel publish/subscribe implementation. `WP 6.0` is explicitly
-orthogonal to the not-yet-started `WP 6.7` (Export/Import), per
-`ADR-0040`, and demonstrates real, working integration with four
-already-completed platform services (Identity, Settings, Audit,
-Notifications) entirely at its own sample module's calling layer,
-never inside `IReportingService` itself. `WP 6.3` adopts ASP.NET
-Core/Kestrel for HTTP hosting (`ADR-0049`) — this platform's first
-substantial dependency on a pre-built framework component beyond the
-bare .NET SDK — confined entirely to one hosted-service type, and
+(Reporting Framework), `WP 6.3` (REST API), and now `WP 6.7`
+(Export/Import) are all implemented — `WP 6.0` and `WP 6.3` remain the
+only two of these seven to actually match their own nominal position in
+`WorkPackages.md`'s own numbering, the other five having each been
+implemented ahead of their own nominal numeric order, per `Platform
+Service Implementation Order.md`'s own explicit recommendation. `WP 6.5`
+reuses the Persistence abstraction `WP 6.4` established, exactly as
+that recommendation anticipated, rather than introducing a second
+storage mechanism. `WP 6.2` is built on top of the existing Event Bus's
+own proven dispatch model, exactly as `Required ADRs.md` anticipated for
+`ADR-0046`, rather than a second, parallel publish/subscribe
+implementation. `WP 6.0` is explicitly orthogonal to `WP 6.7`
+(Export/Import), per `ADR-0040`, and demonstrates real, working
+integration with four already-completed platform services (Identity,
+Settings, Audit, Notifications) entirely at its own sample module's
+calling layer, never inside `IReportingService` itself. `WP 6.3` adopts
+ASP.NET Core/Kestrel for HTTP hosting (`ADR-0049`) — this platform's
+first substantial dependency on a pre-built framework component beyond
+the bare .NET SDK — confined entirely to one hosted-service type, and
 resolves this platform's first genuinely concurrent, per-request
 scenario without touching `CurrentPrincipalAccessor`'s own already-
 shipped ambient design (`ADR-0052`), a decision verified empirically,
-not merely reasoned about. See Current Work Package, below.
+not merely reasoned about. `WP 6.7` completes the orthogonality
+`ADR-0040` anticipated (`ADR-0051`): Export/Import is a user-facing,
+`Stream`-based, portable-artifact I/O layer, explicitly distinct from
+the internal Persistence abstraction, round-tripping two Settings
+values as a single, multi-source artifact through a Kind-routed
+`IImportable` registration mechanism dual-registered exactly as
+`ADR-0044`'s own `CurrentPrincipalAccessor` precedent. See Current Work
+Package, below.
 
 ## Current Development Branch
 
 **`feature/v0.6.0-platform-services`**, cut from `main` at the `v0.5.0`
 tag. `WP 6.1` (Permissions & Identity), `WP 6.4` (Settings Framework),
 `WP 6.5` (Audit Framework), `WP 6.2` (Notification Framework), `WP 6.0`
-(Reporting Framework), and `WP 6.3` (REST API) are implemented on this
-branch; no other `v0.6.0` Work Package has begun.
+(Reporting Framework), `WP 6.3` (REST API), and `WP 6.7` (Export/Import)
+are implemented on this branch; no other `v0.6.0` Work Package has
+begun.
 `feature/v0.5.0-developer-experience`
 (`WP 5.0A` through `WP 5.4`) has been merged into `main` and is
 retained, unmerged branches are never deleted per this project's own
@@ -87,62 +95,82 @@ before that; `v0.3.0` ("Runtime Foundation Complete") before that.
 
 ## Current Work Package
 
-**`WP 6.3` — REST API — implemented.** The sixth Work Package of the
-Platform Services phase (`v0.6.0`) to ship real code, following the
-same single-pass implementation precedent as its five predecessors —
-the second, after `WP 6.0`, to match its own nominal numeric position.
-Delivers `Tempest.Core.Api`
-(`IApiEndpointRegistry`/`ApiRouteDescriptor`, exactly as approved),
-hosted on ASP.NET Core/Kestrel adopted via a `FrameworkReference` to the
-already-installed shared framework (`ADR-0049`) — this platform's first
-substantial dependency on a pre-built framework component beyond the
-bare .NET SDK, confined entirely to one hosted-service type
-(`RestApiHostedService`); this platform's own DI container, Command
-Framework, and every other platform service remain entirely unchanged
-and unreplaced. `RestApiHostedService` is discovered and orchestrated
-identically to any other hosted service (`ADR-0047`), retiring `AT-07`
-("Zero real hosted services exist beyond the infrastructure") — the
-Work Package that trade-off's own revisit trigger explicitly named in
-advance. Every registered route dispatches through the existing,
-unmodified `ICommandRegistry.InvokeAsync` (`ADR-0048`) — `ApiSampleModule`,
-this Work Package's own reference module, contains zero business logic
-of its own whatsoever, mapping one route directly to
-`ReportingSampleModule`'s own already-registered command, the purest
-possible proof of "no business logic inside controllers/endpoints."
+**`WP 6.7` — Export/Import — implemented.** The seventh Work Package of
+the Platform Services phase (`v0.6.0`) to ship real code, following the
+same single-pass implementation precedent as its six predecessors — the
+sixth of seven implemented so far to be sequenced ahead of its own
+nominal numeric position, per `Platform Service Implementation Order.md`'s
+own explicit recommendation (only `WP 6.0` and `WP 6.3` match their own
+nominal position). Delivers `Tempest.Core.ExportImport`
+(`IExportable`/`IExportService`/`ExportService`,
+`IImportService`/`ImportService`, `ExportImportException` and its
+approved subtype `IncompatibleExportSchemaException`, exactly as
+approved), completing the orthogonality `ADR-0040` anticipated for
+Reporting: Export/Import is a user-facing, `Stream`-based,
+portable-artifact I/O layer, explicitly distinct from
+`IPersistenceStore`, which remains internal, platform-owned state
+(`ADR-0051`).
 
-A genuine, empirically-resolved architectural tension: `Risk
-Register.md`'s own `R1` had explicitly named this Work Package as the
-point where `CurrentPrincipalAccessor`'s ambient (not request-scoped)
-design "will need real reconsideration" once genuine request
-concurrency arrived. An `AsyncLocal<T>`-backed implementation was built
-and tested directly against the full pre-existing suite, and regressed
-17 tests — confirming `WP 6.1`'s own original design was correct for
-this release's actual need. `CurrentPrincipalAccessor` therefore
-remains entirely unchanged; `ApiRequestHandler` instead resolves a
-per-request principal via the pure, non-mutating
-`IIdentityService.GetPrincipal`, passed explicitly to
-`IPermissionEvaluator.HasPermission` — safe for concurrent requests by
-construction, proven directly by a test sending ten concurrent,
-differently-permissioned requests (`ADR-0052`). Because the ambient
-principal is never touched, a REST request's own Audit entry carries
-the caller's real identity explicitly in `Detail`, not via ambient
-auto-attribution — disclosed as `TD-15` for any future command handler
-that assumes otherwise. Identity itself carries no real authentication
-this release — a bare, unverified `X-Identity-Id` header, mechanically
-extending this release's own local-only trust model over HTTP
-(`TD-13`), mitigated by binding to the loopback address only by
-default; no TLS is configured (`TD-14`). Four new ADRs (`ADR-0047`,
-`ADR-0048`, `ADR-0049`, and `ADR-0052` — the last genuinely
-implementation-driven, not anticipated by `Required ADRs.md`),
-`ApiSampleModule` (the thirteenth production sample module), 45 new
-tests (914 total, 0 failures) — including real, genuine HTTP round
-trips via `HttpClient` against a real, running `TempestHost`, not an
-in-process simulation — 0 build warnings, both Debug and Release,
-stable across repeated runs in both configurations. See its own
-retrospective: `docs/academy/03 Work Packages/
-WP6.3-rest-api-implementation.md`, and its own dedicated `WP6.3
-Platform Integration Demonstration.md` for the full, per-service
-account of every platform-service interaction assessed.
+Two genuine implementation-phase gaps the approved interface catalogue
+left unresolved, both closed additively, with zero change to any
+approved interface. First: `IImportService.ImportAsync`'s own approved,
+single-`Stream`-parameter signature carries no way to route an
+artifact's own section(s) back to more than one owning service — closed
+by a new, optional `IExportableKind`/`IImportable` pair (a source's
+artifact section is tagged with a stable `Kind`, an importable is
+registered under that same `Kind` ahead of time) and a concrete-type-only
+`ImportService.RegisterImportable` method, dual-registered under both
+its own concrete type and `IImportService` — mirroring `ADR-0044`'s own
+`CurrentPrincipalAccessor` precedent exactly. Every section's
+compatibility is validated before any section is imported, so an
+incompatible artifact is never partially applied. Second: "Serialization
+abstraction" and "Format abstraction" were named in this Work Package's
+own brief but never drafted as interface members — filled by two
+genuinely distinct, optional additive types: `IExportFormat`/
+`JsonExportFormat` (frames multiple opaque sections into one artifact,
+used only by `ExportService`/`ImportService`'s own orchestration) and
+`IExportPayloadSerializer`/`JsonExportPayloadSerializer` (converts a
+specific source's own key/value data to/from bytes, used only by that
+source itself, mirroring `IReportTemplate<T>`'s own optional-collaborator
+precedent). A malformed or truncated artifact is rejected as the new
+`CorruptedExportArtifactException`, kept distinct from a
+well-formed-but-incompatible one (`IncompatibleExportSchemaException`),
+per the approved contract's own "Corrupted file tests" testing
+requirement.
+
+`ExportImportSampleModule` (the fourteenth production sample module)
+registers two Settings-backed `SettingExportImportAdapter` instances —
+each a single class implementing `IExportable`, `IExportableKind`, and
+`IImportable` together — and two commands
+(`ExportSampleDataCommand`/`ImportSampleDataCommand`) whose handlers
+check a permission (Identity), export or import both settings as one
+multi-source artifact (Export/Import), record the action (Audit), and
+publish a completion notice (Notifications); a dedicated integration
+test proves a full export-then-overwrite-then-import round trip through
+the real `ISettingsProvider`. Persistence is deliberately not consumed —
+Export/Import's own approved contract states "Persistence Requirements:
+None" — and Reporting is deliberately not exported either, since a
+`ReportResult`'s own bytes are explicitly not guaranteed round-trip-safe
+(`ADR-0040`). One new ADR (`ADR-0051`, formally authoring the last
+remaining reserved-ADR-number gap from `Required ADRs.md` — only
+`ADR-0050`, Licensing, `WP 6.6`, remains reserved), 58 new tests (972
+total, 0 failures) — unit, integration, corrupted-file, version-
+compatibility, failure-injection, concurrency, and regression categories
+— 0 build warnings, both Debug and Release, stable across repeated runs
+in both configurations. This Work Package's own repository review found
+three further, genuine, pre-existing governance-documentation drifts,
+none related to its own scope: `Platform Service Map.md`'s own Audit and
+Notifications "Consumers" entries had read "none yet implemented" since
+before `WP 6.0` first shipped a real consumer of each; and
+`Interface Register.md`/`Dependency Injection Register.md`/`Module
+Register.md` had each gone stale since `WP 5.2`, missing every interface,
+DI registration, and sample module `WP 6.1` through `WP 6.3` added — all
+disclosed explicitly, with only this Work Package's own new entries
+added, the larger backfill left for `WP 6.8`'s own closing audit. See
+its own retrospective: `docs/academy/03 Work Packages/
+WP6.7-export-import-implementation.md`, and its own dedicated `WP6.7
+Platform Integration Demonstration.md` for the full, per-service account
+of every platform-service interaction assessed.
 
 ## Next Planned Work Package
 
@@ -150,9 +178,9 @@ Per this Work Package's own explicit closing instruction, implementation
 stops here pending engineering approval — no further Work Package is to
 begin regardless of `Platform Service Implementation Order.md`'s own
 recommended sequencing. `WP 6.1`, `WP 6.4`, `WP 6.5`, `WP 6.2`, `WP
-6.0`, and `WP 6.3` are all now complete; `WP 6.6` (Licensing), `WP 6.7`
-(Export/Import), and `WP 6.8` (Platform Services Integration Review)
-remain — see `docs/releases/v0.6.0/WorkPackages.md` for the full,
+6.0`, `WP 6.3`, and `WP 6.7` are all now complete; only `WP 6.6`
+(Licensing) and `WP 6.8` (Platform Services Integration Review) remain —
+see `docs/releases/v0.6.0/WorkPackages.md` for the full,
 nine-Work-Package plan.
 
 ## Foundation Status
@@ -215,19 +243,19 @@ Experience phase is now complete.
 
 | Metric | Value |
 |---|---|
-| Automated tests | 914 (0 failures) — **+45, `WP 6.3`**: unit, failure-injection, concurrency, Host registration-validation, and sample-module integration tests for the REST API, including genuine, real-HTTP round trips (via `HttpClient`) against a real, running `TempestHost` and a genuinely concurrent, per-request authorization test |
-| ADRs | 50 (`ADR-0001`–`ADR-0049`, `ADR-0052`; `ADR-0050`–`ADR-0051` remain reserved), all Accepted — **+4, `WP 6.3`**: `ADR-0047` (REST API is a hosted service), `ADR-0048` (REST dispatches through the Command Framework), `ADR-0049` (adopting ASP.NET Core/Kestrel), `ADR-0052` (identity resolution never touches the ambient current principal — genuinely implementation-driven, not anticipated by `Required ADRs.md`) |
-| Rejected Designs | 45 (`RD-0001`–`RD-0045`) — unchanged by `WP 6.3` (no rejected design produced; alternatives-considered sections recorded within `ADR-0047`/`ADR-0048`/`ADR-0049`/`ADR-0052` themselves) |
-| Academy articles | 83 (see `docs/governance/Documentation/Academy Register.md`) — **+1, `WP 6.3`**: `WP6.3-rest-api-implementation.md` |
+| Automated tests | 972 (0 failures) — **+58, `WP 6.7`**: unit, integration, corrupted-file, version-compatibility, failure-injection, concurrency, and regression tests for Export/Import, including a full export-then-overwrite-then-import round trip through the real `ISettingsProvider` and a dedicated "no best-effort partial import" test |
+| ADRs | 51 (`ADR-0001`–`ADR-0049`, `ADR-0051`, `ADR-0052`; `ADR-0050` remains reserved), all Accepted — **+1, `WP 6.7`**: `ADR-0051` (Export/Import Is Orthogonal to the Internal Persistence Abstraction — Kind Routing, Format/Serialization Abstractions, and Scope Boundaries) |
+| Rejected Designs | 45 (`RD-0001`–`RD-0045`) — unchanged by `WP 6.7` (no rejected design produced; alternatives-considered sections recorded within `ADR-0051` itself) |
+| Academy articles | 84 (see `docs/governance/Documentation/Academy Register.md`) — **+1, `WP 6.7`**: `WP6.7-export-import-implementation.md` |
 | Governance registers | 27 (32 governance documents total), plus 4 standing security documents under `docs/security/` (not governance registers themselves, indexed from `Governance Index.md`'s Security section) |
-| Architecture documents | 20 under `docs/architecture/` (22 including the two release-scoped documents) — unchanged by `WP 6.3` (Platform Service Map.md updated in place, not a new document) |
-| Platform services | 24 catalogued — 21 Implemented, 2 not implemented as platform services, 1 developer-convenience layer — **+1, `WP 6.3`**: REST API |
-| Modules (production) | 13 (`ClockModule`, `ClockLifecycleObserverModule`, `NavigationSampleModule`, `SecondaryNavigationSampleModule`, `DuplicateNavigationSampleModule`, `CommandSampleModule`, `DiagnosticsSampleModule`, `IdentitySampleModule`, `SettingsSampleModule`, `AuditSampleModule`, `NotificationSampleModule`, `ReportingSampleModule`, `ApiSampleModule`) |
-| Hosted services (production) | 2 — **+1, `WP 6.3`**: `RestApiHostedService` (`Tempest.Core.Api`, a real, Kestrel-backed HTTP listener), alongside `NotificationSampleHostedService` (`WP 6.2`). `AT-07` ("Zero real hosted services exist beyond the infrastructure") is now Retired — the Work Package its own revisit trigger explicitly named in advance |
+| Architecture documents | 20 under `docs/architecture/` (22 including the two release-scoped documents) — unchanged by `WP 6.7` (Platform Service Map.md updated in place, not a new document) |
+| Platform services | 25 catalogued — 22 Implemented, 2 not implemented as platform services, 1 developer-convenience layer — **+1, `WP 6.7`**: Export/Import |
+| Modules (production) | 14 (`ClockModule`, `ClockLifecycleObserverModule`, `NavigationSampleModule`, `SecondaryNavigationSampleModule`, `DuplicateNavigationSampleModule`, `CommandSampleModule`, `DiagnosticsSampleModule`, `IdentitySampleModule`, `SettingsSampleModule`, `AuditSampleModule`, `NotificationSampleModule`, `ReportingSampleModule`, `ApiSampleModule`, `ExportImportSampleModule`) |
+| Hosted services (production) | 2 — unchanged by `WP 6.7` (Export/Import has no hosted-service component, per its own approved contract — an ordinary Phase 6 singleton, no new Host Lifecycle phase) |
 | Plugins (production) | 0 — infrastructure fully implemented and tested; `src/Plugins/` empty by deliberate scope decision |
-| Custom exception types | 46 — **+2, `WP 6.3`**: `ApiException` (base-plus-subtype, mirroring `ReportingException`), `DuplicateApiRouteException` |
-| Technical Debt Register items | 15 tracked, 10 disclosed trade-offs (1 Retired) — **`WP 6.3`**: +3 tracked (`TD-13` no real authentication, `TD-14` no TLS, `TD-15` ambient-principal Audit-attribution gap under REST invocation); +1 trade-off (`AT-10` no request-parameter binding); `AT-07` updated to Retired; `TD-04` annotated (real usage evidence for the naming-proximity concern has arrived) |
-| Commits (this release, `v0.5.0` → `v0.6.0`, so far) | 9 — branch/documentation preparation, Architecture Package, Contract Review Package, `WP 6.1` implementation, `WP 6.4` implementation, `WP 6.5` implementation, `WP 6.2` implementation, `WP 6.0` implementation, `WP 6.3` implementation (this one) |
+| Custom exception types | 50 — **+4, `WP 6.7`**: `ExportImportException` (base-plus-subtype, mirroring `ReportingException`), `IncompatibleExportSchemaException` (the one approved subtype), `CorruptedExportArtifactException` and `DuplicateImportableKindException` (both additive) |
+| Technical Debt Register items | 15 tracked, 12 disclosed trade-offs (1 Retired) — **`WP 6.7`**: +2 trade-offs (`AT-11` no compression/encryption of exported content, `AT-12` no schema-upgrade/migration path); no existing Technical Debt item required annotation |
+| Commits (this release, `v0.5.0` → `v0.6.0`, so far) | 10 — branch/documentation preparation, Architecture Package, Contract Review Package, `WP 6.1` implementation, `WP 6.4` implementation, `WP 6.5` implementation, `WP 6.2` implementation, `WP 6.0` implementation, `WP 6.3` implementation, `WP 6.7` implementation (this one) |
 | Contributors | 1 (repository owner; all commits co-authored by Claude) |
 
 *(This table is generated from `docs/governance/Quality/Repository Metrics
@@ -239,34 +267,25 @@ three together.)*
 - **Build:** Clean — 0 warnings, 0 errors (`dotnet build
   tests/Tempest.Core.Tests/Tempest.Core.Tests.csproj`, both Debug and
   Release configurations, from a fully-removed `bin`/`obj` tree —
-  verified directly by `WP 6.3`).
-- **Tests:** 914/914 passing (+45, `WP 6.3`), verified in both Debug and
-  Release configurations from a clean rebuild, and re-run three
-  consecutive times in each configuration to confirm stability —
-  including every real-HTTP integration test, each configured with an
-  OS-assigned ephemeral port (`Api:Port` = `0`) specifically to
-  eliminate any cross-test port-collision risk, never observed once
-  across any run. This Work Package's own most consequential finding was
-  not a code defect but an empirically-tested architectural question:
-  an `AsyncLocal<T>`-backed `CurrentPrincipalAccessor` was built and run
-  directly against the full pre-`WP 6.3` suite, and regressed 17 tests —
-  confirming, rather than merely assuming, that this release's own
-  ambient-principal design (`WP 6.1`) remains correct and must not
-  change (`ADR-0052`). A pre-existing, non-reproducible flake in an
-  unrelated Logging test area (`ConsoleLogSinkTests.
-  Write_ProducesNoAnsiColourEscapeCodes` once, then
-  `CompositeLogSinkTests.Write_AllSinksThrow_ExceptionNeverPropagatesToTheCaller`
-  twice consecutively — the same class of order/parallelism-dependent
-  `Console.Out`-capture issue disclosed once already, for
-  `CompositeLogSinkTests` specifically, during a prior Work Package)
-  surfaced intermittently across roughly a dozen full-suite runs
-  performed for this Work Package's own validation, always passing
-  100% of the time in isolation and in every Release-configuration run.
-  Not chased further — it is outside this Work Package's own scope,
-  does not touch the REST API or anything this Work Package changed,
-  and its own root cause (a `Console.Out`-redirection race between
-  test collections under xUnit's default parallelism) was already
-  identified, not newly discovered here.
+  verified directly by `WP 6.7`).
+- **Tests:** 972/972 passing (+58, `WP 6.7`), verified in both Debug and
+  Release configurations from a clean rebuild, and re-run a second
+  consecutive time in Debug to confirm stability — including a
+  dedicated test proving an incompatible section anywhere in a
+  multi-source artifact aborts the entire import before any section is
+  applied (`ImportAsync_OneOfMultipleSectionsIsIncompatible_NoSectionIsImported`),
+  and both a truncated-JSON and a not-base64 corrupted-artifact test.
+  This Work Package's own most consequential design question — how a
+  single-`Stream`, no-destination-parameter `IImportService.ImportAsync`
+  can route a multi-section artifact back to more than one owning
+  service — was resolved by directly inspecting `TempestServiceProvider`'s
+  own resolution model (confirmed: exactly one registration per type, no
+  `IEnumerable<T>` collection-resolution support at all) before designing
+  around that real constraint, rather than assuming a more featureful
+  container's own conveniences would be available (`ADR-0051`). No
+  instance of the previously-disclosed, non-reproducible
+  `Console.Out`-capture flake (`WP 6.3`'s own finding) was observed
+  across any run performed for this Work Package's own validation.
 - **Known regressions:** None.
 - **Working tree:** Clean at every Work Package boundary — see
   `docs/governance/Quality/Validation Register.md`.
@@ -511,15 +530,48 @@ annotated, since real usage evidence (a genuine ASP.NET Core dependency
 now coexisting with this platform's own, differently-shaped
 `IHostedService`) has arrived for the first time.
 
+**`WP 6.7` (Export/Import)** — implemented directly against the same,
+unrevised architecture and Contract Review packages, completing the
+Reporting/Export/Import orthogonality question `ADR-0040` first raised.
+`docs/architecture/Platform Service Map.md` gained a new Export/Import
+entry, following the identical documentation shape every prior new
+platform service's own entry has used. One new ADR, `ADR-0051`, formally
+settles the orthogonality question `Required ADRs.md` anticipated and
+records two further genuine implementation-phase decisions the Contract
+Review left open: the additive `IExportableKind`/`IImportable`
+Kind-routing mechanism (closing the approved contract's own
+multi-destination-import gap without changing `IImportService`'s own
+shape, via a concrete-type dual registration reusing `ADR-0044`'s own
+`CurrentPrincipalAccessor` precedent), and the additive
+`IExportFormat`/`IExportPayloadSerializer` pair filling the brief's own
+"Format abstraction"/"Serialization abstraction" scope. `docs/governance/
+Quality/Technical Debt Register.md` gained two new trade-offs (`AT-11`
+no compression/encryption of exported content, `AT-12` no
+schema-upgrade/migration path) — both matching the approved contract's
+own Future Extension Points exactly, not newly-discovered gaps. This
+Work Package's own repository review found three further, genuine,
+pre-existing drifts, none related to its own scope: `Platform Service
+Map.md`'s own Audit and Notifications "Consumers" entries had read
+"none yet implemented" since before `WP 6.0` first shipped a real
+consumer of each — corrected here; and `docs/governance/Engineering/
+Interface Register.md`, `Dependency Injection Register.md`, and `Module
+Register.md` had each gone stale since `WP 5.2`, missing every public
+interface, DI registration, and sample module `WP 6.1` through `WP 6.3`
+added — each register's own Coverage Status is corrected from
+"Complete" to "Partial," disclosing the exact gap, with only this Work
+Package's own new entries added and the larger, six-Work-Package
+backfill explicitly left for `WP 6.8` (Platform Services Integration
+Review).
+
 ## Academy Status
 
-83 articles across 7 categories (Introduction, Engineering Principles,
+84 articles across 7 categories (Introduction, Engineering Principles,
 Runtime Architecture, Work Package retrospectives, Design Patterns, Case
 Studies, Engineering Standards), plus `Academy Index.md`, `Academy
 Masterclass Roadmap.md`, `Academy Audit Report.md`, and `Contributor
 Learning Path.md` — re-derived directly (`find docs/academy -name
-"*.md"`) by `WP 6.3`, consistent with `WP 6.0`'s/`WP 6.2`'s own prior
-passes. Every completed Work Package has a matching
+"*.md"`) by `WP 6.7`, consistent with `WP 6.0`'s/`WP 6.2`'s/`WP 6.3`'s
+own prior passes. Every completed Work Package has a matching
 retrospective, including `WP 5.0A` through `WP 5.4`. Maintenance
 obligation (Engineering Governance §6) verified honoured by two
 independent audits (`WP 4.4F`, and the Academy Register built during
@@ -593,7 +645,17 @@ the empirically-verified `CurrentPrincipalAccessor` decision
 (`ADR-0052`) — including the 17-test regression the rejected
 `AsyncLocal<T>` alternative actually produced, not merely a theoretical
 concern — and the `Detail`-carried-caller-identity convention for
-REST-originated Audit records.
+REST-originated Audit records. `WP 6.7` added
+`WP6.7-export-import-implementation.md`, teaching the Kind-routing
+mechanism that closes the approved contract's own multi-destination-
+import gap without changing any approved interface, the reuse of
+`ADR-0044`'s own dual-registration pattern for a structurally identical
+problem, the two-abstraction (Format/Serialization) resolution to the
+brief's own named scope, and — as a genuine, disclosed
+engineering-review finding, not a planned lesson — the three
+governance-documentation drifts (two Platform Service Map consumer
+entries, and three registers stale since `WP 5.2`) found while
+re-deriving every touched register directly.
 
 ## Governance Status
 
@@ -764,6 +826,34 @@ register directly, found this one further, genuine, pre-existing
 governance-documentation drift beyond what `WP 6.0`'s own review had
 already confirmed clean.
 
+**`WP 6.7` (Export/Import)** added `ADR-0051` (Export/Import Is
+Orthogonal to the Internal Persistence Abstraction — Kind Routing,
+Format/Serialization Abstractions, and Scope Boundaries) — Accepted,
+formally authoring its own `Required ADRs.md` catalogue entry and
+filling the last remaining reserved-ADR-number gap besides `ADR-0050`
+(Licensing, `WP 6.6`, not yet started): `docs/adr/` now runs `ADR-0001`
+through `ADR-0049`, then `ADR-0051`–`ADR-0052`, with only `ADR-0050`
+still reserved. `docs/governance/Quality/Technical Debt Register.md`
+gained two new trade-offs (`AT-11`, `AT-12`); no existing Technical Debt
+item required annotation. This Work Package's own repository review,
+re-deriving every touched register directly, found three further,
+genuine, pre-existing governance-documentation drifts, none related to
+its own scope: `docs/architecture/Platform Service Map.md`'s own Audit
+and Notifications "Consumers" entries had read "none yet implemented"
+since before `WP 6.0` first shipped a real consumer of each — corrected
+here. More substantially,
+`docs/governance/Engineering/Interface Register.md`, `Dependency
+Injection Register.md`, and `Module Register.md` had each gone stale
+since `WP 5.2` — six consecutive Work Packages' worth of interfaces (23),
+DI registration call sites (10), and sample modules (6) were missing
+entirely from all three, each register's own "Coverage Status: Complete"
+line surviving unchallenged the entire time. Each register's own
+Coverage Status is corrected to "Partial," the exact gap disclosed
+explicitly, with only this Work Package's own new entries added — a
+full backfill is recommended as `WP 6.8` (Platform Services Integration
+Review)'s own closing-audit task, exactly the kind of accumulated,
+multi-Work-Package drift that Work Package exists to catch.
+
 ## Known Unknowns
 
 Recorded honestly, not guessed at — full detail in `docs/governance/
@@ -787,17 +877,19 @@ Governance Audit Report.md`:
 1. **Await engineering approval before any further `v0.6.0`
    implementation begins.** `WP 6.1` (Permissions & Identity), `WP 6.4`
    (Settings Framework), `WP 6.5` (Audit Framework), `WP 6.2`
-   (Notification Framework), `WP 6.0` (Reporting Framework), and `WP
-   6.3` (REST API) are all complete on
-   `feature/v0.6.0-platform-services`; per `WP 6.3`'s own explicit
+   (Notification Framework), `WP 6.0` (Reporting Framework), `WP 6.3`
+   (REST API), and `WP 6.7` (Export/Import) are all complete on
+   `feature/v0.6.0-platform-services`; per `WP 6.7`'s own explicit
    closing instruction, no further Work Package is to begin next,
    regardless of `Platform Service Implementation Order.md`'s own
    recommended sequencing.
 2. Once approved, the next Work Package is whichever engineering review
-   directs among the three remaining — `WP 6.6` (Licensing), `WP 6.7`
-   (Export/Import), or `WP 6.8` (Platform Services Integration Review)
-   — see `docs/releases/v0.6.0/WorkPackages.md` for the full,
-   nine-Work-Package plan.
+   directs among the two remaining — `WP 6.6` (Licensing) or `WP 6.8`
+   (Platform Services Integration Review) — see `docs/releases/v0.6.0/
+   WorkPackages.md` for the full, nine-Work-Package plan. `WP 6.8` is
+   also the recommended place to backfill the `Interface Register.md`/
+   `Dependency Injection Register.md`/`Module Register.md` gap `WP 6.7`
+   disclosed (see Governance Status, above).
 3. No merge to `main` is due until the Platform Services phase's Work
    Packages are complete (see `docs/releases/v0.6.0/WorkPackages.md`).
 
@@ -831,7 +923,7 @@ is under way:
 - `WP 6.4` — Settings Framework. **Complete.**
 - `WP 6.5` — Audit Framework. **Complete.**
 - `WP 6.6` — Licensing Framework. Not started.
-- `WP 6.7` — Export / Import. Not started.
+- `WP 6.7` — Export / Import. **Complete.**
 - `WP 6.8` — Platform Services Integration Review (closing milestone
   audit, mirroring `WP 4.2D`/`WP 5.0S`'s own precedent). Not started.
 

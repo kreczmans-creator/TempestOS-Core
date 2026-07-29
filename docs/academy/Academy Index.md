@@ -258,8 +258,9 @@ as an ordinary DI-public singleton with no permission-gating of its own
 (the caller enforces, mirroring Navigation/Command Framework). Additive
 `IReportTemplate<TDefinition>`/`PlainTextReportTemplate<TDefinition>`
 separate a renderer's own data-gathering from layout/rendering.
-Deliberately orthogonal to Export/Import (`WP 6.7`, not yet started) —
-no export interface was built inside Reporting. Cross-service
+Deliberately orthogonal to Export/Import (`WP 6.7`, now implemented,
+`ADR-0051`) — no export interface was built inside Reporting.
+Cross-service
 integration (Identity, Settings, Audit, Notifications) is demonstrated
 entirely at the sample module's own calling layer.
 
@@ -282,6 +283,28 @@ deliberate limitation.
 
 - [WP 6.3 — REST API Implementation](03%20Work%20Packages/WP6.3-rest-api-implementation.md) — implemented directly against the already-approved architecture and Contract Review packages, including the empirically-verified identity-resolution decision (`ADR-0052`) and a dedicated Platform Integration Demonstration.
 - ADR-0047 (The REST API Is a Background Hosted Service), ADR-0048 (REST Endpoints Dispatch Through the Existing Command Framework), ADR-0049 (Adopting ASP.NET Core/Kestrel for the REST API), ADR-0052 (The REST API Resolves Identity Per-Request Without Touching the Ambient Current Principal — Empirically Verified).
+
+### Export/Import
+
+Implemented (`WP 6.7`, `ADR-0051`) — `Tempest.Core.ExportImport`: a
+user-facing, `Stream`-based, portable-artifact I/O layer, explicitly
+distinct from the internal `IPersistenceStore` abstraction. Additive
+`IExportableKind`/`IImportable` route a multi-section artifact back to
+the correct owning service by `Kind`, registered with `ImportService`'s
+own concrete type — dual-registered under both that type and
+`IImportService`, mirroring `ADR-0044`'s own `CurrentPrincipalAccessor`
+precedent. Separate, optional `IExportFormat`/`JsonExportFormat`
+(artifact framing) and `IExportPayloadSerializer`/
+`JsonExportPayloadSerializer` (payload serialization) abstractions fill
+the brief's own named scope without touching any approved interface.
+Every section's compatibility is validated before any section is
+imported — no best-effort partial import. Cross-service integration
+(Identity, Settings, Audit, Notifications) is demonstrated entirely at
+the sample module's own calling layer; Persistence and Reporting are
+both deliberately not consumed.
+
+- [WP 6.7 — Export/Import Framework Implementation](03%20Work%20Packages/WP6.7-export-import-implementation.md) — implemented directly against the already-approved architecture and Contract Review packages, including the additive Kind-routing/Format/Serialization elaborations (`ADR-0051`) and a dedicated Platform Integration Demonstration.
+- ADR-0051 (Export/Import Is Orthogonal to the Internal Persistence Abstraction — Kind Routing, Format/Serialization Abstractions, and Scope Boundaries).
 
 ## Design Patterns
 
@@ -376,8 +399,9 @@ is complete and `v0.5.0` is released.
 - [WP 6.4 — Settings Framework Implementation](03%20Work%20Packages/WP6.4-settings-framework-implementation.md) — implemented ahead of `WP 6.0`–`WP 6.3` per `Platform Service Implementation Order.md`'s own recommendation; establishes the shared Persistence abstraction as part of its own scope.
 - [WP 6.5 — Audit Framework Implementation](03%20Work%20Packages/WP6.5-audit-framework-implementation.md) — implemented per the same recommendation; reuses `WP 6.4`'s own Persistence abstraction and validates it as sufficient, without extending it speculatively.
 - [WP 6.2 — Notification Framework Implementation](03%20Work%20Packages/WP6.2-notification-framework-implementation.md) — implemented per the same recommendation; builds on the existing Event Bus's own proven dispatch model rather than a second, parallel publish/subscribe implementation.
-- [WP 6.0 — Reporting Framework Implementation](03%20Work%20Packages/WP6.0-reporting-framework-implementation.md) — the first of `v0.6.0`'s five implemented Work Packages to match its own nominal numeric position; orthogonal to the not-yet-started `WP 6.7` (Export/Import).
+- [WP 6.0 — Reporting Framework Implementation](03%20Work%20Packages/WP6.0-reporting-framework-implementation.md) — the first of `v0.6.0`'s implemented Work Packages to match its own nominal numeric position; orthogonal to `WP 6.7` (Export/Import).
 - [WP 6.3 — REST API Implementation](03%20Work%20Packages/WP6.3-rest-api-implementation.md) — this platform's first substantial dependency on a pre-built framework component (ASP.NET Core/Kestrel) and first genuinely concurrent, per-request scenario, resolved without modifying `WP 6.1`'s own already-shipped `CurrentPrincipalAccessor`.
+- [WP 6.7 — Export/Import Framework Implementation](03%20Work%20Packages/WP6.7-export-import-implementation.md) — completes the orthogonality `WP 6.0` anticipated; resolves the approved contract's own multi-destination-import gap via a `Kind`-routed, dual-registered `ImportService`, reusing `WP 6.1`'s own `CurrentPrincipalAccessor` registration pattern.
 
 See `PROJECT_STATUS.md` for current status and `docs/releases/v0.6.0/
 WorkPackages.md` for the full, nine-Work-Package plan.

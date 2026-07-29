@@ -6,6 +6,7 @@ using Tempest.Core.Configuration;
 using Tempest.Core.DependencyInjection;
 using Tempest.Core.Diagnostics;
 using Tempest.Core.Events;
+using Tempest.Core.ExportImport;
 using Tempest.Core.Identity;
 using Tempest.Core.Logging;
 using Tempest.Core.Modules;
@@ -277,6 +278,28 @@ public sealed class TempestHost : ITempestHost
         // initialisation, before the hosted service itself ever starts
         // listening.
         services.Singleton<IApiEndpointRegistry, ApiEndpointRegistry>();
+
+        // ADR-0051: Export/Import reads from whatever service owns the
+        // exported data (Settings, Reporting) via that service's own
+        // public interface, never IPersistenceStore directly - registered
+        // last among the ordinary Phase 6 singletons, needing nothing but
+        // Dependency Injection itself.
+        //
+        // ImportService is constructed directly, once, and registered
+        // under both its own concrete type and IImportService - the same
+        // already-built instance under two service-type keys - mirroring
+        // ADR-0044's own dual-registration precedent for
+        // CurrentPrincipalAccessor: a module needing RegisterImportable
+        // resolves the concrete type, while every ordinary consumer
+        // resolves only the read-only IImportService interface, both
+        // against the exact same object.
+        var exportFormat = new JsonExportFormat();
+        services.AddInstance<IExportFormat>(exportFormat);
+        services.Singleton<IExportService, ExportService>();
+
+        var importService = new ImportService(exportFormat, logger);
+        services.AddInstance<IImportService>(importService);
+        services.AddInstance(importService);
 
         // Composition Root pattern (ADR-0009), like Configuration/Logging/
         // PlatformVersionProvider above: DiagnosticsProvider needs references
