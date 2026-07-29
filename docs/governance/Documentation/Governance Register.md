@@ -6,13 +6,13 @@
 |---|---|
 | **Register Name** | Governance Register |
 | **Purpose** | Tracks, per Work Package, whether Engineering Governance's own obligations (§5 ADR criteria, §6 Academy maintenance, §10 Rejected Designs) were actually met — the compliance record, distinct from the Decision Register's record of *what* was decided. |
-| **Scope** | Every Work Package from `7514b9d` (first Claude-authored commit) through `v0.4.0` Release Engineering. |
+| **Scope** | Every Work Package from `7514b9d` (first Claude-authored commit) through `WP 5.3`. |
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | Git history (`git log`); `docs/academy/06 Engineering Standards/Engineering Governance.md`; each Work Package's own retrospective. |
 | **Review Frequency** | Updated at the end of every Work Package. |
-| **Last Reviewed** | 2026-07-27 (v0.4.0 Release Engineering). |
+| **Last Reviewed** | 2026-07-28 (WP 5.3, Developer Experience Improvements) — backfilled four Work Packages (`WP 5.0S`, `WP 5.1A`, `WP 5.1B`, `WP 5.2`) missing from this register's own Compliance Matrix since `WP 5.0D`; see Findings. |
 | **Related Documents** | `Decision Register.md`; `ADR Register.md`; `Rejected Designs Register.md`; `Academy Register.md`; `Feature Register.md`. |
-| **Related ADRs** | All 30 — this register verifies each one's originating Work Package actually followed §5. |
+| **Related ADRs** | All 39 — this register verifies each one's originating Work Package actually followed §5. |
 | **Related Academy Articles** | `docs/academy/06 Engineering Standards/Engineering Governance.md`. |
 | **Coverage Status** | Complete. |
 
@@ -55,16 +55,38 @@ records an explicit judgement, never an omission.
 | WP 4.5 — Background Services Implementation | `c460aaf` | — | — | Yes |
 | WP 4.5A — Governance Register Baseline | `256afc8` | — | — | This Work Package's own governance material (see `Governance Philosophy.md`) |
 | WP 4.5B — Platform Foundation Closeout | `eb19605` | — | — | This Work Package's own closeout material (see `docs/releases/Platform Foundation Completion Report.md`) |
-| v0.4.0 Release Engineering | *(release-preparation commit)* | — | — | Not a Work Package in the numbered sequence — a Release Engineering activity, per Engineering Governance §7. `docs/releases/v0.4.0/Release Notes.md` and `docs/releases/v0.4.0.md` serve the retrospective role for this activity. |
+| v0.4.0 Release Engineering | `2c88c07`/`5802b92` | — | — | Not a Work Package in the numbered sequence — a Release Engineering activity, per Engineering Governance §7. `docs/releases/v0.4.0/Release Notes.md` and `docs/releases/v0.4.0.md` serve the retrospective role for this activity. |
+| WP 5.0A — Navigation Framework Architecture | `c3f9246` | ADR-0031, ADR-0032 | RD-0030–RD-0033 | Yes |
+| WP 5.0B — Navigation Framework Implementation | `df4cb45` | — (implements ADR-0031/ADR-0032 exactly; no new ADR required) | — | Yes |
+| WP 5.0C — Shell & Composition Framework Architecture | `6ce9173` | ADR-0033, ADR-0034, ADR-0035 | RD-0034–RD-0037 | Yes |
+| WP 5.0D — Shell & Composition Framework Implementation | `8d268a7` | — (implements ADR-0033–ADR-0035 exactly; no new ADR required) | — | Yes |
+| WP 5.0S — Platform Security Baseline Audit | `6d7def5` | — (audit; no architecture redesigned, per its own brief) | — | Yes |
+| WP 5.1A — Command Framework Architecture | `8aad1f0` | ADR-0036, ADR-0037, ADR-0038 | RD-0038–RD-0041 | Yes |
+| WP 5.1B — Command Framework Implementation | `3ef23a9` | — (implements ADR-0036–ADR-0038 exactly; no new ADR required) | — | Yes |
+| WP 5.2 — Diagnostics Improvements | `a0520d5` | ADR-0039 | RD-0042–RD-0044 | Yes |
+| WP 5.3 — Developer Experience Improvements | `10c5b14` | — (RD-0045 only; no ADR met §5's criteria) | RD-0045 | Yes |
+| WP 5.4 — v0.5.0 Release Candidate & Engineering Sign-Off | `d30e286` | — (verification only; no new ADR) | — | Yes — deliberately shaped around what a release-verification retrospective actually needs, not the standard 13-section template (disclosed in that document's own "What This Document Is") |
 
-**Total: 28 Work Packages tracked, plus `v0.4.0` Release Engineering,
+**Total: 38 Work Packages tracked, plus `v0.4.0` Release Engineering,
 100% Academy
 retrospective compliance for every Work Package that required one
 (housekeeping correctly excepted).**
 
 ## Findings
 
-- **Zero governance gaps found.** Every Work Package that met §5's ADR
+- **Repository review correction (`WP 5.3`).** This register's own
+  Compliance Matrix had not been updated since `WP 5.0D` — four
+  completed Work Packages (`WP 5.0S`, `WP 5.1A`, `WP 5.1B`, `WP 5.2`)
+  were missing entirely, and `WP 5.0D`'s own row still carried a
+  `*(this commit)*` placeholder never backfilled with its real commit
+  hash once that commit landed. None of the four intervening Work
+  Packages' own repository reviews caught this, despite each fixing
+  other, similar drift elsewhere (`Feature Register.md`, `Traceability
+  Matrix.md`, `Architecture Document Register.md`) — this register
+  itself was simply never re-opened. All five rows backfilled here,
+  verified directly against `git log` and each Work Package's own
+  retrospective; no discrepancy found once complete.
+- **Zero governance gaps found**, backfill aside. Every Work Package that met §5's ADR
   criteria produced an ADR; every Work Package that met §10's rejected-
   alternative criteria produced a Rejected Designs entry; every Work
   Package produced an Academy retrospective, per §6, with the single,

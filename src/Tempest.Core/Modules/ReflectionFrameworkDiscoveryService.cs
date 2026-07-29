@@ -127,6 +127,16 @@ public class ReflectionFrameworkDiscoveryService : IFrameworkDiscoveryService
     /// otherwise by instantiating it via its public parameterless constructor and reading
     /// its <see cref="IModule"/> instance properties, exactly as discovery has always done.
     /// </summary>
+    /// <remarks>
+    /// <see cref="Activator.CreateInstance(Type)"/> throws an unhelpful, undocumented
+    /// <see cref="MissingMethodException"/> for a type with no public parameterless
+    /// constructor — exactly the shape a module author who forgets
+    /// <see cref="ModuleMetadataAttribute"/> after adding a constructor dependency would hit
+    /// (<c>Building a Module.md</c>'s own long-documented, but previously unenforced, "one
+    /// constraint you still need to know about"). This is checked explicitly first (WP 5.3)
+    /// so the failure is a clear <see cref="ModuleDiscoveryException"/> naming the actual fix,
+    /// not a raw runtime exception with no actionable guidance.
+    /// </remarks>
     private static ModuleDescriptor CreateDescriptor(Type type)
     {
         var metadataAttribute = type.GetCustomAttribute<ModuleMetadataAttribute>();
@@ -135,6 +145,16 @@ public class ReflectionFrameworkDiscoveryService : IFrameworkDiscoveryService
         {
             ValidateMetadata(metadataAttribute.Id, metadataAttribute.Name, metadataAttribute.Version, type);
             return new ModuleDescriptor(metadataAttribute.Id, metadataAttribute.Name, metadataAttribute.Version, type);
+        }
+
+        if (type.GetConstructor(Type.EmptyTypes) is null)
+        {
+            throw new ModuleDiscoveryException(
+                $"Module type '{type.FullName}' has no public parameterless constructor and no " +
+                $"[ModuleMetadataAttribute]. Discovery cannot construct it to read Id/Name/Version. " +
+                "Add [ModuleMetadataAttribute(id, name, version)] to declare metadata without " +
+                "construction, freeing the constructor to take dependencies (see 'Building a " +
+                "Module.md'), or add a public parameterless constructor.");
         }
 
         var module = (IModule)Activator.CreateInstance(type)!;

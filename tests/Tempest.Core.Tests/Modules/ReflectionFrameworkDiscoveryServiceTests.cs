@@ -66,6 +66,36 @@ public class ReflectionFrameworkDiscoveryServiceTests
             service.DiscoverModules(new[] { typeof(InvalidIdModule) }));
     }
 
+    // WP 5.3: a module with a constructor requiring a dependency but no
+    // [ModuleMetadata] previously surfaced as a raw, unhelpful
+    // MissingMethodException from Activator.CreateInstance - the exact
+    // pitfall "Building a Module.md" has long warned a module author about
+    // without the code itself ever enforcing it. Now a clear
+    // ModuleDiscoveryException naming the actual fix.
+    [Fact]
+    public void DiscoverModules_ThrowsModuleDiscoveryExceptionWithActionableMessage_WhenTypeHasNoParameterlessConstructorAndNoMetadataAttribute()
+    {
+        var service = new ReflectionFrameworkDiscoveryService();
+
+        var exception = Assert.Throws<ModuleDiscoveryException>(() =>
+            service.DiscoverModules(new[] { typeof(ConstructorDependencyModuleWithoutMetadata) }));
+
+        Assert.Contains("ConstructorDependencyModuleWithoutMetadata", exception.Message);
+        Assert.Contains("ModuleMetadataAttribute", exception.Message);
+        Assert.Contains("parameterless constructor", exception.Message);
+    }
+
+    [Fact]
+    public void DiscoverModules_DoesNotThrowMissingMethodException_WhenTypeHasNoParameterlessConstructorAndNoMetadataAttribute()
+    {
+        var service = new ReflectionFrameworkDiscoveryService();
+
+        var exception = Record.Exception(() =>
+            service.DiscoverModules(new[] { typeof(ConstructorDependencyModuleWithoutMetadata) }));
+
+        Assert.IsType<ModuleDiscoveryException>(exception);
+    }
+
     [Fact]
     public void DiscoverModules_ScansSuppliedAssembly_ReturnsEmptyWhenNoModulesPresent()
     {

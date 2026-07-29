@@ -10,7 +10,7 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | `src/Samples/Tempest.Samples/ClockModuleLifecycleEvent.cs`; `docs/architecture/Event Bus Architecture.md`. |
 | **Review Frequency** | Updated whenever a new production event type is added anywhere under `src/`. |
-| **Last Reviewed** | 2026-07-25 (WP 4.5A). |
+| **Last Reviewed** | 2026-07-27 (WP 5.0B). |
 | **Related Documents** | `docs/architecture/Event Bus Architecture.md`; `Module Register.md`; `Platform Services Register.md`. |
 | **Related ADRs** | ADR-0020, ADR-0028. |
 | **Related Academy Articles** | `docs/academy/02 Runtime Architecture/04-building-an-event-driven-module.md`; `docs/academy/03 Work Packages/WP4.4E-sample-module-event-integration.md`. |
@@ -23,9 +23,11 @@
 | Event | Namespace | Publisher | Subscriber(s) | Payload | Originating Work Package |
 |---|---|---|---|---|---|
 | `ClockModuleLifecycleEvent` | `Tempest.Samples` | `ClockModule` (from `InitialiseAsync`/`StartAsync`/`StopAsync`) | `ClockLifecycleObserverModule` | `ModuleId`, `ModuleName`, `Transition` (`ClockModuleLifecycleTransition`: `Initialised`/`Started`/`Stopped`), `Timestamp`, `CorrelationId` | WP 4.4E |
+| `NavigationRequestedEvent` | `Tempest.Core.Navigation` | `NavigationService` (from `Navigate`) | None in production yet — `Tempest.App`'s own rendering, not yet built, is the intended subscriber (ADR-0031); proven in tests against a real `IEventBus` with a recording subscriber standing in for it | `Item` (the requested `NavigationItem`) | WP 5.0A (designed), WP 5.0B (implemented) |
 
-**Total: 1 production event type — Verified directly against
-`src/Samples/Tempest.Samples/ClockModuleLifecycleEvent.cs`.**
+**Total: 2 production event types — Verified directly against
+`src/Samples/Tempest.Samples/ClockModuleLifecycleEvent.cs` and
+`src/Tempest.Core/Navigation/NavigationRequestedEvent.cs`.**
 
 ## A Documented, Tested Non-Delivery Case
 
@@ -44,5 +46,8 @@ behaviour, not a hypothetical edge case.
 `ClockModuleLifecycleEvent` is cited in `Module Register.md` (both
 publisher and subscriber), `Platform Services Register.md` (Event Bus's
 "first real consumer"), and `Test Register.md`
-(`ClockModuleEventIntegrationTests.cs`). No production event type exists
-without a corresponding test.
+(`ClockModuleEventIntegrationTests.cs`). `NavigationRequestedEvent` is
+cited in `Module Register.md` (`NavigationSampleModule` and companions),
+`Platform Services Register.md` (Navigation), and `Test Register.md`
+(`NavigationServiceTests.cs`, `NavigationSampleModuleIntegrationTests.cs`).
+No production event type exists without a corresponding test.

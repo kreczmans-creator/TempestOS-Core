@@ -137,6 +137,15 @@ Nothing in the runtime treats an SDK-built module any differently from a
 hand-written one; Discovery, Registration, and Lifecycle cannot tell the
 difference, and neither should you need to.
 
+## Scaffolding One Without Hand-Copying `ClockModule`
+
+**As of `WP 5.3`**, you don't have to start from a blank file or copy
+`ClockModule` by hand: `dotnet new tempest-module` generates a module
+shaped exactly as this guide describes, already carrying
+`[ModuleMetadata]` and ready to compile. See `src/Templates/README.md`
+for installation and usage, and this guide's own examples above for what
+the generated code means.
+
 ## A Real Example
 
 `Tempest.Samples.ClockModule` (`src/Samples/Tempest.Samples/ClockModule.cs`,
@@ -169,4 +178,6 @@ Architecture*, *Sample Module Implementation*) · WP 4.4A retrospective
 Integration*) · `docs/architecture/Platform Service Map.md`'s Module SDK
 entry · `docs/architecture/Sample Module Architecture.md` ·
 `docs/architecture/Module Dependency Injection Architecture.md` ·
-`docs/architecture/Event Bus Architecture.md` · ADR-0027 · ADR-0028.
+`docs/architecture/Event Bus Architecture.md` · ADR-0027 · ADR-0028 ·
+`src/Templates/README.md` (the `dotnet new tempest-module` template,
+`WP 5.3`).

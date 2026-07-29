@@ -85,6 +85,19 @@ or non-deterministic one. Cited throughout the Runtime Host architecture to
 justify single-threaded orchestration (*Runtime Host Architecture.md*,
 "Threading") and fixed startup/shutdown ordering.
 
+### Diagnostics *(implemented — v0.5.0, WP 5.2, ADR-0039)*
+
+The platform service exposing a read-only projection of the Host's own
+current lifecycle state — `HostState`, every registered module's
+`ModuleLifecycleStatus`, every hosted service's `HostedServiceStatus` —
+via `IDiagnosticsProvider`. Constructed directly by `TempestHost`
+(Composition Root, `ADR-0009`) and registered via `AddInstance`, yet
+DI-public — a combination made possible only because `DiagnosticsProvider`
+carries no orchestration authority of its own; it reads data
+`IModuleLifecycleManager`/`IHostedServiceManager` already produce, and
+never exposes either manager itself (`ADR-0017`). See the Platform
+Service Map's "Diagnostics" entry.
+
 ### Discovery
 
 The platform service that finds `IModule` implementations across loaded
@@ -93,17 +106,30 @@ deterministic order — answering exactly one question: what modules exist.
 Deliberately independent of the DI container (ADR-0008) and of Configuration.
 See the Platform Service Map's "Discovery" entry.
 
-### Command *(contract implemented — v0.4.0, WP 4.0)*
+### Command *(implemented — v0.4.0 WP 4.0 contract, WP 5.1A design, WP 5.1B dispatcher implementation, ADR-0036–ADR-0038)*
 
 A discrete, named unit of application logic requested by a caller,
 implemented as data (`ICommand`, `Tempest.Core.Commands`): a concrete
 command type carries its own parameters as ordinary properties and is
-dispatched by its own type. Has exactly one handler and an expected
-result — contrasted with an **Event**, which has zero or more subscribers
-and no expected result. The handler contract and dispatcher are not yet
-defined (Command Framework's own work, WP 4.7) — only the command shape
-itself exists so far. Never depends on, or is invoked through, Navigation
-— see ADR-0022.
+dispatched by its own type, to exactly one registered
+`ICommandHandler<TCommand>`, via `ICommandDispatcher.DispatchAsync`. A
+caller with only a string Id (a menu, a keyboard shortcut, a toolbar,
+future automation or AI invocation) instead uses `ICommandRegistry.
+InvokeAsync(id)`, resolved against a `CommandDescriptor` catalogue —
+the Command Framework's own Registry-pattern application, mirroring
+Navigation's. Has exactly one handler and an expected result,
+represented as a `CommandResult` — contrasted with an **Event**, which
+has zero or more subscribers and no expected result. A handler's own
+exception propagates directly to the caller rather than being isolated,
+a deliberate divergence from the Event Bus's own per-subscriber
+isolation (ADR-0038), since "an expected result" requires the caller to
+actually know whether the command succeeded. DI-public, registered as an
+ordinary singleton like the Event Bus and Navigation (ADR-0036).
+Registration is imperative, in two independent parts — a handler
+instance registered with the dispatcher, a descriptor registered with
+the registry (ADR-0037) — needing no new Dependency Injection capability.
+Never depends on, or is invoked through, Navigation — see ADR-0022 and
+ADR-0031/ADR-0032.
 
 ### Event Bus *(implemented — v0.4.0, WP 4.0 contracts; WP 4.4D bus, ADR-0028; WP 4.4E first real consumer)*
 
@@ -289,6 +315,26 @@ state (ADR-0012). Ten values: `Discovered`, `Registered`, `Initialising`,
 `Disposed`, with `Failed` reachable from most non-terminal states. Not to be
 confused with **Host State** — a Host can be `Running` while individual
 modules sit in `Failed`, by design.
+
+### Navigation *(implemented — v0.5.0, WP 5.0A design/WP 5.0B implementation, ADR-0031/ADR-0032)*
+
+The primary mechanism by which a user moves between built-in platform
+pages, module-contributed destinations, and plugin-contributed
+destinations. `NavigationItem` (`Tempest.Core.Navigation`) is pure data
+— identity, title, an optional symbolic icon key, ordering, grouping, a
+parent reference for hierarchy, an optional visibility predicate —
+carrying no rendering type of any kind.
+`INavigationProvider`/`NavigationService` holds a registry of these,
+populated imperatively (mirroring Event Bus subscription, not
+`ModuleMetadataAttribute`'s declarative pattern — see **Reflection-Based
+Discovery**), and exposes `Navigate(id)`, which publishes a
+`NavigationRequestedEvent` through the existing **Event Bus** — see
+Reuse Before Invention. **Explicitly orthogonal to Command** (ADR-0022):
+neither depends on the other. **The model is UI-agnostic; rendering is
+`Tempest.App`'s own responsibility** (ADR-0031) — the same
+platform/application split already proven by `ICommand`/`IEvent`, applied
+to a concept that sounds UI-shaped but does not require knowing how
+anything is drawn.
 
 ### Owner
 

@@ -10,9 +10,9 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | Direct source inspection; `docs/architecture/Failure Behaviour.md`; `docs/academy/06 Engineering Standards/01-exception-design.md`. |
 | **Review Frequency** | Updated whenever a new exception type is introduced. |
-| **Last Reviewed** | 2026-07-25 (WP 4.5A). |
+| **Last Reviewed** | 2026-07-28 (WP 5.4, v0.5.0 Release Candidate) — corrected a Total-count arithmetic error found during this Work Package's own repository review (see Entries table, below): the stated total read "30," undercounting the Entries/Distribution tables' own, unchanged sum of 31. No new exception type introduced since `WP 5.3`. |
 | **Related Documents** | `docs/architecture/Failure Behaviour.md`; `Architectural Dependency Register.md`. |
-| **Related ADRs** | ADR-0013, ADR-0021, ADR-0025. |
+| **Related ADRs** | ADR-0013, ADR-0021, ADR-0025, ADR-0038. |
 | **Related Academy Articles** | `docs/academy/06 Engineering Standards/01-exception-design.md`. |
 | **Coverage Status** | Complete. |
 
@@ -45,8 +45,23 @@
 | `PluginAssemblyNotFoundException` | `PluginException` | Plugin Manifest | Isolated per plugin |
 | `HostException` | `Exception` | Runtime Host | Host-fatal (base for Host-level defects) |
 | `InvalidHostStateTransitionException` | `HostException` | Runtime Host | Host-fatal |
+| `NavigationException` | `Exception` | Navigation | Isolated per module (registration happens inside a module's own lifecycle method) |
+| `DuplicateNavigationItemException` | `NavigationException` | Navigation | Isolated per module — covered by `ModuleLifecycleException`'s existing isolation, no new Host policy (ADR-0032) |
+| `NavigationItemNotFoundException` | `NavigationException` | Navigation | Application logic's own error (not Host-level); thrown by `Navigate`, not during module lifecycle |
+| `CommandException` | `Exception` | Command Framework | Propagates to the caller — deliberately not isolated (ADR-0038); unlike every category above, this is neither Host-fatal nor per-module isolated |
+| `DuplicateCommandHandlerException` | `CommandException` | Command Framework | Propagates to the caller — thrown by `RegisterHandler`, typically during a module's own `InitialiseAsync`, so also covered by `ModuleLifecycleException`'s existing per-module isolation in that context |
+| `DuplicateCommandIdException` | `CommandException` | Command Framework | As above |
+| `CommandHandlerNotRegisteredException` | `CommandException` | Command Framework | Application logic's own error (not Host-level); thrown by `DispatchAsync`/`InvokeAsync` |
+| `CommandNotFoundException` | `CommandException` | Command Framework | Application logic's own error (not Host-level); thrown by `InvokeAsync` |
 
-**Total: 22 custom exception types — Verified directly.**
+**Total: 31 custom exception types — Verified directly against
+`src/Tempest.Core/` (`grep -rlP "^public (sealed )?class \w+Exception\b"`
+returns exactly 31 files, matching the 31 rows in the Entries table
+above). Corrected, `WP 5.4`: this total previously read "30," undercounting
+by one against this register's own Entries table and Distribution table
+(both of which have always summed to 31) — a genuine, internal
+arithmetic drift found during `WP 5.4`'s own repository review, not a
+change in the actual exception count.**
 
 ## A Note on Background Services
 
@@ -62,6 +77,50 @@ platform-defined one. Contrast with `PluginException` and
 `ModuleDiscoveryException`, which do wrap failures in a dedicated
 hierarchy.
 
+## A Note on Command Framework
+
+`CommandException` and its four subtypes introduce a genuinely new
+Host-Fatal/Isolated classification (Case 5 of *Failure Isolation Across
+TempestOS*): **propagates to the caller** — neither Host-fatal (it does
+not fault the Host) nor per-module isolated in the general case (a
+handler's own exception, thrown from `DispatchAsync`/`InvokeAsync`, is
+not automatically caught by any existing mechanism unless the call
+happens to occur during a module's own lifecycle method, in which case
+`ModuleLifecycleException`'s existing isolation applies incidentally, not
+because the Command Framework itself isolates anything). This is a
+deliberate, reasoned divergence from every prior exception category in
+this register — see ADR-0038.
+
+## A Note on Module Discovery (WP 5.3)
+
+`ModuleDiscoveryException`'s existing role is unchanged — Host-fatal,
+per ADR-0013, exactly as it has been since `WP 2.1`. What changed is
+*when* it is thrown: a module type with no `[ModuleMetadataAttribute]`
+and no public parameterless constructor previously fell through to
+`Activator.CreateInstance`, which throws a raw `MissingMethodException`
+with no actionable content. `ReflectionFrameworkDiscoveryService.
+CreateDescriptor` now checks for this precondition explicitly first,
+raising `ModuleDiscoveryException` with a message naming the actual fix
+(add the attribute, or add a parameterless constructor) — closing a gap
+`Building a Module.md` has documented in prose since `WP 4.1` but the
+code itself never enforced. No new exception type; no new failure
+category.
+
+## A Note on Diagnostics
+
+`WP 5.2` introduces no new exception type — confirmed directly, not by
+omission. `DiagnosticsProvider`'s constructor throws only the ordinary
+`ArgumentNullException` already used throughout this codebase for
+constructor-parameter validation (`ArgumentNullException.ThrowIfNull`),
+and `IDiagnosticsProvider`'s three properties (`HostState`, `Modules`,
+`HostedServices`) have no failure mode of their own to raise — each
+either returns a live value or an empty collection, never throws (see
+`Diagnostics Architecture.md`'s own Failure Model). `CompositeLogSink`
+likewise introduces no new exception type: its own constructor reuses
+`ArgumentNullException`/`ArgumentException` for validation, and its
+`Write` method deliberately catches and reports every child sink's own
+exception rather than throwing a new, wrapping one.
+
 ## Distribution by Root Category
 
 | Root Category | Exception Count |
@@ -74,6 +133,8 @@ hierarchy.
 | Plugin Manifest | 6 |
 | Runtime Host | 2 |
 | Background Services | 0 (by design — see note above) |
+| Navigation | 3 |
+| Command Framework | 5 |
 
 ## Cross-Reference Check
 

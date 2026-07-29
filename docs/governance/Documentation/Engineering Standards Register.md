@@ -10,7 +10,7 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | `docs/academy/06 Engineering Standards/`. |
 | **Review Frequency** | Updated whenever a new coding standard is adopted or an existing one materially changes. |
-| **Last Reviewed** | 2026-07-25 (WP 4.5B). |
+| **Last Reviewed** | 2026-07-28 (WP 5.3, Developer Experience Improvements) — §11 amended (adds `src/Templates/`). |
 | **Related Documents** | `Academy Register.md`; `Governance Register.md`; `Validation Register.md`; `Future Work Package Guidelines.md`. |
 | **Related ADRs** | None directly — these are process/coding standards, not architectural decisions. |
 | **Related Academy Articles** | This register's entire scope, plus every retrospective that references Engineering Governance's own sections. |
@@ -22,7 +22,7 @@
 
 | Document | Scope | Sections |
 |---|---|---|
-| `Engineering Governance.md` | The project's constitution — Work Package lifecycle, Review Gates, Definition of Done, Documentation Requirements, ADR Creation Rules, Academy Maintenance, Release Approval Process, Coding Standards Hierarchy, Decision Authority, Rejected Designs Log, Repository Organisation, Naming Conventions | 12 numbered sections (§1–§12, extended `WP 4.5B` with §11/§12) |
+| `Engineering Governance.md` | The project's constitution — Work Package lifecycle, Review Gates, Definition of Done, Documentation Requirements, ADR Creation Rules, Academy Maintenance, Release Approval Process, Coding Standards Hierarchy, Decision Authority, Rejected Designs Log, Repository Organisation, Naming Conventions | 12 numbered sections (§1–§12, extended `WP 4.5B` with §11/§12; §11 amended `WP 5.3` to add `src/Templates/`) |
 | `01-exception-design.md` | How and when to define a new custom exception type, and where it sits in a hierarchy | Standalone standard |
 | `02-testing-strategy.md` | The internal-test-seam pattern, test-double conventions, "prefer real implementations over mocks" | Standalone standard |
 | `03-governance-registers.md` | Why and how to maintain the governance register suite | Standalone standard, added `WP 4.5A` |

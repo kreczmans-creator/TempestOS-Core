@@ -1,6 +1,6 @@
 # TempestOS — Project Status
 
-**Last Updated:** 2026-07-27 (v0.4.0 Release Engineering — "Platform Foundation")
+**Last Updated:** 2026-07-29 (v0.5.0 Release Engineering — "Developer Experience," released)
 
 This is the primary status dashboard for TempestOS. Read this first for
 "where does the project stand right now" — for "why is it built this
@@ -11,44 +11,72 @@ read `docs/academy/Contributor Learning Path.md`.
 
 ## Current Repository Phase
 
-**Developer Experience.** The Foundation phase is complete and closed —
-Platform Formation, Academy Formation, and Governance Formation are all
-done (see `docs/releases/Platform Foundation Completion Report.md`), and
-`v0.4.0` ("Platform Foundation") ships exactly that scope. TempestOS now
-enters the **Developer Experience** phase: building *on* the foundation —
-Navigation, a Command Framework, Diagnostics, and Developer Experience
-tooling itself — not revisiting it, absent evidence that requires
-otherwise (see `docs/governance/Future Work Package Guidelines.md`).
+**Developer Experience — complete and released as `v0.5.0`.** The
+Foundation phase is complete and closed — Platform Formation, Academy
+Formation, and Governance Formation are all done (see `docs/releases/
+Platform Foundation Completion Report.md`), and `v0.4.0` ("Platform
+Foundation") shipped exactly that scope. TempestOS then built *on* the
+foundation — Navigation, a Command Framework, Diagnostics, and Developer
+Experience tooling itself — through the **Developer Experience** phase.
+`WP 5.0A` through `WP 5.0D` were this phase's first four completed Work
+Packages — Navigation and the Shell are both fully implemented, and
+`Tempest.App` now runs the real platform for the first time in this
+project's history. `WP 5.0S` (Platform Security Baseline Audit) followed
+as a dedicated, formal engineering audit — not a feature Work Package —
+establishing the v0.5.0 Security Baseline every future Work Package's
+Definition of Done is checked against. `WP 5.1A`/`WP 5.1B` (Command
+Framework) followed — `ICommand`'s own contract (`WP 4.0`) now has a real
+handler contract and dispatcher. `WP 5.2` (Diagnostics Improvements)
+followed — a composite `ILogSink` closes a long-named debt (`TD-02`), and
+a new `IDiagnosticsProvider` gives any DI-resolving consumer a read-only
+view of the Host's own current lifecycle state. `WP 5.3` (Developer
+Experience Improvements) closed the phase out — a `dotnet new` module
+template, and a previously-only-documented Discovery pitfall now closed
+with a clear, actionable error message. `WP 5.4` (v0.5.0 Release
+Candidate & Engineering Sign-Off) then verified the entire release
+directly — every ADR, every Work Package, every governance register —
+before Product Approval authorised the release itself. **`v0.5.0` is now
+released.** TempestOS is entering the **Platform Services** phase
+(`v0.6.0`) — see Current Priorities, below.
 
 ## Current Development Branch
 
-**`main` (post-release).** `v0.4.0` merges `feature/v0.4.0-platform-
-services` into `main` via an explicit `--no-ff` merge, tagged `v0.4.0`
-(Engineering Governance §7). The next feature branch is cut from `main`
-for whatever Work Package begins the Developer Experience phase,
-matching the same discipline used for every prior release (§1.3). See
-`docs/releases/v0.4.0/ReleaseChecklist.md`'s "Merge and Tag Sequence" for
-the exact, prepared command sequence this release used.
+**`feature/v0.6.0-platform-services`**, cut from `main` at the `v0.5.0`
+tag. No implementation has begun. `feature/v0.5.0-developer-experience`
+(`WP 5.0A` through `WP 5.4`) has been merged into `main` and is retained,
+unmerged branches are never deleted per this project's own convention.
 
 ## Current Release
 
-**v0.4.0** ("Platform Foundation") — released 2026-07-27. Root `VERSION`
-reads `0.4.0`. `v0.3.0` ("Runtime Foundation Complete") is the prior
-tagged release.
+**v0.5.0** ("Developer Experience") — released 2026-07-29. Root
+`VERSION` reads `0.5.0`. `v0.4.0` ("Platform Foundation") is the release
+before that; `v0.3.0` ("Runtime Foundation Complete") before that.
 
 ## Current Work Package
 
-None in progress — `v0.4.0` Release Engineering is complete. The branch
-is ready for merge into `main` (see "Current Development Branch," above,
-and `docs/releases/v0.4.0/ReleaseChecklist.md`).
+**None — between releases.** `WP 5.4` (v0.5.0 Release Candidate &
+Engineering Sign-Off) was the last Work Package of the Developer
+Experience phase, verifying every ADR implemented or intentionally
+deferred, every Work Package closed, and every governance register
+internally consistent before the release was cut. It found and corrected
+two genuine, silent arithmetic undercounts (the Exception Register's own
+stated total, and the Academy Register's own Work-Package/article
+counts), a stale `docs/releases/v0.5.0/ReleasePlan.md`, a stale
+`docs/academy/Contributor Learning Path.md`, and retired all four
+remaining open release-level risks in `docs/releases/v0.4.0/Risks.md`
+(`R5`, `R7`, `R8`, `R9`) — every one of that register's ten risks is now
+Retired. See its own retrospective:
+`docs/academy/03 Work Packages/WP5.4-v0.5.0-release-candidate-and-engineering-sign-off.md`.
+Release Engineering then merged `feature/v0.5.0-developer-experience`
+into `main`, tagged `v0.5.0`, and cut `feature/v0.6.0-platform-services`
+for what comes next.
 
 ## Next Planned Work Package
 
-`WP 4.6A` — Navigation Architecture (architecture-only phase; see
-`docs/releases/v0.4.0/WorkPackages.md`). Rescoped out of `v0.4.0` itself
-— see `docs/releases/v0.4.0/ReleasePlan.md`'s "Scope" section — it is the
-first Work Package of the Developer Experience phase, not part of the
-release just shipped.
+**`WP 6.0` — Reporting Framework**, the first Work Package of the
+Platform Services phase (`v0.6.0`) — see `docs/releases/v0.6.0/
+WorkPackages.md` for the full, nine-Work-Package plan (`WP 6.0` through
+`WP 6.8`). No implementation has begun.
 
 ## Foundation Status
 
@@ -72,27 +100,56 @@ Registration, Lifecycle, Dependency Injection, Configuration, and Logging
 (the original Runtime Foundation, v0.3.0); Plugin Manifest discovery and
 loading; the Event Bus (publish/subscribe between modules); and
 Background Services (Host-orchestrated hosted work with isolated/critical
-failure classification). Two real modules (`ClockModule`,
-`ClockLifecycleObserverModule`) exercise the complete pipeline end to end.
-Navigation and a Command Framework dispatcher remain unbuilt; their
-contracts exist, their implementations do not — both are rescoped out of
-`v0.4.0` and belong to the Developer Experience phase now beginning.
+failure classification); and Navigation (a DI-public registry of
+navigable destinations, notified via the Event Bus). Five real modules
+(`ClockModule`, `ClockLifecycleObserverModule`, `NavigationSampleModule`,
+`SecondaryNavigationSampleModule`, `DuplicateNavigationSampleModule`)
+exercise the complete pipeline end to end. `Tempest.App` now runs the
+real platform for the first time in this project's history: its entry
+point builds a `TempestHostBuilder`, constructs the Shell
+(`TempestShell`, `Tempest.App.Shell`), and runs it — the Shell resolves
+`INavigationProvider`/`IEventBus` through `ITempestHost.Services`
+(`ADR-0033`–`ADR-0035`, implemented `WP 5.0D`) and presents a real,
+interactive Navigation/Content region. The bootstrap-era
+`BootstrapService`/`HostingService`/`ProjectService` code remains in the
+repository, untouched and unmigrated, simply no longer referenced by
+`Program.cs`. The Command Framework (`ICommand`, `v0.4.0`; `ICommandDispatcher`/
+`ICommandRegistry`, `ADR-0036`–`ADR-0038`, `WP 5.1A`/`WP 5.1B`) is now
+fully implemented — a type-keyed dispatcher and an Id-keyed registry,
+both DI-public, mirroring the Event Bus and Navigation — proven by a
+real reference module (`CommandSampleModule`) that also realises
+ADR-0022's own Navigation-integration illustration for the first time.
+Wiring the Shell's own input handling (keyboard shortcuts, a menu) to
+the Command Framework is deferred to a later Work Package. Diagnostics
+(`IDiagnosticsProvider`/`DiagnosticsProvider`, `Tempest.Core.Diagnostics`)
+is now implemented — a read-only projection over the Host's own current
+lifecycle state, constructed directly by `TempestHost` and registered via
+`AddInstance` with `Func<T>` accessors (`ADR-0039`), proven by
+`DiagnosticsSampleModule` and its `GetDiagnosticsSummaryCommand`. Logging
+also gained `CompositeLogSink`, closing `TD-02`. A `dotnet new
+tempest-module` template (`src/Templates/`) now lets a new contributor
+scaffold a correctly-shaped module without hand-copying an existing one,
+and Discovery's own long-documented parameterless-constructor pitfall now
+fails with a clear, actionable message instead of a raw runtime
+exception. Every Work Package originally scoped for the Developer
+Experience phase is now complete.
 
 ## Repository Metrics
 
 | Metric | Value |
 |---|---|
-| Automated tests | 355 (0 failures) |
-| ADRs | 30 (`ADR-0001`–`ADR-0030`), all Accepted |
-| Rejected Designs | 29 (`RD-0001`–`RD-0029`) |
-| Academy articles | 63 (see `docs/governance/Documentation/Academy Register.md`) |
-| Governance registers | 27 |
-| Architecture documents | 16 under `docs/architecture/` (18 including the two release-scoped documents) |
-| Platform services | 15 catalogued — 11 Implemented, 1 contract-only, 2 not implemented as platform services, 1 developer-convenience layer |
-| Modules (production) | 2 (`ClockModule`, `ClockLifecycleObserverModule`) |
+| Automated tests | 552 (0 failures) — unchanged by `WP 5.4` (verification only; re-run and re-verified directly) |
+| ADRs | 39 (`ADR-0001`–`ADR-0039`), all Accepted — unchanged by `WP 5.4` (no new ADR; re-verified by direct file count) |
+| Rejected Designs | 45 (`RD-0001`–`RD-0045`) — re-verified by direct count against the source log |
+| Academy articles | 77 (see `docs/governance/Documentation/Academy Register.md`) — **corrected, `WP 5.4`**: previously stated as 76, itself an undercount inherited across two prior Work Packages; re-derived directly from the file system |
+| Governance registers | 27 (32 governance documents total), plus 4 standing security documents under `docs/security/` (not governance registers themselves, indexed from `Governance Index.md`'s Security section) |
+| Architecture documents | 20 under `docs/architecture/` (22 including the two release-scoped documents) |
+| Platform services | 17 catalogued — 14 Implemented, 2 not implemented as platform services, 1 developer-convenience layer |
+| Modules (production) | 7 (`ClockModule`, `ClockLifecycleObserverModule`, `NavigationSampleModule`, `SecondaryNavigationSampleModule`, `DuplicateNavigationSampleModule`, `CommandSampleModule`, `DiagnosticsSampleModule`) |
 | Hosted services (production) | 0 — infrastructure fully implemented and tested; zero shipped consumers by deliberate scope decision |
 | Plugins (production) | 0 — infrastructure fully implemented and tested; `src/Plugins/` empty by deliberate scope decision |
-| Commits (total / this release) | 50 total (45 Claude-authored) / 23 since `v0.3.0` |
+| Custom exception types | 31 — **corrected, `WP 5.4`**: the Exception Register's own stated total previously read 30, undercounting its own Entries table since `WP 5.1B` first introduced the mismatch |
+| Commits (this release, `v0.4.0` → `v0.5.0`) | 13 (`WP 5.0A`, `WP 5.0B`, `WP 5.0C`, `WP 5.0D`, `WP 5.0S`, `WP 5.1A`, `WP 5.1B`, `WP 5.2`, `WP 5.3` ×2, `WP 5.4` ×2, release-preparation) |
 | Contributors | 1 (repository owner; all commits co-authored by Claude) |
 
 *(This table is generated from `docs/governance/Quality/Repository Metrics
@@ -102,8 +159,10 @@ three together.)*
 ## Repository Health
 
 - **Build:** Clean — 0 warnings, 0 errors (`dotnet build src/TempestOS.slnx`).
-- **Tests:** 355/355 passing, verified stable across multiple consecutive
-  full-suite runs at every major Work Package boundary.
+- **Tests:** 552/552 passing, verified stable across multiple consecutive
+  full-suite runs at every major Work Package boundary, re-confirmed
+  directly one final time by `WP 5.4` as part of this release's own
+  sign-off.
 - **Known regressions:** None.
 - **Working tree:** Clean at every Work Package boundary — see
   `docs/governance/Quality/Validation Register.md`.
@@ -112,37 +171,196 @@ three together.)*
 
 Mature and cross-referenced. Every architecture document, ADR, and
 Academy article is indexed in `docs/governance/` and cross-checked
-against its own source. Release Engineering for `v0.4.0` performed a
-full Pre-Release Review across architecture, documentation, Academy,
-governance, traceability, release documentation, repository standards,
-engineering standards, root documentation, cross references, and
-repository structure — no new documentation drift was found beyond what
-`WP 4.5B` had already corrected. `ReleasePlan.md` and `WorkPackages.md`
-were updated to reflect this release's actual, rescoped scope (Platform
-Foundation only), and every "planned"/"not yet begun" reference to
-`WP 4.0`–`WP 4.5B` was removed now that those work packages are shipped.
+against its own source. `WP 5.0A` added `Navigation Framework
+Architecture.md`, `ADR-0031`/`ADR-0032`, and a new Academy concept guide;
+`WP 5.0B` updated each of them in place to reflect implementation. `WP
+5.0C` added `Shell & Composition Framework Architecture.md` and
+`ADR-0033`–`ADR-0035`; `WP 5.0D` updated each of them in place to reflect
+implementation, following the identical documentation shape Navigation's
+own implementation phase established. Two small, pre-existing drifts were
+also found and fixed along the way, unrelated to this Work Package's own
+changes: `Documentation Register.md` had gone stale since `WP 4.5B`, and
+`Technical Debt Register.md`'s own TD-07 still described Navigation's
+`Tempest.Core` placement as an open question, under its old `WP 4.6A`
+number, three Work Packages after `ADR-0031` had already resolved it.
+`docs/releases/v0.5.0/ReleasePlan.md` and `WorkPackages.md` carry the
+renumbered Developer Experience scope (`WP 4.6A`–`WP 4.9` → `WP 5.0A`–
+`WP 5.3`) forward, plus the new `WP 5.0C`/`WP 5.0D` pair inserted without
+renumbering anything else (`D-016`); the old `v0.4.0` entries were
+annotated with redirect notes rather than deleted, per this project's
+"never delete, mark superseded" convention. `WP 5.0S` added a new
+top-level documentation tree, `docs/security/` (four documents: `Threat
+Model.md`, `Security Principles.md`, `Platform Security Review
+v0.5.0.md`, `Security Roadmap.md`), indexed from `Governance Index.md`'s
+new Security section and `Documentation Register.md`'s Directory Map —
+the first new top-level `docs/` tree since `docs/governance/` itself
+(`WP 4.5A`). `WP 5.1A` added `Command Framework Architecture.md` and
+`ADR-0036`–`ADR-0038`; the existing "Command" entries in `Platform
+Service Map.md` and `Engineering Glossary.md` were updated in place,
+following the identical documentation shape Navigation's and the
+Shell's own design phases established. A genuine, pre-existing drift was
+found and corrected along the way, unrelated to `WP 5.1A`'s own design
+work: `Ownership Matrix.md` had never received a row for Navigation, at
+either `WP 5.0A` or `WP 5.0B` — added then, alongside `WP 5.1A`'s own new
+Command Framework row. `WP 5.1B` updated every "Command Framework" status
+line from "architected" to "implemented" (`Platform Service Map.md`,
+`Ownership Matrix.md`, `Engineering Glossary.md`, `Architecture Document
+Register.md`) and added an Implementation Note and Security Review
+Update to `Command Framework Architecture.md` itself. Further
+pre-existing drift was found and corrected during `WP 5.1B`'s own
+repository review: `docs/releases/v0.5.0/WorkPackages.md` had never
+gained an entry for `WP 5.0S`, and several Engineering registers
+(`Platform Services Register.md`, `Interface Register.md`, `Namespace
+Register.md`, `Dependency Injection Register.md`, `Exception Register.md`,
+`Module Register.md`) and Delivery registers (`Feature Register.md`,
+`Traceability Matrix.md`) had gone stale since `WP 5.0D` — all corrected
+in the same commit as the change that prompted noticing them. `WP 5.2`
+added `Diagnostics Architecture.md` and `ADR-0039`; `Platform Service
+Map.md`, `Ownership Matrix.md`, and `Engineering Glossary.md` each gained
+a new Diagnostics entry, following the identical documentation shape
+Navigation's and the Command Framework's own design phases established.
+A genuine, pre-existing drift was found and corrected along the way,
+unrelated to `WP 5.2`'s own scope: `Architecture Document Register.md`
+still read `Command Framework Architecture.md` as "implementation
+pending... not yet started," two Work Packages after `WP 5.1B` had
+actually completed it — corrected here. `WP 5.3` updated `Building a
+Module.md` and `Sample Module Architecture.md` to reference the new
+scaffolding template, and amended `Engineering Governance.md` §11 to
+document `src/Templates/`. Three further, genuine, pre-existing drifts
+were found and corrected during this Work Package's own repository
+review, none related to its own scope: `Rejected Designs Register.md`
+had added `RD-0042`–`RD-0044` (`WP 5.2`) without the corresponding full
+entries ever being written into `docs/architecture/Rejected Designs.md`
+itself; `Engineering Governance.md` §11 had not been updated when
+`WP 5.2` added the `Tempest.Core.Diagnostics` namespace; and
+`Governance Register.md`'s own Compliance Matrix had not been updated
+since `WP 5.0D`, missing four completed Work Packages entirely (see
+Governance Status, below, for the full account). `WP 5.4` produced this
+release's own Release Candidate documentation — `docs/releases/v0.5.0/
+CHANGELOG.md`, `Release Notes.md`, `ReleaseChecklist.md`, and the
+top-level `docs/releases/v0.5.0.md` — and found three further,
+significant, pre-existing drifts: `docs/releases/v0.5.0/ReleasePlan.md`
+had not been updated since `WP 5.0C` and still read "in progress" with
+only three of nine Work Packages marked complete; `docs/academy/
+Contributor Learning Path.md` — the document a *new contributor* reads
+first — still pointed at `v0.4.0/WorkPackages.md`, cited a 30-ADR count,
+and never mentioned Navigation, the Shell, the Command Framework,
+Diagnostics, or the new module template at all; and `docs/releases/
+v0.4.0/Risks.md`'s own `R5`/`R7`/`R8`/`R9` rows had each been carrying a
+"residual carries forward" caveat that was, by this point, already fully
+resolved by a specific, named `v0.5.0` Work Package — all corrected.
 
 ## Academy Status
 
-63 articles across 7 categories (Introduction, Engineering Principles,
+77 articles across 7 categories (Introduction, Engineering Principles,
 Runtime Architecture, Work Package retrospectives, Design Patterns, Case
 Studies, Engineering Standards), plus `Academy Index.md`, `Academy
 Masterclass Roadmap.md`, `Academy Audit Report.md`, and `Contributor
 Learning Path.md`. Every completed Work Package has a matching
-retrospective. Maintenance obligation (Engineering Governance §6)
-verified honoured by two independent audits (`WP 4.4F`, and the Academy
-Register built during `WP 4.5A`), re-checked during `v0.4.0` Release
-Engineering with no new drift found.
+retrospective, including `WP 5.0A` through `WP 5.4`. Maintenance
+obligation (Engineering Governance §6) verified honoured by two
+independent audits (`WP 4.4F`, and the Academy Register built during
+`WP 4.5A`); `WP 5.0A` updated two existing articles' (`06-platform-
+layering.md`, `08-failure-isolation.md`) "Future Evolution" sections,
+`WP 5.0B` confirmed those predictions against the real implementation
+with no correction needed, `WP 5.0D` added a genuine, non-obvious
+implementation finding (`const` fields not forcing assembly load) to the
+Shell's own concept guide, `WP 5.0S` added a new "Security" category
+teaching threat modelling, secure plugin architecture, trust boundaries,
+and least privilege from first principles, `WP 5.1A` added a new
+"Command Framework" category (a new concept guide,
+`11-command-framework.md`) and updated `08-failure-isolation.md` with a
+genuinely new, fifth failure-isolation case (Case 5 — Command Dispatch:
+propagate, don't isolate) that document's own "Future Evolution" section
+had explicitly anticipated testing, `WP 5.1B` added the matching
+implementation retrospective and confirmed the concept guide's own
+design against the real, working implementation, with one genuine,
+non-obvious implementation finding (`CommandHandlerTable`) added to both,
+`WP 5.2` added a new "Diagnostics" category (a new concept guide,
+`12-diagnostics-and-composite-logging.md`) plus its own retrospective,
+teaching the `Func<T>` lazy-accessor pattern and the two-named-debts
+decision from first principles, `WP 5.3` updated `Building a
+Module.md` in place (no new concept guide — this Work Package extends
+already-covered material, not a new platform capability) plus its own
+retrospective, teaching why a scoped tooling Work Package legitimately
+has no preceding architecture phase, and `WP 5.4` added a `v0.5.0
+Release Retrospective` — deliberately shaped around what was achieved,
+architectural lessons, implementation lessons, repository maturity, and
+recommendations for `v0.6.0`, rather than the standard 13-section
+per-feature template, since a whole-release verification pass is not the
+same kind of document as a single capability's own design retrospective
+(disclosed explicitly in that document's own "What This Document Is").
 
 ## Governance Status
 
 27 registers (32 governance documents total, including the Index,
 Philosophy, Audit Report, Maturity Report, and Future Work Package
-Guidelines), fully cross-referenced, zero outstanding governance debt as
-of the `WP 4.5A` baseline (see `docs/governance/Governance Audit
-Report.md`), re-verified during `v0.4.0` Release Engineering. Traceability
-is complete for all 13 Implemented capabilities
-(`docs/governance/Delivery/Traceability Matrix.md`).
+Guidelines), fully cross-referenced, re-verified during `v0.4.0` Release
+Engineering and every Work Package since. Traceability for both
+Navigation and the Shell is complete end to end — no Pending cells remain
+(`docs/governance/Delivery/Traceability Matrix.md`). One stale, pre-
+existing entry unrelated to `WP 5.0D`'s own scope was found and corrected
+along the way: `Technical Debt Register.md`'s TD-07. `WP 5.0S` added two
+new, disclosed debt items following its own security audit — `TD-09`
+(plugin trust boundary) and `TD-10` (Navigation ownership gap) — both
+Open, both requiring a future Architecture Work Package, neither a
+regression of anything previously Resolved. `Decision Register.md`
+gained `D-017` (conducting `WP 5.0S` as a dedicated security audit Work
+Package). `WP 5.1A` added `TD-11` (command/navigation registration-order
+squatting, `CMD-1`) and widened `TD-09`'s own scope to name the Command
+Framework as a second affected surface; `Decision Register.md` gained
+`D-018` (splitting `WP 5.1` into `WP 5.1A`/`WP 5.1B`); `Risks.md`'s R3 is
+now Retired (the Event Bus/Command Framework cross-reference it required
+now exists). `WP 5.1B` confirmed `TD-09`/`TD-11` present in the real
+implementation exactly as designed (neither worsened, neither newly
+introduced) and disclosed no new debt. Several Engineering and Delivery
+registers (`Platform Services Register.md`, `Interface Register.md`,
+`Namespace Register.md`, `Dependency Injection Register.md`, `Exception
+Register.md`, `Module Register.md`, `Feature Register.md`, `Traceability
+Matrix.md`) had drifted stale since `WP 5.0D` without any Work Package
+since having touched them — found and corrected during `WP 5.1B`'s own
+mandatory repository review. `WP 5.2` resolved `TD-02` (`CompositeLogSink`)
+and reassessed `TD-01` (re-scoped forward again, not migrated —
+`D-020`); `Decision Register.md` also gained `D-019` (the Event
+Framework/Diagnostics premise redirect). ADR Register, Rejected Designs
+Register, and every Engineering/Delivery register touched by this Work
+Package's own new types were updated in the same commit; `Architecture
+Document Register.md`'s stale Command Framework marker (see Documentation
+Status, above) was corrected during this Work Package's own repository
+review, unrelated to its own scope. `WP 5.3` added `RD-0045` (local-folder
+vs. NuGet-packaged template distribution) and touched no Technical Debt
+item (its own scope does not concern `TD-01`–`TD-11`). That Work
+Package's own repository review found three further, genuine,
+pre-existing drifts: (1) `RD-0042`–`RD-0044` had been added to
+`Rejected Designs Register.md` during `WP 5.2` but never actually written
+into `docs/architecture/Rejected Designs.md` itself — the register's own
+declared Source of Truth — backfilled here, unchanged in content; (2)
+`Engineering Governance.md` §11 had not been updated when `WP 5.2` added
+the `Tempest.Core.Diagnostics` namespace; (3) `Governance Register.md`'s
+own Compliance Matrix had not been updated since `WP 5.0D` — four
+completed Work Packages (`WP 5.0S`, `WP 5.1A`, `WP 5.1B`, `WP 5.2`) were
+missing entirely, and `WP 5.0D`'s own row still carried a
+`*(this commit)*` placeholder never backfilled with its real hash. All
+five rows backfilled, verified directly against `git log`.
+
+**`WP 5.4` (v0.5.0 Release Candidate & Engineering Sign-Off)** performed
+a full, independent repository review rather than a scope-limited one,
+and found two further, genuine, silent arithmetic undercounts: the
+Exception Register's own stated total (30) had never matched its own
+Entries table (31, true since `WP 5.1B` first introduced the mismatch);
+and the Academy Register's own "03 Work Packages" count had undercounted
+its own table by one for at least two consecutive Work Packages, with
+the academy-wide grand total inheriting the same undercount rather than
+being independently re-derived each time. Both are now corrected, backed
+by a direct file-system count rather than an incremented prior figure.
+`docs/releases/v0.4.0/Risks.md`'s remaining four risks with a "residual
+carries forward" caveat (`R5`, `R7`, `R8`, `R9`) were each confirmed
+resolved by a specific, named `v0.5.0` Work Package and retired in
+full — all ten risks in that register are now Retired. This is the
+fourth Work Package in a row to find real, previously-unnoticed
+governance drift during its own repository review — see `WP 5.4`'s own
+retrospective, "Repository Maturity," for the standing-practice
+recommendation this pattern produced.
 
 ## Known Unknowns
 
@@ -164,41 +382,67 @@ Governance Audit Report.md`:
 
 ## Current Priorities
 
-1. Merge `feature/v0.4.0-platform-services` into `main` and push the
-   `v0.4.0` tag, following the prepared command sequence in
-   `docs/releases/v0.4.0/ReleaseChecklist.md` — pending explicit,
-   separate approval before any push, per that checklist's own gate.
-2. Begin `WP 4.6A` (Navigation Architecture) on a new feature branch cut
-   from `main`, once the above is complete.
+1. **Begin `WP 6.0` (Reporting Framework)** on
+   `feature/v0.6.0-platform-services` — see `docs/releases/v0.6.0/
+   WorkPackages.md` for its own scope. No implementation has begun; the
+   branch and release documentation were prepared, deliberately, ahead of
+   any code.
+2. No merge to `main` is due until the Platform Services phase's Work
+   Packages are complete (see `docs/releases/v0.6.0/WorkPackages.md`).
 
 ## Near-Term Roadmap
 
-Per `docs/releases/v0.4.0/WorkPackages.md`, the Developer Experience
-phase, in sequence — none of this is part of `v0.4.0`, which has already
-shipped:
+Per `docs/releases/v0.5.0/WorkPackages.md`, the Developer Experience
+phase is complete and released as `v0.5.0`, `WP 5.0A` through `WP 5.4`:
 
-- `WP 4.6A` — Navigation Architecture (design only).
-- `WP 4.6B` — Navigation Implementation.
-- `WP 4.7` — Command Framework (dispatcher).
-- `WP 4.8` — Diagnostics Improvements (composite logging, health/status
-  reporting).
-- `WP 4.9` — Developer Experience Improvements (templates, scaffolding).
+- `WP 5.0A` — Navigation Framework Architecture (design only). **Complete.**
+- `WP 5.0B` — Navigation Framework Implementation. **Complete.**
+- `WP 5.0C` — Shell & Composition Framework Architecture (design only). **Complete.**
+- `WP 5.0D` — Shell & Composition Framework Implementation. **Complete.**
+- `WP 5.0S` — Platform Security Baseline Audit (dedicated engineering
+  audit, not a feature Work Package). **Complete.**
+- `WP 5.1A` — Command Framework Architecture (design only). **Complete.**
+- `WP 5.1B` — Command Framework Implementation. **Complete.**
+- `WP 5.2` — Diagnostics Improvements (composite logging, `TD-01`
+  reassessment, `IDiagnosticsProvider`). **Complete.**
+- `WP 5.3` — Developer Experience Improvements (module template,
+  clearer Discovery message). **Complete.**
+- `WP 5.4` — v0.5.0 Release Candidate & Engineering Sign-Off (verification,
+  not a feature Work Package). **Complete.**
+
+Per `docs/releases/v0.6.0/WorkPackages.md`, the Platform Services phase
+now begins, none started:
+
+- `WP 6.0` — Reporting Framework.
+- `WP 6.1` — Permissions & Identity.
+- `WP 6.2` — Notification Framework.
+- `WP 6.3` — REST API.
+- `WP 6.4` — Settings Framework.
+- `WP 6.5` — Audit Framework.
+- `WP 6.6` — Licensing Framework.
+- `WP 6.7` — Export / Import.
+- `WP 6.8` — Platform Services Integration Review (closing milestone
+  audit, mirroring `WP 4.2D`/`WP 5.0S`'s own precedent).
 
 ## Long-Term Vision
 
 TempestOS aims to be an extensible platform other people build on, not
 merely a runtime that hosts a fixed set of built-in capabilities — see
 `docs/releases/v0.4.0/ReleasePlan.md`'s own "From Runtime to Platform"
-theme. Two named, not-yet-designed platform services (Project Engine,
-Requirements Engine) remain aspirational, each requiring its own
-classification under ADR-0013 before design begins. The governing
-constraint on all of it is `docs/releases/FOUNDATION.md`: every future
-capability is a module or platform service running inside the one Runtime
-Host this foundation established, never a second, parallel execution
-model — and every future Work Package is expected to build capability
-against that stable foundation rather than revisit it, absent evidence
-that requires otherwise (see `docs/governance/Future Work Package
-Guidelines.md`).
+theme. The Platform Services phase (`v0.6.0`) is the next concrete step:
+Reporting, Permissions & Identity, Notifications, a REST API, Settings,
+Audit, Licensing, and Export/Import, each a domain-facing capability
+built *on* the platform the first two releases established, not a
+redesign of it. Two further, not-yet-designed platform services (Project
+Engine, Requirements Engine) remain aspirational beyond that, each
+requiring its own classification under ADR-0013 before design begins.
+The governing constraint on all of it is `docs/releases/FOUNDATION.md`:
+every future capability is a module or platform service running inside
+the one Runtime Host this foundation established, never a second,
+parallel execution model — and every future Work Package is expected to
+build capability against that stable foundation rather than revisit it,
+absent evidence that requires otherwise (see `docs/governance/Future Work
+Package Guidelines.md`).
 
 ---
 

@@ -79,6 +79,50 @@ public class PluginManifestDiscoveryServiceTests
     }
 
     // ----------------------------------------------------------------
+    // Security baseline (WP 5.0S): AssemblyFileName path containment -
+    // isolated, Warning. A manifest is untrusted input; an absolute path or
+    // a "../" escape must not be allowed to resolve outside the candidate
+    // folder that declared it.
+    // ----------------------------------------------------------------
+
+    [Fact]
+    public void DiscoverManifests_AssemblyFileNameEscapesCandidateFolder_IsIsolated_ExcludedAndLoggedAsWarning()
+    {
+        using var temp = new TempDirectory();
+        var pluginFolder = CreateCandidateFolder(temp.Path, "escaping-plugin");
+        WriteManifest(pluginFolder, ValidManifestJson("test.escape", "Escaping Plugin", "1.0.0", "0.1.0", "../../outside.dll"));
+
+        var logger = new RecordingLevelLogger();
+        var service = new PluginManifestDiscoveryService(temp.Path, DefaultVersionProvider, logger);
+
+        var result = service.DiscoverManifests();
+
+        Assert.Empty(result);
+        Assert.Contains(logger.Entries, e => e.Level == LogLevel.Warning && e.Message.Contains("outside its own candidate folder", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void DiscoverManifests_AssemblyFileNameIsAbsolutePathOutsideFolder_IsIsolated_ExcludedAndLoggedAsWarning()
+    {
+        using var temp = new TempDirectory();
+        var pluginFolder = CreateCandidateFolder(temp.Path, "absolute-path-plugin");
+
+        using var outsideTemp = new TempDirectory();
+        var outsideAssembly = Path.Combine(outsideTemp.Path, "Outside.dll");
+        var jsonEscapedOutsideAssembly = outsideAssembly.Replace("\\", "\\\\", StringComparison.Ordinal);
+
+        WriteManifest(pluginFolder, ValidManifestJson("test.absolute", "Absolute Path Plugin", "1.0.0", "0.1.0", jsonEscapedOutsideAssembly));
+
+        var logger = new RecordingLevelLogger();
+        var service = new PluginManifestDiscoveryService(temp.Path, DefaultVersionProvider, logger);
+
+        var result = service.DiscoverManifests();
+
+        Assert.Empty(result);
+        Assert.Contains(logger.Entries, e => e.Level == LogLevel.Warning && e.Message.Contains("outside its own candidate folder", StringComparison.Ordinal));
+    }
+
+    // ----------------------------------------------------------------
     // Unparseable MinimumPlatformVersion - isolated, Warning
     // ----------------------------------------------------------------
 

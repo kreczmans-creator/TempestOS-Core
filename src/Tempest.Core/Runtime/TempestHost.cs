@@ -1,9 +1,12 @@
 using Tempest.Core.BackgroundServices;
+using Tempest.Core.Commands;
 using Tempest.Core.Configuration;
 using Tempest.Core.DependencyInjection;
+using Tempest.Core.Diagnostics;
 using Tempest.Core.Events;
 using Tempest.Core.Logging;
 using Tempest.Core.Modules;
+using Tempest.Core.Navigation;
 using Tempest.Core.Plugins;
 using Tempest.Core.Versioning;
 
@@ -65,6 +68,7 @@ public sealed class TempestHost : ITempestHost
     private IRuntimeModuleManager? _moduleManager;
     private IModuleLifecycleManager? _lifecycleManager;
     private IHostedServiceManager? _hostedServiceManager;
+    private ITempestServiceProvider? _services;
 
     internal TempestHost(
         IReadOnlyList<IConfigurationSource> configurationSources,
@@ -85,6 +89,16 @@ public sealed class TempestHost : ITempestHost
         {
             lock (_gate)
                 return _state;
+        }
+    }
+
+    /// <inheritdoc />
+    public ITempestServiceProvider? Services
+    {
+        get
+        {
+            lock (_gate)
+                return _services;
         }
     }
 
@@ -214,6 +228,25 @@ public sealed class TempestHost : ITempestHost
         services.AddInstance(logger);
         services.AddInstance(platformVersionProvider);
         services.Singleton<IEventBus, EventBus>();
+        services.Singleton<INavigationProvider, NavigationService>();
+        services.Singleton<CommandHandlerTable>();
+        services.Singleton<ICommandDispatcher, CommandDispatcher>();
+        services.Singleton<ICommandRegistry, CommandRegistry>();
+
+        // Composition Root pattern (ADR-0009), like Configuration/Logging/
+        // PlatformVersionProvider above: DiagnosticsProvider needs references
+        // to _lifecycleManager/_hostedServiceManager, both Host-owned and
+        // never added to this container (ADR-0017), and neither constructed
+        // yet at this point in the phase table - so it is built here,
+        // directly, with Func<T> accessors closing over this instance's own
+        // fields, and registered as an already-constructed instance rather
+        // than a container-constructed singleton. See ADR-0039.
+        IDiagnosticsProvider diagnosticsProvider = new DiagnosticsProvider(
+            () => State,
+            () => { lock (_gate) return _lifecycleManager; },
+            () => { lock (_gate) return _hostedServiceManager; });
+        services.AddInstance(diagnosticsProvider);
+
         services.AddDiscoveredModules(moduleManager.GetAll().Select(module => module.Descriptor));
         services.AddDiscoveredHostedServices(hostedServiceTypes);
         logger.Information(
@@ -223,6 +256,10 @@ public sealed class TempestHost : ITempestHost
         runToken.ThrowIfCancellationRequested();
 
         ITempestServiceProvider serviceProvider = new TempestServiceProvider(services, logger);
+
+        lock (_gate)
+            _services = serviceProvider;
+
         logger.Information("Host lifecycle phase completed: Dependency Injection Built.");
 
         runToken.ThrowIfCancellationRequested();

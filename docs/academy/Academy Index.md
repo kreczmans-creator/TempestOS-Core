@@ -73,7 +73,7 @@ span every individual service.
 - `docs/architecture/Platform Service Map.md` — the living, service-by-service index of what exists, what depends on what, and where to read more (outside the Academy folder, but maintained under the same obligation).
 - `docs/architecture/Engineering Glossary.md` — the project's own vocabulary, alphabetical, cross-referenced.
 - `docs/architecture/Rejected Designs.md` — the permanent record of designs seriously considered and declined; the mirror image of the ADR catalogue.
-- `docs/adr/` — the full Architecture Decision Record catalogue (ADR-0001 through ADR-0030 at time of writing).
+- `docs/adr/` — the full Architecture Decision Record catalogue (ADR-0001 through ADR-0039 at time of writing).
 
 ## Runtime
 
@@ -103,7 +103,9 @@ The module pipeline and the Runtime Host, holistically.
 - [WP 4.1 — Module SDK](03%20Work%20Packages/WP4.1-module-sdk.md) — `ModuleBase`/`ModuleLifecycleBase`.
 - [WP 4.3 — Sample Module Architecture](03%20Work%20Packages/WP4.3-sample-module-architecture.md) and [Implementation](03%20Work%20Packages/WP4.3-sample-module-implementation.md) — `ClockModule`, the living reference module every later work package extends.
 - [WP 4.4E — Sample Module Event Integration](03%20Work%20Packages/WP4.4E-sample-module-event-integration.md) — `ClockModule` extended to publish, and its companion module built to subscribe.
+- [WP 5.3 — Developer Experience Improvements](03%20Work%20Packages/WP5.3-developer-experience-improvements.md) — the `dotnet new tempest-module` scaffolding template, and a Discovery pitfall closed with a clear error message instead of a raw runtime exception.
 - `docs/architecture/Sample Module Architecture.md` — the full design document behind `ClockModule` and its companion.
+- `src/Templates/README.md` — how to install and use the module template.
 
 ## Plugins
 
@@ -131,6 +133,68 @@ Implemented (`WP 4.5`, ADR-0029/ADR-0030) — `Tempest.Core.BackgroundServices`.
 - `docs/architecture/Background Services Architecture.md` — the full design document.
 - ADR-0021 (failure classification, decided during original v0.4.0 planning), ADR-0029 (discovery/ownership/orchestration model), ADR-0030 (Host Lifecycle placement).
 - See also [Failure Isolation Across TempestOS](02%20Runtime%20Architecture/08-failure-isolation.md) for how ADR-0021 fits alongside the platform's other three isolation decisions, [Working with the TempestOS Host](02%20Runtime%20Architecture/05-the-runtime-host.md) for the two new phases (`8.1`, `10.1`) in context, and [Reflection-Based Discovery](04%20Design%20Patterns/04-reflection-based-discovery.md) for hosted service discovery as a third application of that pattern.
+
+## Navigation
+
+Implemented (`WP 5.0A` design, `WP 5.0B` implementation, ADR-0031/ADR-0032)
+— `Tempest.Core.Navigation`.
+
+- [Navigation Architecture](02%20Runtime%20Architecture/09-navigation-architecture.md) — the concept guide: why a UI-adjacent concept can still be architecturally UI-agnostic, the platform/application rendering boundary, the contribution model, and common mistakes.
+- [WP 5.0A — Navigation Framework Architecture](03%20Work%20Packages/WP5.0A-navigation-framework-architecture.md) — the design phase: platform/application boundary, ownership, registration model, notification mechanism.
+- [WP 5.0B — Navigation Framework Implementation](03%20Work%20Packages/WP5.0B-navigation-framework-implementation.md) — the implementation phase: `NavigationItem`/`NavigationService` built and proven against real modules, a real plugin assembly, and the real Host.
+- `docs/architecture/Navigation Framework Architecture.md` — the full design document.
+- ADR-0022 (Navigation/Command Framework orthogonality, decided during original v0.4.0 planning), ADR-0031 (Navigation belongs in `Tempest.Core`; rendering is an application responsibility), ADR-0032 (DI-public ownership, imperative registration, Event Bus reuse).
+- See also [Platform Layering](02%20Runtime%20Architecture/06-platform-layering.md) for Navigation as a worked example of the four-layer model, and [Failure Isolation Across TempestOS](02%20Runtime%20Architecture/08-failure-isolation.md) for why Navigation needed no new failure model at all.
+
+## Shell & Application Composition
+
+Implemented (`WP 5.0C` design, `WP 5.0D` implementation,
+ADR-0033/ADR-0034/ADR-0035) — the application shell, `Tempest.App`'s own
+composition root.
+
+- [Shell & Application Composition](02%20Runtime%20Architecture/10-shell-and-application-composition.md) — the concept guide: why "the thing that runs the app" is not the same component as "the thing the app runs," the composition-root relationship to the Runtime Host, and common mistakes.
+- [WP 5.0C — Shell & Composition Framework Architecture](03%20Work%20Packages/WP5.0C-shell-and-composition-framework-architecture.md) — the design phase: platform/application boundary, composition model, `ITempestHost.Services`, page/view ownership.
+- [WP 5.0D — Shell & Composition Framework Implementation](03%20Work%20Packages/WP5.0D-shell-and-composition-framework-implementation.md) — the implementation phase: `TempestShell` built and proven against the real Host and sample modules; `Tempest.App` runs the real platform for the first time.
+- `docs/architecture/Shell & Composition Framework Architecture.md` — the full design document.
+- ADR-0033 (the Shell is a composition root, not a module or hosted service), ADR-0034 (`ITempestHost` exposes a read-only service resolution surface), ADR-0035 (the Shell owns page/view construction, independent of the DI container).
+- See also ADR-0009 for the forward reference this Work Package fulfils, and [Navigation Architecture](02%20Runtime%20Architecture/09-navigation-architecture.md) for the Rendering Boundary this design's own page ownership directly completes.
+
+## Security
+
+The v0.5.0 Security Baseline (`WP 5.0S`) — the platform's first
+comprehensive security audit, and the standing reference every future
+Work Package's Definition of Done is checked against.
+
+- [WP 5.0S — Platform Security Baseline Audit](03%20Work%20Packages/WP5.0S-platform-security-baseline-audit.md) — the retrospective: threat modelling, secure platform design, secure plugin architecture, trust boundaries, least privilege, and secure engineering practice, taught from first principles.
+- `docs/security/Threat Model.md` — assets, actors, trust boundaries, and threat scenarios.
+- `docs/security/Security Principles.md` — the standing security principles the platform is designed against.
+- `docs/security/Platform Security Review v0.5.0.md` — the full audit findings; establishes the Security Baseline.
+- `docs/security/Security Roadmap.md` — prioritised future security work, sequenced against the Threat Model's own assumptions.
+
+## Command Framework
+
+Implemented — `WP 5.1A` design, `WP 5.1B` implementation
+(ADR-0036–ADR-0038). `ICommand`'s own contract (`WP 4.0`) now has a real
+handler contract and dispatcher, proven against a real sample module.
+
+- [Command Framework](02%20Runtime%20Architecture/11-command-framework.md) — the concept guide: why commands exist, the Command/Mediator pattern, why TempestOS didn't adopt CQRS, and how `ICommandDispatcher`/`ICommandRegistry` answer two genuinely different callers' needs.
+- [WP 5.1A — Command Framework Architecture](03%20Work%20Packages/WP5.1A-command-framework-architecture.md) — the design phase: registration model, dispatch model, the registration-order-squatting finding (`CMD-1`/`TD-11`), and why an implied prior direction (DI-resolved handlers) was resolved by reuse rather than a container redesign.
+- [WP 5.1B — Command Framework Implementation](03%20Work%20Packages/WP5.1B-command-framework-implementation.md) — the implementation phase: `CommandDispatcher`/`CommandRegistry` built and proven against `CommandSampleModule`; the `CommandHandlerTable` sharing finding, resolved without reflection or a container redesign.
+- `docs/architecture/Command Framework Architecture.md` — the full design document, including its own Implementation Note and Security Review Update.
+- ADR-0022 (Navigation/Command orthogonality, decided during original v0.4.0 planning), ADR-0036 (Command Framework is DI-public), ADR-0037 (registration model), ADR-0038 (dispatch failure model — Case 5 of *Failure Isolation Across TempestOS*).
+- See also [Failure Isolation Across TempestOS](02%20Runtime%20Architecture/08-failure-isolation.md) (Case 5: propagate, don't isolate) and [Navigation Architecture](02%20Runtime%20Architecture/09-navigation-architecture.md) (the closest structural precedent).
+
+## Diagnostics
+
+Implemented (`WP 5.2`, `ADR-0039`) — `Tempest.Core.Diagnostics`, and the
+`CompositeLogSink` extension to `Tempest.Core.Logging`. Closes `TD-02`
+outright and re-scopes `TD-01` forward again.
+
+- [Diagnostics & Composite Logging](02%20Runtime%20Architecture/12-diagnostics-and-composite-logging.md) — the concept guide: why composite logging and read-only lifecycle-state visibility are the same underlying need, the `Func<T>` lazy-accessor pattern, and common mistakes.
+- [WP 5.2 — Diagnostics Improvements](03%20Work%20Packages/WP5.2-diagnostics-improvements.md) — the combined design-and-implementation retrospective, including the opening "Event Framework" premise mismatch and its redirect (`D-019`), and the `TD-01` re-scoping decision (`D-020`).
+- `docs/architecture/Diagnostics Architecture.md` — the full design document.
+- ADR-0009 (Composition Root, reused), ADR-0017 (Host-owned collaborators never DI-public, the boundary this design respects), ADR-0034 (the `null`/empty-before-ready convention this design reuses), ADR-0039 (this Work Package's own decision).
+- See also [Navigation Architecture](02%20Runtime%20Architecture/09-navigation-architecture.md) and [Shell & Application Composition](02%20Runtime%20Architecture/10-shell-and-application-composition.md) for `ITempestHost.Services`'s own precedent for the "not yet available" convention this design reuses.
 
 ## Design Patterns
 
@@ -200,12 +264,25 @@ whatever you're about to change, before you change it.
 - [WP 4.4E — Sample Module Event Integration](03%20Work%20Packages/WP4.4E-sample-module-event-integration.md)
 - [WP 4.5 — Background Services Architecture](03%20Work%20Packages/WP4.5-background-services-architecture.md)
 - [WP 4.5 — Background Services Implementation](03%20Work%20Packages/WP4.5-background-services-implementation.md)
+- WP 4.5A — Governance Register Baseline *(no dedicated retrospective — its own deliverable is the governance suite itself; see `docs/governance/Governance Index.md`)*
+- WP 4.5B — Platform Foundation Closeout *(no dedicated retrospective — its own deliverable is `docs/releases/Platform Foundation Completion Report.md`)*
 
-Still to come: `WP 4.6A` (Navigation Architecture) onward — the
-Developer Experience phase, not part of `v0.4.0` itself (rescoped out
-during Release Engineering; see `docs/releases/v0.4.0/ReleasePlan.md`'s
-"Scope" section) — see `docs/releases/v0.4.0/WorkPackages.md` for the
-full, current plan.
+**Developer Experience (v0.5.0, Release Candidate):**
+
+- [WP 5.0A — Navigation Framework Architecture](03%20Work%20Packages/WP5.0A-navigation-framework-architecture.md)
+- [WP 5.0B — Navigation Framework Implementation](03%20Work%20Packages/WP5.0B-navigation-framework-implementation.md)
+- [WP 5.0C — Shell & Composition Framework Architecture](03%20Work%20Packages/WP5.0C-shell-and-composition-framework-architecture.md)
+- [WP 5.0D — Shell & Composition Framework Implementation](03%20Work%20Packages/WP5.0D-shell-and-composition-framework-implementation.md)
+- [WP 5.0S — Platform Security Baseline Audit](03%20Work%20Packages/WP5.0S-platform-security-baseline-audit.md)
+- [WP 5.1A — Command Framework Architecture](03%20Work%20Packages/WP5.1A-command-framework-architecture.md)
+- [WP 5.1B — Command Framework Implementation](03%20Work%20Packages/WP5.1B-command-framework-implementation.md)
+- [WP 5.2 — Diagnostics Improvements](03%20Work%20Packages/WP5.2-diagnostics-improvements.md)
+- [WP 5.3 — Developer Experience Improvements](03%20Work%20Packages/WP5.3-developer-experience-improvements.md)
+- [WP 5.4 — v0.5.0 Release Candidate & Engineering Sign-Off](03%20Work%20Packages/WP5.4-v0.5.0-release-candidate-and-engineering-sign-off.md) — the release-closing verification pass; not a feature Work Package. See also `docs/releases/v0.5.0.md`, `docs/releases/v0.5.0/CHANGELOG.md`, and `docs/releases/v0.5.0/Release Notes.md`.
+
+`docs/releases/v0.5.0/WorkPackages.md`'s own Developer Experience phase
+is complete and `v0.5.0` is a Release Candidate — see `PROJECT_STATUS.md`
+for current status and whether Product Approval has cut the release.
 
 ## Reference Material
 
@@ -220,3 +297,4 @@ Documents outside `docs/academy/` maintained under the same obligation:
 - `docs/architecture/Platform Service Map.md`, `Engineering Glossary.md`, `Rejected Designs.md` — see Platform Architecture, above.
 - **This Academy audit's own deliverables**: [Academy Masterclass Roadmap](Academy%20Masterclass%20Roadmap.md), [Academy Audit Report](Academy%20Audit%20Report.md).
 - **The Governance Register suite's own deliverables (`WP 4.5A`)**: `docs/governance/Governance Index.md`, `Governance Philosophy.md`, `Governance Audit Report.md`, `Repository Maturity Report.md`.
+- **The v0.5.0 Security Baseline's own deliverables (`WP 5.0S`)**: `docs/security/Threat Model.md`, `Security Principles.md`, `Platform Security Review v0.5.0.md`, `Security Roadmap.md`.

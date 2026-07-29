@@ -831,3 +831,472 @@ explicitly open rather than silently implied.
 
 **Source.** ADR-0021, Future Considerations; ADR-0029, Decision
 (Failure model).
+
+---
+
+## RD-0030 — Declarative, Attribute-Based Navigation Contribution
+
+**Considered during:** WP 5.0A (ADR-0032, Navigation Framework
+Architecture).
+
+**Rejected because:** `ModuleMetadataAttribute` (`ADR-0027`) exists to
+solve one specific problem — letting Discovery read a module's identity
+*without instantiating it*, because Discovery runs before the DI
+container exists. Navigation registration happens *after* Dependency
+Injection Built, during Module Initialisation, when the module is
+already being constructed and driven through its own lifecycle — the
+instantiation-avoidance problem `ModuleMetadataAttribute` solves simply
+does not exist here. Introducing a `[NavigationItem]`-style attribute and
+a reflection pass to read it would duplicate real, working machinery to
+solve a problem this case never had.
+
+**Reversibility.** Cheap and purely additive — a declarative surface
+could be layered on top of the imperative one later (reading the
+attribute, then calling the same `Register` method internally) without
+changing `INavigationProvider`'s own contract.
+
+**Revisit trigger.** A real, demonstrated need for a module to declare
+navigation items without writing any lifecycle code at all — not
+speculatively now, with zero real navigation-contributing modules yet
+built.
+
+**Source.** ADR-0032, Decision (Registration model); Navigation Framework
+Architecture.md, "Registration Model."
+
+---
+
+## RD-0031 — A Dedicated Navigation Publish/Subscribe Mechanism, Separate From the Event Bus
+
+**Considered during:** WP 5.0A (ADR-0032, Navigation Framework
+Architecture).
+
+**Rejected because:** `IEventBus` already provides exactly what
+`NavigationService.Navigate(id)` needs to communicate a requested
+navigation to whatever is rendering — imperative subscribe/publish,
+sequential dispatch, unconditional per-subscriber failure isolation
+(`ADR-0028`), already implemented and tested. Building a second,
+Navigation-specific notification channel would duplicate that machinery
+for no reason beyond "it's a different kind of event," which the Event
+Bus's own design already accommodates (any `IEvent` subtype).
+
+**Reversibility.** Expensive to introduce later if genuinely needed —
+every existing subscriber would need to migrate from `IEventHandler<
+NavigationRequestedEvent>` to whatever new interface replaced it. This
+weighs directly against introducing it speculatively now.
+
+**Revisit trigger.** A demonstrated, structural reason `IEventBus`'s
+existing dispatch model cannot serve Navigation's own notification need —
+not identified during this Work Package's own design.
+
+**Source.** ADR-0032, Decision (Notification mechanism); Navigation
+Framework Architecture.md, "Rendering Boundary."
+
+---
+
+## RD-0032 — Navigation as a Host-Owned Collaborator
+
+**Considered during:** WP 5.0A (ADR-0032, Navigation Framework
+Architecture).
+
+**Rejected because:** Applying `ADR-0017`'s own test — does this
+component carry authority to register, initialise, start, stop, or
+dispose anything in the module pipeline — `NavigationService` does not:
+it holds a data registry and raises one notification, the same
+non-authority the Event Bus (DI-public, `ADR-0020`) already has and
+Discovery/Registration/Lifecycle (Host-owned) do not. Classifying it as
+Host-owned anyway would put a component with no orchestration authority
+behind the same access restriction as components that have real
+authority to reach back into, for no principled reason connected to what
+Navigation actually does.
+
+**Reversibility.** Expensive to reverse later — every module contributing
+navigation would need to change how it obtains `INavigationProvider` if
+this were reversed from DI-public to Host-owned after real consumers
+existed.
+
+**Revisit trigger.** A demonstrated need for `NavigationService` to gain
+real orchestration authority over the module pipeline — not currently
+imagined, and not a direction this design anticipates.
+
+**Source.** ADR-0032, Decision (Ownership); Navigation Framework
+Architecture.md, "Ownership."
+
+---
+
+## RD-0033 — A First-Class Permission/Role Model in Navigation
+
+**Considered during:** WP 5.0A (Navigation Framework Architecture).
+
+**Rejected because:** No authentication or authorization concept exists
+anywhere in this platform yet — no `IUser`, no `IPrincipal`, no
+permission or role type of any kind. Designing a permission model now,
+even narrowly scoped to "which navigation items a user can see," would
+be exactly the speculative-design-ahead-of-need pattern `ADR-0015`'s
+Future Considerations already warned against, and the same reasoning
+`RD-0002` already applied once to this release when it declined to
+define `INavigationProvider` before Navigation's own architecture existed.
+`NavigationItem.IsVisible` (a generic `Func<bool>?` predicate) is the
+seam a future permission system would plug into — Navigation itself
+remains permanently ignorant of what a permission is.
+
+**Reversibility.** Cheap and purely additive — a future permission system
+supplies predicates to the already-existing `IsVisible` seam; nothing
+about `NavigationItem`'s own shape needs to change to accommodate it.
+
+**Revisit trigger.** A real authentication/authorization system actually
+exists, or a genuine, demonstrated need for permission-gated navigation
+arises — not speculatively now, with zero users, roles, or permissions
+of any kind yet modelled anywhere in this platform.
+
+**Source.** Navigation Framework Architecture.md, "Required for v0.5 vs.
+Deferred Beyond v0.5."
+
+---
+
+## RD-0034 — The Shell Implemented as a Module
+
+**Considered during:** WP 5.0C (Shell & Composition Framework
+Architecture).
+
+**Rejected because:** A module's `InitialiseAsync`/`StartAsync` are
+expected to *complete*, so `ModuleLifecycleManager`'s batch-per-phase
+orchestration can proceed to the next module and, eventually, so the
+Host can reach `Running`. A Shell whose own presentation loop blocks on
+console input has no natural completion point inside either lifecycle
+method — it would hang Host startup indefinitely, or be forced to spawn
+its own background thread from within a module anyway, at which point
+nothing about the module pipeline was actually serving the Shell's own
+purpose. A module is also, by construction, something the Host
+discovers, registers, and drives — the Shell must exist *before* the Host
+it presents even begins running, since it is the thing that constructs
+the Host in the first place, not something the Host constructs.
+
+**Reversibility.** Expensive to reverse later — every consumer of the
+Shell's own composition-root role would need to change if this were
+reversed after real implementation existed.
+
+**Revisit trigger.** None currently imagined. This would only become
+worth revisiting if TempestOS's own module lifecycle contract changed to
+support genuinely long-running, non-completing lifecycle methods — a
+change with much broader consequences than the Shell alone.
+
+**Source.** ADR-0033, Context and Decision; Shell & Composition Framework
+Architecture.md, "The Shell Is Not a Module or a Hosted Service."
+
+---
+
+## RD-0035 — The Shell Implemented as a Hosted Service
+
+**Considered during:** WP 5.0C (Shell & Composition Framework
+Architecture).
+
+**Rejected because:** `IHostedService.StartAsync`'s own contract states
+it is "invoked once, between Module Initialisation and Runtime Running" —
+`HostedServiceManager.StartAllAsync` must finish before the Host can
+reach `Running`, the identical bounded-completion expectation a module's
+own lifecycle methods carry. A blocking, interactive Shell cannot satisfy
+this any more than it could a module's `StartAsync`. Structurally, a
+hosted service is also something the Host constructs and starts *after*
+Module Initialisation — the Shell must exist before the Host it presents
+even begins running, which a hosted service, by definition, cannot.
+
+**Reversibility.** Expensive to reverse later, for the same reason as
+`RD-0034`.
+
+**Revisit trigger.** None currently imagined.
+
+**Source.** ADR-0033, Context and Decision; Shell & Composition Framework
+Architecture.md, "The Shell Is Not a Module or a Hosted Service."
+
+---
+
+## RD-0036 — Module/Plugin-Contributed Page Rendering via a DI-Routed or Reflection-Discovered View Registry
+
+**Considered during:** WP 5.0C (Shell & Composition Framework
+Architecture).
+
+**Rejected because:** Letting a module contribute its own page/view
+alongside the `NavigationItem` it registers would require that module to
+depend on some contract describing what a view is. That contract cannot
+live in `Tempest.Core.Navigation` without reintroducing the exact
+rendering-type leak `ADR-0031` forbids, and cannot live in `Tempest.App`
+either, since a module depending on `Tempest.App` would be a Module
+depending *upward* on the Shell's own layer, inverting `ADR-0023`'s
+downward-only four-layer model outright. No real plugin or module exists
+today that needs to contribute its own rendering — designing a
+contribution mechanism now, with zero real consumers, would be
+speculative capability.
+
+**Reversibility.** Purely additive and cheap to introduce later — a
+future, narrow `Tempest.App`-side contract a plugin's own assembly could
+implement without a compile-time dependency (mirroring how Plugin
+Manifest already separates "what a plugin declares" from "what the
+runtime decides") would not require changing anything about
+`Tempest.Core.Navigation`'s own, already-implemented shape.
+
+**Revisit trigger.** A real plugin or module with a genuine, demonstrated
+need to contribute its own page rendering, not a hypothetical one.
+
+**Source.** ADR-0035, Context and Decision; Shell & Composition Framework
+Architecture.md, "Page/View Construction."
+
+---
+
+## RD-0037 — Multiple Concurrent Workspaces
+
+**Considered during:** WP 5.0C (Shell & Composition Framework
+Architecture).
+
+**Rejected because:** A console shell has exactly one input stream and
+one output stream; there is no realistic `v0.5` need for more than one
+concurrent workspace, and no plausible near-term consumer. Unlike this
+document's usual "deferred, not rejected" treatment of capabilities with
+a plausible future need, this is rejected outright for the console
+shell this Work Package designs — a future, fundamentally different
+shell technology (a GUI, a web front end) would revisit multiple
+workspaces on its own terms, as its own architecture, not as an extension
+of this one.
+
+**Reversibility.** Not applicable to this shell — a genuinely different
+future shell would design its own answer from its own constraints, not
+inherit this one's.
+
+**Revisit trigger.** Not this shell. A future, structurally different
+shell technology, designed on its own merits.
+
+**Source.** Shell & Composition Framework Architecture.md, "Composition
+Model."
+
+---
+
+## RD-0038 — Declarative/Attribute-Based Command Registration
+
+**Considered during:** WP 5.1A (Command Framework Architecture).
+
+**Rejected because:** `ModuleMetadataAttribute` (ADR-0027) exists
+specifically to let Discovery read a module's identity *without
+instantiating it* — a real constraint because Discovery runs before the
+DI container exists. Command registration happens *after* Dependency
+Injection Built, during Module Initialisation, when the module is
+already constructed and already being driven through its own lifecycle
+— there is no instantiation-avoidance problem here for a declarative,
+reflection-read mechanism to solve. Introducing one anyway would
+duplicate existing reflection-reading machinery for a case that does not
+need it, mirroring RD-0030's identical reasoning for Navigation.
+
+**Reversibility.** Purely additive and cheap to introduce later, exactly
+as RD-0030 already concludes for Navigation — imperative registration
+does not foreclose a future declarative convenience layered on top of
+it.
+
+**Revisit trigger.** A real, demonstrated need for declarative
+registration, not a hypothetical one.
+
+**Source.** ADR-0037, Context and Decision; Command Framework
+Architecture.md, "Registration Model."
+
+---
+
+## RD-0039 — Dispatching Commands Through the Event Bus
+
+**Considered during:** WP 5.1A (Command Framework Architecture).
+
+**Rejected because:** An event has zero or more subscribers and no
+expected result (ADR-0028); a command has exactly one handler and an
+expected result (`Risks.md` R3, Engineering Glossary). Reusing
+`IEventBus.PublishAsync` for command dispatch would isolate a command
+handler's own exception exactly like an isolated event-subscriber
+failure — caught, logged, and never rethrown — silently absorbing
+exactly the outcome information "an expected result" requires the
+caller to receive. The two mechanisms solve genuinely different
+problems; collapsing them into one would corrupt the semantics of
+whichever one borrowed the other's transport.
+
+**Reversibility.** Not applicable — the two mechanisms are not
+convertible into one another without abandoning one side's own defining
+property (arity, or expected-result semantics).
+
+**Revisit trigger.** None imagined. This is not a scope boundary that
+narrows a currently-unneeded capability; it is a rejected conflation of
+two contracts that must remain distinct for either to mean what it
+claims to mean.
+
+**Source.** ADR-0037, Context and Decision; Command Framework
+Architecture.md, "Repository Investigation" and "Dispatch Model."
+
+---
+
+## RD-0040 — `ICommandHandler<TCommand>` as a DI-Container-Resolved, Reflection-Discovered Service
+
+**Considered during:** WP 5.1A (Command Framework Architecture).
+
+**Rejected because:** `TempestServiceProvider` supports neither
+open-generic/keyed registration nor a mechanism for a module to add a
+new registration to the `ServiceCollection` after it has already been
+frozen into a provider — confirmed by direct inspection, not assumed.
+Making `ICommandHandler<TCommand>` a real, container-resolved service
+type would require either a new, Discovery-shaped reflection pass
+scanning every module for `ICommandHandler<T>` implementations before
+the container is built (a structurally invasive new mechanism, adding a
+capability nothing else in the platform needs), or extending the
+container itself with open-generic/keyed registration (a genuine
+container redesign, out of this Work Package's own scope per its own
+governing rule to recommend, not perform, an architectural change).
+Registering a handler *instance* directly with `ICommandDispatcher`
+achieves the identical "exactly one handler per command type" invariant
+`ICommand`'s own `WP 4.0` doc comment already committed to, needing zero
+new DI capability.
+
+**Reversibility.** Expensive to reverse later if a real need for
+container-resolved, reflection-discovered handlers ever emerged — every
+module registering a handler imperatively would need to migrate to
+whatever new discovery/registration convention replaced it. No such need
+exists today.
+
+**Revisit trigger.** A real, demonstrated need for the DI container
+itself to gain open-generic or keyed registration, arising from a
+requirement broader than the Command Framework alone — not a reason to
+extend the container for this one case in isolation.
+
+**Source.** ADR-0037, Context and Decision; Command Framework
+Architecture.md, "Repository Investigation" and "Registration Model."
+
+---
+
+## RD-0041 — Allowing a Later Command Registration to Silently Override an Earlier One
+
+**Considered during:** WP 5.1A (Command Framework Architecture).
+
+**Rejected because:** Every existing registry in this platform
+(`RuntimeModuleManager`, `NavigationService`) rejects, rather than
+silently accepts, a duplicate registration — a silent override would
+make a command Id or type collision (accidental, or, per this Work
+Package's own Security Review finding CMD-1, potentially adversarial)
+invisible rather than surfaced. First registration wins; a colliding,
+later registration is rejected (`DuplicateCommandHandlerException`/
+`DuplicateCommandIdException`) and isolated by the platform's existing,
+unmodified per-module isolation (ADR-0013).
+
+**Reversibility.** Expensive to reverse later — any consumer that had
+come to rely on override semantics would need to change if this were
+reversed.
+
+**Revisit trigger.** None imagined; this is a consistency-with-precedent
+decision, not a placeholder for a capability that might later be wanted.
+Note, however, that first-registration-wins is not itself a complete
+answer to command-Id ownership — see CMD-1/TD-11 for the registration-
+*order* squatting gap this rejection does not close.
+
+**Source.** ADR-0037, Context and Decision; Command Framework
+Architecture.md, "Registration Model" and "Security Review."
+
+---
+
+## RD-0042 — `IDiagnosticsProvider` Resolving `IModuleLifecycleManager`/`IHostedServiceManager` as Ordinary Constructor Parameters
+
+**Considered during:** WP 5.2 (Diagnostics Improvements).
+
+**Rejected because:** neither `IModuleLifecycleManager` nor
+`IHostedServiceManager` is ever registered in the dependency injection
+container — both are constructed directly by `TempestHost` and
+deliberately kept out of `ServiceCollection` (ADR-0017), so a module
+must never be able to reach the machinery orchestrating it. A
+constructor parameter of either type would not compile against the real
+`TempestServiceProvider`, and registering either type to make it compile
+would reopen ADR-0017 itself — a decision this Work Package has no
+standing to revisit.
+
+**Reversibility.** Not applicable in the ordinary sense — this was never
+a viable design to begin with, given the container's real, unmodified
+registration table; "reversing" it would mean reopening ADR-0017.
+
+**Revisit trigger.** None imagined. ADR-0017's own boundary is a
+standing, non-negotiable platform constraint (`FOUNDATION.md` §2), not a
+scope decision specific to Diagnostics.
+
+**Source.** ADR-0039, Alternatives Considered; `Diagnostics
+Architecture.md`.
+
+---
+
+## RD-0043 — Deferring `DiagnosticsProvider`'s Own DI Registration Until After Both Managers Exist
+
+**Considered during:** WP 5.2 (Diagnostics Improvements).
+
+**Rejected because:** `IServiceCollection.AddInstance`/`Singleton` have
+no effect once `TempestServiceProvider` has already been constructed
+from the collection — confirmed by direct inspection of
+`TempestServiceProvider`'s own construction, not assumed. Registration
+must happen during Phase 6 (Platform Services Registered), before the
+container is built, or not at all; there is no later point in the Host
+Lifecycle where a new DI registration can still take effect.
+
+**Reversibility.** Not applicable — this alternative does not work
+against the real container as built, regardless of preference.
+
+**Revisit trigger.** A future redesign of `TempestServiceProvider` itself
+to support post-construction registration — a much larger change than
+Diagnostics alone would ever justify, with no such need identified today.
+
+**Source.** ADR-0039, Alternatives Considered; `Diagnostics
+Architecture.md`.
+
+---
+
+## RD-0044 — Reordering the Host Lifecycle's Frozen Phase Table to Construct the Managers Earlier
+
+**Considered during:** WP 5.2 (Diagnostics Improvements).
+
+**Rejected because:** `Host Lifecycle.md`'s own phase table — Module
+Initialisation (Phase 8) before Hosted Services Started (Phase 10.1) —
+is frozen, already-approved architecture (ADR-0029/ADR-0030). Moving
+`IHostedServiceManager`'s own construction earlier so both managers
+exist by Phase 6 would mean reordering that table purely for one new
+feature's convenience — exactly the "redesign the framework" this Work
+Package's own brief prohibited absent a genuine implementation blocker,
+and no such blocker existed: the `Func<T>` accessor pattern (ADR-0039)
+solves the same problem without touching the phase table at all.
+
+**Reversibility.** Expensive to reverse if ever attempted regardless —
+reordering Host Lifecycle phases has historically required updating
+`Host Lifecycle.md`, `Runtime State Machine.md`, and every retrospective
+that documents today's ordering.
+
+**Revisit trigger.** A future need broad enough to justify renumbering
+Host Lifecycle phases on its own merits — not a reason specific to
+Diagnostics.
+
+**Source.** ADR-0039, Alternatives Considered; `Diagnostics
+Architecture.md`.
+
+---
+
+## RD-0045 — NuGet-Packaged Template Distribution
+
+**Considered during:** WP 5.3 (Developer Experience Improvements).
+
+**Rejected because:** this repository has no NuGet publishing pipeline
+of any kind today — no package feed, no versioned release-artifact
+process, nothing `dotnet new tempest-module`'s own template package
+could realistically be published through yet. Building one solely to
+distribute a single, small module-scaffolding template would be
+substantially more machinery than the template itself, disproportionate
+to this Work Package's own **S–M** complexity estimate — the same
+proportionality reasoning `WP 4.3`'s own Alternatives Considered applied
+to plugin-packaging the sample module (RD-0015). A local-folder template
+(`dotnet new install <path>`), installed directly from
+`src/Templates/Tempest.Templates.Module/`, gives every in-repository
+contributor the identical scaffolding result with zero packaging
+infrastructure.
+
+**Reversibility.** Purely additive and cheap to add later — packaging
+the same template content into a `.nupkg` for external distribution,
+once a real publishing pipeline exists, requires no change to the
+template's own content, only an additional `.csproj`/pack step wrapped
+around it.
+
+**Revisit trigger.** TempestOS gains a real NuGet publishing pipeline for
+any other reason, or a genuine need arises for a contributor outside
+this repository's own clone to install the template.
+
+**Source.** This Work Package's own brief; `src/Templates/README.md`.

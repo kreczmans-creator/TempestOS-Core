@@ -1,4 +1,8 @@
 using Tempest.Core.Configuration;
+using Tempest.Core.DependencyInjection;
+using Tempest.Core.Events;
+using Tempest.Core.Modules;
+using Tempest.Core.Navigation;
 using Tempest.Core.Runtime;
 
 namespace Tempest.Core.Tests.Runtime;
@@ -372,6 +376,146 @@ public class TempestHostTests
         await host.DisposeAsync();
 
         Assert.Equal(HostState.Disposed, host.State);
+        await runTask;
+    }
+
+    // ----------------------------------------------------------------
+    // Services (ADR-0034: a read-only service resolution surface for
+    // external consumers, additive to the Host's own public contract)
+    // ----------------------------------------------------------------
+
+    [Fact]
+    public void Services_BeforeRunAsyncIsCalled_IsNull()
+    {
+        var host = new TempestHostBuilder(Type.EmptyTypes).Build();
+
+        Assert.Null(host.Services);
+    }
+
+    [Fact]
+    public async Task Services_OnceRunning_IsNotNull()
+    {
+        var host = new TempestHostBuilder(Type.EmptyTypes).Build();
+
+        var runTask = host.RunAsync();
+
+        while (host.State != HostState.Running)
+            await Task.Delay(5);
+
+        Assert.NotNull(host.Services);
+
+        await host.StopAsync();
+        await runTask;
+    }
+
+    [Fact]
+    public async Task Services_ResolvesTheRealIEventBus()
+    {
+        var host = new TempestHostBuilder(Type.EmptyTypes).Build();
+
+        var runTask = host.RunAsync();
+
+        while (host.Services is null)
+            await Task.Delay(5);
+
+        var resolved = host.Services.GetService(typeof(IEventBus));
+
+        Assert.IsType<EventBus>(resolved);
+
+        await host.StopAsync();
+        await runTask;
+    }
+
+    [Fact]
+    public async Task Services_ResolvesTheRealINavigationProvider()
+    {
+        var host = new TempestHostBuilder(Type.EmptyTypes).Build();
+
+        var runTask = host.RunAsync();
+
+        while (host.Services is null)
+            await Task.Delay(5);
+
+        var resolved = host.Services.GetService(typeof(INavigationProvider));
+
+        Assert.IsType<NavigationService>(resolved);
+
+        await host.StopAsync();
+        await runTask;
+    }
+
+    [Fact]
+    public async Task Services_ResolvingTheSameServiceTwice_ReturnsTheSameSingletonInstance()
+    {
+        var host = new TempestHostBuilder(Type.EmptyTypes).Build();
+
+        var runTask = host.RunAsync();
+
+        while (host.Services is null)
+            await Task.Delay(5);
+
+        var first = host.Services.GetService(typeof(IEventBus));
+        var second = host.Services.GetService(typeof(IEventBus));
+
+        Assert.Same(first, second);
+
+        await host.StopAsync();
+        await runTask;
+    }
+
+    [Fact]
+    public async Task Services_RemainsNonNull_AfterGracefulStop()
+    {
+        var host = new TempestHostBuilder(Type.EmptyTypes).Build();
+
+        var runTask = host.RunAsync();
+
+        while (host.Services is null)
+            await Task.Delay(5);
+
+        await host.StopAsync();
+        await runTask;
+
+        Assert.NotNull(host.Services);
+    }
+
+    [Fact]
+    public async Task Services_RemainsNonNull_AfterDispose()
+    {
+        var host = new TempestHostBuilder(Type.EmptyTypes).Build();
+
+        var runTask = host.RunAsync();
+
+        while (host.Services is null)
+            await Task.Delay(5);
+
+        await host.StopAsync();
+        await runTask;
+        await host.DisposeAsync();
+
+        Assert.NotNull(host.Services);
+    }
+
+    [Fact]
+    public async Task Services_DoesNotExposeDiscoveryRegistrationOrLifecycle()
+    {
+        // ADR-0034: exposing Services cannot weaken ADR-0017's protection,
+        // because none of these three is ever added to the container in the
+        // first place - proven here by resolving each one and observing the
+        // same ServiceNotRegisteredException any other unregistered type
+        // would produce, not some special-cased behaviour.
+        var host = new TempestHostBuilder(Type.EmptyTypes).Build();
+
+        var runTask = host.RunAsync();
+
+        while (host.Services is null)
+            await Task.Delay(5);
+
+        Assert.Throws<ServiceNotRegisteredException>(() => host.Services.GetService(typeof(IFrameworkDiscoveryService)));
+        Assert.Throws<ServiceNotRegisteredException>(() => host.Services.GetService(typeof(IRuntimeModuleManager)));
+        Assert.Throws<ServiceNotRegisteredException>(() => host.Services.GetService(typeof(IModuleLifecycleManager)));
+
+        await host.StopAsync();
         await runTask;
     }
 }

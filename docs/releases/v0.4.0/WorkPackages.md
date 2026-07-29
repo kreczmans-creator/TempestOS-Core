@@ -603,8 +603,12 @@ single riskiest touch-point in this release.
 
 **Status note.** Rescoped out of `v0.4.0` ("Platform Foundation") during
 Release Engineering for that release — see `ReleasePlan.md`'s "Scope"
-section. Not started. This is the next planned Work Package, targeting
-the milestone after `v0.4.0`, not a part of `v0.4.0` itself.
+section. **Renumbered `WP 5.0A`** and completed under `v0.5.0`
+("Developer Experience") — see `docs/releases/v0.5.0/WorkPackages.md`
+for its current, authoritative entry and `docs/architecture/Navigation
+Framework Architecture.md` for the design itself. This entry is retained
+for historical record, per this project's own "never delete, mark
+superseded" convention, and is not otherwise updated.
 
 ### Objective
 
@@ -670,7 +674,8 @@ decision, not on effort.
 ## WP 4.6B — Navigation Implementation
 
 **Status note.** Rescoped out of `v0.4.0` — see `WP 4.6A`'s own status
-note, above. Not started.
+note, above. **Renumbered `WP 5.0B`** — see `docs/releases/v0.5.0/
+WorkPackages.md`. Not started.
 
 ### Objective
 
@@ -710,7 +715,9 @@ Inherits every risk `WP 4.6A` does not fully resolve.
 ## WP 4.7 — Command Framework
 
 **Status note.** Rescoped out of `v0.4.0` — see `WP 4.6A`'s own status
-note, above. Not started; only its contract (`ICommand`, `WP 4.0`) exists.
+note, above. **Renumbered `WP 5.1`** — see `docs/releases/v0.5.0/
+WorkPackages.md`. Not started; only its contract (`ICommand`, `WP 4.0`)
+exists.
 
 ### Objective
 
@@ -769,7 +776,8 @@ dependent on **WP 4.6A/4.6B (Navigation)** — ADR-0022.
 ## WP 4.8 — Diagnostics Improvements
 
 **Status note.** Rescoped out of `v0.4.0` — see `WP 4.6A`'s own status
-note, above. Not started.
+note, above. **Renumbered `WP 5.2`** — see `docs/releases/v0.5.0/
+WorkPackages.md`. Not started.
 
 ### Objective
 
@@ -824,7 +832,8 @@ Services)** if health reporting runs as a periodic background check.
 ## WP 4.9 — Developer Experience Improvements
 
 **Status note.** Rescoped out of `v0.4.0` — see `WP 4.6A`'s own status
-note, above. Not started.
+note, above. **Renumbered `WP 5.3`** — see `docs/releases/v0.5.0/
+WorkPackages.md`. Not started.
 
 ### Objective
 

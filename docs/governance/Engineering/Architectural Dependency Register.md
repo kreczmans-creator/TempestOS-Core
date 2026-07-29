@@ -10,7 +10,7 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | The `.csproj` files themselves (project references); `docs/adr/ADR-0023-platform-layering-dependencies-flow-downward.md`; `docs/academy/02 Runtime Architecture/06-platform-layering.md`. |
 | **Review Frequency** | Updated whenever a project reference changes, or a new capability is classified against the four-layer model. |
-| **Last Reviewed** | 2026-07-25 (WP 4.5A). |
+| **Last Reviewed** | 2026-07-27 (WP 5.0D). |
 | **Related Documents** | `docs/architecture/Platform Service Map.md`; `Namespace Register.md`; `Interface Register.md`. |
 | **Related ADRs** | ADR-0016, ADR-0023. |
 | **Related Academy Articles** | `docs/academy/02 Runtime Architecture/06-platform-layering.md`. |
@@ -23,14 +23,22 @@
 | Project | Type | References | Referenced By |
 |---|---|---|---|
 | `Tempest.Core` | Library | (none) | `Tempest.App`, `Tempest.Samples`, `Tempest.Core.Tests` |
-| `Tempest.Samples` | Library | `Tempest.Core` | `Tempest.App` (Unknown — not verified whether `Tempest.App` actually loads it at runtime vs. only via test project), `Tempest.Core.Tests` |
-| `Tempest.App` | Executable | `Tempest.Core` | (entry point — referenced by nothing) |
-| `Tempest.Core.Tests` | Test project | `Tempest.Core`, `Tempest.Samples` | (test host — referenced by nothing) |
+| `Tempest.Samples` | Library | `Tempest.Core` | `Tempest.App`, `Tempest.Core.Tests` |
+| `Tempest.App` | Executable | `Tempest.Core`, `Tempest.Samples` | `Tempest.Core.Tests` |
+| `Tempest.Core.Tests` | Test project | `Tempest.Core`, `Tempest.Samples`, `Tempest.App` | (test host — referenced by nothing) |
 
 **Total: 4 projects — Verified directly against each `.csproj`'s own
 `<ProjectReference>` elements.** `Tempest.Core` has zero outbound project
 references, confirming it is the platform's own dependency root — nothing
-in this solution sits "below" it.
+in this solution sits "below" it. **Resolved, `WP 5.0D`:** the previous
+"Unknown — not verified whether `Tempest.App` actually loads
+`Tempest.Samples` at runtime" note is settled — `Tempest.App` now
+references `Tempest.Samples` directly (`TempestShell`'s own page mapping
+keys off `NavigationSampleModule`/`SecondaryNavigationSampleModule`), and
+does load it at runtime, confirmed by direct execution. `Tempest.Core.Tests`
+gained a reference to `Tempest.App` in the same Work Package, to test
+`Tempest.App.Shell` under the same single test project every other
+namespace is already tested from (Engineering Governance §11).
 
 ## The Four-Layer Platform Model (ADR-0023)
 
@@ -41,10 +49,19 @@ Service or the Runtime Host's own contracts; nothing depends upward.
 
 | Layer | Examples | Verified By |
 |---|---|---|
-| Modules | `ClockModule`, `ClockLifecycleObserverModule` | `Module Register.md` |
+| Modules | `ClockModule`, `ClockLifecycleObserverModule`, `NavigationSampleModule` and companions | `Module Register.md` |
 | Platform APIs (contracts) | `IEvent`, `IEventHandler<T>`, `ICommand`, `IHostedService`, `ICriticalBackgroundService` | `Interface Register.md`'s "Platform API" classification |
-| Platform Services (implementations) | Configuration, Logging, Discovery, Registration, Lifecycle, Dependency Injection, Event Bus, Background Services infrastructure, Plugin Manifest infrastructure | `Platform Services Register.md` |
+| Platform Services (implementations) | Configuration, Logging, Discovery, Registration, Lifecycle, Dependency Injection, Event Bus, Background Services infrastructure, Plugin Manifest infrastructure, Navigation Framework infrastructure | `Platform Services Register.md` |
 | Runtime Host | `TempestHost`, `TempestHostBuilder` | `Architecture Document Register.md` |
+
+**A fifth position, above all four, implemented `WP 5.0D`:** the
+Application layer — `Tempest.App`'s own Shell (`TempestShell`,
+`Tempest.App.Shell`) — consumes the Runtime Host's own public surface
+(`ITempestHost`/`ITempestHost.Services`) exactly as a human operator or
+test harness already could, but is not itself one of ADR-0023's four
+layers and carries no orchestration authority the Host does not already
+grant any other external caller. See `ADR-0033` and `Shell & Composition
+Framework Architecture.md`.
 
 ## Layering Violations Found
 
@@ -52,8 +69,13 @@ Service or the Runtime Host's own contracts; nothing depends upward.
 cross-module interaction observed — `ClockLifecycleObserverModule`
 subscribing to `ClockModule`'s event — passes through the Event Bus, a
 Platform Service, never a direct reference). No Platform Service depends
-upward on a Module. **Verified** by direct inspection of every Module
-Register/Event Catalogue entry's own dependency list.
+upward on a Module. `NavigationService`'s own dependency on `IEventBus`
+is Platform-Service-to-Platform-Service, confirmed downward-only and
+introducing no cycle (`ADR-0032`). `Tempest.App`'s own new dependency on
+`Tempest.Samples` (`WP 5.0D`) is Application-layer depending downward on
+Modules — the same direction any consumer already depends in, never the
+reverse. **Verified** by direct inspection of every Module Register/Event
+Catalogue entry's own dependency list.
 
 ## Cross-Reference Check
 

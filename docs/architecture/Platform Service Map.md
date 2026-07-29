@@ -30,7 +30,9 @@ of date is worse than no map at all, because it will be trusted.
 | Host | Implemented (WP 2.7B) | Configuration, Logging, Discovery, Registration, Lifecycle, Dependency Injection | Tempest.App |
 | Event Bus | **Implemented — WP 4.4D** (`IEventBus`/`EventBus`, `Tempest.Core.Events`) — dispatch/subscription/failure model per ADR-0028; **consumed — WP 4.4E** | Dependency Injection | Any module — first real consumer: `ClockModule`/`ClockLifecycleObserverModule` (`WP 4.4E`) |
 | Background Services | **Implemented — WP 4.5** (`IHostedServiceDiscoveryService`/`HostedServiceDiscoveryService`, `IHostedServiceManager`/`HostedServiceManager`, `Tempest.Core.BackgroundServices`) — discovery, ownership, orchestration, and Host Lifecycle placement per ADR-0029/ADR-0030; failure model per ADR-0021 | Host, Dependency Injection | Any module declaring a hosted service |
-| Command Framework | Contract implemented (WP 4.0: `ICommand`); dispatcher planned (WP 4.7) — orthogonal to Navigation, ADR-0022 | Dependency Injection | Any module |
+| Command Framework | **Implemented — WP 5.1A (design), WP 5.1B (implementation)** (`ICommandDispatcher`/`ICommandRegistry`, `Tempest.Core.Commands`) — orthogonal to Navigation, ADR-0022 | Dependency Injection | `CommandSampleModule` (real contributor); `Tempest.App` (invocation, not yet wired into the Shell's own input handling) |
+| Navigation | **Implemented — WP 5.0A (design), WP 5.0B (implementation)** (`INavigationProvider`/`NavigationService`, `Tempest.Core.Navigation`) — model, ownership, and rendering boundary per ADR-0031/ADR-0032 | Dependency Injection, Event Bus | Any module contributing a navigation item; `Tempest.App` (rendering, not yet built) |
+| Diagnostics | **Implemented — WP 5.2** (`IDiagnosticsProvider`/`DiagnosticsProvider`, `Tempest.Core.Diagnostics`) — read-only projection over Host/module/hosted-service lifecycle state per ADR-0039 | Dependency Injection (constructed directly by `TempestHost`, ADR-0009); reads live data from `IModuleLifecycleManager`/`IHostedServiceManager` via `Func<T>` accessors, never resolves either through the container (ADR-0017) | `DiagnosticsSampleModule` (real contributor); any future Shell status page or health-check command |
 | Plugin Manifest | **Implemented — WP 4.2** (`Tempest.Core.Plugins`) | Host (Phases 3.1/3.2, ADR-0026 — a pre-Discovery step) | Module Discovery (unchanged), any real plugin |
 | Project Engine | Planned | Undetermined | Undetermined |
 | Requirements Engine | Planned | Undetermined | Undetermined |
@@ -132,7 +134,9 @@ sink failure is isolated inside `Logger` itself (fixed WP 2.7B) and never
 propagates to the caller that was logging something.
 
 **Key types.** `ILogger`, `ILoggerFactory`, `ILogSink`, `ConsoleLogSink`,
-`Logger`, `LoggerFactory`, `LogEntry`, `LogLevel`,
+`CompositeLogSink` (`WP 5.2` — fans a log entry out to any number of
+child `ILogSink`s, isolating one child's own write failure from every
+other; closes `TD-02`), `Logger`, `LoggerFactory`, `LogEntry`, `LogLevel`,
 `LoggingServiceCollectionExtensions`.
 
 **Dependencies.** `IConfigurationProvider` (read once, at `LoggerFactory`
@@ -358,8 +362,8 @@ Module* (Academy, new); WP 4.0 retrospective (*Platform Contracts*).
 
 ## Host *(implemented — WP 2.7B)*
 
-**Responsibility.** The composition root: assembles Configuration, Logging,
-Discovery, Registration, Dependency Injection, and Lifecycle into one running
+**Responsibility.** Assembles Configuration, Logging, Discovery,
+Registration, Dependency Injection, and Lifecycle into one running
 instance, and owns orchestration, startup, shutdown, cancellation, and
 disposal ordering. Does **not** own business logic, configuration parsing,
 module implementation, or logging implementation. Implemented exactly as
@@ -367,6 +371,20 @@ designed — responsibilities, a 13-phase lifecycle, complete startup/shutdown
 sequence diagrams, its own 7-state machine, and a full failure model; see
 *Runtime Host Architecture.md* and its companion documents, all now marked
 implemented.
+
+**A naming clarification, disclosed rather than left to collide
+silently** (`WP 5.0C`): earlier text here called the Host itself "the
+composition root," informally. `ADR-0009`'s own, authoritative definition
+is narrower and different in kind — "whatever code assembles a *running*
+TempestOS instance... eventually `Program.cs`" — which describes whatever
+*constructs* `ITempestHost` (test setup, and, since `WP 5.0D`,
+`Tempest.App`'s own Shell), not the Host's own internal wiring of its six
+constituent services. Both uses were accurate to what they described;
+only the shared label was ambiguous. See `Shell & Composition Framework
+Architecture.md` and `ADR-0033` for the Shell's own composition-root role
+in `ADR-0009`'s sense, and `ADR-0034` for the read-only `Services`
+property, implemented `WP 5.0D`, that lets it reach
+`INavigationProvider`/`IEventBus`.
 
 **Status.** Implemented (WP 2.7B), as `TempestHost`/`TempestHostBuilder` in
 `Tempest.Core.Runtime`. Previously flagged as a gap across the WP 2.4, WP
@@ -378,12 +396,15 @@ first (constructed directly, outside the container), then Discovery and
 Registration (deliberately *before* the DI container is built — see
 ADR-0011), then Dependency Injection, then Lifecycle.
 
-**Key types.** `ITempestHost`, `TempestHost`, `ITempestHostBuilder`,
-`TempestHostBuilder`, `HostState`, `HostException`,
+**Key types.** `ITempestHost` (including `Services`, ADR-0034), `TempestHost`,
+`ITempestHostBuilder`, `TempestHostBuilder`, `HostState`, `HostException`,
 `InvalidHostStateTransitionException`.
 
-**Consumers (anticipated).** `Tempest.App` / the process entry point; future
-hosted services, background workers, and — pending their own classification
+**Consumers.** `Tempest.App`'s own Shell (`TempestShell`, implemented
+`WP 5.0D`) — the process entry point's own composition root, per
+`ADR-0033`, constructing and running the Host, then resolving
+`INavigationProvider`/`IEventBus` through `Services`; future hosted
+services, background workers, and — pending their own classification
 under ADR-0013 — a Requirements Engine and/or Project Engine.
 
 **ADR references.** ADR-0004 (disposal reused at Host level, and its WP 2.7B
@@ -397,13 +418,20 @@ Restartable*), ADR-0016 (*The Host Lives in Tempest.Core.Runtime, Distinct
 From Tempest.Core.Hosting*), ADR-0017 (*Discovery, Registration, and
 Lifecycle Remain Host-Owned Collaborators, Not Public DI Services*),
 ADR-0018 (*Startup Cancellation Transitions to Controlled Shutdown*),
-ADR-0019 (*Host Disposal Is Always an Explicit, Idempotent Call*).
+ADR-0019 (*Host Disposal Is Always an Explicit, Idempotent Call*),
+ADR-0033 (*The Shell Is a Composition Root Layered Above the Runtime
+Host*, `WP 5.0C` design, `WP 5.0D` implementation), ADR-0034
+(*`ITempestHost` Exposes a Read-Only Service Resolution Surface*,
+`WP 5.0C` design, `WP 5.0D` implementation).
 
 **Academy references.** WP 2.7 retrospective (*Runtime Host Architecture
 Review*); WP 2.7B retrospective (*Runtime Host Implementation*, including its
 Alternatives Considered and Architectural Debt Assessment); Engineering
 Principle 11 (*Atomic Phase Principle*); *The Startup Sequence* (Runtime
-Architecture); *Runtime Host Architecture.md*, *Host Lifecycle.md*, *Startup
+Architecture); WP 5.0C retrospective (*Shell & Composition Framework
+Architecture*); WP 5.0D retrospective (*Shell & Composition Framework
+Implementation*); *Shell & Application Composition* (Academy concept
+guide); *Runtime Host Architecture.md*, *Host Lifecycle.md*, *Startup
 Sequence.md*, *Shutdown Sequence.md*, *Runtime State Machine.md*, *Failure
 Behaviour.md*, *Ownership Matrix.md* (all `docs/architecture/`).
 
@@ -506,28 +534,161 @@ RD-0029; `docs/releases/v0.4.0/WorkPackages.md` (`WP 4.5`).
 
 ---
 
-## Command Framework *(contract implemented — WP 4.0; dispatcher planned — WP 4.7)*
+## Command Framework *(implemented — WP 5.1A design, WP 5.1B implementation, ADR-0036–ADR-0038)*
 
-**Responsibility.** A uniform way to request a discrete unit of application
-logic. `ICommand` marks a concrete command type, which carries its own
-parameters as ordinary data. No dispatcher exists yet — a command type
-implementing this interface cannot currently be invoked by anything.
+**Responsibility.** A uniform, UI-agnostic way to request a discrete unit
+of application logic, invokable by a typed caller (`ICommandDispatcher.
+DispatchAsync<TCommand>`) or by a caller with only a string Id
+(`ICommandRegistry.InvokeAsync`) — a menu, a toolbar, a keyboard
+shortcut, a future touch gesture, or a future automation/AI service.
+`ICommand` marks a concrete command type, which carries its own
+parameters as ordinary data; exactly one `ICommandHandler<TCommand>`
+handles it, and the caller receives a `CommandResult` (or a propagated
+exception) so it genuinely knows whether the command succeeded.
 
-**Key types.** `ICommand` (`Tempest.Core.Commands`, implemented WP 4.0). A
-handler contract and dispatcher — not yet defined; `WP 4.7`'s own design
-work, deliberately not speculated on ahead of it.
+**Key types.** `ICommand` (`Tempest.Core.Commands`, implemented WP 4.0,
+unchanged). `ICommandHandler<TCommand>`, `ICommandDispatcher`/
+`CommandDispatcher`, `CommandDescriptor`, `ICommandRegistry`/
+`CommandRegistry`, `CommandResult`, `CommandHandlerTable` (an internal-in-
+spirit, DI-registered collaborator shared by the dispatcher and the
+registry), and five exception types (`CommandException`,
+`DuplicateCommandHandlerException`, `DuplicateCommandIdException`,
+`CommandHandlerNotRegisteredException`, `CommandNotFoundException`) —
+designed WP 5.1A, implemented WP 5.1B with zero deviation from the
+approved public shape.
 
-**Dependencies.** None for the contract itself. **Explicitly orthogonal to
-Navigation** (ADR-0022) — neither this nor the future Navigation service
-depends on the other.
+**Dependencies.** None module-specific — depends on nothing but the
+handler/descriptor instances registered into it. **Explicitly orthogonal
+to Navigation** (ADR-0022) — neither this nor `NavigationService`
+depends on the other. **Never dispatched through the Event Bus**
+(ADR-0037, RD-0039) — a command handler may use `IEventBus` as an
+ordinary peer dependency, exactly as it may use `INavigationProvider`.
 
-**Consumers.** Any module, once `WP 4.7` implements the dispatcher.
+**Consumers.** `CommandSampleModule` (`Tempest.Samples`, WP 5.1B) — the
+real, first consumer, registering `IncrementCounterCommand` (success/
+failure) and `NavigateToSampleHomeCommand` (the first concrete
+realisation of ADR-0022's own `OpenModuleCommand → NavigationService.
+Navigate(...)` illustration). `Tempest.App`'s Shell can resolve both
+`ICommandDispatcher`/`ICommandRegistry` via `ITempestHost.Services`
+today; wiring the Shell's own input handling (menus, keyboard shortcuts)
+to them is a later Work Package's own scope.
 
 **ADR references.** ADR-0022 (*Navigation and Commands Are Orthogonal
-Platform Services*), ADR-0023, ADR-0024.
+Platform Services*), ADR-0023, ADR-0024, ADR-0036 (*Command Framework Is
+a DI-Public Platform Service*), ADR-0037 (*Command Registration Model*),
+ADR-0038 (*Command Dispatch Failure Model*).
 
-**Academy references.** WP 4.0 retrospective (*Platform Contracts*);
-`docs/releases/v0.4.0/WorkPackages.md` (`WP 4.7`).
+**Academy references.** WP 4.0 retrospective (*Platform Contracts*); WP
+5.1A retrospective (*Command Framework Architecture*); WP 5.1B
+retrospective (*Command Framework Implementation*);
+`docs/releases/v0.5.0/WorkPackages.md` (`WP 5.1B`).
+
+---
+
+## Navigation *(implemented — WP 5.0A design, WP 5.0B implementation, ADR-0031/ADR-0032)*
+
+**Responsibility.** The primary mechanism by which a user navigates the
+application — built-in platform pages, future engineering modules, and
+future plugins each contribute a `NavigationItem` (identity, title, an
+optional symbolic icon key, ordering, grouping, hierarchy via a parent
+reference, an optional visibility predicate) to one coherent catalogue.
+`INavigationProvider`/`NavigationService` holds that catalogue and
+exposes `Navigate(id)`, which publishes a `NavigationRequestedEvent`
+through the existing Event Bus. **The model is UI-agnostic by design** —
+`Tempest.Core.Navigation` contains no rendering type, delegate, or UI
+framework reference of any kind; resolving a navigated-to item into an
+actual screen is entirely `Tempest.App`'s (or any future UI shell's) own
+responsibility. See `Navigation Framework Architecture.md` for the
+complete design.
+
+**Key types.** `NavigationItem`, `INavigationProvider`/`NavigationService`,
+`NavigationRequestedEvent`, `NavigationException` and two subtypes
+(`DuplicateNavigationItemException`, `NavigationItemNotFoundException`) —
+designed in full (`ADR-0031`, `ADR-0032`) and implemented with zero
+deviation in `WP 5.0B`, in a new `Tempest.Core.Navigation` namespace
+(`ADR-0024`'s established capability-packaging pattern). Registered as an
+ordinary DI-public singleton in `TempestHost`'s existing Platform Services
+Registered phase, alongside `IEventBus`.
+
+**Dependencies.** `IEventBus` (to publish `NavigationRequestedEvent`) —
+a platform-service-to-platform-service dependency with direct precedent
+(`LoggerFactory` → `IConfigurationProvider`), introducing no cycle.
+**Explicitly orthogonal to Command Framework** (ADR-0022) — neither
+depends on the other; application logic wires the two together, exactly
+as ADR-0022's own illustrative shapes show.
+
+**Consumers.** Any module or plugin-loaded module contributing a
+navigation item, via ordinary constructor injection — no special-casing
+for either (`ADR-0032`). `Tempest.App` (or a future UI shell) is a
+consumer of a different kind: it enumerates `Items` to render a menu and
+subscribes to `NavigationRequestedEvent` to perform the actual view swap,
+using its own, entirely private mapping from `Id` to rendering — a
+mapping `Tempest.Core.Navigation` never sees.
+
+**ADR references.** ADR-0022 (orthogonality with Command Framework,
+decided during original v0.4.0 planning), ADR-0023, ADR-0024, ADR-0031
+(*Navigation Contracts Belong in Tempest.Core; Rendering Remains an
+Application Responsibility*), ADR-0032 (*Navigation Is a DI-Public
+Platform Service, Registered Imperatively, Reusing the Event Bus*).
+
+**Academy references.** WP 4.0 retrospective (*Platform Contracts* —
+`ICommand`/`IEvent` as the precedent this design's own UI-agnosticism
+reasoning draws on); WP 5.0A retrospective (*Navigation Framework
+Architecture*); WP 5.0B retrospective (*Navigation Framework
+Implementation*); `Navigation Framework Architecture.md`; *Navigation
+Architecture* (Academy concept guide); Rejected Designs RD-0030 through
+RD-0033; `docs/releases/v0.5.0/WorkPackages.md` (`WP 5.0A`/`WP 5.0B`).
+
+---
+
+## Diagnostics *(implemented — WP 5.2, ADR-0039)*
+
+**Responsibility.** A read-only projection over the Host's own current
+lifecycle state — `HostState`, every registered module's
+`ModuleLifecycleStatus`, and every hosted service's `HostedServiceStatus`
+— exposed to any DI-resolving consumer, without granting that consumer
+write access to `IModuleLifecycleManager`/`IHostedServiceManager`
+themselves (both remain Host-owned, never DI-public, per `ADR-0017`). See
+`Diagnostics Architecture.md` for the complete design.
+
+**Key types.** `IDiagnosticsProvider`/`DiagnosticsProvider`
+(`Tempest.Core.Diagnostics`). Reuses `ModuleLifecycleStatus`
+(`Tempest.Core.Modules`) and `HostedServiceStatus`
+(`Tempest.Core.BackgroundServices`) exactly as they already exist —
+neither is duplicated or wrapped in a new type.
+
+**Dependencies.** None as ordinary constructor parameters — instead, three
+`Func<T>` accessors supplied by `TempestHost` at construction, closing
+over its own `State` property and `_lifecycleManager`/
+`_hostedServiceManager` private fields. This is deliberate: neither
+manager exists yet at Phase 6 (Platform Services Registered), where
+`DiagnosticsProvider` itself is registered, so a direct constructor
+reference would not compile. Before a referenced manager is actually
+constructed, its own accessor reports an empty collection — never an
+exception — mirroring `ITempestHost.Services`'s own "not yet available"
+convention (`ADR-0034`).
+
+**Consumers.** `DiagnosticsSampleModule` (real contributor and consumer);
+`GetDiagnosticsSummaryCommandHandler` (`Tempest.Samples`, demonstrating
+the Command Framework and Diagnostics interacting); any future Shell
+status page or health-check command.
+
+**Lifecycle.** Constructed directly by `TempestHost` and registered via
+`AddInstance` — the Composition Root pattern (`ADR-0009`) — immediately
+after the Command Framework's own three registrations, still within
+Phase 6 (Platform Services Registered). No new Host Lifecycle phase.
+
+**ADR references.** ADR-0009 (Composition Root, reused a fourth time);
+ADR-0017 (Host-owned collaborators never DI-public — the boundary this
+design's entire shape exists to respect); ADR-0034 (the
+`null`/empty-before-ready convention this design reuses); ADR-0039
+(*Diagnostics Is a DI-Public, Lazily-Projected Read-Only Service Over
+Host-Owned Lifecycle State*).
+
+**Academy references.** WP 5.2 retrospective (*Diagnostics
+Improvements*); *Diagnostics & Composite Logging* (Academy concept
+guide); Rejected Designs RD-0042 through RD-0044;
+`docs/releases/v0.5.0/WorkPackages.md` (`WP 5.2`).
 
 ---
 

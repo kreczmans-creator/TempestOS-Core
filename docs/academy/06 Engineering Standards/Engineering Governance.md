@@ -375,14 +375,19 @@ consistently, rather than introducing a new one.
 - **`src/`** holds exactly one namespace tree per project:
   `Tempest.Core` (the platform itself — Configuration, Logging,
   Discovery, Registration, Lifecycle, Dependency Injection, Runtime,
-  Events, Plugins, BackgroundServices, Commands, Versioning, and the
-  pre-module-pipeline legacy code), `Tempest.App` (the thin console entry
-  point), `Samples/Tempest.Samples` (the living reference module set),
-  and `Plugins/` (empty by design until a real plugin ships — see
-  `docs/governance/Engineering/Plugin Register.md`). A new platform
+  Events, Plugins, BackgroundServices, Commands, Diagnostics, Versioning,
+  and the pre-module-pipeline legacy code), `Tempest.App` (the thin
+  console entry point), `Samples/Tempest.Samples` (the living reference
+  module set), and `Plugins/` (empty by design until a real plugin ships
+  — see `docs/governance/Engineering/Plugin Register.md`). A new platform
   capability gets its own namespace folder under `Tempest.Core`
-  (`Tempest.Core.BackgroundServices`, most recently) rather than being
-  folded into an existing, unrelated one.
+  (`Tempest.Core.Diagnostics`, most recently) rather than being folded
+  into an existing, unrelated one. **`Templates/`** (added `WP 5.3`) holds
+  `dotnet new` template *sources* — content the templating engine copies
+  and renames, never built as part of `TempestOS.slnx` directly; a
+  template's own project file (if it has one, for compiling and proving
+  its content genuinely works) is therefore deliberately excluded from
+  the main solution, not a gap.
 - **`tests/`** mirrors `src/`'s own namespace structure directory-for-
   directory (`tests/Tempest.Core.Tests/Modules/` tests
   `src/Tempest.Core/Modules/`, and so on) — a new namespace under `src/`

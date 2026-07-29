@@ -15,6 +15,17 @@ namespace Tempest.Core.Tests.Samples;
 // its companion, ClockLifecycleObserverModule - so an assembly-scoped scan
 // finds both. Tests that need exactly ClockModule alone use the type-list
 // overload instead; tests scoping to the whole assembly now assert on both.
+//
+// WP 5.0B: Tempest.Samples grew three more real modules -
+// NavigationSampleModule, SecondaryNavigationSampleModule, and
+// DuplicateNavigationSampleModule (see NavigationSampleModuleIntegrationTests)
+// - so an assembly-scoped scan now finds five modules in total.
+//
+// WP 5.1B: Tempest.Samples grew CommandSampleModule, bringing the total to
+// six.
+//
+// WP 5.2: Tempest.Samples grew DiagnosticsSampleModule, bringing the total
+// to seven.
 public class ClockModuleDiscoveryTests
 {
     // ----------------------------------------------------------------
@@ -55,15 +66,20 @@ public class ClockModuleDiscoveryTests
     }
 
     [Fact]
-    public void DiscoverModules_ScopedToSampleAssembly_FindsBothClockModuleAndItsCompanion()
+    public void DiscoverModules_ScopedToSampleAssembly_FindsEveryRealSampleModule()
     {
         var service = new ReflectionFrameworkDiscoveryService([typeof(ClockModule).Assembly]);
 
         var result = service.DiscoverModules();
 
-        Assert.Equal(2, result.Count);
+        Assert.Equal(7, result.Count);
         Assert.Contains(result, d => d.Id == "tempest.samples.clock" && d.ModuleType == typeof(ClockModule));
         Assert.Contains(result, d => d.Id == "tempest.samples.clock.observer" && d.ModuleType == typeof(ClockLifecycleObserverModule));
+        Assert.Contains(result, d => d.Id == "tempest.samples.navigation" && d.ModuleType == typeof(NavigationSampleModule));
+        Assert.Contains(result, d => d.Id == "tempest.samples.navigation.secondary" && d.ModuleType == typeof(SecondaryNavigationSampleModule));
+        Assert.Contains(result, d => d.Id == "tempest.samples.navigation.zzz-duplicate" && d.ModuleType == typeof(DuplicateNavigationSampleModule));
+        Assert.Contains(result, d => d.Id == "tempest.samples.commands" && d.ModuleType == typeof(Tempest.Samples.CommandSampleModule));
+        Assert.Contains(result, d => d.Id == "tempest.samples.diagnostics" && d.ModuleType == typeof(Tempest.Samples.DiagnosticsSampleModule));
     }
 
     // ----------------------------------------------------------------

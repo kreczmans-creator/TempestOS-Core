@@ -228,10 +228,12 @@ public sealed class PluginManifestDiscoveryService : IPluginManifestDiscoverySer
             throw new IncompatiblePluginVersionException(dto.Id!, minimumPlatformVersion, runningPlatformVersion);
 
         string assemblyPath;
+        string normalizedFolder;
 
         try
         {
-            assemblyPath = Path.GetFullPath(Path.Combine(folder, dto.AssemblyFileName!));
+            normalizedFolder = Path.GetFullPath(folder);
+            assemblyPath = Path.GetFullPath(Path.Combine(normalizedFolder, dto.AssemblyFileName!));
         }
         catch (ArgumentException ex)
         {
@@ -240,7 +242,30 @@ public sealed class PluginManifestDiscoveryService : IPluginManifestDiscoverySer
                 $"'{dto.AssemblyFileName}'.", ex);
         }
 
+        // Security baseline (WP 5.0S): AssemblyFileName is manifest-declared,
+        // untrusted input. Without this check, an absolute path or a "../" escape
+        // would resolve outside the plugin's own candidate folder — Path.Combine
+        // discards its first argument entirely when the second is rooted. The
+        // manifest declares a file *within its own folder*; nothing outside that
+        // folder is a valid target, regardless of what this plugin is otherwise
+        // trusted to do once loaded (see Plugin Manifest Architecture.md).
+        if (!IsWithinFolder(assemblyPath, normalizedFolder))
+        {
+            throw new InvalidPluginManifestException(
+                $"Manifest file '{manifestPath}' declares an AssemblyFileName value that resolves " +
+                $"outside its own candidate folder: '{dto.AssemblyFileName}'.");
+        }
+
         return new PluginManifest(dto.Id!, dto.Name!, dto.Version!, minimumPlatformVersion, dto.AssemblyFileName!, assemblyPath);
+    }
+
+    private static bool IsWithinFolder(string candidatePath, string normalizedFolder)
+    {
+        var folderWithSeparator = normalizedFolder.EndsWith(Path.DirectorySeparatorChar)
+            ? normalizedFolder
+            : normalizedFolder + Path.DirectorySeparatorChar;
+
+        return candidatePath.StartsWith(folderWithSeparator, StringComparison.OrdinalIgnoreCase);
     }
 
     private static void RequireField(string? value, string fieldName, string manifestPath)

@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!--
+      This path assumes the generated project lives as a sibling of
+      Tempest.Samples, under src/Samples/ - the same layout every
+      TempestOS module uses (see this template's own README.md). Adjust
+      it if you generated this project somewhere else.
+    -->
+    <ProjectReference Include="..\..\Tempest.Core\Tempest.Core.csproj" />
+  </ItemGroup>
+
+</Project>

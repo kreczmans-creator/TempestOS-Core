@@ -10,9 +10,9 @@
 | **Owner** | Project Maintainer — sole contributor of record across all 48 repository commits (git author `kreczmans-creator`; no separate architecture-review board or team structure exists as of this baseline). |
 | **Source of Truth** | `docs/adr/` (the ADR files themselves). This register is a governance index over that source, not a replacement for it — the full Context/Decision/Consequences reasoning lives only in each ADR file. |
 | **Review Frequency** | Updated whenever a new ADR is created, superseded, or reversed (Engineering Governance §5) — in practice, once per Work Package that meets the §5 ADR criteria. |
-| **Last Reviewed** | 2026-07-25 (WP 4.5A, Governance Register Baseline). |
+| **Last Reviewed** | 2026-07-28 (WP 5.2, Diagnostics Improvements). |
 | **Related Documents** | `docs/academy/06 Engineering Standards/Engineering Governance.md` (§5, ADR Creation Rules); `Decision Register.md`; `Rejected Designs Register.md`; `Traceability Matrix.md`. |
-| **Related ADRs** | All 30 — this register's entire subject matter. |
+| **Related ADRs** | All 39 — this register's entire subject matter. |
 | **Related Academy Articles** | Every Work Package retrospective under `docs/academy/03 Work Packages/` cites the ADR(s) it produced or realised; see each retrospective's own "ADR references" or "Architectural Principles" section. |
 | **Coverage Status** | Complete — every ADR file present in `docs/adr/` at time of review is listed below. |
 
@@ -60,14 +60,23 @@ line, verified directly.
 | ADR-0028 | Event Bus Dispatch, Subscription, and Failure Model | Accepted | WP 4.4 (architecture) | 2026-07-25 | Verified |
 | ADR-0029 | Background Service Discovery, Ownership, and Orchestration Model | Accepted | WP 4.5 (design phase) | 2026-07-25 | Verified |
 | ADR-0030 | Background Service Host Lifecycle Placement | Accepted | WP 4.5 (design phase) | 2026-07-25 | Verified |
+| ADR-0031 | Navigation Contracts Belong in Tempest.Core; Rendering Remains an Application Responsibility | Accepted | WP 5.0A (Navigation Framework Architecture) | 2026-07-27 | Verified |
+| ADR-0032 | Navigation Is a DI-Public Platform Service, Registered Imperatively, Reusing the Event Bus | Accepted | WP 5.0A (Navigation Framework Architecture) | 2026-07-27 | Verified |
+| ADR-0033 | The Shell Is a Composition Root Layered Above the Runtime Host, Not a Module or a Hosted Service | Accepted | WP 5.0C (Shell & Composition Framework Architecture) | 2026-07-27 | Verified |
+| ADR-0034 | ITempestHost Exposes a Read-Only Service Resolution Surface for External Consumers | Accepted | WP 5.0C (Shell & Composition Framework Architecture) | 2026-07-27 | Verified |
+| ADR-0035 | The Shell Owns Page/View Construction, Independent of the Platform's DI Container | Accepted | WP 5.0C (Shell & Composition Framework Architecture) | 2026-07-27 | Verified |
+| ADR-0036 | The Command Framework Is a DI-Public Platform Service | Accepted | WP 5.1A (Command Framework Architecture) | 2026-07-28 | Verified |
+| ADR-0037 | Commands Register Imperatively, in Two Parts — a Type-Keyed Handler and an Id-Keyed Descriptor | Accepted | WP 5.1A (Command Framework Architecture) | 2026-07-28 | Verified |
+| ADR-0038 | Command Dispatch Propagates Handler Exceptions to the Caller, Diverging Deliberately from the Event Bus's Per-Subscriber Isolation | Accepted | WP 5.1A (Command Framework Architecture) | 2026-07-28 | Verified |
+| ADR-0039 | Diagnostics Is a DI-Public, Lazily-Projected Read-Only Service Over Host-Owned Lifecycle State | Accepted | WP 5.2 (Diagnostics Improvements) | 2026-07-28 | Verified |
 
-**Total: 30 ADRs, all Accepted, none superseded or reversed (Verified — no
+**Total: 39 ADRs, all Accepted, none superseded or reversed (Verified — no
 ADR file in `docs/adr/` carries a Superseded/Deprecated/Rejected status
 line).**
 
 ## Numbering Integrity
 
-Sequential, `ADR-0001` through `ADR-0030`, no gaps, no reused numbers —
+Sequential, `ADR-0001` through `ADR-0039`, no gaps, no reused numbers —
 Verified by direct enumeration of `docs/adr/`. Per Engineering Governance
 §5, a superseded ADR would be marked as such in its own Status section
 with a new ADR created referencing it, rather than renumbered or deleted;

@@ -10,9 +10,9 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | `docs/architecture/Platform Service Map.md` — the full responsibility/dependency/consumer/lifecycle detail for each service lives there; this register does not repeat it, only indexes it against governance status. |
 | **Review Frequency** | Updated whenever `Platform Service Map.md` itself is updated (Engineering Governance §6) — i.e., whenever a service is added, removed, or changes responsibility/dependencies/consumers. |
-| **Last Reviewed** | 2026-07-25 (WP 4.5A). |
+| **Last Reviewed** | 2026-07-28 (WP 5.2, Diagnostics Improvements). |
 | **Related Documents** | `docs/architecture/Platform Service Map.md`; `Architecture Document Register.md`; `Module Register.md`; `Hosted Services Register.md`; `Event Catalogue.md`. |
-| **Related ADRs** | ADR-0005 through ADR-0030 — nearly every ADR concerns one of these services directly or the boundary between them. |
+| **Related ADRs** | ADR-0005 through ADR-0038 — nearly every ADR concerns one of these services directly or the boundary between them. |
 | **Related Academy Articles** | `docs/academy/02 Runtime Architecture/` (The Module Pipeline, The Startup Sequence, Working with the TempestOS Host, Platform Layering, Plugin Architecture, Failure Isolation Across TempestOS). |
 | **Coverage Status** | Complete. |
 
@@ -33,12 +33,15 @@
 | Host | Implemented | WP 2.7 (design), WP 2.7B (implementation) | ADR-0004, ADR-0008, ADR-0009, ADR-0011–ADR-0019 |
 | Event Bus | Implemented | WP 4.4 (design), WP 4.4D (implementation), WP 4.4E (first consumer) | ADR-0020, ADR-0028 |
 | Background Services | Implemented | WP 4.5 (design), WP 4.5 (implementation) | ADR-0021, ADR-0029, ADR-0030 |
-| Command Framework | Contract only (WP 4.0); dispatcher **not yet implemented** | WP 4.0; dispatcher planned WP 4.7 | ADR-0022, ADR-0024 |
+| Command Framework | Implemented | WP 4.0 (contract), WP 5.1A (design), WP 5.1B (implementation) | ADR-0022, ADR-0024, ADR-0036, ADR-0037, ADR-0038 |
 | Plugin Manifest | Implemented | WP 4.2 (design and implementation), WP 4.2A, WP 4.2B, WP 4.2C | ADR-0025, ADR-0026 |
+| Navigation | Implemented | WP 5.0A (design), WP 5.0B (implementation) | ADR-0022, ADR-0031, ADR-0032 |
+| Diagnostics | Implemented | WP 5.2 (design and implementation) | ADR-0009, ADR-0017, ADR-0034, ADR-0039 |
 | Project Engine | Not implemented as a platform service — bootstrap-era code (`Tempest.Core.Projects`, `ProjectService`, `JsonProjectRepository`) predates and is independent of the module pipeline | Planned, no Work Package assigned | None |
 | Requirements Engine | Not implemented — no code exists | Planned, no Work Package assigned | None |
 
-**Total: 15 entries — 11 Implemented, 1 contract-only (Command Framework), 2 planned with no code (Project Engine, Requirements Engine), 1 developer-convenience layer (Module SDK).**
+**Total: 17 entries — 14 Implemented, 2 planned with no code (Project
+Engine, Requirements Engine), 1 developer-convenience layer (Module SDK).**
 
 ## Verification of "Implemented" Status
 
@@ -53,7 +56,27 @@ bootstrap code they might relate to (`Tempest.Core.Projects`,
 `Tempest.Core.Repositories`) was never integrated into, or classified
 under, the module pipeline's own platform-service model (ADR-0013) — this
 is **Verified** directly: no ADR classifies either, and no Work Package
-claims to have implemented either as a platform service.
+claims to have implemented either as a platform service. Navigation is
+marked Implemented as of `WP 5.0B`: `src/Tempest.Core/Navigation/`
+contains `NavigationItem`, `INavigationProvider`/`NavigationService`,
+`NavigationRequestedEvent`, and the `NavigationException` hierarchy,
+exercised by 45 tests (`Test Register.md`) and registered as an ordinary
+DI-public singleton in `TempestHost`'s existing Platform Services
+Registered phase. Command Framework is marked Implemented as of `WP
+5.1B`: `src/Tempest.Core/Commands/` contains `ICommand` (`WP 4.0`),
+`ICommandHandler<TCommand>`, `ICommandDispatcher`/`CommandDispatcher`,
+`ICommandRegistry`/`CommandRegistry`, `CommandDescriptor`, `CommandResult`,
+and the `CommandException` hierarchy, exercised by 66 tests (`Test
+Register.md`) and registered as ordinary DI-public singletons in
+`TempestHost`'s existing Platform Services Registered phase. Diagnostics
+is marked Implemented as of `WP 5.2`: `src/Tempest.Core/Diagnostics/`
+contains `IDiagnosticsProvider`/`DiagnosticsProvider`, a read-only
+projection over `IModuleLifecycleManager`/`IHostedServiceManager`'s own
+existing snapshot data, registered via `AddInstance` (Composition Root
+pattern, `ADR-0009`) rather than a container-constructed singleton, and
+exercised by 17 tests (`Test Register.md`). The same Work Package also
+resolved `TD-02` with `CompositeLogSink` (`src/Tempest.Core/Logging/`),
+extending the existing Logging service rather than introducing a new one.
 
 ## Cross-Reference Check
 

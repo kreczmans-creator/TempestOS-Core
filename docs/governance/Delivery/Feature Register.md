@@ -6,11 +6,11 @@
 |---|---|
 | **Register Name** | Feature Register |
 | **Purpose** | The capability-level index of what TempestOS actually delivers, one row per major feature, cross-referencing the Work Package(s) that built it — the delivery lens, as distinct from the Platform Services Register's architectural lens. |
-| **Scope** | Every major capability named in `docs/releases/v0.4.0/WorkPackages.md` and `docs/releases/v0.3.0.md`. |
+| **Scope** | Every major capability named in `docs/releases/v0.5.0/WorkPackages.md`, `docs/releases/v0.4.0/WorkPackages.md`, and `docs/releases/v0.3.0.md`. |
 | **Owner** | Project Maintainer. |
-| **Source of Truth** | `docs/releases/v0.4.0/WorkPackages.md`; `docs/releases/v0.4.0/CHANGELOG.md`; `docs/releases/v0.3.0.md`. |
+| **Source of Truth** | `docs/releases/v0.5.0/WorkPackages.md`; `docs/releases/v0.4.0/WorkPackages.md`; `docs/releases/v0.4.0/CHANGELOG.md`; `docs/releases/v0.3.0.md`. |
 | **Review Frequency** | Updated whenever a Work Package delivers or changes a major capability. |
-| **Last Reviewed** | 2026-07-27 (v0.4.0 Release Engineering). |
+| **Last Reviewed** | 2026-07-28 (WP 5.3, Developer Experience Improvements) — Developer Experience Improvements row corrected from "Not started" to Implemented, closing this release's own Feature Register. |
 | **Related Documents** | `Platform Services Register.md`; `Release Register.md`; `Traceability Matrix.md`. |
 | **Related ADRs** | See `Platform Services Register.md` for the full per-service ADR list. |
 | **Related Academy Articles** | See `Academy Register.md`'s "03 Work Packages" table. |
@@ -47,20 +47,26 @@
 | Governance Register Baseline | Complete | WP 4.5A |
 | Platform Foundation Closeout | Complete | WP 4.5B |
 
-## Developer Experience Phase (Next Milestone — Deferred Out of `v0.4.0`)
+## Developer Experience Phase (v0.5.0, in progress — renumbered from `v0.4.0`'s deferred scope)
 
 | Feature | Status | Work Package |
 |---|---|---|
-| Navigation Architecture | Deferred to next milestone | WP 4.6A (planned, next) |
-| Navigation Implementation | Deferred to next milestone | WP 4.6B (planned, blocked on 4.6A) |
-| Command Framework (dispatcher) | Deferred to next milestone (contract only, WP 4.0) | WP 4.7 (planned) |
-| Diagnostics Improvements | Deferred to next milestone | WP 4.8 (planned) |
-| Developer Experience Improvements | Deferred to next milestone | WP 4.9 (planned) |
+| Navigation Framework Architecture | **Complete** | WP 5.0A (formerly WP 4.6A) |
+| Navigation Framework Implementation | **Implemented** | WP 5.0B (formerly WP 4.6B) |
+| Shell & Composition Framework Architecture | **Complete** | WP 5.0C (new — not part of the original `v0.4.0` plan) |
+| Shell & Composition Framework Implementation | **Implemented** | WP 5.0D (new — not part of the original `v0.4.0` plan) |
+| Command Framework | **Implemented** | WP 4.0 (contract), WP 5.1A (design), WP 5.1B (implementation) (formerly WP 4.7) |
+| Platform Security Baseline | **Complete** | WP 5.0S (new — not part of the original `v0.4.0` plan) |
+| Diagnostics Improvements | **Implemented** | WP 5.2 (formerly WP 4.8) |
+| Developer Experience Improvements | **Implemented** | WP 5.3 (formerly WP 4.9) |
 
-**Total: 24 features tracked — 17 Implemented/Complete (all of `v0.4.0`'s
-own shipped scope), 5 Deferred to the next milestone (rescoped out of
-`v0.4.0` — see `ReleasePlan.md`'s "Scope" section), 2 audit/review
-milestones (no code by design).**
+**Total: 27 features tracked across all three phases (Verified by direct
+row count) — 27 Implemented/Complete (including 3 audit/review
+milestones with no code by design: Platform Services Architecture
+Review, Academy & Documentation Baseline Audit, Platform Security
+Baseline), 0 Not Started — every feature originally scoped across
+`v0.3.0`, `v0.4.0`, and `v0.5.0`'s renumbered plan is now complete — see
+`docs/releases/v0.5.0/ReleasePlan.md`'s "A Note on Renumbering".**
 
 ## Cross-Reference Check
 

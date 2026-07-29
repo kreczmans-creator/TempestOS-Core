@@ -10,9 +10,9 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | Direct source inspection (`grep -rhoP "^public interface" src/Tempest.Core`). |
 | **Review Frequency** | Updated whenever a new public interface is introduced. |
-| **Last Reviewed** | 2026-07-25 (WP 4.5A). |
+| **Last Reviewed** | 2026-07-28 (WP 5.2, Diagnostics Improvements). |
 | **Related Documents** | `docs/architecture/Ownership Matrix.md`; `Dependency Injection Register.md`; `Namespace Register.md`. |
-| **Related ADRs** | ADR-0006, ADR-0017, ADR-0020, ADR-0023, ADR-0024. |
+| **Related ADRs** | ADR-0006, ADR-0009, ADR-0017, ADR-0020, ADR-0023, ADR-0024, ADR-0034, ADR-0036, ADR-0037, ADR-0039. |
 | **Related Academy Articles** | `docs/architecture/Engineering Glossary.md` (Platform API vs. Platform Service). |
 | **Coverage Status** | Complete. |
 
@@ -22,10 +22,14 @@
 
 | Interface | Namespace | Classification | Purpose |
 |---|---|---|---|
-| `ICommand` | `Tempest.Core.Commands` | Platform API (contract only) | Command Framework marker — no dispatcher yet |
+| `ICommand` | `Tempest.Core.Commands` | Platform API (contract only) | Command Framework marker — dispatched by concrete type (`ICommandDispatcher`, `WP 5.1B`) |
+| `ICommandDispatcher` | `Tempest.Core.Commands` | DI-public | Type-keyed handler registration/dispatch (ADR-0036/ADR-0037) |
+| `ICommandHandler<T>` | `Tempest.Core.Commands` | Platform API (contract) | Consumer-facing command handler contract |
+| `ICommandRegistry` | `Tempest.Core.Commands` | DI-public | Id-keyed command catalogue/invocation (ADR-0036/ADR-0037) |
 | `IConfigurationProvider` | `Tempest.Core.Configuration` | DI-public (via `AddInstance`) | Read-only configuration access |
 | `IConfigurationSource` | `Tempest.Core.Configuration` | Not DI-registered (input to `ConfigurationBuilder`) | A source `ConfigurationBuilder` reads |
 | `ICriticalBackgroundService` | `Tempest.Core.BackgroundServices` | Platform API (marker) | Opt-in critical-failure escalation (ADR-0021) |
+| `IDiagnosticsProvider` | `Tempest.Core.Diagnostics` | DI-public (via `AddInstance`) | Read-only projection over Host/module/hosted-service lifecycle state (ADR-0039) |
 | `IEvent` | `Tempest.Core.Events` | Platform API (contract) | Marks a published fact |
 | `IEventBus` | `Tempest.Core.Events` | DI-public | Publish/subscribe dispatch (ADR-0020) |
 | `IEventHandler<T>` | `Tempest.Core.Events` | Platform API (contract) | Consumer-facing subscription contract |
@@ -36,6 +40,7 @@
 | `ILogSink` | `Tempest.Core.Logging` | DI-public (via `AddInstance`) | Log entry destination |
 | `ILogger` | `Tempest.Core.Logging` | DI-public (via `AddInstance`) | Structured logging abstraction |
 | `ILoggerFactory` | `Tempest.Core.Logging` | DI-public (via `AddInstance`) | Produces `ILogger` instances |
+| `INavigationProvider` | `Tempest.Core.Navigation` | DI-public | Navigation registry + `Navigate` (ADR-0031/ADR-0032) |
 | `IModule` | `Tempest.Core.Modules` | Discovered/registered, not DI-registered as an interface | Module identity contract |
 | `IModuleLifecycle` | `Tempest.Core.Modules` | Discovered/registered | Module lifecycle contract |
 | `IModuleLifecycleManager` | `Tempest.Core.Modules` | Host-owned, never DI-public (ADR-0017) | Module lifecycle orchestration |
@@ -49,16 +54,16 @@
 | `ITempestHostBuilder` | `Tempest.Core.Runtime` | Not DI-registered (the composition root's own entry point) | Assembles and produces a `TempestHost` |
 | `ITempestServiceProvider` | `Tempest.Core.DependencyInjection` | The container itself | Constructs and resolves service instances |
 
-**Total: 26 public interfaces under `src/Tempest.Core/` — Verified
-directly.**
+**Total: 31 public interfaces under `src/Tempest.Core/` — Verified
+directly (adds `IDiagnosticsProvider`, `WP 5.2`).**
 
 ## Classification Summary
 
 | Classification | Count |
 |---|---|
-| DI-public (`AddInstance` or container-constructed singleton) | 7 |
+| DI-public (`AddInstance` or container-constructed singleton) | 11 |
 | Host-owned, never DI-public (ADR-0017 and its extensions) | 6 |
-| Platform API / contract only (no dispatcher or orchestration yet, or consumer-facing marker) | 5 |
+| Platform API / contract only (no dispatcher or orchestration yet, or consumer-facing marker) | 6 |
 | Discovered/registered but not itself a DI registration target | 3 |
 | Composition-time / not-DI-registered infrastructure | 4 |
 | Pre-module-pipeline, outside the platform-service model | 1 |

@@ -73,8 +73,8 @@ first.
 
 ### 5. Why specific decisions were made this way
 
-- **`docs/adr/`** — the full Architecture Decision Record catalogue (30
-  as of this baseline). You do not need to read all 30 now — read
+- **`docs/adr/`** — the full Architecture Decision Record catalogue (39
+  as of this baseline). You do not need to read all 39 now — read
   ADR-0013 (platform-service vs. module failure), ADR-0017 (Host-owned
   collaborators), and ADR-0023 (the four-layer platform model) first;
   they are cited by nearly everything else.
@@ -92,10 +92,17 @@ first.
 - **[`docs/academy/02 Runtime Architecture/03-building-a-module.md`](02%20Runtime%20Architecture/03-building-a-module.md)**
   and **[`04-building-an-event-driven-module.md`](02%20Runtime%20Architecture/04-building-an-event-driven-module.md)**
   — practical, module-author-facing guides.
-- **`src/Samples/Tempest.Samples/`** — `ClockModule` and
-  `ClockLifecycleObserverModule`, the living reference modules every
-  later Work Package extends. Read the source directly alongside
-  `docs/architecture/Sample Module Architecture.md`.
+- **`src/Samples/Tempest.Samples/`** — seven real, production reference
+  modules as of `v0.5.0`: `ClockModule`/`ClockLifecycleObserverModule`
+  (the original pair every later Work Package validated against),
+  `NavigationSampleModule` and its two companions, `CommandSampleModule`,
+  and `DiagnosticsSampleModule` — see `docs/governance/Engineering/Module
+  Register.md` for the complete list with what each one demonstrates.
+  Read the source directly alongside `docs/architecture/Sample Module
+  Architecture.md`.
+- **Don't hand-copy a sample module to start your own.** As of `WP 5.3`,
+  `dotnet new tempest-module` scaffolds a correctly-shaped module
+  directly — see `src/Templates/README.md`.
 - **`src/Tempest.Core/BackgroundServices/`** — `HostedServiceDiscoveryService`
   and `HostedServiceManager`, alongside `docs/architecture/Background
   Services Architecture.md` and the WP 4.5 implementation retrospective.
@@ -103,6 +110,28 @@ first.
   Services Register.md`) — the test fixtures under
   `tests/Tempest.Core.Tests/BackgroundServices/HostedServiceFixtures.cs`
   are the closest worked examples available today.
+
+### 6a. What `v0.5.0` added on top of the Platform Foundation
+
+Four more platform services now exist beyond the six the Runtime
+Foundation established and the four `v0.4.0` added — read each concept
+guide, in this order, once steps 1–6 above make sense:
+
+- **[`09-navigation-architecture.md`](02%20Runtime%20Architecture/09-navigation-architecture.md)**
+  — `INavigationProvider`/`NavigationService`, a DI-public registry of
+  navigable destinations.
+- **[`10-shell-and-application-composition.md`](02%20Runtime%20Architecture/10-shell-and-application-composition.md)**
+  — `TempestShell`, `Tempest.App`'s own composition root, and the first
+  time this platform actually ran as a real, interactive application.
+- **[`11-command-framework.md`](02%20Runtime%20Architecture/11-command-framework.md)**
+  — `ICommandDispatcher`/`ICommandRegistry`, invoking application logic
+  uniformly from a typed caller or a string Id.
+- **[`12-diagnostics-and-composite-logging.md`](02%20Runtime%20Architecture/12-diagnostics-and-composite-logging.md)**
+  — `IDiagnosticsProvider`, a read-only projection over the Host's own
+  lifecycle state.
+- **`docs/security/Threat Model.md`** and **`Security Principles.md`** —
+  the v0.5.0 Security Baseline every Work Package's Definition of Done is
+  now checked against.
 
 ### 7. How to actually contribute
 
@@ -136,12 +165,18 @@ first.
 
 ## After This Path
 
-You should now be able to open `docs/releases/v0.4.0/WorkPackages.md`,
-find the Work Package you are about to change, read its own retrospective
-(if one already exists) or its own scope entry (if it's still ahead), and
-proceed — following the Engineering Lifecycle, checking `docs/governance/
-Future Work Package Guidelines.md` for the standing expectations every
-future Work Package must meet.
+You should now be able to open `docs/releases/v0.5.0/WorkPackages.md`
+(the current release plan — `docs/releases/v0.4.0/WorkPackages.md` is
+its own, now-shipped predecessor, retained for history, not where new
+work is scoped), find the Work Package you are about to change, read its
+own retrospective (if one already exists) or its own scope entry (if
+it's still ahead), and proceed — following the Engineering Lifecycle,
+checking `docs/governance/Future Work Package Guidelines.md` for the
+standing expectations every future Work Package must meet. **Correction,
+`WP 5.4`**: this section previously pointed to `v0.4.0/WorkPackages.md`
+even after `v0.5.0`'s own plan superseded it — a real, previously
+unnoticed onboarding drift, corrected here as part of that Work Package's
+own Developer Experience review.
 
 ## Related Documents
 

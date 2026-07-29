@@ -39,9 +39,9 @@ completeness.
 Registers tracking *decisions* — what was decided, what was rejected, and
 where the reasoning lives.
 
-- [ADR Register](Architecture/ADR%20Register.md) — all 30 Architecture Decision Records.
-- [Rejected Designs Register](Architecture/Rejected%20Designs%20Register.md) — all 29 Rejected Designs entries.
-- [Architecture Document Register](Architecture/Architecture%20Document%20Register.md) — all 18 standing architecture documents.
+- [ADR Register](Architecture/ADR%20Register.md) — all 39 Architecture Decision Records.
+- [Rejected Designs Register](Architecture/Rejected%20Designs%20Register.md) — all 45 Rejected Designs entries.
+- [Architecture Document Register](Architecture/Architecture%20Document%20Register.md) — all 20 standing architecture documents.
 - [Decision Register](Architecture/Decision%20Register.md) — significant process/sequencing decisions that don't meet ADR criteria.
 
 ## Engineering
@@ -80,6 +80,17 @@ lives and whether the Academy's own maintenance obligation is being met.
 - [Academy Register](Documentation/Academy%20Register.md)
 - [Engineering Standards Register](Documentation/Engineering%20Standards%20Register.md)
 - [Governance Register](Documentation/Governance%20Register.md)
+
+## Security
+
+Standing documents tracking *what TempestOS protects, against whom, and
+to what standard* — the security baseline every future Work Package's
+Definition of Done is checked against.
+
+- [Threat Model](../security/Threat%20Model.md) — assets, actors, trust boundaries, and threat scenarios.
+- [Security Principles](../security/Security%20Principles.md) — the standing security principles the platform is designed against.
+- [Platform Security Review v0.5.0](../security/Platform%20Security%20Review%20v0.5.0.md) — the first comprehensive security audit; establishes the v0.5.0 Security Baseline.
+- [Security Roadmap](../security/Security%20Roadmap.md) — prioritised future security work, sequenced against the Threat Model's own assumptions.
 
 ## Delivery
 
