@@ -10,11 +10,11 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | `src/Samples/Tempest.Samples/`; `docs/architecture/Sample Module Architecture.md`. |
 | **Review Frequency** | Updated whenever a new production module is added anywhere under `src/`. |
-| **Last Reviewed** | 2026-07-29 (WP 6.7, Export/Import) — added `ExportImportSampleModule`; see the disclosed gap under Coverage Status. |
+| **Last Reviewed** | 2026-07-29 (WP 6.6, Licensing) — added `LicensingSampleModule`; see the disclosed gap under Coverage Status. |
 | **Related Documents** | `docs/architecture/Sample Module Architecture.md`; `Platform Services Register.md`; `Event Catalogue.md`. |
-| **Related ADRs** | ADR-0001 through ADR-0004 (module identity, lifecycle, disposal), ADR-0027 (`ModuleMetadataAttribute`), ADR-0036–ADR-0038, ADR-0051. |
+| **Related ADRs** | ADR-0001 through ADR-0004 (module identity, lifecycle, disposal), ADR-0027 (`ModuleMetadataAttribute`), ADR-0036–ADR-0038, ADR-0050, ADR-0051. |
 | **Related Academy Articles** | `docs/academy/02 Runtime Architecture/03-building-a-module.md`; `04-building-an-event-driven-module.md`; `docs/academy/03 Work Packages/WP4.3-sample-module-architecture.md`, `WP4.3-sample-module-implementation.md`, `WP4.4E-sample-module-event-integration.md`. |
-| **Coverage Status** | **Partial — a genuine, disclosed gap found during `WP 6.7`'s own repository review, not introduced by this Work Package.** This register's own `Last Reviewed` line read `WP 5.2` before this Work Package touched it — `IdentitySampleModule` (`WP 6.1`), `SettingsSampleModule`/`AuditSampleModule` (`WP 6.4`/`WP 6.5`), `NotificationSampleModule` (`WP 6.2`), `ReportingSampleModule` (`WP 6.0`), and `ApiSampleModule` (`WP 6.3`) were all missing entirely (`ClockModuleDiscoveryTests.DiscoverModules_ScopedToSampleAssembly_FindsEveryRealSampleModule` confirms 14 production modules actually exist; only 7 were previously listed, plus this Work Package's own 1 new one = 8, leaving 6 still undocumented). `WP 6.7` adds only its own new module, correctly described, rather than retroactively backfilling six unrelated Work Packages' worth of rows under its own scope — a full backfill is recommended as `WP 6.8` (Platform Services Integration Review)'s own closing-audit task. |
+| **Coverage Status** | **Partial — a genuine, disclosed gap found during `WP 6.7`'s own repository review, not introduced by that Work Package or this one.** This register's own `Last Reviewed` line read `WP 5.2` before `WP 6.7` touched it — `IdentitySampleModule` (`WP 6.1`), `SettingsSampleModule`/`AuditSampleModule` (`WP 6.4`/`WP 6.5`), `NotificationSampleModule` (`WP 6.2`), `ReportingSampleModule` (`WP 6.0`), and `ApiSampleModule` (`WP 6.3`) were all missing entirely (`ClockModuleDiscoveryTests.DiscoverModules_ScopedToSampleAssembly_FindsEveryRealSampleModule` confirms 15 production modules actually exist). `WP 6.7` added only its own new module; `WP 6.6` adds only its own new module below, correctly described, rather than retroactively backfilling the six unrelated Work Packages' worth of rows under either Work Package's own scope — a full backfill remains recommended as `WP 6.8` (Platform Services Integration Review)'s own closing-audit task. |
 
 ---
 
@@ -30,14 +30,15 @@
 | `CommandSampleModule` | `Tempest.Samples` | `ModuleLifecycleBase` | Yes | `ICommandDispatcher`, `ICommandRegistry`, `INavigationProvider` | WP 5.1B |
 | `DiagnosticsSampleModule` | `Tempest.Samples` | `ModuleLifecycleBase` | Yes | `IDiagnosticsProvider`, `ICommandDispatcher`, `ICommandRegistry` | WP 5.2 |
 | `ExportImportSampleModule` | `Tempest.Samples` | `ModuleLifecycleBase` | Yes | `IIdentityService`, `ISettingsProvider`, `ICurrentPrincipalAccessor`, `IPermissionEvaluator`, `IAuditRecorder`, `INotificationDispatcher`, `IExportService`, `ImportService` (concrete type), `ICommandDispatcher`, `ICommandRegistry` | WP 6.7 |
+| `LicensingSampleModule` | `Tempest.Samples` | `ModuleLifecycleBase` | Yes | `IIdentityService`, `ISettingsProvider`, `ICurrentPrincipalAccessor`, `IPermissionEvaluator`, `ILicenseProvider`, `IAuditRecorder`, `INotificationDispatcher`, `IApiEndpointRegistry`, `ICommandDispatcher`, `ICommandRegistry` | WP 6.6 |
 
-**Total: 14 production modules actually exist (Verified directly via
+**Total: 15 production modules actually exist (Verified directly via
 `ClockModuleDiscoveryTests.DiscoverModules_ScopedToSampleAssembly_FindsEveryRealSampleModule`)
-— only 8 are listed above (the 7 previously listed + this Work Package's
-own new one); the remaining 6, added by `WP 6.1`/`WP 6.4`/`WP 6.5`/`WP
-6.2`/`WP 6.0`/`WP 6.3`, are the disclosed gap under Coverage Status,
-left for `WP 6.8`'s own backfill rather than retrofitted here under a
-different Work Package's own scope.**
+— only 9 are listed above (the 7 originally listed + `WP 6.7`'s own new
+one + this Work Package's own new one); the remaining 6, added by `WP
+6.1`/`WP 6.4`/`WP 6.5`/`WP 6.2`/`WP 6.0`/`WP 6.3`, are the disclosed gap
+under Coverage Status, left for `WP 6.8`'s own backfill rather than
+retrofitted here under a different Work Package's own scope.**
 
 ## SDK Base Types (Not Modules Themselves)
 

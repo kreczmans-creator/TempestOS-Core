@@ -10,9 +10,9 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | `docs/architecture/Platform Service Map.md` — the full responsibility/dependency/consumer/lifecycle detail for each service lives there; this register does not repeat it, only indexes it against governance status. |
 | **Review Frequency** | Updated whenever `Platform Service Map.md` itself is updated (Engineering Governance §6) — i.e., whenever a service is added, removed, or changes responsibility/dependencies/consumers. |
-| **Last Reviewed** | 2026-07-29 (WP 6.7, Export/Import). |
+| **Last Reviewed** | 2026-07-29 (WP 6.6, Licensing). |
 | **Related Documents** | `docs/architecture/Platform Service Map.md`; `Architecture Document Register.md`; `Module Register.md`; `Hosted Services Register.md`; `Event Catalogue.md`. |
-| **Related ADRs** | ADR-0005 through ADR-0052 (plus ADR-0051) — nearly every ADR concerns one of these services directly or the boundary between them. |
+| **Related ADRs** | ADR-0005 through ADR-0052 — nearly every ADR concerns one of these services directly or the boundary between them. |
 | **Related Academy Articles** | `docs/academy/02 Runtime Architecture/` (The Module Pipeline, The Startup Sequence, Working with the TempestOS Host, Platform Layering, Plugin Architecture, Failure Isolation Across TempestOS). |
 | **Coverage Status** | Complete. |
 
@@ -45,10 +45,11 @@
 | Reporting | Implemented | WP 6.0 (design and implementation, no separate architecture phase) | ADR-0038, ADR-0040 |
 | REST API | Implemented | WP 6.3 (design and implementation, no separate architecture phase) | ADR-0047, ADR-0048, ADR-0049, ADR-0052 |
 | Export/Import | Implemented | WP 6.7 (design and implementation, no separate architecture phase) | ADR-0044, ADR-0051 |
+| Licensing | Implemented | WP 6.6 (design and implementation, no separate architecture phase) | ADR-0009, ADR-0013, ADR-0023, ADR-0044, ADR-0050 |
 | Project Engine | Not implemented as a platform service — bootstrap-era code (`Tempest.Core.Projects`, `ProjectService`, `JsonProjectRepository`) predates and is independent of the module pipeline | Planned, no Work Package assigned | None |
 | Requirements Engine | Not implemented — no code exists | Planned, no Work Package assigned | None |
 
-**Total: 25 entries — 22 Implemented, 2 planned with no code (Project
+**Total: 26 entries — 23 Implemented, 2 planned with no code (Project
 Engine, Requirements Engine), 1 developer-convenience layer (Module SDK).**
 
 ## Verification of "Implemented" Status

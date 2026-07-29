@@ -8,6 +8,7 @@ using Tempest.Core.Diagnostics;
 using Tempest.Core.Events;
 using Tempest.Core.ExportImport;
 using Tempest.Core.Identity;
+using Tempest.Core.Licensing;
 using Tempest.Core.Logging;
 using Tempest.Core.Modules;
 using Tempest.Core.Navigation;
@@ -67,6 +68,7 @@ public sealed class TempestHost : ITempestHost
     private readonly IEnumerable<Type>? _discoveryCandidateTypesOverride;
     private readonly string? _pluginsRootPathOverride;
     private readonly IEnumerable<Type>? _hostedServiceCandidateTypesOverride;
+    private readonly string? _licenseFilePathOverride;
     private readonly CancellationTokenSource _shutdownRequested = new();
     private readonly CancellationTokenSource _stopEscalation = new();
     private readonly TaskCompletionSource _runCompletion = new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -82,12 +84,14 @@ public sealed class TempestHost : ITempestHost
         IReadOnlyList<IConfigurationSource> configurationSources,
         IEnumerable<Type>? discoveryCandidateTypesOverride,
         string? pluginsRootPathOverride,
-        IEnumerable<Type>? hostedServiceCandidateTypesOverride)
+        IEnumerable<Type>? hostedServiceCandidateTypesOverride,
+        string? licenseFilePathOverride)
     {
         _configurationSources = configurationSources;
         _discoveryCandidateTypesOverride = discoveryCandidateTypesOverride;
         _pluginsRootPathOverride = pluginsRootPathOverride;
         _hostedServiceCandidateTypesOverride = hostedServiceCandidateTypesOverride;
+        _licenseFilePathOverride = licenseFilePathOverride;
     }
 
     /// <inheritdoc />
@@ -170,6 +174,31 @@ public sealed class TempestHost : ITempestHost
 
         var configuration = configurationBuilder.Build();
 
+        // ADR-0050: License validation runs here, before the DI container
+        // (and even the logger) exists - Configuration's own value is
+        // irrelevant to this check, since Licensing never reads
+        // IConfigurationProvider itself (a fixed, documented file-path
+        // convention, mirroring Plugin Manifest's own fixed convention).
+        // An invalid license aborts startup immediately, Host-fatal, per
+        // ADR-0013's existing platform-service-failure classification,
+        // applied here without modification. A missing license file is
+        // not itself invalid - it resolves to a valid, unrestricted-but-
+        // uncapable default (see LicenseValidator's own remarks, and
+        // ADR-0050's own resolution of Risk Register.md's R5).
+        ILicenseValidator licenseValidator = _licenseFilePathOverride is not null
+            ? new LicenseValidator(_licenseFilePathOverride)
+            : new LicenseValidator();
+
+        var licenseValidationResult = licenseValidator.Validate();
+
+        if (!licenseValidationResult.IsValid)
+        {
+            Console.Error.WriteLine($"License validation failed: {licenseValidationResult.FailureReason}");
+            throw new LicenseValidationException(licenseValidationResult.FailureReason!);
+        }
+
+        var currentLicense = licenseValidationResult.License!;
+
         ILogSink sink = new ConsoleLogSink();
         ILoggerFactory loggerFactory = new LoggerFactory(configuration, sink);
         var logger = loggerFactory.CreateLogger(LoggingServiceCollectionExtensions.DefaultLoggerCategory);
@@ -177,6 +206,9 @@ public sealed class TempestHost : ITempestHost
 
         logger.Information("Host lifecycle phase completed: Configuration Built.");
         logger.Information("Host lifecycle phase completed: Logging Built.");
+        logger.Information(
+            $"Host lifecycle phase completed: License Validated. Licensee: '{currentLicense.LicenseeName}', " +
+            $"{currentLicense.EnabledCapabilities.Count} capability(ies) enabled.");
 
         runToken.ThrowIfCancellationRequested();
 
@@ -257,6 +289,13 @@ public sealed class TempestHost : ITempestHost
         services.Singleton<IRoleProvider, RoleProvider>();
         services.Singleton<IPermissionEvaluator, PermissionEvaluator>();
         services.Singleton<IIdentityService, IdentityService>();
+
+        // ADR-0050: Licensing's ILicenseProvider wraps the already-
+        // validated license from before Phase 1 - registered via
+        // AddInstance, never container-constructed, exactly like
+        // IPlatformVersionProvider and IDiagnosticsProvider below.
+        ILicenseProvider licenseProvider = new LicenseProvider(currentLicense);
+        services.AddInstance(licenseProvider);
 
         // ADR-0041: Persistence is established here, as part of Settings'
         // own scope, ahead of Settings' own registration so the container

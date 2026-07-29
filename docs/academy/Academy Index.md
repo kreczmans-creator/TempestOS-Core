@@ -306,6 +306,26 @@ both deliberately not consumed.
 - [WP 6.7 — Export/Import Framework Implementation](03%20Work%20Packages/WP6.7-export-import-implementation.md) — implemented directly against the already-approved architecture and Contract Review packages, including the additive Kind-routing/Format/Serialization elaborations (`ADR-0051`) and a dedicated Platform Integration Demonstration.
 - ADR-0051 (Export/Import Is Orthogonal to the Internal Persistence Abstraction — Kind Routing, Format/Serialization Abstractions, and Scope Boundaries).
 
+### Licensing
+
+Implemented (`WP 6.6`, `ADR-0050`) — `Tempest.Core.Licensing`: what
+capability is enabled, for whom, until when — exposes capability only,
+never commercial policy. `ILicenseValidator` runs before the DI
+container exists, deliberately a leaf with no constructor dependencies,
+mirroring `PlatformVersionProvider`'s own position; an invalid license
+(unreadable, malformed, missing its own required field, or expired)
+aborts Host startup, Host-fatal, per `ADR-0013`. A **missing** license
+file is explicitly not invalid — it resolves to a valid,
+unrestricted-but-uncapable default, this platform's own normal,
+open-source-friendly state, proven not to regress any of the 24
+pre-existing tests that build a real `TempestHost`. `ILicenseProvider`
+wraps the already-validated license and is registered via `AddInstance`
+at Phase 6. License file contents are trusted at face value — no
+cryptographic signature verification, a disclosed limitation.
+
+- [WP 6.6 — Licensing Framework Implementation](03%20Work%20Packages/WP6.6-licensing-framework-implementation.md) — implemented directly against the already-approved architecture and Contract Review packages, including the missing-file-vs-broken-file Host-fatal resolution (`ADR-0050`) and a dedicated Platform Integration Demonstration.
+- ADR-0050 (License Validation Is a Host-Startup, Host-Fatal Gate — Except a Missing License File, Which Is a Valid, Unrestricted Default).
+
 ## Design Patterns
 
 Recurring structural patterns TempestOS actually uses, explained in terms
@@ -393,7 +413,7 @@ whatever you're about to change, before you change it.
 `docs/releases/v0.5.0/WorkPackages.md`'s own Developer Experience phase
 is complete and `v0.5.0` is released.
 
-**Platform Services (v0.6.0, in progress):**
+**Platform Services (v0.6.0, feature Work Packages complete — only `WP 6.8` certification remains):**
 
 - [WP 6.1 — Permissions & Identity Implementation](03%20Work%20Packages/WP6.1-permissions-and-identity-implementation.md) — implemented directly against the already-approved architecture and Contract Review packages; no separate architecture-phase retrospective, per direct instruction.
 - [WP 6.4 — Settings Framework Implementation](03%20Work%20Packages/WP6.4-settings-framework-implementation.md) — implemented ahead of `WP 6.0`–`WP 6.3` per `Platform Service Implementation Order.md`'s own recommendation; establishes the shared Persistence abstraction as part of its own scope.
@@ -402,6 +422,7 @@ is complete and `v0.5.0` is released.
 - [WP 6.0 — Reporting Framework Implementation](03%20Work%20Packages/WP6.0-reporting-framework-implementation.md) — the first of `v0.6.0`'s implemented Work Packages to match its own nominal numeric position; orthogonal to `WP 6.7` (Export/Import).
 - [WP 6.3 — REST API Implementation](03%20Work%20Packages/WP6.3-rest-api-implementation.md) — this platform's first substantial dependency on a pre-built framework component (ASP.NET Core/Kestrel) and first genuinely concurrent, per-request scenario, resolved without modifying `WP 6.1`'s own already-shipped `CurrentPrincipalAccessor`.
 - [WP 6.7 — Export/Import Framework Implementation](03%20Work%20Packages/WP6.7-export-import-implementation.md) — completes the orthogonality `WP 6.0` anticipated; resolves the approved contract's own multi-destination-import gap via a `Kind`-routed, dual-registered `ImportService`, reusing `WP 6.1`'s own `CurrentPrincipalAccessor` registration pattern.
+- [WP 6.6 — Licensing Framework Implementation](03%20Work%20Packages/WP6.6-licensing-framework-implementation.md) — the release's final production implementation Work Package; resolves `Risk Register.md`'s own `R5` (a missing license file is a valid, unrestricted default, never Host-fatal; a broken one is), proven not to regress any of the 24 pre-existing tests that build a real `TempestHost`.
 
 See `PROJECT_STATUS.md` for current status and `docs/releases/v0.6.0/
 WorkPackages.md` for the full, nine-Work-Package plan.

@@ -36,11 +36,12 @@ of date is worse than no map at all, because it will be trusted.
 | Identity & Permissions | **Implemented — WP 6.1** (`IIdentity`/`PlatformIdentity`, `IPrincipal`/`PlatformPrincipal`, `Permission`, `IRole`/`Role`, `IRoleProvider`/`RoleProvider`, `ICurrentPrincipalAccessor`/`CurrentPrincipalAccessor`, `IPermissionEvaluator`/`PermissionEvaluator`, `IIdentityService`/`IdentityService`, `Tempest.Core.Identity`) — local-only identity model per ADR-0043; single authorization enforcement point per ADR-0044 | Dependency Injection | `IdentitySampleModule` (real contributor); `TD-09`/`TD-10`/`TD-11` are now resolvable through this enforcement point, though none is retired by this Work Package itself; a plausible future `WP 6.3` (REST API) and `WP 6.5` (Audit) consumer |
 | Persistence | **Implemented — WP 6.4** (`IPersistenceStore`/`PersistenceStore`, `Tempest.Core.Persistence`) — established as part of Settings' own scope per ADR-0041; file-backed, one file per `collection`/`key`, percent-encoded paths, per-key async locking | Dependency Injection, Configuration (root path) | Settings (real contributor via `SettingsProvider`); Audit (real contributor via `AuditRecorder`/`AuditQuery`, `WP 6.5`) — the reuse `ADR-0041` recommended, now confirmed in practice |
 | Settings | **Implemented — WP 6.4** (`ISettingDefinition`/`SettingDefinition`, `ISettingsProvider`/`SettingsProvider`, `ISettingsChangedEvent`/`SettingsChangedEvent`, `Tempest.Core.Settings`) — DI-public, distinct from Configuration per ADR-0042; in-memory cache over Persistence, invalidated on write | Dependency Injection, Persistence, Event Bus | `SettingsSampleModule` (real contributor); a plausible future `WP 6.3` (REST API) settings-management surface |
-| Audit | **Implemented — WP 6.5** (`IAuditRecord`/`AuditRecord`, `IAuditRecorder`/`AuditRecorder`, `IAuditQuery`/`AuditQuery`, `AuditQueryCriteria`, `Tempest.Core.Audit`) — durable, queryable, append-only history distinct from Logging/Diagnostics per ADR-0045; reuses Persistence, never a second storage mechanism; `IAuditQuery` permission-gated via `ADR-0044` | Dependency Injection, Persistence, Identity & Permissions | `AuditSampleModule` (real contributor); also a real dependency of `ApiRequestHandler` (`Tempest.Core.Api`), `ReportingSampleModule`, and `ExportImportSampleModule`; Licensing remains a plausible future consumer |
-| Notifications | **Implemented — WP 6.2** (`INotification`, `INotificationHandler<T>`, `INotificationDispatcher`/`NotificationDispatcher`, `Tempest.Core.Notifications`) — derived from, not a replacement for, the Event Bus per ADR-0046; transient only, no persistence this release; additive `IPlatformNotification`/`PlatformNotification`/`NotificationSeverity` general-purpose shape | Dependency Injection | `NotificationSampleModule` (real contributor); `NotificationSampleHostedService` (the platform's first real, non-infrastructure hosted service); also a real dependency of `ReportingSampleModule` and `ExportImportSampleModule`; Licensing and a future UI Shell remain plausible future consumers |
+| Audit | **Implemented — WP 6.5** (`IAuditRecord`/`AuditRecord`, `IAuditRecorder`/`AuditRecorder`, `IAuditQuery`/`AuditQuery`, `AuditQueryCriteria`, `Tempest.Core.Audit`) — durable, queryable, append-only history distinct from Logging/Diagnostics per ADR-0045; reuses Persistence, never a second storage mechanism; `IAuditQuery` permission-gated via `ADR-0044` | Dependency Injection, Persistence, Identity & Permissions | `AuditSampleModule` (real contributor); also a real dependency of `ApiRequestHandler` (`Tempest.Core.Api`), `ReportingSampleModule`, `ExportImportSampleModule`, and `LicensingSampleModule` |
+| Notifications | **Implemented — WP 6.2** (`INotification`, `INotificationHandler<T>`, `INotificationDispatcher`/`NotificationDispatcher`, `Tempest.Core.Notifications`) — derived from, not a replacement for, the Event Bus per ADR-0046; transient only, no persistence this release; additive `IPlatformNotification`/`PlatformNotification`/`NotificationSeverity` general-purpose shape | Dependency Injection | `NotificationSampleModule` (real contributor); `NotificationSampleHostedService` (the platform's first real, non-infrastructure hosted service); also a real dependency of `ReportingSampleModule`, `ExportImportSampleModule`, and `LicensingSampleModule`; a future UI Shell remains a plausible future consumer |
 | Reporting | **Implemented — WP 6.0** (`IReportDefinition`, `IReportRenderer<T>`, `IReportingService`/`ReportingService`, `Tempest.Core.Reporting`) — orthogonal to Export/Import per ADR-0040; no permission-gating of its own (caller enforces, mirroring Navigation/Command Framework); additive `IReportTemplate<T>`/`PlainTextReportTemplate<T>` general-purpose template shape | Dependency Injection | `ReportingSampleModule` (real contributor, also demonstrating Identity/Settings/Audit/Notifications integration at the calling layer); a plausible future consumer for the REST API and any engineering module |
 | REST API | **Implemented — WP 6.3** (`IApiEndpointRegistry`/`ApiEndpointRegistry`, `ApiRequestHandler`, `RestApiHostedService`, `Tempest.Core.Api`) — hosted on ASP.NET Core/Kestrel per ADR-0049, orchestrated as an ordinary hosted service per ADR-0047, dispatches every route through the existing, unmodified Command Framework per ADR-0048; identity resolved per-request without touching the shared ambient current principal per ADR-0052 | Dependency Injection, Identity & Permissions, Audit | `ApiSampleModule` (real contributor, exposing `ReportingSampleModule`'s own command with zero business logic of its own); any future engineering module wanting an HTTP-reachable route |
 | Export/Import | **Implemented — WP 6.7** (`IExportable`/`IExportService`/`ExportService`, `IImportService`/`ImportService`, `Tempest.Core.ExportImport`) — orthogonal to Persistence per ADR-0051; additive `IExportableKind`/`IImportable` Kind-routing, `IExportFormat`/`JsonExportFormat` artifact framing, and optional `IExportPayloadSerializer`/`JsonExportPayloadSerializer` general-purpose shapes | Dependency Injection | `ExportImportSampleModule` (real contributor, round-tripping two Settings values as a single multi-source artifact, also demonstrating Identity/Audit/Notifications integration at the calling layer); a plausible future consumer for Licensing and any engineering module |
+| Licensing | **Implemented — WP 6.6** (`ILicense`/`ILicenseValidator`/`LicenseValidator`, `ILicenseProvider`/`LicenseProvider`, `Tempest.Core.Licensing`) — pre-container, Host-fatal validation gate per ADR-0050, except a missing license file, which is a valid, unrestricted-but-uncapable default (resolving Risk Register R5) | `System.Text.Json` (BCL) only | `LicensingSampleModule` (real contributor, also demonstrating Identity/Settings/Audit/Notifications/REST API integration at the calling layer); a plausible future consumer for any commercially licensed engineering module |
 | Plugin Manifest | **Implemented — WP 4.2** (`Tempest.Core.Plugins`) | Host (Phases 3.1/3.2, ADR-0026 — a pre-Discovery step) | Module Discovery (unchanged), any real plugin |
 | Project Engine | Planned | Undetermined | Undetermined |
 | Requirements Engine | Planned | Undetermined | Undetermined |
@@ -865,8 +866,9 @@ Event Bus (change notification).
 the ninth production sample module) — registers a setting definition,
 subscribes to `ISettingsChangedEvent`, and registers two commands
 (get/set) demonstrating the Command Framework and Settings interacting.
-A plausible future `WP 6.3` (REST API) settings-management surface —
-not yet implemented.
+Also a real dependency of `ReportingSampleModule` (`WP 6.0`),
+`ExportImportSampleModule` (`WP 6.7`), and `LicensingSampleModule`
+(`WP 6.6`), each reading a customisable message at the calling layer.
 
 **Lifecycle.** Ordinary DI-public, container-constructed singleton,
 registered in `TempestHost`'s existing Platform Services Registered
@@ -922,15 +924,14 @@ tenth production sample module) — establishes its own principal, records
 an action during its own initialisation, and registers two commands
 (record/query) demonstrating both the recording path and the
 permission-gated query path. Also a real, since-confirmed dependency of
-`ApiRequestHandler` itself (`Tempest.Core.Api`, `WP 6.3`), and of three
+`ApiRequestHandler` itself (`Tempest.Core.Api`, `WP 6.3`), and of four
 further sample-module command handlers built on top of already-shipped
-platform services: `ReportingSampleModule` (`WP 6.0`) and
-`ExportImportSampleModule` (`WP 6.7`). Licensing remains the one
-plausible future consumer not yet implemented. *(This entry previously
-read "none yet implemented" — corrected here, `WP 6.7`, as a genuine,
-pre-existing drift found during this Work Package's own repository
-review, unrelated to Export/Import's own scope: it had gone stale since
-`WP 6.0` first shipped a real consumer.)*
+platform services: `ReportingSampleModule` (`WP 6.0`),
+`ExportImportSampleModule` (`WP 6.7`), and `LicensingSampleModule`
+(`WP 6.6`). *(This entry previously read "none yet implemented" —
+corrected `WP 6.7`, as a genuine, pre-existing drift found during that
+Work Package's own repository review, unrelated to Export/Import's own
+scope: it had gone stale since `WP 6.0` first shipped a real consumer.)*
 
 **Lifecycle.** Ordinary DI-public, container-constructed singletons
 (`IAuditRecorder`, `IAuditQuery`), registered in `TempestHost`'s
@@ -1012,16 +1013,16 @@ command (`PublishSampleNotificationCommand`) that publishes one on
 demand, and observes `NotificationSampleHostedService`'s own
 `StartAsync`/`StopAsync` notifications end-to-end, proving "Background
 notifications" concretely. Also a real, since-confirmed dependency of
-two further sample-module command handlers built on top of
-already-shipped platform services: `ReportingSampleModule` (`WP 6.0`)
-and `ExportImportSampleModule` (`WP 6.7`) — the REST API itself
-(`Tempest.Core.Api`) does not consume Notifications directly; only the
-`ReportingSampleModule` command it happens to expose does. Licensing and
-a future UI Shell remain plausible future consumers not yet implemented.
-*(This entry previously read "none yet implemented" — corrected here,
-`WP 6.7`, as a genuine, pre-existing drift found during this Work
-Package's own repository review, unrelated to Export/Import's own
-scope: it had gone stale since `WP 6.0` first shipped a real consumer.)*
+three further sample-module command handlers built on top of
+already-shipped platform services: `ReportingSampleModule` (`WP 6.0`),
+`ExportImportSampleModule` (`WP 6.7`), and `LicensingSampleModule`
+(`WP 6.6`) — the REST API itself (`Tempest.Core.Api`) does not consume
+Notifications directly; only the commands it happens to expose do. A
+future UI Shell remains a plausible future consumer not yet implemented.
+*(This entry previously read "none yet implemented" — corrected `WP
+6.7`, as a genuine, pre-existing drift found during that Work Package's
+own repository review, unrelated to Export/Import's own scope: it had
+gone stale since `WP 6.0` first shipped a real consumer.)*
 
 **Lifecycle.** Ordinary DI-public, container-constructed singleton
 (`INotificationDispatcher`), registered in `TempestHost`'s existing
@@ -1321,6 +1322,91 @@ Kind Routing, Format/Serialization Abstractions, and Scope Boundaries*).
 Framework Implementation*); `docs/releases/v0.6.0/Release
 Architecture.md` and companions; `Platform Service Contracts.md` and
 companions.
+
+---
+
+## Licensing *(implemented — WP 6.6, ADR-0050)*
+
+**Responsibility.** What capability is enabled, for whom, until when.
+Validates a license at Host startup, before the DI container exists;
+exposes the current license's own entitlements read-only thereafter.
+Does not itself implement any licensed feature's own gating logic
+beyond answering "is this capability enabled" — a consuming module
+decides what to do with that answer. Does not implement commercial
+policy, billing, or subscriptions — those remain outside the platform
+entirely.
+
+**Key types.** `ILicense`/`License`, `ILicenseValidator`/`LicenseValidator`,
+`LicenseValidationResult`, `ILicenseProvider`/`LicenseProvider`,
+`LicensingException` and one approved subtype
+(`LicenseValidationException`) — all `Tempest.Core.Licensing`,
+implemented with zero signature deviation from `Public Interface
+Catalogue.md`. `LicenseDto` is an additive, internal-only JSON
+deserialization shape, mirroring `PluginManifestDto`'s own precedent.
+
+**Dependencies.** `System.Text.Json` (BCL) only — confirmed directly by
+`using` inspection. `ILicenseValidator` has no constructor dependencies
+at all, deliberately a leaf, mirroring `IPlatformVersionProvider`'s own
+position — it cannot depend on anything container-constructed, since it
+runs before the container exists.
+
+**Consumers.** `LicensingSampleModule` (real contributor and consumer,
+the fifteenth production sample module) — registers a sample setting
+and a command (`CheckSampleCapabilityCommand`) whose handler checks a
+permission (Identity), checks a sample capability
+(`ILicenseProvider.HasCapability`), reads a Settings-provided message on
+success, records the outcome (Audit), and publishes a completion notice
+(Notifications) — then maps that same command to an HTTP route (REST
+API), proven by a real HTTP round trip. See this Work Package's own
+Platform Integration Demonstration for the complete, per-service
+account. Named as a plausible future consumer for any commercially
+licensed engineering module.
+
+**Lifecycle.** `ILicenseValidator` is Composition-Root-constructed,
+pre-container — `TempestHost` constructs it directly, immediately after
+`ConfigurationBuilder.Build()` returns and before the logger/sink are
+built, mirroring `PlatformVersionProvider`'s own construction-time
+placement. `ILicenseProvider` is Composition-Root-constructed from the
+already-validated `ILicense` and registered via `AddInstance` at Phase
+6, immediately after Identity & Permissions — the only proposed
+`v0.6.0` service with a non-container-registered contract. No new Host
+Lifecycle phase — both placements resolve to phases that already exist.
+
+**Failure behaviour — the one genuine architectural decision this Work
+Package resolved, not merely implemented.** `Risk Register.md`'s own
+`R5` named an open question: does every "invalid" category (missing,
+expired, malformed) warrant Host-fatal treatment? Resolved: a missing
+license file is a valid, unrestricted-but-uncapable default
+(`LicenseValidator.UnlicensedLicenseeName`, zero enabled capabilities) —
+this platform's own normal, open-source-friendly state, never
+Host-fatal. A license file that exists but is unreadable, not valid
+JSON, missing its own required `LicenseeName` field, or already
+expired, aborts Host startup entirely — Host-fatal, per `ADR-0013`'s
+existing classification, applied without modification. Proven directly:
+every one of the 24 pre-existing test files that build a real
+`TempestHost` continues to pass completely unmodified, since none of
+them has ever supplied a license file. See `ADR-0050`.
+
+**Security — a genuine, disclosed limitation, not a hidden one.** The
+license file's own contents are trusted at face value — no
+cryptographic signature or tamper-resistance verification of any kind
+(`TD-16`), extending this release's own local-trust posture (`ADR-0043`)
+to a second surface.
+
+**ADR references.** ADR-0009 (Composition Root pattern, confirmed to
+extend to a leaf validator and a wrapped provider); ADR-0013
+(platform-service-failure classification, applied here without
+modification); ADR-0023 (`PlatformVersionProvider`'s own "deliberately a
+leaf" precedent, mirrored here); ADR-0044 (the fail-closed-by-default
+precedent `HasCapability`'s own default state mirrors); ADR-0050
+(*License Validation Is a Host-Startup, Host-Fatal Gate — Except a
+Missing License File, Which Is a Valid, Unrestricted Default*).
+
+**Academy references.** `WP 6.6` retrospective (*Licensing Framework
+Implementation*); `docs/releases/v0.6.0/Release Architecture.md` and
+companions; `Platform Service Contracts.md` and companions;
+`docs/releases/v0.6.0/Risk Register.md` (`R5`);
+`docs/governance/Quality/Technical Debt Register.md` (`TD-16`, `AT-13`).
 
 ---
 
