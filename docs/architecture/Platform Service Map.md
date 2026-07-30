@@ -33,6 +33,15 @@ of date is worse than no map at all, because it will be trusted.
 | Command Framework | **Implemented — WP 5.1A (design), WP 5.1B (implementation)** (`ICommandDispatcher`/`ICommandRegistry`, `Tempest.Core.Commands`) — orthogonal to Navigation, ADR-0022 | Dependency Injection | `CommandSampleModule` (real contributor); `Tempest.App` (invocation, not yet wired into the Shell's own input handling) |
 | Navigation | **Implemented — WP 5.0A (design), WP 5.0B (implementation)** (`INavigationProvider`/`NavigationService`, `Tempest.Core.Navigation`) — model, ownership, and rendering boundary per ADR-0031/ADR-0032 | Dependency Injection, Event Bus | Any module contributing a navigation item; `Tempest.App` (rendering, not yet built) |
 | Diagnostics | **Implemented — WP 5.2** (`IDiagnosticsProvider`/`DiagnosticsProvider`, `Tempest.Core.Diagnostics`) — read-only projection over Host/module/hosted-service lifecycle state per ADR-0039 | Dependency Injection (constructed directly by `TempestHost`, ADR-0009); reads live data from `IModuleLifecycleManager`/`IHostedServiceManager` via `Func<T>` accessors, never resolves either through the container (ADR-0017) | `DiagnosticsSampleModule` (real contributor); any future Shell status page or health-check command |
+| Identity & Permissions | **Implemented — WP 6.1** (`IIdentity`/`PlatformIdentity`, `IPrincipal`/`PlatformPrincipal`, `Permission`, `IRole`/`Role`, `IRoleProvider`/`RoleProvider`, `ICurrentPrincipalAccessor`/`CurrentPrincipalAccessor`, `IPermissionEvaluator`/`PermissionEvaluator`, `IIdentityService`/`IdentityService`, `Tempest.Core.Identity`) — local-only identity model per ADR-0043; single authorization enforcement point per ADR-0044 | Dependency Injection | `IdentitySampleModule` (real contributor); `TD-09`/`TD-10`/`TD-11` are now resolvable through this enforcement point, though none is retired by this Work Package itself; a plausible future `WP 6.3` (REST API) and `WP 6.5` (Audit) consumer |
+| Persistence | **Implemented — WP 6.4** (`IPersistenceStore`/`PersistenceStore`, `Tempest.Core.Persistence`) — established as part of Settings' own scope per ADR-0041; file-backed, one file per `collection`/`key`, percent-encoded paths, per-key async locking | Dependency Injection, Configuration (root path) | Settings (real contributor via `SettingsProvider`); Audit (real contributor via `AuditRecorder`/`AuditQuery`, `WP 6.5`) — the reuse `ADR-0041` recommended, now confirmed in practice |
+| Settings | **Implemented — WP 6.4** (`ISettingDefinition`/`SettingDefinition`, `ISettingsProvider`/`SettingsProvider`, `ISettingsChangedEvent`/`SettingsChangedEvent`, `Tempest.Core.Settings`) — DI-public, distinct from Configuration per ADR-0042; in-memory cache over Persistence, invalidated on write | Dependency Injection, Persistence, Event Bus | `SettingsSampleModule` (real contributor); a plausible future `WP 6.3` (REST API) settings-management surface |
+| Audit | **Implemented — WP 6.5** (`IAuditRecord`/`AuditRecord`, `IAuditRecorder`/`AuditRecorder`, `IAuditQuery`/`AuditQuery`, `AuditQueryCriteria`, `Tempest.Core.Audit`) — durable, queryable, append-only history distinct from Logging/Diagnostics per ADR-0045; reuses Persistence, never a second storage mechanism; `IAuditQuery` permission-gated via `ADR-0044` | Dependency Injection, Persistence, Identity & Permissions | `AuditSampleModule` (real contributor); also a real dependency of `ApiRequestHandler` (`Tempest.Core.Api`), `ReportingSampleModule`, `ExportImportSampleModule`, and `LicensingSampleModule` |
+| Notifications | **Implemented — WP 6.2** (`INotification`, `INotificationHandler<T>`, `INotificationDispatcher`/`NotificationDispatcher`, `Tempest.Core.Notifications`) — derived from, not a replacement for, the Event Bus per ADR-0046; transient only, no persistence this release; additive `IPlatformNotification`/`PlatformNotification`/`NotificationSeverity` general-purpose shape | Dependency Injection | `NotificationSampleModule` (real contributor); `NotificationSampleHostedService` (the platform's first real, non-infrastructure hosted service); also a real dependency of `ReportingSampleModule`, `ExportImportSampleModule`, and `LicensingSampleModule`; a future UI Shell remains a plausible future consumer |
+| Reporting | **Implemented — WP 6.0** (`IReportDefinition`, `IReportRenderer<T>`, `IReportingService`/`ReportingService`, `Tempest.Core.Reporting`) — orthogonal to Export/Import per ADR-0040; no permission-gating of its own (caller enforces, mirroring Navigation/Command Framework); additive `IReportTemplate<T>`/`PlainTextReportTemplate<T>` general-purpose template shape | Dependency Injection | `ReportingSampleModule` (real contributor, also demonstrating Identity/Settings/Audit/Notifications integration at the calling layer); a plausible future consumer for the REST API and any engineering module |
+| REST API | **Implemented — WP 6.3** (`IApiEndpointRegistry`/`ApiEndpointRegistry`, `ApiRequestHandler`, `RestApiHostedService`, `Tempest.Core.Api`) — hosted on ASP.NET Core/Kestrel per ADR-0049, orchestrated as an ordinary hosted service per ADR-0047, dispatches every route through the existing, unmodified Command Framework per ADR-0048; identity resolved per-request without touching the shared ambient current principal per ADR-0052 | Dependency Injection, Identity & Permissions, Audit | `ApiSampleModule` (real contributor, exposing `ReportingSampleModule`'s own command with zero business logic of its own); any future engineering module wanting an HTTP-reachable route |
+| Export/Import | **Implemented — WP 6.7** (`IExportable`/`IExportService`/`ExportService`, `IImportService`/`ImportService`, `Tempest.Core.ExportImport`) — orthogonal to Persistence per ADR-0051; additive `IExportableKind`/`IImportable` Kind-routing, `IExportFormat`/`JsonExportFormat` artifact framing, and optional `IExportPayloadSerializer`/`JsonExportPayloadSerializer` general-purpose shapes | Dependency Injection | `ExportImportSampleModule` (real contributor, round-tripping two Settings values as a single multi-source artifact, also demonstrating Identity/Audit/Notifications integration at the calling layer); a plausible future consumer for Licensing and any engineering module |
+| Licensing | **Implemented — WP 6.6** (`ILicense`/`ILicenseValidator`/`LicenseValidator`, `ILicenseProvider`/`LicenseProvider`, `Tempest.Core.Licensing`) — pre-container, Host-fatal validation gate per ADR-0050, except a missing license file, which is a valid, unrestricted-but-uncapable default (resolving Risk Register R5) | `System.Text.Json` (BCL) only | `LicensingSampleModule` (real contributor, also demonstrating Identity/Settings/Audit/Notifications/REST API integration at the calling layer); a plausible future consumer for any commercially licensed engineering module |
 | Plugin Manifest | **Implemented — WP 4.2** (`Tempest.Core.Plugins`) | Host (Phases 3.1/3.2, ADR-0026 — a pre-Discovery step) | Module Discovery (unchanged), any real plugin |
 | Project Engine | Planned | Undetermined | Undetermined |
 | Requirements Engine | Planned | Undetermined | Undetermined |
@@ -668,6 +677,20 @@ constructed, its own accessor reports an empty collection — never an
 exception — mirroring `ITempestHost.Services`'s own "not yet available"
 convention (`ADR-0034`).
 
+**A genuine, disclosed architectural note (`WP 6.8`), not a defect.**
+`Tempest.Core.Diagnostics` imports `Tempest.Core.Runtime` for exactly
+one type — the `HostState` enum, exposed via `IDiagnosticsProvider.HostState`
+— a mutual namespace reference with `Runtime` (which imports
+`Diagnostics` to construct `DiagnosticsProvider`). A strictly literal
+reading of `ADR-0023`'s "dependencies flow downward only" would flag
+this as an upward reference from a Platform Service to the Runtime Host
+layer. In practice this is confined to one read-only, side-effect-free
+enum type, has shipped without incident since this Work Package
+introduced it, and involves no behavioural coupling. `WP 6.8`'s own
+`Platform Architecture Conformance Report.md` recommends a future
+release either formally accept this as a named `ADR-0023` exception or
+relocate `HostState` to a neutral namespace.
+
 **Consumers.** `DiagnosticsSampleModule` (real contributor and consumer);
 `GetDiagnosticsSummaryCommandHandler` (`Tempest.Samples`, demonstrating
 the Command Framework and Diagnostics interacting); any future Shell
@@ -689,6 +712,720 @@ Host-Owned Lifecycle State*).
 Improvements*); *Diagnostics & Composite Logging* (Academy concept
 guide); Rejected Designs RD-0042 through RD-0044;
 `docs/releases/v0.5.0/WorkPackages.md` (`WP 5.2`).
+
+---
+
+## Identity & Permissions *(implemented — WP 6.1, ADR-0043/ADR-0044)*
+
+**Responsibility.** Answers who is performing an action, and whether
+they are allowed to. `IIdentity`/`IPrincipal` model a local-only actor
+(no authentication step, ADR-0043 — a caller-supplied identity id is
+trusted outright); `IRole`/`IRoleProvider` resolve config-sourced role
+definitions (`Identity:Roles:{RoleName}:Permissions`);
+`IIdentityService` resolves a principal by identity id (flattening its
+configured roles into permissions, fail-closed to zero permissions for
+an unrecognised id) and establishes it as current;
+`ICurrentPrincipalAccessor` exposes that current principal read-only;
+`IPermissionEvaluator` is the single, uniform authorization enforcement
+point (`RequirePermission` throws `PermissionDeniedException`;
+`HasPermission` is the non-throwing form) every future consumer is
+expected to call (ADR-0044). See `docs/releases/v0.6.0/Release
+Architecture.md` and companions for the full design, and `ADR-0043`/
+`ADR-0044` for what implementation confirmed, elaborated, or departed
+from in that design.
+
+**Key types.** `IIdentity`/`PlatformIdentity`, `IPrincipal`/
+`PlatformPrincipal`, `Permission`, `IRole`/`Role`, `IRoleProvider`/
+`RoleProvider`, `ICurrentPrincipalAccessor`/`CurrentPrincipalAccessor`,
+`IPermissionEvaluator`/`PermissionEvaluator`, `IIdentityService`/
+`IdentityService`, `IdentityException` and two subtypes
+(`PermissionDeniedException`, `RoleNotFoundException`) — all
+`Tempest.Core.Identity`. `IRole`/`IRoleProvider` and `IIdentityService`
+are additive elaborations the original architecture package deferred to
+this Work Package's own implementation phase, not part of its original
+`Public Interface Catalogue.md` draft; `IIdentity`, `IPrincipal`,
+`ICurrentPrincipalAccessor`, `IPermissionEvaluator`, and `Permission`
+are implemented with zero signature deviation from that draft.
+
+**Dependencies.** None beyond Dependency Injection and (for `RoleProvider`/
+`IdentityService`) `IConfigurationProvider`, read the same way every
+other config-sourced platform service reads it.
+
+**Consumers.** `IdentitySampleModule` (real contributor and consumer,
+the eighth production sample module) — establishes a default local
+principal during its own `InitialiseAsync` and registers a command
+(`CheckSamplePermissionCommand`) demonstrating both the granted and
+fail-closed-denied paths against the same, unmodified module, depending
+on configuration. `TD-09` (plugin isolation), `TD-10` (Navigation
+ownership), and `TD-11` (Command/Navigation registration-order
+squatting) are now *resolvable* through `IPermissionEvaluator` — **none
+is retired by this Work Package**: retrofitting an enforcement call into
+`NavigationService`, Command/Navigation registration, or plugin loading
+was explicitly out of this Work Package's own scope (see `ADR-0044`).
+Future, explicitly-scoped consumers: `WP 6.3` (REST API, a hard
+dependency per `docs/releases/v0.6.0/WorkPackages.md`) and `WP 6.5`
+(Audit, for attribution).
+
+**Lifecycle.** `CurrentPrincipalAccessor` is constructed directly by
+`TempestHost` (a plain `new` — it has no constructor dependencies) and
+registered via `AddInstance` under *both* `ICurrentPrincipalAccessor`
+and its own concrete type — the same already-built instance under two
+service-type keys, so `IdentityService` (which needs write access via
+the concrete type) and every ordinary consumer (which resolves only the
+read-only interface) share one object rather than two independently-
+constructed ones. `IRoleProvider`, `IPermissionEvaluator`, and
+`IIdentityService` are ordinary, container-constructed singletons,
+registered in `TempestHost`'s existing Platform Services Registered
+block (Phase 6) — no new Host Lifecycle phase.
+
+**A genuine implementation-phase departure from the architecture
+package, disclosed rather than absorbed silently:**
+`CurrentPrincipalAccessor` is backed by a single, `lock`-protected
+mutable field, not `AsyncLocal<T>` as `Platform Service Contracts.md`
+tentatively suggested — `AsyncLocal<T>` would make a principal
+established during Module Initialisation invisible to any later,
+unrelated caller (a dispatched command, a test), which does not fit
+this release's own local-only, single-ambient-principal need. See
+`ADR-0044` for the full reasoning and the regression test that proves
+it.
+
+**ADR references.** ADR-0043 (*Identity Model Scope Is Local-Only,
+Extensible*); ADR-0044 (*`IPermissionEvaluator` Is the Single
+Authorization Enforcement Point; `CurrentPrincipalAccessor` Is Ambient,
+Not Request-Scoped*).
+
+**Academy references.** `WP 6.1` retrospective (*Permissions & Identity
+Implementation*); `docs/releases/v0.6.0/Release Architecture.md`,
+`Platform Services Overview.md`, `Public Interface Catalogue.md`,
+`Service Lifecycle.md`, `Required ADRs.md` (the architecture package
+this Work Package implemented); `Platform Service Contracts.md`,
+`Platform Service Implementation Order.md`, `Service Registration
+Matrix.md`, `Testing Strategy.md` (the Contract Review package);
+`docs/governance/Quality/Technical Debt Register.md` (`TD-09`, `TD-10`,
+`TD-11`); `docs/security/Platform Security Review v0.5.0.md` (Findings
+SEC-01, NAV-1); `docs/architecture/Command Framework Architecture.md`
+(Finding CMD-1).
+
+---
+
+## Persistence *(implemented — WP 6.4, ADR-0041)*
+
+**Responsibility.** A minimal, internal, platform-owned durable store —
+store, retrieve, delete, and enumerate string values, scoped by a
+caller-supplied `collection` name and `key`. No schema, no querying
+beyond key lookup and full-collection key enumeration, no transactions
+across multiple keys. Established as part of `WP 6.4`'s own scope
+specifically so no other platform service invents an incompatible
+storage mechanism of its own (`ADR-0041`).
+
+**Key types.** `IPersistenceStore`/`PersistenceStore`,
+`PersistenceException` and one subtype
+(`PersistenceStoreUnavailableException`) — all `Tempest.Core.Persistence`.
+Reuses `Tempest.Core.Concurrency.AsyncKeyedLock` (internal, shared with
+Settings) for per-`collection`/`key` concurrency control.
+
+**Dependencies.** Dependency Injection; `IConfigurationProvider`, read
+once at construction for the storage root path
+(`Persistence:RootPath`, defaulting to `persistence-data`).
+
+**Consumers.** Settings (`WP 6.4`, its own originating Work Package),
+via `SettingsProvider`. Audit (`WP 6.5`), via `AuditRecorder`/
+`AuditQuery` — the reuse `ADR-0041`'s own title anticipated, now
+implemented and verified: each service owns its own, distinct
+collection name (`"Settings"`, `"Audit"`), proving collection-scoping
+isolation in practice, not merely in design.
+
+**Lifecycle.** Ordinary DI-public, container-constructed singleton,
+registered in `TempestHost`'s existing Platform Services Registered
+block (Phase 6) — no new Host Lifecycle phase.
+
+**Storage.** One file per `collection`/`key` pair, under the configured
+root directory; both `collection` and `key` are percent-encoded
+(`Uri.EscapeDataString`) before becoming a path segment, so an arbitrary
+caller-supplied name can never produce an invalid or unintended
+file-system path. Every operation acquires a per-`collection`/`key`
+`AsyncKeyedLock` before touching the file system.
+
+**ADR references.** ADR-0041 (*A Shared Persistence Abstraction Serves
+Settings and Audit*).
+
+**Academy references.** `WP 6.4` retrospective (*Settings Framework
+Implementation*); `docs/releases/v0.6.0/Release Architecture.md` and
+companions (the architecture package this Work Package implemented);
+`Platform Service Contracts.md` and companions (the Contract Review
+package).
+
+---
+
+## Settings *(implemented — WP 6.4, ADR-0042)*
+
+**Responsibility.** User-changeable, runtime-mutable configuration,
+explicitly distinct from Configuration (`WP 2.5`), which is read-only,
+immutable, and loaded once at startup (`ADR-0009`, Case Study 05).
+Registers setting definitions with defaults; reads and writes current
+values; publishes `ISettingsChangedEvent` through the existing Event Bus
+on every successful write, including a write of the already-current
+value (`ADR-0042`'s own explicit default).
+
+**Key types.** `ISettingDefinition`/`SettingDefinition`,
+`ISettingsProvider`/`SettingsProvider`, `ISettingsChangedEvent`/
+`SettingsChangedEvent`, `SettingsException` and two subtypes
+(`DuplicateSettingDefinitionException`, `SettingNotFoundException`) —
+all `Tempest.Core.Settings`.
+
+**Dependencies.** Dependency Injection, Persistence (durable storage),
+Event Bus (change notification).
+
+**Consumers.** `SettingsSampleModule` (real contributor and consumer,
+the ninth production sample module) — registers a setting definition,
+subscribes to `ISettingsChangedEvent`, and registers two commands
+(get/set) demonstrating the Command Framework and Settings interacting.
+Also a real dependency of `ReportingSampleModule` (`WP 6.0`),
+`ExportImportSampleModule` (`WP 6.7`), and `LicensingSampleModule`
+(`WP 6.6`), each reading a customisable message at the calling layer.
+
+**Lifecycle.** Ordinary DI-public, container-constructed singleton,
+registered in `TempestHost`'s existing Platform Services Registered
+block (Phase 6), after Persistence and the Event Bus — no new Host
+Lifecycle phase.
+
+**Performance.** An in-memory cache sits over `IPersistenceStore`,
+invalidated only by this instance's own writes — `GetValueAsync` is a
+likely hot-path call; a cache hit never touches the file system. A
+per-key `AsyncKeyedLock` (shared implementation with Persistence)
+serialises the cache-populate-on-miss sequence against the
+write-then-cache-update sequence, for the same key, so a slow concurrent
+read can never overwrite a newer write's own cache entry with a stale
+value.
+
+**A disclosed, deliberate limitation.** No sensitive-value flag exists
+on `ISettingDefinition` in this release — every setting change is
+logged at Information level with both old and new values, unredacted.
+Named as a Future Extension Point, not a defect (`ADR-0042`).
+
+**ADR references.** ADR-0041 (Persistence, shared with Audit's future
+need), ADR-0042 (*Settings Is DI-Public and Distinct From
+Configuration*).
+
+**Academy references.** `WP 6.4` retrospective (*Settings Framework
+Implementation*); `docs/releases/v0.6.0/Release Architecture.md` and
+companions; `Platform Service Contracts.md` and companions;
+`docs/academy/05 Case Studies/` Case Study 05 (Configuration
+immutability, the distinction Settings exists to complement).
+
+---
+
+## Audit *(implemented — WP 6.5, ADR-0045)*
+
+**Responsibility.** A durable, queryable, append-only record of who did
+what, when — explicitly distinct from Logging (developer-facing, not
+guaranteed durable) and Diagnostics (a live snapshot of *current*
+state). Records an attributable action with the current principal
+resolved automatically; answers filtered queries over previously
+recorded actions. Never modifies or deletes an existing record.
+
+**Key types.** `IAuditRecord`/`AuditRecord`, `IAuditRecorder`/
+`AuditRecorder`, `IAuditQuery`/`AuditQuery`, `AuditQueryCriteria`,
+`AuditException` — all `Tempest.Core.Audit`.
+
+**Dependencies.** Dependency Injection, Persistence (durable storage,
+reused from `WP 6.4`, never a second mechanism), Identity & Permissions
+(`ICurrentPrincipalAccessor` for attribution; `IPermissionEvaluator` for
+query-gating).
+
+**Consumers.** `AuditSampleModule` (real contributor and consumer, the
+tenth production sample module) — establishes its own principal, records
+an action during its own initialisation, and registers two commands
+(record/query) demonstrating both the recording path and the
+permission-gated query path. Also a real, since-confirmed dependency of
+`ApiRequestHandler` itself (`Tempest.Core.Api`, `WP 6.3`), and of four
+further sample-module command handlers built on top of already-shipped
+platform services: `ReportingSampleModule` (`WP 6.0`),
+`ExportImportSampleModule` (`WP 6.7`), and `LicensingSampleModule`
+(`WP 6.6`). *(This entry previously read "none yet implemented" —
+corrected `WP 6.7`, as a genuine, pre-existing drift found during that
+Work Package's own repository review, unrelated to Export/Import's own
+scope: it had gone stale since `WP 6.0` first shipped a real consumer.)*
+
+**Lifecycle.** Ordinary DI-public, container-constructed singletons
+(`IAuditRecorder`, `IAuditQuery`), registered in `TempestHost`'s
+existing Platform Services Registered block (Phase 6), after
+Persistence and Identity & Permissions — no new Host Lifecycle phase.
+
+**Storage.** Every record is serialised to JSON (`System.Text.Json`,
+already used elsewhere in this codebase — `PluginManifestDiscoveryService`
+— introducing no new dependency) and stored in its own
+`IPersistenceStore` collection (`AuditRecorder.AuditCollectionName`,
+`"Audit"`), distinct from Settings' own `"Settings"` collection —
+proving Persistence's own collection-scoping isolation in practice.
+`IAuditQuery.QueryAsync` filters client-side, over
+`ListKeysAsync` plus a per-key `ReadAsync` — `IPersistenceStore` has no
+native query capability (`ADR-0041`, confirmed again here, `ADR-0045`);
+see `Technical Debt Register.md`'s `TD-12`.
+
+**A genuine implementation-phase finding, disclosed rather than
+absorbed silently:** `RecordAsync` is awaited, not literally
+fire-and-forget, so a storage failure always propagates — the
+Contract Review's own performance goal is met by keeping the write
+itself minimal (a single, append-only file write), not by discarding
+the returned `Task`. See `ADR-0045`'s own reasoning.
+
+**ADR references.** ADR-0041 (Persistence, reused not reinvented);
+ADR-0044 (the enforcement point Audit's own query-gating reuses);
+ADR-0045 (*Audit Is a Durable, Queryable, Append-Only Record, Distinct
+From Logging and Diagnostics — Recording Model, Permission Gating, and
+Persistence Sufficiency*).
+
+**Academy references.** `WP 6.5` retrospective (*Audit Framework
+Implementation*); `docs/releases/v0.6.0/Release Architecture.md` and
+companions; `Platform Service Contracts.md` and companions;
+`docs/governance/Quality/Technical Debt Register.md` (`TD-12`);
+`docs/releases/v0.6.0/Risk Register.md` (`R8`).
+
+---
+
+## Notifications *(implemented — WP 6.2, ADR-0046)*
+
+**Responsibility.** The standard platform mechanism for publishing
+user-facing and platform-generated notifications — `INotification`
+marks a published fact (mirroring `IEvent`'s own marker shape);
+`INotificationHandler<TNotification>` is the consumer-facing
+subscription contract; `INotificationDispatcher` subscribes and
+publishes, sequentially, in subscription order, isolating and logging
+(at `Warning`) every subscriber's own exception, never rethrowing it.
+Deliberately **not** a second, independent publish/subscribe
+implementation — built to mirror the Event Bus's own proven dispatch
+model exactly (`ADR-0028`/`ADR-0046`), since the two types' own,
+independently-approved generic constraints (`where TNotification :
+INotification` vs. `where TEvent : IEvent`) rule out literal
+delegation. Transient only this release — a notification is not
+retained after dispatch; no history or inbox capability exists yet.
+
+**Key types.** `INotification`, `INotificationHandler<TNotification>`,
+`INotificationDispatcher`/`NotificationDispatcher`,
+`NotificationException` — all `Tempest.Core.Notifications`, implemented
+with zero signature deviation from `Public Interface Catalogue.md`.
+`IPlatformNotification`/`PlatformNotification`/`NotificationSeverity`
+(`Information`, `Success`, `Warning`, `Error`) are additive elaborations
+this Work Package's own implementation phase introduced — "Notification
+severity" and "Notification categories" were named in this Work
+Package's own brief but never drafted as interface members;
+`IPlatformNotification` extends both `INotification` and `Events.IEvent`,
+concretely realising `INotification`'s own doc comment ("typically
+derived from... an `IEvent`") for this one general-purpose shape.
+
+**Dependencies.** Dependency Injection; `Tempest.Core.Events` (for
+`IPlatformNotification`'s own `IEvent` extension — a type-level
+relationship only, no runtime call into `IEventBus`); `Tempest.Core.Logging`
+(optional `ILogger`, the same convention every other platform service
+follows).
+
+**Consumers.** `NotificationSampleModule` (real contributor and
+consumer, the eleventh production sample module) — subscribes to
+`IPlatformNotification` during its own initialisation, registers a
+command (`PublishSampleNotificationCommand`) that publishes one on
+demand, and observes `NotificationSampleHostedService`'s own
+`StartAsync`/`StopAsync` notifications end-to-end, proving "Background
+notifications" concretely. Also a real, since-confirmed dependency of
+three further sample-module command handlers built on top of
+already-shipped platform services: `ReportingSampleModule` (`WP 6.0`),
+`ExportImportSampleModule` (`WP 6.7`), and `LicensingSampleModule`
+(`WP 6.6`) — the REST API itself (`Tempest.Core.Api`) does not consume
+Notifications directly; only the commands it happens to expose do. A
+future UI Shell remains a plausible future consumer not yet implemented.
+*(This entry previously read "none yet implemented" — corrected `WP
+6.7`, as a genuine, pre-existing drift found during that Work Package's
+own repository review, unrelated to Export/Import's own scope: it had
+gone stale since `WP 6.0` first shipped a real consumer.)*
+
+**Lifecycle.** Ordinary DI-public, container-constructed singleton
+(`INotificationDispatcher`), registered in `TempestHost`'s existing
+Platform Services Registered block (Phase 6), immediately after
+`IEventBus` — no new Host Lifecycle phase.
+
+**A genuine, first-of-its-kind hosted service, disclosed rather than
+overclaimed.** `NotificationSampleHostedService` is the codebase's
+first real, non-infrastructure `IHostedService` — every prior Work
+Package's own Background Services coverage (`WP 4.5`) proved the
+infrastructure itself but shipped with zero real consumers (`AT-07`).
+`AT-07`'s own revisit trigger names `WP 6.3` (REST API) as its intended
+retiree; this Work Package does not claim that milestone — see its own
+Platform Impact Assessment.
+
+**A genuine implementation-phase finding, disclosed rather than
+absorbed silently:** `INotificationDispatcher` dispatches by exact
+static generic type, the same design `IEventBus` already uses — a
+caller that publishes a notification typed as the concrete
+`PlatformNotification` will never be observed by a subscriber that
+subscribed against `IPlatformNotification`, since the two are different
+dictionary keys. Found and fixed against this Work Package's own sample
+consumers while writing their integration tests; documented directly on
+`IPlatformNotification`'s own remarks as calling guidance. See
+`ADR-0046`.
+
+**ADR references.** ADR-0028 (Event Bus dispatch/failure model, the
+design reused here); ADR-0046 (*Notifications Are Derived From Events,
+Not a Replacement Pub/Sub — Dispatch Model, Severity/Category
+Elaboration, and Logging Level*).
+
+**Academy references.** `WP 6.2` retrospective (*Notification
+Framework Implementation*); `docs/releases/v0.6.0/Release
+Architecture.md` and companions; `Platform Service Contracts.md` and
+companions; `docs/governance/Quality/Technical Debt Register.md`
+(`AT-07`).
+
+---
+
+## Reporting *(implemented — WP 6.0, ADR-0040)*
+
+**Responsibility.** Produces structured, formatted output from
+platform or module data via a registered definition/renderer pair.
+Registers report definitions and their renderers; dispatches a render
+request by definition Id; enumerates registered definitions. Does not
+persist generated output, does not schedule recurring generation, and
+does not itself provide a delivery mechanism — a generated report
+reaching a user is Notifications' or the REST API's own concern, not
+Reporting's (`ADR-0040`).
+
+**Key types.** `IReportDefinition`, `IReportRenderer<TDefinition>`,
+`IReportingService`/`ReportingService`, `ReportRequest`, `ReportResult`,
+`ReportingException` and two subtypes
+(`DuplicateReportDefinitionException`, `ReportDefinitionNotFoundException`)
+— all `Tempest.Core.Reporting`, implemented with zero signature
+deviation from `Public Interface Catalogue.md`.
+`IReportTemplate<TDefinition>`/`PlainTextReportTemplate<TDefinition>`
+are additive elaborations this Work Package's own implementation phase
+introduced — "Template abstraction" was named in this Work Package's
+own brief but never drafted as an interface member; entirely optional,
+`IReportingService` has no awareness of templates at all.
+
+**Dependencies.** Dependency Injection only — confirmed directly, and
+consistent with `Platform Service Implementation Order.md`'s own
+observation that "Reporting has no hard proposed-service dependency."
+
+**Consumers.** `ReportingSampleModule` (real contributor and consumer,
+the twelfth production sample module) — registers
+`SampleSummaryReportDefinition` and its own renderer, then registers a
+command (`GenerateSampleReportCommand`) whose handler checks a
+permission (Identity), generates the report (Reporting), records the
+action (Audit), and publishes a completion notice (Notifications) — see
+this Work Package's own Platform Integration Demonstration for the
+complete, per-service account. Named as a plausible future consumer for
+the REST API and any engineering module — none yet implemented.
+
+**Lifecycle.** Ordinary DI-public, container-constructed singleton,
+registered in `TempestHost`'s existing Platform Services Registered
+block (Phase 6), immediately after the Event Bus and before
+Notifications — matching `Service Registration Matrix.md`'s own
+recommended order. No new Host Lifecycle phase.
+
+**Security.** `GenerateAsync` does not itself check permissions — the
+enforcement point is the caller, mirroring how Navigation and the
+Command Framework themselves impose no authorization internally
+(`ADR-0032`, `ADR-0037`). `ReportingSampleModule`'s own command handler
+is that enforcement point, and its own published notification carries
+only a fixed, non-identifying success message — never report content —
+per Notifications' own Security Considerations for exactly this
+scenario.
+
+**A genuine implementation-phase decision, disclosed rather than
+absorbed silently:** "Export abstraction" was named in this Work
+Package's own brief but is explicitly **not** built — a dedicated
+export interface inside `Tempest.Core.Reporting` would duplicate `WP
+6.7` (Export/Import)'s own future scope and contradict this very ADR's
+own orthogonality decision. `ReportResult`'s own `ContentType`/`Content`
+shape is Reporting's own output mechanism, explicitly not guaranteed
+round-trip-safe or re-importable. See `ADR-0040`.
+
+**ADR references.** ADR-0038 (Command dispatch failure model, mirrored
+by `GenerateAsync`'s own renderer-failure propagation); ADR-0040
+(*Reporting Is DI-Public and Orthogonal to Export/Import — Template
+Abstraction, Cross-Service Integration, and Scope Boundaries*).
+
+**Academy references.** `WP 6.0` retrospective (*Reporting Framework
+Implementation*); `docs/releases/v0.6.0/Release Architecture.md` and
+companions; `Platform Service Contracts.md` and companions;
+`docs/governance/Quality/Technical Debt Register.md` (`AT-09`).
+
+---
+
+## REST API *(implemented — WP 6.3, ADR-0047/ADR-0048/ADR-0049/ADR-0052)*
+
+**Responsibility.** Lets an external HTTP client invoke platform
+capability from outside the running process. Hosts an HTTP listener;
+maps registered routes to Command Framework invocations; authorizes
+each request via Identity & Permissions before dispatch; returns a
+response reflecting the command's own `CommandResult`. Contains no
+business logic of its own — every route is a thin translation layer to
+an existing `ICommand`, per this Work Package's own Design Principles.
+
+**Key types.** `IApiEndpointRegistry`/`ApiEndpointRegistry`,
+`ApiRouteDescriptor`, `ApiException` and one subtype
+(`DuplicateApiRouteException`) — all `Tempest.Core.Api`, implemented
+with zero signature deviation from `Public Interface Catalogue.md`.
+`ApiRequestHandler` (the thin, Kestrel-independent request pipeline),
+`RestApiHostedService` (the Kestrel-backed hosted-service scaffold),
+`ApiResponse`, and `OpenApiDocumentGenerator` are additive
+implementation-phase types — the hosted-service scaffold itself was
+deliberately left undrafted in the architecture package, "pending
+`ADR-0049`'s ratification."
+
+**Dependencies.** Dependency Injection; Identity & Permissions
+(`IIdentityService`/`IPermissionEvaluator`, for per-request
+authorization); Audit (`IAuditRecorder`, for the Logging Requirement's
+own "the REST API should call `IAuditRecorder` explicitly"). Does
+**not** depend on Settings, Notifications, or Reporting directly — those
+three are consumed only at the sample-module calling layer
+(`ApiSampleModule` exposing `ReportingSampleModule`'s own command),
+exactly mirroring Reporting's own precedent of keeping cross-service
+integration outside the core service itself.
+
+**Consumers.** `ApiSampleModule` (real contributor and consumer, the
+thirteenth production sample module) — maps one route
+(`POST /api/v1/sample-report`) directly to
+`ReportingSampleModule.GenerateSampleReportCommandId`, containing zero
+business logic of its own whatsoever, the purest possible proof of this
+Work Package's own "no business logic inside controllers/endpoints"
+design principle. Also a real, since-confirmed second consumer:
+`LicensingSampleModule` (`WP 6.6`) independently maps its own route
+(`POST /api/v1/sample-capability`) to
+`CheckSampleCapabilityCommandId` — confirmed by `WP 6.8`'s own
+Consumption Matrix as the strongest available evidence that
+`IApiEndpointRegistry`'s own "any module can map a route" design
+genuinely generalises, not merely works once.
+
+**Lifecycle.** `IApiEndpointRegistry` is an ordinary DI-public,
+container-constructed Phase 6 singleton, registered immediately after
+Audit; `RestApiHostedService` is discovered and orchestrated identically
+to any other hosted service — started Phase 8.1, stopped Phase 10.1
+(`ADR-0030`), isolated by default, not critical (`ADR-0021`) — no new
+Host Lifecycle phase. Retires `AT-07` ("Zero real hosted services exist
+beyond the infrastructure") — the Work Package that trade-off's own
+revisit trigger explicitly named in advance.
+
+**Hosting.** ASP.NET Core/Kestrel, adopted via a `FrameworkReference` to
+the already-installed shared framework, confined entirely to
+`RestApiHostedService` — this platform's own DI container, Command
+Framework, and every other platform service remain entirely unchanged
+and unreplaced (`ADR-0049`). Binds to the loopback address only by
+default (`Api:Port` configuration key, default port `5080`); no TLS is
+configured this release (`TD-14`).
+
+**Security — a genuine, disclosed limitation, not a hidden one.** The
+platform's first network-facing attack surface. Identity is carried in
+an `X-Identity-Id` request header, trusted outright with no
+cryptographic verification — a mechanical extension of this release's
+own local-only identity model (`ADR-0043`) over HTTP, not a real
+authentication mechanism (`TD-13`). `ApiRequestHandler` never
+establishes the shared, ambient `ICurrentPrincipalAccessor` — a
+per-request `IPrincipal` is resolved via the pure, non-mutating
+`IIdentityService.GetPrincipal` and passed explicitly to
+`IPermissionEvaluator.HasPermission`, safe for concurrent requests by
+construction. This was empirically verified, not merely reasoned about:
+an `AsyncLocal<T>`-backed `CurrentPrincipalAccessor` was built and
+tested directly, and regressed 17 pre-existing tests — see `ADR-0052`.
+
+**A genuine implementation-phase finding, disclosed rather than
+absorbed silently:** because the REST pipeline never establishes the
+ambient current principal, a command handler relying on
+`IAuditRecorder`'s own ambient-attribution convention will record
+`"unknown"` when invoked via REST — the real caller identity is instead
+carried explicitly in the REST API's own `api.request` audit entry's
+own `Detail[CallerIdentityId]` (`TD-15`), mirroring `WP 6.5`'s own
+`Detail`-carried-attribute convention.
+
+**ADR references.** ADR-0038 (Command dispatch failure model, reused
+for renderer/handler-failure mapping); ADR-0044 (the enforcement point
+this Work Package's own permission checks reuse); ADR-0045 (the
+`Detail`-carried-attribute convention `TD-15`'s own resolution mirrors);
+ADR-0047 (*The REST API Is a Background Hosted Service*); ADR-0048
+(*REST Endpoints Dispatch Through the Existing Command Framework*);
+ADR-0049 (*Adopting ASP.NET Core/Kestrel for the REST API*); ADR-0052
+(*The REST API Resolves Identity Per-Request Without Touching the
+Ambient Current Principal*).
+
+**Academy references.** `WP 6.3` retrospective (*REST API
+Implementation*); `docs/releases/v0.6.0/Release Architecture.md` and
+companions; `Platform Service Contracts.md` and companions;
+`docs/releases/v0.6.0/Risk Register.md` (`R1`, `R2`, `R3`);
+`docs/governance/Quality/Technical Debt Register.md` (`AT-07`, retired;
+`AT-10`; `TD-04`; `TD-13`; `TD-14`; `TD-15`).
+
+---
+
+## Export/Import *(implemented — WP 6.7, ADR-0051)*
+
+**Responsibility.** The platform's own user-facing, `Stream`-based,
+portable-artifact I/O layer — exports one or more `IExportable` sources
+into a single artifact, and reads a previously exported artifact back
+into its owning service(s), rejecting an incompatible schema version
+outright rather than attempting a best-effort partial import.
+Explicitly distinct from `IPersistenceStore`, which is internal,
+platform-owned state never directly exposed to a user (`ADR-0051`).
+Does not duplicate Reporting — a `ReportResult`'s own bytes are not
+guaranteed round-trip-safe (`ADR-0040`), so Reporting output is never
+wrapped as export data.
+
+**Key types.** `IExportable`, `IExportService`/`ExportService`,
+`IImportService`/`ImportService`, `ExportImportException` and one
+approved subtype (`IncompatibleExportSchemaException`) — all
+`Tempest.Core.ExportImport`, implemented with zero signature deviation
+from `Public Interface Catalogue.md`. `IExportableKind`, `IImportable`,
+`ExportSection`, `IExportFormat`/`JsonExportFormat`,
+`IExportPayloadSerializer`/`JsonExportPayloadSerializer`, and two further
+concrete exception subtypes (`CorruptedExportArtifactException`,
+`DuplicateImportableKindException`) are additive elaborations this Work
+Package's own implementation phase introduced — "Serialization
+abstraction" and "Format abstraction" were named in this Work Package's
+own brief but never drafted as interface members; entirely optional or
+internal-only, `IExportable`/`IExportService`/`IImportService` remain
+unaware of all of them.
+
+**Dependencies.** Dependency Injection only — confirmed directly by
+`using` inspection, and consistent with `Platform Service Implementation
+Order.md`'s own observation that Export/Import has no hard
+proposed-service dependency, only a practical one (a real `IExportable`
+source worth integrating against).
+
+**Consumers.** `ExportImportSampleModule` (real contributor and
+consumer, the fourteenth production sample module) — registers two
+Settings-backed `SettingExportImportAdapter` instances (each a single
+class implementing `IExportable`, `IExportableKind`, and `IImportable`
+together) and two commands (`ExportSampleDataCommand`,
+`ImportSampleDataCommand`) whose handlers check a permission (Identity),
+export or import (Export/Import), record the action (Audit), and
+publish a completion notice (Notifications) — see this Work Package's
+own Platform Integration Demonstration for the complete, per-service
+account. Named as a plausible future consumer for Licensing and any
+engineering module.
+
+**Lifecycle.** `IExportService`/`ExportService` is an ordinary DI-public,
+container-constructed singleton, registered in `TempestHost`'s existing
+Platform Services Registered block (Phase 6), immediately after the
+REST API's own `IApiEndpointRegistry`. `ImportService` is constructed
+directly, once, and registered under both its own concrete type and
+`IImportService` — the same already-built instance under two
+service-type keys — mirroring `ADR-0044`'s own dual-registration
+precedent for `CurrentPrincipalAccessor`: a module needing
+`RegisterImportable` resolves the concrete type, while every ordinary
+consumer resolves only the read-only `IImportService` interface. No new
+Host Lifecycle phase.
+
+**Security.** `ExportAsync`/`ImportAsync` do not themselves check
+permissions — the enforcement point is the caller, mirroring how
+Reporting and the REST API themselves impose no authorization
+internally. `ExportImportSampleModule`'s own command handlers are that
+enforcement point. An exported artifact may contain sensitive data (a
+Settings export including a sensitive value) — `IExportable`
+implementations are individually responsible for redacting or refusing
+to export sensitive content; `IExportService`/`IImportService` impose no
+content-level policy of their own, mirroring how Persistence imposes
+none on what Settings/Audit choose to store.
+
+**A genuine implementation-phase decision, disclosed rather than
+absorbed silently:** `IImportService.ImportAsync`'s own approved,
+single-method shape carries no destination parameter, yet must "read...
+back into the owning service(s)" — plural — with no registration
+mechanism drafted for it. Resolved by a concrete-type-only
+`RegisterImportable` method (not part of `IImportService` itself),
+routing each artifact section to its own registered `IImportable` by
+`Kind`, validating every section's compatibility before importing any
+of them. See `ADR-0051`.
+
+**ADR references.** ADR-0044 (`CurrentPrincipalAccessor`'s own
+dual-registration precedent, reused for `ImportService`); ADR-0051
+(*Export/Import Is Orthogonal to the Internal Persistence Abstraction —
+Kind Routing, Format/Serialization Abstractions, and Scope Boundaries*).
+
+**Academy references.** `WP 6.7` retrospective (*Export/Import
+Framework Implementation*); `docs/releases/v0.6.0/Release
+Architecture.md` and companions; `Platform Service Contracts.md` and
+companions.
+
+---
+
+## Licensing *(implemented — WP 6.6, ADR-0050)*
+
+**Responsibility.** What capability is enabled, for whom, until when.
+Validates a license at Host startup, before the DI container exists;
+exposes the current license's own entitlements read-only thereafter.
+Does not itself implement any licensed feature's own gating logic
+beyond answering "is this capability enabled" — a consuming module
+decides what to do with that answer. Does not implement commercial
+policy, billing, or subscriptions — those remain outside the platform
+entirely.
+
+**Key types.** `ILicense`/`License`, `ILicenseValidator`/`LicenseValidator`,
+`LicenseValidationResult`, `ILicenseProvider`/`LicenseProvider`,
+`LicensingException` and one approved subtype
+(`LicenseValidationException`) — all `Tempest.Core.Licensing`,
+implemented with zero signature deviation from `Public Interface
+Catalogue.md`. `LicenseDto` is an additive, internal-only JSON
+deserialization shape, mirroring `PluginManifestDto`'s own precedent.
+
+**Dependencies.** `System.Text.Json` (BCL) only — confirmed directly by
+`using` inspection. `ILicenseValidator` has no constructor dependencies
+at all, deliberately a leaf, mirroring `IPlatformVersionProvider`'s own
+position — it cannot depend on anything container-constructed, since it
+runs before the container exists.
+
+**Consumers.** `LicensingSampleModule` (real contributor and consumer,
+the fifteenth production sample module) — registers a sample setting
+and a command (`CheckSampleCapabilityCommand`) whose handler checks a
+permission (Identity), checks a sample capability
+(`ILicenseProvider.HasCapability`), reads a Settings-provided message on
+success, records the outcome (Audit), and publishes a completion notice
+(Notifications) — then maps that same command to an HTTP route (REST
+API), proven by a real HTTP round trip. See this Work Package's own
+Platform Integration Demonstration for the complete, per-service
+account. Named as a plausible future consumer for any commercially
+licensed engineering module.
+
+**Lifecycle.** `ILicenseValidator` is Composition-Root-constructed,
+pre-container — `TempestHost` constructs it directly, immediately after
+`ConfigurationBuilder.Build()` returns and before the logger/sink are
+built, mirroring `PlatformVersionProvider`'s own construction-time
+placement. `ILicenseProvider` is Composition-Root-constructed from the
+already-validated `ILicense` and registered via `AddInstance` at Phase
+6, immediately after Identity & Permissions — the only proposed
+`v0.6.0` service with a non-container-registered contract. No new Host
+Lifecycle phase — both placements resolve to phases that already exist.
+
+**Failure behaviour — the one genuine architectural decision this Work
+Package resolved, not merely implemented.** `Risk Register.md`'s own
+`R5` named an open question: does every "invalid" category (missing,
+expired, malformed) warrant Host-fatal treatment? Resolved: a missing
+license file is a valid, unrestricted-but-uncapable default
+(`LicenseValidator.UnlicensedLicenseeName`, zero enabled capabilities) —
+this platform's own normal, open-source-friendly state, never
+Host-fatal. A license file that exists but is unreadable, not valid
+JSON, missing its own required `LicenseeName` field, or already
+expired, aborts Host startup entirely — Host-fatal, per `ADR-0013`'s
+existing classification, applied without modification. Proven directly:
+every one of the 24 pre-existing test files that build a real
+`TempestHost` continues to pass completely unmodified, since none of
+them has ever supplied a license file. See `ADR-0050`.
+
+**Security — a genuine, disclosed limitation, not a hidden one.** The
+license file's own contents are trusted at face value — no
+cryptographic signature or tamper-resistance verification of any kind
+(`TD-16`), extending this release's own local-trust posture (`ADR-0043`)
+to a second surface.
+
+**ADR references.** ADR-0009 (Composition Root pattern, confirmed to
+extend to a leaf validator and a wrapped provider); ADR-0013
+(platform-service-failure classification, applied here without
+modification); ADR-0023 (`PlatformVersionProvider`'s own "deliberately a
+leaf" precedent, mirrored here); ADR-0044 (the fail-closed-by-default
+precedent `HasCapability`'s own default state mirrors); ADR-0050
+(*License Validation Is a Host-Startup, Host-Fatal Gate — Except a
+Missing License File, Which Is a Valid, Unrestricted Default*).
+
+**Academy references.** `WP 6.6` retrospective (*Licensing Framework
+Implementation*); `docs/releases/v0.6.0/Release Architecture.md` and
+companions; `Platform Service Contracts.md` and companions;
+`docs/releases/v0.6.0/Risk Register.md` (`R5`);
+`docs/governance/Quality/Technical Debt Register.md` (`TD-16`, `AT-13`).
 
 ---
 

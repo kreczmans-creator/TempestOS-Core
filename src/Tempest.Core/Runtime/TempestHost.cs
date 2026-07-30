@@ -1,13 +1,22 @@
+using Tempest.Core.Api;
+using Tempest.Core.Audit;
 using Tempest.Core.BackgroundServices;
 using Tempest.Core.Commands;
 using Tempest.Core.Configuration;
 using Tempest.Core.DependencyInjection;
 using Tempest.Core.Diagnostics;
 using Tempest.Core.Events;
+using Tempest.Core.ExportImport;
+using Tempest.Core.Identity;
+using Tempest.Core.Licensing;
 using Tempest.Core.Logging;
 using Tempest.Core.Modules;
 using Tempest.Core.Navigation;
+using Tempest.Core.Notifications;
+using Tempest.Core.Persistence;
 using Tempest.Core.Plugins;
+using Tempest.Core.Reporting;
+using Tempest.Core.Settings;
 using Tempest.Core.Versioning;
 
 namespace Tempest.Core.Runtime;
@@ -59,6 +68,7 @@ public sealed class TempestHost : ITempestHost
     private readonly IEnumerable<Type>? _discoveryCandidateTypesOverride;
     private readonly string? _pluginsRootPathOverride;
     private readonly IEnumerable<Type>? _hostedServiceCandidateTypesOverride;
+    private readonly string? _licenseFilePathOverride;
     private readonly CancellationTokenSource _shutdownRequested = new();
     private readonly CancellationTokenSource _stopEscalation = new();
     private readonly TaskCompletionSource _runCompletion = new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -74,12 +84,14 @@ public sealed class TempestHost : ITempestHost
         IReadOnlyList<IConfigurationSource> configurationSources,
         IEnumerable<Type>? discoveryCandidateTypesOverride,
         string? pluginsRootPathOverride,
-        IEnumerable<Type>? hostedServiceCandidateTypesOverride)
+        IEnumerable<Type>? hostedServiceCandidateTypesOverride,
+        string? licenseFilePathOverride)
     {
         _configurationSources = configurationSources;
         _discoveryCandidateTypesOverride = discoveryCandidateTypesOverride;
         _pluginsRootPathOverride = pluginsRootPathOverride;
         _hostedServiceCandidateTypesOverride = hostedServiceCandidateTypesOverride;
+        _licenseFilePathOverride = licenseFilePathOverride;
     }
 
     /// <inheritdoc />
@@ -162,6 +174,31 @@ public sealed class TempestHost : ITempestHost
 
         var configuration = configurationBuilder.Build();
 
+        // ADR-0050: License validation runs here, before the DI container
+        // (and even the logger) exists - Configuration's own value is
+        // irrelevant to this check, since Licensing never reads
+        // IConfigurationProvider itself (a fixed, documented file-path
+        // convention, mirroring Plugin Manifest's own fixed convention).
+        // An invalid license aborts startup immediately, Host-fatal, per
+        // ADR-0013's existing platform-service-failure classification,
+        // applied here without modification. A missing license file is
+        // not itself invalid - it resolves to a valid, unrestricted-but-
+        // uncapable default (see LicenseValidator's own remarks, and
+        // ADR-0050's own resolution of Risk Register.md's R5).
+        ILicenseValidator licenseValidator = _licenseFilePathOverride is not null
+            ? new LicenseValidator(_licenseFilePathOverride)
+            : new LicenseValidator();
+
+        var licenseValidationResult = licenseValidator.Validate();
+
+        if (!licenseValidationResult.IsValid)
+        {
+            Console.Error.WriteLine($"License validation failed: {licenseValidationResult.FailureReason}");
+            throw new LicenseValidationException(licenseValidationResult.FailureReason!);
+        }
+
+        var currentLicense = licenseValidationResult.License!;
+
         ILogSink sink = new ConsoleLogSink();
         ILoggerFactory loggerFactory = new LoggerFactory(configuration, sink);
         var logger = loggerFactory.CreateLogger(LoggingServiceCollectionExtensions.DefaultLoggerCategory);
@@ -169,6 +206,9 @@ public sealed class TempestHost : ITempestHost
 
         logger.Information("Host lifecycle phase completed: Configuration Built.");
         logger.Information("Host lifecycle phase completed: Logging Built.");
+        logger.Information(
+            $"Host lifecycle phase completed: License Validated. Licensee: '{currentLicense.LicenseeName}', " +
+            $"{currentLicense.EnabledCapabilities.Count} capability(ies) enabled.");
 
         runToken.ThrowIfCancellationRequested();
 
@@ -228,10 +268,77 @@ public sealed class TempestHost : ITempestHost
         services.AddInstance(logger);
         services.AddInstance(platformVersionProvider);
         services.Singleton<IEventBus, EventBus>();
+        services.Singleton<IReportingService, ReportingService>();
+        services.Singleton<INotificationDispatcher, NotificationDispatcher>();
         services.Singleton<INavigationProvider, NavigationService>();
         services.Singleton<CommandHandlerTable>();
         services.Singleton<ICommandDispatcher, CommandDispatcher>();
         services.Singleton<ICommandRegistry, CommandRegistry>();
+
+        // ADR-0044: CurrentPrincipalAccessor is constructed directly, once,
+        // and registered under both its own concrete type and
+        // ICurrentPrincipalAccessor - the same already-built instance under
+        // two service-type keys - so IdentityService (which needs write
+        // access via the concrete type) and every ordinary consumer
+        // (which resolves only the read-only interface) share the exact
+        // same object, never two independently-constructed ones. See
+        // CurrentPrincipalAccessor's own remarks.
+        var currentPrincipalAccessor = new CurrentPrincipalAccessor();
+        services.AddInstance<ICurrentPrincipalAccessor>(currentPrincipalAccessor);
+        services.AddInstance(currentPrincipalAccessor);
+        services.Singleton<IRoleProvider, RoleProvider>();
+        services.Singleton<IPermissionEvaluator, PermissionEvaluator>();
+        services.Singleton<IIdentityService, IdentityService>();
+
+        // ADR-0050: Licensing's ILicenseProvider wraps the already-
+        // validated license from before Phase 1 - registered via
+        // AddInstance, never container-constructed, exactly like
+        // IPlatformVersionProvider and IDiagnosticsProvider below.
+        ILicenseProvider licenseProvider = new LicenseProvider(currentLicense);
+        services.AddInstance(licenseProvider);
+
+        // ADR-0041: Persistence is established here, as part of Settings'
+        // own scope, ahead of Settings' own registration so the container
+        // can resolve IPersistenceStore for SettingsProvider's constructor.
+        services.Singleton<IPersistenceStore, PersistenceStore>();
+        services.Singleton<ISettingsProvider, SettingsProvider>();
+
+        // ADR-0041/ADR-0045: Audit reuses the same IPersistenceStore
+        // Settings established, rather than introducing a second
+        // storage mechanism - registered after Persistence and Identity
+        // & Permissions, both of which it depends on.
+        services.Singleton<IAuditRecorder, AuditRecorder>();
+        services.Singleton<IAuditQuery, AuditQuery>();
+
+        // ADR-0047: the REST API's own hosted-service scaffold is
+        // registered separately, via hosted service discovery, below -
+        // IApiEndpointRegistry itself is an ordinary Phase 6 singleton,
+        // resolvable by any module wanting to map a route during its own
+        // initialisation, before the hosted service itself ever starts
+        // listening.
+        services.Singleton<IApiEndpointRegistry, ApiEndpointRegistry>();
+
+        // ADR-0051: Export/Import reads from whatever service owns the
+        // exported data (Settings, Reporting) via that service's own
+        // public interface, never IPersistenceStore directly - registered
+        // last among the ordinary Phase 6 singletons, needing nothing but
+        // Dependency Injection itself.
+        //
+        // ImportService is constructed directly, once, and registered
+        // under both its own concrete type and IImportService - the same
+        // already-built instance under two service-type keys - mirroring
+        // ADR-0044's own dual-registration precedent for
+        // CurrentPrincipalAccessor: a module needing RegisterImportable
+        // resolves the concrete type, while every ordinary consumer
+        // resolves only the read-only IImportService interface, both
+        // against the exact same object.
+        var exportFormat = new JsonExportFormat();
+        services.AddInstance<IExportFormat>(exportFormat);
+        services.Singleton<IExportService, ExportService>();
+
+        var importService = new ImportService(exportFormat, logger);
+        services.AddInstance<IImportService>(importService);
+        services.AddInstance(importService);
 
         // Composition Root pattern (ADR-0009), like Configuration/Logging/
         // PlatformVersionProvider above: DiagnosticsProvider needs references

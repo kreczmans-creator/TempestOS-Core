@@ -10,7 +10,7 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | `docs/academy/` itself; `docs/academy/Academy Index.md` (the reader-facing navigation index this register cross-checks against). |
 | **Review Frequency** | Updated whenever a new Academy article is created — in practice, every Work Package (Engineering Governance §6). |
-| **Last Reviewed** | 2026-07-28 (WP 5.4, v0.5.0 Release Candidate & Engineering Sign-Off). |
+| **Last Reviewed** | 2026-07-29 (WP 6.8, Platform Services Integration Review) — added `WP6.8-platform-services-integration-review.md`. |
 | **Related Documents** | `docs/academy/Academy Index.md`; `docs/academy/Academy Audit Report.md`; `Engineering Standards Register.md`; `Feature Register.md`. |
 | **Related ADRs** | None directly — the Academy documents ADRs, it is not itself governed by one. |
 | **Related Academy Articles** | This register's entire scope. |
@@ -57,7 +57,7 @@
 | 11 | Command Framework | WP 5.1A (new), WP 5.1B (implementation confirmed; `CommandHandlerTable` sharing finding added) |
 | 12 | Diagnostics & Composite Logging | WP 5.2 (new) |
 
-## 03 Work Packages (35 retrospectives)
+## 03 Work Packages (44 retrospectives)
 
 | Retrospective | Type |
 |---|---|
@@ -96,6 +96,15 @@
 | WP 5.2 — Diagnostics Improvements | Implementation (combined design + implementation, ADR-0039) |
 | WP 5.3 — Developer Experience Improvements | Implementation (scaffolding/tooling, no preceding architecture phase) |
 | WP 5.4 — v0.5.0 Release Candidate & Engineering Sign-Off | Release verification/sign-off — not a feature Work Package; a departure from the standard 13-section template, disclosed in its own retrospective's "What This Document Is" |
+| WP 6.1 — Permissions & Identity Implementation | Implementation (combined design + implementation, ADR-0043/0044 — implemented directly against the already-approved `v0.6.0` architecture and Contract Review packages, no separate architecture-phase retrospective) |
+| WP 6.4 — Settings Framework Implementation | Implementation (combined design + implementation, ADR-0041/0042 — implemented directly against the already-approved `v0.6.0` architecture and Contract Review packages, ahead of `WP 6.0`–`WP 6.3` per `Platform Service Implementation Order.md`) |
+| WP 6.5 — Audit Framework Implementation | Implementation (combined design + implementation, ADR-0045 — reuses `WP 6.4`'s own Persistence abstraction, validated as sufficient without speculative extension) |
+| WP 6.2 — Notification Framework Implementation | Implementation (combined design + implementation, ADR-0046 — built on the existing Event Bus's own proven dispatch model rather than a second, parallel publish/subscribe implementation) |
+| WP 6.0 — Reporting Framework Implementation | Implementation (combined design + implementation, ADR-0040 — orthogonal to Export/Import; first of the five implemented `v0.6.0` Work Packages to match its own nominal numeric position) |
+| WP 6.3 — REST API Implementation | Implementation (combined design + implementation, ADR-0047/0048/0049/0052 — this platform's first substantial pre-built framework dependency, first genuinely concurrent per-request scenario, resolved without modifying `WP 6.1`'s own already-shipped `CurrentPrincipalAccessor`) |
+| WP 6.7 — Export/Import Framework Implementation | Implementation (combined design + implementation, ADR-0051 — completes the `WP 6.0` orthogonality decision; resolves the approved contract's own multi-destination-import gap via a `Kind`-routed, dual-registered `ImportService`, reusing `WP 6.1`'s own `CurrentPrincipalAccessor` registration pattern) |
+| WP 6.6 — Licensing Framework Implementation | Implementation (combined design + implementation, ADR-0050 — the release's final production implementation Work Package; resolves `Risk Register.md`'s own `R5`, a missing license file is a valid, unrestricted default, never Host-fatal, while a broken one is) |
+| WP 6.8 — Platform Services Integration Review & Release Certification | Closing certification review — mirrors `WP 5.4`'s own whole-release format (What Was Achieved, Architectural Lessons, Implementation Lessons, Repository Maturity, Recommendations, Key Takeaways), not the standard 13-section per-feature template; no production code written |
 
 **Note.** `WP 4.4C` produced no code and no separate retrospective — its
 story is told inside the `WP 4.4` architecture retrospective's own
@@ -141,18 +150,22 @@ added `Engineering Lifecycle.md`).
 | `Contributor Learning Path.md` | Repository-wide onboarding sequence for a new contributor, added `WP 4.5B` |
 
 **Total: 1 (Introduction) + 11 (Engineering Principles) + 12 (Runtime
-Architecture) + 35 (Work Packages) + 4 (Design Patterns) + 5 (Case
-Studies) + 5 (Engineering Standards) + 4 (top-level meta) = 77 files
+Architecture) + 44 (Work Packages) + 4 (Design Patterns) + 5 (Case
+Studies) + 5 (Engineering Standards) + 4 (top-level meta) = 86 files
 under `docs/academy/` — re-verified by direct `find` count against every
-subfolder individually, not just the grand total, during `WP 5.4`'s own
-repository review. **Correction, `WP 5.4`**: the "03 Work Packages" count
-had read "33" (`WP 5.2`) then "34" (`WP 5.3`) while the section's own
-table already listed 34 and then 35 rows respectively — the stated count
-had undercounted its own table by one for at least two consecutive Work
-Packages, and the "76" grand total inherited the same undercount rather
-than being independently re-derived. Both figures are now re-verified
-directly against the real file system, not carried forward from the
-previous register's own arithmetic.**
+subfolder individually (`WP 6.1`, `WP 6.4`, `WP 6.5`, `WP 6.2`, `WP
+6.0`, `WP 6.3`, `WP 6.7`, `WP 6.6`, `WP 6.8`), not just the grand total,
+continuing the standing practice `WP 5.4`'s own repository review
+recommended.
+**Correction, `WP
+5.4`**: the "03 Work Packages" count had read "33" (`WP 5.2`) then "34"
+(`WP 5.3`) while the section's own table already listed 34 and then 35
+rows respectively — the stated count had undercounted its own table by
+one for at least two consecutive Work Packages, and the "76" grand
+total inherited the same undercount rather than being independently
+re-derived. Both figures are now re-verified directly against the real
+file system, not carried forward from the previous register's own
+arithmetic.**
 
 ## Governance Maintenance Check (Engineering Governance §6)
 

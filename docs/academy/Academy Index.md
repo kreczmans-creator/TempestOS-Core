@@ -196,6 +196,136 @@ outright and re-scopes `TD-01` forward again.
 - ADR-0009 (Composition Root, reused), ADR-0017 (Host-owned collaborators never DI-public, the boundary this design respects), ADR-0034 (the `null`/empty-before-ready convention this design reuses), ADR-0039 (this Work Package's own decision).
 - See also [Navigation Architecture](02%20Runtime%20Architecture/09-navigation-architecture.md) and [Shell & Application Composition](02%20Runtime%20Architecture/10-shell-and-application-composition.md) for `ITempestHost.Services`'s own precedent for the "not yet available" convention this design reuses.
 
+### Identity & Permissions
+
+Implemented (`WP 6.1`, `ADR-0043`, `ADR-0044`) — `Tempest.Core.Identity`:
+a local-only identity model (`IIdentity`/`IPrincipal`), config-sourced
+roles (`IRole`/`IRoleProvider`), an identity-resolution service
+(`IIdentityService`), and a single authorization enforcement point
+(`IPermissionEvaluator`). The platform's first authorization concept —
+`TD-09`/`TD-10`/`TD-11` are now resolvable through it, though none is
+retired by this Work Package itself.
+
+- [WP 6.1 — Permissions & Identity Implementation](03%20Work%20Packages/WP6.1-permissions-and-identity-implementation.md) — implemented directly against the already-approved `v0.6.0` architecture and Contract Review packages, including the `AsyncLocal<T>`-vs-ambient-field finding (`ADR-0044`) and the honest disclosure that `TD-09`/`TD-10`/`TD-11` remain Open.
+- `docs/releases/v0.6.0/Release Architecture.md` and companions — the architecture package this Work Package implemented.
+- ADR-0043 (Identity Model Scope Is Local-Only, Extensible), ADR-0044 (`IPermissionEvaluator` Is the Single Authorization Enforcement Point; `CurrentPrincipalAccessor` Is Ambient, Not Request-Scoped).
+
+### Persistence and Settings
+
+Implemented (`WP 6.4`, `ADR-0041`, `ADR-0042`) — `Tempest.Core.Persistence`:
+a minimal, file-backed key/value store established as part of Settings'
+own scope; `Tempest.Core.Settings`: user-changeable, runtime-mutable
+configuration, explicitly distinct from Configuration, with an
+in-memory cache and `ISettingsChangedEvent` published through the
+existing Event Bus.
+
+- [WP 6.4 — Settings Framework Implementation](03%20Work%20Packages/WP6.4-settings-framework-implementation.md) — implemented directly against the already-approved `v0.6.0` architecture and Contract Review packages, including the shared-Persistence-abstraction ratification (`ADR-0041`) and the deliberate choice not to add a sensitive-value flag to an approved interface (`ADR-0042`).
+- ADR-0041 (A Shared Persistence Abstraction Serves Settings and Audit), ADR-0042 (Settings Is DI-Public and Distinct From Configuration).
+
+### Audit
+
+Implemented (`WP 6.5`, `ADR-0045`) — `Tempest.Core.Audit`: a durable,
+queryable, append-only record of who did what, when, explicitly
+distinct from Logging and Diagnostics. Reuses the Persistence
+abstraction `WP 6.4` established rather than introducing a second
+storage mechanism; `IAuditQuery` is permission-gated through the same
+enforcement point Identity & Permissions established (`ADR-0044`).
+
+- [WP 6.5 — Audit Framework Implementation](03%20Work%20Packages/WP6.5-audit-framework-implementation.md) — implemented directly against the already-approved architecture and Contract Review packages, including the recording-model/permission-gating/Persistence-sufficiency decisions (`ADR-0045`) and a genuine, disclosed engineering-review finding: a premature-resource-disposal bug in two prior Work Packages' own Host-registration tests.
+- ADR-0045 (Audit Is a Durable, Queryable, Append-Only Record, Distinct From Logging and Diagnostics — Recording Model, Permission Gating, and Persistence Sufficiency).
+
+### Notifications
+
+Implemented (`WP 6.2`, `ADR-0046`) — `Tempest.Core.Notifications`: the
+standard platform mechanism for publishing user-facing and
+platform-generated notifications, built on top of the existing Event
+Bus's own proven dispatch model rather than a second, parallel
+publish/subscribe implementation. Additive
+`IPlatformNotification`/`NotificationSeverity`/`Category` fill the
+severity/category gap the original interface draft never gave members.
+Transient only this release; an isolated subscriber failure is logged
+at `Warning`, a deliberate departure from the Event Bus's own `Error`
+convention.
+
+- [WP 6.2 — Notification Framework Implementation](03%20Work%20Packages/WP6.2-notification-framework-implementation.md) — implemented directly against the already-approved architecture and Contract Review packages, including the genuine C# generic-constraint impossibility that prevented literal delegation to `IEventBus` (`ADR-0046`) and a genuine, disclosed engineering-review finding: an exact-static-type-dispatch defect in this Work Package's own sample consumers.
+- ADR-0046 (Notifications Are Derived From Events, Not a Replacement Pub/Sub — Dispatch Model, Severity/Category Elaboration, and Logging Level).
+
+### Reporting
+
+Implemented (`WP 6.0`, `ADR-0040`) — `Tempest.Core.Reporting`: the
+single reporting engine every future module can depend on, registered
+as an ordinary DI-public singleton with no permission-gating of its own
+(the caller enforces, mirroring Navigation/Command Framework). Additive
+`IReportTemplate<TDefinition>`/`PlainTextReportTemplate<TDefinition>`
+separate a renderer's own data-gathering from layout/rendering.
+Deliberately orthogonal to Export/Import (`WP 6.7`, now implemented,
+`ADR-0051`) — no export interface was built inside Reporting.
+Cross-service
+integration (Identity, Settings, Audit, Notifications) is demonstrated
+entirely at the sample module's own calling layer.
+
+- [WP 6.0 — Reporting Framework Implementation](03%20Work%20Packages/WP6.0-reporting-framework-implementation.md) — implemented directly against the already-approved architecture and Contract Review packages, including the additive Template Strategy elaboration (`ADR-0040`) and a dedicated Platform Integration Demonstration assessing interactions with Identity, Settings, Persistence, Audit, and Notifications.
+- ADR-0040 (Reporting Is DI-Public and Orthogonal to Export/Import — Template Abstraction, Cross-Service Integration, and Scope Boundaries).
+
+### REST API
+
+Implemented (`WP 6.3`, `ADR-0047`/`ADR-0048`/`ADR-0049`/`ADR-0052`) —
+`Tempest.Core.Api`: lets an external HTTP client invoke platform
+capability, hosted on ASP.NET Core/Kestrel confined to one type,
+dispatching every route through the existing, unmodified Command
+Framework with zero business logic of its own. This platform's first
+genuinely concurrent, per-request scenario is resolved without touching
+`CurrentPrincipalAccessor`'s own already-shipped ambient design — a
+decision verified empirically (an `AsyncLocal<T>` alternative was built
+and tested, and regressed 17 pre-existing tests) rather than reasoned
+about alone. No real authentication exists this release — a disclosed,
+deliberate limitation.
+
+- [WP 6.3 — REST API Implementation](03%20Work%20Packages/WP6.3-rest-api-implementation.md) — implemented directly against the already-approved architecture and Contract Review packages, including the empirically-verified identity-resolution decision (`ADR-0052`) and a dedicated Platform Integration Demonstration.
+- ADR-0047 (The REST API Is a Background Hosted Service), ADR-0048 (REST Endpoints Dispatch Through the Existing Command Framework), ADR-0049 (Adopting ASP.NET Core/Kestrel for the REST API), ADR-0052 (The REST API Resolves Identity Per-Request Without Touching the Ambient Current Principal — Empirically Verified).
+
+### Export/Import
+
+Implemented (`WP 6.7`, `ADR-0051`) — `Tempest.Core.ExportImport`: a
+user-facing, `Stream`-based, portable-artifact I/O layer, explicitly
+distinct from the internal `IPersistenceStore` abstraction. Additive
+`IExportableKind`/`IImportable` route a multi-section artifact back to
+the correct owning service by `Kind`, registered with `ImportService`'s
+own concrete type — dual-registered under both that type and
+`IImportService`, mirroring `ADR-0044`'s own `CurrentPrincipalAccessor`
+precedent. Separate, optional `IExportFormat`/`JsonExportFormat`
+(artifact framing) and `IExportPayloadSerializer`/
+`JsonExportPayloadSerializer` (payload serialization) abstractions fill
+the brief's own named scope without touching any approved interface.
+Every section's compatibility is validated before any section is
+imported — no best-effort partial import. Cross-service integration
+(Identity, Settings, Audit, Notifications) is demonstrated entirely at
+the sample module's own calling layer; Persistence and Reporting are
+both deliberately not consumed.
+
+- [WP 6.7 — Export/Import Framework Implementation](03%20Work%20Packages/WP6.7-export-import-implementation.md) — implemented directly against the already-approved architecture and Contract Review packages, including the additive Kind-routing/Format/Serialization elaborations (`ADR-0051`) and a dedicated Platform Integration Demonstration.
+- ADR-0051 (Export/Import Is Orthogonal to the Internal Persistence Abstraction — Kind Routing, Format/Serialization Abstractions, and Scope Boundaries).
+
+### Licensing
+
+Implemented (`WP 6.6`, `ADR-0050`) — `Tempest.Core.Licensing`: what
+capability is enabled, for whom, until when — exposes capability only,
+never commercial policy. `ILicenseValidator` runs before the DI
+container exists, deliberately a leaf with no constructor dependencies,
+mirroring `PlatformVersionProvider`'s own position; an invalid license
+(unreadable, malformed, missing its own required field, or expired)
+aborts Host startup, Host-fatal, per `ADR-0013`. A **missing** license
+file is explicitly not invalid — it resolves to a valid,
+unrestricted-but-uncapable default, this platform's own normal,
+open-source-friendly state, proven not to regress any of the 24
+pre-existing tests that build a real `TempestHost`. `ILicenseProvider`
+wraps the already-validated license and is registered via `AddInstance`
+at Phase 6. License file contents are trusted at face value — no
+cryptographic signature verification, a disclosed limitation.
+
+- [WP 6.6 — Licensing Framework Implementation](03%20Work%20Packages/WP6.6-licensing-framework-implementation.md) — implemented directly against the already-approved architecture and Contract Review packages, including the missing-file-vs-broken-file Host-fatal resolution (`ADR-0050`) and a dedicated Platform Integration Demonstration.
+- ADR-0050 (License Validation Is a Host-Startup, Host-Fatal Gate — Except a Missing License File, Which Is a Valid, Unrestricted Default).
+
 ## Design Patterns
 
 Recurring structural patterns TempestOS actually uses, explained in terms
@@ -281,8 +411,22 @@ whatever you're about to change, before you change it.
 - [WP 5.4 — v0.5.0 Release Candidate & Engineering Sign-Off](03%20Work%20Packages/WP5.4-v0.5.0-release-candidate-and-engineering-sign-off.md) — the release-closing verification pass; not a feature Work Package. See also `docs/releases/v0.5.0.md`, `docs/releases/v0.5.0/CHANGELOG.md`, and `docs/releases/v0.5.0/Release Notes.md`.
 
 `docs/releases/v0.5.0/WorkPackages.md`'s own Developer Experience phase
-is complete and `v0.5.0` is a Release Candidate — see `PROJECT_STATUS.md`
-for current status and whether Product Approval has cut the release.
+is complete and `v0.5.0` is released.
+
+**Platform Services (v0.6.0, complete — CERTIFIED WITH ACCEPTED TECHNICAL DEBT):**
+
+- [WP 6.1 — Permissions & Identity Implementation](03%20Work%20Packages/WP6.1-permissions-and-identity-implementation.md) — implemented directly against the already-approved architecture and Contract Review packages; no separate architecture-phase retrospective, per direct instruction.
+- [WP 6.4 — Settings Framework Implementation](03%20Work%20Packages/WP6.4-settings-framework-implementation.md) — implemented ahead of `WP 6.0`–`WP 6.3` per `Platform Service Implementation Order.md`'s own recommendation; establishes the shared Persistence abstraction as part of its own scope.
+- [WP 6.5 — Audit Framework Implementation](03%20Work%20Packages/WP6.5-audit-framework-implementation.md) — implemented per the same recommendation; reuses `WP 6.4`'s own Persistence abstraction and validates it as sufficient, without extending it speculatively.
+- [WP 6.2 — Notification Framework Implementation](03%20Work%20Packages/WP6.2-notification-framework-implementation.md) — implemented per the same recommendation; builds on the existing Event Bus's own proven dispatch model rather than a second, parallel publish/subscribe implementation.
+- [WP 6.0 — Reporting Framework Implementation](03%20Work%20Packages/WP6.0-reporting-framework-implementation.md) — the first of `v0.6.0`'s implemented Work Packages to match its own nominal numeric position; orthogonal to `WP 6.7` (Export/Import).
+- [WP 6.3 — REST API Implementation](03%20Work%20Packages/WP6.3-rest-api-implementation.md) — this platform's first substantial dependency on a pre-built framework component (ASP.NET Core/Kestrel) and first genuinely concurrent, per-request scenario, resolved without modifying `WP 6.1`'s own already-shipped `CurrentPrincipalAccessor`.
+- [WP 6.7 — Export/Import Framework Implementation](03%20Work%20Packages/WP6.7-export-import-implementation.md) — completes the orthogonality `WP 6.0` anticipated; resolves the approved contract's own multi-destination-import gap via a `Kind`-routed, dual-registered `ImportService`, reusing `WP 6.1`'s own `CurrentPrincipalAccessor` registration pattern.
+- [WP 6.6 — Licensing Framework Implementation](03%20Work%20Packages/WP6.6-licensing-framework-implementation.md) — the release's final production implementation Work Package; resolves `Risk Register.md`'s own `R5` (a missing license file is a valid, unrestricted default, never Host-fatal; a broken one is), proven not to regress any of the 24 pre-existing tests that build a real `TempestHost`.
+- [WP 6.8 — Platform Services Integration Review & Release Certification](03%20Work%20Packages/WP6.8-platform-services-integration-review.md) — the release's closing certification review, not a feature Work Package; fully backfilled three governance registers stale since `WP 5.2`, closed two silently-stale risks with fresh evidence, and recommended `CERTIFIED WITH ACCEPTED TECHNICAL DEBT`.
+
+See `PROJECT_STATUS.md` for current status and `docs/releases/v0.6.0/
+WorkPackages.md` for the full, nine-Work-Package plan.
 
 ## Reference Material
 

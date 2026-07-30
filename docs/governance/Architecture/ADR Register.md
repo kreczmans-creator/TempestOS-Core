@@ -7,12 +7,12 @@
 | **Register Name** | ADR Register |
 | **Purpose** | The complete, authoritative index of every Architecture Decision Record TempestOS has produced — what each one decided, which Work Package produced it, and whether it remains in force. |
 | **Scope** | Every file in `docs/adr/`, from `ADR-0001` through the highest-numbered ADR present at time of review. |
-| **Owner** | Project Maintainer — sole contributor of record across all 48 repository commits (git author `kreczmans-creator`; no separate architecture-review board or team structure exists as of this baseline). |
+| **Owner** | Project Maintainer — sole contributor of record across all 77 repository commits (git author `kreczmans-creator`; no separate architecture-review board or team structure exists as of this baseline). |
 | **Source of Truth** | `docs/adr/` (the ADR files themselves). This register is a governance index over that source, not a replacement for it — the full Context/Decision/Consequences reasoning lives only in each ADR file. |
 | **Review Frequency** | Updated whenever a new ADR is created, superseded, or reversed (Engineering Governance §5) — in practice, once per Work Package that meets the §5 ADR criteria. |
-| **Last Reviewed** | 2026-07-28 (WP 5.2, Diagnostics Improvements). |
-| **Related Documents** | `docs/academy/06 Engineering Standards/Engineering Governance.md` (§5, ADR Creation Rules); `Decision Register.md`; `Rejected Designs Register.md`; `Traceability Matrix.md`. |
-| **Related ADRs** | All 39 — this register's entire subject matter. |
+| **Last Reviewed** | 2026-07-29 (WP 6.6, Licensing). |
+| **Related Documents** | `docs/academy/06 Engineering Standards/Engineering Governance.md` (§5, ADR Creation Rules); `Decision Register.md`; `Rejected Designs Register.md`; `Traceability Matrix.md`; `docs/releases/v0.6.0/Required ADRs.md`. |
+| **Related ADRs** | All 52 — this register's entire subject matter. |
 | **Related Academy Articles** | Every Work Package retrospective under `docs/academy/03 Work Packages/` cites the ADR(s) it produced or realised; see each retrospective's own "ADR references" or "Architectural Principles" section. |
 | **Coverage Status** | Complete — every ADR file present in `docs/adr/` at time of review is listed below. |
 
@@ -69,18 +69,46 @@ line, verified directly.
 | ADR-0037 | Commands Register Imperatively, in Two Parts — a Type-Keyed Handler and an Id-Keyed Descriptor | Accepted | WP 5.1A (Command Framework Architecture) | 2026-07-28 | Verified |
 | ADR-0038 | Command Dispatch Propagates Handler Exceptions to the Caller, Diverging Deliberately from the Event Bus's Per-Subscriber Isolation | Accepted | WP 5.1A (Command Framework Architecture) | 2026-07-28 | Verified |
 | ADR-0039 | Diagnostics Is a DI-Public, Lazily-Projected Read-Only Service Over Host-Owned Lifecycle State | Accepted | WP 5.2 (Diagnostics Improvements) | 2026-07-28 | Verified |
+| ADR-0040 | Reporting Is DI-Public and Orthogonal to Export/Import — Template Abstraction, Cross-Service Integration, and Scope Boundaries | Accepted | WP 6.0 (Reporting Framework) | 2026-07-29 | Verified |
+| ADR-0041 | A Shared Persistence Abstraction Serves Settings and Audit | Accepted | WP 6.4 (Settings Framework) | 2026-07-29 | Verified |
+| ADR-0042 | Settings Is DI-Public and Distinct From Configuration | Accepted | WP 6.4 (Settings Framework) | 2026-07-29 | Verified |
+| ADR-0043 | Identity Model Scope Is Local-Only, Extensible | Accepted | WP 6.1 (Permissions & Identity) | 2026-07-29 | Verified |
+| ADR-0044 | `IPermissionEvaluator` Is the Single Authorization Enforcement Point; `CurrentPrincipalAccessor` Is Ambient, Not Request-Scoped | Accepted | WP 6.1 (Permissions & Identity) | 2026-07-29 | Verified |
+| ADR-0045 | Audit Is a Durable, Queryable, Append-Only Record, Distinct From Logging and Diagnostics — Recording Model, Permission Gating, and Persistence Sufficiency | Accepted | WP 6.5 (Audit Framework) | 2026-07-29 | Verified |
+| ADR-0046 | Notifications Are Derived From Events, Not a Replacement Pub/Sub — Dispatch Model, Severity/Category Elaboration, and Logging Level | Accepted | WP 6.2 (Notification Framework) | 2026-07-29 | Verified |
+| ADR-0047 | The REST API Is a Background Hosted Service | Accepted | WP 6.3 (REST API) | 2026-07-29 | Verified |
+| ADR-0048 | REST Endpoints Dispatch Through the Existing Command Framework | Accepted | WP 6.3 (REST API) | 2026-07-29 | Verified |
+| ADR-0049 | Adopting ASP.NET Core/Kestrel for the REST API | Accepted | WP 6.3 (REST API) | 2026-07-29 | Verified |
+| ADR-0050 | License Validation Is a Host-Startup, Host-Fatal Gate — Except a Missing License File, Which Is a Valid, Unrestricted Default | Accepted | WP 6.6 (Licensing Framework) | 2026-07-29 | Verified |
+| ADR-0051 | Export/Import Is Orthogonal to the Internal Persistence Abstraction — Kind Routing, Format/Serialization Abstractions, and Scope Boundaries | Accepted | WP 6.7 (Export/Import) | 2026-07-29 | Verified |
+| ADR-0052 | The REST API Resolves Identity Per-Request Without Touching the Ambient Current Principal — Empirically Verified | Accepted | WP 6.3 (REST API) | 2026-07-29 | Verified |
 
-**Total: 39 ADRs, all Accepted, none superseded or reversed (Verified — no
+**Total: 52 ADRs, all Accepted, none superseded or reversed (Verified — no
 ADR file in `docs/adr/` carries a Superseded/Deprecated/Rejected status
 line).**
 
 ## Numbering Integrity
 
-Sequential, `ADR-0001` through `ADR-0039`, no gaps, no reused numbers —
-Verified by direct enumeration of `docs/adr/`. Per Engineering Governance
-§5, a superseded ADR would be marked as such in its own Status section
-with a new ADR created referencing it, rather than renumbered or deleted;
-no such case exists yet in this repository.
+Sequential and complete, `ADR-0001` through `ADR-0052`, with no gaps
+at all — the last remaining reserved number (`ADR-0050`) is now filled.
+`docs/releases/v0.6.0/Required ADRs.md` reserved `ADR-0040` through
+`ADR-0051` in advance, as a catalogue of anticipated decisions, one
+range per `v0.6.0` Work Package, before any of those Work Packages began
+implementation. `WP 6.1`, `WP 6.4`, `WP 6.5`, `WP 6.2`, `WP 6.0`, `WP
+6.3`, `WP 6.7`, and now `WP 6.6` are all eight of those Work Packages,
+each having now implemented; their own reserved numbers
+(`ADR-0040`–`ADR-0051`) are now real, Accepted files. `ADR-0052` is new,
+genuinely implementation-driven — not anticipated by `Required ADRs.md`
+at all — documenting a decision `WP 6.3`'s own brief authorised ("if
+deviation is required... produce the appropriate ADR"): identity
+resolution and audit attribution for the REST API, resolved without
+touching `CurrentPrincipalAccessor`'s own already-shipped design (see
+that ADR's own Context for the empirical verification behind this).
+Verified by direct enumeration of `docs/adr/` cross-checked against
+that table. Per Engineering Governance §5, a superseded ADR would be
+marked as such in its own Status section with a new ADR created
+referencing it, rather than renumbered or deleted; no such case exists
+yet in this repository.
 
 ## Cross-Reference Check
 

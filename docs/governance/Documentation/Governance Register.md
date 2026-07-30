@@ -6,13 +6,13 @@
 |---|---|
 | **Register Name** | Governance Register |
 | **Purpose** | Tracks, per Work Package, whether Engineering Governance's own obligations (§5 ADR criteria, §6 Academy maintenance, §10 Rejected Designs) were actually met — the compliance record, distinct from the Decision Register's record of *what* was decided. |
-| **Scope** | Every Work Package from `7514b9d` (first Claude-authored commit) through `WP 5.3`. |
+| **Scope** | Every Work Package from `7514b9d` (first Claude-authored commit) through `WP 6.8`. |
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | Git history (`git log`); `docs/academy/06 Engineering Standards/Engineering Governance.md`; each Work Package's own retrospective. |
 | **Review Frequency** | Updated at the end of every Work Package. |
-| **Last Reviewed** | 2026-07-28 (WP 5.3, Developer Experience Improvements) — backfilled four Work Packages (`WP 5.0S`, `WP 5.1A`, `WP 5.1B`, `WP 5.2`) missing from this register's own Compliance Matrix since `WP 5.0D`; see Findings. |
+| **Last Reviewed** | 2026-07-29 (WP 6.8, Platform Services Integration Review) — backfilled all nine `v0.6.0` Work Packages (`WP 6.0` through `WP 6.8`), missing from this register's own Compliance Matrix since `WP 5.3` — a genuine, previously-undisclosed governance-documentation drift found during this Work Package's own closing review, not flagged by any prior Work Package; see Findings. |
 | **Related Documents** | `Decision Register.md`; `ADR Register.md`; `Rejected Designs Register.md`; `Academy Register.md`; `Feature Register.md`. |
-| **Related ADRs** | All 39 — this register verifies each one's originating Work Package actually followed §5. |
+| **Related ADRs** | All 52 — this register verifies each one's originating Work Package actually followed §5. |
 | **Related Academy Articles** | `docs/academy/06 Engineering Standards/Engineering Governance.md`. |
 | **Coverage Status** | Complete. |
 
@@ -66,14 +66,39 @@ records an explicit judgement, never an omission.
 | WP 5.2 — Diagnostics Improvements | `a0520d5` | ADR-0039 | RD-0042–RD-0044 | Yes |
 | WP 5.3 — Developer Experience Improvements | `10c5b14` | — (RD-0045 only; no ADR met §5's criteria) | RD-0045 | Yes |
 | WP 5.4 — v0.5.0 Release Candidate & Engineering Sign-Off | `d30e286` | — (verification only; no new ADR) | — | Yes — deliberately shaped around what a release-verification retrospective actually needs, not the standard 13-section template (disclosed in that document's own "What This Document Is") |
+| WP 6.1 — Permissions & Identity | `c8c9ced` | ADR-0043, ADR-0044 | — (alternatives recorded within the ADRs themselves) | Yes |
+| WP 6.4 — Settings Framework | `7e13af7` | ADR-0041, ADR-0042 | — | Yes |
+| WP 6.5 — Audit Framework | `66b1cf1` | ADR-0045 | — | Yes |
+| WP 6.2 — Notification Framework | `f5db8d6` | ADR-0046 | — | Yes |
+| WP 6.0 — Reporting Framework | `2178207` | ADR-0040 | — | Yes |
+| WP 6.3 — REST API | `08cb844` | ADR-0047, ADR-0048, ADR-0049, ADR-0052 | — | Yes |
+| WP 6.7 — Export/Import Framework | `4283469` | ADR-0051 | — | Yes |
+| WP 6.6 — Licensing Framework | `a940e0f` | ADR-0050 | — | Yes |
+| WP 6.8 — Platform Services Integration Review & Release Certification | *(this commit)* | — (certification review; no architectural decision made, none required) | — | Yes — deliberately shaped around a whole-release verification pass, not the standard 13-section template, mirroring `WP 5.4`'s own precedent |
 
-**Total: 38 Work Packages tracked, plus `v0.4.0` Release Engineering,
-100% Academy
-retrospective compliance for every Work Package that required one
-(housekeeping correctly excepted).**
+**Total: 47 Work Packages tracked, plus `v0.4.0` Release Engineering,
+100% Academy retrospective compliance for every Work Package that
+required one (housekeeping correctly excepted).**
 
 ## Findings
 
+- **Repository review correction (`WP 6.8`).** This register's own
+  Compliance Matrix had not been updated since `WP 5.3` — all nine
+  `v0.6.0` Work Packages (`WP 6.0` through `WP 6.8`) were missing
+  entirely, a nine-Work-Package gap larger than the four-Work-Package
+  gap `WP 5.3` itself found and fixed in this same register. None of
+  the eight feature Work Packages' own repository reviews caught this,
+  despite six of them finding and fixing other governance drift
+  elsewhere during this same release (`Platform Service Map.md`,
+  `Hosted Services Register.md`, `Interface Register.md`/`Dependency
+  Injection Register.md`/`Module Register.md`) — this specific register
+  was never re-opened by any of them. All nine rows backfilled here,
+  verified directly against `git log` and each Work Package's own ADR
+  Register entry; no discrepancy found once complete. This is now the
+  second time this exact register has gone stale for several
+  consecutive Work Packages before a later, dedicated review caught it
+  — see `WP6.8 Platform Certification Report.md`'s own discussion of
+  `Risk Register.md`'s `R6` for the standing pattern this confirms.
 - **Repository review correction (`WP 5.3`).** This register's own
   Compliance Matrix had not been updated since `WP 5.0D` — four
   completed Work Packages (`WP 5.0S`, `WP 5.1A`, `WP 5.1B`, `WP 5.2`)

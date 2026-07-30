@@ -10,11 +10,11 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | `src/Samples/Tempest.Samples/`; `docs/architecture/Sample Module Architecture.md`. |
 | **Review Frequency** | Updated whenever a new production module is added anywhere under `src/`. |
-| **Last Reviewed** | 2026-07-28 (WP 5.2, Diagnostics Improvements). |
+| **Last Reviewed** | 2026-07-29 (WP 6.8, Platform Services Integration Review) — full backfill performed; every production module is now listed, closing the gap `WP 6.7` first disclosed and `WP 6.6` left in place. |
 | **Related Documents** | `docs/architecture/Sample Module Architecture.md`; `Platform Services Register.md`; `Event Catalogue.md`. |
-| **Related ADRs** | ADR-0001 through ADR-0004 (module identity, lifecycle, disposal), ADR-0027 (`ModuleMetadataAttribute`), ADR-0036–ADR-0038. |
+| **Related ADRs** | ADR-0001 through ADR-0004 (module identity, lifecycle, disposal), ADR-0027 (`ModuleMetadataAttribute`), ADR-0036–ADR-0038, ADR-0040–ADR-0052. |
 | **Related Academy Articles** | `docs/academy/02 Runtime Architecture/03-building-a-module.md`; `04-building-an-event-driven-module.md`; `docs/academy/03 Work Packages/WP4.3-sample-module-architecture.md`, `WP4.3-sample-module-implementation.md`, `WP4.4E-sample-module-event-integration.md`. |
-| **Coverage Status** | Complete. |
+| **Coverage Status** | **Complete.** Full backfill performed directly against `ClockModuleDiscoveryTests.DiscoverModules_ScopedToSampleAssembly_FindsEveryRealSampleModule`, which enumerates every production module by direct assembly scan. |
 
 ---
 
@@ -29,9 +29,25 @@
 | `DuplicateNavigationSampleModule` | `Tempest.Samples` | `ModuleLifecycleBase` | Yes | `INavigationProvider` | WP 5.0B |
 | `CommandSampleModule` | `Tempest.Samples` | `ModuleLifecycleBase` | Yes | `ICommandDispatcher`, `ICommandRegistry`, `INavigationProvider` | WP 5.1B |
 | `DiagnosticsSampleModule` | `Tempest.Samples` | `ModuleLifecycleBase` | Yes | `IDiagnosticsProvider`, `ICommandDispatcher`, `ICommandRegistry` | WP 5.2 |
+| `IdentitySampleModule` | `Tempest.Samples` | `ModuleLifecycleBase` | Yes | `IIdentityService`, `ICurrentPrincipalAccessor`, `IPermissionEvaluator`, `ICommandDispatcher`, `ICommandRegistry` | WP 6.1 |
+| `SettingsSampleModule` | `Tempest.Samples` | `ModuleLifecycleBase` | Yes | `ISettingsProvider`, `IEventBus`, `ICommandDispatcher`, `ICommandRegistry` | WP 6.4 |
+| `AuditSampleModule` | `Tempest.Samples` | `ModuleLifecycleBase` | Yes | `IIdentityService`, `IAuditRecorder`, `IAuditQuery`, `ICommandDispatcher`, `ICommandRegistry` | WP 6.5 |
+| `NotificationSampleModule` | `Tempest.Samples` | `ModuleLifecycleBase` | Yes | `INotificationDispatcher`, `ICommandDispatcher`, `ICommandRegistry` | WP 6.2 |
+| `ReportingSampleModule` | `Tempest.Samples` | `ModuleLifecycleBase` | Yes | `IIdentityService`, `IReportingService`, `ISettingsProvider`, `ICurrentPrincipalAccessor`, `IPermissionEvaluator`, `IAuditRecorder`, `INotificationDispatcher`, `ICommandDispatcher`, `ICommandRegistry` | WP 6.0 |
+| `ApiSampleModule` | `Tempest.Samples` | `ModuleLifecycleBase` | Yes | `IApiEndpointRegistry` | WP 6.3 |
+| `ExportImportSampleModule` | `Tempest.Samples` | `ModuleLifecycleBase` | Yes | `IIdentityService`, `ISettingsProvider`, `ICurrentPrincipalAccessor`, `IPermissionEvaluator`, `IAuditRecorder`, `INotificationDispatcher`, `IExportService`, `ImportService` (concrete type), `ICommandDispatcher`, `ICommandRegistry` | WP 6.7 |
+| `LicensingSampleModule` | `Tempest.Samples` | `ModuleLifecycleBase` | Yes | `IIdentityService`, `ISettingsProvider`, `ICurrentPrincipalAccessor`, `IPermissionEvaluator`, `ILicenseProvider`, `IAuditRecorder`, `INotificationDispatcher`, `IApiEndpointRegistry`, `ICommandDispatcher`, `ICommandRegistry` | WP 6.6 |
 
-**Total: 7 production modules — Verified directly against
-`src/Samples/Tempest.Samples/*.cs`.**
+**Total: 15 production modules — Verified directly via
+`ClockModuleDiscoveryTests.DiscoverModules_ScopedToSampleAssembly_FindsEveryRealSampleModule`,
+which asserts exactly 15 and names each by Id and type; all 15 are
+listed above. Fully backfilled by `WP 6.8`: `IdentitySampleModule`
+(`WP 6.1`), `SettingsSampleModule` (`WP 6.4`), `AuditSampleModule`
+(`WP 6.5`), `NotificationSampleModule` (`WP 6.2`),
+`ReportingSampleModule` (`WP 6.0`), and `ApiSampleModule` (`WP 6.3`)
+were added in this pass — none of these six had ever been recorded
+here before, a gap `WP 6.7` first disclosed and `WP 6.6` left in place,
+now closed.**
 
 ## SDK Base Types (Not Modules Themselves)
 
@@ -45,28 +61,28 @@ Both are abstract, introduced by WP 4.1 (Module SDK) — see
 
 ## Test-Only Module Fixtures (Out of Scope, Noted for Completeness)
 
-Six additional concrete `IModule`/`ModuleBase` implementations exist under
-`tests/Tempest.Core.Tests/` (**Verified** by direct grep) — these are
-deliberately excluded from this register's own count because they exist
-solely to exercise Discovery/Registration/Lifecycle in isolation (healthy
-modules, a duplicate-ID module, a blocking module, a disposal-tracking
-module, and similar), never shipped or discoverable outside the test
-assembly. Full detail is tracked by `Test Register.md`, not duplicated
-here.
+Additional concrete `IModule`/`ModuleBase` implementations exist under
+`tests/Tempest.Core.Tests/` — these are deliberately excluded from this
+register's own count because they exist solely to exercise Discovery/
+Registration/Lifecycle in isolation (healthy modules, a duplicate-ID
+module, a blocking module, a disposal-tracking module, and similar),
+never shipped or discoverable outside the test assembly. Full detail is
+tracked by `Test Register.md`, not duplicated here.
 
 ## Cross-Reference Check
 
-All seven production modules are cited by name in `Platform Services
-Register.md` (Event Bus's "first real consumer"; Navigation's real
-contributors; Command Framework's real contributor; Diagnostics' real
-consumer), `Event Catalogue.md`
-(`ClockModule`/`ClockLifecycleObserverModule` as publisher/subscriber of
-`ClockModuleLifecycleEvent`; the three Navigation sample modules as
-`NavigationRequestedEvent`'s real contributors — `CommandSampleModule`
-also publishes `NavigationRequestedEvent` indirectly, via
-`NavigateToSampleHomeCommandHandler`'s own call to `INavigationProvider.
-Navigate`, not as a direct contributor of its own), and at least one Work
-Package retrospective each. `DiagnosticsSampleModule` publishes no event
-of its own — it demonstrates `IDiagnosticsProvider` and the Command
+All 15 production modules are cited by name in `Platform Services
+Register.md` and at least one Work Package retrospective each —
+confirmed directly against `docs/academy/03 Work Packages/` for every
+module above. `Platform Service Map.md`'s own per-service "Consumers"
+section names each module as its own service's real contributor.
+`ClockModule`/`ClockLifecycleObserverModule` publish/subscribe
+`ClockModuleLifecycleEvent` (`Event Catalogue.md`); the three Navigation
+sample modules are `NavigationRequestedEvent`'s real contributors —
+`CommandSampleModule` also publishes it indirectly, via
+`NavigateToSampleHomeCommandHandler`'s own call to
+`INavigationProvider.Navigate`, not as a direct contributor of its own.
+`DiagnosticsSampleModule` and `ApiSampleModule` each publish no event of
+their own — they demonstrate their own named service and the Command
 Framework interacting, not the Event Bus. No production module exists
 that is not also covered by at least one test in `Test Register.md`.

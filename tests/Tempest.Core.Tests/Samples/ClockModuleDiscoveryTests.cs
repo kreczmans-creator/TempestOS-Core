@@ -26,6 +26,34 @@ namespace Tempest.Core.Tests.Samples;
 //
 // WP 5.2: Tempest.Samples grew DiagnosticsSampleModule, bringing the total
 // to seven.
+//
+// WP 6.1: Tempest.Samples grew IdentitySampleModule, bringing the total to
+// eight.
+//
+// WP 6.4: Tempest.Samples grew SettingsSampleModule, bringing the total to
+// nine.
+//
+// WP 6.5: Tempest.Samples grew AuditSampleModule, bringing the total to
+// ten.
+//
+// WP 6.2: Tempest.Samples grew NotificationSampleModule, bringing the
+// total to eleven. (NotificationSampleHostedService, added the same Work
+// Package, is not a module - it is discovered separately, by hosted
+// service discovery, and does not affect this count.)
+//
+// WP 6.0: Tempest.Samples grew ReportingSampleModule, bringing the
+// total to twelve.
+//
+// WP 6.3: Tempest.Samples grew ApiSampleModule, bringing the total to
+// thirteen. (RestApiHostedService, added the same Work Package, lives
+// in Tempest.Core and is not a module - it is discovered separately, by
+// hosted service discovery, and does not affect this count.)
+//
+// WP 6.7: Tempest.Samples grew ExportImportSampleModule, bringing the
+// total to fourteen.
+//
+// WP 6.6: Tempest.Samples grew LicensingSampleModule, bringing the
+// total to fifteen.
 public class ClockModuleDiscoveryTests
 {
     // ----------------------------------------------------------------
@@ -72,7 +100,7 @@ public class ClockModuleDiscoveryTests
 
         var result = service.DiscoverModules();
 
-        Assert.Equal(7, result.Count);
+        Assert.Equal(15, result.Count);
         Assert.Contains(result, d => d.Id == "tempest.samples.clock" && d.ModuleType == typeof(ClockModule));
         Assert.Contains(result, d => d.Id == "tempest.samples.clock.observer" && d.ModuleType == typeof(ClockLifecycleObserverModule));
         Assert.Contains(result, d => d.Id == "tempest.samples.navigation" && d.ModuleType == typeof(NavigationSampleModule));
@@ -80,6 +108,14 @@ public class ClockModuleDiscoveryTests
         Assert.Contains(result, d => d.Id == "tempest.samples.navigation.zzz-duplicate" && d.ModuleType == typeof(DuplicateNavigationSampleModule));
         Assert.Contains(result, d => d.Id == "tempest.samples.commands" && d.ModuleType == typeof(Tempest.Samples.CommandSampleModule));
         Assert.Contains(result, d => d.Id == "tempest.samples.diagnostics" && d.ModuleType == typeof(Tempest.Samples.DiagnosticsSampleModule));
+        Assert.Contains(result, d => d.Id == "tempest.samples.identity" && d.ModuleType == typeof(Tempest.Samples.IdentitySampleModule));
+        Assert.Contains(result, d => d.Id == "tempest.samples.settings" && d.ModuleType == typeof(Tempest.Samples.SettingsSampleModule));
+        Assert.Contains(result, d => d.Id == "tempest.samples.audit" && d.ModuleType == typeof(Tempest.Samples.AuditSampleModule));
+        Assert.Contains(result, d => d.Id == "tempest.samples.notifications" && d.ModuleType == typeof(Tempest.Samples.NotificationSampleModule));
+        Assert.Contains(result, d => d.Id == "tempest.samples.reporting" && d.ModuleType == typeof(Tempest.Samples.ReportingSampleModule));
+        Assert.Contains(result, d => d.Id == "tempest.samples.api" && d.ModuleType == typeof(Tempest.Samples.ApiSampleModule));
+        Assert.Contains(result, d => d.Id == "tempest.samples.exportimport" && d.ModuleType == typeof(Tempest.Samples.ExportImportSampleModule));
+        Assert.Contains(result, d => d.Id == "tempest.samples.licensing" && d.ModuleType == typeof(Tempest.Samples.LicensingSampleModule));
     }
 
     // ----------------------------------------------------------------

@@ -10,9 +10,9 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | Direct source inspection; `docs/architecture/Failure Behaviour.md`; `docs/academy/06 Engineering Standards/01-exception-design.md`. |
 | **Review Frequency** | Updated whenever a new exception type is introduced. |
-| **Last Reviewed** | 2026-07-28 (WP 5.4, v0.5.0 Release Candidate) — corrected a Total-count arithmetic error found during this Work Package's own repository review (see Entries table, below): the stated total read "30," undercounting the Entries/Distribution tables' own, unchanged sum of 31. No new exception type introduced since `WP 5.3`. |
+| **Last Reviewed** | 2026-07-29 (WP 6.6, Licensing) — added `LicensingException`, `LicenseValidationException` (see Entries table, below); no other change to prior entries. |
 | **Related Documents** | `docs/architecture/Failure Behaviour.md`; `Architectural Dependency Register.md`. |
-| **Related ADRs** | ADR-0013, ADR-0021, ADR-0025, ADR-0038. |
+| **Related ADRs** | ADR-0013, ADR-0021, ADR-0025, ADR-0038, ADR-0040, ADR-0046, ADR-0047, ADR-0048, ADR-0050, ADR-0051. |
 | **Related Academy Articles** | `docs/academy/06 Engineering Standards/01-exception-design.md`. |
 | **Coverage Status** | Complete. |
 
@@ -53,13 +53,36 @@
 | `DuplicateCommandIdException` | `CommandException` | Command Framework | As above |
 | `CommandHandlerNotRegisteredException` | `CommandException` | Command Framework | Application logic's own error (not Host-level); thrown by `DispatchAsync`/`InvokeAsync` |
 | `CommandNotFoundException` | `CommandException` | Command Framework | Application logic's own error (not Host-level); thrown by `InvokeAsync` |
+| `IdentityException` | `Exception` | Identity & Permissions | Application logic's own error (not Host-level); base type, never thrown directly |
+| `PermissionDeniedException` | `IdentityException` | Identity & Permissions | Application logic's own error (not Host-level); thrown by `RequirePermission` — the single authorization enforcement point (ADR-0044) |
+| `RoleNotFoundException` | `IdentityException` | Identity & Permissions | Application logic's own error (not Host-level); thrown by `IIdentityService.GetPrincipal`/`EstablishCurrentPrincipal` for a configuration defect (a principal referencing an undefined role), distinct from an ordinary denied-permission case |
+| `PersistenceException` | `Exception` | Persistence | Application logic's own error (not Host-level); base type, never thrown directly |
+| `PersistenceStoreUnavailableException` | `PersistenceException` | Persistence | Application logic's own error (not Host-level); thrown when the underlying storage backend fails (ADR-0041) |
+| `SettingsException` | `Exception` | Settings | Application logic's own error (not Host-level); base type, never thrown directly |
+| `DuplicateSettingDefinitionException` | `SettingsException` | Settings | Application logic's own error (not Host-level); thrown by `RegisterDefinition` — first registration wins |
+| `SettingNotFoundException` | `SettingsException` | Settings | Application logic's own error (not Host-level); thrown by `GetValueAsync`/`SetValueAsync` for an unregistered key |
+| `AuditException` | `Exception` | Audit | Application logic's own error (not Host-level); base type, never thrown directly — every current Audit failure mode is already covered by an existing exception from another namespace (`ArgumentException`, `PersistenceStoreUnavailableException`, `PermissionDeniedException`) |
+| `NotificationException` | `Exception` | Notifications | Application logic's own error (not Host-level); base type, never thrown directly — every current Notification failure mode is already covered by an existing exception (`ArgumentException`, `ArgumentNullException`); see "A Note on Notifications" below |
+| `ReportingException` | `Exception` | Reporting | Application logic's own error (not Host-level); base-plus-subtype (mirroring `SettingsException`/`IdentityException`/`CommandException`), never thrown directly itself |
+| `DuplicateReportDefinitionException` | `ReportingException` | Reporting | Application logic's own error (not Host-level); thrown by `RegisterDefinition` — first registration wins |
+| `ReportDefinitionNotFoundException` | `ReportingException` | Reporting | Application logic's own error (not Host-level); thrown by `GenerateAsync` for an unregistered Id |
+| `ApiException` | `Exception` | REST API | Application logic's own error (not Host-level); base-plus-subtype (mirroring `ReportingException`/`SettingsException`), never thrown directly itself |
+| `DuplicateApiRouteException` | `ApiException` | REST API | Application logic's own error (not Host-level); thrown by `MapCommand` — first registration wins |
+| `ExportImportException` | `Exception` | Export/Import | Application logic's own error (not Host-level); base-plus-subtype (mirroring `ReportingException`/`ApiException`), never thrown directly itself |
+| `IncompatibleExportSchemaException` | `ExportImportException` | Export/Import | Application logic's own error (not Host-level); thrown by `ImportAsync` for a schema-version mismatch or an unregistered section kind — approved by `Public Interface Catalogue.md` |
+| `CorruptedExportArtifactException` | `ExportImportException` | Export/Import | Application logic's own error (not Host-level); thrown by `JsonExportFormat.ReadAsync`/`JsonExportPayloadSerializer.Deserialize` for a malformed or truncated artifact — additive, not in the original catalogue (see `ADR-0051`) |
+| `DuplicateImportableKindException` | `ExportImportException` | Export/Import | Application logic's own error (not Host-level); thrown by `ImportService.RegisterImportable` — first registration wins, mirroring `DuplicateReportDefinitionException`/`DuplicateApiRouteException` |
+| `LicensingException` | `Exception` | Licensing | Host-fatal (ADR-0013); base-plus-subtype (mirroring `ReportingException`/`ExportImportException`), never thrown directly itself |
+| `LicenseValidationException` | `LicensingException` | Licensing | Host-fatal (ADR-0013, ADR-0050); thrown by the Host's own startup sequence when `ILicenseValidator.Validate()` reports an invalid result — never thrown by the validator itself, which always returns a `LicenseValidationResult` even for an expired, malformed, or unreadable license file |
 
-**Total: 31 custom exception types — Verified directly against
+**Total: 52 custom exception types — Verified directly against
 `src/Tempest.Core/` (`grep -rlP "^public (sealed )?class \w+Exception\b"`
-returns exactly 31 files, matching the 31 rows in the Entries table
-above). Corrected, `WP 5.4`: this total previously read "30," undercounting
+returns exactly 52 files, matching the 52 rows in the Entries table
+above, re-derived directly by `WP 6.6` rather than incremented from the
+prior figure — the standing practice `WP 5.4` recommended). Corrected,
+`WP 5.4`: this total previously read "30," undercounting
 by one against this register's own Entries table and Distribution table
-(both of which have always summed to 31) — a genuine, internal
+(both of which had, at that point, always summed to 31) — a genuine, internal
 arithmetic drift found during `WP 5.4`'s own repository review, not a
 change in the actual exception count.**
 
@@ -121,6 +144,51 @@ likewise introduces no new exception type: its own constructor reuses
 `Write` method deliberately catches and reports every child sink's own
 exception rather than throwing a new, wrapping one.
 
+## A Note on Notifications
+
+`NotificationException` mirrors `AuditException`'s own base-only
+precedent exactly: a concrete, single-constructor base type introduced
+for the approved contract's own sake, never thrown directly this
+release — every current Notification failure mode (a null handler, a
+null notification, an invalid `Category`/`Message` on
+`PlatformNotification`) is already fully covered by
+`ArgumentNullException`/`ArgumentException`. Application logic's own
+error (not Host-level); `NotificationDispatcher`'s own per-subscriber
+isolation (mirroring `EventBus`, `ADR-0028`/`ADR-0046`) catches and logs
+a subscriber's own exception at `Warning`, never rethrowing it, so no
+Notification-specific exception type was needed for that path either.
+
+## A Note on Reporting
+
+`ReportingException`/`DuplicateReportDefinitionException`/
+`ReportDefinitionNotFoundException` mirror
+`SettingsException`/`DuplicateSettingDefinitionException`/
+`SettingNotFoundException`'s own base-plus-subtype shape exactly —
+`DuplicateReportDefinitionException` is thrown by `RegisterDefinition`
+(first registration wins), `ReportDefinitionNotFoundException` by
+`GenerateAsync` for an unregistered Id. Application logic's own error
+(not Host-level); a renderer's own exception, thrown from
+`RenderAsync`, propagates through `GenerateAsync` unmodified rather
+than being wrapped in a Reporting-specific type — mirroring the Command
+Framework's own dispatch failure model (`ADR-0038`), not the Event
+Bus's or Notification Dispatcher's own per-subscriber isolation.
+
+## A Note on the REST API
+
+`ApiException`/`DuplicateApiRouteException` mirror `ReportingException`/
+`DuplicateReportDefinitionException`'s own base-plus-subtype shape
+exactly — thrown by `IApiEndpointRegistry.MapCommand` for a colliding
+method + path, first registration wins. A request-time failure
+(unmapped route, missing/unauthorized identity, a dispatched command's
+own exception) is deliberately **not** modelled as a custom exception
+type at all — `ApiRequestHandler` maps each case directly to an HTTP
+status code (404/401/403/500) and returns it as an ordinary
+`ApiResponse`, never throwing across its own public `HandleAsync`
+boundary (`CommandNotFoundException`/`OperationCanceledException`
+aside, both already-existing types it catches or lets propagate,
+respectively). Application logic's own error (not Host-level); see
+`ADR-0048`.
+
 ## Distribution by Root Category
 
 | Root Category | Exception Count |
@@ -135,6 +203,15 @@ exception rather than throwing a new, wrapping one.
 | Background Services | 0 (by design — see note above) |
 | Navigation | 3 |
 | Command Framework | 5 |
+| Identity & Permissions | 3 |
+| Persistence | 2 |
+| Settings | 3 |
+| Audit | 1 |
+| Notifications | 1 |
+| Reporting | 3 |
+| REST API | 2 |
+| Export/Import | 4 |
+| Licensing | 2 |
 
 ## Cross-Reference Check
 
