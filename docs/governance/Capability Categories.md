@@ -10,7 +10,7 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | This document; `VISION.md` (the product ambition each category exists to serve); `docs/security/Threat Model.md` (the assumptions that first named several of these domains). |
 | **Review Frequency** | Reviewed whenever a new category is needed — additive only; an existing category is never renamed or removed once a capability references it, per Governance Philosophy's own "never silently invalidate a prior reference" discipline. |
-| **Last Reviewed** | 2026-07-30 (`WP 7.0A`, Future Capability Register & Product Vision — established). |
+| **Last Reviewed** | 2026-07-30 (`WP 7.0B`, Engineering Foundation Planning & Capability Architecture) — `Materials` and `Quality` categories each populated with one entry (`FCR-0031`, `FCR-0033`). Previously reviewed 2026-07-30 (`WP 7.0A`, established). |
 | **Related Documents** | `Future Capability Register.md`; `Product Roadmap.md`; `VISION.md`; `docs/security/Threat Model.md`; `docs/security/Security Roadmap.md`. |
 | **Related ADRs** | ADR-0013 (Platform Service vs. Module classification — the categorisation this document performs at the capability level, ADR-0013 performs at the individual-service level). |
 | **Related Academy Articles** | None yet — this register is new. |
@@ -73,20 +73,32 @@ recognise as its own.
 
 ## Coverage Note
 
-**No capability has yet been identified for six of the nine Engineering
+**Updated `WP 7.0B`:** `Materials` and `Quality` each now have exactly
+one entry — `FCR-0031` (Materials Framework) and `FCR-0033`
+(Verification & Validation Framework) respectively — identified by `WP
+7.0B`'s own Capability Dependency Analysis as cross-cutting foundation
+capabilities every eventual discipline module in these categories would
+structurally require, not a discipline-specific capability within
+either. Both are marked **Inferred** in `Future Capability Register.md`,
+not Verified.
+
+**No capability has yet been identified for five of the nine Engineering
 Discipline categories** (Mechanical, Structural, Electrical, Building
-Services/HVAC, Materials, Manufacturing) — recorded honestly, per this
-project's own standing discipline of disclosing an Unknown rather than
-inventing a plausible-sounding candidate to fill it. `Threat Model.md`
-assumption 1 confirms these disciplines are within TempestOS's eventual
-mission ("engineering intellectual property (CAD, requirements, analysis,
+Services/HVAC, Manufacturing) — recorded honestly, per this project's
+own standing discipline of disclosing an Unknown rather than inventing a
+plausible-sounding candidate to fill it. `Threat Model.md` assumption 1
+confirms these disciplines are within TempestOS's eventual mission
+("engineering intellectual property (CAD, requirements, analysis,
 verification records)"), but no Work Package, retrospective, ADR, or
-Contract Review document reviewed for this Work Package names a specific
-capability within any of them. These six categories exist now so a future
-capability-identification exercise — almost certainly its own dedicated
-Work Package, per this document's own extensibility goal — has a fixed
-place to classify what it finds, not so this register can claim false
-completeness today.
+Contract Review document reviewed through `WP 7.0B` names a specific
+capability within any of them. These five categories exist now so a
+future capability-identification exercise — almost certainly its own
+dedicated Work Package, per this document's own extensibility goal — has
+a fixed place to classify what it finds, not so this register can claim
+false completeness today. `WP 7.0B`'s own Engineering Discipline
+Assessment confirmed this gap cannot be closed by further documentation
+mining — see `docs/releases/v0.7.0/WP7.0B Engineering Discipline
+Assessment.md`.
 
 `AI` and `Academy` each have at most one sourced candidate (`AI`: one,
 see `FCR-0024`; `Academy`: none) — also disclosed rather than padded.

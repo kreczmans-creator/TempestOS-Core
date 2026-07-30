@@ -10,11 +10,11 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | This document, from `WP 7.0A` onward. Prior to this Work Package, the same information existed only in fragments — see each entry's own "Sourced From" field for where it previously lived. |
 | **Review Frequency** | Updated whenever a new future capability is identified (by any Work Package, retrospective, or review), or whenever an existing capability's Status changes (a Work Package begins, completes, or a capability is formally deferred/rejected). |
-| **Last Reviewed** | 2026-07-30 (`WP 7.0A`, Future Capability Register & Product Vision — established). |
+| **Last Reviewed** | 2026-07-30 (`WP 7.0B`, Engineering Foundation Planning & Capability Architecture) — added `FCR-0029` through `FCR-0033`, the five cross-cutting Engineering Foundation frameworks this Work Package's own dependency analysis identified as architecturally necessary before any discipline-specific Engineering Module can begin (see `WP7.0B Engineering Foundation Architecture.md`). Each is marked **Inferred**, not Verified — architectural necessity reasoning, not a capability named in a prior document, per the same discipline `FCR-0026` already applied. Previously reviewed 2026-07-30 (`WP 7.0A`, established). |
 | **Related Documents** | `Capability Categories.md`; `Product Roadmap.md`; `VISION.md`; `docs/governance/Quality/Technical Debt Register.md`; `docs/security/Security Roadmap.md`; `docs/security/Threat Model.md`; `docs/releases/v0.7.0/WorkPackages.md`; the eight `WP6.x Future Capability Recommendations.md` documents under `docs/releases/v0.6.0/`. |
 | **Related ADRs** | ADR-0013, ADR-0040, ADR-0044, ADR-0045, ADR-0046, ADR-0049, ADR-0050, ADR-0052 — see individual entries. |
-| **Related Academy Articles** | `WP6.8-platform-services-integration-review.md` §6 (the direct source of `FCR-0001`, `FCR-0003`, `FCR-0004`, `FCR-0005`, `FCR-0006`). |
-| **Coverage Status** | Complete for every future capability traceable to an existing, real document as of this Work Package. **Not** claimed complete for capability areas no existing document has yet named a concrete candidate within — see Coverage Note, below, and `Capability Categories.md`'s own identical disclosure. |
+| **Related Academy Articles** | `WP6.8-platform-services-integration-review.md` §6 (the direct source of `FCR-0001`, `FCR-0003`, `FCR-0004`, `FCR-0005`, `FCR-0006`); `WP7.0B-engineering-foundation-planning-and-capability-architecture.md`. |
+| **Coverage Status** | Complete for every future capability traceable to an existing, real document, plus five architecturally-inferred Engineering Foundation entries (`WP 7.0B`). **Not** claimed complete for the five Engineering Discipline categories with no identified candidate — see Coverage Note, below, and `Capability Categories.md`'s own identical disclosure. |
 
 ---
 
@@ -494,6 +494,105 @@
 | **Academy Impact** | None until designed |
 | **Notes** | Sourced from `Threat Model.md` assumption 10 and its own note on `ProjectModel`'s `Classification`/`SecurityLevel`/`ExportControlled`/`Customer`/`ContractNumber` fields; `Platform Security Review v0.5.0.md`, File System section. Marked **Inferred**, not Verified — no document confirms this is an actual, current business objective, only that the original bootstrap-era code modelled toward it. |
 
+### Engineering Foundation (Cross-Cutting)
+
+Five entries below were identified by `WP 7.0B`'s own Capability
+Dependency Analysis, not sourced from a prior document naming them
+directly — each is marked **Inferred**: architectural necessity,
+reasoned from what any Engineering Discipline module would structurally
+require to be built at all, mirroring how `Capability Categories.md`
+itself defines the Engineering Discipline categories. This is
+architecture/planning reasoning about shared technical substrate, not
+an invented business capability within a discipline (no Mechanical,
+Structural, Electrical, Building Services/HVAC, or Manufacturing
+capability is registered below, or anywhere in this register — see
+Coverage Note).
+
+#### FCR-0029 — Engineering Data Model & Document Management Foundation
+
+| Field | Value |
+|---|---|
+| **Category** | Platform |
+| **Description** | A shared engineering-entity data model — documents, revisions, references, and their relationships — that Requirements, Project, and every future discipline module build on rather than each inventing its own storage shape, mirroring `ADR-0041`'s own "one shared Persistence abstraction, not reinvented per service" precedent for Settings/Audit. |
+| **Status** | Identified (`WP 7.0B`) — architectural necessity, no design work exists |
+| **Priority** | High relative to other unscheduled capabilities — almost every Engineering Foundation and Engineering Module capability depends on it |
+| **Business Value** | Unknown in isolation; high as an enabler, since `FCR-0027`, `FCR-0028`, `FCR-0031`, `FCR-0033`, and every future discipline module would otherwise each invent an incompatible storage shape |
+| **Engineering Effort** | Unknown — requires its own Architecture Work Package; needs its own Platform-Service-vs-Module classification (`ADR-0013`) |
+| **Dependencies** | None upstream; `IPersistenceStore` (shipped, `WP 6.4`) is a plausible, not guaranteed, storage substrate — `FCR-0007`'s own query-capability gap should be resolved or explicitly ruled out-of-scope before this capability commits to it |
+| **Proposed Target Release** | Not yet scheduled — recommended as the first Engineering Foundation capability, before `FCR-0027`/`FCR-0028`/`FCR-0031`/`FCR-0033` |
+| **Related ADRs** | ADR-0013, ADR-0041 |
+| **Related Work Packages** | None yet |
+| **Academy Impact** | Would warrant a new Academy concept guide once designed — a genuinely new data-modelling pattern for this platform |
+| **Notes** | Inferred from `Threat Model.md` assumption 1's own generic "CAD, requirements, analysis, verification records" framing and the shared-storage need `FCR-0027`/`FCR-0028` both independently implied in `WP 7.0A`. Not sourced from any document naming this capability directly. |
+
+#### FCR-0030 — Units & Quantities Framework
+
+| Field | Value |
+|---|---|
+| **Category** | Platform |
+| **Description** | A shared representation for dimensioned physical quantities (length, force, temperature, and so on) and unit conversion between them, usable by every future Engineering Discipline module rather than each implementing its own conversion logic. |
+| **Status** | Identified (`WP 7.0B`) — architectural necessity, no design work exists |
+| **Priority** | High relative to other unscheduled capabilities — a prerequisite for `FCR-0032` and for any Mechanical/Structural/Electrical/HVAC/Materials/Manufacturing capability, once one is identified |
+| **Business Value** | Unknown in isolation; mitigates a well-known, industry-wide class of defect (unit-conversion error) that becomes possible the moment more than one discipline module performs a physical calculation |
+| **Engineering Effort** | Unknown — likely Medium; this class of library is well-precedented in other engineering software, though TempestOS's own shape has not been designed |
+| **Dependencies** | None upstream |
+| **Proposed Target Release** | Not yet scheduled |
+| **Related ADRs** | None yet |
+| **Related Work Packages** | None yet |
+| **Academy Impact** | Would warrant a new Academy concept guide once designed |
+| **Notes** | Inferred purely from `Capability Categories.md`'s own Engineering Discipline list (Mechanical, Structural, Electrical, Building Services/HVAC, Materials, Manufacturing all fundamentally operate on dimensioned quantities) — no prior document names this capability. The weakest-sourced entry in this register alongside `FCR-0032`; recommended for explicit confirmation, not assumed, the first time any discipline module is seriously designed. |
+
+#### FCR-0031 — Materials Framework
+
+| Field | Value |
+|---|---|
+| **Category** | Materials |
+| **Description** | Material selection, specification, and traceability capability shared across disciplines — the first identified candidate for the previously-empty `Materials` category in `Capability Categories.md`. |
+| **Status** | Identified (`WP 7.0B`) — architectural necessity, no design work exists |
+| **Priority** | Medium — enables the `Materials` and `Manufacturing` discipline categories and supports `Quality` (material traceability is a common non-conformance/inspection concern), but not a hard prerequisite for `FCR-0027`/`FCR-0028` |
+| **Business Value** | Unknown — dependent on TempestOS's eventual engineering-domain customer base, same as every other discipline-adjacent entry |
+| **Engineering Effort** | Unknown — requires its own Architecture Work Package |
+| **Dependencies** | `FCR-0029` (data model), `FCR-0030` (units — material properties are dimensioned quantities) |
+| **Proposed Target Release** | Not yet scheduled |
+| **Related ADRs** | None yet |
+| **Related Work Packages** | None yet |
+| **Academy Impact** | None until designed |
+| **Notes** | Inferred purely from the existence of the `Materials` category in `Capability Categories.md` and the structural observation that a `Manufacturing` or `Materials` discipline module cannot exist without some shared material-data capability. Not sourced from any document naming a concrete Materials capability — the weakest-sourced entry in this register alongside `FCR-0030`/`FCR-0032`. |
+
+#### FCR-0032 — Engineering Calculation Framework
+
+| Field | Value |
+|---|---|
+| **Category** | Platform |
+| **Description** | A shared calculation/formula execution model usable by every future discipline module (a structural load calculation, an HVAC sizing calculation, an electrical load calculation), mirroring the Command Framework's own "one dispatch mechanism, not reinvented per consumer" precedent (`ADR-0037`/`ADR-0038`), rather than each discipline module inventing its own ad hoc computation approach. |
+| **Status** | Identified (`WP 7.0B`) — architectural necessity, no design work exists |
+| **Priority** | High relative to other unscheduled capabilities — a prerequisite for any Mechanical/Structural/Electrical/HVAC capability, once one is identified |
+| **Business Value** | Unknown in isolation; prevents each future discipline module from independently reinventing calculation infrastructure |
+| **Engineering Effort** | Unknown, likely High — a genuine new abstraction, not a small extension of an existing one |
+| **Dependencies** | `FCR-0030` (Units & Quantities) — a calculation framework operating on undimensioned raw numbers would reintroduce the exact defect class `FCR-0030` exists to prevent |
+| **Proposed Target Release** | Not yet scheduled |
+| **Related ADRs** | None yet |
+| **Related Work Packages** | None yet |
+| **Academy Impact** | Would warrant a new Academy concept guide once designed |
+| **Notes** | Inferred purely from `Capability Categories.md`'s own Engineering Discipline list, the same basis as `FCR-0030` — no prior document names this capability. The weakest-sourced entry in this register alongside `FCR-0030`/`FCR-0031`. |
+
+#### FCR-0033 — Verification & Validation Framework
+
+| Field | Value |
+|---|---|
+| **Category** | Quality |
+| **Description** | A cross-cutting mechanism for recording a pass/fail verification against a requirement or specification, usable by every discipline's own quality process — the first identified candidate for the previously-empty `Quality` category in `Capability Categories.md`, and distinct from Audit (who did what) and Reporting (presentation). |
+| **Status** | Identified (`WP 7.0B`) — architectural necessity, no design work exists |
+| **Priority** | Medium-High — `Threat Model.md` assumption 1 names "verification records" directly as engineering IP TempestOS will eventually manage |
+| **Business Value** | Unknown in isolation; strengthens `FCR-0027` (Requirements Engine) directly, since a requirement without a verification record against it is only half the traceability chain `FCR-0027`'s own description names |
+| **Engineering Effort** | Unknown — requires its own Architecture Work Package |
+| **Dependencies** | `FCR-0027` (Requirements Engine — verification is meaningless without a requirement to verify against), `FCR-0029` (data model, to attach a verification record to an entity) |
+| **Proposed Target Release** | Not yet scheduled |
+| **Related ADRs** | None yet |
+| **Related Work Packages** | None yet |
+| **Academy Impact** | Would warrant a new Academy concept guide once designed |
+| **Notes** | Inferred from `Threat Model.md` assumption 1's explicit "verification records" phrase and `FCR-0027`'s own description naming "verification" as part of the Requirements Engine's scope — this entry formalises verification as its own cross-cutting capability rather than an implicit part of Requirements alone, since Quality/Manufacturing disciplines would need it independent of Systems Engineering. |
+
 ### Systems Engineering
 
 #### FCR-0027 — Requirements Engine
@@ -506,7 +605,7 @@
 | **Priority** | Unknown — no Work Package has yet been proposed |
 | **Business Value** | Unknown — dependent entirely on TempestOS's eventual engineering-domain customer base |
 | **Engineering Effort** | Unknown — requires its own Architecture Work Package before any estimate is meaningful |
-| **Dependencies** | Requires its own explicit Platform-Service-vs-Module classification decision (`ADR-0013`'s own Future Considerations name this exact capability as an example) before design begins |
+| **Dependencies** | Requires its own explicit Platform-Service-vs-Module classification decision (`ADR-0013`'s own Future Considerations name this exact capability as an example) before design begins; benefits from `FCR-0029` (shared data model) and `FCR-0033` (Verification & Validation Framework, identified `WP 7.0B`) rather than building either itself |
 | **Proposed Target Release** | Not yet scheduled |
 | **Related ADRs** | ADR-0013 (names this capability directly in its own Future Considerations) |
 | **Related Work Packages** | None yet |
@@ -525,7 +624,7 @@
 | **Priority** | Unknown — no Work Package has yet been proposed |
 | **Business Value** | Unknown — dependent entirely on TempestOS's eventual engineering-domain customer base |
 | **Engineering Effort** | Unknown — requires its own Architecture Work Package; security design (encryption, access control, audit) must be part of that same design phase, not a follow-up, per `Security Roadmap.md` item 4 |
-| **Dependencies** | Requires its own explicit Platform-Service-vs-Module classification decision (`ADR-0013`); benefits from `FCR-0021` (multi-user/tenant) if concurrent access is in scope |
+| **Dependencies** | Requires its own explicit Platform-Service-vs-Module classification decision (`ADR-0013`); benefits from `FCR-0021` (multi-user/tenant) if concurrent access is in scope; benefits from `FCR-0029` (shared data model, identified `WP 7.0B`) rather than building its own storage shape |
 | **Proposed Target Release** | Not yet scheduled |
 | **Related ADRs** | ADR-0013 (names this capability directly in its own Future Considerations) |
 | **Related Work Packages** | None yet — `JsonProjectRepository`/`ProjectModel` predate the Claude-developed history |
@@ -534,22 +633,30 @@
 
 ## Coverage Note
 
-**28 capabilities identified** (`FCR-0001` through `FCR-0028`), every
-one traceable to a specific, cited, pre-existing document — no entry was
-invented to fill a category. Six of the nine Engineering Discipline
-categories `Capability Categories.md` establishes (Mechanical,
-Structural, Electrical, Building Services/HVAC, Materials, Manufacturing)
-have **zero entries** — disclosed explicitly, not papered over — because
-no release retrospective, Future Capability Recommendations document,
-Technical Debt Register entry, governance review, or architecture
-discussion reviewed for this Work Package names a concrete capability
-within any of them. `Quality` (the engineering-discipline sense) and
-`Academy` likewise have zero entries. Identifying real candidates for
-these categories is recommended as its own future exercise — likely a
-dedicated Work Package engaging real engineering-domain stakeholders,
-not a documentation-only pass over existing repository text, since no
-further mining of existing documentation would produce genuine
-candidates where none currently exist.
+**33 capabilities identified** (`FCR-0001` through `FCR-0033`).
+`FCR-0001`–`FCR-0028` were each traceable to a specific, cited,
+pre-existing document, established `WP 7.0A`. `FCR-0029`–`FCR-0033`
+were added by `WP 7.0B`'s own Capability Dependency Analysis — each
+marked **Inferred**, architectural necessity reasoning rather than a
+capability named in a prior document, and each says so explicitly in
+its own Notes field. No entry was invented to fill a category without
+disclosing that it was inferred rather than sourced.
+
+`Materials` and `Quality` each now have exactly one entry (`FCR-0031`,
+`FCR-0033` respectively) — both cross-cutting *foundation* capabilities
+identified as prerequisites for their category's own eventual discipline
+modules, not a discipline-specific capability within either category.
+**Five of the nine Engineering Discipline categories still have zero
+entries** (Mechanical, Structural, Electrical, Building Services/HVAC,
+Manufacturing) — disclosed explicitly, not papered over. `AI` and
+`Academy` likewise remain at their `WP 7.0A` count (one and zero
+respectively). Identifying real candidates for the five still-empty
+disciplines remains recommended as its own future exercise engaging
+real engineering-domain stakeholders — `WP 7.0B`'s own Capability
+Dependency Analysis deliberately confined itself to cross-cutting
+*foundation* reasoning (what any discipline module would structurally
+need), not discipline-specific capability invention, exactly as `WP
+7.0A` itself declined to do.
 
 ## Cross-Reference Check
 
@@ -570,10 +677,15 @@ implementation-pattern guidance rather than a genuine future capability
 (for example, "reuse the existing permission pattern" recommendations
 are guidance for a future Work Package's own implementation discipline,
 not a capability in their own right, and are not separately registered).
+Every `FCR-0029`–`FCR-0033` cross-reference (to each other, and to
+`FCR-0001`–`FCR-0028`) is verified consistent in both directions — see
+`WP7.0B Capability Dependency Report.md` for the full dependency graph
+this check is drawn from.
 
 ## Related Documents
 
 `Capability Categories.md`; `Product Roadmap.md`; `VISION.md`;
 `docs/governance/Quality/Technical Debt Register.md`;
 `docs/security/Security Roadmap.md`; `docs/security/Threat Model.md`;
-`ADR-0013`; `PROJECT_STATUS.md`; `docs/releases/v0.7.0/WorkPackages.md`.
+`ADR-0013`; `PROJECT_STATUS.md`; `docs/releases/v0.7.0/WorkPackages.md`;
+`docs/releases/v0.7.0/WP7.0B Capability Dependency Report.md`.

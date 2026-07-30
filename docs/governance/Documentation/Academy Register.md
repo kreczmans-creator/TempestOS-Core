@@ -10,7 +10,7 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | `docs/academy/` itself; `docs/academy/Academy Index.md` (the reader-facing navigation index this register cross-checks against). |
 | **Review Frequency** | Updated whenever a new Academy article is created — in practice, every Work Package (Engineering Governance §6). |
-| **Last Reviewed** | 2026-07-30 (WP 7.0A, Future Capability Register & Product Vision) — added `WP7.0A-future-capability-register-and-product-vision.md`. |
+| **Last Reviewed** | 2026-07-30 (WP 7.0B, Engineering Foundation Planning & Capability Architecture) — added `WP7.0B-engineering-foundation-planning-and-capability-architecture.md`. |
 | **Related Documents** | `docs/academy/Academy Index.md`; `docs/academy/Academy Audit Report.md`; `Engineering Standards Register.md`; `Feature Register.md`. |
 | **Related ADRs** | None directly — the Academy documents ADRs, it is not itself governed by one. |
 | **Related Academy Articles** | This register's entire scope. |
@@ -57,7 +57,7 @@
 | 11 | Command Framework | WP 5.1A (new), WP 5.1B (implementation confirmed; `CommandHandlerTable` sharing finding added) |
 | 12 | Diagnostics & Composite Logging | WP 5.2 (new) |
 
-## 03 Work Packages (45 retrospectives)
+## 03 Work Packages (46 retrospectives)
 
 | Retrospective | Type |
 |---|---|
@@ -106,6 +106,7 @@
 | WP 6.6 — Licensing Framework Implementation | Implementation (combined design + implementation, ADR-0050 — the release's final production implementation Work Package; resolves `Risk Register.md`'s own `R5`, a missing license file is a valid, unrestricted default, never Host-fatal, while a broken one is) |
 | WP 6.8 — Platform Services Integration Review & Release Certification | Closing certification review — mirrors `WP 5.4`'s own whole-release format (What Was Achieved, Architectural Lessons, Implementation Lessons, Repository Maturity, Recommendations, Key Takeaways), not the standard 13-section per-feature template; no production code written |
 | WP 7.0A — Future Capability Register & Product Vision | Architecture-and-governance milestone Work Package — mirrors `WP 6.8`'s own whole-review format, not the standard 13-section per-feature template; no production code written; established `VISION.md`, `Future Capability Register.md`, `Capability Categories.md`, `Product Roadmap.md` |
+| WP 7.0B — Engineering Foundation Planning & Capability Architecture | Architecture-and-planning milestone Work Package — mirrors `WP 6.8`/`WP 7.0A`'s own whole-review format; no production code written; added `FCR-0029`–`FCR-0033` (Engineering Foundation Programme) and eight planning deliverables (dependency graph, foundation architecture, discipline assessment, release roadmap, Work Package catalogue, platform consumption matrix, roadmap risk register) |
 
 **Note.** `WP 4.4C` produced no code and no separate retrospective — its
 story is told inside the `WP 4.4` architecture retrospective's own
@@ -151,13 +152,13 @@ added `Engineering Lifecycle.md`).
 | `Contributor Learning Path.md` | Repository-wide onboarding sequence for a new contributor, added `WP 4.5B` |
 
 **Total: 1 (Introduction) + 11 (Engineering Principles) + 12 (Runtime
-Architecture) + 45 (Work Packages) + 4 (Design Patterns) + 5 (Case
-Studies) + 5 (Engineering Standards) + 4 (top-level meta) = 87 files
+Architecture) + 46 (Work Packages) + 4 (Design Patterns) + 5 (Case
+Studies) + 5 (Engineering Standards) + 4 (top-level meta) = 88 files
 under `docs/academy/` — re-verified by direct `find` count against every
 subfolder individually (`WP 6.1`, `WP 6.4`, `WP 6.5`, `WP 6.2`, `WP
-6.0`, `WP 6.3`, `WP 6.7`, `WP 6.6`, `WP 6.8`, `WP 7.0A`), not just the
-grand total, continuing the standing practice `WP 5.4`'s own repository
-review
+6.0`, `WP 6.3`, `WP 6.7`, `WP 6.6`, `WP 6.8`, `WP 7.0A`, `WP 7.0B`), not
+just the grand total, continuing the standing practice `WP 5.4`'s own
+repository review
 recommended.
 **Correction, `WP
 5.4`**: the "03 Work Packages" count had read "33" (`WP 5.2`) then "34"
