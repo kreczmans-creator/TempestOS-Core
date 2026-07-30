@@ -57,6 +57,10 @@ namespace Tempest.Core.Tests.Samples;
 //
 // WP 7.1A: Tempest.Samples grew EngineeringDataSampleModule, bringing the
 // total to sixteen.
+//
+// WP 7.1C: Tempest.Samples grew MaterialsSampleModule, bringing the
+// total to seventeen. (WP 7.1B, Units & Quantities, added no sample
+// module - a pure mathematical library with no lifecycle to demonstrate.)
 public class ClockModuleDiscoveryTests
 {
     // ----------------------------------------------------------------
@@ -103,7 +107,7 @@ public class ClockModuleDiscoveryTests
 
         var result = service.DiscoverModules();
 
-        Assert.Equal(16, result.Count);
+        Assert.Equal(17, result.Count);
         Assert.Contains(result, d => d.Id == "tempest.samples.clock" && d.ModuleType == typeof(ClockModule));
         Assert.Contains(result, d => d.Id == "tempest.samples.clock.observer" && d.ModuleType == typeof(ClockLifecycleObserverModule));
         Assert.Contains(result, d => d.Id == "tempest.samples.navigation" && d.ModuleType == typeof(NavigationSampleModule));
@@ -120,6 +124,7 @@ public class ClockModuleDiscoveryTests
         Assert.Contains(result, d => d.Id == "tempest.samples.exportimport" && d.ModuleType == typeof(Tempest.Samples.ExportImportSampleModule));
         Assert.Contains(result, d => d.Id == "tempest.samples.licensing" && d.ModuleType == typeof(Tempest.Samples.LicensingSampleModule));
         Assert.Contains(result, d => d.Id == "tempest.samples.engineeringdata" && d.ModuleType == typeof(Tempest.Samples.EngineeringDataSampleModule));
+        Assert.Contains(result, d => d.Id == "tempest.samples.materials" && d.ModuleType == typeof(Tempest.Samples.MaterialsSampleModule));
     }
 
     // ----------------------------------------------------------------

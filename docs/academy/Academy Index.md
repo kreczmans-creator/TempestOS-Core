@@ -342,6 +342,21 @@ parsing all require the exact same `Unit`, never an implicit conversion.
 - [Phantom-Type Dimension Safety](04%20Design%20Patterns/05-phantom-type-dimension-safety.md) — the compile-time-safety pattern this framework introduces to TempestOS for the first time.
 - ADR-0054 (Units & Quantities — Representation, Precision, and Registration Model).
 
+### Materials
+
+Implemented (`WP 7.1C`, `ADR-0055`) — `Tempest.Core.Materials`:
+`MaterialCatalog`, a thin, typed index over the Engineering Data Model
+(`Kind = "MaterialSpecification"`), consuming Units & Quantities
+directly for every dimensioned property. Every property carries
+structural provenance (`MaterialPropertyProvenance`) — source
+reference, revision, validation status, confidence level, applicable
+conditions, notes — never optional. No new concept guide: Materials is
+presented as a worked example of the Data Model, per `WP7.0C Academy
+Plan.md`'s own finding, not a new pattern in its own right.
+
+- [WP 7.1C — Materials Framework](03%20Work%20Packages/WP7.1C-materials-framework-implementation.md) — implemented exactly as `WP 7.0C` proposed, extended with a structured, provenance-carrying property type resolving `ADR-0055`'s own reserved property-typing question, plus one genuine finding (a direct `IPersistenceStore` dependency for its own `materialId` index) `WP7.0C Required ADR Catalogue.md` did not anticipate.
+- ADR-0055 (Materials Framework — Property Typing and Platform-Service Classification).
+
 ## Design Patterns
 
 Recurring structural patterns TempestOS actually uses, explained in terms
@@ -452,6 +467,7 @@ WorkPackages.md` for the full, nine-Work-Package plan.
 - [WP 7.0C — Engineering Foundation Contract Review](03%20Work%20Packages/WP7.0C-engineering-foundation-contract-review.md) — contract-review milestone Work Package, not a feature implementation; proposed public C# contracts for all five Engineering Foundation frameworks and reserved `ADR-0053`–`ADR-0057`. Mirrors the same whole-review retrospective format.
 - [WP 7.1A — Engineering Data Model](03%20Work%20Packages/WP7.1A-engineering-data-model-implementation.md) — the first implementation Work Package of this phase; implements `Tempest.Core.EngineeringData` (`ADR-0053`) exactly as `WP 7.0C` proposed. Standard 13-section implementation template.
 - [WP 7.1B — Units & Quantities Framework](03%20Work%20Packages/WP7.1B-units-and-quantities-framework-implementation.md) — the second implementation Work Package of this phase; implements `Tempest.Core.UnitsAndQuantities` (`ADR-0054`) exactly as `WP 7.0C` proposed, extended with arithmetic/comparison/formatting/parsing/serialization. Standard 13-section implementation template.
+- [WP 7.1C — Materials Framework](03%20Work%20Packages/WP7.1C-materials-framework-implementation.md) — the third implementation Work Package of this phase; implements `Tempest.Core.Materials` (`ADR-0055`) exactly as `WP 7.0C` proposed, extended with a structured, provenance-carrying property type. Standard 13-section implementation template.
 
 See `PROJECT_STATUS.md` for current status, `docs/governance/Future
 Capability Register.md` for the authoritative future-capability list,

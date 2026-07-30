@@ -18,6 +18,12 @@ six further principles (7-12, below) derived from what
 "derived from working code, not asserted in advance" discipline applied
 to a second framework.
 
+Extended by `WP 7.1C` (Materials Framework), 2026-07-30, adding four
+further principles (13-16, below) derived from what
+`Tempest.Core.Materials` actually implements — the same discipline
+applied to a third framework, this one built directly on both of the
+first two.
+
 ## Purpose
 
 Every future Engineering Foundation framework (`FCR-0030`–`FCR-0033`)
@@ -178,26 +184,75 @@ records, because an implicit conversion the caller did not ask for is a
 correctness risk this framework's own controlling Work Package named
 directly ("never perform implicit unit conversions").
 
+## Materials Extension (`WP 7.1C`)
+
+### 13. Every engineering property has provenance
+
+`MaterialProperty` cannot be constructed without a
+`MaterialPropertyProvenance` — the constructor throws
+`ArgumentNullException` if one is omitted
+(`MaterialProperty_NullValue_ThrowsArgumentNullException`'s own sibling
+test for provenance). There is no "provenance-free" property anywhere in
+this framework; the honest default when nothing is known
+(`MaterialPropertyProvenance.Unknown`) is still a real, present value —
+`SourceReference = null`, `ValidationStatus = Unvalidated`,
+`ConfidenceLevel = Unknown` — never an omitted field.
+
+### 14. Engineering data is revision controlled
+
+A material's own properties are never updated in place — `ReviseAsync`
+records an entirely new revision of the underlying
+`IEngineeringDocument`, exactly as Principle 2 (Engineering Data Model)
+already established for documents generally, now proven for Materials
+specifically: `ReviseAsync_ExistingMaterial_UpdatesPropertiesAndIncrementsRevisionNumber`
+confirms the revision number advances and the prior revision remains
+independently readable through `IEngineeringDocumentStore` directly.
+
+### 15. Engineering values remain independent of design methodology
+
+`Tempest.Core.Materials` contains no safety factor, no design allowable,
+no calculation, and no design-code-specific assumption — a
+`MaterialProperty`'s own value is the engineering fact as sourced
+(`MaterialPropertyProvenance.SourceReference`), never a value adjusted
+for a particular design methodology's own margin or allowable. This
+Work Package's own controlling instruction required this separation
+explicitly ("shall not implement design allowables beyond the approved
+contracts"), and `grep` of `src/Tempest.Core/Materials/` for any
+calculation or safety-factor logic finds none.
+
+### 16. Material identity is stable
+
+A material's own `MaterialId`, `Name`, and `Category` never change once
+registered — `ReviseAsync`'s own signature accepts only new properties,
+never a new Id, name, or category, mirroring Principle 1's identical
+claim for `IEngineeringDocument.Kind`.
+`ReviseAsync_PreservesNameAndCategory` proves this directly: revising a
+material's own properties leaves its name and category exactly as
+registered.
+
 ## What This Document Does Not Cover
 
-- **Calculations, materials, or verification** — each remaining future
-  Engineering Foundation framework (`FCR-0031`–`FCR-0033`) will assess
-  which of these principles apply to it directly and which it extends
-  with its own, once each is implemented; this document is not amended
-  in advance of that work.
+- **Calculations, or verification** — each remaining future Engineering
+  Foundation framework (`FCR-0032`–`FCR-0033`) will assess which of
+  these principles apply to it directly and which it extends with its
+  own, once each is implemented; this document is not amended in advance
+  of that work.
 - **Affine unit conversion (Temperature)** — deliberately deferred, not
   covered by Principle 9's "pure multiplication" claim; see `ADR-0054`'s
-  own "Temperature Deliberately Deferred" section.
+  own "Temperature Deliberately Deferred" section. Materials properties
+  are correspondingly bounded to the same seven dimensions
+  (`ADR-0055`).
 - **Discipline-specific engineering principles** (a structural
   engineering design principle, an electrical safety margin
   principle) — deliberately out of scope, per this Work Package's own
   controlling instruction not to introduce Mechanical, HVAC, Structural,
-  or Electrical concepts.
+  or Electrical concepts, or country-specific design codes.
 
 ## Related Documents
 
 `docs/academy/06 Engineering Standards/Engineering Governance.md`;
 `VISION.md`; `docs/releases/FOUNDATION.md`; `docs/governance/Future
-Capability Register.md`; `ADR-0053`; `ADR-0054`; `docs/academy/03 Work
-Packages/WP7.1A-engineering-data-model-implementation.md`;
-`docs/academy/03 Work Packages/WP7.1B-units-and-quantities-framework-implementation.md`.
+Capability Register.md`; `ADR-0053`; `ADR-0054`; `ADR-0055`;
+`docs/academy/03 Work Packages/WP7.1A-engineering-data-model-implementation.md`;
+`docs/academy/03 Work Packages/WP7.1B-units-and-quantities-framework-implementation.md`;
+`docs/academy/03 Work Packages/WP7.1C-materials-framework-implementation.md`.

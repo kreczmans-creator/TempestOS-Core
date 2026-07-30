@@ -10,7 +10,7 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | `docs/academy/` itself; `docs/academy/Academy Index.md` (the reader-facing navigation index this register cross-checks against). |
 | **Review Frequency** | Updated whenever a new Academy article is created — in practice, every Work Package (Engineering Governance §6). |
-| **Last Reviewed** | 2026-07-30 (WP 7.1B, Units & Quantities Framework) — added `WP7.1B-units-and-quantities-framework-implementation.md` and `04 Design Patterns/05-phantom-type-dimension-safety.md`. Previously reviewed 2026-07-30 (WP 7.1A, Engineering Data Model) — added `WP7.1A-engineering-data-model-implementation.md`. |
+| **Last Reviewed** | 2026-07-30 (WP 7.1C, Materials Framework) — added `WP7.1C-materials-framework-implementation.md`. No new concept guide — per `WP7.0C Academy Plan.md`'s own finding, Materials is a worked example of the Data Model, not a new pattern. Previously reviewed 2026-07-30 (WP 7.1B, Units & Quantities Framework) — added `WP7.1B-units-and-quantities-framework-implementation.md` and `04 Design Patterns/05-phantom-type-dimension-safety.md`. Previously reviewed 2026-07-30 (WP 7.1A, Engineering Data Model) — added `WP7.1A-engineering-data-model-implementation.md`. |
 | **Related Documents** | `docs/academy/Academy Index.md`; `docs/academy/Academy Audit Report.md`; `Engineering Standards Register.md`; `Feature Register.md`. |
 | **Related ADRs** | None directly — the Academy documents ADRs, it is not itself governed by one. |
 | **Related Academy Articles** | This register's entire scope. |
@@ -57,7 +57,7 @@
 | 11 | Command Framework | WP 5.1A (new), WP 5.1B (implementation confirmed; `CommandHandlerTable` sharing finding added) |
 | 12 | Diagnostics & Composite Logging | WP 5.2 (new) |
 
-## 03 Work Packages (49 retrospectives)
+## 03 Work Packages (50 retrospectives)
 
 | Retrospective | Type |
 |---|---|
@@ -110,6 +110,7 @@
 | WP 7.0C — Engineering Foundation Contract Review | Contract-review milestone Work Package — mirrors `WP 6.8`/`WP 7.0A`/`WP 7.0B`'s own whole-review format; no production code, no compiled interface; proposed public C# contracts for all five Engineering Foundation frameworks and eight review deliverables (contracts, cross-framework dependency report, standards mapping, platform integration matrix, testing strategy, academy plan, governance confirmation, required ADR catalogue `ADR-0053`–`ADR-0057`) |
 | WP 7.1A — Engineering Data Model | Implementation (standard 13-section template, `ADR-0053`) — the first implementation Work Package of the Engineering Foundation phase; implements `Tempest.Core.EngineeringData` exactly as `WP 7.0C` proposed, one disclosed minor deviation (exception base class modifier); 13 new production files, 36 new tests, `docs/engineering/Engineering Principles.md` established |
 | WP 7.1B — Units & Quantities Framework | Implementation (standard 13-section template, `ADR-0054`) — the second implementation Work Package of the Engineering Foundation phase; implements `Tempest.Core.UnitsAndQuantities` exactly as `WP 7.0C` proposed, extended (not changed) with arithmetic, comparison, formatting, parsing, and JSON serialization; 20 new production files, 67 new tests, zero DI registration, `docs/engineering/Engineering Principles.md` extended (Principles 7-12), new Design Patterns concept guide added |
+| WP 7.1C — Materials Framework | Implementation (standard 13-section template, `ADR-0055`) — the third implementation Work Package of the Engineering Foundation phase; implements `Tempest.Core.Materials` exactly as `WP 7.0C` proposed, extended (not changed) with a structured, provenance-carrying property type resolving `ADR-0055`'s own reserved property-typing question; 14 new production files, 55 new tests, consumes both `Tempest.Core.EngineeringData` and `Tempest.Core.UnitsAndQuantities`, `docs/engineering/Engineering Principles.md` extended (Principles 13-16), no new concept guide (a worked example of the Data Model, per `WP7.0C Academy Plan.md`) |
 
 **Note.** `WP 4.4C` produced no code and no separate retrospective — its
 story is told inside the `WP 4.4` architecture retrospective's own
@@ -156,13 +157,13 @@ added `Engineering Lifecycle.md`).
 | `Contributor Learning Path.md` | Repository-wide onboarding sequence for a new contributor, added `WP 4.5B` |
 
 **Total: 1 (Introduction) + 11 (Engineering Principles) + 12 (Runtime
-Architecture) + 49 (Work Packages) + 5 (Design Patterns) + 5 (Case
-Studies) + 5 (Engineering Standards) + 4 (top-level meta) = 92 files
+Architecture) + 50 (Work Packages) + 5 (Design Patterns) + 5 (Case
+Studies) + 5 (Engineering Standards) + 4 (top-level meta) = 93 files
 under `docs/academy/` — re-verified by direct `find` count against every
 subfolder individually (`WP 6.1`, `WP 6.4`, `WP 6.5`, `WP 6.2`, `WP
 6.0`, `WP 6.3`, `WP 6.7`, `WP 6.6`, `WP 6.8`, `WP 7.0A`, `WP 7.0B`, `WP
-7.0C`, `WP 7.1A`, `WP 7.1B`), not just the grand total, continuing the
-standing practice `WP 5.4`'s own repository review
+7.0C`, `WP 7.1A`, `WP 7.1B`, `WP 7.1C`), not just the grand total,
+continuing the standing practice `WP 5.4`'s own repository review
 recommended.
 **Correction, `WP
 5.4`**: the "03 Work Packages" count had read "33" (`WP 5.2`) then "34"

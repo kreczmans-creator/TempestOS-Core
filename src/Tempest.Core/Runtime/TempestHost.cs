@@ -11,6 +11,7 @@ using Tempest.Core.ExportImport;
 using Tempest.Core.Identity;
 using Tempest.Core.Licensing;
 using Tempest.Core.Logging;
+using Tempest.Core.Materials;
 using Tempest.Core.Modules;
 using Tempest.Core.Navigation;
 using Tempest.Core.Notifications;
@@ -347,6 +348,14 @@ public sealed class TempestHost : ITempestHost
         // after Persistence and Identity & Permissions, both of which it
         // depends on, mirroring Audit's own placement rationale.
         services.Singleton<IEngineeringDocumentStore, EngineeringDocumentStore>();
+
+        // ADR-0055: Materials is a thin, typed index over the Engineering
+        // Data Model (Kind = "MaterialSpecification"), plus a direct
+        // IPersistenceStore dependency of its own for the materialId
+        // index IEngineeringDocumentStore's own contract has no lookup-by-
+        // arbitrary-string capability to provide - registered after both,
+        // which it depends on.
+        services.Singleton<IMaterialCatalog, MaterialCatalog>();
 
         // Composition Root pattern (ADR-0009), like Configuration/Logging/
         // PlatformVersionProvider above: DiagnosticsProvider needs references

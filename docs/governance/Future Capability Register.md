@@ -10,9 +10,9 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | This document, from `WP 7.0A` onward. Prior to this Work Package, the same information existed only in fragments — see each entry's own "Sourced From" field for where it previously lived. |
 | **Review Frequency** | Updated whenever a new future capability is identified (by any Work Package, retrospective, or review), or whenever an existing capability's Status changes (a Work Package begins, completes, or a capability is formally deferred/rejected). |
-| **Last Reviewed** | 2026-07-30 (`WP 7.1B`, Units & Quantities Framework) — `FCR-0030` marked **Implemented**; `FCR-0034` added (Affine Unit Conversion / Temperature, found during implementation, not anticipated by prior planning). Previously reviewed 2026-07-30 (`WP 7.1A`, Engineering Data Model) — `FCR-0029` marked **Implemented**, the first entry in this register to leave "Identified" status. Previously reviewed 2026-07-30 (`WP 7.0B`, Engineering Foundation Planning & Capability Architecture) — added `FCR-0029` through `FCR-0033`, the five cross-cutting Engineering Foundation frameworks this Work Package's own dependency analysis identified as architecturally necessary before any discipline-specific Engineering Module can begin (see `WP7.0B Engineering Foundation Architecture.md`). Each is marked **Inferred**, not Verified — architectural necessity reasoning, not a capability named in a prior document, per the same discipline `FCR-0026` already applied. Previously reviewed 2026-07-30 (`WP 7.0A`, established). |
+| **Last Reviewed** | 2026-07-30 (`WP 7.1C`, Materials Framework) — `FCR-0031` marked **Implemented**. Previously reviewed 2026-07-30 (`WP 7.1B`, Units & Quantities Framework) — `FCR-0030` marked **Implemented**; `FCR-0034` added (Affine Unit Conversion / Temperature, found during implementation, not anticipated by prior planning). Previously reviewed 2026-07-30 (`WP 7.1A`, Engineering Data Model) — `FCR-0029` marked **Implemented**, the first entry in this register to leave "Identified" status. Previously reviewed 2026-07-30 (`WP 7.0B`, Engineering Foundation Planning & Capability Architecture) — added `FCR-0029` through `FCR-0033`, the five cross-cutting Engineering Foundation frameworks this Work Package's own dependency analysis identified as architecturally necessary before any discipline-specific Engineering Module can begin (see `WP7.0B Engineering Foundation Architecture.md`). Each is marked **Inferred**, not Verified — architectural necessity reasoning, not a capability named in a prior document, per the same discipline `FCR-0026` already applied. Previously reviewed 2026-07-30 (`WP 7.0A`, established). |
 | **Related Documents** | `Capability Categories.md`; `Product Roadmap.md`; `VISION.md`; `docs/governance/Quality/Technical Debt Register.md`; `docs/security/Security Roadmap.md`; `docs/security/Threat Model.md`; `docs/releases/v0.7.0/WorkPackages.md`; the eight `WP6.x Future Capability Recommendations.md` documents under `docs/releases/v0.6.0/`. |
-| **Related ADRs** | ADR-0013, ADR-0040, ADR-0044, ADR-0045, ADR-0046, ADR-0049, ADR-0050, ADR-0052, ADR-0053, ADR-0054 — see individual entries. |
+| **Related ADRs** | ADR-0013, ADR-0040, ADR-0044, ADR-0045, ADR-0046, ADR-0049, ADR-0050, ADR-0052, ADR-0053, ADR-0054, ADR-0055 — see individual entries. |
 | **Related Academy Articles** | `WP6.8-platform-services-integration-review.md` §6 (the direct source of `FCR-0001`, `FCR-0003`, `FCR-0004`, `FCR-0005`, `FCR-0006`); `WP7.0B-engineering-foundation-planning-and-capability-architecture.md`. |
 | **Coverage Status** | Complete for every future capability traceable to an existing, real document, plus five architecturally-inferred Engineering Foundation entries (`WP 7.0B`). **Not** claimed complete for the five Engineering Discipline categories with no identified candidate — see Coverage Note, below, and `Capability Categories.md`'s own identical disclosure. |
 
@@ -547,17 +547,17 @@ Coverage Note).
 | Field | Value |
 |---|---|
 | **Category** | Materials |
-| **Description** | Material selection, specification, and traceability capability shared across disciplines — the first identified candidate for the previously-empty `Materials` category in `Capability Categories.md`. |
-| **Status** | Identified (`WP 7.0B`) — architectural necessity, no design work exists |
+| **Description** | Material specification, provenance, and traceability capability shared across disciplines — the first identified candidate for the previously-empty `Materials` category in `Capability Categories.md`. Engineering data only — no material selection algorithm, design allowable, or calculation. |
+| **Status** | **Implemented (`WP 7.1C`)** — `Tempest.Core.Materials`, `MaterialCatalog`, built on `Tempest.Core.EngineeringData` and `Tempest.Core.UnitsAndQuantities` per `ADR-0055` |
 | **Priority** | Medium — enables the `Materials` and `Manufacturing` discipline categories and supports `Quality` (material traceability is a common non-conformance/inspection concern), but not a hard prerequisite for `FCR-0027`/`FCR-0028` |
-| **Business Value** | Unknown — dependent on TempestOS's eventual engineering-domain customer base, same as every other discipline-adjacent entry |
-| **Engineering Effort** | Unknown — requires its own Architecture Work Package |
-| **Dependencies** | `FCR-0029` (data model), `FCR-0030` (units — material properties are dimensioned quantities) |
-| **Proposed Target Release** | Not yet scheduled |
-| **Related ADRs** | None yet |
-| **Related Work Packages** | None yet |
-| **Academy Impact** | None until designed |
-| **Notes** | Inferred purely from the existence of the `Materials` category in `Capability Categories.md` and the structural observation that a `Manufacturing` or `Materials` discipline module cannot exist without some shared material-data capability. Not sourced from any document naming a concrete Materials capability — the weakest-sourced entry in this register alongside `FCR-0030`/`FCR-0032`. |
+| **Business Value** | Unknown in isolation; high as an enabler once a real Materials/Manufacturing discipline module needs shared material data rather than inventing its own |
+| **Engineering Effort** | Delivered — one Work Package (`WP 7.1C`), 14 new production files, 55 new tests |
+| **Dependencies** | `FCR-0029` (data model, implemented `WP 7.1A`), `FCR-0030` (units, implemented `WP 7.1B`) — both now real, not merely approved contracts |
+| **Proposed Target Release** | Shipped, `v0.7.0` (pending release) |
+| **Related ADRs** | ADR-0013, ADR-0053, ADR-0054, ADR-0055 |
+| **Related Work Packages** | `WP 7.1C` |
+| **Academy Impact** | `WP7.1C-materials-framework-implementation.md`; `docs/engineering/Engineering Principles.md` (Principles 13-16) |
+| **Notes** | Inferred purely from the existence of the `Materials` category in `Capability Categories.md` and the structural observation that a `Manufacturing` or `Materials` discipline module cannot exist without some shared material-data capability. Not sourced from any document naming a concrete Materials capability at planning time. Implemented `WP 7.1C` exactly as `WP7.0C Engineering Foundation Contracts.md` proposed, extended (not changed) with a structured, provenance-carrying property type resolving `ADR-0055`'s own reserved question, and one disclosed implementation finding (a direct `IPersistenceStore` dependency for its own `materialId` index — see `ADR-0055` Decision 3). |
 
 #### FCR-0032 — Engineering Calculation Framework
 
