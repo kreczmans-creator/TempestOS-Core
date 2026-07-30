@@ -10,9 +10,9 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | This document, from `WP 7.0A` onward. Prior to this Work Package, the same information existed only in fragments — see each entry's own "Sourced From" field for where it previously lived. |
 | **Review Frequency** | Updated whenever a new future capability is identified (by any Work Package, retrospective, or review), or whenever an existing capability's Status changes (a Work Package begins, completes, or a capability is formally deferred/rejected). |
-| **Last Reviewed** | 2026-07-30 (`WP 7.1A`, Engineering Data Model) — `FCR-0029` marked **Implemented**, the first entry in this register to leave "Identified" status. Previously reviewed 2026-07-30 (`WP 7.0B`, Engineering Foundation Planning & Capability Architecture) — added `FCR-0029` through `FCR-0033`, the five cross-cutting Engineering Foundation frameworks this Work Package's own dependency analysis identified as architecturally necessary before any discipline-specific Engineering Module can begin (see `WP7.0B Engineering Foundation Architecture.md`). Each is marked **Inferred**, not Verified — architectural necessity reasoning, not a capability named in a prior document, per the same discipline `FCR-0026` already applied. Previously reviewed 2026-07-30 (`WP 7.0A`, established). |
+| **Last Reviewed** | 2026-07-30 (`WP 7.1B`, Units & Quantities Framework) — `FCR-0030` marked **Implemented**; `FCR-0034` added (Affine Unit Conversion / Temperature, found during implementation, not anticipated by prior planning). Previously reviewed 2026-07-30 (`WP 7.1A`, Engineering Data Model) — `FCR-0029` marked **Implemented**, the first entry in this register to leave "Identified" status. Previously reviewed 2026-07-30 (`WP 7.0B`, Engineering Foundation Planning & Capability Architecture) — added `FCR-0029` through `FCR-0033`, the five cross-cutting Engineering Foundation frameworks this Work Package's own dependency analysis identified as architecturally necessary before any discipline-specific Engineering Module can begin (see `WP7.0B Engineering Foundation Architecture.md`). Each is marked **Inferred**, not Verified — architectural necessity reasoning, not a capability named in a prior document, per the same discipline `FCR-0026` already applied. Previously reviewed 2026-07-30 (`WP 7.0A`, established). |
 | **Related Documents** | `Capability Categories.md`; `Product Roadmap.md`; `VISION.md`; `docs/governance/Quality/Technical Debt Register.md`; `docs/security/Security Roadmap.md`; `docs/security/Threat Model.md`; `docs/releases/v0.7.0/WorkPackages.md`; the eight `WP6.x Future Capability Recommendations.md` documents under `docs/releases/v0.6.0/`. |
-| **Related ADRs** | ADR-0013, ADR-0040, ADR-0044, ADR-0045, ADR-0046, ADR-0049, ADR-0050, ADR-0052 — see individual entries. |
+| **Related ADRs** | ADR-0013, ADR-0040, ADR-0044, ADR-0045, ADR-0046, ADR-0049, ADR-0050, ADR-0052, ADR-0053, ADR-0054 — see individual entries. |
 | **Related Academy Articles** | `WP6.8-platform-services-integration-review.md` §6 (the direct source of `FCR-0001`, `FCR-0003`, `FCR-0004`, `FCR-0005`, `FCR-0006`); `WP7.0B-engineering-foundation-planning-and-capability-architecture.md`. |
 | **Coverage Status** | Complete for every future capability traceable to an existing, real document, plus five architecturally-inferred Engineering Foundation entries (`WP 7.0B`). **Not** claimed complete for the five Engineering Discipline categories with no identified candidate — see Coverage Note, below, and `Capability Categories.md`'s own identical disclosure. |
 
@@ -530,17 +530,17 @@ Coverage Note).
 | Field | Value |
 |---|---|
 | **Category** | Platform |
-| **Description** | A shared representation for dimensioned physical quantities (length, force, temperature, and so on) and unit conversion between them, usable by every future Engineering Discipline module rather than each implementing its own conversion logic. |
-| **Status** | Identified (`WP 7.0B`) — architectural necessity, no design work exists |
+| **Description** | A shared representation for dimensioned physical quantities (length, force, and so on) and unit conversion between them, usable by every future Engineering Discipline module rather than each implementing its own conversion logic. |
+| **Status** | **Implemented (`WP 7.1B`)** — `Tempest.Core.UnitsAndQuantities`, `Quantity<TDimension>`/`Unit<TDimension>`, per `ADR-0054`. Temperature (an affine, not purely multiplicative, dimension) deliberately deferred — see `FCR-0034`. |
 | **Priority** | High relative to other unscheduled capabilities — a prerequisite for `FCR-0032` and for any Mechanical/Structural/Electrical/HVAC/Materials/Manufacturing capability, once one is identified |
 | **Business Value** | Unknown in isolation; mitigates a well-known, industry-wide class of defect (unit-conversion error) that becomes possible the moment more than one discipline module performs a physical calculation |
-| **Engineering Effort** | Unknown — likely Medium; this class of library is well-precedented in other engineering software, though TempestOS's own shape has not been designed |
-| **Dependencies** | None upstream |
-| **Proposed Target Release** | Not yet scheduled |
-| **Related ADRs** | None yet |
-| **Related Work Packages** | None yet |
-| **Academy Impact** | Would warrant a new Academy concept guide once designed |
-| **Notes** | Inferred purely from `Capability Categories.md`'s own Engineering Discipline list (Mechanical, Structural, Electrical, Building Services/HVAC, Materials, Manufacturing all fundamentally operate on dimensioned quantities) — no prior document names this capability. The weakest-sourced entry in this register alongside `FCR-0032`; recommended for explicit confirmation, not assumed, the first time any discipline module is seriously designed. |
+| **Engineering Effort** | Delivered — one Work Package (`WP 7.1B`), 20 new production files, 67 new tests |
+| **Dependencies** | None upstream — the only Engineering Foundation framework with zero Platform Service dependency and no DI registration of any kind, confirmed by implementation |
+| **Proposed Target Release** | Shipped, `v0.7.0` (pending release) |
+| **Related ADRs** | ADR-0054 |
+| **Related Work Packages** | `WP 7.1B` |
+| **Academy Impact** | `WP7.1B-units-and-quantities-framework-implementation.md`; `docs/engineering/Engineering Principles.md` (Principles 7-12); new concept guide (phantom-type-style dimension safety) |
+| **Notes** | Inferred purely from `Capability Categories.md`'s own Engineering Discipline list — no prior document names this capability directly, the weakest-sourced entry in this register alongside `FCR-0031`/`FCR-0032` prior to implementation. Implemented `WP 7.1B` exactly as `WP7.0C Engineering Foundation Contracts.md` proposed, extended (not changed) with arithmetic, comparison, formatting, parsing, and JSON serialization support, per this Work Package's own controlling instruction. One disclosed scope boundary: Temperature deferred (`FCR-0034`), not a deviation from the approved contract. |
 
 #### FCR-0031 — Materials Framework
 
@@ -593,6 +593,23 @@ Coverage Note).
 | **Academy Impact** | Would warrant a new Academy concept guide once designed |
 | **Notes** | Inferred from `Threat Model.md` assumption 1's explicit "verification records" phrase and `FCR-0027`'s own description naming "verification" as part of the Requirements Engine's scope — this entry formalises verification as its own cross-cutting capability rather than an implicit part of Requirements alone, since Quality/Manufacturing disciplines would need it independent of Systems Engineering. |
 
+#### FCR-0034 — Affine Unit Conversion (Temperature and Similar Dimensions)
+
+| Field | Value |
+|---|---|
+| **Category** | Platform |
+| **Description** | Extend `Tempest.Core.UnitsAndQuantities` to support dimensions whose conversion is affine (both a scale and an offset), not purely multiplicative — Temperature (Celsius↔Fahrenheit) is the canonical example, deliberately excluded from `WP 7.1B`'s own starting catalogue because `Unit<TDimension>.ToBaseUnitFactor` supports only a single multiplicative factor. |
+| **Status** | Identified (`WP 7.1B`) — found during implementation, not anticipated by `WP7.0C Required ADR Catalogue.md` |
+| **Priority** | Medium — no discipline module currently needs Temperature; becomes High the moment one does (HVAC and Materials are the most likely first consumers) |
+| **Business Value** | Would grow substantially once any Mechanical/HVAC/Materials capability is designed — nearly every thermal or material-science calculation needs Temperature |
+| **Engineering Effort** | Medium — either an optional offset term on `Unit<TDimension>` (touching every existing dimension's own conversion arithmetic to confirm the offset defaults correctly to zero) or a parallel affine-unit type; a genuine design decision, not yet made |
+| **Dependencies** | `FCR-0030` (Units & Quantities, shipped `WP 7.1B`) |
+| **Proposed Target Release** | Not yet scheduled — revisit trigger: a real discipline module naming a Temperature requirement |
+| **Related ADRs** | ADR-0054 (names this gap explicitly, "Temperature Deliberately Deferred") |
+| **Related Work Packages** | `WP 7.1B` (found and disclosed, not resolved) |
+| **Academy Impact** | Would warrant an update to the Units & Quantities concept guide once designed |
+| **Notes** | Sourced from `Technical Debt Register.md` TD-19; `ADR-0054`. A genuine architectural finding discovered during implementation, not present in any prior planning document — `WP 7.0B`/`WP 7.0C` both discussed Units & Quantities only at the category/contract level, neither anticipated the multiplicative-only representation would need this exclusion until real unit catalogues were actually written. |
+
 ### Systems Engineering
 
 #### FCR-0027 — Requirements Engine
@@ -633,14 +650,19 @@ Coverage Note).
 
 ## Coverage Note
 
-**33 capabilities identified** (`FCR-0001` through `FCR-0033`).
+**34 capabilities identified** (`FCR-0001` through `FCR-0034`).
 `FCR-0001`–`FCR-0028` were each traceable to a specific, cited,
 pre-existing document, established `WP 7.0A`. `FCR-0029`–`FCR-0033`
 were added by `WP 7.0B`'s own Capability Dependency Analysis — each
 marked **Inferred**, architectural necessity reasoning rather than a
 capability named in a prior document, and each says so explicitly in
-its own Notes field. No entry was invented to fill a category without
-disclosing that it was inferred rather than sourced.
+its own Notes field. `FCR-0034` was added by `WP 7.1B`, found during
+real implementation rather than planning-stage inference — the first
+entry in this register sourced from an implementation Work Package's
+own disclosed finding rather than a retrospective, a Technical Debt
+Register entry, or architectural-necessity reasoning. No entry was
+invented to fill a category without disclosing that it was inferred
+rather than sourced.
 
 `Materials` and `Quality` each now have exactly one entry (`FCR-0031`,
 `FCR-0033` respectively) — both cross-cutting *foundation* capabilities
@@ -688,4 +710,5 @@ this check is drawn from.
 `docs/governance/Quality/Technical Debt Register.md`;
 `docs/security/Security Roadmap.md`; `docs/security/Threat Model.md`;
 `ADR-0013`; `PROJECT_STATUS.md`; `docs/releases/v0.7.0/WorkPackages.md`;
-`docs/releases/v0.7.0/WP7.0B Capability Dependency Report.md`.
+`docs/releases/v0.7.0/WP7.0B Capability Dependency Report.md`;
+`docs/releases/v0.7.0/WP7.1B Implementation Report.md`.

@@ -1,6 +1,6 @@
 # TempestOS — Project Status
 
-**Last Updated:** 2026-07-30 (`v0.6.0` Release Engineering — merged to `main`, tagged, released)
+**Last Updated:** 2026-07-30 (`WP 7.1B` — Units & Quantities Framework)
 
 This is the primary status dashboard for TempestOS. Read this first for
 "where does the project stand right now" — for "why is it built this
@@ -95,9 +95,10 @@ Work Package, below.
 
 **`feature/v0.7.0-engineering-foundation`**, cut from `main` at the
 `v0.6.0` tag, per `v0.6.0`'s own Release Engineering closing activity.
-`WP 7.0A` through `WP 7.1A` have all landed on this branch — the first
-four Work Packages of the Engineering Foundation phase, the last of
-which (`WP 7.1A`) is this branch's first real implementation. See
+`WP 7.0A` through `WP 7.1B` have all landed on this branch — the first
+five Work Packages of the Engineering Foundation phase, the last two of
+which (`WP 7.1A`, `WP 7.1B`) are this branch's first two real
+implementations. See
 `docs/releases/v0.7.0/WorkPackages.md` and `docs/governance/Future
 Capability Register.md` for the candidate items awaiting Product
 Approval for whatever comes next. `feature/v0.6.0-platform-services`
@@ -116,10 +117,37 @@ that; `v0.4.0` ("Platform Foundation") before that.
 
 ## Current Work Package
 
-**`WP 7.1A` — Engineering Data Model.** The Engineering Foundation
-phase's (`v0.7.0`) fourth activity, and its **first implementation**
+**`WP 7.1B` — Units & Quantities Framework.** The Engineering Foundation
+phase's (`v0.7.0`) fifth activity, and its **second implementation**
 Work Package — approved to begin after Engineering Review of `WP 7.0A`,
-`WP 7.0B`, and `WP 7.0C` all passed. Implements `Tempest.Core.
+`WP 7.0B`, `WP 7.0C`, and `WP 7.1A` all passed. Implements `Tempest.Core.
+UnitsAndQuantities` (`Quantity<TDimension>`, `Unit<TDimension>`,
+`IUnitConverter`) exactly as `WP7.0C Engineering Foundation
+Contracts.md` proposed, extended (not changed) with arithmetic,
+comparison, formatting, parsing, and JSON serialization support this
+Work Package's own controlling instruction required, resolving
+`ADR-0054`: `double`-backed, no DI registration, `IUnitConverter` built
+as a stateless, non-DI-registered wrapper. Seven starting dimensions
+(Length, Mass, Duration, Force, Pressure, Area, Volume), each purely
+multiplicative; Temperature (an affine dimension) deliberately deferred
+(`TD-19`, `FCR-0034`) — see `ADR-0054`'s own "Temperature Deliberately
+Deferred" section. 20 new production files; **zero** modified files —
+the first Engineering Foundation Work Package to touch neither
+`TempestHost.cs` nor any other existing file, since this framework
+registers nothing with Dependency Injection. 67 new tests (1119/1119
+passing, both Debug and Release, clean rebuild, 0 warnings). Extends
+`docs/engineering/Engineering Principles.md` with six further
+principles (7-12) and adds a new Design Patterns concept guide
+(`Phantom-Type Dimension Safety`, this platform's first phantom-type
+pattern). One new disclosed debt item (`TD-19`) and one new accepted
+trade-off (`AT-14`), neither Release Blocking. See `docs/releases/
+v0.7.0/WP7.1B Implementation Report.md` and its six companion
+deliverables for the complete account.
+
+### `WP 7.1A` Summary (for reference)
+
+**`WP 7.1A` — Engineering Data Model.** The Engineering Foundation
+phase's first implementation Work Package. Implemented `Tempest.Core.
 EngineeringData` (`IEngineeringDocumentStore`, `IEngineeringDocument`,
 `IDocumentRevision`, `DocumentReference`) exactly as `WP7.0C Engineering
 Foundation Contracts.md` proposed, resolving `ADR-0053`: built directly
@@ -128,12 +156,9 @@ disclosed, minor deviation (the exception base class's modifier,
 corrected to match universal existing convention) — see `WP7.1A
 Implementation Report.md`. 13 new production files; a new sample
 module (`EngineeringDataSampleModule`, the platform's sixteenth); 36 new
-tests (1052/1052 passing, both Debug and Release, clean rebuild, 0
-warnings). Establishes `docs/engineering/Engineering Principles.md` — a
+tests. Established `docs/engineering/Engineering Principles.md` — a
 new, permanent, top-level document. Two new, disclosed debt items
-(`TD-17`, `TD-18`), neither Release Blocking. See `docs/releases/
-v0.7.0/WP7.1A Implementation Report.md` and its six companion
-deliverables for the complete account.
+(`TD-17`, `TD-18`), neither Release Blocking.
 
 ### `WP 7.0A`/`WP 7.0B`/`WP 7.0C` Summary (for reference)
 
@@ -214,21 +239,20 @@ review.md`.
 
 ## Next Planned Work Package
 
-**None yet approved (`WP 7.1B` or a candidate from `A`–`C`, `E`–`J`).**
+**None yet approved (`WP 7.1C` or a candidate from `A`–`C`, `F`–`J`).**
 **`docs/governance/Future Capability Register.md` is now this project's
-own authoritative source for what comes next** — 33 identified
-capabilities (`FCR-0001`–`FCR-0033`), one now **Implemented**
-(`FCR-0029`, `WP 7.1A`). `WP7.1A Engineering Foundation Impact
-Assessment.md` recommends Candidates `E` (Units & Quantities) and `G`
-(Materials) as the two strongest next candidates — `E` because it
-remains fully independent, `G` because its own direct dependency
-(`FCR-0029`) is now complete and proven working, not merely approved on
-paper. Candidates `A`–`C` (Platform Hardening) remain independently
-available. **None is yet an approved Work Package** — per this
-project's own standing discipline (`FOUNDATION.md` §1), each still
-requires Product Approval before its own implementation begins. Await
-Engineering Review of `WP 7.1A` before Product Approval selects the
-next Work Package.
+own authoritative source for what comes next** — 34 identified
+capabilities (`FCR-0001`–`FCR-0034`), two now **Implemented**
+(`FCR-0029`, `WP 7.1A`; `FCR-0030`, `WP 7.1B`). `WP7.1B Engineering
+Foundation Impact Assessment.md` recommends Candidate `G` (Materials) as
+the strongest next candidate — both of its own upstream dependencies
+(`FCR-0029`, `FCR-0030`) are now complete and proven working, not merely
+approved on paper — with Candidate `F` (Calculation) second-strongest.
+Candidates `A`–`C` (Platform Hardening) remain independently available.
+**None is yet an approved Work Package** — per this project's own
+standing discipline (`FOUNDATION.md` §1), each still requires Product
+Approval before its own implementation begins. Await Engineering Review
+of `WP 7.1B` before Product Approval selects the next Work Package.
 
 ## Foundation Status
 
@@ -290,19 +314,19 @@ Experience phase is now complete.
 
 | Metric | Value |
 |---|---|
-| Automated tests | 1052 (0 failures) — **+36, `WP 7.1A`** (Engineering Data Model); re-verified across clean Debug and Release rebuilds |
-| ADRs | 53 (`ADR-0001`–`ADR-0053`, no gaps at all), all Accepted — **+1, `WP 7.1A`**: `ADR-0053` (Engineering Data Model storage substrate). `ADR-0054`–`ADR-0057` remain reserved, catalogued, not yet Accepted. |
-| Rejected Designs | 45 (`RD-0001`–`RD-0045`) — unchanged by `WP 7.1A` |
-| Academy articles | 90 (see `docs/governance/Documentation/Academy Register.md`) — **+1, `WP 7.1A`**: `WP7.1A-engineering-data-model-implementation.md` |
-| Governance registers | 27 (32 governance documents total), plus 4 standing security documents under `docs/security/` and 1 new standing engineering document (`docs/engineering/Engineering Principles.md`, `WP 7.1A`) | 
-| Architecture documents | 20 under `docs/architecture/` (22 including the two release-scoped documents) — unchanged by `WP 7.1A` |
-| Platform services | 26 catalogued — unchanged by `WP 7.1A`'s own count (Engineering Foundation frameworks are tracked in `Future Capability Register.md`, not yet added to `Platform Services Register.md` pending their own `ADR-0013` classification) |
-| Modules (production) | 16 (adds `EngineeringDataSampleModule`, `WP 7.1A`) — the sixteenth real sample module |
-| Hosted services (production) | 2 — unchanged by `WP 7.1A` |
+| Automated tests | 1119 (0 failures) — **+67, `WP 7.1B`** (Units & Quantities Framework); re-verified across clean Debug and Release rebuilds |
+| ADRs | 54 (`ADR-0001`–`ADR-0054`, no gaps at all), all Accepted — **+1, `WP 7.1B`**: `ADR-0054` (Units & Quantities representation, precision, registration model). `ADR-0055`–`ADR-0057` remain reserved, catalogued, not yet Accepted. |
+| Rejected Designs | 45 (`RD-0001`–`RD-0045`) — unchanged by `WP 7.1B` |
+| Academy articles | 92 (see `docs/governance/Documentation/Academy Register.md`) — **+2, `WP 7.1B`**: `WP7.1B-units-and-quantities-framework-implementation.md`, `04 Design Patterns/05-phantom-type-dimension-safety.md` |
+| Governance registers | 27 (32 governance documents total), plus 4 standing security documents under `docs/security/` and 1 standing engineering document (`docs/engineering/Engineering Principles.md`, established `WP 7.1A`, extended `WP 7.1B` with Principles 7-12) | 
+| Architecture documents | 20 under `docs/architecture/` (22 including the two release-scoped documents) — unchanged by `WP 7.1B` |
+| Platform services | 26 catalogued — unchanged by `WP 7.1B` (Units & Quantities is deliberately **not** a Platform Service — zero DI registration, confirmed by implementation) |
+| Modules (production) | 16 — unchanged by `WP 7.1B` (a pure mathematical library needs no living-reference sample module; the one required Platform Integration demonstration is a direct unit test, `PlatformIntegrationTests.cs`) |
+| Hosted services (production) | 2 — unchanged by `WP 7.1B` |
 | Plugins (production) | 0 — infrastructure fully implemented and tested; `src/Plugins/` empty by deliberate scope decision |
-| Custom exception types | 54 — **+2, `WP 7.1A`**: `EngineeringDataException`, `EngineeringDocumentNotFoundException` |
-| Technical Debt Register items | 18 tracked, 13 disclosed trade-offs — **+2, `WP 7.1A`**: `TD-17` (Content is string-only), `TD-18` (LinkAsync concurrency untested at scale) — both Open, neither Release Blocking |
-| Commits (`v0.6.0` → `v0.7.0`, so far) | 7 — `v0.6.0` release-branch preparation (2 commits), merge from `main`, `WP 7.0A`, `WP 7.0B`, `WP 7.0C`, `WP 7.1A` (this commit) |
+| Custom exception types | 55 — **+1, `WP 7.1B`**: `IncompatibleUnitsException` |
+| Technical Debt Register items | 19 tracked, 14 disclosed trade-offs — **+1 tracked, `WP 7.1B`**: `TD-19` (no affine/offset unit conversion — Temperature deferred), Open, not Release Blocking; **+1 trade-off**: `AT-14` (compile-time dimension safety verified by inspection, not an automated test) |
+| Commits (`v0.6.0` → `v0.7.0`, so far) | 8 — `v0.6.0` release-branch preparation (2 commits), merge from `main`, `WP 7.0A`, `WP 7.0B`, `WP 7.0C`, `WP 7.1A`, `WP 7.1B` (this commit) |
 | Contributors | 1 (repository owner; all commits co-authored by Claude) |
 
 *(This table is generated from `docs/governance/Quality/Repository Metrics
@@ -778,7 +802,21 @@ exception class modifier was corrected to match universal existing
 convention), and that a design decision not specified in a contract (how
 revision history is looked up) can still matter architecturally.
 `docs/engineering/Engineering Principles.md`, a new top-level document,
-was also established by `WP 7.1A`.
+was also established by `WP 7.1A`. **`WP 7.1B`** added
+`WP7.1B-units-and-quantities-framework-implementation.md` — the second
+standard 13-section implementation retrospective of this phase —
+teaching that `System.Text.Json` requires an explicit `[JsonConstructor]`
+attribute for a value type with a hand-written (non-positional-record)
+constructor, that a framework with zero Platform Service dependency is a
+genuinely different implementation experience (no `TempestHost.cs`
+change at all), and that a real architectural gap (Temperature's affine
+conversion) can surface during a framework's own implementation even
+after contract review found no issue at the interface-signature level.
+Also added a new Design Patterns concept guide,
+`04 Design Patterns/05-phantom-type-dimension-safety.md` — this
+platform's first phantom-type pattern — and extended
+`docs/engineering/Engineering Principles.md` with six further
+principles (7-12).
 
 ## Governance Status
 
@@ -1036,7 +1074,15 @@ Register.md`'s own "Last Reviewed" field (unchanged since `WP 6.6`
 despite `WP 7.0C`'s own edit to that register's Numbering Integrity
 narrative in the interim) — a minor, disclosed instance of the same
 register-staleness pattern this project has found and corrected
-several times before.
+several times before. **`WP 7.1B`** added `ADR-0054` (Accepted, the
+register's 54th), `TD-19` and `AT-14` to `Technical Debt Register.md`
+(19 tracked items, 14 disclosed trade-offs total), and marked `FCR-0030`
+**Implemented** — the second entry in the Future Capability Register to
+leave "Identified" status. `WP 7.1B` also added `FCR-0034` (Affine Unit
+Conversion / Temperature) — the first Future Capability Register entry
+sourced from a real implementation Work Package's own disclosed finding
+rather than planning-stage inference, bringing the register to 34
+entries total.
 
 ## Known Unknowns
 
@@ -1070,19 +1116,23 @@ Governance Audit Report.md`:
    proposed public C# contracts for all five Engineering Foundation
    frameworks, and `ADR-0053`–`ADR-0057` catalogued are all established
    and approved.
-3. **`WP 7.1A` (Engineering Data Model) is complete — awaiting
-   Engineering Review.** `Tempest.Core.EngineeringData` is implemented
-   and `ADR-0053` is Accepted; 1052/1052 tests passing, both
-   configurations, clean rebuild. No further implementation Work
-   Package begins until Engineering Review of `WP 7.1A` completes, per
-   that Work Package's own explicit closing instruction.
+3. **`WP 7.1A` (Engineering Data Model) and `WP 7.1B` (Units &
+   Quantities Framework) are both complete — awaiting Engineering
+   Review.** `Tempest.Core.EngineeringData` (`ADR-0053`) and
+   `Tempest.Core.UnitsAndQuantities` (`ADR-0054`) are both implemented;
+   1119/1119 tests passing, both configurations, clean rebuild. No
+   further implementation Work Package begins until Engineering Review
+   of `WP 7.1B` completes, per that Work Package's own explicit closing
+   instruction.
 4. **Await Product Approval of the next implementation Work Package.**
-   `WP7.1A Engineering Foundation Impact Assessment.md` recommends
-   Candidates `E` (Units & Quantities) and `G` (Materials) as the
-   strongest next candidates; Candidates `A`–`C` (Platform Hardening)
-   remain independently available. None is yet an approved Work
-   Package. No implementation is authorised until Product Approval
-   selects one, mirroring `v0.6.0`'s own pre-implementation discipline.
+   `WP7.1B Engineering Foundation Impact Assessment.md` recommends
+   Candidate `G` (Materials) as the strongest next candidate — both of
+   its own upstream dependencies (`FCR-0029`, `FCR-0030`) are now
+   complete and proven working — with Candidate `F` (Calculation)
+   second-strongest; Candidates `A`–`C` (Platform Hardening) remain
+   independently available. None is yet an approved Work Package. No
+   implementation is authorised until Product Approval selects one,
+   mirroring `v0.6.0`'s own pre-implementation discipline.
 5. A GitHub Release for `v0.6.0` has not yet been created (`gh` CLI
    unavailable in this environment) — see the Release Summary for the
    exact command or manual steps to complete it.
@@ -1125,7 +1175,7 @@ is under way:
 
 **The Platform Services phase is complete and released.** `v0.6.0` is
 merged to `main`, tagged, and pushed. TempestOS is now in the
-**Engineering Foundation** phase (`v0.7.0`). `WP 7.0A` through `WP 7.1A`
+**Engineering Foundation** phase (`v0.7.0`). `WP 7.0A` through `WP 7.1B`
 are all complete; the next implementation Work Package is not yet
 approved — see `docs/releases/v0.7.0/WorkPackages.md` and
 `docs/governance/Future Capability Register.md` for candidate items
@@ -1142,7 +1192,10 @@ pending Product Approval.
   Engineering Review APPROVED.**
 - `WP 7.1A` — Engineering Data Model (first implementation Work Package
   of this phase; `Tempest.Core.EngineeringData`, `ADR-0053`). **Complete
-  — awaiting Engineering Review.**
+  — Engineering Review APPROVED.**
+- `WP 7.1B` — Units & Quantities Framework (second implementation Work
+  Package of this phase; `Tempest.Core.UnitsAndQuantities`, `ADR-0054`).
+  **Complete — awaiting Engineering Review.**
 
 ## Long-Term Vision
 

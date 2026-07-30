@@ -12,6 +12,12 @@ principles the engineering-domain content itself — not the platform
 that hosts it — must uphold, derived from what `Tempest.Core.
 EngineeringData` actually implements, not asserted in advance of it.
 
+Extended by `WP 7.1B` (Units & Quantities Framework), 2026-07-30, adding
+six further principles (7-12, below) derived from what
+`Tempest.Core.UnitsAndQuantities` actually implements — the same
+"derived from working code, not asserted in advance" discipline applied
+to a second framework.
+
 ## Purpose
 
 Every future Engineering Foundation framework (`FCR-0030`–`FCR-0033`)
@@ -102,13 +108,86 @@ path. Likewise, requiring a full new revision for any content change
 (Principle 2), rather than offering a cheaper "patch" operation, is a
 deliberate correctness-over-convenience choice, not an oversight.
 
+## Units & Quantities Extension (`WP 7.1B`)
+
+### 7. Units are explicit
+
+A bare `double` never represents a physical quantity anywhere in
+`Tempest.Core.UnitsAndQuantities` — every numeric value is paired with a
+`Unit<TDimension>` inside a `Quantity<TDimension>`, and no method
+anywhere in this framework accepts or returns an un-unit'd number. This
+is enforced structurally: `Quantity<TDimension>`'s own constructor
+requires both a value and a unit; there is no overload that defaults
+the unit.
+
+### 8. Dimensions are enforced
+
+A `Quantity<Length>` cannot be added to, compared against, or converted
+into a `Quantity<Mass>` — the compiler rejects it. This is proven, not
+merely asserted: `CompileTimeDimensionSafetyTests.cs` documents the exact
+`CS1503`/`CS0019` errors reproduced by attempting it, verified directly
+against this repository's own compiler (see `ADR-0054`'s own note on why
+this is verified by inspection rather than an automated compiler-error
+test).
+
+### 9. Conversion is deterministic
+
+`Quantity<TDimension>.ConvertTo` is pure multiplication/division against
+a fixed `ToBaseUnitFactor` — no randomness, no ambient state, no
+thread-culture dependency. `DimensionCatalogueTests` proves every
+catalogued unit round-trips through its own dimension's base unit to
+within floating-point tolerance, for the same input, every time.
+Formatting and parsing are equally deterministic: both are hard-coded to
+`CultureInfo.InvariantCulture` regardless of the calling thread's own
+culture — `QuantityTests.ToString_IsCultureInvariant` proves a `de-DE`
+format provider does not change the decimal separator produced.
+
+### 10. Physical impossibilities fail loudly
+
+A `Unit<TDimension>` cannot be constructed with a zero, negative,
+infinite, or `NaN` conversion factor — no unit's scale can be
+physically zero or negative. A `Quantity<TDimension>` cannot be
+constructed with a `NaN` or infinite value — no physical quantity is
+"not a number." Both are enforced in each type's own constructor, proven
+by `UnitTests.Constructor_NonPositiveOrNonFiniteFactor_ThrowsArgumentOutOfRangeException`
+and `QuantityTests.Constructor_NonFiniteValue_ThrowsArgumentOutOfRangeException`
+— neither silently clamps or coerces the invalid input.
+
+### 11. Precision loss is never silent
+
+`Quantity<TDimension>.ToString()` (no format specified) uses `double`'s
+own full round-trippable representation — it does not truncate decimal
+places unless the caller explicitly requests a reduced format (e.g.
+`"F2"`). Dividing a quantity by zero does not silently produce an
+`Infinity`-valued quantity: the resulting non-finite value is rejected by
+the constructor (Principle 10), converting a silent precision/validity
+loss into a loud, immediate failure —
+`QuantityTests.ScalarDivision_ByZero_ThrowsArgumentOutOfRangeException`
+proves this.
+
+### 12. Mathematical correctness takes precedence over convenience
+
+Every arithmetic and comparison operator requires both operands to share
+the exact same `Unit<TDimension>` — not merely the same dimension —
+throwing `IncompatibleUnitsException` otherwise
+(`QuantityTests.Addition_DifferentUnits_ThrowsIncompatibleUnitsException`).
+A more convenient design would silently convert 500 cm to 5 m before
+adding; this framework deliberately requires the caller to call
+`ConvertTo` explicitly first, exactly as `ADR-0054`'s own Decision 4
+records, because an implicit conversion the caller did not ask for is a
+correctness risk this framework's own controlling Work Package named
+directly ("never perform implicit unit conversions").
+
 ## What This Document Does Not Cover
 
-- **Units, calculations, materials, or verification** — each future
-  Engineering Foundation framework (`FCR-0030`–`FCR-0033`) will assess
+- **Calculations, materials, or verification** — each remaining future
+  Engineering Foundation framework (`FCR-0031`–`FCR-0033`) will assess
   which of these principles apply to it directly and which it extends
   with its own, once each is implemented; this document is not amended
   in advance of that work.
+- **Affine unit conversion (Temperature)** — deliberately deferred, not
+  covered by Principle 9's "pure multiplication" claim; see `ADR-0054`'s
+  own "Temperature Deliberately Deferred" section.
 - **Discipline-specific engineering principles** (a structural
   engineering design principle, an electrical safety margin
   principle) — deliberately out of scope, per this Work Package's own
@@ -119,5 +198,6 @@ deliberate correctness-over-convenience choice, not an oversight.
 
 `docs/academy/06 Engineering Standards/Engineering Governance.md`;
 `VISION.md`; `docs/releases/FOUNDATION.md`; `docs/governance/Future
-Capability Register.md`; `ADR-0053`; `docs/academy/03 Work Packages/
-WP7.1A-engineering-data-model-implementation.md`.
+Capability Register.md`; `ADR-0053`; `ADR-0054`; `docs/academy/03 Work
+Packages/WP7.1A-engineering-data-model-implementation.md`;
+`docs/academy/03 Work Packages/WP7.1B-units-and-quantities-framework-implementation.md`.

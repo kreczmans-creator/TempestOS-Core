@@ -326,6 +326,22 @@ cryptographic signature verification, a disclosed limitation.
 - [WP 6.6 — Licensing Framework Implementation](03%20Work%20Packages/WP6.6-licensing-framework-implementation.md) — implemented directly against the already-approved architecture and Contract Review packages, including the missing-file-vs-broken-file Host-fatal resolution (`ADR-0050`) and a dedicated Platform Integration Demonstration.
 - ADR-0050 (License Validation Is a Host-Startup, Host-Fatal Gate — Except a Missing License File, Which Is a Valid, Unrestricted Default).
 
+### Units & Quantities
+
+Implemented (`WP 7.1B`, `ADR-0054`) — `Tempest.Core.UnitsAndQuantities`:
+`Quantity<TDimension>`/`Unit<TDimension>`, a pure, dependency-free
+mathematical library for dimensioned physical quantities — this
+platform's first Engineering Foundation framework with zero Platform
+Service dependency and no DI registration of any kind. Seven starting
+dimensions (Length, Mass, Duration, Force, Pressure, Area, Volume), each
+purely multiplicative; Temperature (an affine dimension) deliberately
+deferred (`TD-19`, `FCR-0034`). Arithmetic, comparison, formatting, and
+parsing all require the exact same `Unit`, never an implicit conversion.
+
+- [WP 7.1B — Units & Quantities Framework](03%20Work%20Packages/WP7.1B-units-and-quantities-framework-implementation.md) — implemented exactly as `WP 7.0C` proposed, extended with arithmetic/comparison/formatting/parsing/serialization, resolving all three `ADR-0054` questions plus one genuine finding (affine conversion) `WP7.0C Required ADR Catalogue.md` did not anticipate.
+- [Phantom-Type Dimension Safety](04%20Design%20Patterns/05-phantom-type-dimension-safety.md) — the compile-time-safety pattern this framework introduces to TempestOS for the first time.
+- ADR-0054 (Units & Quantities — Representation, Precision, and Registration Model).
+
 ## Design Patterns
 
 Recurring structural patterns TempestOS actually uses, explained in terms
@@ -335,6 +351,7 @@ of the real code that uses them — not a generic patterns catalogue.
 - [Descriptor and Snapshot Types](04%20Design%20Patterns/02-descriptor-and-snapshot-types.md)
 - [Minimal Interface, Extension-Method Sugar](04%20Design%20Patterns/03-minimal-interface-with-extension-sugar.md)
 - [Reflection-Based Discovery](04%20Design%20Patterns/04-reflection-based-discovery.md)
+- [Phantom-Type Dimension Safety](04%20Design%20Patterns/05-phantom-type-dimension-safety.md)
 
 ## Engineering Governance
 
@@ -434,6 +451,7 @@ WorkPackages.md` for the full, nine-Work-Package plan.
 - [WP 7.0B — Engineering Foundation Planning & Capability Architecture](03%20Work%20Packages/WP7.0B-engineering-foundation-planning-and-capability-architecture.md) — architecture-and-planning milestone Work Package, not a feature implementation; added `FCR-0029`–`FCR-0033` (the Engineering Foundation Programme) and eight planning deliverables analysing all 33 Future Capability Register entries. Mirrors the same whole-review retrospective format.
 - [WP 7.0C — Engineering Foundation Contract Review](03%20Work%20Packages/WP7.0C-engineering-foundation-contract-review.md) — contract-review milestone Work Package, not a feature implementation; proposed public C# contracts for all five Engineering Foundation frameworks and reserved `ADR-0053`–`ADR-0057`. Mirrors the same whole-review retrospective format.
 - [WP 7.1A — Engineering Data Model](03%20Work%20Packages/WP7.1A-engineering-data-model-implementation.md) — the first implementation Work Package of this phase; implements `Tempest.Core.EngineeringData` (`ADR-0053`) exactly as `WP 7.0C` proposed. Standard 13-section implementation template.
+- [WP 7.1B — Units & Quantities Framework](03%20Work%20Packages/WP7.1B-units-and-quantities-framework-implementation.md) — the second implementation Work Package of this phase; implements `Tempest.Core.UnitsAndQuantities` (`ADR-0054`) exactly as `WP 7.0C` proposed, extended with arithmetic/comparison/formatting/parsing/serialization. Standard 13-section implementation template.
 
 See `PROJECT_STATUS.md` for current status, `docs/governance/Future
 Capability Register.md` for the authoritative future-capability list,
