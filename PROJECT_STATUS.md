@@ -1,6 +1,6 @@
 # TempestOS — Project Status
 
-**Last Updated:** 2026-07-29 (`WP 6.6` — Licensing Framework, implemented)
+**Last Updated:** 2026-07-29 (`WP 6.8` — Platform Services Integration Review, certified)
 
 This is the primary status dashboard for TempestOS. Read this first for
 "where does the project stand right now" — for "why is it built this
@@ -80,7 +80,12 @@ license validation is a pre-container, Host-startup gate, Host-fatal
 for a broken license file but not for a missing one, which resolves to
 a valid, unrestricted-but-uncapable default (`ADR-0050`) — proven not
 to regress any of the 24 pre-existing tests that build a real
-`TempestHost`. See Current Work Package, below.
+`TempestHost`. `WP 6.8` closes the phase: a certification review, not
+an implementation Work Package, confirming the platform's own
+architecture, integration, testing, documentation, and governance all
+hold up under direct, independent re-verification, and recommending
+**CERTIFIED WITH ACCEPTED TECHNICAL DEBT**. See Current Work Package,
+below.
 
 ## Current Development Branch
 
@@ -104,82 +109,68 @@ before that; `v0.3.0` ("Runtime Foundation Complete") before that.
 
 ## Current Work Package
 
-**`WP 6.6` — Licensing Framework — implemented.** The final production
-implementation Work Package of the Platform Services phase (`v0.6.0`)
-— every feature Work Package this release plans to ship has now landed;
-only `WP 6.8` (Platform Services Integration Review, certification)
-remains. The sixth of eight implemented Work Packages to be sequenced
-ahead of its own nominal numeric position, per `Platform Service
-Implementation Order.md`'s own explicit recommendation (only `WP 6.0`
-and `WP 6.3` match their own nominal position). Delivers
-`Tempest.Core.Licensing` (`ILicense`/`ILicenseValidator`/
-`ILicenseProvider`, `LicensingException` and its approved subtype
-`LicenseValidationException`, exactly as approved) — Licensing exposes
-capability only; it does not implement commercial policy, billing, or
-subscriptions.
+**`WP 6.8` — Platform Services Integration Review & Release
+Certification — certified.** The closing Work Package of the Platform
+Services phase (`v0.6.0`) — a certification review, not an
+implementation exercise; no production code was written. Reviewed all
+eleven in-scope services (Runtime Foundation, Host, Identity &
+Permissions, Settings, Persistence, Audit, Notifications, Reporting,
+REST API, Export/Import, Licensing) directly against the shipped
+repository, re-verifying rather than re-reading each prior Work
+Package's own claim.
 
-**The one genuine architectural question this Work Package was
-specifically positioned to answer, resolved with evidence rather than
-assumption:** `Risk Register.md`'s own `R5` asked whether every
-"invalid" license category (missing, expired, malformed) genuinely
-warrants Host-fatal treatment. Resolved: a missing license file is a
-valid, unrestricted-but-uncapable default
-(`LicenseValidator.UnlicensedLicenseeName`, zero enabled capabilities)
-— this platform's own normal, open-source-friendly state, never
-Host-fatal; a license file that exists but is unreadable, not valid
-JSON, missing its own required `LicenseeName` field, or already
-expired, aborts Host startup entirely, Host-fatal, per `ADR-0013`'s
-existing classification, applied without modification (`ADR-0050`).
-Proven directly, not merely reasoned about: every one of the 24
-pre-existing test files that build a real `TempestHost` continues to
-pass completely unmodified, since none of them has ever supplied a
-license file — confirmed by running the full pre-`WP 6.6` suite after
-this change. `ILicenseValidator` is constructed directly by
-`TempestHost`, before the DI container exists, with no constructor
-dependencies at all — deliberately a leaf, mirroring
-`PlatformVersionProvider`'s own position; `ILicenseProvider` wraps the
-already-validated license and is registered via `AddInstance` at Phase
-6, the only proposed `v0.6.0` service with a non-container-registered
-contract.
+**Certification outcome: CERTIFIED WITH ACCEPTED TECHNICAL DEBT.**
+Zero findings rise to release-blocking. Architecture Review: zero
+`Service → Module` violations, zero `Module → Module` violations beyond
+one disclosed, constant-only exception (`ApiSampleModule`), zero
+`Runtime → Feature` violations — confirmed by direct `grep`, not
+assumed. One genuine, narrow, non-blocking architectural finding
+disclosed for the first time: `Tempest.Core.Diagnostics` imports
+`Tempest.Core.Runtime` for a single enum type (`HostState`), a mutual
+namespace reference a literal reading of `ADR-0023` would flag —
+shipped safely since `WP 5.2`, recommended for formal resolution in a
+future release. Integration Review: every one of the eleven services
+has at least one verified, real consumer (the REST API now has two
+independent ones — `ApiSampleModule` and `LicensingSampleModule` — the
+strongest evidence yet that `IApiEndpointRegistry`'s own design
+generalises). Testing Review: 1016 tests, 0 failures, confirmed across
+six full-suite runs (Debug and Release, from a clean rebuild), zero
+instances of the known, disclosed `Console.Out`-capture flake.
 
-`LicensingSampleModule` (the fifteenth production sample module)
-registers a sample setting and a command
-(`CheckSampleCapabilityCommand`) whose handler checks a permission
-(Identity), checks a sample capability via
-`ILicenseProvider.HasCapability` (Licensing), reads a Settings-provided
-message on success (Settings), records the outcome (Audit), and
-publishes a completion notice (Notifications) — then maps that same
-command to an HTTP route (REST API), proven by a real HTTP round trip
-returning `200` for a licensed capability, `400` for an unlicensed one,
-and `403` for a denied permission. Persistence and Reporting are both
-deliberately not consumed — Licensing's own approved contract states
-"Persistence Requirements: None," and no commercial reporting need
-exists for this sample. License file contents are trusted at face
-value — no cryptographic signature verification of any kind, disclosed
-as `TD-16`, mirroring `TD-13`'s own precedent for the REST API's
-undisclosed-authentication gap. One new ADR (`ADR-0050`, formally
-filling the very last remaining reserved-ADR-number gap from `Required
-ADRs.md` — `docs/adr/` now runs `ADR-0001` through `ADR-0052` with no
-gaps at all), 44 new tests (1016 total, 0 failures) — unit, integration,
-capability-evaluation, invalid-license, expired-license,
-failure-injection, registration, and regression categories — 0 build
-warnings, both Debug and Release, stable across repeated runs in both
-configurations. See its own retrospective: `docs/academy/03 Work
-Packages/WP6.6-licensing-framework-implementation.md`, and its own
-dedicated `WP6.6 Platform Integration Demonstration.md` for the full,
-per-service account of every platform-service interaction assessed.
+**The largest single finding: three governance registers, stale since
+`WP 5.2`, were fully backfilled.** `Interface Register.md`
+(64 interfaces), `Dependency Injection Register.md` (26 named
+registrations), and `Module Register.md` (all 15 production modules)
+had each gone six Work Packages without an update — `WP 6.7` first
+disclosed this as `Partial`, `WP 6.6` correctly added only its own new
+entries, and `WP 6.8` performed the full backfill, closing the gap
+completely. Two release-level risks (`R2`, `R3`) that had sat "Open"
+despite being substantively resolved by their own owning Work Packages
+were formally closed here with fresh, independent evidence (`git log`'s
+own commit order for `R2`; a fresh `grep` of `RestApiHostedService.cs`
+for `R3`). All eight risks in `Risk Register.md` are now Closed or
+Mitigated, save one (`R8`) Remaining by deliberate, disclosed design
+choice. Sixteen tracked debt items and thirteen disclosed trade-offs
+were each classified Resolved, Accepted, or Deferred — zero Release
+Blocking. See `WP6.8 Platform Certification Report.md` for the complete
+decision and evidence, and its eight companion deliverables
+(`Platform Architecture Conformance Report.md`, `Platform Consumption
+Matrix.md`, `Definition of Done Audit.md`, `Technical Debt
+Disposition.md`, `Risk Register Disposition.md`, `Release Readiness
+Report.md`, `Executive Summary.md`) plus its own retrospective:
+`docs/academy/03 Work Packages/WP6.8-platform-services-integration-
+review.md`.
 
 ## Next Planned Work Package
 
-Per this Work Package's own explicit closing instruction, implementation
-stops here pending engineering approval — no further Work Package is to
-begin regardless of `Platform Service Implementation Order.md`'s own
-recommended sequencing. `WP 6.1`, `WP 6.4`, `WP 6.5`, `WP 6.2`, `WP
-6.0`, `WP 6.3`, `WP 6.7`, and `WP 6.6` are all now complete — every
-feature Work Package this release plans to ship. Only `WP 6.8`
-(Platform Services Integration Review) remains, mirroring `WP 4.2D`'s/
-`WP 5.0S`'s own closing-milestone precedent — see `docs/releases/v0.6.0/
-WorkPackages.md` for the full, nine-Work-Package plan.
+**None — `v0.6.0`'s own implementation phase is complete.** All nine
+Work Packages (`WP 6.0` through `WP 6.8`) are done; `WP 6.8` certified
+the release `CERTIFIED WITH ACCEPTED TECHNICAL DEBT`. Per this Work
+Package's own explicit closing instruction, no further implementation
+is authorised — the release now awaits Product Approval (Engineering
+Governance §7) and, once granted, a merge to `main` and a `v0.6.0` tag.
+No merge or tag has been created by this Work Package itself — both
+remain explicit, separate actions requiring their own authorisation.
 
 ## Foundation Status
 
@@ -241,19 +232,19 @@ Experience phase is now complete.
 
 | Metric | Value |
 |---|---|
-| Automated tests | 1016 (0 failures) — **+44, `WP 6.6`**: unit, integration, capability-evaluation, invalid-license, expired-license, failure-injection, registration, and regression tests for Licensing, including four dedicated Host-fatal-abort tests and a real HTTP round trip through the REST API |
-| ADRs | 52 (`ADR-0001`–`ADR-0052`, no gaps at all), all Accepted — **+1, `WP 6.6`**: `ADR-0050` (License Validation Is a Host-Startup, Host-Fatal Gate — Except a Missing License File, Which Is a Valid, Unrestricted Default) — the last remaining reserved-ADR-number gap, now filled |
-| Rejected Designs | 45 (`RD-0001`–`RD-0045`) — unchanged by `WP 6.6` (no rejected design produced; alternatives-considered sections recorded within `ADR-0050` itself) |
-| Academy articles | 85 (see `docs/governance/Documentation/Academy Register.md`) — **+1, `WP 6.6`**: `WP6.6-licensing-framework-implementation.md` |
-| Governance registers | 27 (32 governance documents total), plus 4 standing security documents under `docs/security/` (not governance registers themselves, indexed from `Governance Index.md`'s Security section) |
-| Architecture documents | 20 under `docs/architecture/` (22 including the two release-scoped documents) — unchanged by `WP 6.6` (Platform Service Map.md updated in place, not a new document) |
-| Platform services | 26 catalogued — 23 Implemented, 2 not implemented as platform services, 1 developer-convenience layer — **+1, `WP 6.6`**: Licensing |
-| Modules (production) | 15 (`ClockModule`, `ClockLifecycleObserverModule`, `NavigationSampleModule`, `SecondaryNavigationSampleModule`, `DuplicateNavigationSampleModule`, `CommandSampleModule`, `DiagnosticsSampleModule`, `IdentitySampleModule`, `SettingsSampleModule`, `AuditSampleModule`, `NotificationSampleModule`, `ReportingSampleModule`, `ApiSampleModule`, `ExportImportSampleModule`, `LicensingSampleModule`) |
-| Hosted services (production) | 2 — unchanged by `WP 6.6` (Licensing has no hosted-service component; `ILicenseValidator` runs pre-container, `ILicenseProvider` is an ordinary Phase 6 `AddInstance` registration, no new Host Lifecycle phase) |
+| Automated tests | 1016 (0 failures) — unchanged by `WP 6.8` (a certification review, no production or test code written); re-run six times across both configurations as this Work Package's own validation, zero failures every time |
+| ADRs | 52 (`ADR-0001`–`ADR-0052`, no gaps at all), all Accepted — unchanged by `WP 6.8` |
+| Rejected Designs | 45 (`RD-0001`–`RD-0045`) — unchanged by `WP 6.8` |
+| Academy articles | 86 (see `docs/governance/Documentation/Academy Register.md`) — **+1, `WP 6.8`**: `WP6.8-platform-services-integration-review.md` |
+| Governance registers | 27 (32 governance documents total), plus 4 standing security documents under `docs/security/` (not governance registers themselves, indexed from `Governance Index.md`'s Security section) — count unchanged by `WP 6.8`, but three registers' own Coverage Status corrected from `Partial` to `Complete` (see Governance Status, below) |
+| Architecture documents | 20 under `docs/architecture/` (22 including the two release-scoped documents) — unchanged by `WP 6.8` |
+| Platform services | 26 catalogued — 23 Implemented, 2 not implemented as platform services, 1 developer-convenience layer — unchanged by `WP 6.8` |
+| Modules (production) | 15 (`ClockModule`, `ClockLifecycleObserverModule`, `NavigationSampleModule`, `SecondaryNavigationSampleModule`, `DuplicateNavigationSampleModule`, `CommandSampleModule`, `DiagnosticsSampleModule`, `IdentitySampleModule`, `SettingsSampleModule`, `AuditSampleModule`, `NotificationSampleModule`, `ReportingSampleModule`, `ApiSampleModule`, `ExportImportSampleModule`, `LicensingSampleModule`) — unchanged by `WP 6.8`; all 15 now correctly listed in `Module Register.md` for the first time |
+| Hosted services (production) | 2 — unchanged by `WP 6.8` |
 | Plugins (production) | 0 — infrastructure fully implemented and tested; `src/Plugins/` empty by deliberate scope decision |
-| Custom exception types | 52 — **+2, `WP 6.6`**: `LicensingException` (base-plus-subtype, mirroring `ReportingException`), `LicenseValidationException` (the one approved subtype, Host-fatal) |
-| Technical Debt Register items | 16 tracked, 13 disclosed trade-offs (1 Retired) — **`WP 6.6`**: +1 tracked (`TD-16` no cryptographic license file signature verification); +1 trade-off (`AT-13` no remote validation/activation, floating/seat-based licensing, or renewal/grace-period model); no existing Technical Debt item required annotation |
-| Commits (this release, `v0.5.0` → `v0.6.0`, so far) | 11 — branch/documentation preparation, Architecture Package, Contract Review Package, `WP 6.1` implementation, `WP 6.4` implementation, `WP 6.5` implementation, `WP 6.2` implementation, `WP 6.0` implementation, `WP 6.3` implementation, `WP 6.7` implementation, `WP 6.6` implementation (this one) |
+| Custom exception types | 52 — unchanged by `WP 6.8` |
+| Technical Debt Register items | 16 tracked, 13 disclosed trade-offs (1 Retired) — unchanged by `WP 6.8`; all 29 items classified in `WP6.8 Technical Debt Disposition.md` (3 Resolved, 6 Accepted, 7 Deferred among tracked debt; 1 Resolved, 12 Accepted among trade-offs; **zero Release Blocking**) |
+| Commits (this release, `v0.5.0` → `v0.6.0`, so far) | 12 — branch/documentation preparation, Architecture Package, Contract Review Package, `WP 6.1` implementation, `WP 6.4` implementation, `WP 6.5` implementation, `WP 6.2` implementation, `WP 6.0` implementation, `WP 6.3` implementation, `WP 6.7` implementation, `WP 6.6` implementation, `WP 6.8` certification review (this one) |
 | Contributors | 1 (repository owner; all commits co-authored by Claude) |
 
 *(This table is generated from `docs/governance/Quality/Repository Metrics
@@ -265,22 +256,16 @@ three together.)*
 - **Build:** Clean — 0 warnings, 0 errors (`dotnet build
   tests/Tempest.Core.Tests/Tempest.Core.Tests.csproj`, both Debug and
   Release configurations, from a fully-removed `bin`/`obj` tree —
-  verified directly by `WP 6.6`).
-- **Tests:** 1016/1016 passing (+44, `WP 6.6`), verified in both Debug
-  and Release configurations from a clean rebuild, and re-run a second
-  consecutive time in Debug to confirm stability. This Work Package's
-  own most consequential finding was not a code defect but a genuine,
-  previously-open architectural question, resolved with direct evidence
-  rather than assumption: `Risk Register.md`'s own `R5` asked whether a
-  missing license file should be Host-fatal; making it so would have
-  broken every one of the 24 pre-existing test files that build a real
-  `TempestHost`, none of which has ever supplied one — confirmed by
-  running the full pre-`WP 6.6` suite unmodified after implementing the
-  "missing file is a valid, unrestricted default" resolution and finding
-  zero regressions, rather than merely reasoning that this would be
-  fine. No instance of the previously-disclosed, non-reproducible
-  `Console.Out`-capture flake (`WP 6.3`'s own finding) was observed
-  across any run performed for this Work Package's own validation.
+  re-verified directly by `WP 6.8`, independent of `WP 6.6`'s own claim).
+- **Tests:** 1016/1016 passing, re-verified by `WP 6.8` across **six**
+  full-suite runs (three Debug, two Release, one further Debug),
+  including two entirely clean rebuilds — the deepest test-stability
+  verification any single Work Package this release has performed. Zero
+  instances of the previously-disclosed, non-reproducible `Console.Out`-
+  capture flake (`WP 6.3`'s own finding) were observed across any of the
+  six runs. `WP 6.8`'s own certification review found no code-level
+  regression of any kind — see `WP6.8 Release Readiness Report.md` for
+  the complete, per-run evidence table.
 - **Known regressions:** None.
 - **Working tree:** Clean at every Work Package boundary — see
   `docs/governance/Quality/Validation Register.md`.
@@ -587,15 +572,32 @@ Register.md`/`Module Register.md` gap, still `Partial`, still left for
 new interfaces, one new registration, and one new module to each,
 exactly as `WP 6.7` did).
 
+**`WP 6.8` (Platform Services Integration Review & Release
+Certification)** — a certification review, not a feature Work Package;
+no architecture or Contract Review document was revised, and no
+production code was written. `Interface Register.md`, `Dependency
+Injection Register.md`, and `Module Register.md` were each fully
+backfilled — every one of the 64 public interfaces, 26 named DI
+registrations, and 15 production modules TempestOS ships is now
+correctly recorded, closing the gap `WP 6.7` first disclosed and `WP
+6.6` correctly left in place. `docs/releases/v0.6.0/Risk Register.md`
+gained four status updates (`R2`, `R3`, `R4` fully closed with fresh
+evidence; `R6` updated to reflect its own partial, not perfect,
+mitigation). No new ADR was produced — this Work Package audits
+decisions already made; it does not make new ones. Nine completion
+deliverables were produced under `docs/releases/v0.6.0/`, prefixed
+`WP6.8`, culminating in a `CERTIFIED WITH ACCEPTED TECHNICAL DEBT`
+recommendation.
+
 ## Academy Status
 
-85 articles across 7 categories (Introduction, Engineering Principles,
+86 articles across 7 categories (Introduction, Engineering Principles,
 Runtime Architecture, Work Package retrospectives, Design Patterns, Case
 Studies, Engineering Standards), plus `Academy Index.md`, `Academy
 Masterclass Roadmap.md`, `Academy Audit Report.md`, and `Contributor
 Learning Path.md` — re-derived directly (`find docs/academy -name
-"*.md"`) by `WP 6.6`, consistent with `WP 6.0`'s/`WP 6.2`'s/`WP 6.3`'s/
-`WP 6.7`'s own prior passes. Every completed Work Package has a matching
+"*.md"`) by `WP 6.8`, consistent with `WP 6.0`'s/`WP 6.2`'s/`WP 6.3`'s/
+`WP 6.7`'s/`WP 6.6`'s own prior passes. Every completed Work Package has a matching
 retrospective, including `WP 5.0A` through `WP 5.4`. Maintenance
 obligation (Engineering Governance §6) verified honoured by two
 independent audits (`WP 4.4F`, and the Academy Register built during
@@ -686,7 +688,17 @@ own `R5`, the pre-container leaf-construction pattern
 `PlatformVersionProvider` already established and this Work Package
 reused rather than reinvented, and — proven directly, not merely
 assumed — that this design change regresses none of the 24 pre-existing
-tests that build a real `TempestHost`.
+tests that build a real `TempestHost`. `WP 6.8` added
+`WP6.8-platform-services-integration-review.md`, mirroring `WP 5.4`'s
+own whole-release-review format (What Was Achieved, Architectural
+Lessons, Implementation Lessons, Repository Maturity, Recommendations,
+Key Takeaways, rather than the standard 13-section per-feature
+template) — teaching that a closing, whole-release review is not a
+formality, that re-verifying a risk's own claimed resolution against
+fresh evidence is cheap and catches real staleness, and that a
+"Certified With Accepted Technical Debt" outcome is more honest than a
+bare "Certified for Release" whenever a release ships disclosed,
+deliberate limitations.
 
 ## Governance Status
 
@@ -904,6 +916,30 @@ registration, and one new module to each, leaving the larger,
 six-Work-Package backfill exactly where `WP 6.7` left it, for `WP 6.8`'s
 own closing audit.
 
+**`WP 6.8` (Platform Services Integration Review & Release
+Certification)** produced no new ADR — it is a certification review,
+not a decision-making Work Package. `Interface Register.md`,
+`Dependency Injection Register.md`, and `Module Register.md` were each
+fully backfilled, closing the gap `WP 6.7` first disclosed: all 64
+public interfaces, 26 named DI registrations (28 raw `Singleton`/
+`AddInstance` call sites), and 15 production modules are now correctly
+recorded, and each register's own Coverage Status is corrected from
+`Partial` to `Complete`. A genuine, pre-existing arithmetic drift,
+unrelated to the larger gap, was found and corrected in the same pass:
+`Interface Register.md`'s own Classification Summary had read
+"Host-owned = 6" while its own Entries table already listed 7 rows
+marked Host-owned. `docs/releases/v0.6.0/Risk Register.md` gained four
+updates: `R2` and `R3` fully closed with fresh, independent evidence
+(`git log`'s own commit order; a fresh `grep` of
+`RestApiHostedService.cs`); `R4` fully closed (Audit's own reuse of
+Persistence re-confirmed directly); `R6` updated to disclose that its
+own mitigation held only partially, not perfectly — exactly the
+Interface/DI/Module Register drift this same risk predicted, now fully
+corrected. Nine completion deliverables were produced, disposing of
+every Technical Debt Register item (29 total: 16 tracked, 13 trade-offs
+— zero Release Blocking) and every Risk Register entry (8 total: 5
+Closed, 2 Mitigated, 1 Remaining by deliberate design) explicitly.
+
 ## Known Unknowns
 
 Recorded honestly, not guessed at — full detail in `docs/governance/
@@ -924,24 +960,21 @@ Governance Audit Report.md`:
 
 ## Current Priorities
 
-1. **Await engineering approval before `WP 6.8` begins.** `WP 6.1`
-   (Permissions & Identity), `WP 6.4` (Settings Framework), `WP 6.5`
-   (Audit Framework), `WP 6.2` (Notification Framework), `WP 6.0`
-   (Reporting Framework), `WP 6.3` (REST API), `WP 6.7` (Export/Import),
-   and `WP 6.6` (Licensing Framework) are all complete on
-   `feature/v0.6.0-platform-services` — every feature Work Package this
-   release plans to ship; per `WP 6.6`'s own explicit closing
-   instruction, no further Work Package is to begin next.
-2. Once approved, the only Work Package remaining is `WP 6.8` (Platform
-   Services Integration Review) — the release's own closing
-   certification milestone, mirroring `WP 4.2D`/`WP 5.0S`'s own
-   precedent — see `docs/releases/v0.6.0/WorkPackages.md` for the full,
-   nine-Work-Package plan. `WP 6.8` is also the recommended place to
-   backfill the `Interface Register.md`/`Dependency Injection
-   Register.md`/`Module Register.md` gap `WP 6.7`/`WP 6.6` disclosed
-   (see Governance Status, above).
-3. No merge to `main` is due until the Platform Services phase's Work
-   Packages are complete (see `docs/releases/v0.6.0/WorkPackages.md`).
+1. **Await Product Approval.** All nine `v0.6.0` Work Packages
+   (`WP 6.0` through `WP 6.8`) are complete on
+   `feature/v0.6.0-platform-services`. `WP 6.8` certified the release
+   `CERTIFIED WITH ACCEPTED TECHNICAL DEBT` — see `WP6.8 Platform
+   Certification Report.md` for the complete decision and evidence.
+   Per Engineering Governance §7, Product Approval is the next required
+   step before merge or tag; no further implementation is authorised or
+   recommended.
+2. Once Product Approval is granted: merge `feature/v0.6.0-platform-
+   services` into `main` and cut the `v0.6.0` tag — both explicit,
+   separate actions this Work Package does not take on its own
+   authority.
+3. No merge to `main` has occurred yet — see
+   `docs/releases/v0.6.0/WorkPackages.md` for the full, nine-Work-
+   Package plan this release now completes.
 
 ## Near-Term Roadmap
 
@@ -974,8 +1007,14 @@ is under way:
 - `WP 6.5` — Audit Framework. **Complete.**
 - `WP 6.6` — Licensing Framework. **Complete.**
 - `WP 6.7` — Export / Import. **Complete.**
-- `WP 6.8` — Platform Services Integration Review (closing milestone
-  audit, mirroring `WP 4.2D`/`WP 5.0S`'s own precedent). Not started.
+- `WP 6.8` — Platform Services Integration Review & Release
+  Certification (closing milestone audit, mirroring `WP 4.2D`/
+  `WP 5.0S`'s own precedent). **Complete — CERTIFIED WITH ACCEPTED
+  TECHNICAL DEBT.**
+
+**The Platform Services phase's own implementation is now complete.**
+`v0.6.0` awaits Product Approval (Engineering Governance §7) before
+merge to `main` and tagging.
 
 ## Long-Term Vision
 

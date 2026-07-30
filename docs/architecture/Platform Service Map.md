@@ -677,6 +677,20 @@ constructed, its own accessor reports an empty collection — never an
 exception — mirroring `ITempestHost.Services`'s own "not yet available"
 convention (`ADR-0034`).
 
+**A genuine, disclosed architectural note (`WP 6.8`), not a defect.**
+`Tempest.Core.Diagnostics` imports `Tempest.Core.Runtime` for exactly
+one type — the `HostState` enum, exposed via `IDiagnosticsProvider.HostState`
+— a mutual namespace reference with `Runtime` (which imports
+`Diagnostics` to construct `DiagnosticsProvider`). A strictly literal
+reading of `ADR-0023`'s "dependencies flow downward only" would flag
+this as an upward reference from a Platform Service to the Runtime Host
+layer. In practice this is confined to one read-only, side-effect-free
+enum type, has shipped without incident since this Work Package
+introduced it, and involves no behavioural coupling. `WP 6.8`'s own
+`Platform Architecture Conformance Report.md` recommends a future
+release either formally accept this as a named `ADR-0023` exception or
+relocate `HostState` to a neutral namespace.
+
 **Consumers.** `DiagnosticsSampleModule` (real contributor and consumer);
 `GetDiagnosticsSummaryCommandHandler` (`Tempest.Samples`, demonstrating
 the Command Framework and Diagnostics interacting); any future Shell
@@ -1172,8 +1186,13 @@ thirteenth production sample module) — maps one route
 `ReportingSampleModule.GenerateSampleReportCommandId`, containing zero
 business logic of its own whatsoever, the purest possible proof of this
 Work Package's own "no business logic inside controllers/endpoints"
-design principle. Named as a plausible future consumer for any
-engineering module wanting an HTTP-reachable route.
+design principle. Also a real, since-confirmed second consumer:
+`LicensingSampleModule` (`WP 6.6`) independently maps its own route
+(`POST /api/v1/sample-capability`) to
+`CheckSampleCapabilityCommandId` — confirmed by `WP 6.8`'s own
+Consumption Matrix as the strongest available evidence that
+`IApiEndpointRegistry`'s own "any module can map a route" design
+genuinely generalises, not merely works once.
 
 **Lifecycle.** `IApiEndpointRegistry` is an ordinary DI-public,
 container-constructed Phase 6 singleton, registered immediately after

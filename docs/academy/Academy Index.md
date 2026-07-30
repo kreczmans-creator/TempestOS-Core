@@ -413,7 +413,7 @@ whatever you're about to change, before you change it.
 `docs/releases/v0.5.0/WorkPackages.md`'s own Developer Experience phase
 is complete and `v0.5.0` is released.
 
-**Platform Services (v0.6.0, feature Work Packages complete — only `WP 6.8` certification remains):**
+**Platform Services (v0.6.0, complete — CERTIFIED WITH ACCEPTED TECHNICAL DEBT):**
 
 - [WP 6.1 — Permissions & Identity Implementation](03%20Work%20Packages/WP6.1-permissions-and-identity-implementation.md) — implemented directly against the already-approved architecture and Contract Review packages; no separate architecture-phase retrospective, per direct instruction.
 - [WP 6.4 — Settings Framework Implementation](03%20Work%20Packages/WP6.4-settings-framework-implementation.md) — implemented ahead of `WP 6.0`–`WP 6.3` per `Platform Service Implementation Order.md`'s own recommendation; establishes the shared Persistence abstraction as part of its own scope.
@@ -423,6 +423,7 @@ is complete and `v0.5.0` is released.
 - [WP 6.3 — REST API Implementation](03%20Work%20Packages/WP6.3-rest-api-implementation.md) — this platform's first substantial dependency on a pre-built framework component (ASP.NET Core/Kestrel) and first genuinely concurrent, per-request scenario, resolved without modifying `WP 6.1`'s own already-shipped `CurrentPrincipalAccessor`.
 - [WP 6.7 — Export/Import Framework Implementation](03%20Work%20Packages/WP6.7-export-import-implementation.md) — completes the orthogonality `WP 6.0` anticipated; resolves the approved contract's own multi-destination-import gap via a `Kind`-routed, dual-registered `ImportService`, reusing `WP 6.1`'s own `CurrentPrincipalAccessor` registration pattern.
 - [WP 6.6 — Licensing Framework Implementation](03%20Work%20Packages/WP6.6-licensing-framework-implementation.md) — the release's final production implementation Work Package; resolves `Risk Register.md`'s own `R5` (a missing license file is a valid, unrestricted default, never Host-fatal; a broken one is), proven not to regress any of the 24 pre-existing tests that build a real `TempestHost`.
+- [WP 6.8 — Platform Services Integration Review & Release Certification](03%20Work%20Packages/WP6.8-platform-services-integration-review.md) — the release's closing certification review, not a feature Work Package; fully backfilled three governance registers stale since `WP 5.2`, closed two silently-stale risks with fresh evidence, and recommended `CERTIFIED WITH ACCEPTED TECHNICAL DEBT`.
 
 See `PROJECT_STATUS.md` for current status and `docs/releases/v0.6.0/
 WorkPackages.md` for the full, nine-Work-Package plan.
