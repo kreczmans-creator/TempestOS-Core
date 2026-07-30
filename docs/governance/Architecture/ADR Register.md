@@ -10,7 +10,7 @@
 | **Owner** | Project Maintainer — sole contributor of record across all 77 repository commits (git author `kreczmans-creator`; no separate architecture-review board or team structure exists as of this baseline). |
 | **Source of Truth** | `docs/adr/` (the ADR files themselves). This register is a governance index over that source, not a replacement for it — the full Context/Decision/Consequences reasoning lives only in each ADR file. |
 | **Review Frequency** | Updated whenever a new ADR is created, superseded, or reversed (Engineering Governance §5) — in practice, once per Work Package that meets the §5 ADR criteria. |
-| **Last Reviewed** | 2026-07-29 (WP 6.6, Licensing). |
+| **Last Reviewed** | 2026-07-30 (WP 7.1A, Engineering Data Model) — ADR-0053 added (Accepted); disclosed a small, previously-uncorrected staleness in this very field (it had not been updated since WP 6.6, despite WP 7.0C's own edit to this register's Numbering Integrity narrative in the interim). Previously reviewed 2026-07-29 (WP 6.6, Licensing). |
 | **Related Documents** | `docs/academy/06 Engineering Standards/Engineering Governance.md` (§5, ADR Creation Rules); `Decision Register.md`; `Rejected Designs Register.md`; `Traceability Matrix.md`; `docs/releases/v0.6.0/Required ADRs.md`. |
 | **Related ADRs** | All 52 — this register's entire subject matter. |
 | **Related Academy Articles** | Every Work Package retrospective under `docs/academy/03 Work Packages/` cites the ADR(s) it produced or realised; see each retrospective's own "ADR references" or "Architectural Principles" section. |
@@ -82,21 +82,25 @@ line, verified directly.
 | ADR-0050 | License Validation Is a Host-Startup, Host-Fatal Gate — Except a Missing License File, Which Is a Valid, Unrestricted Default | Accepted | WP 6.6 (Licensing Framework) | 2026-07-29 | Verified |
 | ADR-0051 | Export/Import Is Orthogonal to the Internal Persistence Abstraction — Kind Routing, Format/Serialization Abstractions, and Scope Boundaries | Accepted | WP 6.7 (Export/Import) | 2026-07-29 | Verified |
 | ADR-0052 | The REST API Resolves Identity Per-Request Without Touching the Ambient Current Principal — Empirically Verified | Accepted | WP 6.3 (REST API) | 2026-07-29 | Verified |
+| ADR-0053 | The Engineering Data Model Is Built Directly on the Existing Persistence Abstraction — No New Storage Mechanism | Accepted | WP 7.1A (Engineering Data Model) | 2026-07-30 | Verified |
 
-**Total: 52 ADRs, all Accepted, none superseded or reversed (Verified — no
+**Total: 53 ADRs, all Accepted, none superseded or reversed (Verified — no
 ADR file in `docs/adr/` carries a Superseded/Deprecated/Rejected status
 line).**
 
 ## Numbering Integrity
 
-Sequential and complete, `ADR-0001` through `ADR-0052`, with no gaps
-at all — the last remaining reserved number (`ADR-0050`) is now filled.
-`docs/releases/v0.7.0/WP7.0C Required ADR Catalogue.md` has since
-reserved `ADR-0053` through `ADR-0057` for the five Engineering
-Foundation frameworks' own anticipated architectural decisions, one per
-framework — none yet Accepted, none yet a real file under `docs/adr/`,
-exactly as `ADR-0040`–`ADR-0052` were once only a catalogue entry before
-their own owning Work Packages implemented them.
+Sequential and complete, `ADR-0001` through `ADR-0053`, with no gaps
+at all. `docs/releases/v0.7.0/WP7.0C Required ADR Catalogue.md` reserved
+`ADR-0053` through `ADR-0057` for the five Engineering Foundation
+frameworks' own anticipated architectural decisions, one per framework
+— `ADR-0053` (Engineering Data Model) is now a real, Accepted file,
+implemented by `WP 7.1A` exactly as that catalogue anticipated.
+`ADR-0054` through `ADR-0057` (Units & Quantities, Materials,
+Calculation, Verification & Validation) remain reserved, not yet
+Accepted, awaiting their own owning Work Packages — exactly as
+`ADR-0040`–`ADR-0052` were once only a catalogue entry before their own
+owning Work Packages implemented them.
 `docs/releases/v0.6.0/Required ADRs.md` reserved `ADR-0040` through
 `ADR-0051` in advance, as a catalogue of anticipated decisions, one
 range per `v0.6.0` Work Package, before any of those Work Packages began

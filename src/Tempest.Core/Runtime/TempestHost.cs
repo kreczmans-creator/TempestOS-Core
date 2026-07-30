@@ -5,6 +5,7 @@ using Tempest.Core.Commands;
 using Tempest.Core.Configuration;
 using Tempest.Core.DependencyInjection;
 using Tempest.Core.Diagnostics;
+using Tempest.Core.EngineeringData;
 using Tempest.Core.Events;
 using Tempest.Core.ExportImport;
 using Tempest.Core.Identity;
@@ -339,6 +340,13 @@ public sealed class TempestHost : ITempestHost
         var importService = new ImportService(exportFormat, logger);
         services.AddInstance<IImportService>(importService);
         services.AddInstance(importService);
+
+        // ADR-0053: the Engineering Data Model is built directly on the
+        // same IPersistenceStore Settings/Audit already established,
+        // rather than introducing a second storage mechanism - registered
+        // after Persistence and Identity & Permissions, both of which it
+        // depends on, mirroring Audit's own placement rationale.
+        services.Singleton<IEngineeringDocumentStore, EngineeringDocumentStore>();
 
         // Composition Root pattern (ADR-0009), like Configuration/Logging/
         // PlatformVersionProvider above: DiagnosticsProvider needs references

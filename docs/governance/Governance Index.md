@@ -122,6 +122,7 @@ informal "Car Park" discussion with a permanent, cited register.
 ## Related to This Suite, Outside `docs/governance/`
 
 - [`VISION.md`](../../VISION.md) (repository root) — the permanent product vision document, established `WP 7.0A`; the "why" behind every entry in the Future Capability Register, above.
+- [`docs/engineering/Engineering Principles.md`](../engineering/Engineering%20Principles.md) — the principles engineering-domain content itself must uphold, established `WP 7.1A`; distinct from `docs/academy/06 Engineering Standards/` (which governs how TempestOS is built as software, not what its engineering-domain content must be).
 - [`PROJECT_STATUS.md`](../../PROJECT_STATUS.md) (repository root) — the primary status dashboard; its Repository Metrics and Governance Status sections are generated from this suite and should be updated together with it.
 - [`docs/releases/Platform Foundation Completion Report.md`](../releases/Platform%20Foundation%20Completion%20Report.md) — the Foundation phase closeout narrative (`WP 4.5B`), summarising everything this suite tracks in aggregate.
 - [`docs/academy/Contributor Learning Path.md`](../academy/Contributor%20Learning%20Path.md) — the repository-wide onboarding sequence, which routes a new contributor into this suite at the appropriate point.

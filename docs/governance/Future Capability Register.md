@@ -10,7 +10,7 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | This document, from `WP 7.0A` onward. Prior to this Work Package, the same information existed only in fragments — see each entry's own "Sourced From" field for where it previously lived. |
 | **Review Frequency** | Updated whenever a new future capability is identified (by any Work Package, retrospective, or review), or whenever an existing capability's Status changes (a Work Package begins, completes, or a capability is formally deferred/rejected). |
-| **Last Reviewed** | 2026-07-30 (`WP 7.0B`, Engineering Foundation Planning & Capability Architecture) — added `FCR-0029` through `FCR-0033`, the five cross-cutting Engineering Foundation frameworks this Work Package's own dependency analysis identified as architecturally necessary before any discipline-specific Engineering Module can begin (see `WP7.0B Engineering Foundation Architecture.md`). Each is marked **Inferred**, not Verified — architectural necessity reasoning, not a capability named in a prior document, per the same discipline `FCR-0026` already applied. Previously reviewed 2026-07-30 (`WP 7.0A`, established). |
+| **Last Reviewed** | 2026-07-30 (`WP 7.1A`, Engineering Data Model) — `FCR-0029` marked **Implemented**, the first entry in this register to leave "Identified" status. Previously reviewed 2026-07-30 (`WP 7.0B`, Engineering Foundation Planning & Capability Architecture) — added `FCR-0029` through `FCR-0033`, the five cross-cutting Engineering Foundation frameworks this Work Package's own dependency analysis identified as architecturally necessary before any discipline-specific Engineering Module can begin (see `WP7.0B Engineering Foundation Architecture.md`). Each is marked **Inferred**, not Verified — architectural necessity reasoning, not a capability named in a prior document, per the same discipline `FCR-0026` already applied. Previously reviewed 2026-07-30 (`WP 7.0A`, established). |
 | **Related Documents** | `Capability Categories.md`; `Product Roadmap.md`; `VISION.md`; `docs/governance/Quality/Technical Debt Register.md`; `docs/security/Security Roadmap.md`; `docs/security/Threat Model.md`; `docs/releases/v0.7.0/WorkPackages.md`; the eight `WP6.x Future Capability Recommendations.md` documents under `docs/releases/v0.6.0/`. |
 | **Related ADRs** | ADR-0013, ADR-0040, ADR-0044, ADR-0045, ADR-0046, ADR-0049, ADR-0050, ADR-0052 — see individual entries. |
 | **Related Academy Articles** | `WP6.8-platform-services-integration-review.md` §6 (the direct source of `FCR-0001`, `FCR-0003`, `FCR-0004`, `FCR-0005`, `FCR-0006`); `WP7.0B-engineering-foundation-planning-and-capability-architecture.md`. |
@@ -514,16 +514,16 @@ Coverage Note).
 |---|---|
 | **Category** | Platform |
 | **Description** | A shared engineering-entity data model — documents, revisions, references, and their relationships — that Requirements, Project, and every future discipline module build on rather than each inventing its own storage shape, mirroring `ADR-0041`'s own "one shared Persistence abstraction, not reinvented per service" precedent for Settings/Audit. |
-| **Status** | Identified (`WP 7.0B`) — architectural necessity, no design work exists |
+| **Status** | **Implemented (`WP 7.1A`)** — `Tempest.Core.EngineeringData`, `EngineeringDocumentStore`, built on `IPersistenceStore` per `ADR-0053` |
 | **Priority** | High relative to other unscheduled capabilities — almost every Engineering Foundation and Engineering Module capability depends on it |
 | **Business Value** | Unknown in isolation; high as an enabler, since `FCR-0027`, `FCR-0028`, `FCR-0031`, `FCR-0033`, and every future discipline module would otherwise each invent an incompatible storage shape |
-| **Engineering Effort** | Unknown — requires its own Architecture Work Package; needs its own Platform-Service-vs-Module classification (`ADR-0013`) |
-| **Dependencies** | None upstream; `IPersistenceStore` (shipped, `WP 6.4`) is a plausible, not guaranteed, storage substrate — `FCR-0007`'s own query-capability gap should be resolved or explicitly ruled out-of-scope before this capability commits to it |
-| **Proposed Target Release** | Not yet scheduled — recommended as the first Engineering Foundation capability, before `FCR-0027`/`FCR-0028`/`FCR-0031`/`FCR-0033` |
-| **Related ADRs** | ADR-0013, ADR-0041 |
-| **Related Work Packages** | None yet |
-| **Academy Impact** | Would warrant a new Academy concept guide once designed — a genuinely new data-modelling pattern for this platform |
-| **Notes** | Inferred from `Threat Model.md` assumption 1's own generic "CAD, requirements, analysis, verification records" framing and the shared-storage need `FCR-0027`/`FCR-0028` both independently implied in `WP 7.0A`. Not sourced from any document naming this capability directly. |
+| **Engineering Effort** | Delivered — one Work Package (`WP 7.1A`), 13 new production files, 36 new tests |
+| **Dependencies** | None upstream; built on `IPersistenceStore` (`WP 6.4`) per `ADR-0053` — `FCR-0007`'s own query-capability gap was avoided, not inherited, for this framework's own access pattern |
+| **Proposed Target Release** | Shipped, `v0.7.0` (pending release) |
+| **Related ADRs** | ADR-0013, ADR-0041, ADR-0053 |
+| **Related Work Packages** | `WP 7.1A` |
+| **Academy Impact** | `WP7.1A-engineering-data-model-implementation.md`; `docs/engineering/Engineering Principles.md` |
+| **Notes** | Inferred from `Threat Model.md` assumption 1's own generic "CAD, requirements, analysis, verification records" framing and the shared-storage need `FCR-0027`/`FCR-0028` both independently implied in `WP 7.0A`. Not sourced from any document naming this capability directly. Implemented `WP 7.1A` exactly as `WP7.0C Engineering Foundation Contracts.md` proposed, with one disclosed, minor deviation (see `WP7.1A Implementation Report.md`). |
 
 #### FCR-0030 — Units & Quantities Framework
 

@@ -95,15 +95,17 @@ Work Package, below.
 
 **`feature/v0.7.0-engineering-foundation`**, cut from `main` at the
 `v0.6.0` tag, per `v0.6.0`'s own Release Engineering closing activity.
-No Work Package has been scoped or begun on this branch — see
-`docs/releases/v0.7.0/WorkPackages.md` for the candidate items awaiting
-a dedicated Architecture, Planning, and Contract Review phase before any
-implementation is authorised. `feature/v0.6.0-platform-services` (`WP
-6.0` through `WP 6.8`) has been merged into `main` (non-fast-forward,
-`99ed285`) and is retained; `feature/v0.5.0-developer-experience` (`WP
-5.0A` through `WP 5.4`) remains merged and retained as well — unmerged
-and merged feature branches are both never deleted per this project's
-own convention.
+`WP 7.0A` through `WP 7.1A` have all landed on this branch — the first
+four Work Packages of the Engineering Foundation phase, the last of
+which (`WP 7.1A`) is this branch's first real implementation. See
+`docs/releases/v0.7.0/WorkPackages.md` and `docs/governance/Future
+Capability Register.md` for the candidate items awaiting Product
+Approval for whatever comes next. `feature/v0.6.0-platform-services`
+(`WP 6.0` through `WP 6.8`) has been merged into `main`
+(non-fast-forward, `99ed285`) and is retained; `feature/v0.5.0-developer-experience`
+(`WP 5.0A` through `WP 5.4`) remains merged and retained as well —
+unmerged and merged feature branches are both never deleted per this
+project's own convention.
 
 ## Current Release
 
@@ -114,29 +116,26 @@ that; `v0.4.0` ("Platform Foundation") before that.
 
 ## Current Work Package
 
-**`WP 7.0C` — Engineering Foundation Contract Review.** The Engineering
-Foundation phase's (`v0.7.0`) third activity, approved to begin after
-Engineering Review of `WP 7.0B`. A contract-review Work Package, not an
-implementation one; no production code, no compiled interface. Defines
-proposed, reviewable public C# contracts for all five Engineering
-Foundation frameworks `WP 7.0B` identified (`FCR-0029`–`FCR-0033`):
-`Tempest.Core.EngineeringData`, `UnitsAndQuantities`, `Materials`,
-`Calculations`, `Verification` — each answering twelve review questions
-(Purpose, Responsibilities, Public Interfaces, Primary Entities,
-Dependency Rules, Platform Services Consumed, Expected Future
-Consumers, Lifetime, Thread-Safety, Error Handling, Extension Points,
-Testing/Academy summaries). Confirms no circular dependency exists
-among the five (and resolves, at contract level, an ambiguity `WP 7.0B`
-left open: Verification depends on the Data Model's generic document
-concept, never on a specific Requirements Engine service). Confirms
-Units & Quantities is the first Engineering Foundation framework needing
-**zero** DI registration — a pure value-type library. Reserves five new
-ADR numbers (`ADR-0053`–`ADR-0057`) for the genuine open design
-questions this review could not itself resolve, none yet answered. See
-`docs/releases/v0.7.0/WP7.0C Engineering Foundation Contracts.md` and
-its seven companion deliverables for the complete account.
+**`WP 7.1A` — Engineering Data Model.** The Engineering Foundation
+phase's (`v0.7.0`) fourth activity, and its **first implementation**
+Work Package — approved to begin after Engineering Review of `WP 7.0A`,
+`WP 7.0B`, and `WP 7.0C` all passed. Implements `Tempest.Core.
+EngineeringData` (`IEngineeringDocumentStore`, `IEngineeringDocument`,
+`IDocumentRevision`, `DocumentReference`) exactly as `WP7.0C Engineering
+Foundation Contracts.md` proposed, resolving `ADR-0053`: built directly
+on `IPersistenceStore` (`WP 6.4`), no new storage abstraction. One
+disclosed, minor deviation (the exception base class's modifier,
+corrected to match universal existing convention) — see `WP7.1A
+Implementation Report.md`. 13 new production files; a new sample
+module (`EngineeringDataSampleModule`, the platform's sixteenth); 36 new
+tests (1052/1052 passing, both Debug and Release, clean rebuild, 0
+warnings). Establishes `docs/engineering/Engineering Principles.md` — a
+new, permanent, top-level document. Two new, disclosed debt items
+(`TD-17`, `TD-18`), neither Release Blocking. See `docs/releases/
+v0.7.0/WP7.1A Implementation Report.md` and its six companion
+deliverables for the complete account.
 
-### `WP 7.0A`/`WP 7.0B` Summary (for reference)
+### `WP 7.0A`/`WP 7.0B`/`WP 7.0C` Summary (for reference)
 
 `WP 7.0A` — Future Capability Register & Product Vision — established
 `VISION.md`, `docs/governance/Future Capability Register.md` (28
@@ -146,10 +145,12 @@ Capability Architecture — added `FCR-0029`–`FCR-0033` (33 entries
 total), a full dependency graph and six-programme grouping, an honest
 conclusion that five of nine Engineering Discipline categories cannot
 yet be sequenced from existing evidence, a non-binding release-number
-recommendation, and ten candidate Work Packages (`A`–`J`, none
-approved). See `docs/releases/v0.7.0/WP7.0A Architecture Report.md` and
-`WP7.0B Capability Dependency Report.md` and their own companion
-deliverables.
+recommendation, and ten candidate Work Packages (`A`–`J`). `WP 7.0C` —
+Engineering Foundation Contract Review — proposed public C# contracts
+for all five Engineering Foundation frameworks and reserved
+`ADR-0053`–`ADR-0057`. All three passed Engineering Review before `WP
+7.1A` began. See each Work Package's own deliverables under
+`docs/releases/v0.7.0/`.
 
 **`PROJECT_STATUS.md`'s own "Next Planned Work Package" section below
 now defers to `docs/governance/Future Capability Register.md` as the
@@ -213,24 +214,21 @@ review.md`.
 
 ## Next Planned Work Package
 
-**None yet approved.** **`docs/governance/Future Capability Register.md`
-is now this project's own authoritative source for what comes next** —
-33 identified capabilities (`FCR-0001`–`FCR-0033`), classified against
-`docs/governance/Capability Categories.md`'s 15 categories, sequenced at
-the phase level in `docs/governance/Product Roadmap.md`, fully
-dependency-mapped by `WP 7.0B`, and now, for the five Engineering
-Foundation frameworks specifically (Candidates `D`–`H`), given a full
-proposed public contract by `WP 7.0C` (`docs/releases/v0.7.0/WP7.0C
-Engineering Foundation Contracts.md`), with five open design questions
-catalogued as `ADR-0053`–`ADR-0057`, none yet answered. Ten candidate
-Work Packages exist across `WP 7.0A`/`WP 7.0B` combined (`A`–`J`) — but
-**none is yet an approved Work Package**. Per this project's own
-standing discipline (`FOUNDATION.md` §1), `v0.7.0`'s real implementation
-scope still requires Product Approval of a specific Work Package before
-any code is written — this Contract Review proposes stable interfaces,
-it does not itself authorise building against them. Await Engineering
-Review of `WP 7.0C` before Product Approval selects and authorises any
-specific implementation Work Package from Candidates `A`–`J`.
+**None yet approved (`WP 7.1B` or a candidate from `A`–`C`, `E`–`J`).**
+**`docs/governance/Future Capability Register.md` is now this project's
+own authoritative source for what comes next** — 33 identified
+capabilities (`FCR-0001`–`FCR-0033`), one now **Implemented**
+(`FCR-0029`, `WP 7.1A`). `WP7.1A Engineering Foundation Impact
+Assessment.md` recommends Candidates `E` (Units & Quantities) and `G`
+(Materials) as the two strongest next candidates — `E` because it
+remains fully independent, `G` because its own direct dependency
+(`FCR-0029`) is now complete and proven working, not merely approved on
+paper. Candidates `A`–`C` (Platform Hardening) remain independently
+available. **None is yet an approved Work Package** — per this
+project's own standing discipline (`FOUNDATION.md` §1), each still
+requires Product Approval before its own implementation begins. Await
+Engineering Review of `WP 7.1A` before Product Approval selects the
+next Work Package.
 
 ## Foundation Status
 
@@ -292,19 +290,19 @@ Experience phase is now complete.
 
 | Metric | Value |
 |---|---|
-| Automated tests | 1016 (0 failures) — unchanged by `WP 6.8` (a certification review, no production or test code written); re-run six times across both configurations as this Work Package's own validation, zero failures every time |
-| ADRs | 52 (`ADR-0001`–`ADR-0052`, no gaps at all), all Accepted — unchanged by `WP 6.8` |
-| Rejected Designs | 45 (`RD-0001`–`RD-0045`) — unchanged by `WP 6.8` |
-| Academy articles | 86 (see `docs/governance/Documentation/Academy Register.md`) — **+1, `WP 6.8`**: `WP6.8-platform-services-integration-review.md` |
-| Governance registers | 27 (32 governance documents total), plus 4 standing security documents under `docs/security/` (not governance registers themselves, indexed from `Governance Index.md`'s Security section) — count unchanged by `WP 6.8`, but three registers' own Coverage Status corrected from `Partial` to `Complete` (see Governance Status, below) |
-| Architecture documents | 20 under `docs/architecture/` (22 including the two release-scoped documents) — unchanged by `WP 6.8` |
-| Platform services | 26 catalogued — 23 Implemented, 2 not implemented as platform services, 1 developer-convenience layer — unchanged by `WP 6.8` |
-| Modules (production) | 15 (`ClockModule`, `ClockLifecycleObserverModule`, `NavigationSampleModule`, `SecondaryNavigationSampleModule`, `DuplicateNavigationSampleModule`, `CommandSampleModule`, `DiagnosticsSampleModule`, `IdentitySampleModule`, `SettingsSampleModule`, `AuditSampleModule`, `NotificationSampleModule`, `ReportingSampleModule`, `ApiSampleModule`, `ExportImportSampleModule`, `LicensingSampleModule`) — unchanged by `WP 6.8`; all 15 now correctly listed in `Module Register.md` for the first time |
-| Hosted services (production) | 2 — unchanged by `WP 6.8` |
+| Automated tests | 1052 (0 failures) — **+36, `WP 7.1A`** (Engineering Data Model); re-verified across clean Debug and Release rebuilds |
+| ADRs | 53 (`ADR-0001`–`ADR-0053`, no gaps at all), all Accepted — **+1, `WP 7.1A`**: `ADR-0053` (Engineering Data Model storage substrate). `ADR-0054`–`ADR-0057` remain reserved, catalogued, not yet Accepted. |
+| Rejected Designs | 45 (`RD-0001`–`RD-0045`) — unchanged by `WP 7.1A` |
+| Academy articles | 90 (see `docs/governance/Documentation/Academy Register.md`) — **+1, `WP 7.1A`**: `WP7.1A-engineering-data-model-implementation.md` |
+| Governance registers | 27 (32 governance documents total), plus 4 standing security documents under `docs/security/` and 1 new standing engineering document (`docs/engineering/Engineering Principles.md`, `WP 7.1A`) | 
+| Architecture documents | 20 under `docs/architecture/` (22 including the two release-scoped documents) — unchanged by `WP 7.1A` |
+| Platform services | 26 catalogued — unchanged by `WP 7.1A`'s own count (Engineering Foundation frameworks are tracked in `Future Capability Register.md`, not yet added to `Platform Services Register.md` pending their own `ADR-0013` classification) |
+| Modules (production) | 16 (adds `EngineeringDataSampleModule`, `WP 7.1A`) — the sixteenth real sample module |
+| Hosted services (production) | 2 — unchanged by `WP 7.1A` |
 | Plugins (production) | 0 — infrastructure fully implemented and tested; `src/Plugins/` empty by deliberate scope decision |
-| Custom exception types | 52 — unchanged by `WP 6.8` |
-| Technical Debt Register items | 16 tracked, 13 disclosed trade-offs (1 Retired) — unchanged by `WP 6.8`; all 29 items classified in `WP6.8 Technical Debt Disposition.md` (3 Resolved, 6 Accepted, 7 Deferred among tracked debt; 1 Resolved, 12 Accepted among trade-offs; **zero Release Blocking**) |
-| Commits (`v0.5.0` → `v0.6.0`, final) | 13 — branch/documentation preparation, Architecture Package, Contract Review Package, `WP 6.1` implementation, `WP 6.4` implementation, `WP 6.5` implementation, `WP 6.2` implementation, `WP 6.0` implementation, `WP 6.3` implementation, `WP 6.7` implementation, `WP 6.6` implementation, `WP 6.8` certification review, and the non-fast-forward merge to `main` (`99ed285`) |
+| Custom exception types | 54 — **+2, `WP 7.1A`**: `EngineeringDataException`, `EngineeringDocumentNotFoundException` |
+| Technical Debt Register items | 18 tracked, 13 disclosed trade-offs — **+2, `WP 7.1A`**: `TD-17` (Content is string-only), `TD-18` (LinkAsync concurrency untested at scale) — both Open, neither Release Blocking |
+| Commits (`v0.6.0` → `v0.7.0`, so far) | 7 — `v0.6.0` release-branch preparation (2 commits), merge from `main`, `WP 7.0A`, `WP 7.0B`, `WP 7.0C`, `WP 7.1A` (this commit) |
 | Contributors | 1 (repository owner; all commits co-authored by Claude) |
 
 *(This table is generated from `docs/governance/Quality/Repository Metrics
@@ -760,6 +758,28 @@ fresh evidence is cheap and catches real staleness, and that a
 bare "Certified for Release" whenever a release ships disclosed,
 deliberate limitations.
 
+**`WP 7.0A`** added `WP7.0A-future-capability-register-and-product-vision.md`,
+teaching that a product-vision document benefits from the same
+evidentiary discipline as an ADR, and that a future-capability
+register's honesty is measured by what it refuses to invent. **`WP
+7.0B`** added `WP7.0B-engineering-foundation-planning-and-capability-architecture.md`,
+teaching that a dependency graph is an analytical tool, not just a
+diagram — it surfaced a real asymmetry between the Requirements Engine
+and Verification & Validation capabilities that a flat list had left
+implicit. **`WP 7.0C`** added
+`WP7.0C-engineering-foundation-contract-review.md`, teaching that
+contract-level design can resolve an ambiguity a capability-level
+dependency graph left open. **`WP 7.1A`** added
+`WP7.1A-engineering-data-model-implementation.md` — the standard
+13-section template, this phase's first, since it is this phase's first
+implementation Work Package — teaching that a Contract Review's
+proposed signatures are a strong default, not a guarantee (one base-
+exception class modifier was corrected to match universal existing
+convention), and that a design decision not specified in a contract (how
+revision history is looked up) can still matter architecturally.
+`docs/engineering/Engineering Principles.md`, a new top-level document,
+was also established by `WP 7.1A`.
+
 ## Governance Status
 
 27 registers (32 governance documents total, including the Index,
@@ -1000,6 +1020,24 @@ every Technical Debt Register item (29 total: 16 tracked, 13 trade-offs
 — zero Release Blocking) and every Risk Register entry (8 total: 5
 Closed, 2 Mitigated, 1 Remaining by deliberate design) explicitly.
 
+**`WP 7.0A`** established `docs/governance/Future Capability
+Register.md` (28 entries), `Capability Categories.md`, and `Product
+Roadmap.md` — no new Technical Debt or Risk item, since it identified
+future capability, not present-day gaps. **`WP 7.0B`** added
+`FCR-0029`–`FCR-0033` to the Future Capability Register (33 entries
+total). **`WP 7.0C`** produced no new governance register entries — a
+contract review audits proposed decisions, it does not itself decide
+them. **`WP 7.1A`** added `ADR-0053` (Accepted, the register's 53rd),
+`TD-17` and `TD-18` to `Technical Debt Register.md` (18 tracked items
+total), and marked `FCR-0029` **Implemented** — the first entry in the
+Future Capability Register to leave "Identified" status. `WP 7.1A` also
+found and corrected a small, previously-undisclosed staleness in `ADR
+Register.md`'s own "Last Reviewed" field (unchanged since `WP 6.6`
+despite `WP 7.0C`'s own edit to that register's Numbering Integrity
+narrative in the interim) — a minor, disclosed instance of the same
+register-staleness pattern this project has found and corrected
+several times before.
+
 ## Known Unknowns
 
 Recorded honestly, not guessed at — full detail in `docs/governance/
@@ -1025,26 +1063,26 @@ Governance Audit Report.md`:
    Approval was granted and Release Engineering executed in full. See
    `docs/releases/v0.6.0/WP6.8 Platform Certification Report.md` for
    the certification decision and evidence this release shipped under.
-2. **`WP 7.0A` and `WP 7.0B` are both complete — Engineering Review
-   APPROVED both.** `VISION.md`, `Future Capability Register.md` (33
-   entries), `Capability Categories.md`, `Product Roadmap.md`, a full
-   dependency graph, six engineering programmes, an honest Engineering
-   Discipline Assessment, a non-binding release-number recommendation,
-   ten candidate Work Packages, a Platform Consumption Matrix, and an
-   eleven-item Roadmap Risk Register are all established and approved.
-3. **`WP 7.0C` (Engineering Foundation Contract Review) is complete —
-   awaiting Engineering Review.** Proposed public C# contracts exist
-   for all five Engineering Foundation frameworks; five open design
-   questions are catalogued as `ADR-0053`–`ADR-0057`, none yet
-   answered. No implementation Work Package begins until Engineering
-   Review of `WP 7.0C` completes, per that Work Package's own explicit
-   closing instruction.
-4. **Await Product Approval of a specific implementation Work Package.**
-   `docs/releases/v0.7.0/WorkPackages.md` and `WP7.0B Candidate Work
-   Package Catalogue.md` record candidate items only (`A`–`J`); none is
-   yet an approved Work Package. No implementation is authorised until
-   Product Approval selects one, mirroring `v0.6.0`'s own
-   pre-implementation discipline.
+2. **`WP 7.0A`, `WP 7.0B`, and `WP 7.0C` are all complete — Engineering
+   Review APPROVED all three.** `VISION.md`, `Future Capability
+   Register.md` (33 entries), `Capability Categories.md`, `Product
+   Roadmap.md`, a full dependency graph, six engineering programmes,
+   proposed public C# contracts for all five Engineering Foundation
+   frameworks, and `ADR-0053`–`ADR-0057` catalogued are all established
+   and approved.
+3. **`WP 7.1A` (Engineering Data Model) is complete — awaiting
+   Engineering Review.** `Tempest.Core.EngineeringData` is implemented
+   and `ADR-0053` is Accepted; 1052/1052 tests passing, both
+   configurations, clean rebuild. No further implementation Work
+   Package begins until Engineering Review of `WP 7.1A` completes, per
+   that Work Package's own explicit closing instruction.
+4. **Await Product Approval of the next implementation Work Package.**
+   `WP7.1A Engineering Foundation Impact Assessment.md` recommends
+   Candidates `E` (Units & Quantities) and `G` (Materials) as the
+   strongest next candidates; Candidates `A`–`C` (Platform Hardening)
+   remain independently available. None is yet an approved Work
+   Package. No implementation is authorised until Product Approval
+   selects one, mirroring `v0.6.0`'s own pre-implementation discipline.
 5. A GitHub Release for `v0.6.0` has not yet been created (`gh` CLI
    unavailable in this environment) — see the Release Summary for the
    exact command or manual steps to complete it.
@@ -1087,8 +1125,8 @@ is under way:
 
 **The Platform Services phase is complete and released.** `v0.6.0` is
 merged to `main`, tagged, and pushed. TempestOS is now in the
-**Engineering Foundation** phase (`v0.7.0`). `WP 7.0A`, `WP 7.0B`, and
-`WP 7.0C` are all complete; implementation Work Package(s) are not yet
+**Engineering Foundation** phase (`v0.7.0`). `WP 7.0A` through `WP 7.1A`
+are all complete; the next implementation Work Package is not yet
 approved — see `docs/releases/v0.7.0/WorkPackages.md` and
 `docs/governance/Future Capability Register.md` for candidate items
 pending Product Approval.
@@ -1101,7 +1139,10 @@ pending Product Approval.
   Engineering Review APPROVED.**
 - `WP 7.0C` — Engineering Foundation Contract Review (contract review
   only; no production code, no compiled interface). **Complete —
-  awaiting Engineering Review.**
+  Engineering Review APPROVED.**
+- `WP 7.1A` — Engineering Data Model (first implementation Work Package
+  of this phase; `Tempest.Core.EngineeringData`, `ADR-0053`). **Complete
+  — awaiting Engineering Review.**
 
 ## Long-Term Vision
 
