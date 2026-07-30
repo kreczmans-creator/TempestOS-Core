@@ -428,6 +428,15 @@ is complete and `v0.5.0` is released.
 See `PROJECT_STATUS.md` for current status and `docs/releases/v0.6.0/
 WorkPackages.md` for the full, nine-Work-Package plan.
 
+**Engineering Foundation (v0.7.0, in progress — not yet scoped):**
+
+- [WP 7.0A — Future Capability Register & Product Vision](03%20Work%20Packages/WP7.0A-future-capability-register-and-product-vision.md) — architecture-and-governance milestone Work Package, not a feature implementation; established `VISION.md`, `docs/governance/Future Capability Register.md`, `Capability Categories.md`, and `Product Roadmap.md`. Mirrors `WP 6.8`'s own whole-review retrospective format.
+
+See `PROJECT_STATUS.md` for current status, `docs/governance/Future
+Capability Register.md` for the authoritative future-capability list,
+and `docs/releases/v0.7.0/WorkPackages.md` for candidate implementation
+items (none yet approved).
+
 ## Reference Material
 
 Documents outside `docs/academy/` maintained under the same obligation:

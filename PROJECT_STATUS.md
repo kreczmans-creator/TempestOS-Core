@@ -114,10 +114,24 @@ that; `v0.4.0` ("Platform Foundation") before that.
 
 ## Current Work Package
 
-**None.** `v0.6.0`'s own implementation and certification are both
-complete and the release itself is now shipped — merged to `main`,
-tagged, and pushed. `v0.7.0`'s own first Work Package has not yet been
-scoped; see Next Planned Work Package, below.
+**`WP 7.0A` — Future Capability Register & Product Vision.** The
+Engineering Foundation phase's (`v0.7.0`) own first activity — an
+architecture-and-governance Work Package, not an implementation one; no
+production code is written. Establishes the permanent governance
+artefacts every future Work Package's own selection is measured against:
+`VISION.md` (repository root), `docs/governance/Future Capability
+Register.md` (28 entries, `FCR-0001`–`FCR-0028`), `docs/governance/
+Capability Categories.md` (15 categories, six Engineering Discipline
+categories disclosed as currently empty), and `docs/governance/Product
+Roadmap.md` (8 phases, only the first four scoped or shipped). See
+`docs/releases/v0.7.0/WP7.0A Architecture Report.md` and its four
+companion deliverables for the complete account.
+
+**`PROJECT_STATUS.md`'s own "Next Planned Work Package" section below
+now defers to `docs/governance/Future Capability Register.md` as the
+authoritative source for what TempestOS builds next** — this dashboard
+still names the current Work Package, but no longer re-derives roadmap
+reasoning that register now owns.
 
 ### `v0.6.0` Closing Summary (for reference)
 
@@ -175,16 +189,23 @@ review.md`.
 
 ## Next Planned Work Package
 
-**None yet approved.** `v0.6.0` shipped in full: merged to `main`
-(non-fast-forward, `99ed285`), tagged `v0.6.0`, and pushed to `origin`.
-`feature/v0.7.0-engineering-foundation` has been cut from `main`, and
-`docs/releases/v0.7.0/WorkPackages.md` records candidate items drawn
-directly from `WP 6.8`'s own disclosed recommendations — but none of
-them is an approved Work Package. Per this project's own standing
-discipline (`FOUNDATION.md` §1), `v0.7.0`'s real scope requires its own
-Architecture, Planning, and Contract Review phase, mirroring the phase
-`v0.6.0` itself held before `WP 6.0` began, before any implementation is
-authorised.
+**None yet approved.** **`docs/governance/Future Capability Register.md`
+is now this project's own authoritative source for what comes next** —
+28 identified capabilities (`FCR-0001`–`FCR-0028`), each traced to a
+specific prior document, classified against `docs/governance/Capability
+Categories.md`'s 15 categories, and sequenced at the phase level in
+`docs/governance/Product Roadmap.md`. `docs/releases/v0.7.0/WP7.0A
+Recommended v0.7 Candidate Work Packages.md` assesses four of them
+(`FCR-0001`, `FCR-0003`/`FCR-0004`, `FCR-0005`, `FCR-0006` — all
+Platform-category, all within Product Roadmap Phase 4, "Engineering
+Foundation") as the strongest `v0.7` candidates by Strategic Value,
+Technical Complexity, and Platform Readiness — but **none is yet an
+approved Work Package**. Per this project's own standing discipline
+(`FOUNDATION.md` §1), `v0.7.0`'s real implementation scope still
+requires its own Architecture, Planning, and Contract Review phase,
+mirroring the phase `v0.6.0` itself held before `WP 6.0` began, before
+any implementation is authorised. Await Engineering Review of `WP 7.0A`
+before beginning `WP 7.0B`.
 
 ## Foundation Status
 
@@ -979,13 +1000,21 @@ Governance Audit Report.md`:
    Approval was granted and Release Engineering executed in full. See
    `docs/releases/v0.6.0/WP6.8 Platform Certification Report.md` for
    the certification decision and evidence this release shipped under.
-2. **Await Architecture/Planning/Contract Review for `v0.7.0`.**
-   `feature/v0.7.0-engineering-foundation` has been cut from `main`;
-   `docs/releases/v0.7.0/WorkPackages.md` records candidate items only,
-   none approved. No implementation is authorised until that review
-   phase produces an approved scope, mirroring `v0.6.0`'s own
+2. **`WP 7.0A` (Future Capability Register & Product Vision) is
+   complete — awaiting Engineering Review.** `VISION.md`,
+   `docs/governance/Future Capability Register.md`, `Capability
+   Categories.md`, and `Product Roadmap.md` are all established.
+   `WP 7.0B` (implementation Work Package selection) does not begin
+   until Engineering Review of `WP 7.0A` completes, per that Work
+   Package's own explicit closing instruction.
+3. **Await Architecture/Planning/Contract Review for `v0.7.0`'s own
+   implementation scope.** `docs/releases/v0.7.0/WorkPackages.md`
+   records candidate items only, cross-referenced against `Future
+   Capability Register.md` entries; none is yet an approved Work
+   Package. No implementation is authorised until that review phase
+   produces an approved scope, mirroring `v0.6.0`'s own
    pre-implementation discipline.
-3. A GitHub Release for `v0.6.0` has not yet been created (`gh` CLI
+4. A GitHub Release for `v0.6.0` has not yet been created (`gh` CLI
    unavailable in this environment) — see the Release Summary for the
    exact command or manual steps to complete it.
 
@@ -1027,29 +1056,45 @@ is under way:
 
 **The Platform Services phase is complete and released.** `v0.6.0` is
 merged to `main`, tagged, and pushed. TempestOS is now in the
-**Engineering Foundation** phase (`v0.7.0`, not yet scoped) — see
-`docs/releases/v0.7.0/WorkPackages.md` for candidate items pending
-Architecture/Planning/Contract Review.
+**Engineering Foundation** phase (`v0.7.0`). `WP 7.0A` (this Work
+Package) is complete; its own implementation Work Package(s) are not
+yet scoped — see `docs/releases/v0.7.0/WorkPackages.md` and
+`docs/governance/Future Capability Register.md` for candidate items
+pending Architecture/Planning/Contract Review.
+
+- `WP 7.0A` — Future Capability Register & Product Vision (architecture
+  and governance only; no production code). **Complete — awaiting
+  Engineering Review.**
 
 ## Long-Term Vision
 
-TempestOS aims to be an extensible platform other people build on, not
-merely a runtime that hosts a fixed set of built-in capabilities — see
-`docs/releases/v0.4.0/ReleasePlan.md`'s own "From Runtime to Platform"
-theme. The Platform Services phase (`v0.6.0`) is the next concrete step:
-Reporting, Permissions & Identity, Notifications, a REST API, Settings,
-Audit, Licensing, and Export/Import, each a domain-facing capability
-built *on* the platform the first two releases established, not a
-redesign of it. Two further, not-yet-designed platform services (Project
-Engine, Requirements Engine) remain aspirational beyond that, each
-requiring its own classification under ADR-0013 before design begins.
-The governing constraint on all of it is `docs/releases/FOUNDATION.md`:
-every future capability is a module or platform service running inside
-the one Runtime Host this foundation established, never a second,
-parallel execution model — and every future Work Package is expected to
-build capability against that stable foundation rather than revisit it,
-absent evidence that requires otherwise (see `docs/governance/Future Work
-Package Guidelines.md`).
+**`VISION.md` (repository root) is now the authoritative, complete
+product vision document** — established by `WP 7.0A`, superseding the
+brief paragraph this section previously held as the only vision
+statement in the repository. This section is kept short deliberately;
+read `VISION.md` for the full account (what TempestOS is, why it
+exists, target users, engineering and architectural philosophy, product
+principles, what it deliberately is not, the Platform-vs-Engineering-
+Module boundary, and the vision beyond `v1.0`).
+
+In summary: TempestOS aims to be an extensible platform other people
+build on, not merely a runtime that hosts a fixed set of built-in
+capabilities — see `docs/releases/v0.4.0/ReleasePlan.md`'s own "From
+Runtime to Platform" theme, the origin of this ambition. The Platform
+Services phase (`v0.6.0`) proved cross-service platform capability;
+`VISION.md` now names what that platform is *for* — engineering-practice
+capability across the nine Engineering Discipline categories
+`docs/governance/Capability Categories.md` establishes, beginning with
+Systems Engineering and Project Management (the "Requirements Engine"
+and "Project Engine" `ADR-0013`'s own Future Considerations already
+named), each still requiring its own explicit Platform-Service-vs-Module
+classification before design begins. The governing constraint on all of
+it remains `docs/releases/FOUNDATION.md`: every future capability is a
+module or platform service running inside the one Runtime Host this
+foundation established, never a second, parallel execution model — and
+every future Work Package is expected to build capability against that
+stable foundation rather than revisit it, absent evidence that requires
+otherwise (see `docs/governance/Future Work Package Guidelines.md`).
 
 ---
 

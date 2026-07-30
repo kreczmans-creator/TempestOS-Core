@@ -23,6 +23,15 @@ this project's own standing discipline (`FOUNDATION.md` §1: architecture
 precedes implementation for anything non-trivial) before any code is
 written.
 
+**Update, `WP 7.0A`:** each candidate below now has a permanent
+`FCR-NNNN` identifier in `docs/governance/Future Capability Register.md`
+— `C1` is `FCR-0006`, `C2` is `FCR-0005`, `C3` is `FCR-0001`, `C4` is
+`FCR-0003`/`FCR-0004`. That register, not this document, is now this
+project's authoritative source for future capability tracking; this
+document's own `C1`–`C4` labels are kept only because `docs/releases/
+v0.7.0/WP7.0A Recommended v0.7 Candidate Work Packages.md` already
+refers to them by these names.
+
 ## Candidate Items (Not Yet Approved)
 
 ### C1 — Resolve the `Runtime`↔`Diagnostics` Namespace Reference

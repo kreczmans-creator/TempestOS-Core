@@ -39,13 +39,13 @@
 | `docs/releases/v0.4.0/` | The released ("Platform Foundation") v0.4.0 release's own planning, architecture review, risk register, work packages, changelog, testing strategy, release checklist | `Release Register.md`; `Risk Register.md`; `Feature Register.md` |
 | `docs/releases/v0.5.0/` | The released ("Developer Experience") v0.5.0 release's own plan, work packages, changelog, and release checklist | `Release Register.md`; `Feature Register.md` |
 | `docs/releases/v0.6.0/` | The released ("Platform Services") v0.6.0 release's own architecture package, contract review package, work packages, risk register, and nine `WP 6.8` certification deliverables (`CERTIFIED WITH ACCEPTED TECHNICAL DEBT`) | `Release Register.md`; `Risk Register.md`; `Feature Register.md`; `Governance Register.md` |
-| `docs/releases/v0.7.0/` | The not-yet-scoped ("Engineering Foundation") v0.7.0 release's own prepared-in-advance skeleton documents (`WorkPackages.md`, `ReleaseNotes.md`, `Retrospective.md`) — candidate items only, none approved | `Release Register.md` |
+| `docs/releases/v0.7.0/` | The not-yet-scoped ("Engineering Foundation") v0.7.0 release's own prepared-in-advance skeleton documents (`WorkPackages.md`, `ReleaseNotes.md`, `Retrospective.md`), plus `WP 7.0A`'s own five certification-style deliverables — candidate implementation items only, none approved | `Release Register.md`; `Future Capability Register.md` |
 | `docs/roadmap/` | Empty directory — **Unknown** intended purpose; no document references it | Not applicable — see Coverage Note below |
 | `docs/diagrams/` | Empty directory — **Unknown** intended purpose; no document references it | Not applicable — see Coverage Note below |
-| `docs/governance/` | This governance suite (introduced by `WP 4.5A`), plus `Future Work Package Guidelines.md` (added `WP 4.5B`) | `Governance Index.md` |
+| `docs/governance/` | This governance suite (introduced by `WP 4.5A`), plus `Future Work Package Guidelines.md` (added `WP 4.5B`); `Future Capability Register.md`, `Capability Categories.md`, `Product Roadmap.md` (added `WP 7.0A`, the new "Product & Roadmap" category) | `Governance Index.md` |
 | `docs/security/` | The v0.5.0 Security Baseline: `Threat Model.md`, `Security Principles.md`, `Platform Security Review v0.5.0.md`, `Security Roadmap.md` (all introduced by `WP 5.0S`) | `Governance Index.md` (Security section) |
 | `src/Templates/` | `dotnet new` template sources (`WP 5.3`) — not under `docs/`, but documentation/tooling content rather than compiled platform code, and indexed here for the same reason `docs/security/` earns its own row | `src/Templates/README.md` is its own source of truth; see `Engineering Governance.md` §11 |
-| Repository root (`PROJECT_STATUS.md`) | Primary status dashboard, added `WP 4.5B` | This register; `PROJECT_STATUS.md` is its own source of truth |
+| Repository root (`PROJECT_STATUS.md`, `VISION.md`) | Primary status dashboard (`WP 4.5B`); permanent product vision document (`WP 7.0A`) | This register; each document is its own source of truth |
 
 ## Coverage Note — Two Empty, Unreferenced Directories
 
