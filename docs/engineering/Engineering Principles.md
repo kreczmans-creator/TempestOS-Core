@@ -30,6 +30,12 @@ adding seven further principles (17-23, below) derived from what
 applied to a fourth framework, this one consuming all three of the
 first three.
 
+Extended by `WP 7.1E` (Verification Framework), 2026-07-30, adding five
+further principles (24-28, below) derived from what
+`Tempest.Core.Verification` actually implements — the fifth and final
+Engineering Foundation framework, completing the programme
+`WP 7.0B`/`WP 7.0C` planned.
+
 ## Purpose
 
 Every future Engineering Foundation framework (`FCR-0030`–`FCR-0033`)
@@ -312,30 +318,97 @@ definition, explicit in its own declared `CalculationMetadata` and its
 own `Calculate` method — never implicit inside this framework's own
 dispatch mechanism.
 
+## Verification Framework Extension (`WP 7.1E`)
+
+### 24. Every engineering conclusion is independently verifiable
+
+`IVerificationRecord` exists specifically so a claim about an
+engineering document ("this requirement is satisfied") is never left as
+an unstated assertion — `RecordAsync` requires a real, existing
+`subjectDocumentId`, an explicit `VerificationOutcome`, and a named
+`method`, together durably recorded as their own
+`EngineeringData.IEngineeringDocument`.
+`RecordAsync_ValidSubject_ReturnsRecord_WithGivenOutcomeAndMethod`
+proves the full shape survives creation intact.
+
+### 25. Verification evidence is explicit
+
+`VerificationContext.RecordCriterion`/`RecordEvidence` let a verifier
+disclose exactly what was checked and what supports the outcome — never
+hidden inside an unstated judgement call.
+`RecordAsync_RecordsCriteriaAndEvidence` proves both survive into the
+resulting record unchanged, the same "explicit, not hidden" discipline
+Calculation's own Principle 18 (explicit assumptions) already
+established for a sibling framework.
+
+### 26. Verification is repeatable
+
+Nothing prevents recording more than one verification against the same
+subject document over time — each is its own independent record, never
+overwriting a prior one.
+`GetVerificationHistoryAsync_MultipleVerifications_ReturnsAllOrderedByVerifiedAt`
+proves two verifications against the same subject both survive,
+correctly ordered, neither displacing the other.
+
+### 27. Engineering conclusions remain traceable
+
+`IVerificationRecord.Id` is the real, underlying
+`EngineeringData.IEngineeringDocument`'s own Id — directly usable with
+`IEngineeringDocumentStore` for revision history this framework does not
+itself duplicate. Every additional link (`LinkedDocumentIds`,
+`LinkedCalculationRecordIds`) is validated at recording time, not merely
+recorded as an unverified string — a stronger traceability guarantee
+than Materials' or Calculation's own material references, proven by
+`RecordAsync_NonExistentLinkedDocument_ThrowsEngineeringDocumentNotFoundException`.
+
+### 28. Verification is independent of presentation
+
+`Tempest.Core.Verification` contains no report formatting, no UI
+concern, and no approval-workflow logic — `IVerificationRecord` is the
+complete, structured account of what was verified; how it is later
+displayed or summarised is deliberately a different framework's own
+concern (Reporting), never this one's. This Work Package's own
+controlling instruction required this separation explicitly ("Do not
+introduce:... Report formatting"), and `grep` of
+`src/Tempest.Core/Verification/` for any formatting or presentation
+logic finds none.
+
 ## What This Document Does Not Cover
 
-- **Verification** — the one remaining Engineering Foundation framework
-  (`FCR-0033`) will assess which of these principles apply to it
-  directly and which it extends with its own, once implemented; this
-  document is not amended in advance of that work.
-- **Affine unit conversion (Temperature)** — deliberately deferred, not
-  covered by Principle 9's "pure multiplication" claim; see `ADR-0054`'s
-  own "Temperature Deliberately Deferred" section. Materials properties
-  and calculation inputs/outputs built on `Quantity<TDimension>` are
-  correspondingly bounded to the same seven dimensions.
 - **Discipline-specific engineering principles** (a structural
   engineering design principle, an electrical safety margin
   principle) — deliberately out of scope, per this Work Package's own
   controlling instruction not to introduce Mechanical, HVAC, Structural,
   Electrical, or Manufacturing mathematics, design-code logic, or
   safety-factor policy.
+- **Affine unit conversion (Temperature)** — deliberately deferred, not
+  covered by Principle 9's "pure multiplication" claim; see `ADR-0054`'s
+  own "Temperature Deliberately Deferred" section. Materials properties
+  and calculation inputs/outputs built on `Quantity<TDimension>` are
+  correspondingly bounded to the same seven dimensions.
+- **Requirements Management and Validation** — this Work Package's own
+  controlling instruction drew both explicitly outside Verification's
+  own scope ("It shall not implement Validation," "It shall not
+  implement Requirements Management"); `Tempest.Core.Verification`
+  answers only "has this engineering claim been demonstrated," never
+  "is this the right claim to have made" (Validation) or "what
+  requirements exist and how do they relate" (a future Requirements
+  Engine, `FCR-0027`).
+
+With this extension, every one of the five Engineering Foundation
+frameworks `WP 7.0B`/`WP 7.0C` planned (`FCR-0029`–`FCR-0033`) has now
+contributed to this document — this section is not expected to grow
+further from this programme, only from future Engineering Modules built
+on top of it.
 
 ## Related Documents
 
 `docs/academy/06 Engineering Standards/Engineering Governance.md`;
 `VISION.md`; `docs/releases/FOUNDATION.md`; `docs/governance/Future
 Capability Register.md`; `ADR-0053`; `ADR-0054`; `ADR-0055`; `ADR-0056`;
+`ADR-0057`;
 `docs/academy/03 Work Packages/WP7.1A-engineering-data-model-implementation.md`;
 `docs/academy/03 Work Packages/WP7.1B-units-and-quantities-framework-implementation.md`;
 `docs/academy/03 Work Packages/WP7.1C-materials-framework-implementation.md`;
-`docs/academy/03 Work Packages/WP7.1D-engineering-calculation-framework-implementation.md`.
+`docs/academy/03 Work Packages/WP7.1D-engineering-calculation-framework-implementation.md`;
+`docs/academy/03 Work Packages/WP7.1E-verification-framework-implementation.md`.

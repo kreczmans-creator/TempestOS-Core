@@ -10,7 +10,7 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | `docs/academy/` itself; `docs/academy/Academy Index.md` (the reader-facing navigation index this register cross-checks against). |
 | **Review Frequency** | Updated whenever a new Academy article is created — in practice, every Work Package (Engineering Governance §6). |
-| **Last Reviewed** | 2026-07-30 (WP 7.1D, Engineering Calculation Framework) — added `WP7.1D-engineering-calculation-framework-implementation.md` and `02 Runtime Architecture/13-calculation-framework.md` (the Calculation-vs-Command distinction, per `WP7.0C Academy Plan.md`'s own required output). Previously reviewed 2026-07-30 (WP 7.1C, Materials Framework) — added `WP7.1C-materials-framework-implementation.md`. No new concept guide — per `WP7.0C Academy Plan.md`'s own finding, Materials is a worked example of the Data Model, not a new pattern. Previously reviewed 2026-07-30 (WP 7.1B, Units & Quantities Framework) — added `WP7.1B-units-and-quantities-framework-implementation.md` and `04 Design Patterns/05-phantom-type-dimension-safety.md`. Previously reviewed 2026-07-30 (WP 7.1A, Engineering Data Model) — added `WP7.1A-engineering-data-model-implementation.md`. |
+| **Last Reviewed** | 2026-07-30 (WP 7.1E, Verification Framework) — added `WP7.1E-verification-framework-implementation.md` and `02 Runtime Architecture/14-verification-framework.md` (distinguishing Verification from Audit and Calculation Record, per `WP7.0C Academy Plan.md`'s own required output). This completes the Engineering Foundation programme's own Academy obligations. Previously reviewed 2026-07-30 (WP 7.1D, Engineering Calculation Framework) — added `WP7.1D-engineering-calculation-framework-implementation.md` and `02 Runtime Architecture/13-calculation-framework.md` (the Calculation-vs-Command distinction, per `WP7.0C Academy Plan.md`'s own required output). Previously reviewed 2026-07-30 (WP 7.1C, Materials Framework) — added `WP7.1C-materials-framework-implementation.md`. No new concept guide — per `WP7.0C Academy Plan.md`'s own finding, Materials is a worked example of the Data Model, not a new pattern. Previously reviewed 2026-07-30 (WP 7.1B, Units & Quantities Framework) — added `WP7.1B-units-and-quantities-framework-implementation.md` and `04 Design Patterns/05-phantom-type-dimension-safety.md`. Previously reviewed 2026-07-30 (WP 7.1A, Engineering Data Model) — added `WP7.1A-engineering-data-model-implementation.md`. |
 | **Related Documents** | `docs/academy/Academy Index.md`; `docs/academy/Academy Audit Report.md`; `Engineering Standards Register.md`; `Feature Register.md`. |
 | **Related ADRs** | None directly — the Academy documents ADRs, it is not itself governed by one. |
 | **Related Academy Articles** | This register's entire scope. |
@@ -40,7 +40,7 @@
 | 10 | Single Responsibility Principle |
 | 11 | Atomic Phase Principle |
 
-## 02 Runtime Architecture (13 articles)
+## 02 Runtime Architecture (14 articles)
 
 | # | Article | Last Materially Updated |
 |---|---|---|
@@ -57,8 +57,9 @@
 | 11 | Command Framework | WP 5.1A (new), WP 5.1B (implementation confirmed; `CommandHandlerTable` sharing finding added) |
 | 12 | Diagnostics & Composite Logging | WP 5.2 (new) |
 | 13 | Calculation Framework | WP 7.1D (new) |
+| 14 | Verification Framework | WP 7.1E (new) |
 
-## 03 Work Packages (51 retrospectives)
+## 03 Work Packages (52 retrospectives)
 
 | Retrospective | Type |
 |---|---|
@@ -113,6 +114,7 @@
 | WP 7.1B — Units & Quantities Framework | Implementation (standard 13-section template, `ADR-0054`) — the second implementation Work Package of the Engineering Foundation phase; implements `Tempest.Core.UnitsAndQuantities` exactly as `WP 7.0C` proposed, extended (not changed) with arithmetic, comparison, formatting, parsing, and JSON serialization; 20 new production files, 67 new tests, zero DI registration, `docs/engineering/Engineering Principles.md` extended (Principles 7-12), new Design Patterns concept guide added |
 | WP 7.1C — Materials Framework | Implementation (standard 13-section template, `ADR-0055`) — the third implementation Work Package of the Engineering Foundation phase; implements `Tempest.Core.Materials` exactly as `WP 7.0C` proposed, extended (not changed) with a structured, provenance-carrying property type resolving `ADR-0055`'s own reserved property-typing question; 14 new production files, 55 new tests, consumes both `Tempest.Core.EngineeringData` and `Tempest.Core.UnitsAndQuantities`, `docs/engineering/Engineering Principles.md` extended (Principles 13-16), no new concept guide (a worked example of the Data Model, per `WP7.0C Academy Plan.md`) |
 | WP 7.1D — Engineering Calculation Framework | Implementation (standard 13-section template, `ADR-0056`) — the fourth implementation Work Package of the Engineering Foundation phase, and the first to include a dedicated Security Review; implements `Tempest.Core.Calculations` exactly as `WP 7.0C` proposed, substantially extended (metadata, assumptions, constraints, a validation model, an execution context, material references) to satisfy this Work Package's own "engineering evidence, not merely a numerical answer" requirement, resolving `ADR-0056`; 17 new production files, 52 new tests, consumes both `Tempest.Core.EngineeringData` and `Tempest.Core.UnitsAndQuantities`, `docs/engineering/Engineering Principles.md` extended (Principles 17-23), new concept guide (`13-calculation-framework.md`, the Calculation-vs-Command distinction) |
+| WP 7.1E — Verification Framework | Implementation (standard 13-section template, `ADR-0057`) — the fifth and final implementation Work Package of the Engineering Foundation phase, completing the entire programme; implements `Tempest.Core.Verification` exactly as `WP 7.0C` proposed, extended (not changed to `subjectDocumentId`/`outcome`/`method`) with a structured `VerificationContext` (criteria, evidence, linked documents, linked calculation records, material references) resolving `ADR-0057`; 9 new production files (the smallest of the five frameworks), 49 new tests, consumes only `Tempest.Core.EngineeringData` (no direct Persistence dependency needed — verification history is queried via the Data Model's own existing `LinkAsync`/`GetReferencesAsync` mechanism), `docs/engineering/Engineering Principles.md` extended (Principles 24-28), new concept guide (`14-verification-framework.md`, distinguishing Verification from Audit and Calculation Record) |
 
 **Note.** `WP 4.4C` produced no code and no separate retrospective — its
 story is told inside the `WP 4.4` architecture retrospective's own
@@ -158,15 +160,15 @@ added `Engineering Lifecycle.md`).
 | `Academy Audit Report.md` | `WP 4.4F`'s own audit deliverable |
 | `Contributor Learning Path.md` | Repository-wide onboarding sequence for a new contributor, added `WP 4.5B` |
 
-**Total: 1 (Introduction) + 11 (Engineering Principles) + 13 (Runtime
-Architecture) + 51 (Work Packages) + 5 (Design Patterns) + 5 (Case
-Studies) + 5 (Engineering Standards) + 4 (top-level meta) = 95 files
+**Total: 1 (Introduction) + 11 (Engineering Principles) + 14 (Runtime
+Architecture) + 52 (Work Packages) + 5 (Design Patterns) + 5 (Case
+Studies) + 5 (Engineering Standards) + 4 (top-level meta) = 97 files
 under `docs/academy/` — re-verified by direct `find` count against every
 subfolder individually (`WP 6.1`, `WP 6.4`, `WP 6.5`, `WP 6.2`, `WP
 6.0`, `WP 6.3`, `WP 6.7`, `WP 6.6`, `WP 6.8`, `WP 7.0A`, `WP 7.0B`, `WP
-7.0C`, `WP 7.1A`, `WP 7.1B`, `WP 7.1C`, `WP 7.1D`), not just the grand
-total, continuing the standing practice `WP 5.4`'s own repository
-review recommended.
+7.0C`, `WP 7.1A`, `WP 7.1B`, `WP 7.1C`, `WP 7.1D`, `WP 7.1E`), not just
+the grand total, continuing the standing practice `WP 5.4`'s own
+repository review recommended.
 **Correction, `WP
 5.4`**: the "03 Work Packages" count had read "33" (`WP 5.2`) then "34"
 (`WP 5.3`) while the section's own table already listed 34 and then 35

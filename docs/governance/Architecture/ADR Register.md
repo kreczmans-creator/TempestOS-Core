@@ -10,9 +10,9 @@
 | **Owner** | Project Maintainer — sole contributor of record across all 77 repository commits (git author `kreczmans-creator`; no separate architecture-review board or team structure exists as of this baseline). |
 | **Source of Truth** | `docs/adr/` (the ADR files themselves). This register is a governance index over that source, not a replacement for it — the full Context/Decision/Consequences reasoning lives only in each ADR file. |
 | **Review Frequency** | Updated whenever a new ADR is created, superseded, or reversed (Engineering Governance §5) — in practice, once per Work Package that meets the §5 ADR criteria. |
-| **Last Reviewed** | 2026-07-30 (WP 7.1D, Engineering Calculation Framework) — ADR-0056 added (Accepted). Previously reviewed 2026-07-30 (WP 7.1C, Materials Framework) — ADR-0055 added (Accepted). Previously reviewed 2026-07-30 (WP 7.1B, Units & Quantities Framework) — ADR-0054 added (Accepted). Previously reviewed 2026-07-30 (WP 7.1A, Engineering Data Model) — ADR-0053 added (Accepted); disclosed a small, previously-uncorrected staleness in this very field (it had not been updated since WP 6.6, despite WP 7.0C's own edit to this register's Numbering Integrity narrative in the interim). Previously reviewed 2026-07-29 (WP 6.6, Licensing). |
+| **Last Reviewed** | 2026-07-30 (WP 7.1E, Verification Framework) — ADR-0057 added (Accepted) — the fifth and final Engineering Foundation framework ADR, closing the `ADR-0053`–`ADR-0057` range `WP7.0C Required ADR Catalogue.md` reserved. Previously reviewed 2026-07-30 (WP 7.1D, Engineering Calculation Framework) — ADR-0056 added (Accepted). Previously reviewed 2026-07-30 (WP 7.1C, Materials Framework) — ADR-0055 added (Accepted). Previously reviewed 2026-07-30 (WP 7.1B, Units & Quantities Framework) — ADR-0054 added (Accepted). Previously reviewed 2026-07-30 (WP 7.1A, Engineering Data Model) — ADR-0053 added (Accepted); disclosed a small, previously-uncorrected staleness in this very field (it had not been updated since WP 6.6, despite WP 7.0C's own edit to this register's Numbering Integrity narrative in the interim). Previously reviewed 2026-07-29 (WP 6.6, Licensing). |
 | **Related Documents** | `docs/academy/06 Engineering Standards/Engineering Governance.md` (§5, ADR Creation Rules); `Decision Register.md`; `Rejected Designs Register.md`; `Traceability Matrix.md`; `docs/releases/v0.6.0/Required ADRs.md`. |
-| **Related ADRs** | All 56 — this register's entire subject matter. |
+| **Related ADRs** | All 57 — this register's entire subject matter. |
 | **Related Academy Articles** | Every Work Package retrospective under `docs/academy/03 Work Packages/` cites the ADR(s) it produced or realised; see each retrospective's own "ADR references" or "Architectural Principles" section. |
 | **Coverage Status** | Complete — every ADR file present in `docs/adr/` at time of review is listed below. |
 
@@ -86,31 +86,32 @@ line, verified directly.
 | ADR-0054 | Units & Quantities — Representation, Precision, and Registration Model | Accepted | WP 7.1B (Units & Quantities Framework) | 2026-07-30 | Verified |
 | ADR-0055 | Materials Framework — Property Typing and Platform-Service Classification | Accepted | WP 7.1C (Materials Framework) | 2026-07-30 | Verified |
 | ADR-0056 | Calculation Framework — Purity Enforcement and Dispatch Model | Accepted | WP 7.1D (Engineering Calculation Framework) | 2026-07-30 | Verified |
+| ADR-0057 | Verification Framework — Relationship to Audit and Method Vocabulary | Accepted | WP 7.1E (Verification Framework) | 2026-07-30 | Verified |
 
-**Total: 56 ADRs, all Accepted, none superseded or reversed (Verified — no
+**Total: 57 ADRs, all Accepted, none superseded or reversed (Verified — no
 ADR file in `docs/adr/` carries a Superseded/Deprecated/Rejected status
 line).**
 
 ## Numbering Integrity
 
-Sequential and complete, `ADR-0001` through `ADR-0056`, with no gaps
+Sequential and complete, `ADR-0001` through `ADR-0057`, with no gaps
 at all. `docs/releases/v0.7.0/WP7.0C Required ADR Catalogue.md` reserved
 `ADR-0053` through `ADR-0057` for the five Engineering Foundation
 frameworks' own anticipated architectural decisions, one per framework
-— `ADR-0053` (Engineering Data Model), `ADR-0054` (Units & Quantities),
-`ADR-0055` (Materials), and `ADR-0056` (Calculation) are now real,
-Accepted files, each implemented exactly as that catalogue anticipated,
-each also resolving at least one genuine question the catalogue did not
-itself anticipate (`ADR-0054`: affine/offset unit conversion, see its
-own "Temperature Deliberately Deferred" section; `ADR-0055`:
-`IMaterialCatalog`'s own direct `IPersistenceStore` dependency for its
-own `materialId` index, see its own Decision 3; `ADR-0056`:
-`Calculate`'s own signature change to accept a `CalculationContext`, see
-its own Decision 3).
-`ADR-0057` (Verification & Validation) remains reserved, not yet
-Accepted, awaiting its own owning Work Package — exactly as
-`ADR-0040`–`ADR-0052` were once only a catalogue entry before their own
-owning Work Packages implemented them.
+— all five (`ADR-0053` Engineering Data Model, `ADR-0054` Units &
+Quantities, `ADR-0055` Materials, `ADR-0056` Calculation, `ADR-0057`
+Verification) are now real, Accepted files, each implemented exactly as
+that catalogue anticipated, each also resolving at least one genuine
+question the catalogue did not itself anticipate (`ADR-0054`:
+affine/offset unit conversion; `ADR-0055`: `IMaterialCatalog`'s own
+direct `IPersistenceStore` dependency; `ADR-0056`: `Calculate`'s own
+signature change to accept a `CalculationContext`; `ADR-0057`:
+verification history queried via the Data Model's own existing
+reference mechanism, requiring no new index or Persistence dependency
+at all). This closes `WP7.0C Required ADR Catalogue.md`'s own entire
+reserved range — every Engineering Foundation ADR it anticipated is now
+Accepted, exactly as `ADR-0040`–`ADR-0052` were once only a catalogue
+entry before their own owning Work Packages implemented them.
 `docs/releases/v0.6.0/Required ADRs.md` reserved `ADR-0040` through
 `ADR-0051` in advance, as a catalogue of anticipated decisions, one
 range per `v0.6.0` Work Package, before any of those Work Packages began

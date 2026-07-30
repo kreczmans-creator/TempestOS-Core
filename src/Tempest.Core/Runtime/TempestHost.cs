@@ -20,6 +20,7 @@ using Tempest.Core.Persistence;
 using Tempest.Core.Plugins;
 using Tempest.Core.Reporting;
 using Tempest.Core.Settings;
+using Tempest.Core.Verification;
 using Tempest.Core.Versioning;
 
 namespace Tempest.Core.Runtime;
@@ -366,6 +367,14 @@ public sealed class TempestHost : ITempestHost
         // each execution always creates a brand new document, never
         // looked up later by a caller-chosen key.
         services.Singleton<ICalculationEngine, CalculationEngine>();
+
+        // ADR-0057: verification history is queried through the
+        // Engineering Data Model's own existing LinkAsync/
+        // GetReferencesAsync mechanism, not a new index - registered
+        // after Engineering Data and Identity & Permissions, both of
+        // which it depends on. Read access is permission-gated,
+        // mirroring IAuditQuery's own established pattern.
+        services.Singleton<IVerificationService, VerificationService>();
 
         // Composition Root pattern (ADR-0009), like Configuration/Logging/
         // PlatformVersionProvider above: DiagnosticsProvider needs references

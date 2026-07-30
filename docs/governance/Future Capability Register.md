@@ -10,9 +10,9 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | This document, from `WP 7.0A` onward. Prior to this Work Package, the same information existed only in fragments — see each entry's own "Sourced From" field for where it previously lived. |
 | **Review Frequency** | Updated whenever a new future capability is identified (by any Work Package, retrospective, or review), or whenever an existing capability's Status changes (a Work Package begins, completes, or a capability is formally deferred/rejected). |
-| **Last Reviewed** | 2026-07-30 (`WP 7.1D`, Engineering Calculation Framework) — `FCR-0032` marked **Implemented**; `FCR-0035` added (Calculation Execution Timeout & Cancellation Support, found during this Work Package's own required Security Review). Previously reviewed 2026-07-30 (`WP 7.1C`, Materials Framework) — `FCR-0031` marked **Implemented**. Previously reviewed 2026-07-30 (`WP 7.1B`, Units & Quantities Framework) — `FCR-0030` marked **Implemented**; `FCR-0034` added (Affine Unit Conversion / Temperature, found during implementation, not anticipated by prior planning). Previously reviewed 2026-07-30 (`WP 7.1A`, Engineering Data Model) — `FCR-0029` marked **Implemented**, the first entry in this register to leave "Identified" status. Previously reviewed 2026-07-30 (`WP 7.0B`, Engineering Foundation Planning & Capability Architecture) — added `FCR-0029` through `FCR-0033`, the five cross-cutting Engineering Foundation frameworks this Work Package's own dependency analysis identified as architecturally necessary before any discipline-specific Engineering Module can begin (see `WP7.0B Engineering Foundation Architecture.md`). Each is marked **Inferred**, not Verified — architectural necessity reasoning, not a capability named in a prior document, per the same discipline `FCR-0026` already applied. Previously reviewed 2026-07-30 (`WP 7.0A`, established). |
+| **Last Reviewed** | 2026-07-30 (`WP 7.1E`, Verification Framework) — `FCR-0033` marked **Implemented**, completing the Engineering Foundation programme (all five, `FCR-0029`–`FCR-0033`, now Implemented); `FCR-0036` added (Transactional Multi-Document Operations, found during this Work Package's own required Security Review). Previously reviewed 2026-07-30 (`WP 7.1D`, Engineering Calculation Framework) — `FCR-0032` marked **Implemented**; `FCR-0035` added (Calculation Execution Timeout & Cancellation Support, found during this Work Package's own required Security Review). Previously reviewed 2026-07-30 (`WP 7.1C`, Materials Framework) — `FCR-0031` marked **Implemented**. Previously reviewed 2026-07-30 (`WP 7.1B`, Units & Quantities Framework) — `FCR-0030` marked **Implemented**; `FCR-0034` added (Affine Unit Conversion / Temperature, found during implementation, not anticipated by prior planning). Previously reviewed 2026-07-30 (`WP 7.1A`, Engineering Data Model) — `FCR-0029` marked **Implemented**, the first entry in this register to leave "Identified" status. Previously reviewed 2026-07-30 (`WP 7.0B`, Engineering Foundation Planning & Capability Architecture) — added `FCR-0029` through `FCR-0033`, the five cross-cutting Engineering Foundation frameworks this Work Package's own dependency analysis identified as architecturally necessary before any discipline-specific Engineering Module can begin (see `WP7.0B Engineering Foundation Architecture.md`). Each is marked **Inferred**, not Verified — architectural necessity reasoning, not a capability named in a prior document, per the same discipline `FCR-0026` already applied. Previously reviewed 2026-07-30 (`WP 7.0A`, established). |
 | **Related Documents** | `Capability Categories.md`; `Product Roadmap.md`; `VISION.md`; `docs/governance/Quality/Technical Debt Register.md`; `docs/security/Security Roadmap.md`; `docs/security/Threat Model.md`; `docs/releases/v0.7.0/WorkPackages.md`; the eight `WP6.x Future Capability Recommendations.md` documents under `docs/releases/v0.6.0/`. |
-| **Related ADRs** | ADR-0013, ADR-0040, ADR-0044, ADR-0045, ADR-0046, ADR-0049, ADR-0050, ADR-0052, ADR-0053, ADR-0054, ADR-0055, ADR-0056 — see individual entries. |
+| **Related ADRs** | ADR-0013, ADR-0040, ADR-0044, ADR-0045, ADR-0046, ADR-0049, ADR-0050, ADR-0052, ADR-0053, ADR-0054, ADR-0055, ADR-0056, ADR-0057 — see individual entries. |
 | **Related Academy Articles** | `WP6.8-platform-services-integration-review.md` §6 (the direct source of `FCR-0001`, `FCR-0003`, `FCR-0004`, `FCR-0005`, `FCR-0006`); `WP7.0B-engineering-foundation-planning-and-capability-architecture.md`. |
 | **Coverage Status** | Complete for every future capability traceable to an existing, real document, plus five architecturally-inferred Engineering Foundation entries (`WP 7.0B`). **Not** claimed complete for the five Engineering Discipline categories with no identified candidate — see Coverage Note, below, and `Capability Categories.md`'s own identical disclosure. |
 
@@ -576,22 +576,22 @@ Coverage Note).
 | **Academy Impact** | `WP7.1D-engineering-calculation-framework-implementation.md`; new concept guide (Calculation vs. Command distinction); `docs/engineering/Engineering Principles.md` (Principles 17-23) |
 | **Notes** | Inferred purely from `Capability Categories.md`'s own Engineering Discipline list, the same basis as `FCR-0030`/`FCR-0031` — no prior document named this capability directly at planning time. Implemented `WP 7.1D` extended substantially beyond `WP7.0C Engineering Foundation Contracts.md`'s own illustrative shape (metadata, assumptions, constraints, a validation model, an execution context, material references) to satisfy this Work Package's own "engineering evidence, not merely a numerical answer" requirement — resolved in `ADR-0056`, not an unauthorised deviation. First Engineering Foundation Work Package to include a dedicated Security Review. |
 
-#### FCR-0033 — Verification & Validation Framework
+#### FCR-0033 — Verification Framework
 
 | Field | Value |
 |---|---|
 | **Category** | Quality |
-| **Description** | A cross-cutting mechanism for recording a pass/fail verification against a requirement or specification, usable by every discipline's own quality process — the first identified candidate for the previously-empty `Quality` category in `Capability Categories.md`, and distinct from Audit (who did what) and Reporting (presentation). |
-| **Status** | Identified (`WP 7.0B`) — architectural necessity, no design work exists |
+| **Description** | A cross-cutting mechanism for recording a pass/fail/conditional verification against an engineering document, usable by every discipline's own quality process — the first identified candidate for the previously-empty `Quality` category in `Capability Categories.md`, and distinct from Audit (who did what), a Calculation Record (what was computed), and Reporting (presentation). Answers "has this engineering claim been demonstrated?" — deliberately excludes Validation and Requirements Management. |
+| **Status** | **Implemented (`WP 7.1E`)** — `Tempest.Core.Verification`, `VerificationService`, built on `Tempest.Core.EngineeringData` per `ADR-0057`; requires no dependency on Requirements Engine (`FCR-0027`), Calculations, Units & Quantities, or Materials |
 | **Priority** | Medium-High — `Threat Model.md` assumption 1 names "verification records" directly as engineering IP TempestOS will eventually manage |
 | **Business Value** | Unknown in isolation; strengthens `FCR-0027` (Requirements Engine) directly, since a requirement without a verification record against it is only half the traceability chain `FCR-0027`'s own description names |
-| **Engineering Effort** | Unknown — requires its own Architecture Work Package |
-| **Dependencies** | `FCR-0027` (Requirements Engine — verification is meaningless without a requirement to verify against), `FCR-0029` (data model, to attach a verification record to an entity) |
-| **Proposed Target Release** | Not yet scheduled |
-| **Related ADRs** | None yet |
-| **Related Work Packages** | None yet |
-| **Academy Impact** | Would warrant a new Academy concept guide once designed |
-| **Notes** | Inferred from `Threat Model.md` assumption 1's explicit "verification records" phrase and `FCR-0027`'s own description naming "verification" as part of the Requirements Engine's scope — this entry formalises verification as its own cross-cutting capability rather than an implicit part of Requirements alone, since Quality/Manufacturing disciplines would need it independent of Systems Engineering. |
+| **Engineering Effort** | Delivered — one Work Package (`WP 7.1E`), 9 new production files (the smallest of the five Engineering Foundation frameworks), 49 new tests |
+| **Dependencies** | `FCR-0029` (data model, implemented `WP 7.1A`) — the only hard dependency, confirmed by implementation, not `FCR-0027` (Requirements Engine), exactly as `WP7.0C Cross-Framework Dependency Report.md`'s own clarification anticipated |
+| **Proposed Target Release** | Shipped, `v0.7.0` (pending release) — **this completes the Engineering Foundation programme**, all five frameworks (`FCR-0029`–`FCR-0033`) now Implemented |
+| **Related ADRs** | ADR-0013, ADR-0045, ADR-0053, ADR-0057 |
+| **Related Work Packages** | `WP 7.1E` |
+| **Academy Impact** | `WP7.1E-verification-framework-implementation.md`; new concept guide (Verification vs. Audit vs. Calculation Record); `docs/engineering/Engineering Principles.md` (Principles 24-28) |
+| **Notes** | Inferred from `Threat Model.md` assumption 1's explicit "verification records" phrase and `FCR-0027`'s own description naming "verification" as part of the Requirements Engine's scope. Implemented `WP 7.1E` exactly as `WP7.0C Engineering Foundation Contracts.md` proposed, extended (not changed to `subjectDocumentId`/`outcome`/`method`) with a structured `VerificationContext` resolving `ADR-0057`'s own reserved question, and one disclosed implementation finding: verification history is queried via the Data Model's own existing `LinkAsync`/`GetReferencesAsync` mechanism, needing no new index or direct `IPersistenceStore` dependency at all — the simplest dependency shape of any Engineering Foundation framework. |
 
 #### FCR-0034 — Affine Unit Conversion (Temperature and Similar Dimensions)
 
@@ -626,6 +626,23 @@ Coverage Note).
 | **Related Work Packages** | `WP 7.1D` (found and disclosed, not resolved) |
 | **Academy Impact** | Would warrant an update to the Calculation Framework's own concept guide once designed |
 | **Notes** | Sourced from `Technical Debt Register.md` `TD-21`; `WP7.1D Security Review Report.md`. A genuine finding from this Work Package's own required Security Review, not present in any prior planning document — the first Future Capability Register entry sourced from a security review rather than an implementation report's own disclosed finding. |
+
+#### FCR-0036 — Transactional Multi-Document Operations for the Engineering Data Model
+
+| Field | Value |
+|---|---|
+| **Category** | Platform |
+| **Description** | Extend `Tempest.Core.EngineeringData` (or a layer atop it) so a sequence of related writes (create a document, link it to another, link it to a third) can be performed atomically — `IEngineeringDocumentStore` currently offers no transactional multi-write primitive, so a consumer performing several related operations in sequence (as `Tempest.Core.Verification.VerificationService.RecordAsync` does) risks a partially-completed state if a later step fails. |
+| **Status** | Identified (`WP 7.1E`) — found during this Work Package's own required Security Review, not anticipated by prior planning |
+| **Priority** | Low — no current consumer has reported a real problem from the non-transactional sequence; disclosed proactively |
+| **Business Value** | Would grow once a real, demonstrated need for atomic multi-document writes exists — Verification is the first consumer with this shape, but not the only plausible future one (Materials' own future multi-link needs, a future Requirements Engine) |
+| **Engineering Effort** | Unknown, likely High — `IPersistenceStore`'s own file-backed implementation has no transaction concept to build on; this would be a genuine new capability, not a small extension |
+| **Dependencies** | `FCR-0029` (Engineering Data Model, shipped `WP 7.1A`) |
+| **Proposed Target Release** | Not yet scheduled — revisit trigger: a real, demonstrated need for transactional multi-document operations |
+| **Related ADRs** | ADR-0053, ADR-0057 |
+| **Related Work Packages** | `WP 7.1E` (found and disclosed, not resolved) |
+| **Academy Impact** | Would warrant an update to the Engineering Data Model's own concept guide once designed |
+| **Notes** | Sourced from `Technical Debt Register.md` `TD-23`; `WP7.1E Security Review Report.md`. A genuine finding from this Work Package's own required Security Review, mirroring `FCR-0035`'s own identical origin (`WP 7.1D`'s Security Review) — the second Future Capability Register entry sourced from a security review rather than a retrospective's own disclosed finding. |
 
 ### Systems Engineering
 
@@ -667,7 +684,7 @@ Coverage Note).
 
 ## Coverage Note
 
-**35 capabilities identified** (`FCR-0001` through `FCR-0035`).
+**36 capabilities identified** (`FCR-0001` through `FCR-0036`).
 `FCR-0001`–`FCR-0028` were each traceable to a specific, cited,
 pre-existing document, established `WP 7.0A`. `FCR-0029`–`FCR-0033`
 were added by `WP 7.0B`'s own Capability Dependency Analysis — each
@@ -680,8 +697,11 @@ own disclosed finding rather than a retrospective, a Technical Debt
 Register entry, or architectural-necessity reasoning. `FCR-0035` was
 added by `WP 7.1D`, sourced from that Work Package's own required
 Security Review — the first entry in this register sourced from a
-security review specifically. No entry was invented to fill a category
-without disclosing that it was inferred rather than sourced.
+security review specifically. `FCR-0036` was added by `WP 7.1E`, sourced
+from that Work Package's own required Security Review — the second such
+entry, and the last added by the Engineering Foundation programme, now
+complete. No entry was invented to fill a category without disclosing
+that it was inferred rather than sourced.
 
 `Materials` and `Quality` each now have exactly one entry (`FCR-0031`,
 `FCR-0033` respectively) — both cross-cutting *foundation* capabilities

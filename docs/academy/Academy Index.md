@@ -233,6 +233,7 @@ enforcement point Identity & Permissions established (`ADR-0044`).
 
 - [WP 6.5 — Audit Framework Implementation](03%20Work%20Packages/WP6.5-audit-framework-implementation.md) — implemented directly against the already-approved architecture and Contract Review packages, including the recording-model/permission-gating/Persistence-sufficiency decisions (`ADR-0045`) and a genuine, disclosed engineering-review finding: a premature-resource-disposal bug in two prior Work Packages' own Host-registration tests.
 - ADR-0045 (Audit Is a Durable, Queryable, Append-Only Record, Distinct From Logging and Diagnostics — Recording Model, Permission Gating, and Persistence Sufficiency).
+- See also [Verification Framework](02%20Runtime%20Architecture/14-verification-framework.md) (`WP 7.1E`'s own worked comparison against this framework — Audit records who did what; Verification judges whether an engineering claim was demonstrated).
 
 ### Notifications
 
@@ -374,6 +375,22 @@ Work Package to include a dedicated Security Review.
 - [WP 7.1D — Engineering Calculation Framework](03%20Work%20Packages/WP7.1D-engineering-calculation-framework-implementation.md) — implemented exactly as `WP 7.0C` proposed, resolving both of `ADR-0056`'s own reserved questions (purity enforcement, Data Model integration) plus the `Calculate`-signature extension this Work Package's own evidentiary requirements demanded.
 - ADR-0056 (Calculation Framework — Purity Enforcement and Dispatch Model).
 
+### Verification
+
+Implemented (`WP 7.1E`, `ADR-0057`) — `Tempest.Core.Verification`:
+`VerificationService` answers "has this engineering claim been
+demonstrated?" — distinct from Audit (who did what) and a Calculation
+Record (what was computed). Verification history is queried through the
+Engineering Data Model's own existing `LinkAsync`/`GetReferencesAsync`
+mechanism, requiring no new index and no direct Persistence dependency
+at all — the simplest dependency shape of any Engineering Foundation
+framework. **Completes the entire Engineering Foundation programme** —
+all five frameworks (`FCR-0029`–`FCR-0033`) are now Implemented.
+
+- [Verification Framework](02%20Runtime%20Architecture/14-verification-framework.md) — the concept guide: distinguishing Verification from Audit and from a Calculation Record, three structurally similar "record what happened" types with genuinely different semantics.
+- [WP 7.1E — Verification Framework](03%20Work%20Packages/WP7.1E-verification-framework-implementation.md) — implemented exactly as `WP 7.0C` proposed, resolving both of `ADR-0057`'s own reserved questions (Audit orthogonality, open method vocabulary) plus one genuine finding (verification history via the Data Model's own reference mechanism) `WP7.0C Required ADR Catalogue.md` did not anticipate.
+- ADR-0057 (Verification Framework — Relationship to Audit and Method Vocabulary).
+
 ## Design Patterns
 
 Recurring structural patterns TempestOS actually uses, explained in terms
@@ -486,6 +503,7 @@ WorkPackages.md` for the full, nine-Work-Package plan.
 - [WP 7.1B — Units & Quantities Framework](03%20Work%20Packages/WP7.1B-units-and-quantities-framework-implementation.md) — the second implementation Work Package of this phase; implements `Tempest.Core.UnitsAndQuantities` (`ADR-0054`) exactly as `WP 7.0C` proposed, extended with arithmetic/comparison/formatting/parsing/serialization. Standard 13-section implementation template.
 - [WP 7.1C — Materials Framework](03%20Work%20Packages/WP7.1C-materials-framework-implementation.md) — the third implementation Work Package of this phase; implements `Tempest.Core.Materials` (`ADR-0055`) exactly as `WP 7.0C` proposed, extended with a structured, provenance-carrying property type. Standard 13-section implementation template.
 - [WP 7.1D — Engineering Calculation Framework](03%20Work%20Packages/WP7.1D-engineering-calculation-framework-implementation.md) — the fourth implementation Work Package of this phase, and the first to include a dedicated Security Review; implements `Tempest.Core.Calculations` (`ADR-0056`) exactly as `WP 7.0C` proposed, substantially extended to satisfy an "engineering evidence, not merely a numerical answer" requirement. Standard 13-section implementation template.
+- [WP 7.1E — Verification Framework](03%20Work%20Packages/WP7.1E-verification-framework-implementation.md) — the fifth and final implementation Work Package of this phase, completing the entire Engineering Foundation programme; implements `Tempest.Core.Verification` (`ADR-0057`) exactly as `WP 7.0C` proposed, extended with a structured `VerificationContext`. Standard 13-section implementation template.
 
 See `PROJECT_STATUS.md` for current status, `docs/governance/Future
 Capability Register.md` for the authoritative future-capability list,
