@@ -1,6 +1,6 @@
 # TempestOS — Project Status
 
-**Last Updated:** 2026-07-30 (`WP 7.1E` — Verification Framework)
+**Last Updated:** 2026-07-30 (`WP 7.1F` — Engineering Core Integration Review & Certification)
 
 This is the primary status dashboard for TempestOS. Read this first for
 "where does the project stand right now" — for "why is it built this
@@ -118,42 +118,84 @@ that; `v0.4.0` ("Platform Foundation") before that.
 
 ## Current Work Package
 
+**`WP 7.1F` — Engineering Core Integration Review & Certification.** The
+Engineering Foundation phase's (`v0.7.0`) ninth and closing activity — a
+certification review, not an implementation Work Package, mirroring
+`WP 6.8`'s own identical role for `v0.6.0`. Approved to begin after
+Engineering Review of `WP 7.0A` through `WP 7.1E` all passed. No
+production code was written; the two findings requiring a fix were each
+a documentation or governance-register correction.
+
+**Certification outcome: ENGINEERING CORE CERTIFIED WITH ACCEPTED
+TECHNICAL DEBT.** Architecture Review: zero circular dependencies within
+the Engineering Core or between it and any Platform Service, zero
+`Service → Module`/`Module → Module`/`Runtime → Feature` violations —
+confirmed directly against real code, not assumed. Integration Review:
+every one of the five frameworks has at least one real, tested consumer;
+Engineering Data Model is consumed by all four siblings, the broadest
+consumption of any of the five. Security Review: zero Release Blocking
+findings across both dedicated Security Reviews (`WP 7.1D`, `WP 7.1E`)
+plus a cross-framework check this Work Package performed itself, which
+found the identical unvalidated-material-reference design (`AT-16`,
+`AT-17`) independently reached by two frameworks — corroborating
+evidence the boundary is principled, not an oversight. Testing Review:
+1275 tests, 0 failures, confirmed across four full-suite runs (Debug and
+Release, from a clean rebuild) plus a dedicated 224-test run scoped to
+the five Engineering Core namespaces. Definition of Done Audit: all
+eight Engineering Foundation Work Packages satisfy every criterion, with
+exactly one disclosed shortfall, now closed (below).
+
+**Two genuine, non-blocking findings, found and closed in this same
+Work Package.** First: a **repeat of `WP 6.8`'s own exact
+governance-drift pattern** — `Interface Register.md` (64 → 75),
+`Dependency Injection Register.md` (26 → 30 named registrations), and
+`Module Register.md` (15 → 19) had each gone stale since `WP 6.8` itself,
+undetected across all five Engineering Foundation Work Packages (11
+interfaces, 4 registrations, 4 sample modules unrecorded). `FCR-0005`
+(Governance Register Health-Check Tooling)'s own priority is raised
+Medium → High as a result — this is now a confirmed, third recurrence of
+the identical failure mode. Second: `WP7.0C Academy Plan.md`'s own
+required Engineering Data Model concept guide, named as this programme's
+"highest-priority new Academy content," was never written by `WP 7.1A`
+and never disclosed as missing by any of `WP 7.1B`–`WP 7.1E` — written
+here (`02 Runtime Architecture/15-engineering-data-model.md`).
+
+Ten completion deliverables produced (`WP7.1F Engineering Core
+Certification Report.md` and nine companions) plus
+`ENGINEERING_CORE_COMPLETION_REPORT.md` (repository root), the
+programme's own permanent historical milestone document. See
+`docs/releases/v0.7.0/WP7.1F Engineering Core Certification Report.md`
+for the complete decision and evidence.
+
+### `WP 7.1E` Summary (for reference)
+
 **`WP 7.1E` — Verification Framework.** The Engineering Foundation
-phase's (`v0.7.0`) eighth activity, and its **fifth and final
-implementation** Work Package — approved to begin after Engineering
-Review of `WP 7.0A`, `WP 7.0B`, `WP 7.0C`, and `WP 7.1A` through
-`WP 7.1D` all passed. **Completes the entire Engineering Foundation
-programme** — all five frameworks (`FCR-0029`–`FCR-0033`) are now
-Implemented. Implements `Tempest.Core.Verification`
-(`IVerificationService`, `IVerificationRecord`, `VerificationOutcome`)
-exactly as `WP7.0C Engineering Foundation Contracts.md` proposed,
-extended with a structured `VerificationContext` (explicit criteria,
-evidence, linked documents, linked calculation records, referenced
-materials) resolving `ADR-0057`'s own two reserved questions (Audit
-orthogonality confirmed; `method` remains open) plus one genuine
-implementation finding: verification history is queried entirely
-through the Engineering Data Model's own existing `LinkAsync`/
-`GetReferencesAsync` mechanism, needing **no new index and no direct
-`IPersistenceStore` dependency at all** — the simplest dependency shape
-of any Engineering Foundation framework. **Zero new exception types** —
-`EngineeringDocumentNotFoundException` is reused directly, exactly as
-`WP7.1A Future Capability Recommendations.md` anticipated. 9 new
-production files (the smallest of the five frameworks); a new sample
-module (`VerificationSampleModule`, the platform's nineteenth,
-demonstrating the permission-gated history-read path denied by default,
-mirroring `AuditSampleModule`'s own precedent). 49 new tests (1275/1275
-passing, both Debug and Release, clean rebuild, 0 warnings). Extends
-`docs/engineering/Engineering Principles.md` with five further
-principles (24-28) — completing that document's own Engineering
-Foundation contribution — and adds a new Academy concept guide
-(`14-verification-framework.md`, distinguishing Verification from Audit
-and Calculation Record). **Second consecutive Work Package to include a
-dedicated Security Review** — two new disclosed debt items (`TD-23`,
-`TD-24`) and one new accepted trade-off (`AT-17`), neither Release
-Blocking, plus a new Future Capability Register entry (`FCR-0036`,
-transactional multi-document operations) sourced directly from that
-review. See `docs/releases/v0.7.0/WP7.1E Implementation Report.md` and
-its seven companion deliverables for the complete account.
+phase's eighth activity, and its fifth and final implementation Work
+Package — approved to begin after Engineering Review of `WP 7.0A`,
+`WP 7.0B`, `WP 7.0C`, and `WP 7.1A` through `WP 7.1D` all passed.
+**Completed the entire Engineering Foundation implementation programme**
+— all five frameworks (`FCR-0029`–`FCR-0033`) became Implemented.
+Implemented `Tempest.Core.Verification` (`IVerificationService`,
+`IVerificationRecord`, `VerificationOutcome`) exactly as `WP7.0C
+Engineering Foundation Contracts.md` proposed, extended with a
+structured `VerificationContext` (explicit criteria, evidence, linked
+documents, linked calculation records, referenced materials) resolving
+`ADR-0057`'s own two reserved questions (Audit orthogonality confirmed;
+`method` remains open) plus one genuine implementation finding:
+verification history is queried entirely through the Engineering Data
+Model's own existing `LinkAsync`/`GetReferencesAsync` mechanism, needing
+no new index and no direct `IPersistenceStore` dependency at all — the
+simplest dependency shape of any Engineering Foundation framework. Zero
+new exception types — `EngineeringDocumentNotFoundException` is reused
+directly. 9 new production files (the smallest of the five frameworks);
+a new sample module (`VerificationSampleModule`, the platform's
+nineteenth). 49 new tests (1275/1275 passing, both Debug and Release,
+clean rebuild). Extended `docs/engineering/Engineering Principles.md`
+with five further principles (24-28) and added a new Academy concept
+guide (`14-verification-framework.md`). Second consecutive Work Package
+to include a dedicated Security Review — two new disclosed debt items
+(`TD-23`, `TD-24`) and one new accepted trade-off (`AT-17`), neither
+Release Blocking, plus `FCR-0036`.
 
 ### `WP 7.1D` Summary (for reference)
 
@@ -335,8 +377,13 @@ frameworks compose for an actual domain problem; (b) Candidates `A`–`C`
 Engine), Verification's own most natural next consumer. **None is yet
 an approved Work Package** — per this project's own standing discipline
 (`FOUNDATION.md` §1), each still requires Product Approval before its
-own implementation begins. Await Engineering Review of `WP 7.1E` before
-Product Approval selects the next Work Package.
+own implementation begins. `WP 7.1F` (Engineering Core Integration
+Review & Certification) has now certified the complete Engineering Core
+**CERTIFIED WITH ACCEPTED TECHNICAL DEBT** — see
+`ENGINEERING_CORE_COMPLETION_REPORT.md` and `docs/releases/v0.7.0/
+WP7.1F Engineering Core Certification Report.md`. Await Engineering
+Review of `WP 7.1F` before Product Approval selects the next Work
+Package.
 
 ## Foundation Status
 
@@ -398,19 +445,21 @@ Experience phase is now complete.
 
 | Metric | Value |
 |---|---|
-| Automated tests | 1275 (0 failures) — **+49, `WP 7.1E`** (Verification Framework); re-verified across clean Debug and Release rebuilds |
-| ADRs | 57 (`ADR-0001`–`ADR-0057`, no gaps at all), all Accepted — **+1, `WP 7.1E`**: `ADR-0057` (Verification Framework relationship to Audit and method vocabulary). This closes `WP7.0C Required ADR Catalogue.md`'s entire reserved `ADR-0053`–`ADR-0057` range. |
-| Rejected Designs | 45 (`RD-0001`–`RD-0045`) — unchanged by `WP 7.1E` |
-| Academy articles | 97 (see `docs/governance/Documentation/Academy Register.md`) — **+2, `WP 7.1E`**: `WP7.1E-verification-framework-implementation.md`, `02 Runtime Architecture/14-verification-framework.md` (distinguishing Verification from Audit and Calculation Record) |
-| Governance registers | 27 (32 governance documents total), plus 4 standing security documents under `docs/security/` and 1 standing engineering document (`docs/engineering/Engineering Principles.md`, established `WP 7.1A`, extended `WP 7.1B` with Principles 7-12, `WP 7.1C` with Principles 13-16, `WP 7.1D` with Principles 17-23, and `WP 7.1E` with Principles 24-28 — completing this document's own Engineering Foundation contribution) | 
-| Architecture documents | 20 under `docs/architecture/` (22 including the two release-scoped documents) — unchanged by `WP 7.1E` |
-| Platform services | 26 catalogued — unchanged by `WP 7.1E`'s own count (Engineering Foundation frameworks confirmed as Platform Services — Engineering Data Model, `WP 7.1A`; Materials, `WP 7.1C`; Calculation, `WP 7.1D`; Verification, `WP 7.1E` — are tracked in `Future Capability Register.md`, not yet backfilled into `Platform Services Register.md`; Units & Quantities, `WP 7.1B`, deliberately is **not** one) |
-| Modules (production) | 19 — **+1, `WP 7.1E`**: `VerificationSampleModule`, the nineteenth real sample module |
-| Hosted services (production) | 2 — unchanged by `WP 7.1E` |
+| Automated tests | 1275 (0 failures) — unchanged by `WP 7.1F` (a certification review; no new tests written); re-verified across four clean Debug/Release rebuilds plus a dedicated 224-test Engineering-Core-scoped run |
+| ADRs | 57 (`ADR-0001`–`ADR-0057`, no gaps at all), all Accepted — unchanged by `WP 7.1F` (no architectural decision was made; this Work Package audits, it does not decide) |
+| Rejected Designs | 45 (`RD-0001`–`RD-0045`) — unchanged by `WP 7.1F` |
+| Academy articles | 99 (see `docs/governance/Documentation/Academy Register.md`) — **+2, `WP 7.1F`**: `WP7.1F-engineering-core-integration-review-and-certification.md` (this Work Package's own retrospective), `02 Runtime Architecture/15-engineering-data-model.md` (the Engineering Data Model's own concept guide, found missing and written by this Work Package, four Work Packages later than `WP7.0C Academy Plan.md` originally called for) |
+| Governance registers | 27 (32 governance documents total), plus 4 standing security documents under `docs/security/` and 1 standing engineering document (`docs/engineering/Engineering Principles.md`) — unchanged in count by `WP 7.1F`, but three registers (`Interface Register.md`, `Dependency Injection Register.md`, `Module Register.md`) were fully backfilled in place, having gone stale since `WP 6.8` |
+| Architecture documents | 20 under `docs/architecture/` (22 including the two release-scoped documents) — unchanged by `WP 7.1F` |
+| Platform services | 26 catalogued — unchanged by `WP 7.1F`'s own count (Engineering Foundation frameworks remain tracked in `Future Capability Register.md`, not yet backfilled into `Platform Services Register.md` — a disclosed, deliberately-deferred classification decision, not newly found by this Work Package) |
+| Modules (production) | 19 — unchanged in count by `WP 7.1F`, but now correctly recorded in `Module Register.md` (previously stale at 15) |
+| Hosted services (production) | 2 — unchanged by `WP 7.1F` |
 | Plugins (production) | 0 — infrastructure fully implemented and tested; `src/Plugins/` empty by deliberate scope decision |
-| Custom exception types | 62 — unchanged by `WP 7.1E` (zero new exception types — `EngineeringDocumentNotFoundException` is reused directly, the first Engineering Foundation framework to add none of its own) |
-| Technical Debt Register items | 24 tracked, 17 disclosed trade-offs — **+2 tracked, `WP 7.1E`**: `TD-23` (`RecordAsync`'s own multi-link sequence is not transactional), `TD-24` (no bound on `VerificationContext`-recorded data volume; history read scales with reference count), both Open, neither Release Blocking, both found via this Work Package's own dedicated Security Review; **+1 trade-off**: `AT-17` (no dependency on Materials for material-reference validation) |
-| Commits (`v0.6.0` → `v0.7.0`, so far) | 11 — `v0.6.0` release-branch preparation (2 commits), merge from `main`, `WP 7.0A`, `WP 7.0B`, `WP 7.0C`, `WP 7.1A`, `WP 7.1B`, `WP 7.1C`, `WP 7.1D`, `WP 7.1E` (this commit) |
+| Custom exception types | 62 — unchanged by `WP 7.1F` |
+| Public interfaces (`src/Tempest.Core/`) | 75 — now correctly recorded in `Interface Register.md` (previously stale at 64; the 11 Engineering Core interfaces had never been recorded since each framework shipped) |
+| DI registrations (`TempestHost.cs` Phase 6) | 32 raw call sites, 30 named registrations — now correctly recorded in `Dependency Injection Register.md` (previously stale at 26 named/28 raw; the four Engineering Core registrations had never been recorded) |
+| Technical Debt Register items | 24 tracked, 17 disclosed trade-offs — unchanged by `WP 7.1F` (no new debt found; one existing item, `TD-18`, reassessed with a more precise disposition — see `WP7.1F Technical Debt Disposition.md`) |
+| Commits (`v0.6.0` → `v0.7.0`, so far) | 12 — `v0.6.0` release-branch preparation (2 commits), merge from `main`, `WP 7.0A`, `WP 7.0B`, `WP 7.0C`, `WP 7.1A`, `WP 7.1B`, `WP 7.1C`, `WP 7.1D`, `WP 7.1E`, `WP 7.1F` (this commit) |
 | Contributors | 1 (repository owner; all commits co-authored by Claude) |
 
 *(This table is generated from `docs/governance/Quality/Repository Metrics
@@ -422,16 +471,17 @@ three together.)*
 - **Build:** Clean — 0 warnings, 0 errors (`dotnet build
   tests/Tempest.Core.Tests/Tempest.Core.Tests.csproj`, both Debug and
   Release configurations, from a fully-removed `bin`/`obj` tree —
-  re-verified directly by `WP 6.8`, independent of `WP 6.6`'s own claim).
-- **Tests:** 1016/1016 passing, re-verified by `WP 6.8` across **six**
-  full-suite runs (three Debug, two Release, one further Debug),
-  including two entirely clean rebuilds — the deepest test-stability
-  verification any single Work Package this release has performed. Zero
-  instances of the previously-disclosed, non-reproducible `Console.Out`-
-  capture flake (`WP 6.3`'s own finding) were observed across any of the
-  six runs. `WP 6.8`'s own certification review found no code-level
-  regression of any kind — see `WP6.8 Release Readiness Report.md` for
-  the complete, per-run evidence table.
+  re-verified directly by `WP 7.1F`, independent of any prior Work
+  Package's own claim).
+- **Tests:** 1275/1275 passing, re-verified by `WP 7.1F` across **four**
+  full-suite runs (two Debug, two Release, each from a clean rebuild)
+  plus one further, dedicated 224-test run scoped to the five Engineering
+  Core namespaces specifically. No instance of the `v0.6.0`-era,
+  previously-disclosed `Console.Out`-capture flake (`WP 6.3`'s own
+  finding) was observed across any run. `WP 7.1F`'s own certification
+  review found no code-level regression of any kind — see `WP7.1F
+  Engineering Core Certification Report.md` for the complete, per-run
+  evidence table.
 - **Known regressions:** None.
 - **Working tree:** Clean at every Work Package boundary — see
   `docs/governance/Quality/Validation Register.md`.
@@ -755,6 +805,25 @@ deliverables were produced under `docs/releases/v0.6.0/`, prefixed
 `WP6.8`, culminating in a `CERTIFIED WITH ACCEPTED TECHNICAL DEBT`
 recommendation.
 
+**`WP 7.1F` (Engineering Core Integration Review & Certification)** — a
+certification review of the complete Engineering Core, not a feature
+Work Package; no production code was written. Found the identical
+governance-register-drift pattern `WP 6.8` itself found and closed for
+`v0.6.0`, recurring a second time: `Interface Register.md` (64 → 75),
+`Dependency Injection Register.md` (26 → 30 named registrations), and
+`Module Register.md` (15 → 19) had each gone stale since `WP 6.8`,
+undetected across all five Engineering Foundation Work Packages — now
+fully backfilled a second time. Also found and wrote the Engineering
+Data Model's own missing concept guide
+(`02 Runtime Architecture/15-engineering-data-model.md`), required by
+`WP7.0C Academy Plan.md` since `WP 7.1A` and never produced or
+disclosed as missing. No new ADR was produced. Ten completion
+deliverables were produced under `docs/releases/v0.7.0/`, prefixed
+`WP7.1F`, plus `ENGINEERING_CORE_COMPLETION_REPORT.md` (repository
+root, the programme's own permanent historical milestone document),
+culminating in an `ENGINEERING CORE CERTIFIED WITH ACCEPTED TECHNICAL
+DEBT` recommendation.
+
 ## Academy Status
 
 86 articles across 7 categories (Introduction, Engineering Principles,
@@ -948,6 +1017,16 @@ both Audit and Calculation Record. Further extended
 `docs/engineering/Engineering Principles.md` with five further
 principles (24-28), completing that document's own Engineering
 Foundation contribution — all five frameworks have now extended it.
+**`WP 7.1F`** added `WP7.1F-engineering-core-integration-review-and-
+certification.md` — a closing certification retrospective, mirroring
+`WP 6.8`'s own whole-release review format, not the standard 13-section
+per-feature template. Also wrote `02 Runtime Architecture/
+15-engineering-data-model.md`, the Engineering Data Model's own concept
+guide — required output of `WP 7.1A`, named by `WP7.0C Academy Plan.md`
+as this programme's "highest-priority new Academy content," never
+written, and never disclosed as missing by `WP 7.1A` or any of
+`WP 7.1B`–`WP 7.1E`. No further Engineering Principles added — this
+Work Package audits, it does not implement.
 
 ## Governance Status
 
@@ -1241,6 +1320,16 @@ Foundation programme** (`FCR-0029`–`FCR-0033` all now Implemented).
 for the Engineering Data Model) — sourced directly from this Work
 Package's own required Security Review, the second such entry after
 `FCR-0035`, bringing the register to 36 entries total.
+**`WP 7.1F`** added no new ADR (an audit, not a decision) and no new
+Technical Debt or trade-off item (`TD-18` was reassessed with a more
+precise disposition, not newly disclosed). Fully backfilled `Interface
+Register.md`, `Dependency Injection Register.md`, and `Module
+Register.md` — each stale since `WP 6.8`, the exact drift pattern
+`FCR-0005` exists to prevent, recurring a second time. `FCR-0005`'s own
+priority raised Medium → High as a direct result — three recurrences of
+this failure mode across three separate release phases is now a
+confirmed pattern, not a single observation. The register remains at 36
+entries total — no new capability was identified.
 
 ## Known Unknowns
 
@@ -1275,25 +1364,30 @@ Governance Audit Report.md`:
    frameworks, and `ADR-0053`–`ADR-0057` catalogued are all established
    and approved.
 3. **`WP 7.1A` through `WP 7.1E` — all five Engineering Foundation
-   frameworks — are complete, awaiting Engineering Review of the last.**
+   frameworks — are complete and Engineering-Review-approved.**
    `Tempest.Core.EngineeringData` (`ADR-0053`),
    `Tempest.Core.UnitsAndQuantities` (`ADR-0054`),
    `Tempest.Core.Materials` (`ADR-0055`), `Tempest.Core.Calculations`
    (`ADR-0056`), and `Tempest.Core.Verification` (`ADR-0057`) are all
    implemented; 1275/1275 tests passing, both configurations, clean
-   rebuild. **The entire Engineering Foundation programme is complete.**
-   No further implementation Work Package begins until Engineering
-   Review of `WP 7.1E` completes, per that Work Package's own explicit
-   closing instruction.
-4. **Await Product Approval of the next implementation Work Package —
-   a genuinely open product choice.** `WP7.1E Engineering Foundation
-   Impact Assessment.md` names three paths, none with an outstanding
-   technical dependency: a real, discipline-specific Engineering
-   Module; Candidates `A`–`C` (Platform Hardening); or design work
-   toward `FCR-0027` (Requirements Engine). None is yet an approved Work
-   Package. No implementation is authorised until Product Approval
-   selects one, mirroring `v0.6.0`'s own pre-implementation discipline.
-5. A GitHub Release for `v0.6.0` has not yet been created (`gh` CLI
+   rebuild.
+4. **`WP 7.1F` — Engineering Core Integration Review & Certification —
+   is complete, awaiting Engineering Review.** The Engineering Core is
+   **CERTIFIED WITH ACCEPTED TECHNICAL DEBT** — see
+   `ENGINEERING_CORE_COMPLETION_REPORT.md` and `docs/releases/v0.7.0/
+   WP7.1F Engineering Core Certification Report.md`. This closes the
+   entire Engineering Foundation programme. No further implementation
+   Work Package begins until Engineering Review of `WP 7.1F` completes,
+   per that Work Package's own explicit closing instruction.
+5. **Await Product Approval of the next implementation Work Package —
+   a genuinely open product choice.** `ENGINEERING_CORE_COMPLETION_REPORT.md`
+   names three paths, none with an outstanding technical dependency: a
+   real, discipline-specific Engineering Module; Candidates `A`–`C`
+   (Platform Hardening); or design work toward `FCR-0027` (Requirements
+   Engine). None is yet an approved Work Package. No implementation is
+   authorised until Product Approval selects one, mirroring `v0.6.0`'s
+   own pre-implementation discipline.
+6. A GitHub Release for `v0.6.0` has not yet been created (`gh` CLI
    unavailable in this environment) — see the Release Summary for the
    exact command or manual steps to complete it.
 
@@ -1335,10 +1429,10 @@ is under way:
 
 **The Platform Services phase is complete and released.** `v0.6.0` is
 merged to `main`, tagged, and pushed. TempestOS is now in the
-**Engineering Foundation** phase (`v0.7.0`). `WP 7.0A` through `WP 7.1E`
+**Engineering Foundation** phase (`v0.7.0`). `WP 7.0A` through `WP 7.1F`
 are all complete — the entire Engineering Foundation programme is now
-implemented; the next implementation Work Package is not yet approved —
-see `docs/releases/v0.7.0/WorkPackages.md` and
+implemented and certified; the next implementation Work Package is not
+yet approved — see `docs/releases/v0.7.0/WorkPackages.md` and
 `docs/governance/Future Capability Register.md` for candidate items
 pending Product Approval.
 
@@ -1367,10 +1461,19 @@ pending Product Approval.
 - `WP 7.1E` — Verification Framework (fifth and final Engineering
   Foundation implementation Work Package, and the second to include a
   dedicated Security Review; `Tempest.Core.Verification`, `ADR-0057`).
-  **Complete — awaiting Engineering Review.** This closes the
-  Engineering Foundation programme — see `docs/governance/Future
+  **Complete — Engineering Review APPROVED.** Closed the Engineering
+  Foundation implementation programme — see `docs/governance/Future
   Capability Register.md` (`FCR-0029` through `FCR-0033`, all now
   Implemented).
+- `WP 7.1F` — Engineering Core Integration Review & Certification
+  (closing certification review of the complete Engineering Core,
+  mirroring `WP 6.8`'s own role for `v0.6.0`; no production code).
+  **Complete — awaiting Engineering Review.** **ENGINEERING CORE
+  CERTIFIED WITH ACCEPTED TECHNICAL DEBT** — see
+  `ENGINEERING_CORE_COMPLETION_REPORT.md` and `docs/releases/v0.7.0/
+  WP7.1F Engineering Core Certification Report.md`. Found and closed a
+  repeat of `WP 6.8`'s own governance-register-drift finding and a
+  missing Academy concept guide four Work Packages overdue.
 
 ## Long-Term Vision
 

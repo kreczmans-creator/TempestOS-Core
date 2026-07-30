@@ -327,6 +327,21 @@ cryptographic signature verification, a disclosed limitation.
 - [WP 6.6 — Licensing Framework Implementation](03%20Work%20Packages/WP6.6-licensing-framework-implementation.md) — implemented directly against the already-approved architecture and Contract Review packages, including the missing-file-vs-broken-file Host-fatal resolution (`ADR-0050`) and a dedicated Platform Integration Demonstration.
 - ADR-0050 (License Validation Is a Host-Startup, Host-Fatal Gate — Except a Missing License File, Which Is a Valid, Unrestricted Default).
 
+### Engineering Data Model
+
+Implemented (`WP 7.1A`, `ADR-0053`) — `Tempest.Core.EngineeringData`:
+`IEngineeringDocumentStore`, this platform's first data-modelling
+abstraction beyond flat key-value storage — stable document identity,
+explicit revision history (never overwritten in place), and typed,
+directed references between documents. Built directly on
+`IPersistenceStore` (`WP 6.4`), introducing no second storage mechanism.
+Every other Engineering Foundation framework (Materials, Calculation,
+Verification) builds on it rather than inventing its own storage shape.
+
+- [Engineering Data Model](02%20Runtime%20Architecture/15-engineering-data-model.md) — the concept guide: the document/revision/reference pattern, why it is a layer above `IPersistenceStore` rather than a replacement for it, and common mistakes. Written by `WP 7.1F`, four Work Packages later than `WP7.0C Academy Plan.md` originally called for — a disclosed documentation-drift finding, not a silent gap.
+- [WP 7.1A — Engineering Data Model](03%20Work%20Packages/WP7.1A-engineering-data-model-implementation.md) — the first implementation Work Package of this phase; implements `Tempest.Core.EngineeringData` (`ADR-0053`) exactly as `WP 7.0C` proposed. Standard 13-section implementation template.
+- ADR-0053 (Engineering Data Model — Storage Substrate and Revision/Reference Persistence Model).
+
 ### Units & Quantities
 
 Implemented (`WP 7.1B`, `ADR-0054`) — `Tempest.Core.UnitsAndQuantities`:
@@ -504,6 +519,7 @@ WorkPackages.md` for the full, nine-Work-Package plan.
 - [WP 7.1C — Materials Framework](03%20Work%20Packages/WP7.1C-materials-framework-implementation.md) — the third implementation Work Package of this phase; implements `Tempest.Core.Materials` (`ADR-0055`) exactly as `WP 7.0C` proposed, extended with a structured, provenance-carrying property type. Standard 13-section implementation template.
 - [WP 7.1D — Engineering Calculation Framework](03%20Work%20Packages/WP7.1D-engineering-calculation-framework-implementation.md) — the fourth implementation Work Package of this phase, and the first to include a dedicated Security Review; implements `Tempest.Core.Calculations` (`ADR-0056`) exactly as `WP 7.0C` proposed, substantially extended to satisfy an "engineering evidence, not merely a numerical answer" requirement. Standard 13-section implementation template.
 - [WP 7.1E — Verification Framework](03%20Work%20Packages/WP7.1E-verification-framework-implementation.md) — the fifth and final implementation Work Package of this phase, completing the entire Engineering Foundation programme; implements `Tempest.Core.Verification` (`ADR-0057`) exactly as `WP 7.0C` proposed, extended with a structured `VerificationContext`. Standard 13-section implementation template.
+- [WP 7.1F — Engineering Core Integration Review & Certification](03%20Work%20Packages/WP7.1F-engineering-core-integration-review-and-certification.md) — closing certification review of the complete Engineering Core, not a feature implementation; mirrors `WP 6.8`'s own whole-release retrospective format. Found and closed a repeat of `WP 6.8`'s own exact governance-drift pattern (`Interface Register.md`/`Dependency Injection Register.md`/`Module Register.md` stale since `WP 6.8`) and wrote the Engineering Data Model's own missing concept guide.
 
 See `PROJECT_STATUS.md` for current status, `docs/governance/Future
 Capability Register.md` for the authoritative future-capability list,
