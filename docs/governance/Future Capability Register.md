@@ -10,9 +10,9 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | This document, from `WP 7.0A` onward. Prior to this Work Package, the same information existed only in fragments — see each entry's own "Sourced From" field for where it previously lived. |
 | **Review Frequency** | Updated whenever a new future capability is identified (by any Work Package, retrospective, or review), or whenever an existing capability's Status changes (a Work Package begins, completes, or a capability is formally deferred/rejected). |
-| **Last Reviewed** | 2026-07-30 (`WP 7.1C`, Materials Framework) — `FCR-0031` marked **Implemented**. Previously reviewed 2026-07-30 (`WP 7.1B`, Units & Quantities Framework) — `FCR-0030` marked **Implemented**; `FCR-0034` added (Affine Unit Conversion / Temperature, found during implementation, not anticipated by prior planning). Previously reviewed 2026-07-30 (`WP 7.1A`, Engineering Data Model) — `FCR-0029` marked **Implemented**, the first entry in this register to leave "Identified" status. Previously reviewed 2026-07-30 (`WP 7.0B`, Engineering Foundation Planning & Capability Architecture) — added `FCR-0029` through `FCR-0033`, the five cross-cutting Engineering Foundation frameworks this Work Package's own dependency analysis identified as architecturally necessary before any discipline-specific Engineering Module can begin (see `WP7.0B Engineering Foundation Architecture.md`). Each is marked **Inferred**, not Verified — architectural necessity reasoning, not a capability named in a prior document, per the same discipline `FCR-0026` already applied. Previously reviewed 2026-07-30 (`WP 7.0A`, established). |
+| **Last Reviewed** | 2026-07-30 (`WP 7.1D`, Engineering Calculation Framework) — `FCR-0032` marked **Implemented**; `FCR-0035` added (Calculation Execution Timeout & Cancellation Support, found during this Work Package's own required Security Review). Previously reviewed 2026-07-30 (`WP 7.1C`, Materials Framework) — `FCR-0031` marked **Implemented**. Previously reviewed 2026-07-30 (`WP 7.1B`, Units & Quantities Framework) — `FCR-0030` marked **Implemented**; `FCR-0034` added (Affine Unit Conversion / Temperature, found during implementation, not anticipated by prior planning). Previously reviewed 2026-07-30 (`WP 7.1A`, Engineering Data Model) — `FCR-0029` marked **Implemented**, the first entry in this register to leave "Identified" status. Previously reviewed 2026-07-30 (`WP 7.0B`, Engineering Foundation Planning & Capability Architecture) — added `FCR-0029` through `FCR-0033`, the five cross-cutting Engineering Foundation frameworks this Work Package's own dependency analysis identified as architecturally necessary before any discipline-specific Engineering Module can begin (see `WP7.0B Engineering Foundation Architecture.md`). Each is marked **Inferred**, not Verified — architectural necessity reasoning, not a capability named in a prior document, per the same discipline `FCR-0026` already applied. Previously reviewed 2026-07-30 (`WP 7.0A`, established). |
 | **Related Documents** | `Capability Categories.md`; `Product Roadmap.md`; `VISION.md`; `docs/governance/Quality/Technical Debt Register.md`; `docs/security/Security Roadmap.md`; `docs/security/Threat Model.md`; `docs/releases/v0.7.0/WorkPackages.md`; the eight `WP6.x Future Capability Recommendations.md` documents under `docs/releases/v0.6.0/`. |
-| **Related ADRs** | ADR-0013, ADR-0040, ADR-0044, ADR-0045, ADR-0046, ADR-0049, ADR-0050, ADR-0052, ADR-0053, ADR-0054, ADR-0055 — see individual entries. |
+| **Related ADRs** | ADR-0013, ADR-0040, ADR-0044, ADR-0045, ADR-0046, ADR-0049, ADR-0050, ADR-0052, ADR-0053, ADR-0054, ADR-0055, ADR-0056 — see individual entries. |
 | **Related Academy Articles** | `WP6.8-platform-services-integration-review.md` §6 (the direct source of `FCR-0001`, `FCR-0003`, `FCR-0004`, `FCR-0005`, `FCR-0006`); `WP7.0B-engineering-foundation-planning-and-capability-architecture.md`. |
 | **Coverage Status** | Complete for every future capability traceable to an existing, real document, plus five architecturally-inferred Engineering Foundation entries (`WP 7.0B`). **Not** claimed complete for the five Engineering Discipline categories with no identified candidate — see Coverage Note, below, and `Capability Categories.md`'s own identical disclosure. |
 
@@ -565,16 +565,16 @@ Coverage Note).
 |---|---|
 | **Category** | Platform |
 | **Description** | A shared calculation/formula execution model usable by every future discipline module (a structural load calculation, an HVAC sizing calculation, an electrical load calculation), mirroring the Command Framework's own "one dispatch mechanism, not reinvented per consumer" precedent (`ADR-0037`/`ADR-0038`), rather than each discipline module inventing its own ad hoc computation approach. |
-| **Status** | Identified (`WP 7.0B`) — architectural necessity, no design work exists |
+| **Status** | **Implemented (`WP 7.1D`)** — `Tempest.Core.Calculations`, `CalculationEngine`, built on `Tempest.Core.EngineeringData` per `ADR-0056`; consumes `Tempest.Core.UnitsAndQuantities` by convention |
 | **Priority** | High relative to other unscheduled capabilities — a prerequisite for any Mechanical/Structural/Electrical/HVAC capability, once one is identified |
 | **Business Value** | Unknown in isolation; prevents each future discipline module from independently reinventing calculation infrastructure |
-| **Engineering Effort** | Unknown, likely High — a genuine new abstraction, not a small extension of an existing one |
-| **Dependencies** | `FCR-0030` (Units & Quantities) — a calculation framework operating on undimensioned raw numbers would reintroduce the exact defect class `FCR-0030` exists to prevent |
-| **Proposed Target Release** | Not yet scheduled |
-| **Related ADRs** | None yet |
-| **Related Work Packages** | None yet |
-| **Academy Impact** | Would warrant a new Academy concept guide once designed |
-| **Notes** | Inferred purely from `Capability Categories.md`'s own Engineering Discipline list, the same basis as `FCR-0030` — no prior document names this capability. The weakest-sourced entry in this register alongside `FCR-0030`/`FCR-0031`. |
+| **Engineering Effort** | Delivered — one Work Package (`WP 7.1D`), 17 new production files, 52 new tests |
+| **Dependencies** | `FCR-0030` (Units & Quantities, implemented `WP 7.1B`) — every dimensioned calculation is expected, by convention, to use `Quantity<TDimension>`; `FCR-0029` (Engineering Data Model, implemented `WP 7.1A`) — every execution is durably recorded as an `IEngineeringDocument` |
+| **Proposed Target Release** | Shipped, `v0.7.0` (pending release) |
+| **Related ADRs** | ADR-0013, ADR-0053, ADR-0054, ADR-0056 |
+| **Related Work Packages** | `WP 7.1D` |
+| **Academy Impact** | `WP7.1D-engineering-calculation-framework-implementation.md`; new concept guide (Calculation vs. Command distinction); `docs/engineering/Engineering Principles.md` (Principles 17-23) |
+| **Notes** | Inferred purely from `Capability Categories.md`'s own Engineering Discipline list, the same basis as `FCR-0030`/`FCR-0031` — no prior document named this capability directly at planning time. Implemented `WP 7.1D` extended substantially beyond `WP7.0C Engineering Foundation Contracts.md`'s own illustrative shape (metadata, assumptions, constraints, a validation model, an execution context, material references) to satisfy this Work Package's own "engineering evidence, not merely a numerical answer" requirement — resolved in `ADR-0056`, not an unauthorised deviation. First Engineering Foundation Work Package to include a dedicated Security Review. |
 
 #### FCR-0033 — Verification & Validation Framework
 
@@ -609,6 +609,23 @@ Coverage Note).
 | **Related Work Packages** | `WP 7.1B` (found and disclosed, not resolved) |
 | **Academy Impact** | Would warrant an update to the Units & Quantities concept guide once designed |
 | **Notes** | Sourced from `Technical Debt Register.md` TD-19; `ADR-0054`. A genuine architectural finding discovered during implementation, not present in any prior planning document — `WP 7.0B`/`WP 7.0C` both discussed Units & Quantities only at the category/contract level, neither anticipated the multiplicative-only representation would need this exclusion until real unit catalogues were actually written. |
+
+#### FCR-0035 — Calculation Execution Timeout & Cancellation Support
+
+| Field | Value |
+|---|---|
+| **Category** | Platform |
+| **Description** | Extend `Tempest.Core.Calculations` so a long-running or blocking `ICalculationDefinition.Calculate` can be cancelled once dispatch has begun — `Calculate` currently carries no `CancellationToken`, matching the approved contract's own signature, which had none either. |
+| **Status** | Identified (`WP 7.1D`) — found during this Work Package's own required Security Review, not anticipated by prior planning |
+| **Priority** | Low — no current calculation definition is long-running; calculation definitions remain trusted, first-party, in-process code, the same trust boundary the Command Framework already operates under without cancellation reaching into a handler either |
+| **Business Value** | Would grow once a real, long-running calculation (or exposure to an external, network-facing caller) demonstrates a genuine need for cooperative cancellation |
+| **Engineering Effort** | Medium — changing `Calculate`'s own signature a second time, after `WP 7.1D` already changed it once, would need care to avoid repeated breakage for any consumer registered by then |
+| **Dependencies** | `FCR-0032` (Engineering Calculation Framework, shipped `WP 7.1D`) |
+| **Proposed Target Release** | Not yet scheduled — revisit trigger: a real, demonstrated need |
+| **Related ADRs** | ADR-0056 |
+| **Related Work Packages** | `WP 7.1D` (found and disclosed, not resolved) |
+| **Academy Impact** | Would warrant an update to the Calculation Framework's own concept guide once designed |
+| **Notes** | Sourced from `Technical Debt Register.md` `TD-21`; `WP7.1D Security Review Report.md`. A genuine finding from this Work Package's own required Security Review, not present in any prior planning document — the first Future Capability Register entry sourced from a security review rather than an implementation report's own disclosed finding. |
 
 ### Systems Engineering
 
@@ -650,7 +667,7 @@ Coverage Note).
 
 ## Coverage Note
 
-**34 capabilities identified** (`FCR-0001` through `FCR-0034`).
+**35 capabilities identified** (`FCR-0001` through `FCR-0035`).
 `FCR-0001`–`FCR-0028` were each traceable to a specific, cited,
 pre-existing document, established `WP 7.0A`. `FCR-0029`–`FCR-0033`
 were added by `WP 7.0B`'s own Capability Dependency Analysis — each
@@ -660,9 +677,11 @@ its own Notes field. `FCR-0034` was added by `WP 7.1B`, found during
 real implementation rather than planning-stage inference — the first
 entry in this register sourced from an implementation Work Package's
 own disclosed finding rather than a retrospective, a Technical Debt
-Register entry, or architectural-necessity reasoning. No entry was
-invented to fill a category without disclosing that it was inferred
-rather than sourced.
+Register entry, or architectural-necessity reasoning. `FCR-0035` was
+added by `WP 7.1D`, sourced from that Work Package's own required
+Security Review — the first entry in this register sourced from a
+security review specifically. No entry was invented to fill a category
+without disclosing that it was inferred rather than sourced.
 
 `Materials` and `Quality` each now have exactly one entry (`FCR-0031`,
 `FCR-0033` respectively) — both cross-cutting *foundation* capabilities

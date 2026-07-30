@@ -1,6 +1,7 @@
 using Tempest.Core.Api;
 using Tempest.Core.Audit;
 using Tempest.Core.BackgroundServices;
+using Tempest.Core.Calculations;
 using Tempest.Core.Commands;
 using Tempest.Core.Configuration;
 using Tempest.Core.DependencyInjection;
@@ -356,6 +357,15 @@ public sealed class TempestHost : ITempestHost
         // arbitrary-string capability to provide - registered after both,
         // which it depends on.
         services.Singleton<IMaterialCatalog, MaterialCatalog>();
+
+        // ADR-0056: every calculation execution is durably recorded as an
+        // Engineering Data Model document (Kind = "CalculationRecord"),
+        // mirroring Materials' own reuse of IEngineeringDocumentStore -
+        // registered after it, which it depends on. No direct
+        // IPersistenceStore dependency is needed here, unlike Materials:
+        // each execution always creates a brand new document, never
+        // looked up later by a caller-chosen key.
+        services.Singleton<ICalculationEngine, CalculationEngine>();
 
         // Composition Root pattern (ADR-0009), like Configuration/Logging/
         // PlatformVersionProvider above: DiagnosticsProvider needs references

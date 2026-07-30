@@ -182,7 +182,7 @@ handler contract and dispatcher, proven against a real sample module.
 - [WP 5.1B — Command Framework Implementation](03%20Work%20Packages/WP5.1B-command-framework-implementation.md) — the implementation phase: `CommandDispatcher`/`CommandRegistry` built and proven against `CommandSampleModule`; the `CommandHandlerTable` sharing finding, resolved without reflection or a container redesign.
 - `docs/architecture/Command Framework Architecture.md` — the full design document, including its own Implementation Note and Security Review Update.
 - ADR-0022 (Navigation/Command orthogonality, decided during original v0.4.0 planning), ADR-0036 (Command Framework is DI-public), ADR-0037 (registration model), ADR-0038 (dispatch failure model — Case 5 of *Failure Isolation Across TempestOS*).
-- See also [Failure Isolation Across TempestOS](02%20Runtime%20Architecture/08-failure-isolation.md) (Case 5: propagate, don't isolate) and [Navigation Architecture](02%20Runtime%20Architecture/09-navigation-architecture.md) (the closest structural precedent).
+- See also [Failure Isolation Across TempestOS](02%20Runtime%20Architecture/08-failure-isolation.md) (Case 5: propagate, don't isolate), [Navigation Architecture](02%20Runtime%20Architecture/09-navigation-architecture.md) (the closest structural precedent), and [Calculation Framework](02%20Runtime%20Architecture/13-calculation-framework.md) (`WP 7.1D`'s own worked comparison against this framework — a calculation is a pure function, a command is an imperative action).
 
 ## Diagnostics
 
@@ -357,6 +357,23 @@ Plan.md`'s own finding, not a new pattern in its own right.
 - [WP 7.1C — Materials Framework](03%20Work%20Packages/WP7.1C-materials-framework-implementation.md) — implemented exactly as `WP 7.0C` proposed, extended with a structured, provenance-carrying property type resolving `ADR-0055`'s own reserved property-typing question, plus one genuine finding (a direct `IPersistenceStore` dependency for its own `materialId` index) `WP7.0C Required ADR Catalogue.md` did not anticipate.
 - ADR-0055 (Materials Framework — Property Typing and Platform-Service Classification).
 
+### Engineering Calculations
+
+Implemented (`WP 7.1D`, `ADR-0056`) — `Tempest.Core.Calculations`:
+`CalculationEngine`, a type-erased, Command-Framework-adjacent registry
+that dispatches a registered `ICalculationDefinition<TInput, TResult>`
+by Id and durably records every execution as an Engineering Data Model
+document. Substantially extends `WP 7.0C`'s own illustrative contract
+shape — `CalculationMetadata` (assumptions, constraints),
+`CalculationContext` (intermediate results, constraint checks, material
+references) — so a `CalculationRecord<TResult>` represents engineering
+evidence, not merely a numerical answer. First Engineering Foundation
+Work Package to include a dedicated Security Review.
+
+- [Calculation Framework](02%20Runtime%20Architecture/13-calculation-framework.md) — the concept guide: why a calculation is not a command, the purity guarantee that makes concurrent execution safe, and common mistakes.
+- [WP 7.1D — Engineering Calculation Framework](03%20Work%20Packages/WP7.1D-engineering-calculation-framework-implementation.md) — implemented exactly as `WP 7.0C` proposed, resolving both of `ADR-0056`'s own reserved questions (purity enforcement, Data Model integration) plus the `Calculate`-signature extension this Work Package's own evidentiary requirements demanded.
+- ADR-0056 (Calculation Framework — Purity Enforcement and Dispatch Model).
+
 ## Design Patterns
 
 Recurring structural patterns TempestOS actually uses, explained in terms
@@ -468,6 +485,7 @@ WorkPackages.md` for the full, nine-Work-Package plan.
 - [WP 7.1A — Engineering Data Model](03%20Work%20Packages/WP7.1A-engineering-data-model-implementation.md) — the first implementation Work Package of this phase; implements `Tempest.Core.EngineeringData` (`ADR-0053`) exactly as `WP 7.0C` proposed. Standard 13-section implementation template.
 - [WP 7.1B — Units & Quantities Framework](03%20Work%20Packages/WP7.1B-units-and-quantities-framework-implementation.md) — the second implementation Work Package of this phase; implements `Tempest.Core.UnitsAndQuantities` (`ADR-0054`) exactly as `WP 7.0C` proposed, extended with arithmetic/comparison/formatting/parsing/serialization. Standard 13-section implementation template.
 - [WP 7.1C — Materials Framework](03%20Work%20Packages/WP7.1C-materials-framework-implementation.md) — the third implementation Work Package of this phase; implements `Tempest.Core.Materials` (`ADR-0055`) exactly as `WP 7.0C` proposed, extended with a structured, provenance-carrying property type. Standard 13-section implementation template.
+- [WP 7.1D — Engineering Calculation Framework](03%20Work%20Packages/WP7.1D-engineering-calculation-framework-implementation.md) — the fourth implementation Work Package of this phase, and the first to include a dedicated Security Review; implements `Tempest.Core.Calculations` (`ADR-0056`) exactly as `WP 7.0C` proposed, substantially extended to satisfy an "engineering evidence, not merely a numerical answer" requirement. Standard 13-section implementation template.
 
 See `PROJECT_STATUS.md` for current status, `docs/governance/Future
 Capability Register.md` for the authoritative future-capability list,

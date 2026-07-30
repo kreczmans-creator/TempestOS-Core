@@ -1,6 +1,6 @@
 # TempestOS — Project Status
 
-**Last Updated:** 2026-07-30 (`WP 7.1C` — Materials Framework)
+**Last Updated:** 2026-07-30 (`WP 7.1D` — Engineering Calculation Framework)
 
 This is the primary status dashboard for TempestOS. Read this first for
 "where does the project stand right now" — for "why is it built this
@@ -95,10 +95,10 @@ Work Package, below.
 
 **`feature/v0.7.0-engineering-foundation`**, cut from `main` at the
 `v0.6.0` tag, per `v0.6.0`'s own Release Engineering closing activity.
-`WP 7.0A` through `WP 7.1C` have all landed on this branch — the first
-six Work Packages of the Engineering Foundation phase, the last three of
-which (`WP 7.1A`, `WP 7.1B`, `WP 7.1C`) are this branch's first three
-real implementations. See
+`WP 7.0A` through `WP 7.1D` have all landed on this branch — the first
+seven Work Packages of the Engineering Foundation phase, the last four
+of which (`WP 7.1A`, `WP 7.1B`, `WP 7.1C`, `WP 7.1D`) are this branch's
+first four real implementations. See
 `docs/releases/v0.7.0/WorkPackages.md` and `docs/governance/Future
 Capability Register.md` for the candidate items awaiting Product
 Approval for whatever comes next. `feature/v0.6.0-platform-services`
@@ -117,38 +117,62 @@ that; `v0.4.0` ("Platform Foundation") before that.
 
 ## Current Work Package
 
-**`WP 7.1C` — Materials Framework.** The Engineering Foundation phase's
-(`v0.7.0`) sixth activity, and its **third implementation** Work
-Package — approved to begin after Engineering Review of `WP 7.0A`,
-`WP 7.0B`, `WP 7.0C`, `WP 7.1A`, and `WP 7.1B` all passed. Implements
-`Tempest.Core.Materials` (`IMaterialCatalog`, `IMaterialSpecification`)
+**`WP 7.1D` — Engineering Calculation Framework.** The Engineering
+Foundation phase's (`v0.7.0`) seventh activity, and its **fourth
+implementation** Work Package — approved to begin after Engineering
+Review of `WP 7.0A`, `WP 7.0B`, `WP 7.0C`, `WP 7.1A`, `WP 7.1B`, and
+`WP 7.1C` all passed. Implements `Tempest.Core.Calculations`
+(`ICalculationDefinition<TInput, TResult>`, `ICalculationEngine`)
 exactly as `WP7.0C Engineering Foundation Contracts.md` proposed,
-extended with a structured, provenance-carrying `MaterialProperty`
-value type (replacing the contract's own bare `object` property value)
-resolving `ADR-0055`'s own reserved property-typing question, plus
-`ReviseAsync` (new — revision support). Every engineering property
-carries mandatory `MaterialPropertyProvenance` (source reference,
-revision, validation status, confidence level, applicable conditions,
-notes) — never omissible by construction. Consumes both the Engineering
-Data Model (every material specification is an `IEngineeringDocument`
-of `Kind = "MaterialSpecification"`) and Units & Quantities (every
-property value is a boxed `Quantity<TDimension>`, bounded to the seven
-dimensions already defined). One genuine implementation finding
-(`ADR-0055`): `MaterialCatalog` depends directly, not only indirectly,
-on `IPersistenceStore`, for its own `materialId` index —
-`IEngineeringDocumentStore` provides no lookup-by-arbitrary-string
-capability. 14 new production files; a new sample module
-(`MaterialsSampleModule`, the platform's seventeenth, using only
-clearly-fictional, explicitly-disclosed test data — no real material
-standard's own value appears anywhere). 55 new tests (1174/1174
+substantially extended with `CalculationMetadata` (assumptions,
+constraints), `CalculationContext` (intermediate results, constraint
+checks, material references), and an expanded `CalculationRecord<TResult>`
+(stable identity, assumptions, validation outcome, revision number) —
+resolving `ADR-0056`'s own two reserved questions (convention-only
+purity enforcement, confirmed; mandatory Engineering Data Model
+integration) plus the `Calculate`-signature extension this Work
+Package's own "engineering evidence, not merely a numerical answer"
+requirement demanded. Every execution is durably recorded as an
+`IEngineeringDocument` of `Kind = "CalculationRecord"`; no direct
+`IPersistenceStore` dependency is needed, unlike Materials, since each
+execution always creates a fresh, never-looked-up-by-key record. 17 new
+production files; a new sample module (`CalculationSampleModule`, the
+platform's eighteenth, registering a deliberately trivial, non-domain-
+specific `DoubleLengthCalculationDefinition`). 52 new tests (1226/1226
 passing, both Debug and Release, clean rebuild, 0 warnings). Extends
-`docs/engineering/Engineering Principles.md` with four further
-principles (13-16); no new Academy concept guide (Materials is a worked
-example of the Data Model, per `WP7.0C Academy Plan.md`'s own finding).
-One new disclosed debt item (`TD-20`) and one new accepted trade-off
-(`AT-15`), neither Release Blocking. See `docs/releases/v0.7.0/WP7.1C
-Implementation Report.md` and its six companion deliverables for the
-complete account.
+`docs/engineering/Engineering Principles.md` with seven further
+principles (17-23) and adds a new Academy concept guide
+(`13-calculation-framework.md`, the Calculation-vs-Command distinction).
+**First Engineering Foundation Work Package to include a dedicated
+Security Review** — two new disclosed debt items (`TD-21`, `TD-22`) and
+one new accepted trade-off (`AT-16`), neither Release Blocking, plus a
+new Future Capability Register entry (`FCR-0035`, execution
+cancellation) sourced directly from that review. See `docs/releases/
+v0.7.0/WP7.1D Implementation Report.md` and its seven companion
+deliverables for the complete account.
+
+### `WP 7.1C` Summary (for reference)
+
+**`WP 7.1C` — Materials Framework.** The Engineering Foundation phase's
+third implementation Work Package. Implemented `Tempest.Core.Materials`
+(`IMaterialCatalog`, `IMaterialSpecification`) exactly as `WP7.0C
+Engineering Foundation Contracts.md` proposed, extended with a
+structured, provenance-carrying `MaterialProperty` value type
+(replacing the contract's own bare `object` property value) resolving
+`ADR-0055`'s own reserved property-typing question, plus `ReviseAsync`
+(new — revision support). Every engineering property carries mandatory
+`MaterialPropertyProvenance` (source reference, revision, validation
+status, confidence level, applicable conditions, notes) — never
+omissible by construction. Consumes both the Engineering Data Model and
+Units & Quantities. One genuine implementation finding (`ADR-0055`):
+`MaterialCatalog` depends directly, not only indirectly, on
+`IPersistenceStore`, for its own `materialId` index. 14 new production
+files; a new sample module (`MaterialsSampleModule`, the platform's
+seventeenth, using only clearly-fictional, explicitly-disclosed test
+data). 55 new tests. Extended `docs/engineering/Engineering
+Principles.md` with four further principles (13-16); no new Academy
+concept guide. One new disclosed debt item (`TD-20`) and one new
+accepted trade-off (`AT-15`), neither Release Blocking.
 
 ### `WP 7.1B` Summary (for reference)
 
@@ -266,23 +290,26 @@ review.md`.
 
 ## Next Planned Work Package
 
-**None yet approved (`WP 7.1D` or a candidate from `A`–`C`, `F`, `H`–`J`).**
+**None yet approved (`WP 7.1E` or a candidate from `A`–`C`, `H`–`J`).**
 **`docs/governance/Future Capability Register.md` is now this project's
-own authoritative source for what comes next** — 34 identified
-capabilities (`FCR-0001`–`FCR-0034`), three now **Implemented**
-(`FCR-0029`, `WP 7.1A`; `FCR-0030`, `WP 7.1B`; `FCR-0031`, `WP 7.1C`).
-`WP7.1C Engineering Foundation Impact Assessment.md` recommends
-Candidate `F` (Calculation) as the strongest next candidate — both of
-its own by-convention dependencies (`FCR-0030`, and now `FCR-0031` as a
-plausible input source) are complete and proven working, not merely
-approved on paper, though `ADR-0056`'s own purity-enforcement question
-remains open. Candidates `A`–`C` (Platform Hardening) remain
-independently available; Candidate `H` (Verification) remains sequenced
-behind Candidate `I` (Requirements Engine). **None is yet an approved
-Work Package** — per this project's own standing discipline
-(`FOUNDATION.md` §1), each still requires Product Approval before its
-own implementation begins. Await Engineering Review of `WP 7.1C` before
-Product Approval selects the next Work Package.
+own authoritative source for what comes next** — 35 identified
+capabilities (`FCR-0001`–`FCR-0035`), four now **Implemented**
+(`FCR-0029`, `WP 7.1A`; `FCR-0030`, `WP 7.1B`; `FCR-0031`, `WP 7.1C`;
+`FCR-0032`, `WP 7.1D`). Four of the five Engineering Foundation
+frameworks are now real, tested implementations — only `FCR-0033`
+(Verification & Validation, Candidate `H`) remains, itself sequenced
+behind Candidate `I` (Requirements Engine), not behind any of the four
+already complete. `WP7.1D Engineering Foundation Impact Assessment.md`
+notes that no further Engineering Foundation implementation Work
+Package is strictly required before a real discipline module could
+begin — the four frameworks a Mechanical/Structural/Electrical/HVAC
+capability would need (data, units, materials, calculation dispatch)
+are all real and proven. Candidates `A`–`C` (Platform Hardening) remain
+independently available. **None is yet an approved Work Package** — per
+this project's own standing discipline (`FOUNDATION.md` §1), each still
+requires Product Approval before its own implementation begins. Await
+Engineering Review of `WP 7.1D` before Product Approval selects the
+next Work Package.
 
 ## Foundation Status
 
@@ -344,19 +371,19 @@ Experience phase is now complete.
 
 | Metric | Value |
 |---|---|
-| Automated tests | 1174 (0 failures) — **+55, `WP 7.1C`** (Materials Framework); re-verified across clean Debug and Release rebuilds |
-| ADRs | 55 (`ADR-0001`–`ADR-0055`, no gaps at all), all Accepted — **+1, `WP 7.1C`**: `ADR-0055` (Materials property typing and Platform-Service classification). `ADR-0056`–`ADR-0057` remain reserved, catalogued, not yet Accepted. |
-| Rejected Designs | 45 (`RD-0001`–`RD-0045`) — unchanged by `WP 7.1C` |
-| Academy articles | 93 (see `docs/governance/Documentation/Academy Register.md`) — **+1, `WP 7.1C`**: `WP7.1C-materials-framework-implementation.md` (no new concept guide — Materials is a worked example of the Data Model) |
-| Governance registers | 27 (32 governance documents total), plus 4 standing security documents under `docs/security/` and 1 standing engineering document (`docs/engineering/Engineering Principles.md`, established `WP 7.1A`, extended `WP 7.1B` with Principles 7-12 and `WP 7.1C` with Principles 13-16) | 
-| Architecture documents | 20 under `docs/architecture/` (22 including the two release-scoped documents) — unchanged by `WP 7.1C` |
-| Platform services | 26 catalogued — unchanged by `WP 7.1C`'s own count (Engineering Foundation frameworks confirmed as Platform Services — Engineering Data Model, `WP 7.1A`; Materials, `WP 7.1C` — are tracked in `Future Capability Register.md`, not yet backfilled into `Platform Services Register.md`; Units & Quantities, `WP 7.1B`, deliberately is **not** one) |
-| Modules (production) | 17 — **+1, `WP 7.1C`**: `MaterialsSampleModule`, the seventeenth real sample module, using only clearly-fictional, explicitly-disclosed test data |
-| Hosted services (production) | 2 — unchanged by `WP 7.1C` |
+| Automated tests | 1226 (0 failures) — **+52, `WP 7.1D`** (Engineering Calculation Framework); re-verified across clean Debug and Release rebuilds |
+| ADRs | 56 (`ADR-0001`–`ADR-0056`, no gaps at all), all Accepted — **+1, `WP 7.1D`**: `ADR-0056` (Calculation Framework purity enforcement and dispatch model). `ADR-0057` remains reserved, catalogued, not yet Accepted. |
+| Rejected Designs | 45 (`RD-0001`–`RD-0045`) — unchanged by `WP 7.1D` |
+| Academy articles | 95 (see `docs/governance/Documentation/Academy Register.md`) — **+2, `WP 7.1D`**: `WP7.1D-engineering-calculation-framework-implementation.md`, `02 Runtime Architecture/13-calculation-framework.md` (the Calculation-vs-Command distinction) |
+| Governance registers | 27 (32 governance documents total), plus 4 standing security documents under `docs/security/` and 1 standing engineering document (`docs/engineering/Engineering Principles.md`, established `WP 7.1A`, extended `WP 7.1B` with Principles 7-12, `WP 7.1C` with Principles 13-16, and `WP 7.1D` with Principles 17-23) | 
+| Architecture documents | 20 under `docs/architecture/` (22 including the two release-scoped documents) — unchanged by `WP 7.1D` |
+| Platform services | 26 catalogued — unchanged by `WP 7.1D`'s own count (Engineering Foundation frameworks confirmed as Platform Services — Engineering Data Model, `WP 7.1A`; Materials, `WP 7.1C`; Calculation, `WP 7.1D` — are tracked in `Future Capability Register.md`, not yet backfilled into `Platform Services Register.md`; Units & Quantities, `WP 7.1B`, deliberately is **not** one) |
+| Modules (production) | 18 — **+1, `WP 7.1D`**: `CalculationSampleModule`, the eighteenth real sample module |
+| Hosted services (production) | 2 — unchanged by `WP 7.1D` |
 | Plugins (production) | 0 — infrastructure fully implemented and tested; `src/Plugins/` empty by deliberate scope decision |
-| Custom exception types | 58 — **+3, `WP 7.1C`**: `MaterialsException`, `DuplicateMaterialException`, `MaterialNotFoundException` |
-| Technical Debt Register items | 20 tracked, 15 disclosed trade-offs — **+1 tracked, `WP 7.1C`**: `TD-20` (`MaterialCatalog` reads full revision history on every lookup), Open, not Release Blocking; **+1 trade-off**: `AT-15` (no permission-gating inside `IMaterialCatalog` itself) |
-| Commits (`v0.6.0` → `v0.7.0`, so far) | 9 — `v0.6.0` release-branch preparation (2 commits), merge from `main`, `WP 7.0A`, `WP 7.0B`, `WP 7.0C`, `WP 7.1A`, `WP 7.1B`, `WP 7.1C` (this commit) |
+| Custom exception types | 62 — **+4, `WP 7.1D`**: `CalculationException`, `DuplicateCalculationException`, `CalculationDefinitionNotFoundException`, `CalculationInputInvalidException` |
+| Technical Debt Register items | 22 tracked, 16 disclosed trade-offs — **+2 tracked, `WP 7.1D`**: `TD-21` (no cancellation reaches into `Calculate`), `TD-22` (no bound on `CalculationContext`-recorded data volume or type fidelity), both Open, neither Release Blocking, both found via this Work Package's own dedicated Security Review; **+1 trade-off**: `AT-16` (no dependency on Materials for material-reference validation) |
+| Commits (`v0.6.0` → `v0.7.0`, so far) | 10 — `v0.6.0` release-branch preparation (2 commits), merge from `main`, `WP 7.0A`, `WP 7.0B`, `WP 7.0C`, `WP 7.1A`, `WP 7.1B`, `WP 7.1C`, `WP 7.1D` (this commit) |
 | Contributors | 1 (repository owner; all commits co-authored by Claude) |
 
 *(This table is generated from `docs/governance/Quality/Repository Metrics
@@ -860,7 +887,22 @@ property-name taxonomy. No new concept guide — Materials is presented
 as a worked example of the Data Model, per `WP7.0C Academy Plan.md`'s
 own finding, not a new pattern in its own right. Further extended
 `docs/engineering/Engineering Principles.md` with four further
-principles (13-16).
+principles (13-16). **`WP 7.1D`** added
+`WP7.1D-engineering-calculation-framework-implementation.md` — the
+fourth standard 13-section implementation retrospective of this
+phase, and the first to include a dedicated Security Review — teaching
+that an evidentiary requirement can justify a signature change a
+contract review could not have anticipated, that reusing a sibling
+framework's own dispatch pattern (the Command Framework's type-erased
+registry) works cleanly provided the one deciding property (purity) is
+kept explicit and tested, and that a calculation's own true evidentiary
+value comes from what it discloses (assumptions, intermediate results,
+validation outcome) rather than its final number alone. Also added a
+new "02 Runtime Architecture" concept guide,
+`13-calculation-framework.md`, distinguishing the Calculation Framework
+from the Command Framework — the required output `WP7.0C Academy
+Plan.md` itself named. Further extended `docs/engineering/Engineering
+Principles.md` with seven further principles (17-23).
 
 ## Governance Status
 
@@ -1134,6 +1176,16 @@ leave "Identified" status. No new `FCR` entry was added this time —
 `WP 7.1C`'s own genuine implementation finding (`MaterialCatalog`'s
 direct `IPersistenceStore` dependency) was recorded directly in
 `ADR-0055` and `TD-20`, not as a new roadmap-facing capability.
+**`WP 7.1D`** added `ADR-0056` (Accepted, the register's 56th), `TD-21`,
+`TD-22`, and `AT-16` to `Technical Debt Register.md` (22 tracked items,
+16 disclosed trade-offs total), and marked `FCR-0032` **Implemented** —
+the fourth entry in the Future Capability Register to leave
+"Identified" status. `WP 7.1D` also added `FCR-0035` (Calculation
+Execution Timeout & Cancellation Support) — sourced directly from this
+Work Package's own required Security Review, the first Future
+Capability Register entry sourced from a security review rather than an
+implementation report's own disclosed finding, bringing the register to
+35 entries total.
 
 ## Known Unknowns
 
@@ -1168,24 +1220,26 @@ Governance Audit Report.md`:
    frameworks, and `ADR-0053`–`ADR-0057` catalogued are all established
    and approved.
 3. **`WP 7.1A` (Engineering Data Model), `WP 7.1B` (Units & Quantities
-   Framework), and `WP 7.1C` (Materials Framework) are all complete —
-   awaiting Engineering Review.** `Tempest.Core.EngineeringData`
-   (`ADR-0053`), `Tempest.Core.UnitsAndQuantities` (`ADR-0054`), and
-   `Tempest.Core.Materials` (`ADR-0055`) are all implemented;
-   1174/1174 tests passing, both configurations, clean rebuild. No
-   further implementation Work Package begins until Engineering Review
-   of `WP 7.1C` completes, per that Work Package's own explicit closing
-   instruction.
+   Framework), `WP 7.1C` (Materials Framework), and `WP 7.1D`
+   (Engineering Calculation Framework) are all complete — awaiting
+   Engineering Review.** `Tempest.Core.EngineeringData` (`ADR-0053`),
+   `Tempest.Core.UnitsAndQuantities` (`ADR-0054`),
+   `Tempest.Core.Materials` (`ADR-0055`), and `Tempest.Core.Calculations`
+   (`ADR-0056`) are all implemented; 1226/1226 tests passing, both
+   configurations, clean rebuild. No further implementation Work
+   Package begins until Engineering Review of `WP 7.1D` completes, per
+   that Work Package's own explicit closing instruction.
 4. **Await Product Approval of the next implementation Work Package.**
-   `WP7.1C Engineering Foundation Impact Assessment.md` recommends
-   Candidate `F` (Calculation) as the strongest next candidate — both of
-   its own by-convention dependencies (`FCR-0030`, and now `FCR-0031` as
-   a plausible input source) are complete and proven working, though
-   `ADR-0056`'s own purity-enforcement question remains open;
-   Candidates `A`–`C` (Platform Hardening) remain independently
-   available. None is yet an approved Work Package. No implementation
-   is authorised until Product Approval selects one, mirroring
-   `v0.6.0`'s own pre-implementation discipline.
+   `WP7.1D Engineering Foundation Impact Assessment.md` notes that four
+   of the five Engineering Foundation frameworks are now real, tested
+   implementations — no further Engineering Foundation Work Package is
+   strictly required before a real discipline module could begin.
+   Candidate `H` (Verification & Validation) remains available, sequenced
+   behind Candidate `I` (Requirements Engine); Candidates `A`–`C`
+   (Platform Hardening) remain independently available. None is yet an
+   approved Work Package. No implementation is authorised until Product
+   Approval selects one, mirroring `v0.6.0`'s own pre-implementation
+   discipline.
 5. A GitHub Release for `v0.6.0` has not yet been created (`gh` CLI
    unavailable in this environment) — see the Release Summary for the
    exact command or manual steps to complete it.
@@ -1228,7 +1282,7 @@ is under way:
 
 **The Platform Services phase is complete and released.** `v0.6.0` is
 merged to `main`, tagged, and pushed. TempestOS is now in the
-**Engineering Foundation** phase (`v0.7.0`). `WP 7.0A` through `WP 7.1C`
+**Engineering Foundation** phase (`v0.7.0`). `WP 7.0A` through `WP 7.1D`
 are all complete; the next implementation Work Package is not yet
 approved — see `docs/releases/v0.7.0/WorkPackages.md` and
 `docs/governance/Future Capability Register.md` for candidate items
@@ -1251,7 +1305,11 @@ pending Product Approval.
   **Complete — Engineering Review APPROVED.**
 - `WP 7.1C` — Materials Framework (third implementation Work Package of
   this phase; `Tempest.Core.Materials`, `ADR-0055`). **Complete —
-  awaiting Engineering Review.**
+  Engineering Review APPROVED.**
+- `WP 7.1D` — Engineering Calculation Framework (fourth implementation
+  Work Package of this phase, and the first to include a dedicated
+  Security Review; `Tempest.Core.Calculations`, `ADR-0056`). **Complete
+  — awaiting Engineering Review.**
 
 ## Long-Term Vision
 

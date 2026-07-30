@@ -24,6 +24,12 @@ further principles (13-16, below) derived from what
 applied to a third framework, this one built directly on both of the
 first two.
 
+Extended by `WP 7.1D` (Engineering Calculation Framework), 2026-07-30,
+adding seven further principles (17-23, below) derived from what
+`Tempest.Core.Calculations` actually implements — the same discipline
+applied to a fourth framework, this one consuming all three of the
+first three.
+
 ## Purpose
 
 Every future Engineering Foundation framework (`FCR-0030`–`FCR-0033`)
@@ -230,29 +236,106 @@ claim for `IEngineeringDocument.Kind`.
 material's own properties leaves its name and category exactly as
 registered.
 
+## Calculation Framework Extension (`WP 7.1D`)
+
+### 17. Every calculation is reproducible
+
+`ICalculationDefinition<TInput, TResult>.Calculate` is required to be a
+pure function of its own input — no I/O, no shared mutable state, no
+ambient dependency. `ExecuteAsync_SameInputMultipleTimes_
+AlwaysProducesTheSameResult` proves this directly: the same input,
+executed five times, produces the identical result every time. This is
+the same "deterministic systems" principle Units & Quantities already
+established (Principle 9), now demonstrated for calculations
+specifically.
+
+### 18. Every assumption is explicit
+
+`CalculationMetadata.Assumptions` is fixed per definition and copied
+directly into every `CalculationRecord<TResult>` at execution time —
+there is no code path anywhere in `Tempest.Core.Calculations` that
+produces a record without its own producing definition's assumptions
+attached. `ExecuteAsync_RecordIncludesDefinitionsOwnAssumptions` proves
+a recorded assumption's own description and justification both survive
+into the resulting record unchanged.
+
+### 19. Every engineering input is traceable
+
+A calculation's own input is not itself stored (only the definition's
+declared metadata and computed outputs are), but every execution's own
+identity (`CalculationRecord<TResult>.Id`) is the real, durable
+`EngineeringData.IEngineeringDocument` Id backing it —
+`ExecuteAsync_RecordId_IsDirectlyRetrievableThroughEngineeringDocumentStore`
+proves this Id is genuinely usable with `IEngineeringDocumentStore`
+directly, the same traceability guarantee Materials already established
+(Principle 16) for its own `UnderlyingDocumentId`.
+
+### 20. Every engineering output records provenance
+
+A `CalculationRecord<TResult>`'s own provenance is not a separate,
+bolted-on field — it *is* the record itself: `CalculationId`,
+`ExecutedAt`, `ExecutedByPrincipalId`, `Assumptions`, and
+`ReferencedMaterialIds` together answer exactly what
+`Materials.MaterialPropertyProvenance` answers for a material property
+(where a value came from, under what conditions, by whom), without
+duplicating that record type for a genuinely different kind of evidence.
+
+### 21. Intermediate results are inspectable
+
+`CalculationContext.RecordIntermediate` lets a definition disclose a
+named value it computed on the way to its own final result — never
+hidden inside the calculation's own internal logic.
+`ExecuteAsync_RecordsIntermediateResults` proves a recorded intermediate
+value is present, by name, on the resulting `CalculationRecord<TResult>`,
+immediately inspectable by the caller that requested the execution.
+
+### 22. Calculations remain deterministic
+
+Concurrent execution of the *same* registered, genuinely pure
+calculation, with *different* inputs, produces correct, non-interfering
+results — proven directly by
+`ExecuteAsync_ConcurrentDifferentInputs_SamePureCalculation_
+AllProduceCorrectResults` (thirty concurrent executions, each producing
+exactly the result its own input implies, no cross-contamination). This
+is the concrete architectural benefit `WP7.0C Engineering Foundation
+Contracts.md` itself named as following directly from the purity
+requirement — demonstrated here, not merely asserted.
+
+### 23. Engineering judgement is never hidden inside algorithms
+
+`Tempest.Core.Calculations` provides dispatch, metadata, context, and
+recording infrastructure only — it supplies no calculation of its own,
+mirroring exactly how `Commands.ICommandRegistry` supplies no command
+logic of its own. Every engineering judgement (an assumption, a
+constraint, a formula) belongs to the registering consumer's own
+definition, explicit in its own declared `CalculationMetadata` and its
+own `Calculate` method — never implicit inside this framework's own
+dispatch mechanism.
+
 ## What This Document Does Not Cover
 
-- **Calculations, or verification** — each remaining future Engineering
-  Foundation framework (`FCR-0032`–`FCR-0033`) will assess which of
-  these principles apply to it directly and which it extends with its
-  own, once each is implemented; this document is not amended in advance
-  of that work.
+- **Verification** — the one remaining Engineering Foundation framework
+  (`FCR-0033`) will assess which of these principles apply to it
+  directly and which it extends with its own, once implemented; this
+  document is not amended in advance of that work.
 - **Affine unit conversion (Temperature)** — deliberately deferred, not
   covered by Principle 9's "pure multiplication" claim; see `ADR-0054`'s
   own "Temperature Deliberately Deferred" section. Materials properties
-  are correspondingly bounded to the same seven dimensions
-  (`ADR-0055`).
+  and calculation inputs/outputs built on `Quantity<TDimension>` are
+  correspondingly bounded to the same seven dimensions.
 - **Discipline-specific engineering principles** (a structural
   engineering design principle, an electrical safety margin
   principle) — deliberately out of scope, per this Work Package's own
   controlling instruction not to introduce Mechanical, HVAC, Structural,
-  or Electrical concepts, or country-specific design codes.
+  Electrical, or Manufacturing mathematics, design-code logic, or
+  safety-factor policy.
 
 ## Related Documents
 
 `docs/academy/06 Engineering Standards/Engineering Governance.md`;
 `VISION.md`; `docs/releases/FOUNDATION.md`; `docs/governance/Future
-Capability Register.md`; `ADR-0053`; `ADR-0054`; `ADR-0055`;
+Capability Register.md`; `ADR-0053`; `ADR-0054`; `ADR-0055`; `ADR-0056`;
 `docs/academy/03 Work Packages/WP7.1A-engineering-data-model-implementation.md`;
 `docs/academy/03 Work Packages/WP7.1B-units-and-quantities-framework-implementation.md`;
-`docs/academy/03 Work Packages/WP7.1C-materials-framework-implementation.md`.
+`docs/academy/03 Work Packages/WP7.1C-materials-framework-implementation.md`;
+`docs/academy/03 Work Packages/WP7.1D-engineering-calculation-framework-implementation.md`.
