@@ -1,6 +1,6 @@
 # TempestOS — Project Status
 
-**Last Updated:** 2026-07-29 (`WP 6.8` — Platform Services Integration Review, certified)
+**Last Updated:** 2026-07-30 (`v0.6.0` Release Engineering — merged to `main`, tagged, released)
 
 This is the primary status dashboard for TempestOS. Read this first for
 "where does the project stand right now" — for "why is it built this
@@ -84,33 +84,45 @@ to regress any of the 24 pre-existing tests that build a real
 an implementation Work Package, confirming the platform's own
 architecture, integration, testing, documentation, and governance all
 hold up under direct, independent re-verification, and recommending
-**CERTIFIED WITH ACCEPTED TECHNICAL DEBT**. See Current Work Package,
-below.
+**CERTIFIED WITH ACCEPTED TECHNICAL DEBT**. Product Approval was then
+granted and `v0.6.0` was released in full: merged to `main`
+(non-fast-forward, `99ed285`), tagged `v0.6.0`, and pushed. TempestOS is
+now in the **Engineering Foundation** phase (`v0.7.0`), on
+`feature/v0.7.0-engineering-foundation`, not yet scoped. See Current
+Work Package, below.
 
 ## Current Development Branch
 
-**`feature/v0.6.0-platform-services`**, cut from `main` at the `v0.5.0`
-tag. `WP 6.1` (Permissions & Identity), `WP 6.4` (Settings Framework),
-`WP 6.5` (Audit Framework), `WP 6.2` (Notification Framework), `WP 6.0`
-(Reporting Framework), `WP 6.3` (REST API), `WP 6.7` (Export/Import),
-and `WP 6.6` (Licensing Framework) are implemented on this branch —
-every feature Work Package this release plans to ship; only `WP 6.8`
-(Platform Services Integration Review) has not begun.
-`feature/v0.5.0-developer-experience`
-(`WP 5.0A` through `WP 5.4`) has been merged into `main` and is
-retained, unmerged branches are never deleted per this project's own
-convention.
+**`feature/v0.7.0-engineering-foundation`**, cut from `main` at the
+`v0.6.0` tag, per `v0.6.0`'s own Release Engineering closing activity.
+No Work Package has been scoped or begun on this branch — see
+`docs/releases/v0.7.0/WorkPackages.md` for the candidate items awaiting
+a dedicated Architecture, Planning, and Contract Review phase before any
+implementation is authorised. `feature/v0.6.0-platform-services` (`WP
+6.0` through `WP 6.8`) has been merged into `main` (non-fast-forward,
+`99ed285`) and is retained; `feature/v0.5.0-developer-experience` (`WP
+5.0A` through `WP 5.4`) remains merged and retained as well — unmerged
+and merged feature branches are both never deleted per this project's
+own convention.
 
 ## Current Release
 
-**v0.5.0** ("Developer Experience") — released 2026-07-29. Root
-`VERSION` reads `0.5.0`. `v0.4.0` ("Platform Foundation") is the release
-before that; `v0.3.0` ("Runtime Foundation Complete") before that.
+**v0.6.0** ("Platform Services") — released 2026-07-30, tagged `v0.6.0`
+(`99ed285`), `CERTIFIED WITH ACCEPTED TECHNICAL DEBT`. Root `VERSION`
+reads `0.6.0`. `v0.5.0` ("Developer Experience") is the release before
+that; `v0.4.0` ("Platform Foundation") before that.
 
 ## Current Work Package
 
-**`WP 6.8` — Platform Services Integration Review & Release
-Certification — certified.** The closing Work Package of the Platform
+**None.** `v0.6.0`'s own implementation and certification are both
+complete and the release itself is now shipped — merged to `main`,
+tagged, and pushed. `v0.7.0`'s own first Work Package has not yet been
+scoped; see Next Planned Work Package, below.
+
+### `v0.6.0` Closing Summary (for reference)
+
+`WP 6.8` — Platform Services Integration Review & Release
+Certification — certified. The closing Work Package of the Platform
 Services phase (`v0.6.0`) — a certification review, not an
 implementation exercise; no production code was written. Reviewed all
 eleven in-scope services (Runtime Foundation, Host, Identity &
@@ -163,14 +175,16 @@ review.md`.
 
 ## Next Planned Work Package
 
-**None — `v0.6.0`'s own implementation phase is complete.** All nine
-Work Packages (`WP 6.0` through `WP 6.8`) are done; `WP 6.8` certified
-the release `CERTIFIED WITH ACCEPTED TECHNICAL DEBT`. Per this Work
-Package's own explicit closing instruction, no further implementation
-is authorised — the release now awaits Product Approval (Engineering
-Governance §7) and, once granted, a merge to `main` and a `v0.6.0` tag.
-No merge or tag has been created by this Work Package itself — both
-remain explicit, separate actions requiring their own authorisation.
+**None yet approved.** `v0.6.0` shipped in full: merged to `main`
+(non-fast-forward, `99ed285`), tagged `v0.6.0`, and pushed to `origin`.
+`feature/v0.7.0-engineering-foundation` has been cut from `main`, and
+`docs/releases/v0.7.0/WorkPackages.md` records candidate items drawn
+directly from `WP 6.8`'s own disclosed recommendations — but none of
+them is an approved Work Package. Per this project's own standing
+discipline (`FOUNDATION.md` §1), `v0.7.0`'s real scope requires its own
+Architecture, Planning, and Contract Review phase, mirroring the phase
+`v0.6.0` itself held before `WP 6.0` began, before any implementation is
+authorised.
 
 ## Foundation Status
 
@@ -244,7 +258,7 @@ Experience phase is now complete.
 | Plugins (production) | 0 — infrastructure fully implemented and tested; `src/Plugins/` empty by deliberate scope decision |
 | Custom exception types | 52 — unchanged by `WP 6.8` |
 | Technical Debt Register items | 16 tracked, 13 disclosed trade-offs (1 Retired) — unchanged by `WP 6.8`; all 29 items classified in `WP6.8 Technical Debt Disposition.md` (3 Resolved, 6 Accepted, 7 Deferred among tracked debt; 1 Resolved, 12 Accepted among trade-offs; **zero Release Blocking**) |
-| Commits (this release, `v0.5.0` → `v0.6.0`, so far) | 12 — branch/documentation preparation, Architecture Package, Contract Review Package, `WP 6.1` implementation, `WP 6.4` implementation, `WP 6.5` implementation, `WP 6.2` implementation, `WP 6.0` implementation, `WP 6.3` implementation, `WP 6.7` implementation, `WP 6.6` implementation, `WP 6.8` certification review (this one) |
+| Commits (`v0.5.0` → `v0.6.0`, final) | 13 — branch/documentation preparation, Architecture Package, Contract Review Package, `WP 6.1` implementation, `WP 6.4` implementation, `WP 6.5` implementation, `WP 6.2` implementation, `WP 6.0` implementation, `WP 6.3` implementation, `WP 6.7` implementation, `WP 6.6` implementation, `WP 6.8` certification review, and the non-fast-forward merge to `main` (`99ed285`) |
 | Contributors | 1 (repository owner; all commits co-authored by Claude) |
 
 *(This table is generated from `docs/governance/Quality/Repository Metrics
@@ -960,21 +974,20 @@ Governance Audit Report.md`:
 
 ## Current Priorities
 
-1. **Await Product Approval.** All nine `v0.6.0` Work Packages
-   (`WP 6.0` through `WP 6.8`) are complete on
-   `feature/v0.6.0-platform-services`. `WP 6.8` certified the release
-   `CERTIFIED WITH ACCEPTED TECHNICAL DEBT` — see `WP6.8 Platform
-   Certification Report.md` for the complete decision and evidence.
-   Per Engineering Governance §7, Product Approval is the next required
-   step before merge or tag; no further implementation is authorised or
-   recommended.
-2. Once Product Approval is granted: merge `feature/v0.6.0-platform-
-   services` into `main` and cut the `v0.6.0` tag — both explicit,
-   separate actions this Work Package does not take on its own
-   authority.
-3. No merge to `main` has occurred yet — see
-   `docs/releases/v0.6.0/WorkPackages.md` for the full, nine-Work-
-   Package plan this release now completes.
+1. **`v0.6.0` is released.** Merged into `main` (non-fast-forward,
+   `99ed285`), tagged `v0.6.0`, both pushed to `origin` — Product
+   Approval was granted and Release Engineering executed in full. See
+   `docs/releases/v0.6.0/WP6.8 Platform Certification Report.md` for
+   the certification decision and evidence this release shipped under.
+2. **Await Architecture/Planning/Contract Review for `v0.7.0`.**
+   `feature/v0.7.0-engineering-foundation` has been cut from `main`;
+   `docs/releases/v0.7.0/WorkPackages.md` records candidate items only,
+   none approved. No implementation is authorised until that review
+   phase produces an approved scope, mirroring `v0.6.0`'s own
+   pre-implementation discipline.
+3. A GitHub Release for `v0.6.0` has not yet been created (`gh` CLI
+   unavailable in this environment) — see the Release Summary for the
+   exact command or manual steps to complete it.
 
 ## Near-Term Roadmap
 
@@ -1012,9 +1025,11 @@ is under way:
   `WP 5.0S`'s own precedent). **Complete — CERTIFIED WITH ACCEPTED
   TECHNICAL DEBT.**
 
-**The Platform Services phase's own implementation is now complete.**
-`v0.6.0` awaits Product Approval (Engineering Governance §7) before
-merge to `main` and tagging.
+**The Platform Services phase is complete and released.** `v0.6.0` is
+merged to `main`, tagged, and pushed. TempestOS is now in the
+**Engineering Foundation** phase (`v0.7.0`, not yet scoped) — see
+`docs/releases/v0.7.0/WorkPackages.md` for candidate items pending
+Architecture/Planning/Contract Review.
 
 ## Long-Term Vision
 

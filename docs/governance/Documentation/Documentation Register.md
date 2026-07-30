@@ -10,7 +10,7 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | The `docs/` tree itself. |
 | **Review Frequency** | Updated whenever a new top-level documentation directory or document type is introduced. |
-| **Last Reviewed** | 2026-07-28 (WP 5.3, Developer Experience Improvements) — Academy count refreshed (adds the `WP 5.3` retrospective); adds a new top-level-adjacent tree, `src/Templates/` (dotnet new template sources, indexed here since it is documentation/tooling content, not compiled platform code — see Directory Map). |
+| **Last Reviewed** | 2026-07-30 (`v0.6.0` Release Engineering) — **Partial update only**: the `docs/releases/` rows in the Directory Map were corrected (v0.5.0 relabelled released, v0.6.0 and v0.7.0 rows added); no other row was re-verified this pass, so the ADR/Academy/architecture-document counts below are carried forward from 2026-07-28 (`WP 5.3`) unchanged and are known to be stale (`docs/adr/` alone has grown from 39 to 52 since). A full re-derivation of every row is recommended as a candidate item for `v0.7.0` (see `docs/releases/v0.7.0/WorkPackages.md` C2, the governance-register health check candidate), not attempted here since this was a release activity, not a Work Package. |
 | **Related Documents** | `ADR Register.md`; `Architecture Document Register.md`; `Academy Register.md`; `Release Register.md`; `Governance Index.md`. |
 | **Related ADRs** | None directly. |
 | **Related Academy Articles** | None directly. |
@@ -37,7 +37,9 @@
 | `docs/releases/v0.2.0/` | Empty directory — **Unknown** why no content exists; no retrospective or CHANGELOG entry explains this gap | `Release Register.md` |
 | `docs/releases/v0.3.0.md` | v0.3.0 release notes (Runtime Foundation Complete) | `Release Register.md` |
 | `docs/releases/v0.4.0/` | The released ("Platform Foundation") v0.4.0 release's own planning, architecture review, risk register, work packages, changelog, testing strategy, release checklist | `Release Register.md`; `Risk Register.md`; `Feature Register.md` |
-| `docs/releases/v0.5.0/` | The in-progress ("Developer Experience") v0.5.0 release's own plan and work packages | `Release Register.md`; `Feature Register.md` |
+| `docs/releases/v0.5.0/` | The released ("Developer Experience") v0.5.0 release's own plan, work packages, changelog, and release checklist | `Release Register.md`; `Feature Register.md` |
+| `docs/releases/v0.6.0/` | The released ("Platform Services") v0.6.0 release's own architecture package, contract review package, work packages, risk register, and nine `WP 6.8` certification deliverables (`CERTIFIED WITH ACCEPTED TECHNICAL DEBT`) | `Release Register.md`; `Risk Register.md`; `Feature Register.md`; `Governance Register.md` |
+| `docs/releases/v0.7.0/` | The not-yet-scoped ("Engineering Foundation") v0.7.0 release's own prepared-in-advance skeleton documents (`WorkPackages.md`, `ReleaseNotes.md`, `Retrospective.md`) — candidate items only, none approved | `Release Register.md` |
 | `docs/roadmap/` | Empty directory — **Unknown** intended purpose; no document references it | Not applicable — see Coverage Note below |
 | `docs/diagrams/` | Empty directory — **Unknown** intended purpose; no document references it | Not applicable — see Coverage Note below |
 | `docs/governance/` | This governance suite (introduced by `WP 4.5A`), plus `Future Work Package Guidelines.md` (added `WP 4.5B`) | `Governance Index.md` |
