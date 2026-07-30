@@ -114,35 +114,42 @@ that; `v0.4.0` ("Platform Foundation") before that.
 
 ## Current Work Package
 
-**`WP 7.0B` — Engineering Foundation Planning & Capability
-Architecture.** The Engineering Foundation phase's (`v0.7.0`) second
-activity, approved to begin after Engineering Review of `WP 7.0A`. An
-architecture-and-planning Work Package, not an implementation one; no
-production code is written. Transforms `Future Capability Register.md`
-into a coherent engineering programme: adds `FCR-0029`–`FCR-0033` (the
-Engineering Foundation Programme — a shared Data Model, Units &
-Quantities, Materials, Calculation, and Verification & Validation
-framework, each marked Inferred/architectural-necessity, not sourced
-from a prior document), producing a full dependency graph and
-six-programme grouping across all 33 entries, an honest conclusion that
-five of nine Engineering Discipline categories cannot yet be sequenced
-against each other from existing evidence, a non-binding `v0.7.x`–`v1.0`
-release-number recommendation, ten candidate Work Packages (`A`–`J`,
-none approved), a Platform Consumption Matrix showing every one of the
-eleven `v0.6.0` Platform Services as a plausible consumer, and an
-eleven-item Roadmap Risk Register. See `docs/releases/v0.7.0/WP7.0B
-Capability Dependency Report.md` and its seven companion deliverables
-for the complete account.
+**`WP 7.0C` — Engineering Foundation Contract Review.** The Engineering
+Foundation phase's (`v0.7.0`) third activity, approved to begin after
+Engineering Review of `WP 7.0B`. A contract-review Work Package, not an
+implementation one; no production code, no compiled interface. Defines
+proposed, reviewable public C# contracts for all five Engineering
+Foundation frameworks `WP 7.0B` identified (`FCR-0029`–`FCR-0033`):
+`Tempest.Core.EngineeringData`, `UnitsAndQuantities`, `Materials`,
+`Calculations`, `Verification` — each answering twelve review questions
+(Purpose, Responsibilities, Public Interfaces, Primary Entities,
+Dependency Rules, Platform Services Consumed, Expected Future
+Consumers, Lifetime, Thread-Safety, Error Handling, Extension Points,
+Testing/Academy summaries). Confirms no circular dependency exists
+among the five (and resolves, at contract level, an ambiguity `WP 7.0B`
+left open: Verification depends on the Data Model's generic document
+concept, never on a specific Requirements Engine service). Confirms
+Units & Quantities is the first Engineering Foundation framework needing
+**zero** DI registration — a pure value-type library. Reserves five new
+ADR numbers (`ADR-0053`–`ADR-0057`) for the genuine open design
+questions this review could not itself resolve, none yet answered. See
+`docs/releases/v0.7.0/WP7.0C Engineering Foundation Contracts.md` and
+its seven companion deliverables for the complete account.
 
-### `WP 7.0A` Summary (for reference)
+### `WP 7.0A`/`WP 7.0B` Summary (for reference)
 
-`WP 7.0A` — Future Capability Register & Product Vision — the
-Engineering Foundation phase's own first activity. Established
-`VISION.md` (repository root), `docs/governance/Future Capability
-Register.md` (28 entries as of that Work Package), `docs/governance/
-Capability Categories.md` (15 categories), and `docs/governance/Product
-Roadmap.md` (8 phases). See `docs/releases/v0.7.0/WP7.0A Architecture
-Report.md` and its four companion deliverables.
+`WP 7.0A` — Future Capability Register & Product Vision — established
+`VISION.md`, `docs/governance/Future Capability Register.md` (28
+entries as of that Work Package), `Capability Categories.md`, and
+`Product Roadmap.md`. `WP 7.0B` — Engineering Foundation Planning &
+Capability Architecture — added `FCR-0029`–`FCR-0033` (33 entries
+total), a full dependency graph and six-programme grouping, an honest
+conclusion that five of nine Engineering Discipline categories cannot
+yet be sequenced from existing evidence, a non-binding release-number
+recommendation, and ten candidate Work Packages (`A`–`J`, none
+approved). See `docs/releases/v0.7.0/WP7.0A Architecture Report.md` and
+`WP7.0B Capability Dependency Report.md` and their own companion
+deliverables.
 
 **`PROJECT_STATUS.md`'s own "Next Planned Work Package" section below
 now defers to `docs/governance/Future Capability Register.md` as the
@@ -210,20 +217,20 @@ review.md`.
 is now this project's own authoritative source for what comes next** —
 33 identified capabilities (`FCR-0001`–`FCR-0033`), classified against
 `docs/governance/Capability Categories.md`'s 15 categories, sequenced at
-the phase level in `docs/governance/Product Roadmap.md`, and now fully
-dependency-mapped and grouped into six engineering programmes by `WP
-7.0B` (`docs/releases/v0.7.0/WP7.0B Capability Dependency Report.md`).
-Ten candidate Work Packages exist across `WP 7.0A` and `WP 7.0B`
-combined (`A`–`J` — `docs/releases/v0.7.0/WP7.0B Candidate Work Package
-Catalogue.md`), spanning Platform Hardening (`A`–`C`) and the new
-Engineering Foundation Programme (`D`–`J`) — but **none is yet an
-approved Work Package**. Per this project's own standing discipline
-(`FOUNDATION.md` §1), `v0.7.0`'s real implementation scope still
-requires its own Architecture, Planning, and Contract Review phase,
-mirroring the phase `v0.6.0` itself held before `WP 6.0` began, before
-any implementation is authorised. Await Engineering Review of `WP 7.0B`
-before beginning the actual Architecture, Planning, and Contract Review
-phase for `v0.7.0`'s own implementation scope.
+the phase level in `docs/governance/Product Roadmap.md`, fully
+dependency-mapped by `WP 7.0B`, and now, for the five Engineering
+Foundation frameworks specifically (Candidates `D`–`H`), given a full
+proposed public contract by `WP 7.0C` (`docs/releases/v0.7.0/WP7.0C
+Engineering Foundation Contracts.md`), with five open design questions
+catalogued as `ADR-0053`–`ADR-0057`, none yet answered. Ten candidate
+Work Packages exist across `WP 7.0A`/`WP 7.0B` combined (`A`–`J`) — but
+**none is yet an approved Work Package**. Per this project's own
+standing discipline (`FOUNDATION.md` §1), `v0.7.0`'s real implementation
+scope still requires Product Approval of a specific Work Package before
+any code is written — this Contract Review proposes stable interfaces,
+it does not itself authorise building against them. Await Engineering
+Review of `WP 7.0C` before Product Approval selects and authorises any
+specific implementation Work Package from Candidates `A`–`J`.
 
 ## Foundation Status
 
@@ -1018,27 +1025,25 @@ Governance Audit Report.md`:
    Approval was granted and Release Engineering executed in full. See
    `docs/releases/v0.6.0/WP6.8 Platform Certification Report.md` for
    the certification decision and evidence this release shipped under.
-2. **`WP 7.0A` (Future Capability Register & Product Vision) is
-   complete — Engineering Review APPROVED.** `VISION.md`,
-   `docs/governance/Future Capability Register.md`, `Capability
-   Categories.md`, and `Product Roadmap.md` are all established and
-   approved.
-3. **`WP 7.0B` (Engineering Foundation Planning & Capability
-   Architecture) is complete — awaiting Engineering Review.** The
-   Future Capability Register is now a coherent engineering programme:
-   a full dependency graph, six engineering programmes, an Engineering
-   Foundation (`FCR-0029`–`FCR-0033`), an honest Engineering Discipline
-   Assessment, a non-binding release-number recommendation, ten
-   candidate Work Packages, a Platform Consumption Matrix, and an
-   eleven-item Roadmap Risk Register. No implementation Work Package
-   begins until Engineering Review of `WP 7.0B` completes, per that
-   Work Package's own explicit closing instruction.
-4. **Await Architecture/Planning/Contract Review for `v0.7.0`'s own
-   implementation scope.** `docs/releases/v0.7.0/WorkPackages.md`
-   records candidate items only, cross-referenced against `Future
-   Capability Register.md` entries; none is yet an approved Work
-   Package. No implementation is authorised until that review phase
-   produces an approved scope, mirroring `v0.6.0`'s own
+2. **`WP 7.0A` and `WP 7.0B` are both complete — Engineering Review
+   APPROVED both.** `VISION.md`, `Future Capability Register.md` (33
+   entries), `Capability Categories.md`, `Product Roadmap.md`, a full
+   dependency graph, six engineering programmes, an honest Engineering
+   Discipline Assessment, a non-binding release-number recommendation,
+   ten candidate Work Packages, a Platform Consumption Matrix, and an
+   eleven-item Roadmap Risk Register are all established and approved.
+3. **`WP 7.0C` (Engineering Foundation Contract Review) is complete —
+   awaiting Engineering Review.** Proposed public C# contracts exist
+   for all five Engineering Foundation frameworks; five open design
+   questions are catalogued as `ADR-0053`–`ADR-0057`, none yet
+   answered. No implementation Work Package begins until Engineering
+   Review of `WP 7.0C` completes, per that Work Package's own explicit
+   closing instruction.
+4. **Await Product Approval of a specific implementation Work Package.**
+   `docs/releases/v0.7.0/WorkPackages.md` and `WP7.0B Candidate Work
+   Package Catalogue.md` record candidate items only (`A`–`J`); none is
+   yet an approved Work Package. No implementation is authorised until
+   Product Approval selects one, mirroring `v0.6.0`'s own
    pre-implementation discipline.
 5. A GitHub Release for `v0.6.0` has not yet been created (`gh` CLI
    unavailable in this environment) — see the Release Summary for the
@@ -1082,17 +1087,20 @@ is under way:
 
 **The Platform Services phase is complete and released.** `v0.6.0` is
 merged to `main`, tagged, and pushed. TempestOS is now in the
-**Engineering Foundation** phase (`v0.7.0`). `WP 7.0A` and `WP 7.0B` are
-both complete; implementation Work Package(s) are not yet scoped — see
-`docs/releases/v0.7.0/WorkPackages.md` and `docs/governance/Future
-Capability Register.md` for candidate items pending Architecture/
-Planning/Contract Review.
+**Engineering Foundation** phase (`v0.7.0`). `WP 7.0A`, `WP 7.0B`, and
+`WP 7.0C` are all complete; implementation Work Package(s) are not yet
+approved — see `docs/releases/v0.7.0/WorkPackages.md` and
+`docs/governance/Future Capability Register.md` for candidate items
+pending Product Approval.
 
 - `WP 7.0A` — Future Capability Register & Product Vision (architecture
   and governance only; no production code). **Complete — Engineering
   Review APPROVED.**
 - `WP 7.0B` — Engineering Foundation Planning & Capability Architecture
   (architecture and planning only; no production code). **Complete —
+  Engineering Review APPROVED.**
+- `WP 7.0C` — Engineering Foundation Contract Review (contract review
+  only; no production code, no compiled interface). **Complete —
   awaiting Engineering Review.**
 
 ## Long-Term Vision

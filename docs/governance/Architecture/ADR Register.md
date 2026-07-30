@@ -91,6 +91,12 @@ line).**
 
 Sequential and complete, `ADR-0001` through `ADR-0052`, with no gaps
 at all — the last remaining reserved number (`ADR-0050`) is now filled.
+`docs/releases/v0.7.0/WP7.0C Required ADR Catalogue.md` has since
+reserved `ADR-0053` through `ADR-0057` for the five Engineering
+Foundation frameworks' own anticipated architectural decisions, one per
+framework — none yet Accepted, none yet a real file under `docs/adr/`,
+exactly as `ADR-0040`–`ADR-0052` were once only a catalogue entry before
+their own owning Work Packages implemented them.
 `docs/releases/v0.6.0/Required ADRs.md` reserved `ADR-0040` through
 `ADR-0051` in advance, as a catalogue of anticipated decisions, one
 range per `v0.6.0` Work Package, before any of those Work Packages began
