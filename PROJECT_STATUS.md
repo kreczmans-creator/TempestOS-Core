@@ -118,49 +118,62 @@ that; `v0.4.0` ("Platform Foundation") before that.
 
 ## Current Work Package
 
+**`WP 7.2C` — Requirements & Verification Platform Contract Review.**
+Contract review only — no production code was written. Approved to
+begin after Engineering Review APPROVED `WP 7.2B`'s own complete
+architecture.
+
+Defined the complete public contracts for the Requirements &
+Verification Platform — full proposed C# interfaces for all thirteen
+named domain concepts (`IRequirementsService`, `IRequirement`,
+`IRequirementCollection`, `IRequirementGroup`, the relationship
+mechanism, `IRequirementEvidence`, `RequirementStatus`, and the
+remaining simpler concepts), each answering the same seventeen
+questions this Work Package's own controlling instruction named.
+Defined a full seven-state **Requirement Lifecycle Model**, confirming
+`RequirementStatus` is never automatically derived from a
+`VerificationRecord`'s own `Outcome` — the two remain separate,
+caller-driven actions. Reviewed all seven named relationship kinds
+(**Relationship Model**), confirming six belong in the initial
+implementation and the seventh — "Verified By" — already exists,
+unmodified, inside `Tempest.Core.Verification`. Confirmed all five
+traceability dimensions reuse existing Engineering Core capability with
+zero new mechanism (**Traceability Contract**), while disclosing one
+genuine, structural limitation: reverse allocation traceability does not
+resolve when an allocation target is an open string rather than a real
+document. Re-confirmed `ADR-0057`'s own circular-dependency avoidance
+holds unmodified at the contract level (**Verification Integration
+Contract**).
+
+**Security Review** found zero new issues beyond `WP 7.2B`'s own
+architecture-level review, but one new open question — whether
+`IRequirementsService` should gate any of its own methods internally,
+mirroring `IVerificationService.GetVerificationHistoryAsync`, or remain
+calling-layer-enforced throughout, mirroring `IReportingService` — now
+reserved as `ADR-0061`. **Standards Architecture** confirmed the
+proposed contracts can support all seven named standard families
+without redesign. **Engineering Principles review** again found no
+extension warranted — contracts, not implementation.
+
+Reserved `ADR-0058`–`ADR-0060` carried forward unchanged from `WP 7.2B`;
+`ADR-0061` newly reserved. Twelve completion deliverables produced under
+`docs/releases/v0.7.0/`, prefixed `WP7.2C`. See `docs/releases/v0.7.0/
+WP7.2C Requirements Platform Contracts.md` for the complete design.
+
+### `WP 7.2B` Summary (for reference)
+
 **`WP 7.2B` — Requirements & Verification Platform Architecture.**
 Architecture and planning only — no production code was written.
-Approved to begin after Engineering Review and Product Approval
-accepted `WP 7.2A`'s own recommendation to commence Programme A
-(Requirements & Verification Platform), continuing the Engineering
-Foundation by establishing the Systems Engineering Foundation.
-
 Designed the complete architecture for the Requirements & Verification
-Platform — twelve domain concepts (Requirement, Collection, Group,
-Relationship, Allocation, Trace Link, Verification Link, Evidence,
-Status, Revision, Identifier, Category), each an architectural
-responsibility reusing an existing Engineering Core mechanism, never a
-new one. Classified the Requirements Engine as a Platform Service under
-`ADR-0013`, mirroring Materials/Calculations/Verification's own
-precedent. Established a three-layer model — **Engineering Core →
-Systems Engineering Foundation → Engineering Discipline Modules** — and
-a digital thread design (Requirement → Engineering Data → Calculation →
-Verification → Evidence → Reporting → Export → Audit), disclosing
-honestly which links are proven today versus architecturally correct
-but not yet built. Reviewed eleven Platform Core/Engineering Core
-services for dependency direction, ownership, lifetime, and layering,
-finding **zero new platform capability required** — every integration
-point this Platform needs already exists, proven, unmodified.
-
-**Security Architecture** classified nine dimensions, finding one
-genuine new Technical Debt item: no compare-and-swap/concurrency-conflict
-check exists on `IEngineeringDocumentStore.ReviseAsync`, a real gap no
-prior Engineering Core consumer's own usage pattern had surfaced.
-**Standards Mapping** reviewed seven illustrative standard families
-(ISO 9001, ISO 15288, IEC 61508, DO-178, Medical Device, Defence,
-Nuclear) industry-neutrally, finding the same four generic capabilities
-(traceability, baseline management, independent verification, evidence
-retention) recur across all seven, already provided by this
-architecture. **Engineering Principles review** found no extension
-warranted — this Work Package produced no implementation to derive a
-genuine new principle from, consistent with the document's own "derived
-from working code, not asserted in advance" discipline.
-
-Reserved `ADR-0058`–`ADR-0060` (classification/storage; identity/status/
-category representation; concurrency and traceability integrity model).
-Eleven completion deliverables produced under `docs/releases/v0.7.0/`,
-prefixed `WP7.2B`. See `docs/releases/v0.7.0/WP7.2B Requirements
-Platform Architecture.md` for the complete design.
+Platform — twelve domain concepts, a three-layer **Engineering Core →
+Systems Engineering Foundation → Engineering Discipline Modules** model,
+a digital thread design, and an eleven-service dependency analysis
+finding zero new platform capability required. Security Architecture
+found one new Technical Debt item (no concurrency-conflict detection on
+`ReviseAsync`); Standards Mapping reviewed seven illustrative standard
+families industry-neutrally. Reserved `ADR-0058`–`ADR-0060`. Eleven
+completion deliverables produced, prefixed `WP7.2B`. **Engineering
+Review APPROVED**, authorising `WP 7.2C`.
 
 ### `WP 7.2A` Summary (for reference)
 
@@ -423,22 +436,22 @@ review.md`.
 
 ## Next Planned Work Package
 
-**None yet approved for implementation.** `WP 7.2B`'s own complete
-architecture for the Requirements & Verification Platform
-(`FCR-0027`) is done, awaiting Engineering Review — see
-`docs/releases/v0.7.0/WP7.2B Requirements Platform Architecture.md`.
-The natural next Work Package is the Requirements Engine's own
-implementation, consuming this architecture directly and ratifying its
-three reserved ADRs (`ADR-0058`–`ADR-0060`, `WP7.2B Required ADR
+**None yet approved for implementation.** `WP 7.2C`'s own complete
+public contracts for the Requirements & Verification Platform
+(`FCR-0027`) are done, awaiting Engineering Review — see
+`docs/releases/v0.7.0/WP7.2C Requirements Platform Contracts.md`. The
+natural next Work Package is the Requirements Engine's own
+implementation, consuming these contracts directly and ratifying its
+four reserved ADRs (`ADR-0058`–`ADR-0061`, `WP7.2C Required ADR
 Catalogue.md`) as its own first act — mirroring exactly how each
 Engineering Foundation implementation Work Package (`WP 7.1A`–`WP 7.1E`)
 ratified its own single reserved ADR before writing code. **This
-architecture is not an approval to implement** — per this project's own
-standing discipline (`FOUNDATION.md` §1), Product Approval must still
-authorise implementation to begin. Programme F (Platform Hardening) is
-recommended second, at `v0.9.0`, not abandoned — see `WP7.2A Recommended
-Programme.md`. Await Engineering Review of `WP 7.2B` before Product
-Approval authorises implementation.
+contract review is not an approval to implement** — per this project's
+own standing discipline (`FOUNDATION.md` §1), Product Approval must
+still authorise implementation to begin. Programme F (Platform
+Hardening) is recommended second, at `v0.9.0`, not abandoned — see
+`WP7.2A Recommended Programme.md`. Await Engineering Review of
+`WP 7.2C` before Product Approval authorises implementation.
 
 ## Foundation Status
 
@@ -500,21 +513,21 @@ Experience phase is now complete.
 
 | Metric | Value |
 |---|---|
-| Automated tests | 1275 (0 failures) — unchanged by `WP 7.2B` (architecture and planning only; no production code, no new tests) |
-| ADRs | 57 (`ADR-0001`–`ADR-0057`, no gaps at all), all Accepted — unchanged by `WP 7.2B`; `ADR-0058`–`ADR-0060` **reserved, not written** (`WP7.2B Required ADR Catalogue.md`) |
-| Rejected Designs | 45 (`RD-0001`–`RD-0045`) — unchanged by `WP 7.2B` |
-| Academy articles | 101 (see `docs/governance/Documentation/Academy Register.md`) — **+1, `WP 7.2B`**: `WP7.2B-requirements-and-verification-platform-architecture.md` (this Work Package's own retrospective; no new concept guide — architecture only, one recommended for the owning implementation Work Package instead) |
-| Governance registers | 27 (32 governance documents total), plus 4 standing security documents under `docs/security/` and 1 standing engineering document (`docs/engineering/Engineering Principles.md`, confirmed requiring **no extension** by this Work Package's own evidence-disciplined review) — unchanged in count by `WP 7.2B`; `Future Capability Register.md` updated in place (`FCR-0027`'s own status annotated: architecture complete, not yet Implemented) |
-| Architecture documents | 20 under `docs/architecture/` (22 including the two release-scoped documents) — unchanged by `WP 7.2B` |
-| Platform services | 26 catalogued — unchanged by `WP 7.2B` |
-| Modules (production) | 19 — unchanged by `WP 7.2B` |
-| Hosted services (production) | 2 — unchanged by `WP 7.2B` |
+| Automated tests | 1275 (0 failures) — unchanged by `WP 7.2C` (contract review only; no production code, no new tests) |
+| ADRs | 57 (`ADR-0001`–`ADR-0057`, no gaps at all), all Accepted — unchanged by `WP 7.2C`; `ADR-0058`–`ADR-0061` **reserved, not written** (`WP7.2C Required ADR Catalogue.md`) |
+| Rejected Designs | 45 (`RD-0001`–`RD-0045`) — unchanged by `WP 7.2C` |
+| Academy articles | 102 (see `docs/governance/Documentation/Academy Register.md`) — **+1, `WP 7.2C`**: `WP7.2C-requirements-and-verification-platform-contract-review.md` (this Work Package's own retrospective; no new concept guide — contract review only, two recommended for the owning implementation Work Package instead) |
+| Governance registers | 27 (32 governance documents total), plus 4 standing security documents under `docs/security/` and 1 standing engineering document (`docs/engineering/Engineering Principles.md`, confirmed requiring **no extension** by this Work Package's own evidence-disciplined review, unchanged from `WP 7.2B`) — unchanged in count by `WP 7.2C`; `Future Capability Register.md` updated in place (`FCR-0027`'s own status annotated: contracts complete, not yet Implemented) |
+| Architecture documents | 20 under `docs/architecture/` (22 including the two release-scoped documents) — unchanged by `WP 7.2C` |
+| Platform services | 26 catalogued — unchanged by `WP 7.2C` |
+| Modules (production) | 19 — unchanged by `WP 7.2C` |
+| Hosted services (production) | 2 — unchanged by `WP 7.2C` |
 | Plugins (production) | 0 — infrastructure fully implemented and tested; `src/Plugins/` empty by deliberate scope decision |
-| Custom exception types | 62 — unchanged by `WP 7.2B` |
-| Public interfaces (`src/Tempest.Core/`) | 75 — unchanged by `WP 7.2B` (architecture only; no interface compiled) |
-| DI registrations (`TempestHost.cs` Phase 6) | 32 raw call sites, 30 named registrations — unchanged by `WP 7.2B` |
-| Technical Debt Register items | 24 tracked, 17 disclosed trade-offs — unchanged by `WP 7.2B` in the register itself; one new item identified at architecture level (no concurrency-conflict detection on `ReviseAsync`) and recommended for formal registration once implementation begins (`WP7.2B Security Architecture.md`) |
-| Commits (`v0.6.0` → `v0.7.0`, so far) | 14 — `v0.6.0` release-branch preparation (2 commits), merge from `main`, `WP 7.0A`, `WP 7.0B`, `WP 7.0C`, `WP 7.1A`, `WP 7.1B`, `WP 7.1C`, `WP 7.1D`, `WP 7.1E`, `WP 7.1F`, `WP 7.2A`, `WP 7.2B` (this commit) |
+| Custom exception types | 62 — unchanged by `WP 7.2C` |
+| Public interfaces (`src/Tempest.Core/`) | 75 — unchanged by `WP 7.2C` (contract review only; no interface compiled) |
+| DI registrations (`TempestHost.cs` Phase 6) | 32 raw call sites, 30 named registrations — unchanged by `WP 7.2C` |
+| Technical Debt Register items | 24 tracked, 17 disclosed trade-offs — unchanged by `WP 7.2C` in the register itself; the one item identified at architecture level (`WP 7.2B`, no concurrency-conflict detection on `ReviseAsync`) re-confirmed unchanged at contract level (`WP7.2C Security Review.md`), still recommended for formal registration once implementation begins |
+| Commits (`v0.6.0` → `v0.7.0`, so far) | 15 — `v0.6.0` release-branch preparation (2 commits), merge from `main`, `WP 7.0A`, `WP 7.0B`, `WP 7.0C`, `WP 7.1A`, `WP 7.1B`, `WP 7.1C`, `WP 7.1D`, `WP 7.1E`, `WP 7.1F`, `WP 7.2A`, `WP 7.2B`, `WP 7.2C` (this commit) |
 | Contributors | 1 (repository owner; all commits co-authored by Claude) |
 
 *(This table is generated from `docs/governance/Quality/Repository Metrics
@@ -1097,6 +1110,16 @@ real code exists to derive worked examples from. Reviewed whether
 **found no extension warranted** — this Work Package produced
 architecture only, and every existing principle was derived from real,
 shipped code, never asserted in advance of it.
+**`WP 7.2C`** added `WP7.2C-requirements-and-verification-platform-
+contract-review.md` — a whole-review retrospective mirroring the same
+format, extended to a seventeen-question-per-concept contract review.
+No new concept guide — `WP7.2C Academy Plan.md` confirms and extends
+`WP7.2B Academy Plan.md`'s own recommendation, now naming two required
+concept-guide sections (the primary Requirements pattern, and the
+relationship/traceability vocabulary newly detailed at contract level)
+for the owning implementation Work Package. Engineering Principles
+review re-confirmed: **no extension warranted**, unchanged from
+`WP 7.2B`.
 
 ## Governance Status
 
@@ -1423,6 +1446,16 @@ architecture level (Platform Service). Zero governance registers
 required backfilling — this Work Package's own Dependency Analysis
 confirmed every integration point it needs already exists, proven,
 unmodified.
+**`WP 7.2C`** added no new ADR (a fourth reserved, not written —
+`ADR-0061`, alongside `ADR-0058`–`ADR-0060` carried forward unanswered),
+no new Technical Debt Register entry (the one item identified at
+`WP 7.2B`'s own architecture level re-confirmed unchanged at contract
+level, still not formally registered), and no new Future Capability
+Register entry. `FCR-0027`'s own entry updated in place: Status
+annotated "complete public contracts defined, not yet Implemented."
+Zero governance registers required backfilling — this Work Package's
+own Security Review confirmed no new issue beyond `WP 7.2B`'s own
+architecture-level review.
 
 ## Known Unknowns
 
@@ -1477,7 +1510,7 @@ Governance Audit Report.md`:
    **Engineering Review and Product Approval accepted this
    recommendation**, authorising `WP 7.2B`.
 6. **`WP 7.2B` — Requirements & Verification Platform Architecture —
-   is complete, awaiting Engineering Review.** Designed the complete
+   is complete, Engineering Review APPROVED.** Designed the complete
    architecture for the Requirements & Verification Platform — twelve
    domain concepts, a three-layer Engineering Core/Systems Engineering
    Foundation/Engineering Discipline Modules model, a digital thread
@@ -1485,17 +1518,30 @@ Governance Audit Report.md`:
    capability required), a security classification (one new Technical
    Debt item found), and an industry-neutral standards mapping. Reserved
    `ADR-0058`–`ADR-0060` — see `docs/releases/v0.7.0/WP7.2B Requirements
-   Platform Architecture.md`. No production code was written. No further
-   Work Package begins until Engineering Review of `WP 7.2B` completes,
-   per that Work Package's own explicit closing instruction ("Do not
-   begin `WP 7.2C`").
-7. **Await Product Approval of the Requirements Engine's own
-   implementation.** This architecture is not an approval to implement —
-   per this project's own standing discipline (`FOUNDATION.md` §1),
-   Product Approval must still authorise implementation, and
-   `WP7.2B Required ADR Catalogue.md`'s own three reserved decisions must
-   still be ratified, before any production code is written.
-8. A GitHub Release for `v0.6.0` has not yet been created (`gh` CLI
+   Platform Architecture.md`. **Engineering Review accepted this
+   architecture**, authorising `WP 7.2C`.
+7. **`WP 7.2C` — Requirements & Verification Platform Contract Review —
+   is complete, awaiting Engineering Review.** Defined full proposed C#
+   contracts for all thirteen named domain concepts, a seven-state
+   Requirement Lifecycle Model, a Relationship Model (six of seven
+   relationship kinds confirmed for the initial implementation), a
+   Traceability Contract (disclosing one genuine reverse-allocation-
+   traceability limitation), and a Verification Integration Contract
+   re-confirming `ADR-0057`'s own circular-dependency avoidance holds
+   unmodified. Reserved `ADR-0061`, alongside `ADR-0058`–`ADR-0060`
+   carried forward unanswered — see `docs/releases/v0.7.0/WP7.2C
+   Requirements Platform Contracts.md`. No production code was written.
+   No further Work Package begins until Engineering Review of `WP 7.2C`
+   completes, per that Work Package's own explicit closing instruction
+   ("Do not begin `WP 7.3A`").
+8. **Await Product Approval of the Requirements Engine's own
+   implementation.** This contract review is not an approval to
+   implement — per this project's own standing discipline
+   (`FOUNDATION.md` §1), Product Approval must still authorise
+   implementation, and `WP7.2C Required ADR Catalogue.md`'s own four
+   reserved decisions must still be ratified, before any production
+   code is written.
+9. A GitHub Release for `v0.6.0` has not yet been created (`gh` CLI
    unavailable in this environment) — see the Release Summary for the
    exact command or manual steps to complete it.
 
@@ -1537,14 +1583,14 @@ is under way:
 
 **The Platform Services phase is complete and released.** `v0.6.0` is
 merged to `main`, tagged, and pushed. TempestOS is now in the
-**Engineering Foundation** phase (`v0.7.0`). `WP 7.0A` through `WP 7.2B`
+**Engineering Foundation** phase (`v0.7.0`). `WP 7.0A` through `WP 7.2C`
 are all complete — the entire Engineering Foundation implementation
 programme is certified, Programme A (Requirements & Verification
 Platform) has been recommended and accepted, and its complete
-architecture is now designed; implementation is not yet approved — see
-`docs/releases/v0.7.0/WP7.2B Requirements Platform Architecture.md` and
-`docs/governance/Future Capability Register.md` for the current state
-pending Product Approval.
+architecture and public contracts are now defined; implementation is
+not yet approved — see `docs/releases/v0.7.0/WP7.2C Requirements
+Platform Contracts.md` and `docs/governance/Future Capability
+Register.md` for the current state pending Product Approval.
 
 - `WP 7.0A` — Future Capability Register & Product Vision (architecture
   and governance only; no production code). **Complete — Engineering
@@ -1594,13 +1640,22 @@ pending Product Approval.
   Review and Product Approval accepted this recommendation.**
 - `WP 7.2B` — Requirements & Verification Platform Architecture
   (architecture and planning only; no production code). **Complete —
-  awaiting Engineering Review.** Designed the complete architecture for
+  Engineering Review APPROVED.** Designed the complete architecture for
   the Requirements & Verification Platform — twelve domain concepts, a
   three-layer Engineering Core/Systems Engineering Foundation/Engineering
   Discipline Modules model, a digital thread design, and an
   eleven-service dependency analysis finding zero new platform capability
   required — see `docs/releases/v0.7.0/WP7.2B Requirements Platform
   Architecture.md`. Reserved `ADR-0058`–`ADR-0060`.
+- `WP 7.2C` — Requirements & Verification Platform Contract Review
+  (contract review only; no production code, no compiled interface).
+  **Complete — awaiting Engineering Review.** Defined full proposed C#
+  contracts for all thirteen named domain concepts, a Requirement
+  Lifecycle Model, a Relationship Model, a Traceability Contract, and a
+  Verification Integration Contract re-confirming `ADR-0057`'s own
+  circular-dependency avoidance holds unmodified — see
+  `docs/releases/v0.7.0/WP7.2C Requirements Platform Contracts.md`.
+  Reserved `ADR-0061`.
 
 ## Long-Term Vision
 
