@@ -10,7 +10,7 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | `docs/governance/Delivery/Release Register.md` (what has actually shipped); `Future Capability Register.md` (what is identified but not yet scheduled); `VISION.md` (why the sequencing below is the sequencing chosen). |
 | **Review Frequency** | Reviewed at every release boundary, and whenever a new phase's own scope is approved. |
-| **Last Reviewed** | 2026-07-30 (`WP 7.0A`, Future Capability Register & Product Vision — established). |
+| **Last Reviewed** | 2026-07-30 (`WP 7.2A`, Strategic Roadmap Selection & Programme Architecture) — Phase 4 (Engineering Foundation) confirmed complete, in a different shape than this document's own original "working premise" anticipated (the Engineering Foundation frameworks were built, not the Platform/Infrastructure hardening items this phase originally named — disclosed explicitly in `WP7.2A Strategic Roadmap Review.md` §4, not silently reconciled). Phase 5 (Engineering Modules) sequencing recommended: Systems Engineering (`FCR-0027`) first, per `WP7.2A Recommended Programme.md` — still a recommendation, not an approval. Previously reviewed 2026-07-30 (`WP 7.0A`, Future Capability Register & Product Vision — established). |
 | **Related Documents** | `Future Capability Register.md`; `Capability Categories.md`; `VISION.md`; `docs/governance/Delivery/Release Register.md`; `docs/releases/v0.7.0/WorkPackages.md`. |
 | **Related ADRs** | ADR-0013. |
 | **Related Academy Articles** | None yet. |
@@ -68,27 +68,35 @@ genuinely new, domain-facing capability rather than infrastructure,
 proving the platform can support real cross-service integration (eleven
 platform services, each with a verified consumer).
 
-### Phase 4 — Engineering Foundation (Current, Not Yet Scoped)
+### Phase 4 — Engineering Foundation (Complete)
 
-**Branch:** `feature/v0.7.0-engineering-foundation`, cut from `main` at
-the `v0.6.0` tag. **This Work Package (`WP 7.0A`) is this phase's own
-first activity** — establishing the governance artefacts (this
-document, `Future Capability Register.md`, `Capability Categories.md`,
-`VISION.md`) the phase's own subsequent Work Packages will be selected
-against, before any implementation begins.
+**Shipped as:** `v0.7.0` (`WP 7.0A`–`WP 7.1F`), **CERTIFIED WITH
+ACCEPTED TECHNICAL DEBT** (`WP7.1F Engineering Core Certification
+Report.md`).
 
-This phase's own working premise (subject to its own Architecture,
-Planning, and Contract Review, not yet held): close the platform-level
-gaps `Future Capability Register.md` identifies under the **Platform**
-and **Infrastructure** categories before building outward into
-Engineering Modules — a platform with known, disclosed gaps in its own
-authentication, governance tooling, and trust-boundary enforcement is a
-weaker foundation for a first Engineering Module than one without them.
-See `docs/releases/v0.7.0/WorkPackages.md` for the four concrete
-candidate items already identified (`FCR-0006`, `FCR-0005`, `FCR-0001`,
-`FCR-0003`/`FCR-0004`).
+**This phase did not follow its own originally-stated working premise,
+disclosed here explicitly rather than silently reconciled.** The premise
+below (as `WP 7.0A` first wrote it) called for closing Platform and
+Infrastructure gaps before building Engineering Modules; `WP 7.0B`'s own
+Architecture Review chose instead to build five Engineering Foundation
+frameworks (Engineering Data Model, Units & Quantities, Materials,
+Calculation, Verification — `FCR-0029`–`FCR-0033`), none of which are
+Platform/Infrastructure hardening items. That choice is now certified as
+sound, with zero Release Blocking consequence. The four original
+candidate items this phase named (`FCR-0006`, `FCR-0005`, `FCR-0001`,
+`FCR-0003`/`FCR-0004`) remain entirely open — carried forward as
+Programme F (Platform Hardening) in `WP7.2A Recommended Programme.md`,
+recommended for `v0.9.0`, not abandoned.
 
-### Phase 5 — Engineering Modules (Not Yet Scoped)
+*Original working premise, preserved for the historical record:* "close
+the platform-level gaps `Future Capability Register.md` identifies under
+the **Platform** and **Infrastructure** categories before building
+outward into Engineering Modules — a platform with known, disclosed gaps
+in its own authentication, governance tooling, and trust-boundary
+enforcement is a weaker foundation for a first Engineering Module than
+one without them."
+
+### Phase 5 — Engineering Modules (Sequencing Recommended, Not Yet Scoped)
 
 The phase `VISION.md` names as TempestOS's own reason for existing: real
 capability for the Engineering Discipline categories `Capability
@@ -97,11 +105,18 @@ Mechanical, Structural, Electrical, Building Services/HVAC, Materials,
 Manufacturing, Quality). `Future Capability Register.md` currently holds
 concrete candidates only for Systems Engineering (`FCR-0027`,
 Requirements Engine) and Project Management (`FCR-0028`, Project Engine)
-— six of the nine discipline categories have no identified candidate yet
-(see that register's own Coverage Note). **This phase's own scope
-cannot be written today** — it depends on a dedicated
-capability-identification exercise engaging real engineering-domain
-stakeholders, not a documentation-only exercise like this one.
+— five of the nine discipline categories still have no identified
+candidate (see that register's own Coverage Note; `Materials` and
+`Quality` each gained one cross-cutting foundation entry during Phase 4).
+**`WP 7.2A` recommends Systems Engineering (`FCR-0027`) begin this phase
+first** — the only discipline with both a completed technical foundation
+and a named platform-level hook (`ADR-0013`) — see `WP7.2A Recommended
+Programme.md`. This is a recommendation, not an approved scope; the
+five still-unidentified disciplines' own scope still cannot be written
+today — that depends on a dedicated capability-identification exercise
+engaging real engineering-domain stakeholders, not a documentation-only
+exercise, per `WP7.0B Engineering Discipline Assessment.md`'s own
+finding, re-confirmed unchanged by `WP 7.2A`.
 
 ### Phase 6 — Professional Features (Not Yet Scoped)
 
