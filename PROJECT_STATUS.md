@@ -118,52 +118,65 @@ that; `v0.4.0` ("Platform Foundation") before that.
 
 ## Current Work Package
 
+**`WP 7.2B` — Requirements & Verification Platform Architecture.**
+Architecture and planning only — no production code was written.
+Approved to begin after Engineering Review and Product Approval
+accepted `WP 7.2A`'s own recommendation to commence Programme A
+(Requirements & Verification Platform), continuing the Engineering
+Foundation by establishing the Systems Engineering Foundation.
+
+Designed the complete architecture for the Requirements & Verification
+Platform — twelve domain concepts (Requirement, Collection, Group,
+Relationship, Allocation, Trace Link, Verification Link, Evidence,
+Status, Revision, Identifier, Category), each an architectural
+responsibility reusing an existing Engineering Core mechanism, never a
+new one. Classified the Requirements Engine as a Platform Service under
+`ADR-0013`, mirroring Materials/Calculations/Verification's own
+precedent. Established a three-layer model — **Engineering Core →
+Systems Engineering Foundation → Engineering Discipline Modules** — and
+a digital thread design (Requirement → Engineering Data → Calculation →
+Verification → Evidence → Reporting → Export → Audit), disclosing
+honestly which links are proven today versus architecturally correct
+but not yet built. Reviewed eleven Platform Core/Engineering Core
+services for dependency direction, ownership, lifetime, and layering,
+finding **zero new platform capability required** — every integration
+point this Platform needs already exists, proven, unmodified.
+
+**Security Architecture** classified nine dimensions, finding one
+genuine new Technical Debt item: no compare-and-swap/concurrency-conflict
+check exists on `IEngineeringDocumentStore.ReviseAsync`, a real gap no
+prior Engineering Core consumer's own usage pattern had surfaced.
+**Standards Mapping** reviewed seven illustrative standard families
+(ISO 9001, ISO 15288, IEC 61508, DO-178, Medical Device, Defence,
+Nuclear) industry-neutrally, finding the same four generic capabilities
+(traceability, baseline management, independent verification, evidence
+retention) recur across all seven, already provided by this
+architecture. **Engineering Principles review** found no extension
+warranted — this Work Package produced no implementation to derive a
+genuine new principle from, consistent with the document's own "derived
+from working code, not asserted in advance" discipline.
+
+Reserved `ADR-0058`–`ADR-0060` (classification/storage; identity/status/
+category representation; concurrency and traceability integrity model).
+Eleven completion deliverables produced under `docs/releases/v0.7.0/`,
+prefixed `WP7.2B`. See `docs/releases/v0.7.0/WP7.2B Requirements
+Platform Architecture.md` for the complete design.
+
+### `WP 7.2A` Summary (for reference)
+
 **`WP 7.2A` — Strategic Roadmap Selection & Programme Architecture.**
 Architecture, governance, and roadmap planning only — no production code
-was written. Approved to begin after both the Platform Core (`v0.6.0`)
-and Engineering Core (`v0.7.0`) reached `CERTIFIED WITH ACCEPTED
-TECHNICAL DEBT`. Evaluated seven candidate programmes (Requirements &
-Verification Platform; Mechanical, Building Services/HVAC, Structural,
-and Electrical Engineering; Platform Hardening; AI & Engineering
-Intelligence) against eleven criteria — strategic value, commercial
-value, engineering value, Platform leverage, Engineering Core leverage,
-future capability unlocked, technical risk, security impact, Academy
-impact, estimated implementation effort, long-term maintainability —
-using repository evidence exclusively, per this Work Package's own
-explicit instruction not to assume any one candidate in advance.
-
-**Recommendation: Programme A — Requirements & Verification Platform**
-(`FCR-0027`, Requirements Engine), scoring 46 of 55, the highest of all
-seven candidates (`WP7.2A Programme Comparison Matrix.md`). The only
-candidate with both a completed, certified technical foundation
-(`Tempest.Core.EngineeringData`, `Tempest.Core.Verification`) and a
-named platform-level hook predating this Work Package by five releases
-(`ADR-0013`, `WP 2.7`). Programme F (Platform Hardening) scored second
-(36/55) and is recommended next, at `v0.9.0`, not rejected — every one
-of its own named triggers (a real third-party plugin; a concrete
-networked deployment scenario) remains unfired, and building it now
-would itself violate `Security Principles.md` Principle 7. Programmes
-B, C, D, E (Mechanical, Building Services/HVAC, Structural, Electrical)
-each scored 14/55 — `WP7.0B Engineering Discipline Assessment.md`'s own
-finding that none has an identified capability was re-confirmed
-unchanged. Programme G (AI & Engineering Intelligence) scored 19/55 —
-its own underlying capability (`FCR-0024`) already works structurally;
-no design gap exists to close.
-
-**Recommendation: focus next on Engineering Workflow, not Engineering
-Disciplines** — Requirements and Verification are discipline-agnostic,
-giving every future discipline module (once identified) a shared
-traceability mechanism to plug into. **Release planning (non-binding):**
-`v0.8.0` — Systems Engineering Foundation (Programme A); `v0.9.0` —
-Platform Hardening (Programme F); `v1.0.0` — provisional milestone, not
-scoped, marking the point a real engineering practice could run
-requirement → verification → report end-to-end.
-
-Ten completion deliverables produced under `docs/releases/v0.7.0/`,
-prefixed `WP7.2A`. See `docs/releases/v0.7.0/WP7.2A Recommended
-Programme.md` for the complete decision and evidence, and
-`docs/releases/v0.7.0/WP7.2A Executive Summary.md` for the condensed
-account.
+was written. Evaluated seven candidate programmes against eleven
+criteria using repository evidence exclusively and recommended Programme
+A — Requirements & Verification Platform (`FCR-0027`), scoring 46 of 55,
+the highest of all seven candidates. Programme F (Platform Hardening)
+scored second (36/55), recommended next at `v0.9.0`, not rejected.
+Programmes B, C, D, E (Mechanical, Building Services/HVAC, Structural,
+Electrical) each scored 14/55 — no identified capability in any of the
+four. Programme G (AI & Engineering Intelligence) scored 19/55 — its own
+capability already works structurally. Ten completion deliverables
+produced, prefixed `WP7.2A`. **Engineering Review and Product Approval
+accepted this recommendation**, authorising `WP 7.2B`.
 
 ### `WP 7.1F` Summary (for reference)
 
@@ -410,24 +423,22 @@ review.md`.
 
 ## Next Planned Work Package
 
-**Recommended, not yet approved: Programme A — Requirements &
-Verification Platform (`FCR-0027`, Requirements Engine), as `v0.8.0`'s
-own scope.** `WP 7.2A` (Strategic Roadmap Selection & Programme
-Architecture) evaluated seven candidate programmes against eleven
-criteria using repository evidence and recommended this one, scoring
-46/55 — see `docs/releases/v0.7.0/WP7.2A Recommended Programme.md` for
-the complete decision and evidence. Its own first Work Package would be
-an Architecture phase (`WP7.2A Candidate Work Package Catalogue.md`'s
-own Candidate `K`, extending `WP7.0B Candidate Work Package
-Catalogue.md`'s own Candidate `I`), deciding `ADR-0013`'s own
-classification question (platform service vs. module) as its first act.
-Programme F (Platform Hardening — Candidates `A`–`C`, `FCR-0001`,
-`FCR-0003`–`FCR-0006`) is recommended second, at `v0.9.0`, not
-abandoned. **This is a recommendation, not an approval** — per this
-project's own standing discipline (`FOUNDATION.md` §1), Product Approval
-must still select it before any implementation Work Package begins.
-Await Engineering Review of `WP 7.2A` before Product Approval acts on
-this recommendation.
+**None yet approved for implementation.** `WP 7.2B`'s own complete
+architecture for the Requirements & Verification Platform
+(`FCR-0027`) is done, awaiting Engineering Review — see
+`docs/releases/v0.7.0/WP7.2B Requirements Platform Architecture.md`.
+The natural next Work Package is the Requirements Engine's own
+implementation, consuming this architecture directly and ratifying its
+three reserved ADRs (`ADR-0058`–`ADR-0060`, `WP7.2B Required ADR
+Catalogue.md`) as its own first act — mirroring exactly how each
+Engineering Foundation implementation Work Package (`WP 7.1A`–`WP 7.1E`)
+ratified its own single reserved ADR before writing code. **This
+architecture is not an approval to implement** — per this project's own
+standing discipline (`FOUNDATION.md` §1), Product Approval must still
+authorise implementation to begin. Programme F (Platform Hardening) is
+recommended second, at `v0.9.0`, not abandoned — see `WP7.2A Recommended
+Programme.md`. Await Engineering Review of `WP 7.2B` before Product
+Approval authorises implementation.
 
 ## Foundation Status
 
@@ -489,21 +500,21 @@ Experience phase is now complete.
 
 | Metric | Value |
 |---|---|
-| Automated tests | 1275 (0 failures) — unchanged by `WP 7.2A` (architecture/governance/roadmap planning only; no production code, no new tests) |
-| ADRs | 57 (`ADR-0001`–`ADR-0057`, no gaps at all), all Accepted — unchanged by `WP 7.2A` (no architectural decision was made; this Work Package recommends, it does not decide) |
-| Rejected Designs | 45 (`RD-0001`–`RD-0045`) — unchanged by `WP 7.2A` |
-| Academy articles | 100 (see `docs/governance/Documentation/Academy Register.md`) — **+1, `WP 7.2A`**: `WP7.2A-strategic-roadmap-selection-and-programme-architecture.md` (this Work Package's own retrospective) |
-| Governance registers | 27 (32 governance documents total), plus 4 standing security documents under `docs/security/` and 1 standing engineering document (`docs/engineering/Engineering Principles.md`) — unchanged in count by `WP 7.2A`; `Future Capability Register.md` and `docs/governance/Product Roadmap.md` both updated in place (no new entries; `FCR-0027`'s own priority and status annotated with this Work Package's own recommendation) |
-| Architecture documents | 20 under `docs/architecture/` (22 including the two release-scoped documents) — unchanged by `WP 7.2A` |
-| Platform services | 26 catalogued — unchanged by `WP 7.2A` |
-| Modules (production) | 19 — unchanged by `WP 7.2A` |
-| Hosted services (production) | 2 — unchanged by `WP 7.2A` |
+| Automated tests | 1275 (0 failures) — unchanged by `WP 7.2B` (architecture and planning only; no production code, no new tests) |
+| ADRs | 57 (`ADR-0001`–`ADR-0057`, no gaps at all), all Accepted — unchanged by `WP 7.2B`; `ADR-0058`–`ADR-0060` **reserved, not written** (`WP7.2B Required ADR Catalogue.md`) |
+| Rejected Designs | 45 (`RD-0001`–`RD-0045`) — unchanged by `WP 7.2B` |
+| Academy articles | 101 (see `docs/governance/Documentation/Academy Register.md`) — **+1, `WP 7.2B`**: `WP7.2B-requirements-and-verification-platform-architecture.md` (this Work Package's own retrospective; no new concept guide — architecture only, one recommended for the owning implementation Work Package instead) |
+| Governance registers | 27 (32 governance documents total), plus 4 standing security documents under `docs/security/` and 1 standing engineering document (`docs/engineering/Engineering Principles.md`, confirmed requiring **no extension** by this Work Package's own evidence-disciplined review) — unchanged in count by `WP 7.2B`; `Future Capability Register.md` updated in place (`FCR-0027`'s own status annotated: architecture complete, not yet Implemented) |
+| Architecture documents | 20 under `docs/architecture/` (22 including the two release-scoped documents) — unchanged by `WP 7.2B` |
+| Platform services | 26 catalogued — unchanged by `WP 7.2B` |
+| Modules (production) | 19 — unchanged by `WP 7.2B` |
+| Hosted services (production) | 2 — unchanged by `WP 7.2B` |
 | Plugins (production) | 0 — infrastructure fully implemented and tested; `src/Plugins/` empty by deliberate scope decision |
-| Custom exception types | 62 — unchanged by `WP 7.2A` |
-| Public interfaces (`src/Tempest.Core/`) | 75 — unchanged by `WP 7.2A` |
-| DI registrations (`TempestHost.cs` Phase 6) | 32 raw call sites, 30 named registrations — unchanged by `WP 7.2A` |
-| Technical Debt Register items | 24 tracked, 17 disclosed trade-offs — unchanged by `WP 7.2A` (no new debt found; this Work Package is a roadmap review, not an implementation) |
-| Commits (`v0.6.0` → `v0.7.0`, so far) | 13 — `v0.6.0` release-branch preparation (2 commits), merge from `main`, `WP 7.0A`, `WP 7.0B`, `WP 7.0C`, `WP 7.1A`, `WP 7.1B`, `WP 7.1C`, `WP 7.1D`, `WP 7.1E`, `WP 7.1F`, `WP 7.2A` (this commit) |
+| Custom exception types | 62 — unchanged by `WP 7.2B` |
+| Public interfaces (`src/Tempest.Core/`) | 75 — unchanged by `WP 7.2B` (architecture only; no interface compiled) |
+| DI registrations (`TempestHost.cs` Phase 6) | 32 raw call sites, 30 named registrations — unchanged by `WP 7.2B` |
+| Technical Debt Register items | 24 tracked, 17 disclosed trade-offs — unchanged by `WP 7.2B` in the register itself; one new item identified at architecture level (no concurrency-conflict detection on `ReviseAsync`) and recommended for formal registration once implementation begins (`WP7.2B Security Architecture.md`) |
+| Commits (`v0.6.0` → `v0.7.0`, so far) | 14 — `v0.6.0` release-branch preparation (2 commits), merge from `main`, `WP 7.0A`, `WP 7.0B`, `WP 7.0C`, `WP 7.1A`, `WP 7.1B`, `WP 7.1C`, `WP 7.1D`, `WP 7.1E`, `WP 7.1F`, `WP 7.2A`, `WP 7.2B` (this commit) |
 | Contributors | 1 (repository owner; all commits co-authored by Claude) |
 
 *(This table is generated from `docs/governance/Quality/Repository Metrics
@@ -1076,6 +1087,16 @@ architecture.md` — a whole-review retrospective mirroring `WP 7.0A`/
 `WP 7.0B`'s own format, not the standard 13-section per-feature
 template. No new concept guide (a planning/governance milestone, not a
 feature); no Engineering Principles added.
+**`WP 7.2B`** added `WP7.2B-requirements-and-verification-platform-
+architecture.md` — a whole-review retrospective mirroring `WP7.0C
+Engineering Foundation Contracts.md`'s own format, not the standard
+13-section per-feature template. No new concept guide — `WP7.2B Academy
+Plan.md` recommends one for the owning implementation Work Package, once
+real code exists to derive worked examples from. Reviewed whether
+`docs/engineering/Engineering Principles.md` requires extension:
+**found no extension warranted** — this Work Package produced
+architecture only, and every existing principle was derived from real,
+shipped code, never asserted in advance of it.
 
 ## Governance Status
 
@@ -1391,6 +1412,17 @@ Complete, with the divergence between its own original working premise
 and what was actually built disclosed explicitly rather than silently
 reconciled; Phase 5 (Engineering Modules) sequencing recommended
 (Systems Engineering first).
+**`WP 7.2B`** added no new ADR (three reserved, not written —
+`ADR-0058`–`ADR-0060`), no new Technical Debt Register entry (one new
+item identified at architecture level, recommended for formal
+registration once implementation begins, not registered by this
+Work Package itself), and no new Future Capability Register entry.
+`FCR-0027`'s own entry updated in place: Status annotated "architecture
+complete, not yet Implemented," `ADR-0013` classification decided at
+architecture level (Platform Service). Zero governance registers
+required backfilling — this Work Package's own Dependency Analysis
+confirmed every integration point it needs already exists, proven,
+unmodified.
 
 ## Known Unknowns
 
@@ -1439,22 +1471,31 @@ Governance Audit Report.md`:
    WP7.1F Engineering Core Certification Report.md`. This closed the
    entire Engineering Foundation implementation programme.
 5. **`WP 7.2A` — Strategic Roadmap Selection & Programme Architecture —
-   is complete, awaiting Engineering Review.** Evaluated seven candidate
-   programmes and recommended Programme A (Requirements & Verification
-   Platform, `FCR-0027`) as `v0.8.0`'s own scope — see
-   `docs/releases/v0.7.0/WP7.2A Recommended Programme.md`. Programme F
-   (Platform Hardening) recommended second, at `v0.9.0`. No further
-   implementation Work Package begins until Engineering Review of
-   `WP 7.2A` completes, per that Work Package's own explicit closing
-   instruction.
-6. **Await Product Approval of `v0.8.0`'s own scope.** `WP 7.2A`'s own
-   recommendation is not an approval — per this project's own standing
-   discipline (`FOUNDATION.md` §1), Product Approval must still select
-   it, and the Requirements Engine's own Architecture, Planning, and
-   Contract Review phase must still occur, before any implementation
-   Work Package begins, mirroring `v0.6.0`'s and `v0.7.0`'s own identical
-   pre-implementation discipline.
-7. A GitHub Release for `v0.6.0` has not yet been created (`gh` CLI
+   is complete, Engineering Review APPROVED.** Recommended Programme A
+   (Requirements & Verification Platform, `FCR-0027`), scoring 46/55 —
+   see `docs/releases/v0.7.0/WP7.2A Recommended Programme.md`.
+   **Engineering Review and Product Approval accepted this
+   recommendation**, authorising `WP 7.2B`.
+6. **`WP 7.2B` — Requirements & Verification Platform Architecture —
+   is complete, awaiting Engineering Review.** Designed the complete
+   architecture for the Requirements & Verification Platform — twelve
+   domain concepts, a three-layer Engineering Core/Systems Engineering
+   Foundation/Engineering Discipline Modules model, a digital thread
+   design, an eleven-service dependency analysis (zero new platform
+   capability required), a security classification (one new Technical
+   Debt item found), and an industry-neutral standards mapping. Reserved
+   `ADR-0058`–`ADR-0060` — see `docs/releases/v0.7.0/WP7.2B Requirements
+   Platform Architecture.md`. No production code was written. No further
+   Work Package begins until Engineering Review of `WP 7.2B` completes,
+   per that Work Package's own explicit closing instruction ("Do not
+   begin `WP 7.2C`").
+7. **Await Product Approval of the Requirements Engine's own
+   implementation.** This architecture is not an approval to implement —
+   per this project's own standing discipline (`FOUNDATION.md` §1),
+   Product Approval must still authorise implementation, and
+   `WP7.2B Required ADR Catalogue.md`'s own three reserved decisions must
+   still be ratified, before any production code is written.
+8. A GitHub Release for `v0.6.0` has not yet been created (`gh` CLI
    unavailable in this environment) — see the Release Summary for the
    exact command or manual steps to complete it.
 
@@ -1496,13 +1537,14 @@ is under way:
 
 **The Platform Services phase is complete and released.** `v0.6.0` is
 merged to `main`, tagged, and pushed. TempestOS is now in the
-**Engineering Foundation** phase (`v0.7.0`). `WP 7.0A` through `WP 7.2A`
-are all complete — the entire Engineering Foundation programme is now
-implemented and certified, and a next-programme recommendation has been
-made; the next implementation Work Package is not yet approved — see
-`docs/releases/v0.7.0/WP7.2A Recommended Programme.md` and
-`docs/governance/Future Capability Register.md` for the recommended
-candidate pending Product Approval.
+**Engineering Foundation** phase (`v0.7.0`). `WP 7.0A` through `WP 7.2B`
+are all complete — the entire Engineering Foundation implementation
+programme is certified, Programme A (Requirements & Verification
+Platform) has been recommended and accepted, and its complete
+architecture is now designed; implementation is not yet approved — see
+`docs/releases/v0.7.0/WP7.2B Requirements Platform Architecture.md` and
+`docs/governance/Future Capability Register.md` for the current state
+pending Product Approval.
 
 - `WP 7.0A` — Future Capability Register & Product Vision (architecture
   and governance only; no production code). **Complete — Engineering
@@ -1544,11 +1586,21 @@ candidate pending Product Approval.
   missing Academy concept guide four Work Packages overdue.
 - `WP 7.2A` — Strategic Roadmap Selection & Programme Architecture
   (architecture, governance, and roadmap planning only; no production
-  code). **Complete — awaiting Engineering Review.** Recommended
+  code). **Complete — Engineering Review APPROVED.** Recommended
   Programme A (Requirements & Verification Platform, `FCR-0027`) as
   `v0.8.0`'s own scope, scoring 46/55 against seven candidates — see
   `docs/releases/v0.7.0/WP7.2A Recommended Programme.md`. Programme F
-  (Platform Hardening) recommended second, at `v0.9.0`.
+  (Platform Hardening) recommended second, at `v0.9.0`. **Engineering
+  Review and Product Approval accepted this recommendation.**
+- `WP 7.2B` — Requirements & Verification Platform Architecture
+  (architecture and planning only; no production code). **Complete —
+  awaiting Engineering Review.** Designed the complete architecture for
+  the Requirements & Verification Platform — twelve domain concepts, a
+  three-layer Engineering Core/Systems Engineering Foundation/Engineering
+  Discipline Modules model, a digital thread design, and an
+  eleven-service dependency analysis finding zero new platform capability
+  required — see `docs/releases/v0.7.0/WP7.2B Requirements Platform
+  Architecture.md`. Reserved `ADR-0058`–`ADR-0060`.
 
 ## Long-Term Vision
 
