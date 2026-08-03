@@ -10,7 +10,7 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | `src/Samples/Tempest.Samples/`; `docs/architecture/Sample Module Architecture.md`. |
 | **Review Frequency** | Updated whenever a new production module is added anywhere under `src/`. |
-| **Last Reviewed** | 2026-07-30 (WP 7.1F, Engineering Core Integration Review & Certification) — full backfill performed; four production modules added across the Engineering Foundation programme (`EngineeringDataSampleModule` `WP 7.1A`, `MaterialsSampleModule` `WP 7.1C`, `CalculationSampleModule` `WP 7.1D`, `VerificationSampleModule` `WP 7.1E`) had never been recorded here — stale since `WP 6.8`, closed by this Work Package's own certification review. `Tempest.Core.UnitsAndQuantities` (`WP 7.1B`) confirmed to have no sample module of its own, consistent with its own zero-DI-registration design. Previously reviewed 2026-07-29 (WP 6.8, Platform Services Integration Review) — full backfill performed; every production module is now listed, closing the gap `WP 6.7` first disclosed and `WP 6.6` left in place. |
+| **Last Reviewed** | 2026-07-30 (WP 7.3A, Requirements Engine) — `RequirementsSampleModule` added directly at implementation time, not backfilled later. Previously reviewed 2026-07-30 (WP 7.1F, Engineering Core Integration Review & Certification) — full backfill performed; four production modules added across the Engineering Foundation programme (`EngineeringDataSampleModule` `WP 7.1A`, `MaterialsSampleModule` `WP 7.1C`, `CalculationSampleModule` `WP 7.1D`, `VerificationSampleModule` `WP 7.1E`) had never been recorded here — stale since `WP 6.8`, closed by this Work Package's own certification review. `Tempest.Core.UnitsAndQuantities` (`WP 7.1B`) confirmed to have no sample module of its own, consistent with its own zero-DI-registration design. Previously reviewed 2026-07-29 (WP 6.8, Platform Services Integration Review) — full backfill performed; every production module is now listed, closing the gap `WP 6.7` first disclosed and `WP 6.6` left in place. |
 | **Related Documents** | `docs/architecture/Sample Module Architecture.md`; `Platform Services Register.md`; `Event Catalogue.md`. |
 | **Related ADRs** | ADR-0001 through ADR-0004 (module identity, lifecycle, disposal), ADR-0027 (`ModuleMetadataAttribute`), ADR-0036–ADR-0038, ADR-0040–ADR-0057. |
 | **Related Academy Articles** | `docs/academy/02 Runtime Architecture/03-building-a-module.md`; `04-building-an-event-driven-module.md`; `docs/academy/03 Work Packages/WP4.3-sample-module-architecture.md`, `WP4.3-sample-module-implementation.md`, `WP4.4E-sample-module-event-integration.md`. |
@@ -41,17 +41,22 @@
 | `MaterialsSampleModule` | `Tempest.Samples` | `ModuleLifecycleBase` | Yes | `IMaterialCatalog`, `ICommandDispatcher`, `ICommandRegistry` | WP 7.1C |
 | `CalculationSampleModule` | `Tempest.Samples` | `ModuleLifecycleBase` | Yes | `ICalculationEngine`, `ICommandDispatcher`, `ICommandRegistry` | WP 7.1D |
 | `VerificationSampleModule` | `Tempest.Samples` | `ModuleLifecycleBase` | Yes | `IEngineeringDocumentStore`, `IVerificationService`, `ICommandDispatcher`, `ICommandRegistry` | WP 7.1E |
+| `RequirementsSampleModule` | `Tempest.Samples` | `ModuleLifecycleBase` | Yes | `IIdentityService`, `IRequirementsService`, `IEngineeringDocumentStore`, `IVerificationService`, `ICurrentPrincipalAccessor`, `IPermissionEvaluator`, `IAuditRecorder`, `IReportingService`, `ImportService` (concrete type), `ICommandDispatcher`, `ICommandRegistry` | WP 7.3A |
 
-**Total: 19 production modules — Verified directly via
+**Total: 20 production modules — Verified directly via
 `ClockModuleDiscoveryTests.DiscoverModules_ScopedToSampleAssembly_FindsEveryRealSampleModule`,
-which asserts exactly 19 and names each by Id and type; all 19 are
-listed above. Four modules were added in this pass, closing a gap that
-had persisted, undetected, since each shipped: `EngineeringDataSampleModule`
+which asserts exactly 20 and names each by Id and type; all 20 are
+listed above. `RequirementsSampleModule` (`WP 7.3A`) was recorded
+directly at implementation time, not backfilled later — the first
+module added since `WP 7.1F` established the practice of keeping this
+register current with implementation. Four modules were added in a
+prior pass, closing a gap that had persisted, undetected, since each
+shipped: `EngineeringDataSampleModule`
 (`WP 7.1A`), `MaterialsSampleModule` (`WP 7.1C`), `CalculationSampleModule`
 (`WP 7.1D`), `VerificationSampleModule` (`WP 7.1E`) — none of these four
-had ever been recorded here before this Work Package (`WP 7.1F`), the
+had ever been recorded here before that Work Package (`WP 7.1F`), the
 same undetected-drift pattern `WP 6.8` found and closed for `v0.6.0`'s
-own six modules, now recurring and closed a second time.
+own six modules, recurring and closed a second time.
 `Tempest.Core.UnitsAndQuantities` (`WP 7.1B`) has no sample module of its
 own — consistent with its own zero-DI-registration design; nothing to
 demonstrate through a module, since every consumer uses

@@ -652,16 +652,50 @@ Coverage Note).
 |---|---|
 | **Category** | Systems Engineering |
 | **Description** | A platform capability for requirements management, verification, and traceability across a real engineering programme — named in `PROJECT_STATUS.md`'s own Long-Term Vision as one of two aspirational platform services beyond the current Platform Services phase. |
-| **Status** | Identified — **complete public contracts defined (`WP 7.2C`)**, not yet Implemented. `WP7.2C Requirements Platform Contracts.md` and eleven companion deliverables define full proposed C# interfaces for all thirteen domain concepts; zero production code written. `ADR-0013` classification proposed (Platform Service, `WP7.2B Requirements Platform Architecture.md` §2), still not ratified as a written ADR — reserved as `ADR-0058`, alongside three further reserved decisions (`ADR-0059`–`ADR-0061`). |
-| **Priority** | High — the only Engineering Discipline category with both a completed technical foundation (`FCR-0029`, `FCR-0033`, both Implemented) and a named platform-level hook (`ADR-0013`), and now the only one with complete architecture and contracts as well |
-| **Business Value** | Unknown in isolation, but the first capability that would realise `VISION.md`'s own stated target user ("an individual engineer or a small professional engineering practice") — see `WP7.2A Commercial Assessment.md` |
-| **Engineering Effort** | Unknown — contracts complete, but no implementation estimate is meaningful until `WP7.2C Required ADR Catalogue.md`'s own four reserved decisions (`ADR-0058`–`ADR-0061`) are ratified; `WP7.0B Candidate Work Package Catalogue.md`'s own Candidate `I` disclosed this as "the least architecturally grounded candidate" prior to `WP 7.2B`/`WP 7.2C`'s own review |
-| **Dependencies** | `ADR-0013` classification proposed (Platform Service); both technical dependencies satisfied — `FCR-0029` (Engineering Data Model) and `FCR-0033` (Verification Framework) are both **Implemented** and certified |
-| **Proposed Target Release** | `v0.8.0` (recommended, not committed — `WP7.2A Recommended Programme.md`) |
-| **Related ADRs** | ADR-0013 (names this capability directly in its own Future Considerations); `ADR-0058`–`ADR-0061` reserved, not yet written (`WP7.2C Required ADR Catalogue.md`) |
-| **Related Work Packages** | `WP 7.2A` (recommended this capability as the next programme); `WP 7.2B` (designed its complete architecture); `WP 7.2C` (defined its complete public contracts) |
-| **Academy Impact** | `WP7.2C Academy Plan.md` recommends two new concept guide sections once implementation exists to derive worked examples from; no concept guide written yet (contract review only) |
-| **Notes** | Sourced from `PROJECT_STATUS.md`'s own Long-Term Vision section; `ADR-0013`'s own Future Considerations; `Threat Model.md` assumption 1 ("requirements, analysis, verification records"); `WP7.1E Future Capability Recommendations.md` Recommendation 1 (recommends this capability consume `IVerificationService` directly — confirmed and detailed by `WP7.2B Platform Integration Report.md` §1 and `WP7.2C Verification Integration Contract.md`); `WP7.2A Strategic Roadmap Review.md`, `WP7.2A Programme Comparison Matrix.md`, `WP7.2A Recommended Programme.md`; `WP7.2B Requirements Platform Architecture.md` and its ten companion deliverables; `WP7.2C Requirements Platform Contracts.md` and its eleven companion deliverables. |
+| **Status** | **Implemented (`WP 7.3A`)** — `Tempest.Core.Requirements`, `RequirementsService`, built on `Tempest.Core.EngineeringData` and `Tempest.Core.Verification` per `ADR-0058`, exactly as `WP7.2C Requirements Platform Contracts.md` approved, zero deviation. `ADR-0013` classification ratified as `ADR-0058` (Platform Service), alongside `ADR-0059`–`ADR-0061`, all four now Accepted. |
+| **Priority** | Realised — the first Engineering Discipline category capability to progress from Identified through Architecture, Contracts, and Implementation in sequence |
+| **Business Value** | Confirmed as the first capability realising `VISION.md`'s own stated target user ("an individual engineer or a small professional engineering practice") — see `WP7.2A Commercial Assessment.md` |
+| **Engineering Effort** | Realised — 20 new production files, 131 new tests (1275 → 1406), 4 ratified ADRs, zero build warnings, zero architectural rework against the approved contracts. See `WP7.3A Implementation Report.md`. |
+| **Dependencies** | Both technical dependencies satisfied and consumed directly — `FCR-0029` (Engineering Data Model) and `FCR-0033` (Verification Framework), both **Implemented** and certified, both now real, hard dependencies of the shipped `RequirementsService`. |
+| **Proposed Target Release** | `v0.7.0` (realised — implemented within the same release the architecture/contract phases targeted, ahead of the originally recommended `v0.8.0`) |
+| **Related ADRs** | ADR-0013 (named this capability directly in its own Future Considerations); `ADR-0058`–`ADR-0061` (Accepted, `WP 7.3A`) |
+| **Related Work Packages** | `WP 7.2A` (recommended this capability as the next programme); `WP 7.2B` (designed its complete architecture); `WP 7.2C` (defined its complete public contracts); `WP 7.3A` (implemented it) |
+| **Academy Impact** | `16-requirements-engine.md` (two concept-guide sections, per `WP7.2C Academy Plan.md`'s own recommendation) and `WP7.3A-requirements-engine-implementation.md` retrospective, both written by `WP 7.3A` |
+| **Notes** | Sourced from `PROJECT_STATUS.md`'s own Long-Term Vision section; `ADR-0013`'s own Future Considerations; `Threat Model.md` assumption 1 ("requirements, analysis, verification records"); `WP7.1E Future Capability Recommendations.md` Recommendation 1 (recommended this capability consume `IVerificationService` directly — confirmed by the shipped `GetEvidenceAsync`); `WP7.2A Strategic Roadmap Review.md`, `WP7.2A Programme Comparison Matrix.md`, `WP7.2A Recommended Programme.md`; `WP7.2B Requirements Platform Architecture.md` and its ten companion deliverables; `WP7.2C Requirements Platform Contracts.md` and its eleven companion deliverables; `WP7.3A Implementation Report.md` and its seven companion deliverables. Two new Future Capability candidates raised from this implementation's own experience: string-based allocation targets and requirement baselining — see `WP7.3A Future Capability Recommendations.md` and the new entries below. |
+
+#### FCR-0037 — String-Based Requirement Allocation Targets
+
+| Field | Value |
+|---|---|
+| **Category** | Systems Engineering |
+| **Description** | `WP7.2B Requirements Domain Model.md`'s own broader architectural vision described a Requirement Allocation target as either a real `IEngineeringDocument` reference or an open, unvalidated string identifier, for allocating to a future design element that does not yet exist as a created document. `WP7.2C`'s own approved `LinkAsync` contract carried forward only the document-reference half; the open-string half was never given its own contract method, and `WP 7.3A` implements the approved contract exactly, with no string-based overload. |
+| **Status** | Identified — disclosed gap between `WP7.2B`'s own architectural aspiration and `WP7.2C`'s own final, narrower approved contract; not a regression, since the contract review stage itself never committed to building it |
+| **Priority** | Low — no real, demonstrated need yet; early-phase systems engineering (allocating to a still-conceptual subsystem before any concrete design document exists) is the plausible future scenario |
+| **Business Value** | Unknown — depends on whether early-phase, pre-design allocation proves to be real practice for TempestOS's own future users |
+| **Engineering Effort** | Low — mirrors `Tempest.Core.EngineeringData.DocumentReference`'s own existing open `RelationshipKind` string precedent; a dedicated method (e.g. `AllocateToPendingAsync`), not a redesign of `LinkAsync` |
+| **Dependencies** | `Tempest.Core.Requirements` (Implemented, `WP 7.3A`) |
+| **Proposed Target Release** | Unscheduled |
+| **Related ADRs** | None yet — would not require revisiting `ADR-0058`–`ADR-0061`, only an additive method |
+| **Related Work Packages** | `WP 7.2B` (named the original broader vision); `WP 7.2C` (approved the narrower, shipped contract); `WP 7.3A` (disclosed the gap) |
+| **Academy Impact** | Would extend `16-requirements-engine.md` §10/§12 once implemented |
+| **Notes** | Raised directly by `WP7.3A Future Capability Recommendations.md`; revisit trigger is a real, demonstrated need to allocate a requirement to a design element that does not yet exist as a document. |
+
+#### FCR-0038 — Requirement Baselining
+
+| Field | Value |
+|---|---|
+| **Category** | Systems Engineering |
+| **Description** | A capability to freeze a named, dated set of requirement revisions as a formal baseline, for later comparison against a current working set — standard systems engineering practice, distinct from the per-requirement revision history `Tempest.Core.Requirements` already provides, and explicitly not implemented by `WP 7.3A`'s own controlling instruction (which named only Requirements Engine implementation, not Compliance or Workflow). |
+| **Status** | Identified — no design work performed yet |
+| **Priority** | Unknown — plausible for the first engineering discipline module that consumes the Requirements Engine in earnest |
+| **Business Value** | Unknown — dependent on real multi-milestone engineering programme usage |
+| **Engineering Effort** | Unknown — no architecture exists yet; would need its own design phase, likely building on `IEngineeringDocumentStore`'s own existing revision history rather than a new mechanism |
+| **Dependencies** | `Tempest.Core.Requirements` (Implemented, `WP 7.3A`) |
+| **Proposed Target Release** | Unscheduled |
+| **Related ADRs** | None yet |
+| **Related Work Packages** | `WP 7.3A` (disclosed this candidate from its own implementation experience) |
+| **Academy Impact** | Would extend `16-requirements-engine.md` §12 once implemented |
+| **Notes** | Raised directly by `WP7.3A Future Capability Recommendations.md`; revisit trigger is a real, demonstrated need to compare "what the requirement set looked like at milestone X" against current state. A related, adjacent candidate (change impact analysis, layered on `GetRelationshipsAsync`) was also noted but not separately registered — see `WP7.3A Future Capability Recommendations.md`. |
 
 ### Project Management
 
@@ -684,7 +718,7 @@ Coverage Note).
 
 ## Coverage Note
 
-**36 capabilities identified** (`FCR-0001` through `FCR-0036`).
+**38 capabilities identified** (`FCR-0001` through `FCR-0038`).
 `FCR-0001`–`FCR-0028` were each traceable to a specific, cited,
 pre-existing document, established `WP 7.0A`. `FCR-0029`–`FCR-0033`
 were added by `WP 7.0B`'s own Capability Dependency Analysis — each
@@ -700,7 +734,13 @@ Security Review — the first entry in this register sourced from a
 security review specifically. `FCR-0036` was added by `WP 7.1E`, sourced
 from that Work Package's own required Security Review — the second such
 entry, and the last added by the Engineering Foundation programme, now
-complete. No entry was invented to fill a category without disclosing
+complete. `FCR-0027` (Requirements Engine) progressed to **Implemented**
+by `WP 7.3A` — the first Systems Engineering Foundation capability to
+complete the full Identified → Architecture → Contracts → Implemented
+sequence. `FCR-0037` and `FCR-0038` were added by `WP 7.3A`, sourced
+directly from that Work Package's own `Future Capability
+Recommendations.md` — disclosed implementation-experience findings, not
+inferred. No entry was invented to fill a category without disclosing
 that it was inferred rather than sourced.
 
 `Materials` and `Quality` each now have exactly one entry (`FCR-0031`,

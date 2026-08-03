@@ -113,7 +113,7 @@ public class ClockModuleDiscoveryTests
 
         var result = service.DiscoverModules();
 
-        Assert.Equal(19, result.Count);
+        Assert.Equal(20, result.Count);
         Assert.Contains(result, d => d.Id == "tempest.samples.clock" && d.ModuleType == typeof(ClockModule));
         Assert.Contains(result, d => d.Id == "tempest.samples.clock.observer" && d.ModuleType == typeof(ClockLifecycleObserverModule));
         Assert.Contains(result, d => d.Id == "tempest.samples.navigation" && d.ModuleType == typeof(NavigationSampleModule));
@@ -133,6 +133,7 @@ public class ClockModuleDiscoveryTests
         Assert.Contains(result, d => d.Id == "tempest.samples.materials" && d.ModuleType == typeof(Tempest.Samples.MaterialsSampleModule));
         Assert.Contains(result, d => d.Id == "tempest.samples.calculations" && d.ModuleType == typeof(Tempest.Samples.CalculationSampleModule));
         Assert.Contains(result, d => d.Id == "tempest.samples.verification" && d.ModuleType == typeof(Tempest.Samples.VerificationSampleModule));
+        Assert.Contains(result, d => d.Id == "tempest.samples.requirements" && d.ModuleType == typeof(Tempest.Samples.RequirementsSampleModule));
     }
 
     // ----------------------------------------------------------------

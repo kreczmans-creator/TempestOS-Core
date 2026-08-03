@@ -36,6 +36,12 @@ further principles (24-28, below) derived from what
 Engineering Foundation framework, completing the programme
 `WP 7.0B`/`WP 7.0C` planned.
 
+Extended by `WP 7.3A` (Requirements Engine), 2026-07-30, adding four
+further principles (29-32, below) derived from what
+`Tempest.Core.Requirements` actually implements — the first Systems
+Engineering Foundation framework, built directly on the Engineering
+Foundation programme this document already covers in full.
+
 ## Purpose
 
 Every future Engineering Foundation framework (`FCR-0030`–`FCR-0033`)
@@ -373,42 +379,104 @@ introduce:... Report formatting"), and `grep` of
 `src/Tempest.Core/Verification/` for any formatting or presentation
 logic finds none.
 
+## Requirements Engine Extension (`WP 7.3A`)
+
+### 29. Requirement lifecycle status is independent of verification outcome
+
+`RequirementStatus` is never automatically derived from a
+`Verification.VerificationRecord`'s own `Outcome` — the two remain
+separate, caller-driven facts, exactly as `Tempest.Core.Verification`'s
+own Principle 25 (evidence is explicit, not an unstated judgement call)
+already established for a sibling framework, now demonstrated for a
+second, adjacent distinction. This is enforced structurally, not by
+convention: `IRequirementsService.RecordAsync` does not exist —
+recording a verification is `IVerificationService.RecordAsync`'s own,
+separate call, with no code path anywhere connecting it to
+`SetStatusAsync`. `SetStatusAsync_NeverDerivesFromVerificationOutcome`
+proves this directly: recording a `Fail` verification against a
+`Draft`-status requirement leaves its status `Draft`, unchanged.
+
+### 30. Engineering workflow is a closed, contractual state model
+
+A requirement's own lifecycle transition is either permitted or
+forbidden by a single, fixed, exhaustively-tested table
+(`RequirementStatusTransitions`) — never a convention, never
+caller-decided at the point of use. `SetStatusAsync` throws
+`InvalidRequirementStatusTransitionException` for every transition not
+in that table, proven by a complete, table-driven test suite covering
+every permitted and every forbidden transition among the seven lifecycle
+states. This is a genuinely new principle for this document: every
+prior Engineering Foundation framework recorded a fact (a revision, a
+calculation, a verification); this is the first to constrain a
+*sequence* of facts against an explicit, closed state machine.
+
+### 31. Traceability and allocation targets are Kind-agnostic
+
+A requirement may be linked — allocated, traced, referenced — to a
+document of any `Kind`, never one this framework itself inspects,
+constrains, or special-cases. `RequirementsService.LinkAsync` accepts
+any real `IEngineeringDocument` Id as a target, validated only for
+existence, never for `Kind`. `Allocation_ToArbitraryDocumentKind_Succeeds`
+proves this directly: a requirement is allocated to a document of
+`Kind = "SampleComponent"`, a Kind this framework has never heard of and
+never needs to. This is the concrete, tested demonstration of this
+Work Package's own controlling instruction — "It shall remain
+discipline-neutral" — expressed as a structural guarantee, not merely a
+design intention.
+
+### 32. A digital thread requires no dedicated traversal mechanism, only composed reads
+
+`IRequirementsService.GetEvidenceAsync` introduces no new storage, no
+new index, and no new query mechanism — it composes
+`IVerificationService.GetVerificationHistoryAsync` (already permission-
+gated, unmodified) with `IEngineeringDocumentStore.GetReferencesAsync`
+(already the mechanism every Engineering Foundation relationship
+reuses) into one read. `GetEvidenceAsync_AggregatesVerificationHistoryAndLinkedReferences`
+proves the aggregation is genuinely correct, not merely plausible.
+This confirms `WP7.2B Digital Thread Architecture.md`'s own central
+finding at the level of real, shipped code: a "digital thread" is a name
+for composing existing reads, never a new capability requiring its own
+implementation.
+
 ## What This Document Does Not Cover
 
 - **Discipline-specific engineering principles** (a structural
   engineering design principle, an electrical safety margin
-  principle) — deliberately out of scope, per this Work Package's own
-  controlling instruction not to introduce Mechanical, HVAC, Structural,
-  Electrical, or Manufacturing mathematics, design-code logic, or
-  safety-factor policy.
+  principle) — deliberately out of scope, per every Engineering
+  Foundation and Systems Engineering Work Package's own controlling
+  instruction not to introduce Mechanical, HVAC, Structural, Electrical,
+  or Manufacturing mathematics, design-code logic, or safety-factor
+  policy.
 - **Affine unit conversion (Temperature)** — deliberately deferred, not
   covered by Principle 9's "pure multiplication" claim; see `ADR-0054`'s
   own "Temperature Deliberately Deferred" section. Materials properties
   and calculation inputs/outputs built on `Quantity<TDimension>` are
   correspondingly bounded to the same seven dimensions.
-- **Requirements Management and Validation** — this Work Package's own
-  controlling instruction drew both explicitly outside Verification's
-  own scope ("It shall not implement Validation," "It shall not
-  implement Requirements Management"); `Tempest.Core.Verification`
-  answers only "has this engineering claim been demonstrated," never
-  "is this the right claim to have made" (Validation) or "what
-  requirements exist and how do they relate" (a future Requirements
-  Engine, `FCR-0027`).
+- **Validation, workflow automation, electronic approval, and digital
+  signatures** — `Tempest.Core.Requirements`'s own controlling
+  instruction drew all four explicitly outside its scope ("Do not
+  introduce: workflow automation, electronic approval..."); it answers
+  only "what is this requirement, and what is it related to," never "is
+  this the right requirement" (Validation, still no framework's own
+  concern) or "has a human formally signed off on it" (a genuine future
+  capability, not yet built anywhere in this platform).
 
-With this extension, every one of the five Engineering Foundation
-frameworks `WP 7.0B`/`WP 7.0C` planned (`FCR-0029`–`FCR-0033`) has now
-contributed to this document — this section is not expected to grow
-further from this programme, only from future Engineering Modules built
-on top of it.
+With this extension, the Engineering Foundation programme
+(`FCR-0029`–`FCR-0033`) and the first Systems Engineering Foundation
+framework (`FCR-0027`) have both contributed to this document — this
+section is not expected to grow further from either, only from future
+Engineering Modules or Systems Engineering capabilities built on top of
+them.
 
 ## Related Documents
 
 `docs/academy/06 Engineering Standards/Engineering Governance.md`;
 `VISION.md`; `docs/releases/FOUNDATION.md`; `docs/governance/Future
 Capability Register.md`; `ADR-0053`; `ADR-0054`; `ADR-0055`; `ADR-0056`;
-`ADR-0057`;
+`ADR-0057`; `ADR-0058`; `ADR-0059`; `ADR-0060`; `ADR-0061`;
 `docs/academy/03 Work Packages/WP7.1A-engineering-data-model-implementation.md`;
 `docs/academy/03 Work Packages/WP7.1B-units-and-quantities-framework-implementation.md`;
 `docs/academy/03 Work Packages/WP7.1C-materials-framework-implementation.md`;
 `docs/academy/03 Work Packages/WP7.1D-engineering-calculation-framework-implementation.md`;
-`docs/academy/03 Work Packages/WP7.1E-verification-framework-implementation.md`.
+`docs/academy/03 Work Packages/WP7.1E-verification-framework-implementation.md`;
+`docs/academy/03 Work Packages/WP7.3A-requirements-engine-implementation.md`.

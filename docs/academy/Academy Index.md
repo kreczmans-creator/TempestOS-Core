@@ -406,6 +406,27 @@ all five frameworks (`FCR-0029`–`FCR-0033`) are now Implemented.
 - [WP 7.1E — Verification Framework](03%20Work%20Packages/WP7.1E-verification-framework-implementation.md) — implemented exactly as `WP 7.0C` proposed, resolving both of `ADR-0057`'s own reserved questions (Audit orthogonality, open method vocabulary) plus one genuine finding (verification history via the Data Model's own reference mechanism) `WP7.0C Required ADR Catalogue.md` did not anticipate.
 - ADR-0057 (Verification Framework — Relationship to Audit and Method Vocabulary).
 
+### Requirements Engine
+
+Implemented (`WP 7.3A`, `ADR-0058`–`ADR-0061`) — `Tempest.Core.Requirements`:
+`RequirementsService` is the first working Systems Engineering Foundation
+capability — the canonical representation of an engineering requirement,
+built entirely on the Engineering Core's own existing mechanisms. Every
+requirement, collection, and group is an `IEngineeringDocument`; every
+relationship (grouping, collection membership, allocation, traceability)
+is a `DocumentReference`; `RequirementStatus` remains structurally
+independent of `VerificationOutcome`, with zero code path connecting
+them. `GetEvidenceAsync` composes Verification's own history with linked
+references into a single digital-thread view, proving `WP7.2B Digital
+Thread Architecture.md`'s own central claim in running code. **The first
+implementation Work Package of the Systems Engineering Foundation
+phase**, following the `WP 7.2A`/`WP 7.2B`/`WP 7.2C` architecture and
+contract review sequence, with zero architectural rework.
+
+- [Requirements Engine](02%20Runtime%20Architecture/16-requirements-engine.md) — the concept guide: the three-layer Requirement-as-Document pattern, and the relationship-kind/traceability vocabulary.
+- [WP 7.3A — Requirements Engine](03%20Work%20Packages/WP7.3A-requirements-engine-implementation.md) — implemented exactly as `WP 7.2C` proposed, zero deviation; the sole disclosed narrowing (Guid-only allocation targets) originated at the `WP 7.2C` contract-review stage itself, not this Work Package. Resolves all four reserved ADRs (`0058`–`0061`); discloses new Technical Debt (`TD-25`).
+- ADR-0058 (Requirements Engine Classification, Storage, and Relationship to the Engineering Data Model); ADR-0059 (Requirement Identity, Status, and Category Representation); ADR-0060 (Requirement Concurrency and Traceability Integrity Model); ADR-0061 (Requirements Engine — Internal vs. Calling-Layer Permission Enforcement).
+
 ## Design Patterns
 
 Recurring structural patterns TempestOS actually uses, explained in terms
@@ -523,6 +544,7 @@ WorkPackages.md` for the full, nine-Work-Package plan.
 - [WP 7.2A — Strategic Roadmap Selection & Programme Architecture](03%20Work%20Packages/WP7.2A-strategic-roadmap-selection-and-programme-architecture.md) — architecture, governance, and roadmap-planning milestone Work Package, not a feature implementation; mirrors `WP 7.0A`/`WP 7.0B`'s own whole-review format. Evaluated seven candidate programmes against eleven criteria; recommended Programme A (Requirements & Verification Platform, `FCR-0027`) over Programme F (Platform Hardening, sequenced second) and five programmes with no identified capability.
 - [WP 7.2B — Requirements & Verification Platform Architecture](03%20Work%20Packages/WP7.2B-requirements-and-verification-platform-architecture.md) — architecture-only milestone Work Package continuing the Engineering Foundation into Systems Engineering, not a feature implementation; mirrors `WP7.0C Engineering Foundation Contracts.md`'s own format. Designed the complete Requirements & Verification Platform architecture — twelve domain concepts, a three-layer Engineering Core/Systems Engineering Foundation/Engineering Discipline Modules model, a digital thread design, and an industry-neutral standards mapping. Reserved `ADR-0058`–`ADR-0060`.
 - [WP 7.2C — Requirements & Verification Platform Contract Review](03%20Work%20Packages/WP7.2C-requirements-and-verification-platform-contract-review.md) — contract-review-only milestone Work Package, not a feature implementation; mirrors `WP7.0C Engineering Foundation Contracts.md`'s own format, extended to seventeen questions per concept. Defined full proposed C# contracts for all thirteen named domain concepts, a Requirement Lifecycle Model, a Relationship Model, a Traceability Contract, and a Verification Integration Contract. Reserved `ADR-0061`.
+- [WP 7.3A — Requirements Engine](03%20Work%20Packages/WP7.3A-requirements-engine-implementation.md) — the first implementation Work Package of the Systems Engineering Foundation phase; implements `Tempest.Core.Requirements` (`ADR-0058`–`ADR-0061`) exactly as `WP 7.2C` proposed, zero architectural deviation. Standard 13-section implementation template, third Work Package overall with a dedicated Security Review.
 
 See `PROJECT_STATUS.md` for current status, `docs/governance/Future
 Capability Register.md` for the authoritative future-capability list,

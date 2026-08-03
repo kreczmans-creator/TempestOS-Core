@@ -44,7 +44,7 @@ of date is worse than no map at all, because it will be trusted.
 | Licensing | **Implemented — WP 6.6** (`ILicense`/`ILicenseValidator`/`LicenseValidator`, `ILicenseProvider`/`LicenseProvider`, `Tempest.Core.Licensing`) — pre-container, Host-fatal validation gate per ADR-0050, except a missing license file, which is a valid, unrestricted-but-uncapable default (resolving Risk Register R5) | `System.Text.Json` (BCL) only | `LicensingSampleModule` (real contributor, also demonstrating Identity/Settings/Audit/Notifications/REST API integration at the calling layer); a plausible future consumer for any commercially licensed engineering module |
 | Plugin Manifest | **Implemented — WP 4.2** (`Tempest.Core.Plugins`) | Host (Phases 3.1/3.2, ADR-0026 — a pre-Discovery step) | Module Discovery (unchanged), any real plugin |
 | Project Engine | Planned | Undetermined | Undetermined |
-| Requirements Engine | Planned | Undetermined | Undetermined |
+| Requirements Engine | **Implemented — WP 7.3A** (`IRequirementsService`/`RequirementsService`, `Tempest.Core.Requirements`) — the canonical, discipline-neutral requirement representation per `ADR-0058`; requirements/collections/groups are `IEngineeringDocument`s, relationships are `DocumentReference`s, zero new storage mechanism | Dependency Injection, Engineering Data Model, Verification | `RequirementsSampleModule` (real contributor, also demonstrating Identity/Audit/Reporting/Export-Import integration at the calling layer); a plausible future consumer for any discipline-specific engineering module |
 
 Arrows in this table point from a service to what it *needs*; read the third
 column as "the following depend on this row." "Depends on" and "Depended on
@@ -1510,15 +1510,37 @@ integrated by any module-pipeline work package to date.
 
 ---
 
-## Requirements Engine *(planned)*
+## Requirements Engine *(implemented — WP 7.3A, ADR-0058–ADR-0061)*
 
-**Responsibility (anticipated).** Not yet designed. No code exists.
+**Responsibility.** The canonical, discipline-neutral representation of an
+engineering requirement — identity, statement, category, lifecycle status,
+revision history, relationships (grouping, collection membership,
+allocation, traceability), and composed evidence — for every future
+engineering discipline module to consume without inventing its own shape.
 
-**Status.** Purely aspirational — named as a future platform service, with no
-implementation, no design discussion, and no code to reference.
+**Key types.** `IRequirementsService`/`RequirementsService`, `IRequirement`/
+`Requirement`, `IRequirementCollection`/`RequirementCollection`,
+`IRequirementGroup`/`RequirementGroup`, `IRequirementEvidence`/
+`RequirementEvidence`, `RequirementStatus`, `RequirementStatusTransitions`,
+`RequirementRelationshipKinds` (`Tempest.Core.Requirements`).
 
-**Dependencies / Consumers.** Undetermined.
+**Dependencies.** Dependency Injection; `IEngineeringDocumentStore`
+(Engineering Data Model) — every requirement/collection/group is an
+`IEngineeringDocument`, every relationship a `DocumentReference`; direct
+`IPersistenceStore` access for its own identifier index, mirroring
+`MaterialCatalog`'s own precedent; `IVerificationService` — `GetEvidenceAsync`
+composes verification history with linked references, introducing no new
+digital-thread traversal mechanism.
 
-**ADR references.** None yet.
+**Consumers.** `RequirementsSampleModule` (real contributor, also
+demonstrating Identity/Audit/Reporting/Export-Import integration at the
+calling layer); a plausible future consumer for any discipline-specific
+engineering module (Mechanical, HVAC, Structural, Electrical).
 
-**Academy references.** None yet.
+**ADR references.** ADR-0058 (classification, storage, Engineering Data
+Model relationship), ADR-0059 (identity/status/category representation),
+ADR-0060 (concurrency and traceability integrity — `TD-25`), ADR-0061
+(internal vs. calling-layer permission enforcement).
+
+**Academy references.** `02 Runtime Architecture/16-requirements-engine.md`;
+`03 Work Packages/WP7.3A-requirements-engine-implementation.md`.

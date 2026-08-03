@@ -19,6 +19,7 @@ using Tempest.Core.Notifications;
 using Tempest.Core.Persistence;
 using Tempest.Core.Plugins;
 using Tempest.Core.Reporting;
+using Tempest.Core.Requirements;
 using Tempest.Core.Settings;
 using Tempest.Core.Verification;
 using Tempest.Core.Versioning;
@@ -375,6 +376,15 @@ public sealed class TempestHost : ITempestHost
         // which it depends on. Read access is permission-gated,
         // mirroring IAuditQuery's own established pattern.
         services.Singleton<IVerificationService, VerificationService>();
+
+        // ADR-0058: the Requirements Engine is a thin, typed index over
+        // the Engineering Data Model (Kind = "Requirement" and two
+        // sibling kinds), plus a direct IPersistenceStore dependency of
+        // its own for its identifier index, mirroring Materials' own
+        // materialId index - registered after Engineering Data and
+        // Verification, both of which it depends on (Verification for
+        // its own GetEvidenceAsync aggregation).
+        services.Singleton<IRequirementsService, RequirementsService>();
 
         // Composition Root pattern (ADR-0009), like Configuration/Logging/
         // PlatformVersionProvider above: DiagnosticsProvider needs references

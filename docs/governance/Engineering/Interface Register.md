@@ -10,11 +10,11 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | Direct source inspection (`grep -rhoP "^public interface" src/Tempest.Core`). |
 | **Review Frequency** | Updated whenever a new public interface is introduced. |
-| **Last Reviewed** | 2026-07-30 (WP 7.1F, Engineering Core Integration Review & Certification) — full backfill performed; 11 interfaces introduced across all five Engineering Foundation Work Packages (`WP 7.1A`–`WP 7.1E`) are now listed, none of which had ever been recorded here — this register had gone stale since `WP 6.8` (2026-07-29), the exact drift pattern `FCR-0005` exists to catch, now found and closed by this Work Package's own certification review, mirroring `WP 6.8`'s own identical finding for the `v0.6.0` release. Previously reviewed 2026-07-29 (WP 6.8, Platform Services Integration Review) — full backfill performed; every interface introduced since `WP 5.2` (`WP 6.1`, `WP 6.4`, `WP 6.5`, `WP 6.2`, `WP 6.0`, `WP 6.3`, `WP 6.7`, `WP 6.6`) is now listed, closing the gap `WP 6.7` first disclosed and `WP 6.6` left in place. |
+| **Last Reviewed** | 2026-07-30 (WP 7.3A, Requirements Engine) — 5 new interfaces added directly at implementation time (`IRequirement`, `IRequirementCollection`, `IRequirementEvidence`, `IRequirementGroup`, `IRequirementsService`), not backfilled later — the first Work Package to keep this register current with its own implementation since `WP 7.1F` established the practice. Previously reviewed 2026-07-30 (WP 7.1F, Engineering Core Integration Review & Certification) — full backfill performed; 11 interfaces introduced across all five Engineering Foundation Work Packages (`WP 7.1A`–`WP 7.1E`) are now listed, none of which had ever been recorded here — this register had gone stale since `WP 6.8` (2026-07-29), the exact drift pattern `FCR-0005` exists to catch, now found and closed by this Work Package's own certification review, mirroring `WP 6.8`'s own identical finding for the `v0.6.0` release. Previously reviewed 2026-07-29 (WP 6.8, Platform Services Integration Review) — full backfill performed; every interface introduced since `WP 5.2` (`WP 6.1`, `WP 6.4`, `WP 6.5`, `WP 6.2`, `WP 6.0`, `WP 6.3`, `WP 6.7`, `WP 6.6`) is now listed, closing the gap `WP 6.7` first disclosed and `WP 6.6` left in place. |
 | **Related Documents** | `docs/architecture/Ownership Matrix.md`; `Dependency Injection Register.md`; `Namespace Register.md`. |
 | **Related ADRs** | ADR-0006, ADR-0009, ADR-0017, ADR-0020, ADR-0023, ADR-0024, ADR-0034, ADR-0036, ADR-0037, ADR-0039, ADR-0040–ADR-0057. |
 | **Related Academy Articles** | `docs/architecture/Engineering Glossary.md` (Platform API vs. Platform Service); `docs/engineering/Engineering Principles.md`. |
-| **Coverage Status** | **Complete.** Full backfill performed directly against `grep -rhoP "^public interface \w+(<[^>]+>)?" src/Tempest.Core` — 75 interfaces found, 75 listed below, zero omitted. A genuine, pre-existing arithmetic drift was also found and corrected during the `WP 6.8` backfill: the register's own Classification Summary read "Host-owned = 6" while its own Entries table already listed 7 Host-owned rows (`IFrameworkDiscoveryService`, `IHostedServiceDiscoveryService`, `IHostedServiceManager`, `IModuleLifecycleManager`, `IPluginAssemblyLoader`, `IPluginManifestDiscoveryService`, `IRuntimeModuleManager`) — an undercount that predates `WP 6.7`'s own first disclosure of the larger gap, corrected at that time. |
+| **Coverage Status** | **Complete.** Verified directly against `grep -rhoP "^public interface \w+(<[^>]+>)?" src/Tempest.Core` — 80 interfaces found, 80 listed below, zero omitted. A genuine, pre-existing arithmetic drift was also found and corrected during the `WP 6.8` backfill: the register's own Classification Summary read "Host-owned = 6" while its own Entries table already listed 7 Host-owned rows (`IFrameworkDiscoveryService`, `IHostedServiceDiscoveryService`, `IHostedServiceManager`, `IModuleLifecycleManager`, `IPluginAssemblyLoader`, `IPluginManifestDiscoveryService`, `IRuntimeModuleManager`) — an undercount that predates `WP 6.7`'s own first disclosure of the larger gap, corrected at that time. |
 
 ---
 
@@ -84,6 +84,11 @@
 | `IReportRenderer<T>` | `Tempest.Core.Reporting` | Platform API (contract) | Produces a report definition's own output (`WP 6.0`) |
 | `IReportTemplate<T>` | `Tempest.Core.Reporting` | Not DI-registered (optional collaborator, additive — `WP 6.0`) | Separates layout/rendering from a renderer's own data-gathering |
 | `IReportingService` | `Tempest.Core.Reporting` | DI-public | Registers report definitions/renderers; dispatches generation by Id (`WP 6.0`) |
+| `IRequirement` | `Tempest.Core.Requirements` | Platform API (data contract) | An `IEngineeringDocument`-backed engineering requirement — identifier, statement, category, status (`WP 7.3A`, `ADR-0058`/`ADR-0059`) |
+| `IRequirementCollection` | `Tempest.Core.Requirements` | Platform API (data contract) | A named, purpose-built set of requirements; membership derived via `GetReferencesAsync`, never stored directly (`WP 7.3A`, `ADR-0058`) |
+| `IRequirementEvidence` | `Tempest.Core.Requirements` | Platform API (data contract) | A read-side aggregation of a requirement's own verification history and linked references — the digital thread, demonstrated (`WP 7.3A`) |
+| `IRequirementGroup` | `Tempest.Core.Requirements` | Platform API (data contract) | A hierarchical requirement categorisation node; parent reference derived via `GetReferencesAsync`, never stored directly (`WP 7.3A`, `ADR-0058`) |
+| `IRequirementsService` | `Tempest.Core.Requirements` | DI-public | Create/find/revise/set-status/link/list requirements, collections, and groups; no internal permission gating (`WP 7.3A`, `ADR-0058`/`ADR-0061`) |
 | `IRole` | `Tempest.Core.Identity` | Platform API (data contract, additive — `WP 6.1`) | A named grouping of permissions |
 | `IRoleProvider` | `Tempest.Core.Identity` | DI-public (additive — `WP 6.1`) | Config-sourced role resolution |
 | `IRuntimeModuleManager` | `Tempest.Core.Modules` | Host-owned, never DI-public (ADR-0017) | Module registration catalogue |
@@ -98,21 +103,27 @@
 | `IVerificationRecord` | `Tempest.Core.Verification` | Platform API (data contract) | The complete, structured account of one recorded verification outcome (`WP 7.1E`, `ADR-0057`) |
 | `IVerificationService` | `Tempest.Core.Verification` | DI-public | Records a verification outcome against a subject document; permission-gated history query (`WP 7.1E`, `ADR-0057`) |
 
-**Total: 75 public interfaces under `src/Tempest.Core/` — Verified
+**Total: 80 public interfaces under `src/Tempest.Core/` — Verified
 directly (`grep -rhoP "^public interface \w+(<[^>]+>)?" src/Tempest.Core`
-returns exactly 75 matches, matching the 75 rows above). 11 interfaces
-introduced across the five Engineering Foundation Work Packages were
-added in this pass, closing a gap that had persisted, undetected, since
-each framework shipped: `WP 7.1A` (`IEngineeringDocument`,
-`IDocumentRevision`, `IEngineeringDocumentStore` — 3), `WP 7.1B`
-(`IDimension`, `IUnitConverter` — 2), `WP 7.1C` (`IMaterialCatalog`,
-`IMaterialSpecification` — 2), `WP 7.1D` (`ICalculationDefinition<TInput,
-TResult>`, `ICalculationEngine` — 2), `WP 7.1E` (`IVerificationRecord`,
-`IVerificationService` — 2) — none of these five Work Packages' own
-interfaces had ever been recorded here before this Work Package
-(`WP 7.1F`), the same undetected-drift pattern `WP 6.8` found and closed
-for `v0.6.0`'s own six Work Packages, now recurring and closed a second
-time. Previously, `WP 6.8` fully backfilled: 23 interfaces introduced by
+returns exactly 80 matches, matching the 80 rows above). 5 new
+interfaces were added by `WP 7.3A` (Requirements Engine) at the time of
+their own implementation, not discovered as drift afterward:
+`IRequirement`, `IRequirementCollection`, `IRequirementEvidence`,
+`IRequirementGroup`, `IRequirementsService` — the first Work Package
+since `WP 7.1F` itself established the practice of keeping this register
+current with implementation, rather than backfilling it later. 11
+interfaces introduced across the five Engineering Foundation Work
+Packages were added in a prior pass (`WP 7.1F`), closing a gap that had
+persisted, undetected, since each framework shipped: `WP 7.1A`
+(`IEngineeringDocument`, `IDocumentRevision`, `IEngineeringDocumentStore`
+— 3), `WP 7.1B` (`IDimension`, `IUnitConverter` — 2), `WP 7.1C`
+(`IMaterialCatalog`, `IMaterialSpecification` — 2), `WP 7.1D`
+(`ICalculationDefinition<TInput, TResult>`, `ICalculationEngine` — 2),
+`WP 7.1E` (`IVerificationRecord`, `IVerificationService` — 2) — none of
+these five Work Packages' own interfaces had ever been recorded here
+before that Work Package (`WP 7.1F`), the same undetected-drift pattern
+`WP 6.8` found and closed for `v0.6.0`'s own six Work Packages, recurring
+and closed a second time. Previously, `WP 6.8` fully backfilled: 23 interfaces introduced by
 `WP 6.1` (`ICurrentPrincipalAccessor`, `IIdentity`, `IIdentityService`,
 `IPermissionEvaluator`, `IPrincipal`, `IRole`, `IRoleProvider` — 7),
 `WP 6.4` (`IPersistenceStore`, `ISettingDefinition`,
