@@ -2,6 +2,30 @@
 
 ## Status
 
+**Superseded by actual events — retained for historical record, not
+deleted, per this project's own "never delete, mark superseded"
+convention.** The candidate items below (`C1`–`C4`), sourced from
+`WP 6.8`'s own recommendations, were **not** the scope `v0.7.0` actually
+pursued. Real Product Approval instead directed the release toward the
+**Engineering Foundation** and **Systems Engineering Foundation**
+programmes — twelve real Work Packages (`WP 7.0A` through `WP 7.3A`),
+none of which is `C1`–`C4` below. See `docs/releases/v0.7.0/
+ReleaseNotes.md` and `PROJECT_STATUS.md` for what `v0.7.0` actually
+delivered. Of the four candidates named below: `C1` (Runtime↔Diagnostics
+namespace reference) and `C3` (`IPermissionEvaluator` retrofit) remain
+undecided, carried forward as open Technical Debt/trade-off items
+(`TD-04`, `TD-09`/`TD-10`/`TD-11`); `C2` (Governance Register health
+check) was reconfirmed, not resolved, as `FCR-0005`, having recurred as
+a real finding twice more during this very release (`WP 7.3A`,
+`WP 7.4.0`); `C4` was not pursued as scoped. This correction was made by
+`WP 7.4.0` (Release Preparation & Product Baseline) — a genuine,
+disclosed documentation-consistency finding: this document's own
+"Not started, not yet scoped" status text survived unchanged through
+all twelve real Work Packages that followed it, never updated by any of
+them, since none had this document specifically in its own scope.
+
+### Original Text (Historical, Not Corrected Below This Line)
+
 **Not started. Not yet scoped.** `feature/v0.7.0-engineering-foundation`
 was cut from `main` at the `v0.6.0` tag, per this release's own opening
 release-activity instruction. Unlike every prior release's own

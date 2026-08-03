@@ -121,15 +121,15 @@
 | **Category** | Platform |
 | **Description** | A lightweight, periodic (not only closing-review-triggered) check — a script or a documented convention — that flags a governance register whose own "Last Reviewed" Work Package predates the most recent Work Package that actually touched its subject area. |
 | **Status** | Identified, not started |
-| **Priority** | **High** (raised from Medium by `WP 7.1F`) — this exact pattern (`Interface Register.md`/`Dependency Injection Register.md`/`Module Register.md` going stale for an entire release phase) has now recurred a third time (`v0.5.0`-era `Governance Register.md`; `v0.6.0`'s six Work Packages, closed by `WP 6.8`; the five Engineering Foundation Work Packages, closed by `WP 7.1F`) — no longer a single observed instance plus a theoretical risk, a confirmed, repeating failure mode |
-| **Business Value** | Medium-High — prevents a class of documentation-drift finding that has, three times now, taken a whole-release closing review to catch rather than being caught as it happened |
+| **Priority** | **High** (raised from Medium by `WP 7.1F`, reconfirmed by `WP 7.4.0`) — this exact pattern has now recurred a fourth and fifth time: `Platform Services Register.md`/`Platform Service Map.md` (missing the four Engineering Foundation frameworks, found by `WP 7.3A`) and `Documentation Register.md`/`Governance Register.md` (both stale since `v0.6.0`/`WP 6.8` respectively, found by `WP 7.4.0`'s own release-readiness audit) — no longer a rare failure mode, a near-certain one absent tooling |
+| **Business Value** | Medium-High — prevents a class of documentation-drift finding that has, five times now, taken a dedicated review (a closing certification or a release-readiness audit) to catch rather than being caught as it happened |
 | **Engineering Effort** | Low-Medium — likely a simple script comparing each register's own "Last Reviewed" Work Package number against the highest Work Package number that touched its declared Scope |
 | **Dependencies** | None |
-| **Proposed Target Release** | `v0.7.0` candidate |
+| **Proposed Target Release** | `v0.7.0` candidate, not yet built — `WP 7.4.0`'s own release-readiness review performed the check manually once again rather than building the tool, since building tooling is outside a release-preparation Work Package's own scope |
 | **Related ADRs** | None |
-| **Related Work Packages** | `WP 5.3` (first instance of this exact drift pattern), `WP 6.7`/`WP 6.6`/`WP 6.8` (second instance, closed), `WP 7.1A`–`WP 7.1E`/`WP 7.1F` (third instance, closed) |
+| **Related Work Packages** | `WP 5.3` (first instance of this exact drift pattern), `WP 6.7`/`WP 6.6`/`WP 6.8` (second instance, closed), `WP 7.1A`–`WP 7.1E`/`WP 7.1F` (third instance, closed), `WP 7.3A` (fourth instance — `Platform Services Register.md`/`Platform Service Map.md`), `WP 7.4.0` (fifth instance — `Documentation Register.md`/`Governance Register.md`, both closed) |
 | **Academy Impact** | Would warrant a new "Design Patterns" or "Engineering Standards" article documenting the convention once built |
-| **Notes** | Sourced from `WP6.8-platform-services-integration-review.md` §6; re-confirmed and priority-raised by `WP7.1F Engineering Core Architecture Conformance Report.md` §7 after a third, independent recurrence. `v0.7.0` candidate `C2`. |
+| **Notes** | Sourced from `WP6.8-platform-services-integration-review.md` §6; re-confirmed and priority-raised by `WP7.1F Engineering Core Architecture Conformance Report.md` §7 after a third, independent recurrence; further reconfirmed by `WP7.4.0 Release Readiness Report.md` after a fourth and fifth. `v0.7.0` candidate `C2`. |
 
 #### FCR-0006 — `Runtime`↔`Diagnostics` Namespace Reference Resolution
 

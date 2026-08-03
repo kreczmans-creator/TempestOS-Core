@@ -6,13 +6,13 @@
 |---|---|
 | **Register Name** | Governance Register |
 | **Purpose** | Tracks, per Work Package, whether Engineering Governance's own obligations (§5 ADR criteria, §6 Academy maintenance, §10 Rejected Designs) were actually met — the compliance record, distinct from the Decision Register's record of *what* was decided. |
-| **Scope** | Every Work Package from `7514b9d` (first Claude-authored commit) through `WP 6.8`. |
+| **Scope** | Every Work Package from `7514b9d` (first Claude-authored commit) through `WP 7.3A`. |
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | Git history (`git log`); `docs/academy/06 Engineering Standards/Engineering Governance.md`; each Work Package's own retrospective. |
 | **Review Frequency** | Updated at the end of every Work Package. |
-| **Last Reviewed** | 2026-07-29 (WP 6.8, Platform Services Integration Review) — backfilled all nine `v0.6.0` Work Packages (`WP 6.0` through `WP 6.8`), missing from this register's own Compliance Matrix since `WP 5.3` — a genuine, previously-undisclosed governance-documentation drift found during this Work Package's own closing review, not flagged by any prior Work Package; see Findings. |
+| **Last Reviewed** | 2026-07-30 (WP 7.4.0, Release Preparation & Product Baseline) — backfilled all twelve `v0.7.0` Work Packages so far (`WP 7.0A` through `WP 7.3A`) plus `v0.6.0` Release Engineering, missing from this register's own Compliance Matrix since `WP 6.8` — the identical recurring governance-drift pattern found and closed for `Interface Register.md`/`Dependency Injection Register.md`/`Module Register.md` (`WP 7.1F`) and `Platform Services Register.md`/`Platform Service Map.md` (`WP 7.3A`), now found in this register too; see Findings. Also corrected the `WP 6.8` row's own commit hash, which had been left as a stale self-reference (`*(this commit)*`) rather than the real, resolved hash (`6344204`) once the commit actually existed. Previously reviewed 2026-07-29 (WP 6.8, Platform Services Integration Review) — backfilled all nine `v0.6.0` Work Packages (`WP 6.0` through `WP 6.8`), missing from this register's own Compliance Matrix since `WP 5.3` — a genuine, previously-undisclosed governance-documentation drift found during this Work Package's own closing review, not flagged by any prior Work Package; see Findings. |
 | **Related Documents** | `Decision Register.md`; `ADR Register.md`; `Rejected Designs Register.md`; `Academy Register.md`; `Feature Register.md`. |
-| **Related ADRs** | All 52 — this register verifies each one's originating Work Package actually followed §5. |
+| **Related ADRs** | All 61 — this register verifies each one's originating Work Package actually followed §5. |
 | **Related Academy Articles** | `docs/academy/06 Engineering Standards/Engineering Governance.md`. |
 | **Coverage Status** | Complete. |
 
@@ -74,14 +74,49 @@ records an explicit judgement, never an omission.
 | WP 6.3 — REST API | `08cb844` | ADR-0047, ADR-0048, ADR-0049, ADR-0052 | — | Yes |
 | WP 6.7 — Export/Import Framework | `4283469` | ADR-0051 | — | Yes |
 | WP 6.6 — Licensing Framework | `a940e0f` | ADR-0050 | — | Yes |
-| WP 6.8 — Platform Services Integration Review & Release Certification | *(this commit)* | — (certification review; no architectural decision made, none required) | — | Yes — deliberately shaped around a whole-release verification pass, not the standard 13-section template, mirroring `WP 5.4`'s own precedent |
+| WP 6.8 — Platform Services Integration Review & Release Certification | `6344204` | — (certification review; no architectural decision made, none required) | — | Yes — deliberately shaped around a whole-release verification pass, not the standard 13-section template, mirroring `WP 5.4`'s own precedent |
+| `v0.6.0` Release Engineering | `18e61d5`/`7709ccb` | — | — | Not a Work Package in the numbered sequence — a Release Engineering activity, per Engineering Governance §7. `docs/releases/v0.6.0/ReleaseNotes.md` serves the retrospective role for this activity. |
+| WP 7.0A — Future Capability Register & Product Vision | `6a11ae3` | — (governance/vision milestone; no architectural decision met §5's criteria) | — | Yes — whole-review format, mirroring `WP 6.8`'s own precedent |
+| WP 7.0B — Engineering Foundation Planning & Capability Architecture | `2f8d1ef` | — (planning milestone; no architectural decision met §5's criteria) | — | Yes — whole-review format |
+| WP 7.0C — Engineering Foundation Contract Review | `36cbc88` | — (contract review only; `ADR-0053`–`ADR-0057` reserved, not yet written) | — | Yes — whole-review format |
+| WP 7.1A — Engineering Data Model | `4dee45d` | ADR-0053 | — | Yes |
+| WP 7.1B — Units & Quantities Framework | `5769901` | ADR-0054 | — | Yes |
+| WP 7.1C — Materials Framework | `d9b1ff7` | ADR-0055 | — | Yes |
+| WP 7.1D — Engineering Calculation Framework | `91b6714` | ADR-0056 | — | Yes |
+| WP 7.1E — Verification Framework | `9d0a65c` | ADR-0057 | — | Yes |
+| WP 7.1F — Engineering Core Integration Review & Certification | `59db844` | — (certification review; no architectural decision made, none required) | — | Yes — whole-review format, mirroring `WP 6.8`'s own precedent |
+| WP 7.2A — Strategic Roadmap Selection & Programme Architecture | `31adcfd` | — (roadmap/governance milestone; no architectural decision met §5's criteria) | — | Yes — whole-review format |
+| WP 7.2B — Requirements & Verification Platform Architecture | `0e069e8` | — (architecture only; `ADR-0058`–`ADR-0060` reserved, not yet written) | — | Yes — whole-review format |
+| WP 7.2C — Requirements & Verification Platform Contract Review | `d532648` | — (contract review only; `ADR-0061` newly reserved, `ADR-0058`–`ADR-0060` carried forward unanswered) | — | Yes — whole-review format |
+| WP 7.3A — Requirements Engine | `ab43ccd` | ADR-0058, ADR-0059, ADR-0060, ADR-0061 | — | Yes |
 
-**Total: 47 Work Packages tracked, plus `v0.4.0` Release Engineering,
-100% Academy retrospective compliance for every Work Package that
-required one (housekeeping correctly excepted).**
+**Total: 60 Work Packages tracked, plus `v0.4.0` and `v0.6.0` Release
+Engineering, 100% Academy retrospective compliance for every Work
+Package that required one (housekeeping correctly excepted). Backfilled
+by `WP 7.4.0` (Release Preparation & Product Baseline) — this Compliance
+Matrix had gone stale since `WP 6.8`, missing all twelve Work Packages
+of the Engineering Foundation and Systems Engineering Foundation
+programmes (`WP 7.0A` through `WP 7.3A`), the same recurring
+governance-drift pattern `WP 6.8` and `WP 7.1F` each found and closed
+for other registers — this is the first time it has been found in this
+specific register.**
 
 ## Findings
 
+- **Repository review correction (`WP 7.4.0`).** This register's own
+  Compliance Matrix had not been updated since `WP 6.8` — all twelve
+  Work Packages of the Engineering Foundation and Systems Engineering
+  Foundation programmes (`WP 7.0A` through `WP 7.3A`) were missing
+  entirely, plus `v0.6.0` Release Engineering. This is the third time
+  this exact register has gone stale for several consecutive Work
+  Packages before a later, dedicated review caught it (`WP 5.3`,
+  `WP 6.8`, now `WP 7.4.0`) — a standing, recurring pattern, not a
+  one-off. All twelve rows plus the Release Engineering row backfilled
+  here, verified directly against `git log` and each Work Package's own
+  ADR Register entry; no discrepancy found once complete. The `WP 6.8`
+  row's own commit hash was also found still reading its original
+  self-reference placeholder (`*(this commit)*`), never resolved to the
+  real hash (`6344204`) once the commit existed — corrected here.
 - **Repository review correction (`WP 6.8`).** This register's own
   Compliance Matrix had not been updated since `WP 5.3` — all nine
   `v0.6.0` Work Packages (`WP 6.0` through `WP 6.8`) were missing

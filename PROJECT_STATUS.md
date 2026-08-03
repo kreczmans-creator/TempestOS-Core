@@ -1,6 +1,6 @@
 # TempestOS — Project Status
 
-**Last Updated:** 2026-07-30 (`WP 7.3A` — Requirements Engine)
+**Last Updated:** 2026-07-30 (`WP 7.4.0` — Release Preparation & Product Baseline)
 
 This is the primary status dashboard for TempestOS. Read this first for
 "where does the project stand right now" — for "why is it built this
@@ -95,13 +95,16 @@ Work Package, below.
 
 **`feature/v0.7.0-engineering-foundation`**, cut from `main` at the
 `v0.6.0` tag, per `v0.6.0`'s own Release Engineering closing activity.
-`WP 7.0A` through `WP 7.3A` have all landed on this branch — the first
-twelve Work Packages of the Engineering Foundation phase.
+`WP 7.0A` through `WP 7.4.0` have all landed on this branch — all
+thirteen Work Packages of the Engineering Foundation phase, now
+release-prepared and recommended for Product Approval.
 `WP 7.1A` through `WP 7.1E` were the first five real implementations,
 completing the entire Engineering Foundation programme; `WP 7.3A` is
 the first real implementation of the Systems Engineering Foundation
 programme that followed it, consuming that completed Engineering Core
-directly. See
+directly; `WP 7.4.0` closed the release with a complete readiness
+review, recommending **APPROVED**. **Not yet merged to `main` or
+tagged** — that remains the Product Owner's own action. See
 `docs/releases/v0.7.0/WorkPackages.md` and `docs/governance/Future
 Capability Register.md` for the candidate items awaiting Product
 Approval for whatever comes next. `feature/v0.6.0-platform-services`
@@ -119,6 +122,51 @@ reads `0.6.0`. `v0.5.0` ("Developer Experience") is the release before
 that; `v0.4.0` ("Platform Foundation") before that.
 
 ## Current Work Package
+
+**`WP 7.4.0` — Release Preparation & Product Baseline.** A release
+preparation exercise only — no new platform functionality, architecture
+change, bug fix, refactoring, or feature development was performed,
+per this Work Package's own explicit constraint. Approved to begin
+after `WP 7.3A`'s own completion, per its own closing instruction
+awaiting Product Owner instruction for whatever comes next.
+
+Performed a complete release readiness review across seventeen named
+areas (repository health, build, test, documentation, Academy,
+governance registers, ADR consistency, Work Package traceability,
+version consistency, dependency consistency, module/platform-service/
+interface/DI inventories, Technical Debt Register, Future Capability
+Register, Known Issues, Release Notes). **Build**: 5/5 projects, 0
+warnings, 0 errors, both Debug and Release, clean rebuild. **Tests**:
+1406/1406 passing, four consecutive full-suite runs, zero flakes.
+**Version**: confirmed the root `VERSION` file correctly still reads
+`0.6.0` — not a defect, matching this project's own established
+precedent that `VERSION` bumps to a new tag only *after* that tag is
+cut, a Product-Owner-executed step this Work Package correctly did not
+pre-empt.
+
+Found and corrected five governance/documentation staleness findings:
+`Documentation Register.md`'s own Directory Map (four stale counts,
+`docs/adr/` alone reading 39 against an actual 61); `Governance
+Register.md`'s own Compliance Matrix (stale since `WP 6.8`, missing all
+twelve `v0.7.0` Work Packages, now backfilled). Disclosed, but did not
+fix (outside this Work Package's own scope): `Platform Services
+Register.md`/`Platform Service Map.md` still missing rows for the four
+Engineering Foundation frameworks (found by `WP 7.3A`, reconfirmed
+still open). Populated two previously-stale release-document skeletons
+in full: `docs/releases/v0.7.0/ReleaseNotes.md` and `Retrospective.md`.
+Corrected `docs/releases/v0.7.0/WorkPackages.md`'s own long-stale
+"not started" status, marking the original candidate list superseded
+by what `v0.7.0` actually delivered, not deleted.
+
+**Recommendation: `v0.7.0` APPROVED** — see `docs/releases/v0.7.0/
+WP7.4.0 Product Approval Report.md`. Five completion deliverables
+produced under `docs/releases/v0.7.0/`, prefixed `WP7.4.0`. **Does not
+create any Git tag, merge, or GitHub Release — those remain the
+Product Owner's own actions after accepting this recommendation. Stops
+here, per this Work Package's own explicit closing instruction, awaiting
+Product Owner instruction before any post-`v0.7.0` work begins.**
+
+### `WP 7.3A` Summary (for reference)
 
 **`WP 7.3A` — Requirements Engine.** The first implementation Work
 Package of the Systems Engineering Foundation phase — approved to begin
@@ -491,20 +539,20 @@ review.md`.
 
 ## Next Planned Work Package
 
-**None yet approved for implementation.** `WP 7.3A` implemented the
-Requirements Engine (`FCR-0027`, now **Implemented**) and stopped
-exactly at its own explicit closing instruction — it does not begin
-`WP 7.3B`. Two new Future Capability candidates were raised from this
-Work Package's own implementation experience: `FCR-0037` (string-based
-allocation targets) and `FCR-0038` (requirement baselining) — see
-`docs/releases/v0.7.0/WP7.3A Future Capability Recommendations.md`.
-Neither is scheduled. Programme F (Platform Hardening) remains
-recommended second, at `v0.9.0`, not abandoned — see `WP7.2A Recommended
-Programme.md`. **Per this project's own standing discipline
-(`FOUNDATION.md` §1), Product Approval must authorise whatever comes
-next** — await Engineering Review of `WP 7.3A` before Product Approval
-authorises a further Systems Engineering capability, a discipline-
-specific engineering module, or Programme F.
+**None yet approved.** `WP 7.4.0` completed `v0.7.0`'s own release
+preparation review and recommended **APPROVED** — see
+`docs/releases/v0.7.0/WP7.4.0 Product Approval Report.md`. The physical
+Git tag, merge to `main`, and GitHub Release remain the Product Owner's
+own actions, not yet performed. Two Future Capability candidates raised
+by `WP 7.3A` (`FCR-0037` string-based allocation targets, `FCR-0038`
+requirement baselining) remain unscheduled. Programme F (Platform
+Hardening) remains recommended second, at `v0.9.0`, not abandoned — see
+`WP7.2A Recommended Programme.md`. **Per this project's own standing
+discipline (`FOUNDATION.md` §1) and this Work Package's own explicit
+closing instruction, no post-`v0.7.0` work begins until the Product
+Owner gives further instruction** — whether that is the `v0.7.0`
+release itself, a further Systems Engineering capability, a
+discipline-specific engineering module, or Programme F.
 
 ## Foundation Status
 
@@ -566,21 +614,21 @@ Experience phase is now complete.
 
 | Metric | Value |
 |---|---|
-| Automated tests | 1406 (0 failures) — **+131, `WP 7.3A`**: 119 in `Tempest.Core.Tests.Requirements`, 4 Host registration, 8 sample-module integration |
-| ADRs | 61 (`ADR-0001`–`ADR-0061`, no gaps at all), all Accepted — **+4, `WP 7.3A`**: `ADR-0058`–`ADR-0061` ratified (Accepted), closing `WP7.2C Required ADR Catalogue.md`'s own entire reserved range |
-| Rejected Designs | 45 (`RD-0001`–`RD-0045`) — unchanged by `WP 7.3A` |
-| Academy articles | 104 (see `docs/governance/Documentation/Academy Register.md`) — **+2, `WP 7.3A`**: `WP7.3A-requirements-engine-implementation.md` (this Work Package's own retrospective) and `02 Runtime Architecture/16-requirements-engine.md` (the two concept-guide sections `WP7.2C Academy Plan.md` recommended) |
-| Governance registers | 27 (32 governance documents total), plus 4 standing security documents under `docs/security/` and 1 standing engineering document (`docs/engineering/Engineering Principles.md`, extended with four further principles, 29-32) — unchanged in count by `WP 7.3A`; `Future Capability Register.md` updated in place (`FCR-0027` now **Implemented**; `FCR-0037`/`FCR-0038` newly raised, 36 → 38 entries) |
-| Architecture documents | 20 under `docs/architecture/` (22 including the two release-scoped documents) — unchanged by `WP 7.3A` |
-| Platform services | 27 catalogued — **+1, `WP 7.3A`**: `IRequirementsService` |
-| Modules (production) | 20 — **+1, `WP 7.3A`**: `RequirementsSampleModule` |
-| Hosted services (production) | 2 — unchanged by `WP 7.3A` |
+| Automated tests | 1406 (0 failures) — unchanged by `WP 7.4.0` (release preparation only; re-verified across four full-suite runs, zero regressions) |
+| ADRs | 61 (`ADR-0001`–`ADR-0061`, no gaps at all), all Accepted — unchanged by `WP 7.4.0` |
+| Rejected Designs | 45 (`RD-0001`–`RD-0045`) — unchanged by `WP 7.4.0` |
+| Academy articles | 105 (see `docs/governance/Documentation/Academy Register.md`) — **+1, `WP 7.4.0`**: `WP7.4.0-release-preparation-and-product-baseline.md` (this Work Package's own whole-review retrospective); no new concept guide (release preparation only) |
+| Governance registers | 27 (32 governance documents total), plus 4 standing security documents under `docs/security/` and 1 standing engineering document (`docs/engineering/Engineering Principles.md`) — unchanged in count by `WP 7.4.0`; `Documentation Register.md` and `Governance Register.md` both corrected in place (see Governance Status) |
+| Architecture documents | 20 under `docs/architecture/` (22 including the two release-scoped documents) — unchanged by `WP 7.4.0` |
+| Platform services | 27 catalogued — unchanged by `WP 7.4.0`; `Platform Services Register.md`'s own Coverage Status corrected from "Complete" to "Partial" (disclosed gap, not fixed) |
+| Modules (production) | 20 — unchanged by `WP 7.4.0` |
+| Hosted services (production) | 2 — unchanged by `WP 7.4.0` |
 | Plugins (production) | 0 — infrastructure fully implemented and tested; `src/Plugins/` empty by deliberate scope decision |
-| Custom exception types | 66 — **+4, `WP 7.3A`**: the abstract `RequirementsException` base, plus `DuplicateRequirementIdentifierException`, `RequirementNotFoundException`, `InvalidRequirementStatusTransitionException` |
-| Public interfaces (`src/Tempest.Core/`) | 80 — **+5, `WP 7.3A`**: `IRequirement`, `IRequirementCollection`, `IRequirementEvidence`, `IRequirementGroup`, `IRequirementsService` |
-| DI registrations (`TempestHost.cs` Phase 6) | 33 raw call sites, 31 named registrations — **+1, `WP 7.3A`**: `IRequirementsService` |
-| Technical Debt Register items | 25 tracked, 17 disclosed trade-offs — **+1, `WP 7.3A`**: `TD-25` (no concurrency-conflict detection on `ReviseAsync`/`SetStatusAsync`), formally registered from `ADR-0060`'s own accepted disposition |
-| Commits (`v0.6.0` → `v0.7.0`, so far) | 16 — `v0.6.0` release-branch preparation (2 commits), merge from `main`, `WP 7.0A`, `WP 7.0B`, `WP 7.0C`, `WP 7.1A`, `WP 7.1B`, `WP 7.1C`, `WP 7.1D`, `WP 7.1E`, `WP 7.1F`, `WP 7.2A`, `WP 7.2B`, `WP 7.2C`, `WP 7.3A` (this commit) |
+| Custom exception types | 66 — unchanged by `WP 7.4.0` |
+| Public interfaces (`src/Tempest.Core/`) | 80 — unchanged by `WP 7.4.0` |
+| DI registrations (`TempestHost.cs` Phase 6) | 33 raw call sites, 31 named registrations — unchanged by `WP 7.4.0` |
+| Technical Debt Register items | 25 tracked, 17 disclosed trade-offs — unchanged by `WP 7.4.0` (zero Release Blocking, re-confirmed) |
+| Commits (`v0.6.0` → `v0.7.0`, so far) | 17 — `v0.6.0` release-branch preparation (2 commits), merge from `main`, `WP 7.0A`, `WP 7.0B`, `WP 7.0C`, `WP 7.1A`, `WP 7.1B`, `WP 7.1C`, `WP 7.1D`, `WP 7.1E`, `WP 7.1F`, `WP 7.2A`, `WP 7.2B`, `WP 7.2C`, `WP 7.3A`, `WP 7.4.0` (this commit) |
 | Contributors | 1 (repository owner; all commits co-authored by Claude) |
 
 *(This table is generated from `docs/governance/Quality/Repository Metrics
@@ -966,6 +1014,19 @@ current directly at implementation time, not backfilled afterward — the
 first Work Package since `WP 7.1F` established the practice to actually
 follow it.
 
+**`WP 7.4.0` (Release Preparation & Product Baseline)** — a complete
+release-preparation review, not a feature Work Package; no production
+code written. Found and corrected `Documentation Register.md`'s own
+long-disclosed stale Directory Map counts (`docs/adr/` 39 → 61,
+`02 Runtime Architecture/` 11 → 16, `03 Work Packages/` 32 → 57 at time
+of correction, `04 Design Patterns/` 4 → 5) — the full re-derivation
+this register's own "Last Reviewed" field had recommended since `v0.6.0`
+Release Engineering, closing that specific `FCR-0005` instance. Two
+previously-stale release-document skeletons (`docs/releases/v0.7.0/
+ReleaseNotes.md`, `Retrospective.md`) fully populated;
+`WorkPackages.md`'s own long-stale "not started" status corrected,
+marked superseded, not deleted.
+
 ## Academy Status
 
 86 articles across 7 categories (Introduction, Engineering Principles,
@@ -1203,6 +1264,12 @@ vocabulary). `docs/engineering/Engineering Principles.md` extended with
 four further principles (29-32) — the first extension since `WP 7.1E`
 completed the Engineering Foundation programme's own five-Work-Package
 contribution.
+**`WP 7.4.0`** added `WP7.4.0-release-preparation-and-product-baseline.md`
+— a whole-review retrospective mirroring `WP 5.4`/`WP 6.8`/`WP 7.1F`'s
+own format, reviewing all twelve `v0.7.0` Work Packages together. No new
+concept guide — release preparation only. `docs/engineering/Engineering
+Principles.md` confirmed requiring no extension, unchanged from
+`WP 7.3A`.
 
 ## Governance Status
 
@@ -1558,6 +1625,19 @@ disclosed there (not fixed, being outside this Work Package's own
 scope): the register and `Platform Service Map.md` had never gained
 rows for the four Engineering Foundation frameworks (`WP 7.1A`–`WP
 7.1E`), a gap `WP 7.1F`'s own certification review did not check.
+**`WP 7.4.0`** added no new ADR, no new Technical Debt or Future
+Capability Register entry (release preparation only; zero new platform
+functionality). Found and fully backfilled `Governance Register.md`'s
+own Compliance Matrix (stale since `WP 6.8`, missing all twelve
+`v0.7.0` Work Packages plus `v0.6.0` Release Engineering) and
+`Documentation Register.md`'s own Directory Map (four stale counts,
+carried forward unchanged since `WP 5.3`/`v0.6.0` Release Engineering).
+`FCR-0005` (Governance Register Health-Check Tooling) reconfirmed still
+open, its own priority annotation updated to record a fourth and fifth
+recurrence found this release. `Platform Services Register.md`'s own
+Coverage Status corrected from "Complete" to "Partial," disclosing
+rather than hiding the still-open four-framework gap `WP 7.3A` first
+found.
 
 ## Known Unknowns
 
@@ -1645,15 +1725,28 @@ Governance Audit Report.md`:
    `WP 7.3B`. Stop after WP 7.3A has been fully implemented and
    reviewed.") is honoured — no further Work Package begins until
    Product Approval authorises what comes next.
-9. **Await Product Approval for the next Systems Engineering capability
-   or Programme F (Platform Hardening).** Per this project's own
-   standing discipline (`FOUNDATION.md` §1), Product Approval must
-   authorise whatever comes next — a further Systems Engineering
-   capability building on the now-Implemented Requirements Engine, a
-   discipline-specific engineering module consuming it, or Programme F
-   (Platform Hardening, recommended second, at `v0.9.0`, per `WP7.2A
-   Recommended Programme.md`).
-10. A GitHub Release for `v0.6.0` has not yet been created (`gh` CLI
+9. **`WP 7.4.0` — Release Preparation & Product Baseline — is complete.**
+   A release-preparation review only, no new platform functionality:
+   5/5 projects build clean (0 warnings, 0 errors) in both
+   configurations; 1406/1406 tests passing across four full-suite runs;
+   `VERSION` confirmed correctly unchanged (`0.6.0`, bumped only after
+   the Product Owner's own tag, per established precedent). Five
+   governance/documentation staleness findings corrected
+   (`Documentation Register.md`, `Governance Register.md`'s Compliance
+   Matrix); one further finding disclosed, not fixed (`Platform Services
+   Register.md`/`Platform Service Map.md`'s own missing four-framework
+   rows). **Recommendation: `v0.7.0` APPROVED** — see
+   `docs/releases/v0.7.0/WP7.4.0 Product Approval Report.md`.
+10. **Await Product Owner instruction.** The physical Git tag, merge to
+    `main`, and GitHub Release for `v0.7.0` remain the Product Owner's
+    own actions, not yet performed, per `WP 7.4.0`'s own explicit
+    constraint ("Do not perform any Git release operations"). No
+    post-`v0.7.0` Work Package begins until that instruction arrives —
+    whether it authorises the `v0.7.0` release itself, a further Systems
+    Engineering capability, a discipline-specific engineering module, or
+    Programme F (Platform Hardening, recommended second, at `v0.9.0`,
+    per `WP7.2A Recommended Programme.md`).
+11. A GitHub Release for `v0.6.0` has not yet been created (`gh` CLI
     unavailable in this environment) — see the Release Summary for the
     exact command or manual steps to complete it.
 
@@ -1780,6 +1873,24 @@ comes next.
   Implementation Report.md`. `FCR-0027` is now **Implemented**. Does not
   begin `WP 7.3B`, per this Work Package's own explicit closing
   instruction.
+- `WP 7.4.0` — Release Preparation & Product Baseline (release
+  preparation only; no production code, no architectural change).
+  **Complete.** Full release readiness review across seventeen named
+  areas: clean build (5/5 projects, 0 warnings/errors, both
+  configurations), 1406/1406 tests (four full-suite runs), `VERSION`
+  confirmed correct, twelve Work Packages' governance traceability
+  backfilled. Five documentation/governance staleness findings
+  corrected; one further finding disclosed, not fixed (outside scope) —
+  see `docs/releases/v0.7.0/WP7.4.0 Release Readiness Report.md`.
+  **Recommendation: `v0.7.0` APPROVED** — see `docs/releases/v0.7.0/
+  WP7.4.0 Product Approval Report.md`. Does not create any Git tag,
+  merge, or GitHub Release — Product Owner action only, not yet
+  performed.
+
+**`v0.7.0` is prepared for Product Approval, not yet released.** All
+twelve Work Packages plus this closing release-preparation review are
+complete. The physical Git tag, merge to `main`, and GitHub Release
+remain outstanding, Product-Owner-executed steps.
 
 ## Long-Term Vision
 
