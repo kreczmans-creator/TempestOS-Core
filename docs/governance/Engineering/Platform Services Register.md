@@ -10,11 +10,11 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | `docs/architecture/Platform Service Map.md` — the full responsibility/dependency/consumer/lifecycle detail for each service lives there; this register does not repeat it, only indexes it against governance status. |
 | **Review Frequency** | Updated whenever `Platform Service Map.md` itself is updated (Engineering Governance §6) — i.e., whenever a service is added, removed, or changes responsibility/dependencies/consumers. |
-| **Last Reviewed** | 2026-07-29 (WP 6.6, Licensing). |
+| **Last Reviewed** | 2026-07-30 (WP 7.3A, Requirements Engine) — Requirements Engine row updated Planned → Implemented; found and disclosed (not fixed) a pre-existing gap: `WP 7.1A`–`WP 7.1E`'s own four Engineering Foundation frameworks (Engineering Data Model, Materials, Calculations, Verification) were never added as rows here or in `Platform Service Map.md`. Previously reviewed 2026-07-29 (WP 6.6, Licensing). |
 | **Related Documents** | `docs/architecture/Platform Service Map.md`; `Architecture Document Register.md`; `Module Register.md`; `Hosted Services Register.md`; `Event Catalogue.md`. |
 | **Related ADRs** | ADR-0005 through ADR-0052 — nearly every ADR concerns one of these services directly or the boundary between them. |
 | **Related Academy Articles** | `docs/academy/02 Runtime Architecture/` (The Module Pipeline, The Startup Sequence, Working with the TempestOS Host, Platform Layering, Plugin Architecture, Failure Isolation Across TempestOS). |
-| **Coverage Status** | Complete. |
+| **Coverage Status** | **Partial** — disclosed gap: the four Engineering Foundation frameworks (`WP 7.1A`–`WP 7.1E`) are missing as rows entirely; Requirements Engine's own row is now current (`WP 7.3A`). |
 
 ---
 
@@ -47,10 +47,31 @@
 | Export/Import | Implemented | WP 6.7 (design and implementation, no separate architecture phase) | ADR-0044, ADR-0051 |
 | Licensing | Implemented | WP 6.6 (design and implementation, no separate architecture phase) | ADR-0009, ADR-0013, ADR-0023, ADR-0044, ADR-0050 |
 | Project Engine | Not implemented as a platform service — bootstrap-era code (`Tempest.Core.Projects`, `ProjectService`, `JsonProjectRepository`) predates and is independent of the module pipeline | Planned, no Work Package assigned | None |
-| Requirements Engine | Not implemented — no code exists | Planned, no Work Package assigned | None |
+| Requirements Engine | Implemented | WP 7.3A (design and implementation, no separate architecture-phase row here — see `WP 7.2B`/`WP 7.2C` for the architecture and contract review) | ADR-0058, ADR-0059, ADR-0060, ADR-0061 |
 
-**Total: 26 entries — 23 Implemented, 2 planned with no code (Project
-Engine, Requirements Engine), 1 developer-convenience layer (Module SDK).**
+**Total: 27 entries — 24 Implemented, 1 planned with no code (Project
+Engine), 1 developer-convenience layer (Module SDK). Requirements Engine's
+own row is updated from Planned to Implemented by `WP 7.3A`, the row
+this Work Package's own entry corrects directly.**
+
+**Disclosed pre-existing gap, found during `WP 7.3A`'s own review, not
+fixed by this Work Package.** This register — and `Platform Service
+Map.md`, its own cited Source of Truth — has never carried rows for the
+four Engineering Foundation frameworks implemented by `WP 7.1A`–`WP
+7.1E` (Engineering Data Model, Materials, Calculations, Verification).
+`docs/governance/Future Capability Register.md` and `docs/governance/
+Engineering/Interface Register.md`/`Dependency Injection Register.md`/
+`Module Register.md` all correctly track these four as Implemented;
+this register and `Platform Service Map.md` do not. This is the same
+class of governance-register drift `WP 7.1F` found and closed for
+`Interface Register.md`/`Dependency Injection Register.md`/`Module
+Register.md`, recurring here in a register `WP 7.1F`'s own review did
+not check. Not fixed here, since backfilling four frameworks' own
+complete responsibility/dependency/consumer detail into `Platform
+Service Map.md` is a substantial undertaking outside `WP 7.3A`'s own
+scope (Requirements Engine implementation); recommended as a candidate
+item for the next certification-style review, mirroring `WP 6.8`/`WP
+7.1F`'s own role.
 
 ## Verification of "Implemented" Status
 

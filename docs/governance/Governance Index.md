@@ -102,6 +102,16 @@ the project's own evolving discipline, and end-to-end traceability.
 - [Engineering Evolution Register](Delivery/Engineering%20Evolution%20Register.md)
 - [Traceability Matrix](Delivery/Traceability%20Matrix.md) — the capstone: Requirement → Work Package → ADR → Architecture → Implementation → Tests → Academy → Release, per major capability.
 
+## Product & Roadmap
+
+Registers tracking *what TempestOS builds next, and why* — established
+`WP 7.0A` (Future Capability Register & Product Vision), replacing every
+informal "Car Park" discussion with a permanent, cited register.
+
+- [Future Capability Register](Future%20Capability%20Register.md) — every identified future capability, `FCR-0001` onward, each traced to a specific prior document.
+- [Capability Categories](Capability%20Categories.md) — the fixed classification vocabulary the Future Capability Register uses.
+- [Product Roadmap](Product%20Roadmap.md) — high-level, phase-based sequencing of what has shipped and what may come next.
+
 ## Top-Level Governance Documents
 
 - [Governance Philosophy](Governance%20Philosophy.md) — why this suite exists, why Unknown beats invented data, ownership and review expectations.
@@ -111,6 +121,8 @@ the project's own evolving discipline, and end-to-end traceability.
 
 ## Related to This Suite, Outside `docs/governance/`
 
+- [`VISION.md`](../../VISION.md) (repository root) — the permanent product vision document, established `WP 7.0A`; the "why" behind every entry in the Future Capability Register, above.
+- [`docs/engineering/Engineering Principles.md`](../engineering/Engineering%20Principles.md) — the principles engineering-domain content itself must uphold, established `WP 7.1A`; distinct from `docs/academy/06 Engineering Standards/` (which governs how TempestOS is built as software, not what its engineering-domain content must be).
 - [`PROJECT_STATUS.md`](../../PROJECT_STATUS.md) (repository root) — the primary status dashboard; its Repository Metrics and Governance Status sections are generated from this suite and should be updated together with it.
 - [`docs/releases/Platform Foundation Completion Report.md`](../releases/Platform%20Foundation%20Completion%20Report.md) — the Foundation phase closeout narrative (`WP 4.5B`), summarising everything this suite tracks in aggregate.
 - [`docs/academy/Contributor Learning Path.md`](../academy/Contributor%20Learning%20Path.md) — the repository-wide onboarding sequence, which routes a new contributor into this suite at the appropriate point.

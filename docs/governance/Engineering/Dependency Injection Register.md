@@ -10,9 +10,9 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | `src/Tempest.Core/Runtime/TempestHost.cs` (the registration call sites); `src/Tempest.Core/DependencyInjection/`. |
 | **Review Frequency** | Updated whenever `TempestHost`'s Platform Services Registered phase changes, or a new `IServiceCollection` extension method is added. |
-| **Last Reviewed** | 2026-07-29 (WP 6.8, Platform Services Integration Review) — full backfill performed; every registration `TempestHost.cs` performs is now listed, closing the gap `WP 6.7` first disclosed and `WP 6.6` left in place. |
+| **Last Reviewed** | 2026-07-30 (WP 7.3A, Requirements Engine) — `IRequirementsService` added directly at implementation time, not backfilled later. Previously reviewed 2026-07-30 (WP 7.1F, Engineering Core Integration Review & Certification) — full backfill performed; four registrations added across the Engineering Foundation programme (`IEngineeringDocumentStore` `WP 7.1A`, `IMaterialCatalog` `WP 7.1C`, `ICalculationEngine` `WP 7.1D`, `IVerificationService` `WP 7.1E`) had never been recorded here — stale since `WP 6.8`, closed by this Work Package's own certification review. `Tempest.Core.UnitsAndQuantities` (`WP 7.1B`) confirmed to register nothing, exactly as its own approved design requires. Previously reviewed 2026-07-29 (WP 6.8, Platform Services Integration Review) — full backfill performed; every registration `TempestHost.cs` performs is now listed, closing the gap `WP 6.7` first disclosed and `WP 6.6` left in place. |
 | **Related Documents** | `docs/architecture/Host Lifecycle.md` (Phase 6); `docs/architecture/Ownership Matrix.md`; `Interface Register.md`. |
-| **Related ADRs** | ADR-0005 through ADR-0009, ADR-0011, ADR-0017, ADR-0020, ADR-0036, ADR-0039, ADR-0040–ADR-0052. |
+| **Related ADRs** | ADR-0005 through ADR-0009, ADR-0011, ADR-0017, ADR-0020, ADR-0036, ADR-0039, ADR-0040–ADR-0057. |
 | **Related Academy Articles** | `docs/academy/01 Engineering Principles/05-dependency-injection.md`; `docs/academy/03 Work Packages/WP2.4-dependency-injection.md`. |
 | **Coverage Status** | **Complete.** Full backfill performed directly against `src/Tempest.Core/Runtime/TempestHost.cs`'s own Phase 6 registration block. |
 
@@ -66,26 +66,40 @@ In registration order, exactly as they appear in
 | `IExportFormat` | `AddInstance` | Pre-built `JsonExportFormat` instance (Composition Root, ADR-0009), shared by both `ExportService` and `ImportService` (`WP 6.7`) |
 | `IExportService` | `Singleton<IExportService, ExportService>()` | Ordinary container-constructed singleton (`WP 6.7`), registered immediately after `IApiEndpointRegistry` |
 | `IImportService` / `ImportService` | `AddInstance` (twice, under both keys) | The same already-built `ImportService` instance registered under both its own concrete type and `IImportService` — mirroring `ICurrentPrincipalAccessor`'s own dual-registration precedent (ADR-0044), so a module needing `RegisterImportable` resolves the concrete type while every ordinary consumer resolves only the interface (`WP 6.7`, ADR-0051) |
+| `IEngineeringDocumentStore` | `Singleton<IEngineeringDocumentStore, EngineeringDocumentStore>()` | Ordinary container-constructed singleton (`WP 7.1A`, ADR-0053), built directly on `IPersistenceStore` — registered after Persistence and Identity & Permissions, both of which it depends on |
+| `IMaterialCatalog` | `Singleton<IMaterialCatalog, MaterialCatalog>()` | Ordinary container-constructed singleton (`WP 7.1C`, ADR-0055), a thin, typed index over `IEngineeringDocumentStore` plus a direct `IPersistenceStore` dependency of its own for its `materialId` index — registered after both |
+| `ICalculationEngine` | `Singleton<ICalculationEngine, CalculationEngine>()` | Ordinary container-constructed singleton (`WP 7.1D`, ADR-0056), depends on `IEngineeringDocumentStore` only — registered immediately after `IMaterialCatalog` |
+| `IVerificationService` | `Singleton<IVerificationService, VerificationService>()` | Ordinary container-constructed singleton (`WP 7.1E`, ADR-0057), depends on `IEngineeringDocumentStore` and Identity & Permissions — registered immediately after `ICalculationEngine` |
+| `IRequirementsService` | `Singleton<IRequirementsService, RequirementsService>()` | Ordinary container-constructed singleton (`WP 7.3A`, ADR-0058), depends on `IEngineeringDocumentStore`, `IPersistenceStore`, Identity & Permissions, and `IVerificationService` — registered immediately after `IVerificationService` |
 | `IDiagnosticsProvider` | `AddInstance` | Pre-built instance (Composition Root, ADR-0009), constructed with `Func<T>` accessors closing over `TempestHost`'s own `_lifecycleManager`/`_hostedServiceManager` private fields — neither manager exists yet at this phase (`WP 5.2`, ADR-0039) |
 | Every discovered module type | `AddDiscoveredModules` → `Singleton(type, type)` per type | Self-referential singleton |
 | Every discovered hosted service type | `AddDiscoveredHostedServices` → `Singleton(type, type)` per type | Self-referential singleton |
 
-**Total: 26 individually-named registrations above (two of which —
+**Total: 31 individually-named registrations above (two of which —
 `ICurrentPrincipalAccessor`/`CurrentPrincipalAccessor` and
 `IImportService`/`ImportService` — are each dual-registered via two
 `AddInstance` calls under two keys), plus 2 further rows
 (`AddDiscoveredModules`, `AddDiscoveredHostedServices`) each registering
-a dynamic set of discovered types. Verified directly: 28 `Singleton`/
-`AddInstance` call sites plus 2 `AddDiscovered*` call sites = 30 total
+a dynamic set of discovered types. Verified directly: 33 `Singleton`/
+`AddInstance` call sites plus 2 `AddDiscovered*` call sites = 35 total
 registration statements in `TempestHost.cs`'s own Phase 6 block
 (`grep -n "services\.\(Singleton\|AddInstance\)" src/Tempest.Core/
-Runtime/TempestHost.cs` returns 28; adding the 2 `AddDiscovered*` lines
-gives 30), matching this table's own 26 named single/dual registrations
-(26 rows, accounting for 28 raw `Singleton`/`AddInstance` calls) plus 2
-discovered-type rows exactly.** `ILicenseValidator` is deliberately
-never registered at all — constructed directly by `TempestHost`, before
-the container exists, since no container exists yet at its own
-construction point (`ADR-0050`).
+Runtime/TempestHost.cs` returns 33; adding the 2 `AddDiscovered*` lines
+gives 35), matching this table's own 31 named single/dual registrations
+(31 rows, accounting for 33 raw `Singleton`/`AddInstance` calls) plus 2
+discovered-type rows exactly. Four of these —
+`IEngineeringDocumentStore`, `IMaterialCatalog`, `ICalculationEngine`,
+`IVerificationService` — were added by the Engineering Foundation
+programme (`WP 7.1A`, `WP 7.1C`, `WP 7.1D`, `WP 7.1E` respectively) and
+had never been recorded in this register before `WP 7.1F`'s own
+backfill; `Tempest.Core.UnitsAndQuantities` (`WP 7.1B`) registers
+nothing, by design (`FCR-0030`'s own "zero Platform Service dependency
+and no DI registration of any kind"). `IRequirementsService` was added
+by `WP 7.3A` (Requirements Engine) and recorded directly at
+implementation time, not backfilled later.**
+`ILicenseValidator` is deliberately never registered at all —
+constructed directly by `TempestHost`, before the container exists,
+since no container exists yet at its own construction point (`ADR-0050`).
 
 **A new external consumption path, not a new registration (`WP 5.0D`).**
 `ITempestHost.Services` (ADR-0034) exposes read-only resolution against

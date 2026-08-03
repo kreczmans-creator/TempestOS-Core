@@ -10,9 +10,9 @@
 | **Owner** | Project Maintainer — sole contributor of record across all 77 repository commits (git author `kreczmans-creator`; no separate architecture-review board or team structure exists as of this baseline). |
 | **Source of Truth** | `docs/adr/` (the ADR files themselves). This register is a governance index over that source, not a replacement for it — the full Context/Decision/Consequences reasoning lives only in each ADR file. |
 | **Review Frequency** | Updated whenever a new ADR is created, superseded, or reversed (Engineering Governance §5) — in practice, once per Work Package that meets the §5 ADR criteria. |
-| **Last Reviewed** | 2026-07-29 (WP 6.6, Licensing). |
+| **Last Reviewed** | 2026-07-30 (WP 7.3A, Requirements Engine) — ADR-0058 through ADR-0061 added (all Accepted), closing the entire reserved range `WP7.2C Required ADR Catalogue.md` named. Previously reviewed 2026-07-30 (WP 7.1E, Verification Framework) — ADR-0057 added (Accepted) — the fifth and final Engineering Foundation framework ADR, closing the `ADR-0053`–`ADR-0057` range `WP7.0C Required ADR Catalogue.md` reserved. Previously reviewed 2026-07-30 (WP 7.1D, Engineering Calculation Framework) — ADR-0056 added (Accepted). Previously reviewed 2026-07-30 (WP 7.1C, Materials Framework) — ADR-0055 added (Accepted). Previously reviewed 2026-07-30 (WP 7.1B, Units & Quantities Framework) — ADR-0054 added (Accepted). Previously reviewed 2026-07-30 (WP 7.1A, Engineering Data Model) — ADR-0053 added (Accepted); disclosed a small, previously-uncorrected staleness in this very field (it had not been updated since WP 6.6, despite WP 7.0C's own edit to this register's Numbering Integrity narrative in the interim). Previously reviewed 2026-07-29 (WP 6.6, Licensing). |
 | **Related Documents** | `docs/academy/06 Engineering Standards/Engineering Governance.md` (§5, ADR Creation Rules); `Decision Register.md`; `Rejected Designs Register.md`; `Traceability Matrix.md`; `docs/releases/v0.6.0/Required ADRs.md`. |
-| **Related ADRs** | All 52 — this register's entire subject matter. |
+| **Related ADRs** | All 61 — this register's entire subject matter. |
 | **Related Academy Articles** | Every Work Package retrospective under `docs/academy/03 Work Packages/` cites the ADR(s) it produced or realised; see each retrospective's own "ADR references" or "Architectural Principles" section. |
 | **Coverage Status** | Complete — every ADR file present in `docs/adr/` at time of review is listed below. |
 
@@ -82,15 +82,51 @@ line, verified directly.
 | ADR-0050 | License Validation Is a Host-Startup, Host-Fatal Gate — Except a Missing License File, Which Is a Valid, Unrestricted Default | Accepted | WP 6.6 (Licensing Framework) | 2026-07-29 | Verified |
 | ADR-0051 | Export/Import Is Orthogonal to the Internal Persistence Abstraction — Kind Routing, Format/Serialization Abstractions, and Scope Boundaries | Accepted | WP 6.7 (Export/Import) | 2026-07-29 | Verified |
 | ADR-0052 | The REST API Resolves Identity Per-Request Without Touching the Ambient Current Principal — Empirically Verified | Accepted | WP 6.3 (REST API) | 2026-07-29 | Verified |
+| ADR-0053 | The Engineering Data Model Is Built Directly on the Existing Persistence Abstraction — No New Storage Mechanism | Accepted | WP 7.1A (Engineering Data Model) | 2026-07-30 | Verified |
+| ADR-0054 | Units & Quantities — Representation, Precision, and Registration Model | Accepted | WP 7.1B (Units & Quantities Framework) | 2026-07-30 | Verified |
+| ADR-0055 | Materials Framework — Property Typing and Platform-Service Classification | Accepted | WP 7.1C (Materials Framework) | 2026-07-30 | Verified |
+| ADR-0056 | Calculation Framework — Purity Enforcement and Dispatch Model | Accepted | WP 7.1D (Engineering Calculation Framework) | 2026-07-30 | Verified |
+| ADR-0057 | Verification Framework — Relationship to Audit and Method Vocabulary | Accepted | WP 7.1E (Verification Framework) | 2026-07-30 | Verified |
+| ADR-0058 | Requirements Engine Classification, Storage, and Relationship to the Engineering Data Model | Accepted | WP 7.3A (Requirements Engine) | 2026-07-30 | Verified |
+| ADR-0059 | Requirement Identity, Status, and Category Representation | Accepted | WP 7.3A (Requirements Engine) | 2026-07-30 | Verified |
+| ADR-0060 | Requirement Concurrency and Traceability Integrity Model | Accepted | WP 7.3A (Requirements Engine) | 2026-07-30 | Verified |
+| ADR-0061 | Requirements Engine — Internal vs. Calling-Layer Permission Enforcement | Accepted | WP 7.3A (Requirements Engine) | 2026-07-30 | Verified |
 
-**Total: 52 ADRs, all Accepted, none superseded or reversed (Verified — no
+**Total: 61 ADRs, all Accepted, none superseded or reversed (Verified — no
 ADR file in `docs/adr/` carries a Superseded/Deprecated/Rejected status
 line).**
 
 ## Numbering Integrity
 
-Sequential and complete, `ADR-0001` through `ADR-0052`, with no gaps
-at all — the last remaining reserved number (`ADR-0050`) is now filled.
+Sequential and complete, `ADR-0001` through `ADR-0061`, with no gaps
+at all. `docs/releases/v0.7.0/WP7.0C Required ADR Catalogue.md` reserved
+`ADR-0053` through `ADR-0057` for the five Engineering Foundation
+frameworks' own anticipated architectural decisions, one per framework
+— all five (`ADR-0053` Engineering Data Model, `ADR-0054` Units &
+Quantities, `ADR-0055` Materials, `ADR-0056` Calculation, `ADR-0057`
+Verification) are now real, Accepted files, each implemented exactly as
+that catalogue anticipated, each also resolving at least one genuine
+question the catalogue did not itself anticipate (`ADR-0054`:
+affine/offset unit conversion; `ADR-0055`: `IMaterialCatalog`'s own
+direct `IPersistenceStore` dependency; `ADR-0056`: `Calculate`'s own
+signature change to accept a `CalculationContext`; `ADR-0057`:
+verification history queried via the Data Model's own existing
+reference mechanism, requiring no new index or Persistence dependency
+at all). This closes `WP7.0C Required ADR Catalogue.md`'s own entire
+reserved range — every Engineering Foundation ADR it anticipated is now
+Accepted, exactly as `ADR-0040`–`ADR-0052` were once only a catalogue
+entry before their own owning Work Packages implemented them.
+
+`docs/releases/v0.7.0/WP7.2C Required ADR Catalogue.md` reserved
+`ADR-0058` through `ADR-0061` for the Requirements Engine's own
+anticipated implementation decisions — all four are now real, Accepted
+files, each implemented exactly as that catalogue anticipated
+(`ADR-0058`: Platform Service classification and Engineering Data Model
+reuse; `ADR-0059`: independent representation decisions for status,
+identifier, and category; `ADR-0060`: no compare-and-swap concurrency
+mechanism, accepted as `TD-25`; `ADR-0061`: no internal permission
+gating, mirroring Materials'/Calculations' own precedent). This closes
+`WP7.2C Required ADR Catalogue.md`'s own entire reserved range.
 `docs/releases/v0.6.0/Required ADRs.md` reserved `ADR-0040` through
 `ADR-0051` in advance, as a catalogue of anticipated decisions, one
 range per `v0.6.0` Work Package, before any of those Work Packages began

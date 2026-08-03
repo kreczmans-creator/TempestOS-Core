@@ -10,11 +10,11 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | Direct source inspection (`grep -rhoP "^public interface" src/Tempest.Core`). |
 | **Review Frequency** | Updated whenever a new public interface is introduced. |
-| **Last Reviewed** | 2026-07-29 (WP 6.8, Platform Services Integration Review) — full backfill performed; every interface introduced since `WP 5.2` (`WP 6.1`, `WP 6.4`, `WP 6.5`, `WP 6.2`, `WP 6.0`, `WP 6.3`, `WP 6.7`, `WP 6.6`) is now listed, closing the gap `WP 6.7` first disclosed and `WP 6.6` left in place. |
+| **Last Reviewed** | 2026-07-30 (WP 7.3A, Requirements Engine) — 5 new interfaces added directly at implementation time (`IRequirement`, `IRequirementCollection`, `IRequirementEvidence`, `IRequirementGroup`, `IRequirementsService`), not backfilled later — the first Work Package to keep this register current with its own implementation since `WP 7.1F` established the practice. Previously reviewed 2026-07-30 (WP 7.1F, Engineering Core Integration Review & Certification) — full backfill performed; 11 interfaces introduced across all five Engineering Foundation Work Packages (`WP 7.1A`–`WP 7.1E`) are now listed, none of which had ever been recorded here — this register had gone stale since `WP 6.8` (2026-07-29), the exact drift pattern `FCR-0005` exists to catch, now found and closed by this Work Package's own certification review, mirroring `WP 6.8`'s own identical finding for the `v0.6.0` release. Previously reviewed 2026-07-29 (WP 6.8, Platform Services Integration Review) — full backfill performed; every interface introduced since `WP 5.2` (`WP 6.1`, `WP 6.4`, `WP 6.5`, `WP 6.2`, `WP 6.0`, `WP 6.3`, `WP 6.7`, `WP 6.6`) is now listed, closing the gap `WP 6.7` first disclosed and `WP 6.6` left in place. |
 | **Related Documents** | `docs/architecture/Ownership Matrix.md`; `Dependency Injection Register.md`; `Namespace Register.md`. |
-| **Related ADRs** | ADR-0006, ADR-0009, ADR-0017, ADR-0020, ADR-0023, ADR-0024, ADR-0034, ADR-0036, ADR-0037, ADR-0039, ADR-0040–ADR-0052. |
-| **Related Academy Articles** | `docs/architecture/Engineering Glossary.md` (Platform API vs. Platform Service). |
-| **Coverage Status** | **Complete.** Full backfill performed directly against `grep -rhoP "^public interface \w+(<[^>]+>)?" src/Tempest.Core` — 64 interfaces found, 64 listed below, zero omitted. A genuine, pre-existing arithmetic drift was also found and corrected during this backfill: the register's own Classification Summary read "Host-owned = 6" while its own Entries table already listed 7 Host-owned rows (`IFrameworkDiscoveryService`, `IHostedServiceDiscoveryService`, `IHostedServiceManager`, `IModuleLifecycleManager`, `IPluginAssemblyLoader`, `IPluginManifestDiscoveryService`, `IRuntimeModuleManager`) — an undercount that predates `WP 6.7`'s own first disclosure of the larger gap, now corrected alongside it. |
+| **Related ADRs** | ADR-0006, ADR-0009, ADR-0017, ADR-0020, ADR-0023, ADR-0024, ADR-0034, ADR-0036, ADR-0037, ADR-0039, ADR-0040–ADR-0057. |
+| **Related Academy Articles** | `docs/architecture/Engineering Glossary.md` (Platform API vs. Platform Service); `docs/engineering/Engineering Principles.md`. |
+| **Coverage Status** | **Complete.** Verified directly against `grep -rhoP "^public interface \w+(<[^>]+>)?" src/Tempest.Core` — 80 interfaces found, 80 listed below, zero omitted. A genuine, pre-existing arithmetic drift was also found and corrected during the `WP 6.8` backfill: the register's own Classification Summary read "Host-owned = 6" while its own Entries table already listed 7 Host-owned rows (`IFrameworkDiscoveryService`, `IHostedServiceDiscoveryService`, `IHostedServiceManager`, `IModuleLifecycleManager`, `IPluginAssemblyLoader`, `IPluginManifestDiscoveryService`, `IRuntimeModuleManager`) — an undercount that predates `WP 6.7`'s own first disclosure of the larger gap, corrected at that time. |
 
 ---
 
@@ -26,6 +26,8 @@
 | `IAuditQuery` | `Tempest.Core.Audit` | DI-public | Permission-gated, filtered query over recorded actions (`WP 6.5`) |
 | `IAuditRecord` | `Tempest.Core.Audit` | Platform API (data contract) | The shape of one recorded action (`WP 6.5`) |
 | `IAuditRecorder` | `Tempest.Core.Audit` | DI-public | Records an attributable action (`WP 6.5`) |
+| `ICalculationDefinition<TInput, TResult>` | `Tempest.Core.Calculations` | Platform API (contract, registered by Id, not itself DI-registered) | A pure, registrable calculation's own input/output/formula contract (`WP 7.1D`, `ADR-0056`) |
+| `ICalculationEngine` | `Tempest.Core.Calculations` | DI-public | Registration/dispatch of `ICalculationDefinition<TInput, TResult>` by Id, mirroring `ICommandRegistry`'s own shape (`WP 7.1D`, `ADR-0056`) |
 | `ICommand` | `Tempest.Core.Commands` | Platform API (contract only) | Command Framework marker — dispatched by concrete type (`ICommandDispatcher`, `WP 5.1B`) |
 | `ICommandDispatcher` | `Tempest.Core.Commands` | DI-public | Type-keyed handler registration/dispatch (ADR-0036/ADR-0037) |
 | `ICommandHandler<T>` | `Tempest.Core.Commands` | Platform API (contract) | Consumer-facing command handler contract |
@@ -35,6 +37,10 @@
 | `ICriticalBackgroundService` | `Tempest.Core.BackgroundServices` | Platform API (marker) | Opt-in critical-failure escalation (ADR-0021) |
 | `ICurrentPrincipalAccessor` | `Tempest.Core.Identity` | DI-public (via `AddInstance`, dual-registered under its own concrete type per ADR-0044) | Read-only view of the ambient current principal (`WP 6.1`) |
 | `IDiagnosticsProvider` | `Tempest.Core.Diagnostics` | DI-public (via `AddInstance`) | Read-only projection over Host/module/hosted-service lifecycle state (ADR-0039) |
+| `IDimension` | `Tempest.Core.UnitsAndQuantities` | Platform API (generic marker, no members) | Phantom-type dimension tag for `Quantity<TDimension>`/`Unit<TDimension>` — compile-time-only, never instantiated (`WP 7.1B`, `ADR-0054`) |
+| `IDocumentRevision` | `Tempest.Core.EngineeringData` | Platform API (data contract) | One immutable, retrievable revision of an `IEngineeringDocument` (`WP 7.1A`, `ADR-0053`) |
+| `IEngineeringDocument` | `Tempest.Core.EngineeringData` | Platform API (data contract) | Identity and current-revision pointer for a tracked engineering entity (`WP 7.1A`, `ADR-0053`) |
+| `IEngineeringDocumentStore` | `Tempest.Core.EngineeringData` | DI-public | Create/find/revise/link/query engineering documents and their references (`WP 7.1A`, `ADR-0053`) |
 | `IEvent` | `Tempest.Core.Events` | Platform API (contract) | Marks a published fact |
 | `IEventBus` | `Tempest.Core.Events` | DI-public | Publish/subscribe dispatch (ADR-0020) |
 | `IEventHandler<T>` | `Tempest.Core.Events` | Platform API (contract) | Consumer-facing subscription contract |
@@ -57,6 +63,8 @@
 | `ILogSink` | `Tempest.Core.Logging` | DI-public (via `AddInstance`) | Log entry destination |
 | `ILogger` | `Tempest.Core.Logging` | DI-public (via `AddInstance`) | Structured logging abstraction |
 | `ILoggerFactory` | `Tempest.Core.Logging` | DI-public (via `AddInstance`) | Produces `ILogger` instances |
+| `IMaterialCatalog` | `Tempest.Core.Materials` | DI-public | Register/find/revise/list named materials — a thin, typed index over `IEngineeringDocumentStore` (`WP 7.1C`, `ADR-0055`) |
+| `IMaterialSpecification` | `Tempest.Core.Materials` | Platform API (data contract) | A registered material's own Id, name, category, and provenance-carrying properties (`WP 7.1C`, `ADR-0055`) |
 | `IModule` | `Tempest.Core.Modules` | Discovered/registered, not DI-registered as an interface | Module identity contract |
 | `IModuleLifecycle` | `Tempest.Core.Modules` | Discovered/registered | Module lifecycle contract |
 | `IModuleLifecycleManager` | `Tempest.Core.Modules` | Host-owned, never DI-public (ADR-0017) | Module lifecycle orchestration |
@@ -76,6 +84,11 @@
 | `IReportRenderer<T>` | `Tempest.Core.Reporting` | Platform API (contract) | Produces a report definition's own output (`WP 6.0`) |
 | `IReportTemplate<T>` | `Tempest.Core.Reporting` | Not DI-registered (optional collaborator, additive — `WP 6.0`) | Separates layout/rendering from a renderer's own data-gathering |
 | `IReportingService` | `Tempest.Core.Reporting` | DI-public | Registers report definitions/renderers; dispatches generation by Id (`WP 6.0`) |
+| `IRequirement` | `Tempest.Core.Requirements` | Platform API (data contract) | An `IEngineeringDocument`-backed engineering requirement — identifier, statement, category, status (`WP 7.3A`, `ADR-0058`/`ADR-0059`) |
+| `IRequirementCollection` | `Tempest.Core.Requirements` | Platform API (data contract) | A named, purpose-built set of requirements; membership derived via `GetReferencesAsync`, never stored directly (`WP 7.3A`, `ADR-0058`) |
+| `IRequirementEvidence` | `Tempest.Core.Requirements` | Platform API (data contract) | A read-side aggregation of a requirement's own verification history and linked references — the digital thread, demonstrated (`WP 7.3A`) |
+| `IRequirementGroup` | `Tempest.Core.Requirements` | Platform API (data contract) | A hierarchical requirement categorisation node; parent reference derived via `GetReferencesAsync`, never stored directly (`WP 7.3A`, `ADR-0058`) |
+| `IRequirementsService` | `Tempest.Core.Requirements` | DI-public | Create/find/revise/set-status/link/list requirements, collections, and groups; no internal permission gating (`WP 7.3A`, `ADR-0058`/`ADR-0061`) |
 | `IRole` | `Tempest.Core.Identity` | Platform API (data contract, additive — `WP 6.1`) | A named grouping of permissions |
 | `IRoleProvider` | `Tempest.Core.Identity` | DI-public (additive — `WP 6.1`) | Config-sourced role resolution |
 | `IRuntimeModuleManager` | `Tempest.Core.Modules` | Host-owned, never DI-public (ADR-0017) | Module registration catalogue |
@@ -86,12 +99,32 @@
 | `ITempestHost` | `Tempest.Core.Runtime` | Not DI-registered (returned by the builder) | The running Host instance |
 | `ITempestHostBuilder` | `Tempest.Core.Runtime` | Not DI-registered (the composition root's own entry point) | Assembles and produces a `TempestHost` |
 | `ITempestServiceProvider` | `Tempest.Core.DependencyInjection` | The container itself | Constructs and resolves service instances |
+| `IUnitConverter` | `Tempest.Core.UnitsAndQuantities` | Not DI-registered (each `Unit<TDimension>` carries its own conversion factor; no registration/lookup service exists) | Reserved conversion-service contract; the framework's own actual conversion path is `Quantity<TDimension>.ConvertTo`, not this interface (`WP 7.1B`, `ADR-0054`) |
+| `IVerificationRecord` | `Tempest.Core.Verification` | Platform API (data contract) | The complete, structured account of one recorded verification outcome (`WP 7.1E`, `ADR-0057`) |
+| `IVerificationService` | `Tempest.Core.Verification` | DI-public | Records a verification outcome against a subject document; permission-gated history query (`WP 7.1E`, `ADR-0057`) |
 
-**Total: 64 public interfaces under `src/Tempest.Core/` — Verified
+**Total: 80 public interfaces under `src/Tempest.Core/` — Verified
 directly (`grep -rhoP "^public interface \w+(<[^>]+>)?" src/Tempest.Core`
-returns exactly 64 matches, matching the 64 rows above). Fully
-backfilled by `WP 6.8`: 23 interfaces introduced by `WP 6.1`
-(`ICurrentPrincipalAccessor`, `IIdentity`, `IIdentityService`,
+returns exactly 80 matches, matching the 80 rows above). 5 new
+interfaces were added by `WP 7.3A` (Requirements Engine) at the time of
+their own implementation, not discovered as drift afterward:
+`IRequirement`, `IRequirementCollection`, `IRequirementEvidence`,
+`IRequirementGroup`, `IRequirementsService` — the first Work Package
+since `WP 7.1F` itself established the practice of keeping this register
+current with implementation, rather than backfilling it later. 11
+interfaces introduced across the five Engineering Foundation Work
+Packages were added in a prior pass (`WP 7.1F`), closing a gap that had
+persisted, undetected, since each framework shipped: `WP 7.1A`
+(`IEngineeringDocument`, `IDocumentRevision`, `IEngineeringDocumentStore`
+— 3), `WP 7.1B` (`IDimension`, `IUnitConverter` — 2), `WP 7.1C`
+(`IMaterialCatalog`, `IMaterialSpecification` — 2), `WP 7.1D`
+(`ICalculationDefinition<TInput, TResult>`, `ICalculationEngine` — 2),
+`WP 7.1E` (`IVerificationRecord`, `IVerificationService` — 2) — none of
+these five Work Packages' own interfaces had ever been recorded here
+before that Work Package (`WP 7.1F`), the same undetected-drift pattern
+`WP 6.8` found and closed for `v0.6.0`'s own six Work Packages, recurring
+and closed a second time. Previously, `WP 6.8` fully backfilled: 23 interfaces introduced by
+`WP 6.1` (`ICurrentPrincipalAccessor`, `IIdentity`, `IIdentityService`,
 `IPermissionEvaluator`, `IPrincipal`, `IRole`, `IRoleProvider` — 7),
 `WP 6.4` (`IPersistenceStore`, `ISettingDefinition`,
 `ISettingsChangedEvent`, `ISettingsProvider` — 4), `WP 6.5`
@@ -99,29 +132,32 @@ backfilled by `WP 6.8`: 23 interfaces introduced by `WP 6.1`
 (`INotification`, `INotificationDispatcher`, `INotificationHandler<T>`,
 `IPlatformNotification` — 4), `WP 6.0` (`IReportDefinition`,
 `IReportRenderer<T>`, `IReportTemplate<T>`, `IReportingService` — 4),
-and `WP 6.3` (`IApiEndpointRegistry` — 1) were added in this pass —
-none of these six Work Packages' own interfaces had ever been recorded
-here before, a gap `WP 6.7` first disclosed and `WP 6.6` left in place,
-now closed.**
+and `WP 6.3` (`IApiEndpointRegistry` — 1).**
 
 ## Classification Summary
 
-**Reflects all 64 interfaces now listed above.**
+**Reflects all 75 interfaces now listed above.**
 
 | Classification | Count |
 |---|---|
-| DI-public (`AddInstance` or container-constructed singleton) | 25 |
+| DI-public (`AddInstance` or container-constructed singleton) | 29 |
 | Host-owned, never DI-public (ADR-0017 and its extensions) | 7 |
-| Platform API / contract only (no dispatcher or orchestration yet, consumer-facing marker, or data shape) | 20 |
+| Platform API / contract only (no dispatcher or orchestration yet, consumer-facing marker, or data shape) | 26 |
 | Discovered/registered but not itself a DI registration target | 3 |
-| Composition-time / not-DI-registered infrastructure | 8 |
+| Composition-time / not-DI-registered infrastructure | 9 |
 | Pre-module-pipeline, outside the platform-service model | 1 |
 
-**Total: 25 + 7 + 20 + 3 + 8 + 1 = 64.** The "Host-owned" row is
-corrected from a previously-stated "6" to "7," matching the 7 rows
-actually marked Host-owned in the Entries table both before and after
-this backfill — a genuine, pre-existing arithmetic drift, unrelated to
-the larger 23-interface gap, found and corrected in the same pass.
+**Total: 29 + 7 + 26 + 3 + 9 + 1 = 75.** Four new DI-public rows
+(`IEngineeringDocumentStore`, `IMaterialCatalog`, `ICalculationEngine`,
+`IVerificationService`: 25 → 29); six new Platform API/contract rows
+(`ICalculationDefinition<TInput, TResult>`, `IDimension`,
+`IDocumentRevision`, `IEngineeringDocument`, `IMaterialSpecification`,
+`IVerificationRecord`: 20 → 26); one new Composition-time/not-DI-registered
+row (`IUnitConverter`, a reserved contract with no registration or lookup
+service behind it: 8 → 9). Host-owned, Discovered/registered, and
+Pre-module-pipeline counts are unchanged by the Engineering Foundation
+programme — none of its five frameworks introduced a Host-owned
+collaborator or a discovered-but-unregistered type.
 
 ## Cross-Reference Check
 

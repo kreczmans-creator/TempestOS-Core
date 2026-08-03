@@ -1,22 +1,27 @@
 using Tempest.Core.Api;
 using Tempest.Core.Audit;
 using Tempest.Core.BackgroundServices;
+using Tempest.Core.Calculations;
 using Tempest.Core.Commands;
 using Tempest.Core.Configuration;
 using Tempest.Core.DependencyInjection;
 using Tempest.Core.Diagnostics;
+using Tempest.Core.EngineeringData;
 using Tempest.Core.Events;
 using Tempest.Core.ExportImport;
 using Tempest.Core.Identity;
 using Tempest.Core.Licensing;
 using Tempest.Core.Logging;
+using Tempest.Core.Materials;
 using Tempest.Core.Modules;
 using Tempest.Core.Navigation;
 using Tempest.Core.Notifications;
 using Tempest.Core.Persistence;
 using Tempest.Core.Plugins;
 using Tempest.Core.Reporting;
+using Tempest.Core.Requirements;
 using Tempest.Core.Settings;
+using Tempest.Core.Verification;
 using Tempest.Core.Versioning;
 
 namespace Tempest.Core.Runtime;
@@ -339,6 +344,47 @@ public sealed class TempestHost : ITempestHost
         var importService = new ImportService(exportFormat, logger);
         services.AddInstance<IImportService>(importService);
         services.AddInstance(importService);
+
+        // ADR-0053: the Engineering Data Model is built directly on the
+        // same IPersistenceStore Settings/Audit already established,
+        // rather than introducing a second storage mechanism - registered
+        // after Persistence and Identity & Permissions, both of which it
+        // depends on, mirroring Audit's own placement rationale.
+        services.Singleton<IEngineeringDocumentStore, EngineeringDocumentStore>();
+
+        // ADR-0055: Materials is a thin, typed index over the Engineering
+        // Data Model (Kind = "MaterialSpecification"), plus a direct
+        // IPersistenceStore dependency of its own for the materialId
+        // index IEngineeringDocumentStore's own contract has no lookup-by-
+        // arbitrary-string capability to provide - registered after both,
+        // which it depends on.
+        services.Singleton<IMaterialCatalog, MaterialCatalog>();
+
+        // ADR-0056: every calculation execution is durably recorded as an
+        // Engineering Data Model document (Kind = "CalculationRecord"),
+        // mirroring Materials' own reuse of IEngineeringDocumentStore -
+        // registered after it, which it depends on. No direct
+        // IPersistenceStore dependency is needed here, unlike Materials:
+        // each execution always creates a brand new document, never
+        // looked up later by a caller-chosen key.
+        services.Singleton<ICalculationEngine, CalculationEngine>();
+
+        // ADR-0057: verification history is queried through the
+        // Engineering Data Model's own existing LinkAsync/
+        // GetReferencesAsync mechanism, not a new index - registered
+        // after Engineering Data and Identity & Permissions, both of
+        // which it depends on. Read access is permission-gated,
+        // mirroring IAuditQuery's own established pattern.
+        services.Singleton<IVerificationService, VerificationService>();
+
+        // ADR-0058: the Requirements Engine is a thin, typed index over
+        // the Engineering Data Model (Kind = "Requirement" and two
+        // sibling kinds), plus a direct IPersistenceStore dependency of
+        // its own for its identifier index, mirroring Materials' own
+        // materialId index - registered after Engineering Data and
+        // Verification, both of which it depends on (Verification for
+        // its own GetEvidenceAsync aggregation).
+        services.Singleton<IRequirementsService, RequirementsService>();
 
         // Composition Root pattern (ADR-0009), like Configuration/Logging/
         // PlatformVersionProvider above: DiagnosticsProvider needs references
