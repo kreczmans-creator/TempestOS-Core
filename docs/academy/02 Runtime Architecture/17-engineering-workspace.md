@@ -2,17 +2,17 @@
 
 ## 1. Introduction
 
-The Engineering Workspace (architected `WP 8.0A`, `ADR-0062`–`ADR-0065`)
-is TempestOS's first user-facing engineering product surface — the
-platform's answer to a question every prior release has deliberately
-deferred: once real engineering capability exists (Requirements,
-Materials, Calculations, Verification), what does an engineer actually
-*see*? This document teaches the reasoning behind the Workspace's own
-design — not its exact implementation, which does not exist yet; this
-is an architecture-only Work Package, and this guide will be updated
-once implementation exists, exactly as `10-shell-and-application-
-composition.md` was written at `WP 5.0C`'s own design stage and updated
-at `WP 5.0D`'s own implementation.
+The Engineering Workspace (architected `WP 8.0A`, contracted `WP 8.0B`,
+`ADR-0062`–`ADR-0067`) is TempestOS's first user-facing engineering
+product surface — the platform's answer to a question every prior
+release has deliberately deferred: once real engineering capability
+exists (Requirements, Materials, Calculations, Verification), what does
+an engineer actually *see*? This document teaches the reasoning behind
+the Workspace's own design and its own frozen public contracts — not
+its exact implementation, which does not exist yet; this guide will be
+updated a third time once implementation exists, exactly as
+`10-shell-and-application-composition.md` was written at `WP 5.0C`'s
+own design stage and updated at `WP 5.0D`'s own implementation.
 
 ## 2. Purpose
 
@@ -68,8 +68,21 @@ selection persist through the existing `ISettingsProvider`, exactly as
 any other per-user runtime-mutable value already does (`ADR-0064`).
 The Digital Thread panel is a View over `GetEvidenceAsync` exactly as
 it already exists — no new traversal mechanism, no multi-hop query
-capability (`ADR-0065`). See `WP8.0A Workspace Architecture
-Document.md` for the complete design.
+capability (`ADR-0065`). Its own presentation is terminal-based, not a
+graphical desktop framework — this platform's first-ever GUI dependency
+was considered and deliberately not taken on absent real demonstrated
+need (`ADR-0066`). Twelve public contracts now exist
+(`IWorkspace`, `IWorkspaceManager`, `IWorkspaceView`, `IWorkspacePanel`,
+`IWorkspaceLayout`, `INavigationService`, `ISelectionService`,
+`IWorkspaceContext`, `IWorkspaceState`, `IProjectExplorer`,
+`IPropertyInspector`, `IWorkspaceCommand`), each fully specified, none
+compiled yet. A future Engineering Discipline Module extends the
+Workspace via two Kind-keyed registrations —
+`IWorkspaceViewFactory` for object presentation,
+`IProjectExplorerNodeProvider` for tree population — mirroring
+`IReportDefinition`/`IReportRenderer<T>`'s own established pattern
+(`ADR-0067`). See `WP8.0A Workspace Architecture Document.md` and
+`WP8.0B Workspace Contracts.md` for the complete design.
 
 ## 6. Alternatives Considered
 
@@ -89,6 +102,12 @@ digital thread visualisation** — considered and rejected; see
 yet, and building one speculatively would repeat exactly the mistake
 `WP7.2B Digital Thread Architecture.md` already argued against at the
 service layer.
+
+**A full graphical desktop framework (WPF, Avalonia, MAUI)** —
+considered and rejected; see `ADR-0066`. This platform has taken on
+zero GUI dependency of any kind through `v0.7.0`; a terminal-based
+interface satisfies every named user journey without that first-ever
+commitment.
 
 ## 7. Why This Solution Was Chosen
 
@@ -125,15 +144,20 @@ thread visualisation) rather than only service-layer storage.
 
 ## 10. Trade-offs
 
-- Two presentation layers (console `TempestShell`, graphical Workspace)
-  now coexist, a maintenance surface no prior release carried
-  (`ADR-0062`).
+- Two presentation layers (console `TempestShell`, terminal-based
+  Workspace) now coexist, a maintenance surface no prior release
+  carried (`ADR-0062`).
 - The Digital Thread panel shows only one hop of relationship depth per
   view; tracing a longer chain requires repeated manual navigation
   (`ADR-0065`).
-- The object-view extensibility contract (how a future module's own
-  engineering object gets a View at all) remains an open question,
-  reserved as `ADR-0067`, not yet designed.
+- A terminal interface is a genuine capability ceiling relative to a
+  full graphical framework — no custom fonts, no embedded images,
+  coarser interaction fidelity — accepted since no named user journey
+  requires graphical-only capability (`ADR-0066`).
+- Extending the Workspace to a new engineering `Kind` requires two
+  registration calls (a view factory and, optionally, an explorer node
+  provider), not one — a small, disclosed ergonomic cost accepted for
+  keeping the two concerns independently varying (`ADR-0067`).
 
 ## 11. Common Mistakes
 
@@ -148,14 +172,16 @@ uses.
 
 ## 12. Future Evolution
 
-- **Concrete UI rendering technology** (`ADR-0066`, reserved) — a
-  Contract Review/Implementation-phase evaluation.
-- **The object-view extensibility contract** (`ADR-0067`, reserved) —
-  how a future Engineering Discipline Module registers a View for its
-  own document `Kind`.
+- **Specific TUI library selection** (narrower than `ADR-0066`, an
+  implementation-phase choice among terminal-based options, needing no
+  further ADR).
 - **Multi-window support, multi-hop digital thread traversal** — both
   named as deliberately deferred, not designed, pending real
   demonstrated need.
+- **Implementation itself** — the natural next Work Package, building
+  the twelve frozen contracts exactly as `WP8.0B Workspace Contracts.md`
+  specifies them, mirroring the Requirements Engine's own `WP 7.2B` →
+  `WP 7.2C` → `WP 7.3A` sequence.
 
 ## 13. Key Takeaways
 
@@ -179,5 +205,7 @@ uses.
 
 `10-shell-and-application-composition.md`; `09-navigation-architecture.md`;
 `11-command-framework.md`; `16-requirements-engine.md`; `ADR-0062`–
-`ADR-0065`; `docs/releases/v0.8.0/WP8.0A Workspace Architecture
-Document.md` and its four companion deliverables.
+`ADR-0067`; `docs/releases/v0.8.0/WP8.0A Workspace Architecture
+Document.md` and its four companion deliverables; `docs/releases/
+v0.8.0/WP8.0B Workspace Contracts.md` and its three companion
+deliverables.

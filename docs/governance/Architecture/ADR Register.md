@@ -10,9 +10,9 @@
 | **Owner** | Project Maintainer — sole contributor of record across all 77 repository commits (git author `kreczmans-creator`; no separate architecture-review board or team structure exists as of this baseline). |
 | **Source of Truth** | `docs/adr/` (the ADR files themselves). This register is a governance index over that source, not a replacement for it — the full Context/Decision/Consequences reasoning lives only in each ADR file. |
 | **Review Frequency** | Updated whenever a new ADR is created, superseded, or reversed (Engineering Governance §5) — in practice, once per Work Package that meets the §5 ADR criteria. |
-| **Last Reviewed** | 2026-07-30 (WP 8.0A, Engineering Workspace Architecture) — ADR-0062 through ADR-0065 added (all Accepted), the first ADRs of the `v0.8.0` release; ADR-0066/ADR-0067 newly reserved for a future Contract Review Work Package, not yet written. Previously reviewed 2026-07-30 (WP 7.3A, Requirements Engine) — ADR-0058 through ADR-0061 added (all Accepted), closing the entire reserved range `WP7.2C Required ADR Catalogue.md` named. Previously reviewed 2026-07-30 (WP 7.1E, Verification Framework) — ADR-0057 added (Accepted) — the fifth and final Engineering Foundation framework ADR, closing the `ADR-0053`–`ADR-0057` range `WP7.0C Required ADR Catalogue.md` reserved. Previously reviewed 2026-07-30 (WP 7.1D, Engineering Calculation Framework) — ADR-0056 added (Accepted). Previously reviewed 2026-07-30 (WP 7.1C, Materials Framework) — ADR-0055 added (Accepted). Previously reviewed 2026-07-30 (WP 7.1B, Units & Quantities Framework) — ADR-0054 added (Accepted). Previously reviewed 2026-07-30 (WP 7.1A, Engineering Data Model) — ADR-0053 added (Accepted); disclosed a small, previously-uncorrected staleness in this very field (it had not been updated since WP 6.6, despite WP 7.0C's own edit to this register's Numbering Integrity narrative in the interim). Previously reviewed 2026-07-29 (WP 6.6, Licensing). |
+| **Last Reviewed** | 2026-07-30 (WP 8.0B, Workspace Contracts) — ADR-0066/ADR-0067 added (both Accepted), resolving both ADRs `WP 8.0A` reserved — zero reserved-but-unwritten ADR numbers remain. Previously reviewed 2026-07-30 (WP 8.0A, Engineering Workspace Architecture) — ADR-0062 through ADR-0065 added (all Accepted), the first ADRs of the `v0.8.0` release; ADR-0066/ADR-0067 newly reserved for a future Contract Review Work Package, not yet written. Previously reviewed 2026-07-30 (WP 7.3A, Requirements Engine) — ADR-0058 through ADR-0061 added (all Accepted), closing the entire reserved range `WP7.2C Required ADR Catalogue.md` named. Previously reviewed 2026-07-30 (WP 7.1E, Verification Framework) — ADR-0057 added (Accepted) — the fifth and final Engineering Foundation framework ADR, closing the `ADR-0053`–`ADR-0057` range `WP7.0C Required ADR Catalogue.md` reserved. Previously reviewed 2026-07-30 (WP 7.1D, Engineering Calculation Framework) — ADR-0056 added (Accepted). Previously reviewed 2026-07-30 (WP 7.1C, Materials Framework) — ADR-0055 added (Accepted). Previously reviewed 2026-07-30 (WP 7.1B, Units & Quantities Framework) — ADR-0054 added (Accepted). Previously reviewed 2026-07-30 (WP 7.1A, Engineering Data Model) — ADR-0053 added (Accepted); disclosed a small, previously-uncorrected staleness in this very field (it had not been updated since WP 6.6, despite WP 7.0C's own edit to this register's Numbering Integrity narrative in the interim). Previously reviewed 2026-07-29 (WP 6.6, Licensing). |
 | **Related Documents** | `docs/academy/06 Engineering Standards/Engineering Governance.md` (§5, ADR Creation Rules); `Decision Register.md`; `Rejected Designs Register.md`; `Traceability Matrix.md`; `docs/releases/v0.6.0/Required ADRs.md`. |
-| **Related ADRs** | All 65 — this register's entire subject matter. |
+| **Related ADRs** | All 67 — this register's entire subject matter. |
 | **Related Academy Articles** | Every Work Package retrospective under `docs/academy/03 Work Packages/` cites the ADR(s) it produced or realised; see each retrospective's own "ADR references" or "Architectural Principles" section. |
 | **Coverage Status** | Complete — every ADR file present in `docs/adr/` at time of review is listed below. |
 
@@ -95,23 +95,25 @@ line, verified directly.
 | ADR-0063 | Workspace Views Read Directly; Mutations Dispatch Through the Command Framework | Accepted | WP 8.0A (Engineering Workspace Architecture) | 2026-07-30 | Verified |
 | ADR-0064 | Workspace Layout and Session State Is Persisted via the Existing Settings Service | Accepted | WP 8.0A (Engineering Workspace Architecture) | 2026-07-30 | Verified |
 | ADR-0065 | Digital Thread Visualisation Composes Existing Reads, Introduces No New Traversal Mechanism | Accepted | WP 8.0A (Engineering Workspace Architecture) | 2026-07-30 | Verified |
+| ADR-0066 | Engineering Workspace Presentation Is Terminal-Based, Not a Graphical Desktop Framework | Accepted | WP 8.0B (Workspace Contracts) | 2026-07-30 | Verified |
+| ADR-0067 | Workspace Extensibility Is Kind-Keyed Registration, for Both Views and Explorer Nodes | Accepted | WP 8.0B (Workspace Contracts) | 2026-07-30 | Verified |
 
-**Total: 65 ADRs, all Accepted, none superseded or reversed (Verified — no
+**Total: 67 ADRs, all Accepted, none superseded or reversed (Verified — no
 ADR file in `docs/adr/` carries a Superseded/Deprecated/Rejected status
-line). `ADR-0066` (concrete UI rendering technology) and `ADR-0067`
-(object-view extensibility contract) are reserved, not yet written —
-see `docs/releases/v0.8.0/WP8.0A Workspace Architecture Document.md`
-§"ADR Summary".**
+line). Both ADRs `WP 8.0A` reserved (`ADR-0066`, `ADR-0067`) are now
+resolved by `WP 8.0B` — no reserved-but-unwritten ADR number remains
+outstanding.**
 
 ## Numbering Integrity
 
-Sequential and complete, `ADR-0001` through `ADR-0065`, with no gaps
-at all — `ADR-0066`/`ADR-0067` are the first genuinely reserved-but-
-unwritten numbers since `ADR-0058`–`ADR-0061` were closed by `WP 7.3A`;
-unlike that prior range, these two are not expected to be answered by
-the immediately following implementation Work Package, since `WP 8.0A`
-is architecture-only and no implementation Work Package has been
-scoped yet. `docs/releases/v0.7.0/WP7.0C Required ADR Catalogue.md` reserved
+Sequential and complete, `ADR-0001` through `ADR-0067`, with no gaps at
+all. `ADR-0066`/`ADR-0067`, reserved by `WP 8.0A`, were resolved by the
+very next Work Package (`WP 8.0B`, its own Contract Review), the same
+one-Work-Package-later cadence `ADR-0058`–`ADR-0061` established for
+the Requirements Engine (reserved `WP 7.2B`/`WP 7.2C`, answered
+`WP 7.3A`) — here compressed even further, since both were answered by
+the Contract Review stage itself rather than waiting for
+implementation. `docs/releases/v0.7.0/WP7.0C Required ADR Catalogue.md` reserved
 `ADR-0053` through `ADR-0057` for the five Engineering Foundation
 frameworks' own anticipated architectural decisions, one per framework
 — all five (`ADR-0053` Engineering Data Model, `ADR-0054` Units &
