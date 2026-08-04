@@ -15,13 +15,15 @@ internal sealed class Workspace : IWorkspace
         NavigationService navigationService,
         ISelectionService selection,
         ProjectExplorer projectExplorer,
-        IPropertyInspector propertyInspector)
+        IPropertyInspector propertyInspector,
+        EngineeringCockpit cockpit)
     {
         ArgumentNullException.ThrowIfNull(state);
         ArgumentNullException.ThrowIfNull(navigationService);
         ArgumentNullException.ThrowIfNull(selection);
         ArgumentNullException.ThrowIfNull(projectExplorer);
         ArgumentNullException.ThrowIfNull(propertyInspector);
+        ArgumentNullException.ThrowIfNull(cockpit);
 
         State = state;
         _navigationService = navigationService;
@@ -29,6 +31,7 @@ internal sealed class Workspace : IWorkspace
         ProjectExplorer = projectExplorer;
         ProjectExplorerConcrete = projectExplorer;
         PropertyInspector = propertyInspector;
+        Cockpit = cockpit;
     }
 
     /// <inheritdoc />
@@ -66,6 +69,14 @@ internal sealed class Workspace : IWorkspace
     /// <see cref="WorkspaceManager.StatusBar"/>'s own identical precedent.
     /// </summary>
     internal NavigationService NavigationServiceConcrete => _navigationService;
+
+    /// <summary>
+    /// Gets the Engineering Cockpit — the Workspace's own default landing
+    /// screen (`ADR-0069`). Not one of the twelve `WP8.0B Workspace
+    /// Contracts.md` interfaces, mirroring <see cref="ProjectExplorerConcrete"/>'s
+    /// own identical precedent.
+    /// </summary>
+    internal EngineeringCockpit Cockpit { get; }
 
     /// <inheritdoc />
     public IPropertyInspector PropertyInspector { get; }

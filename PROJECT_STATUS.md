@@ -1,6 +1,6 @@
 # TempestOS — Project Status
 
-**Last Updated:** 2026-08-04 (`WP 8.1B` — Navigation & Project Explorer)
+**Last Updated:** 2026-08-04 (`WP 8.1C` — Engineering Cockpit)
 
 This is the primary status dashboard for TempestOS. Read this first for
 "where does the project stand right now" — for "why is it built this
@@ -131,46 +131,66 @@ that; `v0.4.0` ("Platform Foundation") before that.
 
 ## Current Work Package
 
+**`WP 8.1C` — Engineering Cockpit.** `v0.8.0`'s own sixth Work Package,
+and its third implementation — following `WP 8.1B`'s own completion.
+Implements the Engineering Cockpit as the Workspace's own default
+landing experience (`ADR-0069`), answering four questions on every
+visit: where am I, what needs attention, is the project healthy, what
+should I do next. Consumes existing Workspace services only —
+`NavigationService` and, newly resolved, the existing `ICommandRegistry`
+Platform Service for the Cockpit's own Command Palette integration
+(`ADR-0070`). No Requirements, Calculations, Verification, or Digital
+Thread traversal logic.
+
+The controlling instruction arrived in two parts, the second
+substantially expanding the named card set beyond `WP8.0C Engineering
+Cockpit Specification.md`'s own seven layout regions: Continue Where I
+Left Off, Recent Projects, Favourite Projects, a five-discipline
+Project Health Dashboard (Requirements/Verification/Calculations/
+Documentation/Review status), Risk Summary, Open Decisions, Blocked
+Items, Overdue Actions, Upcoming Milestones, Digital Thread Summary,
+Workspace Status, Quick Actions, Navigation Shortcuts, and the Command
+Palette integration — followed in full, as the superseding version,
+disclosed explicitly as a product-scope expansion, not an architectural
+one. Every card with a real Workspace-service backing
+(`ContinueWhereILeftOff`, `RecentActivity`, `AreaCount`,
+`OpenDocumentCount`, `AvailableCommands`) is a live read; every other
+card is fixed, representative, disclosed placeholder content — never
+fabricated to look real.
+
+`WorkspaceShell` now starts on, and can return to (`cockpit` command),
+the Cockpit screen; from it, `run <N>` invokes an available global
+command, `continue` re-opens the most recent activity, `recent <N>`
+re-opens a specific one. **Zero new ADRs** — `ADR-0069`/`ADR-0070`
+already made the relevant decisions; this Work Package only implements
+them. 5 new production files, 3 modified, 40 new tests (1552 → 1592,
+both configurations, clean rebuild, stable across three runs). **Zero
+new Technical Debt.** One completion deliverable produced under
+`docs/releases/v0.8.0/` (`WP8.1C Implementation Report.md`). **Stops
+here, awaiting further Product Owner instruction before the next Work
+Package begins.**
+
+### `WP 8.1B` Summary (for reference)
+
 **`WP 8.1B` — Navigation & Project Explorer.** `v0.8.0`'s own fifth
-Work Package, and its second implementation — following `WP 8.0C`'s own
-completion. Implements the Workspace Navigation system and Project
-Explorer exactly as specified across `WP 8.0A`/`WP 8.0B`/`WP 8.0C`:
-Navigation Service, navigation history, breadcrumbs, an Areas panel,
-the Project Explorer, Kind-keyed node providers, selection
-synchronisation, context menus, filtering, search, and recent items —
-against representative engineering objects only. No Requirements logic,
-no Calculations, no Documents, no persistence beyond the
-navigation/session state `WP 8.1A` already implemented.
-
-`NavigationService`/`ProjectExplorer` (`WP 8.1A`) were extended with
+Work Package, and its second implementation. Implements the Workspace
+Navigation system and Project Explorer exactly as specified across
+`WP 8.0A`/`WP 8.0B`/`WP 8.0C`: Navigation Service, navigation history,
+breadcrumbs, an Areas panel, the Project Explorer, Kind-keyed node
+providers, selection synchronisation, context menus, filtering, search,
+and recent items — against representative engineering objects only.
+`NavigationService`/`ProjectExplorer` (`WP 8.1A`) extended with
 `History`/`RecentItems`/`GoBackAsync`/`GoForwardAsync` and
-`CurrentPath`/`EnterAsync`/`ExitAsync`/`FilterAsync` respectively — two
-genuine capabilities `WP 8.0B` never anticipated, added as
-same-assembly-only extensions to the concrete classes, never to the
-twelve public interfaces themselves. The Project Explorer is populated,
-for the first time, with real content: a fixed, fictional Category →
-Group → Object tree (`Tempest.App.Workspace.Samples` — Assemblies →
-Primary/Secondary Structure → Longeron/Frame/Bracket), presented
-through the first real `IProjectExplorerNodeProvider`/
-`IWorkspaceViewFactory` pair, proving `ADR-0067`'s own Kind-keyed
-extensibility mechanism end to end. `WorkspaceShell`'s own input loop
-gained a small word-command vocabulary (`open`, `up`, `close`, `filter`,
-`back`, `forward`, `menu`) — a disclosed, terminal-appropriate
-realisation of `WP8.0C Interaction Specification.md`'s own richer
-keyboard/mouse model.
-
-**One new ADR: `ADR-0071`** — corrects a genuine finding: `ADR-0067`'s
-own worked registration example (a module calling
-`IWorkspaceManager.RegisterView` directly) does not hold, since a
-discovered module has no path to the composition-root-only
-`WorkspaceManager` instance (`ADR-0062`). Registration now happens in
-`Tempest.App`'s own `Program.cs`; `ADR-0067`'s own core Kind-keyed
-decision is unaffected. 7 new production files, 5 modified, 55 new
-tests (1497 → 1552, both configurations, clean rebuild, stable across
-three runs). **Zero new Technical Debt.** One completion deliverable
-produced under `docs/releases/v0.8.0/` (`WP8.1B Implementation
-Report.md`). **Stops here, awaiting further Product Owner instruction
-before the next Work Package begins.**
+`CurrentPath`/`EnterAsync`/`ExitAsync`/`FilterAsync`, added as
+same-assembly-only extensions, never to the twelve public interfaces.
+The Project Explorer populated for the first time with real content (a
+fixed, fictional Category → Group → Object tree,
+`Tempest.App.Workspace.Samples`), proving `ADR-0067`'s own Kind-keyed
+extensibility mechanism end to end. One new ADR (`ADR-0071`), correcting
+a worked example inside `ADR-0067` that a discovered module cannot
+actually reach `IWorkspaceManager` directly. 7 new production files, 5
+modified, 55 new tests (1497 → 1552). Zero new Technical Debt. See
+`docs/releases/v0.8.0/WP8.1B Implementation Report.md`.
 
 ### `WP 8.0C` Summary (for reference)
 
@@ -658,28 +678,32 @@ review.md`.
 
 ## Next Planned Work Package
 
-**None yet approved.** `WP 8.1B` implemented the Navigation system and
-Project Explorer against representative sample content only — the
-Engineering Cockpit (`ADR-0069`), Command Palette (`ADR-0070`), Project
-Dashboard, and Properties/Inspector split `WP 8.0C` specified all remain
-unimplemented. `WP8.0C UX Specification.md` §0's own Recommendations
-still name the natural next step for those: **a Contract Review
-reconciling `WP 8.0B`'s twelve contracts against `WP 8.0C`'s richer
-demands** (the Cockpit's own data needs, the Palette's own reach into
-`ICommandRegistry`, the plausible `IDigitalThreadInspector`) before a
-Cockpit/Palette implementation Work Package builds either — mirroring
-the identical two-stage discipline `WP 7.2C` already proved out for
+**None yet approved.** `WP 8.1C` implemented the Engineering Cockpit —
+the Workspace's own default landing screen (`ADR-0069`) with a Command
+Palette integration (`ADR-0070`) scoped to the Cockpit itself. The
+Project Dashboard, the Properties/Inspector split, and the Command
+Palette's own full, screen-independent realisation (reachable from
+every screen, not only the Cockpit) all remain unimplemented.
+`WP8.0C UX Specification.md` §0's own Recommendations still name the
+natural next step for those still requiring new contract surface: **a
+Contract Review reconciling `WP 8.0B`'s twelve contracts against
+`WP 8.0C`'s richer demands** (the Palette's own screen-independent
+reach, the plausible `IDigitalThreadInspector`) before a Dashboard/
+Inspector implementation Work Package builds either — mirroring the
+identical two-stage discipline `WP 7.2C` already proved out for
 Requirements. Separately, the **first real, production
 `IWorkspaceViewFactory`/`IProjectExplorerNodeProvider` pair for an
 actual Engineering Core `Kind`**, most naturally for Requirements (the
 only Implemented Systems Engineering Foundation capability), remains
 open — `WP 8.1B` proved the mechanism only against fictional sample
-content. Two Future Capability candidates raised by `WP 7.3A`
-(`FCR-0037` string-based allocation targets, `FCR-0038` requirement
-baselining) and Programme F (Platform Hardening, recommended second, at
-`v0.9.0` — see `WP7.2A Recommended Programme.md`) all remain open,
-unscheduled alternatives. **Per this project's own standing discipline
-(`FOUNDATION.md` §1) and `WP 8.1B`'s own explicit closing instruction,
+content, and `WP 8.1C`'s own Project Health Dashboard/KPI cards remain
+placeholder until a real discipline is wired to the Workspace. Two
+Future Capability candidates raised by `WP 7.3A` (`FCR-0037`
+string-based allocation targets, `FCR-0038` requirement baselining) and
+Programme F (Platform Hardening, recommended second, at `v0.9.0` — see
+`WP7.2A Recommended Programme.md`) all remain open, unscheduled
+alternatives. **Per this project's own standing discipline
+(`FOUNDATION.md` §1) and `WP 8.1C`'s own explicit closing instruction,
 no further Work Package begins until the Product Owner gives further
 instruction.**
 
@@ -743,22 +767,22 @@ Experience phase is now complete.
 
 | Metric | Value |
 |---|---|
-| Automated tests | 1552 (0 failures) — **+55, `WP 8.1B`**: Navigation history/recent items, Project Explorer breadcrumbs/filtering, the first real sample Kind-keyed registration, and `WorkspaceShell`'s own new interaction commands, both configurations, clean rebuild, stable across three runs |
-| ADRs | 71 (`ADR-0001`–`ADR-0071`, no gaps at all), all Accepted — **+1, `WP 8.1B`**: `ADR-0071` (Workspace extensibility registrations belong to the composition root, not a discovered module) — corrects `ADR-0067`'s own worked example, not its core decision |
-| Rejected Designs | 45 (`RD-0001`–`RD-0045`) — unchanged by `WP 8.1B` |
-| Academy articles | 111 (see `docs/governance/Documentation/Academy Register.md`) — **+1, `WP 8.1B`**: `WP8.1B-navigation-and-project-explorer-implementation.md` (standard 13-section implementation retrospective); `02 Runtime Architecture/17-engineering-workspace.md` updated in place a fifth time, not counted as new |
-| Governance registers | 27 (32 governance documents total), plus 4 standing security documents under `docs/security/` and 1 standing engineering document (`docs/engineering/Engineering Principles.md`, confirmed requiring no extension by this Work Package) — unchanged in count by `WP 8.1B` |
-| Architecture documents | 20 under `docs/architecture/` (22 including the two release-scoped documents) — unchanged by `WP 8.1B` |
-| Platform services | 27 catalogued — unchanged by `WP 8.1B` (introduces zero new Platform Service) |
-| Modules (production) | 21 — **+1, `WP 8.1B`**: `WorkspaceExplorerSampleModule` (registers only a `NavigationItem`; Workspace content registration happens in `Program.cs`, per `ADR-0071`) |
-| Hosted services (production) | 2 — unchanged by `WP 8.1B` |
+| Automated tests | 1592 (0 failures) — **+40, `WP 8.1C`**: the Engineering Cockpit's own placeholder-card shapes, real-data delegation (Continue/Recent Activity/Command Palette), and `WorkspaceShell`'s own new interaction commands, both configurations, clean rebuild, stable across three runs |
+| ADRs | 71 (`ADR-0001`–`ADR-0071`, no gaps at all), all Accepted — unchanged by `WP 8.1C` (implements `ADR-0069`/`ADR-0070` directly; zero new ADRs — the first implementation Work Package this release to need none) |
+| Rejected Designs | 45 (`RD-0001`–`RD-0045`) — unchanged by `WP 8.1C` |
+| Academy articles | 112 (see `docs/governance/Documentation/Academy Register.md`) — **+1, `WP 8.1C`**: `WP8.1C-engineering-cockpit-implementation.md` (standard 13-section implementation retrospective); `02 Runtime Architecture/17-engineering-workspace.md` updated in place a sixth time, not counted as new |
+| Governance registers | 27 (32 governance documents total), plus 4 standing security documents under `docs/security/` and 1 standing engineering document (`docs/engineering/Engineering Principles.md`, confirmed requiring no extension by this Work Package) — unchanged in count by `WP 8.1C` |
+| Architecture documents | 20 under `docs/architecture/` (22 including the two release-scoped documents) — unchanged by `WP 8.1C` |
+| Platform services | 27 catalogued — unchanged by `WP 8.1C` (consumes the existing `ICommandRegistry`, introduces zero new Platform Service) |
+| Modules (production) | 21 — unchanged by `WP 8.1C` (no new discovered module; the Cockpit is a composition-root component, mirroring `WorkspaceManager` itself) |
+| Hosted services (production) | 2 — unchanged by `WP 8.1C` |
 | Plugins (production) | 0 — infrastructure fully implemented and tested; `src/Plugins/` empty by deliberate scope decision |
-| Custom exception types (`src/Tempest.Core/`) | 66 — unchanged by `WP 8.1B`; the 3 Workspace-scoped exception types under `src/Tempest.App/Workspace/` (`WP 8.1A`) also unchanged |
-| Public interfaces (`src/Tempest.Core/`) | 80 — unchanged by `WP 8.1B`; the 12 `Tempest.App.Workspace` interfaces (`WP 8.1A`) also unchanged — history/recent items/breadcrumbs/filtering were added to the concrete classes only, never to the public interfaces |
-| DI registrations (`TempestHost.cs` Phase 6) | 33 raw call sites, 31 named registrations — unchanged by `WP 8.1B` |
-| Technical Debt Register items | 25 tracked, 17 disclosed trade-offs — unchanged by `WP 8.1B`; zero new items raised |
+| Custom exception types (`src/Tempest.Core/`) | 66 — unchanged by `WP 8.1C`; the 3 Workspace-scoped exception types under `src/Tempest.App/Workspace/` (`WP 8.1A`) also unchanged |
+| Public interfaces (`src/Tempest.Core/`) | 80 — unchanged by `WP 8.1C`; the 12 `Tempest.App.Workspace` interfaces (`WP 8.1A`) also unchanged — the Cockpit is a concrete class only, reached via `Workspace.Cockpit`, never a thirteenth public interface |
+| DI registrations (`TempestHost.cs` Phase 6) | 33 raw call sites, 31 named registrations — unchanged by `WP 8.1C` |
+| Technical Debt Register items | 25 tracked, 17 disclosed trade-offs — unchanged by `WP 8.1C`; zero new items raised |
 | Commits (`v0.6.0` → `v0.7.0`) | 17 total, release complete: `v0.6.0` release-branch preparation (2 commits), merge from `main`, `WP 7.0A`–`WP 7.4.0` (14 commits), the `v0.7.0` merge to `main` (non-fast-forward, `61fb2db`) — tagged `v0.7.0`, pushed |
-| Commits (`v0.7.0` → `v0.8.0`, so far) | 5 — `WP 8.0A`, `WP 8.0B`, `WP 8.1A`, `WP 8.0C`, `WP 8.1B` (this commit); `VERSION` bumped to `0.7.0` as part of branch preparation, not counted as a separate Work Package commit |
+| Commits (`v0.7.0` → `v0.8.0`, so far) | 6 — `WP 8.0A`, `WP 8.0B`, `WP 8.1A`, `WP 8.0C`, `WP 8.1B`, `WP 8.1C` (this commit); `VERSION` bumped to `0.7.0` as part of branch preparation, not counted as a separate Work Package commit |
 | Contributors | 1 (repository owner; all commits co-authored by Claude) |
 
 *(This table is generated from `docs/governance/Quality/Repository Metrics
@@ -1194,6 +1218,12 @@ under `src/Tempest.App/Workspace/`, 4 under
 `src/Samples/Tempest.Samples/`), 5 modified. Added one further
 `docs/releases/v0.8.0/` deliverable (`WP8.1B Implementation Report.md`)
 and one new ADR file (`ADR-0071`).
+
+**`WP 8.1C` (Engineering Cockpit)** — the third implementation Work
+Package of `v0.8.0`; 5 new production files under
+`src/Tempest.App/Workspace/`, 3 modified. Added one further
+`docs/releases/v0.8.0/` deliverable (`WP8.1C Implementation Report.md`)
+— zero new ADR files (implements `ADR-0069`/`ADR-0070` directly).
 
 ## Academy Status
 
@@ -1886,6 +1916,14 @@ modules) — confirmed directly via
 updated in the same commit. `ADR Register.md`, `Academy Register.md`,
 `Documentation Register.md`, `Module Register.md` all kept current
 directly at implementation time, not backfilled.
+**`WP 8.1C`** added **zero** new ADRs — `ADR-0069`/`ADR-0070` already
+made the decisions this Work Package only implements; the ADR Register
+remains at 71, unchanged. No new Technical Debt item, no new Future
+Capability Register entry, no new Module Register row (the Cockpit is a
+composition-root component, not a discovered module — mirroring
+`WorkspaceManager`'s own identical, long-standing exclusion). `Academy
+Register.md`, `Documentation Register.md` kept current directly at
+implementation time, not backfilled.
 
 ## Known Unknowns
 
@@ -2037,19 +2075,32 @@ Governance Audit Report.md`:
     ADR (`ADR-0071`), correcting a worked example inside `ADR-0067` that
     a discovered module cannot actually reach `IWorkspaceManager`
     directly. 55 new tests (1497 → 1552). **Zero new Technical Debt.**
-16. **Await Product Owner instruction for what comes next.** `WP8.0C
+16. **`WP 8.1C` — Engineering Cockpit — is complete.** The Engineering
+    Cockpit, implemented as the Workspace's own default landing screen
+    (`ADR-0069`) — see Current Work Package, above, and
+    `docs/releases/v0.8.0/WP8.1C Implementation Report.md`. Consumes
+    only existing Workspace services (`NavigationService`, and the
+    newly-resolved `ICommandRegistry` for Command Palette integration,
+    `ADR-0070`); every card with no real backing service shows fixed,
+    disclosed placeholder content. Controlling instruction expanded
+    mid-Work-Package to name many more cards than `WP 8.0C`'s own seven
+    regions — followed in full, disclosed as a product-scope expansion.
+    **Zero new ADRs.** 40 new tests (1552 → 1592). **Zero new Technical
+    Debt.**
+17. **Await Product Owner instruction for what comes next.** `WP8.0C
     UX Specification.md` §0 still recommends a Contract Review
     reconciling `WP 8.0B`'s twelve contracts against `WP 8.0C`'s richer
-    demands before a Cockpit/Command Palette implementation Work Package
-    builds either; separately, the first real, production
-    `IWorkspaceViewFactory`/`IProjectExplorerNodeProvider` pair for an
-    actual Engineering Core `Kind` (most naturally Requirements) remains
-    open — `WP 8.1B` proved the mechanism only against fictional sample
-    content. Per this project's own standing discipline (`FOUNDATION.md`
-    §1) and `WP 8.1B`'s own explicit closing instruction, no further
-    Work Package begins until the Product Owner gives further
-    instruction.
-17. A GitHub Release for `v0.6.0` (and now `v0.7.0`) has not yet been
+    demands before a Project Dashboard/Properties-Inspector-split
+    implementation Work Package builds either; separately, the Command
+    Palette's own full, screen-independent realisation (`ADR-0070`,
+    reachable from every screen, not only the Cockpit) and the first
+    real, production `IWorkspaceViewFactory`/`IProjectExplorerNodeProvider`
+    pair for an actual Engineering Core `Kind` (most naturally
+    Requirements) both remain open. Per this project's own standing
+    discipline (`FOUNDATION.md` §1) and `WP 8.1C`'s own explicit closing
+    instruction, no further Work Package begins until the Product Owner
+    gives further instruction.
+18. A GitHub Release for `v0.6.0` (and now `v0.7.0`) has not yet been
     created (`gh` CLI unavailable in this environment) — see the Release
     Summary for the exact command or manual steps to complete it.
 
@@ -2269,13 +2320,32 @@ phase is under way, on `feature/v0.8.0-engineering-workspace` (cut from
   actually reach `IWorkspaceManager` directly — registration now happens
   in `Program.cs`. 7 new production files, 5 modified, 55 new tests
   (1497 → 1552). Zero new Technical Debt.
+- `WP 8.1C` — Engineering Cockpit (implementation; the Workspace's own
+  default landing screen, consuming existing Workspace services only,
+  no Requirements/Calculations/Verification/Digital-Thread-traversal
+  logic). **Complete.** Implements `ADR-0069` (default landing screen)
+  and a Cockpit-scoped realisation of `ADR-0070` (Command Palette
+  integration via the existing `ICommandRegistry`) — see
+  `docs/releases/v0.8.0/WP8.1C Implementation Report.md`. Controlling
+  instruction expanded mid-Work-Package to name many more cards than
+  `WP8.0C Engineering Cockpit Specification.md`'s own seven regions
+  (Continue Where I Left Off, Recent/Favourite Projects, a
+  five-discipline Project Health Dashboard, Risk Summary, Open
+  Decisions, Blocked Items, Overdue Actions, Quick Actions) — followed
+  in full, disclosed as a product-scope expansion, not an architectural
+  one. Every card with a real Workspace-service backing is a live read;
+  every other card is fixed, disclosed placeholder content. **Zero new
+  ADRs** — the first implementation Work Package this release to need
+  none. 5 new production files, 3 modified, 40 new tests (1552 → 1592).
+  Zero new Technical Debt.
 
-**`v0.8.0` is in progress.** Its architecture, contract, both
+**`v0.8.0` is in progress.** Its architecture, contract, all three
 implementation phases so far, and UX specification are all complete —
-a real, running Workspace shell with a navigable Project Explorer
-exists, and its complete target experience is fully specified; the
-Engineering Cockpit, Command Palette, and any real engineering-domain
-content all remain unscheduled.
+a real, running Workspace shell with a navigable Project Explorer and a
+live Engineering Cockpit landing screen exists; the Project Dashboard,
+the Properties/Inspector split, the Command Palette's own
+screen-independent realisation, and any real engineering-domain content
+all remain unscheduled.
 
 ## Long-Term Vision
 

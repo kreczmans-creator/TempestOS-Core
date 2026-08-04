@@ -31,6 +31,16 @@ namespace Tempest.App.Workspace;
 /// literal bindings were always deferred to a future rendering-technology
 /// choice, `WP8.0C UX Specification.md` §5).
 /// </para>
+/// <para>
+/// <b>`WP 8.1C` — Engineering Cockpit.</b> This Shell now starts on, and
+/// can return to, a second screen — the Engineering Cockpit (`ADR-0069`)
+/// — toggled by <see cref="_onCockpit"/>: a bare number still switches
+/// areas from either screen (leaving the Cockpit if on it); <c>cockpit</c>
+/// returns to it from an area; <c>run &lt;N&gt;</c> invokes one of the
+/// Cockpit's own currently-available global commands
+/// (<see cref="EngineeringCockpit.AvailableCommands"/>, the Cockpit's own
+/// Command Palette integration, `ADR-0070`).
+/// </para>
 /// </remarks>
 public sealed class WorkspaceShell : IAsyncDisposable
 {
@@ -42,6 +52,7 @@ public sealed class WorkspaceShell : IAsyncDisposable
     private Workspace? _workspaceConcrete;
     private IReadOnlyList<ProjectExplorerNode> _explorerNodes = [];
     private string? _activeFilter;
+    private bool _onCockpit = true;
 
     /// <summary>Initialises a new instance of the <see cref="WorkspaceShell"/> class.</summary>
     /// <param name="manager">The Workspace manager this Shell starts, renders, and shuts down.</param>
@@ -101,13 +112,10 @@ public sealed class WorkspaceShell : IAsyncDisposable
     }
 
     /// <summary>
-    /// Interprets a single line of input. <c>0</c> requests exit. A bare
-    /// number within range switches areas (unchanged from `WP 8.1A`).
-    /// Otherwise, the first word is matched against a small vocabulary:
-    /// <c>open &lt;N&gt;</c>, <c>up</c>, <c>close &lt;N&gt;</c>,
-    /// <c>filter [text]</c>, <c>back</c>, <c>forward</c>,
-    /// <c>menu &lt;N&gt;</c> — anything else is an invalid selection,
-    /// reported and otherwise ignored.
+    /// Interprets a single line of input. <c>0</c> requests exit,
+    /// regardless of which screen is currently shown. Otherwise, dispatches
+    /// to <see cref="HandleCockpitInputAsync"/> or
+    /// <see cref="HandleAreaInputAsync"/> depending on <see cref="_onCockpit"/>.
     /// </summary>
     /// <returns><see langword="false"/> if exit was requested (or input ended); otherwise <see langword="true"/>.</returns>
     public async Task<bool> HandleInputAsync(string? input, CancellationToken cancellationToken = default)
@@ -120,7 +128,68 @@ public sealed class WorkspaceShell : IAsyncDisposable
         if (trimmed == "0")
             return false;
 
-        var areas = _workspace.Navigation.Areas;
+        return _onCockpit
+            ? await HandleCockpitInputAsync(trimmed, cancellationToken).ConfigureAwait(false)
+            : await HandleAreaInputAsync(trimmed, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Interprets a single line of input while the Engineering Cockpit is
+    /// shown. A bare number within range switches areas, leaving the
+    /// Cockpit. <c>run &lt;N&gt;</c> invokes one of the Cockpit's own
+    /// currently-available global commands. Anything else is an invalid
+    /// selection, reported and otherwise ignored.
+    /// </summary>
+    private async Task<bool> HandleCockpitInputAsync(string trimmed, CancellationToken cancellationToken)
+    {
+        var areas = _workspace!.Navigation.Areas;
+
+        if (int.TryParse(trimmed, out var areaSelection) && areaSelection >= 1 && areaSelection <= areas.Count)
+        {
+            await _workspace.Navigation.SwitchAreaAsync(areas[areaSelection - 1].Id, cancellationToken).ConfigureAwait(false);
+            _manager.StatusBar.SetStatus($"Viewing: {areas[areaSelection - 1].Title}");
+            _activeFilter = null;
+            _onCockpit = false;
+            await RefreshExplorerNodesAsync(cancellationToken).ConfigureAwait(false);
+            return true;
+        }
+
+        var parts = trimmed.Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);
+        var verb = parts.Length > 0 ? parts[0].ToLowerInvariant() : string.Empty;
+        var argument = parts.Length > 1 ? parts[1] : null;
+
+        switch (verb)
+        {
+            case "run" when int.TryParse(argument, out var runIndex):
+                await HandleRunCommandAsync(runIndex, cancellationToken).ConfigureAwait(false);
+                return true;
+
+            case "continue":
+                await HandleContinueAsync(cancellationToken).ConfigureAwait(false);
+                return true;
+
+            case "recent" when int.TryParse(argument, out var recentIndex):
+                await HandleOpenRecentAsync(recentIndex, cancellationToken).ConfigureAwait(false);
+                return true;
+
+            default:
+                _output.WriteLine("Invalid selection.");
+                return true;
+        }
+    }
+
+    /// <summary>
+    /// Interprets a single line of input while an area is shown. A bare
+    /// number within range switches areas (unchanged from `WP 8.1A`).
+    /// Otherwise, the first word is matched against a small vocabulary:
+    /// <c>open &lt;N&gt;</c>, <c>up</c>, <c>close &lt;N&gt;</c>,
+    /// <c>filter [text]</c>, <c>back</c>, <c>forward</c>,
+    /// <c>menu &lt;N&gt;</c>, <c>cockpit</c> — anything else is an invalid
+    /// selection, reported and otherwise ignored.
+    /// </summary>
+    private async Task<bool> HandleAreaInputAsync(string trimmed, CancellationToken cancellationToken)
+    {
+        var areas = _workspace!.Navigation.Areas;
 
         if (int.TryParse(trimmed, out var areaSelection) && areaSelection >= 1 && areaSelection <= areas.Count)
         {
@@ -142,7 +211,7 @@ public sealed class WorkspaceShell : IAsyncDisposable
                 return true;
 
             case "up":
-                _explorerNodes = await _workspaceConcrete.ProjectExplorerConcrete.ExitAsync(cancellationToken).ConfigureAwait(false);
+                _explorerNodes = await _workspaceConcrete!.ProjectExplorerConcrete.ExitAsync(cancellationToken).ConfigureAwait(false);
                 _activeFilter = null;
                 return true;
 
@@ -164,6 +233,10 @@ public sealed class WorkspaceShell : IAsyncDisposable
 
             case "menu" when int.TryParse(argument, out var menuIndex):
                 RenderContextMenu(menuIndex);
+                return true;
+
+            case "cockpit":
+                _onCockpit = true;
                 return true;
 
             default:
@@ -220,6 +293,52 @@ public sealed class WorkspaceShell : IAsyncDisposable
         var view = openViews[index - 1];
         await _workspace.Navigation.CloseAsync(view.Id, cancellationToken).ConfigureAwait(false);
         _manager.StatusBar.SetStatus($"Closed: {view.Title}");
+    }
+
+    private async Task HandleRunCommandAsync(int index, CancellationToken cancellationToken)
+    {
+        var cockpit = _workspaceConcrete!.Cockpit;
+        var commands = cockpit.AvailableCommands;
+
+        if (index < 1 || index > commands.Count)
+        {
+            _output.WriteLine("Invalid selection.");
+            return;
+        }
+
+        var descriptor = commands[index - 1];
+        var result = await cockpit.InvokeCommandAsync(index, cancellationToken).ConfigureAwait(false);
+        _manager.StatusBar.SetStatus(result.Succeeded
+            ? $"{descriptor.DisplayName}: {result.Message ?? "Succeeded."}"
+            : $"{descriptor.DisplayName} failed: {result.Message}");
+    }
+
+    private async Task HandleContinueAsync(CancellationToken cancellationToken)
+    {
+        var cockpit = _workspaceConcrete!.Cockpit;
+
+        if (cockpit.ContinueWhereILeftOff is null)
+        {
+            _output.WriteLine("Nothing to continue yet.");
+            return;
+        }
+
+        var view = await cockpit.ContinueAsync(cancellationToken).ConfigureAwait(false);
+        _manager.StatusBar.SetStatus($"Continued: {view.Title}");
+    }
+
+    private async Task HandleOpenRecentAsync(int index, CancellationToken cancellationToken)
+    {
+        var cockpit = _workspaceConcrete!.Cockpit;
+
+        if (index < 1 || index > cockpit.RecentActivity.Count)
+        {
+            _output.WriteLine("Invalid selection.");
+            return;
+        }
+
+        var view = await cockpit.OpenRecentAsync(index, cancellationToken).ConfigureAwait(false);
+        _manager.StatusBar.SetStatus($"Opened: {view.Title}");
     }
 
     private async Task HandleFilterAsync(string? argument, CancellationToken cancellationToken)
@@ -304,9 +423,206 @@ public sealed class WorkspaceShell : IAsyncDisposable
         if (_workspace is null || _workspaceConcrete is null)
             return;
 
-        var nav = _workspaceConcrete.NavigationServiceConcrete;
+        if (_onCockpit)
+            RenderCockpit();
+        else
+            RenderArea();
+    }
+
+    private void RenderCockpit()
+    {
+        var cockpit = _workspaceConcrete!.Cockpit;
+        var areas = _workspace!.Navigation.Areas;
+
+        // ---- Where am I? ----
+        _output.WriteLine();
+        _output.WriteLine("Engineering Cockpit");
+        _output.WriteLine("====================");
+        _output.WriteLine($"Project: {cockpit.ProjectName}  {FormatStatus(cockpit.Health)}");
+
+        _output.WriteLine();
+        _output.WriteLine("Continue Where I Left Off");
+        _output.WriteLine("--------------------------");
+        _output.WriteLine(cockpit.ContinueWhereILeftOff is { } continueItem
+            ? $"continue - {continueItem.Title} ({continueItem.Kind})"
+            : "(nothing yet — open something from an Area to continue it next time)");
+
+        _output.WriteLine();
+        _output.WriteLine("Recent Projects");
+        _output.WriteLine("----------------");
+        foreach (var project in cockpit.RecentProjects)
+            _output.WriteLine($"- {project}");
+
+        _output.WriteLine();
+        _output.WriteLine("Favourite Projects");
+        _output.WriteLine("-------------------");
+        _output.WriteLine(cockpit.FavouriteProjects.Count == 0
+            ? "(none — favouriting is not yet implemented)"
+            : string.Join(", ", cockpit.FavouriteProjects));
+
+        // ---- What needs attention? ----
+        _output.WriteLine();
+        _output.WriteLine("What Needs Attention");
+        _output.WriteLine("---------------------");
+
+        if (cockpit.AttentionItems.Count == 0)
+        {
+            _output.WriteLine("(nothing needs attention)");
+        }
+        else
+        {
+            foreach (var item in cockpit.AttentionItems)
+                _output.WriteLine($"- {item.Title}: {item.Detail}");
+        }
+
+        _output.WriteLine();
+        _output.WriteLine("Open Decisions");
+        _output.WriteLine("---------------");
+        _output.WriteLine(cockpit.OpenDecisions.Count == 0 ? "(none)" : string.Join("; ", cockpit.OpenDecisions));
+
+        _output.WriteLine();
+        _output.WriteLine("Blocked Items");
+        _output.WriteLine("--------------");
+        _output.WriteLine(cockpit.BlockedItems.Count == 0 ? "(none)" : string.Join("; ", cockpit.BlockedItems));
+
+        _output.WriteLine();
+        _output.WriteLine("Overdue Actions");
+        _output.WriteLine("----------------");
+        _output.WriteLine(cockpit.OverdueActions.Count == 0
+            ? "(none)"
+            : string.Join("; ", cockpit.OverdueActions.Select(a => $"{a.Title} ({a.Owner})")));
+
+        // ---- Is the project healthy? ----
+        _output.WriteLine();
+        _output.WriteLine("Project Health Dashboard");
+        _output.WriteLine("-------------------------");
+        _output.WriteLine($"Engineering Health Score: {cockpit.HealthScoreDisplay}");
+        _output.WriteLine($"Requirements:  {FormatStatus(cockpit.RequirementsStatus)}");
+        _output.WriteLine($"Verification:  {FormatStatus(cockpit.VerificationStatus)}");
+        _output.WriteLine($"Calculations:  {FormatStatus(cockpit.CalculationStatus)}");
+        _output.WriteLine($"Documentation: {FormatStatus(cockpit.DocumentationStatus)}");
+        _output.WriteLine($"Review:        {FormatStatus(cockpit.ReviewStatus)}");
+
+        _output.WriteLine();
+        _output.WriteLine("Engineering Health Summary (KPI Cards)");
+        _output.WriteLine("----------------------------------------");
+        foreach (var kpi in cockpit.KpiCards)
+            _output.WriteLine($"{kpi.Label}: {kpi.Value}{(kpi.IsPlaceholder ? " (placeholder)" : string.Empty)}");
+
+        _output.WriteLine();
+        _output.WriteLine("Risk Summary");
+        _output.WriteLine("-------------");
+        _output.WriteLine(cockpit.RiskSummary);
+
+        _output.WriteLine();
+        _output.WriteLine("Digital Thread Summary");
+        _output.WriteLine("------------------------");
+        _output.WriteLine(cockpit.DigitalThreadSummary);
+
+        _output.WriteLine();
+        _output.WriteLine("Upcoming Milestones");
+        _output.WriteLine("--------------------");
+        _output.WriteLine(cockpit.UpcomingMilestones.Count == 0 ? "(none)" : string.Join("; ", cockpit.UpcomingMilestones));
+
+        // ---- What should I do next? ----
+        _output.WriteLine();
+        _output.WriteLine("Recent Engineering Activity");
+        _output.WriteLine("-----------------------------");
+
+        if (cockpit.RecentActivity.Count == 0)
+        {
+            _output.WriteLine("(none)");
+        }
+        else
+        {
+            for (var i = 0; i < cockpit.RecentActivity.Count; i++)
+            {
+                var item = cockpit.RecentActivity[i];
+                _output.WriteLine($"{i + 1} - {item.Title} ({item.Kind})");
+            }
+        }
+
+        _output.WriteLine();
+        _output.WriteLine("Workspace Status");
+        _output.WriteLine("-----------------");
+        _output.WriteLine($"Areas: {cockpit.AreaCount}");
+        _output.WriteLine($"Open documents: {cockpit.OpenDocumentCount}");
+
+        _output.WriteLine();
+        _output.WriteLine("Open Actions");
+        _output.WriteLine("------------");
+
+        if (cockpit.OpenActions.Count == 0)
+        {
+            _output.WriteLine("(none)");
+        }
+        else
+        {
+            foreach (var action in cockpit.OpenActions)
+                _output.WriteLine($"- {action.Title} ({action.Owner})");
+        }
+
+        _output.WriteLine();
+        _output.WriteLine("Quick Actions");
+        _output.WriteLine("--------------");
+
+        if (cockpit.QuickActions.Count == 0)
+        {
+            _output.WriteLine("(none)");
+        }
+        else
+        {
+            foreach (var hint in cockpit.QuickActions)
+                _output.WriteLine($"- {hint}");
+        }
+
+        _output.WriteLine();
+        _output.WriteLine("Navigation Shortcuts (Areas)");
+        _output.WriteLine("------------------------------");
+
+        var currentAreaId = _workspaceConcrete.NavigationServiceConcrete.CurrentAreaId;
+        for (var i = 0; i < areas.Count; i++)
+        {
+            var marker = areas[i].Id == currentAreaId ? "*" : " ";
+            _output.WriteLine($"{marker}{i + 1} - {areas[i].Title}");
+        }
+
+        _output.WriteLine("0 - Exit");
+
+        _output.WriteLine();
+        _output.WriteLine("Global Commands (Command Palette)");
+        _output.WriteLine("------------------------------------");
+
+        var commands = cockpit.AvailableCommands;
+        if (commands.Count == 0)
+        {
+            _output.WriteLine("(none available)");
+        }
+        else
+        {
+            for (var i = 0; i < commands.Count; i++)
+                _output.WriteLine($"{i + 1} - {commands[i].DisplayName}");
+        }
+
+        _output.WriteLine();
+        _output.WriteLine("------------------------------------");
+        _output.WriteLine($"Status: {_manager.StatusBar.StatusText}");
+        _output.Write("> ");
+    }
+
+    private static string FormatStatus(EngineeringHealthStatus status) => status switch
+    {
+        EngineeringHealthStatus.Blocked => "[BLOCKED]",
+        EngineeringHealthStatus.Attention => "[ATTENTION]",
+        EngineeringHealthStatus.Healthy => "[HEALTHY]",
+        _ => "[UNKNOWN]",
+    };
+
+    private void RenderArea()
+    {
+        var nav = _workspaceConcrete!.NavigationServiceConcrete;
         var explorer = _workspaceConcrete.ProjectExplorerConcrete;
-        var areas = _workspace.Navigation.Areas;
+        var areas = _workspace!.Navigation.Areas;
 
         _output.WriteLine();
         _output.WriteLine("Areas");

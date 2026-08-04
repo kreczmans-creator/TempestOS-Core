@@ -1,3 +1,4 @@
+using Tempest.Core.Commands;
 using Tempest.Core.Events;
 using Tempest.Core.Navigation;
 using Tempest.Core.Runtime;
@@ -84,12 +85,14 @@ public sealed class WorkspaceManager : IWorkspaceManager, IAsyncDisposable
         var navigationProvider = (INavigationProvider)services.GetService(typeof(INavigationProvider));
         var eventBus = (IEventBus)services.GetService(typeof(IEventBus));
         var settingsProvider = (ISettingsProvider)services.GetService(typeof(ISettingsProvider));
+        var commandRegistry = (ICommandRegistry)services.GetService(typeof(ICommandRegistry));
         _eventBus = eventBus;
 
         var navigationService = new NavigationService(navigationProvider, _viewFactories, _context);
         var projectExplorer = new ProjectExplorer(navigationService, _explorerProviders);
         var propertyInspector = new PropertyInspector();
         _propertyInspector = propertyInspector;
+        var cockpit = new EngineeringCockpit(navigationService, commandRegistry);
 
         var defaultPlacements = new List<WorkspacePanelPlacement>
         {
@@ -102,7 +105,7 @@ public sealed class WorkspaceManager : IWorkspaceManager, IAsyncDisposable
 
         var selectionService = new SelectionService(eventBus, _context);
 
-        var workspace = new Workspace(state, navigationService, selectionService, projectExplorer, propertyInspector);
+        var workspace = new Workspace(state, navigationService, selectionService, projectExplorer, propertyInspector, cockpit);
 
         eventBus.Subscribe(propertyInspector);
         eventBus.Subscribe(_statusBar);

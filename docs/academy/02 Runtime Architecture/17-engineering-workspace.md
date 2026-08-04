@@ -5,28 +5,37 @@
 The Engineering Workspace (architected `WP 8.0A`, contracted `WP 8.0B`,
 shell implemented `WP 8.1A`, its complete target experience specified
 `WP 8.0C`, its Navigation system and Project Explorer implemented
-`WP 8.1B`, `ADR-0062`–`ADR-0071`) is TempestOS's first user-facing
-engineering product surface, and — since `WP 8.1A` — the platform's own
-default launch target (`ADR-0068`). Running `Tempest.App` today
-presents the five-region Workspace shell (Areas, Project Explorer,
-Documents, Properties, Status Bar), not the original console
+`WP 8.1B`, its Engineering Cockpit implemented `WP 8.1C`,
+`ADR-0062`–`ADR-0071`) is TempestOS's first user-facing engineering
+product surface, and — since `WP 8.1A` — the platform's own default
+launch target (`ADR-0068`). Running `Tempest.App` today presents the
+Engineering Cockpit first (`ADR-0069`, `WP 8.1C`), then, once an Area
+is chosen, the five-region Workspace shell (Areas, Project Explorer,
+Documents, Properties, Status Bar) — not the original console
 `TempestShell`, which remains in the repository, fully tested, simply
-no longer the default. `WP 8.0C` then specified, without implementing,
-the complete target experience this shell is meant to grow into — an
-Engineering Cockpit landing screen (`ADR-0069`), a Command Palette
-(`ADR-0070`), a Project Dashboard, an Inspector panel distinct from
-Properties, and the full interaction/navigation/behaviour model around
-them. `WP 8.1B` then implemented the first slice of that target
-experience for real: navigation history, breadcrumbs, filtering, recent
-items, and context menus, proven against a real, fixed, fictional
-object tree (`Tempest.App.Workspace.Samples`) — the Project Explorer's
-own first living reference content, not a test double. This document
-teaches the reasoning behind the Workspace's own design, its own frozen
-public contracts, its own shell implementation, the target experience
-specified for it, and its own first navigation/tree implementation —
-not yet any real engineering-domain content (Requirements, Materials,
-Calculations) or the richer Cockpit/Command Palette UX, neither of
-which any Work Package through `WP 8.1B` has built.
+no longer the default. `WP 8.0C` specified, without implementing, the
+complete target experience this shell was meant to grow into — an
+Engineering Cockpit landing screen, a Command Palette (`ADR-0070`), a
+Project Dashboard, an Inspector panel distinct from Properties, and the
+full interaction/navigation/behaviour model around them. `WP 8.1B` then
+implemented the Navigation system and Project Explorer for real:
+navigation history, breadcrumbs, filtering, recent items, and context
+menus, proven against a real, fixed, fictional object tree
+(`Tempest.App.Workspace.Samples`) — the Project Explorer's own first
+living reference content, not a test double. `WP 8.1C` then implemented
+the Engineering Cockpit itself — the Workspace's own default landing
+screen, answering four questions on every visit (where am I, what
+needs attention, is the project healthy, what should I do next),
+consuming only existing Workspace services (`NavigationService`,
+`ICommandRegistry`) with zero Requirements/Calculations/Verification/
+Digital-Thread-traversal logic of its own. This document teaches the
+reasoning behind the Workspace's own design, its own frozen public
+contracts, its own shell implementation, the target experience
+specified for it, its own navigation/tree implementation, and its own
+Cockpit implementation — not yet any real engineering-domain content
+(Requirements, Materials, Calculations) or the Command Palette's own
+full, screen-independent realisation, neither of which any Work Package
+through `WP 8.1C` has built.
 
 ## 2. Purpose
 
@@ -151,6 +160,30 @@ instance wrapping its own Host from the outside. `ADR-0071` corrects
 this — registration belongs to `Tempest.App`'s own composition root
 (`Program.cs`), not to a module.
 
+`WP 8.1C` then implemented the Engineering Cockpit — `EngineeringCockpit`,
+reached only through `Workspace.Cockpit` internally (mirroring
+`ProjectExplorerConcrete`'s own `WP 8.1B` precedent, never one of the
+twelve public interfaces), and made the default screen
+`WorkspaceShell` starts on and can return to (`cockpit` command). It
+resolves one further existing Platform Service,
+`ICommandRegistry` (already shipped, `ADR-0036`/`ADR-0037`), for its
+own Command Palette integration — a real, live, `CanExecute`-filtered
+read of `ICommandRegistry.Items`, invokable by index (`run <N>`). Every
+region with a real backing Workspace service (`ContinueWhereILeftOff`,
+`RecentActivity`, `AreaCount`, `OpenDocumentCount`, `AvailableCommands`)
+is a live read; every region that would need Requirements, Materials,
+Calculations, Verification, a Project concept, or Digital Thread
+traversal shows fixed, disclosed, representative placeholder content
+instead — `WP 8.1C`'s own explicit scope boundary, honoured throughout
+rather than worked around. The controlling instruction arrived in two
+parts, the second substantially expanding the Cockpit's own named card
+set beyond `WP8.0C Engineering Cockpit Specification.md`'s own seven
+layout regions (Continue Where I Left Off, Recent/Favourite Projects, a
+five-discipline Project Health Dashboard, Risk Summary, Open Decisions,
+Blocked Items, Overdue Actions, Quick Actions) — implemented in full as
+a disclosed product-scope expansion, not an architectural one (see
+`WP8.1C Implementation Report.md`'s own "A Disclosed Scope Note").
+
 ## 6. Alternatives Considered
 
 **A new Platform Service for the Workspace** — considered and rejected;
@@ -197,6 +230,14 @@ at.
 that the Workspace is not a Platform Service and is never resolved
 through `ITempestHost.Services` — reopening a settled architectural
 boundary to save one composition-root registration call.
+
+**Fabricating fake Requirements/Risk/Decision records so every Cockpit
+card would have a "real" backing object** — considered and rejected.
+This would directly violate `WP 8.1C`'s own explicit "no Requirements/
+Calculations/Verification logic" constraint, and would actively mislead
+a user into believing engineering data exists that does not — a fixed,
+clearly-disclosed placeholder is more honest and no less useful for
+proving the Cockpit's own layout and interaction shape.
 
 ## 7. Why This Solution Was Chosen
 
@@ -254,12 +295,20 @@ thread visualisation) rather than only service-layer storage.
   `WP 8.1A` — Revision/Provenance/Relationship/DisciplineSpecific facets
   have no source yet, expected given "no engineering functionality" was
   this Work Package's own explicit constraint.
-- A real gap remains, disclosed rather than hidden, between what
-  `WP 8.1B` ships today and what `WP 8.0C` specifies as the target
-  experience — the Project Explorer is now populated (with fictional
-  sample content) and navigable, but there is still no Cockpit, no
-  Command Palette, and no Properties/Inspector split
-  (`WP8.0C UX Specification.md` §0).
+- A real gap remains, disclosed rather than hidden, between what has
+  shipped through `WP 8.1C` and what `WP 8.0C` specifies as the full
+  target experience — the Project Explorer is populated (with fictional
+  sample content) and navigable, and the Cockpit is now the default
+  screen with a real, live Command Palette integration, but there is
+  still no Project Dashboard, no Properties/Inspector split, and the
+  Command Palette is reachable only from the Cockpit, not from every
+  screen as `ADR-0070` names (`WP8.0C UX Specification.md` §0).
+- The Cockpit's own status indicators use a closed, bracketed textual
+  vocabulary (`[BLOCKED]`, `[ATTENTION]`, `[HEALTHY]`, `[UNKNOWN]`),
+  not colour — `WP8.0C UX Specification.md` §3's own "Colour usage"
+  intent (paired with a second signal, never colour alone) is honoured
+  in spirit, but real terminal colour is a separate, undecided question
+  (`WP8.1C Implementation Report.md`'s own Technical Debt Assessment).
 - A future `IWorkspaceCommand`-adjacent thirteenth contract
   (`IDigitalThreadInspector`, named but not designed, `WP8.0C Screen
   Catalogue.md` §10) is now a disclosed, plausible future addition, not
@@ -312,9 +361,13 @@ themselves.
   `Kind`**, most naturally for Requirements — `WP 8.1B` proved the
   mechanism against fictional sample content only; a real discipline
   Kind is still the natural next proof.
-- **The Engineering Cockpit and Command Palette** (`ADR-0069`/
-  `ADR-0070`) — specified in full (`WP 8.0C`) but not yet implemented;
-  the next Workspace-experience gap after Navigation & Project Explorer.
+- **The Command Palette's own full, screen-independent realisation**
+  (`ADR-0070`) — `WP 8.1C` reaches it only from the Cockpit; reaching it
+  from an Area screen too is a natural, small follow-on, not designed
+  here.
+- **The Project Dashboard and Properties/Inspector split** — specified
+  in full (`WP 8.0C`) but not yet implemented; the next
+  Workspace-experience gap after the Cockpit.
 - **Specific TUI library selection**, if `WorkspaceShell`'s own
   hand-rolled renderer (`WP 8.1A`) ever proves insufficient — narrower
   than `ADR-0066`, needing no further ADR.
@@ -372,6 +425,19 @@ themselves.
    actually needs it relies on it, and correct it with a new ADR,
    openly, if it turns out not to hold (`ADR-0071`), rather than quietly
    working around it.
+8. Not every named region of a dashboard needs a real backing service
+   before it can ship — a fixed, disclosed, representative placeholder,
+   named honestly as such, lets a screen "feel complete" (`WP 8.1C`'s
+   own controlling instruction) without pretending data exists that
+   does not, and without violating a scope boundary ("no Requirements/
+   Calculations/Verification logic") that exists for good reason.
+9. A controlling instruction can expand mid-Work-Package, and the
+   correct response is to follow the expanded, superseding version in
+   full while disclosing the expansion explicitly against the
+   originally-specified scope (`WP8.0C Engineering Cockpit
+   Specification.md`'s own seven regions vs. `WP 8.1C`'s own larger,
+   shipped card set) — not to silently treat the smaller, earlier
+   version as if it were still the authoritative source.
 
 ## Related Documents
 
@@ -382,8 +448,10 @@ Document.md` and its four companion deliverables; `docs/releases/
 v0.8.0/WP8.0B Workspace Contracts.md` and its three companion
 deliverables; `docs/releases/v0.8.0/WP8.1A Implementation Report.md`;
 `docs/releases/v0.8.0/WP8.0C UX Specification.md` and its eight
-companion deliverables; `docs/releases/v0.8.0/WP8.1B Implementation
-Report.md`;
+companion deliverables (`Engineering Cockpit Specification.md`
+especially); `docs/releases/v0.8.0/WP8.1B Implementation Report.md`;
+`docs/releases/v0.8.0/WP8.1C Implementation Report.md`;
 `docs/academy/03 Work Packages/WP8.1A-workspace-shell-implementation.md`;
 `docs/academy/03 Work Packages/WP8.0C-engineering-workspace-ux-specification.md`;
-`docs/academy/03 Work Packages/WP8.1B-navigation-and-project-explorer-implementation.md`.
+`docs/academy/03 Work Packages/WP8.1B-navigation-and-project-explorer-implementation.md`;
+`docs/academy/03 Work Packages/WP8.1C-engineering-cockpit-implementation.md`.

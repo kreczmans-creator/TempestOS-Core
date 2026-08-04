@@ -113,51 +113,48 @@ public class WorkspaceShellTests
     }
 
     [Fact]
-    public async Task StartAsync_RendersEmptyProjectExplorer_NoEngineeringFunctionality()
+    public async Task RunAsync_SwitchArea_RendersEmptyProjectExplorer_NoEngineeringFunctionality()
     {
         using var temp = new TempDirectory();
         var writer = new StringWriter();
-        await using var wshell = new WorkspaceShell(BuildManager(temp.Path, Type.EmptyTypes), writer, new StringReader(""));
+        var manager = BuildManager(temp.Path, typeof(NavigationSampleModule));
+        await using var wshell = new WorkspaceShell(manager, writer, new StringReader("1\n0\n"));
 
-        await wshell.StartAsync();
+        await wshell.RunAsync();
 
         var output = writer.ToString();
         Assert.Contains("Project Explorer", output);
         Assert.Contains("no engineering module registered yet", output);
-
-        await wshell.StopAsync();
     }
 
     [Fact]
-    public async Task StartAsync_RendersEmptyDocumentArea()
+    public async Task RunAsync_SwitchArea_RendersEmptyDocumentArea()
     {
         using var temp = new TempDirectory();
         var writer = new StringWriter();
-        await using var wshell = new WorkspaceShell(BuildManager(temp.Path, Type.EmptyTypes), writer, new StringReader(""));
+        var manager = BuildManager(temp.Path, typeof(NavigationSampleModule));
+        await using var wshell = new WorkspaceShell(manager, writer, new StringReader("1\n0\n"));
 
-        await wshell.StartAsync();
+        await wshell.RunAsync();
 
         var output = writer.ToString();
         Assert.Contains("Documents", output);
         Assert.Contains("(no documents open)", output);
-
-        await wshell.StopAsync();
     }
 
     [Fact]
-    public async Task StartAsync_RendersEmptyProperties()
+    public async Task RunAsync_SwitchArea_RendersEmptyProperties()
     {
         using var temp = new TempDirectory();
         var writer = new StringWriter();
-        await using var wshell = new WorkspaceShell(BuildManager(temp.Path, Type.EmptyTypes), writer, new StringReader(""));
+        var manager = BuildManager(temp.Path, typeof(NavigationSampleModule));
+        await using var wshell = new WorkspaceShell(manager, writer, new StringReader("1\n0\n"));
 
-        await wshell.StartAsync();
+        await wshell.RunAsync();
 
         var output = writer.ToString();
         Assert.Contains("Properties", output);
         Assert.Contains("(nothing selected)", output);
-
-        await wshell.StopAsync();
     }
 
     [Fact]
@@ -377,8 +374,9 @@ public class WorkspaceShellTests
     {
         using var temp = new TempDirectory();
         var writer = new StringWriter();
-        await using var wshell = new WorkspaceShell(BuildManager(temp.Path, Type.EmptyTypes), writer, new StringReader(""));
+        await using var wshell = new WorkspaceShell(BuildManager(temp.Path, typeof(NavigationSampleModule)), writer, new StringReader(""));
         await wshell.StartAsync();
+        await wshell.HandleInputAsync("1");
 
         await wshell.HandleInputAsync("back");
 
@@ -553,5 +551,220 @@ public class WorkspaceShellTests
         await wshell.RunAsync();
 
         Assert.Contains("*1 - Longeron", writer.ToString());
+    }
+
+    // ----------------------------------------------------------------
+    // Engineering Cockpit (WP 8.1C): default landing screen (ADR-0069),
+    // Command Palette integration (ADR-0070).
+    // ----------------------------------------------------------------
+
+    [Fact]
+    public async Task StartAsync_RendersEngineeringCockpit_ByDefault()
+    {
+        using var temp = new TempDirectory();
+        var writer = new StringWriter();
+        await using var wshell = new WorkspaceShell(BuildManager(temp.Path, Type.EmptyTypes), writer, new StringReader(""));
+
+        await wshell.StartAsync();
+
+        var output = writer.ToString();
+        Assert.Contains("Engineering Cockpit", output);
+        Assert.Contains("Continue Where I Left Off", output);
+        Assert.Contains("Recent Projects", output);
+        Assert.Contains("Favourite Projects", output);
+        Assert.Contains("What Needs Attention", output);
+        Assert.Contains("Open Decisions", output);
+        Assert.Contains("Blocked Items", output);
+        Assert.Contains("Overdue Actions", output);
+        Assert.Contains("Project Health Dashboard", output);
+        Assert.Contains("Engineering Health Summary (KPI Cards)", output);
+        Assert.Contains("Risk Summary", output);
+        Assert.Contains("Digital Thread Summary", output);
+        Assert.Contains("Upcoming Milestones", output);
+        Assert.Contains("Recent Engineering Activity", output);
+        Assert.Contains("Workspace Status", output);
+        Assert.Contains("Open Actions", output);
+        Assert.Contains("Quick Actions", output);
+        Assert.Contains("Navigation Shortcuts (Areas)", output);
+        Assert.Contains("Global Commands (Command Palette)", output);
+
+        await wshell.StopAsync();
+    }
+
+    [Fact]
+    public async Task StartAsync_Cockpit_HealthIndicators_UseClosedStatusVocabulary()
+    {
+        using var temp = new TempDirectory();
+        var writer = new StringWriter();
+        await using var wshell = new WorkspaceShell(BuildManager(temp.Path, Type.EmptyTypes), writer, new StringReader(""));
+
+        await wshell.StartAsync();
+
+        var output = writer.ToString();
+        Assert.Contains("[UNKNOWN]", output);
+        Assert.DoesNotContain("[HEALTHY]", output);
+        Assert.DoesNotContain("[BLOCKED]", output);
+        Assert.DoesNotContain("[ATTENTION]", output);
+
+        await wshell.StopAsync();
+    }
+
+    [Fact]
+    public async Task StartAsync_Cockpit_RendersPlaceholderKpiCards()
+    {
+        using var temp = new TempDirectory();
+        var writer = new StringWriter();
+        await using var wshell = new WorkspaceShell(BuildManager(temp.Path, Type.EmptyTypes), writer, new StringReader(""));
+
+        await wshell.StartAsync();
+
+        var output = writer.ToString();
+        Assert.Contains("Requirements: — (placeholder)", output);
+        Assert.Contains("Verification: — (placeholder)", output);
+        Assert.Contains("Calculations: — (placeholder)", output);
+
+        await wshell.StopAsync();
+    }
+
+    [Fact]
+    public async Task StartAsync_Cockpit_NoCommandModulesLoaded_RendersNoneAvailable()
+    {
+        using var temp = new TempDirectory();
+        var writer = new StringWriter();
+        await using var wshell = new WorkspaceShell(BuildManager(temp.Path, Type.EmptyTypes), writer, new StringReader(""));
+
+        await wshell.StartAsync();
+
+        Assert.Contains("(none available)", writer.ToString());
+
+        await wshell.StopAsync();
+    }
+
+    [Fact]
+    public async Task RunAsync_SwitchAreaFromCockpit_LeavesCockpit_ShowsAreaLayout()
+    {
+        using var temp = new TempDirectory();
+        var writer = new StringWriter();
+        var manager = BuildManager(temp.Path, typeof(NavigationSampleModule));
+        await using var wshell = new WorkspaceShell(manager, writer, new StringReader("1\n0\n"));
+
+        await wshell.RunAsync();
+
+        var output = writer.ToString();
+        Assert.Contains("Project Explorer", output);
+        Assert.Contains("Viewing: Home", output);
+    }
+
+    [Fact]
+    public async Task RunAsync_CockpitCommand_ReturnsToCockpitFromArea()
+    {
+        using var temp = new TempDirectory();
+        var writer = new StringWriter();
+        var manager = BuildManager(temp.Path, typeof(NavigationSampleModule));
+        await using var wshell = new WorkspaceShell(manager, writer, new StringReader("1\ncockpit\n0\n"));
+
+        await wshell.RunAsync();
+
+        var occurrences = writer.ToString().Split("Engineering Cockpit").Length - 1;
+        Assert.Equal(2, occurrences);
+    }
+
+    [Fact]
+    public async Task HandleInputAsync_Cockpit_InvalidVerb_ReportsInvalid()
+    {
+        using var temp = new TempDirectory();
+        var writer = new StringWriter();
+        await using var wshell = new WorkspaceShell(BuildManager(temp.Path, Type.EmptyTypes), writer, new StringReader(""));
+        await wshell.StartAsync();
+
+        await wshell.HandleInputAsync("nonsense");
+
+        Assert.Contains("Invalid selection.", writer.ToString());
+
+        await wshell.StopAsync();
+    }
+
+    [Fact]
+    public async Task HandleInputAsync_Cockpit_Run_NoCommandsAvailable_ReportsInvalid()
+    {
+        using var temp = new TempDirectory();
+        var writer = new StringWriter();
+        await using var wshell = new WorkspaceShell(BuildManager(temp.Path, Type.EmptyTypes), writer, new StringReader(""));
+        await wshell.StartAsync();
+
+        await wshell.HandleInputAsync("run 1");
+
+        Assert.Contains("Invalid selection.", writer.ToString());
+
+        await wshell.StopAsync();
+    }
+
+    [Fact]
+    public async Task RunAsync_Run_InvokesTheRealCommand_UpdatesStatusBar()
+    {
+        using var temp = new TempDirectory();
+        var writer = new StringWriter();
+        var manager = BuildManager(temp.Path, typeof(Tempest.Samples.CommandSampleModule));
+        await using var wshell = new WorkspaceShell(manager, writer, new StringReader("run 1\n0\n"));
+
+        await wshell.RunAsync();
+
+        Assert.Contains("Increment Sample Counter: Counter is now 1.", writer.ToString());
+    }
+
+    [Fact]
+    public async Task HandleInputAsync_Cockpit_Continue_NothingYet_ReportsNothingToContinue()
+    {
+        using var temp = new TempDirectory();
+        var writer = new StringWriter();
+        await using var wshell = new WorkspaceShell(BuildManager(temp.Path, Type.EmptyTypes), writer, new StringReader(""));
+        await wshell.StartAsync();
+
+        await wshell.HandleInputAsync("continue");
+
+        Assert.Contains("Nothing to continue yet.", writer.ToString());
+
+        await wshell.StopAsync();
+    }
+
+    [Fact]
+    public async Task RunAsync_Continue_ReopensTheMostRecentSampleObject()
+    {
+        using var temp = new TempDirectory();
+        var writer = new StringWriter();
+        var manager = BuildManagerWithSampleExplorer(temp.Path);
+        await using var wshell = new WorkspaceShell(manager, writer, new StringReader("1\nopen 1\nopen 1\nopen 1\ncockpit\ncontinue\n0\n"));
+
+        await wshell.RunAsync();
+
+        Assert.Contains("Continued: Longeron", writer.ToString());
+    }
+
+    [Fact]
+    public async Task HandleInputAsync_Cockpit_Recent_NoActivityYet_ReportsInvalid()
+    {
+        using var temp = new TempDirectory();
+        var writer = new StringWriter();
+        await using var wshell = new WorkspaceShell(BuildManager(temp.Path, Type.EmptyTypes), writer, new StringReader(""));
+        await wshell.StartAsync();
+
+        await wshell.HandleInputAsync("recent 1");
+
+        Assert.Contains("Invalid selection.", writer.ToString());
+
+        await wshell.StopAsync();
+    }
+
+    [Fact]
+    public async Task RunAsync_Recent_ReopensTheSelectedActivityEntry()
+    {
+        using var temp = new TempDirectory();
+        var writer = new StringWriter();
+        var manager = BuildManagerWithSampleExplorer(temp.Path);
+        await using var wshell = new WorkspaceShell(manager, writer, new StringReader("1\nopen 1\nopen 1\nopen 1\ncockpit\nrecent 1\n0\n"));
+
+        await wshell.RunAsync();
+
+        Assert.Contains("Opened: Longeron", writer.ToString());
     }
 }
