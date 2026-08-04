@@ -10,7 +10,7 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | `src/Tempest.Core/Runtime/TempestHost.cs` (the registration call sites); `src/Tempest.Core/DependencyInjection/`. |
 | **Review Frequency** | Updated whenever `TempestHost`'s Platform Services Registered phase changes, or a new `IServiceCollection` extension method is added. |
-| **Last Reviewed** | 2026-07-30 (WP 7.3A, Requirements Engine) — `IRequirementsService` added directly at implementation time, not backfilled later. Previously reviewed 2026-07-30 (WP 7.1F, Engineering Core Integration Review & Certification) — full backfill performed; four registrations added across the Engineering Foundation programme (`IEngineeringDocumentStore` `WP 7.1A`, `IMaterialCatalog` `WP 7.1C`, `ICalculationEngine` `WP 7.1D`, `IVerificationService` `WP 7.1E`) had never been recorded here — stale since `WP 6.8`, closed by this Work Package's own certification review. `Tempest.Core.UnitsAndQuantities` (`WP 7.1B`) confirmed to register nothing, exactly as its own approved design requires. Previously reviewed 2026-07-29 (WP 6.8, Platform Services Integration Review) — full backfill performed; every registration `TempestHost.cs` performs is now listed, closing the gap `WP 6.7` first disclosed and `WP 6.6` left in place. |
+| **Last Reviewed** | 2026-08-04 (WP 8.2C, Engineering Domain Implementation) — ten new registrations added directly at implementation time, not backfilled later; 31 → 41. Previously reviewed 2026-07-30 (WP 7.3A, Requirements Engine) — `IRequirementsService` added directly at implementation time, not backfilled later. Previously reviewed 2026-07-30 (WP 7.1F, Engineering Core Integration Review & Certification) — full backfill performed; four registrations added across the Engineering Foundation programme (`IEngineeringDocumentStore` `WP 7.1A`, `IMaterialCatalog` `WP 7.1C`, `ICalculationEngine` `WP 7.1D`, `IVerificationService` `WP 7.1E`) had never been recorded here — stale since `WP 6.8`, closed by this Work Package's own certification review. `Tempest.Core.UnitsAndQuantities` (`WP 7.1B`) confirmed to register nothing, exactly as its own approved design requires. Previously reviewed 2026-07-29 (WP 6.8, Platform Services Integration Review) — full backfill performed; every registration `TempestHost.cs` performs is now listed, closing the gap `WP 6.7` first disclosed and `WP 6.6` left in place. |
 | **Related Documents** | `docs/architecture/Host Lifecycle.md` (Phase 6); `docs/architecture/Ownership Matrix.md`; `Interface Register.md`. |
 | **Related ADRs** | ADR-0005 through ADR-0009, ADR-0011, ADR-0017, ADR-0020, ADR-0036, ADR-0039, ADR-0040–ADR-0057. |
 | **Related Academy Articles** | `docs/academy/01 Engineering Principles/05-dependency-injection.md`; `docs/academy/03 Work Packages/WP2.4-dependency-injection.md`. |
@@ -67,6 +67,16 @@ In registration order, exactly as they appear in
 | `IExportService` | `Singleton<IExportService, ExportService>()` | Ordinary container-constructed singleton (`WP 6.7`), registered immediately after `IApiEndpointRegistry` |
 | `IImportService` / `ImportService` | `AddInstance` (twice, under both keys) | The same already-built `ImportService` instance registered under both its own concrete type and `IImportService` — mirroring `ICurrentPrincipalAccessor`'s own dual-registration precedent (ADR-0044), so a module needing `RegisterImportable` resolves the concrete type while every ordinary consumer resolves only the interface (`WP 6.7`, ADR-0051) |
 | `IEngineeringDocumentStore` | `Singleton<IEngineeringDocumentStore, EngineeringDocumentStore>()` | Ordinary container-constructed singleton (`WP 7.1A`, ADR-0053), built directly on `IPersistenceStore` — registered after Persistence and Identity & Permissions, both of which it depends on |
+| `IEngineeringObjectRepository` | `Singleton<IEngineeringObjectRepository, InMemoryEngineeringObjectRepository>()` | Ordinary container-constructed singleton (`WP 8.2C`, `ADR-0077`), zero constructor dependencies — a new, purely in-memory index, registered immediately after `IEngineeringDocumentStore` |
+| `IEngineeringRelationshipRepository` | `Singleton<IEngineeringRelationshipRepository, InMemoryEngineeringRelationshipRepository>()` | Ordinary container-constructed singleton (`WP 8.2C`, `ADR-0077`), zero constructor dependencies |
+| `ILifecycleTransitionTable` | `Singleton<ILifecycleTransitionTable, LifecycleTransitionTable>()` | Ordinary container-constructed singleton (`WP 8.2C`), zero constructor dependencies — a static, canonical eight-state table |
+| `IValidationRuleSet` | `Singleton<IValidationRuleSet, ValidationRuleSet>()` | Ordinary container-constructed singleton (`WP 8.2C`), zero constructor dependencies — zero rules registered by default |
+| `IReferenceIntegrityChecker` | `Singleton<IReferenceIntegrityChecker, ReferenceIntegrityChecker>()` | Ordinary container-constructed singleton (`WP 8.2C`), depends on `IEngineeringObjectRepository` |
+| `IRelationshipDiscovery` | `Singleton<IRelationshipDiscovery, RelationshipDiscoveryService>()` | Ordinary container-constructed singleton (`WP 8.2C`), depends on `IEngineeringRelationshipRepository`, `IEngineeringObjectRepository` |
+| `IDependencyTraversal` | `Singleton<IDependencyTraversal, RelationshipDiscoveryService>()` | A second, independent `RelationshipDiscoveryService` singleton (`WP 8.2C`) — stateless, so a separate instance per interface costs nothing observable; not dual-registered via `AddInstance` |
+| `IImpactAnalysis` | `Singleton<IImpactAnalysis, RelationshipDiscoveryService>()` | A third, independent `RelationshipDiscoveryService` singleton (`WP 8.2C`), same reasoning as `IDependencyTraversal` above |
+| `IEvidenceComposer` | `Singleton<IEvidenceComposer, EvidenceComposer>()` | Ordinary container-constructed singleton (`WP 8.2C`), depends on `IRelationshipDiscovery`, `IEngineeringObjectRepository` |
+| `EngineeringDomainContext` | `Singleton<EngineeringDomainContext>()` | Ordinary container-constructed singleton (`WP 8.2C`), depends on `IEngineeringDocumentStore` and all nine services immediately above plus `ICurrentPrincipalAccessor` — the shared collaborator bundle every `EngineeringObjectFactory<T>` needs |
 | `IMaterialCatalog` | `Singleton<IMaterialCatalog, MaterialCatalog>()` | Ordinary container-constructed singleton (`WP 7.1C`, ADR-0055), a thin, typed index over `IEngineeringDocumentStore` plus a direct `IPersistenceStore` dependency of its own for its `materialId` index — registered after both |
 | `ICalculationEngine` | `Singleton<ICalculationEngine, CalculationEngine>()` | Ordinary container-constructed singleton (`WP 7.1D`, ADR-0056), depends on `IEngineeringDocumentStore` only — registered immediately after `IMaterialCatalog` |
 | `IVerificationService` | `Singleton<IVerificationService, VerificationService>()` | Ordinary container-constructed singleton (`WP 7.1E`, ADR-0057), depends on `IEngineeringDocumentStore` and Identity & Permissions — registered immediately after `ICalculationEngine` |
@@ -75,19 +85,26 @@ In registration order, exactly as they appear in
 | Every discovered module type | `AddDiscoveredModules` → `Singleton(type, type)` per type | Self-referential singleton |
 | Every discovered hosted service type | `AddDiscoveredHostedServices` → `Singleton(type, type)` per type | Self-referential singleton |
 
-**Total: 31 individually-named registrations above (two of which —
+**Total: 41 individually-named registrations above (two of which —
 `ICurrentPrincipalAccessor`/`CurrentPrincipalAccessor` and
 `IImportService`/`ImportService` — are each dual-registered via two
 `AddInstance` calls under two keys), plus 2 further rows
 (`AddDiscoveredModules`, `AddDiscoveredHostedServices`) each registering
-a dynamic set of discovered types. Verified directly: 33 `Singleton`/
-`AddInstance` call sites plus 2 `AddDiscovered*` call sites = 35 total
+a dynamic set of discovered types. Verified directly: 43 `Singleton`/
+`AddInstance` call sites plus 2 `AddDiscovered*` call sites = 45 total
 registration statements in `TempestHost.cs`'s own Phase 6 block
 (`grep -n "services\.\(Singleton\|AddInstance\)" src/Tempest.Core/
-Runtime/TempestHost.cs` returns 33; adding the 2 `AddDiscovered*` lines
-gives 35), matching this table's own 31 named single/dual registrations
-(31 rows, accounting for 33 raw `Singleton`/`AddInstance` calls) plus 2
-discovered-type rows exactly. Four of these —
+Runtime/TempestHost.cs` returns 43; adding the 2 `AddDiscovered*` lines
+gives 45), matching this table's own 41 named single/dual registrations
+(41 rows, accounting for 43 raw `Singleton`/`AddInstance` calls) plus 2
+discovered-type rows exactly. Ten new rows —
+`IEngineeringObjectRepository`, `IEngineeringRelationshipRepository`,
+`ILifecycleTransitionTable`, `IValidationRuleSet`,
+`IReferenceIntegrityChecker`, `IRelationshipDiscovery`,
+`IDependencyTraversal`, `IImpactAnalysis`, `IEvidenceComposer`,
+`EngineeringDomainContext` — were added by `WP 8.2C` (Engineering
+Domain Implementation) and recorded directly at implementation time,
+not backfilled later; 31 → 41. Four of these —
 `IEngineeringDocumentStore`, `IMaterialCatalog`, `ICalculationEngine`,
 `IVerificationService` — were added by the Engineering Foundation
 programme (`WP 7.1A`, `WP 7.1C`, `WP 7.1D`, `WP 7.1E` respectively) and

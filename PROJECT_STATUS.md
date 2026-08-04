@@ -1,6 +1,6 @@
 # TempestOS — Project Status
 
-**Last Updated:** 2026-08-04 (`WP 8.2B` — Engineering Domain Contracts)
+**Last Updated:** 2026-08-04 (`WP 8.2C` — Engineering Domain Implementation)
 
 This is the primary status dashboard for TempestOS. Read this first for
 "where does the project stand right now" — for "why is it built this
@@ -130,6 +130,51 @@ ACCEPTED TECHNICAL DEBT`); `v0.5.0` ("Developer Experience") before
 that; `v0.4.0` ("Platform Foundation") before that.
 
 ## Current Work Package
+
+**`WP 8.2C` — Engineering Domain Implementation.** `v0.8.0`'s own ninth
+Work Package, and its fourth implementation — following `WP 8.2B`
+directly, the identical architecture-then-contracts-then-implementation
+sequence every prior Engineering Core framework already proved out.
+Implements the complete `WP 8.2B` contract set exactly as frozen, with
+no discipline logic (Requirements/Verification/Calculations/
+Manufacturing) written anywhere inside it, per this Work Package's own
+explicit constraint.
+
+A new namespace, `Tempest.Core.EngineeringDomain`, compiles all 21
+contract files (83 interfaces/enums/records — every WP8.2B interface,
+plus one disclosed gap-fill, `IRevisionRecord`, referenced by
+`IHasRevisions.GetRevisionHistoryAsync` but never itself defined by
+`WP 8.2B`). A shared `EngineeringObjectBase` class implements every
+facet unconditionally; 39 of the ~49 canonical objects get a real,
+tested concrete class over it, constructed through one of two generic
+factory types (`EngineeringObjectFactory<T>`, `EngineeringRelationshipFactory`).
+The five already-Implemented canonical Kinds (`Requirement`,
+`RequirementCollection`/`Group`, `VerificationRecord`,
+`CalculationRecord`, `MaterialSpecification`) compile as Domain
+interfaces but receive no competing concrete class — their ownership
+stays exactly where `WP 8.2A` already placed it. Every canonical
+object's own real storage reuses the existing, shared
+`IEngineeringDocumentStore` in production; a new, purely in-memory
+`IEngineeringObjectRepository`/`IEngineeringRelationshipRepository`
+pair is the genuinely new "in-memory repositories" deliverable.
+
+**Three new ADRs**: `ADR-0077` (shared services reuse the existing
+`IEngineeringDocumentStore` in production; the new repository layer,
+not a second document store, is the in-memory deliverable — resolving
+a tension against `ADR-0072`), `ADR-0078` (the five already-Implemented
+Kinds are not given a competing concrete realisation), `ADR-0079`
+(object/relationship factories are two generic types, instantiated once
+per Kind, not dozens of hand-written ones). A new, twenty-second sample
+module (`EngineeringDomainSampleModule`) builds a sixteen-object,
+eight-family representative graph, including a real cross-framework
+reference to a `Tempest.Core.Materials`-registered
+`IMaterialSpecification`. 39 new tests (1592 → 1631), both Debug and
+Release, clean rebuild. One completion deliverable, prefixed `WP8.2C`
+— see `docs/releases/v0.8.0/WP8.2C Engineering Domain Implementation
+Report.md`. **Stops here, awaiting further Product Owner instruction
+before the next Work Package begins.**
+
+### `WP 8.2B` Summary (for reference)
 
 **`WP 8.2B` — Engineering Domain Contracts.** `v0.8.0`'s own eighth
 Work Package, following `WP 8.2A` directly — the identical
@@ -736,36 +781,38 @@ review.md`.
 
 ## Next Planned Work Package
 
-**None yet approved.** `WP 8.2B` defined the complete public contract for
-the Engineering Domain Architecture `WP 8.2A` established — no
-implementation performed. The most natural next step both Work
-Packages name is a **real Physical/Configuration Engineering Discipline
-Module** (`IAssembly`/`ISubAssembly`/`IPart`/`IComponent`), implementing
-the now-frozen `WP8.2B` contracts exactly as specified — the first proof
-of the new canonical model and its contracts against a genuinely new
-discipline, and the first real
-`IEngineeringObjectFactory`/`IEngineeringRelationshipFactory` pair.
-Separately, the Workspace's own gaps remain open: the Project
-Dashboard, the Properties/Inspector split, and the Command Palette's
-own full, screen-independent realisation (`WP8.0C UX Specification.md`
-§0's own recommended Contract Review, reconciling `WP 8.0B`'s twelve
-contracts against `WP 8.0C`'s richer demands, still applies); the first
-real, production `IWorkspaceViewFactory`/`IProjectExplorerNodeProvider`
-pair for an actual Engineering Core `Kind` (most naturally Requirements)
+**None yet approved.** `WP 8.2C` implemented the complete Engineering
+Domain contracts `WP 8.2A`/`WP 8.2B` established — 39 of ~49 canonical
+objects now have real, tested concrete classes. The most natural next
+step all three Work Packages name is a **real Physical/Configuration
+Engineering Discipline Module**, now building directly on the
+already-compiled `IAssembly`/`ISubAssembly`/`IPart`/`IComponent`
+concrete classes rather than starting from proposed contracts alone —
+the first proof of the new canonical model, its contracts, and its
+implementation against a genuinely new discipline. Separately, the
+Workspace's own gaps remain open: the Project Dashboard, the
+Properties/Inspector split, and the Command Palette's own full,
+screen-independent realisation (`WP8.0C UX Specification.md` §0's own
+recommended Contract Review, reconciling `WP 8.0B`'s twelve contracts
+against `WP 8.0C`'s richer demands, still applies); the first real,
+production `IWorkspaceViewFactory`/`IProjectExplorerNodeProvider` pair
+for an actual Engineering Core `Kind` (most naturally Requirements)
 remains open — `WP 8.1B` proved the mechanism only against fictional
-sample content. Two disclosed gaps from `WP 8.2A` itself, unchanged by
-`WP 8.2B`: closing the Verification Activity/Verification Result split
-(`Canonical Object Catalogue.md` §3), and a real Baseline implementation
-(`Configuration Management Specification.md` §3) — `WP 8.2B` explicitly
-recommends closing the former only if a real discipline module
-demonstrates a genuine need, not speculatively. Two Future Capability
-candidates raised by `WP 7.3A` (`FCR-0037` string-based allocation
-targets, `FCR-0038` requirement baselining) and Programme F (Platform
-Hardening, recommended second, at `v0.9.0` — see `WP7.2A Recommended
-Programme.md`) all remain open, unscheduled alternatives. **Per this
-project's own standing discipline (`FOUNDATION.md` §1) and `WP 8.2B`'s
-own explicit closing instruction, no further Work Package begins until
-the Product Owner gives further instruction.**
+sample content. Three disclosed gaps from this Work Package's own
+trio, unchanged: closing the Verification Activity/Verification Result
+split (a genuine implementation now exists but is generic, not
+discipline-specialised), a real Baseline/Release implementation proving
+`Configuration Management Specification.md` §3 against a genuinely
+frozen membership model, and reconciling the five already-Implemented
+canonical Kinds (`ADR-0078`) once a real consumer needs their Domain
+facet interfaces. Two Future Capability candidates raised by `WP 7.3A`
+(`FCR-0037` string-based allocation targets, `FCR-0038` requirement
+baselining) and Programme F (Platform Hardening, recommended second, at
+`v0.9.0` — see `WP7.2A Recommended Programme.md`) all remain open,
+unscheduled alternatives. **Per this project's own standing discipline
+(`FOUNDATION.md` §1) and `WP 8.2C`'s own explicit closing instruction,
+no further Work Package begins until the Product Owner gives further
+instruction.**
 
 ## Foundation Status
 
@@ -827,22 +874,22 @@ Experience phase is now complete.
 
 | Metric | Value |
 |---|---|
-| Automated tests | 1592 (0 failures) — unchanged by `WP 8.2B` (contract-review-only Work Package; no `src/`/`tests/` change of any kind, verified directly against `git status`) |
-| ADRs | 76 (`ADR-0001`–`ADR-0076`, no gaps at all), all Accepted — **+2, `WP 8.2B`**: `ADR-0075`/`ADR-0076` (facet-interface composition; one generic relationship interface, not seventeen per-category types), `ADR-0076` explicitly resolving a tension against `ADR-0073` |
-| Rejected Designs | 45 (`RD-0001`–`RD-0045`) — unchanged by `WP 8.2B` |
-| Academy articles | 115 (see `docs/governance/Documentation/Academy Register.md`) — **+1, `WP 8.2B`**: `WP8.2B-engineering-domain-contracts.md` (whole-review retrospective); `18-engineering-domain-architecture.md` updated in place a second time, not counted as new |
-| Governance registers | 27 (32 governance documents total), plus 4 standing security documents under `docs/security/` and 1 standing engineering document (`docs/engineering/Engineering Principles.md`, confirmed requiring no extension by this Work Package) — unchanged in count by `WP 8.2B` |
-| Architecture documents | 20 under `docs/architecture/` (22 including the two release-scoped documents) — unchanged by `WP 8.2B` |
-| Platform services | 27 catalogued — unchanged by `WP 8.2B` (no implementation performed) |
-| Modules (production) | 21 — unchanged by `WP 8.2B` |
-| Hosted services (production) | 2 — unchanged by `WP 8.2B` |
+| Automated tests | 1631 (0 failures) — **+39, `WP 8.2C`** (1592 → 1631), both Debug and Release, clean rebuild |
+| ADRs | 79 (`ADR-0001`–`ADR-0079`, no gaps at all), all Accepted — **+3, `WP 8.2C`**: `ADR-0077`/`ADR-0078`/`ADR-0079` (shared-store reuse plus new in-memory repository layer; no competing realisation of the five already-Implemented Kinds; generic factories, not per-Kind types) |
+| Rejected Designs | 45 (`RD-0001`–`RD-0045`) — unchanged by `WP 8.2C` |
+| Academy articles | 116 (see `docs/governance/Documentation/Academy Register.md`) — **+1, `WP 8.2C`**: `WP8.2C-engineering-domain-implementation.md` (standard 13-section implementation retrospective); `18-engineering-domain-architecture.md` updated in place a third time, not counted as new |
+| Governance registers | 27 (32 governance documents total), plus 4 standing security documents under `docs/security/` and 1 standing engineering document (`docs/engineering/Engineering Principles.md`) — unchanged in count by `WP 8.2C` |
+| Architecture documents | 20 under `docs/architecture/` (22 including the two release-scoped documents) — unchanged by `WP 8.2C` |
+| Platform services | 27 catalogued — unchanged by `WP 8.2C` (no new Platform Service; every new shared service is a component of the existing Engineering Core layer, not a new named Platform Service) |
+| Modules (production) | 22 — **+1, `WP 8.2C`**: `EngineeringDomainSampleModule` (21 → 22) |
+| Hosted services (production) | 2 — unchanged by `WP 8.2C` |
 | Plugins (production) | 0 — infrastructure fully implemented and tested; `src/Plugins/` empty by deliberate scope decision |
-| Custom exception types (`src/Tempest.Core/`) | 66 — unchanged by `WP 8.2B` |
-| Public interfaces (`src/Tempest.Core/`) | 80 — unchanged by `WP 8.2B` — the ~49 canonical Engineering Objects and ten facet interfaces this Work Package proposes are contracts only, uncompiled; five objects are reconciled against already-real `Kind` values, the remaining forty-plus have no interface or implementation of any kind yet |
-| DI registrations (`TempestHost.cs` Phase 6) | 33 raw call sites, 31 named registrations — unchanged by `WP 8.2B` |
-| Technical Debt Register items | 25 tracked, 17 disclosed trade-offs — unchanged by `WP 8.2B`; zero new items raised |
+| Custom exception types (`src/Tempest.Core/`) | 69 — **+4, `WP 8.2C`**: `EngineeringDomainException` (base), `EngineeringObjectNotFoundException`, `InvalidLifecycleTransitionException`, `SelfReferentialRelationshipException` — verified directly (`grep -rhoP "^(public\|internal)( sealed)? class \w+Exception\b" src/Tempest.Core` returns 69) |
+| Public interfaces (`src/Tempest.Core/`) | 163 — **+83, `WP 8.2C`**: the complete `Tempest.Core.EngineeringDomain` contract surface now compiles for the first time (`WP 8.2A`/`WP 8.2B` proposed the same interfaces as uncompiled C#, never counted here) |
+| DI registrations (`TempestHost.cs` Phase 6) | 43 raw call sites, 41 named registrations — **+10, `WP 8.2C`** (31 → 41) |
+| Technical Debt Register items | 25 tracked, 17 disclosed trade-offs — unchanged by `WP 8.2C`; zero new items raised |
 | Commits (`v0.6.0` → `v0.7.0`) | 17 total, release complete: `v0.6.0` release-branch preparation (2 commits), merge from `main`, `WP 7.0A`–`WP 7.4.0` (14 commits), the `v0.7.0` merge to `main` (non-fast-forward, `61fb2db`) — tagged `v0.7.0`, pushed |
-| Commits (`v0.7.0` → `v0.8.0`, so far) | 8 — `WP 8.0A`, `WP 8.0B`, `WP 8.1A`, `WP 8.0C`, `WP 8.1B`, `WP 8.1C`, `WP 8.2A`, `WP 8.2B` (this commit); `VERSION` bumped to `0.7.0` as part of branch preparation, not counted as a separate Work Package commit |
+| Commits (`v0.7.0` → `v0.8.0`, so far) | 9 — `WP 8.0A`, `WP 8.0B`, `WP 8.1A`, `WP 8.0C`, `WP 8.1B`, `WP 8.1C`, `WP 8.2A`, `WP 8.2B`, `WP 8.2C` (this commit); `VERSION` bumped to `0.7.0` as part of branch preparation, not counted as a separate Work Package commit |
 | Contributors | 1 (repository owner; all commits co-authored by Claude) |
 
 *(This table is generated from `docs/governance/Quality/Repository Metrics
@@ -1616,6 +1663,16 @@ reflect the now-frozen public contracts and `ADR-0075`/`ADR-0076`.
 `docs/engineering/Engineering Principles.md` reviewed: **no extension
 warranted**, unchanged from `WP 8.2A` — contract review produced no
 implementation to derive a genuine engineering principle from.
+**`WP 8.2C`** added `WP8.2C-engineering-domain-implementation.md` (a
+standard 13-section implementation retrospective) and updated `02
+Runtime Architecture/18-engineering-domain-architecture.md` in place a
+third time to reflect the now-compiled implementation, `ADR-0077`,
+`ADR-0078`, and `ADR-0079`. `docs/engineering/Engineering Principles.md`
+reviewed: **no extension warranted** — every design decision this Work
+Package made was already anticipated by `WP 8.2A`/`WP 8.2B`'s own
+approved architecture and contracts; no genuinely new engineering
+principle emerged from compiling and implementing them, mirroring `WP
+8.1A`'s own identical finding for the Workspace Shell.
 
 ## Governance Status
 
@@ -2081,6 +2138,32 @@ instead. No new Module Register row (contracts only, no discovered
 module). `ADR Register.md`, `Academy Register.md`, `Documentation
 Register.md` all kept current directly at documentation time, not
 backfilled.
+**`WP 8.2C`** added three new ADRs (`ADR-0077`–`ADR-0079`, all
+Accepted, 76 → 79) — all three genuinely new implementation-stage
+decisions, not reserved numbers answered; `ADR-0077` explicitly
+resolves a tension between this Work Package's own "no persistence"
+constraint and `ADR-0072`'s own prior, binding decision, the same
+shape of tension `ADR-0076` already resolved once at the contract
+stage — no existing ADR was modified or superseded. No new Technical
+Debt item (every disclosed limitation — the repository not rebuilding
+from the real store on restart, the five already-Implemented Kinds
+being unconstructable through this framework, `ValidationRuleSet`
+enforcing zero rules by design — is an ADR consequence or a named
+Future Evolution item, not a defect in shipped behaviour); no new
+Future Capability Register entry raised speculatively — the natural
+next Work Package (a real Physical/Configuration Engineering
+Discipline Module, now buildable directly against compiled concrete
+classes) is named directly in this Work Package's own Future Evolution
+instead. One new Module Register row (`EngineeringDomainSampleModule`,
+21 → 22 production modules) — confirmed directly via
+`ClockModuleDiscoveryTests.DiscoverModules_ScopedToSampleAssembly_FindsEveryRealSampleModule`,
+updated in the same commit. `Interface Register.md` gains its largest
+single addition to date (83 new interfaces, one dedicated subsection);
+`Dependency Injection Register.md` gains ten new named registrations.
+`ADR Register.md`, `Academy Register.md`, `Documentation Register.md`,
+`Module Register.md`, `Interface Register.md`, `Dependency Injection
+Register.md` all kept current directly at implementation time, not
+backfilled.
 
 ## Known Unknowns
 
@@ -2269,20 +2352,33 @@ Governance Audit Report.md`:
     prohibition (`ADR-0076`). Two new ADRs (`ADR-0075`–`ADR-0076`), one
     explicitly resolving a tension against a prior, binding decision.
     **Zero `src/`/`tests/` change of any kind.**
-19. **Await Product Owner instruction for what comes next.** Both
-    `WP 8.2A` and `WP 8.2B` recommend a real Physical/Configuration
-    Engineering Discipline Module
-    (`IAssembly`/`ISubAssembly`/`IPart`/`IComponent`) as the natural next
-    proof of the new canonical model and its now-frozen contracts;
-    separately, `WP8.0C UX Specification.md` §0's own recommended
-    Contract Review (reconciling `WP 8.0B`'s twelve contracts against
-    `WP 8.0C`'s richer demands) and the first real, production
-    `IWorkspaceViewFactory`/`IProjectExplorerNodeProvider` pair for an
-    actual Engineering Core `Kind` both remain open. Per this project's
-    own standing discipline (`FOUNDATION.md` §1) and `WP 8.2B`'s own
-    explicit closing instruction, no further Work Package begins until
-    the Product Owner gives further instruction.
-19. A GitHub Release for `v0.6.0` (and now `v0.7.0`) has not yet been
+19. **`WP 8.2C` — Engineering Domain Implementation — is complete.**
+    Compiles every `WP 8.2B` frozen contract exactly, and gives 39 of
+    the ~49 canonical objects a real, tested concrete class over a new
+    shared `EngineeringObjectBase` and two generic factory types — see
+    Current Work Package, above, and `docs/releases/v0.8.0/WP8.2C
+    Engineering Domain Implementation Report.md`. Every canonical
+    object's own real storage reuses the existing, shared
+    `IEngineeringDocumentStore` in production; a new, purely in-memory
+    repository layer is the "in-memory repositories" deliverable. The
+    five already-Implemented canonical Kinds are deliberately not given
+    a competing concrete realisation. Three new ADRs
+    (`ADR-0077`–`ADR-0079`). New sample module
+    (`EngineeringDomainSampleModule`, the platform's twenty-second). 39
+    new tests (1592 → 1631). **Zero new Technical Debt.**
+20. **Await Product Owner instruction for what comes next.** `WP 8.2A`,
+    `WP 8.2B`, and `WP 8.2C` all recommend a real Physical/Configuration
+    Engineering Discipline Module, now buildable directly against the
+    already-compiled `IAssembly`/`ISubAssembly`/`IPart`/`IComponent`
+    concrete classes; separately, `WP8.0C UX Specification.md` §0's own
+    recommended Contract Review (reconciling `WP 8.0B`'s twelve
+    contracts against `WP 8.0C`'s richer demands) and the first real,
+    production `IWorkspaceViewFactory`/`IProjectExplorerNodeProvider`
+    pair for an actual Engineering Core `Kind` both remain open. Per
+    this project's own standing discipline (`FOUNDATION.md` §1) and
+    `WP 8.2C`'s own explicit closing instruction, no further Work
+    Package begins until the Product Owner gives further instruction.
+21. A GitHub Release for `v0.6.0` (and now `v0.7.0`) has not yet been
     created (`gh` CLI unavailable in this environment) — see the Release
     Summary for the exact command or manual steps to complete it.
 
@@ -2552,17 +2648,38 @@ phase is under way, on `feature/v0.8.0-engineering-workspace` (cut from
   `ADR-0076` explicitly resolving a tension between this Work Package's
   own controlling instruction and `ADR-0073`'s own prior, binding
   decision. Zero `src/`/`tests/` change of any kind.
+- `WP 8.2C` — Engineering Domain Implementation (implementation; no
+  discipline logic — Requirements/Verification/Calculations/
+  Manufacturing — written anywhere inside it). **Complete.** Compiles
+  every `WP 8.2B` frozen contract exactly — see `docs/releases/v0.8.0/
+  WP8.2C Engineering Domain Implementation Report.md`. A shared
+  `EngineeringObjectBase` class implements every facet unconditionally;
+  39 of the ~49 canonical objects get a real, tested concrete class,
+  constructed through one of two generic factory types
+  (`EngineeringObjectFactory<T>`, `EngineeringRelationshipFactory`).
+  The five already-Implemented canonical Kinds are deliberately not
+  given a competing concrete realisation — their ownership stays
+  exactly where `WP 8.2A` already placed it. Every canonical object's
+  own real storage reuses the existing, shared `IEngineeringDocumentStore`
+  in production, introducing zero new persistence; a new, purely
+  in-memory `IEngineeringObjectRepository`/`IEngineeringRelationshipRepository`
+  pair is the genuinely new "in-memory repositories" deliverable. Three
+  new ADRs (`ADR-0077`–`ADR-0079`). New sample module
+  (`EngineeringDomainSampleModule`, the platform's twenty-second,
+  building a sixteen-object representative graph including a real
+  cross-framework Material reference). 39 new tests (1592 → 1631), both
+  Debug and Release, clean rebuild.
 
-**`v0.8.0` is in progress.** Its architecture, contract, all three
-implementation phases, UX specification, and the Engineering Domain
-Architecture and its own complete public contracts are all complete —
-a real, running Workspace shell with a navigable Project Explorer and a
-live Engineering Cockpit landing screen exists, and the platform's own
-canonical engineering vocabulary is now frozen at both the architecture
-and contract level; the Project Dashboard, the Properties/Inspector
-split, the Command Palette's own screen-independent realisation, and any
-real implementation of the ~49-object Engineering Domain Architecture
-against its now-frozen contracts all remain unscheduled.
+**`v0.8.0` is in progress.** Its architecture, contract, and
+implementation stages for both the Workspace and the Engineering Domain
+are all complete — a real, running Workspace shell with a navigable
+Project Explorer and a live Engineering Cockpit landing screen exists,
+and the platform's own canonical engineering vocabulary is now frozen
+and, for 39 of its ~49 objects, real, tested, running code; the Project
+Dashboard, the Properties/Inspector split, the Command Palette's own
+screen-independent realisation, and a real Physical/Configuration
+Engineering Discipline Module built against the now-compiled Engineering
+Domain classes all remain unscheduled.
 
 ## Long-Term Vision
 

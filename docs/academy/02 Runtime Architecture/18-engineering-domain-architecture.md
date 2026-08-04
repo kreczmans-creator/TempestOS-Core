@@ -3,19 +3,24 @@
 ## 1. Introduction
 
 The Engineering Domain Architecture (`WP 8.2A`, contracted `WP 8.2B`,
-`ADR-0072`–`ADR-0076`) is TempestOS's own canonical statement of what an
-Engineering Object is — the shape every one of roughly fifty named
-object families (Requirement, Assembly, Risk, Supplier, Milestone, and
-so on) commits to, whether it ships today or in a future release. `WP
-8.2A` was architecture-only: no code, no interfaces, no persistence, no
-UI. `WP 8.2B` then converted that architecture into the complete public
-contract — proposed, uncompiled C# for every one of the ~49 canonical
-objects plus their own supporting facet/relationship/lifecycle/
-validation/traceability contracts — still no implementation, no
-concrete classes, no persistence. This document teaches why the model
-looks the way it does, why its own contracts are shaped the way they
-are, and how both relate to the four Engineering Core frameworks
-(`Tempest.Core.Requirements`, `Verification`, `Materials`,
+implemented `WP 8.2C`, `ADR-0072`–`ADR-0079`) is TempestOS's own
+canonical statement of what an Engineering Object is — the shape every
+one of roughly fifty named object families (Requirement, Assembly,
+Risk, Supplier, Milestone, and so on) commits to, whether it ships
+today or in a future release. `WP 8.2A` was architecture-only: no code,
+no interfaces, no persistence, no UI. `WP 8.2B` then converted that
+architecture into the complete public contract — proposed, uncompiled
+C# for every one of the ~49 canonical objects plus their own supporting
+facet/relationship/lifecycle/validation/traceability contracts — still
+no implementation, no concrete classes, no persistence. `WP 8.2C` then
+compiled every one of those contracts and gave 39 of the ~49 canonical
+objects a real, tested concrete class, backed by a small, shared
+implementation framework (`EngineeringObjectBase`, generic factories, a
+new in-memory repository layer) — the first Engineering Domain code
+that actually runs. This document teaches why the model looks the way
+it does, why its own contracts and implementation are shaped the way
+they are, and how all three relate to the four Engineering Core
+frameworks (`Tempest.Core.Requirements`, `Verification`, `Materials`,
 `Calculations`) that already ship and already, independently, converged
 on the same shape.
 
@@ -76,6 +81,21 @@ have no implementation at all.
    "open string, never a closed enum" decision** — `ADR-0076`'s own
    question, the most direct tension `WP 8.2B`'s own controlling
    instruction created against `WP 8.2A`'s own prior work?
+7. **How does "no persistence" for a new implementation Work Package
+   coexist with `ADR-0072`'s own mandate that every canonical object is
+   `IEngineeringDocumentStore`-backed** — `ADR-0077`'s own question,
+   `WP 8.2C`'s direct analogue of `ADR-0076`'s tension one layer down,
+   at the implementation stage rather than the contract stage.
+8. **Do the five canonical Kinds an existing framework already
+   implements get a second, competing concrete realisation from the new
+   shared framework, or not** — `ADR-0078`'s own question, forced by
+   `WP 8.2C`'s own simultaneous instructions to "implement every
+   canonical Engineering Object class" and to write no Requirements/
+   Verification/Calculations logic.
+9. **Does "one factory per Kind" (`WP8.2B Dependency Rules.md` §7) mean
+   one hand-written factory type per Kind, or one instance** — `ADR-0079`'s
+   own question, answered before it produced sixty near-identical
+   classes.
 
 ## 5. The Design
 
@@ -112,6 +132,30 @@ relationship categories" and "relationships are open-string, never a
 closed enum" by recognising governing a category can mean documenting
 a convention, not defining a closed type.
 
+`WP 8.2C` then compiled all of this and gave it a working implementation.
+`EngineeringObjectBase` is one shared, concrete class implementing every
+facet interface unconditionally — a concrete Kind class inherits
+whichever subset its own interface actually declares, at no extra
+implementation cost, since the plumbing already exists once. Every
+canonical object's own real storage still flows through
+`IEngineeringDocumentStore`, exactly as `ADR-0072` requires — reused,
+in production, from the same shared, already-registered instance every
+other Engineering Core framework already resolves (`ADR-0077`); a new,
+purely in-memory `IEngineeringObjectRepository`/
+`IEngineeringRelationshipRepository` pair is the genuinely new
+"in-memory repositories" layer, answering the one question
+`IEngineeringDocumentStore` cannot ("list every object of Kind X").
+Five canonical Kinds already owned by an existing framework
+(`Requirement`, `RequirementCollection`/`Group`, `VerificationRecord`,
+`CalculationRecord`, `MaterialSpecification`) compile as Domain
+interfaces but receive no competing concrete class here — that
+realisation remains exactly where `WP 8.2A` already placed it
+(`ADR-0078`). The remaining 39 canonical objects each get a small
+concrete class, constructed through one of two generic factory types
+(`EngineeringObjectFactory<T>`, `EngineeringRelationshipFactory`),
+instantiated once per Kind by whichever composition root needs it —
+never a hand-written factory class per Kind (`ADR-0079`).
+
 ## 6. Alternatives Considered
 
 **A distinct storage/type hierarchy per object family** — considered
@@ -140,6 +184,24 @@ and rejected; see `ADR-0076`. Would be a closed set by construction,
 directly contradicting `ADR-0073`'s own already-locked decision one
 Work Package earlier in the same release.
 
+**Registering a second, in-memory `IEngineeringDocumentStore` as the
+Host's own production store** — considered and rejected; see `ADR-0077`.
+Would silently break every existing Engineering Core framework's own
+persistence, or require a competing dual-registration scheme this
+platform has no precedent for.
+
+**Giving the five already-Implemented canonical Kinds their own new
+concrete classes**, either under the same `Kind` strings (risking two
+incompatible writers for one Kind) or under new, Domain-prefixed ones
+(permanently forking "what a Requirement is" in two directions) —
+considered and rejected; see `ADR-0078`.
+
+**One hand-written factory class per Kind** (~39 object factories plus
+~20 relationship factories) — considered and rejected; see `ADR-0079`.
+Pure boilerplate proportional to how many Kinds a catalogue happens to
+enumerate, the identical reasoning `ADR-0076` already applied to
+relationship types one Work Package earlier.
+
 ## 7. Why This Solution Was Chosen
 
 It is the first Work Package to generalise "reuse what already exists"
@@ -157,8 +219,15 @@ controlling instruction was easiest.
 ## 8. Architectural Principles
 
 - **Composition Over Inheritance** — the canonical shape is a set of
-  facets an object's own `Kind` commits to, not a base class hierarchy;
-  nothing in this architecture proposes an `EngineeringObjectBase` type.
+  facets an object's own `Kind` commits to, not a base class hierarchy.
+  This governs *contracts*: no canonical object **interface** inherits
+  from more than one other canonical object interface (`ADR-0075`).
+  `WP 8.2C` does introduce a shared `EngineeringObjectBase` **class** —
+  a deliberate, disclosed, and orthogonal choice: ordinary
+  implementation reuse (mirroring `ModuleLifecycleBase`'s own identical
+  role for modules), never inherited by more than one canonical object
+  interface's own concrete class, and never itself part of any public
+  contract a caller programs against.
 - **Open/Closed** — every extensibility point (`ADR-0072`'s new Kinds,
   `ADR-0073`'s new relationship kinds, `ADR-0074`'s per-family lifecycle
   specialisation) is additive; nothing requires modifying existing,
@@ -187,6 +256,18 @@ controlling instruction was easiest.
   which behaviours it must support by reading its own interface list,
   never by inheriting a large surface and discovering which members
   actually matter.
+- Thirty-nine canonical objects are no longer merely named — they
+  compile, are constructible through a working factory, are queryable
+  through a real in-memory repository, and are exercised end to end by
+  a sixteen-object representative graph (`EngineeringDomainSampleModule`),
+  proving the architecture and its contracts actually hold together in
+  running code, not only on paper.
+- A future discipline module inherits identity, metadata, lifecycle,
+  revision, relationship, traceability, validation, and search
+  behaviour simply by deriving from `EngineeringObjectBase` and
+  declaring which of the ~49 interfaces it realises — zero new
+  plumbing code required, mirroring exactly how a new sample module
+  inherits lifecycle no-ops from `ModuleLifecycleBase` today.
 
 ## 10. Trade-offs
 
@@ -212,6 +293,22 @@ controlling instruction was easiest.
   individually small and the mapping from the twenty named "Common
   Behaviour" concerns to the ten facets is documented once
   (`WP8.2B Interface Catalogue.md` §1), not left for a reader to infer.
+- Two `IEngineeringDocumentStore` implementations now exist in the
+  repository (`ADR-0077`) — a reader unfamiliar with the ADR could
+  reasonably ask why a second one exists; disclosed in both types' own
+  code comments, not hidden.
+- `IRequirement`/`IRequirementSet`/`IVerificationResult`/
+  `ICalculationResult`/`IMaterial` compile but cannot currently be
+  constructed by anything in `Tempest.Core.EngineeringDomain` —
+  `ADR-0078`'s own disclosed cost of not duplicating an already-owned
+  Kind.
+- `WP8.2B Interface Catalogue.md`'s own `IRelease : IBaseline : IConfiguration`
+  chain is three levels of canonical-object specialisation deep,
+  directly contradicting `WP8.2B Dependency Rules.md` §6's own "at most
+  one level" rule — found during implementation, compiled exactly as
+  frozen (interfaces are not `WP 8.2C`'s to silently correct), and
+  disclosed here as a genuine authoring inconsistency in `WP 8.2B`'s
+  own deliverables, not corrected.
 
 ## 11. Common Mistakes
 
@@ -237,29 +334,52 @@ settled (`ADR-0073`) is real architectural work — accepting the
 literal reading uncritically would have quietly undone a locked-in
 decision one Work Package old.
 
+A third, `WP 8.2C`-specific mistake worth naming: assuming "implement
+every canonical Engineering Object class" must mean giving every one of
+the ~49 a brand-new concrete class, including the five an existing
+framework already owns. The five already-Implemented Kinds are just as
+"implemented" after `WP 8.2C` as before it — their concrete realisation
+was never this Work Package's own to duplicate (`ADR-0078`). A reader
+should not expect `Tempest.Core.EngineeringDomain` to construct an
+`IRequirement`; that remains `Tempest.Core.Requirements`'s own job,
+permanently, unless a future Work Package deliberately decides
+otherwise.
+
 ## 12. Future Evolution
 
 - **A real Physical/Configuration Engineering Discipline Module**
-  (Assembly, Sub-Assembly, Part, Component) — the most natural first
-  proof of this canonical model against a genuinely new discipline,
-  mirroring Requirements' own role as the first proof of the Engineering
-  Data Model.
+  (Assembly, Sub-Assembly, Part, Component) — now able to build directly
+  on the already-compiled `IAssembly`/`ISubAssembly`/`IPart`/`IComponent`
+  concrete classes `WP 8.2C` shipped, rather than starting from proposed
+  contracts alone, mirroring Requirements' own role as the first proof
+  of the Engineering Data Model.
 - **Closing the Verification Activity/Verification Result gap**
   (`WP8.2A Canonical Object Catalogue.md` §3's own disclosed note) —
-  a real, separately-persisted, revisable Verification Activity, distinct
-  from its own eventual Result.
+  `VerificationActivity`/`Test`/`Inspection` now exist as real, if
+  generic, concrete classes; a genuine discipline-specific need should
+  drive any further specialisation, not speculation (`WP8.2B`'s own
+  Recommendations, unchanged).
 - **A real Baseline/Release implementation**, proving `Configuration
   Management Specification.md` §3's own reuse of the
   `RequirementCollection` pattern against a genuinely frozen,
-  revision-pinned membership model.
+  revision-pinned membership model — `Baseline`/`Release` concrete
+  classes exist; `ReferenceIntegrityChecker.CheckBaselineMembersAsync`
+  is implemented and tested, but nothing yet calls it automatically on
+  a lifecycle transition into `Released`.
 - **Structural enforcement of the approval-gate and lifecycle-blocking
   rules** `Validation Specification.md` names but does not yet require
-  any shipped code to enforce.
-- **A real implementation of any `WP8.2B Interface Catalogue.md`
-  interface** — the natural next step for whichever discipline module
-  is authorised next, most likely following the identical two-stage
-  discipline (architecture, this pair of Work Packages; implementation,
-  next) every prior Engineering Core framework already used.
+  any shipped code to enforce — `IValidationRuleSet` exists and is
+  tested empty; registering real rules against it is a genuine next
+  step, not attempted speculatively here.
+- **Reconciling the five already-Implemented canonical Kinds**
+  (`ADR-0078`) — retrofitting `Requirement`/`VerificationRecord`/
+  `CalculationRecord`/`MaterialSpecification` to additionally implement
+  their own Domain facet interfaces, once a real consumer needs it, not
+  before.
+- **Rebuilding the in-memory repository from the real store on Host
+  startup** (`ADR-0077`'s own disclosed gap) — today, restarting the
+  Host loses the repository's own by-Kind index even though the
+  underlying documents themselves survive.
 
 ## 13. Key Takeaways
 
@@ -283,20 +403,33 @@ decision one Work Package old.
    verify mechanically, not merely aspire to.
 5. When a new Work Package's own controlling instruction appears to
    conflict with a prior, binding decision, the right response is
-   resolving the tension explicitly (`ADR-0076`), not silently
-   following whichever reading is more literal — the same "disclose,
-   don't hide" discipline this project has applied to implementation
-   findings since `WP 8.1A`, now proven to apply equally well across
-   two consecutive architecture/contract Work Packages.
+   resolving the tension explicitly (`ADR-0076`, `ADR-0077`), not
+   silently following whichever reading is more literal — the same
+   "disclose, don't hide" discipline this project has applied to
+   implementation findings since `WP 8.1A`, now proven to apply equally
+   well across three consecutive architecture/contract/implementation
+   Work Packages.
+6. "Composition over inheritance" is a rule about **contracts**; a
+   shared concrete base class for **implementation reuse** is an
+   orthogonal, ordinary technique, not a violation of it — conflating
+   the two would have meant reinventing every facet's own plumbing 39
+   separate times for no architectural benefit.
+7. Not every named canonical object needs a new concrete class from a
+   new shared framework — five of them already have a perfectly good
+   one, and building a second would have been the exact discipline-specific
+   duplication this Work Package's own controlling instruction explicitly
+   forbade.
 
 ## Related Documents
 
 `15-engineering-data-model.md`; `16-requirements-engine.md`;
 `14-verification-framework.md`; `13-calculation-framework.md`;
-`ADR-0053`, `ADR-0058`, `ADR-0072`–`ADR-0076`; `docs/releases/v0.8.0/
+`ADR-0053`, `ADR-0058`, `ADR-0072`–`ADR-0079`; `docs/releases/v0.8.0/
 WP8.2A Engineering Domain Architecture.md` and its eight companion
 deliverables; `docs/releases/v0.8.0/WP8.2B Engineering Domain
-Contracts.md` and its six companion deliverables; `docs/engineering/
-Engineering Principles.md`;
+Contracts.md` and its seven companion deliverables; `docs/releases/v0.8.0/
+WP8.2C Engineering Domain Implementation Report.md` and its companion
+deliverables; `docs/engineering/Engineering Principles.md`;
 `docs/academy/03 Work Packages/WP8.2A-engineering-domain-architecture.md`;
-`docs/academy/03 Work Packages/WP8.2B-engineering-domain-contracts.md`.
+`docs/academy/03 Work Packages/WP8.2B-engineering-domain-contracts.md`;
+`docs/academy/03 Work Packages/WP8.2C-engineering-domain-implementation.md`.
