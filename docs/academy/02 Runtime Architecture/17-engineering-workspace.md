@@ -3,16 +3,23 @@
 ## 1. Introduction
 
 The Engineering Workspace (architected `WP 8.0A`, contracted `WP 8.0B`,
-shell implemented `WP 8.1A`, `ADR-0062`–`ADR-0068`) is TempestOS's first
-user-facing engineering product surface, and now — as of `WP 8.1A` — the
-platform's own default launch target (`ADR-0068`). Running
-`Tempest.App` today presents the five-region Workspace shell (Areas,
-Project Explorer, Documents, Properties, Status Bar), not the original
-console `TempestShell`, which remains in the repository, fully tested,
-simply no longer the default. This document teaches the reasoning
-behind the Workspace's own design, its own frozen public contracts, and
-its own shell implementation — not yet any real engineering-domain
-content, which no Work Package through `WP 8.1A` has built.
+shell implemented `WP 8.1A`, its complete target experience specified
+`WP 8.0C`, `ADR-0062`–`ADR-0070`) is TempestOS's first user-facing
+engineering product surface, and — since `WP 8.1A` — the platform's own
+default launch target (`ADR-0068`). Running `Tempest.App` today
+presents the five-region Workspace shell (Areas, Project Explorer,
+Documents, Properties, Status Bar), not the original console
+`TempestShell`, which remains in the repository, fully tested, simply
+no longer the default. `WP 8.0C` then specified, without implementing,
+the complete target experience this shell is meant to grow into — an
+Engineering Cockpit landing screen (`ADR-0069`), a Command Palette
+(`ADR-0070`), a Project Dashboard, an Inspector panel distinct from
+Properties, and the full interaction/navigation/behaviour model around
+them. This document teaches the reasoning behind the Workspace's own
+design, its own frozen public contracts, its own shell implementation,
+and the target experience now specified for it — not yet any real
+engineering-domain content or the richer UX itself, neither of which
+any Work Package through `WP 8.0C` has built.
 
 ## 2. Purpose
 
@@ -52,6 +59,11 @@ it to present.
 4. **How does a digital thread get presented on screen** without
    requiring a new traversal capability the Systems Engineering
    Foundation does not yet provide?
+5. **What does the Workspace actually feel like to use** — what screen
+   does a user land on, how do they discover an action without
+   memorising it, and how does the experience stay coherent across
+   every future engineering discipline — decided deliberately, before
+   implementation, rather than accreted screen by screen (`WP 8.0C`)?
 
 ## 5. The Design
 
@@ -90,6 +102,26 @@ in this Work Package's own scope). See `WP8.0A Workspace Architecture
 Document.md`, `WP8.0B Workspace Contracts.md`, and
 `WP8.0B Workspace Contracts.md` for the complete design.
 
+`WP 8.0C` then specified, product- and UX-only, the complete experience
+this shell is meant to reach: the Engineering Cockpit — not a
+placeholder Home page — is the Workspace's own default landing screen
+(`ADR-0069`), a live, data-driven dashboard surfacing "what needs
+attention" ahead of any drill-down; the Command Palette is a first-class
+global entry point, a *view* over the existing `ICommandRegistry`
+introducing no second registration mechanism, reachable from any screen
+and surfacing both commands and navigation targets in one surface
+(`ADR-0070`); and a Properties/Inspector split formalises a distinction
+already implicit in the shipped contracts — Properties answers "what an
+object is," Inspector answers "what proves or relates to it" (a
+`GetEvidenceAsync`-composed read, `ADR-0065`, unchanged). Every screen
+and journey this specification names is checked against the twelve
+already-approved contracts and disclosed, not silently assumed, where a
+gap exists: `WP8.0C UX Specification.md` §0 names `WP 8.1A`'s own shell
+as having shipped before this specification existed, and §5 names,
+without resolving, a real tension between this specification's own
+richer ambitions (true multi-window, multi-monitor, a floating palette
+overlay) and `ADR-0066`'s current terminal-based decision.
+
 ## 6. Alternatives Considered
 
 **A new Platform Service for the Workspace** — considered and rejected;
@@ -114,6 +146,20 @@ considered and rejected; see `ADR-0066`. This platform has taken on
 zero GUI dependency of any kind through `v0.7.0`; a terminal-based
 interface satisfies every named user journey without that first-ever
 commitment.
+
+**A static Home/welcome page as the default landing screen** —
+considered and rejected; see `ADR-0069`. Cheap to build, but directly
+contradicts `WP 8.0C`'s own controlling instruction that the Cockpit
+"should become the engineer's primary landing page," and would not
+answer "what needs attention?" on the one screen where an engineer most
+needs that question answered.
+
+**Per-view search only, with no global command surface** — considered
+and rejected; see `ADR-0070`. This is what `WP 8.1A`'s shipped shell
+effectively has today, and it directly fails Principle 4
+("everything discoverable"): a user has no way to discover a command
+that exists outside whichever view they currently happen to be looking
+at.
 
 ## 7. Why This Solution Was Chosen
 
@@ -171,6 +217,20 @@ thread visualisation) rather than only service-layer storage.
   `WP 8.1A` — Revision/Provenance/Relationship/DisciplineSpecific facets
   have no source yet, expected given "no engineering functionality" was
   this Work Package's own explicit constraint.
+- A real gap now exists, disclosed rather than hidden, between what
+  `WP 8.1A` ships today and what `WP 8.0C` specifies as the target
+  experience — an empty Project Explorer and no Cockpit today, versus a
+  live dashboard, a Command Palette, and a Properties/Inspector split
+  specified as the target (`WP8.0C UX Specification.md` §0).
+- A future `IWorkspaceCommand`-adjacent thirteenth contract
+  (`IDigitalThreadInspector`, named but not designed, `WP8.0C Screen
+  Catalogue.md` §10) is now a disclosed, plausible future addition, not
+  yet a decision — a future Contract Review must actually design it
+  before an Inspector panel distinct from Properties can be built.
+- True multi-window and multi-monitor placement remain named, not
+  designed — `WP8.0C Workspace Behaviour Specification.md` §5-§6
+  elaborates precisely why a terminal-based single window (`ADR-0066`)
+  bounds this specific ambition, without resolving the tension.
 
 ## 11. Common Mistakes
 
@@ -195,6 +255,16 @@ uses.
 - **Multi-window support, multi-hop digital thread traversal** — both
   named as deliberately deferred, not designed, pending real
   demonstrated need, unchanged since `WP 8.0A`.
+- **A Contract Review reconciling `WP 8.0B`'s twelve contracts against
+  `WP 8.0C`'s richer demands** — the Engineering Cockpit's own data
+  needs, the Command Palette's own reach into `ICommandRegistry`, and
+  the Inspector panel's own plausible `IDigitalThreadInspector` — is the
+  explicitly recommended next step (`WP8.0C UX Specification.md` §0)
+  before a second implementation Work Package builds any of it.
+- **A possible future revisit of `ADR-0066`** — only if true
+  multi-window or multi-monitor support ever becomes a real,
+  demonstrated need rather than a named ambition (`WP8.0C Workspace
+  Behaviour Specification.md` §5-§6).
 
 ## 13. Key Takeaways
 
@@ -213,13 +283,27 @@ uses.
    composition) versus which are empirical questions implementation
    should actually answer (rendering technology, extensibility contract
    shape).
+4. A UX specification is not exempt from the same discipline: `WP 8.0C`
+   named two genuine architectural boundary decisions as ADRs (default
+   landing screen, global command discoverability) while leaving colour
+   meanings, panel proportions, and keyboard bindings as product/UX
+   record rather than inflating `docs/adr/` with decisions that do not
+   constrain future architecture.
+5. Disclosing a sequencing gap honestly (a shell shipped before its own
+   UX specification existed) is more valuable than presenting the
+   specification as if it were already satisfied — the "Today vs.
+   Target" pattern `WP 8.0C` uses throughout is itself a reusable
+   documentation discipline, not specific to the Workspace.
 
 ## Related Documents
 
 `10-shell-and-application-composition.md`; `09-navigation-architecture.md`;
 `11-command-framework.md`; `16-requirements-engine.md`; `ADR-0062`–
-`ADR-0068`; `docs/releases/v0.8.0/WP8.0A Workspace Architecture
+`ADR-0070`; `docs/releases/v0.8.0/WP8.0A Workspace Architecture
 Document.md` and its four companion deliverables; `docs/releases/
 v0.8.0/WP8.0B Workspace Contracts.md` and its three companion
 deliverables; `docs/releases/v0.8.0/WP8.1A Implementation Report.md`;
-`docs/academy/03 Work Packages/WP8.1A-workspace-shell-implementation.md`.
+`docs/releases/v0.8.0/WP8.0C UX Specification.md` and its seven
+companion deliverables;
+`docs/academy/03 Work Packages/WP8.1A-workspace-shell-implementation.md`;
+`docs/academy/03 Work Packages/WP8.0C-engineering-workspace-ux-specification.md`.
