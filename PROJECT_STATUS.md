@@ -1,6 +1,6 @@
 # TempestOS — Project Status
 
-**Last Updated:** 2026-07-30 (`WP 8.0B` — Workspace Contracts)
+**Last Updated:** 2026-07-30 (`WP 8.1A` — Workspace Shell)
 
 This is the primary status dashboard for TempestOS. Read this first for
 "where does the project stand right now" — for "why is it built this
@@ -131,36 +131,52 @@ that; `v0.4.0` ("Platform Foundation") before that.
 
 ## Current Work Package
 
-**`WP 8.0B` — Workspace Contracts.** `v0.8.0`'s own second Work Package
-— contract review only, no implementation, per this Work Package's own
-explicit constraint. Approved to begin directly following `WP 8.0A`'s
-own completion, mirroring the Requirements Engine's own `WP 7.2B` →
-`WP 7.2C` sequence exactly.
+**`WP 8.1A` — Workspace Shell.** `v0.8.0`'s own first implementation
+Work Package, and its third overall — the shell only, no engineering
+functionality, per this Work Package's own explicit constraint.
+Approved to begin directly following `WP 8.0B`'s own completion,
+mirroring the Requirements Engine's own `WP 7.2C` → `WP 7.3A` sequence
+exactly.
 
-Defined the complete public contract for all twelve named Workspace
-interfaces — `IWorkspace`, `IWorkspaceManager`, `IWorkspaceView`,
+Implements all twelve `WP 8.0B`-approved contracts, compiled exactly as
+specified in a new `Tempest.App.Workspace` namespace, with zero
+signature change: `IWorkspace`, `IWorkspaceManager`, `IWorkspaceView`,
 `IWorkspacePanel`, `IWorkspaceLayout`, `INavigationService`,
 `ISelectionService`, `IWorkspaceContext`, `IWorkspaceState`,
-`IProjectExplorer`, `IPropertyInspector`, `IWorkspaceCommand` — each
-fully specified in proposed C#, plus the supporting types they
-genuinely need. **Both ADRs `WP 8.0A` reserved are now resolved:**
-`ADR-0066` (the Workspace's own presentation is terminal-based, not a
-graphical desktop framework — this platform's first-ever GUI dependency
-was considered and deliberately not taken on, absent real demonstrated
-need) and `ADR-0067` (Workspace extensibility is Kind-keyed
-registration for both object views and Project Explorer nodes,
-mirroring `IReportDefinition`/`IReportRenderer<T>`'s own established
-pattern). Zero reserved-but-unwritten ADR number remains outstanding.
+`IProjectExplorer`, `IPropertyInspector`, `IWorkspaceCommand`.
+**`WorkspaceManager`/`WorkspaceShell` are now `Tempest.App`'s own
+default launch target** (`ADR-0068`) — running TempestOS presents the
+five-region Workspace shell (Areas, Project Explorer, Documents,
+Properties, Status Bar); console `TempestShell` remains in the
+repository, fully intact, fully tested, simply no longer the default.
 
-Four completion deliverables produced under `docs/releases/v0.8.0/`,
-prefixed `WP8.0B`: `Workspace Contracts.md` (the master document),
-`Sequence Diagrams.md`, `Lifecycle Definitions.md`, `Dependency
-Rules.md`. `02 Runtime Architecture/17-engineering-workspace.md`
-updated in place to reflect the now-frozen contracts. **Zero code
-compiled — every signature remains proposed, documentation-only C#,
-per this Work Package's own explicit "no implementation" constraint.
-Stops here, awaiting further Product Owner instruction before an
-implementation Work Package begins.**
+Two disclosed implementation-phase findings, neither requiring an
+architectural revisit: `ISettingsProvider` is `string`-only, not the
+generic contract `WP 8.0B` proposed (`WorkspaceState` serializes its own
+DTO to JSON, mirroring `RequirementDto`'s own precedent); `ITempestHost`
+is explicitly single-use, not restart-tolerant as
+`WP8.0B Lifecycle Definitions.md` assumed (`WorkspaceManager.StartAsync`
+now throws on a second call). 27 new production files, 91 new tests
+(1406 → 1497, both configurations, clean rebuild, stable across four
+runs). One new ADR (`ADR-0068`). **Zero new Technical Debt** — every
+scope limitation is either already-disclosed from `WP 8.0A` or a direct
+consequence of "no engineering functionality." One completion
+deliverable produced under `docs/releases/v0.8.0/`
+(`WP8.1A Implementation Report.md`). **Stops here, awaiting further
+Product Owner instruction before the next Work Package begins.**
+
+### `WP 8.0B` Summary (for reference)
+
+**`WP 8.0B` — Workspace Contracts.** `v0.8.0`'s own second Work Package
+— contract review only, no implementation. Defined the complete public
+contract for all twelve named Workspace interfaces, each fully
+specified in proposed C#, plus the supporting types they genuinely
+need. Both ADRs `WP 8.0A` reserved resolved: `ADR-0066` (terminal-based
+presentation, not a graphical desktop framework) and `ADR-0067`
+(Kind-keyed registration for both object views and Project Explorer
+nodes, mirroring `IReportDefinition`/`IReportRenderer<T>`). Four
+completion deliverables, prefixed `WP8.0B` — see `docs/releases/v0.8.0/
+WP8.0B Workspace Contracts.md`.
 
 ### `WP 8.0A` Summary (for reference)
 
@@ -598,21 +614,21 @@ review.md`.
 
 ## Next Planned Work Package
 
-**None yet approved.** `WP 8.0B` defined the complete public contract
-for the Engineering Workspace and resolved both ADRs `WP 8.0A`
-reserved; no implementation Work Package has been scoped. The natural
-next step is an **implementation Work Package**, building the twelve
-frozen contracts in `Tempest.App.Workspace` exactly as
-`WP8.0B Workspace Contracts.md` specifies them — mirroring the
-Requirements Engine's own `WP 7.2C` → `WP 7.3A` sequence exactly. A
-specific TUI library selection (narrower than `ADR-0066`, needing no
-further ADR) is a natural first sub-decision for that Work Package.
+**None yet approved.** `WP 8.1A` implemented the Workspace shell —
+`IWorkspace`/`IWorkspaceManager` and every supporting contract, empty
+Project Explorer/Properties/Content, session restore, and the new
+default launch target (`ADR-0068`) — with no engineering functionality
+yet. The natural next step is the **first real
+`IWorkspaceViewFactory`/`IProjectExplorerNodeProvider` pair**, most
+naturally for Requirements (the only Implemented Systems Engineering
+Foundation capability), proving `ADR-0067`'s own extensibility
+mechanism against a real engineering discipline for the first time.
 Two Future Capability candidates raised by `WP 7.3A` (`FCR-0037`
 string-based allocation targets, `FCR-0038` requirement baselining) and
 Programme F (Platform Hardening, recommended second, at `v0.9.0` — see
 `WP7.2A Recommended Programme.md`) all remain open, unscheduled
 alternatives. **Per this project's own standing discipline
-(`FOUNDATION.md` §1) and `WP 8.0B`'s own explicit closing instruction,
+(`FOUNDATION.md` §1) and `WP 8.1A`'s own explicit closing instruction,
 no further Work Package begins until the Product Owner gives further
 instruction.**
 
@@ -676,22 +692,22 @@ Experience phase is now complete.
 
 | Metric | Value |
 |---|---|
-| Automated tests | 1406 (0 failures) — unchanged by `WP 8.0B` (contract review only; no code compiled) |
-| ADRs | 67 (`ADR-0001`–`ADR-0067`, no gaps at all), all Accepted — **+2, `WP 8.0B`**: `ADR-0066`/`ADR-0067`, resolving both ADRs `WP 8.0A` reserved; zero reserved-but-unwritten ADR number remains |
-| Rejected Designs | 45 (`RD-0001`–`RD-0045`) — unchanged by `WP 8.0B` |
-| Academy articles | 108 (see `docs/governance/Documentation/Academy Register.md`) — **+1, `WP 8.0B`**: `WP8.0B-workspace-contracts.md` (this Work Package's own whole-review retrospective); `02 Runtime Architecture/17-engineering-workspace.md` updated in place, not counted as new |
-| Governance registers | 27 (32 governance documents total), plus 4 standing security documents under `docs/security/` and 1 standing engineering document (`docs/engineering/Engineering Principles.md`, confirmed requiring no extension by this Work Package) — unchanged in count by `WP 8.0B` |
-| Architecture documents | 20 under `docs/architecture/` (22 including the two release-scoped documents) — unchanged by `WP 8.0B` |
-| Platform services | 27 catalogued — unchanged by `WP 8.0B` (introduces zero new Platform Service; all twelve new interfaces live in `Tempest.App.Workspace`, not `Tempest.Core`) |
-| Modules (production) | 20 — unchanged by `WP 8.0B` |
-| Hosted services (production) | 2 — unchanged by `WP 8.0B` |
+| Automated tests | 1497 (0 failures) — **+91, `WP 8.1A`**: real-collaborator tests for every one of the twelve compiled Workspace contracts, both configurations, clean rebuild, stable across four runs |
+| ADRs | 68 (`ADR-0001`–`ADR-0068`, no gaps at all), all Accepted — **+1, `WP 8.1A`**: `ADR-0068` (`Tempest.App`'s own default launch target) — a genuinely new decision, not a reserved number answered |
+| Rejected Designs | 45 (`RD-0001`–`RD-0045`) — unchanged by `WP 8.1A` |
+| Academy articles | 109 (see `docs/governance/Documentation/Academy Register.md`) — **+1, `WP 8.1A`**: `WP8.1A-workspace-shell-implementation.md` (standard 13-section implementation retrospective); `02 Runtime Architecture/17-engineering-workspace.md` updated in place a second time, not counted as new |
+| Governance registers | 27 (32 governance documents total), plus 4 standing security documents under `docs/security/` and 1 standing engineering document (`docs/engineering/Engineering Principles.md`, confirmed requiring no extension by this Work Package) — unchanged in count by `WP 8.1A` |
+| Architecture documents | 20 under `docs/architecture/` (22 including the two release-scoped documents) — unchanged by `WP 8.1A` |
+| Platform services | 27 catalogued — unchanged by `WP 8.1A` (introduces zero new Platform Service, per `ADR-0062`, confirmed at compile time; `WorkspaceManager` consumes four existing Platform Services, none modified) |
+| Modules (production) | 20 — unchanged by `WP 8.1A` (`WorkspaceManager` is a composition-root component, not a discovered module, mirroring `TempestShell`) |
+| Hosted services (production) | 2 — unchanged by `WP 8.1A` |
 | Plugins (production) | 0 — infrastructure fully implemented and tested; `src/Plugins/` empty by deliberate scope decision |
-| Custom exception types | 66 — unchanged by `WP 8.0B` (three new Workspace exception types are proposed, not yet compiled) |
-| Public interfaces (`src/Tempest.Core/`) | 80 — unchanged by `WP 8.0B` (twelve new Workspace interfaces are proposed under `Tempest.App.Workspace`, not yet compiled, and would not count in this `Tempest.Core`-scoped metric regardless) |
-| DI registrations (`TempestHost.cs` Phase 6) | 33 raw call sites, 31 named registrations — unchanged by `WP 8.0B` |
-| Technical Debt Register items | 25 tracked, 17 disclosed trade-offs — unchanged by `WP 8.0B` |
+| Custom exception types (`src/Tempest.Core/`) | 66 — unchanged by `WP 8.1A`; **+3 new, scoped separately**: `WorkspaceException` (abstract base), `DuplicateWorkspaceRegistrationException`, `WorkspaceViewFactoryNotFoundException`, all under `src/Tempest.App/Workspace/`, outside this Core-scoped metric's own definition |
+| Public interfaces (`src/Tempest.Core/`) | 80 — unchanged by `WP 8.1A`; **+12 new, scoped separately**: all twelve `Tempest.App.Workspace` interfaces now compiled and running, outside this Core-scoped metric's own definition (`Interface Register.md` remains explicitly `Tempest.Core`-only) |
+| DI registrations (`TempestHost.cs` Phase 6) | 33 raw call sites, 31 named registrations — unchanged by `WP 8.1A` (`WorkspaceManager` is never DI-registered, per `ADR-0062`) |
+| Technical Debt Register items | 25 tracked, 17 disclosed trade-offs — unchanged by `WP 8.1A`; zero new items raised |
 | Commits (`v0.6.0` → `v0.7.0`) | 17 total, release complete: `v0.6.0` release-branch preparation (2 commits), merge from `main`, `WP 7.0A`–`WP 7.4.0` (14 commits), the `v0.7.0` merge to `main` (non-fast-forward, `61fb2db`) — tagged `v0.7.0`, pushed |
-| Commits (`v0.7.0` → `v0.8.0`, so far) | 2 — `WP 8.0A`, `WP 8.0B` (this commit); `VERSION` bumped to `0.7.0` as part of branch preparation, not counted as a separate Work Package commit |
+| Commits (`v0.7.0` → `v0.8.0`, so far) | 3 — `WP 8.0A`, `WP 8.0B`, `WP 8.1A` (this commit); `VERSION` bumped to `0.7.0` as part of branch preparation, not counted as a separate Work Package commit |
 | Contributors | 1 (repository owner; all commits co-authored by Claude) |
 
 *(This table is generated from `docs/governance/Quality/Repository Metrics
@@ -1105,6 +1121,12 @@ Package; no production code, no compiled interface. Added four further
 `Sequence Diagrams.md`, `Lifecycle Definitions.md`, `Dependency
 Rules.md`).
 
+**`WP 8.1A` (Workspace Shell)** — the first implementation Work Package
+of `v0.8.0`; 27 new production files under `src/Tempest.App/Workspace/`
+plus `src/Tempest.App/AssemblyInfo.cs`, 1 modified (`Program.cs`). Added
+one further `docs/releases/v0.8.0/` deliverable
+(`WP8.1A Implementation Report.md`).
+
 ## Academy Status
 
 86 articles across 7 categories (Introduction, Engineering Principles,
@@ -1364,6 +1386,15 @@ contracts and both resolved ADRs. `docs/engineering/Engineering
 Principles.md` reviewed: **no extension warranted**, unchanged from
 `WP 8.0A` — contract review produced no implementation to derive a
 genuine engineering principle from.
+**`WP 8.1A`** added `WP8.1A-workspace-shell-implementation.md` (a
+standard 13-section implementation retrospective) and updated
+`02 Runtime Architecture/17-engineering-workspace.md` in place a third
+time to reflect the now-compiled shell and `ADR-0068`.
+`docs/engineering/Engineering Principles.md` reviewed: **no extension
+warranted** — every design decision this Work Package made was already
+anticipated by `WP 8.0A`/`WP 8.0B`'s own approved architecture and
+contracts; no genuinely new engineering principle emerged from
+implementing them.
 
 ## Governance Status
 
@@ -1749,6 +1780,18 @@ register. No new Technical Debt or Future Capability Register entry
 (contract review only; no implementation to disclose a defect or
 capability gap from). `Academy Register.md`, `Documentation Register.md`
 kept current directly at documentation time, not backfilled.
+**`WP 8.1A`** added one new ADR (`ADR-0068`, Accepted, 67 → 68) — a
+genuinely new decision (`Tempest.App`'s own default launch target), not
+a reserved number answered. Zero new Technical Debt item — every scope
+limitation is either already-disclosed from `WP 8.0A` or a direct
+consequence of "no engineering functionality." No new Future Capability
+Register entry. `Academy Register.md`, `Documentation Register.md` kept
+current directly at implementation time, not backfilled. Confirmed,
+disclosed: `Interface Register.md`/`Dependency Injection Register.md`/
+`Module Register.md` remain correctly unchanged — all twelve new public
+interfaces and `WorkspaceManager` fall outside each register's own
+explicit `Tempest.Core`/`TempestHost.cs`/discovered-module scope,
+mirroring `TempestShell`'s own identical, long-standing exclusion.
 
 ## Known Unknowns
 
@@ -1863,19 +1906,25 @@ Governance Audit Report.md`:
     was performed — zero code written.**
 12. **`WP 8.0B` — Workspace Contracts — is complete.** The complete
     public contract for all twelve named Workspace interfaces — see
-    Current Work Package, above, and `docs/releases/v0.8.0/WP8.0B
-    Workspace Contracts.md`. Both reserved ADRs resolved
-    (`ADR-0066` terminal-based presentation, `ADR-0067` Kind-keyed
-    extensibility registration). **No implementation was performed —
-    zero code compiled.**
-13. **Await Product Owner instruction for what comes next.** An
-    implementation Work Package for the Engineering Workspace is the
-    natural next step (mirroring the Requirements Engine's own
-    `WP 7.2C` → `WP 7.3A` sequence), but per this project's own standing
-    discipline (`FOUNDATION.md` §1) and `WP 8.0B`'s own explicit closing
-    instruction, no further Work Package begins until the Product Owner
-    gives further instruction.
-14. A GitHub Release for `v0.6.0` (and now `v0.7.0`) has not yet been
+    `docs/releases/v0.8.0/WP8.0B Workspace Contracts.md`. Both reserved
+    ADRs resolved (`ADR-0066` terminal-based presentation, `ADR-0067`
+    Kind-keyed extensibility registration). **No implementation was
+    performed — zero code compiled.**
+13. **`WP 8.1A` — Workspace Shell — is complete.** All twelve contracts
+    compiled and running in `Tempest.App.Workspace`, zero signature
+    change — see Current Work Package, above, and
+    `docs/releases/v0.8.0/WP8.1A Implementation Report.md`. The
+    Workspace is now `Tempest.App`'s own default launch target
+    (`ADR-0068`); console `TempestShell` remains, untouched, no longer
+    default. 91 new tests (1406 → 1497). **No engineering functionality
+    — shell only, per this Work Package's own explicit constraint.**
+14. **Await Product Owner instruction for what comes next.** The first
+    real `IWorkspaceViewFactory`/`IProjectExplorerNodeProvider` pair
+    (most naturally for Requirements) is the natural next step, but per
+    this project's own standing discipline (`FOUNDATION.md` §1) and
+    `WP 8.1A`'s own explicit closing instruction, no further Work
+    Package begins until the Product Owner gives further instruction.
+15. A GitHub Release for `v0.6.0` (and now `v0.7.0`) has not yet been
     created (`gh` CLI unavailable in this environment) — see the Release
     Summary for the exact command or manual steps to complete it.
 
@@ -2053,10 +2102,22 @@ phase is under way, on `feature/v0.8.0-engineering-workspace` (cut from
   and `ADR-0067` (Kind-keyed registration for both object views and
   Project Explorer nodes, mirroring `IReportDefinition`/
   `IReportRenderer<T>`'s own established pattern).
+- `WP 8.1A` — Workspace Shell (implementation; shell only, no
+  engineering functionality). **Complete.** All twelve contracts
+  compiled and running in a new `Tempest.App.Workspace` namespace, zero
+  signature change — see `docs/releases/v0.8.0/WP8.1A Implementation
+  Report.md`. `WorkspaceManager`/`WorkspaceShell` are now `Tempest.App`'s
+  own default launch target (`ADR-0068`); console `TempestShell`
+  remains, untouched, no longer default. 27 new production files, 91
+  new tests (1406 → 1497). Two disclosed implementation-phase findings
+  (`ISettingsProvider`'s own `string`-only contract;
+  `ITempestHost`'s own single-use constraint), neither requiring an
+  architectural revisit. Zero new Technical Debt.
 
-**`v0.8.0` is in progress.** Its architecture and contract phases are
-both complete, all Workspace contracts frozen; no implementation Work
-Package has been scoped or approved yet.
+**`v0.8.0` is in progress.** Its architecture, contract, and first
+implementation phases are all complete — a real, running, empty
+Workspace shell now exists; no engineering-functionality Work Package
+has been scoped or approved yet.
 
 ## Long-Term Vision
 

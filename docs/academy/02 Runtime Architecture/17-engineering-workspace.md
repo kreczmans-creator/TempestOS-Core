@@ -3,16 +3,16 @@
 ## 1. Introduction
 
 The Engineering Workspace (architected `WP 8.0A`, contracted `WP 8.0B`,
-`ADR-0062`–`ADR-0067`) is TempestOS's first user-facing engineering
-product surface — the platform's answer to a question every prior
-release has deliberately deferred: once real engineering capability
-exists (Requirements, Materials, Calculations, Verification), what does
-an engineer actually *see*? This document teaches the reasoning behind
-the Workspace's own design and its own frozen public contracts — not
-its exact implementation, which does not exist yet; this guide will be
-updated a third time once implementation exists, exactly as
-`10-shell-and-application-composition.md` was written at `WP 5.0C`'s
-own design stage and updated at `WP 5.0D`'s own implementation.
+shell implemented `WP 8.1A`, `ADR-0062`–`ADR-0068`) is TempestOS's first
+user-facing engineering product surface, and now — as of `WP 8.1A` — the
+platform's own default launch target (`ADR-0068`). Running
+`Tempest.App` today presents the five-region Workspace shell (Areas,
+Project Explorer, Documents, Properties, Status Bar), not the original
+console `TempestShell`, which remains in the repository, fully tested,
+simply no longer the default. This document teaches the reasoning
+behind the Workspace's own design, its own frozen public contracts, and
+its own shell implementation — not yet any real engineering-domain
+content, which no Work Package through `WP 8.1A` has built.
 
 ## 2. Purpose
 
@@ -71,17 +71,23 @@ it already exists — no new traversal mechanism, no multi-hop query
 capability (`ADR-0065`). Its own presentation is terminal-based, not a
 graphical desktop framework — this platform's first-ever GUI dependency
 was considered and deliberately not taken on absent real demonstrated
-need (`ADR-0066`). Twelve public contracts now exist
-(`IWorkspace`, `IWorkspaceManager`, `IWorkspaceView`, `IWorkspacePanel`,
-`IWorkspaceLayout`, `INavigationService`, `ISelectionService`,
-`IWorkspaceContext`, `IWorkspaceState`, `IProjectExplorer`,
-`IPropertyInspector`, `IWorkspaceCommand`), each fully specified, none
-compiled yet. A future Engineering Discipline Module extends the
-Workspace via two Kind-keyed registrations —
-`IWorkspaceViewFactory` for object presentation,
+need (`ADR-0066`). Twelve public contracts exist, all now compiled and running
+(`Tempest.App.Workspace`, `WP 8.1A`): `IWorkspace`, `IWorkspaceManager`,
+`IWorkspaceView`, `IWorkspacePanel`, `IWorkspaceLayout`,
+`INavigationService`, `ISelectionService`, `IWorkspaceContext`,
+`IWorkspaceState`, `IProjectExplorer`, `IPropertyInspector`,
+`IWorkspaceCommand`. `WorkspaceManager` is `Tempest.App`'s own default
+launch target (`ADR-0068`), assembling a real `IWorkspace` from four
+existing Platform Services with zero new one. A future Engineering
+Discipline Module extends the Workspace via two Kind-keyed
+registrations — `IWorkspaceViewFactory` for object presentation,
 `IProjectExplorerNodeProvider` for tree population — mirroring
 `IReportDefinition`/`IReportRenderer<T>`'s own established pattern
-(`ADR-0067`). See `WP8.0A Workspace Architecture Document.md` and
+(`ADR-0067`); this Work Package proves both mechanisms directly, using
+real, minimal test-double registrations, though no production
+Engineering Core `Kind` is registered yet (no engineering functionality
+in this Work Package's own scope). See `WP8.0A Workspace Architecture
+Document.md`, `WP8.0B Workspace Contracts.md`, and
 `WP8.0B Workspace Contracts.md` for the complete design.
 
 ## 6. Alternatives Considered
@@ -158,6 +164,13 @@ thread visualisation) rather than only service-layer storage.
   registration calls (a view factory and, optionally, an explorer node
   provider), not one — a small, disclosed ergonomic cost accepted for
   keeping the two concerns independently varying (`ADR-0067`).
+- `TempestShell` is no longer directly reachable by running
+  `Tempest.App` — a future contributor wanting the console Shell
+  specifically must construct it manually (`ADR-0068`, `WP 8.1A`).
+- `IPropertyInspector` shows only Identity facets (Id, Kind) as of
+  `WP 8.1A` — Revision/Provenance/Relationship/DisciplineSpecific facets
+  have no source yet, expected given "no engineering functionality" was
+  this Work Package's own explicit constraint.
 
 ## 11. Common Mistakes
 
@@ -172,16 +185,16 @@ uses.
 
 ## 12. Future Evolution
 
-- **Specific TUI library selection** (narrower than `ADR-0066`, an
-  implementation-phase choice among terminal-based options, needing no
-  further ADR).
+- **The first real `IWorkspaceViewFactory`/`IProjectExplorerNodeProvider`
+  pair**, most naturally for Requirements — the natural next Work
+  Package's own first proof of `ADR-0067` beyond `WP 8.1A`'s own
+  test-local fakes.
+- **Specific TUI library selection**, if `WorkspaceShell`'s own
+  hand-rolled renderer (`WP 8.1A`) ever proves insufficient — narrower
+  than `ADR-0066`, needing no further ADR.
 - **Multi-window support, multi-hop digital thread traversal** — both
   named as deliberately deferred, not designed, pending real
-  demonstrated need.
-- **Implementation itself** — the natural next Work Package, building
-  the twelve frozen contracts exactly as `WP8.0B Workspace Contracts.md`
-  specifies them, mirroring the Requirements Engine's own `WP 7.2B` →
-  `WP 7.2C` → `WP 7.3A` sequence.
+  demonstrated need, unchanged since `WP 8.0A`.
 
 ## 13. Key Takeaways
 
@@ -205,7 +218,8 @@ uses.
 
 `10-shell-and-application-composition.md`; `09-navigation-architecture.md`;
 `11-command-framework.md`; `16-requirements-engine.md`; `ADR-0062`–
-`ADR-0067`; `docs/releases/v0.8.0/WP8.0A Workspace Architecture
+`ADR-0068`; `docs/releases/v0.8.0/WP8.0A Workspace Architecture
 Document.md` and its four companion deliverables; `docs/releases/
 v0.8.0/WP8.0B Workspace Contracts.md` and its three companion
-deliverables.
+deliverables; `docs/releases/v0.8.0/WP8.1A Implementation Report.md`;
+`docs/academy/03 Work Packages/WP8.1A-workspace-shell-implementation.md`.
