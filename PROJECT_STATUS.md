@@ -1,6 +1,6 @@
 # TempestOS — Project Status
 
-**Last Updated:** 2026-07-30 (`WP 7.4.0` — Release Preparation & Product Baseline)
+**Last Updated:** 2026-07-30 (`WP 8.0A` — Engineering Workspace Architecture)
 
 This is the primary status dashboard for TempestOS. Read this first for
 "where does the project stand right now" — for "why is it built this
@@ -86,28 +86,31 @@ architecture, integration, testing, documentation, and governance all
 hold up under direct, independent re-verification, and recommending
 **CERTIFIED WITH ACCEPTED TECHNICAL DEBT**. Product Approval was then
 granted and `v0.6.0` was released in full: merged to `main`
-(non-fast-forward, `99ed285`), tagged `v0.6.0`, and pushed. TempestOS is
-now in the **Engineering Foundation** phase (`v0.7.0`), on
-`feature/v0.7.0-engineering-foundation`, not yet scoped. See Current
-Work Package, below.
+(non-fast-forward, `99ed285`), tagged `v0.6.0`, and pushed. TempestOS
+then completed the **Engineering Foundation** phase (`v0.7.0`) in full —
+thirteen Work Packages (`WP 7.0A`–`WP 7.4.0`) across two sequential
+programmes, closed by `WP 7.4.0`'s own release-readiness review
+recommending **APPROVED**. Product Approval was granted and `v0.7.0`
+was released in full: merged to `main` (non-fast-forward, `61fb2db`),
+tagged `v0.7.0`, and pushed. TempestOS is now in the **Engineering
+Workspace** phase (`v0.8.0`), on
+`feature/v0.8.0-engineering-workspace`. See Current Work Package,
+below.
 
 ## Current Development Branch
 
-**`feature/v0.7.0-engineering-foundation`**, cut from `main` at the
-`v0.6.0` tag, per `v0.6.0`'s own Release Engineering closing activity.
-`WP 7.0A` through `WP 7.4.0` have all landed on this branch — all
-thirteen Work Packages of the Engineering Foundation phase, now
-release-prepared and recommended for Product Approval.
-`WP 7.1A` through `WP 7.1E` were the first five real implementations,
-completing the entire Engineering Foundation programme; `WP 7.3A` is
-the first real implementation of the Systems Engineering Foundation
-programme that followed it, consuming that completed Engineering Core
-directly; `WP 7.4.0` closed the release with a complete readiness
-review, recommending **APPROVED**. **Not yet merged to `main` or
-tagged** — that remains the Product Owner's own action. See
-`docs/releases/v0.7.0/WorkPackages.md` and `docs/governance/Future
-Capability Register.md` for the candidate items awaiting Product
-Approval for whatever comes next. `feature/v0.6.0-platform-services`
+**`feature/v0.8.0-engineering-workspace`**, cut from `main` at the
+`v0.7.0` tag, per `v0.7.0`'s own Release Engineering closing activity
+(`VERSION` bumped to `0.7.0`, matching the tagged release, mirroring
+`v0.6.0`'s own identical precedent). `WP 8.0A` (Engineering Workspace
+Architecture) is this branch's first Work Package — architecture and
+design only, no implementation. See `docs/releases/v0.8.0/
+WorkPackages.md` for current scope.
+
+`feature/v0.7.0-engineering-foundation` (`WP 7.0A` through `WP 7.4.0`,
+all thirteen Work Packages of the Engineering Foundation phase) has
+been merged into `main` (non-fast-forward, `61fb2db`), tagged `v0.7.0`,
+pushed, and is retained; `feature/v0.6.0-platform-services`
 (`WP 6.0` through `WP 6.8`) has been merged into `main`
 (non-fast-forward, `99ed285`) and is retained; `feature/v0.5.0-developer-experience`
 (`WP 5.0A` through `WP 5.4`) remains merged and retained as well —
@@ -116,12 +119,61 @@ project's own convention.
 
 ## Current Release
 
-**v0.6.0** ("Platform Services") — released 2026-07-30, tagged `v0.6.0`
-(`99ed285`), `CERTIFIED WITH ACCEPTED TECHNICAL DEBT`. Root `VERSION`
-reads `0.6.0`. `v0.5.0` ("Developer Experience") is the release before
+**v0.7.0** ("Engineering Foundation") — released 2026-07-30, tagged
+`v0.7.0` (merge `61fb2db`), recommended **APPROVED** by `WP 7.4.0`'s own
+release-readiness review. Root `VERSION` reads `0.7.0`, bumped
+immediately after the tag as part of preparing
+`feature/v0.8.0-engineering-workspace`, per this project's own
+established "bump after tag" precedent. `v0.6.0` ("Platform Services")
+is the release before that (tagged `v0.6.0`, `99ed285`, `CERTIFIED WITH
+ACCEPTED TECHNICAL DEBT`); `v0.5.0` ("Developer Experience") before
 that; `v0.4.0` ("Platform Foundation") before that.
 
 ## Current Work Package
+
+**`WP 8.0A` — Engineering Workspace Architecture.** `v0.8.0`'s own first
+Work Package — architecture and design only, no implementation, per
+this Work Package's own explicit constraint. Approved to begin once the
+Product Owner accepted `WP 7.4.0`'s own `v0.7.0` APPROVED recommendation
+and executed the release (merge, tag, push).
+
+Designed the complete Engineering Workspace — TempestOS's first
+user-facing engineering product surface — across all twelve named
+areas: workspace philosophy, user journeys, main window layout,
+navigation model, Project Explorer, engineering object hierarchy,
+docking strategy, view architecture, digital thread visualisation,
+workspace state management, extensibility model, and interaction
+patterns. **The Workspace is a graphical, multi-panel evolution of
+`Tempest.App`'s own composition root, additive to console
+`TempestShell`** (`ADR-0062`) — introducing zero new Platform Service,
+zero new persistence mechanism, and zero new traversal capability.
+Views read Engineering Core/Platform services directly; every mutating
+action dispatches through the existing Command Framework (`ADR-0063`).
+Workspace layout/session state persists via the existing
+`ISettingsProvider` (`ADR-0064`). The Digital Thread panel composes the
+already-existing `GetEvidenceAsync`-shaped reads, introducing no new
+traversal mechanism (`ADR-0065`) — the same reuse-of-existing-mechanism
+pattern every Engineering Core framework already independently reached,
+now extended to the presentation layer for the first time.
+
+Four new ADRs written (`ADR-0062`–`ADR-0065`), each a genuine, locked-in
+architectural boundary decision. Two genuine open questions named and
+explicitly deferred, not answered speculatively: `ADR-0066` (concrete
+UI rendering technology) and `ADR-0067` (the object-view extensibility
+contract shape), both reserved for a future Contract Review Work
+Package. Five completion deliverables produced under
+`docs/releases/v0.8.0/`, prefixed `WP8.0A`: `Workspace Architecture
+Document.md` (the master document), `UI Architecture.md`, `Navigation
+Specification.md`, `Object Relationship Diagrams.md`, `User Workflow
+Diagrams.md`. New Academy concept guide
+(`02 Runtime Architecture/17-engineering-workspace.md`), to be updated
+once implementation exists, mirroring `10-shell-and-application-
+composition.md`'s own precedent. **Zero code written, per this Work
+Package's own explicit "no implementation" constraint. Stops here,
+awaiting further Product Owner instruction before a Contract Review
+Work Package begins.**
+
+### `WP 7.4.0` Summary (for reference)
 
 **`WP 7.4.0` — Release Preparation & Product Baseline.** A release
 preparation exercise only — no new platform functionality, architecture
@@ -160,11 +212,10 @@ by what `v0.7.0` actually delivered, not deleted.
 
 **Recommendation: `v0.7.0` APPROVED** — see `docs/releases/v0.7.0/
 WP7.4.0 Product Approval Report.md`. Five completion deliverables
-produced under `docs/releases/v0.7.0/`, prefixed `WP7.4.0`. **Does not
-create any Git tag, merge, or GitHub Release — those remain the
-Product Owner's own actions after accepting this recommendation. Stops
-here, per this Work Package's own explicit closing instruction, awaiting
-Product Owner instruction before any post-`v0.7.0` work begins.**
+produced under `docs/releases/v0.7.0/`, prefixed `WP7.4.0`. **Product
+Approval was subsequently granted; `v0.7.0` was merged to `main`
+(non-fast-forward, `61fb2db`), tagged, and pushed by the Product
+Owner.**
 
 ### `WP 7.3A` Summary (for reference)
 
@@ -539,20 +590,24 @@ review.md`.
 
 ## Next Planned Work Package
 
-**None yet approved.** `WP 7.4.0` completed `v0.7.0`'s own release
-preparation review and recommended **APPROVED** — see
-`docs/releases/v0.7.0/WP7.4.0 Product Approval Report.md`. The physical
-Git tag, merge to `main`, and GitHub Release remain the Product Owner's
-own actions, not yet performed. Two Future Capability candidates raised
-by `WP 7.3A` (`FCR-0037` string-based allocation targets, `FCR-0038`
-requirement baselining) remain unscheduled. Programme F (Platform
-Hardening) remains recommended second, at `v0.9.0`, not abandoned — see
-`WP7.2A Recommended Programme.md`. **Per this project's own standing
-discipline (`FOUNDATION.md` §1) and this Work Package's own explicit
-closing instruction, no post-`v0.7.0` work begins until the Product
-Owner gives further instruction** — whether that is the `v0.7.0`
-release itself, a further Systems Engineering capability, a
-discipline-specific engineering module, or Programme F.
+**None yet approved.** `WP 8.0A` designed the complete Engineering
+Workspace architecture; no implementation Work Package has been scoped.
+The natural next step is a **Contract Review Work Package**, defining
+concrete public contracts for the Workspace's own new types (View base
+contracts, a Command-dispatch convention for Workspace-originated
+commands) and resolving `ADR-0066` (concrete UI rendering technology)
+either as part of, or immediately before, that review — mirroring the
+Requirements Engine's own `WP 7.2B` → `WP 7.2C` → `WP 7.3A` sequence
+exactly. `ADR-0067` (the object-view extensibility contract) remains
+reserved until a second real consumer exists to validate its shape
+against. Two Future Capability candidates raised by `WP 7.3A`
+(`FCR-0037` string-based allocation targets, `FCR-0038` requirement
+baselining) and Programme F (Platform Hardening, recommended second, at
+`v0.9.0` — see `WP7.2A Recommended Programme.md`) all remain open,
+unscheduled alternatives. **Per this project's own standing discipline
+(`FOUNDATION.md` §1) and `WP 8.0A`'s own explicit closing instruction,
+no further Work Package begins until the Product Owner gives further
+instruction.**
 
 ## Foundation Status
 
@@ -614,21 +669,22 @@ Experience phase is now complete.
 
 | Metric | Value |
 |---|---|
-| Automated tests | 1406 (0 failures) — unchanged by `WP 7.4.0` (release preparation only; re-verified across four full-suite runs, zero regressions) |
-| ADRs | 61 (`ADR-0001`–`ADR-0061`, no gaps at all), all Accepted — unchanged by `WP 7.4.0` |
-| Rejected Designs | 45 (`RD-0001`–`RD-0045`) — unchanged by `WP 7.4.0` |
-| Academy articles | 105 (see `docs/governance/Documentation/Academy Register.md`) — **+1, `WP 7.4.0`**: `WP7.4.0-release-preparation-and-product-baseline.md` (this Work Package's own whole-review retrospective); no new concept guide (release preparation only) |
-| Governance registers | 27 (32 governance documents total), plus 4 standing security documents under `docs/security/` and 1 standing engineering document (`docs/engineering/Engineering Principles.md`) — unchanged in count by `WP 7.4.0`; `Documentation Register.md` and `Governance Register.md` both corrected in place (see Governance Status) |
-| Architecture documents | 20 under `docs/architecture/` (22 including the two release-scoped documents) — unchanged by `WP 7.4.0` |
-| Platform services | 27 catalogued — unchanged by `WP 7.4.0`; `Platform Services Register.md`'s own Coverage Status corrected from "Complete" to "Partial" (disclosed gap, not fixed) |
-| Modules (production) | 20 — unchanged by `WP 7.4.0` |
-| Hosted services (production) | 2 — unchanged by `WP 7.4.0` |
+| Automated tests | 1406 (0 failures) — unchanged by `WP 8.0A` (architecture only; no code written) |
+| ADRs | 65 (`ADR-0001`–`ADR-0065`, no gaps at all), all Accepted — **+4, `WP 8.0A`**: `ADR-0062`–`ADR-0065`; `ADR-0066`/`ADR-0067` reserved, not written |
+| Rejected Designs | 45 (`RD-0001`–`RD-0045`) — unchanged by `WP 8.0A` |
+| Academy articles | 107 (see `docs/governance/Documentation/Academy Register.md`) — **+2, `WP 8.0A`**: `WP8.0A-engineering-workspace-architecture.md` (this Work Package's own whole-review retrospective) and `02 Runtime Architecture/17-engineering-workspace.md` (new concept guide, written at the architecture stage) |
+| Governance registers | 27 (32 governance documents total), plus 4 standing security documents under `docs/security/` and 1 standing engineering document (`docs/engineering/Engineering Principles.md`, confirmed requiring no extension by this Work Package) — unchanged in count by `WP 8.0A` |
+| Architecture documents | 20 under `docs/architecture/` (22 including the two release-scoped documents) — unchanged by `WP 8.0A` |
+| Platform services | 27 catalogued — unchanged by `WP 8.0A` (introduces zero new Platform Service, per `ADR-0062`) |
+| Modules (production) | 20 — unchanged by `WP 8.0A` |
+| Hosted services (production) | 2 — unchanged by `WP 8.0A` |
 | Plugins (production) | 0 — infrastructure fully implemented and tested; `src/Plugins/` empty by deliberate scope decision |
-| Custom exception types | 66 — unchanged by `WP 7.4.0` |
-| Public interfaces (`src/Tempest.Core/`) | 80 — unchanged by `WP 7.4.0` |
-| DI registrations (`TempestHost.cs` Phase 6) | 33 raw call sites, 31 named registrations — unchanged by `WP 7.4.0` |
-| Technical Debt Register items | 25 tracked, 17 disclosed trade-offs — unchanged by `WP 7.4.0` (zero Release Blocking, re-confirmed) |
-| Commits (`v0.6.0` → `v0.7.0`, so far) | 17 — `v0.6.0` release-branch preparation (2 commits), merge from `main`, `WP 7.0A`, `WP 7.0B`, `WP 7.0C`, `WP 7.1A`, `WP 7.1B`, `WP 7.1C`, `WP 7.1D`, `WP 7.1E`, `WP 7.1F`, `WP 7.2A`, `WP 7.2B`, `WP 7.2C`, `WP 7.3A`, `WP 7.4.0` (this commit) |
+| Custom exception types | 66 — unchanged by `WP 8.0A` |
+| Public interfaces (`src/Tempest.Core/`) | 80 — unchanged by `WP 8.0A` |
+| DI registrations (`TempestHost.cs` Phase 6) | 33 raw call sites, 31 named registrations — unchanged by `WP 8.0A` |
+| Technical Debt Register items | 25 tracked, 17 disclosed trade-offs — unchanged by `WP 8.0A` |
+| Commits (`v0.6.0` → `v0.7.0`) | 17 total, release complete: `v0.6.0` release-branch preparation (2 commits), merge from `main`, `WP 7.0A`–`WP 7.4.0` (14 commits), the `v0.7.0` merge to `main` (non-fast-forward, `61fb2db`) — tagged `v0.7.0`, pushed |
+| Commits (`v0.7.0` → `v0.8.0`, so far) | 1 — `WP 8.0A` (this commit); `VERSION` bumped to `0.7.0` as part of branch preparation, not counted as a separate Work Package commit |
 | Contributors | 1 (repository owner; all commits co-authored by Claude) |
 
 *(This table is generated from `docs/governance/Quality/Repository Metrics
@@ -1027,6 +1083,15 @@ ReleaseNotes.md`, `Retrospective.md`) fully populated;
 `WorkPackages.md`'s own long-stale "not started" status corrected,
 marked superseded, not deleted.
 
+**`WP 8.0A` (Engineering Workspace Architecture)** — an architecture-
+only Work Package; no production code written. Added
+`docs/releases/v0.8.0/` (five new deliverables: `Workspace Architecture
+Document.md`, `UI Architecture.md`, `Navigation Specification.md`,
+`Object Relationship Diagrams.md`, `User Workflow Diagrams.md`) and the
+prepared-in-advance `v0.8.0` release skeletons (`WorkPackages.md`,
+`ReleaseNotes.md`, `Retrospective.md`), mirroring `v0.6.0`→`v0.7.0`'s
+own branch-preparation precedent exactly.
+
 ## Academy Status
 
 86 articles across 7 categories (Introduction, Engineering Principles,
@@ -1270,6 +1335,14 @@ own format, reviewing all twelve `v0.7.0` Work Packages together. No new
 concept guide — release preparation only. `docs/engineering/Engineering
 Principles.md` confirmed requiring no extension, unchanged from
 `WP 7.3A`.
+**`WP 8.0A`** added `WP8.0A-engineering-workspace-architecture.md` (a
+whole-review retrospective mirroring `WP7.2B`'s own architecture-only
+format) and `02 Runtime Architecture/17-engineering-workspace.md` (a
+new concept guide, written at the architecture stage, to be updated at
+implementation — mirroring `10-shell-and-application-composition.md`'s
+own precedent). `docs/engineering/Engineering Principles.md` reviewed:
+**no extension warranted** — this Work Package produced architecture
+only, no implementation to derive a genuine engineering principle from.
 
 ## Governance Status
 
@@ -1638,6 +1711,16 @@ recurrence found this release. `Platform Services Register.md`'s own
 Coverage Status corrected from "Complete" to "Partial," disclosing
 rather than hiding the still-open four-framework gap `WP 7.3A` first
 found.
+**`WP 8.0A`** added four new ADRs (`ADR-0062`–`ADR-0065`, all Accepted,
+61 → 65) — the first ADRs of the `v0.8.0` release, each a genuine,
+locked-in architectural boundary decision rather than an implementation
+detail. `ADR-0066`/`ADR-0067` newly reserved for a future Contract
+Review Work Package. No new Technical Debt or Future Capability
+Register entry (architecture only; no implementation to disclose a
+defect or capability gap from). `Academy Register.md`, `Documentation
+Register.md` (directory-map counts for `docs/adr/`,
+`02 Runtime Architecture/`, `03 Work Packages/`) kept current directly
+at documentation time, not backfilled.
 
 ## Known Unknowns
 
@@ -1737,18 +1820,30 @@ Governance Audit Report.md`:
    Register.md`/`Platform Service Map.md`'s own missing four-framework
    rows). **Recommendation: `v0.7.0` APPROVED** — see
    `docs/releases/v0.7.0/WP7.4.0 Product Approval Report.md`.
-10. **Await Product Owner instruction.** The physical Git tag, merge to
-    `main`, and GitHub Release for `v0.7.0` remain the Product Owner's
-    own actions, not yet performed, per `WP 7.4.0`'s own explicit
-    constraint ("Do not perform any Git release operations"). No
-    post-`v0.7.0` Work Package begins until that instruction arrives —
-    whether it authorises the `v0.7.0` release itself, a further Systems
-    Engineering capability, a discipline-specific engineering module, or
-    Programme F (Platform Hardening, recommended second, at `v0.9.0`,
-    per `WP7.2A Recommended Programme.md`).
-11. A GitHub Release for `v0.6.0` has not yet been created (`gh` CLI
-    unavailable in this environment) — see the Release Summary for the
-    exact command or manual steps to complete it.
+10. **`v0.7.0` is released.** The Product Owner accepted `WP 7.4.0`'s own
+    recommendation, merged `feature/v0.7.0-engineering-foundation` into
+    `main` (non-fast-forward, `61fb2db`), tagged `v0.7.0`, and pushed
+    both to `origin`. `feature/v0.8.0-engineering-workspace` was then cut
+    from `main` at the `v0.7.0` tag, `VERSION` bumped to `0.7.0`,
+    mirroring `v0.6.0`'s own identical precedent.
+11. **`WP 8.0A` — Engineering Workspace Architecture — is complete.**
+    The complete architecture for TempestOS's first user-facing
+    engineering product surface, across all twelve named areas — see
+    Current Work Package, above, and `docs/releases/v0.8.0/WP8.0A
+    Workspace Architecture Document.md`. Four new ADRs
+    (`ADR-0062`–`ADR-0065`); `ADR-0066`/`ADR-0067` reserved for a future
+    Contract Review Work Package. **No implementation was performed —
+    zero code written.**
+12. **Await Product Owner instruction for what comes next.** A Contract
+    Review Work Package for the Engineering Workspace is the natural
+    next step (mirroring the Requirements Engine's own `WP 7.2B` →
+    `WP 7.2C` → `WP 7.3A` sequence), but per this project's own standing
+    discipline (`FOUNDATION.md` §1) and `WP 8.0A`'s own explicit closing
+    instruction, no further Work Package begins until the Product Owner
+    gives further instruction.
+13. A GitHub Release for `v0.6.0` (and now `v0.7.0`) has not yet been
+    created (`gh` CLI unavailable in this environment) — see the Release
+    Summary for the exact command or manual steps to complete it.
 
 ## Near-Term Roadmap
 
@@ -1883,14 +1978,37 @@ comes next.
   corrected; one further finding disclosed, not fixed (outside scope) —
   see `docs/releases/v0.7.0/WP7.4.0 Release Readiness Report.md`.
   **Recommendation: `v0.7.0` APPROVED** — see `docs/releases/v0.7.0/
-  WP7.4.0 Product Approval Report.md`. Does not create any Git tag,
-  merge, or GitHub Release — Product Owner action only, not yet
-  performed.
+  WP7.4.0 Product Approval Report.md`.
 
-**`v0.7.0` is prepared for Product Approval, not yet released.** All
-twelve Work Packages plus this closing release-preparation review are
-complete. The physical Git tag, merge to `main`, and GitHub Release
-remain outstanding, Product-Owner-executed steps.
+**`v0.7.0` is released.** All thirteen Work Packages plus its own
+closing release-preparation review are complete. The Product Owner
+merged `feature/v0.7.0-engineering-foundation` into `main`
+(non-fast-forward, `61fb2db`), tagged `v0.7.0`, and pushed both to
+`origin`.
+
+Per `docs/releases/v0.8.0/WorkPackages.md`, the Engineering Workspace
+phase is under way, on `feature/v0.8.0-engineering-workspace` (cut from
+`main` at the `v0.7.0` tag):
+
+- `WP 8.0A` — Engineering Workspace Architecture (architecture and
+  design only; no implementation, no production code). **Complete.**
+  Designed the complete Engineering Workspace across all twelve named
+  areas — TempestOS's first user-facing engineering product surface,
+  a graphical, multi-panel evolution of `Tempest.App`'s own composition
+  root, additive to console `TempestShell` (`ADR-0062`). Views read
+  Engineering Core/Platform services directly; mutations dispatch
+  through the existing Command Framework (`ADR-0063`); layout/session
+  state persists via the existing `ISettingsProvider` (`ADR-0064`);
+  Digital Thread visualisation composes existing reads, introducing no
+  new traversal mechanism (`ADR-0065`) — see `docs/releases/v0.8.0/
+  WP8.0A Workspace Architecture Document.md` and its four companion
+  deliverables. `ADR-0066` (UI rendering technology) and `ADR-0067`
+  (object-view extensibility contract) reserved for a future Contract
+  Review Work Package.
+
+**`v0.8.0` is in progress.** Its first Work Package is complete; no
+Contract Review or implementation Work Package has been scoped or
+approved yet.
 
 ## Long-Term Vision
 
