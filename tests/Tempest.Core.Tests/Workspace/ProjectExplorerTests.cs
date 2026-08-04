@@ -132,4 +132,181 @@ public class ProjectExplorerTests
 
         await manager.ShutdownAsync();
     }
+
+    // ----------------------------------------------------------------
+    // CurrentPath / EnterAsync / ExitAsync (WP 8.1B — a genuine, disclosed
+    // implementation-phase addition, not part of the twelve WP8.0B
+    // contracts; ProjectExplorer is internal, reached here via
+    // Tempest.App's own InternalsVisibleTo grant, WP 8.1A)
+    // ----------------------------------------------------------------
+
+    private static async Task<(IWorkspace Workspace, WorkspaceManager Manager, ProjectExplorer Explorer)> StartWithCategoryAsync(string rootPath)
+    {
+        var (workspace, manager) = await StartAsync(rootPath, typeof(NavigationSampleModule));
+        var category = new ProjectExplorerNode(Guid.NewGuid(), "Assemblies", null, true, ProjectExplorerNodeType.Category);
+        manager.RegisterExplorerArea(NavigationSampleModule.NavigationItemId, new TestProjectExplorerNodeProvider(NavigationSampleModule.NavigationItemId, [category]));
+        await workspace.Navigation.SwitchAreaAsync(NavigationSampleModule.NavigationItemId);
+
+        var explorer = (ProjectExplorer)workspace.ProjectExplorer;
+        return (workspace, manager, explorer);
+    }
+
+    [Fact]
+    public async Task CurrentPath_InitiallyEmpty()
+    {
+        using var temp = new TempDirectory();
+        var (_, manager, explorer) = await StartWithCategoryAsync(temp.Path);
+
+        Assert.Empty(explorer.CurrentPath);
+
+        await manager.ShutdownAsync();
+    }
+
+    [Fact]
+    public async Task EnterAsync_ExtendsCurrentPath()
+    {
+        using var temp = new TempDirectory();
+        var (workspace, manager, explorer) = await StartWithCategoryAsync(temp.Path);
+        var rootNodes = await workspace.ProjectExplorer.GetRootNodesAsync();
+        var category = rootNodes[0];
+
+        await explorer.EnterAsync(category);
+
+        Assert.Single(explorer.CurrentPath);
+        Assert.Equal(category, explorer.CurrentPath[0]);
+
+        await manager.ShutdownAsync();
+    }
+
+    [Fact]
+    public async Task EnterAsync_NodeWithNoChildren_ReturnsEmpty()
+    {
+        using var temp = new TempDirectory();
+        var (_, manager, explorer) = await StartWithCategoryAsync(temp.Path);
+        var leaf = new ProjectExplorerNode(Guid.NewGuid(), "Bracket", "SampleComponent", false, ProjectExplorerNodeType.Object);
+
+        var children = await explorer.EnterAsync(leaf);
+
+        Assert.Empty(children);
+        Assert.Single(explorer.CurrentPath);
+
+        await manager.ShutdownAsync();
+    }
+
+    [Fact]
+    public async Task ExitAsync_AtRoot_IsANoOp_ReturnsRootNodes()
+    {
+        using var temp = new TempDirectory();
+        var (workspace, manager, explorer) = await StartWithCategoryAsync(temp.Path);
+
+        var result = await explorer.ExitAsync();
+
+        Assert.Empty(explorer.CurrentPath);
+        Assert.Equal(await workspace.ProjectExplorer.GetRootNodesAsync(), result);
+
+        await manager.ShutdownAsync();
+    }
+
+    [Fact]
+    public async Task ExitAsync_AfterEnter_RemovesLastPathSegment()
+    {
+        using var temp = new TempDirectory();
+        var (workspace, manager, explorer) = await StartWithCategoryAsync(temp.Path);
+        var category = (await workspace.ProjectExplorer.GetRootNodesAsync())[0];
+        await explorer.EnterAsync(category);
+
+        await explorer.ExitAsync();
+
+        Assert.Empty(explorer.CurrentPath);
+
+        await manager.ShutdownAsync();
+    }
+
+    [Fact]
+    public async Task SwitchAreaAsync_ResetsCurrentPath()
+    {
+        using var temp = new TempDirectory();
+        var (workspace, manager) = await StartAsync(temp.Path, typeof(NavigationSampleModule), typeof(SecondaryNavigationSampleModule));
+        var category = new ProjectExplorerNode(Guid.NewGuid(), "Assemblies", null, true, ProjectExplorerNodeType.Category);
+        manager.RegisterExplorerArea(NavigationSampleModule.NavigationItemId, new TestProjectExplorerNodeProvider(NavigationSampleModule.NavigationItemId, [category]));
+        await workspace.Navigation.SwitchAreaAsync(NavigationSampleModule.NavigationItemId);
+        var explorer = (ProjectExplorer)workspace.ProjectExplorer;
+        await explorer.EnterAsync(category);
+        Assert.Single(explorer.CurrentPath);
+
+        manager.RegisterExplorerArea(SecondaryNavigationSampleModule.NavigationItemId, new TestProjectExplorerNodeProvider(SecondaryNavigationSampleModule.NavigationItemId, []));
+        await workspace.Navigation.SwitchAreaAsync(SecondaryNavigationSampleModule.NavigationItemId);
+
+        Assert.Empty(explorer.CurrentPath);
+
+        await manager.ShutdownAsync();
+    }
+
+    // ----------------------------------------------------------------
+    // FilterAsync (WP 8.1B)
+    // ----------------------------------------------------------------
+
+    [Fact]
+    public async Task FilterAsync_MatchesRootNode()
+    {
+        using var temp = new TempDirectory();
+        var (workspace, manager) = await StartAsync(temp.Path, typeof(NavigationSampleModule));
+        var node = new ProjectExplorerNode(Guid.NewGuid(), "Bracket", "SampleComponent", false, ProjectExplorerNodeType.Object);
+        manager.RegisterExplorerArea(NavigationSampleModule.NavigationItemId, new TestProjectExplorerNodeProvider(NavigationSampleModule.NavigationItemId, [node]));
+        await workspace.Navigation.SwitchAreaAsync(NavigationSampleModule.NavigationItemId);
+        var explorer = (ProjectExplorer)workspace.ProjectExplorer;
+
+        var matches = await explorer.FilterAsync("brack");
+
+        Assert.Single(matches);
+        Assert.Equal(node, matches[0]);
+
+        await manager.ShutdownAsync();
+    }
+
+    [Fact]
+    public async Task FilterAsync_IsCaseInsensitive()
+    {
+        using var temp = new TempDirectory();
+        var (workspace, manager) = await StartAsync(temp.Path, typeof(NavigationSampleModule));
+        var node = new ProjectExplorerNode(Guid.NewGuid(), "Bracket", "SampleComponent", false, ProjectExplorerNodeType.Object);
+        manager.RegisterExplorerArea(NavigationSampleModule.NavigationItemId, new TestProjectExplorerNodeProvider(NavigationSampleModule.NavigationItemId, [node]));
+        await workspace.Navigation.SwitchAreaAsync(NavigationSampleModule.NavigationItemId);
+        var explorer = (ProjectExplorer)workspace.ProjectExplorer;
+
+        var matches = await explorer.FilterAsync("BRACKET");
+
+        Assert.Single(matches);
+
+        await manager.ShutdownAsync();
+    }
+
+    [Fact]
+    public async Task FilterAsync_NoMatch_ReturnsEmpty()
+    {
+        using var temp = new TempDirectory();
+        var (workspace, manager) = await StartAsync(temp.Path, typeof(NavigationSampleModule));
+        var node = new ProjectExplorerNode(Guid.NewGuid(), "Bracket", "SampleComponent", false, ProjectExplorerNodeType.Object);
+        manager.RegisterExplorerArea(NavigationSampleModule.NavigationItemId, new TestProjectExplorerNodeProvider(NavigationSampleModule.NavigationItemId, [node]));
+        await workspace.Navigation.SwitchAreaAsync(NavigationSampleModule.NavigationItemId);
+        var explorer = (ProjectExplorer)workspace.ProjectExplorer;
+
+        var matches = await explorer.FilterAsync("no-such-object");
+
+        Assert.Empty(matches);
+
+        await manager.ShutdownAsync();
+    }
+
+    [Fact]
+    public async Task FilterAsync_NullOrWhitespace_ThrowsArgumentException()
+    {
+        using var temp = new TempDirectory();
+        var (workspace, manager) = await StartAsync(temp.Path, Type.EmptyTypes);
+        var explorer = (ProjectExplorer)workspace.ProjectExplorer;
+
+        await Assert.ThrowsAsync<ArgumentException>(() => explorer.FilterAsync("  "));
+
+        await manager.ShutdownAsync();
+    }
 }

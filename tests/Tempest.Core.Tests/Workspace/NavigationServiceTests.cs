@@ -242,4 +242,215 @@ public class NavigationServiceTests
 
         await manager.ShutdownAsync();
     }
+
+    // ----------------------------------------------------------------
+    // History / GoBackAsync / GoForwardAsync (WP 8.1B — a genuine,
+    // disclosed implementation-phase addition, not part of the twelve
+    // WP8.0B contracts; NavigationService is internal, reached here via
+    // Tempest.App's own InternalsVisibleTo grant, WP 8.1A)
+    // ----------------------------------------------------------------
+
+    [Fact]
+    public async Task SwitchAreaAsync_RecordsAHistoryEntry()
+    {
+        using var temp = new TempDirectory();
+        var (workspace, manager) = await StartAsync(temp.Path, typeof(NavigationSampleModule));
+        var navigationService = (NavigationService)workspace.Navigation;
+
+        await workspace.Navigation.SwitchAreaAsync(NavigationSampleModule.NavigationItemId);
+
+        Assert.Single(navigationService.History);
+        Assert.Equal(NavigationSampleModule.NavigationItemId, navigationService.History[0].AreaId);
+        Assert.Null(navigationService.History[0].ObjectId);
+
+        await manager.ShutdownAsync();
+    }
+
+    [Fact]
+    public async Task OpenAsync_RecordsAHistoryEntry()
+    {
+        using var temp = new TempDirectory();
+        var (workspace, manager) = await StartAsync(temp.Path, Type.EmptyTypes);
+        manager.RegisterView("Requirement", new TestWorkspaceViewFactory("Requirement"));
+        var navigationService = (NavigationService)workspace.Navigation;
+        var objectId = Guid.NewGuid();
+
+        await workspace.Navigation.OpenAsync(objectId, "Requirement");
+
+        Assert.Single(navigationService.History);
+        Assert.Equal(objectId, navigationService.History[0].ObjectId);
+        Assert.Equal("Requirement", navigationService.History[0].ObjectKind);
+
+        await manager.ShutdownAsync();
+    }
+
+    [Fact]
+    public async Task GoBackAsync_NoHistoryYet_ReturnsFalse()
+    {
+        using var temp = new TempDirectory();
+        var (workspace, manager) = await StartAsync(temp.Path, Type.EmptyTypes);
+        var navigationService = (NavigationService)workspace.Navigation;
+
+        Assert.False(await navigationService.GoBackAsync());
+
+        await manager.ShutdownAsync();
+    }
+
+    [Fact]
+    public async Task GoBackAsync_OnlyOneEntry_ReturnsFalse()
+    {
+        using var temp = new TempDirectory();
+        var (workspace, manager) = await StartAsync(temp.Path, typeof(NavigationSampleModule));
+        var navigationService = (NavigationService)workspace.Navigation;
+        await workspace.Navigation.SwitchAreaAsync(NavigationSampleModule.NavigationItemId);
+
+        Assert.False(await navigationService.GoBackAsync());
+
+        await manager.ShutdownAsync();
+    }
+
+    [Fact]
+    public async Task GoBackAsync_TwoAreaSwitches_ReturnsToTheFirst()
+    {
+        using var temp = new TempDirectory();
+        var (workspace, manager) = await StartAsync(temp.Path, typeof(NavigationSampleModule), typeof(SecondaryNavigationSampleModule));
+        var navigationService = (NavigationService)workspace.Navigation;
+        await workspace.Navigation.SwitchAreaAsync(NavigationSampleModule.NavigationItemId);
+        await workspace.Navigation.SwitchAreaAsync(SecondaryNavigationSampleModule.NavigationItemId);
+
+        var moved = await navigationService.GoBackAsync();
+
+        Assert.True(moved);
+        Assert.Equal(NavigationSampleModule.NavigationItemId, navigationService.CurrentAreaId);
+
+        await manager.ShutdownAsync();
+    }
+
+    [Fact]
+    public async Task GoBackAsync_DoesNotRecordANewHistoryEntry()
+    {
+        using var temp = new TempDirectory();
+        var (workspace, manager) = await StartAsync(temp.Path, typeof(NavigationSampleModule), typeof(SecondaryNavigationSampleModule));
+        var navigationService = (NavigationService)workspace.Navigation;
+        await workspace.Navigation.SwitchAreaAsync(NavigationSampleModule.NavigationItemId);
+        await workspace.Navigation.SwitchAreaAsync(SecondaryNavigationSampleModule.NavigationItemId);
+
+        await navigationService.GoBackAsync();
+
+        Assert.Equal(2, navigationService.History.Count);
+
+        await manager.ShutdownAsync();
+    }
+
+    [Fact]
+    public async Task GoForwardAsync_AfterGoBack_ReturnsToTheSecond()
+    {
+        using var temp = new TempDirectory();
+        var (workspace, manager) = await StartAsync(temp.Path, typeof(NavigationSampleModule), typeof(SecondaryNavigationSampleModule));
+        var navigationService = (NavigationService)workspace.Navigation;
+        await workspace.Navigation.SwitchAreaAsync(NavigationSampleModule.NavigationItemId);
+        await workspace.Navigation.SwitchAreaAsync(SecondaryNavigationSampleModule.NavigationItemId);
+        await navigationService.GoBackAsync();
+
+        var moved = await navigationService.GoForwardAsync();
+
+        Assert.True(moved);
+        Assert.Equal(SecondaryNavigationSampleModule.NavigationItemId, navigationService.CurrentAreaId);
+
+        await manager.ShutdownAsync();
+    }
+
+    [Fact]
+    public async Task GoForwardAsync_AtNewestEntry_ReturnsFalse()
+    {
+        using var temp = new TempDirectory();
+        var (workspace, manager) = await StartAsync(temp.Path, typeof(NavigationSampleModule));
+        var navigationService = (NavigationService)workspace.Navigation;
+        await workspace.Navigation.SwitchAreaAsync(NavigationSampleModule.NavigationItemId);
+
+        Assert.False(await navigationService.GoForwardAsync());
+
+        await manager.ShutdownAsync();
+    }
+
+    [Fact]
+    public async Task SwitchAreaAsync_AfterGoBack_TruncatesForwardHistory()
+    {
+        using var temp = new TempDirectory();
+        var (workspace, manager) = await StartAsync(temp.Path, typeof(NavigationSampleModule), typeof(SecondaryNavigationSampleModule));
+        var navigationService = (NavigationService)workspace.Navigation;
+        await workspace.Navigation.SwitchAreaAsync(NavigationSampleModule.NavigationItemId);
+        await workspace.Navigation.SwitchAreaAsync(SecondaryNavigationSampleModule.NavigationItemId);
+        await navigationService.GoBackAsync();
+
+        await workspace.Navigation.SwitchAreaAsync(NavigationSampleModule.NavigationItemId);
+
+        Assert.False(await navigationService.GoForwardAsync());
+        Assert.Equal(2, navigationService.History.Count);
+
+        await manager.ShutdownAsync();
+    }
+
+    // ----------------------------------------------------------------
+    // RecentItems (WP 8.1B — a genuine, disclosed implementation-phase
+    // addition, not part of the twelve WP8.0B contracts)
+    // ----------------------------------------------------------------
+
+    [Fact]
+    public async Task RecentItems_OpenAsync_AddsAnEntry_MostRecentFirst()
+    {
+        using var temp = new TempDirectory();
+        var (workspace, manager) = await StartAsync(temp.Path, Type.EmptyTypes);
+        manager.RegisterView("Requirement", new TestWorkspaceViewFactory("Requirement"));
+        var navigationService = (NavigationService)workspace.Navigation;
+        var first = Guid.NewGuid();
+        var second = Guid.NewGuid();
+
+        await workspace.Navigation.OpenAsync(first, "Requirement");
+        await workspace.Navigation.OpenAsync(second, "Requirement");
+
+        Assert.Equal(2, navigationService.RecentItems.Count);
+        Assert.Equal(second, navigationService.RecentItems[0].ObjectId);
+        Assert.Equal(first, navigationService.RecentItems[1].ObjectId);
+
+        await manager.ShutdownAsync();
+    }
+
+    [Fact]
+    public async Task RecentItems_ReOpeningSameObject_DoesNotDuplicate_MovesToFront()
+    {
+        using var temp = new TempDirectory();
+        var (workspace, manager) = await StartAsync(temp.Path, Type.EmptyTypes);
+        manager.RegisterView("Requirement", new TestWorkspaceViewFactory("Requirement"));
+        var navigationService = (NavigationService)workspace.Navigation;
+        var first = Guid.NewGuid();
+        var second = Guid.NewGuid();
+
+        await workspace.Navigation.OpenAsync(first, "Requirement");
+        await workspace.Navigation.OpenAsync(second, "Requirement");
+        await workspace.Navigation.OpenAsync(first, "Requirement");
+
+        Assert.Equal(2, navigationService.RecentItems.Count);
+        Assert.Equal(first, navigationService.RecentItems[0].ObjectId);
+
+        await manager.ShutdownAsync();
+    }
+
+    [Fact]
+    public async Task RecentItems_GoBackReplay_DoesNotAddAnEntry()
+    {
+        using var temp = new TempDirectory();
+        var (workspace, manager) = await StartAsync(temp.Path, Type.EmptyTypes);
+        manager.RegisterView("Requirement", new TestWorkspaceViewFactory("Requirement"));
+        var navigationService = (NavigationService)workspace.Navigation;
+        await workspace.Navigation.OpenAsync(Guid.NewGuid(), "Requirement");
+        var jumped = await workspace.Navigation.JumpToAsync(Guid.NewGuid(), "Requirement");
+
+        await navigationService.GoBackAsync();
+
+        Assert.Equal(2, navigationService.RecentItems.Count);
+        Assert.Equal(jumped.ObjectId, navigationService.RecentItems[0].ObjectId);
+
+        await manager.ShutdownAsync();
+    }
 }

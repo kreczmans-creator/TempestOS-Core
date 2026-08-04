@@ -67,6 +67,13 @@ namespace Tempest.Core.Tests.Samples;
 //
 // WP 7.1E: Tempest.Samples grew VerificationSampleModule, bringing the
 // total to nineteen.
+//
+// WP 7.3A: Tempest.Samples grew RequirementsSampleModule, bringing the
+// total to twenty.
+//
+// WP 8.1B: Tempest.Samples grew WorkspaceExplorerSampleModule (the
+// Project Explorer's own living reference content's navigation area),
+// bringing the total to twenty-one.
 public class ClockModuleDiscoveryTests
 {
     // ----------------------------------------------------------------
@@ -113,7 +120,7 @@ public class ClockModuleDiscoveryTests
 
         var result = service.DiscoverModules();
 
-        Assert.Equal(20, result.Count);
+        Assert.Equal(21, result.Count);
         Assert.Contains(result, d => d.Id == "tempest.samples.clock" && d.ModuleType == typeof(ClockModule));
         Assert.Contains(result, d => d.Id == "tempest.samples.clock.observer" && d.ModuleType == typeof(ClockLifecycleObserverModule));
         Assert.Contains(result, d => d.Id == "tempest.samples.navigation" && d.ModuleType == typeof(NavigationSampleModule));
@@ -134,6 +141,7 @@ public class ClockModuleDiscoveryTests
         Assert.Contains(result, d => d.Id == "tempest.samples.calculations" && d.ModuleType == typeof(Tempest.Samples.CalculationSampleModule));
         Assert.Contains(result, d => d.Id == "tempest.samples.verification" && d.ModuleType == typeof(Tempest.Samples.VerificationSampleModule));
         Assert.Contains(result, d => d.Id == "tempest.samples.requirements" && d.ModuleType == typeof(Tempest.Samples.RequirementsSampleModule));
+        Assert.Contains(result, d => d.Id == "tempest.samples.workspace-explorer" && d.ModuleType == typeof(Tempest.Samples.WorkspaceExplorerSampleModule));
     }
 
     // ----------------------------------------------------------------

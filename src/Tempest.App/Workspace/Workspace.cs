@@ -14,7 +14,7 @@ internal sealed class Workspace : IWorkspace
         IWorkspaceState state,
         NavigationService navigationService,
         ISelectionService selection,
-        IProjectExplorer projectExplorer,
+        ProjectExplorer projectExplorer,
         IPropertyInspector propertyInspector)
     {
         ArgumentNullException.ThrowIfNull(state);
@@ -27,6 +27,7 @@ internal sealed class Workspace : IWorkspace
         _navigationService = navigationService;
         Selection = selection;
         ProjectExplorer = projectExplorer;
+        ProjectExplorerConcrete = projectExplorer;
         PropertyInspector = propertyInspector;
     }
 
@@ -45,6 +46,26 @@ internal sealed class Workspace : IWorkspace
 
     /// <inheritdoc />
     public IProjectExplorer ProjectExplorer { get; }
+
+    /// <summary>
+    /// Gets the concrete <see cref="Workspace.ProjectExplorer"/> — internal,
+    /// same-assembly-only access to the members
+    /// (<see cref="Workspace.ProjectExplorer"/>'s own <c>CurrentPath</c>,
+    /// <c>EnterAsync</c>, <c>ExitAsync</c>, <c>FilterAsync</c>) that are not
+    /// part of the twelve `WP8.0B Workspace Contracts.md` interfaces,
+    /// mirroring <see cref="WorkspaceManager.StatusBar"/>'s own identical
+    /// precedent.
+    /// </summary>
+    internal ProjectExplorer ProjectExplorerConcrete { get; }
+
+    /// <summary>
+    /// Gets the concrete <see cref="NavigationService"/> — internal,
+    /// same-assembly-only access to <c>History</c>, <c>RecentItems</c>,
+    /// <c>GoBackAsync</c>, <c>GoForwardAsync</c>, none of which are part of
+    /// the twelve `WP8.0B Workspace Contracts.md` interfaces, mirroring
+    /// <see cref="WorkspaceManager.StatusBar"/>'s own identical precedent.
+    /// </summary>
+    internal NavigationService NavigationServiceConcrete => _navigationService;
 
     /// <inheritdoc />
     public IPropertyInspector PropertyInspector { get; }

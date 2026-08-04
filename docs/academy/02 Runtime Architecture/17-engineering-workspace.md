@@ -4,7 +4,8 @@
 
 The Engineering Workspace (architected `WP 8.0A`, contracted `WP 8.0B`,
 shell implemented `WP 8.1A`, its complete target experience specified
-`WP 8.0C`, `ADR-0062`–`ADR-0070`) is TempestOS's first user-facing
+`WP 8.0C`, its Navigation system and Project Explorer implemented
+`WP 8.1B`, `ADR-0062`–`ADR-0071`) is TempestOS's first user-facing
 engineering product surface, and — since `WP 8.1A` — the platform's own
 default launch target (`ADR-0068`). Running `Tempest.App` today
 presents the five-region Workspace shell (Areas, Project Explorer,
@@ -15,11 +16,17 @@ the complete target experience this shell is meant to grow into — an
 Engineering Cockpit landing screen (`ADR-0069`), a Command Palette
 (`ADR-0070`), a Project Dashboard, an Inspector panel distinct from
 Properties, and the full interaction/navigation/behaviour model around
-them. This document teaches the reasoning behind the Workspace's own
-design, its own frozen public contracts, its own shell implementation,
-and the target experience now specified for it — not yet any real
-engineering-domain content or the richer UX itself, neither of which
-any Work Package through `WP 8.0C` has built.
+them. `WP 8.1B` then implemented the first slice of that target
+experience for real: navigation history, breadcrumbs, filtering, recent
+items, and context menus, proven against a real, fixed, fictional
+object tree (`Tempest.App.Workspace.Samples`) — the Project Explorer's
+own first living reference content, not a test double. This document
+teaches the reasoning behind the Workspace's own design, its own frozen
+public contracts, its own shell implementation, the target experience
+specified for it, and its own first navigation/tree implementation —
+not yet any real engineering-domain content (Requirements, Materials,
+Calculations) or the richer Cockpit/Command Palette UX, neither of
+which any Work Package through `WP 8.1B` has built.
 
 ## 2. Purpose
 
@@ -122,6 +129,28 @@ without resolving, a real tension between this specification's own
 richer ambitions (true multi-window, multi-monitor, a floating palette
 overlay) and `ADR-0066`'s current terminal-based decision.
 
+`WP 8.1B` then implemented the Navigation system and Project Explorer
+`WP8.0C Navigation Maps.md`/`Screen Catalogue.md` specified, against the
+`WP 8.0B` contracts that already existed. Two genuine capabilities
+`WP 8.0B` never anticipated — navigation history/recent items
+(`NavigationService.History`/`RecentItems`/`GoBackAsync`/`GoForwardAsync`)
+and breadcrumbs/filtering (`ProjectExplorer.CurrentPath`/`EnterAsync`/
+`ExitAsync`/`FilterAsync`) — were added as disclosed, same-assembly-only
+extensions to the concrete classes, never to the twelve public
+interfaces themselves, mirroring `WorkspaceManager.StatusBar`'s own
+`WP 8.1A` precedent exactly: a real capability the approved contracts
+never named, added without reopening any of them. The Project Explorer
+is populated, for the first time, with real (if fictional) content — a
+fixed Category → Group → Object tree
+(`Tempest.App.Workspace.Samples.SampleExplorerContent`) — proving the
+Kind-keyed provider architecture (`ADR-0067`) end to end. Building this
+first real registration found `ADR-0067`'s own worked example
+(a module calling `IWorkspaceManager.RegisterView` directly) does not
+hold: a discovered module has no path to the one `WorkspaceManager`
+instance wrapping its own Host from the outside. `ADR-0071` corrects
+this — registration belongs to `Tempest.App`'s own composition root
+(`Program.cs`), not to a module.
+
 ## 6. Alternatives Considered
 
 **A new Platform Service for the Workspace** — considered and rejected;
@@ -160,6 +189,14 @@ effectively has today, and it directly fails Principle 4
 ("everything discoverable"): a user has no way to discover a command
 that exists outside whichever view they currently happen to be looking
 at.
+
+**Giving a discovered module a reference to `IWorkspaceManager`**
+(a new Workspace-aware module base class, or DI-registering
+`WorkspaceManager` into the Host) — considered and rejected; see
+`ADR-0071`. This would directly contradict `ADR-0062`'s own decision
+that the Workspace is not a Platform Service and is never resolved
+through `ITempestHost.Services` — reopening a settled architectural
+boundary to save one composition-root registration call.
 
 ## 7. Why This Solution Was Chosen
 
@@ -217,11 +254,12 @@ thread visualisation) rather than only service-layer storage.
   `WP 8.1A` — Revision/Provenance/Relationship/DisciplineSpecific facets
   have no source yet, expected given "no engineering functionality" was
   this Work Package's own explicit constraint.
-- A real gap now exists, disclosed rather than hidden, between what
-  `WP 8.1A` ships today and what `WP 8.0C` specifies as the target
-  experience — an empty Project Explorer and no Cockpit today, versus a
-  live dashboard, a Command Palette, and a Properties/Inspector split
-  specified as the target (`WP8.0C UX Specification.md` §0).
+- A real gap remains, disclosed rather than hidden, between what
+  `WP 8.1B` ships today and what `WP 8.0C` specifies as the target
+  experience — the Project Explorer is now populated (with fictional
+  sample content) and navigable, but there is still no Cockpit, no
+  Command Palette, and no Properties/Inspector split
+  (`WP8.0C UX Specification.md` §0).
 - A future `IWorkspaceCommand`-adjacent thirteenth contract
   (`IDigitalThreadInspector`, named but not designed, `WP8.0C Screen
   Catalogue.md` §10) is now a disclosed, plausible future addition, not
@@ -231,6 +269,17 @@ thread visualisation) rather than only service-layer storage.
   designed — `WP8.0C Workspace Behaviour Specification.md` §5-§6
   elaborates precisely why a terminal-based single window (`ADR-0066`)
   bounds this specific ambition, without resolving the tension.
+- Navigation history and recent items are Workspace-global, not
+  per-tab/per-project as `WP8.0C Navigation Maps.md` §4 specifies — a
+  disclosed simplification, since the terminal shell has no independent
+  per-tab focus model to hang per-tab history off
+  (`WP8.1B Implementation Report.md`).
+- The Project Explorer's own interaction vocabulary (`open <N>`, `up`,
+  `filter [text]`, `back`/`forward`, `menu <N>`) is a small, discoverable
+  set of terminal words, not a literal binding of `WP8.0C Interaction
+  Specification.md`'s own richer keyboard-shortcut/mouse-gesture model
+  — the literal bindings remain deferred to a future rendering-technology
+  choice, unchanged since `ADR-0066`.
 
 ## 11. Common Mistakes
 
@@ -243,12 +292,29 @@ retrofitted into that one View specifically, rather than gained for
 free at the one dispatch point every other mutating action already
 uses.
 
+A second, `WP 8.1B`-specific mistake worth naming: assuming a Decision
+document's own worked example is itself proven, rather than proving it
+against real code before relying on it. `ADR-0067`'s own Decision
+section described a module calling `IWorkspaceManager.RegisterView`
+directly — a plausible-sounding example nobody had actually built yet.
+Building the first real registration (`WP 8.1B`) is what surfaced that
+this specific example contradicts `ADR-0062`'s own Host/Workspace
+boundary. The lesson is not "ADRs are unreliable" — it is that a worked
+example inside an ADR is still a claim, and claims get verified by
+building the thing, exactly as this platform's own two-stage
+architecture-then-contracts discipline already assumes for the contracts
+themselves.
+
 ## 12. Future Evolution
 
-- **The first real `IWorkspaceViewFactory`/`IProjectExplorerNodeProvider`
-  pair**, most naturally for Requirements — the natural next Work
-  Package's own first proof of `ADR-0067` beyond `WP 8.1A`'s own
-  test-local fakes.
+- **The first real, production `IWorkspaceViewFactory`/
+  `IProjectExplorerNodeProvider` pair for an actual Engineering Core
+  `Kind`**, most naturally for Requirements — `WP 8.1B` proved the
+  mechanism against fictional sample content only; a real discipline
+  Kind is still the natural next proof.
+- **The Engineering Cockpit and Command Palette** (`ADR-0069`/
+  `ADR-0070`) — specified in full (`WP 8.0C`) but not yet implemented;
+  the next Workspace-experience gap after Navigation & Project Explorer.
 - **Specific TUI library selection**, if `WorkspaceShell`'s own
   hand-rolled renderer (`WP 8.1A`) ever proves insufficient — narrower
   than `ADR-0066`, needing no further ADR.
@@ -258,9 +324,9 @@ uses.
 - **A Contract Review reconciling `WP 8.0B`'s twelve contracts against
   `WP 8.0C`'s richer demands** — the Engineering Cockpit's own data
   needs, the Command Palette's own reach into `ICommandRegistry`, and
-  the Inspector panel's own plausible `IDigitalThreadInspector` — is the
-  explicitly recommended next step (`WP8.0C UX Specification.md` §0)
-  before a second implementation Work Package builds any of it.
+  the Inspector panel's own plausible `IDigitalThreadInspector` — remains
+  the explicitly recommended step before a Cockpit/Palette
+  implementation Work Package builds either.
 - **A possible future revisit of `ADR-0066`** — only if true
   multi-window or multi-monitor support ever becomes a real,
   demonstrated need rather than a named ambition (`WP8.0C Workspace
@@ -294,16 +360,30 @@ uses.
    specification as if it were already satisfied — the "Today vs.
    Target" pattern `WP 8.0C` uses throughout is itself a reusable
    documentation discipline, not specific to the Workspace.
+6. A same-assembly-only, concrete-class extension (`NavigationService.
+   History`, `ProjectExplorer.CurrentPath`) is a legitimate way to add a
+   real, needed capability the frozen public contracts never named,
+   without reopening those contracts — the discipline is keeping the
+   extension internal until a genuine cross-boundary need (a second
+   assembly, a second implementation) actually forces a public contract
+   change, not adding it speculatively.
+7. An Accepted ADR's own worked example is a claim like any other —
+   verify it against real, built code before the first Work Package that
+   actually needs it relies on it, and correct it with a new ADR,
+   openly, if it turns out not to hold (`ADR-0071`), rather than quietly
+   working around it.
 
 ## Related Documents
 
 `10-shell-and-application-composition.md`; `09-navigation-architecture.md`;
 `11-command-framework.md`; `16-requirements-engine.md`; `ADR-0062`–
-`ADR-0070`; `docs/releases/v0.8.0/WP8.0A Workspace Architecture
+`ADR-0071`; `docs/releases/v0.8.0/WP8.0A Workspace Architecture
 Document.md` and its four companion deliverables; `docs/releases/
 v0.8.0/WP8.0B Workspace Contracts.md` and its three companion
 deliverables; `docs/releases/v0.8.0/WP8.1A Implementation Report.md`;
-`docs/releases/v0.8.0/WP8.0C UX Specification.md` and its seven
-companion deliverables;
+`docs/releases/v0.8.0/WP8.0C UX Specification.md` and its eight
+companion deliverables; `docs/releases/v0.8.0/WP8.1B Implementation
+Report.md`;
 `docs/academy/03 Work Packages/WP8.1A-workspace-shell-implementation.md`;
-`docs/academy/03 Work Packages/WP8.0C-engineering-workspace-ux-specification.md`.
+`docs/academy/03 Work Packages/WP8.0C-engineering-workspace-ux-specification.md`;
+`docs/academy/03 Work Packages/WP8.1B-navigation-and-project-explorer-implementation.md`.
