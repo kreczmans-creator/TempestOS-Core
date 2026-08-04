@@ -13,7 +13,7 @@ architecture into the complete public contract — proposed, uncompiled
 C# for every one of the ~49 canonical objects plus their own supporting
 facet/relationship/lifecycle/validation/traceability contracts — still
 no implementation, no concrete classes, no persistence. `WP 8.2C` then
-compiled every one of those contracts and gave 39 of the ~49 canonical
+compiled every one of those contracts and gave 38 of the ~49 canonical
 objects a real, tested concrete class, backed by a small, shared
 implementation framework (`EngineeringObjectBase`, generic factories, a
 new in-memory repository layer) — the first Engineering Domain code
@@ -150,7 +150,7 @@ Five canonical Kinds already owned by an existing framework
 `CalculationRecord`, `MaterialSpecification`) compile as Domain
 interfaces but receive no competing concrete class here — that
 realisation remains exactly where `WP 8.2A` already placed it
-(`ADR-0078`). The remaining 39 canonical objects each get a small
+(`ADR-0078`). The remaining 38 canonical objects each get a small
 concrete class, constructed through one of two generic factory types
 (`EngineeringObjectFactory<T>`, `EngineeringRelationshipFactory`),
 instantiated once per Kind by whichever composition root needs it —
@@ -196,7 +196,7 @@ incompatible writers for one Kind) or under new, Domain-prefixed ones
 (permanently forking "what a Requirement is" in two directions) —
 considered and rejected; see `ADR-0078`.
 
-**One hand-written factory class per Kind** (~39 object factories plus
+**One hand-written factory class per Kind** (~38 object factories plus
 ~20 relationship factories) — considered and rejected; see `ADR-0079`.
 Pure boilerplate proportional to how many Kinds a catalogue happens to
 enumerate, the identical reasoning `ADR-0076` already applied to
@@ -412,7 +412,7 @@ otherwise.
 6. "Composition over inheritance" is a rule about **contracts**; a
    shared concrete base class for **implementation reuse** is an
    orthogonal, ordinary technique, not a violation of it — conflating
-   the two would have meant reinventing every facet's own plumbing 39
+   the two would have meant reinventing every facet's own plumbing 38
    separate times for no architectural benefit.
 7. Not every named canonical object needs a new concrete class from a
    new shared framework — five of them already have a perfectly good

@@ -1,6 +1,6 @@
 # TempestOS — Project Status
 
-**Last Updated:** 2026-08-04 (`WP 8.2C` — Engineering Domain Implementation)
+**Last Updated:** 2026-08-04 (`WP 8.9.0` — Release Preparation & Product Baseline, `v0.8.0` recommended **APPROVED**)
 
 This is the primary status dashboard for TempestOS. Read this first for
 "where does the project stand right now" — for "why is it built this
@@ -119,17 +119,70 @@ project's own convention.
 
 ## Current Release
 
-**v0.7.0** ("Engineering Foundation") — released 2026-07-30, tagged
-`v0.7.0` (merge `61fb2db`), recommended **APPROVED** by `WP 7.4.0`'s own
-release-readiness review. Root `VERSION` reads `0.7.0`, bumped
-immediately after the tag as part of preparing
-`feature/v0.8.0-engineering-workspace`, per this project's own
-established "bump after tag" precedent. `v0.6.0` ("Platform Services")
-is the release before that (tagged `v0.6.0`, `99ed285`, `CERTIFIED WITH
-ACCEPTED TECHNICAL DEBT`); `v0.5.0` ("Developer Experience") before
-that; `v0.4.0` ("Platform Foundation") before that.
+**v0.7.0** ("Engineering Foundation") remains the latest *tagged and
+merged* release — released 2026-07-30, tagged `v0.7.0` (merge
+`61fb2db`), recommended **APPROVED** by `WP 7.4.0`'s own
+release-readiness review. Root `VERSION` correctly still reads `0.7.0`.
+**`v0.8.0` ("Engineering Workspace") is now prepared and recommended
+APPROVED by `WP 8.9.0`'s own release-readiness review**, awaiting the
+Product Owner's own merge, `VERSION` bump, tag, and push — see
+`docs/releases/v0.8.0/WP8.9.0 Product Approval Report.md` and
+`WP8.9.0 Product Owner Release Checklist.md` for the prepared, not yet
+executed, sequence. `v0.6.0` ("Platform Services") is the release
+before `v0.7.0` (tagged `v0.6.0`, `99ed285`, `CERTIFIED WITH ACCEPTED
+TECHNICAL DEBT`); `v0.5.0` ("Developer Experience") before that;
+`v0.4.0` ("Platform Foundation") before that.
 
 ## Current Work Package
+
+**`WP 8.9.0` — Release Preparation & Product Baseline.** `v0.8.0`'s own
+tenth and closing Work Package — a release-verification-only pass, no
+new platform functionality, no architecture change, no refactoring
+beyond what resolving a genuine release-blocking defect would require
+(none was found). Performed a complete release readiness review across
+repository, build, test, version, governance, and architecture
+verification for all nine prior `v0.8.0` Work Packages
+(`WP 8.0A`–`WP 8.2C`).
+
+**Build**: 4/4 projects, 0 warnings, 0 errors, both Debug and Release,
+clean rebuild, verified both per-project and via `src/TempestOS.slnx`
+(the exact path `scripts/new-release.ps1` itself uses). **Tests**:
+1631/1631 passing, five full-suite-equivalent runs (two Debug, two
+Release, plus one via the release script's own solution-file path),
+plus a dedicated 225-test scoped run and three targeted flaky-test
+probes — zero failures, zero flakes anywhere. **Version**: confirmed
+`VERSION` correctly still reads `0.7.0`, not yet bumped, per the
+established "bump after tag" precedent.
+
+Found and corrected one genuine arithmetic error (`WP 8.2C`'s own
+claimed 39 concrete canonical object classes, corrected to the verified
+38, in every living document — left exactly as originally written in
+`WP 8.2C`'s own dated historical artifacts, per "never silently modify
+historical records"). Disclosed, not fixed, two further findings: the
+four-Engineering-Foundation-framework Platform Service Register/Map gap
+(`WP 7.3A` found it, `WP 7.4.0` confirmed it open, now confirmed open a
+second consecutive release cycle); `WP8.2B`'s own `IRelease : IBaseline
+: IConfiguration` three-level interface specialisation, contradicting
+that document's own Dependency Rules §6 (a documentation-only
+inconsistency, zero functional consequence). Disclosed and weighed
+explicitly: **zero dedicated Security Reviews performed this release**
+— a genuine departure from `v0.7.0`'s own three-review standard,
+mitigated by this release's own narrow, low-risk technical footprint
+(no new external attack surface), and named as the single most
+important recommendation for whatever begins Programme 9.
+
+**Recommendation: `v0.8.0` APPROVED** — see `docs/releases/v0.8.0/
+WP8.9.0 Product Approval Report.md`. Nine completion deliverables
+produced under `docs/releases/v0.8.0/`, prefixed `WP8.9.0`, plus
+`ReleaseNotes.md`/`Retrospective.md` fully populated (both previously
+stale skeletons) and `WorkPackages.md` corrected (its own stale status
+marked superseded, not silently overwritten). **Zero new ADRs. Stops
+here — the Product Owner alone performs the merge, VERSION bump, tag,
+GitHub Release, and push, per `WP8.9.0 Product Owner Release
+Checklist.md`; no Programme 9 Work Package begins until the Product
+Owner gives further instruction.**
+
+### `WP 8.2C` Summary (for reference)
 
 **`WP 8.2C` — Engineering Domain Implementation.** `v0.8.0`'s own ninth
 Work Package, and its fourth implementation — following `WP 8.2B`
@@ -145,9 +198,13 @@ contract files (83 interfaces/enums/records — every WP8.2B interface,
 plus one disclosed gap-fill, `IRevisionRecord`, referenced by
 `IHasRevisions.GetRevisionHistoryAsync` but never itself defined by
 `WP 8.2B`). A shared `EngineeringObjectBase` class implements every
-facet unconditionally; 39 of the ~49 canonical objects get a real,
+facet unconditionally; 38 of the ~49 canonical objects get a real,
 tested concrete class over it, constructed through one of two generic
 factory types (`EngineeringObjectFactory<T>`, `EngineeringRelationshipFactory`).
+(Corrected 39 → 38 by `WP 8.9.0`'s own release-readiness verification —
+`WP 8.2C`'s own documentation miscounted; every class that exists
+compiles and is tested correctly, disclosed as an arithmetic
+correction, not a functional defect.)
 The five already-Implemented canonical Kinds (`Requirement`,
 `RequirementCollection`/`Group`, `VerificationRecord`,
 `CalculationRecord`, `MaterialSpecification`) compile as Domain
@@ -874,22 +931,22 @@ Experience phase is now complete.
 
 | Metric | Value |
 |---|---|
-| Automated tests | 1631 (0 failures) — **+39, `WP 8.2C`** (1592 → 1631), both Debug and Release, clean rebuild |
-| ADRs | 79 (`ADR-0001`–`ADR-0079`, no gaps at all), all Accepted — **+3, `WP 8.2C`**: `ADR-0077`/`ADR-0078`/`ADR-0079` (shared-store reuse plus new in-memory repository layer; no competing realisation of the five already-Implemented Kinds; generic factories, not per-Kind types) |
-| Rejected Designs | 45 (`RD-0001`–`RD-0045`) — unchanged by `WP 8.2C` |
-| Academy articles | 116 (see `docs/governance/Documentation/Academy Register.md`) — **+1, `WP 8.2C`**: `WP8.2C-engineering-domain-implementation.md` (standard 13-section implementation retrospective); `18-engineering-domain-architecture.md` updated in place a third time, not counted as new |
-| Governance registers | 27 (32 governance documents total), plus 4 standing security documents under `docs/security/` and 1 standing engineering document (`docs/engineering/Engineering Principles.md`) — unchanged in count by `WP 8.2C` |
-| Architecture documents | 20 under `docs/architecture/` (22 including the two release-scoped documents) — unchanged by `WP 8.2C` |
-| Platform services | 27 catalogued — unchanged by `WP 8.2C` (no new Platform Service; every new shared service is a component of the existing Engineering Core layer, not a new named Platform Service) |
-| Modules (production) | 22 — **+1, `WP 8.2C`**: `EngineeringDomainSampleModule` (21 → 22) |
-| Hosted services (production) | 2 — unchanged by `WP 8.2C` |
+| Automated tests | 1631 (0 failures) — unchanged by `WP 8.9.0` (release-verification-only Work Package; re-verified across five full-suite-equivalent runs, zero flakes) |
+| ADRs | 79 (`ADR-0001`–`ADR-0079`, no gaps at all), all Accepted — unchanged by `WP 8.9.0`; zero new ADRs, re-verified directly |
+| Rejected Designs | 45 (`RD-0001`–`RD-0045`) — unchanged by `WP 8.9.0` |
+| Academy articles | 117 (see `docs/governance/Documentation/Academy Register.md`) — **+1, `WP 8.9.0`**: `WP8.9.0-release-preparation-and-product-baseline.md` (whole-review retrospective) |
+| Governance registers | 27 (32 governance documents total), plus 4 standing security documents under `docs/security/` and 1 standing engineering document (`docs/engineering/Engineering Principles.md`) — unchanged in count by `WP 8.9.0` |
+| Architecture documents | 20 under `docs/architecture/` (22 including the two release-scoped documents) — unchanged by `WP 8.9.0` |
+| Platform services | 27 catalogued — unchanged by `WP 8.9.0`, re-verified directly; disclosed, still-open gap (four Engineering Foundation frameworks missing rows) confirmed open a second consecutive release cycle, not fixed |
+| Modules (production) | 22 — unchanged by `WP 8.9.0`, re-verified directly (22/22 `ClockModuleDiscoveryTests`) |
+| Hosted services (production) | 2 — unchanged by `WP 8.9.0` |
 | Plugins (production) | 0 — infrastructure fully implemented and tested; `src/Plugins/` empty by deliberate scope decision |
-| Custom exception types (`src/Tempest.Core/`) | 69 — **+4, `WP 8.2C`**: `EngineeringDomainException` (base), `EngineeringObjectNotFoundException`, `InvalidLifecycleTransitionException`, `SelfReferentialRelationshipException` — verified directly (`grep -rhoP "^(public\|internal)( sealed)? class \w+Exception\b" src/Tempest.Core` returns 69) |
-| Public interfaces (`src/Tempest.Core/`) | 163 — **+83, `WP 8.2C`**: the complete `Tempest.Core.EngineeringDomain` contract surface now compiles for the first time (`WP 8.2A`/`WP 8.2B` proposed the same interfaces as uncompiled C#, never counted here) |
-| DI registrations (`TempestHost.cs` Phase 6) | 43 raw call sites, 41 named registrations — **+10, `WP 8.2C`** (31 → 41) |
-| Technical Debt Register items | 25 tracked, 17 disclosed trade-offs — unchanged by `WP 8.2C`; zero new items raised |
+| Custom exception types (`src/Tempest.Core/`) | 69 — unchanged by `WP 8.9.0`, re-verified directly |
+| Public interfaces (`src/Tempest.Core/`) | 163 — unchanged by `WP 8.9.0`, re-verified directly |
+| DI registrations (`TempestHost.cs` Phase 6) | 43 raw call sites, 41 named registrations — unchanged by `WP 8.9.0`, re-verified directly |
+| Technical Debt Register items | 25 tracked, 17 disclosed trade-offs — unchanged by `WP 8.9.0`; zero new items raised across all nine `v0.8.0` Work Packages |
 | Commits (`v0.6.0` → `v0.7.0`) | 17 total, release complete: `v0.6.0` release-branch preparation (2 commits), merge from `main`, `WP 7.0A`–`WP 7.4.0` (14 commits), the `v0.7.0` merge to `main` (non-fast-forward, `61fb2db`) — tagged `v0.7.0`, pushed |
-| Commits (`v0.7.0` → `v0.8.0`, so far) | 9 — `WP 8.0A`, `WP 8.0B`, `WP 8.1A`, `WP 8.0C`, `WP 8.1B`, `WP 8.1C`, `WP 8.2A`, `WP 8.2B`, `WP 8.2C` (this commit); `VERSION` bumped to `0.7.0` as part of branch preparation, not counted as a separate Work Package commit |
+| Commits (`v0.7.0` → `v0.8.0`, so far) | 10 — `WP 8.0A`, `WP 8.0B`, `WP 8.1A`, `WP 8.0C`, `WP 8.1B`, `WP 8.1C`, `WP 8.2A`, `WP 8.2B`, `WP 8.2C`, `WP 8.9.0` (this commit); `VERSION` bumped to `0.7.0` as part of branch preparation, not counted as a separate Work Package commit; total diff against `main`: 204 files changed, +21,427/−133 lines (pre-`WP 8.9.0`) |
 | Contributors | 1 (repository owner; all commits co-authored by Claude) |
 
 *(This table is generated from `docs/governance/Quality/Repository Metrics
@@ -1673,6 +1730,11 @@ Package made was already anticipated by `WP 8.2A`/`WP 8.2B`'s own
 approved architecture and contracts; no genuinely new engineering
 principle emerged from compiling and implementing them, mirroring `WP
 8.1A`'s own identical finding for the Workspace Shell.
+**`WP 8.9.0`** added `WP8.9.0-release-preparation-and-product-baseline.md`
+(a whole-review retrospective mirroring `WP 5.4`/`WP 6.8`/`WP 7.4.0`'s
+own format). No new concept guide — release preparation only.
+`docs/engineering/Engineering Principles.md` confirmed requiring no
+extension, unchanged from `WP 8.2C`.
 
 ## Governance Status
 
@@ -2164,6 +2226,21 @@ single addition to date (83 new interfaces, one dedicated subsection);
 `Module Register.md`, `Interface Register.md`, `Dependency Injection
 Register.md` all kept current directly at implementation time, not
 backfilled.
+**`WP 8.9.0`** added **zero** new ADRs — a release-verification-only
+Work Package, consistent with `WP 8.0A`/`WP 8.0C`/`WP 8.2A`'s own
+identical pattern for architecture/product-only Work Packages; the ADR
+Register remains at 79, unchanged, re-verified directly. No new
+Technical Debt item — the one genuine process gap this Work Package
+found (zero dedicated Security Reviews this release) is disclosed as a
+standing recommendation, not converted into a Technical Debt Register
+entry, since it describes a *process* gap for the next Work Package to
+close, not a defect in any shipped component. No new Future Capability
+Register entry. `Academy Register.md`, `Documentation Register.md` kept
+current directly at documentation time, not backfilled. One genuine,
+disclosed correction made across every living document: `WP 8.2C`'s own
+"39 concrete classes" claim, corrected to the verified 38 — left
+unedited in `WP 8.2C`'s own dated historical artifacts, per this Work
+Package's own "never silently modify historical records" instruction.
 
 ## Known Unknowns
 
@@ -2353,34 +2430,55 @@ Governance Audit Report.md`:
     explicitly resolving a tension against a prior, binding decision.
     **Zero `src/`/`tests/` change of any kind.**
 19. **`WP 8.2C` — Engineering Domain Implementation — is complete.**
-    Compiles every `WP 8.2B` frozen contract exactly, and gives 39 of
-    the ~49 canonical objects a real, tested concrete class over a new
-    shared `EngineeringObjectBase` and two generic factory types — see
-    Current Work Package, above, and `docs/releases/v0.8.0/WP8.2C
-    Engineering Domain Implementation Report.md`. Every canonical
-    object's own real storage reuses the existing, shared
-    `IEngineeringDocumentStore` in production; a new, purely in-memory
-    repository layer is the "in-memory repositories" deliverable. The
-    five already-Implemented canonical Kinds are deliberately not given
-    a competing concrete realisation. Three new ADRs
-    (`ADR-0077`–`ADR-0079`). New sample module
+    Compiles every `WP 8.2B` frozen contract exactly, and gives 38 of
+    the ~49 canonical objects a real, tested concrete class (corrected
+    39 → 38 by `WP 8.9.0`) over a new shared `EngineeringObjectBase` and
+    two generic factory types — see `WP 8.2C` Summary, above, and
+    `docs/releases/v0.8.0/WP8.2C Engineering Domain Implementation
+    Report.md`. Every canonical object's own real storage reuses the
+    existing, shared `IEngineeringDocumentStore` in production; a new,
+    purely in-memory repository layer is the "in-memory repositories"
+    deliverable. The five already-Implemented canonical Kinds are
+    deliberately not given a competing concrete realisation. Three new
+    ADRs (`ADR-0077`–`ADR-0079`). New sample module
     (`EngineeringDomainSampleModule`, the platform's twenty-second). 39
     new tests (1592 → 1631). **Zero new Technical Debt.**
-20. **Await Product Owner instruction for what comes next.** `WP 8.2A`,
-    `WP 8.2B`, and `WP 8.2C` all recommend a real Physical/Configuration
-    Engineering Discipline Module, now buildable directly against the
-    already-compiled `IAssembly`/`ISubAssembly`/`IPart`/`IComponent`
-    concrete classes; separately, `WP8.0C UX Specification.md` §0's own
-    recommended Contract Review (reconciling `WP 8.0B`'s twelve
-    contracts against `WP 8.0C`'s richer demands) and the first real,
-    production `IWorkspaceViewFactory`/`IProjectExplorerNodeProvider`
-    pair for an actual Engineering Core `Kind` both remain open. Per
-    this project's own standing discipline (`FOUNDATION.md` §1) and
-    `WP 8.2C`'s own explicit closing instruction, no further Work
-    Package begins until the Product Owner gives further instruction.
-21. A GitHub Release for `v0.6.0` (and now `v0.7.0`) has not yet been
+20. **`WP 8.9.0` — Release Preparation & Product Baseline — is
+    complete.** A complete release readiness review across repository,
+    build, test, version, governance, and architecture verification for
+    all nine `v0.8.0` Work Packages — see Current Work Package, above,
+    and `docs/releases/v0.8.0/WP8.9.0 Release Readiness Report.md` and
+    its eight companion deliverables. 1631/1631 tests passing across
+    five full-suite-equivalent runs, zero flakes; 4/4 projects build
+    clean, both configurations, verified both per-project and via
+    `src/TempestOS.slnx`. One genuine arithmetic correction made (39→38
+    concrete classes); two further findings disclosed, not fixed (the
+    four-framework Platform Service gap, now open across two
+    consecutive release cycles; `WP8.2B`'s own `IRelease`
+    inheritance-depth inconsistency); one process gap disclosed and
+    weighed explicitly (zero dedicated Security Reviews this release).
+    **Recommendation: `v0.8.0` APPROVED.** Zero new ADRs.
+21. **Await Product Owner instruction for what comes next.** `v0.8.0`
+    is prepared and recommended for release — the Product Owner's own
+    merge/`VERSION` bump/tag/GitHub Release/push sequence is prepared,
+    not executed (`WP8.9.0 Product Owner Release Checklist.md`).
+    Separately, `WP 8.2A`, `WP 8.2B`, and `WP 8.2C` all recommend a real
+    Physical/Configuration Engineering Discipline Module, now buildable
+    directly against the already-compiled
+    `IAssembly`/`ISubAssembly`/`IPart`/`IComponent` concrete classes, as
+    Programme 9's own most concrete candidate; `WP8.9.0`'s own
+    Retrospective additionally recommends a dedicated Security Review
+    precede or accompany whatever implementation Work Package comes
+    next. Per this project's own standing discipline (`FOUNDATION.md`
+    §1) and `WP 8.9.0`'s own explicit closing instruction, no Programme
+    9 Work Package begins until the Product Owner gives further
+    instruction.
+22. A GitHub Release for `v0.6.0` (and now `v0.7.0`) has not yet been
     created (`gh` CLI unavailable in this environment) — see the Release
-    Summary for the exact command or manual steps to complete it.
+    Summary for the exact command or manual steps to complete it. The
+    same limitation applies to `v0.8.0`'s own eventual GitHub Release —
+    prepared as a manual web-UI alternative in `WP8.9.0 Product Owner
+    Release Checklist.md` Step 6.
 
 ## Near-Term Roadmap
 
@@ -2654,7 +2752,8 @@ phase is under way, on `feature/v0.8.0-engineering-workspace` (cut from
   every `WP 8.2B` frozen contract exactly — see `docs/releases/v0.8.0/
   WP8.2C Engineering Domain Implementation Report.md`. A shared
   `EngineeringObjectBase` class implements every facet unconditionally;
-  39 of the ~49 canonical objects get a real, tested concrete class,
+  38 of the ~49 canonical objects get a real, tested concrete class
+  (corrected 39 → 38 by `WP 8.9.0`, see Repository Metrics below),
   constructed through one of two generic factory types
   (`EngineeringObjectFactory<T>`, `EngineeringRelationshipFactory`).
   The five already-Implemented canonical Kinds are deliberately not
@@ -2669,17 +2768,35 @@ phase is under way, on `feature/v0.8.0-engineering-workspace` (cut from
   building a sixteen-object representative graph including a real
   cross-framework Material reference). 39 new tests (1592 → 1631), both
   Debug and Release, clean rebuild.
+- `WP 8.9.0` — Release Preparation & Product Baseline (release
+  verification only; no new functionality, no architecture change, no
+  refactoring). **Complete.** Complete release readiness review across
+  repository/build/test/version/governance/architecture verification
+  for all nine `v0.8.0` Work Packages — see `docs/releases/v0.8.0/
+  WP8.9.0 Release Readiness Report.md` and eight companions.
+  1631/1631 tests, five full-suite-equivalent runs, zero flakes; 4/4
+  projects build clean both configurations, verified via both
+  per-project builds and `src/TempestOS.slnx`. One arithmetic
+  correction (39 → 38 concrete classes); two disclosed, unfixed
+  findings (the four-framework Platform Service gap, now open across
+  two release cycles; `WP8.2B`'s own `IRelease` inheritance-depth
+  inconsistency); one disclosed process gap (zero dedicated Security
+  Reviews this release). **Recommendation: `v0.8.0` APPROVED.** Zero
+  new ADRs.
 
-**`v0.8.0` is in progress.** Its architecture, contract, and
+**`v0.8.0` is complete and recommended APPROVED, awaiting the Product
+Owner's own release action.** Its architecture, contract, and
 implementation stages for both the Workspace and the Engineering Domain
 are all complete — a real, running Workspace shell with a navigable
 Project Explorer and a live Engineering Cockpit landing screen exists,
 and the platform's own canonical engineering vocabulary is now frozen
-and, for 39 of its ~49 objects, real, tested, running code; the Project
-Dashboard, the Properties/Inspector split, the Command Palette's own
-screen-independent realisation, and a real Physical/Configuration
-Engineering Discipline Module built against the now-compiled Engineering
-Domain classes all remain unscheduled.
+and, for 38 of its ~49 objects, real, tested, running code — and
+`WP 8.9.0`'s own independent release-readiness review found zero
+release-blocking defects. The Project Dashboard, the Properties/Inspector
+split, the Command Palette's own screen-independent realisation, and a
+real Physical/Configuration Engineering Discipline Module built against
+the now-compiled Engineering Domain classes all remain unscheduled for
+whatever Work Package begins Programme 9.
 
 ## Long-Term Vision
 
