@@ -8,6 +8,11 @@ __pycache__/
 # Logs
 logs/
 
+# Local persistence data (PersistenceStore.DefaultRootPath) - created by
+# running Tempest.App locally without a configured root; a run artifact,
+# never source (found and disclosed, WP 8.1A)
+/persistence-data/
+
 # Database
 *.db
 

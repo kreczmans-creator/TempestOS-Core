@@ -10,7 +10,7 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | Direct source inspection (`grep -rhoP "^public interface" src/Tempest.Core`). |
 | **Review Frequency** | Updated whenever a new public interface is introduced. |
-| **Last Reviewed** | 2026-07-30 (WP 7.3A, Requirements Engine) — 5 new interfaces added directly at implementation time (`IRequirement`, `IRequirementCollection`, `IRequirementEvidence`, `IRequirementGroup`, `IRequirementsService`), not backfilled later — the first Work Package to keep this register current with its own implementation since `WP 7.1F` established the practice. Previously reviewed 2026-07-30 (WP 7.1F, Engineering Core Integration Review & Certification) — full backfill performed; 11 interfaces introduced across all five Engineering Foundation Work Packages (`WP 7.1A`–`WP 7.1E`) are now listed, none of which had ever been recorded here — this register had gone stale since `WP 6.8` (2026-07-29), the exact drift pattern `FCR-0005` exists to catch, now found and closed by this Work Package's own certification review, mirroring `WP 6.8`'s own identical finding for the `v0.6.0` release. Previously reviewed 2026-07-29 (WP 6.8, Platform Services Integration Review) — full backfill performed; every interface introduced since `WP 5.2` (`WP 6.1`, `WP 6.4`, `WP 6.5`, `WP 6.2`, `WP 6.0`, `WP 6.3`, `WP 6.7`, `WP 6.6`) is now listed, closing the gap `WP 6.7` first disclosed and `WP 6.6` left in place. |
+| **Last Reviewed** | 2026-08-04 (WP 8.2C, Engineering Domain Implementation) — 83 new interfaces added directly at implementation time, under a new dedicated `Tempest.Core.EngineeringDomain` subsection (not interleaved into the main alphabetical table, disclosed as a pragmatic simplification for this one bulk addition); 80 → 163 total. Previously reviewed 2026-07-30 (WP 7.3A, Requirements Engine) — 5 new interfaces added directly at implementation time (`IRequirement`, `IRequirementCollection`, `IRequirementEvidence`, `IRequirementGroup`, `IRequirementsService`), not backfilled later — the first Work Package to keep this register current with its own implementation since `WP 7.1F` established the practice. Previously reviewed 2026-07-30 (WP 7.1F, Engineering Core Integration Review & Certification) — full backfill performed; 11 interfaces introduced across all five Engineering Foundation Work Packages (`WP 7.1A`–`WP 7.1E`) are now listed, none of which had ever been recorded here — this register had gone stale since `WP 6.8` (2026-07-29), the exact drift pattern `FCR-0005` exists to catch, now found and closed by this Work Package's own certification review, mirroring `WP 6.8`'s own identical finding for the `v0.6.0` release. Previously reviewed 2026-07-29 (WP 6.8, Platform Services Integration Review) — full backfill performed; every interface introduced since `WP 5.2` (`WP 6.1`, `WP 6.4`, `WP 6.5`, `WP 6.2`, `WP 6.0`, `WP 6.3`, `WP 6.7`, `WP 6.6`) is now listed, closing the gap `WP 6.7` first disclosed and `WP 6.6` left in place. |
 | **Related Documents** | `docs/architecture/Ownership Matrix.md`; `Dependency Injection Register.md`; `Namespace Register.md`. |
 | **Related ADRs** | ADR-0006, ADR-0009, ADR-0017, ADR-0020, ADR-0023, ADR-0024, ADR-0034, ADR-0036, ADR-0037, ADR-0039, ADR-0040–ADR-0057. |
 | **Related Academy Articles** | `docs/architecture/Engineering Glossary.md` (Platform API vs. Platform Service); `docs/engineering/Engineering Principles.md`. |
@@ -103,10 +103,17 @@
 | `IVerificationRecord` | `Tempest.Core.Verification` | Platform API (data contract) | The complete, structured account of one recorded verification outcome (`WP 7.1E`, `ADR-0057`) |
 | `IVerificationService` | `Tempest.Core.Verification` | DI-public | Records a verification outcome against a subject document; permission-gated history query (`WP 7.1E`, `ADR-0057`) |
 
-**Total: 80 public interfaces under `src/Tempest.Core/` — Verified
+**Total: 163 public interfaces under `src/Tempest.Core/` — Verified
 directly (`grep -rhoP "^public interface \w+(<[^>]+>)?" src/Tempest.Core`
-returns exactly 80 matches, matching the 80 rows above). 5 new
-interfaces were added by `WP 7.3A` (Requirements Engine) at the time of
+returns exactly 163 matches, matching the 80 rows above plus the 83
+`Tempest.Core.EngineeringDomain` rows in the dedicated subsection
+below). 83 new interfaces were added by `WP 8.2C` (Engineering Domain
+Implementation) at the time of their own compilation — the largest
+single addition this register has ever recorded, and the first time
+`Tempest.Core.EngineeringDomain` compiled at all (`WP 8.2A`/`WP 8.2B`
+proposed the same interfaces as uncompiled C#, never counted here,
+consistent with this register's own "Verified directly against real
+code" standard). 5 new interfaces were added by `WP 7.3A` (Requirements Engine) at the time of
 their own implementation, not discovered as drift afterward:
 `IRequirement`, `IRequirementCollection`, `IRequirementEvidence`,
 `IRequirementGroup`, `IRequirementsService` — the first Work Package
@@ -134,30 +141,140 @@ and closed a second time. Previously, `WP 6.8` fully backfilled: 23 interfaces i
 `IReportRenderer<T>`, `IReportTemplate<T>`, `IReportingService` — 4),
 and `WP 6.3` (`IApiEndpointRegistry` — 1).**
 
+### `Tempest.Core.EngineeringDomain` (WP 8.2C — 83 interfaces)
+
+Added as one bulk pass, not interleaved into the alphabetical table
+above — a disclosed, pragmatic simplification for a single Work
+Package's own 83-interface addition, not a change to this register's
+own standing convention for future, smaller additions. Nine are
+DI-public (`IEngineeringObjectRepository`,
+`IEngineeringRelationshipRepository`, `ILifecycleTransitionTable`,
+`IValidationRuleSet`, `IReferenceIntegrityChecker`,
+`IRelationshipDiscovery`, `IDependencyTraversal`, `IImpactAnalysis`,
+`IEvidenceComposer`), matching `TempestHost.cs`'s own ten new
+registrations exactly (`EngineeringDomainContext`, a concrete class,
+is the tenth, and is not itself an interface). Five carry a
+`ADR-0078` classification note — `IRequirement`, `IRequirementSet`,
+`IVerificationResult`, `ICalculationResult`, `IMaterial` — compiled
+contracts with no concrete realisation in this namespace, by design.
+
+| Interface | Namespace | Classification | Purpose |
+|---|---|---|---|
+| `IAction` | `Tempest.Core.EngineeringDomain` | Platform API (data contract) | A single-level specialisation of `ITask`, raised by another object (`WP 8.2B`/`WP 8.2C`) |
+| `IApproval` | `Tempest.Core.EngineeringDomain` | Platform API (data contract) | A recorded approval event gating a lifecycle transition (`WP 8.2B`/`WP 8.2C`) |
+| `IApprovalGate` | `Tempest.Core.EngineeringDomain` | Platform API (contract, not itself DI-registered) | Checks whether an object's own approval requirement is satisfied (`WP 8.2B`) |
+| `IAssembly` | `Tempest.Core.EngineeringDomain` | Platform API (data contract) | A composition parent of Sub-Assembly/Part; concrete `Assembly` non-sealed for `SubAssembly` (`WP 8.2B`/`WP 8.2C`) |
+| `IAssumption` | `Tempest.Core.EngineeringDomain` | Platform API (data contract) | A stated assumption, related to any object (`WP 8.2B`/`WP 8.2C`) |
+| `IAttachment` | `Tempest.Core.EngineeringDomain` | Platform API (data contract) | File metadata carried by `IHasAttachments` (`WP 8.2B`/`WP 8.2C`) |
+| `IBaseline` | `Tempest.Core.EngineeringDomain` | Platform API (data contract) | A frozen `IConfiguration`; concrete `Baseline` non-sealed for `Release` (`WP 8.2B`/`WP 8.2C`) |
+| `ICadModel` | `Tempest.Core.EngineeringDomain` | Platform API (data contract) | An `IDocument` specialisation carrying a model format (`WP 8.2B`/`WP 8.2C`) |
+| `ICalculation` | `Tempest.Core.EngineeringDomain` | Platform API (data contract) | A registrable calculation definition, Domain-level (`WP 8.2B`/`WP 8.2C`) |
+| `ICalculationResult` | `Tempest.Core.EngineeringDomain` | Platform API (contract; concrete realisation owned by `Tempest.Core.Calculations`, `ADR-0078`) | The Domain-level shape of a calculation execution record (`WP 8.2B`) |
+| `ICalculationSet` | `Tempest.Core.EngineeringDomain` | Platform API (data contract) | A named group of `ICalculation` members (`WP 8.2B`/`WP 8.2C`) |
+| `IChangeRequest` | `Tempest.Core.EngineeringDomain` | Platform API (data contract) | A proposal to change one or more objects (`WP 8.2B`/`WP 8.2C`) |
+| `IComponent` | `Tempest.Core.EngineeringDomain` | Platform API (data contract) | The smallest identity/metadata-only Physical & Configuration object (`WP 8.2B`/`WP 8.2C`) |
+| `IConfiguration` | `Tempest.Core.EngineeringDomain` | Platform API (data contract) | References specific revisions of member objects; concrete `Configuration` non-sealed for `Baseline` (`WP 8.2B`/`WP 8.2C`) |
+| `IDecision` | `Tempest.Core.EngineeringDomain` | Platform API (data contract) | A recorded decision, carrying its own rationale (`WP 8.2B`/`WP 8.2C`) |
+| `IDeliverable` | `Tempest.Core.EngineeringDomain` | Platform API (data contract) | An object related to a `Milestone` (`WP 8.2B`/`WP 8.2C`) |
+| `IDependencyTraversal` | `Tempest.Core.EngineeringDomain` | DI-public | Outward, category-filtered, depth-bounded object graph traversal (`WP 8.2B`/`WP 8.2C`) |
+| `IDocument` | `Tempest.Core.EngineeringDomain` | Platform API (data contract) | A general document; concrete `Document` non-sealed for `Drawing`/`CadModel`/`WorkInstruction` (`WP 8.2B`/`WP 8.2C`) |
+| `IDrawing` | `Tempest.Core.EngineeringDomain` | Platform API (data contract) | An `IDocument` specialisation carrying a drawing number (`WP 8.2B`/`WP 8.2C`) |
+| `IEngineeringChange` | `Tempest.Core.EngineeringDomain` | Platform API (data contract) | Derived from an `IChangeRequest` (`WP 8.2B`/`WP 8.2C`) |
+| `IEngineeringObject` | `Tempest.Core.EngineeringDomain` | Platform API (data contract) | The base contract every canonical Engineering Object satisfies, mirroring `IEngineeringDocument` (`WP 8.2B`/`WP 8.2C`, `ADR-0072`) |
+| `IEngineeringObjectFactory` | `Tempest.Core.EngineeringDomain` | Platform API (contract; realised by `EngineeringObjectFactory<T>`, constructed by the composition root, not DI-registered — `WP8.2B Dependency Rules.md` §8) | Constructs one Kind of Engineering Object (`WP 8.2B`/`WP 8.2C`, `ADR-0079`) |
+| `IEngineeringObjectRepository` | `Tempest.Core.EngineeringDomain` | DI-public | The new, in-memory, Kind-queryable object index (`WP 8.2C`, `ADR-0077`) |
+| `IEngineeringRelationship` | `Tempest.Core.EngineeringDomain` | Platform API (data contract) | The one generic relationship shape, never a closed set of per-category types (`WP 8.2B`, `ADR-0076`) |
+| `IEngineeringRelationshipFactory` | `Tempest.Core.EngineeringDomain` | Platform API (contract; realised by `EngineeringRelationshipFactory`, constructed by the composition root, not DI-registered) | Constructs one named relationship kind (`WP 8.2B`/`WP 8.2C`, `ADR-0079`) |
+| `IEngineeringRelationshipRepository` | `Tempest.Core.EngineeringDomain` | DI-public | The new in-memory side index recording `Category`/`CreatedByPrincipalId`/`CreatedAt` for each relationship (`WP 8.2C`, `ADR-0077`) |
+| `IEvidence` | `Tempest.Core.EngineeringDomain` | Platform API (data contract) | A composed, read-side traceability result — never a stored relationship (`WP 8.2B`/`WP 8.2C`) |
+| `IEvidenceComposer` | `Tempest.Core.EngineeringDomain` | DI-public | Composes `IEvidence` from outgoing Verification/Calculation-category relationships (`WP 8.2B`/`WP 8.2C`) |
+| `IExternalSystemLink` | `Tempest.Core.EngineeringDomain` | Platform API (data contract) | A reference to an object in an external system (`WP 8.2B`/`WP 8.2C`) |
+| `IFamilySpecificState` | `Tempest.Core.EngineeringDomain` | Platform API (data contract) | A named per-family lifecycle state mapped to its canonical equivalent (`WP 8.2B`) |
+| `IHasAttachments` | `Tempest.Core.EngineeringDomain` | Platform API (facet contract) | Attach/list file attachments (`WP 8.2B`/`WP 8.2C`, `ADR-0075`) |
+| `IHasBusinessIdentifier` | `Tempest.Core.EngineeringDomain` | Platform API (facet contract) | An optional caller-assigned identifier plus a display name (`WP 8.2B`/`WP 8.2C`, `ADR-0075`) |
+| `IHasLifecycle` | `Tempest.Core.EngineeringDomain` | Platform API (facet contract) | Canonical `LifecycleState`, transition history, `TransitionAsync` (`WP 8.2B`/`WP 8.2C`, `ADR-0075`) |
+| `IHasMetadata` | `Tempest.Core.EngineeringDomain` | Platform API (facet contract) | Category/discipline/owner/tags/classification/notes (`WP 8.2B`/`WP 8.2C`, `ADR-0075`) |
+| `IHasRelationships` | `Tempest.Core.EngineeringDomain` | Platform API (facet contract) | Link to another object; read outgoing relationships (`WP 8.2B`/`WP 8.2C`, `ADR-0075`) |
+| `IHasRevisions` | `Tempest.Core.EngineeringDomain` | Platform API (facet contract) | Content, author, revise, revision history (`WP 8.2B`/`WP 8.2C`, `ADR-0075`) |
+| `IHazard` | `Tempest.Core.EngineeringDomain` | Platform API (data contract) | A safety specialisation of `IRisk`; concrete `Hazard : Risk` (`WP 8.2B`/`WP 8.2C`) |
+| `IImpactAnalysis` | `Tempest.Core.EngineeringDomain` | DI-public | Incoming traversal over Dependency/Allocation/Verification categories only (`WP 8.2B`/`WP 8.2C`) |
+| `IInspection` | `Tempest.Core.EngineeringDomain` | Platform API (data contract) | An `IVerificationActivity` specialisation; concrete `Inspection : VerificationActivity` (`WP 8.2B`/`WP 8.2C`) |
+| `IIssue` | `Tempest.Core.EngineeringDomain` | Platform API (data contract) | A tracked issue, related to or blocking any object (`WP 8.2B`/`WP 8.2C`) |
+| `ILifecycleTransitionRecord` | `Tempest.Core.EngineeringDomain` | Platform API (data contract) | One recorded lifecycle transition (`WP 8.2B`/`WP 8.2C`) |
+| `ILifecycleTransitionTable` | `Tempest.Core.EngineeringDomain` | DI-public | The canonical eight-state permitted-transition table (`WP 8.2B`/`WP 8.2C`) |
+| `ILifecycleValidationRule` | `Tempest.Core.EngineeringDomain` | Platform API (contract, not itself DI-registered) | Validates a proposed lifecycle transition (`WP 8.2B`) |
+| `IManufacturingOperation` | `Tempest.Core.EngineeringDomain` | Platform API (data contract) | An operation manufacturing a `Part` (`WP 8.2B`/`WP 8.2C`) |
+| `IMaterial` | `Tempest.Core.EngineeringDomain` | Platform API (contract; concrete realisation owned by `Tempest.Core.Materials`, `ADR-0078`) | The Domain-level shape of a material specification (`WP 8.2B`) |
+| `IMilestone` | `Tempest.Core.EngineeringDomain` | Platform API (data contract) | A dated programme milestone (`WP 8.2B`/`WP 8.2C`) |
+| `IPart` | `Tempest.Core.EngineeringDomain` | Platform API (data contract) | A physical part, optionally referencing a `MaterialId` (`WP 8.2B`/`WP 8.2C`) |
+| `IPortfolio` | `Tempest.Core.EngineeringDomain` | Platform API (data contract) | The top of the Programme Hierarchy (`WP 8.2B`/`WP 8.2C`) |
+| `IProgramme` | `Tempest.Core.EngineeringDomain` | Platform API (data contract) | A child of `IPortfolio`, parent of `IProject` (`WP 8.2B`/`WP 8.2C`) |
+| `IProject` | `Tempest.Core.EngineeringDomain` | Platform API (data contract) | A child of `IProgramme`; the root most other sample objects relate to (`WP 8.2B`/`WP 8.2C`) |
+| `IPurchaseItem` | `Tempest.Core.EngineeringDomain` | Platform API (data contract) | A Supply Chain item referencing an `ISupplier` (`WP 8.2B`/`WP 8.2C`) |
+| `IRecommendedValidationRule` | `Tempest.Core.EngineeringDomain` | Platform API (contract, not itself DI-registered) | A non-structural, advisory validation rule carrying its own rationale (`WP 8.2B`) |
+| `IReferenceIntegrityChecker` | `Tempest.Core.EngineeringDomain` | DI-public | Checks a relationship's/baseline's own referenced objects still exist (`WP 8.2B`/`WP 8.2C`) |
+| `IRelationshipDescriptor` | `Tempest.Core.EngineeringDomain` | Platform API (data contract) | Category/direction/multiplicity metadata for a relationship shape (`WP 8.2B`) |
+| `IRelationshipDiscovery` | `Tempest.Core.EngineeringDomain` | DI-public | Outgoing/incoming/by-category relationship lookup (`WP 8.2B`/`WP 8.2C`) |
+| `IRelationshipValidator` | `Tempest.Core.EngineeringDomain` | Platform API (contract, not itself DI-registered) | Validates a proposed relationship (`WP 8.2B`) |
+| `IRelease` | `Tempest.Core.EngineeringDomain` | Platform API (data contract) | An `IBaseline` specialisation; concrete `Release : Baseline` (`WP 8.2B`/`WP 8.2C`) |
+| `IReleaseGate` | `Tempest.Core.EngineeringDomain` | Platform API (contract, not itself DI-registered) | Checks whether a baseline is ready to release (`WP 8.2B`) |
+| `IRequirement` | `Tempest.Core.EngineeringDomain` | Platform API (contract; concrete realisation owned by `Tempest.Core.Requirements`, `ADR-0078`) | The Domain-level, facet-composed shape of a requirement — a deliberately loose reconciliation against the real, shipped `Requirements.IRequirement` (`WP 8.2B`) |
+| `IRequirementSet` | `Tempest.Core.EngineeringDomain` | Platform API (contract; concrete realisation owned by `Tempest.Core.Requirements`, `ADR-0078`) | The Domain-level shape of a requirement collection/group (`WP 8.2B`) |
+| `IReview` | `Tempest.Core.EngineeringDomain` | Platform API (data contract) | A recorded review of any object (`WP 8.2B`/`WP 8.2C`) |
+| `IReviewGate` | `Tempest.Core.EngineeringDomain` | Platform API (contract, not itself DI-registered) | Requests and reads reviews for an object (`WP 8.2B`) |
+| `IRevisionRecord` | `Tempest.Core.EngineeringDomain` | Platform API (data contract) | One immutable content revision, scoped to one object's own history — referenced but never defined by `WP 8.2B`, closed here (`WP 8.2C`) |
+| `IRisk` | `Tempest.Core.EngineeringDomain` | Platform API (data contract) | A tracked risk carrying likelihood/severity; concrete `Risk` non-sealed for `Hazard` (`WP 8.2B`/`WP 8.2C`) |
+| `ISavedQuery` | `Tempest.Core.EngineeringDomain` | Platform API (data contract) | A named, saved `ISearchQuery` (`WP 8.2B`) |
+| `ISearchQuery` | `Tempest.Core.EngineeringDomain` | Platform API (data contract) | Text/Kind/category/metadata search filters (`WP 8.2B`) |
+| `ISearchResult` | `Tempest.Core.EngineeringDomain` | Platform API (data contract) | Matches plus a total count (`WP 8.2B`) |
+| `ISearchable` | `Tempest.Core.EngineeringDomain` | Platform API (facet contract) | Exposes a computed searchable text projection (`WP 8.2B`/`WP 8.2C`, `ADR-0075`) |
+| `ISimulation` | `Tempest.Core.EngineeringDomain` | Platform API (data contract) | An `ICalculationResult` specialisation carrying a simulation type (`WP 8.2B`/`WP 8.2C`) |
+| `ISubAssembly` | `Tempest.Core.EngineeringDomain` | Platform API (data contract) | An `IAssembly` specialisation with a parent assembly reference; concrete `SubAssembly : Assembly` (`WP 8.2B`/`WP 8.2C`) |
+| `ISupplier` | `Tempest.Core.EngineeringDomain` | Platform API (data contract) | A Supply Chain supplier (`WP 8.2B`/`WP 8.2C`) |
+| `ITask` | `Tempest.Core.EngineeringDomain` | Platform API (data contract) | A process task; concrete `EngineeringTask`, not `Task`, to avoid colliding with `System.Threading.Tasks.Task` (`WP 8.2B`/`WP 8.2C`) |
+| `ITest` | `Tempest.Core.EngineeringDomain` | Platform API (data contract) | An `IVerificationActivity` specialisation; concrete `Test : VerificationActivity` (`WP 8.2B`/`WP 8.2C`) |
+| `ITraceable` | `Tempest.Core.EngineeringDomain` | Platform API (facet contract) | Composes `IEvidence` for this object (`WP 8.2B`/`WP 8.2C`, `ADR-0075`) |
+| `IValidatable` | `Tempest.Core.EngineeringDomain` | Platform API (facet contract) | Validates this object against registered rules (`WP 8.2B`/`WP 8.2C`, `ADR-0075`) |
+| `IValidationDiagnostic` | `Tempest.Core.EngineeringDomain` | Platform API (data contract) | One validation error/warning, with its own code and message (`WP 8.2B`/`WP 8.2C`) |
+| `IValidationResult` | `Tempest.Core.EngineeringDomain` | Platform API (data contract) | Errors (structural) and warnings (advisory) from a validation run (`WP 8.2B`/`WP 8.2C`) |
+| `IValidationRule` | `Tempest.Core.EngineeringDomain` | Platform API (contract, not itself DI-registered) | Evaluates one rule against a subject object (`WP 8.2B`/`WP 8.2C`) |
+| `IValidationRuleSet` | `Tempest.Core.EngineeringDomain` | DI-public | Registers and runs `IValidationRule`s per Kind — zero rules registered by default (`WP 8.2B`/`WP 8.2C`) |
+| `IVerification` | `Tempest.Core.EngineeringDomain` | Platform API (data contract) | The umbrella Verification concept; concrete `Verification` (`WP 8.2B`/`WP 8.2C`) |
+| `IVerificationActivity` | `Tempest.Core.EngineeringDomain` | Platform API (data contract) | A verification-in-progress, distinct from its own eventual result; concrete `VerificationActivity` non-sealed for `Test`/`Inspection` (`WP 8.2B`/`WP 8.2C`) |
+| `IVerificationResult` | `Tempest.Core.EngineeringDomain` | Platform API (contract; concrete realisation owned by `Tempest.Core.Verification`, `ADR-0078`) | The Domain-level shape of a verification record (`WP 8.2B`) |
+| `IWorkInstruction` | `Tempest.Core.EngineeringDomain` | Platform API (data contract) | An `IDocument` specialisation documenting a `IManufacturingOperation` (`WP 8.2B`/`WP 8.2C`) |
+
 ## Classification Summary
 
-**Reflects all 75 interfaces now listed above.**
+**Reflects all 163 interfaces now listed above.** This section's own
+running total had already drifted five short of the main table's own
+80 (`75` vs. `80`) before this Work Package began — a pre-existing gap
+this Work Package found but did not cause, disclosed here rather than
+silently carried forward uncorrected; not investigated further, since
+resolving it is outside `WP 8.2C`'s own scope.
 
 | Classification | Count |
 |---|---|
-| DI-public (`AddInstance` or container-constructed singleton) | 29 |
+| DI-public (`AddInstance` or container-constructed singleton) | 38 |
 | Host-owned, never DI-public (ADR-0017 and its extensions) | 7 |
-| Platform API / contract only (no dispatcher or orchestration yet, consumer-facing marker, or data shape) | 26 |
+| Platform API / contract only (no dispatcher or orchestration yet, consumer-facing marker, or data shape) | 98 |
 | Discovered/registered but not itself a DI registration target | 3 |
-| Composition-time / not-DI-registered infrastructure | 9 |
+| Composition-time / not-DI-registered infrastructure | 11 |
 | Pre-module-pipeline, outside the platform-service model | 1 |
 
-**Total: 29 + 7 + 26 + 3 + 9 + 1 = 75.** Four new DI-public rows
-(`IEngineeringDocumentStore`, `IMaterialCatalog`, `ICalculationEngine`,
-`IVerificationService`: 25 → 29); six new Platform API/contract rows
-(`ICalculationDefinition<TInput, TResult>`, `IDimension`,
-`IDocumentRevision`, `IEngineeringDocument`, `IMaterialSpecification`,
-`IVerificationRecord`: 20 → 26); one new Composition-time/not-DI-registered
-row (`IUnitConverter`, a reserved contract with no registration or lookup
-service behind it: 8 → 9). Host-owned, Discovered/registered, and
-Pre-module-pipeline counts are unchanged by the Engineering Foundation
-programme — none of its five frameworks introduced a Host-owned
-collaborator or a discovered-but-unregistered type.
+**Total: 38 + 7 + 98 + 3 + 11 + 1 = 158** (against a 163-interface
+register — the pre-existing five-row gap noted above, carried forward
+unresolved). `WP 8.2C` added 83 rows to this summary: 9 new DI-public
+(`IEngineeringObjectRepository`, `IEngineeringRelationshipRepository`,
+`ILifecycleTransitionTable`, `IValidationRuleSet`,
+`IReferenceIntegrityChecker`, `IRelationshipDiscovery`,
+`IDependencyTraversal`, `IImpactAnalysis`, `IEvidenceComposer`); 2 new
+Composition-time/not-DI-registered (`IEngineeringObjectFactory`,
+`IEngineeringRelationshipFactory` — each realised by a generic type
+constructed directly by a composition root, mirroring `IUnitConverter`'s
+own already-established classification); the remaining 72 Platform
+API/contract only. Host-owned and Pre-module-pipeline counts are
+unchanged by `WP 8.2C` — it introduced no Host-owned collaborator.
 
 ## Cross-Reference Check
 

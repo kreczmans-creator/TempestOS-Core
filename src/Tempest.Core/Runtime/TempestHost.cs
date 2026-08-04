@@ -7,6 +7,7 @@ using Tempest.Core.Configuration;
 using Tempest.Core.DependencyInjection;
 using Tempest.Core.Diagnostics;
 using Tempest.Core.EngineeringData;
+using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Events;
 using Tempest.Core.ExportImport;
 using Tempest.Core.Identity;
@@ -351,6 +352,38 @@ public sealed class TempestHost : ITempestHost
         // after Persistence and Identity & Permissions, both of which it
         // depends on, mirroring Audit's own placement rationale.
         services.Singleton<IEngineeringDocumentStore, EngineeringDocumentStore>();
+
+        // WP 8.2C: the Engineering Domain's own shared services sit between
+        // the Engineering Data Model and every discipline framework
+        // (WP8.2B Dependency Rules.md §1/§5) - registered directly after
+        // IEngineeringDocumentStore, which every one of them ultimately
+        // depends on (Repository/RelationshipRepository do not - they are
+        // a new, purely in-memory index, never a competing storage
+        // mechanism). No discipline-specific Kind or business rule is
+        // registered here - this is the shared vocabulary layer only.
+        services.Singleton<IEngineeringObjectRepository, InMemoryEngineeringObjectRepository>();
+        services.Singleton<IEngineeringRelationshipRepository, InMemoryEngineeringRelationshipRepository>();
+        services.Singleton<ILifecycleTransitionTable, LifecycleTransitionTable>();
+        services.Singleton<IValidationRuleSet, ValidationRuleSet>();
+        services.Singleton<IReferenceIntegrityChecker, ReferenceIntegrityChecker>();
+
+        // RelationshipDiscoveryService realises all three digital-thread
+        // interfaces (it is stateless, delegating only to the two
+        // repositories above, themselves the real singletons) - registered
+        // once per interface rather than dual-registered as one shared
+        // instance, since no shared mutable state exists for callers to
+        // observe diverging.
+        services.Singleton<IRelationshipDiscovery, RelationshipDiscoveryService>();
+        services.Singleton<IDependencyTraversal, RelationshipDiscoveryService>();
+        services.Singleton<IImpactAnalysis, RelationshipDiscoveryService>();
+        services.Singleton<IEvidenceComposer, EvidenceComposer>();
+
+        // The shared collaborator bundle every canonical object's own
+        // EngineeringObjectFactory<T> needs - constructed here so a
+        // composition root (a future discipline module, or the sample
+        // module below) can resolve one instance rather than assembling
+        // seven collaborators by hand.
+        services.Singleton<EngineeringDomainContext>();
 
         // ADR-0055: Materials is a thin, typed index over the Engineering
         // Data Model (Kind = "MaterialSpecification"), plus a direct

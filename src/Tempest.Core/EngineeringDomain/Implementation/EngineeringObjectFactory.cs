@@ -1,0 +1,73 @@
+using Tempest.Core.EngineeringData;
+
+namespace Tempest.Core.EngineeringDomain;
+
+/// <summary>
+/// One generic factory type serving every Kind — each <em>instance</em> is still responsible for exactly one
+/// declared <see cref="Kind"/> (WP8.2B Dependency Rules.md §7), constructed once per Kind by the composition
+/// root rather than resolved from any registry (§8: no registry contract is proposed by WP8.2B).
+/// </summary>
+public sealed class EngineeringObjectFactory<T> : IEngineeringObjectFactory
+    where T : EngineeringObjectBase
+{
+    private readonly EngineeringDomainContext _context;
+    private readonly Func<IEngineeringDocument, IDocumentRevision, T> _constructor;
+
+    public EngineeringObjectFactory(string kind, EngineeringDomainContext context, Func<IEngineeringDocument, IDocumentRevision, T> constructor)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(kind);
+        ArgumentNullException.ThrowIfNull(context);
+        ArgumentNullException.ThrowIfNull(constructor);
+
+        Kind = kind;
+        _context = context;
+        _constructor = constructor;
+    }
+
+    public string Kind { get; }
+
+    public async Task<IEngineeringObject> CreateAsync(string initialContent, CancellationToken cancellationToken = default)
+    {
+        var document = await _context.Store.CreateAsync(Kind, initialContent, cancellationToken).ConfigureAwait(false);
+        var revisions = await _context.Store.GetRevisionHistoryAsync(document.Id, cancellationToken).ConfigureAwait(false);
+        var currentRevision = revisions[^1];
+
+        var instance = _constructor(document, currentRevision);
+        instance.AttachSelfFactory((doc, rev) => _constructor(doc, rev));
+        _context.Repository.Register(instance);
+
+        return instance;
+    }
+}
+
+/// <summary>A uniform <see cref="IEngineeringRelationshipFactory"/> — <see cref="IEngineeringRelationship"/>'s own shape needs no per-Kind specialisation, so one concrete type, instantiated once per named relationship kind, suffices (mirrors <see cref="EngineeringObjectFactory{T}"/>'s own reasoning).</summary>
+public sealed class EngineeringRelationshipFactory : IEngineeringRelationshipFactory
+{
+    private readonly EngineeringDomainContext _context;
+    private readonly RelationshipCategory _category;
+
+    public EngineeringRelationshipFactory(string relationshipKind, RelationshipCategory category, EngineeringDomainContext context)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(relationshipKind);
+        ArgumentNullException.ThrowIfNull(context);
+
+        RelationshipKind = relationshipKind;
+        _category = category;
+        _context = context;
+    }
+
+    public string RelationshipKind { get; }
+
+    public async Task<IEngineeringRelationship> CreateAsync(Guid sourceId, Guid targetId, CancellationToken cancellationToken = default)
+    {
+        if (sourceId == targetId)
+            throw new SelfReferentialRelationshipException(sourceId);
+
+        await _context.Store.LinkAsync(sourceId, targetId, RelationshipKind, cancellationToken).ConfigureAwait(false);
+
+        var relationship = new EngineeringRelationship(sourceId, targetId, RelationshipKind, _category, _context.ResolveCurrentPrincipalId(), DateTimeOffset.UtcNow);
+        _context.RelationshipRepository.Record(relationship);
+
+        return relationship;
+    }
+}
