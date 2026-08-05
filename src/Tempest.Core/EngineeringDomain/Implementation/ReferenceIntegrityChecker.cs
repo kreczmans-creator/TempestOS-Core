@@ -17,10 +17,10 @@ public sealed class ReferenceIntegrityChecker : IReferenceIntegrityChecker
         var errors = new List<IValidationDiagnostic>();
 
         if (await _repository.FindAsync(relationship.SourceId, cancellationToken).ConfigureAwait(false) is null)
-            errors.Add(new ValidationDiagnostic("TEMPEST-VAL-002", $"Relationship source '{relationship.SourceId}' does not exist.", relationship.SourceId));
+            errors.Add(new ValidationDiagnostic(StructuralValidationRules.RelationshipSourceMustExist, $"Relationship source '{relationship.SourceId}' does not exist.", relationship.SourceId));
 
         if (await _repository.FindAsync(relationship.TargetId, cancellationToken).ConfigureAwait(false) is null)
-            errors.Add(new ValidationDiagnostic("TEMPEST-VAL-003", $"Relationship target '{relationship.TargetId}' does not exist.", relationship.TargetId));
+            errors.Add(new ValidationDiagnostic(StructuralValidationRules.RelationshipTargetMustExist, $"Relationship target '{relationship.TargetId}' does not exist.", relationship.TargetId));
 
         return errors.Count == 0 ? ValidationResult.Valid : new ValidationResult(errors, Array.Empty<IValidationDiagnostic>());
     }
@@ -37,12 +37,12 @@ public sealed class ReferenceIntegrityChecker : IReferenceIntegrityChecker
 
             if (found is null)
             {
-                errors.Add(new ValidationDiagnostic("TEMPEST-VAL-004", $"Baseline member '{member.ObjectId}' does not exist.", member.ObjectId));
+                errors.Add(new ValidationDiagnostic(StructuralValidationRules.BaselineMemberMustExist, $"Baseline member '{member.ObjectId}' does not exist.", member.ObjectId));
             }
             else if (found.CurrentRevisionNumber < member.RevisionNumber)
             {
                 errors.Add(new ValidationDiagnostic(
-                    "TEMPEST-VAL-005",
+                    StructuralValidationRules.BaselineMemberRevisionMustExist,
                     $"Baseline member '{member.ObjectId}' references revision {member.RevisionNumber}, but only {found.CurrentRevisionNumber} exist(s).",
                     member.ObjectId));
             }

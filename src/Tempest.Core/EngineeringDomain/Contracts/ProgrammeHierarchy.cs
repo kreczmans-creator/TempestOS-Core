@@ -11,7 +11,7 @@ public interface IProgramme : IEngineeringObject, IHasBusinessIdentifier, IHasMe
     IReadOnlyList<Guid> ProjectIds { get; }
 }
 
-public interface IProject : IEngineeringObject, IHasBusinessIdentifier, IHasMetadata, IHasLifecycle, IHasRelationships, ITraceable
+public interface IProject : IEngineeringObject, IHasBusinessIdentifier, IHasMetadata, IHasLifecycle, IHasRelationships, ITraceable, IRenamable, IHasParent, IDeletable
 {
     Guid? ProgrammeId { get; }
 }

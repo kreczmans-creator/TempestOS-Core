@@ -45,3 +45,31 @@ public sealed class SelfReferentialRelationshipException : EngineeringDomainExce
         ObjectId = objectId;
     }
 }
+
+/// <summary>`WP 9.0A`: <see cref="IHasParent.MoveAsync"/> was asked to move an object under itself or one of its own descendants.</summary>
+public sealed class CircularParentAssignmentException : EngineeringDomainException
+{
+    public Guid ObjectId { get; }
+    public Guid AttemptedParentId { get; }
+
+    public CircularParentAssignmentException(Guid objectId, Guid attemptedParentId)
+        : base($"'{objectId}' cannot be moved under '{attemptedParentId}' — it is the object itself or one of its own descendants ({StructuralValidationRules.NoCircularParent}).")
+    {
+        ObjectId = objectId;
+        AttemptedParentId = attemptedParentId;
+    }
+}
+
+/// <summary>`WP 9.0A`: <see cref="IDeletable.DeleteAsync"/> was asked to delete an object that still has live (non-deleted) children.</summary>
+public sealed class EngineeringObjectHasChildrenException : EngineeringDomainException
+{
+    public Guid ObjectId { get; }
+    public int LiveChildCount { get; }
+
+    public EngineeringObjectHasChildrenException(Guid objectId, int liveChildCount)
+        : base($"'{objectId}' cannot be deleted — it still has {liveChildCount} live child object(s); move or delete them first ({StructuralValidationRules.NoDeleteWithLiveChildren}).")
+    {
+        ObjectId = objectId;
+        LiveChildCount = liveChildCount;
+    }
+}

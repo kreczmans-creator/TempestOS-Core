@@ -10,7 +10,7 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | Direct source inspection; `docs/architecture/Failure Behaviour.md`; `docs/academy/06 Engineering Standards/01-exception-design.md`. |
 | **Review Frequency** | Updated whenever a new exception type is introduced. |
-| **Last Reviewed** | 2026-07-29 (WP 6.6, Licensing) — added `LicensingException`, `LicenseValidationException` (see Entries table, below); no other change to prior entries. |
+| **Last Reviewed** | 2026-08-05 (WP 9.1A, Requirements Management Workspace) — added `RequirementGroupHasChildrenException` (see Entries table, below); confirmed the disclosed staleness below is still open, now also naming the `Tempest.Core.Requirements` exception family explicitly (previously only implied by "every other `v0.7.0`/`v0.8.0` exception type"). Previously reviewed 2026-08-05 (WP 9.0A, Mechanical Product Structure) — added `CircularParentAssignmentException`, `EngineeringObjectHasChildrenException` (see Entries table, below); disclosed, not fixed, that this register's own Entries table and Total figure have gone stale since `WP 6.6` — every Engineering Domain and other `v0.7.0`/`v0.8.0` exception type is genuinely missing, a full backfill being out of this Work Package's own scope. Previously reviewed 2026-07-29 (WP 6.6, Licensing) — added `LicensingException`, `LicenseValidationException` (see Entries table, below); no other change to prior entries. |
 | **Related Documents** | `docs/architecture/Failure Behaviour.md`; `Architectural Dependency Register.md`. |
 | **Related ADRs** | ADR-0013, ADR-0021, ADR-0025, ADR-0038, ADR-0040, ADR-0046, ADR-0047, ADR-0048, ADR-0050, ADR-0051. |
 | **Related Academy Articles** | `docs/academy/06 Engineering Standards/01-exception-design.md`. |
@@ -74,8 +74,31 @@
 | `DuplicateImportableKindException` | `ExportImportException` | Export/Import | Application logic's own error (not Host-level); thrown by `ImportService.RegisterImportable` — first registration wins, mirroring `DuplicateReportDefinitionException`/`DuplicateApiRouteException` |
 | `LicensingException` | `Exception` | Licensing | Host-fatal (ADR-0013); base-plus-subtype (mirroring `ReportingException`/`ExportImportException`), never thrown directly itself |
 | `LicenseValidationException` | `LicensingException` | Licensing | Host-fatal (ADR-0013, ADR-0050); thrown by the Host's own startup sequence when `ILicenseValidator.Validate()` reports an invalid result — never thrown by the validator itself, which always returns a `LicenseValidationResult` even for an expired, malformed, or unreadable license file |
+| `CircularParentAssignmentException` | `EngineeringDomainException` | Engineering Domain | Application logic's own error (not Host-level); thrown by `IHasParent.MoveAsync` when the candidate parent is the object itself or one of its own descendants (`WP 9.0A`, `ADR-0081`, `TEMPEST-VAL-006` — corrected from `-002` by `WP 9.0B`; see that register's own disclosure) |
+| `EngineeringObjectHasChildrenException` | `EngineeringDomainException` | Engineering Domain | Application logic's own error (not Host-level); thrown by `IDeletable.DeleteAsync` when the object still has live (non-deleted) children (`WP 9.0A`, `ADR-0080`, `TEMPEST-VAL-007` — corrected from `-003` by `WP 9.0B`; see that register's own disclosure) |
+| `RequirementGroupHasChildrenException` | `RequirementsException` | Requirements | Application logic's own error (not Host-level); thrown by `IRequirementsService.DeleteGroupAsync` when the group still has live (non-deleted) grouped requirements or live sub-groups (`WP 9.1A`, `ADR-0084`) — mirrors `EngineeringObjectHasChildrenException`'s own identical reasoning, for a genuinely different base exception type (`RequirementsException`, `WP 7.3A`, not `EngineeringDomainException`) |
 
-**Total: 52 custom exception types — Verified directly against
+**Disclosed staleness, found by `WP 9.0A`, not fixed here, still open
+after `WP 9.1A`:** this register's own "Total" figure and Entries table
+have not been updated since `WP 6.6` (2026-07-29) — every
+`Tempest.Core.EngineeringDomain` exception type from `WP 8.2C` onward
+(`EngineeringDomainException`, `EngineeringObjectNotFoundException`,
+`InvalidLifecycleTransitionException`, `SelfReferentialRelationshipException`,
+and others), every `Tempest.Core.Requirements` exception type from
+`WP 7.3A` onward (`RequirementsException`, `RequirementNotFoundException`,
+`DuplicateRequirementIdentifierException`,
+`InvalidRequirementStatusTransitionException`, and others), and every
+exception type introduced by any `v0.7.0`/`v0.8.0` Work Package, is
+genuinely missing from both. Only each Work Package's own genuinely new
+exception(s) are added above as they are introduced (`WP 9.0A`'s two,
+`WP 9.1A`'s one); a full backfill (mirroring `WP 7.1F`'s own precedent for
+the Interface/DI/Module Registers) is out of `WP 9.1A`'s own Requirements
+Management Workspace scope, and is recommended as a future governance
+health-check candidate (`FCR-0005`).
+
+**Total: 52 custom exception types (stale — see disclosure above; at
+least 55 now exist, counting only `WP 9.0A`'s two and `WP 9.1A`'s one
+additions on top of the last-verified figure) — Verified directly against
 `src/Tempest.Core/` (`grep -rlP "^public (sealed )?class \w+Exception\b"`
 returns exactly 52 files, matching the 52 rows in the Entries table
 above, re-derived directly by `WP 6.6` rather than incremented from the

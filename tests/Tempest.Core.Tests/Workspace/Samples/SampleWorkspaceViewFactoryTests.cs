@@ -13,6 +13,8 @@ public class SampleWorkspaceViewFactoryTests
     {
         public WorkspaceSelection? CurrentSelection => null;
 
+        public IReadOnlyList<WorkspaceSelection> SelectedItems => [];
+
         public Guid? ActiveViewId => null;
     }
 

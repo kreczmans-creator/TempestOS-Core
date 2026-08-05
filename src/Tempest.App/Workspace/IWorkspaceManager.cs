@@ -36,4 +36,18 @@ public interface IWorkspaceManager
     /// <exception cref="ArgumentNullException"><paramref name="provider"/> is <see langword="null"/>.</exception>
     /// <exception cref="DuplicateWorkspaceRegistrationException">A provider is already registered for <paramref name="kind"/>.</exception>
     void RegisterExplorerArea(string kind, IProjectExplorerNodeProvider provider);
+
+    /// <summary>
+    /// Registers the one <see cref="IPropertyFacetProvider"/> responsible for
+    /// supplying the Property Inspector's own real facets for <paramref name="kind"/>.
+    /// A genuine, disclosed `WP 9.0A` addition to this frozen `WP8.0B`
+    /// contract — additive only (a new member, no existing member changed),
+    /// applying the same Kind-keyed registration principle
+    /// <see cref="RegisterView"/>/<see cref="RegisterExplorerArea"/> already
+    /// establish (`ADR-0067`) a third time.
+    /// </summary>
+    /// <exception cref="ArgumentException"><paramref name="kind"/> is null, empty, or whitespace.</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="provider"/> is <see langword="null"/>.</exception>
+    /// <exception cref="DuplicateWorkspaceRegistrationException">A provider is already registered for <paramref name="kind"/>.</exception>
+    void RegisterFacetProvider(string kind, IPropertyFacetProvider provider);
 }

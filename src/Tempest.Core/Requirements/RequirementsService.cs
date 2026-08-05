@@ -78,6 +78,12 @@ public sealed class RequirementsService : IRequirementsService
     /// <summary>The <see cref="IPersistenceStore"/> collection mapping each registered <c>identifier</c> to its own backing document Id.</summary>
     public const string IdentifierIndexCollectionName = "Requirements.Index";
 
+    /// <summary>The <see cref="IPersistenceStore"/> collection registering every created collection's own document Id, for <see cref="ListCollectionsAsync"/> (`WP 9.1A`) — see that method's own disclosed remarks.</summary>
+    public const string CollectionRegistryCollectionName = "Requirements.CollectionRegistry";
+
+    /// <summary>The <see cref="IPersistenceStore"/> collection registering every created group's own document Id, for <see cref="ListGroupsAsync"/> (`WP 9.1A`) — see that method's own disclosed remarks.</summary>
+    public const string GroupRegistryCollectionName = "Requirements.GroupRegistry";
+
     /// <summary>The <see cref="IRequirement.CreatedByPrincipalId"/> recorded when no principal is currently established.</summary>
     public const string UnknownPrincipalId = "unknown";
 
@@ -136,7 +142,7 @@ public sealed class RequirementsService : IRequirementsService
 
             _logger?.Information($"Requirement created: '{identifier}' (document '{document.Id}').");
 
-            return new Requirement(document.Id, identifier, statement, category, RequirementStatus.Draft, document.CurrentRevisionNumber, createdBy, createdAt);
+            return ToRequirement(document.Id, dto, document.CurrentRevisionNumber);
         }
     }
 
@@ -173,7 +179,7 @@ public sealed class RequirementsService : IRequirementsService
 
         _logger?.Information($"Requirement revised: '{dto.Identifier}' (revision {revision.RevisionNumber}).");
 
-        return new Requirement(requirementId, dto.Identifier, newStatement, dto.Category, dto.Status, revision.RevisionNumber, dto.CreatedByPrincipalId, dto.CreatedAt);
+        return ToRequirement(requirementId, dto, revision.RevisionNumber);
     }
 
     /// <inheritdoc />
@@ -190,6 +196,72 @@ public sealed class RequirementsService : IRequirementsService
             .ConfigureAwait(false);
 
         _logger?.Information($"Requirement status changed: '{dto.Identifier}' → '{status}'.");
+    }
+
+    /// <inheritdoc />
+    public async Task<IRequirement> SetOwnerAsync(Guid requirementId, string? owner, CancellationToken cancellationToken = default)
+    {
+        var current = await ReadDtoAsync(requirementId, cancellationToken).ConfigureAwait(false)
+            ?? throw new RequirementNotFoundException(requirementId);
+
+        var dto = current with { Owner = owner };
+        var revision = await _documentStore.ReviseAsync(requirementId, JsonSerializer.Serialize(dto), $"Owner changed to '{owner ?? "(none)"}'.", cancellationToken)
+            .ConfigureAwait(false);
+
+        _logger?.Information($"Requirement owner changed: '{dto.Identifier}' → '{owner ?? "(none)"}'.");
+
+        return ToRequirement(requirementId, dto, revision.RevisionNumber);
+    }
+
+    /// <inheritdoc />
+    public async Task<IRequirement> SetPriorityAsync(Guid requirementId, RequirementPriority? priority, CancellationToken cancellationToken = default)
+    {
+        var current = await ReadDtoAsync(requirementId, cancellationToken).ConfigureAwait(false)
+            ?? throw new RequirementNotFoundException(requirementId);
+
+        var dto = current with { Priority = priority };
+        var revision = await _documentStore.ReviseAsync(requirementId, JsonSerializer.Serialize(dto), $"Priority changed to '{priority?.ToString() ?? "(none)"}'.", cancellationToken)
+            .ConfigureAwait(false);
+
+        _logger?.Information($"Requirement priority changed: '{dto.Identifier}' → '{priority?.ToString() ?? "(none)"}'.");
+
+        return ToRequirement(requirementId, dto, revision.RevisionNumber);
+    }
+
+    /// <inheritdoc />
+    public async Task<IRequirement> DeleteAsync(Guid requirementId, CancellationToken cancellationToken = default)
+    {
+        var current = await ReadDtoAsync(requirementId, cancellationToken).ConfigureAwait(false)
+            ?? throw new RequirementNotFoundException(requirementId);
+
+        var dto = current with { IsDeleted = true };
+        var revision = await _documentStore.ReviseAsync(requirementId, JsonSerializer.Serialize(dto), "Deleted.", cancellationToken)
+            .ConfigureAwait(false);
+
+        _logger?.Information($"Requirement deleted: '{dto.Identifier}'.");
+
+        return ToRequirement(requirementId, dto, revision.RevisionNumber);
+    }
+
+    /// <inheritdoc />
+    public async Task<IRequirement> MoveToGroupAsync(Guid requirementId, Guid? groupId, CancellationToken cancellationToken = default)
+    {
+        var current = await ReadDtoAsync(requirementId, cancellationToken).ConfigureAwait(false)
+            ?? throw new RequirementNotFoundException(requirementId);
+
+        if (groupId is not null && await _documentStore.FindAsync(groupId.Value, cancellationToken).ConfigureAwait(false) is null)
+            throw new EngineeringDocumentNotFoundException(groupId.Value);
+
+        var dto = current with { GroupId = groupId };
+        var revision = await _documentStore.ReviseAsync(requirementId, JsonSerializer.Serialize(dto), $"Moved to group '{groupId?.ToString() ?? "(none)"}'.", cancellationToken)
+            .ConfigureAwait(false);
+
+        if (groupId is not null)
+            await _documentStore.LinkAsync(requirementId, groupId.Value, RequirementRelationshipKinds.GroupedUnder, cancellationToken).ConfigureAwait(false);
+
+        _logger?.Information($"Requirement moved to group: '{dto.Identifier}' → '{groupId?.ToString() ?? "(none)"}'.");
+
+        return ToRequirement(requirementId, dto, revision.RevisionNumber);
     }
 
     /// <inheritdoc />
@@ -243,9 +315,12 @@ public sealed class RequirementsService : IRequirementsService
         var document = await _documentStore.CreateAsync(RequirementCollectionDocumentKind, JsonSerializer.Serialize(dto), cancellationToken)
             .ConfigureAwait(false);
 
+        await _persistenceStore.WriteAsync(CollectionRegistryCollectionName, document.Id.ToString("N"), document.Id.ToString("N"), cancellationToken)
+            .ConfigureAwait(false);
+
         _logger?.Information($"Requirement collection created: '{name}' (document '{document.Id}').");
 
-        return new RequirementCollection(document.Id, name, []);
+        return new RequirementCollection(document.Id, name, [], dto.IsDeleted);
     }
 
     /// <inheritdoc />
@@ -265,7 +340,33 @@ public sealed class RequirementsService : IRequirementsService
             .Select(r => r.TargetDocumentId)
             .ToList();
 
-        return new RequirementCollection(collectionId, dto.Name, memberIds);
+        return new RequirementCollection(collectionId, dto.Name, memberIds, dto.IsDeleted);
+    }
+
+    /// <inheritdoc />
+    public async Task<IRequirementCollection> DeleteCollectionAsync(Guid collectionId, CancellationToken cancellationToken = default)
+    {
+        var collectionDocument = await _documentStore.FindAsync(collectionId, cancellationToken).ConfigureAwait(false);
+        if (collectionDocument is null || !string.Equals(collectionDocument.Kind, RequirementCollectionDocumentKind, StringComparison.Ordinal))
+            throw new EngineeringDocumentNotFoundException(collectionId);
+
+        var history = await _documentStore.GetRevisionHistoryAsync(collectionId, cancellationToken).ConfigureAwait(false);
+        var current = JsonSerializer.Deserialize<RequirementCollectionDto>(history[^1].Content)
+            ?? throw new EngineeringDataException($"Requirement collection '{collectionId}' could not be deserialised.");
+
+        var dto = current with { IsDeleted = true };
+        await _documentStore.ReviseAsync(collectionId, JsonSerializer.Serialize(dto), "Deleted.", cancellationToken)
+            .ConfigureAwait(false);
+
+        _logger?.Information($"Requirement collection deleted: '{dto.Name}'.");
+
+        var members = await _documentStore.GetReferencesAsync(collectionId, cancellationToken).ConfigureAwait(false);
+        var memberIds = members
+            .Where(r => string.Equals(r.RelationshipKind, RequirementRelationshipKinds.CollectedIn, StringComparison.Ordinal))
+            .Select(r => r.TargetDocumentId)
+            .ToList();
+
+        return new RequirementCollection(collectionId, dto.Name, memberIds, dto.IsDeleted);
     }
 
     /// <inheritdoc />
@@ -291,8 +392,11 @@ public sealed class RequirementsService : IRequirementsService
         if (parentGroupId is not null && await _documentStore.FindAsync(parentGroupId.Value, cancellationToken).ConfigureAwait(false) is null)
             throw new EngineeringDocumentNotFoundException(parentGroupId.Value);
 
-        var dto = new RequirementGroupDto(name);
+        var dto = new RequirementGroupDto(name, parentGroupId);
         var document = await _documentStore.CreateAsync(RequirementGroupDocumentKind, JsonSerializer.Serialize(dto), cancellationToken)
+            .ConfigureAwait(false);
+
+        await _persistenceStore.WriteAsync(GroupRegistryCollectionName, document.Id.ToString("N"), document.Id.ToString("N"), cancellationToken)
             .ConfigureAwait(false);
 
         if (parentGroupId is not null)
@@ -300,7 +404,7 @@ public sealed class RequirementsService : IRequirementsService
 
         _logger?.Information($"Requirement group created: '{name}' (document '{document.Id}').");
 
-        return new RequirementGroup(document.Id, name, parentGroupId);
+        return new RequirementGroup(document.Id, name, parentGroupId, dto.IsDeleted);
     }
 
     /// <inheritdoc />
@@ -310,17 +414,54 @@ public sealed class RequirementsService : IRequirementsService
         if (document is null || !string.Equals(document.Kind, RequirementGroupDocumentKind, StringComparison.Ordinal))
             return null;
 
-        var history = await _documentStore.GetRevisionHistoryAsync(groupId, cancellationToken).ConfigureAwait(false);
-        var dto = JsonSerializer.Deserialize<RequirementGroupDto>(history[^1].Content)
+        var dto = await ReadGroupDtoAsync(groupId, cancellationToken).ConfigureAwait(false)
             ?? throw new EngineeringDataException($"Requirement group '{groupId}' could not be deserialised.");
 
-        var references = await _documentStore.GetReferencesAsync(groupId, cancellationToken).ConfigureAwait(false);
-        var parentGroupId = references
-            .Where(r => string.Equals(r.RelationshipKind, RequirementRelationshipKinds.GroupedUnder, StringComparison.Ordinal))
-            .Select(r => (Guid?)r.TargetDocumentId)
-            .FirstOrDefault();
+        // WP 9.1A: ParentGroupId is now this DTO's own live, current value —
+        // see RequirementGroupDto's own disclosed remarks for why the prior
+        // .FirstOrDefault()-over-relationships resolution was unsafe once a
+        // real Move existed.
+        return new RequirementGroup(groupId, dto.Name, dto.ParentGroupId, dto.IsDeleted);
+    }
 
-        return new RequirementGroup(groupId, dto.Name, parentGroupId);
+    /// <inheritdoc />
+    public async Task<IRequirementGroup> MoveGroupAsync(Guid groupId, Guid? newParentGroupId, CancellationToken cancellationToken = default)
+    {
+        var current = await ReadGroupDtoAsync(groupId, cancellationToken).ConfigureAwait(false)
+            ?? throw new EngineeringDocumentNotFoundException(groupId);
+
+        if (newParentGroupId is not null && await _documentStore.FindAsync(newParentGroupId.Value, cancellationToken).ConfigureAwait(false) is null)
+            throw new EngineeringDocumentNotFoundException(newParentGroupId.Value);
+
+        var dto = current with { ParentGroupId = newParentGroupId };
+        await _documentStore.ReviseAsync(groupId, JsonSerializer.Serialize(dto), $"Moved under group '{newParentGroupId?.ToString() ?? "(none)"}'.", cancellationToken)
+            .ConfigureAwait(false);
+
+        if (newParentGroupId is not null)
+            await _documentStore.LinkAsync(groupId, newParentGroupId.Value, RequirementRelationshipKinds.GroupedUnder, cancellationToken).ConfigureAwait(false);
+
+        _logger?.Information($"Requirement group moved: '{dto.Name}' → '{newParentGroupId?.ToString() ?? "(none)"}'.");
+
+        return new RequirementGroup(groupId, dto.Name, dto.ParentGroupId, dto.IsDeleted);
+    }
+
+    /// <inheritdoc />
+    public async Task<IRequirementGroup> DeleteGroupAsync(Guid groupId, CancellationToken cancellationToken = default)
+    {
+        var current = await ReadGroupDtoAsync(groupId, cancellationToken).ConfigureAwait(false)
+            ?? throw new EngineeringDocumentNotFoundException(groupId);
+
+        var liveChildren = await CountLiveGroupChildrenAsync(groupId, cancellationToken).ConfigureAwait(false);
+        if (liveChildren > 0)
+            throw new RequirementGroupHasChildrenException(groupId, liveChildren);
+
+        var dto = current with { IsDeleted = true };
+        await _documentStore.ReviseAsync(groupId, JsonSerializer.Serialize(dto), "Deleted.", cancellationToken)
+            .ConfigureAwait(false);
+
+        _logger?.Information($"Requirement group deleted: '{dto.Name}'.");
+
+        return new RequirementGroup(groupId, dto.Name, dto.ParentGroupId, dto.IsDeleted);
     }
 
     /// <inheritdoc />
@@ -333,6 +474,38 @@ public sealed class RequirementsService : IRequirementsService
         var linkedReferences = await _documentStore.GetReferencesAsync(requirementId, cancellationToken).ConfigureAwait(false);
 
         return new RequirementEvidence(requirementId, verificationHistory, linkedReferences);
+    }
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<IRequirementCollection>> ListCollectionsAsync(CancellationToken cancellationToken = default)
+    {
+        var documentIds = await _persistenceStore.ListKeysAsync(CollectionRegistryCollectionName, cancellationToken).ConfigureAwait(false);
+        var collections = new List<IRequirementCollection>(documentIds.Count);
+
+        foreach (var documentIdKey in documentIds)
+        {
+            var collection = await FindCollectionAsync(Guid.ParseExact(documentIdKey, "N"), cancellationToken).ConfigureAwait(false);
+            if (collection is not null)
+                collections.Add(collection);
+        }
+
+        return collections;
+    }
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<IRequirementGroup>> ListGroupsAsync(CancellationToken cancellationToken = default)
+    {
+        var documentIds = await _persistenceStore.ListKeysAsync(GroupRegistryCollectionName, cancellationToken).ConfigureAwait(false);
+        var groups = new List<IRequirementGroup>(documentIds.Count);
+
+        foreach (var documentIdKey in documentIds)
+        {
+            var group = await FindGroupAsync(Guid.ParseExact(documentIdKey, "N"), cancellationToken).ConfigureAwait(false);
+            if (group is not null)
+                groups.Add(group);
+        }
+
+        return groups;
     }
 
     private async Task<Guid?> ReadDocumentIdAsync(string identifier, CancellationToken cancellationToken)
@@ -363,9 +536,55 @@ public sealed class RequirementsService : IRequirementsService
         var dto = JsonSerializer.Deserialize<RequirementDto>(currentRevision.Content)
             ?? throw new EngineeringDataException($"Requirement '{requirementId}' could not be deserialised.");
 
-        return new Requirement(requirementId, dto.Identifier, dto.Statement, dto.Category, dto.Status, currentRevision.RevisionNumber, dto.CreatedByPrincipalId, dto.CreatedAt);
+        return ToRequirement(requirementId, dto, currentRevision.RevisionNumber);
     }
 
     private string ResolveCurrentPrincipalId() =>
         _currentPrincipalAccessor.Current?.Identity.Id ?? UnknownPrincipalId;
+
+    /// <summary>Builds an <see cref="IRequirement"/> snapshot from a DTO — the one place every read/write construction site goes through, so a new DTO field is never forgotten at a second call site (`WP 9.1A`).</summary>
+    private static IRequirement ToRequirement(Guid id, RequirementDto dto, int revisionNumber) =>
+        new Requirement(id, dto.Identifier, dto.Statement, dto.Category, dto.Status, revisionNumber, dto.CreatedByPrincipalId, dto.CreatedAt, dto.Owner, dto.Priority, dto.IsDeleted, dto.GroupId);
+
+    private async Task<RequirementGroupDto?> ReadGroupDtoAsync(Guid groupId, CancellationToken cancellationToken)
+    {
+        var document = await _documentStore.FindAsync(groupId, cancellationToken).ConfigureAwait(false);
+        if (document is null || !string.Equals(document.Kind, RequirementGroupDocumentKind, StringComparison.Ordinal))
+            return null;
+
+        var history = await _documentStore.GetRevisionHistoryAsync(groupId, cancellationToken).ConfigureAwait(false);
+        return JsonSerializer.Deserialize<RequirementGroupDto>(history[^1].Content)
+            ?? throw new EngineeringDataException($"Requirement group '{groupId}' could not be deserialised.");
+    }
+
+    /// <summary>
+    /// Counts live (non-deleted) requirements grouped directly under
+    /// <paramref name="groupId"/>, plus live (non-deleted) sub-groups
+    /// parented directly under it — `WP 9.1A`'s own
+    /// <see cref="DeleteGroupAsync"/> guard, mirroring
+    /// <c>EngineeringDomain.EngineeringObjectBase.DeleteAsync</c>'s own
+    /// identical has-children reasoning.
+    /// </summary>
+    /// <remarks>
+    /// <b>Superseded disclosure:</b> this method originally checked live
+    /// grouped requirements only — <see cref="EngineeringData.IEngineeringDocumentStore"/>
+    /// has no "list every document of a Kind" capability, and groups
+    /// were not otherwise enumerable, so live sub-groups could not be
+    /// discovered. <see cref="ListGroupsAsync"/> (added within this same
+    /// Work Package, for the Engineering Workspace's own Project Explorer)
+    /// closes that gap; this guard now uses it, so both live children
+    /// kinds are checked, matching `EngineeringDomain`'s own equivalent
+    /// guard exactly. See `WP9.1A Technical Debt Assessment.md` for the
+    /// full, disclosed history of this correction.
+    /// </remarks>
+    private async Task<int> CountLiveGroupChildrenAsync(Guid groupId, CancellationToken cancellationToken)
+    {
+        var allRequirements = await ListAsync(cancellationToken).ConfigureAwait(false);
+        var liveRequirementChildren = allRequirements.Count(r => !r.IsDeleted && r.GroupId == groupId);
+
+        var allGroups = await ListGroupsAsync(cancellationToken).ConfigureAwait(false);
+        var liveGroupChildren = allGroups.Count(g => !g.IsDeleted && g.Id != groupId && g.ParentGroupId == groupId);
+
+        return liveRequirementChildren + liveGroupChildren;
+    }
 }

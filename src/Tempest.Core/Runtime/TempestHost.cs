@@ -419,6 +419,14 @@ public sealed class TempestHost : ITempestHost
         // its own GetEvidenceAsync aggregation).
         services.Singleton<IRequirementsService, RequirementsService>();
 
+        // WP 9.1A: Requirements-specific validation - a thin read-only
+        // service over IRequirementsService itself, registered directly
+        // after it, which it depends on. Reuses EngineeringDomain's own
+        // IValidationResult/IValidationDiagnostic for its result shape only
+        // - IValidationRule itself is scoped to IEngineeringObject, which
+        // no Requirements type implements (ADR-0084).
+        services.Singleton<IRequirementValidationService, RequirementValidationService>();
+
         // Composition Root pattern (ADR-0009), like Configuration/Logging/
         // PlatformVersionProvider above: DiagnosticsProvider needs references
         // to _lifecycleManager/_hostedServiceManager, both Host-owned and

@@ -10,7 +10,7 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | `src/Samples/Tempest.Samples/`; `docs/architecture/Sample Module Architecture.md`. |
 | **Review Frequency** | Updated whenever a new production module is added anywhere under `src/`. |
-| **Last Reviewed** | 2026-08-04 (WP 8.2C, Engineering Domain Implementation) — `EngineeringDomainSampleModule` added directly at implementation time, not backfilled later; 21 → 22 production modules. Previously reviewed 2026-08-04 (WP 8.1B, Navigation & Project Explorer) — `WorkspaceExplorerSampleModule` added directly at implementation time, not backfilled later; 20 → 21 production modules. Previously reviewed 2026-07-30 (WP 7.3A, Requirements Engine) — `RequirementsSampleModule` added directly at implementation time, not backfilled later. Previously reviewed 2026-07-30 (WP 7.1F, Engineering Core Integration Review & Certification) — full backfill performed; four production modules added across the Engineering Foundation programme (`EngineeringDataSampleModule` `WP 7.1A`, `MaterialsSampleModule` `WP 7.1C`, `CalculationSampleModule` `WP 7.1D`, `VerificationSampleModule` `WP 7.1E`) had never been recorded here — stale since `WP 6.8`, closed by this Work Package's own certification review. `Tempest.Core.UnitsAndQuantities` (`WP 7.1B`) confirmed to have no sample module of its own, consistent with its own zero-DI-registration design. Previously reviewed 2026-07-29 (WP 6.8, Platform Services Integration Review) — full backfill performed; every production module is now listed, closing the gap `WP 6.7` first disclosed and `WP 6.6` left in place. |
+| **Last Reviewed** | 2026-08-05 (WP 9.1A, Requirements Management Workspace) — `RequirementsWorkspaceExplorerModule`/`RequirementsWorkspaceSampleModule` added directly at implementation time, not backfilled later; 24 → 26 production modules. The first sample module (`RequirementsWorkspaceSampleModule`) ever to constructor-inject another sample module's own concrete type (`MechanicalProductStructureSampleModule`), disclosed directly. Previously reviewed 2026-08-05 (WP 9.0B, Product Configuration & BOM Management) — reviewed, no new module added: `MechanicalProductStructureSampleModule` (`WP 9.0A`) was extended in place with real BOM lines, a Baseline, a Release, and validation rule registration, rather than a second sample module being introduced; 24 production modules, unchanged. Previously reviewed 2026-08-05 (WP 9.0A, Mechanical Product Structure) — `MechanicalWorkspaceExplorerModule`/`MechanicalProductStructureSampleModule` added directly at implementation time, not backfilled later; 22 → 24 production modules. Previously reviewed 2026-08-04 (WP 8.2C, Engineering Domain Implementation) — `EngineeringDomainSampleModule` added directly at implementation time, not backfilled later; 21 → 22 production modules. Previously reviewed 2026-08-04 (WP 8.1B, Navigation & Project Explorer) — `WorkspaceExplorerSampleModule` added directly at implementation time, not backfilled later; 20 → 21 production modules. Previously reviewed 2026-07-30 (WP 7.3A, Requirements Engine) — `RequirementsSampleModule` added directly at implementation time, not backfilled later. Previously reviewed 2026-07-30 (WP 7.1F, Engineering Core Integration Review & Certification) — full backfill performed; four production modules added across the Engineering Foundation programme (`EngineeringDataSampleModule` `WP 7.1A`, `MaterialsSampleModule` `WP 7.1C`, `CalculationSampleModule` `WP 7.1D`, `VerificationSampleModule` `WP 7.1E`) had never been recorded here — stale since `WP 6.8`, closed by this Work Package's own certification review. `Tempest.Core.UnitsAndQuantities` (`WP 7.1B`) confirmed to have no sample module of its own, consistent with its own zero-DI-registration design. Previously reviewed 2026-07-29 (WP 6.8, Platform Services Integration Review) — full backfill performed; every production module is now listed, closing the gap `WP 6.7` first disclosed and `WP 6.6` left in place. |
 | **Related Documents** | `docs/architecture/Sample Module Architecture.md`; `Platform Services Register.md`; `Event Catalogue.md`. |
 | **Related ADRs** | ADR-0001 through ADR-0004 (module identity, lifecycle, disposal), ADR-0027 (`ModuleMetadataAttribute`), ADR-0036–ADR-0038, ADR-0040–ADR-0057. |
 | **Related Academy Articles** | `docs/academy/02 Runtime Architecture/03-building-a-module.md`; `04-building-an-event-driven-module.md`; `docs/academy/03 Work Packages/WP4.3-sample-module-architecture.md`, `WP4.3-sample-module-implementation.md`, `WP4.4E-sample-module-event-integration.md`. |
@@ -44,11 +44,43 @@
 | `RequirementsSampleModule` | `Tempest.Samples` | `ModuleLifecycleBase` | Yes | `IIdentityService`, `IRequirementsService`, `IEngineeringDocumentStore`, `IVerificationService`, `ICurrentPrincipalAccessor`, `IPermissionEvaluator`, `IAuditRecorder`, `IReportingService`, `ImportService` (concrete type), `ICommandDispatcher`, `ICommandRegistry` | WP 7.3A |
 | `WorkspaceExplorerSampleModule` | `Tempest.Samples` | `ModuleLifecycleBase` | Yes | `INavigationProvider` | WP 8.1B |
 | `EngineeringDomainSampleModule` | `Tempest.Samples` | `ModuleLifecycleBase` | Yes | `IIdentityService`, `EngineeringDomainContext`, `IMaterialCatalog`, `IDependencyTraversal`, `ICommandDispatcher`, `ICommandRegistry` | WP 8.2C |
+| `MechanicalWorkspaceExplorerModule` | `Tempest.Samples` | `ModuleLifecycleBase` | Yes | `INavigationProvider` | WP 9.0A |
+| `MechanicalProductStructureSampleModule` | `Tempest.Samples` | `ModuleLifecycleBase` | Yes | `IIdentityService`, `EngineeringDomainContext` | WP 9.0A |
+| `RequirementsWorkspaceExplorerModule` | `Tempest.Samples` | `ModuleLifecycleBase` | Yes | `INavigationProvider` | WP 9.1A |
+| `RequirementsWorkspaceSampleModule` | `Tempest.Samples` | `ModuleLifecycleBase` | Yes | `IIdentityService`, `IRequirementsService`, `IVerificationService`, `ImportService` (concrete type), `MechanicalProductStructureSampleModule` (concrete type — see Notes) | WP 9.1A |
 
-**Total: 22 production modules — Verified directly via
+**Total: 26 production modules — Verified directly via
 `ClockModuleDiscoveryTests.DiscoverModules_ScopedToSampleAssembly_FindsEveryRealSampleModule`,
-which asserts exactly 22 and names each by Id and type; all 22 are
-listed above. `EngineeringDomainSampleModule` (`WP 8.2C`) was recorded
+which asserts exactly 26 and names each by Id and type; all 26 are
+listed above. `MechanicalProductStructureSampleModule` (`WP 9.0A`) was
+recorded directly at implementation time, not backfilled later — it
+builds the Mechanical Product Structure's own representative object
+graph (a Project, two Assemblies, a three-level-deep Sub-Assembly chain,
+five Parts, one shared Component, one Configuration), and exercises
+`RenameAsync`/`MoveAsync`/`DeleteAsync` directly during seeding.
+`MechanicalWorkspaceExplorerModule` (`WP 9.0A`) was recorded directly at
+implementation time, not backfilled later — it registers only a
+`NavigationItem`, mirroring `WorkspaceExplorerSampleModule`'s own
+identical shape exactly, for the identical reason (`ADR-0071`).
+`RequirementsWorkspaceExplorerModule` (`WP 9.1A`) was recorded directly
+at implementation time, not backfilled later — it registers only a
+`NavigationItem`, the identical shape a third time. `RequirementsWorkspaceSampleModule`
+(`WP 9.1A`) was recorded directly at implementation time, not backfilled
+later — it builds a three-level Group hierarchy, ten Requirements across
+six lifecycle statuses, two Collections, and real cross-discipline
+allocations to `MechanicalProductStructureSampleModule`'s own live Wing
+Assembly/Spar Web Plate. **A disclosed, genuine first for this register:**
+its own constructor dependency on `MechanicalProductStructureSampleModule`
+(the concrete sample module type, not an interface) is the first instance
+of one sample module depending on another sample module's own instance —
+safe because every discovered module type is registered as a DI singleton
+(`ModuleServiceCollectionExtensions.AddDiscoveredModules`) and
+`ModuleLifecycleManager` initialises modules in ordinal Id order
+(`tempest.samples.mechanicalproductstructure` sorts before
+`tempest.samples.requirementsworkspace`), confirmed directly, not
+assumed. See `ADR-0084`'s Related Documents and `WP9.1A Architecture
+Conformance Review.md` §2.
+`EngineeringDomainSampleModule` (`WP 8.2C`) was recorded
 directly at implementation time, not backfilled later — it builds a
 sixteen-object representative Engineering Domain graph and registers one
 command demonstrating `IDependencyTraversal`. `WorkspaceExplorerSampleModule` (`WP 8.1B`) was recorded

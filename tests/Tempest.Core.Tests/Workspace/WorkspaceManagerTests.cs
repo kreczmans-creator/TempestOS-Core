@@ -218,6 +218,86 @@ public class WorkspaceManagerTests
     }
 
     [Fact]
+    public void RegisterFacetProvider_NullKind_ThrowsArgumentException()
+    {
+        using var temp = new TempDirectory();
+        var manager = new WorkspaceManager(BuildHost(temp.Path, Type.EmptyTypes));
+
+        Assert.ThrowsAny<ArgumentException>(() => manager.RegisterFacetProvider(null!, new TestPropertyFacetProvider("Requirement", [])));
+    }
+
+    [Fact]
+    public void RegisterFacetProvider_NullProvider_ThrowsArgumentNullException()
+    {
+        using var temp = new TempDirectory();
+        var manager = new WorkspaceManager(BuildHost(temp.Path, Type.EmptyTypes));
+
+        Assert.Throws<ArgumentNullException>(() => manager.RegisterFacetProvider("Requirement", null!));
+    }
+
+    [Fact]
+    public void RegisterFacetProvider_DuplicateKind_ThrowsDuplicateWorkspaceRegistrationException()
+    {
+        using var temp = new TempDirectory();
+        var manager = new WorkspaceManager(BuildHost(temp.Path, Type.EmptyTypes));
+        manager.RegisterFacetProvider("Requirement", new TestPropertyFacetProvider("Requirement", []));
+
+        var exception = Assert.Throws<DuplicateWorkspaceRegistrationException>(() =>
+            manager.RegisterFacetProvider("Requirement", new TestPropertyFacetProvider("Requirement", [])));
+        Assert.Equal("Requirement", exception.Kind);
+    }
+
+    [Fact]
+    public async Task RegisterFacetProvider_BeforeStartAsync_IsHonouredByThePropertyInspector()
+    {
+        using var temp = new TempDirectory();
+        var manager = new WorkspaceManager(BuildHost(temp.Path, Type.EmptyTypes));
+        var facets = new List<PropertyFacet> { new("Name", "Real Facet", PropertyFacetKind.Identity) };
+        manager.RegisterFacetProvider("Requirement", new TestPropertyFacetProvider("Requirement", facets));
+
+        var workspace = await WithSuppressedConsoleAsync(() => manager.StartAsync());
+        var objectId = Guid.NewGuid();
+        await workspace.PropertyInspector.InspectAsync(objectId, "Requirement");
+
+        Assert.Equal(facets, workspace.PropertyInspector.CurrentFacets);
+
+        await manager.ShutdownAsync();
+    }
+
+    [Fact]
+    public async Task RegisterFacetProvider_AfterStartAsync_IsStillHonoured()
+    {
+        using var temp = new TempDirectory();
+        var manager = new WorkspaceManager(BuildHost(temp.Path, Type.EmptyTypes));
+        var workspace = await WithSuppressedConsoleAsync(() => manager.StartAsync());
+
+        var facets = new List<PropertyFacet> { new("Name", "Real Facet", PropertyFacetKind.Identity) };
+        manager.RegisterFacetProvider("Requirement", new TestPropertyFacetProvider("Requirement", facets));
+        await workspace.PropertyInspector.InspectAsync(Guid.NewGuid(), "Requirement");
+
+        Assert.Equal(facets, workspace.PropertyInspector.CurrentFacets);
+
+        await manager.ShutdownAsync();
+    }
+
+    [Fact]
+    public async Task PropertyInspector_NoFacetProviderRegisteredForKind_FallsBackToIdKindOnly()
+    {
+        using var temp = new TempDirectory();
+        var manager = new WorkspaceManager(BuildHost(temp.Path, Type.EmptyTypes));
+        var workspace = await WithSuppressedConsoleAsync(() => manager.StartAsync());
+
+        var objectId = Guid.NewGuid();
+        await workspace.PropertyInspector.InspectAsync(objectId, "UnregisteredKind");
+
+        Assert.Equal(2, workspace.PropertyInspector.CurrentFacets.Count);
+        Assert.Contains(workspace.PropertyInspector.CurrentFacets, f => f.Name == "Id" && f.Value == objectId.ToString());
+        Assert.Contains(workspace.PropertyInspector.CurrentFacets, f => f.Name == "Kind" && f.Value == "UnregisteredKind");
+
+        await manager.ShutdownAsync();
+    }
+
+    [Fact]
     public async Task RegisterView_BeforeStartAsync_IsHonouredByTheAssembledWorkspace()
     {
         using var temp = new TempDirectory();

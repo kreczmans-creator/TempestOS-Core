@@ -13,4 +13,7 @@ public interface IRequirementCollection
 
     /// <summary>Every requirement Id this collection currently contains. Never <see langword="null"/>.</summary>
     IReadOnlyList<Guid> MemberRequirementIds { get; }
+
+    /// <summary>Whether this collection has been soft-deleted (`WP 9.1A`).</summary>
+    bool IsDeleted { get; }
 }

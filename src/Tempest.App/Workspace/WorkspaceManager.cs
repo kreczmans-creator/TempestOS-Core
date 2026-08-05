@@ -1,6 +1,8 @@
 using Tempest.Core.Commands;
+using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Events;
 using Tempest.Core.Navigation;
+using Tempest.Core.Requirements;
 using Tempest.Core.Runtime;
 using Tempest.Core.Settings;
 using Tempest.Samples;
@@ -40,6 +42,7 @@ public sealed class WorkspaceManager : IWorkspaceManager, IAsyncDisposable
     private readonly ITempestHost _host;
     private readonly Dictionary<string, IWorkspaceViewFactory> _viewFactories = new(StringComparer.Ordinal);
     private readonly Dictionary<string, IProjectExplorerNodeProvider> _explorerProviders = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, IPropertyFacetProvider> _facetProviders = new(StringComparer.Ordinal);
     private readonly WorkspaceContext _context = new();
     private readonly WorkspaceStatusBar _statusBar = new();
 
@@ -86,13 +89,16 @@ public sealed class WorkspaceManager : IWorkspaceManager, IAsyncDisposable
         var eventBus = (IEventBus)services.GetService(typeof(IEventBus));
         var settingsProvider = (ISettingsProvider)services.GetService(typeof(ISettingsProvider));
         var commandRegistry = (ICommandRegistry)services.GetService(typeof(ICommandRegistry));
+        var domainContext = (EngineeringDomainContext)services.GetService(typeof(EngineeringDomainContext));
+        var requirementsService = (IRequirementsService)services.GetService(typeof(IRequirementsService));
+        var requirementValidationService = (IRequirementValidationService)services.GetService(typeof(IRequirementValidationService));
         _eventBus = eventBus;
 
         var navigationService = new NavigationService(navigationProvider, _viewFactories, _context);
         var projectExplorer = new ProjectExplorer(navigationService, _explorerProviders);
-        var propertyInspector = new PropertyInspector();
+        var propertyInspector = new PropertyInspector(_facetProviders);
         _propertyInspector = propertyInspector;
-        var cockpit = new EngineeringCockpit(navigationService, commandRegistry);
+        var cockpit = new EngineeringCockpit(navigationService, commandRegistry, domainContext, requirementsService, requirementValidationService);
 
         var defaultPlacements = new List<WorkspacePanelPlacement>
         {
@@ -161,6 +167,24 @@ public sealed class WorkspaceManager : IWorkspaceManager, IAsyncDisposable
         ArgumentNullException.ThrowIfNull(provider);
 
         if (!_explorerProviders.TryAdd(kind, provider))
+            throw new DuplicateWorkspaceRegistrationException(kind);
+    }
+
+    /// <summary>
+    /// Registers <paramref name="provider"/> as the real facet source for
+    /// every selected object of Kind <paramref name="kind"/> — the Property
+    /// Inspector's own Kind-keyed extension point (`ADR-0067`, `WP 9.0A`),
+    /// alongside <see cref="RegisterView"/>/<see cref="RegisterExplorerArea"/>.
+    /// </summary>
+    /// <exception cref="ArgumentException"><paramref name="kind"/> is null, empty, or whitespace.</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="provider"/> is <see langword="null"/>.</exception>
+    /// <exception cref="DuplicateWorkspaceRegistrationException">A facet provider is already registered for <paramref name="kind"/>.</exception>
+    public void RegisterFacetProvider(string kind, IPropertyFacetProvider provider)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(kind);
+        ArgumentNullException.ThrowIfNull(provider);
+
+        if (!_facetProviders.TryAdd(kind, provider))
             throw new DuplicateWorkspaceRegistrationException(kind);
     }
 

@@ -22,15 +22,23 @@ internal sealed class SelectionService : ISelectionService
     public WorkspaceSelection? Current => _context.CurrentSelection;
 
     /// <inheritdoc />
+    public IReadOnlyList<WorkspaceSelection> SelectedItems => _context.SelectedItems;
+
+    /// <inheritdoc />
     public async Task SelectAsync(Guid objectId, string kind, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(kind);
 
-        var previous = _context.CurrentSelection;
+        var previousCurrent = _context.CurrentSelection;
+        var previousItems = _context.SelectedItems;
         var current = new WorkspaceSelection(objectId, kind);
-        _context.CurrentSelection = current;
+        var currentItems = new List<WorkspaceSelection> { current };
 
-        await _eventBus.PublishAsync(new WorkspaceSelectionChangedEvent(previous, current), cancellationToken).ConfigureAwait(false);
+        _context.CurrentSelection = current;
+        _context.ReplaceSelectedItems(currentItems);
+
+        await _eventBus.PublishAsync(new WorkspaceSelectionChangedEvent(previousCurrent, current), cancellationToken).ConfigureAwait(false);
+        await _eventBus.PublishAsync(new WorkspaceSelectionSetChangedEvent(previousItems, currentItems), cancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc />
@@ -39,9 +47,43 @@ internal sealed class SelectionService : ISelectionService
         if (_context.CurrentSelection is null)
             return;
 
-        var previous = _context.CurrentSelection;
-        _context.CurrentSelection = null;
+        var previousCurrent = _context.CurrentSelection;
+        var previousItems = _context.SelectedItems;
 
-        await _eventBus.PublishAsync(new WorkspaceSelectionChangedEvent(previous, null), cancellationToken).ConfigureAwait(false);
+        _context.CurrentSelection = null;
+        _context.ReplaceSelectedItems([]);
+
+        await _eventBus.PublishAsync(new WorkspaceSelectionChangedEvent(previousCurrent, null), cancellationToken).ConfigureAwait(false);
+        await _eventBus.PublishAsync(new WorkspaceSelectionSetChangedEvent(previousItems, []), cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <inheritdoc />
+    public async Task ToggleSelectionAsync(Guid objectId, string kind, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(kind);
+
+        var previousCurrent = _context.CurrentSelection;
+        var previousItems = _context.SelectedItems;
+        var currentItems = new List<WorkspaceSelection>(previousItems);
+
+        var existingIndex = currentItems.FindIndex(selection => selection.ObjectId == objectId);
+        WorkspaceSelection? current;
+
+        if (existingIndex >= 0)
+        {
+            currentItems.RemoveAt(existingIndex);
+            current = currentItems.Count > 0 ? currentItems[^1] : null;
+        }
+        else
+        {
+            current = new WorkspaceSelection(objectId, kind);
+            currentItems.Add(current);
+        }
+
+        _context.CurrentSelection = current;
+        _context.ReplaceSelectedItems(currentItems);
+
+        await _eventBus.PublishAsync(new WorkspaceSelectionSetChangedEvent(previousItems, currentItems), cancellationToken).ConfigureAwait(false);
+        await _eventBus.PublishAsync(new WorkspaceSelectionChangedEvent(previousCurrent, current), cancellationToken).ConfigureAwait(false);
     }
 }

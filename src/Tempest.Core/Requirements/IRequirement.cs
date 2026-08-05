@@ -32,4 +32,16 @@ public interface IRequirement
 
     /// <summary>When this requirement was originally created — carried forward unchanged across every later revision.</summary>
     DateTimeOffset CreatedAt { get; }
+
+    /// <summary>The principal currently accountable for this requirement, or <see langword="null"/> if unset. Distinct from <see cref="CreatedByPrincipalId"/> — ownership may change; authorship never does (`WP 9.1A`).</summary>
+    string? Owner { get; }
+
+    /// <summary>This requirement's own relative importance, or <see langword="null"/> if unset (`WP 9.1A`).</summary>
+    RequirementPriority? Priority { get; }
+
+    /// <summary>Whether this requirement has been soft-deleted — never erased, per this platform's own append-only ethos (`WP 9.1A`).</summary>
+    bool IsDeleted { get; }
+
+    /// <summary>The requirement group this requirement currently belongs to, or <see langword="null"/> if ungrouped — the live, current value; see <see cref="IRequirementsService.MoveToGroupAsync"/> (`WP 9.1A`).</summary>
+    Guid? GroupId { get; }
 }

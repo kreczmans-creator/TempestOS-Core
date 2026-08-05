@@ -11,14 +11,24 @@ namespace Tempest.Core.EngineeringDomain;
 /// </summary>
 public abstract class EngineeringObjectBase :
     IEngineeringObject, IHasBusinessIdentifier, IHasMetadata, IHasLifecycle, IHasRevisions,
-    IHasRelationships, ITraceable, IValidatable, IHasAttachments, ISearchable
+    IHasRelationships, ITraceable, IValidatable, IHasAttachments, ISearchable,
+    IRenamable, IHasParent, IDeletable, IHasBomLine
 {
     private readonly EngineeringDomainContext _context;
     private readonly List<ILifecycleTransitionRecord> _history = new();
     private readonly List<IAttachment> _attachments = new();
     private readonly object _lifecycleLock = new();
+    private readonly object _structuralLock = new();
     private Func<IEngineeringDocument, IDocumentRevision, EngineeringObjectBase>? _selfFactory;
     private LifecycleState _status = LifecycleState.Draft;
+    private string _displayName;
+    private Guid? _parentId;
+    private bool _isDeleted;
+    private decimal _quantity = 1m;
+    private string? _unitOfMeasure;
+    private string? _findNumber;
+    private string? _itemNumber;
+    private string? _referenceDesignator;
 
     protected EngineeringObjectBase(
         IEngineeringDocument document,
@@ -38,7 +48,7 @@ public abstract class EngineeringObjectBase :
         CurrentRevision = currentRevision;
         _context = context;
         Identifier = identifier;
-        DisplayName = displayName;
+        _displayName = displayName;
         Metadata = metadata;
     }
 
@@ -59,7 +69,11 @@ public abstract class EngineeringObjectBase :
 
     // IHasBusinessIdentifier
     public string? Identifier { get; }
-    public string DisplayName { get; }
+
+    public string DisplayName
+    {
+        get { lock (_structuralLock) { return _displayName; } }
+    }
 
     // IHasMetadata
     public string? Category => Metadata.Category;
@@ -108,9 +122,42 @@ public abstract class EngineeringObjectBase :
 
         var revised = _selfFactory(refreshedDocument, newRevision);
         revised.AttachSelfFactory(_selfFactory);
+        revised.CopyStructuralStateFrom(this);
         _context.Repository.Register(revised);
 
         return revised;
+    }
+
+    /// <summary>
+    /// Copies every `WP 9.0A`/`WP 9.0B` mutable structural field (rename,
+    /// parent, delete, BOM line) from <paramref name="source"/> onto this,
+    /// freshly-constructed, revised instance. A genuine, disclosed
+    /// <c>WP 9.0B</c> correctness fix: <see cref="ReviseAsync"/>'s own
+    /// <c>_selfFactory</c> closure only ever knew the values passed to the
+    /// <em>original</em> <see cref="EngineeringObjectFactory{T}"/> call —
+    /// without this copy, a revision would silently discard any rename,
+    /// move, delete, or BOM line set on the object since it was created,
+    /// reverting to construction-time values. `IHasRevisions.ReviseAsync`'s
+    /// own contract shape is unchanged; only this base class's own,
+    /// previously-incomplete implementation of it is corrected. Private
+    /// field access across two instances of the same class is ordinary C#
+    /// (never a same-instance-only rule), so no new internal surface is
+    /// needed for this.
+    /// </summary>
+    private void CopyStructuralStateFrom(EngineeringObjectBase source)
+    {
+        lock (_structuralLock)
+        lock (source._structuralLock)
+        {
+            _displayName = source._displayName;
+            _parentId = source._parentId;
+            _isDeleted = source._isDeleted;
+            _quantity = source._quantity;
+            _unitOfMeasure = source._unitOfMeasure;
+            _findNumber = source._findNumber;
+            _itemNumber = source._itemNumber;
+            _referenceDesignator = source._referenceDesignator;
+        }
     }
 
     public async Task<IReadOnlyList<IRevisionRecord>> GetRevisionHistoryAsync(CancellationToken cancellationToken = default)
@@ -168,4 +215,130 @@ public abstract class EngineeringObjectBase :
     // ISearchable
     public virtual string SearchableText =>
         string.Join(' ', new[] { DisplayName, Identifier, Category, Content }.Where(s => !string.IsNullOrWhiteSpace(s)));
+
+    // IRenamable (WP 9.0A — additive; see StructuralMutation.cs)
+    public Task RenameAsync(string newDisplayName, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(newDisplayName);
+
+        lock (_structuralLock)
+        {
+            _displayName = newDisplayName;
+        }
+
+        return Task.CompletedTask;
+    }
+
+    // IHasParent (WP 9.0A — additive; see StructuralMutation.cs)
+    public Guid? ParentId
+    {
+        get { lock (_structuralLock) { return _parentId; } }
+    }
+
+    public async Task MoveAsync(Guid? newParentId, CancellationToken cancellationToken = default)
+    {
+        if (newParentId is { } candidateParentId)
+            await GuardAgainstCircularParentAsync(candidateParentId, cancellationToken).ConfigureAwait(false);
+
+        lock (_structuralLock)
+        {
+            _parentId = newParentId;
+        }
+
+        // Permanent, append-only audit trail — the old "groupedUnder" link (if
+        // any) is never removed, so a full move history survives even though
+        // ParentId itself only ever reflects the latest move (WP 9.0A).
+        if (newParentId is { } parentId)
+            await LinkAsync(parentId, "groupedUnder", cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task GuardAgainstCircularParentAsync(Guid candidateParentId, CancellationToken cancellationToken)
+    {
+        if (candidateParentId == Id)
+            throw new CircularParentAssignmentException(Id, candidateParentId);
+
+        var current = candidateParentId;
+        var visited = new HashSet<Guid> { Id };
+
+        while (visited.Add(current))
+        {
+            var candidate = await _context.Repository.FindAsync(current, cancellationToken).ConfigureAwait(false);
+
+            if (candidate is not IHasParent { ParentId: { } nextParentId })
+                return;
+
+            if (nextParentId == Id)
+                throw new CircularParentAssignmentException(Id, candidateParentId);
+
+            current = nextParentId;
+        }
+    }
+
+    // IDeletable (WP 9.0A — additive; see StructuralMutation.cs)
+    public bool IsDeleted
+    {
+        get { lock (_structuralLock) { return _isDeleted; } }
+    }
+
+    public async Task DeleteAsync(CancellationToken cancellationToken = default)
+    {
+        var all = await _context.Repository.ListAllAsync(cancellationToken).ConfigureAwait(false);
+
+        var liveChildren = all.Count(o =>
+            o is IHasParent { ParentId: { } parentId } && parentId == Id &&
+            o is not IDeletable { IsDeleted: true });
+
+        if (liveChildren > 0)
+            throw new EngineeringObjectHasChildrenException(Id, liveChildren);
+
+        lock (_structuralLock)
+        {
+            _isDeleted = true;
+        }
+    }
+
+    // IHasBomLine (WP 9.0B — additive; see BillOfMaterials.cs)
+    public decimal Quantity
+    {
+        get { lock (_structuralLock) { return _quantity; } }
+    }
+
+    public string? UnitOfMeasure
+    {
+        get { lock (_structuralLock) { return _unitOfMeasure; } }
+    }
+
+    public string? FindNumber
+    {
+        get { lock (_structuralLock) { return _findNumber; } }
+    }
+
+    public string? ItemNumber
+    {
+        get { lock (_structuralLock) { return _itemNumber; } }
+    }
+
+    public string? ReferenceDesignator
+    {
+        get { lock (_structuralLock) { return _referenceDesignator; } }
+    }
+
+    public Task SetBomLineAsync(
+        decimal quantity, string? unitOfMeasure = null, string? findNumber = null,
+        string? itemNumber = null, string? referenceDesignator = null, CancellationToken cancellationToken = default)
+    {
+        if (quantity <= 0)
+            throw new ArgumentOutOfRangeException(nameof(quantity), quantity, $"Quantity must be positive ({StructuralValidationRules.QuantityMustBePositive}).");
+
+        lock (_structuralLock)
+        {
+            _quantity = quantity;
+            _unitOfMeasure = unitOfMeasure;
+            _findNumber = findNumber;
+            _itemNumber = itemNumber;
+            _referenceDesignator = referenceDesignator;
+        }
+
+        return Task.CompletedTask;
+    }
 }

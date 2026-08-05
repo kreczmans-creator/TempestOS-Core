@@ -2,8 +2,10 @@ using Tempest.App.Workspace;
 using Tempest.Core.Commands;
 using Tempest.Core.Configuration;
 using Tempest.Core.Persistence;
+using Tempest.Core.Requirements;
 using Tempest.Core.Runtime;
 using Tempest.Core.Tests.Plugins;
+using Tempest.Core.Verification;
 using Tempest.Samples;
 
 namespace Tempest.Core.Tests.Workspace;
@@ -48,13 +50,18 @@ public class EngineeringCockpitTests
     // ----------------------------------------------------------------
 
     [Fact]
-    public async Task ProjectName_IsFixedRepresentativePlaceholderText()
+    public async Task ProjectName_NoMechanicalProjectExists_ReportsHonestEmptyState()
     {
+        // WP 9.0A: ProjectName is now a real read of the Engineering Domain's
+        // own live "Project" objects, not fixed placeholder text — with no
+        // modules loaded (Type.EmptyTypes), none exists, so the honest empty
+        // state is reported, mirroring FavouriteProjects_IsHonestlyEmpty's
+        // own identical precedent.
         using var temp = new TempDirectory();
         var (workspace, manager, _) = await StartAsync(temp.Path, Type.EmptyTypes);
         var cockpit = ((Tempest.App.Workspace.Workspace)workspace).Cockpit;
 
-        Assert.Equal("Sample Engineering Project", cockpit.ProjectName);
+        Assert.Equal("No Mechanical Project yet", cockpit.ProjectName);
 
         await manager.ShutdownAsync();
     }
@@ -365,13 +372,16 @@ public class EngineeringCockpitTests
     }
 
     [Fact]
-    public async Task RecentProjects_HasFixedRepresentativeEntry()
+    public async Task RecentProjects_NoMechanicalProjectExists_IsHonestlyEmpty()
     {
+        // WP 9.0A: RecentProjects is now a real read of the Engineering
+        // Domain's own live "Project" objects, not fixed placeholder
+        // content — with no modules loaded, none exists.
         using var temp = new TempDirectory();
         var (workspace, manager, _) = await StartAsync(temp.Path, Type.EmptyTypes);
         var cockpit = ((Tempest.App.Workspace.Workspace)workspace).Cockpit;
 
-        Assert.NotEmpty(cockpit.RecentProjects);
+        Assert.Empty(cockpit.RecentProjects);
 
         await manager.ShutdownAsync();
     }
@@ -439,6 +449,176 @@ public class EngineeringCockpitTests
         var cockpit = ((Tempest.App.Workspace.Workspace)workspace).Cockpit;
 
         Assert.Contains(cockpit.QuickActions, hint => hint.Contains("Run a Global Command", StringComparison.Ordinal));
+
+        await manager.ShutdownAsync();
+    }
+
+    // ----------------------------------------------------------------
+    // WP 9.1A: Requirements KPIs - real reads via IRequirementsService/
+    // IRequirementValidationService, replacing the prior Requirement
+    // placeholder cards.
+    // ----------------------------------------------------------------
+
+    [Fact]
+    public async Task KpiCards_NoLiveRequirement_RequirementsEntryIsStillPlaceholder()
+    {
+        using var temp = new TempDirectory();
+        var (workspace, manager, _) = await StartAsync(temp.Path, Type.EmptyTypes);
+        var cockpit = ((Tempest.App.Workspace.Workspace)workspace).Cockpit;
+
+        var requirementsCard = Assert.Single(cockpit.KpiCards, c => c.Label == "Requirements");
+        Assert.True(requirementsCard.IsPlaceholder);
+
+        await manager.ShutdownAsync();
+    }
+
+    [Fact]
+    public async Task KpiCards_WithALiveRequirement_RequirementsEntryIsReal()
+    {
+        using var temp = new TempDirectory();
+        var (workspace, manager, host) = await StartAsync(temp.Path, Type.EmptyTypes);
+        var requirementsService = (IRequirementsService)host.Services!.GetService(typeof(IRequirementsService));
+        await requirementsService.CreateAsync("REQ-1", "The system shall do X.");
+        var cockpit = ((Tempest.App.Workspace.Workspace)workspace).Cockpit;
+
+        var requirementsCard = Assert.Single(cockpit.KpiCards, c => c.Label == "Requirements");
+        Assert.False(requirementsCard.IsPlaceholder);
+        Assert.Equal("1 total", requirementsCard.Value);
+
+        await manager.ShutdownAsync();
+    }
+
+    [Fact]
+    public async Task RequirementsKpiCards_NoLiveRequirement_ReportsZeroesHonestly()
+    {
+        using var temp = new TempDirectory();
+        var (workspace, manager, _) = await StartAsync(temp.Path, Type.EmptyTypes);
+        var cockpit = ((Tempest.App.Workspace.Workspace)workspace).Cockpit;
+
+        var cards = cockpit.RequirementsKpiCards.ToDictionary(c => c.Label, c => c.Value);
+
+        Assert.Equal("0", cards["Total Requirements"]);
+        Assert.Equal("0", cards["Draft"]);
+        Assert.Equal("0", cards["Outstanding Actions"]);
+        Assert.Equal(EngineeringHealthStatus.Unknown.ToString(), cards["Requirement Health"]);
+        Assert.All(cockpit.RequirementsKpiCards, c => Assert.False(c.IsPlaceholder));
+
+        await manager.ShutdownAsync();
+    }
+
+    [Fact]
+    public async Task RequirementsKpiCards_CountsByStatus()
+    {
+        using var temp = new TempDirectory();
+        var (workspace, manager, host) = await StartAsync(temp.Path, Type.EmptyTypes);
+        var requirementsService = (IRequirementsService)host.Services!.GetService(typeof(IRequirementsService));
+        await requirementsService.CreateAsync("REQ-1", "Draft one.");
+        await requirementsService.CreateAsync("REQ-2", "Draft two.");
+        var third = await requirementsService.CreateAsync("REQ-3", "Reviewed one.");
+        await requirementsService.SetStatusAsync(third.Id, RequirementStatus.Reviewed);
+        var cockpit = ((Tempest.App.Workspace.Workspace)workspace).Cockpit;
+
+        var cards = cockpit.RequirementsKpiCards.ToDictionary(c => c.Label, c => c.Value);
+
+        Assert.Equal("3", cards["Total Requirements"]);
+        Assert.Equal("2", cards["Draft"]);
+        Assert.Equal("1", cards["Review"]);
+
+        await manager.ShutdownAsync();
+    }
+
+    [Fact]
+    public async Task RequirementsKpiCards_DeletedRequirement_IsExcludedFromEveryCount()
+    {
+        using var temp = new TempDirectory();
+        var (workspace, manager, host) = await StartAsync(temp.Path, Type.EmptyTypes);
+        var requirementsService = (IRequirementsService)host.Services!.GetService(typeof(IRequirementsService));
+        var requirement = await requirementsService.CreateAsync("REQ-1", "The system shall do X.");
+        await requirementsService.DeleteAsync(requirement.Id);
+        var cockpit = ((Tempest.App.Workspace.Workspace)workspace).Cockpit;
+
+        var cards = cockpit.RequirementsKpiCards.ToDictionary(c => c.Label, c => c.Value);
+
+        Assert.Equal("0", cards["Total Requirements"]);
+
+        await manager.ShutdownAsync();
+    }
+
+    [Fact]
+    public async Task RequirementsKpiCards_VerificationAndAllocationCoverage_ReflectRealDigitalThreadReads()
+    {
+        using var temp = new TempDirectory();
+        var (workspace, manager, host) = await StartAsync(temp.Path, Type.EmptyTypes);
+        var requirementsService = (IRequirementsService)host.Services!.GetService(typeof(IRequirementsService));
+        var verificationService = (IVerificationService)host.Services!.GetService(typeof(IVerificationService));
+        var verified = await requirementsService.CreateAsync("REQ-1", "Verified and allocated.");
+        await requirementsService.CreateAsync("REQ-2", "Neither verified nor allocated.");
+        var target = await requirementsService.CreateAsync("REQ-TARGET", "Allocation target.");
+        await requirementsService.LinkAsync(verified.Id, target.Id, RequirementRelationshipKinds.AllocatedTo);
+        await verificationService.RecordAsync(verified.Id, VerificationOutcome.Pass, "Inspection", new VerificationContext());
+        var cockpit = ((Tempest.App.Workspace.Workspace)workspace).Cockpit;
+
+        var cards = cockpit.RequirementsKpiCards.ToDictionary(c => c.Label, c => c.Value);
+
+        Assert.Equal("33% (1/3)", cards["Verification Coverage"]);
+        Assert.Equal("33% (1/3)", cards["Allocation Coverage"]);
+
+        await manager.ShutdownAsync();
+    }
+
+    [Fact]
+    public async Task RequirementsStatus_OrphanRequirement_IsAttention()
+    {
+        using var temp = new TempDirectory();
+        var (workspace, manager, host) = await StartAsync(temp.Path, Type.EmptyTypes);
+        var requirementsService = (IRequirementsService)host.Services!.GetService(typeof(IRequirementsService));
+        await requirementsService.CreateAsync("REQ-1", "An orphan requirement with no relationships.");
+        var cockpit = ((Tempest.App.Workspace.Workspace)workspace).Cockpit;
+
+        Assert.Equal(EngineeringHealthStatus.Attention, cockpit.RequirementsStatus);
+
+        await manager.ShutdownAsync();
+    }
+
+    [Fact]
+    public async Task OutstandingRequirementActions_CountsFindingsAcrossEveryLiveRequirement()
+    {
+        using var temp = new TempDirectory();
+        var (workspace, manager, host) = await StartAsync(temp.Path, Type.EmptyTypes);
+        var requirementsService = (IRequirementsService)host.Services!.GetService(typeof(IRequirementsService));
+        await requirementsService.CreateAsync("REQ-1", "An orphan requirement.");
+        await requirementsService.CreateAsync("REQ-2", "Another orphan requirement.");
+        var cockpit = ((Tempest.App.Workspace.Workspace)workspace).Cockpit;
+
+        Assert.Equal(2, cockpit.OutstandingRequirementActions);
+
+        await manager.ShutdownAsync();
+    }
+
+    [Fact]
+    public async Task AttentionItems_WithLiveRequirements_ReportsRequirementsManagementIsLive()
+    {
+        using var temp = new TempDirectory();
+        var (workspace, manager, host) = await StartAsync(temp.Path, Type.EmptyTypes);
+        var requirementsService = (IRequirementsService)host.Services!.GetService(typeof(IRequirementsService));
+        await requirementsService.CreateAsync("REQ-1", "The system shall do X.");
+        var cockpit = ((Tempest.App.Workspace.Workspace)workspace).Cockpit;
+
+        Assert.Contains(cockpit.AttentionItems, item => item.Title == "Requirements Management is live");
+
+        await manager.ShutdownAsync();
+    }
+
+    [Fact]
+    public async Task OpenActions_OutstandingRequirementActions_IncludesATriageEntryFirst()
+    {
+        using var temp = new TempDirectory();
+        var (workspace, manager, host) = await StartAsync(temp.Path, Type.EmptyTypes);
+        var requirementsService = (IRequirementsService)host.Services!.GetService(typeof(IRequirementsService));
+        await requirementsService.CreateAsync("REQ-1", "An orphan requirement.");
+        var cockpit = ((Tempest.App.Workspace.Workspace)workspace).Cockpit;
+
+        Assert.Contains("Triage", cockpit.OpenActions[0].Title);
 
         await manager.ShutdownAsync();
     }

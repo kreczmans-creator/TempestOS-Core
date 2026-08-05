@@ -9,4 +9,4 @@ namespace Tempest.Core.Requirements;
 /// Model.md</c> §2's own "a collection is a view over requirements, not a
 /// container that owns them" finding.
 /// </summary>
-internal sealed record RequirementCollectionDto(string Name);
+internal sealed record RequirementCollectionDto(string Name, bool IsDeleted = false);

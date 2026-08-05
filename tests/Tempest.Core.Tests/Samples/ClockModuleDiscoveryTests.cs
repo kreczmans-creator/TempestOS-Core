@@ -78,6 +78,14 @@ namespace Tempest.Core.Tests.Samples;
 // WP 8.2C: Tempest.Samples grew EngineeringDomainSampleModule (the
 // Engineering Domain's own representative object graph), bringing the
 // total to twenty-two.
+//
+// WP 9.0A: Tempest.Samples grew two more - MechanicalWorkspaceExplorerModule
+// (the Mechanical Product Structure area's own navigation item, mirroring
+// WorkspaceExplorerSampleModule's own identical shape) and
+// MechanicalProductStructureSampleModule (the Mechanical Product
+// Structure's own representative object graph, mirroring
+// EngineeringDomainSampleModule's own identical shape) - bringing the
+// total to twenty-four.
 public class ClockModuleDiscoveryTests
 {
     // ----------------------------------------------------------------
@@ -124,7 +132,7 @@ public class ClockModuleDiscoveryTests
 
         var result = service.DiscoverModules();
 
-        Assert.Equal(22, result.Count);
+        Assert.Equal(26, result.Count);
         Assert.Contains(result, d => d.Id == "tempest.samples.clock" && d.ModuleType == typeof(ClockModule));
         Assert.Contains(result, d => d.Id == "tempest.samples.clock.observer" && d.ModuleType == typeof(ClockLifecycleObserverModule));
         Assert.Contains(result, d => d.Id == "tempest.samples.navigation" && d.ModuleType == typeof(NavigationSampleModule));
@@ -147,6 +155,10 @@ public class ClockModuleDiscoveryTests
         Assert.Contains(result, d => d.Id == "tempest.samples.requirements" && d.ModuleType == typeof(Tempest.Samples.RequirementsSampleModule));
         Assert.Contains(result, d => d.Id == "tempest.samples.workspace-explorer" && d.ModuleType == typeof(Tempest.Samples.WorkspaceExplorerSampleModule));
         Assert.Contains(result, d => d.Id == "tempest.samples.engineeringdomain" && d.ModuleType == typeof(Tempest.Samples.EngineeringDomainSampleModule));
+        Assert.Contains(result, d => d.Id == "tempest.samples.mechanical-workspace-explorer" && d.ModuleType == typeof(Tempest.Samples.MechanicalWorkspaceExplorerModule));
+        Assert.Contains(result, d => d.Id == "tempest.samples.mechanicalproductstructure" && d.ModuleType == typeof(Tempest.Samples.MechanicalProductStructureSampleModule));
+        Assert.Contains(result, d => d.Id == "tempest.samples.requirements-workspace-explorer" && d.ModuleType == typeof(Tempest.Samples.RequirementsWorkspaceExplorerModule));
+        Assert.Contains(result, d => d.Id == "tempest.samples.requirementsworkspace" && d.ModuleType == typeof(Tempest.Samples.RequirementsWorkspaceSampleModule));
     }
 
     // ----------------------------------------------------------------
