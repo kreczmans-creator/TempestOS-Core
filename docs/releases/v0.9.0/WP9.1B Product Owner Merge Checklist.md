@@ -14,8 +14,10 @@ this sequence.
 
 - [x] All `WP 9.0A`/`WP 9.0B`/`WP 9.1A` work is committed —
       `feature/v0.9.0-mechanical-foundation` at commit `71b49ea`, plus
-      this Work Package's own four deliverables at `99d2c53` (the
-      branch's current tip).
+      this Work Package's own four deliverables in one further commit on
+      top (run `git rev-parse feature/v0.9.0-mechanical-foundation` for
+      its exact hash — it was amended once after its own first draft to
+      correct a self-reference, so is not quoted here).
 - [x] Working tree clean except pre-existing, unrelated
       `docs/First_run/` (not part of this consolidation — see `WP9.1B
       Development Baseline Report.md`).
@@ -26,9 +28,10 @@ this sequence.
 
 ## Step 1 — Commit Any Outstanding Work
 
-Already done — `71b49ea` (`WP 9.0A`/`WP 9.0B`/`WP 9.1A`) and `99d2c53`
-(`WP 9.1B`'s own deliverables) on `feature/v0.9.0-mechanical-foundation`
-carry every change. Confirm before proceeding:
+Already done — `71b49ea` (`WP 9.0A`/`WP 9.0B`/`WP 9.1A`) plus one further
+commit (`WP 9.1B`'s own deliverables) on
+`feature/v0.9.0-mechanical-foundation` carry every change. Confirm
+before proceeding:
 
 ```
 git status --short
@@ -65,8 +68,8 @@ complete account."
 ```
 
 **Expected result**: a new merge commit on `main`, parenting both
-`183d2ef` (the `v0.8.0` tag) and `99d2c53` (the feature branch's own
-current tip). Zero conflicts expected — see `WP9.1B Merge
+`183d2ef` (the `v0.8.0` tag) and the feature branch's own current tip.
+Zero conflicts expected — see `WP9.1B Merge
 Readiness Report.md`'s own direct `git merge-tree` verification.
 
 ## Step 4 — If (Unexpectedly) a Conflict Occurs

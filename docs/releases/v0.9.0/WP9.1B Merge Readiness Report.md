@@ -12,17 +12,23 @@ the prepared, not-executed, sequence).
 
 ```
 main:                                    183d2ef (v0.8.0 tag)
-feature/v0.9.0-mechanical-foundation:    183d2ef -> 71b49ea (WP 9.0A-9.1A consolidation) -> 99d2c53 (WP 9.1B, this Work Package's own deliverables)
+feature/v0.9.0-mechanical-foundation:    183d2ef -> 71b49ea (WP 9.0A-9.1A consolidation) -> <branch tip> (WP 9.1B's own deliverables)
 ```
+
+(`<branch tip>` — this Work Package's own deliverables commit was
+amended after its own first draft to correct a self-reference, so its
+final hash is not quoted here; run `git rev-parse
+feature/v0.9.0-mechanical-foundation` for the current value.)
 
 `main` has received no commits since the `v0.8.0` tag (`183d2ef`) — the
 same commit `feature/v0.9.0-mechanical-foundation` was itself cut from.
 Confirmed directly: `git merge-base --is-ancestor main
 feature/v0.9.0-mechanical-foundation` returns true. `main` is a strict
-ancestor of the feature branch; the feature branch's own two new
-commits (`71b49ea`, `99d2c53`) are the entire delta. The merge-tree
-simulation below was re-run against `99d2c53`, the branch's current
-tip, after that second commit was made — still zero conflicts.
+ancestor of the feature branch; the feature branch's own two commits
+(`71b49ea` plus this Work Package's own deliverables commit) are the
+entire delta. The merge-tree simulation below was re-run against the
+branch's own current tip, after that second commit was made — still
+zero conflicts.
 
 ## Conflict Analysis
 
@@ -62,9 +68,9 @@ linear history.
 ## What This Merge Will and Will Not Do
 
 **Will**: create one new merge commit on `main`, parenting both
-`183d2ef` and `99d2c53` (the feature branch's own current tip); bring
-all `WP 9.0A`/`WP 9.0B`/`WP 9.1A` source,
-test, and documentation changes onto `main`.
+`183d2ef` and the feature branch's own current tip; bring all
+`WP 9.0A`/`WP 9.0B`/`WP 9.1A` source, test, and documentation changes
+onto `main`.
 
 **Will not**: change `VERSION` (remains `0.8.0` on `main` after the
 merge, exactly as it is on the feature branch — this is a development
