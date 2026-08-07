@@ -1,6 +1,6 @@
 # TempestOS — Project Status
 
-**Last Updated:** 2026-08-05 (`WP 9.1A` — Requirements Management Workspace, `v0.9.0` "Mechanical Foundation" phase, in progress)
+**Last Updated:** 2026-08-07 (`WP 9.9.0` — Release Preparation & Product Baseline, **Second Pass**. A second, independent release-readiness verification for `v0.9.0`, commissioned by the Product Owner after `WP 9.8B` closed the first pass's own top standing recommendation (the four-Engineering-Foundation-framework Platform Service gap) — the identical controlling instruction as the first pass, re-run deliberately, not a correction of it. Independently re-confirms `WP 9.8B`'s own closure (rather than trusting its claim) and **recommends `v0.9.0` APPROVED a second time**. One genuine new finding: `TD-34`, a previously-only-narratively-disclosed test flake (`CompositeLogSinkTests`, informally named since `WP 6.3`), actually observed for the first time and formally registered — not Release Blocking. The "32 vs. 35 governance documents" count drift remains open. Neither the first pass's own documents nor `WP 9.8B`'s own were modified — this pass's own deliverables are new, distinctly-named artifacts alongside them. See Current Work Package, below, for the full disclosure.)
 
 This is the primary status dashboard for TempestOS. Read this first for
 "where does the project stand right now" — for "why is it built this
@@ -104,13 +104,45 @@ below.
 
 ## Current Development Branch
 
-**`feature/v0.9.0-mechanical-foundation`**, cut from `main` at the
+**`feature/v0.9.0-calculations-workspace`**, cut from `main` at the
 `v0.8.0` tag, per `v0.8.0`'s own Release Engineering closing activity
 (`VERSION` bumped to `0.8.0`, matching the tagged release, mirroring
 `v0.7.0`'s own identical precedent). `WP 9.0A` (Mechanical Product
 Structure) was this branch's first Work Package; `WP 9.1A` (Requirements
-Management Workspace) is its third, and the second to wire a real
-Engineering Discipline into the real Engineering Workspace.
+Management Workspace) its third; `WP 9.2A` (Engineering Calculations
+Workspace) its fourth; `WP 9.4A` (Engineering Documents Workspace) its
+fifth — commissioned directly by the Product Owner under a disclosed
+`WP 9.3A` numbering gap — `WP 9.3A` (Verification Management Workspace)
+its sixth, closing that same disclosed gap, completed in real time after
+`WP 9.4A` despite carrying the earlier number — and `WP 9.5A`
+(Manufacturing Workspace) its seventh (see Current Work Package, below)
+— the sixth to wire a real Engineering Discipline into the real
+Engineering Workspace.
+
+**Disclosed, found while touching this section again, `WP 9.5A`:**
+`git branch -a` continues to show only `main` (plus its own remote
+tracking branches) — no `feature/v0.9.0-calculations-workspace` branch
+exists in this repository today, and none has since at least the start
+of this session. Every `WP 9.0A`–`WP 9.4A`/`WP 9.3A` narrative above
+describes work as happening on that branch; this Work Package's own
+work, like theirs, was in fact performed directly against `main`. Not a
+new inconsistency this Work Package introduces — recorded here plainly,
+per "disclose, do not silently modify historical records," rather than
+silently rewriting the prior narrative to match actual `git` state or
+fabricating the branch's existence.
+
+**Disclosed observation, not this Work Package's own change:** every
+`WP 9.1B` document committed to this branch (`7d6b493`, `447c368`) names
+it `feature/v0.9.0-mechanical-foundation`, and `git branch -a` confirms
+no branch by that name exists any longer — only
+`feature/v0.9.0-calculations-workspace` does, at the identical commit
+history/tip those `WP 9.1B` commits produced. The branch was renamed at
+some point between `WP 9.1B`'s own close and this Work Package's own
+start, outside any Work Package's own narrated process (not by `WP 9.2A`
+itself, and not documented by any commit on the branch). This document
+is updated to the real, current name; `WP 9.1B`'s own already-committed
+documents are left exactly as written, per "never silently modify
+historical records."
 
 `feature/v0.8.0-engineering-workspace` (`WP 8.0A` through `WP 8.9.0`,
 all ten Work Packages of the Engineering Workspace phase) has been
@@ -128,11 +160,16 @@ project's own convention.
 
 ## Current Release
 
-**v0.8.0** ("Engineering Workspace") is the latest *tagged and merged*
-release — released 2026-08-04, tagged `v0.8.0` (merge `28e41e8`),
-recommended **APPROVED** by `WP 8.9.0`'s own release-readiness review.
-Root `VERSION` correctly reads `0.8.0`, not yet bumped for `v0.9.0`, per
-the established "bump after tag" precedent. `v0.7.0` ("Engineering
+**v0.8.0** ("Engineering Workspace") remains the latest *tagged and
+merged* release — released 2026-08-04, tagged `v0.8.0` (merge
+`28e41e8`), recommended **APPROVED** by `WP 8.9.0`'s own
+release-readiness review. **`v0.9.0`** ("Mechanical Foundation") is now
+recommended **APPROVED** for Product Approval by `WP 9.9.0`'s own
+release-readiness review, but is **not yet tagged, merged to `main`, or
+pushed** — those actions belong to the Product Owner, per this Work
+Package's own explicit "Do NOT merge/tag/push" constraint. Root
+`VERSION` correctly reads `0.8.0`, not yet bumped for `v0.9.0`, per the
+established "bump after tag" precedent. `v0.7.0` ("Engineering
 Foundation") is the release before `v0.8.0` (tagged `v0.7.0`, `61fb2db`,
 **APPROVED**); `v0.6.0` ("Platform Services") before that (tagged
 `v0.6.0`, `99ed285`, `CERTIFIED WITH ACCEPTED TECHNICAL DEBT`); `v0.5.0`
@@ -141,11 +178,507 @@ before that.
 
 ## Current Work Package
 
-**`WP 9.1A` — Requirements Management Workspace.** `v0.9.0`'s own third
-Work Package, and the second to wire a real Engineering Discipline into
-the real Engineering Workspace — the complete Requirements Management
-experience, using the already-real Requirements Framework (`WP 7.3A`),
+**`WP 9.9.0` — Release Preparation & Product Baseline (Second Pass).**
+A second, independent release-readiness verification pass for `v0.9.0`,
+commissioned by the Product Owner with the identical controlling
+instruction as the first pass, after `WP 9.8B` closed that first pass's
+own top standing recommendation — a deliberate "verify, remediate,
+re-verify" sequence, the first this project has performed in full.
+**Verification only.** The first pass's own five deliverables and `WP
+9.8B`'s own five deliverables are left exactly as written, per "never
+silently modify historical records" — this pass's own deliverables are
+new, distinctly-named artifacts alongside them (suffixed "(Second
+Pass)"), except `ReleaseNotes.md`/`Retrospective.md`, both living
+release-level documents updated in place.
+
+**Resolved, re-confirmed independently:** the four-Engineering-Foundation-framework
+Platform Service Register/Map gap. This pass did not trust `WP 9.8B`'s
+own claim of closure — it independently re-derived the same
+five-document consistency check and reached the identical conclusion by
+its own separate route. **This is the first release-closing review in
+this project's history to find this gap closed rather than open.**
+
+**New finding this pass: `TD-34`.** A fresh, full test-suite
+verification (5 runs, one more than the first pass performed) caught a
+live instance of a test flake informally disclosed by name since
+`WP 6.3` (`CompositeLogSinkTests`'s own intermittent, cross-test-class
+`Console.Error`-capture race) but never once actually observed by any
+of the four prior release-closing reviews that named it, nor by this
+Work Package's own first pass. Root-caused directly (a race between
+`CompositeLogSink.Write`'s own `Console.Error.WriteLine` failure report
+and any concurrently-running `[Collection("Console output
+capture")]`-tagged test's own console redirection), confirmed
+non-reproducible in isolation (5/5 further isolated runs passed), and
+formally registered for the first time. **Not Release Blocking** — no
+data-correctness consequence; the underlying `CompositeLogSink.Write`
+behaviour is correct, proven so by the same test's own repeated,
+isolated passes.
+
+**Build**: 4/4 projects, 0 warnings, 0 errors, both Debug and Release,
+re-confirmed by fresh clean rebuild, plus per-project Release builds.
+**Tests**: 2026/2026 passing in 4 of 5 full-suite runs this pass (the
+one exception being the `TD-34` instance, resolved on immediate
+re-run); zero regression against the first pass's own 2026-test
+baseline. **Version**: `VERSION` correctly still reads `0.8.0`.
+
+Zero new ADRs. One new Technical Debt item (`TD-34`, disclosed above).
+Zero new Future Capability entries — `FCR-0005` (Governance Register
+Health-Check Tooling) reconfirmed still Identified, now carrying its
+strongest evidentiary case yet (both `WP 9.8B`'s own existence and this
+pass's own `TD-34` finding are direct evidence for it). Five completion
+deliverables produced under `docs/releases/v0.9.0/`, each prefixed
+`WP9.9.0` and suffixed "(Second Pass)" (`Release Readiness Report`,
+`Engineering Statistics Report`, `Architecture Baseline Summary`,
+`Engineering Capability Summary`, `Product Approval Report`), plus
+`ReleaseNotes.md`/`Retrospective.md` updated in place, plus one Academy
+Retrospective
+(`docs/academy/03 Work Packages/WP9.9.0-release-preparation-and-product-baseline-second-pass.md`).
+
+**Recommendation, reconfirmed: `v0.9.0` APPROVED.**
+
+**Stops here — no merge, no tag, no `VERSION` change, no push performed
+by this Work Package. Await Product Owner release.**
+
+### `WP 9.8B` Summary (for reference)
+
+A dedicated, narrow-scope governance Work Package — five documents,
+four frameworks, zero code — closing the single most persistent
+disclosed governance finding in this project's history: the
+four-Engineering-Foundation-framework Platform Service Register/Map
+gap, first found by `WP 7.3A` (2026-07-30), confirmed still open by
+`WP 7.4.0` and `WP 8.9.0`, and confirmed open a third consecutive
+release-closing review by `WP 9.9.0`'s own first pass, whose own
+Product Approval Report named making a firm decision about it as
+`v0.9.0`'s own top standing recommendation. **Verification and
+documentation only.**
+
+**Disclosed sequencing.** Commissioned **after** `WP 9.9.0`'s own first
+pass despite carrying an earlier number (`9.8B`, inside the `WP
+9.6A`–`WP 9.8A` range `WP 9.5A`'s own controlling instruction
+explicitly skipped) — not an error: this Work Package addressed that
+first pass's own top standing recommendation before the release was
+finalised. `WP 9.9.0`'s own second pass (above) independently
+re-confirmed this Work Package's own claimed closure.
+
+**Finding: the disclosed gap was real, but narrower than three
+successive reviews' own repeated description implied** — confined to
+exactly two of five reviewed governance documents (`Platform Services
+Register.md`, `Platform Service Map.md`); `Dependency Injection
+Register.md`, `Module Register.md`, and `Interface Register.md` had
+each already been correctly backfilled by `WP 7.1F`, long before the
+gap was first named.
+
+**Backfill performed — four rows, four complete sections, zero
+invention.** Engineering Data Model, Materials, Engineering
+Calculations, Verification, all Implemented, `WP 7.1A`/`WP 7.1C`/
+`WP 7.1D`/`WP 7.1E`, `ADR-0053`/`ADR-0055`/`ADR-0056`/`ADR-0057`. Every
+fact independently re-verified against real source. Two further,
+previously-undisclosed findings surfaced and corrected in the same
+pass: a distinct arithmetic error in the Platform Services Register's
+own headline total (claimed "27," true row count 26, now 30); two
+stale "Depended on by" entries in `Platform Service Map.md`.
+
+**Build/Test**: unaffected — `git status` confirmed zero `src/`/`tests/`
+file touched. Five completion deliverables produced under
+`docs/releases/v0.9.0/`, prefixed `WP9.8B`, plus one Academy
+Retrospective. **Stops here** — `WP 9.9.0`'s own second pass (above) is
+the direct continuation.
+
+### `WP 9.9.0` (First Pass) Summary (for reference)
+
+`v0.9.0`'s own eighth Work Package by completion order (and by intended
+number, before `WP 9.8B`'s own disclosed out-of-order commissioning) —
+the complete release-readiness review this project's own standing
+practice performs before every tagged release (mirroring `WP 5.4`/
+`WP 6.8`/`WP 7.4.0`/`WP 8.9.0`), covering all seven `v0.9.0`
+implementation Work Packages (`WP 9.0A` through `WP 9.5A`).
+**Verification only** — no new functionality, no architectural changes.
+
+**Recommendation: `v0.9.0` APPROVED** for Product Approval, release,
+tagging, and merge to `main` by the Product Owner — see `WP9.9.0
+Product Approval Report.md`. Not yet acted on by the Product Owner as of
+either `WP 9.8B` or `WP 9.9.0`'s own second pass (both above).
+
+**Repository verified clean of release-blocking defects.** 4/4 projects
+build with 0 warnings/0 errors in both Debug and Release, from a fully
+clean rebuild, plus per-project Release builds. 2026/2026 tests passing
+across four full-suite runs (two Debug, two Release — the second
+reproducing `scripts/new-release.ps1`'s own exact invocation), plus a
+dedicated 516-test scoped run and a flake-check run — zero failures,
+zero flakes, zero regressions against `v0.8.0`'s own 1631 tests. Full
+arithmetic re-derivation of the test-count and ADR-count chains, zero
+drift found. Architecture, Workspace integration, Engineering lifecycle,
+Digital Thread, and Cockpit integration all independently re-verified
+sound.
+
+**Two governance-completeness findings reconfirmed open at the time —
+the first (the four-Engineering-Foundation-framework Platform Service
+gap) subsequently closed by `WP 9.8B`, above; the second (the "32 vs.
+35 governance documents" count drift) remains open.** Seven dedicated
+Security Reviews performed this release — a full recovery from
+`WP 8.9.0`'s own disclosed "zero dedicated Security Reviews" gap.
+
+Zero new ADRs. Zero new Technical Debt items. Zero new Future
+Capability entries. Five completion deliverables produced under
+`docs/releases/v0.9.0/`, prefixed `WP9.9.0`, plus two newly-created
+release documents (`ReleaseNotes.md`, `Retrospective.md`), plus one
+Academy Retrospective. Closed with "await Product Owner release" — `WP
+9.8B`, and subsequently `WP 9.9.0`'s own second pass (both above), are
+the direct continuation, the latter finding the release approved a
+second time, independently.
+
+### `WP 9.5A` Summary (for reference)
+
+`v0.9.0`'s own seventh Work Package by completion order (fifth by
+intended number), and the sixth to wire a real Engineering Discipline
+into the real Engineering Workspace — the complete Manufacturing
+Workspace experience, using exclusively the already-real Engineering
+Domain, Workspace, and Digital Thread
+(`ManufacturingOperation`/`WorkInstruction`/`Inspection`, `WP 8.2C`),
 integrated into the Workspace, Engineering Cockpit, and Digital Thread.
+
+**Disclosed sequencing.** This Work Package's own controlling
+instruction closed with "await Product Owner instruction before
+`WP 9.9.0` Release Preparation" — skipping `WP 9.6A` through `WP 9.8A`
+entirely, none of which was named or reserved anywhere in this
+repository. `WP 9.9.0` (above) is that next Work Package, now itself
+the Current Work Package.
+
+The fourth real-discipline Work Package to require **zero Domain-layer
+(`Tempest.Core`) changes**, after `WP 9.2A`, `WP 9.4A`, and `WP 9.3A`.
+Nine of thirteen named scope items needed zero new Domain representation
+— Manufacturing BOM already worked before this Work Package wrote a
+single line of code (`Mechanical.SetBomLineCommand`, `WP 9.0B`, already
+Kind-agnostic, confirmed by direct read and by a dedicated test
+dispatching it against a live `"ManufacturingOperation"`); Manufacturing
+Assemblies/Parts reuse the existing Mechanical Kinds directly;
+Manufacturing Resources/Tooling/Fixtures are `Classification`-tagged
+`"Document"` objects, extending `ADR-0088`'s own taxonomy; Supplier
+Operations are `Classification`-tagged `ManufacturingOperation` objects
+linked `"manufacturedBy"` a real Supplier. Routings needed one genuine,
+disclosed design decision: a `Classification`-tagged
+`ManufacturingOperation` used as a structural container, its own real
+`IHasParent` children sequenced via the existing `IHasBomLine.ItemNumber`
+field (`ADR-0091`).
+
+**A disclosed, deliberate first for this project — genuine
+cross-Work-Package read-side reuse.** `"WorkInstruction"`/`"Inspection"`
+register `Documents`'/`Verification`'s own already-shipped Property
+Facet Provider and Workspace View types **directly**, constructed with a
+different Kind string — both already generic over their own Kind
+parameter, confirmed by direct read; zero new facet/view code was
+written for either, verified correct by dedicated tests. Recording an
+Inspection result reuses `Verification.RecordVerificationResultCommand`
+directly — already Kind-agnostic. Commands remain this Work Package's
+own, never reused, for Command Palette category clarity.
+
+New `Tempest.App.Workspace.Manufacturing` namespace:
+`ManufacturingNodeProvider` (five synthetic Explorer categories —
+Routings/Operations/Supplier Operations/Work Instructions/Inspections —
+over all three Manufacturing Kinds together)/
+`ManufacturingWorkspaceView(Factory)`/
+`ManufacturingOperationPropertyFacetProvider`, eight commands (Create/
+Rename/Edit/Delete/Move/Copy/Duplicate/SetStatus — "Release"/"Archive"
+already match `LifecycleState` 1:1, no aliasing needed). Real Engineering
+Cockpit Manufacturing KPIs (Manufacturing Objects/Manufacturing
+Readiness/Released Items/Open Operations/Supplier Status/Inspection
+Status/Production Health) are purely additive — `ManufacturingStatus` is
+a genuinely new Cockpit member, since `WP 8.1C` never named a
+Manufacturing placeholder slot to reuse.
+
+Representative data (`EngineeringManufacturingWorkspaceSampleModule`,
+one real Routing with three sequenced Operation steps — Wing Assembly
+`InReview`, Spar Web Plate `Released` and referencing the real Beam
+Bending Stress Calculation, Shared Fastener Component left `Draft`, the
+honest "Open" baseline — one Supplier Operation `manufacturedBy` the
+base sample's own real Supplier, one Tooling and one Fixture Document,
+one Work Instruction, one Inspection with a real recorded `Pass` result
+referencing the Documents sample's own Test Report): real Digital Thread
+links spanning all six named nodes this Work Package's own scope lists,
+all via already-mapped relationship kinds — the fifth sample module to
+depend on four other sample modules' own instances at once, plus one
+further, disclosed query-not-inject edge, verified safe by four clean
+test runs with zero flakes.
+
+**Build**: 4/4 projects, 0 warnings, 0 errors. **Tests**: 2026/2026
+passing (1972 → 2026, 54 new), four full-suite runs, zero failures.
+
+One new ADR (`ADR-0091`). One new Technical Debt item (`TD-33`:
+`EngineeringCockpit.FormatCoverage`'s own zero-denominator text is
+hardcoded Requirements-specific, already inaccurately reused twice,
+worked around locally rather than fixed at the shared source);
+`TD-30`/`TD-31`/`TD-32` confirmed still open. Three new Future
+Capability candidates recorded (`FCR-0060`–`FCR-0062`). Eight completion
+deliverables produced under `docs/releases/v0.9.0/`, prefixed `WP9.5A`,
+plus one combined Academy file
+(`docs/academy/03 Work Packages/WP9.5A-manufacturing-workspace.md`).
+Closed with "await instruction before `WP 9.9.0`" — `WP 9.9.0` (above)
+is that next Work Package.
+
+### `WP 9.3A` Summary (for reference)
+
+`v0.9.0`'s own sixth Work Package by completion order (fourth by
+intended number), and the fifth to wire a real Engineering Discipline
+into the real Engineering Workspace — the complete Verification
+Management experience, using the already-real Verification Framework
+(`IVerificationService`, `WP 7.1E`) and its Engineering Domain
+counterpart (`IVerificationActivity`/`VerificationActivity`, `WP 8.2C`),
+integrated into the Workspace, Engineering Cockpit, and Digital Thread.
+
+**Disclosed sequencing.** This Work Package closed the numbering gap
+`WP 9.2A` left open ("no `WP 9.3A` begins until the Product Owner gives
+further instruction") and `WP 9.4A` recommended filling next
+(`FCR-0055`). It was commissioned, completed, and documented **after**
+`WP 9.4A` in this repository's own real history, despite carrying the
+earlier number `9.3A` — recorded here plainly, not silently reordered
+(see Near-Term Roadmap, below, for the full completion-order record). A
+further, disclosed inconsistency: this Work Package's own controlling
+instruction closed with "Await Product Owner instruction before
+`WP 9.4A`" — already complete before that instruction was issued, and in
+fact what recommended this very Work Package — a disclosed copy-paste
+artifact from the template `WP 9.4A`'s own instruction used, not
+silently corrected and not treated as a request to redo `WP 9.4A`.
+
+The third real-discipline Work Package to require **zero Domain-layer
+(`Tempest.Core`) changes**, after `WP 9.2A` and `WP 9.4A` — and the
+first to also need **zero `Tempest.Core.Verification` changes**:
+`VerificationActivity` is an ordinary `EngineeringObjectBase`-derived
+object. `IVerificationService.RecordAsync` is a single, caller-driven
+action — unlike Calculations' generic-per-Template `ICalculationEngine`,
+it needed no `CalculationTemplateRegistry`-equivalent adapter at all:
+"Execute," "Record Result," and "Attach Evidence" are realised together
+by one command, `RecordVerificationResultCommand` (`ADR-0089`).
+"Verification Plan" and "Verification Activity" are one Domain Kind,
+distinguished only by `LifecycleState` (`ADR-0090`).
+
+New `Tempest.App.Workspace.Verification` namespace: `VerificationActivityNodeProvider`
+(five synthetic Explorer categories by verification Method), nine
+commands (Create/Rename/Edit/Delete/Move/Copy/Duplicate/SetStatus/RecordResult).
+Real Engineering Cockpit Verification KPIs replace the placeholder card
+— `VerificationStatus` (a fixed `Unknown` placeholder since `WP 8.1C`)
+is now a real, derived read.
+
+**A genuine, disclosed implementation-time finding, caught by nine
+failing tests before any commit:** `VerificationService.RecordAsync`
+links its own subject to a new record via the raw document store only,
+never through `EngineeringDomainContext.RelationshipRepository`.
+`VerificationRecordReader` was corrected to read
+`IEngineeringDocumentStore.GetReferencesAsync` directly instead — the
+same raw data the Framework's own (permission-gated)
+`GetVerificationHistoryAsync` reads internally, un-gated — introducing
+no duplication and no functional gap (`TD-32`).
+
+Representative data (`EngineeringVerificationWorkspaceSampleModule`,
+four real activities — Inspection `InReview`/no result; Analysis
+recorded `Pass`, linking the real Beam Bending Stress Calculation
+record and referencing the real sample Material; Test recorded `Fail` —
+a genuine, disclosed honest failure demonstration; Demonstration left
+`Draft`): real Digital Thread links spanning all eight named nodes this
+Work Package's own scope lists — the fourth sample module to depend on
+four other sample modules' own instances at once, verified safe by four
+clean test runs with zero flakes.
+
+**Build**: 4/4 projects, 0 warnings, 0 errors, both Debug and Release.
+**Tests**: 1972/1972 passing (1922 → 1972, 50 new), four full-suite runs,
+zero failures.
+
+Two new ADRs (`ADR-0089`, `ADR-0090`). One new Technical Debt item
+(`TD-32`); `TD-30`/`TD-31` confirmed still open. Three new Future
+Capability candidates recorded (`FCR-0057`–`FCR-0059`). Eight completion
+deliverables produced under `docs/releases/v0.9.0/`, prefixed `WP9.3A`,
+plus one combined Academy file
+(`docs/academy/03 Work Packages/WP9.3A-verification-management-workspace.md`).
+Closed with "await instruction before `WP 9.5A`" — `WP 9.5A` (Manufacturing
+Workspace) is that next Work Package, now itself the Current Work
+Package, above.
+
+### `WP 9.4A` Summary (for reference)
+
+`v0.9.0`'s own fifth Work Package, and the fourth to wire a real
+Engineering Discipline into the real Engineering Workspace — the
+complete Engineering Documents experience, using the already-real
+Documentation & Design Domain family (`IDocument`/`Document`,
+`IDrawing`/`Drawing`, `ICadModel`/`CadModel`, `WP 8.2C`), integrated into
+the Workspace, Engineering Cockpit, and Digital Thread.
+
+**Disclosed numbering gap (as recorded by `WP 9.4A` itself).** `WP 9.2A`
+closed with "no `WP 9.3A` begins until the Product Owner gives further
+instruction"; no `WP 9.3A` deliverable existed anywhere in this
+repository at the time. The Product Owner's own instruction
+commissioning `WP 9.4A` named it directly, skipping `9.3A` — recorded
+plainly, not silently renumbered or backfilled. That gap is now closed
+by `WP 9.3A` itself (see Current Work Package, above, and Near-Term
+Roadmap, below).
+
+The second real-discipline Work Package to require **zero Domain-layer
+(`Tempest.Core`) changes**, after `WP 9.2A` — `Document`/`Drawing`/
+`CadModel` are ordinary `EngineeringObjectBase`-derived objects, so every
+Document Management verb is realised entirely through the same casts
+(`IRenamable`/`IHasParent`/`IDeletable`/`IHasRevisions`/`IHasLifecycle`/
+`IHasAttachments`) `CalculationsWorkspaceRegistration` already
+established. Six of this Work Package's own eight named Document types
+(Specification/Report/Procedure/Standard/Datasheet/External Reference)
+have no dedicated Domain Kind anywhere in the platform — realised as
+plain `"Document"` objects distinguished by the existing
+`IHasMetadata.Classification` facet (`ADR-0088`), never five new
+concrete Domain classes. This Work Package's own named statuses (Draft/
+Review/Approved/Released) map one-for-one onto `LifecycleState`'s own
+existing values — unlike Calculations' five-verb aliasing (`ADR-0087`),
+no descriptive alias command was needed.
+
+New `Tempest.App.Workspace.Documents` namespace mirrors `.Calculations`'s
+own shape, one level simpler (no Template/Execute concept):
+`DocumentsNodeProvider` (nine synthetic Explorer categories over three
+real Domain Kinds — Drawings/CAD Models/Specifications/Reports/
+Procedures/Standards/Datasheets/External References/Uncategorized) /
+`DocumentsWorkspaceView(Factory)`/`DocumentsPropertyFacetProvider`, nine
+commands (Create/Rename/Edit/Delete/Move/Copy/Duplicate/SetStatus, plus
+one genuinely new command, `AttachDocumentCommand`, wrapping the
+already-existing `IHasAttachments.AttachAsync` for the first time).
+Search needed zero new code — `ProjectExplorer.FilterAsync` (`WP8.1B`)
+already generic over whatever provider is registered. Real Engineering
+Cockpit Documents KPIs (Total Documents/Draft/Review/Approved/Released/
+Outstanding Reviews/Missing Evidence/Documentation Health) replace the
+placeholder card — `DocumentationStatus` (a fixed `Unknown` placeholder
+since `WP 8.1C`) is now a real, derived read; "Missing Evidence" is a
+disclosed heuristic (zero Attachments and zero Digital Thread links),
+all disclosed explicitly.
+
+Representative data (`EngineeringDocumentsWorkspaceSampleModule`, nine
+real documents: a General Arrangement Drawing and a Detail Drawing —
+real `DrawingNumber`s, the Detail Drawing structurally nested under the
+GA Drawing — a Specification, a Test Report (carries a real
+`Attachment`), a Design Report, a Material Datasheet, a Procedure, a
+Standard, and an External Reference): real Digital Thread links to the
+Mechanical sample data's own Wing Assembly/Spar Web Plate, the
+Requirements sample's own Requirements, the Calculations sample's own
+Beam Bending Stress Calculation, the base sample's own already-live
+Risk, and one newly-created `Decision` — the third sample module to
+depend on other sample modules' own instances, this time three at once
+plus one further, disclosed query-not-inject edge (the base sample's
+own live Risk, queried by Kind rather than constructor-injected),
+verified safe by four clean test runs with zero flakes. The External
+Reference document is deliberately left with zero Attachments and zero
+relationships — the Cockpit's own real "Missing Evidence" KPI's sole,
+honest example.
+
+**Build**: 4/4 projects, 0 warnings, 0 errors, both Debug and Release,
+clean rebuild, verified both per-project (`Tempest.App`/`Tempest.Samples`
+Release builds) and via `src/TempestOS.slnx`. **Tests**: 1922/1922
+passing (1865 → 1922, 57 new), four full-suite runs across this Work
+Package's own verification (two Debug, two Release), zero failures.
+**Version**: `VERSION` correctly still reads `0.8.0`, not yet bumped,
+per the established "bump after tag" precedent.
+
+One new ADR (`ADR-0088`). One new Technical Debt item (`TD-31`: no
+file/URL attachment storage service exists anywhere in the platform —
+`Attachment`/External Reference are metadata/placeholder only,
+disclosed, not fixed); `TD-30` confirmed still open, its consequences
+extended to Documents↔Verification traceability. Zero genuine
+implementation defects found (a second consecutive real-discipline Work
+Package with none, after `WP 9.2A`). Three new Future Capability
+candidates recorded (`FCR-0054`–`FCR-0056`, including `FCR-0055` —
+Verification Workspace, this Work Package's own explicit recommendation
+for what should follow it). Eight completion deliverables produced under
+`docs/releases/v0.9.0/`, prefixed `WP9.4A`, plus one combined Academy
+file (`docs/academy/03 Work Packages/WP9.4A-engineering-documents-workspace.md`).
+**Stops here — no `WP 9.5A` begins until the Product Owner gives further
+instruction.** *(Historical note: `WP 9.3A` was, in real time, completed
+after this Work Package, closing the numbering gap this section itself
+disclosed — see `WP 9.3A`'s own summary above.)*
+
+### `WP 9.2A` Summary (for reference)
+
+`v0.9.0`'s own fourth Work Package, and the third to wire a real
+Engineering Discipline into the real Engineering Workspace — the
+complete Engineering Calculations experience, using the already-real Calculation Framework
+(`WP 7.1D`) and its Engineering Domain counterpart
+(`ICalculation`/`ICalculationSet`, `WP 8.2C`), integrated into the
+Workspace, Engineering Cockpit, and Digital Thread. The first of the
+three real-discipline Work Packages to require **zero Domain-layer
+(`Tempest.Core`) changes** — `Calculation`/`CalculationSet` are ordinary
+`EngineeringObjectBase`-derived objects, architecturally much closer to
+Mechanical than to Requirements, so every Calculation Management verb is
+realised entirely through the same casts (`IRenamable`/`IHasParent`/
+`IDeletable`/`IHasRevisions`/`IHasLifecycle`) `MechanicalWorkspaceRegistration`
+already established.
+
+A new Workspace-layer type, `CalculationTemplateRegistry` (`ADR-0086`),
+is the one genuinely new mechanism: a JSON-marshalling type-erasure
+adapter connecting `ICalculationEngine` (generic per Template) to one
+non-generic Execute/Recalculate command, without changing the Calculation
+Framework itself. Lock/Unlock/Request Review/Approve/Archive are five
+descriptive `CommandDescriptor`s over one real `SetCalculationStatusCommand`/
+`IHasLifecycle.TransitionAsync` (`ADR-0087`), since no `IApprovalGate`/
+`IApproval` implementation exists anywhere in the platform — a
+pre-existing gap, now formally registered (`TD-30`).
+
+New `Tempest.App.Workspace.Calculations` namespace mirrors `.Mechanical`'s
+own shape, extended by one synthetic, non-Domain `"CalculationTemplate"`
+Kind (a read-only Explorer/Property-Inspector catalogue of every
+registered Template, addressed by a registry-local Id — Templates have
+no Domain identity of their own): `CalculationsNodeProvider`/
+`CalculationsWorkspaceView(Factory)`/`CalculationsPropertyFacetProvider`,
+ten commands (Create/Rename/Edit/Delete/Move/Copy/Duplicate/SetStatus/
+Execute/Recalculate). Search needed zero new code —
+`ProjectExplorer.FilterAsync` (`WP8.1B`) already generic over whatever
+provider is registered. Real Engineering Cockpit Calculations KPIs
+(Total/Draft/Review/Approved/Failed/Out-of-date/Verification Coverage/
+Calculation Health) replace the placeholder card — "Failed" maps to a
+`Conditional` validation outcome (the Framework's own closed vocabulary
+has no literal "Failed"), "Out-of-date" is a disclosed revision-vs-
+execution-timestamp heuristic, "Verification Coverage" reports the share
+of Calculations executed at least once, all disclosed explicitly.
+
+Representative data (`EngineeringCalculationsWorkspaceSampleModule`, five
+new real — if simplified — engineering calculations: Bolt Shear
+Capacity, Beam Bending Stress, Bearing Load Capacity, Pressure Vessel
+Wall Thickness, Material Selection Margin): one Calculation Set grouping
+two of them, a `"basedOnCalculation"` dependency chain, a mix of
+lifecycle statuses, one genuine `Conditional` outcome (applied stress
+exceeds allowable — a real, honest "Failed" KPI demonstration), one
+Calculation revised after execution (a real "Out-of-date" demonstration),
+and real Digital Thread links to the Mechanical sample data's own Wing
+Assembly/Spar Web Plate and one Requirements sample requirement — the
+second sample module ever to depend on other sample modules' own
+instances, this time two at once, disclosed directly and verified safe
+(identical DI-singleton-plus-ordinal-ordering mechanism `WP 9.1A`
+established).
+
+**Build**: 4/4 projects, 0 warnings, 0 errors, both Debug and Release,
+clean rebuild, verified both per-project (`Tempest.App`/`Tempest.Samples`
+Release builds) and via `src/TempestOS.slnx`. **Tests**: 1865/1865
+passing (1808 → 1865, 57 new), four full-suite runs across this Work
+Package's own verification (two Debug, two Release), zero failures.
+**Version**: `VERSION` correctly still reads `0.8.0`, not yet bumped,
+per the established "bump after tag" precedent.
+
+Two new ADRs (`ADR-0086`, `ADR-0087`). Two new Technical Debt items
+(`TD-29`: Recalculate cannot resume from a previously-executed input,
+since `CalculationRecord` never retained one; `TD-30`: `ICalculationResult`/
+`IVerificationResult`/`IApprovalGate` family — declared `WP8.2B` Domain
+contracts with zero concrete implementations anywhere in the platform, a
+pre-existing gap across two releases, now formally registered for the
+first time) — both disclosed limitations, not correctness defects; zero
+genuine implementation defects found (the first real-discipline Work
+Package with none, consistent with its own zero-Domain-layer-file-touched
+footprint). Three new Future Capability candidates recorded
+(`FCR-0051`–`FCR-0053`). Eight completion deliverables produced under
+`docs/releases/v0.9.0/`, prefixed `WP9.2A`, plus one combined Academy
+file (`docs/academy/03 Work Packages/WP9.2A-engineering-calculations-workspace.md`).
+Also disclosed: the current development branch's own real name has
+silently diverged from what `WP 9.1B`'s own committed documents record
+(see Current Development Branch, above) — not this Work Package's own
+change, corrected here for the first time. **Stops here — no `WP 9.3A`
+begins until the Product Owner gives further instruction.**
+
+### `WP 9.1A` Summary (for reference)
+
+`v0.9.0`'s own third Work Package, and the second to wire a real
+Engineering Discipline into the real Engineering Workspace — the
+complete Requirements Management experience, using the already-real
+Requirements Framework (`WP 7.3A`), integrated into the Workspace,
+Engineering Cockpit, and Digital Thread.
 
 Seven new additive `IRequirementsService` methods (SetOwner/SetPriority/
 Delete/MoveToGroup/MoveGroup/DeleteGroup/DeleteCollection) plus
@@ -216,8 +749,6 @@ operation — disclosed, not fixed; no data-correctness issue, only a
 display-freshness one. `FCR-0039` (multi-selection) resolved; three new
 candidates recorded (`FCR-0048`–`FCR-0050`). Eight completion
 deliverables produced under `docs/releases/v0.9.0/`, prefixed `WP9.1A`.
-**Stops here — no `WP 9.2A` begins until the Product Owner gives further
-instruction.**
 
 ### `WP 9.0B` Summary (for reference)
 
@@ -996,31 +1527,56 @@ review.md`.
 
 ## Next Planned Work Package
 
-**None yet approved.** `WP 9.1A` gave Requirements Management a complete
-Workspace experience, proving the Kind-keyed Workspace extension model
-generalises to a second, genuinely different Domain architecture (the
-Requirements Framework's immutable-snapshot, service-oriented design,
-against `EngineeringObjectBase`'s own facet-composed one), and resolving
-`FCR-0039` (multi-selection) now that Bulk editing gave it a real
-consumer. The most natural next steps this Work Package's own Future
-Capability Assessment names: a **third Engineering Discipline Module**
-(`FCR-0042`/`FCR-0043` — Documentation & Design, or Supply Chain, both
-already real `WP8.2C` Kinds with no Workspace presentation yet); Domain-
-level cross-discipline Search (`FCR-0049`), once a real need to query
-both Mechanical and Requirements results together exists; Requirement
-Collection membership removal (`FCR-0048`), contingent on
-`IEngineeringDocumentStore` gaining a real unlink primitive; multi-target
-Workspace view refresh (`FCR-0050`), contingent on a real user report of
-the stale-view symptom `TD-28` discloses; and `TD-26`/`TD-27` (the
-disclosed Runtime Host timing characteristic and repository-ordering
-characteristic), both genuine candidates for a dedicated Runtime Host/
-`WorkspaceManager` Work Package independent of any further Engineering
-Discipline work. Longer-standing Future Capability candidates remain
-open and unscheduled: `FCR-0037`/`FCR-0038` (`WP 7.3A`),
+**None yet approved.** `WP 9.9.0`'s own first pass closed `v0.9.0` with
+a recommended **APPROVED** verdict — verification only, zero
+release-blocking findings, zero new functionality or architecture. `WP
+9.8B`, commissioned after that first pass despite its own earlier
+number, then closed the first of that pass's own two standing
+recommendations: the four-Engineering-Foundation-framework Platform
+Service Register/Map gap is now resolved — **no outstanding Platform
+Service governance inconsistency remains.** `WP 9.9.0`'s own second
+pass then independently re-confirmed that closure and reached the
+identical **APPROVED** recommendation a second time, adding one new,
+non-blocking finding of its own (`TD-34`, a previously-only-narratively-disclosed
+test flake, now formally registered). The second of the first pass's
+own two standing recommendations — reconstruct or formally retire the
+"32 governance documents" figure — remains open, outside both `WP
+9.8B`'s and the second pass's own narrower scope. The physical Git
+merge, tag, `VERSION` bump, and push are the Product Owner's own next
+action, not a Work Package. Once performed, the natural next candidates
+this release's own Future Capability Register names are: a dedicated
+Governance & Risk Workspace for `Risk`/`Issue`/`Decision`/`Hazard`/
+`Assumption` (`FCR-0056`) — every Domain class it needs already
+compiled and already live in the base sample module, the most
+concrete, ready-to-start next Engineering Discipline candidate; a
+genuine `Routing`/`SupplierOperation` Domain Kind with structured
+fields (`FCR-0060`); parameterising `EngineeringCockpit.FormatCoverage`'s
+own empty-state message (`FCR-0061`); `VerificationService.RecordAsync`
+additionally linking through `IHasRelationships` (`FCR-0057`/`FCR-0062`);
+a governed Approval/Review workflow (`FCR-0052`/`FCR-0058`); a real
+file/URL attachment storage service (`FCR-0054`); a dedicated `Witness`
+field on `VerificationEvidenceEntry` (`FCR-0059`); concrete
+`ICalculationResult`/`IVerificationResult` implementations (`FCR-0051`);
+Recalculate resuming from a stored input (`FCR-0053`); Domain-level
+cross-discipline Search (`FCR-0049`); Requirement Collection membership
+removal (`FCR-0048`); multi-target Workspace view refresh (`FCR-0050`);
+`TD-26`/`TD-27` (the disclosed Runtime Host timing characteristic and
+repository-ordering characteristic), both genuine candidates for a
+dedicated Runtime Host/`WorkspaceManager` Work Package; and `TD-34`
+(the `CompositeLogSinkTests` flake, `WP 9.9.0`'s own second pass) —
+either serialising it against the `[Collection("Console output
+capture")]` tests, or removing `CompositeLogSink`'s own direct
+`Console.Error` dependency, both low-cost candidates for whatever
+Work Package next touches `Tempest.Core.Logging`. `FCR-0005`
+(Governance Register Health-Check Tooling) — carrying its strongest
+evidentiary case yet, between `WP 9.8B`'s own existence and `TD-34`'s
+own six-release-cycle-old informal disclosure only now formally
+tracked. Longer-standing Future Capability candidates
+remain open and unscheduled: `FCR-0037`/`FCR-0038` (`WP 7.3A`),
 `FCR-0041`/`FCR-0045`–`FCR-0047` (`WP 9.0A`/`WP 9.0B`). **Per this
-project's own standing discipline (`FOUNDATION.md` §1) and `WP 9.1A`'s
-own explicit closing instruction, no further Work Package begins until
-the Product Owner gives further instruction.**
+project's own standing discipline (`FOUNDATION.md` §1) and `WP 9.9.0`'s
+own second pass's own explicit closing instruction, no further Work
+Package begins until the Product Owner gives further instruction.**
 
 ## Foundation Status
 
@@ -1082,23 +1638,23 @@ Experience phase is now complete.
 
 | Metric | Value |
 |---|---|
-| Automated tests | 1808 (0 failures) — **+70, `WP 9.1A`**: 32 Domain (`RequirementsLifecycleExtensionsTests`, `RequirementValidationServiceTests`), 12 multi-selection (`SelectionServiceTests`), 10 Cockpit Requirements KPIs (`EngineeringCockpitTests`), 16 full Workspace integration (`RequirementsWorkspaceIntegrationTests`); four full-suite runs (two Debug, two Release), zero failures. Previously 1695 → 1738, **+43, `WP 9.0B`** |
-| ADRs | 85 (`ADR-0001`–`ADR-0085`, no gaps at all), all Accepted — **+2, `WP 9.1A`**: `ADR-0084`, `ADR-0085`. Previously **+1, `WP 9.0B`**: `ADR-0083` |
-| Rejected Designs | 45 (`RD-0001`–`RD-0045`) — unchanged by `WP 9.0A`/`WP 9.0B`/`WP 9.1A` |
-| Academy articles | 120 (see `docs/governance/Documentation/Academy Register.md`) — **+1, `WP 9.1A`**: `WP9.1A-requirements-management-workspace.md` (two-part Concept Guide/Implementation Retrospective). Also corrects this register's own total, stale at 117 since `WP 8.9.0` and never updated by `WP 9.0A`/`WP 9.0B` |
-| Governance registers | 27 (32 governance documents total), plus 4 standing security documents under `docs/security/` and 1 standing engineering document (`docs/engineering/Engineering Principles.md`) — unchanged in count by `WP 9.0A`/`WP 9.0B`/`WP 9.1A` (all edited in place, no new register added) |
-| Architecture documents | 20 under `docs/architecture/` (22 including the two release-scoped documents) — unchanged by `WP 9.0A`/`WP 9.0B`/`WP 9.1A` |
-| Platform services | 27 catalogued — unchanged by `WP 9.1A`; no new Platform Service introduced (`IRequirementValidationService` is a narrow Requirements-scoped service, not classified as a Platform Service, mirroring `IRequirementsService`'s own identical non-classification). Disclosed, still-open gap (four Engineering Foundation frameworks missing rows) confirmed open again within the same `v0.9.0` cycle, not a new one, not fixed |
-| Modules (production) | 26 — **+2, `WP 9.1A`**: `RequirementsWorkspaceExplorerModule`, `RequirementsWorkspaceSampleModule` (26/26 `ClockModuleDiscoveryTests`). Previously unchanged by `WP 9.0B` |
-| Hosted services (production) | 2 — unchanged by `WP 9.0A`/`WP 9.0B`/`WP 9.1A` |
+| Automated tests | 2026 (0 failures in 4 of 5 full-suite runs this pass) — unchanged in *count* by `WP 9.9.0` Second Pass (verification only, zero new tests); one genuine flake instance observed and characterised this pass (`TD-34` — see Technical Debt Register items, below), resolved on immediate re-run, zero reproducible regression. Full `v0.9.0` chain: 1631 → 2026 (+395), independently re-summed a second time, exact match. Previously unchanged, `WP 9.8B`; +54, `WP 9.5A` |
+| ADRs | 91 (`ADR-0001`–`ADR-0091`, no gaps at all), all Accepted — unchanged by `WP 9.9.0` (verification only, zero new ADRs). Full `v0.9.0` chain: 79 → 91 (+12), independently re-summed against all seven Work Packages' own stated deltas, exact match. Previously +1, `WP 9.5A`: `ADR-0091` |
+| Rejected Designs | 45 (`RD-0001`–`RD-0045`) — unchanged by `WP 9.0A`/`WP 9.0B`/`WP 9.1A`/`WP 9.2A`/`WP 9.4A`/`WP 9.3A`/`WP 9.5A`/`WP 9.9.0` |
+| Academy articles | 127 (see `docs/governance/Documentation/Academy Register.md`) — **+1, `WP 9.9.0` Second Pass**: `WP9.9.0-release-preparation-and-product-baseline-second-pass.md`. Also corrects `Documentation Register.md`'s own `docs/academy/03 Work Packages/` row 77 → 78, each re-verified directly. Previously +1, `WP 9.8B`: `WP9.8B-platform-service-register-reconciliation.md`. Previously +1, `WP 9.9.0` (first pass) |
+| Governance registers | 27 (stated "32 governance documents total"), plus 4 standing security documents under `docs/security/` and 1 standing engineering document (`docs/engineering/Engineering Principles.md`) — unchanged in register *count* by any `v0.9.0` Work Package (all edited in place, no new register added). **Disclosed, unfixed observation, `WP 9.3A`, re-confirmed `WP 9.5A`, `WP 9.9.0`, and `WP 9.8B`:** a direct `find` against `docs/governance/` continues to return 35 files today, not 32 — a pre-existing drift no Work Package has chased to ground (the original 27-registers/32-total split's own exact taxonomy remains undocumented); disclosed, not fixed (outside `WP 9.8B`'s own narrower Platform Service scope), escalated as a standing recommendation in `WP9.9.0 Product Approval Report.md` |
+| Architecture documents | 20 under `docs/architecture/` (22 including the two release-scoped documents) — unchanged by any `v0.9.0` Work Package |
+| Platform services | 30 catalogued — unchanged by `WP 9.9.0` Second Pass; independently re-verified consistent across all five governance documents, not merely trusted from `WP 9.8B`'s own claim — **the first release-closing review in this project's history to find this gap closed rather than open.** Previously **+4, `WP 9.8B`**: Engineering Data Model (`WP 7.1A`), Materials (`WP 7.1C`), Engineering Calculations (`WP 7.1D`), Verification (`WP 7.1E`) — zero new service introduced, all four already real, running, and DI-registered since `v0.7.0`; only their own governance rows/Map sections were missing. Closed the disclosed gap `WP 7.3A` first found, confirmed open across three consecutive release-closing reviews (`WP 7.4.0`/`WP 8.9.0`/`WP 9.9.0` first pass). Also corrected this register's own stale headline total (previously "27," true prior count 26). |
+| Modules (production) | 34 — unchanged by `WP 9.9.0` (verification only); re-verified via `ClockModuleDiscoveryTests` (part of the 2026/2026 passing suite). Previously +2, `WP 9.5A` |
+| Hosted services (production) | 2 — unchanged by any `v0.9.0` Work Package |
 | Plugins (production) | 0 — infrastructure fully implemented and tested; `src/Plugins/` empty by deliberate scope decision |
-| Custom exception types (`src/Tempest.Core/`) | 72 (register stale since `WP 6.6`; **+1, `WP 9.1A`**: `RequirementGroupHasChildrenException`, added directly, backfill still outstanding — see `Exception Register.md`'s own disclosure) |
-| Public interfaces (`src/Tempest.Core/`) | 168 — **+1, `WP 9.1A`**: `IRequirementValidationService`, re-verified directly |
-| DI registrations (`TempestHost.cs` Phase 6) | 44 raw call sites, 42 named registrations — **+1, `WP 9.1A`**: `IRequirementValidationService` (every other new `Tempest.App.Workspace.Requirements`/`Tempest.Samples` type is composition-root-constructed, never DI-resolved) |
-| Technical Debt Register items | 26 tracked — **+1, `WP 9.1A`**: `TD-28` (Bulk Requirements commands do not trigger an automatic view refresh — disclosed, not fixed). Previously **+1, `WP 9.0B`**: `TD-27`. This row is corrected here from a previously-stated "27," which did not match the register's own authoritative total (25 before this Work Package) — disclosed, not silently carried forward. |
+| Custom exception types (`src/Tempest.Core/`) | 72 (register stale since `WP 6.6`; unchanged by `WP 9.9.0` — zero `src/`/`tests/` files touched, verification only) |
+| Public interfaces (`src/Tempest.Core/`) | 168 — unchanged by `WP 9.9.0` (verification only); re-verified directly (`grep -rhoP "^public interface"`). Previously unchanged, `WP 9.5A` |
+| DI registrations (`TempestHost.cs` Phase 6) | 44 raw call sites, 42 named registrations — unchanged by `WP 9.9.0` (verification only); re-confirmed directly against all seven `Program.cs` registration calls. Previously unchanged, `WP 9.5A` |
+| Technical Debt Register items | 34 tracked — **+1, `WP 9.9.0` Second Pass**: `TD-34` (`CompositeLogSinkTests`'s own previously-only-narratively-disclosed, non-reproducible `Console.Error`-capture flake, informally named since `WP 6.3`, actually observed for the first time during this pass's own fresh test-suite verification and formally registered — not Release Blocking). Full `v0.9.0` chain: 25 → 34 (+9). Previously unchanged, `WP 9.8B`; +1, `WP 9.9.0` first pass: none (verification only, zero new items that pass); +1, `WP 9.5A`: `TD-33` |
 | Commits (`v0.6.0` → `v0.7.0`) | 17 total, release complete: `v0.6.0` release-branch preparation (2 commits), merge from `main`, `WP 7.0A`–`WP 7.4.0` (14 commits), the `v0.7.0` merge to `main` (non-fast-forward, `61fb2db`) — tagged `v0.7.0`, pushed |
 | Commits (`v0.7.0` → `v0.8.0`) | 11 total, release complete: `WP 8.0A`, `WP 8.0B`, `WP 8.1A`, `WP 8.0C`, `WP 8.1B`, `WP 8.1C`, `WP 8.2A`, `WP 8.2B`, `WP 8.2C`, `WP 8.9.0` (10 commits), the `v0.8.0` merge to `main` (non-fast-forward, `28e41e8`) — tagged `v0.8.0`, pushed |
-| Commits (`v0.8.0` → `v0.9.0`, so far) | 0 — `WP 9.0A`/`WP 9.0B`/`WP 9.1A`'s own work is uncommitted pending explicit instruction to commit; `VERSION` remains `0.8.0` |
+| Commits (`v0.8.0` → `v0.9.0`, so far) | 3, on `feature/v0.9.0-calculations-workspace` per this document's own historical narrative — but see the disclosed finding under Current Development Branch, above: `git branch -a` shows only `main` today (`WP 9.0A`–`WP 9.1A` consolidation, `WP 9.1B` baseline, its own follow-up fix are the 3 real commits present, all on `main`) — `WP 9.2A`'s, `WP 9.4A`'s, `WP 9.3A`'s, `WP 9.5A`'s, `WP 9.9.0`'s (both passes), and `WP 9.8B`'s own work (144 files, +14,546/−294 lines against the `v0.8.0` merge commit) is uncommitted pending explicit Product Owner instruction to commit/merge/tag; `VERSION` remains `0.8.0` |
 | Contributors | 1 (repository owner; all commits co-authored by Claude) |
 
 *(This table is generated from `docs/governance/Quality/Repository Metrics
@@ -2949,6 +3505,166 @@ split, the Command Palette's own screen-independent realisation, and a
 real Physical/Configuration Engineering Discipline Module built against
 the now-compiled Engineering Domain classes all remain unscheduled for
 whatever Work Package begins Programme 9.
+
+**Disclosed staleness, found and fixed by `WP 9.4A`:** this section
+carried no `v0.9.0` roadmap bullet list at all — it jumped directly from
+`v0.8.0`'s own closing paragraph to Long-Term Vision, silently
+un-updated across all four prior `v0.9.0` Work Packages
+(`WP 9.0A`/`WP 9.0B`/`WP 9.1A`/`WP 9.2A`), none of which added one.
+Backfilled here, not silently — every entry below reflects this
+document's own Current Work Package section and each Work Package's own
+committed Implementation Report; no historical record is altered by
+this backfill, only this section's own prior omission is corrected.
+
+Per this release's own Work Package sequence (no `docs/releases/v0.9.0/
+WorkPackages.md` file exists), the **Mechanical Foundation** phase is
+**complete, recommended APPROVED by `WP 9.9.0`, awaiting Product Owner
+release** — narrated throughout as happening on
+`feature/v0.9.0-calculations-workspace`, though `git branch -a` shows
+only `main` today (see Current Development Branch, above). Listed here in
+**intended numeric order**; each entry also states its own **real
+completion order**, since the two diverge from `WP 9.4A` onward — see
+the disclosed numbering-gap account immediately below the list:
+
+- `WP 9.0A` — Mechanical Product Structure (the first real Engineering
+  Discipline wired into the real Engineering Workspace; `ADR-0080`–
+  `ADR-0082`). **Complete.** (1st completed.)
+- `WP 9.0B` — Product Configuration & BOM Management (extends
+  `WP 9.0A`'s own Mechanical Product Structure in place; `ADR-0083`).
+  **Complete.** (2nd completed.)
+- `WP 9.1A` — Requirements Management Workspace (the second real
+  Engineering Discipline; `ADR-0084`/`ADR-0085`). **Complete.** (3rd
+  completed.)
+- `WP 9.1B` — Development Baseline & Merge Readiness (verification/
+  governance only). **Complete.** (4th completed.)
+- `WP 9.2A` — Engineering Calculations Workspace (the third real
+  Engineering Discipline, and the first requiring zero Domain-layer
+  changes; `ADR-0086`/`ADR-0087`). **Complete.** (5th completed.)
+- `WP 9.3A` — Verification Management Workspace (the fifth real
+  Engineering Discipline, the third requiring zero Domain-layer changes,
+  and the first requiring zero Verification-Framework changes;
+  `ADR-0089`/`ADR-0090`). **Complete.** (**6th completed** — completed
+  *after* `WP 9.4A` in real time, despite its own earlier number; closes
+  the numbering gap below. See Current Work Package, above.)
+- `WP 9.4A` — Engineering Documents Workspace (the fourth real
+  Engineering Discipline; `ADR-0088`). **Complete.** (**5th completed**
+  — completed *before* `WP 9.3A` in real time, despite its own later
+  number.) See `WP 9.4A` Summary, above.
+- `WP 9.5A` — Manufacturing Workspace (the sixth real Engineering
+  Discipline, the fourth requiring zero Domain-layer changes, and the
+  first to demonstrate genuine cross-Work-Package read-side reuse of
+  another discipline's own Property Facet Provider/Workspace View
+  types; `ADR-0091`). **Complete.** (7th completed — intended and real
+  completion order agree for this Work Package; no numbering gap.) See
+  `WP 9.5A` Summary, above.
+- `WP 9.8B` — Platform Service Register Reconciliation (a dedicated
+  governance-only Work Package inside the `WP 9.6A`–`WP 9.8A` range
+  `WP 9.5A`'s own controlling instruction skipped — see the disclosed
+  numbering skip, below — closing the four-Engineering-Foundation-framework
+  Platform Service Register/Map gap `WP 7.3A` first disclosed; zero new
+  ADRs). **Complete.** (**9th completed** — completed *after* `WP 9.9.0`'s
+  own first pass in real time, despite its own earlier number; a direct,
+  disclosed response to that pass's own top standing recommendation,
+  commissioned before the Product Owner finalised the release. See
+  `WP 9.8B` Summary, above.)
+- `WP 9.9.0` (first pass) — Release Preparation & Product Baseline (the
+  release's own closing Work Package by intended number, skipping
+  `WP 9.6A`–`WP 9.8A` per `WP 9.5A`'s own controlling instruction — see
+  the disclosed numbering skip, below). **Complete.** (**8th
+  completed** — completed *before* `WP 9.8B` in real time, despite its
+  own later number.) Recommended `v0.9.0` **APPROVED**. See `WP 9.9.0`
+  (First Pass) Summary, above.
+- `WP 9.9.0` (second pass) — Release Preparation & Product Baseline, a
+  second, independent verification pass, commissioned with the
+  identical controlling instruction after `WP 9.8B` closed the first
+  pass's own top standing recommendation. **Complete.** (**10th
+  completed** — the fourth disclosed numbering irregularity this
+  release names: a Work Package number *reused* for a deliberate second
+  pass, not a new one — see the disclosed post-hoc-reconciliation
+  category, below.) Recommended `v0.9.0` **APPROVED** a second time;
+  one new, non-blocking finding (`TD-34`). See Current Work Package,
+  above.
+
+**Disclosed numbering gap: `WP 9.3A` was not built until after `WP 9.4A`.**
+`WP 9.2A`'s own closing instruction was explicit — "Stops here — no
+`WP 9.3A` begins until the Product Owner gives further instruction" —
+and at the time `WP 9.4A` began, no `WP 9.3A` deliverable of any kind
+existed anywhere in this repository. The Product Owner's own instruction
+commissioning the next Work Package named `9.4A` directly, skipping that
+number; `WP 9.4A` itself recorded this plainly, per "disclose all
+inconsistencies... do not silently modify historical records," rather
+than silently renumbering or backfilling. `WP 9.4A` itself recommended
+a Verification Workspace as the natural next Work Package (`FCR-0055`)
+— `Tempest.Core.Verification` (`WP 7.1E`) was, at that point, the one
+already-real, Workspace-invisible framework this programme's own
+established pattern (one real Engineering Discipline per Work Package)
+had not yet reached — and the Product Owner's own next instruction
+commissioned exactly that, correctly naming it `WP 9.3A`, its own real,
+intended number, closing the gap. **This document's own numeric-order
+list above and this document's own real-time narrative (Current Work
+Package/`WP 9.4A` Summary, above) therefore disagree on which Work
+Package is "5th" and which is "6th" — both are correct, for their own
+stated ordering, and neither is silently reconciled to hide the other.**
+
+`WP 9.3A`'s own controlling instruction itself carried a further,
+disclosed inconsistency: its own closing line read "Await Product Owner
+instruction before `WP 9.4A`" — a copy-paste artifact from the template
+`WP 9.4A`'s own instruction used ("Await Product Owner instruction
+before `WP 9.5A`"), since `WP 9.4A` was already complete, and had
+already recommended `WP 9.3A`, before this instruction was issued.
+Recorded here plainly, not silently corrected — see `WP9.3A
+Implementation Report.md`.
+
+**`WP 9.5A`'s own controlling instruction skips `WP 9.6A` through
+`WP 9.8A` entirely, jumping directly to `WP 9.9.0` Release Preparation.**
+No `WP 9.6A`, `WP 9.7A`, or `WP 9.8A` is named or reserved anywhere in
+this repository's own governance history — unlike the disclosed
+`WP 9.3A` numbering gap above, this is not an inconsistency: `WP 9.2A`
+never committed this repository to a `9.6A`–`9.8A` range existing at
+all, and the Product Owner is free to sequence Work Packages as
+instructed. Recorded here as a plain observation, per the identical
+"disclose plainly, do not silently modify" discipline applied throughout
+this document, distinguishing a genuine numbering *gap* (`WP 9.3A`,
+above — a range the Product Owner's own prior instruction implied would
+be filled) from a deliberate numbering *skip* (this one — no such prior
+implication exists).
+
+**A third disclosed numbering irregularity: `WP 9.8B` was commissioned
+*after* `WP 9.9.0` despite carrying an earlier number, inside the very
+`WP 9.6A`–`WP 9.8A` range the paragraph above confirms was never
+reserved.** Unlike the `WP 9.3A`/`WP 9.4A` gap (a range the Product
+Owner's own prior instruction implied would be filled) and unlike the
+`WP 9.6A`–`WP 9.8A` skip (no prior implication existed at all), `WP
+9.8B` is neither — it is a **new Work Package, given a number inside a
+previously-skipped range, commissioned specifically to close that same
+release's own top standing recommendation, after that release's own
+closing review already ran.** `WP 9.9.0`'s own "Stops here" closing
+instruction was honoured — no further Work Package began until the
+Product Owner gave further instruction, and that further instruction
+was `WP 9.8B`. Recorded here as a fourth distinct category this
+document's own numbering-disclosure discipline now names explicitly: a
+**post-hoc reconciliation Work Package**, numbered to sit where it
+would have belonged had it been anticipated, not appended after `WP
+9.9.0` as `WP 9.9.1` or similar — a genuine, deliberate Product Owner
+choice, not an error, and not silently smoothed over by renumbering
+`WP 9.9.0` or `WP 9.8B` to make their own real completion order match
+their own numeric order.
+
+**A fourth disclosed numbering irregularity, distinct from the first
+three: `WP 9.9.0` was commissioned a second time, with the identical
+controlling instruction, after `WP 9.8B` closed.** Unlike the three
+irregularities above (a gap, a skip, and a post-hoc reconciliation Work
+Package each occupying their own previously-unused number), this is a
+**Work Package number reused for a second, independent pass** — not a
+new number, and not a correction of the first pass (which remains
+correct, and whose own documents are left exactly as written). Named
+here as a fifth category: a **re-verification pass**, sitting alongside
+its own first pass under the identical number, distinguished only by
+"(First Pass)"/"(Second Pass)" suffixes on every document either one
+produced. Confirmed, by direct Product Owner instruction, to be
+deliberate — the natural close of a "verify, remediate, re-verify"
+cycle this project's own governance discipline has now performed in
+full for the first time, not an accidental duplicate instruction.
 
 ## Long-Term Vision
 

@@ -86,6 +86,17 @@ namespace Tempest.Core.Tests.Samples;
 // Structure's own representative object graph, mirroring
 // EngineeringDomainSampleModule's own identical shape) - bringing the
 // total to twenty-four.
+//
+// WP 9.5A: Tempest.Samples grew two more - ManufacturingWorkspaceExplorerModule
+// (the Manufacturing area's own navigation item, mirroring every prior
+// discipline's own identical Explorer-module shape) and
+// EngineeringManufacturingWorkspaceSampleModule (the Manufacturing
+// discipline's own representative object graph, mirroring
+// EngineeringVerificationWorkspaceSampleModule's own identical shape) -
+// bringing the total to thirty-four (32 confirmed present directly, before
+// this Work Package's own +2, by direct count of this method's own
+// Assert.Contains lines, per WP 9.3A's own disclosed "never carry a stated
+// total forward unchecked" discipline).
 public class ClockModuleDiscoveryTests
 {
     // ----------------------------------------------------------------
@@ -132,7 +143,7 @@ public class ClockModuleDiscoveryTests
 
         var result = service.DiscoverModules();
 
-        Assert.Equal(26, result.Count);
+        Assert.Equal(34, result.Count);
         Assert.Contains(result, d => d.Id == "tempest.samples.clock" && d.ModuleType == typeof(ClockModule));
         Assert.Contains(result, d => d.Id == "tempest.samples.clock.observer" && d.ModuleType == typeof(ClockLifecycleObserverModule));
         Assert.Contains(result, d => d.Id == "tempest.samples.navigation" && d.ModuleType == typeof(NavigationSampleModule));
@@ -159,6 +170,17 @@ public class ClockModuleDiscoveryTests
         Assert.Contains(result, d => d.Id == "tempest.samples.mechanicalproductstructure" && d.ModuleType == typeof(Tempest.Samples.MechanicalProductStructureSampleModule));
         Assert.Contains(result, d => d.Id == "tempest.samples.requirements-workspace-explorer" && d.ModuleType == typeof(Tempest.Samples.RequirementsWorkspaceExplorerModule));
         Assert.Contains(result, d => d.Id == "tempest.samples.requirementsworkspace" && d.ModuleType == typeof(Tempest.Samples.RequirementsWorkspaceSampleModule));
+        Assert.Contains(result, d => d.Id == "tempest.samples.calculations-workspace-explorer" && d.ModuleType == typeof(Tempest.Samples.CalculationsWorkspaceExplorerModule));
+        Assert.Contains(result, d => d.Id == "tempest.samples.workspacecalculations" && d.ModuleType == typeof(Tempest.Samples.EngineeringCalculationsWorkspaceSampleModule));
+        // WP 9.4A: +2 (Documents Workspace Explorer, Documents Workspace Sample).
+        Assert.Contains(result, d => d.Id == "tempest.samples.documents-workspace-explorer" && d.ModuleType == typeof(Tempest.Samples.DocumentsWorkspaceExplorerModule));
+        Assert.Contains(result, d => d.Id == "tempest.samples.workspacedocuments" && d.ModuleType == typeof(Tempest.Samples.EngineeringDocumentsWorkspaceSampleModule));
+        // WP 9.3A: +2 (Verification Workspace Explorer, Verification Workspace Sample).
+        Assert.Contains(result, d => d.Id == "tempest.samples.verification-workspace-explorer" && d.ModuleType == typeof(Tempest.Samples.VerificationWorkspaceExplorerModule));
+        Assert.Contains(result, d => d.Id == "tempest.samples.workspaceverification" && d.ModuleType == typeof(Tempest.Samples.EngineeringVerificationWorkspaceSampleModule));
+        // WP 9.5A: +2 (Manufacturing Workspace Explorer, Manufacturing Workspace Sample).
+        Assert.Contains(result, d => d.Id == "tempest.samples.manufacturing-workspace-explorer" && d.ModuleType == typeof(Tempest.Samples.ManufacturingWorkspaceExplorerModule));
+        Assert.Contains(result, d => d.Id == "tempest.samples.workspacemanufacturing" && d.ModuleType == typeof(Tempest.Samples.EngineeringManufacturingWorkspaceSampleModule));
     }
 
     // ----------------------------------------------------------------

@@ -1,0 +1,49 @@
+# ADR-0091: Routings, Operations, and Supplier Operations Are `Classification`-Tagged `ManufacturingOperation` Objects, Sequenced via the Existing `IHasBomLine.ItemNumber` Field
+
+## Status
+
+Accepted — `v0.9.0` "Mechanical Foundation", `WP 9.5A` (Manufacturing Workspace), 2026-08-07.
+
+## Context
+
+`WP 9.5A`'s own controlling instruction names thirteen Manufacturing scope items as first-class, including Manufacturing BOM, Manufacturing Assemblies/Parts, Operations, Routings, Work Instructions, Manufacturing Resources/Tooling/Fixtures, Supplier Operations, Inspection Operations, and Manufacturing Readiness/Production Status. Its own explicit constraints match every prior real-discipline Work Package's own: "No architectural redesign. No contract redesign. No duplicate framework. Reuse existing Engineering Objects exclusively."
+
+`Contracts/TestManufacturing.cs`/`Implementation/TestManufacturing.cs` (`WP 8.2C`) declare and compile exactly one concrete Manufacturing-specific structural class: `ManufacturingOperation` (`PartId`, `IHasBusinessIdentifier`, `IHasMetadata`, `IHasLifecycle`, `IHasRelationships`) — confirmed, by direct repository-wide search, never instantiated anywhere before this Work Package. No `Routing`, no `SupplierOperation`, no sequencing concept of any kind exists anywhere in `Tempest.Core.EngineeringDomain`. Adding three new concrete Domain classes (or a `Routing` container type plus a step-ordering field) to realise Routings/Operations/Supplier Operations would be exactly the "contract redesign"/"architectural redesign" this Work Package's own controlling instruction forbids — the identical situation `ADR-0088` (`WP 9.4A`) already faced for Specification/Report/Procedure/Standard/Datasheet/External Reference, and `ADR-0090` (`WP 9.3A`) already faced for "Verification Plan" vs. "Verification Activity".
+
+`IHasMetadata.Classification` (`Contracts/Facets.cs`, `WP 8.2B`) already declares a free-text `string?` facet every `ManufacturingOperation` already carries via `EngineeringObjectBase`'s own unconditional facet implementation, never validated against a closed vocabulary anywhere in the platform (`ADR-0088`'s own identical precedent). Separately, `IHasBomLine.ItemNumber` (`WP 9.0B`) already declares a free-text `string?` sibling-sequence field, already read by `MechanicalProductStructureNodeProvider.OrderForBom` to order a parent's own real `IHasParent` children — confirmed, by direct read, to be Kind-agnostic (it orders whatever `IHasBomLine`-implementing siblings it is given, never checking their own Kind).
+
+## Decision
+
+**Routings, Operations, and Supplier Operations are realised as plain `"ManufacturingOperation"` Domain objects, distinguished only by `EngineeringObjectMetadata.Classification`, with a Routing's own real `IHasParent` children as its own sequenced steps, ordered via the existing `IHasBomLine.ItemNumber` field** — never a new Domain Kind, container type, or sequencing mechanism:
+
+- `Tempest.App.Workspace.Manufacturing.ManufacturingObjectFactoryRegistry` declares three named `string` constants (`Routing`, `Operation`, `SupplierOperation`) — Workspace-layer values only, never a Domain-layer enum or registry contract, mirroring `DocumentObjectFactoryRegistry`'s own established "Workspace-layer composition helper, no Domain-layer registry contract" precedent (`ADR-0088`).
+- A Routing (`Classification = "Routing"`) is a plain `ManufacturingOperation` used purely as a structural container — its own real children (`Classification = "Operation"`, moved under it via the existing `IHasParent.MoveAsync`) are its own sequenced steps. Sequence order is read from each step's own `IHasBomLine.ItemNumber` ("1"/"2"/"3", ...) — the identical field, and the identical "ItemNumber as sibling sequence" convention, `MechanicalProductStructureNodeProvider.OrderForBom` already established for Mechanical BOM lines, reused verbatim rather than reinvented.
+- A Supplier Operation (`Classification = "Supplier Operation"`) is a plain `ManufacturingOperation` linked `"manufacturedBy"` to a real `Supplier` (`WP 8.2C`) — the identical relationship kind, and the identical link direction, the base `EngineeringDomainSampleModule`'s own `PurchaseItem --manufacturedBy--> Supplier` precedent already establishes.
+- `ManufacturingNodeProvider`/`ManufacturingCategory.Of` (`Tempest.App.Workspace.Manufacturing.ManufacturingNodeProvider`) derives every named type from this one `Classification` field (or, for `"WorkInstruction"`/`"Inspection"`, from the object's own distinct real Kind) — never a second, competing classification mechanism, mirroring `DocumentCategory.Of`'s own identical shape.
+
+## Consequences
+
+**Positive:**
+
+- Zero Domain-layer change of any kind — `src/Tempest.Core/EngineeringDomain/` is untouched by this Work Package, honouring "no contract redesign" and "no duplicate framework" exactly, and extending `WP 9.2A`/`WP 9.4A`/`WP 9.3A`'s own identical "zero Domain-layer files touched" finding to a fourth real-discipline Work Package.
+- Every Manufacturing Management verb (Create/Rename/Edit/Delete/Move/Copy/Duplicate/Release/Archive) already works uniformly across Routings, Operations, and Supplier Operations, since they share one real Domain Kind (`"ManufacturingOperation"`) and one real facet set — no per-type command variant is ever needed, mirroring `ADR-0088`'s own identical positive consequence for Documents.
+- Manufacturing BOM support — sequencing, quantity, find number, reference designator — costs zero new code: `Mechanical.SetBomLineCommand`/`Handler` (`WP 9.0B`) is already fully Kind-agnostic (casts to `IHasBomLine`, never checks Kind), confirmed by direct read and proven empirically by a dedicated integration test dispatching it against a live `"ManufacturingOperation"` (`WP9.5A Implementation Report.md`).
+- A future Work Package that does need a genuinely distinct `Routing`/`SupplierOperation` Domain concept (its own lifecycle rules, its own structured fields — for example, a real cycle-time or standard-cost field) can introduce one without this Work Package's own Workspace-layer classification constants standing in the way — they are a display/categorisation convenience, never load-bearing Domain state.
+
+**Negative:**
+
+- `Classification` is free text, never validated against this Work Package's own three named constants at write time — a caller could set `Classification: "Rotuing"` (misspelled) and get a real, live, but silently un-categorised (falls into `"Operations"`, this Work Package's own honest default, never dropped) `ManufacturingOperation`. Judged acceptable for the identical reason `ADR-0088` already accepted it: the same open-string, non-validated shape `RelationshipCategory`/`RelationshipKindCategoryMap` establishes platform-wide (`ADR-0076`).
+- `ItemNumber`'s own type is a free-text `string?`, not a real, orderable integer — sorting a Routing's own steps by `"10"` vs. `"9"` sorts lexicographically, not numerically, if a caller ever exceeds nine steps without zero-padding. Not a defect introduced by this Work Package: `MechanicalProductStructureNodeProvider.OrderForBom`'s own already-shipped `WP 9.0B` behaviour is reused verbatim, with the identical characteristic, disclosed rather than silently inherited.
+- A Routing and a standalone Operation are, at the Domain layer, indistinguishable from each other except by `Classification` and by whether any child currently exists — no compiler-enforced guarantee that a `"Routing"`-classified object is ever given real children, or that a `"Supplier Operation"`-classified object is ever `"manufacturedBy"`-linked to a real `Supplier`. Accepted for the identical reason `ADR-0088`'s own "no compiler-enforced guarantee a caller means what they say" consequence was accepted.
+
+## Alternatives Considered
+
+**Add a new concrete `Routing` Domain class (an ordered collection of `ManufacturingOperation` references) plus a `SupplierOperation` Domain class, each implementing `IManufacturingOperation` or a new interface directly.** Considered and rejected outright; this is precisely the "contract redesign"/"architectural redesign" `WP 9.5A`'s own controlling instruction forbids, and would require `WP 8.2A`/`WP 8.2B`/`WP 8.2C` (all `Complete`, all already `Engineering Review APPROVED`) to be reopened to add new canonical objects to a catalogue those Work Packages explicitly closed.
+
+**Introduce a new, dedicated `Sequence`/`StepNumber` facet on `IManufacturingOperation` rather than reusing `IHasBomLine.ItemNumber`.** Considered and rejected — `IHasBomLine` is already unconditionally implemented by every `EngineeringObjectBase`-derived object, including `ManufacturingOperation`, and its own `ItemNumber` field already means exactly "this object's own sibling sequence position" (`WP 9.0B`, `MechanicalProductStructureNodeProvider.OrderForBom`). A second field meaning the same thing would be genuine duplication — the "no duplicate framework" constraint this Work Package's own controlling instruction names explicitly.
+
+**Introduce a `ManufacturingOperationType` enum in `Tempest.Core.EngineeringDomain`.** Considered and rejected for the same reason `ADR-0088` rejected an equivalent `DocumentType` enum — any new Domain-layer type, even a small enum, is still a Domain contract change this Work Package's own scope forbids. A Workspace-layer `string` constant costs nothing architecturally and is trivially extensible by a future Work Package without touching `Tempest.Core` at all.
+
+## Related Documents
+
+`ADR-0076`; `ADR-0080`; `ADR-0083`; `ADR-0088`; `ADR-0090`; `Contracts/TestManufacturing.cs`; `Contracts/Facets.cs`; `Contracts/BillOfMaterials.cs`; `WP9.5A Implementation Report.md`; `WP9.5A Technical Debt Assessment.md`; `src/Tempest.App/Workspace/Manufacturing/ManufacturingObjectFactoryRegistry.cs`; `src/Tempest.App/Workspace/Manufacturing/ManufacturingNodeProvider.cs`.

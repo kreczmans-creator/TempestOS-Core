@@ -1,11 +1,17 @@
 using Tempest.App.Workspace;
+using Tempest.App.Workspace.Calculations;
+using Tempest.App.Workspace.Documents;
+using Tempest.App.Workspace.Manufacturing;
 using Tempest.App.Workspace.Mechanical;
 using Tempest.App.Workspace.Requirements;
 using Tempest.App.Workspace.Samples;
+using Tempest.App.Workspace.Verification;
+using Tempest.Core.Calculations;
 using Tempest.Core.Commands;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Requirements;
 using Tempest.Core.Runtime;
+using Tempest.Core.Verification;
 using Tempest.Samples;
 
 Console.Title = "TempestOS";
@@ -43,6 +49,8 @@ var commandDispatcher = (ICommandDispatcher)services.GetService(typeof(ICommandD
 var commandRegistry = (ICommandRegistry)services.GetService(typeof(ICommandRegistry));
 var referenceIntegrityChecker = (IReferenceIntegrityChecker)services.GetService(typeof(IReferenceIntegrityChecker));
 var requirementsService = (IRequirementsService)services.GetService(typeof(IRequirementsService));
+var calculationEngine = (ICalculationEngine)services.GetService(typeof(ICalculationEngine));
+var verificationService = (IVerificationService)services.GetService(typeof(IVerificationService));
 
 MechanicalWorkspaceRegistration.Register(manager, domainContext, commandDispatcher, commandRegistry, referenceIntegrityChecker);
 
@@ -51,6 +59,35 @@ MechanicalWorkspaceRegistration.Register(manager, domainContext, commandDispatch
 // immediately above (RequirementsService reads the real Engineering Data
 // document store, populated only once the Host is running).
 RequirementsWorkspaceRegistration.Register(manager, requirementsService, commandDispatcher, commandRegistry);
+
+// WP 9.2A: the third real Engineering discipline registered here, after
+// the Host has started — same reason as Mechanical/Requirements' own
+// registrations immediately above (ICalculationEngine/EngineeringDomainContext
+// both only resolvable once the Host is running).
+CalculationsWorkspaceRegistration.Register(manager, domainContext, calculationEngine, commandDispatcher, commandRegistry);
+
+// WP 9.4A: the fourth real Engineering discipline registered here, after
+// the Host has started — same reason as Mechanical/Requirements/
+// Calculations' own registrations immediately above (EngineeringDomainContext
+// only resolvable once the Host is running).
+DocumentsWorkspaceRegistration.Register(manager, domainContext, commandDispatcher, commandRegistry);
+
+// WP 9.3A: the fifth real Engineering discipline registered here, after
+// the Host has started — same reason as Mechanical/Requirements/
+// Calculations/Documents' own registrations immediately above
+// (EngineeringDomainContext/IVerificationService both only resolvable
+// once the Host is running).
+VerificationWorkspaceRegistration.Register(manager, domainContext, verificationService, commandDispatcher, commandRegistry);
+
+// WP 9.5A: the sixth real Engineering discipline registered here, after
+// the Host has started — same reason as Mechanical/Requirements/
+// Calculations/Documents/Verification's own registrations immediately
+// above (EngineeringDomainContext only resolvable once the Host is
+// running). Must run after VerificationWorkspaceRegistration — Manufacturing
+// deliberately does not re-register RecordVerificationResultCommand,
+// reusing the handler Verification's own registration above already
+// wired (ManufacturingWorkspaceRegistration's own remarks).
+ManufacturingWorkspaceRegistration.Register(manager, domainContext, commandDispatcher, commandRegistry);
 
 await shell.RunInputLoopAsync();
 await shell.StopAsync();

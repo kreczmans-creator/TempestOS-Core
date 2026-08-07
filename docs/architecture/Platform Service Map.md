@@ -33,8 +33,8 @@ of date is worse than no map at all, because it will be trusted.
 | Command Framework | **Implemented — WP 5.1A (design), WP 5.1B (implementation)** (`ICommandDispatcher`/`ICommandRegistry`, `Tempest.Core.Commands`) — orthogonal to Navigation, ADR-0022 | Dependency Injection | `CommandSampleModule` (real contributor); `Tempest.App` (invocation, not yet wired into the Shell's own input handling) |
 | Navigation | **Implemented — WP 5.0A (design), WP 5.0B (implementation)** (`INavigationProvider`/`NavigationService`, `Tempest.Core.Navigation`) — model, ownership, and rendering boundary per ADR-0031/ADR-0032 | Dependency Injection, Event Bus | Any module contributing a navigation item; `Tempest.App` (rendering, not yet built) |
 | Diagnostics | **Implemented — WP 5.2** (`IDiagnosticsProvider`/`DiagnosticsProvider`, `Tempest.Core.Diagnostics`) — read-only projection over Host/module/hosted-service lifecycle state per ADR-0039 | Dependency Injection (constructed directly by `TempestHost`, ADR-0009); reads live data from `IModuleLifecycleManager`/`IHostedServiceManager` via `Func<T>` accessors, never resolves either through the container (ADR-0017) | `DiagnosticsSampleModule` (real contributor); any future Shell status page or health-check command |
-| Identity & Permissions | **Implemented — WP 6.1** (`IIdentity`/`PlatformIdentity`, `IPrincipal`/`PlatformPrincipal`, `Permission`, `IRole`/`Role`, `IRoleProvider`/`RoleProvider`, `ICurrentPrincipalAccessor`/`CurrentPrincipalAccessor`, `IPermissionEvaluator`/`PermissionEvaluator`, `IIdentityService`/`IdentityService`, `Tempest.Core.Identity`) — local-only identity model per ADR-0043; single authorization enforcement point per ADR-0044 | Dependency Injection | `IdentitySampleModule` (real contributor); `TD-09`/`TD-10`/`TD-11` are now resolvable through this enforcement point, though none is retired by this Work Package itself; a plausible future `WP 6.3` (REST API) and `WP 6.5` (Audit) consumer |
-| Persistence | **Implemented — WP 6.4** (`IPersistenceStore`/`PersistenceStore`, `Tempest.Core.Persistence`) — established as part of Settings' own scope per ADR-0041; file-backed, one file per `collection`/`key`, percent-encoded paths, per-key async locking | Dependency Injection, Configuration (root path) | Settings (real contributor via `SettingsProvider`); Audit (real contributor via `AuditRecorder`/`AuditQuery`, `WP 6.5`) — the reuse `ADR-0041` recommended, now confirmed in practice |
+| Identity & Permissions | **Implemented — WP 6.1** (`IIdentity`/`PlatformIdentity`, `IPrincipal`/`PlatformPrincipal`, `Permission`, `IRole`/`Role`, `IRoleProvider`/`RoleProvider`, `ICurrentPrincipalAccessor`/`CurrentPrincipalAccessor`, `IPermissionEvaluator`/`PermissionEvaluator`, `IIdentityService`/`IdentityService`, `Tempest.Core.Identity`) — local-only identity model per ADR-0043; single authorization enforcement point per ADR-0044 | Dependency Injection | `IdentitySampleModule` (real contributor); `TD-09`/`TD-10`/`TD-11` are now resolvable through this enforcement point, though none is retired by this Work Package itself; the Engineering Data Model (`ICurrentPrincipalAccessor`, revision attribution, `WP 7.1A`), Engineering Calculations (`ICurrentPrincipalAccessor`, `WP 7.1D`), and Verification (`ICurrentPrincipalAccessor`/`IPermissionEvaluator`, `WP 7.1E`) — a disclosed backfill correction, `WP 9.8B`: this row previously named only its own then-future `WP 6.3`/`WP 6.5` consumers and was never updated when the Engineering Foundation programme (`v0.7.0`) began consuming it |
+| Persistence | **Implemented — WP 6.4** (`IPersistenceStore`/`PersistenceStore`, `Tempest.Core.Persistence`) — established as part of Settings' own scope per ADR-0041; file-backed, one file per `collection`/`key`, percent-encoded paths, per-key async locking | Dependency Injection, Configuration (root path) | Settings (real contributor via `SettingsProvider`); Audit (real contributor via `AuditRecorder`/`AuditQuery`, `WP 6.5`) — the reuse `ADR-0041` recommended, now confirmed in practice; the Engineering Data Model (`WP 7.1A`) and Materials (its own `materialId` index, `WP 7.1C`) — a disclosed backfill correction, `WP 9.8B`, the identical stale-row pattern found in the Identity & Permissions row above |
 | Settings | **Implemented — WP 6.4** (`ISettingDefinition`/`SettingDefinition`, `ISettingsProvider`/`SettingsProvider`, `ISettingsChangedEvent`/`SettingsChangedEvent`, `Tempest.Core.Settings`) — DI-public, distinct from Configuration per ADR-0042; in-memory cache over Persistence, invalidated on write | Dependency Injection, Persistence, Event Bus | `SettingsSampleModule` (real contributor); a plausible future `WP 6.3` (REST API) settings-management surface |
 | Audit | **Implemented — WP 6.5** (`IAuditRecord`/`AuditRecord`, `IAuditRecorder`/`AuditRecorder`, `IAuditQuery`/`AuditQuery`, `AuditQueryCriteria`, `Tempest.Core.Audit`) — durable, queryable, append-only history distinct from Logging/Diagnostics per ADR-0045; reuses Persistence, never a second storage mechanism; `IAuditQuery` permission-gated via `ADR-0044` | Dependency Injection, Persistence, Identity & Permissions | `AuditSampleModule` (real contributor); also a real dependency of `ApiRequestHandler` (`Tempest.Core.Api`), `ReportingSampleModule`, `ExportImportSampleModule`, and `LicensingSampleModule` |
 | Notifications | **Implemented — WP 6.2** (`INotification`, `INotificationHandler<T>`, `INotificationDispatcher`/`NotificationDispatcher`, `Tempest.Core.Notifications`) — derived from, not a replacement for, the Event Bus per ADR-0046; transient only, no persistence this release; additive `IPlatformNotification`/`PlatformNotification`/`NotificationSeverity` general-purpose shape | Dependency Injection | `NotificationSampleModule` (real contributor); `NotificationSampleHostedService` (the platform's first real, non-infrastructure hosted service); also a real dependency of `ReportingSampleModule`, `ExportImportSampleModule`, and `LicensingSampleModule`; a future UI Shell remains a plausible future consumer |
@@ -43,6 +43,10 @@ of date is worse than no map at all, because it will be trusted.
 | Export/Import | **Implemented — WP 6.7** (`IExportable`/`IExportService`/`ExportService`, `IImportService`/`ImportService`, `Tempest.Core.ExportImport`) — orthogonal to Persistence per ADR-0051; additive `IExportableKind`/`IImportable` Kind-routing, `IExportFormat`/`JsonExportFormat` artifact framing, and optional `IExportPayloadSerializer`/`JsonExportPayloadSerializer` general-purpose shapes | Dependency Injection | `ExportImportSampleModule` (real contributor, round-tripping two Settings values as a single multi-source artifact, also demonstrating Identity/Audit/Notifications integration at the calling layer); a plausible future consumer for Licensing and any engineering module |
 | Licensing | **Implemented — WP 6.6** (`ILicense`/`ILicenseValidator`/`LicenseValidator`, `ILicenseProvider`/`LicenseProvider`, `Tempest.Core.Licensing`) — pre-container, Host-fatal validation gate per ADR-0050, except a missing license file, which is a valid, unrestricted-but-uncapable default (resolving Risk Register R5) | `System.Text.Json` (BCL) only | `LicensingSampleModule` (real contributor, also demonstrating Identity/Settings/Audit/Notifications/REST API integration at the calling layer); a plausible future consumer for any commercially licensed engineering module |
 | Plugin Manifest | **Implemented — WP 4.2** (`Tempest.Core.Plugins`) | Host (Phases 3.1/3.2, ADR-0026 — a pre-Discovery step) | Module Discovery (unchanged), any real plugin |
+| Engineering Data Model | **Implemented — WP 7.1A, ADR-0053** (`IEngineeringDocumentStore`/`EngineeringDocumentStore`, `Tempest.Core.EngineeringData`) — the shared, discipline-neutral document/revision/reference substrate every later Engineering Core framework and the Engineering Domain (`WP 8.2C`) are built on | Dependency Injection, Persistence, Identity & Permissions | Materials, Engineering Calculations, Verification, Requirements Engine, the Engineering Domain (`EngineeringDomainContext`, `WP 8.2C`); `EngineeringDataSampleModule` (real contributor) |
+| Materials | **Implemented — WP 7.1C, ADR-0055** (`IMaterialCatalog`/`MaterialCatalog`, `Tempest.Core.Materials`) — a thin, typed index over the Engineering Data Model (`Kind = "MaterialSpecification"`), plus a direct `IPersistenceStore` dependency of its own for its `materialId` index | Dependency Injection, Engineering Data Model, Persistence | `MaterialsSampleModule` (real contributor); the base `EngineeringDomainSampleModule` (`WP 8.2C`) |
+| Engineering Calculations | **Implemented — WP 7.1D, ADR-0056** (`ICalculationEngine`/`CalculationEngine`, `Tempest.Core.Calculations`) — durable, evidentiary calculation execution against a registered `ICalculationDefinition<TInput, TResult>`, every execution recorded as an Engineering Data Model document | Dependency Injection, Engineering Data Model, Identity & Permissions | `CalculationSampleModule` (real contributor); `Tempest.App.Workspace.Calculations` (`WP 9.2A`, the third real Engineering Discipline wired into the Workspace) |
+| Verification | **Implemented — WP 7.1E, ADR-0057** (`IVerificationService`/`VerificationService`, `Tempest.Core.Verification`) — records a verification outcome (criteria, evidence) against a subject document; permission-gated history query, reusing the Engineering Data Model's own `LinkAsync`/`GetReferencesAsync` mechanism, never a new index | Dependency Injection, Engineering Data Model, Identity & Permissions | `VerificationSampleModule` (real contributor); Requirements Engine (`GetEvidenceAsync` composition); `Tempest.App.Workspace.Verification` (`WP 9.3A`) and `.Manufacturing` (`WP 9.5A`, reuses `RecordVerificationResultCommand` directly) |
 | Project Engine | Planned | Undetermined | Undetermined |
 | Requirements Engine | **Implemented — WP 7.3A** (`IRequirementsService`/`RequirementsService`, `Tempest.Core.Requirements`) — the canonical, discipline-neutral requirement representation per `ADR-0058`; requirements/collections/groups are `IEngineeringDocument`s, relationships are `DocumentReference`s, zero new storage mechanism | Dependency Injection, Engineering Data Model, Verification | `RequirementsSampleModule` (real contributor, also demonstrating Identity/Audit/Reporting/Export-Import integration at the calling layer); a plausible future consumer for any discipline-specific engineering module |
 
@@ -1486,6 +1490,226 @@ Infrastructure*); WP 4.2B retrospective (*ADR: Plugin Failure
 Classification*); WP 4.2C retrospective (*ADR: Plugin Discovery Lifecycle
 Placement*); WP 4.2 implementation retrospective; *Plugin Manifest
 Architecture.md*; Rejected Designs RD-0008 through RD-0014.
+
+---
+
+## Engineering Data Model *(implemented — WP 7.1A, ADR-0053)*
+
+**Responsibility.** The shared, discipline-neutral document/revision/
+reference substrate every later Engineering Core framework, and the
+Engineering Domain (`WP 8.2C`), are built on — create, find, revise,
+link, and query an `IEngineeringDocument` and its `DocumentReference`s,
+with a full, append-only revision history. Introduces no discipline-
+specific concept of its own; "what is a Material," "what is a
+Calculation," "what is a Requirement" are each answered one layer above
+this one.
+
+**Key types.** `IEngineeringDocument`, `IDocumentRevision`,
+`IEngineeringDocumentStore`/`EngineeringDocumentStore`,
+`DocumentReference`, `EngineeringDataException` and one subtype
+(`EngineeringDocumentNotFoundException`) — all `Tempest.Core.EngineeringData`.
+
+**Dependencies.** Dependency Injection; `IPersistenceStore` (durable
+storage, reused from `WP 6.4`, never a second storage mechanism, the
+identical reuse `ADR-0041` already established for Settings/Audit);
+`ICurrentPrincipalAccessor` (Identity & Permissions, for revision
+attribution).
+
+**Consumers.** Materials (`IMaterialCatalog`, `WP 7.1C`), Engineering
+Calculations (`ICalculationEngine`, `WP 7.1D`), Verification
+(`IVerificationService`, `WP 7.1E`), and Requirements Engine
+(`IRequirementsService`, `WP 7.3A`) each build directly on
+`IEngineeringDocumentStore` rather than inventing their own storage —
+every one of them realises its own canonical Kind (`"MaterialSpecification"`,
+`"CalculationRecord"`, a verification record, `"Requirement"`, and
+siblings) as a plain `IEngineeringDocument`. The Engineering Domain's
+own `EngineeringDomainContext` (`WP 8.2C`) resolves the same, real,
+already-registered `IEngineeringDocumentStore` instance every one of
+these siblings shares in production (`ADR-0077`) — a sixth, later
+consumer at a different architectural layer, confirmed by direct
+inspection, not merely asserted. `EngineeringDataSampleModule` (real
+contributor and consumer, the sixteenth production sample module).
+
+**Lifecycle.** Ordinary DI-public, container-constructed singleton,
+registered in `TempestHost`'s existing Platform Services Registered
+block (Phase 6), after Persistence and Identity & Permissions, both of
+which it depends on — no new Host Lifecycle phase.
+
+**ADR references.** ADR-0041 (Persistence, reused not reinvented);
+ADR-0053 (*The Engineering Data Model Is Built Directly on the Existing
+`IPersistenceStore`*).
+
+**Academy references.** `02 Runtime Architecture/15-engineering-data-model.md`;
+`03 Work Packages/WP7.1A-engineering-data-model-implementation.md`.
+
+**Disclosed, `WP 9.8B`.** This section, and this service's own row in
+the "At a Glance" table above, did not exist before `WP 9.8B` — a
+genuine, disclosed omission first found by `WP 7.3A`, confirmed still
+open across three consecutive release-closing reviews
+(`WP 7.4.0`/`WP 8.9.0`/`WP 9.9.0`), and closed here. See `WP9.8B
+Reconciliation Report.md` for the complete account.
+
+---
+
+## Materials *(implemented — WP 7.1C, ADR-0055)*
+
+**Responsibility.** A thin, typed index over the Engineering Data Model
+(`Kind = "MaterialSpecification"`) for registering, finding, revising,
+and listing named engineering materials and their properties — deliberately
+not a second storage mechanism; every material is an ordinary
+`IEngineeringDocument`.
+
+**Key types.** `IMaterialCatalog`/`MaterialCatalog`,
+`IMaterialSpecification`/`MaterialSpecification`, `MaterialProperty`,
+`MaterialPropertyConfidenceLevel`, `MaterialPropertyProvenance`,
+`MaterialPropertyValidationStatus`, `MaterialsException` and one subtype
+(`DuplicateMaterialException`, `MaterialNotFoundException`) — all
+`Tempest.Core.Materials`.
+
+**Dependencies.** Dependency Injection; `IEngineeringDocumentStore`
+(Engineering Data Model, every material's own real storage);
+`IPersistenceStore` directly (Persistence, for its own `materialId`
+index — `IEngineeringDocumentStore`'s own contract has no lookup-by-
+arbitrary-string capability to provide, the identical shape Requirements
+Engine's own identifier index later reuses, `WP 7.3A`).
+
+**Consumers.** `MaterialsSampleModule` (real contributor and consumer,
+the seventeenth production sample module). The base
+`EngineeringDomainSampleModule` (`WP 8.2C`) registers a real material via
+`IMaterialCatalog.RegisterAsync` as part of its own representative
+Engineering Domain graph — a second, later, cross-layer consumer,
+confirmed by direct inspection.
+
+**Lifecycle.** Ordinary DI-public, container-constructed singleton,
+registered in `TempestHost`'s existing Platform Services Registered
+block (Phase 6), immediately after the Engineering Data Model, both of
+which it depends on — no new Host Lifecycle phase.
+
+**ADR references.** ADR-0053 (Engineering Data Model, reused not
+duplicated); ADR-0055 (*Materials Is a Thin, Typed Index Over the
+Engineering Data Model*).
+
+**Academy references.** `03 Work Packages/WP7.1C-materials-framework-implementation.md`
+— no dedicated concept guide exists for Materials specifically; per
+`WP7.0C Academy Plan.md`'s own finding, Materials is a worked example of
+the Engineering Data Model, not a new architectural pattern, so its own
+Work Package retrospective is this service's own complete Academy
+record.
+
+**Disclosed, `WP 9.8B`.** This section, and this service's own row in
+the "At a Glance" table above, did not exist before `WP 9.8B` — see the
+Engineering Data Model entry, immediately above, for the full disclosure
+this backfill shares with all four Engineering Foundation frameworks.
+
+---
+
+## Engineering Calculations *(implemented — WP 7.1D, ADR-0056)*
+
+**Responsibility.** Durable, evidentiary execution of a registered
+`ICalculationDefinition<TInput, TResult>` against caller-supplied input
+— every execution, first or repeated, produces a real, fully-recorded
+`CalculationRecord`, never a transient, unrecorded result. Distinct from
+the Command Framework: a Calculation is a typed, evidentiary
+computation with a durable record; a Command is a discrete unit of
+application logic with no such guarantee.
+
+**Key types.** `ICalculationDefinition<TInput, TResult>`,
+`ICalculationEngine`/`CalculationEngine`, `CalculationContext`,
+`CalculationRecord`, `CalculationConstraint`, `CalculationConstraintCheck`,
+`CalculationAssumption`, `CalculationIntermediateResult`,
+`CalculationMetadata`, `CalculationValidationOutcome`,
+`CalculationValidationResult`, `CalculationException` and two subtypes
+(`CalculationDefinitionNotFoundException`, `DuplicateCalculationException`,
+`CalculationInputInvalidException`) — all `Tempest.Core.Calculations`.
+
+**Dependencies.** Dependency Injection; `IEngineeringDocumentStore`
+(Engineering Data Model — every execution durably recorded as a
+`"CalculationRecord"`-Kind document, mirroring Materials' own reuse, no
+direct `IPersistenceStore` dependency needed here since each execution
+always creates a brand new document, never looked up later by a
+caller-chosen key); `ICurrentPrincipalAccessor` (Identity & Permissions,
+for record attribution).
+
+**Consumers.** `CalculationSampleModule` (real contributor and
+consumer, the eighteenth production sample module). `Tempest.App
+.Workspace.Calculations` (`WP 9.2A`, the third real Engineering
+Discipline wired into the Engineering Workspace, via a Workspace-layer
+adapter, `CalculationTemplateRegistry`) — the first real, non-sample
+consumer of this service, confirmed directly.
+
+**Lifecycle.** Ordinary DI-public, container-constructed singleton,
+registered in `TempestHost`'s existing Platform Services Registered
+block (Phase 6), immediately after Materials — no new Host Lifecycle
+phase.
+
+**ADR references.** ADR-0053 (Engineering Data Model, reused not
+duplicated); ADR-0056 (*Every Calculation Execution Is Durably Recorded
+as an Engineering Data Model Document*).
+
+**Academy references.** `02 Runtime Architecture/13-calculation-framework.md`;
+`03 Work Packages/WP7.1D-engineering-calculation-framework-implementation.md`.
+
+**Disclosed, `WP 9.8B`.** This section, and this service's own row in
+the "At a Glance" table above, did not exist before `WP 9.8B` — see the
+Engineering Data Model entry, above, for the full disclosure this
+backfill shares with all four Engineering Foundation frameworks.
+
+---
+
+## Verification *(implemented — WP 7.1E, ADR-0057)*
+
+**Responsibility.** Records a verification outcome (Pass/Fail/Conditional,
+with explicit criteria and evidence) against a subject document, and
+answers a permission-gated query for a subject's own recorded
+verification history. Distinct from Calculations: a Verification Record
+asserts an evaluated claim about a subject; a Calculation Record
+computes and durably stores a numeric result.
+
+**Key types.** `IVerificationService`/`VerificationService`,
+`IVerificationRecord`/`VerificationRecord`, `VerificationContext`,
+`VerificationCriterion`, `VerificationEvidenceEntry`, `VerificationOutcome`
+— all `Tempest.Core.Verification`.
+
+**Dependencies.** Dependency Injection; `IEngineeringDocumentStore`
+(Engineering Data Model — verification history is queried through its
+own existing `LinkAsync`/`GetReferencesAsync` mechanism, never a new
+index); `ICurrentPrincipalAccessor`/`IPermissionEvaluator` (Identity &
+Permissions — read access to recorded history is permission-gated,
+mirroring `IAuditQuery`'s own established pattern).
+
+**Consumers.** `VerificationSampleModule` (real contributor and
+consumer, the nineteenth production sample module). Requirements Engine
+(`IRequirementsService.GetEvidenceAsync`, `WP 7.3A`) composes
+verification history with linked references, introducing no new
+digital-thread traversal mechanism of its own — a real, framework-to-
+framework dependency. `Tempest.App.Workspace.Verification` (`WP 9.3A`,
+the fifth real Engineering Discipline) and `.Manufacturing` (`WP 9.5A`,
+which dispatches `RecordVerificationResultCommand` — itself a thin
+Workspace-layer wrapper over `IVerificationService.RecordAsync` — 
+directly against an `"Inspection"`-Kind target, the disclosed
+cross-Work-Package command reuse that Work Package's own retrospective
+names) are two further, real, non-sample consumers.
+
+**Lifecycle.** Ordinary DI-public, container-constructed singleton,
+registered in `TempestHost`'s existing Platform Services Registered
+block (Phase 6), immediately after Engineering Calculations — no new
+Host Lifecycle phase.
+
+**ADR references.** ADR-0053 (Engineering Data Model, reused not
+duplicated); ADR-0057 (*Verification History Is Queried Through the
+Engineering Data Model's Own Existing Reference Mechanism, Read Access
+Permission-Gated*).
+
+**Academy references.** `02 Runtime Architecture/14-verification-framework.md`;
+`03 Work Packages/WP7.1E-verification-framework-implementation.md`.
+
+**Disclosed, `WP 9.8B`.** This section, and this service's own row in
+the "At a Glance" table above, did not exist before `WP 9.8B` — see the
+Engineering Data Model entry, above, for the full disclosure this
+backfill shares with all four Engineering Foundation frameworks. This
+is also the fourth and final entry in that disclosure; the gap
+`WP 7.3A` first found, confirmed open across three consecutive
+release-closing reviews, is fully closed as of this Work Package.
 
 ---
 

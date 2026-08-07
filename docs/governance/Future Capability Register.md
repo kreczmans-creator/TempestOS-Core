@@ -10,7 +10,7 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | This document, from `WP 7.0A` onward. Prior to this Work Package, the same information existed only in fragments — see each entry's own "Sourced From" field for where it previously lived. |
 | **Review Frequency** | Updated whenever a new future capability is identified (by any Work Package, retrospective, or review), or whenever an existing capability's Status changes (a Work Package begins, completes, or a capability is formally deferred/rejected). |
-| **Last Reviewed** | 2026-08-05 (`WP 9.1A`, Requirements Management Workspace) — `FCR-0048`–`FCR-0050` added (Requirement Collection Membership Removal, Domain-Level Search Generalised Beyond `IEngineeringObject`, Multi-Target Workspace View Refresh) — all **Identified**, sourced directly from `WP9.1A Future Capability Assessment.md`; `FCR-0039` (Multi-Selection) marked **Resolved/Implemented** — `ADR-0085`, the first entry in the "Workspace" category to leave Identified status; 47 → 50 total. Previously reviewed 2026-08-05 (`WP 9.0B`, Product Configuration & BOM Management) — `FCR-0044`–`FCR-0047` added (Product Variant Resolution, Unit of Measure Canonicalisation, Cost Roll-Up Over the BOM Hierarchy, Configuration Management Workflow) — all **Identified**, sourced directly from `WP9.0B Future Capability Assessment.md`; 43 → 47 total. Previously reviewed 2026-08-05 (`WP 9.0A`, Mechanical Product Structure) — `FCR-0039`–`FCR-0043` added, the first entries in a new "Workspace" category (multi-selection, drag-and-drop, real invoke-by-Id command execution, a second Engineering Discipline Module reusing this Work Package's own provider categories, and structural mutation for further object families) — all **Identified**, sourced directly from `WP9.0A Future Capability Assessment.md`; 38 → 43 total. Previously reviewed 2026-07-30 (`WP 7.2C`, Requirements & Verification Platform Contract Review) — `FCR-0027`'s own complete public contracts defined (thirteen domain concepts, four reserved ADRs, twelve completion deliverables) — still **Identified**, not **Implemented**; a contract review is not an implementation, and this Work Package wrote no production code. Previously reviewed 2026-07-30 (`WP 7.2B`, Requirements & Verification Platform Architecture) — `FCR-0027`'s own complete architecture designed (twelve domain concepts, three reserved ADRs, eleven completion deliverables) — still **Identified**, not **Implemented**; an architecture phase is not an implementation, and this Work Package wrote no production code. Previously reviewed 2026-07-30 (`WP 7.2A`, Strategic Roadmap Selection & Programme Architecture) — all 36 entries reviewed against seven candidate next-programme options; no new entry added, no status changed. `FCR-0027` (Requirements Engine) recommended as the next implementation programme's own scope (`WP7.2A Recommended Programme.md`) — still **Identified**, not yet approved; recommendation is not approval. Previously reviewed 2026-07-30 (`WP 7.1F`, Engineering Core Integration Review & Certification) — confirmed `FCR-0029`–`FCR-0033` all **Implemented**; reviewed `FCR-0034`/`FCR-0035`/`FCR-0036`, all remain **Deferred** (no scheduled release); `FCR-0005`'s own priority raised Medium → High after a third, independent recurrence of the governance-register-drift pattern it exists to prevent (see `WP7.1F Engineering Core Architecture Conformance Report.md` §7). No new capability identified. Previously reviewed 2026-07-30 (`WP 7.1E`, Verification Framework) — `FCR-0033` marked **Implemented**, completing the Engineering Foundation programme (all five, `FCR-0029`–`FCR-0033`, now Implemented); `FCR-0036` added (Transactional Multi-Document Operations, found during this Work Package's own required Security Review). Previously reviewed 2026-07-30 (`WP 7.1D`, Engineering Calculation Framework) — `FCR-0032` marked **Implemented**; `FCR-0035` added (Calculation Execution Timeout & Cancellation Support, found during this Work Package's own required Security Review). Previously reviewed 2026-07-30 (`WP 7.1C`, Materials Framework) — `FCR-0031` marked **Implemented**. Previously reviewed 2026-07-30 (`WP 7.1B`, Units & Quantities Framework) — `FCR-0030` marked **Implemented**; `FCR-0034` added (Affine Unit Conversion / Temperature, found during implementation, not anticipated by prior planning). Previously reviewed 2026-07-30 (`WP 7.1A`, Engineering Data Model) — `FCR-0029` marked **Implemented**, the first entry in this register to leave "Identified" status. Previously reviewed 2026-07-30 (`WP 7.0B`, Engineering Foundation Planning & Capability Architecture) — added `FCR-0029` through `FCR-0033`, the five cross-cutting Engineering Foundation frameworks this Work Package's own dependency analysis identified as architecturally necessary before any discipline-specific Engineering Module can begin (see `WP7.0B Engineering Foundation Architecture.md`). Each is marked **Inferred**, not Verified — architectural necessity reasoning, not a capability named in a prior document, per the same discipline `FCR-0026` already applied. Previously reviewed 2026-07-30 (`WP 7.0A`, established). |
+| **Last Reviewed** | 2026-08-07 (`WP 9.9.0`, Release Preparation & Product Baseline — Second Pass) — reviewed, zero new entries added: a second, independent verification pass, commissioned after `WP 9.8B` closed the first pass's own top standing recommendation. All 62 entries re-verified directly a second time, 62 total unchanged. `FCR-0005` (Governance Register Health-Check Tooling) reconfirmed still Identified, now carrying its strongest evidentiary case yet — both `WP 9.8B`'s own existence and this pass's own newly-registered `TD-34` finding are direct, first-hand evidence of the manual-effort cost automation would eliminate. Previously reviewed 2026-08-07 (`WP 9.9.0`, Release Preparation & Product Baseline — First Pass) — reviewed, zero new entries added: verification-only Work Package. All 62 entries (`FCR-0001`–`FCR-0062`) re-verified directly against this register's own section headings, 62 total unchanged. `FCR-0005` (Governance Register Health-Check Tooling) reconfirmed still Identified, now disclosed as recurring across a seventh consecutive release-adjacent review — see `WP9.9.0 Release Readiness Report.md` §16 (Future Capability Review) and `WP9.9.0 Product Approval Report.md`'s own standing recommendations. Previously reviewed 2026-08-07 (`WP 9.5A`, Manufacturing Workspace) — `FCR-0060`–`FCR-0062` added (A Genuine `Routing`/`SupplierOperation` Domain Kind, Parameterising `EngineeringCockpit.FormatCoverage`'s Own Empty-State Message, Extending `VerificationService.RecordAsync`'s Own `IHasRelationships` Linking to Cover Inspection Subjects) — all **Identified**, sourced directly from `WP9.5A Future Capability Assessment.md`; 59 → 62 total. **Disclosed, found gap, not fixed retroactively:** this field's own immediately-prior entry was `WP 9.2A`'s (2026-08-05) — neither `WP 9.3A` nor `WP 9.4A` updated this "Last Reviewed" field despite each adding three real entries of their own (`FCR-0054`–`FCR-0056`, `FCR-0057`–`FCR-0059`, confirmed present in the Coverage Note below and in the table itself) — a genuine drift between this field and this register's own actual content, found while adding this Work Package's own entries, recorded here plainly rather than silently backfilled to look as though it was continuously current. Previously reviewed 2026-08-05 (`WP 9.2A`, Engineering Calculations Workspace) — `FCR-0051`–`FCR-0053` added (Concrete `ICalculationResult`/`IVerificationResult` Implementations, Concrete Approval/Review Workflow, Recalculate Resuming From a Previously-Executed Input) — all **Identified**, sourced directly from `WP9.2A Future Capability Assessment.md`; 50 → 53 total. Previously reviewed 2026-08-05 (`WP 9.1A`, Requirements Management Workspace) — `FCR-0048`–`FCR-0050` added (Requirement Collection Membership Removal, Domain-Level Search Generalised Beyond `IEngineeringObject`, Multi-Target Workspace View Refresh) — all **Identified**, sourced directly from `WP9.1A Future Capability Assessment.md`; `FCR-0039` (Multi-Selection) marked **Resolved/Implemented** — `ADR-0085`, the first entry in the "Workspace" category to leave Identified status; 47 → 50 total. Previously reviewed 2026-08-05 (`WP 9.0B`, Product Configuration & BOM Management) — `FCR-0044`–`FCR-0047` added (Product Variant Resolution, Unit of Measure Canonicalisation, Cost Roll-Up Over the BOM Hierarchy, Configuration Management Workflow) — all **Identified**, sourced directly from `WP9.0B Future Capability Assessment.md`; 43 → 47 total. Previously reviewed 2026-08-05 (`WP 9.0A`, Mechanical Product Structure) — `FCR-0039`–`FCR-0043` added, the first entries in a new "Workspace" category (multi-selection, drag-and-drop, real invoke-by-Id command execution, a second Engineering Discipline Module reusing this Work Package's own provider categories, and structural mutation for further object families) — all **Identified**, sourced directly from `WP9.0A Future Capability Assessment.md`; 38 → 43 total. Previously reviewed 2026-07-30 (`WP 7.2C`, Requirements & Verification Platform Contract Review) — `FCR-0027`'s own complete public contracts defined (thirteen domain concepts, four reserved ADRs, twelve completion deliverables) — still **Identified**, not **Implemented**; a contract review is not an implementation, and this Work Package wrote no production code. Previously reviewed 2026-07-30 (`WP 7.2B`, Requirements & Verification Platform Architecture) — `FCR-0027`'s own complete architecture designed (twelve domain concepts, three reserved ADRs, eleven completion deliverables) — still **Identified**, not **Implemented**; an architecture phase is not an implementation, and this Work Package wrote no production code. Previously reviewed 2026-07-30 (`WP 7.2A`, Strategic Roadmap Selection & Programme Architecture) — all 36 entries reviewed against seven candidate next-programme options; no new entry added, no status changed. `FCR-0027` (Requirements Engine) recommended as the next implementation programme's own scope (`WP7.2A Recommended Programme.md`) — still **Identified**, not yet approved; recommendation is not approval. Previously reviewed 2026-07-30 (`WP 7.1F`, Engineering Core Integration Review & Certification) — confirmed `FCR-0029`–`FCR-0033` all **Implemented**; reviewed `FCR-0034`/`FCR-0035`/`FCR-0036`, all remain **Deferred** (no scheduled release); `FCR-0005`'s own priority raised Medium → High after a third, independent recurrence of the governance-register-drift pattern it exists to prevent (see `WP7.1F Engineering Core Architecture Conformance Report.md` §7). No new capability identified. Previously reviewed 2026-07-30 (`WP 7.1E`, Verification Framework) — `FCR-0033` marked **Implemented**, completing the Engineering Foundation programme (all five, `FCR-0029`–`FCR-0033`, now Implemented); `FCR-0036` added (Transactional Multi-Document Operations, found during this Work Package's own required Security Review). Previously reviewed 2026-07-30 (`WP 7.1D`, Engineering Calculation Framework) — `FCR-0032` marked **Implemented**; `FCR-0035` added (Calculation Execution Timeout & Cancellation Support, found during this Work Package's own required Security Review). Previously reviewed 2026-07-30 (`WP 7.1C`, Materials Framework) — `FCR-0031` marked **Implemented**. Previously reviewed 2026-07-30 (`WP 7.1B`, Units & Quantities Framework) — `FCR-0030` marked **Implemented**; `FCR-0034` added (Affine Unit Conversion / Temperature, found during implementation, not anticipated by prior planning). Previously reviewed 2026-07-30 (`WP 7.1A`, Engineering Data Model) — `FCR-0029` marked **Implemented**, the first entry in this register to leave "Identified" status. Previously reviewed 2026-07-30 (`WP 7.0B`, Engineering Foundation Planning & Capability Architecture) — added `FCR-0029` through `FCR-0033`, the five cross-cutting Engineering Foundation frameworks this Work Package's own dependency analysis identified as architecturally necessary before any discipline-specific Engineering Module can begin (see `WP7.0B Engineering Foundation Architecture.md`). Each is marked **Inferred**, not Verified — architectural necessity reasoning, not a capability named in a prior document, per the same discipline `FCR-0026` already applied. Previously reviewed 2026-07-30 (`WP 7.0A`, established). |
 | **Related Documents** | `Capability Categories.md`; `Product Roadmap.md`; `VISION.md`; `docs/governance/Quality/Technical Debt Register.md`; `docs/security/Security Roadmap.md`; `docs/security/Threat Model.md`; `docs/releases/v0.7.0/WorkPackages.md`; the eight `WP6.x Future Capability Recommendations.md` documents under `docs/releases/v0.6.0/`. |
 | **Related ADRs** | ADR-0013, ADR-0040, ADR-0044, ADR-0045, ADR-0046, ADR-0049, ADR-0050, ADR-0052, ADR-0053, ADR-0054, ADR-0055, ADR-0056, ADR-0057 — see individual entries. |
 | **Related Academy Articles** | `WP6.8-platform-services-integration-review.md` §6 (the direct source of `FCR-0001`, `FCR-0003`, `FCR-0004`, `FCR-0005`, `FCR-0006`); `WP7.0B-engineering-foundation-planning-and-capability-architecture.md`. |
@@ -903,6 +903,210 @@ Coverage Note).
 | **Academy Impact** | Would extend `WP9.1A-requirements-management-workspace.md` once implemented |
 | **Notes** | Raised directly by `WP9.1A Future Capability Assessment.md` and `WP9.1A Technical Debt Assessment.md` (`TD-28`). |
 
+#### FCR-0051 — Concrete `ICalculationResult`/`IVerificationResult` Implementations
+
+| Field | Value |
+|---|---|
+| **Category** | Workspace |
+| **Description** | `ICalculationResult`/`IVerificationResult` (`Contracts/Calculations.cs`/`Contracts/RequirementsVerification.cs`, `WP8.2B`) have zero concrete implementations anywhere, so `EvidenceComposer`/`ITraceable.GetEvidenceAsync` resolves structurally empty for every object. A real implementation would need a genuinely addressable, non-generic `IEngineeringObject` shape wrapping `CalculationRecord<TResult>` (which is generic and has no fixed `Kind`/`SubjectId` today) — a real Domain design question, not a mechanical add. |
+| **Status** | Identified |
+| **Priority** | Low — direct `GetRelationshipsAsync` reads already satisfy every scope item across four consecutive Work Packages |
+| **Business Value** | Unknown — dependent on a real, demonstrated need for composed, cross-discipline `IEvidence` |
+| **Engineering Effort** | Medium-High — a genuine new Domain design question, not a reopening of a frozen contract's own existing shape |
+| **Dependencies** | `Contracts/Calculations.cs`/`Contracts/RequirementsVerification.cs` (Identified, `WP8.2B`, still unimplemented) |
+| **Proposed Target Release** | Unscheduled |
+| **Related ADRs** | None yet |
+| **Related Work Packages** | `WP 8.2B` (defined the current, unimplemented contracts); `WP 9.1A`/`WP 9.2A` (both worked around the gap via direct relationship reads) |
+| **Academy Impact** | Would extend `WP9.2A-engineering-calculations-workspace.md` once implemented |
+| **Notes** | Raised directly by `WP9.2A Future Capability Assessment.md` and `WP9.2A Technical Debt Assessment.md` (`TD-30`). |
+
+#### FCR-0052 — Concrete Approval/Review Workflow
+
+| Field | Value |
+|---|---|
+| **Category** | Workspace |
+| **Description** | `IApprovalGate`/`IApproval`/`IReview`/`IReviewGate` (`Contracts/Lifecycle.cs`, `WP8.2B`) have zero concrete implementations anywhere. A real implementation would give any discipline naming "Approval" in its own scope a governed, queryable sign-off record (who approved what, when, against what evidence) instead of a bare `LifecycleState` reading. |
+| **Status** | Identified |
+| **Priority** | Low — `LifecycleState` reading already satisfies every KPI/facet named across `WP 9.0A`–`WP 9.2A` |
+| **Business Value** | Unknown — dependent on a real, demonstrated need for auditable approval provenance |
+| **Engineering Effort** | Medium-High — a real governance-record design question (single approver? review panel? evidence bundle required?), not a mechanical add |
+| **Dependencies** | `Contracts/Lifecycle.cs` (Identified, `WP8.2B`, still unimplemented) |
+| **Proposed Target Release** | Unscheduled |
+| **Related ADRs** | `ADR-0087` (documents the current `LifecycleState`-only workaround) |
+| **Related Work Packages** | `WP 8.2B` (defined the current, unimplemented contracts); `WP 9.2A` (disclosed the gap, `ADR-0087`) |
+| **Academy Impact** | Would extend `WP9.2A-engineering-calculations-workspace.md` once implemented |
+| **Notes** | Raised directly by `WP9.2A Future Capability Assessment.md` and `WP9.2A Technical Debt Assessment.md` (`TD-30`). |
+
+#### FCR-0053 — Recalculate Resuming From a Previously-Executed Input
+
+| Field | Value |
+|---|---|
+| **Category** | Workspace |
+| **Description** | `RecalculateCalculationCommand` cannot offer a parameterless "run it again" gesture, since `CalculationRecordDto<TResult>` never retained the input that produced a record. A future capability could extend the Calculation Framework's own stored shape to retain a JSON-serialized input snapshot, or introduce a Workspace-layer-only, session-scoped "last input" cache requiring no Domain change at all. |
+| **Status** | Identified — disclosed directly by `TD-29` |
+| **Priority** | Low — no real UI consumer of the Calculations Workspace surface exists yet to demonstrate the need |
+| **Business Value** | Unknown — dependent on a real UI consumer |
+| **Engineering Effort** | Low (Workspace-layer cache) to Medium (`Tempest.Core.Calculations` stored-shape extension) |
+| **Dependencies** | `CalculationRecordDto<TResult>` (Implemented, `WP 7.1D`) would need its own extension for the Domain-layer option |
+| **Proposed Target Release** | Unscheduled |
+| **Related ADRs** | None yet |
+| **Related Work Packages** | `WP 7.1D` (defined the current, input-free stored shape); `WP 9.2A` (disclosed the gap via `TD-29`) |
+| **Academy Impact** | Would extend `WP9.2A-engineering-calculations-workspace.md` once implemented |
+| **Notes** | Raised directly by `WP9.2A Future Capability Assessment.md` and `WP9.2A Technical Debt Assessment.md` (`TD-29`). |
+
+#### FCR-0054 — Real File/URL Attachment Storage Service
+
+| Field | Value |
+|---|---|
+| **Category** | Workspace |
+| **Description** | `Attachment`/`IAttachment` (`WP8.2C`) carry descriptive metadata only (`FileName`/`ContentType`/`SizeInBytes`) — no actual file bytes, no resolvable path, no URL-fetch capability exists anywhere in this platform. A real implementation would need a genuine Platform Service decision (local filesystem storage? a blob-storage abstraction? an external document-management-system integration?). |
+| **Status** | Identified — disclosed directly by `TD-31` |
+| **Priority** | Low — metadata-only Attachments already satisfy every scope item `WP 9.4A`'s own controlling instruction names |
+| **Business Value** | Unknown — dependent on a real, demonstrated need for actual file content |
+| **Engineering Effort** | Medium-High — a genuine new Platform Service design question, not a mechanical add |
+| **Dependencies** | None yet identified |
+| **Proposed Target Release** | Unscheduled |
+| **Related ADRs** | None yet |
+| **Related Work Packages** | `WP 8.2C` (defined the current, metadata-only `Attachment` shape); `WP 9.4A` (disclosed the gap via `TD-31`) |
+| **Academy Impact** | Would extend `WP9.4A-engineering-documents-workspace.md` once implemented |
+| **Notes** | Raised directly by `WP9.4A Future Capability Assessment.md` and `WP9.4A Technical Debt Assessment.md` (`TD-31`). |
+
+#### FCR-0055 — Verification Workspace
+
+| Field | Value |
+|---|---|
+| **Category** | Workspace |
+| **Description** | `Tempest.Core.Verification` (`WP 7.1E`) is already real, tested, and Workspace-invisible — architecturally the closest remaining precedent to `WP 9.2A`'s own "already-real framework, never introduced to the Workspace" starting point. A Verification Workspace would also retroactively resolve `EngineeringCockpit.VerificationStatus`'s own placeholder (`Unknown` since `WP 8.1C`) and give `WP 9.4A`'s own structurally-proven-but-unpopulated Documents↔Verification Digital Thread link a real, live anchor to point at. |
+| **Status** | Identified — recommended directly |
+| **Priority** | Medium-High — the most natural next real-discipline Work Package; also closes the disclosed `WP 9.3A` numbering gap this release's own record carries |
+| **Business Value** | High — completes the fourth of the platform's own four already-live Engineering disciplines' own most naturally-paired framework |
+| **Engineering Effort** | Medium — mirrors `WP 9.2A`'s own already-proven "already-real framework, introduce to the Workspace" shape closely |
+| **Dependencies** | `Tempest.Core.Verification` (Implemented, `WP 7.1E`); the Engineering Domain's own Verification-family canonical objects (`WP 8.2A`/`WP 8.2B`/`WP 8.2C`) |
+| **Proposed Target Release** | `v0.9.0`, as the Product Owner's own next-instructed Work Package |
+| **Related ADRs** | None yet |
+| **Related Work Packages** | `WP 7.1E` (Verification Framework); `WP 9.4A` (recommends this directly, disclosing the `WP 9.3A` numbering gap it stands in for) |
+| **Academy Impact** | Would be a new Academy article, mirroring `WP9.2A-engineering-calculations-workspace.md`'s own shape |
+| **Notes** | Raised directly by `WP9.4A Future Capability Assessment.md`. |
+
+#### FCR-0056 — Governance & Risk Workspace (Risks, Issues, Decisions, Hazards, Assumptions)
+
+| Field | Value |
+|---|---|
+| **Category** | Workspace |
+| **Description** | `Issue`/`Risk`/`Hazard`/`Decision`/`Assumption` (`Contracts/GovernanceRisk.cs`, `WP 8.2C`) are all already real, compiled, `EngineeringObjectBase`-derived concrete classes, architecturally ready for the same Kind-keyed Workspace treatment every other discipline has now received four times, but none has its own Explorer area, Property Inspector Kind registration, or dedicated commands — `EngineeringCockpit.OpenDecisions`/`RiskSummary` remain fixed, disclosed placeholder content. `WP 9.4A` creates one live `Decision` and reads one already-live `Risk` purely to satisfy its own Digital Thread scope item, proving the underlying Domain classes are Workspace-ready without any further Domain-layer work. |
+| **Status** | Identified |
+| **Priority** | Low — no dedicated Governance & Risk Workspace presence has been requested yet |
+| **Business Value** | Unknown — dependent on a real, demonstrated need for dedicated Risk/Decision browsing and management, beyond the indirect Digital Thread reachability `WP 9.4A` already provides |
+| **Engineering Effort** | Low — mirrors the now four-times-proven Kind-keyed Workspace pattern directly; no Domain-layer work is anticipated |
+| **Dependencies** | `Contracts/GovernanceRisk.cs`/`Implementation/GovernanceRisk.cs` (Implemented, `WP 8.2C`) |
+| **Proposed Target Release** | Unscheduled |
+| **Related ADRs** | None yet |
+| **Related Work Packages** | `WP 8.2C` (defined and implemented the underlying Domain classes); `WP 9.4A` (first to instantiate a live `Decision`, and to read the base sample's own live `Risk`) |
+| **Academy Impact** | Would be a new Academy article, mirroring the shape of every prior discipline's own |
+| **Notes** | Raised directly by `WP9.4A Future Capability Assessment.md`. |
+
+#### FCR-0057 — `VerificationService.RecordAsync` Additionally Linking Through `IHasRelationships` When the Subject Is a Real Domain Object
+
+| Field | Value |
+|---|---|
+| **Category** | Workspace |
+| **Description** | `VerificationService.RecordAsync` (`WP7.1E`) links its own subject to a newly-created record via the raw document store only, never visible to `EngineeringDomainContext.RelationshipRepository` (`TD-32`). A future implementation could have `RecordAsync` detect an `EngineeringObjectBase`-derived subject and additionally call its own `.LinkAsync()`. |
+| **Status** | Identified — disclosed directly by `TD-32` |
+| **Priority** | Low — `VerificationRecordReader`'s own existing raw-store read already serves every scope item `WP 9.3A`'s own controlling instruction names |
+| **Business Value** | Unknown — dependent on a real Workspace-layer consumer needing `RelationshipRepository` to see this specific link directly |
+| **Engineering Effort** | Low — a small, additive change to one already-shipped method, once justified |
+| **Dependencies** | `VerificationService.RecordAsync` (Implemented, `WP 7.1E`) |
+| **Proposed Target Release** | Unscheduled |
+| **Related ADRs** | None yet |
+| **Related Work Packages** | `WP 7.1E` (defined the current, raw-store-only linking shape); `WP 9.3A` (disclosed the gap via `TD-32`) |
+| **Academy Impact** | Would extend `WP9.3A-verification-management-workspace.md` once implemented |
+| **Notes** | Raised directly by `WP9.3A Future Capability Assessment.md` and `WP9.3A Technical Debt Assessment.md` (`TD-32`). |
+
+#### FCR-0058 — Concrete `IApprovalGate`/`IApproval`/`IReview` Implementation, Extended to Verification
+
+| Field | Value |
+|---|---|
+| **Category** | Workspace |
+| **Description** | Extends `FCR-0052` (`WP 9.2A`) to Verification: "Verification Reviews"/"Verification Approval State" are satisfied by `LifecycleState` alone (`ADR-0090`), identically to Calculation Management's own already-disclosed treatment. A real implementation would give every discipline naming "Review"/"Approval" a genuine, queryable governance record. |
+| **Status** | Identified |
+| **Priority** | Low — `LifecycleState` reading already satisfies every KPI/facet named across `WP 9.0A`–`WP 9.3A` |
+| **Business Value** | Unknown — dependent on a real, demonstrated need for auditable review/approval provenance |
+| **Engineering Effort** | Medium-High — the identical governance-record design question `FCR-0052` already names |
+| **Dependencies** | `Contracts/Lifecycle.cs` (Identified, `WP8.2B`, still unimplemented) |
+| **Proposed Target Release** | Unscheduled |
+| **Related ADRs** | `ADR-0090` (documents the current `LifecycleState`-only workaround for Verification) |
+| **Related Work Packages** | `WP 8.2B` (defined the current, unimplemented contracts); `WP 9.2A` (`FCR-0052`, `ADR-0087`); `WP 9.3A` (extends `FCR-0052` to Verification, `ADR-0090`) |
+| **Academy Impact** | Would extend `WP9.3A-verification-management-workspace.md` once implemented |
+| **Notes** | Raised directly by `WP9.3A Future Capability Assessment.md`; extends `FCR-0052` rather than duplicating it. |
+
+#### FCR-0059 — A Dedicated `Witness` Field on `VerificationEvidenceEntry`
+
+| Field | Value |
+|---|---|
+| **Category** | Workspace |
+| **Description** | `WP 9.3A`'s own scope names "Witness information" as a distinct Engineering Behaviour item; `VerificationEvidenceEntry` (`Description`/`Reference` only, `WP 7.1E`) has no dedicated field for it — represented today as ordinary evidence text. A future capability could extend the record with a genuine `WitnessedBy` field. |
+| **Status** | Identified |
+| **Priority** | Low — descriptive-text representation already satisfies every scope item `WP 9.3A`'s own controlling instruction names |
+| **Business Value** | Unknown — dependent on witness identity needing to be queryable/reportable independently of free-text evidence |
+| **Engineering Effort** | Low — a small, additive field on an existing record, once justified |
+| **Dependencies** | `VerificationEvidenceEntry` (Implemented, `WP 7.1E`) |
+| **Proposed Target Release** | Unscheduled |
+| **Related ADRs** | None yet |
+| **Related Work Packages** | `WP 7.1E` (defined the current, two-field shape); `WP 9.3A` (disclosed the gap) |
+| **Academy Impact** | Would extend `WP9.3A-verification-management-workspace.md` once implemented |
+| **Notes** | Raised directly by `WP9.3A Future Capability Assessment.md`. |
+
+#### FCR-0060 — A Genuine `Routing`/`SupplierOperation` Domain Kind, Each With Its Own Structured Fields
+
+| Field | Value |
+|---|---|
+| **Category** | Workspace |
+| **Description** | `ADR-0091` (`WP 9.5A`) realises Routings/Supplier Operations as `Classification`-tagged `ManufacturingOperation` objects. A future implementation could introduce genuine, distinct Domain Kinds carrying their own structured fields (a real cycle-time, a real lead-time/cost). |
+| **Status** | Identified |
+| **Priority** | Low — every named `WP 9.5A` scope item is satisfied by the current representation |
+| **Business Value** | Unknown — dependent on a real consumer needing structured fields beyond `Classification`/`PartId`/`"manufacturedBy"` |
+| **Engineering Effort** | Medium — a genuine Domain-layer contract addition, reopening `WP 8.2C`'s own closed catalogue |
+| **Dependencies** | `Contracts/TestManufacturing.cs` (Implemented, `WP 8.2C`) |
+| **Proposed Target Release** | Unscheduled |
+| **Related ADRs** | `ADR-0091` (documents the current `Classification`-tagged workaround) |
+| **Related Work Packages** | `WP 8.2C` (defined the current, single-Kind shape); `WP 9.5A` (`ADR-0091`) |
+| **Academy Impact** | Would extend `WP9.5A-manufacturing-workspace.md` once implemented |
+| **Notes** | Raised directly by `WP9.5A Future Capability Assessment.md`. |
+
+#### FCR-0061 — Parameterising `EngineeringCockpit.FormatCoverage`'s Own Empty-State Message
+
+| Field | Value |
+|---|---|
+| **Category** | Workspace |
+| **Description** | `EngineeringCockpit.FormatCoverage`'s own zero-denominator text is hardcoded Requirements-specific (`TD-33`), already inaccurately reused by `CalculationsKpiCards`/`VerificationKpiCards`, and deliberately not reused by `ManufacturingKpiCards` for the same reason. A future capability could add an optional `emptyLabel` parameter and update every existing call site. |
+| **Status** | Identified — disclosed directly by `TD-33` |
+| **Priority** | Low — a small, low-risk, purely additive fix, but outside any one Work Package's own scope to make unprompted |
+| **Business Value** | Low — a display-accuracy improvement only, no data-correctness consequence |
+| **Engineering Effort** | Low — one optional parameter plus updating three existing call sites |
+| **Dependencies** | `EngineeringCockpit.FormatCoverage` (Implemented, `WP 9.1A`) |
+| **Proposed Target Release** | Unscheduled — recommended the next time `EngineeringCockpit.cs` is touched for any reason |
+| **Related ADRs** | None yet |
+| **Related Work Packages** | `WP 9.1A` (defined the current, hardcoded shape); `WP 9.2A`/`WP 9.3A` (each already reuse it inaccurately); `WP 9.5A` (disclosed the gap via `TD-33`) |
+| **Academy Impact** | None until implemented |
+| **Notes** | Raised directly by `WP9.5A Future Capability Assessment.md` and `WP9.5A Technical Debt Assessment.md` (`TD-33`). |
+
+#### FCR-0062 — Extending `VerificationService.RecordAsync`'s Own `IHasRelationships` Linking to Cover Inspection Subjects
+
+| Field | Value |
+|---|---|
+| **Category** | Workspace |
+| **Description** | Extends `FCR-0057` (`WP 9.3A`): `WP 9.5A`'s own Inspection recording is a direct, disclosed instance of the identical underlying gap (`TD-32`), now exercised by a second discipline (Manufacturing), strengthening the case for the future capability `FCR-0057` already names. |
+| **Status** | Identified |
+| **Priority** | Low — `VerificationRecordReader`'s own existing raw-store read already serves every scope item `WP 9.5A`'s own controlling instruction names |
+| **Business Value** | Unknown — dependent on a real Workspace-layer consumer needing `RelationshipRepository` to see this specific link directly |
+| **Engineering Effort** | Low — identical to `FCR-0057`, since it is the same underlying change |
+| **Dependencies** | `VerificationService.RecordAsync` (Implemented, `WP 7.1E`) |
+| **Proposed Target Release** | Unscheduled |
+| **Related ADRs** | None yet |
+| **Related Work Packages** | `WP 7.1E` (defined the current, raw-store-only linking shape); `WP 9.3A` (`FCR-0057`, `TD-32`); `WP 9.5A` (a second, real consumer with a genuine stake) |
+| **Academy Impact** | Would extend `WP9.5A-manufacturing-workspace.md` once implemented |
+| **Notes** | Raised directly by `WP9.5A Future Capability Assessment.md`; extends `FCR-0057` rather than duplicating it. |
+
 ### Project Management
 
 #### FCR-0028 — Project Engine / Secure Project Data Management
@@ -924,7 +1128,20 @@ Coverage Note).
 
 ## Coverage Note
 
-**50 capabilities identified** (`FCR-0001` through `FCR-0050`).
+**62 capabilities identified** (`FCR-0001` through `FCR-0062`).
+`FCR-0060`–`FCR-0062` were added by `WP 9.5A`, sourced directly from its
+own implementation-experience findings (the `Classification`-tagged
+Routing/Supplier Operation representation, `TD-33`'s own
+`FormatCoverage` finding, and extending `WP 9.3A`'s own `FCR-0057` to a
+second, real consumer), not inferred.
+`FCR-0057`–`FCR-0059` were added by `WP 9.3A`, sourced directly from its
+own implementation-experience findings (`TD-32`, the disclosed
+`LifecycleState`-only Approval State treatment extending `FCR-0052`, and
+the undedicated Witness-information field), not inferred.
+`FCR-0054`–`FCR-0056` were added by `WP 9.4A`, sourced directly from its
+own implementation-experience findings (`TD-31`, the disclosed `WP 9.3A`
+numbering gap, and the Governance & Risk Domain classes' own proven
+Workspace-readiness), not inferred.
 `FCR-0001`–`FCR-0028` were each traceable to a specific, cited,
 pre-existing document, established `WP 7.0A`. `FCR-0029`–`FCR-0033`
 were added by `WP 7.0B`'s own Capability Dependency Analysis — each
