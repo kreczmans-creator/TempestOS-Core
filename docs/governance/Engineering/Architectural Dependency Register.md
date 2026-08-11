@@ -10,7 +10,7 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | The `.csproj` files themselves (project references); `docs/adr/ADR-0023-platform-layering-dependencies-flow-downward.md`; `docs/academy/02 Runtime Architecture/06-platform-layering.md`. |
 | **Review Frequency** | Updated whenever a project reference changes, or a new capability is classified against the four-layer model. |
-| **Last Reviewed** | 2026-07-27 (WP 5.0D). |
+| **Last Reviewed** | 2026-08-11 (WP 11.3B, Presentation Strategy Implementation) — narrow correction: the "fifth position" paragraph's own named occupant updated to reflect `TempestShell`'s retirement and `ADR-0101`'s classification of `Tempest.Desktop`/`Tempest.App.Workspace` as its current occupants; the four-layer model itself and every other row unchanged. Previously reviewed 2026-07-27 (WP 5.0D). |
 | **Related Documents** | `docs/architecture/Platform Service Map.md`; `Namespace Register.md`; `Interface Register.md`. |
 | **Related ADRs** | ADR-0016, ADR-0023. |
 | **Related Academy Articles** | `docs/academy/02 Runtime Architecture/06-platform-layering.md`. |
@@ -54,14 +54,22 @@ Service or the Runtime Host's own contracts; nothing depends upward.
 | Platform Services (implementations) | Configuration, Logging, Discovery, Registration, Lifecycle, Dependency Injection, Event Bus, Background Services infrastructure, Plugin Manifest infrastructure, Navigation Framework infrastructure | `Platform Services Register.md` |
 | Runtime Host | `TempestHost`, `TempestHostBuilder` | `Architecture Document Register.md` |
 
-**A fifth position, above all four, implemented `WP 5.0D`:** the
-Application layer — `Tempest.App`'s own Shell (`TempestShell`,
-`Tempest.App.Shell`) — consumes the Runtime Host's own public surface
+**A fifth position, above all four, first implemented `WP 5.0D`:** the
+Application layer — consumes the Runtime Host's own public surface
 (`ITempestHost`/`ITempestHost.Services`) exactly as a human operator or
 test harness already could, but is not itself one of ADR-0023's four
 layers and carries no orchestration authority the Host does not already
 grant any other external caller. See `ADR-0033` and `Shell & Composition
-Framework Architecture.md`.
+Framework Architecture.md`. **Occupant updated, `WP 11.3B`:** the
+original occupant, `Tempest.App`'s own Shell (`TempestShell`,
+`Tempest.App.Shell`), was retired as dead code (unreachable since
+`ADR-0068`, `WP 8.1A`, `v0.8.0`) — this position is now held by
+`Tempest.Desktop` (TempestOS's shipped application) and, for the shared
+Workspace domain layer specifically, `Tempest.App.Workspace`
+(`WorkspaceShell`, TempestOS's Internal Engineering Harness per
+`ADR-0101`). Neither is one of ADR-0023's four layers either; the
+position itself, and this register's own reasoning about it, is
+unchanged.
 
 ## Layering Violations Found
 

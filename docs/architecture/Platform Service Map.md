@@ -413,12 +413,16 @@ ADR-0011), then Dependency Injection, then Lifecycle.
 `ITempestHostBuilder`, `TempestHostBuilder`, `HostState`, `HostException`,
 `InvalidHostStateTransitionException`.
 
-**Consumers.** `Tempest.App`'s own Shell (`TempestShell`, implemented
-`WP 5.0D`) — the process entry point's own composition root, per
-`ADR-0033`, constructing and running the Host, then resolving
-`INavigationProvider`/`IEventBus` through `Services`; future hosted
-services, background workers, and — pending their own classification
-under ADR-0013 — a Requirements Engine and/or Project Engine.
+**Consumers.** `Tempest.Desktop` (TempestOS's shipped application) and
+`Tempest.App.Workspace`'s `WorkspaceShell` (TempestOS's Internal
+Engineering Harness, `ADR-0101`) — each a process entry point's own
+composition root, per `ADR-0033`, constructing and running the Host,
+then resolving platform services through `Services`. (`TempestShell`,
+the original `WP 5.0D` implementation of this role, was retired `WP
+11.3B` — unreachable from any running entry point since `ADR-0068`,
+`WP 8.1A`, `v0.8.0`.) Also: future hosted services, background workers,
+and — pending their own classification under ADR-0013 — a Requirements
+Engine and/or Project Engine.
 
 **ADR references.** ADR-0004 (disposal reused at Host level, and its WP 2.7B
 update), ADR-0008 (why Discovery/Registration precede DI — see ADR-0011),

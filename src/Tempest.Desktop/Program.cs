@@ -4,11 +4,14 @@ namespace Tempest.Desktop;
 
 /// <summary>
 /// The desktop application's own process entry point — Application
-/// Bootstrap (`WP 10.0B`). `Tempest.Desktop` is now the primary launch
-/// target for TempestOS (`WP 10.0B`'s own explicit "replace the console
-/// application as the primary launch target" instruction); the console
-/// `Tempest.App`/`TempestShell` remains, retained for diagnostics/testing
-/// per that same instruction's own explicit exception.
+/// Bootstrap (`WP 10.0B`). `Tempest.Desktop` is TempestOS's shipped
+/// desktop application. `Tempest.App` (`WorkspaceShell`) is TempestOS's
+/// Internal Engineering Harness, formally classified as such by
+/// `ADR-0101` (`WP 11.3B`) — not a second shipped product; see that ADR
+/// for the full reasoning. `WP11.3A Presentation Strategy Review.md`
+/// found the prior wording here ("`WP 10.0B`'s own explicit... instruction")
+/// unverifiable against `WP 10.0B`'s own documentation record; corrected,
+/// not repeated, per that review's own disclosed finding.
 /// </summary>
 public static class Program
 {

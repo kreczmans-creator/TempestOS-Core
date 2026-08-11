@@ -2,9 +2,9 @@ using Tempest.App.Workspace;
 
 namespace Tempest.Core.Tests.Workspace;
 
-// A real, minimal IWorkspaceView — mirrors PlaceholderPage's own role in
-// Shell tests, not a mock standing in for a production type (this project
-// does not use a mocking framework).
+// A real, minimal IWorkspaceView — a genuine, minimal test fixture, not a
+// mock standing in for a production type (this project does not use a
+// mocking framework).
 public sealed class TestWorkspaceView(Guid objectId, string objectKind, string title) : IWorkspaceView
 {
     public Guid Id { get; } = Guid.NewGuid();

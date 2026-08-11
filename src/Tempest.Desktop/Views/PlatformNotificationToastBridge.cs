@@ -17,7 +17,7 @@ namespace Tempest.Desktop.Views;
 /// directly, by a whole-repository search. This closes that gap: any
 /// module (a background task, a long-running import, a future
 /// scheduled job) that already knows how to publish a notification the
-/// console `TempestShell` path could always observe now reaches a real
+/// console `WorkspaceShell` path could always observe now reaches a real
 /// visible surface in the graphical Workspace too, without that module
 /// needing any Desktop-specific knowledge — the same "publish once,
 /// reach every subscriber" principle the event bus already existed to

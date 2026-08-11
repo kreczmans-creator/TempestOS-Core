@@ -477,10 +477,31 @@ public sealed class ObjectEditorViewTests
 
             var passButton = resultExpander.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "✅ Pass"));
             passButton.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
-            await Task.Delay(50);
 
-            var statusMessage = resultExpander.GetLogicalDescendants().OfType<TextBlock>().Last();
-            Assert.Contains("recorded", statusMessage.Text, StringComparison.OrdinalIgnoreCase);
+            // Deterministic synchronisation, not a fixed delay: the "Record
+            // Pass" click dispatches an async command whose completion (and
+            // consequent status-text update) has no other observable signal
+            // this test can await, so it polls the real, current status text
+            // — re-read from the live visual tree every iteration, not a
+            // reference captured before the command completes — until it
+            // contains "recorded" or a generous deadline elapses. A fixed
+            // `Task.Delay` here was found flaky under CI load (WP 11.9.0
+            // Release Publication Report, Finding 1): the assertion could
+            // read the TextBlock before the async update landed. This still
+            // fails, just as before, if the operation genuinely never
+            // completes — it no longer fails because it merely ran slower
+            // than an arbitrary guess.
+            string? statusText = null;
+            var deadline = DateTime.UtcNow.AddSeconds(2);
+            while (DateTime.UtcNow < deadline)
+            {
+                statusText = resultExpander.GetLogicalDescendants().OfType<TextBlock>().Last().Text;
+                if (statusText is not null && statusText.Contains("recorded", StringComparison.OrdinalIgnoreCase))
+                    break;
+                await Task.Delay(10);
+            }
+
+            Assert.Contains("recorded", statusText, StringComparison.OrdinalIgnoreCase);
         }
         finally
         {

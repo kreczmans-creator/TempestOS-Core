@@ -10,8 +10,14 @@ Console.Title = "TempestOS";
 // sequence in the identical order rather than risking two, independently
 // maintained copies drifting apart. This file itself now only decides when
 // to start (WorkspaceShell.StartAsync, below) and how to present (a
-// console loop) — the same responsibility split TempestShell already has
-// relative to ITempestHostBuilder/ITempestHost.
+// console loop) — a clean separation from ITempestHostBuilder/ITempestHost's
+// own, presentation-agnostic construction.
+//
+// WP 11.3B: this project's own console entry point is TempestOS's
+// Internal Engineering Harness (ADR-0101) — a fast, scriptable surface
+// for verifying the Runtime Host and Workspace domain layer compose and
+// run correctly, not a shipped end-user product. TempestOS's shipped
+// desktop application is Tempest.Desktop.
 var (host, manager) = EngineeringWorkspaceComposer.Build();
 
 await using var shell = new WorkspaceShell(manager, Console.Out, Console.In);

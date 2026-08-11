@@ -8,11 +8,12 @@ using Tempest.Samples;
 
 namespace Tempest.Core.Tests.Workspace;
 
-// Proves WorkspaceShell (Tempest.App.Workspace) end to end: TempestOS
-// launches directly into a functioning, five-region Workspace shell, over a
-// real, unmodified TempestHost - the same real-collaborator,
-// StringWriter/StringReader testing discipline TempestShellTests.cs already
-// established (WP 5.0D), applied to the Workspace for the first time.
+// Proves WorkspaceShell (Tempest.App.Workspace) end to end: TempestOS's
+// Internal Engineering Harness (ADR-0101) launches directly into a
+// functioning, five-region Workspace shell, over a real, unmodified
+// TempestHost - the same real-collaborator, StringWriter/StringReader
+// testing discipline this project established for its console shell at
+// WP 5.0D, applied to the Workspace for the first time.
 [Collection("Console output capture")]
 public class WorkspaceShellTests
 {

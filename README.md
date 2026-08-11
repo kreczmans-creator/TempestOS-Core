@@ -35,19 +35,34 @@ src/
 │                            # services), Commands, Versioning — plus legacy,
 │                            # pre-module-pipeline bootstrap/project code
 │                            # (Bootstrap, Hosting, Projects, Repositories)
-├── Tempest.App/             # A console front end — still the legacy
-│                            # bootstrap/project-management app; does not
-│                            # yet run through TempestHost (see
-│                            # docs/governance/Engineering/Platform Services
-│                            # Register.md)
-├── Samples/Tempest.Samples/ # ClockModule and ClockLifecycleObserverModule —
-│                            # the living reference modules every Work
-│                            # Package extends
-└── Plugins/                 # Empty by design — no real plugin ships yet
+├── Tempest.App/             # TempestOS's Internal Engineering Harness
+│                            # (ADR-0101) — a console presentation
+│                            # (WorkspaceShell) over the shared Engineering
+│                            # Workspace domain layer, plus the domain layer
+│                            # itself (WorkspaceManager, all six Engineering
+│                            # Disciplines' commands/node providers).
+│                            # Tempest.Desktop depends on this project's
+│                            # shared domain layer; not a shipped product of
+│                            # its own — a fast, scriptable verification
+│                            # tool, not TempestOS's application.
+├── Tempest.Desktop/         # TempestOS's shipped desktop application
+│                            # (ADR-0092, ADR-0094) — Avalonia 11.2.3,
+│                            # the graphical Engineering Workspace: Ribbon,
+│                            # Object Editors, Docking, Digital Thread graph,
+│                            # Command Palette, Undo/Redo, Macros. This is
+│                            # how TempestOS is actually run and used.
+├── Samples/Tempest.Samples/ # ClockModule, ClockLifecycleObserverModule, and
+│                            # the six real Engineering Discipline sample
+│                            # modules — the living reference modules every
+│                            # Work Package extends
+├── Templates/                # `dotnet new` module project template
+└── Plugins/                  # Empty by design — no real plugin ships yet
 
 tests/
-└── Tempest.Core.Tests/      # xUnit tests, mirroring src/'s own namespace
-                              # structure directory-for-directory
+├── Tempest.Core.Tests/       # xUnit tests, mirroring src/'s own namespace
+│                             # structure directory-for-directory
+└── Tempest.Desktop.Tests/    # xUnit tests against real Avalonia headless
+                               # rendering — no display attached, no mocks
 ```
 
 For the full platform picture — every platform service, module, hosted
@@ -55,6 +70,8 @@ service, and plugin that exists, what's implemented versus contract-only,
 and how it's all cross-referenced — see
 [`docs/governance/Governance Index.md`](docs/governance/Governance%20Index.md)
 and [`docs/architecture/Platform Service Map.md`](docs/architecture/Platform%20Service%20Map.md).
+For why `Tempest.App` and `Tempest.Desktop` both exist and what each one
+is for, see [`ADR-0101`](docs/adr/ADR-0101-tempest-app-workspaceshell-is-tempestos-internal-engineering-harness-not-a-shipped-product.md).
 
 ## Documentation
 
@@ -81,7 +98,15 @@ Requires the .NET SDK version pinned in [global.json](global.json).
 dotnet build src/TempestOS.slnx
 ```
 
-Run the console application:
+**Run TempestOS** (the shipped desktop application):
+
+```
+dotnet run --project src/Tempest.Desktop/Tempest.Desktop.csproj
+```
+
+**Run the Internal Engineering Harness** (`Tempest.App`/`WorkspaceShell`
+— a console verification tool, not a second application; see
+[`ADR-0101`](docs/adr/ADR-0101-tempest-app-workspaceshell-is-tempestos-internal-engineering-harness-not-a-shipped-product.md)):
 
 ```
 dotnet run --project src/Tempest.App/Tempest.App.csproj
@@ -92,6 +117,11 @@ Run tests:
 ```
 dotnet test src/TempestOS.slnx
 ```
+
+TempestOS also has a CI pipeline (`.github/workflows/ci.yml`) that builds
+Debug and Release and runs the complete test suite on every push, pull
+request, and manual dispatch — see
+[`docs/academy/06 Engineering Standards/04-continuous-integration.md`](docs/academy/06%20Engineering%20Standards/04-continuous-integration.md).
 
 ## Archive
 

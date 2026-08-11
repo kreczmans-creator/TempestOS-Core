@@ -4,6 +4,20 @@
 — WP 5.0D, exactly as designed, with zero deviation from the shape
 below.**
 
+**Update, `WP 11.3B` (`ADR-0101`):** `TempestShell`, the concrete class
+this document designs below, was retired as dead code — unreachable
+from any running entry point since `ADR-0068` (`WP 8.1A`, `v0.8.0`)
+made `WorkspaceShell` `Tempest.App`'s own default launch target instead.
+This document's own design reasoning (the composition-root pattern,
+`ADR-0033`–`ADR-0035`, the dependency-direction rules) remains valid and
+is not reversed — `WorkspaceShell` and, later, `Tempest.Desktop` both
+realise the identical pattern this document first designed — but every
+mention of `TempestShell` specifically below describes a class that no
+longer exists in the repository. Read as the historical record of
+`v0.5.0`'s own design, not current source. See `ADR-0101` and
+`docs/releases/v0.11.0/WP11.3B Presentation Strategy Implementation.md`
+for the current picture.
+
 ## Objective
 
 Design how `Tempest.App` consumes the platform: the application shell that

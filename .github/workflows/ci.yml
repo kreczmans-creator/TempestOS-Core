@@ -1,0 +1,271 @@
+name: CI
+
+# WP 11.1A — Continuous Integration & Build Verification.
+#
+# This is TempestOS's first CI pipeline and the authoritative engineering
+# gate for every future change: it builds Debug and Release, runs the
+# complete automated test suite against both, and fails immediately on
+# any build error or test failure. Before this pipeline existed, every
+# "0 Warnings/0 Errors, N/N tests passing" claim in this project's own
+# Work Package retrospectives was a manually-run, self-reported
+# assertion — see docs/releases/v0.11.0/WP11.0A Platform Architecture
+# Review.md, finding R-1. This workflow closes that gap: the claim is now
+# machine-verified on every push, every pull request, and on demand.
+#
+# See docs/academy/06 Engineering Standards/04-continuous-integration.md
+# for the philosophy this workflow implements, and
+# docs/releases/v0.11.0/WP11.1A Implementation Report.md for the design
+# rationale behind every decision below.
+#
+# WP 11.2A adds a third, independent job — governance-health-check — a
+# separate validation stage that runs after build-and-test completes,
+# auditing governance-document consistency (ADR Register, Academy Index,
+# Release Register, Documentation Register, PROJECT_STATUS.md, VERSION,
+# release folders) rather than code. See
+# docs/releases/v0.11.0/WP11.2A Governance Health-Check Tool.md for what
+# it checks and why it is deliberately NOT yet part of the required `CI
+# Gate` job (real, pre-existing governance drift the tool found on its
+# first run — not introduced by this change — would otherwise block
+# every future merge until a separate, larger clean-up Work Package
+# closes it).
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch: {}
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_NOLOGO: "true"
+  DOTNET_CLI_TELEMETRY_OPTOUT: "true"
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: "true"
+  SOLUTION_PATH: src/TempestOS.slnx
+
+jobs:
+  build-and-test:
+    name: Build & Test (${{ matrix.configuration }})
+    # Pinned to a specific runner image, not the floating "windows-latest"
+    # alias — this project pins every other version it depends on exactly
+    # (global.json's SDK version, every PackageReference in every
+    # .csproj); an unannounced runner-image upgrade silently changing CI
+    # behaviour would be the identical class of risk. Bump deliberately,
+    # not automatically.
+    runs-on: windows-2022
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        configuration: [Debug, Release]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Reads the SDK version and rollForward policy directly from
+      # global.json — the same single source of truth every local build
+      # already uses (Directory.Build.props applies the identical
+      # "one file, read once" convention to the platform's own Version).
+      # A second, hand-typed SDK version here would be exactly the kind
+      # of drift this pipeline exists to prevent.
+      - name: Set up .NET SDK (from global.json)
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Restore
+        run: dotnet restore "${{ env.SOLUTION_PATH }}"
+
+      # TreatWarningsAsErrors is applied here, at the CI build step only —
+      # Directory.Build.props itself is deliberately left unchanged
+      # (it sets it false, so a local `dotnet build` still behaves exactly
+      # as it always has). This is the mechanical enforcement of the "0
+      # Warnings" bar this project has always claimed but never had a
+      # machine verify: confirmed locally, before this workflow was
+      # written, that the current tree builds clean under this flag in
+      # both configurations, so this is closing a gap, not introducing a
+      # new failure mode.
+      - name: Build (${{ matrix.configuration }})
+        shell: pwsh
+        run: |
+          $log = "build-${{ matrix.configuration }}.log"
+          dotnet build "${{ env.SOLUTION_PATH }}" `
+            --configuration ${{ matrix.configuration }} `
+            --no-restore `
+            -p:TreatWarningsAsErrors=true `
+            2>&1 | Tee-Object -FilePath $log
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "Build failed for configuration '${{ matrix.configuration }}' (exit code $LASTEXITCODE)."
+            exit $LASTEXITCODE
+          }
+
+      - name: Test (${{ matrix.configuration }})
+        shell: pwsh
+        run: |
+          dotnet test "${{ env.SOLUTION_PATH }}" `
+            --configuration ${{ matrix.configuration }} `
+            --no-build `
+            --logger trx `
+            --logger "console;verbosity=normal" `
+            --results-directory "TestResults/${{ matrix.configuration }}"
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "One or more tests failed for configuration '${{ matrix.configuration }}' (exit code $LASTEXITCODE)."
+            exit $LASTEXITCODE
+          }
+
+      # Runs even if Build or Test failed above (if: always()), so a
+      # failing run still publishes exactly what it got through — the
+      # same "disclose what actually happened" instinct this project
+      # applies everywhere else, applied to its own CI output.
+      - name: Publish build & test summary
+        if: always()
+        shell: pwsh
+        run: |
+          $config = "${{ matrix.configuration }}"
+          $lines = New-Object System.Collections.Generic.List[string]
+          $lines.Add("### Build & Test — $config")
+          $lines.Add("")
+
+          $buildLog = "build-$config.log"
+          if (Test-Path $buildLog) {
+            $errorCount   = (Select-String -Path $buildLog -Pattern ': error '   | Measure-Object).Count
+            $warningCount = (Select-String -Path $buildLog -Pattern ': warning ' | Measure-Object).Count
+            $lines.Add("| Build metric | Count |")
+            $lines.Add("|---|---|")
+            $lines.Add("| Errors | $errorCount |")
+            $lines.Add("| Warnings | $warningCount |")
+          } else {
+            $lines.Add("_No build log found - the build step did not complete._")
+          }
+          $lines.Add("")
+
+          $trxFiles = Get-ChildItem -Path "TestResults/$config" -Filter "*.trx" -ErrorAction SilentlyContinue
+          if ($trxFiles) {
+            $lines.Add("| Test result file | Total | Passed | Failed |")
+            $lines.Add("|---|---|---|---|")
+            foreach ($file in $trxFiles) {
+              [xml]$trx = Get-Content $file.FullName
+              $counters = $trx.TestRun.ResultSummary.Counters
+              $lines.Add("| $($file.Name) | $($counters.total) | $($counters.passed) | $($counters.failed) |")
+            }
+          } else {
+            $lines.Add("_No test results found - the test step did not complete._")
+          }
+
+          $lines -join "`n" | Add-Content -Path $env:GITHUB_STEP_SUMMARY
+
+      - name: Upload build log (${{ matrix.configuration }})
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log-${{ matrix.configuration }}
+          path: build-${{ matrix.configuration }}.log
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Upload test results (${{ matrix.configuration }})
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.configuration }}
+          path: TestResults/${{ matrix.configuration }}/*.trx
+          if-no-files-found: warn
+          retention-days: 14
+
+      # Two separate artefacts, deliberately not one — ADR-0101 (`WP 11.3B`):
+      # Tempest.Desktop is TempestOS's shipped application; Tempest.App
+      # (WorkspaceShell) is the Internal Engineering Harness, not a second
+      # product. Bundling both into one "tempestos-release-build" artefact
+      # (as this step did through WP 11.1A/WP 11.1B) implied they were
+      # co-equal deliverables — corrected here. Debug output is not
+      # published for either: it is not a release candidate and would only
+      # double artefact storage for no verification benefit.
+      - name: Upload Tempest.Desktop build output (shipped application)
+        if: matrix.configuration == 'Release'
+        uses: actions/upload-artifact@v4
+        with:
+          name: tempestos-desktop-release
+          path: src/Tempest.Desktop/bin/Release/net10.0/**
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Upload Tempest.App build output (Internal Engineering Harness)
+        if: matrix.configuration == 'Release'
+        uses: actions/upload-artifact@v4
+        with:
+          name: tempestos-engineering-harness
+          path: src/Tempest.App/bin/Release/net10.0/**
+          if-no-files-found: warn
+          retention-days: 14
+
+  # WP 11.2A — Governance Health-Check. Runs after build-and-test
+  # completes (not gated on its success — a governance-document
+  # inconsistency is orthogonal to whether the code itself compiles, and
+  # this project's own "disclose what actually happened" instinct favours
+  # always producing this report over silently skipping it because an
+  # unrelated build step failed). Read-only: scripts/governance-
+  # healthcheck.ps1 never writes inside the repository it validates.
+  governance-health-check:
+    name: Governance Health Check
+    needs: build-and-test
+    if: always()
+    runs-on: windows-2022
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # Release Register vs. git tags (Check 3) needs real tags to
+          # compare against - actions/checkout's own default
+          # (fetch-depth: 1) fetches none. fetch-tags: true is the
+          # supported way to get them without a full, slower
+          # fetch-depth: 0 history clone.
+          fetch-tags: true
+          # Pinned explicitly: without this, a tag-triggered push leaves
+          # checkout's own default ref (github.ref, e.g. refs/tags/v0.11.0)
+          # colliding with fetch-tags's own fetch of that identical tag -
+          # both target the same local refs/tags/<name> path, and git
+          # refuses ("Cannot fetch both <sha> and refs/tags/<name> to
+          # refs/tags/<name>"). Checking out by commit SHA instead removes
+          # the competing tag-ref write target entirely, on both a branch
+          # push and a tag push (WP 11.9.0 Release Publication Report,
+          # Finding 3).
+          ref: ${{ github.sha }}
+
+      - name: Run governance health check
+        id: healthcheck
+        shell: pwsh
+        run: |
+          $summaryPath = Join-Path $env:RUNNER_TEMP "governance-summary.txt"
+          & "${{ github.workspace }}\scripts\governance-healthcheck.ps1" -SummaryPath $summaryPath
+          $exitCode = $LASTEXITCODE
+          if (Test-Path $summaryPath) {
+            Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value (Get-Content -Path $summaryPath -Raw)
+          }
+          exit $exitCode
+
+  # A single, named job every branch-protection rule can require, so
+  # "the pipeline is green" has one unambiguous status check rather than
+  # requiring both matrix legs to be individually named in every
+  # protection rule — and so a future contributor reads one job name,
+  # not the matrix's own internal shape, to know whether it is safe to
+  # merge. Deliberately depends on build-and-test only, not
+  # governance-health-check — see the comment above that job for why.
+  gate:
+    name: CI Gate
+    needs: build-and-test
+    if: always()
+    runs-on: windows-2022
+    steps:
+      - name: Confirm every configuration passed
+        shell: pwsh
+        run: |
+          if ("${{ needs.build-and-test.result }}" -ne "success") {
+            Write-Error "One or more Build & Test configurations did not succeed - see the build-and-test job matrix for details."
+            exit 1
+          }
+          Write-Host "All Build & Test configurations succeeded."

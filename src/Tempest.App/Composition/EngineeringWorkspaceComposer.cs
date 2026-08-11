@@ -44,7 +44,7 @@ namespace Tempest.App.Composition;
 /// Deliberately returns the constructed <see cref="ITempestHost"/> and
 /// <see cref="WorkspaceManager"/> rather than a console- or
 /// Avalonia-specific wrapper — what a caller does with them (a
-/// <see cref="Tempest.App.Shell.TempestShell"/>-style console loop, or a
+/// <see cref="Tempest.App.Workspace.WorkspaceShell"/> console loop, or a
 /// graphical <c>MainWindow</c>) is entirely that caller's own
 /// presentation-layer decision, mirroring how <see cref="ITempestHostBuilder"/>
 /// itself already returns a plain <see cref="ITempestHost"/> rather than

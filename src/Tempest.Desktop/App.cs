@@ -13,7 +13,7 @@ namespace Tempest.Desktop;
 /// initialisation completes, builds the Engineering Workspace
 /// (<see cref="WorkspaceHost"/>) and shows the <see cref="MainWindow"/> —
 /// the graphical presentation layer's own equivalent of
-/// <c>Tempest.App.Shell.TempestShell</c>'s constructor plus
+/// <see cref="Tempest.App.Workspace.WorkspaceShell"/>'s construction plus
 /// <c>RunAsync</c>.
 /// </summary>
 public sealed class App : Application
@@ -42,7 +42,7 @@ public sealed class App : Application
             // Workspace's own StartAsync (Runtime Host discovery/DI
             // construction, then all six real disciplines) completes here,
             // before the first frame renders — the graphical equivalent of
-            // TempestShell.StartAsync's own synchronous-from-the-caller's-
+            // WorkspaceShell.StartAsync's own synchronous-from-the-caller's-
             // perspective await, just performed once at process start
             // rather than awaited inline in top-level statements.
             host.StartAsync().GetAwaiter().GetResult();
@@ -66,7 +66,7 @@ public sealed class App : Application
             };
 
             // Window Lifecycle: persist session state on the way out,
-            // exactly as the console TempestShell.StopAsync path already
+            // exactly as the console WorkspaceShell.StopAsync path already
             // does via WorkspaceManager.ShutdownAsync (ADR-0064, unchanged).
             // Every Desktop-local save (panel UI state, `WP 10.2B`; window
             // geometry, `WP 10.5B`) — plus the real unsaved-work

@@ -1,0 +1,162 @@
+name: Release Publish
+
+# WP 11.1B — Version-Tagging Workflow & Rollback Support.
+#
+# Triggered only by pushing an annotated tag matching the project's own
+# versioning policy (see docs/releases/v0.11.0/WP11.1B Engineering
+# Workflow.md, "Versioning Policy"): a final release ("v0.11.0",
+# "v0.11.1"), a hotfix patch ("v0.10.1"), or a release candidate
+# ("v0.11.0-rc.1"). Re-builds and re-tests Release configuration at the
+# exact tagged commit — a release is not considered published until this
+# workflow's own Build Gate and Test Gate pass a second, independent
+# time, against the tag itself, not only against whatever CI run the
+# feature branch happened to produce earlier — then publishes a GitHub
+# Release with two separate assets attached: Tempest.Desktop's own build
+# (TempestOS's shipped application) and, separately, Tempest.App's own
+# build (the Internal Engineering Harness, ADR-0101) — never bundled
+# into one artefact, so it is never ambiguous which download is the
+# actual product (WP 11.3B).
+#
+# This is this project's rollback procedure's own mechanical foundation:
+# every tagged release gets a durable (non-expiring, unlike this
+# project's ordinary 14-day CI artifacts), downloadable build a future
+# operator can always fall back to without needing to rebuild from
+# source.
+
+on:
+  push:
+    tags:
+      # A single pattern deliberately covers every tag shape this
+      # project's versioning policy produces: "v0.11.0" (final),
+      # "v0.10.1" (hotfix patch), and "v0.11.0-rc.1" (release candidate)
+      # all match "v*.*.*" - GitHub's own tag-filter globs match "-rc.1"
+      # as part of the trailing wildcard, so a second, RC-specific
+      # pattern would be redundant, not additive.
+      - "v*.*.*"
+
+permissions:
+  contents: write
+
+env:
+  DOTNET_NOLOGO: "true"
+  DOTNET_CLI_TELEMETRY_OPTOUT: "true"
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: "true"
+  SOLUTION_PATH: src/TempestOS.slnx
+
+jobs:
+  publish:
+    name: Build, Verify & Publish Release
+    runs-on: windows-2022
+    timeout-minutes: 30
+    steps:
+      - name: Checkout tag
+        uses: actions/checkout@v4
+
+      - name: Set up .NET SDK (from global.json)
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Restore
+        run: dotnet restore "${{ env.SOLUTION_PATH }}"
+
+      - name: Build (Release)
+        shell: pwsh
+        run: |
+          dotnet build "${{ env.SOLUTION_PATH }}" `
+            --configuration Release `
+            --no-restore `
+            -p:TreatWarningsAsErrors=true
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "Release build failed for tag '${{ github.ref_name }}' - this tag will not be published."
+            exit $LASTEXITCODE
+          }
+
+      # A tagged commit that fails its own re-verification here is not
+      # published. Per Engineering Governance §7.4, a pushed tag is never
+      # moved or recreated - if this happens, the corrective action is a
+      # new patch version and a new tag (see "Rollback Procedure"),
+      # never editing this one.
+      - name: Test (Release)
+        shell: pwsh
+        run: |
+          dotnet test "${{ env.SOLUTION_PATH }}" `
+            --configuration Release `
+            --no-build `
+            --logger trx `
+            --logger "console;verbosity=normal" `
+            --results-directory "TestResults/Release"
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "One or more tests failed for tag '${{ github.ref_name }}' - this tag will not be published."
+            exit $LASTEXITCODE
+          }
+
+      # Two separate archives, deliberately not one — ADR-0101 (`WP 11.3B`):
+      # Tempest.Desktop is TempestOS's shipped application; Tempest.App
+      # (WorkspaceShell) is the Internal Engineering Harness. The primary
+      # asset ("TempestOS-<tag>.zip") is Tempest.Desktop alone, so it is
+      # unambiguous on the GitHub Release page which download *is*
+      # TempestOS; the harness build is a separate, clearly-named asset,
+      # never implied to be a second, co-equal product.
+      - name: Package Release build output
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}"
+
+          $desktopDir = "TempestOS-$tag"
+          New-Item -ItemType Directory -Path $desktopDir -Force | Out-Null
+          Copy-Item -Path "src/Tempest.Desktop/bin/Release/net10.0/*" -Destination $desktopDir -Recurse
+          Compress-Archive -Path $desktopDir -DestinationPath "$desktopDir.zip"
+
+          $harnessDir = "TempestOS-$tag-engineering-harness"
+          New-Item -ItemType Directory -Path $harnessDir -Force | Out-Null
+          Copy-Item -Path "src/Tempest.App/bin/Release/net10.0/*" -Destination $harnessDir -Recurse
+          Compress-Archive -Path $harnessDir -DestinationPath "$harnessDir.zip"
+
+      # Release notes are looked up by directory convention
+      # (docs/releases/vX.Y.Z/Release Notes.md) — the same convention
+      # scripts/new-release.ps1 checks before a final release is ever
+      # tagged (WP11.1B). A release-candidate tag (the "-rc." suffix) has
+      # no release-notes file of its own yet — expected, since an RC
+      # precedes the release notes being finalised — so it falls back to
+      # an honest, generated placeholder rather than failing.
+      - name: Resolve release notes
+        id: notes
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}"
+          $versionOnly = $tag -replace '^v', '' -replace '-rc\.\d+$', ''
+          $notesPath = "docs/releases/v$versionOnly/Release Notes.md"
+
+          if (Test-Path $notesPath) {
+            Write-Host "Using $notesPath"
+            "path=$notesPath" | Add-Content -Path $env:GITHUB_OUTPUT
+          } else {
+            $placeholder = "release-notes-placeholder.md"
+            "# TempestOS $tag`n`nRelease-candidate build. See the eventual v$versionOnly Release Notes for the full, curated summary." |
+              Set-Content -Path $placeholder
+            Write-Host "No release notes found at $notesPath - using generated placeholder ($placeholder)."
+            "path=$placeholder" | Add-Content -Path $env:GITHUB_OUTPUT
+          }
+
+      # `gh` is preinstalled on GitHub-hosted runners - no third-party
+      # release-publishing action is used, consistent with WP 11.1A's own
+      # minimal-supply-chain-surface precedent for this pipeline.
+      - name: Publish GitHub Release
+        shell: pwsh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $tag = "${{ github.ref_name }}"
+          $isPrerelease = $tag -match '-rc\.\d+$'
+          $args = @(
+            "release", "create", $tag,
+            "--title", "TempestOS $tag",
+            "--notes-file", "${{ steps.notes.outputs.path }}",
+            "TempestOS-$tag.zip",
+            "TempestOS-$tag-engineering-harness.zip"
+          )
+          if ($isPrerelease) {
+            $args += "--prerelease"
+          }
+          gh @args

@@ -90,11 +90,16 @@ satisfying it.
 
 1. **Build Gate.** `dotnet build` against the full solution: zero warnings, zero
    errors. Non-negotiable, checked before every commit and before every
-   completion report.
+   completion report. **Machine-verified from `WP 11.1A` onward** —
+   `.github/workflows/ci.yml` builds both Debug and Release with warnings
+   promoted to errors on every push, pull request, and manual dispatch; see
+   `docs/academy/06 Engineering Standards/04-continuous-integration.md`. A
+   local run before pushing remains expected, not replaced.
 2. **Test Gate.** `dotnet test` against the full solution: every test passes,
    including every test from every prior work package — a new work package
    breaking an existing test is a Build Gate and Test Gate failure, full stop,
    regardless of whether the new work package's own tests all pass.
+   **Machine-verified from `WP 11.1A` onward**, by the same pipeline.
 3. **Technical Review Gate.** Applied when a work package introduces a
    non-obvious architectural decision, an asymmetry, a deviation from an
    explicit brief requirement, or a design choice a reasonable reviewer might
@@ -108,7 +113,12 @@ satisfying it.
    but the reasoning is now permanently recorded.
 4. **Merge/Release Gate.** See §7 and §10. Distinct from the previous three
    gates: passing them makes a work package *ready* for this gate, not
-   automatically through it.
+   automatically through it. **From `WP 11.1B` onward**, this gate's
+   mechanics — branching, pull requests, required status checks, and
+   release tagging — are fully specified in `docs/academy/06 Engineering
+   Standards/05-release-engineering.md` and `docs/releases/v0.11.0/
+   WP11.1B Engineering Workflow.md`; this section states the principle,
+   those documents state the procedure.
 
 ---
 
@@ -248,7 +258,17 @@ Specifically:
 4. An annotated tag is created only after the above are satisfied, and only
    once — a tag, once created and pushed, is not moved or recreated; if a
    mistake is discovered after tagging, a new version and a new tag are cut,
-   the old one is never silently altered.
+   the old one is never silently altered. **Narrow exception (added
+   `WP 11.4B`, after `v0.11.0` was found to repeat exactly the `v0.10.0`
+   tag-position defect item 1 exists to prevent):** published release
+   tags are immutable except where a documented release-process defect
+   is identified **before closure of the release branch**. Such
+   corrections require explicit Product Owner approval, a documented
+   Release Process Correction Report, and must preserve complete
+   traceability. This does not reopen `v0.10.0`'s own, already-closed
+   case (see item 7, below) — the exception's own "before closure"
+   condition is what distinguishes a correction from a rewrite of
+   history, not a general licence to re-tag.
 5. **Pushing to the remote — the branch, and separately, any tag — requires
    explicit approval each time.** This is not a one-time authorisation: an
    approval to push on one occasion does not carry forward to the next. This
@@ -257,6 +277,26 @@ Specifically:
 6. Merging a feature branch into `main` is itself a release-adjacent action and
    requires the same explicit, per-occasion approval — "approved for merge" on
    one work package is not standing approval for the next.
+7. **From `WP 11.1B` onward, every merge into `main` goes through a pull
+   request**, gated on the `CI Gate` status check (`WP 11.1A`), merged
+   only as a merge commit (never squash or rebase). Hotfix, release-
+   candidate, and rollback procedures — none of which existed before
+   `WP 11.1B` — are fully specified in `05-release-engineering.md` and
+   `docs/releases/v0.11.0/WP11.1B Engineering Workflow.md`, not repeated
+   here. **Disclosed, not silently corrected:** researching that Work
+   Package found the `v0.10.0` tag itself does not satisfy items 1 and 3
+   above as literally written — it points to the feature branch's own
+   pre-merge commit, not to `main`. Per item 4, the tag was not moved;
+   see `WP11.1B Engineering Workflow.md`'s own "Evidence & Findings" for
+   the full account. **`v0.11.0` repeated the identical defect
+   (`WP 11.4B`)** — its own tag was likewise cut from the feature branch
+   before merge, despite this section's own item 1/3 having existed
+   throughout `v0.11.0`'s entire development. Found and corrected under
+   item 4's own narrow, `WP 11.4B`-added exception, since the release
+   branch had not yet closed (`main` had not yet received it) when the
+   defect was found — `v0.10.0`'s own, already-closed case is
+   unaffected and not reopened; see `docs/releases/v0.11.0/WP11.4B
+   Release Process Correction Report.md` for the full account.
 
 ## 8. Coding Standards Hierarchy
 
