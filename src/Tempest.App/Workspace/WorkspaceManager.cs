@@ -12,10 +12,9 @@ namespace Tempest.App.Workspace;
 
 /// <summary>
 /// The concrete <see cref="IWorkspaceManager"/> implementation — creates and
-/// owns the lifecycle of the one running <see cref="IWorkspace"/>, exactly
-/// as <see cref="Tempest.App.Shell.TempestShell"/> creates and owns the
-/// lifecycle of its own console presentation, and the Workspace's own
-/// registration point for view/explorer-node extensibility (`ADR-0067`).
+/// owns the lifecycle of the one running <see cref="IWorkspace"/>, and the
+/// Workspace's own registration point for view/explorer-node extensibility
+/// (`ADR-0067`).
 /// </summary>
 /// <remarks>
 /// <para>
@@ -64,10 +63,10 @@ public sealed class WorkspaceManager : IWorkspaceManager, IAsyncDisposable
 
         _host = host;
 
-        // Forces Tempest.Samples to load before Discovery runs — mirrors
-        // TempestShell's own identical, documented necessity (WP 5.0D):
-        // reading a const member alone does not force the assembly to load,
-        // and Discovery's own AppDomain scan would otherwise find zero
+        // Forces Tempest.Samples to load before Discovery runs — the same
+        // documented necessity first found by WP 5.0D: reading a const
+        // member alone does not force the assembly to load, and
+        // Discovery's own AppDomain scan would otherwise find zero
         // Tempest.Samples modules.
         _ = typeof(NavigationSampleModule).Assembly;
     }

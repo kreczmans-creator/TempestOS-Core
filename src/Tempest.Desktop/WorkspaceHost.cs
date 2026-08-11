@@ -11,7 +11,8 @@ namespace Tempest.Desktop;
 /// Owns the one running <see cref="ITempestHost"/>/<see cref="WorkspaceManager"/>
 /// pair for the lifetime of the desktop application — the graphical
 /// presentation layer's own equivalent of what <c>Program.cs</c>'s own
-/// top-level statements do for the console (`Tempest.App.Shell.TempestShell`).
+/// top-level statements do for the console
+/// (<see cref="Tempest.App.Workspace.WorkspaceShell"/>).
 /// Composes through <see cref="EngineeringWorkspaceComposer"/>, shared with
 /// the console entry point, so the same six real Engineering Disciplines
 /// load identically in both presentation layers (`WP 10.0B`'s own explicit

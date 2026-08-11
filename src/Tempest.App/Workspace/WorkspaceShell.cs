@@ -9,15 +9,18 @@ namespace Tempest.App.Workspace;
 /// Report.md`). Built entirely on the rendering-agnostic
 /// <see cref="IWorkspaceManager"/>/<see cref="IWorkspace"/> contracts —
 /// this class, not those interfaces, is where "terminal-based" actually
-/// becomes concrete.
+/// becomes concrete. Since `v0.10.0` (`ADR-0092`) `Tempest.Desktop` is
+/// TempestOS's shipped graphical application; this class is now
+/// TempestOS's Internal Engineering Harness (`ADR-0101`) — a fast,
+/// scriptable surface for verifying the Runtime Host and Workspace
+/// domain layer compose and run correctly, not a shipped product of its
+/// own.
 /// </summary>
 /// <remarks>
 /// <para>
-/// Mirrors <see cref="Tempest.App.Shell.TempestShell"/>'s own
-/// <c>StartAsync</c>/<c>RunInputLoopAsync</c>/<c>HandleInputAsync</c>/
-/// <c>StopAsync</c> shape directly — the identical console interaction
-/// model, extended from two regions (Navigation, Content) to five
-/// (Areas, Project Explorer, Documents, Properties, Status Bar).
+/// Extends `WP 5.0D`'s own console interaction model (a two-region
+/// Navigation/Content shell) to five regions (Areas, Project Explorer,
+/// Documents, Properties, Status Bar).
 /// </para>
 /// <para>
 /// <b>`WP 8.1B` — Navigation &amp; Project Explorer.</b> A bare number

@@ -176,19 +176,29 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
-      # The Release build output is the one artefact worth keeping beyond
-      # diagnostics — a downloadable, buildable-from-this-commit binary
-      # for manual smoke-testing. Debug output is not published: it is
-      # not a release candidate and would only double artefact storage
-      # for no verification benefit.
-      - name: Upload Release build output
+      # Two separate artefacts, deliberately not one — ADR-0101 (`WP 11.3B`):
+      # Tempest.Desktop is TempestOS's shipped application; Tempest.App
+      # (WorkspaceShell) is the Internal Engineering Harness, not a second
+      # product. Bundling both into one "tempestos-release-build" artefact
+      # (as this step did through WP 11.1A/WP 11.1B) implied they were
+      # co-equal deliverables — corrected here. Debug output is not
+      # published for either: it is not a release candidate and would only
+      # double artefact storage for no verification benefit.
+      - name: Upload Tempest.Desktop build output (shipped application)
         if: matrix.configuration == 'Release'
         uses: actions/upload-artifact@v4
         with:
-          name: tempestos-release-build
-          path: |
-            src/Tempest.App/bin/Release/net10.0/**
-            src/Tempest.Desktop/bin/Release/net10.0/**
+          name: tempestos-desktop-release
+          path: src/Tempest.Desktop/bin/Release/net10.0/**
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Upload Tempest.App build output (Internal Engineering Harness)
+        if: matrix.configuration == 'Release'
+        uses: actions/upload-artifact@v4
+        with:
+          name: tempestos-engineering-harness
+          path: src/Tempest.App/bin/Release/net10.0/**
           if-no-files-found: warn
           retention-days: 14
 

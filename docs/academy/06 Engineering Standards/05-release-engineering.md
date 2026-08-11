@@ -63,10 +63,13 @@ tree, `VERSION`, release notes, Build Gate, and Test Gate before creating
 an annotated tag. Pushing that tag triggers
 `.github/workflows/release.yml`, a second, independent Build Gate/Test
 Gate run against the tagged commit itself, which then publishes a GitHub
-Release with the built `Tempest.App`/`Tempest.Desktop` output attached —
-a release is not considered shipped until this second verification
-passes, not merely on the strength of an earlier CI run or a local
-script's own printed success message.
+Release with **two separate assets attached, never one** — `Tempest.Desktop`'s
+own build (TempestOS's shipped application) and, separately,
+`Tempest.App`'s own build (the Internal Engineering Harness, `ADR-0101`,
+`WP 11.3B`) — so it is never ambiguous on the Release page which
+download *is* TempestOS. A release is not considered shipped until this
+second verification passes, not merely on the strength of an earlier CI
+run or a local script's own printed success message.
 
 A release-readiness review recommending **APPROVED** or **CERTIFIED**
 remains required — the same pattern every release since `v0.6.0` has

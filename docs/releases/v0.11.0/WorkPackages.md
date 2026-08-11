@@ -7,21 +7,22 @@ the `v0.10.0` tag. `WP 11.0A` (Platform Architecture & Code Quality
 Review), `WP 11.0B` (v1.0 Architecture Roadmap & Release Planning),
 `WP 11.1A` (Continuous Integration & Build Verification), `WP 11.1B`
 (Branch Protection & Engineering Workflow Hardening), `WP 11.2A`
-(Governance Health-Check Automation), and `WP 11.3A` (Presentation
-Strategy Review & Platform Consolidation) are this release's own first
-six Work Packages, each following this project's own standing discipline
-(`FOUNDATION.md` §1: architecture and planning precede implementation
-for anything non-trivial) — `WP 11.0A`/`WP 11.0B`/`WP 11.3A` review-and-
-planning only; `WP 11.1A`/`WP 11.1B`/`WP 11.2A` implementation, scoped
-entirely to CI/release-engineering/governance-tooling infrastructure,
-with no production code, ADR, or architecture change in any of the
-three. This release's own scope and sequencing are fully described by
-`WP11.0B Architecture Roadmap.md`; this document tracks status only, per
-this project's established `WorkPackages.md` convention. TempestOS's
-first CI pipeline (`WP 11.1A`), its complete surrounding engineering
-workflow (`WP 11.1B`), its first automated governance health check
-(`WP 11.2A`), and a complete, evidence-based presentation-layer review
-(`WP 11.3A`) all now exist.
+(Governance Health-Check Automation), `WP 11.3A` (Presentation Strategy
+Review & Platform Consolidation), and `WP 11.3B` (Presentation Strategy
+Implementation) are this release's own first seven Work Packages, each
+following this project's own standing discipline (`FOUNDATION.md` §1:
+architecture and planning precede implementation for anything
+non-trivial) — `WP 11.0A`/`WP 11.0B`/`WP 11.3A` review-and-planning
+only; `WP 11.1A`/`WP 11.1B`/`WP 11.2A`/`WP 11.3B` implementation. This
+release's own scope and sequencing are fully described by `WP11.0B
+Architecture Roadmap.md`; this document tracks status only, per this
+project's established `WorkPackages.md` convention. TempestOS's first CI
+pipeline (`WP 11.1A`), its complete surrounding engineering workflow
+(`WP 11.1B`), its first automated governance health check (`WP 11.2A`),
+and a fully reviewed and implemented presentation strategy (`WP 11.3A`/
+`WP 11.3B` — `Tempest.Desktop` is the shipped application,
+`Tempest.App`/`WorkspaceShell` is the Internal Engineering Harness per
+`ADR-0101`, `TempestShell` is retired) all now exist.
 
 **Disclosed divergence from `WP11.0B Architecture Roadmap.md`'s own
 prediction — twice, in the same release:** that roadmap scoped
@@ -36,7 +37,8 @@ not an approval"; this is that distinction exercised a second time, not
 a defect. The Desktop & Console Presentation Strategy Decision (finding
 `A-2`) was predicted for two Work Package slots without being
 commissioned under either, before finally being commissioned directly as
-`WP 11.3A` — see that Work Package's own row, below.
+the `WP 11.3A`/`WP 11.3B` pair — now fully resolved, see both Work
+Packages' own rows, below.
 
 ## Work Packages
 
@@ -48,9 +50,9 @@ commissioned under either, before finally being commissioned directly as
 | `WP 11.1B` | Branch Protection & Engineering Workflow Hardening — the complete engineering workflow surrounding `WP 11.1A`'s CI pipeline: branching strategy, pull request expectations (`.github/pull_request_template.md`, `.github/CODEOWNERS`), merge/release requirements, required CI status checks (documented for branch protection, not configured), the version-tagging workflow (new `.github/workflows/release.yml` — independent re-verification + durable GitHub Release publishing), a first-ever hotfix workflow and rollback procedure, and a release-candidate process. Two genuine pre-existing defects found and fixed in `scripts/new-release.ps1` (stale release-notes path; missing `TreatWarningsAsErrors` parity with CI). One genuine governance deviation found and disclosed, not silently fixed: the `v0.10.0` tag points to the feature branch's pre-merge commit, not to `main`. No production code, ADR, or architecture modified; no GitHub repository setting configured. See `WP11.1B Engineering Workflow.md`. | Implementation | **Complete** |
 | `WP 11.2A` | Governance Health-Check Automation — `scripts/governance-healthcheck.ps1`, delivering `FCR-0005`. A standalone, read-only PowerShell script with no production-code dependency; eight checks (ADR Register, Academy Index, Release Register, Documentation Register, `PROJECT_STATUS.md`, `VERSION`, release-folder mandatory docs, Governance Index orphans), Pass/Warn/Fail per check, non-zero exit on any Fail. Three genuine tool defects found and fixed during development (multi-line path-extraction crash, git-unavailable crash, PowerShell single-item-count sharp edge). The fixed tool's first live run found two genuine, real, previously-undisclosed governance findings (Academy Index "Work Package Walkthroughs" stops at `WP 7.3A`, missing ~50 retrospectives; four references to directories git cannot track because they are empty) — both disclosed, neither fixed within this Work Package's own scope. Wired into `.github/workflows/ci.yml` as a new job; deliberately not yet a required `CI Gate` check. Failure-detection verified against an isolated, temporary fixture, never the real repository. No production code, ADR, or architecture modified; no GitHub repository setting configured. See `WP11.2A Governance Health-Check Tool.md`. | Implementation | **Complete** |
 | `WP 11.3A` | Presentation Strategy Review & Platform Consolidation — the Desktop & Console Presentation Strategy Decision (`WP11.0A` finding `A-2`), finally commissioned directly. Complete source review of `Tempest.App`/`Tempest.Desktop`, startup flow, dependency graph, duplication, documentation assumptions, release-process implications. Finds the real duplication confined to the console-*rendering* slice of `Tempest.App` (`WorkspaceShell`, `TempestShell`), not the shared Workspace domain layer `Tempest.Desktop` depends on. `TempestShell` found provably dead (unreachable since `ADR-0068`, `WP 8.1A`, `v0.8.0` — three releases). A `Program.cs` comment's claim that `WP 10.0B` formally decided "Desktop primary, console diagnostic" could not be found in any `WP 10.0B` document — reported Unverified. `README.md`/`Contributor Learning Path.md` found describing an architecture ~6 releases stale, omitting `Tempest.Desktop` entirely; `ci.yml`/`release.yml` found packaging both presentation layers as symmetric release artifacts. Recommends (5-stage, minimum-disruption roadmap, none executed here): retire `TempestShell`; ratify `Tempest.App`/`WorkspaceShell` as an Internal Engineering Harness via a new ADR; correct documentation and release packaging. Review only — no code, ADR, or architecture modified; no repository restructuring. See `WP11.3A Presentation Strategy Review.md`. | Review only | **Complete** |
-| — | Execution of `WP11.3A`'s own five-stage roadmap — genuinely not started, pending Product Owner acceptance of its recommendation; unscoped to a specific future Work Package number. | Implementation | Not started |
+| `WP 11.3B` | Presentation Strategy Implementation — executes `WP11.3A`'s own approved Stages 1–4. `TempestShell`/`IPage`/`PlaceholderPage` retired as production code (`git rm`, history preserved; zero live references confirmed before and after). `ADR-0101` authored, formally classifying `Tempest.App`/`WorkspaceShell` as TempestOS's Internal Engineering Harness — cites `ADR-0068`/`ADR-0092` directly, neither modified. `README.md`, `Contributor Learning Path.md`, `Platform Service Map.md`, `Shell & Composition Framework Architecture.md` corrected; three governance registers (Namespace, Test, Architectural Dependency) narrowly corrected, each disclosed as a targeted fix against an already-independently-stale register. `ci.yml`/`release.yml` now package `Tempest.Desktop` and `Tempest.App` as two separate, clearly-labelled artifacts, never bundled. Verified directly: `Tempest.Desktop` launched and ran cleanly (Host, all six disciplines, every Desktop service, its own default navigation fired, zero exception) until deliberately timed out; `WorkspaceShell` ran a full start-to-clean-shutdown cycle via piped stdin, exit code 0; full regression both configurations, both 2,228/2,228 passing, 0 Warnings/0 Errors; `scripts/governance-healthcheck.ps1` re-run post-change, ADR Register check now correctly reports 100/100. No behavioural change to `Tempest.Desktop`; no architectural redesign; no change outside `WP11.3A`'s own approved plan. See `WP11.3B Presentation Strategy Implementation.md`. | Implementation | **Complete** |
 | — | Governance Currency Pass & Health-Check Tooling (`FCR-0005`) — the roadmap's own originally-scoped `WP 11.1B`; delivered instead, in substance, by `WP 11.2A` above. No longer outstanding. | Implementation | Delivered by `WP 11.2A` |
-| `WP 11.9.0` | `v0.11.0` Release Preparation & Engineering Sign-Off | Verification only | Not started |
+| `WP 11.9.0` | `v0.11.0` Release Preparation & Engineering Sign-Off — the only remaining item before `v0.11.0` can close. | Verification only | Not started |
 
 Further Work Packages (`v0.12.0`, conditionally `v0.13.0`, and `v1.0.0`
 itself) are scoped by `WP11.0B Architecture Roadmap.md` §3 but are not
@@ -67,12 +69,13 @@ own full scope, estimates, dependencies, and release sequence);
 `docs/releases/v0.11.0/WP11.1B Engineering Workflow.md`;
 `docs/releases/v0.11.0/WP11.2A Governance Health-Check Tool.md`;
 `docs/releases/v0.11.0/WP11.3A Presentation Strategy Review.md`;
+`docs/releases/v0.11.0/WP11.3B Presentation Strategy Implementation.md`;
 `.github/workflows/ci.yml`; `.github/workflows/release.yml`;
 `scripts/governance-healthcheck.ps1`;
 `docs/academy/06 Engineering Standards/04-continuous-integration.md`;
 `docs/academy/06 Engineering Standards/05-release-engineering.md`;
 `docs/academy/06 Engineering Standards/06-governance-automation.md`;
-`ADR-0068`; `ADR-0092`; `README.md`; `docs/academy/Contributor Learning
-Path.md`; `docs/releases/v0.10.0/Release Notes.md` (the immediately
-preceding release); `PROJECT_STATUS.md`; `docs/governance/Future
-Capability Register.md`.
+`ADR-0068`; `ADR-0092`; `ADR-0101`; `README.md`; `docs/academy/
+Contributor Learning Path.md`; `docs/releases/v0.10.0/Release Notes.md`
+(the immediately preceding release); `PROJECT_STATUS.md`;
+`docs/governance/Future Capability Register.md`.

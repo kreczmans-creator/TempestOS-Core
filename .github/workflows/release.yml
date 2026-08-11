@@ -11,7 +11,11 @@ name: Release Publish
 # workflow's own Build Gate and Test Gate pass a second, independent
 # time, against the tag itself, not only against whatever CI run the
 # feature branch happened to produce earlier — then publishes a GitHub
-# Release with the built Tempest.App/Tempest.Desktop output attached.
+# Release with two separate assets attached: Tempest.Desktop's own build
+# (TempestOS's shipped application) and, separately, Tempest.App's own
+# build (the Internal Engineering Harness, ADR-0101) — never bundled
+# into one artefact, so it is never ambiguous which download is the
+# actual product (WP 11.3B).
 #
 # This is this project's rollback procedure's own mechanical foundation:
 # every tagged release gets a durable (non-expiring, unlike this
@@ -87,15 +91,27 @@ jobs:
             exit $LASTEXITCODE
           }
 
+      # Two separate archives, deliberately not one — ADR-0101 (`WP 11.3B`):
+      # Tempest.Desktop is TempestOS's shipped application; Tempest.App
+      # (WorkspaceShell) is the Internal Engineering Harness. The primary
+      # asset ("TempestOS-<tag>.zip") is Tempest.Desktop alone, so it is
+      # unambiguous on the GitHub Release page which download *is*
+      # TempestOS; the harness build is a separate, clearly-named asset,
+      # never implied to be a second, co-equal product.
       - name: Package Release build output
         shell: pwsh
         run: |
-          $stagingDir = "TempestOS-${{ github.ref_name }}"
-          New-Item -ItemType Directory -Path "$stagingDir/Tempest.App" -Force | Out-Null
-          New-Item -ItemType Directory -Path "$stagingDir/Tempest.Desktop" -Force | Out-Null
-          Copy-Item -Path "src/Tempest.App/bin/Release/net10.0/*" -Destination "$stagingDir/Tempest.App" -Recurse
-          Copy-Item -Path "src/Tempest.Desktop/bin/Release/net10.0/*" -Destination "$stagingDir/Tempest.Desktop" -Recurse
-          Compress-Archive -Path $stagingDir -DestinationPath "$stagingDir.zip"
+          $tag = "${{ github.ref_name }}"
+
+          $desktopDir = "TempestOS-$tag"
+          New-Item -ItemType Directory -Path $desktopDir -Force | Out-Null
+          Copy-Item -Path "src/Tempest.Desktop/bin/Release/net10.0/*" -Destination $desktopDir -Recurse
+          Compress-Archive -Path $desktopDir -DestinationPath "$desktopDir.zip"
+
+          $harnessDir = "TempestOS-$tag-engineering-harness"
+          New-Item -ItemType Directory -Path $harnessDir -Force | Out-Null
+          Copy-Item -Path "src/Tempest.App/bin/Release/net10.0/*" -Destination $harnessDir -Recurse
+          Compress-Archive -Path $harnessDir -DestinationPath "$harnessDir.zip"
 
       # Release notes are looked up by directory convention
       # (docs/releases/vX.Y.Z/Release Notes.md) — the same convention
@@ -137,7 +153,8 @@ jobs:
             "release", "create", $tag,
             "--title", "TempestOS $tag",
             "--notes-file", "${{ steps.notes.outputs.path }}",
-            "TempestOS-$tag.zip"
+            "TempestOS-$tag.zip",
+            "TempestOS-$tag-engineering-harness.zip"
           )
           if ($isPrerelease) {
             $args += "--prerelease"

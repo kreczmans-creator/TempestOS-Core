@@ -121,8 +121,17 @@ guide, in this order, once steps 1–6 above make sense:
   — `INavigationProvider`/`NavigationService`, a DI-public registry of
   navigable destinations.
 - **[`10-shell-and-application-composition.md`](02%20Runtime%20Architecture/10-shell-and-application-composition.md)**
-  — `TempestShell`, `Tempest.App`'s own composition root, and the first
-  time this platform actually ran as a real, interactive application.
+  — `TempestShell`, `Tempest.App`'s own composition root at `v0.5.0`, and
+  the first time this platform actually ran as a real, interactive
+  application. Read as history, not current state: `TempestShell` was
+  superseded as `Tempest.App`'s own default entry point by `WorkspaceShell`
+  at `v0.8.0` (`ADR-0068`) and retired entirely at `v0.11.0` (`ADR-0101`,
+  `WP 11.3B`) once found to have been unreachable for three releases. The
+  composition-root *pattern* this guide teaches is what matters going
+  forward; the specific class no longer exists. TempestOS's shipped
+  application is `Tempest.Desktop`; `Tempest.App`/`WorkspaceShell` is now
+  TempestOS's Internal Engineering Harness — see `ADR-0101` for the full,
+  current picture and `README.md` for how to run either.
 - **[`11-command-framework.md`](02%20Runtime%20Architecture/11-command-framework.md)**
   — `ICommandDispatcher`/`ICommandRegistry`, invoking application logic
   uniformly from a typed caller or a string Id.
