@@ -1,6 +1,41 @@
 # TempestOS — Project Status
 
-**Last Updated:** 2026-08-11 (`WP 11.1B` — Branch Protection &
+**Last Updated:** 2026-08-11 (`WP 11.2A` — Governance Health-Check
+Automation. `v0.11.0`'s own fifth Work Package — delivers the first
+Governance Health-Check Tool identified as `FCR-0005`, reprioritised
+into this release by `WP11.0B Architecture Roadmap.md` §4 after
+`WP 11.0A`'s own Governance Index audit became that finding's seventh
+independent recurrence. `scripts/governance-healthcheck.ps1` — a
+standalone, read-only PowerShell script with no production-code
+dependency — runs eight checks (ADR Register vs. `docs/adr/`, Academy
+Index vs. Academy articles, Release Register vs. git tags, Documentation
+Register path references, `PROJECT_STATUS.md` references, `VERSION` vs.
+planned release folder, release-folder mandatory documentation,
+Governance Index orphans), reporting Pass/Warn/Fail per check and
+exiting non-zero on any Fail. Three genuine defects found and fixed in
+the tool itself during development (a multi-line path-extraction crash,
+a git-unavailable crash, a PowerShell single-item-count sharp edge),
+each found by actually running the tool, not by inspection. The fixed
+tool's first live run against this repository found two genuine, real,
+previously-undisclosed governance findings — `Academy Index.md`'s "Work
+Package Walkthroughs" section silently stops at `WP 7.3A`, missing
+roughly fifty real retrospectives since; and `docs/roadmap/`,
+`docs/diagrams/`, `docs/releases/v0.2.0/`, and `src/Plugins/` are
+described as existing but are not tracked by git at all (git cannot
+track an empty directory) — both disclosed in full, neither fixed within
+this Work Package's own scope. Wired into `.github/workflows/ci.yml` as
+a new `governance-health-check` job, running after the build/test matrix
+and publishing its report to every run's Job Summary — deliberately
+**not** yet part of the required `CI Gate` job, since doing so today
+would fail every future push on a pre-existing backlog this Work Package
+did not clear; named explicitly as the natural next step once that
+backlog closes. Failure-detection verified against an isolated, wholly
+temporary fixture (never the real repository) via a new `-RepoRoot`
+parameter. No production code, ADR, or architecture modified; no GitHub
+repository setting configured. See `docs/releases/v0.11.0/WP11.2A
+Governance Health-Check Tool.md`. **`WP 11.1B`'s own status line, below
+this point, is this field's prior content — retained, not deleted:**
+(`WP 11.1B` — Branch Protection &
 Engineering Workflow Hardening. `v0.11.0`'s own fourth Work Package —
 defines the complete engineering workflow surrounding `WP 11.1A`'s CI
 pipeline: branching strategy, pull request expectations, merge and
@@ -260,11 +295,11 @@ project's own convention.
 
 **`v0.11.0` ("Release Engineering & Architecture Governance") is in
 progress, not yet released** — `WP 11.0A`/`WP 11.0B`/`WP 11.1A`/
-`WP 11.1B` complete (TempestOS's first CI pipeline and its full
-surrounding engineering workflow — branching, pull requests, releases,
-versioning, hotfixes, rollback — now both exist); see Current Work
-Package and `docs/releases/v0.11.0/WP11.0B Architecture Roadmap.md` for
-the full scope and sequence through `v1.0.0`.
+`WP 11.1B`/`WP 11.2A` complete (TempestOS's first CI pipeline, its full
+surrounding engineering workflow, and its first automated governance
+health check all now exist); see Current Work Package and
+`docs/releases/v0.11.0/WP11.0B Architecture Roadmap.md` for the full
+scope and sequence through `v1.0.0`.
 **`v0.10.0`** ("User Experience & Desktop Application") remains the most
 recently shipped release, and is the release this document's own
 `WP 10.9A` (Release Candidate & Engineering Sign-Off) has independently,
@@ -288,8 +323,30 @@ Experience") before that; `v0.4.0` ("Platform Foundation") before that.
 
 ## Current Work Package
 
-**`WP 11.1B` — Branch Protection & Engineering Workflow Hardening.**
-`v0.11.0`'s own fourth Work Package. Defines the complete engineering
+**`WP 11.2A` — Governance Health-Check Automation.** `v0.11.0`'s own
+fifth Work Package. Delivers `scripts/governance-healthcheck.ps1`, the
+first Governance Health-Check Tool (`FCR-0005`) — a standalone,
+read-only PowerShell script with no production-code dependency, running
+eight checks (ADR Register, Academy Index, Release Register,
+Documentation Register, `PROJECT_STATUS.md`, `VERSION`, release-folder
+mandatory documentation, Governance Index orphans) and exiting non-zero
+on any Fail. Three genuine defects found and fixed in the tool itself
+during its own development; its fixed first live run then found two
+genuine, real, previously-undisclosed governance findings (`Academy
+Index.md`'s "Work Package Walkthroughs" section stops at `WP 7.3A`,
+missing ~50 real retrospectives since; `docs/roadmap/`, `docs/diagrams/`,
+`docs/releases/v0.2.0/`, and `src/Plugins/` are described as existing
+but are not tracked by git — an empty-directory limitation, not a typo)
+— both disclosed, neither fixed within this Work Package's own scope.
+Wired into `.github/workflows/ci.yml` as a new job running after the
+build/test matrix; deliberately not yet part of the required `CI Gate`
+job, since the disclosed backlog above would otherwise fail every future
+push. No production code, ADR, or architecture modified; no GitHub
+repository setting configured. See `docs/releases/v0.11.0/WP11.2A
+Governance Health-Check Tool.md`.
+
+**Preceded, same release, by `WP 11.1B` — Branch Protection &
+Engineering Workflow Hardening.** `v0.11.0`'s own fourth Work Package. Defines the complete engineering
 workflow surrounding `WP 11.1A`'s CI pipeline: branching strategy
 (one `feature/vX.Y.0-*` branch per release, confirmed against real
 history), pull request expectations (`.github/pull_request_template.md`,
@@ -3291,32 +3348,38 @@ review.md`.
 ## Next Planned Work Package
 
 **Disclosed divergence from `WP11.0B Architecture Roadmap.md`'s own
-prediction, not silently reconciled:** that roadmap's §3 scoped
-`WP 11.1B` as "Governance Currency Pass & Health-Check Tooling" (closing
-finding `A-5`, building `FCR-0005`). The Product Owner instead
-commissioned the real `WP 11.1B` as **Branch Protection & Engineering
-Workflow Hardening** — now complete, see Current Work Package, above.
-The roadmap's own text called itself "a recommendation, not an
-approval" throughout (§7); this is that distinction actually exercised,
-not a defect in either the roadmap or the Work Package actually run. The
-Governance Currency Pass / `FCR-0005` work the roadmap originally named
-for this slot **remains genuinely not started** and is carried forward,
-unscoped to a specific future Work Package number, alongside `WP 11.2A`
-(Desktop & Console Presentation Strategy Decision, closing finding `A-2`
-— still the single highest-leverage undecided item, since it sets the
+prediction, not silently reconciled — now twice, in the same release:**
+that roadmap's §3 scoped `WP 11.1B` as "Governance Currency Pass &
+Health-Check Tooling" and `WP 11.2A` as "Desktop & Console Presentation
+Strategy Decision." The Product Owner instead commissioned `WP 11.1B` as
+**Branch Protection & Engineering Workflow Hardening** and `WP 11.2A` as
+**Governance Health-Check Automation** — both now complete, see Current
+Work Package, above; the latter is, in substance, the roadmap's own
+originally-predicted `WP 11.1B` scope, delivered one Work Package later
+and under a different number than predicted. The roadmap's own text
+called itself "a recommendation, not an approval" throughout (§7); this
+is that distinction exercised a second time, not a defect in the roadmap
+or in either Work Package actually run.
+
+**What this leaves genuinely open:** the Desktop & Console Presentation
+Strategy Decision (`WP11.0A` finding `A-2` — still the single
+highest-leverage undecided item in the whole roadmap, since it sets the
 scope of `v0.12.0`'s `WP 12.2A` and whether the conditional `v0.13.0`
-release is needed at all). `WP 11.9.0` (Release Preparation &
-Engineering Sign-Off) closes the release once both are complete — and
-can now cite a real, green CI run for its own Build/Test Gate evidence
-(`WP 11.1A`) plus a fully-defined merge/release process (`WP 11.1B`)
-rather than a local session's output, the first Work Package in this
-project's history able to do either. See `docs/releases/v0.11.0/
-WP11.0B Architecture Roadmap.md` for full effort/risk/impact estimates,
-the complete `v0.12.0`/conditional-`v0.13.0`/`v1.0.0` sequence beyond
-this release, and this project's own "each
-requires its own Architecture, Planning, and Contract Review phase before
-a Work Package number is assigned" discipline applied to everything
-beyond `v0.11.0`.
+release is needed at all) has now been predicted for two different Work
+Package slots (`WP 11.2A` in the original roadmap, implicitly next again
+here) without yet being commissioned under either. It remains carried
+forward, unscoped to a specific future Work Package number, per this
+project's own "each requires its own Architecture, Planning, and
+Contract Review phase before a Work Package number is assigned"
+discipline. `WP 11.9.0` (Release Preparation & Engineering Sign-Off)
+closes the release once it — or a Product Owner decision to defer it
+beyond `v0.11.0` — is resolved; the release can already cite a real CI
+run (`WP 11.1A`), a fully-defined merge/release process (`WP 11.1B`),
+and an automated governance check (`WP 11.2A`) for its own gate
+evidence, the first release in this project's history able to cite all
+three. See `docs/releases/v0.11.0/WP11.0B Architecture Roadmap.md` for
+full effort/risk/impact estimates and the complete `v0.12.0`/
+conditional-`v0.13.0`/`v1.0.0` sequence beyond this release.
 
 ### Superseded — `v0.10.0`'s Own Prior "Next Planned Work Package" Content (Retained for Reference)
 
@@ -5617,11 +5680,19 @@ Architecture Governance phase (`v0.11.0`) is under way:
   strategy, pull request workflow, merge/release requirements, a new
   `.github/workflows/release.yml`, hotfix workflow, rollback procedure,
   release-candidate process. **Complete.**
-- Governance Currency Pass & Health-Check Tooling (`FCR-0005`) —
-  the roadmap's original `WP 11.1B` scope, genuinely **not started**,
-  carried forward unscoped to a specific future Work Package number.
-- `WP 11.2A` — Desktop & Console Presentation Strategy Decision.
-  **Not started.**
+- `WP 11.2A` — as actually commissioned: **Governance Health-Check
+  Automation** — `scripts/governance-healthcheck.ps1`, delivering
+  `FCR-0005` (the roadmap's original `WP 11.1B` scope, delivered here
+  instead — see Next Planned Work Package, above). Eight checks, three
+  genuine tool defects found and fixed, two genuine real governance
+  findings disclosed (Academy Index "Work Package Walkthroughs" stops at
+  `WP 7.3A`; four untracked empty-directory references). Wired into CI,
+  not yet a required check. **Complete.**
+- Desktop & Console Presentation Strategy Decision (`WP11.0A` finding
+  `A-2`) — the roadmap's original `WP 11.2A` scope, genuinely **not
+  started**, carried forward unscoped to a specific future Work Package
+  number — still the single highest-leverage undecided item in the
+  roadmap.
 - `WP 11.9.0` — `v0.11.0` Release Preparation & Engineering Sign-Off.
   **Not started.**
 

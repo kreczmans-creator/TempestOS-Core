@@ -16,6 +16,18 @@ name: CI
 # for the philosophy this workflow implements, and
 # docs/releases/v0.11.0/WP11.1A Implementation Report.md for the design
 # rationale behind every decision below.
+#
+# WP 11.2A adds a third, independent job — governance-health-check — a
+# separate validation stage that runs after build-and-test completes,
+# auditing governance-document consistency (ADR Register, Academy Index,
+# Release Register, Documentation Register, PROJECT_STATUS.md, VERSION,
+# release folders) rather than code. See
+# docs/releases/v0.11.0/WP11.2A Governance Health-Check Tool.md for what
+# it checks and why it is deliberately NOT yet part of the required `CI
+# Gate` job (real, pre-existing governance drift the tool found on its
+# first run — not introduced by this change — would otherwise block
+# every future merge until a separate, larger clean-up Work Package
+# closes it).
 
 on:
   push:
@@ -180,12 +192,49 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
+  # WP 11.2A — Governance Health-Check. Runs after build-and-test
+  # completes (not gated on its success — a governance-document
+  # inconsistency is orthogonal to whether the code itself compiles, and
+  # this project's own "disclose what actually happened" instinct favours
+  # always producing this report over silently skipping it because an
+  # unrelated build step failed). Read-only: scripts/governance-
+  # healthcheck.ps1 never writes inside the repository it validates.
+  governance-health-check:
+    name: Governance Health Check
+    needs: build-and-test
+    if: always()
+    runs-on: windows-2022
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # Release Register vs. git tags (Check 3) needs real tags to
+          # compare against - actions/checkout's own default
+          # (fetch-depth: 1) fetches none. fetch-tags: true is the
+          # supported way to get them without a full, slower
+          # fetch-depth: 0 history clone.
+          fetch-tags: true
+
+      - name: Run governance health check
+        id: healthcheck
+        shell: pwsh
+        run: |
+          $summaryPath = Join-Path $env:RUNNER_TEMP "governance-summary.txt"
+          & "${{ github.workspace }}\scripts\governance-healthcheck.ps1" -SummaryPath $summaryPath
+          $exitCode = $LASTEXITCODE
+          if (Test-Path $summaryPath) {
+            Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value (Get-Content -Path $summaryPath -Raw)
+          }
+          exit $exitCode
+
   # A single, named job every branch-protection rule can require, so
   # "the pipeline is green" has one unambiguous status check rather than
   # requiring both matrix legs to be individually named in every
   # protection rule — and so a future contributor reads one job name,
   # not the matrix's own internal shape, to know whether it is safe to
-  # merge.
+  # merge. Deliberately depends on build-and-test only, not
+  # governance-health-check — see the comment above that job for why.
   gate:
     name: CI Gate
     needs: build-and-test
