@@ -90,11 +90,16 @@ satisfying it.
 
 1. **Build Gate.** `dotnet build` against the full solution: zero warnings, zero
    errors. Non-negotiable, checked before every commit and before every
-   completion report.
+   completion report. **Machine-verified from `WP 11.1A` onward** —
+   `.github/workflows/ci.yml` builds both Debug and Release with warnings
+   promoted to errors on every push, pull request, and manual dispatch; see
+   `docs/academy/06 Engineering Standards/04-continuous-integration.md`. A
+   local run before pushing remains expected, not replaced.
 2. **Test Gate.** `dotnet test` against the full solution: every test passes,
    including every test from every prior work package — a new work package
    breaking an existing test is a Build Gate and Test Gate failure, full stop,
    regardless of whether the new work package's own tests all pass.
+   **Machine-verified from `WP 11.1A` onward**, by the same pipeline.
 3. **Technical Review Gate.** Applied when a work package introduces a
    non-obvious architectural decision, an asymmetry, a deviation from an
    explicit brief requirement, or a design choice a reasonable reviewer might

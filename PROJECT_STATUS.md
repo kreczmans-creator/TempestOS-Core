@@ -1,6 +1,30 @@
 # TempestOS — Project Status
 
-**Last Updated:** 2026-08-11 (`WP 11.0B` — v1.0 Architecture Roadmap &
+**Last Updated:** 2026-08-11 (`WP 11.1A` — Continuous Integration & Build
+Verification. `v0.11.0`'s own third Work Package — TempestOS's first CI
+pipeline, `.github/workflows/ci.yml`, closing `WP 11.0A` finding `R-1`
+(no build/test automation existed; every "0 Warnings, N/N tests passing"
+claim was self-reported, never machine-verified). Builds Debug and
+Release (both with warnings promoted to errors, verified safe against
+the current tree before being adopted) and runs the complete test suite
+against both, on every push, pull request, and manual dispatch, with
+build/test summaries and downloadable artifacts (build logs, TRX
+results, and the Release build output). Local reproduction of every
+command the workflow issues confirmed 0 Warnings/0 Errors in both
+configurations and 2,266/2,266 tests passing (2,064 `Tempest.Core.Tests`
++ 202 `Tempest.Desktop.Tests`, the latter real Avalonia headless UI, not
+mocked) — matching this project's own most recent retrospective counts
+exactly. Engineering Governance §2 (Build Gate, Test Gate) updated to
+record machine-verification from this Work Package onward. Actual
+execution on a GitHub-hosted runner is disclosed as **Unknown, not
+Verified** — no GitHub Actions runner was available in this environment
+and pushing the branch was judged outside this Work Package's own
+"await review" scope; every command was instead reproduced directly,
+locally, with the exact flags the workflow uses. No production code,
+ADR, or architecture modified. See `docs/releases/v0.11.0/WP11.1A
+Implementation Report.md` for full detail. **`WP 11.0B`'s own status
+line, below this point, is this field's prior content — retained, not
+deleted:** (`WP 11.0B` — v1.0 Architecture Roadmap &
 Release Planning. `v0.11.0`'s own second Work Package — a planning-only
 exercise, no code/ADR/architecture modified — that categorises
 `WP 11.0A`'s ten findings into Must Complete Before v1.0 / Strongly
@@ -209,8 +233,9 @@ project's own convention.
 ## Current Release
 
 **`v0.11.0` ("Release Engineering & Architecture Governance") is in
-progress, not yet released** — `WP 11.0A`/`WP 11.0B` complete; see
-Current Work Package and `docs/releases/v0.11.0/WP11.0B Architecture
+progress, not yet released** — `WP 11.0A`/`WP 11.0B`/`WP 11.1A` complete
+(TempestOS's first CI pipeline now exists, `.github/workflows/ci.yml`);
+see Current Work Package and `docs/releases/v0.11.0/WP11.0B Architecture
 Roadmap.md` for the full scope and sequence through `v1.0.0`.
 **`v0.10.0`** ("User Experience & Desktop Application") remains the most
 recently shipped release, and is the release this document's own
@@ -235,7 +260,25 @@ Experience") before that; `v0.4.0` ("Platform Foundation") before that.
 
 ## Current Work Package
 
-**`WP 11.0B` — v1.0 Architecture Roadmap & Release Planning.**
+**`WP 11.1A` — Continuous Integration & Build Verification.**
+`v0.11.0`'s own third Work Package. Implements TempestOS's first CI
+pipeline (`.github/workflows/ci.yml`, GitHub Actions), closing
+`WP 11.0A` finding `R-1`. Builds Debug and Release (warnings promoted to
+errors at the CI step only — `Directory.Build.props` unchanged) and runs
+the complete test suite against both, on every push, pull request, and
+manual dispatch; publishes build/test summaries and downloadable
+artifacts. Verified locally, command-for-command, before being finalised:
+0 Warnings/0 Errors in both configurations, 2,266/2,266 tests passing.
+Actual GitHub-hosted execution is disclosed as unverified (no runner
+available in this environment; pushing was judged outside this Work
+Package's own scope) — named plainly, not assumed. Engineering
+Governance §2 updated to record machine-verification of the Build/Test
+Gates from this Work Package onward. No production code, ADR, or
+architecture modified. Full detail: `docs/releases/v0.11.0/WP11.1A
+Implementation Report.md`.
+
+**Preceded, same release, by `WP 11.0B` — v1.0 Architecture Roadmap &
+Release Planning.**
 `v0.11.0`'s own second Work Package, on `feature/v0.11.0-v1-architecture`
 (cut from `main` at the `v0.10.0` tag). Planning only — no production
 code, ADR, or architecture modified. Takes `WP 11.0A`'s ten findings
@@ -3192,18 +3235,21 @@ review.md`.
 
 ## Next Planned Work Package
 
-**`WP 11.1A`, `WP 11.1B`, and `WP 11.2A`** — scoped, not yet started, per
-`WP11.0B Architecture Roadmap.md` §3: `WP 11.1A` (CI/CD Pipeline
-Standup, closing finding `R-1`); `WP 11.1B` (Governance Currency Pass &
-Health-Check Tooling, closing finding `A-5` and building `FCR-0005`);
-`WP 11.2A` (Desktop & Console Presentation Strategy Decision, closing
-finding `A-2` — the single highest-leverage early decision in the
-roadmap, since it sets the scope of `v0.12.0`'s `WP 12.2A` and whether
-the conditional `v0.13.0` release is needed at all). `WP 11.1A`/
-`WP 11.1B` have no dependencies on each other and may run in parallel;
-`WP 11.2A` likewise has no technical dependency and should be sequenced
-early in `v0.11.0`. `WP 11.9.0` (Release Preparation & Engineering
-Sign-Off) closes the release once all three are complete. See
+**`WP 11.1B` and `WP 11.2A`** — scoped, not yet started, per
+`WP11.0B Architecture Roadmap.md` §3. `WP 11.1A` (CI/CD Pipeline Standup)
+is now **complete** — see Current Work Package, above, and
+`docs/releases/v0.11.0/WP11.1A Implementation Report.md`. Remaining:
+`WP 11.1B` (Governance Currency Pass & Health-Check Tooling, closing
+finding `A-5` and building `FCR-0005`); `WP 11.2A` (Desktop & Console
+Presentation Strategy Decision, closing finding `A-2` — the single
+highest-leverage early decision in the roadmap, since it sets the scope
+of `v0.12.0`'s `WP 12.2A` and whether the conditional `v0.13.0` release
+is needed at all). Both have no dependency on each other or on
+`WP 11.1A`'s own completion and may run in parallel. `WP 11.9.0`
+(Release Preparation & Engineering Sign-Off) closes the release once
+both are complete — and can now cite a real, green CI run for its own
+Build/Test Gate evidence rather than a local session's output, the first
+Work Package in this project's history able to do so. See
 `docs/releases/v0.11.0/WP11.0B Architecture Roadmap.md` for full effort/
 risk/impact estimates, the complete `v0.12.0`/conditional-`v0.13.0`/
 `v1.0.0` sequence beyond this release, and this project's own "each
@@ -5499,7 +5545,10 @@ Architecture Governance phase (`v0.11.0`) is under way:
   ten findings, zero Critical). **Complete.**
 - `WP 11.0B` — v1.0 Architecture Roadmap & Release Planning (planning
   only; scopes `v0.11.0`–`v1.0.0`). **Complete.**
-- `WP 11.1A` — CI/CD Pipeline Standup. **Not started.**
+- `WP 11.1A` — CI/CD Pipeline Standup (`.github/workflows/ci.yml`,
+  closing finding `R-1`; local verification: 0 Warnings/0 Errors both
+  configurations, 2,266/2,266 tests passing; GitHub-hosted execution
+  disclosed unverified pending the first real push). **Complete.**
 - `WP 11.1B` — Governance Currency Pass & Health-Check Tooling
   (`FCR-0005`). **Not started.**
 - `WP 11.2A` — Desktop & Console Presentation Strategy Decision.

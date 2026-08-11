@@ -49,3 +49,8 @@ out/
 # MSBuild / test results
 TestResults/
 *.trx
+
+# CI build logs (WP 11.1A) - written to the repository root by
+# .github/workflows/ci.yml's own Build step; harmless if reproduced
+# locally with the identical command, never source
+build-*.log

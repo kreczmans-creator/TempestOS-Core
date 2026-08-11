@@ -4,14 +4,19 @@
 
 **In progress.** `feature/v0.11.0-v1-architecture` was cut from `main` at
 the `v0.10.0` tag. `WP 11.0A` (Platform Architecture & Code Quality
-Review) and `WP 11.0B` (v1.0 Architecture Roadmap & Release Planning)
-are this release's own first two Work Packages — a review-and-planning
-phase only, no implementation — following this project's own standing
-discipline (`FOUNDATION.md` §1: architecture and planning precede
-implementation for anything non-trivial). This release's own scope and
-sequencing are fully described by `WP11.0B Architecture Roadmap.md`;
-this document tracks status only, per this project's established
-`WorkPackages.md` convention.
+Review), `WP 11.0B` (v1.0 Architecture Roadmap & Release Planning), and
+`WP 11.1A` (Continuous Integration & Build Verification) are this
+release's own first three Work Packages, each following this project's
+own standing discipline (`FOUNDATION.md` §1: architecture and planning
+precede implementation for anything non-trivial) — `WP 11.0A`/`WP 11.0B`
+review-and-planning only; `WP 11.1A` the release's first implementation,
+scoped entirely to CI infrastructure, with no production code, ADR, or
+architecture change. This release's own scope and sequencing are fully
+described by `WP11.0B Architecture Roadmap.md`; this document tracks
+status only, per this project's established `WorkPackages.md`
+convention. TempestOS's first CI pipeline (`.github/workflows/ci.yml`)
+now exists as of `WP 11.1A` — every Work Package from here forward can
+cite a real CI run for its own Build/Test Gate evidence.
 
 ## Work Packages
 
@@ -19,7 +24,7 @@ this document tracks status only, per this project's established
 |---|---|---|---|
 | `WP 11.0A` | Platform Architecture & Code Quality Review — independent architecture, engineering, and release-readiness review of the complete codebase as of `v0.10.0`. No code modified. | Review only | **Complete** |
 | `WP 11.0B` | v1.0 Architecture Roadmap & Release Planning — categorises `WP 11.0A`'s findings, scopes the Work Packages and release sequence from `v0.11.0` through `v1.0.0`. No code, ADR, or architecture modified. | Planning only | **Complete** |
-| `WP 11.1A` | CI/CD Pipeline Standup — closes `WP11.0A` finding `R-1` (no build/test automation exists). | Implementation | Not started |
+| `WP 11.1A` | Continuous Integration & Build Verification — `.github/workflows/ci.yml`, TempestOS's first CI pipeline. Closes `WP11.0A` finding `R-1`. Builds Debug and Release (warnings promoted to errors at the CI step only) and runs the complete test suite against both, on every push/pull request/manual dispatch. Verified locally: 0 Warnings/0 Errors both configurations, 2,266/2,266 tests passing. GitHub-hosted execution disclosed unverified pending the first real push. No production code, ADR, or architecture modified. See `WP11.1A Implementation Report.md`. | Implementation | **Complete** |
 | `WP 11.1B` | Governance Currency Pass & Health-Check Tooling — closes `WP11.0A` finding `A-5` and reprioritises `FCR-0005` (Governance Register Health-Check Tooling, deferred since `v0.7.0`, now independently found a seventh time). | Implementation | Not started |
 | `WP 11.2A` | Desktop & Console Presentation Strategy Decision — resolves `WP11.0A` finding `A-2` (two independently maintained presentation stacks with no documented product decision). Sets the scope of `WP 12.2A` and whether the conditional `v0.13.0` release is needed. | Architecture / Decision | Not started |
 | `WP 11.9.0` | `v0.11.0` Release Preparation & Engineering Sign-Off | Verification only | Not started |
@@ -35,6 +40,8 @@ convention (see `docs/releases/v0.8.0/WorkPackages.md`).
 `docs/releases/v0.11.0/WP11.0A Platform Architecture Review.md`;
 `docs/releases/v0.11.0/WP11.0B Architecture Roadmap.md` (this release's
 own full scope, estimates, dependencies, and release sequence);
-`docs/releases/v0.10.0/Release Notes.md` (the immediately preceding
-release); `PROJECT_STATUS.md`; `docs/governance/Future Capability
-Register.md`.
+`docs/releases/v0.11.0/WP11.1A Implementation Report.md`;
+`.github/workflows/ci.yml`; `docs/academy/06 Engineering Standards/
+04-continuous-integration.md`; `docs/releases/v0.10.0/Release Notes.md`
+(the immediately preceding release); `PROJECT_STATUS.md`;
+`docs/governance/Future Capability Register.md`.

@@ -444,6 +444,7 @@ of the real code that uses them — not a generic patterns catalogue.
 - [Engineering Standard: Exception Design](06%20Engineering%20Standards/01-exception-design.md)
 - [Engineering Standard: Testing Strategy](06%20Engineering%20Standards/02-testing-strategy.md)
 - [Working with TempestOS's Governance Registers](06%20Engineering%20Standards/03-governance-registers.md) — why the governance register suite exists, how to maintain one, common mistakes.
+- [Engineering Standard: Continuous Integration](06%20Engineering%20Standards/04-continuous-integration.md) — CI philosophy, the `.github/workflows/ci.yml` build pipeline, release verification, and the engineering workflow around it (`WP 11.1A`).
 - `docs/architecture/Rejected Designs.md` — the Rejected Designs Log (Governance §10).
 - `docs/adr/` — the ADR catalogue (Governance §5).
 - `docs/governance/Governance Index.md` — the full governance register suite (`WP 4.5A`): ADR, Rejected Designs, Architecture Document, Decision, Platform Services, Module, Hosted Services, Plugin, Event, Dependency Injection, Namespace, Interface, Exception, Architectural Dependency, Risk, Technical Debt, Validation, Test, Repository Metrics, Documentation, Academy, Engineering Standards, Governance, Feature, Release, Engineering Evolution, and Traceability Matrix registers, plus `Governance Philosophy.md`, `Governance Audit Report.md`, and `Repository Maturity Report.md`.
