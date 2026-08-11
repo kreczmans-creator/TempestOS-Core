@@ -1,6 +1,35 @@
 # TempestOS — Project Status
 
-**Last Updated:** 2026-08-11 (`WP 11.9.0` — `v0.11.0` Release
+**Last Updated:** 2026-08-11 (`WP 11.4A` — Release Engineering
+Corrections. `v0.11.0`'s own ninth Work Package — resolves the three
+release-engineering defects `WP 11.9.0`'s own Release Publication
+Report diagnosed when `v0.11.0` was tagged, pushed, and published: a
+flaky test (`ObjectEditorViewTests.cs`, a fixed `Task.Delay` racing an
+async UI update — replaced with a bounded, condition-driven poll, no
+production/Domain/architecture change); `scripts/governance-
+healthcheck.ps1`'s `-SummaryPath` resolution (PowerShell's `Join-Path`
+doubling an already-absolute CI-runner path into `RepoRoot` — fixed
+with an `IsPathRooted` guard, relative-path behaviour and the genuine
+safety check both re-verified unchanged); `.github/workflows/ci.yml`'s
+`governance-health-check` job's tag-triggered checkout (`fetch-tags:
+true` colliding with an unpinned ref — fixed by pinning `ref: ${{
+github.sha }}`). None was a regression in product code; none was
+discoverable before this release's own first real GitHub-hosted CI
+execution. All three independently re-verified on real infrastructure
+via two separate live runs (a branch push and a disposable, deleted-
+after-use tag push): `Build & Test` (Debug/Release) and `CI Gate` both
+now genuinely pass on real infrastructure for the first time in this
+release's history. `Governance Health Check` still shows red on both
+real runs — confirmed benign (a clean, correct non-zero exit from
+genuine, pre-existing, already-tracked governance debt — Academy
+Index/Documentation Register gaps — not a crash), explicitly outside
+this Work Package's own three-item scope. Technical Debt Register:
+`TD-44` moved Open → Resolved; `TD-46`–`TD-48` added and immediately
+resolved (each distinct from the still-open `TD-42`/`TD-43` in the same
+two files). See `docs/releases/v0.11.0/WP11.4A Release Engineering
+Corrections.md` and `Release Publication Report.md`. **`WP 11.9.0`'s
+own status line, below this point, is this field's prior content —
+retained, not deleted:** (`WP 11.9.0` — `v0.11.0` Release
 Preparation & Engineering Sign-Off. `v0.11.0`'s own eighth and closing
 Work Package — executed as a six-discipline TempestOS Engineering
 Programme (Chief Architect, Principal Engineer, Workflow Engineer, QA
@@ -3521,18 +3550,23 @@ review.md`.
 
 ## Next Planned Work Package
 
-**`v0.11.0` sign-off is complete (`WP 11.9.0`), recommended Accept with
-Observations; tagging is a pending Product Approval action, not yet
-taken.** All eight `v0.11.0` Work Packages (`WP 11.0A`–`WP 11.9.0`) are
-now complete — see `docs/releases/v0.11.0/WP11.9.0 Engineering Release
-Report.md` for the full Programme Review and gate-by-gate evidence.
-Once `v0.11.0` is tagged, `WP11.0B Architecture Roadmap.md` §6 names two
-concrete next candidates, cross-checked directly against its own §5
-estimates table and not superseded by anything found during `WP
-11.9.0`: **(1)** close `TD-44`/`TD-45` first — push
-`feature/v0.11.0-v1-architecture` (or its eventual merge), confirm `CI
-Gate` actually executes on real GitHub-hosted infrastructure, then
-configure the already-documented branch-protection rule in GitHub — the
+**`v0.11.0` is released and published; `TD-44` is now Resolved.** All
+nine `v0.11.0` Work Packages (`WP 11.0A`–`WP 11.4A`) are now complete.
+`v0.11.0` was tagged, pushed, and published as a real GitHub Release;
+that push gave CI its first real execution, found three genuine defects
+(`WP 11.9.0`'s own Release Publication Report), and `WP 11.4A` fixed and
+independently re-verified all three on real infrastructure — `Build &
+Test` and `CI Gate` now genuinely pass on real GitHub-hosted
+infrastructure, confirmed on two separate live runs. See
+`docs/releases/v0.11.0/WP11.9.0 Engineering Release Report.md` (the
+Programme Review) and `WP11.4A Release Engineering Corrections.md` (the
+fixes and their real-infrastructure verification). `WP11.0B Architecture
+Roadmap.md` §6 names two concrete next candidates, cross-checked
+directly against its own §5 estimates table and not superseded by
+anything found since: **(1)** close `TD-45` — configure the already-
+documented branch-protection rule in GitHub (required `CI Gate` check,
+required CODEOWNERS review) now that `CI Gate` has demonstrated it
+passes correctly on real infrastructure, not merely designed to — the
 single action that converts this release's own designed-but-advisory
 process into mechanically enforced process, recommended by both the
 Workflow Engineer's and Product Manager's own independent `WP 11.9.0`
