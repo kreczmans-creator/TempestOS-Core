@@ -106,14 +106,22 @@ fix is **forward-merged into whatever release branch is currently
 active** — not optional; an omitted forward-merge is the standard way a
 hotfix silently regresses in the very next regular release.
 
-Rollback, in this project, is always forward: Governance §7.4 already
-forbids moving or recreating a pushed tag, so a defective release is
-never un-tagged — its GitHub Release is instead marked superseded (the
-one narrow exception: editing a Release's own description, never its
-tag or content), a fallback build remains permanently downloadable from
-it, and a hotfix ships as soon as one is ready. See `WP11.1B Engineering
-Workflow.md` §10 for the full procedure, including what it deliberately
-does not cover (a user's own locally-persisted project data).
+Rollback, in this project, is always forward: a published release tag
+is immutable (Governance §7.4), so a defective release found *after*
+its own branch has closed is never un-tagged — its GitHub Release is
+instead marked superseded (the one narrow exception: editing a
+Release's own description, never its tag or content), a fallback build
+remains permanently downloadable from it, and a hotfix ships as soon as
+one is ready. §7.4 carries one further, distinct, narrower exception
+(added `WP 11.4B`): a documented release-process defect — not a defect
+in the release's own content — found and Product-Owner-approved for
+correction *before* the release branch closes, with a Release Process
+Correction Report and full traceability. The two are not
+interchangeable: rollback never touches a tag; the `WP 11.4B` exception
+touches only a tag's own mechanical position, never its release
+content. See `WP11.1B Engineering Workflow.md` §10 for the full
+rollback procedure, including what it deliberately does not cover (a
+user's own locally-persisted project data).
 
 ## Evidence & Findings (Summary)
 
@@ -125,7 +133,11 @@ process Engineering Governance §7 already specified, not something this
 Work Package introduced. Per §7.4, the tag was not moved; the deviation
 is disclosed here and the "cut only from `main`, post-merge" rule is
 restated explicitly, precisely because relying on it being obvious once
-already failed silently.
+already failed silently. **It failed silently a second time**: `v0.11.0`
+repeated the identical defect despite this explicit restatement —
+found and corrected under §7.4's own narrow, `WP 11.4B`-added exception,
+since found before its own release branch closed. Full account:
+`docs/releases/v0.11.0/WP11.4B Release Process Correction Report.md`.
 
 ## Related Documents
 

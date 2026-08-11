@@ -258,7 +258,17 @@ Specifically:
 4. An annotated tag is created only after the above are satisfied, and only
    once — a tag, once created and pushed, is not moved or recreated; if a
    mistake is discovered after tagging, a new version and a new tag are cut,
-   the old one is never silently altered.
+   the old one is never silently altered. **Narrow exception (added
+   `WP 11.4B`, after `v0.11.0` was found to repeat exactly the `v0.10.0`
+   tag-position defect item 1 exists to prevent):** published release
+   tags are immutable except where a documented release-process defect
+   is identified **before closure of the release branch**. Such
+   corrections require explicit Product Owner approval, a documented
+   Release Process Correction Report, and must preserve complete
+   traceability. This does not reopen `v0.10.0`'s own, already-closed
+   case (see item 7, below) — the exception's own "before closure"
+   condition is what distinguishes a correction from a rewrite of
+   history, not a general licence to re-tag.
 5. **Pushing to the remote — the branch, and separately, any tag — requires
    explicit approval each time.** This is not a one-time authorisation: an
    approval to push on one occasion does not carry forward to the next. This
@@ -278,7 +288,15 @@ Specifically:
    above as literally written — it points to the feature branch's own
    pre-merge commit, not to `main`. Per item 4, the tag was not moved;
    see `WP11.1B Engineering Workflow.md`'s own "Evidence & Findings" for
-   the full account.
+   the full account. **`v0.11.0` repeated the identical defect
+   (`WP 11.4B`)** — its own tag was likewise cut from the feature branch
+   before merge, despite this section's own item 1/3 having existed
+   throughout `v0.11.0`'s entire development. Found and corrected under
+   item 4's own narrow, `WP 11.4B`-added exception, since the release
+   branch had not yet closed (`main` had not yet received it) when the
+   defect was found — `v0.10.0`'s own, already-closed case is
+   unaffected and not reopened; see `docs/releases/v0.11.0/WP11.4B
+   Release Process Correction Report.md` for the full account.
 
 ## 8. Coding Standards Hierarchy
 
