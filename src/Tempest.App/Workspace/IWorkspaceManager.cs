@@ -1,3 +1,5 @@
+using Tempest.Core.Commands;
+
 namespace Tempest.App.Workspace;
 
 /// <summary>
@@ -50,4 +52,83 @@ public interface IWorkspaceManager
     /// <exception cref="ArgumentNullException"><paramref name="provider"/> is <see langword="null"/>.</exception>
     /// <exception cref="DuplicateWorkspaceRegistrationException">A provider is already registered for <paramref name="kind"/>.</exception>
     void RegisterFacetProvider(string kind, IPropertyFacetProvider provider);
+
+    /// <summary>
+    /// Registers the factory building the real, discipline-specific rename
+    /// command for objects of Kind <paramref name="kind"/> — a genuine,
+    /// disclosed `WP 10.2A` addition to this frozen `WP8.0B` contract
+    /// (`ADR-0096`), additive only. Realises the "future context-menu
+    /// action" every discipline's own <c>Rename*Command</c> was already
+    /// built, and already dispatcher-registered, to serve
+    /// (`MechanicalWorkspaceRegistration`'s own remarks, `WP 9.0A`) — the
+    /// Project Explorer's own inline rename and the Property Inspector's
+    /// own editable Name field (`WP 10.2A`) are its first two real callers.
+    /// </summary>
+    /// <exception cref="ArgumentException"><paramref name="kind"/> is null, empty, or whitespace.</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="factory"/> is <see langword="null"/>.</exception>
+    /// <exception cref="DuplicateWorkspaceRegistrationException">A rename factory is already registered for <paramref name="kind"/>.</exception>
+    void RegisterRenameFactory(string kind, Func<Guid, string, string, IWorkspaceCommand> factory);
+
+    /// <summary>
+    /// Registers the factory building the real, discipline-specific delete
+    /// command for objects of Kind <paramref name="kind"/> — the delete
+    /// counterpart of <see cref="RegisterRenameFactory"/>, identical
+    /// rationale (`WP 10.2A`, `ADR-0096`).
+    /// </summary>
+    /// <exception cref="ArgumentException"><paramref name="kind"/> is null, empty, or whitespace.</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="factory"/> is <see langword="null"/>.</exception>
+    /// <exception cref="DuplicateWorkspaceRegistrationException">A delete factory is already registered for <paramref name="kind"/>.</exception>
+    void RegisterDeleteFactory(string kind, Func<Guid, string, IWorkspaceCommand> factory);
+
+    /// <summary>
+    /// Registers the factory building the real, discipline-specific content-
+    /// revision command for objects of Kind <paramref name="kind"/> — a
+    /// genuine, disclosed `WP 10.3A` addition to this frozen `WP8.0B`
+    /// contract (`ADR-0097`), additive only, mirroring
+    /// <see cref="RegisterRenameFactory"/>'s own `ADR-0096` shape exactly a
+    /// second time. Every discipline's own already-existing
+    /// <c>Revise*Command</c> (built for the console/Command Palette,
+    /// `WP 9.x`) is its own real factory here — the Object Editor
+    /// Framework's own Content field is this member's first real caller.
+    /// </summary>
+    /// <exception cref="ArgumentException"><paramref name="kind"/> is null, empty, or whitespace.</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="factory"/> is <see langword="null"/>.</exception>
+    /// <exception cref="DuplicateWorkspaceRegistrationException">A revise factory is already registered for <paramref name="kind"/>.</exception>
+    void RegisterReviseFactory(string kind, Func<Guid, string, string, IWorkspaceCommand> factory);
+
+    /// <summary>Gets whether a rename factory is registered for <paramref name="kind"/> — the honest, pre-check surface a menu/inline-edit UI uses to decide whether to offer renaming at all, never guessing or always-enabling.</summary>
+    bool CanRename(string kind);
+
+    /// <summary>Gets whether a delete factory is registered for <paramref name="kind"/> — the delete counterpart of <see cref="CanRename"/>.</summary>
+    bool CanDelete(string kind);
+
+    /// <summary>Gets whether a revise factory is registered for <paramref name="kind"/> — the revise counterpart of <see cref="CanRename"/>.</summary>
+    bool CanRevise(string kind);
+
+    /// <summary>
+    /// Renames <paramref name="id"/>/<paramref name="kind"/> to
+    /// <paramref name="newDisplayName"/> by building the registered
+    /// rename command (<see cref="RegisterRenameFactory"/>) and dispatching
+    /// it through the real, already-registered handler for its own
+    /// concrete type. Returns a <see cref="CommandResult.Failure(string)"/>,
+    /// never throws, if no rename factory is registered for
+    /// <paramref name="kind"/> — the identical "foreseeable failure, not a
+    /// defect" discipline every command handler in this platform already
+    /// follows (ADR-0038).
+    /// </summary>
+    Task<CommandResult> RenameObjectAsync(Guid id, string kind, string newDisplayName, CancellationToken cancellationToken = default);
+
+    /// <summary>The delete counterpart of <see cref="RenameObjectAsync"/>.</summary>
+    Task<CommandResult> DeleteObjectAsync(Guid id, string kind, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Revises <paramref name="id"/>/<paramref name="kind"/>'s own content
+    /// to <paramref name="newContent"/> by building the registered revise
+    /// command (<see cref="RegisterReviseFactory"/>) and dispatching it
+    /// through the real, already-registered handler for its own concrete
+    /// type — the revise counterpart of <see cref="RenameObjectAsync"/>.
+    /// Returns a <see cref="CommandResult.Failure(string)"/>, never throws,
+    /// if no revise factory is registered for <paramref name="kind"/>.
+    /// </summary>
+    Task<CommandResult> ReviseObjectAsync(Guid id, string kind, string newContent, CancellationToken cancellationToken = default);
 }

@@ -12,4 +12,17 @@ namespace Tempest.App.Workspace;
 /// <param name="Label">The KPI's own short name — for example "Requirements".</param>
 /// <param name="Value">The KPI's own display value.</param>
 /// <param name="IsPlaceholder">Whether this value is representative sample data, not a live read.</param>
-internal sealed record CockpitKpiCard(string Label, string Value, bool IsPlaceholder);
+/// <param name="PercentValue">
+/// The KPI's own coverage percentage, `0`-`100`, when this KPI genuinely
+/// represents a coverage ratio (`WP 10.5C`, "coloured health indicators,
+/// progress bars... verification coverage, requirements coverage") —
+/// <see langword="null"/> for every KPI that is not a percentage (a raw
+/// count, a placeholder). A trailing, defaulted, additive parameter —
+/// every pre-existing call site compiles unchanged; the three real
+/// Coverage KPIs (Requirements/Verification/Calculations) were
+/// individually revisited to pass the identical numerator/denominator
+/// <see cref="EngineeringCockpit"/> already computes for its own
+/// <c>FormatCoverage</c> display string — never a second, independent
+/// computation that could drift from the text it accompanies.
+/// </param>
+internal sealed record CockpitKpiCard(string Label, string Value, bool IsPlaceholder, int? PercentValue = null);

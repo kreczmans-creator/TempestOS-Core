@@ -10,7 +10,7 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | This document, from `WP 7.0A` onward. Prior to this Work Package, the same information existed only in fragments — see each entry's own "Sourced From" field for where it previously lived. |
 | **Review Frequency** | Updated whenever a new future capability is identified (by any Work Package, retrospective, or review), or whenever an existing capability's Status changes (a Work Package begins, completes, or a capability is formally deferred/rejected). |
-| **Last Reviewed** | 2026-08-07 (`WP 9.9.0`, Release Preparation & Product Baseline — Second Pass) — reviewed, zero new entries added: a second, independent verification pass, commissioned after `WP 9.8B` closed the first pass's own top standing recommendation. All 62 entries re-verified directly a second time, 62 total unchanged. `FCR-0005` (Governance Register Health-Check Tooling) reconfirmed still Identified, now carrying its strongest evidentiary case yet — both `WP 9.8B`'s own existence and this pass's own newly-registered `TD-34` finding are direct, first-hand evidence of the manual-effort cost automation would eliminate. Previously reviewed 2026-08-07 (`WP 9.9.0`, Release Preparation & Product Baseline — First Pass) — reviewed, zero new entries added: verification-only Work Package. All 62 entries (`FCR-0001`–`FCR-0062`) re-verified directly against this register's own section headings, 62 total unchanged. `FCR-0005` (Governance Register Health-Check Tooling) reconfirmed still Identified, now disclosed as recurring across a seventh consecutive release-adjacent review — see `WP9.9.0 Release Readiness Report.md` §16 (Future Capability Review) and `WP9.9.0 Product Approval Report.md`'s own standing recommendations. Previously reviewed 2026-08-07 (`WP 9.5A`, Manufacturing Workspace) — `FCR-0060`–`FCR-0062` added (A Genuine `Routing`/`SupplierOperation` Domain Kind, Parameterising `EngineeringCockpit.FormatCoverage`'s Own Empty-State Message, Extending `VerificationService.RecordAsync`'s Own `IHasRelationships` Linking to Cover Inspection Subjects) — all **Identified**, sourced directly from `WP9.5A Future Capability Assessment.md`; 59 → 62 total. **Disclosed, found gap, not fixed retroactively:** this field's own immediately-prior entry was `WP 9.2A`'s (2026-08-05) — neither `WP 9.3A` nor `WP 9.4A` updated this "Last Reviewed" field despite each adding three real entries of their own (`FCR-0054`–`FCR-0056`, `FCR-0057`–`FCR-0059`, confirmed present in the Coverage Note below and in the table itself) — a genuine drift between this field and this register's own actual content, found while adding this Work Package's own entries, recorded here plainly rather than silently backfilled to look as though it was continuously current. Previously reviewed 2026-08-05 (`WP 9.2A`, Engineering Calculations Workspace) — `FCR-0051`–`FCR-0053` added (Concrete `ICalculationResult`/`IVerificationResult` Implementations, Concrete Approval/Review Workflow, Recalculate Resuming From a Previously-Executed Input) — all **Identified**, sourced directly from `WP9.2A Future Capability Assessment.md`; 50 → 53 total. Previously reviewed 2026-08-05 (`WP 9.1A`, Requirements Management Workspace) — `FCR-0048`–`FCR-0050` added (Requirement Collection Membership Removal, Domain-Level Search Generalised Beyond `IEngineeringObject`, Multi-Target Workspace View Refresh) — all **Identified**, sourced directly from `WP9.1A Future Capability Assessment.md`; `FCR-0039` (Multi-Selection) marked **Resolved/Implemented** — `ADR-0085`, the first entry in the "Workspace" category to leave Identified status; 47 → 50 total. Previously reviewed 2026-08-05 (`WP 9.0B`, Product Configuration & BOM Management) — `FCR-0044`–`FCR-0047` added (Product Variant Resolution, Unit of Measure Canonicalisation, Cost Roll-Up Over the BOM Hierarchy, Configuration Management Workflow) — all **Identified**, sourced directly from `WP9.0B Future Capability Assessment.md`; 43 → 47 total. Previously reviewed 2026-08-05 (`WP 9.0A`, Mechanical Product Structure) — `FCR-0039`–`FCR-0043` added, the first entries in a new "Workspace" category (multi-selection, drag-and-drop, real invoke-by-Id command execution, a second Engineering Discipline Module reusing this Work Package's own provider categories, and structural mutation for further object families) — all **Identified**, sourced directly from `WP9.0A Future Capability Assessment.md`; 38 → 43 total. Previously reviewed 2026-07-30 (`WP 7.2C`, Requirements & Verification Platform Contract Review) — `FCR-0027`'s own complete public contracts defined (thirteen domain concepts, four reserved ADRs, twelve completion deliverables) — still **Identified**, not **Implemented**; a contract review is not an implementation, and this Work Package wrote no production code. Previously reviewed 2026-07-30 (`WP 7.2B`, Requirements & Verification Platform Architecture) — `FCR-0027`'s own complete architecture designed (twelve domain concepts, three reserved ADRs, eleven completion deliverables) — still **Identified**, not **Implemented**; an architecture phase is not an implementation, and this Work Package wrote no production code. Previously reviewed 2026-07-30 (`WP 7.2A`, Strategic Roadmap Selection & Programme Architecture) — all 36 entries reviewed against seven candidate next-programme options; no new entry added, no status changed. `FCR-0027` (Requirements Engine) recommended as the next implementation programme's own scope (`WP7.2A Recommended Programme.md`) — still **Identified**, not yet approved; recommendation is not approval. Previously reviewed 2026-07-30 (`WP 7.1F`, Engineering Core Integration Review & Certification) — confirmed `FCR-0029`–`FCR-0033` all **Implemented**; reviewed `FCR-0034`/`FCR-0035`/`FCR-0036`, all remain **Deferred** (no scheduled release); `FCR-0005`'s own priority raised Medium → High after a third, independent recurrence of the governance-register-drift pattern it exists to prevent (see `WP7.1F Engineering Core Architecture Conformance Report.md` §7). No new capability identified. Previously reviewed 2026-07-30 (`WP 7.1E`, Verification Framework) — `FCR-0033` marked **Implemented**, completing the Engineering Foundation programme (all five, `FCR-0029`–`FCR-0033`, now Implemented); `FCR-0036` added (Transactional Multi-Document Operations, found during this Work Package's own required Security Review). Previously reviewed 2026-07-30 (`WP 7.1D`, Engineering Calculation Framework) — `FCR-0032` marked **Implemented**; `FCR-0035` added (Calculation Execution Timeout & Cancellation Support, found during this Work Package's own required Security Review). Previously reviewed 2026-07-30 (`WP 7.1C`, Materials Framework) — `FCR-0031` marked **Implemented**. Previously reviewed 2026-07-30 (`WP 7.1B`, Units & Quantities Framework) — `FCR-0030` marked **Implemented**; `FCR-0034` added (Affine Unit Conversion / Temperature, found during implementation, not anticipated by prior planning). Previously reviewed 2026-07-30 (`WP 7.1A`, Engineering Data Model) — `FCR-0029` marked **Implemented**, the first entry in this register to leave "Identified" status. Previously reviewed 2026-07-30 (`WP 7.0B`, Engineering Foundation Planning & Capability Architecture) — added `FCR-0029` through `FCR-0033`, the five cross-cutting Engineering Foundation frameworks this Work Package's own dependency analysis identified as architecturally necessary before any discipline-specific Engineering Module can begin (see `WP7.0B Engineering Foundation Architecture.md`). Each is marked **Inferred**, not Verified — architectural necessity reasoning, not a capability named in a prior document, per the same discipline `FCR-0026` already applied. Previously reviewed 2026-07-30 (`WP 7.0A`, established). |
+| **Last Reviewed** | 2026-08-11 (`WP 10.8A`, Desktop Feature Completion & Existing Capability Exposure) — reviewed, zero new entries added: this Work Package's own scope was confirming `WP 10.7A`'s five already-Implemented items remained intact at runtime and closing the two genuinely incomplete ones its own controlling instruction named directly — `FCR-0075`'s own Notes updated in place (Manufacturing's own "Record Inspection Result" wired, the one remaining genuinely-unwired verb this register's own audit found; the Ribbon's own honest-fallback wording corrected, a defect in messaging, not a missing capability, so tracked in the Technical Debt Register's own narrative, not a new entry here). The Property Inspector's real Validation section is a new capability closed this Work Package but was never itself a tracked `FCR` — `23-workspace-modernisation.md`'s own "Validation, an honest placeholder" line was a `WP 10.2A` Academy disclosure, not a registered Future Capability, so its closure updates that article directly (§Future Evolution) rather than marking an entry Implemented here. 83 entries unchanged. `v0.10.0`'s own fifteenth Work Package by completion order. Previously reviewed 2026-08-10 (`WP 10.7A`, Feature Completion) — three entries marked **Implemented**: `FCR-0066` (Uniform `Move*Command` Shape, Enabling Real Drag/Drop Reparenting — implemented via a lighter, non-`IWorkspaceManager`-extending route than this entry's own original proposal, see its own updated remarks), `FCR-0068` (Discipline-Specific Object Editor Enhancements — all five named sections built, one genuine pre-existing gap found and disclosed as `TD-41` in the process), `FCR-0075` (Uniform Create/Duplicate Wiring Across All Six Disciplines — Create/Duplicate/status-transition dispatch now real for all five disciplines beyond Mechanical; Copy remains unwired, `FCR-0073`'s own named destination-picker dialog gap unchanged). This Work Package closes every WP10.6D-audited placeholder judged achievable without new architecture — see `WP10.7A Implementation Report.md`. No new entries added (every capability closed this Work Package was already tracked). `v0.10.0`'s own fourteenth Work Package by completion order. Previously reviewed 2026-08-10 (`WP 10.5C`, Commercial User Experience & Application Completion) — reviewed, zero new entries added: this Work Package's own required-first runtime audit found no genuinely unreachable feature (`WP10.5C Runtime UX Traceability Matrix.md`), and its own two real findings (both hardcoded, wrong-in-one-theme colours) were fixed in place, never reaching Future Capability status. The one disclosed, lasting scope reduction — Object Editor discipline-aware layouts — is `FCR-0068`'s own already-tracked scope, reconfirmed still Identified, not a new entry. 83 entries unchanged. `v0.10.0`'s own thirteenth Work Package by completion order (commissioned and completed after `WP 10.6A` despite its own earlier number — recorded plainly, not reordered, mirroring `WP 9.3A`'s own identical precedent). Previously reviewed 2026-08-10 (`WP 10.6A`, Command Execution & Productivity Experience) — `FCR-0078`–`FCR-0083` added (Undo/Redo Coverage Beyond Rename and Favourite Toggle; Background Task Percentage Progress Reporting; Macro Steps Eligible Beyond `CreateDefault`-Invokable Commands; Command History as a Real `ICommandDispatcher` Interception; Persisted Cross-Session Undo/Redo and Command History; Keyboard Remapping UI and a Real External Controller Integration) — all **Identified**, sourced directly from this Work Package's own six disclosed scope reductions (`WP10.6A Implementation Report.md` §8, each also tracked as `AT-18`–`AT-23` in the Technical Debt Register); 77 → 83 total. `v0.10.0`'s own twelfth Work Package. Previously reviewed 2026-08-10 (`WP 10.5B`, Desktop Workflow & Professional Interaction) — `FCR-0073`–`FCR-0077` added (Copy/Move Destination-Picker Dialog & Wired Dispatch; Export/Import Commands & Dialog Wiring; Uniform Create/Duplicate Wiring Across All Six Disciplines; Startup Splash Screen; Customisable Keyboard Shortcuts, Ribbon & Toolbar Preferences) — all **Identified**, sourced directly from this Work Package's own five disclosed scope reductions; 72 → 77 total. `v0.10.0`'s own eleventh Work Package. Previously reviewed 2026-08-10 (`WP 10.5A`, Workspace Visual Polish & Engineering User Experience) — `FCR-0071` added (A Comprehensive, Hand-Authored Vector Icon Library) and `FCR-0072` added (Split/Tiled Document View) — both **Identified**, sourced directly from this Work Package's own disclosed scope reductions; `FCR-0067` (Theme-Variant-Aware Overlay Backgrounds) marked **Implemented** — `ApplicationPalette`/`ThemeReactiveBrush`, closing `TD-39`; 70 → 72 total. `v0.10.0`'s own tenth Work Package. Previously reviewed 2026-08-09 (`WP 10.4A`, Digital Thread Visualisation) — `FCR-0070` added (Digital Thread Graph Clustering/Pruning for Dense Objects) — **Identified**, sourced directly from `ADR-0093`'s own already-disclosed, already-accepted first-iteration limitation, now attached to a real implementation for the first time; 69 → 70 total. `v0.10.0`'s own ninth Work Package. Previously reviewed 2026-08-09 (`WP 10.3B`, Ribbon, Toolbar & Command Experience) — `FCR-0069` added (Real, Authored Per-Command Icons) — **Identified**, sourced directly from this Work Package's own confirmed-by-`grep` finding that `CommandDescriptor.Icon` is unpopulated everywhere; 68 → 69 total. `v0.10.0`'s own eighth Work Package. Previously reviewed 2026-08-09 (`WP 10.3A`, Engineering Object Editors) — `FCR-0068` added (Discipline-Specific Object Editor Enhancements) — **Identified**, sourced directly from this Work Package's own disclosed scope decision (one generic engine, real per-discipline enhancements deferred); 67 → 68 total. `v0.10.0`'s own seventh Work Package. Previously reviewed 2026-08-09 (`WP 10.2B`, Docking & Workspace Layouts) — `FCR-0067` added (Theme-Variant-Aware Overlay Backgrounds) — **Identified**, sourced directly from this Work Package's own disclosed `TD-39` finding; 66 → 67 total. `FCR-0005` (Governance Register Health-Check Tooling) reconfirmed still Identified, reinforced by a fresh instance of its own exact pattern found this Work Package — the Academy Register's own `## 03 Work Packages` table found missing eleven real, already-shipped rows (see `Academy Register.md`'s own "Last Reviewed" entry) — named there, not fixed here, out of this Work Package's own scope. Previously reviewed 2026-08-07 (`WP 10.2A`, Workspace Modernisation) — `FCR-0066` added (Uniform `Move*Command` Shape, Enabling Real Drag/Drop Reparenting) — **Identified**, sourced directly from this Work Package's own disclosed drag/drop-preparation-not-implementation trade-off; 65 → 66 total. Previously reviewed 2026-08-07 (`WP 10.1B`, Runtime Host & Module Discovery Hardening) — reviewed, zero new entries added: this Work Package's own two named subjects (`TD-26`, `TD-37`) were both genuinely resolved, not merely disclosed as future capability candidates, and its one new finding (`TD-38`, `EngineeringObjectFactory<T>`'s own lack of business-identifier uniqueness enforcement) is tracked in the Technical Debt Register, not this one — mirroring `WP 10.1A`'s own identical "significant finding belongs in the Technical Debt Register" precedent. 65 entries unchanged. Previously reviewed 2026-08-07 (`WP 10.1A`, Engineering Cockpit Implementation) — `FCR-0056` (Governance & Risk Workspace) updated, not resolved: `EngineeringCockpit` now reads this exact Domain family for the first time (Open Decisions, Risk Summary, Upcoming Milestones), strengthening rather than closing this capability's own case, since a full Explorer/commands/Property Inspector presence still does not exist. No new entry added — the one significant new finding this Work Package made (a sample-module registration defect) is tracked as `TD-37` in the Technical Debt Register, not this register. 65 entries unchanged. Previously reviewed 2026-08-07 (`WP 10.0B`, Desktop Application Framework) — `FCR-0063` (Concrete Cross-Platform .NET Desktop UI Framework Selection) marked **Implemented** — Avalonia 11.2.3, `ADR-0094`, the first entry in the "Workspace" category `WP 10.0A` itself added to leave Identified status. No new entry added; `FCR-0064`/`FCR-0065` reconfirmed still Identified, both outside this Work Package's own "no contract redesign"/"no new Platform Service" scope. **Disclosed, found gap, not fixed retroactively**: this field's own immediately-prior entry was `WP 9.9.0` Second Pass's (below) — `WP 10.0A` itself, despite adding `FCR-0063`–`FCR-0065`, never updated this field — the identical class of drift this register's own `WP 9.3A`/`WP 9.4A` gap already disclosed once before, recorded here plainly rather than silently backfilled. Previously reviewed 2026-08-07 (`WP 10.0A`, User Experience Architecture) — `FCR-0063`–`FCR-0065` added (Concrete Desktop UI Framework Selection, Floating/Multi-Monitor Panel Contract Extension, Notification Framework Workspace Integration) — all **Identified**, sourced directly from `WP10.0A UX Architecture Document.md` and companion reviews, the first entries in this register raised by an architecture-only Work Package; 62 → 65 total. Previously reviewed 2026-08-07 (`WP 9.9.0`, Release Preparation & Product Baseline — Second Pass) — reviewed, zero new entries added: a second, independent verification pass, commissioned after `WP 9.8B` closed the first pass's own top standing recommendation. All 62 entries re-verified directly a second time, 62 total unchanged. `FCR-0005` (Governance Register Health-Check Tooling) reconfirmed still Identified, now carrying its strongest evidentiary case yet — both `WP 9.8B`'s own existence and this pass's own newly-registered `TD-34` finding are direct, first-hand evidence of the manual-effort cost automation would eliminate. Previously reviewed 2026-08-07 (`WP 9.9.0`, Release Preparation & Product Baseline — First Pass) — reviewed, zero new entries added: verification-only Work Package. All 62 entries (`FCR-0001`–`FCR-0062`) re-verified directly against this register's own section headings, 62 total unchanged. `FCR-0005` (Governance Register Health-Check Tooling) reconfirmed still Identified, now disclosed as recurring across a seventh consecutive release-adjacent review — see `WP9.9.0 Release Readiness Report.md` §16 (Future Capability Review) and `WP9.9.0 Product Approval Report.md`'s own standing recommendations. Previously reviewed 2026-08-07 (`WP 9.5A`, Manufacturing Workspace) — `FCR-0060`–`FCR-0062` added (A Genuine `Routing`/`SupplierOperation` Domain Kind, Parameterising `EngineeringCockpit.FormatCoverage`'s Own Empty-State Message, Extending `VerificationService.RecordAsync`'s Own `IHasRelationships` Linking to Cover Inspection Subjects) — all **Identified**, sourced directly from `WP9.5A Future Capability Assessment.md`; 59 → 62 total. **Disclosed, found gap, not fixed retroactively:** this field's own immediately-prior entry was `WP 9.2A`'s (2026-08-05) — neither `WP 9.3A` nor `WP 9.4A` updated this "Last Reviewed" field despite each adding three real entries of their own (`FCR-0054`–`FCR-0056`, `FCR-0057`–`FCR-0059`, confirmed present in the Coverage Note below and in the table itself) — a genuine drift between this field and this register's own actual content, found while adding this Work Package's own entries, recorded here plainly rather than silently backfilled to look as though it was continuously current. Previously reviewed 2026-08-05 (`WP 9.2A`, Engineering Calculations Workspace) — `FCR-0051`–`FCR-0053` added (Concrete `ICalculationResult`/`IVerificationResult` Implementations, Concrete Approval/Review Workflow, Recalculate Resuming From a Previously-Executed Input) — all **Identified**, sourced directly from `WP9.2A Future Capability Assessment.md`; 50 → 53 total. Previously reviewed 2026-08-05 (`WP 9.1A`, Requirements Management Workspace) — `FCR-0048`–`FCR-0050` added (Requirement Collection Membership Removal, Domain-Level Search Generalised Beyond `IEngineeringObject`, Multi-Target Workspace View Refresh) — all **Identified**, sourced directly from `WP9.1A Future Capability Assessment.md`; `FCR-0039` (Multi-Selection) marked **Resolved/Implemented** — `ADR-0085`, the first entry in the "Workspace" category to leave Identified status; 47 → 50 total. Previously reviewed 2026-08-05 (`WP 9.0B`, Product Configuration & BOM Management) — `FCR-0044`–`FCR-0047` added (Product Variant Resolution, Unit of Measure Canonicalisation, Cost Roll-Up Over the BOM Hierarchy, Configuration Management Workflow) — all **Identified**, sourced directly from `WP9.0B Future Capability Assessment.md`; 43 → 47 total. Previously reviewed 2026-08-05 (`WP 9.0A`, Mechanical Product Structure) — `FCR-0039`–`FCR-0043` added, the first entries in a new "Workspace" category (multi-selection, drag-and-drop, real invoke-by-Id command execution, a second Engineering Discipline Module reusing this Work Package's own provider categories, and structural mutation for further object families) — all **Identified**, sourced directly from `WP9.0A Future Capability Assessment.md`; 38 → 43 total. Previously reviewed 2026-07-30 (`WP 7.2C`, Requirements & Verification Platform Contract Review) — `FCR-0027`'s own complete public contracts defined (thirteen domain concepts, four reserved ADRs, twelve completion deliverables) — still **Identified**, not **Implemented**; a contract review is not an implementation, and this Work Package wrote no production code. Previously reviewed 2026-07-30 (`WP 7.2B`, Requirements & Verification Platform Architecture) — `FCR-0027`'s own complete architecture designed (twelve domain concepts, three reserved ADRs, eleven completion deliverables) — still **Identified**, not **Implemented**; an architecture phase is not an implementation, and this Work Package wrote no production code. Previously reviewed 2026-07-30 (`WP 7.2A`, Strategic Roadmap Selection & Programme Architecture) — all 36 entries reviewed against seven candidate next-programme options; no new entry added, no status changed. `FCR-0027` (Requirements Engine) recommended as the next implementation programme's own scope (`WP7.2A Recommended Programme.md`) — still **Identified**, not yet approved; recommendation is not approval. Previously reviewed 2026-07-30 (`WP 7.1F`, Engineering Core Integration Review & Certification) — confirmed `FCR-0029`–`FCR-0033` all **Implemented**; reviewed `FCR-0034`/`FCR-0035`/`FCR-0036`, all remain **Deferred** (no scheduled release); `FCR-0005`'s own priority raised Medium → High after a third, independent recurrence of the governance-register-drift pattern it exists to prevent (see `WP7.1F Engineering Core Architecture Conformance Report.md` §7). No new capability identified. Previously reviewed 2026-07-30 (`WP 7.1E`, Verification Framework) — `FCR-0033` marked **Implemented**, completing the Engineering Foundation programme (all five, `FCR-0029`–`FCR-0033`, now Implemented); `FCR-0036` added (Transactional Multi-Document Operations, found during this Work Package's own required Security Review). Previously reviewed 2026-07-30 (`WP 7.1D`, Engineering Calculation Framework) — `FCR-0032` marked **Implemented**; `FCR-0035` added (Calculation Execution Timeout & Cancellation Support, found during this Work Package's own required Security Review). Previously reviewed 2026-07-30 (`WP 7.1C`, Materials Framework) — `FCR-0031` marked **Implemented**. Previously reviewed 2026-07-30 (`WP 7.1B`, Units & Quantities Framework) — `FCR-0030` marked **Implemented**; `FCR-0034` added (Affine Unit Conversion / Temperature, found during implementation, not anticipated by prior planning). Previously reviewed 2026-07-30 (`WP 7.1A`, Engineering Data Model) — `FCR-0029` marked **Implemented**, the first entry in this register to leave "Identified" status. Previously reviewed 2026-07-30 (`WP 7.0B`, Engineering Foundation Planning & Capability Architecture) — added `FCR-0029` through `FCR-0033`, the five cross-cutting Engineering Foundation frameworks this Work Package's own dependency analysis identified as architecturally necessary before any discipline-specific Engineering Module can begin (see `WP7.0B Engineering Foundation Architecture.md`). Each is marked **Inferred**, not Verified — architectural necessity reasoning, not a capability named in a prior document, per the same discipline `FCR-0026` already applied. Previously reviewed 2026-07-30 (`WP 7.0A`, established). |
 | **Related Documents** | `Capability Categories.md`; `Product Roadmap.md`; `VISION.md`; `docs/governance/Quality/Technical Debt Register.md`; `docs/security/Security Roadmap.md`; `docs/security/Threat Model.md`; `docs/releases/v0.7.0/WorkPackages.md`; the eight `WP6.x Future Capability Recommendations.md` documents under `docs/releases/v0.6.0/`. |
 | **Related ADRs** | ADR-0013, ADR-0040, ADR-0044, ADR-0045, ADR-0046, ADR-0049, ADR-0050, ADR-0052, ADR-0053, ADR-0054, ADR-0055, ADR-0056, ADR-0057 — see individual entries. |
 | **Related Academy Articles** | `WP6.8-platform-services-integration-review.md` §6 (the direct source of `FCR-0001`, `FCR-0003`, `FCR-0004`, `FCR-0005`, `FCR-0006`); `WP7.0B-engineering-foundation-planning-and-capability-architecture.md`. |
@@ -993,17 +993,17 @@ Coverage Note).
 | Field | Value |
 |---|---|
 | **Category** | Workspace |
-| **Description** | `Issue`/`Risk`/`Hazard`/`Decision`/`Assumption` (`Contracts/GovernanceRisk.cs`, `WP 8.2C`) are all already real, compiled, `EngineeringObjectBase`-derived concrete classes, architecturally ready for the same Kind-keyed Workspace treatment every other discipline has now received four times, but none has its own Explorer area, Property Inspector Kind registration, or dedicated commands — `EngineeringCockpit.OpenDecisions`/`RiskSummary` remain fixed, disclosed placeholder content. `WP 9.4A` creates one live `Decision` and reads one already-live `Risk` purely to satisfy its own Digital Thread scope item, proving the underlying Domain classes are Workspace-ready without any further Domain-layer work. |
+| **Description** | `Issue`/`Risk`/`Hazard`/`Decision`/`Assumption` (`Contracts/GovernanceRisk.cs`, `WP 8.2C`) are all already real, compiled, `EngineeringObjectBase`-derived concrete classes, architecturally ready for the same Kind-keyed Workspace treatment every other discipline has now received four times, but none has its own Explorer area, Property Inspector Kind registration, or dedicated commands. `WP 9.4A` creates one live `Decision` and reads one already-live `Risk` purely to satisfy its own Digital Thread scope item, proving the underlying Domain classes are Workspace-ready without any further Domain-layer work. **`WP 10.1A` update**: `EngineeringCockpit.OpenDecisions`/`RiskSummary` (plus `Milestone`/`Task` reads) are no longer placeholder — real Cockpit-level reads now exist over this exact Domain family (a read-only dashboard summary, not the Explorer/commands/Property Inspector presence this capability itself still names) — strengthening, not resolving, this capability's own case: the Cockpit now visibly surfaces exactly how little of this already-Workspace-ready Domain family has real presence anywhere else. |
 | **Status** | Identified |
-| **Priority** | Low — no dedicated Governance & Risk Workspace presence has been requested yet |
+| **Priority** | Low — no dedicated Governance & Risk Workspace presence has been requested yet, though `WP 10.1A`'s own Cockpit reads give it a real, visible summary for the first time |
 | **Business Value** | Unknown — dependent on a real, demonstrated need for dedicated Risk/Decision browsing and management, beyond the indirect Digital Thread reachability `WP 9.4A` already provides |
 | **Engineering Effort** | Low — mirrors the now four-times-proven Kind-keyed Workspace pattern directly; no Domain-layer work is anticipated |
 | **Dependencies** | `Contracts/GovernanceRisk.cs`/`Implementation/GovernanceRisk.cs` (Implemented, `WP 8.2C`) |
 | **Proposed Target Release** | Unscheduled |
 | **Related ADRs** | None yet |
-| **Related Work Packages** | `WP 8.2C` (defined and implemented the underlying Domain classes); `WP 9.4A` (first to instantiate a live `Decision`, and to read the base sample's own live `Risk`) |
+| **Related Work Packages** | `WP 8.2C` (defined and implemented the underlying Domain classes); `WP 9.4A` (first to instantiate a live `Decision`, and to read the base sample's own live `Risk`); `WP 10.1A` (first Workspace surface — the Cockpit — to actually read this family) |
 | **Academy Impact** | Would be a new Academy article, mirroring the shape of every prior discipline's own |
-| **Notes** | Raised directly by `WP9.4A Future Capability Assessment.md`. |
+| **Notes** | Raised directly by `WP9.4A Future Capability Assessment.md`. See also `TD-37` (`WP10.1A Technical Debt Review.md`) — a sample-module registration defect currently prevents most of this family's own sample data from seeding at all, a real blocker any future Governance & Risk Workspace Work Package would need resolved first. |
 
 #### FCR-0057 — `VerificationService.RecordAsync` Additionally Linking Through `IHasRelationships` When the Subject Is a Real Domain Object
 
@@ -1107,6 +1107,363 @@ Coverage Note).
 | **Academy Impact** | Would extend `WP9.5A-manufacturing-workspace.md` once implemented |
 | **Notes** | Raised directly by `WP9.5A Future Capability Assessment.md`; extends `FCR-0057` rather than duplicating it. |
 
+#### FCR-0063 — Concrete Cross-Platform .NET Desktop UI Framework Selection
+
+| Field | Value |
+|---|---|
+| **Category** | Workspace |
+| **Description** | `ADR-0092` (`WP 10.0A`) decides the Workspace's presentation paradigm moves to a graphical desktop application, but explicitly reserves the concrete framework choice (a WPF/Avalonia/MAUI-shaped decision) as `ADR-0094`, an implementation-phase evaluation — mirroring exactly how `ADR-0066` once deferred "the specific TUI library" the same way. |
+| **Status** | **Implemented, `WP 10.0B`** — Avalonia 11.2.3 selected, justified (`ADR-0094`), and integrated into a real, running, tested `Tempest.Desktop` project |
+| **Priority** | N/A — resolved |
+| **Business Value** | High — realised: unblocked all further graphical Workspace implementation |
+| **Engineering Effort** | Medium, as estimated — an evaluation and selection Work Package, not a redesign; every existing Workspace contract confirmed rendering-agnostic, zero contract change required, confirmed empirically by `WP10.0B Engineering Review.md` §3 |
+| **Dependencies** | `ADR-0092` (Accepted, `WP 10.0A`); `IWorkspaceView`/`IWorkspacePanel` (Implemented, `WP 8.0B`, unchanged) |
+| **Proposed Target Release** | `v0.10.0` — realised, `WP 10.0B`, the Work Package immediately after `WP 10.0A`, exactly as recommended |
+| **Related ADRs** | `ADR-0092`; `ADR-0094` (this capability's own resolution) |
+| **Related Work Packages** | `WP 10.0A` (reserved `ADR-0094`); `WP 10.0B` (resolved it) |
+| **Academy Impact** | Realised — `20-desktop-application-framework.md` (new concept guide, `WP 10.0B`) |
+| **Notes** | Raised directly by `WP10.0A UX Architecture Document.md` §17 and `WP10.0A Systems Engineering Review.md` §5; resolved directly by `WP10.0B Implementation Report.md` §1 and `ADR-0094`. |
+
+#### FCR-0064 — `WorkspaceDockPosition`/`WorkspacePanelPlacement` Contract Extension for Floating Panels and Multi-Monitor Placement
+
+| Field | Value |
+|---|---|
+| **Category** | Workspace |
+| **Description** | `WorkspaceDockPosition` deliberately has no `Floating` value (`WP 8.0A`'s own "Deliberately Out of Scope"), and neither it nor `WorkspacePanelPlacement` carries a monitor concept. `WP10.0A UX Architecture Document.md` §4/§15 names both as required for full multi-monitor/undocked-panel support and reserves the contract question as `ADR-0095`, explicitly not designed under `WP 10.0A`'s own "no contract changes" constraint. |
+| **Status** | Identified |
+| **Priority** | Medium — the majority of `WP 10.0A`'s own scope (docked-panel behaviour, single-window multi-monitor spanning) does not depend on this; only true panel undocking and per-monitor placement do |
+| **Business Value** | Medium — required for Journey 6 (`WP10.0A Navigation & Workflow Diagrams.md` §7) to be fully realised |
+| **Engineering Effort** | Medium — an additive enum value plus a new field on `WorkspacePanelPlacement`, mirroring `ADR-0080`'s/`ADR-0083`'s own established "extend additively" pattern, never a reopened contract |
+| **Dependencies** | `WorkspaceDockPosition`/`WorkspacePanelPlacement` (Implemented, `WP 8.0B`); `ADR-0092` (Accepted, `WP 10.0A`) |
+| **Proposed Target Release** | `v0.10.0`, a Contract Review Work Package, mirroring `WP 8.0B`'s own relationship to `WP 8.0A` |
+| **Related ADRs** | `ADR-0095` (reserved, this capability's own eventual resolution) |
+| **Related Work Packages** | `WP 10.0A` (reserved `ADR-0095`) |
+| **Academy Impact** | Would extend `19-user-experience-and-desktop-application.md` once resolved |
+| **Notes** | Raised directly by `WP10.0A UX Architecture Document.md` §4, §15 and `WP10.0A Security Review.md` §4 (the multi-monitor physical-exposure consideration this same contract extension should account for). |
+
+#### FCR-0065 — Notification Framework Workspace Integration
+
+| Field | Value |
+|---|---|
+| **Category** | Workspace |
+| **Description** | `WP 6.2`'s own Notification Framework exists with zero Workspace-level presentation consumer. `WP10.0A UX Architecture Document.md` §10 names a Notification tray as a required Workspace surface, composing the existing framework read-only, but explicitly defers which `INotificationService` methods a future implementation Work Package actually calls. |
+| **Status** | Identified |
+| **Priority** | Low — no other capability in `WP 10.0A`'s own scope depends on this being resolved first |
+| **Business Value** | Medium — Attention Items/Open Actions (`EngineeringCockpit`) already give engineers a derived-state view; Notifications add discrete, timestamped event awareness on top |
+| **Engineering Effort** | Low-Medium — no new Platform Service; a Workspace-layer read-only consumer of the existing Notification Framework |
+| **Dependencies** | `Tempest.Core` Notification Framework (Implemented, `WP 6.2`) |
+| **Proposed Target Release** | Unscheduled — recommended after `FCR-0063`/`FCR-0064` |
+| **Related ADRs** | None yet |
+| **Related Work Packages** | `WP 6.2` (defined the current framework); `WP 10.0A` (named the requirement) |
+| **Academy Impact** | None until implemented |
+| **Notes** | Raised directly by `WP10.0A UX Architecture Document.md` §10; permission-gating consideration flagged by `WP10.0A Security Review.md` §5 — must be honoured by whichever future Work Package implements this. |
+
+#### FCR-0066 — Uniform `Move*Command` Shape, Enabling Real Drag/Drop Reparenting
+
+| Field | Value |
+|---|---|
+| **Category** | Workspace |
+| **Description** | `WP 10.2A`'s own Project Explorer drag/drop is deliberately "preparation architecture" only (`ADR-0096`'s own precedent, applied narrowly) — a real drag begins with a real payload and `DragOver` gives real feedback, but `Drop` is a documented no-op. Each discipline's own `Move*Command` already exists but is not yet uniform in shape across all six disciplines, unlike Rename/Delete's own now-uniform `(Guid, string[, string])` shape (`ADR-0096`) — a future Work Package standardising it the same way would let the Project Explorer's own `Drop` handler dispatch a real reparent command generically, exactly mirroring how `RegisterRenameFactory`/`RegisterDeleteFactory` already work. |
+| **Status** | **Implemented, `WP 10.7A`** — real, not via the `IWorkspaceManager` extension this entry originally proposed. `Drop` now raises a new `ProjectExplorerView.ObjectMoveRequested` event (mirroring the View's own existing `ObjectOpened`/`ToggleFavouriteRequested` shape) carrying (draggedId, draggedKind, newParentId); `MainWindow` maps `Kind` to the correct discipline's own already-registered `Move*Command` directly via `ICommandDispatcher`, never touching `IWorkspaceManager` — a lighter, "no new architecture" route this entry's own original Engineering Effort estimate did not anticipate. Guards against dropping onto self/a descendant. Requirements' own two Move commands (`MoveRequirementCommand`/`MoveRequirementGroupCommand`, fixed-Kind, no `targetKind` parameter) and `RequirementCollection` (no Move command at all) are handled by the same dispatch switch — the latter reports an honest "isn't supported yet" message rather than throwing. Proven both by a real reparent test (`FeatureCompletionTests.ObjectMoveRequested_ForARealMechanicalAssembly_...`) and by this Work Package's own required interactive runtime pass. |
+| **Priority** | Low — no other capability depends on this; disclosed, not blocking |
+| **Business Value** | Medium — drag-and-drop reparenting is a common, expected desktop-application affordance once a tree view supports multi-select and context menus, both now real (`WP 10.2A`) |
+| **Engineering Effort** | Medium — requires auditing and, where needed, reshaping six disciplines' own `Move*Command` constructors to a common shape, then two new `IWorkspaceManager` members (`RegisterMoveFactory`/`MoveObjectAsync`) mirroring `ADR-0096` a third time |
+| **Dependencies** | `ADR-0096` (established the Kind-keyed dispatch pattern this would reuse) |
+| **Proposed Target Release** | `v0.10.0` (delivered) |
+| **Related ADRs** | `ADR-0096` (the pattern this entry originally proposed extending; `WP 10.7A` took a lighter, non-contract-changing route instead) |
+| **Related Work Packages** | `WP 10.2A` (named this as future work directly); `WP 10.7A` (implemented, per `WP10.6D`'s own audit) |
+| **Academy Impact** | Would extend `23-workspace-modernisation.md` in place, not a new article |
+| **Notes** | Raised directly by `WP10.2A Implementation Report.md` §2 and `23-workspace-modernisation.md` §12 (Future Evolution); implemented `WP10.7A Implementation Report.md` §2. |
+
+#### FCR-0067 — Theme-Variant-Aware Overlay Backgrounds
+
+| Field | Value |
+|---|---|
+| **Category** | Workspace |
+| **Description** | `Tempest.Desktop`'s own two overlay controls — `CommandPaletteOverlay` (`WP 10.0B`, `Background = Brushes.Black`) and `PanelHostControl` in its Auto-Hide flyout role (`WP 10.2B`, `Background = Brushes.White`) — both use a fixed, hardcoded brush rather than a `DynamicResource`-bound one resolved from the active `ThemeVariant`. Both remain visually correct only in one theme (dark text implied for the black palette; the white panel is simply wrong once the user is in Dark theme, `TD-39`). A real fix gives both controls' own `Background` a `DynamicResource` binding to a theme-appropriate resource key instead. |
+| **Status** | **Implemented, `WP 10.5A`** |
+| **Priority** | Low — cosmetic only, no functional defect; both controls remained fully usable in either theme before this fix |
+| **Business Value** | Low-Medium — a small but real visual-polish gap once a user actually keeps Dark theme (`ThemeService`, `WP 10.0B`/`WP 10.2A`) as their working default, most visible for the newer Auto-Hide flyout, which sits directly over live Document Area content |
+| **Engineering Effort** | Low — realised as `ApplicationPalette`/`ThemeReactiveBrush` (`WP 10.5A`), a real, shared, theme-reactive brush-binding helper — see `WP10.5A Implementation Report.md` §1-2 |
+| **Dependencies** | None — `ThemeService`/`RequestedThemeVariant` (`WP 10.0B`) already existed |
+| **Proposed Target Release** | `v0.10.0` (delivered) |
+| **Related ADRs** | None |
+| **Related Work Packages** | `WP 10.0B` (introduced the first instance, `CommandPaletteOverlay`, never previously registered); `WP 10.2B` (introduced the second instance, found and registered both together); `WP 10.5A` (implemented) |
+| **Academy Impact** | Realised in `28-workspace-visual-polish.md` |
+| **Notes** | Raised directly by `WP10.2B Engineering Review.md` §4 and Technical Debt Register `TD-39` (both now Resolved, `WP 10.5A`). |
+
+#### FCR-0068 — Discipline-Specific Object Editor Enhancements
+
+| Field | Value |
+|---|---|
+| **Category** | Workspace |
+| **Description** | `ObjectEditorView` (`WP 10.3A`) is deliberately one generic engine over Name/Content/Lifecycle/Relationships/Validation, applied uniformly across all six disciplines. Real, valuable, discipline-specific enhancements remain unbuilt: a structured BOM-fields editing section for Mechanical (`SetBomLineCommand`); Owner/Priority editing for Requirements (`SetRequirementOwnerCommand`/`SetRequirementPriorityCommand`); an Execute/Recalculate action for Calculations; a Record Result action for Verification; an Attachments section for Documents (`IHasAttachments`); lifecycle-transition actions (Release/Archive/etc.) surfaced directly in the editor rather than only via the Project Explorer's own context menu. |
+| **Status** | **Implemented, `WP 10.7A`** — all five sections built exactly as this entry named them, each a Kind-gated `Expander` (`IsVisible = false` until `PopulateFrom`'s own gate matches — a C# `is` type-check against the real object for BOM/Attachments/Record-Result, `_objectKind`-string for Requirements Owner/Priority and Calculations Execute, since those two need a service the object graph itself does not expose), each dispatching its own already-registered command via a newly-threaded `ICommandDispatcher` constructor parameter. **One genuine, disclosed, pre-existing gap found during implementation, not caused by this Work Package**: `ObjectEditorView.TryCreate` gates on `EngineeringDomainContext.Repository.FindAsync` resolving a real `IEngineeringObject` — confirmed by direct test that this call returns `null` for every real Requirement (Requirements are real `IEngineeringDocument`s, `ADR-0058`, but were never wired into the general repository's own Kind-to-object materialisation, only reachable via `IRequirementsService` directly) — so the Requirements Owner/Priority section, while correctly implemented, is currently unreachable specifically through the Object Editor for Requirements (the identical gap the pre-existing `NavigateToObject_ClickedFromARelationshipRow_...` test already silently defended against since `WP 10.3A`, now formally disclosed). The underlying capability remains genuinely reachable via the Ribbon's own `"requirements.set-owner"`/`"requirements.set-priority"` handlers, which dispatch the identical commands directly, independent of `ObjectEditorView`. A second, genuine bug found and fixed in place before commit: every section's own success/failure status message was being immediately overwritten by the subsequent `Refresh()` call re-running `PopulateFrom` — reordered (`Refresh()` first, status message set after) in all five sections. |
+| **Priority** | Medium — each of the five named enhancements dispatches through an already-existing, already-tested Command; the missing piece is Desktop-layer UI only |
+| **Business Value** | Medium-High — closes the gap between "the generic editor shows real data" and "the generic editor is the single place to do every common per-object action," reducing how often a user needs to leave the editor tab to reach the Project Explorer's own context menu |
+| **Engineering Effort** | Medium — no new Command/Domain capability required for any of the five; each is a new, Kind-gated `Expander` section in `ObjectEditorView`'s own already-established layout pattern (`BuildLayout`), reusing an already-registered command directly |
+| **Dependencies** | None — every underlying Command already exists and is already registered |
+| **Proposed Target Release** | `v0.10.0` (delivered) |
+| **Related ADRs** | `ADR-0083` (BOM line); `ADR-0089` (Verification Record Result); `ADR-0096`/`ADR-0097` (the dispatch pattern any new section would reuse) |
+| **Related Work Packages** | `WP 10.3A` (named this as future work directly); `WP 10.7A` (implemented, per `WP10.6D`'s own audit) |
+| **Academy Impact** | Would extend `25-engineering-object-editors.md` in place, not a new article |
+| **Notes** | Raised directly by `WP10.3A Implementation Report.md` §3, `WP10.3A Architecture Review.md` §3, and `WP10.3A UX Review.md` §1/§5; implemented `WP10.7A Implementation Report.md` §3, disclosed gap `WP10.7A Implementation Report.md` §5, tracked as `TD-41`. |
+
+#### FCR-0069 — Real, Authored Per-Command Icons
+
+| Field | Value |
+|---|---|
+| **Category** | Workspace |
+| **Description** | `CommandDescriptor.Icon` (`Tempest.Core.Commands`, `WP 6.x`) has never been populated by any of this platform's own ~80 registered commands, across every discipline, since the field's own introduction — confirmed by direct `grep`, zero matches. `RibbonView` (`WP 10.3B`) stands in with a deterministic, verb-suffix-derived glyph, so every Rename button across all six disciplines currently looks identical, and every command in the same verb-group shares one icon regardless of its own more specific meaning. A real fix populates `icon:` at each of the ~80 real `RegisterDescriptor` call sites with a genuinely distinct, authored symbol. |
+| **Status** | Identified |
+| **Priority** | Low — cosmetic only; the current, deterministic fallback is real, working, and disclosed, not broken |
+| **Business Value** | Low-Medium — a real visual-polish improvement once a user works across multiple disciplines' own Ribbon tabs regularly enough to notice the repetition |
+| **Engineering Effort** | Medium — mechanical but wide: one `icon:` argument added per already-existing `CommandDescriptor` constructor call, across all six `*WorkspaceRegistration.cs` files, no new capability required |
+| **Dependencies** | None — `CommandDescriptor.Icon` already exists, unmodified, since `WP 6.x` |
+| **Proposed Target Release** | Unscheduled |
+| **Related ADRs** | None |
+| **Related Work Packages** | `WP 10.3B` (found the gap and built the deterministic fallback that stands in for it today) |
+| **Academy Impact** | Would extend `26-ribbon-and-command-experience.md` in place, not a new article |
+| **Notes** | Raised directly by `WP10.3B Implementation Report.md` §1 and `WP10.3B UX Review.md` §5. |
+
+#### FCR-0070 — Digital Thread Graph Clustering/Pruning for Dense Objects
+
+| Field | Value |
+|---|---|
+| **Category** | Workspace |
+| **Description** | `DigitalThreadGraphModel` (`WP 10.4A`) implements no automatic pruning, clustering, or heuristic layout simplification for a densely-connected object (e.g. a Routing with many Operations) — exactly the first-iteration limitation `WP10.0A Digital Thread & Relationship Visualisation.md` §5 already disclosed and accepted before implementation began. After 2-3 expansions such a graph can become visually unwieldy; the engineer must manage node count manually today (collapsing nodes, filtering categories) rather than the graph offering to summarise a dense neighbourhood automatically. |
+| **Status** | Identified |
+| **Priority** | Low — a real, disclosed, accepted first-iteration limitation, not a defect; no user report exists yet |
+| **Business Value** | Medium — would materially improve usability for the densest real objects (large Routings, heavily-referenced Standards/Specifications), but only once real usage demonstrates the current manual controls (collapse, category filter, search) are insufficient |
+| **Engineering Effort** | Medium-High — a real clustering heuristic (e.g. group same-Kind, same-Category neighbours beyond a threshold into one summary node) is a genuine new algorithm, not a mechanical extension of `DigitalThreadGraphModel`'s own existing structure |
+| **Dependencies** | None — purely additive to `DigitalThreadGraphModel`'s own existing node/edge model |
+| **Proposed Target Release** | Unscheduled |
+| **Related ADRs** | `ADR-0093` (names this exact limitation as an accepted Negative Consequence) |
+| **Related Work Packages** | `WP 10.0A` (first disclosed); `WP 10.4A` (implemented without it, as planned) |
+| **Academy Impact** | Would extend `27-digital-thread-visualisation.md` in place, not a new article |
+| **Notes** | Raised directly by `WP10.0A Digital Thread & Relationship Visualisation.md` §5, `ADR-0093`'s own Consequences (Negative), and `WP10.4A Performance Review.md` §3/§4. |
+
+#### FCR-0071 — A Comprehensive, Hand-Authored Vector Icon Library
+
+| Field | Value |
+|---|---|
+| **Category** | Workspace |
+| **Description** | `IconRegistry` (`WP 10.0B`, refreshed `WP 10.5A`) resolves every Kind to a single Unicode text glyph — now a consistent, monochrome, theme-reactive set (`WP 10.5A` Phase 2), a real improvement over the prior mixed full-colour-emoji set, but still text-glyph-based, not a true vector icon. `IconGeometry` (`WP 10.5A`, new) proves the platform can render real, hand-authored `StreamGeometry` vector icons — four exist today (Close, Check, ChevronRight, ChevronDown), used only by the newest feedback controls' own interactive chrome, not yet extended to any of `IconRegistry`'s own ~20 Kind glyphs or `FCR-0069`'s own per-command icons. |
+| **Status** | Identified |
+| **Priority** | Low — cosmetic; the current monochrome Unicode set is real, working, and already a disclosed improvement over the prior full-colour-emoji baseline |
+| **Business Value** | Low-Medium — a further, incremental visual-polish improvement once a user compares this platform's own iconography against a mature commercial CAD/PLM tool's own hand-designed icon set |
+| **Engineering Effort** | High — authoring ~20-30 genuinely well-designed vector icons (one per Kind, potentially one per command per `FCR-0069`) by hand, without a design tool in this environment, is a real, substantial effort, not a mechanical extension of `IconGeometry`'s own existing four-icon pattern |
+| **Dependencies** | None — `IconGeometry`'s own pattern (a `StreamGeometry` constant, rendered via a `Path` inheriting `Foreground`) already exists and needs no extension, only more content |
+| **Proposed Target Release** | Unscheduled |
+| **Related ADRs** | None |
+| **Related Work Packages** | `WP 10.0B` (Phase 1, full-colour emoji); `WP 10.5A` (Phase 2, monochrome Unicode + the first four real vector icons); `FCR-0069` (the identical, still-open per-command icon gap this would also close) |
+| **Academy Impact** | Would extend `28-workspace-visual-polish.md` in place, not a new article |
+| **Notes** | Raised directly by `WP10.5A Implementation Report.md` §4/§8 and `WP10.5A UX Review.md` §5. |
+
+#### FCR-0072 — Split/Tiled Document View
+
+| Field | Value |
+|---|---|
+| **Category** | Workspace |
+| **Description** | `DocumentAreaView` (`WP 10.0B` onward) renders exactly one active document tab at a time — no split, tiled, or side-by-side view of two open documents exists anywhere in this platform, so comparing two Engineering Objects (or a Requirement against its own Verification Activity) always means switching tabs back and forth, never seeing both at once. Named directly by this Work Package's own controlling instruction ("split-document presentation") but not attempted — a genuine new capability, not a polish item, and a materially larger change to `DocumentAreaView`'s own tab-hosting model than this Work Package's own realistic scope. |
+| **Status** | Identified |
+| **Priority** | Medium — a real, named, plausible productivity feature for any engineer regularly cross-referencing two open objects |
+| **Business Value** | Medium — most valuable for exactly the cross-discipline traceability scenarios `ADR-0093`'s own Digital Thread graph already partially addresses (though the graph shows relationships, not full side-by-side object content) |
+| **Engineering Effort** | High — `DocumentAreaView`'s own single-`TabControl` model would need a real, new layout concept (a second pane, a splitter, tab-to-pane assignment); not a mechanical extension of any existing class |
+| **Dependencies** | None identified — purely additive to `Tempest.Desktop`, no Workspace contract implicated |
+| **Proposed Target Release** | Unscheduled |
+| **Related ADRs** | None |
+| **Related Work Packages** | `WP 10.5A` (named directly, deliberately not attempted) |
+| **Academy Impact** | Would warrant its own new concept guide once designed — a real layout-architecture decision, not an in-place extension |
+| **Notes** | Raised directly by `WP10.5A Implementation Report.md` §8 and this Work Package's own controlling instruction ("Multi-document Experience... split-document presentation"). |
+
+#### FCR-0073 — Copy/Move Destination-Picker Dialog & Wired Dispatch
+
+| Field | Value |
+|---|---|
+| **Category** | Workspace |
+| **Description** | `WP 10.5B`'s own Dialog Framework wires real Create/Delete/Duplicate flows but leaves Copy and Move entirely unwired — `InputDialog`'s own single-text-field shape cannot collect a destination parent, which both operations genuinely need, and no existing dialog offers a tree-position picker. |
+| **Status** | Identified |
+| **Priority** | Medium — a real, named workflow gap; users can still reparent structurally via `WP 10.2A`'s own drag/drop where implemented, so this is a missing *dialog-driven* path, not the only path |
+| **Business Value** | Medium — most valuable for large structural reorganisations where drag/drop across a long, scrolled Project Explorer tree is impractical |
+| **Engineering Effort** | Medium — a new dialog (a filtered tree or searchable list of valid destination parents) plus wiring into `RibbonView.ObjectCreationHandlers`'s own established pattern; the dispatch side (`MoveMechanicalObjectCommand`-shaped commands) already exists for at least Mechanical |
+| **Dependencies** | None new — reuses `ICommandDispatcher.DispatchAsync`, `RibbonView.ObjectCreationHandlers`'s own established shape |
+| **Proposed Target Release** | Unscheduled |
+| **Related ADRs** | None |
+| **Related Work Packages** | `WP 10.5B` (named directly, deliberately not attempted) |
+| **Academy Impact** | Would extend `29-desktop-workflow-and-professional-interaction.md` in place, not a new article |
+| **Notes** | Raised directly by `WP10.5B Implementation Report.md` §8. |
+
+#### FCR-0074 — Export/Import Commands & Dialog Wiring
+
+| Field | Value |
+|---|---|
+| **Category** | Workspace |
+| **Description** | `WP 10.5B`'s own instruction names Export/Import dialogs directly, but no underlying Workspace command to dispatch exists for either operation anywhere in this platform today — confirmed directly, no `Export*Command`/`Import*Command` exists in any discipline's own Command set. A dialog with nothing real to dispatch to would be a non-functional placeholder, deliberately not built. |
+| **Status** | Identified |
+| **Priority** | Low-Medium — no user-facing demand has been recorded yet; genuinely useful once any external interchange format (a real file-format ADR) is chosen |
+| **Business Value** | Medium — data interchange with external CAD/PLM/requirements tools is a plausible, common enterprise need, but entirely speculative until a concrete format is scoped |
+| **Engineering Effort** | High — requires its own format-selection ADR before any command or dialog work begins; not a mechanical extension of any existing pattern |
+| **Dependencies** | A concrete file-interchange format decision (new ADR) must precede any implementation |
+| **Proposed Target Release** | Unscheduled |
+| **Related ADRs** | None yet — would need one |
+| **Related Work Packages** | `WP 10.5B` (named directly, deliberately not attempted) |
+| **Academy Impact** | Would warrant its own new concept guide once a format is chosen — a real new capability, not an in-place extension |
+| **Notes** | Raised directly by `WP10.5B Implementation Report.md` §8. |
+
+#### FCR-0075 — Uniform Create/Duplicate Wiring Across All Six Disciplines
+
+| Field | Value |
+|---|---|
+| **Category** | Workspace |
+| **Description** | `WP 10.5B`'s own real object-creation workflow (`RibbonView.ObjectCreationHandlers`) is wired for Mechanical only. The other five disciplines' own Create commands have genuinely different constructor shapes (Requirements alone has three: Requirement, Requirement Collection, Requirement Group) — extending uniformly is real, substantial, disclosed future work, not a copy-paste of the Mechanical handler. |
+| **Status** | **Implemented, `WP 10.7A`** — Create wired for Calculations/Documents/Manufacturing (each defaults every optional constructor parameter beyond name, mirroring Mechanical's own precedent) and Requirements (all three real Create commands — Requirement, Group, Collection — each its own Ribbon entry); Verification's own Create genuinely uses the current selection as `SubjectId`. Duplicate wired for Calculations/Documents/Verification/Manufacturing (a shared handler factory) and Requirements (its own dedicated handler — `DuplicateRequirementCommand`'s own `newIdentifier` is required, not optional, unlike every other discipline). Status transitions (Approve/Archive/Lock/Unlock/Request-Review/Release) also wired for all five status-bearing disciplines as a direct consequence of the identical `ObjectCreationHandlers` seam — see `WP10.7A Implementation Report.md` §1. Copy remains unwired (needs a destination-parent picker dialog that does not exist — disclosed, deliberately out of this Work Package's own scope, see `FCR-0073`). |
+| **Priority** | Medium — every other discipline's own Ribbon Create button still falls through to the pre-existing honest "needs additional input" message, a real, disclosed, non-broken degraded state, not a crash or a lie |
+| **Business Value** | High — the single most direct route to making every discipline's own Workspace as genuinely usable end-to-end as Mechanical's now is |
+| **Engineering Effort** | Medium per discipline — the `InputDialog`/`ConfirmationDialog` + `ICommandDispatcher.DispatchAsync` pattern `WP 10.5B` established is real and reusable; the effort is in each discipline's own distinct command shape, not new dialog infrastructure |
+| **Dependencies** | None new — reuses `WP 10.5B`'s own established Dialog Framework and `ObjectCreationHandlers` pattern directly |
+| **Proposed Target Release** | `v0.10.0` (delivered, Create/Duplicate/status transitions; Copy still unscheduled) |
+| **Related ADRs** | None |
+| **Related Work Packages** | `WP 10.5B` (established the pattern for Mechanical only, named this gap directly); `WP 10.7A` (implemented for the remaining five disciplines, per `WP10.6D`'s own audit); `WP 10.8A` (Manufacturing's own "Record Inspection Result" wired — the one remaining genuinely-unwired verb `WP10.6D`'s own audit had not separately named — plus a related, disclosed messaging fix, see Notes) |
+| **Academy Impact** | Would extend `29-desktop-workflow-and-professional-interaction.md` in place, not a new article |
+| **Notes** | Raised directly by `WP10.5B Implementation Report.md` §4/§8; implemented `WP10.7A Implementation Report.md` §1. **`WP 10.8A` update**: `"manufacturing.record-inspection-result"` wired (`RecordVerificationResultCommand`, the identical command the Object Editor's own Verification section already dispatches — a disclosed cross-Work-Package reuse, not a new command). Separately, and not itself part of this capability's own scope: the Ribbon's own final fallback message (`RibbonView.OnCommandButtonClickAsync`, reached by every verb still genuinely unwired, including Copy) previously claimed a command "not yet collected" was reachable via "the Command Palette (Ctrl+K)" or "Project Explorer's own context menu" — confirmed false for every command reaching that branch (`ADR-0070`/§11 of `26-ribbon-and-command-experience.md`: `CreateDefault` is `null` everywhere, so the Palette cannot invoke any real discipline command by Id at all). Corrected to name no false alternative — see `Technical Debt Register.md`'s own `WP 10.8A` narrative entry and `26-ribbon-and-command-experience.md` §Future Evolution. |
+
+#### FCR-0076 — Startup Splash Screen
+
+| Field | Value |
+|---|---|
+| **Category** | Workspace |
+| **Description** | `WP 10.5B`'s own controlling instruction names "startup splash behaviour" and "application loading sequence" directly; not attempted — a real risk of shipping something visually unverifiable in this environment (no way to observe a transient splash render/dismiss timing directly) outweighed its value against `WindowUiState`'s own real, verified startup-restoration work. |
+| **Status** | Identified |
+| **Priority** | Low — purely cosmetic; module discovery/`WorkspaceHost` startup is already fast enough in practice that a splash screen addresses perception, not a real waiting problem |
+| **Business Value** | Low — a conventional desktop-application polish expectation, not a functional gap |
+| **Engineering Effort** | Low-Medium — a new transient `Window` shown before `MainWindow`, dismissed once startup completes; the main risk is visual verification, not implementation complexity |
+| **Dependencies** | None |
+| **Proposed Target Release** | Unscheduled |
+| **Related ADRs** | None |
+| **Related Work Packages** | `WP 10.5B` (named directly, deliberately not attempted) |
+| **Academy Impact** | Would extend `29-desktop-workflow-and-professional-interaction.md` in place, not a new article |
+| **Notes** | Raised directly by `WP10.5B Implementation Report.md` §8. |
+
+#### FCR-0077 — Customisable Keyboard Shortcuts, Ribbon & Toolbar Preferences
+
+| Field | Value |
+|---|---|
+| **Category** | Workspace |
+| **Description** | `WP 10.5B`'s own instruction names keyboard-shortcut and Ribbon/toolbar preferences directly; `UserSettings` (new this Work Package) deliberately does not persist a preference for any of these, because no underlying remapping/customisation *capability* exists anywhere in this platform to configure — shortcuts are fixed in code, the Ribbon's own layout is fixed in `RibbonView`. Persisting a setting for a capability that does not exist would be dishonest. |
+| **Status** | Identified |
+| **Priority** | Low — no user-facing demand recorded; the current fixed shortcuts/layout are real, working, and undisputed |
+| **Business Value** | Low-Medium — a mature-desktop-application expectation, most valuable to power users with strong prior-tool muscle memory |
+| **Engineering Effort** | High — requires a genuine key-binding registry/remapping engine and a Ribbon layout-customisation model, both real new subsystems, not settings-persistence extensions |
+| **Dependencies** | None identified |
+| **Proposed Target Release** | Unscheduled |
+| **Related ADRs** | None |
+| **Related Work Packages** | `WP 10.5B` (named directly, deliberately not attempted) |
+| **Academy Impact** | Would warrant its own new concept guide once designed |
+| **Notes** | Raised directly by `WP10.5B Implementation Report.md` §8. |
+
+#### FCR-0078 — Undo/Redo Coverage Beyond Rename and Favourite Toggle
+
+| Field | Value |
+|---|---|
+| **Category** | Workspace |
+| **Description** | `WP 10.6A`'s own `IUndoRedoStack`/`UndoableAction` architecture (`ADR-0098`) is wired for exactly two real cases — Rename (all six disciplines, via `IWorkspaceManager.RenameObjectAsync`'s own Kind-agnostic dispatch) and the new Favourite/Un-favourite toggle. Create/Delete/Duplicate/Move, and every Set-Status/Set-Priority/Set-Owner command across all six disciplines, remain dispatched exactly as before, with no Undo entry recorded. Delete in particular has no defined inverse today — it is already a soft delete with no "restore" operation anywhere in this platform to invert into. |
+| **Status** | Identified |
+| **Priority** | Medium — genuine productivity gap once a user relies on Undo for one action type and expects it for others |
+| **Business Value** | Medium-High — Undo/Redo is a baseline professional-desktop-application expectation; partial coverage is a real, disclosed gap |
+| **Engineering Effort** | Medium — each additional command needs its own captured pre-state at its own UI call site (`UndoableAction`'s own established shape already proven); Delete specifically needs a real "restore" operation defined first |
+| **Dependencies** | A real "restore a soft-deleted object" capability, not yet built anywhere in this platform, before Delete can be undone |
+| **Proposed Target Release** | Unscheduled |
+| **Related ADRs** | ADR-0098 |
+| **Related Work Packages** | `WP 10.6A` (named directly, deliberately scoped down) |
+| **Academy Impact** | Would extend `30-command-execution-and-productivity-experience.md` |
+| **Notes** | Raised directly by `WP10.6A Implementation Report.md` §8; tracked as `AT-18` in the Technical Debt Register. |
+
+#### FCR-0079 — Background Task Percentage Progress Reporting
+
+| Field | Value |
+|---|---|
+| **Category** | Workspace |
+| **Description** | `IBackgroundTaskRunner` (`WP 10.6A`) reports coarse state only (Running/Succeeded/Failed/Cancelled) plus elapsed time — never a percentage. No `ICommandHandler<TCommand>` anywhere in this platform reports incremental progress; that frozen Command Framework contract carries no `IProgress<T>` parameter, and adding one would be a Command Framework-wide redesign, explicitly out of this Work Package's own scope. |
+| **Status** | Identified |
+| **Priority** | Low — no currently-registered command handler runs long enough for percentage progress to matter in practice |
+| **Business Value** | Low-Medium — mostly valuable once a genuinely long-running engineering operation exists (a large import, a batch recalculation) |
+| **Engineering Effort** | High — requires extending `ICommandHandler<TCommand>.HandleAsync` (or a parallel, opt-in contract) to accept an `IProgress<T>`, touching the Command Framework itself |
+| **Dependencies** | A real, demonstrated long-running command handler that would benefit — none exists yet |
+| **Proposed Target Release** | Unscheduled |
+| **Related ADRs** | None |
+| **Related Work Packages** | `WP 10.6A` (named directly, deliberately not attempted) |
+| **Academy Impact** | Would extend `30-command-execution-and-productivity-experience.md` |
+| **Notes** | Raised directly by `WP10.6A Implementation Report.md` §8; tracked as `AT-19` in the Technical Debt Register. |
+
+#### FCR-0080 — Macro Steps Eligible Beyond `CreateDefault`-Invokable Commands
+
+| Field | Value |
+|---|---|
+| **Category** | Workspace |
+| **Description** | A macro step (`ADR-0099`) must be a `CommandDescriptor` with `CreateDefault` set — today, confirmed by repository-wide `grep`, that means only `Tempest.Samples` commands qualify. No real Engineering discipline command (Create/Rename/Revise/Delete/Set-Status, etc.) is invokable by Id alone, since each needs UI-collected context `InvokeAsync`'s parameterless contract cannot supply — the identical, pre-existing, platform-wide limitation `CommandPaletteOverlay`'s own remarks already document for the Command Palette itself. |
+| **Status** | Identified |
+| **Priority** | Medium — directly limits the Macro foundation's own real-world usefulness until resolved |
+| **Business Value** | High — this is the single biggest lever on making the Macro foundation genuinely useful for real engineering workflows, not just Sample commands |
+| **Engineering Effort** | High — needs either a per-command "collect missing parameters" UI step during macro authoring, or a broader rework of which commands can be made honestly parameterless-invokable |
+| **Dependencies** | None identified beyond the design work itself |
+| **Proposed Target Release** | Unscheduled |
+| **Related ADRs** | ADR-0099 |
+| **Related Work Packages** | `WP 10.6A` (named directly, deliberately scoped down); `AT-10` (`WP 6.3`, the identical root limitation named for the REST API's own `MapCommand`) |
+| **Academy Impact** | Would extend `30-command-execution-and-productivity-experience.md` |
+| **Notes** | Raised directly by `WP10.6A Implementation Report.md` §8; tracked as `AT-20` in the Technical Debt Register. |
+
+#### FCR-0081 — Command History as a Real `ICommandDispatcher` Interception, Not a UI-Surface Aggregation
+
+| Field | Value |
+|---|---|
+| **Category** | Workspace |
+| **Description** | `CommandHistoryLog` (`WP 10.6A`) records only what already reaches `MainWindow`'s own existing `ActionCompleted`-shaped UI surfaces (Ribbon, Explorer, Inspector, Object Editor, Undo/Redo) — not a global interception of `ICommandDispatcher` itself, which remains completely unmodified. A command dispatched through any future path that bypasses these surfaces would not appear in the History. `succeeded` is also a disclosed heuristic (inferred from whether the recorded message contains "fail"), since these UI surfaces carry only a human-readable string, not a structured `CommandResult`. |
+| **Status** | Identified |
+| **Priority** | Low — every currently-real dispatch path already funnels through one of the recorded surfaces |
+| **Business Value** | Low-Medium — would matter primarily for audit-grade completeness, not day-to-day productivity |
+| **Engineering Effort** | Medium — either a genuine `ICommandDispatcher` decorator (touching Command Framework composition) or a broader `ActionCompleted`-signature change across five Desktop views to carry a real `CommandResult` instead of a string |
+| **Dependencies** | None identified |
+| **Proposed Target Release** | Unscheduled |
+| **Related ADRs** | ADR-0098 |
+| **Related Work Packages** | `WP 10.6A` (named directly, deliberately scoped down) |
+| **Academy Impact** | Would extend `30-command-execution-and-productivity-experience.md` |
+| **Notes** | Raised directly by `WP10.6A Implementation Report.md` §8; tracked as `AT-21` in the Technical Debt Register. |
+
+#### FCR-0082 — Persisted (Cross-Session) Undo/Redo and Command History
+
+| Field | Value |
+|---|---|
+| **Category** | Workspace |
+| **Description** | `IUndoRedoStack`/`CommandHistoryLog` (`WP 10.6A`) are both deliberately session-only — closing and reopening TempestOS discards both, matching most desktop applications' own established convention, but a real, disclosed limitation nonetheless. |
+| **Status** | Identified |
+| **Priority** | Low — matches mainstream desktop-application convention; no user-facing demand recorded |
+| **Business Value** | Low — genuinely optional; most desktop applications behave identically |
+| **Engineering Effort** | Medium — would need a real, bounded, `ISettingsProvider`-backed persisted shape for both, mirroring `RecentObjectsState`'s own established pattern |
+| **Dependencies** | None identified |
+| **Proposed Target Release** | Unscheduled |
+| **Related ADRs** | ADR-0098 |
+| **Related Work Packages** | `WP 10.6A` (named directly, deliberately not attempted) |
+| **Academy Impact** | Would extend `30-command-execution-and-productivity-experience.md` |
+| **Notes** | Raised directly by `WP10.6A Implementation Report.md` §8; tracked as `AT-22` in the Technical Debt Register. |
+
+#### FCR-0083 — Keyboard Remapping UI and a Real External Controller (Stream Deck/MIDI) Integration
+
+| Field | Value |
+|---|---|
+| **Category** | Workspace |
+| **Description** | `KeyboardCommandBindingProvider` (`ADR-0100`) is a real, working, tested `gesture → Command Id` mechanism, shipped with zero default bindings and no end-user UI to author them. `IExternalControllerProvider` is a real, proven contract (against a test-only `StubExternalControllerProvider`) with zero real vendor integration — no Stream Deck plugin, no MIDI device support, no hardware integration, all explicitly out of `WP 10.6A`'s own scope. |
+| **Status** | Identified |
+| **Priority** | Low — no user-facing demand recorded; the architecture is real and proven, only the concrete UI/hardware layers are missing |
+| **Business Value** | Medium — a keyboard remapping UI is a mainstream expectation; a real Stream Deck/MIDI integration is a genuine differentiator for a professional engineering tool but a large, separate undertaking |
+| **Engineering Effort** | Low (remapping UI, over the already-real `KeyboardCommandBindingProvider.Bind`/`Unbind` API) to High (a real vendor SDK integration, its own Work Package) |
+| **Dependencies** | A real vendor SDK dependency for any real external controller — explicitly out of scope for this platform to add without a dedicated commissioning decision |
+| **Proposed Target Release** | Unscheduled |
+| **Related ADRs** | ADR-0100 |
+| **Related Work Packages** | `WP 10.6A` (named directly, deliberately scoped to architecture + one real software provider + one test double) |
+| **Academy Impact** | Would extend `30-command-execution-and-productivity-experience.md` |
+| **Notes** | Raised directly by `WP10.6A Implementation Report.md` §8; tracked as `AT-23` in the Technical Debt Register. |
+
 ### Project Management
 
 #### FCR-0028 — Project Engine / Secure Project Data Management
@@ -1128,7 +1485,47 @@ Coverage Note).
 
 ## Coverage Note
 
-**62 capabilities identified** (`FCR-0001` through `FCR-0062`).
+**77 capabilities identified** (`FCR-0001` through `FCR-0077`).
+`FCR-0073`–`FCR-0077` (Copy/Move Destination-Picker Dialog & Wired
+Dispatch; Export/Import Commands & Dialog Wiring; Uniform Create/
+Duplicate Wiring Across All Six Disciplines; Startup Splash Screen;
+Customisable Keyboard Shortcuts, Ribbon & Toolbar Preferences) were all
+added by `WP 10.5B`, sourced directly from that Work Package's own five
+disclosed scope reductions (`WP10.5B Implementation Report.md` §8) —
+each a real, deliberate, honestly-named gap, none a defect; 72 → 77
+total.
+`FCR-0072` (Split/Tiled Document View) and `FCR-0071` (A Comprehensive,
+Hand-Authored Vector Icon Library) were both added by `WP 10.5A`,
+sourced directly from that Work Package's own disclosed scope
+reductions; `FCR-0067` (Theme-Variant-Aware Overlay Backgrounds) was
+marked **Implemented** by the same Work Package — `TD-39`'s own
+resolution.
+`FCR-0070` (Digital Thread Graph Clustering/Pruning for Dense Objects)
+was added by `WP 10.4A`, sourced directly from `ADR-0093`'s own
+already-disclosed, already-accepted first-iteration limitation, carried
+forward into this register for the first time now that a real
+implementation exists to attach the finding to.
+`FCR-0069` (Real, Authored Per-Command Icons) was added by `WP 10.3B`,
+sourced directly from the same confirmed-by-`grep` finding that
+`CommandDescriptor.Icon` has never been populated anywhere.
+`FCR-0068` (Discipline-Specific Object Editor Enhancements) was added
+by `WP 10.3A`, sourced directly from its own disclosed "one generic
+engine, no bespoke per-discipline layout yet" scope decision.
+`FCR-0067` (Theme-Variant-Aware Overlay Backgrounds) was added by `WP
+10.2B`, sourced directly from `TD-39` (`Technical Debt Register.md`) —
+`CommandPaletteOverlay`'s own identical, previously-unregistered fixed-
+brush limitation (`WP 10.0B`) and `PanelHostControl`'s own new one (`WP
+10.2B`) surfaced and registered together for the first time. `FCR-0066`
+was added by `WP 10.2A`, sourced directly from its own
+disclosed drag/drop-preparation trade-off (`WP10.2A Implementation
+Report.md` §2). `FCR-0063`–`FCR-0065` were added by `WP 10.0A`, sourced
+directly from its
+own UX Architecture Document and companion reviews (the concrete
+desktop UI framework selection `ADR-0094` reserves, the floating/
+multi-monitor panel contract extension `ADR-0095` reserves, and
+Notification Framework Workspace integration), not inferred — the
+first entries in this register raised by an architecture-only Work
+Package rather than an implementation one.
 `FCR-0060`–`FCR-0062` were added by `WP 9.5A`, sourced directly from its
 own implementation-experience findings (the `Classification`-tagged
 Routing/Supplier Operation representation, `TD-33`'s own

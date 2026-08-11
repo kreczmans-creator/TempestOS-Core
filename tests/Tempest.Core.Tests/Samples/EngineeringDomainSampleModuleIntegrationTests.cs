@@ -105,6 +105,42 @@ public class EngineeringDomainSampleModuleIntegrationTests
         Assert.Equal(16, module.AllSampleObjectIds.Count);
     }
 
+    /// <summary>
+    /// `TD-37` fix (`WP 10.1B`): a second, entirely independent pipeline
+    /// built against the same <paramref name="persistenceRootPath"/> —
+    /// mirroring a genuine second application launch from the same working
+    /// directory — must reach <see cref="ModuleState.Initialised"/> again,
+    /// not <see cref="ModuleState.Failed"/> against its own
+    /// <c>"SAMPLE-MAT-001"</c> material registration, and must skip the
+    /// whole graph-construction sequence rather than partially duplicating
+    /// it (see this module's own <c>InitialiseAsync</c> remarks).
+    /// </summary>
+    [Fact]
+    public async Task Initialise_ASecondTimeAgainstTheSamePersistenceStore_IsIdempotentNotFailed()
+    {
+        using var temp = new TempDirectory();
+
+        var (firstRuntimeManager, firstServiceProvider) = BuildPipeline(temp.Path, typeof(EngineeringDomainSampleModule));
+        var firstLifecycleManager = new ModuleLifecycleManager(firstRuntimeManager, firstServiceProvider);
+        await firstLifecycleManager.InitialiseAllAsync(CancellationToken.None);
+        Assert.Equal(ModuleState.Initialised, firstLifecycleManager.GetState("tempest.samples.engineeringdomain"));
+
+        var (secondRuntimeManager, secondServiceProvider) = BuildPipeline(temp.Path, typeof(EngineeringDomainSampleModule));
+        var secondLifecycleManager = new ModuleLifecycleManager(secondRuntimeManager, secondServiceProvider);
+        await secondLifecycleManager.InitialiseAllAsync(CancellationToken.None);
+
+        Assert.Equal(ModuleState.Initialised, secondLifecycleManager.GetState("tempest.samples.engineeringdomain"));
+
+        var secondModule = Assert.IsType<EngineeringDomainSampleModule>(secondServiceProvider.GetService(typeof(EngineeringDomainSampleModule)));
+        Assert.True(secondModule.HasRegistered);
+
+        // Honestly unset on the idempotent-skip run - no lookup-by-business-Id
+        // capability exists to recover the first run's own object Ids (see
+        // this module's own InitialiseAsync remarks).
+        Assert.Null(secondModule.SampleAssemblyId);
+        Assert.Empty(secondModule.AllSampleObjectIds);
+    }
+
     [Fact]
     public async Task Initialise_SampleAssembly_WasRevisedThroughLifecycleTransitionsAndIsQueryableThroughTheSharedRepository()
     {

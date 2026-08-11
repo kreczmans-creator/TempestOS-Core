@@ -120,6 +120,42 @@ public class RequirementsSampleModuleIntegrationTests
         Assert.Equal(5, requirement.RevisionNumber); // create + one ReviseAsync + three SetStatusAsync calls (Reviewed, Approved, Allocated)
     }
 
+    /// <summary>
+    /// `TD-37` fix (`WP 10.1B`): <see cref="IRequirementsService"/>'s own
+    /// <c>Identifier</c> index is durable (`ADR-0058`), so a second,
+    /// entirely independent pipeline built against the same
+    /// <paramref name="persistenceRootPath"/> — mirroring a genuine second
+    /// application launch from the same working directory — must reach
+    /// <see cref="ModuleState.Initialised"/> again, not
+    /// <see cref="ModuleState.Failed"/>, and must reuse the
+    /// already-created <c>"SAMPLE-REQ-001"</c> rather than repeating the
+    /// full create/revise/status/group/collection/allocate/verify
+    /// sequence.
+    /// </summary>
+    [Fact]
+    public async Task Initialise_ASecondTimeAgainstTheSamePersistenceStore_IsIdempotentNotFailed()
+    {
+        using var temp = new TempDirectory();
+
+        var (firstRuntimeManager, firstServiceProvider) = BuildPipeline(temp.Path, typeof(RequirementsSampleModule));
+        var firstLifecycleManager = new ModuleLifecycleManager(firstRuntimeManager, firstServiceProvider);
+        await firstLifecycleManager.InitialiseAllAsync(CancellationToken.None);
+        Assert.Equal(ModuleState.Initialised, firstLifecycleManager.GetState("tempest.samples.requirements"));
+
+        var firstModule = Assert.IsType<RequirementsSampleModule>(firstServiceProvider.GetService(typeof(RequirementsSampleModule)));
+        var firstRequirementId = firstModule.SampleRequirementId;
+
+        var (secondRuntimeManager, secondServiceProvider) = BuildPipeline(temp.Path, typeof(RequirementsSampleModule));
+        var secondLifecycleManager = new ModuleLifecycleManager(secondRuntimeManager, secondServiceProvider);
+        await secondLifecycleManager.InitialiseAllAsync(CancellationToken.None);
+
+        Assert.Equal(ModuleState.Initialised, secondLifecycleManager.GetState("tempest.samples.requirements"));
+
+        var secondModule = Assert.IsType<RequirementsSampleModule>(secondServiceProvider.GetService(typeof(RequirementsSampleModule)));
+        Assert.True(secondModule.HasRegistered);
+        Assert.Equal(firstRequirementId, secondModule.SampleRequirementId);
+    }
+
     [Fact]
     public async Task Initialise_RecordsAVerification_ReadableThroughVerificationServiceDirectly()
     {

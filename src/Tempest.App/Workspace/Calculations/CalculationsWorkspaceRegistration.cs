@@ -47,6 +47,23 @@ public static class CalculationsWorkspaceRegistration
         {
             manager.RegisterView(kind, new CalculationsWorkspaceViewFactory(kind, domainContext, templateRegistry));
             manager.RegisterFacetProvider(kind, new CalculationsPropertyFacetProvider(kind, domainContext, templateRegistry));
+
+            // WP 10.2A (ADR-0096): rename/delete only for the two real
+            // EngineeringDomainContext-backed Kinds — the synthetic
+            // "CalculationTemplate" Kind (this class's own remarks) is never
+            // an EngineeringDomainContext.Repository object, so
+            // RenameCalculationObjectCommandHandler/DeleteCalculationObjectCommandHandler
+            // would always fail against it; honestly never registered,
+            // rather than offering a menu item that can never succeed.
+            if (kind != "CalculationTemplate")
+            {
+                manager.RegisterRenameFactory(kind, static (id, targetKind, name) => new RenameCalculationObjectCommand(id, targetKind, name));
+                manager.RegisterDeleteFactory(kind, static (id, targetKind) => new DeleteCalculationObjectCommand(id, targetKind));
+
+                // WP 10.3A (ADR-0097): real revise dispatch, the identical
+                // "real Kinds only" exclusion as Rename/Delete above.
+                manager.RegisterReviseFactory(kind, static (id, targetKind, content) => new ReviseCalculationCommand(id, targetKind, content));
+            }
         }
 
         var factoryRegistry = new CalculationObjectFactoryRegistry(domainContext);

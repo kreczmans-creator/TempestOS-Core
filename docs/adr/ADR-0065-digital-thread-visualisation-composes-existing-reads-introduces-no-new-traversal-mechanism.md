@@ -6,6 +6,18 @@ Accepted — `v0.8.0` "Engineering Workspace", `WP 8.0A` (Engineering
 Workspace Architecture), 2026-07-30. Resolves how the Workspace's own
 Digital Thread panel obtains the data it presents.
 
+**Superseded 2026-08-07 by `ADR-0093`** (`v0.10.0` "User Experience &
+Desktop Application", `WP 10.0A`) — the Product Owner's own controlling
+instruction names "Digital Thread visualisation" and "Object
+relationship views" as two explicit, required topics, the real,
+demonstrated need this ADR's own Consequences §Negative implied would
+be needed to revisit its flat-list-only decision. This ADR's own core
+finding — no new traversal, query, or aggregation platform capability
+is required — is explicitly carried forward and reaffirmed by
+`ADR-0093`, not reversed; only the rendering shape (list, not graph)
+changes. This record is left otherwise unedited, per this project's
+own "never silently modify historical records" discipline.
+
 ## Context
 
 `WP7.2B Digital Thread Architecture.md` argued, at the architecture

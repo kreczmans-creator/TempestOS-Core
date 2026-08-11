@@ -111,9 +111,35 @@ public sealed class RequirementsWorkspaceSampleModule : ModuleLifecycleBase
     public IReadOnlyList<Guid> AllSampleRequirementIds { get; private set; } = [];
     public bool HasRegistered { get; private set; }
 
+    /// <remarks>
+    /// <b>Idempotent restart (`WP 10.1B`, `TD-37`):</b> every Requirement
+    /// below carries a fixed, literal <c>Identifier</c>, durably checked
+    /// for uniqueness by <see cref="IRequirementsService"/> (`ADR-0058`) —
+    /// a second real launch from the same working directory (`ADR-0041`)
+    /// would otherwise collide on <c>"REQ-STR-001"</c>, the first one
+    /// created, after having already silently duplicated the four Group
+    /// objects that precede it (<c>CreateGroupAsync</c> enforces no
+    /// name-uniqueness of its own). This module checks the same durable
+    /// signal up front — <c>"REQ-STR-001"</c> already existing — and skips
+    /// the entire sequence outright if so, leaving every Id property at
+    /// its honest, unset default and not (re-)registering the Export
+    /// adapter (which needs a real collection Id this run never creates) —
+    /// mirroring <see cref="EngineeringDomainSampleModule"/>'s own
+    /// identical, same-Work-Package fix.
+    /// </remarks>
     public override async Task InitialiseAsync(CancellationToken cancellationToken)
     {
         _identityService.EstablishCurrentPrincipal(SampleIdentityId);
+
+        if (await _requirementsService.FindByIdentifierAsync("REQ-STR-001", cancellationToken).ConfigureAwait(false) is not null)
+        {
+            // Already durably seeded by an earlier launch against this same
+            // persistence store (TD-37) - skip the whole sequence rather
+            // than silently duplicating the four Group objects that
+            // precede REQ-STR-001, then crashing on it anyway.
+            HasRegistered = true;
+            return;
+        }
 
         var requirementIds = new List<Guid>();
 

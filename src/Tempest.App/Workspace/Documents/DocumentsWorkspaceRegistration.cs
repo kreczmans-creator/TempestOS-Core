@@ -43,6 +43,15 @@ public static class DocumentsWorkspaceRegistration
         {
             manager.RegisterView(kind, new DocumentsWorkspaceViewFactory(kind, domainContext));
             manager.RegisterFacetProvider(kind, new DocumentsPropertyFacetProvider(kind, domainContext));
+
+            // WP 10.2A (ADR-0096): real rename/delete dispatch, mirroring Mechanical's own identical wiring.
+            manager.RegisterRenameFactory(kind, static (id, targetKind, name) => new RenameDocumentObjectCommand(id, targetKind, name));
+            manager.RegisterDeleteFactory(kind, static (id, targetKind) => new DeleteDocumentObjectCommand(id, targetKind));
+
+            // WP 10.3A (ADR-0097): real revise dispatch — reused directly by
+            // Manufacturing's own "WorkInstruction" Kind below (identical
+            // rename/delete reuse pattern, `WP 10.2A`).
+            manager.RegisterReviseFactory(kind, static (id, targetKind, content) => new ReviseDocumentCommand(id, targetKind, content));
         }
 
         var factoryRegistry = new DocumentObjectFactoryRegistry(domainContext);

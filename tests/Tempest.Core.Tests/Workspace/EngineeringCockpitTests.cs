@@ -563,6 +563,35 @@ public class EngineeringCockpitTests
         Assert.Equal("33% (1/3)", cards["Verification Coverage"]);
         Assert.Equal("33% (1/3)", cards["Allocation Coverage"]);
 
+        // `WP 10.5C` — `CockpitKpiCard.PercentValue` is the identical
+        // numerator/denominator `FormatCoverage`'s own display text
+        // already computed, never a second, independent calculation that
+        // could drift from the text a real progress bar renders beside.
+        var percentByLabel = cockpit.RequirementsKpiCards.ToDictionary(c => c.Label, c => c.PercentValue);
+        Assert.Equal(33, percentByLabel["Verification Coverage"]);
+        Assert.Equal(33, percentByLabel["Allocation Coverage"]);
+
+        await manager.ShutdownAsync();
+    }
+
+    /// <summary>
+    /// `WP 10.5C` — the zero-denominator case (`FormatCoverage`'s own
+    /// honest dash) has a matching honest <see langword="null"/>
+    /// <see cref="CockpitKpiCard.PercentValue"/>, never a fabricated
+    /// `0%` progress bar for "no requirements yet."
+    /// </summary>
+    [Fact]
+    public async Task RequirementsKpiCards_NoLiveRequirement_PercentValueIsNullNotZero()
+    {
+        using var temp = new TempDirectory();
+        var (workspace, manager, _) = await StartAsync(temp.Path, Type.EmptyTypes);
+        var cockpit = ((Tempest.App.Workspace.Workspace)workspace).Cockpit;
+
+        var percentByLabel = cockpit.RequirementsKpiCards.ToDictionary(c => c.Label, c => c.PercentValue);
+
+        Assert.Null(percentByLabel["Verification Coverage"]);
+        Assert.Null(percentByLabel["Allocation Coverage"]);
+
         await manager.ShutdownAsync();
     }
 

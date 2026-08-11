@@ -47,6 +47,29 @@ public static class RequirementsWorkspaceRegistration
             manager.RegisterFacetProvider(kind, new RequirementsPropertyFacetProvider(kind, requirementsService));
         }
 
+        // WP 10.2A (ADR-0096): real delete dispatch, one factory per Kind
+        // since each has its own dedicated command
+        // (Delete{Requirement,RequirementGroup,RequirementCollection}Command)
+        // — never a Rename factory for any of the three: no
+        // Rename*Command exists for this discipline (a Requirement's own
+        // mutable field is its Statement, mutated via
+        // ReviseRequirementCommand, not a DisplayName/RenameAsync concept
+        // the other five disciplines share) — honestly not registered,
+        // rather than offering a menu item with nothing to dispatch to.
+        manager.RegisterDeleteFactory(RequirementsService.RequirementDocumentKind, static (id, _) => new DeleteRequirementCommand(id));
+        manager.RegisterDeleteFactory(RequirementsService.RequirementGroupDocumentKind, static (id, _) => new DeleteRequirementGroupCommand(id));
+        manager.RegisterDeleteFactory(RequirementsService.RequirementCollectionDocumentKind, static (id, _) => new DeleteRequirementCollectionCommand(id));
+
+        // WP 10.3A (ADR-0097): real revise dispatch — the Object Editor
+        // Framework's own Content field, realised here as the Requirement's
+        // own Statement (ReviseRequirementCommand, unchanged since `WP
+        // 7.3A`). Requirement only — RequirementGroup/RequirementCollection
+        // are structural containers with no Statement/Content concept of
+        // their own, honestly not registered, the identical asymmetry this
+        // class's own remarks already disclose for Rename (which exists for
+        // neither Kind), just the other way around for Requirement itself.
+        manager.RegisterReviseFactory(RequirementsService.RequirementDocumentKind, static (id, _, content) => new ReviseRequirementCommand(id, content));
+
         commandDispatcher.RegisterHandler<CreateRequirementCommand>(new CreateRequirementCommandHandler(requirementsService));
         commandDispatcher.RegisterHandler<ReviseRequirementCommand>(new ReviseRequirementCommandHandler(requirementsService));
         commandDispatcher.RegisterHandler<SetRequirementStatusCommand>(new SetRequirementStatusCommandHandler(requirementsService));

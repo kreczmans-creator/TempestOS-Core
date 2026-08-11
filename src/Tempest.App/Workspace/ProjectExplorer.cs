@@ -28,8 +28,29 @@ internal sealed class ProjectExplorer : IProjectExplorer
         _providers = providers;
     }
 
+    /// <summary>
+    /// This panel's own stable, well-known identifier — fixed, not
+    /// per-instance-random, so a persisted <see cref="WorkspacePanelPlacement"/>
+    /// (`ADR-0064`) written by one process genuinely identifies the same
+    /// logical panel when read back by a later, independent process.
+    /// </summary>
+    /// <remarks>
+    /// <b>Disclosed, found-and-fixed defect (`WP 10.0B`):</b> this field
+    /// was originally <c>Guid.NewGuid()</c>, generated fresh on every
+    /// <see cref="WorkspaceManager.StartAsync"/> call — meaning a genuine
+    /// cross-process restart could never correctly restore a persisted
+    /// placement for this panel, since the freshly-constructed instance's
+    /// own <see cref="Id"/> could never match whatever Id an earlier
+    /// process had persisted. Never observed before `WP 10.0B`'s own
+    /// desktop implementation, since no prior test or console usage
+    /// exercised two genuinely independent <see cref="WorkspaceManager"/>
+    /// instances against the same persisted session state — see
+    /// `WP10.0B Technical Debt Review.md`.
+    /// </remarks>
+    public static readonly Guid WellKnownId = new("8f6c1a2e-2b1e-4b1a-9c3d-1f2a3b4c5d6e");
+
     /// <inheritdoc />
-    public Guid Id { get; } = Guid.NewGuid();
+    public Guid Id { get; } = WellKnownId;
 
     /// <inheritdoc />
     public string Title => "Project Explorer";

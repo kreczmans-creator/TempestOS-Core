@@ -120,7 +120,7 @@ public sealed class VerificationActivityNodeProvider : IProjectExplorerNodeProvi
         var all = await _context.Repository.ListAllAsync(cancellationToken).ConfigureAwait(false);
         var hasChildren = all.Any(o => IsLive(o) && o is IHasParent { ParentId: { } parentId } && parentId == activity.Id);
 
-        return new ProjectExplorerNode(activity.Id, DisplayNameOf(activity), activity.Kind, hasChildren, ProjectExplorerNodeType.Object);
+        return new ProjectExplorerNode(activity.Id, DisplayNameOf(activity), activity.Kind, hasChildren, ProjectExplorerNodeType.Object, activity is IHasLifecycle lifecycle ? lifecycle.Status : null);
     }
 
     private static string DisplayNameOf(IEngineeringObject o) => (o as IHasBusinessIdentifier)?.DisplayName ?? o.Id.ToString();

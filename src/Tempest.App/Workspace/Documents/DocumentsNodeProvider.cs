@@ -157,7 +157,7 @@ public sealed class DocumentsNodeProvider : IProjectExplorerNodeProvider
         var all = await _context.Repository.ListAllAsync(cancellationToken).ConfigureAwait(false);
         var hasChildren = all.Any(o => IsLive(o) && o is IHasParent { ParentId: { } parentId } && parentId == document.Id);
 
-        return new ProjectExplorerNode(document.Id, DisplayNameOf(document), document.Kind, hasChildren, ProjectExplorerNodeType.Object);
+        return new ProjectExplorerNode(document.Id, DisplayNameOf(document), document.Kind, hasChildren, ProjectExplorerNodeType.Object, document is IHasLifecycle lifecycle ? lifecycle.Status : null);
     }
 
     private static string DisplayNameOf(IEngineeringObject o) => (o as IHasBusinessIdentifier)?.DisplayName ?? o.Id.ToString();

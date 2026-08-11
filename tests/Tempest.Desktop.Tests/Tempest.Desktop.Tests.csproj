@@ -1,0 +1,37 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <!--
+      WP 10.0B: Avalonia's own headless rendering backend
+      (Avalonia.Headless.XUnit) runs and interacts with real Tempest.Desktop
+      controls with no real display attached — the disclosed new test
+      strategy ADR-0094 named (WP10.0A Architecture Review.md §5, Risk 2),
+      letting this Work Package's own "Demonstrate" requirements be proven
+      as real, dotnet-test-verified behaviour rather than asserted prose.
+    -->
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" Version="6.0.4" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageReference Include="xunit" Version="2.9.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4" />
+    <PackageReference Include="Avalonia.Headless.XUnit" Version="11.2.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Tempest.Core\Tempest.Core.csproj" />
+    <ProjectReference Include="..\..\src\Samples\Tempest.Samples\Tempest.Samples.csproj" />
+    <ProjectReference Include="..\..\src\Tempest.App\Tempest.App.csproj" />
+    <ProjectReference Include="..\..\src\Tempest.Desktop\Tempest.Desktop.csproj" />
+  </ItemGroup>
+
+</Project>

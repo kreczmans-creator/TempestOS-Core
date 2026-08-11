@@ -103,7 +103,7 @@ public sealed class MechanicalProductStructureNodeProvider : IProjectExplorerNod
         var children = await GetLiveChildrenAsync(o.Id, cancellationToken).ConfigureAwait(false);
         var title = BuildBomTitle(o);
 
-        return new ProjectExplorerNode(o.Id, title, o.Kind, children.Count > 0, ProjectExplorerNodeType.Object);
+        return new ProjectExplorerNode(o.Id, title, o.Kind, children.Count > 0, ProjectExplorerNodeType.Object, o is IHasLifecycle lifecycle ? lifecycle.Status : null);
     }
 
     /// <summary>

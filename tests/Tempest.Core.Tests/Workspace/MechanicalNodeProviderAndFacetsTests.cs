@@ -76,6 +76,26 @@ public class MechanicalNodeProviderAndFacetsTests
         Assert.Equal(ProjectExplorerNodeType.Object, root.NodeType);
     }
 
+    /// <summary>
+    /// `WP 10.5C` — <see cref="ProjectExplorerNode.Lifecycle"/> is
+    /// populated from the real, already-in-scope object's own
+    /// <see cref="IHasLifecycle.Status"/>, at zero extra read cost — the
+    /// Project Explorer's own new lifecycle-status dot needs real data,
+    /// never a fabricated one, to colour by.
+    /// </summary>
+    [Fact]
+    public async Task GetRootNodesAsync_PopulatesRealLifecycleStatus()
+    {
+        var context = BuildContext();
+        var project = await CreateProjectAsync(context);
+
+        var provider = new MechanicalProductStructureNodeProvider(AreaKind, context);
+        var roots = await provider.GetRootNodesAsync();
+
+        var root = Assert.Single(roots);
+        Assert.Equal(((IHasLifecycle)project).Status, root.Lifecycle);
+    }
+
     [Fact]
     public async Task GetChildrenAsync_ReturnsLiveObjectsWhoseParentIdMatches()
     {

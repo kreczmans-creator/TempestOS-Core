@@ -47,6 +47,15 @@ public static class VerificationWorkspaceRegistration
         {
             manager.RegisterView(kind, new VerificationActivityWorkspaceViewFactory(kind, domainContext));
             manager.RegisterFacetProvider(kind, new VerificationActivityPropertyFacetProvider(kind, domainContext));
+
+            // WP 10.2A (ADR-0096): real rename/delete dispatch, mirroring Mechanical's own identical wiring.
+            manager.RegisterRenameFactory(kind, static (id, targetKind, name) => new RenameVerificationActivityCommand(id, targetKind, name));
+            manager.RegisterDeleteFactory(kind, static (id, targetKind) => new DeleteVerificationActivityCommand(id, targetKind));
+
+            // WP 10.3A (ADR-0097): real revise dispatch — reused directly by
+            // Manufacturing's own "Inspection" Kind below (identical
+            // rename/delete reuse pattern, `WP 10.2A`).
+            manager.RegisterReviseFactory(kind, static (id, targetKind, content) => new ReviseVerificationActivityCommand(id, targetKind, content));
         }
 
         var factoryRegistry = new VerificationActivityFactoryRegistry(domainContext);
