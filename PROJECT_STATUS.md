@@ -1,6 +1,44 @@
 # TempestOS — Project Status
 
-**Last Updated:** 2026-08-11 (`WP 10.8A` — Desktop Feature Completion & Existing Capability Exposure. `v0.10.0`'s fifteenth Work Package by completion order — a direct, narrowly-scoped re-audit of `WP 10.7A`'s own seven priority items against the real, running application. Five were confirmed already genuinely implemented and intact; two were genuinely incomplete and closed this Work Package (honest Ribbon fallback messaging — the fallback previously claimed a genuinely-unwired command was reachable via the Command Palette or Project Explorer context menu, confirmed false for every command reaching that branch, corrected to name no false alternative; real Property Inspector Validation — `EngineeringDomainContext` threaded in as a third optional constructor parameter, reusing `ObjectEditorView`'s own `IValidatable` read and `BuildSeverityRow` helper directly, one disclosed exception for Requirements, `TD-41`, a second consumer of an already-known gap); one further genuinely-unwired existing command was found and wired alongside them (Manufacturing's "Record Inspection Result," reusing the identical `RecordVerificationResultCommand` the Object Editor's own Verification section already dispatches). Zero Command Framework or Workspace-contract changes; zero new commands. Combined test suite: 2266/2266 passing, Debug and Release both clean. See Current Work Package, below, for the full disclosure.)
+**Last Updated:** 2026-08-11 (`WP 11.0B` — v1.0 Architecture Roadmap &
+Release Planning. `v0.11.0`'s own second Work Package — a planning-only
+exercise, no code/ADR/architecture modified — that categorises
+`WP 11.0A`'s ten findings into Must Complete Before v1.0 / Strongly
+Recommended Before v1.0 / Post-v1.0 Technical Debt / Future Capability,
+scopes the resulting Work Packages in this project's own WBS format
+(`WP 11.1A`–`WP 11.2A` this release; `WP 12.0A`–`WP 12.2A` next; a
+conditional `v0.13.0`; `WP RC.0A` closing `v1.0.0`), and reconciles that
+scope against `WP7.2A Recommended Programme.md`'s own previously-deferred
+"Programme F" rather than duplicating it — one reprioritisation
+recommended (`FCR-0005`, now independently found a seventh time), no
+others. See `docs/releases/v0.11.0/WP11.0B Architecture Roadmap.md` for
+the complete roadmap. Preceded, same release, by `WP 11.0A` (Platform
+Architecture & Code Quality Review — an independent review of the
+complete codebase as of `v0.10.0`; ten findings, zero Critical, zero ADR
+violations found in the areas sampled; no code modified). Both Work
+Packages run on `feature/v0.11.0-v1-architecture`, cut from `main` at the
+`v0.10.0` tag. **`v0.10.0`'s own status line, below this point, is this
+field's prior content — retained, not deleted, per this project's own
+convention, and still the accurate record of the currently-shipped
+release.** (`WP 10.8A` — Desktop Feature Completion & Existing Capability
+Exposure. `v0.10.0`'s fifteenth Work Package by completion order — a
+direct, narrowly-scoped re-audit of `WP 10.7A`'s own seven priority items
+against the real, running application. Five were confirmed already
+genuinely implemented and intact; two were genuinely incomplete and
+closed this Work Package (honest Ribbon fallback messaging — the
+fallback previously claimed a genuinely-unwired command was reachable via
+the Command Palette or Project Explorer context menu, confirmed false for
+every command reaching that branch, corrected to name no false
+alternative; real Property Inspector Validation — `EngineeringDomainContext`
+threaded in as a third optional constructor parameter, reusing
+`ObjectEditorView`'s own `IValidatable` read and `BuildSeverityRow` helper
+directly, one disclosed exception for Requirements, `TD-41`, a second
+consumer of an already-known gap); one further genuinely-unwired existing
+command was found and wired alongside them (Manufacturing's "Record
+Inspection Result," reusing the identical `RecordVerificationResultCommand`
+the Object Editor's own Verification section already dispatches). Zero
+Command Framework or Workspace-contract changes; zero new commands.
+Combined test suite: 2266/2266 passing, Debug and Release both clean.)
 
 This is the primary status dashboard for TempestOS. Read this first for
 "where does the project stand right now" — for "why is it built this
@@ -119,7 +157,19 @@ Current Work Package, below.
 
 ## Current Development Branch
 
-**`feature/v0.10.0-user-experience`**, created and checked out directly
+**`feature/v0.11.0-v1-architecture`**, created and checked out directly
+by `WP 11.0B`'s own controlling instruction, cut from `main` at the
+`v0.10.0` tag. `WP 11.0A` (Platform Architecture & Code Quality Review)
+and `WP 11.0B` (v1.0 Architecture Roadmap & Release Planning) are this
+branch's first two Work Packages — both review/planning-only, no
+production code, ADR, or architecture modified by either. See
+`docs/releases/v0.11.0/WorkPackages.md` and `docs/releases/v0.11.0/
+WP11.0B Architecture Roadmap.md`.
+
+**`feature/v0.10.0-user-experience`'s own record, retained below,
+unchanged — the branch this document narrates as `v0.10.0`'s development
+branch is no longer the *current* one, but every word below remained true
+of it at the time it was written:** created and checked out directly
 by `WP 10.0A`, cut from `main` at the point `v0.9.0` was pushed
 (`9f64700`). **Confirmed to actually exist** by `git branch -a` — the
 first Programme 10 feature branch in this project's history where that
@@ -158,9 +208,14 @@ project's own convention.
 
 ## Current Release
 
-**v0.10.0** ("User Experience & Desktop Application") is the release
-this document's own `WP 10.9A` (Release Candidate & Engineering
-Sign-Off) has independently, from-source re-verified and released —
+**`v0.11.0` ("Release Engineering & Architecture Governance") is in
+progress, not yet released** — `WP 11.0A`/`WP 11.0B` complete; see
+Current Work Package and `docs/releases/v0.11.0/WP11.0B Architecture
+Roadmap.md` for the full scope and sequence through `v1.0.0`.
+**`v0.10.0`** ("User Experience & Desktop Application") remains the most
+recently shipped release, and is the release this document's own
+`WP 10.9A` (Release Candidate & Engineering Sign-Off) has independently,
+from-source re-verified and released —
 2026-08-11, tag `v0.10.0`, commit reference recorded in `WP10.9A
 Engineering Release Report.md` §Git alongside the tag's own message.
 Root `VERSION` correctly reads `0.10.0`. Full engineering justification,
@@ -179,6 +234,50 @@ Foundation") before that (tagged `v0.7.0`, `61fb2db`, **APPROVED**);
 Experience") before that; `v0.4.0` ("Platform Foundation") before that.
 
 ## Current Work Package
+
+**`WP 11.0B` — v1.0 Architecture Roadmap & Release Planning.**
+`v0.11.0`'s own second Work Package, on `feature/v0.11.0-v1-architecture`
+(cut from `main` at the `v0.10.0` tag). Planning only — no production
+code, ADR, or architecture modified. Takes `WP 11.0A`'s ten findings
+(`A-1`–`A-9`, `R-1`; zero Critical) and: categorises each into Must
+Complete Before v1.0 / Strongly Recommended Before v1.0 / Post-v1.0
+Technical Debt / Future Capability; scopes every Must/Strongly-
+Recommended item into a Work Package in this project's own WBS format,
+with effort, engineering risk, architectural impact, documentation
+impact, testing impact, and dependencies for each; produces a recommended
+release sequence (`v0.11.0` → `v0.12.0` → [conditional `v0.13.0`] →
+`v1.0.0`); reconciles the new scope against `WP7.2A Recommended
+Programme.md`'s own previously-deferred "Programme F" rather than
+duplicating it (one reprioritisation recommended — `FCR-0005`, Governance
+Register Health-Check Tooling, independently found stale a **seventh**
+time by `WP 11.0A`'s own Governance Index audit; every other Programme F
+item, `FCR-0001`/`FCR-0003`/`FCR-0004`, correctly stays gated on its own
+undemonstrated trigger, per Security Principle 7); and recommends a
+realistic `v1.0` definition (a single-user/trusted-team, locally-trusted
+desktop engineering platform covering the six disciplines already shipped
+through `v0.10.0`, with third-party plugins and non-local REST deployment
+explicitly out of scope unless the Product Owner commits otherwise). Full
+detail: `docs/releases/v0.11.0/WP11.0B Architecture Roadmap.md`.
+
+**Preceded, same release, by `WP 11.0A` — Platform Architecture & Code
+Quality Review.** An independent review of the complete codebase as of
+the `v0.10.0` tag — layering, assembly boundaries, dependency direction
+(empirically verified, not merely read from documentation), SOLID
+adherence, ADR compliance (spot-checked, zero violations found in the
+areas sampled), the Command/Event/Runtime Host/Plugin/Desktop
+architectures, code and test quality, technical debt, and release
+readiness for `v1.0`. Ten findings (zero Critical; three High — no
+CI/CD pipeline, Desktop composition-root God Objects, an undecided dual-
+presentation-stack strategy; four Medium; two Low), each with evidence,
+impact, recommendation, and a before-v1.0-or-defer disposition. No code
+modified. Full detail: `docs/releases/v0.11.0/WP11.0A Platform
+Architecture Review.md`.
+
+---
+
+**`v0.10.0`'s own prior Current Work Package content, below this point,
+is retained unchanged — the accurate record of that release's own last
+Work Package, not this release's current one:**
 
 **`WP 10.8A` — Desktop Feature Completion & Existing Capability
 Exposure.** `v0.10.0`'s fifteenth Work Package — a direct, narrowly-
@@ -3093,6 +3192,38 @@ review.md`.
 
 ## Next Planned Work Package
 
+**`WP 11.1A`, `WP 11.1B`, and `WP 11.2A`** — scoped, not yet started, per
+`WP11.0B Architecture Roadmap.md` §3: `WP 11.1A` (CI/CD Pipeline
+Standup, closing finding `R-1`); `WP 11.1B` (Governance Currency Pass &
+Health-Check Tooling, closing finding `A-5` and building `FCR-0005`);
+`WP 11.2A` (Desktop & Console Presentation Strategy Decision, closing
+finding `A-2` — the single highest-leverage early decision in the
+roadmap, since it sets the scope of `v0.12.0`'s `WP 12.2A` and whether
+the conditional `v0.13.0` release is needed at all). `WP 11.1A`/
+`WP 11.1B` have no dependencies on each other and may run in parallel;
+`WP 11.2A` likewise has no technical dependency and should be sequenced
+early in `v0.11.0`. `WP 11.9.0` (Release Preparation & Engineering
+Sign-Off) closes the release once all three are complete. See
+`docs/releases/v0.11.0/WP11.0B Architecture Roadmap.md` for full effort/
+risk/impact estimates, the complete `v0.12.0`/conditional-`v0.13.0`/
+`v1.0.0` sequence beyond this release, and this project's own "each
+requires its own Architecture, Planning, and Contract Review phase before
+a Work Package number is assigned" discipline applied to everything
+beyond `v0.11.0`.
+
+### Superseded — `v0.10.0`'s Own Prior "Next Planned Work Package" Content (Retained for Reference)
+
+The paragraph below was this field's own content immediately before
+`WP 11.0A`/`WP 11.0B` began, and remains an accurate record of what
+`v0.10.0`'s own closing review found — several of its named candidates
+(`TD-38`, `TD-41`, `ADR-0095`/`FCR-0064`, the Command Palette/Macro
+`CreateDefault` gap, `FCR-0073`, `FCR-0056`) are real and still open, but
+none traces to a `WP 11.0A` finding, so `WP11.0B`'s own roadmap
+deliberately does not absorb them — see that roadmap's §4 for why, and
+for the one item it does reprioritise (`FCR-0005`, folded into
+`WP 11.1B` above). They remain available for the Product Owner to
+interleave with the Work Packages above at their own discretion.
+
 **None yet approved for `WP 11.0`.** `v0.10.0`'s own sixteenth and final
 Work Package, `WP 10.9A` (`v0.10.0` Release Candidate & Engineering
 Sign-Off), has completed a full, independently re-verified release
@@ -5349,6 +5480,37 @@ produced. Confirmed, by direct Product Owner instruction, to be
 deliberate — the natural close of a "verify, remediate, re-verify"
 cycle this project's own governance discipline has now performed in
 full for the first time, not an accidental duplicate instruction.
+
+**Disclosed gap, not silently filled: this section was never given a
+`v0.10.0` entry.** `v0.10.0`'s own sixteen Work Packages (`WP 10.0A`
+through `WP 10.9A`) shipped, per `Current Release`/`Current Work
+Package` above and `docs/releases/v0.10.0/Release Notes.md`, but no
+corresponding bullet list was ever added here — found while adding this
+section's own `v0.11.0` entry below, recorded plainly rather than
+reconstructed after the fact from memory, per this document's own
+"disclose, do not silently backfill" convention. A future documentation-
+currency Work Package (`WP 11.1B`'s own governance-currency pass, or a
+successor) is the right place to close this specific gap, not this one.
+
+Per `docs/releases/v0.11.0/WorkPackages.md`, the Release Engineering &
+Architecture Governance phase (`v0.11.0`) is under way:
+
+- `WP 11.0A` — Platform Architecture & Code Quality Review (review only;
+  ten findings, zero Critical). **Complete.**
+- `WP 11.0B` — v1.0 Architecture Roadmap & Release Planning (planning
+  only; scopes `v0.11.0`–`v1.0.0`). **Complete.**
+- `WP 11.1A` — CI/CD Pipeline Standup. **Not started.**
+- `WP 11.1B` — Governance Currency Pass & Health-Check Tooling
+  (`FCR-0005`). **Not started.**
+- `WP 11.2A` — Desktop & Console Presentation Strategy Decision.
+  **Not started.**
+- `WP 11.9.0` — `v0.11.0` Release Preparation & Engineering Sign-Off.
+  **Not started.**
+
+See `docs/releases/v0.11.0/WP11.0B Architecture Roadmap.md` for the full
+scope of `v0.12.0`, the conditional `v0.13.0`, and `v1.0.0` beyond this
+release — not repeated here, per this section's own "index, do not
+duplicate" convention.
 
 ## Long-Term Vision
 
