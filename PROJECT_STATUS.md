@@ -1,6 +1,32 @@
 # TempestOS — Project Status
 
-**Last Updated:** 2026-08-11 (`WP 11.1A` — Continuous Integration & Build
+**Last Updated:** 2026-08-11 (`WP 11.1B` — Branch Protection &
+Engineering Workflow Hardening. `v0.11.0`'s own fourth Work Package —
+defines the complete engineering workflow surrounding `WP 11.1A`'s CI
+pipeline: branching strategy, pull request expectations, merge and
+release requirements, required CI status checks (recommended for branch
+protection, not configured — `.github/CODEOWNERS`, `.github/
+pull_request_template.md`, `.github/ISSUE_TEMPLATE/` added), the
+version-tagging workflow (a new `.github/workflows/release.yml`
+independently re-verifies and publishes a durable GitHub Release on
+every tag), a first-ever hotfix workflow and rollback procedure, and a
+release-candidate process. Two genuine, pre-existing defects found and
+fixed in place: `scripts/new-release.ps1`'s release-notes check read a
+path convention abandoned since `v0.6.0`, and lacked the
+`-p:TreatWarningsAsErrors=true` parity `WP 11.1A`'s own CI pipeline
+already established — both corrected. One genuine, previously-
+undisclosed governance deviation found and disclosed, not silently
+fixed: the `v0.10.0` tag itself points to the feature branch's own
+pre-merge commit, not to `main`, contradicting Engineering Governance §7
+as literally written — the tag is not moved (§7.4), the rule is now
+stated explicitly in the new workflow documents instead. Engineering
+Governance §2 and §7 updated with pointers to the new standard
+(`05-release-engineering.md`). No production code, ADR, or architecture
+modified; no GitHub repository setting configured (recommendations
+documented for a repository administrator, per this Work Package's own
+constraint). See `docs/releases/v0.11.0/WP11.1B Engineering
+Workflow.md`. **`WP 11.1A`'s own status line, below this point, is this
+field's prior content — retained, not deleted:** (`WP 11.1A` — Continuous Integration & Build
 Verification. `v0.11.0`'s own third Work Package — TempestOS's first CI
 pipeline, `.github/workflows/ci.yml`, closing `WP 11.0A` finding `R-1`
 (no build/test automation existed; every "0 Warnings, N/N tests passing"
@@ -233,10 +259,12 @@ project's own convention.
 ## Current Release
 
 **`v0.11.0` ("Release Engineering & Architecture Governance") is in
-progress, not yet released** — `WP 11.0A`/`WP 11.0B`/`WP 11.1A` complete
-(TempestOS's first CI pipeline now exists, `.github/workflows/ci.yml`);
-see Current Work Package and `docs/releases/v0.11.0/WP11.0B Architecture
-Roadmap.md` for the full scope and sequence through `v1.0.0`.
+progress, not yet released** — `WP 11.0A`/`WP 11.0B`/`WP 11.1A`/
+`WP 11.1B` complete (TempestOS's first CI pipeline and its full
+surrounding engineering workflow — branching, pull requests, releases,
+versioning, hotfixes, rollback — now both exist); see Current Work
+Package and `docs/releases/v0.11.0/WP11.0B Architecture Roadmap.md` for
+the full scope and sequence through `v1.0.0`.
 **`v0.10.0`** ("User Experience & Desktop Application") remains the most
 recently shipped release, and is the release this document's own
 `WP 10.9A` (Release Candidate & Engineering Sign-Off) has independently,
@@ -260,8 +288,35 @@ Experience") before that; `v0.4.0` ("Platform Foundation") before that.
 
 ## Current Work Package
 
-**`WP 11.1A` — Continuous Integration & Build Verification.**
-`v0.11.0`'s own third Work Package. Implements TempestOS's first CI
+**`WP 11.1B` — Branch Protection & Engineering Workflow Hardening.**
+`v0.11.0`'s own fourth Work Package. Defines the complete engineering
+workflow surrounding `WP 11.1A`'s CI pipeline: branching strategy
+(one `feature/vX.Y.0-*` branch per release, confirmed against real
+history), pull request expectations (`.github/pull_request_template.md`,
+`.github/CODEOWNERS` — every merge into `main` now goes through a PR,
+formalising what was a direct merge/push through `v0.10.0`), merge and
+release requirements, required CI status checks (`CI Gate` — documented
+for a repository administrator to enable via branch protection, not
+configured directly, per this Work Package's own constraint), the
+version-tagging workflow (a new `.github/workflows/release.yml`
+independently re-verifies Build/Test Gate against the tagged commit and
+publishes a durable GitHub Release with the build attached), a
+first-ever hotfix workflow and rollback procedure, and a
+release-candidate process (`-rc.N` tags, pre-release GitHub Releases).
+Two genuine pre-existing defects found and fixed in place:
+`scripts/new-release.ps1`'s release-notes path check was stale (abandoned
+since `v0.6.0`) and lacked `WP 11.1A`'s own `-p:TreatWarningsAsErrors=true`
+parity — both corrected. One genuine governance deviation found and
+disclosed, not silently fixed: the `v0.10.0` tag points to the feature
+branch's own pre-merge commit, not to `main`, contradicting Engineering
+Governance §7 as written — the tag itself was not moved (§7.4 forbids
+it); the rule is now stated explicitly in the new workflow documents.
+No production code, ADR, or architecture modified; no GitHub repository
+setting configured. See `docs/releases/v0.11.0/WP11.1B Engineering
+Workflow.md`.
+
+**Preceded, same release, by `WP 11.1A` — Continuous Integration & Build
+Verification.** `v0.11.0`'s own third Work Package. Implements TempestOS's first CI
 pipeline (`.github/workflows/ci.yml`, GitHub Actions), closing
 `WP 11.0A` finding `R-1`. Builds Debug and Release (warnings promoted to
 errors at the CI step only — `Directory.Build.props` unchanged) and runs
@@ -3235,24 +3290,30 @@ review.md`.
 
 ## Next Planned Work Package
 
-**`WP 11.1B` and `WP 11.2A`** — scoped, not yet started, per
-`WP11.0B Architecture Roadmap.md` §3. `WP 11.1A` (CI/CD Pipeline Standup)
-is now **complete** — see Current Work Package, above, and
-`docs/releases/v0.11.0/WP11.1A Implementation Report.md`. Remaining:
-`WP 11.1B` (Governance Currency Pass & Health-Check Tooling, closing
-finding `A-5` and building `FCR-0005`); `WP 11.2A` (Desktop & Console
-Presentation Strategy Decision, closing finding `A-2` — the single
-highest-leverage early decision in the roadmap, since it sets the scope
-of `v0.12.0`'s `WP 12.2A` and whether the conditional `v0.13.0` release
-is needed at all). Both have no dependency on each other or on
-`WP 11.1A`'s own completion and may run in parallel. `WP 11.9.0`
-(Release Preparation & Engineering Sign-Off) closes the release once
-both are complete — and can now cite a real, green CI run for its own
-Build/Test Gate evidence rather than a local session's output, the first
-Work Package in this project's history able to do so. See
-`docs/releases/v0.11.0/WP11.0B Architecture Roadmap.md` for full effort/
-risk/impact estimates, the complete `v0.12.0`/conditional-`v0.13.0`/
-`v1.0.0` sequence beyond this release, and this project's own "each
+**Disclosed divergence from `WP11.0B Architecture Roadmap.md`'s own
+prediction, not silently reconciled:** that roadmap's §3 scoped
+`WP 11.1B` as "Governance Currency Pass & Health-Check Tooling" (closing
+finding `A-5`, building `FCR-0005`). The Product Owner instead
+commissioned the real `WP 11.1B` as **Branch Protection & Engineering
+Workflow Hardening** — now complete, see Current Work Package, above.
+The roadmap's own text called itself "a recommendation, not an
+approval" throughout (§7); this is that distinction actually exercised,
+not a defect in either the roadmap or the Work Package actually run. The
+Governance Currency Pass / `FCR-0005` work the roadmap originally named
+for this slot **remains genuinely not started** and is carried forward,
+unscoped to a specific future Work Package number, alongside `WP 11.2A`
+(Desktop & Console Presentation Strategy Decision, closing finding `A-2`
+— still the single highest-leverage undecided item, since it sets the
+scope of `v0.12.0`'s `WP 12.2A` and whether the conditional `v0.13.0`
+release is needed at all). `WP 11.9.0` (Release Preparation &
+Engineering Sign-Off) closes the release once both are complete — and
+can now cite a real, green CI run for its own Build/Test Gate evidence
+(`WP 11.1A`) plus a fully-defined merge/release process (`WP 11.1B`)
+rather than a local session's output, the first Work Package in this
+project's history able to do either. See `docs/releases/v0.11.0/
+WP11.0B Architecture Roadmap.md` for full effort/risk/impact estimates,
+the complete `v0.12.0`/conditional-`v0.13.0`/`v1.0.0` sequence beyond
+this release, and this project's own "each
 requires its own Architecture, Planning, and Contract Review phase before
 a Work Package number is assigned" discipline applied to everything
 beyond `v0.11.0`.
@@ -5549,8 +5610,16 @@ Architecture Governance phase (`v0.11.0`) is under way:
   closing finding `R-1`; local verification: 0 Warnings/0 Errors both
   configurations, 2,266/2,266 tests passing; GitHub-hosted execution
   disclosed unverified pending the first real push). **Complete.**
-- `WP 11.1B` — Governance Currency Pass & Health-Check Tooling
-  (`FCR-0005`). **Not started.**
+- `WP 11.1B` — as actually commissioned: **Branch Protection &
+  Engineering Workflow Hardening**, not the roadmap's own originally
+  predicted "Governance Currency Pass & Health-Check Tooling" (see Next
+  Planned Work Package, above, for the disclosed divergence). Branching
+  strategy, pull request workflow, merge/release requirements, a new
+  `.github/workflows/release.yml`, hotfix workflow, rollback procedure,
+  release-candidate process. **Complete.**
+- Governance Currency Pass & Health-Check Tooling (`FCR-0005`) —
+  the roadmap's original `WP 11.1B` scope, genuinely **not started**,
+  carried forward unscoped to a specific future Work Package number.
 - `WP 11.2A` — Desktop & Console Presentation Strategy Decision.
   **Not started.**
 - `WP 11.9.0` — `v0.11.0` Release Preparation & Engineering Sign-Off.

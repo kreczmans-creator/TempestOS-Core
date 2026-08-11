@@ -113,7 +113,12 @@ satisfying it.
    but the reasoning is now permanently recorded.
 4. **Merge/Release Gate.** See §7 and §10. Distinct from the previous three
    gates: passing them makes a work package *ready* for this gate, not
-   automatically through it.
+   automatically through it. **From `WP 11.1B` onward**, this gate's
+   mechanics — branching, pull requests, required status checks, and
+   release tagging — are fully specified in `docs/academy/06 Engineering
+   Standards/05-release-engineering.md` and `docs/releases/v0.11.0/
+   WP11.1B Engineering Workflow.md`; this section states the principle,
+   those documents state the procedure.
 
 ---
 
@@ -262,6 +267,18 @@ Specifically:
 6. Merging a feature branch into `main` is itself a release-adjacent action and
    requires the same explicit, per-occasion approval — "approved for merge" on
    one work package is not standing approval for the next.
+7. **From `WP 11.1B` onward, every merge into `main` goes through a pull
+   request**, gated on the `CI Gate` status check (`WP 11.1A`), merged
+   only as a merge commit (never squash or rebase). Hotfix, release-
+   candidate, and rollback procedures — none of which existed before
+   `WP 11.1B` — are fully specified in `05-release-engineering.md` and
+   `docs/releases/v0.11.0/WP11.1B Engineering Workflow.md`, not repeated
+   here. **Disclosed, not silently corrected:** researching that Work
+   Package found the `v0.10.0` tag itself does not satisfy items 1 and 3
+   above as literally written — it points to the feature branch's own
+   pre-merge commit, not to `main`. Per item 4, the tag was not moved;
+   see `WP11.1B Engineering Workflow.md`'s own "Evidence & Findings" for
+   the full account.
 
 ## 8. Coding Standards Hierarchy
 

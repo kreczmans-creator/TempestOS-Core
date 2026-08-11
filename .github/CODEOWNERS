@@ -1,0 +1,19 @@
+# WP 11.1B — Engineering Workflow Hardening.
+#
+# Names the reviewer GitHub should request automatically on every pull
+# request. This formalises, in a GitHub-native, machine-enforceable way,
+# a rule this project's own governance has already stated in prose since
+# before this file existed (Engineering Governance §9, Product
+# Approval): every merge into `main` requires an explicit, per-occasion
+# approval from this authority, never assumed by the engineering tier
+# that opened the pull request. This file does not change who that
+# authority is — it makes GitHub's own review-request UI agree with what
+# Engineering Governance already says.
+#
+# Repository administrators: pair this file with "Require review from
+# Code Owners" in branch protection for `main` (see WP11.1B Engineering
+# Workflow.md, "Required CI Status Checks & Branch Protection") — this
+# file alone requests a review; it does not block a merge without that
+# setting also being enabled.
+
+* @kreczmans-creator

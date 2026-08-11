@@ -10,7 +10,7 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | `docs/academy/06 Engineering Standards/`. |
 | **Review Frequency** | Updated whenever a new coding standard is adopted or an existing one materially changes. |
-| **Last Reviewed** | 2026-08-11 (WP 11.1A, Continuous Integration & Build Verification) — `04-continuous-integration.md` added; entries table updated in the same change. Previously reviewed 2026-07-28 (WP 5.3, Developer Experience Improvements) — §11 amended (adds `src/Templates/`). |
+| **Last Reviewed** | 2026-08-11 (WP 11.1B, Branch Protection & Engineering Workflow Hardening) — `05-release-engineering.md` added; entries table updated in the same change. Previously reviewed 2026-08-11 (WP 11.1A, Continuous Integration & Build Verification) — `04-continuous-integration.md` added; entries table updated in the same change. Previously reviewed 2026-07-28 (WP 5.3, Developer Experience Improvements) — §11 amended (adds `src/Templates/`). |
 | **Related Documents** | `Academy Register.md`; `Governance Register.md`; `Validation Register.md`; `Future Work Package Guidelines.md`. |
 | **Related ADRs** | None directly — these are process/coding standards, not architectural decisions. |
 | **Related Academy Articles** | This register's entire scope, plus every retrospective that references Engineering Governance's own sections. |
@@ -28,10 +28,11 @@
 | `03-governance-registers.md` | Why and how to maintain the governance register suite | Standalone standard, added `WP 4.5A` |
 | `Engineering Lifecycle.md` | The canonical Idea→...→Maintenance engineering pipeline, elaborating Governance §1 | Standalone standard, added `WP 4.5B` |
 | `04-continuous-integration.md` | CI philosophy, the `.github/workflows/ci.yml` build pipeline, release verification, and the engineering workflow around it — the machine-verified realisation of Governance §2's Build Gate and Test Gate | Standalone standard, added `WP 11.1A` |
+| `05-release-engineering.md` | Branching strategy, pull request workflow, release process, versioning policy, and the emergency hotfix process — the engineering workflow surrounding the CI pipeline, from feature branch through release | Standalone standard, added `WP 11.1B` |
 
-**Total: 6 documents.** (This register's own prior total of 5, recorded
-at `WP 4.5B`, already omitted `04-continuous-integration.md` for the
-obvious reason that it did not exist yet — added within `WP 11.1A`,
+**Total: 7 documents.** (This register's own prior total of 6, recorded
+at `WP 11.1A`, already omitted `05-release-engineering.md` for the
+obvious reason that it did not exist yet — added within `WP 11.1B`,
 same change that produced the document itself, per Governance §6.)
 
 ## Coding Standards Hierarchy (Engineering Governance §8)

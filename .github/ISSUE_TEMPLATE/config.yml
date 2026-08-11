@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Project Status & Roadmap
+    url: https://github.com/kreczmans-creator/TempestOS-Core/blob/main/PROJECT_STATUS.md
+    about: Read this first — current release, current Work Package, and the near-term roadmap.
+  - name: Engineering Workflow
+    url: https://github.com/kreczmans-creator/TempestOS-Core/blob/main/docs/releases/v0.11.0/WP11.1B%20Engineering%20Workflow.md
+    about: Branching, pull requests, releases, versioning, hotfixes — how a change actually ships.
