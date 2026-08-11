@@ -1,6 +1,53 @@
 # TempestOS — Project Status
 
-**Last Updated:** 2026-08-11 (`WP 11.3B` — Presentation Strategy
+**Last Updated:** 2026-08-11 (`WP 11.9.0` — `v0.11.0` Release
+Preparation & Engineering Sign-Off. `v0.11.0`'s own eighth and closing
+Work Package — executed as a six-discipline TempestOS Engineering
+Programme (Chief Architect, Principal Engineer, Workflow Engineer, QA
+Lead, Technical Author, Product Manager), each performing an
+independent review, reconciled into one Programme Review. **Recommendation:
+Accept with Observations.** Every hard gate independently re-verified
+from a clean build, not carried forward from any prior claim: Debug/
+Release both 0 Warnings/0 Errors; combined test suite 2228/2228 both
+configurations (the 2266→2228 drop from `v0.10.0` exactly reconciled
+against `WP 11.3B`'s own two deleted test files, not a regression);
+`ADR-0101` honoured, dependency direction and all three named public
+contracts unmodified; zero executable-code changes anywhere in the
+release outside the disclosed `TempestShell` deletion. `WorkspaceShell`
+and `Tempest.Desktop` both verified to launch and run cleanly; no
+interactive, mouse-driven UI click-through was performed this Work
+Package (no mouse-automation tool available this session) — disclosed
+explicitly as a depth gap against `WP10.9A`'s own prior precedent for
+`v0.10.0`, not silently narrowed to look equivalent. Five governance
+registers found independently drifted stale relative to this release's
+own seven prior Work Packages and corrected within this Work Package —
+`Academy Register.md`, `Documentation Register.md`, `Release
+Register.md`, `Technical Debt Register.md`, `Future Capability
+Register.md` (the last carrying an outright factual error, not merely a
+stale date: `FCR-0005` still read "Identified, not started" despite
+`WP 11.2A` having shipped it — corrected). Four new technical debt items
+registered (`TD-42`–`TD-45`): two genuine, previously-undisclosed
+defects found in this release's own new release-engineering tooling by
+independent QA re-verification (`scripts/new-release.ps1`'s `git tag`/
+`git push` steps silently swallow a failure; `scripts/
+governance-healthcheck.ps1`'s generic exception handler loses the
+failing check's identity on malformed input); two already-disclosed,
+still-open release-engineering gaps formally consolidated (CI never
+executed on real GitHub-hosted infrastructure; branch protection
+documented, not configured). Academy retrospective coverage found
+absent for four of this release's own seven prior Work Packages —
+assessed non-blocking per this project's own `v0.10.0`-era precedent
+for a comparable finding, recommended as an immediate `v0.12.0`
+fast-follow. `docs/releases/v0.11.0/Release Notes.md` created. **No git
+commit or tag created by this Work Package** — per this project's own
+standing discipline, tagging `v0.11.0` is a Product Approval action
+sought explicitly, not assumed from a Work Package's own completion.
+See `docs/releases/v0.11.0/WP11.9.0 Engineering Release Report.md`
+(the release decision, full gate-by-gate evidence, all six discipline
+reports, the reconciled Definition of Done) and `Release Notes.md` (the
+narrative record). **`WP 11.3B`'s own status line, below this point, is
+this field's prior content — retained, not deleted:** (`WP 11.3B` —
+Presentation Strategy
 Implementation. `v0.11.0`'s own seventh Work Package — executes
 `WP 11.3A`'s own approved, low-risk recommendation (Stages 1–4 of its
 five-stage roadmap; Stage 5 remains deferred). `TempestShell`/`IPage`/
@@ -3473,6 +3520,36 @@ Report.md`, `Executive Summary.md`) plus its own retrospective:
 review.md`.
 
 ## Next Planned Work Package
+
+**`v0.11.0` sign-off is complete (`WP 11.9.0`), recommended Accept with
+Observations; tagging is a pending Product Approval action, not yet
+taken.** All eight `v0.11.0` Work Packages (`WP 11.0A`–`WP 11.9.0`) are
+now complete — see `docs/releases/v0.11.0/WP11.9.0 Engineering Release
+Report.md` for the full Programme Review and gate-by-gate evidence.
+Once `v0.11.0` is tagged, `WP11.0B Architecture Roadmap.md` §6 names two
+concrete next candidates, cross-checked directly against its own §5
+estimates table and not superseded by anything found during `WP
+11.9.0`: **(1)** close `TD-44`/`TD-45` first — push
+`feature/v0.11.0-v1-architecture` (or its eventual merge), confirm `CI
+Gate` actually executes on real GitHub-hosted infrastructure, then
+configure the already-documented branch-protection rule in GitHub — the
+single action that converts this release's own designed-but-advisory
+process into mechanically enforced process, recommended by both the
+Workflow Engineer's and Product Manager's own independent `WP 11.9.0`
+reviews; **(2)** `WP 12.0A` — Desktop Composition Root Decomposition
+Architecture, the roadmap's own next-scheduled item, explicitly gated
+on this release's own CI pipeline existing first ("want CI in place
+before the large refactor it authorises," `WP11.0B` §5). A secondary,
+lower-cost fast-follow also disclosed by `WP 11.9.0`, not blocking
+either candidate above: write the four missing `docs/academy/03 Work
+Packages/` retrospective articles (`WP 11.0A`, `WP 11.0B`, `WP 11.3A`,
+`WP 11.3B`) and correct `Contributor Learning Path.md`'s own stale
+`v0.5.0` closing-section pointer (a `WP 11.9.0` Workflow Engineer
+finding, six releases stale, missed by `WP 11.3B`'s own edit pass to
+that same file).
+
+**`WP 11.9.0`'s own status line, below this point, is this field's
+prior content — retained, not deleted:**
 
 **Disclosed divergence from `WP11.0B Architecture Roadmap.md`'s own
 prediction, not silently reconciled — now twice, in the same release:**
