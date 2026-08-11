@@ -225,6 +225,16 @@ jobs:
           # supported way to get them without a full, slower
           # fetch-depth: 0 history clone.
           fetch-tags: true
+          # Pinned explicitly: without this, a tag-triggered push leaves
+          # checkout's own default ref (github.ref, e.g. refs/tags/v0.11.0)
+          # colliding with fetch-tags's own fetch of that identical tag -
+          # both target the same local refs/tags/<name> path, and git
+          # refuses ("Cannot fetch both <sha> and refs/tags/<name> to
+          # refs/tags/<name>"). Checking out by commit SHA instead removes
+          # the competing tag-ref write target entirely, on both a branch
+          # push and a tag push (WP 11.9.0 Release Publication Report,
+          # Finding 3).
+          ref: ${{ github.sha }}
 
       - name: Run governance health check
         id: healthcheck

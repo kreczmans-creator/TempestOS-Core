@@ -48,7 +48,21 @@ $ErrorActionPreference = "Stop"
 
 if ($SummaryPath)
 {
-    $resolvedSummary = [System.IO.Path]::GetFullPath((Join-Path (Get-Location) $SummaryPath))
+    # Join-Path (unlike [System.IO.Path]::Combine) does not discard the
+    # parent when the child is already rooted - it concatenates
+    # unconditionally. An already-absolute -SummaryPath (e.g. CI's own
+    # $env:RUNNER_TEMP-based path) would otherwise double into RepoRoot
+    # (e.g. "...\RepoRoot\D:\a\_temp\..."), tripping the safety check
+    # below for the wrong reason. Resolve directly when already rooted;
+    # only join against the current location when genuinely relative.
+    $resolvedSummary = if ([System.IO.Path]::IsPathRooted($SummaryPath))
+    {
+        [System.IO.Path]::GetFullPath($SummaryPath)
+    }
+    else
+    {
+        [System.IO.Path]::GetFullPath((Join-Path (Get-Location) $SummaryPath))
+    }
     $resolvedRoot = [System.IO.Path]::GetFullPath($RepoRoot)
 
     if ($resolvedSummary.StartsWith($resolvedRoot, [StringComparison]::OrdinalIgnoreCase))
