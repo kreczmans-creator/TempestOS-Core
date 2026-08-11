@@ -1,7 +1,44 @@
 # TempestOS — Project Status
 
-**Last Updated:** 2026-08-11 (`WP 11.4A` — Release Engineering
-Corrections. `v0.11.0`'s own ninth Work Package — resolves the three
+**Last Updated:** 2026-08-11 (`WP 11.4B` — Merge to `main` & Release
+Process Correction. `v0.11.0`'s own tenth and final Work Package.
+**`main` is now the authoritative development baseline.** Before
+merging, discovered — and, with explicit Product Owner approval,
+corrected — that `v0.11.0`'s own tag repeated, verbatim, the `v0.10.0`
+tag-position defect `WP 11.1B` itself disclosed and warned against: cut
+from the feature branch (`fda4172`), never an ancestor of `main`.
+Unlike `v0.10.0` (found after its branch had long closed, left as
+permanent history), this was found *before* `v0.11.0`'s branch closed —
+the distinction a new, narrowly-scoped governance exception (Governance
+§7 item 4, amended this Work Package) now exists specifically to cover:
+published release tags remain immutable *except* a documented
+release-process defect (not a defect in the release's own content)
+found and Product-Owner-approved for correction before the release
+branch closes, with a Release Process Correction Report and full
+traceability — `v0.10.0`'s own already-closed case is explicitly not
+reopened. Corrective sequence: the git tag (never the commit, never any
+release content) was deleted and recreated on the merge commit, reusing
+its original annotation verbatim; `feature/v0.11.0-v1-architecture`
+merged into `main` as a non-fast-forward merge commit (`4b1fb16`);
+Build Gate/Test Gate re-verified **on `main` itself**, immediately
+before tagging, genuinely satisfying Governance §7.3 as literally
+written for the first time this release (2228/2228 both configurations,
+0 Warnings/0 Errors). Independently re-verified, not assumed: the tag
+now resolves to the merge commit exactly; the merge commit is
+`main`'s own `HEAD`; the tag is a real ancestor of `main`; `Build &
+Test`/`CI Gate` pass on real infrastructure for both the `main` push
+and the corrected tag push (four consecutive real CI runs now show the
+identical pattern); `release.yml` independently rebuilt, retested, and
+republished a fresh, correctly-tagged, non-draft GitHub Release.
+**One disclosed, unresolved residual**: deleting the original tag
+orphaned its GitHub Release into a draft (`id 368605775`,
+`untagged-9246469d05862713c1cc`) — still present, not deleted, outside
+this Work Package's own explicitly authorised scope; the live release
+(`id 368784327`) is unaffected and correct. Full account:
+`docs/releases/v0.11.0/WP11.4B Release Process Correction Report.md`.
+**`WP 11.4A`'s own status line, below this point, is this field's
+prior content — retained, not deleted:** (`WP 11.4A` — Release
+Engineering Corrections. `v0.11.0`'s own ninth Work Package — resolves the three
 release-engineering defects `WP 11.9.0`'s own Release Publication
 Report diagnosed when `v0.11.0` was tagged, pushed, and published: a
 flaky test (`ObjectEditorViewTests.cs`, a fixed `Task.Delay` racing an
@@ -388,12 +425,24 @@ Current Work Package, below.
 
 ## Current Development Branch
 
-**`feature/v0.11.0-v1-architecture`**, created and checked out directly
-by `WP 11.0B`'s own controlling instruction, cut from `main` at the
-`v0.10.0` tag. `WP 11.0A` (Platform Architecture & Code Quality Review)
-and `WP 11.0B` (v1.0 Architecture Roadmap & Release Planning) are this
-branch's first two Work Packages — both review/planning-only, no
-production code, ADR, or architecture modified by either. See
+**`main`** — `feature/v0.11.0-v1-architecture` (`WP 11.0A` through
+`WP 11.4B`, ten Work Packages) has been merged into `main`
+(non-fast-forward merge commit `4b1fb16`, `WP 11.4B`), tagged
+`v0.11.0` (recreated on the merge commit after a Product-Owner-approved,
+one-time release-process correction — see `WP11.4B Release Process
+Correction Report.md`), pushed, and is retained. `main` is the
+authoritative development baseline going forward, until `v0.12.0`'s own
+feature branch is cut.
+
+**`feature/v0.11.0-v1-architecture`'s own record, retained below,
+unchanged — the branch this document narrates as `v0.11.0`'s development
+branch is no longer the *current* one, but every word below remained
+true of it at the time it was written:** created and checked out
+directly by `WP 11.0B`'s own controlling instruction, cut from `main` at
+the `v0.10.0` tag. `WP 11.0A` (Platform Architecture & Code Quality
+Review) and `WP 11.0B` (v1.0 Architecture Roadmap & Release Planning)
+are this branch's first two Work Packages — both review/planning-only,
+no production code, ADR, or architecture modified by either. See
 `docs/releases/v0.11.0/WorkPackages.md` and `docs/releases/v0.11.0/
 WP11.0B Architecture Roadmap.md`.
 
@@ -439,17 +488,21 @@ project's own convention.
 
 ## Current Release
 
-**`v0.11.0` ("Release Engineering & Architecture Governance") is in
-progress, not yet released** — `WP 11.0A`/`WP 11.0B`/`WP 11.1A`/
-`WP 11.1B`/`WP 11.2A`/`WP 11.3A`/`WP 11.3B` complete: TempestOS's first
-CI pipeline, its full surrounding engineering workflow, its first
+**`v0.11.0` ("Release Engineering & Architecture Governance") is
+released, published, and merged to `main`** — all ten Work Packages
+(`WP 11.0A` through `WP 11.4B`) complete: TempestOS's first CI
+pipeline, its full surrounding engineering workflow, its first
 automated governance health check, and the Desktop & Console
 Presentation Strategy Review **and its own approved implementation**
 all now exist — `Tempest.Desktop` is formally TempestOS's shipped
 application, `Tempest.App`/`WorkspaceShell` is formally its Internal
-Engineering Harness (`ADR-0101`), and `TempestShell` is retired; see
-Current Work Package and `docs/releases/v0.11.0/WP11.0B Architecture
-Roadmap.md` for the full scope and sequence through `v1.0.0`.
+Engineering Harness (`ADR-0101`), and `TempestShell` is retired. Tag
+`v0.11.0` resolves to `main`'s own merge commit (`4b1fb16`), corrected
+under a one-time, Product-Owner-approved governance exception after
+being found to repeat `v0.10.0`'s own disclosed tag-position defect —
+see `WP11.4B Release Process Correction Report.md`. See Current Work
+Package and `docs/releases/v0.11.0/WP11.0B Architecture Roadmap.md` for
+the full scope and sequence through `v1.0.0`.
 **`v0.10.0`** ("User Experience & Desktop Application") remains the most
 recently shipped release, and is the release this document's own
 `WP 10.9A` (Release Candidate & Engineering Sign-Off) has independently,
@@ -3550,27 +3603,32 @@ review.md`.
 
 ## Next Planned Work Package
 
-**`v0.11.0` is released and published; `TD-44` is now Resolved.** All
-nine `v0.11.0` Work Packages (`WP 11.0A`–`WP 11.4A`) are now complete.
-`v0.11.0` was tagged, pushed, and published as a real GitHub Release;
-that push gave CI its first real execution, found three genuine defects
-(`WP 11.9.0`'s own Release Publication Report), and `WP 11.4A` fixed and
-independently re-verified all three on real infrastructure — `Build &
-Test` and `CI Gate` now genuinely pass on real GitHub-hosted
-infrastructure, confirmed on two separate live runs. See
-`docs/releases/v0.11.0/WP11.9.0 Engineering Release Report.md` (the
-Programme Review) and `WP11.4A Release Engineering Corrections.md` (the
-fixes and their real-infrastructure verification). `WP11.0B Architecture
+**`v0.11.0` is closed — merged to `main`, released, and published;
+`main` is the authoritative baseline.** All ten `v0.11.0` Work Packages
+(`WP 11.0A`–`WP 11.4B`) are now complete. `WP 11.4B` merged
+`feature/v0.11.0-v1-architecture` into `main` (`4b1fb16`) and, with
+explicit Product Owner approval, corrected a genuine release-process
+defect found before the release branch closed — `v0.11.0`'s own tag had
+repeated the `v0.10.0` tag-position defect `WP 11.1B` already disclosed
+— under a new, narrowly-scoped governance exception (see `WP11.4B
+Release Process Correction Report.md`). `Build & Test`/`CI Gate` now
+genuinely pass on real GitHub-hosted infrastructure for `main` itself,
+not only a feature branch, confirmed on four consecutive real CI runs.
+See `docs/releases/v0.11.0/WP11.9.0 Engineering Release Report.md` (the
+Programme Review), `WP11.4A Release Engineering Corrections.md` (the
+CI-infrastructure fixes), and `WP11.4B Release Process Correction
+Report.md` (the tag correction and merge). `WP11.0B Architecture
 Roadmap.md` §6 names two concrete next candidates, cross-checked
 directly against its own §5 estimates table and not superseded by
 anything found since: **(1)** close `TD-45` — configure the already-
-documented branch-protection rule in GitHub (required `CI Gate` check,
-required CODEOWNERS review) now that `CI Gate` has demonstrated it
-passes correctly on real infrastructure, not merely designed to — the
-single action that converts this release's own designed-but-advisory
-process into mechanically enforced process, recommended by both the
-Workflow Engineer's and Product Manager's own independent `WP 11.9.0`
-reviews; **(2)** `WP 12.0A` — Desktop Composition Root Decomposition
+documented branch-protection rule in GitHub on `main` (required `CI
+Gate` check, required CODEOWNERS review) now that `CI Gate` has
+demonstrated it passes correctly on real infrastructure, not merely
+designed to — the single action that converts this release's own
+designed-but-advisory process into mechanically enforced process,
+recommended by both the Workflow Engineer's and Product Manager's own
+independent `WP 11.9.0` reviews; **(2)** `WP 12.0A` — Desktop
+Composition Root Decomposition
 Architecture, the roadmap's own next-scheduled item, explicitly gated
 on this release's own CI pipeline existing first ("want CI in place
 before the large refactor it authorises," `WP11.0B` §5). A secondary,
