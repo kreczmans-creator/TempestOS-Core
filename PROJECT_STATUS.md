@@ -1,6 +1,42 @@
 # TempestOS — Project Status
 
-**Last Updated:** 2026-08-11 (`WP 11.2A` — Governance Health-Check
+**Last Updated:** 2026-08-11 (`WP 11.3A` — Presentation Strategy Review
+& Platform Consolidation. `v0.11.0`'s own sixth Work Package — the
+Desktop & Console Presentation Strategy Decision (`WP11.0A` finding
+`A-2`) finally commissioned, after being predicted for both `WP 11.2A`
+and, implicitly, the slot after it, without landing in either. Review
+only — no code, ADR, or architecture modified. Finds the question was
+narrower than `WP11.0A` framed it: `Tempest.App` bundles a genuinely
+shared Workspace domain layer (which `Tempest.Desktop` depends on) with
+a console *presentation* layer `Tempest.Desktop` has zero code
+dependency on; within that presentation layer, `TempestShell` has been
+**provably unreachable for three releases** (`ADR-0068`, `WP 8.1A`,
+`v0.8.0` — confirmed by direct grep, every reference outside its own
+file is a doc-comment citation), while `WorkspaceShell` remains
+`Tempest.App`'s real, live entry point today. A claim that `WP 10.0B`
+formally decided "Desktop is primary, console is retained for
+diagnostics/testing" exists only as a `Tempest.Desktop/Program.cs` code
+comment — searched directly against all six `WP 10.0B` documents and the
+rest of the repository, found nowhere else, reported as **Unverified**,
+not assumed true or false. Separately, and independently of that
+question: `README.md` — the repository's own front door — was found to
+describe an architecture roughly six releases stale (still calling
+`Tempest.App` "the legacy bootstrap/project-management app... does not
+yet run through `TempestHost`," omitting `Tempest.Desktop` entirely from
+its own architecture diagram and its only run instruction), and
+`Contributor Learning Path.md` shows the identical pattern. `ci.yml`/
+`release.yml` (this project's own `WP 11.1A`/`WP 11.1B`) were found to
+package `Tempest.App` and `Tempest.Desktop` as symmetric, co-equal
+release artifacts, contradicting the informal Desktop-primary
+positioning. **Recommendation:** retire `TempestShell` (zero risk, dead
+code); formally ratify `Tempest.App`/`WorkspaceShell` as an Internal
+Engineering Harness (not a shipped product) via a new ADR; correct
+`README.md`/`Contributor Learning Path.md`/release packaging to match.
+A five-stage, minimum-disruption implementation roadmap is proposed for
+a future Work Package — none of it executed here. See `docs/releases/
+v0.11.0/WP11.3A Presentation Strategy Review.md`. **`WP 11.2A`'s own
+status line, below this point, is this field's prior content — retained,
+not deleted:** (`WP 11.2A` — Governance Health-Check
 Automation. `v0.11.0`'s own fifth Work Package — delivers the first
 Governance Health-Check Tool identified as `FCR-0005`, reprioritised
 into this release by `WP11.0B Architecture Roadmap.md` §4 after
@@ -295,10 +331,11 @@ project's own convention.
 
 **`v0.11.0` ("Release Engineering & Architecture Governance") is in
 progress, not yet released** — `WP 11.0A`/`WP 11.0B`/`WP 11.1A`/
-`WP 11.1B`/`WP 11.2A` complete (TempestOS's first CI pipeline, its full
-surrounding engineering workflow, and its first automated governance
-health check all now exist); see Current Work Package and
-`docs/releases/v0.11.0/WP11.0B Architecture Roadmap.md` for the full
+`WP 11.1B`/`WP 11.2A`/`WP 11.3A` complete (TempestOS's first CI pipeline,
+its full surrounding engineering workflow, its first automated
+governance health check, and — finally — the Desktop & Console
+Presentation Strategy Review all now exist); see Current Work Package
+and `docs/releases/v0.11.0/WP11.0B Architecture Roadmap.md` for the full
 scope and sequence through `v1.0.0`.
 **`v0.10.0`** ("User Experience & Desktop Application") remains the most
 recently shipped release, and is the release this document's own
@@ -323,7 +360,35 @@ Experience") before that; `v0.4.0` ("Platform Foundation") before that.
 
 ## Current Work Package
 
-**`WP 11.2A` — Governance Health-Check Automation.** `v0.11.0`'s own
+**`WP 11.3A` — Presentation Strategy Review & Platform Consolidation.**
+`v0.11.0`'s own sixth Work Package. A complete, evidence-based
+engineering review of the presentation layer (`Tempest.App`,
+`Tempest.Desktop`, startup flow, dependency graph, duplication,
+documentation assumptions, release-process implications) — review only,
+no code/ADR/architecture modified, no repository restructuring.
+Reframes `WP11.0A` finding `A-2`: the real duplication is confined to
+the console-rendering slice of `Tempest.App` (`WorkspaceShell`,
+`TempestShell`), not the shared Workspace domain layer, which
+`Tempest.Desktop` genuinely depends on and which is provably
+duplication-free (`EngineeringWorkspaceComposer`). `TempestShell` found
+provably dead — unreachable from any running entry point since
+`ADR-0068` (`WP 8.1A`, `v0.8.0`), three releases ago, zero live
+references anywhere. A `Tempest.Desktop/Program.cs` comment's claim that
+`WP 10.0B` formally decided "Desktop primary, console diagnostic" could
+not be found in any of `WP 10.0B`'s own six documents — reported
+Unverified, not assumed. Independently: `README.md` and `Contributor
+Learning Path.md` found describing an architecture roughly six releases
+stale, omitting `Tempest.Desktop` entirely; `ci.yml`/`release.yml`
+(this project's own `WP 11.1A`/`WP 11.1B`) found packaging both
+presentation layers as symmetric release artifacts. Recommends (for a
+future Work Package, not executed here): retire `TempestShell`; ratify
+`Tempest.App`/`WorkspaceShell` as an Internal Engineering Harness via a
+new ADR; correct the documentation and release-packaging
+inconsistencies. See `docs/releases/v0.11.0/WP11.3A Presentation
+Strategy Review.md`.
+
+**Preceded, same release, by `WP 11.2A` — Governance Health-Check
+Automation.** `v0.11.0`'s own
 fifth Work Package. Delivers `scripts/governance-healthcheck.ps1`, the
 first Governance Health-Check Tool (`FCR-0005`) — a standalone,
 read-only PowerShell script with no production-code dependency, running
@@ -3361,25 +3426,31 @@ called itself "a recommendation, not an approval" throughout (§7); this
 is that distinction exercised a second time, not a defect in the roadmap
 or in either Work Package actually run.
 
-**What this leaves genuinely open:** the Desktop & Console Presentation
-Strategy Decision (`WP11.0A` finding `A-2` — still the single
-highest-leverage undecided item in the whole roadmap, since it sets the
-scope of `v0.12.0`'s `WP 12.2A` and whether the conditional `v0.13.0`
-release is needed at all) has now been predicted for two different Work
-Package slots (`WP 11.2A` in the original roadmap, implicitly next again
-here) without yet being commissioned under either. It remains carried
-forward, unscoped to a specific future Work Package number, per this
-project's own "each requires its own Architecture, Planning, and
-Contract Review phase before a Work Package number is assigned"
-discipline. `WP 11.9.0` (Release Preparation & Engineering Sign-Off)
-closes the release once it — or a Product Owner decision to defer it
-beyond `v0.11.0` — is resolved; the release can already cite a real CI
-run (`WP 11.1A`), a fully-defined merge/release process (`WP 11.1B`),
-and an automated governance check (`WP 11.2A`) for its own gate
-evidence, the first release in this project's history able to cite all
-three. See `docs/releases/v0.11.0/WP11.0B Architecture Roadmap.md` for
-full effort/risk/impact estimates and the complete `v0.12.0`/
-conditional-`v0.13.0`/`v1.0.0` sequence beyond this release.
+**Update — the Desktop & Console Presentation Strategy Decision
+(`WP11.0A` finding `A-2`) has now been reviewed, by `WP 11.3A`.** After
+being predicted for two Work Package slots without landing in either, it
+was finally commissioned directly, as its own Work Package. `WP 11.3A`
+is a *review*, not an implementation — it produces a recommendation
+(retire `TempestShell`; ratify `Tempest.App`/`WorkspaceShell` as an
+Internal Engineering Harness via a new ADR; correct `README.md`/
+`Contributor Learning Path.md`/release-artifact packaging) and a
+five-stage, minimum-disruption roadmap, but executes none of it — see
+`docs/releases/v0.11.0/WP11.3A Presentation Strategy Review.md`. **What
+this leaves genuinely open:** whether the Product Owner accepts the
+recommendation, and — if so — which future Work Package executes its
+five stages, remain undecided; carried forward, unscoped to a specific
+future Work Package number, per this project's own "each requires its
+own Architecture, Planning, and Contract Review phase before a Work
+Package number is assigned" discipline. `WP 11.9.0` (Release Preparation
+& Engineering Sign-Off) closes the release once this — or a Product
+Owner decision to defer execution beyond `v0.11.0` — is resolved; the
+release can already cite a real CI run (`WP 11.1A`), a fully-defined
+merge/release process (`WP 11.1B`), an automated governance check
+(`WP 11.2A`), and a complete presentation-strategy review (`WP 11.3A`)
+for its own gate evidence. See `docs/releases/v0.11.0/WP11.0B
+Architecture Roadmap.md` for full effort/risk/impact estimates and the
+complete `v0.12.0`/conditional-`v0.13.0`/`v1.0.0` sequence beyond this
+release.
 
 ### Superseded — `v0.10.0`'s Own Prior "Next Planned Work Package" Content (Retained for Reference)
 
@@ -5688,11 +5759,20 @@ Architecture Governance phase (`v0.11.0`) is under way:
   findings disclosed (Academy Index "Work Package Walkthroughs" stops at
   `WP 7.3A`; four untracked empty-directory references). Wired into CI,
   not yet a required check. **Complete.**
-- Desktop & Console Presentation Strategy Decision (`WP11.0A` finding
-  `A-2`) — the roadmap's original `WP 11.2A` scope, genuinely **not
-  started**, carried forward unscoped to a specific future Work Package
-  number — still the single highest-leverage undecided item in the
-  roadmap.
+- `WP 11.3A` — Presentation Strategy Review & Platform Consolidation —
+  the Desktop & Console Presentation Strategy Decision (`WP11.0A`
+  finding `A-2`), finally commissioned directly. Review only:
+  `TempestShell` found provably dead (unreachable since `ADR-0068`,
+  `WP 8.1A`, `v0.8.0`); `README.md`/`Contributor Learning Path.md` found
+  critically stale (omit `Tempest.Desktop` entirely); `ci.yml`/
+  `release.yml` found packaging both presentation layers as symmetric
+  release artifacts. Recommends retirement of `TempestShell`, a new ADR
+  ratifying `Tempest.App`/`WorkspaceShell` as an Internal Engineering
+  Harness, and documentation/release-packaging corrections — a five-
+  stage roadmap, none of it executed here. **Complete.**
+- Execution of `WP11.3A`'s own five-stage roadmap — genuinely **not
+  started**, pending Product Owner acceptance of its recommendation;
+  carried forward unscoped to a specific future Work Package number.
 - `WP 11.9.0` — `v0.11.0` Release Preparation & Engineering Sign-Off.
   **Not started.**
 
