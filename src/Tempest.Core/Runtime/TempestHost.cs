@@ -11,8 +11,10 @@ using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Events;
 using Tempest.Core.ExportImport;
 using Tempest.Core.Identity;
+using Tempest.Core.Input;
 using Tempest.Core.Licensing;
 using Tempest.Core.Logging;
+using Tempest.Core.Macros;
 using Tempest.Core.Materials;
 using Tempest.Core.Modules;
 using Tempest.Core.Navigation;
@@ -308,6 +310,17 @@ public sealed class TempestHost : ITempestHost
         // can resolve IPersistenceStore for SettingsProvider's constructor.
         services.Singleton<IPersistenceStore, PersistenceStore>();
         services.Singleton<ISettingsProvider, SettingsProvider>();
+
+        // WP 10.6A / ADR-0098 / ADR-0100: the Macro foundation and the
+        // External Controller/Input Binding abstraction — both ordinary
+        // Platform Services, registered here alongside the rest of the
+        // Command Framework's own supporting cast. MacroManager needs
+        // ISettingsProvider (just registered above) and ICommandRegistry
+        // (registered earlier in this method); neither is constructed
+        // eagerly here, so registration order only needs to precede first
+        // resolution, not construction.
+        services.Singleton<IMacroManager, MacroManager>();
+        services.Singleton<IInputBindingRegistry, InputBindingRouter>();
 
         // ADR-0041/ADR-0045: Audit reuses the same IPersistenceStore
         // Settings established, rather than introducing a second

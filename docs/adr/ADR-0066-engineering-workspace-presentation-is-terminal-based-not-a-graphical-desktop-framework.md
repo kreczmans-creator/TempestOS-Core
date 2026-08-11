@@ -7,6 +7,16 @@ Contracts), 2026-07-30. Resolves the question `ADR-0062` deliberately
 reserved: what concrete rendering technology presents the Workspace to
 a user?
 
+**Superseded 2026-08-07 by `ADR-0092`** (`v0.10.0` "User Experience &
+Desktop Application", `WP 10.0A`) — the Product Owner's own Programme
+10 commissioning is the real, demonstrated need for a graphical desktop
+experience this ADR's own Consequences §Negative named as its
+reversal condition. This decision's own reasoning remains historically
+correct for the evidence available at the time it was made — see
+`ADR-0092` for the full disclosure and the reversal's own reasoning.
+This record is left otherwise unedited, per this project's own "never
+silently modify historical records" discipline.
+
 ## Context
 
 `ADR-0062` locked in the Workspace's own *shape* — a windowed,

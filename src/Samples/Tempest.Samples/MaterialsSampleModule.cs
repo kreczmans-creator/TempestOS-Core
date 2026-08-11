@@ -103,29 +103,58 @@ public sealed class MaterialsSampleModule : ModuleLifecycleBase
 
     /// <inheritdoc />
     /// <remarks>
+    /// <para>
     /// Registers a fictional material with two dimensioned properties, then
     /// revises it once — proving register/revise/find all work end to end
     /// against the real catalogue — then registers
     /// <see cref="RegisterSampleMaterialCommand"/> and
     /// <see cref="ReviseSampleMaterialCommand"/>'s handlers and descriptors.
+    /// </para>
+    /// <para>
+    /// <b>Idempotent restart (`WP 10.1B`, `TD-37`):</b> <see cref="IMaterialCatalog"/>
+    /// is built directly on <see cref="Tempest.Core.Persistence.IPersistenceStore"/>
+    /// (`ADR-0055`), which is durable and, by default, shared across every
+    /// process launched from the same working directory (`ADR-0041`) — so a
+    /// second real launch of the console or desktop application, from the
+    /// same directory as a first, successful one, would otherwise find
+    /// <see cref="SampleMaterialId"/> already registered and fail loudly.
+    /// This module now checks first, and treats an already-registered
+    /// sample material as this module's own prior work, not a collision —
+    /// re-reading it rather than re-registering it, and still (re-)registering
+    /// its own commands, which are in-memory only and never survive a
+    /// restart on their own.
+    /// </para>
     /// </remarks>
     public override async Task InitialiseAsync(CancellationToken cancellationToken)
     {
-        var material = await _materialCatalog.RegisterAsync(
-            SampleMaterialId,
-            "Fictional Test Alloy",
-            BuildSampleProperties(yieldStrengthMPa: 100.0, referenceLengthMm: 10.0),
-            category: "TestFixture",
-            cancellationToken)
-            .ConfigureAwait(false);
-        RegisteredMaterialId = material.MaterialId;
+        var existing = await _materialCatalog.FindAsync(SampleMaterialId, cancellationToken).ConfigureAwait(false);
 
-        await _materialCatalog.ReviseAsync(
-            SampleMaterialId,
-            BuildSampleProperties(yieldStrengthMPa: 105.0, referenceLengthMm: 10.0),
-            "Sample revision — fictional updated test value.",
-            cancellationToken)
-            .ConfigureAwait(false);
+        if (existing is not null)
+        {
+            // Already durably registered by an earlier launch against this
+            // same persistence store (TD-37) - reuse it rather than
+            // re-attempting RegisterAsync, which would throw
+            // DuplicateMaterialException.
+            RegisteredMaterialId = existing.MaterialId;
+        }
+        else
+        {
+            var material = await _materialCatalog.RegisterAsync(
+                SampleMaterialId,
+                "Fictional Test Alloy",
+                BuildSampleProperties(yieldStrengthMPa: 100.0, referenceLengthMm: 10.0),
+                category: "TestFixture",
+                cancellationToken)
+                .ConfigureAwait(false);
+            RegisteredMaterialId = material.MaterialId;
+
+            await _materialCatalog.ReviseAsync(
+                SampleMaterialId,
+                BuildSampleProperties(yieldStrengthMPa: 105.0, referenceLengthMm: 10.0),
+                "Sample revision — fictional updated test value.",
+                cancellationToken)
+                .ConfigureAwait(false);
+        }
 
         _commandDispatcher.RegisterHandler<RegisterSampleMaterialCommand>(
             new RegisterSampleMaterialCommandHandler(_materialCatalog));

@@ -79,12 +79,30 @@ public static class ManufacturingWorkspaceRegistration
 
         manager.RegisterView("ManufacturingOperation", new ManufacturingWorkspaceViewFactory("ManufacturingOperation", domainContext));
         manager.RegisterFacetProvider("ManufacturingOperation", new ManufacturingOperationPropertyFacetProvider("ManufacturingOperation", domainContext));
+        // WP 10.2A (ADR-0096): real rename/delete dispatch.
+        manager.RegisterRenameFactory("ManufacturingOperation", static (id, targetKind, name) => new RenameManufacturingObjectCommand(id, targetKind, name));
+        manager.RegisterDeleteFactory("ManufacturingOperation", static (id, targetKind) => new DeleteManufacturingObjectCommand(id, targetKind));
+        // WP 10.3A (ADR-0097): real revise dispatch.
+        manager.RegisterReviseFactory("ManufacturingOperation", static (id, targetKind, content) => new ReviseManufacturingObjectCommand(id, targetKind, content));
 
         // Disclosed cross-Work-Package reuse — see this class's own remarks.
         manager.RegisterView("WorkInstruction", new DocumentsWorkspaceViewFactory("WorkInstruction", domainContext));
         manager.RegisterFacetProvider("WorkInstruction", new DocumentsPropertyFacetProvider("WorkInstruction", domainContext));
+        // WP 10.2A (ADR-0096): reuses Documents' own already-registered
+        // Rename/DeleteDocumentObjectCommand handler for the identical
+        // reason the View/Facet Provider above already do — neither
+        // handler inspects TargetKind beyond passing it through.
+        manager.RegisterRenameFactory("WorkInstruction", static (id, targetKind, name) => new RenameDocumentObjectCommand(id, targetKind, name));
+        manager.RegisterDeleteFactory("WorkInstruction", static (id, targetKind) => new DeleteDocumentObjectCommand(id, targetKind));
+        // WP 10.3A (ADR-0097): reuses Documents' own already-registered ReviseDocumentCommand handler, identical reuse rationale.
+        manager.RegisterReviseFactory("WorkInstruction", static (id, targetKind, content) => new ReviseDocumentCommand(id, targetKind, content));
+
         manager.RegisterView("Inspection", new VerificationActivityWorkspaceViewFactory("Inspection", domainContext));
         manager.RegisterFacetProvider("Inspection", new VerificationActivityPropertyFacetProvider("Inspection", domainContext));
+        manager.RegisterRenameFactory("Inspection", static (id, targetKind, name) => new RenameVerificationActivityCommand(id, targetKind, name));
+        manager.RegisterDeleteFactory("Inspection", static (id, targetKind) => new DeleteVerificationActivityCommand(id, targetKind));
+        // WP 10.3A (ADR-0097): reuses Verification's own already-registered ReviseVerificationActivityCommand handler, identical reuse rationale.
+        manager.RegisterReviseFactory("Inspection", static (id, targetKind, content) => new ReviseVerificationActivityCommand(id, targetKind, content));
 
         var factoryRegistry = new ManufacturingObjectFactoryRegistry(domainContext);
         var copyHandler = new CopyManufacturingObjectCommandHandler(domainContext, factoryRegistry);

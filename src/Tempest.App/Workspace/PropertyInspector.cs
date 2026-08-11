@@ -34,8 +34,17 @@ internal sealed class PropertyInspector : IPropertyInspector, IEventHandler<Work
         _facetProviders = facetProviders ?? new Dictionary<string, IPropertyFacetProvider>(StringComparer.Ordinal);
     }
 
+    /// <summary>
+    /// This panel's own stable, well-known identifier — see
+    /// <see cref="ProjectExplorer.WellKnownId"/>'s own identical remarks
+    /// (`WP 10.0B`'s disclosed found-and-fixed defect: this field was
+    /// originally <c>Guid.NewGuid()</c>, which could never round-trip a
+    /// persisted placement across a genuine process restart).
+    /// </summary>
+    public static readonly Guid WellKnownId = new("3d4e5f6a-7b8c-4d9e-8f1a-2b3c4d5e6f7a");
+
     /// <inheritdoc />
-    public Guid Id { get; } = Guid.NewGuid();
+    public Guid Id { get; } = WellKnownId;
 
     /// <inheritdoc />
     public string Title => "Properties";

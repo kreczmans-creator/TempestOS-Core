@@ -247,6 +247,169 @@ public class WorkspaceManagerTests
         Assert.Equal("Requirement", exception.Kind);
     }
 
+    // ----------------------------------------------------------------
+    // RegisterRenameFactory / RegisterDeleteFactory / CanRename / CanDelete
+    // / RenameObjectAsync / DeleteObjectAsync (ADR-0096, WP 10.2A)
+    // ----------------------------------------------------------------
+
+    [Fact]
+    public void RegisterRenameFactory_NullKind_ThrowsArgumentException()
+    {
+        using var temp = new TempDirectory();
+        var manager = new WorkspaceManager(BuildHost(temp.Path, Type.EmptyTypes));
+
+        Assert.ThrowsAny<ArgumentException>(() => manager.RegisterRenameFactory(null!, static (id, kind, name) => new TestWorkspaceCommand(id, kind, name)));
+    }
+
+    [Fact]
+    public void RegisterRenameFactory_NullFactory_ThrowsArgumentNullException()
+    {
+        using var temp = new TempDirectory();
+        var manager = new WorkspaceManager(BuildHost(temp.Path, Type.EmptyTypes));
+
+        Assert.Throws<ArgumentNullException>(() => manager.RegisterRenameFactory("Requirement", null!));
+    }
+
+    [Fact]
+    public void RegisterRenameFactory_DuplicateKind_ThrowsDuplicateWorkspaceRegistrationException()
+    {
+        using var temp = new TempDirectory();
+        var manager = new WorkspaceManager(BuildHost(temp.Path, Type.EmptyTypes));
+        manager.RegisterRenameFactory("Requirement", static (id, kind, name) => new TestWorkspaceCommand(id, kind, name));
+
+        var exception = Assert.Throws<DuplicateWorkspaceRegistrationException>(() =>
+            manager.RegisterRenameFactory("Requirement", static (id, kind, name) => new TestWorkspaceCommand(id, kind, name)));
+        Assert.Equal("Requirement", exception.Kind);
+    }
+
+    [Fact]
+    public void RegisterDeleteFactory_DuplicateKind_ThrowsDuplicateWorkspaceRegistrationException()
+    {
+        using var temp = new TempDirectory();
+        var manager = new WorkspaceManager(BuildHost(temp.Path, Type.EmptyTypes));
+        manager.RegisterDeleteFactory("Requirement", static (id, kind) => new TestWorkspaceCommand(id, kind));
+
+        Assert.Throws<DuplicateWorkspaceRegistrationException>(() =>
+            manager.RegisterDeleteFactory("Requirement", static (id, kind) => new TestWorkspaceCommand(id, kind)));
+    }
+
+    [Fact]
+    public void CanRename_NoFactoryRegisteredForKind_IsFalse()
+    {
+        using var temp = new TempDirectory();
+        var manager = new WorkspaceManager(BuildHost(temp.Path, Type.EmptyTypes));
+
+        Assert.False(manager.CanRename("Requirement"));
+        Assert.False(manager.CanDelete("Requirement"));
+    }
+
+    [Fact]
+    public void CanRename_FactoryRegisteredForKind_IsTrue()
+    {
+        using var temp = new TempDirectory();
+        var manager = new WorkspaceManager(BuildHost(temp.Path, Type.EmptyTypes));
+        manager.RegisterRenameFactory("Requirement", static (id, kind, name) => new TestWorkspaceCommand(id, kind, name));
+        manager.RegisterDeleteFactory("Requirement", static (id, kind) => new TestWorkspaceCommand(id, kind));
+
+        Assert.True(manager.CanRename("Requirement"));
+        Assert.True(manager.CanDelete("Requirement"));
+    }
+
+    [Fact]
+    public async Task RenameObjectAsync_NoFactoryRegisteredForKind_ReturnsHonestFailure_NeverThrows()
+    {
+        using var temp = new TempDirectory();
+        var manager = new WorkspaceManager(BuildHost(temp.Path, Type.EmptyTypes));
+        await WithSuppressedConsoleAsync(() => manager.StartAsync());
+
+        var result = await manager.RenameObjectAsync(Guid.NewGuid(), "Requirement", "New Name");
+
+        Assert.False(result.Succeeded);
+        Assert.Contains("Requirement", result.Message);
+
+        await manager.ShutdownAsync();
+    }
+
+    [Fact]
+    public async Task DeleteObjectAsync_NoFactoryRegisteredForKind_ReturnsHonestFailure_NeverThrows()
+    {
+        using var temp = new TempDirectory();
+        var manager = new WorkspaceManager(BuildHost(temp.Path, Type.EmptyTypes));
+        await WithSuppressedConsoleAsync(() => manager.StartAsync());
+
+        var result = await manager.DeleteObjectAsync(Guid.NewGuid(), "Requirement");
+
+        Assert.False(result.Succeeded);
+
+        await manager.ShutdownAsync();
+    }
+
+    [Fact]
+    public async Task RenameObjectAsync_RegisteredFactory_DispatchesToTheRealHandler_WithTheRealArguments()
+    {
+        using var temp = new TempDirectory();
+        var host = BuildHost(temp.Path, Type.EmptyTypes);
+        var manager = new WorkspaceManager(host);
+        manager.RegisterRenameFactory("Requirement", static (id, kind, name) => new TestWorkspaceCommand(id, kind, name));
+
+        await WithSuppressedConsoleAsync(() => manager.StartAsync());
+
+        var commandDispatcher = (Tempest.Core.Commands.ICommandDispatcher)host.Services!.GetService(typeof(Tempest.Core.Commands.ICommandDispatcher));
+        var handler = new RecordingTestWorkspaceCommandHandler();
+        commandDispatcher.RegisterHandler(handler);
+
+        var targetId = Guid.NewGuid();
+        var result = await manager.RenameObjectAsync(targetId, "Requirement", "New Name");
+
+        Assert.True(result.Succeeded);
+        var handled = Assert.Single(handler.Handled);
+        Assert.Equal(targetId, handled.TargetObjectId);
+        Assert.Equal("Requirement", handled.TargetKind);
+        Assert.Equal("New Name", handled.Note);
+
+        await manager.ShutdownAsync();
+    }
+
+    [Fact]
+    public async Task DeleteObjectAsync_RegisteredFactory_DispatchesToTheRealHandler_WithTheRealArguments()
+    {
+        using var temp = new TempDirectory();
+        var host = BuildHost(temp.Path, Type.EmptyTypes);
+        var manager = new WorkspaceManager(host);
+        manager.RegisterDeleteFactory("Requirement", static (id, kind) => new TestWorkspaceCommand(id, kind));
+
+        await WithSuppressedConsoleAsync(() => manager.StartAsync());
+
+        var commandDispatcher = (Tempest.Core.Commands.ICommandDispatcher)host.Services!.GetService(typeof(Tempest.Core.Commands.ICommandDispatcher));
+        var handler = new RecordingTestWorkspaceCommandHandler();
+        commandDispatcher.RegisterHandler(handler);
+
+        var targetId = Guid.NewGuid();
+        var result = await manager.DeleteObjectAsync(targetId, "Requirement");
+
+        Assert.True(result.Succeeded);
+        var handled = Assert.Single(handler.Handled);
+        Assert.Equal(targetId, handled.TargetObjectId);
+
+        await manager.ShutdownAsync();
+    }
+
+    [Fact]
+    public async Task RenameObjectAsync_BeforeStartAsyncCompletes_ReturnsHonestFailure_NeverThrows()
+    {
+        using var temp = new TempDirectory();
+        var manager = new WorkspaceManager(BuildHost(temp.Path, Type.EmptyTypes));
+        manager.RegisterRenameFactory("Requirement", static (id, kind, name) => new TestWorkspaceCommand(id, kind, name));
+
+        // Never started - _commandHandlerTable is still null, exactly like
+        // a caller that (incorrectly) invoked this before StartAsync ever
+        // ran; must still report an honest failure, never throw a null
+        // -reference exception.
+        var result = await manager.RenameObjectAsync(Guid.NewGuid(), "Requirement", "New Name");
+
+        Assert.False(result.Succeeded);
+    }
+
     [Fact]
     public async Task RegisterFacetProvider_BeforeStartAsync_IsHonouredByThePropertyInspector()
     {
@@ -326,6 +489,113 @@ public class WorkspaceManagerTests
         Assert.Equal("Requirement", view.ObjectKind);
 
         await manager.ShutdownAsync();
+    }
+
+    // ----------------------------------------------------------------
+    // RegisterReviseFactory / CanRevise / ReviseObjectAsync
+    // (ADR-0097, WP 10.3A)
+    // ----------------------------------------------------------------
+
+    [Fact]
+    public void RegisterReviseFactory_NullKind_ThrowsArgumentException()
+    {
+        using var temp = new TempDirectory();
+        var manager = new WorkspaceManager(BuildHost(temp.Path, Type.EmptyTypes));
+
+        Assert.ThrowsAny<ArgumentException>(() => manager.RegisterReviseFactory(null!, static (id, kind, content) => new TestWorkspaceCommand(id, kind, content)));
+    }
+
+    [Fact]
+    public void RegisterReviseFactory_NullFactory_ThrowsArgumentNullException()
+    {
+        using var temp = new TempDirectory();
+        var manager = new WorkspaceManager(BuildHost(temp.Path, Type.EmptyTypes));
+
+        Assert.Throws<ArgumentNullException>(() => manager.RegisterReviseFactory("Requirement", null!));
+    }
+
+    [Fact]
+    public void RegisterReviseFactory_DuplicateKind_ThrowsDuplicateWorkspaceRegistrationException()
+    {
+        using var temp = new TempDirectory();
+        var manager = new WorkspaceManager(BuildHost(temp.Path, Type.EmptyTypes));
+        manager.RegisterReviseFactory("Requirement", static (id, kind, content) => new TestWorkspaceCommand(id, kind, content));
+
+        var exception = Assert.Throws<DuplicateWorkspaceRegistrationException>(() =>
+            manager.RegisterReviseFactory("Requirement", static (id, kind, content) => new TestWorkspaceCommand(id, kind, content)));
+        Assert.Equal("Requirement", exception.Kind);
+    }
+
+    [Fact]
+    public void CanRevise_NoFactoryRegisteredForKind_IsFalse()
+    {
+        using var temp = new TempDirectory();
+        var manager = new WorkspaceManager(BuildHost(temp.Path, Type.EmptyTypes));
+
+        Assert.False(manager.CanRevise("Requirement"));
+    }
+
+    [Fact]
+    public void CanRevise_FactoryRegisteredForKind_IsTrue()
+    {
+        using var temp = new TempDirectory();
+        var manager = new WorkspaceManager(BuildHost(temp.Path, Type.EmptyTypes));
+        manager.RegisterReviseFactory("Requirement", static (id, kind, content) => new TestWorkspaceCommand(id, kind, content));
+
+        Assert.True(manager.CanRevise("Requirement"));
+    }
+
+    [Fact]
+    public async Task ReviseObjectAsync_NoFactoryRegisteredForKind_ReturnsHonestFailure_NeverThrows()
+    {
+        using var temp = new TempDirectory();
+        var manager = new WorkspaceManager(BuildHost(temp.Path, Type.EmptyTypes));
+        await WithSuppressedConsoleAsync(() => manager.StartAsync());
+
+        var result = await manager.ReviseObjectAsync(Guid.NewGuid(), "Requirement", "New Content");
+
+        Assert.False(result.Succeeded);
+        Assert.Contains("Requirement", result.Message);
+
+        await manager.ShutdownAsync();
+    }
+
+    [Fact]
+    public async Task ReviseObjectAsync_RegisteredFactory_DispatchesToTheRealHandler_WithTheRealArguments()
+    {
+        using var temp = new TempDirectory();
+        var host = BuildHost(temp.Path, Type.EmptyTypes);
+        var manager = new WorkspaceManager(host);
+        manager.RegisterReviseFactory("Requirement", static (id, kind, content) => new TestWorkspaceCommand(id, kind, content));
+
+        await WithSuppressedConsoleAsync(() => manager.StartAsync());
+
+        var commandDispatcher = (Tempest.Core.Commands.ICommandDispatcher)host.Services!.GetService(typeof(Tempest.Core.Commands.ICommandDispatcher));
+        var handler = new RecordingTestWorkspaceCommandHandler();
+        commandDispatcher.RegisterHandler(handler);
+
+        var targetId = Guid.NewGuid();
+        var result = await manager.ReviseObjectAsync(targetId, "Requirement", "New Content");
+
+        Assert.True(result.Succeeded);
+        var handled = Assert.Single(handler.Handled);
+        Assert.Equal(targetId, handled.TargetObjectId);
+        Assert.Equal("Requirement", handled.TargetKind);
+        Assert.Equal("New Content", handled.Note);
+
+        await manager.ShutdownAsync();
+    }
+
+    [Fact]
+    public async Task ReviseObjectAsync_BeforeStartAsyncCompletes_ReturnsHonestFailure_NeverThrows()
+    {
+        using var temp = new TempDirectory();
+        var manager = new WorkspaceManager(BuildHost(temp.Path, Type.EmptyTypes));
+        manager.RegisterReviseFactory("Requirement", static (id, kind, content) => new TestWorkspaceCommand(id, kind, content));
+
+        var result = await manager.ReviseObjectAsync(Guid.NewGuid(), "Requirement", "New Content");
+
+        Assert.False(result.Succeeded);
     }
 
     // ----------------------------------------------------------------

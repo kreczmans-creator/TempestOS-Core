@@ -218,18 +218,20 @@ public class MechanicalWorkspaceIntegrationTests
     }
 
     [Fact]
-    public async Task CommandRegistry_ListsAllNineMechanicalCommands()
+    public async Task CommandRegistry_ListsAllTenMechanicalCommands()
     {
         // WP 9.0A shipped six (Create/Rename/Delete/Move/Copy/Duplicate);
         // WP 9.0B adds three more (Set BOM Line, Compare Baselines,
-        // Validate Configuration).
+        // Validate Configuration); WP 10.3A adds a tenth (Edit — real
+        // content-revise dispatch, ADR-0097, the one discipline of six
+        // that had none before it).
         using var temp = new TempDirectory();
         var (_, manager, host) = await StartAsync(temp.Path);
         var commandRegistry = (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
 
         var mechanicalCommands = commandRegistry.Items.Where(d => d.Category == "Mechanical").ToList();
 
-        Assert.Equal(9, mechanicalCommands.Count);
+        Assert.Equal(10, mechanicalCommands.Count);
 
         await manager.ShutdownAsync();
     }

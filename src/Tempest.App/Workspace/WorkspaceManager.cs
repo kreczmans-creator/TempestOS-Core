@@ -1,4 +1,5 @@
 using Tempest.Core.Commands;
+using Tempest.Core.Diagnostics;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Events;
 using Tempest.Core.Navigation;
@@ -43,12 +44,16 @@ public sealed class WorkspaceManager : IWorkspaceManager, IAsyncDisposable
     private readonly Dictionary<string, IWorkspaceViewFactory> _viewFactories = new(StringComparer.Ordinal);
     private readonly Dictionary<string, IProjectExplorerNodeProvider> _explorerProviders = new(StringComparer.Ordinal);
     private readonly Dictionary<string, IPropertyFacetProvider> _facetProviders = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, Func<Guid, string, string, IWorkspaceCommand>> _renameFactories = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, Func<Guid, string, IWorkspaceCommand>> _deleteFactories = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, Func<Guid, string, string, IWorkspaceCommand>> _reviseFactories = new(StringComparer.Ordinal);
     private readonly WorkspaceContext _context = new();
     private readonly WorkspaceStatusBar _statusBar = new();
 
     private IEventBus? _eventBus;
     private PropertyInspector? _propertyInspector;
     private Task? _hostRunTask;
+    private CommandHandlerTable? _commandHandlerTable;
 
     /// <summary>Initialises a new instance of the <see cref="WorkspaceManager"/> class.</summary>
     /// <param name="host">The Runtime Host this Workspace constructs its own composition around. Must be in <see cref="HostState.Created"/> — not yet run.</param>
@@ -89,6 +94,7 @@ public sealed class WorkspaceManager : IWorkspaceManager, IAsyncDisposable
         var eventBus = (IEventBus)services.GetService(typeof(IEventBus));
         var settingsProvider = (ISettingsProvider)services.GetService(typeof(ISettingsProvider));
         var commandRegistry = (ICommandRegistry)services.GetService(typeof(ICommandRegistry));
+        _commandHandlerTable = (CommandHandlerTable)services.GetService(typeof(CommandHandlerTable));
         var domainContext = (EngineeringDomainContext)services.GetService(typeof(EngineeringDomainContext));
         var requirementsService = (IRequirementsService)services.GetService(typeof(IRequirementsService));
         var requirementValidationService = (IRequirementValidationService)services.GetService(typeof(IRequirementValidationService));
@@ -189,17 +195,162 @@ public sealed class WorkspaceManager : IWorkspaceManager, IAsyncDisposable
     }
 
     /// <inheritdoc />
+    public void RegisterRenameFactory(string kind, Func<Guid, string, string, IWorkspaceCommand> factory)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(kind);
+        ArgumentNullException.ThrowIfNull(factory);
+
+        if (!_renameFactories.TryAdd(kind, factory))
+            throw new DuplicateWorkspaceRegistrationException(kind);
+    }
+
+    /// <inheritdoc />
+    public void RegisterDeleteFactory(string kind, Func<Guid, string, IWorkspaceCommand> factory)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(kind);
+        ArgumentNullException.ThrowIfNull(factory);
+
+        if (!_deleteFactories.TryAdd(kind, factory))
+            throw new DuplicateWorkspaceRegistrationException(kind);
+    }
+
+    /// <inheritdoc />
+    public void RegisterReviseFactory(string kind, Func<Guid, string, string, IWorkspaceCommand> factory)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(kind);
+        ArgumentNullException.ThrowIfNull(factory);
+
+        if (!_reviseFactories.TryAdd(kind, factory))
+            throw new DuplicateWorkspaceRegistrationException(kind);
+    }
+
+    /// <inheritdoc />
+    public bool CanRename(string kind) => kind is not null && _renameFactories.ContainsKey(kind);
+
+    /// <inheritdoc />
+    public bool CanDelete(string kind) => kind is not null && _deleteFactories.ContainsKey(kind);
+
+    /// <inheritdoc />
+    public bool CanRevise(string kind) => kind is not null && _reviseFactories.ContainsKey(kind);
+
+    /// <inheritdoc />
+    public Task<CommandResult> RenameObjectAsync(Guid id, string kind, string newDisplayName, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(kind);
+        ArgumentException.ThrowIfNullOrWhiteSpace(newDisplayName);
+
+        if (!_renameFactories.TryGetValue(kind, out var factory))
+            return Task.FromResult(CommandResult.Failure($"No rename capability is registered for Kind '{kind}'."));
+
+        return DispatchObjectCommandAsync(factory(id, kind, newDisplayName), cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public Task<CommandResult> DeleteObjectAsync(Guid id, string kind, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(kind);
+
+        if (!_deleteFactories.TryGetValue(kind, out var factory))
+            return Task.FromResult(CommandResult.Failure($"No delete capability is registered for Kind '{kind}'."));
+
+        return DispatchObjectCommandAsync(factory(id, kind), cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public Task<CommandResult> ReviseObjectAsync(Guid id, string kind, string newContent, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(kind);
+        ArgumentNullException.ThrowIfNull(newContent);
+
+        if (!_reviseFactories.TryGetValue(kind, out var factory))
+            return Task.FromResult(CommandResult.Failure($"No revise capability is registered for Kind '{kind}'."));
+
+        return DispatchObjectCommandAsync(factory(id, kind, newContent), cancellationToken);
+    }
+
+    /// <summary>
+    /// Dispatches <paramref name="command"/> to its own real, already
+    /// -registered handler, looked up by its own runtime concrete type —
+    /// <see cref="CommandHandlerTable.DispatchAsync(ICommand, CancellationToken)"/>
+    /// is the identical, unmodified primitive
+    /// <see cref="ICommandRegistry.InvokeAsync"/> already uses internally
+    /// for this exact reason (a caller with only a runtime-typed
+    /// <see cref="ICommand"/>, not a compile-time <c>TCommand</c>) — no new
+    /// dispatch mechanism, no reflection, introduced here.
+    /// </summary>
+    private Task<CommandResult> DispatchObjectCommandAsync(IWorkspaceCommand command, CancellationToken cancellationToken)
+    {
+        if (_commandHandlerTable is null)
+            return Task.FromResult(CommandResult.Failure("The Workspace has not finished starting yet."));
+
+        return _commandHandlerTable.DispatchAsync(command, cancellationToken);
+    }
+
+    /// <inheritdoc />
     public async ValueTask DisposeAsync()
     {
         await _host.DisposeAsync().ConfigureAwait(false);
     }
 
+    /// <summary>
+    /// Waits until <see cref="ITempestHost.Services"/> is resolvable
+    /// <b>and</b> the Runtime Host has reached <see cref="HostState.Running"/>
+    /// — i.e. every module's own <c>InitialiseAsync</c>/<c>StartAsync</c>
+    /// has completed, not merely that the Dependency Injection container
+    /// exists.
+    /// </summary>
+    /// <remarks>
+    /// <b>`TD-26` fixed at its own source (`WP 10.1B`):</b> <c>TempestHost.cs</c>
+    /// sets <see cref="ITempestHost.Services"/> during "Platform Services
+    /// Registered" (Phase 6), several phases <em>before</em> Module
+    /// Initialisation/Start runs — a caller that returned as soon as
+    /// <see cref="ITempestHost.Services"/> became non-null, as this method
+    /// did from `WP 9.0A` through `WP 10.1A`, could read a Workspace state
+    /// (a module-registered <c>NavigationItem</c>, a sample module's own
+    /// seeded Engineering Domain object) before it existed. `WP 10.0B`/
+    /// `WP 10.1A` each mitigated this one layer up, in <c>Tempest.Desktop</c>
+    /// alone, polling the same authoritative signal used here —
+    /// <see cref="IDiagnosticsProvider.HostState"/> reaching
+    /// <see cref="HostState.Running"/> — without ever fixing
+    /// <see cref="WorkspaceManager"/> itself. This method now applies that
+    /// identical, authoritative wait at its true source, so every
+    /// <see cref="IWorkspaceManager"/> consumer — console, desktop, or any
+    /// future presentation layer — receives the same guarantee without its
+    /// own workaround. <c>Tempest.Desktop</c>'s own now-redundant
+    /// <c>WorkspaceHost.WaitForHostRunningAsync</c> poll was removed in the
+    /// same Work Package.
+    /// </remarks>
     private async Task WaitForServicesAsync(CancellationToken cancellationToken)
     {
         while (_host.Services is null)
         {
             cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfHostRunFaulted();
             await Task.Delay(10, cancellationToken).ConfigureAwait(false);
         }
+
+        var diagnosticsProvider = (IDiagnosticsProvider)_host.Services.GetService(typeof(IDiagnosticsProvider));
+
+        while (diagnosticsProvider.HostState != HostState.Running)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfHostRunFaulted();
+            await Task.Delay(10, cancellationToken).ConfigureAwait(false);
+        }
+    }
+
+    /// <summary>
+    /// Observes <see cref="_hostRunTask"/> without blocking: if the Runtime
+    /// Host's own <see cref="ITempestHost.RunAsync"/> has already completed
+    /// — necessarily a fault, since it cannot return successfully before
+    /// <see cref="HostState.Running"/> is reached, the only condition
+    /// <see cref="WaitForServicesAsync"/> is waiting for — this rethrows
+    /// that fault immediately, rather than spinning forever waiting for a
+    /// <see cref="HostState.Running"/> transition that will now never come.
+    /// </summary>
+    private void ThrowIfHostRunFaulted()
+    {
+        if (_hostRunTask is { IsCompleted: true } task)
+            task.GetAwaiter().GetResult();
     }
 }

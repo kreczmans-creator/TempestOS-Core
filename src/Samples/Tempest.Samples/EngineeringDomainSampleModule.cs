@@ -75,9 +75,47 @@ public sealed class EngineeringDomainSampleModule : ModuleLifecycleBase
     public IReadOnlyList<Guid> AllSampleObjectIds { get; private set; } = Array.Empty<Guid>();
     public bool HasRegistered { get; private set; }
 
+    /// <remarks>
+    /// <b>Idempotent restart (`WP 10.1B`, `TD-37`):</b> the sixteen-object
+    /// graph below is built through <see cref="EngineeringObjectFactory{T}"/>,
+    /// which enforces no business-identifier uniqueness of its own (a
+    /// disclosed, separate finding — see <c>TD-38</c>) — but the
+    /// <c>"SAMPLE-MAT-001"</c> material registration partway through
+    /// <em>is</em> checked, durably, by <see cref="IMaterialCatalog"/>
+    /// (`ADR-0055`), and would otherwise throw on a second real launch
+    /// from the same working directory (`ADR-0041`), after having already
+    /// silently created five duplicate Programme-Hierarchy/Physical-
+    /// Configuration objects that run. Rather than let that partial,
+    /// asymmetric duplication continue, this module checks the same
+    /// durable signal up front: if <c>"SAMPLE-MAT-001"</c> already exists,
+    /// the entire graph-construction sequence is skipped outright (not
+    /// merely the Material step), leaving <see cref="SampleProjectId"/>/
+    /// <see cref="SampleAssemblyId"/>/<see cref="SamplePartId"/>/
+    /// <see cref="AllSampleObjectIds"/> honestly at their unset defaults —
+    /// no lookup-by-business-Id capability exists to recover the earlier
+    /// run's own object Ids (`Tempest.Core.EngineeringDomain`'s
+    /// <see cref="IEngineeringObjectRepository"/> is an in-memory-only
+    /// index, never rehydrated from the durable document store on
+    /// startup — `WP10.1B Root Cause Analysis.md` §3). The command this
+    /// module registers already handles this honestly
+    /// (<see cref="GetSampleEngineeringDomainGraphSummaryCommandHandler"/>
+    /// reports "not finished initialising" rather than fabricating a
+    /// count).
+    /// </remarks>
     public override async Task InitialiseAsync(CancellationToken cancellationToken)
     {
         _identityService.EstablishCurrentPrincipal(SampleIdentityId);
+
+        if (await _materialCatalog.FindAsync("SAMPLE-MAT-001", cancellationToken).ConfigureAwait(false) is not null)
+        {
+            // Already durably seeded by an earlier launch against this same
+            // persistence store (TD-37) - skip the whole graph rather than
+            // silently duplicating the five objects that precede the
+            // Material registration below, then crashing on it anyway.
+            RegisterGraphSummaryCommand();
+            HasRegistered = true;
+            return;
+        }
 
         var objectIds = new List<Guid>();
 
@@ -196,6 +234,21 @@ public sealed class EngineeringDomainSampleModule : ModuleLifecycleBase
 
         AllSampleObjectIds = objectIds;
 
+        RegisterGraphSummaryCommand();
+
+        HasRegistered = true;
+    }
+
+    /// <summary>
+    /// Registers <see cref="GetSampleEngineeringDomainGraphSummaryCommand"/>'s
+    /// own handler and descriptor — split out from <see cref="InitialiseAsync"/>
+    /// so the idempotent-restart skip path (`WP 10.1B`, `TD-37`, see that
+    /// method's own remarks) can still register it: commands are in-memory
+    /// only and never survive a restart on their own, regardless of whether
+    /// this run built a fresh graph or found one already durably seeded.
+    /// </summary>
+    private void RegisterGraphSummaryCommand()
+    {
         _commandDispatcher.RegisterHandler<GetSampleEngineeringDomainGraphSummaryCommand>(
             new GetSampleEngineeringDomainGraphSummaryCommandHandler(_dependencyTraversal, this));
         _commandRegistry.RegisterDescriptor(new CommandDescriptor(
@@ -204,7 +257,5 @@ public sealed class EngineeringDomainSampleModule : ModuleLifecycleBase
             category: "Sample",
             description: "Traverses this module's own sample Engineering Domain object graph and summarises what was found, demonstrating IDependencyTraversal end to end.",
             createDefault: () => new GetSampleEngineeringDomainGraphSummaryCommand()));
-
-        HasRegistered = true;
     }
 }

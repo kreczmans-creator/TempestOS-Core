@@ -101,6 +101,39 @@ public class MaterialsSampleModuleIntegrationTests
         Assert.Equal(105.0, yieldStrength.Value);
     }
 
+    /// <summary>
+    /// `TD-37` fix (`WP 10.1B`): <see cref="IMaterialCatalog"/>'s own
+    /// <c>materialId</c> index is durable (`ADR-0055`), so a second,
+    /// entirely independent pipeline built against the same
+    /// <paramref name="persistenceRootPath"/> — mirroring a genuine second
+    /// application launch from the same working directory — must reach
+    /// <see cref="ModuleState.Initialised"/> again, not
+    /// <see cref="ModuleState.Failed"/> with a
+    /// <see cref="DuplicateMaterialException"/>, and must still populate
+    /// <see cref="MaterialsSampleModule.RegisteredMaterialId"/> from the
+    /// already-registered material rather than re-registering it.
+    /// </summary>
+    [Fact]
+    public async Task Initialise_ASecondTimeAgainstTheSamePersistenceStore_IsIdempotentNotFailed()
+    {
+        using var temp = new TempDirectory();
+
+        var (firstRuntimeManager, firstServiceProvider) = BuildPipeline(temp.Path, typeof(MaterialsSampleModule));
+        var firstLifecycleManager = new ModuleLifecycleManager(firstRuntimeManager, firstServiceProvider);
+        await firstLifecycleManager.InitialiseAllAsync(CancellationToken.None);
+        Assert.Equal(ModuleState.Initialised, firstLifecycleManager.GetState("tempest.samples.materials"));
+
+        var (secondRuntimeManager, secondServiceProvider) = BuildPipeline(temp.Path, typeof(MaterialsSampleModule));
+        var secondLifecycleManager = new ModuleLifecycleManager(secondRuntimeManager, secondServiceProvider);
+        await secondLifecycleManager.InitialiseAllAsync(CancellationToken.None);
+
+        Assert.Equal(ModuleState.Initialised, secondLifecycleManager.GetState("tempest.samples.materials"));
+
+        var secondModule = Assert.IsType<MaterialsSampleModule>(secondServiceProvider.GetService(typeof(MaterialsSampleModule)));
+        Assert.True(secondModule.HasRegistered);
+        Assert.Equal(MaterialsSampleModule.SampleMaterialId, secondModule.RegisteredMaterialId);
+    }
+
     // ----------------------------------------------------------------
     // Command registration and invocation
     // ----------------------------------------------------------------

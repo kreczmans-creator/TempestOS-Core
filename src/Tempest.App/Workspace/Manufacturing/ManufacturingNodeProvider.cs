@@ -127,7 +127,7 @@ public sealed class ManufacturingNodeProvider : IProjectExplorerNodeProvider
         var all = await _context.Repository.ListAllAsync(cancellationToken).ConfigureAwait(false);
         var hasChildren = all.Any(o => IsLive(o) && o is IHasParent { ParentId: { } parentId } && parentId == manufacturingObject.Id);
 
-        return new ProjectExplorerNode(manufacturingObject.Id, DisplayNameOf(manufacturingObject), manufacturingObject.Kind, hasChildren, ProjectExplorerNodeType.Object);
+        return new ProjectExplorerNode(manufacturingObject.Id, DisplayNameOf(manufacturingObject), manufacturingObject.Kind, hasChildren, ProjectExplorerNodeType.Object, manufacturingObject is IHasLifecycle lifecycle ? lifecycle.Status : null);
     }
 
     private static string DisplayNameOf(IEngineeringObject o) => (o as IHasBusinessIdentifier)?.DisplayName ?? o.Id.ToString();

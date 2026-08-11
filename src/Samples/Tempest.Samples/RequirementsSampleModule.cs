@@ -124,6 +124,7 @@ public sealed class RequirementsSampleModule : ModuleLifecycleBase
 
     /// <inheritdoc />
     /// <remarks>
+    /// <para>
     /// Creates a fictional sample requirement, revises it, walks
     /// <c>Draft → Reviewed → Approved → Allocated</c>, creates a group and
     /// a collection, allocates it to a fictional non-Requirements
@@ -132,49 +133,84 @@ public sealed class RequirementsSampleModule : ModuleLifecycleBase
     /// <see cref="IVerificationService"/> — proving create/revise/status/
     /// relate/verify all work end to end, and that no duplicate
     /// verification mechanism exists in this framework.
+    /// </para>
+    /// <para>
+    /// <b>Idempotent restart (`WP 10.1B`, `TD-37`):</b> <see cref="IRequirementsService"/>
+    /// keeps its own durable <c>Identifier</c> index (`ADR-0058`), shared
+    /// across every process launched from the same working directory
+    /// (`ADR-0041`) — so a second real launch would otherwise find
+    /// <c>"SAMPLE-REQ-001"</c> already created and fail loudly. This module
+    /// now checks first: if already created, it reuses the existing
+    /// requirement for <see cref="SampleRequirementId"/> rather than
+    /// repeating the full create/revise/status/group/collection/allocate/
+    /// verify sequence (each of which assumes a freshly-created requirement
+    /// and would itself fail or duplicate against an already-progressed
+    /// one) — <see cref="SampleGroupId"/>/<see cref="SampleCollectionId"/>
+    /// are only populated on the run that actually creates them, honestly
+    /// left <see langword="null"/> on a later, idempotent-skip run, since
+    /// no lookup-by-name capability exists to recover them. Commands,
+    /// report definition, and the export adapter are always
+    /// (re-)registered — all three are in-memory only and never survive a
+    /// restart on their own.
+    /// </para>
     /// </remarks>
     public override async Task InitialiseAsync(CancellationToken cancellationToken)
     {
         _identityService.EstablishCurrentPrincipal(SampleIdentityId);
 
-        var requirement = await _requirementsService.CreateAsync(
-            "SAMPLE-REQ-001",
-            "Fictional sample requirement — for demonstration only.",
-            category: "functional",
-            cancellationToken)
-            .ConfigureAwait(false);
-        SampleRequirementId = requirement.Id;
+        var existing = await _requirementsService.FindByIdentifierAsync("SAMPLE-REQ-001", cancellationToken).ConfigureAwait(false);
+        IRequirement requirement;
 
-        await _auditRecorder.RecordAsync(CreatedActionName, new Dictionary<string, string> { ["Identifier"] = requirement.Identifier }, cancellationToken)
-            .ConfigureAwait(false);
+        if (existing is not null)
+        {
+            // Already durably created by an earlier launch against this
+            // same persistence store (TD-37) - reuse it rather than
+            // repeating a sequence that assumes a freshly-created
+            // requirement.
+            requirement = existing;
+            SampleRequirementId = requirement.Id;
+        }
+        else
+        {
+            requirement = await _requirementsService.CreateAsync(
+                "SAMPLE-REQ-001",
+                "Fictional sample requirement — for demonstration only.",
+                category: "functional",
+                cancellationToken)
+                .ConfigureAwait(false);
+            SampleRequirementId = requirement.Id;
 
-        await _requirementsService.ReviseAsync(
-            requirement.Id, "Fictional sample requirement, revised — for demonstration only.", "Sample revision.", cancellationToken)
-            .ConfigureAwait(false);
+            await _auditRecorder.RecordAsync(CreatedActionName, new Dictionary<string, string> { ["Identifier"] = requirement.Identifier }, cancellationToken)
+                .ConfigureAwait(false);
 
-        await _requirementsService.SetStatusAsync(requirement.Id, RequirementStatus.Reviewed, cancellationToken).ConfigureAwait(false);
-        await _requirementsService.SetStatusAsync(requirement.Id, RequirementStatus.Approved, cancellationToken).ConfigureAwait(false);
+            await _requirementsService.ReviseAsync(
+                requirement.Id, "Fictional sample requirement, revised — for demonstration only.", "Sample revision.", cancellationToken)
+                .ConfigureAwait(false);
 
-        var group = await _requirementsService.CreateGroupAsync("Sample Requirements Group", cancellationToken: cancellationToken).ConfigureAwait(false);
-        SampleGroupId = group.Id;
-        await _requirementsService.LinkAsync(requirement.Id, group.Id, RequirementRelationshipKinds.GroupedUnder, cancellationToken).ConfigureAwait(false);
+            await _requirementsService.SetStatusAsync(requirement.Id, RequirementStatus.Reviewed, cancellationToken).ConfigureAwait(false);
+            await _requirementsService.SetStatusAsync(requirement.Id, RequirementStatus.Approved, cancellationToken).ConfigureAwait(false);
 
-        var collection = await _requirementsService.CreateCollectionAsync("Sample Requirements Baseline", cancellationToken).ConfigureAwait(false);
-        SampleCollectionId = collection.Id;
-        await _requirementsService.AddToCollectionAsync(collection.Id, requirement.Id, cancellationToken).ConfigureAwait(false);
+            var group = await _requirementsService.CreateGroupAsync("Sample Requirements Group", cancellationToken: cancellationToken).ConfigureAwait(false);
+            SampleGroupId = group.Id;
+            await _requirementsService.LinkAsync(requirement.Id, group.Id, RequirementRelationshipKinds.GroupedUnder, cancellationToken).ConfigureAwait(false);
 
-        var allocationTarget = await _documentStore.CreateAsync(
-            SampleAllocationTargetDocumentKind, "Fictional sample component — for demonstration only.", cancellationToken)
-            .ConfigureAwait(false);
-        await _requirementsService.LinkAsync(requirement.Id, allocationTarget.Id, RequirementRelationshipKinds.AllocatedTo, cancellationToken)
-            .ConfigureAwait(false);
-        await _requirementsService.SetStatusAsync(requirement.Id, RequirementStatus.Allocated, cancellationToken).ConfigureAwait(false);
+            var collection = await _requirementsService.CreateCollectionAsync("Sample Requirements Baseline", cancellationToken).ConfigureAwait(false);
+            SampleCollectionId = collection.Id;
+            await _requirementsService.AddToCollectionAsync(collection.Id, requirement.Id, cancellationToken).ConfigureAwait(false);
 
-        var verificationContext = new VerificationContext();
-        verificationContext.RecordCriterion("Sample requirement is demonstrated by fictional inspection.", isSatisfied: true);
-        verificationContext.RecordEvidence("Fictional sample inspection note — not a real engineering record.");
-        await _verificationService.RecordAsync(requirement.Id, VerificationOutcome.Pass, "inspection", verificationContext, cancellationToken)
-            .ConfigureAwait(false);
+            var allocationTarget = await _documentStore.CreateAsync(
+                SampleAllocationTargetDocumentKind, "Fictional sample component — for demonstration only.", cancellationToken)
+                .ConfigureAwait(false);
+            await _requirementsService.LinkAsync(requirement.Id, allocationTarget.Id, RequirementRelationshipKinds.AllocatedTo, cancellationToken)
+                .ConfigureAwait(false);
+            await _requirementsService.SetStatusAsync(requirement.Id, RequirementStatus.Allocated, cancellationToken).ConfigureAwait(false);
+
+            var verificationContext = new VerificationContext();
+            verificationContext.RecordCriterion("Sample requirement is demonstrated by fictional inspection.", isSatisfied: true);
+            verificationContext.RecordEvidence("Fictional sample inspection note — not a real engineering record.");
+            await _verificationService.RecordAsync(requirement.Id, VerificationOutcome.Pass, "inspection", verificationContext, cancellationToken)
+                .ConfigureAwait(false);
+        }
 
         _importService.RegisterImportable(new RequirementExportAdapter(_requirementsService, ExportAdapterKind, requirement.Id));
 

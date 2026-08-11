@@ -391,6 +391,9 @@ internal sealed class EngineeringCockpit
     /// Gets the favourited projects list - always empty today: favouriting
     /// is not a capability this platform has built anywhere yet, so an
     /// honest empty state is shown rather than fabricated sample favourites.
+    /// Reconfirmed still correctly unbuilt by `WP 10.1A`'s own audit of
+    /// every Cockpit placeholder - no <c>IsFavourite</c>/starred concept
+    /// exists on <c>Project</c> or anywhere else in the Domain.
     /// </summary>
     public IReadOnlyList<string> FavouriteProjects { get; } = [];
 
@@ -479,47 +482,190 @@ internal sealed class EngineeringCockpit
         }
     }
 
-    /// <summary>
-    /// Gets the "Open Decisions" region's own entries - fixed,
-    /// representative placeholder content: no decision-tracking service
-    /// exists anywhere in this platform yet.
-    /// </summary>
-    public IReadOnlyList<string> OpenDecisions { get; } =
-    [
-        "Which Engineering Discipline Module ships first - pending Product Owner decision.",
-    ];
+    /// <summary>Gets every live (non-deleted) Decision (`WP 10.1A`) - a real read via <see cref="EngineeringDomainContext.Repository"/>, mirroring <see cref="LiveProjects"/>'s own identical sync-over-async bridging. The first Cockpit consumer of the Governance & Risk family (<see cref="IDecision"/>, `WP 8.2C`) - previously compiled but never read by any Workspace surface until this Work Package.</summary>
+    private IReadOnlyList<IDecision> LiveDecisions =>
+        _domainContext.Repository.ListByKindAsync("Decision").GetAwaiter().GetResult()
+            .Where(o => o is not IDeletable { IsDeleted: true })
+            .OfType<IDecision>()
+            .ToList();
+
+    /// <summary>Gets every live (non-deleted) Risk-family object (`"Risk"`/`"Hazard"` Kinds - <see cref="IHazard"/> is itself an <see cref="IRisk"/>, `WP 10.1A`) - a real read via <see cref="EngineeringDomainContext.Repository"/>, mirroring <see cref="LiveDecisions"/>'s own identical shape.</summary>
+    private IReadOnlyList<IRisk> LiveRisks =>
+        new[] { "Risk", "Hazard" }
+            .SelectMany(kind => _domainContext.Repository.ListByKindAsync(kind).GetAwaiter().GetResult())
+            .Where(o => o is not IDeletable { IsDeleted: true })
+            .OfType<IRisk>()
+            .ToList();
+
+    /// <summary>Gets every live (non-deleted) Milestone (`WP 10.1A`) - a real read via <see cref="EngineeringDomainContext.Repository"/>, mirroring <see cref="LiveDecisions"/>'s own identical shape.</summary>
+    private IReadOnlyList<IMilestone> LiveMilestones =>
+        _domainContext.Repository.ListByKindAsync("Milestone").GetAwaiter().GetResult()
+            .Where(o => o is not IDeletable { IsDeleted: true })
+            .OfType<IMilestone>()
+            .ToList();
 
     /// <summary>
-    /// Gets the "Blocked Items" region's own entries - fixed,
-    /// representative placeholder content.
+    /// Gets the "Open Decisions" region's own entries (`WP 10.1A`) - a real
+    /// read of live <see cref="LiveDecisions"/>, each shown as its own
+    /// display name plus <see cref="IDecision.Rationale"/>. Honestly empty
+    /// if none exist. Upgraded from `WP 8.1C`'s own fixed, editorial
+    /// placeholder text ("Which Engineering Discipline Module ships
+    /// first...") - disclosed here, not silently replaced: <see cref="IDecision"/>
+    /// carries no <see cref="IHasLifecycle"/> facet of its own, so this
+    /// platform has no "open vs. closed" Decision state to filter by -
+    /// "Open Decisions" names this region, every live Decision is shown
+    /// under it, honestly, rather than fabricating a status this Domain
+    /// Kind does not have.
     /// </summary>
-    public IReadOnlyList<string> BlockedItems { get; } = [];
+    public IReadOnlyList<string> OpenDecisions =>
+        LiveDecisions.Select(d => $"{((IHasBusinessIdentifier)d).DisplayName} — {d.Rationale}").ToList();
 
     /// <summary>
-    /// Gets the "Overdue Actions" region's own entries - fixed,
-    /// representative placeholder content, distinct from
-    /// <see cref="OpenActions"/> (not yet due).
+    /// Gets the "Blocked Items" region's own entries (`WP 10.1A`) - a real,
+    /// disclosed synthesis, not a native Domain concept: no Kind anywhere
+    /// in this platform carries a "blocked" flag, and <see cref="LifecycleState"/>
+    /// itself has no <c>Blocked</c> value. This region instead lists the
+    /// concrete, real objects whose own most recent evidence is exactly why
+    /// their own discipline already reports <see cref="EngineeringHealthStatus.Blocked"/>
+    /// (a Requirement with a validation error, a Calculation with a
+    /// <see cref="CalculationValidationOutcome.Conditional"/> outcome, a
+    /// Verification Activity or Inspection with a <see cref="VerificationOutcome.Fail"/>
+    /// result) - every one of these signals already real and computed
+    /// elsewhere in this class; this region only lists the objects behind
+    /// them by name, introducing no new read.
+    /// </summary>
+    public IReadOnlyList<string> BlockedItems
+    {
+        get
+        {
+            var items = new List<string>();
+
+            // Re-validates per requirement directly (mirroring
+            // LiveRequirementValidationResults's own identical
+            // try/catch-per-item shape) rather than correlating back from
+            // that property's own pre-aggregated list — IValidationResult
+            // carries no ObjectId of its own, and a skipped
+            // PermissionDeniedException would otherwise misalign a
+            // positional correlation.
+            foreach (var requirement in LiveRequirements)
+            {
+                try
+                {
+                    var result = _requirementValidationService.ValidateAsync(requirement.Id).GetAwaiter().GetResult();
+                    if (result.Errors.Count > 0)
+                        items.Add($"Requirement '{requirement.Identifier}' has a validation error blocking approval.");
+                }
+                catch (PermissionDeniedException)
+                {
+                    // See LiveRequirementValidationResults's own remarks — silently excluded, never counted as a false "not blocked."
+                }
+            }
+
+            items.AddRange(LiveCalculationSnapshots
+                .Where(s => s.LatestRecord?.Outcome == CalculationValidationOutcome.Conditional)
+                .Select(s => $"Calculation '{((IHasBusinessIdentifier)s.Calculation).DisplayName}' recorded a Conditional (Failed) outcome."));
+
+            items.AddRange(LiveVerificationSnapshots
+                .Where(s => s.LatestRecord?.Outcome == VerificationOutcome.Fail)
+                .Select(s => $"Verification Activity '{((IHasBusinessIdentifier)s.Activity).DisplayName}' recorded a Fail outcome."));
+
+            items.AddRange(LiveInspectionSnapshots
+                .Where(s => s.LatestRecord?.Outcome == VerificationOutcome.Fail)
+                .Select(s => $"Inspection '{((IHasBusinessIdentifier)s.Inspection).DisplayName}' recorded a Fail outcome."));
+
+            return items;
+        }
+    }
+
+    /// <summary>
+    /// Gets the "Overdue Actions" region's own entries (`WP 10.1A`) - a
+    /// disclosed, honest placeholder, deliberately not upgraded: neither
+    /// <see cref="ITask"/> nor <see cref="IAction"/> (`WP 8.2C`) carries a
+    /// due-date field of any kind, so "overdue" cannot be honestly computed
+    /// from any live data today - fabricating one would violate this Work
+    /// Package's own explicit "never fabricate engineering data" instruction
+    /// more directly than leaving the region empty. Distinct from
+    /// <see cref="OpenActions"/> (a Workspace-level "what to triage now"
+    /// list, not a Domain <see cref="ITask"/> read at all). See
+    /// <see cref="OpenTaskCount"/> for the closest honest, real substitute -
+    /// deliberately surfaced as a separate, clearly distinguished metric,
+    /// never silently relabelled as "overdue."
     /// </summary>
     public IReadOnlyList<CockpitActionItem> OverdueActions { get; } = [];
+
+    /// <summary>Gets every live (non-deleted) Task/Action (`"Task"`/`"Action"` Kinds, `WP 10.1A`) - a real read, the honest substitute named in <see cref="OverdueActions"/>'s own remarks: "open," not "overdue," since no due date exists to compare against.</summary>
+    private IReadOnlyList<ITask> LiveTasks =>
+        new[] { "Task", "Action" }
+            .SelectMany(kind => _domainContext.Repository.ListByKindAsync(kind).GetAwaiter().GetResult())
+            .Where(o => o is not IDeletable { IsDeleted: true })
+            .OfType<ITask>()
+            .ToList();
+
+    /// <summary>Gets the number of live Tasks/Actions not yet <see cref="LifecycleState.Released"/>, <see cref="LifecycleState.Archived"/>, <see cref="LifecycleState.Obsolete"/>, or <see cref="LifecycleState.Cancelled"/> (`WP 10.1A`) - real, honest "open" count, distinct from "overdue" (see <see cref="OverdueActions"/>).</summary>
+    public int OpenTaskCount =>
+        LiveTasks.Count(t => t is IHasLifecycle { Status: not (LifecycleState.Released or LifecycleState.Archived or LifecycleState.Obsolete or LifecycleState.Cancelled) });
 
     // ------------------------------------------------------------
     // Is the project healthy?
     // ------------------------------------------------------------
 
     /// <summary>
-    /// Gets the project's own overall health - always
-    /// <see cref="EngineeringHealthStatus.Unknown"/> today, honestly: no
-    /// Verification/Calculation signal beyond Requirements' own is wired to
-    /// the Workspace yet for a whole-project status to be derived from.
+    /// Gets the project's own overall health (`WP 10.1A`) - a real rollup
+    /// across every per-discipline status this Cockpit already computes
+    /// (<see cref="RequirementsStatus"/>/<see cref="CalculationStatus"/>/
+    /// <see cref="VerificationStatus"/>/<see cref="DocumentationStatus"/>/
+    /// <see cref="ManufacturingStatus"/> - <see cref="ReviewStatus"/> is
+    /// deliberately excluded: always <see cref="EngineeringHealthStatus.Unknown"/>,
+    /// no Review service is wired to the Workspace, so including it would
+    /// only ever suppress a real <see cref="EngineeringHealthStatus.Healthy"/>
+    /// rollup down to <see cref="EngineeringHealthStatus.Unknown"/> for a
+    /// reason with no real signal behind it): <see cref="EngineeringHealthStatus.Blocked"/>
+    /// if any included discipline reports it; else
+    /// <see cref="EngineeringHealthStatus.Attention"/> if any does; else
+    /// <see cref="EngineeringHealthStatus.Unknown"/> if every included
+    /// discipline itself reports Unknown (no Engineering data exists
+    /// anywhere yet); else <see cref="EngineeringHealthStatus.Healthy"/>.
+    /// Upgraded from a fixed <see cref="EngineeringHealthStatus.Unknown"/>
+    /// placeholder (`WP 8.1C`).
     /// </summary>
-    public EngineeringHealthStatus Health => EngineeringHealthStatus.Unknown;
+    public EngineeringHealthStatus Health
+    {
+        get
+        {
+            var statuses = new[] { RequirementsStatus, CalculationStatus, VerificationStatus, DocumentationStatus, ManufacturingStatus };
+
+            if (statuses.Any(s => s == EngineeringHealthStatus.Blocked))
+                return EngineeringHealthStatus.Blocked;
+
+            if (statuses.Any(s => s == EngineeringHealthStatus.Attention))
+                return EngineeringHealthStatus.Attention;
+
+            return statuses.All(s => s == EngineeringHealthStatus.Unknown)
+                ? EngineeringHealthStatus.Unknown
+                : EngineeringHealthStatus.Healthy;
+        }
+    }
 
     /// <summary>
-    /// Gets the Engineering Health Score's own display text - always a
-    /// disclosed placeholder today, distinct from <see cref="Health"/>'s
-    /// own closed four-value status vocabulary.
+    /// Gets the Engineering Health Score's own display text (`WP 10.1A`) -
+    /// a real, honest fraction: how many of the five disciplines
+    /// <see cref="Health"/> rolls up currently report real data at all
+    /// (not <see cref="EngineeringHealthStatus.Unknown"/>), and how many of
+    /// those are <see cref="EngineeringHealthStatus.Healthy"/>. Upgraded
+    /// from a fixed "— (not yet available)" placeholder (`WP 8.1C`).
     /// </summary>
-    public string HealthScoreDisplay => "— (not yet available)";
+    public string HealthScoreDisplay
+    {
+        get
+        {
+            var statuses = new[] { RequirementsStatus, CalculationStatus, VerificationStatus, DocumentationStatus, ManufacturingStatus };
+            var withData = statuses.Count(s => s != EngineeringHealthStatus.Unknown);
+
+            return withData == 0
+                ? "— (no Engineering data yet)"
+                : $"{statuses.Count(s => s == EngineeringHealthStatus.Healthy)}/{withData} healthy ({withData}/5 disciplines reporting)";
+        }
+    }
 
     /// <summary>
     /// Gets the Requirements discipline's own status (`WP 9.1A`) - a real,
@@ -662,13 +808,26 @@ internal sealed class EngineeringCockpit
         }
     }
 
+    /// <summary>Gets the number of live Requirements that are <see cref="RequirementStatus.Reviewed"/> (`WP 10.7A`) — promoted from <see cref="RequirementsKpiCards"/>'s own previously-inline closure so <see cref="KpiCards"/>'s own real "Review" card can reuse the identical count without duplicating the logic.</summary>
+    private int RequirementsInReviewCount => LiveRequirements.Count(r => r.Status == RequirementStatus.Reviewed);
+
+    /// <summary>Gets the number of live Calculations that are <see cref="LifecycleState.InReview"/> (`WP 10.7A`) — promoted from <see cref="CalculationsKpiCards"/>'s own previously-inline closure, identical reuse rationale as <see cref="RequirementsInReviewCount"/>.</summary>
+    private int CalculationsInReviewCount => LiveCalculationSnapshots.Count(s => s.Calculation is IHasLifecycle { Status: LifecycleState.InReview });
+
     /// <summary>
     /// Gets the Engineering Health Summary's own per-discipline KPI cards.
-    /// The <c>"Requirements"</c> entry is a real read (`WP 9.1A`) - the
-    /// live requirement count, or a disclosed placeholder if none exist
-    /// yet; every other entry remains placeholder
-    /// (<see cref="CockpitKpiCard.IsPlaceholder"/>) until its own
-    /// discipline is wired to the Workspace.
+    /// The <c>"Requirements"</c>/<c>"Verification"</c>/<c>"Calculations"</c>/
+    /// <c>"Documentation"</c> entries are real reads (`WP 9.1A` onward) -
+    /// the live object count, or a disclosed placeholder if none exist
+    /// yet. <c>"Review"</c> and <c>"Risks"</c> (`WP 10.7A`, Feature
+    /// Completion, closing the WP10.6D-audited gap) are real reads too,
+    /// now for the first time: "Review" sums each discipline's own
+    /// already-computed in-review count (Requirements Reviewed,
+    /// Calculations InReview, <see cref="OutstandingDocumentReviews"/> -
+    /// Verification/Manufacturing have no equivalent single named count
+    /// exposed publicly today, honestly not included rather than
+    /// approximated); "Risks" is <see cref="LiveRisks"/>'s own real
+    /// count, the identical read <see cref="RiskSummary"/> already uses.
     /// </summary>
     public IReadOnlyList<CockpitKpiCard> KpiCards
     {
@@ -678,6 +837,8 @@ internal sealed class EngineeringCockpit
             var totalCalculations = LiveCalculations.Count;
             var totalDocuments = LiveDocuments.Count;
             var totalVerificationActivities = LiveVerificationActivities.Count;
+            var totalInReview = RequirementsInReviewCount + CalculationsInReviewCount + OutstandingDocumentReviews;
+            var totalRisks = LiveRisks.Count;
 
             return
             [
@@ -685,8 +846,8 @@ internal sealed class EngineeringCockpit
                 totalVerificationActivities > 0 ? new("Verification", $"{totalVerificationActivities} total", IsPlaceholder: false) : new("Verification", "—", IsPlaceholder: true),
                 totalCalculations > 0 ? new("Calculations", $"{totalCalculations} total", IsPlaceholder: false) : new("Calculations", "—", IsPlaceholder: true),
                 totalDocuments > 0 ? new("Documentation", $"{totalDocuments} total", IsPlaceholder: false) : new("Documentation", "—", IsPlaceholder: true),
-                new("Review", "—", IsPlaceholder: true),
-                new("Risks", "—", IsPlaceholder: true),
+                totalInReview > 0 ? new("Review", $"{totalInReview} total", IsPlaceholder: false) : new("Review", "—", IsPlaceholder: true),
+                totalRisks > 0 ? new("Risks", $"{totalRisks} total", IsPlaceholder: false) : new("Risks", "—", IsPlaceholder: true),
             ];
         }
     }
@@ -792,7 +953,7 @@ internal sealed class EngineeringCockpit
                 new("Failed", FailedVerificationCount.ToString(), IsPlaceholder: false),
                 new("Conditional", ConditionalVerificationCount.ToString(), IsPlaceholder: false),
                 new("Outstanding", OutstandingVerificationActions.ToString(), IsPlaceholder: false),
-                new("Verification Coverage", FormatCoverage(recorded, total), IsPlaceholder: false),
+                new("Verification Coverage", FormatCoverage(recorded, total), IsPlaceholder: false, PercentOf(recorded, total)),
                 new("Project Verification Health", VerificationStatus.ToString(), IsPlaceholder: false),
             ];
         }
@@ -885,11 +1046,11 @@ internal sealed class EngineeringCockpit
             [
                 new("Total Calculations", total.ToString(), IsPlaceholder: false),
                 new("Draft", CountStatus(LifecycleState.Draft).ToString(), IsPlaceholder: false),
-                new("Review", CountStatus(LifecycleState.InReview).ToString(), IsPlaceholder: false),
+                new("Review", CalculationsInReviewCount.ToString(), IsPlaceholder: false),
                 new("Approved", CountStatus(LifecycleState.Approved).ToString(), IsPlaceholder: false),
                 new("Failed", FailedCalculationsCount.ToString(), IsPlaceholder: false),
                 new("Out-of-date", outOfDate.ToString(), IsPlaceholder: false),
-                new("Verification Coverage", FormatCoverage(executed, total), IsPlaceholder: false),
+                new("Verification Coverage", FormatCoverage(executed, total), IsPlaceholder: false, PercentOf(executed, total)),
                 new("Calculation Health", CalculationStatus.ToString(), IsPlaceholder: false),
             ];
         }
@@ -935,11 +1096,11 @@ internal sealed class EngineeringCockpit
             [
                 new("Total Requirements", total.ToString(), IsPlaceholder: false),
                 new("Draft", CountOf(RequirementStatus.Draft).ToString(), IsPlaceholder: false),
-                new("Review", CountOf(RequirementStatus.Reviewed).ToString(), IsPlaceholder: false),
+                new("Review", RequirementsInReviewCount.ToString(), IsPlaceholder: false),
                 new("Approved", CountOf(RequirementStatus.Approved).ToString(), IsPlaceholder: false),
                 new("Released", CountOf(RequirementStatus.Satisfied).ToString(), IsPlaceholder: false),
-                new("Verification Coverage", FormatCoverage(VerifiedRequirementCount, total), IsPlaceholder: false),
-                new("Allocation Coverage", FormatCoverage(AllocatedRequirementCount, total), IsPlaceholder: false),
+                new("Verification Coverage", FormatCoverage(VerifiedRequirementCount, total), IsPlaceholder: false, PercentOf(VerifiedRequirementCount, total)),
+                new("Allocation Coverage", FormatCoverage(AllocatedRequirementCount, total), IsPlaceholder: false, PercentOf(AllocatedRequirementCount, total)),
                 new("Requirement Health", RequirementsStatus.ToString(), IsPlaceholder: false),
                 new("Outstanding Actions", OutstandingRequirementActions.ToString(), IsPlaceholder: false),
             ];
@@ -1020,25 +1181,84 @@ internal sealed class EngineeringCockpit
         denominator == 0 ? "— (no requirements yet)" : $"{numerator * 100 / denominator}% ({numerator}/{denominator})";
 
     /// <summary>
-    /// Gets the Risk Summary's own display text - always a disclosed
-    /// placeholder today: no Risk service exists anywhere in this
-    /// platform yet.
+    /// The numeric twin of <see cref="FormatCoverage"/> (`WP 10.5C`,
+    /// "progress bars... verification coverage, requirements coverage") —
+    /// the identical numerator/denominator, as a real `0`-`100` percentage
+    /// a progress-bar control can bind to directly, or <see langword="null"/>
+    /// for the identical zero-denominator case <see cref="FormatCoverage"/>
+    /// already renders as an honest dash, never a misleading empty bar.
     /// </summary>
-    public string RiskSummary => "0 open (placeholder — Risk tracking is not yet wired to the Workspace).";
+    private static int? PercentOf(int numerator, int denominator) =>
+        denominator == 0 ? null : numerator * 100 / denominator;
 
     /// <summary>
-    /// Gets the Digital Thread Summary's own display text - always a
-    /// disclosed placeholder today, and always will be a summary count
-    /// only, never a live traversal (`WP 8.1C`'s own explicit "no Digital
-    /// Thread traversal" scope boundary).
+    /// Gets the Risk Summary's own display text (`WP 10.1A`) - a real read
+    /// of <see cref="LiveRisks"/>, bucketed by <see cref="IRisk.Severity"/>.
+    /// Honestly "0 open" if none exist. Upgraded from a fixed placeholder
+    /// (`WP 8.1C`).
     /// </summary>
-    public string DigitalThreadSummary => "0 links tracked (placeholder — no traversal is performed by the Cockpit).";
+    public string RiskSummary
+    {
+        get
+        {
+            var risks = LiveRisks;
+            if (risks.Count == 0)
+                return "0 open (no live Risk/Hazard recorded yet).";
+
+            var bySeverity = risks
+                .GroupBy(r => string.IsNullOrWhiteSpace(r.Severity) ? "Unspecified" : r.Severity!)
+                .OrderByDescending(g => g.Count())
+                .Select(g => $"{g.Count()} {g.Key}");
+
+            return $"{risks.Count} open — {string.Join(", ", bySeverity)}.";
+        }
+    }
 
     /// <summary>
-    /// Gets the Upcoming Milestones region's own entries - fixed,
-    /// representative placeholder content.
+    /// Gets the Digital Thread Summary's own display text (`WP 10.1A`) - a
+    /// real, honest aggregate: the total number of outgoing relationship
+    /// links recorded across every live Engineering object platform-wide
+    /// (<see cref="EngineeringDomainContext.Repository"/>'s own
+    /// <c>ListAllAsync</c>, paired with
+    /// <see cref="EngineeringDomainContext.RelationshipRepository"/>'s own
+    /// <c>GetOutgoingAsync</c> per object) - a direct-link count, never a
+    /// multi-hop traversal. `WP 8.1C`'s own explicit "no Digital Thread
+    /// traversal" scope boundary is honoured, not reversed: this sums
+    /// existing one-hop <c>GetOutgoingAsync</c> reads exactly as
+    /// <see cref="HasMissingEvidence"/>/<see cref="UnfulfilledSupplierOperationCount"/>
+    /// already do elsewhere in this class, never walking beyond one hop
+    /// from any object.
     /// </summary>
-    public IReadOnlyList<string> UpcomingMilestones { get; } = [];
+    public string DigitalThreadSummary
+    {
+        get
+        {
+            var liveObjects = _domainContext.Repository.ListAllAsync().GetAwaiter().GetResult()
+                .Where(o => o is not IDeletable { IsDeleted: true })
+                .ToList();
+
+            if (liveObjects.Count == 0)
+                return "0 links tracked (no live Engineering objects exist yet).";
+
+            var totalLinks = liveObjects.Sum(o => _domainContext.RelationshipRepository.GetOutgoingAsync(o.Id).GetAwaiter().GetResult().Count);
+
+            return $"{totalLinks} link(s) tracked across {liveObjects.Count} live object(s).";
+        }
+    }
+
+    /// <summary>
+    /// Gets the Upcoming Milestones region's own entries (`WP 10.1A`) - a
+    /// real read of <see cref="LiveMilestones"/> whose own
+    /// <see cref="IMilestone.TargetDate"/> is not yet past, soonest first.
+    /// Honestly empty if none are upcoming. Upgraded from a fixed empty
+    /// placeholder (`WP 8.1C`).
+    /// </summary>
+    public IReadOnlyList<string> UpcomingMilestones =>
+        LiveMilestones
+            .Where(m => m.TargetDate >= DateTimeOffset.UtcNow)
+            .OrderBy(m => m.TargetDate)
+            .Select(m => $"{((IHasBusinessIdentifier)m).DisplayName} — due {m.TargetDate:yyyy-MM-dd}")
+            .ToList();
 
     // ------------------------------------------------------------
     // What should I do next?
