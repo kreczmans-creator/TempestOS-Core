@@ -70,6 +70,9 @@ public class MechanicalCommandsTests
     [InlineData("Assembly")]
     [InlineData("Part")]
     [InlineData("Component")]
+    [InlineData("Configuration")]
+    [InlineData("Baseline")]
+    [InlineData("Release")]
     public async Task Create_SupportedKindWithoutParent_Succeeds(string kind)
     {
         var context = BuildContext();

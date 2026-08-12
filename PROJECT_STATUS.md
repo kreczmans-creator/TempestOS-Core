@@ -1,6 +1,209 @@
 # TempestOS — Project Status
 
-**Last Updated:** 2026-08-12 (`WP 12.4B` — Desktop Command & Event
+**Last Updated:** 2026-08-12 (`WP 12.1B` Architecture Review Follow-Up —
+documentation only, closing the two findings from `WP 12.1B`'s own
+read-only architecture/code review. **Finding 1**: the Engineering
+Vocabulary Register's own narrative claimed a declaring-class count of "12";
+re-derived directly from the register's three Entries tables (manual
+enumeration, cross-checked by an automated extraction), the true count
+is **11** — the original figure over-counted `VerificationService`,
+which appears in both the Kind and RelationshipKind tables but is one
+class. All 46 individual values and their declaring classes were
+themselves already correct; corrected the propagated "12" in all seven
+affected documents (`Engineering Vocabulary Register.md`, this file,
+`docs/releases/v0.12.0/WorkPackages.md`, `Documentation Register.md`,
+`Academy Register.md`, `ADR Register.md`, the `WP 12.1B` Academy
+retrospective) and confirmed by repository-wide search that no
+occurrence remains. **Finding 2**: `Classification & Relationship
+Vocabulary Safety Net Architecture.md`'s own Component 3 description
+named only two of the four detection checks the implemented
+`EngineeringVocabularyConsistencyTests` actually provides; updated to
+describe all four (register drift, duplicate canonical-owner detection,
+register self-consistency, rogue duplicate vocabulary scan across
+assemblies) so documentation matches implementation. `ADR-0105` not
+reopened; zero `src/`/`tests/` files touched, confirmed directly; no
+build or regression run required or performed — no production code
+changed. See the `WP 12.1B` architecture/code review findings (read-only,
+not itself a separate document) and `docs/governance/Engineering/Engineering
+Vocabulary Register.md`'s own corrected "Last Reviewed" entry.
+**`WP 12.1B`'s own status line, below this point, is this field's prior
+content — retained, not deleted:**
+
+**Previously updated** 2026-08-12 (`WP 12.1B` — Classification & Relationship
+Vocabulary Safety Net Implementation. Realises `ADR-0105` exactly, on
+the same branch as `WP 12.1A`; implements the architecture only, does
+not revisit or extend the decision. Every `FactoryRegistry`
+retrofitted: `MechanicalObjectFactoryRegistry` (the largest confirmed
+gap) gains all eight Kind constants (`Project`/`Assembly`/
+`SubAssembly`/`Part`/`Component`/`Configuration`/`Baseline`/`Release`),
+used internally throughout its own `SupportedKinds`/switch/factory-
+argument sites; `DocumentObjectFactoryRegistry`/
+`ManufacturingObjectFactoryRegistry` gain their own base Kind constants
+alongside their already-disciplined `Classification` sub-values;
+`CalculationObjectFactoryRegistry` gains `CalculationKind`/
+`CalculationSetKind`. `DigitalThreadGraphModel`'s own confirmed
+duplicate closed — found, while directly reading the file, to be
+**three** local constants, not one (`VerificationActivityKind`/
+`VerificationRecordKind`/`VerifiedByRelationshipKind`), all now
+referencing their real owning constants
+(`VerificationActivityFactoryRegistry.SupportedKind`;
+`VerificationService.VerificationRecordDocumentKind`/
+`VerifiedByRelationshipKind`) instead. New Engineering Vocabulary
+Register (`docs/governance/Engineering/Engineering Vocabulary
+Register.md`) populated from a full, direct repository scan — 46
+declared values (23 Kind, 12 `Classification`, 11 `RelationshipKind`)
+across 11 declaring classes, plus 7 further conventional
+`RelationshipKind` values honestly marked **Undeclared** rather than
+omitted. **One genuine, pre-existing dual-ownership case found and
+disclosed, not treated as a defect**: `references` is independently,
+legitimately declared by both `RequirementRelationshipKinds` and
+`VerificationService` for a genuinely shared, conventional meaning
+neither discipline exclusively owns — mirrors `ADR-0073`'s own
+already-accepted "vocabulary drift" risk, recorded explicitly with its
+own register footnote and named by exception in the consistency test.
+New `EngineeringVocabularyConsistencyTests` (`Tempest.Desktop.Tests`,
+per the corrected `WP 12.1A` architecture review) — four tests
+covering register/code drift, cross-owner duplication, register
+self-consistency, and a rogue-duplicate scan across all four layer
+assemblies (`Tempest.Core`/`Tempest.App`/`Tempest.Samples`/
+`Tempest.Desktop`, public and private `const string` fields, since the
+confirmed `DigitalThreadGraphModel` duplicates were `private`).
+**Verified to actually work, not merely assumed**: a rogue duplicate
+was deliberately, temporarily reintroduced into `DigitalThreadGraphModel`
+mid-implementation — the consistency test failed immediately, with a
+precise, actionable message naming both the offending class and the
+real owner; reverted immediately after confirming the failure. Three
+characterization tests added before refactoring
+(`MechanicalCommandsTests.Create_SupportedKindWithoutParent_Succeeds`
+gained `Configuration`/`Baseline`/`Release` `InlineData` cases,
+closing a real, confirmed-by-direct-search gap `WP 12.1A`'s own
+literal-string grep had missed entirely, since the existing coverage
+used `[Theory]`/`[InlineData]` theory parameters, invisible to that
+grep pattern — re-derived directly, method by method, before touching
+any production code). **No write-time validation, no runtime registry
+or lookup service, no enum, no strongly-typed value object introduced
+anywhere** — the platform's own open-vocabulary philosophy fully
+preserved; every prior ADR's own "never validated" guarantee
+(`ADR-0073`/`ADR-0076`/`ADR-0088`/`ADR-0090`/`ADR-0091`) left
+completely intact. Full Debug+Release regression: 2,255/2,255 passing
+(2,034 `Tempest.Core.Tests` + 221 `Tempest.Desktop.Tests`, net +7 new
+tests — 3 characterization, 4 consistency — zero regressions), 0
+Warnings/0 Errors, both configurations. Behaviour confirmed unchanged,
+not merely asserted — every refactored `FactoryRegistry`'s own
+constants hold the identical values the literals they replace already
+held; every pre-existing test passes with unchanged assertions against
+the refactored code. No new ADR — `ADR-0105` unmodified, implemented as
+designed. No commit, merge, tag, or push performed. See
+`docs/governance/Engineering/Engineering Vocabulary Register.md`,
+`tests/Tempest.Desktop.Tests/EngineeringVocabularyConsistencyTests.cs`,
+`docs/academy/03 Work
+Packages/WP12.1B-classification-and-relationship-vocabulary-safety-net-implementation.md`,
+`docs/releases/v0.12.0/WorkPackages.md`. **`WP 12.1A`'s own Architecture
+Review Follow-Up status line, below this point, is this field's prior
+content — retained, not deleted:** (`WP 12.1A` Architecture Review
+Follow-Up — closes all findings from the read-only architecture review
+of `WP 12.1A`, documentation only, no production code or tests. (1)
+`Architecture Document Register.md`'s own Total and Coverage sections
+fully re-derived, not carried forward: the Entries table has 26 real
+rows (24 under `docs/architecture/`, 2 under `docs/releases/`),
+independently re-counted directly (`grep -c`, `ls`) rather than
+assumed — the prior "24 documents (22 under `docs/architecture/`...)"
+Total line and the Coverage table's own stale "Implemented: 18"
+(17-item list, three Implemented documents missing from it) are both
+corrected; all five Coverage buckets (20 + 1 + 3 + 1 + 1 = 26) now sum
+to the Entries table's own row count exactly. (2) `Classification &
+Relationship Vocabulary Safety Net Architecture.md`'s own Component 3
+consistency-check proposed home moved from `Tempest.Core.Tests` to
+`Tempest.Desktop.Tests` — confirmed directly that `Tempest.Core.Tests.csproj`
+has no `ProjectReference` to `Tempest.Desktop`, so a test placed there
+could never reflect over `DigitalThreadGraphModel` and could never
+have caught the confirmed, motivating `VerifiedByRelationshipKind`
+cross-layer duplicate; `Tempest.Desktop.Tests.csproj` already
+references all three layers (`Tempest.Core`/`Tempest.App`/
+`Tempest.Desktop`) and is the only structurally correct home. (3)
+`ADR-0105` clarified in two places, its own Decision unchanged: states
+explicitly that vocabulary ownership is determined by which component
+*writes* a value (calls `CreateAsync`/`LinkAsync`), never by which
+project compiles the underlying type — grounded in a real example
+(`VerificationActivity`, compiled in `Tempest.Core.EngineeringDomain`
+but written only by the Workspace-layer `VerificationActivityFactoryRegistry`,
+confirmed by direct search finding zero writers in `Tempest.Core`) and
+`ADR-0078`'s own "one Kind, one owner" precedent; and explains why
+every declared constant is `public`, not `internal` as `WP11.0A`
+Finding `A-6`'s own illustrative suggestion named — cross-layer reuse
+(the entire point of this ADR) requires it, and every already-shipped
+precedent this ADR generalises was already `public`. No other
+governance document was found to cite the corrected figures — checked
+directly, `docs/governance/Documentation/Documentation Register.md`'s
+own "24 standing architecture documents" line describes the physical
+`docs/architecture/` folder only (unaffected, still accurate) and
+required no change. Documentation only; zero `src/`/`tests/` files
+touched, confirmed directly; no commit, merge, tag, or push performed;
+`WP 12.1B` not implemented. See `docs/governance/Architecture/Architecture
+Document Register.md`, `docs/architecture/Classification & Relationship
+Vocabulary Safety Net Architecture.md`, `ADR-0105`. **`WP 12.1A`'s own
+status line, below this point, is this field's prior content —
+retained, not deleted:** (`WP 12.1A` — Classification &
+Relationship Vocabulary Safety Net Architecture. The roadmap-defined
+`v0.12.0` Work Package, realising `WP11.0A Platform Architecture
+Review.md` Finding `A-6` ("Domain classification/relationship
+vocabulary is entirely stringly-typed, by deliberate design, with no
+compile-time safety net"), on its own new branch
+(`feature/v0.12.0-classification-relationship-vocabulary-safety-net`).
+Audits every Kind/`Classification`/`RelationshipKind` vocabulary
+across `Tempest.Core`/`Tempest.App`/`Tempest.Desktop`. Confirms five
+prior ADRs (`ADR-0072`/`ADR-0073`/`ADR-0076`/`ADR-0088`/`ADR-0091`)
+already, independently, settle the open-string-vs-closed-type question
+— none reopened — while `ADR-0090` provides direct evidence that
+`Classification`-tagging is not universally the right sub-typing axis
+(Verification deliberately reuses `LifecycleState` instead, "rather
+than... two fields for one distinction, never reconciled against each
+other"). Finds the confirmed gap is precisely bounded, not
+platform-wide: four `Tempest.Core` frameworks
+(Requirements/Verification/Calculations/Materials) and two Workspace
+disciplines (Documents/Manufacturing, `ADR-0088`/`ADR-0091`) already
+declare their own vocabulary values as named `public const string`
+constants; Mechanical declares none, across any of its own eight
+Kinds. **Quantified, not estimated**: the literal Kind string `"Part"`
+is written out at 14 separate sites across 5 different `src/` files
+spanning three layers, zero referencing a shared constant; a confirmed
+cross-layer duplicate — `Tempest.Desktop.DigitalThread.DigitalThreadGraphModel`
+independently redeclares `Tempest.Core.Verification.VerificationService`'s
+own `VerifiedByRelationshipKind` constant, identical value, identical
+name. Finds and generalises three already-shipped, independently-proven
+instances of the eventual safety-net shape (`RequirementRelationshipKinds`,
+`RelationshipKindCategoryMap`, `DocumentCategory.Of`/
+`ManufacturingCategory.Of`) rather than inventing a new mechanism.
+**`ADR-0105` produced** — every live Kind/`Classification`/
+`RelationshipKind` value declared exactly once, as a named constant,
+on its owning class; a new Engineering Vocabulary Register
+(`docs/governance/Engineering/`) tracks every value platform-wide; one
+additive xUnit test (not a new tool, not a build gate) catches
+exact-value collisions and register/code drift — none of this
+validates a value at write time, every prior ADR's own "never
+validated" guarantee left completely intact. Four alternatives
+evaluated and rejected on real evidence: a closed enum (already
+rejected five times, independently, by five prior ADRs); a
+strongly-typed value object (no material benefit over a plain
+constant, real adoption cost across nine-and-growing disciplines); a
+runtime, DI-resolved registry service (the identical "misclassifies a
+coordination concern as a Platform Service" reasoning `ADR-0104` just
+applied to Desktop wiring); a fully free-form metadata model (a
+genuine `IHasMetadata` contract redesign, widening rather than
+narrowing the coordination problem). Digital Thread roadmap
+compatibility confirmed low-risk directly —
+`DigitalThreadGraphModel` is fully Kind-agnostic except for its own
+two hand-typed local duplicates, the confirmed defect above.
+Architecture only; zero `src/`/`tests/` files touched, confirmed
+directly; no commit, merge, tag, or push performed. `WP 12.1B`'s own
+minimum scope named directly, not left merely implied: populate the
+Engineering Vocabulary Register, add the consistency test, retrofit
+the two confirmed defects by name. See `docs/architecture/Classification
+& Relationship Vocabulary Safety Net Architecture.md`, `ADR-0105`,
+`docs/academy/03 Work Packages/WP12.1A-classification-and-relationship-vocabulary-safety-net-architecture.md`,
+`docs/releases/v0.12.0/WorkPackages.md`. **`WP 12.4B`'s own status
+line, below this point, is this field's prior content — retained, not
+deleted:** (`WP 12.4B` — Desktop Command & Event
 Wiring Implementation. A third directly-commissioned `v0.12.0` Work
 Package, on the same branch as `WP 12.4A`
 (`feature/v0.12.0-desktop-command-event-wiring`). Realises `ADR-0104`
