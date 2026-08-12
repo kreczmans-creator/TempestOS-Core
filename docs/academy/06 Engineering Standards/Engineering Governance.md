@@ -248,6 +248,15 @@ Specifically:
 
 ## 7. Release Approval Process
 
+**From `WP 12.9.0` onward**, the evaluation criteria a release must
+satisfy before this section's own approval is sought — what evidence is
+gathered, in what categories, against what pass/fail and blocking
+conditions — are fully specified in `docs/architecture/Engineering
+Readiness Review Architecture.md` and `ADR-0106`; this section states
+the approval principle, that document states the evaluation model,
+exactly as `05-release-engineering.md` already states this section's
+own tagging *mechanics*. Neither addition changes any rule below.
+
 1. A release is only cut from `main`, never from a feature branch.
 2. The version to be released is recorded (`VERSION`) and matched by release
    notes (`docs/releases/`) describing what changed, in terms a non-engineering
