@@ -19,6 +19,7 @@ public sealed class TempestHostBuilder : ITempestHostBuilder
     private readonly string? _pluginsRootPathOverride;
     private readonly IEnumerable<Type>? _hostedServiceCandidateTypesOverride;
     private readonly string? _licenseFilePathOverride;
+    private bool _includeFaultInjectionModules;
     private bool _built;
 
     /// <summary>
@@ -197,6 +198,16 @@ public sealed class TempestHostBuilder : ITempestHostBuilder
     }
 
     /// <inheritdoc />
+    public ITempestHostBuilder EnableFaultInjectionModules()
+    {
+        ThrowIfAlreadyBuilt();
+
+        _includeFaultInjectionModules = true;
+
+        return this;
+    }
+
+    /// <inheritdoc />
     public ITempestHost Build()
     {
         ThrowIfAlreadyBuilt();
@@ -207,7 +218,8 @@ public sealed class TempestHostBuilder : ITempestHostBuilder
             _discoveryCandidateTypesOverride,
             _pluginsRootPathOverride,
             _hostedServiceCandidateTypesOverride,
-            _licenseFilePathOverride);
+            _licenseFilePathOverride,
+            _includeFaultInjectionModules);
     }
 
     private void ThrowIfAlreadyBuilt()

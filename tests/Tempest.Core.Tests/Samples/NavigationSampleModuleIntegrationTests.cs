@@ -8,6 +8,7 @@ using Tempest.Core.Runtime;
 using Tempest.Core.Tests.Events;
 using Tempest.Core.Tests.Plugins;
 using Tempest.Samples;
+using Tempest.Validation.FaultInjection;
 
 namespace Tempest.Core.Tests.Samples;
 
@@ -30,7 +31,13 @@ public class NavigationSampleModuleIntegrationTests
     private static (RuntimeModuleManager RuntimeManager, TempestServiceProvider ServiceProvider) BuildPipeline(
         params Type[] moduleTypes)
     {
-        var descriptors = new ReflectionFrameworkDiscoveryService([typeof(NavigationSampleModule).Assembly])
+        // includeFaultInjectionModules: true - several tests below pass
+        // DuplicateNavigationModule (Tempest.Validation.FaultInjection)
+        // explicitly as a candidate type; ADR-0102's default-exclusion
+        // filter would otherwise silently drop it even from an explicit
+        // candidate list naming it directly.
+        var descriptors = new ReflectionFrameworkDiscoveryService(
+                [typeof(NavigationSampleModule).Assembly], includeFaultInjectionModules: true)
             .DiscoverModules(moduleTypes);
 
         var runtimeManager = new RuntimeModuleManager();
@@ -178,7 +185,7 @@ public class NavigationSampleModuleIntegrationTests
     public async Task DuplicateNavigationId_FailsOnlyTheOffendingModule_TheOriginalRegistrationSurvives()
     {
         var (runtimeManager, serviceProvider) = BuildPipeline(
-            typeof(NavigationSampleModule), typeof(DuplicateNavigationSampleModule));
+            typeof(NavigationSampleModule), typeof(DuplicateNavigationModule));
         var navigationProvider = (INavigationProvider)serviceProvider.GetService(typeof(INavigationProvider));
 
         var lifecycleManager = new ModuleLifecycleManager(runtimeManager, serviceProvider);
@@ -193,10 +200,10 @@ public class NavigationSampleModuleIntegrationTests
 
         Assert.Equal(
             ModuleState.Failed,
-            lifecycleManager.GetState("tempest.samples.navigation.zzz-duplicate"));
+            lifecycleManager.GetState("tempest.validation.faultinjection.navigation-duplicate"));
 
         var failure = lifecycleManager.Modules.Single(
-            status => status.Descriptor.Id == "tempest.samples.navigation.zzz-duplicate");
+            status => status.Descriptor.Id == "tempest.validation.faultinjection.navigation-duplicate");
         Assert.IsType<DuplicateNavigationItemException>(failure.FailureReason);
     }
 
@@ -205,17 +212,17 @@ public class NavigationSampleModuleIntegrationTests
     {
         var (runtimeManager, serviceProvider) = BuildPipeline(
             typeof(NavigationSampleModule),
-            typeof(DuplicateNavigationSampleModule),
+            typeof(DuplicateNavigationModule),
             typeof(SecondaryNavigationSampleModule));
 
         var lifecycleManager = new ModuleLifecycleManager(runtimeManager, serviceProvider);
         await lifecycleManager.InitialiseAllAsync(CancellationToken.None);
 
-        // "tempest.samples.navigation.secondary" sorts after the duplicate's
-        // own "tempest.samples.navigation.zzz-duplicate"? No - 's' < 'z'
-        // ordinally, so secondary actually initialises before the duplicate.
-        // Either order, the point stands: the duplicate's failure does not
-        // stop the batch.
+        // "tempest.samples.navigation.secondary" sorts before the duplicate's
+        // own "tempest.validation.faultinjection.navigation-duplicate" ('s'
+        // < 'v' ordinally), so secondary initialises before the duplicate is
+        // even attempted. Either order, the point stands: the duplicate's
+        // failure does not stop the batch.
         Assert.Equal(
             ModuleState.Initialised,
             lifecycleManager.GetState("tempest.samples.navigation.secondary"));

@@ -3,6 +3,16 @@
 **Status: implemented — WP 4.3 (`Tempest.Samples`); extended — WP 4.4E;
 scaffolding template and a clearer Discovery failure message added —
 WP 5.3.**
+
+**Scope note, WP 12.3B (ADR-0102):** fault-injection modules — those
+existing solely to deliberately fail, for validation purposes, never a
+genuine application capability — are **no longer** within this
+document's scope. `DuplicateNavigationSampleModule`, the one such module
+this project ever shipped, moved out of `Tempest.Samples` entirely (to
+`Tempest.Validation.FaultInjection`, renamed `DuplicateNavigationModule`)
+— see `Fault Injection & Validation Architecture.md` for its own
+dedicated design. Every other claim below, about `Tempest.Samples`'s own
+genuine reference modules, is unaffected and remains accurate.
 Every design decision below is now backed by working, tested code, not
 only design intent — see the WP 4.3 implementation retrospective for what
 was built and the two small corrections implementation surfaced (Testing

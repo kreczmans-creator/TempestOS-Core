@@ -120,4 +120,44 @@ public class ReflectionFrameworkDiscoveryServiceTests
         Assert.Single(result);
         Assert.NotEmpty(logger.Messages);
     }
+
+    // ----------------------------------------------------------------
+    // IFaultInjectionModule default-exclusion filter (WP 12.3B, ADR-0102)
+    // ----------------------------------------------------------------
+
+    [Fact]
+    public void DiscoverModules_DefaultConstruction_ExcludesFaultInjectionModule_EvenWhenPassedExplicitly()
+    {
+        // The candidate-type-list overload, not just the AppDomain-scanning
+        // one - the filter applies to both identically (this is what makes
+        // it a genuine guarantee rather than a fragile "don't scan for it"
+        // convention).
+        var service = new ReflectionFrameworkDiscoveryService();
+
+        var result = service.DiscoverModules(new[] { typeof(SampleFaultInjectionModule), typeof(SampleModuleA) });
+
+        var descriptor = Assert.Single(result);
+        Assert.Equal("tempest.sample.alpha", descriptor.Id);
+    }
+
+    [Fact]
+    public void DiscoverModules_IncludeFaultInjectionModulesTrue_DiscoversIt()
+    {
+        var service = new ReflectionFrameworkDiscoveryService(logger: null, includeFaultInjectionModules: true);
+
+        var result = service.DiscoverModules(new[] { typeof(SampleFaultInjectionModule), typeof(SampleModuleA) });
+
+        Assert.Equal(2, result.Count);
+        Assert.Contains(result, d => d.Id == "tempest.sample.fault-injection" && d.ModuleType == typeof(SampleFaultInjectionModule));
+    }
+
+    [Fact]
+    public void DiscoverModules_AssemblyScanningConstructor_DefaultsToExcludingFaultInjectionModules()
+    {
+        var service = new ReflectionFrameworkDiscoveryService(new[] { typeof(SampleFaultInjectionModule).Assembly });
+
+        var result = service.DiscoverModules(new[] { typeof(SampleFaultInjectionModule) });
+
+        Assert.Empty(result);
+    }
 }

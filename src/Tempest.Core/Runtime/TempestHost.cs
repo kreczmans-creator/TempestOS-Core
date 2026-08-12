@@ -77,6 +77,7 @@ public sealed class TempestHost : ITempestHost
     private readonly string? _pluginsRootPathOverride;
     private readonly IEnumerable<Type>? _hostedServiceCandidateTypesOverride;
     private readonly string? _licenseFilePathOverride;
+    private readonly bool _includeFaultInjectionModules;
     private readonly CancellationTokenSource _shutdownRequested = new();
     private readonly CancellationTokenSource _stopEscalation = new();
     private readonly TaskCompletionSource _runCompletion = new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -93,13 +94,15 @@ public sealed class TempestHost : ITempestHost
         IEnumerable<Type>? discoveryCandidateTypesOverride,
         string? pluginsRootPathOverride,
         IEnumerable<Type>? hostedServiceCandidateTypesOverride,
-        string? licenseFilePathOverride)
+        string? licenseFilePathOverride,
+        bool includeFaultInjectionModules = false)
     {
         _configurationSources = configurationSources;
         _discoveryCandidateTypesOverride = discoveryCandidateTypesOverride;
         _pluginsRootPathOverride = pluginsRootPathOverride;
         _hostedServiceCandidateTypesOverride = hostedServiceCandidateTypesOverride;
         _licenseFilePathOverride = licenseFilePathOverride;
+        _includeFaultInjectionModules = includeFaultInjectionModules;
     }
 
     /// <inheritdoc />
@@ -243,7 +246,7 @@ public sealed class TempestHost : ITempestHost
 
         runToken.ThrowIfCancellationRequested();
 
-        var discovery = new ReflectionFrameworkDiscoveryService(logger);
+        var discovery = new ReflectionFrameworkDiscoveryService(logger, includeFaultInjectionModules: _includeFaultInjectionModules);
 
         var descriptors = _discoveryCandidateTypesOverride is not null
             ? discovery.DiscoverModules(_discoveryCandidateTypesOverride)

@@ -29,6 +29,23 @@ public interface ITempestHostBuilder
     ITempestHostBuilder AddConfigurationSource(IConfigurationSource source);
 
     /// <summary>
+    /// Opts the resulting host's Module Discovery phase into discovering
+    /// <see cref="Modules.IFaultInjectionModule"/> candidates, which are
+    /// excluded by default.
+    /// </summary>
+    /// <returns>This builder, to allow chaining.</returns>
+    /// <exception cref="InvalidOperationException">This builder has already built a host.</exception>
+    /// <remarks>
+    /// The explicit "enabled for validation runs" surface named by
+    /// ADR-0102 — a fault-injection module (<c>Tempest.Validation.FaultInjection</c>)
+    /// is never discovered unless this method is called before
+    /// <see cref="Build"/>. Never called by <c>Tempest.App</c>'s or
+    /// <c>Tempest.Desktop</c>'s own composition root, so ordinary application
+    /// startup is unaffected.
+    /// </remarks>
+    ITempestHostBuilder EnableFaultInjectionModules();
+
+    /// <summary>
     /// Builds a <see cref="ITempestHost"/> from the inputs collected so far.
     /// </summary>
     /// <returns>A new <see cref="ITempestHost"/>, in the <see cref="HostState.Created"/> state.</returns>

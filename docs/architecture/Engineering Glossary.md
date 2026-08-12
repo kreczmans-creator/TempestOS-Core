@@ -172,6 +172,35 @@ defect occurs during `Running` or `Stopping`. Not reachable from a module
 failure alone — see **Host-Fatal** and **Isolated Failure**. See *Runtime
 State Machine.md*.
 
+### Fault Injection *(implemented — v0.12.0, WP 12.3B, ADR-0102)*
+
+A deliberately-failing or deliberately-misbehaving `IModule`
+implementation, built and shipped as real, tested code, existing solely
+to validate the platform's own failure-handling behaviour (**Isolated
+Failure**, ADR-0013) — never a genuine application capability. Marked
+with `IFaultInjectionModule` (`Tempest.Core.Modules`), a discovery-time
+classification: `ReflectionFrameworkDiscoveryService` excludes any such
+candidate by default, from both its full-`AppDomain` scan and its
+explicit-candidate-type overload alike, unless a caller explicitly opts
+in via `ITempestHostBuilder.EnableFaultInjectionModules()`. Lives in
+**`Tempest.Validation`** (namespace `Tempest.Validation.FaultInjection`),
+a project neither `Tempest.App` nor `Tempest.Desktop` references — the
+two-layer guarantee (project isolation *and* the discovery-time marker)
+is what keeps a fault-injection module out of ordinary application
+startup even if its own assembly is ever loaded into the same process by
+something else (the test suite, today). `Tempest.Validation` is named
+"Validation," not "Diagnostics," specifically to avoid colliding with
+the unrelated **Diagnostics** platform service; Fault Injection is
+currently the only realised category under it — not itself a separate
+glossary term, since no second, independent platform concept exists
+there yet — further validation categories (Lifecycle, Performance,
+Compatibility) are named in the architecture document below as a
+deliberately deferred future extension point, not yet built. Not to be
+confused with **Diagnostics**: Diagnostics *observes* the platform's own
+genuine health; a Fault Injection module *proves*, on demand, that a
+deliberately-induced failure is handled correctly. See *Fault Injection &
+Validation Architecture.md*.
+
 ### Graceful Shutdown
 
 A **Controlled Shutdown** entered from `Running` — i.e., triggered by a
@@ -510,6 +539,7 @@ Machine.md* · *Failure Behaviour.md* · *Shutdown Sequence.md* · *Startup
 Sequence.md* · *Ownership Matrix.md* · *Platform Service Map.md* · *Plugin
 Manifest Architecture.md* · *Module Dependency Injection Architecture.md* ·
 *Event Bus Architecture.md* · *Background Services Architecture.md* ·
-ADR-0001 through ADR-0030 ·
+*Fault Injection & Validation Architecture.md* ·
+ADR-0001 through ADR-0030 · ADR-0102 ·
 `docs/academy/01 Engineering Principles/` · `docs/academy/
 02 Runtime Architecture/`.

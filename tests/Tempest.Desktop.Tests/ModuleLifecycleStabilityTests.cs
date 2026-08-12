@@ -32,17 +32,6 @@ public sealed class ModuleLifecycleStabilityTests
         "tempest.samples.requirementsworkspace",
     ];
 
-    /// <summary>
-    /// <see cref="DuplicateNavigationSampleModule"/>'s own module Id — a
-    /// deliberate, permanent, by-design failure (its own remarks: "exists
-    /// solely to prove that a duplicate navigation registration failing
-    /// inside a module's own <c>InitialiseAsync</c> is isolated"), never a
-    /// regression, and must be excluded from every "no module failed"
-    /// assertion below rather than making this test fragile against an
-    /// intentional demonstration.
-    /// </summary>
-    private const string IntentionallyFailingModuleId = "tempest.samples.navigation.zzz-duplicate";
-
     [AvaloniaFact]
     public async Task StableRestart_TwoSequentialHostsAgainstTheSameStore_BothReachRunningWithNoModuleFailures()
     {
@@ -150,8 +139,16 @@ public sealed class ModuleLifecycleStabilityTests
 
         Assert.Equal(HostState.Running, diagnostics.HostState);
 
+        // No exclusion needed here (WP 12.3B, ADR-0102): the always-failing
+        // fault-injection module formerly discovered on this exact real
+        // WorkspaceHost path (DuplicateNavigationSampleModule, previously
+        // ID'd "tempest.samples.navigation.zzz-duplicate") moved to
+        // Tempest.Validation.FaultInjection, a project Tempest.App/
+        // Tempest.Desktop never reference and this Host never opts into via
+        // EnableFaultInjectionModules() - a genuinely, permanently healthy
+        // "no module failed" assertion, not merely a hidden one.
         var failed = diagnostics.Modules
-            .Where(m => m.State == ModuleState.Failed && m.Descriptor.Id != IntentionallyFailingModuleId)
+            .Where(m => m.State == ModuleState.Failed)
             .ToList();
 
         if (failed.Count > 0)

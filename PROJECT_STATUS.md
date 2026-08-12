@@ -1,6 +1,51 @@
 # TempestOS — Project Status
 
-**Last Updated:** 2026-08-11 (`WP 11.4B` — Merge to `main` & Release
+**Last Updated:** 2026-08-12 (`WP 12.3B` — Fault Injection & Validation
+Framework Implementation. `v0.12.0`'s own first completed Work Package
+— a directly-commissioned pair, `WP 12.3A`/`WP 12.3B`, not named in
+`WP11.0B Architecture Roadmap.md`'s own predicted `12.0`–`12.2` slots
+(the identical pattern `WP 11.3A`/`B` and `WP 11.4A`/`B` each already
+established for `v0.11.0`), on a new branch,
+`feature/v0.12.0-desktop-composition-domain-vocabulary-hardening`, cut
+from `main`. **Closes a genuine, previously-undisclosed defect**:
+`Tempest.Samples.DuplicateNavigationSampleModule` — a deliberately-
+always-failing module proving `ModuleLifecycleManager`'s per-module
+isolation (ADR-0013) — was discovered and initialised by every real
+`Tempest.App`/`Tempest.Desktop` launch (both compose through an
+unrestricted `TempestHostBuilder()`, a genuine full-`AppDomain` scan),
+permanently leaving one module `ModuleState.Failed` in real use;
+confirmed directly against `ModuleLifecycleStabilityTests.cs`'s own
+pre-existing special-case exclusion for exactly this module's Id. Fixed
+via `ADR-0102`: the module moved to a new project, `Tempest.Validation`
+(namespace `Tempest.Validation.FaultInjection`, renamed
+`DuplicateNavigationModule`) that `Tempest.App`/`Tempest.Desktop` never
+reference, *and* a new, default-excluded discovery-time marker
+(`IFaultInjectionModule`, a defaulted `includeFaultInjectionModules`
+parameter on `ReflectionFrameworkDiscoveryService`, a new
+`ITempestHostBuilder.EnableFaultInjectionModules()` method) — project
+isolation alone was assessed and found insufficient on its own, since
+reflection-based Discovery scans the whole process's `AppDomain`, not
+only directly-referenced assemblies. **The fix verified directly, not
+merely asserted**: `ModuleLifecycleStabilityTests.cs`'s special-case
+exclusion is deleted, not updated — a real `WorkspaceHost`, composed
+through the identical path `Tempest.App` itself uses, now genuinely
+reaches `Running` with zero modules `Failed`. Zero behavioural change
+for any existing, unmodified caller (every new parameter defaults to
+today's exact behaviour). Full regression re-verified directly, both
+configurations, both before this Work Package's own documentation phase
+and again as its closing gate: 2,233/2,233 passing (2,031
+`Tempest.Core.Tests` + 202 `Tempest.Desktop.Tests`, net +5 new tests, 0
+removed), 0 Warnings/0 Errors, Debug and Release both. No merge to
+`main`, no tag, no release closure performed or sought by this Work
+Package — `docs/releases/v0.12.0/WorkPackages.md`'s own remaining,
+roadmap-predicted Work Packages (`WP 12.0A` through `WP 12.9.0`) remain
+Not started. See `docs/architecture/Fault Injection & Validation
+Architecture.md`, `ADR-0102`,
+`docs/academy/03 Work Packages/WP12.3A-fault-injection-validation-framework-architecture.md`,
+`WP12.3B-fault-injection-validation-framework-implementation.md`,
+`docs/releases/v0.12.0/WorkPackages.md`. **`WP 11.4B`'s own status
+line, below this point, is this field's prior content — retained, not
+deleted:** (`WP 11.4B` — Merge to `main` & Release
 Process Correction. `v0.11.0`'s own tenth and final Work Package.
 **`main` is now the authoritative development baseline.** Before
 merging, discovered — and, with explicit Product Owner approval,

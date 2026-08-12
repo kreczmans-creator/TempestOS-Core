@@ -66,3 +66,15 @@ internal sealed class ConstructorDependencyModuleWithoutMetadata : IModule
     public string Name => "No Parameterless Constructor";
     public string Version => "1.0.0";
 }
+
+// WP 12.3B (ADR-0102): a minimal IFaultInjectionModule fixture, isolated
+// from the real Tempest.Validation.FaultInjection.DuplicateNavigationModule
+// (which requires INavigationProvider), used to prove
+// ReflectionFrameworkDiscoveryService's own default-exclusion filter at the
+// unit level in ReflectionFrameworkDiscoveryServiceTests.
+internal sealed class SampleFaultInjectionModule : IModule, IFaultInjectionModule
+{
+    public string Id => "tempest.sample.fault-injection";
+    public string Name => "Sample Fault Injection Module";
+    public string Version => "1.0.0";
+}
