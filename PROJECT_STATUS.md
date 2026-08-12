@@ -1,6 +1,75 @@
 # TempestOS — Project Status
 
-**Last Updated:** 2026-08-12 (`WP 12.3B` — Fault Injection & Validation
+**Last Updated:** 2026-08-12 (`WP 12.0B` — Desktop Composition Root
+Decomposition Implementation. Closes `WP11.0A Platform Architecture
+Review.md` Finding `A-1` in full, on branch
+`feature/v0.12.0-desktop-composition-domain-vocabulary-hardening`.
+Implements `ADR-0103` exactly, per `WP 12.0A`'s own design — refactor
+only: zero public API changes, zero behavioural changes, zero new
+Platform Services, zero new DI registrations, no `partial class`.
+`MainWindow.cs` (1,556 → 544 lines; ~1,000 → ~370-line constructor)
+decomposes into nine `Tempest.Desktop.Composition` collaborators
+(`DesktopCompositionRoot`, `DesktopSessionState`,
+`WorkspaceDockingComposer`, `RibbonObjectActionHandlers` — the
+~450-line, ~29%-of-file per-discipline handler population, moved
+verbatim — `WorkspaceViewCoordinator`, `UndoRedoCoordinator` — now
+fully reactive via `IUndoRedoStack.Changed` — `MainMenuFactory`/
+`QuickAccessToolbarFactory` — stateless static build functions —
+`WorkspaceLayoutPresetCoordinator`). `EngineeringCockpit.cs` (1,398 →
+575 lines) decomposes into six per-discipline read-model collaborators,
+one per existing `Tempest.App.Workspace.{Discipline}` namespace;
+genuinely cross-discipline aggregation and the Governance & Risk family
+stay on the composition root, per `ADR-0103`'s own Composition-root
+Responsibility #4. Two genuine construction-order cycles found and
+resolved (`DocumentAreaView`/`CockpitView` needing
+`WorkspaceViewCoordinator`'s own deferred delegates, which in turn need
+them back) via the identical two-phase "construct, then attach"
+sequencing the pre-decomposition source already used at the field
+level, now one collaborator boundary out — not a new pattern. 12 new
+characterization tests added before their own respective extractions (5
+`EngineeringCockpit`, 7 `MainWindow` Menu System/Quick Access Toolbar),
+both real, confirmed-by-direct-search coverage gaps. **Full Debug+Release
+regression: 2,245/2,245 passing, 0 Warnings/0 Errors, both
+configurations** (2,031 `Tempest.Core.Tests` + 214
+`Tempest.Desktop.Tests`, up from `WP 12.3B`'s own 2,233 baseline — 12
+net new tests, zero regressions). No new ADR; `ADR-0103` unmodified — no
+factual correction was exposed by implementation. See
+`docs/architecture/Desktop Composition Architecture.md`, `ADR-0103`,
+`docs/academy/03 Work Packages/WP12.0B-desktop-composition-root-decomposition-implementation.md`,
+`docs/releases/v0.12.0/WorkPackages.md`. **`WP 12.0A`'s own status
+line, below this point, is this field's prior content — retained, not
+deleted:** (`WP 12.0A` — Desktop Composition Root
+Decomposition Architecture. `v0.12.0`'s own roadmap-predicted first Work
+Package to complete (`WP11.0B Architecture Roadmap.md` §3), on branch
+`feature/v0.12.0-desktop-composition-domain-vocabulary-hardening`
+(re-checked-out from `main` after `WP 12.3A`/`WP 12.3B` merged — new
+work continues on the feature branch, not on `main`). Realises
+`WP11.0A Platform Architecture Review.md` Finding `A-1`
+("Composition-root God Objects in the Desktop layer"), re-verified
+directly, unchanged: `MainWindow.cs` (1,556 lines, a ~1,000-line
+constructor) and `EngineeringCockpit.cs` (1,398 lines, a flat
+six-Engineering-Discipline read-model). Designs `ADR-0103` —
+"Composition Roots Own Collaborators": a general, platform-wide pattern
+(explicitly not scoped to either motivating file) extending `ADR-0009`'s
+own composition-root principle one layer down — full composition-root/
+collaborator responsibilities, ownership/lifetime, construction/
+dependency rules, and an explicit prohibition on ever DI-registering an
+extracted collaborator (reusing `ADR-0013`'s own classification test
+verbatim); rejects a `partial class` split (no structural boundary,
+`ADR-0017`'s own precedent) and a declarative/reflective composition
+framework (no genuine extensibility trigger, `ADR-0032`'s own precedent)
+as alternatives. `docs/architecture/Desktop Composition Architecture.md`
+records the pattern, with `MainWindow`/`EngineeringCockpit` as
+motivating, explicitly non-binding illustrative evidence — the real,
+final collaborator boundaries are `WP 12.0B`'s (not yet started) own
+Implementation Report. **Architecture only — zero `src/`/`tests/` files
+touched, confirmed directly; no code, no test run required or
+performed.** See `docs/architecture/Desktop Composition Architecture.md`,
+`ADR-0103`, `docs/academy/03 Work
+Packages/WP12.0A-desktop-composition-root-decomposition-architecture.md`,
+`docs/releases/v0.12.0/WorkPackages.md`. **`WP 12.3B`'s own status
+line, below this point, is this field's prior content — retained, not
+deleted:** (`WP 12.3B` — Fault Injection & Validation
 Framework Implementation. `v0.12.0`'s own first completed Work Package
 — a directly-commissioned pair, `WP 12.3A`/`WP 12.3B`, not named in
 `WP11.0B Architecture Roadmap.md`'s own predicted `12.0`–`12.2` slots

@@ -345,4 +345,170 @@ public sealed class EngineeringCockpitTests
         documentArea.SetHomeTab(new Border());
         Assert.Equal(1, documentArea.TabCount);
     }
+
+    // ----------------------------------------------------------------
+    // WP 12.0B (ADR-0103) — characterization tests added before the
+    // per-discipline read-model decomposition, closing gaps this Work
+    // Package's own investigation found in this file's pre-existing
+    // coverage: AttentionItems/OpenActions (cross-discipline aggregation
+    // order and content), the three per-discipline KPI card sets no
+    // existing test named directly, and the Mechanical/cross-cutting
+    // Workspace reads. Each asserts self-consistency against the same
+    // live sample data other tests above already establish is real and
+    // stable, mirroring this file's own established style, rather than
+    // hardcoding a second, independent set of expected sample counts.
+    // ----------------------------------------------------------------
+
+    [AvaloniaFact]
+    public async Task RealData_AttentionItems_OneEntryPerDisciplineInFixedOrder_PlusConditionalAndTrailingEntries()
+    {
+        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
+        try
+        {
+            await host.StartAsync();
+            var cockpit = ((Workspace)host.Workspace!).Cockpit;
+
+            var items = cockpit.AttentionItems;
+            var titles = items.Select(i => i.Title).ToList();
+
+            // Fixed base order: Mechanical, Requirements, [Requirements
+            // attention], Calculations, [Calculations attention],
+            // Documents, [Documents attention], Verification,
+            // [Verification attention], Manufacturing, [Manufacturing
+            // attention], trailing placeholder — each discipline's own
+            // base ("X are/is live" or "No X registered yet") entry is
+            // always added before its own conditional attention entry, so
+            // the first index matching the discipline name is always the
+            // base entry regardless of whether the conditional one exists.
+            var mechanicalIndex = titles.FindIndex(t => t.Contains("Mechanical Product Structure", StringComparison.Ordinal));
+            var requirementsIndex = titles.FindIndex(t => t.Contains("Requirements", StringComparison.Ordinal));
+            var calculationsIndex = titles.FindIndex(t => t.Contains("Calculations", StringComparison.Ordinal));
+            var documentsIndex = titles.FindIndex(t => t.Contains("Documents", StringComparison.Ordinal));
+            var verificationIndex = titles.FindIndex(t => t.Contains("Verification", StringComparison.Ordinal));
+            var manufacturingIndex = titles.FindIndex(t => t.Contains("Manufacturing", StringComparison.Ordinal));
+            var trailingIndex = titles.FindIndex(t => t.Contains("Other disciplines still placeholder", StringComparison.Ordinal));
+
+            Assert.True(mechanicalIndex >= 0 && mechanicalIndex < requirementsIndex);
+            Assert.True(requirementsIndex < calculationsIndex);
+            Assert.True(calculationsIndex < documentsIndex);
+            Assert.True(documentsIndex < verificationIndex);
+            Assert.True(verificationIndex < manufacturingIndex);
+            Assert.True(manufacturingIndex < trailingIndex);
+            Assert.Equal(trailingIndex, titles.Count - 1);
+
+            Assert.Equal(cockpit.OutstandingRequirementActions > 0, titles.Contains("Requirements need attention"));
+            Assert.Equal(cockpit.OutstandingCalculationActions > 0, titles.Contains("Calculations need attention"));
+            Assert.Equal(cockpit.OutstandingDocumentActions > 0, titles.Contains("Documents need attention"));
+            Assert.Equal(cockpit.OutstandingVerificationActions > 0, titles.Contains("Verification needs attention"));
+            Assert.Equal(cockpit.OutstandingManufacturingActions > 0, titles.Contains("Manufacturing needs attention"));
+        }
+        finally
+        {
+            await host.ShutdownAsync();
+            await host.DisposeAsync();
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task RealData_OpenActions_TriageEntriesMatchOutstandingCounts_TrailingFixedEntriesAlwaysPresent()
+    {
+        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
+        try
+        {
+            await host.StartAsync();
+            var cockpit = ((Workspace)host.Workspace!).Cockpit;
+
+            var titles = cockpit.OpenActions.Select(a => a.Title).ToList();
+
+            Assert.Equal(cockpit.OutstandingRequirementActions > 0, titles.Any(d => d.Contains($"Triage {cockpit.OutstandingRequirementActions} outstanding Requirements", StringComparison.Ordinal)));
+            Assert.Equal(cockpit.OutstandingCalculationActions > 0, titles.Any(d => d.Contains($"Triage {cockpit.OutstandingCalculationActions} outstanding Calculation", StringComparison.Ordinal)));
+            Assert.Equal(cockpit.OutstandingDocumentActions > 0, titles.Any(d => d.Contains($"Triage {cockpit.OutstandingDocumentActions} outstanding Document", StringComparison.Ordinal)));
+            Assert.Equal(cockpit.OutstandingVerificationActions > 0, titles.Any(d => d.Contains($"Triage {cockpit.OutstandingVerificationActions} outstanding Verification", StringComparison.Ordinal)));
+            Assert.Equal(cockpit.OutstandingManufacturingActions > 0, titles.Any(d => d.Contains($"Triage {cockpit.OutstandingManufacturingActions} outstanding Manufacturing", StringComparison.Ordinal)));
+
+            Assert.Contains(titles, d => d == "Review the Project Explorer's own sample content");
+            Assert.Contains(titles, d => d == "Await the next real engineering discipline module");
+            Assert.Equal("Review the Project Explorer's own sample content", titles[^2]);
+            Assert.Equal("Await the next real engineering discipline module", titles[^1]);
+        }
+        finally
+        {
+            await host.ShutdownAsync();
+            await host.DisposeAsync();
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task RealData_PerDisciplineKpiCards_ManufacturingVerificationDocuments_ReportRealSelfConsistentCards()
+    {
+        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
+        try
+        {
+            await host.StartAsync();
+            var cockpit = ((Workspace)host.Workspace!).Cockpit;
+
+            var manufacturing = cockpit.ManufacturingKpiCards;
+            Assert.Equal(7, manufacturing.Count);
+            Assert.Equal(
+                new[] { "Manufacturing Objects", "Manufacturing Readiness", "Released Items", "Open Operations", "Supplier Status", "Inspection Status", "Production Health" },
+                manufacturing.Select(c => c.Label));
+            Assert.Equal(cockpit.ManufacturingStatus.ToString(), manufacturing.Single(c => c.Label == "Production Health").Value);
+
+            var verification = cockpit.VerificationKpiCards;
+            Assert.Equal(9, verification.Count);
+            Assert.Equal(cockpit.OutstandingVerificationActions.ToString(), verification.Single(c => c.Label == "Outstanding").Value);
+            Assert.Equal(cockpit.VerificationStatus.ToString(), verification.Single(c => c.Label == "Project Verification Health").Value);
+
+            var documents = cockpit.DocumentsKpiCards;
+            Assert.Equal(8, documents.Count);
+            Assert.Equal(cockpit.OutstandingDocumentReviews.ToString(), documents.Single(c => c.Label == "Outstanding Reviews").Value);
+            Assert.Equal(cockpit.DocumentationStatus.ToString(), documents.Single(c => c.Label == "Documentation Health").Value);
+        }
+        finally
+        {
+            await host.ShutdownAsync();
+            await host.DisposeAsync();
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task RealData_Mechanical_ProjectNameAndRecentProjects_ReflectTheLiveSeededProject()
+    {
+        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
+        try
+        {
+            await host.StartAsync();
+            var cockpit = ((Workspace)host.Workspace!).Cockpit;
+
+            Assert.NotEqual("No Mechanical Project yet", cockpit.ProjectName);
+            Assert.NotEmpty(cockpit.RecentProjects);
+            Assert.Contains(cockpit.ProjectName, cockpit.RecentProjects);
+        }
+        finally
+        {
+            await host.ShutdownAsync();
+            await host.DisposeAsync();
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task RealData_CrossCuttingWorkspaceReads_AreLive()
+    {
+        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
+        try
+        {
+            await host.StartAsync();
+            var cockpit = ((Workspace)host.Workspace!).Cockpit;
+
+            Assert.True(cockpit.AreaCount > 0);
+            Assert.NotEmpty(cockpit.AvailableCommands);
+            Assert.Equal(cockpit.RecentActivity.Count > 0, cockpit.ContinueWhereILeftOff is not null);
+            Assert.Equal(cockpit.ContinueWhereILeftOff is not null, cockpit.QuickActions.Any(a => a.StartsWith("Continue:", StringComparison.Ordinal)));
+        }
+        finally
+        {
+            await host.ShutdownAsync();
+            await host.DisposeAsync();
+        }
+    }
 }
