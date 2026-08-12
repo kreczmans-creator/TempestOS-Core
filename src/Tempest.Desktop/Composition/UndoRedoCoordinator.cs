@@ -33,14 +33,28 @@ namespace Tempest.Desktop.Composition;
 /// several separate, explicit <c>RefreshUndoRedoButtons()</c> call sites
 /// with one, identical in effect.
 /// </remarks>
+/// <remarks>
+/// **`WP 12.4B` (`ADR-0104`).** Previously depended on a two-phase-
+/// constructed <c>CockpitView</c> object reference (a nullable field
+/// assigned post-construction via a now-removed <c>AttachCockpitView</c>
+/// method) purely to call its own <c>Refresh()</c> — WP12.0B's own
+/// architecture review, Finding 5, flagged this as heavier than the
+/// actual need warranted, since nothing else about <see cref="CockpitView"/>
+/// was ever used. Replaced with a plain <c>Action refreshCockpit</c>
+/// constructor parameter — `ADR-0104`'s own "direct delegate over object
+/// reference" default — supplied by <see cref="MainWindow"/> (the
+/// composition root) via the same field-closure lazy-capture pattern
+/// already established there for <c>_documentArea</c>. This removes a
+/// genuine (if minor) construction-order coupling: this collaborator no
+/// longer needs to know <see cref="CockpitView"/> exists at all.
+/// </remarks>
 internal sealed class UndoRedoCoordinator
 {
     private readonly StatusBarView _statusBar;
     private readonly ToastHost _toastHost;
     private readonly ProjectExplorerView _explorerView;
     private readonly Action<string> _recordHistory;
-
-    private CockpitView? _cockpitView;
+    private readonly Action _refreshCockpit;
 
     /// <summary>Gets the session-only Undo/Redo stack (`ADR-0099`) — never persisted across a restart.</summary>
     public IUndoRedoStack Stack { get; } = new UndoRedoStack();
@@ -52,17 +66,19 @@ internal sealed class UndoRedoCoordinator
     public Button RedoButton { get; } = new() { Content = "↷ Redo", MinHeight = DesignTokens.MinControlSize };
 
     /// <summary>Initialises a new instance of the <see cref="UndoRedoCoordinator"/> class.</summary>
-    public UndoRedoCoordinator(StatusBarView statusBar, ToastHost toastHost, ProjectExplorerView explorerView, Action<string> recordHistory)
+    public UndoRedoCoordinator(StatusBarView statusBar, ToastHost toastHost, ProjectExplorerView explorerView, Action<string> recordHistory, Action refreshCockpit)
     {
         ArgumentNullException.ThrowIfNull(statusBar);
         ArgumentNullException.ThrowIfNull(toastHost);
         ArgumentNullException.ThrowIfNull(explorerView);
         ArgumentNullException.ThrowIfNull(recordHistory);
+        ArgumentNullException.ThrowIfNull(refreshCockpit);
 
         _statusBar = statusBar;
         _toastHost = toastHost;
         _explorerView = explorerView;
         _recordHistory = recordHistory;
+        _refreshCockpit = refreshCockpit;
 
         ToolTip.SetTip(UndoButton, "Nothing to undo");
         ToolTip.SetTip(RedoButton, "Nothing to redo");
@@ -72,23 +88,6 @@ internal sealed class UndoRedoCoordinator
         RedoButton.Click += (_, _) => _ = RedoAsync();
 
         Stack.Changed += RefreshButtons;
-    }
-
-    /// <summary>
-    /// Attaches the now-constructed <see cref="CockpitView"/> — must be
-    /// called exactly once, before <see cref="UndoAsync"/>/<see cref="RedoAsync"/>
-    /// can first run. <see cref="CockpitView"/> itself needs
-    /// <c>WorkspaceViewCoordinator</c>'s own <c>NavigateToObject</c> to be
-    /// constructed first, which in turn needs this collaborator's own
-    /// <see cref="Stack"/> — the identical two-phase "constructed, then
-    /// attached" resolution <c>WorkspaceViewCoordinator</c>'s own remarks
-    /// describe for the equivalent cycle.
-    /// </summary>
-    public void AttachCockpitView(CockpitView cockpitView)
-    {
-        ArgumentNullException.ThrowIfNull(cockpitView);
-
-        _cockpitView = cockpitView;
     }
 
     /// <summary>Refreshes <see cref="UndoButton"/>/<see cref="RedoButton"/>'s own enablement/tooltip from <see cref="Stack"/>'s own real, current state.</summary>
@@ -112,7 +111,7 @@ internal sealed class UndoRedoCoordinator
         _toastHost.Show(message, result.Succeeded ? FeedbackSeverity.Success : FeedbackSeverity.Error);
         _recordHistory(message);
         await _explorerView.LoadAsync().ConfigureAwait(true);
-        _cockpitView!.Refresh();
+        _refreshCockpit();
     }
 
     /// <summary>Re-applies the most recently undone action, if any (`WP 10.6A`, `ADR-0099`) — mirrors <see cref="UndoAsync"/>'s own identical shape.</summary>
@@ -127,6 +126,6 @@ internal sealed class UndoRedoCoordinator
         _toastHost.Show(message, result.Succeeded ? FeedbackSeverity.Success : FeedbackSeverity.Error);
         _recordHistory(message);
         await _explorerView.LoadAsync().ConfigureAwait(true);
-        _cockpitView!.Refresh();
+        _refreshCockpit();
     }
 }

@@ -32,21 +32,36 @@ namespace Tempest.Desktop.Composition;
 /// <remarks>
 /// <see cref="Attach"/> exists because <see cref="DocumentAreaView"/> must
 /// itself be constructed with <see cref="BuildDocumentContent"/> as its
-/// own injectable content builder, while <see cref="CockpitView"/> must
-/// itself be constructed with this collaborator's own
-/// <see cref="NavigateToObject"/> as its own Favourite Projects
-/// open-callback — each needs the other to exist first. The
-/// pre-decomposition source resolved the identical cycle with a "field
-/// assigned after construction, read lazily by a deferred delegate"
-/// two-phase sequencing (its own constructor remarks: "a local function's
-/// own captured-field flow state is evaluated at its own declaration
-/// point, not its own later invocation point"); <see cref="Attach"/> is
-/// that same, unchanged resolution, one collaborator boundary away rather
-/// than one field assignment away. Undo/Redo button refresh needs no
-/// explicit call here — <c>Stack</c> is the plain <see cref="IUndoRedoStack"/>
+/// own injectable content builder — a genuine construction-order cycle,
+/// this collaborator needs to exist before <see cref="DocumentAreaView"/>
+/// can, and <see cref="DocumentAreaView"/> must exist before its own
+/// <c>TabCloseRequested</c> event can be subscribed. The pre-decomposition
+/// source resolved the identical cycle with a "field assigned after
+/// construction, read lazily by a deferred delegate" two-phase sequencing
+/// (its own constructor remarks: "a local function's own captured-field
+/// flow state is evaluated at its own declaration point, not its own
+/// later invocation point"); <see cref="Attach"/> is that same, unchanged
+/// resolution, one collaborator boundary away rather than one field
+/// assignment away. Undo/Redo button refresh needs no explicit call here
+/// — <c>Stack</c> is the plain <see cref="IUndoRedoStack"/>
 /// <c>UndoRedoCoordinator</c> already owns and reactively refreshes from
 /// (<see cref="IUndoRedoStack.Changed"/>), passed once as a value, never
 /// a reference to that collaborator itself.
+/// </remarks>
+/// <remarks>
+/// **`WP 12.4B` (`ADR-0104`).** Previously also carried
+/// <see cref="CockpitView"/> through this same two-phase-construction
+/// cycle purely to call its own <c>Refresh()</c> — WP12.0B's own
+/// architecture review, Finding 5, flagged this as heavier than the
+/// actual need warranted, since <see cref="CockpitView"/>'s only other
+/// use anywhere in this class was as <see cref="Attach"/>'s own second
+/// parameter. Replaced with a plain <c>Action refreshCockpit</c>
+/// constructor parameter — `ADR-0104`'s own "direct delegate over object
+/// reference" default — supplied by <see cref="MainWindow"/> (the
+/// composition root) via the same field-closure lazy-capture pattern
+/// already used here for <see cref="DocumentAreaView"/> itself. Only one
+/// genuine construction-order cycle (<see cref="DocumentAreaView"/>)
+/// remains after this change.
 /// </remarks>
 internal sealed class WorkspaceViewCoordinator
 {
@@ -68,18 +83,18 @@ internal sealed class WorkspaceViewCoordinator
     private readonly Dictionary<Guid, IWorkspaceView> _openGraphViewsByRootId;
     private readonly Action _refreshStatusBar;
     private readonly Action<string> _recordHistory;
+    private readonly Action _refreshCockpit;
 
     private DocumentAreaView? _documentArea;
-    private CockpitView? _cockpitView;
 
-    /// <summary>Initialises a new instance of the <see cref="WorkspaceViewCoordinator"/> class, wiring every Explorer/Inspector cross-view interaction that does not need <see cref="DocumentAreaView"/>/<see cref="CockpitView"/> to already exist (see <see cref="Attach"/>).</summary>
+    /// <summary>Initialises a new instance of the <see cref="WorkspaceViewCoordinator"/> class, wiring every Explorer/Inspector cross-view interaction that does not need <see cref="DocumentAreaView"/> to already exist (see <see cref="Attach"/>).</summary>
     public WorkspaceViewCoordinator(
         IWorkspace workspace, WorkspaceManager manager, EngineeringDomainContext domainContext, ICommandDispatcher commandDispatcher,
         IRequirementsService requirementsService, CalculationTemplateRegistry? calculationTemplates,
         ProjectExplorerView explorerView, PropertyInspectorView inspectorView, RibbonView ribbon,
         StatusBarView statusBar, ToastHost toastHost, ConfirmationDialog confirmationDialog, IUndoRedoStack undoRedoStack,
         RecentObjectsState recentObjects, FavouriteObjectsState favouriteObjects, Dictionary<Guid, IWorkspaceView> openGraphViewsByRootId,
-        Action refreshStatusBar, Action<string> recordHistory)
+        Action refreshStatusBar, Action<string> recordHistory, Action refreshCockpit)
     {
         ArgumentNullException.ThrowIfNull(workspace);
         ArgumentNullException.ThrowIfNull(manager);
@@ -98,6 +113,7 @@ internal sealed class WorkspaceViewCoordinator
         ArgumentNullException.ThrowIfNull(openGraphViewsByRootId);
         ArgumentNullException.ThrowIfNull(refreshStatusBar);
         ArgumentNullException.ThrowIfNull(recordHistory);
+        ArgumentNullException.ThrowIfNull(refreshCockpit);
 
         _workspace = workspace;
         _manager = manager;
@@ -117,6 +133,7 @@ internal sealed class WorkspaceViewCoordinator
         _openGraphViewsByRootId = openGraphViewsByRootId;
         _refreshStatusBar = refreshStatusBar;
         _recordHistory = recordHistory;
+        _refreshCockpit = refreshCockpit;
 
         // Select-to-inspect / Open-to-edit (WP8.0A UI Architecture.md §4, unchanged).
         _explorerView.ObjectSelected += async (id, kind) =>
@@ -131,7 +148,7 @@ internal sealed class WorkspaceViewCoordinator
         {
             var view = await _workspace.Navigation.OpenAsync(id, kind).ConfigureAwait(true);
             _documentArea!.ShowTab(view);
-            _cockpitView!.Refresh();
+            _refreshCockpit();
 
             // "Recent objects" (`WP 10.6A`) — recorded here, the one
             // place every Open path already converges (tree double-click/
@@ -145,7 +162,7 @@ internal sealed class WorkspaceViewCoordinator
             _statusBar.SetText(message);
             _toastHost.Show(message, FeedbackSeverity.Success);
             _recordHistory(message);
-            _cockpitView!.Refresh();
+            _refreshCockpit();
         };
         _explorerView.RecentObjects = _recentObjects;
         _explorerView.Favourites = _favouriteObjects;
@@ -186,7 +203,7 @@ internal sealed class WorkspaceViewCoordinator
             if (result.Succeeded)
             {
                 await _explorerView.LoadAsync().ConfigureAwait(true);
-                _cockpitView!.Refresh();
+                _refreshCockpit();
             }
         };
         _inspectorView.ActionCompleted += async message =>
@@ -195,25 +212,23 @@ internal sealed class WorkspaceViewCoordinator
             _toastHost.Show(message, FeedbackSeverity.Success);
             _recordHistory(message);
             await _explorerView.LoadAsync().ConfigureAwait(true);
-            _cockpitView!.Refresh();
+            _refreshCockpit();
         };
     }
 
     /// <summary>
-    /// Attaches the now-constructed <see cref="DocumentAreaView"/>/
-    /// <see cref="CockpitView"/> — must be called exactly once,
-    /// immediately after both are constructed (see this type's own
-    /// remarks for why each needs the other to exist first), wiring the
-    /// one piece of Document Area interaction (Tab Close) that could not
-    /// be wired inside this collaborator's own constructor.
+    /// Attaches the now-constructed <see cref="DocumentAreaView"/> — must
+    /// be called exactly once, immediately after it is constructed (see
+    /// this type's own remarks for why it needs this collaborator to
+    /// exist first), wiring the one piece of Document Area interaction
+    /// (Tab Close) that could not be wired inside this collaborator's own
+    /// constructor.
     /// </summary>
-    public void Attach(DocumentAreaView documentArea, CockpitView cockpitView)
+    public void Attach(DocumentAreaView documentArea)
     {
         ArgumentNullException.ThrowIfNull(documentArea);
-        ArgumentNullException.ThrowIfNull(cockpitView);
 
         _documentArea = documentArea;
-        _cockpitView = cockpitView;
         _documentArea.TabCloseRequested += viewId => _ = CloseDocumentAsync(viewId);
     }
 
@@ -229,7 +244,7 @@ internal sealed class WorkspaceViewCoordinator
     /// </summary>
     /// <remarks>
     /// Only ever invoked as a deferred delegate, after
-    /// <see cref="AttachDocumentArea"/> has already run — the
+    /// <see cref="Attach"/> has already run — the
     /// null-forgiving operator on <see cref="_documentArea"/> here
     /// suppresses a known, harmless nullable-flow-analysis limitation (a
     /// method's own captured-field flow state is evaluated at its own
@@ -259,7 +274,7 @@ internal sealed class WorkspaceViewCoordinator
             _recordHistory(message);
             await _explorerView.LoadAsync().ConfigureAwait(true);
             _inspectorView.Refresh();
-            _cockpitView!.Refresh();
+            _refreshCockpit();
         };
         // Undo/Redo (`WP 10.6A`, `ADR-0099`) — every discipline's own
         // Object Editor shares this one commit path, so this single
@@ -273,7 +288,7 @@ internal sealed class WorkspaceViewCoordinator
     {
         var relatedView = await _workspace.Navigation.OpenAsync(id, kind).ConfigureAwait(true);
         _documentArea!.ShowTab(relatedView);
-        _cockpitView!.Refresh();
+        _refreshCockpit();
     }
 
     /// <summary>Fire-and-forget wrapper over <see cref="NavigateToObjectAsync"/> — the delegate shape every synchronous callback site (Object Editor "Open →" links, the Cockpit's own Favourite Projects card, the Digital Thread graph) needs.</summary>
@@ -338,6 +353,6 @@ internal sealed class WorkspaceViewCoordinator
         foreach (var rootId in _openGraphViewsByRootId.Where(kv => kv.Value.Id == viewId).Select(kv => kv.Key).ToList())
             _openGraphViewsByRootId.Remove(rootId);
         _documentArea.RemoveTab(viewId);
-        _cockpitView!.Refresh();
+        _refreshCockpit();
     }
 }
