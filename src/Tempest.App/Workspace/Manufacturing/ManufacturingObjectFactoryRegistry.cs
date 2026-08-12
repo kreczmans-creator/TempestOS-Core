@@ -21,10 +21,32 @@ namespace Tempest.App.Workspace.Manufacturing;
 /// Operations," never "Test Operations" — disclosed in
 /// `WP9.5A Technical Debt Assessment.md`.
 /// </remarks>
+/// <remarks>
+/// **`WP 12.1B` (`ADR-0105`).** <see cref="ManufacturingOperationKind"/>/
+/// <see cref="WorkInstructionKind"/>/<see cref="InspectionKind"/> — this
+/// class's own three base Kinds — are now declared as named constants
+/// alongside its own already-disciplined `Classification` sub-values
+/// (`ADR-0091` already required those be declared once; this Work
+/// Package closes the one remaining gap, the base Kinds themselves,
+/// previously only named inside <see cref="SupportedKinds"/>). Named
+/// with a `Kind` suffix, not bare `ManufacturingOperation`, since the
+/// Domain type of that identical name is already this class's own most
+/// frequently used type reference. No value, no behaviour, and no
+/// public signature changed — only where each literal is declared.
+/// </remarks>
 public sealed class ManufacturingObjectFactoryRegistry
 {
+    /// <summary>The <see cref="IEngineeringObject.Kind"/> for a Manufacturing Operation.</summary>
+    public const string ManufacturingOperationKind = "ManufacturingOperation";
+
+    /// <summary>The <see cref="IEngineeringObject.Kind"/> for a Work Instruction.</summary>
+    public const string WorkInstructionKind = "WorkInstruction";
+
+    /// <summary>The <see cref="IEngineeringObject.Kind"/> for an Inspection.</summary>
+    public const string InspectionKind = "Inspection";
+
     /// <summary>The Kinds this registry can construct.</summary>
-    public static readonly IReadOnlyList<string> SupportedKinds = ["ManufacturingOperation", "WorkInstruction", "Inspection"];
+    public static readonly IReadOnlyList<string> SupportedKinds = [ManufacturingOperationKind, WorkInstructionKind, InspectionKind];
 
     /// <summary>
     /// The <see cref="EngineeringObjectMetadata.Classification"/> values
@@ -47,7 +69,7 @@ public sealed class ManufacturingObjectFactoryRegistry
         _context = context;
     }
 
-    /// <summary>Creates a new <c>"ManufacturingOperation"</c>, moving it under <paramref name="parentId"/> if one is given.</summary>
+    /// <summary>Creates a new <see cref="ManufacturingOperationKind"/>, moving it under <paramref name="parentId"/> if one is given.</summary>
     /// <param name="partId">The Mechanical Part/Assembly this Operation manufactures — <see cref="IManufacturingOperation.PartId"/>.</param>
     /// <param name="classification">One of <see cref="Routing"/>/<see cref="Operation"/>/<see cref="SupplierOperation"/>, or any other free-text classification.</param>
     /// <exception cref="ArgumentException"><paramref name="displayName"/> is null/empty/whitespace.</exception>
@@ -61,7 +83,7 @@ public sealed class ManufacturingObjectFactoryRegistry
         var metadata = classification is null ? EngineeringObjectMetadata.Empty : new EngineeringObjectMetadata(Classification: classification);
 
         var factory = new EngineeringObjectFactory<ManufacturingOperation>(
-            "ManufacturingOperation", _context, (doc, rev) => new ManufacturingOperation(doc, rev, _context, identifier, displayName, metadata, partId));
+            ManufacturingOperationKind, _context, (doc, rev) => new ManufacturingOperation(doc, rev, _context, identifier, displayName, metadata, partId));
 
         var created = await factory.CreateAsync(initialContent, cancellationToken).ConfigureAwait(false);
 
@@ -71,7 +93,7 @@ public sealed class ManufacturingObjectFactoryRegistry
         return created;
     }
 
-    /// <summary>Creates a new <c>"WorkInstruction"</c> against <paramref name="manufacturingOperationId"/>, moving it under <paramref name="parentId"/> if one is given.</summary>
+    /// <summary>Creates a new <see cref="WorkInstructionKind"/> against <paramref name="manufacturingOperationId"/>, moving it under <paramref name="parentId"/> if one is given.</summary>
     /// <exception cref="ArgumentException"><paramref name="displayName"/> is null/empty/whitespace.</exception>
     public async Task<IEngineeringObject> CreateWorkInstructionAsync(
         string? identifier, string displayName, string initialContent, Guid manufacturingOperationId, Guid? parentId,
@@ -81,7 +103,7 @@ public sealed class ManufacturingObjectFactoryRegistry
         ArgumentNullException.ThrowIfNull(initialContent);
 
         var factory = new EngineeringObjectFactory<WorkInstruction>(
-            "WorkInstruction", _context, (doc, rev) => new WorkInstruction(
+            WorkInstructionKind, _context, (doc, rev) => new WorkInstruction(
                 doc, rev, _context, identifier, displayName, EngineeringObjectMetadata.Empty, manufacturingOperationId));
 
         var created = await factory.CreateAsync(initialContent, cancellationToken).ConfigureAwait(false);
@@ -92,7 +114,7 @@ public sealed class ManufacturingObjectFactoryRegistry
         return created;
     }
 
-    /// <summary>Creates a new <c>"Inspection"</c> verifying <paramref name="subjectId"/>, moving it under <paramref name="parentId"/> if one is given.</summary>
+    /// <summary>Creates a new <see cref="InspectionKind"/> verifying <paramref name="subjectId"/>, moving it under <paramref name="parentId"/> if one is given.</summary>
     /// <exception cref="ArgumentException"><paramref name="displayName"/>/<paramref name="method"/> is null/empty/whitespace.</exception>
     public async Task<IEngineeringObject> CreateInspectionAsync(
         string displayName, string initialContent, Guid subjectId, string method, Guid? parentId,
@@ -103,7 +125,7 @@ public sealed class ManufacturingObjectFactoryRegistry
         ArgumentNullException.ThrowIfNull(initialContent);
 
         var factory = new EngineeringObjectFactory<Inspection>(
-            "Inspection", _context, (doc, rev) => new Inspection(doc, rev, _context, displayName, EngineeringObjectMetadata.Empty, subjectId, method));
+            InspectionKind, _context, (doc, rev) => new Inspection(doc, rev, _context, displayName, EngineeringObjectMetadata.Empty, subjectId, method));
 
         var created = await factory.CreateAsync(initialContent, cancellationToken).ConfigureAwait(false);
 

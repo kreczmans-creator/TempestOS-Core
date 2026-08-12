@@ -1,6 +1,7 @@
 using Avalonia;
 using Tempest.App.Workspace.Verification;
 using Tempest.Core.EngineeringDomain;
+using Tempest.Core.Verification;
 
 namespace Tempest.Desktop.DigitalThread;
 
@@ -72,12 +73,21 @@ public readonly record struct DigitalThreadBreadcrumbEntry(Guid ObjectId, string
 /// Debt Register's own updated <c>TD-32</c> disposition.
 /// </para>
 /// </remarks>
+/// <remarks>
+/// **`WP 12.1B` (`ADR-0105`).** Previously declared three private local
+/// constants (<c>VerificationActivityKind</c>, <c>VerificationRecordKind</c>,
+/// <c>VerifiedByRelationshipKind</c>) duplicating values already
+/// canonically owned elsewhere — <see cref="VerificationService.VerificationRecordDocumentKind"/>/
+/// <see cref="VerificationService.VerifiedByRelationshipKind"/>
+/// (`Tempest.Core.Verification`) and
+/// <see cref="VerificationActivityFactoryRegistry.SupportedKind"/>
+/// (`Tempest.App.Workspace.Verification`). This was the confirmed,
+/// motivating cross-layer duplicate `WP 12.1A`'s own investigation
+/// found — closed by referencing each owning constant directly instead.
+/// No value, no behaviour changed.
+/// </remarks>
 public sealed class DigitalThreadGraphModel
 {
-    private const string VerificationActivityKind = "VerificationActivity";
-    private const string VerificationRecordKind = "VerificationRecord";
-    private const string VerifiedByRelationshipKind = "verifiedBy";
-
     private readonly EngineeringDomainContext _domainContext;
     private readonly Dictionary<Guid, GraphNode> _nodes = new();
     private readonly List<Guid> _nodeOrder = new();
@@ -312,14 +322,14 @@ public sealed class DigitalThreadGraphModel
         foreach (var relationship in incoming)
             AddNeighbour(objectId, relationship.SourceId, relationship.TargetId, relationship.RelationshipKind, relationship.Category);
 
-        if (string.Equals(target.Kind, VerificationActivityKind, StringComparison.Ordinal))
+        if (string.Equals(target.Kind, VerificationActivityFactoryRegistry.SupportedKind, StringComparison.Ordinal))
         {
             var records = VerificationRecordReader.GetResultHistoryAsync(_domainContext, objectId).GetAwaiter().GetResult();
             foreach (var record in records)
             {
-                var recordNode = new GraphNode(record.RecordId, VerificationRecordKind, $"{record.Outcome} — {record.Method}", status: null, isCentre: false, isExpanded: true, isRecord: true);
+                var recordNode = new GraphNode(record.RecordId, VerificationService.VerificationRecordDocumentKind, $"{record.Outcome} — {record.Method}", status: null, isCentre: false, isExpanded: true, isRecord: true);
                 AddNode(recordNode);
-                AddEdge(objectId, record.RecordId, VerifiedByRelationshipKind, RelationshipCategory.Verification);
+                AddEdge(objectId, record.RecordId, VerificationService.VerifiedByRelationshipKind, RelationshipCategory.Verification);
             }
         }
     }
