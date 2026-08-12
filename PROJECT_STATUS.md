@@ -1,6 +1,75 @@
 # TempestOS — Project Status
 
-**Last Updated:** 2026-08-12 (`WP 12.1B` Architecture Review Follow-Up —
+**Last Updated:** 2026-08-12 (`WP 12.9.0` — Release Preparation &
+Engineering Sign-Off, Architecture phase. The final roadmap-defined
+`v0.12.0` Work Package, on its own new branch (`feature/v0.12.0-release-preparation-and-signoff`).
+Designs the permanent TempestOS Engineering Readiness Review (ERR):
+five readiness categories (Architecture/Implementation/Verification/
+Governance/Release), each with defined required evidence, pass
+criteria, and blocking conditions; a written blocking taxonomy (Release
+Blocking / Disclosed Non-Blocking / Pre-Existing Unaffected — no prior
+sign-off ever wrote this down); a fixed, four-value verdict vocabulary
+(`CERTIFIED`; `CERTIFIED WITH ACCEPTED TECHNICAL DEBT`; `ACCEPT WITH
+OBSERVATIONS`; `NOT READY`); executed via the six-discipline Programme
+Review `WP 10.9A`/`WP 11.9.0` each already, independently, converged
+on. **`ADR-0106` produced** — three alternatives evaluated and
+rejected (continue the ad hoc checklist; a single-reviewer sign-off; a
+purely automated gate), each on this project's own concrete evidence,
+most directly `WP 11.9.0`'s own independently-found `TD-42`/`TD-43` as
+the case against collapsing multi-discipline review. **Phase A
+repository assessment**, performed directly, not carried forward:
+`main`'s own merge state confirmed via `git log` (`WP 12.0A`/`12.0B`,
+`12.1A`/`12.1B`, `12.3A`/`12.3B`, `12.4A`/`12.4B` all merged; `WP
+12.2A`'s own disposition complete but not yet committed — its branch
+tip is byte-identical to `main`'s own, its changes existing only as an
+uncommitted stash); Debug+Release builds and full regression freshly
+re-run (0 Warnings/0 Errors both, 2,255/2,255 passing both);
+`scripts/governance-healthcheck.ps1` run directly (3 passed, 1 warned,
+4 failed of 8 — one genuine, previously-undisclosed, `v0.12.0`-caused
+gap found: `Engineering Vocabulary Register.md` never linked from
+`Governance Index.md`; the remaining failures are the Academy Index's
+own large, pre-existing, already-disclosed gap and mostly tool-level
+path-check false positives); Technical Debt (48 entries) and Future
+Capability (84 entries) registers both independently re-derived by
+direct count, matching their own claimed totals exactly, nothing
+newly blocking. **Found and fixed, this Work Package's own
+Governance-readiness review**: `Architecture Document Register.md`'s
+own `Classification & Relationship Vocabulary Safety Net Architecture.md`
+row was still marked Designed despite `WP 12.1B` having implemented
+`ADR-0105` and merged it into `main` — corrected directly, plus that
+register's own stale `Related ADRs` field. **This is explicitly not
+release engineering** — no verdict is rendered for `v0.12.0` itself;
+the actual `v0.12.0` Engineering Readiness Review execution (the six
+independent reviews, the reconciled Programme Review, Product
+Approval's own verdict) remains a distinct, later, separately-commissioned
+Work Package, gated on `WP 12.2A`'s own disposition being committed
+and merged first, among other preconditions named directly in
+`docs/architecture/Engineering Readiness Review Architecture.md`'s own
+"Execution boundary" section. **Architecture review and follow-up,
+same day, before any commit**: a read-only review found two blocking
+findings — the ADR Register's own Entries table missing `ADR-0106`'s
+row (`governance-healthcheck.ps1`: 105 files, 104 register rows), and
+an internally contradictory relationship between category status, the
+blocking taxonomy, and the verdict vocabulary that made `CERTIFIED
+WITH ACCEPTED TECHNICAL DEBT` unreachable as originally written. Both
+closed: the Entries table row added (`governance-healthcheck.ps1` now
+`[PASS]`, 105/105); the architecture document's §4 rewritten as the
+single, explicit, priority-ordered derivation from finding kind →
+category status → release verdict, with §2/§6 and `ADR-0106`'s own
+Decision section corrected to cite it rather than each restate their
+own version — the minimum change making all four verdicts
+simultaneously reachable, mutually exclusive, and objectively
+derivable. No other part of the model touched. Architecture only; zero
+`src/`/`tests/` files touched, confirmed directly; no commits, merge,
+tag, or push performed at either pass. See `docs/academy/03 Work
+Packages/WP12.9.0-release-preparation-and-engineering-sign-off-architecture.md`
+(§8 Addendum for the full account),
+`docs/architecture/Engineering Readiness Review Architecture.md`,
+`ADR-0106`. **`WP 12.1B` Architecture Review Follow-Up's own status
+line, below this point, is this field's prior content — retained, not
+deleted:**
+
+**Previously updated** 2026-08-12 (`WP 12.1B` Architecture Review Follow-Up —
 documentation only, closing the two findings from `WP 12.1B`'s own
 read-only architecture/code review. **Finding 1**: the Engineering
 Vocabulary Register's own narrative claimed a declaring-class count of "12";
