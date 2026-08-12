@@ -28,6 +28,24 @@ namespace Tempest.Desktop.Composition;
 /// back — the single largest, most mechanical extraction (~29% of the
 /// pre-decomposition source file).
 /// </summary>
+/// <remarks>
+/// **`WP 12.4B` (`ADR-0104`).** Every one of this class's own ~16
+/// distinct handler bodies previously repeated an identical four-
+/// statement "report the result via <see cref="StatusBarView"/>/
+/// <see cref="ToastHost"/>, then refresh <see cref="ProjectExplorerView"/>/
+/// <see cref="CockpitView"/> on success" tail — a real, quantified
+/// duplication `WP 12.4A`'s own architecture review counted directly (16
+/// of the platform's own 25 total occurrences lived in this one file).
+/// Consolidated into <c>ReportAsync</c>, a local function — never
+/// a typed callback interface: `ADR-0104` sanctions a typed interface
+/// only where a single collaborator's own *constructor* needs three or
+/// more genuinely bundled callbacks, and this class's own constructor
+/// needs none added by this change — <c>ReportAsync</c> closes
+/// over constructor parameters already held, exactly the "direct
+/// delegate... zero new abstraction" default `ADR-0104` names first.
+/// Every per-handler success/failure message text is unchanged — this
+/// is a pure "extract the repeated tail," never a rewording.
+/// </remarks>
 internal sealed class RibbonObjectActionHandlers
 {
     /// <summary>Initialises a new instance of the <see cref="RibbonObjectActionHandlers"/> class, populating every handler onto <paramref name="ribbon"/>'s own <see cref="RibbonView.ObjectCreationHandlers"/> dictionary.</summary>
@@ -44,6 +62,23 @@ internal sealed class RibbonObjectActionHandlers
         ArgumentNullException.ThrowIfNull(cockpitView);
         ArgumentNullException.ThrowIfNull(confirmationDialog);
         ArgumentNullException.ThrowIfNull(inputDialog);
+
+        // `ADR-0104` — the report-then-refresh consolidation: report
+        // `message` via StatusBar/Toast unconditionally; refresh Explorer/
+        // Cockpit only on success. Every one of the ~16 call sites below
+        // already computed this identical tail inline — moved here
+        // verbatim, not reworded, and still called with each handler's
+        // own real, distinct success/failure message text.
+        async Task ReportAsync(string message, bool succeeded)
+        {
+            statusBar.SetText(message);
+            toastHost.Show(message, succeeded ? FeedbackSeverity.Success : FeedbackSeverity.Error);
+            if (succeeded)
+            {
+                await explorerView.LoadAsync().ConfigureAwait(true);
+                cockpitView.Refresh();
+            }
+        }
 
         // A real, working "Create Object" flow (`WP 10.5B`, Dialog
         // Framework/"object creation experience") — honestly scoped to
@@ -66,13 +101,7 @@ internal sealed class RibbonObjectActionHandlers
                 return;
 
             var result = await commandDispatcher.DispatchAsync(new CreateMechanicalObjectCommand("Part", name), CancellationToken.None).ConfigureAwait(true);
-            statusBar.SetText(result.Succeeded ? $"Created Part '{name}'." : result.Message ?? "Create failed.");
-            toastHost.Show(result.Succeeded ? $"Created Part '{name}'." : result.Message ?? "Create failed.", result.Succeeded ? FeedbackSeverity.Success : FeedbackSeverity.Error);
-            if (result.Succeeded)
-            {
-                await explorerView.LoadAsync().ConfigureAwait(true);
-                cockpitView.Refresh();
-            }
+            await ReportAsync(result.Succeeded ? $"Created Part '{name}'." : result.Message ?? "Create failed.", result.Succeeded).ConfigureAwait(true);
         };
 
         // A real "Duplicate workflow" (`WP 10.5B` scope) — genuinely
@@ -97,13 +126,7 @@ internal sealed class RibbonObjectActionHandlers
                 return;
 
             var result = await commandDispatcher.DispatchAsync(new DuplicateMechanicalObjectCommand(selection.ObjectId, selection.Kind), CancellationToken.None).ConfigureAwait(true);
-            statusBar.SetText(result.Succeeded ? $"Duplicated the selected {selection.Kind}." : result.Message ?? "Duplicate failed.");
-            toastHost.Show(result.Succeeded ? $"Duplicated the selected {selection.Kind}." : result.Message ?? "Duplicate failed.", result.Succeeded ? FeedbackSeverity.Success : FeedbackSeverity.Error);
-            if (result.Succeeded)
-            {
-                await explorerView.LoadAsync().ConfigureAwait(true);
-                cockpitView.Refresh();
-            }
+            await ReportAsync(result.Succeeded ? $"Duplicated the selected {selection.Kind}." : result.Message ?? "Duplicate failed.", result.Succeeded).ConfigureAwait(true);
         };
 
         // WP 10.7A — Feature Completion. Closes the WP10.6D-audited gap
@@ -132,14 +155,7 @@ internal sealed class RibbonObjectActionHandlers
             }
 
             var result = await commandDispatcher.DispatchAsync(factory(selection.ObjectId, selection.Kind, status), CancellationToken.None).ConfigureAwait(true);
-            var message = result.Succeeded ? $"'{verbLabel}' applied to the selected {selection.Kind}." : result.Message ?? $"'{verbLabel}' failed.";
-            statusBar.SetText(message);
-            toastHost.Show(message, result.Succeeded ? FeedbackSeverity.Success : FeedbackSeverity.Error);
-            if (result.Succeeded)
-            {
-                await explorerView.LoadAsync().ConfigureAwait(true);
-                cockpitView.Refresh();
-            }
+            await ReportAsync(result.Succeeded ? $"'{verbLabel}' applied to the selected {selection.Kind}." : result.Message ?? $"'{verbLabel}' failed.", result.Succeeded).ConfigureAwait(true);
         };
 
         ribbon.ObjectCreationHandlers["calculations.lock"] = statusHandler("Lock", LifecycleState.Approved, static (id, kind, status) => new SetCalculationStatusCommand(id, kind, status));
@@ -179,10 +195,7 @@ internal sealed class RibbonObjectActionHandlers
 
             var status = Enum.Parse<RequirementStatus>(statusText, ignoreCase: true);
             var result = await commandDispatcher.DispatchAsync(new SetRequirementStatusCommand(selection.ObjectId, status), CancellationToken.None).ConfigureAwait(true);
-            var message = result.Succeeded ? $"Requirement status set to {status}." : result.Message ?? "Set status failed.";
-            statusBar.SetText(message);
-            toastHost.Show(message, result.Succeeded ? FeedbackSeverity.Success : FeedbackSeverity.Error);
-            if (result.Succeeded) { await explorerView.LoadAsync().ConfigureAwait(true); cockpitView.Refresh(); }
+            await ReportAsync(result.Succeeded ? $"Requirement status set to {status}." : result.Message ?? "Set status failed.", result.Succeeded).ConfigureAwait(true);
         };
 
         ribbon.ObjectCreationHandlers["requirements.set-owner"] = async () =>
@@ -194,10 +207,7 @@ internal sealed class RibbonObjectActionHandlers
             if (owner is null) return;
 
             var result = await commandDispatcher.DispatchAsync(new SetRequirementOwnerCommand(selection.ObjectId, owner), CancellationToken.None).ConfigureAwait(true);
-            var message = result.Succeeded ? $"Owner set to '{owner}'." : result.Message ?? "Set owner failed.";
-            statusBar.SetText(message);
-            toastHost.Show(message, result.Succeeded ? FeedbackSeverity.Success : FeedbackSeverity.Error);
-            if (result.Succeeded) { await explorerView.LoadAsync().ConfigureAwait(true); cockpitView.Refresh(); }
+            await ReportAsync(result.Succeeded ? $"Owner set to '{owner}'." : result.Message ?? "Set owner failed.", result.Succeeded).ConfigureAwait(true);
         };
 
         ribbon.ObjectCreationHandlers["requirements.set-priority"] = async () =>
@@ -214,10 +224,7 @@ internal sealed class RibbonObjectActionHandlers
 
             var priority = Enum.Parse<RequirementPriority>(priorityText, ignoreCase: true);
             var result = await commandDispatcher.DispatchAsync(new SetRequirementPriorityCommand(selection.ObjectId, priority), CancellationToken.None).ConfigureAwait(true);
-            var message = result.Succeeded ? $"Priority set to {priority}." : result.Message ?? "Set priority failed.";
-            statusBar.SetText(message);
-            toastHost.Show(message, result.Succeeded ? FeedbackSeverity.Success : FeedbackSeverity.Error);
-            if (result.Succeeded) { await explorerView.LoadAsync().ConfigureAwait(true); cockpitView.Refresh(); }
+            await ReportAsync(result.Succeeded ? $"Priority set to {priority}." : result.Message ?? "Set priority failed.", result.Succeeded).ConfigureAwait(true);
         };
 
         // A shared factory for every discipline's own Duplicate button —
@@ -235,10 +242,7 @@ internal sealed class RibbonObjectActionHandlers
             if (!confirmed) return;
 
             var result = await commandDispatcher.DispatchAsync(factory(selection.ObjectId, selection.Kind), CancellationToken.None).ConfigureAwait(true);
-            var message = result.Succeeded ? $"Duplicated the selected {selection.Kind}." : result.Message ?? "Duplicate failed.";
-            statusBar.SetText(message);
-            toastHost.Show(message, result.Succeeded ? FeedbackSeverity.Success : FeedbackSeverity.Error);
-            if (result.Succeeded) { await explorerView.LoadAsync().ConfigureAwait(true); cockpitView.Refresh(); }
+            await ReportAsync(result.Succeeded ? $"Duplicated the selected {selection.Kind}." : result.Message ?? "Duplicate failed.", result.Succeeded).ConfigureAwait(true);
         };
 
         ribbon.ObjectCreationHandlers["calculations.duplicate"] = duplicateHandler(static (id, kind) => new DuplicateCalculationObjectCommand(id, kind));
@@ -261,10 +265,7 @@ internal sealed class RibbonObjectActionHandlers
             if (newIdentifier is null) return;
 
             var result = await commandDispatcher.DispatchAsync(new DuplicateRequirementCommand(selection.ObjectId, newIdentifier), CancellationToken.None).ConfigureAwait(true);
-            var message = result.Succeeded ? $"Duplicated as '{newIdentifier}'." : result.Message ?? "Duplicate failed.";
-            statusBar.SetText(message);
-            toastHost.Show(message, result.Succeeded ? FeedbackSeverity.Success : FeedbackSeverity.Error);
-            if (result.Succeeded) { await explorerView.LoadAsync().ConfigureAwait(true); cockpitView.Refresh(); }
+            await ReportAsync(result.Succeeded ? $"Duplicated as '{newIdentifier}'." : result.Message ?? "Duplicate failed.", result.Succeeded).ConfigureAwait(true);
         };
 
         // Create — the four disciplines with one Create{X}ObjectCommand
@@ -277,10 +278,7 @@ internal sealed class RibbonObjectActionHandlers
             if (name is null) return;
 
             var result = await commandDispatcher.DispatchAsync(new CreateCalculationObjectCommand("Calculation", name), CancellationToken.None).ConfigureAwait(true);
-            var message = result.Succeeded ? $"Created Calculation '{name}'." : result.Message ?? "Create failed.";
-            statusBar.SetText(message);
-            toastHost.Show(message, result.Succeeded ? FeedbackSeverity.Success : FeedbackSeverity.Error);
-            if (result.Succeeded) { await explorerView.LoadAsync().ConfigureAwait(true); cockpitView.Refresh(); }
+            await ReportAsync(result.Succeeded ? $"Created Calculation '{name}'." : result.Message ?? "Create failed.", result.Succeeded).ConfigureAwait(true);
         };
 
         ribbon.ObjectCreationHandlers["documents.create"] = async () =>
@@ -289,10 +287,7 @@ internal sealed class RibbonObjectActionHandlers
             if (name is null) return;
 
             var result = await commandDispatcher.DispatchAsync(new CreateDocumentObjectCommand("Document", name), CancellationToken.None).ConfigureAwait(true);
-            var message = result.Succeeded ? $"Created Document '{name}'." : result.Message ?? "Create failed.";
-            statusBar.SetText(message);
-            toastHost.Show(message, result.Succeeded ? FeedbackSeverity.Success : FeedbackSeverity.Error);
-            if (result.Succeeded) { await explorerView.LoadAsync().ConfigureAwait(true); cockpitView.Refresh(); }
+            await ReportAsync(result.Succeeded ? $"Created Document '{name}'." : result.Message ?? "Create failed.", result.Succeeded).ConfigureAwait(true);
         };
 
         ribbon.ObjectCreationHandlers["manufacturing.create"] = async () =>
@@ -301,10 +296,7 @@ internal sealed class RibbonObjectActionHandlers
             if (name is null) return;
 
             var result = await commandDispatcher.DispatchAsync(new CreateManufacturingObjectCommand("ManufacturingOperation", name), CancellationToken.None).ConfigureAwait(true);
-            var message = result.Succeeded ? $"Created Manufacturing Operation '{name}'." : result.Message ?? "Create failed.";
-            statusBar.SetText(message);
-            toastHost.Show(message, result.Succeeded ? FeedbackSeverity.Success : FeedbackSeverity.Error);
-            if (result.Succeeded) { await explorerView.LoadAsync().ConfigureAwait(true); cockpitView.Refresh(); }
+            await ReportAsync(result.Succeeded ? $"Created Manufacturing Operation '{name}'." : result.Message ?? "Create failed.", result.Succeeded).ConfigureAwait(true);
         };
 
         // Verification Create genuinely means "verify the object I have
@@ -325,10 +317,7 @@ internal sealed class RibbonObjectActionHandlers
             if (name is null) return;
 
             var result = await commandDispatcher.DispatchAsync(new CreateVerificationActivityCommand(name, selection.ObjectId, "Inspection"), CancellationToken.None).ConfigureAwait(true);
-            var message = result.Succeeded ? $"Created Verification Activity '{name}'." : result.Message ?? "Create failed.";
-            statusBar.SetText(message);
-            toastHost.Show(message, result.Succeeded ? FeedbackSeverity.Success : FeedbackSeverity.Error);
-            if (result.Succeeded) { await explorerView.LoadAsync().ConfigureAwait(true); cockpitView.Refresh(); }
+            await ReportAsync(result.Succeeded ? $"Created Verification Activity '{name}'." : result.Message ?? "Create failed.", result.Succeeded).ConfigureAwait(true);
         };
 
         // Manufacturing's own "Record Inspection Result" (`WP 10.8A`) —
@@ -358,10 +347,7 @@ internal sealed class RibbonObjectActionHandlers
 
             var outcome = Enum.Parse<VerificationOutcome>(outcomeText, ignoreCase: true);
             var result = await commandDispatcher.DispatchAsync(new RecordVerificationResultCommand(selection.ObjectId, selection.Kind, outcome, method), CancellationToken.None).ConfigureAwait(true);
-            var message = result.Succeeded ? $"Result recorded: {outcome}." : result.Message ?? "Record result failed.";
-            statusBar.SetText(message);
-            toastHost.Show(message, result.Succeeded ? FeedbackSeverity.Success : FeedbackSeverity.Error);
-            if (result.Succeeded) { await explorerView.LoadAsync().ConfigureAwait(true); cockpitView.Refresh(); }
+            await ReportAsync(result.Succeeded ? $"Result recorded: {outcome}." : result.Message ?? "Record result failed.", result.Succeeded).ConfigureAwait(true);
         };
 
         // Requirements Create — three distinct commands/descriptors
@@ -379,10 +365,7 @@ internal sealed class RibbonObjectActionHandlers
             if (statement is null) return;
 
             var result = await commandDispatcher.DispatchAsync(new CreateRequirementCommand(identifier, statement), CancellationToken.None).ConfigureAwait(true);
-            var message = result.Succeeded ? $"Created Requirement '{identifier}'." : result.Message ?? "Create failed.";
-            statusBar.SetText(message);
-            toastHost.Show(message, result.Succeeded ? FeedbackSeverity.Success : FeedbackSeverity.Error);
-            if (result.Succeeded) { await explorerView.LoadAsync().ConfigureAwait(true); cockpitView.Refresh(); }
+            await ReportAsync(result.Succeeded ? $"Created Requirement '{identifier}'." : result.Message ?? "Create failed.", result.Succeeded).ConfigureAwait(true);
         };
 
         ribbon.ObjectCreationHandlers["requirements.create-group"] = async () =>
@@ -391,10 +374,7 @@ internal sealed class RibbonObjectActionHandlers
             if (name is null) return;
 
             var result = await commandDispatcher.DispatchAsync(new CreateRequirementGroupCommand(name), CancellationToken.None).ConfigureAwait(true);
-            var message = result.Succeeded ? $"Created Requirement Group '{name}'." : result.Message ?? "Create failed.";
-            statusBar.SetText(message);
-            toastHost.Show(message, result.Succeeded ? FeedbackSeverity.Success : FeedbackSeverity.Error);
-            if (result.Succeeded) { await explorerView.LoadAsync().ConfigureAwait(true); cockpitView.Refresh(); }
+            await ReportAsync(result.Succeeded ? $"Created Requirement Group '{name}'." : result.Message ?? "Create failed.", result.Succeeded).ConfigureAwait(true);
         };
 
         ribbon.ObjectCreationHandlers["requirements.create-collection"] = async () =>
@@ -403,10 +383,7 @@ internal sealed class RibbonObjectActionHandlers
             if (name is null) return;
 
             var result = await commandDispatcher.DispatchAsync(new CreateRequirementCollectionCommand(name), CancellationToken.None).ConfigureAwait(true);
-            var message = result.Succeeded ? $"Created Requirement Collection '{name}'." : result.Message ?? "Create failed.";
-            statusBar.SetText(message);
-            toastHost.Show(message, result.Succeeded ? FeedbackSeverity.Success : FeedbackSeverity.Error);
-            if (result.Succeeded) { await explorerView.LoadAsync().ConfigureAwait(true); cockpitView.Refresh(); }
+            await ReportAsync(result.Succeeded ? $"Created Requirement Collection '{name}'." : result.Message ?? "Create failed.", result.Succeeded).ConfigureAwait(true);
         };
     }
 }

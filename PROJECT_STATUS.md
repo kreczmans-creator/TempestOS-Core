@@ -1,6 +1,119 @@
 # TempestOS — Project Status
 
-**Last Updated:** 2026-08-12 (`WP 12.0B` — Desktop Composition Root
+**Last Updated:** 2026-08-12 (`WP 12.4B` — Desktop Command & Event
+Wiring Implementation. A third directly-commissioned `v0.12.0` Work
+Package, on the same branch as `WP 12.4A`
+(`feature/v0.12.0-desktop-command-event-wiring`). Realises `ADR-0104`
+exactly as approved. Three characterization tests added before any
+refactor (`MechanicalCreate_OnARealPart_ActuallyCreatesARealObject`,
+`MechanicalDuplicate_OnARealPart_ActuallyCreatesARealCopy`,
+`DocumentsApprove_OnAFreshDraftDocument_IsRejectedByRealValidation_NeverThrows`),
+closing two real, confirmed-by-direct-search gaps: the entire Mechanical
+discipline had zero direct Ribbon-handler test coverage anywhere, and
+the shared `statusHandler` factory's own failure branch had never been
+exercised by any existing test. **Two `ADR-0104`-compliant changes, both
+direct delegates, neither a typed callback interface.** Before `WP
+12.4B`, `WorkspaceViewCoordinator`'s own genuine, delegate-shaped
+callback-parameter count was 2 (`refreshStatusBar`, `recordHistory`) —
+below `ADR-0104`'s own 3-callback threshold. `WP 12.4B` introduces a
+third, `refreshCockpit`, bringing the count to 3 and reaching that
+threshold. Despite reaching it, introducing a typed callback interface
+in the same change that first crosses the threshold was assessed and
+deferred as an explicit, disclosed engineering judgement — not applied
+speculatively — even though `WorkspaceViewCoordinator` is `ADR-0104`'s
+own named motivating example. (1) `RibbonObjectActionHandlers`'s own 16
+duplicated "report via StatusBar/Toast, then refresh Explorer/Cockpit"
+tails (`WP 12.4A`'s own quantified finding) consolidated into one local
+function, `ReportAsync`, defined inside the existing constructor — pure
+extract-method, zero new abstraction, zero constructor-signature change;
+every handler's own success/failure message text preserved unchanged,
+and `mechanical.create`/`mechanical.duplicate`'s own previously-double-
+computed message ternary normalised to compute once, matching the other
+14 sites' own existing convention. (2) `WP 12.0B`'s own architecture
+review Finding 5 closed: `UndoRedoCoordinator` and
+`WorkspaceViewCoordinator` both previously carried a two-phase-
+constructed `CockpitView` object reference (a nullable field plus an
+`Attach`/`AttachCockpitView` method) purely to call its own `Refresh()`
+— replaced in both with a plain `Action refreshCockpit` constructor
+parameter, wired from `MainWindow` via the identical field-closure
+lazy-capture pattern already established there for `DocumentAreaView`.
+`WorkspaceViewCoordinator`'s own two-phase `Attach` now takes only
+`DocumentAreaView` — the one genuine remaining construction-order cycle;
+`UndoRedoCoordinator`'s own `AttachCockpitView` method removed entirely.
+**Zero Desktop mediator, Desktop-local command dispatcher, or
+Desktop-local event dispatcher introduced; the platform Command/Event
+Framework left untouched** — all four exactly as instructed.
+`ADR-0103`'s ownership rules preserved throughout: every collaborator
+remains `new`-constructed by `MainWindow`, never DI-registered, never
+referencing a sibling collaborator directly. All public APIs preserved;
+behaviour verified identical, not merely asserted unchanged — the three
+new characterization tests (plus the full pre-existing suite) pass
+against both the pre-refactor and post-refactor code, identical
+assertions. Full Debug+Release regression: 2,248/2,248 passing (2,031
+`Tempest.Core.Tests` + 217 `Tempest.Desktop.Tests`, net +3 from the new
+characterization tests, zero regressions), 0 Warnings/0 Errors, both
+configurations. No new ADR — `ADR-0104` unmodified, implemented as
+designed with no factual correction exposed; `Desktop Command & Event
+Wiring Architecture.md`'s own Status flipped Designed → Implemented.
+No commit, merge, tag, or push performed. See `docs/academy/03 Work
+Packages/WP12.4B-desktop-command-and-event-wiring-implementation.md`,
+`docs/architecture/Desktop Command & Event Wiring Architecture.md`,
+`ADR-0104`, `docs/releases/v0.12.0/WorkPackages.md`. **`WP 12.4A`'s own
+status line, below this point, is this field's prior content — retained,
+not deleted:** (`WP 12.4A` — Desktop Command & Event
+Wiring Architecture. A second directly-commissioned `v0.12.0` Work
+Package (`WP 12.3A`/`WP 12.3B`'s own precedent), on its own branch
+`feature/v0.12.0-desktop-command-event-wiring` (cut from `main` after
+`WP 12.0A`/`WP 12.0B` merged). Reviews the Desktop layer's own command,
+event, and UI-wiring architecture after `WP 12.0B`'s decomposition.
+Catalogues every event in `Tempest.Desktop` directly (25, all plain
+`Action`/`Action<T>` delegates; zero unsubscription, zero `IDisposable`
+anywhere — found safe today given exactly one `MainWindow` is ever
+constructed per process, `ADR-0103`'s own "Ownership and lifetime"
+section already establishing why). Documents four distinct,
+already-individually-ADR-governed command mechanisms
+(`ICommandRegistry`/`ICommandDispatcher`, `RibbonView.ObjectCreationHandlers`,
+`KeyboardShortcuts`, `KeyboardCommandBindingProvider`) now composing
+together for the first time in one visible place, confirming none is
+redundant. Finds and quantifies real duplication — a four-statement
+"report via StatusBar/Toast, then refresh Explorer/Cockpit" tail
+repeated 42/25/25/19 times respectively across six files, concentrated
+in `RibbonObjectActionHandlers`/`WorkspaceViewCoordinator` — named as a
+real implementation-hygiene opportunity for a future `WP 12.4B`,
+deliberately not designed in full here. Re-confirms
+`WorkspaceViewCoordinator` as the strongest remaining decomposition
+candidate (`WP 12.0B`'s own architecture review Finding 4, unchanged);
+confirms neither it, `RibbonObjectActionHandlers`, nor `MainWindow`'s
+own constructor meets this project's own "God Method" bar
+(`FOUNDATION.md` non-negotiable 2) today. Evaluates six candidate
+cross-collaborator communication mechanisms in full (advantages/
+disadvantages/layering/ownership/lifetime/testing each): direct
+delegates, typed callback interfaces, a Desktop-local Mediator, a
+Desktop-local Command Dispatcher, a Desktop-local Event Dispatcher, and
+reuse of the existing platform Command/Event Framework. **`ADR-0104`
+produced** — direct delegates remain the default; typed callback
+interfaces sanctioned narrowly, at three or more bundled callbacks
+(directly answering `WorkspaceViewCoordinator`'s own 18-parameter
+constructor); the Mediator, a second Command Dispatcher, and a second
+Event Dispatcher are each explicitly rejected as Desktop composition
+mechanisms, on mechanism-specific grounds, not merely inferred from
+`ADR-0103`'s more general text — meets Engineering Governance §5's own
+ADR-creation criteria, applying `ADR-0103`'s own principles more
+specifically rather than replacing or narrowing them (this Work
+Package's own first-pass conclusion of "zero new ADR" was revised in
+the same Work Package once its own fuller brief's evaluation was
+carried out — disclosed directly here, not silently corrected).
+**Disclosed naming correction**: initially proposed under the label
+`WP 12.1A`, already the roadmap's own name for an unrelated item
+(Classification & Relationship Vocabulary Safety Net); corrected before
+any document was written. Architecture only; zero `src/`/`tests/`
+files touched, confirmed directly; no commit, merge, tag, or push
+performed. See `docs/architecture/Desktop Command & Event Wiring
+Architecture.md`, `ADR-0104`, `docs/academy/03 Work
+Packages/WP12.4A-desktop-command-and-event-wiring-architecture.md`,
+`docs/releases/v0.12.0/WorkPackages.md`. **`WP 12.0B`'s own status
+line, below this point, is this field's prior content — retained, not
+deleted:** (`WP 12.0B` — Desktop Composition Root
 Decomposition Implementation. Closes `WP11.0A Platform Architecture
 Review.md` Finding `A-1` in full, on branch
 `feature/v0.12.0-desktop-composition-domain-vocabulary-hardening`.

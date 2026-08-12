@@ -290,6 +290,145 @@ public sealed class FeatureCompletionTests
         }
     }
 
+    /// <summary>
+    /// `WP 12.4B` — closes a real, confirmed-by-direct-search coverage
+    /// gap: no existing test exercised `mechanical.create` at all (every
+    /// other Ribbon handler test above covers a different discipline).
+    /// Added before consolidating the report-then-refresh tail
+    /// (`ADR-0104`) so the refactor is provably behaviour-preserving for
+    /// this handler's own real success path too, not only the ones
+    /// already covered.
+    /// </summary>
+    [AvaloniaFact]
+    public async Task MechanicalCreate_OnARealPart_ActuallyCreatesARealObject()
+    {
+        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
+        try
+        {
+            await host.StartAsync();
+            var workspace = host.Workspace!;
+            await workspace.Navigation.SwitchAreaAsync(MechanicalWorkspaceExplorerModule.NavigationItemId);
+            var domainContext = (EngineeringDomainContext)host.Services!.GetService(typeof(EngineeringDomainContext));
+
+            var window = new MainWindow(host);
+            var ribbon = GetPrivateField<RibbonView>(window, "_ribbon");
+            var inputDialog = GetPrivateField<InputDialog>(window, "_inputDialog");
+
+            var handlerTask = ribbon.ObjectCreationHandlers["mechanical.create"]();
+            await Task.Delay(20);
+
+            var textBox = inputDialog.GetLogicalDescendants().OfType<TextBox>().Single();
+            textBox.Text = "WP12.4B Test Part";
+            var okButton = inputDialog.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "OK"));
+            okButton.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+
+            await handlerTask;
+
+            // A new "Part" with no explicit parent (Mechanical Create's
+            // own honest, disclosed scope — "defaults to Kind Part," no
+            // parent picker) is a real, valid, but parentless object — not
+            // necessarily reachable from any root Project's own Project
+            // Explorer tree traversal. Verified directly against the real
+            // domain repository instead, the authoritative source, rather
+            // than assuming tree visibility.
+            var allParts = await domainContext.Repository.ListByKindAsync("Part");
+            Assert.Contains(allParts, o => o is IHasBusinessIdentifier named && named.DisplayName == "WP12.4B Test Part");
+        }
+        finally
+        {
+            await host.ShutdownAsync();
+            await host.DisposeAsync();
+        }
+    }
+
+    /// <summary>`WP 12.4B` — closes the same class of gap as <see cref="MechanicalCreate_OnARealPart_ActuallyCreatesARealObject"/>, for <c>mechanical.duplicate</c>.</summary>
+    [AvaloniaFact]
+    public async Task MechanicalDuplicate_OnARealPart_ActuallyCreatesARealCopy()
+    {
+        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
+        try
+        {
+            await host.StartAsync();
+            var workspace = host.Workspace!;
+            await workspace.Navigation.SwitchAreaAsync(MechanicalWorkspaceExplorerModule.NavigationItemId);
+
+            var target = await FindFirstObjectNodeOfKindAsync(workspace.ProjectExplorer, await workspace.ProjectExplorer.GetRootNodesAsync(), "Part");
+            Assert.NotNull(target);
+            await workspace.Selection.SelectAsync(target!.Id, target.Kind!);
+
+            var countBefore = await CountAllObjectNodesAsync(workspace.ProjectExplorer, await workspace.ProjectExplorer.GetRootNodesAsync());
+
+            var window = new MainWindow(host);
+            var ribbon = GetPrivateField<RibbonView>(window, "_ribbon");
+            var confirmationDialog = GetPrivateField<ConfirmationDialog>(window, "_confirmationDialog");
+
+            var handlerTask = ribbon.ObjectCreationHandlers["mechanical.duplicate"]();
+            await Task.Delay(20);
+
+            var confirmButton = confirmationDialog.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "Duplicate"));
+            confirmButton.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+
+            await handlerTask;
+            await Task.Delay(20);
+
+            var countAfter = await CountAllObjectNodesAsync(workspace.ProjectExplorer, await workspace.ProjectExplorer.GetRootNodesAsync());
+            Assert.Equal(countBefore + 1, countAfter);
+        }
+        finally
+        {
+            await host.ShutdownAsync();
+            await host.DisposeAsync();
+        }
+    }
+
+    /// <summary>
+    /// `WP 12.4B` — closes a real coverage gap in the shared
+    /// <c>statusHandler</c> factory (`RibbonObjectActionHandlers`):
+    /// every existing test exercises only its own success path
+    /// (`CalculationsRequestReviewThenApprove...`). A direct Draft →
+    /// Approved jump on a fresh Document is genuinely rejected by
+    /// <c>LifecycleTransitionTable</c> (the identical real-validation
+    /// rejection <see cref="CalculationsRequestReviewThenApprove_OnARealCalculation_ActuallyChainsTheRealStatusTransitions"/>'s
+    /// own remarks already document for Calculations) — proving the
+    /// factory's own failure branch (report <c>result.Message</c>,
+    /// never refresh Explorer/Cockpit) behaves correctly too, before
+    /// `ADR-0104`'s report-then-refresh consolidation is applied to it.
+    /// </summary>
+    [AvaloniaFact]
+    public async Task DocumentsApprove_OnAFreshDraftDocument_IsRejectedByRealValidation_NeverThrows()
+    {
+        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
+        try
+        {
+            await host.StartAsync();
+            var workspace = host.Workspace!;
+            await workspace.Navigation.SwitchAreaAsync(DocumentsWorkspaceExplorerModule.NavigationItemId);
+            var domainContext = (EngineeringDomainContext)host.Services!.GetService(typeof(EngineeringDomainContext));
+
+            var target = await FindFirstObjectNodeOfKindAsync(workspace.ProjectExplorer, await workspace.ProjectExplorer.GetRootNodesAsync(), "Document");
+            Assert.NotNull(target);
+            var before = await domainContext.Repository.FindAsync(target!.Id);
+            Assert.Equal(LifecycleState.Draft, ((IHasLifecycle)before!).Status);
+            await workspace.Selection.SelectAsync(target.Id, target.Kind!);
+
+            var window = new MainWindow(host);
+            var ribbon = GetPrivateField<RibbonView>(window, "_ribbon");
+            var statusBar = GetPrivateField<StatusBarView>(window, "_statusBar");
+
+            var exception = await Record.ExceptionAsync(() => ribbon.ObjectCreationHandlers["documents.approve"]());
+
+            Assert.Null(exception);
+            var after = await domainContext.Repository.FindAsync(target.Id);
+            Assert.Equal(LifecycleState.Draft, ((IHasLifecycle)after!).Status);
+            Assert.DoesNotContain(statusBar.GetLogicalDescendants().OfType<TextBlock>(), t => t.Text != null && t.Text.Contains("applied to the selected", StringComparison.Ordinal));
+        }
+        finally
+        {
+            await host.ShutdownAsync();
+            await host.DisposeAsync();
+        }
+    }
+
     // ------------------------------------------------------------
     // Real drag-and-drop reparenting — ProjectExplorerView.ObjectMoveRequested
     // is a real, public, field-like event; MainWindow subscribes to it

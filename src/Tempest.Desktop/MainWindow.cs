@@ -183,19 +183,26 @@ public sealed class MainWindow : Window
 
         // Undo/Redo (`ADR-0103` collaborator #3, `WP 10.6A`/`ADR-0099`) —
         // constructed before WorkspaceViewCoordinator, which needs its
-        // own Stack; its own CockpitView dependency is attached once
-        // CockpitView exists, below (see AttachCockpitView's own remarks).
-        _undoRedo = new UndoRedoCoordinator(_statusBar, _toastHost, _explorerView, RecordHistory);
+        // own Stack. `WP 12.4B` (`ADR-0104`): its own CockpitView-refresh
+        // need is a plain `Action` delegate, not an object reference —
+        // `() => _cockpitView!.Refresh()` is the same field-closure
+        // lazy-capture pattern `_documentArea!` already uses just below;
+        // `_cockpitView` is a `readonly` field assigned later, at line
+        // ~209, but this lambda is only ever invoked after construction
+        // fully completes, by which point it is always assigned.
+        _undoRedo = new UndoRedoCoordinator(_statusBar, _toastHost, _explorerView, RecordHistory, refreshCockpit: () => _cockpitView!.Refresh());
 
         // Explorer/Inspector/Document-Area cross-view coordination
-        // (`ADR-0103` collaborator #4) — DocumentAreaView/CockpitView are
-        // attached once both exist, below (see WorkspaceViewCoordinator's
-        // own remarks for why the cycle needs two phases).
+        // (`ADR-0103` collaborator #4) — DocumentAreaView is attached
+        // once it exists, below (see WorkspaceViewCoordinator's own
+        // remarks for why that one cycle needs two phases); its own
+        // CockpitView-refresh need is the identical `Action` delegate
+        // passed to UndoRedoCoordinator above, `WP 12.4B` (`ADR-0104`).
         _viewCoordinator = new WorkspaceViewCoordinator(
             workspace, manager, composition.DomainContext, composition.CommandDispatcher, composition.RequirementsService, host.CalculationTemplates,
             _explorerView, _inspectorView, _ribbon, _statusBar, _toastHost, _confirmationDialog, _undoRedo.Stack,
             _session.RecentObjects, _session.FavouriteObjects, _openGraphViewsByRootId,
-            refreshStatusBar: () => RefreshStatusBar(manager), recordHistory: RecordHistory);
+            refreshStatusBar: () => RefreshStatusBar(manager), recordHistory: RecordHistory, refreshCockpit: () => _cockpitView!.Refresh());
 
         _documentArea = new DocumentAreaView(_viewCoordinator.BuildDocumentContent);
 
@@ -231,8 +238,7 @@ public sealed class MainWindow : Window
             onOpenFavourite: _viewCoordinator.NavigateToObject);
         _documentArea.SetHomeTab(_cockpitView);
 
-        _viewCoordinator.Attach(_documentArea, _cockpitView);
-        _undoRedo.AttachCockpitView(_cockpitView);
+        _viewCoordinator.Attach(_documentArea);
 
         // Panel construction/resize/hide/collapse/pin/flyout wiring
         // (`ADR-0103` collaborator #5, `WP 10.2B`).
