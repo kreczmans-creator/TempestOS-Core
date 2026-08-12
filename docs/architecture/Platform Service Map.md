@@ -226,7 +226,14 @@ convenience base implementation of `IModule` — see the Module SDK entry,
 below. `ModuleMetadataAttribute` *(implemented — WP 4.4B, ADR-0027)* — an
 optional, class-level alternative to instance-property metadata, letting
 Discovery read a module's `Id`/`Name`/`Version` without instantiating it;
-see `Module Dependency Injection Architecture.md`.
+see `Module Dependency Injection Architecture.md`. `IFaultInjectionModule`
+*(implemented — WP 12.3B, ADR-0102)* — a marker interface; a candidate
+implementing it is excluded from discovery by default (both the
+`AppDomain`-scanning and explicit-candidate-type overloads), unless
+`ReflectionFrameworkDiscoveryService` was constructed with
+`includeFaultInjectionModules: true` — the flag `ITempestHostBuilder
+.EnableFaultInjectionModules()` sets. See `Fault Injection & Validation
+Architecture.md`.
 
 **Dependencies.** `ILogger` (optional, for diagnostics). Deliberately **not**
 dependent on the DI container (see ADR-0008) or on Configuration.
@@ -249,13 +256,15 @@ Discovery test passes completely unmodified.
 **ADR references.** ADR-0003 (*Constructors Are Side-Effect-Free*); ADR-0008
 (*Discovery Does Not Depend on DI*); ADR-0027 (*A Declarative
 `ModuleMetadataAttribute` Decouples Discovery From Construction* —
-implemented).
+implemented); ADR-0102 (*Fault-Injection Modules Are Isolated By Project
+Reference and a Default-Excluded Discovery Marker* — implemented).
 
 **Academy references.** WP 2.1 retrospective (*Module Discovery*); Case Study
 04 (*Why Discovery Is Isolated*); Engineering Principles — Deterministic
 Systems, Fail Fast, SOLID (Interface Segregation, Open/Closed); WP 4.4A
 retrospective (*Dependency Injection for Discovered Modules — architecture*);
-WP 4.4B retrospective (*ADR-0027 Implementation*).
+WP 4.4B retrospective (*ADR-0027 Implementation*); WP 12.3A/WP 12.3B
+retrospectives (*Fault Injection & Validation Framework*).
 
 ---
 

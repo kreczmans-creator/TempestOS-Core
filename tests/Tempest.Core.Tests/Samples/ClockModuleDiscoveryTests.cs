@@ -97,6 +97,15 @@ namespace Tempest.Core.Tests.Samples;
 // this Work Package's own +2, by direct count of this method's own
 // Assert.Contains lines, per WP 9.3A's own disclosed "never carry a stated
 // total forward unchecked" discipline).
+//
+// WP 12.3B (ADR-0102): DuplicateNavigationSampleModule moved out of
+// Tempest.Samples entirely, into Tempest.Validation.FaultInjection as
+// DuplicateNavigationModule - it was never a genuine reference module, only
+// a deliberately-always-failing fault-injection fixture, and its presence
+// here meant every real Tempest.App/Tempest.Desktop run permanently carried
+// one module in ModuleState.Failed. Bringing the total back down to
+// thirty-three. See FaultInjectionModuleDiscoveryTests.cs (tests/Tempest.Core.Tests/Modules/)
+// for its own, now-separate discovery coverage.
 public class ClockModuleDiscoveryTests
 {
     // ----------------------------------------------------------------
@@ -143,12 +152,11 @@ public class ClockModuleDiscoveryTests
 
         var result = service.DiscoverModules();
 
-        Assert.Equal(34, result.Count);
+        Assert.Equal(33, result.Count);
         Assert.Contains(result, d => d.Id == "tempest.samples.clock" && d.ModuleType == typeof(ClockModule));
         Assert.Contains(result, d => d.Id == "tempest.samples.clock.observer" && d.ModuleType == typeof(ClockLifecycleObserverModule));
         Assert.Contains(result, d => d.Id == "tempest.samples.navigation" && d.ModuleType == typeof(NavigationSampleModule));
         Assert.Contains(result, d => d.Id == "tempest.samples.navigation.secondary" && d.ModuleType == typeof(SecondaryNavigationSampleModule));
-        Assert.Contains(result, d => d.Id == "tempest.samples.navigation.zzz-duplicate" && d.ModuleType == typeof(DuplicateNavigationSampleModule));
         Assert.Contains(result, d => d.Id == "tempest.samples.commands" && d.ModuleType == typeof(Tempest.Samples.CommandSampleModule));
         Assert.Contains(result, d => d.Id == "tempest.samples.diagnostics" && d.ModuleType == typeof(Tempest.Samples.DiagnosticsSampleModule));
         Assert.Contains(result, d => d.Id == "tempest.samples.identity" && d.ModuleType == typeof(Tempest.Samples.IdentitySampleModule));

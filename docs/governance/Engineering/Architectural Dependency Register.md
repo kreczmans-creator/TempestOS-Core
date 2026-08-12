@@ -10,9 +10,9 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | The `.csproj` files themselves (project references); `docs/adr/ADR-0023-platform-layering-dependencies-flow-downward.md`; `docs/academy/02 Runtime Architecture/06-platform-layering.md`. |
 | **Review Frequency** | Updated whenever a project reference changes, or a new capability is classified against the four-layer model. |
-| **Last Reviewed** | 2026-08-11 (WP 11.3B, Presentation Strategy Implementation) — narrow correction: the "fifth position" paragraph's own named occupant updated to reflect `TempestShell`'s retirement and `ADR-0101`'s classification of `Tempest.Desktop`/`Tempest.App.Workspace` as its current occupants; the four-layer model itself and every other row unchanged. Previously reviewed 2026-07-27 (WP 5.0D). |
-| **Related Documents** | `docs/architecture/Platform Service Map.md`; `Namespace Register.md`; `Interface Register.md`. |
-| **Related ADRs** | ADR-0016, ADR-0023. |
+| **Last Reviewed** | 2026-08-12 (WP 12.3B, Fault-Injection Validation Framework Implementation) — narrow correction, same discipline as the prior pass below: added `Tempest.Validation` (new project, ADR-0102) — references `Tempest.Core` and `Tempest.Samples`, both downward, no cycle; referenced by `Tempest.Core.Tests` only, deliberately **not** by `Tempest.App`/`Tempest.Desktop` (the load-bearing fact this Work Package's own mechanism depends on — see `Fault Injection & Validation Architecture.md`). `Tempest.Samples`'s own "Referenced By" column gains `Tempest.Validation`. This register's own project-reference table is otherwise known to be stale beyond these two rows (does not yet list `Tempest.Desktop`/`Tempest.Desktop.Tests`/`Tempest.Templates.Module`, absent since before this table's own last full pass) — a full re-derivation remains a separate, larger undertaking outside this Work Package's own scope, named here rather than silently left implicit, matching this register's own established "narrow correction only" precedent. Previously reviewed 2026-08-11 (WP 11.3B, Presentation Strategy Implementation) — narrow correction: the "fifth position" paragraph's own named occupant updated to reflect `TempestShell`'s retirement and `ADR-0101`'s classification of `Tempest.Desktop`/`Tempest.App.Workspace` as its current occupants; the four-layer model itself and every other row unchanged. Previously reviewed 2026-07-27 (WP 5.0D). |
+| **Related Documents** | `docs/architecture/Platform Service Map.md`; `docs/architecture/Fault Injection & Validation Architecture.md`; `Namespace Register.md`; `Interface Register.md`. |
+| **Related ADRs** | ADR-0016, ADR-0023, ADR-0102. |
 | **Related Academy Articles** | `docs/academy/02 Runtime Architecture/06-platform-layering.md`. |
 | **Coverage Status** | Complete. |
 
@@ -22,13 +22,16 @@
 
 | Project | Type | References | Referenced By |
 |---|---|---|---|
-| `Tempest.Core` | Library | (none) | `Tempest.App`, `Tempest.Samples`, `Tempest.Core.Tests` |
-| `Tempest.Samples` | Library | `Tempest.Core` | `Tempest.App`, `Tempest.Core.Tests` |
+| `Tempest.Core` | Library | (none) | `Tempest.App`, `Tempest.Samples`, `Tempest.Validation`, `Tempest.Core.Tests` |
+| `Tempest.Samples` | Library | `Tempest.Core` | `Tempest.App`, `Tempest.Validation`, `Tempest.Core.Tests` |
+| `Tempest.Validation` | Library | `Tempest.Core`, `Tempest.Samples` | `Tempest.Core.Tests` — deliberately **not** `Tempest.App`/`Tempest.Desktop` (ADR-0102) |
 | `Tempest.App` | Executable | `Tempest.Core`, `Tempest.Samples` | `Tempest.Core.Tests` |
-| `Tempest.Core.Tests` | Test project | `Tempest.Core`, `Tempest.Samples`, `Tempest.App` | (test host — referenced by nothing) |
+| `Tempest.Core.Tests` | Test project | `Tempest.Core`, `Tempest.Samples`, `Tempest.Validation`, `Tempest.App` | (test host — referenced by nothing) |
 
-**Total: 4 projects — Verified directly against each `.csproj`'s own
-`<ProjectReference>` elements.** `Tempest.Core` has zero outbound project
+**5 of this table's rows verified directly against each named `.csproj`'s
+own `<ProjectReference>` elements (`Tempest.Desktop`/`Tempest.Desktop.Tests`/
+`Tempest.Templates.Module` not yet re-added to this table — see Last
+Reviewed, above).** `Tempest.Core` has zero outbound project
 references, confirming it is the platform's own dependency root — nothing
 in this solution sits "below" it. **Resolved, `WP 5.0D`:** the previous
 "Unknown — not verified whether `Tempest.App` actually loads

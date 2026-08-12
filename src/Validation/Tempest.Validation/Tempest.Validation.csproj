@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Tempest.Core\Tempest.Core.csproj" />
+    <!--
+      Tempest.Samples is referenced too, not just Tempest.Core: this
+      project's fault-injection modules deliberately collide with a real
+      Tempest.Samples module's own registration (see FaultInjection/
+      DuplicateNavigationModule.cs), and reference that module's public
+      Id constant directly rather than duplicating it as a second string
+      literal that could silently drift out of sync. Both edges point
+      downward only (Tempest.Samples does not reference Tempest.Validation);
+      see "Fault Injection & Validation Architecture.md" and the
+      Architectural Dependency Register.
+    -->
+    <ProjectReference Include="..\..\Samples\Tempest.Samples\Tempest.Samples.csproj" />
+  </ItemGroup>
+
+</Project>

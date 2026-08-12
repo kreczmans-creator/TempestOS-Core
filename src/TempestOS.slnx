@@ -5,4 +5,5 @@
   <Project Path="Tempest.App/Tempest.App.csproj" />
   <Project Path="Tempest.Core/Tempest.Core.csproj" />
   <Project Path="Tempest.Desktop/Tempest.Desktop.csproj" />
+  <Project Path="Validation/Tempest.Validation/Tempest.Validation.csproj" />
 </Solution>

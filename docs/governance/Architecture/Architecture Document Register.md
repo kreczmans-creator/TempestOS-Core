@@ -10,7 +10,7 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | The documents themselves, under `docs/architecture/` and `docs/releases/`. |
 | **Review Frequency** | Each document is updated as part of the Definition of Done for any Work Package that changes the subsystem it describes (Engineering Governance §6, extended explicitly to `Platform Service Map.md` and, by the same reasoning, every other architecture document). |
-| **Last Reviewed** | 2026-07-28 (WP 5.2, Diagnostics Improvements) — corrected a stale marker found during this Work Package's own repository review: `Command Framework Architecture.md` still read "implementation pending... not yet started" despite `WP 5.1B` having completed it; also adds `Diagnostics Architecture.md`. |
+| **Last Reviewed** | 2026-08-12 (WP 12.3B, Fault-Injection Validation Framework Implementation) — narrow correction only, not a full re-derivation (this register has otherwise gone unreviewed since `WP 5.2`, a large, pre-existing, disclosed-here-not-fixed staleness spanning every release since — `Related ADRs`'s own "All 39" below is one direct symptom): adds `Fault Injection & Validation Architecture.md` (new, ADR-0102). Previously reviewed 2026-07-28 (WP 5.2, Diagnostics Improvements) — corrected a stale marker found during this Work Package's own repository review: `Command Framework Architecture.md` still read "implementation pending... not yet started" despite `WP 5.1B` having completed it; also adds `Diagnostics Architecture.md`. |
 | **Related Documents** | `Platform Services Register.md`; `Decision Register.md`; `Documentation Register.md` (the superset index, including Academy and release docs). |
 | **Related ADRs** | All 39 — every architecture document in this register is the realisation of one or more ADRs. |
 | **Related Academy Articles** | `docs/academy/02 Runtime Architecture/` mirrors much of this register's own subject matter at a teaching, rather than reference, depth — see the Academy Register for the pairing. |
@@ -42,6 +42,7 @@
 | `Shell & Composition Framework Architecture.md` | The application shell's composition-root role, `ITempestHost.Services`, and page/view ownership design (ADR-0033/0034/0035) | Implemented | WP 5.0C (design), WP 5.0D (implementation) |
 | `Command Framework Architecture.md` | `ICommandDispatcher`/`ICommandRegistry` dispatch/discovery/registration/failure design (ADR-0036/0037/0038) | Implemented | WP 5.1A (design), WP 5.1B (implementation) |
 | `Diagnostics Architecture.md` | `CompositeLogSink`/`IDiagnosticsProvider` fan-out/read-only-projection design (ADR-0039) | Implemented | WP 5.2 (design and implementation) |
+| `Fault Injection & Validation Architecture.md` | Fault-injection module isolation: `Tempest.Validation` project placement, `IFaultInjectionModule`/`ReflectionFrameworkDiscoveryService`/`ITempestHostBuilder` design (ADR-0102) | Implemented | WP 12.3A (design), WP 12.3B (implementation) |
 | `docs/releases/v0.4.0/Architecture.md` | The v0.4.0 release's own architecture review, decisions, and reuse map | Living document (release-scoped) | v0.4.0 planning; updated across the release |
 | `docs/releases/FOUNDATION.md` | Permanent, cross-release engineering constitution — what must never change | Permanent | Established at v0.1.0-era stabilisation; not release-scoped |
 

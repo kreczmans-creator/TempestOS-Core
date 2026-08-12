@@ -21,11 +21,18 @@ namespace Tempest.Core.Modules;
 /// discarded. See <c>Module Dependency Injection Architecture.md</c> for the complete design
 /// this enables.
 /// </para>
+/// <para>
+/// A candidate implementing <see cref="IFaultInjectionModule"/> is also ignored, exactly
+/// like an interface or abstract class, unless this instance was constructed with
+/// <c>includeFaultInjectionModules: true</c> — see that interface's own remarks and
+/// ADR-0102.
+/// </para>
 /// </remarks>
 public class ReflectionFrameworkDiscoveryService : IFrameworkDiscoveryService
 {
     private readonly IEnumerable<Assembly> _assemblies;
     private readonly ILogger? _logger;
+    private readonly bool _includeFaultInjectionModules;
 
     /// <summary>
     /// Initialises a new instance of the <see cref="ReflectionFrameworkDiscoveryService"/>
@@ -35,8 +42,17 @@ public class ReflectionFrameworkDiscoveryService : IFrameworkDiscoveryService
     /// An optional logger used to record discovery progress via the logging
     /// abstraction. May be <see langword="null"/> if logging is not required.
     /// </param>
-    public ReflectionFrameworkDiscoveryService(ILogger? logger = null)
-        : this(AppDomain.CurrentDomain.GetAssemblies(), logger)
+    /// <param name="includeFaultInjectionModules">
+    /// Whether candidates implementing <see cref="IFaultInjectionModule"/> are
+    /// discovered. Defaults to <see langword="false"/> — a fault-injection
+    /// module is excluded exactly like an interface, abstract class, or open
+    /// generic type definition unless a caller explicitly opts in (see
+    /// <see cref="Runtime.ITempestHostBuilder.EnableFaultInjectionModules"/>,
+    /// ADR-0102). Every existing caller's behaviour is unchanged by this
+    /// parameter's addition.
+    /// </param>
+    public ReflectionFrameworkDiscoveryService(ILogger? logger = null, bool includeFaultInjectionModules = false)
+        : this(AppDomain.CurrentDomain.GetAssemblies(), logger, includeFaultInjectionModules)
     {
     }
 
@@ -49,10 +65,19 @@ public class ReflectionFrameworkDiscoveryService : IFrameworkDiscoveryService
     /// An optional logger used to record discovery progress via the logging
     /// abstraction. May be <see langword="null"/> if logging is not required.
     /// </param>
-    public ReflectionFrameworkDiscoveryService(IEnumerable<Assembly> assemblies, ILogger? logger = null)
+    /// <param name="includeFaultInjectionModules">
+    /// Whether candidates implementing <see cref="IFaultInjectionModule"/> are
+    /// discovered. Defaults to <see langword="false"/> — see the other
+    /// constructor's own remarks for the complete rationale. Applies
+    /// identically to <see cref="DiscoverModules(IEnumerable{Type})"/>, so an
+    /// explicit candidate-type list naming a fault-injection module still
+    /// requires this flag to actually discover it.
+    /// </param>
+    public ReflectionFrameworkDiscoveryService(IEnumerable<Assembly> assemblies, ILogger? logger = null, bool includeFaultInjectionModules = false)
     {
         _assemblies = assemblies;
         _logger = logger;
+        _includeFaultInjectionModules = includeFaultInjectionModules;
     }
 
     /// <inheritdoc />
@@ -110,12 +135,15 @@ public class ReflectionFrameworkDiscoveryService : IFrameworkDiscoveryService
         return ordered;
     }
 
-    private static bool IsValidModuleType(Type type)
+    private bool IsValidModuleType(Type type)
     {
         if (!typeof(IModule).IsAssignableFrom(type))
             return false;
 
         if (type.IsInterface || type.IsAbstract || type.IsGenericTypeDefinition)
+            return false;
+
+        if (!_includeFaultInjectionModules && typeof(IFaultInjectionModule).IsAssignableFrom(type))
             return false;
 
         return true;
