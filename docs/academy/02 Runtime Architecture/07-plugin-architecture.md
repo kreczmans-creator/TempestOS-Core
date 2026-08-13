@@ -190,13 +190,20 @@ sequenceDiagram
 
 ### Extended, `WP 13.0A`: the Plugin Platform and the Trust Boundary
 
-**Status: architecture only — `docs/architecture/Plugin Platform
-Architecture.md` and `docs/security/Plugin Trust & Isolation
-Architecture.md`, not yet implemented.** `WP 13.0B` implements what
-follows; nothing below changes running behaviour today. Both documents
-extend, and do not replace, everything above — every v1 field, phase, and
-failure category `Plugin Manifest Architecture.md`/ADR-0025/ADR-0026 already
-settled is unchanged.
+**Status: mixed — the Plugin Platform half is implemented, `WP 13.1A`; the
+Trust & Isolation half remains architecture only.** `docs/architecture/Plugin
+Platform Architecture.md` (`ADR-0107`–`ADR-0109` — dependency graph
+resolution, the Plugin Registry, the configurable plugins root/manifest
+convention, the DI service-registration boundary) is real, built, and tested
+code as of `WP 13.1A` (Plugin Runtime & Composition Root Implementation);
+running behaviour changes accordingly wherever this section says so below.
+`docs/security/Plugin Trust & Isolation Architecture.md`
+(`ADR-0110`–`ADR-0112` — trust tiers, capability enforcement, signature
+verification) is **not** implemented by `WP 13.1A` and remains architecture
+only, awaiting a still-unassigned future Work Package — see `TD-09`/
+`TD-10`/`TD-11`, below. Both documents extend, and do not replace, everything
+above — every v1 field, phase, and failure category `Plugin Manifest
+Architecture.md`/ADR-0025/ADR-0026 already settled is unchanged.
 
 **The Plugin Platform (`ADR-0107`–`ADR-0109`) answers the *shape*
 questions `Plugin Manifest Architecture.md` deliberately left as
@@ -496,7 +503,13 @@ is not.
 - **Architecture only — `WP 13.0A` wrote zero implementation code.**
   `TD-09`/`TD-10`/`TD-11` move from "mechanism exists, not yet applied"
   to "design resolved, retrofit remains open" — not further than that
-  until `WP 13.0B` lands. See `WP13.0A-plugin-and-registration-trust-isolation-architecture.md`
+  until a future, still-unassigned trust-enforcement Work Package lands
+  (**not** `WP 13.1A`, which implemented only the Plugin Platform's own
+  non-trust half — `ADR-0107`–`ADR-0109` — leaving `ADR-0110`–`ADR-0112`
+  untouched; the original citation here read `WP 13.0B`, which was
+  itself later commissioned as an architecture review rather than an
+  implementation — see `WorkPackages.md` for that disclosed divergence).
+  See `WP13.0A-plugin-and-registration-trust-isolation-architecture.md`
   §10 for the full, disclosed statement.
 
 ## 11. Common Mistakes
@@ -525,7 +538,10 @@ out (RD-0011).
 2. **Assuming this Work Package's own architecture resolves `TD-09`/
    `TD-10`/`TD-11`** because it was the Work Package their own revisit
    trigger named. It designed the resolution, ADR-ratified and ready; it
-   built none of it. `WP 13.0B` is where the retrofit actually happens —
+   built none of it. A future, still-unassigned trust-enforcement Work
+   Package is where the retrofit actually happens — **not** `WP 13.1A`,
+   which implemented `ADR-0107`–`ADR-0109` (the Plugin Platform's own
+   non-trust half) and left `ADR-0110`–`ADR-0112` untouched by design —
    the identical distinction `WP 6.1`'s own retrospective already drew for
    itself, and worth re-drawing here rather than assuming the trigger
    firing and the debt closing are the same event.
@@ -541,18 +557,22 @@ out (RD-0011).
   this Work Package's own Version Compatibility analysis (`RD-0009`
   revisit-trigger check).
 - ~~**Configurable plugin root/manifest name** — available additively,
-  without needing to revisit anything decided here.~~ **Designed, `WP
-  13.0A`** — `Runtime:Plugins:RootDirectory`/`ManifestFileName`/`Disabled`
-  (`Plugin Platform Architecture.md`, closing `FCR-0010`/`TD-06` at the
-  design level). Awaiting `WP 13.0B` implementation.
+  without needing to revisit anything decided here.~~ ~~**Designed, `WP
+  13.0A`** — awaiting implementation.~~ **Implemented, `WP 13.1A`** —
+  `Runtime:Plugins:RootDirectory`/`ManifestFileName`/`Disabled` are real,
+  tested configuration keys, consumed in `TempestHost.cs`'s own Plugin
+  Discovery wiring exactly as `Plugin Platform Architecture.md` designed,
+  defaulting to the original `WP 4.2` fixed conventions when absent —
+  closing `FCR-0010`/`TD-06` in full, not merely at the design level.
 - ~~**A future diagnostics capability** (`WP 4.8`) should be able to
   surface "which plugins failed, and why" from whatever structure this
   system produces — anticipated by ADR-0025's own Future Considerations,
-  not designed here.~~ **Designed, `WP 13.0A`** — `IDiagnosticsProvider.Plugins`
-  (extending the already-shipped `WP 5.2`/ADR-0039 service, not a new
-  one) is exactly the queryable form ADR-0025 anticipated, built to the
-  shape that ADR named without that ADR needing revision. Awaiting `WP
-  13.0B` implementation.
+  not designed here.~~ ~~**Designed, `WP 13.0A`** — awaiting
+  implementation.~~ **Implemented, `WP 13.1A`** —
+  `IDiagnosticsProvider.Plugins` (extending the already-shipped `WP 5.2`/
+  ADR-0039 service, not a new one) is real, tested code — exactly the
+  queryable form ADR-0025 anticipated, built to the shape that ADR named
+  without that ADR needing revision.
 
 **Added, `WP 13.0A`** — every one of these is a named non-goal with its
 own explicit revisit trigger, not an oversight:

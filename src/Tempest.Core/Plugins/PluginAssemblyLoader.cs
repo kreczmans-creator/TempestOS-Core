@@ -24,6 +24,7 @@ namespace Tempest.Core.Plugins;
 public sealed class PluginAssemblyLoader : IPluginAssemblyLoader
 {
     private readonly ILogger? _logger;
+    private readonly IPluginRegistryRecorder? _registryRecorder;
 
     /// <summary>
     /// Initialises a new instance of the <see cref="PluginAssemblyLoader"/> class.
@@ -32,9 +33,15 @@ public sealed class PluginAssemblyLoader : IPluginAssemblyLoader
     /// An optional logger used to record loading progress and isolated
     /// failures. May be <see langword="null"/> if logging is not required.
     /// </param>
-    public PluginAssemblyLoader(ILogger? logger = null)
+    /// <param name="registryRecorder">
+    /// An optional Plugin Registry write side, used to record each
+    /// candidate's outcome. May be <see langword="null"/> if no registry is
+    /// available.
+    /// </param>
+    public PluginAssemblyLoader(ILogger? logger = null, IPluginRegistryRecorder? registryRecorder = null)
     {
         _logger = logger;
+        _registryRecorder = registryRecorder;
     }
 
     /// <inheritdoc />
@@ -53,10 +60,12 @@ public sealed class PluginAssemblyLoader : IPluginAssemblyLoader
                 loaded.Add(LoadOne(manifest));
 
                 _logger?.Information($"Plugin assembly loaded: '{manifest.Id}' from '{manifest.AssemblyPath}'.");
+                _registryRecorder?.Record(new PluginRegistryEntry(manifest.Id, manifest.Name, manifest.Version, PluginRegistryState.Loaded, null));
             }
             catch (PluginException ex)
             {
                 PluginFailureLogging.LogIsolatedFailure(_logger, ex, manifest.Id);
+                PluginFailureLogging.RecordIsolatedFailure(_registryRecorder, ex, manifest.Id);
             }
         }
 

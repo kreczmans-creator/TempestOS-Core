@@ -50,7 +50,8 @@ public class DiagnosticsSampleModuleIntegrationTests
         services.AddInstance<IDiagnosticsProvider>(new DiagnosticsProvider(
             () => HostState.Running,
             () => lifecycleManager,
-            () => null));
+            () => null,
+            new PluginRegistry()));
         services.AddDiscoveredModules(runtimeManager.GetAll().Select(module => module.Descriptor));
 
         var serviceProvider = new TempestServiceProvider(services);
@@ -232,7 +233,8 @@ public class DiagnosticsSampleModuleIntegrationTests
 
         var manifest = new PluginManifest(
             "test.plugin.diagnostics", "Diagnostics Plugin", "1.0.0",
-            new Version(0, 1, 0), Path.GetFileName(assemblyPath), assemblyPath);
+            new Version(0, 1, 0), Path.GetFileName(assemblyPath), assemblyPath,
+            [], [], null, null);
 
         var loader = new PluginAssemblyLoader();
         var loadedAssemblies = loader.LoadPlugins([manifest]);
@@ -254,7 +256,7 @@ public class DiagnosticsSampleModuleIntegrationTests
         services.Singleton<ICommandDispatcher, CommandDispatcher>();
         services.Singleton<ICommandRegistry, CommandRegistry>();
         services.AddInstance<IDiagnosticsProvider>(new DiagnosticsProvider(
-            () => HostState.Running, () => lifecycleManager, () => null));
+            () => HostState.Running, () => lifecycleManager, () => null, new PluginRegistry()));
         services.AddDiscoveredModules(runtimeManager.GetAll().Select(module => module.Descriptor));
         var serviceProvider = new TempestServiceProvider(services);
 

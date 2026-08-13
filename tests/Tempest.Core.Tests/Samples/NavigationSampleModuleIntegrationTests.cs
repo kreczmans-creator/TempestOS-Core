@@ -289,7 +289,8 @@ public class NavigationSampleModuleIntegrationTests
 
         var manifest = new PluginManifest(
             "test.plugin.navigation", "Navigation Plugin", "1.0.0",
-            new Version(0, 1, 0), Path.GetFileName(assemblyPath), assemblyPath);
+            new Version(0, 1, 0), Path.GetFileName(assemblyPath), assemblyPath,
+            [], [], null, null);
 
         var loader = new PluginAssemblyLoader();
         var loadedAssemblies = loader.LoadPlugins([manifest]);

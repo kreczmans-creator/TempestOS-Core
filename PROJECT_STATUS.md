@@ -1,6 +1,95 @@
 # TempestOS — Project Status
 
-**Last Updated:** 2026-08-13 (`WP 13.0B`, Plugin & Trust Isolation
+**Last Updated:** 2026-08-13 (`WP 13.1B`, Plugin Runtime & Composition
+Root Implementation Review). An independent review of `WP 13.1A` before
+its work becomes a commit — mirroring `WP 13.0B`'s own role one Work
+Package earlier, applied to real production code for the first time
+this release. **Assigned this label directly, colliding with — and
+repurposing — this table's own roadmap-predicted `WP 13.1B` row ("REST
+API Authentication & TLS Implementation"), the second such collision
+this release (`WP 13.1A`'s own row was the first); disclosed plainly in
+`WorkPackages.md`, not silently reconciled.** Four parallel, genuinely
+independent audit sub-agents — none of which authored any `WP 13.1A`
+material, each instructed to assume defects exist until personally
+disproven — found and closed **two genuine, empirically-confirmed
+production bugs**, the first real code defects any review in this
+project's `v0.13.0` history has found: (1) `PluginManifestDiscoveryService.TopologicalSort`
+silently dropped a plugin declaring a duplicate dependency entry from
+the load order, with zero isolation, log line, or registry entry —
+fixed by keying its remaining-dependency count on distinct targets, not
+a raw count including duplicates; (2) `TempestHost.cs`'s configuration
+precedence chains treated a blank (empty/whitespace) configured
+`Runtime:Plugins:RootDirectory`/`ManifestFileName` value as present
+rather than absent, faulting the **entire Host** rather than falling
+back to default — fixed at both precedence chains. Architecture
+Compliance audit: PASS, zero blocking findings, `ADR-0107`–`ADR-0109`
+and the `ADR-0017`/`ADR-0109` DI-registration boundary all confirmed
+clean. Governance & Documentation audit: PASS, zero defects, twenty
+claims fact-checked. Verification & Test Audit independently converged
+on the same two bugs via test-completeness judgment and correctly
+diagnosed a genuinely pre-existing, unrelated `CompositeLogSinkTests`
+flake (confirmed non-reproducible on two clean reruns, not a `WP 13.1A`
+regression) — disclosed, not fixed. Eight new regression tests added
+closing every real gap found. `governance-healthcheck.ps1` re-run
+clean: **7 passed, 1 warned, 0 failed, exit 0**. Debug and Release
+builds both **0 Warnings, 0 Errors**, independently re-run after every
+fix; full regression, both configurations, independently re-run:
+**2,313 / 2,313 passing** (2,092 `Tempest.Core.Tests` + 221
+`Tempest.Desktop.Tests` — 2,305 from `WP 13.1A`'s own baseline plus
+these 8 new tests). No new Technical Debt introduced; no ADR changes
+required or made. This Work Package's own review also found and fixed a
+genuine gap `WP 13.1A` itself left: `Academy Register.md`'s own file
+counts had never been incremented for `WP 13.1A`'s own retrospective at
+all — corrected by independent recount, a two-file jump, not the
+one-file jump a naive edit would have produced. `WP 13.1A`'s and this
+Work Package's combined material is committed as a single reviewed
+implementation baseline immediately following — **not pushed**, per
+this Work Package's own explicit instruction; see this repository's own
+git log for the exact commit. Full detail: `docs/academy/03 Work
+Packages/WP13.1B-plugin-runtime-and-composition-root-implementation-review.md`.
+**`WP 13.1A`'s own status line, below this point, is this field's prior
+content — retained, not deleted:**
+
+**Previously updated** 2026-08-13 (`WP 13.1A`, Plugin Runtime & Composition
+Root Implementation). Builds the mechanical, non-trust half of `WP
+13.0A`'s ratified design — `ADR-0107`–`ADR-0109` — leaving the sibling
+Trust & Isolation retrofit (`ADR-0110`–`ADR-0112`, `TD-09`/`TD-10`/
+`TD-11`) untouched, exactly as scoped, not implemented here. **Assigned
+this label directly by the Product Owner, colliding with — and
+repurposing — this table's own roadmap-predicted `WP 13.1A` row ("REST
+API Authentication & TLS Architecture"), a real, different, still
+genuinely uncommissioned Work Package that will need its own number
+later; disclosed plainly in `WorkPackages.md`, not silently
+reconciled.** Four parallel workstreams: **Runtime Implementation**
+built the fixed-point dependency-graph reduction (missing/incompatible-
+version removal, three-colour cycle detection, repeat-until-stable, then
+Kahn's-algorithm topological sort — `ADR-0107`) and three new isolated
+failure categories (12–14); **Dependency Injection & Composition** wired
+`Runtime:Plugins:RootDirectory`/`ManifestFileName`/`Disabled`
+(`TempestHost.cs`, no Host Lifecycle phase change) and extended
+`IDiagnosticsProvider` with a `Plugins` property backed by a direct
+`IPluginRegistry` reference; **Verification & Testing** added 45 new
+test methods across six new test files plus two extended existing ones —
+Debug and Release builds both **0 Warnings, 0 Errors**
+(`-p:TreatWarningsAsErrors=true`); full regression Debug **2,305/2,305
+passing** (2,084 `Tempest.Core.Tests` + 221 `Tempest.Desktop.Tests`),
+Release confirmed to match; **zero genuine production-code defects
+found** (two bugs found and fixed in the testing workstream's own new
+test assertions, never in production code); **Governance & Documentation**
+confirmed no new ADR was warranted, closed `TD-06`/`FCR-0010` (both now
+Resolved/Implemented), and updated `docs/academy/02 Runtime
+Architecture/07-plugin-architecture.md`'s Status line and two Future
+Evolution bullets to reflect real, built code. 10 new + 8 modified
+production files under `src/Tempest.Core/Plugins/`,
+`src/Tempest.Core/Runtime/TempestHost.cs`,
+`src/Tempest.Core/Diagnostics/` — independently re-verified directly via
+`git status`/`git diff --stat`, one file more than the orchestrator's own
+initial count, disclosed plainly rather than silently reconciled. Full
+detail: `docs/academy/03 Work Packages/WP13.1A-plugin-runtime-and-composition-root-implementation.md`.
+**`WP 13.0B`'s own status line, below this point, is this field's prior
+content — retained, not deleted:**
+
+**Previously updated** 2026-08-13 (`WP 13.0B`, Plugin & Trust Isolation
 Architecture Review and Baseline). An independent review of `WP 13.0A`
 before its work becomes a commit — **not** the Trust Isolation
 implementation the roadmap-predicted table originally named `WP 13.0B`

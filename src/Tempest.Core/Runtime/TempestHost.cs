@@ -231,16 +231,53 @@ public sealed class TempestHost : ITempestHost
         // to move.
         IPlatformVersionProvider platformVersionProvider = new PlatformVersionProvider(logger);
 
-        var pluginDiscoveryService = _pluginsRootPathOverride is not null
-            ? new PluginManifestDiscoveryService(_pluginsRootPathOverride, platformVersionProvider, logger)
-            : new PluginManifestDiscoveryService(platformVersionProvider, logger);
+        // Plugin Platform Architecture.md, "Configurable Plugins Root and
+        // Manifest Convention": Runtime:Plugins:RootDirectory/
+        // ManifestFileName/Disabled are all optional configuration
+        // overrides, resolved here since `configuration` is already built
+        // and in scope. _pluginsRootPathOverride (the existing test-only
+        // constructor field) takes precedence over configuration, exactly
+        // as it already did before this override existed, preserving every
+        // existing test's own determinism unchanged.
+        // A configured-but-blank value (an empty string, or one that is only
+        // whitespace) is treated as absent, not as a present-but-empty
+        // override - PluginManifestDiscoveryService's own constructor
+        // guards (ArgumentException.ThrowIfNullOrWhiteSpace) would otherwise
+        // turn a single blank configuration entry (an empty environment
+        // variable, a blank JSON field) into an uncaught exception here,
+        // faulting the entire Host - not merely isolating one plugin -
+        // exactly the kind of platform-wide failure a plugin-scoped
+        // configuration mistake must never cause.
+        var pluginsRootPath = _pluginsRootPathOverride
+            ?? (configuration.TryGetValue("Runtime:Plugins:RootDirectory", out var configuredRoot) && !string.IsNullOrWhiteSpace(configuredRoot) ? configuredRoot : null)
+            ?? Path.Combine(AppContext.BaseDirectory, "Plugins");
+
+        var manifestFileName = configuration.TryGetValue("Runtime:Plugins:ManifestFileName", out var configuredManifestFileName) && !string.IsNullOrWhiteSpace(configuredManifestFileName)
+            ? configuredManifestFileName
+            : PluginManifestDiscoveryService.ManifestFileName;
+
+        IReadOnlyCollection<string>? disabledPluginIds = configuration.TryGetValue("Runtime:Plugins:Disabled", out var configuredDisabled) && configuredDisabled is not null
+            ? configuredDisabled.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
+            : null;
+
+        // Plugin Platform Architecture.md, "Plugin Registry": Host-owned,
+        // constructed immediately before Plugin Discovery ever runs, so
+        // both Discovery and Loading can record every candidate's outcome
+        // into it as they go. Never added to the DI ServiceCollection
+        // (ADR-0017's own Host-owned-collaborator boundary, applied to a
+        // fourth collaborator) — only IDiagnosticsProvider.Plugins, the
+        // DI-public read-only projection, ever reaches a module.
+        var pluginRegistry = new PluginRegistry();
+
+        var pluginDiscoveryService = new PluginManifestDiscoveryService(
+            pluginsRootPath, platformVersionProvider, logger, manifestFileName, disabledPluginIds, pluginRegistry);
 
         var pluginManifests = pluginDiscoveryService.DiscoverManifests();
         logger.Information($"Host lifecycle phase completed: Plugin Discovery. {pluginManifests.Count} plugin(s) eligible.");
 
         runToken.ThrowIfCancellationRequested();
 
-        IPluginAssemblyLoader pluginAssemblyLoader = new PluginAssemblyLoader(logger);
+        IPluginAssemblyLoader pluginAssemblyLoader = new PluginAssemblyLoader(logger, pluginRegistry);
         var loadedPluginAssemblies = pluginAssemblyLoader.LoadPlugins(pluginManifests);
         logger.Information($"Host lifecycle phase completed: Plugin Loading. {loadedPluginAssemblies.Count} plugin assembly(ies) loaded.");
 
@@ -454,7 +491,8 @@ public sealed class TempestHost : ITempestHost
         IDiagnosticsProvider diagnosticsProvider = new DiagnosticsProvider(
             () => State,
             () => { lock (_gate) return _lifecycleManager; },
-            () => { lock (_gate) return _hostedServiceManager; });
+            () => { lock (_gate) return _hostedServiceManager; },
+            pluginRegistry);
         services.AddInstance(diagnosticsProvider);
 
         services.AddDiscoveredModules(moduleManager.GetAll().Select(module => module.Descriptor));

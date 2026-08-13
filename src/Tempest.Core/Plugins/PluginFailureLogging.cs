@@ -48,6 +48,47 @@ internal static class PluginFailureLogging
         DuplicatePluginIdException => LogLevel.Warning,
         PluginAssemblyNotFoundException => LogLevel.Error,
         PluginAssemblyLoadException => LogLevel.Error,
+        MissingPluginDependencyException => LogLevel.Warning,
+        IncompatiblePluginDependencyVersionException => LogLevel.Warning,
+        CircularPluginDependencyException => LogLevel.Warning,
         _ => LogLevel.Error,
     };
+
+    /// <summary>
+    /// Records an isolated plugin failure into the Plugin Registry, if a
+    /// recorder is available.
+    /// </summary>
+    /// <param name="recorder">The registry's write side, or <see langword="null"/> if none is available.</param>
+    /// <param name="exception">The isolated failure.</param>
+    /// <param name="candidateFolderName">
+    /// The candidate's folder name, used as the recorded <see cref="PluginRegistryEntry.Id"/>
+    /// only when the exception carries no reliable plugin identifier of its own
+    /// (<see cref="InvalidPluginManifestException"/>).
+    /// </param>
+    public static void RecordIsolatedFailure(IPluginRegistryRecorder? recorder, PluginException exception, string candidateFolderName)
+    {
+        if (recorder is null)
+            return;
+
+        var id = exception switch
+        {
+            DuplicatePluginIdException e => e.PluginId,
+            IncompatiblePluginVersionException e => e.PluginId,
+            MissingPluginDependencyException e => e.PluginId,
+            IncompatiblePluginDependencyVersionException e => e.PluginId,
+            CircularPluginDependencyException e => e.PluginId,
+            PluginAssemblyNotFoundException e => e.PluginId,
+            PluginAssemblyLoadException e => e.PluginId,
+            _ => candidateFolderName,
+        };
+
+        var state = exception switch
+        {
+            IncompatiblePluginVersionException => PluginRegistryState.Incompatible,
+            MissingPluginDependencyException or IncompatiblePluginDependencyVersionException or CircularPluginDependencyException => PluginRegistryState.DependencyUnmet,
+            _ => PluginRegistryState.Failed,
+        };
+
+        recorder.Record(new PluginRegistryEntry(id, null, null, state, exception.Message));
+    }
 }
