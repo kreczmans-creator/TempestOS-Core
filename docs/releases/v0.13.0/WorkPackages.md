@@ -68,10 +68,16 @@ Package or Work Package pair):
 
 ## Work Packages
 
-*(No Work Package has started. This table will grow one row per
-completed Work Package, exactly as every prior release's own
-`WorkPackages.md` does — see `docs/releases/v0.12.0/WorkPackages.md`
-for the established format and density convention.)*
+Two process/governance Work Packages completed so far, outside the
+roadmap-predicted table above (mirroring how `v0.12.0`'s own `WP
+12.9.1`/`WP 12.9.2`/`WP 12.9.3B` were real, additive Work Packages
+never named in that release's own original roadmap prediction either).
+`WP 13.0A` (the roadmap's own first predicted item) has not yet begun.
+
+| Work Package | Scope | Type | Status |
+|---|---|---|---|
+| `WP 13.0.0` | `v0.13.0` Branch Establishment — creates `feature/v0.13.0` directly from the released `v0.12.0` tag (`13a6ce3`), confirmed the exact branch point six independent ways (Architecture Agent). Two real conflicts resolved with the Product Owner before proceeding, not silently applied: `VERSION → 0.13.0-dev` would have broken `governance-healthcheck.ps1`'s own version-token parsing (`[version]"0.13.0-dev"` throws) and has no precedent in this project's documented versioning policy — `VERSION` kept at `0.12.0`, mirroring how it stayed `0.11.0` throughout all of `v0.12.0`'s own development; `v0.13.0`'s own roadmap-conditional scope confirmed now explicitly triggered by the Product Owner. Establishes stricter branch discipline than any prior release: `feature/v0.13.0` is the sole integration branch, commit directly to it, never rebase, never squash. Three parallel verification agents (Architecture/Repository/Governance) all Pass; Governance Agent's one minor finding (imprecise "verbatim" wording) fixed same session, second sequential commit. See `WP13.0.0-v0.13.0-branch-establishment.md` (Academy retrospective). | Governance/Process | **Complete** |
+| `WP 13.0.0A` | Release Register Reconciliation — closes the one finding `WP 13.0.0` disclosed rather than fixed: `docs/governance/Delivery/Release Register.md` had no row for the `v0.12.0` tag. Independently confirmed pre-existing, dating to `v0.12.0`'s own close (`git show 13a6ce3:...` — already missing at the exact commit the tag points to), not caused by any `v0.13.0` Work Package. `v0.12.0` row added, matching the established evidence/density convention; all eleven real tags (`v0.3.0`–`v0.12.0`) independently re-verified present in the Entries table exactly once each. `governance-healthcheck.ps1` re-confirmed clean: 7 passed, 1 warned, 0 failed, exit 0. Governance/documentation only; zero `src/`/`tests/` files touched, zero architecture/implementation/release behaviour changed. See `WP13.0.0A-release-register-reconciliation.md` (Academy retrospective). | Governance/Process | **Complete** |
 
 ## Related Documents
 

@@ -708,12 +708,20 @@ Engineering Release Report.md` for the full gate-by-gate evidence.
 - [WP 12.9.2 — Engineering Readiness Review Re-Execution](03%20Work%20Packages/WP12.9.2-engineering-readiness-review-re-execution.md) — re-executes the complete ERR (`ADR-0106`) against `main` after `WP 12.9.1`'s remediation, independently re-deriving every Phase A item from source. Finds `WP 12.9.1`'s own changes had never been committed; commits them (`955badb`, local only, no push) before evaluating anything else — a repository-state change necessary to assess "the current state after `WP 12.9.1`" at all. `governance-healthcheck.ps1` re-run clean: 7 passed, 1 warned, 0 failed. Architecture/Implementation/Governance/Release readiness all Pass; Verification readiness Not Ready — the identical class of finding `WP 12.9.0`'s own first execution raised, now against the newly-committed, not-yet-pushed tip. **Verdict: `NOT READY`**, pending one action (push, then real CI confirmation); no tag or push created or proposed.
 - [WP 12.9.3B — Governance Health Check Consistency Remediation](03%20Work%20Packages/WP12.9.3B-governance-health-check-consistency-remediation.md) — pushing `main` for the first time surfaces a real GitHub Actions `[FAIL]` invisible to every local run: `Test-ProjectStatusReferences` and `Test-ReleaseRegisterMatchesTags` both consume `Get-RepoTags`, but only the latter treated a shallow checkout's empty tag list as a disclosed environmental limitation (`Warn`) rather than a content defect — a checker-architecture inconsistency (`WP 12.9.3A`'s own architecture review), not a repository defect: `v0.3.0`–`v0.10.0` are all real, correctly-tagged releases. Fix scoped to exactly the affected sub-check — version-token validation now degrades to `Warn` when tags are unavailable; path-reference validation, which never depended on tags, continues unconditionally and can still `Fail` the check on its own. `Get-RepoTags` and Check 3 itself both left unmodified. Four behavioural cases verified against isolated fixtures; full Debug+Release regression 2,255/2,255 passing both, 0 Warnings/0 Errors both.
 
-`v0.12.0`'s own roadmap-defined Work Packages are complete; the
-Engineering Readiness Review itself (`ADR-0106`) remains a distinct,
-later, separately-commissioned Work Package, gated on `WP 12.2A`'s own
-disposition being committed and merged first. See `PROJECT_STATUS.md`
-for current status and `docs/releases/v0.12.0/WorkPackages.md` for the
-full plan.
+`v0.12.0`'s own roadmap-defined Work Packages are complete, its
+Engineering Readiness Review exercised for real three times (`WP
+12.9.0`/`WP 12.9.2`/`WP 12.9.4`), and the release itself tagged and
+published — final verdict `CERTIFIED WITH ACCEPTED TECHNICAL DEBT`;
+see `docs/releases/v0.12.0/WP12.9.4 Engineering Release Report.md` for
+the full account.
+
+**Trust & Deployment Hardening (v0.13.0, in progress):**
+
+- [WP 13.0.0 — v0.13.0 Branch Establishment](03%20Work%20Packages/WP13.0.0-v0.13.0-branch-establishment.md) — creates `feature/v0.13.0`, cut directly from the `v0.12.0` tag, as the sole integration branch for this release (stricter than every prior release's own multiple-parallel-branch convention). Two real conflicts found and resolved with the Product Owner rather than silently applied: `VERSION → 0.13.0-dev` would have broken `governance-healthcheck.ps1`'s own version-token parsing; `v0.13.0`'s own scope is roadmap-conditional, confirmed now explicitly triggered. Three parallel verification agents (Architecture/Repository/Governance) all Pass.
+- [WP 13.0.0A — Release Register Reconciliation](03%20Work%20Packages/WP13.0.0A-release-register-reconciliation.md) — closes the one finding `WP 13.0.0` disclosed rather than fixed: `docs/governance/Delivery/Release Register.md` had no row for the `v0.12.0` tag, a pre-existing gap dating to that release's own close, independently confirmed to predate this Work Package. `governance-healthcheck.ps1` re-confirmed clean: 7 passed, 1 warned, 0 failed. Governance/documentation only; zero `src/`/`tests/` files touched.
+
+See `PROJECT_STATUS.md` for current status and
+`docs/releases/v0.13.0/WorkPackages.md` for the full plan.
 
 ## Reference Material
 

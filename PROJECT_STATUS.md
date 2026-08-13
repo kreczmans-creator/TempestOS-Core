@@ -1,6 +1,28 @@
 # TempestOS — Project Status
 
-**Last Updated:** 2026-08-13 (`WP 13.0.0`, `v0.13.0` Branch
+**Last Updated:** 2026-08-13 (`WP 13.0.0A`, Release Register
+Reconciliation). Closes the one finding `WP 13.0.0` disclosed rather
+than fixed: `docs/governance/Delivery/Release Register.md` had no row
+for the `v0.12.0` tag. Independently confirmed pre-existing, dating to
+`v0.12.0`'s own close (`git show 13a6ce3:"docs/governance/Delivery/Release
+Register.md"` — already missing at the exact commit the tag points to,
+not caused by any `v0.13.0` Work Package). `v0.12.0` row added,
+matching this register's own established evidence/density convention;
+all eleven real tags (`v0.3.0`–`v0.12.0`) independently re-verified
+present in the Entries table exactly once each, cross-checked directly
+against `git tag -l "v*"` and each tag's own resolved commit/date, not
+carried forward from any prior figure. Total corrected 11 → 12 versions
+referenced (10 → 11 confirmed released). `governance-healthcheck.ps1`
+re-confirmed clean: **7 passed, 1 warned, 0 failed, exit code 0** —
+Release Register now `[PASS]`. Governance/documentation only; zero
+`src/`/`tests/` files touched, zero architecture, implementation, or
+release behaviour changed. On `feature/v0.13.0`, per its own branch
+discipline (commit directly, never rebase, never squash); not pushed.
+Full detail: `docs/academy/03 Work Packages/WP13.0.0A-release-register-reconciliation.md`.
+**`WP 13.0.0`'s own status line, below this point, is this field's
+prior content — retained, not deleted:**
+
+**Previously updated** 2026-08-13 (`WP 13.0.0`, `v0.13.0` Branch
 Establishment). `feature/v0.13.0` cut directly from the released
 `v0.12.0` tag (`13a6ce3`) — confirmed, not assumed: `git merge-base
 feature/v0.13.0 v0.12.0` resolves to that exact commit. This branch is
