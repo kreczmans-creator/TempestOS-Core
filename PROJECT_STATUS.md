@@ -1,6 +1,30 @@
 # TempestOS — Project Status
 
-**Last Updated:** 2026-08-12 (`WP 12.9.0` — Release Preparation &
+**Last Updated:** 2026-08-13 (`v0.12.0` Release Preparation —
+`WP 12.9.0` and `WP 12.2A` both committed and merged into `main`
+(`ab9d006`/`e8566ab`, `d5422e1`/`cfdfa6f`); Debug+Release builds and
+full regression independently re-verified on `main` post-merge,
+2,255/2,255 passing both, 0 Warnings/0 Errors both.
+`docs/releases/v0.12.0/Release Notes.md` produced. **The first real
+execution of the Engineering Readiness Review `ADR-0106` defines**,
+performed as a genuine engineering exercise, not a formality — full
+detail: `docs/releases/v0.12.0/WP12.9.0 Engineering Release Report.md`.
+Four of five readiness categories Pass or Pass-with-observations;
+Verification readiness is **Not Ready** for one procedural,
+non-architectural reason: `main` carries four commits never pushed to
+`origin` (`git status`: `ahead 4`), so real, GitHub-hosted CI has not
+run against the commit this release would tag — the identical literal
+requirement `WP 11.4B` found `v0.10.0` and `v0.11.0` had each silently
+failed to satisfy, treated literally here specifically because of that
+history. **Overall verdict: `NOT READY`, pending exactly one action**
+— pushing `main` — not a code or architecture defect. Pushing was not
+part of this Work Package's own authorised scope (Engineering
+Governance §7.5 — requires separate, per-occasion approval) and is not
+assumed here. No tag created; no push performed. **`WP 12.9.0`'s own
+architecture-phase status line, below this point, is this field's
+prior content — retained, not deleted:**
+
+**Previously updated** 2026-08-12 (`WP 12.9.0` — Release Preparation &
 Engineering Sign-Off, Architecture phase. The final roadmap-defined
 `v0.12.0` Work Package, on its own new branch (`feature/v0.12.0-release-preparation-and-signoff`).
 Designs the permanent TempestOS Engineering Readiness Review (ERR):

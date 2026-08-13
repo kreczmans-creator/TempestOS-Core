@@ -87,7 +87,17 @@ both rows, below, for the full account, including the one genuine,
 `v0.12.0`-caused governance gap `WP 12.9.0` found (the Engineering
 Vocabulary Register's own missing `Governance Index.md` link) and the
 one stale Architecture Document Register row it found and corrected.
-Both Work Packages are now merged into `main`.
+Both Work Packages are now merged into `main`. **Release preparation,
+2026-08-13**: `docs/releases/v0.12.0/Release Notes.md` produced;
+the actual `v0.12.0` Engineering Readiness Review executed for real,
+under the corrected `ADR-0106` model — `docs/releases/v0.12.0/WP12.9.0
+Engineering Release Report.md`. Verdict: **`NOT READY`**, for a single
+procedural reason — `main` has not yet been pushed to `origin`, so
+real CI has not run against the pre-tag commit (Verification
+readiness's own explicit requirement, `Engineering Readiness Review
+Architecture.md` §2.3). All other readiness categories Pass or
+Pass-with-observations. No tag created; no push performed; pushing
+`main` awaits separate, explicit authorisation.
 
 ## Work Packages
 
