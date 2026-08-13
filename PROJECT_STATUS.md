@@ -1,8 +1,55 @@
 # TempestOS — Project Status
 
-**Last Updated:** 2026-08-13 (`v0.12.0` Release Preparation —
-`WP 12.9.3B`, Governance Health Check Consistency Remediation).
-Pushing `main` for the first time in this release (`WP 12.9.3`)
+**Last Updated:** 2026-08-13 (`WP 13.0.0`, `v0.13.0` Branch
+Establishment). `feature/v0.13.0` cut directly from the released
+`v0.12.0` tag (`13a6ce3`) — confirmed, not assumed: `git merge-base
+feature/v0.13.0 v0.12.0` resolves to that exact commit. This branch is
+the **sole** integration branch for every `v0.13.0` Work Package, per
+this Work Package's own explicit instruction (stricter than every
+prior release's multiple-parallel-branch convention) — no additional
+feature branches without separate authorisation; every Work Package
+commits directly to it; never rebase, never squash; merge commits only
+when integrating back to `main` at this release's own close. `VERSION`
+deliberately left at `0.12.0` (not bumped to a "dev" placeholder) —
+this project's own documented versioning policy (`WP11.1B Engineering
+Workflow.md` §7) recognises only `MAJOR.MINOR.PATCH` and a `-rc.N`
+suffix; a `-dev` suffix was considered and rejected, confirmed directly
+to break `governance-healthcheck.ps1`'s own version-token parsing
+(`[version]"0.13.0-dev"` throws) — `VERSION` reflects the last
+*released* version until the moment of the next tag, exactly as it did
+throughout `v0.12.0`'s entire development (`0.11.0`, unchanged, until
+the final pre-tag commit). `docs/releases/v0.13.0/WorkPackages.md`
+created, seeded from `WP11.0B Architecture Roadmap.md` §3's own
+predicted `v0.13.0` table — "Trust & Deployment Hardening," conditional
+on the Product Owner committing `v1.0` scope to third-party plugins
+and/or REST deployment beyond a trusted local network. That trigger had
+not fired as of `v0.12.0`'s own close (`src/Plugins/` still empty; no
+`v0.12.0` Work Package touched REST API scope) — the Product Owner has
+now made that commitment explicitly, confirmed directly as this Work
+Package's own commissioning, not inferred from the branch's mere
+existence. **`v0.12.0`'s own release, below this point, is this
+field's prior content — retained, not deleted; its own final
+completion (tag, GitHub Release) is recorded here since no prior entry
+did:**
+
+**`v0.12.0` released**, 2026-08-13 — tag `v0.12.0` (annotated, object
+`f430f6f`), commit `13a6ce3`, confirmed directly to point to the exact
+commit `main`'s own tip resolved to at release time. GitHub Release
+published automatically by `.github/workflows/release.yml`
+(tag-triggered, independently re-built and re-tested Release
+configuration against the tagged commit, real GitHub Actions-confirmed
+success) — https://github.com/kreczmans-creator/TempestOS-Core/releases/tag/v0.12.0.
+**Final Engineering Readiness verdict: `CERTIFIED WITH ACCEPTED
+TECHNICAL DEBT`** (`ADR-0106` §4, mechanically derived — zero Release
+Blocking finding, zero Disclosed Non-Blocking finding, `TD-42`/`TD-43`/
+`TD-45` the operative Pre-Existing, Unaffected finding, §4's own row 3;
+full evidence `docs/releases/v0.12.0/WP12.9.4 Engineering Release
+Report.md`). Thirteen Work Packages (`WP 12.3A`–`WP 12.9.3B`); five new
+ADRs (`ADR-0102`–`ADR-0106`); 2,255/2,255 tests passing both
+configurations throughout. Previously updated 2026-08-13 (`v0.12.0`
+Release Preparation — `WP 12.9.3B`, Governance Health Check
+Consistency Remediation). Pushing `main` for the first time in this
+release (`WP 12.9.3`)
 surfaced a real GitHub Actions `Governance Health Check` `[FAIL]`
 invisible to every local run: `Test-ProjectStatusReferences` and
 `Test-ReleaseRegisterMatchesTags` both consume `Get-RepoTags`, but only
