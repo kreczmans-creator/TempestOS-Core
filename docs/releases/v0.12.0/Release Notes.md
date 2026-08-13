@@ -33,7 +33,10 @@ Ten Work Packages delivered this release's own engineering scope
 (`ADR-0102`–`ADR-0106`), five new standing architecture documents; an
 eleventh, `WP 12.9.1`, closed the two genuine governance findings
 `WP 12.9.0`'s own first Engineering Readiness Review execution
-disclosed (§5, below, updated in place). `WP 12.3A`/`WP 12.3B` were
+disclosed (§5, below, updated in place). A twelfth, `WP 12.9.3B`,
+closed a further, real checker-architecture inconsistency
+`governance-healthcheck.ps1`'s own path to real CI first exposed (§2,
+below). `WP 12.3A`/`WP 12.3B` were
 directly commissioned outside the roadmap's own predicted `12.0`–`12.2`
 sequence — the same pattern `v0.11.0`'s own `WP 11.3A`/`WP 11.3B` and
 `WP 11.4A`/`WP 11.4B` already established — after tracing the real
@@ -142,6 +145,22 @@ discipline reviews, and the reconciled Definition of Done there.
   unmodified throughout. Documentation/governance only; zero `src/`/
   `tests/` files touched. `governance-healthcheck.ps1` re-run clean: 7
   passed, 1 warned (informational only), 0 failed.
+- **`WP 12.9.3B` — Governance Health Check Consistency Remediation.**
+  Pushing `main` for the first time in this release surfaced a real
+  GitHub Actions `[FAIL]` invisible to every local run:
+  `Test-ProjectStatusReferences` and `Test-ReleaseRegisterMatchesTags`
+  both consume `Get-RepoTags`, but only the latter treated a shallow
+  checkout's empty tag list as a disclosed environmental limitation
+  (`Warn`) rather than a content defect — a checker-architecture
+  inconsistency, not a repository defect: `v0.3.0`–`v0.10.0` are all
+  real, correctly-tagged releases. Fix scoped to exactly the affected
+  sub-check: version-token validation now degrades to `Warn`, disclosed,
+  when zero tags are available; path-reference validation — independent
+  of tag availability — continues unconditionally and can still `Fail`
+  the check on its own. `Get-RepoTags` and the Release Register check
+  both left unmodified. Four behavioural cases verified against
+  isolated fixtures; full Debug+Release regression 2,255/2,255 passing
+  both, 0 Warnings/0 Errors both.
 
 ## 3. Testing Summary
 
@@ -185,6 +204,18 @@ documented, not configured, in GitHub).
   59 missing links restored, spanning the `v0.7.0` tail through all of
   `v0.12.0`; `governance-healthcheck.ps1`'s Academy Index check
   re-confirmed `[PASS]`.
+- ~~**`PROJECT_STATUS.md` version-token false `[FAIL]` on a shallow
+  checkout**~~ — **Closed, `WP 12.9.3B`.** First surfaced when `main`
+  was pushed for the first time this release; a checker-architecture
+  inconsistency between `Test-ProjectStatusReferences` and
+  `Test-ReleaseRegisterMatchesTags`, not a repository defect —
+  see §2, above.
+- ~~**This document not yet mentioning `WP 12.9.3B`**~~ — **Closed,
+  `WP 12.9.5`.** The one Disclosed, Non-Blocking Governance-readiness
+  finding standing between `v0.12.0`'s own `ACCEPT WITH OBSERVATIONS`
+  verdict and `CERTIFIED` (`WP12.9.4 Engineering Release Report.md`,
+  Part D/E) — closed by this document's own update, §2/§6/§7, above and
+  below.
 - **`WorkspaceShell` Stage 5** (further test/feature trimming,
   `WP 11.3A`) — reconfirmed still deliberately deferred, `WP 12.2A`;
   trigger condition ("a real, demonstrated cost problem") still unmet.
@@ -207,13 +238,21 @@ documented, not configured, in GitHub).
   §3.
 - **Technical Debt Register: 48 tracked items, unchanged in count.**
 - **Future Capability Register: 83 → 84** (`FCR-0084`).
-- **Academy `03 Work Packages` retrospectives: +11** — every `v0.12.0`
+- **Academy `03 Work Packages` retrospectives: +13** — every `v0.12.0`
   Work Package has one, closing the exact gap `v0.11.0`'s own Release
   Notes named as an immediate `v0.12.0` fast-follow (§5, `v0.11.0`
   Release Notes).
-- **Eleven Work Packages** completed (`WP 12.3A`/`WP 12.3B`, `WP 12.0A`/
-  `WP 12.0B`, `WP 12.4A`/`WP 12.4B`, `WP 12.1A`/`WP 12.1B`, `WP 12.2A`,
-  `WP 12.9.0`, `WP 12.9.1`).
+- **Thirteen Work Packages** completed, per `WorkPackages.md`'s own
+  table (`WP 12.3A`/`WP 12.3B`, `WP 12.0A`/`WP 12.0B`, `WP 12.4A`/
+  `WP 12.4B`, `WP 12.1A`/`WP 12.1B`, `WP 12.2A`, `WP 12.9.0`,
+  `WP 12.9.1`, `WP 12.9.2`, `WP 12.9.3B`) — `WP 12.9.2` (Engineering
+  Readiness Review Re-Execution) is a certification exercise, not a
+  capability Work Package, and carries no `§2` entry, mirroring how
+  `WP 12.9.0` itself is the one bullet, above, for the whole ERR model
+  rather than one bullet per execution. `WP 12.9.4` (Final Execution)
+  and this document's own `WP 12.9.5` update are further certification/
+  documentation exercises, not yet reflected as their own
+  `WorkPackages.md` rows.
 
 ## 7. Final Engineering Assessment
 
@@ -222,24 +261,46 @@ Warnings/0 Errors), full test suite (both configurations, 2,255/2,255,
 independently re-run from source, not carried forward from any Work
 Package's own claim), and governance-register health
 (`governance-healthcheck.ps1` run directly: **7 passed, 1 warned, 0
-failed of 8**, `WP 12.9.1` — the one remaining `[WARN]` is the same
-informational, already-accepted exception `WP 11.2A`'s own design
-names) — passed on independent, from-source re-verification. `WP
-12.9.0`'s own first Engineering Readiness Review execution found one
-Release Blocking finding (real CI not yet run against the pre-tag
-commit, since `main` had not yet been pushed) and two Disclosed,
-Non-Blocking governance findings (both closed by `WP 12.9.1`, above).
-The Engineering Readiness Review's own re-execution against this
-updated state — `WP 12.9.2` — is `WP12.9.2 Engineering Release
-Report.md`; its own verdict is this release's own current, authoritative
-one, superseding `WP12.9.0 Engineering Release Report.md`'s, which
-remains as the historical record of the first execution, not corrected
-or deleted.
+failed of 8** — the one remaining `[WARN]` is the same informational,
+already-accepted exception `WP 11.2A`'s own design names) — passed on
+independent, from-source re-verification, most recently `WP 12.9.4`.
+The Engineering Readiness Review has now been executed three times:
+`WP 12.9.0`'s own first execution found one Release Blocking finding
+(real CI not yet run against the pre-tag commit) and two Disclosed,
+Non-Blocking governance findings (both closed by `WP 12.9.1`); `WP
+12.9.2`'s re-execution, after committing `WP 12.9.1`'s own then-
+uncommitted remediation, found the identical class of Release Blocking
+finding recur against the newly-committed, not-yet-pushed tip; `WP
+12.9.4`'s final execution found it a third time, against `dc7e9cc`,
+after `WP 12.9.3B`/`WP 12.9.3C` merged the governance-consistency fix —
+then, within that same Work Package, `main` was pushed with explicit
+authorisation and real, independently-confirmed GitHub Actions evidence
+(`Build & Test (Debug)`, `Build & Test (Release)`, `CI Gate`,
+`Governance Health Check` — all `succeeded` against `dc7e9cc`
+specifically) closed it. **`v0.12.0`'s own current, authoritative
+verdict is `ACCEPT WITH OBSERVATIONS`** — mechanically derived,
+`ADR-0106` §4: zero category is `Not Ready`, but one Disclosed,
+Non-Blocking finding existed at that time (this document not yet
+mentioning `WP 12.9.3B`), which is sufficient on its own to stop the
+derivation short of `CERTIFIED`. That finding is closed by this
+document's own `WP 12.9.5` update, §2/§5/§6, above — full detail:
+`WP12.9.4 Engineering Release Report.md`, which supersedes
+`WP12.9.2 Engineering Release Report.md`'s and
+`WP12.9.0 Engineering Release Report.md`'s own verdicts; both remain on
+record as the historical account of the first two executions, not
+corrected or deleted. No tag, GitHub Release, or tag push has been
+created; `ADR-0106`'s own tier separation (Engineering Governance §7.5,
+§9) reserves that decision for explicit, separate, per-occasion
+authorisation, regardless of how close the verdict runs to
+`CERTIFIED`.
 
 ## Related Documents
 
-`docs/releases/v0.12.0/WorkPackages.md`; every `WP12.0A`–`WP12.9.0`
+`docs/releases/v0.12.0/WorkPackages.md`; every `WP12.0A`–`WP12.9.3B`
 document under `docs/academy/03 Work Packages/`; `docs/architecture/Engineering
-Readiness Review Architecture.md`; `ADR-0106`; `Technical Debt
-Register.md`; `Future Capability Register.md`; `Release Register.md`;
-`PROJECT_STATUS.md`.
+Readiness Review Architecture.md`; `ADR-0106`; `WP12.9.0 Engineering
+Release Report.md`, `WP12.9.2 Engineering Release Report.md`, and
+`WP12.9.4 Engineering Release Report.md` (the three real Engineering
+Readiness Review executions, in order; the last is this release's own
+current, authoritative verdict); `Technical Debt Register.md`; `Future
+Capability Register.md`; `Release Register.md`; `PROJECT_STATUS.md`.
