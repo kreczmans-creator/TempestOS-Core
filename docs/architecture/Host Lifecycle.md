@@ -8,6 +8,21 @@ are now implemented (`Tempest.Core.Plugins`), exactly as ADR-0026
 specified. Decimal phase numbers mean "between 3 and 4" — no existing
 phase was renumbered; see ADR-0026 for why.
 
+**Update, WP 13.0A (architecture only, not yet implemented):** Phase 3.1
+(Plugin Discovery) now also resolves a dependency graph over the
+validated candidate set (`ADR-0107`), checks each candidate's `Id`
+against the optional `Runtime:Plugins:Disabled` configuration list, and
+verifies a manifest-carried signature and trust tier (`ADR-0112`); Phase
+3.2 (Plugin Loading) now loads eligible plugins in dependency-topological
+order (`ADR-0107`, folder name remaining the deterministic tie-break)
+rather than folder-name order alone, performs a capability-eligibility
+and constructor-conformance check (`ADR-0111`), and populates a new,
+Host-owned Plugin Registry (`Plugin Platform Architecture.md`). None of
+this adds a new phase, a new `HostState`, or a new transition — see
+`ADR-0107`, `ADR-0110`–`ADR-0112`, `Plugin Platform Architecture.md`, and
+`Plugin Trust & Isolation Architecture.md` for the full design.
+Implementation is `WP 13.0B`'s own, separately-scoped task.
+
 **Update, WP 4.4D:** Phase 6 (Platform Services Registered) gained one new
 registration — `IEventBus` as an ordinary container-constructed singleton
 — alongside the `IPlatformVersionProvider` registration WP 4.2A already
@@ -146,6 +161,30 @@ rest. Only a genuine defect in this phase's own orchestration (not
 attributable to any specific plugin) is Host-fatal — `Faulted`, exactly
 the same transition Configuration Built and Logging Built already use.
 
+**Extended, `WP 13.0A` (architecture only — see `ADR-0107`, `ADR-0112`,
+`Plugin Platform Architecture.md`, `Plugin Trust & Isolation
+Architecture.md`).** After each candidate's manifest is individually
+validated exactly as above, this phase also: (a) checks the candidate's
+`Id` against the optional `Runtime:Plugins:Disabled` configuration list,
+isolating a match as `Disabled` before any further check; (b) verifies a
+manifest-carried `Signature`, assigning a trust tier
+(First-Party/Verified-Signed/Unsigned-Local/Untrusted) — a signature that
+fails to verify, or an absent signature with unsigned loading not
+explicitly enabled, isolates the candidate (`ADR-0025` categories 15–16,
+added by `ADR-0112`);
+(c) resolves a dependency graph (`PluginManifest.Dependencies`) over the
+surviving candidates via a fixed-point reduction, isolating any candidate
+with a missing or version-incompatible dependency, or membership in a
+circular dependency (`ADR-0025` categories 12–14). All three additions
+remain entirely side-effect-free — no assembly is loaded during any of
+them. **Exit criteria (extended).** The resulting list is additionally
+ordered for dependency-topological load order (folder name remains the
+tie-break), and each surviving candidate carries its assigned trust tier
+forward to Plugin Loading. **Failure behaviour (extended).** `ADR-0025`
+categories 12–16 (`ADR-0107`/`ADR-0112`) are isolated identically to
+every other plugin-scoped category above; the Host-fatal carve-out is
+unchanged and ungrown.
+
 ---
 
 ### 3.2. Plugin Loading
@@ -169,6 +208,23 @@ Discovery, entirely unchanged, depends on** — see Phase 4, below.
 **Failure behaviour.** Fully governed by ADR-0025, identical in shape to
 Plugin Discovery's own: plugin-scoped failures are isolated; a genuine
 defect in this phase's own orchestration is Host-fatal — `Faulted`.
+
+**Extended, `WP 13.0A` (architecture only — see `ADR-0107`, `ADR-0111`,
+`Plugin Platform Architecture.md`, `Plugin Trust & Isolation
+Architecture.md`).** "The same deterministic order Plugin Discovery
+established" is now dependency-topological order, folder name remaining
+the tie-break. This phase also now performs a capability-eligibility
+check (a plugin's `RequestedCapabilities` against its assigned trust
+tier's ceiling) and a constructor-conformance check (each discovered
+`IModule` implementer's constructor parameter types, against the fixed
+baseline plus the plugin's own granted capabilities) — a violation of
+either isolates the whole plugin (`ADR-0025` category 17, `ADR-0111`).
+This phase also populates a new, Host-owned Plugin Registry
+(`IPluginRegistry`) with one entry per candidate attempted, whether
+loaded or isolated — read-only, never DI-public (`ADR-0017`), projected
+for observation via `IDiagnosticsProvider.Plugins` (extended, `WP
+13.0A`) during Platform Services Registered (Phase 6), unchanged in this
+phase's own scope.
 
 ---
 

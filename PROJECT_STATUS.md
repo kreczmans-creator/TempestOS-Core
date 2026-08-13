@@ -1,6 +1,113 @@
 # TempestOS — Project Status
 
-**Last Updated:** 2026-08-13 (`WP 13.0.0A`, Release Register
+**Last Updated:** 2026-08-13 (`WP 13.0B`, Plugin & Trust Isolation
+Architecture Review and Baseline). An independent review of `WP 13.0A`
+before its work becomes a commit — **not** the Trust Isolation
+implementation the roadmap-predicted table originally named `WP 13.0B`
+for; that divergence is disclosed plainly in `WorkPackages.md`, not
+silently reconciled. Three parallel, genuinely independent audit
+sub-agents (Architecture Audit; Governance Audit; Documentation Audit)
+— none of which authored any `WP 13.0A` material — each strictly
+read-only, found and (via this Work Package's own triage/fix pass, not
+the auditors themselves) closed a small set of real defects `WP 13.0A`
+introduced: a stale `ADR Register.md` paragraph internally
+contradicting that same register's own already-corrected fields; a
+mis-cited failure-category range in `Plugin Trust & Isolation
+Architecture.md`; a false "untouched" claim in the `WP 13.0A`
+retrospective about two architecture documents it had, in fact, already
+edited; a governance Brief left asserting incompleteness after its own
+underlying findings were already resolved; two missing ADR citations
+(`ADR-0032`/`ADR-0037`) where `ADR-0111` additively revises their
+already-Accepted registration behaviour; and two smaller
+citation/wording corrections. **Nothing pre-existing was touched or
+re-flagged** — `Rejected Designs Register.md`/`Governance Index.md`'s
+own long-stale counts, already disclosed by `WP 13.0A` as out of scope,
+remain untouched. `governance-healthcheck.ps1` re-run clean after every
+fix: **7 passed, 1 warned, 0 failed, exit 0** — identical shape to `WP
+13.0A`'s own closing baseline. No new ADR, no new architecture, no
+broadened scope. Zero `src/`/`tests/` files touched throughout, at every
+stage, by any of the three audit sub-agents or by this Work Package's
+own fix pass. `WP 13.0A`'s and this Work Package's combined material is
+committed as a single architecture baseline immediately following —
+**not pushed**, per this Work Package's own explicit instruction; see
+this repository's own git log for the exact commit. Full detail:
+`docs/academy/03 Work Packages/WP13.0B-plugin-and-trust-isolation-architecture-review-and-baseline.md`.
+**`WP 13.0A`'s own status line, below this point, is this field's prior
+content — retained, not deleted:**
+
+**Previously updated** 2026-08-13 (`WP 13.0A`, Plugin & Registration
+Trust Isolation Architecture). This release's own first roadmap-predicted
+Work Package (`A-3`/`FCR-0001`), commissioned once the Product Owner's
+third-party plugin commitment fired at `WP 13.0.0`'s own branch
+establishment. Four parallel sub-agents (Plugin Architecture; Security &
+Trust; Governance & ADR Review; Documentation & Academy), each confined
+to new, non-overlapping files, with every shared governance file
+reconciled and applied by a single integrating pass rather than by each
+agent independently — avoiding the exact class of drift this project's
+own governance suite has repeatedly found and disclosed when a shared
+register is touched by more than one uncoordinated change at once.
+
+**Two new architecture documents.** `docs/architecture/Plugin Platform
+Architecture.md` — manifest v2 (dependency declarations; a configurable
+plugins root/manifest convention, closing `FCR-0010`/`TD-06`; shape-only
+`RequestedCapabilities`/`Publisher`/`Signature` fields whose semantics
+the sibling document owns), dependency-graph resolution inside the
+existing Phase 3.1 (no new Host Lifecycle phase), a new Host-owned
+`IPluginRegistry` projected read-only via `IDiagnosticsProvider.Plugins`
+(extending `ADR-0039`, not a new service), and an explicit, defended
+decision that live in-process plugin unload remains a non-goal for
+`v0.13.0` — `ADR-0015`'s no-restart decision reaffirmed, not reversed —
+while reserving an unused lifecycle seam contingent on a future
+isolation-mechanism change. `docs/security/Plugin Trust & Isolation
+Architecture.md` — a four-tier trust model (First-Party/Verified-Signed/
+Unsigned-Local/Untrusted); a capability model extending
+`IPermissionEvaluator` (`ADR-0044`) via a new, `AsyncLocal<T>`-backed
+`ICurrentComponentAccessor`, distinct from the existing ambient
+`ICurrentPrincipalAccessor`; a detached SHA-256 manifest+assembly
+signature verified entirely at Plugin Discovery, zero new NuGet
+dependency; and the central isolation-boundary decision — capability-
+scoped, in-process enforcement, confirmed directly **not** a separate
+`AssemblyLoadContext` (not a genuine security boundary in modern .NET —
+CAS/AppDomain sandboxing was removed from .NET Core) and **not** process
+separation (disproportionate to the actual, disclosed threat: vetted,
+signed, commercial plugins, not an open, adversarial marketplace). This
+directly closes the architecture gap behind three long-open Technical
+Debt items — `TD-09` (plugin/module trust isolation), `TD-10`
+(`NavigationService.Unregister` ownership), `TD-11` (Command/Navigation
+Id registration-order squatting) — via one trust-tier-ordered
+registration rule replacing unconditional "first registration wins,"
+closing `Security Roadmap.md` items 1, 2, and 10 together, exactly as
+that roadmap's own item 10 recommended designing them. **All six new
+ADRs are Accepted** (`ADR-0107`–`ADR-0112`); **nineteen new Rejected
+Designs entries** (`RD-0046`–`RD-0064`) plus one addendum (`RD-0009`,
+reaffirmed, not reversed); **105 → 111 ADR total** (`ADR-0095` remains
+permanently reserved, never written — 105 files existed at 106 numbers
+before this Work Package, not 106 files; independently confirmed by
+`governance-healthcheck.ps1`: "111 files, 111 register rows"). `TD-06`/`TD-09`/
+`TD-10`/`TD-11` and `FCR-0001`/`FCR-0010` all updated in the governance
+registers to reflect "design resolved" — **none moved to Resolved**,
+since this Work Package is architecture only and introduced zero
+implementation. A genuine, disclosed cross-document integration gap
+(both sibling architecture documents referenced a sixth
+`PluginRegistryState.TrustDenied` enum value neither had literally
+declared) was found and closed directly, in the one file that already
+owned the enum, during integration — not left as a silent inconsistency
+between two otherwise-excellent, independently-reconciled documents. An
+independent Governance & ADR Review workstream confirmed a
+`governance-healthcheck.ps1` clean baseline before either architecture
+document existed, and re-confirmed no conflict with any existing
+Accepted ADR after integration. **Zero `src/`/`tests/` files touched,
+zero code written, zero implementation introduced** — confirmed directly
+at every stage of every sub-agent's own work and this integration pass;
+implementation is `WP 13.0B`'s own, separately-scoped task, not begun
+here. On `feature/v0.13.0`, per its own branch discipline; not committed,
+per this Work Package's own explicit "stop before commit" instruction —
+pending review before it becomes a real commit. Full detail:
+`docs/academy/03 Work Packages/WP13.0A-plugin-and-registration-trust-isolation-architecture.md`.
+**`WP 13.0.0A`'s own status line, below this point, is this field's
+prior content — retained, not deleted:**
+
+**Previously updated** 2026-08-13 (`WP 13.0.0A`, Release Register
 Reconciliation). Closes the one finding `WP 13.0.0` disclosed rather
 than fixed: `docs/governance/Delivery/Release Register.md` had no row
 for the `v0.12.0` tag. Independently confirmed pre-existing, dating to

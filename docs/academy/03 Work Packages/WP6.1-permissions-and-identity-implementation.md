@@ -260,6 +260,31 @@ Navigation registration, and plugin loading to actually close `TD-09`/
 Work Package's own responsibility, not designed now because this Work
 Package's own brief did not authorise touching those three services.
 
+**Update, `WP 13.0A` (`v0.13.0`).** The retrofit this section named is now
+designed, not yet built. `WP 13.0A` — commissioned once the Product Owner
+confirmed the third-party plugin trigger this section's own revisit
+condition always pointed to — produced `Plugin Trust & Isolation
+Architecture.md` (`ADR-0110`–`ADR-0112`), which closes exactly the three
+retrofits this paragraph named: a capability model extending
+`IPermissionEvaluator` (this Work Package's own enforcement point, reused
+directly, not replaced) via a new `ICurrentComponentAccessor` — precisely
+the "request-scoped accessor layered on top of \[`CurrentPrincipalAccessor`\]"
+this retrospective's own §10/§12/`ADR-0044` anticipated as `WP 6.3`'s eventual
+concern, now built one Work Package later for a different, genuinely
+concurrent-in-a-different-sense caller (a plugin's own executing code,
+not an HTTP request); a `RequirePermission` call added to
+`NavigationService.Register`/`Unregister` closing `TD-10`; and a
+trust-ordered registration rule replacing "first wins" for Command/
+Navigation registration, closing `TD-11`/`CMD-1`. **Design, not
+implementation** — `WP 13.0A` wrote zero production code (confirmed
+directly, `git status`); the actual `RequirePermission` calls this section
+described remain `WP 13.0B`'s own task. See
+`WP13.0A-plugin-and-registration-trust-isolation-architecture.md` for the
+full account, and `docs/security/Plugin Trust & Isolation Architecture.md`
+for the design itself. `ADR-0044` itself is Accepted/historical and is not
+edited to reflect this — this note is this retrospective's own, living
+update, per Engineering Governance §6.
+
 ## 13. Key Takeaways
 
 1. An architecture package's own tentative language ("likely requires
