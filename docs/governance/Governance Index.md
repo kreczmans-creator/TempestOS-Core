@@ -59,6 +59,7 @@ and the dependency graph between them.
 - [Interface Register](Engineering/Interface%20Register.md)
 - [Exception Register](Engineering/Exception%20Register.md)
 - [Architectural Dependency Register](Engineering/Architectural%20Dependency%20Register.md)
+- [Engineering Vocabulary Register](Engineering/Engineering%20Vocabulary%20Register.md) — every live Kind, `Classification`, and `RelationshipKind` string value, its one canonical declaring class, and its meaning (`ADR-0105`, `WP 12.1B`).
 
 ## Quality
 

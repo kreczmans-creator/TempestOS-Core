@@ -617,12 +617,13 @@ release-engineering defects `WP 11.9.0`'s own Release Publication
 Report diagnosed when `v0.11.0` was tagged, pushed, and published: a
 flaky test (`ObjectEditorViewTests.cs`, a fixed `Task.Delay` racing an
 async UI update — replaced with a bounded, condition-driven poll, no
-production/Domain/architecture change); `scripts/governance-
-healthcheck.ps1`'s `-SummaryPath` resolution (PowerShell's `Join-Path`
-doubling an already-absolute CI-runner path into `RepoRoot` — fixed
-with an `IsPathRooted` guard, relative-path behaviour and the genuine
-safety check both re-verified unchanged); `.github/workflows/ci.yml`'s
-`governance-health-check` job's tag-triggered checkout (`fetch-tags:
+production/Domain/architecture change);
+`scripts/governance-healthcheck.ps1`'s `-SummaryPath` resolution
+(PowerShell's `Join-Path` doubling an already-absolute CI-runner path
+into `RepoRoot` — fixed with an `IsPathRooted` guard, relative-path
+behaviour and the genuine safety check both re-verified unchanged);
+`.github/workflows/ci.yml`'s `governance-health-check` job's
+tag-triggered checkout (`fetch-tags:
 true` colliding with an unpinned ref — fixed by pinning `ref: ${{
 github.sha }}`). None was a regression in product code; none was
 discoverable before this release's own first real GitHub-hosted CI
@@ -777,7 +778,9 @@ tool's first live run against this repository found two genuine, real,
 previously-undisclosed governance findings — `Academy Index.md`'s "Work
 Package Walkthroughs" section silently stops at `WP 7.3A`, missing
 roughly fifty real retrospectives since; and `docs/roadmap/`,
-`docs/diagrams/`, `docs/releases/v0.2.0/`, and `src/Plugins/` are
+`docs/diagrams/`, `docs/releases/v0.2.0.md` (then `docs/releases/v0.2.0`,
+no extension, misnamed and tracked, not an untracked empty directory —
+that part of this finding corrected `WP 12.9.1`), and `src/Plugins/` are
 described as existing but are not tracked by git at all (git cannot
 track an empty directory) — both disclosed in full, neither fixed within
 this Work Package's own scope. Wired into `.github/workflows/ci.yml` as
@@ -1165,8 +1168,10 @@ during its own development; its fixed first live run then found two
 genuine, real, previously-undisclosed governance findings (`Academy
 Index.md`'s "Work Package Walkthroughs" section stops at `WP 7.3A`,
 missing ~50 real retrospectives since; `docs/roadmap/`, `docs/diagrams/`,
-`docs/releases/v0.2.0/`, and `src/Plugins/` are described as existing
-but are not tracked by git — an empty-directory limitation, not a typo)
+`docs/releases/v0.2.0.md` (then `docs/releases/v0.2.0`, tracked but
+misnamed, not an untracked empty directory — corrected `WP 12.9.1`), and
+`src/Plugins/` are described as existing but are not tracked by git — an
+empty-directory limitation, not a typo)
 — both disclosed, neither fixed within this Work Package's own scope.
 Wired into `.github/workflows/ci.yml` as a new job running after the
 build/test matrix; deliberately not yet part of the required `CI Gate`
@@ -3974,7 +3979,7 @@ the identical failure mode. Second: `WP7.0C Academy Plan.md`'s own
 required Engineering Data Model concept guide, named as this programme's
 "highest-priority new Academy content," was never written by `WP 7.1A`
 and never disclosed as missing by any of `WP 7.1B`–`WP 7.1E` — written
-here (`02 Runtime Architecture/15-engineering-data-model.md`).
+here (`docs/academy/02 Runtime Architecture/15-engineering-data-model.md`).
 
 Ten completion deliverables produced (`WP7.1F Engineering Core
 Certification Report.md` and nine companions) plus
@@ -4172,8 +4177,7 @@ decision and evidence, and its eight companion deliverables
 Matrix.md`, `Definition of Done Audit.md`, `Technical Debt
 Disposition.md`, `Risk Register Disposition.md`, `Release Readiness
 Report.md`, `Executive Summary.md`) plus its own retrospective:
-`docs/academy/03 Work Packages/WP6.8-platform-services-integration-
-review.md`.
+`docs/academy/03 Work Packages/WP6.8-platform-services-integration-review.md`.
 
 ## Next Planned Work Package
 
@@ -4791,7 +4795,7 @@ governance-register-drift pattern `WP 6.8` itself found and closed for
 undetected across all five Engineering Foundation Work Packages — now
 fully backfilled a second time. Also found and wrote the Engineering
 Data Model's own missing concept guide
-(`02 Runtime Architecture/15-engineering-data-model.md`), required by
+(`docs/academy/02 Runtime Architecture/15-engineering-data-model.md`), required by
 `WP7.0C Academy Plan.md` since `WP 7.1A` and never produced or
 disclosed as missing. No new ADR was produced. Ten completion
 deliverables were produced under `docs/releases/v0.7.0/`, prefixed
@@ -4825,8 +4829,8 @@ follow it.
 release-preparation review, not a feature Work Package; no production
 code written. Found and corrected `Documentation Register.md`'s own
 long-disclosed stale Directory Map counts (`docs/adr/` 39 → 61,
-`02 Runtime Architecture/` 11 → 16, `03 Work Packages/` 32 → 57 at time
-of correction, `04 Design Patterns/` 4 → 5) — the full re-derivation
+`docs/academy/02 Runtime Architecture/` 11 → 16, `docs/academy/03 Work Packages/` 32 → 57 at time
+of correction, `docs/academy/04 Design Patterns/` 4 → 5) — the full re-derivation
 this register's own "Last Reviewed" field had recommended since `v0.6.0`
 Release Engineering, closing that specific `FCR-0005` instance. Two
 previously-stale release-document skeletons (`docs/releases/v0.7.0/
@@ -5040,7 +5044,7 @@ change at all), and that a real architectural gap (Temperature's affine
 conversion) can surface during a framework's own implementation even
 after contract review found no issue at the interface-signature level.
 Also added a new Design Patterns concept guide,
-`04 Design Patterns/05-phantom-type-dimension-safety.md` — this
+`docs/academy/04 Design Patterns/05-phantom-type-dimension-safety.md` — this
 platform's first phantom-type pattern — and extended
 `docs/engineering/Engineering Principles.md` with six further
 principles (7-12). **`WP 7.1C`** added
@@ -5091,8 +5095,9 @@ both Audit and Calculation Record. Further extended
 `docs/engineering/Engineering Principles.md` with five further
 principles (24-28), completing that document's own Engineering
 Foundation contribution — all five frameworks have now extended it.
-**`WP 7.1F`** added `WP7.1F-engineering-core-integration-review-and-
-certification.md` — a closing certification retrospective, mirroring
+**`WP 7.1F`** added
+`WP7.1F-engineering-core-integration-review-and-certification.md` — a
+closing certification retrospective, mirroring
 `WP 6.8`'s own whole-release review format, not the standard 13-section
 per-feature template. Also wrote `02 Runtime Architecture/
 15-engineering-data-model.md`, the Engineering Data Model's own concept
@@ -5128,7 +5133,7 @@ review re-confirmed: **no extension warranted**, unchanged from
 `WP 7.2B`.
 **`WP 7.3A`** added `WP7.3A-requirements-engine-implementation.md` (the
 standard 13-section implementation retrospective) and
-`02 Runtime Architecture/16-requirements-engine.md` (the two
+`docs/academy/02 Runtime Architecture/16-requirements-engine.md` (the two
 concept-guide sections `WP7.2C Academy Plan.md` named: the three-layer
 Requirement-as-Document pattern, and the relationship-kind/traceability
 vocabulary). `docs/engineering/Engineering Principles.md` extended with
@@ -5143,7 +5148,7 @@ Principles.md` confirmed requiring no extension, unchanged from
 `WP 7.3A`.
 **`WP 8.0A`** added `WP8.0A-engineering-workspace-architecture.md` (a
 whole-review retrospective mirroring `WP7.2B`'s own architecture-only
-format) and `02 Runtime Architecture/17-engineering-workspace.md` (a
+format) and `docs/academy/02 Runtime Architecture/17-engineering-workspace.md` (a
 new concept guide, written at the architecture stage, to be updated at
 implementation — mirroring `10-shell-and-application-composition.md`'s
 own precedent). `docs/engineering/Engineering Principles.md` reviewed:
@@ -5151,7 +5156,7 @@ own precedent). `docs/engineering/Engineering Principles.md` reviewed:
 only, no implementation to derive a genuine engineering principle from.
 **`WP 8.0B`** added `WP8.0B-workspace-contracts.md` (a whole-review
 retrospective mirroring `WP7.2C`'s own contract-review-only format) and
-updated `02 Runtime Architecture/17-engineering-workspace.md` in place
+updated `docs/academy/02 Runtime Architecture/17-engineering-workspace.md` in place
 (second update — not a new file) to reflect the twelve now-frozen
 contracts and both resolved ADRs. `docs/engineering/Engineering
 Principles.md` reviewed: **no extension warranted**, unchanged from
@@ -5159,7 +5164,7 @@ Principles.md` reviewed: **no extension warranted**, unchanged from
 genuine engineering principle from.
 **`WP 8.1A`** added `WP8.1A-workspace-shell-implementation.md` (a
 standard 13-section implementation retrospective) and updated
-`02 Runtime Architecture/17-engineering-workspace.md` in place a third
+`docs/academy/02 Runtime Architecture/17-engineering-workspace.md` in place a third
 time to reflect the now-compiled shell and `ADR-0068`.
 `docs/engineering/Engineering Principles.md` reviewed: **no extension
 warranted** — every design decision this Work Package made was already
@@ -5174,14 +5179,15 @@ drift `WP 7.1F`/`WP 6.8` each found and closed once before, not
 backfilled speculatively beyond what follows.**
 **`WP 8.0C`** added `WP8.0C-engineering-workspace-ux-specification.md`
 (a whole-review retrospective mirroring `WP 8.0A`/`WP 8.0B`'s own
-format) and updated `02 Runtime Architecture/17-engineering-
-workspace.md` in place a fourth time to reflect the target UX across
+format) and updated
+`docs/academy/02 Runtime Architecture/17-engineering-workspace.md` in
+place a fourth time to reflect the target UX across
 all 28 named scope areas. `docs/engineering/Engineering Principles.md`
 reviewed: **no extension warranted** — a product/UX specification only,
 no implementation to derive a genuine engineering principle from.
 **`WP 8.1B`** added `WP8.1B-navigation-and-project-explorer-
 implementation.md` (a standard 13-section implementation retrospective)
-and updated `02 Runtime Architecture/17-engineering-workspace.md` in
+and updated `docs/academy/02 Runtime Architecture/17-engineering-workspace.md` in
 place a fifth time to reflect the now-implemented Navigation system and
 Project Explorer. `docs/engineering/Engineering Principles.md`
 reviewed: **no extension warranted** — every design decision was already
@@ -5189,30 +5195,32 @@ anticipated by `WP 8.0A`/`WP 8.0B`/`WP 8.0C`'s own approved
 architecture, contracts, and UX specification.
 **`WP 8.1C`** added `WP8.1C-engineering-cockpit-implementation.md` (a
 standard 13-section implementation retrospective) and updated
-`02 Runtime Architecture/17-engineering-workspace.md` in place a sixth
+`docs/academy/02 Runtime Architecture/17-engineering-workspace.md` in place a sixth
 time to reflect the now-implemented Engineering Cockpit.
 `docs/engineering/Engineering Principles.md` reviewed: **no extension
 warranted**, unchanged from `WP 8.1B`.
 **`WP 8.2A`** added `WP8.2A-engineering-domain-architecture.md` (a
 whole-review retrospective mirroring `WP 7.2B`/`WP 8.0A`'s own
-architecture-only format) and `02 Runtime Architecture/
-18-engineering-domain-architecture.md` (a new concept guide — the
-Engineering Domain's own, distinct from the Workspace's).
+architecture-only format) and
+`docs/academy/02 Runtime Architecture/18-engineering-domain-architecture.md`
+(a new concept guide — the Engineering Domain's own, distinct from the
+Workspace's).
 `docs/engineering/Engineering Principles.md` reviewed: **no extension
 warranted** — this Work Package produced architecture only, no
 implementation to derive a genuine engineering principle from.
 **`WP 8.2B`** added `WP8.2B-engineering-domain-contracts.md` (a
 whole-review retrospective mirroring `WP 7.0C`/`WP 7.2C`/`WP 8.0B`'s own
-contract-review-only format) and updated `02 Runtime Architecture/
-18-engineering-domain-architecture.md` in place a second time to
-reflect the now-frozen public contracts and `ADR-0075`/`ADR-0076`.
+contract-review-only format) and updated
+`docs/academy/02 Runtime Architecture/18-engineering-domain-architecture.md`
+in place a second time to reflect the now-frozen public contracts and
+`ADR-0075`/`ADR-0076`.
 `docs/engineering/Engineering Principles.md` reviewed: **no extension
 warranted**, unchanged from `WP 8.2A` — contract review produced no
 implementation to derive a genuine engineering principle from.
 **`WP 8.2C`** added `WP8.2C-engineering-domain-implementation.md` (a
-standard 13-section implementation retrospective) and updated `02
-Runtime Architecture/18-engineering-domain-architecture.md` in place a
-third time to reflect the now-compiled implementation, `ADR-0077`,
+standard 13-section implementation retrospective) and updated
+`docs/academy/02 Runtime Architecture/18-engineering-domain-architecture.md`
+in place a third time to reflect the now-compiled implementation, `ADR-0077`,
 `ADR-0078`, and `ADR-0079`. `docs/engineering/Engineering Principles.md`
 reviewed: **no extension warranted** — every design decision this Work
 Package made was already anticipated by `WP 8.2A`/`WP 8.2B`'s own
@@ -5600,7 +5608,7 @@ Review Work Package. No new Technical Debt or Future Capability
 Register entry (architecture only; no implementation to disclose a
 defect or capability gap from). `Academy Register.md`, `Documentation
 Register.md` (directory-map counts for `docs/adr/`,
-`02 Runtime Architecture/`, `03 Work Packages/`) kept current directly
+`docs/academy/02 Runtime Architecture/`, `docs/academy/03 Work Packages/`) kept current directly
 at documentation time, not backfilled.
 **`WP 8.0B`** added two new ADRs (`ADR-0066`/`ADR-0067`, both Accepted,
 65 → 67), resolving both ADRs `WP 8.0A` reserved — zero
@@ -5736,10 +5744,14 @@ Package's own "never silently modify historical records" instruction.
 Recorded honestly, not guessed at — full detail in `docs/governance/
 Governance Audit Report.md`:
 
-1. `docs/releases/v0.2.0/` — an empty directory; whether v0.2.0 was ever
-   released, skipped, or reserved is unknown.
-2. `docs/roadmap/`, `docs/diagrams/` — both empty, both unreferenced by
-   any document reviewed; intended purpose unknown.
+1. `docs/releases/v0.2.0.md` (renamed `WP 12.9.1` from a misnamed stray
+   file, `docs/releases/v0.2.0`, no extension, no folder) — a
+   never-completed release-notes skeleton, every field blank; whether
+   v0.2.0 was ever released, skipped, or reserved is unknown.
+2. `docs/roadmap/`, `docs/diagrams/` (each gains a tracked marker
+   `README.md`, `WP 12.9.1`, disclosing this in place — see
+   `Documentation Register.md`) — intended purpose unknown; unreferenced
+   by any document reviewed.
 3. Exact original authorship of four pre-Claude namespaces
    (`Tempest.Core.Hosting`, `Bootstrap`, `Projects`, `Repositories`) and
    seven unnamespaced bootstrap-era files.
