@@ -65,7 +65,58 @@ tag, or push performed at either pass. See `docs/academy/03 Work
 Packages/WP12.9.0-release-preparation-and-engineering-sign-off-architecture.md`
 (§8 Addendum for the full account),
 `docs/architecture/Engineering Readiness Review Architecture.md`,
-`ADR-0106`. **`WP 12.1B` Architecture Review Follow-Up's own status
+`ADR-0106`. **`WP 12.2A`'s own status line, below this point, is this
+field's prior content — retained, not deleted:**
+
+**Previously updated** 2026-08-12 (`WP 12.2A` — Presentation Strategy
+Execution Architecture. The roadmap-defined `v0.12.0` Work Package
+(`WP11.0B Architecture Roadmap.md` §3), on its own new branch
+(`feature/v0.12.0-presentation-strategy-execution`), scoped as
+"Presentation Strategy Execution (realises `WP 11.2A`'s decision)."
+Discovery (Phase A) finds `WP 11.2A` itself was never commissioned as
+predicted — its label was reused for Governance Health-Check Automation
+instead — and the real Desktop & Console Presentation Strategy Decision
+(`WP11.0A` finding `A-2`) was ratified and executed under a different
+pair, `WP 11.3A` (review, `Complete`) and `WP 11.3B` (implementation,
+`Complete`), both in `v0.11.0`, before `v0.12.0` even branched. Every
+claim independently re-verified directly against live source, not
+carried forward: `TempestShell`/`IPage`/`PlaceholderPage` confirmed
+retired (zero references anywhere in `src/`/`tests/`); `ADR-0101`
+confirmed Accepted and unmodified, formally classifying `Tempest.App`/
+`WorkspaceShell` as TempestOS's Internal Engineering Harness, not a
+shipped product; `README.md`/`Contributor Learning Path.md` confirmed
+corrected; `ci.yml`/`release.yml` confirmed packaging `Tempest.Desktop`
+and `Tempest.App` as two separate, clearly-labelled artifacts;
+`Shell & Composition Framework Architecture.md` confirmed already
+reflecting the final state via its own `WP 11.3B` addendum. `WP11.3A`'s
+own five-stage roadmap's Stage 5 (further `WorkspaceShell` test/feature
+trimming) was deliberately not executed by `WP 11.3B` — confirmed, not
+assumed, to be a formal, disclosed deferral (`WP11.9.0 Engineering
+Release Report.md`'s own "Product Debt... deferred by design" entry),
+gated on "a real, demonstrated cost problem" that a direct search of
+both the Technical Debt Register and the Future Capability Register
+confirms has still not occurred. Phase B (Architectural Analysis)
+evaluates four disposition alternatives (execute Stage 5 speculatively;
+re-run the investigation from scratch; formally close as delivered,
+adopted; leave the Status silently stale) and concludes, honestly,
+neither a new ADR nor a new/updated architecture document is justified
+— Engineering Governance §5's own ADR-creation criteria is not met (no
+new either/or choice exists to record), and `Shell & Composition
+Framework Architecture.md` already documents the current state
+correctly. `docs/releases/v0.12.0/WorkPackages.md`'s own `WP 12.2A` row
+updated from "Not started — scope set by `WP 11.2A`" to "Delivered by
+`WP 11.3A`/`WP 11.3B` — no remaining scope," mirroring this project's
+own identical, already-established disposition pattern for the sibling
+`WP 11.1B`/`WP 11.2A` renumbering. Architecture only; zero `src/`/
+`tests/` files touched, confirmed directly; no ADR produced; no build
+or regression run required or performed. `docs/governance/Documentation/
+Academy Register.md` and `Documentation Register.md` updated to
+disclose this Work Package's own new Academy retrospective; `ADR
+Register.md` and `Architecture Document Register.md` are **not**
+modified — genuinely unaffected. See
+`docs/academy/03 Work Packages/WP12.2A-presentation-strategy-execution-architecture.md`,
+`docs/releases/v0.11.0/WP11.3A Presentation Strategy Review.md`,
+`ADR-0101`. **`WP 12.1B` Architecture Review Follow-Up's own status
 line, below this point, is this field's prior content — retained, not
 deleted:**
 
