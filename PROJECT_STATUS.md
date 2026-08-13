@@ -1,6 +1,37 @@
 # TempestOS — Project Status
 
 **Last Updated:** 2026-08-13 (`v0.12.0` Release Preparation —
+`WP 12.9.3B`, Governance Health Check Consistency Remediation).
+Pushing `main` for the first time in this release (`WP 12.9.3`)
+surfaced a real GitHub Actions `Governance Health Check` `[FAIL]`
+invisible to every local run: `Test-ProjectStatusReferences` and
+`Test-ReleaseRegisterMatchesTags` both consume `Get-RepoTags`, but only
+the latter treats a shallow checkout's empty tag list as a disclosed
+environmental limitation (`Warn`) — the former had no equivalent guard,
+producing a false `Fail` against every real historical version token
+(`v0.3.0`–`v0.10.0`) whenever tags happened to be unavailable.
+`WP 12.9.3A` (architecture/investigation only, no file changed)
+confirmed this is a checker-architecture inconsistency, not a
+repository defect — this document's own content was always accurate.
+`WP 12.9.3B` implements the approved fix, scoped to exactly the
+affected sub-check: version-token validation degrades to `Warn`,
+disclosed, when zero tags are available; path-reference validation,
+independent of tag availability, continues unconditionally and can
+still `Fail` the check on its own. `Get-RepoTags` and the Release
+Register check both left unmodified. Four behavioural cases verified
+against isolated fixtures; full Debug+Release regression re-run,
+2,255/2,255 passing both, 0 Warnings/0 Errors both. Reviewed and
+integrated into `main` by `WP 12.9.3C` (Final Verification and
+Integration) via the normal Engineering Governance merge process, after
+an independent architecture/code review confirmed the implementation
+matches `WP 12.9.3A`'s own approved recommendation exactly and a full,
+independent re-verification (Governance Health Check, both builds,
+both test suites) passed clean. Full detail: `docs/academy/03 Work
+Packages/WP12.9.3B-governance-health-check-consistency-remediation.md`.
+**`WP 12.9.2`'s own status line, below this point, is this field's
+prior content — retained, not deleted:**
+
+**Previously updated** 2026-08-13 (`v0.12.0` Release Preparation —
 `WP 12.9.2`, Engineering Readiness Review Re-Execution). Re-runs the
 complete ERR (`ADR-0106`) after `WP 12.9.1`'s governance remediation,
 independently re-deriving every Phase A item from source, not relying

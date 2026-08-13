@@ -408,35 +408,68 @@ function Test-ProjectStatusReferences
 
     $tags = Get-RepoTags -Root $Root
 
+    # Zero tags means "unenumerable in this environment" (git missing,
+    # -Root not a git repository, or a shallow checkout with no local tag
+    # refs - Get-RepoTags's own contract, shared verbatim with Check 3),
+    # never "zero tags genuinely exist" - this repository has shipped
+    # nine real releases. Check 3 (Test-ReleaseRegisterMatchesTags)
+    # already treats this as a disclosed environmental limitation, Warn,
+    # not a content defect; version-token validation below did not,
+    # producing a false Fail against every historical version whenever
+    # tags happen to be unavailable (WP 12.9.3A, confirmed directly
+    # against a real GitHub Actions shallow checkout). Path-reference
+    # validation, below, does not depend on tags at all and is
+    # unaffected either way - WP 12.9.3B deliberately narrows the fix to
+    # only the sub-check that actually depends on tag availability,
+    # rather than Check 3's own coarser "skip the whole check" shape,
+    # which would also have suppressed genuine path drift whenever tags
+    # happen to be unavailable.
+    $tagsAvailable = $tags.Count -gt 0
+
     $versionFilePath = Join-Path $Root "VERSION"
     $currentVersionText = if (Test-Path $versionFilePath) { (Get-Content -LiteralPath $versionFilePath -Raw).Trim() -replace '-rc\.\d+$', '' } else { $null }
     $currentVersion = if ($currentVersionText) { [version]$currentVersionText } else { $null }
 
     $knownExceptions = @("v0.1.0", "v0.2.0")
 
-    $unknownVersions = $versionTokens | Where-Object {
-        $token = $_
-        $isTag = $tags -contains $token
-        $isException = $knownExceptions -contains $token
-        $isCurrentOrFuture = $false
-        if ($currentVersion)
-        {
-            try { $isCurrentOrFuture = ([version]($token.TrimStart('v'))) -ge $currentVersion }
-            catch { $isCurrentOrFuture = $false }
+    $unknownVersions = if ($tagsAvailable)
+    {
+        $versionTokens | Where-Object {
+            $token = $_
+            $isTag = $tags -contains $token
+            $isException = $knownExceptions -contains $token
+            $isCurrentOrFuture = $false
+            if ($currentVersion)
+            {
+                try { $isCurrentOrFuture = ([version]($token.TrimStart('v'))) -ge $currentVersion }
+                catch { $isCurrentOrFuture = $false }
+            }
+            -not ($isTag -or $isException -or $isCurrentOrFuture)
         }
-        -not ($isTag -or $isException -or $isCurrentOrFuture)
+    }
+    else
+    {
+        @()
     }
 
     # Path-like references, same heuristic and Root-relative resolution as
-    # the Documentation Register check.
+    # the Documentation Register check - deliberately independent of tag
+    # availability, so this sub-check runs, and can still fail the check
+    # on its own, regardless of the branch above.
     $references = Get-PathLikeReferences -Text $text
     $missingPaths = $references | Where-Object { -not (Test-RepoPath -RelativePath $_ -Root $Root) }
 
     $details = @()
+    if (-not $tagsAvailable)
+    {
+        $details += "Version token validation skipped: no git tags available (git missing, -Root is not a git repository, or zero 'v*' tags exist) - the identical, disclosed limitation Check 3 already names."
+    }
     if ($unknownVersions) { $details += "Version token(s) referenced that match no git tag, the current VERSION, or a disclosed exception: $($unknownVersions -join ', ')" }
     if ($missingPaths) { $details += "Referenced path(s) that do not exist: $($missingPaths -join ', ')" }
 
-    $status = if ($details.Count -eq 0) { "Pass" } else { "Fail" }
+    $status = if ($unknownVersions -or $missingPaths) { "Fail" }
+              elseif (-not $tagsAvailable) { "Warn" }
+              else { "Pass" }
     New-CheckResult -Name "PROJECT_STATUS.md references are valid ($(@($versionTokens).Count) version tokens, $(@($references).Count) path references)" -Status $status -Details $details
 }
 
