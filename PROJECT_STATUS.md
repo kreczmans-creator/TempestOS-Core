@@ -1,28 +1,36 @@
 # TempestOS — Project Status
 
 **Last Updated:** 2026-08-13 (`v0.12.0` Release Preparation —
-`WP 12.9.0` and `WP 12.2A` both committed and merged into `main`
-(`ab9d006`/`e8566ab`, `d5422e1`/`cfdfa6f`); Debug+Release builds and
-full regression independently re-verified on `main` post-merge,
-2,255/2,255 passing both, 0 Warnings/0 Errors both.
-`docs/releases/v0.12.0/Release Notes.md` produced. **The first real
-execution of the Engineering Readiness Review `ADR-0106` defines**,
-performed as a genuine engineering exercise, not a formality — full
-detail: `docs/releases/v0.12.0/WP12.9.0 Engineering Release Report.md`.
-Four of five readiness categories Pass or Pass-with-observations;
-Verification readiness is **Not Ready** for one procedural,
-non-architectural reason: `main` carries four commits never pushed to
-`origin` (`git status`: `ahead 4`), so real, GitHub-hosted CI has not
-run against the commit this release would tag — the identical literal
-requirement `WP 11.4B` found `v0.10.0` and `v0.11.0` had each silently
-failed to satisfy, treated literally here specifically because of that
-history. **Overall verdict: `NOT READY`, pending exactly one action**
-— pushing `main` — not a code or architecture defect. Pushing was not
-part of this Work Package's own authorised scope (Engineering
-Governance §7.5 — requires separate, per-occasion approval) and is not
-assumed here. No tag created; no push performed. **`WP 12.9.0`'s own
-architecture-phase status line, below this point, is this field's
-prior content — retained, not deleted:**
+`WP 12.9.2`, Engineering Readiness Review Re-Execution). Re-runs the
+complete ERR (`ADR-0106`) after `WP 12.9.1`'s governance remediation,
+independently re-deriving every Phase A item from source, not relying
+on `WP 12.9.0`'s own report. Found `WP 12.9.1`'s own changes had never
+been committed — corrected within this same Work Package (commit
+`955badb`, local only, no push; Engineering Governance §7.5), since
+"the current repository state after `WP 12.9.1`" could not otherwise
+be assessed as a real, tag-able commit. `governance-healthcheck.ps1`
+re-run clean: **7 passed, 1 warned, 0 failed, exit code 0** — both
+Disclosed, Non-Blocking findings `WP 12.9.0`'s own execution raised
+(Academy Index gap; Engineering Vocabulary Register's missing link)
+are now closed. Debug+Release builds and full regression freshly
+re-run, 2,255/2,255 passing both, 0 Warnings/0 Errors both — identical
+to `WP 12.9.0`'s own figures (zero `src/`/`tests/` files changed besides
+one documentation marker). Six independent discipline reviews: Architecture/
+Implementation/Governance/Release readiness all **Pass** (Governance
+readiness improves from `WP 12.9.0`'s own "Pass, with observations" to
+a clean Pass); Verification readiness **Not Ready** — the identical
+class of finding `WP 12.9.0`'s own first execution raised, now against
+`955badb` (committed but not pushed) rather than `fb76ce8`: real,
+GitHub-hosted CI has not run against the commit this release would tag.
+**Overall verdict: `NOT READY`, pending exactly one action** — pushing
+`main`, then confirming real CI passes against `955badb` — expected to
+become `CERTIFIED` on that evidence alone, since this execution finds
+zero findings of any kind beyond the CI-evidence gap itself. Full
+detail: `docs/releases/v0.12.0/WP12.9.2 Engineering Release Report.md`.
+No tag, GitHub release, or push created or proposed — outside this
+Work Package's own authorised scope and independently prohibited by
+the `NOT READY` verdict itself. **`WP 12.9.0`'s own status line, below
+this point, is this field's prior content — retained, not deleted:**
 
 **Previously updated** 2026-08-12 (`WP 12.9.0` — Release Preparation &
 Engineering Sign-Off, Architecture phase. The final roadmap-defined

@@ -27,10 +27,13 @@ replacing the ad hoc, independently-worded sign-off checklist `v0.10.0`
 and `v0.11.0` each used with a named, five-category, four-verdict
 framework every future release now cites rather than reinvents.
 
-Ten Work Packages delivered this release (`WP 12.3A`/`WP 12.3B`,
-`WP 12.0A`/`WP 12.0B`, `WP 12.4A`/`WP 12.4B`, `WP 12.1A`/`WP 12.1B`,
-`WP 12.2A`, `WP 12.9.0`), five new ADRs (`ADR-0102`–`ADR-0106`), five
-new standing architecture documents. `WP 12.3A`/`WP 12.3B` were
+Ten Work Packages delivered this release's own engineering scope
+(`WP 12.3A`/`WP 12.3B`, `WP 12.0A`/`WP 12.0B`, `WP 12.4A`/`WP 12.4B`,
+`WP 12.1A`/`WP 12.1B`, `WP 12.2A`, `WP 12.9.0`), five new ADRs
+(`ADR-0102`–`ADR-0106`), five new standing architecture documents; an
+eleventh, `WP 12.9.1`, closed the two genuine governance findings
+`WP 12.9.0`'s own first Engineering Readiness Review execution
+disclosed (§5, below, updated in place). `WP 12.3A`/`WP 12.3B` were
 directly commissioned outside the roadmap's own predicted `12.0`–`12.2`
 sequence — the same pattern `v0.11.0`'s own `WP 11.3A`/`WP 11.3B` and
 `WP 11.4A`/`WP 11.4B` already established — after tracing the real
@@ -118,6 +121,27 @@ discipline reviews, and the reconciled Definition of Done there.
   one genuine, `v0.12.0`-caused governance gap (the Engineering
   Vocabulary Register never linked from `Governance Index.md`) and one
   stale Architecture Document Register row (corrected in passing).
+- **`WP 12.9.1` — Governance Health Check Remediation.** Repairs the
+  four genuine `[FAIL]` results `governance-healthcheck.ps1` reported
+  against `main`, per `WP 12.9.0`'s own Phase A finding. Academy Index:
+  59 missing links restored — the `v0.7.0` tail through all of `v0.12.0`
+  (closing the Academy Index gap named in §5, below, and disclosed
+  since `WP 11.2A`, larger every release since). Documentation
+  Register/`PROJECT_STATUS.md`: bare numbered-Academy-folder shorthand
+  fully qualified (a documented, deliberate `governance-healthcheck.ps1`
+  scope limit, confirmed by direct code reading, left unmodified);
+  three hyphen-hard-wrap filename defects rewrapped; `docs/diagrams/`,
+  `docs/roadmap/`, `src/Plugins/` each given a tracked, honestly-
+  disclosed `README.md` marker, closing a `WP 11.2A`-disclosed,
+  previously-deferred gap (git cannot track an empty directory);
+  `docs/releases/v0.2.0` renamed `v0.2.0.md` (found to be a misnamed
+  tracked file, not an empty directory as `WP 11.2A`'s own finding had
+  conflated it). Governance Index: the Engineering Vocabulary Register
+  link added, closing the one genuine, `v0.12.0`-caused governance gap
+  named in §5, below. `scripts/governance-healthcheck.ps1` left
+  unmodified throughout. Documentation/governance only; zero `src/`/
+  `tests/` files touched. `governance-healthcheck.ps1` re-run clean: 7
+  passed, 1 warned (informational only), 0 failed.
 
 ## 3. Testing Summary
 
@@ -152,16 +176,15 @@ documented, not configured, in GitHub).
 
 ## 5. Deferred / Open Findings
 
-- **Engineering Vocabulary Register not linked from `Governance
-  Index.md`** (`WP 12.1B` finding, first disclosed this release, by
-  `WP 12.9.0`) — a genuine, `v0.12.0`-caused governance gap, still
-  open at this release's close; a discoverability gap, not a factual
-  error.
-- **Academy Index gap** (`WP 11.2A` finding, still open, now larger):
-  "Work Package Walkthroughs" still stops well short of current —
-  every one of this release's own ten retrospectives is itself
-  unlinked, the identical pattern `v0.11.0` already disclosed and did
-  not close.
+- ~~**Engineering Vocabulary Register not linked from `Governance
+  Index.md`**~~ — **Closed, `WP 12.9.1`.** First disclosed this
+  release, by `WP 12.9.0`; the link was added, `governance-
+  healthcheck.ps1`'s Governance Index check re-confirmed `[PASS]`.
+- ~~**Academy Index gap**~~ — **Closed, `WP 12.9.1`.** `WP 11.2A`'s own
+  disclosed, previously-unaddressed gap (grown every release since);
+  59 missing links restored, spanning the `v0.7.0` tail through all of
+  `v0.12.0`; `governance-healthcheck.ps1`'s Academy Index check
+  re-confirmed `[PASS]`.
 - **`WorkspaceShell` Stage 5** (further test/feature trimming,
   `WP 11.3A`) — reconfirmed still deliberately deferred, `WP 12.2A`;
   trigger condition ("a real, demonstrated cost problem") still unmet.
@@ -184,26 +207,34 @@ documented, not configured, in GitHub).
   §3.
 - **Technical Debt Register: 48 tracked items, unchanged in count.**
 - **Future Capability Register: 83 → 84** (`FCR-0084`).
-- **Academy `03 Work Packages` retrospectives: +10** — every `v0.12.0`
+- **Academy `03 Work Packages` retrospectives: +11** — every `v0.12.0`
   Work Package has one, closing the exact gap `v0.11.0`'s own Release
   Notes named as an immediate `v0.12.0` fast-follow (§5, `v0.11.0`
   Release Notes).
-- **Ten Work Packages** completed (`WP 12.3A`/`WP 12.3B`, `WP 12.0A`/
+- **Eleven Work Packages** completed (`WP 12.3A`/`WP 12.3B`, `WP 12.0A`/
   `WP 12.0B`, `WP 12.4A`/`WP 12.4B`, `WP 12.1A`/`WP 12.1B`, `WP 12.2A`,
-  `WP 12.9.0`).
+  `WP 12.9.0`, `WP 12.9.1`).
 
 ## 7. Final Engineering Assessment
 
 Every hard engineering gate — clean build (both configurations, 0
 Warnings/0 Errors), full test suite (both configurations, 2,255/2,255,
-independently re-run from source on `main` post-merge, not carried
-forward from any Work Package's own claim), and governance-register
-health (`governance-healthcheck.ps1` run directly: 3 passed, 1 warned,
-4 failed of 8 — every failure a pre-existing, already-disclosed gap,
-none newly caused by this release's own merges) — passed on
-independent, from-source re-verification. Full detail, the six
-independent discipline reviews, and the release verdict this
-assessment feeds: `WP12.9.0 Engineering Release Report.md`.
+independently re-run from source, not carried forward from any Work
+Package's own claim), and governance-register health
+(`governance-healthcheck.ps1` run directly: **7 passed, 1 warned, 0
+failed of 8**, `WP 12.9.1` — the one remaining `[WARN]` is the same
+informational, already-accepted exception `WP 11.2A`'s own design
+names) — passed on independent, from-source re-verification. `WP
+12.9.0`'s own first Engineering Readiness Review execution found one
+Release Blocking finding (real CI not yet run against the pre-tag
+commit, since `main` had not yet been pushed) and two Disclosed,
+Non-Blocking governance findings (both closed by `WP 12.9.1`, above).
+The Engineering Readiness Review's own re-execution against this
+updated state — `WP 12.9.2` — is `WP12.9.2 Engineering Release
+Report.md`; its own verdict is this release's own current, authoritative
+one, superseding `WP12.9.0 Engineering Release Report.md`'s, which
+remains as the historical record of the first execution, not corrected
+or deleted.
 
 ## Related Documents
 
