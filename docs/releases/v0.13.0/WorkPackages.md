@@ -27,9 +27,10 @@ now explicitly made that commitment, confirmed directly, commissioning
 this branch — recorded here as the trigger event itself, not assumed
 or inferred from the branch's mere existence.
 
-**Predicted scope**, per `WP11.0B Architecture Roadmap.md` §3, table
-reproduced below verbatim, every row `Not started` — no `v0.13.0` Work
-Package has yet begun:
+**Predicted scope**, per `WP11.0B Architecture Roadmap.md` §3: Work
+Package, Scope, and Type columns reproduced verbatim; Status updated
+from that table's own `Conditional` to `Not started` now that the
+condition has fired — no `v0.13.0` Work Package has yet begun:
 
 | Work Package | Scope | Type | Status |
 |---|---|---|---|
