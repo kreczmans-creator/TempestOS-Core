@@ -51,6 +51,9 @@ internal static class PluginFailureLogging
         MissingPluginDependencyException => LogLevel.Warning,
         IncompatiblePluginDependencyVersionException => LogLevel.Warning,
         CircularPluginDependencyException => LogLevel.Warning,
+        PluginSignatureVerificationFailedException => LogLevel.Error,
+        PluginUnsignedLoadNotAllowedException => LogLevel.Warning,
+        PluginTrustDeniedException => LogLevel.Warning,
         _ => LogLevel.Error,
     };
 
@@ -79,6 +82,9 @@ internal static class PluginFailureLogging
             CircularPluginDependencyException e => e.PluginId,
             PluginAssemblyNotFoundException e => e.PluginId,
             PluginAssemblyLoadException e => e.PluginId,
+            PluginSignatureVerificationFailedException e => e.PluginId,
+            PluginUnsignedLoadNotAllowedException e => e.PluginId,
+            PluginTrustDeniedException e => e.PluginId,
             _ => candidateFolderName,
         };
 
@@ -86,6 +92,7 @@ internal static class PluginFailureLogging
         {
             IncompatiblePluginVersionException => PluginRegistryState.Incompatible,
             MissingPluginDependencyException or IncompatiblePluginDependencyVersionException or CircularPluginDependencyException => PluginRegistryState.DependencyUnmet,
+            PluginTrustDeniedException => PluginRegistryState.TrustDenied,
             _ => PluginRegistryState.Failed,
         };
 

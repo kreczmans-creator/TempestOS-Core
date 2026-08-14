@@ -68,6 +68,20 @@ namespace Tempest.Core.Runtime;
 /// including once the host is already <see cref="HostState.Disposed"/> —
 /// matching the standard <see cref="IAsyncDisposable"/> convention.
 /// </para>
+/// <para>
+/// <b>Plugin trust and capability enforcement</b> (ADR-0110, ADR-0111,
+/// ADR-0112, WP 13.2A): this class constructs and holds every new
+/// Host-owned trust collaborator — <see cref="Plugins.PluginTrustStore"/>,
+/// <see cref="Plugins.PluginComponentPrincipalRegistry"/>, and
+/// <see cref="Identity.CurrentComponentAccessor"/> — and wires them into
+/// <see cref="Plugins.PluginManifestDiscoveryService"/>,
+/// <see cref="Plugins.PluginAssemblyLoader"/>, and
+/// <see cref="Modules.ModuleLifecycleManager"/>'s own construction, alongside
+/// the already-existing <see cref="Identity.IPermissionEvaluator"/>. None of
+/// the three new collaborators is ever added to the DI
+/// <see cref="DependencyInjection.ServiceCollection"/> (ADR-0017), mirroring
+/// <see cref="Plugins.PluginRegistry"/>'s own established boundary.
+/// </para>
 /// </remarks>
 public sealed class TempestHost : ITempestHost
 {
@@ -260,6 +274,15 @@ public sealed class TempestHost : ITempestHost
             ? configuredDisabled.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
             : null;
 
+        // ADR-0112: the operator's own explicit opt-in for Unsigned-Local
+        // plugins to load at all. Absent or unparseable resolves to false -
+        // ADR-0112's own table names this the safe default (fail closed,
+        // mirroring ADR-0043's identical fail-closed precedent for an
+        // unrecognised identity).
+        var allowUnsignedLoad = configuration.TryGetValue("Plugins:AllowUnsignedLoad", out var rawAllowUnsigned)
+            && bool.TryParse(rawAllowUnsigned, out var parsedAllowUnsigned)
+            && parsedAllowUnsigned;
+
         // Plugin Platform Architecture.md, "Plugin Registry": Host-owned,
         // constructed immediately before Plugin Discovery ever runs, so
         // both Discovery and Loading can record every candidate's outcome
@@ -269,15 +292,45 @@ public sealed class TempestHost : ITempestHost
         // DI-public read-only projection, ever reaches a module.
         var pluginRegistry = new PluginRegistry();
 
+        // ADR-0112: the local, flat-file trust store (TrustedPublishers/,
+        // fixed convention relative to AppContext.BaseDirectory) a signed
+        // candidate's PublisherCertificateThumbprint is resolved against.
+        // Host-owned, alongside pluginRegistry, for the identical reason.
+        var pluginTrustStore = new PluginTrustStore(logger);
+
+        // ADR-0111: the small, Host-owned registry mapping a discovered
+        // IModule Type back to the plugin's own component principal that
+        // owns it - written once, by PluginAssemblyLoader, for every plugin
+        // whose two static trust checks both pass; read later by the
+        // componentScopeProvider closure passed to ModuleLifecycleManager,
+        // below. Never added to the DI ServiceCollection, for the same
+        // ADR-0017 reason as pluginRegistry/pluginTrustStore.
+        var componentPrincipalRegistry = new PluginComponentPrincipalRegistry();
+
+        // ADR-0111: the second, component-scoped identity axis, distinct
+        // from CurrentPrincipalAccessor's own user-scoped one (constructed
+        // below, at Platform Services Registered). Constructed here, ahead
+        // of Plugin Discovery, mirroring CurrentPrincipalAccessor's own
+        // early-construction convention - EventBus's own construction
+        // (Platform Services Registered, Phase 6, later) is what actually
+        // needs it; Plugin Discovery/Loading do not read it directly.
+        var currentComponentAccessor = new CurrentComponentAccessor();
+
         var pluginDiscoveryService = new PluginManifestDiscoveryService(
-            pluginsRootPath, platformVersionProvider, logger, manifestFileName, disabledPluginIds, pluginRegistry);
+            pluginsRootPath, platformVersionProvider, logger, manifestFileName, disabledPluginIds, pluginRegistry,
+            pluginTrustStore, allowUnsignedLoad);
 
         var pluginManifests = pluginDiscoveryService.DiscoverManifests();
         logger.Information($"Host lifecycle phase completed: Plugin Discovery. {pluginManifests.Count} plugin(s) eligible.");
 
         runToken.ThrowIfCancellationRequested();
 
-        IPluginAssemblyLoader pluginAssemblyLoader = new PluginAssemblyLoader(logger, pluginRegistry);
+        // ADR-0110/ADR-0111: componentPrincipalRegistry is passed as the
+        // IPluginComponentPrincipalRecorder write side only - the loader
+        // records a trust-checked plugin's own component principal against
+        // each of its discovered IModule types here; nothing about Module
+        // Discovery, Registration, or Lifecycle changes.
+        IPluginAssemblyLoader pluginAssemblyLoader = new PluginAssemblyLoader(logger, pluginRegistry, componentPrincipalRegistry);
         var loadedPluginAssemblies = pluginAssemblyLoader.LoadPlugins(pluginManifests);
         logger.Information($"Host lifecycle phase completed: Plugin Loading. {loadedPluginAssemblies.Count} plugin assembly(ies) loaded.");
 
@@ -315,6 +368,14 @@ public sealed class TempestHost : ITempestHost
         services.AddInstance(loggerFactory);
         services.AddInstance(logger);
         services.AddInstance(platformVersionProvider);
+        // ADR-0110/ADR-0111: EventBus, NavigationService, CommandHandlerTable,
+        // and CommandRegistry each gained new, optional, trailing constructor
+        // parameters (a component-scope accessor and/or IPermissionEvaluator)
+        // for the trust-ordered registration rule and capability-gated
+        // publish/register checks. No change is needed at these registration
+        // lines themselves - see currentComponentAccessor's own dual
+        // registration, below, and its remarks on lazy constructor-parameter
+        // resolution.
         services.Singleton<IEventBus, EventBus>();
         services.Singleton<IReportingService, ReportingService>();
         services.Singleton<INotificationDispatcher, NotificationDispatcher>();
@@ -337,6 +398,25 @@ public sealed class TempestHost : ITempestHost
         services.Singleton<IRoleProvider, RoleProvider>();
         services.Singleton<IPermissionEvaluator, PermissionEvaluator>();
         services.Singleton<IIdentityService, IdentityService>();
+
+        // ADR-0111: currentComponentAccessor was already constructed above,
+        // ahead of Plugin Discovery - registered here, under both its own
+        // concrete type (EventBus's own constructor needs the concrete type
+        // specifically, to call BeginScope) and ICurrentComponentAccessor
+        // (NavigationService/CommandRegistry/CommandHandlerTable only ever
+        // need the read-only interface), mirroring currentPrincipalAccessor's
+        // own dual-registration pattern immediately above. IPermissionEvaluator
+        // is already registered above (WP 6.1) - NavigationService,
+        // CommandRegistry, CommandHandlerTable, and EventBus (registered
+        // below) each resolve it, and currentComponentAccessor, through
+        // their own new, optional constructor parameters automatically:
+        // TempestServiceProvider resolves every constructor parameter type
+        // lazily, at first resolution, not at Singleton<> registration time
+        // (see ServiceCollection.cs/TempestServiceProvider.cs) - so no
+        // change is needed at any of those types' own Singleton<> lines
+        // below beyond what construction-time resolution already provides.
+        services.AddInstance<ICurrentComponentAccessor>(currentComponentAccessor);
+        services.AddInstance(currentComponentAccessor);
 
         // ADR-0050: Licensing's ILicenseProvider wraps the already-
         // validated license from before Phase 1 - registered via
@@ -512,7 +592,27 @@ public sealed class TempestHost : ITempestHost
 
         runToken.ThrowIfCancellationRequested();
 
-        var lifecycleManager = new ModuleLifecycleManager(moduleManager, serviceProvider, logger);
+        // ADR-0111: given a module Id, resolves the owning plugin's own
+        // component principal (if any - null for a genuine first-party
+        // module, or for a plugin whose types never made it past trust
+        // enforcement in PluginAssemblyLoader) and pushes it onto
+        // currentComponentAccessor for the duration of one lifecycle call.
+        // A linear scan per call is acceptable here - module counts are
+        // small, this is not a hot path comparable to per-request REST
+        // handling.
+        Func<string, IDisposable?> componentScopeProvider = moduleId =>
+        {
+            var descriptor = descriptors.FirstOrDefault(d => d.Id == moduleId);
+
+            if (descriptor is null)
+                return null;
+
+            var principal = componentPrincipalRegistry.GetPrincipalFor(descriptor.ModuleType);
+
+            return principal is not null ? currentComponentAccessor.BeginScope(principal) : null;
+        };
+
+        var lifecycleManager = new ModuleLifecycleManager(moduleManager, serviceProvider, logger, componentScopeProvider);
         _lifecycleManager = lifecycleManager;
 
         await lifecycleManager.InitialiseAllAsync(runToken).ConfigureAwait(false);

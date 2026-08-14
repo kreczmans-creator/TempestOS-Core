@@ -32,6 +32,7 @@ public class TempestHostPluginConfigurationTests
         builder.AddConfigurationSource(new MemoryConfigurationSource(
         [
             new KeyValuePair<string, string>("Runtime:Plugins:RootDirectory", temp.Path),
+            new KeyValuePair<string, string>("Plugins:AllowUnsignedLoad", "true"),
         ]));
 
         await using var host = builder.Build();
@@ -125,6 +126,7 @@ public class TempestHostPluginConfigurationTests
         builder.AddConfigurationSource(new MemoryConfigurationSource(
         [
             new KeyValuePair<string, string>("Runtime:Plugins:ManifestFileName", customManifestFileName),
+            new KeyValuePair<string, string>("Plugins:AllowUnsignedLoad", "true"),
         ]));
 
         await using var host = builder.Build();
@@ -170,6 +172,7 @@ public class TempestHostPluginConfigurationTests
             // both of which Runtime:Plugins:Disabled's own parsing must
             // tolerate (StringSplitOptions.TrimEntries | RemoveEmptyEntries).
             new KeyValuePair<string, string>("Runtime:Plugins:Disabled", "  test.disabled-via-config ,, "),
+            new KeyValuePair<string, string>("Plugins:AllowUnsignedLoad", "true"),
         ]));
 
         await using var host = builder.Build();
@@ -255,6 +258,7 @@ public class TempestHostPluginConfigurationTests
         builder.AddConfigurationSource(new MemoryConfigurationSource(
         [
             new KeyValuePair<string, string>("Runtime:Plugins:ManifestFileName", "   "),
+            new KeyValuePair<string, string>("Plugins:AllowUnsignedLoad", "true"),
         ]));
 
         await using var host = builder.Build();

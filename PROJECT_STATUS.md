@@ -1,6 +1,77 @@
 # TempestOS — Project Status
 
-**Last Updated:** 2026-08-13 (`WP 13.1B`, Plugin Runtime & Composition
+**Last Updated:** 2026-08-13 (`WP 13.2A`, Plugin Trust & Capability
+Enforcement Implementation). Implements `ADR-0110`/`ADR-0111`/`ADR-0112`
+exactly as `WP 13.0A` designed and `WP 13.0B` independently audited them —
+the trust half of the plugin platform, directly following `WP 13.1A`/
+`WP 13.1B`'s own mechanical, non-trust half. Trust tier assignment
+(`PluginManifestDiscoveryService.AssignTrustTier`) and detached
+SHA-256/RSA-PSS signature verification (`PluginSignatureVerifier`,
+`PluginSignatureEnvelope`) run entirely within the existing Plugin
+Discovery phase, from file bytes, before any `Assembly.LoadFrom` call;
+`Plugins:AllowUnsignedLoad` (new configuration key) governs whether an
+unsigned candidate loads at all, defaulting to `false` — fail-closed, per
+`ADR-0112`'s own named safe default — isolating it at category 16
+otherwise, never silently. Capability enforcement
+(`PluginAssemblyLoader.EnforceTrust`) checks a plugin's
+`RequestedCapabilities` against its assigned tier's ceiling and reflects
+over every discovered `IModule` implementer's constructor for conformance
+against a fixed always-allowed baseline plus its own granted
+`plugin.services.resolve:*` grants, denying at category 17
+(`PluginTrustDeniedException`, recorded `PluginRegistryState.TrustDenied`,
+the sixth registry state) before the plugin is ever `Loaded`. A new,
+`AsyncLocal<T>`-backed `ICurrentComponentAccessor`/`CurrentComponentAccessor`
+(mirroring `ICurrentPrincipalAccessor`'s exact shape, a second, independent
+identity axis per `ADR-0111`) is pushed around each module lifecycle call
+by `ModuleLifecycleManager`'s new, plugin-unaware `componentScopeProvider`
+hook, closed over by `TempestHost`. `NavigationService`, `CommandRegistry`,
+`CommandHandlerTable`, and `IEventBus` each gained a trust-ordered
+registration/capability-gated-publish retrofit: a non-null registrant must
+hold the matching `plugin.*` capability permission; a contested Id is
+resolved by trust-tier rank (a higher tier always evicts and replaces a
+lower one, logged loudly, never silently); `NavigationService.Unregister`
+now performs a real ownership check, closing `TD-10`; every check is
+skipped, not merely satisfied, for a `null`/First-Party actor, so every
+registrant that exists today observes zero behavioural change. **Directly
+closes `TD-09`, `TD-10`, and `TD-11`** (Technical Debt Register) — moved
+from "design resolved, retrofit remains open" to **Resolved** — and
+updates `Security Roadmap.md` items 1, 2, and 10 from "resolved at the
+architecture level, not yet implemented" to implemented. 15 new + 11
+modified production files (`src/Tempest.Core/Plugins/`,
+`src/Tempest.Core/Identity/`, plus `ModuleLifecycleManager.cs`/
+`TempestHost.cs`/`NavigationService.cs`/`CommandRegistry.cs`/
+`CommandHandlerTable.cs`/`EventBus.cs`); 2 new test files
+(`PluginSignatureVerifierTests.cs`, 15 test methods;
+`PluginSigningTestHelper.cs`, an RSA test-key helper) plus 31 modified
+test files — 23 pre-existing fixtures needed a two-line
+`ICurrentComponentAccessor`/`IPermissionEvaluator` dual-registration
+update, the direct, foreseeable consequence of this platform's DI
+container requiring every constructor parameter type to be independently
+resolvable, once those four types gained new, optional trust-related
+constructor parameters. One genuine found-and-corrected test-fixture
+finding, not a production defect: `PluginManifestV2FieldsTests.cs` had,
+since `WP 13.0A`/`WP 13.1A`, asserted a placeholder `Signature` string
+round-tripped verbatim — correct before this Work Package, since
+`Signature` was "read, not interpreted"; now that it is actively parsed
+and cryptographically verified, the placeholder correctly fails envelope
+parsing, so the fixture was corrected to omit the field and pass
+`allowUnsignedLoad: true` instead, taking the deliberate unsigned path its
+own remaining assertions actually concern. Confirmed absent from this Work
+Package's own diff, matching its explicit out-of-scope list: certificate
+chains, online revocation, a marketplace, remote trust services, a REST
+API, authentication, authorisation beyond plugin capabilities, dynamic
+trust changes, live plugin reload. No new ADR — `ADR-0110`–`ADR-0112`
+implemented exactly as ratified, zero architectural deviation, confirmed
+directly by this Work Package's own Governance & Documentation review; the
+`ADR Register.md`'s own Originating Work Package field for all three
+updated to cite this Work Package's implementation alongside `WP 13.0A`'s
+own design, mirroring `ADR-0105`'s own established
+design/implementation-citation precedent. Full detail: `docs/academy/03
+Work Packages/WP13.2A-plugin-trust-and-capability-enforcement-implementation.md`.
+**`WP 13.1B`'s own status line, below this point, is this field's prior
+content — retained, not deleted:**
+
+**Previously updated** 2026-08-13 (`WP 13.1B`, Plugin Runtime & Composition
 Root Implementation Review). An independent review of `WP 13.1A` before
 its work becomes a commit — mirroring `WP 13.0B`'s own role one Work
 Package earlier, applied to real production code for the first time

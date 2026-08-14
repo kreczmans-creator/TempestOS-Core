@@ -288,6 +288,60 @@ internal static class DynamicPluginAssemblyBuilder
     }
 
     /// <summary>
+    /// Builds an assembly containing one public, concrete <see cref="IModule"/>
+    /// implementation whose sole public constructor accepts exactly
+    /// <paramref name="constructorParameterTypes"/>, in order, ignoring every
+    /// argument at runtime (the constructor body only ever calls the base
+    /// <see cref="object"/> constructor). Used to exercise
+    /// <c>PluginAssemblyLoader.EnforceTrust</c>'s own constructor-conformance
+    /// reflection check (ADR-0111) without needing those services to be
+    /// resolvable — <c>LoadPlugins</c> never actually constructs a discovered
+    /// module, only reflects over its declared constructor shape. Saved to
+    /// <paramref name="outputDirectory"/> under <paramref name="fileName"/>.
+    /// </summary>
+    /// <returns>The full path to the saved assembly file.</returns>
+    public static string BuildPluginAssemblyWithConstructorParameters(
+        string outputDirectory,
+        string fileName,
+        string moduleId,
+        string moduleName,
+        string moduleVersion,
+        Type[] constructorParameterTypes)
+    {
+        var dllPath = Path.Combine(outputDirectory, fileName);
+
+        var assemblyName = new AssemblyName($"{Path.GetFileNameWithoutExtension(fileName)}-{Guid.NewGuid():N}");
+        var assemblyBuilder = new PersistedAssemblyBuilder(assemblyName, typeof(object).Assembly);
+        var moduleBuilder = assemblyBuilder.DefineDynamicModule("MainModule");
+
+        var typeBuilder = moduleBuilder.DefineType(
+            $"{assemblyName.Name}.DynamicConstructorPluginModule",
+            TypeAttributes.Public | TypeAttributes.Class,
+            typeof(object),
+            [typeof(IModule)]);
+
+        DefineStringProperty(typeBuilder, nameof(IModule.Id), moduleId);
+        DefineStringProperty(typeBuilder, nameof(IModule.Name), moduleName);
+        DefineStringProperty(typeBuilder, nameof(IModule.Version), moduleVersion);
+
+        var objectCtor = typeof(object).GetConstructor(Type.EmptyTypes)!;
+        var ctorBuilder = typeBuilder.DefineConstructor(
+            MethodAttributes.Public | MethodAttributes.HideBySig | MethodAttributes.SpecialName | MethodAttributes.RTSpecialName,
+            CallingConventions.Standard,
+            constructorParameterTypes);
+
+        var il = ctorBuilder.GetILGenerator();
+        il.Emit(OpCodes.Ldarg_0);
+        il.Emit(OpCodes.Call, objectCtor);
+        il.Emit(OpCodes.Ret);
+
+        typeBuilder.CreateType();
+        assemblyBuilder.Save(dllPath);
+
+        return dllPath;
+    }
+
+    /// <summary>
     /// Writes a file that is not a valid .NET assembly (or PE image at all)
     /// to <paramref name="outputDirectory"/> under <paramref name="fileName"/>,
     /// so that loading it via <see cref="Assembly.LoadFrom(string)"/> fails

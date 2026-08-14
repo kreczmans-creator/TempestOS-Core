@@ -177,5 +177,5 @@ public class PluginAssemblyLoaderTests
 
     private static PluginManifest CreateManifest(string id, string assemblyPath) =>
         new(id, $"{id} name", "1.0.0", new Version(0, 1, 0), Path.GetFileName(assemblyPath), assemblyPath,
-            [], [], null, null);
+            [], [], null, null, PluginTrustTier.FirstParty);
 }

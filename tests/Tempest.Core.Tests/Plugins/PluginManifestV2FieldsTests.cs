@@ -35,10 +35,17 @@ public class PluginManifestV2FieldsTests
             assemblyFileName: "Dependent.dll",
             dependencies: [PluginManifestJsonBuilder.DependencyFragment.On("test.target", "1.0.0", "3.0.0")],
             requestedCapabilities: ["cap.alpha", "cap.beta"],
-            publisher: "Acme Plugins Ltd.",
-            signature: "base64-looking-opaque-blob=="));
+            publisher: "Acme Plugins Ltd."));
 
-        var service = new PluginManifestDiscoveryService(temp.Path, DefaultVersionProvider);
+        // Deliberately no Signature fragment here: since WP 13.2A
+        // (ADR-0112), a declared Signature is actively parsed as a
+        // verification envelope and cryptographically checked, not merely
+        // stored verbatim - an opaque placeholder string would now fail
+        // envelope parsing (category 15) rather than round-trip. Signature
+        // envelope shape/verification has its own dedicated coverage; this
+        // test's remaining concern is Dependencies/RequestedCapabilities/
+        // Publisher parsing, so it takes the unsigned/allowUnsignedLoad path.
+        var service = new PluginManifestDiscoveryService(temp.Path, DefaultVersionProvider, allowUnsignedLoad: true);
 
         var result = service.DiscoverManifests();
 
@@ -52,7 +59,7 @@ public class PluginManifestV2FieldsTests
 
         Assert.Equal(["cap.alpha", "cap.beta"], dependent.RequestedCapabilities);
         Assert.Equal("Acme Plugins Ltd.", dependent.Publisher);
-        Assert.Equal("base64-looking-opaque-blob==", dependent.Signature);
+        Assert.Null(dependent.Signature);
     }
 
     [Fact]
@@ -65,7 +72,7 @@ public class PluginManifestV2FieldsTests
         // Publisher/Signature keys at all in the JSON.
         WriteManifest(folder, PluginManifestJsonBuilder.Build(id: "test.v1", name: "V1 Shaped", assemblyFileName: "V1.dll"));
 
-        var service = new PluginManifestDiscoveryService(temp.Path, DefaultVersionProvider);
+        var service = new PluginManifestDiscoveryService(temp.Path, DefaultVersionProvider, allowUnsignedLoad: true);
 
         var result = service.DiscoverManifests();
 

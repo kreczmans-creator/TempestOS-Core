@@ -99,7 +99,7 @@ public class PluginDisabledConfigurationTests
         WriteManifest(folder, Build(id: "test.enabled", assemblyFileName: "Enabled.dll"));
 
         var service = new PluginManifestDiscoveryService(
-            temp.Path, DefaultVersionProvider, disabledPluginIds: ["some.other.id"]);
+            temp.Path, DefaultVersionProvider, disabledPluginIds: ["some.other.id"], allowUnsignedLoad: true);
 
         var result = service.DiscoverManifests();
 
@@ -115,7 +115,7 @@ public class PluginDisabledConfigurationTests
         WriteManifest(folder, Build(id: "test.unconfigured", assemblyFileName: "Unconfigured.dll"));
 
         // disabledPluginIds deliberately omitted (defaults to null).
-        var service = new PluginManifestDiscoveryService(temp.Path, DefaultVersionProvider);
+        var service = new PluginManifestDiscoveryService(temp.Path, DefaultVersionProvider, allowUnsignedLoad: true);
 
         var result = service.DiscoverManifests();
 

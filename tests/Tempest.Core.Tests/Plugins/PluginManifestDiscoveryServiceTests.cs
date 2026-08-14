@@ -20,7 +20,7 @@ public class PluginManifestDiscoveryServiceTests
         var pluginFolder = CreateCandidateFolder(temp.Path, "sample-plugin");
         WriteManifest(pluginFolder, ValidManifestJson("test.sample", "Sample Plugin", "1.0.0", "0.1.0", "Sample.dll"));
 
-        var service = new PluginManifestDiscoveryService(temp.Path, DefaultVersionProvider);
+        var service = new PluginManifestDiscoveryService(temp.Path, DefaultVersionProvider, allowUnsignedLoad: true);
 
         var result = service.DiscoverManifests();
 
@@ -45,7 +45,7 @@ public class PluginManifestDiscoveryServiceTests
         WriteManifest(pluginFolder, "{ this is not valid json");
 
         var logger = new RecordingLevelLogger();
-        var service = new PluginManifestDiscoveryService(temp.Path, DefaultVersionProvider, logger);
+        var service = new PluginManifestDiscoveryService(temp.Path, DefaultVersionProvider, logger, allowUnsignedLoad: true);
 
         var result = service.DiscoverManifests();
 
@@ -70,7 +70,7 @@ public class PluginManifestDiscoveryServiceTests
         WriteManifest(pluginFolder, ManifestJsonMissingField(missingField));
 
         var logger = new RecordingLevelLogger();
-        var service = new PluginManifestDiscoveryService(temp.Path, DefaultVersionProvider, logger);
+        var service = new PluginManifestDiscoveryService(temp.Path, DefaultVersionProvider, logger, allowUnsignedLoad: true);
 
         var result = service.DiscoverManifests();
 
@@ -93,7 +93,7 @@ public class PluginManifestDiscoveryServiceTests
         WriteManifest(pluginFolder, ValidManifestJson("test.escape", "Escaping Plugin", "1.0.0", "0.1.0", "../../outside.dll"));
 
         var logger = new RecordingLevelLogger();
-        var service = new PluginManifestDiscoveryService(temp.Path, DefaultVersionProvider, logger);
+        var service = new PluginManifestDiscoveryService(temp.Path, DefaultVersionProvider, logger, allowUnsignedLoad: true);
 
         var result = service.DiscoverManifests();
 
@@ -114,7 +114,7 @@ public class PluginManifestDiscoveryServiceTests
         WriteManifest(pluginFolder, ValidManifestJson("test.absolute", "Absolute Path Plugin", "1.0.0", "0.1.0", jsonEscapedOutsideAssembly));
 
         var logger = new RecordingLevelLogger();
-        var service = new PluginManifestDiscoveryService(temp.Path, DefaultVersionProvider, logger);
+        var service = new PluginManifestDiscoveryService(temp.Path, DefaultVersionProvider, logger, allowUnsignedLoad: true);
 
         var result = service.DiscoverManifests();
 
@@ -134,7 +134,7 @@ public class PluginManifestDiscoveryServiceTests
         WriteManifest(pluginFolder, ValidManifestJson("test.badversion", "Bad Version Plugin", "1.0.0", "not-a-version", "Plugin.dll"));
 
         var logger = new RecordingLevelLogger();
-        var service = new PluginManifestDiscoveryService(temp.Path, DefaultVersionProvider, logger);
+        var service = new PluginManifestDiscoveryService(temp.Path, DefaultVersionProvider, logger, allowUnsignedLoad: true);
 
         var result = service.DiscoverManifests();
 
@@ -154,7 +154,7 @@ public class PluginManifestDiscoveryServiceTests
         WriteManifest(pluginFolder, ValidManifestJson("test.future", "Future Plugin", "1.0.0", "9.9.9", "Plugin.dll"));
 
         var logger = new RecordingLevelLogger();
-        var service = new PluginManifestDiscoveryService(temp.Path, new FakePlatformVersionProvider(new Version(1, 0, 0)), logger);
+        var service = new PluginManifestDiscoveryService(temp.Path, new FakePlatformVersionProvider(new Version(1, 0, 0)), logger, allowUnsignedLoad: true);
 
         var result = service.DiscoverManifests();
 
@@ -170,7 +170,7 @@ public class PluginManifestDiscoveryServiceTests
         var pluginFolder = CreateCandidateFolder(temp.Path, "compatible-plugin");
         WriteManifest(pluginFolder, ValidManifestJson("test.compatible", "Compatible Plugin", "1.0.0", "1.0.0", "Plugin.dll"));
 
-        var service = new PluginManifestDiscoveryService(temp.Path, new FakePlatformVersionProvider(new Version(1, 0, 0)));
+        var service = new PluginManifestDiscoveryService(temp.Path, new FakePlatformVersionProvider(new Version(1, 0, 0)), allowUnsignedLoad: true);
 
         var result = service.DiscoverManifests();
 
@@ -192,7 +192,7 @@ public class PluginManifestDiscoveryServiceTests
         WriteManifest(second, ValidManifestJson("dup.id", "Second Plugin", "1.0.0", "0.1.0", "Second.dll"));
 
         var logger = new RecordingLevelLogger();
-        var service = new PluginManifestDiscoveryService(temp.Path, DefaultVersionProvider, logger);
+        var service = new PluginManifestDiscoveryService(temp.Path, DefaultVersionProvider, logger, allowUnsignedLoad: true);
 
         var result = service.DiscoverManifests();
 
@@ -218,7 +218,7 @@ public class PluginManifestDiscoveryServiceTests
         WriteManifest(alpha, ValidManifestJson("test.alpha", "Alpha", "1.0.0", "0.1.0", "A.dll"));
         WriteManifest(mike, ValidManifestJson("test.mike", "Mike", "1.0.0", "0.1.0", "M.dll"));
 
-        var service = new PluginManifestDiscoveryService(temp.Path, DefaultVersionProvider);
+        var service = new PluginManifestDiscoveryService(temp.Path, DefaultVersionProvider, allowUnsignedLoad: true);
 
         var result = service.DiscoverManifests();
 
@@ -235,7 +235,7 @@ public class PluginManifestDiscoveryServiceTests
         using var temp = new TempDirectory();
         var nonExistentRoot = Path.Combine(temp.Path, "does-not-exist");
 
-        var service = new PluginManifestDiscoveryService(nonExistentRoot, DefaultVersionProvider);
+        var service = new PluginManifestDiscoveryService(nonExistentRoot, DefaultVersionProvider, allowUnsignedLoad: true);
 
         var result = service.DiscoverManifests();
 
@@ -247,7 +247,7 @@ public class PluginManifestDiscoveryServiceTests
     {
         using var temp = new TempDirectory();
 
-        var service = new PluginManifestDiscoveryService(temp.Path, DefaultVersionProvider);
+        var service = new PluginManifestDiscoveryService(temp.Path, DefaultVersionProvider, allowUnsignedLoad: true);
 
         var result = service.DiscoverManifests();
 
@@ -265,7 +265,7 @@ public class PluginManifestDiscoveryServiceTests
         CreateCandidateFolder(temp.Path, "empty-plugin");
 
         var logger = new RecordingLevelLogger();
-        var service = new PluginManifestDiscoveryService(temp.Path, DefaultVersionProvider, logger);
+        var service = new PluginManifestDiscoveryService(temp.Path, DefaultVersionProvider, logger, allowUnsignedLoad: true);
 
         var result = service.DiscoverManifests();
 
@@ -287,7 +287,7 @@ public class PluginManifestDiscoveryServiceTests
         WriteManifest(broken, "{ not valid json");
         WriteManifest(healthy, ValidManifestJson("test.healthy", "Healthy", "1.0.0", "0.1.0", "Healthy.dll"));
 
-        var service = new PluginManifestDiscoveryService(temp.Path, DefaultVersionProvider);
+        var service = new PluginManifestDiscoveryService(temp.Path, DefaultVersionProvider, allowUnsignedLoad: true);
 
         var result = service.DiscoverManifests();
 
@@ -311,7 +311,7 @@ public class PluginManifestDiscoveryServiceTests
         // Host's own supporting infrastructure, not attributable to any
         // specific plugin - it must not be caught by the per-candidate
         // catch (PluginException), which only isolates plugin-scoped failures.
-        var service = new PluginManifestDiscoveryService(temp.Path, new ThrowingPlatformVersionProvider());
+        var service = new PluginManifestDiscoveryService(temp.Path, new ThrowingPlatformVersionProvider(), allowUnsignedLoad: true);
 
         Assert.Throws<InvalidOperationException>(() => service.DiscoverManifests());
     }
@@ -330,7 +330,7 @@ public class PluginManifestDiscoveryServiceTests
         WriteManifest(first, ValidManifestJson("test.z", "Z", "1.0.0", "0.1.0", "Z.dll"));
         WriteManifest(second, ValidManifestJson("test.a", "A", "1.0.0", "0.1.0", "A.dll"));
 
-        var service = new PluginManifestDiscoveryService(temp.Path, DefaultVersionProvider);
+        var service = new PluginManifestDiscoveryService(temp.Path, DefaultVersionProvider, allowUnsignedLoad: true);
 
         // Deliberately out of alphabetical order - the internal seam must not
         // re-sort; sorting is the public overload's own responsibility.

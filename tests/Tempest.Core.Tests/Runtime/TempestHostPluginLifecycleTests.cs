@@ -1,3 +1,4 @@
+using Tempest.Core.Configuration;
 using Tempest.Core.Diagnostics;
 using Tempest.Core.Plugins;
 using Tempest.Core.Runtime;
@@ -164,7 +165,12 @@ public class TempestHostPluginLifecycleTests
             }
             """);
 
-        var host = new TempestHostBuilder(Type.EmptyTypes, temp.Path).Build();
+        var builder = new TempestHostBuilder(Type.EmptyTypes, temp.Path);
+        builder.AddConfigurationSource(new MemoryConfigurationSource(
+        [
+            new KeyValuePair<string, string>("Plugins:AllowUnsignedLoad", "true"),
+        ]));
+        var host = builder.Build();
 
         var runTask = host.RunAsync();
 
@@ -260,7 +266,12 @@ public class TempestHostPluginLifecycleTests
             }
             """);
 
-        var host = new TempestHostBuilder(Type.EmptyTypes, temp.Path).Build();
+        var builder = new TempestHostBuilder(Type.EmptyTypes, temp.Path);
+        builder.AddConfigurationSource(new MemoryConfigurationSource(
+        [
+            new KeyValuePair<string, string>("Plugins:AllowUnsignedLoad", "true"),
+        ]));
+        var host = builder.Build();
 
         var runTask = host.RunAsync();
 
@@ -318,7 +329,12 @@ public class TempestHostPluginLifecycleTests
             }
             """);
 
-        var host = new TempestHostBuilder(Type.EmptyTypes, temp.Path).Build();
+        var builder = new TempestHostBuilder(Type.EmptyTypes, temp.Path);
+        builder.AddConfigurationSource(new MemoryConfigurationSource(
+        [
+            new KeyValuePair<string, string>("Plugins:AllowUnsignedLoad", "true"),
+        ]));
+        var host = builder.Build();
 
         var runTask = host.RunAsync();
 

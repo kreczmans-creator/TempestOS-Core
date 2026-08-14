@@ -41,6 +41,10 @@ public class DiagnosticsSampleModuleIntegrationTests
         IModuleLifecycleManager? lifecycleManager = null;
 
         var services = new ServiceCollection();
+        var currentComponentAccessor = new Tempest.Core.Identity.CurrentComponentAccessor();
+        services.AddInstance<Tempest.Core.Identity.ICurrentComponentAccessor>(currentComponentAccessor);
+        services.AddInstance(currentComponentAccessor);
+        services.AddInstance<Tempest.Core.Identity.IPermissionEvaluator>(new Tempest.Core.Identity.PermissionEvaluator());
         services.AddInstance<ILogger>(new Tempest.Core.Tests.Events.RecordingLevelLogger());
         services.Singleton<IEventBus, EventBus>();
         services.Singleton<INavigationProvider, NavigationService>();
@@ -231,10 +235,21 @@ public class DiagnosticsSampleModuleIntegrationTests
             "test.plugin.diagnostics.increment",
             "Plugin Increment");
 
+        // ADR-0111: the dynamically-built module's constructor injects
+        // ICommandDispatcher/ICommandRegistry - neither is in the fixed
+        // always-allowed baseline (ILogger/IConfigurationProvider/
+        // IDiagnosticsProvider), so this plugin must explicitly request
+        // (and, at FirstParty tier, is eligible to be granted) a
+        // plugin.services.resolve:* capability naming each.
         var manifest = new PluginManifest(
             "test.plugin.diagnostics", "Diagnostics Plugin", "1.0.0",
             new Version(0, 1, 0), Path.GetFileName(assemblyPath), assemblyPath,
-            [], [], null, null);
+            [],
+            [
+                PluginCapability.ServiceResolve(typeof(ICommandDispatcher).FullName!),
+                PluginCapability.ServiceResolve(typeof(ICommandRegistry).FullName!),
+            ],
+            null, null, PluginTrustTier.FirstParty);
 
         var loader = new PluginAssemblyLoader();
         var loadedAssemblies = loader.LoadPlugins([manifest]);
@@ -249,6 +264,10 @@ public class DiagnosticsSampleModuleIntegrationTests
         IModuleLifecycleManager? lifecycleManager = null;
 
         var services = new ServiceCollection();
+        var currentComponentAccessor = new Tempest.Core.Identity.CurrentComponentAccessor();
+        services.AddInstance<Tempest.Core.Identity.ICurrentComponentAccessor>(currentComponentAccessor);
+        services.AddInstance(currentComponentAccessor);
+        services.AddInstance<Tempest.Core.Identity.IPermissionEvaluator>(new Tempest.Core.Identity.PermissionEvaluator());
         services.AddInstance<ILogger>(new Tempest.Core.Tests.Events.RecordingLevelLogger());
         services.Singleton<IEventBus, EventBus>();
         services.Singleton<INavigationProvider, NavigationService>();
