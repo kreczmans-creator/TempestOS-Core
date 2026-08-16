@@ -1,6 +1,41 @@
 # TempestOS — Project Status
 
-**Last Updated:** 2026-08-13 (`WP 13.2A`, Plugin Trust & Capability
+**Last Updated:** 2026-08-14 (`WP 13.3A`, Plugin Platform Integration &
+End-to-End Validation). The plugin platform's own closing integration/
+validation pass for `v0.13.0`: independently re-verified all six plugin
+ADRs (`ADR-0107`–`ADR-0112`) fully implemented against real, current
+source, with zero remaining gap; `TD-09`/`TD-10`/`TD-11` re-confirmed
+genuinely Resolved by the same direct-code re-read, not by citation.
+`WP 13.2B`'s own two disclosed-but-unfixed findings (a Discovery-to-
+Loading TOCTOU window; filename-based first-party trust-store detection)
+checked directly against `ADR-0112`'s own literal text — neither is an
+ADR conformance gap, both are real, disclosed debt, formally registered
+for the first time as `TD-49`/`TD-50`. Four new Future Capability entries
+raised (`FCR-0085`–`FCR-0088`: certificate-chain validation/revocation
+checking; per-plugin hot/live reload and unload; process-separated
+marketplace isolation; a per-plugin unsigned-load allow-list), each
+already named out of scope by the ADRs themselves. **Found and fixed,
+this Work Package's own independent audit**: `ADR-0107`/`ADR-0108`/
+`ADR-0109`'s own `ADR Register.md` citation still read "WP 13.0A
+(architecture only)" despite `WP 13.1A` having implemented all three —
+corrected to the same two-phase citation `WP 13.2A` already applied to
+`ADR-0110`–`ADR-0112`. **Disclosed, not backfilled**: `WP 13.2B` had no
+Academy retrospective, `WorkPackages.md` row, or `PROJECT_STATUS.md`
+entry of its own before this Work Package — a row was added to
+`WorkPackages.md` from its own commit message (`25df570`), but a full
+retrospective was deliberately not fabricated for a Work Package this
+workstream did not execute. Zero `src/`/`tests/` files touched by this
+workstream; `governance-healthcheck.ps1` re-confirmed clean. Ran alongside
+three parallel technical sub-agents (End-to-End Integration; Fault
+Injection & Resilience; Performance & Scalability) whose own results were
+not yet available when this entry was written — this entry's own claims
+are independently verified by this workstream alone. Full detail:
+`docs/academy/03 Work
+Packages/WP13.3A-plugin-platform-integration-and-end-to-end-validation.md`.
+**`WP 13.2A`'s own status line, below this point, is this field's prior
+content — retained, not deleted:**
+
+**Previously updated** 2026-08-13 (`WP 13.2A`, Plugin Trust & Capability
 Enforcement Implementation). Implements `ADR-0110`/`ADR-0111`/`ADR-0112`
 exactly as `WP 13.0A` designed and `WP 13.0B` independently audited them —
 the trust half of the plugin platform, directly following `WP 13.1A`/

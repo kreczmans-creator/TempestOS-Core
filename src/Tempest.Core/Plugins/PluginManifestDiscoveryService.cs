@@ -361,16 +361,16 @@ public sealed class PluginManifestDiscoveryService : IPluginManifestDiscoverySer
             return null;
         }
 
-        RequireField(dto.Name, nameof(dto.Name), manifestPath);
-        RequireField(dto.Version, nameof(dto.Version), manifestPath);
-        RequireField(dto.MinimumPlatformVersion, nameof(dto.MinimumPlatformVersion), manifestPath);
-        RequireField(dto.AssemblyFileName, nameof(dto.AssemblyFileName), manifestPath);
+        RequireField(dto.Name, nameof(dto.Name), manifestPath, dto.Id);
+        RequireField(dto.Version, nameof(dto.Version), manifestPath, dto.Id);
+        RequireField(dto.MinimumPlatformVersion, nameof(dto.MinimumPlatformVersion), manifestPath, dto.Id);
+        RequireField(dto.AssemblyFileName, nameof(dto.AssemblyFileName), manifestPath, dto.Id);
 
         if (!Version.TryParse(dto.MinimumPlatformVersion, out var minimumPlatformVersion))
         {
             throw new InvalidPluginManifestException(
                 $"Manifest file '{manifestPath}' has an unparseable MinimumPlatformVersion value: " +
-                $"'{dto.MinimumPlatformVersion}'.");
+                $"'{dto.MinimumPlatformVersion}'.", dto.Id);
         }
 
         var runningPlatformVersion = _platformVersionProvider.Version.AssemblyVersion;
@@ -390,7 +390,7 @@ public sealed class PluginManifestDiscoveryService : IPluginManifestDiscoverySer
         {
             throw new InvalidPluginManifestException(
                 $"Manifest file '{manifestPath}' has an invalid AssemblyFileName value: " +
-                $"'{dto.AssemblyFileName}'.", ex);
+                $"'{dto.AssemblyFileName}'.", ex, dto.Id);
         }
 
         // Security baseline (WP 5.0S): AssemblyFileName is manifest-declared,
@@ -404,10 +404,10 @@ public sealed class PluginManifestDiscoveryService : IPluginManifestDiscoverySer
         {
             throw new InvalidPluginManifestException(
                 $"Manifest file '{manifestPath}' declares an AssemblyFileName value that resolves " +
-                $"outside its own candidate folder: '{dto.AssemblyFileName}'.");
+                $"outside its own candidate folder: '{dto.AssemblyFileName}'.", dto.Id);
         }
 
-        var dependencies = ParseDependencies(dto.Dependencies, manifestPath);
+        var dependencies = ParseDependencies(dto.Dependencies, manifestPath, dto.Id);
         var requestedCapabilities = dto.RequestedCapabilities ?? [];
 
         var trustTier = AssignTrustTier(dto, assemblyPath);
@@ -538,7 +538,7 @@ public sealed class PluginManifestDiscoveryService : IPluginManifestDiscoverySer
             : "The signature does not verify against the recomputed manifest and assembly hash.";
     }
 
-    private static IReadOnlyList<PluginDependency> ParseDependencies(IReadOnlyList<PluginDependencyDto>? dtos, string manifestPath)
+    private static IReadOnlyList<PluginDependency> ParseDependencies(IReadOnlyList<PluginDependencyDto>? dtos, string manifestPath, string? pluginId)
     {
         if (dtos is null || dtos.Count == 0)
             return [];
@@ -547,14 +547,14 @@ public sealed class PluginManifestDiscoveryService : IPluginManifestDiscoverySer
 
         foreach (var dependencyDto in dtos)
         {
-            RequireField(dependencyDto.Id, "Dependencies[].Id", manifestPath);
-            RequireField(dependencyDto.MinimumVersion, "Dependencies[].MinimumVersion", manifestPath);
+            RequireField(dependencyDto.Id, "Dependencies[].Id", manifestPath, pluginId);
+            RequireField(dependencyDto.MinimumVersion, "Dependencies[].MinimumVersion", manifestPath, pluginId);
 
             if (!Version.TryParse(dependencyDto.MinimumVersion, out var minimumVersion))
             {
                 throw new InvalidPluginManifestException(
                     $"Manifest file '{manifestPath}' declares a dependency on '{dependencyDto.Id}' with an " +
-                    $"unparseable MinimumVersion value: '{dependencyDto.MinimumVersion}'.");
+                    $"unparseable MinimumVersion value: '{dependencyDto.MinimumVersion}'.", pluginId);
             }
 
             Version? maximumVersion = null;
@@ -565,14 +565,14 @@ public sealed class PluginManifestDiscoveryService : IPluginManifestDiscoverySer
                 {
                     throw new InvalidPluginManifestException(
                         $"Manifest file '{manifestPath}' declares a dependency on '{dependencyDto.Id}' with an " +
-                        $"unparseable MaximumVersion value: '{dependencyDto.MaximumVersion}'.");
+                        $"unparseable MaximumVersion value: '{dependencyDto.MaximumVersion}'.", pluginId);
                 }
 
                 if (maximumVersion < minimumVersion)
                 {
                     throw new InvalidPluginManifestException(
                         $"Manifest file '{manifestPath}' declares a dependency on '{dependencyDto.Id}' whose " +
-                        $"MaximumVersion ('{maximumVersion}') is less than its MinimumVersion ('{minimumVersion}').");
+                        $"MaximumVersion ('{maximumVersion}') is less than its MinimumVersion ('{minimumVersion}').", pluginId);
                 }
             }
 
@@ -776,14 +776,66 @@ public sealed class PluginManifestDiscoveryService : IPluginManifestDiscoverySer
         // this as invalid input - it is still one graph edge, just declared
         // redundantly) must still reach zero once that one target is
         // emitted. The decrement loop below fires once per removed target
-        // (via .Any), never once per duplicate entry - counting duplicates
-        // here would leave remainingDependencyCount permanently above zero
-        // for a perfectly valid candidate, silently dropping it from the
-        // result with no isolation, no log line, and no registry entry.
-        var remainingDependencyCount = survivors.ToDictionary(
-            id => id,
-            id => acceptedById[id].Dependencies.Select(dependency => dependency.Id).Distinct(StringComparer.Ordinal).Count(),
-            StringComparer.Ordinal);
+        // (via the dependentsByTargetId lookup), never once per duplicate
+        // entry - counting duplicates here would leave
+        // remainingDependencyCount permanently above zero for a perfectly
+        // valid candidate, silently dropping it from the result with no
+        // isolation, no log line, and no registry entry.
+        var remainingDependencyCount = new Dictionary<string, int>(survivors.Count, StringComparer.Ordinal);
+
+        // Reverse adjacency (dependents-by-target), built once up front:
+        // WP 13.3A performance finding. The prior implementation re-scanned
+        // every remaining survivor's own Dependencies on every single
+        // emission to discover which ones depended on the justemitted node -
+        // an O(survivors) rescan per emission regardless of how many actual
+        // dependents existed, making a wide, dependency-free candidate set
+        // (measured: WP 13.3A PluginPlatformPerformanceTests) quadratic in
+        // candidate count for no reason. This index removes exactly that
+        // rescan: for each survivor, record it once against each of its own
+        // distinct dependency targets, so emitting a node only ever touches
+        // its real dependents - same fixed-point removal, three-colour
+        // cycle detection, and Kahn's topological sort ADR-0107 ratifies,
+        // just without the redundant full-set rescan for dependent lookup.
+        //
+        // This does not, by itself, make the whole loop O(V + E) (WP 13.3B
+        // verification review finding): the "next" selection immediately
+        // below still performs its own O(survivors) linear scan per
+        // emission, so overall cost remains O(V²) in the number of
+        // survivors, independent of edge count - only the per-emission
+        // dependent-propagation cost dropped from O(V) to O(1) amortized.
+        // A true O(V + E) Kahn's implementation needs a ready-queue
+        // populated as each node's own count first reaches zero, which is a
+        // materially larger, structural change (new ordering/readiness
+        // bookkeeping) - correctly out of scope for this WP's own "narrow,
+        // mechanical speedup only" mandate. At the plugin counts this
+        // platform actually operates at (tens to low hundreds, not
+        // thousands), the remaining O(V²) selection scan is not the
+        // dominant cost - see PluginPlatformPerformanceTests.cs's own
+        // measured data - so this is disclosed here, not treated as a
+        // blocking defect.
+        var dependentsByTargetId = new Dictionary<string, List<string>>(StringComparer.Ordinal);
+
+        foreach (var id in survivors)
+        {
+            var distinctDependencyIds = acceptedById[id].Dependencies
+                .Select(dependency => dependency.Id)
+                .Distinct(StringComparer.Ordinal)
+                .ToList();
+
+            remainingDependencyCount[id] = distinctDependencyIds.Count;
+
+            foreach (var dependencyId in distinctDependencyIds)
+            {
+                if (!dependentsByTargetId.TryGetValue(dependencyId, out var dependents))
+                {
+                    dependents = [];
+                    dependentsByTargetId[dependencyId] = dependents;
+                }
+
+                dependents.Add(id);
+            }
+        }
+
         var emitted = new HashSet<string>(StringComparer.Ordinal);
         var result = new List<PluginManifest>(survivors.Count);
 
@@ -797,13 +849,15 @@ public sealed class PluginManifestDiscoveryService : IPluginManifestDiscoverySer
             emitted.Add(next);
             result.Add(acceptedById[next]);
 
-            foreach (var id in survivors)
+            if (!dependentsByTargetId.TryGetValue(next, out var dependents))
+                continue;
+
+            foreach (var id in dependents)
             {
                 if (emitted.Contains(id))
                     continue;
 
-                if (acceptedById[id].Dependencies.Any(dependency => dependency.Id == next))
-                    remainingDependencyCount[id]--;
+                remainingDependencyCount[id]--;
             }
         }
 
@@ -826,12 +880,12 @@ public sealed class PluginManifestDiscoveryService : IPluginManifestDiscoverySer
         return candidatePath.StartsWith(folderWithSeparator, StringComparison.OrdinalIgnoreCase);
     }
 
-    private static void RequireField(string? value, string fieldName, string manifestPath)
+    private static void RequireField(string? value, string fieldName, string manifestPath, string? pluginId = null)
     {
         if (string.IsNullOrWhiteSpace(value))
         {
             throw new InvalidPluginManifestException(
-                $"Manifest file '{manifestPath}' has a null, empty, or whitespace '{fieldName}' field.");
+                $"Manifest file '{manifestPath}' has a null, empty, or whitespace '{fieldName}' field.", pluginId);
         }
     }
 }
