@@ -236,7 +236,7 @@ public sealed class PluginAssemblyLoader : IPluginAssemblyLoader
     /// </remarks>
     private void EnforceTrust(PluginManifest manifest, Assembly assembly)
     {
-        var moduleTypes = DiscoverModuleTypes(assembly, out var hostedServiceTypes);
+        var moduleTypes = DiscoverModuleTypes(manifest.Id, assembly, out var hostedServiceTypes);
 
         var ineligibleCapability = FindIneligibleCapability(manifest);
 
@@ -250,7 +250,7 @@ public sealed class PluginAssemblyLoader : IPluginAssemblyLoader
                 $"'{manifest.TrustTier}'.");
         }
 
-        var nonCompliantType = moduleTypes.FirstOrDefault(type => !HasCompliantConstructor(type, manifest));
+        var nonCompliantType = moduleTypes.Concat(hostedServiceTypes).FirstOrDefault(type => !HasCompliantConstructor(type, manifest));
 
         if (nonCompliantType is not null)
         {
@@ -258,12 +258,12 @@ public sealed class PluginAssemblyLoader : IPluginAssemblyLoader
 
             throw new PluginTrustDeniedException(
                 manifest.Id,
-                $"Module type '{nonCompliantType.FullName}' has no public constructor whose parameters are " +
+                $"Module or hosted service type '{nonCompliantType.FullName}' has no public constructor whose parameters are " +
                 "all within the fixed always-allowed baseline or an eligible, granted " +
                 "'plugin.services.resolve:*' capability.");
         }
 
-        if (moduleTypes.Count == 0)
+        if (moduleTypes.Count == 0 && hostedServiceTypes.Count == 0)
             return;
 
         var grantedPermissions = manifest.RequestedCapabilities
@@ -275,8 +275,8 @@ public sealed class PluginAssemblyLoader : IPluginAssemblyLoader
             new Identity.PlatformIdentity(manifest.Id, manifest.Name),
             grantedPermissions);
 
-        foreach (var moduleType in moduleTypes)
-            _componentPrincipalRecorder?.Record(moduleType, principal);
+        foreach (var type in moduleTypes.Concat(hostedServiceTypes))
+            _componentPrincipalRecorder?.Record(type, principal);
     }
 
     /// <summary>
@@ -339,6 +339,7 @@ public sealed class PluginAssemblyLoader : IPluginAssemblyLoader
         key == PluginCapability.Navigation
         || key == PluginCapability.Commands
         || key == PluginCapability.DiRegister
+        || key == PluginCapability.IdentityEstablish
         || key.StartsWith(EventPublishPrefix, StringComparison.Ordinal)
         || key.StartsWith(ServiceResolvePrefix, StringComparison.Ordinal);
 
@@ -434,7 +435,7 @@ public sealed class PluginAssemblyLoader : IPluginAssemblyLoader
     /// services today.
     /// </para>
     /// </remarks>
-    private static List<Type> DiscoverModuleTypes(Assembly assembly, out List<Type> hostedServiceTypes)
+    private static List<Type> DiscoverModuleTypes(string pluginId, Assembly assembly, out List<Type> hostedServiceTypes)
     {
         var scannedAssemblies = new HashSet<Assembly> { assembly };
         var toScan = new Queue<Assembly>();
@@ -452,7 +453,8 @@ public sealed class PluginAssemblyLoader : IPluginAssemblyLoader
             var currentModuleTypes = currentLoadableTypes.Where(IsModuleType).ToList();
             allModuleTypes.AddRange(currentModuleTypes);
 
-            allHostedServiceTypes.AddRange(currentLoadableTypes.Where(IsHostedServiceType));
+            var currentHostedServiceTypes = currentLoadableTypes.Where(IsHostedServiceType).ToList();
+            allHostedServiceTypes.AddRange(currentHostedServiceTypes);
 
             // WP 13.9.3: force every discovered type's every public
             // constructor's every parameter's ParameterType to resolve now,
@@ -463,13 +465,77 @@ public sealed class PluginAssemblyLoader : IPluginAssemblyLoader
             // to it. HasCompliantConstructor itself remains unchanged; its
             // own reflection side effects simply have nowhere new left to
             // hide by the time it runs.
-            foreach (var moduleType in currentModuleTypes)
+            //
+            // Corrected, WP 13.10B: this loop originally iterated
+            // currentModuleTypes only. Once EnforceTrust's own constructor-
+            // conformance check was extended to also cover hostedServiceTypes
+            // (TD-51), that left an IHostedService-only type's constructor
+            // parameters never pre-resolved here - HasCompliantConstructor's
+            // own later call to GetParameters() became the FIRST resolution
+            // attempt for such a type, with no exception handling of any
+            // kind, and no try/catch anywhere else in this method's own
+            // reach protects it either. An unresolvable parameter type on a
+            // hosted-service-only plugin's constructor then threw an
+            // uncaught exception all the way out of LoadPlugins and
+            // TempestHost.RunAsync itself - a genuine Host-wide crash, not
+            // merely a denied plugin, and a strictly worse regression than
+            // the gap TD-51 itself closed. Found live, by WP 13.10B's own
+            // independent Adversarial Security review, immediately after
+            // this same method's IModule-only version of this exact fix
+            // landed. Iterating both currentModuleTypes and
+            // currentHostedServiceTypes here closes it for both discovery
+            // axes uniformly, and also completes WP 13.9.3's own original
+            // transitive-assembly-discovery intent for hosted services -
+            // forcing a hosted service's own constructor-parameter types to
+            // resolve here is exactly what lets this step's own before/after
+            // diff, below, discover a secondary assembly reachable only via
+            // a hosted-service's own constructor parameter, not only a
+            // module's.
+            foreach (var moduleType in currentModuleTypes.Concat(currentHostedServiceTypes))
             {
                 foreach (var constructor in moduleType.GetConstructors())
                 {
-                    foreach (var parameter in constructor.GetParameters())
+                    // WP 13.10B (TD-cheap-hardening): forcing every
+                    // parameter's ParameterType to resolve is a genuine CLR
+                    // type-load, capable of throwing TypeLoadException/
+                    // FileNotFoundException/FileLoadException/
+                    // BadImageFormatException for a malformed or missing
+                    // dependency belonging to this one plugin's own
+                    // assembly - exactly the failure modes LoadOne already
+                    // isolates for Assembly.LoadFrom itself, below.
+                    // Corrected: the try must wrap constructor.GetParameters()
+                    // itself, not only the inner _ = parameter.ParameterType
+                    // access - RuntimeConstructorInfo.GetParameters() eagerly
+                    // resolves every parameter's own Signature the moment
+                    // it's called, so a genuinely unresolvable parameter type
+                    // throws from GetParameters() itself, in this loop's own
+                    // header, never reaching a per-parameter try/catch placed
+                    // only around the body (confirmed live: an earlier
+                    // version of this fix placed the try/catch one level too
+                    // deep and never actually caught anything for its own
+                    // documented scenario). Left unguarded, that exception is
+                    // not a PluginException, so LoadPlugins's own
+                    // catch (PluginException) would not catch it here - it
+                    // would propagate out of LoadPlugins entirely, aborting
+                    // every other plugin's own loading in the same call, not
+                    // just this one's (violating ADR-0025's isolation
+                    // discipline). Converted here into a
+                    // PluginTrustDeniedException instead, so this one plugin
+                    // is isolated and denied exactly like any other
+                    // trust-check failure.
+                    try
                     {
-                        _ = parameter.ParameterType;
+                        foreach (var parameter in constructor.GetParameters())
+                        {
+                            _ = parameter.ParameterType;
+                        }
+                    }
+                    catch (Exception ex) when (ex is TypeLoadException or FileNotFoundException or FileLoadException or BadImageFormatException)
+                    {
+                        throw new PluginTrustDeniedException(
+                            pluginId,
+                            $"Module or hosted service type '{moduleType.FullName}' declares a constructor " +
+                            $"parameter whose type could not be resolved ('{ex.GetType().Name}': {ex.Message}).");
                     }
                 }
             }

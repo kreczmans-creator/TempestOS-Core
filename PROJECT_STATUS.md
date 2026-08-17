@@ -1,6 +1,102 @@
 # TempestOS — Project Status
 
-**Last Updated:** 2026-08-17 (`WP 13.9.7`, Trust Boundary Integration &
+**Last Updated:** 2026-08-17 (`WP 13.10C`, Plugin Trust Hardening Review
+& Integration). The same integration-and-commit role `WP 13.9.7`
+established for the `WP 13.9.1`–`WP 13.9.6` chain, applied here to the
+`WP 13.10A`/`WP 13.10B` chain. `WP 13.10A`'s own read-only, six-discipline
+architecture/hardening review of the complete `v0.13.0` plugin platform
+found two genuine, live-PoC-confirmed, Release-Blocking gaps in the
+plugin trust platform's own static/dynamic enforcement (`TD-51`: the
+constructor-conformance/denylist check never covered `IHostedService`
+types, and `HostedServiceManager` had no component-scope hook at all;
+`TD-52`: `IIdentityService.EstablishCurrentPrincipal` reached the
+ambient-identity write surface the denylist exists to guard, ungated),
+neither a variant of anything the `WP 13.9.1`–`WP 13.9.6` remediation
+chain closed. `WP 13.10B` closed both in full, extending
+`HasCompliantConstructor` to `hostedServiceTypes`, wiring a new
+`componentScopeProvider` hook into `HostedServiceManager`, and gating
+`EstablishCurrentPrincipal` behind a new `plugin.identity.establish`
+capability — and, along the way, its own independent Adversarial
+Security review found and fixed a compounding Host-crash regression
+introduced mid-implementation, before any commit (an unresolvable
+hosted-service constructor-parameter type, once the constructor check
+was extended to cover it, threw uncaught out of `TempestHost.RunAsync`
+entirely; found independently twice, fixed by guarding both `IModule`
+and `IHostedService` type collections uniformly).
+
+This Work Package (`WP 13.10C`) independently re-verified `WP 13.10B`'s
+own fix directly against real, current source via four fresh, read-only
+sub-agents (Security/Adversarial, Architecture/API, Verification/Test +
+RAM/Concurrency, Governance/Documentation) — all four converged clean:
+`TD-51`/`TD-52` non-vacuously closed (reverted-and-restored independently
+by two separate reviewers on the two most load-bearing tests); no public
+API break; no unintended ADR/dependency change; and, resolving an open
+question this session's own repeated "Test host process crashed"
+incidents had raised, definitively confirmed `WP 13.10B` changed no
+test-suite parallelism/RAM configuration at all — every new
+real-assembly-loading test correctly reuses the pre-existing
+`[Collection("Console output capture")]` convention, and the crash
+pattern was independently traced to external, concurrent multi-agent
+process contention (a session-workflow artifact), not a test-suite
+design defect. **One permanent-coverage gap found and closed directly by
+this review**: the twice-found, twice-fixed Host-crash regression had
+only ever been proven fixed via throwaway proof-of-concept code across
+two independent `WP 13.10B` reviewers — a new permanent test,
+`LoadPlugins_FirstHostedServiceOnlyPluginHasUnresolvableConstructorParameterType_IsolatesFailure_SecondLegitimatePluginStillLoads`,
+closes it, non-vacuousness independently confirmed (reverted, observed to
+fail with the exact uncaught `FileNotFoundException`, restored). **One
+small, low-severity, pre-existing gap disclosed but deliberately not
+fixed**, to avoid scope creep beyond this review's own remit: the
+"unresolvable constructor parameter type" denial path throws directly
+from inside `DiscoverModuleTypes`, before `EnforceTrust` ever reaches a
+`RecordDenied` call site, so that one specific type is never added to
+`deniedTypeRegistry` — a second, independent construction attempt is made
+during Registration, safely failing for the identical reason (no code
+execution, not a crash); confirmed pre-existing since `WP 13.9.3` for the
+`IModule` axis, `WP 13.10B` merely widened its reach. **One
+governance-only note disclosed, not a code defect**: `plugin.identity.establish`
+is grantable to any trust tier above `UnsignedLocal`, and
+`EstablishCurrentPrincipal` accepts an arbitrary identity with no
+ownership check by design (`ADR-0043`) — a materially broader blast
+radius than every other v1 capability, warranting explicit governance
+sign-off before any third-party publisher is actually granted it.
+
+`TD-51`/`TD-52` moved **Open → Resolved** in `Technical Debt Register.md`,
+each entry's own Status field extended to disclose the regression and
+both further items in full, mirroring `TD-49`'s own established
+convention; the register's own stale `**Total:**` line corrected to 52
+tracked items — 18 Resolved, 1 Partially resolved, 33 Open.
+`Plugin Trust & Isolation Architecture.md`'s own Risks entry corrected
+"Found ... NOT YET CLOSED" → "Closed, `WP 13.10B`," Status header
+corrected to match, including the now-superseded "third and final
+correction" claim in `ADR-0111`. `ADR-0111` gained a "Corrected,
+`WP 13.10B`" Status-section note and matching Decision-text amendment —
+not a new ADR; `ADR Register.md`'s own `ADR-0111` citation extended to a
+seventh phase. Added `WP 13.10A`/`WP 13.10B`/`WP 13.10C` rows to
+`WorkPackages.md`. Confirmed, by convention check against
+`Academy Index.md`'s own maintenance rule and the `WP 13.2B`/
+`WP 13.9.1`–`WP 13.9.6` precedent, that none of the three requires a new
+Academy retrospective; confirmed `Security Roadmap.md` items 1/2/10 need
+no update, matching the identical precedent.
+
+`governance-healthcheck.ps1`: **7 passed, 1 warned (pre-existing
+`v0.9.0`/`v0.10.0` informational, unrelated), 0 failed** — confirmed
+identical before and after every documentation correction, so zero new
+drift was introduced. Debug and Release builds both **0 Warnings, 0
+Errors** (`-p:TreatWarningsAsErrors=true`); full regression, both
+configurations, independently re-run fresh after every correction:
+**2,554/2,554 passing** (2,333 `Tempest.Core.Tests` + 221
+`Tempest.Desktop.Tests` — one net new permanent test added by this
+Work Package). Working tree confirmed, directly via `git status --short`,
+to contain only files accounted for by the commissioned `WP 13.10B`
+changeset, this Work Package's own governance edits, and the one new
+permanent test, before staging. Committed as a single commit alongside
+the complete `WP 13.10B` implementation. Not pushed, not tagged, no
+release created.
+**`WP 13.9.7`'s own status line, below this point, is this field's prior
+content — retained, not deleted:**
+
+**Previously updated** 2026-08-17 (`WP 13.9.7`, Trust Boundary Integration &
 Commit). Sole implementation/integration agent for this Work Package, no
 parallel writers. Integrates, reconciles, and commits the entire
 `WP 13.9.1`–`WP 13.9.6` remediation chain (each with its own entry below)

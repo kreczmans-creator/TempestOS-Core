@@ -1,7 +1,9 @@
 using System.Runtime.Loader;
+using Tempest.Core.BackgroundServices;
 using Tempest.Core.Configuration;
 using Tempest.Core.Diagnostics;
 using Tempest.Core.Logging;
+using Tempest.Core.Modules;
 using Tempest.Core.Plugins;
 
 namespace Tempest.Core.Tests.Plugins;
@@ -527,6 +529,250 @@ public class PluginAssemblyLoaderMultiAssemblyTrustTests
         // constructor references an external assembly's type it has been
         // explicitly, correctly granted still loads successfully.
         Assert.Single(result);
+    }
+
+    // ------------------------------------------------------------------
+    // WP 13.10B (TD-51): PluginAssemblyLoader.EnforceTrust's own
+    // constructor-conformance check previously consulted moduleTypes only -
+    // an IHostedService-only plugin (zero discovered IModule types)
+    // short-circuited straight past it, so a plugin whose sole hosted
+    // service's own constructor required a forbidden, denylisted parameter
+    // type would have been silently accepted. These two tests prove the fix
+    // directly at the PluginAssemblyLoader level: the denial case, and the
+    // positive/no-regression case (which also proves component-principal
+    // recording was correctly extended to hosted-service types - before this
+    // fix, this exact positive scenario would have recorded ZERO principals).
+    // ------------------------------------------------------------------
+
+    [Fact]
+    public void EnforceTrust_HostedServiceOnlyPlugin_NonCompliantConstructor_IsDenied_RecordsTrustDenied()
+    {
+        using var temp = new TempDirectory();
+
+        // Zero IModule types anywhere in this assembly - before WP 13.10B,
+        // moduleTypes.Count == 0 meant EnforceTrust's own constructor check
+        // (moduleTypes.FirstOrDefault(...)) never even looked at this type,
+        // regardless of how non-compliant its own sole constructor was.
+        var assemblyPath = DynamicPluginAssemblyBuilder.BuildHostedServiceOnlyAssemblyWithConstructorParameters(
+            temp.Path,
+            "HostedServiceOnlyDenied.dll",
+            [typeof(global::Tempest.Core.Identity.CurrentComponentAccessor)]);
+
+        var manifest = CreateManifest("test.hosted-service-only-denied-plugin", assemblyPath, PluginTrustTier.UnsignedLocal, []);
+
+        var registry = new PluginRegistry();
+        var logger = new RecordingLevelLogger();
+        var recorder = new RecordingComponentPrincipalRecorder();
+        var loader = new PluginAssemblyLoader(logger, registry, recorder);
+
+        var result = loader.LoadPlugins([manifest]);
+
+        Assert.Empty(result);
+        var entry = Assert.Single(registry.Entries);
+        Assert.Equal(PluginRegistryState.TrustDenied, entry.State);
+        Assert.NotNull(entry.Detail);
+        Assert.Contains("no public constructor", entry.Detail!, StringComparison.OrdinalIgnoreCase);
+
+        // Neither survives: no component principal is ever recorded for the
+        // denied plugin's own hosted service type.
+        Assert.Empty(recorder.Recorded);
+    }
+
+    [Fact]
+    public void EnforceTrust_HostedServiceOnlyPlugin_CompliantConstructor_Loads_RecordsComponentPrincipal()
+    {
+        using var temp = new TempDirectory();
+
+        var assemblyPath = DynamicPluginAssemblyBuilder.BuildCompliantHostedServiceOnlyAssembly(
+            temp.Path, "HostedServiceOnlyCompliant.dll");
+
+        var manifest = CreateManifest("test.hosted-service-only-compliant-plugin", assemblyPath, PluginTrustTier.UnsignedLocal, []);
+
+        var recorder = new RecordingComponentPrincipalRecorder();
+        var loader = new PluginAssemblyLoader(componentPrincipalRecorder: recorder);
+
+        var result = loader.LoadPlugins([manifest]);
+
+        Assert.Single(result);
+
+        // Before WP 13.10B's fix, EnforceTrust's own principal-recording loop
+        // ("foreach (var type in moduleTypes)") never iterated hosted-service
+        // types at all - this exact, wholly compliant IHostedService-only
+        // plugin would have recorded ZERO principals despite passing trust
+        // cleanly.
+        var recorded = Assert.Single(recorder.Recorded);
+        Assert.Equal("test.hosted-service-only-compliant-plugin", recorded.Principal.Identity.Id);
+
+        var loadedAssembly = System.Reflection.Assembly.LoadFrom(assemblyPath);
+        var hostedServiceType = loadedAssembly.GetTypes()
+            .Single(type => typeof(IHostedService).IsAssignableFrom(type) && !type.IsInterface && !type.IsAbstract);
+        Assert.Equal(hostedServiceType, recorded.ModuleType);
+    }
+
+    // ------------------------------------------------------------------
+    // WP 13.10B cheap-hardening item: DiscoverModuleTypes's own forced
+    // ParameterType resolution loop is now wrapped in a try/catch, isolating
+    // ONE malformed plugin's own resolution failure into a
+    // PluginTrustDeniedException rather than letting the raw
+    // TypeLoadException/FileNotFoundException/FileLoadException/
+    // BadImageFormatException escape LoadPlugins entirely and abort every
+    // other plugin's own loading in the same call. This is the single most
+    // important non-vacuousness proof in this file.
+    // ------------------------------------------------------------------
+
+    [Fact]
+    public void LoadPlugins_FirstPluginHasUnresolvableConstructorParameterType_IsolatesFailure_SecondLegitimatePluginStillLoads()
+    {
+        using var temp = new TempDirectory();
+
+        // The external, dependency assembly is deliberately saved to a
+        // DIFFERENT directory than the primary plugin assembly below - the
+        // default AssemblyLoadContext's own directory-probing for an
+        // Assembly.LoadFrom-loaded assembly's own referenced dependencies
+        // only ever searches the referencing assembly's own directory (the
+        // exact mechanism BuildSecondaryAssemblyWithBaseTypeAndModule's own
+        // remarks rely on, in every OTHER test in this file, to make a
+        // secondary assembly discoverable - deliberately inverted here to
+        // make this parameter type's own resolution genuinely UNresolvable),
+        // so forcing it throws FileNotFoundException/TypeLoadException.
+        var externalOnlyDirectory = Path.Combine(temp.Path, "external-unreachable");
+        Directory.CreateDirectory(externalOnlyDirectory);
+
+        var secondaryAssemblyPath = DynamicPluginAssemblyBuilder.BuildSecondaryAssemblyWithBaseTypeAndModule(
+            externalOnlyDirectory,
+            "UnresolvableSecondary",
+            "SharedParameterType",
+            "InertModule",
+            "test.unresolvable-secondary-module",
+            "Inert Secondary Module",
+            "1.0.0",
+            [typeof(ILogger), typeof(IConfigurationProvider), typeof(IDiagnosticsProvider)]);
+
+        var secondaryAssemblyName = Path.GetFileNameWithoutExtension(secondaryAssemblyPath);
+        var externalParameterTypeFullName = $"{secondaryAssemblyName}.SharedParameterType";
+
+        var unresolvablePrimaryAssemblyPath = DynamicPluginAssemblyBuilder.BuildPrimaryPluginAssemblyWithExternalConstructorParameter(
+            temp.Path,
+            "UnresolvableCtorParamPrimary.dll",
+            secondaryAssemblyPath,
+            externalParameterTypeFullName,
+            moduleId: "test.unresolvable-ctor-param-module",
+            moduleName: "Unresolvable Constructor Parameter Module",
+            moduleVersion: "1.0.0",
+            addAlternateCompliantConstructor: false);
+
+        var legitimateAssemblyPath = DynamicPluginAssemblyBuilder.BuildValidPluginAssembly(
+            temp.Path, "IsolationLegitimate.dll", "test.isolation-legitimate", "Isolation Legitimate Plugin", "1.0.0");
+
+        var unresolvableManifest = CreateManifest(
+            "test.unresolvable-ctor-param-plugin", unresolvablePrimaryAssemblyPath, PluginTrustTier.UnsignedLocal, []);
+        var legitimateManifest = CreateManifest(
+            "test.isolation-legitimate-plugin", legitimateAssemblyPath, PluginTrustTier.UnsignedLocal, []);
+
+        var registry = new PluginRegistry();
+        var logger = new RecordingLevelLogger();
+        var loader = new PluginAssemblyLoader(logger, registry);
+
+        // Deliberately in this order: before WP 13.10B's fix, the first
+        // plugin's own unresolvable-type exception was not a PluginException,
+        // so it propagated straight out of LoadPlugins, aborting every other
+        // plugin's own loading in the same call - not just this one's.
+        var result = loader.LoadPlugins([unresolvableManifest, legitimateManifest]);
+
+        Assert.Single(result);
+        Assert.Equal(2, registry.Entries.Count);
+
+        var unresolvableEntry = registry.Entries.Single(e => e.Id == "test.unresolvable-ctor-param-plugin");
+        Assert.Equal(PluginRegistryState.TrustDenied, unresolvableEntry.State);
+        Assert.NotNull(unresolvableEntry.Detail);
+        Assert.Contains("could not be resolved", unresolvableEntry.Detail!, StringComparison.OrdinalIgnoreCase);
+
+        var legitimateEntry = registry.Entries.Single(e => e.Id == "test.isolation-legitimate-plugin");
+        Assert.Equal(PluginRegistryState.Loaded, legitimateEntry.State);
+    }
+
+    /// <summary>
+    /// The <see cref="BackgroundServices.IHostedService"/>-only counterpart
+    /// to <see cref="LoadPlugins_FirstPluginHasUnresolvableConstructorParameterType_IsolatesFailure_SecondLegitimatePluginStillLoads"/>
+    /// - WP 13.10C's own Verification/RAM-concurrency reviewer found the
+    /// twice-found, twice-fixed regression (an unresolvable constructor
+    /// parameter type on an <see cref="BackgroundServices.IHostedService"/>-only
+    /// plugin faulting the whole Host, rather than isolating just that one
+    /// plugin) was proven fixed only via throwaway, non-permanent
+    /// proof-of-concept code across two independent reviewers - genuinely
+    /// closed in production (<see cref="PluginAssemblyLoader.DiscoverModuleTypes"/>'s
+    /// own forced-resolution loop now iterates both <c>moduleTypes</c> and
+    /// <c>hostedServiceTypes</c> uniformly), but with zero permanent
+    /// regression coverage protecting the specific axis two independent
+    /// reviewers each had to rediscover by hand. This test closes that gap
+    /// permanently, mirroring the sibling <see cref="Modules.IModule"/> test
+    /// immediately above exactly, substituting
+    /// <see cref="DynamicPluginAssemblyBuilder.BuildHostedServiceOnlyAssemblyWithConstructorParameters"/>
+    /// for the <see cref="Modules.IModule"/>-shaped builder it uses.
+    /// </summary>
+    [Fact]
+    public void LoadPlugins_FirstHostedServiceOnlyPluginHasUnresolvableConstructorParameterType_IsolatesFailure_SecondLegitimatePluginStillLoads()
+    {
+        using var temp = new TempDirectory();
+
+        // Deliberately saved to a DIFFERENT directory than the primary
+        // plugin assembly below, for the identical reason the IModule
+        // sibling test does this - the default AssemblyLoadContext's own
+        // directory-probing for an Assembly.LoadFrom-loaded assembly's own
+        // referenced dependencies only ever searches the referencing
+        // assembly's own directory, so this makes the parameter type's own
+        // resolution genuinely UNresolvable.
+        var externalOnlyDirectory = Path.Combine(temp.Path, "external-unreachable-hs");
+        Directory.CreateDirectory(externalOnlyDirectory);
+
+        var secondaryAssemblyPath = DynamicPluginAssemblyBuilder.BuildSecondaryAssemblyWithBaseTypeAndModule(
+            externalOnlyDirectory,
+            "UnresolvableSecondaryHS",
+            "SharedParameterType",
+            "InertModule",
+            "test.unresolvable-secondary-hs-module",
+            "Inert Secondary Module",
+            "1.0.0",
+            [typeof(ILogger), typeof(IConfigurationProvider), typeof(IDiagnosticsProvider)]);
+
+        var secondaryAssemblyName = Path.GetFileNameWithoutExtension(secondaryAssemblyPath);
+        var externalParameterTypeFullName = $"{secondaryAssemblyName}.SharedParameterType";
+        var externalParameterType = ResolveExternalType(secondaryAssemblyPath, externalParameterTypeFullName);
+
+        var unresolvablePrimaryAssemblyPath = DynamicPluginAssemblyBuilder.BuildHostedServiceOnlyAssemblyWithConstructorParameters(
+            temp.Path, "UnresolvableCtorParamHostedServicePrimary.dll", [externalParameterType]);
+
+        var legitimateAssemblyPath = DynamicPluginAssemblyBuilder.BuildValidPluginAssembly(
+            temp.Path, "IsolationLegitimateHS.dll", "test.isolation-legitimate-hs", "Isolation Legitimate Plugin", "1.0.0");
+
+        var unresolvableManifest = CreateManifest(
+            "test.unresolvable-ctor-param-hs-plugin", unresolvablePrimaryAssemblyPath, PluginTrustTier.UnsignedLocal, []);
+        var legitimateManifest = CreateManifest(
+            "test.isolation-legitimate-hs-plugin", legitimateAssemblyPath, PluginTrustTier.UnsignedLocal, []);
+
+        var registry = new PluginRegistry();
+        var logger = new RecordingLevelLogger();
+        var loader = new PluginAssemblyLoader(logger, registry);
+
+        // Deliberately in this order, for the identical reason the IModule
+        // sibling test orders its own two plugins this way: before the
+        // WP 13.10B fix's own hostedServiceTypes extension, the first
+        // plugin's own unresolvable-type exception was not a
+        // PluginException, so it propagated straight out of LoadPlugins,
+        // aborting every other plugin's own loading in the same call - not
+        // just this one's.
+        var result = loader.LoadPlugins([unresolvableManifest, legitimateManifest]);
+
+        Assert.Single(result);
+        Assert.Equal(2, registry.Entries.Count);
+
+        var unresolvableEntry = registry.Entries.Single(e => e.Id == "test.unresolvable-ctor-param-hs-plugin");
+        Assert.Equal(PluginRegistryState.TrustDenied, unresolvableEntry.State);
+        Assert.NotNull(unresolvableEntry.Detail);
+        Assert.Contains("could not be resolved", unresolvableEntry.Detail!, StringComparison.OrdinalIgnoreCase);
+
+        var legitimateEntry = registry.Entries.Single(e => e.Id == "test.isolation-legitimate-hs-plugin");
+        Assert.Equal(PluginRegistryState.Loaded, legitimateEntry.State);
     }
 
     /// <summary>

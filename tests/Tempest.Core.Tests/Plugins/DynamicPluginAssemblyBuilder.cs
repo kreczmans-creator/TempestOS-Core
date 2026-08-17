@@ -3,6 +3,7 @@ using System.Reflection.Emit;
 using System.Runtime.Loader;
 using Tempest.Core.BackgroundServices;
 using Tempest.Core.Commands;
+using Tempest.Core.Identity;
 using Tempest.Core.Modules;
 using Tempest.Core.Navigation;
 using Tempest.Samples;
@@ -779,5 +780,301 @@ internal static class DynamicPluginAssemblyBuilder
         il.Emit(OpCodes.Ret);
 
         typeBuilder.DefineMethodOverride(methodBuilder, interfaceMethod);
+    }
+
+    /// <summary>
+    /// Builds an assembly containing one public, concrete type implementing
+    /// <i>only</i> <see cref="IHostedService"/> — never <see cref="IModule"/>
+    /// — whose sole public constructor accepts exactly
+    /// <paramref name="constructorParameterTypes"/>, in order, ignoring every
+    /// argument at runtime (mirrors <see cref="BuildPluginAssemblyWithConstructorParameters"/>'s
+    /// own exact convention, adapted to a hosted-service-only shape). Used to
+    /// exercise <c>PluginAssemblyLoader.EnforceTrust</c>'s own
+    /// constructor-conformance check (WP 13.10B, TD-51) for the specific
+    /// defect it closes: before this fix, an <see cref="IHostedService"/>-only
+    /// plugin (zero discovered <see cref="IModule"/> types) short-circuited
+    /// straight past the constructor-conformance check entirely, since it
+    /// only ever consulted <c>moduleTypes</c>. Passing <see cref="Type.EmptyTypes"/>
+    /// yields a trivially compliant, parameterless constructor — the
+    /// "positive/no-regression" shape proving the fix does not overreach.
+    /// Saved to <paramref name="outputDirectory"/> under <paramref name="fileName"/>.
+    /// </summary>
+    /// <returns>The full path to the saved assembly file.</returns>
+    public static string BuildHostedServiceOnlyAssemblyWithConstructorParameters(
+        string outputDirectory,
+        string fileName,
+        Type[] constructorParameterTypes)
+    {
+        var dllPath = Path.Combine(outputDirectory, fileName);
+
+        var assemblyName = new AssemblyName($"{Path.GetFileNameWithoutExtension(fileName)}-{Guid.NewGuid():N}");
+        var assemblyBuilder = new PersistedAssemblyBuilder(assemblyName, typeof(object).Assembly);
+        var moduleBuilder = assemblyBuilder.DefineDynamicModule("MainModule");
+        var objectCtor = typeof(object).GetConstructor(Type.EmptyTypes)!;
+
+        var typeBuilder = moduleBuilder.DefineType(
+            $"{assemblyName.Name}.DynamicHostedServiceOnlyConstructorType",
+            TypeAttributes.Public | TypeAttributes.Class,
+            typeof(object),
+            [typeof(IHostedService)]);
+
+        var ctorBuilder = typeBuilder.DefineConstructor(
+            MethodAttributes.Public | MethodAttributes.HideBySig | MethodAttributes.SpecialName | MethodAttributes.RTSpecialName,
+            CallingConventions.Standard,
+            constructorParameterTypes);
+
+        var il = ctorBuilder.GetILGenerator();
+        il.Emit(OpCodes.Ldarg_0);
+        il.Emit(OpCodes.Call, objectCtor);
+        il.Emit(OpCodes.Ret);
+
+        DefineCompletedTaskMethodOverride(typeBuilder, typeof(IHostedService), nameof(IHostedService.StartAsync));
+        DefineCompletedTaskMethodOverride(typeBuilder, typeof(IHostedService), nameof(IHostedService.StopAsync));
+
+        typeBuilder.CreateType();
+        assemblyBuilder.Save(dllPath);
+
+        return dllPath;
+    }
+
+    /// <summary>
+    /// Builds an assembly containing one public, concrete
+    /// <see cref="IHostedService"/>-only type (never <see cref="IModule"/>)
+    /// with a wholly baseline-compliant, public parameterless constructor —
+    /// the compliant, "still loads" counterpart to
+    /// <see cref="BuildHostedServiceOnlyAssemblyWithConstructorParameters"/>'s
+    /// own non-compliant shape (WP 13.10B, TD-51). A thin, explicitly-named
+    /// wrapper over that same method (<c>Type.EmptyTypes</c> is always
+    /// trivially compliant), kept as its own method so a caller's own intent
+    /// — "the compliant variant" — reads directly at the call site.
+    /// Saved to <paramref name="outputDirectory"/> under <paramref name="fileName"/>.
+    /// </summary>
+    /// <returns>The full path to the saved assembly file.</returns>
+    public static string BuildCompliantHostedServiceOnlyAssembly(string outputDirectory, string fileName) =>
+        BuildHostedServiceOnlyAssemblyWithConstructorParameters(outputDirectory, fileName, Type.EmptyTypes);
+
+    /// <summary>
+    /// Builds an assembly containing one public, concrete
+    /// <see cref="IHostedService"/>-only type whose sole public constructor
+    /// constructor-injects <see cref="ICurrentComponentAccessor"/> (the
+    /// read-only, freely grantable interface — never the denylisted concrete
+    /// <see cref="CurrentComponentAccessor"/> type) and whose <c>StartAsync</c>
+    /// override reads <see cref="ICurrentComponentAccessor.Current"/>'s own
+    /// <see cref="IPrincipal.Identity"/>/<see cref="IIdentity.Id"/>
+    /// (or <see langword="null"/> if <c>Current</c> itself is <see langword="null"/>)
+    /// and records it via <see cref="AmbientPrincipalCaptureProbe.RecordObservedIdentity"/>
+    /// keyed by <paramref name="probeId"/> — an observable side effect proving
+    /// which ambient component principal, if any, was genuinely pushed by
+    /// <c>TempestHost</c>'s own <c>hostedServiceComponentScopeProvider</c>
+    /// closure (WP 13.10B, TD-51) at the exact moment <c>StartAsync</c> ran.
+    /// Saved to <paramref name="outputDirectory"/> under <paramref name="fileName"/>.
+    /// </summary>
+    /// <returns>The full path to the saved assembly file.</returns>
+    public static string BuildHostedServiceOnlyAssemblyCapturingAmbientComponentPrincipal(
+        string outputDirectory,
+        string fileName,
+        string probeId)
+    {
+        var dllPath = Path.Combine(outputDirectory, fileName);
+
+        var assemblyName = new AssemblyName($"{Path.GetFileNameWithoutExtension(fileName)}-{Guid.NewGuid():N}");
+        var assemblyBuilder = new PersistedAssemblyBuilder(assemblyName, typeof(object).Assembly);
+        var moduleBuilder = assemblyBuilder.DefineDynamicModule("MainModule");
+        var objectCtor = typeof(object).GetConstructor(Type.EmptyTypes)!;
+
+        var typeBuilder = moduleBuilder.DefineType(
+            $"{assemblyName.Name}.DynamicAmbientPrincipalHostedService",
+            TypeAttributes.Public | TypeAttributes.Class,
+            typeof(object),
+            [typeof(IHostedService)]);
+
+        var accessorField = typeBuilder.DefineField(
+            "_accessor", typeof(ICurrentComponentAccessor), FieldAttributes.Private);
+
+        var ctorBuilder = typeBuilder.DefineConstructor(
+            MethodAttributes.Public | MethodAttributes.HideBySig | MethodAttributes.SpecialName | MethodAttributes.RTSpecialName,
+            CallingConventions.Standard,
+            [typeof(ICurrentComponentAccessor)]);
+
+        var ctorIl = ctorBuilder.GetILGenerator();
+        ctorIl.Emit(OpCodes.Ldarg_0);
+        ctorIl.Emit(OpCodes.Call, objectCtor);
+        ctorIl.Emit(OpCodes.Ldarg_0);
+        ctorIl.Emit(OpCodes.Ldarg_1);
+        ctorIl.Emit(OpCodes.Stfld, accessorField);
+        ctorIl.Emit(OpCodes.Ret);
+
+        DefineAmbientPrincipalCapturingStartAsync(typeBuilder, accessorField, probeId);
+        DefineCompletedTaskMethodOverride(typeBuilder, typeof(IHostedService), nameof(IHostedService.StopAsync));
+
+        typeBuilder.CreateType();
+        assemblyBuilder.Save(dllPath);
+
+        return dllPath;
+    }
+
+    /// <summary>
+    /// Defines a public <c>StartAsync</c> override that reads
+    /// <paramref name="accessorField"/>'s own <see cref="ICurrentComponentAccessor.Current"/>
+    /// property, resolves <c>?.Identity.Id</c> (or <see langword="null"/> if
+    /// <c>Current</c> is <see langword="null"/>), and records the result via
+    /// <see cref="AmbientPrincipalCaptureProbe.RecordObservedIdentity"/>
+    /// before returning <see cref="Task.CompletedTask"/>.
+    /// </summary>
+    private static void DefineAmbientPrincipalCapturingStartAsync(TypeBuilder typeBuilder, FieldBuilder accessorField, string probeId)
+    {
+        var interfaceMethod = typeof(IHostedService).GetMethod(nameof(IHostedService.StartAsync))!;
+
+        var methodBuilder = typeBuilder.DefineMethod(
+            nameof(IHostedService.StartAsync),
+            MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.HideBySig,
+            typeof(Task),
+            [typeof(CancellationToken)]);
+
+        var currentGetter = typeof(ICurrentComponentAccessor).GetProperty(nameof(ICurrentComponentAccessor.Current))!.GetGetMethod()!;
+        var identityGetter = typeof(IPrincipal).GetProperty(nameof(IPrincipal.Identity))!.GetGetMethod()!;
+        var idGetter = typeof(IIdentity).GetProperty(nameof(IIdentity.Id))!.GetGetMethod()!;
+        var recordMethod = typeof(AmbientPrincipalCaptureProbe).GetMethod(nameof(AmbientPrincipalCaptureProbe.RecordObservedIdentity))!;
+        var completedTaskGetter = typeof(Task).GetProperty(nameof(Task.CompletedTask))!.GetGetMethod()!;
+
+        var il = methodBuilder.GetILGenerator();
+        var notNullLabel = il.DefineLabel();
+        var afterLabel = il.DefineLabel();
+
+        // AmbientPrincipalCaptureProbe.RecordObservedIdentity(probeId, _accessor.Current?.Identity.Id);
+        il.Emit(OpCodes.Ldstr, probeId);
+
+        il.Emit(OpCodes.Ldarg_0);
+        il.Emit(OpCodes.Ldfld, accessorField);
+        il.Emit(OpCodes.Callvirt, currentGetter);
+        il.Emit(OpCodes.Dup);
+        il.Emit(OpCodes.Brtrue_S, notNullLabel);
+        il.Emit(OpCodes.Pop);
+        il.Emit(OpCodes.Ldnull);
+        il.Emit(OpCodes.Br_S, afterLabel);
+        il.MarkLabel(notNullLabel);
+        il.Emit(OpCodes.Callvirt, identityGetter);
+        il.Emit(OpCodes.Callvirt, idGetter);
+        il.MarkLabel(afterLabel);
+
+        il.Emit(OpCodes.Call, recordMethod);
+        il.Emit(OpCodes.Call, completedTaskGetter);
+        il.Emit(OpCodes.Ret);
+
+        typeBuilder.DefineMethodOverride(methodBuilder, interfaceMethod);
+    }
+
+    /// <summary>
+    /// Builds an assembly containing TWO separate, legitimate, compliant,
+    /// <see cref="ModuleMetadataAttribute"/>-carrying, <see cref="ModuleLifecycleBase"/>-derived
+    /// <see cref="IModule"/> types in the SAME assembly — multi-module-per-plugin
+    /// coverage. Each has a public parameterless constructor calling the base
+    /// constructor with its own literal Id/Name/Version, mirroring
+    /// <see cref="BuildValidPluginAssembly"/>'s own simplest shape, duplicated.
+    /// When <paramref name="module2ThrowsOnInitialise"/> is <see langword="true"/>,
+    /// the second module's own <c>InitialiseAsync</c> override throws a
+    /// distinctive <see cref="InvalidOperationException"/>
+    /// (<c>"WP1310B-DELIBERATE-INITIALISE-FAILURE"</c>) instead of the base
+    /// class's default no-op — proving the first module's own lifecycle is
+    /// unaffected by the second module's own failure, within the same
+    /// plugin. When <see langword="false"/>, both modules behave identically
+    /// to <see cref="BuildValidPluginAssembly"/>'s own simple, no-op shape.
+    /// Saved to <paramref name="outputDirectory"/> under <paramref name="fileName"/>.
+    /// </summary>
+    /// <returns>The full path to the saved assembly file.</returns>
+    public static string BuildValidPluginAssemblyWithTwoModules(
+        string outputDirectory,
+        string fileName,
+        string module1Id,
+        string module1Name,
+        string module1Version,
+        string module2Id,
+        string module2Name,
+        string module2Version,
+        bool module2ThrowsOnInitialise)
+    {
+        var dllPath = Path.Combine(outputDirectory, fileName);
+
+        var assemblyName = new AssemblyName($"{Path.GetFileNameWithoutExtension(fileName)}-{Guid.NewGuid():N}");
+        var assemblyBuilder = new PersistedAssemblyBuilder(assemblyName, typeof(object).Assembly);
+        var moduleBuilder = assemblyBuilder.DefineDynamicModule("MainModule");
+
+        DefineSimpleLifecycleModuleType(
+            moduleBuilder, $"{assemblyName.Name}.DynamicTwoModuleTypeOne",
+            module1Id, module1Name, module1Version, throwsOnInitialise: false);
+        DefineSimpleLifecycleModuleType(
+            moduleBuilder, $"{assemblyName.Name}.DynamicTwoModuleTypeTwo",
+            module2Id, module2Name, module2Version, throwsOnInitialise: module2ThrowsOnInitialise);
+
+        assemblyBuilder.Save(dllPath);
+
+        return dllPath;
+    }
+
+    /// <summary>
+    /// Defines one public, concrete, <see cref="ModuleMetadataAttribute"/>-carrying
+    /// <see cref="ModuleLifecycleBase"/>-derived type named <paramref name="typeName"/>
+    /// into <paramref name="moduleBuilder"/>, with a public parameterless
+    /// constructor calling the base constructor with the given literal
+    /// Id/Name/Version. If <paramref name="throwsOnInitialise"/>, overrides
+    /// <c>InitialiseAsync</c> to throw a distinctive
+    /// <see cref="InvalidOperationException"/> instead of the base class's
+    /// default no-op.
+    /// </summary>
+    private static void DefineSimpleLifecycleModuleType(
+        ModuleBuilder moduleBuilder,
+        string typeName,
+        string moduleId,
+        string moduleName,
+        string moduleVersion,
+        bool throwsOnInitialise)
+    {
+        var typeBuilder = moduleBuilder.DefineType(
+            typeName,
+            TypeAttributes.Public | TypeAttributes.Class,
+            typeof(ModuleLifecycleBase));
+
+        var metadataAttributeCtor = typeof(ModuleMetadataAttribute).GetConstructor(
+            [typeof(string), typeof(string), typeof(string)])!;
+        typeBuilder.SetCustomAttribute(new CustomAttributeBuilder(
+            metadataAttributeCtor, [moduleId, moduleName, moduleVersion]));
+
+        var baseCtor = typeof(ModuleLifecycleBase).GetConstructor(
+            BindingFlags.Instance | BindingFlags.NonPublic, null, [typeof(string), typeof(string), typeof(string)], null)!;
+
+        var ctorBuilder = typeBuilder.DefineConstructor(
+            MethodAttributes.Public | MethodAttributes.HideBySig | MethodAttributes.SpecialName | MethodAttributes.RTSpecialName,
+            CallingConventions.Standard,
+            Type.EmptyTypes);
+
+        var ctorIl = ctorBuilder.GetILGenerator();
+        ctorIl.Emit(OpCodes.Ldarg_0);
+        ctorIl.Emit(OpCodes.Ldstr, moduleId);
+        ctorIl.Emit(OpCodes.Ldstr, moduleName);
+        ctorIl.Emit(OpCodes.Ldstr, moduleVersion);
+        ctorIl.Emit(OpCodes.Call, baseCtor);
+        ctorIl.Emit(OpCodes.Ret);
+
+        if (throwsOnInitialise)
+        {
+            var baseInitialiseAsync = typeof(ModuleLifecycleBase).GetMethod(nameof(ModuleLifecycleBase.InitialiseAsync))!;
+
+            var initialiseBuilder = typeBuilder.DefineMethod(
+                nameof(ModuleLifecycleBase.InitialiseAsync),
+                MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.HideBySig,
+                typeof(Task),
+                [typeof(CancellationToken)]);
+
+            var exceptionCtor = typeof(InvalidOperationException).GetConstructor([typeof(string)])!;
+
+            var il = initialiseBuilder.GetILGenerator();
+            il.Emit(OpCodes.Ldstr, "WP1310B-DELIBERATE-INITIALISE-FAILURE");
+            il.Emit(OpCodes.Newobj, exceptionCtor);
+            il.Emit(OpCodes.Throw);
+
+            typeBuilder.DefineMethodOverride(initialiseBuilder, baseInitialiseAsync);
+        }
+
+        typeBuilder.CreateType();
     }
 }

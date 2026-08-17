@@ -1,7 +1,10 @@
 using System.Diagnostics;
 using System.Reflection;
+using System.Runtime.Loader;
 using System.Security.Cryptography.X509Certificates;
 using Tempest.Core.Configuration;
+using Tempest.Core.Diagnostics;
+using Tempest.Core.Logging;
 using Tempest.Core.Plugins;
 using Tempest.Core.Runtime;
 using Tempest.Core.Versioning;
@@ -281,6 +284,231 @@ public class PluginPlatformPerformanceTests
         Assert.True(
             stopwatch.ElapsedMilliseconds < maxMilliseconds,
             $"Loading {scale} plugin assemblies took {stopwatch.ElapsedMilliseconds}ms, expected under {maxMilliseconds}ms.");
+    }
+
+    // ------------------------------------------------------------------
+    // 3b. WP 13.10B: the widened DiscoverModuleTypes scan's own added cost,
+    //    isolated. Every fixture above (and #3's own LoadPlugins_LargeSet)
+    //    builds each plugin with exactly one module, an implicit
+    //    zero-parameter constructor, and no secondary/transitive assembly -
+    //    so WP 13.9.1's fixed-point BFS assembly scan and WP 13.9.3's forced
+    //    constructor-ParameterType resolution loop never had their own
+    //    actual incremental cost measured at any scale; only plugin COUNT,
+    //    the one dimension neither change added cost to, was ever scaled.
+    //
+    //    This isolates the ParameterType-resolution loop's own marginal
+    //    cost: a flat, zero-constructor-parameter baseline set is loaded and
+    //    timed first, then an identically-sized set whose every module has a
+    //    moderate-but-nontrivial (8) constructor parameter count - all
+    //    drawn from PluginAssemblyLoader's own AlwaysAllowedConstructorBaseline
+    //    (ADR-0111), so every plugin still reaches Loaded, exactly like the
+    //    zero-parameter baseline - isolating the parameter-count dimension
+    //    alone, mirroring SignatureVerification_LargeSet_IsolatedCost's own
+    //    delta-isolation technique above.
+    // ------------------------------------------------------------------
+
+    [Theory]
+    [InlineData(50)]
+    [InlineData(200)]
+    public void LoadPlugins_ManyConstructorParametersPerModule_IsolatesParameterResolutionCost(int scale)
+    {
+        using var zeroParamRoot = new TempDirectory();
+        using var manyParamRoot = new TempDirectory();
+
+        // Eight baseline-compliant constructor parameter types - a
+        // realistic, nontrivial count reached purely by repeating the three
+        // types PluginAssemblyLoader.AlwaysAllowedConstructorBaseline always
+        // permits (ADR-0111), so every "many-parameter" module still passes
+        // HasCompliantConstructor with zero requested capabilities, exactly
+        // like the zero-parameter baseline - the only varying dimension is
+        // parameter COUNT, never compliance outcome.
+        Type[] manyParameterTypes =
+        [
+            typeof(ILogger), typeof(IConfigurationProvider), typeof(IDiagnosticsProvider),
+            typeof(ILogger), typeof(IConfigurationProvider), typeof(IDiagnosticsProvider),
+            typeof(ILogger), typeof(IConfigurationProvider),
+        ];
+
+        var zeroParamManifests = new List<PluginManifest>(scale);
+        var manyParamManifests = new List<PluginManifest>(scale);
+
+        for (var i = 0; i < scale; i++)
+        {
+            var zeroId = $"perf.ctorparams.zero.{i:D5}";
+            var zeroFileName = $"ZeroParam{i:D5}.dll";
+            var zeroAssemblyPath = DynamicPluginAssemblyBuilder.BuildValidPluginAssembly(
+                zeroParamRoot.Path, zeroFileName, zeroId, $"Zero Param Plugin {i}", "1.0.0");
+            zeroParamManifests.Add(new PluginManifest(
+                zeroId, $"Zero Param Plugin {i}", "1.0.0", new Version(0, 1, 0),
+                zeroFileName, zeroAssemblyPath, PluginTrustTier.FirstParty));
+
+            var manyId = $"perf.ctorparams.many.{i:D5}";
+            var manyFileName = $"ManyParam{i:D5}.dll";
+            var manyAssemblyPath = DynamicPluginAssemblyBuilder.BuildPluginAssemblyWithConstructorParameters(
+                manyParamRoot.Path, manyFileName, manyId, $"Many Param Plugin {i}", "1.0.0", manyParameterTypes);
+            manyParamManifests.Add(new PluginManifest(
+                manyId, $"Many Param Plugin {i}", "1.0.0", new Version(0, 1, 0),
+                manyFileName, manyAssemblyPath, PluginTrustTier.FirstParty));
+        }
+
+        var zeroStopwatch = Stopwatch.StartNew();
+        var zeroLoaded = new PluginAssemblyLoader().LoadPlugins(zeroParamManifests);
+        zeroStopwatch.Stop();
+
+        var manyStopwatch = Stopwatch.StartNew();
+        var manyLoaded = new PluginAssemblyLoader().LoadPlugins(manyParamManifests);
+        manyStopwatch.Stop();
+
+        var deltaMs = manyStopwatch.ElapsedMilliseconds - zeroStopwatch.ElapsedMilliseconds;
+        var perParameterMs = scale > 0 ? deltaMs / (double)(scale * manyParameterTypes.Length) : 0;
+
+        _output.WriteLine(
+            $"[ConstructorParameters] scale={scale}, parametersPerModule={manyParameterTypes.Length}, " +
+            $"zeroParam={zeroStopwatch.ElapsedMilliseconds}ms, manyParam={manyStopwatch.ElapsedMilliseconds}ms, " +
+            $"delta~={deltaMs}ms, perPluginPerParameterCost~={perParameterMs:F4}ms");
+
+        Assert.Equal(scale, zeroLoaded.Count);
+        Assert.Equal(scale, manyLoaded.Count);
+
+        // Generous upper bound on the many-parameter run's own absolute
+        // time - well under a genuine regression threshold, loose enough
+        // not to be flaky on a slower CI box.
+        var maxMilliseconds = Math.Max(3_000, scale * 60);
+        Assert.True(
+            manyStopwatch.ElapsedMilliseconds < maxMilliseconds,
+            $"Loading {scale} plugins with {manyParameterTypes.Length} constructor parameters each took " +
+            $"{manyStopwatch.ElapsedMilliseconds}ms, expected well under {maxMilliseconds}ms.");
+    }
+
+    // ------------------------------------------------------------------
+    // 3c. WP 13.10B: the widened DiscoverModuleTypes scan's own added cost,
+    //    second dimension - deep transitive assembly chains. Each plugin's
+    //    primary assembly derives from a chain of secondaryAssemblyCount
+    //    transitively-loaded secondary assemblies, reusing
+    //    BuildPrimaryPluginAssemblyDerivingFromExternalBaseType/
+    //    BuildSecondaryAssemblyWithBaseTypeAndModule's own chaining pattern
+    //    exactly as PluginAssemblyLoaderMultiAssemblyTrustTests's own
+    //    three-assembly EnforceTrust_ThreeAssemblyTransitiveConstructorParameterChain_...
+    //    test does, generalised to an arbitrary depth and granted throughout
+    //    so every plugin genuinely reaches Loaded (never TrustDenied) -
+    //    isolating WP 13.9.1's own fixed-point BFS scan cost at a
+    //    moderate, clearly-labelled scale, not a denial path.
+    // ------------------------------------------------------------------
+
+    [Theory]
+    [InlineData(20, 2)]
+    [InlineData(40, 4)]
+    public void LoadPlugins_DeepTransitiveAssemblyChain_MeasuresFixedPointScanCost(int scale, int secondaryAssemblyCount)
+    {
+        using var temp = new TempDirectory();
+
+        var manifests = new List<PluginManifest>(scale);
+
+        for (var i = 0; i < scale; i++)
+            manifests.Add(BuildTransitiveChainManifest(temp.Path, secondaryAssemblyCount, i));
+
+        var loader = new PluginAssemblyLoader();
+
+        var stopwatch = Stopwatch.StartNew();
+        var loaded = loader.LoadPlugins(manifests);
+        stopwatch.Stop();
+
+        _output.WriteLine(
+            $"[TransitiveChain] scale={scale}, secondaryAssembliesPerPlugin={secondaryAssemblyCount} " +
+            $"(totalAssembliesPerPlugin={secondaryAssemblyCount + 1}), elapsed={stopwatch.ElapsedMilliseconds}ms, " +
+            $"loaded={loaded.Count}, perPluginCost~={(scale > 0 ? stopwatch.Elapsed.TotalMilliseconds / scale : 0):F3}ms");
+
+        Assert.Equal(scale, loaded.Count);
+
+        // Generous upper bound, scaled with both plugin count and chain
+        // depth - not a tight benchmark gate, see this class's own header
+        // remarks; loose enough to absorb CI noise without masking a
+        // genuine algorithmic regression in the fixed-point scan.
+        var maxMilliseconds = Math.Max(5_000, scale * secondaryAssemblyCount * 100);
+        Assert.True(
+            stopwatch.ElapsedMilliseconds < maxMilliseconds,
+            $"Loading {scale} plugins each with a {secondaryAssemblyCount + 1}-assembly transitive chain took " +
+            $"{stopwatch.ElapsedMilliseconds}ms, expected well under {maxMilliseconds}ms.");
+    }
+
+    /// <summary>
+    /// Builds one plugin manifest whose primary assembly derives from a
+    /// chain of <paramref name="secondaryAssemblyCount"/> transitively-loaded
+    /// secondary assemblies - each one's own module referencing the next,
+    /// deeper assembly's own marker type via a constructor parameter
+    /// (WP 13.9.3's own mechanism, granted via a matching
+    /// <c>plugin.services.resolve:*</c> capability so it remains compliant),
+    /// the shallowest (outermost) one's own marker type reached by the
+    /// primary assembly via plain base-type inheritance (WP 13.9.1's own
+    /// mechanism, which needs no capability grant) - the same two linking
+    /// mechanisms <c>PluginAssemblyLoaderMultiAssemblyTrustTests</c>'s own
+    /// three-assembly transitive chain test exercises, generalised here to
+    /// an arbitrary depth and kept fully compliant throughout, so
+    /// <see cref="PluginAssemblyLoader.LoadPlugins"/> genuinely reaches
+    /// <see cref="PluginRegistryState.Loaded"/> for every plugin this
+    /// builds - isolating the fixed-point scan's own traversal cost, not a
+    /// denial path.
+    /// </summary>
+    private static PluginManifest BuildTransitiveChainManifest(string root, int secondaryAssemblyCount, int index)
+    {
+        var grantedCapabilities = new List<string>();
+
+        string? deeperAssemblyPath = null;
+        string? deeperMarkerTypeFullName = null;
+
+        for (var depth = secondaryAssemblyCount - 1; depth >= 0; depth--)
+        {
+            var namePrefix = $"PerfChain{index}_{depth}";
+
+            Type[] moduleConstructorParameterTypes = deeperAssemblyPath is null
+                ? Type.EmptyTypes
+                : [ResolveExternalType(deeperAssemblyPath, deeperMarkerTypeFullName!)];
+
+            var assemblyPath = DynamicPluginAssemblyBuilder.BuildSecondaryAssemblyWithBaseTypeAndModule(
+                root, namePrefix, "SharedMarkerType", "ChainModule",
+                $"perf.chain.{index}.{depth}", $"Chain Module {index}-{depth}", "1.0.0",
+                moduleConstructorParameterTypes);
+
+            if (deeperMarkerTypeFullName is not null)
+                grantedCapabilities.Add(PluginCapability.ServiceResolve(deeperMarkerTypeFullName));
+
+            var assemblyName = Path.GetFileNameWithoutExtension(assemblyPath);
+            deeperAssemblyPath = assemblyPath;
+            deeperMarkerTypeFullName = $"{assemblyName}.SharedMarkerType";
+        }
+
+        var primaryAssemblyPath = DynamicPluginAssemblyBuilder.BuildPrimaryPluginAssemblyDerivingFromExternalBaseType(
+            root, $"PerfChainPrimary{index}.dll", deeperAssemblyPath!, deeperMarkerTypeFullName!,
+            moduleId: $"perf.chain.{index}.primary", moduleName: $"Chain Primary {index}", moduleVersion: "1.0.0",
+            implementIModule: false);
+
+        return new PluginManifest(
+            $"perf.chain.{index}", $"Chain Plugin {index}", "1.0.0", new Version(0, 1, 0),
+            Path.GetFileName(primaryAssemblyPath), primaryAssemblyPath, PluginTrustTier.FirstParty,
+            requestedCapabilities: grantedCapabilities);
+    }
+
+    /// <summary>
+    /// Resolves <paramref name="typeFullName"/> from the already-saved
+    /// assembly at <paramref name="assemblyPath"/> via a temporary,
+    /// dedicated <see cref="AssemblyLoadContext"/> - mirrors
+    /// <c>PluginAssemblyLoaderMultiAssemblyTrustTests</c>'s own identically-named,
+    /// identically-shaped helper exactly, duplicated here rather than shared
+    /// (this file owns no production or shared-fixture code beyond its own
+    /// two WP 13.10B-owned test files).
+    /// </summary>
+    private static Type ResolveExternalType(string assemblyPath, string typeFullName)
+    {
+        var reflectionLoadContext = new AssemblyLoadContext($"ReflectionOnly-{Guid.NewGuid():N}", isCollectible: true);
+        try
+        {
+            var assembly = reflectionLoadContext.LoadFromAssemblyPath(assemblyPath);
+            return assembly.GetType(typeFullName, throwOnError: true)!;
+        }
+        finally
+        {
+            reflectionLoadContext.Unload();
+        }
     }
 
     // ------------------------------------------------------------------

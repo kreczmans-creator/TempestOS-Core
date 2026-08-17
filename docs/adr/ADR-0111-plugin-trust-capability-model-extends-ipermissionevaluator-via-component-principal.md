@@ -131,7 +131,8 @@ own already-reserved flat `IReadOnlyList<string>` manifest field,
 **Static, at Plugin Loading (Phase 3.2), entirely Host-owned:** every
 requested capability key is checked against the plugin's assigned trust
 tier's ceiling (`ADR-0112`); every constructor parameter type on a
-discovered `IModule` implementer in every assembly that becomes part of
+discovered `IModule` or `BackgroundServices.IHostedService` implementer
+(`WP 13.10B` — see the correction below) in every assembly that becomes part of
 the process as a direct or transitive consequence of examining the
 plugin's own declared assembly — reflected over independently, before
 handoff to Module Discovery, via a fixed-point breadth-first scan that
@@ -165,7 +166,7 @@ and `BackgroundServices.IHostedServiceManager` themselves gained no trust
 awareness and no change of any kind. The first half was never actually
 true: a denied plugin's assembly is already resident in the process the
 moment `Assembly.LoadFrom` runs, strictly before this static check ever
-executes, and per ADR-0015 that step cannot be undone — Module Discovery
+executes, and per `ADR-0015` that step cannot be undone — Module Discovery
 and Hosted Service Discovery (both deliberately plugin-unaware, `ADR-0110`)
 scan the whole `AppDomain` regardless of denial, and *did* see it. A live
 proof-of-concept (`WP 13.9.3`'s own Adversarial Review, independently
@@ -242,14 +243,78 @@ overload's behaviour when the predicate is absent. The existing `WP
 defense-in-depth for the module pipeline and still fully load-bearing for
 Hosted Service Registration (confirmed, independently, to need no
 equivalent fix — `HostedServiceDiscoveryService` never instantiates a
-candidate at all, per its own `ADR-0029`-cited design). This is the third
-and, per `WP 13.9.6`'s own fresh, independent Adversarial Review
-(mutation-tested against the actual test suite, plus a fully independent
-standalone proof-of-concept), final correction closing the "isolates the
-whole plugin" execution boundary this Decision first stated.
+candidate at all, per its own `ADR-0029`-cited design). This was, per
+`WP 13.9.6`'s own fresh, independent Adversarial Review (mutation-tested
+against the actual test suite, plus a fully independent standalone
+proof-of-concept), believed to be the third and final correction closing
+the "isolates the whole plugin" execution boundary this Decision first
+stated — `WP 13.10A`/`WP 13.10B`, below, found and closed a fourth,
+distinct gap in that same boundary, along a discovery axis none of
+`WP 13.9.1`–`WP 13.9.6` had asked about.
+
+**Corrected, `WP 13.10B` Hosted Service & Identity Trust Boundary
+Remediation.** `WP 13.10A`'s own architecture/hardening review found this
+Decision's own static-enforcement text, unrevised on this point since
+first accepted, was narrower than the trust boundary actually requires,
+in a way distinct from every correction above: it named only a
+discovered `IModule` implementer as the constructor-conformance check's
+own subject, and `PluginAssemblyLoader.EnforceTrust` implemented that
+literal scope faithfully — an assembly containing only an
+`IHostedService` implementer, zero `IModule` types, was never
+constructor-checked at all, and `BackgroundServices.HostedServiceManager`
+had no `componentScopeProvider`-equivalent hook of any kind, so even a
+legitimately-passing plugin's own hosted service ran with a `null`,
+First-Party-treated ambient component principal (`TD-51`). Separately,
+the "Dynamic, at each call site" list below never named
+`IIdentityService.EstablishCurrentPrincipal`, an ordinary, DI-public,
+un-denylisted interface reaching `ICurrentPrincipalAccessor.SetCurrent`
+directly — the exact ambient-identity write surface the static denylist
+exists to keep out of plugin hands (`TD-52`). Both live-PoC-confirmed by
+`WP 13.10A`, fixed by `WP 13.10B`: `HasCompliantConstructor` (and, with
+it, `NeverEligibleServiceResolveTypes`) is now invoked identically
+against every discovered `IHostedService` implementer, not only
+`IModule` ones; `HostedServiceManager` gained an optional
+`componentScopeProvider` constructor hook, mirroring
+`ModuleLifecycleManager`'s own hook this ADR already establishes —
+`TempestHost` supplies a non-null provider, closing over the same
+`ICurrentComponentAccessor`/plugin component-principal registry
+`ModuleLifecycleManager`'s own hook already uses; and
+`EstablishCurrentPrincipal` gained the dynamic
+`IPermissionEvaluator.RequirePermission` gate named below, checked
+against a new, sixth capability key, `plugin.identity.establish` — purely
+additive to the closed v1 key set exactly as `PluginCapability.cs`'s own
+remarks anticipate, requiring no correction of the "Capability keys
+reuse `Permission` directly" section above beyond this note.
+`WP 13.10B`'s own independent Adversarial Security review additionally
+found and fixed a regression introduced mid-implementation, before any
+commit: `DiscoverModuleTypes`'s own `WP 13.9.3` pre-resolution loop
+originally iterated `moduleTypes` only; once `HasCompliantConstructor`
+was extended to also cover `hostedServiceTypes`, an unresolvable
+constructor-parameter type on a hosted-service-only plugin threw
+uncaught out of `TempestHost.RunAsync` entirely — a Host-wide crash
+strictly worse than the gap being closed, found independently twice (an
+`IModule`-only version of the fix having already landed when a second
+reviewer reproduced the identical gap for hosted services) — fixed by
+iterating both type collections uniformly, with the resulting exception
+now caught and converted to a `PluginTrustDeniedException`, isolating
+the one plugin exactly like any other trust-check failure.
+`WP 13.10C` (four fresh, read-only reviewers, mirroring `WP 13.9.6`'s
+own final-review pattern) independently re-confirmed the fix, closed one
+remaining permanent-test-coverage gap for the twice-found regression
+above, and committed this correction alongside the implementation it
+describes. No new isolation mechanism, no ALC, no process separation —
+this correction widens the existing capability-scoped enforcement
+mechanism's own coverage to a second discovery axis it always should
+have covered, and extends the existing dynamic-enforcement pattern to a
+second call site reaching the same write surface; `ADR-0110`'s own
+boundary is unaffected. See `Plugin Trust & Isolation Architecture.md`'s
+own "Closed, `WP 13.10B`" Risks entry and
+`docs/governance/Quality/Technical Debt Register.md` `TD-51`/`TD-52` for
+full detail.
 
 **Dynamic, at each call site:** `NavigationService.Register`/`Unregister`,
-the Command Framework's registration path, and `IEventBus.PublishAsync`
+the Command Framework's registration path, `IEventBus.PublishAsync`, and
+— added `WP 13.10B`, see the correction above — `IIdentityService.EstablishCurrentPrincipal`
 each gain one `IPermissionEvaluator.RequirePermission(componentPrincipal,
 permission)` call. The check is skipped — not merely satisfied — when the
 ambient component principal is `null` or First-Party, so every actor that
@@ -405,5 +470,5 @@ additively revises for the plugin-contested case); `ADR-0037` (Command
 registration model — its own "no Unregister/Deregister is defined"
 absolute, similarly revised); `Plugin Trust & Isolation
 Architecture.md`; `docs/governance/Quality/Technical Debt Register.md`
-`TD-09`, `TD-10`, `TD-11`; `docs/architecture/Command Framework
+`TD-09`, `TD-10`, `TD-11`, `TD-51`, `TD-52`; `docs/architecture/Command Framework
 Architecture.md` Finding `CMD-1`; `Security Roadmap.md` items 1, 2, 10.

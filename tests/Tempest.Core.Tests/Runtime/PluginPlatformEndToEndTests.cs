@@ -515,6 +515,145 @@ public class PluginPlatformEndToEndTests
     }
 
     // ------------------------------------------------------------------
+    // Scenario 6 (WP 13.10B): multi-module-per-plugin coverage - a single
+    // plugin whose one assembly contains TWO separate, legitimate IModule
+    // types (DynamicPluginAssemblyBuilder.BuildValidPluginAssemblyWithTwoModules),
+    // driven through a real TempestHostBuilder/TempestHost.RunAsync() end to
+    // end. Every prior multi-module test in this suite ("one succeeds, one
+    // fails, sibling unaffected") uses two separate PLUGINS, each with
+    // exactly one module - this proves the same shape genuinely holds
+    // WITHIN one plugin's own multiple modules too.
+    // ------------------------------------------------------------------
+
+    [Fact]
+    public async Task RunAsync_SinglePluginWithTwoModules_BothModulesIndependentlyReachRunning_PluginRecordedLoaded()
+    {
+        using var temp = new TempDirectory();
+
+        const string pluginId = "wp1310b.twomodule-positive";
+        const string module1Id = "wp1310b.twomodule-positive.one";
+        const string module2Id = "wp1310b.twomodule-positive.two";
+
+        var folder = CreateFolder(temp.Path, "twomodule-positive");
+        var assemblyPath = DynamicPluginAssemblyBuilder.BuildValidPluginAssemblyWithTwoModules(
+            folder, "TwoModulesPositive.dll",
+            module1Id, "Two Module Plugin - Module One", "1.0.0",
+            module2Id, "Two Module Plugin - Module Two", "1.0.0",
+            module2ThrowsOnInitialise: false);
+        WriteUnsignedManifest(folder, pluginId, Path.GetFileName(assemblyPath), name: "Two Module Plugin");
+
+        var moduleTypes = LoadPluginModuleTypes(assemblyPath);
+        Assert.Equal(2, moduleTypes.Count);
+
+        var builder = new TempestHostBuilder(moduleTypes, temp.Path);
+        builder.AddConfigurationSource(new MemoryConfigurationSource(
+        [
+            new KeyValuePair<string, string>("Plugins:AllowUnsignedLoad", "true"),
+        ]));
+        var host = builder.Build();
+
+        var runTask = host.RunAsync();
+        while (host.State is HostState.Created or HostState.Starting)
+            await Task.Delay(5);
+
+        Assert.Equal(HostState.Running, host.State);
+
+        var diagnosticsProvider = (IDiagnosticsProvider)host.Services!.GetService(typeof(IDiagnosticsProvider));
+
+        var pluginEntry = diagnosticsProvider.Plugins.Single(e => e.Id == pluginId);
+        Assert.Equal(PluginRegistryState.Loaded, pluginEntry.State);
+
+        var module1Status = diagnosticsProvider.Modules.Single(m => m.Descriptor.Id == module1Id);
+        Assert.Equal(ModuleState.Running, module1Status.State);
+        Assert.Null(module1Status.FailureReason);
+
+        var module2Status = diagnosticsProvider.Modules.Single(m => m.Descriptor.Id == module2Id);
+        Assert.Equal(ModuleState.Running, module2Status.State);
+        Assert.Null(module2Status.FailureReason);
+
+        await host.StopAsync();
+        await runTask;
+    }
+
+    // ------------------------------------------------------------------
+    // Scenario 7 (WP 13.10B): failure isolation WITHIN one plugin's own
+    // multiple modules - module 2's own InitialiseAsync deliberately
+    // throws; module 1, its own SIBLING in the identical plugin (same
+    // assembly, same manifest, same trust decision), must still
+    // independently reach Running, and the Host itself must still reach
+    // Running overall - one module's own failure never cascades to a
+    // sibling module belonging to the same plugin, nor crashes the Host.
+    // ------------------------------------------------------------------
+
+    [Fact]
+    public async Task RunAsync_SinglePluginWithTwoModules_OneModuleInitialiseAsyncFails_SiblingModuleWithinSamePluginStillReachesRunning_HostStaysRunning()
+    {
+        using var temp = new TempDirectory();
+
+        const string pluginId = "wp1310b.twomodule-isolation";
+        const string module1Id = "wp1310b.twomodule-isolation.survivor";
+        const string module2Id = "wp1310b.twomodule-isolation.failing";
+
+        var folder = CreateFolder(temp.Path, "twomodule-isolation");
+        var assemblyPath = DynamicPluginAssemblyBuilder.BuildValidPluginAssemblyWithTwoModules(
+            folder, "TwoModulesIsolation.dll",
+            module1Id, "Two Module Plugin - Survivor", "1.0.0",
+            module2Id, "Two Module Plugin - Failing", "1.0.0",
+            module2ThrowsOnInitialise: true);
+        WriteUnsignedManifest(folder, pluginId, Path.GetFileName(assemblyPath), name: "Two Module Failure Plugin");
+
+        var moduleTypes = LoadPluginModuleTypes(assemblyPath);
+        Assert.Equal(2, moduleTypes.Count);
+
+        var builder = new TempestHostBuilder(moduleTypes, temp.Path);
+        builder.AddConfigurationSource(new MemoryConfigurationSource(
+        [
+            new KeyValuePair<string, string>("Plugins:AllowUnsignedLoad", "true"),
+        ]));
+        var host = builder.Build();
+
+        var runTask = host.RunAsync();
+        while (host.State is HostState.Created or HostState.Starting)
+            await Task.Delay(5);
+
+        // The Host itself is unaffected - one plugin's own module-level
+        // activation failure is isolated, never Host-fatal.
+        Assert.Equal(HostState.Running, host.State);
+
+        var diagnosticsProvider = (IDiagnosticsProvider)host.Services!.GetService(typeof(IDiagnosticsProvider));
+
+        // The plugin itself still reaches Loaded - Plugin Loading's own
+        // constructor-conformance and capability checks ran, and passed,
+        // strictly before either module's own InitialiseAsync was ever
+        // called; a lifecycle-time failure in one module cannot retroactively
+        // change the plugin's own already-recorded Loading outcome.
+        var pluginEntry = diagnosticsProvider.Plugins.Single(e => e.Id == pluginId);
+        Assert.Equal(PluginRegistryState.Loaded, pluginEntry.State);
+
+        // Module 1 - the survivor, and the SAME plugin's own sibling of the
+        // module that fails below - still independently reaches Running.
+        var survivorStatus = diagnosticsProvider.Modules.Single(m => m.Descriptor.Id == module1Id);
+        Assert.Equal(ModuleState.Running, survivorStatus.State);
+        Assert.Null(survivorStatus.FailureReason);
+
+        // Module 2 - the one whose own InitialiseAsync deliberately throws -
+        // isolated as Failed, with the distinctive marker preserved
+        // (thrown directly from IL-emitted code via a virtual override call,
+        // never through reflection Invoke, so it is never wrapped in a
+        // TargetInvocationException - mirrors this suite's own established
+        // pattern, e.g. RunAsync_TrustOrderedNavigationOwnership...'s own
+        // bbbStatus.FailureReason assertion above).
+        var failingStatus = diagnosticsProvider.Modules.Single(m => m.Descriptor.Id == module2Id);
+        Assert.Equal(ModuleState.Failed, failingStatus.State);
+        Assert.NotNull(failingStatus.FailureReason);
+        Assert.IsType<InvalidOperationException>(failingStatus.FailureReason);
+        Assert.Contains("WP1310B-DELIBERATE-INITIALISE-FAILURE", failingStatus.FailureReason!.Message, StringComparison.Ordinal);
+
+        await host.StopAsync();
+        await runTask;
+    }
+
+    // ------------------------------------------------------------------
     // Suspected production defect, documented as a passing, precise
     // repro rather than fixed here (per this Work Package's own
     // instructions - see final report).
@@ -597,6 +736,18 @@ public class PluginPlatformEndToEndTests
     private static Type LoadPluginModuleType(string assemblyPath) =>
         Assembly.LoadFrom(assemblyPath).GetTypes()
             .Single(type => typeof(IModule).IsAssignableFrom(type) && !type.IsInterface && !type.IsAbstract);
+
+    /// <summary>
+    /// The multi-module counterpart of <see cref="LoadPluginModuleType"/> -
+    /// returns every discovered <see cref="IModule"/> type in the assembly at
+    /// <paramref name="assemblyPath"/> (WP 13.10B: a plugin whose one
+    /// assembly declares more than one legitimate module type), rather than
+    /// requiring exactly one.
+    /// </summary>
+    private static IReadOnlyList<Type> LoadPluginModuleTypes(string assemblyPath) =>
+        Assembly.LoadFrom(assemblyPath).GetTypes()
+            .Where(type => typeof(IModule).IsAssignableFrom(type) && !type.IsInterface && !type.IsAbstract)
+            .ToList();
 
     private static void WriteSignedManifest(
         string folder,

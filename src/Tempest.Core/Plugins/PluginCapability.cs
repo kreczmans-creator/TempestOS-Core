@@ -23,7 +23,8 @@ namespace Tempest.Core.Plugins;
 /// | <c>plugin.commands.register</c> | May call the Command Framework's registration path (<c>CommandHandlerTable.Register</c>/<c>CommandRegistry.RegisterDescriptor</c>). |<br/>
 /// | <c>plugin.di.register</c> | May contribute a DI service registration, if/when manifest v2 introduces that mechanism. |<br/>
 /// | <c>plugin.events.publish:&lt;FullTypeName&gt;</c> | May call <c>IEventBus.PublishAsync&lt;TEvent&gt;</c>/<c>Publish</c> for the named event type. One key per event type — no wildcard in v1. |<br/>
-/// | <c>plugin.services.resolve:&lt;FullTypeName&gt;</c> | Declares the plugin's module constructor is permitted to depend on the named service type, beyond the fixed always-allowed baseline (<c>ILogger</c>, <c>IConfigurationProvider</c>, <c>IDiagnosticsProvider</c>). |
+/// | <c>plugin.services.resolve:&lt;FullTypeName&gt;</c> | Declares the plugin's module constructor is permitted to depend on the named service type, beyond the fixed always-allowed baseline (<c>ILogger</c>, <c>IConfigurationProvider</c>, <c>IDiagnosticsProvider</c>). |<br/>
+/// | <c>plugin.identity.establish</c> | May call <c>IIdentityService.EstablishCurrentPrincipal</c>. |
 /// </para>
 /// </remarks>
 public static class PluginCapability
@@ -42,6 +43,9 @@ public static class PluginCapability
     /// if/when manifest v2 introduces that mechanism.
     /// </summary>
     public const string DiRegister = "plugin.di.register";
+
+    /// <summary>The capability key granting <c>IIdentityService.EstablishCurrentPrincipal</c>.</summary>
+    public const string IdentityEstablish = "plugin.identity.establish";
 
     /// <summary>
     /// Builds the capability key granting

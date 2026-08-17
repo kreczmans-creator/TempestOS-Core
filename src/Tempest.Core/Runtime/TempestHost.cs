@@ -723,7 +723,29 @@ public sealed class TempestHost : ITempestHost
 
         runToken.ThrowIfCancellationRequested();
 
-        var hostedServiceManager = new HostedServiceManager(hostedServiceTypes, serviceProvider, logger);
+        // WP 13.10B / TD-51: the identical component-scope mechanism
+        // componentScopeProvider (above) already gives ModuleLifecycleManager,
+        // extended to HostedServiceManager - a plugin's own hosted service
+        // previously ran with no ambient component principal at all (null,
+        // treated as First-Party), even when the plugin genuinely passed
+        // trust enforcement. Hosted services are natively Type-keyed (no
+        // string Id concept exists for one), so this closure takes the
+        // service's own Type directly - no moduleId-to-descriptor lookup
+        // step is needed, unlike componentScopeProvider above.
+        // componentPrincipalRegistry is now populated for hosted-service
+        // types too (PluginAssemblyLoader.EnforceTrust, WP 13.10B) - null
+        // here for a genuine first-party hosted service, or for a plugin's
+        // hosted service whose own types never made it past trust
+        // enforcement, identically to the module case.
+        Func<Type, IDisposable?> hostedServiceComponentScopeProvider = serviceType =>
+        {
+            var principal = componentPrincipalRegistry.GetPrincipalFor(serviceType);
+
+            return principal is not null ? currentComponentAccessor.BeginScope(principal) : null;
+        };
+
+        var hostedServiceManager = new HostedServiceManager(
+            hostedServiceTypes, serviceProvider, logger, hostedServiceComponentScopeProvider);
         _hostedServiceManager = hostedServiceManager;
 
         await hostedServiceManager.StartAllAsync(runToken).ConfigureAwait(false);

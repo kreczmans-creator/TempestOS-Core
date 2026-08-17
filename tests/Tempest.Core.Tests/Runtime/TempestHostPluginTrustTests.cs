@@ -1,7 +1,9 @@
+using System.Security.Cryptography.X509Certificates;
 using Tempest.Core.BackgroundServices;
 using Tempest.Core.Commands;
 using Tempest.Core.Configuration;
 using Tempest.Core.Diagnostics;
+using Tempest.Core.Identity;
 using Tempest.Core.Modules;
 using Tempest.Core.Plugins;
 using Tempest.Core.Runtime;
@@ -493,6 +495,155 @@ public class TempestHostPluginTrustTests
     }
 
     // ------------------------------------------------------------------
+    // WP 13.10B (TD-51): PluginAssemblyLoader.EnforceTrust's own
+    // constructor-conformance check previously consulted moduleTypes only -
+    // an IHostedService-only plugin (zero discovered IModule types) never
+    // reached it. Proven at the loader level already
+    // (PluginAssemblyLoaderMultiAssemblyTrustTests.cs); the two tests below
+    // prove the SAME defect end-to-end through a real TempestHost - the
+    // denial case (the hosted service must never appear in
+    // IDiagnosticsProvider.HostedServices), and the positive case (the
+    // HostedServiceManager's own new componentScopeProvider hook genuinely
+    // pushes the plugin's own component principal during StartAsync).
+    // ------------------------------------------------------------------
+
+    [Fact]
+    public async Task RunAsync_HostedServiceOnlyPlugin_NonCompliantConstructor_IsRecordedTrustDenied_HostedServiceNeverReachesRegistration()
+    {
+        using var temp = new TempDirectory();
+        var pluginFolder = Path.Combine(temp.Path, "hosted-service-only-denied-plugin");
+        Directory.CreateDirectory(pluginFolder);
+
+        // Zero IModule types anywhere in this assembly - before WP 13.10B,
+        // moduleTypes.Count == 0 meant EnforceTrust's own constructor check
+        // never even looked at this type, regardless of how non-compliant
+        // its own sole constructor was.
+        var assemblyPath = DynamicPluginAssemblyBuilder.BuildHostedServiceOnlyAssemblyWithConstructorParameters(
+            pluginFolder, "HostedServiceOnlyDenied.dll", [typeof(CurrentComponentAccessor)]);
+
+        File.WriteAllText(
+            Path.Combine(pluginFolder, PluginManifestDiscoveryService.ManifestFileName),
+            $$"""
+            {
+              "Id": "wp1310b.hosted-service-only-denied-plugin",
+              "Name": "Hosted Service Only Denied Plugin",
+              "Version": "1.0.0",
+              "MinimumPlatformVersion": "0.1.0",
+              "AssemblyFileName": "{{Path.GetFileName(assemblyPath)}}"
+            }
+            """);
+
+        // Mirrors RunAsync_CapabilityCeilingExceededDeniedPlugin_DualModuleAndHostedServiceType_...'s
+        // own established TempestHostBuilder([type], temp.Path, [type])
+        // candidate-override usage - here the type only implements
+        // IHostedService, so the module discovery candidate set is
+        // harmlessly empty (nothing in this assembly is an IModule), and
+        // the hosted service discovery candidate set genuinely includes it.
+        var hostedServiceType = LoadPluginHostedServiceType(assemblyPath);
+        var builder = new TempestHostBuilder(Type.EmptyTypes, temp.Path, [hostedServiceType]);
+        builder.AddConfigurationSource(new MemoryConfigurationSource(
+        [
+            new KeyValuePair<string, string>("Plugins:AllowUnsignedLoad", "true"),
+        ]));
+        var host = builder.Build();
+
+        var runTask = host.RunAsync();
+
+        while (host.State is HostState.Created or HostState.Starting)
+            await Task.Delay(5);
+
+        Assert.Equal(HostState.Running, host.State);
+
+        var diagnosticsProvider = (IDiagnosticsProvider)host.Services!.GetService(typeof(IDiagnosticsProvider));
+        var entry = Assert.Single(diagnosticsProvider.Plugins);
+        Assert.Equal(PluginRegistryState.TrustDenied, entry.State);
+        Assert.NotNull(entry.Detail);
+        Assert.Contains("constructor", entry.Detail!, StringComparison.OrdinalIgnoreCase);
+
+        // The execution boundary: before WP 13.10B, this hosted service
+        // would have been silently accepted (constructor check skipped
+        // entirely) and reached Hosted Service Registration/StartAsync. It
+        // must never appear here at all.
+        Assert.DoesNotContain(diagnosticsProvider.HostedServices, h => h.ServiceType == hostedServiceType);
+
+        await host.StopAsync();
+        await runTask;
+
+        Assert.Equal(HostState.Stopped, host.State);
+    }
+
+    [Fact]
+    public async Task RunAsync_HostedServiceOnlyPlugin_LegitimateComponentAccessorGrant_ObservesOwnComponentPrincipalDuringStartAsync()
+    {
+        using var trust = new RealFirstPartyTrustFixture();
+        using var firstPartyCertificate = PluginSigningTestHelper.CreateSelfSignedCertificate("CN=TempestOS");
+        trust.WriteFirstParty(firstPartyCertificate);
+
+        using var temp = new TempDirectory();
+        var pluginFolder = Path.Combine(temp.Path, "ambient-principal-plugin");
+        Directory.CreateDirectory(pluginFolder);
+
+        const string pluginId = "wp1310b.ambient-principal-plugin";
+        var probeId = Guid.NewGuid().ToString("N");
+
+        // Constructor-injects ICurrentComponentAccessor - the read-only
+        // interface, never the denylisted concrete CurrentComponentAccessor
+        // type (see PluginAssemblyLoader.NeverEligibleServiceResolveTypes's
+        // own remarks) - a legitimate, grantable capability. StartAsync
+        // reads Current?.Identity.Id and records it via
+        // AmbientPrincipalCaptureProbe.
+        var assemblyPath = DynamicPluginAssemblyBuilder.BuildHostedServiceOnlyAssemblyCapturingAmbientComponentPrincipal(
+            pluginFolder, "AmbientPrincipalCapture.dll", probeId);
+
+        // FirstParty tier: UnsignedLocal's own fixed ceiling never contains
+        // a service-resolve-shaped key (PluginAssemblyLoader.UnsignedLocalCapabilityCeiling),
+        // so a genuinely signed, higher-tier manifest is required to grant
+        // 'plugin.services.resolve:*' at all - mirrors
+        // PluginPlatformEndToEndTests.cs's own established signed-manifest
+        // pattern (RealTrustedPublishersFixture/PluginSigningTestHelper).
+        var dto = PluginSigningTestHelper.BuildDto(
+            pluginId,
+            Path.GetFileName(assemblyPath),
+            name: "Ambient Principal Plugin",
+            requestedCapabilities: [PluginCapability.ServiceResolve(typeof(ICurrentComponentAccessor).FullName!)]);
+        dto.Signature = PluginSigningTestHelper.ComputeValidSignatureEnvelopeJson(dto, assemblyPath, firstPartyCertificate);
+
+        File.WriteAllText(
+            Path.Combine(pluginFolder, PluginManifestDiscoveryService.ManifestFileName),
+            PluginSigningTestHelper.ToManifestJson(dto));
+
+        var hostedServiceType = LoadPluginHostedServiceType(assemblyPath);
+        var builder = new TempestHostBuilder(Type.EmptyTypes, temp.Path, [hostedServiceType]);
+        var host = builder.Build();
+
+        var runTask = host.RunAsync();
+
+        while (host.State is HostState.Created or HostState.Starting)
+            await Task.Delay(5);
+
+        Assert.Equal(HostState.Running, host.State);
+
+        var diagnosticsProvider = (IDiagnosticsProvider)host.Services!.GetService(typeof(IDiagnosticsProvider));
+        var entry = Assert.Single(diagnosticsProvider.Plugins);
+        Assert.Equal(PluginRegistryState.Loaded, entry.State);
+
+        var hostedServiceStatus = diagnosticsProvider.HostedServices.Single(h => h.ServiceType == hostedServiceType);
+        Assert.Equal(HostedServiceState.Running, hostedServiceStatus.State);
+
+        // The load-bearing assertion: TempestHost's own
+        // hostedServiceComponentScopeProvider closure genuinely pushed THIS
+        // plugin's own component principal (constructed from manifest.Id)
+        // onto the ambient ICurrentComponentAccessor stack for the duration
+        // of StartAsync - not null, not some other plugin's identity.
+        Assert.Equal(pluginId, AmbientPrincipalCaptureProbe.GetObservedIdentity(probeId));
+
+        await host.StopAsync();
+        await runTask;
+
+        Assert.Equal(HostState.Stopped, host.State);
+    }
+
+    // ------------------------------------------------------------------
     // WP 13.9.6 Module Discovery Trust Boundary Remediation. Before this
     // fix, ReflectionFrameworkDiscoveryService.CreateDescriptor called
     // Activator.CreateInstance(type) for ANY unattributed IModule type
@@ -723,4 +874,55 @@ public class TempestHostPluginTrustTests
     private static Type LoadPluginModuleType(string assemblyPath) =>
         System.Reflection.Assembly.LoadFrom(assemblyPath).GetTypes()
             .Single(type => typeof(IModule).IsAssignableFrom(type) && !type.IsInterface && !type.IsAbstract);
+
+    /// <summary>
+    /// Loads <paramref name="assemblyPath"/> and returns its sole concrete
+    /// <see cref="IHostedService"/> implementer - the hosted-service-only
+    /// counterpart to <see cref="LoadPluginModuleType"/>, for an assembly
+    /// built via <see cref="DynamicPluginAssemblyBuilder"/>'s own
+    /// <c>BuildHostedServiceOnly*</c> methods (WP 13.10B, TD-51), which
+    /// implement no <see cref="IModule"/> at all.
+    /// </summary>
+    private static Type LoadPluginHostedServiceType(string assemblyPath) =>
+        System.Reflection.Assembly.LoadFrom(assemblyPath).GetTypes()
+            .Single(type => typeof(IHostedService).IsAssignableFrom(type) && !type.IsInterface && !type.IsAbstract);
+
+    /// <summary>
+    /// Writes a real First-Party certificate into the actual, conventional
+    /// <c>TrustedPublishers/</c> folder relative to <see cref="AppContext.BaseDirectory"/>
+    /// - mirrors <c>PluginPlatformEndToEndTests.RealTrustedPublishersFixture</c>'s
+    /// own established pattern exactly (that nested class is private to its
+    /// own file, so this is a local, minimal copy scoped to just what
+    /// <c>RunAsync_HostedServiceOnlyPlugin_LegitimateComponentAccessorGrant_...</c>
+    /// needs: writing the First-Party certificate only). Safe here for the
+    /// identical reason that file's own remarks state: every test in THIS
+    /// file is already tagged <c>[Collection("Console output capture")]</c>,
+    /// serialising it against every other real-Host test in this assembly,
+    /// and only the exact file this writes is ever deleted.
+    /// </summary>
+    private sealed class RealFirstPartyTrustFixture : IDisposable
+    {
+        private readonly string _filePath = Path.Combine(
+            AppContext.BaseDirectory, PluginTrustStore.TrustedPublishersFolderName, PluginTrustStore.FirstPartyCertificateFileName);
+
+        public void WriteFirstParty(X509Certificate2 certificate) =>
+            PluginSigningTestHelper.WriteToTrustStore(
+                Path.Combine(AppContext.BaseDirectory, PluginTrustStore.TrustedPublishersFolderName),
+                certificate,
+                PluginTrustStore.FirstPartyCertificateFileName);
+
+        public void Dispose()
+        {
+            try
+            {
+                File.Delete(_filePath);
+            }
+            catch (IOException)
+            {
+            }
+            catch (UnauthorizedAccessException)
+            {
+            }
+        }
+    }
 }

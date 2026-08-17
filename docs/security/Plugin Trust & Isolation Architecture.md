@@ -36,7 +36,17 @@ plugin's unattributed module before the `WP 13.9.4` execution boundary
 was ever reached, in one variant crashing the Host entirely — closed by
 `WP 13.9.6`, itself verified by a further fresh, independent adversarial
 review finding no remaining gap. See the Risks section's own dedicated
-entries for each.
+entries for each. **`WP 13.10A`'s own architecture/hardening review**
+(read-only, no implementation) subsequently found a further, distinct
+gap in the same static enforcement mechanism — it was never extended to
+`IHostedService` types at all, and a DI-public, un-denylisted interface
+reached the ambient-identity write surface the denylist exists to keep
+out of plugin hands (`TD-51`/`TD-52`) — closed by `WP 13.10B`, itself
+finding and fixing a compounding Host-crash regression mid-implementation
+before any commit, independently re-verified by four fresh, read-only
+`WP 13.10C` reviewers before this closure was committed. See the Risks
+section's own "Closed, `WP 13.10B`" entry, and `ADR-0111`'s own
+"Corrected, `WP 13.10B`" note.
 Corrected `WP 13.9.1` Governance & Documentation Remediation
 (`WP13.9.0 Engineering Release Report.md`'s own Governance-readiness
 Finding 3): only this Status header and the stale `WP 13.0B` implementer
@@ -765,6 +775,135 @@ Explicitly not designed here, each with its own named revisit trigger:
   Plugins folder to load under the same clamped ceiling. Accepted for
   v1 — a per-plugin allow-list is purely additive if real need for finer
   granularity emerges.
+- **Closed, `WP 13.10B`: the entire static
+  constructor-conformance/denylist check applied only to `IModule`,
+  never to `IHostedService`, and a DI-public, un-denylisted interface
+  reached the exact ambient-identity write surface the denylist exists
+  to keep out of plugin hands.** Found by `WP 13.10A`'s own Security/
+  Trust and Lifecycle/Composition reviewers independently, each with a
+  live proof-of-concept against the current, committed code (not a
+  theoretical concern). Two distinct findings, compounding:
+  - **`HasCompliantConstructor` — and, with it, the
+    `NeverEligibleServiceResolveTypes` denylist — was invoked only
+    against `moduleTypes`, never `hostedServiceTypes`**
+    (`PluginAssemblyLoader.EnforceTrust`). A plugin assembly containing
+    *only* an `IHostedService` implementer, zero `IModule` types, hit
+    `moduleTypes.Count == 0` and returned immediately after the
+    (trivially-satisfied, empty) capability-ceiling check — its hosted
+    service's constructor was never inspected at all. Confirmed live: an
+    `UnsignedLocal` manifest requesting zero capabilities, one
+    `IHostedService` type whose sole constructor took
+    `Identity.CurrentComponentAccessor` (the concrete, denylisted,
+    identity-forging type), loaded via `PluginAssemblyLoader.LoadPlugins`
+    — accepted, not denied. Compounded by `HostedServiceManager` having
+    no `componentScopeProvider`-equivalent hook at all (confirmed
+    directly in `TempestHost.cs`/`HostedServiceManager.cs`) — a
+    *legitimately-passing* plugin's own hosted service ran with a
+    `null` ambient component principal, identical in effect to a denied
+    one, so every dynamic capability check downstream
+    (`PluginTrustPermission.IsFirstParty(null) == true`) was silently
+    skipped for it too.
+  - **`IIdentityService.EstablishCurrentPrincipal` called
+    `ICurrentPrincipalAccessor.SetCurrent` directly**, and `IIdentityService`
+    is an ordinary, DI-public, un-denylisted interface every sample
+    module already legitimately depends on. A plugin declaring
+    `plugin.services.resolve:Tempest.Core.Identity.IIdentityService` — an
+    innocuous-looking capability request — passed `EnforceTrust`
+    cleanly (confirmed live), then could call `EstablishCurrentPrincipal`
+    for *any* configured identity at runtime, with no ownership check;
+    because `ICurrentPrincipalAccessor` is deliberately not
+    call-chain-scoped (`ADR-0044`), the effect persisted ambiently for
+    every later, unrelated caller in the process.
+
+  Neither finding was a variant of anything the `WP 13.9.1`–`WP 13.9.6`
+  remediation chain closed — all six of those rounds scoped "the plugin
+  trust boundary" as coextensive with the `IModule` pipeline; none asked
+  whether the same static enforcement applies uniformly to every way a
+  plugin's own code can be discovered, constructed, or granted ambient
+  identity. Closed without any new isolation mechanism and without a new
+  ADR — the fix reuses existing mechanisms exactly as both reviewing
+  disciplines' own independent `WP 13.10A` assessment anticipated:
+  `HasCompliantConstructor`/the denylist now run identically against
+  `hostedServiceTypes`, not only `moduleTypes`; `HostedServiceManager`
+  gained an optional `componentScopeProvider` constructor hook
+  (`Func<Type, IDisposable?>`), mirroring `ModuleLifecycleManager`'s own
+  established `ADR-0111` hook, held for the duration of each
+  `StartAsync`/`StopAsync` call, `TempestHost` supplying a non-null
+  provider closing over the same `ICurrentComponentAccessor`/component-
+  principal registry; `EstablishCurrentPrincipal` gained a new dynamic
+  `IPermissionEvaluator.RequirePermission` gate against a new capability
+  key, `plugin.identity.establish` (`PluginCapability.IdentityEstablish`),
+  mirroring `NavigationService.Register`'s own existing gate exactly —
+  skipped, not merely satisfied, for a `null`/First-Party ambient
+  component principal, so every existing first-party caller observes
+  zero behavioural change.
+
+  **`WP 13.10B`'s own independent Adversarial Security review found and
+  fixed a compounding regression, mid-implementation, before any
+  commit**, disclosed here in full rather than only in the fix's own
+  commit message: `DiscoverModuleTypes`'s own `WP 13.9.3` pre-resolution
+  loop (forcing every discovered type's every constructor parameter to
+  resolve inside that scan step's own AppDomain-diff window) originally
+  iterated `moduleTypes` only. Once `HasCompliantConstructor` was
+  extended, above, to also check `hostedServiceTypes`, an
+  `IHostedService`-only plugin with a genuinely unresolvable
+  constructor-parameter type reached `HasCompliantConstructor`'s own
+  `GetParameters()` call as the *first* resolution attempt for that
+  type — with no exception handling anywhere in reach — throwing
+  uncaught out of `LoadPlugins` and `TempestHost.RunAsync` entirely: a
+  Host-wide crash, strictly worse than the gap being closed, not merely
+  one denied plugin. Found independently twice: the `IModule`-only
+  version of this exact pre-resolution fix had already landed when a
+  second reviewer reproduced the identical gap for hosted services; a
+  first attempted fix also placed its own `try`/`catch` one level too
+  deep (around the per-parameter body, not `constructor.GetParameters()`
+  itself, which eagerly resolves every parameter's own signature the
+  moment it is called) and never actually caught anything for its own
+  documented scenario — corrected before landing. Closed by iterating
+  both `moduleTypes` and `hostedServiceTypes` uniformly in the
+  pre-resolution loop, converting the resulting
+  `TypeLoadException`/`FileNotFoundException`/`FileLoadException`/
+  `BadImageFormatException` into a `PluginTrustDeniedException`,
+  isolating the one plugin exactly like any other trust-check failure,
+  never the whole Host. `WP 13.10C`'s own Verification/RAM-concurrency
+  reviewer found this specific scenario had only ever been proven fixed
+  via throwaway proof-of-concept code across two independent reviewers,
+  never a permanent regression test — closed directly by `WP 13.10C`
+  itself (`LoadPlugins_FirstHostedServiceOnlyPluginHasUnresolvableConstructorParameterType_IsolatesFailure_SecondLegitimatePluginStillLoads`,
+  non-vacuousness independently confirmed: reverted, observed to fail,
+  restored).
+
+  **Two further items disclosed by `WP 13.10C`'s own Security/Adversarial
+  reviewer, deliberately not fixed here to avoid scope creep beyond this
+  closure's own remit:**
+  - A small, low-severity, pre-existing (not `WP 13.10B`-introduced) gap:
+    the "unresolvable constructor parameter type" denial path throws
+    `PluginTrustDeniedException` directly from inside
+    `DiscoverModuleTypes`, before `EnforceTrust` ever reaches a
+    `RecordDenied` call site — so that one specific denied type is never
+    added to `deniedTypeRegistry` (`WP 13.9.4`'s own execution-boundary
+    registry), and a second, independent construction attempt is made
+    during Module/Hosted Service Registration, safely failing for the
+    identical reason (no code execution, a `Failed` state, not a crash).
+    Confirmed pre-existing since `WP 13.9.3` for the `IModule` axis —
+    `WP 13.10B` merely widened this already-existing gap's reach to the
+    `IHostedService` axis too, it did not create a new category of
+    defect. See `docs/governance/Quality/Technical Debt Register.md`
+    `TD-51`'s own updated Status cell for the recommended future
+    follow-up.
+  - A governance-only note, not a code defect: `plugin.identity.establish`
+    is grantable to any trust tier above `UnsignedLocal` (including
+    `VerifiedSigned`, not only `FirstParty`), and `EstablishCurrentPrincipal`
+    accepts an arbitrary `identityId` with no ownership check by design
+    (`ADR-0043`, no authentication) — granting this one capability to any
+    signed third-party publisher is effectively full ambient-identity
+    impersonation power, a materially broader blast radius than every
+    other v1 capability. Inherent to the capability's own necessary
+    semantics, not a code defect; warrants explicit governance sign-off
+    before any third-party publisher is actually granted it. See
+    `TD-52`'s own updated Status cell.
+
+  See `ADR-0111`'s own "Corrected, `WP 13.10B`" note for full detail.
 
 ## ADRs Required
 
