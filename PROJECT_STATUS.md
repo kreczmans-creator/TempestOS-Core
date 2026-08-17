@@ -1,6 +1,42 @@
 # TempestOS — Project Status
 
-**Last Updated:** 2026-08-14 (`WP 13.3A`, Plugin Platform Integration &
+**Last Updated:** 2026-08-17 (`WP 13.9.0`, `v0.13.0` Engineering
+Readiness Review). The first execution of the permanent ERR `ADR-0106`
+defines, applied to `v0.13.0`, at `feature/v0.13.0` HEAD `88e41a2`
+— six independent discipline reviews (Architecture, Implementation,
+Verification, Governance, Release, plus a disclosed, additional
+Security/Trust category specific to this release's own plugin-platform
+content), each performed before seeing the others' conclusions, per
+`Engineering Readiness Review Architecture.md` §5. **Verdict: `NOT
+READY`.** Four of six categories independently reached Not Ready, via
+largely non-overlapping evidence: Verification (real, GitHub-hosted CI
+has never run against any commit of this release — `feature/v0.13.0`
+has no upstream, does not exist on `origin`, and none of its seven
+commits have ever merged into `main`); Release (independently
+re-derived the identical branch/CI fact via its own evidence);
+Implementation (`WP 13.3B` in an undocumented governance state; a
+"20,000-trial differential fuzz harness" claimed in its own commit
+message with no corresponding artefact anywhere in the repository;
+`PluginManifest`'s public constructor gained five new **required**
+parameters this release, an undisclosed public API break); Security/
+Trust (a genuine, empirically-demonstrated trust-boundary bypass, newly
+found by this review and not previously tracked anywhere: a plugin can
+smuggle a second, wholly undeclared assembly past all trust/capability
+enforcement — `PluginAssemblyLoader.EnforceTrust` scans only the one
+manifest-declared assembly, while Module Discovery, unmodified per
+`ADR-0110`, scans the entire process `AppDomain` — reached and confirmed
+via a live proof-of-concept against this commit's own compiled binary).
+Architecture and Governance readiness both scored Pass, with
+observations (nine further Disclosed, Non-Blocking findings between
+them, none Release Blocking). No implementation defect, and no
+governance/documentation gap, was fixed by this Work Package — every
+finding is disclosed and classified only, per this Work Package's own
+explicit, narrower brief than prior sign-offs' own precedent. Full
+detail: `docs/releases/v0.13.0/WP13.9.0 Engineering Release Report.md`.
+**`WP 13.3A`'s own status line, below this point, is this field's prior
+content — retained, not deleted:**
+
+**Previously updated** 2026-08-14 (`WP 13.3A`, Plugin Platform Integration &
 End-to-End Validation). The plugin platform's own closing integration/
 validation pass for `v0.13.0`: independently re-verified all six plugin
 ADRs (`ADR-0107`–`ADR-0112`) fully implemented against real, current
