@@ -15,6 +15,11 @@ namespace Tempest.Core.Tests.Plugins;
 // own file-loading success/failure paths, always with an empty
 // RequestedCapabilities list and no module type requiring anything beyond
 // the baseline).
+// WP 13.9.1: see PluginAssemblyLoaderTests.cs's own comment on this same
+// [Collection] attribute - real assembly loading here must not race
+// against any other test class that also loads a real assembly, given
+// EnforceTrust's own fixed-point AppDomain scan.
+[Collection("Console output capture")]
 public class PluginAssemblyLoaderEnforceTrustTests
 {
     // ------------------------------------------------------------------
@@ -352,7 +357,7 @@ public class PluginAssemblyLoaderEnforceTrustTests
     private static PluginManifest CreateManifest(
         string id, string assemblyPath, PluginTrustTier trustTier, IReadOnlyList<string> requestedCapabilities) =>
         new(id, $"{id} name", "1.0.0", new Version(0, 1, 0), Path.GetFileName(assemblyPath), assemblyPath,
-            [], requestedCapabilities, null, null, trustTier);
+            trustTier, requestedCapabilities: requestedCapabilities);
 
     private sealed class RecordingComponentPrincipalRecorder : IPluginComponentPrincipalRecorder
     {

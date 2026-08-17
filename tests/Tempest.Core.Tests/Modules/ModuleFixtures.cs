@@ -67,6 +67,28 @@ internal sealed class ConstructorDependencyModuleWithoutMetadata : IModule
     public string Version => "1.0.0";
 }
 
+// WP 13.9.6: a minimal IModule fixture whose constructor increments a
+// static counter - an observable side effect requiring no dynamic IL
+// emission at all, used to prove ReflectionFrameworkDiscoveryService's own
+// new isTypeExcluded predicate parameter genuinely prevents
+// Activator.CreateInstance from ever running, in complete isolation from
+// the plugin-trust pipeline (mirrors ConstructorExecutionProbe's own role
+// in Tempest.Core.Tests.Plugins, at the mechanism level rather than the
+// end-to-end Host level).
+internal sealed class ConstructorTrackingModule : IModule
+{
+    public static int ConstructionCount;
+
+    public ConstructorTrackingModule()
+    {
+        ConstructionCount++;
+    }
+
+    public string Id => "tempest.sample.constructor-tracking";
+    public string Name => "Constructor Tracking Module";
+    public string Version => "1.0.0";
+}
+
 // WP 12.3B (ADR-0102): a minimal IFaultInjectionModule fixture, isolated
 // from the real Tempest.Validation.FaultInjection.DuplicateNavigationModule
 // (which requires INavigationProvider), used to prove

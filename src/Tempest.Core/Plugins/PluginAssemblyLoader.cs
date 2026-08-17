@@ -101,6 +101,7 @@ public sealed class PluginAssemblyLoader : IPluginAssemblyLoader
     private readonly ILogger? _logger;
     private readonly IPluginRegistryRecorder? _registryRecorder;
     private readonly IPluginComponentPrincipalRecorder? _componentPrincipalRecorder;
+    private readonly IPluginDeniedTypeRecorder? _deniedTypeRecorder;
 
     /// <summary>
     /// Initialises a new instance of the <see cref="PluginAssemblyLoader"/> class.
@@ -122,14 +123,27 @@ public sealed class PluginAssemblyLoader : IPluginAssemblyLoader
     /// case trust checks still run and can still deny a plugin, but no
     /// principal is ever recorded for one that passes.
     /// </param>
+    /// <param name="deniedTypeRecorder">
+    /// An optional recorder every discovered <see cref="Modules.IModule"/>
+    /// or <see cref="BackgroundServices.IHostedService"/> type belonging to
+    /// a trust-denied plugin is written into (WP 13.9.4) — the execution
+    /// boundary <c>TempestHost</c> filters Module Registration and Hosted
+    /// Service Registration against, so a denied plugin's own module or
+    /// hosted service can never reach
+    /// <c>InitialiseAsync</c>/<c>StartAsync</c>. May be <see langword="null"/>
+    /// if no such recorder is available — in which case trust checks still
+    /// run and can still deny a plugin, but nothing downstream is filtered.
+    /// </param>
     public PluginAssemblyLoader(
         ILogger? logger = null,
         IPluginRegistryRecorder? registryRecorder = null,
-        IPluginComponentPrincipalRecorder? componentPrincipalRecorder = null)
+        IPluginComponentPrincipalRecorder? componentPrincipalRecorder = null,
+        IPluginDeniedTypeRecorder? deniedTypeRecorder = null)
     {
         _logger = logger;
         _registryRecorder = registryRecorder;
         _componentPrincipalRecorder = componentPrincipalRecorder;
+        _deniedTypeRecorder = deniedTypeRecorder;
     }
 
     /// <inheritdoc />
@@ -194,24 +208,54 @@ public sealed class PluginAssemblyLoader : IPluginAssemblyLoader
     /// <see cref="Modules.IModule"/> type has no compliant public
     /// constructor (category 17).
     /// </exception>
+    /// <remarks>
+    /// <b>Corrected, <c>WP 13.9.4</c> trust-denial execution boundary
+    /// remediation.</b> <see cref="DiscoverModuleTypes"/>'s own fixed-point
+    /// transitive scan now always runs first, unconditionally, before either
+    /// static check — not only ahead of the constructor-conformance check as
+    /// before. This is required, not cosmetic: a plugin denied purely for an
+    /// ineligible requested capability used to throw before
+    /// <see cref="DiscoverModuleTypes"/> ever ran, so nothing anywhere ever
+    /// learned which <see cref="Modules.IModule"/> types (or which
+    /// transitively-loaded assemblies) belonged to it — leaving no data a
+    /// downstream execution-boundary filter could key off for that denial
+    /// reason. Every discovered <see cref="Modules.IModule"/> AND
+    /// <see cref="BackgroundServices.IHostedService"/> type is now recorded
+    /// via <see cref="IPluginDeniedTypeRecorder"/> on <i>either</i> denial
+    /// path, before the corresponding exception is thrown — not only the one
+    /// type that happened to trigger it, since the whole plugin is isolated
+    /// and every type reachable from its own scan must never reach Module
+    /// Registration or Hosted Service Registration (<c>TempestHost</c>'s own
+    /// filters, keyed against this recorder's <see cref="IPluginDeniedTypeRegistry"/>
+    /// read side). Hosted service types are recorded only on denial — unlike
+    /// module types, they are never constructor-checked and never receive a
+    /// component principal for a passing plugin, matching
+    /// <see cref="BackgroundServices.IHostedServiceManager"/>'s own existing,
+    /// unrelated lack of a component-scope hook (a separate, pre-existing
+    /// gap, not introduced or widened here).
+    /// </remarks>
     private void EnforceTrust(PluginManifest manifest, Assembly assembly)
     {
+        var moduleTypes = DiscoverModuleTypes(assembly, out var hostedServiceTypes);
+
         var ineligibleCapability = FindIneligibleCapability(manifest);
 
         if (ineligibleCapability is not null)
         {
+            RecordDenied(moduleTypes, hostedServiceTypes);
+
             throw new PluginTrustDeniedException(
                 manifest.Id,
                 $"Requested capability '{ineligibleCapability}' is not eligible for trust tier " +
                 $"'{manifest.TrustTier}'.");
         }
 
-        var moduleTypes = GetLoadableTypes(assembly).Where(IsModuleType).ToList();
-
         var nonCompliantType = moduleTypes.FirstOrDefault(type => !HasCompliantConstructor(type, manifest));
 
         if (nonCompliantType is not null)
         {
+            RecordDenied(moduleTypes, hostedServiceTypes);
+
             throw new PluginTrustDeniedException(
                 manifest.Id,
                 $"Module type '{nonCompliantType.FullName}' has no public constructor whose parameters are " +
@@ -233,6 +277,23 @@ public sealed class PluginAssemblyLoader : IPluginAssemblyLoader
 
         foreach (var moduleType in moduleTypes)
             _componentPrincipalRecorder?.Record(moduleType, principal);
+    }
+
+    /// <summary>
+    /// Records every one of <paramref name="moduleTypes"/> and
+    /// <paramref name="hostedServiceTypes"/> as belonging to a plugin just
+    /// denied trust (WP 13.9.4) — the whole plugin is isolated, so every
+    /// type its own transitive scan found must never reach Module
+    /// Registration or Hosted Service Registration, not only the specific
+    /// type that triggered the denial.
+    /// </summary>
+    private void RecordDenied(IReadOnlyList<Type> moduleTypes, IReadOnlyList<Type> hostedServiceTypes)
+    {
+        foreach (var moduleType in moduleTypes)
+            _deniedTypeRecorder?.Record(moduleType);
+
+        foreach (var hostedServiceType in hostedServiceTypes)
+            _deniedTypeRecorder?.Record(hostedServiceType);
     }
 
     /// <summary>
@@ -282,6 +343,149 @@ public sealed class PluginAssemblyLoader : IPluginAssemblyLoader
         || key.StartsWith(ServiceResolvePrefix, StringComparison.Ordinal);
 
     /// <summary>
+    /// Discovers every <see cref="Modules.IModule"/> implementer reachable
+    /// from <paramref name="assembly"/>'s own type scan, following every
+    /// assembly that enters the <see cref="AppDomain"/> as a direct or
+    /// transitive side effect of that scan — <c>WP 13.9.1</c> security
+    /// remediation, closing the gap <c>WP 13.9.0</c>'s Security/Trust review
+    /// found and ADR-0111's own corrected scope now states; <c>WP 13.9.3</c>
+    /// closes a second, narrower gap in that same remediation, below.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// .NET only loads a referenced assembly lazily, the moment one of its
+    /// types is actually resolved — <see cref="Assembly.GetTypes"/> triggers
+    /// exactly this via base-type-chain resolution. Before <c>WP 13.9.1</c>'s
+    /// fix, a plugin could package a second, wholly undeclared assembly in
+    /// its own candidate folder, have its primary assembly's own type
+    /// inherit from a type in that second assembly, and the second
+    /// assembly's own <see cref="Modules.IModule"/> implementers would still
+    /// reach Module Discovery (deliberately plugin-unaware of trust, per
+    /// ADR-0110) — with zero trust checking of any kind, indistinguishable
+    /// from first-party code.
+    /// </para>
+    /// <para>
+    /// This performs the identical fixed-point, breadth-first traversal
+    /// idiom <see cref="PluginManifestDiscoveryService"/>'s own
+    /// dependency-graph resolution already uses: diff
+    /// <see cref="AppDomain.CurrentDomain"/>'s own assembly set immediately
+    /// before and after each scan step, enqueueing only assemblies newly
+    /// present as a direct consequence of that specific step, until nothing
+    /// new appears. An assembly already resident in the
+    /// <see cref="AppDomain"/> for an unrelated reason before this plugin's
+    /// own scan began is correctly out of scope — the before/after diff
+    /// excludes it by construction. This deliberately widens only the
+    /// existing capability-scoped enforcement mechanism's own coverage; it
+    /// introduces no new isolation mechanism — no alternate assembly-loading
+    /// context, no process separation — per ADR-0110's own unchanged
+    /// boundary.
+    /// </para>
+    /// <para>
+    /// <b>Corrected, <c>WP 13.9.3</c> security remediation.</b> <c>Assembly.GetTypes()</c>
+    /// is not the only reflection call in this plugin's own trust evaluation
+    /// capable of lazily loading a referenced assembly — resolving a
+    /// constructor parameter's own <see cref="System.Reflection.ParameterInfo.ParameterType"/>,
+    /// which <see cref="HasCompliantConstructor"/> does for every discovered
+    /// module type in a later, separate pass, is an equally unavoidable CLR
+    /// load trigger, and it happens strictly after this method has already
+    /// returned — invisible to the diff above. A plugin module could smuggle
+    /// a second, undeclared assembly by referencing one of its types only
+    /// from a constructor parameter (not a base type): a non-compliant
+    /// constructor still force-loads the referenced assembly while the
+    /// module itself is denied (leaving that assembly's own, separately
+    /// discoverable module types un-vetted); worse, if the same module also
+    /// declared an alternate, compliant constructor, the module was accepted
+    /// outright — <see cref="System.Reflection.Type.GetConstructors()"/>
+    /// resolves every returned constructor's own full parameter signature
+    /// regardless of declaration order or which one ultimately proves
+    /// compliant, so this was never merely a lazy, incidentally-avoidable
+    /// effect. Closed by forcing every discovered module type's every public
+    /// constructor's every parameter's <c>ParameterType</c> to resolve here,
+    /// unconditionally, inside this same per-step diff window — so any
+    /// assembly this pulls in is captured exactly like any other
+    /// transitively-loaded one, and a later loop iteration discovers and
+    /// trust-checks its own module types too. <see cref="HasCompliantConstructor"/>
+    /// itself is unchanged; only the point at which its own unavoidable
+    /// reflection side effects are allowed to fire moved earlier, into this
+    /// method's own already-diffed scan window. No new isolation mechanism —
+    /// still the same fixed-point, capability-scoped enforcement this type
+    /// has always performed, now correctly capturing both of its own two
+    /// reflection touchpoints instead of one.
+    /// </para>
+    /// <para>
+    /// <b>Corrected, <c>WP 13.9.4</c> trust-denial execution boundary
+    /// remediation.</b> This scan also now collects every discovered
+    /// <see cref="BackgroundServices.IHostedService"/> implementer, alongside
+    /// <see cref="Modules.IModule"/> ones, in the same single pass — closing
+    /// a second, sibling defect <c>WP 13.9.4</c>'s own Adversarial Review
+    /// found: Module Registration and Hosted Service Registration are two
+    /// wholly independent discovery pipelines (<c>ReflectionFrameworkDiscoveryService</c>
+    /// / <c>HostedServiceDiscoveryService</c>), and a denied plugin's
+    /// already-loaded assembly could still contribute an
+    /// <see cref="BackgroundServices.IHostedService"/> implementer that
+    /// reached <c>StartAsync</c> with zero trust checking, even one sharing
+    /// the identical <see cref="Type"/> a denied <see cref="Modules.IModule"/>
+    /// implementer was already correctly excluded through the other
+    /// pipeline. Hosted service types are collected here purely for
+    /// denial-recording purposes (<see cref="EnforceTrust"/>'s own
+    /// <c>RecordDenied</c> call) — they are never constructor-checked and
+    /// never granted a component principal for a passing plugin, exactly
+    /// matching this type's own existing, unchanged behaviour for hosted
+    /// services today.
+    /// </para>
+    /// </remarks>
+    private static List<Type> DiscoverModuleTypes(Assembly assembly, out List<Type> hostedServiceTypes)
+    {
+        var scannedAssemblies = new HashSet<Assembly> { assembly };
+        var toScan = new Queue<Assembly>();
+        toScan.Enqueue(assembly);
+        var allModuleTypes = new List<Type>();
+        var allHostedServiceTypes = new List<Type>();
+
+        while (toScan.Count > 0)
+        {
+            var current = toScan.Dequeue();
+            var before = new HashSet<Assembly>(AppDomain.CurrentDomain.GetAssemblies());
+
+            var currentLoadableTypes = GetLoadableTypes(current).ToList();
+
+            var currentModuleTypes = currentLoadableTypes.Where(IsModuleType).ToList();
+            allModuleTypes.AddRange(currentModuleTypes);
+
+            allHostedServiceTypes.AddRange(currentLoadableTypes.Where(IsHostedServiceType));
+
+            // WP 13.9.3: force every discovered type's every public
+            // constructor's every parameter's ParameterType to resolve now,
+            // inside this scan step - unconditionally, not only the ones
+            // HasCompliantConstructor's own short-circuiting .All()/return
+            // would happen to touch - so any assembly this pulls in is
+            // captured by this step's own before/after diff, not invisible
+            // to it. HasCompliantConstructor itself remains unchanged; its
+            // own reflection side effects simply have nowhere new left to
+            // hide by the time it runs.
+            foreach (var moduleType in currentModuleTypes)
+            {
+                foreach (var constructor in moduleType.GetConstructors())
+                {
+                    foreach (var parameter in constructor.GetParameters())
+                    {
+                        _ = parameter.ParameterType;
+                    }
+                }
+            }
+
+            foreach (var loaded in AppDomain.CurrentDomain.GetAssemblies())
+            {
+                if (!before.Contains(loaded) && scannedAssemblies.Add(loaded))
+                    toScan.Enqueue(loaded);
+            }
+        }
+
+        hostedServiceTypes = allHostedServiceTypes;
+        return allModuleTypes;
+    }
+
+    /// <summary>
     /// Mirrors <see cref="Modules.ReflectionFrameworkDiscoveryService"/>'s
     /// own <c>IsValidModuleType</c> filter exactly, run here independently
     /// and before handoff to Module Discovery — see ADR-0111's own disclosed
@@ -289,6 +493,19 @@ public sealed class PluginAssemblyLoader : IPluginAssemblyLoader
     /// </summary>
     private static bool IsModuleType(Type type) =>
         typeof(Modules.IModule).IsAssignableFrom(type)
+        && !type.IsInterface
+        && !type.IsAbstract
+        && !type.IsGenericTypeDefinition;
+
+    /// <summary>
+    /// Mirrors <see cref="BackgroundServices.HostedServiceDiscoveryService"/>'s
+    /// own <c>IsValidHostedServiceType</c> filter exactly (WP 13.9.4), run
+    /// here independently and before handoff to Hosted Service Discovery —
+    /// the same duplication-risk shape ADR-0111 already discloses for
+    /// <see cref="IsModuleType"/>.
+    /// </summary>
+    private static bool IsHostedServiceType(Type type) =>
+        typeof(BackgroundServices.IHostedService).IsAssignableFrom(type)
         && !type.IsInterface
         && !type.IsAbstract
         && !type.IsGenericTypeDefinition;

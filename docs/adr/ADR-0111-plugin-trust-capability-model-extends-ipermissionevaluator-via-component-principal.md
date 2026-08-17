@@ -8,6 +8,55 @@ genuinely resolvable by a targeted retrofit, exactly as `ADR-0044`
 anticipated — this decision does not itself perform that retrofit;
 `WP 13.0B` does.
 
+**Corrected, `WP 13.9.1` Security Remediation.** `WP 13.9.0`'s
+Security/Trust review found this ADR's own Decision text, as originally
+accepted, under-specified the static enforcement mechanism's own scope:
+it read "every constructor parameter type on a discovered `IModule`
+implementer **in the plugin's own assembly**," and
+`PluginAssemblyLoader.EnforceTrust` implemented that literal scope
+faithfully — but a live proof-of-concept, run against this exact
+commit's compiled binary, showed that scope is narrower than the trust
+boundary actually requires: .NET only loads a referenced assembly
+lazily, the moment one of its types is resolved, so a plugin's real code
+footprint is not always confined to its one manifest-declared file. A
+second, wholly undeclared assembly in a plugin's own candidate folder —
+reached only because the primary assembly's own type inherits from a
+type declared there — was discovered by Module Discovery and activated
+as an ordinary module with zero trust checking of any kind. The
+corrected scope, now implemented and reflected in the Decision text
+below: every assembly that becomes part of the process as a direct or
+transitive consequence of examining the plugin's own declared assembly,
+not only that one declared file. This widens the *scope* of the
+existing, unchanged capability-scoped enforcement mechanism; it does not
+introduce any new isolation mechanism, and does not change what
+"capability-scoped enforcement" means (`ADR-0110`'s own boundary is
+unaffected).
+
+**Corrected, `WP 13.9.3` Multi-Assembly Trust-Boundary Remediation.**
+`WP 13.9.2`'s Security/Trust review found the `WP 13.9.1` correction
+above, though it widened *which assemblies* are in scope, still
+under-specified *what "examining an assembly" means* while performing
+the fixed-point scan: the implementation as re-verified only diffed the
+AppDomain around `Assembly.GetTypes()`/`IsAssignableFrom` — the
+touchpoint that resolves an `IModule` implementer's own base-type
+chain — but a discovered module's own constructor parameter types are a
+second, independent CLR resolution touchpoint (`ConstructorInfo
+.GetParameters()`/`ParameterInfo.ParameterType`), reachable from a type
+this same scan step has already discovered, and a live proof-of-concept
+showed a wholly separate, undeclared assembly reached only through a
+non-compliant constructor's own parameter type — never through any base
+type — was again discoverable with zero trust checking, including the
+more severe variant where the same module also exposes an alternate,
+individually-compliant constructor and so is not even rejected on its
+own conformance check. The corrected scope, now implemented: each
+fixed-point scan step's own AppDomain diff must be taken around forcing
+resolution of *every* public constructor's *every* parameter's
+`ParameterType` for that step's newly-discovered module types, not only
+around `GetTypes()`. This is a precision of what one existing scan step
+examines, not a new scan mechanism, a new pass, or a change to the
+fixed-point traversal's own termination guarantee; `ADR-0110`'s and
+`ADR-0112`'s own boundaries remain unaffected.
+
 ## Context
 
 `ADR-0044` built `IPermissionEvaluator.HasPermission`/`RequirePermission`
@@ -82,15 +131,122 @@ own already-reserved flat `IReadOnlyList<string>` manifest field,
 **Static, at Plugin Loading (Phase 3.2), entirely Host-owned:** every
 requested capability key is checked against the plugin's assigned trust
 tier's ceiling (`ADR-0112`); every constructor parameter type on a
-discovered `IModule` implementer in the plugin's own assembly — reflected
-over independently, before handoff to Module Discovery — is checked
-against a fixed always-allowed baseline (`ILogger`, `IConfigurationProvider`,
-`IDiagnosticsProvider`) plus the plugin's own granted
-`plugin.services.resolve:*` declarations. Either failure isolates the
-whole plugin before Module Discovery ever sees it — no change to Module
-Discovery, Registration, or Lifecycle. This is the concrete mechanism
-that closes the "resolve a given service" half of `TD-09` without a DI
-resolution interceptor.
+discovered `IModule` implementer in every assembly that becomes part of
+the process as a direct or transitive consequence of examining the
+plugin's own declared assembly — reflected over independently, before
+handoff to Module Discovery, via a fixed-point breadth-first scan that
+follows each assembly newly loaded as a side effect of scanning the one
+before it — is checked against a fixed always-allowed baseline
+(`ILogger`, `IConfigurationProvider`, `IDiagnosticsProvider`) plus the
+plugin's own granted `plugin.services.resolve:*` declarations. Each scan
+step's own "examining an assembly" means forcing resolution both of its
+types' base-type chains (`GetTypes()`/`IsAssignableFrom`, to discover
+`IModule` implementers) and of every discovered module type's own public
+constructors' parameter types (`GetParameters()`/`ParameterType`, to
+evaluate constructor conformance) — the AppDomain is diffed around both,
+not `GetTypes()` alone, since either is an independent CLR lazy-load
+trigger a newly-referenced assembly can arrive through. Either capability
+or constructor-conformance failure isolates the whole plugin — every
+`Type` this scan discovered for it, whether an `IModule` implementer or a
+`BackgroundServices.IHostedService` implementer, is recorded denied
+(`IPluginDeniedTypeRecorder`, `WP 13.9.4`) and, per the correction
+immediately below, excluded from ever reaching Module Registration or
+Hosted Service Registration. This is the concrete mechanism that closes
+the "resolve a given service" half of `TD-09` without a DI resolution
+interceptor.
+
+**Corrected, `WP 13.9.4` trust-denial execution boundary remediation.**
+This Decision's own original text asserted denial "isolates the whole
+plugin before Module Discovery ever sees it — no change to Module
+Discovery, Registration, or Lifecycle." The second half of that sentence
+remains true — `ReflectionFrameworkDiscoveryService`, `RuntimeModuleManager`,
+`Modules.ModuleLifecycleManager`, `BackgroundServices.HostedServiceDiscoveryService`,
+and `BackgroundServices.IHostedServiceManager` themselves gained no trust
+awareness and no change of any kind. The first half was never actually
+true: a denied plugin's assembly is already resident in the process the
+moment `Assembly.LoadFrom` runs, strictly before this static check ever
+executes, and per ADR-0015 that step cannot be undone — Module Discovery
+and Hosted Service Discovery (both deliberately plugin-unaware, `ADR-0110`)
+scan the whole `AppDomain` regardless of denial, and *did* see it. A live
+proof-of-concept (`WP 13.9.3`'s own Adversarial Review, independently
+reconfirmed by `WP 13.9.4`'s Security workstream) showed a denied plugin's
+module still reached `InitialiseAsync`/`StartAsync` — indistinguishable
+from first-party code, since its ambient component principal is always
+`null` and `null` is treated as First-Party
+(`PluginTrustPermission.IsFirstParty`) — and, through that, still reached
+Command/Navigation/Event registration. `WP 13.9.4`'s own Adversarial
+Review then found this closure itself incomplete on its first pass:
+Module Registration and Hosted Service Registration are two wholly
+independent discovery/registration pipelines, and a single `Type`
+implementing both `IModule` and `BackgroundServices.IHostedService` —
+correctly excluded from the first — still reached `StartAsync`
+unfiltered through the second. Closed by a new, small, additive filter
+entirely within `TempestHost`'s own orchestration, applied at *both*
+points: between Module Discovery's output and the Module Registration
+loop, and between Hosted Service Discovery's output and Hosted Service
+Registration (no new phase, either time): any type this scan recorded
+denied is excluded before `RuntimeModuleManager.Register` or
+`IHostedServiceManager` construction ever sees it — mirroring
+`componentScopeProvider`'s own established technique for threading
+plugin-relevant data through otherwise fully generic machinery. One
+registry, keyed on `Type` alone, covers both pipelines from the one
+recording pass — a `Type` need not declare which interface it implements
+to be excluded from wherever it would otherwise have been discovered.
+`DiscoverModuleTypes` now runs unconditionally, before either static
+check, not only ahead of the constructor-conformance check, so a
+capability-ceiling denial (which previously short-circuited before any
+type discovery happened at all, for either interface) also has its full
+type set recorded. No new isolation mechanism, no ALC, no process
+separation; the correction makes the Decision's own first-stated intent —
+"isolates the whole plugin" — actually true, rather than widening what
+"isolates" means.
+
+**Corrected, `WP 13.9.6` Module Discovery trust boundary remediation.**
+`WP 13.9.4`'s own closure, above, made "excluded before
+`RuntimeModuleManager.Register`... ever sees it" true — but Module
+Discovery itself, which runs *before* that Registration-time filter, was
+never merely a passive scan. `ReflectionFrameworkDiscoveryService`'s own
+metadata-reading convention (`ADR-0027`) calls
+`Activator.CreateInstance` for any candidate `IModule` type lacking
+`[ModuleMetadataAttribute]`, purely to read `Id`/`Name`/`Version` — a
+long-standing, pre-plugin-trust convention (`WP 5.3`) never previously a
+security concern, since every module was first-party by construction.
+Once third-party plugin denial exists, it is: a denied plugin's
+already-loaded assembly (`ADR-0015`: cannot be undone) is still scanned
+by Module Discovery (deliberately plugin-unaware, `ADR-0110`), and an
+unattributed candidate's constructor genuinely ran — real code
+execution, strictly before the `WP 13.9.4` Registration-time filter was
+ever reached. A live proof-of-concept (independently found and confirmed
+three separate times — `WP 13.9.5`'s own Runtime/Lifecycle, Security, and
+Adversarial reviewers, each with a compiled reproduction against the
+unmodified pipeline) also showed the more severe variant: a denied,
+unattributed module with *no* public parameterless constructor hits
+`CreateDescriptor`'s own `ModuleDiscoveryException` guard, uncaught
+inside the Discovery loop — Host-fatal, crashing `RunAsync` entirely, not
+merely executing unwanted code. Closed by `WP 13.9.6`: a small, additive
+`Func<Type, bool>` predicate, threaded into
+`ReflectionFrameworkDiscoveryService`'s own existing constructor
+(`isTypeExcluded`, defaulting to `null`/never-excluded for every
+existing caller, preserving `ADR-0110`'s "deliberately plugin-unaware"
+status at the type-reference level — the predicate is generic, `Modules`
+gains no reference to `Plugins`), consulted inside the existing
+candidate-scanning loop immediately after the existing
+`IsValidModuleType` check and strictly before `CreateDescriptor` is ever
+called. `TempestHost` supplies `deniedTypeRegistry.IsDenied` — the same,
+unmodified `WP 13.9.4` registry, already fully populated by Plugin
+Loading before Module Discovery ever runs. No new isolation mechanism,
+no ALC, no process separation, no change to `IsValidModuleType`,
+`CreateDescriptor`, `ValidateMetadata`, or either public `DiscoverModules`
+overload's behaviour when the predicate is absent. The existing `WP
+13.9.4` Registration-time filter remains in place, unchanged, as harmless
+defense-in-depth for the module pipeline and still fully load-bearing for
+Hosted Service Registration (confirmed, independently, to need no
+equivalent fix — `HostedServiceDiscoveryService` never instantiates a
+candidate at all, per its own `ADR-0029`-cited design). This is the third
+and, per `WP 13.9.6`'s own fresh, independent Adversarial Review
+(mutation-tested against the actual test suite, plus a fully independent
+standalone proof-of-concept), final correction closing the "isolates the
+whole plugin" execution boundary this Decision first stated.
 
 **Dynamic, at each call site:** `NavigationService.Register`/`Unregister`,
 the Command Framework's registration path, and `IEventBus.PublishAsync`

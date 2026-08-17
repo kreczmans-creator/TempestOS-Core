@@ -1754,3 +1754,46 @@ convenience change.
 **Revisit trigger.** Not expected to be revisited.
 
 **Source.** ADR-0112, Alternatives Considered.
+
+---
+
+## RD-0065 — Making `PluginManifest.TrustTier` an Optional Constructor Parameter with a Default Value
+
+**Considered during:** WP 13.9.1, remediating `WP13.9.0`'s Implementation
+readiness Finding F3 (`PluginManifest`'s public constructor grew five new
+required parameters this release, an undisclosed public API break — one
+of `ADR-0106`'s own three literally-named Release-Blocking examples).
+
+**Rejected because:** unlike `dependencies`, `requestedCapabilities`,
+`publisher`, and `signature` — each restored to an optional, trailing,
+defaulted constructor parameter as part of this same remediation —
+`TrustTier` is a security-critical field with no safe implicit default.
+Even defaulting it to the most restrictive tier
+(`PluginTrustTier.UnsignedLocal`) would be a live footgun: a caller who
+simply forgets to pass `trustTier` would silently construct a manifest
+carrying *some* trust grant rather than fail to compile, forcing a
+deliberate choice. This mirrors the exact precedent `AssemblyPath`
+already set — a required, Discovery-computed field, never a
+manifest-declared one — a deliberate design choice made during the
+original `WP13.2A` implementation, not an oversight; keeping `trustTier`
+required extends that established reasoning rather than reopening it.
+The current blast radius is separately, genuinely zero:
+`PluginManifest` is exclusively constructed by the Host-owned
+`PluginManifestDiscoveryService` (confirmed via
+`grep -rn "new PluginManifest(" src/ tests/`, six call sites total, all
+now updated), so no external consumer is harmed by keeping this
+parameter required today — but per `ADR-0106`'s own explicit rule, a
+finding's classification (and, by the same logic, a rejection like this
+one) is by a design's own nature, not its current blast radius; the
+reasoning above would hold identically even if third-party plugin
+authors already depended on this constructor.
+
+**Reversibility.** Expensive to relax later in the sense that matters —
+softening this to an optional, defaulted parameter would reintroduce the
+exact silent-trust-grant footgun this rejection exists to prevent, not a
+mere convenience change.
+
+**Revisit trigger.** Not expected to be revisited.
+
+**Source.** `WP13.9.0 Engineering Release Report.md`, Implementation
+readiness (Finding F3); WP 13.9.1 remediation; `PluginManifest.cs`.

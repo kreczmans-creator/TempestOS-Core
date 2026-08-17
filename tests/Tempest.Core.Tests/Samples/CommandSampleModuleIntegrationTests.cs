@@ -231,12 +231,12 @@ public class CommandSampleModuleIntegrationTests
         var manifest = new PluginManifest(
             "test.plugin.commands", "Command Plugin", "1.0.0",
             new Version(0, 1, 0), Path.GetFileName(assemblyPath), assemblyPath,
-            [],
+            PluginTrustTier.FirstParty,
+            requestedCapabilities:
             [
                 PluginCapability.ServiceResolve(typeof(ICommandDispatcher).FullName!),
                 PluginCapability.ServiceResolve(typeof(ICommandRegistry).FullName!),
-            ],
-            null, null, PluginTrustTier.FirstParty);
+            ]);
 
         var loader = new PluginAssemblyLoader();
         var loadedAssemblies = loader.LoadPlugins([manifest]);

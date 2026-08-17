@@ -160,4 +160,46 @@ public class ReflectionFrameworkDiscoveryServiceTests
 
         Assert.Empty(result);
     }
+
+    // ----------------------------------------------------------------
+    // isTypeExcluded predicate (WP 13.9.6, Module Discovery Trust Boundary
+    // Remediation). Proves the new mechanism itself works correctly in
+    // complete isolation from the plugin-trust pipeline - see
+    // TempestHostPluginTrustTests.cs for the end-to-end guarantee this
+    // composes with.
+    // ----------------------------------------------------------------
+
+    [Fact]
+    public void DiscoverModules_IsTypeExcludedPredicateMatchesType_ExcludesItAndNeverConstructsIt()
+    {
+        var countBefore = ConstructorTrackingModule.ConstructionCount;
+
+        var service = new ReflectionFrameworkDiscoveryService(
+            isTypeExcluded: type => type == typeof(ConstructorTrackingModule));
+
+        var result = service.DiscoverModules(new[] { typeof(ConstructorTrackingModule), typeof(SampleModuleA) });
+
+        var descriptor = Assert.Single(result);
+        Assert.Equal("tempest.sample.alpha", descriptor.Id);
+        Assert.DoesNotContain(result, d => d.ModuleType == typeof(ConstructorTrackingModule));
+
+        // The observable side effect never fired - the excluded type's
+        // constructor genuinely never ran, not merely "was excluded from
+        // the returned list after having already been constructed".
+        Assert.Equal(countBefore, ConstructorTrackingModule.ConstructionCount);
+    }
+
+    [Fact]
+    public void DiscoverModules_IsTypeExcludedPredicateNull_LeavesExistingBehaviourUnchanged()
+    {
+        var countBefore = ConstructorTrackingModule.ConstructionCount;
+
+        var service = new ReflectionFrameworkDiscoveryService(isTypeExcluded: null);
+
+        var result = service.DiscoverModules(new[] { typeof(ConstructorTrackingModule), typeof(SampleModuleA) });
+
+        Assert.Equal(2, result.Count);
+        Assert.Contains(result, d => d.ModuleType == typeof(ConstructorTrackingModule));
+        Assert.Equal(countBefore + 1, ConstructorTrackingModule.ConstructionCount);
+    }
 }

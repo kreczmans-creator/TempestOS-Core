@@ -1,6 +1,249 @@
 # TempestOS — Project Status
 
-**Last Updated:** 2026-08-17 (`WP 13.9.0`, `v0.13.0` Engineering
+**Last Updated:** 2026-08-17 (`WP 13.9.7`, Trust Boundary Integration &
+Commit). Sole implementation/integration agent for this Work Package, no
+parallel writers. Integrates, reconciles, and commits the entire
+`WP 13.9.1`–`WP 13.9.6` remediation chain (each with its own entry below)
+as a single commit on `feature/v0.13.0` — the net effect: the plugin trust
+platform's execution boundary is now closed end to end. No denied
+plugin's code executes at any point from Plugin Discovery through
+Module/Hosted-Service Discovery, Registration, and Lifecycle, for any
+denial reason, across single- or multi-assembly plugins, for either
+`IModule` or `IHostedService`. Verified the changeset directly against
+real, current source before touching anything, not the commissioning
+summary alone — spot-checked `PluginAssemblyLoader.cs`, `TempestHost.cs`,
+`ReflectionFrameworkDiscoveryService.cs` diffs and read `ADR-0111`/
+`Plugin Trust & Isolation Architecture.md` in full; confirmed each
+accurately describes the final code state, with no "not yet implemented"/
+"pending"/"to be closed" language remaining for this chain's own scope (a
+repository-wide grep for that phrasing across both documents returned
+exactly one hit, an unrelated, genuinely still-open Diagnostics
+recommendation this chain never touches — left as is, correctly disclosed
+open, not stale). **Found and fixed the one genuine governance staleness
+`WP 13.9.5`'s own Governance reviewer had flagged as needing to close
+before commit**: `ADR Register.md`'s own `ADR-0111` Entries-table citation
+had accumulated only a `WP 13.9.1 (corrected)` phase while three further
+corrections (`WP 13.9.3`/`WP 13.9.4`/`WP 13.9.6`) had already landed
+directly in `ADR-0111`'s own file's Status/Decision text without this
+register's own citation field ever being extended to match — corrected to
+a six-phase citation, each phase carrying its own short parenthetical;
+this register's own "Last Reviewed" narrative gained a matching new entry.
+Added six dense rows to `docs/releases/v0.13.0/WorkPackages.md`
+(`WP 13.9.1`–`WP 13.9.6`, plus this Work Package's own row), matching the
+`WP 13.2A`/`WP 13.3B` row precedent's own density; prepended six matching
+entries to this field (below). Confirmed, by direct convention check
+against `Academy Index.md`'s own stated maintenance rule and the
+`WP 13.2B`/`WP 13.9.1` precedent (neither has an Academy retrospective,
+both closed with only a `WorkPackages.md` row and a `PROJECT_STATUS.md`
+entry), that `WP 13.9.1`–`WP 13.9.6` do not require new Academy
+retrospective files of their own — a `WorkPackages.md` row plus this
+field's own entry already satisfies this project's actual, established
+requirement; not scope creep to omit them.
+`governance-healthcheck.ps1`: **7 passed, 1 warned (pre-existing
+`v0.9.0`/`v0.10.0` informational, unrelated), 0 failed** — confirmed
+identical both before and after every documentation edit this Work
+Package made, so zero new drift was introduced. Debug and Release builds
+both **0 Warnings, 0 Errors** (`-p:TreatWarningsAsErrors=true`); full
+regression, both configurations, independently re-run fresh after every
+edit: **2,538/2,538 passing** (2,317 `Tempest.Core.Tests` + 221
+`Tempest.Desktop.Tests`). Working tree confirmed, directly via `git status
+--short`, to contain only files accounted for by the commissioned
+changeset or this Work Package's own governance edits, before staging.
+Not pushed, not tagged, no release created, per this Work Package's own
+explicit instruction. Full detail: this Work Package's own report to the
+commissioning conversation.
+**`WP 13.9.6`'s own status line, below this point, is this field's prior
+content — retained, not deleted:**
+
+**Previously updated** 2026-08-17 (`WP 13.9.6`, Module Discovery Trust
+Boundary Remediation). Closes the `WP 13.9.5` finding, immediately below:
+four parallel Round-1 read-only reviewers converged on one design, then
+one implementation agent, then a fresh, independent adversarial review.
+`ReflectionFrameworkDiscoveryService` gained one optional constructor
+parameter, `Func<Type, bool>? isTypeExcluded = null`, consulted inside its
+existing candidate-scanning loop immediately after the existing
+`IsValidModuleType` check and strictly before `CreateDescriptor` is ever
+called — `TempestHost` supplies `deniedTypeRegistry.IsDenied` (the same,
+unmodified `WP 13.9.4` registry, already fully populated by Plugin
+Loading before Module Discovery ever runs). Defaults to `null`
+(never-excluded) for every existing caller/test, leaving every existing
+caller's behaviour completely unchanged; `Modules` gains no reference to
+`Plugins` (the predicate is generic), preserving `ADR-0110`'s
+"deliberately plugin-unaware" status at the type-reference level exactly
+as the `WP 13.9.4` filter already did. New test infrastructure:
+`tests/Tempest.Core.Tests/Plugins/ConstructorExecutionProbe.cs` (new file
+— a GUID-keyed, thread-safe static invocation counter an emitted plugin
+module's own IL calls into, proving whether `Activator.CreateInstance`
+genuinely ran for that exact type); a new `DynamicPluginAssemblyBuilder.cs`
+builder method (`BuildUnattributedPluginModuleWithConstructorProbe`); a
+new `ModuleFixtures.cs` fixture (`ConstructorTrackingModule`); new tests
+in `ReflectionFrameworkDiscoveryServiceTests.cs` (2) and
+`TempestHostPluginTrustTests.cs` (7). `ADR-0111` gained a "Corrected,
+`WP 13.9.6` Module Discovery Trust Boundary Remediation" section — the
+third and, per this Work Package's own fresh, independent Adversarial
+Review (mutation-tested against the actual test suite twice,
+independently, plus a fully independent standalone proof-of-concept
+project), final correction closing the "isolates the whole plugin"
+execution boundary `ADR-0111`'s Decision first stated; `Plugin Trust &
+Isolation Architecture.md`'s own Status header and Risks section updated
+with the full `WP 13.9.0`→`WP 13.9.6` chain. No new isolation mechanism,
+no `AssemblyLoadContext`, no process separation. Full detail: `ADR-0111`'s
+own "Corrected, `WP 13.9.6`" note; `docs/releases/v0.13.0/WorkPackages.md`'s
+own `WP 13.9.6` row.
+**`WP 13.9.5`'s own status line, below this point, is this field's prior
+content — retained, not deleted:**
+
+**Previously updated** 2026-08-17 (`WP 13.9.5`, `v0.13.0` Trust & Security
+Final Adversarial Review). Six parallel, read-only reviewers (Security,
+Architecture, Runtime/Lifecycle, Verification, Governance, Adversarial),
+each performed before seeing the others' conclusions, per `Engineering
+Readiness Review Architecture.md` §5's own independence discipline. Found
+the combined `WP 13.9.3`+`WP 13.9.4` boundary defensible for its own
+literal claims, but three independent reviewers (Runtime/Lifecycle,
+Security, Adversarial) each separately live-PoC-reproduced a further,
+distinct bug: `ReflectionFrameworkDiscoveryService.CreateDescriptor`
+called `Activator.CreateInstance` for any `IModule` type lacking
+`[ModuleMetadataAttribute]`, unconditionally, during Module Discovery —
+which ran before the `WP 13.9.4` filter was ever consulted — so a denied
+plugin's unattributed module constructor genuinely executed; a more
+severe variant crashed the whole Host via an uncaught
+`ModuleDiscoveryException` when the same type had no parameterless
+constructor. This Work Package produced no code changes of its own —
+read-only review; its report was delivered conversationally to the
+commissioning session, not saved as a standalone file. Directly
+commissions `WP 13.9.6`, above.
+**`WP 13.9.4`'s own status line, below this point, is this field's prior
+content — retained, not deleted:**
+
+**Previously updated** 2026-08-17 (`WP 13.9.4`, Trust-Denial Execution
+Boundary Remediation). Found and closed a separate, more severe defect
+than the `WP 13.9.3` multi-assembly scan gap: `PluginTrustDeniedException`
+isolated a denied plugin only from `PluginAssemblyLoader.LoadPlugins`'s
+own returned list and `PluginRegistryState.Loaded` — nothing stopped the
+plugin's already-loaded assembly (`Assembly.LoadFrom` runs before this
+check; `ADR-0015`: cannot be undone) from being separately, redundantly
+rediscovered by Module Discovery and Hosted Service Discovery (both
+deliberately plugin-unaware, `ADR-0110`) and fully lifecycle-run — a
+denied module's ambient component principal is always `null`, and `null`
+is treated as First-Party. True of every denial reason, not only the
+multi-assembly case; true since `WP 13.2A` first introduced trust denial.
+Closed via three new files (`IPluginDeniedTypeRecorder.cs`,
+`IPluginDeniedTypeRegistry.cs`, `PluginDeniedTypeRegistry.cs` — a
+Host-owned registry mirroring `PluginComponentPrincipalRegistry`'s own
+established read/write-split pattern), `EnforceTrust` reordered
+(`PluginAssemblyLoader.cs`) so `DiscoverModuleTypes` runs unconditionally
+before either static trust check, and two new filters entirely within
+`TempestHost.cs`'s own orchestration, at Module Registration and Hosted
+Service Registration. **This Work Package's own Adversarial Review found
+its first pass (Module Registration only) itself incomplete before this
+Work Package concluded** — broadened mid-WP to also cover Hosted Service
+Registration, since a single `Type` implementing both `IModule` and
+`IHostedService` could otherwise still reach `StartAsync` unfiltered via
+the second, wholly independent pipeline — hence the registry/interfaces
+are named `IPluginDeniedTypeRecorder`/`Registry` (not `...ModuleType...`),
+reflecting that final, broadened scope. New tests in
+`TempestHostPluginTrustTests.cs` and
+`PluginAssemblyLoaderMultiAssemblyTrustTests.cs`; a new
+`DynamicPluginAssemblyBuilder.cs` builder method
+(`BuildDualModuleAndHostedServiceAssembly`). `ADR-0111` gained a
+"Corrected, `WP 13.9.4`" section. No new isolation mechanism, no
+`AssemblyLoadContext`, no process separation.
+**`WP 13.9.3`'s own status line, below this point, is this field's prior
+content — retained, not deleted:**
+
+**Previously updated** 2026-08-17 (`WP 13.9.3`, Multi-Assembly
+Trust-Boundary Remediation). Closes `WP 13.9.2`'s own finding in full.
+`PluginAssemblyLoader.DiscoverModuleTypes`'s own fixed-point scan widened
+so each step's own `AppDomain` diff is taken around forcing resolution of
+every discovered module type's every public constructor's every
+parameter's `ParameterType`, not only around `GetTypes()`/
+`IsAssignableFrom` — `HasCompliantConstructor` itself is unchanged; only
+the point at which its own unavoidable reflection side effects are
+allowed to fire moved earlier, into this method's own already-diffed scan
+window. New file `PluginAssemblyLoaderMultiAssemblyTrustTests.cs` (8
+tests): the direct case, the alternate-compliant-constructor case (the
+more severe variant `WP 13.9.2` found), a three-assembly transitive chain
+proving the fix generalises beyond one hop, and a benign
+multi-assembly-with-granted-capability case proving no legitimate plugin
+regresses. A new `DynamicPluginAssemblyBuilder.cs` builder method
+(`BuildPrimaryPluginAssemblyWithExternalConstructorParameter`). `ADR-0111`
+gained a "Corrected, `WP 13.9.3`" section. No new isolation mechanism, no
+`AssemblyLoadContext`, no process separation — widens the existing
+capability-scoped enforcement mechanism's own coverage only.
+**`WP 13.9.2`'s own status line, below this point, is this field's prior
+content — retained, not deleted:**
+
+**Previously updated** 2026-08-17 (`WP 13.9.2`, `v0.13.0` Readiness
+Re-Execution). Verification only; no code, documentation, or Academy
+artefact of its own. Re-verified `WP 13.9.1`'s own multi-assembly fix
+directly against a fresh live proof-of-concept and found it still
+incomplete: `DiscoverModuleTypes`'s own fixed-point scan diffed the
+`AppDomain` only around `Assembly.GetTypes()`/`IsAssignableFrom`, not
+around the independent CLR lazy-load trigger a discovered module's own
+constructor parameter types represent
+(`ConstructorInfo.GetParameters()`/`ParameterInfo.ParameterType`). The
+proof-of-concept showed a second, wholly undeclared assembly reachable
+only through a non-compliant constructor's own parameter type — never
+through any base type — again reached Module Discovery with zero trust
+checking, including the more severe variant where the same module also
+exposes an alternate, individually-compliant constructor and so is not
+even rejected on its own conformance check. Directly commissions
+`WP 13.9.3`, above. Zero `src`/`tests`/`docs` files touched by this Work
+Package itself.
+**`WP 13.9.1`'s own status line, below this point, is this field's prior
+content — retained, not deleted:**
+
+**Previously updated** 2026-08-17 (`WP 13.9.1`, `v0.13.0` Readiness
+Remediation). Fixes `WP13.9.0`'s named findings only — nothing broader.
+Four parallel sub-agents (Security, Implementation/API, Verification/
+Test, Governance & Documentation), each stopped before commit.
+**Priority 1 (Security):** the multi-assembly trust-boundary bypass
+closed — `PluginAssemblyLoader.EnforceTrust` now performs a
+fixed-point, breadth-first scan of every assembly that enters the
+`AppDomain` as a direct or transitive consequence of examining a
+plugin's own declared assembly (not just that one file), applying the
+existing, unchanged constructor-conformance check to every discovered
+`IModule` type across all of them — no `AssemblyLoadContext`, no
+process separation introduced; `ADR-0110`/`ADR-0111`'s own boundary is
+widened in scope, not weakened. `ADR-0111` carries a new "Corrected,
+`WP 13.9.1`" section recording the fix. A dedicated regression suite
+(`PluginAssemblyLoaderMultiAssemblyTrustTests.cs`, 3 tests) reproduces
+`WP13.9.0`'s own exact proof-of-concept end-to-end and confirms it is
+now denied, plus confirms legitimate multi-assembly plugins still load.
+**Priority 2 (API):** `PluginManifest`'s undisclosed public API break
+resolved asymmetrically, not simply reverted — `TrustTier` stays
+required (a genuine, security-critical field with no safe implicit
+default, mirroring the `AssemblyPath` precedent; documented via a new
+Rejected Designs entry, `RD-0065`), while `Dependencies`/
+`RequestedCapabilities`/`Publisher`/`Signature` are restored to
+optional, defaulted, trailing parameters, matching every other
+constructor this release touched. **Priority 3 (Verification):** the
+unsubstantiated "20,000-trial differential fuzz harness" claim in
+`WP13.3B`'s own commit message replaced with a real, persisted,
+reproducible one — `TopologicalSort_RandomizedTrials_MatchesNaiveFullRescanReference`,
+10,000 seeded trials, ~1.9s measured runtime, committed and re-runnable
+by anyone. **Priority 4 (Governance):** `WP13.3B` now has a real
+Academy retrospective and a `WorkPackages.md` row (the single
+most-corroborated `WP13.9.0` finding — independently found by four of
+six disciplines); `Architecture Document Register.md` and
+`Documentation Register.md` counts corrected; both plugin architecture
+documents' stale `WP13.0A`-era Status headers corrected to reflect real
+implementation and review. Full regression re-run fresh after all four
+fixes: **2,524/2,524 passing**, both configurations (2,303
+`Tempest.Core.Tests` + 221 `Tempest.Desktop.Tests`);
+`governance-healthcheck.ps1`: 7 passed, 1 warned (pre-existing,
+unrelated), 0 failed. **`WP13.9.0`'s own verdict is not rewritten by
+this Work Package** — the CI/branch-push/merge gap (Verification/
+Release readiness) remains entirely unaddressed, out of this WP's own
+engineering scope; a fresh Engineering Readiness Review is required to
+re-derive an updated verdict, not assumed here. Full detail: this Work
+Package's own report to the commissioning conversation (no dedicated
+Engineering Release Report — that is `WP13.9.0`'s/a future re-execution's
+own artifact, not this remediation pass's).
+**`WP 13.9.0`'s own status line, below this point, is this field's
+prior content — retained, not deleted:**
+
+**Previously updated** 2026-08-17 (`WP 13.9.0`, `v0.13.0` Engineering
 Readiness Review). The first execution of the permanent ERR `ADR-0106`
 defines, applied to `v0.13.0`, at `feature/v0.13.0` HEAD `88e41a2`
 — six independent discipline reviews (Architecture, Implementation,

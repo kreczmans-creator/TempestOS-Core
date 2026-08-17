@@ -4,6 +4,20 @@ using Tempest.Core.Plugins;
 
 namespace Tempest.Core.Tests.Plugins;
 
+// WP 13.9.1: PluginAssemblyLoader.EnforceTrust's own fixed-point AppDomain
+// scan (the security remediation's DiscoverModuleTypes) diffs
+// AppDomain.CurrentDomain's own, process-global assembly set immediately
+// before and after each scan step. Two unrelated test classes each loading
+// a real assembly via Assembly.LoadFrom (directly, or via
+// PluginAssemblyLoader.LoadPlugins) on separate threads at the same moment
+// would otherwise let one test's own diff observe the other's unrelated,
+// concurrently-loading assembly as if it were part of its own plugin's own
+// footprint - a test-harness-only race with no real-world counterpart
+// (Plugin Loading is a single, sequential Host-startup phase in
+// production). [Collection("Console output capture")] - the same,
+// already-established serialization collection every real-assembly-loading
+// test in this suite uses - removes that race by construction.
+[Collection("Console output capture")]
 public class PluginAssemblyLoaderTests
 {
     // ----------------------------------------------------------------
@@ -177,5 +191,5 @@ public class PluginAssemblyLoaderTests
 
     private static PluginManifest CreateManifest(string id, string assemblyPath) =>
         new(id, $"{id} name", "1.0.0", new Version(0, 1, 0), Path.GetFileName(assemblyPath), assemblyPath,
-            [], [], null, null, PluginTrustTier.FirstParty);
+            PluginTrustTier.FirstParty);
 }

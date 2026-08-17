@@ -1,5 +1,7 @@
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Runtime.Loader;
+using Tempest.Core.BackgroundServices;
 using Tempest.Core.Commands;
 using Tempest.Core.Modules;
 using Tempest.Core.Navigation;
@@ -342,6 +344,333 @@ internal static class DynamicPluginAssemblyBuilder
     }
 
     /// <summary>
+    /// Builds an assembly containing one public, concrete <see cref="IModule"/>
+    /// implementer with NO <see cref="ModuleMetadataAttribute"/> and a public
+    /// parameterless constructor whose body calls
+    /// <see cref="ConstructorExecutionProbe.RecordInvocation(string)"/> with
+    /// <paramref name="probeId"/> - an observable side effect proving whether
+    /// <see cref="Activator.CreateInstance(Type)"/> genuinely ran for this
+    /// exact type (WP 13.9.6 regression coverage).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// If <paramref name="nonCompliantConstructorParameterTypes"/> is
+    /// non-empty, a second public constructor overload is also defined, with
+    /// those parameter types (ignored at runtime, mirroring
+    /// <see cref="BuildPluginAssemblyWithConstructorParameters"/>'s own
+    /// convention) and no probe call.
+    /// </para>
+    /// <para>
+    /// <b>This does NOT produce a constructor-non-compliant type.</b>
+    /// <c>PluginAssemblyLoader.HasCompliantConstructor</c> accepts a type if
+    /// <i>any</i> one of its public constructors is compliant, and a
+    /// parameterless constructor is always trivially compliant (zero
+    /// parameters vacuously satisfy its own <c>.All(...)</c> check) -
+    /// so a type built this way, with the probe-calling parameterless
+    /// constructor always present, is always accepted regardless of what
+    /// <paramref name="nonCompliantConstructorParameterTypes"/> contains.
+    /// This parameter exists only to exercise/document that exact semantic
+    /// (a passing plugin whose module happens to expose a second, otherwise
+    /// non-compliant overload nobody ever calls) - it is never the right
+    /// shape for a genuine constructor-non-compliance test scenario. For
+    /// that, use <see cref="BuildPluginAssemblyWithConstructorParameters"/>
+    /// instead: a type with no parameterless overload at all is both (a)
+    /// genuinely non-compliant per <c>HasCompliantConstructor</c>, since
+    /// none of its constructors can ever be compliant-by-default, and (b)
+    /// guaranteed to reach <c>CreateDescriptor</c>'s own explicit
+    /// "no parameterless constructor" guard - which throws
+    /// <see cref="ModuleDiscoveryException"/> naming the actual fix, before
+    /// <see cref="Activator.CreateInstance(Type)"/> is ever attempted - if it
+    /// were ever (wrongly) reached, proving the WP 13.9.6 fix by the absence
+    /// of that exception rather than by a probe call.
+    /// </para>
+    /// </remarks>
+    /// <returns>The full path to the saved assembly file.</returns>
+    public static string BuildUnattributedPluginModuleWithConstructorProbe(
+        string outputDirectory,
+        string fileName,
+        string moduleId,
+        string moduleName,
+        string moduleVersion,
+        string probeId,
+        Type[]? nonCompliantConstructorParameterTypes = null)
+    {
+        var dllPath = Path.Combine(outputDirectory, fileName);
+
+        var assemblyName = new AssemblyName($"{Path.GetFileNameWithoutExtension(fileName)}-{Guid.NewGuid():N}");
+        var assemblyBuilder = new PersistedAssemblyBuilder(assemblyName, typeof(object).Assembly);
+        var moduleBuilder = assemblyBuilder.DefineDynamicModule("MainModule");
+
+        var typeBuilder = moduleBuilder.DefineType(
+            $"{assemblyName.Name}.DynamicProbePluginModule",
+            TypeAttributes.Public | TypeAttributes.Class,
+            typeof(object),
+            [typeof(IModule)]);
+
+        DefineStringProperty(typeBuilder, nameof(IModule.Id), moduleId);
+        DefineStringProperty(typeBuilder, nameof(IModule.Name), moduleName);
+        DefineStringProperty(typeBuilder, nameof(IModule.Version), moduleVersion);
+
+        var objectCtor = typeof(object).GetConstructor(Type.EmptyTypes)!;
+        var recordInvocationMethod = typeof(ConstructorExecutionProbe).GetMethod(
+            nameof(ConstructorExecutionProbe.RecordInvocation))!;
+
+        var probeCtorBuilder = typeBuilder.DefineConstructor(
+            MethodAttributes.Public | MethodAttributes.HideBySig | MethodAttributes.SpecialName | MethodAttributes.RTSpecialName,
+            CallingConventions.Standard,
+            Type.EmptyTypes);
+
+        var probeIl = probeCtorBuilder.GetILGenerator();
+        probeIl.Emit(OpCodes.Ldarg_0);
+        probeIl.Emit(OpCodes.Call, objectCtor);
+        probeIl.Emit(OpCodes.Ldstr, probeId);
+        probeIl.Emit(OpCodes.Call, recordInvocationMethod);
+        probeIl.Emit(OpCodes.Ret);
+
+        if (nonCompliantConstructorParameterTypes is { Length: > 0 })
+        {
+            var secondCtorBuilder = typeBuilder.DefineConstructor(
+                MethodAttributes.Public | MethodAttributes.HideBySig | MethodAttributes.SpecialName | MethodAttributes.RTSpecialName,
+                CallingConventions.Standard,
+                nonCompliantConstructorParameterTypes);
+
+            var secondIl = secondCtorBuilder.GetILGenerator();
+            secondIl.Emit(OpCodes.Ldarg_0);
+            secondIl.Emit(OpCodes.Call, objectCtor);
+            secondIl.Emit(OpCodes.Ret);
+        }
+
+        typeBuilder.CreateType();
+        assemblyBuilder.Save(dllPath);
+
+        return dllPath;
+    }
+
+    /// <summary>
+    /// Builds a "second, wholly undeclared assembly" (WP 13.9.1 security
+    /// remediation test scenario) containing two public types: a plain base
+    /// class with a parameterless constructor, and an <see cref="IModule"/>
+    /// implementer whose sole public constructor accepts exactly
+    /// <paramref name="moduleConstructorParameterTypes"/>, in order, ignoring
+    /// every argument at runtime (mirroring
+    /// <see cref="BuildPluginAssemblyWithConstructorParameters"/>'s own
+    /// constructor-shape convention). Saved to <paramref name="outputDirectory"/>
+    /// under a file name that exactly matches this assembly's own generated
+    /// simple name — required so that the default <c>AssemblyLoadContext</c>'s
+    /// own directory-probing (triggered when a caller-declared assembly loaded
+    /// via <see cref="Assembly.LoadFrom(string)"/> references this assembly by
+    /// name, but never declares it in any plugin manifest) can find it purely
+    /// by simple-name-plus-extension, exactly as a real, undeclared dependency
+    /// DLL sitting in a plugin's own candidate folder would be found.
+    /// </summary>
+    /// <returns>The full path to the saved assembly file.</returns>
+    public static string BuildSecondaryAssemblyWithBaseTypeAndModule(
+        string outputDirectory,
+        string namePrefix,
+        string baseTypeSimpleName,
+        string moduleTypeSimpleName,
+        string moduleId,
+        string moduleName,
+        string moduleVersion,
+        Type[] moduleConstructorParameterTypes)
+    {
+        var assemblyName = new AssemblyName($"{namePrefix}-{Guid.NewGuid():N}");
+        var dllPath = Path.Combine(outputDirectory, $"{assemblyName.Name}.dll");
+
+        var assemblyBuilder = new PersistedAssemblyBuilder(assemblyName, typeof(object).Assembly);
+        var moduleBuilder = assemblyBuilder.DefineDynamicModule("MainModule");
+        var objectCtor = typeof(object).GetConstructor(Type.EmptyTypes)!;
+
+        var baseTypeBuilder = moduleBuilder.DefineType(
+            $"{assemblyName.Name}.{baseTypeSimpleName}",
+            TypeAttributes.Public | TypeAttributes.Class,
+            typeof(object));
+
+        DefineParameterlessConstructorCallingBase(baseTypeBuilder, objectCtor);
+        baseTypeBuilder.CreateType();
+
+        var moduleTypeBuilder = moduleBuilder.DefineType(
+            $"{assemblyName.Name}.{moduleTypeSimpleName}",
+            TypeAttributes.Public | TypeAttributes.Class,
+            typeof(object),
+            [typeof(IModule)]);
+
+        DefineStringProperty(moduleTypeBuilder, nameof(IModule.Id), moduleId);
+        DefineStringProperty(moduleTypeBuilder, nameof(IModule.Name), moduleName);
+        DefineStringProperty(moduleTypeBuilder, nameof(IModule.Version), moduleVersion);
+
+        var moduleCtorBuilder = moduleTypeBuilder.DefineConstructor(
+            MethodAttributes.Public | MethodAttributes.HideBySig | MethodAttributes.SpecialName | MethodAttributes.RTSpecialName,
+            CallingConventions.Standard,
+            moduleConstructorParameterTypes);
+        var moduleCtorIl = moduleCtorBuilder.GetILGenerator();
+        moduleCtorIl.Emit(OpCodes.Ldarg_0);
+        moduleCtorIl.Emit(OpCodes.Call, objectCtor);
+        moduleCtorIl.Emit(OpCodes.Ret);
+
+        moduleTypeBuilder.CreateType();
+        assemblyBuilder.Save(dllPath);
+
+        return dllPath;
+    }
+
+    /// <summary>
+    /// Builds a plugin's own primary, manifest-declared assembly, containing
+    /// one public type that inherits from <paramref name="externalBaseTypeFullName"/>
+    /// — a type declared in the already-saved, wholly separate
+    /// <paramref name="externalAssemblyPath"/> assembly, never itself declared
+    /// in any plugin manifest. Reproduces the exact WP 13.9.0 proof-of-concept
+    /// mechanism: resolving this type's own base-type chain (which
+    /// <c>PluginAssemblyLoader.EnforceTrust</c>'s own <see cref="Assembly.GetTypes"/>
+    /// call does, as an ordinary part of reflecting over the primary assembly)
+    /// is what forces the CLR to load <paramref name="externalAssemblyPath"/>
+    /// into the <c>AppDomain</c> as a lazy, unavoidable side effect — no
+    /// explicit <see cref="Assembly.LoadFrom(string)"/> of the second assembly
+    /// ever appears anywhere in this builder or in the plugin's own manifest.
+    /// The external base type is resolved via a temporary, dedicated
+    /// <see cref="AssemblyLoadContext"/> — used only to obtain a real,
+    /// reflectable <see cref="Type"/> to emit IL against; it has no bearing on
+    /// how the CLR later, independently, resolves and loads
+    /// <paramref name="externalAssemblyPath"/> for the built assembly's own
+    /// benefit at plugin-load time.
+    /// </summary>
+    /// <returns>The full path to the saved assembly file.</returns>
+    public static string BuildPrimaryPluginAssemblyDerivingFromExternalBaseType(
+        string outputDirectory,
+        string fileName,
+        string externalAssemblyPath,
+        string externalBaseTypeFullName,
+        string moduleId,
+        string moduleName,
+        string moduleVersion,
+        bool implementIModule)
+    {
+        var dllPath = Path.Combine(outputDirectory, fileName);
+
+        var reflectionLoadContext = new AssemblyLoadContext($"ReflectionOnly-{Guid.NewGuid():N}", isCollectible: true);
+        var externalAssembly = reflectionLoadContext.LoadFromAssemblyPath(externalAssemblyPath);
+        var externalBaseType = externalAssembly.GetType(externalBaseTypeFullName, throwOnError: true)!;
+        var externalBaseCtor = externalBaseType.GetConstructor(Type.EmptyTypes)!;
+
+        var assemblyName = new AssemblyName($"{Path.GetFileNameWithoutExtension(fileName)}-{Guid.NewGuid():N}");
+        var assemblyBuilder = new PersistedAssemblyBuilder(assemblyName, typeof(object).Assembly);
+        var moduleBuilder = assemblyBuilder.DefineDynamicModule("MainModule");
+
+        var interfaces = implementIModule ? new[] { typeof(IModule) } : Type.EmptyTypes;
+
+        var typeBuilder = moduleBuilder.DefineType(
+            $"{assemblyName.Name}.DynamicPrimaryModule",
+            TypeAttributes.Public | TypeAttributes.Class,
+            externalBaseType,
+            interfaces);
+
+        if (implementIModule)
+        {
+            DefineStringProperty(typeBuilder, nameof(IModule.Id), moduleId);
+            DefineStringProperty(typeBuilder, nameof(IModule.Name), moduleName);
+            DefineStringProperty(typeBuilder, nameof(IModule.Version), moduleVersion);
+        }
+
+        DefineParameterlessConstructorCallingBase(typeBuilder, externalBaseCtor);
+
+        typeBuilder.CreateType();
+        assemblyBuilder.Save(dllPath);
+
+        reflectionLoadContext.Unload();
+
+        return dllPath;
+    }
+
+    /// <summary>
+    /// Builds a plugin's own primary, manifest-declared assembly, containing
+    /// one public <see cref="IModule"/> implementer whose own non-compliant
+    /// constructor accepts exactly one parameter of
+    /// <paramref name="externalParameterTypeFullName"/> — a type declared in
+    /// the already-saved, wholly separate <paramref name="externalAssemblyPath"/>
+    /// assembly, never itself declared in any plugin manifest — ignoring the
+    /// argument at runtime (mirroring <see cref="BuildPluginAssemblyWithConstructorParameters"/>'s
+    /// own convention). <c>WP 13.9.3</c> security remediation test scenario:
+    /// unlike <see cref="BuildPrimaryPluginAssemblyDerivingFromExternalBaseType"/>'s
+    /// own base-type-inheritance mechanism (closed at <c>WP 13.9.1</c>), this
+    /// reproduces the second, narrower mechanism <c>WP 13.9.2</c>'s
+    /// Security/Trust re-execution found: resolving a constructor
+    /// parameter's own <see cref="System.Reflection.ParameterInfo.ParameterType"/>
+    /// is an equally unavoidable CLR assembly-load trigger, and it fires
+    /// during <c>PluginAssemblyLoader.HasCompliantConstructor</c>'s own
+    /// reflection, not <see cref="Assembly.GetTypes"/>. If
+    /// <paramref name="addAlternateCompliantConstructor"/> is <see langword="true"/>,
+    /// the type also gets a second, entirely parameterless (therefore
+    /// trivially compliant) constructor — reproducing the specific,
+    /// order-independent variant where a plugin module was fully accepted
+    /// via its own alternate, compliant overload while the same mechanism
+    /// still smuggled the external assembly in unvetted.
+    /// </summary>
+    /// <returns>The full path to the saved assembly file.</returns>
+    public static string BuildPrimaryPluginAssemblyWithExternalConstructorParameter(
+        string outputDirectory,
+        string fileName,
+        string externalAssemblyPath,
+        string externalParameterTypeFullName,
+        string moduleId,
+        string moduleName,
+        string moduleVersion,
+        bool addAlternateCompliantConstructor)
+    {
+        var dllPath = Path.Combine(outputDirectory, fileName);
+
+        var reflectionLoadContext = new AssemblyLoadContext($"ReflectionOnly-{Guid.NewGuid():N}", isCollectible: true);
+        var externalAssembly = reflectionLoadContext.LoadFromAssemblyPath(externalAssemblyPath);
+        var externalParameterType = externalAssembly.GetType(externalParameterTypeFullName, throwOnError: true)!;
+
+        var assemblyName = new AssemblyName($"{Path.GetFileNameWithoutExtension(fileName)}-{Guid.NewGuid():N}");
+        var assemblyBuilder = new PersistedAssemblyBuilder(assemblyName, typeof(object).Assembly);
+        var moduleBuilder = assemblyBuilder.DefineDynamicModule("MainModule");
+        var objectCtor = typeof(object).GetConstructor(Type.EmptyTypes)!;
+
+        var typeBuilder = moduleBuilder.DefineType(
+            $"{assemblyName.Name}.DynamicPrimaryConstructorParameterModule",
+            TypeAttributes.Public | TypeAttributes.Class,
+            typeof(object),
+            [typeof(IModule)]);
+
+        DefineStringProperty(typeBuilder, nameof(IModule.Id), moduleId);
+        DefineStringProperty(typeBuilder, nameof(IModule.Name), moduleName);
+        DefineStringProperty(typeBuilder, nameof(IModule.Version), moduleVersion);
+
+        var externalParameterCtor = typeBuilder.DefineConstructor(
+            MethodAttributes.Public | MethodAttributes.HideBySig | MethodAttributes.SpecialName | MethodAttributes.RTSpecialName,
+            CallingConventions.Standard,
+            [externalParameterType]);
+        var externalParameterIl = externalParameterCtor.GetILGenerator();
+        externalParameterIl.Emit(OpCodes.Ldarg_0);
+        externalParameterIl.Emit(OpCodes.Call, objectCtor);
+        externalParameterIl.Emit(OpCodes.Ret);
+
+        if (addAlternateCompliantConstructor)
+            DefineParameterlessConstructorCallingBase(typeBuilder, objectCtor);
+
+        typeBuilder.CreateType();
+        assemblyBuilder.Save(dllPath);
+
+        reflectionLoadContext.Unload();
+
+        return dllPath;
+    }
+
+    private static void DefineParameterlessConstructorCallingBase(TypeBuilder typeBuilder, ConstructorInfo baseCtor)
+    {
+        var ctorBuilder = typeBuilder.DefineConstructor(
+            MethodAttributes.Public | MethodAttributes.HideBySig | MethodAttributes.SpecialName | MethodAttributes.RTSpecialName,
+            CallingConventions.Standard,
+            Type.EmptyTypes);
+
+        var il = ctorBuilder.GetILGenerator();
+        il.Emit(OpCodes.Ldarg_0);
+        il.Emit(OpCodes.Call, baseCtor);
+        il.Emit(OpCodes.Ret);
+    }
+
+    /// <summary>
     /// Writes a file that is not a valid .NET assembly (or PE image at all)
     /// to <paramref name="outputDirectory"/> under <paramref name="fileName"/>,
     /// so that loading it via <see cref="Assembly.LoadFrom(string)"/> fails
@@ -373,5 +702,82 @@ internal static class DynamicPluginAssemblyBuilder
 
         propertyBuilder.SetGetMethod(getMethod);
         typeBuilder.DefineMethodOverride(getMethod, interfaceProperty.GetGetMethod()!);
+    }
+
+    /// <summary>
+    /// Builds an assembly containing one public, concrete type implementing
+    /// <i>both</i> <see cref="IModule"/> and <see cref="IHostedService"/> —
+    /// <c>WP 13.9.4</c> trust-denial execution boundary remediation test
+    /// scenario. A wholly baseline-compliant, parameterless constructor, so
+    /// denial (when the caller's own manifest requests an out-of-ceiling
+    /// capability) comes purely from the capability check, isolating the
+    /// specific case that previously had zero discovered-type data recorded
+    /// for it at all (<c>FindIneligibleCapability</c> used to short-circuit
+    /// before <c>DiscoverModuleTypes</c> ever ran). Proves the single most
+    /// severe variant WP 13.9.4's own Adversarial Review found: a Type
+    /// correctly excluded from Module Registration through one discovery
+    /// pipeline (<see cref="Modules.ReflectionFrameworkDiscoveryService"/>)
+    /// remaining fully reachable through the sibling, independent Hosted
+    /// Service discovery/registration pipeline
+    /// (<see cref="HostedServiceDiscoveryService"/>/<see cref="IHostedServiceManager"/>)
+    /// unless the SAME denial is propagated to both.
+    /// </summary>
+    /// <returns>The full path to the saved assembly file.</returns>
+    public static string BuildDualModuleAndHostedServiceAssembly(
+        string outputDirectory,
+        string fileName,
+        string moduleId,
+        string moduleName,
+        string moduleVersion)
+    {
+        var dllPath = Path.Combine(outputDirectory, fileName);
+
+        var assemblyName = new AssemblyName($"{Path.GetFileNameWithoutExtension(fileName)}-{Guid.NewGuid():N}");
+        var assemblyBuilder = new PersistedAssemblyBuilder(assemblyName, typeof(object).Assembly);
+        var moduleBuilder = assemblyBuilder.DefineDynamicModule("MainModule");
+        var objectCtor = typeof(object).GetConstructor(Type.EmptyTypes)!;
+
+        var typeBuilder = moduleBuilder.DefineType(
+            $"{assemblyName.Name}.DynamicDualModuleHostedServiceType",
+            TypeAttributes.Public | TypeAttributes.Class,
+            typeof(object),
+            [typeof(IModule), typeof(IHostedService)]);
+
+        DefineStringProperty(typeBuilder, nameof(IModule.Id), moduleId);
+        DefineStringProperty(typeBuilder, nameof(IModule.Name), moduleName);
+        DefineStringProperty(typeBuilder, nameof(IModule.Version), moduleVersion);
+
+        DefineParameterlessConstructorCallingBase(typeBuilder, objectCtor);
+        DefineCompletedTaskMethodOverride(typeBuilder, typeof(IHostedService), nameof(IHostedService.StartAsync));
+        DefineCompletedTaskMethodOverride(typeBuilder, typeof(IHostedService), nameof(IHostedService.StopAsync));
+
+        typeBuilder.CreateType();
+        assemblyBuilder.Save(dllPath);
+
+        return dllPath;
+    }
+
+    /// <summary>
+    /// Defines a public override of <paramref name="interfaceType"/>'s own
+    /// <c>Task MethodName(CancellationToken)</c>-shaped method, returning
+    /// <see cref="Task.CompletedTask"/> unconditionally.
+    /// </summary>
+    private static void DefineCompletedTaskMethodOverride(TypeBuilder typeBuilder, Type interfaceType, string methodName)
+    {
+        var interfaceMethod = interfaceType.GetMethod(methodName)!;
+
+        var methodBuilder = typeBuilder.DefineMethod(
+            methodName,
+            MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.HideBySig,
+            typeof(Task),
+            [typeof(CancellationToken)]);
+
+        var completedTaskGetter = typeof(Task).GetProperty(nameof(Task.CompletedTask))!.GetGetMethod()!;
+
+        var il = methodBuilder.GetILGenerator();
+        il.Emit(OpCodes.Call, completedTaskGetter);
+        il.Emit(OpCodes.Ret);
+
+        typeBuilder.DefineMethodOverride(methodBuilder, interfaceMethod);
     }
 }

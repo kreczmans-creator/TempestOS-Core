@@ -11,6 +11,9 @@ namespace Tempest.Core.Tests.Plugins;
 // (mutated assembly bytes, mutated manifest, wrong certificate, expired
 // certificate, malformed Base64 Value). No mocking of any cryptographic
 // primitive anywhere in this file.
+// WP 13.9.1: see PluginAssemblyLoaderTests.cs's own comment on this same
+// [Collection] attribute.
+[Collection("Console output capture")]
 public class PluginSignatureVerifierTests
 {
     // ------------------------------------------------------------------

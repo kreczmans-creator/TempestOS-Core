@@ -1,11 +1,27 @@
 # Plugin Platform Architecture
 
-**Status: architecture only — `v0.13.0`, `WP 13.0A`.** Every design below
-extends `Plugin Manifest Architecture.md`'s implemented (`WP 4.2`)
-baseline; nothing in this document is implemented yet — implementation is
-`WP 13.0B`'s own, separately-scoped task, exactly mirroring how `WP 4.2A`/
-`WP 4.2B`/`WP 4.2C` settled architecture and ADRs before `WP 4.2` itself
-implemented any of it.
+**Status: Implemented — `v0.13.0`.** Designed `WP 13.0A`; every design
+below extends `Plugin Manifest Architecture.md`'s implemented (`WP 4.2`)
+baseline. Implemented in full by `WP 13.1A` (`ADR-0107`–`ADR-0109`: the
+fixed-point dependency-graph resolution and topological sort, the
+Host-owned `PluginRegistry`/`IPluginRegistry`, the configurable plugins
+root/manifest convention, `IDiagnosticsProvider.Plugins`) — not `WP 13.0B`,
+which this document's own original Recommendation section (below) named
+as the anticipated implementer; `WP 13.0B` was in fact commissioned as an
+independent architecture review of this document instead, a disclosed
+divergence recorded in `docs/releases/v0.13.0/WorkPackages.md`'s own
+`WP 13.0B` row. `WP 13.3A`/`WP 13.3B` subsequently independently
+re-verified every decision in this document against real, current source
+end to end (no remaining gap) and, during that pass, found and fixed one
+genuine registry-Id-spoofing defect adjacent to this document's own
+`PluginRegistryEntry.Id` design (`WP 13.3B`) — this document's own
+technical content was confirmed accurate throughout and required no
+correction of its own. Corrected `WP 13.9.1` (`WP13.9.0 Engineering
+Release Report.md`'s own Governance-readiness Finding 3) — only this
+Status header and the stale `WP 13.0B` implementer citation in
+Recommendation, below, were out of date; the technical content
+throughout the rest of this document was independently confirmed still
+accurate and is unchanged.
 
 ## Overview
 
@@ -581,15 +597,21 @@ a fresh tension between live alternatives.
 
 1. Ratify `ADR-0107`, `ADR-0108`, `ADR-0109` — all three drafted and
    ready for review alongside this document.
-2. A future implementation work package (`WP 13.0B`, already named in
+2. ~~A future implementation work package (`WP 13.0B`, already named in
    `docs/releases/v0.13.0/WorkPackages.md`'s own roadmap-predicted table)
-   may implement `PluginDependency`, the extended `PluginManifest`,
+   may implement~~ **Corrected, `WP 13.9.1`: `WP 13.0B` was in fact
+   commissioned as an independent architecture review of this document,
+   not its implementation — a disclosed divergence, see
+   `docs/releases/v0.13.0/WorkPackages.md`'s own `WP 13.0B` row. The real
+   implementation work this item anticipated —
+   `PluginDependency`, the extended `PluginManifest`,
    `IPluginRegistry`/`PluginRegistry`, the extended `IDiagnosticsProvider`,
    and the corresponding `Host Lifecycle.md`/`Failure Behaviour.md`/
-   `Rejected Designs.md` updates this document anticipates — **not
-   performed by this document**, architecture only, exactly as `Plugin
-   Manifest Architecture.md` itself was once architecture-only ahead of
-   `WP 4.2`.
+   `Rejected Designs.md` updates — was in fact performed by `WP 13.1A`,
+   independently reviewed by `WP 13.1B`, and independently re-verified
+   end to end by `WP 13.3A`/`WP 13.3B`.** Not performed by this document
+   itself, which remains architecture only, exactly as `Plugin Manifest
+   Architecture.md` itself was once architecture-only ahead of `WP 4.2`.
 3. This document's own Manifest v2 field *shapes* for capability/trust
    metadata (`RequestedCapabilities`, `Publisher`, `Signature`) are ready
    to compose with the sibling Trust & Isolation Architecture the moment

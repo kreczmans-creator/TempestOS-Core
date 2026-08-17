@@ -22,6 +22,18 @@ namespace Tempest.Core.Plugins;
 /// a verifying <c>Signature</c> matched against the trust store) decides it —
 /// a manifest never declares its own trust tier directly, exactly as it
 /// never declares its own resolved <see cref="AssemblyPath"/>.
+/// <see cref="TrustTier"/> is the constructor's only new-this-release
+/// required parameter: a security-critical field has no safe implicit
+/// default (any default value, including the most restrictive tier, would
+/// let a caller silently construct a manifest with an unintended trust
+/// grant by simply forgetting to pass it), so it is required exactly as
+/// <see cref="AssemblyPath"/> already is. <see cref="Dependencies"/>,
+/// <see cref="RequestedCapabilities"/>, <see cref="Publisher"/>, and
+/// <see cref="Signature"/> each have a safe, maximally-restrictive default
+/// (an empty collection, or <see langword="null"/> meaning "not declared")
+/// and remain optional, trailing constructor parameters — see
+/// <c>RD-0065</c> in <c>Rejected Designs.md</c> for why <c>trustTier</c>
+/// alone was not also made optional.
 /// </remarks>
 public sealed class PluginManifest
 {
@@ -34,15 +46,21 @@ public sealed class PluginManifest
     /// <param name="minimumPlatformVersion">The minimum platform version the plugin requires.</param>
     /// <param name="assemblyFileName">The declared, manifest-relative assembly file name.</param>
     /// <param name="assemblyPath">The resolved, absolute path to the plugin's assembly.</param>
-    /// <param name="dependencies">The plugin's declared inter-plugin dependencies.</param>
-    /// <param name="requestedCapabilities">The plugin's declared, opaque requested capability identifiers.</param>
-    /// <param name="publisher">The plugin's declared publisher, if any.</param>
-    /// <param name="signature">The plugin's declared signature, if any.</param>
     /// <param name="trustTier">
     /// The plugin's trust tier, as computed by signature verification and
     /// tier assignment (ADR-0112) at Plugin Discovery/Loading time — never a
     /// manifest-declared value; see <see cref="TrustTier"/>.
     /// </param>
+    /// <param name="dependencies">
+    /// The plugin's declared inter-plugin dependencies. Optional; defaults
+    /// to an empty list when omitted.
+    /// </param>
+    /// <param name="requestedCapabilities">
+    /// The plugin's declared, opaque requested capability identifiers.
+    /// Optional; defaults to an empty list when omitted.
+    /// </param>
+    /// <param name="publisher">The plugin's declared publisher, if any. Optional; defaults to <see langword="null"/>.</param>
+    /// <param name="signature">The plugin's declared signature, if any. Optional; defaults to <see langword="null"/>.</param>
     public PluginManifest(
         string id,
         string name,
@@ -50,11 +68,11 @@ public sealed class PluginManifest
         Version minimumPlatformVersion,
         string assemblyFileName,
         string assemblyPath,
-        IReadOnlyList<PluginDependency> dependencies,
-        IReadOnlyList<string> requestedCapabilities,
-        string? publisher,
-        string? signature,
-        PluginTrustTier trustTier)
+        PluginTrustTier trustTier,
+        IReadOnlyList<PluginDependency>? dependencies = null,
+        IReadOnlyList<string>? requestedCapabilities = null,
+        string? publisher = null,
+        string? signature = null)
     {
         Id = id;
         Name = name;
@@ -62,8 +80,8 @@ public sealed class PluginManifest
         MinimumPlatformVersion = minimumPlatformVersion;
         AssemblyFileName = assemblyFileName;
         AssemblyPath = assemblyPath;
-        Dependencies = dependencies;
-        RequestedCapabilities = requestedCapabilities;
+        Dependencies = dependencies ?? [];
+        RequestedCapabilities = requestedCapabilities ?? [];
         Publisher = publisher;
         Signature = signature;
         TrustTier = trustTier;

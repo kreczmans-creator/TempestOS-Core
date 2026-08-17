@@ -2,13 +2,49 @@
 
 ## Status
 
-**Design — `WP 13.0A`, not yet implemented.** This document is the direct
-answer to `Security Roadmap.md` items 1, 2, and 10, commissioned by the
-Product Owner's confirmed commitment to third-party plugins
-(`docs/releases/v0.13.0/WorkPackages.md`). It designs the retrofit
-`ADR-0044` explicitly deferred and named as the future work that would
-close `TD-09`, `TD-10`, and `TD-11` — it does not implement that retrofit.
-Implementation is `WP 13.0B`'s scope, not this document's.
+**Status: Implemented — `v0.13.0`.** Designed `WP 13.0A`; this document is
+the direct answer to `Security Roadmap.md` items 1, 2, and 10,
+commissioned by the Product Owner's confirmed commitment to third-party
+plugins (`docs/releases/v0.13.0/WorkPackages.md`). It designs the
+retrofit `ADR-0044` explicitly deferred and named as the future work that
+would close `TD-09`, `TD-10`, and `TD-11`. **Not `WP 13.0B`** (which this
+document's own original Recommendation section, below, named as the
+anticipated implementer — `WP 13.0B` was in fact commissioned as an
+independent architecture review of this document instead, a disclosed
+divergence recorded in `docs/releases/v0.13.0/WorkPackages.md`'s own
+`WP 13.0B` row); the real retrofit was implemented by `WP 13.2A`
+(`ADR-0110`–`ADR-0112`: trust tier assignment, detached-signature
+verification, capability enforcement, the component-principal model),
+independently reviewed by `WP 13.2B`, and independently re-verified end
+to end by `WP 13.3A`/`WP 13.3B` — closing `TD-09`, `TD-10`, and `TD-11`
+in full. `WP 13.9.0`'s own Security/Trust review subsequently found a
+genuine, empirically-demonstrated multi-assembly trust-boundary bypass in
+the implemented enforcement mechanism's own scope, not previously tracked
+anywhere — see this document's own Risks section, below, for the full
+account of that finding, `WP 13.9.1` Security Remediation's own partial
+fix, and `WP 13.9.3`'s subsequent full closure after `WP 13.9.2`'s
+re-verification found the `WP 13.9.1` fix's own scan still incomplete.
+`WP 13.9.3`'s own Adversarial Review then found a second, separate, more
+severe defect — trust denial never actually prevented a denied plugin's
+module from being discovered, registered, and fully lifecycle-run —
+closed by `WP 13.9.4`; `WP 13.9.4`'s own Adversarial Review, in turn,
+found a third, sibling defect in that same closure (Hosted Service
+Registration was a second, unfiltered pipeline), closed within the same
+Work Package. `WP 13.9.5`'s own independent, final review then found a
+fourth, distinct defect — Module Discovery itself constructed a denied
+plugin's unattributed module before the `WP 13.9.4` execution boundary
+was ever reached, in one variant crashing the Host entirely — closed by
+`WP 13.9.6`, itself verified by a further fresh, independent adversarial
+review finding no remaining gap. See the Risks section's own dedicated
+entries for each.
+Corrected `WP 13.9.1` Governance & Documentation Remediation
+(`WP13.9.0 Engineering Release Report.md`'s own Governance-readiness
+Finding 3): only this Status header and the stale `WP 13.0B` implementer
+citation in Recommendation, below, were out of date — this document's
+own underlying technical content was independently confirmed accurate
+throughout by `WP13.9.0` and required no correction of its own beyond
+the Risks-section update Security Remediation made directly, in parallel,
+for the newly-found trust-boundary finding.
 
 This document is written alongside a parallel, sibling architecture
 effort (`WP 13.0A`'s Plugin Architecture workstream) covering manifest
@@ -484,8 +520,12 @@ assigned trust tier, signature outcome, and granted capability set —
 purely for operator/diagnostic visibility, never write access, never a
 new registration surface. This is a direct, natural extension of the
 existing, established Diagnostics pattern, not a new mechanism — named
-here as a recommendation for `WP 13.0B`/a future Diagnostics update to
-build, not designed in full by this document.
+here as a recommendation for a future Diagnostics update to build, not
+designed in full by this document. **Status, `WP 13.9.1`: still open** —
+confirmed directly, `PluginRegistryEntry` (built by `WP 13.1A`) carries
+only `Id`/`Name`/`Version`/`State`/`Detail`; no trust tier, signature
+outcome, or granted capability set field exists yet anywhere in
+`IDiagnosticsProvider.Plugins`'s own projection.
 
 ## Non-Goals
 
@@ -498,8 +538,9 @@ Explicitly not designed here, each with its own named revisit trigger:
   `IServiceProvider.GetService` directly (bypassing constructor
   injection, if it ever obtains an `IServiceProvider` reference at all)
   is not intercepted by this design. **Revisit trigger:** real evidence,
-  from `WP 13.0B`'s own implementation or a real plugin, that
-  constructor-time gating alone is insufficient.
+  from the retrofit's own implementation (`WP 13.2A`, not `WP 13.0B` —
+  see Status, above) or a real plugin, that constructor-time gating alone
+  is insufficient.
 - **Wildcard/glob capability keys** (for example, `plugin.events.publish:*`).
   Every `plugin.events.publish:<Type>`/`plugin.services.resolve:<Type>`
   key names one exact type. **Revisit trigger:** a real plugin needing
@@ -547,9 +588,177 @@ Explicitly not designed here, each with its own named revisit trigger:
   reflecting over the plugin's own `IModule` types independently of
   Module Discovery's later, official scan.** A divergence between the two
   scans (for example, a future Module Discovery change not mirrored here)
-  would be a real, if narrow, maintenance hazard. `WP 13.0B` should share
+  would be a real, if narrow, maintenance hazard. The implementing Work
+  Package (`WP 13.2A`, not `WP 13.0B` — see Status, above) should share
   the underlying type-scanning logic with `IFrameworkDiscoveryService`
   where practical, rather than duplicating it independently.
+- **Closed, `WP 13.9.3` (corrected from an earlier, incomplete `WP
+  13.9.1` closure claim): the multi-assembly trust-boundary bypass `WP
+  13.9.0`'s Security/Trust review found.** Until the `WP 13.9.1` fix,
+  `PluginAssemblyLoader.EnforceTrust`'s own construction-time conformance
+  check (the bullet directly above) scanned only the one manifest-declared
+  assembly's own types — but .NET only loads a referenced assembly
+  lazily, the moment one of its types is resolved, and Module Discovery
+  (deliberately plugin-unaware, `ADR-0110`) scans the entire process
+  `AppDomain` regardless of which assembly a type came from. A plugin
+  packaging a second, wholly undeclared assembly in its own candidate
+  folder — with a type in its primary, manifest-declared assembly
+  inheriting from a type in that second assembly — had that second
+  assembly's own `IModule` implementers reach Module Discovery with zero
+  trust checking of any kind: no capability check, no constructor-
+  conformance check, no component principal recorded, so its ambient
+  component principal was `null` and therefore treated as First-Party
+  (`PluginTrustPermission.IsFirstParty(null) == true`). Empirically
+  demonstrated by `WP 13.9.0`'s Security/Trust review against this
+  project's own compiled binary — a genuine, previously-untracked
+  Release Blocking finding, not a `TD-49`/`TD-50`-adjacent theoretical
+  risk. `WP 13.9.1` partially closed it: `EnforceTrust` gained a
+  fixed-point, breadth-first scan of every assembly that enters the
+  `AppDomain` as a direct or transitive side effect of examining the
+  plugin's own primary assembly (mirroring `PluginManifestDiscoveryService`'s
+  own dependency-graph fixed-point idiom), applying the identical
+  constructor-conformance check to every discovered `IModule` type across
+  every scanned assembly and recording a component principal for each one
+  — but this scan's own AppDomain diff was taken only around
+  `Assembly.GetTypes()`/`IsAssignableFrom` (the touchpoint that resolves a
+  discovered type's own base-type chain), not around the independent CLR
+  lazy-load trigger a discovered module's own constructor parameter types
+  represent (`ConstructorInfo.GetParameters()`/`ParameterInfo.ParameterType`).
+  `WP 13.9.2`'s re-verification found this gap still empirically
+  exploitable: a second, wholly undeclared assembly reachable only through
+  a non-compliant constructor's own parameter type — never through any
+  base type — again reached Module Discovery with zero trust checking,
+  including a more severe variant where the same module also exposes an
+  alternate, individually-compliant constructor and so is not even
+  rejected on its own conformance check. `WP 13.9.3` closed it in full:
+  each fixed-point scan step now also forces resolution of every
+  discovered module type's every public constructor's every parameter's
+  `ParameterType` before that step's own AppDomain diff is taken, so
+  either lazy-load trigger is captured by the step that caused it, not
+  invisible to it. Non-vacuous regression coverage added for both the
+  direct case and the alternate-compliant-constructor case, plus a
+  three-assembly transitive chain proving the fix generalises beyond a
+  single extra hop, and a benign multi-assembly-with-granted-capability
+  case proving no legitimate plugin regresses. See `ADR-0111`'s own
+  "Corrected, `WP 13.9.3` Multi-Assembly Trust-Boundary Remediation" note.
+  This does not widen the isolation boundary itself — no
+  `AssemblyLoadContext`, no process separation is introduced; the fix
+  only widens the existing capability-scoped enforcement mechanism's own
+  coverage to the plugin's real, complete footprint, and the fixed-point
+  traversal's own termination guarantee (a visited-assembly `HashSet`) is
+  unchanged.
+- **Closed, `WP 13.9.4`: trust denial did not actually gate downstream
+  execution.** A genuinely separate, more severe defect than the
+  multi-assembly scan gap above — found by `WP 13.9.3`'s own Adversarial
+  Review while verifying that fix, independently reconfirmed by
+  `WP 13.9.4`'s own Security workstream with a fresh, live
+  proof-of-concept. `PluginTrustDeniedException` isolated a denied
+  plugin only from `PluginAssemblyLoader.LoadPlugins`'s own returned
+  list and `PluginRegistryState.Loaded` — nothing stopped the plugin's
+  already-loaded assembly (`Assembly.LoadFrom` runs before this check;
+  ADR-0015: that step cannot be undone) from being separately,
+  redundantly rediscovered by Module Discovery (deliberately
+  plugin-unaware, `ADR-0110`) and fully lifecycle-run
+  (`InitialiseAsync`/`StartAsync`), indistinguishable from first-party
+  code: a denied module's ambient component principal is always
+  `null`, and `null` is treated as First-Party
+  (`PluginTrustPermission.IsFirstParty`), so every dynamic capability
+  check downstream (Command/Navigation/Event registration) was skipped
+  too. True of every denial reason — both constructor non-compliance and
+  capability-ceiling exceedance — not only the multi-assembly case; this
+  has been true since `WP 13.2A` first introduced trust denial. Closed
+  by a new, small, additive filter entirely within `TempestHost`'s own
+  orchestration, between Module Discovery's output and Module
+  Registration: every discovered `IModule` type belonging to a denied
+  plugin is now recorded (`IPluginDeniedTypeRecorder`/
+  `IPluginDeniedTypeRegistry`, mirroring
+  `IPluginComponentPrincipalRecorder`/`IPluginComponentPrincipalRegistry`'s
+  own established pattern exactly) and excluded before
+  `RuntimeModuleManager.Register` ever sees it — no `Type` a denied
+  plugin's own trust-evaluation scan discovered can reach Registration,
+  and therefore never Lifecycle, and therefore never Command/
+  Navigation/Event registration. Required reordering `EnforceTrust` so
+  its own `DiscoverModuleTypes` scan runs unconditionally, before either
+  static check, not only ahead of the constructor-conformance check —
+  otherwise a capability-ceiling denial (which previously
+  short-circuited before any module-type discovery ran at all) would
+  still have had no data to record.
+  **This fix's own first pass was itself incomplete** — found by `WP
+  13.9.4`'s own Adversarial Review before this Work Package concluded, not
+  by a later one: Module Discovery/Registration is only one of two wholly
+  independent discovery/registration pipelines a denied plugin's
+  already-loaded assembly can be found through. `BackgroundServices.HostedServiceDiscoveryService`/
+  `BackgroundServices.IHostedServiceManager` is a second, equally
+  plugin-unaware pipeline with no relationship to the first — a single
+  `Type` implementing both `IModule` and `IHostedService`, correctly
+  excluded from Module Registration by the first-pass fix, still reached
+  `StartAsync` unfiltered through Hosted Service Registration, live-PoC
+  confirmed. `DiscoverModuleTypes` was broadened, in the same scan pass,
+  to also collect every discovered `IHostedService` implementer (recorded
+  only on denial — never constructor-checked, never granted a component
+  principal, matching this type's own existing, unrelated lack of a
+  component-scope hook for hosted services); `TempestHost` gained an
+  identical filter at the Hosted Service Discovery → Registration
+  boundary, reading the same registry (renamed `IPluginDeniedTypeRecorder`/
+  `IPluginDeniedTypeRegistry`, from the first pass's narrower
+  `IPluginDeniedModuleTypeRecorder`/`IPluginDeniedModuleTypeRegistry`, since
+  it is no longer `IModule`-scoped) — one registry, keyed on `Type` alone,
+  correctly excludes a dual-interface type from both pipelines regardless
+  of which one would otherwise have found it first.
+  `ReflectionFrameworkDiscoveryService`, `RuntimeModuleManager`,
+  `Modules.ModuleLifecycleManager`, `HostedServiceDiscoveryService`, and
+  `IHostedServiceManager` themselves gain no trust awareness and no other
+  change — both discovery services remain deliberately plugin-unaware, per
+  `ADR-0110`; only `TempestHost`'s own composition-root orchestration
+  gained the two filters. No new isolation mechanism, no
+  `AssemblyLoadContext`, no process separation. See `ADR-0111`'s own
+  "Corrected, `WP 13.9.4` Trust-Denial Execution Boundary Remediation"
+  note.
+- **Closed, `WP 13.9.6`: Module Discovery itself constructed a denied
+  plugin's unattributed module before the `WP 13.9.4` execution boundary
+  was ever consulted.** A third, distinct defect in the same closure —
+  found by `WP 13.9.5`'s own final adversarial review (three independent
+  reviewers, each with a separate live proof-of-concept against the
+  unmodified pipeline), not by `WP 13.9.4` itself.
+  `ReflectionFrameworkDiscoveryService.CreateDescriptor`'s own
+  metadata-reading convention (`ADR-0027`) calls
+  `Activator.CreateInstance` for any `IModule` candidate lacking
+  `[ModuleMetadataAttribute]`, purely to read `Id`/`Name`/`Version` — a
+  pre-plugin-trust convention (`WP 5.3`) that was never a security concern
+  while every module was first-party by construction. Module Discovery
+  runs after Plugin Loading (which already knows, and records, every
+  denied plugin's full type set) but *before* the `WP 13.9.4` Module
+  Registration filter is ever reached — so a denied plugin's unattributed
+  module constructor genuinely ran: real, verified code execution,
+  live-PoC confirmed three separate times. A more severe variant was also
+  found and confirmed: a denied, unattributed module with *no* public
+  parameterless constructor hits `CreateDescriptor`'s own
+  `ModuleDiscoveryException` guard, **uncaught** inside the Discovery
+  loop — Host-fatal, crashing `RunAsync` entirely (a denial-of-service any
+  plugin author could trigger deliberately). `Plugins:AllowUnsignedLoad`
+  is irrelevant to either: capability-ceiling denial alone is a sufficient
+  precondition, requiring no constructor trickery at all. Closed by a
+  small, additive `Func<Type, bool>` predicate (`isTypeExcluded`) threaded
+  into `ReflectionFrameworkDiscoveryService`'s own existing constructor,
+  consulted inside its existing candidate loop immediately after the
+  existing `IsValidModuleType` check and strictly before `CreateDescriptor`
+  is ever called — `TempestHost` supplies `deniedTypeRegistry.IsDenied`,
+  the same, unmodified `WP 13.9.4` registry. Defaults to `null`
+  (never-excluded) for every existing caller/test; `Modules` gains no
+  reference to `Plugins` (the predicate is generic), preserving
+  `ADR-0110`'s "deliberately plugin-unaware" status at the type-reference
+  level exactly as the `WP 13.9.4` Registration filter already did. The
+  existing Registration-time filter remains in place, unchanged, as
+  harmless defense-in-depth for the module pipeline and still fully
+  load-bearing for Hosted Service Registration — confirmed, independently,
+  to need no equivalent fix (`HostedServiceDiscoveryService` never
+  instantiates a candidate at all). Verified non-vacuous by mutation
+  testing (temporarily disabling the guard reproduced both the quiet
+  execution and the `Faulted`-crash failure modes exactly) and by a fresh,
+  independent adversarial review with its own separate, standalone
+  proof-of-concept, finding no remaining or newly-introduced gap. See
+  `ADR-0111`'s own "Corrected, `WP 13.9.6` Module Discovery Trust Boundary
+  Remediation" note.
 - **`Plugins:AllowUnsignedLoad` is a single, global switch**, not
   per-plugin. An operator who enables it for one legitimately-unsigned
   internal tool also permits every other unsigned candidate in the
@@ -576,14 +785,18 @@ plugins exist that depend on it):
 
 ## Recommendation
 
-Adopt all three decisions as a single, coherent package — `WP 13.0B`'s
-implementation brief. Do not implement any one in isolation: the
-capability model (`ADR-0111`) is unenforceable without a trust tier to
-gate it (`ADR-0112`'s signing decision), and the signing decision alone
-closes none of `TD-09`/`TD-10`/`TD-11` without the enforcement calls
-`ADR-0111` designs. Sequence within `WP 13.0B` is an implementation
-decision, not an architectural one — this document does not mandate an
-order.
+Adopt all three decisions as a single, coherent package. **Corrected,
+`WP 13.9.1`: this was, in fact, `WP 13.2A`'s own implementation brief, not
+`WP 13.0B`'s** — `WP 13.0B` was commissioned as an independent
+architecture review of this document instead (see Status, above, and
+`docs/releases/v0.13.0/WorkPackages.md`'s own `WP 13.0B` row). Do not
+implement any one in isolation: the capability model (`ADR-0111`) is
+unenforceable without a trust tier to gate it (`ADR-0112`'s signing
+decision), and the signing decision alone closes none of
+`TD-09`/`TD-10`/`TD-11` without the enforcement calls `ADR-0111` designs.
+`WP 13.2A` did in fact adopt all three together, in one Work Package, not
+sequenced — the sequencing question this paragraph originally left open
+was resolved by not needing to choose.
 
 ## Related Documents
 

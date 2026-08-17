@@ -419,11 +419,11 @@ public sealed class PluginManifestDiscoveryService : IPluginManifestDiscoverySer
             minimumPlatformVersion,
             dto.AssemblyFileName!,
             assemblyPath,
+            trustTier,
             dependencies,
             requestedCapabilities,
             dto.Publisher,
-            dto.Signature,
-            trustTier);
+            dto.Signature);
     }
 
     /// <summary>

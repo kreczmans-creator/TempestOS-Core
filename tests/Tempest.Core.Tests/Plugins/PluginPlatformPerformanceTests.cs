@@ -264,7 +264,7 @@ public class PluginPlatformPerformanceTests
 
             manifests.Add(new PluginManifest(
                 id, $"Load Perf Plugin {i}", "1.0.0", new Version(0, 1, 0),
-                fileName, assemblyPath, [], [], null, null, PluginTrustTier.FirstParty));
+                fileName, assemblyPath, PluginTrustTier.FirstParty));
         }
 
         var loader = new PluginAssemblyLoader();
@@ -402,6 +402,101 @@ public class PluginPlatformPerformanceTests
         AssertProductionMatchesNaiveReference(acceptedById, orderedIds);
     }
 
+    // ------------------------------------------------------------------
+    // 5b. WP 13.9.1 (Verification/Test Remediation sub-agent): a real,
+    //    persisted, randomized differential test - restoring, as a genuine
+    //    committed artefact, the verification value `WP13.3B`'s own commit
+    //    message claimed ("20,000-trial differential fuzz harness... zero
+    //    mismatches, zero nondeterminism") but that `WP13.9.0`'s
+    //    Implementation and Verification disciplines both independently
+    //    confirmed does not exist anywhere in this repository or its
+    //    history - only the four fixed-shape equivalence tests above.
+    //
+    //    10,000 trials, fixed seed 20130 (chosen only for reproducibility;
+    //    it carries no other significance). Each trial builds a fresh,
+    //    randomly-shaped acyclic dependency graph - node count, edge
+    //    density, presence of duplicate dependency declarations, and
+    //    candidate ordering (via BuildInMemoryFixture's own existing
+    //    folder-order scramble) all vary trial-to-trial - and asserts the
+    //    real, current, production TopologicalSort (via reflection, the
+    //    same technique the four tests above already use) exactly matches
+    //    NaiveFullRescanTopologicalSort's independent reimplementation.
+    //    Measured on this machine: ~10,000 trials complete in well under
+    //    two seconds (see this test's own recorded Stopwatch output) - see
+    //    this Work Package's own report for the exact figure.
+    // ------------------------------------------------------------------
+
+    [Fact]
+    public void TopologicalSort_RandomizedTrials_MatchesNaiveFullRescanReference()
+    {
+        const int trialCount = 10_000;
+        const int seed = 20130;
+
+        var random = new Random(Seed: seed);
+        var stopwatch = Stopwatch.StartNew();
+
+        for (var trial = 0; trial < trialCount; trial++)
+        {
+            var nodeCount = random.Next(1, 40);
+            var edgeDensity = random.NextDouble() * 0.5;
+            var allowDuplicateDeclarations = random.Next(2) == 0;
+
+            var edges = BuildRandomDependencyEdges(random, nodeCount, edgeDensity, allowDuplicateDeclarations);
+            var (acceptedById, orderedIds) = BuildInMemoryFixture(edges);
+
+            AssertProductionMatchesNaiveReference(acceptedById, orderedIds);
+        }
+
+        stopwatch.Stop();
+
+        _output.WriteLine(
+            $"[RandomizedDifferential] trials={trialCount}, seed={seed}, " +
+            $"elapsed={stopwatch.ElapsedMilliseconds}ms, " +
+            $"perTrial~={stopwatch.Elapsed.TotalMilliseconds / trialCount:F4}ms");
+    }
+
+    /// <summary>
+    /// Builds a randomly-shaped, guaranteed-acyclic dependency edge map for
+    /// <see cref="TopologicalSort_RandomizedTrials_MatchesNaiveFullRescanReference"/>:
+    /// <paramref name="nodeCount"/> nodes, each node <c>i</c> only ever able
+    /// to depend on an already-generated node <c>j &lt; i</c> (by
+    /// construction - no cycle is ever possible, exactly as a real,
+    /// dependency-resolved plugin set never contains one), each candidate
+    /// edge included independently with probability <paramref name="edgeDensity"/>.
+    /// When <paramref name="allowDuplicateDeclarations"/> is <see langword="true"/>,
+    /// roughly a third of included edges are declared twice in the same
+    /// node's own dependency array - the same "one graph edge, declared
+    /// redundantly" shape
+    /// <see cref="TopologicalSort_DuplicateDeclaredDependencyShape_MatchesNaiveFullRescanReference"/>
+    /// already covers, now varied randomly rather than fixed.
+    /// </summary>
+    private static Dictionary<string, string[]> BuildRandomDependencyEdges(
+        Random random, int nodeCount, double edgeDensity, bool allowDuplicateDeclarations)
+    {
+        var ids = Enumerable.Range(0, nodeCount).Select(i => $"rand.{i:D4}").ToArray();
+        var edges = new Dictionary<string, string[]>(StringComparer.Ordinal);
+
+        for (var i = 0; i < nodeCount; i++)
+        {
+            var dependencyIds = new List<string>();
+
+            for (var j = 0; j < i; j++)
+            {
+                if (random.NextDouble() >= edgeDensity)
+                    continue;
+
+                dependencyIds.Add(ids[j]);
+
+                if (allowDuplicateDeclarations && random.NextDouble() < 0.3)
+                    dependencyIds.Add(ids[j]);
+            }
+
+            edges[ids[i]] = dependencyIds.ToArray();
+        }
+
+        return edges;
+    }
+
     /// <summary>
     /// Invokes both the real, private, production <c>TopologicalSort</c>
     /// (via reflection - the exact same method every real Plugin Discovery
@@ -492,7 +587,7 @@ public class PluginPlatformPerformanceTests
 
             acceptedById[id] = new PluginManifest(
                 id, "Bench", "1.0.0", new Version(0, 1, 0), "Plugin.dll", "Plugin.dll",
-                dependencies, [], null, null, PluginTrustTier.FirstParty);
+                PluginTrustTier.FirstParty, dependencies);
         }
 
         return (acceptedById, orderedIds);

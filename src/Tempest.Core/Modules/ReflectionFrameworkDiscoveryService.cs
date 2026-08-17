@@ -27,12 +27,29 @@ namespace Tempest.Core.Modules;
 /// <c>includeFaultInjectionModules: true</c> — see that interface's own remarks and
 /// ADR-0102.
 /// </para>
+/// <para>
+/// <b>Corrected, WP 13.9.6</b> (Module Discovery Trust Boundary Remediation):
+/// an optional <c>isTypeExcluded</c> predicate, evaluated once per candidate
+/// immediately before <see cref="Activator.CreateInstance(Type)"/> would
+/// otherwise be reached for a type lacking <see cref="ModuleMetadataAttribute"/>.
+/// This class remains deliberately plugin-unaware at the type-reference level
+/// (ADR-0110) - the predicate is a generic <see cref="Func{T,TResult}"/>, never
+/// a reference to any <c>Tempest.Core.Plugins</c> type - but lets a caller
+/// (<c>TempestHost</c>) close the gap where an unattributed module belonging to
+/// a plugin already denied trust would otherwise still be constructed (and, if
+/// it also lacked a public parameterless constructor, would previously fault
+/// the whole Host via an uncaught <see cref="ModuleDiscoveryException"/>) purely
+/// because Module Discovery runs before the existing Module Registration
+/// trust-denial filter is ever consulted. See <c>TempestHost.cs</c>'s own
+/// <c>isTypeExcluded: deniedTypeRegistry.IsDenied</c> wiring.
+/// </para>
 /// </remarks>
 public class ReflectionFrameworkDiscoveryService : IFrameworkDiscoveryService
 {
     private readonly IEnumerable<Assembly> _assemblies;
     private readonly ILogger? _logger;
     private readonly bool _includeFaultInjectionModules;
+    private readonly Func<Type, bool>? _isTypeExcluded;
 
     /// <summary>
     /// Initialises a new instance of the <see cref="ReflectionFrameworkDiscoveryService"/>
@@ -51,8 +68,19 @@ public class ReflectionFrameworkDiscoveryService : IFrameworkDiscoveryService
     /// ADR-0102). Every existing caller's behaviour is unchanged by this
     /// parameter's addition.
     /// </param>
-    public ReflectionFrameworkDiscoveryService(ILogger? logger = null, bool includeFaultInjectionModules = false)
-        : this(AppDomain.CurrentDomain.GetAssemblies(), logger, includeFaultInjectionModules)
+    /// <param name="isTypeExcluded">
+    /// An optional predicate (WP 13.9.6) evaluated once per candidate type
+    /// that already passed <see cref="IsValidModuleType"/>, immediately
+    /// before it would otherwise be constructed to read its metadata. A
+    /// candidate for which this returns <see langword="true"/> is skipped
+    /// entirely - never constructed, never included in the result. Defaults
+    /// to <see langword="null"/>, which excludes nothing, leaving every
+    /// existing caller's behaviour completely unchanged. See this class's
+    /// own remarks for the trust-boundary rationale.
+    /// </param>
+    public ReflectionFrameworkDiscoveryService(
+        ILogger? logger = null, bool includeFaultInjectionModules = false, Func<Type, bool>? isTypeExcluded = null)
+        : this(AppDomain.CurrentDomain.GetAssemblies(), logger, includeFaultInjectionModules, isTypeExcluded)
     {
     }
 
@@ -73,11 +101,23 @@ public class ReflectionFrameworkDiscoveryService : IFrameworkDiscoveryService
     /// explicit candidate-type list naming a fault-injection module still
     /// requires this flag to actually discover it.
     /// </param>
-    public ReflectionFrameworkDiscoveryService(IEnumerable<Assembly> assemblies, ILogger? logger = null, bool includeFaultInjectionModules = false)
+    /// <param name="isTypeExcluded">
+    /// An optional predicate (WP 13.9.6) - see the other constructor's own
+    /// remarks for the complete rationale. Applies identically whether
+    /// candidates come from this constructor's own assembly scan or from an
+    /// explicit candidate-type list passed to
+    /// <see cref="DiscoverModules(IEnumerable{Type})"/>.
+    /// </param>
+    public ReflectionFrameworkDiscoveryService(
+        IEnumerable<Assembly> assemblies,
+        ILogger? logger = null,
+        bool includeFaultInjectionModules = false,
+        Func<Type, bool>? isTypeExcluded = null)
     {
         _assemblies = assemblies;
         _logger = logger;
         _includeFaultInjectionModules = includeFaultInjectionModules;
+        _isTypeExcluded = isTypeExcluded;
     }
 
     /// <inheritdoc />
@@ -112,6 +152,12 @@ public class ReflectionFrameworkDiscoveryService : IFrameworkDiscoveryService
         {
             if (!IsValidModuleType(type))
                 continue;
+
+            if (_isTypeExcluded?.Invoke(type) == true)
+            {
+                _logger?.Warning($"Module type '{type.FullName}' excluded from discovery: its own plugin was denied trust (ADR-0110/ADR-0111/WP 13.9.6).");
+                continue;
+            }
 
             var descriptor = CreateDescriptor(type);
 
