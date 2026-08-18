@@ -1,6 +1,69 @@
 # TempestOS — Project Status
 
-**Last Updated:** 2026-08-18 (`WP 13.12.2`, `v0.13.0` Release
+**Last Updated:** 2026-08-18 (`WP 13.13.1`, `v0.13.1` Release
+Preparation). Prepares `v0.13.1` — the corrected and publishable form of
+`v0.13.0`'s content — on branch `release/v0.13.1`, cut from `main` at
+`ea3fe07`. Zero production code and zero test-code changes; nothing
+pushed, merged, tagged, or published.
+
+**Why `v0.13.1` exists.** `v0.13.0` was genuinely tagged (annotated
+`15aedec` → `6089a218`) and genuinely merged to `main`, with all four
+GitHub Actions jobs green on `main` at that exact pre-tag commit. Its
+tag-triggered `release.yml` run (`32146823154`) then failed at
+`Test (Release)` on one Desktop test, so packaging and publication never
+ran: **no GitHub Release, no `TempestOS-v0.13.0.zip`, no
+engineering-harness asset.** `WP 13.12.8` diagnosed the failure as a
+genuine intermittent flake — a fixed `Task.Delay(50)` racing a real
+disk-write chain, the `TD-46` idiom — and `WP 13.12.9` remediated it
+test-only.
+
+**`v0.13.0`'s tag is immutable and stays exactly as cut**, at
+`6089a218`. Engineering Governance §7.4 forbids moving or recreating a
+pushed tag, and `WP 11.4B`'s tag-position exception is deliberately not
+invoked: it is bounded to a tag's *mechanical position*, never to build
+or test evidence, and only before the release branch closes. `v0.13.0`
+remains in the Release Register as a valid but unpublished historical
+tag, with a truthful row rather than being erased.
+
+**Prepared here:** `VERSION` 0.13.0 → 0.13.1;
+`docs/releases/v0.13.1/Release Notes.md` (stating the supersession,
+preserving the historical-tag distinction, describing the one
+test-determinism correction, and pointing to `v0.13.0`'s own notes for
+the full scope account rather than duplicating twenty-eight Work
+Packages); the `v0.13.1` Release Register row as **In preparation** — a
+fourth status category rather than overloading "released"; ten
+`WorkPackages.md` rows for the Work Packages delivered since
+`WP 13.12.2`; and this Work Package's own Academy retrospective, Index
+entry and Register row.
+
+**Ancestry preserved, not rewritten:** `6089a218` → `7449756` →
+`ea3fe07` → branch tip, linear, zero merge commits, no rebase or squash.
+The combined delta over the `v0.13.0` tagged tree is **2 files, +35/−5,
+zero `src/` files** — `7449756` (test-only, one method) and `ea3fe07`
+(documentation-only).
+
+**Test discipline preserved:** sequential verification throughout, no
+increase in parallelism, no `xunit.runner.json`, no `.runsettings`, no
+`CollectionBehavior`/`maxParallelThreads`/`DisableParallelization`
+change, and the `WP 13.12.9` delay fix deliberately not generalised to
+the other twenty-eight fixed waits in `Tempest.Desktop.Tests`.
+
+**Governance finding, disclosed not absorbed:** `WP 13.12.3` through
+`WP 13.13.0` now have `WorkPackages.md` rows but **no Academy
+retrospectives**. Engineering Governance §6 requires one per Work
+Package. Writing ten was outside this Work Package's commissioned scope,
+so the obligation is recorded here for separate scheduling rather than
+silently carried or quietly closed.
+
+**Verification:** `governance-healthcheck.ps1` 7 passed, 1 warned
+(pre-existing `v0.9.0`/`v0.10.0` informational), 0 failed; Debug and
+Release builds 0 Warnings / 0 Errors; full regression 2,562/2,562 both
+configurations. `origin/main` remains `6089a218`.
+
+**`WP 13.12.2`'s own status line, below this point, is this field's prior
+content — retained, not deleted:**
+
+**Previously updated** 2026-08-18 (`WP 13.12.2`, `v0.13.0` Release
 Documentation Closure). Closes the documentation and governance items
 `WP 13.12.1`'s readiness re-execution enumerated, leaving CI-on-`main` as
 the sole remaining barrier to release. Zero `src/`/`tests/` files
