@@ -1,6 +1,143 @@
 # TempestOS — Project Status
 
-**Last Updated:** 2026-08-18 (`WP 13.11C`, TD-51 Remediation Review &
+**Last Updated:** 2026-08-18 (`WP 13.11D`, `v0.13.0` Plugin Platform Exit
+Review). Read-only review of the complete plugin platform through
+`WP 13.11C` (`c0f3a19`), across six fresh sub-agents
+(Security/Adversarial, Architecture/Runtime, API/Compatibility,
+Verification/Test and RAM-concurrency, Governance/Documentation, WP14
+UI/UX Dependency), scoped deliberately to one question: does anything
+genuinely prevent starting WP14 UI/UX?
+
+## READY FOR WP14 UI/UX
+
+All six disciplines returned no blocker.
+
+**Verified against real source**, centrally re-confirmed before anything
+was written: `TD-51` remains closed — all four elements of the
+`WP 13.11B` mechanism are intact (the `out PluginTrustDeniedException?`
+seam, `RecordDenied` preceding all three throws, the completed
+fixed-point scan, and the four-exception `CreateDescriptor` guard).
+`TD-52` remains closed — hosted-service constructor conformance plus
+`HostedServiceManager`'s own `componentScopeProvider` hook, with
+`IdentityService`'s `plugin.identity.establish` gate live. `TD-55` is
+correctly classified non-blocking: an escalation was attempted from both
+of its halves and failed — the over-recording half is fail-closed, and
+the under-recording half binds a shared assembly to whichever plugin
+legitimately loaded it first, requiring filesystem write access to
+exploit. No public API, dependency, or ADR regression anywhere in
+`v0.13.0`: 111 ADRs matching 111 register rows, **zero** project-file or
+lock-file changes across the entire release, `TargetFramework` unchanged,
+and nothing packaged for external consumption — so the several
+binary-breaking-but-source-compatible constructor additions are inert.
+Multi-assembly/multi-module behaviour is sound, with the fixed-point scan
+proven terminating and complete and sequential plugin loads proven
+non-interfering. Test-suite RAM and concurrency are acceptable and
+structurally capped: every heavy dynamic-assembly emitter already sits
+inside the single serialised collection, so concurrent peak is bounded by
+construction rather than by convention.
+
+**Plugin-facing UI dependencies, stated plainly.** A plugin can
+contribute Navigation items and Commands — both capability-gated, both
+proven end-to-end against real signed plugin assemblies — but **cannot
+contribute any renderable UI content at all**. `NavigationItem` carries
+no rendering concern by explicit design, and the real UI seams
+(`IWorkspaceViewFactory`, `IWorkspacePanel`, `IWorkspaceView`) live in
+`Tempest.App`, which plugin projects do not and structurally cannot
+reference. No trust-tier, granted-capability, or ownership projection
+exists on any DI-public diagnostics surface either. Both gaps are
+**WP14's own first-order design scope, not prerequisites**: there is no
+plugin-facing UI seam to break because none exists, and every extension
+WP14 would need — `IDiagnosticsProvider` members, `PluginRegistryEntry`
+fields, new `PluginCapability` keys, a new UI-contract type — is purely
+additive to contracts explicitly documented as extensible. First-party
+UI is confirmed *not* accidentally blocked by the new capability gates:
+`IsFirstParty(null)` is true and `Rank(null)` is the top rank, so WP14's
+own UI code skips every `RequirePermission` rather than merely
+satisfying it.
+
+**One genuine new finding — `TD-56` — added and deliberately not fixed**,
+this Work Package being read-only by its own instruction. A plugin's own
+**constructor** executes outside its component scope: both
+`ModuleLifecycleManager` and `HostedServiceManager` create the instance
+*before* opening the `componentScopeProvider` scope, so plugin code runs
+during construction with a `null` ambient principal — which every
+capability gate treats as genuine first-party and skips entirely, at the
+top trust rank. A `VerifiedSigned` plugin granted only
+`plugin.services.resolve:Tempest.Core.Identity.IIdentityService`, and
+deliberately *not* `plugin.identity.establish`, can therefore call
+`EstablishCurrentPrincipal` from its constructor and defeat the exact
+gate `TD-52` exists to enforce. Worse, a handler subscribed to
+`IEventBus` from a constructor is recorded with a `null` owner and is
+dispatched unscoped, as first-party, for the remaining life of the
+process. Every link was independently re-confirmed against real source,
+and the reason no prior review caught it was established: the existing
+`AmbientPrincipalCaptureProbe` records inside `StartAsync`, which *is*
+correctly scoped, so it passes regardless.
+
+Graded **Release Blocking for third-party plugin support**, exactly as
+`TD-51` was, and explicitly **not** blocking WP14 or `v0.13.0` as
+shipped — dormant (`src/Plugins/` holds only `README.md`), unreachable
+below `VerifiedSigned` (that tier's ceiling admits no
+`plugin.services.resolve:*` key at all), causing no crash, and entirely
+orthogonal to UI/UX work. It is nonetheless the one place `v0.13.0`'s
+trust boundary is fail-**open** rather than fail-closed, which is why it
+is graded above `TD-55` despite both being dormant. Minimum follow-up,
+defined but not performed: move the scope to enclose construction on both
+axes — the scope key is available before construction on each — a
+statement-ordering change within `ADR-0111`'s existing hook, not a new
+seam, paired with coverage that probes the constructor rather than only
+`StartAsync`.
+
+**Three documentation-accuracy defects corrected**, all disclosed rather
+than silently fixed: `WP 13.9.0` was genuinely complete (commit
+`0b8726f`, with its own Engineering Release Report) yet had no row in
+`WorkPackages.md`'s delivered table — the only completed `v0.13.0` Work
+Package missing from it; that table's preamble still read "Two
+process/governance Work Packages completed so far ... `WP 13.0A` ... has
+not yet begun", written when it held two rows and never updated as it
+grew past twenty; and `Plugin Trust & Isolation Architecture.md`'s
+closing pointer named only `TD-53`/`TD-54`, omitting `TD-55` and `TD-56`,
+the two items that are actually plugin-trust-specific. **A fourth
+reported defect was rejected on inspection**: `WP 13.9.0`'s `Not started`
+cell in the roadmap-*predicted* table is correct and deliberately left
+alone — that table is a frozen branch-cut snapshot the document itself
+states is never re-derived, and "correcting" it would destroy its only
+purpose.
+
+55 → 56 tracked debt items; 18 Resolved and 1 Partially resolved both
+unchanged; 36 → 37 Open. No existing item's status changed;
+`TD-53`/`TD-54` untouched. No ADR added or amended and `ADR Register.md`
+correctly untouched, mirroring `WP 13.11A`–`WP 13.11C`; no Academy
+article, mirroring the unbroken precedent since `WP 13.3B`.
+
+**Zero `src/` and `tests/` files touched** — this Work Package
+implemented nothing, fixed nothing, and created no speculative ADR or
+Work Package, per its own explicit instruction.
+
+**Verification:** Debug and Release builds both 0 Warnings / 0 Errors.
+Debug regression **2,562/2,562**. Release regression recorded honestly
+rather than rounded up: the first Release run returned **2,561/2,562**
+with one failure, and an immediate re-run of the identical binaries
+returned **2,562/2,562** clean. The failing test's identity was lost to
+the log filter used on that run and so is **not** asserted here — but it
+cannot be a regression from this Work Package, which changed zero `src/`
+and zero `tests/` files, and it is the known shape of `TD-34`, a tracked
+intermittent failure caused by a `Console` redirect race that occurs only
+under full-suite parallelism and never in isolation. `TD-34` has been
+extended to record this observation and to name the untracked sibling
+hazard this Work Package's own Verification reviewer found:
+`Logging/ConsoleLogSinkTests.cs` redirects process-global `Console.Out`
+while sitting *outside* the serialising collection that guards the other
+fifty classes doing the same. `governance-healthcheck.ps1` 7 passed, 1
+warned (pre-existing `v0.9.0`/`v0.10.0` informational, unrelated), 0
+failed. No standalone
+report file — delivered directly, in-session, to the commissioning
+conversation.
+
+**`WP 13.11C`'s own status line, below this point, is this field's prior
+content — retained, not deleted:**
+
+**Previously updated** 2026-08-18 (`WP 13.11C`, TD-51 Remediation Review &
 Trust-Boundary Verification). Review of `WP 13.11B` (commit `8341438`)
 against `TD-51`, `ADR-0110`/`ADR-0111`, and the real implementation —
 four fresh, read-only sub-agents (Security/Adversarial,

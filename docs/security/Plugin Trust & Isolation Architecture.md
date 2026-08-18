@@ -1044,6 +1044,41 @@ Explicitly not designed here, each with its own named revisit trigger:
   `ITempestServiceProvider` DI-escape closure) — neither plugin-trust-
   specific, neither release- or WP14-blocking.
 
+  **Extended, `WP 13.11D`** (`v0.13.0` Plugin Platform Exit Review), which
+  found this pointer named only `TD-53`/`TD-54` and omitted the two items
+  that genuinely *are* plugin-trust-specific and therefore belong in this
+  document:
+
+  - **`TD-55`** — `PluginAssemblyLoader.RecordDenied` records every `Type`
+    a denied plugin's transitive scan reached and `PluginDeniedTypeRegistry`
+    is keyed on `Type` identity alone, with no plugin attribution. One
+    plugin's denial can therefore suppress another assembly's module
+    types (over-recording, fail-closed), and an assembly already resident
+    when a plugin is scanned is never attributed to it at all
+    (under-recording, *not* fail-closed). Open, non-blocking; closed only
+    by per-plugin denial scoping.
+  - **`TD-56`** — a plugin's own **constructor** executes outside its
+    component scope, so plugin code runs during construction with a `null`
+    ambient principal, which every capability gate treats as first-party
+    and skips. Both `ModuleLifecycleManager` and `HostedServiceManager`
+    create the instance *before* opening the `componentScopeProvider`
+    scope. A `VerifiedSigned` plugin granted only
+    `plugin.services.resolve:Tempest.Core.Identity.IIdentityService` — and
+    deliberately not `plugin.identity.establish` — can therefore call
+    `EstablishCurrentPrincipal` from its constructor, defeating the very
+    gate `TD-52` exists to enforce; and a handler subscribed to
+    `IEventBus` from a constructor is recorded with a `null` owner and so
+    runs unscoped, as first-party, for the remaining life of the process.
+    Unreachable at `UnsignedLocal` (that tier's ceiling admits no
+    `plugin.services.resolve:*` key at all). **Open — Release Blocking for
+    third-party plugin support, exactly as `TD-51` was; not blocking
+    `v0.13.0` as shipped and not blocking WP14**, since `src/Plugins/` is
+    empty, third-party support is neither enabled nor advertised, nothing
+    crashes, and the path is entirely orthogonal to UI/UX work. This is
+    the one place `v0.13.0`'s trust boundary is genuinely fail-**open**:
+    a plugin gains authority it was never granted. Must be closed before
+    third-party plugin support is enabled.
+
 ## ADRs Required
 
 Three ADRs, numbered `ADR-0110`–`ADR-0112`, each independently meeting
