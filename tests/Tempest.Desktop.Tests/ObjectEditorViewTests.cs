@@ -163,9 +163,35 @@ public sealed class ObjectEditorViewTests
 
             var saveButton = FindButtonByContent(editor, "💾 Save");
             saveButton.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
-            await Task.Delay(50);
 
-            var reread = await domainContext.Repository.FindAsync(target.Id);
+            // Poll the repository for the revised object — re-reading every
+            // iteration, not once after a guess — until the revision number
+            // actually advances or a generous deadline elapses. The Save
+            // handler is an `async void` click subscriber whose task the test
+            // cannot observe, and the revise path performs real disk I/O
+            // (`EngineeringDocumentStore.ReviseAsync` writes both a revision
+            // file and the document, each behind an `AsyncKeyedLock`), so a
+            // fixed `Task.Delay` is a race, not a wait. This is the same
+            // failure mode `TD-46` records for
+            // `VerificationResultSection_RecordPass_...` further down this
+            // file, and the same bounded-poll remedy: found flaky under CI
+            // load, passing on a quiet machine. It bit here for real —
+            // `WP 13.12.7`'s tag-triggered `release.yml` run failed this exact
+            // assertion on the `v0.13.0` commit while the concurrent `ci.yml`
+            // run on the identical SHA passed. This still fails, just as
+            // before, if the revision genuinely never advances — it no longer
+            // fails because the write merely took longer than an arbitrary
+            // guess.
+            IEngineeringObject? reread = null;
+            var deadline = DateTime.UtcNow.AddSeconds(2);
+            while (DateTime.UtcNow < deadline)
+            {
+                reread = await domainContext.Repository.FindAsync(target.Id);
+                if (reread is not null && reread.CurrentRevisionNumber > originalRevision)
+                    break;
+                await Task.Delay(10);
+            }
+
             Assert.True(reread!.CurrentRevisionNumber > originalRevision);
             Assert.Equal("Revised content, WP 10.3A test.", ((IHasRevisions)reread).Content);
         }
