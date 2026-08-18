@@ -84,7 +84,7 @@ Plugin Loading (3.2)           ── extended: loads in dependency-topological
    │                                order (ADR-0107), not folder-name-only
    │                                order; populates the new Plugin Registry
    ▼
-Module Discovery (4) ──────────── completely unchanged, as always
+Module Discovery (4) ──────────── plugin-unaware (see note below)
    ⋮
 Platform Services Registered (6) ── IDiagnosticsProvider gains a new
                                      read-only `Plugins` property (this
@@ -105,7 +105,7 @@ it.
 | **Plugin Loading** *(Host-owned — Phase 3.2)* | Loads each eligible plugin's assembly, now in **dependency-topological order** (ADR-0107), folder name remaining the deterministic tie-break. Populates the new **Plugin Registry** with a `PluginRegistryEntry` for every candidate, loaded or not. | Extended |
 | **Plugin Registry** *(Host-owned, new — `IPluginRegistry`)* | The queryable catalogue of every plugin candidate this run attempted, and its outcome. Never DI-public — mirrors `IRuntimeModuleManager`'s own ADR-0017 boundary exactly. | **New** |
 | **Diagnostics** *(DI-public, existing — `IDiagnosticsProvider`, ADR-0039)* | Gains one new read-only property, `Plugins`, projecting the Plugin Registry's own entries — the identical pattern already used for `Modules`/`HostedServices`. | Extended |
-| **Module Discovery / Registration / Lifecycle** | **Unchanged.** As `Plugin Manifest Architecture.md` insisted, and this document insists again: nothing here changes because plugins gained dependencies, a registry, or a lifecycle document of their own. | Unchanged |
+| **Module Discovery / Registration / Lifecycle** | ~~**Unchanged.** As `Plugin Manifest Architecture.md` insisted, and this document insists again: nothing here changes because plugins gained dependencies, a registry, or a lifecycle document of their own.~~ **Corrected, `WP 13.12.2`: "Unchanged" is false and has been since `WP 13.9.6`.** `ReflectionFrameworkDiscoveryService` gained an optional `Func<Type, bool>? isTypeExcluded` predicate (`WP 13.9.6`); `ModuleLifecycleManager` and `HostedServiceManager` each gained an optional `componentScopeProvider` hook (`WP 13.2A`, extended `WP 13.10B`); `TempestHost` gained trust-denial filters at Module Registration and Hosted Service Registration (`WP 13.9.4`). The accurate claim is **plugin-unaware**, not unchanged: every hook is a generic `Func<>`, and `Tempest.Core.Modules`/`Tempest.Core.BackgroundServices` hold no code reference to `Tempest.Core.Plugins`. The `WP 13.9.1` Status-header assertion that "the technical content throughout the rest of this document was independently confirmed still accurate" was itself invalidated by `WP 13.9.6` landing in the same commit (`d7d19d4`). | **Plugin-unaware, not unchanged** |
 
 The load-bearing claim is identical to the one `Plugin Manifest
 Architecture.md` made: if this design required changing Module Discovery,

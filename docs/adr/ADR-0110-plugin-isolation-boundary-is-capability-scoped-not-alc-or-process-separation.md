@@ -77,11 +77,38 @@ revisit trigger.
   7, as scoped by this Work Package's own commissioning) rather than
   built against a hypothetical, more adversarial actor no named trigger
   yet requires defending against.
-- Leaves Module Discovery, Registration, and Lifecycle completely
+- ~~Leaves Module Discovery, Registration, and Lifecycle completely
   unchanged — `Plugin Manifest Architecture.md`'s own load-bearing
   "Unchanged" claim survives this decision intact, since the
   construction-time conformance check (`ADR-0111`) runs entirely within
-  the existing Plugin Loading phase boundary.
+  the existing Plugin Loading phase boundary.~~
+
+  **Corrected, `WP 13.12.2` Release Documentation Closure.** This bullet
+  is no longer true at the letter, and has not been since `WP 13.9.6`.
+  Module Discovery, Module Registration, Hosted Service Registration, and
+  Module/Hosted Service Lifecycle each did change: `ReflectionFrameworkDiscoveryService`
+  gained an optional `Func<Type, bool>? isTypeExcluded` predicate
+  (`WP 13.9.6`), `ModuleLifecycleManager` and `HostedServiceManager` each
+  gained an optional `Func<string, IDisposable?>`/`Func<Type, IDisposable?>`
+  `componentScopeProvider` hook (`WP 13.2A`, extended `WP 13.10B`), and
+  `TempestHost` gained trust-denial filters at both Registration points
+  (`WP 13.9.4`). The change was disclosed at the time — `ADR-0111`'s own
+  "Corrected, `WP 13.9.6`" note states it — but this bullet was never
+  amended to match, so this ADR carried a false claim for the remainder of
+  the release.
+  **This decision's own substance is unaffected.** What `ADR-0110`
+  actually decided — capability-scoped, in-process enforcement, not a
+  separate `AssemblyLoadContext` and not process separation — is honoured
+  by the shipped code, verified by direct source read (`grep` for
+  `AssemblyLoadContext` across `src/` returns zero hits). The components
+  above also remain plugin-**unaware at the type-reference level**, which
+  is the property this bullet was protecting: every hook added is a
+  generic `Func<>`, and `Tempest.Core.Modules` and
+  `Tempest.Core.BackgroundServices` contain no code reference to
+  `Tempest.Core.Plugins`. The accurate statement is therefore "leaves
+  Module Discovery, Registration, and Lifecycle **plugin-unaware**", not
+  "completely unchanged". Struck rather than deleted, preserving the
+  audit trail.
 
 **Negative:**
 

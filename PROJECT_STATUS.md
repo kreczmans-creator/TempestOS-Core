@@ -1,6 +1,70 @@
 # TempestOS — Project Status
 
-**Last Updated:** 2026-08-18 (`WP 13.11D`, `v0.13.0` Plugin Platform Exit
+**Last Updated:** 2026-08-18 (`WP 13.12.2`, `v0.13.0` Release
+Documentation Closure). Closes the documentation and governance items
+`WP 13.12.1`'s readiness re-execution enumerated, leaving CI-on-`main` as
+the sole remaining barrier to release. Zero `src/`/`tests/` files
+touched; `VERSION` deliberately unbumped; nothing pushed, tagged,
+merged, or released.
+
+**Produced:** `docs/releases/v0.13.0/WP13.12.2 Engineering Release
+Report.md` — this release's **authoritative readiness record**,
+superseding `WP13.9.0 Engineering Release Report.md`, whose **NOT READY**
+verdict was accurate when issued and is now historical (every finding it
+rested on has since been closed, and `TD-53`–`TD-56` did not yet exist).
+And `docs/releases/v0.13.0/Release Notes.md`, absent until now.
+
+**Records added** for `WP 13.12.0`/`13.12.1`/`13.12.2`: three
+`WorkPackages.md` rows, three Academy retrospectives, three Academy
+Index entries, three Academy Register rows. The retrospectives are
+required by Engineering Governance §6 for the rows added — writing the
+rows without them would have re-opened the very finding `WP 13.12.0`
+closed. Academy completeness therefore stands at **28 of 28** delivered
+Work Packages, verified programmatically: zero missing, zero duplicates.
+
+**Eight drift findings corrected**, each by annotation with the original
+retained, never by silent replacement: `DNB-1` (`ADR-0110`'s Consequences
+bullet asserting Module Discovery/Registration/Lifecycle "completely
+unchanged" — false since `WP 13.9.6`; the accurate claim is
+*plugin-unaware*, and `ADR Register.md`'s row gained a matching
+corrected-phase citation); `DNB-2` (the same false claim in
+`Plugin Platform Architecture.md`); `DNB-4` (`Ownership Matrix.md`,
+untouched since `WP 5.2`, gained seven rows covering every `v0.13.0`
+Host-owned component with its single construction site); `DNB-5`
+(`DiagnosticsProvider`'s required fourth parameter named explicitly as a
+real source break); `DNB-7` (the four stale "Current …" dashboard fields
+in this file); `DNB-11` (`TD-34` extended to name `LoggerTests.cs`'s
+unguarded `Console.SetError` — a more direct collider than the one
+already recorded — and "fifty-odd" corrected to the verified 64);
+`DNB-12` (three **live** uses of the colliding "Release Blocking" term,
+missed by `WP 13.12.0` because its pass excluded `docs/academy/03`);
+`DNB-16` (the roadmap-predicted table annotated rather than edited — its
+freeze is inconsistent, its `WP 13.9.0` scope name diverges from what was
+delivered, and its "reproduced verbatim" claim is false).
+
+**Deliberately preserved, not silently tidied:**
+`Feature Register.md`/`Traceability Matrix.md` staleness since `WP 5.3`;
+the Academy Register's `03 Work Packages` row deficit; `TD-42`, `TD-43`,
+`TD-45`; the `v0.9.0`/`v0.10.0` health-check warning.
+
+**Test resource discipline:** the existing serialisation strategy is
+preserved and its record improved — no broad parallel execution
+introduced, no concurrent test processes spawned, and `TD-34` now names
+both unguarded `Console`-redirect colliders rather than one.
+
+**Verification:** Debug and Release builds **0 Warnings / 0 Errors**;
+full regression **2,562/2,562 both configurations**;
+`governance-healthcheck.ps1` **7 passed, 1 warned (pre-existing), 0
+failed**. **Verdict remains `NOT READY`** on one Release Blocking
+finding: `Build & Test` and `CI Gate` have never run on `main` at a
+pre-tag commit (`Engineering Readiness Review Architecture.md` §2.3) — a
+condition no branch-local action can satisfy. Absent it, the derivation
+reaches §4 row 2 and returns **ACCEPT WITH OBSERVATIONS**.
+
+**`WP 13.11D`'s own status line, below this point, is this field's prior
+content — retained, not deleted:**
+
+**Previously updated** 2026-08-18 (`WP 13.11D`, `v0.13.0` Plugin Platform Exit
 Review). Read-only review of the complete plugin platform through
 `WP 13.11C` (`c0f3a19`), across six fresh sub-agents
 (Security/Adversarial, Architecture/Runtime, API/Compatibility,
@@ -74,7 +138,7 @@ and the reason no prior review caught it was established: the existing
 `AmbientPrincipalCaptureProbe` records inside `StartAsync`, which *is*
 correctly scoped, so it passes regardless.
 
-Graded **Release Blocking for third-party plugin support**, exactly as
+Graded **Disclosed, Non-Blocking for `v0.13.0`; mandatory precondition to enabling third-party plugin support**, exactly as
 `TD-51` was, and explicitly **not** blocking WP14 or `v0.13.0` as
 shipped — dormant (`src/Plugins/` holds only `README.md`), unreachable
 below `VerifiedSigned` (that tier's ceiling admits no
@@ -108,7 +172,11 @@ purpose.
 unchanged; 36 → 37 Open. No existing item's status changed;
 `TD-53`/`TD-54` untouched. No ADR added or amended and `ADR Register.md`
 correctly untouched, mirroring `WP 13.11A`–`WP 13.11C`; no Academy
-article, mirroring the unbroken precedent since `WP 13.3B`.
+article at the time, following what was then believed to be established
+precedent — corrected by `WP 13.12.0`, which found no such rule exists
+(`Academy Index.md` states none; Engineering Governance §6 is
+unconditional) and backfilled all sixteen missing retrospectives, this
+one included.
 
 **Zero `src/` and `tests/` files touched** — this Work Package
 implemented nothing, fixed nothing, and created no speculative ADR or
@@ -256,8 +324,10 @@ style. `TempestServiceProvider` and Lifecycle genuinely remain unchanged.
 
 No new ADR and no `ADR Register.md` touch, mirroring `WP 13.11A`/
 `WP 13.11B`'s own precedent for a Work Package amending no ADR; no
-Academy retrospective article, mirroring the unbroken precedent across
-`WP 13.9.x`–`WP 13.11B`. 55 tracked debt items unchanged, 18 Resolved, 1
+Academy retrospective article at the time, following what was then
+believed to be established precedent — corrected by `WP 13.12.0`, which
+found no such rule exists and backfilled all sixteen missing
+retrospectives, this one included. 55 tracked debt items unchanged, 18 Resolved, 1
 Partially resolved, 36 Open — no status changed; `TD-53`/`TD-54`
 deliberately untouched.
 
@@ -573,11 +643,19 @@ correction" claim in `ADR-0111`. `ADR-0111` gained a "Corrected,
 `WP 13.10B`" Status-section note and matching Decision-text amendment —
 not a new ADR; `ADR Register.md`'s own `ADR-0111` citation extended to a
 seventh phase. Added `WP 13.10A`/`WP 13.10B`/`WP 13.10C` rows to
-`WorkPackages.md`. Confirmed, by convention check against
+`WorkPackages.md`. ~~Confirmed, by convention check against
 `Academy Index.md`'s own maintenance rule and the `WP 13.2B`/
 `WP 13.9.1`–`WP 13.9.6` precedent, that none of the three requires a new
-Academy retrospective; confirmed `Security Roadmap.md` items 1/2/10 need
-no update, matching the identical precedent.
+Academy retrospective~~ — **factually wrong; corrected by `WP 13.12.0`.**
+`Academy Index.md` states no such maintenance rule, and the cited
+"precedent" was itself the gap being used to justify its own
+continuation. Engineering Governance §6 is unconditional: "A Work Package
+retrospective (`docs/academy/03 Work Packages/`) is created for **every future work
+package**." All three of `WP 13.10A`/`WP 13.10B`/`WP 13.10C` did require
+retrospectives, and all three now have them. The original claim is struck
+rather than deleted, preserving the audit trail. Confirmed
+`Security Roadmap.md` items 1/2/10 need no update, matching the identical
+precedent.
 
 `governance-healthcheck.ps1`: **7 passed, 1 warned (pre-existing
 `v0.9.0`/`v0.10.0` informational, unrelated), 0 failed** — confirmed
@@ -627,14 +705,23 @@ this register's own "Last Reviewed" narrative gained a matching new entry.
 Added six dense rows to `docs/releases/v0.13.0/WorkPackages.md`
 (`WP 13.9.1`–`WP 13.9.6`, plus this Work Package's own row), matching the
 `WP 13.2A`/`WP 13.3B` row precedent's own density; prepended six matching
-entries to this field (below). Confirmed, by direct convention check
+entries to this field (below). ~~Confirmed, by direct convention check
 against `Academy Index.md`'s own stated maintenance rule and the
 `WP 13.2B`/`WP 13.9.1` precedent (neither has an Academy retrospective,
 both closed with only a `WorkPackages.md` row and a `PROJECT_STATUS.md`
 entry), that `WP 13.9.1`–`WP 13.9.6` do not require new Academy
-retrospective files of their own — a `WorkPackages.md` row plus this
-field's own entry already satisfies this project's actual, established
-requirement; not scope creep to omit them.
+retrospective files of their own~~ — **factually wrong; corrected by
+`WP 13.12.0`.** `Academy Index.md` states no such maintenance rule;
+Engineering Governance §6 requires a retrospective for *every* Work
+Package, unconditionally; and the cited `WP 13.2B`/`WP 13.9.1`
+"precedent" was the very gap this claim was used to perpetuate — a gap
+citing itself as its own justification. `WP 13.2B` moreover has no
+`PROJECT_STATUS.md` entry of its own, so even the precedent's own
+description was inaccurate. All of `WP 13.9.1`–`WP 13.9.6` did require
+retrospectives, and all now have them. The original claim is struck
+rather than deleted, preserving the audit trail. ~~a `WorkPackages.md`
+row plus this field's own entry already satisfies this project's actual,
+established requirement; not scope creep to omit them.~~
 `governance-healthcheck.ps1`: **7 passed, 1 warned (pre-existing
 `v0.9.0`/`v0.10.0` informational, unrelated), 0 failed** — confirmed
 identical both before and after every documentation edit this Work
@@ -2179,6 +2266,14 @@ read `docs/academy/Contributor Learning Path.md`.
 
 ## Current Repository Phase
 
+**Corrected, `WP 13.12.2`.** This field is stale. The current repository
+phase is **`v0.13.0` — Trust & Deployment Hardening**, in progress.
+The `v0.5.0` Developer Experience content below has been out of date
+since that release closed and was never updated across `v0.6.0`–`v0.13.0`;
+it is retained, not deleted. All four "Current …" fields in this lower
+section drifted together and were raised as `DNB-7` by `WP 13.12.1`'s
+readiness re-execution.
+
 **Developer Experience — complete and released as `v0.5.0`.** The
 Foundation phase is complete and closed — Platform Formation, Academy
 Formation, and Governance Formation are all done (see `docs/releases/
@@ -2287,6 +2382,13 @@ Current Work Package, below.
 
 ## Current Development Branch
 
+**Corrected, `WP 13.12.2`.** This field is stale. The current
+development branch is **`feature/v0.13.0`** — the sole integration branch
+for this release (`WP 13.0.0`), cut directly from the `v0.12.0` tag,
+never rebased or squashed, with no upstream configured and no merge to
+`main` yet performed. The `main`/`v0.11.0` content below is retained, not
+deleted.
+
 **`main`** — `feature/v0.11.0-v1-architecture` (`WP 11.0A` through
 `WP 11.4B`, ten Work Packages) has been merged into `main`
 (non-fast-forward merge commit `4b1fb16`, `WP 11.4B`), tagged
@@ -2350,6 +2452,13 @@ project's own convention.
 
 ## Current Release
 
+**Corrected, `WP 13.12.2`.** This field is stale. The current release is
+**`v0.13.0` ("Plugin Platform & Trust Isolation"), in progress on
+`feature/v0.13.0`, not yet merged, tagged, or published**; `VERSION`
+remains `0.12.0` pending the release-time bump. The `v0.11.0` content
+below was never updated across `v0.12.0` (released, tagged `13a6ce3`) or
+`v0.13.0`; it is retained, not deleted.
+
 **`v0.11.0` ("Release Engineering & Architecture Governance") is
 released, published, and merged to `main`** — all ten Work Packages
 (`WP 11.0A` through `WP 11.4B`) complete: TempestOS's first CI
@@ -2387,6 +2496,14 @@ Foundation") before that (tagged `v0.7.0`, `61fb2db`, **APPROVED**);
 Experience") before that; `v0.4.0` ("Platform Foundation") before that.
 
 ## Current Work Package
+
+**Corrected, `WP 13.12.2`.** This field is stale. The current Work
+Package is **`WP 13.12.2` — v0.13.0 Release Documentation Closure**, on
+`feature/v0.13.0`. The `WP 11.3B` content below was last accurate at
+`v0.11.0` and was never updated across `v0.12.0` or `v0.13.0`; it is
+retained, not deleted, per this file's own retention convention. The
+authoritative current state is always the `**Last Updated:**` block at
+the top of this file.
 
 **`WP 11.3B` — Presentation Strategy Implementation.** `v0.11.0`'s own
 seventh Work Package. Executes `WP 11.3A`'s own approved recommendation
