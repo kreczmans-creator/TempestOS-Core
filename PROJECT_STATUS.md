@@ -1,6 +1,142 @@
 # TempestOS — Project Status
 
-**Last Updated:** 2026-08-18 (`WP 13.11B`, TD-51 Trust-Denial Crash
+**Last Updated:** 2026-08-18 (`WP 13.11C`, TD-51 Remediation Review &
+Trust-Boundary Verification). Review of `WP 13.11B` (commit `8341438`)
+against `TD-51`, `ADR-0110`/`ADR-0111`, and the real implementation —
+four fresh, read-only sub-agents (Security/Adversarial,
+Architecture/Runtime, Verification/Test and RAM-concurrency,
+Governance/Documentation), with every revert experiment and every edit
+performed centrally.
+
+**The production fix is clean on every axis it was asked to prove.** An
+unresolvable constructor-parameter type cannot crash the Host on any
+traced path — a full reflection inventory was taken from `LoadPlugins`
+through Module Discovery, Registration, DI registration, Lifecycle, and
+both hosted-service pipelines, and every call able to throw a CLR
+type-load failure is either guarded or provably unreachable for that
+scenario. `RecordDenied` provably precedes every denial `EnforceTrust`
+surfaces, on all three denial paths — `DiscoverModuleTypes` now contains
+no `throw` at all. The `break` exits only the per-constructor loop;
+termination is bounded by the finite `AppDomain` assembly set; the
+per-step before/after diff runs on every path; and no type is dropped
+from the returned lists. Denied `IModule` **and** `IHostedService` types
+are excluded from Discovery, Registration, and Lifecycle, including a
+single type implementing both. The discovery backstop preserves
+`ModuleDiscoveryException`, `DuplicateModuleIdException` (thrown outside
+the guarded block entirely), `ValidateMetadata` failures, and
+`TargetInvocationException`. Legitimate multi-assembly/multi-module
+plugins are byte-identical on the non-failing path. No public API, ADR,
+dependency, or architecture-boundary regression — and
+`ReflectionFrameworkDiscoveryService` references no `Tempest.Core.Plugins`
+type, directly or transitively.
+
+**Finding 1 — material, and the reason this review earned its keep.**
+`WP 13.11B`'s own completed-fixed-point-scan decision had **no regression
+coverage whatsoever**. That decision deliberately rejected `WP 13.11A`'s
+recommended partial-list shape on the grounds it would trade the Host
+crash for a silent trust bypass — it is the security-critical half of the
+remediation and the part its rationale argued at greatest length — yet
+reverting it to the partial-list shape left **all 2,561 tests green**.
+Every existing unresolvable-parameter test deliberately places its
+secondary assembly where the default `AssemblyLoadContext` can never
+probe, so no assembly ever becomes resident mid-scan and the two shapes
+are indistinguishable. A future "simplification" back to the unsafe shape
+would have passed the entire suite. Closed by one new test and one new
+`DynamicPluginAssemblyBuilder` helper carrying both transitive-load
+mechanisms at once: a *reachable* secondary assembly pulled in by an
+anchor type's own base-type-chain resolution during the scan step, plus
+an *unreachable* tertiary supplying the offending constructor parameter
+that trips the denial mid-step, before that step's diff is reached. It
+fails on its own load-bearing assertion under the partial-list revert and
+passes with the fix — which also converts `WP 13.11B`'s trust-bypass
+argument from a stated rationale into a demonstrated one.
+
+**Finding 2 — a factually wrong documented claim.** "Guard already used
+at three other call sites in this exact codebase", inherited verbatim
+from `WP 13.11A` and softened to an unquantified plural rather than
+corrected by `WP 13.11B`. Exactly **one** other call site carries that
+four-exception filter (`DiscoverModuleTypes`' own); `LoadOne`'s
+neighbouring guard is a different three-exception filter
+(`BadImageFormatException`/`FileLoadException`/`IOException`, omitting
+`TypeLoadException`) and the rest are single-`ReflectionTypeLoadException`
+catches. Corrected in all four documents that repeated it and in the
+production comment that asserted it.
+
+**All three defences proven non-vacuously by individual reversion**, as
+this Work Package's own test discipline required: reverting `RecordDenied`
+fails 4 tests; reverting the discovery guard fails exactly 1; reverting
+the completed-scan semantics fails exactly the new test; reverting the
+first two together reproduces `TD-51`'s Host crash end-to-end
+(`Expected: Running, Actual: Faulted`). Both production files were
+confirmed content-identical to `8341438` after every experiment.
+
+**`TD-55` extended** to name the complementary **under**-recording half of
+the same attribution defect, which its original "never wrongly included"
+wording concealed and which is genuinely not fail-closed:
+`DiscoverModuleTypes` takes its per-step `before` snapshot only after
+`LoadOne`'s own `Assembly.LoadFrom` has returned, so an assembly already
+resident when a given plugin is scanned is never attributed to that
+plugin at all. `WP 13.9.1` reasoned that such an assembly is resident
+"for an unrelated reason" — but a *second plugin* is very much a related
+reason. Adversarial review could not construct a privilege escalation
+from it, so it is recorded as attribution imprecision of the same root
+cause rather than a separate exploitable finding; per-plugin denial
+scoping closes both halves at once.
+
+**`ADR-0013` reviewed, no amendment required.** Its Decision states that
+if "Discovery throws" the Host aborts to `Faulted`, with no "partial
+platform ... with ... Discovery having silently failed". The backstop
+deliberately stops Discovery throwing for four CLR type-load classes.
+This is the same isolation `ADR-0025`'s own category 8 already ratifies,
+and `ADR-0025` explicitly extends `ADR-0013`'s boundary "rather than
+complicating it". The genuine residue — category 8 is written
+per-*assembly* while this guard is per-*candidate*, and it also covers
+first-party candidates, so a first-party module with a missing dependency
+assembly now disappears with a `Warning` rather than faulting loudly — is
+disclosed in `Plugin Trust & Isolation Architecture.md` rather than
+amended into either ADR.
+
+**Test parallelism deliberately unchanged.** The new file's
+`"Console output capture"` membership is genuinely required — it is a
+*producer* side of the process-global `AppDomain`-diff race via
+`Assembly.LoadFrom`, even though it never invokes `PluginAssemblyLoader`
+itself. No suite was globally serialised. Two pre-existing, non-blocking
+observations recorded but not acted on: that collection has become a
+catch-all conflating two distinct shared-state hazards (`Console.Out`
+redirection and `AppDomain` assembly loading), serialising ~32% of the
+Core suite, with `Logging/ConsoleLogSinkTests.cs` redirecting
+`Console.Out` while sitting *outside* it; and
+`PluginPlatformPerformanceTests.cs` is the suite's dominant RAM consumer
+at roughly 1,700 permanently-resident dynamic assemblies, against this
+Work Package's 1 added.
+
+**One pre-existing Academy staleness corrected in place**:
+`07-plugin-architecture.md`'s "with zero change to
+`TempestServiceProvider`, Module Discovery, Registration, or Lifecycle"
+claim has been false since `WP 13.9.6`, not `WP 13.11B`, and now carries
+a supersession marker in that article's own established strikethrough
+style. `TempestServiceProvider` and Lifecycle genuinely remain unchanged.
+
+No new ADR and no `ADR Register.md` touch, mirroring `WP 13.11A`/
+`WP 13.11B`'s own precedent for a Work Package amending no ADR; no
+Academy retrospective article, mirroring the unbroken precedent across
+`WP 13.9.x`–`WP 13.11B`. 55 tracked debt items unchanged, 18 Resolved, 1
+Partially resolved, 36 Open — no status changed; `TD-53`/`TD-54`
+deliberately untouched.
+
+**Verification:** Debug and Release builds both 0 Warnings / 0 Errors
+(`-p:TreatWarningsAsErrors=true`); full regression **2,562/2,562 both
+configurations** (2,561 + 1 new); `governance-healthcheck.ps1` **7
+passed, 1 warned (pre-existing `v0.9.0`/`v0.10.0` informational,
+unrelated), 0 failed**. Working tree confirmed to contain only the
+intended review changes: one new test, one new test-builder helper, one
+corrected production comment, and documentation. No standalone report
+file — delivered directly, in-session, to the commissioning conversation.
+
+**`WP 13.11B`'s own status line, below this point, is this field's prior
+content — retained, not deleted:**
+
+**Previously updated** 2026-08-18 (`WP 13.11B`, TD-51 Trust-Denial Crash
 Remediation). Implementation — closes the single Release-blocking finding
 `WP 13.11A` raised, by that review's own recommended minimum fix, taking
 both of its options and no wider. Four parallel sub-agents
@@ -46,9 +182,10 @@ before/after `AppDomain` diff still runs.
 **(b) The backstop.** `ReflectionFrameworkDiscoveryService.DiscoverModules`
 now wraps its own `CreateDescriptor` call in the same narrow
 `TypeLoadException`/`FileNotFoundException`/`FileLoadException`/
-`BadImageFormatException` guard already used at other call sites in this
-codebase: the candidate is excluded and logged, never a crash and never a
-silent inclusion. The class gains no plugin awareness (ADR-0110) — it is
+`BadImageFormatException` guard already used at the one other call site
+in this codebase — `DiscoverModuleTypes`' own (corrected from "other call
+sites", `WP 13.11C`): the candidate is excluded and logged, never a crash
+and never a silent inclusion. The class gains no plugin awareness (ADR-0110) — it is
 a reflection guard, not a trust decision — and `ModuleDiscoveryException`
 derives from none of the four, so the long-standing `WP 5.3` "no
 parameterless constructor and no `[ModuleMetadataAttribute]`" guidance

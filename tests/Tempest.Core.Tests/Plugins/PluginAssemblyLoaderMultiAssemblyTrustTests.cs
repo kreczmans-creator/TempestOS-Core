@@ -1037,6 +1037,173 @@ public class PluginAssemblyLoaderMultiAssemblyTrustTests
     }
 
     /// <summary>
+    /// <b>WP 13.11C.</b> The one test that makes <c>WP 13.11B</c>'s own
+    /// completed-fixed-point-scan decision observable — the security-critical
+    /// half of that fix which, as this Work Package's own Verification review
+    /// found, had no regression coverage whatsoever: reverting it to
+    /// <c>WP 13.11A</c>'s own recommended partial-list shape left all 2,561
+    /// existing tests green, because every other unresolvable-parameter test
+    /// deliberately places its secondary assembly somewhere the default
+    /// <see cref="AssemblyLoadContext"/> can never probe, so no assembly ever
+    /// becomes resident mid-scan and the partial list and the fixed-point list
+    /// are byte-identical.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The shape that separates them needs both transitive-load mechanisms in
+    /// one plugin, and a <i>reachable</i> secondary assembly:
+    /// </para>
+    /// <list type="number">
+    /// <item><description>
+    /// <c>DiscoverModuleTypes</c> takes its step-1 <c>before</c> snapshot, then
+    /// calls <see cref="Assembly.GetTypes"/> on the primary — whose anchor
+    /// type's own base-type-chain resolution pulls the <b>reachable</b>
+    /// secondary assembly into the <c>AppDomain</c>, right there inside the
+    /// step, after the snapshot.
+    /// </description></item>
+    /// <item><description>
+    /// The primary's own module type then trips the unresolvable-constructor-
+    /// parameter denial in the middle of that same step, <i>before</i> the
+    /// step's own end-of-body before/after diff is ever reached.
+    /// </description></item>
+    /// <item><description>
+    /// Under the partial-list shape the scan returns there and then: the diff
+    /// never runs, the secondary assembly is never enqueued, its own
+    /// <see cref="IModule"/> implementer is never scanned and never recorded
+    /// denied — yet it is fully resident in the process (ADR-0015: that cannot
+    /// be undone) and fully visible to Module Discovery's own deliberately
+    /// plugin-unaware <c>AppDomain</c> scan (ADR-0110). Being well-formed
+    /// (parameterless constructor, valid metadata) it would then be
+    /// registered and lifecycle-run with a <see langword="null"/>, and
+    /// therefore First-Party-treated
+    /// (<see cref="PluginTrustPermission.IsFirstParty"/>), ambient component
+    /// principal — a silent trust bypass in place of the Host crash
+    /// <c>TD-51</c> described, which is strictly worse and not fail-closed.
+    /// </description></item>
+    /// <item><description>
+    /// Letting the scan run on to its own fixed point is what closes it: the
+    /// diff still runs, the secondary is enqueued, step 2 scans it, and
+    /// <c>RecordDenied</c> covers its module type along with everything else
+    /// the plugin reached.
+    /// </description></item>
+    /// </list>
+    /// <para>
+    /// Non-vacuity confirmed by construction: with <c>DiscoverModuleTypes</c>'s
+    /// own <c>catch</c> reverted to record-partial-and-return, this test fails
+    /// on the secondary assembly's own assertion below while every other test
+    /// in the suite still passes.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void LoadPlugins_UnresolvableConstructorParameterType_StillRecordsModuleTypesFromAssembliesLoadedEarlierInTheSameScanStep()
+    {
+        using var temp = new TempDirectory();
+
+        // The UNREACHABLE tertiary assembly, supplying the constructor
+        // parameter type that cannot be resolved - saved where the default
+        // AssemblyLoadContext's own directory-probing will never search.
+        var unreachableDirectory = Path.Combine(temp.Path, "wp1311c-unreachable");
+        Directory.CreateDirectory(unreachableDirectory);
+
+        var unreachableAssemblyPath = DynamicPluginAssemblyBuilder.BuildSecondaryAssemblyWithBaseTypeAndModule(
+            unreachableDirectory,
+            "Wp1311cUnreachableTertiary",
+            "UnreachableParameterType",
+            "UnreachableInertModule",
+            "test.wp1311c-unreachable-module",
+            "Unreachable Inert Module",
+            "1.0.0",
+            [typeof(ILogger), typeof(IConfigurationProvider), typeof(IDiagnosticsProvider)]);
+
+        var unreachableAssemblyName = Path.GetFileNameWithoutExtension(unreachableAssemblyPath);
+
+        // The REACHABLE secondary assembly - deliberately saved ALONGSIDE the
+        // primary, so probing genuinely finds it and it genuinely enters the
+        // AppDomain mid-scan. Its own InertModule is entirely well-formed: a
+        // fully baseline-compliant constructor and valid metadata, so nothing
+        // about the module itself would ever stop it running. That is the
+        // point - only being recorded denied stops it.
+        var reachableAssemblyPath = DynamicPluginAssemblyBuilder.BuildSecondaryAssemblyWithBaseTypeAndModule(
+            temp.Path,
+            "Wp1311cReachableSecondary",
+            "ReachableBaseType",
+            "ReachableInertModule",
+            "test.wp1311c-reachable-secondary-module",
+            "Reachable Inert Module",
+            "1.0.0",
+            [typeof(ILogger), typeof(IConfigurationProvider), typeof(IDiagnosticsProvider)]);
+
+        var reachableAssemblyName = Path.GetFileNameWithoutExtension(reachableAssemblyPath);
+
+        var primaryAssemblyPath = DynamicPluginAssemblyBuilder
+            .BuildPrimaryPluginAssemblyWithReachableBaseTypeAnchorAndUnresolvableConstructorParameter(
+                temp.Path,
+                "Wp1311cPrimary.dll",
+                reachableAssemblyPath,
+                $"{reachableAssemblyName}.ReachableBaseType",
+                unreachableAssemblyPath,
+                $"{unreachableAssemblyName}.UnreachableParameterType",
+                moduleId: "test.wp1311c-primary-module",
+                moduleName: "WP 13.11C Primary Module",
+                moduleVersion: "1.0.0");
+
+        var manifest = CreateManifest(
+            "test.wp1311c-plugin", primaryAssemblyPath, PluginTrustTier.UnsignedLocal, []);
+
+        var registry = new PluginRegistry();
+        var deniedTypeRegistry = new PluginDeniedTypeRegistry();
+        var loader = new PluginAssemblyLoader(new RecordingLevelLogger(), registry, null, deniedTypeRegistry);
+
+        Assert.Empty(loader.LoadPlugins([manifest]));
+
+        var entry = Assert.Single(registry.Entries);
+        Assert.Equal(PluginRegistryState.TrustDenied, entry.State);
+        Assert.Contains("could not be resolved", entry.Detail!, StringComparison.OrdinalIgnoreCase);
+
+        // Sanity: the primary's own module type is recorded denied on any
+        // shape of the fix, partial-list or fixed-point alike. This assertion
+        // is deliberately NOT the one carrying this test - it passes either
+        // way, and is here only to prove the denial itself really happened
+        // before the assertion that matters.
+        var primaryModuleType = System.Reflection.Assembly.LoadFrom(primaryAssemblyPath).GetTypes()
+            .Single(type => typeof(IModule).IsAssignableFrom(type) && !type.IsInterface && !type.IsAbstract);
+        Assert.True(deniedTypeRegistry.IsDenied(primaryModuleType));
+
+        // Proof the reachable secondary genuinely entered the AppDomain as a
+        // side effect of the scan - never via any explicit Assembly.LoadFrom
+        // of it in this test, and never declared in the manifest. If this
+        // fails, the test has stopped exercising its own mechanism and the
+        // assertion below would pass vacuously.
+        // Explicitly the DEFAULT load context's copy. The builder above also
+        // reflection-loads this same assembly into a temporary collectible
+        // context to emit IL against its base type; Unload() is asynchronous,
+        // so that copy can still be enumerable here under the identical simple
+        // name. Only the default-context copy is the one the scan actually
+        // pulled in, and only its Type identities are the ones
+        // deniedTypeRegistry is keyed on.
+        var reachableAssembly = AssemblyLoadContext.Default.Assemblies
+            .SingleOrDefault(a => string.Equals(a.GetName().Name, reachableAssemblyName, StringComparison.Ordinal));
+        Assert.NotNull(reachableAssembly);
+
+        var reachableInertModuleType = reachableAssembly!.GetTypes()
+            .Single(type => typeof(IModule).IsAssignableFrom(type) && !type.IsInterface && !type.IsAbstract);
+
+        // THE LOAD-BEARING ASSERTION - the only one in the suite that
+        // distinguishes WP 13.11B's completed fixed-point scan from
+        // WP 13.11A's own recommended partial-list shape. Under the partial
+        // list this type is absent from deniedTypeRegistry, is therefore not
+        // excluded by TempestHost's own WP 13.9.6 Module Discovery filter or
+        // its Module Registration filter, and runs with a null - First-Party-
+        // treated - ambient component principal.
+        Assert.True(
+            deniedTypeRegistry.IsDenied(reachableInertModuleType),
+            "A denied plugin's own scan must run to its fixed point: an assembly that entered the AppDomain " +
+            "earlier in the SAME scan step must still be scanned and its module types recorded denied. " +
+            "Aborting the scan at the denial strands it - resident, un-vetted, and still fully visible to " +
+            "Module Discovery's own plugin-unaware AppDomain scan.");
+    }
+
+    /// <summary>
     /// Resolves a plain (non-<see cref="Modules.IModule"/>-implementing)
     /// type by full name from an already-saved assembly file, via a
     /// temporary, dedicated <see cref="AssemblyLoadContext"/> - mirroring

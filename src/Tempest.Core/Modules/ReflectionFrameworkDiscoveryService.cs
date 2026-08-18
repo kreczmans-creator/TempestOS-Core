@@ -199,8 +199,17 @@ public class ReflectionFrameworkDiscoveryService : IFrameworkDiscoveryService
             // logged, exactly like the WP 13.9.6 trust exclusion above: never
             // a crash, and never a silent inclusion. Deliberately narrow -
             // only the four CLR type-load failures, matching the guard shape
-            // PluginAssemblyLoader.DiscoverModuleTypes and its own LoadOne
-            // already use. ModuleDiscoveryException (including the WP 5.3
+            // PluginAssemblyLoader.DiscoverModuleTypes already uses, verbatim
+            // and uniquely. Corrected, WP 13.11C: this comment previously also
+            // cited PluginAssemblyLoader.LoadOne as the same shape, and the
+            // governance record inherited a WP 13.11A claim of "three other
+            // call sites". Both were wrong on the facts. LoadOne guards a
+            // different failure (Assembly.LoadFrom itself) with a different,
+            // three-exception filter - BadImageFormatException, FileLoadException,
+            // IOException - which omits TypeLoadException entirely and adds
+            // IOException. DiscoverModuleTypes' guard is the ONLY other
+            // occurrence of this exact four-exception filter in src/.
+            // ModuleDiscoveryException (including the WP 5.3
             // "no parameterless constructor and no [ModuleMetadataAttribute]"
             // guidance and every ValidateMetadata failure) derives from none
             // of the four and still propagates, unchanged.

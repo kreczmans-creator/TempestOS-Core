@@ -57,10 +57,14 @@ through a newer one (`WP 13.9.3`'s own reflection guard, later widened by
 filter. **Closed, `WP 13.11B`** — the denial path now records every type
 its own fixed-point scan discovered before throwing, so `WP 13.9.6`'s own
 Module Discovery filter genuinely excludes it, and `CreateDescriptor`
-gained the same fail-closed reflection guard as a backstop. See the Risks
-section's own "Reopened `WP 13.11A`, closed `WP 13.11B`" entry for the
-full account and `Technical Debt Register.md`'s own updated `TD-51`
-Status cell.
+gained the same fail-closed reflection guard as a backstop.
+Independently re-verified, `WP 13.11C` — four fresh read-only reviewers,
+each of the three defences proven non-vacuously by individual reversion,
+which closed the one genuine gap that review found (the
+completed-fixed-point-scan decision had no regression coverage at all).
+See the Risks section's own "Reopened `WP 13.11A`, closed `WP 13.11B`"
+entry for the full account and `Technical Debt Register.md`'s own updated
+`TD-51` Status cell.
 Corrected `WP 13.9.1` Governance & Documentation Remediation
 (`WP13.9.0 Engineering Release Report.md`'s own Governance-readiness
 Finding 3): only this Status header and the stale `WP 13.0B` implementer
@@ -988,12 +992,51 @@ Explicitly not designed here, each with its own named revisit trigger:
   and the per-step before/after `AppDomain` diff still runs. Then the
   backstop: `ReflectionFrameworkDiscoveryService.DiscoverModules` now
   wraps its own `CreateDescriptor` call in the same four-exception guard
-  already used at other call sites in this codebase, excluding and logging
+  already used at the one other call site in this codebase (`DiscoverModuleTypes`' own; corrected from "other call sites", `WP 13.11C`), excluding and logging
   the candidate instead of faulting the Host. That class gains no plugin
   awareness (ADR-0110) — it is a reflection guard, not a trust decision,
   and the guard is deliberately narrow: `ModuleDiscoveryException` derives
   from none of the four, so the `WP 5.3` "no parameterless constructor and
-  no `[ModuleMetadataAttribute]`" guidance still propagates unchanged. See
+  no `[ModuleMetadataAttribute]`" guidance still propagates unchanged.
+
+  **Independently re-verified, `WP 13.11C`** (four fresh read-only
+  reviewers: Security/Adversarial, Architecture/Runtime, Verification/Test
+  and RAM-concurrency, Governance/Documentation), which additionally
+  proved each of the three defences non-vacuously by reverting them
+  individually. Two findings, both closed by that Work Package: the
+  completed-fixed-point-scan decision — the security-critical half of this
+  remediation — had **no regression coverage at all** (reverting it to
+  `WP 13.11A`'s own recommended partial-list shape left all 2,561 tests
+  green), now closed by a dedicated test proving a reachable secondary
+  assembly loaded mid-scan is still recorded denied; and the "three other
+  call sites" claim inherited from `WP 13.11A` was factually wrong, now
+  corrected wherever it appeared.
+
+  **`ADR-0013` reviewed and found not to require amendment, `WP 13.11C`.**
+  Its Decision states that if "Discovery throws ... the Host aborts
+  startup entirely and transitions to `Faulted`", and that there is no
+  "partial platform ... with ... Discovery having silently failed". The
+  backstop above deliberately stops Discovery throwing for four CLR
+  type-load failure classes, dropping the candidate with a `Warning`
+  instead. This is the same isolation `ADR-0025`'s own category 8
+  ("Reflection/type load failure while scanning the plugin's types —
+  **Isolated**, Warning") already ratified and which
+  `ReflectionFrameworkDiscoveryService.GetLoadableTypes` has always
+  performed; `ADR-0025` explicitly "extends `ADR-0013`'s existing boundary
+  rather than complicating it". The genuine residue is that category 8 is
+  written per-*assembly* whereas this guard is per-*candidate*, and that
+  this class is deliberately plugin-unaware (ADR-0110) so the guard also
+  covers first-party module candidates — a first-party module whose
+  dependency assembly is missing from a deployment now disappears with a
+  `Warning` rather than faulting the Host loudly. Judged same-category,
+  fail-closed, and in the direction `ADR-0025` already chose, so it is
+  disclosed here rather than amended into either ADR. `ADR-0013`'s
+  Host-fatal path for genuine Discovery defects is untouched:
+  `ModuleDiscoveryException` and `DuplicateModuleIdException` derive from
+  none of the four caught types, and the latter is thrown outside the
+  guarded block entirely.
+
+  See
   `Technical Debt Register.md`'s own updated `TD-51` Status cell for full
   detail, and `TD-53`/`TD-54` for two further, low-severity, non-blocking
   items the same review found (a hosted-service construction-throw

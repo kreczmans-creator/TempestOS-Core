@@ -264,7 +264,17 @@ a loaded plugin is trusted to do. Four points carry the whole design:
   `plugin.services.resolve:*` declarations (this is the concrete
   mechanism that closes the "resolve a given service" half of `TD-09`,
   with zero change to `TempestServiceProvider`, Module Discovery,
-  Registration, or Lifecycle); and **dynamically**, at the call site —
+  Registration, or Lifecycle — ~~**as designed, `WP 13.0A`**~~
+  **superseded, `WP 13.9.6`/`WP 13.11B`**: the "zero change to Module
+  Discovery, Registration" half of this sentence has not held since
+  `WP 13.9.6` added `ReflectionFrameworkDiscoveryService`'s own optional
+  `isTypeExcluded` predicate and `TempestHost`'s two trust-denial
+  registration filters, and `WP 13.11B` changed Module Discovery a second
+  time, adding a fail-closed reflection guard around `CreateDescriptor`.
+  `TempestServiceProvider` and Lifecycle remain genuinely unchanged.
+  Flagged and corrected here by `WP 13.11C`; see
+  `Plugin Trust & Isolation Architecture.md` and `ADR-0111` for the
+  current mechanism); and **dynamically**, at the call site —
   one `RequirePermission` call added to `NavigationService.Register`/
   `Unregister`, the Command Framework's registration path, and
   `IEventBus.PublishAsync`, skipped entirely when the caller is

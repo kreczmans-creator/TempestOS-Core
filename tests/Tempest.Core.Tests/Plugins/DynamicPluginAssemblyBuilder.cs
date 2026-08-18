@@ -658,6 +658,120 @@ internal static class DynamicPluginAssemblyBuilder
         return dllPath;
     }
 
+    /// <summary>
+    /// Builds a plugin's own primary, manifest-declared assembly carrying
+    /// <b>both</b> of this suite's established transitive-load mechanisms at
+    /// once (WP 13.11C): one public anchor type inheriting from
+    /// <paramref name="reachableBaseTypeFullName"/> — a type in the already-saved
+    /// <paramref name="reachableSecondaryAssemblyPath"/>, deliberately saved
+    /// <i>alongside</i> this assembly so the default <c>AssemblyLoadContext</c>'s
+    /// own directory-probing genuinely finds and loads it during
+    /// <see cref="Assembly.GetTypes"/>'s own base-type-chain resolution — and,
+    /// separately, one public <see cref="IModule"/> implementer whose sole
+    /// constructor takes a parameter of
+    /// <paramref name="unreachableParameterTypeFullName"/>, a type in
+    /// <paramref name="unreachableAssemblyPath"/>, deliberately saved to a
+    /// directory that probing will never search, so resolving it genuinely
+    /// throws.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// This exact combination is what makes <c>WP 13.11B</c>'s own
+    /// completed-fixed-point-scan decision observable, and it is the only
+    /// shape that does. The anchor forces the reachable secondary assembly to
+    /// enter the <c>AppDomain</c> during the scan step's own
+    /// <see cref="Assembly.GetTypes"/> call — i.e. <i>after</i>
+    /// <c>DiscoverModuleTypes</c> took that step's <c>before</c> snapshot, so
+    /// the step's own before/after diff at the <i>end</i> of the loop body is
+    /// the only thing that can discover it — while the module's own
+    /// unresolvable constructor parameter trips the denial <i>in the middle</i>
+    /// of that same step, before the diff is reached. Aborting the scan at
+    /// that point (<c>WP 13.11A</c>'s own recommended partial-list shape)
+    /// therefore silently strands the secondary assembly: resident in the
+    /// process, its <see cref="IModule"/> implementers never scanned, never
+    /// recorded denied, and yet fully visible to Module Discovery's own
+    /// deliberately plugin-unaware <c>AppDomain</c> scan (ADR-0110). Letting
+    /// the scan run on to its fixed point is what closes it.
+    /// </para>
+    /// <para>
+    /// Both external types are resolved through one temporary, collectible
+    /// <see cref="AssemblyLoadContext"/>, used only to obtain real, reflectable
+    /// <see cref="Type"/> handles to emit IL against — exactly as
+    /// <see cref="BuildPrimaryPluginAssemblyDerivingFromExternalBaseType"/> and
+    /// <see cref="BuildPrimaryPluginAssemblyWithExternalConstructorParameter"/>
+    /// each already do for their own single mechanism. It has no bearing on how
+    /// the CLR later, independently, resolves either assembly at plugin-load
+    /// time.
+    /// </para>
+    /// </remarks>
+    /// <returns>The full path to the saved assembly file.</returns>
+    public static string BuildPrimaryPluginAssemblyWithReachableBaseTypeAnchorAndUnresolvableConstructorParameter(
+        string outputDirectory,
+        string fileName,
+        string reachableSecondaryAssemblyPath,
+        string reachableBaseTypeFullName,
+        string unreachableAssemblyPath,
+        string unreachableParameterTypeFullName,
+        string moduleId,
+        string moduleName,
+        string moduleVersion)
+    {
+        var dllPath = Path.Combine(outputDirectory, fileName);
+
+        var reflectionLoadContext = new AssemblyLoadContext($"ReflectionOnly-{Guid.NewGuid():N}", isCollectible: true);
+        var reachableAssembly = reflectionLoadContext.LoadFromAssemblyPath(reachableSecondaryAssemblyPath);
+        var reachableBaseType = reachableAssembly.GetType(reachableBaseTypeFullName, throwOnError: true)!;
+        var reachableBaseCtor = reachableBaseType.GetConstructor(Type.EmptyTypes)!;
+
+        var unreachableAssembly = reflectionLoadContext.LoadFromAssemblyPath(unreachableAssemblyPath);
+        var unreachableParameterType = unreachableAssembly.GetType(unreachableParameterTypeFullName, throwOnError: true)!;
+
+        var assemblyName = new AssemblyName($"{Path.GetFileNameWithoutExtension(fileName)}-{Guid.NewGuid():N}");
+        var assemblyBuilder = new PersistedAssemblyBuilder(assemblyName, typeof(object).Assembly);
+        var moduleBuilder = assemblyBuilder.DefineDynamicModule("MainModule");
+        var objectCtor = typeof(object).GetConstructor(Type.EmptyTypes)!;
+
+        // The anchor. Deliberately NOT an IModule implementer - its only job
+        // is to make GetTypes()'s own base-type-chain resolution pull the
+        // reachable secondary assembly into the AppDomain during the scan
+        // step, so that only the step's own end-of-body diff can discover it.
+        var anchorTypeBuilder = moduleBuilder.DefineType(
+            $"{assemblyName.Name}.DynamicSecondaryAssemblyAnchor",
+            TypeAttributes.Public | TypeAttributes.Class,
+            reachableBaseType);
+
+        DefineParameterlessConstructorCallingBase(anchorTypeBuilder, reachableBaseCtor);
+        anchorTypeBuilder.CreateType();
+
+        // The offending module: unattributed, sole constructor, unresolvable
+        // parameter type - the TD-51 shape, tripping the denial mid-step.
+        var moduleTypeBuilder = moduleBuilder.DefineType(
+            $"{assemblyName.Name}.DynamicUnresolvableConstructorModule",
+            TypeAttributes.Public | TypeAttributes.Class,
+            typeof(object),
+            [typeof(IModule)]);
+
+        DefineStringProperty(moduleTypeBuilder, nameof(IModule.Id), moduleId);
+        DefineStringProperty(moduleTypeBuilder, nameof(IModule.Name), moduleName);
+        DefineStringProperty(moduleTypeBuilder, nameof(IModule.Version), moduleVersion);
+
+        var moduleCtorBuilder = moduleTypeBuilder.DefineConstructor(
+            MethodAttributes.Public | MethodAttributes.HideBySig | MethodAttributes.SpecialName | MethodAttributes.RTSpecialName,
+            CallingConventions.Standard,
+            [unreachableParameterType]);
+        var moduleCtorIl = moduleCtorBuilder.GetILGenerator();
+        moduleCtorIl.Emit(OpCodes.Ldarg_0);
+        moduleCtorIl.Emit(OpCodes.Call, objectCtor);
+        moduleCtorIl.Emit(OpCodes.Ret);
+
+        moduleTypeBuilder.CreateType();
+        assemblyBuilder.Save(dllPath);
+
+        reflectionLoadContext.Unload();
+
+        return dllPath;
+    }
+
     private static void DefineParameterlessConstructorCallingBase(TypeBuilder typeBuilder, ConstructorInfo baseCtor)
     {
         var ctorBuilder = typeBuilder.DefineConstructor(
