@@ -16,6 +16,24 @@ namespace Tempest.Core.Plugins;
 /// once at discovery time (relative to the manifest's own folder) exactly as
 /// <see cref="Modules.ModuleDescriptor.ModuleType"/> captures something derived
 /// at discovery time rather than declared directly in <see cref="IModule"/>.
+/// <see cref="TrustTier"/> is the same kind of discovery-computed value, one
+/// step further: ADR-0112's own signature verification and tier-assignment
+/// table (no <c>Signature</c> field plus <c>Plugins:AllowUnsignedLoad</c>;
+/// a verifying <c>Signature</c> matched against the trust store) decides it —
+/// a manifest never declares its own trust tier directly, exactly as it
+/// never declares its own resolved <see cref="AssemblyPath"/>.
+/// <see cref="TrustTier"/> is the constructor's only new-this-release
+/// required parameter: a security-critical field has no safe implicit
+/// default (any default value, including the most restrictive tier, would
+/// let a caller silently construct a manifest with an unintended trust
+/// grant by simply forgetting to pass it), so it is required exactly as
+/// <see cref="AssemblyPath"/> already is. <see cref="Dependencies"/>,
+/// <see cref="RequestedCapabilities"/>, <see cref="Publisher"/>, and
+/// <see cref="Signature"/> each have a safe, maximally-restrictive default
+/// (an empty collection, or <see langword="null"/> meaning "not declared")
+/// and remain optional, trailing constructor parameters — see
+/// <c>RD-0065</c> in <c>Rejected Designs.md</c> for why <c>trustTier</c>
+/// alone was not also made optional.
 /// </remarks>
 public sealed class PluginManifest
 {
@@ -28,13 +46,33 @@ public sealed class PluginManifest
     /// <param name="minimumPlatformVersion">The minimum platform version the plugin requires.</param>
     /// <param name="assemblyFileName">The declared, manifest-relative assembly file name.</param>
     /// <param name="assemblyPath">The resolved, absolute path to the plugin's assembly.</param>
+    /// <param name="trustTier">
+    /// The plugin's trust tier, as computed by signature verification and
+    /// tier assignment (ADR-0112) at Plugin Discovery/Loading time — never a
+    /// manifest-declared value; see <see cref="TrustTier"/>.
+    /// </param>
+    /// <param name="dependencies">
+    /// The plugin's declared inter-plugin dependencies. Optional; defaults
+    /// to an empty list when omitted.
+    /// </param>
+    /// <param name="requestedCapabilities">
+    /// The plugin's declared, opaque requested capability identifiers.
+    /// Optional; defaults to an empty list when omitted.
+    /// </param>
+    /// <param name="publisher">The plugin's declared publisher, if any. Optional; defaults to <see langword="null"/>.</param>
+    /// <param name="signature">The plugin's declared signature, if any. Optional; defaults to <see langword="null"/>.</param>
     public PluginManifest(
         string id,
         string name,
         string version,
         Version minimumPlatformVersion,
         string assemblyFileName,
-        string assemblyPath)
+        string assemblyPath,
+        PluginTrustTier trustTier,
+        IReadOnlyList<PluginDependency>? dependencies = null,
+        IReadOnlyList<string>? requestedCapabilities = null,
+        string? publisher = null,
+        string? signature = null)
     {
         Id = id;
         Name = name;
@@ -42,6 +80,11 @@ public sealed class PluginManifest
         MinimumPlatformVersion = minimumPlatformVersion;
         AssemblyFileName = assemblyFileName;
         AssemblyPath = assemblyPath;
+        Dependencies = dependencies ?? [];
+        RequestedCapabilities = requestedCapabilities ?? [];
+        Publisher = publisher;
+        Signature = signature;
+        TrustTier = trustTier;
     }
 
     /// <summary>
@@ -81,4 +124,79 @@ public sealed class PluginManifest
     /// <see cref="AssemblyFileName"/>.
     /// </summary>
     public string AssemblyPath { get; }
+
+    /// <summary>
+    /// Gets the plugin's declared inter-plugin dependencies.
+    /// </summary>
+    /// <remarks>
+    /// Never <see langword="null"/> — an empty list if none were declared.
+    /// ADR-0107. Resolved into dependency-topological load order by Plugin
+    /// Discovery's own graph resolution step; see
+    /// <see cref="PluginManifestDiscoveryService"/>.
+    /// </remarks>
+    public IReadOnlyList<PluginDependency> Dependencies { get; }
+
+    /// <summary>
+    /// Gets the plugin's declared, opaque requested capability identifiers.
+    /// </summary>
+    /// <remarks>
+    /// Never <see langword="null"/> — an empty list if none were declared.
+    /// This document (<c>Plugin Platform Architecture.md</c>) defines only
+    /// that this field exists, is a list of opaque strings, and is read, not
+    /// interpreted, at Plugin Discovery time. Its semantics — what a
+    /// capability identifier means, and whether a plugin is entitled to what
+    /// it requests — are owned entirely by
+    /// <c>docs/security/Plugin Trust &amp; Isolation Architecture.md</c> and
+    /// are explicitly out of this Work Package's own scope; nothing in this
+    /// Work Package validates, enforces, or otherwise acts on this field's
+    /// content.
+    /// </remarks>
+    public IReadOnlyList<string> RequestedCapabilities { get; }
+
+    /// <summary>
+    /// Gets the plugin's declared publisher, if any.
+    /// </summary>
+    /// <remarks>
+    /// Free text, unverified. Its semantics — verification, display, trust
+    /// weighting — are owned entirely by
+    /// <c>docs/security/Plugin Trust &amp; Isolation Architecture.md</c> and
+    /// are explicitly out of this Work Package's own scope; this value is
+    /// stored and forwarded only.
+    /// </remarks>
+    public string? Publisher { get; }
+
+    /// <summary>
+    /// Gets the plugin's declared signature, if any.
+    /// </summary>
+    /// <remarks>
+    /// An opaque, encoded blob — algorithm and encoding undecided by this
+    /// Work Package. Its semantics — algorithm, verification, failure
+    /// handling — are owned entirely by
+    /// <c>docs/security/Plugin Trust &amp; Isolation Architecture.md</c> and
+    /// are explicitly out of this Work Package's own scope; this value is
+    /// stored and forwarded only, never cryptographically evaluated here.
+    /// </remarks>
+    public string? Signature { get; }
+
+    /// <summary>
+    /// Gets the plugin's trust tier, as computed by signature verification
+    /// and tier assignment (ADR-0112) at Plugin Discovery/Loading time.
+    /// </summary>
+    /// <remarks>
+    /// <b>Discovery-computed, never manifest-declared</b> — exactly like
+    /// <see cref="AssemblyPath"/>. Neither <see cref="PluginManifestDto"/>
+    /// nor the raw JSON manifest file carries a <c>TrustTier</c> field; a
+    /// plugin author cannot simply write <c>"TrustTier": "FirstParty"</c>
+    /// into a manifest and be believed. This value is derived entirely from
+    /// <see cref="Signature"/> (or its absence) and, where present, from
+    /// which entry in the local trust store its embedded
+    /// <c>PublisherCertificateThumbprint</c> matches — see ADR-0112,
+    /// "Trust store and tier assignment". A <see cref="PluginManifest"/>
+    /// instance is only ever constructed once a tier has been successfully
+    /// assigned; a plugin that fails verification or is rejected for lacking
+    /// a signature never reaches this constructor at all — see
+    /// <see cref="PluginTrustTier"/>'s own remarks for why no fourth,
+    /// "rejected" tier value exists here.
+    /// </remarks>
+    public PluginTrustTier TrustTier { get; }
 }

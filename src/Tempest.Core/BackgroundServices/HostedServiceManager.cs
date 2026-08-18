@@ -26,6 +26,26 @@ namespace Tempest.Core.BackgroundServices;
 /// ordering is by type, and a hosted service carries no metadata a duplicate could
 /// collide on.
 /// </para>
+/// <para>
+/// <b>Component scope hook (WP 13.10B, TD-51).</b> The optional
+/// <c>componentScopeProvider</c> constructor parameter is a fully generic,
+/// plugin-<i>unaware</i> hook — this class carries no reference to
+/// <c>Tempest.Core.Plugins</c> or <c>Tempest.Core.Identity</c> at all. Given a hosted
+/// service's own concrete <see cref="Type"/> (a hosted service has no string <c>Id</c>
+/// the way a module does, so unlike <see cref="Modules.ModuleLifecycleManager"/>'s own
+/// <c>componentScopeProvider</c> hook, which is keyed by module Id, this one is keyed by
+/// <see cref="Type"/> directly), it may return a disposable scope token to hold for the
+/// duration of one start/stop call, established immediately before that call's own
+/// <c>StartAsync</c>/<c>StopAsync</c> and disposed immediately after — inside the same
+/// <see langword="try"/> block already responsible for that call, so a hosted service's
+/// own thrown exception still correctly pops the scope (via the <see langword="using"/>
+/// block's own implicit <see langword="finally"/>) before this class's existing
+/// <see langword="catch"/> logic runs. This mirrors <see cref="Modules.ModuleLifecycleManager"/>'s
+/// own analogous hook (ADR-0111, WP 13.2A); TD-51 identified that this class had no
+/// equivalent seam at all. <c>TempestHost</c> is the only caller expected to supply a
+/// non-null provider, closing over its own <c>ICurrentComponentAccessor</c> and plugin
+/// component-principal registry.
+/// </para>
 /// </remarks>
 public sealed class HostedServiceManager : IHostedServiceManager
 {
@@ -33,6 +53,7 @@ public sealed class HostedServiceManager : IHostedServiceManager
     private readonly List<TrackedHostedService> _orderedServices;
     private readonly ITempestServiceProvider _serviceProvider;
     private readonly ILogger? _logger;
+    private readonly Func<Type, IDisposable?>? _componentScopeProvider;
 
     /// <summary>
     /// Initialises a new instance of the <see cref="HostedServiceManager"/> class, taking
@@ -52,16 +73,25 @@ public sealed class HostedServiceManager : IHostedServiceManager
     /// An optional logger used to record start/stop activity via the logging
     /// abstraction. May be <see langword="null"/> if logging is not required.
     /// </param>
+    /// <param name="componentScopeProvider">
+    /// An optional, fully generic hook (WP 13.10B, TD-51): given a hosted service's own
+    /// concrete <see cref="Type"/>, may return a disposable scope token held for the
+    /// duration of one start/stop call. <see langword="null"/> — the default,
+    /// reproducing every existing caller's behaviour unchanged — means no scope is ever
+    /// established. See this type's own remarks.
+    /// </param>
     public HostedServiceManager(
         IEnumerable<Type> hostedServiceTypes,
         ITempestServiceProvider serviceProvider,
-        ILogger? logger = null)
+        ILogger? logger = null,
+        Func<Type, IDisposable?>? componentScopeProvider = null)
     {
         ArgumentNullException.ThrowIfNull(hostedServiceTypes);
         ArgumentNullException.ThrowIfNull(serviceProvider);
 
         _serviceProvider = serviceProvider;
         _logger = logger;
+        _componentScopeProvider = componentScopeProvider;
 
         _orderedServices = hostedServiceTypes
             .OrderBy(type => type.FullName, StringComparer.Ordinal)
@@ -122,6 +152,7 @@ public sealed class HostedServiceManager : IHostedServiceManager
         {
             tracked.Instance = (IHostedService)_serviceProvider.GetService(tracked.ServiceType);
 
+            using var scope = _componentScopeProvider?.Invoke(tracked.ServiceType);
             await tracked.Instance.StartAsync(cancellationToken).ConfigureAwait(false);
 
             lock (_gate)
@@ -171,6 +202,7 @@ public sealed class HostedServiceManager : IHostedServiceManager
 
         try
         {
+            using var scope = _componentScopeProvider?.Invoke(tracked.ServiceType);
             await tracked.Instance!.StopAsync(cancellationToken).ConfigureAwait(false);
 
             lock (_gate)

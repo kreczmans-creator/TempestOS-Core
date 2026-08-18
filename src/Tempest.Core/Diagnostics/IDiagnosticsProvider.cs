@@ -55,4 +55,24 @@ public interface IDiagnosticsProvider
     /// orchestrator (Host Lifecycle phase 8.1) — not an error.
     /// </summary>
     IReadOnlyCollection<HostedServiceStatus> HostedServices { get; }
+
+    /// <summary>
+    /// Gets the Plugin Registry's own entry for every plugin candidate this
+    /// run attempted, in the same order <see cref="Plugins.IPluginRegistry.Entries"/>
+    /// itself reports.
+    /// </summary>
+    /// <remarks>
+    /// Unlike <see cref="Modules"/>/<see cref="HostedServices"/>, this
+    /// property's collection is never actually empty because it has not
+    /// yet been observed: <see cref="IDiagnosticsProvider"/> itself is not
+    /// constructed until Platform Services Registered (Host Lifecycle
+    /// phase 6), which — per ADR-0026's own frozen phase table — always
+    /// occurs after Plugin Discovery (phase 3.1) and Plugin Loading
+    /// (phase 3.2) have already fully completed. By the time any caller
+    /// can reach this property at all, the Plugin Registry is therefore
+    /// already fully populated; an empty collection here reflects a run
+    /// with zero plugin candidates, not one that has not reached this
+    /// phase yet.
+    /// </remarks>
+    IReadOnlyCollection<Plugins.PluginRegistryEntry> Plugins { get; }
 }

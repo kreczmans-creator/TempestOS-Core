@@ -19,6 +19,26 @@ Host-owned, mirroring Discovery and Lifecycle's own ADR-0017 status
 exactly, for a new, fourth kind of runtime component (neither a Platform
 Service nor a Module — see *Background Services Architecture.md*).
 
+**Update, WP 13.12.2 — v0.13.0 plugin platform ownership recorded.**
+This matrix had not been touched since `WP 5.2` and carried no row for any
+of the seven Host-owned components `v0.13.0` introduced, a gap
+`WP 13.12.1`'s readiness re-execution raised as a Disclosed,
+Non-Blocking finding (`DNB-4`). Ownership was never ambiguous — each is
+constructed exactly once, in `TempestHost`, and the boundary is stated in
+`Plugin Platform Architecture.md`, `Plugin Trust & Isolation Architecture.md`
+and `ADR-0111` — but it was not recorded here. Seven rows added below,
+each citing its single construction site. One deliberate asymmetry worth
+naming: `ICurrentComponentAccessor` is the only one of the seven that is
+DI-registered at all (the `ADR-0044` precedent) — and it is registered
+under **both** its own concrete type and the read-only interface
+(`TempestHost.cs:520-521`), the concrete registration being what
+`ModuleLifecycleManager`, `HostedServiceManager`, `EventBus`, and
+`CommandHandlerTable` resolve in order to call `BeginScope`. That is safe
+because the concrete type is denylisted in
+`PluginAssemblyLoader.NeverEligibleServiceResolveTypes`, so no plugin may
+obtain it by constructor injection or by any `plugin.services.resolve:*`
+grant, at any trust tier including First-Party.
+
 **Update, WP 5.1A — drift found and corrected.** A Navigation
 (`INavigationProvider`/`NavigationService`) row was never added to this
 table at either `WP 5.0A` (design) or `WP 5.0B` (implementation) —
@@ -81,6 +101,13 @@ here at the level of individual objects rather than whole services.
 | Navigation (`INavigationProvider` / `NavigationService`) *(implemented — WP 5.0A design, WP 5.0B implementation, ADR-0031/ADR-0032)* | **`TempestServiceProvider`** | Registered as an ordinary `services.Singleton<INavigationProvider, NavigationService>()`, constructed by the container the first time something resolves it — the same non-Host-owned shape the Event Bus row above already established. DI-public by design (ADR-0032): a module or plugin-loaded module may hold and resolve it directly, and registers its own `NavigationItem`s imperatively. This row was missing from this table until `WP 5.1A`; see the Update note above. |
 | Command Framework (`ICommandDispatcher` / `ICommandRegistry`) *(implemented — WP 5.1A design, WP 5.1B implementation, ADR-0036–ADR-0038)* | **`TempestServiceProvider`** | Registered as an ordinary singleton, mirroring the Event Bus and Navigation rows exactly (ADR-0036). A module or plugin-loaded module registers its own command handler(s)/descriptor(s) imperatively, during its own lifecycle, exactly as it already does for `IEventBus`/`INavigationProvider`. Both share a `CommandHandlerTable` collaborator (also container-constructed, its own singleton row not separately listed here — see `Dependency Injection Register.md`) so dispatch and Id-based invocation operate against the identical handler set. |
 | Diagnostics (`IDiagnosticsProvider` / `DiagnosticsProvider`) *(implemented — WP 5.2, ADR-0039)* | `TempestHost` | Constructed directly, alongside Platform Version — the Composition Root pattern (ADR-0009) — and registered via `AddInstance`, **not** container-constructed like the Event Bus/Navigation/Command Framework rows above. DI-public (a module may resolve it directly), yet Host-constructed: a novel combination for this table, made possible because `DiagnosticsProvider` itself carries no orchestration authority (it only *reads* `Modules`/`HostedServices` via `Func<T>` accessors) even though `TempestHost` is the one that builds it. `IModuleLifecycleManager`/`IHostedServiceManager` — the rows immediately above — remain exactly as Host-owned and non-DI-public as ever; Diagnostics reads their data, never reaches the managers themselves. |
+| Plugin Registry (`IPluginRegistry` / `PluginRegistry`) *(implemented — WP 13.1A, ADR-0107/ADR-0017)* | `TempestHost` | Constructed directly (`TempestHost.cs:293`); never registered in DI (ADR-0017's Host-owned-collaborator boundary, applied to a fourth collaborator). Reaches DI only as a read-only projection through `IDiagnosticsProvider.Plugins` — the ADR-0039 precedent, not a second registration. |
+| Plugin Trust Store (`IPluginTrustStore` / `PluginTrustStore`) *(implemented — WP 13.2A, ADR-0112)* | `TempestHost` | Constructed directly (`TempestHost.cs:299`), Host-owned alongside `PluginRegistry` for the identical ADR-0017 reason. Consulted during Plugin Discovery (3.1) for trust-tier assignment and detached-signature verification; never DI-resolvable by a module or plugin. |
+| Plugin component principal registry (`IPluginComponentPrincipalRegistry` / `IPluginComponentPrincipalRecorder` / `PluginComponentPrincipalRegistry`) *(implemented — WP 13.2A, ADR-0111)* | `TempestHost` | Constructed directly (`TempestHost.cs:308`); never registered in DI (ADR-0017). Read/write split so nothing outside `Tempest.Core.Plugins` is handed a mutating reference: `PluginAssemblyLoader` records through the recorder interface, `TempestHost`'s own `componentScopeProvider` closure observes through the registry interface. |
+| Plugin denied-type registry (`IPluginDeniedTypeRegistry` / `IPluginDeniedTypeRecorder` / `PluginDeniedTypeRegistry`) *(implemented — WP 13.9.4, ADR-0111)* | `TempestHost` | Constructed directly (`TempestHost.cs:325`); never registered in DI (ADR-0017), mirroring `PluginComponentPrincipalRegistry`'s own read/write split exactly. Written during Plugin Loading (3.2); read by Module Discovery's `isTypeExcluded` predicate (WP 13.9.6) and by both Registration filters — every write completes before the first read. |
+| Ambient component accessor (`ICurrentComponentAccessor` / `CurrentComponentAccessor`) *(implemented — WP 13.2A, ADR-0111)* | `TempestHost` | Constructed directly (`TempestHost.cs:334`). The one plugin-trust collaborator that **is** DI-registered, mirroring `ICurrentPrincipalAccessor`'s own ADR-0044 precedent. Registered under **both** its own concrete type and the read-only `ICurrentComponentAccessor` interface (`TempestHost.cs:520-521`) — the concrete registration is what `ModuleLifecycleManager`/`HostedServiceManager`/`EventBus`/`CommandHandlerTable` resolve to call `BeginScope`. The concrete type is named in `PluginAssemblyLoader.NeverEligibleServiceResolveTypes`, so no plugin may obtain it by constructor injection or by any `plugin.services.resolve:*` grant, at any trust tier including First-Party. |
+| Plugin Discovery (`PluginManifestDiscoveryService`) *(implemented — WP 13.1A, ADR-0107)* | `TempestHost` | Constructed directly (`TempestHost.cs:336`); never registered in DI (ADR-0017, applied as for Module Discovery). Used once, during Plugin Discovery (3.1), then no longer needed — mirroring Discovery's own role exactly. |
+| Plugin Loading (`IPluginAssemblyLoader` / `PluginAssemblyLoader`) *(implemented — WP 13.1A, ADR-0107/ADR-0111)* | `TempestHost` | Constructed directly (`TempestHost.cs:356`); never registered in DI (ADR-0017). Used once, during Plugin Loading (3.2). Holds the write side of both the component-principal and denied-type registries for the duration of that phase, and nothing beyond it. |
 
 ## Reading the Matrix Alongside Other Documents
 

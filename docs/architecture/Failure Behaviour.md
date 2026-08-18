@@ -14,6 +14,13 @@ ADR-0029, ADR-0030) is now implemented (`Tempest.Core.BackgroundServices`)
 (`HostedServiceManagerTests`, `TempestHostHostedServiceTests`), not only
 design intent.
 
+**Update, WP 13.0A (architecture only):** the Plugin Discovery/Loading
+Failure section below is extended with seven new isolated failure
+categories, twelve through eighteen — three from dependency-graph
+resolution (`ADR-0107`) and four from trust/signature/capability
+enforcement (`ADR-0111`, `ADR-0112`). Architecture only; implementation
+is `WP 13.0B`'s own scope.
+
 ## Governing Principle
 
 The boundary established by ADR-0013 governs every failure mode below:
@@ -34,7 +41,7 @@ a duplicate key within one source.
 Nothing else has been built yet; disposal is attempted for consistency but has
 nothing to release.
 
-## Plugin Discovery/Loading Failure *(ADR-0025, ADR-0026; implemented — WP 4.2)*
+## Plugin Discovery/Loading Failure *(ADR-0025, ADR-0026; implemented — WP 4.2. Extended — ADR-0107, ADR-0111, ADR-0112, WP 13.0A, architecture only)*
 
 **Trigger.** Any of the eleven failure categories ADR-0025 classifies,
 occurring during Plugin Discovery (Phase 3.1) or Plugin Loading
@@ -56,6 +63,33 @@ Host-level bug, not a plugin failure, and Host-fatal:
 `Starting → Faulted`, exactly the same transition Configuration Built,
 Logging Built, Module Discovery, and Module Registration already use for
 their own Host-fatal failures. No new transition is introduced.
+
+**Extended, `WP 13.0A` (architecture only).** Also any of seven further
+categories:
+
+- **Categories 12–14** (`ADR-0107`) — a missing plugin dependency, an
+  incompatible plugin dependency version, or a circular plugin
+  dependency.
+- **Categories 15–16** (`ADR-0112`) — a manifest-carried signature
+  present but failing to verify, or absent with unsigned loading not
+  explicitly enabled.
+- **Category 17** (`ADR-0111`) — a requested capability outside the
+  plugin's assigned trust tier's ceiling, or a plugin module's
+  constructor requiring an undeclared/ineligible service type.
+- **Category 18** (`ADR-0111`) — a *running* plugin attempting a
+  capability-gated operation it was not granted; unlike 12–17, this
+  occurs after the plugin is already `Loaded`, not during Discovery/
+  Loading, and blocks only the one call, not the plugin as a whole.
+
+**Required behaviour (extended, `WP 13.0A`).** Identical treatment for
+categories 12–17 — isolated, never Host-fatal, logged at the severity
+`ADR-0107`/`ADR-0112` assign, that plugin (or, for a circular
+dependency, every participating plugin) excluded, the phase continues.
+Category 18 blocks only the one denied call, logged at Warning,
+mirroring `PermissionEvaluator`'s own existing denied-permission
+convention — the plugin itself remains `Loaded` and running. The
+Host-fatal carve-out above is unchanged and ungrown by any of these
+seven categories.
 
 ## Discovery Failure
 
@@ -200,8 +234,9 @@ reported directly to `Console.Error` — bypassing the failed sink entirely
 | Failure | Host-fatal? | State transition |
 |---|---|---|
 | Configuration failure | Yes | `Starting → Faulted` |
-| Plugin Discovery/Loading — per-plugin failure *(ADR-0025/0026, implemented — WP 4.2)* | No | (none — that plugin isolated, phase continues) |
+| Plugin Discovery/Loading — per-plugin failure *(ADR-0025/0026, implemented — WP 4.2; ADR-0107/0111/0112 categories 12–17, WP 13.0A, architecture only)* | No | (none — that plugin isolated, phase continues) |
 | Plugin Discovery/Loading — Host-level defect *(ADR-0025/0026, implemented — WP 4.2)* | Yes | `Starting → Faulted` |
+| Plugin — running-plugin capability denial *(ADR-0111 category 18, WP 13.0A, architecture only)* | No | (none — that call blocked, plugin remains `Loaded`) |
 | Discovery failure | Yes | `Starting → Faulted` |
 | Registration failure | Yes | `Starting → Faulted` |
 | Individual module initialisation failure | No | (none — Host proceeds to `Running`) |

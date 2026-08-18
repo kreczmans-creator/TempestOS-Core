@@ -36,6 +36,26 @@ type X, may not resolve type Y"); code-signing verification before load;
 or some combination. This decision should produce its own ADR with a
 genuinely considered rejected alternative, not a quiet code change.
 
+**Resolved at the architecture level — `WP 13.0A`.** The trigger fired
+(the Product Owner's confirmed third-party plugin commitment) and the
+dedicated Architecture Work Package this item names ran directly:
+`ADR-0110` decides the combination — capability-scoped enforcement plus
+code-signing establishes the trust tier the capability scope is gated
+by — evaluating and rejecting `AssemblyLoadContext` alone (not a
+security boundary in modern .NET), process separation alone
+(disproportionate to the disclosed threat), and each half of the
+combination alone (`RD-0053`–`RD-0056`). See `Plugin Trust & Isolation
+Architecture.md`.
+
+**Implemented — `WP 13.2A`.** Capability enforcement
+(`PluginAssemblyLoader.EnforceTrust`) and signature verification/trust
+tier assignment (`PluginManifestDiscoveryService.AssignTrustTier`,
+`PluginSignatureVerifier`) are now real, tested, working code — checked
+entirely from file bytes at Plugin Discovery, before any
+`Assembly.LoadFrom` call, exactly as designed. `Plugins:AllowUnsignedLoad`
+defaults to `false`, fail-closed, per this item's own combination
+decision. See `docs/academy/03 Work Packages/WP13.2A-plugin-trust-and-capability-enforcement-implementation.md`.
+
 ### 2. Navigation ownership — trigger: paired with item 1, or any multi-author navigation scenario
 
 **Finding:** `NAV-1` / `Technical Debt Register.md` TD-10.
@@ -44,6 +64,22 @@ genuinely considered rejected alternative, not a quiet code change.
 Once item 1's isolation model exists, extend the same capability/identity
 concept to `NavigationService.Unregister` (and any future shared registry
 with the same shape) so a component can only remove what it registered.
+
+**Resolved at the architecture level — `WP 13.0A`**, alongside item 1 as
+this item's own text anticipated. `ADR-0111` extends item 1's own
+capability/identity concept (a new `ICurrentComponentAccessor`) to
+`NavigationService.Unregister`: the registering component's identity is
+captured out-of-band at `Register`, and `Unregister` rejects a mismatch
+via a reserved, First-Party-only override permission. See `Plugin Trust
+& Isolation Architecture.md`.
+
+**Implemented — `WP 13.2A`.** `NavigationService.Register`/`Unregister`
+now perform this ownership check for real — a non-first-party caller
+removing an item it does not own is rejected unless it holds the reserved
+`navigation.unregister.any` permission, held by no principal this
+platform's own capability-grant logic ever grants. Zero behavioural change
+for every `null`/First-Party caller, confirmed directly. See
+`docs/academy/03 Work Packages/WP13.2A-plugin-trust-and-capability-enforcement-implementation.md`.
 
 ### 3. Secrets-redaction logging convention — trigger: any credential, token, or connection string entering the platform (assumptions 5, 8)
 
@@ -139,6 +175,24 @@ item 1's own isolation-boundary work, not as a separate, later effort,
 since both share the same root precondition and the same future
 Architecture Work Package is the natural place to resolve them together.
 
+**Resolved at the architecture level — `WP 13.0A`**, designed alongside
+items 1 and 2 exactly as this item recommended. `ADR-0111` chose
+trust-tier priority comparison over an Id-namespace-prefix reservation
+(`RD-0059` — no such convention exists in the codebase today; retrofitting
+one would touch every existing registration call site for a purely
+cosmetic change): first registration wins only among registrants of the
+same trust tier; a higher tier always evicts and replaces a lower one,
+regardless of order, logged loudly, never silently. See `Plugin Trust &
+Isolation Architecture.md`.
+
+**Implemented — `WP 13.2A`.** `NavigationService.Register`,
+`CommandHandlerTable.Register`, and `CommandRegistry.RegisterDescriptor`
+all now apply the trust-tier-ordered rule for real, each logging a loud
+"ownership override" warning on a higher-tier eviction. Every registrant
+that exists today is First-Party, so first-registration-wins behaves
+identically to before this Work Package — confirmed directly. See
+`docs/academy/03 Work Packages/WP13.2A-plugin-trust-and-capability-enforcement-implementation.md`.
+
 ## Explicit Non-Recommendations
 
 This roadmap deliberately does **not** recommend, at this time:
@@ -158,4 +212,6 @@ above, is a real, scheduled piece of work — not before.
 ## Related Documents
 
 `Threat Model.md`; `Security Principles.md`; `Platform Security Review
-v0.5.0.md`; `Technical Debt Register.md` (TD-09, TD-10).
+v0.5.0.md`; `Technical Debt Register.md` (TD-09, TD-10, TD-11, all
+Resolved — `WP 13.2A`); `Plugin Trust & Isolation Architecture.md`;
+`ADR-0110`–`ADR-0112`; `docs/academy/03 Work Packages/WP13.2A-plugin-trust-and-capability-enforcement-implementation.md`.

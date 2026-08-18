@@ -45,6 +45,10 @@ public class NavigationSampleModuleIntegrationTests
             runtimeManager.Register(descriptor);
 
         var services = new ServiceCollection();
+        var currentComponentAccessor = new Tempest.Core.Identity.CurrentComponentAccessor();
+        services.AddInstance<Tempest.Core.Identity.ICurrentComponentAccessor>(currentComponentAccessor);
+        services.AddInstance(currentComponentAccessor);
+        services.AddInstance<Tempest.Core.Identity.IPermissionEvaluator>(new Tempest.Core.Identity.PermissionEvaluator());
         services.AddInstance<ILogger>(new Tempest.Core.Tests.Events.RecordingLevelLogger());
         services.Singleton<IEventBus, EventBus>();
         services.Singleton<INavigationProvider, NavigationService>();
@@ -287,9 +291,17 @@ public class NavigationSampleModuleIntegrationTests
             "test.plugin.navigation.page",
             "Plugin Page");
 
+        // ADR-0111: the dynamically-built module's constructor injects
+        // INavigationProvider, which is not in the fixed always-allowed
+        // baseline (ILogger/IConfigurationProvider/IDiagnosticsProvider),
+        // so this plugin must explicitly request (and, at FirstParty tier,
+        // is eligible to be granted) a plugin.services.resolve:* capability
+        // naming it.
         var manifest = new PluginManifest(
             "test.plugin.navigation", "Navigation Plugin", "1.0.0",
-            new Version(0, 1, 0), Path.GetFileName(assemblyPath), assemblyPath);
+            new Version(0, 1, 0), Path.GetFileName(assemblyPath), assemblyPath,
+            PluginTrustTier.FirstParty,
+            requestedCapabilities: [PluginCapability.ServiceResolve(typeof(INavigationProvider).FullName!)]);
 
         var loader = new PluginAssemblyLoader();
         var loadedAssemblies = loader.LoadPlugins([manifest]);
@@ -305,6 +317,10 @@ public class NavigationSampleModuleIntegrationTests
         runtimeManager.Register(descriptor);
 
         var services = new ServiceCollection();
+        var currentComponentAccessor = new Tempest.Core.Identity.CurrentComponentAccessor();
+        services.AddInstance<Tempest.Core.Identity.ICurrentComponentAccessor>(currentComponentAccessor);
+        services.AddInstance(currentComponentAccessor);
+        services.AddInstance<Tempest.Core.Identity.IPermissionEvaluator>(new Tempest.Core.Identity.PermissionEvaluator());
         services.AddInstance<ILogger>(new Tempest.Core.Tests.Events.RecordingLevelLogger());
         services.Singleton<IEventBus, EventBus>();
         services.Singleton<INavigationProvider, NavigationService>();

@@ -250,6 +250,16 @@ no existing field or consumer would need to change to add it later.
 **Revisit trigger.** Once real plugins and real version history exist to
 design a ceiling policy against — not before, and not speculatively.
 
+**Update, `WP 13.0A`.** Revisited directly, as this release's own trigger
+(the Product Owner's confirmed third-party plugin commitment, `FCR-0001`)
+invited reconsideration. **Rejection reaffirmed, not reversed** — a
+commitment to build toward third-party plugins is not the same fact as
+"real plugins and real version history exist"; `src/Plugins/` remains
+empty (`Plugin Register.md`). Concrete, now-nameable future trigger: the
+first real plugin ships and is upgraded at least once, so a ceiling
+policy can be designed against real observed behaviour. See `Plugin
+Platform Architecture.md`, Version Compatibility.
+
 **Source.** `Plugin Manifest Architecture.md`, Versioning Strategy.
 
 ---
@@ -1300,3 +1310,490 @@ any other reason, or a genuine need arises for a contributor outside
 this repository's own clone to install the template.
 
 **Source.** This Work Package's own brief; `src/Templates/README.md`.
+
+---
+
+## RD-0046 — Host-Fatal Circular Plugin Dependency
+
+**Considered during:** WP 13.0A (ADR-0107, Plugin Dependency Graph Resolution).
+
+**Rejected because:** a dependency cycle is a mutual defect between two
+or more *optional* plugins, not a defect in the Host's own, foundational
+orchestration — treating it as Host-fatal would contradict this
+project's own governing principle for plugins ("fail one plugin, not the
+platform"), for the identical reason RD-0010 already rejected Host-fatal
+plugin failure once.
+
+**Reversibility.** Expensive to introduce later in the sense that
+matters: a behavioural regression, not an addition, exactly mirroring
+RD-0010's own reversibility note.
+
+**Revisit trigger.** Not expected to be revisited — mirrors RD-0010.
+
+**Source.** ADR-0107, Alternatives Considered.
+
+---
+
+## RD-0047 — A Dedicated Cascade-Notification Step for Transitive Plugin Dependency Failure
+
+**Considered during:** WP 13.0A (ADR-0107).
+
+**Rejected because:** the chosen fixed-point graph-reduction algorithm
+already produces correct transitive isolation (a plugin depending on an
+excluded plugin is itself excluded in the next reduction pass) as a
+natural consequence of repeated passes — a separate, bespoke cascade
+mechanism would duplicate this outcome with no corresponding benefit.
+
+**Reversibility.** Cheap — the two approaches are behaviourally
+equivalent; nothing about the chosen algorithm forecloses adding an
+explicit step later if a real need for distinguishing "I am broken" from
+"my dependency is broken" in the queryable state itself ever emerges.
+
+**Revisit trigger.** A real, demonstrated need to distinguish those two
+cases in `PluginRegistryEntry` itself, not merely in its logged `Detail`.
+
+**Source.** ADR-0107, Alternatives Considered.
+
+---
+
+## RD-0048 — Soft/Optional Plugin Dependencies
+
+**Considered during:** WP 13.0A (ADR-0107).
+
+**Rejected because:** no real plugin ecosystem exists yet to demonstrate
+this is a genuine need rather than a plausible-sounding one — mirrors
+RD-0011's and RD-0022's identical reasoning for declining a speculative
+opt-in with no demonstrated consumer.
+
+**Reversibility.** Cheap — purely additive to `PluginDependency` if a
+real need is ever demonstrated.
+
+**Revisit trigger.** A real plugin author demonstrating a genuine need
+for a dependency that should not block loading when unmet.
+
+**Source.** ADR-0107, Alternatives Considered.
+
+---
+
+## RD-0049 — Real Per-Plugin Assembly Unload for v0.13.0
+
+**Considered during:** WP 13.0A (ADR-0108, Plugin Lifecycle).
+
+**Rejected because:** the isolation mechanism this would require (a
+collectible `AssemblyLoadContext` per plugin, or equivalent) is the
+sibling Trust & Isolation Architecture's own decision — resolved,
+elsewhere in this same Work Package, as capability-scoped enforcement,
+not a collectible `AssemblyLoadContext` (`ADR-0110`) — so this
+precondition is now confirmed unmet, not merely undecided.
+Independently, no real, demonstrated operational need for hot-upgrading
+a running plugin exists yet — `src/Plugins/` remains empty. Either
+reason alone is sufficient.
+
+**Reversibility.** Expensive to introduce later in the sense that
+matters: real unload would be a genuine state-machine extension, not a
+trivial one — though ADR-0108 deliberately reserves the seam
+(`Loaded → Unloading → Unloaded`) so the extension is additive, not a
+redesign, once both preconditions are met.
+
+**Revisit trigger.** A future decision separately adopts a collectible,
+per-plugin isolation boundary (reopening `ADR-0110`, not merely
+`ADR-0108`), **and** a real, demonstrated need for hot-upgrade without a
+full process restart exists — both conditions, not either alone.
+
+**Source.** ADR-0108, Alternatives Considered; ADR-0110 (confirms the
+isolation-mechanism precondition unmet).
+
+---
+
+## RD-0050 — Automatic Restart/Backoff for a Plugin That Fails After Loading
+
+**Considered during:** WP 13.0A (ADR-0108).
+
+**Rejected because:** designing a retry/backoff policy now, with zero
+real plugins to test any policy against, would be guessing at operational
+requirements no real plugin has yet demonstrated — mirrors RD-0029's
+identical reasoning for hosted services exactly.
+
+**Reversibility.** Cheap — purely additive if a real need for it ever
+emerges; "no restart" is itself a valid default a future opt-in policy
+would only extend, not replace.
+
+**Revisit trigger.** A real, demonstrated operational need for automatic
+plugin recovery — not speculatively now.
+
+**Source.** ADR-0108, Alternatives Considered.
+
+---
+
+## RD-0051 — A New, Dedicated `IPluginDiagnosticsProvider` Service
+
+**Considered during:** WP 13.0A (`Plugin Platform Architecture.md`, Plugin Registry).
+
+**Rejected because:** `IDiagnosticsProvider` (ADR-0039, `WP 5.2`) already
+exists for exactly this purpose — a read-only, DI-public projection over
+Host-owned pipeline state — and already establishes a proven `Func<T>`-
+accessor pattern for reading a not-yet-constructed Host-owned
+collaborator safely. A second, near-identical reporter would proliferate
+near-duplicate surfaces for no reason beyond "it's a different pipeline
+stage," which `IDiagnosticsProvider`'s own existing design already
+accommodates (it already reports on two other Host-owned collaborators
+this same way).
+
+**Reversibility.** Cheap — a dedicated service could still be split out
+later if `IDiagnosticsProvider` ever grows unwieldy from too many
+unrelated data sources; no consumer of `Plugins` would need to change if
+that split preserved the same property shape.
+
+**Revisit trigger.** `IDiagnosticsProvider` accumulating enough unrelated
+data sources that a single interface genuinely becomes the wrong shape —
+not before.
+
+**Source.** `Plugin Platform Architecture.md`, Plugin Registry.
+
+---
+
+## RD-0052 — Making `IPluginRegistry` Itself DI-Public
+
+**Considered during:** WP 13.0A (`Plugin Platform Architecture.md`, Plugin Registry).
+
+**Rejected because:** ADR-0017 already established that Discovery,
+Registration, and Lifecycle remain Host-owned, never DI-public, so a
+module cannot reach back into the machinery driving it. A plugin registry
+is a fourth Host-owned collaborator of the same kind; making it directly
+reachable by a module would risk it later being mistaken for a place to
+*drive* plugin loading rather than merely observe outcomes, and
+reintroduces exactly the boundary risk ADR-0017 exists to close.
+
+**Reversibility.** Expensive to reverse later in the sense that matters —
+any consumer that came to depend on direct `IPluginRegistry` access would
+need to migrate to the read-only `IDiagnosticsProvider.Plugins`
+projection if this were reversed after real consumers existed.
+
+**Revisit trigger.** A demonstrated need for a module to gain real
+orchestration authority over plugin loading — not currently imagined,
+mirroring RD-0032's identical reasoning for Navigation.
+
+**Source.** `Plugin Platform Architecture.md`, Plugin Registry.
+
+---
+
+## RD-0053 — Separate `AssemblyLoadContext` Per Plugin as the Trust/Isolation Mechanism
+
+**Considered during:** WP 13.0A (ADR-0110, Plugin Isolation Boundary).
+
+**Rejected because:** `AssemblyLoadContext` is not a security boundary in
+modern .NET — Code Access Security and AppDomain-based sandboxing were
+removed entirely from .NET Core. An ALC governs assembly *identity and
+unload*, not *privilege*: a plugin loaded into its own ALC still runs
+with the full process's own OS privileges, can call any public API of
+any type loaded anywhere in the process
+(`AppDomain.CurrentDomain.GetAssemblies()` already returns assemblies
+across every ALC in a single-AppDomain .NET Core process — the exact
+fact ADR-0026 already depends on), and can still hold and use any
+DI-resolved service reference it was ever given. Adopting it would add
+real implementation complexity (collectible-context lifetime management,
+type-identity-across-context hazards) while closing none of `TD-09`'s
+actual complaint. Its one genuine benefit — enabling unload — is an
+explicit Non-Goal for this release (see RD-0049).
+
+**Reversibility.** Not cheap to adopt later purely for isolation (the
+complexity cost is real whenever paid), but cheap to *add* later
+specifically to enable unload without reversing this decision's own
+trust reasoning — the two purposes (privilege boundary vs. unload
+capability) are independent, and this entry rejects only the former.
+
+**Revisit trigger.** TempestOS is ever asked to run genuinely
+adversarial, unvetted third-party code (an open marketplace with no
+publisher accountability) rather than signed, accountable commercial
+plugins — the same trigger RD-0054 names.
+
+**Source.** ADR-0110, Alternatives Considered; `Plugin Trust & Isolation
+Architecture.md`, Isolation Boundary Decision.
+
+---
+
+## RD-0054 — Separate OS Process Per Plugin, With IPC to the Host
+
+**Considered during:** WP 13.0A (ADR-0110).
+
+**Rejected because:** disproportionate to the actual, disclosed threat.
+This Work Package's own trigger is a Product Owner commitment to vetted,
+signed, commercial third-party plugins — not an open marketplace
+accepting anonymous, actively adversarial publishers. Defending against a
+resourced adversary willing to reflect past a permission check requires
+OS-process isolation; defending against careless, unverified, or merely
+unaccountable third-party code — the actual, named threat — does not.
+Process isolation would also require redesigning DI resolution, event
+dispatch, and every module constructor-injection point across an IPC
+boundary, an order of magnitude larger than this Work Package's own
+brief.
+
+**Reversibility.** Expensive — a genuine architectural redesign, not an
+incremental change, if adopted later.
+
+**Revisit trigger.** TempestOS is ever asked to run genuinely
+adversarial, unvetted third-party code.
+
+**Source.** ADR-0110, Alternatives Considered.
+
+---
+
+## RD-0055 — Code-Signing Alone, With No Capability Scoping
+
+**Considered during:** WP 13.0A (ADR-0110).
+
+**Rejected because:** signing alone answers *who* published a plugin,
+not *what* a legitimately-signed plugin may then do once loaded — a
+properly signed, fully accountable plugin would still receive `TD-09`'s
+exact, unrestricted DI-container trust. Signing and capability scoping
+solve different problems (*who* vs. *what*) and are complementary, not
+substitutable.
+
+**Reversibility.** Cheap in principle — capability scoping is purely
+additive on top of a signing-only design — but shipping signing-only
+first would leave `TD-09` open for however long the gap lasted.
+
+**Revisit trigger.** Not expected to be revisited — the combination is
+the chosen design.
+
+**Source.** ADR-0110, Alternatives Considered.
+
+---
+
+## RD-0056 — A Manifest-Declared Capability/Permission Scope Alone, With No Signing
+
+**Considered during:** WP 13.0A (ADR-0110).
+
+**Rejected because:** without a signature, a manifest's capability
+declaration is an unverifiable, self-asserted claim with no
+accountability behind it — nothing prevents a malicious manifest from
+simply declaring every capability it wants. Signing is what makes the
+capability declaration mean something.
+
+**Reversibility.** Cheap in the abstract, but would have shipped a false
+sense of security if adopted alone — the real risk is in the interim,
+not in a later addition of signing.
+
+**Revisit trigger.** Not expected to be revisited — the combination is
+the chosen design.
+
+**Source.** ADR-0110, Alternatives Considered.
+
+---
+
+## RD-0057 — Reusing `ICurrentPrincipalAccessor` Directly for Plugin/Component Identity
+
+**Considered during:** WP 13.0A (ADR-0111, Plugin Trust Capability Model).
+
+**Rejected because:** it would conflate two genuinely different
+questions. `ICurrentPrincipalAccessor` is deliberately non-call-chain-
+scoped (`ADR-0044`) so a user, once established, remains visible to any
+later, unrelated caller — exactly wrong for "which component's code is
+executing right now," which must revert on return and nest correctly.
+Stuffing a plugin's identity into the same ambient slot would also
+silently let a plugin's registration inherit whatever user happens to be
+ambiently current, granting it rights the plugin itself was never
+granted — a real correctness defect, not merely an aesthetic one.
+
+**Reversibility.** Expensive to unwind once real components relied on
+the conflated identity — the correctness defect could go unnoticed until
+a specific ownership dispute exposed it.
+
+**Revisit trigger.** Not expected to be revisited.
+
+**Source.** ADR-0111, Alternatives Considered.
+
+---
+
+## RD-0058 — Backing `ICurrentComponentAccessor` With `CurrentPrincipalAccessor`'s Ambient, `lock`-Protected Single-Field Pattern Instead of `AsyncLocal<T>`
+
+**Considered during:** WP 13.0A (ADR-0111).
+
+**Rejected because:** `ADR-0044` itself explains why `AsyncLocal<T>` was
+wrong for *its own* question (a value must remain visible to a wholly
+separate, later, unrelated caller) and, by the same reasoning, right for
+a genuinely call-chain-scoped question — which component identity is.
+Using the ambient pattern here would misattribute registrations made by
+code the plugin's own call happened to invoke afterward, in an unrelated
+later chain, to the wrong component.
+
+**Reversibility.** Expensive — a genuine flow-semantics defect, not a
+style preference, if built the wrong way and later corrected.
+
+**Revisit trigger.** Not expected to be revisited.
+
+**Source.** ADR-0111, Alternatives Considered.
+
+---
+
+## RD-0059 — An Id-Namespace-Prefix Reservation Instead of Trust-Tier Priority Comparison
+
+**Considered during:** WP 13.0A (ADR-0111) — the Security Roadmap's own
+suggested example (item 10).
+
+**Rejected because:** no such naming convention (e.g. a reserved
+`tempest.*` prefix) exists across the codebase's existing first-party
+Ids today; retrofitting one would touch every existing registration call
+site for a purely cosmetic naming change, for a problem trust-tier
+comparison already solves generally, without requiring any existing Id
+to be renamed.
+
+**Reversibility.** Cheap to introduce later as an additional convention,
+but would not by itself have solved `TD-11` without also building the
+comparison logic this design already provides.
+
+**Revisit trigger.** Not expected to be revisited.
+
+**Source.** ADR-0111, Alternatives Considered; `Security Roadmap.md`
+item 10.
+
+---
+
+## RD-0060 — Requiring a Dedicated Registration Permission of Every Registrant, Including First-Party
+
+**Considered during:** WP 13.0A (ADR-0111).
+
+**Rejected because:** First-Party is, by this design's own definition,
+exactly as trusted as the platform itself — requiring it to hold an
+explicit permission for an operation it has always been able to perform
+unconditionally would add a check with no possible denial outcome, pure
+overhead for no behavioural guarantee, and risk a real regression if a
+future change ever failed to grant it.
+
+**Reversibility.** Cheap to add later if uniformity is ever genuinely
+required.
+
+**Revisit trigger.** Not expected to be revisited.
+
+**Source.** ADR-0111, Alternatives Considered.
+
+---
+
+## RD-0061 — Authenticode Instead of a Detached `System.Security.Cryptography` Signature
+
+**Considered during:** WP 13.0A (ADR-0112, Plugin Signing).
+
+**Rejected because:** verifying an Authenticode signature natively from
+cross-platform .NET requires either shelling out to a Windows-only tool
+or a third-party verification library — a new dependency this project's
+own reuse-first discipline (`ADR-0005`) disfavours, for no capability a
+detached signature does not already provide. Authenticode also signs the
+assembly file itself, not the manifest+assembly pair together, so a
+manifest could be swapped out from under a validly-signed assembly
+without invalidating the signature.
+
+**Reversibility.** Cheap to adopt later as an additional, optional
+signing scheme if a genuine Windows-ecosystem-integration need arises —
+would not require removing the detached-signature mechanism.
+
+**Revisit trigger.** A genuine need to integrate with an existing Windows
+code-signing pipeline outside this project's own control.
+
+**Source.** ADR-0112, Alternatives Considered.
+
+---
+
+## RD-0062 — A Single Combined Hash Over the Concatenated Manifest and Assembly Bytes
+
+**Considered during:** WP 13.0A (ADR-0112).
+
+**Rejected because:** hashing the manifest and assembly independently
+lets verification recompute either hash from whichever artefact is on
+disk without needing to buffer both files' full raw bytes into one
+combined stream, and keeps the manifest's own canonicalisation (JSON
+field ordering, the `Signature` field's exclusion) cleanly separate from
+the assembly's raw-byte hash — simpler to reason about and to implement
+correctly.
+
+**Reversibility.** Cheap either way; a pure implementation-shape choice
+with no external consumer yet.
+
+**Revisit trigger.** Not expected to be revisited.
+
+**Source.** ADR-0112, Alternatives Considered.
+
+---
+
+## RD-0063 — An OS-Native or Third-Party Certificate Store for Trusted Publishers
+
+**Considered during:** WP 13.0A (ADR-0112).
+
+**Rejected because:** an OS-specific store API (Windows Certificate
+Store, a PKCS#12/PFX-backed store) is not portable and adds real
+complexity for a local trust model this design deliberately keeps
+minimal — mirrors `Plugin Manifest Architecture.md`'s own precedent of a
+fixed, simple, filesystem-based convention over an OS-integrated
+mechanism.
+
+**Reversibility.** Cheap to add later as an additional, pluggable
+trust-store backend if a real need emerges.
+
+**Revisit trigger.** A genuine, demonstrated need for OS-integrated
+certificate management (e.g. a genuine multi-user/administered
+deployment scenario).
+
+**Source.** ADR-0112, Alternatives Considered.
+
+---
+
+## RD-0064 — Falling Back to Unsigned-Local When a `Signature` Field Is Present but Fails to Verify
+
+**Considered during:** WP 13.0A (ADR-0112).
+
+**Rejected because:** a present-but-broken signature is a stronger, more
+concerning signal than an honestly-absent one — it indicates either a
+corrupted distribution or active tampering, neither of which should be
+treated as equivalent to "this plugin's author never claimed a signature
+at all." Always rejecting outright (category 15, never category 16)
+keeps that distinction real rather than papering over it.
+
+**Reversibility.** Expensive to relax later in the sense that matters —
+softening this rule would be a real security regression, not a mere
+convenience change.
+
+**Revisit trigger.** Not expected to be revisited.
+
+**Source.** ADR-0112, Alternatives Considered.
+
+---
+
+## RD-0065 — Making `PluginManifest.TrustTier` an Optional Constructor Parameter with a Default Value
+
+**Considered during:** WP 13.9.1, remediating `WP13.9.0`'s Implementation
+readiness Finding F3 (`PluginManifest`'s public constructor grew five new
+required parameters this release, an undisclosed public API break — one
+of `ADR-0106`'s own three literally-named Release-Blocking examples).
+
+**Rejected because:** unlike `dependencies`, `requestedCapabilities`,
+`publisher`, and `signature` — each restored to an optional, trailing,
+defaulted constructor parameter as part of this same remediation —
+`TrustTier` is a security-critical field with no safe implicit default.
+Even defaulting it to the most restrictive tier
+(`PluginTrustTier.UnsignedLocal`) would be a live footgun: a caller who
+simply forgets to pass `trustTier` would silently construct a manifest
+carrying *some* trust grant rather than fail to compile, forcing a
+deliberate choice. This mirrors the exact precedent `AssemblyPath`
+already set — a required, Discovery-computed field, never a
+manifest-declared one — a deliberate design choice made during the
+original `WP13.2A` implementation, not an oversight; keeping `trustTier`
+required extends that established reasoning rather than reopening it.
+The current blast radius is separately, genuinely zero:
+`PluginManifest` is exclusively constructed by the Host-owned
+`PluginManifestDiscoveryService` (confirmed via
+`grep -rn "new PluginManifest(" src/ tests/`, six call sites total, all
+now updated), so no external consumer is harmed by keeping this
+parameter required today — but per `ADR-0106`'s own explicit rule, a
+finding's classification (and, by the same logic, a rejection like this
+one) is by a design's own nature, not its current blast radius; the
+reasoning above would hold identically even if third-party plugin
+authors already depended on this constructor.
+
+**Reversibility.** Expensive to relax later in the sense that matters —
+softening this to an optional, defaulted parameter would reintroduce the
+exact silent-trust-grant footgun this rejection exists to prevent, not a
+mere convenience change.
+
+**Revisit trigger.** Not expected to be revisited.
+
+**Source.** `WP13.9.0 Engineering Release Report.md`, Implementation
+readiness (Finding F3); WP 13.9.1 remediation; `PluginManifest.cs`.

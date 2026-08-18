@@ -26,4 +26,16 @@ internal sealed class PluginManifestDto
 
     /// <summary>Gets or sets the raw, unvalidated, manifest-relative assembly file name.</summary>
     public string? AssemblyFileName { get; set; }
+
+    /// <summary>Gets or sets the raw, unvalidated set of inter-plugin dependency declarations.</summary>
+    public IReadOnlyList<PluginDependencyDto>? Dependencies { get; set; }
+
+    /// <summary>Gets or sets the raw, unvalidated set of requested capability identifiers.</summary>
+    public IReadOnlyList<string>? RequestedCapabilities { get; set; }
+
+    /// <summary>Gets or sets the raw, unvalidated publisher free-text value.</summary>
+    public string? Publisher { get; set; }
+
+    /// <summary>Gets or sets the raw, unvalidated signature value.</summary>
+    public string? Signature { get; set; }
 }

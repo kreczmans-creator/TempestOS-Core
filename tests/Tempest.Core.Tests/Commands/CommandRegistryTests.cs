@@ -324,6 +324,10 @@ public class CommandRegistryTests
     public void ServiceCollection_SingletonRegistration_ResolvesICommandRegistryToCommandRegistry()
     {
         var services = new ServiceCollection();
+        var currentComponentAccessor = new Tempest.Core.Identity.CurrentComponentAccessor();
+        services.AddInstance<Tempest.Core.Identity.ICurrentComponentAccessor>(currentComponentAccessor);
+        services.AddInstance(currentComponentAccessor);
+        services.AddInstance<Tempest.Core.Identity.IPermissionEvaluator>(new Tempest.Core.Identity.PermissionEvaluator());
         services.AddInstance<ILogger>(new RecordingLevelLogger());
         services.Singleton<CommandHandlerTable>();
         services.Singleton<ICommandRegistry, CommandRegistry>();
@@ -338,6 +342,10 @@ public class CommandRegistryTests
     public async Task ServiceCollection_SingletonRegistration_DispatcherAndRegistryShareTheSameHandlerTable()
     {
         var services = new ServiceCollection();
+        var currentComponentAccessor = new Tempest.Core.Identity.CurrentComponentAccessor();
+        services.AddInstance<Tempest.Core.Identity.ICurrentComponentAccessor>(currentComponentAccessor);
+        services.AddInstance(currentComponentAccessor);
+        services.AddInstance<Tempest.Core.Identity.IPermissionEvaluator>(new Tempest.Core.Identity.PermissionEvaluator());
         services.AddInstance<ILogger>(new RecordingLevelLogger());
         services.Singleton<CommandHandlerTable>();
         services.Singleton<ICommandDispatcher, CommandDispatcher>();
