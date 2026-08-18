@@ -1,6 +1,81 @@
 # TempestOS — Project Status
 
-**Last Updated:** 2026-08-18 (`WP 13.13.1`, `v0.13.1` Release
+**Last Updated:** 2026-08-18 (`WP 13.13.2`, `v0.13.1` Final Release,
+Closure & Handover to WP14). **The `v0.13.x` release train is CLOSED.**
+
+**`v0.13.1` is published.** Merge commit `6eca5fde` on `main` (parents
+`6089a218` + `9707fe7f`, a true merge commit from PR #2 under explicit
+Product Approval, no squash, no rebase, tree byte-identical to the branch
+tip). Annotated tag `b647e2c` → `6eca5fde`, verified locally and against
+the remote peel rather than from the release script's own success banner
+(`TD-42`). Real GitHub Actions on `main` at that exact pre-tag commit —
+`Build & Test (Debug)`, `Build & Test (Release)`, `CI Gate`, `Governance
+Health Check` all green (run `32157115399`). `release.yml` run
+`32158618270` then succeeded end to end, publishing the
+[GitHub Release](https://github.com/kreczmans-creator/TempestOS-Core/releases/tag/v0.13.1)
+at 2026-08-18T16:14:42Z with both required assets —
+`TempestOS-v0.13.1.zip` (49,877,891 bytes) and
+`TempestOS-v0.13.1-engineering-harness.zip` (642,363 bytes) — each
+confirmed directly via `gh release view`, not inferred from workflow
+success. `VERSION` = `0.13.1`.
+
+**`v0.13.0` remains immutable at `6089a218`** — tagged and merged, but
+never published, because its own tag-triggered `release.yml` run
+(`32146823154`) failed at `Test (Release)` on a single Desktop test
+before packaging. It was not amended, moved, deleted, recreated, or
+retried, per Engineering Governance §7.4, and `WP 11.4B`'s tag-position
+exception was deliberately not invoked — it is bounded to a tag's
+mechanical position, never build or test evidence, and only before the
+release branch closes. `v0.13.0` is superseded **in content, never in
+tag**, and keeps a truthful Release Register row rather than being
+erased.
+
+**What `v0.13.1` corrected.** Two commits, neither touching production
+code: `7449756` (`WP 13.12.9`) replaced a fixed `Task.Delay(50)` — racing
+a real disk-write chain, the `TD-46` idiom — with a bounded 2 s / 10 ms
+repository-revision poll, test-only, one method; and `ea3fe07`
+(`WP 13.12.10`) recorded `v0.13.0`'s true state in the Release Register.
+`9707fe7` then carried the `v0.13.1` preparation and Academy closure. The
+Desktop test that blocked `v0.13.0` passed in every configuration of
+every run across this release.
+
+**Governance state.** 38 delivered `v0.13.x` Work Packages, **38/38
+Academy retrospectives**, zero missing and zero duplicates.
+`governance-healthcheck.ps1` 7 passed, 1 warned (the pre-existing
+`v0.9.0`/`v0.10.0` informational), 0 failed. The Release Register now
+distinguishes the two releases explicitly: `v0.13.0` tagged and merged
+but unpublished, `v0.13.1` released and published. Released count 11 → 12.
+
+**Delivered by `v0.13.0`/`v0.13.1`, unchanged in scope:** the plugin
+platform and its trust boundary (`ADR-0107`–`ADR-0112`) — dependency-graph
+resolution, load/upgrade/uninstall lifecycle, capability-scoped isolation
+rather than `AssemblyLoadContext` or process separation, a
+trust-capability model extending `IPermissionEvaluator` via a component
+principal, and detached signature verification at Plugin Discovery.
+Closes `TD-09`/`TD-10`/`TD-11` and `Security Roadmap.md` items 1, 2 and
+10. **No third-party plugin ships**; `FCR-0002` is not started and
+`TD-56` is a mandatory precondition to enabling it.
+
+**READY TO BEGIN WP14 UI/UX.** `WP 13.11D`'s exit review established the
+plugin-facing UI position: a plugin can contribute Navigation items and
+Commands, both capability-gated and proven end-to-end, but **cannot
+contribute renderable UI content** — `NavigationItem` carries no rendering
+concern by design, and the real UI seams live in `Tempest.App`, which
+plugin projects structurally cannot reference. Neither that nor the
+absent trust-tier/capability diagnostics projection is a prerequisite
+gap: both are WP14's own first-order design scope, and every extension
+WP14 would need is additive to contracts documented as extensible.
+First-party UI is confirmed not blocked by the new capability gates.
+
+**`WP 13.13.2`'s own change is documentation-only** — the Release
+Register row, totals and `Last Reviewed`, plus this field — correcting
+records that described `v0.13.1` as unpublished before it was published.
+Zero `src/` and zero `tests/` changes.
+
+**`WP 13.13.1`'s own status line, below this point, is this field's prior
+content — retained, not deleted:**
+
+**Previously updated** 2026-08-18 (`WP 13.13.1`, `v0.13.1` Release
 Preparation). Prepares `v0.13.1` — the corrected and publishable form of
 `v0.13.0`'s content — on branch `release/v0.13.1`, cut from `main` at
 `ea3fe07`. Zero production code and zero test-code changes; nothing
