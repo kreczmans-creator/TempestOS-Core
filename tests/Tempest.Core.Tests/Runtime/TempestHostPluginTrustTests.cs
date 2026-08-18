@@ -861,6 +861,123 @@ public class TempestHostPluginTrustTests
         Assert.Equal(HostState.Stopped, host.State);
     }
 
+    // ------------------------------------------------------------------
+    // WP 13.11B (TD-51, reopened by WP 13.11A). The end-to-end reproduction
+    // of the Host crash WP 13.11A's own Security/Adversarial reviewer built,
+    // confirmed live, and then tore down - made permanent here. A single,
+    // otherwise-inert IModule type, lowest trust tier, zero requested
+    // capabilities, whose sole constructor parameter's own type cannot be
+    // resolved, faulted the entire Host: PluginAssemblyLoader denied the
+    // plugin from inside DiscoverModuleTypes, before EnforceTrust ever
+    // reached RecordDenied, so deniedTypeRegistry stayed empty, so
+    // isTypeExcluded never excluded the type, so
+    // ReflectionFrameworkDiscoveryService.CreateDescriptor's own
+    // type.GetConstructor(Type.EmptyTypes) call threw uncaught through
+    // TempestHost.RunAsync's own outer catch.
+    //
+    // Non-vacuous against the DEFECT, not against either half of the fix
+    // individually - either half alone keeps the Host alive. The recording
+    // half is isolated by PluginAssemblyLoaderMultiAssemblyTrustTests's own
+    // LoadPlugins_UnresolvableConstructorParameterType_ModuleAxis_RecordsDeniedModuleType;
+    // the discovery-guard half by ModuleDiscoveryUnresolvableConstructorTests.
+    // ------------------------------------------------------------------
+
+    [Fact]
+    public async Task RunAsync_UnresolvableConstructorParameterModulePlugin_IsRecordedTrustDenied_HostStaysRunning_ModuleNeverRegistered()
+    {
+        using var temp = new TempDirectory();
+
+        // A wholly separate temp root for the unreachable dependency, so it
+        // can never be mistaken for a plugin candidate folder by
+        // PluginManifestDiscoveryService's own scan of temp.Path, and so the
+        // default AssemblyLoadContext's own directory-probing - which only
+        // ever searches the referencing assembly's own directory - genuinely
+        // fails to find it. The same mechanism
+        // PluginAssemblyLoaderMultiAssemblyTrustTests.cs relies on.
+        using var externalTemp = new TempDirectory();
+
+        var pluginFolder = Path.Combine(temp.Path, "td51-unresolvable-ctor-plugin");
+        Directory.CreateDirectory(pluginFolder);
+
+        const string moduleId = "wp1311b.unresolvable-ctor-module";
+
+        var secondaryAssemblyPath = DynamicPluginAssemblyBuilder.BuildSecondaryAssemblyWithBaseTypeAndModule(
+            externalTemp.Path,
+            "Wp1311bHostSecondary",
+            "SharedParameterType",
+            "InertModule",
+            "wp1311b.unreachable-secondary-module",
+            "Inert Secondary Module",
+            "1.0.0",
+            [typeof(Tempest.Core.Logging.ILogger), typeof(IConfigurationProvider), typeof(IDiagnosticsProvider)]);
+
+        var secondaryAssemblyName = Path.GetFileNameWithoutExtension(secondaryAssemblyPath);
+
+        // No [ModuleMetadataAttribute] and no parameterless constructor, so
+        // CreateDescriptor must reach type.GetConstructor(Type.EmptyTypes)
+        // for this type unless something excludes it first.
+        var assemblyPath = DynamicPluginAssemblyBuilder.BuildPrimaryPluginAssemblyWithExternalConstructorParameter(
+            pluginFolder,
+            "Wp1311bUnresolvableCtor.dll",
+            secondaryAssemblyPath,
+            $"{secondaryAssemblyName}.SharedParameterType",
+            moduleId: moduleId,
+            moduleName: "Unresolvable Ctor Module",
+            moduleVersion: "1.0.0",
+            addAlternateCompliantConstructor: false);
+
+        File.WriteAllText(
+            Path.Combine(pluginFolder, PluginManifestDiscoveryService.ManifestFileName),
+            $$"""
+            {
+              "Id": "wp1311b.unresolvable-ctor-plugin",
+              "Name": "Unresolvable Ctor Plugin",
+              "Version": "1.0.0",
+              "MinimumPlatformVersion": "0.1.0",
+              "AssemblyFileName": "{{Path.GetFileName(assemblyPath)}}"
+            }
+            """);
+
+        // A candidate-type override, for the identical reason the
+        // constructor-denial test above uses one: Module Discovery must
+        // genuinely be capable of finding this exact type, so that the Host
+        // staying Running proves something reachable was actually excluded.
+        var moduleType = LoadPluginModuleType(assemblyPath);
+        var builder = new TempestHostBuilder([moduleType], temp.Path);
+        builder.AddConfigurationSource(new MemoryConfigurationSource(
+        [
+            new KeyValuePair<string, string>("Plugins:AllowUnsignedLoad", "true"),
+        ]));
+        var host = builder.Build();
+
+        var runTask = host.RunAsync();
+
+        while (host.State is HostState.Created or HostState.Starting)
+            await Task.Delay(5);
+
+        // The load-bearing assertion. Before WP 13.11B this read Faulted -
+        // TempestHost.RunAsync's own catch (Exception ex) { EnterFaulted(ex);
+        // throw; } having caught a raw TypeLoadException/FileNotFoundException
+        // thrown out of Module Discovery.
+        Assert.Equal(HostState.Running, host.State);
+
+        var diagnosticsProvider = (IDiagnosticsProvider)host.Services!.GetService(typeof(IDiagnosticsProvider));
+        var entry = Assert.Single(diagnosticsProvider.Plugins);
+        Assert.Equal(PluginRegistryState.TrustDenied, entry.State);
+        Assert.NotNull(entry.Detail);
+        Assert.Contains("could not be resolved", entry.Detail!, StringComparison.OrdinalIgnoreCase);
+
+        // The execution boundary still holds: entirely absent from Module
+        // Registration, not merely registered-but-never-started.
+        Assert.DoesNotContain(diagnosticsProvider.Modules, m => m.Descriptor.Id == moduleId);
+        Assert.DoesNotContain(diagnosticsProvider.Modules, m => m.Descriptor.ModuleType == moduleType);
+
+        await host.StopAsync();
+        await runTask;
+
+        Assert.Equal(HostState.Stopped, host.State);
+    }
+
     /// <summary>
     /// Loads <paramref name="assemblyPath"/> and returns its sole concrete
     /// <see cref="IModule"/> implementer - mirrors

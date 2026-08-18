@@ -1,6 +1,232 @@
 # TempestOS — Project Status
 
-**Last Updated:** 2026-08-17 (`WP 13.10C`, Plugin Trust Hardening Review
+**Last Updated:** 2026-08-18 (`WP 13.11B`, TD-51 Trust-Denial Crash
+Remediation). Implementation — closes the single Release-blocking finding
+`WP 13.11A` raised, by that review's own recommended minimum fix, taking
+both of its options and no wider. Four parallel sub-agents
+(Security/Adversarial, Runtime/Lifecycle, Verification/Test,
+Governance/Documentation), the three analysis disciplines strictly
+read-only, every production and documentation edit integrated centrally
+with one owner per file.
+
+**(a) The root cause.** `PluginAssemblyLoader.DiscoverModuleTypes`'s own
+"unresolvable constructor parameter type" failure no longer throws
+`PluginTrustDeniedException` from inside the scan. It is surfaced to
+`EnforceTrust` through a new `out PluginTrustDeniedException?` parameter,
+which calls `RecordDenied` for every discovered `IModule` and
+`BackgroundServices.IHostedService` type (`IPluginDeniedTypeRecorder`,
+`WP 13.9.4`) before throwing it. Previously the throw escaped
+`DiscoverModuleTypes` before `EnforceTrust` could reach either existing
+`RecordDenied` call site, so `deniedTypeRegistry` stayed empty for this
+one denial reason — `TempestHost.cs`'s own `WP 13.9.6` Module Discovery
+filter (`isTypeExcluded: deniedTypeRegistry.IsDenied`) therefore had
+nothing to exclude, `ReflectionFrameworkDiscoveryService.CreateDescriptor`'s
+own unguarded `type.GetConstructor(Type.EmptyTypes)` call was reached, and
+its uncaught `TypeLoadException`/`FileNotFoundException` propagated through
+`TempestHost.RunAsync`'s own outer `catch (Exception ex) { EnterFaulted(ex);
+throw; }` to a genuine whole-Host crash. Root cause closed, not the
+symptom — restoring `ADR-0025`'s founding guarantee that a plugin-scoped
+failure never becomes a platform-wide outage.
+
+**Deliberately a complete fixed-point scan, not the partial type list
+`WP 13.11A` suggested.** This Work Package's own Security/Adversarial
+analysis found the partial-list shape actively unsafe: aborting the
+traversal leaves an assembly already resident in the `AppDomain` —
+enqueued but not yet dequeued, or pulled in earlier in the same step —
+unscanned and unrecorded, while remaining fully visible to Module
+Discovery's own deliberately plugin-unaware `AppDomain` scan (ADR-0110).
+A well-formed module among those (attributed, parameterless constructor)
+would then have been registered and lifecycle-run with a `null`, and
+therefore First-Party-treated (`PluginTrustPermission.IsFirstParty`),
+ambient component principal — trading the Host crash for a silent trust
+bypass, strictly worse and not fail-closed. The failing type's remaining
+constructors are skipped, the enclosing loops continue, and the per-step
+before/after `AppDomain` diff still runs.
+
+**(b) The backstop.** `ReflectionFrameworkDiscoveryService.DiscoverModules`
+now wraps its own `CreateDescriptor` call in the same narrow
+`TypeLoadException`/`FileNotFoundException`/`FileLoadException`/
+`BadImageFormatException` guard already used at other call sites in this
+codebase: the candidate is excluded and logged, never a crash and never a
+silent inclusion. The class gains no plugin awareness (ADR-0110) — it is
+a reflection guard, not a trust decision — and `ModuleDiscoveryException`
+derives from none of the four, so the long-standing `WP 5.3` "no
+parameterless constructor and no `[ModuleMetadataAttribute]`" guidance
+and every `ValidateMetadata` failure still propagate unchanged.
+
+**No ADR added or amended.** `ADR-0111`'s own Decision text already
+mandates the recording behaviour (a) restores, verbatim — "every `Type`
+this scan discovered for it, whether an `IModule` implementer or a
+`BackgroundServices.IHostedService` implementer, is recorded denied
+(`IPluginDeniedTypeRecorder`, `WP 13.9.4`)" — so the defect was an
+implementation divergence from an already-correct decision, not a
+decision requiring revision. Independently re-confirmed by direct read of
+that Decision section before any documentation was updated. `ADR
+Register.md` therefore untouched, its own `Last Reviewed` correctly still
+citing `WP 13.10C`, mirroring `WP 13.11A`'s own identical precedent. No
+public API change and no new dependency — every touched member is
+`private`, except the `internal` `DiscoverModules(IEnumerable<Type>)` test
+seam, whose signature is unchanged.
+
+**Seven permanent regression tests**, across three files: four in
+`PluginAssemblyLoaderMultiAssemblyTrustTests.cs` (both discovery axes, the
+recorded-type-is-actually-excluded boundary, and the legitimate-plugin
+no-overreach direction), two in a new
+`ModuleDiscoveryUnresolvableConstructorTests.cs` (the guard, and its
+narrowness), and one end-to-end Host test in
+`TempestHostPluginTrustTests.cs`. Non-vacuousness confirmed by reverting
+each half of the fix independently and observing exactly the predicted
+targeted failures — `RecordDenied` reverted, the three recording tests
+fail; the discovery guard reverted, the guard test fails on the raw
+reflection exception; **both** reverted, the end-to-end Host test
+reproduces `WP 13.11A`'s crash exactly (`Assert.Equal() Failure:
+Expected: Running, Actual: Faulted`) — then restoring and confirming both
+production files byte-identical to their fixed versions.
+
+New test cost measured rather than assumed: no parallelism increase
+(every new test sits in the existing `"Console output capture"`
+serialisation collection, mandatory here because these tests load real
+assemblies and `DiscoverModuleTypes` diffs the process-global
+`AppDomain`), no processes spawned, six collectible reflection-only load
+contexts created and unloaded, and roughly 7 small dynamic assemblies
+permanently resident in the default, non-unloadable `AssemblyLoadContext`
+(ADR-0015) — under ~2 MB, against 141 such existing calls already in the
+suite.
+
+**Independent adversarial review after implementation** found the core
+fix clean on every axis it attacked — the `break` scoping, the completed
+fixed point, `HasCompliantConstructor` unreachability for the offending
+type, message equivalence, denial-set equivalence, the guard's
+narrowness, and fail-closedness — and produced two corrections, both
+applied: a stray deleted `/// </summary>` tag in a test helper's doc
+comment (invisible to the build, since `GenerateDocumentationFile` is
+`false`), and an incomplete `<exception>` element on `EnforceTrust`, now
+that this denial is raised there rather than inside `DiscoverModuleTypes`.
+
+It also found one genuine consequence worth tracking rather than
+accepting silently, now **`TD-55`**: `RecordDenied` records every type a
+denied plugin's transitive scan reached, and `PluginDeniedTypeRegistry`
+is keyed on `Type` identity alone, so one plugin's denial can suppress
+another assembly's module types. That hazard has been latent since
+`WP 13.9.4` on the two existing denial paths; this fix makes it newly
+*reachable* on the third, which previously recorded nothing at all.
+Closing it needs a per-plugin denial-scoping mechanism — an architectural
+change beyond this Work Package's own explicitly minimal remit, so it is
+disclosed and tracked, not attempted here. It is fail-closed in direction
+(a type is wrongly excluded, never wrongly included), and `Tempest.Samples`
+is provably unaffected by composition ordering rather than by design —
+which is exactly why it is tracked.
+
+`Technical Debt Register.md` updated: `TD-51` moved **Reopened →
+Resolved** and `TD-55` added (54 → 55 tracked; 17 → 18 Resolved, 1
+Partially resolved unchanged, 36 Open unchanged in count but changed in
+membership), including the buried, mid-paragraph counter-narrative
+cross-reference that would otherwise have contradicted the entry above
+it. `TD-53`/`TD-54` deliberately untouched — both low-severity,
+non-blocking, neither a variant of `TD-51`, and neither naturally nor
+directly implicated by this fix; left tracked. `Plugin
+Trust & Isolation Architecture.md`'s own Status header and Risks entry
+corrected "Not yet closed" → "Closed, `WP 13.11B`". Added the
+`WP 13.11B` row to `WorkPackages.md`.
+
+**Verification:** Debug and Release builds both 0 Warnings / 0 Errors
+(`-p:TreatWarningsAsErrors=true`, as CI applies it); full regression
+**2,561/2,561 both configurations** (2,554 documented baseline + 7 new);
+`governance-healthcheck.ps1` **7 passed, 1 warned (pre-existing
+`v0.9.0`/`v0.10.0` informational, unrelated), 0 failed** — confirmed
+identical before and after every edit. No standalone report file —
+delivered directly, in-session, to the commissioning conversation.
+
+**Committed together with `WP 13.11A`'s own documentation corrections**,
+which stopped before commit by their own explicit instruction: the
+finding and its closure form a single commit.
+
+**`WP 13.11A`'s own status line, below this point, is this field's prior
+content — retained, not deleted:**
+
+**Previously updated** 2026-08-17 (`WP 13.11A`, Plugin Platform Final Hardening
+Architecture Review). Read-only, six parallel disciplines (Security/
+Adversarial, Runtime/Lifecycle Architecture, API/Compatibility,
+Verification/Test/RAM, Governance/Documentation, UI/UX Dependency),
+determining whether anything genuinely blocks WP14 UI/UX after
+`WP 13.0A`–`WP 13.10C`.
+
+**One Release-blocking finding**, for third-party plugin support only —
+not `v0.13.0`'s own currently-shipped state, since `src/Plugins/` remains
+empty today: the Security/Adversarial reviewer re-examined `TD-51`'s own
+already-disclosed "unresolvable constructor parameter type" residual
+gap, which `WP 13.10C` had characterised uniformly as safely isolated
+(no crash), and found that characterisation false for the `IModule`
+axis. `PluginAssemblyLoader`'s denial path for this specific case throws
+before `EnforceTrust` ever reaches `RecordDenied`, so the offending type
+is never recorded in `deniedTypeRegistry`; `TempestHost.cs`'s own
+`WP 13.9.6` Module Discovery crash-prevention filter
+(`isTypeExcluded: deniedTypeRegistry.IsDenied`) therefore never excludes
+it; `ReflectionFrameworkDiscoveryService.CreateDescriptor`'s own
+unguarded `type.GetConstructor(Type.EmptyTypes)` call then throws an
+uncaught `TypeLoadException`/`FileNotFoundException`, propagating
+through `TempestHost.RunAsync`'s own outer `catch (Exception ex) {
+EnterFaulted(ex); throw; }` to a genuine Host crash — reachable by a
+single, otherwise-inert `IModule` type, any trust tier, zero requested
+capabilities. Empirically confirmed (a real, minimal repro built and
+torn down during the review) and independently re-confirmed by direct
+source read before this document was updated. `TD-51` reopened in
+`Technical Debt Register.md` accordingly (Resolved → Reopened); a
+minimal follow-up Work Package, `WP 13.11B`, is recommended — not yet
+scheduled, not implemented here, since this Work Package is read-only by
+its own explicit instruction.
+
+**Two further, genuinely new, low-severity, non-blocking findings** by
+the same reviewer, neither plugin-trust-specific: `TD-53`
+(`HostedServiceManager.StartServiceAsync`'s own critical-service-failure
+classification is silently wrong if construction itself throws before
+`tracked.Instance` is assigned) and `TD-54` (`ITempestServiceProvider`'s
+own DI-escape closure is correct today only incidentally, not as an
+explicit `NeverEligibleServiceResolveTypes` denylist entry).
+
+**Zero WP14-blocking findings** from any of the six disciplines.
+Runtime/Lifecycle, API/Compatibility, Verification/Test/RAM, and
+Governance/Documentation each independently converged clean — full
+regression independently re-run fresh, **2,554/2,554 passing**, both
+configurations, matching the previously-documented figure exactly. The
+UI/UX Dependency reviewer found two genuine gaps in the plugin
+platform's own UI-facing surface — no capability-gated Workspace
+view/panel extension point exists yet for a plugin to contribute real UI
+content (only Navigation/Commands, both proven end-to-end today via
+`Tempest.Desktop`); no plugin-ownership/trust-tier/granted-capability
+projection exists yet on any DI-public diagnostics surface a future
+plugin-management UI would need — but assessed both as WP14's own
+first-order design scope to build, not a prerequisite hardening gap
+blocking WP14 from starting.
+
+**One documentation-accuracy correction, unrelated to the plugin trust
+boundary**: `Future Capability Register.md`'s `FCR-0001`/`FCR-0002`
+entries had drifted stale since `WP 13.0A` itself, still citing
+`WP 13.0B` as "implementation pending" through `WP 13.1A`, `WP 13.2A`,
+and `WP 13.3A` (which reconfirmed **Implemented** in this same
+register's own narrative without ever correcting the table cells it
+contradicted) — corrected to cite `WP 13.2A` as the real implementer and
+`Status: Implemented`.
+
+`Technical Debt Register.md` updated: `TD-51` reopened, `TD-53`/`TD-54`
+added (52 → 54 tracked items; 18 → 17 Resolved, 1 Partially resolved
+unchanged, 33 → 36 Open). `Plugin Trust & Isolation Architecture.md`'s
+own Status header and Risks section gained a "Reopened, `WP 13.11A`"
+entry with the full technical account. `governance-healthcheck.ps1`: **7
+passed, 1 warned (pre-existing `v0.9.0`/`v0.10.0` informational,
+unrelated), 0 failed** — confirmed identical before and after every
+documentation edit. Added the `WP 13.11A` row to `WorkPackages.md`. No
+standalone report file — delivered directly, in-session, to the
+commissioning conversation.
+
+**Stopped before commit, per this Work Package's own explicit
+instruction** — the working tree at time of writing contains only these
+documentation corrections; `WP 13.11B`'s own implementation is a
+separate, not-yet-commissioned future Work Package.
+**`WP 13.10C`'s own status line, below this point, is this field's prior
+content — retained, not deleted:**
+
+**Previously updated** 2026-08-17 (`WP 13.10C`, Plugin Trust Hardening Review
 & Integration). The same integration-and-commit role `WP 13.9.7`
 established for the `WP 13.9.1`–`WP 13.9.6` chain, applied here to the
 `WP 13.10A`/`WP 13.10B` chain. `WP 13.10A`'s own read-only, six-discipline

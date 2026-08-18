@@ -206,7 +206,15 @@ public sealed class PluginAssemblyLoader : IPluginAssemblyLoader
     /// <see cref="PluginManifest.TrustTier"/>'s ceiling, or names a key that
     /// is not a recognised capability shape at all, or a discovered
     /// <see cref="Modules.IModule"/> type has no compliant public
-    /// constructor (category 17).
+    /// constructor (category 17). <c>WP 13.11B</c>: also thrown, from here,
+    /// when a discovered <see cref="Modules.IModule"/> or
+    /// <see cref="BackgroundServices.IHostedService"/> type declares a
+    /// constructor parameter whose own type cannot be resolved —
+    /// <see cref="DiscoverModuleTypes"/> detects that during its own scan
+    /// but no longer throws it there, returning it through its
+    /// <c>unresolvableConstructorDenial</c> out parameter so this method can
+    /// record the denial before raising it, exactly as it does for the other
+    /// two reasons.
     /// </exception>
     /// <remarks>
     /// <b>Corrected, <c>WP 13.9.4</c> trust-denial execution boundary
@@ -236,7 +244,29 @@ public sealed class PluginAssemblyLoader : IPluginAssemblyLoader
     /// </remarks>
     private void EnforceTrust(PluginManifest manifest, Assembly assembly)
     {
-        var moduleTypes = DiscoverModuleTypes(manifest.Id, assembly, out var hostedServiceTypes);
+        var moduleTypes = DiscoverModuleTypes(
+            manifest.Id, assembly, out var hostedServiceTypes, out var unresolvableConstructorDenial);
+
+        // Corrected, WP 13.11B (TD-51, reopened by WP 13.11A). This denial is
+        // detected inside DiscoverModuleTypes' own scan, not here, so before
+        // this block existed it was thrown from there directly - strictly
+        // before either RecordDenied call site below could ever run, leaving
+        // deniedTypeRegistry empty for this one denial reason alone. Raised
+        // to a first-class denial path here, at the same seam as the other
+        // two, so it records exactly what they record before throwing
+        // exactly as they throw. Placed FIRST, ahead of the capability
+        // check, deliberately: it preserves the message precedence the
+        // in-scan throw already had (this denial reason has always won when
+        // a plugin triggers more than one), and it keeps the offending type
+        // away from HasCompliantConstructor below - whose own
+        // GetConstructors()/GetParameters() calls are unguarded and would
+        // rethrow the identical, uncaught CLR type-load failure.
+        if (unresolvableConstructorDenial is not null)
+        {
+            RecordDenied(moduleTypes, hostedServiceTypes);
+
+            throw unresolvableConstructorDenial;
+        }
 
         var ineligibleCapability = FindIneligibleCapability(manifest);
 
@@ -434,9 +464,37 @@ public sealed class PluginAssemblyLoader : IPluginAssemblyLoader
     /// matching this type's own existing, unchanged behaviour for hosted
     /// services today.
     /// </para>
+    /// <para>
+    /// <b>Corrected, <c>WP 13.11B</c> trust-denial recording remediation
+    /// (<c>TD-51</c>, reopened by <c>WP 13.11A</c>).</b> The
+    /// unresolvable-constructor-parameter-type failure below no longer
+    /// throws from inside this scan. It is reported to
+    /// <see cref="EnforceTrust"/> through
+    /// <paramref name="unresolvableConstructorDenial"/> instead, so that
+    /// denial reason records exactly what the other two record
+    /// (<see cref="RecordDenied"/>) before throwing, and so this scan still
+    /// runs to its own fixed point rather than abandoning assemblies it has
+    /// already pulled into the <see cref="AppDomain"/>. Throwing from here
+    /// bypassed both: nothing was ever recorded for this denial reason, so
+    /// <c>TempestHost</c>'s own <c>WP 13.9.6</c> Module Discovery filter had
+    /// nothing to exclude and
+    /// <see cref="Modules.ReflectionFrameworkDiscoveryService"/>'s own
+    /// <c>CreateDescriptor</c> then rethrew the identical CLR type-load
+    /// failure uncaught, faulting the whole Host — a platform-wide outage
+    /// from a plugin-scoped failure, which ADR-0025 exists to forbid. See
+    /// the <c>catch</c> block's own comment for the complete account,
+    /// including why recording alone, without completing the scan, would
+    /// have traded that crash for a silent trust bypass.
+    /// </para>
     /// </remarks>
-    private static List<Type> DiscoverModuleTypes(string pluginId, Assembly assembly, out List<Type> hostedServiceTypes)
+    private static List<Type> DiscoverModuleTypes(
+        string pluginId,
+        Assembly assembly,
+        out List<Type> hostedServiceTypes,
+        out PluginTrustDeniedException? unresolvableConstructorDenial)
     {
+        unresolvableConstructorDenial = null;
+
         var scannedAssemblies = new HashSet<Assembly> { assembly };
         var toScan = new Queue<Assembly>();
         toScan.Enqueue(assembly);
@@ -532,10 +590,62 @@ public sealed class PluginAssemblyLoader : IPluginAssemblyLoader
                     }
                     catch (Exception ex) when (ex is TypeLoadException or FileNotFoundException or FileLoadException or BadImageFormatException)
                     {
-                        throw new PluginTrustDeniedException(
+                        // Corrected, WP 13.11B (TD-51, reopened by WP 13.11A).
+                        // This block used to throw here, immediately. Two
+                        // separate defects followed from that, both closed by
+                        // recording the denial and letting the scan run to its
+                        // own fixed point instead:
+                        //
+                        // (1) The throw escaped DiscoverModuleTypes before
+                        //     EnforceTrust's own two RecordDenied call sites
+                        //     could run, so NOTHING was recorded in
+                        //     deniedTypeRegistry for this one denial reason.
+                        //     TempestHost's own WP 13.9.6 Module Discovery
+                        //     filter (isTypeExcluded: deniedTypeRegistry.IsDenied)
+                        //     therefore never excluded the offending type, and
+                        //     ReflectionFrameworkDiscoveryService.CreateDescriptor's
+                        //     own type.GetConstructor(Type.EmptyTypes) call -
+                        //     itself a genuine CLR type-load - rethrew the
+                        //     identical failure uncaught, out through
+                        //     TempestHost.RunAsync, faulting the whole Host.
+                        //     Reachable by a single, otherwise-inert IModule
+                        //     type, any trust tier, zero requested
+                        //     capabilities; empirically reproduced by
+                        //     WP 13.11A's own Security/Adversarial review.
+                        //
+                        // (2) Aborting mid-scan also skipped the before/after
+                        //     assembly diff below, so any assembly this
+                        //     plugin had ALREADY pulled into the AppDomain -
+                        //     enqueued but not yet dequeued, or loaded earlier
+                        //     in this very step - was never scanned and its
+                        //     own module types never recorded. Merely adding
+                        //     a RecordDenied call to the old throw would have
+                        //     left those types resident, undiscovered by this
+                        //     scan, yet fully visible to Module Discovery's
+                        //     own deliberately plugin-unaware AppDomain scan
+                        //     (ADR-0110) - and a well-formed one among them
+                        //     (attributed, parameterless ctor) would have been
+                        //     registered and lifecycle-run with a null, and
+                        //     therefore First-Party-treated (PluginTrustPermission.IsFirstParty),
+                        //     ambient component principal. That would have
+                        //     traded a Host crash for a silent trust bypass -
+                        //     strictly worse, and not fail-closed.
+                        //
+                        // ??= keeps the FIRST offending type, so the thrown
+                        // message is byte-identical to the one the immediate
+                        // throw produced. break leaves this type's remaining
+                        // constructors uninspected - the plugin is already
+                        // denied, and every later constructor of an
+                        // already-condemned type is irrelevant - while the
+                        // enclosing loops carry on, so the diff below still
+                        // runs and the fixed point still closes. EnforceTrust
+                        // records and throws, above.
+                        unresolvableConstructorDenial ??= new PluginTrustDeniedException(
                             pluginId,
                             $"Module or hosted service type '{moduleType.FullName}' declares a constructor " +
                             $"parameter whose type could not be resolved ('{ex.GetType().Name}': {ex.Message}).");
+
+                        break;
                     }
                 }
             }

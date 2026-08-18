@@ -43,6 +43,21 @@ namespace Tempest.Core.Modules;
 /// trust-denial filter is ever consulted. See <c>TempestHost.cs</c>'s own
 /// <c>isTypeExcluded: deniedTypeRegistry.IsDenied</c> wiring.
 /// </para>
+/// <para>
+/// <b>Corrected, WP 13.11B</b> (<c>TD-51</c>, reopened by <c>WP 13.11A</c>):
+/// a candidate whose own metadata cannot be read because a referenced type
+/// fails to load is now excluded and logged rather than faulting discovery.
+/// <c>CreateDescriptor</c>'s own <c>type.GetConstructor(Type.EmptyTypes)</c>
+/// call is a genuine CLR type-load and threw an uncaught
+/// <see cref="TypeLoadException"/>/<see cref="FileNotFoundException"/> for a
+/// candidate declaring an unresolvable constructor parameter, propagating
+/// through <c>TempestHost.RunAsync</c> to a whole-Host crash. This class
+/// gains no plugin awareness from the fix (ADR-0110) - it is a reflection
+/// guard, not a trust decision, and the trust decision that actually
+/// excludes a denied plugin's types remains <c>PluginAssemblyLoader</c>'s
+/// own, surfaced here only through the existing <c>isTypeExcluded</c>
+/// predicate. See <c>DiscoverModules</c>'s own comment for the full account.
+/// </para>
 /// </remarks>
 public class ReflectionFrameworkDiscoveryService : IFrameworkDiscoveryService
 {
@@ -159,7 +174,49 @@ public class ReflectionFrameworkDiscoveryService : IFrameworkDiscoveryService
                 continue;
             }
 
-            var descriptor = CreateDescriptor(type);
+            ModuleDescriptor descriptor;
+
+            // WP 13.11B (TD-51, reopened by WP 13.11A): reading a candidate's
+            // metadata is itself a genuine CLR type-load. CreateDescriptor's
+            // own type.GetConstructor(Type.EmptyTypes) call resolves EVERY
+            // public constructor's full parameter signature to arity-match
+            // against Type.EmptyTypes - including overloads irrelevant to the
+            // parameterless one being asked for - so a candidate declaring a
+            // constructor parameter whose own assembly is unreachable throws
+            // TypeLoadException/FileNotFoundException here rather than merely
+            // returning null. That is not the MissingMethodException the
+            // WP 5.3 guard inside CreateDescriptor was written to pre-empt,
+            // and nothing in this loop, in TempestHost.ExecuteStartupPhasesAsync,
+            // or anywhere between caught it: it propagated to
+            // TempestHost.RunAsync's own outer catch and faulted the whole
+            // Host. PluginAssemblyLoader's own WP 13.11B fix closes the root
+            // cause for every type its trust scan reaches, and is what
+            // actually keeps a denied plugin excluded; this is the fail-closed
+            // backstop for a class that is, by design, wholly plugin-unaware
+            // (ADR-0110) and whose isTypeExcluded predicate is optional -
+            // discovery must never fault the Host over a candidate whose own
+            // metadata cannot be read, whatever produced it. Excluded and
+            // logged, exactly like the WP 13.9.6 trust exclusion above: never
+            // a crash, and never a silent inclusion. Deliberately narrow -
+            // only the four CLR type-load failures, matching the guard shape
+            // PluginAssemblyLoader.DiscoverModuleTypes and its own LoadOne
+            // already use. ModuleDiscoveryException (including the WP 5.3
+            // "no parameterless constructor and no [ModuleMetadataAttribute]"
+            // guidance and every ValidateMetadata failure) derives from none
+            // of the four and still propagates, unchanged.
+            try
+            {
+                descriptor = CreateDescriptor(type);
+            }
+            catch (Exception ex) when (ex is TypeLoadException or FileNotFoundException or FileLoadException or BadImageFormatException)
+            {
+                _logger?.Warning(
+                    $"Module type '{type.FullName}' excluded from discovery: its metadata could not be read " +
+                    $"because a referenced type could not be loaded ('{ex.GetType().Name}': {ex.Message}) " +
+                    "(WP 13.11B).",
+                    ex);
+                continue;
+            }
 
             if (descriptorsById.ContainsKey(descriptor.Id))
             {

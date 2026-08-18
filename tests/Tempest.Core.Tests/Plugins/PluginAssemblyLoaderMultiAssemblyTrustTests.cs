@@ -775,6 +775,267 @@ public class PluginAssemblyLoaderMultiAssemblyTrustTests
         Assert.Equal(PluginRegistryState.Loaded, legitimateEntry.State);
     }
 
+    // ------------------------------------------------------------------
+    // WP 13.11B (TD-51, reopened by WP 13.11A). The two WP 13.10B/13.10C
+    // tests immediately above prove ONE malformed plugin's own unresolvable
+    // constructor-parameter type is isolated rather than aborting
+    // LoadPlugins - but neither passes an IPluginDeniedTypeRecorder to the
+    // loader at all, so neither could ever have observed what WP 13.11A's
+    // own Security/Adversarial reviewer found: DiscoverModuleTypes threw
+    // from inside its own forced-resolution loop, strictly BEFORE
+    // EnforceTrust ever reached either RecordDenied call site, so nothing
+    // whatsoever was recorded for this one denial reason. TempestHost's own
+    // WP 13.9.6 Module Discovery filter (isTypeExcluded:
+    // deniedTypeRegistry.IsDenied) therefore never excluded the offending
+    // type, and ReflectionFrameworkDiscoveryService.CreateDescriptor's own
+    // type.GetConstructor(Type.EmptyTypes) call rethrew the identical CLR
+    // type-load failure uncaught, faulting the whole Host - reachable by a
+    // single, otherwise-inert IModule type, any trust tier, zero requested
+    // capabilities. These four tests are the permanent regression coverage
+    // for that recording gap, on both discovery axes, and in both
+    // directions (denied AND legitimate).
+    // ------------------------------------------------------------------
+
+    [Fact]
+    public void LoadPlugins_UnresolvableConstructorParameterType_ModuleAxis_RecordsDeniedModuleType()
+    {
+        using var temp = new TempDirectory();
+
+        // The identical unreachable-directory mechanism the two tests above
+        // use: the default AssemblyLoadContext's own directory-probing for
+        // an Assembly.LoadFrom-loaded assembly's referenced dependencies
+        // only ever searches the referencing assembly's own directory, so a
+        // dependency saved anywhere else is genuinely UNresolvable.
+        var externalOnlyDirectory = Path.Combine(temp.Path, "td51-module-axis-unreachable");
+        Directory.CreateDirectory(externalOnlyDirectory);
+
+        var secondaryAssemblyPath = DynamicPluginAssemblyBuilder.BuildSecondaryAssemblyWithBaseTypeAndModule(
+            externalOnlyDirectory,
+            "Td51ModuleAxisSecondary",
+            "SharedParameterType",
+            "InertModule",
+            "test.td51-module-axis-secondary-module",
+            "Inert Secondary Module",
+            "1.0.0",
+            [typeof(ILogger), typeof(IConfigurationProvider), typeof(IDiagnosticsProvider)]);
+
+        var secondaryAssemblyName = Path.GetFileNameWithoutExtension(secondaryAssemblyPath);
+
+        // Unattributed (DefineStringProperty only, no ModuleMetadataAttribute)
+        // and with no parameterless overload - the exact shape WP 13.11A
+        // reproduced, and the only shape that reaches CreateDescriptor's own
+        // type.GetConstructor(Type.EmptyTypes) call at all.
+        var primaryAssemblyPath = DynamicPluginAssemblyBuilder.BuildPrimaryPluginAssemblyWithExternalConstructorParameter(
+            temp.Path,
+            "Td51ModuleAxisPrimary.dll",
+            secondaryAssemblyPath,
+            $"{secondaryAssemblyName}.SharedParameterType",
+            moduleId: "test.td51-module-axis-module",
+            moduleName: "TD-51 Module Axis Module",
+            moduleVersion: "1.0.0",
+            addAlternateCompliantConstructor: false);
+
+        var manifest = CreateManifest(
+            "test.td51-module-axis-plugin", primaryAssemblyPath, PluginTrustTier.UnsignedLocal, []);
+
+        var registry = new PluginRegistry();
+        var recorder = new RecordingComponentPrincipalRecorder();
+        var deniedTypeRegistry = new PluginDeniedTypeRegistry();
+        var loader = new PluginAssemblyLoader(new RecordingLevelLogger(), registry, recorder, deniedTypeRegistry);
+
+        Assert.Empty(loader.LoadPlugins([manifest]));
+
+        var entry = Assert.Single(registry.Entries);
+        Assert.Equal(PluginRegistryState.TrustDenied, entry.State);
+        Assert.NotNull(entry.Detail);
+        Assert.Contains("could not be resolved", entry.Detail!, StringComparison.OrdinalIgnoreCase);
+
+        // The primary assembly is already resident - LoadPlugins loaded it
+        // via Assembly.LoadFrom above, and the default AssemblyLoadContext
+        // caches by path - so this yields the identical Type reference
+        // PluginDeniedTypeRegistry recorded. GetTypes() itself is safe here:
+        // it resolves base types and implemented interfaces, never
+        // constructor signatures.
+        var moduleType = System.Reflection.Assembly.LoadFrom(primaryAssemblyPath).GetTypes()
+            .Single(type => typeof(IModule).IsAssignableFrom(type) && !type.IsInterface && !type.IsAbstract);
+
+        // The load-bearing assertion. Before WP 13.11B, DiscoverModuleTypes
+        // threw before EnforceTrust could ever reach RecordDenied, so this
+        // registry was empty for this denial reason - and TempestHost's own
+        // Module Discovery filter, keyed entirely off it, could not possibly
+        // have excluded this type.
+        Assert.True(
+            deniedTypeRegistry.IsDenied(moduleType),
+            "A module type whose own constructor parameter could not be resolved must be recorded denied - " +
+            "the denial originates inside DiscoverModuleTypes, so recording must happen for it too, not only " +
+            "at EnforceTrust's own two later RecordDenied call sites.");
+
+        // A denied plugin is never granted a component principal, on this
+        // denial path either.
+        Assert.Empty(recorder.Recorded);
+    }
+
+    [Fact]
+    public void LoadPlugins_UnresolvableConstructorParameterType_HostedServiceAxis_RecordsDeniedHostedServiceType()
+    {
+        using var temp = new TempDirectory();
+
+        var externalOnlyDirectory = Path.Combine(temp.Path, "td51-hs-axis-unreachable");
+        Directory.CreateDirectory(externalOnlyDirectory);
+
+        var secondaryAssemblyPath = DynamicPluginAssemblyBuilder.BuildSecondaryAssemblyWithBaseTypeAndModule(
+            externalOnlyDirectory,
+            "Td51HostedServiceAxisSecondary",
+            "SharedParameterType",
+            "InertModule",
+            "test.td51-hs-axis-secondary-module",
+            "Inert Secondary Module",
+            "1.0.0",
+            [typeof(ILogger), typeof(IConfigurationProvider), typeof(IDiagnosticsProvider)]);
+
+        var secondaryAssemblyName = Path.GetFileNameWithoutExtension(secondaryAssemblyPath);
+        var externalParameterType = ResolveExternalType(
+            secondaryAssemblyPath, $"{secondaryAssemblyName}.SharedParameterType");
+
+        // Zero IModule types anywhere in this assembly - so if the fix ever
+        // regressed to recording moduleTypes only, forgetting
+        // hostedServiceTypes, this is the one test that catches it.
+        var primaryAssemblyPath = DynamicPluginAssemblyBuilder.BuildHostedServiceOnlyAssemblyWithConstructorParameters(
+            temp.Path, "Td51HostedServiceAxisPrimary.dll", [externalParameterType]);
+
+        var manifest = CreateManifest(
+            "test.td51-hs-axis-plugin", primaryAssemblyPath, PluginTrustTier.UnsignedLocal, []);
+
+        var registry = new PluginRegistry();
+        var recorder = new RecordingComponentPrincipalRecorder();
+        var deniedTypeRegistry = new PluginDeniedTypeRegistry();
+        var loader = new PluginAssemblyLoader(new RecordingLevelLogger(), registry, recorder, deniedTypeRegistry);
+
+        Assert.Empty(loader.LoadPlugins([manifest]));
+
+        var entry = Assert.Single(registry.Entries);
+        Assert.Equal(PluginRegistryState.TrustDenied, entry.State);
+        Assert.NotNull(entry.Detail);
+        Assert.Contains("could not be resolved", entry.Detail!, StringComparison.OrdinalIgnoreCase);
+
+        var hostedServiceType = System.Reflection.Assembly.LoadFrom(primaryAssemblyPath).GetTypes()
+            .Single(type => typeof(IHostedService).IsAssignableFrom(type) && !type.IsInterface && !type.IsAbstract);
+
+        Assert.True(
+            deniedTypeRegistry.IsDenied(hostedServiceType),
+            "A hosted-service-only plugin's own type must be recorded denied on this path too - " +
+            "TempestHost's own Hosted Service Registration filter is keyed entirely off this registry.");
+
+        Assert.Empty(recorder.Recorded);
+    }
+
+    [Fact]
+    public void LoadPlugins_UnresolvableConstructorParameterType_RecordedTypeIsExcludedByModuleDiscoveryPredicate()
+    {
+        using var temp = new TempDirectory();
+
+        var externalOnlyDirectory = Path.Combine(temp.Path, "td51-boundary-unreachable");
+        Directory.CreateDirectory(externalOnlyDirectory);
+
+        var secondaryAssemblyPath = DynamicPluginAssemblyBuilder.BuildSecondaryAssemblyWithBaseTypeAndModule(
+            externalOnlyDirectory,
+            "Td51BoundarySecondary",
+            "SharedParameterType",
+            "InertModule",
+            "test.td51-boundary-secondary-module",
+            "Inert Secondary Module",
+            "1.0.0",
+            [typeof(ILogger), typeof(IConfigurationProvider), typeof(IDiagnosticsProvider)]);
+
+        var secondaryAssemblyName = Path.GetFileNameWithoutExtension(secondaryAssemblyPath);
+
+        var primaryAssemblyPath = DynamicPluginAssemblyBuilder.BuildPrimaryPluginAssemblyWithExternalConstructorParameter(
+            temp.Path,
+            "Td51BoundaryPrimary.dll",
+            secondaryAssemblyPath,
+            $"{secondaryAssemblyName}.SharedParameterType",
+            moduleId: "test.td51-boundary-module",
+            moduleName: "TD-51 Boundary Module",
+            moduleVersion: "1.0.0",
+            addAlternateCompliantConstructor: false);
+
+        var manifest = CreateManifest(
+            "test.td51-boundary-plugin", primaryAssemblyPath, PluginTrustTier.UnsignedLocal, []);
+
+        var deniedTypeRegistry = new PluginDeniedTypeRegistry();
+        var loader = new PluginAssemblyLoader(deniedTypeRecorder: deniedTypeRegistry);
+
+        Assert.Empty(loader.LoadPlugins([manifest]));
+
+        var moduleType = System.Reflection.Assembly.LoadFrom(primaryAssemblyPath).GetTypes()
+            .Single(type => typeof(IModule).IsAssignableFrom(type) && !type.IsInterface && !type.IsAbstract);
+
+        Assert.True(
+            deniedTypeRegistry.IsDenied(moduleType),
+            "The recording half of this boundary must hold before the exclusion half can mean anything.");
+
+        // Wired exactly as TempestHost.cs wires it
+        // (isTypeExcluded: deniedTypeRegistry.IsDenied), wrapped only to
+        // record which types the predicate was actually asked about - so
+        // this proves the exclusion genuinely came from THIS predicate
+        // returning true for THIS type, and not from IsValidModuleType
+        // having filtered it out earlier, nor from the WP 13.11B discovery
+        // guard silently absorbing it.
+        var probedTypes = new List<Type>();
+        var discovery = new ReflectionFrameworkDiscoveryService(
+            isTypeExcluded: type =>
+            {
+                probedTypes.Add(type);
+                return deniedTypeRegistry.IsDenied(type);
+            });
+
+        var exception = Record.Exception(() => discovery.DiscoverModules([moduleType]));
+
+        // Before WP 13.11B the predicate returned false, CreateDescriptor
+        // was called, and its own unguarded type.GetConstructor(Type.EmptyTypes)
+        // threw the raw TypeLoadException/FileNotFoundException that faulted
+        // TempestHost.RunAsync.
+        Assert.Null(exception);
+        Assert.Contains(moduleType, probedTypes);
+        Assert.Empty(discovery.DiscoverModules([moduleType]));
+    }
+
+    [Fact]
+    public void LoadPlugins_LegitimatePluginWithCompliantConstructor_IsNeverRecordedDenied_AndStillDiscoversNormally()
+    {
+        using var temp = new TempDirectory();
+
+        // The "does the fix overreach?" direction. If RecordDenied were ever
+        // hoisted out of the failure path, or if the discovery guard's own
+        // catch filter were widened past the four CLR type-load exceptions,
+        // both assertions below fail.
+        var assemblyPath = DynamicPluginAssemblyBuilder.BuildValidPluginAssembly(
+            temp.Path, "Td51Legitimate.dll", "test.td51-legitimate", "TD-51 Legitimate Plugin", "1.0.0");
+
+        var manifest = CreateManifest(
+            "test.td51-legitimate-plugin", assemblyPath, PluginTrustTier.UnsignedLocal, []);
+
+        var registry = new PluginRegistry();
+        var deniedTypeRegistry = new PluginDeniedTypeRegistry();
+        var loader = new PluginAssemblyLoader(null, registry, null, deniedTypeRegistry);
+
+        Assert.Single(loader.LoadPlugins([manifest]));
+        Assert.Equal(PluginRegistryState.Loaded, Assert.Single(registry.Entries).State);
+
+        var moduleType = System.Reflection.Assembly.LoadFrom(assemblyPath).GetTypes()
+            .Single(type => typeof(IModule).IsAssignableFrom(type) && !type.IsInterface && !type.IsAbstract);
+
+        Assert.False(
+            deniedTypeRegistry.IsDenied(moduleType),
+            "A passing plugin's own module type must never be recorded denied.");
+
+        var discovery = new ReflectionFrameworkDiscoveryService(isTypeExcluded: deniedTypeRegistry.IsDenied);
+
+        var descriptor = Assert.Single(discovery.DiscoverModules([moduleType]));
+        Assert.Equal("test.td51-legitimate", descriptor.Id);
+        Assert.Equal(moduleType, descriptor.ModuleType);
+    }
+
     /// <summary>
     /// Resolves a plain (non-<see cref="Modules.IModule"/>-implementing)
     /// type by full name from an already-saved assembly file, via a

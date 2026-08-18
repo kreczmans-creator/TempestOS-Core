@@ -46,7 +46,21 @@ finding and fixing a compounding Host-crash regression mid-implementation
 before any commit, independently re-verified by four fresh, read-only
 `WP 13.10C` reviewers before this closure was committed. See the Risks
 section's own "Closed, `WP 13.10B`" entry, and `ADR-0111`'s own
-"Corrected, `WP 13.10B`" note.
+"Corrected, `WP 13.10B`" note. **`WP 13.11A`'s own final hardening
+architecture review** (read-only, six parallel disciplines) then
+re-examined `WP 13.10C`'s own "safely isolated, no crash" characterisation
+of `TD-51`'s disclosed residual gap and found it false for the `IModule`
+axis — the identical class of Host-crash defect `WP 13.9.5`/`WP 13.9.6`
+already closed once, for a different specific denial path, reopened
+through a newer one (`WP 13.9.3`'s own reflection guard, later widened by
+`WP 13.10B`) that never wires into `WP 13.9.6`'s own crash-prevention
+filter. **Closed, `WP 13.11B`** — the denial path now records every type
+its own fixed-point scan discovered before throwing, so `WP 13.9.6`'s own
+Module Discovery filter genuinely excludes it, and `CreateDescriptor`
+gained the same fail-closed reflection guard as a backstop. See the Risks
+section's own "Reopened `WP 13.11A`, closed `WP 13.11B`" entry for the
+full account and `Technical Debt Register.md`'s own updated `TD-51`
+Status cell.
 Corrected `WP 13.9.1` Governance & Documentation Remediation
 (`WP13.9.0 Engineering Release Report.md`'s own Governance-readiness
 Finding 3): only this Status header and the stale `WP 13.0B` implementer
@@ -904,6 +918,88 @@ Explicitly not designed here, each with its own named revisit trigger:
     `TD-52`'s own updated Status cell.
 
   See `ADR-0111`'s own "Corrected, `WP 13.10B`" note for full detail.
+- **Reopened `WP 13.11A`, closed `WP 13.11B`: the "unresolvable constructor parameter type"
+  residual gap disclosed immediately above (the redundant, second
+  construction attempt) is not, in fact, always safe.** `WP 13.10C`
+  characterised it uniformly as "no code execution, a `Failed` state, not
+  a crash" — true for the `IHostedService` axis (`HostedServiceManager.
+  StartServiceAsync`'s own generic `try`/`catch` genuinely isolates it),
+  but false for the `IModule` axis. Traced end to end by `WP 13.11A`'s own
+  Security/Adversarial reviewer, independently re-confirmed against
+  current source before this document was updated:
+  - The denial path throws `PluginTrustDeniedException` directly from
+    inside `PluginAssemblyLoader.DiscoverModuleTypes`, before
+    `EnforceTrust` ever reaches a `RecordDenied` call site — exactly as
+    already disclosed above — so the offending type is never added to
+    `deniedTypeRegistry`.
+  - `TempestHost.cs`'s own `WP 13.9.6` Module Discovery filter
+    (`isTypeExcluded: deniedTypeRegistry.IsDenied`) — built specifically
+    to stop an unattributed module belonging to a denied plugin from
+    ever being constructed during discovery — therefore never excludes
+    this type. Module Discovery is deliberately plugin-unaware
+    (`ADR-0110`) and independently rescans the whole `AppDomain`,
+    rediscovering it.
+  - `ReflectionFrameworkDiscoveryService.CreateDescriptor`'s own
+    `type.GetConstructor(Type.EmptyTypes)` call (reached for any module
+    lacking `[ModuleMetadataAttribute]`) is not wrapped in any exception
+    handling. Empirically confirmed: this call throws an uncaught
+    `TypeLoadException`/`FileNotFoundException` when *any* of the type's
+    own constructors — not only the parameterless one being matched —
+    names a parameter type that cannot be resolved, mirroring the
+    identical eager-signature-resolution CLR behaviour `WP 13.10B`'s own
+    `GetParameters()` investigation already established for a different
+    call site.
+  - Nothing catches this exception anywhere between `TempestHost.
+    ExecuteStartupPhasesAsync`'s call to `discovery.DiscoverModules()`
+    and `RunAsync`'s own outer `catch (Exception ex) { EnterFaulted(ex);
+    throw; }` — it propagates out of `RunAsync` entirely, a genuine Host
+    crash, not a denied plugin.
+
+  Reachable by a single, otherwise-inert `IModule` type — any trust
+  tier, zero requested capabilities, no `[ModuleMetadataAttribute]`, any
+  constructor naming an unresolvable parameter type — directly against
+  `ADR-0025`'s own founding guarantee that a plugin-scoped failure must
+  never become a platform-wide outage, the exact guarantee this whole
+  `WP 13` plugin trust chain exists to provide. Not release-blocking for
+  `v0.13.0` as currently shipped (`src/Plugins/` is empty today — no real
+  plugin assembly exists to trigger this path), but must be closed before
+  third-party plugin support is actually enabled or advertised, matching
+  `TD-51`'s own original `WP 13.10A` framing exactly. **Closed,
+  `WP 13.11B`** — both recommended options taken, and no wider. The root
+  cause first: `DiscoverModuleTypes`'s own unresolvable-parameter failure
+  no longer throws from inside the scan, but is surfaced to `EnforceTrust`
+  through an `out PluginTrustDeniedException?`, which calls `RecordDenied`
+  for every discovered `IModule` and `IHostedService` type before throwing
+  it — so `WP 13.9.6`'s own filter correctly excludes the type and
+  `CreateDescriptor` is never reached for it. Note this is deliberately
+  *not* the "whatever partial type list had already been scanned" shape
+  recommended above: `WP 13.11B`'s own Security/Adversarial analysis found
+  that shape actively unsafe, because aborting the fixed-point traversal
+  leaves an assembly already resident in the `AppDomain` — enqueued but
+  not yet dequeued, or pulled in earlier in the same step — unscanned and
+  unrecorded, while Module Discovery's own plugin-unaware `AppDomain` scan
+  still sees it. A well-formed module among those (attributed,
+  parameterless constructor) would then have been registered and
+  lifecycle-run with a `null`, and therefore First-Party-treated
+  (`PluginTrustPermission.IsFirstParty`), ambient component principal:
+  a silent trust bypass in place of a crash, strictly worse and not
+  fail-closed. The scan is therefore allowed to complete — the failing
+  type's remaining constructors are skipped, the enclosing loops continue,
+  and the per-step before/after `AppDomain` diff still runs. Then the
+  backstop: `ReflectionFrameworkDiscoveryService.DiscoverModules` now
+  wraps its own `CreateDescriptor` call in the same four-exception guard
+  already used at other call sites in this codebase, excluding and logging
+  the candidate instead of faulting the Host. That class gains no plugin
+  awareness (ADR-0110) — it is a reflection guard, not a trust decision,
+  and the guard is deliberately narrow: `ModuleDiscoveryException` derives
+  from none of the four, so the `WP 5.3` "no parameterless constructor and
+  no `[ModuleMetadataAttribute]`" guidance still propagates unchanged. See
+  `Technical Debt Register.md`'s own updated `TD-51` Status cell for full
+  detail, and `TD-53`/`TD-54` for two further, low-severity, non-blocking
+  items the same review found (a hosted-service construction-throw
+  criticality-misclassification gap; an incidental, not explicit,
+  `ITempestServiceProvider` DI-escape closure) — neither plugin-trust-
+  specific, neither release- or WP14-blocking.
 
 ## ADRs Required
 
