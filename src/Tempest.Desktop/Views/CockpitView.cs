@@ -166,7 +166,12 @@ internal sealed class CockpitView : UserControl
         else
         {
             foreach (var entry in favouriteProjects)
-                card.AddAction($"{IconRegistry.Resolve(entry.Kind)} {entry.DisplayName}", () => { _onOpenFavourite?.Invoke(entry.Id, entry.Kind); Refresh(); });
+                // No inline Refresh() here (`TD-58`): the open callback is
+                // WorkspaceViewCoordinator.NavigateToObject, whose
+                // NavigateToObjectAsync already refreshes this Cockpit —
+                // the inline call made every favourite open rebuild all
+                // twenty cards twice.
+                card.AddAction($"{IconRegistry.Resolve(entry.Kind)} {entry.DisplayName}", () => _onOpenFavourite?.Invoke(entry.Id, entry.Kind));
         }
 
         _cards.Children.Add(card);

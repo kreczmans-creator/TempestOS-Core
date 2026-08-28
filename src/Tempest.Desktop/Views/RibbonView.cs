@@ -67,10 +67,11 @@ public sealed class RibbonView : UserControl
     private readonly TabControl _tabs = new();
     private readonly List<string> _recentCommandIds = [];
     private readonly List<(Button Button, CommandDescriptor Descriptor)> _selectionAwareButtons = [];
+    private readonly Dictionary<string, ContentControl> _recentSectionHosts = new(StringComparer.Ordinal);
     private bool _suppressTabSelection;
 
-    /// <summary>Raised after a ribbon action completes (successfully or not), carrying a human-readable status message — mirrors every other Desktop View's own identical <c>ActionCompleted</c> convention.</summary>
-    public event Action<string>? ActionCompleted;
+    /// <summary>Raised after a ribbon action completes (successfully or not), carrying a human-readable status message and its <see cref="ActionOutcome"/> — mirrors every other Desktop View's own identical <c>ActionCompleted</c> convention (`TD-58`: the outcome is what lets the subscriber refresh dependent surfaces only when the workspace actually changed).</summary>
+    public event Action<string, ActionOutcome>? ActionCompleted;
 
     /// <summary>Raised when the user clicks a discipline tab directly (not via <see cref="SelectTabForArea"/>) — the caller's own cue to switch the Navigation area to match.</summary>
     public event Action<string>? CategorySelected;
@@ -108,6 +109,7 @@ public sealed class RibbonView : UserControl
         var selected = (_tabs.SelectedItem as TabItem)?.Tag as string;
         _tabs.Items.Clear();
         _selectionAwareButtons.Clear();
+        _recentSectionHosts.Clear();
 
         var byCategory = _commandRegistry.Items
             .GroupBy(d => d.Category ?? "General")
@@ -205,9 +207,14 @@ public sealed class RibbonView : UserControl
     {
         var root = new StackPanel { Orientation = Orientation.Vertical, Spacing = DesignTokens.SpaceXs, Margin = DesignTokens.PanelPadding };
 
-        var recentSection = BuildRecentSection(category);
-        if (recentSection is not null)
-            root.Children.Add(recentSection);
+        // A stable per-tab host for the "Recently Used" row, so
+        // RecordRecent can update just this row instead of tearing down
+        // and rebuilding every tab and button on every command click
+        // (`TD-58` — the full rebuild also destroyed keyboard focus).
+        var recentSectionHost = new ContentControl { IsVisible = false };
+        _recentSectionHosts[category] = recentSectionHost;
+        root.Children.Add(recentSectionHost);
+        UpdateRecentSection(category);
 
         var groupsRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceLg };
         foreach (var groupedByVerb in descriptors.GroupBy(d => ClassifyGroup(d.Id)).OrderBy(g => GroupOrder(g.Key)))
@@ -340,7 +347,7 @@ public sealed class RibbonView : UserControl
         {
             if (selection is null || !_manager.CanDelete(selection.Kind))
             {
-                ActionCompleted?.Invoke($"'{descriptor.DisplayName}' needs a selected object first.");
+                ActionCompleted?.Invoke($"'{descriptor.DisplayName}' needs a selected object first.", ActionOutcome.Failed);
                 return;
             }
 
@@ -350,7 +357,9 @@ public sealed class RibbonView : UserControl
             var result = await _manager.DeleteObjectAsync(selection.ObjectId, selection.Kind).ConfigureAwait(true);
             RecordRecent(descriptor.Id);
             RefreshEnablement();
-            ActionCompleted?.Invoke(result.Succeeded ? $"Deleted via '{descriptor.DisplayName}'." : result.Message ?? "Delete failed.");
+            ActionCompleted?.Invoke(
+                result.Succeeded ? $"Deleted via '{descriptor.DisplayName}'." : result.Message ?? "Delete failed.",
+                ActionOutcome.From(result.Succeeded));
             return;
         }
 
@@ -359,14 +368,16 @@ public sealed class RibbonView : UserControl
             var canEdit = selection is not null && (verb == "rename" ? _manager.CanRename(selection.Kind) : _manager.CanRevise(selection.Kind));
             if (!canEdit)
             {
-                ActionCompleted?.Invoke($"'{descriptor.DisplayName}' needs a selected object this command applies to.");
+                ActionCompleted?.Invoke($"'{descriptor.DisplayName}' needs a selected object this command applies to.", ActionOutcome.Failed);
                 return;
             }
 
             var view = await _workspace.Navigation.OpenAsync(selection!.ObjectId, selection.Kind).ConfigureAwait(true);
             _openDocument(view);
             RecordRecent(descriptor.Id);
-            ActionCompleted?.Invoke($"Opened for editing via '{descriptor.DisplayName}' — use the Name/Content fields in the editor tab.");
+            ActionCompleted?.Invoke(
+                $"Opened for editing via '{descriptor.DisplayName}' — use the Name/Content fields in the editor tab.",
+                ActionOutcome.NoChange);
             return;
         }
 
@@ -374,7 +385,9 @@ public sealed class RibbonView : UserControl
         {
             var result = await _commandRegistry.InvokeAsync(descriptor.Id).ConfigureAwait(true);
             RecordRecent(descriptor.Id);
-            ActionCompleted?.Invoke(result.Succeeded ? $"'{descriptor.DisplayName}' completed." : result.Message ?? "Command failed.");
+            ActionCompleted?.Invoke(
+                result.Succeeded ? $"'{descriptor.DisplayName}' completed." : result.Message ?? "Command failed.",
+                ActionOutcome.From(result.Succeeded));
             return;
         }
 
@@ -404,7 +417,9 @@ public sealed class RibbonView : UserControl
         // branch. Claiming either would be exactly the "misleading
         // messaging" this Work Package's own controlling instruction
         // forbids.
-        ActionCompleted?.Invoke($"'{descriptor.DisplayName}' isn't available yet — no destination picker or additional-input UI exists in this platform to collect what it needs.");
+        ActionCompleted?.Invoke(
+            $"'{descriptor.DisplayName}' isn't available yet — no destination picker or additional-input UI exists in this platform to collect what it needs.",
+            ActionOutcome.Failed);
     }
 
     /// <summary>
@@ -426,7 +441,23 @@ public sealed class RibbonView : UserControl
         if (_recentCommandIds.Count > 5)
             _recentCommandIds.RemoveAt(_recentCommandIds.Count - 1);
 
-        Rebuild();
+        // Only the "Recently Used" rows changed — updating them in place
+        // (instead of the previous full Rebuild()) keeps every existing
+        // tab and button alive, preserving keyboard focus and avoiding a
+        // second RefreshEnablement pass per click (`TD-58`).
+        foreach (var category in _recentSectionHosts.Keys)
+            UpdateRecentSection(category);
+    }
+
+    /// <summary>Recomputes one tab's own "Recently Used" row inside its stable host — the incremental complement to <see cref="Rebuild"/> (`TD-58`).</summary>
+    private void UpdateRecentSection(string category)
+    {
+        if (!_recentSectionHosts.TryGetValue(category, out var host))
+            return;
+
+        var section = BuildRecentSection(category);
+        host.Content = section;
+        host.IsVisible = section is not null;
     }
 
     /// <summary>

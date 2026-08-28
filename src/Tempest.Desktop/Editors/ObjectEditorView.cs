@@ -157,8 +157,8 @@ public sealed class ObjectEditorView : UserControl
     /// <summary>Raised whenever <see cref="IsDirty"/> changes.</summary>
     public event Action<bool>? DirtyChanged;
 
-    /// <summary>Raised after Save/Cancel completes, carrying a human-readable status message — the caller's own hook to refresh the Status Bar/Cockpit/Property Inspector, mirroring every other Desktop View's own identical <c>ActionCompleted</c> convention.</summary>
-    public event Action<string>? ActionCompleted;
+    /// <summary>Raised after Save/Cancel completes, carrying a human-readable status message and its <see cref="ActionOutcome"/> — the caller's own hook to refresh the Status Bar/Cockpit/Property Inspector, mirroring every other Desktop View's own identical <c>ActionCompleted</c> convention (`TD-58`).</summary>
+    public event Action<string, ActionOutcome>? ActionCompleted;
 
     /// <summary>
     /// Raised after a successful Rename — carries a ready-to-record
@@ -598,7 +598,7 @@ public sealed class ObjectEditorView : UserControl
         if (result.Succeeded)
             Refresh();
         _bomStatusMessage.Text = message;
-        ActionCompleted?.Invoke(message);
+        ActionCompleted?.Invoke(message, ActionOutcome.From(result.Succeeded));
     }
 
     /// <summary>
@@ -643,7 +643,7 @@ public sealed class ObjectEditorView : UserControl
         if (!ownerResult.Succeeded)
         {
             _requirementStatusMessage.Text = ownerResult.Message ?? "Set owner failed.";
-            ActionCompleted?.Invoke(_requirementStatusMessage.Text);
+            ActionCompleted?.Invoke(_requirementStatusMessage.Text, ActionOutcome.Failed);
             return;
         }
 
@@ -653,14 +653,17 @@ public sealed class ObjectEditorView : UserControl
         if (!priorityResult.Succeeded)
         {
             _requirementStatusMessage.Text = priorityResult.Message ?? "Set priority failed.";
-            ActionCompleted?.Invoke(_requirementStatusMessage.Text);
+
+            // The Owner half already dispatched successfully above, so the
+            // workspace did change even though this action failed overall.
+            ActionCompleted?.Invoke(_requirementStatusMessage.Text, new ActionOutcome(Succeeded: false, WorkspaceChanged: true));
             return;
         }
 
         // Refresh() before the final message — see OnSaveBomAsync's own identical remarks.
         Refresh();
         _requirementStatusMessage.Text = "Owner/Priority saved.";
-        ActionCompleted?.Invoke(_requirementStatusMessage.Text);
+        ActionCompleted?.Invoke(_requirementStatusMessage.Text, ActionOutcome.Changed);
     }
 
     /// <summary>
@@ -724,7 +727,7 @@ public sealed class ObjectEditorView : UserControl
         if (result.Succeeded)
             Refresh();
         _calculationStatusMessage.Text = message;
-        ActionCompleted?.Invoke(message);
+        ActionCompleted?.Invoke(message, ActionOutcome.From(result.Succeeded));
     }
 
     /// <summary>
@@ -761,7 +764,7 @@ public sealed class ObjectEditorView : UserControl
         if (result.Succeeded)
             Refresh();
         _verificationStatusMessage.Text = message;
-        ActionCompleted?.Invoke(message);
+        ActionCompleted?.Invoke(message, ActionOutcome.From(result.Succeeded));
     }
 
     /// <summary>
@@ -832,7 +835,7 @@ public sealed class ObjectEditorView : UserControl
         if (result.Succeeded)
             Refresh();
         _attachmentStatusMessage.Text = message;
-        ActionCompleted?.Invoke(message);
+        ActionCompleted?.Invoke(message, ActionOutcome.From(result.Succeeded));
     }
 
     private static string? NullIfEmpty(string? value) => string.IsNullOrWhiteSpace(value) ? null : value;
@@ -892,7 +895,7 @@ public sealed class ObjectEditorView : UserControl
             if (!result.Succeeded)
             {
                 _statusMessage.Text = result.Message ?? "Rename failed.";
-                ActionCompleted?.Invoke(_statusMessage.Text);
+                ActionCompleted?.Invoke(_statusMessage.Text, ActionOutcome.Failed);
                 return;
             }
 
@@ -911,7 +914,12 @@ public sealed class ObjectEditorView : UserControl
             if (!result.Succeeded)
             {
                 _statusMessage.Text = result.Message ?? "Revise failed.";
-                ActionCompleted?.Invoke(_statusMessage.Text);
+
+                // A rename in the same Save may already have been applied
+                // above, in which case the workspace did change even
+                // though this Save failed overall.
+                var renameApplied = nameChanged && _manager.CanRename(_objectKind);
+                ActionCompleted?.Invoke(_statusMessage.Text, new ActionOutcome(Succeeded: false, WorkspaceChanged: renameApplied));
                 return;
             }
         }
@@ -919,7 +927,7 @@ public sealed class ObjectEditorView : UserControl
         Refresh();
         DirtyChanged?.Invoke(false);
         _statusMessage.Text = "Saved.";
-        ActionCompleted?.Invoke(_statusMessage.Text);
+        ActionCompleted?.Invoke(_statusMessage.Text, ActionOutcome.Changed);
     }
 
     private void OnCancel()

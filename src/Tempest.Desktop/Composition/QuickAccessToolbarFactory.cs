@@ -99,7 +99,7 @@ internal static class QuickAccessToolbarFactory
                 return;
             }
 
-            graphView.ActionCompleted += message => statusBar.SetText(message);
+            graphView.ActionCompleted += (message, _) => statusBar.SetText(message);
             openGraphViewsByRootId[selection.ObjectId] = graphView;
             documentArea.ShowTab(graphView);
         };

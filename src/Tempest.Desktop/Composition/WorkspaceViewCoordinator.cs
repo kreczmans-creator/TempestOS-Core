@@ -157,12 +157,22 @@ internal sealed class WorkspaceViewCoordinator
             // event rather than duplicating this logic).
             _recentObjects.Record(id, kind, view.Title);
         };
-        _explorerView.ActionCompleted += message =>
+        _explorerView.ActionCompleted += (message, outcome) =>
         {
             _statusBar.SetText(message);
-            _toastHost.Show(message, FeedbackSeverity.Success);
+            _toastHost.Show(message, outcome.Succeeded ? FeedbackSeverity.Success : FeedbackSeverity.Error);
             _recordHistory(message);
-            _refreshCockpit();
+
+            // Success-gated (`TD-58`): a refused rename/delete/move
+            // changed nothing, so no Cockpit rebuild — and a failure no
+            // longer reports itself as a Success toast. The Inspector
+            // re-renders too: a successful delete cleared the selection,
+            // and a successful rename changed the displayed facets.
+            if (outcome.WorkspaceChanged)
+            {
+                _ = _inspectorView.RefreshFromSourceAsync();
+                _refreshCockpit();
+            }
         };
         _explorerView.RecentObjects = _recentObjects;
         _explorerView.Favourites = _favouriteObjects;
@@ -206,13 +216,18 @@ internal sealed class WorkspaceViewCoordinator
                 _refreshCockpit();
             }
         };
-        _inspectorView.ActionCompleted += async message =>
+        _inspectorView.ActionCompleted += async (message, outcome) =>
         {
             _statusBar.SetText(message);
-            _toastHost.Show(message, FeedbackSeverity.Success);
+            _toastHost.Show(message, outcome.Succeeded ? FeedbackSeverity.Success : FeedbackSeverity.Error);
             _recordHistory(message);
-            await _explorerView.LoadAsync().ConfigureAwait(true);
-            _refreshCockpit();
+
+            // Success-gated (`TD-58`).
+            if (outcome.WorkspaceChanged)
+            {
+                await _explorerView.LoadAsync().ConfigureAwait(true);
+                _refreshCockpit();
+            }
         };
     }
 
@@ -267,14 +282,23 @@ internal sealed class WorkspaceViewCoordinator
             return DocumentAreaView.BuildDefaultBody(view);
 
         editor.DirtyChanged += dirty => _documentArea!.MarkDirty(view.Id, dirty);
-        editor.ActionCompleted += async message =>
+        editor.ActionCompleted += async (message, outcome) =>
         {
             _statusBar.SetText(message);
-            _toastHost.Show(message, FeedbackSeverity.Success);
+            _toastHost.Show(message, outcome.Succeeded ? FeedbackSeverity.Success : FeedbackSeverity.Error);
             _recordHistory(message);
-            await _explorerView.LoadAsync().ConfigureAwait(true);
-            _inspectorView.Refresh();
-            _refreshCockpit();
+
+            // Success-gated (`TD-58`): a rejected Save/Execute/Attach
+            // changed nothing, so the Explorer/Inspector/Cockpit keep
+            // their current, still-correct state. The Inspector re-reads
+            // its facets from source — a plain Refresh() would re-render
+            // the cached, pre-mutation values.
+            if (outcome.WorkspaceChanged)
+            {
+                await _explorerView.LoadAsync().ConfigureAwait(true);
+                await _inspectorView.RefreshFromSourceAsync().ConfigureAwait(true);
+                _refreshCockpit();
+            }
         };
         // Undo/Redo (`WP 10.6A`, `ADR-0099`) — every discipline's own
         // Object Editor shares this one commit path, so this single

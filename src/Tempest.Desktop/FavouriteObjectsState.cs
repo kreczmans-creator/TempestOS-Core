@@ -88,7 +88,19 @@ public sealed class FavouriteObjectsState
     {
         var json = await _settingsProvider.GetValueAsync(SettingKey, cancellationToken).ConfigureAwait(false);
 
-        var entries = string.IsNullOrEmpty(json) ? null : JsonSerializer.Deserialize<List<FavouriteObjectEntry>>(json);
+        List<FavouriteObjectEntry>? entries;
+        try
+        {
+            entries = string.IsNullOrEmpty(json) ? null : JsonSerializer.Deserialize<List<FavouriteObjectEntry>>(json);
+        }
+        catch (JsonException)
+        {
+            // A corrupted stored value (e.g. a torn write) degrades to
+            // the documented first-run empty list — this method's own
+            // "never an exception" contract (`TD-60`).
+            entries = null;
+        }
+
         if (entries is null)
             return;
 

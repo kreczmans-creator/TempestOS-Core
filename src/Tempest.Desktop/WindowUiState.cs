@@ -83,7 +83,19 @@ internal sealed class WindowUiState
     {
         var json = await _settingsProvider.GetValueAsync(SettingKey, cancellationToken).ConfigureAwait(false);
 
-        var dto = string.IsNullOrEmpty(json) ? null : JsonSerializer.Deserialize<WindowUiStateDto>(json);
+        WindowUiStateDto? dto;
+        try
+        {
+            dto = string.IsNullOrEmpty(json) ? null : JsonSerializer.Deserialize<WindowUiStateDto>(json);
+        }
+        catch (JsonException)
+        {
+            // A corrupted stored value (e.g. a torn write) degrades to
+            // the documented first-run defaults — this method's own
+            // "never an exception" contract (`TD-60`).
+            dto = null;
+        }
+
         if (dto is null)
             return;
 

@@ -87,7 +87,17 @@ internal sealed class WorkspaceState : IWorkspaceState
     {
         var json = await _settingsProvider.GetValueAsync(SettingKey, cancellationToken).ConfigureAwait(false);
 
-        var dto = string.IsNullOrEmpty(json) ? null : JsonSerializer.Deserialize<WorkspaceStateDto>(json);
+        WorkspaceStateDto? dto;
+        try
+        {
+            dto = string.IsNullOrEmpty(json) ? null : JsonSerializer.Deserialize<WorkspaceStateDto>(json);
+        }
+        catch (JsonException)
+        {
+            // A corrupted stored value (e.g. a torn write) degrades to
+            // the documented first-run defaults, never a startup crash (`TD-60`).
+            dto = null;
+        }
 
         if (dto is null)
         {

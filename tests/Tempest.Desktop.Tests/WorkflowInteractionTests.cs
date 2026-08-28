@@ -400,7 +400,7 @@ public sealed class WorkflowInteractionTests
 
             var ribbon = new RibbonView(registry, host.Manager!, workspace, _ => { }, _ => { }); // ConfirmDeleteAsync never set
             var messages = new List<string>();
-            ribbon.ActionCompleted += messages.Add;
+            ribbon.ActionCompleted += (message, _) => messages.Add(message);
 
             var deleteButton = FindButtonById(ribbon, registry, "mechanical.delete");
             deleteButton.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));

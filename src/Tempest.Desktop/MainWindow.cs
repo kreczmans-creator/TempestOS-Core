@@ -132,6 +132,15 @@ public sealed class MainWindow : Window
 
                 _commandHistory.Record($"Macro '{title}'", result.Succeeded);
                 RefreshOutputPanelExtras();
+
+                // A macro is an arbitrary multi-command mutation — the
+                // Explorer/Cockpit previously stayed stale after one (`TD-58`).
+                if (result.Succeeded)
+                {
+                    await _explorerView.LoadAsync().ConfigureAwait(true);
+                    _cockpitView.Refresh();
+                }
+
                 return result;
             });
 
@@ -139,7 +148,14 @@ public sealed class MainWindow : Window
         // (`WP 10.5B`) — every `IPlatformNotification` this platform
         // already publishes (background tasks, sample modules, any
         // future long-running operation) now reaches a real Toast.
-        composition.EventBus.Subscribe(new PlatformNotificationToastBridge(_toastHost));
+        var toastBridge = new PlatformNotificationToastBridge(_toastHost);
+        composition.EventBus.Subscribe(toastBridge);
+
+        // Every real producer publishes through INotificationDispatcher,
+        // not the event bus — without this second subscription no
+        // platform notification ever reached a toast (`TD-58` stale-UI
+        // closure; confirmed dead wiring by whole-repository search).
+        composition.NotificationDispatcher.Subscribe<Tempest.Core.Notifications.IPlatformNotification>(toastBridge);
 
         _theme = new ThemeService(composition.SettingsProvider);
         _settingsDialog = new SettingsDialog(_theme, _session.UserSettings);
@@ -268,14 +284,28 @@ public sealed class MainWindow : Window
         // `_ribbon.ObjectCreationHandlers` directly.
         _ = new RibbonObjectActionHandlers(_ribbon, workspace, composition.CommandDispatcher, _statusBar, _toastHost, _explorerView, _cockpitView, _confirmationDialog, _inputDialog);
 
-        _ribbon.ActionCompleted += async message =>
+        _ribbon.ActionCompleted += async (message, outcome) =>
         {
             _statusBar.SetText(message);
-            _toastHost.Show(message, FeedbackSeverity.Success);
+            _toastHost.Show(message, outcome.Succeeded ? FeedbackSeverity.Success : FeedbackSeverity.Error);
             RecordHistory(message);
-            await _explorerView.LoadAsync().ConfigureAwait(true);
-            _cockpitView.Refresh();
+
+            // Refused/failed actions changed nothing — a full Explorer
+            // reload and Cockpit rebuild for them was `TD-58`'s core
+            // redundant-rebuild path.
+            if (outcome.WorkspaceChanged)
+            {
+                await _explorerView.LoadAsync().ConfigureAwait(true);
+                _cockpitView.Refresh();
+            }
         };
+        // Background-task state changes drive the Output panel's own
+        // Background Tasks list directly (`TD-58` stale-UI closure) —
+        // previously `Changed` had no subscriber at all, so a running
+        // macro never showed "Running" and completion appeared only
+        // after the next unrelated action happened to refresh the panel.
+        _backgroundTaskRunner.Changed += RefreshOutputPanelExtras;
+
         _ribbon.CategorySelected += async category =>
         {
             var area = workspace.Navigation.Areas.FirstOrDefault(a => a.Title.Contains(category, StringComparison.OrdinalIgnoreCase));
@@ -384,11 +414,21 @@ public sealed class MainWindow : Window
             // moment" case in this platform.
             return await _backgroundTaskRunner.RunAsync($"Running macro '{descriptor.DisplayName}'…", ct => composition.CommandRegistry.InvokeAsync(descriptor.Id, ct)).ConfigureAwait(true);
         };
-        _commandPalette.CommandInvoked += descriptor =>
+        _commandPalette.CommandInvoked += async (descriptor, result) =>
         {
-            RecordHistory($"Invoked '{descriptor.DisplayName}' via Command Palette.");
+            RecordHistory(result.Succeeded
+                ? $"Invoked '{descriptor.DisplayName}' via Command Palette."
+                : $"'{descriptor.DisplayName}' failed via Command Palette: {result.Message ?? "Command failed."}");
             RefreshStatusBar(manager);
-            _cockpitView.Refresh();
+
+            // Success-gated (`TD-58`): a failed command changed nothing;
+            // a successful one may have mutated the domain, so the
+            // Explorer (previously left stale here) reloads too.
+            if (result.Succeeded)
+            {
+                await _explorerView.LoadAsync().ConfigureAwait(true);
+                _cockpitView.Refresh();
+            }
         };
         _commandPalette.CommandUnavailable += descriptor =>
         {

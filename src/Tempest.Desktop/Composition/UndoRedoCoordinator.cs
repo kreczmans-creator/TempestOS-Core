@@ -110,8 +110,13 @@ internal sealed class UndoRedoCoordinator
         _statusBar.SetText(message);
         _toastHost.Show(message, result.Succeeded ? FeedbackSeverity.Success : FeedbackSeverity.Error);
         _recordHistory(message);
-        await _explorerView.LoadAsync().ConfigureAwait(true);
-        _refreshCockpit();
+
+        // Success-gated (`TD-58`): a failed undo/redo changed nothing.
+        if (result.Succeeded)
+        {
+            await _explorerView.LoadAsync().ConfigureAwait(true);
+            _refreshCockpit();
+        }
     }
 
     /// <summary>Re-applies the most recently undone action, if any (`WP 10.6A`, `ADR-0099`) — mirrors <see cref="UndoAsync"/>'s own identical shape.</summary>
@@ -125,7 +130,12 @@ internal sealed class UndoRedoCoordinator
         _statusBar.SetText(message);
         _toastHost.Show(message, result.Succeeded ? FeedbackSeverity.Success : FeedbackSeverity.Error);
         _recordHistory(message);
-        await _explorerView.LoadAsync().ConfigureAwait(true);
-        _refreshCockpit();
+
+        // Success-gated (`TD-58`): a failed undo/redo changed nothing.
+        if (result.Succeeded)
+        {
+            await _explorerView.LoadAsync().ConfigureAwait(true);
+            _refreshCockpit();
+        }
     }
 }

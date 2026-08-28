@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.LogicalTree;
 using Tempest.App.Workspace;
+using Tempest.Core.Notifications;
 using Tempest.Desktop.Docking;
 using Tempest.Desktop.Views;
 using Tempest.Samples;
@@ -23,6 +24,35 @@ namespace Tempest.Desktop.Tests;
 [Collection("Tempest.Desktop WorkspaceHost persistence")]
 public sealed class MainWindowCompositionTests
 {
+    [AvaloniaFact]
+    public async Task PlatformNotification_PublishedThroughTheRealDispatcher_ReachesAVisibleToast()
+    {
+        // `TD-58` stale-UI closure: the toast bridge previously listened
+        // only on the event bus, which no real producer publishes
+        // notifications through — every INotificationDispatcher
+        // publication silently vanished.
+        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
+        try
+        {
+            await host.StartAsync();
+            var window = new MainWindow(host);
+            var toastHost = window.GetLogicalDescendants().OfType<ToastHost>().Single();
+            var dispatcher = (INotificationDispatcher)host.Services!.GetService(typeof(INotificationDispatcher));
+
+            Assert.Equal(0, toastHost.ActiveToastCount);
+
+            await dispatcher.PublishAsync<IPlatformNotification>(
+                new PlatformNotification("Tests", NotificationSeverity.Information, "A real platform notification."));
+
+            Assert.Equal(1, toastHost.ActiveToastCount);
+        }
+        finally
+        {
+            await host.ShutdownAsync();
+            await host.DisposeAsync();
+        }
+    }
+
     [AvaloniaFact]
     public async Task ViewMenu_ToggleProjectExplorer_ActuallyFlipsTheRealWorkspaceLayoutVisibility()
     {

@@ -72,8 +72,8 @@ public sealed class DigitalThreadGraphView : UserControl, IWorkspaceView
     private Point _dragStart;
     private Vector _panAtDragStart;
 
-    /// <summary>Raised after any action completes, carrying a human-readable status message — the caller's own hook to refresh the Status Bar, mirroring every other Desktop View's own identical convention.</summary>
-    public event Action<string>? ActionCompleted;
+    /// <summary>Raised after any action completes, carrying a human-readable status message and its <see cref="ActionOutcome"/> — the caller's own hook to refresh the Status Bar, mirroring every other Desktop View's own identical convention (`TD-58`).</summary>
+    public event Action<string, ActionOutcome>? ActionCompleted;
 
     private DigitalThreadGraphView(DigitalThreadGraphModel model, EngineeringDomainContext domainContext, Action<Guid, string> navigateToObject)
     {
@@ -533,7 +533,7 @@ public sealed class DigitalThreadGraphView : UserControl, IWorkspaceView
                 {
                     SelectNode(node.ObjectId);
                     _navigateToObject(node.ObjectId, node.Kind);
-                    ActionCompleted?.Invoke($"Opened {node.Kind} '{node.DisplayName}' from the Digital Thread graph.");
+                    ActionCompleted?.Invoke($"Opened {node.Kind} '{node.DisplayName}' from the Digital Thread graph.", ActionOutcome.NoChange);
                 }
                 e.Handled = true;
             };

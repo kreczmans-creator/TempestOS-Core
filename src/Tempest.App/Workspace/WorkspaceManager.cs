@@ -245,14 +245,24 @@ public sealed class WorkspaceManager : IWorkspaceManager, IAsyncDisposable
     }
 
     /// <inheritdoc />
-    public Task<CommandResult> DeleteObjectAsync(Guid id, string kind, CancellationToken cancellationToken = default)
+    public async Task<CommandResult> DeleteObjectAsync(Guid id, string kind, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(kind);
 
         if (!_deleteFactories.TryGetValue(kind, out var factory))
-            return Task.FromResult(CommandResult.Failure($"No delete capability is registered for Kind '{kind}'."));
+            return CommandResult.Failure($"No delete capability is registered for Kind '{kind}'.");
 
-        return DispatchObjectCommandAsync(factory(id, kind), cancellationToken);
+        var result = await DispatchObjectCommandAsync(factory(id, kind), cancellationToken).ConfigureAwait(false);
+
+        // A deleted object must not stay selected (`TD-58` stale-UI
+        // closure): every deleting surface (Ribbon, Project Explorer
+        // context menu, Delete key) converges here, so this one clear
+        // keeps Delete/Rename enablement, the Property Inspector, and
+        // any repeat-delete dispatch from acting on a dead Id.
+        if (result.Succeeded && Current?.Selection.Current is { } selection && selection.ObjectId == id)
+            await Current.Selection.ClearAsync(cancellationToken).ConfigureAwait(false);
+
+        return result;
     }
 
     /// <inheritdoc />

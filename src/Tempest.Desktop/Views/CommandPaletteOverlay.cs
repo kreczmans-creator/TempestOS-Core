@@ -36,7 +36,7 @@ public sealed class CommandPaletteOverlay : Border
     private IReadOnlyList<CommandDescriptor> _filtered = [];
 
     /// <summary>Raised after a command is successfully invoked from this palette.</summary>
-    public event Action<CommandDescriptor>? CommandInvoked;
+    public event Action<CommandDescriptor, CommandResult>? CommandInvoked;
 
     /// <summary>
     /// Raised when the user selects and confirms a command whose own
@@ -147,12 +147,13 @@ public sealed class CommandPaletteOverlay : Border
 
         if (descriptor.CreateDefault is not null)
         {
-            if (InvokeOverride is not null)
-                await InvokeOverride(descriptor).ConfigureAwait(true);
-            else
-                await _registry.InvokeAsync(descriptor.Id).ConfigureAwait(true);
+            // The result now travels with the event (`TD-58`) — the
+            // subscriber refreshes dependent surfaces only on success.
+            var result = InvokeOverride is not null
+                ? await InvokeOverride(descriptor).ConfigureAwait(true)
+                : await _registry.InvokeAsync(descriptor.Id).ConfigureAwait(true);
 
-            CommandInvoked?.Invoke(descriptor);
+            CommandInvoked?.Invoke(descriptor, result);
         }
         else
         {

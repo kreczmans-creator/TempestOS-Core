@@ -103,8 +103,8 @@ public sealed class ProjectExplorerView : UserControl
     /// </summary>
     public event Action<System.Guid, string, System.Guid?>? ObjectMoveRequested;
 
-    /// <summary>Raised after a Rename/Delete context-menu action completes — successfully or not — carrying a status message the caller may surface (e.g. on the Status Bar).</summary>
-    public event Action<string>? ActionCompleted;
+    /// <summary>Raised after a Rename/Delete context-menu action completes — successfully or not — carrying a status message the caller may surface (e.g. on the Status Bar) and its <see cref="ActionOutcome"/> (`TD-58`).</summary>
+    public event Action<string, ActionOutcome>? ActionCompleted;
 
     /// <summary>
     /// An optional confirmation gate (`WP 10.5B`, Dialog Framework —
@@ -567,7 +567,7 @@ public sealed class ProjectExplorerView : UserControl
             if (!string.IsNullOrWhiteSpace(newName) && newName != item.Node.Title)
             {
                 var result = await _manager.RenameObjectAsync(item.Node.Id, item.Node.Kind!, newName).ConfigureAwait(true);
-                ActionCompleted?.Invoke(result.Succeeded ? $"Renamed to '{newName}'." : result.Message ?? "Rename failed.");
+                ActionCompleted?.Invoke(result.Succeeded ? $"Renamed to '{newName}'." : result.Message ?? "Rename failed.", ActionOutcome.From(result.Succeeded));
                 if (result.Succeeded)
                     await LoadAsync().ConfigureAwait(true);
             }
@@ -593,7 +593,7 @@ public sealed class ProjectExplorerView : UserControl
     {
         if (!_manager.CanRename(item.Node.Kind!))
         {
-            ActionCompleted?.Invoke($"'{item.Node.Kind}' objects cannot be renamed.");
+            ActionCompleted?.Invoke($"'{item.Node.Kind}' objects cannot be renamed.", ActionOutcome.Failed);
             return;
         }
 
@@ -657,7 +657,7 @@ public sealed class ProjectExplorerView : UserControl
     {
         if (!_manager.CanDelete(item.Node.Kind!))
         {
-            ActionCompleted?.Invoke($"'{item.Node.Kind}' objects cannot be deleted.");
+            ActionCompleted?.Invoke($"'{item.Node.Kind}' objects cannot be deleted.", ActionOutcome.Failed);
             return;
         }
 
@@ -665,7 +665,7 @@ public sealed class ProjectExplorerView : UserControl
             return;
 
         var result = await _manager.DeleteObjectAsync(item.Node.Id, item.Node.Kind!).ConfigureAwait(true);
-        ActionCompleted?.Invoke(result.Succeeded ? $"Deleted '{item.Node.Title}'." : result.Message ?? "Delete failed.");
+        ActionCompleted?.Invoke(result.Succeeded ? $"Deleted '{item.Node.Title}'." : result.Message ?? "Delete failed.", ActionOutcome.From(result.Succeeded));
         if (result.Succeeded)
             await LoadAsync().ConfigureAwait(true);
     }
@@ -716,19 +716,19 @@ public sealed class ProjectExplorerView : UserControl
         {
             if (targetItem.Node.NodeType != ProjectExplorerNodeType.Object)
             {
-                ActionCompleted?.Invoke("Can't move an object there.");
+                ActionCompleted?.Invoke("Can't move an object there.", ActionOutcome.Failed);
                 return;
             }
 
             if (targetItem.Node.Id == draggedId)
             {
-                ActionCompleted?.Invoke("Can't move an object onto itself.");
+                ActionCompleted?.Invoke("Can't move an object onto itself.", ActionOutcome.Failed);
                 return;
             }
 
             if (targetItem.PathFromRoot().Any(ancestor => ancestor.Node.Id == draggedId))
             {
-                ActionCompleted?.Invoke("Can't move an object into its own descendant.");
+                ActionCompleted?.Invoke("Can't move an object into its own descendant.", ActionOutcome.Failed);
                 return;
             }
         }
