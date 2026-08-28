@@ -51,6 +51,17 @@ src/
 │                            # Object Editors, Docking, Digital Thread graph,
 │                            # Command Palette, Undo/Redo, Macros. This is
 │                            # how TempestOS is actually run and used.
+├── Tempest.Companion/       # TempestOS Companion (ADR-0113) — the mobile
+│                            # operational interface: a separate-process
+│                            # Avalonia single-view client for awareness,
+│                            # triage, and controlled quick actions, talking
+│                            # to the platform only over the REST API
+│                            # boundary (ADR-0114). Runs today in a
+│                            # phone-frame desktop head (TD-57).
+├── Tempest.Companion.Contracts/ # The Companion wire contract — route
+│                            # constants, permission keys, and DTO records
+│                            # shared by the server-side registration
+│                            # (Tempest.App) and the Companion client.
 ├── Samples/Tempest.Samples/ # ClockModule, ClockLifecycleObserverModule, and
 │                            # the six real Engineering Discipline sample
 │                            # modules — the living reference modules every
@@ -61,8 +72,12 @@ src/
 tests/
 ├── Tempest.Core.Tests/       # xUnit tests, mirroring src/'s own namespace
 │                             # structure directory-for-directory
-└── Tempest.Desktop.Tests/    # xUnit tests against real Avalonia headless
-                               # rendering — no display attached, no mocks
+├── Tempest.Desktop.Tests/    # xUnit tests against real Avalonia headless
+│                             # rendering — no display attached, no mocks
+└── Tempest.Companion.Tests/  # Companion tests: unit + Avalonia headless UI
+                               # + full-stack integration (a real TempestHost
+                               # and Kestrel driven by the production client
+                               # over real HTTP)
 ```
 
 For the full platform picture — every platform service, module, hosted

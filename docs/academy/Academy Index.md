@@ -765,6 +765,10 @@ the full account.
 - [WP 13.13.0 — v0.13.0 Release Failure Disposition & v0.13.1 Planning](03%20Work%20Packages/WP13.13.0-v0.13.0-release-failure-disposition-and-v0.13.1-planning.md) — analysis only, changing no file. Established that re-tagging is barred by Engineering Governance §7.4, that `WP 11.4B`'s tag-position exception cannot reach this case on two independent grounds, and that a new patch version is the only permitted remedy.
 - [WP 13.13.1 — v0.13.1 Release Preparation](03%20Work%20Packages/WP13.13.1-v0.13.1-release-preparation.md) — prepares `v0.13.1`, the corrected and publishable form of `v0.13.0`'s content, on a branch cut from `ea3fe07` so the tagged commit `6089a218` stays in ancestry unchanged. `v0.13.0`'s tag is left immutable per Engineering Governance §7.4; `WP 11.4B`'s tag-position exception is deliberately not invoked, being bounded to a tag's mechanical position and to the window before the release branch closes. The project's first non-zero patch version.
 
+**TempestOS Companion (v0.14.0, In Preparation):**
+
+- [WP 14.0A — TempestOS Companion: Mobile Companion Application](03%20Work%20Packages/WP14.0A-tempestos-companion-mobile-companion-application.md) — the platform's first non-desktop client: a separate-process Avalonia single-view mobile app (`ADR-0113`) over a new late-bound REST query-and-action surface (`ADR-0114`), with read-only snapshot caching and explicit freshness states (`ADR-0115`, no offline writes — `AT-24`), the first concrete TempestOS visual identity, and a full-stack integration suite driving the production client against a real Host over real HTTP. Added `TD-57`/`TD-58` and `FCR-0089`–`FCR-0091`.
+
 See `PROJECT_STATUS.md` for current status and
 `docs/releases/v0.13.0/WorkPackages.md` for the full plan.
 

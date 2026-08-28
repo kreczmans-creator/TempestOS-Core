@@ -1166,7 +1166,7 @@ companions; `Platform Service Contracts.md` and companions;
 
 ---
 
-## REST API *(implemented — WP 6.3, ADR-0047/ADR-0048/ADR-0049/ADR-0052)*
+## REST API *(implemented — WP 6.3, ADR-0047/ADR-0048/ADR-0049/ADR-0052; extended — WP 14.0A, ADR-0114)*
 
 **Responsibility.** Lets an external HTTP client invoke platform
 capability from outside the running process. Hosts an HTTP listener;
@@ -1269,6 +1269,23 @@ companions; `Platform Service Contracts.md` and companions;
 `AT-10`; `TD-04`; `TD-13`; `TD-14`; `TD-15`).
 
 ---
+
+**Late-bound query-and-action surface (`WP 14.0A`, `ADR-0114`).** Beside
+the original route-to-command registry, `IApiQueryRegistry` (a Phase 6
+singleton, `ApiQueryRegistry`) registers `GET` **queries** — delegates
+producing a complete JSON body, `ADR-0063`'s reads-read rule applied at
+the API boundary — and `POST` **actions** — delegates binding the
+request body to an existing typed `ICommand` and dispatching through the
+unmodified Command Framework. `RestApiHostedService` serves the surface
+through one catch-all fallback resolved against the registry per
+request, so a composition root may register routes after the Host has
+started (the Engineering Workspace's own timing). The pipeline
+(`ApiQueryRequestHandler`) applies the identical identity → permission →
+audit → failure-map sequence as `ApiRequestHandler`, plus one case:
+binding faults (`ApiRequestBindingException`/`JsonException`) map to
+`400`. First consumer: the TempestOS Companion's routes under
+`/api/v1/companion` (`CompanionApiRegistration`, `Tempest.App`) — see
+`TempestOS Companion Architecture.md`.
 
 ## Export/Import *(implemented — WP 6.7, ADR-0051)*
 

@@ -155,6 +155,14 @@ public static class EngineeringWorkspaceComposer
         // does.
         MacroWorkspaceRegistration.Register(commandDispatcher, commandRegistry, macroManager);
 
+        // The TempestOS Companion API (`WP 14.0A`, ADR-0113/ADR-0114) —
+        // registered here, once, so the console shell and Tempest.Desktop
+        // both serve the identical Companion surface without either
+        // presentation layer knowing it exists. Same precondition as every
+        // discipline above: the Host is running and the Workspace has
+        // started (WorkspaceManager.Current non-null).
+        CompanionApiRegistration.Register(manager, host);
+
         return calculationTemplateRegistry;
     }
 }

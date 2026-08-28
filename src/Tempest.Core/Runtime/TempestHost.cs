@@ -559,6 +559,13 @@ public sealed class TempestHost : ITempestHost
         // listening.
         services.Singleton<IApiEndpointRegistry, ApiEndpointRegistry>();
 
+        // ADR-0114: the REST API's late-bound query-and-action surface -
+        // an ordinary Phase 6 singleton like IApiEndpointRegistry above,
+        // but deliberately consultable per request rather than snapshotted
+        // at hosted-service start, so a composition root can register
+        // read-only projections after the Host is already running.
+        services.Singleton<IApiQueryRegistry, ApiQueryRegistry>();
+
         // ADR-0051: Export/Import reads from whatever service owns the
         // exported data (Settings, Reporting) via that service's own
         // public interface, never IPersistenceStore directly - registered

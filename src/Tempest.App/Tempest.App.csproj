@@ -3,6 +3,13 @@
   <ItemGroup>
     <ProjectReference Include="..\Tempest.Core\Tempest.Core.csproj" />
     <ProjectReference Include="..\Samples\Tempest.Samples\Tempest.Samples.csproj" />
+    <!--
+      WP 14.0A: the Companion wire contract - the shared route/DTO
+      definitions CompanionApiRegistration serializes with, so the server
+      side and the Tempest.Companion client share one wire-shape source of
+      truth (ADR-0113).
+    -->
+    <ProjectReference Include="..\Tempest.Companion.Contracts\Tempest.Companion.Contracts.csproj" />
   </ItemGroup>
 
   <PropertyGroup>

@@ -23,10 +23,13 @@ public static class OpenApiDocumentGenerator
 {
     /// <summary>
     /// Generates the OpenAPI document, as a JSON string, for
-    /// <paramref name="routes"/>.
+    /// <paramref name="routes"/> plus, optionally, every late-bound
+    /// query/action route (<c>ADR-0114</c>) in
+    /// <paramref name="queryRoutes"/>.
     /// </summary>
-    /// <param name="routes">Every route to describe.</param>
-    public static string Generate(IReadOnlyList<ApiRouteDescriptor> routes)
+    /// <param name="routes">Every command route to describe.</param>
+    /// <param name="queryRoutes">Every late-bound query/action route to describe, or <see langword="null"/> for none.</param>
+    public static string Generate(IReadOnlyList<ApiRouteDescriptor> routes, IReadOnlyList<ApiQueryRouteDescriptor>? queryRoutes = null)
     {
         ArgumentNullException.ThrowIfNull(routes);
 
@@ -34,25 +37,17 @@ public static class OpenApiDocumentGenerator
 
         foreach (var route in routes)
         {
-            var pathItem = paths.TryGetPropertyValue(route.Path, out var existing) && existing is JsonObject existingObject
-                ? existingObject
-                : new JsonObject();
+            AddOperation(paths, route.Method, route.Path, $"Invokes command '{route.CommandId}'.", isJsonResponse: false);
+        }
 
-            pathItem[route.Method.ToLowerInvariant()] = new JsonObject
-            {
-                ["summary"] = $"Invokes command '{route.CommandId}'.",
-                ["responses"] = new JsonObject
-                {
-                    ["200"] = new JsonObject { ["description"] = "The command succeeded." },
-                    ["400"] = new JsonObject { ["description"] = "The command reported a foreseeable failure." },
-                    ["401"] = new JsonObject { ["description"] = "No identity was supplied." },
-                    ["403"] = new JsonObject { ["description"] = "The caller does not hold the required permission." },
-                    ["404"] = new JsonObject { ["description"] = "No route or command matches." },
-                    ["500"] = new JsonObject { ["description"] = "An unhandled error occurred." },
-                },
-            };
-
-            paths[route.Path] = pathItem;
+        foreach (var route in queryRoutes ?? [])
+        {
+            AddOperation(
+                paths,
+                route.Method,
+                route.Path,
+                route.Query is null ? "Binds the request body to a typed command and dispatches it." : "Serves a read-only JSON projection.",
+                isJsonResponse: route.Query is not null);
         }
 
         var document = new JsonObject
@@ -67,5 +62,28 @@ public static class OpenApiDocumentGenerator
         };
 
         return document.ToJsonString(new JsonSerializerOptions { WriteIndented = true });
+    }
+
+    private static void AddOperation(JsonObject paths, string method, string path, string summary, bool isJsonResponse)
+    {
+        var pathItem = paths.TryGetPropertyValue(path, out var existing) && existing is JsonObject existingObject
+            ? existingObject
+            : new JsonObject();
+
+        pathItem[method.ToLowerInvariant()] = new JsonObject
+        {
+            ["summary"] = summary,
+            ["responses"] = new JsonObject
+            {
+                ["200"] = new JsonObject { ["description"] = isJsonResponse ? "The query succeeded; the body is JSON." : "The command succeeded." },
+                ["400"] = new JsonObject { ["description"] = "The command reported a foreseeable failure, or the request body could not be bound." },
+                ["401"] = new JsonObject { ["description"] = "No identity was supplied." },
+                ["403"] = new JsonObject { ["description"] = "The caller does not hold the required permission." },
+                ["404"] = new JsonObject { ["description"] = "No route or command matches." },
+                ["500"] = new JsonObject { ["description"] = "An unhandled error occurred." },
+            },
+        };
+
+        paths[path] = pathItem;
     }
 }

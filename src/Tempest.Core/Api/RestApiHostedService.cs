@@ -73,7 +73,9 @@ public sealed class RestApiHostedService : IHostedService
     public int? BoundPort { get; private set; }
 
     private readonly IApiEndpointRegistry _endpointRegistry;
+    private readonly IApiQueryRegistry _queryRegistry;
     private readonly ApiRequestHandler _requestHandler;
+    private readonly ApiQueryRequestHandler _queryRequestHandler;
     private readonly IConfigurationProvider _configuration;
     private readonly ILogger? _logger;
     private WebApplication? _app;
@@ -83,6 +85,7 @@ public sealed class RestApiHostedService : IHostedService
     /// </summary>
     public RestApiHostedService(
         IApiEndpointRegistry endpointRegistry,
+        IApiQueryRegistry queryRegistry,
         ICommandRegistry commandRegistry,
         IIdentityService identityService,
         IPermissionEvaluator permissionEvaluator,
@@ -91,6 +94,7 @@ public sealed class RestApiHostedService : IHostedService
         ILogger? logger = null)
     {
         ArgumentNullException.ThrowIfNull(endpointRegistry);
+        ArgumentNullException.ThrowIfNull(queryRegistry);
         ArgumentNullException.ThrowIfNull(commandRegistry);
         ArgumentNullException.ThrowIfNull(identityService);
         ArgumentNullException.ThrowIfNull(permissionEvaluator);
@@ -98,7 +102,9 @@ public sealed class RestApiHostedService : IHostedService
         ArgumentNullException.ThrowIfNull(configuration);
 
         _endpointRegistry = endpointRegistry;
+        _queryRegistry = queryRegistry;
         _requestHandler = new ApiRequestHandler(endpointRegistry, commandRegistry, identityService, permissionEvaluator, auditRecorder, logger);
+        _queryRequestHandler = new ApiQueryRequestHandler(queryRegistry, identityService, permissionEvaluator, auditRecorder, logger);
         _configuration = configuration;
         _logger = logger;
     }
@@ -121,6 +127,15 @@ public sealed class RestApiHostedService : IHostedService
         }
 
         app.MapGet(OpenApiPath, (HttpContext context) => InvokeOpenApiAsync(context));
+
+        // The late-bound query-and-action surface (ADR-0114): one
+        // catch-all fallback, resolved per request against
+        // IApiQueryRegistry — so a composition root can register routes
+        // after this hosted service has already started (which is exactly
+        // when the Engineering Workspace's own read models first exist).
+        // Statically mapped command routes above always win — a fallback
+        // has the lowest possible routing precedence by definition.
+        app.MapFallback((HttpContext context) => InvokeQueryAsync(context));
 
         await app.StartAsync(cancellationToken).ConfigureAwait(false);
         _app = app;
@@ -162,9 +177,37 @@ public sealed class RestApiHostedService : IHostedService
             await context.Response.WriteAsync(response.Body, context.RequestAborted).ConfigureAwait(false);
     }
 
+    private async Task InvokeQueryAsync(HttpContext context)
+    {
+        var identityHeaderValue = context.Request.Headers.TryGetValue(ApiRequestHandler.IdentityHeaderName, out var values)
+            ? values.ToString()
+            : null;
+
+        string? requestBody = null;
+
+        if (context.Request.ContentLength is > 0 || context.Request.Headers.ContainsKey("Transfer-Encoding"))
+        {
+            using var reader = new StreamReader(context.Request.Body);
+            requestBody = await reader.ReadToEndAsync(context.RequestAborted).ConfigureAwait(false);
+        }
+
+        var (response, isJson) = await _queryRequestHandler.HandleAsync(
+            context.Request.Method,
+            context.Request.Path.Value ?? string.Empty,
+            identityHeaderValue,
+            requestBody,
+            context.RequestAborted).ConfigureAwait(false);
+
+        context.Response.StatusCode = response.StatusCode;
+        context.Response.ContentType = isJson ? "application/json" : "text/plain";
+
+        if (response.Body is not null)
+            await context.Response.WriteAsync(response.Body, context.RequestAborted).ConfigureAwait(false);
+    }
+
     private Task InvokeOpenApiAsync(HttpContext context)
     {
         context.Response.ContentType = "application/json";
-        return context.Response.WriteAsync(OpenApiDocumentGenerator.Generate(_endpointRegistry.Routes), context.RequestAborted);
+        return context.Response.WriteAsync(OpenApiDocumentGenerator.Generate(_endpointRegistry.Routes, _queryRegistry.Routes), context.RequestAborted);
     }
 }

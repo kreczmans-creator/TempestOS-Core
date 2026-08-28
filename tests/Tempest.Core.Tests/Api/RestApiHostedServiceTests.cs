@@ -23,6 +23,7 @@ public class RestApiHostedServiceTests
     private static RestApiHostedService BuildService(IConfigurationProvider configuration) =>
         new(
             new ApiEndpointRegistry(),
+            new ApiQueryRegistry(),
             new CommandRegistryStub(),
             new IdentityServiceStub(),
             new PermissionEvaluatorStub(),

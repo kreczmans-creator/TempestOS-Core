@@ -1,0 +1,41 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <!--
+      WP 14.0A: the Companion's own test project - the identical strategy
+      Tempest.Desktop.Tests established (ADR-0094): unit tests over the
+      client/offline/service layers, real Avalonia headless rendering for
+      every view test, and full-stack integration tests that stand up a
+      real TempestOS Host (EngineeringWorkspaceComposer + Kestrel on an
+      OS-assigned port) and drive the production CompanionApiClient over
+      real HTTP - mocks appear only inside unit tests, never in the
+      integration path.
+    -->
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" Version="6.0.4" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageReference Include="xunit" Version="2.9.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4" />
+    <PackageReference Include="Avalonia.Headless.XUnit" Version="11.2.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Tempest.Companion\Tempest.Companion.csproj" />
+    <ProjectReference Include="..\..\src\Tempest.Companion.Contracts\Tempest.Companion.Contracts.csproj" />
+    <!-- Server-side stack, for the real-Host integration tests only. -->
+    <ProjectReference Include="..\..\src\Tempest.Core\Tempest.Core.csproj" />
+    <ProjectReference Include="..\..\src\Samples\Tempest.Samples\Tempest.Samples.csproj" />
+    <ProjectReference Include="..\..\src\Tempest.App\Tempest.App.csproj" />
+  </ItemGroup>
+
+</Project>

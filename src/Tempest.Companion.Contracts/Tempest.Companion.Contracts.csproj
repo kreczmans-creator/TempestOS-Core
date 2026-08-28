@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <!--
+      WP 14.0A: the TempestOS Companion wire contract - the one shared
+      definition of every route path, permission key, and DTO shape the
+      Companion's REST boundary (ADR-0114) carries, referenced by BOTH
+      sides of the HTTP boundary (Tempest.App's server-side registration
+      and Tempest.Companion's client), so the wire shape has exactly one
+      source of truth and can never silently drift between them.
+      Deliberately dependency-free: no Tempest.Core reference - a DTO
+      here is an API representation, not a Domain object and not a mobile
+      presentation model (ADR-0113 documents that three-way boundary).
+    -->
+  </PropertyGroup>
+
+</Project>

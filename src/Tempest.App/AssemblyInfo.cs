@@ -15,3 +15,10 @@ using System.Runtime.CompilerServices;
 // running Workspace — the identical build-visibility-only grant pattern,
 // applied to the test project this Work Package adds.
 [assembly: InternalsVisibleTo("Tempest.Desktop.Tests")]
+
+// WP 14.0A: lets the Companion's tests verify the server-side Companion
+// projection (CompanionQueryService/CompanionApiRegistration's own
+// internal binder) against the real, running Workspace — the identical
+// build-visibility-only grant pattern again, applied to the test project
+// this Work Package adds.
+[assembly: InternalsVisibleTo("Tempest.Companion.Tests")]

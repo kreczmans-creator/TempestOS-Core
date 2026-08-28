@@ -1,5 +1,45 @@
 # TempestOS — Project Status
 
+**Last Updated:** 2026-08-28 (`WP 14.0A`, TempestOS Companion — Mobile
+Companion Application). **The `v0.14.0` train is OPEN (In preparation —
+see the Release Register); `WP 14.0A` is complete on branch
+`claude/tempestos-companion-mobile-ubznt3`.**
+
+**What `WP 14.0A` delivered.** TempestOS Companion — the platform's
+first non-desktop client: a separate-process Avalonia single-view mobile
+application (`ADR-0113`) for awareness, triage, and one confirm-gated
+quick action, over a new late-bound REST query-and-action surface
+(`IApiQueryRegistry`/`ApiQueryRequestHandler`, `ADR-0114` — reads serve
+JSON per `ADR-0063`'s rule applied at the API boundary; the action binds
+its body to the existing `SetDocumentStatusCommand` and dispatches
+through the unmodified Command Framework), with read-only snapshot
+caching and four disclosed freshness states (`ADR-0115`; no offline
+writes, `AT-24`). Server side registered from
+`EngineeringWorkspaceComposer` (`ADR-0071`'s rule), so console and
+desktop serve the identical Companion API. First concrete realisation of
+the TempestOS visual identity (Royal Blue `#1E2F97` / Electric Blue
+`#00AEEF` / Purple `#6C2BD9`; Chakra Petch / Inter / Space Mono; the
+six-blade iris mark as code-drawn geometry) — the implementation phase
+`WP10.0A Visual Design System.md` deferred values to. Three new
+projects (`Tempest.Companion`, `Tempest.Companion.Contracts`,
+`Tempest.Companion.Tests`); 75 new tests (23 API surface + 52 Companion,
+including full-stack integration over real Kestrel with the production
+client); complete pre-existing suite green in Debug and Release, 0
+warnings under CI's `TreatWarningsAsErrors`. Governance: `ADR-0113`–
+`ADR-0115`; `TD-57` (no Android/iOS heads yet), `TD-58` (off-box reach
+gated on `FCR-0003`/`FCR-0004`), `AT-24`; `FCR-0023` advanced,
+`FCR-0089`–`FCR-0091` added (business awareness, push notifications,
+offline dashboard display — each verified absent from the codebase and
+registered rather than fabricated); Academy retrospective
+`WP14.0A-tempestos-companion-mobile-companion-application.md`;
+`TempestOS Companion Architecture.md`;
+`Companion Security Review WP14.0A.md`;
+`docs/releases/v0.14.0/` opened. `VERSION` deliberately remains `0.13.1`
+until release preparation (`WP 13.12.4` precedent).
+
+**`WP 13.13.2`'s own status line, below this point, is this field's
+prior content — retained, not deleted:**
+
 **Last Updated:** 2026-08-18 (`WP 13.13.2`, `v0.13.1` Final Release,
 Closure & Handover to WP14). **The `v0.13.x` release train is CLOSED.**
 
