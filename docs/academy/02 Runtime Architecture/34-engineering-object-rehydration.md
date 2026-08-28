@@ -153,6 +153,34 @@ record however it was reached.
 > is always the same. "It only fails after a restart" usually means "it
 > was always fragile."
 
+## The audit found one more, and it was the same shape
+
+A closure audit ran after the implementation was committed. Nine of its
+ten checks passed. The tenth found this:
+
+`ReviseAsync` builds a *new instance* of the same object and copies state
+onto it. It copied a hand-picked list — rename, parent, delete, BOM line —
+added by an earlier Work Package that had, correctly for its own scope,
+fixed exactly those four. It did not copy lifecycle state, transition
+history or attachments. So a revised object quietly went back to `Draft`.
+
+That had been true for months and cost nothing visible, because the reset
+lived in memory and memory was discarded at restart anyway. **Making state
+durable turned a cosmetic bug into data loss**: the revised instance's very
+next mutation persisted `Draft` over a recorded `Approved`, and took the
+whole transition history with it.
+
+The fix was not to extend the hand-picked list. It was to delete it and use
+`revised.RestoreState(CaptureState())` — the same pair rehydration already
+uses. There is now **one** definition of "this object's state", shared by
+persistence, rehydration and revision.
+
+> **The transferable lesson.** Two code paths that each copy "the object's
+> state" is a bug waiting for its third field. And when you make something
+> durable, audit every pre-existing path that constructs a *fresh instance
+> of the same thing* — durability upgrades their bugs from forgettable to
+> permanent. The defect was old; the severity was new, and it was ours.
+
 ## What we deleted
 
 `ProjectDirectory` kept a durable `Projects.Index` collection — a second

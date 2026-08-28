@@ -151,6 +151,25 @@ snapshot.** It is the same object, live, possibly with mutations not yet
 written; overwriting it would discard them. Rehydration only fills in what
 the process does not already have.
 
+## Revision uses the same pair
+
+`IHasRevisions.ReviseAsync` produces a new *instance* of the same object,
+so it must carry the same object's whole state:
+
+```csharp
+var revised = _selfFactory(refreshedDocument, newRevision);
+revised.AttachSelfFactory(_selfFactory);
+revised.RestoreState(CaptureState());
+```
+
+It previously copied a hand-picked structural subset (`WP 9.0B`), which
+reverted a revised object to `Draft` with no history — an in-memory-only
+loss until object state became durable, at which point the revised
+instance's next mutation wrote the reset to disk. `CaptureState`/
+`RestoreState` is therefore the **single definition of an object's state**,
+shared by persistence, rehydration and revision alike, so a field added to
+it cannot be forgotten by one path and honoured by another.
+
 ## Relationships
 
 Relationship *edges* were always durable — `EngineeringObjectBase.LinkAsync`
@@ -201,6 +220,14 @@ contents, not a name-and-status snapshot.
 - **Attachment content.** Attachments remain metadata-only records
   (`TD-31`) — their metadata now survives restart; there were never any
   bytes to survive.
+- **The `WP9.3A` link asymmetry (`TD-32`).** Rehydration rebuilds the
+  relationship index from *all* durable references, including the
+  Activity→Record `"verifiedBy"` links `VerificationService.RecordAsync`
+  writes straight through the document store. The index is therefore
+  slightly more complete after a relaunch than before one. That asymmetry
+  is `TD-32`'s to close (`FCR-0057`), not this architecture's; it is
+  recorded there, and consumers must not assume the index is
+  session-invariant for such links.
 
 ## Proven by
 

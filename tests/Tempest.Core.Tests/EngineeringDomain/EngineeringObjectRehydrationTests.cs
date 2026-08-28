@@ -255,6 +255,97 @@ public class EngineeringObjectRehydrationTests
     }
 
     // ----------------------------------------------------------------
+    // Revision must carry the whole object, not half of it
+    // (`TD-85` closure audit)
+    // ----------------------------------------------------------------
+
+    [Fact]
+    public async Task ReviseAsync_CarriesLifecycleStateAndHistoryOntoTheRevisedInstance()
+    {
+        var persistence = new Materials.InMemoryPersistenceStore();
+        var life = NewLifetime(persistence);
+        var part = await CreatePartAsync(life.Domain);
+
+        await part.TransitionAsync(LifecycleState.InReview);
+        await part.TransitionAsync(LifecycleState.Approved);
+
+        var revised = Assert.IsType<Part>(await part.ReviseAsync("Revised.", "Rev B"));
+
+        // A revision is a new instance of the *same* object. Before this
+        // was fixed, the successor started at Draft with no history,
+        // because the self-factory only ever knew the original factory
+        // call's own arguments.
+        Assert.Equal(LifecycleState.Approved, revised.Status);
+        Assert.Equal(2, revised.History.Count);
+        Assert.Equal(LifecycleState.Draft, revised.History[0].From);
+        Assert.Equal(LifecycleState.Approved, revised.History[1].To);
+    }
+
+    [Fact]
+    public async Task ReviseAsync_CarriesAttachmentsOntoTheRevisedInstance()
+    {
+        var persistence = new Materials.InMemoryPersistenceStore();
+        var life = NewLifetime(persistence);
+        var part = await CreatePartAsync(life.Domain);
+        var attachment = new Attachment("profile.step", "model/step", 2048);
+        await part.AttachAsync(attachment);
+
+        var revised = Assert.IsType<Part>(await part.ReviseAsync("Revised.", "Rev B"));
+
+        var carried = Assert.Single(await revised.GetAttachmentsAsync());
+        Assert.Equal(attachment.Id, carried.Id);
+    }
+
+    [Fact]
+    public async Task ReviseAsync_StillCarriesEveryStructuralField_TheWP90BBehaviourIsUnchanged()
+    {
+        var persistence = new Materials.InMemoryPersistenceStore();
+        var life = NewLifetime(persistence);
+        var parent = await CreateAsync(life.Domain, MechanicalObjectFactoryRegistry.Assembly,
+            (doc, rev) => new Assembly(doc, rev, life.Domain, "ASM-100", "Pump Head", EngineeringObjectMetadata.Empty));
+        var part = await CreatePartAsync(life.Domain);
+
+        await part.RenameAsync("Impeller (Rev B)");
+        await part.MoveAsync(parent.Id);
+        await part.SetBomLineAsync(4m, "ea", "FN-07", "IT-3", "RD-9");
+
+        var revised = Assert.IsType<Part>(await part.ReviseAsync("Revised.", "Rev B"));
+
+        Assert.Equal("Impeller (Rev B)", revised.DisplayName);
+        Assert.Equal(parent.Id, revised.ParentId);
+        Assert.Equal(4m, revised.Quantity);
+        Assert.Equal("ea", revised.UnitOfMeasure);
+        Assert.Equal("FN-07", revised.FindNumber);
+        Assert.Equal("IT-3", revised.ItemNumber);
+        Assert.Equal("RD-9", revised.ReferenceDesignator);
+    }
+
+    [Fact]
+    public async Task AfterRevising_AFurtherMutation_NeverOverwritesThePersistedLifecycleWithAResetOne()
+    {
+        // The defect this closes was durable, not cosmetic: a revised
+        // instance that had silently reverted to Draft would write that
+        // reset to disk on its very next mutation, destroying a recorded
+        // lifecycle state and its whole transition history.
+        var persistence = new Materials.InMemoryPersistenceStore();
+        var first = NewLifetime(persistence);
+        var part = await CreatePartAsync(first.Domain);
+        await part.TransitionAsync(LifecycleState.InReview);
+
+        var revised = (Part)await part.ReviseAsync("Revised.", "Rev B");
+        await revised.RenameAsync("Impeller B");
+
+        var second = NewLifetime(persistence);
+        await second.Service.RehydrateAsync();
+        var recovered = Assert.IsType<Part>(await second.Domain.Repository.FindAsync(part.Id));
+
+        Assert.Equal(LifecycleState.InReview, recovered.Status);
+        Assert.Single(recovered.History);
+        Assert.Equal("Impeller B", recovered.DisplayName);
+        Assert.Equal(2, recovered.CurrentRevisionNumber);
+    }
+
+    // ----------------------------------------------------------------
     // Relationships
     // ----------------------------------------------------------------
 

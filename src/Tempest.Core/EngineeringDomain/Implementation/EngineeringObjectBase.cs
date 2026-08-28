@@ -237,42 +237,27 @@ public abstract class EngineeringObjectBase :
 
         var revised = _selfFactory(refreshedDocument, newRevision);
         revised.AttachSelfFactory(_selfFactory);
-        revised.CopyStructuralStateFrom(this);
+
+        // A revision is a new *instance* of the same object, so it must
+        // carry the same object's whole state. `_selfFactory` only ever
+        // knew the values passed to the original factory call, so a freshly
+        // constructed successor starts at `Draft` with no history and no
+        // attachments — which, before `TD-85`, silently reverted a revised
+        // object's lifecycle in memory (`WP 9.0B` corrected only the
+        // structural half of this: rename, parent, delete, BOM line).
+        //
+        // `TD-85` made that in-memory loss durable: the next mutation on
+        // the revised instance persists it, overwriting a recorded
+        // lifecycle state and its entire transition history on disk.
+        // Found by the `TD-85` closure audit and fixed here by carrying the
+        // full captured state rather than a hand-picked subset — the same
+        // capture/restore pair rehydration already uses, so there is
+        // exactly one definition of "this object's state" and a field added
+        // to it can never again be forgotten by one of two copy paths.
+        revised.RestoreState(CaptureState());
         _context.Repository.Register(revised);
 
         return revised;
-    }
-
-    /// <summary>
-    /// Copies every `WP 9.0A`/`WP 9.0B` mutable structural field (rename,
-    /// parent, delete, BOM line) from <paramref name="source"/> onto this,
-    /// freshly-constructed, revised instance. A genuine, disclosed
-    /// <c>WP 9.0B</c> correctness fix: <see cref="ReviseAsync"/>'s own
-    /// <c>_selfFactory</c> closure only ever knew the values passed to the
-    /// <em>original</em> <see cref="EngineeringObjectFactory{T}"/> call —
-    /// without this copy, a revision would silently discard any rename,
-    /// move, delete, or BOM line set on the object since it was created,
-    /// reverting to construction-time values. `IHasRevisions.ReviseAsync`'s
-    /// own contract shape is unchanged; only this base class's own,
-    /// previously-incomplete implementation of it is corrected. Private
-    /// field access across two instances of the same class is ordinary C#
-    /// (never a same-instance-only rule), so no new internal surface is
-    /// needed for this.
-    /// </summary>
-    private void CopyStructuralStateFrom(EngineeringObjectBase source)
-    {
-        lock (_structuralLock)
-        lock (source._structuralLock)
-        {
-            _displayName = source._displayName;
-            _parentId = source._parentId;
-            _isDeleted = source._isDeleted;
-            _quantity = source._quantity;
-            _unitOfMeasure = source._unitOfMeasure;
-            _findNumber = source._findNumber;
-            _itemNumber = source._itemNumber;
-            _referenceDesignator = source._referenceDesignator;
-        }
     }
 
     public async Task<IReadOnlyList<IRevisionRecord>> GetRevisionHistoryAsync(CancellationToken cancellationToken = default)

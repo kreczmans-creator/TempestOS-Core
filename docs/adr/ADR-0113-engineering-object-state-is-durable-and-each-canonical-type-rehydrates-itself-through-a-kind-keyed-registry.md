@@ -4,6 +4,8 @@
 
 Accepted — `TD-85` (Engineering Object Rehydration / Persistence Boundary), 2026-08-28. Closes the gap `ADR-0077` disclosed in its own Consequences; extends, and does not reopen, `ADR-0072`/`ADR-0077`.
 
+**Corrected, `TD-85` closure audit, 2026-08-28.** Decision point 3 below now also governs `IHasRevisions.ReviseAsync`. That method carried only the structural half of an object's state onto its revised instance (`WP 9.0B`'s `CopyStructuralStateFrom`: rename, parent, delete, BOM line), so a revised object silently reverted to `Draft` with no history and no attachments. Before this ADR that loss was in-memory and discarded at restart anyway; **this ADR made it durable**, because the revised instance's next mutation persisted the reset over a recorded lifecycle state and its whole transition history. `ReviseAsync` now carries the full captured state — `revised.RestoreState(CaptureState())`, the same capture/restore pair rehydration uses — and the partial copy was deleted. One definition of "this object's state" therefore exists, and a field added to it cannot be forgotten by one of two copy paths. No contract changed.
+
 ## Context
 
 `ADR-0077` established that the Engineering Domain's `IEngineeringObjectRepository`/`IEngineeringRelationshipRepository` are an **indexing layer**, not a document store, and disclosed the price:
@@ -29,7 +31,7 @@ A single `EngineeringObjectState` record captures everything that makes an objec
 
 State is written at creation and after every mutation that changes it (`TransitionAsync`, `RenameAsync`, `MoveAsync`, `DeleteAsync`, `AttachAsync`, `SetBomLineAsync`) — so there is no "save" step for a user to forget or for a crash to lose. The store is an **optional** collaborator on `EngineeringDomainContext`: a context composed without one behaves exactly as it did before, which is what keeps every hand-assembled test and sample pipeline working unchanged.
 
-**3. Each type owns its own persistence, in both directions.**
+**3. Each type owns its own persistence, in both directions, and one capture/restore pair defines "state".**
 
 - `EngineeringObjectBase.CaptureTypeState(IDictionary<string, string?>)` — a virtual hook each concrete type overrides to write its own fields.
 - `IRehydratable<TSelf>.Rehydrate(...)` — a `static abstract` interface member each concrete type implements to read them back.
@@ -65,6 +67,7 @@ With projects rehydrated as real `IProject` objects, `ProjectDirectory`'s second
 - Adding a canonical Kind is two symmetric members on the type plus one registration line by its declaring class. No shared file grows a new `case`.
 - Partial failure is survivable and honestly reported: `EngineeringRehydrationResult` names unknown Kinds, orphaned state, objects that threw, and objects already live. One unreadable record never costs a user every other object they own (`TD-60`'s discipline, applied to startup).
 - Relationship attribution survives a restart truthfully.
+- `CaptureState`/`RestoreState` is the single definition of an object's state, used by persistence, rehydration **and** revision. The class of bug where one copy path knows about a field and another does not is closed structurally, not by vigilance.
 
 **Negative:**
 

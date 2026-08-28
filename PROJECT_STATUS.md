@@ -58,7 +58,23 @@ new part) → **relaunch again** → that work is there too. Nothing in it
 inspects a file on disk. Plus 24 focused tests over the real persistent
 stores. **Thirteen mutations run, thirteen killed.**
 
-Suite: Core 2464/2466 (the same two pre-existing Linux-environment cases),
+**Closure audit (ten checks, post-`e752368`).** Nine passed. One material
+defect found and fixed: `IHasRevisions.ReviseAsync` carried only the
+structural half of an object's state onto its revised instance
+(`WP 9.0B`'s partial copy), so a revised object silently reverted to
+`Draft` with no history — harmless while state was in-memory, but this
+pass had made it **durable**, so the revised instance's next mutation wrote
+the reset over a recorded lifecycle state and its whole transition history.
+`ReviseAsync` now carries the full captured state through the same
+`CaptureState`/`RestoreState` pair rehydration uses, and the partial copy
+was deleted: one definition of "this object's state" now serves
+persistence, rehydration and revision alike. Four regression tests added,
+two further mutations run and killed. `TD-32` was amended — not resolved,
+and deliberately not absorbed into `TD-85` — to record that the `WP9.3A`
+relationship-index asymmetry is now session-dependent.
+
+Suite: Core 2468/2470 (the same two pre-existing Linux-environment cases,
+confirmed failing identically at `37788a0` and therefore not regressions),
 Desktop 252/252, 0 warnings, 0 errors. Decision: `ADR-0113`. Architecture:
 `docs/architecture/Engineering Object Rehydration Architecture.md`.
 Academy: `02 Runtime Architecture/34-engineering-object-rehydration.md`.
