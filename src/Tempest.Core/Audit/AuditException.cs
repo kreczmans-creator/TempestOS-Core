@@ -24,4 +24,14 @@ public class AuditException : Exception
         : base(message)
     {
     }
+
+    /// <summary>
+    /// Initialises a new instance of the <see cref="AuditException"/> class.
+    /// </summary>
+    /// <param name="message">A message describing the failure.</param>
+    /// <param name="innerException">The underlying failure.</param>
+    public AuditException(string message, Exception innerException)
+        : base(message, innerException)
+    {
+    }
 }

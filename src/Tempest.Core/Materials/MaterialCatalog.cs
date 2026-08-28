@@ -110,7 +110,7 @@ public sealed class MaterialCatalog : IMaterialCatalog
         if (documentId is null)
             return null;
 
-        return await ReadSpecificationAsync(documentId.Value, cancellationToken).ConfigureAwait(false);
+        return await ReadSpecificationAsync(materialId, documentId.Value, cancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc />
@@ -125,7 +125,12 @@ public sealed class MaterialCatalog : IMaterialCatalog
             if (documentId is null)
                 continue;
 
-            specifications.Add(await ReadSpecificationAsync(documentId.Value, cancellationToken).ConfigureAwait(false));
+            // A stale index entry (its backing document gone, or of another
+            // Kind) is skipped rather than aborting the whole listing —
+            // mirroring RequirementsService.ListAsync's own identical guard.
+            var specification = await ReadSpecificationAsync(materialId, documentId.Value, cancellationToken).ConfigureAwait(false);
+            if (specification is not null)
+                specifications.Add(specification);
         }
 
         return specifications;
@@ -144,7 +149,8 @@ public sealed class MaterialCatalog : IMaterialCatalog
         var documentId = await ReadDocumentIdAsync(materialId, cancellationToken).ConfigureAwait(false)
             ?? throw new MaterialNotFoundException(materialId);
 
-        var current = await ReadDtoAsync(documentId, cancellationToken).ConfigureAwait(false);
+        var current = await ReadDtoAsync(materialId, documentId, cancellationToken).ConfigureAwait(false)
+            ?? throw new MaterialNotFoundException(materialId);
         var dto = current with { Properties = EncodeProperties(properties) };
 
         var revision = await _documentStore.ReviseAsync(documentId, JsonSerializer.Serialize(dto), changeSummary, cancellationToken)
@@ -155,30 +161,82 @@ public sealed class MaterialCatalog : IMaterialCatalog
         return new MaterialSpecification(materialId, dto.Name, dto.Category, properties, documentId, revision.RevisionNumber);
     }
 
+    /// <summary>
+    /// Resolves <paramref name="materialId"/>'s backing document Id from
+    /// the index. A malformed index value throws a controlled
+    /// <see cref="MaterialsException"/> naming the entry (`TD-60`) —
+    /// never a raw <see cref="FormatException"/>, and never
+    /// <see langword="null"/>, which would silently misreport corruption
+    /// as "no such material".
+    /// </summary>
     private async Task<Guid?> ReadDocumentIdAsync(string materialId, CancellationToken cancellationToken)
     {
         var value = await _persistenceStore.ReadAsync(IndexCollectionName, materialId, cancellationToken).ConfigureAwait(false);
-        return value is null ? null : Guid.ParseExact(value, "N");
+        if (value is null)
+            return null;
+
+        if (!Guid.TryParseExact(value, "N", out var documentId))
+            throw new MaterialsException(
+                $"Material index entry for '{materialId}' is corrupted: '{value}' is not a valid document Id.");
+
+        return documentId;
     }
 
-    private async Task<MaterialSpecificationDto> ReadDtoAsync(Guid documentId, CancellationToken cancellationToken)
+    private async Task<MaterialSpecificationDto?> ReadDtoAsync(string materialId, Guid documentId, CancellationToken cancellationToken)
     {
-        var history = await _documentStore.GetRevisionHistoryAsync(documentId, cancellationToken).ConfigureAwait(false);
-        var currentContent = history[^1].Content;
+        // A stale index entry — backing document missing, or of another
+        // Kind — reads as "no material", mirroring
+        // RequirementsService.ReadDtoAsync's own identical guard, rather
+        // than letting GetRevisionHistoryAsync throw for a document this
+        // catalog never wrote.
+        var document = await _documentStore.FindAsync(documentId, cancellationToken).ConfigureAwait(false);
+        if (document is null || !string.Equals(document.Kind, MaterialSpecificationDocumentKind, StringComparison.Ordinal))
+            return null;
 
-        return JsonSerializer.Deserialize<MaterialSpecificationDto>(currentContent)
-            ?? throw new MaterialsException($"Material document '{documentId}' could not be deserialised.");
+        var history = await _documentStore.GetRevisionHistoryAsync(documentId, cancellationToken).ConfigureAwait(false);
+        if (history.Count == 0)
+            throw new MaterialsException($"Material '{materialId}' (document '{documentId}') has no revisions.");
+
+        return DeserialiseDto(materialId, documentId, history[^1].Content);
     }
 
-    private async Task<IMaterialSpecification> ReadSpecificationAsync(Guid documentId, CancellationToken cancellationToken)
+    private async Task<IMaterialSpecification?> ReadSpecificationAsync(string materialId, Guid documentId, CancellationToken cancellationToken)
     {
+        var document = await _documentStore.FindAsync(documentId, cancellationToken).ConfigureAwait(false);
+        if (document is null || !string.Equals(document.Kind, MaterialSpecificationDocumentKind, StringComparison.Ordinal))
+            return null;
+
         var history = await _documentStore.GetRevisionHistoryAsync(documentId, cancellationToken).ConfigureAwait(false);
+        if (history.Count == 0)
+            throw new MaterialsException($"Material '{materialId}' (document '{documentId}') has no revisions.");
+
         var currentRevision = history[^1];
-        var dto = JsonSerializer.Deserialize<MaterialSpecificationDto>(currentRevision.Content)
-            ?? throw new MaterialsException($"Material document '{documentId}' could not be deserialised.");
+        var dto = DeserialiseDto(materialId, documentId, currentRevision.Content);
 
         return new MaterialSpecification(
             dto.MaterialId, dto.Name, dto.Category, DecodeProperties(dto.Properties), documentId, currentRevision.RevisionNumber);
+    }
+
+    /// <summary>Deserialises one revision's content, converting any malformed-content failure into a controlled <see cref="MaterialsException"/> (`TD-60`) rather than a raw <see cref="JsonException"/>.</summary>
+    private static MaterialSpecificationDto DeserialiseDto(string materialId, Guid documentId, string content)
+    {
+        try
+        {
+            var dto = JsonSerializer.Deserialize<MaterialSpecificationDto>(content)
+                ?? throw new MaterialsException($"Material '{materialId}' (document '{documentId}') could not be deserialised.");
+
+            // A structurally-valid JSON object missing the Properties
+            // field would otherwise surface later as a raw
+            // NullReferenceException inside DecodeProperties.
+            if (dto.Properties is null)
+                throw new MaterialsException($"Material '{materialId}' (document '{documentId}') is missing its Properties.");
+
+            return dto;
+        }
+        catch (JsonException ex)
+        {
+            throw new MaterialsException($"Material '{materialId}' (document '{documentId}') could not be deserialised.", ex);
+        }
     }
 
     private static IReadOnlyDictionary<string, MaterialPropertyDto> EncodeProperties(IReadOnlyDictionary<string, MaterialProperty> properties)

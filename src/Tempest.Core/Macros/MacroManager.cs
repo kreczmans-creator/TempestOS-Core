@@ -41,7 +41,18 @@ public sealed class MacroManager : IMacroManager
     public async Task LoadAsync(CancellationToken cancellationToken = default)
     {
         var json = await _settingsProvider.GetValueAsync(SettingKey, cancellationToken).ConfigureAwait(false);
-        var dtos = string.IsNullOrEmpty(json) ? null : JsonSerializer.Deserialize<List<MacroDto>>(json);
+
+        List<MacroDto>? dtos;
+        try
+        {
+            dtos = string.IsNullOrEmpty(json) ? null : JsonSerializer.Deserialize<List<MacroDto>>(json);
+        }
+        catch (JsonException)
+        {
+            // A corrupted stored value (e.g. a torn write) degrades to
+            // "no persisted macros" rather than failing the load (`TD-60`).
+            dtos = null;
+        }
 
         if (dtos is null)
             return;
@@ -50,6 +61,12 @@ public sealed class MacroManager : IMacroManager
         {
             foreach (var dto in dtos)
             {
+                // A structurally-valid list can still carry a corrupted
+                // entry (null Name/StepCommandIds after a partial write);
+                // one bad entry must not abort loading the rest.
+                if (dto.Name is null || dto.StepCommandIds is null)
+                    continue;
+
                 var macro = new CommandMacro(dto.Id, dto.Name, dto.StepCommandIds);
                 _macrosById[macro.Id] = macro;
                 RegisterDescriptorIfNeeded(macro);
