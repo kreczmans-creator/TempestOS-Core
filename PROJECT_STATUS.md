@@ -1,5 +1,56 @@
 # TempestOS — Project Status
 
+**Last Updated:** 2026-08-28 (Product Convergence & Recovery Programme —
+the Product Spine). **The `v0.13.x` train remains CLOSED.**
+
+**Product decision, now implemented:** TempestOS is a **project-centric
+engineering operating environment** —
+`TempestOS → Module → Project → Workspace → Engineering Object → Evidence`.
+Engineering is not a standalone application inside TempestOS; projects are
+the context engineering work happens within.
+
+**What this pass delivered — the Product Spine (`TD-84`).** The previous
+audit's four P0 gaps (no global navigation, no project context, no
+engineering surfaces, no project modules) were **one** architectural
+deficiency: the Product Shell / Project Context layer was missing. They are
+now grouped as `TD-84` so they are never worked as four unrelated features.
+Built and proven: `IProjectDirectory` (projects are real `IProject`
+engineering objects, created through the same factory every discipline
+uses, with a durable index so they survive restart); `IProjectContext` (the
+current project as real, persisted application state with an event, not a
+caption); `IShellNavigator`/`ShellLocation` (`Module → Project → Workspace`
+as one immutable, persisted, testable value, enforcing that a
+project-scoped location and the current project can never disagree); and
+the Desktop shell they drive — a global navigation rail, project browser,
+project workspace, a single module host that renders whatever the navigator
+reports, and a Status Bar that finally shows the real current project.
+Engineering is reachable **only** from an open project, by construction.
+The existing engineering platform is unchanged and is now one module inside
+the shell.
+
+**Proven, not screenshotted.** The full Definition-of-Done journey runs end
+to end through the real `MainWindow`: launch → Projects → create → open →
+Project Workspace → current project visible → enter Engineering → real
+ribbon and docking grid → return with context intact → close → **reopen →
+project and location recovered**. Plus the three commissioned traces
+(Project→Component→Material→Calculation→Validation→Result;
+Project→Requirement→Verification→Evidence;
+Project→Drawing/Document→Engineering Object) against the real material,
+requirements and verification services. Four mutations run and killed.
+
+**A real boundary was found and crossed honestly.** The restart step failed
+until the spine confronted `ADR-0077`: the engineering object graph is
+in-memory, so documents persist but objects do not. Projects now keep a
+durable index (`MaterialCatalog`'s own approved pattern, `ADR-0055`); every
+other engineering object still vanishes on restart. That is recorded as
+`TD-85` as a workaround, not presented as a fix.
+
+Suite: Core 2440/2442 (the two pre-existing Linux-environment cases),
+Desktop 250/250, 0 warnings, 0 errors. Architecture:
+`docs/architecture/Product Spine Architecture.md`.
+
+**The prior status block, below this point, is retained:**
+
 **Last Updated:** 2026-08-28 (Product / UX / Functional Compliance Audit,
 branch `claude/finding-closure-verification-tbcd50`). **The `v0.13.x`
 train remains CLOSED; no `WP 14.x` feature work was performed** — this

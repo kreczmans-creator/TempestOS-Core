@@ -1,6 +1,12 @@
 using Tempest.App.Composition;
+using Tempest.App.Projects;
+using Tempest.App.Shell;
 using Tempest.App.Workspace;
 using Tempest.App.Workspace.Calculations;
+using Tempest.Core.EngineeringDomain;
+using Tempest.Core.Events;
+using Tempest.Core.Persistence;
+using Tempest.Core.Settings;
 using Tempest.Core.Configuration;
 using Tempest.Core.DependencyInjection;
 using Tempest.Core.Runtime;
@@ -104,13 +110,52 @@ public sealed class WorkspaceHost : IAsyncDisposable
         Workspace = await manager.StartAsync(cancellationToken).ConfigureAwait(false);
 
         CalculationTemplates = EngineeringWorkspaceComposer.RegisterEngineeringDisciplines(manager, host);
+
+        // ---- The Product Spine (`TD-84`) ----------------------------
+        // Module -> Project -> Workspace. Composed here, after the
+        // disciplines have registered, because the project directory
+        // reads the same engineering domain they populate. Built with
+        // `new` over already-resolved Platform Services, exactly as
+        // every other Desktop-side collaborator is (`ADR-0103`).
+        var domainContext = (EngineeringDomainContext)host.Services!.GetService(typeof(EngineeringDomainContext));
+        var eventBus = (IEventBus)host.Services!.GetService(typeof(IEventBus));
+        var settingsProvider = (ISettingsProvider)host.Services!.GetService(typeof(ISettingsProvider));
+
+        var persistenceStore = (IPersistenceStore)host.Services!.GetService(typeof(IPersistenceStore));
+        ProjectDirectory = new ProjectDirectory(domainContext, persistenceStore);
+        var projectContext = new ProjectContext(ProjectDirectory, eventBus, settingsProvider);
+        ProjectContext = projectContext;
+        ShellNavigator = new ShellNavigator(projectContext, eventBus, settingsProvider);
+
+        // Recover where the user was, and which project they were in.
+        // Order matters: the navigator's own restore opens the project,
+        // so loading the context first would be redundant work, not a
+        // second source of truth.
+        await ShellNavigator.LoadAsync(cancellationToken).ConfigureAwait(false);
     }
+
+    /// <summary>Gets the project catalogue (`TD-84`) — <see langword="null"/> before <see cref="StartAsync"/> completes.</summary>
+    public IProjectDirectory? ProjectDirectory { get; private set; }
+
+    /// <summary>Gets the current-project context (`TD-84`) — <see langword="null"/> before <see cref="StartAsync"/> completes.</summary>
+    public IProjectContext? ProjectContext { get; private set; }
+
+    /// <summary>Gets the shell navigator (`TD-84`) — <see langword="null"/> before <see cref="StartAsync"/> completes.</summary>
+    public IShellNavigator? ShellNavigator { get; private set; }
 
     /// <summary>Persists current session state (`ADR-0064`, unchanged) and shuts the Workspace down — called from the main window's own Closing handler (Window Lifecycle).</summary>
     public async Task ShutdownAsync(CancellationToken cancellationToken = default)
     {
         if (_manager is null)
             return;
+
+        // Persist the product spine alongside the Workspace's own state,
+        // so reopening recovers the project and location the user left
+        // (`TD-84`).
+        if (ProjectContext is not null)
+            await ProjectContext.SaveAsync(cancellationToken).ConfigureAwait(false);
+        if (ShellNavigator is not null)
+            await ShellNavigator.SaveAsync(cancellationToken).ConfigureAwait(false);
 
         await _manager.ShutdownAsync(cancellationToken).ConfigureAwait(false);
     }

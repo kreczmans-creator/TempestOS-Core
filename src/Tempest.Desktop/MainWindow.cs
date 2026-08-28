@@ -1,5 +1,7 @@
 using Avalonia.Controls;
 using Avalonia.Input;
+using Tempest.App.Projects;
+using Tempest.App.Shell;
 using Tempest.App.Workspace;
 using Tempest.Core.Commands;
 using Tempest.Core.Diagnostics;
@@ -69,6 +71,16 @@ public sealed class MainWindow : Window
     private readonly WorkspaceViewCoordinator _viewCoordinator;
     private readonly UndoRedoCoordinator _undoRedo;
     private readonly WorkspaceLayoutPresetCoordinator _layoutPresets;
+
+    // The Product Spine (`TD-84`) — Module -> Project -> Workspace.
+    private readonly IShellNavigator _navigator;
+    private readonly IProjectContext _projectContext;
+    private readonly GlobalNavigationRail _navigationRail;
+    private readonly ProjectBrowserView _projectBrowser;
+    private readonly ProjectWorkspaceView _projectWorkspace;
+    private readonly ContentControl _moduleHost = new();
+    private readonly Control _engineeringSurface;
+    private readonly IProjectDirectory _projectDirectory;
 
     // WP 10.6A — Command Execution & Productivity Experience.
     private readonly CommandHistoryLog _commandHistory = new();
@@ -352,12 +364,48 @@ public sealed class MainWindow : Window
         topStack.Children.Add(_ribbon);
         topStack.Children.Add(new Separator());
 
-        var dock = new DockPanel();
+        // ---- The Product Spine's own shell composition (`TD-84`) ----
+        // The Engineering surface (ribbon + docking grid) is no longer the
+        // whole application: it is one module inside a global shell whose
+        // first level is the navigation rail and whose second is a project.
+        _navigator = host.ShellNavigator!;
+        _projectContext = host.ProjectContext!;
+
+        var engineeringStack = new DockPanel();
         DockPanel.SetDock(topStack, Dock.Top);
+        engineeringStack.Children.Add(topStack);
+        engineeringStack.Children.Add(_dockingComposer.Grid);
+        _engineeringSurface = engineeringStack;
+
+        _projectDirectory = host.ProjectDirectory!;
+        _projectBrowser = new ProjectBrowserView(_projectDirectory, _navigator, PromptForNewProjectAsync);
+        _projectWorkspace = new ProjectWorkspaceView(_projectContext, host.ProjectDirectory!, _navigator);
+        _navigationRail = new GlobalNavigationRail(_navigator);
+
+        _navigationRail.NavigationRequested += () => _ = RenderCurrentModuleAsync();
+        _projectBrowser.ProjectOpened += () => _ = RenderCurrentModuleAsync();
+        _projectWorkspace.EngineeringRequested += () => _ = RenderCurrentModuleAsync();
+        _projectWorkspace.ProjectClosed += () => _ = RenderCurrentModuleAsync();
+
+        // The shell carries its module surface from construction, not from
+        // a later window event: a window that exists but hosts nothing is a
+        // window whose menus and commands are unreachable.
+        _moduleHost.Content = _navigator.Current.Area switch
+        {
+            ShellArea.Projects => _projectBrowser,
+            ShellArea.ProjectWorkspace => _projectWorkspace,
+            _ => _engineeringSurface,
+        };
+
+        var shell = new DockPanel();
+        DockPanel.SetDock(_navigationRail, Dock.Left);
+        shell.Children.Add(_navigationRail);
+        shell.Children.Add(_moduleHost);
+
+        var dock = new DockPanel();
         DockPanel.SetDock(_statusBar, Dock.Bottom);
-        dock.Children.Add(topStack);
         dock.Children.Add(_statusBar);
-        dock.Children.Add(_dockingComposer.Grid);
+        dock.Children.Add(shell);
 
         // `WP 10.5A`'s own three new overlay surfaces — added last, so
         // each renders above every other root child (Grid Z-order follows
@@ -462,6 +510,11 @@ public sealed class MainWindow : Window
             SetCurrentArea(firstArea?.Title);
             RefreshStatusBar(manager);
             _cockpitView.Refresh();
+
+            // Render whichever module the recovered location names
+            // (`TD-84`) — the shell opens where the user left it, with the
+            // project they left it in, not always at Engineering.
+            await RenderCurrentModuleAsync().ConfigureAwait(true);
         };
 
         // Graceful shutdown (`WP 10.5B` scope: "unsaved work handling,
@@ -554,6 +607,79 @@ public sealed class MainWindow : Window
     }
 
     /// <summary>Refreshes the Output panel's own Background Tasks/Command History sections (`WP 10.6A`) from their own real, current state.</summary>
+    /// <summary>
+    /// Renders whichever module the navigator currently reports (`TD-84`).
+    /// </summary>
+    /// <remarks>
+    /// The shell has exactly one place that decides what is on screen, and
+    /// it derives that from <see cref="IShellNavigator.Current"/> — so the
+    /// rendered surface can never disagree with the navigation state, and a
+    /// test can assert the surface by setting the location.
+    /// </remarks>
+    public async Task RenderCurrentModuleAsync()
+    {
+        var location = _navigator.Current;
+
+        switch (location.Area)
+        {
+            case ShellArea.Projects:
+                await _projectBrowser.RefreshAsync().ConfigureAwait(true);
+                _moduleHost.Content = _projectBrowser;
+                break;
+
+            case ShellArea.ProjectWorkspace:
+                await _projectWorkspace.RefreshAsync().ConfigureAwait(true);
+                _moduleHost.Content = _projectWorkspace;
+                break;
+
+            case ShellArea.Engineering:
+                _moduleHost.Content = _engineeringSurface;
+                break;
+
+            default:
+                _moduleHost.Content = _engineeringSurface;
+                break;
+        }
+
+        _navigationRail.RefreshSelection();
+        RefreshProjectStatus();
+    }
+
+    /// <summary>
+    /// Shows the current project in the Status Bar (`TD-84`) — the
+    /// "see the current project everywhere appropriate" requirement, met
+    /// from the one real context rather than a caption a view sets on
+    /// itself. Before the spine this segment read "No project" permanently,
+    /// because nothing could ever set it.
+    /// </summary>
+    private void RefreshProjectStatus() =>
+        _statusBar.SetProject(_projectContext.Current?.Label);
+
+    /// <summary>Collects an identifier and name for a new project, creating it on confirmation. Returns whether a project was created.</summary>
+    private async Task<bool> PromptForNewProjectAsync(string suggestedIdentifier, string _)
+    {
+        var name = await _inputDialog.PromptAsync(
+            "New Project",
+            $"Name for {suggestedIdentifier}:",
+            validate: value => value.Length > 200 ? "Name is too long (200 characters max)." : null).ConfigureAwait(true);
+
+        if (name is null)
+            return false;
+
+        try
+        {
+            var created = await _projectDirectory.CreateAsync(suggestedIdentifier, name).ConfigureAwait(true);
+            _toastHost.Show($"Created {created.Label}.", FeedbackSeverity.Success);
+            RecordHistory($"Created project {created.Label}.");
+            return true;
+        }
+        catch (DuplicateProjectIdentifierException ex)
+        {
+            _toastHost.Show(ex.Message, FeedbackSeverity.Error);
+            return false;
+        }
+    }
+
     private void RefreshOutputPanelExtras()
     {
         _dockingComposer.OutputView.RefreshBackgroundTasks(_backgroundTaskRunner);
