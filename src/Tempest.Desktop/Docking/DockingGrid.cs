@@ -1,5 +1,6 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Reactive;
 using Avalonia.Layout;
 using Tempest.App.Workspace;
 
@@ -41,9 +42,32 @@ public sealed class DockingGrid : Grid
     /// <summary>The fixed width/height a collapsed panel's own strip occupies — wide enough for a rotated title, narrow enough to hand most of the space back to the Document Area (`WP10.2B UX Review.md` §3).</summary>
     public const double CollapsedStripSize = 32;
 
-    private double _lastLeftWidth = 240;
-    private double _lastRightWidth = 240;
-    private double _lastBottomHeight = 160;
+    /// <summary>
+    /// The narrowest the Document Area is ever allowed to become before
+    /// the side docks start giving space back (`TD-70`). The Document
+    /// Area is where the engineer actually works; a fixed-pixel side
+    /// dock that consumes half a laptop window is the concrete failure
+    /// this floor exists to prevent.
+    /// </summary>
+    public const double MinDocumentAreaWidth = 420;
+
+    /// <summary>The <see cref="MinDocumentAreaWidth"/> equivalent for the bottom dock (`TD-70`).</summary>
+    public const double MinDocumentAreaHeight = 220;
+
+    /// <summary>
+    /// The narrowest a side dock is squeezed to before it is collapsed to
+    /// its own <see cref="CollapsedStripSize"/> strip instead — below this
+    /// a panel is too narrow to read, so handing the space to the Document
+    /// Area and leaving the strip's expand affordance is the more useful
+    /// outcome (`TD-70`).
+    /// </summary>
+    public const double MinUsablePanelSize = 140;
+
+    private const double SplitterAllowance = 4;
+
+    private double _preferredLeftWidth = 240;
+    private double _preferredRightWidth = 240;
+    private double _preferredBottomHeight = 160;
 
     private bool _leftCollapsed;
     private bool _rightCollapsed;
@@ -99,6 +123,13 @@ public sealed class DockingGrid : Grid
         Grid.SetRow(_bottomSplitter, BottomSplitterRow);
         _bottomSplitter.DragCompleted += (_, _) => NotifyBottomPanelResized();
         Children.Add(_bottomSplitter);
+
+        // Responsive adaptation (`TD-70`): re-clamp whenever the host
+        // window changes size. Observed rather than done inside
+        // ArrangeOverride so mutating the column definitions can never
+        // re-enter the layout pass that produced them.
+        this.GetObservable(BoundsProperty).Subscribe(new AnonymousObserver<Rect>(bounds =>
+            ApplyResponsiveLayout(bounds.Width, bounds.Height)));
     }
 
     /// <summary>
@@ -109,13 +140,109 @@ public sealed class DockingGrid : Grid
     /// headless environment needing to simulate an OS-level pointer drag
     /// on a <see cref="GridSplitter"/> specifically.
     /// </summary>
-    public void NotifyLeftPanelResized() => LeftPanelResized?.Invoke(LeftWidth);
+    public void NotifyLeftPanelResized()
+    {
+        // A drag is a deliberate new user preference — record it, or a
+        // later hide/show would silently revert to the pre-drag width
+        // (`TD-71`).
+        if (!_leftCollapsed && LeftWidth > 0)
+            _preferredLeftWidth = LeftWidth;
+
+        LeftPanelResized?.Invoke(LeftWidth);
+    }
 
     /// <summary>The right-column equivalent of <see cref="NotifyLeftPanelResized"/>.</summary>
-    public void NotifyRightPanelResized() => RightPanelResized?.Invoke(RightWidth);
+    public void NotifyRightPanelResized()
+    {
+        if (!_rightCollapsed && RightWidth > 0)
+            _preferredRightWidth = RightWidth;
+
+        RightPanelResized?.Invoke(RightWidth);
+    }
 
     /// <summary>The bottom-row equivalent of <see cref="NotifyLeftPanelResized"/>.</summary>
-    public void NotifyBottomPanelResized() => BottomPanelResized?.Invoke(BottomHeight);
+    public void NotifyBottomPanelResized()
+    {
+        if (!_bottomCollapsed && BottomHeight > 0)
+            _preferredBottomHeight = BottomHeight;
+
+        BottomPanelResized?.Invoke(BottomHeight);
+    }
+
+    /// <summary>
+    /// Re-applies the side/bottom dock sizes for an available area of
+    /// <paramref name="availableWidth"/> × <paramref name="availableHeight"/>,
+    /// squeezing and — below <see cref="MinUsablePanelSize"/> — collapsing
+    /// docks so the Document Area never falls under
+    /// <see cref="MinDocumentAreaWidth"/>/<see cref="MinDocumentAreaHeight"/>
+    /// (`TD-70`). The user's own preferred sizes are never overwritten:
+    /// they are restored in full as soon as the window is wide enough
+    /// again. Public so a test can drive the exact path a real window
+    /// resize drives.
+    /// </summary>
+    public void ApplyResponsiveLayout(double availableWidth, double availableHeight)
+    {
+        if (availableWidth > 0)
+        {
+            var leftShown = IsLeftVisible;
+            var rightShown = IsRightVisible;
+            var splitters = (leftShown ? SplitterAllowance : 0) + (rightShown ? SplitterAllowance : 0);
+            var budget = availableWidth - MinDocumentAreaWidth - splitters;
+
+            var (left, right) = FitPair(
+                leftShown ? (_leftCollapsed ? CollapsedStripSize : _preferredLeftWidth) : 0,
+                rightShown ? (_rightCollapsed ? CollapsedStripSize : _preferredRightWidth) : 0,
+                budget);
+
+            if (leftShown)
+                ColumnDefinitions[LeftColumn].Width = new GridLength(left, GridUnitType.Pixel);
+            if (rightShown)
+                ColumnDefinitions[RightColumn].Width = new GridLength(right, GridUnitType.Pixel);
+
+            _leftSplitter.IsEnabled = leftShown && left > CollapsedStripSize;
+            _rightSplitter.IsEnabled = rightShown && right > CollapsedStripSize;
+        }
+
+        if (availableHeight > 0 && IsBottomVisible)
+        {
+            var desired = _bottomCollapsed ? CollapsedStripSize : _preferredBottomHeight;
+            var budget = availableHeight - MinDocumentAreaHeight - SplitterAllowance;
+            var (bottom, _) = FitPair(desired, 0, budget);
+
+            RowDefinitions[BottomRow].Height = new GridLength(bottom, GridUnitType.Pixel);
+            _bottomSplitter.IsEnabled = bottom > CollapsedStripSize;
+        }
+    }
+
+    /// <summary>
+    /// Fits two desired dock sizes into <paramref name="budget"/>:
+    /// unchanged when they already fit, squeezed proportionally when they
+    /// do not, and collapsed to <see cref="CollapsedStripSize"/> rather
+    /// than squeezed below <see cref="MinUsablePanelSize"/> (`TD-70`).
+    /// </summary>
+    private static (double First, double Second) FitPair(double first, double second, double budget)
+    {
+        var total = first + second;
+        if (total <= budget || total <= 0)
+            return (first, second);
+
+        var floor = (first > 0 ? CollapsedStripSize : 0) + (second > 0 ? CollapsedStripSize : 0);
+        if (budget <= floor)
+            return (first > 0 ? CollapsedStripSize : 0, second > 0 ? CollapsedStripSize : 0);
+
+        var scale = budget / total;
+        var scaledFirst = first > 0 ? Math.Max(first * scale, CollapsedStripSize) : 0;
+        var scaledSecond = second > 0 ? Math.Max(second * scale, CollapsedStripSize) : 0;
+
+        // Too narrow to read is worse than not shown: hand the space to
+        // the Document Area and leave the strip's own expand affordance.
+        if (scaledFirst > 0 && scaledFirst < MinUsablePanelSize)
+            scaledFirst = CollapsedStripSize;
+        if (scaledSecond > 0 && scaledSecond < MinUsablePanelSize)
+            scaledSecond = CollapsedStripSize;
+
+        return (scaledFirst, scaledSecond);
+    }
 
     /// <summary>Places <paramref name="content"/> as the always-present, centre Document Area (`WP8.0A Workspace Architecture Document.md` §7 — never dockable away).</summary>
     public void SetCenterContent(Control content)
@@ -133,7 +260,7 @@ public sealed class DockingGrid : Grid
         Grid.SetColumn(content, LeftColumn);
         Grid.SetRow(content, MainRow);
         Children.Add(content);
-        _lastLeftWidth = initialWidth;
+        _preferredLeftWidth = initialWidth;
         SetLeftVisible(visible);
     }
 
@@ -144,7 +271,7 @@ public sealed class DockingGrid : Grid
         Grid.SetColumn(content, RightColumn);
         Grid.SetRow(content, MainRow);
         Children.Add(content);
-        _lastRightWidth = initialWidth;
+        _preferredRightWidth = initialWidth;
         SetRightVisible(visible);
     }
 
@@ -156,29 +283,40 @@ public sealed class DockingGrid : Grid
         Grid.SetColumnSpan(content, ColumnCount);
         Grid.SetRow(content, BottomRow);
         Children.Add(content);
-        _lastBottomHeight = initialHeight;
+        _preferredBottomHeight = initialHeight;
         SetBottomVisible(visible);
     }
 
     /// <summary>Shows or hides the left dock column — hiding collapses it to zero width, preserving the last width to restore on <c>SetLeftVisible(true)</c> (`WP8.0A UI Architecture.md` §2's own "reopening restores the same width" requirement).</summary>
     public void SetLeftVisible(bool visible)
     {
-        ColumnDefinitions[LeftColumn].Width = visible ? new GridLength(_leftCollapsed ? CollapsedStripSize : _lastLeftWidth, GridUnitType.Pixel) : new GridLength(0, GridUnitType.Pixel);
+        ColumnDefinitions[LeftColumn].Width = visible ? new GridLength(_leftCollapsed ? CollapsedStripSize : _preferredLeftWidth, GridUnitType.Pixel) : new GridLength(0, GridUnitType.Pixel);
         _leftSplitter.IsEnabled = visible && !_leftCollapsed;
+
+        // Re-clamp against the current window size, so restoring a
+        // preference never overflows a narrow window (`TD-70`).
+        ApplyResponsiveLayout(Bounds.Width, Bounds.Height);
     }
 
     /// <summary>Shows or hides the right dock column — same preserved-width behaviour as <see cref="SetLeftVisible"/>.</summary>
     public void SetRightVisible(bool visible)
     {
-        ColumnDefinitions[RightColumn].Width = visible ? new GridLength(_rightCollapsed ? CollapsedStripSize : _lastRightWidth, GridUnitType.Pixel) : new GridLength(0, GridUnitType.Pixel);
+        ColumnDefinitions[RightColumn].Width = visible ? new GridLength(_rightCollapsed ? CollapsedStripSize : _preferredRightWidth, GridUnitType.Pixel) : new GridLength(0, GridUnitType.Pixel);
         _rightSplitter.IsEnabled = visible && !_rightCollapsed;
+
+        // Re-clamp against the current window size, so restoring a
+        // preference never overflows a narrow window (`TD-70`).
+        ApplyResponsiveLayout(Bounds.Width, Bounds.Height);
     }
 
     /// <summary>Shows or hides the bottom dock row — same preserved-height behaviour as <see cref="SetLeftVisible"/>.</summary>
     public void SetBottomVisible(bool visible)
     {
-        RowDefinitions[BottomRow].Height = visible ? new GridLength(_bottomCollapsed ? CollapsedStripSize : _lastBottomHeight, GridUnitType.Pixel) : new GridLength(0, GridUnitType.Pixel);
+        RowDefinitions[BottomRow].Height = visible ? new GridLength(_bottomCollapsed ? CollapsedStripSize : _preferredBottomHeight, GridUnitType.Pixel) : new GridLength(0, GridUnitType.Pixel);
         _bottomSplitter.IsEnabled = visible && !_bottomCollapsed;
+
+        // Re-clamp against the current window size (`TD-70`).
+        ApplyResponsiveLayout(Bounds.Width, Bounds.Height);
     }
 
     /// <summary>
@@ -225,7 +363,7 @@ public sealed class DockingGrid : Grid
     /// </summary>
     public void SetLeftWidth(double width)
     {
-        _lastLeftWidth = width;
+        _preferredLeftWidth = width;
         if (IsLeftVisible)
             SetLeftVisible(true);
     }
@@ -233,7 +371,7 @@ public sealed class DockingGrid : Grid
     /// <summary>The right-column equivalent of <see cref="SetLeftWidth"/>.</summary>
     public void SetRightWidth(double width)
     {
-        _lastRightWidth = width;
+        _preferredRightWidth = width;
         if (IsRightVisible)
             SetRightVisible(true);
     }
@@ -241,7 +379,7 @@ public sealed class DockingGrid : Grid
     /// <summary>The bottom-row equivalent of <see cref="SetLeftWidth"/>.</summary>
     public void SetBottomHeight(double height)
     {
-        _lastBottomHeight = height;
+        _preferredBottomHeight = height;
         if (IsBottomVisible)
             SetBottomVisible(true);
     }

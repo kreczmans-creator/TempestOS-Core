@@ -29,7 +29,7 @@ internal static class MainMenuFactory
         IWorkspace workspace, PanelHostControl explorerHost, PanelHostControl inspectorHost, PanelHostControl outputHost,
         DockingGrid docking, DesktopPanelUiState uiState, OutputPanel outputPanel, OutputPanelView outputView, IDiagnosticsProvider diagnostics,
         ThemeService theme, SettingsDialog settingsDialog, MessageDialog messageDialog, CommandPaletteOverlay commandPalette, DocumentAreaView documentArea,
-        Action<PredefinedLayouts.WorkspaceLayoutPreset> applyPreset, Action resetLayout)
+        RibbonView ribbon, Action<PredefinedLayouts.WorkspaceLayoutPreset> applyPreset, Action resetLayout)
     {
         ArgumentNullException.ThrowIfNull(workspace);
         ArgumentNullException.ThrowIfNull(explorerHost);
@@ -45,6 +45,7 @@ internal static class MainMenuFactory
         ArgumentNullException.ThrowIfNull(messageDialog);
         ArgumentNullException.ThrowIfNull(commandPalette);
         ArgumentNullException.ThrowIfNull(documentArea);
+        ArgumentNullException.ThrowIfNull(ribbon);
         ArgumentNullException.ThrowIfNull(applyPreset);
         ArgumentNullException.ThrowIfNull(resetLayout);
 
@@ -80,9 +81,16 @@ internal static class MainMenuFactory
                 outputView.Refresh(diagnostics);
         };
 
+        // `TD-70` — the ribbon's own minimise affordance, reachable from
+        // the menu as well as by double-clicking a tab, so it is
+        // discoverable rather than a hidden gesture.
+        var toggleRibbon = new MenuItem { Header = "Minimise Ribbon" };
+        toggleRibbon.Click += (_, _) => ribbon.ToggleCollapsed();
+
         view.Items.Add(toggleExplorer);
         view.Items.Add(toggleInspector);
         view.Items.Add(toggleOutput);
+        view.Items.Add(toggleRibbon);
         view.Items.Add(new Separator());
 
         var layout = new MenuItem { Header = "_Layout" };

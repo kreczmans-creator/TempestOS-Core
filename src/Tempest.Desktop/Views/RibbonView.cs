@@ -1,4 +1,7 @@
+using Avalonia;
 using Avalonia.Controls;
+using Avalonia.LogicalTree;
+using Avalonia.VisualTree;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Tempest.App.Workspace;
@@ -68,13 +71,47 @@ public sealed class RibbonView : UserControl
     private readonly List<string> _recentCommandIds = [];
     private readonly List<(Button Button, CommandDescriptor Descriptor)> _selectionAwareButtons = [];
     private readonly Dictionary<string, ContentControl> _recentSectionHosts = new(StringComparer.Ordinal);
+    private readonly List<Control> _tabContents = [];
     private bool _suppressTabSelection;
+    private bool _isCollapsed;
 
     /// <summary>Raised after a ribbon action completes (successfully or not), carrying a human-readable status message and its <see cref="ActionOutcome"/> — mirrors every other Desktop View's own identical <c>ActionCompleted</c> convention (`TD-58`: the outcome is what lets the subscriber refresh dependent surfaces only when the workspace actually changed).</summary>
     public event Action<string, ActionOutcome>? ActionCompleted;
 
     /// <summary>Raised when the user clicks a discipline tab directly (not via <see cref="SelectTabForArea"/>) — the caller's own cue to switch the Navigation area to match.</summary>
     public event Action<string>? CategorySelected;
+
+    /// <summary>Raised after <see cref="SetCollapsed"/> changes the ribbon's own collapsed state, carrying the new state — the caller's own cue to persist it (`TD-70`).</summary>
+    public event Action<bool>? CollapsedChanged;
+
+    /// <summary>
+    /// Gets whether the ribbon is minimised to its own tab strip
+    /// (`TD-70`) — the standard ribbon affordance for reclaiming vertical
+    /// space on a laptop or split screen. Every tab header stays visible
+    /// and clickable; only the command content area is hidden, so no
+    /// command becomes unreachable.
+    /// </summary>
+    public bool IsCollapsed => _isCollapsed;
+
+    /// <summary>Minimises the ribbon to its own tab strip, or restores it (`TD-70`).</summary>
+    public void SetCollapsed(bool collapsed)
+    {
+        if (_isCollapsed == collapsed)
+            return;
+
+        _isCollapsed = collapsed;
+        ApplyCollapsedState();
+        CollapsedChanged?.Invoke(collapsed);
+    }
+
+    /// <summary>Toggles <see cref="IsCollapsed"/> — the double-click/keyboard affordance's own target.</summary>
+    public void ToggleCollapsed() => SetCollapsed(!_isCollapsed);
+
+    private void ApplyCollapsedState()
+    {
+        foreach (var content in _tabContents)
+            content.IsVisible = !_isCollapsed;
+    }
 
     /// <summary>An optional confirmation gate (`WP 10.5B`, Dialog Framework — "Delete Confirmation") — mirrors <see cref="ProjectExplorerView.ConfirmDeleteAsync"/> exactly, including its own identical "unwired means proceed immediately" default.</summary>
     public Func<string, Task<bool>>? ConfirmDeleteAsync { get; set; }
@@ -94,6 +131,18 @@ public sealed class RibbonView : UserControl
         _openDocument = openDocument;
 
         Content = _tabs;
+
+        // Double-click a tab header to minimise/restore — the convention
+        // every ribbon application shares (`TD-70`).
+        _tabs.DoubleTapped += (_, e) =>
+        {
+            if (e.Source is Visual source && source.FindAncestorOfType<TabItem>(includeSelf: true) is not null)
+            {
+                ToggleCollapsed();
+                e.Handled = true;
+            }
+        };
+
         _tabs.SelectionChanged += (_, _) =>
         {
             if (!_suppressTabSelection && _tabs.SelectedItem is TabItem { Tag: string category })
@@ -110,6 +159,7 @@ public sealed class RibbonView : UserControl
         _tabs.Items.Clear();
         _selectionAwareButtons.Clear();
         _recentSectionHosts.Clear();
+        _tabContents.Clear();
 
         var byCategory = _commandRegistry.Items
             .GroupBy(d => d.Category ?? "General")
@@ -117,7 +167,9 @@ public sealed class RibbonView : UserControl
 
         foreach (var group in byCategory)
         {
-            var tab = new TabItem { Header = BuildTabHeader(group.Key), Tag = group.Key, Content = BuildTabContent(group.Key, group.ToList()) };
+            var content = BuildTabContent(group.Key, group.ToList());
+            _tabContents.Add(content);
+            var tab = new TabItem { Header = BuildTabHeader(group.Key), Tag = group.Key, Content = content };
             _tabs.Items.Add(tab);
         }
 
@@ -136,6 +188,10 @@ public sealed class RibbonView : UserControl
         // immediately after opening, before the user has selected
         // anything at all.
         RefreshEnablement();
+
+        // A rebuild recreates every content panel — re-apply the current
+        // minimised state so it survives (`TD-70`).
+        ApplyCollapsedState();
     }
 
     /// <summary>

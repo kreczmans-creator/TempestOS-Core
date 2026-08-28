@@ -1,5 +1,49 @@
 # TempestOS — Project Status
 
+**Last Updated:** 2026-08-28 (Product / UX / Functional Compliance Audit,
+branch `claude/finding-closure-verification-tbcd50`). **The `v0.13.x`
+train remains CLOSED; no `WP 14.x` feature work was performed** — this
+pass audited the implementation against the original design brief and the
+five supplied mock-ups, and fixed only what that audit proved defective.
+
+**The honest verdict: PARTIALLY compliant — the shortfall is structural,
+not cosmetic.** TempestOS is an excellent engineering *platform* behind a
+modest single-window desktop shell. The platform layer (runtime host, DI,
+modules, plugin trust boundary, engineering domain, units, materials,
+calculations, requirements, verification, persistence, audit) is genuinely
+strong and matches its architecture documents. The product in the mock-ups
+is not the product implemented: there is **no project context** (the status
+bar permanently reads "No project"; `ProjectModel` is dead code), **no
+global navigation rail**, **no drawing/document viewer**, **no Tasks,
+Commercial, Resources, Knowledge or Administration modules**, and **no
+Companion application on this branch** (it exists only on the unmerged
+`claude/tempestos-companion-mobile-ubznt3`). Docking is a fixed
+three-dock grid — resize, collapse, auto-hide, presets and persistence are
+real and tested, but panels cannot be moved, tabbed, floated or split, and
+the application is single-window. Two things count strongly in the
+codebase's favour and were verified directly: it **fakes nothing** (zero
+`TODO`/`FIXME`/`NotImplementedException`; placeholders are labelled as
+placeholders in the UI itself), and its governance registers largely
+disclosed these gaps already rather than claiming false completeness.
+
+**What this pass fixed.** Responsiveness was measured on the real window
+before any change: both side docks were fixed at 240 px with only the
+centre column flexible, so at the app's own 960 px minimum they took half
+the window, and no `SizeChanged`/`Bounds`/breakpoint/compact-mode code
+existed anywhere in `Tempest.Desktop`. `TD-70` now squeezes and then
+collapses the docks so the Document Area keeps a guaranteed floor —
+without ever overwriting the user's preferred sizes — and adds ribbon
+minimisation (double-click a tab, or View ▸ Minimise Ribbon), persisted.
+`TD-71` makes a splitter drag a durable preference. 12 new tests; three
+mutations run and killed. Everything else the audit found is registered at
+severity as `TD-72`–`TD-83` (four P0) rather than quietly narrowed. Full
+report: `docs/governance/Quality/Product Compliance Audit (2026-08-28).md`.
+Suite after the pass: Core 2412/2414 (the two pre-existing
+Linux-environment cases), Desktop 246/246, 0 errors.
+
+**The prior status block, below this point, is this field's earlier
+content — retained, not deleted:**
+
 **Last Updated:** 2026-08-28 (Independent Finding-Closure Verification
 pass, branch `claude/finding-closure-verification-tbcd50`). **The
 `v0.13.x` release train remains CLOSED; no `WP 14.x` feature work was

@@ -306,6 +306,11 @@ public sealed class MainWindow : Window
         // after the next unrelated action happened to refresh the panel.
         _backgroundTaskRunner.Changed += RefreshOutputPanelExtras;
 
+        // Ribbon minimise (`TD-70`) — restore the persisted state, and
+        // record every later change so it survives the next restart.
+        _ribbon.SetCollapsed(_session.PanelUiState.RibbonCollapsed);
+        _ribbon.CollapsedChanged += collapsed => _session.PanelUiState.RibbonCollapsed = collapsed;
+
         _ribbon.CategorySelected += async category =>
         {
             var area = workspace.Navigation.Areas.FirstOrDefault(a => a.Title.Contains(category, StringComparison.OrdinalIgnoreCase));
@@ -336,7 +341,7 @@ public sealed class MainWindow : Window
         var menu = MainMenuFactory.Build(
             workspace, _dockingComposer.ExplorerHost, _dockingComposer.InspectorHost, _dockingComposer.OutputHost,
             _dockingComposer.Grid, _session.PanelUiState, _dockingComposer.OutputPanel, _dockingComposer.OutputView, _diagnostics,
-            _theme, _settingsDialog, _messageDialog, _commandPalette, _documentArea, _layoutPresets.Apply, _layoutPresets.Reset);
+            _theme, _settingsDialog, _messageDialog, _commandPalette, _documentArea, _ribbon, _layoutPresets.Apply, _layoutPresets.Reset);
         var quickAccessToolbar = QuickAccessToolbarFactory.Build(
             workspace, composition.DomainContext, _viewCoordinator.NavigateToObject, _statusBar, _documentArea, _commandPalette, _theme,
             _layoutPresets.Reset, _macroManagerDialog, _undoRedo.UndoButton, _undoRedo.RedoButton, _openGraphViewsByRootId);

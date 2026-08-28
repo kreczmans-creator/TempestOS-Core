@@ -90,10 +90,13 @@ internal sealed class DesktopPanelUiState
     /// </summary>
     public string? LastAppliedPreset { get; set; }
 
+    /// <summary>Gets or sets whether the Engineering Ribbon is minimised to its own tab strip (`TD-70`) — persisted so a user working on a laptop keeps the vertical space they reclaimed across restarts.</summary>
+    public bool RibbonCollapsed { get; set; }
+
     /// <summary>Writes the current state via <see cref="ISettingsProvider.SetValueAsync"/>.</summary>
     public async Task SaveAsync(CancellationToken cancellationToken = default)
     {
-        var dto = new DesktopPanelUiStateDto(ExplorerCollapsed, ExplorerPinned, InspectorCollapsed, InspectorPinned, OutputVisible, OutputHeight, OutputCollapsed, OutputPinned, LastAppliedPreset);
+        var dto = new DesktopPanelUiStateDto(ExplorerCollapsed, ExplorerPinned, InspectorCollapsed, InspectorPinned, OutputVisible, OutputHeight, OutputCollapsed, OutputPinned, LastAppliedPreset, RibbonCollapsed);
         var json = JsonSerializer.Serialize(dto);
 
         await _settingsProvider.SetValueAsync(SettingKey, json, cancellationToken).ConfigureAwait(false);
@@ -129,6 +132,7 @@ internal sealed class DesktopPanelUiState
         OutputCollapsed = dto.OutputCollapsed;
         OutputPinned = dto.OutputPinned;
         LastAppliedPreset = dto.LastAppliedPreset;
+        RibbonCollapsed = dto.RibbonCollapsed;
     }
 
     /// <summary>The plain, JSON-serializable shape this class persists.</summary>
@@ -141,5 +145,6 @@ internal sealed class DesktopPanelUiState
         double OutputHeight,
         bool OutputCollapsed,
         bool OutputPinned,
-        string? LastAppliedPreset);
+        string? LastAppliedPreset,
+        bool RibbonCollapsed = false);
 }
