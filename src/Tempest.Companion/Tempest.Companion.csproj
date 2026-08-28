@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <OutputType>WinExe</OutputType>
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
@@ -10,11 +9,13 @@
       the TempestOS platform (ADR-0113). Same UI framework as
       Tempest.Desktop (Avalonia, ADR-0094), same authoring style (every
       View constructed directly in C#, no .axaml), same test strategy
-      (Avalonia.Headless.XUnit). The application itself is a single-view
-      mobile shell (ISingleViewApplicationLifetime-ready); this project's
-      own desktop lifetime hosts that shell in a phone-frame window - the
-      runnable form until Android/iOS platform heads are added (TD-57,
-      mobile workloads unavailable in the build environment).
+      (Avalonia.Headless.XUnit). Since WP 14.2A (ADR-0116) this is the
+      SHARED single-view application library - the official Avalonia
+      cross-platform shape: every screen, service, theme, and the App
+      class live here, and each platform head
+      (Tempest.Companion.Desktop's phone-frame window,
+      Tempest.Companion.Android, Tempest.Companion.iOS) is a thin
+      bootstrap over it.
       Talks to the platform ONLY over the REST API boundary (ADR-0114) -
       no reference to Tempest.Core, Tempest.App, or any Domain type:
       a separate process, exactly like a real phone would be.
@@ -23,12 +24,9 @@
 
   <ItemGroup>
     <PackageReference Include="Avalonia" Version="11.2.3" />
-    <PackageReference Include="Avalonia.Desktop" Version="11.2.3" />
     <PackageReference Include="Avalonia.Themes.Fluent" Version="11.2.3" />
-    <!-- Inter - the TempestOS body/UI typeface - ships embedded in this official Avalonia package; Chakra Petch and Space Mono are embedded below under their own OFL licences (Assets/Fonts/OFL-*.txt). -->
+    <!-- Inter - the brand's prose typeface - ships embedded in this official Avalonia package; Chakra Petch and Space Mono are embedded below under their own OFL licences (Assets/Fonts/OFL-*.txt). -->
     <PackageReference Include="Avalonia.Fonts.Inter" Version="11.2.3" />
-    <!-- Same advisory pin Tempest.Desktop already carries for Avalonia.Desktop's transitive Tmds.DBus.Protocol (GHSA-xrw6-gwf8-vvr9). -->
-    <PackageReference Include="Tmds.DBus.Protocol" Version="0.94.2" />
   </ItemGroup>
 
   <ItemGroup>

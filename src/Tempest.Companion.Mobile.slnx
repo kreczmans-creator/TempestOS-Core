@@ -1,0 +1,14 @@
+<!--
+  WP 14.2A: the Companion's mobile-head solution (ADR-0116) - deliberately
+  separate from TempestOS.slnx, whose CI gate runs on environments without
+  the .NET mobile workloads. Requires:
+    Android job/dev box:  dotnet workload install android  + an Android SDK + JDK 17
+    iOS job/dev box:      dotnet workload install ios      + macOS/Xcode
+  Built by .github/workflows/mobile-heads.yml (non-gating, manual dispatch).
+-->
+<Solution>
+  <Project Path="Tempest.Companion.Contracts/Tempest.Companion.Contracts.csproj" />
+  <Project Path="Tempest.Companion/Tempest.Companion.csproj" />
+  <Project Path="Tempest.Companion.Android/Tempest.Companion.Android.csproj" />
+  <Project Path="Tempest.Companion.iOS/Tempest.Companion.iOS.csproj" />
+</Solution>

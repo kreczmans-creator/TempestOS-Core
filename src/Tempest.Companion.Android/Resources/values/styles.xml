@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  WP 14.2A: the Activity theme. AvaloniaMainActivity derives from
+  AndroidX's AppCompatActivity, which REQUIRES a Theme.AppCompat-family
+  theme (a plain @android:style theme crashes at startup - a real defect
+  caught by this Work Package's own reference-assembly compile check).
+  DayNight follows the OS light/dark setting; the window background is
+  the brand's navy-800 page ground so the first frame is on-brand.
+-->
+<resources>
+    <style name="TempestCompanionTheme" parent="Theme.AppCompat.DayNight.NoActionBar">
+        <item name="android:windowBackground">#0b0e1e</item>
+    </style>
+</resources>

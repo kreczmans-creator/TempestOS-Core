@@ -5,6 +5,7 @@
   <Project Path="Samples/Tempest.Samples/Tempest.Samples.csproj" />
   <Project Path="Tempest.App/Tempest.App.csproj" />
   <Project Path="Tempest.Companion.Contracts/Tempest.Companion.Contracts.csproj" />
+  <Project Path="Tempest.Companion.Desktop/Tempest.Companion.Desktop.csproj" />
   <Project Path="Tempest.Companion/Tempest.Companion.csproj" />
   <Project Path="Tempest.Core/Tempest.Core.csproj" />
   <Project Path="Tempest.Desktop/Tempest.Desktop.csproj" />

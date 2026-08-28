@@ -3,11 +3,11 @@ using Avalonia;
 namespace Tempest.Companion;
 
 /// <summary>
-/// The Companion's desktop-lifetime entry point — hosts the single-view
-/// shell in a phone-frame window (`TD-57`: the runnable form until
-/// Android/iOS platform heads exist; those heads will call
-/// <see cref="BuildAvaloniaApp"/> with their own platform initialisation,
-/// exactly Avalonia's standard mobile-head shape).
+/// The Companion's desktop head — hosts the shared single-view shell in
+/// a phone-frame window (`ADR-0113`; head split per `WP 14.2A`,
+/// `ADR-0116`): the development harness, and the runnable form on a
+/// desktop OS. The Android and iOS heads bootstrap the identical shared
+/// <see cref="App"/> through their own platform entry points.
 /// </summary>
 public static class Program
 {
@@ -16,7 +16,7 @@ public static class Program
     public static void Main(string[] args) => BuildAvaloniaApp()
         .StartWithClassicDesktopLifetime(args);
 
-    /// <summary>Builds the shared <see cref="AppBuilder"/> every platform head starts from.</summary>
+    /// <summary>Builds the desktop head's <see cref="AppBuilder"/>.</summary>
     public static AppBuilder BuildAvaloniaApp() =>
         AppBuilder.Configure<App>()
             .UsePlatformDetect()

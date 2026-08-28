@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>Tempest.Companion</RootNamespace>
+    <!--
+      WP 14.2A: the Companion's desktop head (ADR-0113/ADR-0116) - the
+      official Avalonia cross-platform shape: Tempest.Companion is the
+      shared single-view application library, and each platform head
+      (this phone-frame desktop window, Tempest.Companion.Android,
+      Tempest.Companion.iOS) is a thin bootstrap over it. This head is
+      the development harness and the runnable form on a desktop OS; it
+      is part of the gating solution, while the mobile heads build via
+      the workload-equipped mobile pipeline (ADR-0116).
+    -->
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia.Desktop" Version="11.2.3" />
+    <!-- Same advisory pin Tempest.Desktop carries for Avalonia.Desktop's transitive Tmds.DBus.Protocol (GHSA-xrw6-gwf8-vvr9). -->
+    <PackageReference Include="Tmds.DBus.Protocol" Version="0.94.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Tempest.Companion\Tempest.Companion.csproj" />
+  </ItemGroup>
+
+</Project>

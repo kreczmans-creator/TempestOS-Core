@@ -1,0 +1,82 @@
+# WP 14.2A (ADR-0116): builds the Companion's mobile platform heads,
+# which deliberately live OUTSIDE src/TempestOS.slnx - they need the .NET
+# mobile workloads (plus the Android SDK / a macOS toolchain) that the
+# gating CI environment does not install. Non-gating by design: manual
+# dispatch only, no branch-protection role; the CI Gate is untouched.
+#
+# The authoring environment for WP 14.2A could not run these jobs (no
+# Android SDK obtainable; iOS workload does not exist on Linux) - the
+# Android head was validated there by restore plus a Roslyn compile
+# against the workload's reference assemblies; this workflow's first
+# dispatch is the heads' first full-toolchain build (TD-57).
+name: Mobile Heads
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mobile-heads-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  android:
+    name: Android Head (Release)
+    runs-on: windows-2022
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET (pinned via global.json)
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Install the Android workload
+        run: |
+          dotnet workload install android
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Build (Release, net10.0-android)
+        # The windows-2022 runner image ships an Android SDK and JDK.
+        run: |
+          dotnet build src/Tempest.Companion.Android/Tempest.Companion.Android.csproj -c Release -f net10.0-android
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Upload package
+        uses: actions/upload-artifact@v4
+        with:
+          name: tempest-companion-android
+          path: src/Tempest.Companion.Android/bin/Release/net10.0-android/*Signed.apk
+          if-no-files-found: error
+          retention-days: 14
+
+  ios:
+    name: iOS Head (Release, simulator)
+    runs-on: macos-15
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET (pinned via global.json)
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Install the iOS workload
+        run: dotnet workload install ios
+
+      - name: Build (Release, net10.0-ios, simulator - no signing required)
+        run: dotnet build src/Tempest.Companion.iOS/Tempest.Companion.iOS.csproj -c Release -f net10.0-ios -r iossimulator-arm64
+
+      - name: Upload app bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: tempest-companion-ios-simulator
+          path: src/Tempest.Companion.iOS/bin/Release/net10.0-ios/iossimulator-arm64/*.app
+          if-no-files-found: error
+          retention-days: 14

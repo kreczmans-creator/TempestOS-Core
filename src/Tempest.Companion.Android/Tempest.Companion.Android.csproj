@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0-android</TargetFramework>
+    <SupportedOSPlatformVersion>24</SupportedOSPlatformVersion>
+    <OutputType>Exe</OutputType>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <!--
+      WP 14.2A: the Android platform head for TempestOS Companion
+      (ADR-0113/ADR-0116) - the standard Avalonia.Android head shape:
+      one Activity hosting the SAME single-view CompanionShellView the
+      desktop head hosts, via ISingleViewApplicationLifetime. Contains
+      no logic of its own beyond platform bootstrap and launcher
+      identity; every screen, service, and test lives in
+      Tempest.Companion.
+
+      Deliberately NOT part of src/TempestOS.slnx: building requires the
+      .NET Android workload plus an Android SDK, which the gating CI
+      environment does not install (ADR-0116). Build via
+      src/Tempest.Companion.Mobile.slnx or this project directly, or the
+      non-gating mobile-heads.yml workflow.
+    -->
+    <ApplicationId>com.tempestengineering.tempestos.companion</ApplicationId>
+    <ApplicationVersion>1</ApplicationVersion>
+    <ApplicationDisplayVersion>$(Version)</ApplicationDisplayVersion>
+    <AndroidPackageFormat>apk</AndroidPackageFormat>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia.Android" Version="11.2.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Tempest.Companion\Tempest.Companion.csproj" />
+  </ItemGroup>
+
+</Project>

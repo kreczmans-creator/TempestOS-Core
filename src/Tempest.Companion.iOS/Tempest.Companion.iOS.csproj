@@ -1,0 +1,37 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0-ios</TargetFramework>
+    <SupportedOSPlatformVersion>13.0</SupportedOSPlatformVersion>
+    <OutputType>Exe</OutputType>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <!--
+      WP 14.2A: the iOS platform head for TempestOS Companion
+      (ADR-0113/ADR-0116) - the standard Avalonia.iOS head shape: an
+      AppDelegate hosting the SAME single-view CompanionShellView every
+      other head hosts. Contains no logic of its own beyond platform
+      bootstrap and bundle identity.
+
+      Deliberately NOT part of src/TempestOS.slnx: building requires the
+      .NET iOS workload and a macOS toolchain (neither exists on the
+      gating CI runners or Linux dev hosts - the iOS workload is not
+      even installable on Linux). Build via the non-gating
+      mobile-heads.yml workflow's macOS job, or locally on a Mac:
+        dotnet workload install ios
+        dotnet build src/Tempest.Companion.iOS -f net10.0-ios -r iossimulator-arm64
+    -->
+    <ApplicationId>com.tempestengineering.tempestos.companion</ApplicationId>
+    <ApplicationVersion>1</ApplicationVersion>
+    <ApplicationDisplayVersion>$(Version)</ApplicationDisplayVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia.iOS" Version="11.2.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Tempest.Companion\Tempest.Companion.csproj" />
+  </ItemGroup>
+
+</Project>

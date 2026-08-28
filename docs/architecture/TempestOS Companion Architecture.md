@@ -30,13 +30,22 @@ src/
 ├── Tempest.Companion.Contracts/   # Wire contract: route constants, permission
 │                                  # keys, DTO records, shared JsonSerializerOptions.
 │                                  # Dependency-free — referenced by BOTH sides.
-├── Tempest.Companion/             # The client application (Avalonia 11.2.3,
-│   ├── Branding/                  # C#-constructed views, no .axaml — the
-│   ├── Theming/                   # Tempest.Desktop authoring style)
-│   ├── Client/                    # CompanionApiClient + settings store
-│   ├── Offline/                   # SnapshotCache, freshness model (ADR-0115)
-│   ├── Services/                  # CompanionDataService (fetch-with-fallback)
-│   └── Views/                     # Shell, five sections, palette, state views
+├── Tempest.Companion/             # The SHARED single-view application library
+│   ├── Branding/                  # (ADR-0116; Avalonia 11.2.3, C#-constructed
+│   ├── Theming/                   # views, no .axaml): App, every screen,
+│   ├── Client/                    # service, theme, and brand asset. Heads are
+│   ├── Offline/                   # thin bootstrap over this — never behaviour.
+│   ├── Services/
+│   └── Views/
+├── Tempest.Companion.Desktop/     # Desktop head: phone-frame window (gating
+│                                  # solution; the development harness)
+├── Tempest.Companion.Android/     # Android head (Mobile solution; MainActivity,
+│                                  # AppCompat theme, brand launcher icon)
+├── Tempest.Companion.iOS/         # iOS head (Mobile solution; AppDelegate,
+│                                  # Info.plist, brand AppIcon set)
+├── Tempest.Companion.Mobile.slnx  # Mobile-head solution — deliberately outside
+│                                  # TempestOS.slnx; built by the dispatch-only
+│                                  # .github/workflows/mobile-heads.yml (ADR-0116)
 └── Tempest.App/Composition/
     ├── CompanionApiRegistration.cs   # Server side: maps every route (ADR-0114)
     ├── CompanionQueryService.cs      # Projects Cockpit/Domain reads → DTOs
@@ -193,8 +202,7 @@ until `FCR-0003`/`FCR-0004`. Full findings:
 
 ## 10. Known Boundaries
 
-`TD-57` (no Android/iOS heads yet — phone-frame desktop head is the
-runnable form), `TD-58` (off-box reach gated on real auth/TLS), `AT-24`
+`TD-57`, Partially resolved (`WP 14.2A`: heads authored and validated to the environment's edge; full-toolchain build pending the first green `mobile-heads.yml` dispatch), `TD-58` (off-box reach gated on real auth/TLS), `AT-24`
 (no offline writes), `FCR-0089` (no business-management surface — the
 domain does not exist), `FCR-0090` (notifications are poll-based),
 `FCR-0091` (the dedicated display client does not exist yet).

@@ -1,5 +1,33 @@
 # TempestOS — Project Status
 
+**Last Updated:** 2026-08-28 (`WP 14.2A`, Companion Android & iOS
+Platform Heads). **The `v0.14.0` train is OPEN; `WP 14.0A` (`f7f00af`),
+`WP 14.1A` (`5554687`) and `WP 14.2A` are complete on branch
+`claude/tempestos-companion-mobile-ubznt3`.**
+
+**What `WP 14.2A` delivered.** The Companion took the official Avalonia
+cross-platform shape: `Tempest.Companion` is now the shared single-view
+application library, with `Tempest.Companion.Desktop` (phone-frame head,
+added to the gating solution), `Tempest.Companion.Android`, and
+`Tempest.Companion.iOS` (brand-pack launcher icons) as thin bootstrap
+heads — forced by `NETSDK1150` (a self-contained mobile executable
+cannot reference another executable). Per `ADR-0116` the mobile heads
+live in `src/Tempest.Companion.Mobile.slnx`, outside `TempestOS.slnx`,
+and build via the new dispatch-only, non-gating
+`.github/workflows/mobile-heads.yml` (Android on `windows-2022`, iOS on
+`macos-15`/simulator). Validation graded to the environment's edge:
+Android restore + Roslyn reference-assembly compile clean (catching a
+real `AppCompatActivity` theme launch crash pre-run), stopping only at
+`XA5300` (no Android SDK reachable); iOS authored to the official
+template, first compiled by the workflow's macOS job. `TD-57` Open →
+**Partially resolved** (closes on the first green dispatch + on-device
+observation). Full suite after the restructure: Companion 69/69, Desktop
+221/221, Core 2362/2364 (the two pre-existing Linux-environment cases),
+0W/0E both configurations.
+
+**`WP 14.1A`'s own status line, below this point, is this field's prior
+content — retained, not deleted:**
+
 **Last Updated:** 2026-08-28 (`WP 14.1A`, Brand Alignment to the Tempest
 Engineering Design System). **The `v0.14.0` train is OPEN; `WP 14.0A`
 (`f7f00af`) and `WP 14.1A` are complete on branch

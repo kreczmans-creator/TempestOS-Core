@@ -56,8 +56,16 @@ src/
 │                            # Avalonia single-view client for awareness,
 │                            # triage, and controlled quick actions, talking
 │                            # to the platform only over the REST API
-│                            # boundary (ADR-0114). Runs today in a
-│                            # phone-frame desktop head (TD-57).
+│                            # boundary (ADR-0114). Since ADR-0116 this is
+│                            # the shared application LIBRARY; the heads
+│                            # below bootstrap it per platform.
+├── Tempest.Companion.Desktop/   # Desktop head — the phone-frame window
+│                            # (part of this gating solution).
+├── Tempest.Companion.Android/   # Android head \
+├── Tempest.Companion.iOS/       # iOS head      — in Tempest.Companion.Mobile.slnx,
+│                            # deliberately OUTSIDE this solution (require the
+│                            # .NET mobile workloads; built by the non-gating
+│                            # mobile-heads.yml workflow — ADR-0116).
 ├── Tempest.Companion.Contracts/ # The Companion wire contract — route
 │                            # constants, permission keys, and DTO records
 │                            # shared by the server-side registration
