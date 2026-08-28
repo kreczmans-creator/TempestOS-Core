@@ -1,5 +1,41 @@
 # TempestOS — Project Status
 
+**Last Updated:** 2026-08-28 (Independent Finding-Closure Verification
+pass, branch `claude/finding-closure-verification-tbcd50`). **The
+`v0.13.x` release train remains CLOSED; no `WP 14.x` feature work was
+performed in this pass** (hard quality gate: verification and closure
+only).
+
+**What this pass delivered.** A full falsification review of every
+claimed finding closure, run by eight parallel read-only review
+disciplines and verified centrally against source (full report:
+`docs/governance/Quality/Finding Closure Verification (2026-08-28).md`).
+The previous session's closure report and original 16-item finding list
+were never committed anywhere and are unrecoverable — stated plainly in
+the report; nothing was assumed closed on their word. Outcome: three
+findings **closed with implementation, real-production-path tests, and
+run-and-verified mutations** — `TD-58` (redundant Desktop rebuilds: the
+`ActionCompleted` convention now carries an outcome, refusal/failure
+paths no longer rebuild anything, the ribbon no longer tears down its
+tabs per click, duplicate and dead refresh wires fixed, deleted objects
+no longer stay selected), `TD-59` (reserved device-name identifiers are
+now unambiguously representable at the `PersistenceStore` boundary —
+encoding, case-exact matching, loud collision refusal, atomic writes,
+legacy migration), `TD-60` (malformed stored values surface as each
+framework's own controlled exception, never raw
+`FormatException`/`JsonException`, and a torn write can no longer brick
+Desktop startup). Every previously-Resolved v0.13.x register closure was
+re-verified against source (all confirmed except `TD-40`/`TD-52`, whose
+test-pinning gaps are now `TD-63`/`TD-64`); ten new items were
+registered (`TD-57`, `TD-61`–`TD-69`); the Risk Register's five
+false-Open rows and the Release Register's v0.13.1 contradiction were
+corrected. Full suite after the pass: Core 2412/2414 (the two
+pre-existing Linux-environment cases), Desktop 228/228, 0 errors — 80
+new tests, three mutations run, killed, and restored.
+
+**`WP 13.13.2`'s own status block, below this point, is this field's
+prior content — retained, not deleted:**
+
 **Last Updated:** 2026-08-18 (`WP 13.13.2`, `v0.13.1` Final Release,
 Closure & Handover to WP14). **The `v0.13.x` release train is CLOSED.**
 
