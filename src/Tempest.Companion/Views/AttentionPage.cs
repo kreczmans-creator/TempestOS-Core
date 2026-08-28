@@ -11,11 +11,12 @@ namespace Tempest.Companion.Views;
 /// Everything requiring the user's attention — the Companion's triage
 /// surface, and the home of its one real quick action: approving or
 /// returning a Document-family object awaiting review, dispatched
-/// server-side through the existing <c>SetDocumentStatusCommand</c>
-/// (`WP 14.0A`'s observe → understand → decide → act loop). Every act is
-/// confirmed before it is sent (destructive-action protection), and the
-/// outcome — success or the command's own failure message — is shown
-/// inline, never swallowed.
+/// server-side through the existing <c>SetDocumentStatusCommand</c>.
+/// Every act is confirmed before it is sent, and the outcome — success
+/// or the command's own failure message — is shown inline as a
+/// log-levelled line, never swallowed. Card rules carry machine state:
+/// cyan where you act, amber for attention, red for blocked, violet for
+/// the decisions category (`WP 14.1A`).
 /// </summary>
 public sealed class AttentionPage : CompanionPage
 {
@@ -47,7 +48,7 @@ public sealed class AttentionPage : CompanionPage
 
         if (!anything)
         {
-            yield return new EmptyStateView("✓", "Nothing needs your attention right now.") { MinHeight = 320 };
+            yield return new EmptyStateView("Nothing needs your attention right now.") { MinHeight = 320 };
             yield break;
         }
 
@@ -56,7 +57,7 @@ public sealed class AttentionPage : CompanionPage
 
         if (attention.AttentionItems.Count > 0)
         {
-            var card = new CompanionCard("⚠", $"What Needs Attention ({attention.AttentionItems.Count})", Brushes.DarkOrange);
+            var card = new CompanionCard($"Needs Attention · {attention.AttentionItems.Count}", new SolidColorBrush(BrandPalette.Amber500));
             foreach (var item in attention.AttentionItems)
             {
                 card.AddLine(item.Title);
@@ -67,7 +68,7 @@ public sealed class AttentionPage : CompanionPage
 
         if (attention.BlockedItems.Count > 0)
         {
-            var card = new CompanionCard("⊘", $"Blocked Items ({attention.BlockedItems.Count})", Brushes.Crimson);
+            var card = new CompanionCard($"Blocked Items · {attention.BlockedItems.Count}", new SolidColorBrush(BrandPalette.Red500));
             foreach (var item in attention.BlockedItems)
                 card.AddLine(item);
             yield return card;
@@ -75,19 +76,19 @@ public sealed class AttentionPage : CompanionPage
 
         if (attention.OpenDecisions.Count > 0)
         {
-            var card = new CompanionCard("◇", $"Open Decisions ({attention.OpenDecisions.Count})", Brushes.MediumPurple);
+            var card = new CompanionCard($"Open Decisions · {attention.OpenDecisions.Count}", new SolidColorBrush(BrandPalette.Violet500));
             foreach (var item in attention.OpenDecisions)
                 card.AddLine(item);
             yield return card;
         }
 
-        var tasks = new CompanionCard("☑", "Open Tasks & Actions");
+        var tasks = new CompanionCard("Open Tasks & Actions");
         tasks.AddMonoLine($"{attention.OpenTaskCount} open");
         yield return tasks;
 
         if (attention.UpcomingMilestones.Count > 0)
         {
-            var milestones = new CompanionCard("⚑", "Upcoming Milestones");
+            var milestones = new CompanionCard("Upcoming Milestones");
             foreach (var item in attention.UpcomingMilestones)
                 milestones.AddMonoLine(item);
             yield return milestones;
@@ -96,7 +97,7 @@ public sealed class AttentionPage : CompanionPage
 
     private CompanionCard PendingReviewsCard(IReadOnlyList<PendingReviewDto> reviews)
     {
-        var card = new CompanionCard("✓", $"Reviews Awaiting Decision ({reviews.Count})", BrandPalette.Brush(Avalonia.Application.Current!, BrandPalette.AccentBrushKey));
+        var card = new CompanionCard($"Reviews Awaiting Decision · {reviews.Count}", new SolidColorBrush(BrandPalette.Cyan500));
 
         foreach (var review in reviews)
             card.AddContent(new PendingReviewRow(review, _data, () => _ = RefreshAsync()));
@@ -107,7 +108,8 @@ public sealed class AttentionPage : CompanionPage
     /// <summary>
     /// One actionable pending review: identity, then Approve/Return
     /// actions, each gated by an inline confirmation step before the
-    /// command is dispatched, with the outcome rendered in place.
+    /// command is dispatched, with the outcome rendered in place as a
+    /// log-levelled line.
     /// </summary>
     private sealed class PendingReviewRow : StackPanel
     {
@@ -122,6 +124,8 @@ public sealed class AttentionPage : CompanionPage
             _data = data;
             _onCompleted = onCompleted;
 
+            var app = Avalonia.Application.Current!;
+
             Spacing = CompanionTokens.SpaceSm;
             Margin = new Avalonia.Thickness(0, CompanionTokens.SpaceSm);
 
@@ -132,12 +136,14 @@ public sealed class AttentionPage : CompanionPage
                 FontSize = CompanionTokens.FontSizeBody,
                 FontWeight = CompanionTokens.WeightHeading,
                 TextWrapping = TextWrapping.Wrap,
+                Foreground = BrandPalette.Brush(app, BrandPalette.BodyTextBrushKey),
             });
             Children.Add(new TextBlock
             {
-                Text = $"{review.Kind} · {review.Status}",
+                Text = $"{review.Kind} · {review.Status}".ToLowerInvariant(),
                 FontFamily = CompanionTokens.MonoFont,
                 FontSize = CompanionTokens.FontSizeCaption,
+                Foreground = BrandPalette.Brush(app, BrandPalette.SecondaryTextBrushKey),
             });
 
             Children.Add(_actions);
@@ -147,8 +153,8 @@ public sealed class AttentionPage : CompanionPage
         private void ShowChoices()
         {
             _actions.Children.Clear();
-            _actions.Children.Add(ActionButton("Approve", () => ShowConfirm("Approved")));
-            _actions.Children.Add(ActionButton("Return to Draft", () => ShowConfirm("Draft")));
+            _actions.Children.Add(WithClick(BrandButtons.Accent("Approve"), () => ShowConfirm("Approved")));
+            _actions.Children.Add(WithClick(BrandButtons.Quiet("Return to Draft"), () => ShowConfirm("Draft")));
         }
 
         private void ShowConfirm(string targetStatus)
@@ -156,19 +162,27 @@ public sealed class AttentionPage : CompanionPage
             _actions.Children.Clear();
             _actions.Children.Add(new TextBlock
             {
-                Text = $"Set '{_review.DisplayName}' to {targetStatus}?",
+                Text = $"Set to {targetStatus}?",
                 FontFamily = CompanionTokens.BodyFont,
                 FontSize = CompanionTokens.FontSizeCaption,
+                Foreground = BrandPalette.Brush(Avalonia.Application.Current!, BrandPalette.BodyTextBrushKey),
                 VerticalAlignment = VerticalAlignment.Center,
             });
-            _actions.Children.Add(ActionButton("Confirm", () => _ = ExecuteAsync(targetStatus)));
-            _actions.Children.Add(ActionButton("Cancel", ShowChoices));
+            _actions.Children.Add(WithClick(BrandButtons.Accent("Confirm"), () => _ = ExecuteAsync(targetStatus)));
+            _actions.Children.Add(WithClick(BrandButtons.Quiet("Cancel"), ShowChoices));
         }
 
         private async Task ExecuteAsync(string targetStatus)
         {
             _actions.Children.Clear();
-            _actions.Children.Add(new ProgressBar { IsIndeterminate = true, Width = 96, Height = 4, VerticalAlignment = VerticalAlignment.Center });
+            _actions.Children.Add(new ProgressBar
+            {
+                IsIndeterminate = true,
+                Width = 96,
+                Height = 3,
+                Foreground = new SolidColorBrush(BrandPalette.Cyan500),
+                VerticalAlignment = VerticalAlignment.Center,
+            });
 
             string message;
             bool succeeded;
@@ -184,13 +198,17 @@ public sealed class AttentionPage : CompanionPage
             }
 
             _actions.Children.Clear();
+            _actions.Children.Add(new LogLevelBadge(
+                succeeded ? "OK" : "ERR",
+                new SolidColorBrush(succeeded ? BrandPalette.Green500 : BrandPalette.Red500)));
             _actions.Children.Add(new TextBlock
             {
-                Text = succeeded ? $"✓ {message}" : $"⊗ {message}",
-                Foreground = succeeded ? Brushes.SeaGreen : Brushes.Crimson,
+                Text = message,
+                Foreground = BrandPalette.Brush(Avalonia.Application.Current!, BrandPalette.BodyTextBrushKey),
                 FontFamily = CompanionTokens.BodyFont,
                 FontSize = CompanionTokens.FontSizeCaption,
                 TextWrapping = TextWrapping.Wrap,
+                MaxWidth = 240,
                 VerticalAlignment = VerticalAlignment.Center,
             });
 
@@ -198,13 +216,8 @@ public sealed class AttentionPage : CompanionPage
                 _onCompleted();
         }
 
-        private static Button ActionButton(string label, Action onClick)
+        private static Button WithClick(Button button, Action onClick)
         {
-            var button = new Button
-            {
-                Content = label,
-                MinHeight = CompanionTokens.MinTouchTarget,
-            };
             button.Click += (_, _) => onClick();
             return button;
         }

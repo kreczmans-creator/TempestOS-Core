@@ -30,26 +30,26 @@ public enum CompanionSection
 }
 
 /// <summary>
-/// The Companion's single-view shell — branded app bar (mark, wordmark,
-/// live/offline pill, palette and refresh affordances), the active page,
-/// and thumb-reach bottom navigation. The mobile re-expression of the
-/// desktop's navigation concepts (`WP 14.0A`): the Cockpit is still the
-/// default landing surface (`ADR-0069`), the Command Palette is still a
-/// first-class global entry point (`ADR-0070`) — only the physical
-/// navigation (bottom tabs instead of ribbon/docking) changes for the
-/// form factor. Cross-collaborator wiring is direct delegates, exactly
-/// <c>ADR-0104</c>'s desktop rule: no mobile-local mediator, dispatcher,
-/// or event bus.
+/// The Companion's single-view shell, in the Tempest Engineering Design
+/// System's instrument idiom (`WP 14.1A`): a sunken navy top bar
+/// carrying the supplied TEMPEST OS lockup and a live/offline status
+/// readout, the active page over the blueprint-grid ground, and a
+/// text-label bottom navigation whose selected item takes the cyan
+/// accent and a 2px top rule (the pack's selection-rule pattern). No
+/// icon glyphs anywhere — the pack ships no glyph set and bans
+/// hand-drawn ones; labels are UPPERCASE Chakra Petch with wide
+/// tracking. The Cockpit is still the default landing surface
+/// (`ADR-0069`) and the Command Palette a first-class global entry point
+/// (`ADR-0070`); wiring stays direct delegates (`ADR-0104`).
 /// </summary>
 public sealed class CompanionShellView : UserControl
 {
     private readonly CompanionDataService _data;
     private readonly ContentControl _pageHost = new();
-    private readonly TextBlock _pageTitle;
     private readonly StatusPill _statusPill = new();
     private readonly CommandPaletteOverlay _palette = new();
     private readonly Dictionary<CompanionSection, CompanionPage> _pages = [];
-    private readonly Dictionary<CompanionSection, Button> _navButtons = [];
+    private readonly Dictionary<CompanionSection, (Button Button, Border Rule)> _navItems = [];
     private ProjectDetailPage? _detailPage;
     private ProjectListDto? _lastProjects;
 
@@ -70,15 +70,6 @@ public sealed class CompanionShellView : UserControl
         _data = data;
         _data.ConnectionStateChanged += connected =>
             Dispatcher.UIThread.Post(() => _statusPill.Update(connected));
-
-        _pageTitle = new TextBlock
-        {
-            FontFamily = CompanionTokens.TitleFont,
-            FontSize = CompanionTokens.FontSizeCaption,
-            LetterSpacing = 1.5,
-            Opacity = 0.85,
-            VerticalAlignment = VerticalAlignment.Center,
-        };
 
         _pages[CompanionSection.Cockpit] = new CockpitPage(data);
         _pages[CompanionSection.Projects] = new ProjectsPage(data, OpenProject);
@@ -132,10 +123,9 @@ public sealed class CompanionShellView : UserControl
 
         var page = _pages[section];
         _pageHost.Content = page;
-        _pageTitle.Text = page.Title.ToUpperInvariant();
 
-        foreach (var (button, buttonSection) in _navButtons.Select(p => (p.Value, p.Key)))
-            StyleNavButton(button, buttonSection == section);
+        foreach (var (itemSection, item) in _navItems)
+            StyleNavItem(item, itemSection == section);
 
         _ = RefreshActiveAsync(page, section);
     }
@@ -147,7 +137,6 @@ public sealed class CompanionShellView : UserControl
 
         _detailPage = new ProjectDetailPage(project, () => Navigate(CompanionSection.Projects));
         _pageHost.Content = _detailPage;
-        _pageTitle.Text = "PROJECT";
     }
 
     private async Task RefreshActiveAsync(CompanionPage page, CompanionSection section)
@@ -155,8 +144,8 @@ public sealed class CompanionShellView : UserControl
         await page.RefreshAsync();
 
         // Keep the palette's project entries current from whatever the
-        // Projects page last fetched - reusing the identical data path,
-        // not a second fetch.
+        // Projects page last fetched - the identical data path, not a
+        // second fetch.
         if (section == CompanionSection.Projects)
             _lastProjects = (await _data.GetProjectsAsync()).Data ?? _lastProjects;
     }
@@ -164,11 +153,12 @@ public sealed class CompanionShellView : UserControl
     private Control BuildAppBar()
     {
         var app = Avalonia.Application.Current!;
-        var chromeForeground = BrandPalette.Brush(app, BrandPalette.ChromeForegroundBrushKey);
 
         var bar = new Border
         {
-            Background = BrandPalette.Brush(app, BrandPalette.ChromeBackgroundBrushKey),
+            Background = BrandPalette.Brush(app, BrandPalette.SunkenBackgroundBrushKey),
+            BorderThickness = new Avalonia.Thickness(0, 0, 0, 1),
+            BorderBrush = BrandPalette.Brush(app, BrandPalette.CardBorderBrushKey),
             Padding = new Avalonia.Thickness(CompanionTokens.SpaceXl, 0),
         };
 
@@ -178,56 +168,41 @@ public sealed class CompanionShellView : UserControl
             VerticalAlignment = VerticalAlignment.Stretch,
         };
 
-        var mark = new TempestLogoControl
+        // The supplied TEMPEST OS lockup, verbatim geometry - paper
+        // wordmark on the dark ground, ink on paper (the pack's own
+        // light/ink variants).
+        var lockup = new TempestLockupControl
         {
-            Width = 26,
-            Height = 26,
-            Foreground = chromeForeground,
+            Height = 24,
             VerticalAlignment = VerticalAlignment.Center,
+            WordmarkBrush = BrandPalette.Brush(app, BrandPalette.HeadingTextBrushKey),
         };
-        grid.Children.Add(mark);
+        Avalonia.Automation.AutomationProperties.SetName(lockup, "TEMPEST OS");
+        grid.Children.Add(lockup);
 
-        var wordmark = new StackPanel
-        {
-            Orientation = Orientation.Vertical,
-            VerticalAlignment = VerticalAlignment.Center,
-            Margin = new Avalonia.Thickness(CompanionTokens.SpaceLg, 0, 0, 0),
-        };
-        wordmark.Children.Add(new TextBlock
-        {
-            Text = "TEMPEST OS",
-            FontFamily = CompanionTokens.TitleFont,
-            FontSize = 15,
-            FontWeight = FontWeight.SemiBold,
-            LetterSpacing = 2,
-            Foreground = chromeForeground,
-        });
-        wordmark.Children.Add(new TextBlock
+        var surfaceTag = new TextBlock
         {
             Text = "COMPANION",
             FontFamily = CompanionTokens.MonoFont,
             FontSize = 9,
-            LetterSpacing = 3,
-            Foreground = new SolidColorBrush(BrandPalette.ElectricBlue),
-        });
-        Grid.SetColumn(wordmark, 1);
-        grid.Children.Add(wordmark);
-
-        _pageTitle.Foreground = chromeForeground;
-        _pageTitle.HorizontalAlignment = HorizontalAlignment.Right;
-        _pageTitle.Margin = new Avalonia.Thickness(CompanionTokens.SpaceMd, 0);
-        Grid.SetColumn(_pageTitle, 2);
-        grid.Children.Add(_pageTitle);
+            LetterSpacing = CompanionTokens.WideTracking,
+            Foreground = BrandPalette.Brush(app, BrandPalette.SecondaryTextBrushKey),
+            VerticalAlignment = VerticalAlignment.Bottom,
+            Margin = new Avalonia.Thickness(CompanionTokens.SpaceMd, 0, 0, 14),
+        };
+        Grid.SetColumn(surfaceTag, 1);
+        grid.Children.Add(surfaceTag);
 
         Grid.SetColumn(_statusPill, 3);
         grid.Children.Add(_statusPill);
 
-        var paletteButton = AppBarButton("⌘", "Open command palette", chromeForeground);
+        var paletteButton = AppBarButton("CMD", "Open command palette");
         paletteButton.Click += (_, _) => _palette.Open();
+        paletteButton.Margin = new Avalonia.Thickness(CompanionTokens.SpaceMd, 0, 0, 0);
         Grid.SetColumn(paletteButton, 4);
         grid.Children.Add(paletteButton);
 
-        var refreshButton = AppBarButton("↻", "Refresh", chromeForeground);
+        var refreshButton = AppBarButton("SYNC", "Refresh");
         refreshButton.Click += (_, _) => _ = (ActivePage ?? _pages[CurrentSection]).RefreshAsync();
         Grid.SetColumn(refreshButton, 5);
         grid.Children.Add(refreshButton);
@@ -236,13 +211,20 @@ public sealed class CompanionShellView : UserControl
         return bar;
     }
 
-    private static Button AppBarButton(string glyph, string automationName, IBrush foreground)
+    private static Button AppBarButton(string label, string automationName)
     {
+        var app = Avalonia.Application.Current!;
         var button = new Button
         {
-            Content = glyph,
-            FontSize = 16,
-            Foreground = foreground,
+            Content = new TextBlock
+            {
+                Text = label,
+                FontFamily = CompanionTokens.TitleFont,
+                FontSize = CompanionTokens.FontSizeLabel,
+                FontWeight = CompanionTokens.WeightLabel,
+                LetterSpacing = CompanionTokens.LabelTracking,
+            },
+            Foreground = BrandPalette.Brush(app, BrandPalette.AccentBrushKey),
             Background = Brushes.Transparent,
             BorderThickness = new Avalonia.Thickness(0),
             MinWidth = CompanionTokens.MinTouchTarget,
@@ -251,6 +233,9 @@ public sealed class CompanionShellView : UserControl
             HorizontalContentAlignment = HorizontalAlignment.Center,
             VerticalContentAlignment = VerticalAlignment.Center,
         };
+        button.Resources["ButtonBackgroundPointerOver"] = new SolidColorBrush(BrandPalette.Paper050, 0.05);
+        button.Resources["ButtonBackgroundPressed"] = new SolidColorBrush(BrandPalette.Paper050, 0.09);
+        button.Resources["ButtonForegroundPointerOver"] = new SolidColorBrush(BrandPalette.Cyan400);
         Avalonia.Automation.AutomationProperties.SetName(button, automationName);
         return button;
     }
@@ -261,51 +246,58 @@ public sealed class CompanionShellView : UserControl
 
         var bar = new Border
         {
-            Background = BrandPalette.Brush(app, BrandPalette.NavBarBackgroundBrushKey),
+            Background = BrandPalette.Brush(app, BrandPalette.SunkenBackgroundBrushKey),
             BorderThickness = new Avalonia.Thickness(0, 1, 0, 0),
             BorderBrush = BrandPalette.Brush(app, BrandPalette.CardBorderBrushKey),
         };
 
         var grid = new Grid { ColumnDefinitions = new ColumnDefinitions("*,*,*,*,*") };
 
-        var items = new (CompanionSection Section, string Glyph, string Label)[]
+        var items = new (CompanionSection Section, string Label)[]
         {
-            (CompanionSection.Cockpit, "▣", "Cockpit"),
-            (CompanionSection.Projects, "⬡", "Projects"),
-            (CompanionSection.Attention, "⚠", "Attention"),
-            (CompanionSection.Activity, "↻", "Activity"),
-            (CompanionSection.More, "☰", "More"),
+            (CompanionSection.Cockpit, "Cockpit"),
+            (CompanionSection.Projects, "Projects"),
+            (CompanionSection.Attention, "Attention"),
+            (CompanionSection.Activity, "Activity"),
+            (CompanionSection.More, "More"),
         };
 
         for (var i = 0; i < items.Length; i++)
         {
-            var (section, glyph, label) = items[i];
-            var button = NavButton(glyph, label);
+            var (section, label) = items[i];
+
+            // The pack's selection-rule pattern: a 2px accent rule on the
+            // selected item's leading (top) edge, over the sunken rail.
+            var rule = new Border { Height = CompanionTokens.RuleThickness, Background = Brushes.Transparent };
+            var button = NavButton(label);
             button.Click += (_, _) => Navigate(section);
-            _navButtons[section] = button;
-            Grid.SetColumn(button, i);
-            grid.Children.Add(button);
+
+            var cell = new Grid { RowDefinitions = new RowDefinitions("Auto,*") };
+            cell.Children.Add(rule);
+            Grid.SetRow(button, 1);
+            cell.Children.Add(button);
+
+            _navItems[section] = (button, rule);
+            Grid.SetColumn(cell, i);
+            grid.Children.Add(cell);
         }
 
         bar.Child = grid;
         return bar;
     }
 
-    private static Button NavButton(string glyph, string label)
+    private static Button NavButton(string label)
     {
-        var stack = new StackPanel { Spacing = CompanionTokens.SpaceXs, HorizontalAlignment = HorizontalAlignment.Center };
-        stack.Children.Add(new TextBlock { Text = glyph, FontSize = 18, HorizontalAlignment = HorizontalAlignment.Center });
-        stack.Children.Add(new TextBlock
-        {
-            Text = label,
-            FontFamily = CompanionTokens.BodyFont,
-            FontSize = 10,
-            HorizontalAlignment = HorizontalAlignment.Center,
-        });
-
         var button = new Button
         {
-            Content = stack,
+            Content = new TextBlock
+            {
+                Text = label.ToUpperInvariant(),
+                FontFamily = CompanionTokens.TitleFont,
+                FontSize = 10,
+                FontWeight = CompanionTokens.WeightLabel,
+                LetterSpacing = CompanionTokens.LabelTracking,
+            },
             Background = Brushes.Transparent,
             BorderThickness = new Avalonia.Thickness(0),
             HorizontalAlignment = HorizontalAlignment.Stretch,
@@ -314,15 +306,19 @@ public sealed class CompanionShellView : UserControl
             VerticalContentAlignment = VerticalAlignment.Center,
             MinHeight = CompanionTokens.MinTouchTarget,
         };
+        button.Resources["ButtonBackgroundPointerOver"] = new SolidColorBrush(BrandPalette.Paper050, 0.05);
+        button.Resources["ButtonBackgroundPressed"] = new SolidColorBrush(BrandPalette.Paper050, 0.09);
         Avalonia.Automation.AutomationProperties.SetName(button, label);
         return button;
     }
 
-    private void StyleNavButton(Button button, bool selected)
+    private void StyleNavItem((Button Button, Border Rule) item, bool selected)
     {
         var app = Avalonia.Application.Current!;
-        button.Foreground = BrandPalette.Brush(app, selected ? BrandPalette.NavSelectedBrushKey : BrandPalette.NavUnselectedBrushKey);
-        button.FontWeight = selected ? FontWeight.SemiBold : FontWeight.Normal;
+        var accent = BrandPalette.Brush(app, BrandPalette.AccentBrushKey);
+
+        item.Button.Foreground = selected ? accent : BrandPalette.Brush(app, BrandPalette.NavUnselectedBrushKey);
+        item.Rule.Background = selected ? accent : Brushes.Transparent;
     }
 
     private IReadOnlyList<CommandPaletteOverlay.PaletteEntry> BuildPaletteEntries()

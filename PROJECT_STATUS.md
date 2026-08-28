@@ -1,5 +1,31 @@
 # TempestOS — Project Status
 
+**Last Updated:** 2026-08-28 (`WP 14.1A`, Brand Alignment to the Tempest
+Engineering Design System). **The `v0.14.0` train is OPEN; `WP 14.0A`
+(`f7f00af`) and `WP 14.1A` are complete on branch
+`claude/tempestos-companion-mobile-ubznt3`.**
+
+**What `WP 14.1A` delivered.** The Product Owner supplied the
+authoritative Tempest Engineering Design System; the Companion's
+provisional `WP 14.0A` branding was replaced wholesale: instrument-dark
+navy themes (dark default), the brand triad (indigo `#1c2d97` / cyan
+`#40a2ce` / violet `#6c29d9`) with machine-state green/amber/red, the
+supplied 18-stroke mark and TEMPEST OS lockup carried as verbatim
+geometry (`TempestMarkGeometry` — transcribed, never redrawn) plus the
+pack's PNG lockups/app icons and font builds, squared 2/3/5px corners,
+top-edge card status rules, UPPERCASE Chakra labels, Space Mono machine
+data with UTC `Z` timestamps and `INFO WARN ERR OK` log levels, the 64px
+blueprint-grid ground, and zero emoji/glyphs. Conformance is
+test-guarded (`BrandConformanceTests`); Companion tests 52 → 69, all
+green; full regression unchanged; `src/` changes confined to
+`Tempest.Companion`. Governance: `ADR-0113` corrected in place
+(`ADR-0111` precedent), `FCR-0092` added (desktop realignment, 91 → 92),
+`docs/design/Tempest Engineering Design System Reference.md` created,
+Academy retrospective `WP14.1A-…md` (143 → 144).
+
+**`WP 14.0A`'s own status line, below this point, is this field's prior
+content — retained, not deleted:**
+
 **Last Updated:** 2026-08-28 (`WP 14.0A`, TempestOS Companion — Mobile
 Companion Application). **The `v0.14.0` train is OPEN (In preparation —
 see the Release Register); `WP 14.0A` is complete on branch

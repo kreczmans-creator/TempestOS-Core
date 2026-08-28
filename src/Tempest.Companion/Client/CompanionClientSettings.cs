@@ -12,9 +12,9 @@ namespace Tempest.Companion.Client;
 /// </summary>
 /// <param name="ServerUrl">The TempestOS host's own REST API base URL — loopback by default, matching the platform's own deliberate bind (<c>TD-14</c>).</param>
 /// <param name="IdentityId">The identity id sent as <c>X-Identity-Id</c> — empty until the user configures one.</param>
-/// <param name="Theme">The requested theme variant name — <c>"Light"</c> or <c>"Dark"</c>.</param>
+/// <param name="Theme">The requested theme variant name — <c>"Dark"</c> (the instrument theme, the brand default) or <c>"Light"</c> (paper).</param>
 public sealed record CompanionClientSettings(string ServerUrl, string IdentityId, string Theme)
 {
     /// <summary>The settings a fresh install starts from.</summary>
-    public static CompanionClientSettings Default { get; } = new("http://127.0.0.1:5080", string.Empty, "Light");
+    public static CompanionClientSettings Default { get; } = new("http://127.0.0.1:5080", string.Empty, "Dark");
 }

@@ -1,7 +1,9 @@
 using Avalonia.Controls;
 using Avalonia.Layout;
+using Avalonia.Media;
+using Avalonia.Media.Imaging;
+using Avalonia.Platform;
 using Avalonia.Styling;
-using Tempest.Companion.Branding;
 using Tempest.Companion.Client;
 using Tempest.Companion.Contracts;
 using Tempest.Companion.Offline;
@@ -11,11 +13,10 @@ using Tempest.Companion.Theming;
 namespace Tempest.Companion.Views;
 
 /// <summary>
-/// The Companion's secondary surface: platform notifications, connection
-/// settings, appearance, local-data hygiene, and product identity.
-/// Everything operational lives on the four primary tabs — this page
-/// deliberately holds only what does not compete for the cockpit-first
-/// landing experience.
+/// The Companion's secondary surface: platform notifications (as
+/// log-levelled lines — the pack's <c>INFO WARN ERR OK</c> vocabulary),
+/// connection settings, appearance, local-data hygiene, and product
+/// identity (the supplied TEMPEST OS lockup artwork, `WP 14.1A`).
 /// </summary>
 public sealed class MorePage : CompanionPage
 {
@@ -56,12 +57,12 @@ public sealed class MorePage : CompanionPage
 
         // Settings and identity must stay reachable even fully offline -
         // the page renders regardless of what the notifications fetch did.
-        var column = new Avalonia.Controls.StackPanel { Spacing = CompanionTokens.CardSpacing };
+        var column = new StackPanel { Spacing = CompanionTokens.CardSpacing };
 
         if (result.Data is null)
         {
-            column.Children.Add(new CompanionCard("◷", "Notifications")
-                .AddLine(result.Error ?? "TempestOS is unavailable.", secondary: true));
+            column.Children.Add(new CompanionCard("Notifications")
+                .AddLine(result.Error ?? "Tempest OS is unavailable.", secondary: true));
         }
         else
         {
@@ -79,21 +80,18 @@ public sealed class MorePage : CompanionPage
 
     private static CompanionCard NotificationsCard(NotificationListDto list)
     {
-        var card = new CompanionCard("◷", $"Notifications ({list.Notifications.Count})");
+        var app = Avalonia.Application.Current!;
+        var card = new CompanionCard($"Notifications · {list.Notifications.Count}");
 
         if (list.Notifications.Count == 0)
-            return card.AddLine("No platform notifications since TempestOS started.", secondary: true);
+            return card.AddLine("No platform notifications since Tempest OS started.", secondary: true);
 
         foreach (var notification in list.Notifications.Take(20))
         {
             var row = new StackPanel { Orientation = Orientation.Horizontal, Spacing = CompanionTokens.SpaceMd };
-            row.Children.Add(new TextBlock
-            {
-                Text = notification.Severity switch { "Success" => "✓", "Warning" => "⚠", "Error" => "⊗", _ => "ⓘ" },
-                Foreground = CompanionStatusColors.ForSeverity(notification.Severity),
-                FontSize = CompanionTokens.FontSizeBody,
-                VerticalAlignment = VerticalAlignment.Top,
-            });
+            row.Children.Add(new LogLevelBadge(
+                CompanionStatusColors.LogLevelFor(notification.Severity),
+                CompanionStatusColors.ForSeverity(notification.Severity)));
             row.Children.Add(new StackPanel
             {
                 Spacing = CompanionTokens.SpaceXs,
@@ -102,17 +100,18 @@ public sealed class MorePage : CompanionPage
                     new TextBlock
                     {
                         Text = notification.Message,
-                        TextWrapping = Avalonia.Media.TextWrapping.Wrap,
+                        TextWrapping = TextWrapping.Wrap,
                         FontFamily = CompanionTokens.BodyFont,
                         FontSize = CompanionTokens.FontSizeBody,
-                        MaxWidth = 280,
+                        Foreground = BrandPalette.Brush(app, BrandPalette.BodyTextBrushKey),
+                        MaxWidth = 260,
                     },
                     new TextBlock
                     {
-                        Text = $"{notification.Category} · {FormatMoment(notification.OccurredAtUtc)}",
+                        Text = $"{notification.Category.ToLowerInvariant()} · {FormatMoment(notification.OccurredAtUtc)}",
                         FontFamily = CompanionTokens.MonoFont,
                         FontSize = CompanionTokens.FontSizeCaption,
-                        Opacity = 0.7,
+                        Foreground = BrandPalette.Brush(app, BrandPalette.SecondaryTextBrushKey),
                     },
                 },
             });
@@ -124,23 +123,10 @@ public sealed class MorePage : CompanionPage
 
     private CompanionCard SettingsCard()
     {
-        var card = new CompanionCard("⚙", "Connection & Appearance");
+        var card = new CompanionCard("Connection & Appearance");
 
-        var serverBox = new TextBox
-        {
-            Text = _settings.ServerUrl,
-            Watermark = "TempestOS server URL",
-            MinHeight = CompanionTokens.MinTouchTarget,
-        };
-        Avalonia.Automation.AutomationProperties.SetName(serverBox, "TempestOS server URL");
-
-        var identityBox = new TextBox
-        {
-            Text = _settings.IdentityId,
-            Watermark = "Identity id (configured on the TempestOS host)",
-            MinHeight = CompanionTokens.MinTouchTarget,
-        };
-        Avalonia.Automation.AutomationProperties.SetName(identityBox, "Identity id");
+        var serverBox = SettingsBox(_settings.ServerUrl, "Tempest OS server URL");
+        var identityBox = SettingsBox(_settings.IdentityId, "Identity id (configured on the Tempest OS host)");
 
         card.AddLine("Server", secondary: true);
         card.AddContent(serverBox);
@@ -148,28 +134,20 @@ public sealed class MorePage : CompanionPage
         card.AddContent(identityBox);
         card.AddLine("Identity is asserted to the platform's configured identity model (no password exists in this release); the platform authorises each request per route.", secondary: true);
 
-        var themeToggle = new Button
-        {
-            Content = Avalonia.Application.Current!.RequestedThemeVariant == ThemeVariant.Dark ? "Switch to Light theme" : "Switch to Dark theme",
-            MinHeight = CompanionTokens.MinTouchTarget,
-            HorizontalAlignment = HorizontalAlignment.Stretch,
-        };
+        var themeToggle = BrandButtons.Quiet(ThemeToggleLabel());
+        themeToggle.HorizontalAlignment = HorizontalAlignment.Stretch;
         themeToggle.Click += (_, _) =>
         {
             var app = Avalonia.Application.Current!;
-            var toDark = app.RequestedThemeVariant != ThemeVariant.Dark;
-            app.RequestedThemeVariant = toDark ? ThemeVariant.Dark : ThemeVariant.Light;
-            themeToggle.Content = toDark ? "Switch to Light theme" : "Switch to Dark theme";
-            _onSaveSettings(_settings with { Theme = toDark ? "Dark" : "Light" });
+            var toLight = app.RequestedThemeVariant != ThemeVariant.Light;
+            app.RequestedThemeVariant = toLight ? ThemeVariant.Light : ThemeVariant.Dark;
+            themeToggle.Content = ThemeToggleLabel();
+            _onSaveSettings(_settings with { Theme = toLight ? "Light" : "Dark" });
         };
         card.AddContent(themeToggle);
 
-        var save = new Button
-        {
-            Content = "Save & Reconnect",
-            MinHeight = CompanionTokens.MinTouchTarget,
-            HorizontalAlignment = HorizontalAlignment.Stretch,
-        };
+        var save = BrandButtons.Accent("Save & Reconnect");
+        save.HorizontalAlignment = HorizontalAlignment.Stretch;
         save.Click += (_, _) => _onSaveSettings(_settings with
         {
             ServerUrl = serverBox.Text?.Trim() ?? string.Empty,
@@ -177,24 +155,22 @@ public sealed class MorePage : CompanionPage
         });
         card.AddContent(save);
 
-        var clear = new Button
-        {
-            Content = "Clear Local Data",
-            MinHeight = CompanionTokens.MinTouchTarget,
-            HorizontalAlignment = HorizontalAlignment.Stretch,
-        };
+        var clear = BrandButtons.Quiet("Clear Local Data");
+        clear.HorizontalAlignment = HorizontalAlignment.Stretch;
+        clear.Foreground = new SolidColorBrush(BrandPalette.Red500);
+        clear.BorderBrush = new SolidColorBrush(BrandPalette.Red500);
         clear.Click += (_, _) =>
         {
             // Two-step confirm - clearing cached engineering data is the
             // device-hygiene path and must not fire on a stray tap.
-            if (clear.Content as string == "Clear Local Data")
+            if (clear.Content as string == "CLEAR LOCAL DATA")
             {
-                clear.Content = "Tap again to confirm clearing cached data";
+                clear.Content = "TAP AGAIN TO CONFIRM";
                 return;
             }
 
             _onClearLocalData();
-            clear.Content = "Local data cleared";
+            clear.Content = "LOCAL DATA CLEARED";
             clear.IsEnabled = false;
         };
         card.AddContent(clear);
@@ -203,35 +179,46 @@ public sealed class MorePage : CompanionPage
         return card;
     }
 
+    private static string ThemeToggleLabel() =>
+        Avalonia.Application.Current!.RequestedThemeVariant == ThemeVariant.Light
+            ? "Switch to instrument (dark) theme"
+            : "Switch to paper (light) theme";
+
+    private static TextBox SettingsBox(string text, string automationName)
+    {
+        var box = new TextBox
+        {
+            Text = text,
+            Watermark = automationName,
+            MinHeight = CompanionTokens.MinTouchTarget,
+            FontFamily = CompanionTokens.MonoFont,
+            FontSize = CompanionTokens.FontSizeCaption,
+            CornerRadius = new Avalonia.CornerRadius(CompanionTokens.ControlCornerRadius),
+        };
+        Avalonia.Automation.AutomationProperties.SetName(box, automationName);
+        return box;
+    }
+
     private static CompanionCard AboutCard()
     {
-        var card = new CompanionCard("▣", "TempestOS Companion");
+        var app = Avalonia.Application.Current!;
+        var card = new CompanionCard("Tempest OS Companion");
 
-        var identity = new StackPanel
+        // The supplied lockup artwork itself - the pack's dark-ground
+        // variant on the instrument theme, the light-ground variant on
+        // paper. Never a redrawn logo.
+        var isDark = app.ActualThemeVariant != ThemeVariant.Light;
+        var lockupUri = new Uri($"avares://Tempest.Companion/Assets/Brand/tempest-os-logo-{(isDark ? "dark" : "light")}.png");
+        card.AddContent(new Image
         {
-            Orientation = Orientation.Horizontal,
-            Spacing = CompanionTokens.SpaceLg,
+            Source = new Bitmap(AssetLoader.Open(lockupUri)),
+            Height = 40,
+            HorizontalAlignment = HorizontalAlignment.Left,
             Margin = new Avalonia.Thickness(0, CompanionTokens.SpaceSm),
-        };
-        identity.Children.Add(new TempestLogoControl
-        {
-            Width = 36,
-            Height = 36,
-            Foreground = new Avalonia.Media.SolidColorBrush(BrandPalette.RoyalBlue),
         });
-        identity.Children.Add(new TextBlock
-        {
-            Text = "TEMPEST OS",
-            FontFamily = CompanionTokens.TitleFont,
-            FontSize = CompanionTokens.FontSizeTitle,
-            FontWeight = CompanionTokens.WeightHeading,
-            LetterSpacing = 2,
-            VerticalAlignment = VerticalAlignment.Center,
-        });
-        card.AddContent(identity);
 
-        card.AddLine("The mobile operational window into the TempestOS engineering platform: awareness, triage, and controlled quick actions. Engineering authoring stays on the desktop Workspace.", secondary: true);
-        card.AddMonoLine("Chakra Petch & Space Mono © their authors, SIL OFL 1.1 (Assets/Fonts).");
+        card.AddLine("The mobile operational window into the Tempest OS engineering platform: awareness, triage, and controlled quick actions. Engineering authoring stays on the desktop Workspace.", secondary: true);
+        card.AddMonoLine("chakra-petch · inter · space-mono — SIL OFL 1.1 (Assets/Fonts)");
 
         return card;
     }

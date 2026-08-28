@@ -7,10 +7,11 @@ namespace Tempest.Companion.Views;
 
 /// <summary>
 /// The base of every Companion page: one scrollable column of cards over
-/// the page background, with the intentional loading → (banner +) content
-/// / empty / error state machine every screen must have (`WP 14.0A`) —
-/// implemented once here so no page can accidentally ship without an
-/// offline or error state.
+/// the navy page ground with the pack's blueprint-grid texture behind it
+/// (`WP 14.1A` — the grid never sits behind body text; every card above
+/// it is opaque), with the intentional loading → (banner +) content /
+/// empty / error state machine every screen must have — implemented once
+/// here so no page can ship without an offline or error state.
 /// </summary>
 public abstract class CompanionPage : UserControl
 {
@@ -28,7 +29,18 @@ public abstract class CompanionPage : UserControl
             HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled,
             Padding = CompanionTokens.PagePadding,
         };
-        Content = _scroller;
+
+        // A ScrollViewer lays a child out at its desired width even with
+        // horizontal scrolling disabled, so one unbreakable line (a long
+        // mono watermark) would push its card past the viewport. Cap the
+        // body to the real viewport width instead - structurally, here,
+        // so no page can regress it.
+        _scroller.SizeChanged += (_, _) => ConstrainBodyWidth();
+
+        var layers = new Panel();
+        layers.Children.Add(new BlueprintGridControl());
+        layers.Children.Add(_scroller);
+        Content = layers;
     }
 
     /// <summary>Gets the page's own title.</summary>
@@ -38,10 +50,20 @@ public abstract class CompanionPage : UserControl
     public abstract Task RefreshAsync();
 
     /// <summary>Shows the shared loading state.</summary>
-    protected void ShowLoading() => _scroller.Content = new LoadingStateView { MinHeight = 320 };
+    protected void ShowLoading() => ShowContent(new LoadingStateView { MinHeight = 320 });
 
     /// <summary>Shows <paramref name="content"/> as the page body.</summary>
-    protected void ShowContent(Control content) => _scroller.Content = content;
+    protected void ShowContent(Control content)
+    {
+        _scroller.Content = content;
+        ConstrainBodyWidth();
+    }
+
+    private void ConstrainBodyWidth()
+    {
+        if (_scroller.Content is Control body && _scroller.Bounds.Width > 0)
+            body.MaxWidth = Math.Max(0, _scroller.Bounds.Width - CompanionTokens.PagePadding.Left - CompanionTokens.PagePadding.Right);
+    }
 
     /// <summary>
     /// Renders a <see cref="SnapshotResult{T}"/> with the uniform state
@@ -57,7 +79,7 @@ public abstract class CompanionPage : UserControl
 
         if (result.Data is null)
         {
-            ShowContent(new ErrorStateView(result.Error ?? "TempestOS is unavailable.", () => _ = RefreshAsync()) { MinHeight = 320 });
+            ShowContent(new ErrorStateView(result.Error ?? "Tempest OS is unavailable.", () => _ = RefreshAsync()) { MinHeight = 320 });
             return;
         }
 
@@ -72,23 +94,27 @@ public abstract class CompanionPage : UserControl
         ShowContent(column);
     }
 
-    /// <summary>Formats a UTC moment for display in local time — short for today, dated otherwise.</summary>
-    protected static string FormatMoment(DateTimeOffset utc)
+    /// <summary>
+    /// Formats a moment as machine data, per the pack: UTC with a
+    /// trailing <c>Z</c> — time-only for today (UTC), dated otherwise.
+    /// </summary>
+    protected static string FormatMoment(DateTimeOffset moment)
     {
-        var local = utc.ToLocalTime();
-        return local.Date == DateTimeOffset.Now.Date ? local.ToString("HH:mm") : local.ToString("yyyy-MM-dd HH:mm");
+        var utc = moment.ToUniversalTime();
+        return utc.Date == DateTimeOffset.UtcNow.Date ? $"{utc:HH:mm}Z" : $"{utc:yyyy-MM-dd HH:mm}Z";
     }
 
-    /// <summary>Builds a small status chip — coloured dot glyph plus the status text itself (never colour alone).</summary>
+    /// <summary>Builds a status readout — the pack's status dot plus the status text itself in Space Mono (never colour alone).</summary>
     protected static Control StatusChip(string status, IBrush colour)
     {
         var chip = new StackPanel { Orientation = Avalonia.Layout.Orientation.Horizontal, Spacing = CompanionTokens.SpaceSm };
-        chip.Children.Add(new TextBlock { Text = "●", FontSize = 10, Foreground = colour, VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center });
+        chip.Children.Add(new TextBlock { Text = "●", FontSize = 9, Foreground = colour, VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center });
         chip.Children.Add(new TextBlock
         {
-            Text = status,
+            Text = status.ToUpperInvariant(),
             FontFamily = CompanionTokens.MonoFont,
             FontSize = CompanionTokens.FontSizeCaption,
+            Foreground = colour,
             VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
         });
         return chip;

@@ -32,7 +32,10 @@ public sealed class App : Application
     {
         Styles.Add(new FluentTheme());
         BrandPalette.Register(this);
-        RequestedThemeVariant = ThemeVariant.Light;
+
+        // Dark first - the instrument theme is the brand's home ground
+        // (WP 14.1A); the paper theme remains a deliberate choice.
+        RequestedThemeVariant = ThemeVariant.Dark;
     }
 
     /// <inheritdoc />
@@ -41,7 +44,7 @@ public sealed class App : Application
         _settingsStore = new CompanionSettingsStore();
         var settings = _settingsStore.Load();
 
-        RequestedThemeVariant = settings.Theme == "Dark" ? ThemeVariant.Dark : ThemeVariant.Light;
+        RequestedThemeVariant = settings.Theme == "Light" ? ThemeVariant.Light : ThemeVariant.Dark;
 
         var shell = BuildShell(settings);
 

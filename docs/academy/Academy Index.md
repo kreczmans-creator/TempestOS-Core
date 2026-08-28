@@ -768,6 +768,7 @@ the full account.
 **TempestOS Companion (v0.14.0, In Preparation):**
 
 - [WP 14.0A — TempestOS Companion: Mobile Companion Application](03%20Work%20Packages/WP14.0A-tempestos-companion-mobile-companion-application.md) — the platform's first non-desktop client: a separate-process Avalonia single-view mobile app (`ADR-0113`) over a new late-bound REST query-and-action surface (`ADR-0114`), with read-only snapshot caching and explicit freshness states (`ADR-0115`, no offline writes — `AT-24`), the first concrete TempestOS visual identity, and a full-stack integration suite driving the production client against a real Host over real HTTP. Added `TD-57`/`TD-58` and `FCR-0089`–`FCR-0091`.
+- [WP 14.1A — Brand Alignment to the Tempest Engineering Design System](03%20Work%20Packages/WP14.1A-brand-alignment-to-the-tempest-engineering-design-system.md) — replaces `WP 14.0A`'s provisional branding with the Product Owner's authoritative design system: instrument-dark navy themes, the indigo/cyan/violet triad, the supplied mark/lockup carried as verbatim geometry (never redrawn), squared corners, mono machine data with UTC `Z`, no glyphs — all test-guarded by a new brand-conformance suite. Corrected `ADR-0113` in place; added `FCR-0092` (desktop realignment).
 
 See `PROJECT_STATUS.md` for current status and
 `docs/releases/v0.13.0/WorkPackages.md` for the full plan.

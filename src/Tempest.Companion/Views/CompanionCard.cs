@@ -6,80 +6,76 @@ using Tempest.Companion.Theming;
 namespace Tempest.Companion.Views;
 
 /// <summary>
-/// One card on a Companion page — the mobile counterpart of the desktop's
-/// <c>CockpitCardControl</c> (`WP 10.1A`): the identical header-plus-
-/// content anatomy and accent-left-border status treatment, re-based for
-/// a phone (full-width, touch padding, Chakra Petch card titles). Cards
-/// represent meaningful TempestOS concepts only — the regions the
-/// Engineering Cockpit already names — never arbitrary dashboard tiles.
+/// One card on a Companion page — the Tempest Engineering Design
+/// System's card anatomy (`WP 14.1A`): a flat surface fill, one
+/// hairline, a 5px squared corner, no shadow, and optionally a 2px
+/// status rule across the TOP edge (cyan default; amber/red for machine
+/// state; violet for category — the pack's own rule vocabulary). Card
+/// titles are UPPERCASE Chakra Petch labels with wide tracking; no icon
+/// glyphs — the pack ships no glyph set and bans hand-drawn ones.
 /// </summary>
 public sealed class CompanionCard : Border
 {
     private readonly StackPanel _content = new() { Spacing = CompanionTokens.SpaceMd };
 
     /// <summary>Initialises a new instance of the <see cref="CompanionCard"/> class.</summary>
-    /// <param name="glyph">A short icon glyph — Unicode geometry, the <c>IconRegistry</c> approach, never an emoji.</param>
-    /// <param name="title">The card's own title, rendered upper-case in the brand titling face.</param>
-    /// <param name="accent">An optional semantic accent (a health/status colour) shown as a thicker left border — <see langword="null"/> for neutral.</param>
-    public CompanionCard(string glyph, string title, IBrush? accent = null)
+    /// <param name="title">The card's own title, rendered as an uppercase tracked label.</param>
+    /// <param name="rule">The 2px top-edge status rule brush, or <see langword="null"/> for the default hairline-only card.</param>
+    public CompanionCard(string title, IBrush? rule = null)
     {
         var app = Avalonia.Application.Current!;
 
         CornerRadius = new Avalonia.CornerRadius(CompanionTokens.CornerRadius);
-        BorderThickness = accent is null ? new Avalonia.Thickness(1) : new Avalonia.Thickness(4, 1, 1, 1);
-        BorderBrush = accent ?? BrandPalette.Brush(app, BrandPalette.CardBorderBrushKey);
+        BorderThickness = new Avalonia.Thickness(1);
+        BorderBrush = BrandPalette.Brush(app, BrandPalette.CardBorderBrushKey);
         Background = BrandPalette.Brush(app, BrandPalette.CardBackgroundBrushKey);
-        Padding = CompanionTokens.CardPadding;
+        ClipToBounds = true;
         HorizontalAlignment = HorizontalAlignment.Stretch;
 
-        var root = new StackPanel { Spacing = CompanionTokens.SpaceMd };
+        var outer = new StackPanel();
 
-        var header = new StackPanel { Orientation = Orientation.Horizontal, Spacing = CompanionTokens.SpaceMd };
-        header.Children.Add(new TextBlock
+        if (rule is not null)
         {
-            Text = glyph,
-            FontSize = CompanionTokens.FontSizeHeading,
-            Foreground = accent ?? BrandPalette.Brush(app, BrandPalette.AccentBrushKey),
-            VerticalAlignment = VerticalAlignment.Center,
-        });
-        header.Children.Add(new TextBlock
+            // The pack's status rule: a flat 2px band across the card's
+            // whole top edge, inside the hairline.
+            outer.Children.Add(new Border { Height = CompanionTokens.RuleThickness, Background = rule });
+        }
+
+        var inner = new StackPanel { Spacing = CompanionTokens.SpaceMd, Margin = CompanionTokens.CardPadding };
+
+        inner.Children.Add(new TextBlock
         {
             Text = title.ToUpperInvariant(),
             FontFamily = CompanionTokens.TitleFont,
             FontSize = CompanionTokens.FontSizeHeading,
-            FontWeight = CompanionTokens.WeightHeading,
-            LetterSpacing = 1.2,
-            VerticalAlignment = VerticalAlignment.Center,
+            FontWeight = CompanionTokens.WeightLabel,
+            LetterSpacing = CompanionTokens.LabelTracking,
+            Foreground = BrandPalette.Brush(app, BrandPalette.HeadingTextBrushKey),
         });
+        inner.Children.Add(_content);
 
-        root.Children.Add(header);
-        root.Children.Add(_content);
-
-        Child = root;
+        outer.Children.Add(inner);
+        Child = outer;
     }
 
-    /// <summary>Adds a body text line.</summary>
+    /// <summary>Adds a body prose line (Inter).</summary>
     public CompanionCard AddLine(string text, bool secondary = false)
     {
+        var app = Avalonia.Application.Current!;
         var line = new TextBlock
         {
             Text = text,
             TextWrapping = TextWrapping.Wrap,
             FontFamily = CompanionTokens.BodyFont,
             FontSize = secondary ? CompanionTokens.FontSizeCaption : CompanionTokens.FontSizeBody,
+            Foreground = BrandPalette.Brush(app, secondary ? BrandPalette.SecondaryTextBrushKey : BrandPalette.BodyTextBrushKey),
         };
-
-        // Only secondary text overrides Foreground - a primary line must
-        // LEAVE the property unset so the theme's own text brush applies
-        // (assigning null would be a local null brush, rendering nothing).
-        if (secondary)
-            line.Foreground = BrandPalette.Brush(Avalonia.Application.Current!, BrandPalette.SecondaryTextBrushKey);
 
         _content.Children.Add(line);
         return this;
     }
 
-    /// <summary>Adds a technical/status value line in the mono face (Space Mono — the system-information voice).</summary>
+    /// <summary>Adds a machine-data line (Space Mono — IDs, units, timestamps).</summary>
     public CompanionCard AddMonoLine(string text)
     {
         _content.Children.Add(new TextBlock
@@ -88,6 +84,7 @@ public sealed class CompanionCard : Border
             TextWrapping = TextWrapping.Wrap,
             FontFamily = CompanionTokens.MonoFont,
             FontSize = CompanionTokens.FontSizeCaption,
+            Foreground = BrandPalette.Brush(Avalonia.Application.Current!, BrandPalette.BodyTextBrushKey),
         });
         return this;
     }

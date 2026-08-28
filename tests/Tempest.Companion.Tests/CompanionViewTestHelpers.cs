@@ -37,6 +37,11 @@ internal static class CompanionViewTestHelpers
         return window;
     }
 
+    /// <summary>Collects every control of type <typeparamref name="T"/> in <paramref name="root"/>'s visual tree.</summary>
+    public static IReadOnlyList<T> FindControls<T>(Visual root)
+        where T : Visual =>
+        root.GetVisualDescendants().OfType<T>().ToList();
+
     /// <summary>Collects every rendered <see cref="TextBlock"/> text in <paramref name="root"/>'s visual tree.</summary>
     public static IReadOnlyList<string> CollectTexts(Visual root) =>
         root.GetVisualDescendants().OfType<TextBlock>().Select(t => t.Text ?? string.Empty).ToList();

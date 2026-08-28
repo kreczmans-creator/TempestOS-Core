@@ -1,5 +1,6 @@
 using Avalonia.Controls;
 using Avalonia.Layout;
+using Avalonia.Media;
 using Tempest.Companion.Contracts;
 using Tempest.Companion.Services;
 using Tempest.Companion.Theming;
@@ -7,12 +8,11 @@ using Tempest.Companion.Theming;
 namespace Tempest.Companion.Views;
 
 /// <summary>
-/// Mobile project awareness — every live Project, most recent first, each
-/// row opening the project's own operational summary
-/// (<see cref="ProjectDetailPage"/>). A drill-down list, deliberately not
-/// the desktop Project Explorer tree: a phone triages projects, it does
-/// not author product structure (`WP 14.0A`'s own observe → understand →
-/// decide → act scope).
+/// Mobile project awareness — every live Project, most recent first,
+/// each row opening the project's own operational summary. Row metadata
+/// is machine data (mono, `·`-separated, per `WP 14.1A`); lifecycle is a
+/// status dot plus its own text. A drill-down list, deliberately not the
+/// desktop Project Explorer tree.
 /// </summary>
 public sealed class ProjectsPage : CompanionPage
 {
@@ -33,6 +33,15 @@ public sealed class ProjectsPage : CompanionPage
         ShowLoading();
     }
 
+    /// <summary>Maps a <c>LifecycleState</c> name to a machine-state colour — released/approved run, in-review holds, cancelled-class states are dead.</summary>
+    internal static IBrush LifecycleColour(string status) => status switch
+    {
+        "Released" or "Approved" => new SolidColorBrush(BrandPalette.Green500),
+        "InReview" => new SolidColorBrush(BrandPalette.Amber500),
+        "Cancelled" or "Obsolete" => new SolidColorBrush(BrandPalette.Red500),
+        _ => new SolidColorBrush(BrandPalette.Slate500),
+    };
+
     /// <inheritdoc />
     public override async Task RefreshAsync()
     {
@@ -45,11 +54,11 @@ public sealed class ProjectsPage : CompanionPage
     {
         if (list.Projects.Count == 0)
         {
-            yield return new EmptyStateView("⬡", "No Projects exist yet. Create one from the TempestOS desktop Workspace.") { MinHeight = 320 };
+            yield return new EmptyStateView("No Projects exist yet. Create one from the Tempest OS desktop Workspace.") { MinHeight = 320 };
             yield break;
         }
 
-        var card = new CompanionCard("⬡", $"Projects ({list.Projects.Count})");
+        var card = new CompanionCard($"Projects · {list.Projects.Count}");
 
         foreach (var project in list.Projects)
             card.AddContent(ProjectRow(project));
@@ -59,41 +68,52 @@ public sealed class ProjectsPage : CompanionPage
 
     private Control ProjectRow(ProjectSummaryDto project)
     {
+        var app = Avalonia.Application.Current!;
+
         var body = new StackPanel { Spacing = CompanionTokens.SpaceXs };
         body.Children.Add(new TextBlock
         {
             Text = project.DisplayName,
             FontFamily = CompanionTokens.BodyFont,
-            FontSize = CompanionTokens.FontSizeHeading,
+            FontSize = CompanionTokens.FontSizeBody,
             FontWeight = CompanionTokens.WeightHeading,
+            Foreground = BrandPalette.Brush(app, BrandPalette.BodyTextBrushKey),
         });
         body.Children.Add(new TextBlock
         {
-            Text = $"{project.Identifier ?? "—"} · rev {project.CurrentRevisionNumber} · {project.OutgoingLinkCount} link(s)",
+            Text = $"{project.Identifier?.ToLowerInvariant() ?? "—"} · rev {project.CurrentRevisionNumber} · {project.OutgoingLinkCount} links",
             FontFamily = CompanionTokens.MonoFont,
             FontSize = CompanionTokens.FontSizeCaption,
+            Foreground = BrandPalette.Brush(app, BrandPalette.SecondaryTextBrushKey),
         });
-        body.Children.Add(StatusChip(project.Status, CompanionStatusColors.ForHealth(project.Status == "Released" ? "Healthy" : "Unknown")));
+        body.Children.Add(StatusChip(project.Status, LifecycleColour(project.Status)));
 
         var row = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto") };
         row.Children.Add(body);
-        var chevron = new TextBlock
+        var arrow = new TextBlock
         {
-            Text = "›",
-            FontSize = 22,
-            Opacity = 0.5,
+            Text = "→",
+            FontFamily = CompanionTokens.MonoFont,
+            FontSize = 16,
+            Foreground = BrandPalette.Brush(app, BrandPalette.AccentBrushKey),
             VerticalAlignment = VerticalAlignment.Center,
         };
-        Grid.SetColumn(chevron, 1);
-        row.Children.Add(chevron);
+        Grid.SetColumn(arrow, 1);
+        row.Children.Add(arrow);
 
         var button = new Button
         {
             MinHeight = CompanionTokens.MinTouchTarget,
+            Background = Brushes.Transparent,
+            BorderThickness = new Avalonia.Thickness(0),
+            CornerRadius = new Avalonia.CornerRadius(CompanionTokens.ControlCornerRadius),
             HorizontalAlignment = HorizontalAlignment.Stretch,
             HorizontalContentAlignment = HorizontalAlignment.Stretch,
+            Padding = new Avalonia.Thickness(0, CompanionTokens.SpaceSm),
             Content = row,
         };
+        button.Resources["ButtonBackgroundPointerOver"] = new SolidColorBrush(BrandPalette.Paper050, 0.05);
+        button.Resources["ButtonBackgroundPressed"] = new SolidColorBrush(BrandPalette.Paper050, 0.09);
         Avalonia.Automation.AutomationProperties.SetName(button, $"Open project {project.DisplayName}");
         button.Click += (_, _) => _onOpenProject(project);
 

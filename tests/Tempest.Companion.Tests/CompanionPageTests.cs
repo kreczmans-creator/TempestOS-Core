@@ -110,7 +110,7 @@ public class CompanionPageTests
         await page.RefreshAsync();
         window.UpdateLayout();
 
-        AssertShowsText(window, "NOTIFICATIONS (1)");
+        AssertShowsText(window, "NOTIFICATIONS · 1");
         AssertShowsText(window, "REQ-0007");
         AssertShowsText(window, "CONNECTION");
         AssertShowsText(window, "Clear Local Data");

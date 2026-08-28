@@ -24,7 +24,9 @@ public class CompanionShellViewTests
 
         Assert.Equal(CompanionSection.Cockpit, shell.CurrentSection);
         Assert.IsType<CockpitPage>(shell.ActivePage);
-        AssertShowsText(window, "TEMPEST OS");
+        // The brand chrome: the supplied TEMPEST OS lockup artwork (a
+        // vector control, not text) plus the COMPANION surface tag.
+        Assert.NotEmpty(FindControls<Tempest.Companion.Branding.TempestLockupControl>(window));
         AssertShowsText(window, "COMPANION");
         AssertShowsText(window, "PROJECT HEALTH");
     }

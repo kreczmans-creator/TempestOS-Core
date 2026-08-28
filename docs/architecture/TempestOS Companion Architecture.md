@@ -98,9 +98,10 @@ no due-date field exists in the Domain to compute it from).
 
 ## 5. Mobile UX Architecture
 
-- **Shell** (`CompanionShellView`): branded app bar (six-blade iris mark,
-  `TEMPEST OS` wordmark, LIVE/OFFLINE pill, palette `⌘` and refresh `↻`),
-  the active page, and a five-tab thumb-reach bottom bar — Cockpit,
+- **Shell** (`CompanionShellView`): a sunken instrument app bar (the
+  supplied TEMPEST OS lockup, the COMPANION surface tag, the
+  `● LIVE`/`● OFFLINE` readout, and `CMD`/`SYNC` label actions), the
+  active page, and a five-tab thumb-reach bottom bar — Cockpit,
   Projects, Attention, Activity, More. The Cockpit is the landing tab
   (`ADR-0069`); the Command Palette is a global entry point on every page
   (`ADR-0070`), substring-filtered like the desktop's, listing
@@ -122,19 +123,36 @@ no due-date field exists in the Domain to compute it from).
 
 ## 6. Visual Identity
 
-`WP 14.0A` realises the TempestOS visual identity concretely for the
-first time (`WP10.0A Visual Design System.md` deferred all values):
-Royal Blue `#1E2F97` (identity/chrome), Electric Blue `#00AEEF`
-(interactive/live accent), Purple `#6C2BD9` (command surfaces) — used
-semantically, on otherwise neutral surfaces, in both theme variants
-(`BrandPalette`, the `ApplicationPalette` theme-dictionary pattern).
-Typography: Chakra Petch (identity/headings) and Space Mono
-(technical/status values), embedded under SIL OFL 1.1
-(`Assets/Fonts/OFL-*.txt`); Inter (body/UI) via `Avalonia.Fonts.Inter`.
-The six-blade shutter/iris mark is code-drawn `StreamGeometry`
-(`TempestLogoControl`) — no bitmap assets, the `IconGeometry` approach.
-Semantic status colours are the desktop's own `HealthColors` vocabulary
-unchanged, and status is always text + colour, never colour alone.
+`WP 14.1A` aligns the Companion to the authoritative **Tempest
+Engineering Design System** (supplied by the Product Owner; condensed
+reference: `docs/design/Tempest Engineering Design System Reference.md`),
+superseding `WP 14.0A`'s provisional values:
+
+- **Ground**: instrument-dark first — navy `#0b0e1e` page, `#111527`
+  cards, `#070915` sunken chrome; the paper theme (`#f5f6fa`) is the
+  light variant. Dark is the default.
+- **Colour**: the brand triad, read off the mark — indigo `#1c2d97`,
+  cyan `#40a2ce` (THE interactive/live accent on dark; indigo takes that
+  role on paper), violet `#6c29d9` (strictly secondary — category rules,
+  the Command surface). Green/amber/red (`#12b981`/`#f5a524`/`#e5484d`)
+  are reserved for machine state.
+- **Type**: Chakra Petch for structure (headings, UPPERCASE tracked
+  labels, readouts), Inter for prose, Space Mono for machine data — IDs,
+  units, log levels (`INFO WARN ERR OK`), and UTC timestamps with a
+  trailing `Z`.
+- **Shape**: squared corners (2px badges, 3px controls, 5px cards); a
+  2px status rule on a card's top edge; a 2px accent rule marks the
+  selected navigation item; the 64px blueprint grid at 5.5% cyan
+  textures the page ground behind opaque cards.
+- **Logo**: the supplied artwork only — `TempestMarkGeometry` carries
+  the pack's 18-stroke/hexagonal-core mark and TEMPEST OS logotype
+  coordinates verbatim (a transcription, never a redraw), rendered by
+  `TempestLogoControl`/`TempestLockupControl`; the pack's PNG lockups
+  render the About surface, and its app icons ship for the platform
+  heads. No emoji or hand-drawn glyphs anywhere; Unicode is limited to
+  `●` `→` `·`.
+- Conformance is test-guarded (`BrandConformanceTests`: token hexes,
+  stroke counts, transcription spot-checks, the corner system).
 
 ## 7. Offline Model (summary — `ADR-0115`)
 

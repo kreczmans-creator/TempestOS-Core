@@ -9,13 +9,13 @@ namespace Tempest.Companion.Views;
 
 /// <summary>
 /// The Companion's default landing screen — the mobile expression of the
-/// Engineering Cockpit (`ADR-0069`, `WP 14.0A`): the identical named
-/// regions the desktop Cockpit renders (What Needs Attention, Continue
-/// Where I Left Off, Project Health, Open Decisions, Blocked Items,
-/// Upcoming Milestones, Risk Summary, Recent Activity), prioritised for a
-/// single phone-width column — attention first, then continuity, then
-/// health, then context. Cockpit-first, not menu-first: opening the app
-/// answers "what is happening in TempestOS right now."
+/// Engineering Cockpit (`ADR-0069`), in the Tempest Engineering
+/// instrument idiom (`WP 14.1A`): the identical named regions the
+/// desktop Cockpit renders, prioritised for a phone-width column —
+/// attention first, then continuity, then health, then context. Health
+/// is a Chakra Petch readout with a status dot; machine data (counts,
+/// stamps, identifiers) is Space Mono; card status rules carry state
+/// (amber attention, red blocked, violet category), never decoration.
 /// </summary>
 public sealed class CockpitPage : CompanionPage
 {
@@ -50,17 +50,17 @@ public sealed class CockpitPage : CompanionPage
         yield return ContinueCard(cockpit);
 
         if (cockpit.OpenDecisions.Count > 0)
-            yield return ListCard("◇", "Open Decisions", cockpit.OpenDecisions, Brushes.MediumPurple);
+            yield return ListCard("Open Decisions", cockpit.OpenDecisions, new SolidColorBrush(BrandPalette.Violet500));
 
         if (cockpit.BlockedItems.Count > 0)
-            yield return ListCard("⊘", "Blocked Items", cockpit.BlockedItems, Brushes.Crimson);
+            yield return ListCard("Blocked Items", cockpit.BlockedItems, new SolidColorBrush(BrandPalette.Red500));
 
         yield return TasksCard(cockpit);
 
         if (cockpit.UpcomingMilestones.Count > 0)
-            yield return MonoListCard("⚑", "Upcoming Milestones", cockpit.UpcomingMilestones);
+            yield return MonoListCard("Upcoming Milestones", cockpit.UpcomingMilestones);
 
-        yield return new CompanionCard("△", "Risk Summary").AddMonoLine(cockpit.RiskSummary);
+        yield return new CompanionCard("Risk Summary").AddMonoLine(cockpit.RiskSummary);
         yield return RecentProjectsCard(cockpit);
         yield return ActivityCard(cockpit);
         yield return SystemFooter(cockpit);
@@ -68,17 +68,21 @@ public sealed class CockpitPage : CompanionPage
 
     private static CompanionCard HealthCard(CockpitSummaryDto cockpit)
     {
+        var app = Avalonia.Application.Current!;
         var healthColour = CompanionStatusColors.ForHealth(cockpit.Health);
-        var card = new CompanionCard("▣", "Project Health", healthColour);
+        var card = new CompanionCard("Project Health", healthColour);
 
+        // The pack's numeric-readout treatment: Chakra Petch readout with
+        // the status dot; supporting figures trail in mono.
         var hero = new StackPanel { Orientation = Orientation.Horizontal, Spacing = CompanionTokens.SpaceLg };
-        hero.Children.Add(new TextBlock { Text = "●", FontSize = 22, Foreground = healthColour, VerticalAlignment = VerticalAlignment.Center });
+        hero.Children.Add(new TextBlock { Text = "●", FontSize = 16, Foreground = healthColour, VerticalAlignment = VerticalAlignment.Center });
         hero.Children.Add(new TextBlock
         {
             Text = cockpit.Health.ToUpperInvariant(),
             FontFamily = CompanionTokens.TitleFont,
             FontSize = CompanionTokens.FontSizeHero,
-            FontWeight = FontWeight.SemiBold,
+            FontWeight = CompanionTokens.WeightHeading,
+            Foreground = BrandPalette.Brush(app, BrandPalette.HeadingTextBrushKey),
             VerticalAlignment = VerticalAlignment.Center,
         });
         card.AddContent(hero);
@@ -106,6 +110,7 @@ public sealed class CockpitPage : CompanionPage
                 Text = status.Discipline,
                 FontFamily = CompanionTokens.BodyFont,
                 FontSize = CompanionTokens.FontSizeCaption,
+                Foreground = BrandPalette.Brush(app, BrandPalette.SecondaryTextBrushKey),
             });
             cell.Children.Add(StatusChip(status.Status, CompanionStatusColors.ForHealth(status.Status)));
 
@@ -120,7 +125,7 @@ public sealed class CockpitPage : CompanionPage
 
     private static CompanionCard AttentionCard(CockpitSummaryDto cockpit)
     {
-        var card = new CompanionCard("⚠", $"What Needs Attention ({cockpit.AttentionItems.Count})", Brushes.DarkOrange);
+        var card = new CompanionCard($"Needs Attention · {cockpit.AttentionItems.Count}", new SolidColorBrush(BrandPalette.Amber500));
 
         foreach (var item in cockpit.AttentionItems.Take(6))
         {
@@ -129,14 +134,14 @@ public sealed class CockpitPage : CompanionPage
         }
 
         if (cockpit.AttentionItems.Count > 6)
-            card.AddLine($"+ {cockpit.AttentionItems.Count - 6} more — see Attention", secondary: true);
+            card.AddLine($"{cockpit.AttentionItems.Count - 6} more on the Attention screen", secondary: true);
 
         return card;
     }
 
     private CompanionCard ContinueCard(CockpitSummaryDto cockpit)
     {
-        var card = new CompanionCard("↩", "Continue Where I Left Off");
+        var card = new CompanionCard("Continue Where I Left Off", new SolidColorBrush(BrandPalette.Cyan500));
 
         if (cockpit.ContinueWhereILeftOff is not { } item)
             return card.AddLine("Nothing opened yet this session.", secondary: true);
@@ -144,49 +149,53 @@ public sealed class CockpitPage : CompanionPage
         if (_onOpenRecent is null)
             return card.AddLine(item.Title).AddMonoLine($"{item.Kind} · {FormatMoment(item.OpenedAtUtc)}");
 
-        var button = new Button
+        var body = new StackPanel { Spacing = CompanionTokens.SpaceXs };
+        body.Children.Add(new TextBlock
         {
-            MinHeight = CompanionTokens.MinTouchTarget,
-            HorizontalAlignment = HorizontalAlignment.Stretch,
-            HorizontalContentAlignment = HorizontalAlignment.Left,
-            Content = new StackPanel
-            {
-                Spacing = CompanionTokens.SpaceXs,
-                Children =
-                {
-                    new TextBlock { Text = item.Title, FontFamily = CompanionTokens.BodyFont, FontSize = CompanionTokens.FontSizeBody },
-                    new TextBlock { Text = $"{item.Kind} · {FormatMoment(item.OpenedAtUtc)}", FontFamily = CompanionTokens.MonoFont, FontSize = CompanionTokens.FontSizeCaption },
-                },
-            },
-        };
+            Text = item.Title,
+            FontFamily = CompanionTokens.BodyFont,
+            FontSize = CompanionTokens.FontSizeBody,
+            Foreground = BrandPalette.Brush(Avalonia.Application.Current!, BrandPalette.BodyTextBrushKey),
+        });
+        body.Children.Add(new TextBlock
+        {
+            Text = $"{item.Kind} · {FormatMoment(item.OpenedAtUtc)}",
+            FontFamily = CompanionTokens.MonoFont,
+            FontSize = CompanionTokens.FontSizeCaption,
+            Foreground = BrandPalette.Brush(Avalonia.Application.Current!, BrandPalette.SecondaryTextBrushKey),
+        });
+
+        var button = BrandButtons.Quiet("Resume");
+        button.HorizontalAlignment = HorizontalAlignment.Left;
         button.Click += (_, _) => _onOpenRecent(item.ObjectId, item.Kind, item.Title);
-        return card.AddContent(button);
+
+        return card.AddContent(body).AddContent(button);
     }
 
     private static CompanionCard TasksCard(CockpitSummaryDto cockpit)
     {
-        var card = new CompanionCard("☑", "Open Tasks & Actions");
+        var card = new CompanionCard("Open Tasks & Actions");
         card.AddMonoLine($"{cockpit.OpenTaskCount} open");
-        // The desktop Cockpit's own honest disclosure, repeated verbatim
-        // in spirit: no due-date field exists in the Domain, so "overdue"
-        // cannot be computed honestly - open count is the real substitute.
+        // The desktop Cockpit's own honest disclosure, repeated in spirit:
+        // no due-date field exists in the Domain, so "overdue" cannot be
+        // computed honestly - the open count is the real substitute.
         card.AddLine("Overdue tracking needs a due-date field the Engineering Domain does not carry yet.", secondary: true);
         return card;
     }
 
-    private static CompanionCard ListCard(string glyph, string title, IReadOnlyList<string> items, IBrush? accent = null)
+    private static CompanionCard ListCard(string title, IReadOnlyList<string> items, IBrush? rule = null)
     {
-        var card = new CompanionCard(glyph, $"{title} ({items.Count})", accent);
+        var card = new CompanionCard($"{title} · {items.Count}", rule);
         foreach (var item in items.Take(8))
             card.AddLine(item);
         if (items.Count > 8)
-            card.AddLine($"+ {items.Count - 8} more", secondary: true);
+            card.AddLine($"{items.Count - 8} more", secondary: true);
         return card;
     }
 
-    private static CompanionCard MonoListCard(string glyph, string title, IReadOnlyList<string> items)
+    private static CompanionCard MonoListCard(string title, IReadOnlyList<string> items)
     {
-        var card = new CompanionCard(glyph, title);
+        var card = new CompanionCard(title);
         foreach (var item in items.Take(8))
             card.AddMonoLine(item);
         return card;
@@ -194,7 +203,7 @@ public sealed class CockpitPage : CompanionPage
 
     private static CompanionCard RecentProjectsCard(CockpitSummaryDto cockpit)
     {
-        var card = new CompanionCard("⬡", "Recent Projects");
+        var card = new CompanionCard("Recent Projects");
 
         if (cockpit.RecentProjects.Count == 0)
             return card.AddLine("No Projects exist yet.", secondary: true);
@@ -207,7 +216,7 @@ public sealed class CockpitPage : CompanionPage
 
     private CompanionCard ActivityCard(CockpitSummaryDto cockpit)
     {
-        var card = new CompanionCard("↻", "Recent Activity");
+        var card = new CompanionCard("Recent Activity");
 
         if (cockpit.RecentActivity.Count == 0)
             return card.AddLine("No activity recorded this session.", secondary: true);
@@ -224,10 +233,10 @@ public sealed class CockpitPage : CompanionPage
     private static Control SystemFooter(CockpitSummaryDto cockpit) =>
         new TextBlock
         {
-            Text = $"TempestOS {cockpit.PlatformVersion} · generated {FormatMoment(cockpit.GeneratedAtUtc)}",
+            Text = $"tempest-os {cockpit.PlatformVersion} · generated {FormatMoment(cockpit.GeneratedAtUtc)}",
             FontFamily = CompanionTokens.MonoFont,
             FontSize = 10,
-            Opacity = 0.6,
+            Foreground = BrandPalette.Brush(Avalonia.Application.Current!, BrandPalette.SecondaryTextBrushKey),
             HorizontalAlignment = HorizontalAlignment.Center,
             Margin = new Avalonia.Thickness(0, CompanionTokens.SpaceMd, 0, CompanionTokens.SpaceXl),
         };

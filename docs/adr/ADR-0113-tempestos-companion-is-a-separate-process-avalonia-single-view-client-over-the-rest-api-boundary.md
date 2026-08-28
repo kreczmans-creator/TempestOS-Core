@@ -4,6 +4,17 @@
 
 Accepted — `WP 14.0A` (TempestOS Companion — Mobile Companion Application), 2026-08-28.
 
+**Corrected, `WP 14.1A` (Brand Alignment to the Tempest Engineering
+Design System), 2026-08-28**: the visual-identity paragraph of the
+Decision below originally realised the commissioning brief's provisional
+brand values (Royal Blue `#1E2F97`, Electric Blue `#00AEEF`, Purple
+`#6C2BD9`, and a code-drawn six-blade iris). The Product Owner then
+supplied the authoritative Tempest Engineering Design System, which
+supersedes those values; the paragraph is corrected in place rather than
+superseded by a new ADR — the *decision* (the Companion realises the
+brand concretely) is unchanged; only the concrete values were
+provisional and are now authoritative.
+
 Establishes the product boundary and concrete technology for TempestOS's
 first non-desktop client — the first concrete step toward `FCR-0023`
 (Offline Synchronisation & Mobile Client Support), pulled forward from
@@ -110,11 +121,17 @@ fabricating one (`FCR-0089`); milestones (`IMilestone.TargetDate`), the
 Domain's one real deadline carrier, serve deadline awareness. No brand
 assets existed anywhere in the repository — `WP 10.0A`'s Visual Design
 System explicitly deferred concrete values to an implementation phase,
-and the Companion is that phase: the brief's brand palette (Royal Blue
-`#1E2F97`, Electric Blue `#00AEEF`, Purple `#6C2BD9`), typography
-(Chakra Petch / Inter / Space Mono), and six-blade shutter/iris mark are
-realised concretely for the first time, as code-drawn vector geometry and
-OFL-licensed embedded fonts.
+and the Companion is that phase. (Corrected, `WP 14.1A`:) the identity
+is the supplied Tempest Engineering Design System — instrument-dark
+first (navy `#0b0e1e` ground), the brand triad read off the mark's own
+stroke layers (indigo `#1c2d97`, cyan `#40a2ce` as THE interactive
+accent, violet `#6c29d9` strictly secondary), green/amber/red reserved
+for machine state, squared 2/3/5px corners, top-edge card status rules,
+UPPERCASE Chakra Petch labels, Inter prose, Space Mono machine data with
+UTC `Z` timestamps, and the supplied mark/lockup artwork carried
+verbatim (`TempestMarkGeometry` transcribes the pack's own SVG
+coordinates; the pack's PNG lockups render the About surface) — never a
+redrawn logo, per the pack's own rule.
 
 ## Consequences
 

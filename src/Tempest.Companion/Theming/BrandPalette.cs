@@ -6,74 +6,150 @@ using Avalonia.Styling;
 namespace Tempest.Companion.Theming;
 
 /// <summary>
-/// The TempestOS brand palette — the platform's visual identity, realised
-/// concretely for the first time by `WP 14.0A` (the `WP 10.0A` Visual
-/// Design System deliberately deferred "concrete colour values" to an
-/// implementation phase; this is that phase for the Companion). Three
-/// brand colours, used semantically: Royal Blue is TempestOS identity
-/// (chrome, wordmark, primary emphasis); Electric Blue is the interactive
-/// accent (links, focus, live-status); Purple marks command/palette
-/// surfaces. Never decoration — every surface not carrying meaning stays
-/// neutral.
+/// The Tempest Engineering brand palette — every value transcribed from
+/// the authoritative Tempest Engineering Design System (`WP 14.1A`;
+/// `tokens/colors.css`/`tokens/semantic.css` of the supplied brand pack),
+/// which supersedes `WP 14.0A`'s provisional colours. The identity is
+/// instrument-dark first: near-black navy ground, one cyan interactive
+/// accent, violet strictly secondary, indigo the accent of the paper
+/// (light) theme; green/amber/red are reserved for machine state, never
+/// decoration.
 /// </summary>
 /// <remarks>
-/// Theme-reactive exactly as <c>Tempest.Desktop.Theming.ApplicationPalette</c>
-/// established (`WP 10.5A`): every key is registered under both
-/// <see cref="ThemeVariant.Light"/> and <see cref="ThemeVariant.Dark"/>
-/// in a real <see cref="ResourceDictionary.ThemeDictionaries"/> entry, so
-/// controls binding through <c>GetResourceObservable</c> re-resolve on
-/// theme change with no manual repaint code.
+/// <see cref="ThemeVariant.Dark"/> is the brand's home ground ("Dark
+/// first" — the design system's own words) and the Companion's default;
+/// <see cref="ThemeVariant.Light"/> maps to the pack's paper theme
+/// (<c>.t-light</c>). Registered as real theme dictionaries, the
+/// `ApplicationPalette` pattern, so controls binding via
+/// <c>GetResourceObservable</c> re-resolve on toggle.
 /// </remarks>
 public static class BrandPalette
 {
-    /// <summary>TempestOS Royal Blue — the primary brand colour.</summary>
-    public static readonly Color RoyalBlue = Color.Parse("#1E2F97");
+    // ------------------------------------------------------------
+    // Base palette — verbatim from tokens/colors.css.
+    // ------------------------------------------------------------
 
-    /// <summary>TempestOS Electric Blue — the interactive/live accent.</summary>
-    public static readonly Color ElectricBlue = Color.Parse("#00AEEF");
+    /// <summary>--navy-900 — sunken surfaces (inputs, rails, log surfaces).</summary>
+    public static readonly Color Navy900 = Color.Parse("#070915");
 
-    /// <summary>TempestOS Purple — the command/palette accent.</summary>
-    public static readonly Color Purple = Color.Parse("#6C2BD9");
+    /// <summary>--navy-800 — the page ground.</summary>
+    public static readonly Color Navy800 = Color.Parse("#0b0e1e");
 
-    /// <summary>The app bar / brand chrome background.</summary>
-    public const string ChromeBackgroundBrushKey = "Tempest.Companion.ChromeBackgroundBrush";
+    /// <summary>--navy-700 — a panel/card surface.</summary>
+    public static readonly Color Navy700 = Color.Parse("#111527");
 
-    /// <summary>Foreground rendered on brand chrome.</summary>
-    public const string ChromeForegroundBrushKey = "Tempest.Companion.ChromeForegroundBrush";
+    /// <summary>--navy-600 — a raised surface.</summary>
+    public static readonly Color Navy600 = Color.Parse("#181d33");
 
-    /// <summary>The page background behind cards.</summary>
+    /// <summary>--navy-400 — the strong border.</summary>
+    public static readonly Color Navy400 = Color.Parse("#2e3552");
+
+    /// <summary>--paper-050 — headings on dark; the paper theme's page ground.</summary>
+    public static readonly Color Paper050 = Color.Parse("#f5f6fa");
+
+    /// <summary>--paper-000 — the paper theme's surface.</summary>
+    public static readonly Color Paper000 = Color.Parse("#ffffff");
+
+    /// <summary>--paper-100 — the paper theme's sunken surface.</summary>
+    public static readonly Color Paper100 = Color.Parse("#eff0f5");
+
+    /// <summary>--slate-400 — muted text on dark.</summary>
+    public static readonly Color Slate400 = Color.Parse("#a2a5af");
+
+    /// <summary>--slate-500 — faint text.</summary>
+    public static readonly Color Slate500 = Color.Parse("#82848e");
+
+    /// <summary>--slate-600 — muted text on paper.</summary>
+    public static readonly Color Slate600 = Color.Parse("#4b5160");
+
+    /// <summary>--slate-700 — body text on paper.</summary>
+    public static readonly Color Slate700 = Color.Parse("#31343f");
+
+    /// <summary>--ink-900 — headings on paper; text on a cyan fill.</summary>
+    public static readonly Color Ink900 = Color.Parse("#16181d");
+
+    /// <summary>--indigo-600 — brand indigo, the paper theme's accent (read off the mark's outer strokes).</summary>
+    public static readonly Color Indigo600 = Color.Parse("#1c2d97");
+
+    /// <summary>--cyan-500 — brand cyan, THE interactive accent on dark (the mark's middle strokes).</summary>
+    public static readonly Color Cyan500 = Color.Parse("#40a2ce");
+
+    /// <summary>--cyan-400 — cyan's hover step.</summary>
+    public static readonly Color Cyan400 = Color.Parse("#68bde2");
+
+    /// <summary>--cyan-600 — cyan's press step.</summary>
+    public static readonly Color Cyan600 = Color.Parse("#2b7fa5");
+
+    /// <summary>--violet-500 — brand violet, strictly secondary (badges, category rules — never the primary CTA; the mark's inner strokes).</summary>
+    public static readonly Color Violet500 = Color.Parse("#6c29d9");
+
+    /// <summary>--green-500 — machine-state success. Reserved for state, never decoration.</summary>
+    public static readonly Color Green500 = Color.Parse("#12b981");
+
+    /// <summary>--amber-500 — machine-state warning.</summary>
+    public static readonly Color Amber500 = Color.Parse("#f5a524");
+
+    /// <summary>--red-500 — machine-state danger.</summary>
+    public static readonly Color Red500 = Color.Parse("#e5484d");
+
+    // ------------------------------------------------------------
+    // Semantic keys — the pack's semantic.css aliases, as theme-reactive
+    // Avalonia resources.
+    // ------------------------------------------------------------
+
+    /// <summary>The page ground (--bg-page).</summary>
     public const string PageBackgroundBrushKey = "Tempest.Companion.PageBackgroundBrush";
 
-    /// <summary>A raised card's own background.</summary>
+    /// <summary>A card/panel surface (--surface-card).</summary>
     public const string CardBackgroundBrushKey = "Tempest.Companion.CardBackgroundBrush";
 
-    /// <summary>A raised card's own border.</summary>
+    /// <summary>A card/panel hairline (--surface-card-border).</summary>
     public const string CardBorderBrushKey = "Tempest.Companion.CardBorderBrush";
 
-    /// <summary>Secondary/caption text.</summary>
+    /// <summary>A sunken surface — the app bar, nav rail, inputs (--bg-surface-sunken/--bg-input).</summary>
+    public const string SunkenBackgroundBrushKey = "Tempest.Companion.SunkenBackgroundBrush";
+
+    /// <summary>Heading text (--text-heading).</summary>
+    public const string HeadingTextBrushKey = "Tempest.Companion.HeadingTextBrush";
+
+    /// <summary>Body text (--text-body).</summary>
+    public const string BodyTextBrushKey = "Tempest.Companion.BodyTextBrush";
+
+    /// <summary>Muted/secondary text (--text-muted).</summary>
     public const string SecondaryTextBrushKey = "Tempest.Companion.SecondaryTextBrush";
 
-    /// <summary>The interactive accent (Electric Blue in both variants — the brand's own constant).</summary>
+    /// <summary>The interactive accent (--accent-primary): cyan on dark, indigo on paper.</summary>
     public const string AccentBrushKey = "Tempest.Companion.AccentBrush";
 
-    /// <summary>The command/palette accent (Purple in both variants).</summary>
+    /// <summary>The secondary brand tint (--accent-secondary): violet in both themes.</summary>
     public const string CommandAccentBrushKey = "Tempest.Companion.CommandAccentBrush";
 
-    /// <summary>The bottom navigation bar background.</summary>
-    public const string NavBarBackgroundBrushKey = "Tempest.Companion.NavBarBackgroundBrush";
+    /// <summary>Text set on an accent fill (--on-accent).</summary>
+    public const string OnAccentBrushKey = "Tempest.Companion.OnAccentBrush";
 
-    /// <summary>A selected navigation item's own foreground.</summary>
-    public const string NavSelectedBrushKey = "Tempest.Companion.NavSelectedBrush";
+    /// <summary>A selected item's fill (--bg-selected, 12% cyan).</summary>
+    public const string SelectedBackgroundBrushKey = "Tempest.Companion.SelectedBackgroundBrush";
 
-    /// <summary>An unselected navigation item's own foreground.</summary>
+    /// <summary>An unselected navigation item's foreground.</summary>
     public const string NavUnselectedBrushKey = "Tempest.Companion.NavUnselectedBrush";
+
+    /// <summary>Legacy aliases kept for the shell's chrome wiring — the app bar is a sunken instrument surface, not a filled brand banner.</summary>
+    public const string ChromeBackgroundBrushKey = SunkenBackgroundBrushKey;
+
+    /// <summary>Foreground on chrome — the heading brush.</summary>
+    public const string ChromeForegroundBrushKey = HeadingTextBrushKey;
+
+    /// <summary>The nav bar shares the sunken chrome surface.</summary>
+    public const string NavBarBackgroundBrushKey = SunkenBackgroundBrushKey;
+
+    /// <summary>A selected navigation item's foreground — the accent.</summary>
+    public const string NavSelectedBrushKey = AccentBrushKey;
 
     /// <summary>
     /// Registers every key above into <paramref name="app"/>'s own
     /// resources. Safe to call more than once — adds one more identical,
-    /// harmless merged dictionary, the exact idempotence shape
-    /// <c>ApplicationPalette.Register</c> documented for headless test
-    /// hosts.
+    /// harmless merged dictionary (the headless-test idempotence shape
+    /// `ApplicationPalette.Register` documented).
     /// </summary>
     public static void Register(Application app)
     {
@@ -81,48 +157,49 @@ public static class BrandPalette
 
         var dictionary = new ResourceDictionary();
 
-        var light = new ResourceDictionary
-        {
-            [ChromeBackgroundBrushKey] = new SolidColorBrush(RoyalBlue),
-            [ChromeForegroundBrushKey] = new SolidColorBrush(Colors.White),
-            [PageBackgroundBrushKey] = new SolidColorBrush(Color.Parse("#F2F4F8")),
-            [CardBackgroundBrushKey] = new SolidColorBrush(Colors.White),
-            [CardBorderBrushKey] = new SolidColorBrush(Color.Parse("#D5DAE4")),
-            [SecondaryTextBrushKey] = new SolidColorBrush(Color.Parse("#5A6272")),
-            [AccentBrushKey] = new SolidColorBrush(ElectricBlue),
-            [CommandAccentBrushKey] = new SolidColorBrush(Purple),
-            [NavBarBackgroundBrushKey] = new SolidColorBrush(Colors.White),
-            [NavSelectedBrushKey] = new SolidColorBrush(RoyalBlue),
-            [NavUnselectedBrushKey] = new SolidColorBrush(Color.Parse("#7A8194")),
-        };
-
+        // The instrument (dark) theme — the brand's home ground.
         var dark = new ResourceDictionary
         {
-            [ChromeBackgroundBrushKey] = new SolidColorBrush(Color.Parse("#141B4D")),
-            [ChromeForegroundBrushKey] = new SolidColorBrush(Color.Parse("#EAECF5")),
-            [PageBackgroundBrushKey] = new SolidColorBrush(Color.Parse("#14161C")),
-            [CardBackgroundBrushKey] = new SolidColorBrush(Color.Parse("#1E2129")),
-            [CardBorderBrushKey] = new SolidColorBrush(Color.Parse("#343946")),
-            [SecondaryTextBrushKey] = new SolidColorBrush(Color.Parse("#9AA1B4")),
-            [AccentBrushKey] = new SolidColorBrush(ElectricBlue),
-            [CommandAccentBrushKey] = new SolidColorBrush(Color.Parse("#9A6CF0")),
-            [NavBarBackgroundBrushKey] = new SolidColorBrush(Color.Parse("#1A1D26")),
-            [NavSelectedBrushKey] = new SolidColorBrush(ElectricBlue),
-            [NavUnselectedBrushKey] = new SolidColorBrush(Color.Parse("#79808F")),
+            [PageBackgroundBrushKey] = new SolidColorBrush(Navy800),
+            [CardBackgroundBrushKey] = new SolidColorBrush(Navy700),
+            [CardBorderBrushKey] = new SolidColorBrush(Paper050, 0.08),
+            [SunkenBackgroundBrushKey] = new SolidColorBrush(Navy900),
+            [HeadingTextBrushKey] = new SolidColorBrush(Paper050),
+            [BodyTextBrushKey] = new SolidColorBrush(Paper050, 0.82),
+            [SecondaryTextBrushKey] = new SolidColorBrush(Slate400),
+            [AccentBrushKey] = new SolidColorBrush(Cyan500),
+            [CommandAccentBrushKey] = new SolidColorBrush(Violet500),
+            [OnAccentBrushKey] = new SolidColorBrush(Navy900),
+            [SelectedBackgroundBrushKey] = new SolidColorBrush(Cyan500, 0.12),
+            [NavUnselectedBrushKey] = new SolidColorBrush(Slate500),
         };
 
-        dictionary.ThemeDictionaries[ThemeVariant.Light] = light;
+        // The paper (light) theme — documents and daylight reading.
+        var light = new ResourceDictionary
+        {
+            [PageBackgroundBrushKey] = new SolidColorBrush(Paper050),
+            [CardBackgroundBrushKey] = new SolidColorBrush(Paper000),
+            [CardBorderBrushKey] = new SolidColorBrush(Ink900, 0.08),
+            [SunkenBackgroundBrushKey] = new SolidColorBrush(Paper100),
+            [HeadingTextBrushKey] = new SolidColorBrush(Ink900),
+            [BodyTextBrushKey] = new SolidColorBrush(Slate700),
+            [SecondaryTextBrushKey] = new SolidColorBrush(Slate600),
+            [AccentBrushKey] = new SolidColorBrush(Indigo600),
+            [CommandAccentBrushKey] = new SolidColorBrush(Violet500),
+            [OnAccentBrushKey] = new SolidColorBrush(Paper050),
+            [SelectedBackgroundBrushKey] = new SolidColorBrush(Cyan500, 0.12),
+            [NavUnselectedBrushKey] = new SolidColorBrush(Slate500),
+        };
+
         dictionary.ThemeDictionaries[ThemeVariant.Dark] = dark;
+        dictionary.ThemeDictionaries[ThemeVariant.Light] = light;
 
         app.Resources.MergedDictionaries.Add(dictionary);
     }
 
     /// <summary>
     /// Resolves <paramref name="key"/> against the current theme variant,
-    /// falling back to a transparent brush if unregistered — used by
-    /// C#-constructed views at build time, with theme-reactive binding via
-    /// <see cref="Avalonia.Controls.ResourceNodeExtensions.GetResourceObservable(IResourceHost, object)"/>
-    /// where a control must repaint on toggle.
+    /// falling back to a transparent brush if unregistered.
     /// </summary>
     public static IBrush Brush(Application app, string key) =>
         app.TryGetResource(key, app.ActualThemeVariant, out var value) && value is IBrush brush

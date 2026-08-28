@@ -48,16 +48,12 @@ public sealed class CommandPaletteOverlay : Border
             FontFamily = CompanionTokens.TitleFont,
             FontSize = CompanionTokens.FontSizeTitle,
             FontWeight = CompanionTokens.WeightHeading,
-            LetterSpacing = 2,
+            LetterSpacing = CompanionTokens.WideTracking,
             Foreground = BrandPalette.Brush(app, BrandPalette.CommandAccentBrushKey),
             VerticalAlignment = VerticalAlignment.Center,
         });
-        var close = new Button
-        {
-            Content = "✕",
-            MinWidth = CompanionTokens.MinTouchTarget,
-            MinHeight = CompanionTokens.MinTouchTarget,
-        };
+        var close = BrandButtons.Quiet("Esc");
+        close.MinWidth = CompanionTokens.MinTouchTarget;
         Avalonia.Automation.AutomationProperties.SetName(close, "Close command palette");
         close.Click += (_, _) => Close();
         Grid.SetColumn(close, 1);
@@ -66,9 +62,10 @@ public sealed class CommandPaletteOverlay : Border
 
         _searchBox = new TextBox
         {
-            Watermark = "Jump to a screen, project, or action…",
+            Watermark = "Jump to a screen, project, or action",
             MinHeight = CompanionTokens.MinTouchTarget,
             FontFamily = CompanionTokens.BodyFont,
+            CornerRadius = new Avalonia.CornerRadius(CompanionTokens.ControlCornerRadius),
         };
         Avalonia.Automation.AutomationProperties.SetName(_searchBox, "Command search");
         _searchBox.TextChanged += (_, _) => Filter();
@@ -88,10 +85,10 @@ public sealed class CommandPaletteOverlay : Border
         column.Children.Add(_resultsList);
         column.Children.Add(new TextBlock
         {
-            Text = "Tap twice or press Enter to run · Esc closes",
+            Text = "tap twice or press enter to run · esc closes",
             FontFamily = CompanionTokens.MonoFont,
             FontSize = 10,
-            Opacity = 0.6,
+            Foreground = BrandPalette.Brush(app, BrandPalette.SecondaryTextBrushKey),
         });
 
         Child = new Border
@@ -158,7 +155,7 @@ public sealed class CommandPaletteOverlay : Border
                             Text = e.Category.ToUpperInvariant(),
                             FontFamily = CompanionTokens.MonoFont,
                             FontSize = 10,
-                            Opacity = 0.7,
+                            Foreground = BrandPalette.Brush(Avalonia.Application.Current!, BrandPalette.SecondaryTextBrushKey),
                             VerticalAlignment = VerticalAlignment.Center,
                             MinWidth = 64,
                         },
@@ -167,6 +164,7 @@ public sealed class CommandPaletteOverlay : Border
                             Text = e.Title,
                             FontFamily = CompanionTokens.BodyFont,
                             FontSize = CompanionTokens.FontSizeBody,
+                            Foreground = BrandPalette.Brush(Avalonia.Application.Current!, BrandPalette.BodyTextBrushKey),
                             VerticalAlignment = VerticalAlignment.Center,
                         },
                     },

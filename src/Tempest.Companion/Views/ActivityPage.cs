@@ -38,11 +38,11 @@ public sealed class ActivityPage : CompanionPage
     {
         if (activity.RecentActivity.Count == 0)
         {
-            yield return new EmptyStateView("↻", "No Workspace activity recorded since TempestOS started.") { MinHeight = 320 };
+            yield return new EmptyStateView("No Workspace activity recorded since Tempest OS started.") { MinHeight = 320 };
             yield break;
         }
 
-        var card = new CompanionCard("↻", $"Recent Activity ({activity.RecentActivity.Count})");
+        var card = new CompanionCard($"Recent Activity · {activity.RecentActivity.Count}");
 
         foreach (var item in activity.RecentActivity)
         {

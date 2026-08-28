@@ -8,9 +8,9 @@ namespace Tempest.Companion.Views;
 /// <summary>
 /// One project's own concise operational summary — identity, lifecycle
 /// status, revision, creation, and Digital Thread link count, from the
-/// already-fetched <see cref="ProjectSummaryDto"/>. A drill-down the user
-/// returns naturally from (the shell's own back affordance); deeper
-/// engineering interaction stays on the desktop by design.
+/// already-fetched <see cref="ProjectSummaryDto"/>. Record values are
+/// machine data: Space Mono, UTC stamps with a trailing <c>Z</c>
+/// (`WP 14.1A`).
 /// </summary>
 public sealed class ProjectDetailPage : CompanionPage
 {
@@ -35,8 +35,8 @@ public sealed class ProjectDetailPage : CompanionPage
     public override Task RefreshAsync()
     {
         // Renders the summary it was opened with - project-scoped live
-        // reads beyond the list DTO are future Companion capability
-        // (FCR: richer per-project drill-down), not silently faked here.
+        // reads beyond the list DTO are future Companion capability, not
+        // silently faked here.
         Render();
         return Task.CompletedTask;
     }
@@ -45,30 +45,26 @@ public sealed class ProjectDetailPage : CompanionPage
     {
         var column = new StackPanel { Spacing = CompanionTokens.CardSpacing };
 
-        var back = new Button
-        {
-            Content = "‹  Projects",
-            MinHeight = CompanionTokens.MinTouchTarget,
-            HorizontalAlignment = HorizontalAlignment.Left,
-        };
+        var back = BrandButtons.Quiet("Back to projects");
+        back.HorizontalAlignment = HorizontalAlignment.Left;
         Avalonia.Automation.AutomationProperties.SetName(back, "Back to Projects");
         back.Click += (_, _) => _onBack();
         column.Children.Add(back);
 
-        var identity = new CompanionCard("⬡", _project.DisplayName);
-        identity.AddMonoLine($"Identifier  {_project.Identifier ?? "—"}");
-        identity.AddMonoLine($"Project Id  {_project.Id:D}");
-        identity.AddContent(StatusChip(_project.Status, CompanionStatusColors.ForHealth(_project.Status == "Released" ? "Healthy" : "Unknown")));
+        var identity = new CompanionCard(_project.DisplayName, ProjectsPage.LifecycleColour(_project.Status));
+        identity.AddMonoLine($"identifier · {_project.Identifier?.ToLowerInvariant() ?? "—"}");
+        identity.AddMonoLine($"project-id · {_project.Id:D}");
+        identity.AddContent(StatusChip(_project.Status, ProjectsPage.LifecycleColour(_project.Status)));
         column.Children.Add(identity);
 
-        var record = new CompanionCard("≡", "Record");
-        record.AddMonoLine($"Revision    {_project.CurrentRevisionNumber}");
-        record.AddMonoLine($"Created     {FormatMoment(_project.CreatedAtUtc)}");
-        record.AddMonoLine($"Links out   {_project.OutgoingLinkCount}");
+        var record = new CompanionCard("Record");
+        record.AddMonoLine($"revision  · {_project.CurrentRevisionNumber}");
+        record.AddMonoLine($"created   · {FormatMoment(_project.CreatedAtUtc)}");
+        record.AddMonoLine($"links-out · {_project.OutgoingLinkCount}");
         column.Children.Add(record);
 
-        var boundary = new CompanionCard("☰", "Work With This Project");
-        boundary.AddLine("Structure, requirements, calculations and documentation for this project are authored in the TempestOS desktop Workspace.", secondary: true);
+        var boundary = new CompanionCard("Work With This Project");
+        boundary.AddLine("Structure, requirements, calculations and documentation for this project are authored in the Tempest OS desktop Workspace.", secondary: true);
         column.Children.Add(boundary);
 
         ShowContent(column);
