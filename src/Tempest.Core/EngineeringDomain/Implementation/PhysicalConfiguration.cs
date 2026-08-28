@@ -2,7 +2,7 @@ using Tempest.Core.EngineeringData;
 
 namespace Tempest.Core.EngineeringDomain;
 
-public class Assembly : EngineeringObjectBase, IAssembly
+public class Assembly : EngineeringObjectBase, IAssembly, IRehydratable<Assembly>
 {
     public IReadOnlyList<Guid> ChildIds { get; }
 
@@ -13,9 +13,16 @@ public class Assembly : EngineeringObjectBase, IAssembly
     {
         ChildIds = childIds ?? Array.Empty<Guid>();
     }
+
+    /// <inheritdoc />
+    protected override void CaptureTypeState(IDictionary<string, string?> state) =>
+        WriteGuidList(state, nameof(ChildIds), ChildIds);
+
+    static Assembly IRehydratable<Assembly>.Rehydrate(IEngineeringDocument document, IDocumentRevision currentRevision, EngineeringDomainContext context, EngineeringObjectState state) =>
+        new(document, currentRevision, context, state.Identifier, state.DisplayName, state.Metadata, state.TypeGuidList(nameof(ChildIds)));
 }
 
-public sealed class SubAssembly : Assembly, ISubAssembly
+public sealed class SubAssembly : Assembly, ISubAssembly, IRehydratable<SubAssembly>
 {
     public Guid ParentAssemblyId { get; }
 
@@ -27,9 +34,20 @@ public sealed class SubAssembly : Assembly, ISubAssembly
     {
         ParentAssemblyId = parentAssemblyId;
     }
+
+    /// <inheritdoc />
+    protected override void CaptureTypeState(IDictionary<string, string?> state)
+    {
+        base.CaptureTypeState(state);
+        state[nameof(ParentAssemblyId)] = ParentAssemblyId.ToString();
+    }
+
+    static SubAssembly IRehydratable<SubAssembly>.Rehydrate(IEngineeringDocument document, IDocumentRevision currentRevision, EngineeringDomainContext context, EngineeringObjectState state) =>
+        new(document, currentRevision, context, state.Identifier, state.DisplayName, state.Metadata,
+            state.TypeGuidOrEmpty(nameof(ParentAssemblyId)), state.TypeGuidList(nameof(ChildIds)));
 }
 
-public sealed class Part : EngineeringObjectBase, IPart
+public sealed class Part : EngineeringObjectBase, IPart, IRehydratable<Part>
 {
     public string? MaterialId { get; }
 
@@ -40,9 +58,16 @@ public sealed class Part : EngineeringObjectBase, IPart
     {
         MaterialId = materialId;
     }
+
+    /// <inheritdoc />
+    protected override void CaptureTypeState(IDictionary<string, string?> state) =>
+        state[nameof(MaterialId)] = MaterialId;
+
+    static Part IRehydratable<Part>.Rehydrate(IEngineeringDocument document, IDocumentRevision currentRevision, EngineeringDomainContext context, EngineeringObjectState state) =>
+        new(document, currentRevision, context, state.Identifier, state.DisplayName, state.Metadata, state.Type(nameof(MaterialId)));
 }
 
-public sealed class Component : EngineeringObjectBase, IComponent
+public sealed class Component : EngineeringObjectBase, IComponent, IRehydratable<Component>
 {
     public Component(
         IEngineeringDocument document, IDocumentRevision currentRevision, EngineeringDomainContext context,
@@ -50,9 +75,12 @@ public sealed class Component : EngineeringObjectBase, IComponent
         : base(document, currentRevision, context, identifier, displayName, metadata)
     {
     }
+
+    static Component IRehydratable<Component>.Rehydrate(IEngineeringDocument document, IDocumentRevision currentRevision, EngineeringDomainContext context, EngineeringObjectState state) =>
+        new(document, currentRevision, context, state.Identifier, state.DisplayName, state.Metadata);
 }
 
-public class Configuration : EngineeringObjectBase, IConfiguration
+public class Configuration : EngineeringObjectBase, IConfiguration, IRehydratable<Configuration>
 {
     public IReadOnlyList<ConfigurationMember> MemberRevisions { get; }
 
@@ -64,4 +92,15 @@ public class Configuration : EngineeringObjectBase, IConfiguration
     {
         MemberRevisions = memberRevisions ?? Array.Empty<ConfigurationMember>();
     }
+
+    /// <inheritdoc />
+    protected override void CaptureTypeState(IDictionary<string, string?> state) =>
+        WriteJson(state, nameof(MemberRevisions), MemberRevisions.ToList());
+
+    /// <summary>Reads back the member revisions this and every derived Kind persist identically — a frozen Baseline's own members are no different in shape from a working Configuration's.</summary>
+    private protected static IReadOnlyList<ConfigurationMember> ReadMemberRevisions(EngineeringObjectState state) =>
+        state.TypeJson<List<ConfigurationMember>>(nameof(MemberRevisions)) ?? [];
+
+    static Configuration IRehydratable<Configuration>.Rehydrate(IEngineeringDocument document, IDocumentRevision currentRevision, EngineeringDomainContext context, EngineeringObjectState state) =>
+        new(document, currentRevision, context, state.Identifier, state.DisplayName, state.Metadata, ReadMemberRevisions(state));
 }

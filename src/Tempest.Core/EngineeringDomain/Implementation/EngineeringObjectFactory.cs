@@ -36,6 +36,16 @@ public sealed class EngineeringObjectFactory<T> : IEngineeringObjectFactory
         instance.AttachSelfFactory((doc, rev) => _constructor(doc, rev));
         _context.Repository.Register(instance);
 
+        // `TD-85`. The document alone only ever carried Kind, created-at and
+        // prose; everything the caller passed through this factory's own
+        // constructor closure — identifier, display name, metadata, and every
+        // type-specific field — existed nowhere but in memory. Persisting the
+        // object's own state here is what makes the object, rather than only
+        // its document, survive a restart. A context composed without a state
+        // store (every pre-`TD-85` hand-assembled one) is unaffected.
+        if (_context.ObjectStateStore is { } stateStore)
+            await stateStore.SaveAsync(instance.CaptureState(), cancellationToken).ConfigureAwait(false);
+
         return instance;
     }
 }

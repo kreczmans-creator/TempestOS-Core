@@ -2,7 +2,7 @@ using Tempest.Core.EngineeringData;
 
 namespace Tempest.Core.EngineeringDomain;
 
-public sealed class Portfolio : EngineeringObjectBase, IPortfolio
+public sealed class Portfolio : EngineeringObjectBase, IPortfolio, IRehydratable<Portfolio>
 {
     public IReadOnlyList<Guid> ProgrammeIds { get; }
 
@@ -13,9 +13,16 @@ public sealed class Portfolio : EngineeringObjectBase, IPortfolio
     {
         ProgrammeIds = programmeIds ?? Array.Empty<Guid>();
     }
+
+    /// <inheritdoc />
+    protected override void CaptureTypeState(IDictionary<string, string?> state) =>
+        WriteGuidList(state, nameof(ProgrammeIds), ProgrammeIds);
+
+    static Portfolio IRehydratable<Portfolio>.Rehydrate(IEngineeringDocument document, IDocumentRevision currentRevision, EngineeringDomainContext context, EngineeringObjectState state) =>
+        new(document, currentRevision, context, state.Identifier, state.DisplayName, state.Metadata, state.TypeGuidList(nameof(ProgrammeIds)));
 }
 
-public sealed class Programme : EngineeringObjectBase, IProgramme
+public sealed class Programme : EngineeringObjectBase, IProgramme, IRehydratable<Programme>
 {
     public Guid? PortfolioId { get; }
     public IReadOnlyList<Guid> ProjectIds { get; }
@@ -29,9 +36,20 @@ public sealed class Programme : EngineeringObjectBase, IProgramme
         PortfolioId = portfolioId;
         ProjectIds = projectIds ?? Array.Empty<Guid>();
     }
+
+    /// <inheritdoc />
+    protected override void CaptureTypeState(IDictionary<string, string?> state)
+    {
+        state[nameof(PortfolioId)] = PortfolioId?.ToString();
+        WriteGuidList(state, nameof(ProjectIds), ProjectIds);
+    }
+
+    static Programme IRehydratable<Programme>.Rehydrate(IEngineeringDocument document, IDocumentRevision currentRevision, EngineeringDomainContext context, EngineeringObjectState state) =>
+        new(document, currentRevision, context, state.Identifier, state.DisplayName, state.Metadata,
+            state.TypeGuid(nameof(PortfolioId)), state.TypeGuidList(nameof(ProjectIds)));
 }
 
-public sealed class Project : EngineeringObjectBase, IProject
+public sealed class Project : EngineeringObjectBase, IProject, IRehydratable<Project>
 {
     public Guid? ProgrammeId { get; }
 
@@ -42,4 +60,11 @@ public sealed class Project : EngineeringObjectBase, IProject
     {
         ProgrammeId = programmeId;
     }
+
+    /// <inheritdoc />
+    protected override void CaptureTypeState(IDictionary<string, string?> state) =>
+        state[nameof(ProgrammeId)] = ProgrammeId?.ToString();
+
+    static Project IRehydratable<Project>.Rehydrate(IEngineeringDocument document, IDocumentRevision currentRevision, EngineeringDomainContext context, EngineeringObjectState state) =>
+        new(document, currentRevision, context, state.Identifier, state.DisplayName, state.Metadata, state.TypeGuid(nameof(ProgrammeId)));
 }

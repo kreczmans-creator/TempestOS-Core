@@ -61,6 +61,119 @@ public abstract class EngineeringObjectBase :
     internal void AttachSelfFactory(Func<IEngineeringDocument, IDocumentRevision, EngineeringObjectBase> selfFactory) =>
         _selfFactory = selfFactory;
 
+    // ----------------------------------------------------------------
+    // Durable object state (`TD-85`)
+    // ----------------------------------------------------------------
+
+    /// <summary>
+    /// Captures this object's own complete state for persistence
+    /// (`TD-85`) — everything that must come back after a restart for
+    /// this to be the same object.
+    /// </summary>
+    internal EngineeringObjectState CaptureState()
+    {
+        var typeState = new Dictionary<string, string?>(StringComparer.Ordinal);
+        CaptureTypeState(typeState);
+
+        lock (_lifecycleLock)
+        {
+            lock (_structuralLock)
+            {
+                return new EngineeringObjectState(
+                    Id,
+                    Kind,
+                    Identifier,
+                    _displayName,
+                    Metadata,
+                    _status,
+                    _parentId,
+                    _isDeleted,
+                    new EngineeringObjectBomLineState(_quantity, _unitOfMeasure, _findNumber, _itemNumber, _referenceDesignator),
+                    _history.Select(h => new EngineeringObjectTransitionState(h.From, h.To, h.ActorPrincipalId, h.OccurredAt, h.ApprovalId)).ToList(),
+                    _attachments.Select(a => new EngineeringObjectAttachmentState(a.Id, a.FileName, a.ContentType, a.SizeInBytes)).ToList(),
+                    typeState);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Restores the mutable state a constructor cannot carry (`TD-85`) —
+    /// applied by the rehydrator immediately after reconstructing an
+    /// instance, so the object is fully itself before any caller can
+    /// observe it.
+    /// </summary>
+    /// <remarks>
+    /// Identifier, display name, metadata and every type-specific field
+    /// arrive through the rehydrating constructor; this method restores
+    /// what lives in mutable fields instead: lifecycle state and its
+    /// history, structural parent, deletion, BOM line, and attachments.
+    /// </remarks>
+    internal void RestoreState(EngineeringObjectState state)
+    {
+        ArgumentNullException.ThrowIfNull(state);
+
+        lock (_lifecycleLock)
+        {
+            _status = state.Status;
+            _history.Clear();
+            foreach (var transition in state.History)
+                _history.Add(new LifecycleTransitionRecord(transition.From, transition.To, transition.ActorPrincipalId, transition.OccurredAt, transition.ApprovalId));
+        }
+
+        lock (_attachments)
+        {
+            _attachments.Clear();
+            foreach (var attachment in state.Attachments)
+                _attachments.Add(new Attachment(attachment.Id, attachment.FileName, attachment.ContentType, attachment.SizeInBytes));
+        }
+
+        lock (_structuralLock)
+        {
+            _displayName = state.DisplayName;
+            _parentId = state.ParentId;
+            _isDeleted = state.IsDeleted;
+            _quantity = state.BomLine.Quantity;
+            _unitOfMeasure = state.BomLine.UnitOfMeasure;
+            _findNumber = state.BomLine.FindNumber;
+            _itemNumber = state.BomLine.ItemNumber;
+            _referenceDesignator = state.BomLine.ReferenceDesignator;
+        }
+    }
+
+    /// <summary>
+    /// Writes this concrete type's own state into <paramref name="state"/>
+    /// (`TD-85`). A type with fields beyond the shared facets overrides
+    /// this and writes them; its own <see cref="IRehydratable{TSelf}.Rehydrate"/>
+    /// reads them back. Each type therefore owns its own persistence,
+    /// rather than a central switch knowing every type's fields.
+    /// </summary>
+    protected virtual void CaptureTypeState(IDictionary<string, string?> state)
+    {
+    }
+
+    /// <summary>Writes a list of values into type state, as JSON.</summary>
+    protected static void WriteList(IDictionary<string, string?> state, string key, IEnumerable<string>? values) =>
+        state[key] = values is null ? null : System.Text.Json.JsonSerializer.Serialize(values.ToList());
+
+    /// <summary>Writes a list of <see cref="Guid"/> values into type state, as JSON.</summary>
+    protected static void WriteGuidList(IDictionary<string, string?> state, string key, IEnumerable<Guid>? values) =>
+        WriteList(state, key, values?.Select(v => v.ToString()));
+
+    /// <summary>Writes an arbitrary serialisable value into type state, as JSON — for a type whose own field is neither a scalar nor a list of scalars.</summary>
+    protected static void WriteJson<TValue>(IDictionary<string, string?> state, string key, TValue? value) =>
+        state[key] = value is null ? null : System.Text.Json.JsonSerializer.Serialize(value);
+
+    /// <summary>
+    /// Persists this object's own current state (`TD-85`) — called after
+    /// every mutation, and once at creation. A no-op where no state store
+    /// is composed, so every pre-`TD-85` hand-assembled context keeps
+    /// working exactly as it did.
+    /// </summary>
+    protected Task PersistStateAsync(CancellationToken cancellationToken = default) =>
+        _context.ObjectStateStore is { } store
+            ? store.SaveAsync(CaptureState(), cancellationToken)
+            : Task.CompletedTask;
+
     // IEngineeringObject
     public Guid Id => Document.Id;
     public string Kind => Document.Kind;
@@ -105,7 +218,9 @@ public abstract class EngineeringObjectBase :
             _status = target;
         }
 
-        return Task.CompletedTask;
+        // A lifecycle change is state (`TD-85`) — persisted here, so it
+        // survives restart rather than living only in this instance.
+        return PersistStateAsync(cancellationToken);
     }
 
     // IHasRevisions
@@ -200,7 +315,7 @@ public abstract class EngineeringObjectBase :
     {
         ArgumentNullException.ThrowIfNull(attachment);
         lock (_attachments) { _attachments.Add(attachment); }
-        return Task.CompletedTask;
+        return PersistStateAsync(cancellationToken);
     }
 
     public Task<IReadOnlyList<IAttachment>> GetAttachmentsAsync(CancellationToken cancellationToken = default)
@@ -226,7 +341,7 @@ public abstract class EngineeringObjectBase :
             _displayName = newDisplayName;
         }
 
-        return Task.CompletedTask;
+        return PersistStateAsync(cancellationToken);
     }
 
     // IHasParent (WP 9.0A — additive; see StructuralMutation.cs)
@@ -250,6 +365,10 @@ public abstract class EngineeringObjectBase :
         // ParentId itself only ever reflects the latest move (WP 9.0A).
         if (newParentId is { } parentId)
             await LinkAsync(parentId, "groupedUnder", cancellationToken).ConfigureAwait(false);
+
+        // The structural parent is the edge that makes an object belong to
+        // a project — it must survive restart (`TD-85`).
+        await PersistStateAsync(cancellationToken).ConfigureAwait(false);
     }
 
     private async Task GuardAgainstCircularParentAsync(Guid candidateParentId, CancellationToken cancellationToken)
@@ -295,6 +414,8 @@ public abstract class EngineeringObjectBase :
         {
             _isDeleted = true;
         }
+
+        await PersistStateAsync(cancellationToken).ConfigureAwait(false);
     }
 
     // IHasBomLine (WP 9.0B — additive; see BillOfMaterials.cs)
@@ -339,6 +460,6 @@ public abstract class EngineeringObjectBase :
             _referenceDesignator = referenceDesignator;
         }
 
-        return Task.CompletedTask;
+        return PersistStateAsync(cancellationToken);
     }
 }

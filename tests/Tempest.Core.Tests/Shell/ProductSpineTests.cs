@@ -1,5 +1,7 @@
 using Tempest.App.Projects;
 using Tempest.App.Shell;
+using Tempest.App.Workspace.Mechanical;
+using Tempest.Core.EngineeringData;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Events;
 using Tempest.Core.Identity;
@@ -14,11 +16,21 @@ namespace Tempest.Core.Tests.Shell;
 /// </summary>
 /// <remarks>
 /// Every test here runs against the <b>real</b> engineering domain
-/// (`EngineeringDomainContext` over the in-memory document store the whole
-/// domain suite uses) and the <b>real</b> settings substrate — never a mock
-/// project or a stubbed context. A project created here is the same
-/// `IProject` engineering object the Engineering Workspace, Project
-/// Explorer and audit trail already understand.
+/// (`EngineeringDomainContext` over the real, persistent
+/// `EngineeringDocumentStore` and `EngineeringObjectStateStore`) and the
+/// <b>real</b> settings substrate — never a mock project or a stubbed
+/// context. A project created here is the same `IProject` engineering
+/// object the Engineering Workspace, Project Explorer and audit trail
+/// already understand.
+///
+/// **`TD-85`.** Each `BuildSpineAsync` call is a fresh application
+/// lifetime: a brand new in-memory object graph, over whatever durable
+/// state the supplied persistence store already holds, with the real
+/// `EngineeringObjectRehydrationService` run over it exactly as the
+/// composition root runs it at startup. Sharing a persistence store
+/// between two calls therefore models a genuine close-and-relaunch, and
+/// the restart tests below prove the objects themselves come back — not
+/// merely a summary of them.
 /// </remarks>
 public class ProductSpineTests
 {
@@ -30,21 +42,29 @@ public class ProductSpineTests
         ISettingsProvider Settings,
         IEventBus EventBus);
 
-    private static Spine BuildSpine(ISettingsProvider? settings = null, IPersistenceStore? persistence = null)
+    private static async Task<Spine> BuildSpineAsync(ISettingsProvider? settings = null, IPersistenceStore? persistence = null)
     {
+        var persistenceStore = persistence ?? new Materials.InMemoryPersistenceStore();
         var principalAccessor = new CurrentPrincipalAccessor();
-        var store = new InMemoryEngineeringDocumentStore(principalAccessor);
+        var store = new EngineeringDocumentStore(persistenceStore, principalAccessor);
         var repository = new InMemoryEngineeringObjectRepository();
         var relationshipRepository = new InMemoryEngineeringRelationshipRepository();
         var relationshipDiscovery = new RelationshipDiscoveryService(relationshipRepository, repository);
         var domain = new EngineeringDomainContext(
             store, repository, relationshipRepository, new LifecycleTransitionTable(), new ValidationRuleSet(),
-            new EvidenceComposer(relationshipDiscovery, repository), principalAccessor);
+            new EvidenceComposer(relationshipDiscovery, repository), principalAccessor,
+            new EngineeringObjectStateStore(persistenceStore));
+
+        // The identical rehydration the composition root performs at
+        // startup (`TD-85`) — same registry, same service, same order.
+        var rehydrators = new EngineeringObjectRehydratorRegistry();
+        MechanicalObjectFactoryRegistry.RegisterRehydrators(rehydrators, domain);
+        await new EngineeringObjectRehydrationService(domain, rehydrators).RehydrateAsync();
 
         var eventBus = new EventBus();
         var settingsProvider = settings ?? new SettingsProvider(new Materials.InMemoryPersistenceStore(), new EventBus());
 
-        var directory = new ProjectDirectory(domain, persistence ?? new Materials.InMemoryPersistenceStore());
+        var directory = new ProjectDirectory(domain);
         var context = new ProjectContext(directory, eventBus, settingsProvider);
         var navigator = new ShellNavigator(context, eventBus, settingsProvider);
 
@@ -58,7 +78,7 @@ public class ProductSpineTests
     [Fact]
     public async Task CreateAsync_ProducesARealEngineeringObject_VisibleToTheDomainItself()
     {
-        var spine = BuildSpine();
+        var spine = await BuildSpineAsync();
 
         var project = await spine.Directory.CreateAsync("P-0027", "Apollo Pump Redesign");
 
@@ -78,7 +98,7 @@ public class ProductSpineTests
     [Fact]
     public async Task ListAsync_ReturnsEveryProject_OrderedByIdentifier()
     {
-        var spine = BuildSpine();
+        var spine = await BuildSpineAsync();
         await spine.Directory.CreateAsync("P-0031", "Data Centre Cooling");
         await spine.Directory.CreateAsync("P-0011", "Hydraulic Manifold");
         await spine.Directory.CreateAsync("P-0027", "Apollo Pump Redesign");
@@ -91,7 +111,7 @@ public class ProductSpineTests
     [Fact]
     public async Task CreateAsync_DuplicateIdentifier_IsRefused()
     {
-        var spine = BuildSpine();
+        var spine = await BuildSpineAsync();
         await spine.Directory.CreateAsync("P-0027", "Apollo Pump Redesign");
 
         await Assert.ThrowsAsync<DuplicateProjectIdentifierException>(
@@ -101,7 +121,7 @@ public class ProductSpineTests
     [Fact]
     public async Task Label_MatchesTheMockUpsOwnForm()
     {
-        var spine = BuildSpine();
+        var spine = await BuildSpineAsync();
         var project = await spine.Directory.CreateAsync("P-0027", "Apollo Pump Redesign");
 
         Assert.Equal("P-0027 Apollo Pump Redesign", project.Label);
@@ -114,7 +134,7 @@ public class ProductSpineTests
     [Fact]
     public async Task OpeningAProject_MakesItCurrent_AndPublishesTheChangeOnce()
     {
-        var spine = BuildSpine();
+        var spine = await BuildSpineAsync();
         var project = await spine.Directory.CreateAsync("P-0027", "Apollo Pump Redesign");
 
         var observed = new List<ProjectContextChangedEvent>();
@@ -133,7 +153,7 @@ public class ProductSpineTests
     [Fact]
     public async Task ReopeningTheSameProject_PublishesNoSpuriousChange()
     {
-        var spine = BuildSpine();
+        var spine = await BuildSpineAsync();
         var project = await spine.Directory.CreateAsync("P-0027", "Apollo");
         await spine.Context.OpenAsync(project.Id);
 
@@ -148,7 +168,7 @@ public class ProductSpineTests
     [Fact]
     public async Task SwitchingProject_CarriesBothEndsOfTheMove()
     {
-        var spine = BuildSpine();
+        var spine = await BuildSpineAsync();
         var first = await spine.Directory.CreateAsync("P-0011", "Hydraulic Manifold");
         var second = await spine.Directory.CreateAsync("P-0027", "Apollo");
         await spine.Context.OpenAsync(first.Id);
@@ -167,7 +187,7 @@ public class ProductSpineTests
     [Fact]
     public async Task OpeningAProjectThatDoesNotExist_IsRefused_AndLeavesTheContextUntouched()
     {
-        var spine = BuildSpine();
+        var spine = await BuildSpineAsync();
         var project = await spine.Directory.CreateAsync("P-0027", "Apollo");
         await spine.Context.OpenAsync(project.Id);
 
@@ -183,7 +203,7 @@ public class ProductSpineTests
     [Fact]
     public async Task TheApplicationStartsAtHome_WithNoProject()
     {
-        var spine = BuildSpine();
+        var spine = await BuildSpineAsync();
 
         Assert.Equal(ShellArea.Home, spine.Navigator.Current.Area);
         Assert.False(spine.Navigator.Current.IsProjectScoped);
@@ -193,7 +213,7 @@ public class ProductSpineTests
     [Fact]
     public async Task OpeningAProject_MovesIntoItsWorkspace_AndOpensTheContextInTheSameMove()
     {
-        var spine = BuildSpine();
+        var spine = await BuildSpineAsync();
         var project = await spine.Directory.CreateAsync("P-0027", "Apollo");
 
         await spine.Navigator.OpenProjectAsync(project.Id);
@@ -210,7 +230,7 @@ public class ProductSpineTests
     [Fact]
     public async Task EngineeringCannotBeEnteredWithoutAProject()
     {
-        var spine = BuildSpine();
+        var spine = await BuildSpineAsync();
 
         await Assert.ThrowsAsync<InvalidOperationException>(() => spine.Navigator.GoToEngineeringAsync());
 
@@ -220,7 +240,7 @@ public class ProductSpineTests
     [Fact]
     public async Task EngineeringIsEnteredFromTheProject_AndCarriesItsScope()
     {
-        var spine = BuildSpine();
+        var spine = await BuildSpineAsync();
         var project = await spine.Directory.CreateAsync("P-0027", "Apollo");
         await spine.Navigator.OpenProjectAsync(project.Id);
 
@@ -234,7 +254,7 @@ public class ProductSpineTests
     [Fact]
     public async Task ReturningFromEngineering_KeepsTheProjectContext()
     {
-        var spine = BuildSpine();
+        var spine = await BuildSpineAsync();
         var project = await spine.Directory.CreateAsync("P-0027", "Apollo");
         await spine.Navigator.OpenProjectAsync(project.Id);
         await spine.Navigator.GoToEngineeringAsync();
@@ -249,7 +269,7 @@ public class ProductSpineTests
     [Fact]
     public async Task GoingHomeFromAProject_KeepsTheProjectOpen_SoTheUserCanReturn()
     {
-        var spine = BuildSpine();
+        var spine = await BuildSpineAsync();
         var project = await spine.Directory.CreateAsync("P-0027", "Apollo");
         await spine.Navigator.OpenProjectAsync(project.Id);
 
@@ -262,7 +282,7 @@ public class ProductSpineTests
     [Fact]
     public async Task ClosingTheProject_ClearsTheContext_AndReturnsToTheBrowser()
     {
-        var spine = BuildSpine();
+        var spine = await BuildSpineAsync();
         var project = await spine.Directory.CreateAsync("P-0027", "Apollo");
         await spine.Navigator.OpenProjectAsync(project.Id);
 
@@ -275,7 +295,7 @@ public class ProductSpineTests
     [Fact]
     public async Task EveryNavigation_PublishesTheMoveOnTheEventBus()
     {
-        var spine = BuildSpine();
+        var spine = await BuildSpineAsync();
         var project = await spine.Directory.CreateAsync("P-0027", "Apollo");
 
         var moves = new List<ShellLocationChangedEvent>();
@@ -295,7 +315,7 @@ public class ProductSpineTests
     [Fact]
     public async Task NavigatingNowhere_PublishesNothing()
     {
-        var spine = BuildSpine();
+        var spine = await BuildSpineAsync();
         await spine.Navigator.GoToProjectsAsync();
 
         var moves = new List<ShellLocationChangedEvent>();
@@ -315,20 +335,20 @@ public class ProductSpineTests
     {
         // One settings store and one persistence store stand for one
         // machine's durable state across two application lifetimes. The
-        // domain object graph is deliberately NOT shared: it is in-memory
-        // by design (`ADR-0077`), which is exactly the boundary the
-        // directory's durable index exists to cross.
+        // domain object graph is deliberately NOT shared — the second
+        // lifetime starts with an empty repository and rebuilds it from
+        // the durable store, exactly as a relaunch does (`TD-85`).
         var settings = new SettingsProvider(new Materials.InMemoryPersistenceStore(), new EventBus());
         var persistence = new Materials.InMemoryPersistenceStore();
 
-        var first = BuildSpine(settings, persistence);
+        var first = await BuildSpineAsync(settings, persistence);
         var project = await first.Directory.CreateAsync("P-0027", "Apollo Pump Redesign");
         await first.Navigator.OpenProjectAsync(project.Id, ProjectArea.Requirements);
         await first.Context.SaveAsync();
         await first.Navigator.SaveAsync();
 
         // A second lifetime: fresh domain, same durable state.
-        var second = BuildSpine(settings, persistence);
+        var second = await BuildSpineAsync(settings, persistence);
         await second.Navigator.LoadAsync();
 
         Assert.Equal(ShellArea.ProjectWorkspace, second.Navigator.Current.Area);
@@ -343,11 +363,11 @@ public class ProductSpineTests
     public async Task AfterRestart_EveryProjectIsStillListed()
     {
         var persistence = new Materials.InMemoryPersistenceStore();
-        var first = BuildSpine(persistence: persistence);
+        var first = await BuildSpineAsync(persistence: persistence);
         await first.Directory.CreateAsync("P-0011", "Hydraulic Manifold");
         await first.Directory.CreateAsync("P-0027", "Apollo Pump Redesign");
 
-        var second = BuildSpine(persistence: persistence);
+        var second = await BuildSpineAsync(persistence: persistence);
         var projects = await second.Directory.ListAsync();
 
         Assert.Equal(["P-0011", "P-0027"], projects.Select(p => p.Identifier));
@@ -357,7 +377,7 @@ public class ProductSpineTests
     public async Task AfterRestart_AgainstThePersistedProject_TheContextAndLocationBothReturn()
     {
         var settings = new SettingsProvider(new Materials.InMemoryPersistenceStore(), new EventBus());
-        var spine = BuildSpine(settings);
+        var spine = await BuildSpineAsync(settings);
         var project = await spine.Directory.CreateAsync("P-0027", "Apollo Pump Redesign");
 
         await spine.Navigator.OpenProjectAsync(project.Id, ProjectArea.Requirements);
@@ -379,13 +399,13 @@ public class ProductSpineTests
     public async Task AfterRestart_WhenTheSavedProjectHasBeenDeleted_ItDegradesToHome_NeverThrows()
     {
         var settings = new SettingsProvider(new Materials.InMemoryPersistenceStore(), new EventBus());
-        var spine = BuildSpine(settings);
+        var spine = await BuildSpineAsync(settings);
         var project = await spine.Directory.CreateAsync("P-0027", "Apollo");
         await spine.Navigator.OpenProjectAsync(project.Id);
         await spine.Navigator.SaveAsync();
 
         // A different domain: the saved project no longer resolves.
-        var afterDeletion = BuildSpine(settings);
+        var afterDeletion = await BuildSpineAsync(settings);
 
         var exception = await Record.ExceptionAsync(() => afterDeletion.Navigator.LoadAsync());
 
@@ -398,7 +418,7 @@ public class ProductSpineTests
     public async Task AfterRestart_ACorruptedSavedLocation_DegradesToHome_NeverThrows()
     {
         var settings = new SettingsProvider(new Materials.InMemoryPersistenceStore(), new EventBus());
-        var spine = BuildSpine(settings);
+        var spine = await BuildSpineAsync(settings);
         await settings.SetValueAsync(ShellNavigator.SettingKey, "{{{not json");
         await settings.SetValueAsync(ProjectContext.SettingKey, "{{{not json");
 
@@ -413,11 +433,11 @@ public class ProductSpineTests
     public async Task ANonProjectLocation_IsRecoveredWithoutNeedingAProject()
     {
         var settings = new SettingsProvider(new Materials.InMemoryPersistenceStore(), new EventBus());
-        var spine = BuildSpine(settings);
+        var spine = await BuildSpineAsync(settings);
         await spine.Navigator.GoToProjectsAsync();
         await spine.Navigator.SaveAsync();
 
-        var reopened = BuildSpine(settings);
+        var reopened = await BuildSpineAsync(settings);
         await reopened.Navigator.LoadAsync();
 
         Assert.Equal(ShellArea.Projects, reopened.Navigator.Current.Area);
@@ -426,7 +446,7 @@ public class ProductSpineTests
     [Fact]
     public async Task RefreshAsync_PicksUpARenamedProject_WithoutReopening()
     {
-        var spine = BuildSpine();
+        var spine = await BuildSpineAsync();
         var project = await spine.Directory.CreateAsync("P-0027", "Apollo");
         await spine.Context.OpenAsync(project.Id);
 

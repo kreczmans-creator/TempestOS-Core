@@ -36,5 +36,10 @@ await shell.StartAsync();
 // the identical call's return value instead.
 _ = EngineeringWorkspaceComposer.RegisterEngineeringDisciplines(manager, host);
 
+// `TD-85`. Bring back every engineering object a previous run persisted,
+// before the input loop can read the object graph — the console shell and
+// the desktop shell recover the identical work, from the identical store.
+_ = await EngineeringWorkspaceComposer.RehydrateEngineeringObjectsAsync(host);
+
 await shell.RunInputLoopAsync();
 await shell.StopAsync();

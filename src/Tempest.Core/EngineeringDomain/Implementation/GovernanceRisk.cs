@@ -2,7 +2,7 @@ using Tempest.Core.EngineeringData;
 
 namespace Tempest.Core.EngineeringDomain;
 
-public sealed class Issue : EngineeringObjectBase, IIssue
+public sealed class Issue : EngineeringObjectBase, IIssue, IRehydratable<Issue>
 {
     public Issue(
         IEngineeringDocument document, IDocumentRevision currentRevision, EngineeringDomainContext context,
@@ -10,9 +10,12 @@ public sealed class Issue : EngineeringObjectBase, IIssue
         : base(document, currentRevision, context, identifier, displayName, metadata)
     {
     }
+
+    static Issue IRehydratable<Issue>.Rehydrate(IEngineeringDocument document, IDocumentRevision currentRevision, EngineeringDomainContext context, EngineeringObjectState state) =>
+        new(document, currentRevision, context, state.Identifier, state.DisplayName, state.Metadata);
 }
 
-public class Risk : EngineeringObjectBase, IRisk
+public class Risk : EngineeringObjectBase, IRisk, IRehydratable<Risk>
 {
     public string? Likelihood { get; }
     public string? Severity { get; }
@@ -25,9 +28,20 @@ public class Risk : EngineeringObjectBase, IRisk
         Likelihood = likelihood;
         Severity = severity;
     }
+
+    /// <inheritdoc />
+    protected override void CaptureTypeState(IDictionary<string, string?> state)
+    {
+        state[nameof(Likelihood)] = Likelihood;
+        state[nameof(Severity)] = Severity;
+    }
+
+    static Risk IRehydratable<Risk>.Rehydrate(IEngineeringDocument document, IDocumentRevision currentRevision, EngineeringDomainContext context, EngineeringObjectState state) =>
+        new(document, currentRevision, context, state.Identifier, state.DisplayName, state.Metadata,
+            state.Type(nameof(Likelihood)), state.Type(nameof(Severity)));
 }
 
-public sealed class Hazard : Risk, IHazard
+public sealed class Hazard : Risk, IHazard, IRehydratable<Hazard>
 {
     public Hazard(
         IEngineeringDocument document, IDocumentRevision currentRevision, EngineeringDomainContext context,
@@ -35,9 +49,13 @@ public sealed class Hazard : Risk, IHazard
         : base(document, currentRevision, context, identifier, displayName, metadata, likelihood, severity)
     {
     }
+
+    static Hazard IRehydratable<Hazard>.Rehydrate(IEngineeringDocument document, IDocumentRevision currentRevision, EngineeringDomainContext context, EngineeringObjectState state) =>
+        new(document, currentRevision, context, state.Identifier, state.DisplayName, state.Metadata,
+            state.Type(nameof(Likelihood)), state.Type(nameof(Severity)));
 }
 
-public sealed class Decision : EngineeringObjectBase, IDecision
+public sealed class Decision : EngineeringObjectBase, IDecision, IRehydratable<Decision>
 {
     public string Rationale { get; }
 
@@ -48,9 +66,16 @@ public sealed class Decision : EngineeringObjectBase, IDecision
     {
         Rationale = rationale;
     }
+
+    /// <inheritdoc />
+    protected override void CaptureTypeState(IDictionary<string, string?> state) =>
+        state[nameof(Rationale)] = Rationale;
+
+    static Decision IRehydratable<Decision>.Rehydrate(IEngineeringDocument document, IDocumentRevision currentRevision, EngineeringDomainContext context, EngineeringObjectState state) =>
+        new(document, currentRevision, context, state.Identifier, state.DisplayName, state.Metadata, state.Type(nameof(Rationale)) ?? string.Empty);
 }
 
-public sealed class Assumption : EngineeringObjectBase, IAssumption
+public sealed class Assumption : EngineeringObjectBase, IAssumption, IRehydratable<Assumption>
 {
     public Assumption(
         IEngineeringDocument document, IDocumentRevision currentRevision, EngineeringDomainContext context,
@@ -58,4 +83,7 @@ public sealed class Assumption : EngineeringObjectBase, IAssumption
         : base(document, currentRevision, context, identifier, displayName, metadata)
     {
     }
+
+    static Assumption IRehydratable<Assumption>.Rehydrate(IEngineeringDocument document, IDocumentRevision currentRevision, EngineeringDomainContext context, EngineeringObjectState state) =>
+        new(document, currentRevision, context, state.Identifier, state.DisplayName, state.Metadata);
 }

@@ -110,17 +110,20 @@ until a real architectural boundary was crossed: **the engineering object
 graph is in-memory by design** (`ADR-0077`). Documents persist; the
 objects reconstructed over them do not.
 
-`ProjectDirectory` therefore keeps its own small durable
-`Projects.Index` in `IPersistenceStore` — the identical, already-approved
-pattern `MaterialCatalog` uses for exactly the same reason (`ADR-0055`),
-never a second storage mechanism. The live object stays authoritative
-whenever it exists; the index is the fallback that makes a project
-reopenable.
+`ProjectDirectory` therefore kept its own small durable
+`Projects.Index` in `IPersistenceStore` — a **workaround for projects, not
+a fix for the boundary**, recorded honestly as `TD-85`. Every other
+engineering object still vanished from the object graph on restart.
 
-This is a **workaround for projects, not a fix for the boundary.** Every
-other engineering object still vanishes from the object graph on restart.
-Recorded honestly as `TD-85`; the real fix is rehydrating the repository
-from the durable document store at startup.
+> **Closed (`TD-85`, `ADR-0113`, 2026-08-28).** The boundary is now fixed
+> at its source. Engineering object state is durable, each canonical type
+> rehydrates itself, and `EngineeringObjectRehydrationService` rebuilds
+> the object graph and the relationship index at startup — so a relaunched
+> TempestOS recovers the objects themselves, not a summary of them.
+> `Projects.Index` was **removed**, not retained: `ProjectDirectory` now
+> reads the one object graph, and a recovered project is a live `IProject`
+> with its real lifecycle state, relationships, revisions and contents.
+> See `docs/architecture/Engineering Object Rehydration Architecture.md`.
 
 ## What is proven
 
@@ -140,7 +143,9 @@ each against the real `MaterialCatalog`, `RequirementsService` and
 
 Four mutations were run and killed: engineering reachable without a
 project; a phantom project location restored; a non-existent project
-opened; the durable index not written.
+opened; the durable index not written. (The last of those was retired with
+the index itself by `TD-85`; the restart journeys are now killed instead by
+removing the rehydration step from the composition root.)
 
 ## What this deliberately did not do
 

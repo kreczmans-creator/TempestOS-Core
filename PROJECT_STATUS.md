@@ -1,5 +1,73 @@
 # TempestOS — Project Status
 
+**Last Updated:** 2026-08-28 (Engineering Object Rehydration — `TD-85`,
+`ADR-0113`). **The `v0.13.x` train remains CLOSED.**
+
+**What this pass delivered — the persistence boundary is closed.** The
+Product Spine's own restart journey exposed a real boundary: engineering
+*documents* were durable, but the objects reconstructed over them were not
+(`ADR-0077`), so a relaunched TempestOS silently started a new object graph
+over the user's still-persisted work. The previous pass worked around it
+for projects alone, with a second durable `Projects.Index`, and recorded
+the rest honestly as `TD-85`.
+
+**The investigation's decisive finding** was that the obvious fix — a
+Kind→constructor map over the existing discipline factory registries —
+could never have worked. Those registries are in `Tempest.App` and are
+explicitly "never a Domain-layer registry contract", and, more
+fundamentally, `EngineeringObjectFactory<T>.CreateAsync` persisted only the
+document (`Kind`, created-at, prose): **the constructor arguments such a
+map would need had never been written to disk at all.** Object state had to
+become durable first.
+
+**Built and proven:** `EngineeringObjectState` — the one canonical model's
+own serialisation, never a second model — written through
+`IEngineeringObjectStateStore` into the same `IPersistenceStore` the
+document store already uses, at creation and after every state-changing
+mutation, with no save step to forget; `CaptureTypeState` +
+`IRehydratable<TSelf>.Rehydrate` so each of the 30 concrete canonical types
+owns both directions of its own persistence, keyed by `nameof`, with **no
+central switch over Kind anywhere** and a compile error if a type cannot
+rebuild itself; a Domain-layer Kind→rehydrator registry populated by each
+Kind's own declaring class using the constants it already owns (`ADR-0105`)
+— 29 Kinds, every Kind with a live write path in `src/`;
+`EngineeringObjectRehydrationService`, run by the shared composition root
+in **both** the desktop and console entry points, which reconstructs
+objects, restores lifecycle/history/parent/deletion/BOM/attachments,
+reattaches self-factories, rebuilds the relationship index from durable
+references, and never overwrites an object already live in the process;
+and durable relationship provenance so a rebuilt link is not credited to
+whoever happens to be signed in at startup.
+
+**`Projects.Index` was removed, not retained** — collection, DTO,
+read/write paths and its `IPersistenceStore` dependency — leaving one
+object model and one persistence authority. A recovered project is now a
+live `IProject` with its real lifecycle state, relationships, revisions and
+contents, not a name-and-status snapshot.
+
+**Proven, not round-tripped.** The Definition of Done was never "the object
+serialises and deserialises". An 18-step acceptance journey drives the real
+`MainWindow` across **three** application lifetimes over one persistence
+root: create a project and engineering objects through the real production
+command path → transition, rename, set a BOM line, link, revise → close →
+**relaunch** → the objects come back as their own concrete types with
+identity, lifecycle, history, relationships, BOM data, parent and revisions
+intact → open the project by clicking the real button in the real project
+browser → **keep working** (another transition, another revision, another
+new part) → **relaunch again** → that work is there too. Nothing in it
+inspects a file on disk. Plus 24 focused tests over the real persistent
+stores. **Thirteen mutations run, thirteen killed.**
+
+Suite: Core 2464/2466 (the same two pre-existing Linux-environment cases),
+Desktop 252/252, 0 warnings, 0 errors. Decision: `ADR-0113`. Architecture:
+`docs/architecture/Engineering Object Rehydration Architecture.md`.
+Academy: `02 Runtime Architecture/34-engineering-object-rehydration.md`.
+Disclosed residual debt, all new and all bounded: `TD-86` (per-mutation
+write volume), `TD-87` (versionless state schema), `TD-88` (eager startup
+rehydration).
+
+**The prior status block, below this point, is retained:**
+
 **Last Updated:** 2026-08-28 (Product Convergence & Recovery Programme —
 the Product Spine). **The `v0.13.x` train remains CLOSED.**
 
@@ -44,6 +112,9 @@ in-memory, so documents persist but objects do not. Projects now keep a
 durable index (`MaterialCatalog`'s own approved pattern, `ADR-0055`); every
 other engineering object still vanishes on restart. That is recorded as
 `TD-85` as a workaround, not presented as a fix.
+
+> **Superseded by the block above (`TD-85`, `ADR-0113`).** The boundary is
+> now fixed at its source and the durable index was deleted.
 
 Suite: Core 2440/2442 (the two pre-existing Linux-environment cases),
 Desktop 250/250, 0 warnings, 0 errors. Architecture:

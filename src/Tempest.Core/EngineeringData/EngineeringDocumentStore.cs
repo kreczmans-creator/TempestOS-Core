@@ -186,7 +186,7 @@ public sealed class EngineeringDocumentStore : IEngineeringDocumentStore
         if (await ReadDocumentAsync(targetDocumentId, cancellationToken).ConfigureAwait(false) is null)
             throw new EngineeringDocumentNotFoundException(targetDocumentId);
 
-        var dto = new DocumentReferenceDto(targetDocumentId, relationshipKind);
+        var dto = new DocumentReferenceDto(targetDocumentId, relationshipKind, ResolveAuthorPrincipalId(), DateTimeOffset.UtcNow);
         var key = Guid.NewGuid().ToString("N");
 
         await _persistenceStore.WriteAsync(
@@ -230,7 +230,7 @@ public sealed class EngineeringDocumentStore : IEngineeringDocumentStore
                 throw new EngineeringDataException($"Reference '{key}' for document '{documentId}' could not be deserialised.", ex);
             }
 
-            references.Add(new DocumentReference(documentId, dto.TargetDocumentId, dto.RelationshipKind));
+            references.Add(new DocumentReference(documentId, dto.TargetDocumentId, dto.RelationshipKind, dto.CreatedByPrincipalId, dto.CreatedAt));
         }
 
         return references;

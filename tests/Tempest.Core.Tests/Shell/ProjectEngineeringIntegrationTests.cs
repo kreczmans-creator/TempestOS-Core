@@ -44,17 +44,17 @@ public class ProjectEngineeringIntegrationTests
         var relationshipRepository = new InMemoryEngineeringRelationshipRepository();
         var relationshipDiscovery = new RelationshipDiscoveryService(relationshipRepository, repository);
 
-        // The domain uses the in-memory document store for object graph
-        // reads (ADR-0077); the persistent store backs materials,
-        // requirements and verification.
+        // One persistence store backs everything — the object graph
+        // (`TD-85`), materials, requirements and verification alike.
         var domain = new EngineeringDomainContext(
-            new InMemoryEngineeringDocumentStore(principal), repository, relationshipRepository,
+            documentStore, repository, relationshipRepository,
             new LifecycleTransitionTable(), new ValidationRuleSet(),
-            new EvidenceComposer(relationshipDiscovery, repository), principal);
+            new EvidenceComposer(relationshipDiscovery, repository), principal,
+            new EngineeringObjectStateStore(persistence));
 
         var settings = new SettingsProvider(new Materials.InMemoryPersistenceStore(), new EventBus());
         var eventBus = new EventBus();
-        var directory = new ProjectDirectory(domain, persistence);
+        var directory = new ProjectDirectory(domain);
         var context = new ProjectContext(directory, eventBus, settings);
 
         return new Rig(domain, directory, context, new ShellNavigator(context, eventBus, settings),

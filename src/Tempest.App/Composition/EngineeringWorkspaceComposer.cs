@@ -155,6 +155,54 @@ public static class EngineeringWorkspaceComposer
         // does.
         MacroWorkspaceRegistration.Register(commandDispatcher, commandRegistry, macroManager);
 
+        // `TD-85`. Each discipline declares how its own Kinds come back
+        // after a restart, using the same named Kind constants it already
+        // owns (`ADR-0105`) — registered here, alongside the discipline
+        // registration it belongs to, so a discipline can never be wired
+        // for creation but silently forgotten for recovery.
+        var rehydrators = (IEngineeringObjectRehydratorRegistry)services.GetService(typeof(IEngineeringObjectRehydratorRegistry));
+        MechanicalObjectFactoryRegistry.RegisterRehydrators(rehydrators, domainContext);
+        DocumentObjectFactoryRegistry.RegisterRehydrators(rehydrators, domainContext);
+        CalculationObjectFactoryRegistry.RegisterRehydrators(rehydrators, domainContext);
+        VerificationActivityFactoryRegistry.RegisterRehydrators(rehydrators, domainContext);
+        ManufacturingObjectFactoryRegistry.RegisterRehydrators(rehydrators, domainContext);
+
+        // The Kinds only the sample modules create (`TD-75`: the samples
+        // ship transitively). They are idempotent across restarts, so
+        // without their own rehydrators the sample graph would be built
+        // once and then silently lose most of itself on the next launch.
+        SampleEngineeringObjectRehydrators.RegisterAll(rehydrators, domainContext);
+
         return calculationTemplateRegistry;
+    }
+
+    /// <summary>
+    /// Reconstructs every engineering object persisted by a previous run,
+    /// and every relationship between them, into the live repositories
+    /// (`TD-85`).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Must be called after <see cref="RegisterEngineeringDisciplines"/> —
+    /// which is what tells the platform how each Kind comes back — and
+    /// before anything reads the object repository, so a user never sees
+    /// an empty workspace that then fills in underneath them.
+    /// </para>
+    /// <para>
+    /// This is the step that makes persistence real rather than
+    /// theoretical: without it the documents survive a restart but the
+    /// engineering work does not (`ADR-0077`'s own disclosed gap).
+    /// </para>
+    /// </remarks>
+    /// <returns>A full account of what was recovered, and of anything that could not be.</returns>
+    /// <exception cref="InvalidOperationException"><paramref name="host"/>'s own <see cref="ITempestHost.Services"/> is not yet resolvable.</exception>
+    public static Task<EngineeringRehydrationResult> RehydrateEngineeringObjectsAsync(ITempestHost host, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(host);
+
+        var services = host.Services ?? throw new InvalidOperationException("The Host must be running (ITempestHost.Services resolvable) before engineering objects can be rehydrated.");
+        var rehydrationService = (EngineeringObjectRehydrationService)services.GetService(typeof(EngineeringObjectRehydrationService));
+
+        return rehydrationService.RehydrateAsync(cancellationToken);
     }
 }

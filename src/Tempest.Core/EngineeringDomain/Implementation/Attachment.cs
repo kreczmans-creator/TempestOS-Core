@@ -8,11 +8,21 @@ public sealed class Attachment : IAttachment
     public long SizeInBytes { get; }
 
     public Attachment(string fileName, string contentType, long sizeInBytes)
+        : this(Guid.NewGuid(), fileName, contentType, sizeInBytes)
+    {
+    }
+
+    /// <summary>
+    /// Reconstructs an attachment that already has an identity (`TD-85`) —
+    /// so an attachment recorded before a restart comes back as the same
+    /// attachment, not a new one wearing the same file name.
+    /// </summary>
+    internal Attachment(Guid id, string fileName, string contentType, long sizeInBytes)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(fileName);
         ArgumentException.ThrowIfNullOrWhiteSpace(contentType);
 
-        Id = Guid.NewGuid();
+        Id = id;
         FileName = fileName;
         ContentType = contentType;
         SizeInBytes = sizeInBytes;

@@ -57,4 +57,13 @@ public sealed class VerificationActivityFactoryRegistry
 
         return created;
     }
+
+    /// <summary>Registers how this discipline's own single Kind comes back after a restart (`TD-85`) — see <c>MechanicalObjectFactoryRegistry.RegisterRehydrators</c> for the rationale.</summary>
+    public static void RegisterRehydrators(IEngineeringObjectRehydratorRegistry registry, EngineeringDomainContext context)
+    {
+        ArgumentNullException.ThrowIfNull(registry);
+        ArgumentNullException.ThrowIfNull(context);
+
+        registry.Register<VerificationActivity>(SupportedKind, context);
+    }
 }

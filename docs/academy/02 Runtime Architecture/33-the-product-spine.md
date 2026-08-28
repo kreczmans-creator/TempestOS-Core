@@ -121,6 +121,15 @@ is recorded as `TD-85` saying exactly that. Every other engineering object
 still vanishes on restart. Naming the workaround as a workaround is what
 stops it being mistaken for the fix in six months.
 
+> **Postscript (`TD-85`, `ADR-0113`).** It did not take six months. The
+> very next work package fixed the boundary — engineering object state is
+> now durable and every persisted object is rehydrated at startup — and
+> **deleted `Projects.Index` in the same change.** That is the other half
+> of the discipline: naming a workaround honestly is what lets the next
+> person find and remove it, and removing it is what stops it becoming a
+> second source of truth. See
+> `34-engineering-object-rehydration.md`.
+
 ## Proving it, not screenshotting it
 
 The controlling instruction was blunt: *"Do not report success because the

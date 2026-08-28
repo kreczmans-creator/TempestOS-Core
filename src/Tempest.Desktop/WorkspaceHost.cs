@@ -121,8 +121,16 @@ public sealed class WorkspaceHost : IAsyncDisposable
         var eventBus = (IEventBus)host.Services!.GetService(typeof(IEventBus));
         var settingsProvider = (ISettingsProvider)host.Services!.GetService(typeof(ISettingsProvider));
 
-        var persistenceStore = (IPersistenceStore)host.Services!.GetService(typeof(IPersistenceStore));
-        ProjectDirectory = new ProjectDirectory(domainContext, persistenceStore);
+        // `TD-85`. Bring back every engineering object a previous run
+        // persisted — projects, and everything inside them — before
+        // anything reads the object graph. Without this the shell would
+        // open on an empty repository and silently start a new object
+        // graph over the user's own still-persisted work.
+        RehydrationResult = await EngineeringWorkspaceComposer
+            .RehydrateEngineeringObjectsAsync(host, cancellationToken)
+            .ConfigureAwait(false);
+
+        ProjectDirectory = new ProjectDirectory(domainContext);
         var projectContext = new ProjectContext(ProjectDirectory, eventBus, settingsProvider);
         ProjectContext = projectContext;
         ShellNavigator = new ShellNavigator(projectContext, eventBus, settingsProvider);
@@ -133,6 +141,9 @@ public sealed class WorkspaceHost : IAsyncDisposable
         // second source of truth.
         await ShellNavigator.LoadAsync(cancellationToken).ConfigureAwait(false);
     }
+
+    /// <summary>Gets what startup rehydration recovered (`TD-85`) — <see langword="null"/> before <see cref="StartAsync"/> completes.</summary>
+    public EngineeringRehydrationResult? RehydrationResult { get; private set; }
 
     /// <summary>Gets the project catalogue (`TD-84`) — <see langword="null"/> before <see cref="StartAsync"/> completes.</summary>
     public IProjectDirectory? ProjectDirectory { get; private set; }

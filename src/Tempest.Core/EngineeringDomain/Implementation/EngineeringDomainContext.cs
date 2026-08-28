@@ -14,6 +14,18 @@ public sealed class EngineeringDomainContext
     public IEvidenceComposer EvidenceComposer { get; }
     public ICurrentPrincipalAccessor CurrentPrincipalAccessor { get; }
 
+    /// <summary>
+    /// The durable engineering-object state store (`TD-85`), or
+    /// <see langword="null"/> where no rehydration substrate is composed.
+    /// </summary>
+    /// <remarks>
+    /// Optional so every existing hand-assembled context in tests and
+    /// samples keeps working unchanged: with no store, objects behave
+    /// exactly as they did before `TD-85` (in-memory only). The production
+    /// Host always supplies one.
+    /// </remarks>
+    public IEngineeringObjectStateStore? ObjectStateStore { get; }
+
     public EngineeringDomainContext(
         IEngineeringDocumentStore store,
         IEngineeringObjectRepository repository,
@@ -21,7 +33,8 @@ public sealed class EngineeringDomainContext
         ILifecycleTransitionTable lifecycleTable,
         IValidationRuleSet validationRuleSet,
         IEvidenceComposer evidenceComposer,
-        ICurrentPrincipalAccessor currentPrincipalAccessor)
+        ICurrentPrincipalAccessor currentPrincipalAccessor,
+        IEngineeringObjectStateStore? objectStateStore = null)
     {
         ArgumentNullException.ThrowIfNull(store);
         ArgumentNullException.ThrowIfNull(repository);
@@ -38,6 +51,7 @@ public sealed class EngineeringDomainContext
         ValidationRuleSet = validationRuleSet;
         EvidenceComposer = evidenceComposer;
         CurrentPrincipalAccessor = currentPrincipalAccessor;
+        ObjectStateStore = objectStateStore;
     }
 
     public string ResolveCurrentPrincipalId() =>
