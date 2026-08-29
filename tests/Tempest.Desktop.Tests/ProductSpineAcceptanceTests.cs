@@ -193,8 +193,19 @@ public sealed class ProductSpineAcceptanceTests
         }
     }
 
+    /// <summary>
+    /// Superseded and inverted, deliberately. This previously asserted that
+    /// the rail's Engineering button routed to Projects when no project was
+    /// open, which was correct under the product decision in force at the
+    /// time. The current decision makes standalone engineering — quick
+    /// calculations and calculation sets — a first-class workflow that
+    /// requires no project (`TD-89`), so the button now goes to
+    /// Engineering, in the standalone scope, and the assertion is
+    /// strengthened rather than removed: the destination must be real, and
+    /// it must know which scope it is in.
+    /// </summary>
     [AvaloniaFact]
-    public async Task EngineeringIsUnreachableWithoutAProject_TheRailRoutesToProjectsInstead()
+    public async Task TheRailEntersStandaloneEngineering_WhenNoProjectIsOpen()
     {
         var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
         try
@@ -205,8 +216,6 @@ public sealed class ProductSpineAcceptanceTests
 
             Assert.False(host.ProjectContext!.HasProject);
 
-            // The rail's Engineering button, with no project open, must not
-            // throw and must not pretend — it routes to Projects.
             var rail = window.GetLogicalDescendants().OfType<GlobalNavigationRail>().Single();
             var engineering = rail.GetLogicalDescendants().OfType<Button>()
                 .Single(b => Avalonia.Automation.AutomationProperties.GetName(b) == "Engineering");
@@ -214,7 +223,12 @@ public sealed class ProductSpineAcceptanceTests
             engineering.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
             await Task.Delay(50);
 
-            Assert.Equal(ShellArea.Projects, navigator.Current.Area);
+            Assert.Equal(ShellArea.Engineering, navigator.Current.Area);
+            Assert.True(navigator.Current.IsStandaloneEngineering);
+            Assert.Equal(EngineeringScopeKind.Standalone, host.EngineeringScope!.Current.Kind);
+
+            // Still no project — standalone did not invent one.
+            Assert.False(host.ProjectContext.HasProject);
         }
         finally
         {

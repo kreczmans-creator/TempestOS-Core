@@ -133,7 +133,13 @@ public sealed class WorkspaceHost : IAsyncDisposable
         ProjectDirectory = new ProjectDirectory(domainContext);
         var projectContext = new ProjectContext(ProjectDirectory, eventBus, settingsProvider);
         ProjectContext = projectContext;
-        ShellNavigator = new ShellNavigator(projectContext, eventBus, settingsProvider);
+        var shellNavigator = new ShellNavigator(projectContext, eventBus, settingsProvider);
+        ShellNavigator = shellNavigator;
+
+        // The Engineering Workspace's own scope (`TD-89`) — project or
+        // standalone — derived from navigation state and the real object
+        // graph, never cached and never inferred by a view.
+        EngineeringScope = new EngineeringScope(shellNavigator, projectContext, domainContext);
 
         // Recover where the user was, and which project they were in.
         // Order matters: the navigator's own restore opens the project,
@@ -153,6 +159,9 @@ public sealed class WorkspaceHost : IAsyncDisposable
 
     /// <summary>Gets the shell navigator (`TD-84`) — <see langword="null"/> before <see cref="StartAsync"/> completes.</summary>
     public IShellNavigator? ShellNavigator { get; private set; }
+
+    /// <summary>Gets the Engineering Workspace's own current scope (`TD-89`) — <see langword="null"/> before <see cref="StartAsync"/> completes.</summary>
+    public IEngineeringScope? EngineeringScope { get; private set; }
 
     /// <summary>Persists current session state (`ADR-0064`, unchanged) and shuts the Workspace down — called from the main window's own Closing handler (Window Lifecycle).</summary>
     public async Task ShutdownAsync(CancellationToken cancellationToken = default)

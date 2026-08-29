@@ -227,14 +227,49 @@ public class ProductSpineTests
         Assert.Equal(project.Id, spine.Context.Current!.Id);
     }
 
+    /// <summary>
+    /// Superseded, deliberately. This test previously asserted that
+    /// Engineering could not be entered without a project — correct under
+    /// the product decision in force at the time, and wrong under the
+    /// current one, which makes quick calculations and calculation sets a
+    /// first-class workflow that requires no project (`TD-89`). The
+    /// behaviour is not weakened, it is inverted and re-proven: entering
+    /// Engineering with no project open produces the <b>standalone</b>
+    /// scope, and is a real location rather than a refusal.
+    /// </summary>
     [Fact]
-    public async Task EngineeringCannotBeEnteredWithoutAProject()
+    public async Task EngineeringWithNoProjectOpen_EntersTheStandaloneScope_NeverThrows()
     {
         var spine = await BuildSpineAsync();
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() => spine.Navigator.GoToEngineeringAsync());
+        await spine.Navigator.GoToEngineeringAsync();
 
-        Assert.Equal(ShellArea.Home, spine.Navigator.Current.Area);
+        Assert.Equal(ShellArea.Engineering, spine.Navigator.Current.Area);
+        Assert.Null(spine.Navigator.Current.ProjectId);
+        Assert.True(spine.Navigator.Current.IsStandaloneEngineering);
+        Assert.False(spine.Navigator.Current.IsProjectScoped);
+        Assert.False(spine.Context.HasProject);
+    }
+
+    [Fact]
+    public async Task StandaloneEngineering_IsReachableEvenWhileAProjectIsOpen_AndNeverClosesIt()
+    {
+        var spine = await BuildSpineAsync();
+        var project = await spine.Directory.CreateAsync("P-0027", "Apollo");
+        await spine.Navigator.OpenProjectAsync(project.Id);
+
+        await spine.Navigator.GoToStandaloneEngineeringAsync();
+
+        Assert.True(spine.Navigator.Current.IsStandaloneEngineering);
+
+        // Standalone is a different scope, not a reason to discard the
+        // project the user is in — returning to it is a plain move.
+        Assert.True(spine.Context.HasProject);
+        Assert.Equal(project.Id, spine.Context.Current!.Id);
+
+        await spine.Navigator.ReturnToProjectAsync();
+        Assert.Equal(ShellArea.ProjectWorkspace, spine.Navigator.Current.Area);
+        Assert.Equal(project.Id, spine.Navigator.Current.ProjectId);
     }
 
     [Fact]

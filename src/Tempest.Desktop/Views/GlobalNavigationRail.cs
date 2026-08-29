@@ -22,11 +22,14 @@ namespace Tempest.Desktop.Views;
 /// rest of the shell about where the user is.
 /// </para>
 /// <para>
-/// Only the modules the platform can genuinely serve are shown. Tasks,
-/// Commercial, Resources, Knowledge and Administration are deliberately
-/// absent rather than present-and-dead — a rail button that opens
-/// nothing is exactly the "fake navigation" this Work Package's own
-/// controlling instruction forbids (`TD-81` tracks them).
+/// <b>Every module the product designs is shown, and every one of them
+/// goes somewhere real.</b> The rail is built from
+/// <see cref="ShellAreas.RailModules"/>, so which modules exist and which
+/// are backed by a capability is declared once, in application state, not
+/// decided here. A module whose capability is not built yet is marked in
+/// the rail and lands on a surface that says exactly what is missing and
+/// what tracks it — never a dead button, and never a screen pretending to
+/// work.
 /// </para>
 /// </remarks>
 public sealed class GlobalNavigationRail : UserControl
@@ -50,18 +53,20 @@ public sealed class GlobalNavigationRail : UserControl
         Padding = new Thickness(DesignTokens.SpaceSm);
         ThemeReactiveBrush.Bind(this, BackgroundProperty, ApplicationPalette.PanelBackgroundBrushKey);
 
-        AddModule("⌂", "Home", ShellArea.Home, () => _navigator.GoHomeAsync());
-        AddModule("▤", "Projects", ShellArea.Projects, () => _navigator.GoToProjectsAsync());
-        AddModule("⚙", "Engineering", ShellArea.Engineering, async () =>
+        foreach (var module in ShellAreas.RailModules)
         {
-            // Engineering is project-scoped by design: with no project
-            // open there is nothing to enter, so the rail routes to the
-            // project browser rather than failing.
-            if (_navigator.Current.ProjectId is null)
-                await _navigator.GoToProjectsAsync().ConfigureAwait(true);
-            else
-                await _navigator.GoToEngineeringAsync().ConfigureAwait(true);
-        });
+            var area = module.Area;
+
+            // Engineering is the one module with a scope of its own: it
+            // enters the open project when there is one, and the
+            // standalone workflow when there is not. Both are real
+            // destinations (`TD-89`).
+            Func<Task> navigate = area == ShellArea.Engineering
+                ? () => _navigator.GoToEngineeringAsync()
+                : () => _navigator.GoToModuleAsync(area);
+
+            AddModule(module, navigate);
+        }
 
         Content = _buttons;
         RefreshSelection();
@@ -85,18 +90,35 @@ public sealed class GlobalNavigationRail : UserControl
         }
     }
 
-    private void AddModule(string glyph, string label, ShellArea area, Func<Task> navigate)
+    private void AddModule(ShellAreaDescriptor module, Func<Task> navigate)
     {
+        var isDeclaredOnly = module.Availability == NavigationAvailability.Declared;
+
         var content = new StackPanel
         {
             Orientation = Orientation.Horizontal,
             Spacing = DesignTokens.SpaceSm,
             Children =
             {
-                new TextBlock { Text = glyph, FontSize = DesignTokens.FontSizeBody, VerticalAlignment = VerticalAlignment.Center },
-                new TextBlock { Text = label, VerticalAlignment = VerticalAlignment.Center },
+                new TextBlock { Text = module.Glyph, FontSize = DesignTokens.FontSizeBody, VerticalAlignment = VerticalAlignment.Center },
+                new TextBlock { Text = module.Title, VerticalAlignment = VerticalAlignment.Center, Opacity = isDeclaredOnly ? 0.55 : 1.0 },
             },
         };
+
+        // A module with no capability behind it is visibly distinguished in
+        // the rail, and says so again on the surface it opens — the user
+        // learns what TempestOS is without being misled about what it can
+        // do today.
+        if (isDeclaredOnly)
+        {
+            content.Children.Add(new TextBlock
+            {
+                Text = "•",
+                FontSize = DesignTokens.FontSizeCaption,
+                VerticalAlignment = VerticalAlignment.Center,
+                Opacity = 0.55,
+            });
+        }
 
         var button = new Button
         {
@@ -104,10 +126,12 @@ public sealed class GlobalNavigationRail : UserControl
             HorizontalAlignment = HorizontalAlignment.Stretch,
             HorizontalContentAlignment = HorizontalAlignment.Left,
             MinHeight = DesignTokens.MinControlSize,
-            Tag = area,
+            Tag = module.Area,
         };
 
-        AutomationProperties.SetName(button, label);
+        AutomationProperties.SetName(button, module.Title);
+        AutomationProperties.SetHelpText(button, isDeclaredOnly ? $"{module.Title} — {DeclaredCapabilityView.NotImplementedBadge}. {module.Note}" : module.Note);
+        ToolTip.SetTip(button, module.Note);
         button.Click += async (_, _) =>
         {
             await navigate().ConfigureAwait(true);
@@ -116,6 +140,6 @@ public sealed class GlobalNavigationRail : UserControl
         };
 
         _buttons.Children.Add(button);
-        _moduleButtons.Add((button, area));
+        _moduleButtons.Add((button, module.Area));
     }
 }

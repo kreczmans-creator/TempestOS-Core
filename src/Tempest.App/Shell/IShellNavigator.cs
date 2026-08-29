@@ -28,6 +28,18 @@ public interface IShellNavigator
     Task GoToProjectsAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Navigates to a global module — including one that is declared but
+    /// not yet implemented, which lands on a real surface stating what is
+    /// missing rather than silently doing nothing.
+    /// </summary>
+    /// <remarks>
+    /// Does not close the current project: a global module is a different
+    /// place, not a reason to discard the project the user is in.
+    /// </remarks>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="area"/> is <see cref="ShellArea.ProjectWorkspace"/>, which is reached by opening a project, or <see cref="ShellArea.Engineering"/>, which has its own scope-aware verbs.</exception>
+    Task GoToModuleAsync(ShellArea area, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Opens <paramref name="projectId"/> — making it the current project —
     /// and navigates to its workspace at <paramref name="area"/>.
     /// </summary>
@@ -41,11 +53,29 @@ public interface IShellNavigator
     Task GoToProjectAreaAsync(ProjectArea area, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Enters the Engineering Workspace within the current project — the
-    /// only way in, because engineering work belongs to a project.
+    /// Enters the Engineering Workspace in the scope the user is already
+    /// in: within the current project when one is open, standalone when
+    /// none is.
     /// </summary>
-    /// <exception cref="InvalidOperationException">No project is currently open.</exception>
+    /// <remarks>
+    /// Never throws for want of a project. TempestOS is project-centric,
+    /// but quick calculations and calculation sets are a first-class
+    /// workflow that does not require one — so "no project open" selects
+    /// the standalone scope rather than blocking the move.
+    /// </remarks>
     Task GoToEngineeringAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Enters the Engineering Workspace with no project scope, whatever is
+    /// currently open — the explicit "quick calculation" entry point.
+    /// </summary>
+    /// <remarks>
+    /// Deliberately does <b>not</b> close the current project: standalone
+    /// work is a different scope, not a reason to discard the project the
+    /// user is in. Returning to that project afterwards is a plain
+    /// <see cref="ReturnToProjectAsync"/>.
+    /// </remarks>
+    Task GoToStandaloneEngineeringAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Returns from Engineering to the current project's workspace,

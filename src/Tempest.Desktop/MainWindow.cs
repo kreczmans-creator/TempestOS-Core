@@ -88,6 +88,8 @@ public sealed class MainWindow : Window
     private readonly KeyboardCommandBindingProvider _keyboardBindingProvider = new();
     private readonly MacroManagerDialog _macroManagerDialog;
 
+    private readonly IEngineeringScope _engineeringScope;
+
     private string? _currentAreaTitle;
     private bool _closeConfirmed;
 
@@ -370,6 +372,7 @@ public sealed class MainWindow : Window
         // first level is the navigation rail and whose second is a project.
         _navigator = host.ShellNavigator!;
         _projectContext = host.ProjectContext!;
+        _engineeringScope = host.EngineeringScope!;
 
         var engineeringStack = new DockPanel();
         DockPanel.SetDock(topStack, Dock.Top);
@@ -632,17 +635,29 @@ public sealed class MainWindow : Window
                 _moduleHost.Content = _projectWorkspace;
                 break;
 
+            case ShellArea.Home:
             case ShellArea.Engineering:
+                // Both render the engineering surface today: the Cockpit is
+                // a panel within it. Engineering carries its own scope —
+                // the open project, or standalone (`TD-89`) — which the
+                // surface reads from the navigator rather than from here.
                 _moduleHost.Content = _engineeringSurface;
                 break;
 
             default:
-                _moduleHost.Content = _engineeringSurface;
+                // A module the product declares but has not built. It gets a
+                // real, honest surface naming what is missing and what
+                // tracks it — never a dead button, and never a fake screen.
+                _moduleHost.Content = new DeclaredCapabilityView(
+                    ShellAreas.For(location.Area), _projectContext.Current?.Label);
                 break;
         }
 
         _navigationRail.RefreshSelection();
         RefreshProjectStatus();
+
+        if (location.Area == ShellArea.Engineering)
+            await RefreshEngineeringScopeAsync().ConfigureAwait(true);
     }
 
     /// <summary>
@@ -652,8 +667,58 @@ public sealed class MainWindow : Window
     /// itself. Before the spine this segment read "No project" permanently,
     /// because nothing could ever set it.
     /// </summary>
-    private void RefreshProjectStatus() =>
+    private void RefreshProjectStatus()
+    {
         _statusBar.SetProject(_projectContext.Current?.Label);
+        _statusBar.SetLocation(DescribeLocation(_navigator.Current));
+    }
+
+    /// <summary>
+    /// Reports the Engineering Workspace's own current scope and how many
+    /// engineering objects are actually in it (`TD-89`).
+    /// </summary>
+    /// <remarks>
+    /// A real read of the real object graph through
+    /// <see cref="IEngineeringScope"/>, not a caption: it is what makes
+    /// "this Engineering session is scoped to Apollo, and Apollo contains
+    /// eleven objects" a checkable statement rather than a claim.
+    /// </remarks>
+    public async Task RefreshEngineeringScopeAsync()
+    {
+        if (_navigator.Current.Area != ShellArea.Engineering)
+            return;
+
+        var scope = _engineeringScope.Current;
+        var objects = await _engineeringScope.ListObjectsAsync().ConfigureAwait(true);
+
+        _statusBar.SetLocation($"{DescribeLocation(_navigator.Current)} · {scope.Label} · {objects.Count} object(s)");
+    }
+
+    /// <summary>
+    /// A one-line answer to "where am I", derived from the navigation
+    /// state (`TD-89`).
+    /// </summary>
+    /// <remarks>
+    /// The product rule is that a user must always be able to tell where
+    /// they are, which project they are in, and which workspace — so the
+    /// Status Bar states the module, the project area when inside one, and
+    /// crucially <b>which engineering scope is active</b>, because
+    /// "Engineering" alone no longer says whether the work belongs to a
+    /// project or is standalone.
+    /// </remarks>
+    internal static string DescribeLocation(ShellLocation location)
+    {
+        ArgumentNullException.ThrowIfNull(location);
+
+        return location.Area switch
+        {
+            ShellArea.ProjectWorkspace when location.ProjectArea is { } area =>
+                $"{ShellAreas.For(location.Area).Title} · {ProjectAreas.For(area).Title}",
+            ShellArea.Engineering =>
+                location.IsStandaloneEngineering ? "Engineering · Standalone" : "Engineering · Project",
+            _ => ShellAreas.For(location.Area).Title,
+        };
+    }
 
     /// <summary>Collects an identifier and name for a new project, creating it on confirmation. Returns whether a project was created.</summary>
     private async Task<bool> PromptForNewProjectAsync(string suggestedIdentifier, string _)

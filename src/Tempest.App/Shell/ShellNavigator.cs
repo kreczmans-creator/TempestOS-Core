@@ -13,10 +13,18 @@ namespace Tempest.App.Shell;
 /// and persists the location through <see cref="ISettingsProvider"/>.
 /// </summary>
 /// <remarks>
+/// <para>
 /// The one rule this class exists to enforce: <b>a project-scoped location
 /// and the current project can never disagree.</b> Both are updated in the
 /// same operation, so there is no window in which the shell believes it is
 /// inside a project the context has not opened.
+/// </para>
+/// <para>
+/// A location that claims <em>no</em> project — Home, Projects, and
+/// standalone Engineering — cannot disagree with the context by
+/// construction, which is why standalone engineering needs no special
+/// case here beyond choosing the scope (`TD-89`).
+/// </para>
 /// </remarks>
 public sealed class ShellNavigator : IShellNavigator
 {
@@ -63,6 +71,20 @@ public sealed class ShellNavigator : IShellNavigator
         MoveToAsync(ShellLocation.Projects, cancellationToken);
 
     /// <inheritdoc />
+    public Task GoToModuleAsync(ShellArea area, CancellationToken cancellationToken = default)
+    {
+        if (area is ShellArea.ProjectWorkspace)
+            throw new ArgumentOutOfRangeException(nameof(area), area, "The project workspace is reached by opening a project, not by picking a module.");
+
+        if (area is ShellArea.Engineering)
+            throw new ArgumentOutOfRangeException(nameof(area), area, "Engineering has its own scope-aware verbs — use GoToEngineeringAsync or GoToStandaloneEngineeringAsync.");
+
+        // Every remaining module is genuinely global: it carries no
+        // project, so it cannot disagree with the open one.
+        return MoveToAsync(new ShellLocation(area), cancellationToken);
+    }
+
+    /// <inheritdoc />
     public async Task OpenProjectAsync(Guid projectId, ProjectArea area = ProjectArea.Overview, CancellationToken cancellationToken = default)
     {
         // Open first: if the project does not exist this throws before the
@@ -84,7 +106,11 @@ public sealed class ShellNavigator : IShellNavigator
 
     /// <inheritdoc />
     public Task GoToEngineeringAsync(CancellationToken cancellationToken = default) =>
-        MoveToAsync(ShellLocation.ForEngineering(RequireOpenProject()), cancellationToken);
+        MoveToAsync(ShellLocation.ForEngineering(_projectContext.Current?.Id), cancellationToken);
+
+    /// <inheritdoc />
+    public Task GoToStandaloneEngineeringAsync(CancellationToken cancellationToken = default) =>
+        MoveToAsync(ShellLocation.StandaloneEngineering, cancellationToken);
 
     /// <inheritdoc />
     public Task ReturnToProjectAsync(CancellationToken cancellationToken = default) =>

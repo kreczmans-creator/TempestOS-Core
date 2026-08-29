@@ -147,6 +147,65 @@ opened; the durable index not written. (The last of those was retired with
 the index itself by `TD-85`; the restart journeys are now killed instead by
 removing the rehydration step from the composition root.)
 
+## Two engineering scopes, not one (`TD-89`)
+
+The spine as first built made Engineering reachable **only** from an open
+project. That was a faithful reading of "TempestOS is project-centric",
+and it was too strong: the authoritative product decision is that quick
+calculations and calculation sets remain a first-class workflow requiring
+no project.
+
+The model is therefore:
+
+```
+TempestOS
+  ├── Global modules            (Home, Projects, Tasks, Commercial, …)
+  ├── Projects
+  │     └── Project Workspace   (Overview, Tasks, Engineering, Documents,
+  │            └── Engineering   Requirements, Risks, Timeline, Reports, Settings)
+  │                  └── Engineering Objects
+  └── Standalone engineering
+        └── Calculations / Calculation Sets
+```
+
+`ShellArea.Engineering` is the one area that legitimately carries a
+project **or** does not. `ShellLocation.ProjectId` is the scope itself:
+non-null means "inside that project", null means standalone. The shell
+invariant is unchanged and simply restated — a location that *claims* a
+project must agree with `IProjectContext`; a location that claims none
+cannot disagree with anything.
+
+`IEngineeringScope` is what the Engineering Workspace reads. It derives
+the scope from navigation state and answers, against the real object
+graph, which objects are in it.
+
+## Project membership has one definition
+
+`ProjectMembership` walks the durable `IHasParent` chain (`WP 9.0A`,
+durable since `TD-85`) upward. An object belongs to a project when that
+walk reaches a `Project`-kind object, and is **standalone** when it does
+not. There is no `ProjectId` field on the domain, no second ownership
+mechanism, and no separate answer for the project workspace and the
+engineering scope — `IProjectDirectory.ListProjectContentsAsync` and
+`IEngineeringScope.ListObjectsAsync` both resolve through it.
+
+Membership is **transitive**: a Part inside an Assembly inside a project
+is in that project. The earlier direct-children-only answer made a
+two-level product structure look almost empty.
+
+## Every destination is real, or says it is not
+
+`ShellAreas` and `ProjectAreas` declare the product's designed module and
+area sets, and — as application state a test asserts, not a caption —
+which of them have a capability behind them. Anything unbuilt gets a real,
+navigable, project-aware surface (`DeclaredCapabilityView`) naming what is
+missing and the debt item tracking it.
+
+This deliberately reverses the earlier choice to omit unbuilt modules
+entirely. Omitting them made the product look smaller than designed;
+faking them would have been worse. Present, navigable and honest is the
+third option.
+
 ## What this deliberately did not do
 
 Full docking (`TD-72`), the workspace layout abstraction, the drawing

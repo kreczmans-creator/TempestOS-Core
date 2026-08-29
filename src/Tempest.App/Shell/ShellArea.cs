@@ -22,6 +22,28 @@ public enum ShellArea
     /// <summary>A single project's own workspace, scoped by <see cref="ShellLocation.ProjectId"/>.</summary>
     ProjectWorkspace,
 
-    /// <summary>The Engineering Workspace, entered from — and scoped by — the current project.</summary>
+    /// <summary>The Engineering Workspace — scoped by the current project, or standalone when none is open.</summary>
     Engineering,
+
+    // The modules below are declared but not yet implemented. They are
+    // present so the shell shows the product's real module set and can
+    // state plainly what is missing, rather than hiding it — see
+    // `ShellAreas`, which is the single place that says which of these the
+    // platform can genuinely serve. New members are appended, never
+    // inserted: `ShellLocation` is persisted by ordinal.
+
+    /// <summary>Engineering and project task management (`TD-81`).</summary>
+    Tasks,
+
+    /// <summary>Quotes, invoices, budget and cashflow (`TD-81`).</summary>
+    Commercial,
+
+    /// <summary>People, workload and equipment planning (`TD-81`).</summary>
+    Resources,
+
+    /// <summary>Standards, reference data and engineering knowledge (`TD-79`).</summary>
+    Knowledge,
+
+    /// <summary>Users, roles, permissions and platform settings (`TD-81`).</summary>
+    Administration,
 }

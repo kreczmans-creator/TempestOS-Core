@@ -111,15 +111,23 @@ public sealed class ProjectDirectory : IProjectDirectory
     }
 
     /// <inheritdoc />
+    /// <remarks>
+    /// Contents are resolved <b>transitively</b> through
+    /// <see cref="ProjectMembership"/>: a Part inside an Assembly inside
+    /// this project is in this project. Answering only with direct
+    /// children would have made a two-level product structure look almost
+    /// empty, and would have given the platform two different answers to
+    /// "what is in this project" — this method and the Engineering
+    /// Workspace's own scope. There is one answer, and it lives in
+    /// <see cref="ProjectMembership"/>.
+    /// </remarks>
     public async Task<IReadOnlyList<Guid>> ListProjectContentsAsync(Guid projectId, CancellationToken cancellationToken = default)
     {
-        var all = await _context.Repository.ListAllAsync(cancellationToken).ConfigureAwait(false);
+        var members = await ProjectMembership
+            .ListProjectMembersAsync(_context.Repository, projectId, cancellationToken)
+            .ConfigureAwait(false);
 
-        return all
-            .OfType<IHasParent>()
-            .Where(o => o.ParentId == projectId)
-            .Select(o => o.Id)
-            .ToList();
+        return members.Select(o => o.Id).ToList();
     }
 
     private static ProjectSummary ToSummary(IProject project) =>

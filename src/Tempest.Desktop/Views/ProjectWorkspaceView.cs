@@ -18,9 +18,11 @@ namespace Tempest.Desktop.Views;
 /// <para>
 /// Shows the open project's own real identity, lifecycle and contents,
 /// and offers its areas as tabs. "Enter Engineering" goes through
-/// <see cref="IShellNavigator.GoToEngineeringAsync"/>, which is the only
-/// route into the Engineering Workspace — that is what makes engineering
-/// work belong to a project rather than sit beside it.
+/// <see cref="IShellNavigator.GoToEngineeringAsync"/>, which enters the
+/// Engineering Workspace <em>with this project as its scope</em> — that is
+/// what makes engineering work belong to a project rather than sit beside
+/// it. It is not the only way into Engineering: the standalone workflow
+/// (`TD-89`) reaches the same workspace with no project, deliberately.
 /// </para>
 /// <para>
 /// Contents are counted by <see cref="IProjectDirectory.ListProjectContentsAsync"/>
@@ -42,6 +44,8 @@ public sealed class ProjectWorkspaceView : UserControl
     private readonly Button _enterEngineering = new() { Content = "Enter Engineering →", MinHeight = DesignTokens.MinControlSize };
     private readonly Button _closeProject = new() { Content = "Close Project", MinHeight = DesignTokens.MinControlSize };
 
+    private readonly List<ContentControl> _areaHosts = [];
+
     private bool _suppressAreaSelection;
 
     /// <summary>Raised after the user asks to enter Engineering, so the shell can render it.</summary>
@@ -61,8 +65,12 @@ public sealed class ProjectWorkspaceView : UserControl
         _directory = directory;
         _navigator = navigator;
 
-        foreach (var area in Enum.GetValues<ProjectArea>())
-            _areas.Items.Add(new TabItem { Header = area.ToString(), Tag = area, Content = BuildAreaContent(area) });
+        // The tab strip is the product's designed area set, declared once
+        // in `ProjectAreas`. An area with no capability behind it is still
+        // present and still navigable — it opens a real, project-aware
+        // surface that says what is missing (`DeclaredCapabilityView`).
+        foreach (var descriptor in ProjectAreas.All)
+            _areas.Items.Add(new TabItem { Header = descriptor.Title, Tag = descriptor.Area, Content = BuildAreaContent(descriptor) });
 
         AutomationProperties.SetName(_areas, "Project areas");
         _areas.SelectionChanged += async (_, _) =>
@@ -138,6 +146,7 @@ public sealed class ProjectWorkspaceView : UserControl
             TextWrapping = TextWrapping.Wrap,
         });
 
+        RefreshAreaSurfaces();
         SyncSelectedArea();
     }
 
@@ -154,27 +163,29 @@ public sealed class ProjectWorkspaceView : UserControl
         _suppressAreaSelection = false;
     }
 
-    private Control BuildAreaContent(ProjectArea area) => area switch
+    private Control BuildAreaContent(ProjectAreaDescriptor descriptor)
     {
-        ProjectArea.Overview => _overview,
+        // The Overview is the one area with live content of its own; every
+        // other area renders from its own declaration, so a view can never
+        // claim a capability the application state does not.
+        if (descriptor.Area == ProjectArea.Overview)
+            return _overview;
 
-        // Honest, not decorative: these areas name what the platform can
-        // genuinely reach today and where the work continues.
-        ProjectArea.Engineering => new EmptyStateView(
-            "⚙",
-            "Engineering Workspace",
-            "Engineering work for this project opens in the Engineering Workspace — use “Enter Engineering”."),
+        var host = new ContentControl { Tag = descriptor.Area };
+        _areaHosts.Add(host);
+        host.Content = new DeclaredCapabilityView(descriptor, _projectContext.Current?.Label);
+        return host;
+    }
 
-        ProjectArea.Documents => new EmptyStateView(
-            "📄",
-            "Project documents",
-            "Documents and drawings belonging to this project appear in the Engineering Workspace's Documents area. A dedicated project document surface, with a real drawing viewer, is tracked as TD-80."),
+    /// <summary>Re-renders every declared area's own surface so it names the currently open project.</summary>
+    private void RefreshAreaSurfaces()
+    {
+        var label = _projectContext.Current?.Label;
 
-        ProjectArea.Requirements => new EmptyStateView(
-            "◎",
-            "Project requirements",
-            "Requirements belonging to this project are managed in the Engineering Workspace's Requirements area."),
-
-        _ => new EmptyStateView("•", area.ToString(), "Not yet available."),
-    };
+        foreach (var host in _areaHosts)
+        {
+            if (host.Tag is ProjectArea area)
+                host.Content = new DeclaredCapabilityView(ProjectAreas.For(area), label);
+        }
+    }
 }

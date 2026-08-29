@@ -1,5 +1,59 @@
 # TempestOS — Project Status
 
+**Last Updated:** 2026-08-29 (Project-Centric Convergence — `TD-89`).
+**The `v0.13.x` train remains CLOSED.**
+
+**The product model is now expressed in full.** TempestOS is a
+project-centric engineering operating environment — **and** standalone
+calculation sets and quick calculations are a first-class workflow that
+requires no project. The Product Spine (`TD-84`) had enforced the first
+half by construction, making Engineering reachable only from an open
+project: a faithful but too-strong reading, now corrected.
+
+**What this pass delivered.** `ShellArea.Engineering` legitimately carries
+a project **or** none, with `ShellLocation.ProjectId` as the scope itself,
+so the shell's load-bearing invariant was *restated* rather than weakened
+— a location that claims a project must agree with the context; a location
+that claims none cannot disagree with anything. `IEngineeringScope` is the
+real derived state the Engineering Workspace reads instead of inferring
+its scope from what is on screen. `ProjectMembership` gives the platform
+**one** transitive definition of project ownership, over the durable
+`IHasParent` edge (`TD-85`), used by both the project workspace and the
+engineering scope — and it fixed a real defect on the way, where contents
+were resolved from direct children only, so a Part inside an Assembly
+inside a project was not "in" the project. `ShellAreas`/`ProjectAreas`
+declare the product's designed module and area sets and which of them have
+a capability behind them, as application state a test asserts; anything
+unbuilt gets a real, navigable, project-aware surface naming what is
+missing and the debt tracking it. No project data is faked, hard-coded, or
+duplicated: projects remain real `IProject` engineering objects.
+
+**Proven by the five mandatory journeys** through the real `MainWindow`:
+new project → engineering → back with context intact; existing project
+with a real calculation and validation, work still associated; **a
+standalone calculation with no project at all, saved into a calculation
+set, surviving a close and reopen**; project and engineering context
+restored across a restart; and a full navigation circuit with context
+correct at every stage. Plus 17 integration tests and 3 Phase-7
+docking-seam tests. Six mutations run, six killed. Two tests encoding the
+superseded rule were **inverted and strengthened**, never deleted.
+
+**Phase 7 (docking preparation) needed no refactor.** The investigation
+found `MainWindow` already hosts modules through a plain content seam,
+with `DockingGrid` strictly inside the Engineering surface — so full
+Option-C docking (`TD-72`) remains a change to one module, not to
+navigation. Three tests now pin that seam, including one asserting the
+docking grid is absent from the tree outside Engineering. Resizing,
+collapsing, responsive behaviour, ribbon minimisation and persisted
+splitter preferences are untouched.
+
+Suite: Core 2486/2488 (the same two pre-existing Linux-environment cases),
+Desktop 262/262, 0 warnings, 0 errors. Architecture:
+`docs/architecture/Product Spine Architecture.md`. Academy:
+`02 Runtime Architecture/35-project-centric-convergence.md`.
+
+**The prior status block, below this point, is retained:**
+
 **Last Updated:** 2026-08-28 (Engineering Object Rehydration — `TD-85`,
 `ADR-0113`). **The `v0.13.x` train remains CLOSED.**
 
