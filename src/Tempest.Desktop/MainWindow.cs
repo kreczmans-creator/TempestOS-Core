@@ -623,6 +623,16 @@ public sealed class MainWindow : Window
     /// </remarks>
     public Viewing.AttachmentViewerLauncher AttachmentViewers => _attachmentViewers;
 
+    /// <summary>Opens an engineering object in the document area, as the Explorer's own activation does.</summary>
+    /// <remarks>
+    /// Exposed for the same reason as <see cref="AttachmentViewers"/>: so
+    /// an acceptance test can reach an object's real editor and press its
+    /// own Open button, proving the wiring from that button through to the
+    /// viewer — rather than calling the launcher directly and leaving the
+    /// button itself untested.
+    /// </remarks>
+    public Task NavigateToObjectAsync(Guid id, string kind) => _viewCoordinator.NavigateToObjectAsync(id, kind);
+
     /// <summary>
     /// Professional Error Handling (`WP 10.5B` scope: "unexpected
     /// exceptions") — shows a real <see cref="MessageDialog"/> for a

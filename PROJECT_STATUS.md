@@ -1,7 +1,79 @@
 # TempestOS — Project Status
 
 **Last Updated:** 2026-08-29 (Drawing / Document Viewer — `TD-80`,
-`ADR-0115`). **The `v0.13.x` train remains CLOSED.**
+`ADR-0115` — visual acceptance audit). **The `v0.13.x` train remains
+CLOSED.**
+
+**`TD-80` is now formally ACCEPTED for the scope delivered, after a visual
+audit against the supplied mock-ups.** It had closed with 287 green
+Desktop tests and no rendered frame: the Desktop suite runs on Avalonia's
+headless platform with `UseHeadlessDrawing` on, so nothing is ever
+rasterised and `CaptureRenderedFrame` throws. The audit drove the real
+`MainWindow` through a throwaway `UseSkia()` harness — navigating to real
+objects and pressing the real buttons on them — and looked at the
+pictures. **Four user-visible defects were in the delivered scope — one of
+them fatal to the whole feature. All four are fixed.**
+
+- **There was no Open button, so the viewer was unreachable from the
+  running application.** `ObjectEditorView.TryCreate` populates the editor
+  before it returns; an attachment row only carries an Open button when
+  something can handle the request; and the shell subscribes *after*
+  `TryCreate` returns. On a freshly opened object the button was never
+  built. Every headless test passed, because every one of them called the
+  launcher directly — verifying the destination and never the door.
+  `OpenAttachmentRequested` now re-populates the attachment rows on its
+  first subscriber.
+- **A viewer tab closed from the tab strip could never be re-opened.** The
+  strip's own close button is `TD-72`'s: it removes the panel from the
+  layout tree and tells `AttachmentViewerLauncher` nothing. The launcher
+  went on believing the attachment was open, so the next open called
+  `SelectPanel` on a panel that no longer existed — a silent no-op that
+  left the drawing unreachable for the rest of the session. The launcher
+  now reconciles its map against the layout tree, which also covers a
+  panel that is floating rather than docked.
+- **`Missing`, `Corrupt` and `Unsupported` each showed a full page-and-zoom
+  toolbar that could do nothing** — arrows, a zoom stepper, Fit and 100%,
+  disabled, around an empty gap, above "No content stored". Chrome that
+  reads as a working viewer whose right button the user has not found yet.
+  Those controls are now hidden rather than merely disabled when nothing
+  is open.
+- **Turning to a page of another size drew it stretched into the previous
+  page's shape.** The viewport carries the content size that decides both
+  the fit zoom and the rendered width and height, and a page turn never
+  updated it — so the audit drawing's portrait second sheet was drawn into
+  its landscape first sheet's rectangle, at roughly half its true height.
+  `DocumentViewport.WithContentSize` had existed since the first commit,
+  correct and re-fitting, and the multi-page test fixture had been built
+  with three deliberately different page sizes; nothing at the view level
+  ever joined the two. The view now tells the viewport each page's own size
+  before anything is drawn.
+
+**Everything else held.** PDF rendering is genuinely vector-derived — the
+captured frames show stroked paths and a filled rectangle, not extracted
+text. The viewer is a real tab in the document group, tabs alongside the
+object editors, keeps per-document page and zoom state, re-fits on resize,
+and leaves the module rail, ribbon, Explorer, Properties panel and status
+bar exactly where they were.
+
+**Four mock-up divergences remain, and none is closed here.** Three are
+capabilities rather than defects, already carried as `TD-98`/`TD-99`: the
+sheet-thumbnail navigator and the zoom *slider* (mock-up 4), and the
+markup palette, rotate and layers tools (mock-up 1). The fourth is a
+design decision rather than a defect: mock-up 4 shows the drawing in a
+column *beside* the object, where `ADR-0115` deliberately tabs it *into*
+the document group, so opening a drawing hides the object editor behind a
+tab rather than placing them side by side. The user can drag either panel
+out to a split, and re-deciding the default is a design call rather than
+an audit finding — recorded here rather than changed unilaterally. The
+mock-ups' "Sheet N of M" is "Page N of M" here, which is the honest
+wording for a surface that also shows specifications and datasheets.
+
+Suite after the audit: Core 2670/2670, Desktop 291/291 (four new
+regression tests, one per defect), both configurations, 0 warnings,
+0 errors. Each fix mutation-tested: reverting any one of them fails
+exactly its own new test and nothing else.
+
+**The `TD-80` delivery block, below this point, is retained:**
 
 **`TD-80` is CLOSED for the scope delivered — and deliberately not for
 more than that.** Its own original text lists markup, annotation and

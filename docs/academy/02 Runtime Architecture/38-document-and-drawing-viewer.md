@@ -1,7 +1,8 @@
 # Document & Drawing Viewer
 
 **Programme:** Product Convergence & Recovery, 2026-08-29 ·
-**Debt:** `TD-80` (closed for scope delivered) · **Decision:** `ADR-0115` ·
+**Debt:** `TD-80` (closed for scope delivered; visually accepted
+2026-08-29) · **Decision:** `ADR-0115` ·
 **Code:** `Tempest.App.Workspace.Viewing`,
 `Tempest.Desktop.Viewing`
 
@@ -131,8 +132,79 @@ a literal, byte-for-byte valid PNG.
 > the test harness was wrong in a way that would have silently weakened
 > the suite if the assertion had simply been relaxed to match.
 
+## What the tests could not see
+
+`TD-80` closed with 287 Desktop tests green, and the viewer still had four
+user-visible defects in it — one of them fatal to the whole feature. All
+four were found the first time anyone *rendered* the window.
+
+The Desktop suite runs on Avalonia's headless platform with
+`UseHeadlessDrawing` on: there is no rasteriser, so `CaptureRenderedFrame`
+throws and nothing is ever drawn. Those tests assert over control state —
+`PageIndicatorText`, `Session.Status`, `RenderedPage.PixelSize` — which is
+the right thing to assert and is not the same thing as looking. A separate
+throwaway harness (`UseSkia()`, `UseHeadlessDrawing = false`) drove the
+real `MainWindow` — navigating to real objects, pressing the real buttons
+on them — and wrote PNGs of what came out.
+
+**There was no Open button.** `ObjectEditorView.TryCreate` populates the
+editor before it returns; the attachment rows only carry an Open button
+when something can handle the request; and the shell subscribes *after*
+`TryCreate` returns. So on a freshly opened object the button was never
+built, and the entire viewer was unreachable from the running application.
+Every headless test passed, because every one of them called the launcher
+directly — which is the shape of a test that verifies the destination and
+never the door. The event now re-populates the attachment rows when it
+gains its first subscriber, which closes the ordering hazard where it
+lives instead of asking every caller to remember to refresh.
+
+**A closed viewer tab could never be re-opened.** The tab strip's own
+close button is `TD-72`'s: it removes the panel from the layout tree and
+tells the launcher nothing. The launcher went on believing the attachment
+was open, so the next open took the "bring it forward" path and called
+`SelectPanel` on a panel that was no longer in the tree — which does
+nothing, silently. The drawing was unreachable for the rest of the
+session. The suite had a close test and a re-open test; neither composed
+them, because `AttachmentViewers.Close` — the launcher's own door — keeps
+the map straight, and the door users actually use does not.
+
+**Missing, Corrupt and Unsupported each showed a full page-and-zoom
+toolbar that could not do anything.** Page arrows, a zoom stepper, Fit and
+100%, disabled, around an empty gap where the page indicator had been,
+above the words "No content stored". Every assertion about that state
+passed: the message was right, the status was right, `RenderedPage` was
+correctly null. Nothing asserted what else was on screen, and what else
+was on screen said the viewer was working and the user had not found the
+right button yet.
+
+**A page of another size was drawn stretched into the previous page's
+shape.** The viewport carries the content size that decides both the fit
+zoom and the rendered width and height, and a page turn never updated it:
+turning from the audit drawing's landscape first sheet to its portrait
+second one drew that page into the landscape rectangle, at roughly half
+its true height. `WithContentSize` had been there from the first commit,
+correct and re-fitting — and the multi-page test fixture had been built
+with three deliberately different page sizes and a comment saying why.
+Nobody called the one from the other. **A model can be right and
+unreached**, and the tests that covered the model could not tell.
+
+> **The transferable lesson.** State assertions answer "is the control in
+> the right state"; they cannot answer "is the right thing on screen", and
+> the second question has its own defects — including whether the feature
+> can be reached at all. A suite that always enters through the API will
+> pass over a missing button forever. If a suite has never drawn the UI,
+> render it once before calling the work accepted: a throwaway harness and
+> an afternoon of looking is the cheapest audit available.
+
 ## What we did not do, and said so
 
+- **The drawing tabs over the object, rather than sitting beside it.**
+  Mock-up 4 shows both at once, in adjacent columns. Docking `Into` the
+  document group was the deliberate choice — a viewer with its own
+  reserved column is the fixed-grid thinking `TD-72` removed — and the
+  panel drags out to a split in one gesture. Recorded as a real
+  difference in information hierarchy rather than changed, because a
+  default docking position is a design decision, not an audit finding.
 - **No markup, annotation or rotation** (`TD-98`). `TD-80`'s own text
   lists them; this scope did not include them. They need an annotation
   model and a decision about whether an annotation is an engineering

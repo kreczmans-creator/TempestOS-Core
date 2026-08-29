@@ -74,11 +74,23 @@ public sealed class AttachmentViewerLauncher
         // Already open: bring it forward rather than opening a second tab
         // onto the same file, which is the behaviour every document
         // application has and the one a user expects.
-        if (PanelFor(attachment.Id) is { } existingPanelId &&
-            _registry.Find(existingPanelId)?.Content is DocumentViewerView existing)
+        if (PanelFor(attachment.Id) is { } existingPanelId)
         {
-            _layout.Apply(tree => tree.SelectPanel(existingPanelId));
-            return existing;
+            if (_layout.Tree.Contains(existingPanelId) &&
+                _registry.Find(existingPanelId)?.Content is DocumentViewerView existing)
+            {
+                _layout.Apply(tree => tree.SelectPanel(existingPanelId));
+                return existing;
+            }
+
+            // The panel is remembered here but no longer in the layout,
+            // which is what closing the tab from the strip's own close
+            // button leaves behind: `TD-72` removes the panel from the tree
+            // and nothing tells this launcher. Forgetting it here is what
+            // makes re-opening work — otherwise the second open selects a
+            // panel that is not there, silently does nothing, and the
+            // drawing is unreachable for the rest of the session.
+            _panelsByAttachment.Remove(attachment.Id);
         }
 
         var view = new DocumentViewerView();

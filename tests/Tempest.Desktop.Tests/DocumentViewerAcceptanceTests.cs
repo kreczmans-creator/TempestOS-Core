@@ -1,8 +1,12 @@
+using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
+using Avalonia.Interactivity;
+using Avalonia.LogicalTree;
 using Tempest.App.Workspace.Documents;
 using Tempest.App.Workspace.Viewing;
 using Tempest.Core.Commands;
 using Tempest.Core.EngineeringDomain;
+using Tempest.Desktop.Editors;
 using Tempest.Desktop.Viewing;
 
 namespace Tempest.Desktop.Tests;
@@ -421,6 +425,221 @@ public sealed class DocumentViewerAcceptanceTests
             Assert.Equal(ViewableDocumentFormat.Text, viewer.Session!.Format);
             Assert.True(viewer.Session!.PageCount > 1);
             Assert.NotNull(viewer.RenderedPage);
+        }
+        finally
+        {
+            await host.ShutdownAsync();
+            await host.DisposeAsync();
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task ClosingTheTabFromTheLayoutItself_ThenOpeningTheSameDrawingAgain_BringsItBack()
+    {
+        // The close a user actually performs. `AttachmentViewers.Close` is
+        // the launcher's own door; the tab strip's own close button is
+        // `TD-72`'s, and it removes the panel from the layout tree without
+        // telling the launcher anything. Found by the `TD-80` visual audit:
+        // after that close, re-opening the same attachment selected a panel
+        // that was no longer there, did nothing at all, and left the
+        // drawing unreachable for the rest of the session.
+        var root = WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath();
+
+        var host = new WorkspaceHost(root);
+        try
+        {
+            await host.StartAsync();
+            var window = new MainWindow(host);
+
+            var (documentId, attachmentId) = await CreateDocumentWithAttachmentAsync(
+                host, "DWG-900", "reopened.pdf", "application/pdf", DocumentPageSourceTests.MultiPagePdf());
+            var (owner, attachment) = await ResolveAsync(host, documentId, attachmentId);
+
+            var opened = await window.AttachmentViewers.OpenAsync(owner, attachment, 800, 600);
+            var firstPanel = window.AttachmentViewers.PanelFor(attachmentId)!.Value;
+            Assert.True(window.WorkspaceLayout.IsPanelVisible(firstPanel));
+
+            // Exactly what LayoutTabGroupView's own close button raises.
+            window.WorkspaceLayout.Apply(tree => tree.Remove(firstPanel));
+            Assert.False(window.WorkspaceLayout.Tree.Contains(firstPanel));
+
+            var reopened = await window.AttachmentViewers.OpenAsync(owner, attachment, 800, 600);
+            var secondPanel = window.AttachmentViewers.PanelFor(attachmentId)!.Value;
+
+            Assert.NotEqual(firstPanel, secondPanel);
+            Assert.True(window.WorkspaceLayout.Tree.Contains(secondPanel));
+            Assert.True(window.WorkspaceLayout.IsPanelVisible(secondPanel));
+            Assert.Equal(DocumentViewStatus.Ready, reopened.Session!.Status);
+            Assert.NotNull(reopened.RenderedPage);
+            Assert.Single(window.AttachmentViewers.OpenAttachmentIds);
+        }
+        finally
+        {
+            await host.ShutdownAsync();
+            await host.DisposeAsync();
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task ADocumentThatCannotBeShown_ShowsNoPageOrZoomControls_WhileOneThatCanDoes()
+    {
+        // A row of page arrows, a zoom stepper, Fit and 100% over "No
+        // content stored" is chrome for a document that is not there: it
+        // reads as a working viewer whose right button the user has not
+        // found yet, when in fact none of them can do anything. Found by
+        // the `TD-80` visual audit.
+        var root = WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath();
+
+        var host = new WorkspaceHost(root);
+        try
+        {
+            await host.StartAsync();
+            var window = new MainWindow(host);
+
+            var (readyDocument, readyAttachment) = await CreateDocumentWithAttachmentAsync(
+                host, "DWG-901", "shown.pdf", "application/pdf", DocumentPageSourceTests.MultiPagePdf());
+            var (readyOwner, ready) = await ResolveAsync(host, readyDocument, readyAttachment);
+            var readyViewer = await window.AttachmentViewers.OpenAsync(readyOwner, ready, 800, 600);
+
+            Assert.True(readyViewer.AreViewControlsVisible);
+            Assert.Equal("Page 1 of 3", readyViewer.PageIndicatorText);
+
+            byte[] zipContainer = [0x50, 0x4B, 0x03, 0x04, 0x14, 0x00, 0x00, 0x00, 0x08, 0x00, 0xFF, 0xFE, 0x00, 0x1A];
+            var (unsupportedDocument, unsupportedAttachment) = await CreateDocumentWithAttachmentAsync(
+                host, "DOC-902", "notes.docx",
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document", zipContainer);
+            var (unsupportedOwner, unsupported) = await ResolveAsync(host, unsupportedDocument, unsupportedAttachment);
+            var unsupportedViewer = await window.AttachmentViewers.OpenAsync(unsupportedOwner, unsupported, 800, 600);
+
+            Assert.True(unsupportedViewer.IsShowingUnavailableState);
+            Assert.False(unsupportedViewer.AreViewControlsVisible);
+            Assert.Equal(string.Empty, unsupportedViewer.PageIndicatorText);
+            Assert.Equal(string.Empty, unsupportedViewer.ZoomIndicatorText);
+
+            // A viewer that has never been opened is in the same position.
+            Assert.False(new DocumentViewerView().AreViewControlsVisible);
+
+            // And the one that can be shown is unaffected by any of it.
+            Assert.True(readyViewer.AreViewControlsVisible);
+        }
+        finally
+        {
+            await host.ShutdownAsync();
+            await host.DisposeAsync();
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task TheOpenButtonOnAnAttachmentRow_ExistsInARealEditor_AndOpensTheViewer()
+    {
+        // The user's actual entry point, and the one nothing tested. The
+        // `TD-80` visual audit rendered the real editor and found no Open
+        // button on it at all: TryCreate populates the attachment rows
+        // before it returns, the rows only carry an Open button when
+        // something can handle it, and the shell subscribes afterwards. The
+        // viewer was unreachable from the UI on a freshly opened object —
+        // every headless test passed, because every one of them called the
+        // launcher directly.
+        var root = WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath();
+
+        var host = new WorkspaceHost(root);
+        try
+        {
+            await host.StartAsync();
+            var window = new MainWindow(host);
+
+            var (documentId, attachmentId) = await CreateDocumentWithAttachmentAsync(
+                host, "DWG-903", "from-the-button.pdf", "application/pdf", DocumentPageSourceTests.MultiPagePdf());
+
+            // Exactly what activating the object in the Explorer does.
+            await window.NavigateToObjectAsync(documentId, DocumentObjectFactoryRegistry.Document);
+
+            var editor = window.GetLogicalDescendants().OfType<ObjectEditorView>()
+                .Single(e => e.GetLogicalDescendants().OfType<TextBlock>()
+                    .Any(t => t.Text?.Contains("from-the-button.pdf", StringComparison.Ordinal) == true));
+
+            var open = editor.GetLogicalDescendants().OfType<Button>()
+                .Single(b => b.Content as string == "Open");
+
+            open.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+
+            // Fire-and-forget by design, so wait for the open to land.
+            for (var attempt = 0; attempt < 200 && window.AttachmentViewers.OpenAttachmentIds.Count == 0; attempt++)
+                await Task.Delay(10);
+
+            Assert.Equal([attachmentId], window.AttachmentViewers.OpenAttachmentIds);
+
+            var panelId = window.AttachmentViewers.PanelFor(attachmentId)!.Value;
+            Assert.True(window.WorkspaceLayout.IsPanelVisible(panelId));
+
+            var viewer = window.GetLogicalDescendants().OfType<DocumentViewerView>().Single();
+            Assert.Equal(DocumentViewStatus.Ready, viewer.Session!.Status);
+            Assert.Equal("from-the-button.pdf", viewer.Session!.FileName);
+            Assert.NotNull(viewer.RenderedPage);
+        }
+        finally
+        {
+            await host.ShutdownAsync();
+            await host.DisposeAsync();
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task TurningToAPageOfAnotherSize_ReFitsToThatPage_RatherThanStretchingItIntoTheLastOnesShape()
+    {
+        // The multi-page fixture was built with three deliberately
+        // different page sizes — A4 portrait, landscape, small square —
+        // and nothing at the view level ever asserted what happened on the
+        // turn. The `TD-80` visual audit rendered page 2 and found a
+        // landscape sheet drawn into the portrait page's rectangle,
+        // squashed to roughly half its height: the viewport still carried
+        // page 1's content size, which decides both the fit zoom and the
+        // rendered width and height the page is drawn at.
+        var root = WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath();
+
+        var host = new WorkspaceHost(root);
+        try
+        {
+            await host.StartAsync();
+            var window = new MainWindow(host);
+
+            var (documentId, attachmentId) = await CreateDocumentWithAttachmentAsync(
+                host, "DWG-904", "mixed-sheets.pdf", "application/pdf", DocumentPageSourceTests.MultiPagePdf());
+            var (owner, attachment) = await ResolveAsync(host, documentId, attachmentId);
+
+            var viewer = await window.AttachmentViewers.OpenAsync(owner, attachment, 800, 600);
+
+            // Page 1 is A4 portrait.
+            Assert.Equal(595, viewer.Session!.Viewport.ContentWidth, 0.5);
+            Assert.Equal(842, viewer.Session!.Viewport.ContentHeight, 0.5);
+            Assert.True(viewer.Session!.Viewport.IsFitted);
+
+            // Page 2 is landscape, and the viewport must say so.
+            viewer.NextPage();
+            Assert.Equal(842, viewer.Session!.Viewport.ContentWidth, 0.5);
+            Assert.Equal(595, viewer.Session!.Viewport.ContentHeight, 0.5);
+            Assert.True(viewer.Session!.Viewport.IsFitted);
+            Assert.True(viewer.Session!.Viewport.RenderedWidth > viewer.Session!.Viewport.RenderedHeight);
+
+            // Page 3 is a small square, and so is what gets drawn.
+            viewer.NextPage();
+            Assert.Equal(200, viewer.Session!.Viewport.ContentWidth, 0.5);
+            Assert.Equal(200, viewer.Session!.Viewport.ContentHeight, 0.5);
+            Assert.Equal(
+                viewer.Session!.Viewport.RenderedWidth,
+                viewer.Session!.Viewport.RenderedHeight,
+                0.5);
+
+            // And the bitmap the control is showing has the page's own
+            // shape, not the previous page's — the squash, measured.
+            var rendered = viewer.RenderedPage!;
+            Assert.Equal(rendered.PixelSize.Width, rendered.PixelSize.Height);
+
+            // Back to page 1, re-fitted to portrait again.
+            viewer.GoToPage(1);
+            Assert.Equal(595, viewer.Session!.Viewport.ContentWidth, 0.5);
+            Assert.Equal(842, viewer.Session!.Viewport.ContentHeight, 0.5);
+            Assert.True(viewer.Session!.Viewport.IsFitted);
         }
         finally
         {

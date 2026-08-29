@@ -154,6 +154,13 @@ public sealed class ObjectEditorView : UserControl
     private bool _isDirty;
     private bool _suppressDirtyTracking;
 
+    private Action<IHasAttachments, IAttachment>? _openAttachmentRequested;
+
+    // The object the sections were last built from, so the attachment rows
+    // can be rebuilt when OpenAttachmentRequested gains its first
+    // subscriber without going back to the repository for a second read.
+    private IEngineeringObject? _populatedTarget;
+
     /// <summary>Raised whenever <see cref="IsDirty"/> changes.</summary>
     public event Action<bool>? DirtyChanged;
 
@@ -177,13 +184,39 @@ public sealed class ObjectEditorView : UserControl
     /// (`TD-80`).
     /// </summary>
     /// <remarks>
+    /// <para>
     /// An event rather than a direct call into the viewer: this editor
     /// knows an object and its attachments, and deliberately not the
     /// workspace it is docked in. The shell decides where a document
     /// opens, which is what keeps the editor usable outside the docked
     /// workspace and keeps the viewer out of its dependencies.
+    /// </para>
+    /// <para>
+    /// A custom accessor, for one reason found by the `TD-80` visual
+    /// audit: <see cref="TryCreate"/> populates the editor before it
+    /// returns, so the shell cannot possibly have subscribed by the time
+    /// the attachment rows are built — and the rows only carry an Open
+    /// button when something can handle it. The button therefore never
+    /// existed in the running application, and the whole viewer was
+    /// unreachable from the UI until some later refresh happened to rebuild
+    /// the section. Re-populating on the first subscriber closes that
+    /// ordering hazard where it lives, rather than requiring every caller
+    /// to remember to refresh after wiring up.
+    /// </para>
     /// </remarks>
-    public event Action<IHasAttachments, IAttachment>? OpenAttachmentRequested;
+    public event Action<IHasAttachments, IAttachment>? OpenAttachmentRequested
+    {
+        add
+        {
+            var hadNone = _openAttachmentRequested is null;
+            _openAttachmentRequested += value;
+
+            if (hadNone && _openAttachmentRequested is not null && _populatedTarget is not null)
+                PopulateAttachments(_populatedTarget);
+        }
+
+        remove => _openAttachmentRequested -= value;
+    }
 
     private ObjectEditorView(
         Guid objectId, string objectKind, EngineeringDomainContext domainContext, IWorkspaceManager manager, Action<Guid, string> navigateToObject,
@@ -378,6 +411,7 @@ public sealed class ObjectEditorView : UserControl
     private void PopulateFrom(IEngineeringObject target)
     {
         _suppressDirtyTracking = true;
+        _populatedTarget = target;
 
         var identifier = (target as IHasBusinessIdentifier)?.Identifier;
         _identityReadout.Text = identifier is null
@@ -829,11 +863,11 @@ public sealed class ObjectEditorView : UserControl
                     },
                 };
 
-                if (OpenAttachmentRequested is not null)
+                if (_openAttachmentRequested is not null)
                 {
                     var open = new Button { Content = "Open", Padding = new Thickness(10, 1), FontSize = DesignTokens.FontSizeBody };
                     var captured = attachment;
-                    open.Click += (_, _) => OpenAttachmentRequested?.Invoke(attachable, captured);
+                    open.Click += (_, _) => _openAttachmentRequested?.Invoke(attachable, captured);
                     row.Children.Add(open);
                 }
 

@@ -48,6 +48,7 @@ public sealed class DocumentViewerView : UserControl
     private Point? _dragOrigin;
     private double _renderedZoom;
     private int _renderedPage = -1;
+    private int _sizedPage = -1;
 
     /// <summary>Initialises a new instance of the <see cref="DocumentViewerView"/> class.</summary>
     public DocumentViewerView()
@@ -119,6 +120,12 @@ public sealed class DocumentViewerView : UserControl
     /// <summary>The zoom indicator's text, exactly as a user reads it.</summary>
     public string ZoomIndicatorText => _zoomIndicator.Text ?? string.Empty;
 
+    /// <summary>
+    /// Whether the page and zoom controls are on screen at all — false
+    /// whenever there is nothing to page through or zoom.
+    /// </summary>
+    public bool AreViewControlsVisible => _fit.IsVisible;
+
     /// <summary>Opens a document that loaded, with the source that renders its pages.</summary>
     public void Open(DocumentViewSession session, IDocumentPageSource source)
     {
@@ -129,7 +136,9 @@ public sealed class DocumentViewerView : UserControl
         _source = source;
         _renderedPage = -1;
         _renderedZoom = 0;
+        _sizedPage = -1;
         Session = session;
+        SyncPageSize();
         Refresh();
     }
 
@@ -142,6 +151,7 @@ public sealed class DocumentViewerView : UserControl
         _source = null;
         _rendered = null;
         _page.Source = null;
+        _sizedPage = -1;
         Session = session;
         Refresh();
     }
@@ -180,8 +190,52 @@ public sealed class DocumentViewerView : UserControl
             return;
 
         Session = updated;
+
+        // Before anything is drawn: a page of a different size is different
+        // content, and the viewport has to know that before it decides a
+        // zoom or a rendered size.
+        SyncPageSize();
+
         Refresh();
-        SessionChanged?.Invoke(updated);
+        SessionChanged?.Invoke(Session);
+    }
+
+    /// <summary>
+    /// Tells the viewport the current page's own size, when it differs
+    /// from the page before it.
+    /// </summary>
+    /// <remarks>
+    /// A document's pages are not all one size — a drawing set mixes A3
+    /// landscape sheets with A4 portrait ones, and this codebase's own
+    /// multi-page fixture was built that way on purpose. The viewport
+    /// carries the content size that decides both the fit zoom and the
+    /// rendered width and height the page is drawn at, so a page turn that
+    /// left it on the previous page's size drew the new page stretched into
+    /// the old page's shape: a portrait sheet squashed into landscape at
+    /// roughly half its true height. Found by the `TD-80` visual audit —
+    /// and the fixture written with three deliberately different page
+    /// sizes had been there the whole time, exercising the model that was
+    /// already correct and never the view that failed to ask it.
+    /// </remarks>
+    private void SyncPageSize()
+    {
+        if (_source is null || Session is not { IsReady: true } session)
+            return;
+
+        var pageIndex = session.CurrentPage - 1;
+        if (pageIndex == _sizedPage)
+            return;
+
+        _sizedPage = pageIndex;
+
+        var page = _source.PageSize(pageIndex);
+        var viewport = session.Viewport;
+
+        if (Math.Abs(page.Width - viewport.ContentWidth) > 0.01 ||
+            Math.Abs(page.Height - viewport.ContentHeight) > 0.01)
+        {
+            Session = session.WithPageSize(page.Width, page.Height);
+        }
     }
 
     private void Refresh()
@@ -192,7 +246,7 @@ public sealed class DocumentViewerView : UserControl
             _unavailable.IsVisible = true;
             _unavailableHeadline.Text = "No document open";
             _unavailableDetail.Text = "Open an attachment from an engineering object to view it here.";
-            SetToolbarEnabled(false);
+            SetViewControlsShown(false);
             return;
         }
 
@@ -205,12 +259,14 @@ public sealed class DocumentViewerView : UserControl
             (_unavailableHeadline.Text, _unavailableDetail.Text) = DescribeUnavailable(session);
             _pageIndicator.Text = string.Empty;
             _zoomIndicator.Text = string.Empty;
-            SetToolbarEnabled(false);
+            SetViewControlsShown(false);
             return;
         }
 
         _canvas.IsVisible = true;
         _unavailable.IsVisible = false;
+
+        SetViewControlsShown(true);
 
         _pageIndicator.Text = session.IsMultiPage
             ? $"Page {session.CurrentPage} of {session.PageCount}"
@@ -297,14 +353,35 @@ public sealed class DocumentViewerView : UserControl
         Canvas.SetTop(_page, -viewport.OffsetY);
     }
 
-    private void SetToolbarEnabled(bool enabled)
+    /// <summary>
+    /// Shows or hides the page and zoom controls as a group.
+    /// </summary>
+    /// <remarks>
+    /// Hidden rather than merely disabled when nothing is open. A row of
+    /// page arrows, a zoom stepper, Fit and 100% over a surface reading
+    /// "No content stored" is chrome for a document that is not there: it
+    /// says the viewer is working and the user simply has not found the
+    /// right button, when in fact none of them can do anything. The
+    /// message is the whole content of that state, and it should be the
+    /// whole of what the state shows.
+    /// </remarks>
+    private void SetViewControlsShown(bool shown)
     {
-        _previousPage.IsEnabled = enabled;
-        _nextPage.IsEnabled = enabled;
-        _zoomIn.IsEnabled = enabled;
-        _zoomOut.IsEnabled = enabled;
-        _fit.IsEnabled = enabled;
-        _actualSize.IsEnabled = enabled;
+        _previousPage.IsVisible = shown;
+        _nextPage.IsVisible = shown;
+        _pageIndicator.IsVisible = shown;
+        _zoomOut.IsVisible = shown;
+        _zoomIndicator.IsVisible = shown;
+        _zoomIn.IsVisible = shown;
+        _fit.IsVisible = shown;
+        _actualSize.IsVisible = shown;
+
+        _previousPage.IsEnabled = shown;
+        _nextPage.IsEnabled = shown;
+        _zoomIn.IsEnabled = shown;
+        _zoomOut.IsEnabled = shown;
+        _fit.IsEnabled = shown;
+        _actualSize.IsEnabled = shown;
     }
 
     private void OnPointerPressed(object? sender, PointerPressedEventArgs e)
