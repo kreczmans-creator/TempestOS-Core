@@ -1,6 +1,5 @@
 using Tempest.Core.Commands;
 using Tempest.Core.Requirements;
-using Tempest.Samples;
 
 namespace Tempest.App.Workspace.Requirements;
 

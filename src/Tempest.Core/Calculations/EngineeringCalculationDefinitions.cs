@@ -1,15 +1,35 @@
-using Tempest.Core.Calculations;
 using Tempest.Core.UnitsAndQuantities;
 
-namespace Tempest.Samples;
+namespace Tempest.Core.Calculations;
 
 /// <summary>
-/// Five representative, real engineering calculations — Bolt, Beam,
-/// Bearing, Pressure, and Material Selection — demonstrating the
-/// Calculation Framework (`WP 7.1D`) against genuine, if simplified,
-/// hand-calculation formulas rather than another trivial arithmetic
-/// stand-in like <see cref="DoubleLengthCalculationDefinition"/>.
-/// Mirrors that class's own shape exactly (`WP 9.2A`): each definition is
+/// The product's engineering calculation catalogue — Bolt, Beam,
+/// Bearing, Pressure and Material Selection — five real, if simplified,
+/// hand-calculation formulas, registered into the Workspace by
+/// <c>Tempest.App.Workspace.Calculations.CalculationsWorkspaceRegistration</c>.
+/// </summary>
+/// <remarks>
+/// <para>
+/// <b>These are product content, and they live in the domain (`TD-75`
+/// phase 1).</b> They depend on nothing but
+/// <see cref="ICalculationDefinition{TInput, TResult}"/> and
+/// <c>Tempest.Core.UnitsAndQuantities</c> — a calculation catalogue is
+/// engineering knowledge, not workspace wiring, so it belongs beside the
+/// framework that executes it rather than beside the registration that
+/// surfaces it. That also keeps it reachable from the sample harness,
+/// which demonstrates these calculations and references only
+/// <c>Tempest.Core</c>. They were declared in
+/// <c>Tempest.Samples</c> until 2026-08-30 — so the product's entire
+/// calculation catalogue shipped inside the sample harness, and removing
+/// that harness removed the calculations. The 2026-08-30 Product Gap
+/// Reconciliation audit measured the coupling and found it was never a
+/// packaging problem: it was product content filed in the wrong assembly.
+/// The trivial arithmetic stand-in <c>DoubleLengthCalculationDefinition</c>
+/// stays in <c>Tempest.Samples</c>, because that one genuinely is a
+/// demonstration.
+/// </para>
+/// <para>
+/// Each definition is
 /// a small, stateless, registrable <see cref="ICalculationDefinition{TInput, TResult}"/>,
 /// pure in <see cref="ICalculationDefinition{TInput, TResult}.Calculate"/>,
 /// declaring its own assumptions/constraints once as

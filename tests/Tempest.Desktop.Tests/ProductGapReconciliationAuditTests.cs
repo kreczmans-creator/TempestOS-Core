@@ -3,6 +3,13 @@ using Avalonia.Headless.XUnit;
 using Avalonia.LogicalTree;
 using Tempest.App.Shell;
 using Tempest.Desktop.Views;
+using Tempest.App.Workspace.Calculations;
+using Tempest.App.Workspace.Documents;
+using Tempest.App.Workspace.Manufacturing;
+using Tempest.App.Workspace.Mechanical;
+using Tempest.App.Workspace.Requirements;
+using Tempest.App.Workspace.Verification;
+using Tempest.Core.Calculations;
 
 namespace Tempest.Desktop.Tests;
 
@@ -161,60 +168,6 @@ public sealed class ProductGapReconciliationAuditTests
 
         Assert.DoesNotContain("no task surface", shellNote, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("assignment workflow or board has been built", shellNote, StringComparison.OrdinalIgnoreCase);
-    }
-
-    // ================================================================
-    // TD-75: what the sample assembly is actually load-bearing for
-    // ================================================================
-
-    /// <summary>
-    /// `TD-75` is recorded as a packaging problem. It is not: the product's
-    /// own discipline navigation and its engineering calculation catalogue
-    /// are declared inside <c>Tempest.Samples</c>.
-    /// </summary>
-    /// <remarks>
-    /// This test states the coupling as it is today so that the size of the
-    /// remaining work is visible rather than inferred. It is expected to be
-    /// deleted — not weakened — by the work package that moves this content
-    /// into the product.
-    /// </remarks>
-    [Fact]
-    public void TheProductsOwnDisciplineNavigationAndCalculations_StillLiveInTheSampleAssembly()
-    {
-        var samples = typeof(Tempest.Samples.MechanicalWorkspaceExplorerModule).Assembly;
-        Assert.Equal("Tempest.Samples", samples.GetName().Name);
-
-        // Every real discipline explorer area takes its identity from a
-        // type in the sample assembly.
-        foreach (var typeName in new[]
-        {
-            "MechanicalWorkspaceExplorerModule",
-            "DocumentsWorkspaceExplorerModule",
-            "RequirementsWorkspaceExplorerModule",
-            "VerificationWorkspaceExplorerModule",
-            "CalculationsWorkspaceExplorerModule",
-            "ManufacturingWorkspaceExplorerModule",
-        })
-        {
-            var type = samples.GetType($"Tempest.Samples.{typeName}");
-            Assert.True(type is not null, $"{typeName} was expected in Tempest.Samples.");
-            Assert.NotNull(type!.GetField("NavigationItemId"));
-        }
-
-        // And so does the engineering calculation catalogue.
-        foreach (var typeName in new[]
-        {
-            "BoltShearCapacityCalculationDefinition",
-            "BeamBendingStressCalculationDefinition",
-            "BearingLoadCapacityCalculationDefinition",
-            "PressureVesselWallThicknessCalculationDefinition",
-            "MaterialSelectionMarginCalculationDefinition",
-        })
-        {
-            Assert.True(
-                samples.GetType($"Tempest.Samples.{typeName}") is not null,
-                $"{typeName} was expected in Tempest.Samples.");
-        }
     }
 
     /// <summary>`TD-75`'s user-visible half, stated as it is: fictional sample content is on screen in a real launch.</summary>

@@ -10,6 +10,7 @@ using Tempest.Core.EngineeringDomain;
 using Tempest.Core.UnitsAndQuantities;
 using Tempest.Desktop.Views;
 using Tempest.Samples;
+using Tempest.Core.Calculations;
 
 namespace Tempest.Desktop.Tests;
 

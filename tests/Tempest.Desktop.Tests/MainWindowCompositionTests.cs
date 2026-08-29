@@ -7,6 +7,7 @@ using Tempest.Core.Notifications;
 using Tempest.Desktop.Docking;
 using Tempest.Desktop.Views;
 using Tempest.Samples;
+using Tempest.App.Workspace.Mechanical;
 
 namespace Tempest.Desktop.Tests;
 

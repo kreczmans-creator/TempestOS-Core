@@ -9,6 +9,10 @@ using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Requirements;
 using Tempest.Desktop.Editors;
 using Tempest.Samples;
+using Tempest.App.Workspace.Documents;
+using Tempest.App.Workspace.Mechanical;
+using Tempest.App.Workspace.Requirements;
+using Tempest.App.Workspace.Verification;
 
 namespace Tempest.Desktop.Tests;
 

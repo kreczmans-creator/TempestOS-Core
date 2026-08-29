@@ -18,6 +18,24 @@ internal static class SampleExplorerContent
     /// <summary>The <c>Kind</c> of a sample component-level object.</summary>
     public const string ComponentKind = "SampleComponent";
 
+    /// <summary>
+    /// The navigation area this sample content is attached to.
+    /// </summary>
+    /// <remarks>
+    /// <b>Disclosed duplication, and the only one `TD-75` phase 1 leaves.</b>
+    /// The same literal is declared by
+    /// <c>Tempest.Samples.WorkspaceExplorerSampleModule.NavigationItemId</c>,
+    /// which registers the navigation item this provider serves. It is
+    /// spelled twice because the two sit either side of the dependency this
+    /// phase removed: <c>Tempest.Samples</c> references only
+    /// <c>Tempest.Core</c>, so it cannot read a constant declared here, and
+    /// <c>Tempest.App</c> must no longer reference it. Kept honest by
+    /// <c>SampleExplorerAreaIdTests</c>, which fails if the two ever drift.
+    /// It disappears with the rest of the sample wiring in `TD-75`'s
+    /// remaining packaging phase.
+    /// </remarks>
+    public const string NavigationItemId = "tempest.samples.workspace-explorer.objects";
+
     private static readonly Guid AssembliesCategoryId = Guid.Parse("00000000-0000-0000-0001-000000000001");
     private static readonly Guid PrimaryStructureId = Guid.Parse("00000000-0000-0000-0001-000000000002");
     private static readonly Guid SecondaryStructureId = Guid.Parse("00000000-0000-0000-0001-000000000003");

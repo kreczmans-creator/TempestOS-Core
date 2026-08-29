@@ -10,6 +10,7 @@ using Tempest.Core.Runtime;
 using Tempest.Core.Tests.Plugins;
 using Tempest.Core.UnitsAndQuantities;
 using Tempest.Samples;
+using Tempest.App.Workspace.Requirements;
 
 namespace Tempest.Core.Tests.Workspace;
 

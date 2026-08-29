@@ -2,7 +2,6 @@ using Tempest.App.Workspace.Documents;
 using Tempest.App.Workspace.Verification;
 using Tempest.Core.Commands;
 using Tempest.Core.EngineeringDomain;
-using Tempest.Samples;
 
 namespace Tempest.App.Workspace.Manufacturing;
 

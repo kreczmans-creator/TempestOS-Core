@@ -8,6 +8,9 @@ using Tempest.Core.Runtime;
 using Tempest.Core.Tests.Plugins;
 using Tempest.Core.Verification;
 using Tempest.Samples;
+using Tempest.App.Workspace.Calculations;
+using Tempest.App.Workspace.Documents;
+using Tempest.App.Workspace.Requirements;
 
 namespace Tempest.Core.Tests.Workspace;
 

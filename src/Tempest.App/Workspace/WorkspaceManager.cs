@@ -6,7 +6,6 @@ using Tempest.Core.Navigation;
 using Tempest.Core.Requirements;
 using Tempest.Core.Runtime;
 using Tempest.Core.Settings;
-using Tempest.Samples;
 
 namespace Tempest.App.Workspace;
 
@@ -63,12 +62,14 @@ public sealed class WorkspaceManager : IWorkspaceManager, IAsyncDisposable
 
         _host = host;
 
-        // Forces Tempest.Samples to load before Discovery runs — the same
-        // documented necessity first found by WP 5.0D: reading a const
-        // member alone does not force the assembly to load, and
-        // Discovery's own AppDomain scan would otherwise find zero
-        // Tempest.Samples modules.
-        _ = typeof(NavigationSampleModule).Assembly;
+        // `TD-75` phase 1: the forced load of Tempest.Samples that used to
+        // stand here is gone. It existed because the six discipline
+        // explorer modules lived in that assembly, so Discovery's own scan
+        // had to be made to see it before the product's own navigation
+        // would appear. Those modules are now declared by the disciplines
+        // that own them, in this assembly, which Discovery already scans —
+        // so the product no longer reaches into the sample harness to find
+        // its own navigation.
     }
 
     /// <inheritdoc />

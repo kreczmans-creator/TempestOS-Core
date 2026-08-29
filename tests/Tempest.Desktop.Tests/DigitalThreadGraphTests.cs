@@ -6,6 +6,7 @@ using Tempest.App.Workspace.Verification;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Desktop.DigitalThread;
 using Tempest.Samples;
+using Tempest.App.Workspace.Mechanical;
 
 namespace Tempest.Desktop.Tests;
 

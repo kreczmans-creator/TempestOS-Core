@@ -4,6 +4,7 @@ using Tempest.App.Workspace;
 using Tempest.Core.Commands;
 using Tempest.Desktop.Views;
 using Tempest.Samples;
+using Tempest.App.Workspace.Mechanical;
 
 namespace Tempest.Desktop.Tests;
 

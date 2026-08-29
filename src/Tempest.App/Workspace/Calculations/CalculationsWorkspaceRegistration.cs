@@ -1,7 +1,6 @@
 using Tempest.Core.Calculations;
 using Tempest.Core.Commands;
 using Tempest.Core.EngineeringDomain;
-using Tempest.Samples;
 
 namespace Tempest.App.Workspace.Calculations;
 

@@ -7,6 +7,7 @@ using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Runtime;
 using Tempest.Desktop.Views;
 using Tempest.Samples;
+using Tempest.App.Workspace.Mechanical;
 
 namespace Tempest.Desktop.Tests;
 

@@ -15,7 +15,6 @@ using Tempest.Core.Macros;
 using Tempest.Core.Requirements;
 using Tempest.Core.Runtime;
 using Tempest.Core.Verification;
-using Tempest.Samples;
 
 namespace Tempest.App.Composition;
 
@@ -94,7 +93,7 @@ public static class EngineeringWorkspaceComposer
         // (ADR-0067) end to end. Needs nothing from the Runtime Host, so it
         // is registered before the Host starts, exactly as the original
         // console Program.cs already did.
-        manager.RegisterExplorerArea(WorkspaceExplorerSampleModule.NavigationItemId, new SampleProjectExplorerNodeProvider(WorkspaceExplorerSampleModule.NavigationItemId));
+        manager.RegisterExplorerArea(SampleExplorerContent.NavigationItemId, new SampleProjectExplorerNodeProvider(SampleExplorerContent.NavigationItemId));
         manager.RegisterView(SampleExplorerContent.ComponentKind, new SampleWorkspaceViewFactory(SampleExplorerContent.ComponentKind));
 
         return (host, manager);
