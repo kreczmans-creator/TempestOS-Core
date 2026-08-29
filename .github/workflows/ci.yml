@@ -143,6 +143,17 @@ jobs:
           }
           $lines.Add("")
 
+          # Name every failed test in this job's own log and step summary.
+          # `dotnet test` runs both assemblies and prints one summary per
+          # assembly, so a solution-level exit code of 1 says only "something
+          # failed" - and the .trx that would say which test is, right now,
+          # unreachable, because artefact upload is refused for an
+          # account-level storage quota (see the upload steps' own note).
+          # Without this a red run cannot be diagnosed from CI at all.
+          # Diagnostic output only: the Test step above remains the gate and
+          # its exit code is untouched.
+          $failedResults = @()
+
           $trxFiles = Get-ChildItem -Path "TestResults/$config" -Filter "*.trx" -ErrorAction SilentlyContinue
           if ($trxFiles) {
             $lines.Add("| Test result file | Total | Passed | Failed |")
@@ -151,9 +162,25 @@ jobs:
               [xml]$trx = Get-Content $file.FullName
               $counters = $trx.TestRun.ResultSummary.Counters
               $lines.Add("| $($file.Name) | $($counters.total) | $($counters.passed) | $($counters.failed) |")
+              $failedResults += $trx.TestRun.Results.UnitTestResult |
+                Where-Object { $_.outcome -eq "Failed" }
             }
           } else {
             $lines.Add("_No test results found - the test step did not complete._")
+          }
+
+          if ($failedResults.Count -gt 0) {
+            $lines.Add("")
+            $lines.Add("#### Failed tests")
+            $lines.Add("")
+            Write-Host "--- Failed tests ($config) ---"
+            foreach ($result in $failedResults) {
+              $message = ($result.Output.ErrorInfo.Message -replace '\s+', ' ').Trim()
+              $lines.Add("- ``$($result.testName)`` - $message")
+              Write-Host "FAILED: $($result.testName)"
+              Write-Host "        $message"
+            }
+            Write-Host "--- end failed tests ($config) ---"
           }
 
           $lines -join "`n" | Add-Content -Path $env:GITHUB_STEP_SUMMARY
