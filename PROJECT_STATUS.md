@@ -1,5 +1,55 @@
 # TempestOS — Project Status
 
+**Last Updated:** 2026-08-29 (Project Documents & Requirements — `TD-102`).
+**The `v0.13.x` train remains CLOSED.**
+
+**`TD-102` is CLOSED — the two project areas that claimed to be
+implemented now are.** The Project Workspace's Documents and Requirements
+tabs were declared `NavigationAvailability.Implemented` and rendered a
+`DeclaredCapabilityView`, which shows its "Not yet implemented" badge only
+for `Declared` areas — so both drew a glyph, a title, a paragraph of prose
+and no badge. The descriptor table, the registers and the surface all
+agreed a capability existed that did not. Found by the post-`TD-80`
+product gap reassessment.
+
+**Documents join transitively; requirements join on the link that already
+exists.** `ProjectDocumentRegister` reads `ProjectMembership`, so a drawing
+on a Part inside a Sub-Assembly inside an Assembly is a project document —
+direct-children-only would find almost nothing in a real product
+structure. A requirement is *not* an engineering object, so
+`ProjectRequirementRegister` joins on allocation: a requirement belongs to
+a project when something it is allocated to is in that project. A
+`ProjectId` field on the requirements model was explicitly not added — it
+would be a second, competing answer to a question the platform can already
+answer. The honest consequence is stated rather than engineered around: an
+unallocated requirement belongs to no project, and the empty state says so.
+
+**Declared status and recorded verification are shown side by side**,
+because they can disagree, and a requirement marked Verified with nothing
+recorded behind it is exactly what a reviewer needs to find.
+
+**Opening a drawing goes through the same `TD-80` launcher the object
+editor uses** and changes no navigation state at all. Because the viewer
+is a panel in the Engineering workspace's layout, the row says where the
+document went — a button that appears to do nothing is indistinguishable
+from a broken one.
+
+**One new gap found and disclosed rather than patched.** The desktop shell
+establishes no principal: only sample modules call
+`EstablishCurrentPrincipal`, so permission-gated reads succeed or fail
+depending on which sample initialised last. The register handles it
+honestly — `Unknown` ("you may not read this") is kept distinct from
+`NotVerified` ("nothing was recorded") — and the real fix belongs with the
+Administration module. Recorded as `TD-103`.
+
+Suite: Core 2682/2682, Desktop 302/302, both configurations, 0 warnings,
+0 errors. Five mutations run, five killed. Every acceptance test drives
+project → area → document/requirement → action through the real
+`MainWindow`; runtime-verified by rendering the window. Academy:
+`docs/academy/02 Runtime Architecture/39-project-documents-and-requirements.md`.
+
+**The prior status block, below this point, is retained:**
+
 **Last Updated:** 2026-08-29 (Drawing / Document Viewer — `TD-80`,
 `ADR-0115` — visual acceptance audit). **The `v0.13.x` train remains
 CLOSED.**

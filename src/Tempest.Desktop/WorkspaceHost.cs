@@ -6,6 +6,7 @@ using Tempest.App.Workspace.Calculations;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Events;
 using Tempest.Core.Persistence;
+using Tempest.Core.Requirements;
 using Tempest.Core.Settings;
 using Tempest.Core.Configuration;
 using Tempest.Core.DependencyInjection;
@@ -141,6 +142,15 @@ public sealed class WorkspaceHost : IAsyncDisposable
         // graph, never cached and never inferred by a view.
         EngineeringScope = new EngineeringScope(shellNavigator, projectContext, domainContext);
 
+        // The two project-area read models. Both compose services that
+        // already exist and hold no state of their own, so they are
+        // constructed here beside the scope rather than registered as
+        // Platform Services — the identical `ADR-0103` shape every other
+        // Desktop-side collaborator uses.
+        ProjectDocuments = new ProjectDocumentRegister(domainContext);
+        ProjectRequirements = new ProjectRequirementRegister(
+            (IRequirementsService)host.Services!.GetService(typeof(IRequirementsService)), domainContext);
+
         // Recover where the user was, and which project they were in.
         // Order matters: the navigator's own restore opens the project,
         // so loading the context first would be redundant work, not a
@@ -162,6 +172,12 @@ public sealed class WorkspaceHost : IAsyncDisposable
 
     /// <summary>Gets the Engineering Workspace's own current scope (`TD-89`) — <see langword="null"/> before <see cref="StartAsync"/> completes.</summary>
     public IEngineeringScope? EngineeringScope { get; private set; }
+
+    /// <summary>Gets the open project's own document and drawing register — <see langword="null"/> before <see cref="StartAsync"/> completes.</summary>
+    public IProjectDocumentRegister? ProjectDocuments { get; private set; }
+
+    /// <summary>Gets the open project's own requirements register — <see langword="null"/> before <see cref="StartAsync"/> completes.</summary>
+    public IProjectRequirementRegister? ProjectRequirements { get; private set; }
 
     /// <summary>Persists current session state (`ADR-0064`, unchanged) and shuts the Workspace down — called from the main window's own Closing handler (Window Lifecycle).</summary>
     public async Task ShutdownAsync(CancellationToken cancellationToken = default)

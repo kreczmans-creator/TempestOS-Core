@@ -36,6 +36,8 @@ public sealed class ProjectWorkspaceView : UserControl
     private readonly IProjectContext _projectContext;
     private readonly IProjectDirectory _directory;
     private readonly IShellNavigator _navigator;
+    private readonly IProjectDocumentRegister _documents;
+    private readonly IProjectRequirementRegister _requirements;
 
     private readonly TextBlock _title = new() { FontSize = DesignTokens.FontSizeTitle, FontWeight = FontWeight.Bold };
     private readonly TextBlock _subtitle = new() { FontSize = DesignTokens.FontSizeCaption, Opacity = 0.85 };
@@ -46,6 +48,12 @@ public sealed class ProjectWorkspaceView : UserControl
 
     private readonly List<ContentControl> _areaHosts = [];
 
+    // The two areas with real surfaces of their own. Built once and
+    // refreshed in place, so the register a user is looking at survives a
+    // re-render of the project workspace around it.
+    private readonly ProjectDocumentsView _documentsView = new();
+    private readonly ProjectRequirementsView _requirementsView = new();
+
     private bool _suppressAreaSelection;
 
     /// <summary>Raised after the user asks to enter Engineering, so the shell can render it.</summary>
@@ -54,16 +62,45 @@ public sealed class ProjectWorkspaceView : UserControl
     /// <summary>Raised after the user closes the project.</summary>
     public event Action? ProjectClosed;
 
+    /// <summary>
+    /// Raised when the user asks to open one of this project's files,
+    /// carrying the owning object and the attachment.
+    /// </summary>
+    /// <remarks>
+    /// The shell decides where a document opens, exactly as it does for
+    /// the object editor's own Open button — this view never reaches into
+    /// the workspace layout itself.
+    /// </remarks>
+    public event Action<Guid, Guid>? OpenAttachmentRequested;
+
     /// <summary>Initialises a new instance of the <see cref="ProjectWorkspaceView"/> class.</summary>
-    public ProjectWorkspaceView(IProjectContext projectContext, IProjectDirectory directory, IShellNavigator navigator)
+    public ProjectWorkspaceView(
+        IProjectContext projectContext,
+        IProjectDirectory directory,
+        IShellNavigator navigator,
+        IProjectDocumentRegister documents,
+        IProjectRequirementRegister requirements)
     {
         ArgumentNullException.ThrowIfNull(projectContext);
         ArgumentNullException.ThrowIfNull(directory);
         ArgumentNullException.ThrowIfNull(navigator);
+        ArgumentNullException.ThrowIfNull(documents);
+        ArgumentNullException.ThrowIfNull(requirements);
 
         _projectContext = projectContext;
         _directory = directory;
         _navigator = navigator;
+        _documents = documents;
+        _requirements = requirements;
+
+        _documentsView.OpenAttachmentRequested += (ownerId, attachmentId) =>
+            OpenAttachmentRequested?.Invoke(ownerId, attachmentId);
+
+        _requirementsView.EngineeringRequested += async () =>
+        {
+            await _navigator.GoToEngineeringAsync().ConfigureAwait(true);
+            EngineeringRequested?.Invoke();
+        };
 
         // The tab strip is the product's designed area set, declared once
         // in `ProjectAreas`. An area with no capability behind it is still
@@ -113,6 +150,9 @@ public sealed class ProjectWorkspaceView : UserControl
         Content = root;
     }
 
+    /// <summary>Notes that a file is now open in the viewer, so its row says where it went.</summary>
+    public void MarkDocumentOpened(Guid attachmentId) => _documentsView.MarkOpened(attachmentId);
+
     /// <summary>Re-reads the open project and its contents.</summary>
     public async Task RefreshAsync()
     {
@@ -123,6 +163,8 @@ public sealed class ProjectWorkspaceView : UserControl
             _title.Text = "No project open";
             _subtitle.Text = "Open a project from the Projects module to begin.";
             _overview.Children.Clear();
+            _documentsView.Show([], null);
+            _requirementsView.Show([], null);
             _enterEngineering.IsEnabled = false;
             _closeProject.IsEnabled = false;
             return;
@@ -134,6 +176,8 @@ public sealed class ProjectWorkspaceView : UserControl
         _closeProject.IsEnabled = true;
 
         var contents = await _directory.ListProjectContentsAsync(project.Id).ConfigureAwait(true);
+        _documentsView.Show(await _documents.ListAsync(project.Id).ConfigureAwait(true), project.Label);
+        _requirementsView.Show(await _requirements.ListAsync(project.Id).ConfigureAwait(true), project.Label);
         _overview.Children.Clear();
         _overview.Children.Add(new TextBlock { Text = $"Engineering objects in this project: {contents.Count}" });
         _overview.Children.Add(new TextBlock
@@ -165,11 +209,17 @@ public sealed class ProjectWorkspaceView : UserControl
 
     private Control BuildAreaContent(ProjectAreaDescriptor descriptor)
     {
-        // The Overview is the one area with live content of its own; every
-        // other area renders from its own declaration, so a view can never
-        // claim a capability the application state does not.
+        // Three areas have live content of their own; every other area
+        // renders from its own declaration, so a view can never claim a
+        // capability the application state does not.
         if (descriptor.Area == ProjectArea.Overview)
             return _overview;
+
+        if (descriptor.Area == ProjectArea.Documents)
+            return _documentsView;
+
+        if (descriptor.Area == ProjectArea.Requirements)
+            return _requirementsView;
 
         var host = new ContentControl { Tag = descriptor.Area };
         _areaHosts.Add(host);

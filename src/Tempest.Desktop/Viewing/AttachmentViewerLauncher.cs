@@ -56,6 +56,16 @@ public sealed class AttachmentViewerLauncher
     public Guid? PanelFor(Guid attachmentId) =>
         _panelsByAttachment.TryGetValue(attachmentId, out var panelId) ? panelId : null;
 
+    /// <summary>The viewer showing <paramref name="attachmentId"/>, or <see langword="null"/> when it is not open.</summary>
+    /// <remarks>
+    /// The counterpart of <see cref="PanelFor"/> for callers that need the
+    /// surface rather than its identity — chiefly a test that opened a
+    /// document by pressing the button a user presses, and so never held
+    /// the view <see cref="OpenAsync"/> returned.
+    /// </remarks>
+    public DocumentViewerView? ViewerFor(Guid attachmentId) =>
+        PanelFor(attachmentId) is { } panelId ? _registry.Find(panelId)?.Content as DocumentViewerView : null;
+
     /// <summary>
     /// Opens <paramref name="attachment"/> of <paramref name="owner"/> in a
     /// viewer tab, reading its real content.

@@ -37,11 +37,10 @@ public static class ProjectAreas
             "The project's own engineering objects, opened in the Engineering Workspace with this project as its scope."),
 
         new(ProjectArea.Documents, "Documents", "📄", NavigationAvailability.Implemented,
-            "Documents and drawings belonging to this project. Managed through the Engineering Workspace's own Documents discipline; a dedicated drawing viewer is tracked as TD-80.",
-            "TD-80"),
+            "This project's own documents and drawings, resolved transitively through project membership, with every file held against them openable in the document viewer."),
 
         new(ProjectArea.Requirements, "Requirements", "◎", NavigationAvailability.Implemented,
-            "Requirements belonging to this project, with their verification and evidence. Managed through the Engineering Workspace's own Requirements discipline."),
+            "The requirements allocated to this project's engineering objects, each showing its declared status alongside what its verification history actually records."),
 
         new(ProjectArea.Tasks, "Tasks", "☑", NavigationAvailability.Declared,
             "Engineering and project tasks. Task and Action are real, durable canonical objects in the domain, but nothing creates, assigns, boards or reports on them yet.",

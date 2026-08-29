@@ -90,6 +90,7 @@ public sealed class MainWindow : Window
     private readonly MacroManagerDialog _macroManagerDialog;
 
     private readonly IEngineeringScope _engineeringScope;
+    private readonly EngineeringDomainContext _domainContext;
 
     private string? _currentAreaTitle;
     private bool _closeConfirmed;
@@ -399,6 +400,7 @@ public sealed class MainWindow : Window
         _navigator = host.ShellNavigator!;
         _projectContext = host.ProjectContext!;
         _engineeringScope = host.EngineeringScope!;
+        _domainContext = (EngineeringDomainContext)services.GetService(typeof(EngineeringDomainContext));
 
         var engineeringStack = new DockPanel();
         DockPanel.SetDock(topStack, Dock.Top);
@@ -408,13 +410,23 @@ public sealed class MainWindow : Window
 
         _projectDirectory = host.ProjectDirectory!;
         _projectBrowser = new ProjectBrowserView(_projectDirectory, _navigator, PromptForNewProjectAsync);
-        _projectWorkspace = new ProjectWorkspaceView(_projectContext, host.ProjectDirectory!, _navigator);
+        _projectWorkspace = new ProjectWorkspaceView(
+            _projectContext, host.ProjectDirectory!, _navigator, host.ProjectDocuments!, host.ProjectRequirements!);
         _navigationRail = new GlobalNavigationRail(_navigator);
 
         _navigationRail.NavigationRequested += () => _ = RenderCurrentModuleAsync();
         _projectBrowser.ProjectOpened += () => _ = RenderCurrentModuleAsync();
         _projectWorkspace.EngineeringRequested += () => _ = RenderCurrentModuleAsync();
         _projectWorkspace.ProjectClosed += () => _ = RenderCurrentModuleAsync();
+
+        // The Documents area opens a file through the same `TD-80`
+        // launcher the object editor uses. It goes through the shell
+        // rather than straight to the launcher for the same reason the
+        // editor does: the shell owns where a document opens, and the
+        // project area that asked keeps no knowledge of the workspace
+        // layout at all.
+        _projectWorkspace.OpenAttachmentRequested += (ownerId, attachmentId) =>
+            _ = OpenProjectAttachmentAsync(ownerId, attachmentId);
 
         // The shell carries its module surface from construction, not from
         // a later window event: a window that exists but hosts nothing is a
@@ -622,6 +634,37 @@ public sealed class MainWindow : Window
     /// construct a viewer of its own.
     /// </remarks>
     public Viewing.AttachmentViewerLauncher AttachmentViewers => _attachmentViewers;
+
+    /// <summary>
+    /// Opens one of the open project's own files in the `TD-80` viewer,
+    /// resolving the object and attachment the Documents area named.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Goes through the same <see cref="AttachmentViewers"/> launcher the
+    /// object editor's Open button uses — one entry point to the viewer,
+    /// so a document opened from the project register behaves identically
+    /// to one opened from an editor: an ordinary `TD-72` tab that splits,
+    /// floats and persists, and a second document is the same call again.
+    /// </para>
+    /// <para>
+    /// Opening never navigates. The module, the open project and the
+    /// project area the user was on are all untouched, so looking at a
+    /// drawing never costs the user their place.
+    /// </para>
+    /// </remarks>
+    public async Task OpenProjectAttachmentAsync(Guid ownerId, Guid attachmentId, CancellationToken cancellationToken = default)
+    {
+        if (await _domainContext.Repository.FindAsync(ownerId, cancellationToken).ConfigureAwait(true) is not IHasAttachments owner)
+            return;
+
+        var attachments = await owner.GetAttachmentsAsync(cancellationToken).ConfigureAwait(true);
+        if (attachments.FirstOrDefault(a => a.Id == attachmentId) is not { } attachment)
+            return;
+
+        await _attachmentViewers.OpenAsync(owner, attachment, Bounds.Width, Bounds.Height, cancellationToken).ConfigureAwait(true);
+        _projectWorkspace.MarkDocumentOpened(attachmentId);
+    }
 
     /// <summary>Opens an engineering object in the document area, as the Explorer's own activation does.</summary>
     /// <remarks>
