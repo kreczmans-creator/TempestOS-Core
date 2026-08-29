@@ -30,14 +30,15 @@ namespace Tempest.Desktop.DigitalThread;
 /// </summary>
 /// <remarks>
 /// Implements <see cref="IWorkspaceView"/> directly (a Document Area tab,
-/// not a new dockable side panel) — a deliberate, minimal-footprint
-/// choice: <see cref="Views.DockingGrid"/> has exactly three physical
-/// dock slots, all already occupied (Explorer/Inspector/Output,
-/// `WP 10.2B`), and adding a fourth would itself be a Workspace docking
-/// change this Work Package's own "No Workspace redesign" constraint
-/// puts out of scope. A Document tab reuses 100% already-built
-/// <see cref="Views.DocumentAreaView"/> infrastructure instead — see
-/// `WP10.4A Architecture Review.md` §1.
+/// rather than its own dockable panel) — originally a minimal-footprint
+/// choice, because the docking geometry of the day had exactly three
+/// fixed slots and adding a fourth would have been a Workspace redesign
+/// (`WP10.4A Architecture Review.md` §1). That constraint is gone:
+/// `TD-72` made the layout an arbitrary tree, so this view could now
+/// register as an ordinary panel and take part in docking, tabbing,
+/// splitting and floating like any other. It remains a Document tab
+/// because that is where it belongs in the workflow, not because the
+/// layout forces it.
 /// </remarks>
 public sealed class DigitalThreadGraphView : UserControl, IWorkspaceView
 {

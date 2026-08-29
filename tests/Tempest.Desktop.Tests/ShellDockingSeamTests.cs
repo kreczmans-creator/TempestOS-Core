@@ -8,21 +8,20 @@ using Tempest.Desktop.Views;
 namespace Tempest.Desktop.Tests;
 
 /// <summary>
-/// Phase 7 (`TD-89`) — the seam that keeps the product spine from being
-/// welded to today's compile-time docking geometry.
+/// The seam that keeps the product spine independent of the workspace
+/// docking implementation (`TD-89`, carried forward through `TD-72`).
 /// </summary>
 /// <remarks>
 /// <para>
-/// The eventual TempestOS requirement is fully dockable workspaces
-/// (`TD-72`, "Option C"): several modules and documents open at once,
-/// side by side, with user-controlled layout. That work is a dedicated
-/// Work Package and is deliberately <b>not</b> attempted here.
+/// Full dockable workspaces were delivered by `TD-72`. What these tests
+/// still hold is the boundary that made it cheap: docking belongs to the
+/// Engineering surface, not to shell navigation.
 /// </para>
 /// <para>
 /// What matters now is that it remains possible. The investigation found
 /// the shell already has the right shape — <c>MainWindow</c> hosts
 /// whichever module the navigator reports in a plain content host, and
-/// <see cref="DockingGrid"/> lives strictly <em>inside</em> the
+/// <see cref="WorkspaceLayoutHost"/> lives strictly <em>inside</em> the
 /// Engineering surface rather than above or around the module host. So
 /// replacing the docking implementation later touches the Engineering
 /// surface only, and never navigation.
@@ -38,7 +37,7 @@ namespace Tempest.Desktop.Tests;
 public sealed class ShellDockingSeamTests
 {
     [AvaloniaFact]
-    public async Task TheDockingGrid_LivesInsideTheEngineeringSurface_NotAroundTheModuleHost()
+    public async Task TheLayoutHost_LivesInsideTheEngineeringSurface_NotAroundTheModuleHost()
     {
         var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
         try
@@ -50,7 +49,7 @@ public sealed class ShellDockingSeamTests
             // Workspace's own layout.
             await host.ShellNavigator!.GoToEngineeringAsync();
             await window.RenderCurrentModuleAsync();
-            Assert.NotNull(window.GetLogicalDescendants().OfType<DockingGrid>().SingleOrDefault());
+            Assert.NotNull(window.GetLogicalDescendants().OfType<WorkspaceLayoutHost>().SingleOrDefault());
 
             // Outside Engineering it is gone entirely, because it belongs to
             // that module rather than to the shell. A shell that always had
@@ -58,7 +57,7 @@ public sealed class ShellDockingSeamTests
             // depended on it.
             await host.ShellNavigator.GoToProjectsAsync();
             await window.RenderCurrentModuleAsync();
-            Assert.Null(window.GetLogicalDescendants().OfType<DockingGrid>().SingleOrDefault());
+            Assert.Null(window.GetLogicalDescendants().OfType<WorkspaceLayoutHost>().SingleOrDefault());
 
             // The navigation rail, by contrast, is shell furniture and is
             // present in both.
@@ -125,11 +124,13 @@ public sealed class ShellDockingSeamTests
             await host.ShellNavigator!.GoToEngineeringAsync();
             await window.RenderCurrentModuleAsync();
 
-            var grid = window.GetLogicalDescendants().OfType<DockingGrid>().Single();
+            var layoutHost = window.GetLogicalDescendants().OfType<WorkspaceLayoutHost>().Single();
 
-            Assert.NotEmpty(grid.ColumnDefinitions);
-            Assert.NotEmpty(grid.RowDefinitions);
-            Assert.NotEmpty(grid.GetLogicalDescendants().OfType<GridSplitter>().ToList());
+            // The arrangement is a real split with real, draggable
+            // splitters, and every panel is present — the layout is not a
+            // stub the spine work left behind.
+            Assert.NotEmpty(layoutHost.GetLogicalDescendants().OfType<GridSplitter>().ToList());
+            Assert.NotEmpty(layoutHost.TabGroups);
             Assert.NotNull(window.GetLogicalDescendants().OfType<RibbonView>().SingleOrDefault());
         }
         finally

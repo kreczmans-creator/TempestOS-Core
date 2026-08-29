@@ -5,6 +5,8 @@ using Tempest.Desktop.Docking;
 using Tempest.Desktop.Theming;
 using Tempest.Desktop.Views;
 
+using Tempest.App.Workspace.Layout;
+
 namespace Tempest.Desktop.Composition;
 
 /// <summary>
@@ -26,16 +28,14 @@ internal static class MainMenuFactory
 {
     /// <summary>Builds the complete Menu System.</summary>
     public static Menu Build(
-        IWorkspace workspace, PanelHostControl explorerHost, PanelHostControl inspectorHost, PanelHostControl outputHost,
-        DockingGrid docking, DesktopPanelUiState uiState, OutputPanel outputPanel, OutputPanelView outputView, IDiagnosticsProvider diagnostics,
+        IWorkspace workspace, WorkspaceLayoutController layout,
+        Guid explorerPanelId, Guid inspectorPanelId, Guid outputPanelId,
+        DesktopPanelUiState uiState, OutputPanel outputPanel, OutputPanelView outputView, IDiagnosticsProvider diagnostics,
         ThemeService theme, SettingsDialog settingsDialog, MessageDialog messageDialog, CommandPaletteOverlay commandPalette, DocumentAreaView documentArea,
-        RibbonView ribbon, Action<PredefinedLayouts.WorkspaceLayoutPreset> applyPreset, Action resetLayout)
+        RibbonView ribbon, Action<WorkspaceLayoutPreset> applyPreset, Action resetLayout)
     {
         ArgumentNullException.ThrowIfNull(workspace);
-        ArgumentNullException.ThrowIfNull(explorerHost);
-        ArgumentNullException.ThrowIfNull(inspectorHost);
-        ArgumentNullException.ThrowIfNull(outputHost);
-        ArgumentNullException.ThrowIfNull(docking);
+        ArgumentNullException.ThrowIfNull(layout);
         ArgumentNullException.ThrowIfNull(uiState);
         ArgumentNullException.ThrowIfNull(outputPanel);
         ArgumentNullException.ThrowIfNull(outputView);
@@ -51,27 +51,32 @@ internal static class MainMenuFactory
 
         var view = new MenuItem { Header = "_View" };
 
+        // Showing and hiding a panel is now "is it in the arrangement",
+        // and restoring one puts it back on the edge it belongs to
+        // (`TD-72`) — there is no zero-width dock to toggle any more.
         var toggleExplorer = new MenuItem { Header = "Project Explorer" };
         toggleExplorer.Click += (_, _) =>
         {
-            var visible = !docking.IsLeftVisible;
-            docking.SetLeftVisible(visible);
-            workspace.Layout.SetPlacement(workspace.ProjectExplorer.Id, workspace.Layout.GetPlacement(workspace.ProjectExplorer.Id) with { IsVisible = visible });
+            layout.TogglePanel(explorerPanelId, DockRelation.Left);
+            workspace.Layout.SetPlacement(
+                workspace.ProjectExplorer.Id,
+                workspace.Layout.GetPlacement(workspace.ProjectExplorer.Id) with { IsVisible = layout.IsPanelVisible(explorerPanelId) });
         };
 
         var toggleInspector = new MenuItem { Header = "Property Inspector" };
         toggleInspector.Click += (_, _) =>
         {
-            var visible = !docking.IsRightVisible;
-            docking.SetRightVisible(visible);
-            workspace.Layout.SetPlacement(workspace.PropertyInspector.Id, workspace.Layout.GetPlacement(workspace.PropertyInspector.Id) with { IsVisible = visible });
+            layout.TogglePanel(inspectorPanelId, DockRelation.Right);
+            workspace.Layout.SetPlacement(
+                workspace.PropertyInspector.Id,
+                workspace.Layout.GetPlacement(workspace.PropertyInspector.Id) with { IsVisible = layout.IsPanelVisible(inspectorPanelId) });
         };
 
         var toggleOutput = new MenuItem { Header = "Output Panel" };
         toggleOutput.Click += async (_, _) =>
         {
-            var visible = !docking.IsBottomVisible;
-            docking.SetBottomVisible(visible);
+            layout.TogglePanel(outputPanelId, DockRelation.Below);
+            var visible = layout.IsPanelVisible(outputPanelId);
             uiState.OutputVisible = visible;
             if (visible)
                 await outputPanel.ShowAsync().ConfigureAwait(true);
@@ -93,15 +98,15 @@ internal static class MainMenuFactory
         view.Items.Add(toggleRibbon);
         view.Items.Add(new Separator());
 
-        var layout = new MenuItem { Header = "_Layout" };
-        layout.Items.Add(BuildLayoutPresetItem("Engineering", PredefinedLayouts.WorkspaceLayoutPreset.Engineering, applyPreset));
-        layout.Items.Add(BuildLayoutPresetItem("Review", PredefinedLayouts.WorkspaceLayoutPreset.Review, applyPreset));
-        layout.Items.Add(BuildLayoutPresetItem("Documentation", PredefinedLayouts.WorkspaceLayoutPreset.Documentation, applyPreset));
-        layout.Items.Add(new Separator());
+        var layoutMenu = new MenuItem { Header = "_Layout" };
+        layoutMenu.Items.Add(BuildLayoutPresetItem("Engineering", WorkspaceLayoutPreset.Engineering, applyPreset));
+        layoutMenu.Items.Add(BuildLayoutPresetItem("Review", WorkspaceLayoutPreset.Review, applyPreset));
+        layoutMenu.Items.Add(BuildLayoutPresetItem("Documentation", WorkspaceLayoutPreset.Documentation, applyPreset));
+        layoutMenu.Items.Add(new Separator());
         var resetLayoutItem = new MenuItem { Header = "Reset Layout" };
         resetLayoutItem.Click += (_, _) => resetLayout();
-        layout.Items.Add(resetLayoutItem);
-        view.Items.Add(layout);
+        layoutMenu.Items.Add(resetLayoutItem);
+        view.Items.Add(layoutMenu);
 
         var themeMenu = new MenuItem { Header = "_Theme" };
         var toggleTheme = new MenuItem { Header = "Toggle Light/Dark" };
@@ -141,7 +146,7 @@ internal static class MainMenuFactory
     }
 
     /// <summary>Builds one <c>_Layout</c> submenu item applying <paramref name="preset"/> via <paramref name="applyPreset"/>.</summary>
-    private static MenuItem BuildLayoutPresetItem(string header, PredefinedLayouts.WorkspaceLayoutPreset preset, Action<PredefinedLayouts.WorkspaceLayoutPreset> applyPreset)
+    private static MenuItem BuildLayoutPresetItem(string header, WorkspaceLayoutPreset preset, Action<WorkspaceLayoutPreset> applyPreset)
     {
         var item = new MenuItem { Header = header };
         item.Click += (_, _) => applyPreset(preset);

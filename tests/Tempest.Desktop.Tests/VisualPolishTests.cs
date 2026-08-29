@@ -10,6 +10,7 @@ using Tempest.Desktop.Icons;
 using Tempest.Desktop.Theming;
 using Tempest.Desktop.Views;
 
+using Tempest.App.Workspace.Layout;
 namespace Tempest.Desktop.Tests;
 
 /// <summary>
@@ -64,16 +65,26 @@ public sealed class VisualPolishTests
     // toggle-and-reread inside one test.
 
     [AvaloniaFact]
-    public void PanelHostControl_Background_IsARealResolvedThemeBrush_ClosesTD39()
+    public void ACollapsedPanelStrip_UsesARealResolvedThemeBrush_ClosesTD39()
     {
-        var panel = new StubWorkspacePanel();
-        var host = new PanelHostControl(panel, new TextBlock());
-        var window = new Window { Content = host };
+        // `PanelHostControl` was replaced by `LayoutTabGroupView` when
+        // `TD-72` made the layout a tree; the `TD-39` guarantee it carried
+        // — panel chrome resolves a real theme brush rather than a
+        // hardcoded black or white — moved with it.
+        var panelId = Guid.NewGuid();
+        var registry = new WorkspacePanelRegistry();
+        registry.Register(new WorkspacePanelDescriptor(panelId, "Explorer", new TextBlock()));
+
+        var tree = WorkspaceLayoutTree.Single(panelId).SetCollapsed(panelId, true);
+        var group = new LayoutTabGroupView((LayoutTabGroupNode)tree.Root!, registry, tree);
+        var window = new Window { Content = group };
         window.Show();
 
-        Assert.IsAssignableFrom<IBrush>(host.Background);
-        Assert.NotEqual(Brushes.White, host.Background);
-        Assert.NotEqual(Brushes.Black, host.Background);
+        var strip = group.GetLogicalDescendants().OfType<Border>().First();
+
+        Assert.IsAssignableFrom<IBrush>(strip.Background);
+        Assert.NotEqual(Brushes.White, strip.Background);
+        Assert.NotEqual(Brushes.Black, strip.Background);
     }
 
     [AvaloniaFact]

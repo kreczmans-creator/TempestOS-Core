@@ -78,7 +78,7 @@ public sealed class ProductSpineAcceptanceTests
             // The real Engineering surface — ribbon and docking grid — is
             // what the Engineering module renders.
             Assert.NotNull(window.GetLogicalDescendants().OfType<RibbonView>().SingleOrDefault());
-            Assert.NotNull(window.GetLogicalDescendants().OfType<Docking.DockingGrid>().SingleOrDefault());
+            Assert.NotNull(window.GetLogicalDescendants().OfType<Docking.WorkspaceLayoutHost>().SingleOrDefault());
 
             // --- 6. Return to the project without losing context ---------
             await navigator.ReturnToProjectAsync();

@@ -1,5 +1,63 @@
 # TempestOS — Project Status
 
+**Last Updated:** 2026-08-29 (Full Workspace Layout & Docking — `TD-72`,
+`ADR-0095`). **The `v0.13.x` train remains CLOSED.**
+
+**The workspace is now fully dockable.** The compile-time five-column,
+three-row docking grid has been **replaced**, not decorated: the
+arrangement is an immutable tree of arbitrarily nested splits and tab
+groups, plus floating panels in real top-level windows at real screen
+coordinates. Drag-to-dock, tabbed panel groups, arbitrary horizontal and
+vertical splitting, floating and multi-monitor placement, collapse,
+auto-hide, resize, layout persistence and restoration, and responsive
+behaviour are all implemented against that one model.
+
+**Why the abstraction had to go.** The features were not missing from the
+implementation, they were missing from the vocabulary: there were three
+places a panel could be and all three were occupied, so "drag this panel
+there" had no *there*, tabbing had no representation, and splitting had no
+fourth slot. `ADR-0095` — reserved and left unwritten by `ADR-0092` since
+2026-08-05 for exactly this question — is now written.
+
+**The extensibility result that matters.** The document area is a panel
+like any other, with no privileged slot. A future surface — the Drawing
+Viewer (`TD-80`), Materials, Calculations, Tasks — participates by
+registering one `WorkspacePanelDescriptor` and gains docking, tabbing,
+splitting, floating, collapse, auto-hide and persistence at once. The
+reason `DigitalThreadGraphView` recorded for *not* being a panel
+("exactly three physical dock slots, all already occupied") no longer
+exists, and its comment now says so.
+
+**Preserved.** `TD-70`'s responsive rule — now expressed against the tree,
+so it holds for any arrangement rather than three named docks, and **wired
+to the window's own resize for the first time**, closing a gap `TD-83` had
+recorded where the guarantee existed but only tests ever invoked it.
+`TD-71` splitter preferences as durable proportions. Ribbon minimisation.
+Collapse and auto-hide. And existing user preferences, carried into the
+new model by `WorkspaceLayoutMigration` so a returning user's first launch
+after the upgrade looks like their last launch before it.
+`IWorkspaceLayout` (`WP 8.0B`) is retained as a **live projection** of the
+tree rather than a stale second account of where the panels are.
+
+**Proven.** 119 tests — 81 of them running with no UI in the process,
+because the model, the drop-zone geometry, the presets and the migration
+are all pure. Eleven mutations run and eleven killed; one survived the
+first attempt and exposed a real coverage gap (nothing exercised a split
+reducing to a single child, the case that accumulates wrappers over a
+session), which was closed before it died. `DockingGrid`,
+`PanelHostControl` and `PredefinedLayouts` were deleted with their tests,
+their guarantees re-proven against the new host rather than carried.
+
+Suite: Core 2567/2569 (the same two pre-existing Linux-environment cases),
+Desktop 259/259, 0 warnings, 0 errors. Decision: `ADR-0095`. Architecture:
+`docs/architecture/Workspace Layout & Docking Architecture.md`. Academy:
+`02 Runtime Architecture/36-workspace-layout-and-docking.md`. Disclosed
+residual debt, all new and all bounded: `TD-90` (focus across a
+re-render), `TD-91` (the edge-based projection is lossy for tabbed and
+floating panels), `TD-92` (no live drag preview adorner).
+
+**The prior status block, below this point, is retained:**
+
 **Last Updated:** 2026-08-29 (Project-Centric Convergence — `TD-89`).
 **The `v0.13.x` train remains CLOSED.**
 

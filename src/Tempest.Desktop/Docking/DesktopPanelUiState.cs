@@ -83,12 +83,20 @@ internal sealed class DesktopPanelUiState
 
     /// <summary>
     /// Gets or sets the name of the last predefined layout applied
-    /// (<see cref="PredefinedLayouts.WorkspaceLayoutPreset"/>), or
+    /// (<see cref="Tempest.App.Workspace.Layout.WorkspaceLayoutPreset"/>), or
     /// <see langword="null"/> if none has been applied this session or the
     /// layout has since been manually changed — an honest label only,
     /// never re-derived from the current placements themselves.
     /// </summary>
     public string? LastAppliedPreset { get; set; }
+
+    /// <summary>
+    /// Gets or sets whether the user has arranged the workspace layout
+    /// themselves (`TD-72`) — set the first time any dock, tab, split,
+    /// float or resize happens, so a later change to the default
+    /// arrangement never silently overwrites a layout someone built.
+    /// </summary>
+    public bool LayoutIsUserArranged { get; set; }
 
     /// <summary>Gets or sets whether the Engineering Ribbon is minimised to its own tab strip (`TD-70`) — persisted so a user working on a laptop keeps the vertical space they reclaimed across restarts.</summary>
     public bool RibbonCollapsed { get; set; }
@@ -96,7 +104,7 @@ internal sealed class DesktopPanelUiState
     /// <summary>Writes the current state via <see cref="ISettingsProvider.SetValueAsync"/>.</summary>
     public async Task SaveAsync(CancellationToken cancellationToken = default)
     {
-        var dto = new DesktopPanelUiStateDto(ExplorerCollapsed, ExplorerPinned, InspectorCollapsed, InspectorPinned, OutputVisible, OutputHeight, OutputCollapsed, OutputPinned, LastAppliedPreset, RibbonCollapsed);
+        var dto = new DesktopPanelUiStateDto(ExplorerCollapsed, ExplorerPinned, InspectorCollapsed, InspectorPinned, OutputVisible, OutputHeight, OutputCollapsed, OutputPinned, LastAppliedPreset, RibbonCollapsed, LayoutIsUserArranged);
         var json = JsonSerializer.Serialize(dto);
 
         await _settingsProvider.SetValueAsync(SettingKey, json, cancellationToken).ConfigureAwait(false);
@@ -133,6 +141,7 @@ internal sealed class DesktopPanelUiState
         OutputPinned = dto.OutputPinned;
         LastAppliedPreset = dto.LastAppliedPreset;
         RibbonCollapsed = dto.RibbonCollapsed;
+        LayoutIsUserArranged = dto.LayoutIsUserArranged;
     }
 
     /// <summary>The plain, JSON-serializable shape this class persists.</summary>
@@ -146,5 +155,6 @@ internal sealed class DesktopPanelUiState
         bool OutputCollapsed,
         bool OutputPinned,
         string? LastAppliedPreset,
-        bool RibbonCollapsed = false);
+        bool RibbonCollapsed = false,
+        bool LayoutIsUserArranged = false);
 }

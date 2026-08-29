@@ -1,171 +1,206 @@
+using Avalonia.Controls;
 using Tempest.App.Workspace;
+using Tempest.App.Workspace.Layout;
 using Tempest.Desktop.Docking;
 using Tempest.Desktop.Views;
 
 namespace Tempest.Desktop.Composition;
 
 /// <summary>
-/// Builds the three docked panels (Project Explorer/Property Inspector/
-/// Output) and wires every resize/hide/collapse/pin/Auto-Hide-flyout
-/// interaction between them and the <see cref="DockingGrid"/> — extracted,
-/// `WP 12.0B` (`ADR-0103`), from <see cref="MainWindow"/>'s own previous
-/// Docking Framework construction block, unmodified in behaviour. A
-/// collaborator under `ADR-0103`: constructed once by
-/// <see cref="MainWindow"/> (the composition root), declaring only the
-/// dependencies it actually needs, never DI-registered, never referencing
-/// <see cref="MainWindow"/> or any sibling collaborator back.
+/// Composes the Engineering Workspace's own dockable surfaces and the
+/// layout that arranges them (`TD-72`).
 /// </summary>
+/// <remarks>
+/// <para>
+/// Before `TD-72` this class wired three named panels into three fixed
+/// slots of a compile-time grid, and every panel operation was a distinct
+/// method per slot (<c>SetLeftVisible</c>, <c>SetRightCollapsed</c>, …).
+/// It now registers panels and hands the arrangement to
+/// <see cref="WorkspaceLayoutController"/>: the panels no longer know
+/// where they are, and the layout no longer knows what they contain.
+/// </para>
+/// <para>
+/// That separation is what makes the layout extensible. A new surface
+/// registers a <see cref="WorkspacePanelDescriptor"/> here and immediately
+/// gains docking, tabbing, splitting, floating, collapse, auto-hide and
+/// persistence, with no change to this class beyond the registration
+/// itself.
+/// </para>
+/// </remarks>
 internal sealed class WorkspaceDockingComposer
 {
     private readonly DesktopPanelUiState _uiState;
-    private WorkspaceDockPosition? _openFlyoutSlot;
 
-    /// <summary>Gets the real Docking Framework grid (`WP 10.2B`) hosting every panel below.</summary>
-    public DockingGrid Grid { get; } = new();
-
-    /// <summary>Gets the Project Explorer's own panel host.</summary>
-    public PanelHostControl ExplorerHost { get; }
-
-    /// <summary>Gets the Property Inspector's own panel host.</summary>
-    public PanelHostControl InspectorHost { get; }
-
-    /// <summary>Gets the Output panel itself (`WP 10.2B`).</summary>
+    /// <summary>The Output panel's own model.</summary>
     public OutputPanel OutputPanel { get; } = new();
 
-    /// <summary>Gets the Output panel's own rendered view.</summary>
+    /// <summary>The Output panel's own view.</summary>
     public OutputPanelView OutputView { get; } = new();
 
-    /// <summary>Gets the Output panel's own panel host.</summary>
-    public PanelHostControl OutputHost { get; }
+    /// <summary>The layout controller that owns the arrangement.</summary>
+    public WorkspaceLayoutController Layout { get; }
 
-    /// <summary>Gets whether an Auto-Hide flyout is currently open — the click-away/<c>Escape</c> gesture's own guard.</summary>
-    public bool IsFlyoutOpen => Grid.IsFlyoutOpen;
+    /// <summary>The control the Engineering surface hosts — the rendered layout.</summary>
+    public Control View => Layout.Host;
+
+    /// <summary>The Project Explorer's own panel id.</summary>
+    public Guid ExplorerPanelId { get; }
+
+    /// <summary>The Property Inspector's own panel id.</summary>
+    public Guid InspectorPanelId { get; }
+
+    /// <summary>The Document Area's own panel id — a panel like any other, with no privileged slot.</summary>
+    public Guid DocumentPanelId { get; }
+
+    /// <summary>The Output panel's own panel id.</summary>
+    public Guid OutputPanelId => OutputPanel.Id;
+
+    /// <summary>Gets whether an auto-hide flyout is currently open.</summary>
+    public bool IsFlyoutOpen => Layout.Host.IsFlyoutOpen;
 
     /// <summary>Initialises a new instance of the <see cref="WorkspaceDockingComposer"/> class.</summary>
-    public WorkspaceDockingComposer(IWorkspace workspace, ProjectExplorerView explorerView, PropertyInspectorView inspectorView, DocumentAreaView documentArea, DesktopPanelUiState uiState)
+    public WorkspaceDockingComposer(
+        IWorkspace workspace,
+        ProjectExplorerView explorerView,
+        PropertyInspectorView inspectorView,
+        DocumentAreaView documentArea,
+        DesktopPanelUiState uiState,
+        IWorkspaceLayoutStore layoutStore)
     {
         ArgumentNullException.ThrowIfNull(workspace);
         ArgumentNullException.ThrowIfNull(explorerView);
         ArgumentNullException.ThrowIfNull(inspectorView);
         ArgumentNullException.ThrowIfNull(documentArea);
         ArgumentNullException.ThrowIfNull(uiState);
+        ArgumentNullException.ThrowIfNull(layoutStore);
 
         _uiState = uiState;
 
-        var explorerPlacement = workspace.Layout.GetPlacement(workspace.ProjectExplorer.Id);
-        var inspectorPlacement = workspace.Layout.GetPlacement(workspace.PropertyInspector.Id);
+        ExplorerPanelId = workspace.ProjectExplorer.Id;
+        InspectorPanelId = workspace.PropertyInspector.Id;
+        DocumentPanelId = DocumentAreaPanelId;
 
-        ExplorerHost = new PanelHostControl(workspace.ProjectExplorer, explorerView);
-        InspectorHost = new PanelHostControl(workspace.PropertyInspector, inspectorView);
-        ExplorerHost.SetCollapsed(uiState.ExplorerCollapsed);
-        ExplorerHost.SetPinned(uiState.ExplorerPinned);
-        InspectorHost.SetCollapsed(uiState.InspectorCollapsed);
-        InspectorHost.SetPinned(uiState.InspectorPinned);
+        var registry = new WorkspacePanelRegistry();
+        registry.Register(new WorkspacePanelDescriptor(ExplorerPanelId, workspace.ProjectExplorer.Title, explorerView));
+        registry.Register(new WorkspacePanelDescriptor(DocumentPanelId, "Documents", documentArea, CanClose: false, CanFloat: false));
+        registry.Register(new WorkspacePanelDescriptor(InspectorPanelId, workspace.PropertyInspector.Title, inspectorView));
+        registry.Register(new WorkspacePanelDescriptor(OutputPanelId, OutputPanel.Title, OutputView));
 
-        OutputHost = new PanelHostControl(OutputPanel, OutputView);
-        OutputHost.SetCollapsed(uiState.OutputCollapsed);
-        OutputHost.SetPinned(uiState.OutputPinned);
-        if (uiState.OutputVisible)
-            OutputPanel.ShowAsync().GetAwaiter().GetResult();
+        Registry = registry;
+        Layout = new WorkspaceLayoutController(registry, layoutStore);
 
-        Grid.SetLeftPanel(ExplorerHost, explorerPlacement.Size == 0 ? 240 : explorerPlacement.Size * 8, explorerPlacement.IsVisible);
-        Grid.SetRightPanel(InspectorHost, inspectorPlacement.Size == 0 ? 240 : inspectorPlacement.Size * 8, inspectorPlacement.IsVisible);
-        Grid.SetBottomPanel(OutputHost, uiState.OutputHeight, uiState.OutputVisible);
-        Grid.SetCenterContent(documentArea);
-        Grid.SetLeftCollapsed(ExplorerHost.IsStripShowing);
-        Grid.SetRightCollapsed(InspectorHost.IsStripShowing);
-        Grid.SetBottomCollapsed(OutputHost.IsStripShowing);
+        // A resize or a dock is session state, written on the shell's own
+        // shutdown save rather than on every pixel of every drag.
+        Layout.LayoutChanged += _ => _uiState.LayoutIsUserArranged = true;
+        Layout.LayoutChanged += tree => SyncWorkspacePlacements(workspace, tree);
 
-        // Resizing: persist the new width back into the real IWorkspaceLayout
-        // (WorkspacePanelPlacement is an immutable record — "with" produces
-        // the updated snapshot ADR-0064's own SaveAsync later serialises).
-        Grid.LeftPanelResized += width =>
-            workspace.Layout.SetPlacement(workspace.ProjectExplorer.Id, workspace.Layout.GetPlacement(workspace.ProjectExplorer.Id) with { Size = width });
-        Grid.RightPanelResized += width =>
-            workspace.Layout.SetPlacement(workspace.PropertyInspector.Id, workspace.Layout.GetPlacement(workspace.PropertyInspector.Id) with { Size = width });
-        Grid.BottomPanelResized += height => _uiState.OutputHeight = height;
-
-        ExplorerHost.HideRequested += () =>
-        {
-            Grid.SetLeftVisible(false);
-            workspace.Layout.SetPlacement(workspace.ProjectExplorer.Id, workspace.Layout.GetPlacement(workspace.ProjectExplorer.Id) with { IsVisible = false });
-        };
-        InspectorHost.HideRequested += () =>
-        {
-            Grid.SetRightVisible(false);
-            workspace.Layout.SetPlacement(workspace.PropertyInspector.Id, workspace.Layout.GetPlacement(workspace.PropertyInspector.Id) with { IsVisible = false });
-        };
-        OutputHost.HideRequested += () =>
-        {
-            Grid.SetBottomVisible(false);
-            _uiState.OutputVisible = false;
-        };
-
-        // Collapse (`WP 10.2B`) — a manual, in-place shrink; Desktop-local
-        // state only (`DesktopPanelUiState`, not `IWorkspaceLayout`).
-        ExplorerHost.CollapseToggled += collapsed =>
-        {
-            _uiState.ExplorerCollapsed = collapsed;
-            Grid.SetLeftCollapsed(ExplorerHost.IsStripShowing);
-        };
-        InspectorHost.CollapseToggled += collapsed =>
-        {
-            _uiState.InspectorCollapsed = collapsed;
-            Grid.SetRightCollapsed(InspectorHost.IsStripShowing);
-        };
-        OutputHost.CollapseToggled += collapsed =>
-        {
-            _uiState.OutputCollapsed = collapsed;
-            Grid.SetBottomCollapsed(OutputHost.IsStripShowing);
-        };
-
-        // Auto-Hide (`WP 10.2B`) — unpinning hands the dock column/row back
-        // to the Document Area, leaving only the thin edge strip; closes
-        // any open flyout for this slot when re-pinned.
-        ExplorerHost.PinToggled += pinned =>
-        {
-            _uiState.ExplorerPinned = pinned;
-            Grid.SetLeftCollapsed(ExplorerHost.IsStripShowing);
-            if (pinned && _openFlyoutSlot == WorkspaceDockPosition.Left)
-                CloseFlyout();
-        };
-        InspectorHost.PinToggled += pinned =>
-        {
-            _uiState.InspectorPinned = pinned;
-            Grid.SetRightCollapsed(InspectorHost.IsStripShowing);
-            if (pinned && _openFlyoutSlot == WorkspaceDockPosition.Right)
-                CloseFlyout();
-        };
-        OutputHost.PinToggled += pinned =>
-        {
-            _uiState.OutputPinned = pinned;
-            Grid.SetBottomCollapsed(OutputHost.IsStripShowing);
-            if (pinned && _openFlyoutSlot == WorkspaceDockPosition.Bottom)
-                CloseFlyout();
-        };
-
-        ExplorerHost.FlyoutRequested += () => ToggleFlyout(WorkspaceDockPosition.Left, ExplorerHost, Math.Max(explorerPlacement.Size == 0 ? 240 : explorerPlacement.Size * 8, 240));
-        InspectorHost.FlyoutRequested += () => ToggleFlyout(WorkspaceDockPosition.Right, InspectorHost, Math.Max(inspectorPlacement.Size == 0 ? 240 : inspectorPlacement.Size * 8, 240));
-        OutputHost.FlyoutRequested += () => ToggleFlyout(WorkspaceDockPosition.Bottom, OutputHost, Math.Max(_uiState.OutputHeight, 160));
+        // The workspace carries a real arrangement from construction, not
+        // from a later window event. A window that exists but whose layout
+        // is empty is a window whose panels, splitters and menu toggles all
+        // behave as though nothing is docked — `RestoreLayoutAsync` then
+        // replaces this with the user's own saved arrangement once the
+        // settings substrate is readable.
+        Layout.Load(DefaultLayout());
     }
 
-    /// <summary>Opens or closes the Auto-Hide flyout for <paramref name="slot"/> — a toggle, so clicking an already-open panel's own edge strip a second time closes it (`WP 10.2B`).</summary>
-    private void ToggleFlyout(WorkspaceDockPosition slot, PanelHostControl host, double size)
+    /// <summary>The registered panels — the extension point a future surface joins through.</summary>
+    public WorkspacePanelRegistry Registry { get; }
+
+    /// <summary>
+    /// The Document Area's own fixed panel id. Fixed rather than generated
+    /// so a saved layout still finds it after a restart.
+    /// </summary>
+    public static Guid DocumentAreaPanelId { get; } = Guid.Parse("d0c00000-0000-4000-8000-000000000001");
+
+    /// <summary>The arrangement a first run — or a reset — opens with.</summary>
+    public WorkspaceLayoutTree DefaultLayout() =>
+        WorkspaceLayoutPresets.Default(ExplorerPanelId, DocumentPanelId, InspectorPanelId, OutputPanelId);
+
+    /// <summary>
+    /// Restores the saved arrangement, or carries a returning user's
+    /// pre-`TD-72` panel preferences into the new model on first run.
+    /// </summary>
+    public Task RestoreLayoutAsync(CancellationToken cancellationToken = default) =>
+        Layout.RestoreAsync(MigratedDefault(), cancellationToken);
+
+    /// <summary>The default arrangement with the user's own existing preferences applied — see <see cref="WorkspaceLayoutMigration"/>.</summary>
+    private WorkspaceLayoutTree MigratedDefault() =>
+        WorkspaceLayoutMigration.FromLegacyPreferences(
+            DefaultLayout(),
+            [
+                new LegacyPanelPreference(ExplorerPanelId, IsVisible: true, _uiState.ExplorerCollapsed, _uiState.ExplorerPinned, 0),
+                new LegacyPanelPreference(InspectorPanelId, IsVisible: true, _uiState.InspectorCollapsed, _uiState.InspectorPinned, 0),
+                new LegacyPanelPreference(OutputPanelId, _uiState.OutputVisible, _uiState.OutputCollapsed, _uiState.OutputPinned, _uiState.OutputHeight),
+            ]);
+
+    /// <summary>Applies <paramref name="preset"/>, replacing the current arrangement.</summary>
+    public void ApplyPreset(WorkspaceLayoutPreset preset)
     {
-        if (_openFlyoutSlot == slot)
-        {
-            CloseFlyout();
-            return;
-        }
-
-        Grid.ShowFlyout(host, slot, size);
-        _openFlyoutSlot = slot;
+        Layout.Load(WorkspaceLayoutPresets.Build(preset, ExplorerPanelId, DocumentPanelId, InspectorPanelId, OutputPanelId));
+        _uiState.LastAppliedPreset = preset.ToString();
     }
 
-    /// <summary>Closes whichever Auto-Hide flyout is currently open, if any — a no-op otherwise.</summary>
-    public void CloseFlyout()
+    /// <summary>Returns to the default arrangement.</summary>
+    public void ResetLayout()
     {
-        Grid.HideFlyout();
-        _openFlyoutSlot = null;
+        Layout.Load(DefaultLayout());
+        _uiState.LastAppliedPreset = null;
     }
+
+    /// <summary>Closes whichever auto-hide flyout is open, if any — a no-op otherwise.</summary>
+    public void CloseFlyout() => Layout.Host.HideFlyout();
+
+    /// <summary>
+    /// Keeps the frozen `WP8.0B` <see cref="IWorkspaceLayout"/> contract
+    /// truthful as a projection of the layout tree (`TD-72`).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <see cref="IWorkspaceLayout"/> speaks in edges, sizes and
+    /// visibility, and Workspace-layer consumers still read it. Rather than
+    /// freezing it out or leaving it stale — which would have made it a
+    /// second, disagreeing account of where the panels are — it is derived
+    /// from the tree after every change. The tree is the model; this is a
+    /// view of it.
+    /// </para>
+    /// <para>
+    /// An arrangement the old contract cannot express — a panel in a tab
+    /// group, or floating — reports the nearest honest answer: visible,
+    /// with whatever edge it is nearest to. That is a real limitation of
+    /// the old shape, disclosed rather than papered over.
+    /// </para>
+    /// </remarks>
+    private void SyncWorkspacePlacements(IWorkspace workspace, WorkspaceLayoutTree tree)
+    {
+        Project(workspace, tree, workspace.ProjectExplorer.Id, WorkspaceDockPosition.Left);
+        Project(workspace, tree, workspace.PropertyInspector.Id, WorkspaceDockPosition.Right);
+    }
+
+    private void Project(IWorkspace workspace, WorkspaceLayoutTree tree, Guid panelId, WorkspaceDockPosition fallbackEdge)
+    {
+        var placement = workspace.Layout.GetPlacement(panelId);
+
+        var edge = tree.InferEdge(panelId, DocumentPanelId) switch
+        {
+            DockRelation.Left => WorkspaceDockPosition.Left,
+            DockRelation.Right => WorkspaceDockPosition.Right,
+            DockRelation.Above or DockRelation.Below => WorkspaceDockPosition.Bottom,
+            _ => fallbackEdge,
+        };
+
+        workspace.Layout.SetPlacement(panelId, placement with
+        {
+            IsVisible = tree.Contains(panelId),
+            DockPosition = edge,
+            Size = Math.Round(tree.ShareOf(panelId) * NominalWorkspaceWidth),
+        });
+    }
+
+    /// <summary>
+    /// The window extent the projected <see cref="WorkspacePanelPlacement.Size"/>
+    /// is expressed against. The old contract's size is unitless by its own
+    /// documentation; a nominal extent keeps the projected number stable
+    /// and comparable rather than changing every time the window resizes.
+    /// </summary>
+    private const double NominalWorkspaceWidth = 1280;
 }

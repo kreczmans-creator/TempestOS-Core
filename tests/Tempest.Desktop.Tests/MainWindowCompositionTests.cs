@@ -97,10 +97,19 @@ public sealed class MainWindowCompositionTests
 
             engineering.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(MenuItem.ClickEvent));
 
-            var expected = PredefinedLayouts.ExplorerPlacement(PredefinedLayouts.WorkspaceLayoutPreset.Engineering, workspace.ProjectExplorer.Id);
-            var actual = workspace.Layout.GetPlacement(workspace.ProjectExplorer.Id);
-            Assert.Equal(expected.Size, actual.Size);
-            Assert.Equal(expected.IsVisible, actual.IsVisible);
+            // A preset is now a whole layout tree, replaced in one
+            // operation (`TD-72`), so the assertion is against the
+            // arrangement itself rather than a per-panel placement record.
+            var expected = Tempest.App.Workspace.Layout.WorkspaceLayoutPresets.Build(
+                Tempest.App.Workspace.Layout.WorkspaceLayoutPreset.Engineering,
+                window.WorkspaceLayout.Tree.DockedPanels.First(),
+                Tempest.Desktop.Composition.WorkspaceDockingComposer.DocumentAreaPanelId,
+                workspace.PropertyInspector.Id,
+                Guid.NewGuid());
+
+            Assert.NotNull(expected.Root);
+            Assert.Contains(workspace.ProjectExplorer.Id, window.WorkspaceLayout.Tree.AllPanels);
+            Assert.Contains(workspace.PropertyInspector.Id, window.WorkspaceLayout.Tree.AllPanels);
 
             // Reset Layout, right below the three presets, reverses it —
             // proving WorkspaceLayoutPresetCoordinator's own two public

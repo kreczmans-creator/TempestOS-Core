@@ -272,7 +272,7 @@ public sealed class MainWindow : Window
 
         // Panel construction/resize/hide/collapse/pin/flyout wiring
         // (`ADR-0103` collaborator #5, `WP 10.2B`).
-        _dockingComposer = new WorkspaceDockingComposer(workspace, _explorerView, _inspectorView, _documentArea, _session.PanelUiState);
+        _dockingComposer = new WorkspaceDockingComposer(workspace, _explorerView, _inspectorView, _documentArea, _session.PanelUiState, _session.LayoutStore);
 
         // Click-away: a pointer press landing directly on the Document
         // Area (never intercepted by the flyout itself, which sits above
@@ -347,14 +347,14 @@ public sealed class MainWindow : Window
 
         // Named layout presets (`ADR-0103` collaborator #7, `WP 10.2B`).
         _layoutPresets = new WorkspaceLayoutPresetCoordinator(
-            workspace, _dockingComposer.ExplorerHost, _dockingComposer.InspectorHost, _dockingComposer.OutputHost,
-            _dockingComposer.Grid, _session.PanelUiState, _dockingComposer.OutputPanel, _statusBar, _dockingComposer.CloseFlyout);
+            _dockingComposer.ApplyPreset, _dockingComposer.ResetLayout, _statusBar);
 
         // Menu System / Quick Access Toolbar (`ADR-0103` collaborators #8
         // — stateless build functions, `WP 10.0B`/`WP 10.3B`).
         var menu = MainMenuFactory.Build(
-            workspace, _dockingComposer.ExplorerHost, _dockingComposer.InspectorHost, _dockingComposer.OutputHost,
-            _dockingComposer.Grid, _session.PanelUiState, _dockingComposer.OutputPanel, _dockingComposer.OutputView, _diagnostics,
+            workspace, _dockingComposer.Layout,
+            _dockingComposer.ExplorerPanelId, _dockingComposer.InspectorPanelId, _dockingComposer.OutputPanelId,
+            _session.PanelUiState, _dockingComposer.OutputPanel, _dockingComposer.OutputView, _diagnostics,
             _theme, _settingsDialog, _messageDialog, _commandPalette, _documentArea, _ribbon, _layoutPresets.Apply, _layoutPresets.Reset);
         var quickAccessToolbar = QuickAccessToolbarFactory.Build(
             workspace, composition.DomainContext, _viewCoordinator.NavigateToObject, _statusBar, _documentArea, _commandPalette, _theme,
@@ -377,7 +377,7 @@ public sealed class MainWindow : Window
         var engineeringStack = new DockPanel();
         DockPanel.SetDock(topStack, Dock.Top);
         engineeringStack.Children.Add(topStack);
-        engineeringStack.Children.Add(_dockingComposer.Grid);
+        engineeringStack.Children.Add(_dockingComposer.View);
         _engineeringSurface = engineeringStack;
 
         _projectDirectory = host.ProjectDirectory!;
@@ -497,6 +497,11 @@ public sealed class MainWindow : Window
         {
             await _theme.LoadAsync().ConfigureAwait(true);
 
+            // The workspace arrangement the user left (`TD-72`) — restored
+            // before anything renders, so the shell never flashes a default
+            // layout and then rearranges itself underneath them.
+            await _dockingComposer.RestoreLayoutAsync().ConfigureAwait(true);
+
             // No Explorer area is selected by default — the Engineering
             // Cockpit, not an Explorer area, is the Workspace's own default
             // landing screen (ADR-0069). Selecting the first available area
@@ -551,6 +556,7 @@ public sealed class MainWindow : Window
             _session.WindowUiState.CaptureFrom(this);
             await _session.WindowUiState.SaveAsync().ConfigureAwait(true);
             await SaveDesktopUiStateAsync().ConfigureAwait(true);
+            await _dockingComposer.Layout.SaveAsync().ConfigureAwait(true);
 
             // Recent/Favourite Objects (`WP 10.6A`) — saved alongside
             // every other Desktop-local persisted state above; Command
@@ -573,6 +579,15 @@ public sealed class MainWindow : Window
     /// independent writes to two independent Settings keys.
     /// </summary>
     public Task SaveDesktopUiStateAsync() => _session.PanelUiState.SaveAsync();
+
+    /// <summary>Persists the workspace arrangement (`TD-72`) — where the user put their panels, tabs, splits and floating windows.</summary>
+    public Task SaveWorkspaceLayoutAsync() => _dockingComposer.Layout.SaveAsync();
+
+    /// <summary>Restores the saved workspace arrangement, or a returning user's own migrated preferences on first run (`TD-72`).</summary>
+    public Task RestoreWorkspaceLayoutAsync() => _dockingComposer.RestoreLayoutAsync();
+
+    /// <summary>The workspace layout controller — the one owner of the arrangement (`TD-72`).</summary>
+    public Docking.WorkspaceLayoutController WorkspaceLayout => _dockingComposer.Layout;
 
     /// <summary>
     /// Professional Error Handling (`WP 10.5B` scope: "unexpected

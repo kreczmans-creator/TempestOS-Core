@@ -39,7 +39,7 @@ namespace Tempest.Desktop.Theming;
 /// </remarks>
 internal static class ApplicationPalette
 {
-    /// <summary>An overlay/scrim background — used by <see cref="Views.CommandPaletteOverlay"/> and <see cref="Docking.PanelHostControl"/>'s own Auto-Hide flyout (closes `TD-39`).</summary>
+    /// <summary>An overlay/scrim background — used by <see cref="Views.CommandPaletteOverlay"/> and the workspace layout's own Auto-Hide flyout (closes `TD-39`).</summary>
     public const string OverlayBackgroundBrushKey = "Tempest.OverlayBackgroundBrush";
 
     /// <summary>A raised panel's own background — used by the new Toast/Dialog/Empty-State controls (`WP 10.5A`).</summary>

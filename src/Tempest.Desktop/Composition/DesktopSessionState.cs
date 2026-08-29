@@ -2,6 +2,8 @@ using Tempest.Core.Settings;
 using Tempest.Desktop;
 using Tempest.Desktop.Docking;
 
+using Tempest.App.Workspace.Layout;
+
 namespace Tempest.Desktop.Composition;
 
 /// <summary>
@@ -40,6 +42,9 @@ internal sealed class DesktopSessionState
     /// <summary>Gets the restored Desktop-local panel UI state (Collapse/Auto-Hide/Output — `WP 10.2B`).</summary>
     public DesktopPanelUiState PanelUiState { get; }
 
+    /// <summary>The durable workspace arrangement (`TD-72`) — where the user put their panels.</summary>
+    public IWorkspaceLayoutStore LayoutStore { get; }
+
     /// <summary>Initialises a new instance of the <see cref="DesktopSessionState"/> class, synchronously loading every Desktop-local persisted state from <paramref name="settingsProvider"/>.</summary>
     public DesktopSessionState(ISettingsProvider settingsProvider)
     {
@@ -72,5 +77,7 @@ internal sealed class DesktopSessionState
         // contracted state.
         PanelUiState = new DesktopPanelUiState(settingsProvider);
         PanelUiState.LoadAsync().GetAwaiter().GetResult();
+        LayoutStore = new WorkspaceLayoutStore(settingsProvider);
+
     }
 }
