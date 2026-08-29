@@ -20,6 +20,83 @@ public class PersistenceStoreHostileNameTests
             new KeyValuePair<string, string>(PersistenceStore.RootPathConfigurationKey, rootPath),
         ])).Build();
 
+    /// <summary>
+    /// Whether the file system under <paramref name="path"/> is
+    /// case-insensitive — determined empirically, by creating a file and
+    /// asking for it back under a different case.
+    /// </summary>
+    /// <remarks>
+    /// Never inferred from the OS name: macOS's default volume is
+    /// case-insensitive, and a Windows directory can be marked
+    /// case-sensitive (`fsutil file setCaseSensitiveInfo`, Windows 10
+    /// 1803 onward), so "is this Windows" answers a different question
+    /// from the one that matters. `TD-59` exists precisely because this
+    /// property differs between the file systems this platform runs on,
+    /// and <see cref="PersistenceStore.WriteAsync"/> has two documented,
+    /// deliberately different behaviours across it: where the file system
+    /// keeps two case-variant keys apart, so does the store; where it
+    /// cannot, the store refuses the second write rather than silently
+    /// discarding the first key's record. The tests below assert whichever
+    /// of the two applies here, so each is a real assertion on both
+    /// platforms instead of a POSIX-only claim that reports a false defect
+    /// on Windows.
+    /// </remarks>
+    private static bool IsCaseInsensitiveFileSystem(string path)
+    {
+        var probe = Path.Combine(path, "TempestCaseProbe.tmp");
+        File.WriteAllText(probe, "probe");
+        try
+        {
+            return File.Exists(Path.Combine(path, "tempestcaseprobe.tmp"));
+        }
+        finally
+        {
+            File.Delete(probe);
+        }
+    }
+
+    /// <summary>
+    /// Whether a file with the literal name <paramref name="name"/> can
+    /// actually be created in <paramref name="directory"/> and read back.
+    /// </summary>
+    /// <remarks>
+    /// On Win32 a path whose stem is a reserved device name is routed to
+    /// the device rather than the file system, so the write appears to
+    /// succeed and no file exists afterwards — the very failure `TD-59`
+    /// was raised for. A test that needs such a file as its *fixture*
+    /// therefore cannot run there, and must say so rather than fail.
+    /// </remarks>
+    private static bool CanCreateFileNamed(string directory, string name)
+    {
+        var candidate = Path.Combine(directory, name);
+        try
+        {
+            File.WriteAllText(candidate, "probe");
+            return File.Exists(candidate) && File.ReadAllText(candidate) == "probe";
+        }
+        catch (IOException)
+        {
+            return false;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return false;
+        }
+        finally
+        {
+            try
+            {
+                if (File.Exists(candidate))
+                    File.Delete(candidate);
+            }
+            catch (IOException)
+            {
+                // Best effort: the probe lives in a per-test temp
+                // directory that is deleted wholesale either way.
+            }
+        }
+    }
+
     // ----------------------------------------------------------------
     // Reserved device names (`TD-59`'s original failure shape)
     // ----------------------------------------------------------------
@@ -75,12 +152,30 @@ public class PersistenceStoreHostileNameTests
     }
 
     [Fact]
-    public async Task ReservedDeviceNameCaseVariants_AreDistinctRecords()
+    public async Task ReservedDeviceNameCaseVariants_AreDistinctRecords_OrTheCollidingWriteIsRefused()
     {
         using var temp = new TempDirectory();
         var store = new PersistenceStore(BuildConfiguration(temp.Path));
 
         await store.WriteAsync("collection", "CON", "upper");
+
+        if (IsCaseInsensitiveFileSystem(temp.Path))
+        {
+            // "CON" and "Con" encode to file names differing only in
+            // case, so one physical file backs both keys and the store
+            // cannot keep them apart. What it must never do is overwrite:
+            // "CON"'s record survives intact, and "Con" reads as the
+            // absent record it is, rather than silently returning
+            // another key's value.
+            await Assert.ThrowsAsync<PersistenceStoreUnavailableException>(
+                () => store.WriteAsync("collection", "Con", "mixed"));
+
+            Assert.Equal("upper", await store.ReadAsync("collection", "CON"));
+            Assert.Null(await store.ReadAsync("collection", "Con"));
+            Assert.Single(await store.ListKeysAsync("collection"));
+            return;
+        }
+
         await store.WriteAsync("collection", "con", "lower");
         await store.WriteAsync("collection", "Con", "mixed");
 
@@ -206,6 +301,20 @@ public class PersistenceStoreHostileNameTests
         var collectionDirectory = Path.Combine(temp.Path, "collection");
         Directory.CreateDirectory(collectionDirectory);
 
+        if (!CanCreateFileNamed(collectionDirectory, "CON"))
+        {
+            // This fixture is a pre-`TD-59` store, and a pre-`TD-59` store
+            // containing a literal "CON" file can only ever have been
+            // written on a file system that permits the name. Where it
+            // does not — Win32 routes the path to the console device —
+            // the legacy record this test migrates cannot exist, so the
+            // path under test is unreachable rather than broken. Assert
+            // that reason, which is `TD-59`'s own premise, instead of
+            // asserting a fixture the platform refused to create.
+            Assert.False(File.Exists(Path.Combine(collectionDirectory, "CON")));
+            return;
+        }
+
         // Simulate a pre-fix store: key "CON" persisted under the plain
         // Uri.EscapeDataString encoding (the literal file name "CON").
         await File.WriteAllTextAsync(Path.Combine(collectionDirectory, "CON"), "legacy-value");
@@ -231,6 +340,20 @@ public class PersistenceStoreHostileNameTests
         using var temp = new TempDirectory();
         var collectionDirectory = Path.Combine(temp.Path, "collection");
         Directory.CreateDirectory(collectionDirectory);
+
+        if (!CanCreateFileNamed(collectionDirectory, "CON"))
+        {
+            // Same unreachable fixture as the migration test above, and
+            // the reason this one needs the guard even though it was
+            // passing: without a literal "CON" file the two records never
+            // coexist, so the test was asserting "reported once" over a
+            // directory holding exactly one file — green, and about
+            // nothing. Found while fixing its neighbours; a test that
+            // cannot fail is worse than one that does.
+            Assert.False(File.Exists(Path.Combine(collectionDirectory, "CON")));
+            return;
+        }
+
         await File.WriteAllTextAsync(Path.Combine(collectionDirectory, "CON"), "legacy");
         await File.WriteAllTextAsync(Path.Combine(collectionDirectory, "%43ON"), "migrated");
 
@@ -266,12 +389,27 @@ public class PersistenceStoreHostileNameTests
     // ----------------------------------------------------------------
 
     [Fact]
-    public async Task CaseVariantKeys_AreIndependentRecords()
+    public async Task CaseVariantKeys_AreIndependentRecords_OrTheCollidingWriteIsRefused()
     {
         using var temp = new TempDirectory();
         var store = new PersistenceStore(BuildConfiguration(temp.Path));
 
         await store.WriteAsync("collection", "Steel", "capitalised");
+
+        if (IsCaseInsensitiveFileSystem(temp.Path))
+        {
+            // The file system itself cannot hold "Steel" and "steel"
+            // apart, so neither can the store. The guarantee that still
+            // holds, and the one that matters, is that the record already
+            // there is never silently discarded.
+            await Assert.ThrowsAsync<PersistenceStoreUnavailableException>(
+                () => store.WriteAsync("collection", "steel", "lowercase"));
+
+            Assert.Equal("capitalised", await store.ReadAsync("collection", "Steel"));
+            Assert.Null(await store.ReadAsync("collection", "steel"));
+            return;
+        }
+
         await store.WriteAsync("collection", "steel", "lowercase");
 
         Assert.Equal("capitalised", await store.ReadAsync("collection", "Steel"));
