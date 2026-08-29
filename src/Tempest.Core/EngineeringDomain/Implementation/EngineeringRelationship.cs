@@ -56,6 +56,7 @@ public static class RelationshipKindCategoryMap
         ["blocks"] = RelationshipCategory.Dependency,
         ["derivesFrom"] = RelationshipCategory.Derivation,
         ["allocatedTo"] = RelationshipCategory.Allocation,
+        ["contributesTo"] = RelationshipCategory.Allocation,
         ["references"] = RelationshipCategory.Reference,
         ["relatedTo"] = RelationshipCategory.Reference,
         ["satisfies"] = RelationshipCategory.Verification,

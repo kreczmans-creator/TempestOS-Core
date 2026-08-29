@@ -181,6 +181,8 @@ public sealed class WorkspaceHost : IAsyncDisposable
         // Platform Services — the identical `ADR-0103` shape every other
         // Desktop-side collaborator uses.
         ProjectDocuments = new ProjectDocumentRegister(domainContext);
+        ProjectTasks = new ProjectTaskRegister(domainContext);
+        ProjectTaskWorkflow = new ProjectTaskService(domainContext);
         ProjectRequirements = new ProjectRequirementRegister(
             (IRequirementsService)host.Services!.GetService(typeof(IRequirementsService)), domainContext);
 
@@ -223,6 +225,12 @@ public sealed class WorkspaceHost : IAsyncDisposable
 
     /// <summary>Gets the open project's own requirements register — <see langword="null"/> before <see cref="StartAsync"/> completes.</summary>
     public IProjectRequirementRegister? ProjectRequirements { get; private set; }
+
+    /// <summary>Gets the project task register — <see langword="null"/> before <see cref="StartAsync"/> completes.</summary>
+    public IProjectTaskRegister? ProjectTasks { get; private set; }
+
+    /// <summary>Gets the task workflow service — <see langword="null"/> before <see cref="StartAsync"/> completes.</summary>
+    public IProjectTaskService? ProjectTaskWorkflow { get; private set; }
 
     /// <summary>Persists current session state (`ADR-0064`, unchanged) and shuts the Workspace down — called from the main window's own Closing handler (Window Lifecycle).</summary>
     public async Task ShutdownAsync(CancellationToken cancellationToken = default)

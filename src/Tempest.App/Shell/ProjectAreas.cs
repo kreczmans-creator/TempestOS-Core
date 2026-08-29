@@ -42,9 +42,8 @@ public static class ProjectAreas
         new(ProjectArea.Requirements, "Requirements", "◎", NavigationAvailability.Implemented,
             "The requirements allocated to this project's engineering objects, each showing its declared status alongside what its verification history actually records."),
 
-        new(ProjectArea.Tasks, "Tasks", "☑", NavigationAvailability.Declared,
-            "Engineering and project tasks. Task and Action are real, durable canonical objects in the domain, but nothing creates, assigns, boards or reports on them yet.",
-            "TD-81"),
+        new(ProjectArea.Tasks, "Tasks", "☑", NavigationAvailability.Implemented,
+            "This project's own tasks and actions, created, assigned, prioritised, dated and moved through their own work states, as a list or a status board."),
 
         new(ProjectArea.Risks, "Risks", "⚠", NavigationAvailability.Declared,
             "Risks, issues and decisions for this project. Risk, Hazard, Issue and Decision are real canonical objects in the domain with lifecycle and traceability; no surface exposes them.",

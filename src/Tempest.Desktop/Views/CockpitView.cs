@@ -216,8 +216,22 @@ internal sealed class CockpitView : UserControl
     private void AddOverdueActionsCard()
     {
         var card = new CockpitCardControl("⏰", "Overdue Actions");
-        card.AddLine("No due-date field exists on any Task/Action Domain object yet — \"overdue\" cannot be honestly computed. Honest placeholder, not fabricated.", 0.6);
-        card.AddLine($"Closest real substitute — Open Tasks/Actions: {_cockpit.OpenTaskCount}");
+
+        // Real overdue work. This card carried an honest placeholder for
+        // as long as it existed — "no due-date field exists on any
+        // Task/Action Domain object yet" — which was true until `TD-81`
+        // gave EngineeringTask a due date and a work state. Nothing
+        // overdue is now a finding rather than an absence of capability,
+        // so the empty case says so plainly.
+        var overdue = _cockpit.OverdueActionLines;
+
+        if (overdue.Count == 0)
+            card.AddLine("Nothing is overdue.", 0.8);
+
+        foreach (var line in overdue)
+            card.AddLine(line);
+
+        card.AddLine($"Open Tasks/Actions: {_cockpit.OpenTaskCount}", 0.8);
         _cards.Children.Add(card);
     }
 

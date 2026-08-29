@@ -38,6 +38,7 @@ public sealed class ProjectWorkspaceView : UserControl
     private readonly IShellNavigator _navigator;
     private readonly IProjectDocumentRegister _documents;
     private readonly IProjectRequirementRegister _requirements;
+    private readonly IProjectTaskRegister _tasks;
 
     private readonly TextBlock _title = new() { FontSize = DesignTokens.FontSizeTitle, FontWeight = FontWeight.Bold };
     private readonly TextBlock _subtitle = new() { FontSize = DesignTokens.FontSizeCaption, Opacity = 0.85 };
@@ -53,6 +54,7 @@ public sealed class ProjectWorkspaceView : UserControl
     // re-render of the project workspace around it.
     private readonly ProjectDocumentsView _documentsView = new();
     private readonly ProjectRequirementsView _requirementsView = new();
+    private readonly ProjectTasksView _tasksView = new();
 
     private bool _suppressAreaSelection;
 
@@ -73,25 +75,46 @@ public sealed class ProjectWorkspaceView : UserControl
     /// </remarks>
     public event Action<Guid, Guid>? OpenAttachmentRequested;
 
+    /// <summary>Raised when the user asks to create a task in this project.</summary>
+    public event Action? CreateTaskRequested;
+
+    /// <summary>Raised when the user asks to assign a task to themselves.</summary>
+    public event Action<Guid>? AssignTaskToMeRequested;
+
+    /// <summary>Raised when the user asks to move a task to a work state.</summary>
+    public event Action<Guid, TaskWorkState>? TaskWorkStateChangeRequested;
+
+    /// <summary>Raised when the user asks to edit a task.</summary>
+    public event Action<Guid>? EditTaskRequested;
+
+    /// <summary>Raised when the user asks to set or change a task's due date.</summary>
+    public event Action<Guid>? TaskDueDateChangeRequested;
+
+    /// <summary>The Tasks surface, so the shell can drive and inspect it.</summary>
+    public ProjectTasksView TasksView => _tasksView;
+
     /// <summary>Initialises a new instance of the <see cref="ProjectWorkspaceView"/> class.</summary>
     public ProjectWorkspaceView(
         IProjectContext projectContext,
         IProjectDirectory directory,
         IShellNavigator navigator,
         IProjectDocumentRegister documents,
-        IProjectRequirementRegister requirements)
+        IProjectRequirementRegister requirements,
+        IProjectTaskRegister tasks)
     {
         ArgumentNullException.ThrowIfNull(projectContext);
         ArgumentNullException.ThrowIfNull(directory);
         ArgumentNullException.ThrowIfNull(navigator);
         ArgumentNullException.ThrowIfNull(documents);
         ArgumentNullException.ThrowIfNull(requirements);
+        ArgumentNullException.ThrowIfNull(tasks);
 
         _projectContext = projectContext;
         _directory = directory;
         _navigator = navigator;
         _documents = documents;
         _requirements = requirements;
+        _tasks = tasks;
 
         _documentsView.OpenAttachmentRequested += (ownerId, attachmentId) =>
             OpenAttachmentRequested?.Invoke(ownerId, attachmentId);
@@ -101,6 +124,16 @@ public sealed class ProjectWorkspaceView : UserControl
             await _navigator.GoToEngineeringAsync().ConfigureAwait(true);
             EngineeringRequested?.Invoke();
         };
+
+        // The Tasks surface raises intent and performs nothing. The shell
+        // holds IProjectTaskService and does the work, exactly as it does
+        // for opening a document — a view that mutated the domain directly
+        // would be a second place task rules could live.
+        _tasksView.CreateRequested += () => CreateTaskRequested?.Invoke();
+        _tasksView.AssignToMeRequested += taskId => AssignTaskToMeRequested?.Invoke(taskId);
+        _tasksView.WorkStateChangeRequested += (taskId, target) => TaskWorkStateChangeRequested?.Invoke(taskId, target);
+        _tasksView.EditRequested += taskId => EditTaskRequested?.Invoke(taskId);
+        _tasksView.DueDateChangeRequested += taskId => TaskDueDateChangeRequested?.Invoke(taskId);
 
         // The tab strip is the product's designed area set, declared once
         // in `ProjectAreas`. An area with no capability behind it is still
@@ -165,6 +198,7 @@ public sealed class ProjectWorkspaceView : UserControl
             _overview.Children.Clear();
             _documentsView.Show([], null);
             _requirementsView.Show([], null);
+            _tasksView.Show([], [], null);
             _enterEngineering.IsEnabled = false;
             _closeProject.IsEnabled = false;
             return;
@@ -178,6 +212,10 @@ public sealed class ProjectWorkspaceView : UserControl
         var contents = await _directory.ListProjectContentsAsync(project.Id).ConfigureAwait(true);
         _documentsView.Show(await _documents.ListAsync(project.Id).ConfigureAwait(true), project.Label);
         _requirementsView.Show(await _requirements.ListAsync(project.Id).ConfigureAwait(true), project.Label);
+        _tasksView.Show(
+            await _tasks.ListAsync(project.Id).ConfigureAwait(true),
+            await _tasks.ListBoardAsync(project.Id).ConfigureAwait(true),
+            project.Label);
         _overview.Children.Clear();
         _overview.Children.Add(new TextBlock { Text = $"Engineering objects in this project: {contents.Count}" });
         _overview.Children.Add(new TextBlock
@@ -220,6 +258,9 @@ public sealed class ProjectWorkspaceView : UserControl
 
         if (descriptor.Area == ProjectArea.Requirements)
             return _requirementsView;
+
+        if (descriptor.Area == ProjectArea.Tasks)
+            return _tasksView;
 
         var host = new ContentControl { Tag = descriptor.Area };
         _areaHosts.Add(host);

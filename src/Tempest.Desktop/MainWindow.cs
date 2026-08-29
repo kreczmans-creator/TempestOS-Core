@@ -1,3 +1,4 @@
+using System.Globalization;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Tempest.App.Projects;
@@ -82,6 +83,8 @@ public sealed class MainWindow : Window
     private readonly ContentControl _moduleHost = new();
     private readonly Control _engineeringSurface;
     private readonly IProjectDirectory _projectDirectory;
+    private readonly IProjectTaskService _projectTasks;
+    private readonly IProjectTaskRegister _projectTaskRegister;
 
     // WP 10.6A — Command Execution & Productivity Experience.
     private readonly CommandHistoryLog _commandHistory = new();
@@ -411,7 +414,9 @@ public sealed class MainWindow : Window
         _projectDirectory = host.ProjectDirectory!;
         _projectBrowser = new ProjectBrowserView(_projectDirectory, _navigator, PromptForNewProjectAsync);
         _projectWorkspace = new ProjectWorkspaceView(
-            _projectContext, host.ProjectDirectory!, _navigator, host.ProjectDocuments!, host.ProjectRequirements!);
+            _projectContext, host.ProjectDirectory!, _navigator, host.ProjectDocuments!, host.ProjectRequirements!, host.ProjectTasks!);
+        _projectTasks = host.ProjectTaskWorkflow!;
+        _projectTaskRegister = host.ProjectTasks!;
         _navigationRail = new GlobalNavigationRail(_navigator);
 
         _navigationRail.NavigationRequested += () => _ = RenderCurrentModuleAsync();
@@ -427,6 +432,16 @@ public sealed class MainWindow : Window
         // layout at all.
         _projectWorkspace.OpenAttachmentRequested += (ownerId, attachmentId) =>
             _ = OpenProjectAttachmentAsync(ownerId, attachmentId);
+
+        // The Tasks area raises intent; the shell performs it through
+        // IProjectTaskService and re-renders. Same shape as the Documents
+        // area's own Open button, and for the same reason: the surface
+        // that asked stays free of both the domain and the layout.
+        _projectWorkspace.CreateTaskRequested += () => _ = CreateProjectTaskAsync();
+        _projectWorkspace.AssignTaskToMeRequested += taskId => _ = AssignProjectTaskToMeAsync(taskId);
+        _projectWorkspace.TaskWorkStateChangeRequested += (taskId, target) => _ = ChangeProjectTaskWorkStateAsync(taskId, target);
+        _projectWorkspace.EditTaskRequested += taskId => _ = EditProjectTaskAsync(taskId);
+        _projectWorkspace.TaskDueDateChangeRequested += taskId => _ = ChangeProjectTaskDueDateAsync(taskId);
 
         // `TD-104`: rehydration that could not recover everything is a
         // fact about the user's own engineering work, so it is said out
@@ -929,4 +944,143 @@ public sealed class MainWindow : Window
         _statusBar.SetArea(_currentAreaTitle);
         _ribbon.SelectTabForArea(title);
     }
+
+    // ================================================================
+    // Project task workflow (`TD-81`)
+    // ================================================================
+
+    /// <summary>Creates a task in the open project, prompting for its title.</summary>
+    /// <remarks>
+    /// The identifier is derived from the count of tasks already in the
+    /// project, matching how <c>ProjectBrowserView</c> suggests a project
+    /// identifier. It is a suggestion the user never has to think about,
+    /// not an identity scheme — the task's own Guid is its identity.
+    /// </remarks>
+    public async Task CreateProjectTaskAsync(CancellationToken cancellationToken = default)
+    {
+        if (_projectContext.Current is not { } project)
+            return;
+
+        var title = await _inputDialog.PromptAsync(
+            "New Task",
+            $"What needs doing in {project.Label}?",
+            validate: value => value.Length > 200 ? "Title is too long (200 characters max)." : null).ConfigureAwait(true);
+
+        if (title is null)
+            return;
+
+        var existing = await _projectTaskRegister.ListAsync(project.Id, cancellationToken).ConfigureAwait(true);
+        var identifier = $"TSK-{existing.Count + 1:D3}";
+
+        try
+        {
+            await _projectTasks.CreateAsync(project.Id, identifier, title, cancellationToken: cancellationToken).ConfigureAwait(true);
+            _toastHost.Show($"Created {identifier} — {title}.", FeedbackSeverity.Success);
+            RecordHistory($"Created task {identifier} in {project.Label}.");
+        }
+        catch (ProjectNotFoundException ex)
+        {
+            _toastHost.Show(ex.Message, FeedbackSeverity.Error);
+        }
+
+        await _projectWorkspace.RefreshAsync().ConfigureAwait(true);
+    }
+
+    /// <summary>Assigns a task to whoever is using the application right now (`ADR-0116`).</summary>
+    public async Task AssignProjectTaskToMeAsync(Guid taskId, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            await _projectTasks.AssignToCurrentPrincipalAsync(taskId, cancellationToken).ConfigureAwait(true);
+            _toastHost.Show("Task assigned to you.", FeedbackSeverity.Success);
+        }
+        catch (TaskNotFoundException ex)
+        {
+            _toastHost.Show(ex.Message, FeedbackSeverity.Error);
+        }
+
+        await _projectWorkspace.RefreshAsync().ConfigureAwait(true);
+    }
+
+    /// <summary>Moves a task to <paramref name="target"/>, reporting a refused transition rather than swallowing it.</summary>
+    public async Task ChangeProjectTaskWorkStateAsync(Guid taskId, TaskWorkState target, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            await _projectTasks.ChangeWorkStateAsync(taskId, target, cancellationToken).ConfigureAwait(true);
+            _toastHost.Show($"Task moved to {ProjectTasksView.Describe(target)}.", FeedbackSeverity.Success);
+            RecordHistory($"Task moved to {ProjectTasksView.Describe(target)}.");
+        }
+        catch (InvalidTaskWorkStateTransitionException ex)
+        {
+            _toastHost.Show(ex.Message, FeedbackSeverity.Error);
+        }
+        catch (TaskNotFoundException ex)
+        {
+            _toastHost.Show(ex.Message, FeedbackSeverity.Error);
+        }
+
+        await _projectWorkspace.RefreshAsync().ConfigureAwait(true);
+    }
+
+    /// <summary>Retitles a task.</summary>
+    public async Task EditProjectTaskAsync(Guid taskId, CancellationToken cancellationToken = default)
+    {
+        var title = await _inputDialog.PromptAsync(
+            "Edit Task",
+            "New title:",
+            validate: value => value.Length > 200 ? "Title is too long (200 characters max)." : null).ConfigureAwait(true);
+
+        if (title is null)
+            return;
+
+        try
+        {
+            await _projectTasks.EditAsync(taskId, title, cancellationToken: cancellationToken).ConfigureAwait(true);
+            _toastHost.Show("Task updated.", FeedbackSeverity.Success);
+        }
+        catch (TaskNotFoundException ex)
+        {
+            _toastHost.Show(ex.Message, FeedbackSeverity.Error);
+        }
+
+        await _projectWorkspace.RefreshAsync().ConfigureAwait(true);
+    }
+
+    /// <summary>Sets or clears a task's due date.</summary>
+    /// <remarks>
+    /// An empty answer clears the date rather than being rejected: "this
+    /// no longer has a deadline" is a real edit, and a dialog that can
+    /// only ever add a date leaves the user unable to undo a mistake.
+    /// </remarks>
+    public async Task ChangeProjectTaskDueDateAsync(Guid taskId, CancellationToken cancellationToken = default)
+    {
+        var answer = await _inputDialog.PromptAsync(
+            "Due Date",
+            "Due date (yyyy-MM-dd), or blank to clear:",
+            validate: value =>
+                string.IsNullOrWhiteSpace(value) || DateTimeOffset.TryParse(value, CultureInfo.InvariantCulture, out _)
+                    ? null
+                    : "Enter a date as yyyy-MM-dd, or leave it blank.").ConfigureAwait(true);
+
+        if (answer is null)
+            return;
+
+        DateTimeOffset? dueDate = string.IsNullOrWhiteSpace(answer)
+            ? null
+            : DateTimeOffset.Parse(answer, CultureInfo.InvariantCulture);
+
+        try
+        {
+            await _projectTasks.SetDueDateAsync(taskId, dueDate, cancellationToken).ConfigureAwait(true);
+            _toastHost.Show(dueDate is null ? "Due date cleared." : $"Due {dueDate:yyyy-MM-dd}.", FeedbackSeverity.Success);
+        }
+        catch (TaskNotFoundException ex)
+        {
+            _toastHost.Show(ex.Message, FeedbackSeverity.Error);
+        }
+
+        await _projectWorkspace.RefreshAsync().ConfigureAwait(true);
+    }
+
 }

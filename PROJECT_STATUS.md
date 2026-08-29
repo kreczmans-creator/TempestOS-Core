@@ -1,7 +1,70 @@
 # TempestOS — Project Status
 
-**Last Updated:** 2026-08-29 (Production Rehydration & Principal Boundary —
-`TD-103`, `TD-104`, `TD-75`). **The `v0.13.x` train remains CLOSED.**
+**Last Updated:** 2026-08-29 (Project Tasks & Delivery Workflow — `TD-81`,
+partially). **The `v0.13.x` train remains CLOSED.**
+
+**Tasks is a real project surface — the first project-management
+capability in TempestOS.** `EngineeringTask`, `EngineeringAction`,
+`Milestone` and `Deliverable` had been real, compiled, persistable domain
+types for several releases, and nothing in the product created, assigned,
+dated or reported on one. The Project Workspace's Tasks area now does: a
+task list and a status board, with create, edit, assign, priority, due
+date, milestone/deliverable association, complete and reopen. No second
+task model was introduced — every operation is performed on the existing
+domain type.
+
+**A task's status is deliberately not `LifecycleState`.** The canonical
+lifecycle forbids Released → Draft, and that rule is correct: a released
+drawing must not silently become a draft again. But a finished task must
+be reopenable, which is the same transition. Rather than weaken a rule
+that protects released engineering data across the platform in order to
+serve one family, `TaskWorkState` implements `IFamilySpecificState` — a
+contract the platform declared and had never used — with its own
+transition table and a mapping onto the canonical lifecycle, so anything
+reasoning across the whole domain still gets one answer per Kind.
+Cancelled counts as finished, not open, because an abandoned task is not
+outstanding work and counting it as such would make every open-task figure
+slowly become a lie.
+
+**Project membership is the parent chain, for the third time.** Documents
+join transitively; requirements join on the allocation link; tasks join the
+same way. A task hung on a Part inside an Assembly is a project task, three
+levels down. No `ProjectId` field was added to the task model — it would be
+a third answer to a question the platform already answers twice.
+Assignment reads the `ADR-0116` principal boundary; unassigned stays a
+first-class state.
+
+**The Cockpit's "Overdue Actions" card is no longer a placeholder.** It
+carried the note "no due-date field exists on any Task/Action Domain object
+yet" for as long as it existed. That reason is gone, so the card reports
+real overdue work and an empty card now means *nothing is overdue* rather
+than *we cannot tell*.
+
+**The most useful test result was a mutation that survived.** Making
+`ChangeWorkStateAsync` skip its own persist call broke nothing — every
+assertion read the in-memory object it had just changed, which cannot
+distinguish "saved" from "set on this instance". Closed by a test that
+reads back what the state store actually holds, after which the mutation
+is killed. Twelve of thirteen mutations died first time; all thirteen die
+now.
+
+**`TD-81` is PARTIALLY resolved, and its row now lists what is left item by
+item.** Commercial, Resources/workload, Knowledge, Administration,
+Gantt/Timeline and managed Milestone surfaces are untouched. No Gantt, no
+scheduling engine, no resource or capacity planning, no task dependencies,
+no swimlanes or WIP limits were built. Risks, Issues and Decisions still
+have no surface (`FCR-0056`).
+
+Suite: Core 2773/2773, Desktop 319/319, both configurations, 0 warnings,
+0 errors. Thirteen mutations run, thirteen killed. Runtime-verified by
+showing the real window and running a layout pass — logical presence is not
+visual presence. Decision: `ADR-0117`. Academy:
+`docs/academy/02 Runtime Architecture/41-project-tasks-and-delivery-workflow.md`.
+
+---
+
+**Previously — 2026-08-29 (Production Rehydration & Principal Boundary —
+`TD-103`, `TD-104`, `TD-75`).**
 
 **Two defects with one shape: the product worked because the sample
 harness happened to ship.** Twelve engineering Kinds — Risk, Task,

@@ -222,7 +222,7 @@ public sealed class EngineeringCockpitTests
     }
 
     [AvaloniaFact]
-    public async Task HonestPlaceholder_FavouriteProjectsAndOverdueActions_RemainEmpty_AndOpenTaskCountReflectsTheLiveSeededTask()
+    public async Task FavouriteProjectsRemainAnHonestPlaceholder_WhileOverdueActionsIsNowRealAndSimplyEmpty()
     {
         var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
         try
@@ -230,12 +230,18 @@ public sealed class EngineeringCockpitTests
             await host.StartAsync();
             var cockpit = ((Workspace)host.Workspace!).Cockpit;
 
-            // No platform capability exists for favouriting a project, or
-            // for a due date on a Task/Action — both must remain honestly
-            // empty, never fabricated, per this Work Package's own
-            // explicit instruction.
+            // Favouriting a project still has no platform capability
+            // behind it, so it stays honestly empty rather than fabricated.
             Assert.Empty(cockpit.FavouriteProjects);
+
+            // Overdue Actions is no longer a placeholder (`TD-81`):
+            // EngineeringTask now carries a due date and a work state, so
+            // this is a real computation. It is empty here because the
+            // seeded sample task has no due date — "nothing is overdue",
+            // which is a different statement from "we cannot tell", and
+            // the one the card now makes.
             Assert.Empty(cockpit.OverdueActions);
+            Assert.Empty(cockpit.OverdueActionLines);
 
             // The closest honest, real substitute for "overdue" — a real
             // open-Task count. `TD-37` fixed, `WP 10.1B` (see RiskSummary's
@@ -285,7 +291,7 @@ public sealed class EngineeringCockpitTests
     /// `WP 10.7A` (Feature Completion) — the "Favourite Projects" card,
     /// previously always the fixed "no platform capability" message
     /// (still true, unmodified, at the <see cref="EngineeringCockpit"/>
-    /// App-layer — <see cref="HonestPlaceholder_FavouriteProjectsAndOverdueActions_RemainEmpty_AndOpenTaskCountReflectsTheLiveSeededTask"/>
+    /// App-layer — <see cref="FavouriteProjectsRemainAnHonestPlaceholder_WhileOverdueActionsIsNowRealAndSimplyEmpty"/>
     /// still proves that), now reads a real, Desktop-layer
     /// <see cref="FavouriteObjectsState"/> instead, when threaded through
     /// — clicking a real favourited Project invokes the real open

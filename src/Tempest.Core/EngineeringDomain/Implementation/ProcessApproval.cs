@@ -5,22 +5,153 @@ namespace Tempest.Core.EngineeringDomain;
 /// <summary>Named <c>EngineeringTask</c>, not <c>Task</c> — <see cref="System.Threading.Tasks.Task"/> is a global using in this assembly and would collide.</summary>
 public class EngineeringTask : EngineeringObjectBase, ITask, IRehydratable<EngineeringTask>
 {
-    public string? AssignedToPrincipalId { get; }
+    private readonly object _taskLock = new();
+
+    private string? _assignedToPrincipalId;
+    private TaskWorkState _workState;
+    private TaskPriority _priority;
+    private DateTimeOffset? _dueDate;
 
     public EngineeringTask(
         IEngineeringDocument document, IDocumentRevision currentRevision, EngineeringDomainContext context,
-        string? identifier, string displayName, EngineeringObjectMetadata metadata, string? assignedToPrincipalId = null)
+        string? identifier, string displayName, EngineeringObjectMetadata metadata, string? assignedToPrincipalId = null,
+        TaskWorkState workState = TaskWorkState.Todo, TaskPriority priority = TaskPriority.Normal, DateTimeOffset? dueDate = null)
         : base(document, currentRevision, context, identifier, displayName, metadata)
     {
-        AssignedToPrincipalId = assignedToPrincipalId;
+        _assignedToPrincipalId = Normalise(assignedToPrincipalId);
+        _workState = workState;
+        _priority = priority;
+        _dueDate = dueDate;
     }
 
     /// <inheritdoc />
-    protected override void CaptureTypeState(IDictionary<string, string?> state) =>
-        state[nameof(AssignedToPrincipalId)] = AssignedToPrincipalId;
+    public string? AssignedToPrincipalId
+    {
+        get { lock (_taskLock) { return _assignedToPrincipalId; } }
+    }
 
-    static EngineeringTask IRehydratable<EngineeringTask>.Rehydrate(IEngineeringDocument document, IDocumentRevision currentRevision, EngineeringDomainContext context, EngineeringObjectState state) =>
-        new(document, currentRevision, context, state.Identifier, state.DisplayName, state.Metadata, state.Type(nameof(AssignedToPrincipalId)));
+    /// <summary>Where this task is in someone's working week — the task family's own state (see <see cref="TaskWorkState"/>).</summary>
+    /// <remarks>
+    /// Deliberately separate from <see cref="EngineeringObjectBase.Status"/>,
+    /// which remains the canonical document lifecycle. Read
+    /// <see cref="TaskWorkStates.For"/> to get the canonical equivalent
+    /// where a cross-domain consumer needs one answer for every Kind.
+    /// </remarks>
+    public TaskWorkState WorkState
+    {
+        get { lock (_taskLock) { return _workState; } }
+    }
+
+    /// <summary>How urgent this task is.</summary>
+    public TaskPriority Priority
+    {
+        get { lock (_taskLock) { return _priority; } }
+    }
+
+    /// <summary>When this task is due, or <see langword="null"/> when no date has been set.</summary>
+    /// <remarks>
+    /// Nullable on purpose. "No due date" is the honest state of most tasks
+    /// most of the time, and defaulting one to the day it was created would
+    /// make every overdue figure in the product meaningless.
+    /// </remarks>
+    public DateTimeOffset? DueDate
+    {
+        get { lock (_taskLock) { return _dueDate; } }
+    }
+
+    /// <summary>Whether this task is past its due date and still open.</summary>
+    /// <remarks>
+    /// A finished task is never overdue, however late it was — the question
+    /// a user is asking is "what still needs chasing", not "what was late".
+    /// </remarks>
+    public bool IsOverdue(DateTimeOffset asOf)
+    {
+        lock (_taskLock)
+            return _dueDate is { } due && due < asOf && TaskWorkStates.IsOpen(_workState);
+    }
+
+    /// <summary>Assigns this task to <paramref name="principalId"/>, or unassigns it when <see langword="null"/>.</summary>
+    /// <remarks>
+    /// Takes a principal id rather than resolving one itself: who is acting
+    /// and who work is assigned to are different questions, and the caller
+    /// gets the current principal from the boundary (`ADR-0116`) rather than
+    /// from the domain. An engineering object never knows who is signed in.
+    /// </remarks>
+    public Task AssignAsync(string? principalId, CancellationToken cancellationToken = default)
+    {
+        lock (_taskLock)
+            _assignedToPrincipalId = Normalise(principalId);
+
+        return PersistStateAsync(cancellationToken);
+    }
+
+    /// <summary>Moves this task to <paramref name="target"/>.</summary>
+    /// <exception cref="InvalidTaskWorkStateTransitionException">The move is not permitted from the current state.</exception>
+    public Task ChangeWorkStateAsync(TaskWorkState target, CancellationToken cancellationToken = default)
+    {
+        lock (_taskLock)
+        {
+            if (!TaskWorkStateTransitions.IsPermitted(_workState, target))
+                throw new InvalidTaskWorkStateTransitionException(Id, _workState, target);
+
+            _workState = target;
+        }
+
+        return PersistStateAsync(cancellationToken);
+    }
+
+    /// <summary>Sets this task's priority.</summary>
+    public Task SetPriorityAsync(TaskPriority priority, CancellationToken cancellationToken = default)
+    {
+        lock (_taskLock)
+            _priority = priority;
+
+        return PersistStateAsync(cancellationToken);
+    }
+
+    /// <summary>Sets or clears this task's due date.</summary>
+    public Task SetDueDateAsync(DateTimeOffset? dueDate, CancellationToken cancellationToken = default)
+    {
+        lock (_taskLock)
+            _dueDate = dueDate;
+
+        return PersistStateAsync(cancellationToken);
+    }
+
+    /// <summary>Links this task to the Milestone or Deliverable it contributes to.</summary>
+    public Task ContributeToAsync(Guid milestoneOrDeliverableId, CancellationToken cancellationToken = default) =>
+        LinkAsync(milestoneOrDeliverableId, TaskRelationshipKinds.ContributesTo, cancellationToken);
+
+    /// <inheritdoc />
+    protected override void CaptureTypeState(IDictionary<string, string?> state)
+    {
+        state[nameof(AssignedToPrincipalId)] = AssignedToPrincipalId;
+        state[nameof(WorkState)] = WorkState.ToString();
+        state[nameof(Priority)] = Priority.ToString();
+        state[nameof(DueDate)] = DueDate?.ToString("O");
+    }
+
+    /// <summary>Reads a task's own persisted state back, tolerating a record written before these fields existed.</summary>
+    /// <remarks>
+    /// An older record has no WorkState or Priority key at all. Falling back
+    /// to Todo/Normal is the honest reading of "a task that was never given
+    /// one", and matches `TD-85`'s established rule that a missing field
+    /// comes back visibly empty rather than failing the whole rehydration.
+    /// </remarks>
+    private protected static (string? Assignee, TaskWorkState WorkState, TaskPriority Priority, DateTimeOffset? DueDate) ReadTaskState(EngineeringObjectState state) =>
+        (state.Type(nameof(AssignedToPrincipalId)),
+         Enum.TryParse<TaskWorkState>(state.Type(nameof(WorkState)), out var workState) ? workState : TaskWorkState.Todo,
+         Enum.TryParse<TaskPriority>(state.Type(nameof(Priority)), out var priority) ? priority : TaskPriority.Normal,
+         state.TypeDate(nameof(DueDate)));
+
+    private static string? Normalise(string? principalId) =>
+        string.IsNullOrWhiteSpace(principalId) ? null : principalId.Trim();
+
+    static EngineeringTask IRehydratable<EngineeringTask>.Rehydrate(IEngineeringDocument document, IDocumentRevision currentRevision, EngineeringDomainContext context, EngineeringObjectState state)
+    {
+        var (assignee, workState, priority, dueDate) = ReadTaskState(state);
+        return new EngineeringTask(document, currentRevision, context, state.Identifier, state.DisplayName, state.Metadata, assignee, workState, priority, dueDate);
+    }
 }
 
 /// <summary>Named <c>EngineeringAction</c>, not <c>Action</c> — <see cref="System.Action"/> would collide.</summary>
@@ -30,8 +161,9 @@ public sealed class EngineeringAction : EngineeringTask, IAction, IRehydratable<
 
     public EngineeringAction(
         IEngineeringDocument document, IDocumentRevision currentRevision, EngineeringDomainContext context,
-        string? identifier, string displayName, EngineeringObjectMetadata metadata, Guid raisedByObjectId, string? assignedToPrincipalId = null)
-        : base(document, currentRevision, context, identifier, displayName, metadata, assignedToPrincipalId)
+        string? identifier, string displayName, EngineeringObjectMetadata metadata, Guid raisedByObjectId, string? assignedToPrincipalId = null,
+        TaskWorkState workState = TaskWorkState.Todo, TaskPriority priority = TaskPriority.Normal, DateTimeOffset? dueDate = null)
+        : base(document, currentRevision, context, identifier, displayName, metadata, assignedToPrincipalId, workState, priority, dueDate)
     {
         RaisedByObjectId = raisedByObjectId;
     }
@@ -43,9 +175,12 @@ public sealed class EngineeringAction : EngineeringTask, IAction, IRehydratable<
         state[nameof(RaisedByObjectId)] = RaisedByObjectId.ToString();
     }
 
-    static EngineeringAction IRehydratable<EngineeringAction>.Rehydrate(IEngineeringDocument document, IDocumentRevision currentRevision, EngineeringDomainContext context, EngineeringObjectState state) =>
-        new(document, currentRevision, context, state.Identifier, state.DisplayName, state.Metadata,
-            state.TypeGuidOrEmpty(nameof(RaisedByObjectId)), state.Type(nameof(AssignedToPrincipalId)));
+    static EngineeringAction IRehydratable<EngineeringAction>.Rehydrate(IEngineeringDocument document, IDocumentRevision currentRevision, EngineeringDomainContext context, EngineeringObjectState state)
+    {
+        var (assignee, workState, priority, dueDate) = ReadTaskState(state);
+        return new EngineeringAction(document, currentRevision, context, state.Identifier, state.DisplayName, state.Metadata,
+            state.TypeGuidOrEmpty(nameof(RaisedByObjectId)), assignee, workState, priority, dueDate);
+    }
 }
 
 public sealed class Review : EngineeringObjectBase, IReview, IRehydratable<Review>

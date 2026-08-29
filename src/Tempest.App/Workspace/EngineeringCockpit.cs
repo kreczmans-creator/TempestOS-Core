@@ -75,6 +75,7 @@ internal sealed class EngineeringCockpit
     private readonly NavigationService _navigationService;
     private readonly ICommandRegistry _commandRegistry;
     private readonly EngineeringDomainContext _domainContext;
+    private readonly Func<DateTimeOffset> _now;
     private readonly IRequirementValidationService _requirementValidationService;
 
     private readonly MechanicalCockpitReadModel _mechanical;
@@ -87,7 +88,8 @@ internal sealed class EngineeringCockpit
     /// <summary>Initialises a new instance of the <see cref="EngineeringCockpit"/> class.</summary>
     public EngineeringCockpit(
         NavigationService navigationService, ICommandRegistry commandRegistry, EngineeringDomainContext domainContext,
-        IRequirementsService requirementsService, IRequirementValidationService requirementValidationService)
+        IRequirementsService requirementsService, IRequirementValidationService requirementValidationService,
+        Func<DateTimeOffset>? now = null)
     {
         ArgumentNullException.ThrowIfNull(navigationService);
         ArgumentNullException.ThrowIfNull(commandRegistry);
@@ -99,6 +101,11 @@ internal sealed class EngineeringCockpit
         _commandRegistry = commandRegistry;
         _domainContext = domainContext;
         _requirementValidationService = requirementValidationService;
+
+        // The clock "overdue" is measured against. Optional, so every
+        // existing caller is unchanged; injectable so a test can state the
+        // date rather than depend on the day it runs.
+        _now = now ?? (() => DateTimeOffset.UtcNow);
 
         // Composition root (ADR-0103): each collaborator is constructed
         // exactly once, with `new`, receiving only the dependencies it
@@ -265,23 +272,88 @@ internal sealed class EngineeringCockpit
     }
 
     /// <summary>
-    /// Gets the "Overdue Actions" region's own entries - a disclosed,
-    /// honest placeholder, deliberately not upgraded: no due-date field
-    /// exists anywhere in this Domain to compute "overdue" from honestly.
+    /// Gets the "Overdue Actions" region's own entries — real overdue work,
+    /// read from the domain.
     /// </summary>
-    public IReadOnlyList<CockpitActionItem> OverdueActions { get; } = [];
+    /// <remarks>
+    /// <para>
+    /// This property was an empty list for as long as it existed, and said
+    /// so: "a disclosed, honest placeholder, deliberately not upgraded: no
+    /// due-date field exists anywhere in this Domain to compute overdue
+    /// from honestly". That was the right call then. It is wired up now
+    /// because the reason is gone — <see cref="EngineeringTask.DueDate"/>
+    /// is real, durable state, and <see cref="EngineeringTask.IsOverdue"/>
+    /// is the domain's own answer rather than this card's guess.
+    /// </para>
+    /// <para>
+    /// An empty list is still the common case and still correct: a project
+    /// with nothing overdue has nothing to show here. What changed is that
+    /// the emptiness now means "nothing is overdue" rather than "we cannot
+    /// tell".
+    /// </para>
+    /// </remarks>
+    public IReadOnlyList<CockpitActionItem> OverdueActions
+    {
+        get
+        {
+            var asOf = _now();
 
-    /// <summary>Gets every live (non-deleted) Task/Action (`"Task"`/`"Action"` Kinds) - a real read, the honest substitute named in <see cref="OverdueActions"/>'s own remarks.</summary>
+            return
+            [
+                .. LiveTasks
+                    .OfType<EngineeringTask>()
+                    .Where(t => t.IsOverdue(asOf))
+                    .OrderBy(t => t.DueDate)
+                    .ThenBy(t => t.DisplayName, StringComparer.OrdinalIgnoreCase)
+                    .Select(t => new CockpitActionItem(
+                        t.DisplayName,
+                        t.AssignedToPrincipalId ?? CockpitActionItem.NobodyAssigned,
+                        t.DueDate!.Value,
+                        (int)Math.Floor((asOf - t.DueDate!.Value).TotalDays))),
+            ];
+        }
+    }
+
+    /// <summary>
+    /// Gets the Overdue Actions card's own lines, ready to render.
+    /// </summary>
+    /// <remarks>
+    /// A formatted projection rather than the records themselves, because
+    /// <c>CockpitActionItem</c> is internal to this assembly and every
+    /// other Cockpit region already hands the view scalars
+    /// (<see cref="HealthScoreDisplay"/> is the same shape). Making the
+    /// record public to render four fields would widen this assembly's own
+    /// surface for one card.
+    /// </remarks>
+    public IReadOnlyList<string> OverdueActionLines =>
+    [
+        .. OverdueActions.Select(a =>
+            $"{a.Title} — {a.Owner} · due {a.DueDate:yyyy-MM-dd} ({a.DaysOverdue} day(s) overdue)"),
+    ];
+
+    /// <summary>Gets every live (non-deleted) Task/Action (`"Task"`/`"Action"` Kinds).</summary>
     private IReadOnlyList<ITask> LiveTasks =>
-        new[] { "Task", "Action" }
+        new[] { CanonicalObjectKinds.Task, CanonicalObjectKinds.Action }
             .SelectMany(kind => _domainContext.Repository.ListByKindAsync(kind).GetAwaiter().GetResult())
             .Where(o => o is not IDeletable { IsDeleted: true })
             .OfType<ITask>()
             .ToList();
 
-    /// <summary>Gets the number of live Tasks/Actions not yet <see cref="LifecycleState.Released"/>, <see cref="LifecycleState.Archived"/>, <see cref="LifecycleState.Obsolete"/>, or <see cref="LifecycleState.Cancelled"/> - real, honest "open" count, distinct from "overdue".</summary>
+    /// <summary>Gets the number of live Tasks/Actions that still need doing.</summary>
+    /// <remarks>
+    /// Counted from the task family's own <see cref="TaskWorkState"/> where
+    /// the object is a real <see cref="EngineeringTask"/>, falling back to
+    /// the canonical lifecycle for anything else implementing
+    /// <see cref="ITask"/>. Both say the same thing —
+    /// <see cref="TaskWorkStates"/> maps Done to
+    /// <see cref="LifecycleState.Released"/> — but asking the task family
+    /// directly means a reopened task counts as open again, which the
+    /// canonical lifecycle alone could never express.
+    /// </remarks>
     public int OpenTaskCount =>
-        LiveTasks.Count(t => t is IHasLifecycle { Status: not (LifecycleState.Released or LifecycleState.Archived or LifecycleState.Obsolete or LifecycleState.Cancelled) });
+        LiveTasks.Count(t => t is EngineeringTask task
+            ? TaskWorkStates.IsOpen(task.WorkState)
+            : t is IHasLifecycle { Status: not (LifecycleState.Released or LifecycleState.Archived or LifecycleState.Obsolete or LifecycleState.Cancelled) });
 
     // ------------------------------------------------------------
     // Is the project healthy?
