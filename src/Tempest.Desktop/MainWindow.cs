@@ -57,6 +57,7 @@ public sealed class MainWindow : Window
     private readonly StatusBarView _statusBar;
     private readonly CommandPaletteOverlay _commandPalette;
     private readonly WorkspaceDockingComposer _dockingComposer;
+    private readonly Viewing.AttachmentViewerLauncher _attachmentViewers;
     private readonly CockpitView _cockpitView;
     private readonly IDiagnosticsProvider _diagnostics;
     private readonly RibbonView _ribbon;
@@ -283,6 +284,21 @@ public sealed class MainWindow : Window
         // Panel construction/resize/hide/collapse/pin/flyout wiring
         // (`ADR-0103` collaborator #5, `WP 10.2B`).
         _dockingComposer = new WorkspaceDockingComposer(workspace, _explorerView, _inspectorView, _documentArea, _session.PanelUiState, _session.LayoutStore);
+
+        // `TD-80`: the document and drawing viewer. Constructed over the
+        // docking composer's own registry and layout controller, so a
+        // viewer is an ordinary `TD-72` panel — it tabs with the document
+        // area, splits, floats onto a second monitor and persists with no
+        // code here for any of it, and opening a second document is the
+        // same call again rather than a second reserved slot.
+        _attachmentViewers = new Viewing.AttachmentViewerLauncher(
+            _dockingComposer.Registry, _dockingComposer.Layout, _dockingComposer.DocumentPanelId);
+
+        // Opening a document never navigates: the shell stays where it is,
+        // so the project, the open object and the Explorer selection are
+        // all still there when the viewer tab is closed.
+        _viewCoordinator.OpenAttachmentAsync = (owner, attachment) =>
+            _attachmentViewers.OpenAsync(owner, attachment, Bounds.Width, Bounds.Height);
 
         // Click-away: a pointer press landing directly on the Document
         // Area (never intercepted by the flyout itself, which sits above
@@ -598,6 +614,14 @@ public sealed class MainWindow : Window
 
     /// <summary>The workspace layout controller — the one owner of the arrangement (`TD-72`).</summary>
     public Docking.WorkspaceLayoutController WorkspaceLayout => _dockingComposer.Layout;
+
+    /// <summary>The document and drawing viewer's opener (`TD-80`).</summary>
+    /// <remarks>
+    /// Exposed so an acceptance test can open a document exactly as the
+    /// editor's Open button does, rather than reaching past the shell to
+    /// construct a viewer of its own.
+    /// </remarks>
+    public Viewing.AttachmentViewerLauncher AttachmentViewers => _attachmentViewers;
 
     /// <summary>
     /// Professional Error Handling (`WP 10.5B` scope: "unexpected

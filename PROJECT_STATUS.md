@@ -1,7 +1,56 @@
 # TempestOS — Project Status
 
+**Last Updated:** 2026-08-29 (Drawing / Document Viewer — `TD-80`,
+`ADR-0115`). **The `v0.13.x` train remains CLOSED.**
+
+**`TD-80` is CLOSED for the scope delivered — and deliberately not for
+more than that.** Its own original text lists markup, annotation and
+rotation; this pass's scope did not include them, so they are carried as
+`TD-98` rather than absorbed into a closure that would overstate what was
+built. Mock-ups 2 and 3 now have a real surface behind them.
+
+**The design turned on one question: what "render" is allowed to mean.**
+The obvious pure-managed approach extracts a PDF's text and lays it out —
+no native dependency, works everywhere, and useless for an engineering
+drawing, whose content is vector paths and whose text extraction yields
+the title block and nothing else. It would have passed for specifications
+and been indistinguishable from working until someone opened a drawing. So
+PDFium rasterises for real, **on demand at the current zoom**, which is
+why zooming into a detail shows more of the drawing rather than larger
+pixels. That was verified with a five-line probe before any viewer code
+was written.
+
+**The geometry is a pure immutable value.** `DocumentViewport` and
+`DocumentViewSession` decide every zoom, pan, fit, resize and page-turn
+rule in `Tempest.App`, with no rendering type in them, so all of it runs
+with no UI in the process — `TD-72`'s discipline again. Offset clamping
+and anchored zoom are invariants of the type, not habits of its callers.
+
+**Three failure states, not one.** `Missing`, `Corrupt` and `Unsupported`
+are distinct on screen: telling a user their intact `.docx` is damaged
+would be a false accusation about their data, where an admission about our
+own capabilities is the truth.
+
+**The viewer is an ordinary `TD-72` panel.** It tabs, splits, floats onto
+a second monitor and persists with no code of its own for any of it;
+multiple documents open with no fixed slots; and opening one never
+navigates, so the project, the open object and the Explorer selection are
+exactly where they were when the tab closes.
+
+Suite: Core 2670/2670, Desktop 287/287, both configurations, 0 warnings,
+0 errors. Eight mutations run, eight killed. Two tests failed against
+*correct* code and were fixed by probing rather than by relaxing the
+assertion — the headless platform decodes every image to 1x1 including
+garbage (`TD-100`), and `RenderTargetBitmap.Save` writes zero bytes there.
+Disclosed residual debt, all new: `TD-98` (markup/annotation/rotate),
+`TD-99` (DWG/SVG), `TD-100` (image decoding unverified headlessly),
+`TD-101` (no tiled rendering). Academy:
+`docs/academy/02 Runtime Architecture/38-document-and-drawing-viewer.md`.
+
+**The prior status block, below this point, is retained:**
+
 **Last Updated:** 2026-08-29 (Attachment Content Storage — `TD-31`,
-`ADR-0114`). **The `v0.13.x` train remains CLOSED.**
+`ADR-0114`).
 
 **`TD-31` is CLOSED — an attached file is now a file this platform
 holds.** Attachments have carried metadata and never bytes since

@@ -172,6 +172,19 @@ public sealed class ObjectEditorView : UserControl
     /// </summary>
     public event Action<UndoableAction>? UndoableActionRecorded;
 
+    /// <summary>
+    /// Raised when the user asks to view one of this object's attachments
+    /// (`TD-80`).
+    /// </summary>
+    /// <remarks>
+    /// An event rather than a direct call into the viewer: this editor
+    /// knows an object and its attachments, and deliberately not the
+    /// workspace it is docked in. The shell decides where a document
+    /// opens, which is what keeps the editor usable outside the docked
+    /// workspace and keeps the viewer out of its dependencies.
+    /// </remarks>
+    public event Action<IHasAttachments, IAttachment>? OpenAttachmentRequested;
+
     private ObjectEditorView(
         Guid objectId, string objectKind, EngineeringDomainContext domainContext, IWorkspaceManager manager, Action<Guid, string> navigateToObject,
         ICommandDispatcher commandDispatcher, IRequirementsService? requirementsService, CalculationTemplateRegistry? calculationTemplates)
@@ -771,10 +784,15 @@ public sealed class ObjectEditorView : UserControl
     /// The Documents Attachments section (`WP 10.7A`) — gated on
     /// <see cref="IHasAttachments"/>. Lists already-attached metadata via
     /// the real <see cref="IHasAttachments.GetAttachmentsAsync"/> read;
-    /// the Attach mini-form collects exactly what <c>Attachment</c>
-    /// genuinely carries (`TD-31`, Technical Debt Register — descriptive
-    /// metadata only) — no file-picker affordance is offered, since there
-    /// is nowhere in this platform for real file bytes to go.
+    /// the Attach mini-form collects the metadata an attachment carries.
+    ///
+    /// `TD-80`: each attachment now also offers <b>Open</b>, which is the
+    /// entry point to the real viewer. It is offered for every attachment
+    /// rather than only for those with stored content, because "this
+    /// attachment has no content" is something the viewer says clearly and
+    /// a disabled button does not — a greyed-out Open leaves the user
+    /// guessing whether the file is missing, the format is unsupported, or
+    /// the application is broken.
     /// </summary>
     private void PopulateAttachments(IEngineeringObject target)
     {
@@ -796,11 +814,30 @@ public sealed class ObjectEditorView : UserControl
         {
             foreach (var attachment in attachments)
             {
-                _attachmentsListPanel.Children.Add(new TextBlock
+                var row = new StackPanel
                 {
-                    Text = $"📎 {attachment.FileName}  ({attachment.ContentType}, {attachment.SizeInBytes:N0} bytes)",
-                    FontSize = DesignTokens.FontSizeBody,
-                });
+                    Orientation = Avalonia.Layout.Orientation.Horizontal,
+                    Spacing = 8,
+                    Children =
+                    {
+                        new TextBlock
+                        {
+                            Text = $"📎 {attachment.FileName}  ({attachment.ContentType}, {attachment.SizeInBytes:N0} bytes)",
+                            FontSize = DesignTokens.FontSizeBody,
+                            VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
+                        },
+                    },
+                };
+
+                if (OpenAttachmentRequested is not null)
+                {
+                    var open = new Button { Content = "Open", Padding = new Thickness(10, 1), FontSize = DesignTokens.FontSizeBody };
+                    var captured = attachment;
+                    open.Click += (_, _) => OpenAttachmentRequested?.Invoke(attachable, captured);
+                    row.Children.Add(open);
+                }
+
+                _attachmentsListPanel.Children.Add(row);
             }
         }
 

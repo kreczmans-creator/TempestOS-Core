@@ -88,6 +88,18 @@ internal sealed class WorkspaceViewCoordinator
     private DocumentAreaView? _documentArea;
 
     /// <summary>Initialises a new instance of the <see cref="WorkspaceViewCoordinator"/> class, wiring every Explorer/Inspector cross-view interaction that does not need <see cref="DocumentAreaView"/> to already exist (see <see cref="Attach"/>).</summary>
+    /// <summary>
+    /// Opens one of an object's attachments in the document viewer
+    /// (`TD-80`), set by the shell that owns the workspace.
+    /// </summary>
+    /// <remarks>
+    /// A settable collaborator rather than a twentieth constructor
+    /// parameter, and deliberately optional: a coordinator used outside
+    /// the docked workspace has nowhere to open a document, and the
+    /// editor's Open affordance simply does not appear.
+    /// </remarks>
+    public Func<IHasAttachments, IAttachment, Task>? OpenAttachmentAsync { get; set; }
+
     public WorkspaceViewCoordinator(
         IWorkspace workspace, WorkspaceManager manager, EngineeringDomainContext domainContext, ICommandDispatcher commandDispatcher,
         IRequirementsService requirementsService, CalculationTemplateRegistry? calculationTemplates,
@@ -282,6 +294,13 @@ internal sealed class WorkspaceViewCoordinator
             return DocumentAreaView.BuildDefaultBody(view);
 
         editor.DirtyChanged += dirty => _documentArea!.MarkDirty(view.Id, dirty);
+
+        // `TD-80`: the editor asks; the shell decides where a document
+        // opens. Fire-and-forget because opening is the user's gesture and
+        // must not block the editor's own event dispatch; the viewer
+        // surfaces its own Missing/Corrupt/Unsupported state, so there is
+        // no result here worth awaiting.
+        editor.OpenAttachmentRequested += (owner, attachment) => _ = OpenAttachmentAsync?.Invoke(owner, attachment);
         editor.ActionCompleted += async (message, outcome) =>
         {
             _statusBar.SetText(message);
