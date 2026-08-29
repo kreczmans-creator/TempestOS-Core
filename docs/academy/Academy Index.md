@@ -519,6 +519,21 @@ verification of every prior claim.
 - ADR-0098 (Undo/Redo, a delegate stack not a new Command contract), ADR-0099 (a Macro is a registered Command, not a second execution path), ADR-0100 (External Controller integration — no vendor SDK). Disclosed numbering note: `WP 10.5C` was completed after `WP 10.6A` despite its lower number, mirroring `WP 9.3A`'s own precedent — see Work Package Walkthroughs, above.
 - See also [Diagnostics & Composite Logging](02%20Runtime%20Architecture/12-diagnostics-and-composite-logging.md) for the `IDiagnosticsProvider` reads the Cockpit/Status Bar/Ribbon all consume, and Notifications, above, for the Event-Bus-derived framework `WP 10.5B` gives its first real Desktop consumer.
 
+### Product Convergence & Recovery
+
+The 2026-08-28/29 programme that turned the working engineering platform
+into the project-centric TempestOS product: an adversarial Product
+Compliance Audit and its responsive-workspace remediation, the Product
+Spine, a real persistence boundary for engineering objects, the
+project/standalone convergence of the shell, and the replacement of the
+compile-time docking grid with a data-driven layout tree.
+
+- [Responsive Workspace & Ribbon Minimisation](02%20Runtime%20Architecture/32-responsive-workspace-and-ribbon-minimisation.md) — the Product Compliance Audit's own remediation: a width-driven responsive rule over the workspace and a genuinely minimisable Ribbon; closes `TD-70`/`TD-71`.
+- [The Product Spine](02%20Runtime%20Architecture/33-the-product-spine.md) — `IProjectDirectory`/`IProjectContext`/`IShellNavigator`: the project-centric backbone the product was missing, established without rewriting the engineering platform beneath it.
+- [Engineering Object Rehydration](02%20Runtime%20Architecture/34-engineering-object-rehydration.md) — `ADR-0113`: durable `EngineeringObjectState` plus factory-driven rehydration (`IRehydratable<TSelf>`), so a persisted object survives a process restart with its identity, lifecycle, revisions, relationships and provenance intact; removes `Projects.Index` rather than leaving two competing persistence mechanisms. Closes `TD-85`; opens `TD-86`/`TD-87`/`TD-88`.
+- [Project-Centric Convergence](02%20Runtime%20Architecture/35-project-centric-convergence.md) — transitive `ProjectMembership`, `IEngineeringScope`, and the `ShellAreas`/`ProjectAreas` descriptor tables that make a not-yet-implemented module say so honestly instead of pretending. Standalone calculation sets remain a first-class, project-free workflow. Closes `TD-89` for the spine.
+- [Workspace Layout & Docking](02%20Runtime%20Architecture/36-workspace-layout-and-docking.md) — `ADR-0095`: the immutable `WorkspaceLayoutTree` (splits, tab groups, floating windows) that replaces the fixed 5x3 `DockingGrid`, with drag-to-dock, collapse/auto-hide, resize, persistence and restoration. Closes `TD-72`; opens `TD-90`/`TD-91`.
+
 ## Design Patterns
 
 Recurring structural patterns TempestOS actually uses, explained in terms

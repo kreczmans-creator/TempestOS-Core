@@ -158,9 +158,20 @@ jobs:
 
           $lines -join "`n" | Add-Content -Path $env:GITHUB_STEP_SUMMARY
 
+      # Artefact publication is diagnostic output, never a verification
+      # gate: `continue-on-error` here so an account-level artefact
+      # storage quota — which is outside this repository's control and
+      # recalculated on GitHub's own 6-12 hour cycle — cannot turn a
+      # genuinely passing build and test run red. Added against direct
+      # evidence: run 33240113523 failed this step with "Failed to
+      # CreateArtifact: Artifact storage quota has been hit", which would
+      # have failed the job on its own even with a clean build. Build,
+      # Test and the Governance Health Check are deliberately untouched
+      # and remain hard gates.
       - name: Upload build log (${{ matrix.configuration }})
         if: always()
         uses: actions/upload-artifact@v4
+        continue-on-error: true
         with:
           name: build-log-${{ matrix.configuration }}
           path: build-${{ matrix.configuration }}.log
@@ -170,6 +181,7 @@ jobs:
       - name: Upload test results (${{ matrix.configuration }})
         if: always()
         uses: actions/upload-artifact@v4
+        continue-on-error: true
         with:
           name: test-results-${{ matrix.configuration }}
           path: TestResults/${{ matrix.configuration }}/*.trx
@@ -187,6 +199,7 @@ jobs:
       - name: Upload Tempest.Desktop build output (shipped application)
         if: matrix.configuration == 'Release'
         uses: actions/upload-artifact@v4
+        continue-on-error: true
         with:
           name: tempestos-desktop-release
           path: src/Tempest.Desktop/bin/Release/net10.0/**
@@ -196,6 +209,7 @@ jobs:
       - name: Upload Tempest.App build output (Internal Engineering Harness)
         if: matrix.configuration == 'Release'
         uses: actions/upload-artifact@v4
+        continue-on-error: true
         with:
           name: tempestos-engineering-harness
           path: src/Tempest.App/bin/Release/net10.0/**

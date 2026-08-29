@@ -123,7 +123,7 @@ public class WorkspaceLayoutTreeTests
 
         tree = tree.Dock(Inspector, explorerGroup.Id, DockRelation.Into);
 
-        Assert.Single(tree.AllPanels.Where(p => p == Inspector));
+        Assert.Single(tree.AllPanels, p => p == Inspector);
         Assert.Equal([Explorer, Inspector], tree.FindGroupContaining(Inspector)!.PanelIds);
     }
 

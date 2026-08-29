@@ -280,10 +280,27 @@ public sealed class ObjectRehydrationAcceptanceTests
     {
         var root = WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath();
 
+        // Every Verification Activity the *first* lifetime persisted. The
+        // second lifetime seeds the sample graph again, with fresh
+        // identities, so "a VerificationActivity in the second lifetime"
+        // is not the same thing as "a rehydrated VerificationActivity" —
+        // and only the latter proves anything about rehydration. Reading
+        // the first lifetime's own identities here is what makes the
+        // assertions below deterministic: without it the test picked
+        // whichever Activity `ListByKindAsync` happened to return first,
+        // which is a freshly-seeded one about half the time, and then
+        // failed on a link that lifetime never asked rehydration to
+        // index (found by running the whole solution's suites
+        // concurrently, where the enumeration order actually varies).
+        List<Guid> firstLifetimeActivityIds;
         var first = new WorkspaceHost(root);
         try
         {
             await first.StartAsync();
+            firstLifetimeActivityIds =
+                (await DomainOf(first).Repository.ListByKindAsync("VerificationActivity"))
+                .Select(a => a.Id)
+                .ToList();
         }
         finally
         {
@@ -291,15 +308,19 @@ public sealed class ObjectRehydrationAcceptanceTests
             await first.DisposeAsync();
         }
 
+        Assert.NotEmpty(firstLifetimeActivityIds);
+
         var second = new WorkspaceHost(root);
         try
         {
             await second.StartAsync();
             var domain = DomainOf(second);
 
-            // The sample graph is idempotent across restarts, so everything
-            // present in this second lifetime arrived through rehydration.
-            var activities = await domain.Repository.ListByKindAsync("VerificationActivity");
+            // Restricted to what the first lifetime wrote, so everything
+            // examined below genuinely arrived through rehydration.
+            var activities = (await domain.Repository.ListByKindAsync("VerificationActivity"))
+                .Where(a => firstLifetimeActivityIds.Contains(a.Id))
+                .ToList();
             Assert.NotEmpty(activities);
 
             Guid recordId = default;

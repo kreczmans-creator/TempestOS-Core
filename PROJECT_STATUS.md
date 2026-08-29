@@ -51,7 +51,7 @@ their guarantees re-proven against the new host rather than carried.
 Suite: Core 2567/2569 (the same two pre-existing Linux-environment cases),
 Desktop 259/259, 0 warnings, 0 errors. Decision: `ADR-0095`. Architecture:
 `docs/architecture/Workspace Layout & Docking Architecture.md`. Academy:
-`02 Runtime Architecture/36-workspace-layout-and-docking.md`. Disclosed
+`docs/academy/02 Runtime Architecture/36-workspace-layout-and-docking.md`. Disclosed
 residual debt, all new and all bounded: `TD-90` (focus across a
 re-render), `TD-91` (the edge-based projection is lossy for tabbed and
 floating panels), `TD-92` (no live drag preview adorner).
@@ -108,7 +108,7 @@ splitter preferences are untouched.
 Suite: Core 2486/2488 (the same two pre-existing Linux-environment cases),
 Desktop 262/262, 0 warnings, 0 errors. Architecture:
 `docs/architecture/Product Spine Architecture.md`. Academy:
-`02 Runtime Architecture/35-project-centric-convergence.md`.
+`docs/academy/02 Runtime Architecture/35-project-centric-convergence.md`.
 
 **The prior status block, below this point, is retained:**
 
@@ -189,7 +189,7 @@ Suite: Core 2468/2470 (the same two pre-existing Linux-environment cases,
 confirmed failing identically at `37788a0` and therefore not regressions),
 Desktop 252/252, 0 warnings, 0 errors. Decision: `ADR-0113`. Architecture:
 `docs/architecture/Engineering Object Rehydration Architecture.md`.
-Academy: `02 Runtime Architecture/34-engineering-object-rehydration.md`.
+Academy: `docs/academy/02 Runtime Architecture/34-engineering-object-rehydration.md`.
 Disclosed residual debt, all new and all bounded: `TD-86` (per-mutation
 write volume), `TD-87` (versionless state schema), `TD-88` (eager startup
 rehydration).

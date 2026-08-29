@@ -149,10 +149,20 @@ public sealed class MainWindow : Window
 
                 // A macro is an arbitrary multi-command mutation — the
                 // Explorer/Cockpit previously stayed stale after one (`TD-58`).
+                //
+                // `!` on both fields is the same field-closure lazy-capture
+                // pattern `_cockpitView!`/`_documentArea!` already use below
+                // (`WP 12.4B`, `ADR-0104`): this lambda is *constructed* here,
+                // before `_explorerView` (assigned ~line 189) and
+                // `_cockpitView` (~line 247) exist, but it is only ever
+                // *invoked* by MacroManagerDialog after construction has
+                // fully completed, by which point both are always assigned.
+                // Suppressed at exactly these two provably-safe dereferences
+                // rather than by relaxing nullable analysis anywhere.
                 if (result.Succeeded)
                 {
-                    await _explorerView.LoadAsync().ConfigureAwait(true);
-                    _cockpitView.Refresh();
+                    await _explorerView!.LoadAsync().ConfigureAwait(true);
+                    _cockpitView!.Refresh();
                 }
 
                 return result;
