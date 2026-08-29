@@ -144,8 +144,26 @@ public sealed record EngineeringObjectTransitionState(
     Guid? ApprovalId);
 
 /// <summary>One recorded attachment's own metadata, durably (`TD-85`).</summary>
+/// <param name="Id">The attachment's identity, stable across restarts.</param>
+/// <param name="FileName">The file's own name.</param>
+/// <param name="ContentType">The file's MIME type.</param>
+/// <param name="SizeInBytes">The size of the content this attachment describes.</param>
+/// <param name="ContentHash">
+/// The SHA-256 of the bytes held for this attachment, or
+/// <see langword="null"/> when no content is stored (`TD-31`).
+/// </param>
+/// <remarks>
+/// <paramref name="ContentHash"/> is optional with a <see langword="null"/>
+/// default so a state record written before `TD-31` still deserialises:
+/// the absent property reads back as <see langword="null"/>, which is
+/// exactly what it means — an attachment whose content this platform never
+/// held and whose bytes therefore cannot be verified. That the schema
+/// carries no version of its own remains `TD-87`; this field was chosen to
+/// be additive so it does not need one.
+/// </remarks>
 public sealed record EngineeringObjectAttachmentState(
     Guid Id,
     string FileName,
     string ContentType,
-    long SizeInBytes);
+    long SizeInBytes,
+    string? ContentHash = null);

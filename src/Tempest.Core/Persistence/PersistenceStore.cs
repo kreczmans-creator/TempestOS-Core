@@ -76,7 +76,7 @@ namespace Tempest.Core.Persistence;
 /// previous good value used to be.
 /// </para>
 /// </remarks>
-public sealed class PersistenceStore : IPersistenceStore
+public sealed class PersistenceStore : IPersistenceStore, IBinaryPersistenceStore
 {
     /// <summary>
     /// The configuration key the storage backend's root path is read
@@ -243,6 +243,102 @@ public sealed class PersistenceStore : IPersistenceStore
         {
             _logger?.Warning($"Persistence list failed for collection '{collection}'.", ex);
             throw new PersistenceStoreUnavailableException($"Failed to list collection '{collection}'.", ex);
+        }
+    }
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// The byte twin of <see cref="ReadAsync"/>, sharing its exact-name
+    /// resolution and legacy-encoding fallback (`TD-59`) and its per-key
+    /// lock, so a record's name and concurrency behaviour do not depend on
+    /// whether its value happens to be text.
+    /// </remarks>
+    public async Task<byte[]?> ReadBytesAsync(string collection, string key, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(collection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(key);
+
+        var path = GetFilePath(collection, key);
+
+        using (await _keyLock.AcquireAsync(LockKey(collection, key), cancellationToken).ConfigureAwait(false))
+        {
+            try
+            {
+                var readablePath = ResolveReadablePath(collection, key, path);
+                if (readablePath is null)
+                    return null;
+
+                return await File.ReadAllBytesAsync(readablePath, cancellationToken).ConfigureAwait(false);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                _logger?.Warning($"Persistence byte read failed for collection '{collection}', key '{key}'.", ex);
+                throw new PersistenceStoreUnavailableException(
+                    $"Failed to read collection '{collection}', key '{key}'.", ex);
+            }
+        }
+    }
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// The byte twin of <see cref="WriteAsync"/>, including the
+    /// case-variant collision guard and the forward migration of a
+    /// legacy-encoded record, so the two shapes cannot disagree about
+    /// which file a key names.
+    /// </remarks>
+    public async Task WriteBytesAsync(string collection, string key, ReadOnlyMemory<byte> value, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(collection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(key);
+
+        var path = GetFilePath(collection, key);
+
+        using (await _keyLock.AcquireAsync(LockKey(collection, key), cancellationToken).ConfigureAwait(false))
+        {
+            try
+            {
+                if (File.Exists(path) && !ExistsWithExactName(path))
+                    throw new PersistenceStoreUnavailableException(
+                        $"Cannot write collection '{collection}', key '{key}': a different key already occupies the " +
+                        "same file name on this case-insensitive file system, and overwriting it would silently " +
+                        "discard that key's record.");
+
+                Directory.CreateDirectory(GetCollectionDirectory(collection));
+                await WriteAtomicallyAsync(path, value, cancellationToken).ConfigureAwait(false);
+
+                var legacyPath = GetLegacyFilePath(collection, key);
+                if (!string.Equals(legacyPath, path, StringComparison.Ordinal) && ExistsWithExactName(legacyPath))
+                    File.Delete(legacyPath);
+            }
+            catch (PersistenceStoreUnavailableException)
+            {
+                throw;
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                _logger?.Warning($"Persistence byte write failed for collection '{collection}', key '{key}'.", ex);
+                throw new PersistenceStoreUnavailableException(
+                    $"Failed to write collection '{collection}', key '{key}'.", ex);
+            }
+        }
+    }
+
+    /// <summary>
+    /// The byte overload of <see cref="WriteAtomicallyAsync(string, string, CancellationToken)"/>,
+    /// with the identical temporary-file-then-rename guarantee.
+    /// </summary>
+    private async Task WriteAtomicallyAsync(string path, ReadOnlyMemory<byte> value, CancellationToken cancellationToken)
+    {
+        var temporaryPath = Path.Combine(_rootPath, $"write-{Guid.NewGuid():N}.tmp");
+        try
+        {
+            await File.WriteAllBytesAsync(temporaryPath, value, cancellationToken).ConfigureAwait(false);
+            File.Move(temporaryPath, path, overwrite: true);
+        }
+        finally
+        {
+            if (File.Exists(temporaryPath))
+                File.Delete(temporaryPath);
         }
     }
 

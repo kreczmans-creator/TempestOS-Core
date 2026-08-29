@@ -1,7 +1,51 @@
 # TempestOS — Project Status
 
+**Last Updated:** 2026-08-29 (Attachment Content Storage — `TD-31`,
+`ADR-0114`). **The `v0.13.x` train remains CLOSED.**
+
+**`TD-31` is CLOSED — an attached file is now a file this platform
+holds.** Attachments have carried metadata and never bytes since
+`WP 8.2C`; that was disclosed rather than hidden, and it left the Document
+Viewer (`TD-80`) with nothing to open. `FCR-0054` had left the design
+question open in three parts — local filesystem storage, a blob
+abstraction, or an external DMS integration — and all three are bigger
+than the answer. `PersistenceStore` is already a file store, so the
+decision is a door rather than a building: `IBinaryPersistenceStore` is
+the byte shape of the **same class, same instance, same root**, sharing
+`TD-59`'s reserved-name-safe naming, the per-key lock, the exact-name
+resolution and the atomic rename outright. No second persistence
+architecture, and none of those hard-won properties re-implemented.
+
+**Metadata and content are separated on purpose.** An object's durable
+state carries an attachment's name, type, size and SHA-256 — and not one
+byte of the file — so rehydrating a whole graph loads no attachment
+content and a 40 MB drawing is read only when someone opens it. Size and
+hash are derived from the bytes stored rather than accepted from the
+caller, so metadata cannot describe content the store does not hold.
+Content is written before metadata, so a crash leaves unreferenced bytes
+rather than an attachment promising a file nobody stored. Reads verify
+hash and length and answer `Available`, `Missing` or `Corrupt`; damaged
+bytes are never returned, and neither absence nor damage throws.
+
+**Proven across process lifetimes, not in isolation.** A create → attach →
+restart → retrieve journey through the real `WorkspaceHost` and the same
+`AttachDocumentCommand` the Documents workspace dispatches, with
+structurally real PDF, PNG, ZIP-container, JPEG and CSV payloads and a
+blob containing every one of the 256 byte values twice. Seven mutations
+run and seven killed — including "record the metadata but never store the
+bytes", which every Core test passed and only the restart journey caught.
+
+Suite: Core 2615/2615, Desktop 265/265, both configurations, 0 warnings,
+0 errors. Disclosed residual debt, all new and all bounded: `TD-95` (no
+deduplication), `TD-96` (whole-file reads, no streaming), `TD-97` (no
+orphaned-content collection). **The viewer is deliberately not built** —
+`TD-31` was the storage boundary; rendering is `TD-80`. Academy:
+`docs/academy/02 Runtime Architecture/37-attachment-content-storage.md`.
+
+**The prior status block, below this point, is retained:**
+
 **Last Updated:** 2026-08-29 (TD-72 final closure and cross-platform
-cleanliness). **The `v0.13.x` train remains CLOSED.**
+cleanliness).
 
 **`TD-72` is CLOSED.** Verified rather than asserted: the real shell's
 composition was traced to the new layout host, all nine required

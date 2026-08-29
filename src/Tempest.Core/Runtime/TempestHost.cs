@@ -622,6 +622,15 @@ public sealed class TempestHost : ITempestHost
         // document was never designed to carry), never a second one.
         services.Singleton<IEngineeringObjectStateStore, EngineeringObjectStateStore>();
 
+        // TD-31: the durable bytes of an attached file. Registered here for
+        // the same reason and on the same terms as the state store above -
+        // the same single persistence store, in its byte shape
+        // (IBinaryPersistenceStore), with its own collection. The metadata
+        // stays on the object; only the content lives here, so rehydrating
+        // a whole object graph never loads a file.
+        services.Singleton<IBinaryPersistenceStore, PersistenceStore>();
+        services.Singleton<IAttachmentContentStore, AttachmentContentStore>();
+
         // TD-85: the Kind-to-type map startup rehydration resolves through.
         // Empty until each Kind's own declaring class registers it -
         // nothing here declares a Kind of its own (ADR-0105).

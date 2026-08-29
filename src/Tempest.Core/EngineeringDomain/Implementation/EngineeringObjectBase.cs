@@ -90,7 +90,7 @@ public abstract class EngineeringObjectBase :
                     _isDeleted,
                     new EngineeringObjectBomLineState(_quantity, _unitOfMeasure, _findNumber, _itemNumber, _referenceDesignator),
                     _history.Select(h => new EngineeringObjectTransitionState(h.From, h.To, h.ActorPrincipalId, h.OccurredAt, h.ApprovalId)).ToList(),
-                    _attachments.Select(a => new EngineeringObjectAttachmentState(a.Id, a.FileName, a.ContentType, a.SizeInBytes)).ToList(),
+                    _attachments.Select(a => new EngineeringObjectAttachmentState(a.Id, a.FileName, a.ContentType, a.SizeInBytes, a.ContentHash)).ToList(),
                     typeState);
             }
         }
@@ -124,7 +124,7 @@ public abstract class EngineeringObjectBase :
         {
             _attachments.Clear();
             foreach (var attachment in state.Attachments)
-                _attachments.Add(new Attachment(attachment.Id, attachment.FileName, attachment.ContentType, attachment.SizeInBytes));
+                _attachments.Add(new Attachment(attachment.Id, attachment.FileName, attachment.ContentType, attachment.SizeInBytes, attachment.ContentHash));
         }
 
         lock (_structuralLock)
@@ -310,6 +310,56 @@ public abstract class EngineeringObjectBase :
             IReadOnlyList<IAttachment> snapshot = _attachments.ToList();
             return Task.FromResult(snapshot);
         }
+    }
+
+    /// <inheritdoc />
+    public async Task<IAttachment> AttachContentAsync(
+        string fileName,
+        string contentType,
+        ReadOnlyMemory<byte> content,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(fileName);
+        ArgumentException.ThrowIfNullOrWhiteSpace(contentType);
+
+        var contentStore = _context.AttachmentContentStore
+            ?? throw new InvalidOperationException(
+                "This engineering domain has no attachment content store configured, so file content cannot be stored. " +
+                "Use AttachAsync to record attachment metadata alone.");
+
+        var attachmentId = Guid.NewGuid();
+
+        // Content first: a crash between the two writes leaves unreferenced
+        // bytes, not an attachment promising content nobody stored.
+        var contentHash = await contentStore.SaveAsync(attachmentId, content, cancellationToken).ConfigureAwait(false);
+
+        var attachment = new Attachment(attachmentId, fileName, contentType, content.Length, contentHash);
+
+        lock (_attachments) { _attachments.Add(attachment); }
+        await PersistStateAsync(cancellationToken).ConfigureAwait(false);
+
+        return attachment;
+    }
+
+    /// <inheritdoc />
+    public async Task<AttachmentContentResult> ReadAttachmentContentAsync(Guid attachmentId, CancellationToken cancellationToken = default)
+    {
+        IAttachment? attachment;
+        lock (_attachments) { attachment = _attachments.FirstOrDefault(a => a.Id == attachmentId); }
+
+        // An attachment this object does not have holds no content for it.
+        // Reported as Missing rather than thrown: asking about the wrong id
+        // is the same passive read as asking about one whose bytes were
+        // never stored, and neither is a failure of this object.
+        if (attachment is null)
+            return AttachmentContentResult.Missing();
+
+        if (_context.AttachmentContentStore is not { } contentStore)
+            return AttachmentContentResult.Missing();
+
+        return await contentStore
+            .ReadAsync(attachment.Id, attachment.ContentHash, attachment.SizeInBytes, cancellationToken)
+            .ConfigureAwait(false);
     }
 
     // ISearchable

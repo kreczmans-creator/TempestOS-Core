@@ -1028,14 +1028,14 @@ Coverage Note).
 |---|---|
 | **Category** | Workspace |
 | **Description** | `Attachment`/`IAttachment` (`WP8.2C`) carry descriptive metadata only (`FileName`/`ContentType`/`SizeInBytes`) — no actual file bytes, no resolvable path, no URL-fetch capability exists anywhere in this platform. A real implementation would need a genuine Platform Service decision (local filesystem storage? a blob-storage abstraction? an external document-management-system integration?). |
-| **Status** | Identified — disclosed directly by `TD-31` |
-| **Priority** | Low — metadata-only Attachments already satisfy every scope item `WP 9.4A`'s own controlling instruction names |
+| **Status** | **Implemented** — `ADR-0114`, 2026-08-29. The open design question is answered with the store this platform already has, in its byte shape: `IBinaryPersistenceStore` on the same `PersistenceStore` instance and root, with `IAttachmentContentStore` writing one record per attachment. No blob abstraction, no external DMS integration, and no new service to operate. `TD-31` is closed. |
+| **Priority** | Low — was low while metadata-only Attachments satisfied every scope item `WP 9.4A` named; raised and delivered by `TD-80`'s need for something real to render |
 | **Business Value** | Unknown — dependent on a real, demonstrated need for actual file content |
 | **Engineering Effort** | Medium-High — a genuine new Platform Service design question, not a mechanical add |
 | **Dependencies** | None yet identified |
 | **Proposed Target Release** | Unscheduled |
-| **Related ADRs** | None yet |
-| **Related Work Packages** | `WP 8.2C` (defined the current, metadata-only `Attachment` shape); `WP 9.4A` (disclosed the gap via `TD-31`) |
+| **Related ADRs** | `ADR-0114` (the implementing decision); `ADR-0053` (the substrate reused); `ADR-0113` (the metadata/state split this mirrors) |
+| **Related Work Packages** | `WP 8.2C` (defined the current, metadata-only `Attachment` shape); `WP 9.4A` (disclosed the gap via `TD-31`); 2026-08-29 Attachment Content Storage (implemented it) |
 | **Academy Impact** | Would extend `WP9.4A-engineering-documents-workspace.md` once implemented |
 | **Notes** | Raised directly by `WP9.4A Future Capability Assessment.md` and `WP9.4A Technical Debt Assessment.md` (`TD-31`). |
 

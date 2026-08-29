@@ -61,6 +61,50 @@ public interface IHasAttachments
 {
     Task AttachAsync(IAttachment attachment, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<IAttachment>> GetAttachmentsAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Attaches a real file: stores <paramref name="content"/> durably and
+    /// records the metadata describing it (`TD-31`).
+    /// </summary>
+    /// <param name="fileName">The file's own name.</param>
+    /// <param name="contentType">The file's MIME type.</param>
+    /// <param name="content">The file's bytes. Empty is legal; a zero-byte file is a file.</param>
+    /// <param name="cancellationToken">Cancels the attach.</param>
+    /// <returns>The attachment recorded, carrying the size and hash of what was actually stored.</returns>
+    /// <remarks>
+    /// <para>
+    /// The size and hash are derived from the bytes rather than accepted
+    /// from the caller, so metadata cannot describe a file the store does
+    /// not hold. <see cref="AttachAsync"/> remains for the metadata-only
+    /// case it has always served — an attachment that names a file this
+    /// platform does not have.
+    /// </para>
+    /// <para>
+    /// Content is written before metadata, deliberately. A crash between
+    /// the two leaves bytes that nothing references, which is invisible
+    /// and reclaimable; the other order would leave an attachment
+    /// promising content that was never stored, which is a record that
+    /// lies.
+    /// </para>
+    /// </remarks>
+    /// <exception cref="InvalidOperationException">No <see cref="IAttachmentContentStore"/> is configured, so content cannot be stored.</exception>
+    Task<IAttachment> AttachContentAsync(
+        string fileName,
+        string contentType,
+        ReadOnlyMemory<byte> content,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Reads the durable bytes of one of this object's attachments,
+    /// verified against the metadata describing them (`TD-31`).
+    /// </summary>
+    /// <remarks>
+    /// Never throws for an attachment this object does not have, for one
+    /// whose content was never stored, or for content that fails its own
+    /// integrity check: all three are ordinary answers, reported through
+    /// <see cref="AttachmentContentResult"/>.
+    /// </remarks>
+    Task<AttachmentContentResult> ReadAttachmentContentAsync(Guid attachmentId, CancellationToken cancellationToken = default);
 }
 
 public interface ISearchable
