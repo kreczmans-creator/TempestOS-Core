@@ -147,6 +147,27 @@ called it*. Only the tests did (`TD-83` had recorded the smell). The new
 host subscribes to its own size changes, so the guarantee is now real for
 a user resizing a window.
 
+> **And the same smell came straight back, one level up.** The closure
+> pass mutated that subscription away — deleted the one line — and all 260
+> Desktop tests stayed green. Every responsive test called
+> `ApplyResponsiveLayout` directly, so the suite proved the rule was
+> *correct* and nothing proved it was *connected*. That is exactly the
+> shape `TD-83` had recorded, moved from the method to its wiring, and it
+> survived a work package written specifically to close it.
+>
+> The fix is a test that resizes and never names the method:
+> `ShrinkingTheWindow_AppliesTheResponsiveRule_WithoutAnyoneInvokingItDirectly`.
+> Its first draft failed against correct code — it drove `Window.Width`,
+> which the headless harness does not propagate, so the host's bounds
+> never moved. A test that fails for its own reasons is no better than one
+> that passes for them; it now drives the host's own layout pass, which is
+> what a resize actually is.
+>
+> **The transferable lesson.** "Is this behaviour correct?" and "does
+> anything invoke it?" are two questions, and a test suite that only ever
+> asks the first will answer the second wrong for years. Mutating the
+> *wiring* — not the logic — is what asks the second one.
+
 **A comment that had become a lie.** `DigitalThreadGraphView` explained
 that it was a document tab rather than a panel because *"there are exactly
 three physical dock slots, all already occupied."* That was true and is

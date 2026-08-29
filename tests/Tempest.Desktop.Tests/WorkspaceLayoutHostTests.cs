@@ -272,6 +272,44 @@ public sealed class WorkspaceLayoutHostTests
     // Responsive behaviour (`TD-70`, carried forward)
     // ----------------------------------------------------------------
 
+    /// <summary>
+    /// Resizing the window applies the responsive rule, with nothing
+    /// calling <see cref="WorkspaceLayoutHost.ApplyResponsiveLayout"/>.
+    /// </summary>
+    /// <remarks>
+    /// `TD-83` recorded exactly this smell against the old fixed grid: the
+    /// responsive guarantee existed, was tested, and was invoked by nothing
+    /// but its own tests, so the running application never applied it.
+    /// `TD-72` closed that by subscribing the host to its own SizeChanged
+    /// — and every responsive test still called the method directly, so
+    /// deleting that one subscription line left all 260 Desktop tests green
+    /// (mutation M1, this closure pass). The gap had been reintroduced one
+    /// level up: the rule was wired, and nothing proved it. This test
+    /// drives the real layout pass and never names the method, so it fails
+    /// if the subscription is ever removed again.
+    /// </remarks>
+    [AvaloniaFact]
+    public void ShrinkingTheWindow_AppliesTheResponsiveRule_WithoutAnyoneInvokingItDirectly()
+    {
+        var (host, _) = Show(Default());
+
+        Assert.False(host.Tree.PresentationOf(Explorer).IsCollapsed);
+        Assert.False(host.Tree.PresentationOf(Inspector).IsCollapsed);
+
+        // A real resize, expressed the way the host actually experiences
+        // one: its own bounds change during a layout pass. Driving the
+        // Window's Width instead does nothing here — the headless harness
+        // does not propagate it, and the host's bounds stay put, which is
+        // how the first version of this test managed to fail against
+        // correct code.
+        host.Measure(new Size(600, 800));
+        host.Arrange(new Rect(0, 0, 600, 800));
+
+        Assert.True(
+            host.Tree.PresentationOf(Explorer).IsCollapsed || host.Tree.PresentationOf(Inspector).IsCollapsed,
+            "Shrinking the window must apply the responsive rule through the host's own SizeChanged subscription.");
+    }
+
     [AvaloniaTheory]
     [InlineData(1920.0)]
     [InlineData(1600.0)]

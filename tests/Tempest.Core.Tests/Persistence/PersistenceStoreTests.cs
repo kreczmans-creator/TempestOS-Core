@@ -12,6 +12,52 @@ public class PersistenceStoreTests
             new KeyValuePair<string, string>(PersistenceStore.RootPathConfigurationKey, rootPath),
         ])).Build();
 
+    /// <summary>
+    /// Whether this platform prevents deleting a file that another handle
+    /// holds open with <see cref="FileShare.None"/> — determined
+    /// empirically, by holding one open and trying.
+    /// </summary>
+    /// <remarks>
+    /// Win32 share modes are mandatory: the open handle blocks the unlink,
+    /// and <see cref="PersistenceStore.DeleteAsync"/> surfaces that as
+    /// <see cref="PersistenceStoreUnavailableException"/>. POSIX unlink
+    /// removes the directory entry regardless of open handles, so the same
+    /// delete simply succeeds and the record is gone. Both are correct;
+    /// which one happens is the platform's decision, not the store's, so
+    /// the test below asserts whichever applies here instead of asserting
+    /// the Win32 one everywhere and reporting a false defect on Linux.
+    /// Determined by probing rather than by OS name so the answer comes
+    /// from the file system actually under the test's temp directory,
+    /// which is the thing that decides.
+    /// </remarks>
+    private static bool DeleteIsBlockedByAnOpenExclusiveHandle(string directory)
+    {
+        var probe = Path.Combine(directory, "TempestDeleteProbe.tmp");
+        File.WriteAllText(probe, "probe");
+        try
+        {
+            using var handle = new FileStream(probe, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+            try
+            {
+                File.Delete(probe);
+                return false;
+            }
+            catch (IOException)
+            {
+                return true;
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return true;
+            }
+        }
+        finally
+        {
+            if (File.Exists(probe))
+                File.Delete(probe);
+        }
+    }
+
     // ----------------------------------------------------------------
     // Round-trip correctness
     // ----------------------------------------------------------------
@@ -213,17 +259,39 @@ public class PersistenceStoreTests
     }
 
     [Fact]
-    public async Task DeleteAsync_FileLockedByAnotherHandle_ThrowsPersistenceStoreUnavailableException()
+    public async Task DeleteAsync_FileLockedByAnotherHandle_ThrowsOrUnlinksAccordingToThePlatform()
     {
         using var temp = new TempDirectory();
         var store = new PersistenceStore(BuildConfiguration(temp.Path));
         await store.WriteAsync("collection", "key", "value");
         var filePath = Path.Combine(temp.Path, Uri.EscapeDataString("collection"), Uri.EscapeDataString("key"));
 
+        var deleteIsBlocked = DeleteIsBlockedByAnOpenExclusiveHandle(temp.Path);
+
         using var lockingHandle = new FileStream(filePath, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
 
-        await Assert.ThrowsAsync<PersistenceStoreUnavailableException>(
-            () => store.DeleteAsync("collection", "key"));
+        if (deleteIsBlocked)
+        {
+            // Win32: the open handle blocks the unlink. The store must
+            // report that as its own failure type rather than leaking the
+            // IOException, and must leave the record intact — a delete that
+            // did not happen must never look like one that did.
+            await Assert.ThrowsAsync<PersistenceStoreUnavailableException>(
+                () => store.DeleteAsync("collection", "key"));
+
+            Assert.Equal("value", await store.ReadAsync("collection", "key"));
+            return;
+        }
+
+        // POSIX: unlink removes the directory entry whatever handles are
+        // open, so the delete genuinely succeeds. The assertion that
+        // matters is that the store agrees the record is gone afterwards,
+        // rather than reporting a stale one from a file that no longer has
+        // a name.
+        await store.DeleteAsync("collection", "key");
+
+        Assert.Null(await store.ReadAsync("collection", "key"));
+        Assert.DoesNotContain("key", await store.ListKeysAsync("collection"));
     }
 
     // ----------------------------------------------------------------

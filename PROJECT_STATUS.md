@@ -1,7 +1,41 @@
 # TempestOS — Project Status
 
+**Last Updated:** 2026-08-29 (TD-72 final closure and cross-platform
+cleanliness). **The `v0.13.x` train remains CLOSED.**
+
+**`TD-72` is CLOSED.** Verified rather than asserted: the real shell's
+composition was traced to the new layout host, all nine required
+capabilities to production wiring rather than test-only entry points, and
+no `DockingGrid`, `PanelHostControl` or `PredefinedLayouts` type survives
+anywhere in `src/` or `tests/`. `TD-90`, `TD-91` and `TD-92` were each
+re-checked against the source and remain the only intentional
+limitations.
+
+**One mutation survived, and it mattered.** Deleting the layout host's own
+`SizeChanged` subscription left all 260 Desktop tests green. `TD-70`'s
+responsive rule was wired, and nothing proved it: every responsive test
+invoked `ApplyResponsiveLayout` directly. That is `TD-83`'s own smell
+reintroduced one level up, inside the work package written to close it.
+Closed with a test that drives a real layout pass and never names the
+method; the mutant then died. The other five mutations run this pass were
+killed as run.
+
+**The suite passes in full on this platform for the first time** — Core
+2572/2572, Desktop 261/261, both configurations, 0 warnings, 0 errors,
+with no environment carve-outs. Clearing the last two "pre-existing
+Linux-environment cases" found that one of them never was one: `TD-94`,
+a real `PluginTrustStore` defect where the file system's case rules, not
+the type's own, decided whether a `.CER` file was a trusted publisher —
+so a genuinely trusted publisher was silently untrusted on Linux, with
+nothing thrown and nothing logged. The other is a true platform
+difference (POSIX unlink versus Win32 share modes) and the test now
+asserts whichever behaviour applies. Academy:
+`docs/academy/02 Runtime Architecture/36-workspace-layout-and-docking.md`.
+
+**The prior status block, below this point, is retained:**
+
 **Last Updated:** 2026-08-29 (Full Workspace Layout & Docking — `TD-72`,
-`ADR-0095`). **The `v0.13.x` train remains CLOSED.**
+`ADR-0095`).
 
 **The workspace is now fully dockable.** The compile-time five-column,
 three-row docking grid has been **replaced**, not decorated: the
