@@ -55,6 +55,20 @@ still surfaces exactly what happened, the same "disclose what actually
 happened" instinct this project applies to its own Technical Debt and
 Governance registers, applied here to its own CI output.
 
+**Verification fails the gate; diagnostics never do** (`WP 14.2.1`,
+`ADR-0117`). Build and test are *verification*: they decide whether the
+commit is sound, and a failure in either must stop the pipeline. Artefact
+uploads are *diagnostics*: they carry evidence about a decision already
+made. Every upload step therefore carries `continue-on-error: true`. This
+is not leniency — it is the gate meaning what it says. Until `WP 14.2.1`
+the `CI Gate` job keyed off the matrix job's conclusion, which folded in
+upload outcomes, so when this account's Actions artifact storage quota
+was exhausted the required gate went red across every branch *and*
+`main`, at commits whose build and tests had both passed — including a
+commit on `main` that had gone green a week earlier and was never
+touched since. A gate that can be reddened by a billing counter is not
+reporting on the code.
+
 ## Build Pipeline
 
 `.github/workflows/ci.yml` runs on every push, every pull request, and
@@ -77,16 +91,31 @@ Each matrix leg:
 3. Restores, then builds `src/TempestOS.slnx` for its own configuration,
    with warnings promoted to errors (above).
 4. Runs the complete test suite (`dotnet test` against the same
-   solution — both `Tempest.Core.Tests` and `Tempest.Desktop.Tests`,
-   the latter exercising real Avalonia headless UI, not a mock) with TRX
-   results written per configuration.
-5. Publishes a Markdown build/test summary to the run's own Job Summary,
-   and uploads the build log and TRX results as downloadable artifacts —
-   always, even on failure, so a failing run is diagnosable from the
-   Actions UI alone, without needing to reproduce it locally first.
-6. The Release leg additionally uploads the built `Tempest.App`/
-   `Tempest.Desktop` output as a downloadable artifact — a smoke-testable
-   build of the exact commit, not a promise of one.
+   solution — `Tempest.Core.Tests`, `Tempest.Desktop.Tests` and
+   `Tempest.Companion.Tests`, the latter two exercising real Avalonia
+   headless UI, not a mock) with TRX results written per configuration.
+5. Publishes a Markdown build/test summary to the run's own Job Summary
+   — error and warning counts, per-assembly test totals, **and the name,
+   message and stack of every failed test**, parsed from the TRX
+   (`WP 14.2.1`). That last part is what makes a failing run genuinely
+   self-describing: this section previously claimed a failing run was
+   "diagnosable from the Actions UI alone", but the only thing naming the
+   failing test was the uploaded TRX, so when uploads began failing an
+   intermittent failure on `main` could be counted ("Failed: 1" of 2,341)
+   and not identified — the console log being far past the run-log API's
+   own tail window. The summary needs no storage quota and no artefact
+   retention, so it survives exactly the conditions under which the
+   artefacts do not.
+6. Uploads the build log and TRX results as artefacts — best-effort, and
+   never able to fail the job (above).
+7. On `main` and on tags only, the Release leg additionally uploads the
+   built `Tempest.App`/`Tempest.Desktop` output — a smoke-testable build
+   of the exact commit, not a promise of one. `WP 14.2.1` restricted this
+   from *every push on every branch*: those two trees are roughly 50 MB
+   per push, they are a convenience copy rather than the release
+   mechanism (`release.yml` packages the real assets from the tag), and
+   publishing them from every feature-branch push is what exhausted the
+   account's artifact storage in the first place.
 
 The runner image (`windows-2022`) is pinned explicitly rather than using
 the floating `windows-latest` alias, for the same reason this project

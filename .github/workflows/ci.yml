@@ -152,14 +152,67 @@ jobs:
               $counters = $trx.TestRun.ResultSummary.Counters
               $lines.Add("| $($file.Name) | $($counters.total) | $($counters.passed) | $($counters.failed) |")
             }
+
+            # WP 14.2.1: name every failed test, here, in the job summary
+            # and on the console. Before this, a failing run reported only
+            # "Failed: 1" out of thousands: the .trx naming the test was
+            # reachable ONLY through the upload artefact (which fails when
+            # storage is exhausted), and the console log is far too long
+            # for the run-log API's own tail window, so an intermittent
+            # failure on `main` could be seen but not identified. A test
+            # failure must describe itself from the run page alone.
+            $failures = New-Object System.Collections.Generic.List[object]
+            foreach ($file in $trxFiles) {
+              [xml]$trx = Get-Content $file.FullName
+              foreach ($result in @($trx.TestRun.Results.UnitTestResult)) {
+                if ($result -and $result.outcome -eq 'Failed') { $failures.Add($result) }
+              }
+            }
+
+            if ($failures.Count -gt 0) {
+              $lines.Add("")
+              $lines.Add("#### Failed tests ($($failures.Count))")
+              $lines.Add("")
+              Write-Host "::group::Failed tests ($($failures.Count))"
+              foreach ($failure in $failures) {
+                $name    = $failure.testName
+                $message = $failure.Output.ErrorInfo.Message
+                $stack   = $failure.Output.ErrorInfo.StackTrace
+                $lines.Add("**$name**")
+                $lines.Add("")
+                if ($message) { $lines.Add('```'); $lines.Add($message.Trim()); $lines.Add('```') }
+                if ($stack)   { $lines.Add('```'); $lines.Add(($stack.Trim() -split "`n" | Select-Object -First 12) -join "`n"); $lines.Add('```') }
+                $lines.Add("")
+                Write-Host "FAILED: $name"
+                if ($message) { Write-Host $message.Trim() }
+                if ($stack)   { Write-Host (($stack.Trim() -split "`n" | Select-Object -First 12) -join "`n") }
+                Write-Host ""
+              }
+              Write-Host "::endgroup::"
+            }
           } else {
             $lines.Add("_No test results found - the test step did not complete._")
           }
 
           $lines -join "`n" | Add-Content -Path $env:GITHUB_STEP_SUMMARY
 
+      # continue-on-error, WP 14.2.1 (ADR-0117): these two uploads are
+      # DIAGNOSTICS, not verification. Before this change a failure here
+      # failed the whole job, and because `gate` keys off
+      # needs.build-and-test.result, an artifact-storage or transport
+      # fault outside this repository's control turned the required CI
+      # Gate red while Build and Test had both genuinely passed - the
+      # exact failure observed on runs 33150525673, 33151166016,
+      # 33212508984 and 33241023711 ("Failed to CreateArtifact: Artifact
+      # storage quota has been hit"), including on `main` at an unchanged
+      # commit that had previously passed. The gate now reflects what it
+      # claims to reflect: whether the build and the tests passed. A
+      # failed upload is still visible as a red step inside the job, and
+      # everything these artefacts carry is also written to the job
+      # summary by the step above, which needs no storage at all.
       - name: Upload build log (${{ matrix.configuration }})
         if: always()
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: build-log-${{ matrix.configuration }}
@@ -169,6 +222,7 @@ jobs:
 
       - name: Upload test results (${{ matrix.configuration }})
         if: always()
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: test-results-${{ matrix.configuration }}
@@ -184,23 +238,37 @@ jobs:
       # co-equal deliverables — corrected here. Debug output is not
       # published for either: it is not a release candidate and would only
       # double artefact storage for no verification benefit.
+      #
+      # WP 14.2.1: restricted to `main` and tags, and shortened to 7 days.
+      # These two trees are ~50 MB per push (the v0.13.1 release asset is
+      # 49,877,891 bytes); publishing them from every push on every
+      # feature branch, at 14-day retention, is what exhausted this
+      # account's Actions artifact storage and, through the coupling
+      # fixed above, turned the gate red repository-wide. They are a
+      # convenience copy, never the release mechanism - release.yml
+      # packages and publishes the real assets from the tag - so keeping
+      # them where someone actually reaches for them (main, tags) and
+      # dropping them on feature-branch pushes costs nothing and removes
+      # the recurring cause. Non-fatal for the same reason as above.
       - name: Upload Tempest.Desktop build output (shipped application)
-        if: matrix.configuration == 'Release'
+        if: matrix.configuration == 'Release' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/'))
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: tempestos-desktop-release
           path: src/Tempest.Desktop/bin/Release/net10.0/**
           if-no-files-found: warn
-          retention-days: 14
+          retention-days: 7
 
       - name: Upload Tempest.App build output (Internal Engineering Harness)
-        if: matrix.configuration == 'Release'
+        if: matrix.configuration == 'Release' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/'))
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: tempestos-engineering-harness
           path: src/Tempest.App/bin/Release/net10.0/**
           if-no-files-found: warn
-          retention-days: 14
+          retention-days: 7
 
   # WP 11.2A — Governance Health-Check. Runs after build-and-test
   # completes (not gated on its success — a governance-document

@@ -46,13 +46,27 @@ jobs:
           dotnet build src/Tempest.Companion.Android/Tempest.Companion.Android.csproj -c Release -f net10.0-android
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
+      # WP 14.2.1 hardening (never executed at authoring time, so every
+      # assumption in it was a liability): the artefact is EVIDENCE of a
+      # green build, not the build itself, so it must not be able to fail
+      # the job - neither by artifact-storage exhaustion (the fault that
+      # reddened the whole repository's CI, ADR-0117) nor by a packaging
+      # path this environment could never verify. `*Signed.apk` was a
+      # guess about .NET Android's own output naming; the glob is widened
+      # to any .apk/.aab and demoted to `warn`, so a naming difference
+      # shows up as a missing artefact against a passing build instead of
+      # a red job that says nothing about whether the head compiles.
       - name: Upload package
+        if: always()
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: tempest-companion-android
-          path: src/Tempest.Companion.Android/bin/Release/net10.0-android/*Signed.apk
-          if-no-files-found: error
-          retention-days: 14
+          path: |
+            src/Tempest.Companion.Android/bin/Release/net10.0-android/*.apk
+            src/Tempest.Companion.Android/bin/Release/net10.0-android/*.aab
+          if-no-files-found: warn
+          retention-days: 7
 
   ios:
     name: iOS Head (Release, simulator)
@@ -73,10 +87,13 @@ jobs:
       - name: Build (Release, net10.0-ios, simulator - no signing required)
         run: dotnet build src/Tempest.Companion.iOS/Tempest.Companion.iOS.csproj -c Release -f net10.0-ios -r iossimulator-arm64
 
+      # Same reasoning as the Android upload above.
       - name: Upload app bundle
+        if: always()
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: tempest-companion-ios-simulator
-          path: src/Tempest.Companion.iOS/bin/Release/net10.0-ios/iossimulator-arm64/*.app
-          if-no-files-found: error
-          retention-days: 14
+          path: src/Tempest.Companion.iOS/bin/Release/net10.0-ios/**/*.app
+          if-no-files-found: warn
+          retention-days: 7

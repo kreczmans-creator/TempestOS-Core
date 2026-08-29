@@ -1,5 +1,41 @@
 # TempestOS — Project Status
 
+**Last Updated:** 2026-08-29 (`WP 14.2.1`, CI Pipeline Remediation).
+**The `v0.14.0` train is OPEN; `WP 14.0A` (`f7f00af`), `WP 14.1A`
+(`5554687`), `WP 14.2A` (`57d0082`) and `WP 14.2.1` are complete on
+branch `claude/tempestos-companion-mobile-ubznt3`.**
+
+**Repository Health — CI.** The required `CI Gate` had been failing on
+this branch **and on `main`**, at commits whose build and tests both
+passed. Root cause, established from the GitHub Actions runs themselves
+rather than inferred: this account's Actions **artifact storage quota is
+exhausted** (`"insufficient usage to create artifact"`), the two
+diagnostic upload steps failed on it, and because `gate` keys off the
+matrix job's conclusion — which folds in every step — a storage/billing
+condition outside the repository turned the required check red. Proof it
+is environmental, not code: run `33241023711` failed on `main` at the
+unchanged commit `00f7f394`, which had passed as run `32170250522`
+eleven days earlier. `WP 14.2.1` fixes this at the gate's own semantics
+(`ADR-0117`): verification decides, diagnostics never do; build-output
+artefacts (~50 MB/push, the cause) now publish from `main`/tags only at
+7-day retention; and every failed test now names itself in the Job
+Summary, which needs no storage. **Expect upload steps to remain amber
+until GitHub recalculates usage — now against a green gate.**
+
+**Known Unknown — `TD-59`.** One real, intermittent
+`Tempest.Core.Tests` failure under **Release** on `windows-2022`, not
+yet identified by name: at the identical `main` commit `00f7f394`, run
+`33212508984` passed `Test (Release)` and run `33241023711` failed it,
+1 of 2,341. It was not named because the TRX naming it could not upload
+and the console log lies beyond the run-log API's tail window — the gap
+`WP 14.2.1`'s Job Summary change closes for next time. Deliberately not
+retried, quarantined or made tolerant. Same class as `TD-46`, and as the
+failure that stopped `v0.13.0`'s own `release.yml` at `Test (Release)`,
+so it is a live risk to the next release as well as to CI.
+
+**`WP 14.2A`'s own status line, below this point, is this field's prior
+content — retained, not deleted:**
+
 **Last Updated:** 2026-08-28 (`WP 14.2A`, Companion Android & iOS
 Platform Heads). **The `v0.14.0` train is OPEN; `WP 14.0A` (`f7f00af`),
 `WP 14.1A` (`5554687`) and `WP 14.2A` are complete on branch
