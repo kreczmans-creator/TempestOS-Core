@@ -54,6 +54,52 @@ public sealed class EngineeringVocabularyConsistencyTests
     /// </summary>
     private const string DisclosedDualOwnerValue = "references";
 
+    /// <summary>
+    /// The three assemblies this check scans, and the anchor type in
+    /// each that forces it to be loaded before the scan runs.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <see cref="AppDomain.GetAssemblies"/> returns what happens to be
+    /// loaded at the moment it is called, not what this test means to
+    /// examine, and the CLR loads an assembly lazily at first use. So
+    /// the scan below was silently scoped by whichever tests xUnit
+    /// happened to run first: a run in which nothing had yet touched
+    /// <c>Tempest.App</c> examined a strictly smaller set of types than
+    /// one in which something had, and neither run said which it was.
+    /// Touching one type per assembly makes the scope a fact of this
+    /// test rather than an accident of ordering, and
+    /// <see cref="TheScan_CoversEveryProductionAssembly_AndSaysSoOutLoud"/>
+    /// fails if any of the three is ever missing — so this check can
+    /// never again pass by having looked at less than it claims.
+    /// </para>
+    /// <para>
+    /// <c>Tempest.Samples</c> is deliberately not among them. It
+    /// references only <c>Tempest.Core</c> (see its own .csproj), while
+    /// the canonical owners of the values its sample modules use —
+    /// <c>DocumentObjectFactoryRegistry</c>,
+    /// <c>ManufacturingObjectFactoryRegistry</c>,
+    /// <c>CalculationTemplateRegistry</c> — all live in
+    /// <c>Tempest.App</c>, one layer above it. A sample module
+    /// therefore <em>cannot</em> reference the constant it would have to
+    /// reference to satisfy "one value, one owner": obeying this rule
+    /// there would require inverting the layering. That is a real
+    /// residual issue about where canonical vocabulary is declared
+    /// (`ADR-0105`), tracked as `TD-93`, not something a sample module
+    /// can fix on its own — so it is named here, exactly like
+    /// <see cref="DisclosedDualOwnerValue"/>, rather than left to a
+    /// half-scanned run to hide. The three production assemblies remain
+    /// strictly enforced, and are now enforced on every run instead of
+    /// only on the runs that happened to have loaded them.
+    /// </para>
+    /// </remarks>
+    private static readonly Type[] ScannedAssemblyAnchors =
+    [
+        typeof(Tempest.Core.Verification.VerificationService),
+        typeof(Tempest.App.Workspace.Documents.DocumentObjectFactoryRegistry),
+        typeof(Tempest.Desktop.MainWindow),
+    ];
+
     private static readonly string RepositoryRoot = FindRepositoryRoot();
     private static readonly string RegisterPath = Path.Combine(RepositoryRoot, "docs", "governance", "Engineering", "Engineering Vocabulary Register.md");
 
@@ -141,9 +187,9 @@ public sealed class EngineeringVocabularyConsistencyTests
             .Where(e => e.Value != DisclosedDualOwnerValue)
             .ToLookup(e => e.Value, e => e.TypeName);
 
-        var assemblies = new[] { "Tempest.Core", "Tempest.App", "Tempest.Samples", "Tempest.Desktop" };
-        var types = AppDomain.CurrentDomain.GetAssemblies()
-            .Where(a => assemblies.Contains(a.GetName().Name))
+        var types = ScannedAssemblyAnchors
+            .Select(anchor => anchor.Assembly)
+            .Distinct()
             .SelectMany(a => a.GetTypes());
 
         var rogueDuplicates = new List<string>();
@@ -166,6 +212,27 @@ public sealed class EngineeringVocabularyConsistencyTests
         }
 
         Assert.True(rogueDuplicates.Count == 0, "Unregistered classes redeclaring a canonical value found:\n" + string.Join("\n", rogueDuplicates));
+    }
+
+    /// <summary>
+    /// The scope guard for the check above. Its finding is only as
+    /// strong as the set of assemblies it actually reflected over, and
+    /// that set used to be whatever the CLR had lazily loaded by then —
+    /// so a run that examined only <c>Tempest.Desktop</c> reported the
+    /// same clean result as one that examined all three. This asserts
+    /// the three production assemblies by name, so shrinking the scan's
+    /// reach is a test failure rather than a quieter pass.
+    /// </summary>
+    [Fact]
+    public void TheScan_CoversEveryProductionAssembly_AndSaysSoOutLoud()
+    {
+        var scanned = ScannedAssemblyAnchors
+            .Select(anchor => anchor.Assembly.GetName().Name ?? "<unnamed>")
+            .ToHashSet(StringComparer.Ordinal);
+
+        Assert.Equal(
+            new HashSet<string>(["Tempest.Core", "Tempest.App", "Tempest.Desktop"], StringComparer.Ordinal),
+            scanned);
     }
 
     // ---- Parsing ----
