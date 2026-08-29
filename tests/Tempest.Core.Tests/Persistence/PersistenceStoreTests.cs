@@ -266,19 +266,25 @@ public class PersistenceStoreTests
         await store.WriteAsync("collection", "key", "value");
         var filePath = Path.Combine(temp.Path, Uri.EscapeDataString("collection"), Uri.EscapeDataString("key"));
 
-        var deleteIsBlocked = DeleteIsBlockedByAnOpenExclusiveHandle(temp.Path);
-
-        using var lockingHandle = new FileStream(filePath, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
-
-        if (deleteIsBlocked)
+        if (DeleteIsBlockedByAnOpenExclusiveHandle(temp.Path))
         {
             // Win32: the open handle blocks the unlink. The store must
             // report that as its own failure type rather than leaking the
-            // IOException, and must leave the record intact — a delete that
-            // did not happen must never look like one that did.
-            await Assert.ThrowsAsync<PersistenceStoreUnavailableException>(
-                () => store.DeleteAsync("collection", "key"));
+            // IOException.
+            using (new FileStream(filePath, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+            {
+                await Assert.ThrowsAsync<PersistenceStoreUnavailableException>(
+                    () => store.DeleteAsync("collection", "key"));
+            }
 
+            // Checked only after the handle is released, because
+            // FileShare.None blocks the read as well — that is what
+            // ReadAsync_FileLockedByAnotherHandle asserts two tests above,
+            // and the first version of this branch asserted the surviving
+            // record while still holding the lock, so it failed on Windows
+            // for its own reasons rather than the store's. The claim that
+            // matters is this one: a delete that did not happen must never
+            // look like one that did.
             Assert.Equal("value", await store.ReadAsync("collection", "key"));
             return;
         }
@@ -288,7 +294,10 @@ public class PersistenceStoreTests
         // matters is that the store agrees the record is gone afterwards,
         // rather than reporting a stale one from a file that no longer has
         // a name.
-        await store.DeleteAsync("collection", "key");
+        using (new FileStream(filePath, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+        {
+            await store.DeleteAsync("collection", "key");
+        }
 
         Assert.Null(await store.ReadAsync("collection", "key"));
         Assert.DoesNotContain("key", await store.ListKeysAsync("collection"));
