@@ -77,7 +77,7 @@ public static class ShellAreas
             "The Engineering Workspace — inside the open project, or standalone for quick calculations and calculation sets."),
 
         new(ShellArea.Tasks, "Tasks", "☑", NavigationAvailability.Declared,
-            "Engineering and project task management. The Task and Action canonical objects exist in the domain and are durable, but no task surface, assignment workflow or board has been built.",
+            "Task management across every project at once — one person's work, or one team's, wherever it lives. Tasks inside a single project are built and reachable from that project's own Tasks tab: create, assign, prioritise, date, board and reopen. What is missing here is only the cross-project view over them.",
             "TD-81"),
 
         new(ShellArea.Commercial, "Commercial", "£", NavigationAvailability.Declared,
