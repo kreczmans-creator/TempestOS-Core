@@ -5,6 +5,7 @@ using Tempest.App.Workspace;
 using Tempest.App.Workspace.Calculations;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Events;
+using Tempest.Core.Identity;
 using Tempest.Core.Persistence;
 using Tempest.Core.Requirements;
 using Tempest.Core.Settings;
@@ -28,6 +29,7 @@ namespace Tempest.Desktop;
 public sealed class WorkspaceHost : IAsyncDisposable
 {
     private readonly string? _persistenceRootPathOverride;
+    private readonly ISessionPrincipalSource _sessionPrincipals;
 
     private ITempestHost? _host;
     private WorkspaceManager? _manager;
@@ -69,9 +71,18 @@ public sealed class WorkspaceHost : IAsyncDisposable
     /// <see cref="Tempest.App.Composition.EngineeringWorkspaceComposer"/>'s
     /// own callers (`WP 10.1B`, `TD-37`).
     /// </param>
-    public WorkspaceHost(string? persistenceRootPathOverride = null)
+    /// <param name="sessionPrincipals">
+    /// Where this session's own principal comes from (`TD-103`). Defaults
+    /// to <see cref="LocalSessionPrincipalSource"/> — one local desktop
+    /// user, no authentication — and is injectable so a test can state the
+    /// account rather than inherit the build agent's, and so
+    /// Administration can supply a different source later without this
+    /// class changing.
+    /// </param>
+    public WorkspaceHost(string? persistenceRootPathOverride = null, ISessionPrincipalSource? sessionPrincipals = null)
     {
         _persistenceRootPathOverride = persistenceRootPathOverride;
+        _sessionPrincipals = sessionPrincipals ?? new LocalSessionPrincipalSource();
     }
 
     /// <summary>
@@ -119,8 +130,30 @@ public sealed class WorkspaceHost : IAsyncDisposable
         // `new` over already-resolved Platform Services, exactly as
         // every other Desktop-side collaborator is (`ADR-0103`).
         var domainContext = (EngineeringDomainContext)host.Services!.GetService(typeof(EngineeringDomainContext));
+        var principalAccessor = (ICurrentPrincipalAccessor)host.Services!.GetService(typeof(ICurrentPrincipalAccessor));
         var eventBus = (IEventBus)host.Services!.GetService(typeof(IEventBus));
         var settingsProvider = (ISettingsProvider)host.Services!.GetService(typeof(ISettingsProvider));
+
+        // `TD-103`: the principal boundary. Authorship, audit attribution
+        // and every permission check read the accessor this sets, and
+        // until now nothing in the product ever set it — only sample
+        // modules did, during their own initialisation, so what a real
+        // launch could do depended on which sample happened to run last.
+        // Established here, after module initialisation, so the product's
+        // own answer is the one that stands rather than a sample's; the
+        // source is the boundary, and Administration can replace it later
+        // without the engineering domain knowing.
+        SessionPrincipal = _sessionPrincipals.Resolve();
+        if (principalAccessor is CurrentPrincipalAccessor accessor)
+        {
+            // Published unconditionally, null included. Publishing only a
+            // non-null answer would leave whatever a module happened to
+            // establish during its own initialisation standing as the
+            // session's principal — which is the `TD-103` defect itself,
+            // not a safe fallback: a session that genuinely has no
+            // principal must report none, not inherit a sample's.
+            accessor.SetCurrent(SessionPrincipal);
+        }
 
         // `TD-85`. Bring back every engineering object a previous run
         // persisted — projects, and everything inside them — before
@@ -157,6 +190,18 @@ public sealed class WorkspaceHost : IAsyncDisposable
         // second source of truth.
         await ShellNavigator.LoadAsync(cancellationToken).ConfigureAwait(false);
     }
+
+    /// <summary>
+    /// Gets the principal this session is operating as (`TD-103`), or
+    /// <see langword="null"/> when none could be established.
+    /// </summary>
+    /// <remarks>
+    /// Read from <see cref="ISessionPrincipalSource"/> at start-up and
+    /// published into <see cref="ICurrentPrincipalAccessor"/>, which is
+    /// what every consumer actually reads. Exposed here so a test can
+    /// assert the boundary did its job, not as a second source of truth.
+    /// </remarks>
+    public IPrincipal? SessionPrincipal { get; private set; }
 
     /// <summary>Gets what startup rehydration recovered (`TD-85`) — <see langword="null"/> before <see cref="StartAsync"/> completes.</summary>
     public EngineeringRehydrationResult? RehydrationResult { get; private set; }

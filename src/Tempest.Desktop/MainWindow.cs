@@ -428,6 +428,15 @@ public sealed class MainWindow : Window
         _projectWorkspace.OpenAttachmentRequested += (ownerId, attachmentId) =>
             _ = OpenProjectAttachmentAsync(ownerId, attachmentId);
 
+        // `TD-104`: rehydration that could not recover everything is a
+        // fact about the user's own engineering work, so it is said out
+        // loud here rather than left in a log file. Recovery still
+        // recovers everything it can — refusing to start would lose the
+        // rest — but an unknown Kind means durable work is missing from
+        // this session, and a user who is never told will assume it was
+        // never saved.
+        ReportIncompleteRehydration(host.RehydrationResult);
+
         // The shell carries its module surface from construction, not from
         // a later window event: a window that exists but hosts nothing is a
         // window whose menus and commands are unreachable.
@@ -664,6 +673,41 @@ public sealed class MainWindow : Window
 
         await _attachmentViewers.OpenAsync(owner, attachment, Bounds.Width, Bounds.Height, cancellationToken).ConfigureAwait(true);
         _projectWorkspace.MarkDocumentOpened(attachmentId);
+    }
+
+    /// <summary>
+    /// Tells the user when startup rehydration could not bring everything
+    /// back, and exactly what was missed.
+    /// </summary>
+    /// <remarks>
+    /// Silence here would be the worst outcome available: the workspace
+    /// would simply look emptier than the user left it, which is
+    /// indistinguishable from having lost the work. The message names the
+    /// unrecoverable Kinds, because "some objects" is not something anyone
+    /// can act on.
+    /// </remarks>
+    private void ReportIncompleteRehydration(EngineeringRehydrationResult? result)
+    {
+        if (result is null || result.IsComplete)
+            return;
+
+        var parts = new List<string>();
+
+        if (result.UnknownKinds.Count > 0)
+            parts.Add($"{result.UnknownKinds.Count} unrecognised kind(s): {string.Join(", ", result.UnknownKinds.Distinct().Order(StringComparer.Ordinal))}");
+
+        if (result.OrphanedStateIds.Count > 0)
+            parts.Add($"{result.OrphanedStateIds.Count} object(s) with no backing document");
+
+        if (result.FailedObjectIds.Count > 0)
+            parts.Add($"{result.FailedObjectIds.Count} object(s) that could not be reconstructed");
+
+        var message = $"Some saved engineering work could not be reopened — {string.Join("; ", parts)}. It is still on disk; see the Output panel.";
+
+        // The rehydration service has already logged each unrecoverable
+        // object at Error level with the Kind and the fix; this is the
+        // half a user actually sees.
+        _toastHost.Show(message, FeedbackSeverity.Error, TimeSpan.FromSeconds(20));
     }
 
     /// <summary>Opens an engineering object in the document area, as the Explorer's own activation does.</summary>

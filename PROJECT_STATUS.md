@@ -1,7 +1,78 @@
 # TempestOS — Project Status
 
-**Last Updated:** 2026-08-29 (Project Documents & Requirements — `TD-102`).
-**The `v0.13.x` train remains CLOSED.**
+**Last Updated:** 2026-08-29 (Production Rehydration & Principal Boundary —
+`TD-103`, `TD-104`, `TD-75`). **The `v0.13.x` train remains CLOSED.**
+
+**Two defects with one shape: the product worked because the sample
+harness happened to ship.** Twelve engineering Kinds — Risk, Task,
+Decision, Supplier, Milestone and the rest — could be persisted and read
+back only because a class inside `Tempest.Samples` registered how. And the
+desktop shell established no principal at all: the only callers of
+`EstablishCurrentPrincipal` in the whole product were sample modules. A
+build of TempestOS without the samples could write a Risk and never read
+it, and would run as nobody.
+
+**`TD-104` is RESOLVED — nine types were registered for rehydration
+nowhere at all.** `Approval`, `Assumption`, `EngineeringAction`, `Hazard`,
+`Issue`, `Review`, `Simulation`, `Test` and `Verification` could each be
+created and written to disk, and each was discarded on the next launch,
+with the loss recorded as a `Warning` in a log with no reader. Found by
+reflecting over every `EngineeringObjectBase` implementing
+`IRehydratable<T>` rather than auditing the registration list, which can
+only ever agree with itself. All 21 canonical Kinds are now declared and
+registered by `Tempest.App.Workspace.CanonicalObjectKinds` — one more
+caller of `TD-85`'s single rehydration boundary, not a second mechanism.
+An unknown Kind is now an `Error` and a toast in the running shell; silent
+data loss was the worse half of the defect.
+
+**The proof is the absence of a dependency, not the presence of a
+behaviour.** `Tempest.Samples` is loaded in the test process, so every
+behavioural round-trip test would pass just as happily if the product
+still leaned on it. `ProductionRegistration_UsesNoTypeFromTempestSamples`
+asserts the thing itself. Each of the 21 Kinds is then driven create →
+persist → a second lifetime over a real store → rehydrate, comparing the
+**full captured state** including every `TypeState` key — so an omission in
+any one type's rehydration constructor fails as a changed key rather than
+passing because the properties the test named were the ones that survived.
+
+**`TD-103` is RESOLVED for the product TempestOS currently is: a local,
+single-user desktop application.** `ISessionPrincipalSource` is the one
+place the application decides who is using it; `WorkspaceHost` resolves it
+at start-up and publishes it into the accessor every consumer already read.
+The shape is `desktop session → ISessionPrincipalSource →
+ICurrentPrincipalAccessor → services → domain` — no username threaded
+through call sites, and no user field on any engineering object. **This is
+not authentication**, and two standing tests assert the absence: no
+credential-, login- or token-shaped member in `Tempest.Core.Identity`, and
+no domain type holding an `IPrincipal`. Authentication and a real
+permissions model remain Administration scope (`TD-81`), and are what this
+interface exists to be replaced by.
+
+**The bug the fix introduced, recorded because it is instructive.** The
+first implementation published the principal only when non-null, which
+reads as ordinary defensive care. The acceptance test then failed with
+`sample.verificationworkspace-user`: when the boundary declined to answer, a
+sample module's principal was left standing as the session's — `TD-103`
+itself, wearing a fix. The boundary is authoritative in both directions;
+publishing null is the answer, not a loss. `unknown` authorship and
+`RequirementVerificationState.Unknown` are preserved for that reason.
+
+**`TD-75` is PARTIALLY resolved, and said so rather than closed.** The
+rehydration half is done and the packaging half is not: `Tempest.App` still
+project-references `Tempest.Samples`, so all 33 sample modules still
+initialise in a real launch and the "Sample" ribbon tab is still visible to
+end users. That is a packaging change with no bearing on rehydration, and
+was left alone rather than folded into a closure that would have read as
+more complete than it was.
+
+Suite: Core 2748/2748, Desktop 310/310, both configurations, 0 warnings,
+0 errors. Seven mutations run, seven killed — including the one that
+reproduced the real defect above. Decision: `ADR-0116`. Academy:
+`docs/academy/02 Runtime Architecture/40-production-rehydration-and-the-principal-boundary.md`.
+
+---
+
+**Previously — 2026-08-29 (Project Documents & Requirements — `TD-102`).**
 
 **`TD-102` is CLOSED — the two project areas that claimed to be
 implemented now are.** The Project Workspace's Documents and Requirements

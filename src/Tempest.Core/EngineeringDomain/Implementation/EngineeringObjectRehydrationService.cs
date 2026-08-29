@@ -99,8 +99,20 @@ public sealed class EngineeringObjectRehydrationService
             var rehydrator = _rehydrators.Find(state.Kind);
             if (rehydrator is null)
             {
+                // An Error, not a Warning, and deliberately actionable: a
+                // persisted object whose Kind nothing can rebuild is
+                // durable engineering work this process cannot show the
+                // user. Recovery continues — refusing to start would lose
+                // everything else that *can* be recovered — but the
+                // outcome is stated loudly, named, and reported back
+                // through `UnknownKinds` so a caller can surface it
+                // rather than leaving it in a log nobody reads.
                 unknownKinds.Add(state.Kind);
-                _logger?.Warning($"Engineering object '{state.Id}' has Kind '{state.Kind}', which no discipline registered for rehydration — it was not reconstructed.");
+                _logger?.Error(
+                    $"Engineering object '{state.Id}' has Kind '{state.Kind}', which no discipline registered for " +
+                    "rehydration — it was NOT reconstructed and is not visible in this session. Register a rehydrator " +
+                    "for this Kind in its owning discipline registry, or in CanonicalObjectKinds if it has no " +
+                    "discipline yet.");
                 continue;
             }
 

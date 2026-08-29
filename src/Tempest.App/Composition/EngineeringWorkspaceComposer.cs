@@ -167,11 +167,14 @@ public static class EngineeringWorkspaceComposer
         VerificationActivityFactoryRegistry.RegisterRehydrators(rehydrators, domainContext);
         ManufacturingObjectFactoryRegistry.RegisterRehydrators(rehydrators, domainContext);
 
-        // The Kinds only the sample modules create (`TD-75`: the samples
-        // ship transitively). They are idempotent across restarts, so
-        // without their own rehydrators the sample graph would be built
-        // once and then silently lose most of itself on the next launch.
-        SampleEngineeringObjectRehydrators.RegisterAll(rehydrators, domainContext);
+        // The canonical Kinds that are durable and rehydratable but have no
+        // discipline workspace yet. Twelve of them were registered only by
+        // `Tempest.Samples` and nine by nothing at all, so the product's
+        // ability to reload a Risk, a Task or a Hazard was either an
+        // accident of the sample harness shipping (`TD-75`) or simply
+        // absent. Registered here, in production, on the same one
+        // rehydration boundary (`TD-85`).
+        CanonicalObjectKinds.RegisterRehydrators(rehydrators, domainContext);
 
         return calculationTemplateRegistry;
     }
