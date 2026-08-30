@@ -7123,9 +7123,11 @@ ADR files (`ADR-0069`, `ADR-0070`).
 
 **`WP 8.1B` (Navigation & Project Explorer)** — the second
 implementation Work Package of `v0.8.0`; 7 new production files (2
-under `src/Tempest.App/Workspace/`, 4 under
-`src/Tempest.App/Workspace/Samples/`, 1 under
-`src/Samples/Tempest.Samples/`), 5 modified. Added one further
+under `src/Tempest.App/Workspace/`, 4 in the then-new
+`Tempest.App.Workspace.Samples` namespace — relocated to
+`tests/Tempest.Core.Tests/Workspace/Samples/` by `TD-75` phase 2, which
+found them to be fixture content the shipped product never registered —
+1 under `src/Samples/Tempest.Samples/`), 5 modified. Added one further
 `docs/releases/v0.8.0/` deliverable (`WP8.1B Implementation Report.md`)
 and one new ADR file (`ADR-0071`).
 
