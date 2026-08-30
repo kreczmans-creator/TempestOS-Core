@@ -21,8 +21,13 @@ full interaction/navigation/behaviour model around them. `WP 8.1B` then
 implemented the Navigation system and Project Explorer for real:
 navigation history, breadcrumbs, filtering, recent items, and context
 menus, proven against a real, fixed, fictional object tree
-(`Tempest.App.Workspace.Samples`) — the Project Explorer's own first
-living reference content, not a test double. `WP 8.1C` then implemented
+(then `Tempest.App.Workspace.Samples`) — the Project Explorer's own first
+living reference content, not a test double. **That content now lives in
+`Tempest.Core.Tests.Workspace.Samples`** (`TD-75` phase 2, 2026-08-30):
+the composition root stopped registering it once phase 1 stopped the
+product loading the sample assembly that declares its navigation area,
+which left the registration keyed to an area no production run contains.
+It is a test fixture now, and filed as one. `WP 8.1C` then implemented
 the Engineering Cockpit itself — the Workspace's own default landing
 screen, answering four questions on every visit (where am I, what
 needs attention, is the project healthy, what should I do next),
@@ -151,8 +156,9 @@ interfaces themselves, mirroring `WorkspaceManager.StatusBar`'s own
 never named, added without reopening any of them. The Project Explorer
 is populated, for the first time, with real (if fictional) content — a
 fixed Category → Group → Object tree
-(`Tempest.App.Workspace.Samples.SampleExplorerContent`) — proving the
-Kind-keyed provider architecture (`ADR-0067`) end to end. Building this
+(`SampleExplorerContent`, since moved to `Tempest.Core.Tests` — see
+above) — proving the Kind-keyed provider architecture (`ADR-0067`) end to
+end. Building this
 first real registration found `ADR-0067`'s own worked example
 (a module calling `IWorkspaceManager.RegisterView` directly) does not
 hold: a discovered module has no path to the one `WorkspaceManager`
