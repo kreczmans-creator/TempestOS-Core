@@ -39,6 +39,7 @@ public sealed class ProjectWorkspaceView : UserControl
     private readonly IProjectDocumentRegister _documents;
     private readonly IProjectRequirementRegister _requirements;
     private readonly IProjectTaskRegister _tasks;
+    private readonly IProjectGovernanceRegister _governance;
 
     private readonly TextBlock _title = new() { FontSize = DesignTokens.FontSizeTitle, FontWeight = FontWeight.Bold };
     private readonly TextBlock _subtitle = new() { FontSize = DesignTokens.FontSizeCaption, Opacity = 0.85 };
@@ -49,12 +50,13 @@ public sealed class ProjectWorkspaceView : UserControl
 
     private readonly List<ContentControl> _areaHosts = [];
 
-    // The two areas with real surfaces of their own. Built once and
-    // refreshed in place, so the register a user is looking at survives a
-    // re-render of the project workspace around it.
+    // The areas with real surfaces of their own. Built once and refreshed
+    // in place, so the register a user is looking at survives a re-render
+    // of the project workspace around it.
     private readonly ProjectDocumentsView _documentsView = new();
     private readonly ProjectRequirementsView _requirementsView = new();
     private readonly ProjectTasksView _tasksView = new();
+    private readonly ProjectRisksView _risksView = new();
 
     private bool _suppressAreaSelection;
 
@@ -90,8 +92,47 @@ public sealed class ProjectWorkspaceView : UserControl
     /// <summary>Raised when the user asks to set or change a task's due date.</summary>
     public event Action<Guid>? TaskDueDateChangeRequested;
 
+    /// <summary>Raised when the user asks to raise a risk in this project.</summary>
+    public event Action? CreateRiskRequested;
+
+    /// <summary>Raised when the user asks to raise an issue in this project.</summary>
+    public event Action? CreateIssueRequested;
+
+    /// <summary>Raised when the user asks to propose a decision in this project.</summary>
+    public event Action? CreateDecisionRequested;
+
+    /// <summary>Raised when the user asks to move a risk to a status.</summary>
+    public event Action<Guid, RiskStatus>? RiskStatusChangeRequested;
+
+    /// <summary>Raised when the user asks to move an issue to a status.</summary>
+    public event Action<Guid, IssueStatus>? IssueStatusChangeRequested;
+
+    /// <summary>Raised when the user asks to move a decision to a status.</summary>
+    public event Action<Guid, DecisionStatus>? DecisionStatusChangeRequested;
+
+    /// <summary>Raised when the user asks to take ownership of a risk.</summary>
+    public event Action<Guid>? OwnRiskRequested;
+
+    /// <summary>Raised when the user asks to assign an issue to themselves.</summary>
+    public event Action<Guid>? AssignIssueToMeRequested;
+
+    /// <summary>Raised when the user asks to score a risk.</summary>
+    public event Action<Guid>? ScoreRiskRequested;
+
+    /// <summary>Raised when the user asks to edit a risk.</summary>
+    public event Action<Guid>? EditRiskRequested;
+
+    /// <summary>Raised when the user asks to edit an issue.</summary>
+    public event Action<Guid>? EditIssueRequested;
+
+    /// <summary>Raised when the user asks to edit a decision.</summary>
+    public event Action<Guid>? EditDecisionRequested;
+
     /// <summary>The Tasks surface, so the shell can drive and inspect it.</summary>
     public ProjectTasksView TasksView => _tasksView;
+
+    /// <summary>The Risks surface, so the shell can drive and inspect it.</summary>
+    public ProjectRisksView RisksView => _risksView;
 
     /// <summary>Initialises a new instance of the <see cref="ProjectWorkspaceView"/> class.</summary>
     public ProjectWorkspaceView(
@@ -100,7 +141,8 @@ public sealed class ProjectWorkspaceView : UserControl
         IShellNavigator navigator,
         IProjectDocumentRegister documents,
         IProjectRequirementRegister requirements,
-        IProjectTaskRegister tasks)
+        IProjectTaskRegister tasks,
+        IProjectGovernanceRegister governance)
     {
         ArgumentNullException.ThrowIfNull(projectContext);
         ArgumentNullException.ThrowIfNull(directory);
@@ -108,6 +150,7 @@ public sealed class ProjectWorkspaceView : UserControl
         ArgumentNullException.ThrowIfNull(documents);
         ArgumentNullException.ThrowIfNull(requirements);
         ArgumentNullException.ThrowIfNull(tasks);
+        ArgumentNullException.ThrowIfNull(governance);
 
         _projectContext = projectContext;
         _directory = directory;
@@ -115,6 +158,7 @@ public sealed class ProjectWorkspaceView : UserControl
         _documents = documents;
         _requirements = requirements;
         _tasks = tasks;
+        _governance = governance;
 
         _documentsView.OpenAttachmentRequested += (ownerId, attachmentId) =>
             OpenAttachmentRequested?.Invoke(ownerId, attachmentId);
@@ -134,6 +178,21 @@ public sealed class ProjectWorkspaceView : UserControl
         _tasksView.WorkStateChangeRequested += (taskId, target) => TaskWorkStateChangeRequested?.Invoke(taskId, target);
         _tasksView.EditRequested += taskId => EditTaskRequested?.Invoke(taskId);
         _tasksView.DueDateChangeRequested += taskId => TaskDueDateChangeRequested?.Invoke(taskId);
+
+        // The Risks surface follows the same discipline as Tasks: it raises
+        // intent for all three governance families and performs none of it.
+        _risksView.CreateRiskRequested += () => CreateRiskRequested?.Invoke();
+        _risksView.CreateIssueRequested += () => CreateIssueRequested?.Invoke();
+        _risksView.CreateDecisionRequested += () => CreateDecisionRequested?.Invoke();
+        _risksView.RiskStatusChangeRequested += (id, target) => RiskStatusChangeRequested?.Invoke(id, target);
+        _risksView.IssueStatusChangeRequested += (id, target) => IssueStatusChangeRequested?.Invoke(id, target);
+        _risksView.DecisionStatusChangeRequested += (id, target) => DecisionStatusChangeRequested?.Invoke(id, target);
+        _risksView.OwnRiskRequested += id => OwnRiskRequested?.Invoke(id);
+        _risksView.AssignIssueToMeRequested += id => AssignIssueToMeRequested?.Invoke(id);
+        _risksView.ScoreRiskRequested += id => ScoreRiskRequested?.Invoke(id);
+        _risksView.EditRiskRequested += id => EditRiskRequested?.Invoke(id);
+        _risksView.EditIssueRequested += id => EditIssueRequested?.Invoke(id);
+        _risksView.EditDecisionRequested += id => EditDecisionRequested?.Invoke(id);
 
         // The tab strip is the product's designed area set, declared once
         // in `ProjectAreas`. An area with no capability behind it is still
@@ -199,6 +258,7 @@ public sealed class ProjectWorkspaceView : UserControl
             _documentsView.Show([], null);
             _requirementsView.Show([], null);
             _tasksView.Show([], [], null);
+            _risksView.Show([], [], [], null);
             _enterEngineering.IsEnabled = false;
             _closeProject.IsEnabled = false;
             return;
@@ -215,6 +275,11 @@ public sealed class ProjectWorkspaceView : UserControl
         _tasksView.Show(
             await _tasks.ListAsync(project.Id).ConfigureAwait(true),
             await _tasks.ListBoardAsync(project.Id).ConfigureAwait(true),
+            project.Label);
+        _risksView.Show(
+            await _governance.ListRisksAsync(project.Id).ConfigureAwait(true),
+            await _governance.ListIssuesAsync(project.Id).ConfigureAwait(true),
+            await _governance.ListDecisionsAsync(project.Id).ConfigureAwait(true),
             project.Label);
         _overview.Children.Clear();
         _overview.Children.Add(new TextBlock { Text = $"Engineering objects in this project: {contents.Count}" });
@@ -247,7 +312,7 @@ public sealed class ProjectWorkspaceView : UserControl
 
     private Control BuildAreaContent(ProjectAreaDescriptor descriptor)
     {
-        // Three areas have live content of their own; every other area
+        // The areas with live content of their own; every other area
         // renders from its own declaration, so a view can never claim a
         // capability the application state does not.
         if (descriptor.Area == ProjectArea.Overview)
@@ -261,6 +326,9 @@ public sealed class ProjectWorkspaceView : UserControl
 
         if (descriptor.Area == ProjectArea.Tasks)
             return _tasksView;
+
+        if (descriptor.Area == ProjectArea.Risks)
+            return _risksView;
 
         var host = new ContentControl { Tag = descriptor.Area };
         _areaHosts.Add(host);

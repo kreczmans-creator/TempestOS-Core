@@ -183,6 +183,8 @@ public sealed class WorkspaceHost : IAsyncDisposable
         ProjectDocuments = new ProjectDocumentRegister(domainContext);
         ProjectTasks = new ProjectTaskRegister(domainContext);
         ProjectTaskWorkflow = new ProjectTaskService(domainContext);
+        ProjectGovernance = new ProjectGovernanceRegister(domainContext);
+        ProjectGovernanceWorkflow = new ProjectGovernanceService(domainContext);
         ProjectRequirements = new ProjectRequirementRegister(
             (IRequirementsService)host.Services!.GetService(typeof(IRequirementsService)), domainContext);
 
@@ -231,6 +233,12 @@ public sealed class WorkspaceHost : IAsyncDisposable
 
     /// <summary>Gets the task workflow service — <see langword="null"/> before <see cref="StartAsync"/> completes.</summary>
     public IProjectTaskService? ProjectTaskWorkflow { get; private set; }
+
+    /// <summary>The project's own risk, issue and decision register.</summary>
+    public IProjectGovernanceRegister? ProjectGovernance { get; private set; }
+
+    /// <summary>The risk, issue and decision lifecycles, as the Project Workspace performs them.</summary>
+    public IProjectGovernanceService? ProjectGovernanceWorkflow { get; private set; }
 
     /// <summary>Persists current session state (`ADR-0064`, unchanged) and shuts the Workspace down — called from the main window's own Closing handler (Window Lifecycle).</summary>
     public async Task ShutdownAsync(CancellationToken cancellationToken = default)

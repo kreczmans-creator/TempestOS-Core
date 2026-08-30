@@ -45,9 +45,8 @@ public static class ProjectAreas
         new(ProjectArea.Tasks, "Tasks", "☑", NavigationAvailability.Implemented,
             "This project's own tasks and actions, created, assigned, prioritised, dated and moved through their own work states, as a list or a status board."),
 
-        new(ProjectArea.Risks, "Risks", "⚠", NavigationAvailability.Declared,
-            "Risks, issues and decisions for this project. Risk, Hazard, Issue and Decision are real canonical objects in the domain with lifecycle and traceability; no surface exposes them.",
-            "FCR-0056"),
+        new(ProjectArea.Risks, "Risks", "⚠", NavigationAvailability.Implemented,
+            "This project's own risks, issues and decisions — raised, scored, owned, and moved through their own status vocabularies, with the decision log recording who decided what, when, and why."),
 
         new(ProjectArea.Timeline, "Timeline", "▦", NavigationAvailability.Declared,
             "Schedule, milestones and deliverables. Milestone and Deliverable are real canonical objects; no scheduling model, Gantt or timeline surface exists.",

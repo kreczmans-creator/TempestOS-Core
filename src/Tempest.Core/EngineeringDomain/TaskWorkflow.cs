@@ -43,14 +43,25 @@ public enum TaskWorkState
     Cancelled,
 }
 
-/// <summary>How urgent a task is.</summary>
+/// <summary>How urgent a piece of work is — a task, an issue, or a risk.</summary>
 /// <remarks>
+/// <para>
 /// Four values, deliberately. A priority scale a team cannot tell apart is
 /// a priority scale nobody sets, and <see cref="Normal"/> is the default so
-/// that an unprioritised task reads as ordinary work rather than as an
-/// omission.
+/// that unprioritised work reads as ordinary rather than as an omission.
+/// </para>
+/// <para>
+/// <b>One priority vocabulary for the whole platform</b>, which is why it
+/// is not called <c>TaskPriority</c> any more. When the Risks, Issues and
+/// Decisions surfaces needed a priority, the choice was between declaring a
+/// second enum with these same four values and widening this one's name.
+/// `ADR-0105` settles that: one canonical declaring class per value. A
+/// second identical scale would let the two drift, and would make "High" on
+/// an issue and "High" on a task different things for no reason a user
+/// could see.
+/// </para>
 /// </remarks>
-public enum TaskPriority
+public enum WorkPriority
 {
     /// <summary>Worth doing, nothing waits on it.</summary>
     Low,

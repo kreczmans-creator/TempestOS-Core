@@ -434,7 +434,7 @@ public sealed class ProjectTaskTests
 
         var task = await fixture.Workflow.CreateAsync(
             project.Id, "TSK-001", "Balance the impeller",
-            priority: TaskPriority.Critical, dueDate: Today.AddDays(5), assignedToPrincipalId: "ada");
+            priority: WorkPriority.Critical, dueDate: Today.AddDays(5), assignedToPrincipalId: "ada");
 
         await fixture.Workflow.ChangeWorkStateAsync(task.Id, TaskWorkState.Blocked);
 
@@ -442,7 +442,7 @@ public sealed class ProjectTaskTests
 
         Assert.Equal("ada", state.Type("AssignedToPrincipalId"));
         Assert.Equal(nameof(TaskWorkState.Blocked), state.Type("WorkState"));
-        Assert.Equal(nameof(TaskPriority.Critical), state.Type("Priority"));
+        Assert.Equal(nameof(WorkPriority.Critical), state.Type("Priority"));
         Assert.Equal(Today.AddDays(5), state.TypeDate("DueDate"));
 
         // The parent edge is what makes it a project task, and it is part
@@ -468,8 +468,8 @@ public sealed class ProjectTaskTests
         await fixture.Workflow.AssignAsync(task.Id, "ada");
         Assert.Equal("ada", (await fixture.LoadStoredStateAsync(task.Id)).Type("AssignedToPrincipalId"));
 
-        await fixture.Workflow.SetPriorityAsync(task.Id, TaskPriority.High);
-        Assert.Equal(nameof(TaskPriority.High), (await fixture.LoadStoredStateAsync(task.Id)).Type("Priority"));
+        await fixture.Workflow.SetPriorityAsync(task.Id, WorkPriority.High);
+        Assert.Equal(nameof(WorkPriority.High), (await fixture.LoadStoredStateAsync(task.Id)).Type("Priority"));
 
         await fixture.Workflow.SetDueDateAsync(task.Id, Today.AddDays(9));
         Assert.Equal(Today.AddDays(9), (await fixture.LoadStoredStateAsync(task.Id)).TypeDate("DueDate"));

@@ -9,13 +9,13 @@ public class EngineeringTask : EngineeringObjectBase, ITask, IRehydratable<Engin
 
     private string? _assignedToPrincipalId;
     private TaskWorkState _workState;
-    private TaskPriority _priority;
+    private WorkPriority _priority;
     private DateTimeOffset? _dueDate;
 
     public EngineeringTask(
         IEngineeringDocument document, IDocumentRevision currentRevision, EngineeringDomainContext context,
         string? identifier, string displayName, EngineeringObjectMetadata metadata, string? assignedToPrincipalId = null,
-        TaskWorkState workState = TaskWorkState.Todo, TaskPriority priority = TaskPriority.Normal, DateTimeOffset? dueDate = null)
+        TaskWorkState workState = TaskWorkState.Todo, WorkPriority priority = WorkPriority.Normal, DateTimeOffset? dueDate = null)
         : base(document, currentRevision, context, identifier, displayName, metadata)
     {
         _assignedToPrincipalId = Normalise(assignedToPrincipalId);
@@ -43,7 +43,7 @@ public class EngineeringTask : EngineeringObjectBase, ITask, IRehydratable<Engin
     }
 
     /// <summary>How urgent this task is.</summary>
-    public TaskPriority Priority
+    public WorkPriority Priority
     {
         get { lock (_taskLock) { return _priority; } }
     }
@@ -101,7 +101,7 @@ public class EngineeringTask : EngineeringObjectBase, ITask, IRehydratable<Engin
     }
 
     /// <summary>Sets this task's priority.</summary>
-    public Task SetPriorityAsync(TaskPriority priority, CancellationToken cancellationToken = default)
+    public Task SetPriorityAsync(WorkPriority priority, CancellationToken cancellationToken = default)
     {
         lock (_taskLock)
             _priority = priority;
@@ -138,10 +138,10 @@ public class EngineeringTask : EngineeringObjectBase, ITask, IRehydratable<Engin
     /// one", and matches `TD-85`'s established rule that a missing field
     /// comes back visibly empty rather than failing the whole rehydration.
     /// </remarks>
-    private protected static (string? Assignee, TaskWorkState WorkState, TaskPriority Priority, DateTimeOffset? DueDate) ReadTaskState(EngineeringObjectState state) =>
+    private protected static (string? Assignee, TaskWorkState WorkState, WorkPriority Priority, DateTimeOffset? DueDate) ReadTaskState(EngineeringObjectState state) =>
         (state.Type(nameof(AssignedToPrincipalId)),
          Enum.TryParse<TaskWorkState>(state.Type(nameof(WorkState)), out var workState) ? workState : TaskWorkState.Todo,
-         Enum.TryParse<TaskPriority>(state.Type(nameof(Priority)), out var priority) ? priority : TaskPriority.Normal,
+         Enum.TryParse<WorkPriority>(state.Type(nameof(Priority)), out var priority) ? priority : WorkPriority.Normal,
          state.TypeDate(nameof(DueDate)));
 
     private static string? Normalise(string? principalId) =>
@@ -162,7 +162,7 @@ public sealed class EngineeringAction : EngineeringTask, IAction, IRehydratable<
     public EngineeringAction(
         IEngineeringDocument document, IDocumentRevision currentRevision, EngineeringDomainContext context,
         string? identifier, string displayName, EngineeringObjectMetadata metadata, Guid raisedByObjectId, string? assignedToPrincipalId = null,
-        TaskWorkState workState = TaskWorkState.Todo, TaskPriority priority = TaskPriority.Normal, DateTimeOffset? dueDate = null)
+        TaskWorkState workState = TaskWorkState.Todo, WorkPriority priority = WorkPriority.Normal, DateTimeOffset? dueDate = null)
         : base(document, currentRevision, context, identifier, displayName, metadata, assignedToPrincipalId, workState, priority, dueDate)
     {
         RaisedByObjectId = raisedByObjectId;

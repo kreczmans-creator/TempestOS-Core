@@ -1,0 +1,463 @@
+using Avalonia.Controls;
+using Avalonia.Headless.XUnit;
+using Avalonia.LogicalTree;
+using Tempest.App.Projects;
+using Tempest.App.Shell;
+using Tempest.App.Workspace;
+using Tempest.Core.EngineeringDomain;
+using Tempest.Desktop.Views;
+
+namespace Tempest.Desktop.Tests;
+
+/// <summary>
+/// The Risks area, driven end to end through the real
+/// <see cref="MainWindow"/>: <b>project → Risks → raise a risk → score it →
+/// own it → mitigate → raise an issue → propose and take a decision →
+/// restart → all three are still there, with everything they carried.</b>
+/// </summary>
+/// <remarks>
+/// <para>
+/// Nothing here calls <see cref="IProjectGovernanceService"/> directly for
+/// the main journey. Every step goes through the rendered surface — the
+/// button a user clicks, the dialog a user types into — because the defect
+/// this Work Package closes was precisely a set of real domain types
+/// (Risk, Hazard, Issue, Decision) that no surface reached. A service test
+/// would have passed against the broken product.
+/// </para>
+/// <para>
+/// The restart is a second real <see cref="WorkspaceHost"/> over the same
+/// persistence root, which is what a relaunch actually is.
+/// </para>
+/// </remarks>
+[Collection("Tempest.Desktop WorkspaceHost persistence")]
+public sealed class ProjectGovernanceAcceptanceTests
+{
+    // ================================================================
+    // The journey
+    // ================================================================
+
+    [AvaloniaFact]
+    public async Task Journey_RaiseARisk_ScoreIt_OwnIt_MitigateIt_ThenRelaunch()
+    {
+        var root = WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath();
+
+        Guid projectId;
+        Guid riskId;
+        string ownerId;
+
+        // ============================================================
+        // FIRST LAUNCH
+        // ============================================================
+        var first = new WorkspaceHost(root);
+        try
+        {
+            await first.StartAsync();
+            var window = new MainWindow(first);
+
+            var project = await first.ProjectDirectory!.CreateAsync("P-0056", "Apollo Pump Redesign");
+            projectId = project.Id;
+            ownerId = first.SessionPrincipal!.Identity.Id;
+
+            await GoToRisksAsync(first, window, projectId);
+
+            var risks = RisksSurfaceOf(window);
+
+            // --- 1. It starts genuinely empty, and says so ----------
+            Assert.True(risks.IsShowingEmptyState);
+            Assert.Equal(GovernanceRegisterTab.Risks, risks.SelectedTab);
+            Assert.Contains(
+                ProjectRisksView.EmptyRisksHeadline,
+                risks.GetLogicalDescendants().OfType<TextBlock>().Select(t => t.Text ?? string.Empty));
+
+            // --- 2. Raise one through the real button and dialog ----
+            await ClickAsync(risks, "Raise Risk");
+            await AnswerDialogAsync(window, "Impeller cavitation at low flow");
+            await window.RenderCurrentModuleAsync();
+
+            risks = RisksSurfaceOf(window);
+            var risk = Assert.Single(risks.Risks);
+            riskId = risk.ObjectId;
+
+            Assert.False(risks.IsShowingEmptyState);
+            Assert.Equal("Impeller cavitation at low flow", risk.DisplayName);
+            Assert.Equal(RiskStatus.Open, risk.Status);
+            Assert.True(risk.IsUnowned);
+            Assert.False(risk.IsScored);
+
+            // --- 3. Score it (two prompts, both axes together) ------
+            await ClickAsync(RisksSurfaceOf(window), "Score");
+            await AnswerDialogAsync(window, "Likely");
+            await AnswerDialogAsync(window, "Severe");
+            await window.RenderCurrentModuleAsync();
+
+            risk = Assert.Single(RisksSurfaceOf(window).Risks);
+            Assert.True(risk.IsScored);
+            Assert.Equal("Likely", risk.Likelihood);
+            Assert.Equal("Severe", risk.Severity);
+
+            // --- 4. Take ownership ---------------------------------
+            await ClickAsync(RisksSurfaceOf(window), "Own this");
+            await window.RenderCurrentModuleAsync();
+
+            risk = Assert.Single(RisksSurfaceOf(window).Risks);
+            Assert.False(risk.IsUnowned);
+            Assert.Equal(ownerId, risk.OwnedByPrincipalId);
+
+            // --- 5. Move it to Mitigating --------------------------
+            await ClickAsync(RisksSurfaceOf(window), "Mitigating");
+            await window.RenderCurrentModuleAsync();
+
+            risk = Assert.Single(RisksSurfaceOf(window).Risks);
+            Assert.Equal(RiskStatus.Mitigating, risk.Status);
+            Assert.True(risk.IsLive);
+        }
+        finally
+        {
+            await first.DisposeAsync();
+        }
+
+        // ============================================================
+        // RELAUNCH — a new host over the same store
+        // ============================================================
+        var second = new WorkspaceHost(root);
+        try
+        {
+            await second.StartAsync();
+            var window = new MainWindow(second);
+
+            await GoToRisksAsync(second, window, projectId);
+
+            var risk = Assert.Single(RisksSurfaceOf(window).Risks);
+
+            // Everything the user set came back, through the production
+            // rehydration path (`TD-104`) and nothing else.
+            Assert.Equal(riskId, risk.ObjectId);
+            Assert.Equal("Impeller cavitation at low flow", risk.DisplayName);
+            Assert.Equal(RiskStatus.Mitigating, risk.Status);
+            Assert.Equal("Likely", risk.Likelihood);
+            Assert.Equal("Severe", risk.Severity);
+            Assert.Equal(ownerId, risk.OwnedByPrincipalId);
+
+            // Its project membership survived too — the risk is in this
+            // project's register, not merely somewhere in the store.
+            Assert.Equal(projectId, await ProjectMembership.ResolveOwningProjectAsync(DomainOf(second).Repository, riskId));
+
+            // --- 6. And it can still be closed ---------------------
+            await ClickAsync(RisksSurfaceOf(window), "Closed");
+            await window.RenderCurrentModuleAsync();
+
+            risk = Assert.Single(RisksSurfaceOf(window).Risks);
+            Assert.Equal(RiskStatus.Closed, risk.Status);
+            Assert.False(risk.IsLive);
+        }
+        finally
+        {
+            await second.DisposeAsync();
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task Journey_RaiseAnIssue_AssignIt_ResolveIt_ThenRelaunch()
+    {
+        var root = WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath();
+
+        Guid projectId;
+        Guid issueId;
+
+        var first = new WorkspaceHost(root);
+        try
+        {
+            await first.StartAsync();
+            var window = new MainWindow(first);
+
+            var project = await first.ProjectDirectory!.CreateAsync("P-0056", "Apollo Pump Redesign");
+            projectId = project.Id;
+
+            await GoToRisksAsync(first, window, projectId);
+
+            // Switching register is part of the journey: all three families
+            // share one area, so the user gets to Issues by switching.
+            await ClickAsync(RisksSurfaceOf(window), "Issues (0)");
+            await window.RenderCurrentModuleAsync();
+
+            var surface = RisksSurfaceOf(window);
+            Assert.Equal(GovernanceRegisterTab.Issues, surface.SelectedTab);
+            Assert.True(surface.IsShowingEmptyState);
+
+            await ClickAsync(surface, "Raise Issue");
+            await AnswerDialogAsync(window, "Blade cracked during the 120% overspeed run");
+            await window.RenderCurrentModuleAsync();
+
+            surface = RisksSurfaceOf(window);
+            surface.SelectTab(GovernanceRegisterTab.Issues);
+
+            var issue = Assert.Single(surface.Issues);
+            issueId = issue.ObjectId;
+
+            Assert.Equal(IssueStatus.Open, issue.Status);
+            Assert.Equal(WorkPriority.Normal, issue.Priority);
+            Assert.True(issue.IsUnassigned);
+
+            await ClickAsync(RisksSurfaceOf(window), "Assign to me");
+            await window.RenderCurrentModuleAsync();
+
+            RisksSurfaceOf(window).SelectTab(GovernanceRegisterTab.Issues);
+            Assert.False(Assert.Single(RisksSurfaceOf(window).Issues).IsUnassigned);
+
+            await ClickAsync(RisksSurfaceOf(window), "Resolved");
+            await window.RenderCurrentModuleAsync();
+
+            RisksSurfaceOf(window).SelectTab(GovernanceRegisterTab.Issues);
+            issue = Assert.Single(RisksSurfaceOf(window).Issues);
+
+            Assert.Equal(IssueStatus.Resolved, issue.Status);
+
+            // Resolved is not closed: a fix nobody has confirmed is still
+            // somebody's problem, and the surface must keep saying so.
+            Assert.True(issue.IsOpen);
+        }
+        finally
+        {
+            await first.DisposeAsync();
+        }
+
+        var second = new WorkspaceHost(root);
+        try
+        {
+            await second.StartAsync();
+            var window = new MainWindow(second);
+
+            await GoToRisksAsync(second, window, projectId);
+            RisksSurfaceOf(window).SelectTab(GovernanceRegisterTab.Issues);
+
+            var issue = Assert.Single(RisksSurfaceOf(window).Issues);
+
+            Assert.Equal(issueId, issue.ObjectId);
+            Assert.Equal(IssueStatus.Resolved, issue.Status);
+            Assert.False(issue.IsUnassigned);
+            Assert.Equal(projectId, await ProjectMembership.ResolveOwningProjectAsync(DomainOf(second).Repository, issueId));
+        }
+        finally
+        {
+            await second.DisposeAsync();
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task Journey_ProposeADecision_AcceptIt_ThenRelaunch_AndSupersedeIt()
+    {
+        var root = WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath();
+
+        Guid projectId;
+        Guid decisionId;
+        string deciderId;
+
+        var first = new WorkspaceHost(root);
+        try
+        {
+            await first.StartAsync();
+            var window = new MainWindow(first);
+
+            var project = await first.ProjectDirectory!.CreateAsync("P-0056", "Apollo Pump Redesign");
+            projectId = project.Id;
+            deciderId = first.SessionPrincipal!.Identity.Id;
+
+            await GoToRisksAsync(first, window, projectId);
+
+            await ClickAsync(RisksSurfaceOf(window), "Decisions (0)");
+            await window.RenderCurrentModuleAsync();
+
+            var surface = RisksSurfaceOf(window);
+            Assert.Equal(GovernanceRegisterTab.Decisions, surface.SelectedTab);
+
+            // Two prompts: the title, then the rationale. A decision log
+            // whose reasons are auto-filled records nothing worth keeping.
+            await ClickAsync(surface, "Propose Decision");
+            await AnswerDialogAsync(window, "Machine the impeller from titanium");
+            await AnswerDialogAsync(window, "Lighter for the same stiffness, and it survives the overspeed case.");
+            await window.RenderCurrentModuleAsync();
+
+            RisksSurfaceOf(window).SelectTab(GovernanceRegisterTab.Decisions);
+            var decision = Assert.Single(RisksSurfaceOf(window).Decisions);
+            decisionId = decision.ObjectId;
+
+            Assert.Equal(DecisionStatus.Proposed, decision.Status);
+            Assert.True(decision.IsAwaitingDecision);
+            Assert.Null(decision.DecidedAt);
+            Assert.Contains("Lighter for the same stiffness", decision.Rationale, StringComparison.Ordinal);
+
+            await ClickAsync(RisksSurfaceOf(window), "Accepted");
+            await window.RenderCurrentModuleAsync();
+
+            RisksSurfaceOf(window).SelectTab(GovernanceRegisterTab.Decisions);
+            decision = Assert.Single(RisksSurfaceOf(window).Decisions);
+
+            Assert.Equal(DecisionStatus.Accepted, decision.Status);
+            Assert.True(decision.IsInForce);
+            Assert.Equal(deciderId, decision.DecidedByPrincipalId);
+            Assert.NotNull(decision.DecidedAt);
+        }
+        finally
+        {
+            await first.DisposeAsync();
+        }
+
+        var second = new WorkspaceHost(root);
+        try
+        {
+            await second.StartAsync();
+            var window = new MainWindow(second);
+
+            await GoToRisksAsync(second, window, projectId);
+            RisksSurfaceOf(window).SelectTab(GovernanceRegisterTab.Decisions);
+
+            var decision = Assert.Single(RisksSurfaceOf(window).Decisions);
+
+            Assert.Equal(decisionId, decision.ObjectId);
+            Assert.Equal(DecisionStatus.Accepted, decision.Status);
+            Assert.Equal(deciderId, decision.DecidedByPrincipalId);
+            Assert.NotNull(decision.DecidedAt);
+
+            var decidedAt = decision.DecidedAt;
+
+            // Superseding it leaves the original record of who decided and
+            // when exactly as it was.
+            await ClickAsync(RisksSurfaceOf(window), "Superseded");
+            await window.RenderCurrentModuleAsync();
+
+            RisksSurfaceOf(window).SelectTab(GovernanceRegisterTab.Decisions);
+            decision = Assert.Single(RisksSurfaceOf(window).Decisions);
+
+            Assert.Equal(DecisionStatus.Superseded, decision.Status);
+            Assert.False(decision.IsInForce);
+            Assert.Equal(deciderId, decision.DecidedByPrincipalId);
+            Assert.Equal(decidedAt, decision.DecidedAt);
+
+            // And it is terminal: the surface offers no further move.
+            var captions = ButtonCaptions(RisksSurfaceOf(window));
+            Assert.DoesNotContain("Accepted", captions);
+            Assert.DoesNotContain("Proposed", captions);
+            Assert.Contains("Edit", captions);
+        }
+        finally
+        {
+            await second.DisposeAsync();
+        }
+    }
+
+    // ================================================================
+    // The surface never offers a move the domain would refuse
+    // ================================================================
+
+    [AvaloniaFact]
+    public async Task TheSurfaceOffersOnlyTheTransitionsTheDomainPermits()
+    {
+        var root = WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath();
+
+        var host = new WorkspaceHost(root);
+        try
+        {
+            await host.StartAsync();
+            var window = new MainWindow(host);
+
+            var project = await host.ProjectDirectory!.CreateAsync("P-0056", "Apollo");
+            await GoToRisksAsync(host, window, project.Id);
+
+            await ClickAsync(RisksSurfaceOf(window), "Raise Risk");
+            await AnswerDialogAsync(window, "Cavitation");
+            await window.RenderCurrentModuleAsync();
+
+            var captions = ButtonCaptions(RisksSurfaceOf(window));
+
+            // An Open risk may go to Mitigating, Accepted or Closed — and
+            // must never be offered a move to Open, which the table refuses.
+            foreach (var permitted in RiskStatusTransitions.GetPermittedTargets(RiskStatus.Open))
+                Assert.Contains(ProjectRisksView.Describe(permitted), captions);
+
+            Assert.DoesNotContain(ProjectRisksView.Describe(RiskStatus.Open), captions);
+        }
+        finally
+        {
+            await host.DisposeAsync();
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task TheRisksAreaIsMarkedImplemented_AndDrawsNoDeclaredCapabilityCard()
+    {
+        // The TD-102 defect class: a descriptor claiming a capability the
+        // surface does not have. This area was Declared until this Work
+        // Package; now it must be Implemented *and* render real content.
+        Assert.True(ProjectAreas.IsImplemented(ProjectArea.Risks));
+        Assert.Null(ProjectAreas.For(ProjectArea.Risks).TrackedBy);
+
+        var root = WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath();
+        var host = new WorkspaceHost(root);
+        try
+        {
+            await host.StartAsync();
+            var window = new MainWindow(host);
+
+            var project = await host.ProjectDirectory!.CreateAsync("P-0056", "Apollo");
+            await GoToRisksAsync(host, window, project.Id);
+
+            Assert.NotNull(RisksSurfaceOf(window));
+            Assert.Empty(window.GetLogicalDescendants().OfType<DeclaredCapabilityView>()
+                .Where(v => v.GetLogicalAncestors().OfType<ProjectRisksView>().Any()));
+        }
+        finally
+        {
+            await host.DisposeAsync();
+        }
+    }
+
+    // ================================================================
+    // Helpers
+    // ================================================================
+
+    private static async Task GoToRisksAsync(WorkspaceHost host, MainWindow window, Guid projectId)
+    {
+        await host.ShellNavigator!.OpenProjectAsync(projectId, ProjectArea.Risks);
+        await window.RenderCurrentModuleAsync();
+    }
+
+    /// <summary>The one Risks surface on screen.</summary>
+    /// <remarks>
+    /// Deduplicated by identity, not filtered by <c>Single()</c>: once a
+    /// window is shown, a <see cref="TabControl"/> materialises the selected
+    /// tab's content through its presenter as well, so the same control
+    /// instance appears twice in the logical tree.
+    /// </remarks>
+    private static ProjectRisksView RisksSurfaceOf(MainWindow window) =>
+        window.GetLogicalDescendants().OfType<ProjectRisksView>().Distinct().Single();
+
+    private static EngineeringDomainContext DomainOf(WorkspaceHost host) =>
+        (EngineeringDomainContext)host.Services!.GetService(typeof(EngineeringDomainContext));
+
+    private static List<string> ButtonCaptions(Control surface) =>
+        [.. surface.GetLogicalDescendants().OfType<Button>().Select(b => b.Content?.ToString() ?? string.Empty)];
+
+    private static async Task ClickAsync(Control surface, string caption)
+    {
+        var button = surface.GetLogicalDescendants().OfType<Button>()
+            .FirstOrDefault(b => string.Equals(b.Content?.ToString(), caption, StringComparison.Ordinal));
+
+        Assert.True(button is not null, $"No '{caption}' button on this surface. Present: {string.Join(", ", ButtonCaptions(surface))}");
+
+        button!.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+        await Task.Delay(20);
+    }
+
+    private static async Task AnswerDialogAsync(MainWindow window, string answer)
+    {
+        var dialog = window.GetLogicalDescendants().OfType<InputDialog>().Single();
+
+        var textBox = dialog.GetLogicalDescendants().OfType<TextBox>().Single();
+        textBox.Text = answer;
+
+        var ok = dialog.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "OK"));
+        ok.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+
+        await Task.Delay(50);
+    }
+}

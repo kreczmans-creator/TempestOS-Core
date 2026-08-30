@@ -12,7 +12,7 @@ public interface IProjectTaskService
         string identifier,
         string title,
         string? description = null,
-        TaskPriority priority = TaskPriority.Normal,
+        WorkPriority priority = WorkPriority.Normal,
         DateTimeOffset? dueDate = null,
         string? assignedToPrincipalId = null,
         CancellationToken cancellationToken = default);
@@ -30,7 +30,7 @@ public interface IProjectTaskService
     Task SetDueDateAsync(Guid taskId, DateTimeOffset? dueDate, CancellationToken cancellationToken = default);
 
     /// <summary>Sets <paramref name="taskId"/>'s priority.</summary>
-    Task SetPriorityAsync(Guid taskId, TaskPriority priority, CancellationToken cancellationToken = default);
+    Task SetPriorityAsync(Guid taskId, WorkPriority priority, CancellationToken cancellationToken = default);
 
     /// <summary>Retitles and/or rewrites <paramref name="taskId"/>.</summary>
     Task EditAsync(Guid taskId, string? title = null, string? description = null, CancellationToken cancellationToken = default);
@@ -86,7 +86,7 @@ public sealed class ProjectTaskService : IProjectTaskService
         string identifier,
         string title,
         string? description = null,
-        TaskPriority priority = TaskPriority.Normal,
+        WorkPriority priority = WorkPriority.Normal,
         DateTimeOffset? dueDate = null,
         string? assignedToPrincipalId = null,
         CancellationToken cancellationToken = default)
@@ -137,7 +137,7 @@ public sealed class ProjectTaskService : IProjectTaskService
             .SetDueDateAsync(dueDate, cancellationToken).ConfigureAwait(false);
 
     /// <inheritdoc />
-    public async Task SetPriorityAsync(Guid taskId, TaskPriority priority, CancellationToken cancellationToken = default) =>
+    public async Task SetPriorityAsync(Guid taskId, WorkPriority priority, CancellationToken cancellationToken = default) =>
         await (await RequireTaskAsync(taskId, cancellationToken).ConfigureAwait(false))
             .SetPriorityAsync(priority, cancellationToken).ConfigureAwait(false);
 

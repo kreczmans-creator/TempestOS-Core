@@ -28,7 +28,7 @@ public sealed record ProjectTaskEntry(
     string DisplayName,
     string Description,
     TaskWorkState WorkState,
-    TaskPriority Priority,
+    WorkPriority Priority,
     string? AssignedToPrincipalId,
     DateTimeOffset? DueDate,
     bool IsOverdue,
