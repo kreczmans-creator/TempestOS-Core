@@ -117,6 +117,13 @@ public class RestApiHostedServiceTests
 
         public Task<CommandResult> InvokeAsync(string id, CancellationToken cancellationToken = default) =>
             throw new CommandNotFoundException(id);
+
+        public CommandAvailability Evaluate(string id, CommandContext context) =>
+            CommandAvailability.Blocked($"No command '{id}' is registered.");
+
+        public Task<CommandInvocation> InvokeAsync(
+            string id, CommandContext context, CommandParameterPrompt? prompt = null, CancellationToken cancellationToken = default) =>
+            throw new CommandNotFoundException(id);
     }
 
     private sealed class IdentityServiceStub : IIdentityService

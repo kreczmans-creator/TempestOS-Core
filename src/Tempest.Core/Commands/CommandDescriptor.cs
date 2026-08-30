@@ -90,4 +90,43 @@ public sealed class CommandDescriptor
     /// cannot be invoked by Id.
     /// </summary>
     public Func<ICommand>? CreateDefault { get; }
+
+    /// <summary>
+    /// Gets how this command is constructed from the application's current
+    /// <see cref="CommandContext"/>, or <see langword="null"/> if it
+    /// declares no binding.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The additive extension <c>Command Framework Architecture.md</c>
+    /// already anticipated: <see cref="CreateDefault"/> serves a command
+    /// needing no caller-supplied data, and was never widened to
+    /// <c>Func&lt;object?, ICommand&gt;</c> because no consumer needed it
+    /// yet. A binding is that widening, done as the document said it would
+    /// be — on this type alone, with <see cref="CreateDefault"/> untouched
+    /// and every existing descriptor unaffected.
+    /// </para>
+    /// <para>
+    /// A descriptor may carry a binding, a <see cref="CreateDefault"/>, or
+    /// neither. Neither means the command is reachable only through
+    /// <see cref="ICommandDispatcher.DispatchAsync{TCommand}"/>; a binding
+    /// built by <see cref="CommandBinding.Unavailable"/> means the same
+    /// thing but says why.
+    /// </para>
+    /// <para>
+    /// <b>Set through an object initialiser, not a constructor parameter —
+    /// deliberately.</b> Appending an optional parameter to the constructor
+    /// would compile every existing call site unchanged while breaking any
+    /// <i>already-compiled</i> assembly bound to its exact signature, and
+    /// this platform loads plugin assemblies it did not compile
+    /// (<c>ADR-0111</c>), one of whose sanctioned acts is registering a
+    /// command descriptor. Adding a second overload instead is ambiguous at
+    /// any named-argument call site, because the two would differ only by a
+    /// trailing optional parameter. An <see langword="init"/> accessor has
+    /// neither problem: the constructor is untouched, so every compiled
+    /// caller keeps working, and the descriptor is still immutable once
+    /// built.
+    /// </para>
+    /// </remarks>
+    public CommandBinding? Binding { get; init; }
 }
