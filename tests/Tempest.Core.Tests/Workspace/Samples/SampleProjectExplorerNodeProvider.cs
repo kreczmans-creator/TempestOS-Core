@@ -1,4 +1,6 @@
-namespace Tempest.App.Workspace.Samples;
+using Tempest.App.Workspace;
+
+namespace Tempest.Core.Tests.Workspace.Samples;
 
 /// <summary>
 /// Populates one Project Explorer area from <see cref="SampleExplorerContent"/>'s

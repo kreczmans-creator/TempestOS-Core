@@ -5,7 +5,6 @@ using Tempest.App.Workspace.Macros;
 using Tempest.App.Workspace.Manufacturing;
 using Tempest.App.Workspace.Mechanical;
 using Tempest.App.Workspace.Requirements;
-using Tempest.App.Workspace.Samples;
 using Tempest.App.Workspace.Verification;
 using Tempest.Core.Calculations;
 using Tempest.Core.Commands;
@@ -88,13 +87,18 @@ public static class EngineeringWorkspaceComposer
         var host = builder.Build();
         var manager = new WorkspaceManager(host);
 
-        // Wires the Project Explorer's own living reference content — a fixed,
-        // fictional tree, proving the Kind-keyed provider architecture
-        // (ADR-0067) end to end. Needs nothing from the Runtime Host, so it
-        // is registered before the Host starts, exactly as the original
-        // console Program.cs already did.
-        manager.RegisterExplorerArea(SampleExplorerContent.NavigationItemId, new SampleProjectExplorerNodeProvider(SampleExplorerContent.NavigationItemId));
-        manager.RegisterView(SampleExplorerContent.ComponentKind, new SampleWorkspaceViewFactory(SampleExplorerContent.ComponentKind));
+        // No sample explorer area is registered here. `TD-75` phase 2 removed
+        // the pair of registrations that used to sit at this point, which
+        // attached a fixed, fictional tree to the navigation area
+        // `tempest.samples.workspace-explorer.objects`. That area's only
+        // registrar is `Tempest.Samples.WorkspaceExplorerSampleModule`, and
+        // phase 1 stopped the product loading that assembly at all — so from
+        // then on these two lines keyed a provider and a view factory to an
+        // area no production run ever contained. Measured before removal: a
+        // real composition root with no `Tempest.Samples.dll` on disk
+        // registers exactly six navigation items, all real disciplines, and
+        // none of them that area. The fictional content itself now lives in
+        // `Tempest.Core.Tests`, which is the only thing that still drives it.
 
         return (host, manager);
     }

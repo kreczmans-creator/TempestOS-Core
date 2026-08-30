@@ -1,15 +1,17 @@
 using Tempest.App.Workspace;
-using Tempest.App.Workspace.Samples;
+using Tempest.Samples;
 
 namespace Tempest.Core.Tests.Workspace.Samples;
 
-// Proves SampleProjectExplorerNodeProvider (Tempest.App.Workspace.Samples)
+// Proves SampleProjectExplorerNodeProvider (Tempest.Core.Tests.Workspace.Samples)
 // — the Project Explorer's own living reference content, WP 8.1B — against
 // its own fixed, fictional tree, with no Engineering Core dependency of any
 // kind.
 public class SampleProjectExplorerNodeProviderTests
 {
-    private const string AreaId = "tempest.samples.workspace-explorer.objects";
+    // The real area id, read from the module that registers it, so this
+    // file adds no second spelling of the literal to the repository.
+    private const string AreaId = WorkspaceExplorerSampleModule.NavigationItemId;
 
     [Fact]
     public void Kind_ReturnsTheConstructorArgument()

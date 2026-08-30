@@ -1,40 +1,30 @@
-namespace Tempest.App.Workspace.Samples;
+using Tempest.App.Workspace;
+
+namespace Tempest.Core.Tests.Workspace.Samples;
 
 /// <summary>
 /// A small, fixed, purely in-memory tree of fictional engineering objects —
-/// a Category root, two Group nodes, and three leaf Objects — proving the
-/// Project Explorer's own Kind-keyed provider architecture (`ADR-0067`)
-/// against real, running content without touching Requirements,
-/// Calculations, Documents, or any other Engineering Core service
-/// (`WP 8.1B`'s own explicit scope boundary). Deliberately not a discovered
-/// <c>IModule</c> — it is registered directly by <c>Tempest.App</c>'s own
-/// composition root (<c>Program.cs</c>), since Workspace registration
-/// (<see cref="IWorkspaceManager.RegisterView"/>/
-/// <see cref="IWorkspaceManager.RegisterExplorerArea"/>) is not reachable
-/// from inside a Host-discovered module.
+/// a Category root, two Group nodes, and three leaf Objects — used to drive
+/// the Project Explorer's own Kind-keyed provider architecture (`ADR-0067`)
+/// end to end without touching Requirements, Calculations, Documents, or any
+/// other Engineering Core service.
 /// </summary>
+/// <remarks>
+/// <para>
+/// A test fixture, and now filed as one. It lived in <c>Tempest.App</c> until
+/// `TD-75` phase 2, where the composition root stopped registering it: the
+/// navigation area it attaches to is registered only by
+/// <c>Tempest.Samples.WorkspaceExplorerSampleModule</c>, which phase 1 stopped
+/// the product loading, so the registration had already become unreachable in
+/// every production run. Nothing in the shipped product constructs a Longeron,
+/// a Frame or a Bracket any more; <see cref="WorkspaceShellTests"/> does, which
+/// is what this content was always actually for.
+/// </para>
+/// </remarks>
 internal static class SampleExplorerContent
 {
     /// <summary>The <c>Kind</c> of a sample component-level object.</summary>
     public const string ComponentKind = "SampleComponent";
-
-    /// <summary>
-    /// The navigation area this sample content is attached to.
-    /// </summary>
-    /// <remarks>
-    /// <b>Disclosed duplication, and the only one `TD-75` phase 1 leaves.</b>
-    /// The same literal is declared by
-    /// <c>Tempest.Samples.WorkspaceExplorerSampleModule.NavigationItemId</c>,
-    /// which registers the navigation item this provider serves. It is
-    /// spelled twice because the two sit either side of the dependency this
-    /// phase removed: <c>Tempest.Samples</c> references only
-    /// <c>Tempest.Core</c>, so it cannot read a constant declared here, and
-    /// <c>Tempest.App</c> must no longer reference it. Kept honest by
-    /// <c>SampleExplorerAreaIdTests</c>, which fails if the two ever drift.
-    /// It disappears with the rest of the sample wiring in `TD-75`'s
-    /// remaining packaging phase.
-    /// </remarks>
-    public const string NavigationItemId = "tempest.samples.workspace-explorer.objects";
 
     private static readonly Guid AssembliesCategoryId = Guid.Parse("00000000-0000-0000-0001-000000000001");
     private static readonly Guid PrimaryStructureId = Guid.Parse("00000000-0000-0000-0001-000000000002");

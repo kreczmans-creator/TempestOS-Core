@@ -1,13 +1,12 @@
 using Tempest.Core.Modules;
 using Tempest.Core.Navigation;
-using Tempest.Samples;
 
 namespace Tempest.Validation.FaultInjection;
 
 /// <summary>
-/// A fault-injection module that deliberately registers the same
-/// <see cref="NavigationItem.Id"/> as <see cref="NavigationSampleModule"/>,
-/// so its own <see cref="InitialiseAsync"/> throws
+/// A fault-injection module that deliberately re-registers a
+/// <see cref="NavigationItem.Id"/> another module has already taken, so its
+/// own <see cref="InitialiseAsync"/> throws
 /// <see cref="DuplicateNavigationItemException"/>.
 /// </summary>
 /// <remarks>
@@ -34,12 +33,22 @@ namespace Tempest.Validation.FaultInjection;
 /// </para>
 /// <para>
 /// Its own <see cref="IModule.Id"/>, <c>tempest.validation.faultinjection.navigation-duplicate</c>,
-/// still sorts ordinally after <see cref="NavigationSampleModule"/>'s own
-/// <c>tempest.samples.navigation</c> (<c>"s"</c> &lt; <c>"v"</c>) — the
-/// module pipeline's ascending-order Initialise batch still always
-/// initialises <see cref="NavigationSampleModule"/> (and its successful
-/// registration) first, with no ordinal-hack suffix needed now that the Id
-/// no longer has to sort within <c>Tempest.Samples</c>'s own Id space.
+/// sorts ordinally after any <c>tempest.samples.*</c> or
+/// <c>tempest.&lt;discipline&gt;.*</c> Id (<c>"s"</c>, <c>"m"</c> &lt;
+/// <c>"v"</c>), so the module pipeline's ascending-order Initialise batch
+/// always runs the partner module's own successful registration first.
+/// </para>
+/// <para>
+/// <b>`TD-75` phase 2:</b> it collides with whatever
+/// <see cref="INavigationProvider.Items"/> already holds rather than with one
+/// named module's Id constant. Until phase 2 this project referenced
+/// <c>Tempest.Samples</c> for the single constant
+/// <c>NavigationSampleModule.NavigationItemId</c>, which meant the sample
+/// harness could not be deleted without breaking the validation harness —
+/// the last edge keeping <c>Tempest.Samples</c> undeletable. Reading the
+/// live registration instead removes that edge and makes the injector
+/// independent of which module it is paired with, which is what it was
+/// always really asserting.
 /// </para>
 /// </remarks>
 [ModuleMetadata("tempest.validation.faultinjection.navigation-duplicate", "Navigation Duplicate Fault Injection", "1.0.0")]
@@ -68,9 +77,20 @@ public sealed class DuplicateNavigationModule : ModuleLifecycleBase, IFaultInjec
     /// Always throws <see cref="DuplicateNavigationItemException"/> — this
     /// module exists solely to trigger and prove isolation of that failure.
     /// </remarks>
+    /// <exception cref="InvalidOperationException">
+    /// No navigation item is registered yet, so there is nothing to collide
+    /// with — the module is being run without the partner module whose
+    /// registration it exists to duplicate.
+    /// </exception>
     public override Task InitialiseAsync(CancellationToken cancellationToken)
     {
-        _navigationProvider.Register(new NavigationItem(NavigationSampleModule.NavigationItemId, "Duplicate Home"));
+        var alreadyRegistered = _navigationProvider.Items.FirstOrDefault()
+            ?? throw new InvalidOperationException(
+                "DuplicateNavigationModule requires a navigation item to already be registered; " +
+                "initialise it after a module that registers one.");
+
+        _navigationProvider.Register(
+            new NavigationItem(alreadyRegistered.Id, $"Duplicate {alreadyRegistered.Title}"));
 
         return Task.CompletedTask;
     }

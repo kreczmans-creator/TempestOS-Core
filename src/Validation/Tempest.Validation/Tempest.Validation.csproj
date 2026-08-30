@@ -9,17 +9,14 @@
   <ItemGroup>
     <ProjectReference Include="..\..\Tempest.Core\Tempest.Core.csproj" />
     <!--
-      Tempest.Samples is referenced too, not just Tempest.Core: this
-      project's fault-injection modules deliberately collide with a real
-      Tempest.Samples module's own registration (see FaultInjection/
-      DuplicateNavigationModule.cs), and reference that module's public
-      Id constant directly rather than duplicating it as a second string
-      literal that could silently drift out of sync. Both edges point
-      downward only (Tempest.Samples does not reference Tempest.Validation);
-      see "Fault Injection & Validation Architecture.md" and the
-      Architectural Dependency Register.
+      Tempest.Core only. `TD-75` phase 2 removed the Tempest.Samples
+      reference: DuplicateNavigationModule used to read one constant from a
+      sample module to collide with, which meant the sample harness could not
+      be deleted without breaking this one. It now collides with whatever
+      INavigationProvider.Items already holds, so this project depends on no
+      sample content at all. See "Fault Injection & Validation
+      Architecture.md" and the Architectural Dependency Register.
     -->
-    <ProjectReference Include="..\..\Samples\Tempest.Samples\Tempest.Samples.csproj" />
   </ItemGroup>
 
 </Project>

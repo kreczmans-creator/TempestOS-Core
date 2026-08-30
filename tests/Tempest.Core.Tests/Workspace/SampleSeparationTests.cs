@@ -1,3 +1,5 @@
+using Tempest.App.Composition;
+using Tempest.App.Workspace;
 using Tempest.App.Workspace.Calculations;
 using Tempest.App.Workspace.Documents;
 using Tempest.App.Workspace.Manufacturing;
@@ -5,8 +7,17 @@ using Tempest.App.Workspace.Mechanical;
 using Tempest.App.Workspace.Requirements;
 using Tempest.App.Workspace.Verification;
 using Tempest.Core.Calculations;
+using Tempest.Core.Configuration;
+using Tempest.Core.Events;
 using Tempest.Core.Modules;
+using Tempest.Core.Navigation;
+using Tempest.Core.Persistence;
+using Tempest.Core.Tests.Plugins;
+using Tempest.Core.Tests.Workspace.Samples;
+using System.Xml.Linq;
 using Tempest.Core.UnitsAndQuantities;
+using Tempest.Samples;
+using Tempest.Validation.FaultInjection;
 
 namespace Tempest.Core.Tests.Workspace;
 
@@ -151,6 +162,7 @@ public sealed class SampleSeparationTests
     [InlineData("src/Tempest.App/Tempest.App.csproj")]
     [InlineData("src/Tempest.Core/Tempest.Core.csproj")]
     [InlineData("src/Tempest.Desktop/Tempest.Desktop.csproj")]
+    [InlineData("src/Validation/Tempest.Validation/Tempest.Validation.csproj")]
     public void NoProductionProject_DeclaresADependencyOnTheSampleAssembly(string relativeProjectPath)
     {
         // The load-bearing assertion, and it reads the project file rather
@@ -164,13 +176,61 @@ public sealed class SampleSeparationTests
         // being a real, declared dependency that ships the sample assembly
         // into the output folder. Asserting the declaration is the only
         // thing that catches it coming back.
+        //
+        // It reads the declarations rather than the file's raw text, which
+        // phase 2 corrected: the substring form also matched the assembly
+        // name in a comment, so documenting the boundary in a project file
+        // failed the test that guards it.
         var project = Path.Combine(FindRepositoryRoot(), relativeProjectPath.Replace('/', Path.DirectorySeparatorChar));
 
         Assert.True(File.Exists(project), $"'{project}' was not found.");
 
-        var contents = File.ReadAllText(project);
+        Assert.DoesNotContain(SampleAssembly, DeclaredReferences(project), StringComparer.OrdinalIgnoreCase);
+    }
 
-        Assert.DoesNotContain(SampleAssembly, contents, StringComparison.OrdinalIgnoreCase);
+    /// <summary>
+    /// The assembly names <paramref name="projectFile"/> actually declares a
+    /// dependency on — every <c>ProjectReference</c> and <c>Reference</c>
+    /// <c>Include</c>, reduced to a bare assembly name. Comments and prose
+    /// are ignored, which a raw substring search cannot do.
+    /// </summary>
+    private static IReadOnlyList<string> DeclaredReferences(string projectFile)
+    {
+        return XDocument.Load(projectFile)
+            .Descendants()
+            .Where(element => element.Name.LocalName is "ProjectReference" or "Reference")
+            .Select(element => (string?)element.Attribute("Include"))
+            .Where(include => !string.IsNullOrWhiteSpace(include))
+            .Select(NormaliseToAssemblyName)
+            .ToList();
+    }
+
+    /// <summary>
+    /// Reduces one <c>Include</c> to a bare assembly name, whether it is a
+    /// project path (<c>..\..\Samples\Tempest.Samples\Tempest.Samples.csproj</c>)
+    /// or an assembly reference (<c>Tempest.Samples</c>, possibly with
+    /// <c>, Version=...</c> trailing).
+    /// </summary>
+    private static string NormaliseToAssemblyName(string? include)
+    {
+        var value = include!.Replace('\\', Path.DirectorySeparatorChar).Trim();
+
+        // An assembly reference's display name, not a path.
+        value = value.Split(',')[0].Trim();
+
+        var fileName = Path.GetFileName(value);
+
+        // Strip only a project-file extension. Path.GetFileNameWithoutExtension
+        // would strip ".Samples" from the bare assembly name "Tempest.Samples"
+        // and leave "Tempest" — a mutation using <Reference Include=
+        // "Tempest.Samples"/> survived this test until that was fixed.
+        foreach (var extension in new[] { ".csproj", ".vbproj", ".fsproj" })
+        {
+            if (fileName.EndsWith(extension, StringComparison.OrdinalIgnoreCase))
+                return fileName[..^extension.Length];
+        }
+
+        return fileName;
     }
 
     [Fact]
@@ -241,17 +301,141 @@ public sealed class SampleSeparationTests
     }
 
     [Fact]
-    public void TheSampleExplorerAreaId_AgreesAcrossTheBoundaryItSitsOn()
+    public async Task TheProductionCompositionRoot_RegistersNoSampleExplorerArea()
     {
-        // The one duplication `TD-75` phase 1 leaves, disclosed rather than
-        // hidden: the sample explorer area's id is spelled in
-        // `Tempest.App.Workspace.Samples` (where its node provider lives)
-        // and again in `Tempest.Samples` (where its navigation item is
-        // registered), because the two now sit either side of a removed
-        // dependency and the sample assembly cannot read a constant from
-        // the production one. This fails the moment they drift.
+        // Phase 1 left one disclosed duplication here: the sample explorer
+        // area's id, spelled once in `Tempest.App` (where its node provider
+        // then lived) and once in `Tempest.Samples` (where its navigation
+        // item is registered). Phase 2 deletes the duplication rather than
+        // guarding it, by removing the production side entirely — that
+        // provider was keyed to an area no production run has contained
+        // since phase 1 stopped the product loading the sample assembly.
+        //
+        // Absence is asserted through the product's own duplicate-registration
+        // rule rather than through a new query method added for a test: a
+        // second registration of an already-registered Kind throws
+        // DuplicateWorkspaceRegistrationException, so if the composition root
+        // still made these calls, these two would throw instead of succeeding.
+        using var temp = new TempDirectory();
+        var (host, manager) = EngineeringWorkspaceComposer.Build(
+        [
+            new MemoryConfigurationSource(
+            [
+                new KeyValuePair<string, string>(PersistenceStore.RootPathConfigurationKey, temp.Path),
+            ]),
+        ]);
+
+        await using (host)
+        {
+            manager.RegisterExplorerArea(
+                WorkspaceExplorerSampleModule.NavigationItemId,
+                new SampleProjectExplorerNodeProvider(WorkspaceExplorerSampleModule.NavigationItemId));
+            manager.RegisterView(
+                SampleExplorerContent.ComponentKind,
+                new SampleWorkspaceViewFactory(SampleExplorerContent.ComponentKind));
+        }
+    }
+
+    // ================================================================
+    // `TD-75` phase 2: the boundary, stated as a whole
+    // ================================================================
+
+    [Fact]
+    public void NoProjectUnderSrc_ReferencesTheSampleAssembly_ExceptTheSampleAssemblyItself()
+    {
+        // The phase-1 test above names three projects, which only holds while
+        // someone remembers to add the fourth. This sweeps every project under
+        // src/ instead, so a new production project that references the
+        // samples fails without anyone having to update a list.
+        //
+        // Phase 2's own subject is the one this catches: Tempest.Validation
+        // referenced Tempest.Samples for a single navigation-id constant,
+        // which meant the sample harness could not be deleted without
+        // breaking the validation harness.
+        var root = FindRepositoryRoot();
+        var offenders = Directory
+            .EnumerateFiles(Path.Combine(root, "src"), "*.csproj", SearchOption.AllDirectories)
+            .Where(path => !path.Contains(Path.Combine("src", "Samples"), StringComparison.Ordinal))
+            .Where(path => DeclaredReferences(path).Contains(SampleAssembly, StringComparer.OrdinalIgnoreCase))
+            .Select(path => Path.GetRelativePath(root, path))
+            .OrderBy(path => path, StringComparer.Ordinal)
+            .ToList();
+
+        Assert.True(
+            offenders.Count == 0,
+            "Projects under src/ still declaring a dependency on the sample assembly:\n"
+            + string.Join("\n", offenders));
+    }
+
+    [Fact]
+    public void TheSampleAssembly_IsDeletable_NothingOutsideItDeclaresItAsADependency()
+    {
+        // What the boundary is actually for, stated as the property a reader
+        // would want: the demo harness can be deleted from the repository and
+        // the product still builds. Only the two test projects may hold it,
+        // and they hold it to drive fixtures, not to ship anything.
+        var root = FindRepositoryRoot();
+        var holders = Directory
+            .EnumerateFiles(root, "*.csproj", SearchOption.AllDirectories)
+            .Where(path => !path.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
+            .Where(path => !path.Contains(Path.Combine("src", "Samples"), StringComparison.Ordinal))
+            .Where(path => DeclaredReferences(path).Contains(SampleAssembly, StringComparer.OrdinalIgnoreCase))
+            .Select(path => Path.GetRelativePath(root, path).Replace(Path.DirectorySeparatorChar, '/'))
+            .OrderBy(path => path, StringComparer.Ordinal)
+            .ToList();
+
         Assert.Equal(
-            "tempest.samples.workspace-explorer.objects",
-            Tempest.Samples.WorkspaceExplorerSampleModule.NavigationItemId);
+            [
+                "tests/Tempest.Core.Tests/Tempest.Core.Tests.csproj",
+                "tests/Tempest.Desktop.Tests/Tempest.Desktop.Tests.csproj",
+            ],
+            holders);
+    }
+
+    [Fact]
+    public void TempestApp_DeclaresNoSampleContentOfItsOwn()
+    {
+        // Phase 1 removed the reference; sample-supporting code stayed behind
+        // in Tempest.App.Workspace.Samples — a fictional Longeron/Frame/
+        // Bracket tree, a never-editable view and its factory, all shipped in
+        // the production assembly. Phase 2 moved them to Tempest.Core.Tests,
+        // which is the only thing that ever drove them.
+        //
+        // Namespace and name are both checked because either alone is easy to
+        // slip past: a `Sample*` type in a discipline namespace, or an
+        // innocuously-named type in a `.Samples` namespace.
+        var offenders = typeof(EngineeringWorkspaceComposer).Assembly
+            .GetTypes()
+            .Where(type =>
+                type.Namespace?.EndsWith(".Samples", StringComparison.Ordinal) == true
+                || type.Name.StartsWith("Sample", StringComparison.Ordinal))
+            .Select(type => type.FullName!)
+            .OrderBy(name => name, StringComparer.Ordinal)
+            .ToList();
+
+        Assert.True(
+            offenders.Count == 0,
+            "Tempest.App still declares sample content:\n" + string.Join("\n", offenders));
+    }
+
+    [Fact]
+    public async Task TheFaultInjectionHarness_CollidesWithWhateverIsRegistered_NotWithASampleConstant()
+    {
+        // The mechanism that let phase 2 cut the Validation edge, asserted
+        // directly: DuplicateNavigationModule reads the live navigation
+        // registrations instead of naming one module's Id constant, so it
+        // fails the module it is paired with whatever that module is. Paired
+        // here with a discipline module rather than a sample one — the exact
+        // pairing that was impossible while it referenced Tempest.Samples.
+        var navigationProvider = new Tempest.Core.Navigation.NavigationService(new EventBus());
+        navigationProvider.Register(new NavigationItem("some.unrelated.area", "Unrelated"));
+
+        var duplicate = new DuplicateNavigationModule(navigationProvider);
+
+        var failure = await Assert.ThrowsAsync<DuplicateNavigationItemException>(
+            () => duplicate.InitialiseAsync(CancellationToken.None));
+
+        Assert.Contains("some.unrelated.area", failure.Message, StringComparison.Ordinal);
+        Assert.Single(navigationProvider.Items);
     }
 }

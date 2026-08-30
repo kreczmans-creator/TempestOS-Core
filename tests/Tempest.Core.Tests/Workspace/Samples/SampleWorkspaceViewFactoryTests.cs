@@ -1,10 +1,9 @@
 using Tempest.App.Workspace;
-using Tempest.App.Workspace.Samples;
 
 namespace Tempest.Core.Tests.Workspace.Samples;
 
-// Proves SampleWorkspaceViewFactory/SampleWorkspaceView (Tempest.App.
-// Workspace.Samples) — the Project Explorer's own living reference content,
+// Proves SampleWorkspaceViewFactory/SampleWorkspaceView
+// (Tempest.Core.Tests.Workspace.Samples) — the Project Explorer's fixture content,
 // WP 8.1B — against a real, minimal IWorkspaceContext (this project does not
 // use a mocking framework).
 public class SampleWorkspaceViewFactoryTests

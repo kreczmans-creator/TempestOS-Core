@@ -1,12 +1,13 @@
-namespace Tempest.App.Workspace.Samples;
+using Tempest.App.Workspace;
+
+namespace Tempest.Core.Tests.Workspace.Samples;
 
 /// <summary>
 /// Constructs a <see cref="SampleWorkspaceView"/> for one sample-object
-/// <c>Kind</c> (<see cref="SampleExplorerContent.AssemblyKind"/> or
-/// <see cref="SampleExplorerContent.ComponentKind"/>), looking the object's
-/// own title up from <see cref="SampleExplorerContent"/> — the living
-/// reference <see cref="IWorkspaceViewFactory"/> proving the Kind-keyed view
-/// extension point (`ADR-0067`) against real, running content.
+/// <c>Kind</c> (<see cref="SampleExplorerContent.ComponentKind"/>), looking
+/// the object's own title up from <see cref="SampleExplorerContent"/> — the
+/// fixture <see cref="IWorkspaceViewFactory"/> driving the Kind-keyed view
+/// extension point (`ADR-0067`) against running content.
 /// </summary>
 public sealed class SampleWorkspaceViewFactory : IWorkspaceViewFactory
 {
