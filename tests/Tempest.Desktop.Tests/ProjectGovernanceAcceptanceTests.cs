@@ -402,8 +402,22 @@ public sealed class ProjectGovernanceAcceptanceTests
             await GoToRisksAsync(host, window, project.Id);
 
             Assert.NotNull(RisksSurfaceOf(window));
-            Assert.Empty(window.GetLogicalDescendants().OfType<DeclaredCapabilityView>()
-                .Where(v => v.GetLogicalAncestors().OfType<ProjectRisksView>().Any()));
+
+            // The Risks tab's own content is the real surface, and nothing
+            // else. Asserted against the tab rather than against the whole
+            // window, because the project workspace builds every area's
+            // content up front — so cards for the areas that genuinely are
+            // Declared (Timeline, Reports, Settings) legitimately exist in
+            // the logical tree and a window-wide assertion would be wrong.
+            var risksTab = window.GetLogicalDescendants().OfType<TabItem>()
+                .Distinct()
+                .Single(tab => tab.Tag is ProjectArea.Risks);
+
+            Assert.IsType<ProjectRisksView>(risksTab.Content);
+
+            Assert.DoesNotContain(
+                ((Control)risksTab.Content!).GetLogicalDescendants().OfType<Control>(),
+                child => child is DeclaredCapabilityView);
         }
         finally
         {
