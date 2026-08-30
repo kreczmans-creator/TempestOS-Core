@@ -40,6 +40,7 @@ public sealed class ProjectWorkspaceView : UserControl
     private readonly IProjectRequirementRegister _requirements;
     private readonly IProjectTaskRegister _tasks;
     private readonly IProjectGovernanceRegister _governance;
+    private readonly IProjectMilestoneRegister _milestones;
 
     private readonly TextBlock _title = new() { FontSize = DesignTokens.FontSizeTitle, FontWeight = FontWeight.Bold };
     private readonly TextBlock _subtitle = new() { FontSize = DesignTokens.FontSizeCaption, Opacity = 0.85 };
@@ -57,6 +58,7 @@ public sealed class ProjectWorkspaceView : UserControl
     private readonly ProjectRequirementsView _requirementsView = new();
     private readonly ProjectTasksView _tasksView = new();
     private readonly ProjectRisksView _risksView = new();
+    private readonly ProjectTimelineView _timelineView = new();
 
     private bool _suppressAreaSelection;
 
@@ -128,11 +130,23 @@ public sealed class ProjectWorkspaceView : UserControl
     /// <summary>Raised when the user asks to edit a decision.</summary>
     public event Action<Guid>? EditDecisionRequested;
 
+    /// <summary>Raised when the user asks to set a milestone in this project.</summary>
+    public event Action? CreateMilestoneRequested;
+
+    /// <summary>Raised when the user asks to add a deliverable against a milestone.</summary>
+    public event Action<Guid>? AddDeliverableRequested;
+
+    /// <summary>Raised when the user asks to edit a milestone.</summary>
+    public event Action<Guid>? EditMilestoneRequested;
+
     /// <summary>The Tasks surface, so the shell can drive and inspect it.</summary>
     public ProjectTasksView TasksView => _tasksView;
 
     /// <summary>The Risks surface, so the shell can drive and inspect it.</summary>
     public ProjectRisksView RisksView => _risksView;
+
+    /// <summary>The Timeline surface, so the shell can drive and inspect it.</summary>
+    public ProjectTimelineView TimelineView => _timelineView;
 
     /// <summary>Initialises a new instance of the <see cref="ProjectWorkspaceView"/> class.</summary>
     public ProjectWorkspaceView(
@@ -142,7 +156,8 @@ public sealed class ProjectWorkspaceView : UserControl
         IProjectDocumentRegister documents,
         IProjectRequirementRegister requirements,
         IProjectTaskRegister tasks,
-        IProjectGovernanceRegister governance)
+        IProjectGovernanceRegister governance,
+        IProjectMilestoneRegister milestones)
     {
         ArgumentNullException.ThrowIfNull(projectContext);
         ArgumentNullException.ThrowIfNull(directory);
@@ -151,6 +166,7 @@ public sealed class ProjectWorkspaceView : UserControl
         ArgumentNullException.ThrowIfNull(requirements);
         ArgumentNullException.ThrowIfNull(tasks);
         ArgumentNullException.ThrowIfNull(governance);
+        ArgumentNullException.ThrowIfNull(milestones);
 
         _projectContext = projectContext;
         _directory = directory;
@@ -159,6 +175,7 @@ public sealed class ProjectWorkspaceView : UserControl
         _requirements = requirements;
         _tasks = tasks;
         _governance = governance;
+        _milestones = milestones;
 
         _documentsView.OpenAttachmentRequested += (ownerId, attachmentId) =>
             OpenAttachmentRequested?.Invoke(ownerId, attachmentId);
@@ -193,6 +210,10 @@ public sealed class ProjectWorkspaceView : UserControl
         _risksView.EditRiskRequested += id => EditRiskRequested?.Invoke(id);
         _risksView.EditIssueRequested += id => EditIssueRequested?.Invoke(id);
         _risksView.EditDecisionRequested += id => EditDecisionRequested?.Invoke(id);
+
+        _timelineView.CreateMilestoneRequested += () => CreateMilestoneRequested?.Invoke();
+        _timelineView.AddDeliverableRequested += id => AddDeliverableRequested?.Invoke(id);
+        _timelineView.EditMilestoneRequested += id => EditMilestoneRequested?.Invoke(id);
 
         // The tab strip is the product's designed area set, declared once
         // in `ProjectAreas`. An area with no capability behind it is still
@@ -259,6 +280,7 @@ public sealed class ProjectWorkspaceView : UserControl
             _requirementsView.Show([], null);
             _tasksView.Show([], [], null);
             _risksView.Show([], [], [], null);
+            _timelineView.Show([], null);
             _enterEngineering.IsEnabled = false;
             _closeProject.IsEnabled = false;
             return;
@@ -281,6 +303,7 @@ public sealed class ProjectWorkspaceView : UserControl
             await _governance.ListIssuesAsync(project.Id).ConfigureAwait(true),
             await _governance.ListDecisionsAsync(project.Id).ConfigureAwait(true),
             project.Label);
+        _timelineView.Show(await _milestones.ListAsync(project.Id).ConfigureAwait(true), project.Label);
         _overview.Children.Clear();
         _overview.Children.Add(new TextBlock { Text = $"Engineering objects in this project: {contents.Count}" });
         _overview.Children.Add(new TextBlock
@@ -329,6 +352,9 @@ public sealed class ProjectWorkspaceView : UserControl
 
         if (descriptor.Area == ProjectArea.Risks)
             return _risksView;
+
+        if (descriptor.Area == ProjectArea.Timeline)
+            return _timelineView;
 
         var host = new ContentControl { Tag = descriptor.Area };
         _areaHosts.Add(host);

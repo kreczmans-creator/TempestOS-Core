@@ -87,6 +87,8 @@ public sealed class MainWindow : Window
     private readonly IProjectTaskRegister _projectTaskRegister;
     private readonly IProjectGovernanceService _projectGovernance;
     private readonly IProjectGovernanceRegister _projectGovernanceRegister;
+    private readonly IProjectMilestoneService _projectMilestones;
+    private readonly IProjectMilestoneRegister _projectMilestoneRegister;
 
     // WP 10.6A — Command Execution & Productivity Experience.
     private readonly CommandHistoryLog _commandHistory = new();
@@ -417,11 +419,13 @@ public sealed class MainWindow : Window
         _projectBrowser = new ProjectBrowserView(_projectDirectory, _navigator, PromptForNewProjectAsync);
         _projectWorkspace = new ProjectWorkspaceView(
             _projectContext, host.ProjectDirectory!, _navigator, host.ProjectDocuments!, host.ProjectRequirements!,
-            host.ProjectTasks!, host.ProjectGovernance!);
+            host.ProjectTasks!, host.ProjectGovernance!, host.ProjectMilestones!);
         _projectTasks = host.ProjectTaskWorkflow!;
         _projectTaskRegister = host.ProjectTasks!;
         _projectGovernance = host.ProjectGovernanceWorkflow!;
         _projectGovernanceRegister = host.ProjectGovernance!;
+        _projectMilestones = host.ProjectMilestoneWorkflow!;
+        _projectMilestoneRegister = host.ProjectMilestones!;
         _navigationRail = new GlobalNavigationRail(_navigator);
 
         _navigationRail.NavigationRequested += () => _ = RenderCurrentModuleAsync();
@@ -457,6 +461,9 @@ public sealed class MainWindow : Window
         _projectWorkspace.EditRiskRequested += id => _ = EditProjectGovernanceObjectAsync(id, GovernanceFamily.Risk);
         _projectWorkspace.EditIssueRequested += id => _ = EditProjectGovernanceObjectAsync(id, GovernanceFamily.Issue);
         _projectWorkspace.EditDecisionRequested += id => _ = EditProjectGovernanceObjectAsync(id, GovernanceFamily.Decision);
+        _projectWorkspace.CreateMilestoneRequested += () => _ = CreateProjectMilestoneAsync();
+        _projectWorkspace.AddDeliverableRequested += id => _ = AddProjectDeliverableAsync(id);
+        _projectWorkspace.EditMilestoneRequested += id => _ = EditProjectMilestoneAsync(id);
         _projectWorkspace.EditTaskRequested += taskId => _ = EditProjectTaskAsync(taskId);
         _projectWorkspace.TaskDueDateChangeRequested += taskId => _ = ChangeProjectTaskDueDateAsync(taskId);
 
@@ -1002,6 +1009,130 @@ public sealed class MainWindow : Window
 
         await _projectWorkspace.RefreshAsync().ConfigureAwait(true);
     }
+
+    /// <summary>Sets a milestone in the open project, prompting for its title and target date.</summary>
+    /// <remarks>
+    /// The date is typed rather than picked, and parsed strictly as
+    /// <c>yyyy-MM-dd</c>: a milestone whose date was silently reinterpreted
+    /// by the machine's own locale would be worse than one the user had to
+    /// retype. A date that will not parse is refused by the dialog's own
+    /// validation rather than being guessed at.
+    /// </remarks>
+    public async Task CreateProjectMilestoneAsync(CancellationToken cancellationToken = default)
+    {
+        if (_projectContext.Current is not { } project)
+            return;
+
+        var title = await _inputDialog.PromptAsync(
+            "Set Milestone",
+            $"What is {project.Label} working to?",
+            validate: value => value.Length > 200 ? "Title is too long (200 characters max)." : null).ConfigureAwait(true);
+
+        if (title is null)
+            return;
+
+        var typedDate = await _inputDialog.PromptAsync(
+            "Milestone Target Date",
+            "When is it due? (yyyy-MM-dd)",
+            validate: value => ParseTargetDate(value) is null ? "Enter a date as yyyy-MM-dd, for example 2026-11-30." : null).ConfigureAwait(true);
+
+        if (typedDate is null)
+            return;
+
+        if (ParseTargetDate(typedDate) is not { } targetDate)
+            return;
+
+        var existing = await _projectMilestoneRegister.ListAsync(project.Id, cancellationToken).ConfigureAwait(true);
+        var identifier = $"MS-{existing.Count + 1:D3}";
+
+        try
+        {
+            await _projectMilestones.CreateMilestoneAsync(project.Id, identifier, title, targetDate, cancellationToken: cancellationToken).ConfigureAwait(true);
+            _toastHost.Show($"Set {identifier} — {title}.", FeedbackSeverity.Success);
+            RecordHistory($"Set milestone {identifier} in {project.Label}.");
+        }
+        catch (ProjectNotFoundException ex)
+        {
+            _toastHost.Show(ex.Message, FeedbackSeverity.Error);
+        }
+
+        await _projectWorkspace.RefreshAsync().ConfigureAwait(true);
+    }
+
+    /// <summary>Adds a deliverable due against a milestone.</summary>
+    public async Task AddProjectDeliverableAsync(Guid milestoneId, CancellationToken cancellationToken = default)
+    {
+        if (_projectContext.Current is not { } project)
+            return;
+
+        var title = await _inputDialog.PromptAsync(
+            "Add Deliverable",
+            "What has to be delivered for this milestone?",
+            validate: value => value.Length > 200 ? "Title is too long (200 characters max)." : null).ConfigureAwait(true);
+
+        if (title is null)
+            return;
+
+        var existing = await _projectMilestoneRegister.ListAsync(project.Id, cancellationToken).ConfigureAwait(true);
+        var identifier = $"DEL-{existing.Sum(m => m.Deliverables.Count) + 1:D3}";
+
+        try
+        {
+            await _projectMilestones.CreateDeliverableAsync(project.Id, milestoneId, identifier, title, cancellationToken: cancellationToken).ConfigureAwait(true);
+            _toastHost.Show($"Added {identifier} — {title}.", FeedbackSeverity.Success);
+            RecordHistory($"Added deliverable {identifier} in {project.Label}.");
+        }
+        catch (MilestoneNotFoundException ex)
+        {
+            _toastHost.Show(ex.Message, FeedbackSeverity.Error);
+        }
+        catch (ProjectNotFoundException ex)
+        {
+            _toastHost.Show(ex.Message, FeedbackSeverity.Error);
+        }
+
+        await _projectWorkspace.RefreshAsync().ConfigureAwait(true);
+    }
+
+    /// <summary>Retitles a milestone.</summary>
+    public async Task EditProjectMilestoneAsync(Guid milestoneId, CancellationToken cancellationToken = default)
+    {
+        var title = await _inputDialog.PromptAsync(
+            "Edit Milestone",
+            "What should it be called?",
+            validate: value => value.Length > 200 ? "Title is too long (200 characters max)." : null).ConfigureAwait(true);
+
+        if (title is null)
+            return;
+
+        try
+        {
+            await _projectMilestones.EditMilestoneAsync(milestoneId, title, cancellationToken: cancellationToken).ConfigureAwait(true);
+            _toastHost.Show("Milestone renamed.", FeedbackSeverity.Success);
+        }
+        catch (MilestoneNotFoundException ex)
+        {
+            _toastHost.Show(ex.Message, FeedbackSeverity.Error);
+        }
+
+        await _projectWorkspace.RefreshAsync().ConfigureAwait(true);
+    }
+
+    /// <summary>Parses a typed milestone date, or <see langword="null"/> when it is not a valid <c>yyyy-MM-dd</c>.</summary>
+    /// <remarks>
+    /// Invariant culture and an exact format, deliberately. The date a
+    /// project commits to must mean the same thing on every machine that
+    /// opens the file.
+    /// </remarks>
+    internal static DateTimeOffset? ParseTargetDate(string? value) =>
+        DateTime.TryParseExact(
+            value?.Trim(),
+            "yyyy-MM-dd",
+            System.Globalization.CultureInfo.InvariantCulture,
+            System.Globalization.DateTimeStyles.None,
+            out var parsed)
+            ? new DateTimeOffset(parsed, TimeSpan.Zero)
+            : null;
 
     /// <summary>Raises a risk in the open project, prompting for its title.</summary>
     /// <remarks>

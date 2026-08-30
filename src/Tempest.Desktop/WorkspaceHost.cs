@@ -185,6 +185,8 @@ public sealed class WorkspaceHost : IAsyncDisposable
         ProjectTaskWorkflow = new ProjectTaskService(domainContext);
         ProjectGovernance = new ProjectGovernanceRegister(domainContext);
         ProjectGovernanceWorkflow = new ProjectGovernanceService(domainContext);
+        ProjectMilestones = new ProjectMilestoneRegister(domainContext);
+        ProjectMilestoneWorkflow = new ProjectMilestoneService(domainContext);
         ProjectRequirements = new ProjectRequirementRegister(
             (IRequirementsService)host.Services!.GetService(typeof(IRequirementsService)), domainContext);
 
@@ -239,6 +241,12 @@ public sealed class WorkspaceHost : IAsyncDisposable
 
     /// <summary>The risk, issue and decision lifecycles, as the Project Workspace performs them.</summary>
     public IProjectGovernanceService? ProjectGovernanceWorkflow { get; private set; }
+
+    /// <summary>The project's own milestone register.</summary>
+    public IProjectMilestoneRegister? ProjectMilestones { get; private set; }
+
+    /// <summary>Setting milestones and deliverables, as the Project Workspace performs it.</summary>
+    public IProjectMilestoneService? ProjectMilestoneWorkflow { get; private set; }
 
     /// <summary>Persists current session state (`ADR-0064`, unchanged) and shuts the Workspace down — called from the main window's own Closing handler (Window Lifecycle).</summary>
     public async Task ShutdownAsync(CancellationToken cancellationToken = default)

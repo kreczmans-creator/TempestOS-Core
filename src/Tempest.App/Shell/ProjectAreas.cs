@@ -48,9 +48,8 @@ public static class ProjectAreas
         new(ProjectArea.Risks, "Risks", "⚠", NavigationAvailability.Implemented,
             "This project's own risks, issues and decisions — raised, scored, owned, and moved through their own status vocabularies, with the decision log recording who decided what, when, and why."),
 
-        new(ProjectArea.Timeline, "Timeline", "▦", NavigationAvailability.Declared,
-            "Schedule, milestones and deliverables. Milestone and Deliverable are real canonical objects; no scheduling model, Gantt or timeline surface exists.",
-            "TD-81"),
+        new(ProjectArea.Timeline, "Timeline", "▦", NavigationAvailability.Implemented,
+            "This project's own milestones in date order, the deliverables due against each, and the tasks and actions contributing to them. A dated register, not a Gantt chart: there is no scheduling engine, no dependency graph and no critical path."),
 
         new(ProjectArea.Reports, "Reports", "▤", NavigationAvailability.Declared,
             "Reports over this project's own engineering evidence. Evidence composition and traceability are real and queryable; report definition, generation and export are not built.",
