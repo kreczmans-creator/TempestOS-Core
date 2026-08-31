@@ -429,14 +429,18 @@ public sealed class WorkflowInteractionTests
             var registry = (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
             var ribbon = new RibbonView(registry, host.Manager!, host.Workspace!, _ => { }, _ => { });
 
-            var invoked = false;
-            ribbon.ObjectCreationHandlers["mechanical.create"] = () => { invoked = true; return Task.CompletedTask; };
+            // TD-77 Stage 5: there is no handler dictionary to inject into
+            // any more. A click asks the command framework, and with no
+            // prompt wired (this view is constructed directly) a command
+            // that needs values says so - honestly, and by name.
+            var messages = new List<string>();
+            ribbon.ActionCompleted += (message, _) => messages.Add(message);
 
             var createButton = FindButtonById(ribbon, registry, "mechanical.create");
             createButton.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
             await Task.Delay(50);
 
-            Assert.True(invoked);
+            Assert.Contains(messages, m => m.Contains("needs additional input", StringComparison.Ordinal));
         }
         finally
         {

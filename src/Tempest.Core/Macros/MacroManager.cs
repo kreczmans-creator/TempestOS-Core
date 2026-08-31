@@ -158,7 +158,23 @@ public sealed class MacroManager : IMacroManager
             macro.Name,
             category: "Macros",
             description: $"Runs {macro.StepCommandIds.Count} step(s) in sequence.",
-            createDefault: () => new RunMacroCommand(macroId)));
+            createDefault: () => new RunMacroCommand(macroId))
+        {
+            // TD-77 Stage 5. CreateDefault is kept exactly as it was, so
+            // every caller that already invoked a macro by bare Id still
+            // does. The binding is what lets a surface hand the macro the
+            // selection the person had when they started it, which its own
+            // steps then replay.
+            //
+            // It requires nothing: a macro with nothing selected is a valid
+            // thing to run, and its steps report for themselves what they
+            // needed. MultipleAllowed because a macro is not a single-target
+            // command and must not be refused merely because two objects
+            // happen to be selected.
+            Binding = new CommandBinding(
+                CommandContextRequirement.MultipleAllowed,
+                (context, _) => new RunMacroCommand(macroId, context)),
+        });
     }
 
     /// <summary>Writes the current macro set via <see cref="ISettingsProvider.SetValueAsync"/>.</summary>

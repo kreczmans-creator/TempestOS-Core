@@ -326,11 +326,25 @@ public sealed class MainWindow : Window
                 _dockingComposer.CloseFlyout();
         };
 
-        // Ribbon object-action handlers (`ADR-0103` collaborator #6, the
-        // ~450-line, ~29%-of-file per-discipline Create/Duplicate/
-        // status-transition population). Its own constructor populates
-        // `_ribbon.ObjectCreationHandlers` directly.
-        _ = new RibbonObjectActionHandlers(_ribbon, workspace, composition.CommandDispatcher, _statusBar, _toastHost, _explorerView, _cockpitView, _confirmationDialog, _inputDialog);
+        // TD-77 Stage 5. The ~390-line RibbonObjectActionHandlers is gone:
+        // every one of its per-discipline Create/Duplicate/status-transition
+        // closures re-derived, by hand, what a command needed and how to
+        // build it - which is exactly what a CommandBinding now declares
+        // once, beside the handler it was registered with. The Ribbon and
+        // the Palette both invoke through the registry instead, and this is
+        // the one prompt implementation they share.
+        //
+        // Confirmation policy stays here, where the settings live: a delete
+        // honours UserSettings.ConfirmBeforeDelete exactly as before, while
+        // every other declared confirmation (the six Duplicates) is
+        // unconditional, which is what their bindings mean.
+        var commandPrompt = new DesktopCommandPrompt(
+            _inputDialog,
+            confirm: (descriptor, message) => SurfaceCommandPolicy.DeleteCommandIds.Contains(descriptor.Id)
+                ? ConfirmDeleteAsync(message)
+                : _confirmationDialog.ConfirmAsync("Confirm", message, "Continue"));
+
+        _ribbon.ParameterPrompt = commandPrompt.Prompt;
 
         _ribbon.ActionCompleted += async (message, outcome) =>
         {
@@ -546,15 +560,43 @@ public sealed class MainWindow : Window
         // "already Handled" guard).
         KeyDown += (_, e) => _keyboardBindingProvider.HandleKeyDown(e);
 
-        _commandPalette.InvokeOverride = async descriptor =>
+        // TD-77 Stage 5: the palette evaluates and invokes against the real
+        // selection, through the same adapter the Ribbon uses, and collects
+        // declared values through the same one prompt.
+        _commandPalette.ContextSource = () => WorkspaceCommandContext.From(workspace.Selection);
+        _commandPalette.ParameterPrompt = commandPrompt.Prompt;
+
+        _commandPalette.InvokeOverride = async (descriptor, context) =>
         {
             if (!descriptor.Id.StartsWith(IMacroManager.CommandIdPrefix, StringComparison.Ordinal))
-                return await composition.CommandRegistry.InvokeAsync(descriptor.Id).ConfigureAwait(true);
+            {
+                return await composition.CommandRegistry
+                    .InvokeAsync(descriptor.Id, context, commandPrompt.Prompt)
+                    .ConfigureAwait(true);
+            }
 
             // Macro invocation (`WP 10.6A`) routes through the
             // Background Task Runner — the one real "could take a
-            // moment" case in this platform.
-            return await _backgroundTaskRunner.RunAsync($"Running macro '{descriptor.DisplayName}'…", ct => composition.CommandRegistry.InvokeAsync(descriptor.Id, ct)).ConfigureAwait(true);
+            // moment" case in this platform. The context is captured here,
+            // at macro start, and every step replays it (`ADR-0098`); no
+            // prompt is passed, so a parameterised step fails honestly
+            // rather than interrupting an unattended run.
+            // IBackgroundTaskRunner reports a CommandResult, unchanged by
+            // TD-77. A macro that could not be run at all is reported as
+            // the failure it is, rather than widening that contract.
+            var macroResult = await _backgroundTaskRunner.RunAsync(
+                $"Running macro '{descriptor.DisplayName}'…",
+                async ct =>
+                {
+                    var invocation = await composition.CommandRegistry
+                        .InvokeAsync(descriptor.Id, context, prompt: null, ct)
+                        .ConfigureAwait(false);
+
+                    return invocation.Result
+                        ?? CommandResult.Failure(invocation.Reason ?? "The macro could not be run.");
+                }).ConfigureAwait(true);
+
+            return CommandInvocation.Executed(macroResult);
         };
         _commandPalette.CommandInvoked += async (descriptor, result) =>
         {
@@ -572,11 +614,12 @@ public sealed class MainWindow : Window
                 _cockpitView.Refresh();
             }
         };
-        _commandPalette.CommandUnavailable += descriptor =>
+        _commandPalette.CommandUnavailable += (descriptor, reason) =>
         {
-            var message = $"'{descriptor.DisplayName}' needs a selected object or additional input — try the Ribbon or Project Explorer's own context menu.";
-            _statusBar.SetText(message);
-            _toastHost.Show(message, FeedbackSeverity.Warning);
+            // The command's own declared reason (TD-77 Stage 5) — what is
+            // actually missing, not a guess at where else to try.
+            _statusBar.SetText(reason);
+            _toastHost.Show(reason, FeedbackSeverity.Warning);
         };
 
         Opened += async (_, _) =>

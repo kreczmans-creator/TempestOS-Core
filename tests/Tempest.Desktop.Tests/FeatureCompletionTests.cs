@@ -4,6 +4,7 @@ using Avalonia.Headless.XUnit;
 using Avalonia.LogicalTree;
 using Tempest.App.Workspace;
 using Tempest.App.Workspace.Requirements;
+using Tempest.Core.Commands;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Requirements;
 using Tempest.Core.Verification;
@@ -30,11 +31,72 @@ namespace Tempest.Desktop.Tests;
 public sealed class FeatureCompletionTests
 {
     // ------------------------------------------------------------
-    // Ribbon lifecycle/organize dispatch — RibbonView.ObjectCreationHandlers
-    // is public; MainWindow populates it privately, so these tests reach
-    // it via reflection on a real, fully-constructed MainWindow, then
-    // invoke the exact same delegate a real button click would.
+    // Ribbon lifecycle/organize dispatch. TD-77 Stage 5 replaced
+    // RibbonView.ObjectCreationHandlers - a dictionary of hand-written
+    // closures - with the command framework's own context-aware
+    // invocation, so these tests now raise a real Click on the real
+    // button instead of invoking a delegate that no longer exists.
+    //
+    // Every behavioural assertion below is the one WP 10.7A shipped:
+    // the same real objects, the same real transitions, the same real
+    // validation. Only the mechanism reaching them changed, which is
+    // exactly what this rewrite is meant to prove.
     // ------------------------------------------------------------
+
+    /// <summary>
+    /// Raises a real Click on the ribbon button for <paramref name="commandId"/>,
+    /// exactly as a person would — the whole point being that nothing
+    /// test-only stands in for the dispatch path under test.
+    /// </summary>
+    private static void ClickRibbonCommand(RibbonView ribbon, string commandId, ICommandRegistry registry)
+    {
+        var descriptor = registry.Items.Single(d => d.Id == commandId);
+
+        // Scoped to the command's own discipline tab: "Request Review" is a
+        // real DisplayName in three of them, so a ribbon-wide search finds
+        // whichever discipline happens to sort first.
+        var tab = ((TabControl)ribbon.Content!).Items.OfType<TabItem>().Single(t => Equals(t.Tag, descriptor.Category));
+        var button = ((Control)tab.Content!).GetLogicalDescendants()
+            .OfType<Button>()
+            .First(b => b.GetLogicalDescendants().OfType<TextBlock>().Any(t => t.Text == descriptor.DisplayName));
+
+        button.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+    }
+
+    /// <summary>Answers the shell's own input prompts, in order, as they appear.</summary>
+    private static async Task AnswerPromptsAsync(InputDialog dialog, params string[] values)
+    {
+        foreach (var value in values)
+        {
+            await WaitUntilVisibleAsync(dialog);
+
+            dialog.GetLogicalDescendants().OfType<TextBox>().Single().Text = value;
+            dialog.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "OK"))
+                .RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+
+            await Task.Delay(20);
+        }
+    }
+
+    /// <summary>Accepts the shell's own confirmation, whatever its affirmative button is labelled.</summary>
+    private static async Task ConfirmAsync(ConfirmationDialog dialog, string confirmText)
+    {
+        await WaitUntilVisibleAsync(dialog);
+
+        dialog.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, confirmText))
+            .RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+
+        await Task.Delay(20);
+    }
+
+    private static async Task WaitUntilVisibleAsync(Control control)
+    {
+        var deadline = DateTime.UtcNow.AddSeconds(2);
+        while (!control.IsVisible && DateTime.UtcNow < deadline)
+            await Task.Delay(10);
+
+        Assert.True(control.IsVisible, $"{control.GetType().Name} never became visible.");
+    }
 
     /// <summary>
     /// Chains two real status transitions — Request Review (Draft →
@@ -63,13 +125,18 @@ public sealed class FeatureCompletionTests
             var window = new MainWindow(host);
             var ribbon = GetPrivateField<RibbonView>(window, "_ribbon");
 
-            Assert.True(ribbon.ObjectCreationHandlers.ContainsKey("calculations.approve"), "Expected a real handler wired for 'calculations.approve'.");
-            await ribbon.ObjectCreationHandlers["calculations.request-review"]();
+            var registry = (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
+
+            // Both transitions need nobody present: no values, no
+            // confirmation. That is what makes them macro-safe too.
+            ClickRibbonCommand(ribbon, "calculations.request-review", registry);
+            await Task.Delay(60);
 
             var afterRequestReview = await domainContext.Repository.FindAsync(target.Id);
             Assert.Equal(LifecycleState.InReview, ((IHasLifecycle)afterRequestReview!).Status);
 
-            await ribbon.ObjectCreationHandlers["calculations.approve"]();
+            ClickRibbonCommand(ribbon, "calculations.approve", registry);
+            await Task.Delay(60);
 
             var afterApprove = await domainContext.Repository.FindAsync(target.Id);
             Assert.Equal(LifecycleState.Approved, ((IHasLifecycle)afterApprove!).Status);
@@ -99,7 +166,9 @@ public sealed class FeatureCompletionTests
             var window = new MainWindow(host);
             var ribbon = GetPrivateField<RibbonView>(window, "_ribbon");
 
-            await ribbon.ObjectCreationHandlers["documents.request-review"]();
+            var registry = (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
+            ClickRibbonCommand(ribbon, "documents.request-review", registry);
+            await Task.Delay(60);
 
             var reread = await domainContext.Repository.FindAsync(target.Id);
             Assert.Equal(LifecycleState.InReview, ((IHasLifecycle)reread!).Status);
@@ -136,15 +205,14 @@ public sealed class FeatureCompletionTests
             var ribbon = GetPrivateField<RibbonView>(window, "_ribbon");
             var inputDialog = GetPrivateField<InputDialog>(window, "_inputDialog");
 
-            var handlerTask = ribbon.ObjectCreationHandlers["requirements.set-status"]();
-            await Task.Delay(20);
+            var registry = (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
+            ClickRibbonCommand(ribbon, "requirements.set-status", registry);
 
-            var textBox = inputDialog.GetLogicalDescendants().OfType<TextBox>().Single();
-            textBox.Text = "Reviewed";
-            var okButton = inputDialog.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "OK"));
-            okButton.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
-
-            await handlerTask;
+            // The binding declares one value, validated against the real
+            // RequirementStatus set - the same validation the hand-written
+            // handler used to spell out inline.
+            await AnswerPromptsAsync(inputDialog, "Reviewed");
+            await Task.Delay(60);
 
             var reread = await requirementsService.FindAsync(target.Id);
             Assert.Equal(RequirementStatus.Reviewed, reread!.Status);
@@ -176,14 +244,14 @@ public sealed class FeatureCompletionTests
             var ribbon = GetPrivateField<RibbonView>(window, "_ribbon");
             var confirmationDialog = GetPrivateField<ConfirmationDialog>(window, "_confirmationDialog");
 
-            var handlerTask = ribbon.ObjectCreationHandlers["calculations.duplicate"]();
-            await Task.Delay(20);
+            var registry = (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
+            ClickRibbonCommand(ribbon, "calculations.duplicate", registry);
 
-            var confirmButton = confirmationDialog.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "Duplicate"));
-            confirmButton.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
-
-            await handlerTask;
-            await Task.Delay(20);
+            // Still unconditionally confirmed - now because the binding
+            // declares a ConfirmationMessage, not because one closure
+            // happened to call the dialog.
+            await ConfirmAsync(confirmationDialog, "Continue");
+            await Task.Delay(60);
 
             var countAfter = await CountAllObjectNodesAsync(workspace.ProjectExplorer, await workspace.ProjectExplorer.GetRootNodesAsync());
             Assert.Equal(countBefore + 1, countAfter);
@@ -214,16 +282,15 @@ public sealed class FeatureCompletionTests
             var ribbon = GetPrivateField<RibbonView>(window, "_ribbon");
             var inputDialog = GetPrivateField<InputDialog>(window, "_inputDialog");
 
-            var handlerTask = ribbon.ObjectCreationHandlers["verification.create"]();
-            await Task.Delay(20);
+            var registry = (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
+            ClickRibbonCommand(ribbon, "verification.create", registry);
 
-            var textBox = inputDialog.GetLogicalDescendants().OfType<TextBox>().Single();
-            textBox.Text = "WP10.7A Test Verification Activity";
-            var okButton = inputDialog.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "OK"));
-            okButton.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
-
-            await handlerTask;
-            await Task.Delay(20);
+            // The binding declares the name and the method. The method's
+            // own default is still "Inspection" - the value the old closure
+            // hard-coded - so accepting the offered default reproduces the
+            // shipped behaviour exactly; the subject is still the selection.
+            await AnswerPromptsAsync(inputDialog, "WP10.7A Test Verification Activity", "Inspection");
+            await Task.Delay(60);
 
             await workspace.Navigation.SwitchAreaAsync(VerificationWorkspaceExplorerModule.NavigationItemId);
             var created = await FindFirstObjectNodeOfKindAsync(workspace.ProjectExplorer, await workspace.ProjectExplorer.GetRootNodesAsync(), "VerificationActivity", "WP10.7A Test Verification Activity");
@@ -266,26 +333,18 @@ public sealed class FeatureCompletionTests
             var ribbon = GetPrivateField<RibbonView>(window, "_ribbon");
             var inputDialog = GetPrivateField<InputDialog>(window, "_inputDialog");
 
-            Assert.True(ribbon.ObjectCreationHandlers.ContainsKey("manufacturing.record-inspection-result"), "Expected a real handler wired for 'manufacturing.record-inspection-result'.");
-            var handlerTask = ribbon.ObjectCreationHandlers["manufacturing.record-inspection-result"]();
-            await Task.Delay(20);
+            var registry = (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
+            ClickRibbonCommand(ribbon, "manufacturing.record-inspection-result", registry);
 
-            var outcomeBox = inputDialog.GetLogicalDescendants().OfType<TextBox>().Single();
-            outcomeBox.Text = "Pass";
-            inputDialog.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "OK"))
-                .RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
-            await Task.Delay(20);
-
-            var methodBox = inputDialog.GetLogicalDescendants().OfType<TextBox>().Single();
-            methodBox.Text = "Inspection";
-            inputDialog.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "OK"))
-                .RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
-
-            await handlerTask;
+            // Cross-discipline reuse, unchanged: this Manufacturing
+            // descriptor's own binding builds Verification's
+            // RecordVerificationResultCommand, scoped to the Inspection Kind.
+            await AnswerPromptsAsync(inputDialog, "Pass", "Inspection");
+            await Task.Delay(60);
 
             var statusBar = GetPrivateField<StatusBarView>(window, "_statusBar");
             var statusText = statusBar.GetLogicalDescendants().OfType<TextBlock>()
-                .FirstOrDefault(t => t.Text != null && t.Text.Contains("Result recorded", StringComparison.Ordinal));
+                .FirstOrDefault(t => t.Text != null && t.Text.Contains("Record Inspection Result", StringComparison.Ordinal) && t.Text.Contains("completed", StringComparison.Ordinal));
             Assert.NotNull(statusText);
         }
         finally
@@ -319,15 +378,15 @@ public sealed class FeatureCompletionTests
             var ribbon = GetPrivateField<RibbonView>(window, "_ribbon");
             var inputDialog = GetPrivateField<InputDialog>(window, "_inputDialog");
 
-            var handlerTask = ribbon.ObjectCreationHandlers["mechanical.create"]();
-            await Task.Delay(20);
+            var registry = (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
+            ClickRibbonCommand(ribbon, "mechanical.create", registry);
 
-            var textBox = inputDialog.GetLogicalDescendants().OfType<TextBox>().Single();
-            textBox.Text = "WP12.4B Test Part";
-            var okButton = inputDialog.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "OK"));
-            okButton.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
-
-            await handlerTask;
+            // The Kind the old closure hard-coded is now the binding's own
+            // offered default, so accepting it and naming the object
+            // reproduces the shipped behaviour - and the Kind is finally
+            // visible and changeable rather than silently fixed.
+            await AnswerPromptsAsync(inputDialog, "Part", "WP12.4B Test Part");
+            await Task.Delay(60);
 
             // A new "Part" with no explicit parent (Mechanical Create's
             // own honest, disclosed scope — "defaults to Kind Part," no
@@ -367,14 +426,10 @@ public sealed class FeatureCompletionTests
             var ribbon = GetPrivateField<RibbonView>(window, "_ribbon");
             var confirmationDialog = GetPrivateField<ConfirmationDialog>(window, "_confirmationDialog");
 
-            var handlerTask = ribbon.ObjectCreationHandlers["mechanical.duplicate"]();
-            await Task.Delay(20);
-
-            var confirmButton = confirmationDialog.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "Duplicate"));
-            confirmButton.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
-
-            await handlerTask;
-            await Task.Delay(20);
+            var registry = (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
+            ClickRibbonCommand(ribbon, "mechanical.duplicate", registry);
+            await ConfirmAsync(confirmationDialog, "Continue");
+            await Task.Delay(60);
 
             var countAfter = await CountAllObjectNodesAsync(workspace.ProjectExplorer, await workspace.ProjectExplorer.GetRootNodesAsync());
             Assert.Equal(countBefore + 1, countAfter);
@@ -420,7 +475,13 @@ public sealed class FeatureCompletionTests
             var ribbon = GetPrivateField<RibbonView>(window, "_ribbon");
             var statusBar = GetPrivateField<StatusBarView>(window, "_statusBar");
 
-            var exception = await Record.ExceptionAsync(() => ribbon.ObjectCreationHandlers["documents.approve"]());
+            var registry = (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
+
+            // A real lifecycle rule refusing a real transition, reported
+            // rather than thrown - unchanged by TD-77 Stage 5, and now
+            // reached through the command framework's own dispatch.
+            var exception = Record.Exception(() => ClickRibbonCommand(ribbon, "documents.approve", registry));
+            await Task.Delay(60);
 
             Assert.Null(exception);
             var after = await domainContext.Repository.FindAsync(target.Id);

@@ -202,7 +202,7 @@ public sealed class RibbonViewTests
     }
 
     [AvaloniaFact]
-    public async Task CreateButton_HasNoCreateDefaultAndNoSelectionRoute_ReportsHonestlyRatherThanSilentlyDoingNothing()
+    public async Task AnUninvocableCommand_ReportsItsOwnDeclaredReason_NeverAGenericFallback()
     {
         var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
         try
@@ -215,21 +215,32 @@ public sealed class RibbonViewTests
             var outcomes = new List<Tempest.Desktop.ActionOutcome>();
             ribbon.ActionCompleted += (message, outcome) => { messages.Add(message); outcomes.Add(outcome); };
 
-            var createButton = FindButtonById(ribbon, registry, "mechanical.create");
-            createButton.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+            // TD-77 Stage 5 replaced one catch-all sentence with each
+            // command's own reason. A Move declares that it needs a
+            // destination chosen from the object tree, and says so by name.
+            FindButtonById(ribbon, registry, "mechanical.move")
+                .RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
             await Task.Delay(50);
 
-            // `WP 10.8A` — the message itself was rewritten to stop
-            // claiming the Command Palette/Project Explorer context menu
-            // can help (confirmed by direct investigation that neither
-            // genuinely can, for any command reaching this fallback) —
-            // this assertion now checks the new, honest wording's own
-            // core claim instead of the old "additional input" phrase.
-            Assert.Contains(messages, m => m.Contains("destination picker", StringComparison.OrdinalIgnoreCase));
+            Assert.Contains(messages, m => m.Contains("Moving a Mechanical object", StringComparison.Ordinal));
+            Assert.Contains(messages, m => m.Contains("object picker", StringComparison.OrdinalIgnoreCase));
 
-            // `TD-58`: the honest "isn't available" fallback is a refusal —
-            // Failed, no workspace change, no dependent rebuild.
+            // A Create needs values, and this view was constructed with no
+            // prompt wired - so it says that, rather than running without
+            // asking or silently doing nothing.
+            messages.Clear();
+            FindButtonById(ribbon, registry, "mechanical.create")
+                .RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+            await Task.Delay(50);
+
+            Assert.Contains(messages, m => m.Contains("needs additional input", StringComparison.Ordinal));
+
+            // `TD-58`: every refusal is Failed, with no workspace change
+            // and no dependent rebuild.
             Assert.All(outcomes, o => Assert.Equal(Tempest.Desktop.ActionOutcome.Failed, o));
+
+            // And the generic sentence is gone for good.
+            Assert.DoesNotContain(messages, m => m.Contains("isn't available yet", StringComparison.OrdinalIgnoreCase));
         }
         finally
         {
@@ -468,9 +479,16 @@ public sealed class RibbonViewTests
             Assert.Equal(0, manager.CanDeleteCalls);
 
             // Delete really deletes, reports Changed, clears the dead
-            // selection, and refreshes enablement exactly once — against
-            // the now-cleared selection, so the only CanDelete call is
-            // the click path's own direct guard.
+            // selection, and refreshes enablement against the now-cleared
+            // selection.
+            //
+            // TD-77 Stage 5: CanDelete is no longer consulted at all. Both
+            // the click guard and enablement now ask
+            // ICommandRegistry.Evaluate, which is the single availability
+            // implementation for every command rather than a per-verb
+            // manager query the Ribbon re-derived. Dispatch still goes
+            // through DeleteObjectAsync, which is what clears the selection
+            // (`TD-58`) - that is the assertion that must not move.
             manager.CanDeleteCalls = 0;
             manager.DeleteCalls = 0;
             var deleteButton = FindButtonById(ribbon, registry, "mechanical.delete");
@@ -478,7 +496,7 @@ public sealed class RibbonViewTests
             await Task.Delay(50);
 
             Assert.Equal(1, manager.DeleteCalls);
-            Assert.Equal(1, manager.CanDeleteCalls);
+            Assert.Equal(0, manager.CanDeleteCalls);
             Assert.Null(workspace.Selection.Current); // `TD-58` stale-selection closure
             Assert.False(deleteButton.IsEnabled);     // enablement recomputed against the cleared selection
 
