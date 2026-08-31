@@ -7,7 +7,7 @@ namespace Tempest.Core.ExportImport;
 /// section as a JSON array of <c>{ kind, schemaVersion, payload }</c>
 /// objects, with each section's own opaque bytes carried as base64 —
 /// matching this codebase's existing <see cref="System.Text.Json"/>
-/// convention (<see cref="Repositories.JsonProjectRepository"/>).
+/// convention.
 /// </summary>
 public sealed class JsonExportFormat : IExportFormat
 {
