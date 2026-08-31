@@ -127,7 +127,7 @@ public sealed class MainWindow : Window
         // identical established discipline this codebase already uses,
         // so the very first frame already reflects last session's own
         // geometry, never a default-then-jump.
-        _session = new DesktopSessionState(composition.SettingsProvider);
+        _session = new DesktopSessionState(composition.SettingsProvider, composition.Logger);
         _session.WindowUiState.ApplyTo(this);
         _toastHost.DefaultDuration = TimeSpan.FromSeconds(_session.UserSettings.ToastDurationSeconds);
 

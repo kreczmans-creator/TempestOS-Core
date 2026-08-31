@@ -34,6 +34,7 @@ public sealed class ShellNavigator : IShellNavigator
     private readonly IProjectContext _projectContext;
     private readonly IEventBus _eventBus;
     private readonly ISettingsProvider _settingsProvider;
+    private readonly SettingsDocument<ShellLocationDto> _document;
     private readonly ILogger? _logger;
 
     /// <summary>Initialises a new instance of the <see cref="ShellNavigator"/> class at <see cref="ShellLocation.Home"/>.</summary>
@@ -49,14 +50,7 @@ public sealed class ShellNavigator : IShellNavigator
         _settingsProvider = settingsProvider;
         _logger = logger;
 
-        try
-        {
-            _settingsProvider.RegisterDefinition(new SettingDefinition(SettingKey, "Shell Location", string.Empty));
-        }
-        catch (DuplicateSettingDefinitionException)
-        {
-            // Idempotent across restarts, as elsewhere.
-        }
+        _document = new SettingsDocument<ShellLocationDto>(settingsProvider, SettingKey, "Shell Location", logger);
     }
 
     /// <inheritdoc />
@@ -126,26 +120,13 @@ public sealed class ShellNavigator : IShellNavigator
     /// <inheritdoc />
     public async Task SaveAsync(CancellationToken cancellationToken = default)
     {
-        var json = JsonSerializer.Serialize(new ShellLocationDto(Current.Area, Current.ProjectId, Current.ProjectArea));
-        await _settingsProvider.SetValueAsync(SettingKey, json, cancellationToken).ConfigureAwait(false);
+        await _document.SaveAsync(new ShellLocationDto(Current.Area, Current.ProjectId, Current.ProjectArea), cancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc />
     public async Task LoadAsync(CancellationToken cancellationToken = default)
     {
-        var json = await _settingsProvider.GetValueAsync(SettingKey, cancellationToken).ConfigureAwait(false);
-
-        ShellLocationDto? dto;
-        try
-        {
-            dto = string.IsNullOrEmpty(json) ? null : JsonSerializer.Deserialize<ShellLocationDto>(json);
-        }
-        catch (JsonException)
-        {
-            // Corrupted state degrades to Home rather than failing startup
-            // (`TD-60`'s own established contract).
-            dto = null;
-        }
+        var dto = await _document.LoadAsync(cancellationToken).ConfigureAwait(false);
 
         if (dto is null)
             return;

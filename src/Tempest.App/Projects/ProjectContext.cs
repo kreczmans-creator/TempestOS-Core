@@ -26,6 +26,7 @@ public sealed class ProjectContext : IProjectContext
     private readonly IProjectDirectory _directory;
     private readonly IEventBus _eventBus;
     private readonly ISettingsProvider _settingsProvider;
+    private readonly SettingsDocument<CurrentProjectDto> _document;
     private readonly ILogger? _logger;
 
     /// <summary>Initialises a new instance of the <see cref="ProjectContext"/> class with no project open.</summary>
@@ -41,16 +42,7 @@ public sealed class ProjectContext : IProjectContext
         _settingsProvider = settingsProvider;
         _logger = logger;
 
-        try
-        {
-            _settingsProvider.RegisterDefinition(new SettingDefinition(SettingKey, "Current Project", string.Empty));
-        }
-        catch (DuplicateSettingDefinitionException)
-        {
-            // Already registered by a prior instance against the same
-            // provider (a restart) — idempotent, the identical discipline
-            // WorkspaceState/DesktopPanelUiState already apply.
-        }
+        _document = new SettingsDocument<CurrentProjectDto>(settingsProvider, SettingKey, "Current Project", logger);
     }
 
     /// <inheritdoc />
@@ -107,26 +99,13 @@ public sealed class ProjectContext : IProjectContext
     /// <inheritdoc />
     public async Task SaveAsync(CancellationToken cancellationToken = default)
     {
-        var json = JsonSerializer.Serialize(new CurrentProjectDto(Current?.Id));
-        await _settingsProvider.SetValueAsync(SettingKey, json, cancellationToken).ConfigureAwait(false);
+        await _document.SaveAsync(new CurrentProjectDto(Current?.Id), cancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc />
     public async Task LoadAsync(CancellationToken cancellationToken = default)
     {
-        var json = await _settingsProvider.GetValueAsync(SettingKey, cancellationToken).ConfigureAwait(false);
-
-        CurrentProjectDto? dto;
-        try
-        {
-            dto = string.IsNullOrEmpty(json) ? null : JsonSerializer.Deserialize<CurrentProjectDto>(json);
-        }
-        catch (JsonException)
-        {
-            // A corrupted stored value degrades to "no project open" —
-            // this method's own "never an exception" contract (`TD-60`).
-            dto = null;
-        }
+        var dto = await _document.LoadAsync(cancellationToken).ConfigureAwait(false);
 
         if (dto?.ProjectId is not { } projectId)
             return;

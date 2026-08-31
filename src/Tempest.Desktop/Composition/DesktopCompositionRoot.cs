@@ -57,6 +57,13 @@ internal sealed class DesktopCompositionRoot
     /// <summary>Gets the resolved <see cref="IInputBindingRegistry"/>.</summary>
     public IInputBindingRegistry InputBindingRegistry { get; }
 
+    /// <summary>
+    /// Gets the Host's own <see cref="Tempest.Core.Logging.ILogger"/> — so a
+    /// Desktop-local persisted state can report a corrupt stored value rather
+    /// than discarding it silently (`WP-D2`, `TD-112`).
+    /// </summary>
+    public Tempest.Core.Logging.ILogger Logger { get; }
+
     /// <summary>Gets the resolved <see cref="Tempest.Core.Notifications.INotificationDispatcher"/> — the channel every real platform-notification producer publishes through (`TD-58`: the toast bridge must listen here, not only on the event bus).</summary>
     public Tempest.Core.Notifications.INotificationDispatcher NotificationDispatcher { get; }
 
@@ -76,5 +83,6 @@ internal sealed class DesktopCompositionRoot
         MacroManager = (IMacroManager)services.GetService(typeof(IMacroManager));
         InputBindingRegistry = (IInputBindingRegistry)services.GetService(typeof(IInputBindingRegistry));
         NotificationDispatcher = (Tempest.Core.Notifications.INotificationDispatcher)services.GetService(typeof(Tempest.Core.Notifications.INotificationDispatcher));
+        Logger = (Tempest.Core.Logging.ILogger)services.GetService(typeof(Tempest.Core.Logging.ILogger));
     }
 }

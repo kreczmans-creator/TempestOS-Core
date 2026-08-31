@@ -1,3 +1,4 @@
+using Tempest.Core.Logging;
 using System.Text.Json;
 using Tempest.Core.Settings;
 
@@ -28,22 +29,16 @@ public sealed class FavouriteObjectsState
     public const string SettingKey = "Desktop.FavouriteObjects";
 
     private readonly ISettingsProvider _settingsProvider;
+    private readonly SettingsDocument<List<FavouriteObjectEntry>> _document;
     private readonly List<FavouriteObjectEntry> _entries = [];
 
     /// <summary>Initialises a new instance of the <see cref="FavouriteObjectsState"/> class, initially empty.</summary>
-    public FavouriteObjectsState(ISettingsProvider settingsProvider)
+    public FavouriteObjectsState(ISettingsProvider settingsProvider, ILogger? logger = null)
     {
         ArgumentNullException.ThrowIfNull(settingsProvider);
         _settingsProvider = settingsProvider;
 
-        try
-        {
-            _settingsProvider.RegisterDefinition(new SettingDefinition(SettingKey, "Favourite Objects", string.Empty));
-        }
-        catch (DuplicateSettingDefinitionException)
-        {
-            // Idempotent — mirrors UserSettings'/DesktopPanelUiState's own identical discipline.
-        }
+        _document = new SettingsDocument<List<FavouriteObjectEntry>>(settingsProvider, SettingKey, "Favourite Objects", logger);
     }
 
     /// <summary>Gets every favourited entry.</summary>
@@ -79,27 +74,13 @@ public sealed class FavouriteObjectsState
     /// <summary>Writes the current entries via <see cref="ISettingsProvider.SetValueAsync"/>.</summary>
     public async Task SaveAsync(CancellationToken cancellationToken = default)
     {
-        var json = JsonSerializer.Serialize(_entries);
-        await _settingsProvider.SetValueAsync(SettingKey, json, cancellationToken).ConfigureAwait(false);
+        await _document.SaveAsync(_entries, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>Reads persisted entries via <see cref="ISettingsProvider.GetValueAsync"/>. A missing/first-run value leaves the list empty — never an exception.</summary>
     public async Task LoadAsync(CancellationToken cancellationToken = default)
     {
-        var json = await _settingsProvider.GetValueAsync(SettingKey, cancellationToken).ConfigureAwait(false);
-
-        List<FavouriteObjectEntry>? entries;
-        try
-        {
-            entries = string.IsNullOrEmpty(json) ? null : JsonSerializer.Deserialize<List<FavouriteObjectEntry>>(json);
-        }
-        catch (JsonException)
-        {
-            // A corrupted stored value (e.g. a torn write) degrades to
-            // the documented first-run empty list — this method's own
-            // "never an exception" contract (`TD-60`).
-            entries = null;
-        }
+        var entries = await _document.LoadAsync(cancellationToken).ConfigureAwait(false);
 
         if (entries is null)
             return;

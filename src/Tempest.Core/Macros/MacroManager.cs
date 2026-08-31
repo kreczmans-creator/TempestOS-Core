@@ -1,3 +1,4 @@
+using Tempest.Core.Logging;
 using System.Text.Json;
 using Tempest.Core.Commands;
 using Tempest.Core.Settings;
@@ -11,13 +12,14 @@ public sealed class MacroManager : IMacroManager
     public const string SettingKey = "Core.Macros";
 
     private readonly ISettingsProvider _settingsProvider;
+    private readonly SettingsDocument<List<MacroDto>> _document;
     private readonly ICommandRegistry _commandRegistry;
     private readonly object _gate = new();
     private readonly Dictionary<Guid, ICommandMacro> _macrosById = new();
     private readonly HashSet<string> _registeredDescriptorIds = new(StringComparer.Ordinal);
 
     /// <summary>Initialises a new instance of the <see cref="MacroManager"/> class.</summary>
-    public MacroManager(ISettingsProvider settingsProvider, ICommandRegistry commandRegistry)
+    public MacroManager(ISettingsProvider settingsProvider, ICommandRegistry commandRegistry, ILogger? logger = null)
     {
         ArgumentNullException.ThrowIfNull(settingsProvider);
         ArgumentNullException.ThrowIfNull(commandRegistry);
@@ -25,34 +27,13 @@ public sealed class MacroManager : IMacroManager
         _settingsProvider = settingsProvider;
         _commandRegistry = commandRegistry;
 
-        try
-        {
-            _settingsProvider.RegisterDefinition(new SettingDefinition(SettingKey, "User Command Macros", string.Empty));
-        }
-        catch (DuplicateSettingDefinitionException)
-        {
-            // Already registered by a prior instance against the same
-            // ISettingsProvider (a restart) — idempotent, mirroring
-            // UserSettings'/DesktopPanelUiState's own identical discipline.
-        }
+        _document = new SettingsDocument<List<MacroDto>>(settingsProvider, SettingKey, "User Command Macros", logger);
     }
 
     /// <inheritdoc />
     public async Task LoadAsync(CancellationToken cancellationToken = default)
     {
-        var json = await _settingsProvider.GetValueAsync(SettingKey, cancellationToken).ConfigureAwait(false);
-
-        List<MacroDto>? dtos;
-        try
-        {
-            dtos = string.IsNullOrEmpty(json) ? null : JsonSerializer.Deserialize<List<MacroDto>>(json);
-        }
-        catch (JsonException)
-        {
-            // A corrupted stored value (e.g. a torn write) degrades to
-            // "no persisted macros" rather than failing the load (`TD-60`).
-            dtos = null;
-        }
+        var dtos = await _document.LoadAsync(cancellationToken).ConfigureAwait(false);
 
         if (dtos is null)
             return;
@@ -188,8 +169,7 @@ public sealed class MacroManager : IMacroManager
                 .ToList();
         }
 
-        var json = JsonSerializer.Serialize(dtos);
-        await _settingsProvider.SetValueAsync(SettingKey, json, cancellationToken).ConfigureAwait(false);
+        await _document.SaveAsync(dtos, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>The plain, JSON-serializable shape one macro persists as.</summary>

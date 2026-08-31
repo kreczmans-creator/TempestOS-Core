@@ -165,9 +165,10 @@ public sealed class WorkspaceHost : IAsyncDisposable
             .ConfigureAwait(false);
 
         ProjectDirectory = new ProjectDirectory(domainContext);
-        var projectContext = new ProjectContext(ProjectDirectory, eventBus, settingsProvider);
+        var hostLogger = (Tempest.Core.Logging.ILogger)host.Services!.GetService(typeof(Tempest.Core.Logging.ILogger));
+        var projectContext = new ProjectContext(ProjectDirectory, eventBus, settingsProvider, hostLogger);
         ProjectContext = projectContext;
-        var shellNavigator = new ShellNavigator(projectContext, eventBus, settingsProvider);
+        var shellNavigator = new ShellNavigator(projectContext, eventBus, settingsProvider, hostLogger);
         ShellNavigator = shellNavigator;
 
         // The Engineering Workspace's own scope (`TD-89`) — project or

@@ -1,3 +1,4 @@
+using Tempest.Core.Logging;
 using System.Text.Json;
 using Avalonia;
 using Avalonia.Controls;
@@ -34,24 +35,15 @@ internal sealed class WindowUiState
     public const string SettingKey = "Desktop.WindowUiState";
 
     private readonly ISettingsProvider _settingsProvider;
+    private readonly SettingsDocument<WindowUiStateDto> _document;
 
     /// <summary>Initialises a new instance of the <see cref="WindowUiState"/> class with every value at its own documented default.</summary>
-    public WindowUiState(ISettingsProvider settingsProvider)
+    public WindowUiState(ISettingsProvider settingsProvider, ILogger? logger = null)
     {
         ArgumentNullException.ThrowIfNull(settingsProvider);
         _settingsProvider = settingsProvider;
 
-        try
-        {
-            _settingsProvider.RegisterDefinition(new SettingDefinition(SettingKey, "Desktop Window UI State", string.Empty));
-        }
-        catch (DuplicateSettingDefinitionException)
-        {
-            // Already registered by a prior instance against the same
-            // ISettingsProvider (a restart) — idempotent, not an error,
-            // mirroring DesktopPanelUiState's/UserSettings's own identical
-            // discipline.
-        }
+        _document = new SettingsDocument<WindowUiStateDto>(settingsProvider, SettingKey, "Desktop Window UI State", logger);
     }
 
     /// <summary>Gets or sets the window's own last known X position, or <see langword="null"/> if never saved (first run — the platform's own default centring applies).</summary>
@@ -73,28 +65,13 @@ internal sealed class WindowUiState
     public async Task SaveAsync(CancellationToken cancellationToken = default)
     {
         var dto = new WindowUiStateDto(X, Y, Width, Height, IsMaximised);
-        var json = JsonSerializer.Serialize(dto);
-
-        await _settingsProvider.SetValueAsync(SettingKey, json, cancellationToken).ConfigureAwait(false);
+        await _document.SaveAsync(dto, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>Reads persisted state via <see cref="ISettingsProvider.GetValueAsync"/>. A missing/first-run value leaves every property at its own documented default — never an exception.</summary>
     public async Task LoadAsync(CancellationToken cancellationToken = default)
     {
-        var json = await _settingsProvider.GetValueAsync(SettingKey, cancellationToken).ConfigureAwait(false);
-
-        WindowUiStateDto? dto;
-        try
-        {
-            dto = string.IsNullOrEmpty(json) ? null : JsonSerializer.Deserialize<WindowUiStateDto>(json);
-        }
-        catch (JsonException)
-        {
-            // A corrupted stored value (e.g. a torn write) degrades to
-            // the documented first-run defaults — this method's own
-            // "never an exception" contract (`TD-60`).
-            dto = null;
-        }
+        var dto = await _document.LoadAsync(cancellationToken).ConfigureAwait(false);
 
         if (dto is null)
             return;

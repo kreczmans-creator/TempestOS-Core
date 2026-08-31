@@ -1,3 +1,4 @@
+using Tempest.Core.Logging;
 using System.Text.Json;
 using Tempest.Core.Settings;
 
@@ -40,24 +41,15 @@ public sealed class UserSettings
     public const string SettingKey = "Desktop.UserSettings";
 
     private readonly ISettingsProvider _settingsProvider;
+    private readonly SettingsDocument<UserSettingsDto> _document;
 
     /// <summary>Initialises a new instance of the <see cref="UserSettings"/> class with every value at its own documented default.</summary>
-    public UserSettings(ISettingsProvider settingsProvider)
+    public UserSettings(ISettingsProvider settingsProvider, ILogger? logger = null)
     {
         ArgumentNullException.ThrowIfNull(settingsProvider);
         _settingsProvider = settingsProvider;
 
-        try
-        {
-            _settingsProvider.RegisterDefinition(new SettingDefinition(SettingKey, "Desktop User Settings", string.Empty));
-        }
-        catch (DuplicateSettingDefinitionException)
-        {
-            // Already registered by a prior instance against the same
-            // ISettingsProvider (a restart) — idempotent, not an error,
-            // mirroring DesktopPanelUiState's/ThemeService's own identical
-            // discipline.
-        }
+        _document = new SettingsDocument<UserSettingsDto>(settingsProvider, SettingKey, "Desktop User Settings", logger);
     }
 
     /// <summary>Gets or sets how long a Toast stays visible before auto-dismissing, in seconds.</summary>
@@ -73,28 +65,13 @@ public sealed class UserSettings
     public async Task SaveAsync(CancellationToken cancellationToken = default)
     {
         var dto = new UserSettingsDto(ToastDurationSeconds, ConfirmBeforeDelete, RecentSearchCapacity);
-        var json = JsonSerializer.Serialize(dto);
-
-        await _settingsProvider.SetValueAsync(SettingKey, json, cancellationToken).ConfigureAwait(false);
+        await _document.SaveAsync(dto, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>Reads persisted state via <see cref="ISettingsProvider.GetValueAsync"/>. A missing/first-run value leaves every property at its own documented default — never an exception.</summary>
     public async Task LoadAsync(CancellationToken cancellationToken = default)
     {
-        var json = await _settingsProvider.GetValueAsync(SettingKey, cancellationToken).ConfigureAwait(false);
-
-        UserSettingsDto? dto;
-        try
-        {
-            dto = string.IsNullOrEmpty(json) ? null : JsonSerializer.Deserialize<UserSettingsDto>(json);
-        }
-        catch (JsonException)
-        {
-            // A corrupted stored value (e.g. a torn write) degrades to
-            // the documented first-run defaults — this method's own
-            // "never an exception" contract (`TD-60`).
-            dto = null;
-        }
+        var dto = await _document.LoadAsync(cancellationToken).ConfigureAwait(false);
 
         if (dto is null)
             return;

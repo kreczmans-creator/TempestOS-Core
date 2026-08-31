@@ -1,3 +1,4 @@
+using Tempest.Core.Logging;
 using System.Text.Json;
 using Tempest.Core.Settings;
 
@@ -37,22 +38,16 @@ public sealed class RecentObjectsState
     public const int Capacity = 15;
 
     private readonly ISettingsProvider _settingsProvider;
+    private readonly SettingsDocument<List<RecentObjectEntry>> _document;
     private readonly List<RecentObjectEntry> _entries = [];
 
     /// <summary>Initialises a new instance of the <see cref="RecentObjectsState"/> class, initially empty.</summary>
-    public RecentObjectsState(ISettingsProvider settingsProvider)
+    public RecentObjectsState(ISettingsProvider settingsProvider, ILogger? logger = null)
     {
         ArgumentNullException.ThrowIfNull(settingsProvider);
         _settingsProvider = settingsProvider;
 
-        try
-        {
-            _settingsProvider.RegisterDefinition(new SettingDefinition(SettingKey, "Recent Objects", string.Empty));
-        }
-        catch (DuplicateSettingDefinitionException)
-        {
-            // Idempotent — mirrors UserSettings'/DesktopPanelUiState's own identical discipline.
-        }
+        _document = new SettingsDocument<List<RecentObjectEntry>>(settingsProvider, SettingKey, "Recent Objects", logger);
     }
 
     /// <summary>Gets every recorded entry, most recently opened first.</summary>
@@ -74,27 +69,13 @@ public sealed class RecentObjectsState
     /// <summary>Writes the current entries via <see cref="ISettingsProvider.SetValueAsync"/>.</summary>
     public async Task SaveAsync(CancellationToken cancellationToken = default)
     {
-        var json = JsonSerializer.Serialize(_entries);
-        await _settingsProvider.SetValueAsync(SettingKey, json, cancellationToken).ConfigureAwait(false);
+        await _document.SaveAsync(_entries, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>Reads persisted entries via <see cref="ISettingsProvider.GetValueAsync"/>. A missing/first-run value leaves the list empty — never an exception.</summary>
     public async Task LoadAsync(CancellationToken cancellationToken = default)
     {
-        var json = await _settingsProvider.GetValueAsync(SettingKey, cancellationToken).ConfigureAwait(false);
-
-        List<RecentObjectEntry>? entries;
-        try
-        {
-            entries = string.IsNullOrEmpty(json) ? null : JsonSerializer.Deserialize<List<RecentObjectEntry>>(json);
-        }
-        catch (JsonException)
-        {
-            // A corrupted stored value (e.g. a torn write) degrades to
-            // the documented first-run empty list — this method's own
-            // "never an exception" contract (`TD-60`).
-            entries = null;
-        }
+        var entries = await _document.LoadAsync(cancellationToken).ConfigureAwait(false);
 
         if (entries is null)
             return;

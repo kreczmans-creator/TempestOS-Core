@@ -112,7 +112,8 @@ public sealed class WorkspaceManager : IWorkspaceManager, IAsyncDisposable
             new(propertyInspector.Id, WorkspaceDockPosition.Right, 30, true),
         };
 
-        var state = new WorkspaceState(settingsProvider, defaultPlacements);
+        var stateLogger = (Tempest.Core.Logging.ILogger)services.GetService(typeof(Tempest.Core.Logging.ILogger));
+        var state = new WorkspaceState(settingsProvider, defaultPlacements, stateLogger);
         await state.LoadAsync(cancellationToken).ConfigureAwait(false);
 
         var selectionService = new SelectionService(eventBus, _context);

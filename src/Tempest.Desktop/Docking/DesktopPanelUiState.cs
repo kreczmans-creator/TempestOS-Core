@@ -1,3 +1,4 @@
+using Tempest.Core.Logging;
 using System.Text.Json;
 using Tempest.Core.Settings;
 
@@ -38,23 +39,15 @@ internal sealed class DesktopPanelUiState
     public const string SettingKey = "Workspace.Desktop.PanelUiState";
 
     private readonly ISettingsProvider _settingsProvider;
+    private readonly SettingsDocument<DesktopPanelUiStateDto> _document;
 
     /// <summary>Initialises a new instance of the <see cref="DesktopPanelUiState"/> class with every flag at its own documented default (nothing collapsed, everything pinned, Output hidden).</summary>
-    public DesktopPanelUiState(ISettingsProvider settingsProvider)
+    public DesktopPanelUiState(ISettingsProvider settingsProvider, ILogger? logger = null)
     {
         ArgumentNullException.ThrowIfNull(settingsProvider);
         _settingsProvider = settingsProvider;
 
-        try
-        {
-            _settingsProvider.RegisterDefinition(new SettingDefinition(SettingKey, "Workspace Desktop Panel UI State", string.Empty));
-        }
-        catch (DuplicateSettingDefinitionException)
-        {
-            // Already registered by a prior IWorkspaceManager.StartAsync call
-            // against the same ISettingsProvider instance (a restart) —
-            // idempotent, not an error (identical precedent, WorkspaceState).
-        }
+        _document = new SettingsDocument<DesktopPanelUiStateDto>(settingsProvider, SettingKey, "Workspace Desktop Panel UI State", logger);
     }
 
     /// <summary>Gets or sets whether the Project Explorer is currently Collapsed.</summary>
@@ -105,28 +98,13 @@ internal sealed class DesktopPanelUiState
     public async Task SaveAsync(CancellationToken cancellationToken = default)
     {
         var dto = new DesktopPanelUiStateDto(ExplorerCollapsed, ExplorerPinned, InspectorCollapsed, InspectorPinned, OutputVisible, OutputHeight, OutputCollapsed, OutputPinned, LastAppliedPreset, RibbonCollapsed, LayoutIsUserArranged);
-        var json = JsonSerializer.Serialize(dto);
-
-        await _settingsProvider.SetValueAsync(SettingKey, json, cancellationToken).ConfigureAwait(false);
+        await _document.SaveAsync(dto, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>Reads persisted state via <see cref="ISettingsProvider.GetValueAsync"/>. A missing/first-run value leaves every property at its own documented default — never an exception.</summary>
     public async Task LoadAsync(CancellationToken cancellationToken = default)
     {
-        var json = await _settingsProvider.GetValueAsync(SettingKey, cancellationToken).ConfigureAwait(false);
-
-        DesktopPanelUiStateDto? dto;
-        try
-        {
-            dto = string.IsNullOrEmpty(json) ? null : JsonSerializer.Deserialize<DesktopPanelUiStateDto>(json);
-        }
-        catch (JsonException)
-        {
-            // A corrupted stored value (e.g. a torn write) degrades to
-            // the documented first-run defaults — this method's own
-            // "never an exception" contract (`TD-60`).
-            dto = null;
-        }
+        var dto = await _document.LoadAsync(cancellationToken).ConfigureAwait(false);
 
         if (dto is null)
             return;
