@@ -3,6 +3,7 @@ using Tempest.App.Workspace.Verification;
 using Tempest.Core.Commands;
 using Tempest.Core.EngineeringDomain;
 
+using Tempest.Core.Verification;
 namespace Tempest.App.Workspace.Manufacturing;
 
 /// <summary>
@@ -115,35 +116,157 @@ public static class ManufacturingWorkspaceRegistration
         commandDispatcher.RegisterHandler<DuplicateManufacturingObjectCommand>(new DuplicateManufacturingObjectCommandHandler(domainContext, copyHandler));
         commandDispatcher.RegisterHandler<SetManufacturingObjectStatusCommand>(new SetManufacturingObjectStatusCommandHandler(domainContext));
 
+        // TD-77 Stage 3 — descriptor binding. Every binding below is a
+        // hand-written lambda closing over the same constructor the handler
+        // registered above already expects; nothing here dispatches, and
+        // nothing reaches a handler except through the registry's own
+        // CommandHandlerTable path. Kind restrictions are this discipline's
+        // own already-declared SupportedKinds, unchanged.
+        var boundKinds = SupportedKinds;
+
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
             id: "manufacturing.create", displayName: "Create Manufacturing Object", category: "Manufacturing",
-            description: "Creates a new Manufacturing Operation (incl. Routing/Supplier Operation via Classification), Work Instruction, or Inspection."));
+            description: "Creates a new Manufacturing Operation (incl. Routing/Supplier Operation via Classification), Work Instruction, or Inspection.")
+        {
+            // Kind is offered as this discipline's own already-declared
+            // SupportedKinds constant, defaulted to the Ribbon's own existing
+            // "ManufacturingOperation" default. A WorkInstruction/Inspection also
+            // needs an owning operation / a subject object, which no collected
+            // value can carry; asked for one, the factory reports its own precise
+            // reason through the normal handler path rather than failing silently.
+            Binding = new CommandBinding(
+                CommandContextRequirement.None,
+                (_, values) => new CreateManufacturingObjectCommand(
+                    WorkspaceCommandBindings.Canonical(boundKinds, values["kind"]), values["displayName"]),
+                [
+                    WorkspaceCommandBindings.Choice("kind", "Kind", boundKinds, ManufacturingObjectFactoryRegistry.ManufacturingOperationKind),
+                    WorkspaceCommandBindings.ObjectName("displayName", "Name"),
+                ]),
+        });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
             id: "manufacturing.rename", displayName: "Rename Manufacturing Object", category: "Manufacturing",
-            description: "Renames the selected Manufacturing object."));
+            description: "Renames the selected Manufacturing object.")
+        {
+            // Bound for the Palette and every other future Id-based consumer.
+            // The Ribbon still routes "rename"/"edit" to the Object Editor before
+            // it ever reads a binding (RibbonView's own verb branch).
+            Binding = new CommandBinding(
+                CommandContextRequirement.SelectedObject,
+                (context, values) => new RenameManufacturingObjectCommand(
+                    WorkspaceCommandBindings.Target(context).ObjectId, WorkspaceCommandBindings.Target(context).Kind, values["newDisplayName"]),
+                [WorkspaceCommandBindings.ObjectName("newDisplayName", "New name")],
+                boundKinds),
+        });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
             id: "manufacturing.edit", displayName: "Edit Manufacturing Object", category: "Manufacturing",
-            description: "Records a new content revision of the selected Manufacturing object."));
+            description: "Records a new content revision of the selected Manufacturing object.")
+        {
+            // ChangeSummary stays at the command's own optional default.
+            Binding = new CommandBinding(
+                CommandContextRequirement.SelectedObject,
+                (context, values) => new ReviseManufacturingObjectCommand(
+                    WorkspaceCommandBindings.Target(context).ObjectId, WorkspaceCommandBindings.Target(context).Kind, values["newContent"]),
+                [WorkspaceCommandBindings.Text("newContent", "New content")],
+                boundKinds),
+        });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
             id: "manufacturing.delete", displayName: "Delete Manufacturing Object", category: "Manufacturing",
-            description: "Soft-deletes the selected Manufacturing object."));
+            description: "Soft-deletes the selected Manufacturing object.")
+        {
+            // The confirmation is what keeps a soft-delete out of an unattended
+            // macro. Ribbon deletion is untouched: it never reaches a binding, and
+            // still clears selection on success through its own
+            // WorkspaceManager.DeleteObjectAsync path.
+            Binding = new CommandBinding(
+                CommandContextRequirement.SelectedObject,
+                (context, _) => new DeleteManufacturingObjectCommand(
+                    WorkspaceCommandBindings.Target(context).ObjectId, WorkspaceCommandBindings.Target(context).Kind),
+                appliesToKinds: boundKinds,
+                confirmationMessage: WorkspaceCommandBindings.DeleteConfirmation("Manufacturing object")),
+        });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
             id: "manufacturing.move", displayName: "Move Manufacturing Object", category: "Manufacturing",
-            description: "Reparents the selected Manufacturing object — for an Operation, this adds/removes it from a Routing's own sequence."));
+            description: "Reparents the selected Manufacturing object — for an Operation, this adds/removes it from a Routing's own sequence.")
+        {
+            Binding = CommandBinding.Unavailable(
+                WorkspaceCommandBindings.ObjectPickerRequired("Moving a Manufacturing object needs a destination parent chosen from the object tree")),
+        });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
             id: "manufacturing.copy", displayName: "Copy Manufacturing Object", category: "Manufacturing",
-            description: "Creates a copy of the selected object under a chosen target parent."));
+            description: "Creates a copy of the selected object under a chosen target parent.")
+        {
+            Binding = CommandBinding.Unavailable(
+                WorkspaceCommandBindings.ObjectPickerRequired("Copying a Manufacturing object needs a destination parent chosen from the object tree")),
+        });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
             id: "manufacturing.duplicate", displayName: "Duplicate Manufacturing Object", category: "Manufacturing",
-            description: "Creates a copy of the selected object under its own current parent."));
+            description: "Creates a copy of the selected object under its own current parent.")
+        {
+            Binding = new CommandBinding(
+                CommandContextRequirement.SelectedObject,
+                (context, _) => new DuplicateManufacturingObjectCommand(
+                    WorkspaceCommandBindings.Target(context).ObjectId, WorkspaceCommandBindings.Target(context).Kind),
+                appliesToKinds: boundKinds,
+                confirmationMessage: WorkspaceCommandBindings.DuplicateConfirmation("Manufacturing object")),
+        });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
             id: "manufacturing.release", displayName: "Release", category: "Manufacturing",
-            description: "Transitions the selected Manufacturing object's own status to Released (SetManufacturingObjectStatusCommand)."));
+            description: "Transitions the selected Manufacturing object's own status to Released (SetManufacturingObjectStatusCommand).")
+        {
+            Binding = StatusBinding(LifecycleState.Released, boundKinds),
+        });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
             id: "manufacturing.archive", displayName: "Archive", category: "Manufacturing",
-            description: "Transitions the selected Manufacturing object's own status to Archived, a terminal state (SetManufacturingObjectStatusCommand)."));
+            description: "Transitions the selected Manufacturing object's own status to Archived, a terminal state (SetManufacturingObjectStatusCommand).")
+        {
+            Binding = StatusBinding(LifecycleState.Archived, boundKinds),
+        });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
             id: "manufacturing.record-inspection-result", displayName: "Record Inspection Result", category: "Manufacturing",
-            description: "Records a real IVerificationRecord (Pass/Fail/Conditional) against the selected Inspection — dispatches Verification.RecordVerificationResultCommand directly, disclosed cross-Work-Package reuse."));
+            description: "Records a real IVerificationRecord (Pass/Fail/Conditional) against the selected Inspection — dispatches Verification.RecordVerificationResultCommand directly, disclosed cross-Work-Package reuse.")
+        {
+            // The disclosed cross-discipline reuse this class's own remarks
+            // already document, now expressed in a binding: this descriptor builds
+            // Verification's own RecordVerificationResultCommand directly, scoped
+            // to the "Inspection" Kind. The binding belongs to this descriptor, not
+            // to the command type — "verification.record-result" carries its own,
+            // independent binding scoped to its own Kind. Every optional collection
+            // stays at the command's own default, exactly as the Ribbon's and the
+            // Object Editor's own record-result paths already leave them.
+            Binding = new CommandBinding(
+                CommandContextRequirement.SelectedObject,
+                (context, values) => new RecordVerificationResultCommand(
+                    WorkspaceCommandBindings.Target(context).ObjectId,
+                    WorkspaceCommandBindings.Target(context).Kind,
+                    Enum.Parse<VerificationOutcome>(values["outcome"], ignoreCase: true),
+                    values["method"]),
+                [
+                    WorkspaceCommandBindings.EnumChoice<VerificationOutcome>("outcome", "Outcome"),
+                    // The default method value is written inline rather than
+                    // held as a named constant: "Inspection" is a canonically
+                    // owned vocabulary value (ManufacturingObjectFactoryRegistry's
+                    // own Inspection Kind), and ADR-0105 allows exactly one
+                    // named owner per value. The Ribbon's own prompt and the
+                    // Object Editor's own record-result path already spell
+                    // this default the same, literal way, for the same reason.
+                    WorkspaceCommandBindings.Required("method", "Method", "Inspection"),
+                ],
+                [ManufacturingObjectFactoryRegistry.InspectionKind]),
+        });
     }
+    /// <summary>
+    /// The one binding shape the two Manufacturing status transitions share
+    /// — <c>SetManufacturingObjectStatusCommand</c>'s own constructor,
+    /// closed over the fixed <see cref="LifecycleState"/> each descriptor
+    /// transitions to. Declares no parameter and no confirmation, which is
+    /// precisely what makes these two macro-eligible.
+    /// </summary>
+    private static CommandBinding StatusBinding(LifecycleState status, IReadOnlyList<string> appliesToKinds) =>
+        new(CommandContextRequirement.SelectedObject,
+            (context, _) => new SetManufacturingObjectStatusCommand(
+                WorkspaceCommandBindings.Target(context).ObjectId,
+                WorkspaceCommandBindings.Target(context).Kind,
+                status),
+            appliesToKinds: appliesToKinds);
+
 }

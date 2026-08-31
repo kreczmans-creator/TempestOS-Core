@@ -70,38 +70,165 @@ public static class VerificationWorkspaceRegistration
         commandDispatcher.RegisterHandler<SetVerificationActivityStatusCommand>(new SetVerificationActivityStatusCommandHandler(domainContext));
         commandDispatcher.RegisterHandler<RecordVerificationResultCommand>(new RecordVerificationResultCommandHandler(verificationService));
 
+        // TD-77 Stage 3 — descriptor binding. Every binding below is a
+        // hand-written lambda closing over the same constructor the handler
+        // registered above already expects; nothing here dispatches, and
+        // nothing reaches a handler except through the registry's own
+        // CommandHandlerTable path. Kind restrictions are this discipline's
+        // own already-declared SupportedKinds, unchanged.
+        var boundKinds = SupportedKinds;
+
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
             id: "verification.create", displayName: "Create Verification Activity", category: "Verification",
-            description: "Creates a new Verification Activity — a Verification Plan until a result is recorded."));
+            description: "Creates a new Verification Activity — a Verification Plan until a result is recorded.")
+        {
+            // Creating a Verification Activity genuinely means "verify the object I
+            // have selected": SubjectId is the current selection's own Id, never a
+            // fabricated one, which is why this Create — alone among the six —
+            // requires a selected object. Method keeps the Ribbon's and the Object
+            // Editor's own identical existing default; ParentId and InitialContent
+            // stay at the command's own optional defaults.
+            Binding = new CommandBinding(
+                CommandContextRequirement.SelectedObject,
+                (context, values) => new CreateVerificationActivityCommand(
+                    values["displayName"], WorkspaceCommandBindings.Target(context).ObjectId, values["method"]),
+                [
+                    WorkspaceCommandBindings.ObjectName("displayName", "Name"),
+                    // The default method value is written inline rather than
+                    // held as a named constant: "Inspection" is a canonically
+                    // owned vocabulary value (ManufacturingObjectFactoryRegistry's
+                    // own Inspection Kind), and ADR-0105 allows exactly one
+                    // named owner per value. The Ribbon's own prompt and the
+                    // Object Editor's own record-result path already spell
+                    // this default the same, literal way, for the same reason.
+                    WorkspaceCommandBindings.Required("method", "Method", "Inspection"),
+                ]),
+        });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
             id: "verification.rename", displayName: "Rename Verification Activity", category: "Verification",
-            description: "Renames the selected Verification Activity."));
+            description: "Renames the selected Verification Activity.")
+        {
+            // Bound for the Palette and every other future Id-based consumer.
+            // The Ribbon still routes "rename"/"edit" to the Object Editor before
+            // it ever reads a binding (RibbonView's own verb branch).
+            Binding = new CommandBinding(
+                CommandContextRequirement.SelectedObject,
+                (context, values) => new RenameVerificationActivityCommand(
+                    WorkspaceCommandBindings.Target(context).ObjectId, WorkspaceCommandBindings.Target(context).Kind, values["newDisplayName"]),
+                [WorkspaceCommandBindings.ObjectName("newDisplayName", "New name")],
+                boundKinds),
+        });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
             id: "verification.edit", displayName: "Edit Verification Activity", category: "Verification",
-            description: "Records a new content revision of the selected Verification Activity."));
+            description: "Records a new content revision of the selected Verification Activity.")
+        {
+            // ChangeSummary stays at the command's own optional default.
+            Binding = new CommandBinding(
+                CommandContextRequirement.SelectedObject,
+                (context, values) => new ReviseVerificationActivityCommand(
+                    WorkspaceCommandBindings.Target(context).ObjectId, WorkspaceCommandBindings.Target(context).Kind, values["newContent"]),
+                [WorkspaceCommandBindings.Text("newContent", "New content")],
+                boundKinds),
+        });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
             id: "verification.delete", displayName: "Delete Verification Activity", category: "Verification",
-            description: "Soft-deletes the selected Verification Activity."));
+            description: "Soft-deletes the selected Verification Activity.")
+        {
+            // The confirmation is what keeps a soft-delete out of an unattended
+            // macro. Ribbon deletion is untouched: it never reaches a binding, and
+            // still clears selection on success through its own
+            // WorkspaceManager.DeleteObjectAsync path.
+            Binding = new CommandBinding(
+                CommandContextRequirement.SelectedObject,
+                (context, _) => new DeleteVerificationActivityCommand(
+                    WorkspaceCommandBindings.Target(context).ObjectId, WorkspaceCommandBindings.Target(context).Kind),
+                appliesToKinds: boundKinds,
+                confirmationMessage: WorkspaceCommandBindings.DeleteConfirmation("Verification Activity")),
+        });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
             id: "verification.move", displayName: "Move Verification Activity", category: "Verification",
-            description: "Reparents the selected Verification Activity."));
+            description: "Reparents the selected Verification Activity.")
+        {
+            Binding = CommandBinding.Unavailable(
+                WorkspaceCommandBindings.ObjectPickerRequired("Moving a Verification Activity needs a destination parent chosen from the object tree")),
+        });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
             id: "verification.copy", displayName: "Copy Verification Activity", category: "Verification",
-            description: "Creates a copy of the selected object under a chosen target parent."));
+            description: "Creates a copy of the selected object under a chosen target parent.")
+        {
+            Binding = CommandBinding.Unavailable(
+                WorkspaceCommandBindings.ObjectPickerRequired("Copying a Verification Activity needs a destination parent chosen from the object tree")),
+        });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
             id: "verification.duplicate", displayName: "Duplicate Verification Activity", category: "Verification",
-            description: "Creates a copy of the selected object under its own current parent."));
+            description: "Creates a copy of the selected object under its own current parent.")
+        {
+            Binding = new CommandBinding(
+                CommandContextRequirement.SelectedObject,
+                (context, _) => new DuplicateVerificationActivityCommand(
+                    WorkspaceCommandBindings.Target(context).ObjectId, WorkspaceCommandBindings.Target(context).Kind),
+                appliesToKinds: boundKinds,
+                confirmationMessage: WorkspaceCommandBindings.DuplicateConfirmation("Verification Activity")),
+        });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
             id: "verification.record-result", displayName: "Record Verification Result", category: "Verification",
-            description: "Records a real IVerificationRecord (Pass/Fail/Conditional, criteria, evidence) against the selected Verification Activity — this Work Package's own realisation of Execute/Record Result/Attach Evidence together (ADR-0089)."));
+            description: "Records a real IVerificationRecord (Pass/Fail/Conditional, criteria, evidence) against the selected Verification Activity — this Work Package's own realisation of Execute/Record Result/Attach Evidence together (ADR-0089).")
+        {
+            // This discipline's own binding for RecordVerificationResultCommand,
+            // scoped to its own "VerificationActivity" Kind — independent of, and
+            // carrying different Kinds from, Manufacturing's own
+            // "manufacturing.record-inspection-result" binding over the same
+            // command type. A binding belongs to a descriptor, not to a command.
+            // Every optional collection (criteria, evidence, linked documents and
+            // calculation records, referenced materials) stays at the command's own
+            // default, exactly as the Object Editor's own record-result path
+            // already leaves them.
+            Binding = new CommandBinding(
+                CommandContextRequirement.SelectedObject,
+                (context, values) => new RecordVerificationResultCommand(
+                    WorkspaceCommandBindings.Target(context).ObjectId,
+                    WorkspaceCommandBindings.Target(context).Kind,
+                    Enum.Parse<VerificationOutcome>(values["outcome"], ignoreCase: true),
+                    values["method"]),
+                [
+                    WorkspaceCommandBindings.EnumChoice<VerificationOutcome>("outcome", "Outcome"),
+                    WorkspaceCommandBindings.Required("method", "Method", "Inspection"),
+                ],
+                boundKinds),
+        });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
             id: "verification.request-review", displayName: "Request Review", category: "Verification",
-            description: "Transitions the selected Verification Activity's own status to InReview (SetVerificationActivityStatusCommand)."));
+            description: "Transitions the selected Verification Activity's own status to InReview (SetVerificationActivityStatusCommand).")
+        {
+            Binding = StatusBinding(LifecycleState.InReview, boundKinds),
+        });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
             id: "verification.approve", displayName: "Approve Verification Activity", category: "Verification",
-            description: "Transitions the selected Verification Activity's own status to Approved (SetVerificationActivityStatusCommand)."));
+            description: "Transitions the selected Verification Activity's own status to Approved (SetVerificationActivityStatusCommand).")
+        {
+            Binding = StatusBinding(LifecycleState.Approved, boundKinds),
+        });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
             id: "verification.archive", displayName: "Archive Verification Activity", category: "Verification",
-            description: "Transitions the selected Verification Activity's own status to Archived, a terminal state (SetVerificationActivityStatusCommand)."));
+            description: "Transitions the selected Verification Activity's own status to Archived, a terminal state (SetVerificationActivityStatusCommand).")
+        {
+            Binding = StatusBinding(LifecycleState.Archived, boundKinds),
+        });
     }
+    /// <summary>
+    /// The one binding shape the three Verification status transitions
+    /// share — <c>SetVerificationActivityStatusCommand</c>'s own
+    /// constructor, closed over the fixed <see cref="LifecycleState"/> each
+    /// descriptor transitions to. Declares no parameter and no
+    /// confirmation, which is precisely what makes these three
+    /// macro-eligible.
+    /// </summary>
+    private static CommandBinding StatusBinding(LifecycleState status, IReadOnlyList<string> appliesToKinds) =>
+        new(CommandContextRequirement.SelectedObject,
+            (context, _) => new SetVerificationActivityStatusCommand(
+                WorkspaceCommandBindings.Target(context).ObjectId,
+                WorkspaceCommandBindings.Target(context).Kind,
+                status),
+            appliesToKinds: appliesToKinds);
+
 }
