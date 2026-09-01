@@ -55,13 +55,13 @@ dotnet build src/TempestOS.slnx --configuration Release --no-restore -p:TreatWar
 applies it, so a local build behaves as it always has while the gate stays
 the same gate.
 
-**2.3 Core tests** — 3,069 tests, ~30 seconds
+**2.3 Core tests** — 3,088 tests, ~30 seconds
 
 ```
 dotnet test tests/Tempest.Core.Tests/Tempest.Core.Tests.csproj --configuration Debug --no-build
 ```
 
-**2.4 Desktop tests** — 353 tests, ~3 minutes
+**2.4 Desktop tests** — 372 tests, ~3 minutes
 
 ```
 dotnet test tests/Tempest.Desktop.Tests/Tempest.Desktop.Tests.csproj --configuration Debug --no-build

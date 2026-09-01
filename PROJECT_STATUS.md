@@ -1,15 +1,25 @@
 # TempestOS — Project Status
 
-**Last Updated:** 2026-09-01 (`WP-Z3`, Programme Academy Retrospective
-Completion — following `WP-Z1`, Governance Correction, and `WP-Z2`,
-`TD-117`).
-**The `v0.13.x` train remains CLOSED. No release has been prepared, merged
-or tagged for the work described below.**
+**Last Updated:** 2026-09-01 (`WP-Z4`, Release Preparation — following
+`WP-Z1` Governance Correction, `WP-Z2` `TD-117`, and `WP-Z3` Academy
+retrospectives).
+**The `v0.13.x` train remains CLOSED. `v0.14.0` is IN PREPARATION: `VERSION`
+is bumped and the release documentation is written, but the work is NOT
+merged to `main`, NOT tagged, NOT published and NOT certified.**
 
-**Fifteen work packages are complete on
-`claude/stage-3-descriptor-binding-6wz401`**, each now with an Academy
-retrospective (`WP-Z3`). Twelve delivered the remediation programme —
-eleven of them plus `WP-REVIEW`:
+**`v0.14.0` — "Durability, Review Readiness & Command-Path Convergence"**
+is prepared on `claude/stage-3-descriptor-binding-6wz401`: **52 commits over
+the `v0.13.1` tag**, of which the sixteen Work Packages below are a
+minority. The rest is the engineering body of work that preceded them —
+durable object state and attachments (`ADR-0113`/`0114`), the workspace
+layout tree (`ADR-0095`), the document viewer (`ADR-0115`), production
+rehydration (`ADR-0116`), project tasks (`ADR-0117`), the Product Spine, and
+the removal of the demo harness the product shipped inside. See
+`docs/releases/v0.14.0/`.
+
+**Sixteen work packages are complete**, each with an Academy retrospective
+(`WP-Z3` wrote fifteen; `WP-Z4` wrote `WP 13.13.2`'s). Twelve delivered the
+remediation programme — eleven of them plus `WP-REVIEW`:
 `WP-C` (dead-code deletion), `WP-B1` (Kind eligibility invariant),
 `WP-D2` (persisted-JSON degrade-to-defaults), `WP-A1` (close the obsolete
 Id-only command path), `WP-H` (architectural invariant enforcement),
@@ -18,9 +28,10 @@ hygiene), `WP-B2` (`ADR-0118`), `WP-G` (`MainWindow` decomposition),
 `WP-A2` (the keyboard on the canonical command path), `WP-E`
 (async/threading hardening). Three governance work packages followed:
 `WP-Z1` (governance correction), `WP-Z2` (`TD-117`, the Undo/Redo
-UI-thread defect) and `WP-Z3` (this programme's fifteen Academy
-retrospectives). Tests **3,088 `Tempest.Core.Tests` + 372
-`Tempest.Desktop.Tests`**, Debug and Release, 0 warnings, 0 errors.
+UI-thread defect), `WP-Z3` (this programme's fifteen Academy
+retrospectives) and `WP-Z4` (release preparation). Tests **3,088
+`Tempest.Core.Tests` + 372 `Tempest.Desktop.Tests`** — 3,460 from 2,562 at
+`v0.13.1` — Debug and Release, 0 warnings, 0 errors.
 
 **The single load-bearing change is that no surface reaches the obsolete
 command path unintentionally any more.** `TD-77`'s binding contract had
@@ -3365,11 +3376,15 @@ project's own convention.
 
 ## Current Release
 
-**Corrected, `WP-Z1` (2026-09-01).** This field is stale. The last released
-version is **`v0.13.1`** — tagged, merged to `main`, and published with both
-assets. `VERSION` reads `0.13.1`. **No release is in preparation**: the
-remediation programme is complete but unreleased, and the next version has
-not been established or scaffolded. The `WP 13.12.2` correction below
+**Corrected, `WP-Z4` (2026-09-01).** This field is stale. The last
+*released* version is **`v0.13.1`** — tagged, merged to `main`, and
+published with both assets. **`v0.14.0` is IN PREPARATION**: `VERSION` reads
+`0.14.0` and `docs/releases/v0.14.0/` holds the Release Notes, Work Package
+inventory and Engineering Release Report, but **no tag exists, no merge to
+`main` has occurred, and nothing has been published or certified**.
+
+**Previously corrected, `WP-Z1` (2026-09-01).** The last released version
+was **`v0.13.1`**; no release was then in preparation. The `WP 13.12.2` correction below
 (which described `v0.13.0` as in progress with `VERSION` at `0.12.0`) is
 historical, and is retained, not deleted.
 
@@ -3418,11 +3433,12 @@ Experience") before that; `v0.4.0` ("Platform Foundation") before that.
 
 ## Current Work Package
 
-**Corrected, `WP-Z3` (2026-09-01).** This field is stale. The current Work
-Package is **`WP-Z3` — Programme Academy Retrospective Completion**, now
-complete: fifteen retrospectives written, indexed and registered.
-`WP-Z1` (Governance Correction) and `WP-Z2` (`TD-117`) preceded it.
-Release preparation has not begun. The `WP 13.12.2` correction below is historical, and is retained,
+**Corrected, `WP-Z4` (2026-09-01).** This field is stale. The current Work
+Package is **`WP-Z4` — Release Preparation**, now complete: `VERSION`
+bumped to `0.14.0`, `docs/releases/v0.14.0/` written, the Release Register
+row added as *in preparation*, and `WP 13.13.2`'s retrospective supplied.
+`WP-Z1`, `WP-Z2` and `WP-Z3` preceded it. **The merge, tag and release have
+not been performed.** The `WP 13.12.2` correction below is historical, and is retained,
 not deleted, per this file's own retention convention. The authoritative
 current state is always the `**Last Updated:**` block at the top of this
 file.
@@ -6752,7 +6768,7 @@ Experience phase is now complete.
 
 ## Repository Metrics
 
-**Corrected, `WP-Z1` (2026-09-01); figures advanced `WP-Z2` and `WP-Z3`.** The table below is stale — its figures
+**Corrected, `WP-Z1` (2026-09-01); figures advanced `WP-Z2`, `WP-Z3` and `WP-Z4`.** The table below is stale — its figures
 were last advanced by `WP 10.2A` (`v0.10.0`) and drifted across every
 release since. Re-derived directly from the repository at `e4bc3ee`:
 
@@ -6761,7 +6777,7 @@ release since. Re-derived directly from the repository at `e4bc3ee`:
 | Automated tests | **3,460** — `Tempest.Core.Tests` 3,088 + `Tempest.Desktop.Tests` 372, Debug and Release, 0 failures, 0 warnings, `-p:TreatWarningsAsErrors=true` |
 | ADRs | **119** (`ADR-0001`–`ADR-0119`, no gaps) — `ADR-0118` added by `WP-B2`, `ADR-0119` by `WP-Z2` |
 | Rejected Designs | **45** (`RD-0001`–`RD-0045`) |
-| Academy articles | **231** (plus `Academy Index.md`; 232 `.md` files in total — the count `governance-healthcheck.ps1` reports is 231, excluding the index it checks against), of which **157** are Work Package retrospectives. **The programme's own fifteen were written by `WP-Z3`**, closing the Engineering Governance §6 gap the pre-release audit found; the figure previously read "eleven are owed", which undercounted — see the `WP-Z3` retrospective for the reconciliation |
+| Academy articles | **232** (plus `Academy Index.md`; 233 `.md` files in total — the count `governance-healthcheck.ps1` reports is 232, excluding the index it checks against), of which **158** are Work Package retrospectives. **The programme's own fifteen were written by `WP-Z3`**, closing the Engineering Governance §6 gap the pre-release audit found; the figure previously read "eleven are owed", which undercounted — see the `WP-Z3` retrospective for the reconciliation |
 | Governance registers | **27** registers, **38** governance documents in `docs/governance/` |
 | Architecture documents | **29** under `docs/architecture/` |
 | Technical debt | **118** tracked (36 Resolved, 6 Closed, 73 Open, 3 Partially resolved) plus **26** accepted trade-offs |
