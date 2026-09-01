@@ -1,4 +1,3 @@
-using System.Globalization;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Tempest.App.Projects;
@@ -83,12 +82,12 @@ public sealed class MainWindow : Window
     private readonly ContentControl _moduleHost = new();
     private readonly Control _engineeringSurface;
     private readonly IProjectDirectory _projectDirectory;
-    private readonly IProjectTaskService _projectTasks;
-    private readonly IProjectTaskRegister _projectTaskRegister;
-    private readonly IProjectGovernanceService _projectGovernance;
-    private readonly IProjectGovernanceRegister _projectGovernanceRegister;
-    private readonly IProjectMilestoneService _projectMilestones;
-    private readonly IProjectMilestoneRegister _projectMilestoneRegister;
+
+    // The open project's own tasks/milestones/deliverables and its
+    // risks/issues/decisions (`ADR-0103` collaborators, `WP-G`) — the CRUD
+    // interaction logic `TD-109` named, moved out of this class verbatim.
+    private readonly ProjectDeliveryCoordinator _projectDelivery;
+    private readonly ProjectGovernanceCoordinator _projectGovernanceCoordinator;
 
     // WP 10.6A — Command Execution & Productivity Experience.
     private readonly CommandHistoryLog _commandHistory = new();
@@ -454,12 +453,20 @@ public sealed class MainWindow : Window
         _projectWorkspace = new ProjectWorkspaceView(
             _projectContext, host.ProjectDirectory!, _navigator, host.ProjectDocuments!, host.ProjectRequirements!,
             host.ProjectTasks!, host.ProjectGovernance!, host.ProjectMilestones!);
-        _projectTasks = host.ProjectTaskWorkflow!;
-        _projectTaskRegister = host.ProjectTasks!;
-        _projectGovernance = host.ProjectGovernanceWorkflow!;
-        _projectGovernanceRegister = host.ProjectGovernance!;
-        _projectMilestones = host.ProjectMilestoneWorkflow!;
-        _projectMilestoneRegister = host.ProjectMilestones!;
+
+        // The two project-CRUD collaborators (`WP-G`, `ADR-0103`). They own
+        // the interaction logic this class used to hold inline; the wiring
+        // below still says which surface event runs which operation, which
+        // is the composition root's own job and stays here.
+        _projectDelivery = new ProjectDeliveryCoordinator(
+            _projectContext, host.ProjectTaskWorkflow!, host.ProjectTasks!,
+            host.ProjectMilestoneWorkflow!, host.ProjectMilestones!,
+            _projectWorkspace, _inputDialog, _toastHost, RecordHistory);
+
+        _projectGovernanceCoordinator = new ProjectGovernanceCoordinator(
+            _projectContext, host.ProjectGovernanceWorkflow!, host.ProjectGovernance!,
+            _projectWorkspace, _inputDialog, _toastHost, RecordHistory);
+
         _navigationRail = new GlobalNavigationRail(_navigator);
 
         _navigationRail.NavigationRequested += () => _ = RenderCurrentModuleAsync();
@@ -480,26 +487,26 @@ public sealed class MainWindow : Window
         // IProjectTaskService and re-renders. Same shape as the Documents
         // area's own Open button, and for the same reason: the surface
         // that asked stays free of both the domain and the layout.
-        _projectWorkspace.CreateTaskRequested += () => _ = CreateProjectTaskAsync();
-        _projectWorkspace.AssignTaskToMeRequested += taskId => _ = AssignProjectTaskToMeAsync(taskId);
-        _projectWorkspace.TaskWorkStateChangeRequested += (taskId, target) => _ = ChangeProjectTaskWorkStateAsync(taskId, target);
-        _projectWorkspace.CreateRiskRequested += () => _ = CreateProjectRiskAsync();
-        _projectWorkspace.CreateIssueRequested += () => _ = CreateProjectIssueAsync();
-        _projectWorkspace.CreateDecisionRequested += () => _ = CreateProjectDecisionAsync();
-        _projectWorkspace.RiskStatusChangeRequested += (id, target) => _ = ChangeProjectRiskStatusAsync(id, target);
-        _projectWorkspace.IssueStatusChangeRequested += (id, target) => _ = ChangeProjectIssueStatusAsync(id, target);
-        _projectWorkspace.DecisionStatusChangeRequested += (id, target) => _ = DecideProjectDecisionAsync(id, target);
-        _projectWorkspace.OwnRiskRequested += id => _ = OwnProjectRiskAsync(id);
-        _projectWorkspace.AssignIssueToMeRequested += id => _ = AssignProjectIssueToMeAsync(id);
-        _projectWorkspace.ScoreRiskRequested += id => _ = ScoreProjectRiskAsync(id);
-        _projectWorkspace.EditRiskRequested += id => _ = EditProjectGovernanceObjectAsync(id, GovernanceFamily.Risk);
-        _projectWorkspace.EditIssueRequested += id => _ = EditProjectGovernanceObjectAsync(id, GovernanceFamily.Issue);
-        _projectWorkspace.EditDecisionRequested += id => _ = EditProjectGovernanceObjectAsync(id, GovernanceFamily.Decision);
-        _projectWorkspace.CreateMilestoneRequested += () => _ = CreateProjectMilestoneAsync();
-        _projectWorkspace.AddDeliverableRequested += id => _ = AddProjectDeliverableAsync(id);
-        _projectWorkspace.EditMilestoneRequested += id => _ = EditProjectMilestoneAsync(id);
-        _projectWorkspace.EditTaskRequested += taskId => _ = EditProjectTaskAsync(taskId);
-        _projectWorkspace.TaskDueDateChangeRequested += taskId => _ = ChangeProjectTaskDueDateAsync(taskId);
+        _projectWorkspace.CreateTaskRequested += () => _ = _projectDelivery.CreateProjectTaskAsync();
+        _projectWorkspace.AssignTaskToMeRequested += taskId => _ = _projectDelivery.AssignProjectTaskToMeAsync(taskId);
+        _projectWorkspace.TaskWorkStateChangeRequested += (taskId, target) => _ = _projectDelivery.ChangeProjectTaskWorkStateAsync(taskId, target);
+        _projectWorkspace.CreateRiskRequested += () => _ = _projectGovernanceCoordinator.CreateProjectRiskAsync();
+        _projectWorkspace.CreateIssueRequested += () => _ = _projectGovernanceCoordinator.CreateProjectIssueAsync();
+        _projectWorkspace.CreateDecisionRequested += () => _ = _projectGovernanceCoordinator.CreateProjectDecisionAsync();
+        _projectWorkspace.RiskStatusChangeRequested += (id, target) => _ = _projectGovernanceCoordinator.ChangeProjectRiskStatusAsync(id, target);
+        _projectWorkspace.IssueStatusChangeRequested += (id, target) => _ = _projectGovernanceCoordinator.ChangeProjectIssueStatusAsync(id, target);
+        _projectWorkspace.DecisionStatusChangeRequested += (id, target) => _ = _projectGovernanceCoordinator.DecideProjectDecisionAsync(id, target);
+        _projectWorkspace.OwnRiskRequested += id => _ = _projectGovernanceCoordinator.OwnProjectRiskAsync(id);
+        _projectWorkspace.AssignIssueToMeRequested += id => _ = _projectGovernanceCoordinator.AssignProjectIssueToMeAsync(id);
+        _projectWorkspace.ScoreRiskRequested += id => _ = _projectGovernanceCoordinator.ScoreProjectRiskAsync(id);
+        _projectWorkspace.EditRiskRequested += id => _ = _projectGovernanceCoordinator.EditProjectGovernanceObjectAsync(id, GovernanceFamily.Risk);
+        _projectWorkspace.EditIssueRequested += id => _ = _projectGovernanceCoordinator.EditProjectGovernanceObjectAsync(id, GovernanceFamily.Issue);
+        _projectWorkspace.EditDecisionRequested += id => _ = _projectGovernanceCoordinator.EditProjectGovernanceObjectAsync(id, GovernanceFamily.Decision);
+        _projectWorkspace.CreateMilestoneRequested += () => _ = _projectDelivery.CreateProjectMilestoneAsync();
+        _projectWorkspace.AddDeliverableRequested += id => _ = _projectDelivery.AddProjectDeliverableAsync(id);
+        _projectWorkspace.EditMilestoneRequested += id => _ = _projectDelivery.EditProjectMilestoneAsync(id);
+        _projectWorkspace.EditTaskRequested += taskId => _ = _projectDelivery.EditProjectTaskAsync(taskId);
+        _projectWorkspace.TaskDueDateChangeRequested += taskId => _ = _projectDelivery.ChangeProjectTaskDueDateAsync(taskId);
 
         // `TD-104`: rehydration that could not recover everything is a
         // fact about the user's own engineering work, so it is said out
@@ -1030,548 +1037,6 @@ public sealed class MainWindow : Window
         _currentAreaTitle = title;
         _statusBar.SetArea(_currentAreaTitle);
         _ribbon.SelectTabForArea(title);
-    }
-
-    // ================================================================
-    // Project task workflow (`TD-81`)
-    // ================================================================
-
-    /// <summary>Creates a task in the open project, prompting for its title.</summary>
-    /// <remarks>
-    /// The identifier is derived from the count of tasks already in the
-    /// project, matching how <c>ProjectBrowserView</c> suggests a project
-    /// identifier. It is a suggestion the user never has to think about,
-    /// not an identity scheme — the task's own Guid is its identity.
-    /// </remarks>
-    public async Task CreateProjectTaskAsync(CancellationToken cancellationToken = default)
-    {
-        if (_projectContext.Current is not { } project)
-            return;
-
-        var title = await _inputDialog.PromptAsync(
-            "New Task",
-            $"What needs doing in {project.Label}?",
-            validate: value => value.Length > 200 ? "Title is too long (200 characters max)." : null).ConfigureAwait(true);
-
-        if (title is null)
-            return;
-
-        var existing = await _projectTaskRegister.ListAsync(project.Id, cancellationToken).ConfigureAwait(true);
-        var identifier = $"TSK-{existing.Count + 1:D3}";
-
-        try
-        {
-            await _projectTasks.CreateAsync(project.Id, identifier, title, cancellationToken: cancellationToken).ConfigureAwait(true);
-            _toastHost.Show($"Created {identifier} — {title}.", FeedbackSeverity.Success);
-            RecordHistory($"Created task {identifier} in {project.Label}.");
-        }
-        catch (ProjectNotFoundException ex)
-        {
-            _toastHost.Show(ex.Message, FeedbackSeverity.Error);
-        }
-
-        await _projectWorkspace.RefreshAsync().ConfigureAwait(true);
-    }
-
-    /// <summary>Sets a milestone in the open project, prompting for its title and target date.</summary>
-    /// <remarks>
-    /// The date is typed rather than picked, and parsed strictly as
-    /// <c>yyyy-MM-dd</c>: a milestone whose date was silently reinterpreted
-    /// by the machine's own locale would be worse than one the user had to
-    /// retype. A date that will not parse is refused by the dialog's own
-    /// validation rather than being guessed at.
-    /// </remarks>
-    public async Task CreateProjectMilestoneAsync(CancellationToken cancellationToken = default)
-    {
-        if (_projectContext.Current is not { } project)
-            return;
-
-        var title = await _inputDialog.PromptAsync(
-            "Set Milestone",
-            $"What is {project.Label} working to?",
-            validate: value => value.Length > 200 ? "Title is too long (200 characters max)." : null).ConfigureAwait(true);
-
-        if (title is null)
-            return;
-
-        var typedDate = await _inputDialog.PromptAsync(
-            "Milestone Target Date",
-            "When is it due? (yyyy-MM-dd)",
-            validate: value => ParseTargetDate(value) is null ? "Enter a date as yyyy-MM-dd, for example 2026-11-30." : null).ConfigureAwait(true);
-
-        if (typedDate is null)
-            return;
-
-        if (ParseTargetDate(typedDate) is not { } targetDate)
-            return;
-
-        var existing = await _projectMilestoneRegister.ListAsync(project.Id, cancellationToken).ConfigureAwait(true);
-        var identifier = $"MS-{existing.Count + 1:D3}";
-
-        try
-        {
-            await _projectMilestones.CreateMilestoneAsync(project.Id, identifier, title, targetDate, cancellationToken: cancellationToken).ConfigureAwait(true);
-            _toastHost.Show($"Set {identifier} — {title}.", FeedbackSeverity.Success);
-            RecordHistory($"Set milestone {identifier} in {project.Label}.");
-        }
-        catch (ProjectNotFoundException ex)
-        {
-            _toastHost.Show(ex.Message, FeedbackSeverity.Error);
-        }
-
-        await _projectWorkspace.RefreshAsync().ConfigureAwait(true);
-    }
-
-    /// <summary>Adds a deliverable due against a milestone.</summary>
-    public async Task AddProjectDeliverableAsync(Guid milestoneId, CancellationToken cancellationToken = default)
-    {
-        if (_projectContext.Current is not { } project)
-            return;
-
-        var title = await _inputDialog.PromptAsync(
-            "Add Deliverable",
-            "What has to be delivered for this milestone?",
-            validate: value => value.Length > 200 ? "Title is too long (200 characters max)." : null).ConfigureAwait(true);
-
-        if (title is null)
-            return;
-
-        var existing = await _projectMilestoneRegister.ListAsync(project.Id, cancellationToken).ConfigureAwait(true);
-        var identifier = $"DEL-{existing.Sum(m => m.Deliverables.Count) + 1:D3}";
-
-        try
-        {
-            await _projectMilestones.CreateDeliverableAsync(project.Id, milestoneId, identifier, title, cancellationToken: cancellationToken).ConfigureAwait(true);
-            _toastHost.Show($"Added {identifier} — {title}.", FeedbackSeverity.Success);
-            RecordHistory($"Added deliverable {identifier} in {project.Label}.");
-        }
-        catch (MilestoneNotFoundException ex)
-        {
-            _toastHost.Show(ex.Message, FeedbackSeverity.Error);
-        }
-        catch (ProjectNotFoundException ex)
-        {
-            _toastHost.Show(ex.Message, FeedbackSeverity.Error);
-        }
-
-        await _projectWorkspace.RefreshAsync().ConfigureAwait(true);
-    }
-
-    /// <summary>Retitles a milestone.</summary>
-    public async Task EditProjectMilestoneAsync(Guid milestoneId, CancellationToken cancellationToken = default)
-    {
-        var title = await _inputDialog.PromptAsync(
-            "Edit Milestone",
-            "What should it be called?",
-            validate: value => value.Length > 200 ? "Title is too long (200 characters max)." : null).ConfigureAwait(true);
-
-        if (title is null)
-            return;
-
-        try
-        {
-            await _projectMilestones.EditMilestoneAsync(milestoneId, title, cancellationToken: cancellationToken).ConfigureAwait(true);
-            _toastHost.Show("Milestone renamed.", FeedbackSeverity.Success);
-        }
-        catch (MilestoneNotFoundException ex)
-        {
-            _toastHost.Show(ex.Message, FeedbackSeverity.Error);
-        }
-
-        await _projectWorkspace.RefreshAsync().ConfigureAwait(true);
-    }
-
-    /// <summary>Parses a typed milestone date, or <see langword="null"/> when it is not a valid <c>yyyy-MM-dd</c>.</summary>
-    /// <remarks>
-    /// Invariant culture and an exact format, deliberately. The date a
-    /// project commits to must mean the same thing on every machine that
-    /// opens the file.
-    /// </remarks>
-    internal static DateTimeOffset? ParseTargetDate(string? value) =>
-        DateTime.TryParseExact(
-            value?.Trim(),
-            "yyyy-MM-dd",
-            System.Globalization.CultureInfo.InvariantCulture,
-            System.Globalization.DateTimeStyles.None,
-            out var parsed)
-            ? new DateTimeOffset(parsed, TimeSpan.Zero)
-            : null;
-
-    /// <summary>Raises a risk in the open project, prompting for its title.</summary>
-    /// <remarks>
-    /// The identifier is derived from how many risks the project already
-    /// has, matching how tasks and projects suggest theirs. It is a
-    /// suggestion, not an identity scheme — the risk's own Guid is its
-    /// identity.
-    /// </remarks>
-    public async Task CreateProjectRiskAsync(CancellationToken cancellationToken = default)
-    {
-        if (_projectContext.Current is not { } project)
-            return;
-
-        var title = await _inputDialog.PromptAsync(
-            "Raise Risk",
-            $"What might go wrong in {project.Label}?",
-            validate: value => value.Length > 200 ? "Title is too long (200 characters max)." : null).ConfigureAwait(true);
-
-        if (title is null)
-            return;
-
-        var existing = await _projectGovernanceRegister.ListRisksAsync(project.Id, cancellationToken).ConfigureAwait(true);
-        var identifier = $"RSK-{existing.Count + 1:D3}";
-
-        try
-        {
-            await _projectGovernance.CreateRiskAsync(project.Id, identifier, title, cancellationToken: cancellationToken).ConfigureAwait(true);
-            _toastHost.Show($"Raised {identifier} — {title}.", FeedbackSeverity.Success);
-            RecordHistory($"Raised risk {identifier} in {project.Label}.");
-        }
-        catch (ProjectNotFoundException ex)
-        {
-            _toastHost.Show(ex.Message, FeedbackSeverity.Error);
-        }
-
-        await _projectWorkspace.RefreshAsync().ConfigureAwait(true);
-    }
-
-    /// <summary>Raises an issue in the open project, prompting for its title.</summary>
-    public async Task CreateProjectIssueAsync(CancellationToken cancellationToken = default)
-    {
-        if (_projectContext.Current is not { } project)
-            return;
-
-        var title = await _inputDialog.PromptAsync(
-            "Raise Issue",
-            $"What has gone wrong in {project.Label}?",
-            validate: value => value.Length > 200 ? "Title is too long (200 characters max)." : null).ConfigureAwait(true);
-
-        if (title is null)
-            return;
-
-        var existing = await _projectGovernanceRegister.ListIssuesAsync(project.Id, cancellationToken).ConfigureAwait(true);
-        var identifier = $"ISS-{existing.Count + 1:D3}";
-
-        try
-        {
-            await _projectGovernance.CreateIssueAsync(project.Id, identifier, title, cancellationToken: cancellationToken).ConfigureAwait(true);
-            _toastHost.Show($"Raised {identifier} — {title}.", FeedbackSeverity.Success);
-            RecordHistory($"Raised issue {identifier} in {project.Label}.");
-        }
-        catch (ProjectNotFoundException ex)
-        {
-            _toastHost.Show(ex.Message, FeedbackSeverity.Error);
-        }
-
-        await _projectWorkspace.RefreshAsync().ConfigureAwait(true);
-    }
-
-    /// <summary>Proposes a decision in the open project, prompting for its title and rationale.</summary>
-    /// <remarks>
-    /// The rationale is prompted for rather than defaulted, because a
-    /// decision log whose reasons are auto-filled records nothing worth
-    /// keeping. Cancelling the second prompt abandons the decision.
-    /// </remarks>
-    public async Task CreateProjectDecisionAsync(CancellationToken cancellationToken = default)
-    {
-        if (_projectContext.Current is not { } project)
-            return;
-
-        var title = await _inputDialog.PromptAsync(
-            "Propose Decision",
-            $"What is being decided in {project.Label}?",
-            validate: value => value.Length > 200 ? "Title is too long (200 characters max)." : null).ConfigureAwait(true);
-
-        if (title is null)
-            return;
-
-        var rationale = await _inputDialog.PromptAsync(
-            "Decision Rationale",
-            "Why is this the right call?",
-            validate: value => value.Length > 1000 ? "Rationale is too long (1000 characters max)." : null).ConfigureAwait(true);
-
-        if (rationale is null)
-            return;
-
-        var existing = await _projectGovernanceRegister.ListDecisionsAsync(project.Id, cancellationToken).ConfigureAwait(true);
-        var identifier = $"DEC-{existing.Count + 1:D3}";
-
-        try
-        {
-            await _projectGovernance.CreateDecisionAsync(project.Id, identifier, title, rationale, cancellationToken: cancellationToken).ConfigureAwait(true);
-            _toastHost.Show($"Proposed {identifier} — {title}.", FeedbackSeverity.Success);
-            RecordHistory($"Proposed decision {identifier} in {project.Label}.");
-        }
-        catch (ProjectNotFoundException ex)
-        {
-            _toastHost.Show(ex.Message, FeedbackSeverity.Error);
-        }
-
-        await _projectWorkspace.RefreshAsync().ConfigureAwait(true);
-    }
-
-    /// <summary>Moves a risk to <paramref name="target"/>, reporting a refused transition rather than swallowing it.</summary>
-    public async Task ChangeProjectRiskStatusAsync(Guid riskId, RiskStatus target, CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            await _projectGovernance.ChangeRiskStatusAsync(riskId, target, cancellationToken).ConfigureAwait(true);
-            _toastHost.Show($"Risk moved to {ProjectRisksView.Describe(target)}.", FeedbackSeverity.Success);
-            RecordHistory($"Risk moved to {ProjectRisksView.Describe(target)}.");
-        }
-        catch (InvalidRiskStatusTransitionException ex)
-        {
-            _toastHost.Show(ex.Message, FeedbackSeverity.Error);
-        }
-        catch (GovernanceObjectNotFoundException ex)
-        {
-            _toastHost.Show(ex.Message, FeedbackSeverity.Error);
-        }
-
-        await _projectWorkspace.RefreshAsync().ConfigureAwait(true);
-    }
-
-    /// <summary>Moves an issue to <paramref name="target"/>.</summary>
-    public async Task ChangeProjectIssueStatusAsync(Guid issueId, IssueStatus target, CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            await _projectGovernance.ChangeIssueStatusAsync(issueId, target, cancellationToken).ConfigureAwait(true);
-            _toastHost.Show($"Issue moved to {ProjectRisksView.Describe(target)}.", FeedbackSeverity.Success);
-            RecordHistory($"Issue moved to {ProjectRisksView.Describe(target)}.");
-        }
-        catch (InvalidIssueStatusTransitionException ex)
-        {
-            _toastHost.Show(ex.Message, FeedbackSeverity.Error);
-        }
-        catch (GovernanceObjectNotFoundException ex)
-        {
-            _toastHost.Show(ex.Message, FeedbackSeverity.Error);
-        }
-
-        await _projectWorkspace.RefreshAsync().ConfigureAwait(true);
-    }
-
-    /// <summary>Moves a decision to <paramref name="target"/>, recording the current principal as the decider (`ADR-0116`).</summary>
-    public async Task DecideProjectDecisionAsync(Guid decisionId, DecisionStatus target, CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            await _projectGovernance.DecideAsync(decisionId, target, cancellationToken).ConfigureAwait(true);
-            _toastHost.Show($"Decision moved to {ProjectRisksView.Describe(target)}.", FeedbackSeverity.Success);
-            RecordHistory($"Decision moved to {ProjectRisksView.Describe(target)}.");
-        }
-        catch (InvalidDecisionStatusTransitionException ex)
-        {
-            _toastHost.Show(ex.Message, FeedbackSeverity.Error);
-        }
-        catch (GovernanceObjectNotFoundException ex)
-        {
-            _toastHost.Show(ex.Message, FeedbackSeverity.Error);
-        }
-
-        await _projectWorkspace.RefreshAsync().ConfigureAwait(true);
-    }
-
-    /// <summary>Gives a risk to whoever is using the application right now (`ADR-0116`).</summary>
-    public async Task OwnProjectRiskAsync(Guid riskId, CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            await _projectGovernance.AssignRiskToCurrentPrincipalAsync(riskId, cancellationToken).ConfigureAwait(true);
-            _toastHost.Show("Risk assigned to you.", FeedbackSeverity.Success);
-        }
-        catch (GovernanceObjectNotFoundException ex)
-        {
-            _toastHost.Show(ex.Message, FeedbackSeverity.Error);
-        }
-
-        await _projectWorkspace.RefreshAsync().ConfigureAwait(true);
-    }
-
-    /// <summary>Assigns an issue to whoever is using the application right now (`ADR-0116`).</summary>
-    public async Task AssignProjectIssueToMeAsync(Guid issueId, CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            await _projectGovernance.AssignIssueToCurrentPrincipalAsync(issueId, cancellationToken).ConfigureAwait(true);
-            _toastHost.Show("Issue assigned to you.", FeedbackSeverity.Success);
-        }
-        catch (GovernanceObjectNotFoundException ex)
-        {
-            _toastHost.Show(ex.Message, FeedbackSeverity.Error);
-        }
-
-        await _projectWorkspace.RefreshAsync().ConfigureAwait(true);
-    }
-
-    /// <summary>Scores a risk, prompting for likelihood and then severity.</summary>
-    /// <remarks>
-    /// Both axes are prompted for together, because the domain sets them
-    /// together: a risk carrying a fresh severity against a stale likelihood
-    /// is worse than one that is honestly unscored.
-    /// </remarks>
-    public async Task ScoreProjectRiskAsync(Guid riskId, CancellationToken cancellationToken = default)
-    {
-        var likelihood = await _inputDialog.PromptAsync(
-            "Score Risk",
-            "How likely is it? (your team's own scale)",
-            validate: value => value.Length > 60 ? "Too long (60 characters max)." : null).ConfigureAwait(true);
-
-        if (likelihood is null)
-            return;
-
-        var severity = await _inputDialog.PromptAsync(
-            "Score Risk",
-            "How bad would it be? (your team's own scale)",
-            validate: value => value.Length > 60 ? "Too long (60 characters max)." : null).ConfigureAwait(true);
-
-        if (severity is null)
-            return;
-
-        try
-        {
-            await _projectGovernance.ScoreRiskAsync(riskId, likelihood, severity, cancellationToken).ConfigureAwait(true);
-            _toastHost.Show("Risk scored.", FeedbackSeverity.Success);
-        }
-        catch (GovernanceObjectNotFoundException ex)
-        {
-            _toastHost.Show(ex.Message, FeedbackSeverity.Error);
-        }
-
-        await _projectWorkspace.RefreshAsync().ConfigureAwait(true);
-    }
-
-    /// <summary>Retitles a risk, issue or decision.</summary>
-    public async Task EditProjectGovernanceObjectAsync(Guid objectId, GovernanceFamily family, CancellationToken cancellationToken = default)
-    {
-        var title = await _inputDialog.PromptAsync(
-            $"Edit {family}",
-            "What should it be called?",
-            validate: value => value.Length > 200 ? "Title is too long (200 characters max)." : null).ConfigureAwait(true);
-
-        if (title is null)
-            return;
-
-        try
-        {
-            switch (family)
-            {
-                case GovernanceFamily.Risk:
-                    await _projectGovernance.EditRiskAsync(objectId, title, cancellationToken: cancellationToken).ConfigureAwait(true);
-                    break;
-                case GovernanceFamily.Issue:
-                    await _projectGovernance.EditIssueAsync(objectId, title, cancellationToken: cancellationToken).ConfigureAwait(true);
-                    break;
-                default:
-                    await _projectGovernance.EditDecisionAsync(objectId, title, cancellationToken: cancellationToken).ConfigureAwait(true);
-                    break;
-            }
-
-            _toastHost.Show($"{family} renamed.", FeedbackSeverity.Success);
-        }
-        catch (GovernanceObjectNotFoundException ex)
-        {
-            _toastHost.Show(ex.Message, FeedbackSeverity.Error);
-        }
-
-        await _projectWorkspace.RefreshAsync().ConfigureAwait(true);
-    }
-
-    /// <summary>Assigns a task to whoever is using the application right now (`ADR-0116`).</summary>
-    public async Task AssignProjectTaskToMeAsync(Guid taskId, CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            await _projectTasks.AssignToCurrentPrincipalAsync(taskId, cancellationToken).ConfigureAwait(true);
-            _toastHost.Show("Task assigned to you.", FeedbackSeverity.Success);
-        }
-        catch (TaskNotFoundException ex)
-        {
-            _toastHost.Show(ex.Message, FeedbackSeverity.Error);
-        }
-
-        await _projectWorkspace.RefreshAsync().ConfigureAwait(true);
-    }
-
-    /// <summary>Moves a task to <paramref name="target"/>, reporting a refused transition rather than swallowing it.</summary>
-    public async Task ChangeProjectTaskWorkStateAsync(Guid taskId, TaskWorkState target, CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            await _projectTasks.ChangeWorkStateAsync(taskId, target, cancellationToken).ConfigureAwait(true);
-            _toastHost.Show($"Task moved to {ProjectTasksView.Describe(target)}.", FeedbackSeverity.Success);
-            RecordHistory($"Task moved to {ProjectTasksView.Describe(target)}.");
-        }
-        catch (InvalidTaskWorkStateTransitionException ex)
-        {
-            _toastHost.Show(ex.Message, FeedbackSeverity.Error);
-        }
-        catch (TaskNotFoundException ex)
-        {
-            _toastHost.Show(ex.Message, FeedbackSeverity.Error);
-        }
-
-        await _projectWorkspace.RefreshAsync().ConfigureAwait(true);
-    }
-
-    /// <summary>Retitles a task.</summary>
-    public async Task EditProjectTaskAsync(Guid taskId, CancellationToken cancellationToken = default)
-    {
-        var title = await _inputDialog.PromptAsync(
-            "Edit Task",
-            "New title:",
-            validate: value => value.Length > 200 ? "Title is too long (200 characters max)." : null).ConfigureAwait(true);
-
-        if (title is null)
-            return;
-
-        try
-        {
-            await _projectTasks.EditAsync(taskId, title, cancellationToken: cancellationToken).ConfigureAwait(true);
-            _toastHost.Show("Task updated.", FeedbackSeverity.Success);
-        }
-        catch (TaskNotFoundException ex)
-        {
-            _toastHost.Show(ex.Message, FeedbackSeverity.Error);
-        }
-
-        await _projectWorkspace.RefreshAsync().ConfigureAwait(true);
-    }
-
-    /// <summary>Sets or clears a task's due date.</summary>
-    /// <remarks>
-    /// An empty answer clears the date rather than being rejected: "this
-    /// no longer has a deadline" is a real edit, and a dialog that can
-    /// only ever add a date leaves the user unable to undo a mistake.
-    /// </remarks>
-    public async Task ChangeProjectTaskDueDateAsync(Guid taskId, CancellationToken cancellationToken = default)
-    {
-        var answer = await _inputDialog.PromptAsync(
-            "Due Date",
-            "Due date (yyyy-MM-dd), or blank to clear:",
-            validate: value =>
-                string.IsNullOrWhiteSpace(value) || DateTimeOffset.TryParse(value, CultureInfo.InvariantCulture, out _)
-                    ? null
-                    : "Enter a date as yyyy-MM-dd, or leave it blank.").ConfigureAwait(true);
-
-        if (answer is null)
-            return;
-
-        DateTimeOffset? dueDate = string.IsNullOrWhiteSpace(answer)
-            ? null
-            : DateTimeOffset.Parse(answer, CultureInfo.InvariantCulture);
-
-        try
-        {
-            await _projectTasks.SetDueDateAsync(taskId, dueDate, cancellationToken).ConfigureAwait(true);
-            _toastHost.Show(dueDate is null ? "Due date cleared." : $"Due {dueDate:yyyy-MM-dd}.", FeedbackSeverity.Success);
-        }
-        catch (TaskNotFoundException ex)
-        {
-            _toastHost.Show(ex.Message, FeedbackSeverity.Error);
-        }
-
-        await _projectWorkspace.RefreshAsync().ConfigureAwait(true);
     }
 
 }

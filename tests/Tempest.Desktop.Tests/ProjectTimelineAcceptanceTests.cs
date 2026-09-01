@@ -4,6 +4,7 @@ using Avalonia.LogicalTree;
 using Tempest.App.Projects;
 using Tempest.App.Shell;
 using Tempest.Core.EngineeringDomain;
+using Tempest.Desktop.Composition;
 using Tempest.Desktop.Views;
 
 namespace Tempest.Desktop.Tests;
@@ -154,13 +155,13 @@ public sealed class ProjectTimelineAcceptanceTests
         // invariant culture rather than guessed at.
         Assert.Equal(
             new DateTimeOffset(2026, 11, 30, 0, 0, 0, TimeSpan.Zero),
-            MainWindow.ParseTargetDate("2026-11-30"));
+            ProjectDeliveryCoordinator.ParseTargetDate("2026-11-30"));
 
-        Assert.Null(MainWindow.ParseTargetDate("30/11/2026"));
-        Assert.Null(MainWindow.ParseTargetDate("November 30"));
-        Assert.Null(MainWindow.ParseTargetDate("2026-13-01"));
-        Assert.Null(MainWindow.ParseTargetDate(""));
-        Assert.Null(MainWindow.ParseTargetDate(null));
+        Assert.Null(ProjectDeliveryCoordinator.ParseTargetDate("30/11/2026"));
+        Assert.Null(ProjectDeliveryCoordinator.ParseTargetDate("November 30"));
+        Assert.Null(ProjectDeliveryCoordinator.ParseTargetDate("2026-13-01"));
+        Assert.Null(ProjectDeliveryCoordinator.ParseTargetDate(""));
+        Assert.Null(ProjectDeliveryCoordinator.ParseTargetDate(null));
     }
 
     [AvaloniaFact]
