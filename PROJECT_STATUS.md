@@ -1,7 +1,8 @@
 # TempestOS — Project Status
 
-**Last Updated:** 2026-09-01 (`WP-Z1`, Governance Correction — closing the
-pre-release audit of the eleven-work-package remediation programme).
+**Last Updated:** 2026-09-01 (`WP-Z2`, `TD-117` Undo/Redo threading —
+following `WP-Z1`, Governance Correction, which closed the pre-release
+audit of the eleven-work-package remediation programme).
 **The `v0.13.x` train remains CLOSED. No release has been prepared, merged
 or tagged for the work described below.**
 
@@ -29,8 +30,13 @@ under `AT-10`, not a leftover.
 persistence on every property access — one refresh performed 1,140 reads
 where 104 suffice — and, while testing the async favourite path, that
 `UndoRedoStack` raises `Changed` on whatever thread an undone action
-resumed on, so Ctrl+D then Ctrl+Z produces an error dialog (`TD-117`,
-pre-existing, shipped in `v0.13.1`, not yet fixed).
+resumed on, so the Quick Access Toolbar refresh touched Avalonia state
+from the thread pool. **`TD-117` is now fixed (`WP-Z2`, `ADR-0119`)**: the
+Desktop subscriber marshals, and `Tempest.App` is untouched. Two
+corrections came with the fix — the defect dated to `v0.10.0`, not
+`v0.13.1`, and its real symptom was an Undo that silently half-completed
+(data changed; no toast, no refresh, stale buttons) rather than the error
+dialog first reported, which was GC-timed and often never seen.
 
 **Known before physical review:** `TD-116` — the Desktop application does
 not launch on Linux/X11 (a `Tmds.DBus.Protocol` security pin against
@@ -3407,11 +3413,11 @@ Experience") before that; `v0.4.0` ("Platform Foundation") before that.
 
 ## Current Work Package
 
-**Corrected, `WP-Z1` (2026-09-01).** This field is stale. The current Work
-Package is **`WP-Z1` — Governance Correction**, closing the pre-release
-audit's findings against the eleven-work-package remediation programme.
-`WP-Z2` (`TD-117`) and `WP-Z3` (the eleven missing Academy retrospectives)
-follow. The `WP 13.12.2` correction below is historical, and is retained,
+**Corrected, `WP-Z2` (2026-09-01).** This field is stale. The current Work
+Package is **`WP-Z2` — `TD-117`, the Undo/Redo UI-thread defect**, now
+complete. `WP-Z1` (Governance Correction) preceded it; `WP-Z3` (the eleven
+missing Academy retrospectives) follows, after which release preparation
+begins. The `WP 13.12.2` correction below is historical, and is retained,
 not deleted, per this file's own retention convention. The authoritative
 current state is always the `**Last Updated:**` block at the top of this
 file.
@@ -6741,19 +6747,19 @@ Experience phase is now complete.
 
 ## Repository Metrics
 
-**Corrected, `WP-Z1` (2026-09-01).** The table below is stale — its figures
+**Corrected, `WP-Z1` (2026-09-01); figures advanced `WP-Z2`.** The table below is stale — its figures
 were last advanced by `WP 10.2A` (`v0.10.0`) and drifted across every
 release since. Re-derived directly from the repository at `e4bc3ee`:
 
 | Metric | Value (verified `WP-Z1`, 2026-09-01) |
 |---|---|
-| Automated tests | **3,458** — `Tempest.Core.Tests` 3,088 + `Tempest.Desktop.Tests` 370, Debug and Release, 0 failures, 0 warnings, `-p:TreatWarningsAsErrors=true` |
-| ADRs | **118** (`ADR-0001`–`ADR-0118`, no gaps) — `ADR-0118` added by `WP-B2` |
+| Automated tests | **3,460** — `Tempest.Core.Tests` 3,088 + `Tempest.Desktop.Tests` 372, Debug and Release, 0 failures, 0 warnings, `-p:TreatWarningsAsErrors=true` |
+| ADRs | **119** (`ADR-0001`–`ADR-0119`, no gaps) — `ADR-0118` added by `WP-B2`, `ADR-0119` by `WP-Z2` |
 | Rejected Designs | **45** (`RD-0001`–`RD-0045`) |
 | Academy articles | **216** (plus `Academy Index.md`; 217 `.md` files in total — the count `governance-healthcheck.ps1` reports is 216, excluding the index it checks against), of which **142** are Work Package retrospectives — **eleven are owed** for the remediation programme and are `WP-Z3`'s subject |
 | Governance registers | **27** registers, **38** governance documents in `docs/governance/` |
 | Architecture documents | **29** under `docs/architecture/` |
-| Technical debt | **118** tracked (35 Resolved, 6 Closed, 74 Open, 3 Partially resolved) plus **26** accepted trade-offs |
+| Technical debt | **118** tracked (36 Resolved, 6 Closed, 73 Open, 3 Partially resolved) plus **26** accepted trade-offs |
 
 Only the metrics above were re-derived. The stale table that follows is
 retained, not deleted, and a full historical re-derivation of this file's

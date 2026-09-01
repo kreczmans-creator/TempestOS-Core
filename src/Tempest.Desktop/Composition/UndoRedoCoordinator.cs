@@ -1,4 +1,5 @@
 using Avalonia.Controls;
+using Avalonia.Threading;
 using Tempest.App.Workspace;
 using Tempest.Desktop.Theming;
 using Tempest.Desktop.Views;
@@ -84,8 +85,49 @@ internal sealed class UndoRedoCoordinator
         Stack.Changed += RefreshButtons;
     }
 
-    /// <summary>Refreshes <see cref="UndoButton"/>/<see cref="RedoButton"/>'s own enablement/tooltip from <see cref="Stack"/>'s own real, current state.</summary>
+    /// <summary>
+    /// Refreshes <see cref="UndoButton"/>/<see cref="RedoButton"/>'s own
+    /// enablement/tooltip from <see cref="Stack"/>'s own real, current
+    /// state — on the UI thread, whichever thread raised
+    /// <see cref="IUndoRedoStack.Changed"/> (`TD-117`, `ADR-0119`).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Why this marshals.</b> <see cref="UndoRedoStack.UndoAsync"/> awaits
+    /// the undone action with <c>ConfigureAwait(false)</c> — correct for a
+    /// <c>Tempest.App</c> type, which knows nothing of a dispatcher and must
+    /// not — and then raises <c>Changed</c> on whatever thread that
+    /// continuation landed on. An action that genuinely yields lands on the
+    /// thread pool, and both real ones do: the favourite toggle writes a
+    /// file, and the Object Editor's rename undo dispatches through the
+    /// document store. Setting <c>Button.IsEnabled</c> from
+    /// there throws <see cref="InvalidOperationException"/> out of
+    /// <c>Changed</c>, which faulted the fire-and-forget undo and left the
+    /// data changed with no toast, no status bar, no refresh and stale
+    /// buttons.
+    /// </para>
+    /// <para>
+    /// <b>Why the fast path is not decoration.</b> <c>Record</c> is
+    /// synchronous and raises <c>Changed</c> on its caller's thread, which is
+    /// always the UI thread; callers rely on the buttons being correct the
+    /// instant it returns. Posting unconditionally would make that
+    /// asynchronous and break them. <see cref="Dispatcher.CheckAccess"/>
+    /// keeps the synchronous case exactly as it was and marshals only the
+    /// case that was broken — the same shape
+    /// <c>PlatformNotificationToastBridge</c> and <c>ThemeService</c> already
+    /// use for the identical problem.
+    /// </para>
+    /// </remarks>
     private void RefreshButtons()
+    {
+        if (Dispatcher.UIThread.CheckAccess())
+            RefreshButtonsCore();
+        else
+            Dispatcher.UIThread.Post(RefreshButtonsCore);
+    }
+
+    /// <summary>The refresh itself — always executed on the UI thread, never called directly except through <see cref="RefreshButtons"/>.</summary>
+    private void RefreshButtonsCore()
     {
         UndoButton.IsEnabled = Stack.CanUndo;
         RedoButton.IsEnabled = Stack.CanRedo;
