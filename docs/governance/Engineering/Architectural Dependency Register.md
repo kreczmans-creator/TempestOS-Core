@@ -112,6 +112,23 @@ Modules — the same direction any consumer already depends in, never the
 reverse. **Verified** by direct inspection of every Module Register/Event
 Catalogue entry's own dependency list.
 
+**Enforcement, `WP-H` (2026-09-01).** Until now the project-reference
+direction was held by the compiler alone, which is not the same thing as
+holding the rule: the compiler enforces whatever graph the `.csproj` files
+declare, and adding an upward reference makes more code compile, not less,
+so there is no failing behaviour to observe. `Tempest.Core.Tests`'s own
+`Architecture/DependencyDirectionTests` now asserts the graph itself —
+`Tempest.Core` declares no project reference at all, `Tempest.App` declares
+`Tempest.Core` alone, `Tempest.Desktop` declares `Tempest.App` alone and
+reaches Core through it, and no Avalonia package reaches Core or App — and
+then re-checks the same facts against what the built assemblies actually
+bind, so a reference arriving transitively or through a props file is caught
+too. No dependency-analysis framework was introduced; the test reads the
+project files and `Assembly.GetReferencedAssemblies()`. The samples half of
+this direction was already enforced by
+`Tempest.Core.Tests.Workspace.SampleSeparationTests`, which is retained
+unchanged.
+
 ## Cross-Reference Check
 
 Every layer classification above is consistent with

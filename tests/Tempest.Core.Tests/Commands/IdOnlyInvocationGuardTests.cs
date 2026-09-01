@@ -182,4 +182,67 @@ public class IdOnlyInvocationGuardTests
 
         Assert.DoesNotContain(CodeLines(mainWindow), IdOnlyCall.IsMatch);
     }
+
+    /// <summary>
+    /// WP-H — the REST entry above is sanctioned on a premise, and this is
+    /// the premise: no shipped code maps an HTTP route onto a command.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>The decision this protects.</b> <c>AT-10</c> records that the REST
+    /// transport threads nothing from a request into the invocation — no
+    /// body, no query string — so a mapped route dispatches its command's
+    /// parameterless <c>CreateDefault</c> instance. That is correct for the
+    /// two sample routes that exist, both in <c>Tempest.Samples</c>, which
+    /// the shipped Desktop does not reference.
+    /// </para>
+    /// <para>
+    /// <b>The failure this catches.</b> A real discipline command is mapped
+    /// to a route. It has no <c>CreateDefault</c> — none of the 74 do — so
+    /// the endpoint answers every request with a <c>CommandException</c>,
+    /// and the fix is not in the mapping but in the transport. Mapping one
+    /// is the trigger for closing <c>AT-10</c>, and this is where that gets
+    /// said.
+    /// </para>
+    /// <para>
+    /// <b>Why a behavioural test would not catch it.</b> The transport is
+    /// live — it is discovered and started by
+    /// <c>HostedServiceDiscoveryService</c> scanning the current AppDomain —
+    /// and every existing endpoint test passes, because the sample commands
+    /// it maps do carry <c>CreateDefault</c>. A newly mapped discipline
+    /// command breaks only that route, only at runtime, and only for a
+    /// caller the test suite does not have.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void NoShippedAssembly_MapsAnHttpRouteOntoACommand()
+    {
+        var callers = new List<string>();
+
+        foreach (var (relativePath, source) in ProductionSources())
+        {
+            // The registry declares and implements MapCommand; the sample
+            // harness is the sanctioned demonstration of it and ships with
+            // nothing (SampleSeparationTests proves the Desktop excludes it).
+            if (relativePath.StartsWith("src/Samples/", StringComparison.Ordinal)
+                || relativePath is "src/Tempest.Core/Api/IApiEndpointRegistry.cs"
+                or "src/Tempest.Core/Api/ApiEndpointRegistry.cs")
+            {
+                continue;
+            }
+
+            foreach (var line in CodeLines(source))
+            {
+                if (line.Contains(".MapCommand(", StringComparison.Ordinal))
+                    callers.Add($"{relativePath}: {line}");
+            }
+        }
+
+        Assert.True(
+            callers.Count == 0,
+            "Production code now maps an HTTP route onto a command. The REST transport has no request-parameter\n"
+            + "binding (AT-10), so the route will dispatch the command's parameterless CreateDefault instance —\n"
+            + "which no production discipline command has. Close AT-10 before mapping one.\n\n"
+            + string.Join("\n", callers));
+    }
 }
