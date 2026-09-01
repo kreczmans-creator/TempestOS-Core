@@ -1,4 +1,5 @@
 using Tempest.Desktop.Input;
+using static Tempest.Desktop.Tests.DesktopTestHelpers;
 
 namespace Tempest.Desktop.Tests;
 
@@ -44,23 +45,6 @@ namespace Tempest.Desktop.Tests;
 /// </remarks>
 public sealed class DormantKeyboardBindingTests
 {
-    private static readonly string RepositoryRoot = FindRepositoryRoot();
-
-    private static string FindRepositoryRoot()
-    {
-        var directory = new DirectoryInfo(AppContext.BaseDirectory);
-
-        while (directory is not null)
-        {
-            if (File.Exists(Path.Combine(directory.FullName, "global.json")))
-                return directory.FullName;
-
-            directory = directory.Parent;
-        }
-
-        throw new InvalidOperationException($"Could not locate the repository root above '{AppContext.BaseDirectory}'.");
-    }
-
     [Fact]
     public void NoProductionCode_BindsAGestureToACommandId()
     {

@@ -178,16 +178,59 @@ public class DocumentsWorkspaceIntegrationTests
         await manager.ShutdownAsync();
     }
 
+    /// <summary>
+    /// Every Documents command the registry offers, named — `WP-F` (`F-11`).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// This asserted a bare count until `WP-F`. A count tells you a discipline
+    /// changed and never which command appeared or vanished, and the same
+    /// number was restated in five other files, so adding one command broke
+    /// tests that had nothing to do with it. The set below fails naming the
+    /// offending Id, and adding a command means adding its Id here — once,
+    /// deliberately.
+    /// </para>
+    /// <para>
+    /// The canonical 74/56/18 reconciliation that gives these numbers their
+    /// arithmetic meaning lives in <c>CommandDescriptorBindingTests</c> and is
+    /// deliberately not repeated here.
+    /// </para>
+    /// </remarks>
     [Fact]
-    public async Task CommandRegistry_ListsAllElevenDocumentsCommands()
+    public async Task CommandRegistry_ListsEveryDocumentsCommand_ById()
     {
         using var temp = new TempDirectory();
         var (_, manager, host) = await StartAsync(temp.Path);
         var commandRegistry = (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
 
-        var documentsCommands = commandRegistry.Items.Where(d => d.Category == "Documents").ToList();
+        string[] expected =
+        [
+            "documents.approve",
+            "documents.attach",
+            "documents.copy",
+            "documents.create",
+            "documents.delete",
+            "documents.duplicate",
+            "documents.edit",
+            "documents.move",
+            "documents.release",
+            "documents.rename",
+            "documents.request-review",
+        ];
 
-        Assert.Equal(11, documentsCommands.Count);
+        var registered = commandRegistry.Items
+            .Where(d => d.Category == "Documents")
+            .Select(d => d.Id)
+            .ToHashSet(StringComparer.Ordinal);
+
+        var unexpected = registered.Except(expected, StringComparer.Ordinal).OrderBy(id => id, StringComparer.Ordinal).ToList();
+        var missing = expected.Except(registered, StringComparer.Ordinal).OrderBy(id => id, StringComparer.Ordinal).ToList();
+
+        Assert.True(
+            unexpected.Count == 0 && missing.Count == 0,
+            $"The Documents command set changed.\n"
+            + $"  Registered but not declared here: {string.Join(", ", unexpected)}\n"
+            + $"  Declared here but not registered: {string.Join(", ", missing)}");
 
         await manager.ShutdownAsync();
     }

@@ -1,5 +1,6 @@
 using System.Reflection;
 using System.Text.RegularExpressions;
+using static Tempest.Desktop.Tests.DesktopTestHelpers;
 
 namespace Tempest.Desktop.Tests;
 
@@ -99,8 +100,6 @@ public sealed class EngineeringVocabularyConsistencyTests
         typeof(Tempest.App.Workspace.Documents.DocumentObjectFactoryRegistry),
         typeof(Tempest.Desktop.MainWindow),
     ];
-
-    private static readonly string RepositoryRoot = FindRepositoryRoot();
     private static readonly string RegisterPath = Path.Combine(RepositoryRoot, "docs", "governance", "Engineering", "Engineering Vocabulary Register.md");
 
     private readonly record struct VocabularyEntry(string Vocabulary, string Value, string TypeName, string FieldName);
@@ -298,20 +297,4 @@ public sealed class EngineeringVocabularyConsistencyTests
             .FirstOrDefault(t => t is not null);
 
     // ---- Repository root discovery (mirrors Tempest.Core.Tests.Templates.RepositoryPaths) ----
-
-    private static string FindRepositoryRoot()
-    {
-        var directory = new DirectoryInfo(AppContext.BaseDirectory);
-
-        while (directory is not null)
-        {
-            if (File.Exists(Path.Combine(directory.FullName, "global.json")))
-                return directory.FullName;
-
-            directory = directory.Parent;
-        }
-
-        throw new InvalidOperationException(
-            $"Could not locate the repository root (global.json) above '{AppContext.BaseDirectory}'.");
-    }
 }

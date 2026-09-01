@@ -158,16 +158,59 @@ public class VerificationWorkspaceIntegrationTests
         await manager.ShutdownAsync();
     }
 
+    /// <summary>
+    /// Every Verification command the registry offers, named — `WP-F` (`F-11`).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// This asserted a bare count until `WP-F`. A count tells you a discipline
+    /// changed and never which command appeared or vanished, and the same
+    /// number was restated in five other files, so adding one command broke
+    /// tests that had nothing to do with it. The set below fails naming the
+    /// offending Id, and adding a command means adding its Id here — once,
+    /// deliberately.
+    /// </para>
+    /// <para>
+    /// The canonical 74/56/18 reconciliation that gives these numbers their
+    /// arithmetic meaning lives in <c>CommandDescriptorBindingTests</c> and is
+    /// deliberately not repeated here.
+    /// </para>
+    /// </remarks>
     [Fact]
-    public async Task CommandRegistry_ListsAllElevenVerificationCommands()
+    public async Task CommandRegistry_ListsEveryVerificationCommand_ById()
     {
         using var temp = new TempDirectory();
         var (_, manager, host) = await StartAsync(temp.Path);
         var commandRegistry = (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
 
-        var verificationCommands = commandRegistry.Items.Where(d => d.Category == "Verification").ToList();
+        string[] expected =
+        [
+            "verification.approve",
+            "verification.archive",
+            "verification.copy",
+            "verification.create",
+            "verification.delete",
+            "verification.duplicate",
+            "verification.edit",
+            "verification.move",
+            "verification.record-result",
+            "verification.rename",
+            "verification.request-review",
+        ];
 
-        Assert.Equal(11, verificationCommands.Count);
+        var registered = commandRegistry.Items
+            .Where(d => d.Category == "Verification")
+            .Select(d => d.Id)
+            .ToHashSet(StringComparer.Ordinal);
+
+        var unexpected = registered.Except(expected, StringComparer.Ordinal).OrderBy(id => id, StringComparer.Ordinal).ToList();
+        var missing = expected.Except(registered, StringComparer.Ordinal).OrderBy(id => id, StringComparer.Ordinal).ToList();
+
+        Assert.True(
+            unexpected.Count == 0 && missing.Count == 0,
+            $"The Verification command set changed.\n"
+            + $"  Registered but not declared here: {string.Join(", ", unexpected)}\n"
+            + $"  Declared here but not registered: {string.Join(", ", missing)}");
 
         await manager.ShutdownAsync();
     }

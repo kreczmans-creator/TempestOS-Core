@@ -8,6 +8,7 @@ using Tempest.Desktop.Docking;
 using Tempest.Desktop.Views;
 using Tempest.Samples;
 using Tempest.App.Workspace.Mechanical;
+using static Tempest.Desktop.Tests.DesktopTestHelpers;
 
 namespace Tempest.Desktop.Tests;
 
@@ -272,14 +273,6 @@ public sealed class MainWindowCompositionTests
             await host.DisposeAsync();
         }
     }
-
-    private static T GetPrivateField<T>(object instance, string fieldName)
-    {
-        var field = instance.GetType().GetField(fieldName, BindingFlags.NonPublic | BindingFlags.Instance)
-            ?? throw new InvalidOperationException($"Field '{fieldName}' not found on {instance.GetType().Name}.");
-        return (T)field.GetValue(instance)!;
-    }
-
     private static async Task<ProjectExplorerNode?> FindFirstObjectNodeAsync(IProjectExplorer explorer, IReadOnlyList<ProjectExplorerNode> nodes)
     {
         foreach (var node in nodes)

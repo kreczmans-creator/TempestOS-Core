@@ -15,6 +15,7 @@ using Tempest.App.Workspace.Documents;
 using Tempest.App.Workspace.Manufacturing;
 using Tempest.App.Workspace.Mechanical;
 using Tempest.App.Workspace.Verification;
+using static Tempest.Desktop.Tests.DesktopTestHelpers;
 
 namespace Tempest.Desktop.Tests;
 
@@ -575,14 +576,6 @@ public sealed class FeatureCompletionTests
         var del = (Action<Guid, string, Guid?>?)field.GetValue(explorerView);
         del?.Invoke(id, kind, newParentId);
     }
-
-    private static T GetPrivateField<T>(object instance, string fieldName)
-    {
-        var field = instance.GetType().GetField(fieldName, BindingFlags.NonPublic | BindingFlags.Instance)
-            ?? throw new InvalidOperationException($"Field '{fieldName}' not found on {instance.GetType().Name}.");
-        return (T)field.GetValue(instance)!;
-    }
-
     private static async Task<ProjectExplorerNode?> FindFirstObjectNodeAsync(IProjectExplorer explorer, IReadOnlyList<ProjectExplorerNode> nodes)
     {
         foreach (var node in nodes)

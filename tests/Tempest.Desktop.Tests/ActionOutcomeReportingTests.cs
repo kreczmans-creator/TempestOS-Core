@@ -8,6 +8,7 @@ using Tempest.Desktop.Composition;
 using Tempest.Desktop.History;
 using Tempest.Desktop.Theming;
 using Tempest.Desktop.Views;
+using static Tempest.Desktop.Tests.DesktopTestHelpers;
 
 namespace Tempest.Desktop.Tests;
 
@@ -492,7 +493,7 @@ public sealed class ActionOutcomeReportingTests
 
     private static IReadOnlyList<string> CodeLines(string relativePath) =>
     [
-        .. File.ReadAllLines(Path.Combine(RepositoryRoot(), relativePath.Replace('/', Path.DirectorySeparatorChar)))
+        .. File.ReadAllLines(Path.Combine(RepositoryRoot, relativePath.Replace('/', Path.DirectorySeparatorChar)))
             .Select(line => line.Trim())
             .Where(line => !line.StartsWith("//", StringComparison.Ordinal)
                            && !line.StartsWith("///", StringComparison.Ordinal)
@@ -508,75 +509,5 @@ public sealed class ActionOutcomeReportingTests
         var handler = (Action<string, ActionOutcome>?)field.GetValue(view);
         Assert.NotNull(handler);
         handler!(message, outcome);
-    }
-
-    private static async Task<Tempest.App.Workspace.ProjectExplorerNode> SelectFirstAsync(IWorkspace workspace, string areaId, string kind)
-    {
-        await workspace.Navigation.SwitchAreaAsync(areaId);
-        var node = await FindAsync(await workspace.ProjectExplorer.GetRootNodesAsync(), workspace, kind);
-        Assert.NotNull(node);
-        await workspace.Selection.SelectAsync(node!.Id, node.Kind!);
-
-        return node;
-    }
-
-    private static async Task<Tempest.App.Workspace.ProjectExplorerNode?> FindAsync(
-        IReadOnlyList<Tempest.App.Workspace.ProjectExplorerNode> nodes, IWorkspace workspace, string kind)
-    {
-        foreach (var node in nodes)
-        {
-            if (node.NodeType == Tempest.App.Workspace.ProjectExplorerNodeType.Object && node.Kind == kind)
-                return node;
-
-            if (node.HasChildren
-                && await FindAsync(await workspace.ProjectExplorer.GetChildrenAsync(node.Id), workspace, kind) is { } found)
-            {
-                return found;
-            }
-        }
-
-        return null;
-    }
-
-    /// <summary>
-    /// Scoped to the command's own discipline tab — several disciplines
-    /// register a command with the same DisplayName, so a window-wide search
-    /// is ambiguous. The same shape <c>SurfaceCommandIntegrationTests</c>
-    /// already uses.
-    /// </summary>
-    private static Button FindButton(RibbonView ribbon, ICommandRegistry registry, string commandId)
-    {
-        var descriptor = registry.Items.Single(d => d.Id == commandId);
-        var tab = ((TabControl)ribbon.Content!).Items.OfType<TabItem>().Single(t => Equals(t.Tag, descriptor.Category));
-
-        return ((Control)tab.Content!).GetLogicalDescendants()
-            .OfType<Button>()
-            .First(b => b.GetLogicalDescendants().OfType<TextBlock>().Any(t => t.Text == descriptor.DisplayName));
-    }
-
-    private static void Click(RibbonView ribbon, ICommandRegistry registry, string commandId) =>
-        FindButton(ribbon, registry, commandId)
-            .RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
-
-    private static T GetPrivateField<T>(object instance, string fieldName)
-    {
-        var field = instance.GetType().GetField(fieldName, BindingFlags.NonPublic | BindingFlags.Instance)
-            ?? throw new InvalidOperationException($"Field '{fieldName}' not found on {instance.GetType().Name}.");
-
-        return (T)field.GetValue(instance)!;
-    }
-
-    private static string RepositoryRoot()
-    {
-        var directory = new DirectoryInfo(AppContext.BaseDirectory);
-        while (directory is not null)
-        {
-            if (File.Exists(Path.Combine(directory.FullName, "global.json")))
-                return directory.FullName;
-
-            directory = directory.Parent;
-        }
-
-        throw new InvalidOperationException("Could not locate the repository root.");
     }
 }

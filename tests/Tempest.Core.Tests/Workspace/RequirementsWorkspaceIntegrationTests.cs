@@ -219,16 +219,66 @@ public class RequirementsWorkspaceIntegrationTests
         await manager.ShutdownAsync();
     }
 
+    /// <summary>
+    /// Every Requirements command the registry offers, named — `WP-F` (`F-11`).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// This asserted a bare count until `WP-F`. A count tells you a discipline
+    /// changed and never which command appeared or vanished, and the same
+    /// number was restated in five other files, so adding one command broke
+    /// tests that had nothing to do with it. The set below fails naming the
+    /// offending Id, and adding a command means adding its Id here — once,
+    /// deliberately.
+    /// </para>
+    /// <para>
+    /// The canonical 74/56/18 reconciliation that gives these numbers their
+    /// arithmetic meaning lives in <c>CommandDescriptorBindingTests</c> and is
+    /// deliberately not repeated here.
+    /// </para>
+    /// </remarks>
     [Fact]
-    public async Task CommandRegistry_ListsAllEighteenRequirementsCommands()
+    public async Task CommandRegistry_ListsEveryRequirementsCommand_ById()
     {
         using var temp = new TempDirectory();
         var (_, manager, host) = await StartAsync(temp.Path);
         var commandRegistry = (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
 
-        var requirementsCommands = commandRegistry.Items.Where(d => d.Category == "Requirements").ToList();
+        string[] expected =
+        [
+            "requirements.add-to-collection",
+            "requirements.bulk-set-owner",
+            "requirements.bulk-set-priority",
+            "requirements.bulk-set-status",
+            "requirements.create",
+            "requirements.create-collection",
+            "requirements.create-group",
+            "requirements.delete",
+            "requirements.delete-collection",
+            "requirements.delete-group",
+            "requirements.duplicate",
+            "requirements.link",
+            "requirements.move",
+            "requirements.move-group",
+            "requirements.revise",
+            "requirements.set-owner",
+            "requirements.set-priority",
+            "requirements.set-status",
+        ];
 
-        Assert.Equal(18, requirementsCommands.Count);
+        var registered = commandRegistry.Items
+            .Where(d => d.Category == "Requirements")
+            .Select(d => d.Id)
+            .ToHashSet(StringComparer.Ordinal);
+
+        var unexpected = registered.Except(expected, StringComparer.Ordinal).OrderBy(id => id, StringComparer.Ordinal).ToList();
+        var missing = expected.Except(registered, StringComparer.Ordinal).OrderBy(id => id, StringComparer.Ordinal).ToList();
+
+        Assert.True(
+            unexpected.Count == 0 && missing.Count == 0,
+            $"The Requirements command set changed.\n"
+            + $"  Registered but not declared here: {string.Join(", ", unexpected)}\n"
+            + $"  Declared here but not registered: {string.Join(", ", missing)}");
 
         await manager.ShutdownAsync();
     }

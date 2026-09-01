@@ -24,7 +24,7 @@
 |---|---|---|---|---|
 | `Tempest.Core.Modules` | Tempest.Core | 23 | Discovery, Registration, Lifecycle, Module SDK, `ModuleMetadataAttribute` | WP 2.1–2.3, extended WP 4.1, WP 4.4B |
 | `Tempest.Core.Plugins` | Tempest.Core | 13 | Plugin manifest, discovery, loading | WP 4.2 |
-| `Tempest.Core.DependencyInjection` | Tempest.Core | 13 | Custom DI container | WP 2.4 |
+| `Tempest.Core.DependencyInjection` | Tempest.Core | 12 | Custom DI container | WP 2.4; `ServiceProviderExtensions` — the public `GetService<T>()` convenience — removed `WP-F` (`TD-114`, `F-15`): zero production callers, 32 test call sites, and production resolved through `GetService(typeof(T))` in 40 places regardless. A public API on a plugin-hosting assembly that only tests used; the tests were migrated to the form production already used rather than production migrated to it |
 | `Tempest.Core.Logging` | Tempest.Core | 9 | `ILogger`, sinks, factory, `CompositeLogSink` | WP 2.6, extended WP 5.2; the legacy `LoggingService` removed `WP-C` (`TD-01`) |
 | `Tempest.Core.Configuration` | Tempest.Core | 7 | Configuration sources, builder, provider | WP 2.5; the legacy `ConfigurationService` and the `ApplicationConfiguration` it returned both removed `WP-C` (`TD-110`) |
 | `Tempest.Core.BackgroundServices` | Tempest.Core | 9 | Hosted service contracts, discovery, orchestration | WP 4.0 (contracts), WP 4.5 (infrastructure) |

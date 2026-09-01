@@ -10,6 +10,7 @@ using Tempest.App.Workspace.Manufacturing;
 using Tempest.App.Workspace.Mechanical;
 using Tempest.App.Workspace.Requirements;
 using Tempest.App.Workspace.Verification;
+using Avalonia.LogicalTree;
 
 namespace Tempest.Desktop.Tests;
 
@@ -172,7 +173,15 @@ public sealed class WorkspaceIntegrationTests
             // end-to-end proof that every one of those pieces composes.
             var window = new MainWindow(host);
 
-            Assert.NotNull(window);
+            // `WP-F` (`F-18`): this asserted only that `new MainWindow(...)`
+            // returned non-null — which it cannot fail to do — while its own
+            // name promised the Explorer, the Document Area and the Inspector
+            // were all present. It now checks the three it names. Constructing
+            // without throwing remains part of the proof; it is simply no
+            // longer the whole of it.
+            Assert.Single(window.GetLogicalDescendants().OfType<ProjectExplorerView>());
+            Assert.Single(window.GetLogicalDescendants().OfType<DocumentAreaView>());
+            Assert.Single(window.GetLogicalDescendants().OfType<PropertyInspectorView>());
         }
         finally
         {

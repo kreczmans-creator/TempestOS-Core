@@ -40,7 +40,7 @@ public class ConfigurationDependencyInjectionTests
 
         var provider = new TempestServiceProvider(services);
 
-        var resolved = provider.GetService<IConfigurationProvider>();
+        var resolved = (IConfigurationProvider)provider.GetService(typeof(IConfigurationProvider));
 
         Assert.Same(configuration, resolved);
     }
@@ -56,7 +56,7 @@ public class ConfigurationDependencyInjectionTests
 
         var provider = new TempestServiceProvider(services);
 
-        var consumingService = provider.GetService<ConfigurationConsumingService>();
+        var consumingService = (ConfigurationConsumingService)provider.GetService(typeof(ConfigurationConsumingService));
 
         Assert.Equal("TempestOS", consumingService.RuntimeName);
     }
@@ -72,8 +72,8 @@ public class ConfigurationDependencyInjectionTests
 
         var provider = new TempestServiceProvider(services);
 
-        var directlyResolved = provider.GetService<IConfigurationProvider>();
-        var consumingService = provider.GetService<ConfigurationConsumingService>();
+        var directlyResolved = (IConfigurationProvider)provider.GetService(typeof(IConfigurationProvider));
+        var consumingService = (ConfigurationConsumingService)provider.GetService(typeof(ConfigurationConsumingService));
 
         Assert.Same(configuration, directlyResolved);
         Assert.Equal("TempestOS", consumingService.RuntimeName);

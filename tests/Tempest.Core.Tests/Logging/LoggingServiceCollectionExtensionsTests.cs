@@ -16,7 +16,7 @@ public class LoggingServiceCollectionExtensionsTests
 
         var provider = new TempestServiceProvider(services);
 
-        Assert.IsType<ConsoleLogSink>(provider.GetService<ILogSink>());
+        Assert.IsType<ConsoleLogSink>((ILogSink)provider.GetService(typeof(ILogSink)));
     }
 
     [Fact]
@@ -27,7 +27,7 @@ public class LoggingServiceCollectionExtensionsTests
 
         var provider = new TempestServiceProvider(services);
 
-        Assert.IsType<LoggerFactory>(provider.GetService<ILoggerFactory>());
+        Assert.IsType<LoggerFactory>((ILoggerFactory)provider.GetService(typeof(ILoggerFactory)));
     }
 
     [Fact]
@@ -38,7 +38,7 @@ public class LoggingServiceCollectionExtensionsTests
 
         var provider = new TempestServiceProvider(services);
 
-        var logger = provider.GetService<ILogger>();
+        var logger = (ILogger)provider.GetService(typeof(ILogger));
 
         Assert.NotNull(logger);
     }
@@ -51,9 +51,9 @@ public class LoggingServiceCollectionExtensionsTests
 
         var provider = new TempestServiceProvider(services);
 
-        Assert.Same(provider.GetService<ILogSink>(), provider.GetService<ILogSink>());
-        Assert.Same(provider.GetService<ILoggerFactory>(), provider.GetService<ILoggerFactory>());
-        Assert.Same(provider.GetService<ILogger>(), provider.GetService<ILogger>());
+        Assert.Same((ILogSink)provider.GetService(typeof(ILogSink)), (ILogSink)provider.GetService(typeof(ILogSink)));
+        Assert.Same((ILoggerFactory)provider.GetService(typeof(ILoggerFactory)), (ILoggerFactory)provider.GetService(typeof(ILoggerFactory)));
+        Assert.Same((ILogger)provider.GetService(typeof(ILogger)), (ILogger)provider.GetService(typeof(ILogger)));
     }
 
     [Fact]
@@ -65,7 +65,7 @@ public class LoggingServiceCollectionExtensionsTests
 
         var provider = new TempestServiceProvider(services);
 
-        var consumer = provider.GetService<LoggingConsumer>();
+        var consumer = (LoggingConsumer)provider.GetService(typeof(LoggingConsumer));
 
         Assert.NotNull(consumer.Logger);
     }
@@ -83,7 +83,7 @@ public class LoggingServiceCollectionExtensionsTests
         services.AddLogging(builder.Build());
 
         var provider = new TempestServiceProvider(services);
-        var loggerFactory = provider.GetService<ILoggerFactory>();
+        var loggerFactory = (ILoggerFactory)provider.GetService(typeof(ILoggerFactory));
         var logger = loggerFactory.CreateLogger("Test");
 
         // The registered sink writes to the console; this test only confirms

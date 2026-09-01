@@ -24,47 +24,80 @@
 
 ## Entries
 
+**Re-derived in full, `WP-F` (2026-09-01),** by walking the test projects on
+disk rather than by patching the previous figures. Every row below was stale:
+the table listed 15 of `Tempest.Core.Tests`' 37 directories, carried
+v0.5-era counts (`Commands/` at 5 files/54 attributes against an actual
+12/156), recorded `Shell/` as retired at 0 when it holds 4 files, and did not
+cover `Tempest.Desktop.Tests` at all. Incremental correction was declined
+because the drift was not incremental.
+
+### `Tempest.Core.Tests`
+
 | Directory | Files | `[Fact]`/`[Theory]` Attributes | Covers |
 |---|---|---|---|
-| `BackgroundServices/` | 4 | 37 | Hosted service discovery, manager, fixtures (WP 4.5) |
-| `Commands/` | 5 | 54 | `ICommand` contract (WP 4.0); `CommandDispatcher`/`CommandRegistry`/`CommandHandlerTable` — registration, duplicate rejection, dispatch, failure propagation, cancellation, logging, thread safety, DI lifetime, shared-state sharing (WP 5.1B) |
-| `Configuration/` | 4 | 31 | Configuration Framework (WP 2.5) |
-| `DependencyInjection/` | 3 | 22 | Custom DI container (WP 2.4) |
-| `Diagnostics/` | 1 | 9 | `IDiagnosticsProvider`/`DiagnosticsProvider` — live accessor projection, empty-before-attached/populated-after-attached, construction validation (WP 5.2) |
-| `Events/` | 4 | 27 | Event Bus (WP 4.0 contracts, WP 4.4D bus) |
-| `Logging/` | 10 | 53 | Logging & Diagnostics Framework (WP 2.6); extended `WP 5.2` with `CompositeLogSinkTests.cs` — fan-out, per-child failure isolation, `Logger` integration |
-| `Modules/` | 13 | 74 | Discovery, Registration, Lifecycle, Module SDK, `ModuleMetadataAttribute` (WP 2.1–2.3, WP 4.1, WP 4.4A/B); extended `WP 5.3` with 2 tests proving a module with no `[ModuleMetadata]` and no parameterless constructor now fails with a clear `ModuleDiscoveryException`, not a raw `MissingMethodException` |
-| `Navigation/` | 2 | 31 | `NavigationItem`, `NavigationService` — registration, ordering, hierarchy, visibility, events, DI (WP 5.0B) |
-| `Plugins/` | 6 | 21 | Plugin manifest, discovery, loading (WP 4.2); extended `WP 5.0B` with a Navigation-registering dynamic plugin assembly builder; extended `WP 5.0S` with 2 `AssemblyFileName` path-containment regression tests |
-| `Runtime/` | 5 | 50 | `TempestHost`, `TempestHostBuilder`, plugin/hosted-service Host integration; extended `WP 5.0D` with `ITempestHost.Services` availability, resolution, and Discovery/Registration/Lifecycle non-exposure tests |
-| `Samples/` | 7 | 55 | `ClockModule`/`ClockLifecycleObserverModule` pipeline and event integration (WP 4.3, WP 4.4E); `NavigationSampleModule` and companions, module/host/plugin integration (WP 5.0B); `CommandSampleModule`, module/host/plugin integration and Navigation-integration proof (WP 5.1B); `DiagnosticsSampleModule`, module/host/plugin integration and the disclosed "zero hosted services during Initialise" finding (WP 5.2) |
-| `Shell/` | 0 — **retired, `WP 11.3B`** | 0 | Formerly `TempestShell`, `PlaceholderPage` — composition, Navigation/Content rendering, page selection, unknown-page placeholder, real Host/sample-module integration, full interactive sessions (WP 5.0D). Both the production classes and this entire test directory were retired `WP 11.3B` (`ADR-0101`) — `TempestShell` had been unreachable from any running entry point since `ADR-0068` (`WP 8.1A`, `v0.8.0`), confirmed dead before removal. |
-| `Templates/` | 3 | 6 | The `dotnet new tempest-module` template (`WP 5.3`) — `template.json` manifest validity; the template's own file content, substituted, built with the real compiler, and proven discoverable by the real, unmodified `ReflectionFrameworkDiscoveryService` |
-| `Versioning/` | 2 | 17 | Platform Version infrastructure (WP 4.2A) |
+| `(project root)` | 1 | 0 | `SampleHarnessLoader.cs` — shared harness plumbing, no tests of its own |
+| `Api/` | 7 | 35 | REST transport, endpoint registry, request handler, OpenAPI (`WP 12.2A`); the transport is composed and started, and maps no shipped command (`AT-10`) |
+| `Architecture/` | 1 | 5 | `WP-H` — dependency direction: `Desktop → App → Core`, no Avalonia below the shell, asserted against both the project graph and the built assemblies |
+| `Audit/` | 8 | 36 | Audit records, query and permission-gated access |
+| `BackgroundServices/` | 4 | 37 | Hosted service discovery, manager, lifecycle isolation (`WP 4.5`) |
+| `Calculations/` | 5 | 44 | Engineering calculation definitions, execution and templates |
+| `Commands/` | 12 | 156 | `ICommand` contract (`WP 4.0`); dispatcher/registry/handler table; the `TD-77` binding and invocation contract; the `WP-A1` Id-only allow-list guard and the `AT-10` REST premise behind it |
+| `Configuration/` | 4 | 31 | Configuration Framework (`WP 2.5`) |
+| `DependencyInjection/` | 3 | 22 | The custom DI container (`WP 2.4`). `ServiceProviderExtensions.GetService<T>()` was deleted `WP-F`; these resolve through `GetService(typeof(T))` like production does |
+| `Diagnostics/` | 1 | 13 | `IDiagnosticsProvider` — live accessor projection, host state |
+| `EngineeringData/` | 5 | 28 | Engineering document store, attachments, content |
+| `EngineeringDomain/` | 9 | 107 | The domain object model, lifecycle, rehydration, structural mutation |
+| `Events/` | 5 | 38 | Event Bus (`WP 4.0` contracts, `WP 4.4D` bus) |
+| `ExportImport/` | 7 | 48 | Export/import round-trips and format handling |
+| `Identity/` | 9 | 81 | Principals, permissions, capability grants, trust tiers |
+| `Input/` | 2 | 6 | `IInputBindingProvider`/`InputBindingRouter` — the extension point, dormant in production (`AT-23`) |
+| `Licensing/` | 3 | 24 | Licence validation; the platform runs Unlicensed with nothing gated |
+| `Logging/` | 10 | 53 | Logging & Diagnostics Framework (`WP 2.6`), sinks and composition. `ConsoleLogSinkTests` joined the `Console output capture` collection in `WP-A1` |
+| `Macros/` | 3 | 10 | `IMacroManager` — ordered Id lists, no branching or parameters (`ADR-0098`/`ADR-0099`) |
+| `Materials/` | 6 | 57 | Material catalogue and properties |
+| `Modules/` | 15 | 83 | Discovery, registration, lifecycle, the Module SDK, `ModuleMetadataAttribute` |
+| `Navigation/` | 3 | 47 | `NavigationItem`, `NavigationService` — registration, ordering, hierarchy, events |
+| `Notifications/` | 5 | 32 | Notification dispatch and platform notifications |
+| `Persistence/` | 3 | 46 | `IPersistenceStore`, hostile names, path containment |
+| `Plugins/` | 22 | 172 | Plugin manifest, discovery, loading, signing and trust (`ADR-0111`) |
+| `Projects/` | 3 | 67 | Projects, tasks, milestones, deliverables, risks, issues, decisions |
+| `Reporting/` | 5 | 28 | Reporting service and report generation |
+| `Requirements/` | 6 | 103 | Requirements, collections, groups, relationships, baselines |
+| `Runtime/` | 22 | 151 | `TempestHost`/`TempestHostBuilder`, plugin and hosted-service host integration, fault injection |
+| `Samples/` | 21 | 170 | Every sample module's own pipeline and host integration — the sample harness is deletable and no production project references it |
+| `Settings/` | 8 | 41 | `ISettingsProvider`, `SettingsDocument` and corrupt-value degradation (`WP-D2`, `TD-112`) |
+| `Shell/` | 4 | 57 | Shell areas, project areas, product convergence, the project-area register. Recorded as retired at 0 until `WP-F`; the directory is live and covers the `TD-84` product spine |
+| `Templates/` | 3 | 6 | The `dotnet new tempest-module` template (`WP 5.3`) and `RepositoryPaths` |
+| `UnitsAndQuantities/` | 10 | 46 | Units, quantities and conversion. `UnitConverterTests.Constructor_RequiresNoArguments` was deleted `WP-F` as tautological |
+| `Verification/` | 4 | 39 | Verification activities, methods and results |
+| `Versioning/` | 2 | 17 | Platform version infrastructure (`WP 4.2A`) |
+| `Workspace/` | 48 | 690 | The Engineering Workspace: six discipline registrations and their commands, the Cockpit read-model, Project Explorer, Property Inspector, selection, navigation, layout, viewing, and the `TD-77` descriptor-binding suite |
 
-**Total: 71 test files, 518 `[Fact]`/`[Theory]` attribute occurrences.**
+**Total: 289 files, 2626 `[Fact]`/`[Theory]` attribute occurrences.**
 
-## Reconciling Attribute Count Against Executed Test Count
+### `Tempest.Desktop.Tests`
 
-`dotnet test` reports **552** executed tests, 34 more than the 518 raw
-`[Fact]`/`[Theory]` attribute occurrences above. This difference is
-**Verified** to be `[Theory]` methods with multiple `[InlineData]` rows
-executing as multiple tests at runtime from a single attribute occurrence
-— for example, the Plugin Manifest test suite's missing-required-field
-theory (one `[Theory]` attribute, five `InlineData` rows, one per
-required field), `NavigationItemTests`' own two `[Theory]` methods
-(invalid `Id`/`Title`, three `InlineData` rows each), `PlaceholderPageTests`'
-own two `[Theory]` methods (invalid title/message, three `InlineData`
-rows each), `TempestShellTests.HandleInputAsync_InvalidSelection_ReportsInvalid_AndReturnsTrue`
-(one `[Theory]` attribute, four `InlineData` rows), `CommandDescriptorAndResultTests`'
-own three `[Theory]` methods (invalid `Id`/`DisplayName`/failure message,
-three `InlineData` rows each, `WP 5.1B`), and, as of `WP 5.3`,
-`ModuleTemplateManifestTests.TemplateManifest_DeclaresEachDocumentedSymbol_WithItsDefaultValue`
-(one `[Theory]` attribute, three `InlineData` rows, one per template
-symbol — a net new gap of 2). No discrepancy or missing test was found;
-the two counts measure different things (source attributes vs.
-runtime-executed cases) and both are reported here to avoid the false
-impression that they should match.
+| Directory | Files | `[Fact]`/`[Theory]` Attributes | Covers |
+|---|---|---|---|
+| `(project root)` | 45 | 358 | Flat by convention — one file per surface or per Work Package theme. Covers `MainWindow` composition, the Ribbon, Command Palette, Object Editor, Project Explorer/Inspector views, docking and layout, the Digital Thread graph, document viewing, the project areas, `WP-D1`'s reporting tail, and the `WP-B1`/`WP-H` Kind-eligibility, policy-completeness and dormant-keyboard invariants |
+
+**Total: 45 files, 358 `[Fact]`/`[Theory]` attribute occurrences.**
+
+## Three Counts, Three Different Things
+
+This register reports **attribute occurrences**, and they are not test cases.
+Keeping the distinction explicit stops a future pass "correcting" one figure
+to match another:
+
+| Measure | Core | Desktop | What it counts |
+|---|---|---|---|
+| **Attribute occurrences** | 2626 | 358 | `[Fact]`/`[Theory]`/`[AvaloniaFact]` written in source — what the table above sums |
+| **Test methods** | — | — | One per attribute; equal to the above, since no method carries two |
+| **Executed test cases** | **3,068** | **366** | What `dotnet test` runs. Higher than the attribute count because one `[Theory]` with *n* `[InlineData]` rows executes as *n* cases |
+
+The gap is entirely `[Theory]` expansion. It is expected, it is not a
+discrepancy, and neither figure is wrong.
 
 ## Historical Test Count Progression (Verified from CHANGELOG.md / Testing.md / Retrospectives)
 

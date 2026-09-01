@@ -212,11 +212,31 @@ public sealed class WorkspaceModernisationTests
             var view = new ProjectExplorerView(workspace.ProjectExplorer, host.Manager!);
             await view.LoadAsync();
 
-            // Constructs and loads without throwing over real sample data -
-            // the direct proof the modernised View (multi-select tree,
-            // filter box, breadcrumb bar, context menu, drag/drop
-            // preparation handlers) is all wired correctly end to end.
-            Assert.NotNull(view);
+            // `WP-F` (`F-18`): this test's name has always promised that
+            // filtering reduces the visible tree. It never filtered and never
+            // counted — `Assert.NotNull(view)` cannot fail. It now does what
+            // it says: load the real tree, then type into the real filter box
+            // and watch the tree shrink.
+            var tree = view.GetLogicalDescendants().OfType<TreeView>().Single();
+            var filter = view.GetLogicalDescendants().OfType<TextBox>()
+                .Single(box => box.Watermark is not null && box.Watermark.Contains("Filter", StringComparison.Ordinal));
+
+            var unfiltered = VisibleNodeCount(tree.ItemsSource);
+            Assert.True(unfiltered > 0, "The Mechanical area must load real nodes before filtering can be shown to reduce them.");
+
+            // A query no object title can match: the tree must empty, and the
+            // View must say so rather than silently showing everything.
+            filter.Text = "zzz-no-such-object-zzz";
+            await Task.Delay(20);
+
+            Assert.Equal(0, VisibleNodeCount(tree.ItemsSource));
+
+            // Clearing it restores exactly what was there — filtering is a
+            // view over the loaded tree, not a re-query that could lose nodes.
+            filter.Text = string.Empty;
+            await Task.Delay(20);
+
+            Assert.Equal(unfiltered, VisibleNodeCount(tree.ItemsSource));
         }
         finally
         {
@@ -372,4 +392,21 @@ public sealed class WorkspaceModernisationTests
         public Task RefreshAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
         public Task<bool> CloseAsync(CancellationToken cancellationToken = default) => Task.FromResult(true);
     }
+    /// <summary>Every node the tree is currently showing, roots and descendants.</summary>
+    private static int VisibleNodeCount(System.Collections.IEnumerable? items)
+    {
+        if (items is null)
+            return 0;
+
+        var count = 0;
+        foreach (var item in items)
+        {
+            count++;
+            if (item is Tempest.Desktop.Views.ExplorerNodeItem node)
+                count += VisibleNodeCount(node.Children);
+        }
+
+        return count;
+    }
+
 }

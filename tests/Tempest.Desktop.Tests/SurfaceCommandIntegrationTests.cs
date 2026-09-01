@@ -10,6 +10,7 @@ using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Requirements;
 using Tempest.Desktop.History;
 using Tempest.Desktop.Views;
+using static Tempest.Desktop.Tests.DesktopTestHelpers;
 
 namespace Tempest.Desktop.Tests;
 
@@ -379,7 +380,7 @@ public sealed class SurfaceCommandIntegrationTests
     [Fact]
     public void NoDispatchOrEnablementDecision_ReadsACommandIdsTrailingWord()
     {
-        var source = File.ReadAllText(Path.Combine(RepositoryRoot(), "src", "Tempest.Desktop", "Views", "RibbonView.cs"));
+        var source = File.ReadAllText(Path.Combine(RepositoryRoot, "src", "Tempest.Desktop", "Views", "RibbonView.cs"));
 
         // Comments are stripped: the surviving helper's own <remarks>
         // legitimately names the parser it replaced, and this rule is about
@@ -406,7 +407,7 @@ public sealed class SurfaceCommandIntegrationTests
     [Fact]
     public void TheRibbonWorkaround_IsDeleted_NotMerelyUnused()
     {
-        var desktop = Path.Combine(RepositoryRoot(), "src", "Tempest.Desktop");
+        var desktop = Path.Combine(RepositoryRoot, "src", "Tempest.Desktop");
 
         Assert.False(
             File.Exists(Path.Combine(desktop, "Composition", "RibbonObjectActionHandlers.cs")),
@@ -460,65 +461,5 @@ public sealed class SurfaceCommandIntegrationTests
             Key = Avalonia.Input.Key.Enter,
         });
         await Task.Delay(80);
-    }
-
-    private static Button FindButton(RibbonView ribbon, ICommandRegistry registry, string commandId)
-    {
-        var descriptor = registry.Items.Single(d => d.Id == commandId);
-        var tab = ((TabControl)ribbon.Content!).Items.OfType<TabItem>().Single(t => Equals(t.Tag, descriptor.Category));
-
-        return ((Control)tab.Content!).GetLogicalDescendants()
-            .OfType<Button>()
-            .First(b => b.GetLogicalDescendants().OfType<TextBlock>().Any(t => t.Text == descriptor.DisplayName));
-    }
-
-    private static void Click(RibbonView ribbon, ICommandRegistry registry, string commandId) =>
-        FindButton(ribbon, registry, commandId)
-            .RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
-
-    private static async Task<ProjectExplorerNode> SelectFirstAsync(IWorkspace workspace, string areaId, string kind)
-    {
-        await workspace.Navigation.SwitchAreaAsync(areaId);
-        var node = await FindAsync(workspace.ProjectExplorer, await workspace.ProjectExplorer.GetRootNodesAsync(), kind);
-        Assert.NotNull(node);
-        await workspace.Selection.SelectAsync(node!.Id, node.Kind!);
-
-        return node;
-    }
-
-    private static async Task<ProjectExplorerNode?> FindAsync(IProjectExplorer explorer, IReadOnlyList<ProjectExplorerNode> nodes, string kind)
-    {
-        foreach (var node in nodes)
-        {
-            if (node.NodeType == ProjectExplorerNodeType.Object && node.Kind == kind)
-                return node;
-
-            if (node.HasChildren && await FindAsync(explorer, await explorer.GetChildrenAsync(node.Id), kind) is { } found)
-                return found;
-        }
-
-        return null;
-    }
-
-    private static T GetPrivateField<T>(object instance, string fieldName)
-    {
-        var field = instance.GetType().GetField(fieldName, BindingFlags.NonPublic | BindingFlags.Instance)
-            ?? throw new InvalidOperationException($"Field '{fieldName}' not found on {instance.GetType().Name}.");
-
-        return (T)field.GetValue(instance)!;
-    }
-
-    private static string RepositoryRoot()
-    {
-        var directory = new DirectoryInfo(AppContext.BaseDirectory);
-        while (directory is not null)
-        {
-            if (File.Exists(Path.Combine(directory.FullName, "global.json")))
-                return directory.FullName;
-
-            directory = directory.Parent;
-        }
-
-        throw new InvalidOperationException("Could not locate the repository root.");
     }
 }

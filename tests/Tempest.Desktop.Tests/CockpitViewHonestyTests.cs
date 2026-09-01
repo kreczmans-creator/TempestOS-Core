@@ -13,8 +13,17 @@ namespace Tempest.Desktop.Tests;
 /// fabricated content — proven against a real, running
 /// <see cref="WorkspaceHost"/> and its own real sample data, never a mock.
 /// </summary>
+/// <remarks>
+/// Named <c>EngineeringCockpitTests</c> until `WP-F`, which is what
+/// <c>Tempest.Core.Tests.Workspace.EngineeringCockpitTests</c> is also
+/// called. Different assemblies, so nothing ever failed to compile — but
+/// the two cover different subjects, and only a reader could tell them
+/// apart. That one covers the <c>EngineeringCockpit</c> read-model; this
+/// one covers what <see cref="CockpitView"/> renders from it, and whether
+/// what it renders is honest.
+/// </remarks>
 [Collection("Tempest.Desktop WorkspaceHost persistence")]
-public sealed class EngineeringCockpitTests
+public sealed class CockpitViewHonestyTests
 {
     [AvaloniaFact]
     public async Task RealData_OpenDecisions_ReflectsTheLiveSeededDecision()
@@ -276,9 +285,19 @@ public sealed class EngineeringCockpitTests
                 onSwitchArea: _ => { });
 
             view.Refresh();
-            view.Refresh(); // idempotent — a second call must not throw or duplicate state incorrectly
+            var afterFirst = view.GetLogicalDescendants().OfType<CockpitCardControl>().Count();
 
-            Assert.NotNull(view);
+            view.Refresh();
+            var afterSecond = view.GetLogicalDescendants().OfType<CockpitCardControl>().Count();
+
+            // `WP-F` (`F-18`): the comment here always claimed the second
+            // Refresh "must not duplicate state incorrectly", and nothing
+            // asserted it — `Assert.NotNull(view)` cannot fail. Refresh clears
+            // its card host and rebuilds, so the count is the claim: real
+            // cards the first time, the same number the second, never twice
+            // as many.
+            Assert.True(afterFirst > 0, "A Refresh over real data must build at least one Cockpit card.");
+            Assert.Equal(afterFirst, afterSecond);
         }
         finally
         {

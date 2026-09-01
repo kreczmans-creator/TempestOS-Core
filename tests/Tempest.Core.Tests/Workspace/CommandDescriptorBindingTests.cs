@@ -197,10 +197,17 @@ public sealed class CommandDescriptorBindingTests : IAsyncLifetime
         var unavailable = ObjectPickerUnavailable.Concat(StructuredInputUnavailable).ToHashSet(StringComparer.Ordinal);
         var bindable = ProductionDescriptors.Where(d => !unavailable.Contains(d.Id)).ToList();
 
-        // 74 production discipline commands, 18 of them explicitly
-        // unavailable: the remaining 56 must every one be invocable.
+        // The canonical reconciliation, and the one place in the suite where
+        // these numbers are asserted (`WP-F`, `F-11`): 74 production
+        // discipline commands, 18 of them explicitly unavailable, so the
+        // remaining 56 must every one be invocable. The arithmetic is the
+        // protection — it is what stops a nineteenth unavailable command
+        // hiding inside the bindable set — so all three terms are stated,
+        // not two of them with the third left in a comment.
         Assert.Equal(74, ProductionDescriptors.Count);
+        Assert.Equal(18, unavailable.Count);
         Assert.Equal(56, bindable.Count);
+        Assert.Equal(ProductionDescriptors.Count, unavailable.Count + bindable.Count);
 
         var notBound = bindable.Where(d => d.Binding is not { IsInvocable: true }).Select(d => d.Id).ToList();
         Assert.Empty(notBound);
@@ -309,22 +316,39 @@ public sealed class CommandDescriptorBindingTests : IAsyncLifetime
     public void EveryDescriptorRegistrationInSource_DeclaresABinding()
     {
         var offenders = new List<string>();
-        var declared = 0;
+        var declaredIds = new List<string>();
 
         foreach (var (file, source) in RegistrationSources())
         {
             foreach (var registration in DescriptorRegistrations(source))
             {
-                declared++;
                 var id = Regex.Match(registration, @"id: ""(?<id>[^""]+)""").Groups["id"].Value;
+                declaredIds.Add(id);
 
                 if (!registration.Contains("Binding =", StringComparison.Ordinal))
                     offenders.Add($"{file}: '{id}' registers no Binding.");
             }
         }
 
-        Assert.Equal(74, declared);
         Assert.Empty(offenders);
+
+        // What the source declares and what the registry ends up holding must
+        // be the same set (`WP-F`, `F-11`). This asserted `74 == declared`
+        // until then, which could not tell a missed registration from an
+        // extra one, and restated the canonical count a third time. The
+        // difference below names the Id.
+        var registeredIds = ProductionDescriptors.Select(d => d.Id).ToHashSet(StringComparer.Ordinal);
+        var declaredOnly = declaredIds.Except(registeredIds, StringComparer.Ordinal).OrderBy(id => id, StringComparer.Ordinal).ToList();
+        var registeredOnly = registeredIds.Except(declaredIds, StringComparer.Ordinal).OrderBy(id => id, StringComparer.Ordinal).ToList();
+
+        Assert.True(
+            declaredOnly.Count == 0 && registeredOnly.Count == 0,
+            $"The six registration sources and the live registry disagree.\n"
+            + $"  Declared in source but not registered: {string.Join(", ", declaredOnly)}\n"
+            + $"  Registered but not declared in source: {string.Join(", ", registeredOnly)}");
+
+        // No source file registers the same Id twice.
+        Assert.Equal(declaredIds.Count, declaredIds.Distinct(StringComparer.Ordinal).Count());
     }
 
     private static IEnumerable<(string File, string Source)> RegistrationSources()
@@ -925,9 +949,11 @@ public sealed class CommandDescriptorBindingTests : IAsyncLifetime
             .OrderBy(id => id, StringComparer.Ordinal)
             .ToList();
 
+        // The set is the assertion. Two counts restating its size followed
+        // this line until `WP-F` (`F-11`); both were derivable from it, so
+        // adding a macro-safe command broke three assertions where one is
+        // enough — and the one that remains names the command.
         Assert.Equal(MacroSafe.OrderBy(id => id, StringComparer.Ordinal).ToList(), unattended);
-        Assert.Equal(14, unattended.Count);
-        Assert.Equal(13, unattended.Count(id => id != "mechanical.validate-configuration"));
     }
 
     [Fact]
@@ -1054,8 +1080,12 @@ public sealed class CommandDescriptorBindingTests : IAsyncLifetime
     [Fact]
     public void EveryDescriptorKeptItsIdentity()
     {
-        Assert.Equal(74, ProductionDescriptors.Count);
-        Assert.Equal(74, ProductionDescriptors.Select(d => d.Id).Distinct(StringComparer.Ordinal).Count());
+        // The invariant here is uniqueness, not the number — the canonical
+        // count lives once, in EveryBindableAuditedDescriptor_HasAnInvocableBinding
+        // (`WP-F`, `F-11`).
+        Assert.Equal(
+            ProductionDescriptors.Count,
+            ProductionDescriptors.Select(d => d.Id).Distinct(StringComparer.Ordinal).Count());
         Assert.All(ProductionDescriptors, d => Assert.False(string.IsNullOrWhiteSpace(d.DisplayName)));
         Assert.All(ProductionDescriptors, d => Assert.False(string.IsNullOrWhiteSpace(d.Description)));
 

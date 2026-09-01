@@ -15,8 +15,8 @@ public class TempestServiceProviderTests
 
         var provider = new TempestServiceProvider(services);
 
-        var first = provider.GetService<IGreeter>();
-        var second = provider.GetService<IGreeter>();
+        var first = (IGreeter)provider.GetService(typeof(IGreeter));
+        var second = (IGreeter)provider.GetService(typeof(IGreeter));
 
         Assert.Same(first, second);
     }
@@ -30,7 +30,7 @@ public class TempestServiceProviderTests
 
         var provider = new TempestServiceProvider(services);
 
-        var resolved = provider.GetService<IGreeter>();
+        var resolved = (IGreeter)provider.GetService(typeof(IGreeter));
 
         Assert.Same(greeter, resolved);
     }
@@ -45,7 +45,7 @@ public class TempestServiceProviderTests
 
         var provider = new TempestServiceProvider(services);
 
-        var consumer = provider.GetService<GreeterConsumer>();
+        var consumer = (GreeterConsumer)provider.GetService(typeof(GreeterConsumer));
 
         Assert.Same(greeter, consumer.Greeter);
     }
@@ -58,8 +58,8 @@ public class TempestServiceProviderTests
 
         var provider = new TempestServiceProvider(services);
 
-        var first = provider.GetService<IGreeter>();
-        var second = provider.GetService<IGreeter>();
+        var first = (IGreeter)provider.GetService(typeof(IGreeter));
+        var second = (IGreeter)provider.GetService(typeof(IGreeter));
 
         Assert.NotSame(first, second);
     }
@@ -73,7 +73,7 @@ public class TempestServiceProviderTests
 
         var provider = new TempestServiceProvider(services);
 
-        var consumer = provider.GetService<GreeterConsumer>();
+        var consumer = (GreeterConsumer)provider.GetService(typeof(GreeterConsumer));
 
         Assert.Equal("Hello", consumer.Greeter.Greet());
     }
@@ -88,7 +88,7 @@ public class TempestServiceProviderTests
 
         var provider = new TempestServiceProvider(services);
 
-        var resolved = provider.GetService<MultiDependencyConsumer>();
+        var resolved = (MultiDependencyConsumer)provider.GetService(typeof(MultiDependencyConsumer));
 
         Assert.Same(resolved.Greeter, resolved.Consumer.Greeter);
     }
@@ -102,7 +102,7 @@ public class TempestServiceProviderTests
         var provider = new TempestServiceProvider(services);
 
         var exception = Assert.Throws<ServiceNotRegisteredException>(() =>
-            provider.GetService<MissingDependencyConsumer>());
+            (MissingDependencyConsumer)provider.GetService(typeof(MissingDependencyConsumer)));
 
         Assert.Equal(typeof(IUnregisteredService), exception.MissingServiceType);
         Assert.Equal(typeof(MissingDependencyConsumer), exception.RequestedService);
@@ -120,7 +120,7 @@ public class TempestServiceProviderTests
         var provider = new TempestServiceProvider(services);
 
         var exception = Assert.Throws<CircularServiceDependencyException>(() =>
-            provider.GetService<CircularServiceA>());
+            (CircularServiceA)provider.GetService(typeof(CircularServiceA)));
 
         Assert.Equal(typeof(CircularServiceA), exception.RequestedService);
         Assert.Contains("CircularServiceA", exception.Message);
@@ -136,7 +136,7 @@ public class TempestServiceProviderTests
         var provider = new TempestServiceProvider(services);
 
         var exception = Assert.Throws<AmbiguousConstructorException>(() =>
-            provider.GetService<MultipleConstructorsService>());
+            (MultipleConstructorsService)provider.GetService(typeof(MultipleConstructorsService)));
 
         Assert.Equal(typeof(MultipleConstructorsService), exception.ImplementationType);
         Assert.Equal(2, exception.PublicConstructorCount);
@@ -151,7 +151,7 @@ public class TempestServiceProviderTests
         var provider = new TempestServiceProvider(services);
 
         Assert.Throws<ServiceResolutionException>(() =>
-            provider.GetService<NoPublicConstructorService>());
+            (NoPublicConstructorService)provider.GetService(typeof(NoPublicConstructorService)));
     }
 
     [Fact]
@@ -192,7 +192,7 @@ public class TempestServiceProviderTests
 
         var provider = new TempestServiceProvider(services, logger);
 
-        var greeter = provider.GetService<IGreeter>();
+        var greeter = (IGreeter)provider.GetService(typeof(IGreeter));
 
         Assert.Equal("Hello", greeter.Greet());
         Assert.NotEmpty(logger.Messages);
