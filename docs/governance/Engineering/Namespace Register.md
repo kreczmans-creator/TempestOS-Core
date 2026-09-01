@@ -26,7 +26,7 @@
 | `Tempest.Core.Plugins` | Tempest.Core | 13 | Plugin manifest, discovery, loading | WP 4.2 |
 | `Tempest.Core.DependencyInjection` | Tempest.Core | 13 | Custom DI container | WP 2.4 |
 | `Tempest.Core.Logging` | Tempest.Core | 9 | `ILogger`, sinks, factory, `CompositeLogSink` | WP 2.6, extended WP 5.2; the legacy `LoggingService` removed `WP-C` (`TD-01`) |
-| `Tempest.Core.Configuration` | Tempest.Core | 8 | Configuration sources, builder, provider | WP 2.5; the legacy `ConfigurationService` removed `WP-C` (`TD-110`) |
+| `Tempest.Core.Configuration` | Tempest.Core | 7 | Configuration sources, builder, provider | WP 2.5; the legacy `ConfigurationService` and the `ApplicationConfiguration` it returned both removed `WP-C` (`TD-110`) |
 | `Tempest.Core.BackgroundServices` | Tempest.Core | 9 | Hosted service contracts, discovery, orchestration | WP 4.0 (contracts), WP 4.5 (infrastructure) |
 | `Tempest.Core.Runtime` | Tempest.Core | 7 | `TempestHost`, `TempestHostBuilder`, `HostState` | WP 2.7B; distinct from `Tempest.Core.Hosting` per ADR-0016 |
 | `Tempest.Core.Events` | Tempest.Core | 4 | `IEvent`, `IEventHandler<T>`, `IEventBus`, `EventBus` | WP 4.0 (contracts), WP 4.4D (bus) |
@@ -69,7 +69,10 @@ and 3 new `Tempest.Samples` files (`LicensingSampleModule.cs`,
 
 ## A Note on the Four Pre-Claude Namespaces
 
-**Update, `WP-C` (2026-08-31):** all four are now **retired**. The full-repository
+**Update, `WP-C` (2026-08-31):** all four are now **retired**. `ApplicationConfiguration`,
+the settings record `ConfigurationService` produced and `HostingService`/`BootstrapService`
+consumed, became unreferenced as a direct consequence and was removed with them as
+`WP-C`'s own completion. The full-repository
 architecture and dead-code audit demonstrated that every type in them was
 unreferenced by any production or test code, and that the only surviving
 mentions were comments describing the code as retired. `TD-01`'s own recorded
