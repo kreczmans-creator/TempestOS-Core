@@ -4,6 +4,7 @@ using Tempest.Core.Configuration;
 using Tempest.Core.Persistence;
 using Tempest.Core.Requirements;
 using Tempest.Core.Runtime;
+using Tempest.Core.Tests.Commands;
 using Tempest.Core.Tests.Plugins;
 using Tempest.Core.Verification;
 using Tempest.Samples;
@@ -176,7 +177,7 @@ public class EngineeringCockpitTests
         var (workspace, manager, _) = await StartAsync(temp.Path, Type.EmptyTypes);
         var cockpit = ((Tempest.App.Workspace.Workspace)workspace).Cockpit;
 
-        Assert.Empty(cockpit.AvailableCommands);
+        Assert.Empty(cockpit.AvailableCommands(CommandContext.Empty));
 
         await manager.ShutdownAsync();
     }
@@ -188,8 +189,10 @@ public class EngineeringCockpitTests
         var (workspace, manager, _) = await StartAsync(temp.Path, typeof(CommandSampleModule));
         var cockpit = ((Tempest.App.Workspace.Workspace)workspace).Cockpit;
 
-        Assert.Contains(cockpit.AvailableCommands, d => d.Id == CommandSampleModule.IncrementCounterCommandId);
-        Assert.Contains(cockpit.AvailableCommands, d => d.Id == CommandSampleModule.NavigateHomeCommandId);
+        var available = cockpit.AvailableCommands(CommandContext.Empty);
+
+        Assert.Contains(available, d => d.Id == CommandSampleModule.IncrementCounterCommandId);
+        Assert.Contains(available, d => d.Id == CommandSampleModule.NavigateHomeCommandId);
 
         await manager.ShutdownAsync();
     }
@@ -203,15 +206,30 @@ public class EngineeringCockpitTests
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
             id: "test.never-available",
             displayName: "Never Available",
-            canExecute: () => false));
+            canExecute: () => false,
+            createDefault: () => new RecordedCommandA()));
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
             id: "test.always-available",
             displayName: "Always Available",
+            canExecute: () => true,
+            createDefault: () => new RecordedCommandA()));
+
+        // Neither a binding nor a default instance: nothing can construct
+        // this command, so no surface may offer it (WP-A1, F-13). Before the
+        // Cockpit moved onto Evaluate it listed exactly this descriptor and
+        // then threw CommandException when it was chosen.
+        commandRegistry.RegisterDescriptor(new CommandDescriptor(
+            id: "test.not-invocable-by-id",
+            displayName: "Not Invocable By Id",
             canExecute: () => true));
         var cockpit = ((Tempest.App.Workspace.Workspace)workspace).Cockpit;
 
-        Assert.DoesNotContain(cockpit.AvailableCommands, d => d.Id == "test.never-available");
-        Assert.Contains(cockpit.AvailableCommands, d => d.Id == "test.always-available");
+        var listed = cockpit.AvailableCommands(CommandContext.Empty);
+
+        // CanExecute is still honoured — Evaluate keeps it as the final gate.
+        Assert.DoesNotContain(listed, d => d.Id == "test.never-available");
+        Assert.DoesNotContain(listed, d => d.Id == "test.not-invocable-by-id");
+        Assert.Contains(listed, d => d.Id == "test.always-available");
 
         await manager.ShutdownAsync();
     }
@@ -222,14 +240,15 @@ public class EngineeringCockpitTests
         using var temp = new TempDirectory();
         var (workspace, manager, _) = await StartAsync(temp.Path, typeof(CommandSampleModule));
         var cockpit = ((Tempest.App.Workspace.Workspace)workspace).Cockpit;
-        var index = cockpit.AvailableCommands
+        var index = cockpit.AvailableCommands(CommandContext.Empty)
             .Select((descriptor, i) => (descriptor, i))
             .Single(x => x.descriptor.Id == CommandSampleModule.IncrementCounterCommandId).i + 1;
 
-        var result = await cockpit.InvokeCommandAsync(index);
+        var invocation = await cockpit.InvokeCommandAsync(index, CommandContext.Empty);
 
-        Assert.True(result.Succeeded);
-        Assert.Equal("Counter is now 1.", result.Message);
+        Assert.Equal(CommandOutcome.Executed, invocation.Outcome);
+        Assert.True(invocation.Result!.Succeeded);
+        Assert.Equal("Counter is now 1.", invocation.Result.Message);
 
         await manager.ShutdownAsync();
     }
@@ -241,7 +260,7 @@ public class EngineeringCockpitTests
         var (workspace, manager, _) = await StartAsync(temp.Path, Type.EmptyTypes);
         var cockpit = ((Tempest.App.Workspace.Workspace)workspace).Cockpit;
 
-        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => cockpit.InvokeCommandAsync(0));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => cockpit.InvokeCommandAsync(0, CommandContext.Empty));
 
         await manager.ShutdownAsync();
     }
@@ -253,7 +272,121 @@ public class EngineeringCockpitTests
         var (workspace, manager, _) = await StartAsync(temp.Path, typeof(CommandSampleModule));
         var cockpit = ((Tempest.App.Workspace.Workspace)workspace).Cockpit;
 
-        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => cockpit.InvokeCommandAsync(cockpit.AvailableCommands.Count + 1));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(
+            () => cockpit.InvokeCommandAsync(cockpit.AvailableCommands(CommandContext.Empty).Count + 1, CommandContext.Empty));
+
+        await manager.ShutdownAsync();
+    }
+
+    // ----------------------------------------------------------------
+    // WP-A1 (`TD-105`) - the Cockpit's own command surface is the same
+    // Evaluate/InvokeAsync(context) contract every other surface uses,
+    // with the context supplied by its caller (WorkspaceShell).
+    // ----------------------------------------------------------------
+
+    /// <summary>
+    /// A command whose binding needs a selected object must not be listed
+    /// when nothing is selected — the F-13 defect. Before WP-A1 the Cockpit
+    /// listed every registered descriptor and then invoked it through the
+    /// Id-only overload, so a command it had just reported as available threw
+    /// <see cref="CommandException"/> the moment it was chosen.
+    /// </summary>
+    [Fact]
+    public async Task AvailableCommands_HonoursTheBindingsOwnContextRequirement()
+    {
+        using var temp = new TempDirectory();
+        var (workspace, manager, host) = await StartAsync(temp.Path, Type.EmptyTypes);
+        var commandRegistry = (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
+        commandRegistry.RegisterDescriptor(new CommandDescriptor("test.needs-selection", "Needs A Selection")
+        {
+            Binding = new CommandBinding(
+                CommandContextRequirement.SelectedObject,
+                (context, _) => new RecordedCommandA(context.Primary!.ObjectId.ToString())),
+        });
+        var cockpit = ((Tempest.App.Workspace.Workspace)workspace).Cockpit;
+
+        Assert.DoesNotContain(cockpit.AvailableCommands(CommandContext.Empty), d => d.Id == "test.needs-selection");
+        Assert.Contains(
+            cockpit.AvailableCommands(CommandContext.For(Guid.NewGuid(), "Requirement")),
+            d => d.Id == "test.needs-selection");
+
+        await manager.ShutdownAsync();
+    }
+
+    /// <summary>
+    /// A command that declares itself unavailable is reported honestly — it
+    /// is left out of the listing, and <c>Evaluate</c> still carries its own
+    /// declared reason for a surface that wants to show it disabled
+    /// (<c>ADR-0070</c>). The Cockpit is a listing surface, so it lists what
+    /// can actually be run.
+    /// </summary>
+    [Fact]
+    public async Task AvailableCommands_NeverListsACommandEvaluateReportsUnavailable()
+    {
+        using var temp = new TempDirectory();
+        var (workspace, manager, host) = await StartAsync(temp.Path, typeof(CommandSampleModule));
+        var commandRegistry = (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
+        commandRegistry.RegisterDescriptor(new CommandDescriptor("test.no-picker", "Needs A Picker")
+        {
+            Binding = CommandBinding.Unavailable("this platform has no object picker yet."),
+        });
+        var cockpit = ((Tempest.App.Workspace.Workspace)workspace).Cockpit;
+        var context = CommandContext.For(Guid.NewGuid(), "Requirement");
+
+        var listed = cockpit.AvailableCommands(context);
+
+        Assert.DoesNotContain(listed, d => d.Id == "test.no-picker");
+        Assert.Equal(
+            "this platform has no object picker yet.",
+            commandRegistry.Evaluate("test.no-picker", context).Reason);
+
+        // The invariant itself, over the whole registry rather than over the
+        // one descriptor this test planted: the two answers cannot disagree.
+        Assert.All(listed, d => Assert.True(commandRegistry.Evaluate(d.Id, context).IsAvailable));
+        Assert.All(
+            commandRegistry.Items.Where(d => !commandRegistry.Evaluate(d.Id, context).IsAvailable),
+            d => Assert.DoesNotContain(listed, listedDescriptor => listedDescriptor.Id == d.Id));
+
+        await manager.ShutdownAsync();
+    }
+
+    /// <summary>
+    /// The whole point of WP-A1: a real context-aware command reaches its
+    /// handler with the caller-supplied selection, through the Cockpit. The
+    /// context here is built by the same
+    /// <see cref="WorkspaceCommandContext"/> adapter WorkspaceShell uses, so
+    /// this exercises the production translation, not a hand-built context.
+    /// </summary>
+    [Fact]
+    public async Task InvokeCommandAsync_BuildsTheCommandFromTheCallerSuppliedSelection()
+    {
+        using var temp = new TempDirectory();
+        var (workspace, manager, host) = await StartAsync(temp.Path, Type.EmptyTypes);
+        var commandRegistry = (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
+        var commandDispatcher = (ICommandDispatcher)host.Services!.GetService(typeof(ICommandDispatcher));
+        var handler = new RecordingCommandHandler<RecordedCommandA>();
+        commandDispatcher.RegisterHandler(handler);
+        commandRegistry.RegisterDescriptor(new CommandDescriptor("test.acts-on-selection", "Acts On The Selection")
+        {
+            Binding = new CommandBinding(
+                CommandContextRequirement.SelectedObject,
+                (context, _) => new RecordedCommandA(context.Primary!.ObjectId.ToString())),
+        });
+        var cockpit = ((Tempest.App.Workspace.Workspace)workspace).Cockpit;
+
+        // Exactly what WorkspaceShell does: read the selection, translate it
+        // through the one adapter, hand the result to the Cockpit.
+        var selected = new WorkspaceSelection(Guid.NewGuid(), "Requirement");
+        var context = WorkspaceCommandContext.From(selected, [selected]);
+        var index = cockpit.AvailableCommands(context)
+            .Select((descriptor, i) => (descriptor, i))
+            .Single(x => x.descriptor.Id == "test.acts-on-selection").i + 1;
+
+        var invocation = await cockpit.InvokeCommandAsync(index, context);
+
+        Assert.Equal(CommandOutcome.Executed, invocation.Outcome);
+        Assert.True(invocation.Result!.Succeeded);
+        Assert.Equal(selected.ObjectId.ToString(), Assert.Single(handler.Received).Payload);
 
         await manager.ShutdownAsync();
     }

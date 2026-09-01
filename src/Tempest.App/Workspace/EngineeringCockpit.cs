@@ -570,7 +570,11 @@ internal sealed class EngineeringCockpit
             if (AreaCount > 0)
                 actions.Add("Browse an Area below to explore the Project Explorer.");
 
-            if (AvailableCommands.Count > 0)
+            // Whether any command is available *right now* depends on a
+            // context this read model deliberately does not hold (`WP-A1`).
+            // This hint only claims the Global Commands section exists, so
+            // it asks the question it can actually answer.
+            if (_commandRegistry.Items.Count > 0)
                 actions.Add("Run a Global Command below.");
 
             return actions;
@@ -592,25 +596,66 @@ internal sealed class EngineeringCockpit
     /// <summary>
     /// Gets every currently-available global command - the Cockpit's own
     /// Command Palette integration (`ADR-0070`): a real, live read of
-    /// <see cref="ICommandRegistry.Items"/>, filtered by each descriptor's
-    /// own <see cref="CommandDescriptor.CanExecute"/>.
+    /// <see cref="ICommandRegistry.Items"/>, filtered by
+    /// <see cref="ICommandRegistry.Evaluate"/> against <paramref name="context"/>.
     /// </summary>
-    public IReadOnlyList<CommandDescriptor> AvailableCommands =>
-        _commandRegistry.Items.Where(d => d.CanExecute is null || d.CanExecute()).ToList();
+    /// <param name="context">
+    /// The caller's own context. The Cockpit is a read model and holds no
+    /// selection of its own (`WP-A1`): whoever is presenting it owns the
+    /// context and supplies it here, which is also what keeps this list
+    /// honest — a command is listed only if it could actually run right now.
+    /// </param>
+    /// <returns>Every command <see cref="ICommandRegistry.Evaluate"/> reports as available.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="context"/> is <see langword="null"/>.</exception>
+    /// <remarks>
+    /// <b>This used to filter on <see cref="CommandDescriptor.CanExecute"/>
+    /// alone</b>, which no production descriptor sets — so it reported all
+    /// seventy-four discipline commands as "available" and
+    /// <see cref="InvokeCommandAsync"/> then threw
+    /// <see cref="CommandException"/> on every one of them, because it
+    /// invoked through the Id-only overload that needs a
+    /// <see cref="CommandDescriptor.CreateDefault"/> none of them has. The
+    /// name and the behaviour now agree.
+    /// </remarks>
+    public IReadOnlyList<CommandDescriptor> AvailableCommands(CommandContext context)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+
+        return [.. _commandRegistry.Items.Where(d => _commandRegistry.Evaluate(d.Id, context).IsAvailable)];
+    }
 
     /// <summary>
     /// Invokes the <paramref name="index"/>-th command in
-    /// <see cref="AvailableCommands"/> (1-based).
+    /// <see cref="AvailableCommands"/> for <paramref name="context"/> (1-based).
     /// </summary>
+    /// <param name="index">The 1-based position in <see cref="AvailableCommands"/>.</param>
+    /// <param name="context">
+    /// The caller's own context — the same one <see cref="AvailableCommands"/>
+    /// was listed for, so the command invoked is the command shown.
+    /// </param>
+    /// <param name="prompt">
+    /// Collects any values the command's own binding declares.
+    /// <see langword="null"/> — a caller with no input surface — reports that
+    /// honestly rather than invoking without asking.
+    /// </param>
+    /// <param name="cancellationToken">A token observed while invoking.</param>
+    /// <returns>Whether the command ran, was declined, or could not be invoked.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="context"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="index"/> is out of range.</exception>
-    public Task<CommandResult> InvokeCommandAsync(int index, CancellationToken cancellationToken = default)
+    public Task<CommandInvocation> InvokeCommandAsync(
+        int index,
+        CommandContext context,
+        CommandParameterPrompt? prompt = null,
+        CancellationToken cancellationToken = default)
     {
-        var commands = AvailableCommands;
+        ArgumentNullException.ThrowIfNull(context);
+
+        var commands = AvailableCommands(context);
 
         if (index < 1 || index > commands.Count)
             throw new ArgumentOutOfRangeException(nameof(index), index, $"Must be between 1 and {commands.Count}.");
 
-        return _commandRegistry.InvokeAsync(commands[index - 1].Id, cancellationToken);
+        return _commandRegistry.InvokeAsync(commands[index - 1].Id, context, prompt, cancellationToken);
     }
 
     /// <summary>

@@ -149,9 +149,27 @@ public sealed class MainWindow : Window
                 // Work Package wires (`WP 10.6A` §4) — a macro's own
                 // multi-step invocation is the one genuinely "could take
                 // a moment" case in this platform today.
+                //
+                // The context is captured here, at macro start, and every
+                // step replays it (`ADR-0098`) — the identical shape the
+                // palette's own macro path uses (`WP-A1`); before that this
+                // ran through the obsolete Id-only overload with no context
+                // at all, so every object-scoped step reported "needs a
+                // selected object" however the workspace was selected. No
+                // prompt is passed, so a parameterised step fails honestly
+                // rather than interrupting an unattended run.
+                var context = WorkspaceCommandContext.From(workspace.Selection);
                 var result = await _backgroundTaskRunner.RunAsync(
                     $"Running macro '{title}'…",
-                    ct => composition.CommandRegistry.InvokeAsync(IMacroManager.CommandIdPrefix + macroId, ct)).ConfigureAwait(true);
+                    async ct =>
+                    {
+                        var invocation = await composition.CommandRegistry
+                            .InvokeAsync(IMacroManager.CommandIdPrefix + macroId, context, prompt: null, ct)
+                            .ConfigureAwait(false);
+
+                        return invocation.Result
+                            ?? CommandResult.Failure(invocation.Reason ?? "The macro could not be run.");
+                    }).ConfigureAwait(true);
 
                 _commandHistory.Record($"Macro '{title}'", result.Succeeded);
                 RefreshOutputPanelExtras();

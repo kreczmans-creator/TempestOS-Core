@@ -1,3 +1,4 @@
+using Tempest.Core.Commands;
 namespace Tempest.App.Workspace;
 
 /// <summary>
@@ -301,7 +302,8 @@ public sealed class WorkspaceShell : IAsyncDisposable
     private async Task HandleRunCommandAsync(int index, CancellationToken cancellationToken)
     {
         var cockpit = _workspaceConcrete!.Cockpit;
-        var commands = cockpit.AvailableCommands;
+        var context = CommandContextForShell();
+        var commands = cockpit.AvailableCommands(context);
 
         if (index < 1 || index > commands.Count)
         {
@@ -310,11 +312,43 @@ public sealed class WorkspaceShell : IAsyncDisposable
         }
 
         var descriptor = commands[index - 1];
-        var result = await cockpit.InvokeCommandAsync(index, cancellationToken).ConfigureAwait(false);
-        _manager.StatusBar.SetStatus(result.Succeeded
-            ? $"{descriptor.DisplayName}: {result.Message ?? "Succeeded."}"
-            : $"{descriptor.DisplayName} failed: {result.Message}");
+
+        // No prompt is supplied: this shell has no value-collection surface,
+        // so a command declaring values is reported as needing one rather
+        // than invoked without asking. That is an honest outcome — before
+        // `WP-A1` this path threw CommandException for all seventy-four
+        // production commands, which the caller then had no way to report.
+        var invocation = await cockpit
+            .InvokeCommandAsync(index, context, prompt: null, cancellationToken)
+            .ConfigureAwait(false);
+
+        _manager.StatusBar.SetStatus(invocation.Outcome switch
+        {
+            CommandOutcome.Executed when invocation.Result!.Succeeded =>
+                $"{descriptor.DisplayName}: {invocation.Result.Message ?? "Succeeded."}",
+            CommandOutcome.Executed =>
+                $"{descriptor.DisplayName} failed: {invocation.Result!.Message}",
+            CommandOutcome.Cancelled =>
+                _manager.StatusBar.StatusText,
+            _ => $"{descriptor.DisplayName}: {invocation.Reason}",
+        });
     }
+
+    /// <summary>
+    /// The Workspace's own live selection, as the Command Framework sees it
+    /// (`WP-A1`).
+    /// </summary>
+    /// <remarks>
+    /// <b>This shell owns the context, not the Cockpit.</b>
+    /// <see cref="EngineeringCockpit"/> is a read model and deliberately holds
+    /// no <see cref="ISelectionService"/>; whoever presents it is the thing
+    /// that knows what the user has selected. Built through the one shared
+    /// <see cref="WorkspaceCommandContext"/> adapter the Ribbon and the
+    /// Command Palette already use, rather than a second context-building
+    /// mechanism.
+    /// </remarks>
+    private CommandContext CommandContextForShell() =>
+        _workspace is null ? CommandContext.Empty : WorkspaceCommandContext.From(_workspace.Selection);
 
     private async Task HandleContinueAsync(CancellationToken cancellationToken)
     {
@@ -596,7 +630,7 @@ public sealed class WorkspaceShell : IAsyncDisposable
         _output.WriteLine("Global Commands (Command Palette)");
         _output.WriteLine("------------------------------------");
 
-        var commands = cockpit.AvailableCommands;
+        var commands = cockpit.AvailableCommands(CommandContextForShell());
         if (commands.Count == 0)
         {
             _output.WriteLine("(none available)");

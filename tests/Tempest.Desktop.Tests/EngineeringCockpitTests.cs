@@ -507,7 +507,7 @@ public sealed class EngineeringCockpitTests
             var cockpit = ((Workspace)host.Workspace!).Cockpit;
 
             Assert.True(cockpit.AreaCount > 0);
-            Assert.NotEmpty(cockpit.AvailableCommands);
+            Assert.NotEmpty(cockpit.AvailableCommands(Tempest.Core.Commands.CommandContext.Empty));
             Assert.Equal(cockpit.RecentActivity.Count > 0, cockpit.ContinueWhereILeftOff is not null);
             Assert.Equal(cockpit.ContinueWhereILeftOff is not null, cockpit.QuickActions.Any(a => a.StartsWith("Continue:", StringComparison.Ordinal)));
         }

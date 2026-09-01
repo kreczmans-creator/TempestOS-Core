@@ -2,6 +2,12 @@ using Tempest.Core.Logging;
 
 namespace Tempest.Core.Tests.Logging;
 
+// Redirects Console.Out to capture what the sink writes, so it must be
+// serialised against every other test that does the same — the
+// established convention in this suite (`WP-A1`: it was the one
+// redirecting class outside the collection, and failed intermittently
+// when a parallel test restored Console.Out underneath it).
+[Collection("Console output capture")]
 public class ConsoleLogSinkTests
 {
     private static LogEntry Entry(
