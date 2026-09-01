@@ -593,6 +593,16 @@ public sealed class MainWindow : Window
         _commandPalette.ContextSource = () => WorkspaceCommandContext.From(workspace.Selection);
         _commandPalette.ParameterPrompt = commandPrompt.Prompt;
 
+        // `WP-A2`: a bound gesture now asks the same question the Ribbon and
+        // the Palette ask, and gets the same answers — the same selection
+        // adapter and the same one prompt. Until then the router used the
+        // obsolete Id-only overload, which throws for every production
+        // command, so a bound key would have looked like a dead key. Nothing
+        // is bound today (`AT-23`, a product choice, not a defect shield);
+        // this is what makes the first binding anyone adds actually work.
+        composition.InputBindingRegistry.ContextSource = () => WorkspaceCommandContext.From(workspace.Selection);
+        composition.InputBindingRegistry.ParameterPrompt = commandPrompt.Prompt;
+
         _commandPalette.InvokeOverride = async (descriptor, context) =>
         {
             if (!descriptor.Id.StartsWith(IMacroManager.CommandIdPrefix, StringComparison.Ordinal))

@@ -45,12 +45,6 @@ public class IdOnlyInvocationGuardTests
                 + "therefore no CommandContext to build — the Id-only overload is the correct one "
                 + "here, not a leftover. Revisit only if `AT-10` is ever closed.",
 
-            ["src/Tempest.Core/Input/InputBindingRouter.cs"] =
-                "DORMANT, trigger-gated (`WP-A2`). KeyboardCommandBindingProvider ships with zero "
-                + "default bindings and no remapping UI (`AT-23`), and no production code calls "
-                + "Bind(gesture, commandId) — so CommandRequested never fires and this line never "
-                + "runs today. It becomes a real defect the moment a gesture is bound to a "
-                + "discipline command, which is the trigger for `WP-A2`.",
         };
 
     /// <summary>
@@ -214,6 +208,25 @@ public class IdOnlyInvocationGuardTests
     /// caller the test suite does not have.
     /// </para>
     /// </remarks>
+    [Fact]
+    public void TheInputBindingRouter_IsNoLongerAllowListed_BecauseItWasMigrated()
+    {
+        // `WP-A2`. This was the last DORMANT survivor, excused only because
+        // nothing was ever bound to it — the dormancy was a defect's shadow,
+        // not a decision: binding any discipline command would have thrown
+        // into a fire-and-forget async void and looked like a dead key. It
+        // now takes the canonical path, so the excuse is gone with it.
+        // `AT-23` still stands, and now means what it says: the keyboard
+        // ships bound to nothing by product choice.
+        Assert.DoesNotContain("src/Tempest.Core/Input/InputBindingRouter.cs", SanctionedCallers.Keys);
+
+        var router = File.ReadAllText(Path.Combine(
+            RepositoryPaths.RepositoryRoot, "src", "Tempest.Core", "Input", "InputBindingRouter.cs"));
+
+        Assert.DoesNotContain(CodeLines(router), IdOnlyCall.IsMatch);
+        Assert.Contains("InvokeAsync(commandId, context, ParameterPrompt)", router, StringComparison.Ordinal);
+    }
+
     [Fact]
     public void NoShippedAssembly_MapsAnHttpRouteOntoACommand()
     {
