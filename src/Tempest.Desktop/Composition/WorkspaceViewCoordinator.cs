@@ -83,6 +83,7 @@ internal sealed class WorkspaceViewCoordinator
     private readonly Dictionary<Guid, IWorkspaceView> _openGraphViewsByRootId;
     private readonly Action _refreshStatusBar;
     private readonly Action<string> _recordHistory;
+    private readonly ActionOutcomeReporter _reporter;
     private readonly Action _refreshCockpit;
 
     private DocumentAreaView? _documentArea;
@@ -106,7 +107,7 @@ internal sealed class WorkspaceViewCoordinator
         ProjectExplorerView explorerView, PropertyInspectorView inspectorView, RibbonView ribbon,
         StatusBarView statusBar, ToastHost toastHost, ConfirmationDialog confirmationDialog, IUndoRedoStack undoRedoStack,
         RecentObjectsState recentObjects, FavouriteObjectsState favouriteObjects, Dictionary<Guid, IWorkspaceView> openGraphViewsByRootId,
-        Action refreshStatusBar, Action<string> recordHistory, Action refreshCockpit)
+        Action refreshStatusBar, Action<string> recordHistory, Action refreshCockpit, ActionOutcomeReporter reporter)
     {
         ArgumentNullException.ThrowIfNull(workspace);
         ArgumentNullException.ThrowIfNull(manager);
@@ -126,6 +127,7 @@ internal sealed class WorkspaceViewCoordinator
         ArgumentNullException.ThrowIfNull(refreshStatusBar);
         ArgumentNullException.ThrowIfNull(recordHistory);
         ArgumentNullException.ThrowIfNull(refreshCockpit);
+        ArgumentNullException.ThrowIfNull(reporter);
 
         _workspace = workspace;
         _manager = manager;
@@ -146,6 +148,7 @@ internal sealed class WorkspaceViewCoordinator
         _refreshStatusBar = refreshStatusBar;
         _recordHistory = recordHistory;
         _refreshCockpit = refreshCockpit;
+        _reporter = reporter;
 
         // Select-to-inspect / Open-to-edit (WP8.0A UI Architecture.md §4, unchanged).
         _explorerView.ObjectSelected += async (id, kind) =>
@@ -169,23 +172,18 @@ internal sealed class WorkspaceViewCoordinator
             // event rather than duplicating this logic).
             _recentObjects.Record(id, kind, view.Title);
         };
+        // Reported through the one shared tail (`WP-D1`). The refresh set
+        // stays this caller's own: the Explorer does not reload itself
+        // here — it has already done so — while the Inspector re-renders,
+        // because a successful delete cleared the selection and a
+        // successful rename changed the displayed facets.
         _explorerView.ActionCompleted += (message, outcome) =>
-        {
-            _statusBar.SetText(message);
-            _toastHost.Show(message, outcome.Succeeded ? FeedbackSeverity.Success : FeedbackSeverity.Error);
-            _recordHistory(message);
-
-            // Success-gated (`TD-58`): a refused rename/delete/move
-            // changed nothing, so no Cockpit rebuild — and a failure no
-            // longer reports itself as a Success toast. The Inspector
-            // re-renders too: a successful delete cleared the selection,
-            // and a successful rename changed the displayed facets.
-            if (outcome.WorkspaceChanged)
+            _ = _reporter.ReportAsync(message, outcome, refresh: () =>
             {
                 _ = _inspectorView.RefreshFromSourceAsync();
                 _refreshCockpit();
-            }
-        };
+                return Task.CompletedTask;
+            });
         _explorerView.RecentObjects = _recentObjects;
         _explorerView.Favourites = _favouriteObjects;
         _explorerView.ToggleFavouriteRequested = ToggleFavourite;
@@ -219,28 +217,23 @@ internal sealed class WorkspaceViewCoordinator
             }
 
             var result = await _commandDispatcher.DispatchAsync(move, CancellationToken.None).ConfigureAwait(true);
-            var message = result.Succeeded ? "Moved." : result.Message ?? "Move failed.";
-            _statusBar.SetText(message);
-            _toastHost.Show(message, result.Succeeded ? FeedbackSeverity.Success : FeedbackSeverity.Error);
-            if (result.Succeeded)
+
+            // Deliberately the no-history entry point (`WP-D1`): a
+            // drag-and-drop reparent has never been written to Command
+            // History, and consolidating the tail is not a licence to
+            // change that.
+            await _reporter.ReportWithoutHistoryAsync(result, "Moved.", "Move failed.", refresh: async () =>
             {
                 await _explorerView.LoadAsync().ConfigureAwait(true);
                 _refreshCockpit();
-            }
+            }).ConfigureAwait(true);
         };
         _inspectorView.ActionCompleted += async (message, outcome) =>
-        {
-            _statusBar.SetText(message);
-            _toastHost.Show(message, outcome.Succeeded ? FeedbackSeverity.Success : FeedbackSeverity.Error);
-            _recordHistory(message);
-
-            // Success-gated (`TD-58`).
-            if (outcome.WorkspaceChanged)
+            await _reporter.ReportAsync(message, outcome, refresh: async () =>
             {
                 await _explorerView.LoadAsync().ConfigureAwait(true);
                 _refreshCockpit();
-            }
-        };
+            }).ConfigureAwait(true);
     }
 
     /// <summary>
@@ -301,24 +294,19 @@ internal sealed class WorkspaceViewCoordinator
         // surfaces its own Missing/Corrupt/Unsupported state, so there is
         // no result here worth awaiting.
         editor.OpenAttachmentRequested += (owner, attachment) => _ = OpenAttachmentAsync?.Invoke(owner, attachment);
+        // Gated on WorkspaceChanged rather than on success (`WP-D1`), which
+        // matters here more than anywhere else: this editor's own
+        // Owner/Priority save reports a failure that *did* change the
+        // workspace when the first half committed and the second was
+        // refused. The Inspector re-reads its facets from source — a plain
+        // Refresh() would re-render the cached, pre-mutation values.
         editor.ActionCompleted += async (message, outcome) =>
-        {
-            _statusBar.SetText(message);
-            _toastHost.Show(message, outcome.Succeeded ? FeedbackSeverity.Success : FeedbackSeverity.Error);
-            _recordHistory(message);
-
-            // Success-gated (`TD-58`): a rejected Save/Execute/Attach
-            // changed nothing, so the Explorer/Inspector/Cockpit keep
-            // their current, still-correct state. The Inspector re-reads
-            // its facets from source — a plain Refresh() would re-render
-            // the cached, pre-mutation values.
-            if (outcome.WorkspaceChanged)
+            await _reporter.ReportAsync(message, outcome, refresh: async () =>
             {
                 await _explorerView.LoadAsync().ConfigureAwait(true);
                 await _inspectorView.RefreshFromSourceAsync().ConfigureAwait(true);
                 _refreshCockpit();
-            }
-        };
+            }).ConfigureAwait(true);
         // Undo/Redo (`WP 10.6A`, `ADR-0099`) — every discipline's own
         // Object Editor shares this one commit path, so this single
         // subscription covers Rename across all six disciplines.

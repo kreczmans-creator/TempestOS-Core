@@ -93,6 +93,7 @@ public sealed class MainWindow : Window
     // WP 10.6A — Command Execution & Productivity Experience.
     private readonly CommandHistoryLog _commandHistory = new();
     private readonly IBackgroundTaskRunner _backgroundTaskRunner = new BackgroundTaskRunner();
+    private readonly ActionOutcomeReporter _actionReporter;
     private readonly KeyboardCommandBindingProvider _keyboardBindingProvider = new();
     private readonly MacroManagerDialog _macroManagerDialog;
 
@@ -252,12 +253,18 @@ public sealed class MainWindow : Window
         // constructed before WorkspaceViewCoordinator, which needs its
         // own Stack. `WP 12.4B` (`ADR-0104`): its own CockpitView-refresh
         // need is a plain `Action` delegate, not an object reference —
+        // The one report-then-refresh tail (`WP-D1`, `TD-111`) — built here,
+        // in the composition root, and handed to every collaborator that
+        // reports an action. It owns the presentation consequences only;
+        // each caller still supplies its own refresh set.
+        _actionReporter = new ActionOutcomeReporter(_statusBar, _toastHost, RecordHistory);
+
         // `() => _cockpitView!.Refresh()` is the same field-closure
         // lazy-capture pattern `_documentArea!` already uses just below;
         // `_cockpitView` is a `readonly` field assigned later, at line
         // ~209, but this lambda is only ever invoked after construction
         // fully completes, by which point it is always assigned.
-        _undoRedo = new UndoRedoCoordinator(_statusBar, _toastHost, _explorerView, RecordHistory, refreshCockpit: () => _cockpitView!.Refresh());
+        _undoRedo = new UndoRedoCoordinator(_explorerView, refreshCockpit: () => _cockpitView!.Refresh(), _actionReporter);
 
         // Explorer/Inspector/Document-Area cross-view coordination
         // (`ADR-0103` collaborator #4) — DocumentAreaView is attached
@@ -269,7 +276,7 @@ public sealed class MainWindow : Window
             workspace, manager, composition.DomainContext, composition.CommandDispatcher, composition.RequirementsService, host.CalculationTemplates,
             _explorerView, _inspectorView, _ribbon, _statusBar, _toastHost, _confirmationDialog, _undoRedo.Stack,
             _session.RecentObjects, _session.FavouriteObjects, _openGraphViewsByRootId,
-            refreshStatusBar: () => RefreshStatusBar(manager), recordHistory: RecordHistory, refreshCockpit: () => _cockpitView!.Refresh());
+            refreshStatusBar: () => RefreshStatusBar(manager), recordHistory: RecordHistory, refreshCockpit: () => _cockpitView!.Refresh(), _actionReporter);
 
         _documentArea = new DocumentAreaView(_viewCoordinator.BuildDocumentContent);
 
@@ -364,21 +371,16 @@ public sealed class MainWindow : Window
 
         _ribbon.ParameterPrompt = commandPrompt.Prompt;
 
+        // Reported through the one shared tail (`WP-D1`). Refused/failed
+        // actions changed nothing — a full Explorer reload and Cockpit
+        // rebuild for them was `TD-58`'s core redundant-rebuild path.
         _ribbon.ActionCompleted += async (message, outcome) =>
-        {
-            _statusBar.SetText(message);
-            _toastHost.Show(message, outcome.Succeeded ? FeedbackSeverity.Success : FeedbackSeverity.Error);
-            RecordHistory(message);
-
-            // Refused/failed actions changed nothing — a full Explorer
-            // reload and Cockpit rebuild for them was `TD-58`'s core
-            // redundant-rebuild path.
-            if (outcome.WorkspaceChanged)
+            await _actionReporter.ReportAsync(message, outcome, refresh: async () =>
             {
                 await _explorerView.LoadAsync().ConfigureAwait(true);
                 _cockpitView.Refresh();
-            }
-        };
+            }).ConfigureAwait(true);
+
         // Background-task state changes drive the Output panel's own
         // Background Tasks list directly (`TD-58` stale-UI closure) —
         // previously `Changed` had no subscriber at all, so a running

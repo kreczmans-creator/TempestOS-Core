@@ -50,11 +50,9 @@ namespace Tempest.Desktop.Composition;
 /// </remarks>
 internal sealed class UndoRedoCoordinator
 {
-    private readonly StatusBarView _statusBar;
-    private readonly ToastHost _toastHost;
     private readonly ProjectExplorerView _explorerView;
-    private readonly Action<string> _recordHistory;
     private readonly Action _refreshCockpit;
+    private readonly ActionOutcomeReporter _reporter;
 
     /// <summary>Gets the session-only Undo/Redo stack (`ADR-0099`) — never persisted across a restart.</summary>
     public IUndoRedoStack Stack { get; } = new UndoRedoStack();
@@ -66,19 +64,15 @@ internal sealed class UndoRedoCoordinator
     public Button RedoButton { get; } = new() { Content = "↷ Redo", MinHeight = DesignTokens.MinControlSize };
 
     /// <summary>Initialises a new instance of the <see cref="UndoRedoCoordinator"/> class.</summary>
-    public UndoRedoCoordinator(StatusBarView statusBar, ToastHost toastHost, ProjectExplorerView explorerView, Action<string> recordHistory, Action refreshCockpit)
+    public UndoRedoCoordinator(ProjectExplorerView explorerView, Action refreshCockpit, ActionOutcomeReporter reporter)
     {
-        ArgumentNullException.ThrowIfNull(statusBar);
-        ArgumentNullException.ThrowIfNull(toastHost);
         ArgumentNullException.ThrowIfNull(explorerView);
-        ArgumentNullException.ThrowIfNull(recordHistory);
         ArgumentNullException.ThrowIfNull(refreshCockpit);
+        ArgumentNullException.ThrowIfNull(reporter);
 
-        _statusBar = statusBar;
-        _toastHost = toastHost;
         _explorerView = explorerView;
-        _recordHistory = recordHistory;
         _refreshCockpit = refreshCockpit;
+        _reporter = reporter;
 
         ToolTip.SetTip(UndoButton, "Nothing to undo");
         ToolTip.SetTip(RedoButton, "Nothing to redo");
@@ -106,17 +100,13 @@ internal sealed class UndoRedoCoordinator
         if (result is null)
             return;
 
-        var message = result.Succeeded ? "Undo completed." : result.Message ?? "Undo failed.";
-        _statusBar.SetText(message);
-        _toastHost.Show(message, result.Succeeded ? FeedbackSeverity.Success : FeedbackSeverity.Error);
-        _recordHistory(message);
-
-        // Success-gated (`TD-58`): a failed undo/redo changed nothing.
-        if (result.Succeeded)
+        // Reported through the one shared tail (`WP-D1`); success-gated
+        // (`TD-58`), because a failed undo changed nothing.
+        await _reporter.ReportAsync(result, "Undo completed.", "Undo failed.", refresh: async () =>
         {
             await _explorerView.LoadAsync().ConfigureAwait(true);
             _refreshCockpit();
-        }
+        }).ConfigureAwait(true);
     }
 
     /// <summary>Re-applies the most recently undone action, if any (`WP 10.6A`, `ADR-0099`) — mirrors <see cref="UndoAsync"/>'s own identical shape.</summary>
@@ -126,16 +116,12 @@ internal sealed class UndoRedoCoordinator
         if (result is null)
             return;
 
-        var message = result.Succeeded ? "Redo completed." : result.Message ?? "Redo failed.";
-        _statusBar.SetText(message);
-        _toastHost.Show(message, result.Succeeded ? FeedbackSeverity.Success : FeedbackSeverity.Error);
-        _recordHistory(message);
-
-        // Success-gated (`TD-58`): a failed undo/redo changed nothing.
-        if (result.Succeeded)
+        // Reported through the one shared tail (`WP-D1`); success-gated
+        // (`TD-58`), because a failed redo changed nothing.
+        await _reporter.ReportAsync(result, "Redo completed.", "Redo failed.", refresh: async () =>
         {
             await _explorerView.LoadAsync().ConfigureAwait(true);
             _refreshCockpit();
-        }
+        }).ConfigureAwait(true);
     }
 }
