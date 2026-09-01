@@ -6768,7 +6768,7 @@ Experience phase is now complete.
 
 ## Repository Metrics
 
-**Corrected, `WP-Z1` (2026-09-01); figures advanced `WP-Z2`, `WP-Z3` and `WP-Z4`.** The table below is stale — its figures
+**Corrected, `WP-Z1` (2026-09-01); figures advanced `WP-Z2`, `WP-Z3`, `WP-Z4` and `WP-Z4` Stage 5.** The table below is stale — its figures
 were last advanced by `WP 10.2A` (`v0.10.0`) and drifted across every
 release since. Re-derived directly from the repository at `e4bc3ee`:
 
@@ -6780,7 +6780,7 @@ release since. Re-derived directly from the repository at `e4bc3ee`:
 | Academy articles | **232** (plus `Academy Index.md`; 233 `.md` files in total — the count `governance-healthcheck.ps1` reports is 232, excluding the index it checks against), of which **158** are Work Package retrospectives. **The programme's own fifteen were written by `WP-Z3`**, closing the Engineering Governance §6 gap the pre-release audit found; the figure previously read "eleven are owed", which undercounted — see the `WP-Z3` retrospective for the reconciliation |
 | Governance registers | **27** registers, **38** governance documents in `docs/governance/` |
 | Architecture documents | **29** under `docs/architecture/` |
-| Technical debt | **118** tracked (36 Resolved, 6 Closed, 73 Open, 3 Partially resolved) plus **26** accepted trade-offs |
+| Technical debt | **119** tracked (36 Resolved, 6 Closed, 74 Open, 3 Partially resolved) plus **26** accepted trade-offs — **+1, `WP-Z4` Stage 5**: `TD-119`, fixed `Task.Delay` synchronisation in `Tempest.Desktop.Tests`, Open and deferred out of `v0.14.0` |
 
 Only the metrics above were re-derived. The stale table that follows is
 retained, not deleted, and a full historical re-derivation of this file's
