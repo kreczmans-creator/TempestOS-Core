@@ -430,9 +430,30 @@ public sealed class FeatureCompletionTests
             var registry = (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
             ClickRibbonCommand(ribbon, "mechanical.duplicate", registry);
             await ConfirmAsync(confirmationDialog, "Continue");
-            await Task.Delay(60);
 
-            var countAfter = await CountAllObjectNodesAsync(workspace.ProjectExplorer, await workspace.ProjectExplorer.GetRootNodesAsync());
+            // `TD-119`: the Continue click dispatches an `async void`
+            // handler, and the duplicate is created and persisted on a
+            // continuation this test has no task for. A fixed `Task.Delay`
+            // sampled the tree once, after a guess: this assertion failed on
+            // CI at `384e47f` with `Expected: 13, Actual: 12` — short by
+            // exactly the one object still being written — while the
+            // push-triggered run on the identical SHA passed. Same
+            // bounded-poll remedy as `TD-46`/`WP 13.12.9`, re-walking the
+            // real tree every iteration. The loop breaks on `>=`, but the
+            // assertion below is still equality: if `duplicate` ever created
+            // two objects the loop would not stop early, and the assertion
+            // would fail at 14 exactly as it should.
+            int countAfter;
+            var duplicateDeadline = DateTime.UtcNow.AddSeconds(2);
+            while (true)
+            {
+                countAfter = await CountAllObjectNodesAsync(workspace.ProjectExplorer, await workspace.ProjectExplorer.GetRootNodesAsync());
+                if (countAfter >= countBefore + 1 || DateTime.UtcNow >= duplicateDeadline)
+                    break;
+
+                await Task.Delay(10);
+            }
+
             Assert.Equal(countBefore + 1, countAfter);
         }
         finally

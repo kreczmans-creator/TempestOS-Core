@@ -199,7 +199,24 @@ public sealed class SurfaceCommandIntegrationTests
             ribbon.ActionCompleted += (_, outcome) => outcomes.Add(outcome);
 
             Click(ribbon, registry, "requirements.delete-group");
-            await Task.Delay(80);
+
+            // `TD-119`: `Click` raises the real Click and returns — the
+            // handler is `async void`, so there is no task to await, and
+            // `RibbonView.OnCommandButtonClickAsync` raises `ActionCompleted`
+            // only after `InvokeAsync` completes. A fixed `Task.Delay` here
+            // was a race, not a wait: this exact assertion failed on the
+            // push-triggered CI run at `b09a620` with `Collection: []`, while
+            // the concurrent `pull_request` run on the identical SHA passed.
+            // Same bounded-poll remedy as `TD-46`/`WP 13.12.9`, re-reading the
+            // live collection every iteration. The condition is deliberately
+            // "an outcome exists", not "a successful outcome exists": a
+            // genuinely failed command must fail this assertion at once, on
+            // its own message, rather than be waited out to the deadline and
+            // reported as a timeout. A cancelled command raises nothing at
+            // all, so it still fails here — exactly as it does today.
+            var outcomeDeadline = DateTime.UtcNow.AddSeconds(2);
+            while (outcomes.Count == 0 && DateTime.UtcNow < outcomeDeadline)
+                await Task.Delay(10);
 
             Assert.Contains(outcomes, o => o.Succeeded);
 

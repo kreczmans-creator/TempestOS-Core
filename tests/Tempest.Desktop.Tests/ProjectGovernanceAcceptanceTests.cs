@@ -275,7 +275,7 @@ public sealed class ProjectGovernanceAcceptanceTests
             await ClickAsync(surface, "Propose Decision");
             await AnswerDialogAsync(window, "Machine the impeller from titanium");
             await AnswerDialogAsync(window, "Lighter for the same stiffness, and it survives the overspeed case.");
-            await window.RenderCurrentModuleAsync();
+            await RenderUntilDecisionsAsync(window, d => d.Count == 1);
 
             RisksSurfaceOf(window).SelectTab(GovernanceRegisterTab.Decisions);
             var decision = Assert.Single(RisksSurfaceOf(window).Decisions);
@@ -287,7 +287,7 @@ public sealed class ProjectGovernanceAcceptanceTests
             Assert.Contains("Lighter for the same stiffness", decision.Rationale, StringComparison.Ordinal);
 
             await ClickAsync(RisksSurfaceOf(window), "Accepted");
-            await window.RenderCurrentModuleAsync();
+            await RenderUntilDecisionsAsync(window, d => d.Count == 1 && d[0].Status == DecisionStatus.Accepted);
 
             RisksSurfaceOf(window).SelectTab(GovernanceRegisterTab.Decisions);
             decision = Assert.Single(RisksSurfaceOf(window).Decisions);
@@ -309,6 +309,7 @@ public sealed class ProjectGovernanceAcceptanceTests
             var window = new MainWindow(second);
 
             await GoToRisksAsync(second, window, projectId);
+            await RenderUntilDecisionsAsync(window, d => d.Count == 1);
             RisksSurfaceOf(window).SelectTab(GovernanceRegisterTab.Decisions);
 
             var decision = Assert.Single(RisksSurfaceOf(window).Decisions);
@@ -323,7 +324,7 @@ public sealed class ProjectGovernanceAcceptanceTests
             // Superseding it leaves the original record of who decided and
             // when exactly as it was.
             await ClickAsync(RisksSurfaceOf(window), "Superseded");
-            await window.RenderCurrentModuleAsync();
+            await RenderUntilDecisionsAsync(window, d => d.Count == 1 && d[0].Status == DecisionStatus.Superseded);
 
             RisksSurfaceOf(window).SelectTab(GovernanceRegisterTab.Decisions);
             decision = Assert.Single(RisksSurfaceOf(window).Decisions);
@@ -447,6 +448,63 @@ public sealed class ProjectGovernanceAcceptanceTests
 
     private static EngineeringDomainContext DomainOf(WorkspaceHost host) =>
         (EngineeringDomainContext)host.Services!.GetService(typeof(EngineeringDomainContext));
+
+    /// <summary>
+    /// Re-renders the current module until <paramref name="condition"/> holds
+    /// over the live Decisions list, or a two-second deadline expires.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <c>TD-119</c>. Proposing and deciding are dispatched fire-and-forget —
+    /// <c>MainWindow</c> wires them as <c>_ = CreateProjectDecisionAsync()</c>
+    /// — so the create, its persistence write and the coordinator's own
+    /// refresh all complete on a continuation this test has no task for. A
+    /// single <c>RenderCurrentModuleAsync</c> after a fixed delay therefore
+    /// read one sample at an arbitrary instant: if the write had not landed,
+    /// it read the pre-create list and <c>Decisions</c> was empty. That is the
+    /// failure CI hit at <c>384e47f</c> — <c>Assert.Single() Failure: The
+    /// collection was empty</c> — while the push-triggered run on the
+    /// identical SHA passed.
+    /// </para>
+    /// <para>
+    /// Same bounded-poll remedy as <c>TD-46</c>/<c>WP 13.12.9</c>. Re-rendering
+    /// is a read, never a write: <c>ProjectWorkspaceView.RefreshAsync</c> lists
+    /// and shows, and can never itself create or transition a decision, so this
+    /// loop cannot manufacture a pass. It decides only *when* to assert — every
+    /// assertion at the call sites is unchanged, and still fails, on its own
+    /// message, if the expected state never arrives.
+    /// </para>
+    /// </remarks>
+    private static async Task RenderUntilDecisionsAsync(
+        MainWindow window,
+        Func<IReadOnlyList<ProjectDecisionEntry>, bool> condition)
+    {
+        var deadline = DateTime.UtcNow.AddSeconds(2);
+        while (true)
+        {
+            await window.RenderCurrentModuleAsync();
+            if (condition(DecisionsOrEmpty(window)) || DateTime.UtcNow >= deadline)
+                return;
+
+            await Task.Delay(10);
+        }
+    }
+
+    /// <summary>
+    /// The Decisions on the surface, or an empty list while the logical tree
+    /// is momentarily not resolvable to exactly one <see cref="ProjectRisksView"/>.
+    /// </summary>
+    /// <remarks>
+    /// Used only to decide when to stop re-rendering. Every assertion reads
+    /// through <see cref="RisksSurfaceOf"/> directly and unguarded, so a tree
+    /// that never settles still fails there, loudly, rather than being
+    /// swallowed here.
+    /// </remarks>
+    private static IReadOnlyList<ProjectDecisionEntry> DecisionsOrEmpty(MainWindow window)
+    {
+        var surfaces = window.GetLogicalDescendants().OfType<ProjectRisksView>().Distinct().ToList();
+        return surfaces.Count == 1 ? surfaces[0].Decisions : [];
+    }
 
     private static List<string> ButtonCaptions(Control surface) =>
         [.. surface.GetLogicalDescendants().OfType<Button>().Select(b => b.Content?.ToString() ?? string.Empty)];
