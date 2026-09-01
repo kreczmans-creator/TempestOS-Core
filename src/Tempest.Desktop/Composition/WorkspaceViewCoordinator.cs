@@ -326,17 +326,40 @@ internal sealed class WorkspaceViewCoordinator
     public void NavigateToObject(Guid id, string kind) => _ = NavigateToObjectAsync(id, kind);
 
     /// <summary>
+    /// Fire-and-forget wrapper over <see cref="ToggleFavouriteAsync"/> — the
+    /// synchronous delegate shape both callback sites need
+    /// (<see cref="ProjectExplorerView.ToggleFavouriteRequested"/>, an
+    /// <see cref="Action{T1,T2,T3}"/>, and <c>MainWindow</c>'s own
+    /// <c>Ctrl+D</c> <see cref="Input.KeyboardShortcutActions"/> entry, an
+    /// <see cref="Action"/>). The identical shape
+    /// <see cref="NavigateToObject"/> above already established.
+    /// </summary>
+    public void ToggleFavourite(Guid id, string kind, string displayName) =>
+        _ = ToggleFavouriteAsync(id, kind, displayName);
+
+    /// <summary>
     /// Toggles <paramref name="id"/>'s own Favourite state (`WP 10.6A`) —
     /// the real, shared implementation both the Project Explorer's own
     /// context menu and the <c>Ctrl+D</c> shortcut call through. Records
     /// a real Undo/Redo pair (`ADR-0099`) — trivially self-inverting,
     /// since toggling twice is a no-op.
     /// </summary>
-    public void ToggleFavourite(Guid id, string kind, string displayName)
+    /// <remarks>
+    /// <b>`WP-E`.</b> The durable save was previously
+    /// <c>SaveAsync().GetAwaiter().GetResult()</c> — a real
+    /// <see cref="System.IO.File"/> write blocking the UI thread on an
+    /// interactive gesture (Ctrl+D, or the Explorer's own context menu).
+    /// It is awaited now. <c>ConfigureAwait(true)</c> is deliberate and
+    /// load-bearing: everything after it — status bar, toast, history,
+    /// Undo/Redo record — touches Avalonia state and must resume on the
+    /// UI thread. The ordering is unchanged: the save still completes
+    /// before the confirmation the user sees.
+    /// </remarks>
+    public async Task ToggleFavouriteAsync(Guid id, string kind, string displayName)
     {
         var wasFavourite = _favouriteObjects.IsFavourite(id);
         _favouriteObjects.Toggle(id, kind, displayName);
-        _favouriteObjects.SaveAsync().GetAwaiter().GetResult();
+        await _favouriteObjects.SaveAsync().ConfigureAwait(true);
 
         var message = wasFavourite ? $"Removed '{displayName}' from Favourites." : $"Added '{displayName}' to Favourites.";
         _statusBar.SetText(message);

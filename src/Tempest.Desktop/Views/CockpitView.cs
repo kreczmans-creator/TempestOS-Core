@@ -83,8 +83,20 @@ internal sealed class CockpitView : UserControl
     }
 
     /// <summary>Rebuilds every card from a fresh, live read of <see cref="EngineeringCockpit"/> — called on first show and after any action taken from the Cockpit itself.</summary>
+    /// <remarks>
+    /// <b>`WP-E`.</b> The whole rebuild runs inside one
+    /// <see cref="EngineeringCockpit.BeginReadScope"/> pass. The read is
+    /// still fresh — the scope is opened here and closed on the way out,
+    /// so each rebuild re-reads everything — but each underlying
+    /// persistence read now happens once for the pass instead of once per
+    /// card that needs it. It also makes the cards agree with each other:
+    /// a KPI total and the coverage percentage beside it are now computed
+    /// from the same snapshot rather than from two separate reads.
+    /// </remarks>
     public void Refresh()
     {
+        using var readScope = _cockpit.BeginReadScope();
+
         _cards.Children.Clear();
 
         AddWelcomeCard();

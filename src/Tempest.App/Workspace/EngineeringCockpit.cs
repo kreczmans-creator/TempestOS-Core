@@ -85,6 +85,9 @@ internal sealed class EngineeringCockpit
     private readonly VerificationCockpitReadModel _verification;
     private readonly ManufacturingCockpitReadModel _manufacturing;
 
+    /// <summary>The per-refresh read scope every persistence-backed discipline read-model above shares (`WP-E`).</summary>
+    private readonly CockpitReadScope _readScope = new();
+
     /// <summary>Initialises a new instance of the <see cref="EngineeringCockpit"/> class.</summary>
     public EngineeringCockpit(
         NavigationService navigationService, ICommandRegistry commandRegistry, EngineeringDomainContext domainContext,
@@ -111,12 +114,37 @@ internal sealed class EngineeringCockpit
         // exactly once, with `new`, receiving only the dependencies it
         // actually requires — never the whole set above "in case."
         _mechanical = new MechanicalCockpitReadModel(domainContext);
-        _requirements = new RequirementsCockpitReadModel(requirementsService, requirementValidationService);
-        _calculations = new CalculationsCockpitReadModel(domainContext);
+        _requirements = new RequirementsCockpitReadModel(requirementsService, requirementValidationService, _readScope);
+        _calculations = new CalculationsCockpitReadModel(domainContext, _readScope);
         _documents = new DocumentsCockpitReadModel(domainContext);
-        _verification = new VerificationCockpitReadModel(domainContext);
-        _manufacturing = new ManufacturingCockpitReadModel(domainContext);
+        _verification = new VerificationCockpitReadModel(domainContext, _readScope);
+        _manufacturing = new ManufacturingCockpitReadModel(domainContext, _readScope);
     }
+
+    /// <summary>
+    /// Opens one Cockpit read pass (`WP-E`) — dispose the handle to close
+    /// it. Every persistence-backed read behind these properties runs once
+    /// inside the pass, and every property derived from one sees the same
+    /// snapshot of it.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A surface that renders the whole Cockpit — <c>CockpitView.Refresh</c>
+    /// is the one that does — should wrap its render in this. Without it
+    /// nothing breaks and nothing is cached: every property reads live, as
+    /// it always did, which is what keeps every existing caller and test
+    /// honest. What the pass removes is the repetition: one render read
+    /// <c>LiveRequirements</c> upwards of twenty times and re-ran the
+    /// whole <c>O(N)</c>-per-requirement validation pass eight times, each
+    /// of those synchronously, on the UI thread.
+    /// </para>
+    /// <para>
+    /// The scope is deliberately not opened here, per read, or for the
+    /// object's lifetime. Per read it would do nothing; for the lifetime
+    /// it would make a live read-model a stale one.
+    /// </para>
+    /// </remarks>
+    public IDisposable BeginReadScope() => _readScope.Begin();
 
     // ------------------------------------------------------------
     // Where am I?
