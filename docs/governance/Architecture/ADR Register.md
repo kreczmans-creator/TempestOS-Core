@@ -150,6 +150,7 @@ line, verified directly.
 | ADR-0115 | The Document Viewer Rasterises Through a Format-Keyed Page Source, and Is an Ordinary Workspace Panel | Accepted | `TD-80` (Drawing / Document Viewer) | 2026-08-29 | Verified |
 | ADR-0116 | Production Rehydration Is Owned by the Product, and the Session Principal Comes From One Boundary | Accepted | `TD-103`, `TD-104` (resolved); `TD-75` (partially) | 2026-08-29 | Verified |
 | ADR-0117 | A Task Carries Its Own Work State, and Belongs to a Project by the Parent Chain | Accepted | `TD-81` (partially — Tasks only) | 2026-08-29 | Verified |
+| ADR-0118 | Kind Eligibility Is Two Mechanisms Held Together by One Invariant, Not One Source of Truth | Accepted | `WP-B2` — closes `TD-107` (`F-03`) | 2026-09-01 | Verified |
 
 **Total: 104 ADRs — corrected directly (`ls docs/adr | wc -l`) — this
 field had drifted stale at "100" even before this Work Package (rows
