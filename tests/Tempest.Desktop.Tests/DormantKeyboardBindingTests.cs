@@ -4,33 +4,38 @@ using static Tempest.Desktop.Tests.DesktopTestHelpers;
 namespace Tempest.Desktop.Tests;
 
 /// <summary>
-/// WP-H (`AT-23`, `WP-A2` trigger) — the keyboard input-binding path is
-/// wired, registered, and bound to nothing, and that is what keeps the
-/// obsolete Id-only invocation behind it dormant.
+/// WP-H (`AT-23`) — the keyboard input-binding path is wired, registered,
+/// and bound to nothing. That is now a product choice and nothing else.
 /// </summary>
 /// <remarks>
 /// <para>
 /// <b>The decision this protects.</b> <c>ADR-0100</c> makes the keyboard one
 /// <see cref="Tempest.Core.Input.IInputBindingProvider"/> among several, and
 /// <c>AT-23</c> records that it ships with zero default bindings and no
-/// remapping UI. <c>InputBindingRouter</c> routes whatever a provider
-/// requests through <c>ICommandRegistry.InvokeAsync(id, cancellationToken)</c>
-/// — the obsolete Id-only overload, which throws for every descriptor
-/// without a <c>CreateDefault</c>, i.e. all 74 production discipline
-/// commands. That line is allow-listed in
-/// <c>Tempest.Core.Tests.Commands.IdOnlyInvocationGuardTests</c> as DORMANT
-/// on exactly one premise: nothing in production ever calls
-/// <see cref="KeyboardCommandBindingProvider.Bind"/>, so
-/// <c>CommandRequested</c> never fires. This test is that premise, checked.
+/// remapping UI. This test is that record, checked against production
+/// source: the extension point is genuinely wired, and genuinely bound to
+/// nothing.
 /// </para>
 /// <para>
-/// <b>The failure this catches.</b> Someone gives a discipline command a
-/// keyboard shortcut — a one-line, entirely reasonable-looking change — and
-/// the dormant path becomes live. The shortcut then throws
-/// <c>CommandException</c> into a fire-and-forget <c>async void</c>, where
-/// <c>InputBindingRouter</c> catches it and writes a log line. The key
-/// appears to do nothing. That is `WP-A2`'s trigger, and this test is what
-/// makes it fire at the change rather than at a bug report.
+/// <b>What changed, and why this test did not.</b> When `WP-H` wrote this,
+/// <c>InputBindingRouter</c> still routed through the obsolete Id-only
+/// <c>InvokeAsync(id, cancellationToken)</c>, which throws for every
+/// descriptor without a <c>CreateDefault</c> — all 74 production
+/// discipline commands — into a fire-and-forget <c>async void</c> that
+/// caught it and wrote a log line. Binding any real command would have
+/// produced a key that silently did nothing, so this test was also the
+/// tripwire on that defect, and the router was allow-listed in
+/// <c>IdOnlyInvocationGuardTests</c> as DORMANT.
+/// </para>
+/// <para>
+/// <b>`WP-A2` closed that.</b> The router now takes the canonical path —
+/// <c>Evaluate(id, context)</c> then
+/// <c>InvokeAsync(commandId, context, ParameterPrompt)</c> — and its
+/// allow-list entry is gone, asserted by
+/// <c>IdOnlyInvocationGuardTests.TheInputBindingRouter_IsNoLongerAllowListed_BecauseItWasMigrated</c>.
+/// So this test no longer guards a defect. It still guards `AT-23`: the
+/// product ships bound to nothing because that is the product decision,
+/// and a default binding appearing without one is what this catches.
 /// </para>
 /// <para>
 /// <b>Why a behavioural test would not catch it.</b> The provider works
@@ -85,10 +90,10 @@ public sealed class DormantKeyboardBindingTests
 
         Assert.True(
             offenders.Count == 0,
-            "Production code now binds a keyboard gesture to a command Id, which activates the dormant\n"
-            + "Id-only invocation in InputBindingRouter — allow-listed as DORMANT on the premise that this\n"
-            + "never happens. That premise is now false: WP-A2 (route the keyboard through\n"
-            + "Evaluate/InvokeAsync(id, context, prompt, ct)) is required before the binding can ship.\n\n"
+            "Production code now binds a keyboard gesture to a command Id. The routing itself is sound —\n"
+            + "WP-A2 put InputBindingRouter on the canonical Evaluate/InvokeAsync(id, context, prompt, ct)\n"
+            + "path — so this is not a defect report. It is AT-23: the keyboard ships with zero default\n"
+            + "bindings and no remapping UI by product decision. Shipping one means amending AT-23 first.\n\n"
             + string.Join("\n", offenders));
     }
 

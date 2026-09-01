@@ -1,7 +1,44 @@
 # TempestOS — Project Status
 
-**Last Updated:** 2026-08-29 (Project Tasks & Delivery Workflow — `TD-81`,
-partially). **The `v0.13.x` train remains CLOSED.**
+**Last Updated:** 2026-09-01 (`WP-Z1`, Governance Correction — closing the
+pre-release audit of the eleven-work-package remediation programme).
+**The `v0.13.x` train remains CLOSED. No release has been prepared, merged
+or tagged for the work described below.**
+
+**Eleven remediation work packages are complete on
+`claude/stage-3-descriptor-binding-6wz401`**, plus `WP-REVIEW`:
+`WP-C` (dead-code deletion), `WP-B1` (Kind eligibility invariant),
+`WP-D2` (persisted-JSON degrade-to-defaults), `WP-A1` (close the obsolete
+Id-only command path), `WP-H` (architectural invariant enforcement),
+`WP-D1` (one Desktop `ActionOutcome` reporting tail), `WP-F` (test-suite
+hygiene), `WP-B2` (`ADR-0118`), `WP-G` (`MainWindow` decomposition),
+`WP-A2` (the keyboard on the canonical command path), `WP-E`
+(async/threading hardening). Tests **3,088 `Tempest.Core.Tests` + 370
+`Tempest.Desktop.Tests`**, Debug and Release, 0 warnings, 0 errors.
+
+**The single load-bearing change is that no surface reaches the obsolete
+command path unintentionally any more.** `TD-77`'s binding contract had
+become canonical without retiring what it replaced, and four surfaces were
+still on the Id-only overload — one of them found by the guard test rather
+than by the audit that preceded it. All four are migrated; the one
+remaining caller (`ApiRequestHandler`) is a decided architectural position
+under `AT-10`, not a leftover.
+
+**Two defects were found by tests written to prove something else.**
+`WP-E`'s Cockpit work exposed that the discipline read-models re-read
+persistence on every property access — one refresh performed 1,140 reads
+where 104 suffice — and, while testing the async favourite path, that
+`UndoRedoStack` raises `Changed` on whatever thread an undone action
+resumed on, so Ctrl+D then Ctrl+Z produces an error dialog (`TD-117`,
+pre-existing, shipped in `v0.13.1`, not yet fixed).
+
+**Known before physical review:** `TD-116` — the Desktop application does
+not launch on Linux/X11 (a `Tmds.DBus.Protocol` security pin against
+`Avalonia.FreeDesktop`); Windows and macOS are unaffected and Windows is
+the verified platform. See `PHYSICAL_REVIEW.md`.
+
+**Previously — 2026-08-29 (Project Tasks & Delivery Workflow — `TD-81`,
+partially).**
 
 **Tasks is a real project surface — the first project-management
 capability in TempestOS.** `EngineeringTask`, `EngineeringAction`,
@@ -3117,7 +3154,15 @@ read `docs/academy/Contributor Learning Path.md`.
 
 ## Current Repository Phase
 
-**Corrected, `WP 13.12.2`.** This field is stale. The current repository
+**Corrected, `WP-Z1` (2026-09-01).** This field is stale. The current
+repository phase is **post-`v0.13.1`, pre-`v0.14.0`** — eleven remediation
+work packages complete on `claude/stage-3-descriptor-binding-6wz401`, no
+release yet prepared. The `WP 13.12.2` correction below is itself now
+historical (it described `v0.13.0` as in progress; `v0.13.0` and `v0.13.1`
+have both since been tagged, and `v0.13.1` released and published). Both it
+and the `v0.5.0` content beneath are retained, not deleted.
+
+**Previously corrected, `WP 13.12.2`.** This field is stale. The current repository
 phase is **`v0.13.0` — Trust & Deployment Hardening**, in progress.
 The `v0.5.0` Developer Experience content below has been out of date
 since that release closed and was never updated across `v0.6.0`–`v0.13.0`;
@@ -3233,7 +3278,13 @@ Current Work Package, below.
 
 ## Current Development Branch
 
-**Corrected, `WP 13.12.2`.** This field is stale. The current
+**Corrected, `WP-Z1` (2026-09-01).** This field is stale. The current
+development branch is **`claude/stage-3-descriptor-binding-6wz401`**,
+carrying the eleven-work-package remediation programme. It is ahead of
+`main` and not merged; `main` remains at `v0.13.1`. The `feature/v0.13.0`
+content below is retained, not deleted.
+
+**Previously corrected, `WP 13.12.2`.** This field is stale. The current
 development branch is **`feature/v0.13.0`** — the sole integration branch
 for this release (`WP 13.0.0`), cut directly from the `v0.12.0` tag,
 never rebased or squashed, with no upstream configured and no merge to
@@ -3303,7 +3354,15 @@ project's own convention.
 
 ## Current Release
 
-**Corrected, `WP 13.12.2`.** This field is stale. The current release is
+**Corrected, `WP-Z1` (2026-09-01).** This field is stale. The last released
+version is **`v0.13.1`** — tagged, merged to `main`, and published with both
+assets. `VERSION` reads `0.13.1`. **No release is in preparation**: the
+remediation programme is complete but unreleased, and the next version has
+not been established or scaffolded. The `WP 13.12.2` correction below
+(which described `v0.13.0` as in progress with `VERSION` at `0.12.0`) is
+historical, and is retained, not deleted.
+
+**Previously corrected, `WP 13.12.2`.** This field is stale. The current release is
 **`v0.13.0` ("Plugin Platform & Trust Isolation"), in progress on
 `feature/v0.13.0`, not yet merged, tagged, or published**; `VERSION`
 remains `0.12.0` pending the release-time bump. The `v0.11.0` content
@@ -3348,7 +3407,16 @@ Experience") before that; `v0.4.0` ("Platform Foundation") before that.
 
 ## Current Work Package
 
-**Corrected, `WP 13.12.2`.** This field is stale. The current Work
+**Corrected, `WP-Z1` (2026-09-01).** This field is stale. The current Work
+Package is **`WP-Z1` — Governance Correction**, closing the pre-release
+audit's findings against the eleven-work-package remediation programme.
+`WP-Z2` (`TD-117`) and `WP-Z3` (the eleven missing Academy retrospectives)
+follow. The `WP 13.12.2` correction below is historical, and is retained,
+not deleted, per this file's own retention convention. The authoritative
+current state is always the `**Last Updated:**` block at the top of this
+file.
+
+**Previously corrected, `WP 13.12.2`.** This field is stale. The current Work
 Package is **`WP 13.12.2` — v0.13.0 Release Documentation Closure**, on
 `feature/v0.13.0`. The `WP 11.3B` content below was last accurate at
 `v0.11.0` and was never updated across `v0.12.0` or `v0.13.0`; it is
@@ -6672,6 +6740,25 @@ exception. Every Work Package originally scoped for the Developer
 Experience phase is now complete.
 
 ## Repository Metrics
+
+**Corrected, `WP-Z1` (2026-09-01).** The table below is stale — its figures
+were last advanced by `WP 10.2A` (`v0.10.0`) and drifted across every
+release since. Re-derived directly from the repository at `e4bc3ee`:
+
+| Metric | Value (verified `WP-Z1`, 2026-09-01) |
+|---|---|
+| Automated tests | **3,458** — `Tempest.Core.Tests` 3,088 + `Tempest.Desktop.Tests` 370, Debug and Release, 0 failures, 0 warnings, `-p:TreatWarningsAsErrors=true` |
+| ADRs | **118** (`ADR-0001`–`ADR-0118`, no gaps) — `ADR-0118` added by `WP-B2` |
+| Rejected Designs | **45** (`RD-0001`–`RD-0045`) |
+| Academy articles | **216** (plus `Academy Index.md`; 217 `.md` files in total — the count `governance-healthcheck.ps1` reports is 216, excluding the index it checks against), of which **142** are Work Package retrospectives — **eleven are owed** for the remediation programme and are `WP-Z3`'s subject |
+| Governance registers | **27** registers, **38** governance documents in `docs/governance/` |
+| Architecture documents | **29** under `docs/architecture/` |
+| Technical debt | **118** tracked (35 Resolved, 6 Closed, 74 Open, 3 Partially resolved) plus **26** accepted trade-offs |
+
+Only the metrics above were re-derived. The stale table that follows is
+retained, not deleted, and a full historical re-derivation of this file's
+lower sections is deliberately **not** undertaken here — it spans eight
+releases and is its own decision.
 
 | Metric | Value |
 |---|---|

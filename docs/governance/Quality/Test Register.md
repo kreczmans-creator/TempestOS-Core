@@ -10,7 +10,7 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | `tests/Tempest.Core.Tests/` (direct inspection); `dotnet test` output. |
 | **Review Frequency** | Updated whenever the test suite's total count changes materially (in practice, every Work Package). |
-| **Last Reviewed** | 2026-08-30 (`WP — Project Timeline & Milestones`). **`Tempest.Core.Tests` 2845/2845 (+17), `Tempest.Desktop.Tests` 332/332 (+3), Debug and Release, 0 warnings, 0 errors, run with `-p:TreatWarningsAsErrors=true` — the CI gate reproduced locally.** **+20 tests.** `ProjectMilestoneTests` (Core, 17) covers transitive membership, a deliverable reaching the project through its milestone rather than a field, both routes work takes to a milestone and the register keeping the difference, chronological ordering, the service refusing a deliverable against something that is not a milestone, and the target date reaching the store. `ProjectTimelineAcceptanceTests` (Desktop, 3) drives the journey through the real `MainWindow` — set a milestone, add a deliverable, link a task to it, relaunch, everything still there — plus strict date parsing and the descriptor/surface agreement check. **The tests that matter most are the ones policing what the register may claim.** `Milestone` carries a target date and the canonical lifecycle and nothing else, so there is no "achieved" state to read: four tests pin the register to stating only what is knowable — the date has passed; work against it is or is not outstanding; nothing was ever linked to it — and keep "past with outstanding work" distinct from "past with nothing linked", which are different failures a review needs to tell apart. **Six mutations run, six killed:** indirect (via-deliverable) contributions dropped; project isolation removed; "past with nothing linked" collapsed into "past with outstanding work"; finished work still counted as open; chronological ordering replaced by name order; and the Timeline descriptor reverted to `Declared`. All 20 new tests passed first time, and no existing test was weakened or deleted. Previously reviewed 2026-08-30 (`WP — Project Risks, Issues & Decisions`, closure correction). **`Tempest.Core.Tests` 2828/2828 and `Tempest.Desktop.Tests` 329/329, Debug and Release, 0 warnings, 0 errors, with `-p:TreatWarningsAsErrors=true` — the CI gate reproduced locally.** Governance health check: 7 passed, 1 warned (pre-existing, informational), 0 failed.
+| **Last Reviewed** | 2026-09-01 (`WP-Z1`, Governance Correction). **`Tempest.Core.Tests` 3,088/3,088, `Tempest.Desktop.Tests` 370/370, Debug and Release, 0 warnings, 0 errors, run with `-p:TreatWarningsAsErrors=true`.** This register had gone stale from `WP-B2` onward: it recorded `WP-A1`, `WP-B1`, `WP-D1`, `WP-D2`, `WP-F` and `WP-H`, but not `WP-C`, `WP-B2`, `WP-G`, `WP-A2` or `WP-E`. Four table cells are corrected, all re-derived from source rather than patched: `Commands/` 156 -> 157 and `Input/` 6 -> 14 (`WP-A2`'s router tests, which took the keyboard onto the canonical command path); `Workspace/` 48/690 -> 49/701 (`WP-E`'s `CockpitReadScopeTests`); and the Desktop root 45/358 -> 46/357 (`WP-E`'s `AsyncFavouritePathTests`, **plus a correction disclosed below** - the 358 had been wrong since `WP-F` wrote it, where the true figure was 353). Executed cases 3,068/366 -> 3,088/370. The historical progression's last row, mislabelled "Current (WP 5.3)" for eight releases, is relabelled as the historical figure it is and a verified current row added. `WP-B2` and `WP-C` added no tests (documentary and deletion respectively), which is why neither moved a figure here. Previously reviewed 2026-08-30 (`WP — Project Timeline & Milestones`). **`Tempest.Core.Tests` 2845/2845 (+17), `Tempest.Desktop.Tests` 332/332 (+3), Debug and Release, 0 warnings, 0 errors, run with `-p:TreatWarningsAsErrors=true` — the CI gate reproduced locally.** **+20 tests.** `ProjectMilestoneTests` (Core, 17) covers transitive membership, a deliverable reaching the project through its milestone rather than a field, both routes work takes to a milestone and the register keeping the difference, chronological ordering, the service refusing a deliverable against something that is not a milestone, and the target date reaching the store. `ProjectTimelineAcceptanceTests` (Desktop, 3) drives the journey through the real `MainWindow` — set a milestone, add a deliverable, link a task to it, relaunch, everything still there — plus strict date parsing and the descriptor/surface agreement check. **The tests that matter most are the ones policing what the register may claim.** `Milestone` carries a target date and the canonical lifecycle and nothing else, so there is no "achieved" state to read: four tests pin the register to stating only what is knowable — the date has passed; work against it is or is not outstanding; nothing was ever linked to it — and keep "past with outstanding work" distinct from "past with nothing linked", which are different failures a review needs to tell apart. **Six mutations run, six killed:** indirect (via-deliverable) contributions dropped; project isolation removed; "past with nothing linked" collapsed into "past with outstanding work"; finished work still counted as open; chronological ordering replaced by name order; and the Timeline descriptor reverted to `Declared`. All 20 new tests passed first time, and no existing test was weakened or deleted. Previously reviewed 2026-08-30 (`WP — Project Risks, Issues & Decisions`, closure correction). **`Tempest.Core.Tests` 2828/2828 and `Tempest.Desktop.Tests` 329/329, Debug and Release, 0 warnings, 0 errors, with `-p:TreatWarningsAsErrors=true` — the CI gate reproduced locally.** Governance health check: 7 passed, 1 warned (pre-existing, informational), 0 failed.
 
 **This was a new test violating an existing analyzer convention, not a product defect.** CI run 76 failed the build with `xUnit2029` — `Assert.Empty(collection.Where(predicate))` is the flagged way of writing an absence check. It was visible locally as a warning and not as an error, because `Directory.Build.props` sets `TreatWarningsAsErrors=false` and CI applies `true` at its own build step; the warning count was seen and not chased, which is the process failure worth recording. Passing `-p:TreatWarningsAsErrors=true` reproduces the gate exactly, and re-introducing the old form fails it again — so the fix is demonstrably the thing that fixed it. The analyzer was not weakened, suppressed or configured, and the repository was swept: four other `Assert.Empty` uses take the shape `Assert.Empty(x.OfType<T>())`, which genuinely asserts "this collection has zero elements" rather than "this value is absent", so they were deliberately left alone.
 
@@ -42,7 +42,7 @@ because the drift was not incremental.
 | `Audit/` | 8 | 36 | Audit records, query and permission-gated access |
 | `BackgroundServices/` | 4 | 37 | Hosted service discovery, manager, lifecycle isolation (`WP 4.5`) |
 | `Calculations/` | 5 | 44 | Engineering calculation definitions, execution and templates |
-| `Commands/` | 12 | 156 | `ICommand` contract (`WP 4.0`); dispatcher/registry/handler table; the `TD-77` binding and invocation contract; the `WP-A1` Id-only allow-list guard and the `AT-10` REST premise behind it |
+| `Commands/` | 12 | 157 | `ICommand` contract (`WP 4.0`); dispatcher/registry/handler table; the `TD-77` binding and invocation contract; the `WP-A1` Id-only allow-list guard and the `AT-10` REST premise behind it |
 | `Configuration/` | 4 | 31 | Configuration Framework (`WP 2.5`) |
 | `DependencyInjection/` | 3 | 22 | The custom DI container (`WP 2.4`). `ServiceProviderExtensions.GetService<T>()` was deleted `WP-F`; these resolve through `GetService(typeof(T))` like production does |
 | `Diagnostics/` | 1 | 13 | `IDiagnosticsProvider` — live accessor projection, host state |
@@ -51,7 +51,7 @@ because the drift was not incremental.
 | `Events/` | 5 | 38 | Event Bus (`WP 4.0` contracts, `WP 4.4D` bus) |
 | `ExportImport/` | 7 | 48 | Export/import round-trips and format handling |
 | `Identity/` | 9 | 81 | Principals, permissions, capability grants, trust tiers |
-| `Input/` | 2 | 6 | `IInputBindingProvider`/`InputBindingRouter` — the extension point, dormant in production (`AT-23`) |
+| `Input/` | 2 | 14 | `IInputBindingProvider`/`InputBindingRouter` — the extension point, dormant in production (`AT-23`) |
 | `Licensing/` | 3 | 24 | Licence validation; the platform runs Unlicensed with nothing gated |
 | `Logging/` | 10 | 53 | Logging & Diagnostics Framework (`WP 2.6`), sinks and composition. `ConsoleLogSinkTests` joined the `Console output capture` collection in `WP-A1` |
 | `Macros/` | 3 | 10 | `IMacroManager` — ordered Id lists, no branching or parameters (`ADR-0098`/`ADR-0099`) |
@@ -72,17 +72,19 @@ because the drift was not incremental.
 | `UnitsAndQuantities/` | 10 | 46 | Units, quantities and conversion. `UnitConverterTests.Constructor_RequiresNoArguments` was deleted `WP-F` as tautological |
 | `Verification/` | 4 | 39 | Verification activities, methods and results |
 | `Versioning/` | 2 | 17 | Platform version infrastructure (`WP 4.2A`) |
-| `Workspace/` | 48 | 690 | The Engineering Workspace: six discipline registrations and their commands, the Cockpit read-model, Project Explorer, Property Inspector, selection, navigation, layout, viewing, and the `TD-77` descriptor-binding suite |
+| `Workspace/` | 49 | 701 | The Engineering Workspace: six discipline registrations and their commands, the Cockpit read-model, Project Explorer, Property Inspector, selection, navigation, layout, viewing, and the `TD-77` descriptor-binding suite |
 
-**Total: 289 files, 2626 `[Fact]`/`[Theory]` attribute occurrences.**
+**Total: 290 files, 2646 `[Fact]`/`[Theory]` attribute occurrences.**
 
 ### `Tempest.Desktop.Tests`
 
 | Directory | Files | `[Fact]`/`[Theory]` Attributes | Covers |
 |---|---|---|---|
-| `(project root)` | 45 | 358 | Flat by convention — one file per surface or per Work Package theme. Covers `MainWindow` composition, the Ribbon, Command Palette, Object Editor, Project Explorer/Inspector views, docking and layout, the Digital Thread graph, document viewing, the project areas, `WP-D1`'s reporting tail, and the `WP-B1`/`WP-H` Kind-eligibility, policy-completeness and dormant-keyboard invariants |
+| `(project root)` | 46 | 357 | Flat by convention — one file per surface or per Work Package theme. Covers `MainWindow` composition, the Ribbon, Command Palette, Object Editor, Project Explorer/Inspector views, docking and layout, the Digital Thread graph, document viewing, the project areas, `WP-D1`'s reporting tail, and the `WP-B1`/`WP-H` Kind-eligibility, policy-completeness and dormant-keyboard invariants |
 
-**Total: 45 files, 358 `[Fact]`/`[Theory]` attribute occurrences.**
+**Total: 46 files, 357 `[Fact]`/`[Theory]` attribute occurrences.**
+
+*Corrected, `WP-Z1` (2026-09-01).* This figure previously read **358**, and had been wrong since `WP-F` re-derived this table: the actual count at `WP-F`'s own commit (`3a9b777`) was **353**, not 358. The overcount came from counting attribute names wherever they appear rather than only on executable lines - prose that names `[AvaloniaFact]` and `[Fact]` in the same comment was counted twice. `Tempest.Core.Tests`' own figures at that commit (289 files / 2,626 attributes) were correct; only this one was not. Every figure in this register is now derived by counting attributes on non-comment lines only.
 
 ## Three Counts, Three Different Things
 
@@ -92,9 +94,9 @@ to match another:
 
 | Measure | Core | Desktop | What it counts |
 |---|---|---|---|
-| **Attribute occurrences** | 2626 | 358 | `[Fact]`/`[Theory]`/`[AvaloniaFact]` written in source — what the table above sums |
+| **Attribute occurrences** | 2646 | 357 | `[Fact]`/`[Theory]`/`[AvaloniaFact]` written in source — what the table above sums |
 | **Test methods** | — | — | One per attribute; equal to the above, since no method carries two |
-| **Executed test cases** | **3,068** | **366** | What `dotnet test` runs. Higher than the attribute count because one `[Theory]` with *n* `[InlineData]` rows executes as *n* cases |
+| **Executed test cases** | **3,088** | **370** | What `dotnet test` runs. Higher than the attribute count because one `[Theory]` with *n* `[InlineData]` rows executes as *n* cases |
 
 The gap is entirely `[Theory]` expansion. It is expected, it is not a
 discrepancy, and neither figure is wrong.
@@ -116,7 +118,9 @@ discrepancy, and neither figure is wrong.
 | WP 5.1B (Command Framework Implementation) | 514 (448 pre-existing + 66 new) |
 | WP 5.2 (Diagnostics Improvements) | 542 (514 pre-existing + 28 new) |
 | WP 5.3 (Developer Experience Improvements) | 552 (542 pre-existing + 10 new) |
-| **Current (WP 5.3)** | **552** — re-verified directly, 0 failures |
+| WP 5.3 (Developer Experience) — the last figure this table tracked contemporaneously | 552 — re-verified directly at the time, 0 failures |
+| *(v0.6.0 through v0.13.1 — not reconstructed; see the note below)* | Unknown as running totals |
+| **Current (`WP-Z1`, 2026-09-01, `e4bc3ee`)** | **3,458 — `Tempest.Core.Tests` 3,088 + `Tempest.Desktop.Tests` 370, both configurations, 0 failures** |
 
 Gaps in this progression are recorded as **Unknown**, not interpolated —
 several retrospectives report only the tests *they* added, not a running
@@ -126,7 +130,15 @@ this Work Package's own scope.
 
 ## Cross-Reference Check
 
-The 552 figure above is cross-checked directly against
-`Validation Register.md`'s own Test Gate row (also 552, from the same
-`dotnet test` run performed as part of this Work Package) — consistent,
-no discrepancy.
+The 552 figure was cross-checked directly against `Validation Register.md`'s
+own Test Gate row (also 552, from the same `dotnet test` run) — consistent,
+no discrepancy **as of `WP 5.3`, 2026-07-28**.
+
+*Amended, `WP-Z1` (2026-09-01).* Both figures are historical. This table's
+last row was labelled "**Current (WP 5.3)**" and had carried that label
+across eight releases (`v0.6.0`–`v0.13.1`) while the real total grew from 552
+to 3,458 — the label, not the figure, was the defect, and it is corrected
+above rather than the progression being rewritten. `Validation Register.md`'s
+Test Gate row still reads 552 and is stale for the same reason; it is left to
+release preparation to re-run and restate, since a Test Gate figure should
+come from the release's own verification run, not be copied from here.
