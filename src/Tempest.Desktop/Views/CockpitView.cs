@@ -83,8 +83,20 @@ internal sealed class CockpitView : UserControl
     }
 
     /// <summary>Rebuilds every card from a fresh, live read of <see cref="EngineeringCockpit"/> — called on first show and after any action taken from the Cockpit itself.</summary>
+    /// <remarks>
+    /// <b>`WP-E`.</b> The whole rebuild runs inside one
+    /// <see cref="EngineeringCockpit.BeginReadScope"/> pass. The read is
+    /// still fresh — the scope is opened here and closed on the way out,
+    /// so each rebuild re-reads everything — but each underlying
+    /// persistence read now happens once for the pass instead of once per
+    /// card that needs it. It also makes the cards agree with each other:
+    /// a KPI total and the coverage percentage beside it are now computed
+    /// from the same snapshot rather than from two separate reads.
+    /// </remarks>
     public void Refresh()
     {
+        using var readScope = _cockpit.BeginReadScope();
+
         _cards.Children.Clear();
 
         AddWelcomeCard();
@@ -166,7 +178,12 @@ internal sealed class CockpitView : UserControl
         else
         {
             foreach (var entry in favouriteProjects)
-                card.AddAction($"{IconRegistry.Resolve(entry.Kind)} {entry.DisplayName}", () => { _onOpenFavourite?.Invoke(entry.Id, entry.Kind); Refresh(); });
+                // No inline Refresh() here (`TD-58`): the open callback is
+                // WorkspaceViewCoordinator.NavigateToObject, whose
+                // NavigateToObjectAsync already refreshes this Cockpit —
+                // the inline call made every favourite open rebuild all
+                // twenty cards twice.
+                card.AddAction($"{IconRegistry.Resolve(entry.Kind)} {entry.DisplayName}", () => _onOpenFavourite?.Invoke(entry.Id, entry.Kind));
         }
 
         _cards.Children.Add(card);
@@ -211,8 +228,22 @@ internal sealed class CockpitView : UserControl
     private void AddOverdueActionsCard()
     {
         var card = new CockpitCardControl("⏰", "Overdue Actions");
-        card.AddLine("No due-date field exists on any Task/Action Domain object yet — \"overdue\" cannot be honestly computed. Honest placeholder, not fabricated.", 0.6);
-        card.AddLine($"Closest real substitute — Open Tasks/Actions: {_cockpit.OpenTaskCount}");
+
+        // Real overdue work. This card carried an honest placeholder for
+        // as long as it existed — "no due-date field exists on any
+        // Task/Action Domain object yet" — which was true until `TD-81`
+        // gave EngineeringTask a due date and a work state. Nothing
+        // overdue is now a finding rather than an absence of capability,
+        // so the empty case says so plainly.
+        var overdue = _cockpit.OverdueActionLines;
+
+        if (overdue.Count == 0)
+            card.AddLine("Nothing is overdue.", 0.8);
+
+        foreach (var line in overdue)
+            card.AddLine(line);
+
+        card.AddLine($"Open Tasks/Actions: {_cockpit.OpenTaskCount}", 0.8);
         _cards.Children.Add(card);
     }
 

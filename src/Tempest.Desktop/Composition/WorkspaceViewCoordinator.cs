@@ -83,18 +83,31 @@ internal sealed class WorkspaceViewCoordinator
     private readonly Dictionary<Guid, IWorkspaceView> _openGraphViewsByRootId;
     private readonly Action _refreshStatusBar;
     private readonly Action<string> _recordHistory;
+    private readonly ActionOutcomeReporter _reporter;
     private readonly Action _refreshCockpit;
 
     private DocumentAreaView? _documentArea;
 
     /// <summary>Initialises a new instance of the <see cref="WorkspaceViewCoordinator"/> class, wiring every Explorer/Inspector cross-view interaction that does not need <see cref="DocumentAreaView"/> to already exist (see <see cref="Attach"/>).</summary>
+    /// <summary>
+    /// Opens one of an object's attachments in the document viewer
+    /// (`TD-80`), set by the shell that owns the workspace.
+    /// </summary>
+    /// <remarks>
+    /// A settable collaborator rather than a twentieth constructor
+    /// parameter, and deliberately optional: a coordinator used outside
+    /// the docked workspace has nowhere to open a document, and the
+    /// editor's Open affordance simply does not appear.
+    /// </remarks>
+    public Func<IHasAttachments, IAttachment, Task>? OpenAttachmentAsync { get; set; }
+
     public WorkspaceViewCoordinator(
         IWorkspace workspace, WorkspaceManager manager, EngineeringDomainContext domainContext, ICommandDispatcher commandDispatcher,
         IRequirementsService requirementsService, CalculationTemplateRegistry? calculationTemplates,
         ProjectExplorerView explorerView, PropertyInspectorView inspectorView, RibbonView ribbon,
         StatusBarView statusBar, ToastHost toastHost, ConfirmationDialog confirmationDialog, IUndoRedoStack undoRedoStack,
         RecentObjectsState recentObjects, FavouriteObjectsState favouriteObjects, Dictionary<Guid, IWorkspaceView> openGraphViewsByRootId,
-        Action refreshStatusBar, Action<string> recordHistory, Action refreshCockpit)
+        Action refreshStatusBar, Action<string> recordHistory, Action refreshCockpit, ActionOutcomeReporter reporter)
     {
         ArgumentNullException.ThrowIfNull(workspace);
         ArgumentNullException.ThrowIfNull(manager);
@@ -114,6 +127,7 @@ internal sealed class WorkspaceViewCoordinator
         ArgumentNullException.ThrowIfNull(refreshStatusBar);
         ArgumentNullException.ThrowIfNull(recordHistory);
         ArgumentNullException.ThrowIfNull(refreshCockpit);
+        ArgumentNullException.ThrowIfNull(reporter);
 
         _workspace = workspace;
         _manager = manager;
@@ -134,6 +148,7 @@ internal sealed class WorkspaceViewCoordinator
         _refreshStatusBar = refreshStatusBar;
         _recordHistory = recordHistory;
         _refreshCockpit = refreshCockpit;
+        _reporter = reporter;
 
         // Select-to-inspect / Open-to-edit (WP8.0A UI Architecture.md §4, unchanged).
         _explorerView.ObjectSelected += async (id, kind) =>
@@ -157,13 +172,18 @@ internal sealed class WorkspaceViewCoordinator
             // event rather than duplicating this logic).
             _recentObjects.Record(id, kind, view.Title);
         };
-        _explorerView.ActionCompleted += message =>
-        {
-            _statusBar.SetText(message);
-            _toastHost.Show(message, FeedbackSeverity.Success);
-            _recordHistory(message);
-            _refreshCockpit();
-        };
+        // Reported through the one shared tail (`WP-D1`). The refresh set
+        // stays this caller's own: the Explorer does not reload itself
+        // here — it has already done so — while the Inspector re-renders,
+        // because a successful delete cleared the selection and a
+        // successful rename changed the displayed facets.
+        _explorerView.ActionCompleted += (message, outcome) =>
+            _ = _reporter.ReportAsync(message, outcome, refresh: () =>
+            {
+                _ = _inspectorView.RefreshFromSourceAsync();
+                _refreshCockpit();
+                return Task.CompletedTask;
+            });
         _explorerView.RecentObjects = _recentObjects;
         _explorerView.Favourites = _favouriteObjects;
         _explorerView.ToggleFavouriteRequested = ToggleFavourite;
@@ -197,23 +217,23 @@ internal sealed class WorkspaceViewCoordinator
             }
 
             var result = await _commandDispatcher.DispatchAsync(move, CancellationToken.None).ConfigureAwait(true);
-            var message = result.Succeeded ? "Moved." : result.Message ?? "Move failed.";
-            _statusBar.SetText(message);
-            _toastHost.Show(message, result.Succeeded ? FeedbackSeverity.Success : FeedbackSeverity.Error);
-            if (result.Succeeded)
+
+            // Deliberately the no-history entry point (`WP-D1`): a
+            // drag-and-drop reparent has never been written to Command
+            // History, and consolidating the tail is not a licence to
+            // change that.
+            await _reporter.ReportWithoutHistoryAsync(result, "Moved.", "Move failed.", refresh: async () =>
             {
                 await _explorerView.LoadAsync().ConfigureAwait(true);
                 _refreshCockpit();
-            }
+            }).ConfigureAwait(true);
         };
-        _inspectorView.ActionCompleted += async message =>
-        {
-            _statusBar.SetText(message);
-            _toastHost.Show(message, FeedbackSeverity.Success);
-            _recordHistory(message);
-            await _explorerView.LoadAsync().ConfigureAwait(true);
-            _refreshCockpit();
-        };
+        _inspectorView.ActionCompleted += async (message, outcome) =>
+            await _reporter.ReportAsync(message, outcome, refresh: async () =>
+            {
+                await _explorerView.LoadAsync().ConfigureAwait(true);
+                _refreshCockpit();
+            }).ConfigureAwait(true);
     }
 
     /// <summary>
@@ -267,15 +287,26 @@ internal sealed class WorkspaceViewCoordinator
             return DocumentAreaView.BuildDefaultBody(view);
 
         editor.DirtyChanged += dirty => _documentArea!.MarkDirty(view.Id, dirty);
-        editor.ActionCompleted += async message =>
-        {
-            _statusBar.SetText(message);
-            _toastHost.Show(message, FeedbackSeverity.Success);
-            _recordHistory(message);
-            await _explorerView.LoadAsync().ConfigureAwait(true);
-            _inspectorView.Refresh();
-            _refreshCockpit();
-        };
+
+        // `TD-80`: the editor asks; the shell decides where a document
+        // opens. Fire-and-forget because opening is the user's gesture and
+        // must not block the editor's own event dispatch; the viewer
+        // surfaces its own Missing/Corrupt/Unsupported state, so there is
+        // no result here worth awaiting.
+        editor.OpenAttachmentRequested += (owner, attachment) => _ = OpenAttachmentAsync?.Invoke(owner, attachment);
+        // Gated on WorkspaceChanged rather than on success (`WP-D1`), which
+        // matters here more than anywhere else: this editor's own
+        // Owner/Priority save reports a failure that *did* change the
+        // workspace when the first half committed and the second was
+        // refused. The Inspector re-reads its facets from source — a plain
+        // Refresh() would re-render the cached, pre-mutation values.
+        editor.ActionCompleted += async (message, outcome) =>
+            await _reporter.ReportAsync(message, outcome, refresh: async () =>
+            {
+                await _explorerView.LoadAsync().ConfigureAwait(true);
+                await _inspectorView.RefreshFromSourceAsync().ConfigureAwait(true);
+                _refreshCockpit();
+            }).ConfigureAwait(true);
         // Undo/Redo (`WP 10.6A`, `ADR-0099`) — every discipline's own
         // Object Editor shares this one commit path, so this single
         // subscription covers Rename across all six disciplines.
@@ -295,17 +326,40 @@ internal sealed class WorkspaceViewCoordinator
     public void NavigateToObject(Guid id, string kind) => _ = NavigateToObjectAsync(id, kind);
 
     /// <summary>
+    /// Fire-and-forget wrapper over <see cref="ToggleFavouriteAsync"/> — the
+    /// synchronous delegate shape both callback sites need
+    /// (<see cref="ProjectExplorerView.ToggleFavouriteRequested"/>, an
+    /// <see cref="Action{T1,T2,T3}"/>, and <c>MainWindow</c>'s own
+    /// <c>Ctrl+D</c> <see cref="Input.KeyboardShortcutActions"/> entry, an
+    /// <see cref="Action"/>). The identical shape
+    /// <see cref="NavigateToObject"/> above already established.
+    /// </summary>
+    public void ToggleFavourite(Guid id, string kind, string displayName) =>
+        _ = ToggleFavouriteAsync(id, kind, displayName);
+
+    /// <summary>
     /// Toggles <paramref name="id"/>'s own Favourite state (`WP 10.6A`) —
     /// the real, shared implementation both the Project Explorer's own
     /// context menu and the <c>Ctrl+D</c> shortcut call through. Records
     /// a real Undo/Redo pair (`ADR-0099`) — trivially self-inverting,
     /// since toggling twice is a no-op.
     /// </summary>
-    public void ToggleFavourite(Guid id, string kind, string displayName)
+    /// <remarks>
+    /// <b>`WP-E`.</b> The durable save was previously
+    /// <c>SaveAsync().GetAwaiter().GetResult()</c> — a real
+    /// <see cref="System.IO.File"/> write blocking the UI thread on an
+    /// interactive gesture (Ctrl+D, or the Explorer's own context menu).
+    /// It is awaited now. <c>ConfigureAwait(true)</c> is deliberate and
+    /// load-bearing: everything after it — status bar, toast, history,
+    /// Undo/Redo record — touches Avalonia state and must resume on the
+    /// UI thread. The ordering is unchanged: the save still completes
+    /// before the confirmation the user sees.
+    /// </remarks>
+    public async Task ToggleFavouriteAsync(Guid id, string kind, string displayName)
     {
         var wasFavourite = _favouriteObjects.IsFavourite(id);
         _favouriteObjects.Toggle(id, kind, displayName);
-        _favouriteObjects.SaveAsync().GetAwaiter().GetResult();
+        await _favouriteObjects.SaveAsync().ConfigureAwait(true);
 
         var message = wasFavourite ? $"Removed '{displayName}' from Favourites." : $"Added '{displayName}' to Favourites.";
         _statusBar.SetText(message);

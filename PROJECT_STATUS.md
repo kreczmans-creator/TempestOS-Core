@@ -1,5 +1,777 @@
 # TempestOS — Project Status
 
+**Last Updated:** 2026-09-01 (`WP-Z4`, Release Preparation — following
+`WP-Z1` Governance Correction, `WP-Z2` `TD-117`, and `WP-Z3` Academy
+retrospectives).
+**The `v0.13.x` train remains CLOSED. `v0.14.0` is IN PREPARATION: `VERSION`
+is bumped and the release documentation is written, but the work is NOT
+merged to `main`, NOT tagged, NOT published and NOT certified.**
+
+**`v0.14.0` — "Durability, Review Readiness & Command-Path Convergence"**
+is prepared on `claude/stage-3-descriptor-binding-6wz401`: **52 commits over
+the `v0.13.1` tag**, of which the sixteen Work Packages below are a
+minority. The rest is the engineering body of work that preceded them —
+durable object state and attachments (`ADR-0113`/`0114`), the workspace
+layout tree (`ADR-0095`), the document viewer (`ADR-0115`), production
+rehydration (`ADR-0116`), project tasks (`ADR-0117`), the Product Spine, and
+the removal of the demo harness the product shipped inside. See
+`docs/releases/v0.14.0/`.
+
+**Sixteen work packages are complete**, each with an Academy retrospective
+(`WP-Z3` wrote fifteen; `WP-Z4` wrote `WP 13.13.2`'s). Twelve delivered the
+remediation programme — eleven of them plus `WP-REVIEW`:
+`WP-C` (dead-code deletion), `WP-B1` (Kind eligibility invariant),
+`WP-D2` (persisted-JSON degrade-to-defaults), `WP-A1` (close the obsolete
+Id-only command path), `WP-H` (architectural invariant enforcement),
+`WP-D1` (one Desktop `ActionOutcome` reporting tail), `WP-F` (test-suite
+hygiene), `WP-B2` (`ADR-0118`), `WP-G` (`MainWindow` decomposition),
+`WP-A2` (the keyboard on the canonical command path), `WP-E`
+(async/threading hardening). Three governance work packages followed:
+`WP-Z1` (governance correction), `WP-Z2` (`TD-117`, the Undo/Redo
+UI-thread defect), `WP-Z3` (this programme's fifteen Academy
+retrospectives) and `WP-Z4` (release preparation). Tests **3,088
+`Tempest.Core.Tests` + 372 `Tempest.Desktop.Tests`** — 3,460 from 2,562 at
+`v0.13.1` — Debug and Release, 0 warnings, 0 errors.
+
+**The single load-bearing change is that no surface reaches the obsolete
+command path unintentionally any more.** `TD-77`'s binding contract had
+become canonical without retiring what it replaced, and four surfaces were
+still on the Id-only overload — one of them found by the guard test rather
+than by the audit that preceded it. All four are migrated; the one
+remaining caller (`ApiRequestHandler`) is a decided architectural position
+under `AT-10`, not a leftover.
+
+**Two defects were found by tests written to prove something else.**
+`WP-E`'s Cockpit work exposed that the discipline read-models re-read
+persistence on every property access — one refresh performed 1,140 reads
+where 104 suffice — and, while testing the async favourite path, that
+`UndoRedoStack` raises `Changed` on whatever thread an undone action
+resumed on, so the Quick Access Toolbar refresh touched Avalonia state
+from the thread pool. **`TD-117` is now fixed (`WP-Z2`, `ADR-0119`)**: the
+Desktop subscriber marshals, and `Tempest.App` is untouched. Two
+corrections came with the fix — the defect dated to `v0.10.0`, not
+`v0.13.1`, and its real symptom was an Undo that silently half-completed
+(data changed; no toast, no refresh, stale buttons) rather than the error
+dialog first reported, which was GC-timed and often never seen.
+
+**Known before physical review:** `TD-116` — the Desktop application does
+not launch on Linux/X11 (a `Tmds.DBus.Protocol` security pin against
+`Avalonia.FreeDesktop`); Windows and macOS are unaffected and Windows is
+the verified platform. See `PHYSICAL_REVIEW.md`.
+
+**Previously — 2026-08-29 (Project Tasks & Delivery Workflow — `TD-81`,
+partially).**
+
+**Tasks is a real project surface — the first project-management
+capability in TempestOS.** `EngineeringTask`, `EngineeringAction`,
+`Milestone` and `Deliverable` had been real, compiled, persistable domain
+types for several releases, and nothing in the product created, assigned,
+dated or reported on one. The Project Workspace's Tasks area now does: a
+task list and a status board, with create, edit, assign, priority, due
+date, milestone/deliverable association, complete and reopen. No second
+task model was introduced — every operation is performed on the existing
+domain type.
+
+**A task's status is deliberately not `LifecycleState`.** The canonical
+lifecycle forbids Released → Draft, and that rule is correct: a released
+drawing must not silently become a draft again. But a finished task must
+be reopenable, which is the same transition. Rather than weaken a rule
+that protects released engineering data across the platform in order to
+serve one family, `TaskWorkState` implements `IFamilySpecificState` — a
+contract the platform declared and had never used — with its own
+transition table and a mapping onto the canonical lifecycle, so anything
+reasoning across the whole domain still gets one answer per Kind.
+Cancelled counts as finished, not open, because an abandoned task is not
+outstanding work and counting it as such would make every open-task figure
+slowly become a lie.
+
+**Project membership is the parent chain, for the third time.** Documents
+join transitively; requirements join on the allocation link; tasks join the
+same way. A task hung on a Part inside an Assembly is a project task, three
+levels down. No `ProjectId` field was added to the task model — it would be
+a third answer to a question the platform already answers twice.
+Assignment reads the `ADR-0116` principal boundary; unassigned stays a
+first-class state.
+
+**The Cockpit's "Overdue Actions" card is no longer a placeholder.** It
+carried the note "no due-date field exists on any Task/Action Domain object
+yet" for as long as it existed. That reason is gone, so the card reports
+real overdue work and an empty card now means *nothing is overdue* rather
+than *we cannot tell*.
+
+**The most useful test result was a mutation that survived.** Making
+`ChangeWorkStateAsync` skip its own persist call broke nothing — every
+assertion read the in-memory object it had just changed, which cannot
+distinguish "saved" from "set on this instance". Closed by a test that
+reads back what the state store actually holds, after which the mutation
+is killed. Twelve of thirteen mutations died first time; all thirteen die
+now.
+
+**`TD-81` is PARTIALLY resolved, and its row now lists what is left item by
+item.** Commercial, Resources/workload, Knowledge, Administration,
+Gantt/Timeline and managed Milestone surfaces are untouched. No Gantt, no
+scheduling engine, no resource or capacity planning, no task dependencies,
+no swimlanes or WIP limits were built. Risks, Issues and Decisions still
+have no surface (`FCR-0056`).
+
+Suite: Core 2773/2773, Desktop 319/319, both configurations, 0 warnings,
+0 errors. Thirteen mutations run, thirteen killed. Runtime-verified by
+showing the real window and running a layout pass — logical presence is not
+visual presence. Decision: `ADR-0117`. Academy:
+`docs/academy/02 Runtime Architecture/41-project-tasks-and-delivery-workflow.md`.
+
+---
+
+**Previously — 2026-08-29 (Production Rehydration & Principal Boundary —
+`TD-103`, `TD-104`, `TD-75`).**
+
+**Two defects with one shape: the product worked because the sample
+harness happened to ship.** Twelve engineering Kinds — Risk, Task,
+Decision, Supplier, Milestone and the rest — could be persisted and read
+back only because a class inside `Tempest.Samples` registered how. And the
+desktop shell established no principal at all: the only callers of
+`EstablishCurrentPrincipal` in the whole product were sample modules. A
+build of TempestOS without the samples could write a Risk and never read
+it, and would run as nobody.
+
+**`TD-104` is RESOLVED — nine types were registered for rehydration
+nowhere at all.** `Approval`, `Assumption`, `EngineeringAction`, `Hazard`,
+`Issue`, `Review`, `Simulation`, `Test` and `Verification` could each be
+created and written to disk, and each was discarded on the next launch,
+with the loss recorded as a `Warning` in a log with no reader. Found by
+reflecting over every `EngineeringObjectBase` implementing
+`IRehydratable<T>` rather than auditing the registration list, which can
+only ever agree with itself. All 21 canonical Kinds are now declared and
+registered by `Tempest.App.Workspace.CanonicalObjectKinds` — one more
+caller of `TD-85`'s single rehydration boundary, not a second mechanism.
+An unknown Kind is now an `Error` and a toast in the running shell; silent
+data loss was the worse half of the defect.
+
+**The proof is the absence of a dependency, not the presence of a
+behaviour.** `Tempest.Samples` is loaded in the test process, so every
+behavioural round-trip test would pass just as happily if the product
+still leaned on it. `ProductionRegistration_UsesNoTypeFromTempestSamples`
+asserts the thing itself. Each of the 21 Kinds is then driven create →
+persist → a second lifetime over a real store → rehydrate, comparing the
+**full captured state** including every `TypeState` key — so an omission in
+any one type's rehydration constructor fails as a changed key rather than
+passing because the properties the test named were the ones that survived.
+
+**`TD-103` is RESOLVED for the product TempestOS currently is: a local,
+single-user desktop application.** `ISessionPrincipalSource` is the one
+place the application decides who is using it; `WorkspaceHost` resolves it
+at start-up and publishes it into the accessor every consumer already read.
+The shape is `desktop session → ISessionPrincipalSource →
+ICurrentPrincipalAccessor → services → domain` — no username threaded
+through call sites, and no user field on any engineering object. **This is
+not authentication**, and two standing tests assert the absence: no
+credential-, login- or token-shaped member in `Tempest.Core.Identity`, and
+no domain type holding an `IPrincipal`. Authentication and a real
+permissions model remain Administration scope (`TD-81`), and are what this
+interface exists to be replaced by.
+
+**The bug the fix introduced, recorded because it is instructive.** The
+first implementation published the principal only when non-null, which
+reads as ordinary defensive care. The acceptance test then failed with
+`sample.verificationworkspace-user`: when the boundary declined to answer, a
+sample module's principal was left standing as the session's — `TD-103`
+itself, wearing a fix. The boundary is authoritative in both directions;
+publishing null is the answer, not a loss. `unknown` authorship and
+`RequirementVerificationState.Unknown` are preserved for that reason.
+
+**`TD-75` is PARTIALLY resolved, and said so rather than closed.** The
+rehydration half is done and the packaging half is not: `Tempest.App` still
+project-references `Tempest.Samples`, so all 33 sample modules still
+initialise in a real launch and the "Sample" ribbon tab is still visible to
+end users. That is a packaging change with no bearing on rehydration, and
+was left alone rather than folded into a closure that would have read as
+more complete than it was.
+
+Suite: Core 2748/2748, Desktop 310/310, both configurations, 0 warnings,
+0 errors. Seven mutations run, seven killed — including the one that
+reproduced the real defect above. Decision: `ADR-0116`. Academy:
+`docs/academy/02 Runtime Architecture/40-production-rehydration-and-the-principal-boundary.md`.
+
+---
+
+**Previously — 2026-08-29 (Project Documents & Requirements — `TD-102`).**
+
+**`TD-102` is CLOSED — the two project areas that claimed to be
+implemented now are.** The Project Workspace's Documents and Requirements
+tabs were declared `NavigationAvailability.Implemented` and rendered a
+`DeclaredCapabilityView`, which shows its "Not yet implemented" badge only
+for `Declared` areas — so both drew a glyph, a title, a paragraph of prose
+and no badge. The descriptor table, the registers and the surface all
+agreed a capability existed that did not. Found by the post-`TD-80`
+product gap reassessment.
+
+**Documents join transitively; requirements join on the link that already
+exists.** `ProjectDocumentRegister` reads `ProjectMembership`, so a drawing
+on a Part inside a Sub-Assembly inside an Assembly is a project document —
+direct-children-only would find almost nothing in a real product
+structure. A requirement is *not* an engineering object, so
+`ProjectRequirementRegister` joins on allocation: a requirement belongs to
+a project when something it is allocated to is in that project. A
+`ProjectId` field on the requirements model was explicitly not added — it
+would be a second, competing answer to a question the platform can already
+answer. The honest consequence is stated rather than engineered around: an
+unallocated requirement belongs to no project, and the empty state says so.
+
+**Declared status and recorded verification are shown side by side**,
+because they can disagree, and a requirement marked Verified with nothing
+recorded behind it is exactly what a reviewer needs to find.
+
+**Opening a drawing goes through the same `TD-80` launcher the object
+editor uses** and changes no navigation state at all. Because the viewer
+is a panel in the Engineering workspace's layout, the row says where the
+document went — a button that appears to do nothing is indistinguishable
+from a broken one.
+
+**One new gap found and disclosed rather than patched.** The desktop shell
+establishes no principal: only sample modules call
+`EstablishCurrentPrincipal`, so permission-gated reads succeed or fail
+depending on which sample initialised last. The register handles it
+honestly — `Unknown` ("you may not read this") is kept distinct from
+`NotVerified` ("nothing was recorded") — and the real fix belongs with the
+Administration module. Recorded as `TD-103`.
+
+Suite: Core 2682/2682, Desktop 302/302, both configurations, 0 warnings,
+0 errors. Five mutations run, five killed. Every acceptance test drives
+project → area → document/requirement → action through the real
+`MainWindow`; runtime-verified by rendering the window. Academy:
+`docs/academy/02 Runtime Architecture/39-project-documents-and-requirements.md`.
+
+**The prior status block, below this point, is retained:**
+
+**Last Updated:** 2026-08-29 (Drawing / Document Viewer — `TD-80`,
+`ADR-0115` — visual acceptance audit). **The `v0.13.x` train remains
+CLOSED.**
+
+**`TD-80` is now formally ACCEPTED for the scope delivered, after a visual
+audit against the supplied mock-ups.** It had closed with 287 green
+Desktop tests and no rendered frame: the Desktop suite runs on Avalonia's
+headless platform with `UseHeadlessDrawing` on, so nothing is ever
+rasterised and `CaptureRenderedFrame` throws. The audit drove the real
+`MainWindow` through a throwaway `UseSkia()` harness — navigating to real
+objects and pressing the real buttons on them — and looked at the
+pictures. **Four user-visible defects were in the delivered scope — one of
+them fatal to the whole feature. All four are fixed.**
+
+- **There was no Open button, so the viewer was unreachable from the
+  running application.** `ObjectEditorView.TryCreate` populates the editor
+  before it returns; an attachment row only carries an Open button when
+  something can handle the request; and the shell subscribes *after*
+  `TryCreate` returns. On a freshly opened object the button was never
+  built. Every headless test passed, because every one of them called the
+  launcher directly — verifying the destination and never the door.
+  `OpenAttachmentRequested` now re-populates the attachment rows on its
+  first subscriber.
+- **A viewer tab closed from the tab strip could never be re-opened.** The
+  strip's own close button is `TD-72`'s: it removes the panel from the
+  layout tree and tells `AttachmentViewerLauncher` nothing. The launcher
+  went on believing the attachment was open, so the next open called
+  `SelectPanel` on a panel that no longer existed — a silent no-op that
+  left the drawing unreachable for the rest of the session. The launcher
+  now reconciles its map against the layout tree, which also covers a
+  panel that is floating rather than docked.
+- **`Missing`, `Corrupt` and `Unsupported` each showed a full page-and-zoom
+  toolbar that could do nothing** — arrows, a zoom stepper, Fit and 100%,
+  disabled, around an empty gap, above "No content stored". Chrome that
+  reads as a working viewer whose right button the user has not found yet.
+  Those controls are now hidden rather than merely disabled when nothing
+  is open.
+- **Turning to a page of another size drew it stretched into the previous
+  page's shape.** The viewport carries the content size that decides both
+  the fit zoom and the rendered width and height, and a page turn never
+  updated it — so the audit drawing's portrait second sheet was drawn into
+  its landscape first sheet's rectangle, at roughly half its true height.
+  `DocumentViewport.WithContentSize` had existed since the first commit,
+  correct and re-fitting, and the multi-page test fixture had been built
+  with three deliberately different page sizes; nothing at the view level
+  ever joined the two. The view now tells the viewport each page's own size
+  before anything is drawn.
+
+**Everything else held.** PDF rendering is genuinely vector-derived — the
+captured frames show stroked paths and a filled rectangle, not extracted
+text. The viewer is a real tab in the document group, tabs alongside the
+object editors, keeps per-document page and zoom state, re-fits on resize,
+and leaves the module rail, ribbon, Explorer, Properties panel and status
+bar exactly where they were.
+
+**Four mock-up divergences remain, and none is closed here.** Three are
+capabilities rather than defects, already carried as `TD-98`/`TD-99`: the
+sheet-thumbnail navigator and the zoom *slider* (mock-up 4), and the
+markup palette, rotate and layers tools (mock-up 1). The fourth is a
+design decision rather than a defect: mock-up 4 shows the drawing in a
+column *beside* the object, where `ADR-0115` deliberately tabs it *into*
+the document group, so opening a drawing hides the object editor behind a
+tab rather than placing them side by side. The user can drag either panel
+out to a split, and re-deciding the default is a design call rather than
+an audit finding — recorded here rather than changed unilaterally. The
+mock-ups' "Sheet N of M" is "Page N of M" here, which is the honest
+wording for a surface that also shows specifications and datasheets.
+
+Suite after the audit: Core 2670/2670, Desktop 291/291 (four new
+regression tests, one per defect), both configurations, 0 warnings,
+0 errors. Each fix mutation-tested: reverting any one of them fails
+exactly its own new test and nothing else.
+
+**The `TD-80` delivery block, below this point, is retained:**
+
+**`TD-80` is CLOSED for the scope delivered — and deliberately not for
+more than that.** Its own original text lists markup, annotation and
+rotation; this pass's scope did not include them, so they are carried as
+`TD-98` rather than absorbed into a closure that would overstate what was
+built. Mock-ups 2 and 3 now have a real surface behind them.
+
+**The design turned on one question: what "render" is allowed to mean.**
+The obvious pure-managed approach extracts a PDF's text and lays it out —
+no native dependency, works everywhere, and useless for an engineering
+drawing, whose content is vector paths and whose text extraction yields
+the title block and nothing else. It would have passed for specifications
+and been indistinguishable from working until someone opened a drawing. So
+PDFium rasterises for real, **on demand at the current zoom**, which is
+why zooming into a detail shows more of the drawing rather than larger
+pixels. That was verified with a five-line probe before any viewer code
+was written.
+
+**The geometry is a pure immutable value.** `DocumentViewport` and
+`DocumentViewSession` decide every zoom, pan, fit, resize and page-turn
+rule in `Tempest.App`, with no rendering type in them, so all of it runs
+with no UI in the process — `TD-72`'s discipline again. Offset clamping
+and anchored zoom are invariants of the type, not habits of its callers.
+
+**Three failure states, not one.** `Missing`, `Corrupt` and `Unsupported`
+are distinct on screen: telling a user their intact `.docx` is damaged
+would be a false accusation about their data, where an admission about our
+own capabilities is the truth.
+
+**The viewer is an ordinary `TD-72` panel.** It tabs, splits, floats onto
+a second monitor and persists with no code of its own for any of it;
+multiple documents open with no fixed slots; and opening one never
+navigates, so the project, the open object and the Explorer selection are
+exactly where they were when the tab closes.
+
+Suite: Core 2670/2670, Desktop 287/287, both configurations, 0 warnings,
+0 errors. Eight mutations run, eight killed. Two tests failed against
+*correct* code and were fixed by probing rather than by relaxing the
+assertion — the headless platform decodes every image to 1x1 including
+garbage (`TD-100`), and `RenderTargetBitmap.Save` writes zero bytes there.
+Disclosed residual debt, all new: `TD-98` (markup/annotation/rotate),
+`TD-99` (DWG/SVG), `TD-100` (image decoding unverified headlessly),
+`TD-101` (no tiled rendering). Academy:
+`docs/academy/02 Runtime Architecture/38-document-and-drawing-viewer.md`.
+
+**The prior status block, below this point, is retained:**
+
+**Last Updated:** 2026-08-29 (Attachment Content Storage — `TD-31`,
+`ADR-0114`).
+
+**`TD-31` is CLOSED — an attached file is now a file this platform
+holds.** Attachments have carried metadata and never bytes since
+`WP 8.2C`; that was disclosed rather than hidden, and it left the Document
+Viewer (`TD-80`) with nothing to open. `FCR-0054` had left the design
+question open in three parts — local filesystem storage, a blob
+abstraction, or an external DMS integration — and all three are bigger
+than the answer. `PersistenceStore` is already a file store, so the
+decision is a door rather than a building: `IBinaryPersistenceStore` is
+the byte shape of the **same class, same instance, same root**, sharing
+`TD-59`'s reserved-name-safe naming, the per-key lock, the exact-name
+resolution and the atomic rename outright. No second persistence
+architecture, and none of those hard-won properties re-implemented.
+
+**Metadata and content are separated on purpose.** An object's durable
+state carries an attachment's name, type, size and SHA-256 — and not one
+byte of the file — so rehydrating a whole graph loads no attachment
+content and a 40 MB drawing is read only when someone opens it. Size and
+hash are derived from the bytes stored rather than accepted from the
+caller, so metadata cannot describe content the store does not hold.
+Content is written before metadata, so a crash leaves unreferenced bytes
+rather than an attachment promising a file nobody stored. Reads verify
+hash and length and answer `Available`, `Missing` or `Corrupt`; damaged
+bytes are never returned, and neither absence nor damage throws.
+
+**Proven across process lifetimes, not in isolation.** A create → attach →
+restart → retrieve journey through the real `WorkspaceHost` and the same
+`AttachDocumentCommand` the Documents workspace dispatches, with
+structurally real PDF, PNG, ZIP-container, JPEG and CSV payloads and a
+blob containing every one of the 256 byte values twice. Seven mutations
+run and seven killed — including "record the metadata but never store the
+bytes", which every Core test passed and only the restart journey caught.
+
+Suite: Core 2615/2615, Desktop 265/265, both configurations, 0 warnings,
+0 errors. Disclosed residual debt, all new and all bounded: `TD-95` (no
+deduplication), `TD-96` (whole-file reads, no streaming), `TD-97` (no
+orphaned-content collection). **The viewer is deliberately not built** —
+`TD-31` was the storage boundary; rendering is `TD-80`. Academy:
+`docs/academy/02 Runtime Architecture/37-attachment-content-storage.md`.
+
+**The prior status block, below this point, is retained:**
+
+**Last Updated:** 2026-08-29 (TD-72 final closure and cross-platform
+cleanliness).
+
+**`TD-72` is CLOSED.** Verified rather than asserted: the real shell's
+composition was traced to the new layout host, all nine required
+capabilities to production wiring rather than test-only entry points, and
+no `DockingGrid`, `PanelHostControl` or `PredefinedLayouts` type survives
+anywhere in `src/` or `tests/`. `TD-90`, `TD-91` and `TD-92` were each
+re-checked against the source and remain the only intentional
+limitations.
+
+**One mutation survived, and it mattered.** Deleting the layout host's own
+`SizeChanged` subscription left all 260 Desktop tests green. `TD-70`'s
+responsive rule was wired, and nothing proved it: every responsive test
+invoked `ApplyResponsiveLayout` directly. That is `TD-83`'s own smell
+reintroduced one level up, inside the work package written to close it.
+Closed with a test that drives a real layout pass and never names the
+method; the mutant then died. The other five mutations run this pass were
+killed as run.
+
+**The suite passes in full on this platform for the first time** — Core
+2572/2572, Desktop 261/261, both configurations, 0 warnings, 0 errors,
+with no environment carve-outs. Clearing the last two "pre-existing
+Linux-environment cases" found that one of them never was one: `TD-94`,
+a real `PluginTrustStore` defect where the file system's case rules, not
+the type's own, decided whether a `.CER` file was a trusted publisher —
+so a genuinely trusted publisher was silently untrusted on Linux, with
+nothing thrown and nothing logged. The other is a true platform
+difference (POSIX unlink versus Win32 share modes) and the test now
+asserts whichever behaviour applies. Academy:
+`docs/academy/02 Runtime Architecture/36-workspace-layout-and-docking.md`.
+
+**The prior status block, below this point, is retained:**
+
+**Last Updated:** 2026-08-29 (Full Workspace Layout & Docking — `TD-72`,
+`ADR-0095`).
+
+**The workspace is now fully dockable.** The compile-time five-column,
+three-row docking grid has been **replaced**, not decorated: the
+arrangement is an immutable tree of arbitrarily nested splits and tab
+groups, plus floating panels in real top-level windows at real screen
+coordinates. Drag-to-dock, tabbed panel groups, arbitrary horizontal and
+vertical splitting, floating and multi-monitor placement, collapse,
+auto-hide, resize, layout persistence and restoration, and responsive
+behaviour are all implemented against that one model.
+
+**Why the abstraction had to go.** The features were not missing from the
+implementation, they were missing from the vocabulary: there were three
+places a panel could be and all three were occupied, so "drag this panel
+there" had no *there*, tabbing had no representation, and splitting had no
+fourth slot. `ADR-0095` — reserved and left unwritten by `ADR-0092` since
+2026-08-05 for exactly this question — is now written.
+
+**The extensibility result that matters.** The document area is a panel
+like any other, with no privileged slot. A future surface — the Drawing
+Viewer (`TD-80`), Materials, Calculations, Tasks — participates by
+registering one `WorkspacePanelDescriptor` and gains docking, tabbing,
+splitting, floating, collapse, auto-hide and persistence at once. The
+reason `DigitalThreadGraphView` recorded for *not* being a panel
+("exactly three physical dock slots, all already occupied") no longer
+exists, and its comment now says so.
+
+**Preserved.** `TD-70`'s responsive rule — now expressed against the tree,
+so it holds for any arrangement rather than three named docks, and **wired
+to the window's own resize for the first time**, closing a gap `TD-83` had
+recorded where the guarantee existed but only tests ever invoked it.
+`TD-71` splitter preferences as durable proportions. Ribbon minimisation.
+Collapse and auto-hide. And existing user preferences, carried into the
+new model by `WorkspaceLayoutMigration` so a returning user's first launch
+after the upgrade looks like their last launch before it.
+`IWorkspaceLayout` (`WP 8.0B`) is retained as a **live projection** of the
+tree rather than a stale second account of where the panels are.
+
+**Proven.** 119 tests — 81 of them running with no UI in the process,
+because the model, the drop-zone geometry, the presets and the migration
+are all pure. Eleven mutations run and eleven killed; one survived the
+first attempt and exposed a real coverage gap (nothing exercised a split
+reducing to a single child, the case that accumulates wrappers over a
+session), which was closed before it died. `DockingGrid`,
+`PanelHostControl` and `PredefinedLayouts` were deleted with their tests,
+their guarantees re-proven against the new host rather than carried.
+
+Suite: Core 2567/2569 (the same two pre-existing Linux-environment cases),
+Desktop 259/259, 0 warnings, 0 errors. Decision: `ADR-0095`. Architecture:
+`docs/architecture/Workspace Layout & Docking Architecture.md`. Academy:
+`docs/academy/02 Runtime Architecture/36-workspace-layout-and-docking.md`. Disclosed
+residual debt, all new and all bounded: `TD-90` (focus across a
+re-render), `TD-91` (the edge-based projection is lossy for tabbed and
+floating panels), `TD-92` (no live drag preview adorner).
+
+**The prior status block, below this point, is retained:**
+
+**Last Updated:** 2026-08-29 (Project-Centric Convergence — `TD-89`).
+**The `v0.13.x` train remains CLOSED.**
+
+**The product model is now expressed in full.** TempestOS is a
+project-centric engineering operating environment — **and** standalone
+calculation sets and quick calculations are a first-class workflow that
+requires no project. The Product Spine (`TD-84`) had enforced the first
+half by construction, making Engineering reachable only from an open
+project: a faithful but too-strong reading, now corrected.
+
+**What this pass delivered.** `ShellArea.Engineering` legitimately carries
+a project **or** none, with `ShellLocation.ProjectId` as the scope itself,
+so the shell's load-bearing invariant was *restated* rather than weakened
+— a location that claims a project must agree with the context; a location
+that claims none cannot disagree with anything. `IEngineeringScope` is the
+real derived state the Engineering Workspace reads instead of inferring
+its scope from what is on screen. `ProjectMembership` gives the platform
+**one** transitive definition of project ownership, over the durable
+`IHasParent` edge (`TD-85`), used by both the project workspace and the
+engineering scope — and it fixed a real defect on the way, where contents
+were resolved from direct children only, so a Part inside an Assembly
+inside a project was not "in" the project. `ShellAreas`/`ProjectAreas`
+declare the product's designed module and area sets and which of them have
+a capability behind them, as application state a test asserts; anything
+unbuilt gets a real, navigable, project-aware surface naming what is
+missing and the debt tracking it. No project data is faked, hard-coded, or
+duplicated: projects remain real `IProject` engineering objects.
+
+**Proven by the five mandatory journeys** through the real `MainWindow`:
+new project → engineering → back with context intact; existing project
+with a real calculation and validation, work still associated; **a
+standalone calculation with no project at all, saved into a calculation
+set, surviving a close and reopen**; project and engineering context
+restored across a restart; and a full navigation circuit with context
+correct at every stage. Plus 17 integration tests and 3 Phase-7
+docking-seam tests. Six mutations run, six killed. Two tests encoding the
+superseded rule were **inverted and strengthened**, never deleted.
+
+**Phase 7 (docking preparation) needed no refactor.** The investigation
+found `MainWindow` already hosts modules through a plain content seam,
+with `DockingGrid` strictly inside the Engineering surface — so full
+Option-C docking (`TD-72`) remains a change to one module, not to
+navigation. Three tests now pin that seam, including one asserting the
+docking grid is absent from the tree outside Engineering. Resizing,
+collapsing, responsive behaviour, ribbon minimisation and persisted
+splitter preferences are untouched.
+
+Suite: Core 2486/2488 (the same two pre-existing Linux-environment cases),
+Desktop 262/262, 0 warnings, 0 errors. Architecture:
+`docs/architecture/Product Spine Architecture.md`. Academy:
+`docs/academy/02 Runtime Architecture/35-project-centric-convergence.md`.
+
+**The prior status block, below this point, is retained:**
+
+**Last Updated:** 2026-08-28 (Engineering Object Rehydration — `TD-85`,
+`ADR-0113`). **The `v0.13.x` train remains CLOSED.**
+
+**What this pass delivered — the persistence boundary is closed.** The
+Product Spine's own restart journey exposed a real boundary: engineering
+*documents* were durable, but the objects reconstructed over them were not
+(`ADR-0077`), so a relaunched TempestOS silently started a new object graph
+over the user's still-persisted work. The previous pass worked around it
+for projects alone, with a second durable `Projects.Index`, and recorded
+the rest honestly as `TD-85`.
+
+**The investigation's decisive finding** was that the obvious fix — a
+Kind→constructor map over the existing discipline factory registries —
+could never have worked. Those registries are in `Tempest.App` and are
+explicitly "never a Domain-layer registry contract", and, more
+fundamentally, `EngineeringObjectFactory<T>.CreateAsync` persisted only the
+document (`Kind`, created-at, prose): **the constructor arguments such a
+map would need had never been written to disk at all.** Object state had to
+become durable first.
+
+**Built and proven:** `EngineeringObjectState` — the one canonical model's
+own serialisation, never a second model — written through
+`IEngineeringObjectStateStore` into the same `IPersistenceStore` the
+document store already uses, at creation and after every state-changing
+mutation, with no save step to forget; `CaptureTypeState` +
+`IRehydratable<TSelf>.Rehydrate` so each of the 30 concrete canonical types
+owns both directions of its own persistence, keyed by `nameof`, with **no
+central switch over Kind anywhere** and a compile error if a type cannot
+rebuild itself; a Domain-layer Kind→rehydrator registry populated by each
+Kind's own declaring class using the constants it already owns (`ADR-0105`)
+— 29 Kinds, every Kind with a live write path in `src/`;
+`EngineeringObjectRehydrationService`, run by the shared composition root
+in **both** the desktop and console entry points, which reconstructs
+objects, restores lifecycle/history/parent/deletion/BOM/attachments,
+reattaches self-factories, rebuilds the relationship index from durable
+references, and never overwrites an object already live in the process;
+and durable relationship provenance so a rebuilt link is not credited to
+whoever happens to be signed in at startup.
+
+**`Projects.Index` was removed, not retained** — collection, DTO,
+read/write paths and its `IPersistenceStore` dependency — leaving one
+object model and one persistence authority. A recovered project is now a
+live `IProject` with its real lifecycle state, relationships, revisions and
+contents, not a name-and-status snapshot.
+
+**Proven, not round-tripped.** The Definition of Done was never "the object
+serialises and deserialises". An 18-step acceptance journey drives the real
+`MainWindow` across **three** application lifetimes over one persistence
+root: create a project and engineering objects through the real production
+command path → transition, rename, set a BOM line, link, revise → close →
+**relaunch** → the objects come back as their own concrete types with
+identity, lifecycle, history, relationships, BOM data, parent and revisions
+intact → open the project by clicking the real button in the real project
+browser → **keep working** (another transition, another revision, another
+new part) → **relaunch again** → that work is there too. Nothing in it
+inspects a file on disk. Plus 24 focused tests over the real persistent
+stores. **Thirteen mutations run, thirteen killed.**
+
+**Closure audit (ten checks, post-`e752368`).** Nine passed. One material
+defect found and fixed: `IHasRevisions.ReviseAsync` carried only the
+structural half of an object's state onto its revised instance
+(`WP 9.0B`'s partial copy), so a revised object silently reverted to
+`Draft` with no history — harmless while state was in-memory, but this
+pass had made it **durable**, so the revised instance's next mutation wrote
+the reset over a recorded lifecycle state and its whole transition history.
+`ReviseAsync` now carries the full captured state through the same
+`CaptureState`/`RestoreState` pair rehydration uses, and the partial copy
+was deleted: one definition of "this object's state" now serves
+persistence, rehydration and revision alike. Four regression tests added,
+two further mutations run and killed. `TD-32` was amended — not resolved,
+and deliberately not absorbed into `TD-85` — to record that the `WP9.3A`
+relationship-index asymmetry is now session-dependent.
+
+Suite: Core 2468/2470 (the same two pre-existing Linux-environment cases,
+confirmed failing identically at `37788a0` and therefore not regressions),
+Desktop 252/252, 0 warnings, 0 errors. Decision: `ADR-0113`. Architecture:
+`docs/architecture/Engineering Object Rehydration Architecture.md`.
+Academy: `docs/academy/02 Runtime Architecture/34-engineering-object-rehydration.md`.
+Disclosed residual debt, all new and all bounded: `TD-86` (per-mutation
+write volume), `TD-87` (versionless state schema), `TD-88` (eager startup
+rehydration).
+
+**The prior status block, below this point, is retained:**
+
+**Last Updated:** 2026-08-28 (Product Convergence & Recovery Programme —
+the Product Spine). **The `v0.13.x` train remains CLOSED.**
+
+**Product decision, now implemented:** TempestOS is a **project-centric
+engineering operating environment** —
+`TempestOS → Module → Project → Workspace → Engineering Object → Evidence`.
+Engineering is not a standalone application inside TempestOS; projects are
+the context engineering work happens within.
+
+**What this pass delivered — the Product Spine (`TD-84`).** The previous
+audit's four P0 gaps (no global navigation, no project context, no
+engineering surfaces, no project modules) were **one** architectural
+deficiency: the Product Shell / Project Context layer was missing. They are
+now grouped as `TD-84` so they are never worked as four unrelated features.
+Built and proven: `IProjectDirectory` (projects are real `IProject`
+engineering objects, created through the same factory every discipline
+uses, with a durable index so they survive restart); `IProjectContext` (the
+current project as real, persisted application state with an event, not a
+caption); `IShellNavigator`/`ShellLocation` (`Module → Project → Workspace`
+as one immutable, persisted, testable value, enforcing that a
+project-scoped location and the current project can never disagree); and
+the Desktop shell they drive — a global navigation rail, project browser,
+project workspace, a single module host that renders whatever the navigator
+reports, and a Status Bar that finally shows the real current project.
+Engineering is reachable **only** from an open project, by construction.
+The existing engineering platform is unchanged and is now one module inside
+the shell.
+
+**Proven, not screenshotted.** The full Definition-of-Done journey runs end
+to end through the real `MainWindow`: launch → Projects → create → open →
+Project Workspace → current project visible → enter Engineering → real
+ribbon and docking grid → return with context intact → close → **reopen →
+project and location recovered**. Plus the three commissioned traces
+(Project→Component→Material→Calculation→Validation→Result;
+Project→Requirement→Verification→Evidence;
+Project→Drawing/Document→Engineering Object) against the real material,
+requirements and verification services. Four mutations run and killed.
+
+**A real boundary was found and crossed honestly.** The restart step failed
+until the spine confronted `ADR-0077`: the engineering object graph is
+in-memory, so documents persist but objects do not. Projects now keep a
+durable index (`MaterialCatalog`'s own approved pattern, `ADR-0055`); every
+other engineering object still vanishes on restart. That is recorded as
+`TD-85` as a workaround, not presented as a fix.
+
+> **Superseded by the block above (`TD-85`, `ADR-0113`).** The boundary is
+> now fixed at its source and the durable index was deleted.
+
+Suite: Core 2440/2442 (the two pre-existing Linux-environment cases),
+Desktop 250/250, 0 warnings, 0 errors. Architecture:
+`docs/architecture/Product Spine Architecture.md`.
+
+**The prior status block, below this point, is retained:**
+
+**Last Updated:** 2026-08-28 (Product / UX / Functional Compliance Audit,
+branch `claude/finding-closure-verification-tbcd50`). **The `v0.13.x`
+train remains CLOSED; no `WP 14.x` feature work was performed** — this
+pass audited the implementation against the original design brief and the
+five supplied mock-ups, and fixed only what that audit proved defective.
+
+**The honest verdict: PARTIALLY compliant — the shortfall is structural,
+not cosmetic.** TempestOS is an excellent engineering *platform* behind a
+modest single-window desktop shell. The platform layer (runtime host, DI,
+modules, plugin trust boundary, engineering domain, units, materials,
+calculations, requirements, verification, persistence, audit) is genuinely
+strong and matches its architecture documents. The product in the mock-ups
+is not the product implemented: there is **no project context** (the status
+bar permanently reads "No project"; `ProjectModel` is dead code), **no
+global navigation rail**, **no drawing/document viewer**, **no Tasks,
+Commercial, Resources, Knowledge or Administration modules**, and **no
+Companion application on this branch** (it exists only on the unmerged
+`claude/tempestos-companion-mobile-ubznt3`). Docking is a fixed
+three-dock grid — resize, collapse, auto-hide, presets and persistence are
+real and tested, but panels cannot be moved, tabbed, floated or split, and
+the application is single-window. Two things count strongly in the
+codebase's favour and were verified directly: it **fakes nothing** (zero
+`TODO`/`FIXME`/`NotImplementedException`; placeholders are labelled as
+placeholders in the UI itself), and its governance registers largely
+disclosed these gaps already rather than claiming false completeness.
+
+**What this pass fixed.** Responsiveness was measured on the real window
+before any change: both side docks were fixed at 240 px with only the
+centre column flexible, so at the app's own 960 px minimum they took half
+the window, and no `SizeChanged`/`Bounds`/breakpoint/compact-mode code
+existed anywhere in `Tempest.Desktop`. `TD-70` now squeezes and then
+collapses the docks so the Document Area keeps a guaranteed floor —
+without ever overwriting the user's preferred sizes — and adds ribbon
+minimisation (double-click a tab, or View ▸ Minimise Ribbon), persisted.
+`TD-71` makes a splitter drag a durable preference. 12 new tests; three
+mutations run and killed. Everything else the audit found is registered at
+severity as `TD-72`–`TD-83` (four P0) rather than quietly narrowed. Full
+report: `docs/governance/Quality/Product Compliance Audit (2026-08-28).md`.
+Suite after the pass: Core 2412/2414 (the two pre-existing
+Linux-environment cases), Desktop 246/246, 0 errors.
+
+**The prior status block, below this point, is this field's earlier
+content — retained, not deleted:**
+
+**Last Updated:** 2026-08-28 (Independent Finding-Closure Verification
+pass, branch `claude/finding-closure-verification-tbcd50`). **The
+`v0.13.x` release train remains CLOSED; no `WP 14.x` feature work was
+performed in this pass** (hard quality gate: verification and closure
+only).
+
+**What this pass delivered.** A full falsification review of every
+claimed finding closure, run by eight parallel read-only review
+disciplines and verified centrally against source (full report:
+`docs/governance/Quality/Finding Closure Verification (2026-08-28).md`).
+The previous session's closure report and original 16-item finding list
+were never committed anywhere and are unrecoverable — stated plainly in
+the report; nothing was assumed closed on their word. Outcome: three
+findings **closed with implementation, real-production-path tests, and
+run-and-verified mutations** — `TD-58` (redundant Desktop rebuilds: the
+`ActionCompleted` convention now carries an outcome, refusal/failure
+paths no longer rebuild anything, the ribbon no longer tears down its
+tabs per click, duplicate and dead refresh wires fixed, deleted objects
+no longer stay selected), `TD-59` (reserved device-name identifiers are
+now unambiguously representable at the `PersistenceStore` boundary —
+encoding, case-exact matching, loud collision refusal, atomic writes,
+legacy migration), `TD-60` (malformed stored values surface as each
+framework's own controlled exception, never raw
+`FormatException`/`JsonException`, and a torn write can no longer brick
+Desktop startup). Every previously-Resolved v0.13.x register closure was
+re-verified against source (all confirmed except `TD-40`/`TD-52`, whose
+test-pinning gaps are now `TD-63`/`TD-64`); ten new items were
+registered (`TD-57`, `TD-61`–`TD-69`); the Risk Register's five
+false-Open rows and the Release Register's v0.13.1 contradiction were
+corrected. Full suite after the pass: Core 2412/2414 (the two
+pre-existing Linux-environment cases), Desktop 228/228, 0 errors — 80
+new tests, three mutations run, killed, and restored.
+
+**`WP 13.13.2`'s own status block, below this point, is this field's
+prior content — retained, not deleted:**
+
 **Last Updated:** 2026-08-18 (`WP 13.13.2`, `v0.13.1` Final Release,
 Closure & Handover to WP14). **The `v0.13.x` release train is CLOSED.**
 
@@ -2404,7 +3176,15 @@ read `docs/academy/Contributor Learning Path.md`.
 
 ## Current Repository Phase
 
-**Corrected, `WP 13.12.2`.** This field is stale. The current repository
+**Corrected, `WP-Z1` (2026-09-01).** This field is stale. The current
+repository phase is **post-`v0.13.1`, pre-`v0.14.0`** — eleven remediation
+work packages complete on `claude/stage-3-descriptor-binding-6wz401`, no
+release yet prepared. The `WP 13.12.2` correction below is itself now
+historical (it described `v0.13.0` as in progress; `v0.13.0` and `v0.13.1`
+have both since been tagged, and `v0.13.1` released and published). Both it
+and the `v0.5.0` content beneath are retained, not deleted.
+
+**Previously corrected, `WP 13.12.2`.** This field is stale. The current repository
 phase is **`v0.13.0` — Trust & Deployment Hardening**, in progress.
 The `v0.5.0` Developer Experience content below has been out of date
 since that release closed and was never updated across `v0.6.0`–`v0.13.0`;
@@ -2520,7 +3300,13 @@ Current Work Package, below.
 
 ## Current Development Branch
 
-**Corrected, `WP 13.12.2`.** This field is stale. The current
+**Corrected, `WP-Z1` (2026-09-01).** This field is stale. The current
+development branch is **`claude/stage-3-descriptor-binding-6wz401`**,
+carrying the eleven-work-package remediation programme. It is ahead of
+`main` and not merged; `main` remains at `v0.13.1`. The `feature/v0.13.0`
+content below is retained, not deleted.
+
+**Previously corrected, `WP 13.12.2`.** This field is stale. The current
 development branch is **`feature/v0.13.0`** — the sole integration branch
 for this release (`WP 13.0.0`), cut directly from the `v0.12.0` tag,
 never rebased or squashed, with no upstream configured and no merge to
@@ -2590,7 +3376,19 @@ project's own convention.
 
 ## Current Release
 
-**Corrected, `WP 13.12.2`.** This field is stale. The current release is
+**Corrected, `WP-Z4` (2026-09-01).** This field is stale. The last
+*released* version is **`v0.13.1`** — tagged, merged to `main`, and
+published with both assets. **`v0.14.0` is IN PREPARATION**: `VERSION` reads
+`0.14.0` and `docs/releases/v0.14.0/` holds the Release Notes, Work Package
+inventory and Engineering Release Report, but **no tag exists, no merge to
+`main` has occurred, and nothing has been published or certified**.
+
+**Previously corrected, `WP-Z1` (2026-09-01).** The last released version
+was **`v0.13.1`**; no release was then in preparation. The `WP 13.12.2` correction below
+(which described `v0.13.0` as in progress with `VERSION` at `0.12.0`) is
+historical, and is retained, not deleted.
+
+**Previously corrected, `WP 13.12.2`.** This field is stale. The current release is
 **`v0.13.0` ("Plugin Platform & Trust Isolation"), in progress on
 `feature/v0.13.0`, not yet merged, tagged, or published**; `VERSION`
 remains `0.12.0` pending the release-time bump. The `v0.11.0` content
@@ -2635,7 +3433,17 @@ Experience") before that; `v0.4.0` ("Platform Foundation") before that.
 
 ## Current Work Package
 
-**Corrected, `WP 13.12.2`.** This field is stale. The current Work
+**Corrected, `WP-Z4` (2026-09-01).** This field is stale. The current Work
+Package is **`WP-Z4` — Release Preparation**, now complete: `VERSION`
+bumped to `0.14.0`, `docs/releases/v0.14.0/` written, the Release Register
+row added as *in preparation*, and `WP 13.13.2`'s retrospective supplied.
+`WP-Z1`, `WP-Z2` and `WP-Z3` preceded it. **The merge, tag and release have
+not been performed.** The `WP 13.12.2` correction below is historical, and is retained,
+not deleted, per this file's own retention convention. The authoritative
+current state is always the `**Last Updated:**` block at the top of this
+file.
+
+**Previously corrected, `WP 13.12.2`.** This field is stale. The current Work
 Package is **`WP 13.12.2` — v0.13.0 Release Documentation Closure**, on
 `feature/v0.13.0`. The `WP 11.3B` content below was last accurate at
 `v0.11.0` and was never updated across `v0.12.0` or `v0.13.0`; it is
@@ -5960,6 +6768,25 @@ Experience phase is now complete.
 
 ## Repository Metrics
 
+**Corrected, `WP-Z1` (2026-09-01); figures advanced `WP-Z2`, `WP-Z3`, `WP-Z4`, `WP-Z4` Stage 5 and `WP-Z4` Stage 15.** The table below is stale — its figures
+were last advanced by `WP 10.2A` (`v0.10.0`) and drifted across every
+release since. Re-derived directly from the repository at `e4bc3ee`:
+
+| Metric | Value (verified `WP-Z1`, 2026-09-01) |
+|---|---|
+| Automated tests | **3,460** — `Tempest.Core.Tests` 3,088 + `Tempest.Desktop.Tests` 372, Debug and Release, 0 failures, 0 warnings, `-p:TreatWarningsAsErrors=true` |
+| ADRs | **119** (`ADR-0001`–`ADR-0119`, no gaps) — `ADR-0118` added by `WP-B2`, `ADR-0119` by `WP-Z2` |
+| Rejected Designs | **45** (`RD-0001`–`RD-0045`) |
+| Academy articles | **233** (plus `Academy Index.md`; 234 `.md` files in total — the count `governance-healthcheck.ps1` reports is 233, excluding the index it checks against), of which **159** are Work Package retrospectives. **+1, `WP-Z4` Stage 15**: the `WP-Z4` Stages 4–14 `TD-119` remediation retrospective. **The programme's own fifteen were written by `WP-Z3`**, closing the Engineering Governance §6 gap the pre-release audit found; the figure previously read "eleven are owed", which undercounted — see the `WP-Z3` retrospective for the reconciliation |
+| Governance registers | **27** registers, **38** governance documents in `docs/governance/` |
+| Architecture documents | **29** under `docs/architecture/` |
+| Technical debt | **120** tracked (36 Resolved, 6 Closed, 74 Open, 4 Partially resolved) plus **26** accepted trade-offs — **`WP-Z4` Stage 15**: `TD-119` moves Open → **Partially resolved** (52 fixed `Task.Delay` waits reduced to 1 across Stages 8/11/13, test-only, zero `src/` changes; the retained site is `WorkflowInteractionTests.cs:335`), and **+1 `TD-120`**, the Desktop suite not deleting its isolated persistence roots. Previously **+1, `WP-Z4` Stage 5**: `TD-119` raised |
+
+Only the metrics above were re-derived. The stale table that follows is
+retained, not deleted, and a full historical re-derivation of this file's
+lower sections is deliberately **not** undertaken here — it spans eight
+releases and is its own decision.
+
 | Metric | Value |
 |---|---|
 | Automated tests | **2069** — `Tempest.Core.Tests` **+11, `WP 10.2A`**: `WorkspaceManagerTests` gained `RegisterRenameFactory`/`RegisterDeleteFactory`/`CanRename`/`CanDelete`/`RenameObjectAsync`/`DeleteObjectAsync` coverage, `ADR-0096` (2029 → 2040); `Tempest.Desktop.Tests` **+7, `WP 10.2A`**: `WorkspaceModernisationTests` (new file) — real rename dispatch, honest `CanRename` absence, the Lifecycle-duplication fix, filtering, pinned tabs, Status Bar diagnostics (22 → 29). Full `v0.9.0`→`v0.10.0` chain: 2026 → 2069 (+43). Previously +25, `WP 10.1B` |
@@ -6410,9 +7237,11 @@ ADR files (`ADR-0069`, `ADR-0070`).
 
 **`WP 8.1B` (Navigation & Project Explorer)** — the second
 implementation Work Package of `v0.8.0`; 7 new production files (2
-under `src/Tempest.App/Workspace/`, 4 under
-`src/Tempest.App/Workspace/Samples/`, 1 under
-`src/Samples/Tempest.Samples/`), 5 modified. Added one further
+under `src/Tempest.App/Workspace/`, 4 in the then-new
+`Tempest.App.Workspace.Samples` namespace — relocated to
+`tests/Tempest.Core.Tests/Workspace/Samples/` by `TD-75` phase 2, which
+found them to be fixture content the shipped product never registered —
+1 under `src/Samples/Tempest.Samples/`), 5 modified. Added one further
 `docs/releases/v0.8.0/` deliverable (`WP8.1B Implementation Report.md`)
 and one new ADR file (`ADR-0071`).
 

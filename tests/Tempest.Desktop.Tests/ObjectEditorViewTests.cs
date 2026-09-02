@@ -9,6 +9,10 @@ using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Requirements;
 using Tempest.Desktop.Editors;
 using Tempest.Samples;
+using Tempest.App.Workspace.Documents;
+using Tempest.App.Workspace.Mechanical;
+using Tempest.App.Workspace.Requirements;
+using Tempest.App.Workspace.Verification;
 
 namespace Tempest.Desktop.Tests;
 
@@ -134,9 +138,20 @@ public sealed class ObjectEditorViewTests
 
             var saveButton = FindButtonByContent(editor, "💾 Save");
             saveButton.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
-            await Task.Delay(50); // async Click handler — real proof below re-reads from the repository, not merely that the click didn't throw.
 
+            // `TD-119`: the Save/Attach click runs an `async void` handler over
+            // real disk I/O. Bounded poll re-reading the real state each
+            // iteration — the same remedy as `TD-46`/`WP 13.12.9` further up
+            // this file. The assertions below are unchanged and still fail if
+            // the write genuinely never lands.
             var reread = await domainContext.Repository.FindAsync(target.Id);
+            var renameDeadline = DateTime.UtcNow.AddSeconds(2);
+            while ((reread is null || ((IHasBusinessIdentifier)reread).DisplayName != "Renamed By WP10.3A Test" || editor.IsDirty) && DateTime.UtcNow < renameDeadline)
+            {
+                await Task.Delay(10);
+                reread = await domainContext.Repository.FindAsync(target.Id);
+            }
+
             Assert.Equal("Renamed By WP10.3A Test", ((IHasBusinessIdentifier)reread!).DisplayName);
             Assert.False(editor.IsDirty);
         }
@@ -333,9 +348,20 @@ public sealed class ObjectEditorViewTests
 
             var saveButton = editor.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "💾 Save BOM Line"));
             saveButton.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
-            await Task.Delay(50);
 
+            // `TD-119`: the Save/Attach click runs an `async void` handler over
+            // real disk I/O. Bounded poll re-reading the real state each
+            // iteration — the same remedy as `TD-46`/`WP 13.12.9` further up
+            // this file. The assertions below are unchanged and still fail if
+            // the write genuinely never lands.
             var reread = await domainContext.Repository.FindAsync(target.Id);
+            var bomDeadline = DateTime.UtcNow.AddSeconds(2);
+            while ((reread is null || ((IHasBomLine)reread).Quantity != 42m) && DateTime.UtcNow < bomDeadline)
+            {
+                await Task.Delay(10);
+                reread = await domainContext.Repository.FindAsync(target.Id);
+            }
+
             Assert.Equal(42m, ((IHasBomLine)reread!).Quantity);
         }
         finally
@@ -401,9 +427,20 @@ public sealed class ObjectEditorViewTests
 
             var saveButton = editor.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "💾 Save Owner/Priority"));
             saveButton.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
-            await Task.Delay(50);
 
+            // `TD-119`: the Save/Attach click runs an `async void` handler over
+            // real disk I/O. Bounded poll re-reading the real state each
+            // iteration — the same remedy as `TD-46`/`WP 13.12.9` further up
+            // this file. The assertions below are unchanged and still fail if
+            // the write genuinely never lands.
             var reread = await requirementsService.FindAsync(target.Id);
+            var ownerDeadline = DateTime.UtcNow.AddSeconds(2);
+            while ((reread is null || reread.Owner != "WP10.7A Test Owner") && DateTime.UtcNow < ownerDeadline)
+            {
+                await Task.Delay(10);
+                reread = await requirementsService.FindAsync(target.Id);
+            }
+
             Assert.Equal("WP10.7A Test Owner", reread!.Owner);
             Assert.Equal(RequirementPriority.High, reread.Priority);
         }
@@ -466,7 +503,13 @@ public sealed class ObjectEditorViewTests
             var executeButton = executeExpander.GetLogicalDescendants().OfType<Button>().Single();
             var statusMessage = executeExpander.GetLogicalDescendants().OfType<TextBlock>().Last();
             executeButton.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
-            await Task.Delay(100);
+
+            // `TD-119`: Execute dispatches asynchronously and reports into the
+            // live status TextBlock. Bounded poll on that real text; both
+            // assertions below are unchanged.
+            var executeDeadline = DateTime.UtcNow.AddSeconds(2);
+            while (string.IsNullOrEmpty(statusMessage.Text) && DateTime.UtcNow < executeDeadline)
+                await Task.Delay(10);
 
             Assert.False(string.IsNullOrEmpty(statusMessage.Text));
             Assert.NotEqual("Executed.", statusMessage.Text); // a real, reported failure — never silently swallowed
@@ -566,10 +609,22 @@ public sealed class ObjectEditorViewTests
 
             var attachButton = attachmentsExpander.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "📎 Attach"));
             attachButton.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
-            await Task.Delay(50);
 
+            // `TD-119`: the Save/Attach click runs an `async void` handler over
+            // real disk I/O. Bounded poll re-reading the real state each
+            // iteration — the same remedy as `TD-46`/`WP 13.12.9` further up
+            // this file. The assertions below are unchanged and still fail if
+            // the write genuinely never lands.
             var reread = await domainContext.Repository.FindAsync(target.Id);
             var attachments = await ((IHasAttachments)reread!).GetAttachmentsAsync();
+            var attachDeadline = DateTime.UtcNow.AddSeconds(2);
+            while (!attachments.Any(a => a.FileName == "wp107a-test.pdf" && a.SizeInBytes == 1024) && DateTime.UtcNow < attachDeadline)
+            {
+                await Task.Delay(10);
+                reread = await domainContext.Repository.FindAsync(target.Id);
+                attachments = await ((IHasAttachments)reread!).GetAttachmentsAsync();
+            }
+
             Assert.Contains(attachments, a => a.FileName == "wp107a-test.pdf" && a.SizeInBytes == 1024);
         }
         finally

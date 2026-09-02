@@ -152,7 +152,15 @@ public class ClockModuleDiscoveryTests
 
         var result = service.DiscoverModules();
 
-        Assert.Equal(33, result.Count);
+        // 33 → 27 (`TD-75` phase 1, 2026-08-30). The six
+        // `*WorkspaceExplorerModule` types that used to be counted here were
+        // never sample content: they declared the product's own Mechanical,
+        // Documents, Requirements, Verification, Calculations and
+        // Manufacturing navigation areas. They now live with the disciplines
+        // that own them in `Tempest.App`, and are asserted there by
+        // `SampleSeparationTests`. This count is the number of genuinely
+        // fictional modules the harness ships.
+        Assert.Equal(27, result.Count);
         Assert.Contains(result, d => d.Id == "tempest.samples.clock" && d.ModuleType == typeof(ClockModule));
         Assert.Contains(result, d => d.Id == "tempest.samples.clock.observer" && d.ModuleType == typeof(ClockLifecycleObserverModule));
         Assert.Contains(result, d => d.Id == "tempest.samples.navigation" && d.ModuleType == typeof(NavigationSampleModule));
@@ -174,20 +182,14 @@ public class ClockModuleDiscoveryTests
         Assert.Contains(result, d => d.Id == "tempest.samples.requirements" && d.ModuleType == typeof(Tempest.Samples.RequirementsSampleModule));
         Assert.Contains(result, d => d.Id == "tempest.samples.workspace-explorer" && d.ModuleType == typeof(Tempest.Samples.WorkspaceExplorerSampleModule));
         Assert.Contains(result, d => d.Id == "tempest.samples.engineeringdomain" && d.ModuleType == typeof(Tempest.Samples.EngineeringDomainSampleModule));
-        Assert.Contains(result, d => d.Id == "tempest.samples.mechanical-workspace-explorer" && d.ModuleType == typeof(Tempest.Samples.MechanicalWorkspaceExplorerModule));
         Assert.Contains(result, d => d.Id == "tempest.samples.mechanicalproductstructure" && d.ModuleType == typeof(Tempest.Samples.MechanicalProductStructureSampleModule));
-        Assert.Contains(result, d => d.Id == "tempest.samples.requirements-workspace-explorer" && d.ModuleType == typeof(Tempest.Samples.RequirementsWorkspaceExplorerModule));
         Assert.Contains(result, d => d.Id == "tempest.samples.requirementsworkspace" && d.ModuleType == typeof(Tempest.Samples.RequirementsWorkspaceSampleModule));
-        Assert.Contains(result, d => d.Id == "tempest.samples.calculations-workspace-explorer" && d.ModuleType == typeof(Tempest.Samples.CalculationsWorkspaceExplorerModule));
         Assert.Contains(result, d => d.Id == "tempest.samples.workspacecalculations" && d.ModuleType == typeof(Tempest.Samples.EngineeringCalculationsWorkspaceSampleModule));
-        // WP 9.4A: +2 (Documents Workspace Explorer, Documents Workspace Sample).
-        Assert.Contains(result, d => d.Id == "tempest.samples.documents-workspace-explorer" && d.ModuleType == typeof(Tempest.Samples.DocumentsWorkspaceExplorerModule));
+        // WP 9.4A: the Documents Workspace Sample. Its Explorer module moved to `Tempest.App` (`TD-75` phase 1).
         Assert.Contains(result, d => d.Id == "tempest.samples.workspacedocuments" && d.ModuleType == typeof(Tempest.Samples.EngineeringDocumentsWorkspaceSampleModule));
-        // WP 9.3A: +2 (Verification Workspace Explorer, Verification Workspace Sample).
-        Assert.Contains(result, d => d.Id == "tempest.samples.verification-workspace-explorer" && d.ModuleType == typeof(Tempest.Samples.VerificationWorkspaceExplorerModule));
+        // WP 9.3A: the Verification Workspace Sample. Its Explorer module moved to `Tempest.App` (`TD-75` phase 1).
         Assert.Contains(result, d => d.Id == "tempest.samples.workspaceverification" && d.ModuleType == typeof(Tempest.Samples.EngineeringVerificationWorkspaceSampleModule));
-        // WP 9.5A: +2 (Manufacturing Workspace Explorer, Manufacturing Workspace Sample).
-        Assert.Contains(result, d => d.Id == "tempest.samples.manufacturing-workspace-explorer" && d.ModuleType == typeof(Tempest.Samples.ManufacturingWorkspaceExplorerModule));
+        // WP 9.5A: the Manufacturing Workspace Sample. Its Explorer module moved to `Tempest.App` (`TD-75` phase 1).
         Assert.Contains(result, d => d.Id == "tempest.samples.workspacemanufacturing" && d.ModuleType == typeof(Tempest.Samples.EngineeringManufacturingWorkspaceSampleModule));
     }
 

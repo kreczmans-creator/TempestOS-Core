@@ -71,6 +71,17 @@ public class EngineeringDomainSampleModuleIntegrationTests
         services.Singleton<IDependencyTraversal, RelationshipDiscoveryService>();
         services.Singleton<IImpactAnalysis, RelationshipDiscoveryService>();
         services.Singleton<IEvidenceComposer, EvidenceComposer>();
+        // `TD-85` — the durable object-state store EngineeringDomainContext
+        // now takes as a collaborator, registered exactly as TempestHost
+        // registers it, so this rig stays a faithful stand-in for the real
+        // service graph rather than a divergent one.
+        services.Singleton<IEngineeringObjectStateStore, EngineeringObjectStateStore>();
+        // `TD-31` — likewise the attachment content store, for the same
+        // reason: the container resolves every constructor parameter
+        // whether or not it has a default, so a collaborator missing here
+        // is a rig that no longer stands in for the real graph.
+        services.Singleton<IBinaryPersistenceStore, PersistenceStore>();
+        services.Singleton<IAttachmentContentStore, AttachmentContentStore>();
         services.Singleton<EngineeringDomainContext>();
 
         services.AddDiscoveredModules(runtimeManager.GetAll().Select(module => module.Descriptor));

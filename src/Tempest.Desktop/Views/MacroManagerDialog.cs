@@ -12,10 +12,10 @@ namespace Tempest.Desktop.Views;
 /// The User Command Macro foundation's own authoring/browsing surface
 /// (`WP 10.6A`) — lists existing macros (Run/Delete), and a minimal, real
 /// "New Macro" editor: a name, and an ordered list of steps picked from
-/// <see cref="ICommandRegistry.Items"/>'s own <see cref="CommandDescriptor.CreateDefault"/>-eligible
-/// subset (`ADR-0098`'s own disclosed limitation — currently the
-/// <c>Tempest.Samples</c> commands; no real discipline command qualifies
-/// yet). Deliberately not a drag/drop builder — the brief's own "user
+/// the commands that can run with nobody present (<see cref="IsMacroEligible"/>
+/// — since TD-77 Stage 5 that includes the real discipline lifecycle
+/// transitions, which `ADR-0098`'s own previously-disclosed limitation
+/// excluded). Deliberately not a drag/drop builder — the brief's own "user
 /// command macros (foundation)" framing, taken literally: real, working,
 /// minimal. Shares the Dialog Framework's own established panel styling
 /// (mirrors <see cref="SettingsDialog"/>'s construction).
@@ -156,15 +156,49 @@ public sealed class MacroManagerDialog : Border
         _steps.ItemsSource = null;
         _statusText.Text = string.Empty;
 
-        // Only CreateDefault-eligible descriptors are real, valid macro
-        // steps (ADR-0098's own disclosed limitation) — every other
-        // registered command needs UI-collected context InvokeAsync's
-        // parameterless contract cannot supply.
-        _availableDescriptors = _commandRegistry.Items.Where(d => d.CreateDefault is not null).ToList();
+        _availableDescriptors = _commandRegistry.Items.Where(IsMacroEligible).ToList();
         _availableCommands.ItemsSource = _availableDescriptors.Select(d => d.Category is null ? d.DisplayName : $"{d.Category}: {d.DisplayName}").ToList();
 
         _browsePanel.IsVisible = false;
         _editorPanel.IsVisible = true;
+    }
+
+    /// <summary>
+    /// Whether <paramref name="descriptor"/> can be a macro step —
+    /// TD-77 Stage 5.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A macro is unattended by definition (<c>ADR-0098</c>: an ordered
+    /// list of Ids, no branching, no looping, no scripting, no
+    /// parameters), so a step must be a command that needs nobody present.
+    /// The binding already answers that exactly:
+    /// <see cref="CommandBinding.RequiresPrompt"/> is true for a command
+    /// declaring values to collect or a confirmation to obtain, and those
+    /// are precisely the ones that must never run unattended. Nothing new
+    /// decides eligibility, and no list of Ids is maintained here.
+    /// </para>
+    /// <para>
+    /// This used to read <see cref="CommandDescriptor.CreateDefault"/>
+    /// alone, which no production discipline command has ever set — so no
+    /// real engineering command could be a macro step at all. The
+    /// <c>CreateDefault</c> clause remains for the commands that still
+    /// work that way.
+    /// </para>
+    /// <para>
+    /// The result is the audited macro-safe set: the thirteen lifecycle
+    /// transitions and <c>mechanical.validate-configuration</c>. Every
+    /// delete and every duplicate declares a confirmation and is excluded
+    /// by that fact, not by being named here.
+    /// </para>
+    /// </remarks>
+    internal static bool IsMacroEligible(CommandDescriptor descriptor)
+    {
+        ArgumentNullException.ThrowIfNull(descriptor);
+
+        return descriptor.Binding is { } binding
+            ? binding is { IsInvocable: true, RequiresPrompt: false }
+            : descriptor.CreateDefault is not null;
     }
 
     private void CloseEditor()

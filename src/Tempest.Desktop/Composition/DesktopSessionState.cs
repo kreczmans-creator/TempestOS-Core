@@ -2,6 +2,8 @@ using Tempest.Core.Settings;
 using Tempest.Desktop;
 using Tempest.Desktop.Docking;
 
+using Tempest.App.Workspace.Layout;
+
 namespace Tempest.Desktop.Composition;
 
 /// <summary>
@@ -40,23 +42,26 @@ internal sealed class DesktopSessionState
     /// <summary>Gets the restored Desktop-local panel UI state (Collapse/Auto-Hide/Output — `WP 10.2B`).</summary>
     public DesktopPanelUiState PanelUiState { get; }
 
+    /// <summary>The durable workspace arrangement (`TD-72`) — where the user put their panels.</summary>
+    public IWorkspaceLayoutStore LayoutStore { get; }
+
     /// <summary>Initialises a new instance of the <see cref="DesktopSessionState"/> class, synchronously loading every Desktop-local persisted state from <paramref name="settingsProvider"/>.</summary>
-    public DesktopSessionState(ISettingsProvider settingsProvider)
+    public DesktopSessionState(ISettingsProvider settingsProvider, Tempest.Core.Logging.ILogger? logger = null)
     {
         ArgumentNullException.ThrowIfNull(settingsProvider);
 
-        WindowUiState = new WindowUiState(settingsProvider);
+        WindowUiState = new WindowUiState(settingsProvider, logger);
         WindowUiState.LoadAsync().GetAwaiter().GetResult();
 
-        UserSettings = new UserSettings(settingsProvider);
+        UserSettings = new UserSettings(settingsProvider, logger);
         UserSettings.LoadAsync().GetAwaiter().GetResult();
 
         // Recent/Favourite Objects (`WP 10.6A`) — loaded synchronously
         // here, the identical established discipline every other
         // persisted Desktop-local state above already uses.
-        RecentObjects = new RecentObjectsState(settingsProvider);
+        RecentObjects = new RecentObjectsState(settingsProvider, logger);
         RecentObjects.LoadAsync().GetAwaiter().GetResult();
-        FavouriteObjects = new FavouriteObjectsState(settingsProvider);
+        FavouriteObjects = new FavouriteObjectsState(settingsProvider, logger);
         FavouriteObjects.LoadAsync().GetAwaiter().GetResult();
 
         // Desktop-local panel UI state (Collapse/Auto-Hide/Output — `WP
@@ -70,7 +75,9 @@ internal sealed class DesktopSessionState
         // startup" applied to this Desktop-local, additional state, the
         // same way `ADR-0064` already applies it to the Workspace's own
         // contracted state.
-        PanelUiState = new DesktopPanelUiState(settingsProvider);
+        PanelUiState = new DesktopPanelUiState(settingsProvider, logger);
         PanelUiState.LoadAsync().GetAwaiter().GetResult();
+        LayoutStore = new WorkspaceLayoutStore(settingsProvider);
+
     }
 }

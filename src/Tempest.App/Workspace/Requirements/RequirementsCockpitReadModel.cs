@@ -1,4 +1,5 @@
 using Tempest.App.Workspace;
+using Tempest.Core.EngineeringData;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Identity;
 using Tempest.Core.Requirements;
@@ -12,7 +13,7 @@ namespace Tempest.App.Workspace.Requirements;
 /// own previous Requirements-specific members, unmodified in behaviour.
 /// A collaborator under `ADR-0103`: constructed once by
 /// <see cref="EngineeringCockpit"/> (the composition root), declaring
-/// only the two dependencies it actually needs, never DI-registered,
+/// only the dependencies it actually needs, never DI-registered,
 /// never referencing <see cref="EngineeringCockpit"/> or any sibling
 /// discipline collaborator back.
 /// </summary>
@@ -20,22 +21,36 @@ internal sealed class RequirementsCockpitReadModel
 {
     private readonly IRequirementsService _requirementsService;
     private readonly IRequirementValidationService _requirementValidationService;
+    private readonly CockpitReadCell<IReadOnlyList<IRequirement>> _liveRequirements;
+    private readonly CockpitReadCell<IReadOnlyList<(Guid RequirementId, IValidationResult Result)>> _validationByRequirement;
+    private readonly CockpitReadCell<IReadOnlyDictionary<Guid, IReadOnlyList<DocumentReference>>> _relationshipsByRequirement;
 
     /// <summary>Initialises a new instance of the <see cref="RequirementsCockpitReadModel"/> class.</summary>
     /// <param name="requirementsService">The Requirements Framework's own service this read-model queries directly.</param>
     /// <param name="requirementValidationService">The Requirements Framework's own validation service this read-model queries directly.</param>
-    public RequirementsCockpitReadModel(IRequirementsService requirementsService, IRequirementValidationService requirementValidationService)
+    /// <param name="scope">The Cockpit's own per-refresh read scope (`WP-E`) — see <see cref="CockpitReadScope"/>.</param>
+    public RequirementsCockpitReadModel(
+        IRequirementsService requirementsService,
+        IRequirementValidationService requirementValidationService,
+        CockpitReadScope scope)
     {
         ArgumentNullException.ThrowIfNull(requirementsService);
         ArgumentNullException.ThrowIfNull(requirementValidationService);
+        ArgumentNullException.ThrowIfNull(scope);
 
         _requirementsService = requirementsService;
         _requirementValidationService = requirementValidationService;
+
+        _liveRequirements = scope.Cell<IReadOnlyList<IRequirement>>(() =>
+            _requirementsService.ListAsync().GetAwaiter().GetResult().Where(r => !r.IsDeleted).ToList());
+
+        _validationByRequirement = scope.Cell<IReadOnlyList<(Guid RequirementId, IValidationResult Result)>>(ReadValidationResults);
+
+        _relationshipsByRequirement = scope.Cell<IReadOnlyDictionary<Guid, IReadOnlyList<DocumentReference>>>(ReadRelationships);
     }
 
     /// <summary>Gets every live (non-deleted) Requirement — a real read.</summary>
-    public IReadOnlyList<IRequirement> LiveRequirements =>
-        _requirementsService.ListAsync().GetAwaiter().GetResult().Where(r => !r.IsDeleted).ToList();
+    public IReadOnlyList<IRequirement> LiveRequirements => _liveRequirements.Value;
 
     /// <summary>Gets the number of live Requirements — the Cockpit's own cross-discipline KPI summary reads this directly.</summary>
     public int Count => LiveRequirements.Count;
@@ -64,26 +79,49 @@ internal sealed class RequirementsCockpitReadModel
     /// read (never counted as a false "no findings"), rather than
     /// crashing every other card this property feeds.
     /// </remarks>
-    private IReadOnlyList<IValidationResult> LiveRequirementValidationResults
+    private IReadOnlyList<(Guid RequirementId, IValidationResult Result)> LiveRequirementValidationResults =>
+        _validationByRequirement.Value;
+
+    /// <summary>
+    /// The one validation pass behind <see cref="LiveRequirementValidationResults"/>
+    /// — keyed by requirement so <see cref="GetBlockedMessages"/> can name
+    /// the requirement a finding belongs to without re-validating it, and
+    /// without the positional correlation that property's own remarks
+    /// correctly refused (`WP-E`).
+    /// </summary>
+    private IReadOnlyList<(Guid RequirementId, IValidationResult Result)> ReadValidationResults()
     {
-        get
+        var results = new List<(Guid, IValidationResult)>();
+
+        foreach (var requirement in LiveRequirements)
         {
-            var results = new List<IValidationResult>();
-
-            foreach (var requirement in LiveRequirements)
+            try
             {
-                try
-                {
-                    results.Add(_requirementValidationService.ValidateAsync(requirement.Id).GetAwaiter().GetResult());
-                }
-                catch (PermissionDeniedException)
-                {
-                    // See this property's own remarks.
-                }
+                results.Add((requirement.Id, _requirementValidationService.ValidateAsync(requirement.Id).GetAwaiter().GetResult()));
             }
-
-            return results;
+            catch (PermissionDeniedException)
+            {
+                // See LiveRequirementValidationResults's own remarks.
+            }
         }
+
+        return results;
+    }
+
+    /// <summary>
+    /// Every live requirement's own outgoing relationships, read once
+    /// (`WP-E`) — <see cref="VerifiedRequirementCount"/> and
+    /// <see cref="AllocatedRequirementCount"/> ask two different questions
+    /// of the same read, and <c>KpiCards</c> asks each of them twice.
+    /// </summary>
+    private IReadOnlyDictionary<Guid, IReadOnlyList<DocumentReference>> ReadRelationships()
+    {
+        var relationships = new Dictionary<Guid, IReadOnlyList<DocumentReference>>();
+
+        foreach (var requirement in LiveRequirements)
+            relationships[requirement.Id] = _requirementsService.GetRelationshipsAsync(requirement.Id).GetAwaiter().GetResult();
+
+        return relationships;
     }
 
     /// <summary>
@@ -94,16 +132,16 @@ internal sealed class RequirementsCockpitReadModel
     /// traversal.
     /// </summary>
     private int VerifiedRequirementCount =>
-        LiveRequirements.Count(r => _requirementsService.GetRelationshipsAsync(r.Id).GetAwaiter().GetResult()
+        _relationshipsByRequirement.Value.Values.Count(references => references
             .Any(reference => string.Equals(reference.RelationshipKind, Tempest.Core.Verification.VerificationService.VerifiedByRelationshipKind, StringComparison.Ordinal)));
 
     /// <summary>Gets the number of live requirements with at least one <see cref="RequirementRelationshipKinds.AllocatedTo"/> relationship.</summary>
     private int AllocatedRequirementCount =>
-        LiveRequirements.Count(r => _requirementsService.GetRelationshipsAsync(r.Id).GetAwaiter().GetResult()
+        _relationshipsByRequirement.Value.Values.Count(references => references
             .Any(reference => string.Equals(reference.RelationshipKind, RequirementRelationshipKinds.AllocatedTo, StringComparison.Ordinal)));
 
     /// <summary>Gets the total count of Requirements validation findings (errors plus warnings) across every live requirement — the Cockpit's own "Outstanding Actions" KPI.</summary>
-    public int OutstandingActions => LiveRequirementValidationResults.Sum(r => r.Errors.Count + r.Warnings.Count);
+    public int OutstandingActions => LiveRequirementValidationResults.Sum(r => r.Result.Errors.Count + r.Result.Warnings.Count);
 
     /// <summary>
     /// Gets the Requirements discipline's own status: <see cref="EngineeringHealthStatus.Unknown"/>
@@ -123,10 +161,10 @@ internal sealed class RequirementsCockpitReadModel
 
             var results = LiveRequirementValidationResults;
 
-            if (results.Any(r => r.Errors.Count > 0))
+            if (results.Any(r => r.Result.Errors.Count > 0))
                 return EngineeringHealthStatus.Blocked;
 
-            return results.Any(r => r.Warnings.Count > 0)
+            return results.Any(r => r.Result.Warnings.Count > 0)
                 ? EngineeringHealthStatus.Attention
                 : EngineeringHealthStatus.Healthy;
         }
@@ -200,24 +238,21 @@ internal sealed class RequirementsCockpitReadModel
     {
         var items = new List<string>();
 
-        // Re-validates per requirement directly (mirroring
-        // LiveRequirementValidationResults's own identical try/catch-per-
-        // item shape) rather than correlating back from that property's
-        // own pre-aggregated list — IValidationResult carries no
-        // ObjectId of its own, and a skipped PermissionDeniedException
-        // would otherwise misalign a positional correlation.
+        // `WP-E`: consumes the one keyed validation pass rather than
+        // re-validating every requirement a second time. The correlation
+        // hazard that previously justified re-validating — IValidationResult
+        // carries no ObjectId, so a PermissionDeniedException skipping an
+        // entry would misalign a positional match — is gone, because the
+        // pass is now keyed by requirement Id rather than by position. A
+        // requirement whose validation was skipped is simply absent from
+        // the map, and is silently excluded here exactly as before, never
+        // counted as a false "not blocked."
+        var validation = LiveRequirementValidationResults.ToDictionary(r => r.RequirementId, r => r.Result);
+
         foreach (var requirement in LiveRequirements)
         {
-            try
-            {
-                var result = _requirementValidationService.ValidateAsync(requirement.Id).GetAwaiter().GetResult();
-                if (result.Errors.Count > 0)
-                    items.Add($"Requirement '{requirement.Identifier}' has a validation error blocking approval.");
-            }
-            catch (PermissionDeniedException)
-            {
-                // See LiveRequirementValidationResults's own remarks — silently excluded, never counted as a false "not blocked."
-            }
+            if (validation.TryGetValue(requirement.Id, out var result) && result.Errors.Count > 0)
+                items.Add($"Requirement '{requirement.Identifier}' has a validation error blocking approval.");
         }
 
         return items;

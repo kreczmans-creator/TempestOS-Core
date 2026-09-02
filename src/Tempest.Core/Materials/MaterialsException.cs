@@ -23,4 +23,14 @@ public class MaterialsException : Exception
         : base(message)
     {
     }
+
+    /// <summary>
+    /// Initialises a new instance of the <see cref="MaterialsException"/> class.
+    /// </summary>
+    /// <param name="message">A message describing the failure.</param>
+    /// <param name="innerException">The underlying failure.</param>
+    public MaterialsException(string message, Exception innerException)
+        : base(message, innerException)
+    {
+    }
 }

@@ -32,9 +32,12 @@ src/
 │                            # Discovery, Registration, Lifecycle, Dependency
 │                            # Injection, Runtime (the Host), Events (Event
 │                            # Bus), Plugins, BackgroundServices (hosted
-│                            # services), Commands, Versioning — plus legacy,
+│                            # services), Commands, Versioning. The legacy,
 │                            # pre-module-pipeline bootstrap/project code
-│                            # (Bootstrap, Hosting, Projects, Repositories)
+│                            # this line used to name (Bootstrap, Hosting,
+│                            # Projects, Repositories) was deleted in full
+│                            # by WP-C (TD-110) — it is gone, not retired
+│                            # in place
 ├── Tempest.App/             # TempestOS's Internal Engineering Harness
 │                            # (ADR-0101) — a console presentation
 │                            # (WorkspaceShell) over the shared Engineering
@@ -92,7 +95,15 @@ This repository documents itself in five places, each with one stated job:
 
 ## Build Instructions
 
-Requires the .NET SDK version pinned in [global.json](global.json).
+Requires the .NET SDK version pinned in [global.json](global.json). It is
+the only mandatory install — no workloads, no external services, no
+secrets.
+
+**Taking this onto a workstation to run and review it?**
+[`PHYSICAL_REVIEW.md`](PHYSICAL_REVIEW.md) is the complete clean-machine
+guide: minimum environment, exact build/test commands, launch procedure,
+where runtime data is written, how to reset it, a 10–15 minute smoke test,
+and the known platform limitations.
 
 ```
 dotnet build src/TempestOS.slnx

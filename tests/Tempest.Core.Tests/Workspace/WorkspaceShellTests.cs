@@ -1,5 +1,5 @@
 using Tempest.App.Workspace;
-using Tempest.App.Workspace.Samples;
+using Tempest.Core.Tests.Workspace.Samples;
 using Tempest.Core.Configuration;
 using Tempest.Core.Persistence;
 using Tempest.Core.Runtime;

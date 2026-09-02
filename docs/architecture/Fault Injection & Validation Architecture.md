@@ -94,14 +94,24 @@ incompatible platform version) — named here, per this platform's own
 future contributor does not have to rediscover the extension point, but
 none is scaffolded ahead of a real need.
 
-**References `Tempest.Core` and, deliberately, `Tempest.Samples`.**
-`DuplicateNavigationModule`'s entire purpose is to collide with
-`NavigationSampleModule`'s own registered `NavigationItem.Id` — it
-references `NavigationSampleModule.NavigationItemId` directly rather
-than duplicating that string as a second literal that could silently
-drift out of sync. Both edges point downward only (`Tempest.Samples`
-does not, and must not, reference `Tempest.Validation`); see
-Alternatives Considered, ADR-0102.
+**References `Tempest.Core` only** (`TD-75` phase 2, 2026-08-30).
+`DuplicateNavigationModule`'s purpose is to collide with a
+`NavigationItem.Id` another module has already registered. It used to
+name one — `NavigationSampleModule.NavigationItemId`, read directly
+rather than duplicated as a second literal that could drift — which was
+sound in itself but had a consequence outside this document's original
+scope: it made `Tempest.Samples` undeletable, since the demo harness
+could not be removed without breaking the validation harness. That was
+the last such edge, and `TD-75` phase 2 removed it.
+
+The module now collides with whatever `INavigationProvider.Items`
+already holds, and throws `InvalidOperationException` if nothing does.
+This needs no constant from anywhere, and it is a better injector than
+the original: it fails whichever module it is paired with, rather than
+only the one sample module it was written against. The scenario under
+proof is unchanged — a *different* module already owns the id — and the
+two pre-existing tests that assert it (`FaultInjectionModuleDiscoveryTests`,
+`NavigationSampleModuleIntegrationTests`) pass unmodified.
 
 **Never referenced by `Tempest.App` or `Tempest.Desktop`.** The load-bearing
 fact: neither project's `.csproj` names `Tempest.Validation`, so its
@@ -167,7 +177,10 @@ addition to `ModuleLifecycleBase`:
 [ModuleMetadata("tempest.validation.faultinjection.navigation-duplicate", "Navigation Duplicate Fault Injection", "1.0.0")]
 public sealed class DuplicateNavigationModule : ModuleLifecycleBase, IFaultInjectionModule
 {
-    // identical InitialiseAsync body to the original DuplicateNavigationSampleModule
+    // Re-registers an id already taken, so InitialiseAsync always throws
+    // DuplicateNavigationItemException. TD-75 phase 2 changed *which* id:
+    // the first of INavigationProvider.Items, rather than a constant read
+    // from Tempest.Samples.
 }
 ```
 
@@ -179,12 +192,12 @@ graph TD
     Discovery["ReflectionFrameworkDiscoveryService (extended: includeFaultInjectionModules, default false)"]
     Builder["ITempestHostBuilder.EnableFaultInjectionModules() (new, additive)"]
     DupModule["Tempest.Validation.FaultInjection.DuplicateNavigationModule"]
-    Samples["Tempest.Samples.NavigationSampleModule"]
+    Partner["Any module that registers a NavigationItem first (a discipline module, or Tempest.Samples.NavigationSampleModule in tests)"]
     App["Tempest.App / Tempest.Desktop (never reference Tempest.Validation)"]
     Tests["Tempest.Core.Tests (references Tempest.Validation, opts in explicitly)"]
 
     DupModule -->|implements| Core
-    DupModule -->|references NavigationItemId| Samples
+    DupModule -.collides at runtime with whatever INavigationProvider.Items holds; no compile-time reference.-> Partner
     Discovery -.filters by.-> Core
     Builder -.sets flag consumed by.-> Discovery
     App -.never loads.-> DupModule
@@ -252,8 +265,10 @@ default-excluded discovery marker, neither alone sufficient. See that
 ADR's own Alternatives Considered for why an assembly-name string check
 in `Tempest.Core` was rejected (violates ADR-0023 downward-dependency
 layering), why a second `[ModuleMetadata]`-style attribute was rejected
-in favour of a marker interface, and why `Tempest.Validation` references
-`Tempest.Samples` rather than duplicating a string literal.
+in favour of a marker interface, and why `Tempest.Validation` originally
+referenced `Tempest.Samples` rather than duplicating a string literal —
+an edge since removed by `TD-75` phase 2, which avoids both the reference
+and the duplicate literal by reading the live registration instead.
 
 ## Alternatives Considered
 
@@ -300,8 +315,8 @@ updated only to note the new filter, not restructured.
   Module/platform-service failure boundary unchanged (④) — a
   fault-injection module's failure is exercised through, never around,
   ADR-0013's existing policy. Dependencies flow downward only (⑨):
-  `Tempest.Validation` depends on `Tempest.Core`/`Tempest.Samples`;
-  neither depends back.
+  `Tempest.Validation` depends on `Tempest.Core` alone (`Tempest.Samples`
+  since `TD-75` phase 2); nothing depends back.
 - **ADR-0013.** Reaffirmed, not reopened — the module isolation policy
   this entire mechanism exists to keep demonstrating, unmodified.
 - **ADR-0023.** The organising constraint behind rejecting the

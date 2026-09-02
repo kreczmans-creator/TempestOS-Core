@@ -14,7 +14,11 @@ namespace Tempest.Core.Plugins;
 /// <c>TrustedPublishers</c> folder, relative to <see cref="AppContext.BaseDirectory"/>
 /// by default. Every <c>*.cer</c> file in the folder is read once, at
 /// construction, as a public-only <see cref="X509Certificate2"/> (no private
-/// key expected).
+/// key expected). "Every" is meant literally and identically on every
+/// platform: the extension is matched case-insensitively by this type, not
+/// by handing a <c>"*.cer"</c> search pattern to the file system, whose own
+/// case rules would otherwise decide whether <c>Acme.CER</c> is a trusted
+/// publisher — yes on Windows, no on Linux.
 /// </para>
 /// <para>
 /// An absent <c>TrustedPublishers</c> folder is a valid, empty store — zero
@@ -56,6 +60,9 @@ public sealed class PluginTrustStore : IPluginTrustStore
     /// TempestOS's own first-party publisher certificate.
     /// </summary>
     internal const string FirstPartyCertificateFileName = "TempestOS.cer";
+
+    /// <summary>The file extension every trust-store certificate carries, matched case-insensitively.</summary>
+    private const string CertificateFileExtension = ".cer";
 
     private readonly Dictionary<string, X509Certificate2> _certificatesByThumbprint =
         new(StringComparer.OrdinalIgnoreCase);
@@ -101,7 +108,18 @@ public sealed class PluginTrustStore : IPluginTrustStore
             return;
         }
 
-        foreach (var filePath in Directory.GetFiles(trustedPublishersFolderPath, "*.cer")
+        // Enumerated unfiltered, then matched on the extension here, rather
+        // than passed to Directory.GetFiles as a "*.cer" search pattern:
+        // that pattern is matched with the *file system's* case rules, so on
+        // Windows it finds "Acme.CER" and on Linux it does not. A trusted
+        // publisher's certificate would then be silently absent from the
+        // store on one platform and present on the other — the store would
+        // report a genuinely trusted publisher as untrusted, with no error
+        // and nothing logged, which is the worst shape a trust decision can
+        // take. `Path.GetExtension` + OrdinalIgnoreCase makes the rule this
+        // type's own, and identical everywhere.
+        foreach (var filePath in Directory.GetFiles(trustedPublishersFolderPath)
+                     .Where(path => string.Equals(Path.GetExtension(path), CertificateFileExtension, StringComparison.OrdinalIgnoreCase))
                      .OrderBy(path => Path.GetFileName(path), StringComparer.Ordinal))
         {
             X509Certificate2 certificate;

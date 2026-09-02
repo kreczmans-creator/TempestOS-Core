@@ -1,3 +1,4 @@
+using Tempest.Core.Logging;
 using System.Text.Json;
 using Tempest.Core.Settings;
 
@@ -38,23 +39,15 @@ internal sealed class DesktopPanelUiState
     public const string SettingKey = "Workspace.Desktop.PanelUiState";
 
     private readonly ISettingsProvider _settingsProvider;
+    private readonly SettingsDocument<DesktopPanelUiStateDto> _document;
 
     /// <summary>Initialises a new instance of the <see cref="DesktopPanelUiState"/> class with every flag at its own documented default (nothing collapsed, everything pinned, Output hidden).</summary>
-    public DesktopPanelUiState(ISettingsProvider settingsProvider)
+    public DesktopPanelUiState(ISettingsProvider settingsProvider, ILogger? logger = null)
     {
         ArgumentNullException.ThrowIfNull(settingsProvider);
         _settingsProvider = settingsProvider;
 
-        try
-        {
-            _settingsProvider.RegisterDefinition(new SettingDefinition(SettingKey, "Workspace Desktop Panel UI State", string.Empty));
-        }
-        catch (DuplicateSettingDefinitionException)
-        {
-            // Already registered by a prior IWorkspaceManager.StartAsync call
-            // against the same ISettingsProvider instance (a restart) —
-            // idempotent, not an error (identical precedent, WorkspaceState).
-        }
+        _document = new SettingsDocument<DesktopPanelUiStateDto>(settingsProvider, SettingKey, "Workspace Desktop Panel UI State", logger);
     }
 
     /// <summary>Gets or sets whether the Project Explorer is currently Collapsed.</summary>
@@ -83,28 +76,36 @@ internal sealed class DesktopPanelUiState
 
     /// <summary>
     /// Gets or sets the name of the last predefined layout applied
-    /// (<see cref="PredefinedLayouts.WorkspaceLayoutPreset"/>), or
+    /// (<see cref="Tempest.App.Workspace.Layout.WorkspaceLayoutPreset"/>), or
     /// <see langword="null"/> if none has been applied this session or the
     /// layout has since been manually changed — an honest label only,
     /// never re-derived from the current placements themselves.
     /// </summary>
     public string? LastAppliedPreset { get; set; }
 
+    /// <summary>
+    /// Gets or sets whether the user has arranged the workspace layout
+    /// themselves (`TD-72`) — set the first time any dock, tab, split,
+    /// float or resize happens, so a later change to the default
+    /// arrangement never silently overwrites a layout someone built.
+    /// </summary>
+    public bool LayoutIsUserArranged { get; set; }
+
+    /// <summary>Gets or sets whether the Engineering Ribbon is minimised to its own tab strip (`TD-70`) — persisted so a user working on a laptop keeps the vertical space they reclaimed across restarts.</summary>
+    public bool RibbonCollapsed { get; set; }
+
     /// <summary>Writes the current state via <see cref="ISettingsProvider.SetValueAsync"/>.</summary>
     public async Task SaveAsync(CancellationToken cancellationToken = default)
     {
-        var dto = new DesktopPanelUiStateDto(ExplorerCollapsed, ExplorerPinned, InspectorCollapsed, InspectorPinned, OutputVisible, OutputHeight, OutputCollapsed, OutputPinned, LastAppliedPreset);
-        var json = JsonSerializer.Serialize(dto);
-
-        await _settingsProvider.SetValueAsync(SettingKey, json, cancellationToken).ConfigureAwait(false);
+        var dto = new DesktopPanelUiStateDto(ExplorerCollapsed, ExplorerPinned, InspectorCollapsed, InspectorPinned, OutputVisible, OutputHeight, OutputCollapsed, OutputPinned, LastAppliedPreset, RibbonCollapsed, LayoutIsUserArranged);
+        await _document.SaveAsync(dto, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>Reads persisted state via <see cref="ISettingsProvider.GetValueAsync"/>. A missing/first-run value leaves every property at its own documented default — never an exception.</summary>
     public async Task LoadAsync(CancellationToken cancellationToken = default)
     {
-        var json = await _settingsProvider.GetValueAsync(SettingKey, cancellationToken).ConfigureAwait(false);
+        var dto = await _document.LoadAsync(cancellationToken).ConfigureAwait(false);
 
-        var dto = string.IsNullOrEmpty(json) ? null : JsonSerializer.Deserialize<DesktopPanelUiStateDto>(json);
         if (dto is null)
             return;
 
@@ -117,6 +118,8 @@ internal sealed class DesktopPanelUiState
         OutputCollapsed = dto.OutputCollapsed;
         OutputPinned = dto.OutputPinned;
         LastAppliedPreset = dto.LastAppliedPreset;
+        RibbonCollapsed = dto.RibbonCollapsed;
+        LayoutIsUserArranged = dto.LayoutIsUserArranged;
     }
 
     /// <summary>The plain, JSON-serializable shape this class persists.</summary>
@@ -129,5 +132,7 @@ internal sealed class DesktopPanelUiState
         double OutputHeight,
         bool OutputCollapsed,
         bool OutputPinned,
-        string? LastAppliedPreset);
+        string? LastAppliedPreset,
+        bool RibbonCollapsed = false,
+        bool LayoutIsUserArranged = false);
 }

@@ -117,6 +117,38 @@ public class PluginTrustStoreTests
         Assert.NotNull(store.FindByThumbprint(certificate.Thumbprint));
     }
 
+    /// <summary>
+    /// The general form of the defect
+    /// <see cref="Constructor_TempestOSCerFileNameIsCaseInsensitive_StillFlaggedFirstParty"/>
+    /// happened to catch: it is not only the first-party file whose
+    /// extension casing must not matter.
+    /// </summary>
+    /// <remarks>
+    /// The store previously enumerated with a <c>"*.cer"</c> search
+    /// pattern, which the file system matches with its own case rules —
+    /// so an ordinary trusted publisher's <c>Acme.CER</c> was in the
+    /// store on Windows and absent from it on Linux, with nothing thrown
+    /// and nothing logged. A trusted publisher silently reported as
+    /// untrusted is a trust decision made by the file system rather than
+    /// by this type, and it had no test of its own: only the first-party
+    /// flag was covered, and only incidentally.
+    /// </remarks>
+    [Theory]
+    [InlineData("Acme.cer")]
+    [InlineData("Acme.CER")]
+    [InlineData("Acme.Cer")]
+    public void Constructor_OrdinaryCertificateExtensionCasingVaries_IsStillTrusted(string fileName)
+    {
+        using var temp = new TempDirectory();
+        using var certificate = PluginSigningTestHelper.CreateSelfSignedCertificate("CN=Acme Plugins Ltd.");
+        PluginSigningTestHelper.WriteToTrustStore(temp.Path, certificate, fileName);
+
+        var store = new PluginTrustStore(temp.Path);
+
+        Assert.NotNull(store.FindByThumbprint(certificate.Thumbprint));
+        Assert.False(store.IsFirstPartyThumbprint(certificate.Thumbprint));
+    }
+
     [Fact]
     public void Constructor_TempestOSCerFileNameIsCaseInsensitive_StillFlaggedFirstParty()
     {

@@ -17,21 +17,39 @@ namespace Tempest.App.Workspace.Verification;
 internal sealed class VerificationCockpitReadModel
 {
     private readonly EngineeringDomainContext _domainContext;
+    private readonly CockpitReadCell<IReadOnlyList<IEngineeringObject>> _liveActivities;
+    private readonly CockpitReadCell<IReadOnlyList<(IEngineeringObject Activity, VerificationRecordSnapshot? LatestRecord)>> _snapshots;
+    private readonly CockpitReadCell<int> _totalRecords;
 
     /// <summary>Initialises a new instance of the <see cref="VerificationCockpitReadModel"/> class.</summary>
     /// <param name="domainContext">The Engineering Domain's own shared repository this read-model queries directly.</param>
-    public VerificationCockpitReadModel(EngineeringDomainContext domainContext)
+    /// <param name="scope">The Cockpit's own per-refresh read scope (`WP-E`) — see <see cref="CockpitReadScope"/>.</param>
+    public VerificationCockpitReadModel(EngineeringDomainContext domainContext, CockpitReadScope scope)
     {
         ArgumentNullException.ThrowIfNull(domainContext);
+        ArgumentNullException.ThrowIfNull(scope);
 
         _domainContext = domainContext;
+
+        _liveActivities = scope.Cell<IReadOnlyList<IEngineeringObject>>(() =>
+            _domainContext.Repository.ListByKindAsync(VerificationActivityFactoryRegistry.SupportedKind).GetAwaiter().GetResult()
+                .Where(o => o is not IDeletable { IsDeleted: true })
+                .ToList());
+
+        // The persistence-backed leaf (`WP-E`): one VerificationRecordReader
+        // read per Activity, previously repeated by each of the eight
+        // counts and card sets derived from it.
+        _snapshots = scope.Cell<IReadOnlyList<(IEngineeringObject Activity, VerificationRecordSnapshot? LatestRecord)>>(() =>
+            LiveVerificationActivities
+                .Select(a => (a, VerificationRecordReader.GetLatestAsync(_domainContext, a.Id).GetAwaiter().GetResult()))
+                .ToList());
+
+        _totalRecords = scope.Cell(() =>
+            LiveVerificationActivities.Sum(a => VerificationRecordReader.GetResultHistoryAsync(_domainContext, a.Id).GetAwaiter().GetResult().Count));
     }
 
     /// <summary>Gets every live (non-deleted) Verification Activity — a real read via <see cref="EngineeringDomainContext.Repository"/>.</summary>
-    public IReadOnlyList<IEngineeringObject> LiveVerificationActivities =>
-        _domainContext.Repository.ListByKindAsync(VerificationActivityFactoryRegistry.SupportedKind).GetAwaiter().GetResult()
-            .Where(o => o is not IDeletable { IsDeleted: true })
-            .ToList();
+    public IReadOnlyList<IEngineeringObject> LiveVerificationActivities => _liveActivities.Value;
 
     /// <summary>Gets the number of live Verification Activities — the Cockpit's own cross-discipline KPI summary reads this directly.</summary>
     public int Count => LiveVerificationActivities.Count;
@@ -45,9 +63,7 @@ internal sealed class VerificationCockpitReadModel
     /// against.
     /// </summary>
     private IReadOnlyList<(IEngineeringObject Activity, VerificationRecordSnapshot? LatestRecord)> LiveVerificationSnapshots =>
-        LiveVerificationActivities
-            .Select(a => (a, VerificationRecordReader.GetLatestAsync(_domainContext, a.Id).GetAwaiter().GetResult()))
-            .ToList();
+        _snapshots.Value;
 
     /// <summary>Gets the number of live Verification Activities whose own most recent recorded result has <see cref="VerificationOutcome.Fail"/> — the Cockpit's own "Failed" signal.</summary>
     private int FailedVerificationCount =>
@@ -82,8 +98,7 @@ internal sealed class VerificationCockpitReadModel
     }
 
     /// <summary>Gets the total number of real <see cref="IVerificationRecord"/>s recorded across every live Verification Activity — the Cockpit's own "Total Verification Records" KPI, distinct from the Activity count itself.</summary>
-    private int TotalVerificationRecordsCount =>
-        LiveVerificationActivities.Sum(a => VerificationRecordReader.GetResultHistoryAsync(_domainContext, a.Id).GetAwaiter().GetResult().Count);
+    private int TotalVerificationRecordsCount => _totalRecords.Value;
 
     /// <summary>
     /// Gets the Verification discipline's own status:

@@ -153,8 +153,17 @@ public sealed class VerificationService : IVerificationService
 
             var history = await _documentStore.GetRevisionHistoryAsync(reference.TargetDocumentId, cancellationToken).ConfigureAwait(false);
             var currentRevision = history[^1];
-            var dto = JsonSerializer.Deserialize<VerificationRecordDto>(currentRevision.Content)
-                ?? throw new EngineeringDataException($"Verification record '{reference.TargetDocumentId}' could not be deserialised.");
+            VerificationRecordDto dto;
+            try
+            {
+                dto = JsonSerializer.Deserialize<VerificationRecordDto>(currentRevision.Content)
+                    ?? throw new EngineeringDataException($"Verification record '{reference.TargetDocumentId}' could not be deserialised.");
+            }
+            catch (JsonException ex)
+            {
+                // Controlled failure for malformed stored content (`TD-60`).
+                throw new EngineeringDataException($"Verification record '{reference.TargetDocumentId}' could not be deserialised.", ex);
+            }
 
             records.Add(new VerificationRecord(
                 reference.TargetDocumentId, dto.SubjectDocumentId, dto.Outcome, dto.Method, dto.Criteria, dto.Evidence,

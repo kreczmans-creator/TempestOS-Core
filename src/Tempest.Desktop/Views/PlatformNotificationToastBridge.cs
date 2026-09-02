@@ -1,3 +1,4 @@
+using Avalonia.Threading;
 using Tempest.Core.Events;
 using Tempest.Core.Notifications;
 
@@ -23,7 +24,7 @@ namespace Tempest.Desktop.Views;
 /// reach every subscriber" principle the event bus already existed to
 /// provide, simply never exercised by this layer before.
 /// </remarks>
-internal sealed class PlatformNotificationToastBridge : IEventHandler<IPlatformNotification>
+internal sealed class PlatformNotificationToastBridge : IEventHandler<IPlatformNotification>, INotificationHandler<IPlatformNotification>
 {
     private readonly ToastHost _toastHost;
 
@@ -34,12 +35,29 @@ internal sealed class PlatformNotificationToastBridge : IEventHandler<IPlatformN
         _toastHost = toastHost;
     }
 
-    /// <inheritdoc />
-    public Task HandleAsync(IPlatformNotification @event, CancellationToken cancellationToken)
+    /// <inheritdoc cref="IEventHandler{TEvent}.HandleAsync" />
+    /// <remarks>
+    /// One method satisfies both subscriptions: the <see cref="IEventBus"/>
+    /// path this class always had, and the <see cref="INotificationDispatcher"/>
+    /// path every real producer (`NotificationDispatcher.PublishAsync`)
+    /// actually publishes through — before `TD-58`'s stale-UI closure the
+    /// bridge listened only on the bus, which no producer uses, so no
+    /// platform notification ever reached a toast. Publishers may run on
+    /// background threads (e.g. a hosted service), so the toast mutation
+    /// is marshalled to the UI thread.
+    /// </remarks>
+    public Task HandleAsync(IPlatformNotification @event, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(@event);
 
-        _toastHost.Show($"[{@event.Category}] {@event.Message}", Map(@event.Severity));
+        var message = $"[{@event.Category}] {@event.Message}";
+        var severity = Map(@event.Severity);
+
+        if (Dispatcher.UIThread.CheckAccess())
+            _toastHost.Show(message, severity);
+        else
+            Dispatcher.UIThread.Post(() => _toastHost.Show(message, severity));
+
         return Task.CompletedTask;
     }
 

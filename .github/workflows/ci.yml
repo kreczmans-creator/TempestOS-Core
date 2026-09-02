@@ -121,8 +121,16 @@ jobs:
       # failing run still publishes exactly what it got through — the
       # same "disclose what actually happened" instinct this project
       # applies everywhere else, applied to its own CI output.
+      # This summary is diagnostic output, never a verification gate — the
+      # same reasoning the artefact uploads below carry, and the same
+      # `continue-on-error`. Added against direct evidence: in run
+      # 33659184434 `Test (Debug)` passed and this step then failed the job
+      # on a .trx path it could not parse, so a green test run reported red.
+      # Build, Test, the Governance Health Check and CI Gate are deliberately
+      # untouched and remain hard gates.
       - name: Publish build & test summary
         if: always()
+        continue-on-error: true
         shell: pwsh
         run: |
           $config = "${{ matrix.configuration }}"
@@ -143,24 +151,66 @@ jobs:
           }
           $lines.Add("")
 
+          # Name every failed test in this job's own log and step summary.
+          # `dotnet test` runs both assemblies and prints one summary per
+          # assembly, so a solution-level exit code of 1 says only "something
+          # failed" - and the .trx that would say which test is, right now,
+          # unreachable, because artefact upload is refused for an
+          # account-level storage quota (see the upload steps' own note).
+          # Without this a red run cannot be diagnosed from CI at all.
+          # Diagnostic output only: the Test step above remains the gate and
+          # its exit code is untouched.
+          $failedResults = @()
+
           $trxFiles = Get-ChildItem -Path "TestResults/$config" -Filter "*.trx" -ErrorAction SilentlyContinue
           if ($trxFiles) {
             $lines.Add("| Test result file | Total | Passed | Failed |")
             $lines.Add("|---|---|---|---|")
             foreach ($file in $trxFiles) {
-              [xml]$trx = Get-Content $file.FullName
+              # `-LiteralPath`: when two assemblies' .trx names collide the
+              # runner de-duplicates by appending `[1]`, and `-Path` would
+              # read that as a wildcard character class and fail to find a
+              # file that exists (run 33659184434).
+              [xml]$trx = Get-Content -LiteralPath $file.FullName
               $counters = $trx.TestRun.ResultSummary.Counters
               $lines.Add("| $($file.Name) | $($counters.total) | $($counters.passed) | $($counters.failed) |")
+              $failedResults += $trx.TestRun.Results.UnitTestResult |
+                Where-Object { $_.outcome -eq "Failed" }
             }
           } else {
             $lines.Add("_No test results found - the test step did not complete._")
           }
 
+          if ($failedResults.Count -gt 0) {
+            $lines.Add("")
+            $lines.Add("#### Failed tests")
+            $lines.Add("")
+            Write-Host "--- Failed tests ($config) ---"
+            foreach ($result in $failedResults) {
+              $message = ($result.Output.ErrorInfo.Message -replace '\s+', ' ').Trim()
+              $lines.Add("- ``$($result.testName)`` - $message")
+              Write-Host "FAILED: $($result.testName)"
+              Write-Host "        $message"
+            }
+            Write-Host "--- end failed tests ($config) ---"
+          }
+
           $lines -join "`n" | Add-Content -Path $env:GITHUB_STEP_SUMMARY
 
+      # Artefact publication is diagnostic output, never a verification
+      # gate: `continue-on-error` here so an account-level artefact
+      # storage quota — which is outside this repository's control and
+      # recalculated on GitHub's own 6-12 hour cycle — cannot turn a
+      # genuinely passing build and test run red. Added against direct
+      # evidence: run 33240113523 failed this step with "Failed to
+      # CreateArtifact: Artifact storage quota has been hit", which would
+      # have failed the job on its own even with a clean build. Build,
+      # Test and the Governance Health Check are deliberately untouched
+      # and remain hard gates.
       - name: Upload build log (${{ matrix.configuration }})
         if: always()
         uses: actions/upload-artifact@v4
+        continue-on-error: true
         with:
           name: build-log-${{ matrix.configuration }}
           path: build-${{ matrix.configuration }}.log
@@ -170,6 +220,7 @@ jobs:
       - name: Upload test results (${{ matrix.configuration }})
         if: always()
         uses: actions/upload-artifact@v4
+        continue-on-error: true
         with:
           name: test-results-${{ matrix.configuration }}
           path: TestResults/${{ matrix.configuration }}/*.trx
@@ -187,6 +238,7 @@ jobs:
       - name: Upload Tempest.Desktop build output (shipped application)
         if: matrix.configuration == 'Release'
         uses: actions/upload-artifact@v4
+        continue-on-error: true
         with:
           name: tempestos-desktop-release
           path: src/Tempest.Desktop/bin/Release/net10.0/**
@@ -196,6 +248,7 @@ jobs:
       - name: Upload Tempest.App build output (Internal Engineering Harness)
         if: matrix.configuration == 'Release'
         uses: actions/upload-artifact@v4
+        continue-on-error: true
         with:
           name: tempestos-engineering-harness
           path: src/Tempest.App/bin/Release/net10.0/**

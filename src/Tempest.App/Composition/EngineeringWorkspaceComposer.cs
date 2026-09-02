@@ -5,7 +5,6 @@ using Tempest.App.Workspace.Macros;
 using Tempest.App.Workspace.Manufacturing;
 using Tempest.App.Workspace.Mechanical;
 using Tempest.App.Workspace.Requirements;
-using Tempest.App.Workspace.Samples;
 using Tempest.App.Workspace.Verification;
 using Tempest.Core.Calculations;
 using Tempest.Core.Commands;
@@ -15,7 +14,6 @@ using Tempest.Core.Macros;
 using Tempest.Core.Requirements;
 using Tempest.Core.Runtime;
 using Tempest.Core.Verification;
-using Tempest.Samples;
 
 namespace Tempest.App.Composition;
 
@@ -89,13 +87,18 @@ public static class EngineeringWorkspaceComposer
         var host = builder.Build();
         var manager = new WorkspaceManager(host);
 
-        // Wires the Project Explorer's own living reference content — a fixed,
-        // fictional tree, proving the Kind-keyed provider architecture
-        // (ADR-0067) end to end. Needs nothing from the Runtime Host, so it
-        // is registered before the Host starts, exactly as the original
-        // console Program.cs already did.
-        manager.RegisterExplorerArea(WorkspaceExplorerSampleModule.NavigationItemId, new SampleProjectExplorerNodeProvider(WorkspaceExplorerSampleModule.NavigationItemId));
-        manager.RegisterView(SampleExplorerContent.ComponentKind, new SampleWorkspaceViewFactory(SampleExplorerContent.ComponentKind));
+        // No sample explorer area is registered here. `TD-75` phase 2 removed
+        // the pair of registrations that used to sit at this point, which
+        // attached a fixed, fictional tree to the navigation area
+        // `tempest.samples.workspace-explorer.objects`. That area's only
+        // registrar is `Tempest.Samples.WorkspaceExplorerSampleModule`, and
+        // phase 1 stopped the product loading that assembly at all — so from
+        // then on these two lines keyed a provider and a view factory to an
+        // area no production run ever contained. Measured before removal: a
+        // real composition root with no `Tempest.Samples.dll` on disk
+        // registers exactly six navigation items, all real disciplines, and
+        // none of them that area. The fictional content itself now lives in
+        // `Tempest.Core.Tests`, which is the only thing that still drives it.
 
         return (host, manager);
     }
@@ -155,6 +158,57 @@ public static class EngineeringWorkspaceComposer
         // does.
         MacroWorkspaceRegistration.Register(commandDispatcher, commandRegistry, macroManager);
 
+        // `TD-85`. Each discipline declares how its own Kinds come back
+        // after a restart, using the same named Kind constants it already
+        // owns (`ADR-0105`) — registered here, alongside the discipline
+        // registration it belongs to, so a discipline can never be wired
+        // for creation but silently forgotten for recovery.
+        var rehydrators = (IEngineeringObjectRehydratorRegistry)services.GetService(typeof(IEngineeringObjectRehydratorRegistry));
+        MechanicalObjectFactoryRegistry.RegisterRehydrators(rehydrators, domainContext);
+        DocumentObjectFactoryRegistry.RegisterRehydrators(rehydrators, domainContext);
+        CalculationObjectFactoryRegistry.RegisterRehydrators(rehydrators, domainContext);
+        VerificationActivityFactoryRegistry.RegisterRehydrators(rehydrators, domainContext);
+        ManufacturingObjectFactoryRegistry.RegisterRehydrators(rehydrators, domainContext);
+
+        // The canonical Kinds that are durable and rehydratable but have no
+        // discipline workspace yet. Twelve of them were registered only by
+        // `Tempest.Samples` and nine by nothing at all, so the product's
+        // ability to reload a Risk, a Task or a Hazard was either an
+        // accident of the sample harness shipping (`TD-75`) or simply
+        // absent. Registered here, in production, on the same one
+        // rehydration boundary (`TD-85`).
+        CanonicalObjectKinds.RegisterRehydrators(rehydrators, domainContext);
+
         return calculationTemplateRegistry;
+    }
+
+    /// <summary>
+    /// Reconstructs every engineering object persisted by a previous run,
+    /// and every relationship between them, into the live repositories
+    /// (`TD-85`).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Must be called after <see cref="RegisterEngineeringDisciplines"/> —
+    /// which is what tells the platform how each Kind comes back — and
+    /// before anything reads the object repository, so a user never sees
+    /// an empty workspace that then fills in underneath them.
+    /// </para>
+    /// <para>
+    /// This is the step that makes persistence real rather than
+    /// theoretical: without it the documents survive a restart but the
+    /// engineering work does not (`ADR-0077`'s own disclosed gap).
+    /// </para>
+    /// </remarks>
+    /// <returns>A full account of what was recovered, and of anything that could not be.</returns>
+    /// <exception cref="InvalidOperationException"><paramref name="host"/>'s own <see cref="ITempestHost.Services"/> is not yet resolvable.</exception>
+    public static Task<EngineeringRehydrationResult> RehydrateEngineeringObjectsAsync(ITempestHost host, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(host);
+
+        var services = host.Services ?? throw new InvalidOperationException("The Host must be running (ITempestHost.Services resolvable) before engineering objects can be rehydrated.");
+        var rehydrationService = (EngineeringObjectRehydrationService)services.GetService(typeof(EngineeringObjectRehydrationService));
+
+        return rehydrationService.RehydrateAsync(cancellationToken);
     }
 }

@@ -97,7 +97,7 @@ public sealed class InMemoryEngineeringDocumentStore : IEngineeringDocumentStore
 
         lock (sourceState)
         {
-            sourceState.References.Add(new DocumentReference(sourceDocumentId, targetDocumentId, relationshipKind));
+            sourceState.References.Add(new DocumentReference(sourceDocumentId, targetDocumentId, relationshipKind, ResolveAuthorPrincipalId(), DateTimeOffset.UtcNow));
         }
 
         return Task.CompletedTask;

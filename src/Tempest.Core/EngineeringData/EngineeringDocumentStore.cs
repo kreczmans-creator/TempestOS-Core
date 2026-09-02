@@ -186,7 +186,7 @@ public sealed class EngineeringDocumentStore : IEngineeringDocumentStore
         if (await ReadDocumentAsync(targetDocumentId, cancellationToken).ConfigureAwait(false) is null)
             throw new EngineeringDocumentNotFoundException(targetDocumentId);
 
-        var dto = new DocumentReferenceDto(targetDocumentId, relationshipKind);
+        var dto = new DocumentReferenceDto(targetDocumentId, relationshipKind, ResolveAuthorPrincipalId(), DateTimeOffset.UtcNow);
         var key = Guid.NewGuid().ToString("N");
 
         await _persistenceStore.WriteAsync(
@@ -216,10 +216,21 @@ public sealed class EngineeringDocumentStore : IEngineeringDocumentStore
             if (json is null)
                 continue;
 
-            var dto = JsonSerializer.Deserialize<DocumentReferenceDto>(json)
-                ?? throw new EngineeringDataException($"Reference '{key}' for document '{documentId}' could not be deserialised.");
+            DocumentReferenceDto dto;
+            try
+            {
+                dto = JsonSerializer.Deserialize<DocumentReferenceDto>(json)
+                    ?? throw new EngineeringDataException($"Reference '{key}' for document '{documentId}' could not be deserialised.");
+            }
+            catch (JsonException ex)
+            {
+                // Malformed stored content surfaces as this store's own
+                // controlled exception type, never a raw JsonException
+                // from a passive read (`TD-60`).
+                throw new EngineeringDataException($"Reference '{key}' for document '{documentId}' could not be deserialised.", ex);
+            }
 
-            references.Add(new DocumentReference(documentId, dto.TargetDocumentId, dto.RelationshipKind));
+            references.Add(new DocumentReference(documentId, dto.TargetDocumentId, dto.RelationshipKind, dto.CreatedByPrincipalId, dto.CreatedAt));
         }
 
         return references;
@@ -233,7 +244,22 @@ public sealed class EngineeringDocumentStore : IEngineeringDocumentStore
         var json = await _persistenceStore.ReadAsync(DocumentsCollectionName, documentId.ToString("N"), cancellationToken)
             .ConfigureAwait(false);
 
-        return json is null ? null : JsonSerializer.Deserialize<EngineeringDocumentDto>(json);
+        if (json is null)
+            return null;
+
+        // Corrupted stored content is corruption, not absence — a null
+        // deserialisation result (the literal `null` document) or a
+        // JsonException must never be misreported as "no such document"
+        // or escape as a raw BCL exception (`TD-60`).
+        try
+        {
+            return JsonSerializer.Deserialize<EngineeringDocumentDto>(json)
+                ?? throw new EngineeringDataException($"Document '{documentId}' could not be deserialised.");
+        }
+        catch (JsonException ex)
+        {
+            throw new EngineeringDataException($"Document '{documentId}' could not be deserialised.", ex);
+        }
     }
 
     private Task WriteDocumentAsync(Guid documentId, EngineeringDocumentDto dto, CancellationToken cancellationToken) =>
@@ -244,7 +270,19 @@ public sealed class EngineeringDocumentStore : IEngineeringDocumentStore
         var json = await _persistenceStore.ReadAsync(RevisionsCollectionName, RevisionKey(documentId, revisionNumber), cancellationToken)
             .ConfigureAwait(false);
 
-        return json is null ? null : JsonSerializer.Deserialize<DocumentRevisionDto>(json);
+        if (json is null)
+            return null;
+
+        // Same corruption-is-not-absence guard as ReadDocumentAsync (`TD-60`).
+        try
+        {
+            return JsonSerializer.Deserialize<DocumentRevisionDto>(json)
+                ?? throw new EngineeringDataException($"Revision {revisionNumber} of document '{documentId}' could not be deserialised.");
+        }
+        catch (JsonException ex)
+        {
+            throw new EngineeringDataException($"Revision {revisionNumber} of document '{documentId}' could not be deserialised.", ex);
+        }
     }
 
     private Task WriteRevisionAsync(Guid documentId, int revisionNumber, DocumentRevisionDto dto, CancellationToken cancellationToken) =>

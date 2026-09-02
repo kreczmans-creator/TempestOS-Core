@@ -15,12 +15,4 @@ public class UnitConverterTests
         Assert.Equal(100.0, converted.Value, precision: 9);
         Assert.Equal(LengthUnits.Centimetre, converted.Unit);
     }
-
-    [Fact]
-    public void Constructor_RequiresNoArguments()
-    {
-        var converter = new UnitConverter();
-
-        Assert.NotNull(converter);
-    }
 }

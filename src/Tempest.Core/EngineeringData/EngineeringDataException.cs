@@ -19,4 +19,14 @@ public class EngineeringDataException : Exception
         : base(message)
     {
     }
+
+    /// <summary>
+    /// Initialises a new instance of the <see cref="EngineeringDataException"/> class.
+    /// </summary>
+    /// <param name="message">A message describing the failure.</param>
+    /// <param name="innerException">The underlying failure.</param>
+    public EngineeringDataException(string message, Exception innerException)
+        : base(message, innerException)
+    {
+    }
 }

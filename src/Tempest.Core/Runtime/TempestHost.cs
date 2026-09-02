@@ -613,12 +613,40 @@ public sealed class TempestHost : ITempestHost
         services.Singleton<IImpactAnalysis, RelationshipDiscoveryService>();
         services.Singleton<IEvidenceComposer, EvidenceComposer>();
 
+        // TD-85: the durable half of the Engineering Domain. Registered
+        // before EngineeringDomainContext, which takes it as a
+        // collaborator. Built on the same IPersistenceStore
+        // IEngineeringDocumentStore already uses (ADR-0053) - one
+        // persistence authority, split by concern (the document owns
+        // identity, Kind and revisions; this owns the object state a
+        // document was never designed to carry), never a second one.
+        services.Singleton<IEngineeringObjectStateStore, EngineeringObjectStateStore>();
+
+        // TD-31: the durable bytes of an attached file. Registered here for
+        // the same reason and on the same terms as the state store above -
+        // the same single persistence store, in its byte shape
+        // (IBinaryPersistenceStore), with its own collection. The metadata
+        // stays on the object; only the content lives here, so rehydrating
+        // a whole object graph never loads a file.
+        services.Singleton<IBinaryPersistenceStore, PersistenceStore>();
+        services.Singleton<IAttachmentContentStore, AttachmentContentStore>();
+
+        // TD-85: the Kind-to-type map startup rehydration resolves through.
+        // Empty until each Kind's own declaring class registers it -
+        // nothing here declares a Kind of its own (ADR-0105).
+        services.Singleton<IEngineeringObjectRehydratorRegistry, EngineeringObjectRehydratorRegistry>();
+
         // The shared collaborator bundle every canonical object's own
         // EngineeringObjectFactory<T> needs - constructed here so a
         // composition root (a future discipline module, or the sample
         // module below) can resolve one instance rather than assembling
         // seven collaborators by hand.
         services.Singleton<EngineeringDomainContext>();
+
+        // TD-85: rebuilds the live object graph from the two stores above
+        // at startup. Registered after EngineeringDomainContext, which it
+        // reads through; it stores nothing of its own.
+        services.Singleton<EngineeringObjectRehydrationService>();
 
         // ADR-0055: Materials is a thin, typed index over the Engineering
         // Data Model (Kind = "MaterialSpecification"), plus a direct

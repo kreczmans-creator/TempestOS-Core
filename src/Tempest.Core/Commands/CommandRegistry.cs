@@ -151,8 +151,210 @@ public sealed class CommandRegistry : ICommandRegistry
 
         _logger?.Information($"Invoking command '{id}'.");
 
-        var command = descriptor.CreateDefault();
+        return await DispatchAsync(id, descriptor.CreateDefault(), cancellationToken).ConfigureAwait(false);
+    }
 
+    /// <inheritdoc />
+    public CommandAvailability Evaluate(string id, CommandContext context)
+    {
+        ArgumentNullException.ThrowIfNull(id);
+        ArgumentNullException.ThrowIfNull(context);
+
+        var descriptor = Find(id);
+
+        if (descriptor is null)
+            return CommandAvailability.Blocked($"No command '{id}' is registered.");
+
+        return Evaluate(descriptor, context);
+    }
+
+    /// <inheritdoc />
+    public async Task<CommandInvocation> InvokeAsync(
+        string id,
+        CommandContext context,
+        CommandParameterPrompt? prompt = null,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(id);
+        ArgumentNullException.ThrowIfNull(context);
+
+        // An Id nobody registered is the one case that still throws:
+        // Evaluate answers "may I offer this?", which is fair to ask about
+        // anything, but invoking a command that does not exist is the same
+        // programming error the Id-only overload has always reported.
+        var descriptor = Find(id) ?? throw new CommandNotFoundException(id);
+
+        // The single availability implementation, consulted rather than
+        // re-derived. Everything below this line assumes only what
+        // Evaluate has already established.
+        var availability = Evaluate(descriptor, context);
+
+        if (!availability.IsAvailable)
+        {
+            _logger?.Information($"Command '{id}' not invoked: {availability.Reason}");
+            return CommandInvocation.Unavailable(availability.Reason!);
+        }
+
+        var binding = descriptor.Binding;
+
+        // No binding, but a default-instance factory: the pre-binding path,
+        // reached identically here. Genuinely valid, because a command that
+        // needs no caller-supplied data needs nothing from a context either
+        // - this is what keeps a macro's own steps working unchanged.
+        if (binding is null)
+        {
+            _logger?.Information($"Invoking command '{id}'.");
+            return CommandInvocation.Executed(
+                await DispatchAsync(id, descriptor.CreateDefault!(), cancellationToken).ConfigureAwait(false));
+        }
+
+        IReadOnlyDictionary<string, string> values;
+
+        if (binding.RequiresPrompt)
+        {
+            if (prompt is null)
+            {
+                // Never a silent no-op: a command needing input, invoked
+                // with nothing able to ask for it, says exactly that.
+                var reason =
+                    $"'{descriptor.DisplayName}' needs additional input, and no input surface was supplied.";
+                _logger?.Information($"Command '{id}' not invoked: {reason}");
+                return CommandInvocation.Unavailable(reason);
+            }
+
+            var collected = await prompt(descriptor, binding.Parameters, binding.ConfirmationMessage, cancellationToken)
+                .ConfigureAwait(false);
+
+            // Declining is not failing. Nothing ran; nothing is reported.
+            if (collected is null)
+            {
+                _logger?.Information($"Command '{id}' cancelled before dispatch.");
+                return CommandInvocation.Cancelled;
+            }
+
+            if (CheckValues(descriptor, binding, collected) is { } invalid)
+            {
+                _logger?.Information($"Command '{id}' not invoked: {invalid}");
+                return CommandInvocation.Unavailable(invalid);
+            }
+
+            values = collected;
+        }
+        else
+        {
+            values = EmptyValues;
+        }
+
+        // A throw out of Build is a defect in the binding - it was handed a
+        // context its own declared requirements said was sufficient - so it
+        // is logged and propagated, never converted into an outcome.
+        ICommand command;
+
+        try
+        {
+            command = binding.Build(context, values);
+        }
+        catch (Exception ex)
+        {
+            _logger?.Error($"Command '{id}' binding failed to construct its command.", ex);
+            throw;
+        }
+
+        _logger?.Information($"Invoking command '{id}'.");
+
+        return CommandInvocation.Executed(await DispatchAsync(id, command, cancellationToken).ConfigureAwait(false));
+    }
+
+    private static readonly IReadOnlyDictionary<string, string> EmptyValues =
+        new Dictionary<string, string>(StringComparer.Ordinal);
+
+    private CommandDescriptor? Find(string id)
+    {
+        lock (_gate)
+        {
+            return _descriptorsById.TryGetValue(id, out var found) ? found : null;
+        }
+    }
+
+    /// <summary>
+    /// The whole of command availability, in one place, in the order a
+    /// person would want to be told about it: what does not exist, then
+    /// what was never wired, then what the current selection cannot
+    /// satisfy, then the command's own opinion.
+    /// </summary>
+    private static CommandAvailability Evaluate(CommandDescriptor descriptor, CommandContext context)
+    {
+        var binding = descriptor.Binding;
+
+        // Declared unavailability wins over everything: a command that
+        // cannot be built has no useful answer to "is the selection right".
+        if (binding is { IsInvocable: false })
+            return CommandAvailability.Blocked(binding.UnavailableReason!);
+
+        if (binding is null && descriptor.CreateDefault is null)
+        {
+            return CommandAvailability.Blocked(
+                $"'{descriptor.DisplayName}' has no binding and cannot be invoked by Id.");
+        }
+
+        // A CreateDefault-only descriptor declares no requirements, so
+        // there is nothing about the context left to check.
+        if (binding is not null)
+        {
+            if (binding.Requires.HasFlag(CommandContextRequirement.SelectedObject) && context.Primary is null)
+                return CommandAvailability.Blocked($"'{descriptor.DisplayName}' needs a selected object.");
+
+            if (binding.AppliesToKinds is { } kinds
+                && context.Primary is { } primary
+                && !kinds.Contains(primary.Kind, StringComparer.Ordinal))
+            {
+                return CommandAvailability.Blocked(
+                    $"'{descriptor.DisplayName}' does not apply to a {primary.Kind}. " +
+                    $"It applies to: {string.Join(", ", kinds)}.");
+            }
+
+            // Refused rather than silently applied to the first item only.
+            if (context.Selection.Count > 1 && !binding.Requires.HasFlag(CommandContextRequirement.MultipleAllowed))
+                return CommandAvailability.Blocked($"'{descriptor.DisplayName}' applies to one object at a time.");
+        }
+
+        // The command's own last word, kept as the final gate - the seam a
+        // future permission model plugs into (ADR-0037's own deferral).
+        if (descriptor.CanExecute is { } canExecute && !canExecute())
+            return CommandAvailability.Blocked($"'{descriptor.DisplayName}' is not currently available.");
+
+        return CommandAvailability.Available;
+    }
+
+    /// <summary>
+    /// Checks the collected values against what the binding declared -
+    /// a value-level question <see cref="Evaluate(CommandDescriptor, CommandContext)"/>
+    /// is never given the values to answer.
+    /// </summary>
+    private static string? CheckValues(
+        CommandDescriptor descriptor, CommandBinding binding, IReadOnlyDictionary<string, string> values)
+    {
+        foreach (var parameter in binding.Parameters)
+        {
+            if (!values.TryGetValue(parameter.Name, out var value))
+                return $"'{descriptor.DisplayName}' needs a value for '{parameter.Label}'.";
+
+            if (parameter.Check(value) is { } problem)
+                return $"'{descriptor.DisplayName}': {problem}";
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// The dispatch-and-report tail both <see cref="InvokeAsync(string, CancellationToken)"/>
+    /// and its context-aware overload share, extracted verbatim so the two
+    /// paths cannot drift in what they log or in how a handler's own
+    /// exception is treated (<c>ADR-0038</c>: logged, then rethrown
+    /// uncaught).
+    /// </summary>
+    private async Task<CommandResult> DispatchAsync(string id, ICommand command, CancellationToken cancellationToken)
+    {
         CommandResult result;
 
         try

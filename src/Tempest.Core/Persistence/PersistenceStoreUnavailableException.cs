@@ -17,6 +17,15 @@ public sealed class PersistenceStoreUnavailableException : PersistenceException
     /// Initialises a new instance of the <see cref="PersistenceStoreUnavailableException"/> class.
     /// </summary>
     /// <param name="message">A message describing the failure.</param>
+    public PersistenceStoreUnavailableException(string message)
+        : base(message)
+    {
+    }
+
+    /// <summary>
+    /// Initialises a new instance of the <see cref="PersistenceStoreUnavailableException"/> class.
+    /// </summary>
+    /// <param name="message">A message describing the failure.</param>
     /// <param name="innerException">The underlying storage failure.</param>
     public PersistenceStoreUnavailableException(string message, Exception innerException)
         : base(message, innerException)

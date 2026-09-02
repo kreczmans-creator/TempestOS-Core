@@ -33,7 +33,7 @@ public class PlatformVersionDependencyInjectionTests
 
         var provider = new TempestServiceProvider(services);
 
-        var resolved = provider.GetService<IPlatformVersionProvider>();
+        var resolved = (IPlatformVersionProvider)provider.GetService(typeof(IPlatformVersionProvider));
 
         Assert.Same(versionProvider, resolved);
     }
@@ -49,7 +49,7 @@ public class PlatformVersionDependencyInjectionTests
 
         var provider = new TempestServiceProvider(services);
 
-        var consumingService = provider.GetService<VersionConsumingService>();
+        var consumingService = (VersionConsumingService)provider.GetService(typeof(VersionConsumingService));
 
         Assert.Equal(versionProvider.Version.SemanticVersion, consumingService.SemanticVersion);
     }
@@ -65,8 +65,8 @@ public class PlatformVersionDependencyInjectionTests
 
         var provider = new TempestServiceProvider(services);
 
-        var directlyResolved = provider.GetService<IPlatformVersionProvider>();
-        var consumingService = provider.GetService<VersionConsumingService>();
+        var directlyResolved = (IPlatformVersionProvider)provider.GetService(typeof(IPlatformVersionProvider));
+        var consumingService = (VersionConsumingService)provider.GetService(typeof(VersionConsumingService));
 
         Assert.Same(versionProvider, directlyResolved);
         Assert.Equal(versionProvider.Version.SemanticVersion, consumingService.SemanticVersion);

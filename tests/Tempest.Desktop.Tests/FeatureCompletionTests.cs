@@ -4,11 +4,18 @@ using Avalonia.Headless.XUnit;
 using Avalonia.LogicalTree;
 using Tempest.App.Workspace;
 using Tempest.App.Workspace.Requirements;
+using Tempest.Core.Commands;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Requirements;
 using Tempest.Core.Verification;
 using Tempest.Desktop.Views;
 using Tempest.Samples;
+using Tempest.App.Workspace.Calculations;
+using Tempest.App.Workspace.Documents;
+using Tempest.App.Workspace.Manufacturing;
+using Tempest.App.Workspace.Mechanical;
+using Tempest.App.Workspace.Verification;
+using static Tempest.Desktop.Tests.DesktopTestHelpers;
 
 namespace Tempest.Desktop.Tests;
 
@@ -25,11 +32,75 @@ namespace Tempest.Desktop.Tests;
 public sealed class FeatureCompletionTests
 {
     // ------------------------------------------------------------
-    // Ribbon lifecycle/organize dispatch — RibbonView.ObjectCreationHandlers
-    // is public; MainWindow populates it privately, so these tests reach
-    // it via reflection on a real, fully-constructed MainWindow, then
-    // invoke the exact same delegate a real button click would.
+    // Ribbon lifecycle/organize dispatch. TD-77 Stage 5 replaced
+    // RibbonView.ObjectCreationHandlers - a dictionary of hand-written
+    // closures - with the command framework's own context-aware
+    // invocation, so these tests now raise a real Click on the real
+    // button instead of invoking a delegate that no longer exists.
+    //
+    // Every behavioural assertion below is the one WP 10.7A shipped:
+    // the same real objects, the same real transitions, the same real
+    // validation. Only the mechanism reaching them changed, which is
+    // exactly what this rewrite is meant to prove.
     // ------------------------------------------------------------
+
+    /// <summary>
+    /// Raises a real Click on the ribbon button for <paramref name="commandId"/>,
+    /// exactly as a person would — the whole point being that nothing
+    /// test-only stands in for the dispatch path under test.
+    /// </summary>
+    private static void ClickRibbonCommand(RibbonView ribbon, string commandId, ICommandRegistry registry)
+    {
+        var descriptor = registry.Items.Single(d => d.Id == commandId);
+
+        // Scoped to the command's own discipline tab: "Request Review" is a
+        // real DisplayName in three of them, so a ribbon-wide search finds
+        // whichever discipline happens to sort first.
+        var tab = ((TabControl)ribbon.Content!).Items.OfType<TabItem>().Single(t => Equals(t.Tag, descriptor.Category));
+        var button = ((Control)tab.Content!).GetLogicalDescendants()
+            .OfType<Button>()
+            .First(b => b.GetLogicalDescendants().OfType<TextBlock>().Any(t => t.Text == descriptor.DisplayName));
+
+        button.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+    }
+
+    /// <summary>Answers the shell's own input prompts, in order, as they appear.</summary>
+    private static async Task AnswerPromptsAsync(InputDialog dialog, params string[] values)
+    {
+        foreach (var value in values)
+        {
+            await WaitUntilVisibleAsync(dialog);
+
+            dialog.GetLogicalDescendants().OfType<TextBox>().Single().Text = value;
+            dialog.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "OK"))
+                .RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+
+            // `TD-119`: no fixed wait here. The next iteration waits for the next
+            // prompt to actually become visible, and every caller now joins on the
+            // real state its own assertion reads.
+        }
+    }
+
+    /// <summary>Accepts the shell's own confirmation, whatever its affirmative button is labelled.</summary>
+    private static async Task ConfirmAsync(ConfirmationDialog dialog, string confirmText)
+    {
+        await WaitUntilVisibleAsync(dialog);
+
+        dialog.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, confirmText))
+            .RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+
+        // `TD-119`: no fixed wait here — every caller joins on the real state its
+        // own assertion reads.
+    }
+
+    private static async Task WaitUntilVisibleAsync(Control control)
+    {
+        var deadline = DateTime.UtcNow.AddSeconds(2);
+        while (!control.IsVisible && DateTime.UtcNow < deadline)
+            await Task.Delay(10);
+
+        Assert.True(control.IsVisible, $"{control.GetType().Name} never became visible.");
+    }
 
     /// <summary>
     /// Chains two real status transitions — Request Review (Draft →
@@ -58,15 +129,36 @@ public sealed class FeatureCompletionTests
             var window = new MainWindow(host);
             var ribbon = GetPrivateField<RibbonView>(window, "_ribbon");
 
-            Assert.True(ribbon.ObjectCreationHandlers.ContainsKey("calculations.approve"), "Expected a real handler wired for 'calculations.approve'.");
-            await ribbon.ObjectCreationHandlers["calculations.request-review"]();
+            var registry = (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
 
+            // Both transitions need nobody present: no values, no
+            // confirmation. That is what makes them macro-safe too.
+            ClickRibbonCommand(ribbon, "calculations.request-review", registry);
+
+            // `TD-119`: the ribbon dispatch is fire-and-forget over real disk I/O; bounded poll
+            // re-reading the real state each iteration, assertion unchanged.
             var afterRequestReview = await domainContext.Repository.FindAsync(target.Id);
+            var requestReviewDeadline = DateTime.UtcNow.AddSeconds(2);
+            while (!(afterRequestReview is not null && ((IHasLifecycle)afterRequestReview).Status == LifecycleState.InReview) && DateTime.UtcNow < requestReviewDeadline)
+            {
+                await Task.Delay(10);
+                afterRequestReview = await domainContext.Repository.FindAsync(target.Id);
+            }
+
             Assert.Equal(LifecycleState.InReview, ((IHasLifecycle)afterRequestReview!).Status);
 
-            await ribbon.ObjectCreationHandlers["calculations.approve"]();
+            ClickRibbonCommand(ribbon, "calculations.approve", registry);
 
+            // `TD-119`: the ribbon dispatch is fire-and-forget over real disk I/O; bounded poll
+            // re-reading the real state each iteration, assertion unchanged.
             var afterApprove = await domainContext.Repository.FindAsync(target.Id);
+            var approveDeadline = DateTime.UtcNow.AddSeconds(2);
+            while (!(afterApprove is not null && ((IHasLifecycle)afterApprove).Status == LifecycleState.Approved) && DateTime.UtcNow < approveDeadline)
+            {
+                await Task.Delay(10);
+                afterApprove = await domainContext.Repository.FindAsync(target.Id);
+            }
+
             Assert.Equal(LifecycleState.Approved, ((IHasLifecycle)afterApprove!).Status);
         }
         finally
@@ -94,9 +186,19 @@ public sealed class FeatureCompletionTests
             var window = new MainWindow(host);
             var ribbon = GetPrivateField<RibbonView>(window, "_ribbon");
 
-            await ribbon.ObjectCreationHandlers["documents.request-review"]();
+            var registry = (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
+            ClickRibbonCommand(ribbon, "documents.request-review", registry);
 
+            // `TD-119`: the ribbon dispatch is fire-and-forget over real disk I/O; bounded poll
+            // re-reading the real state each iteration, assertion unchanged.
             var reread = await domainContext.Repository.FindAsync(target.Id);
+            var documentsDeadline = DateTime.UtcNow.AddSeconds(2);
+            while (!(reread is not null && ((IHasLifecycle)reread).Status == LifecycleState.InReview) && DateTime.UtcNow < documentsDeadline)
+            {
+                await Task.Delay(10);
+                reread = await domainContext.Repository.FindAsync(target.Id);
+            }
+
             Assert.Equal(LifecycleState.InReview, ((IHasLifecycle)reread!).Status);
         }
         finally
@@ -131,17 +233,24 @@ public sealed class FeatureCompletionTests
             var ribbon = GetPrivateField<RibbonView>(window, "_ribbon");
             var inputDialog = GetPrivateField<InputDialog>(window, "_inputDialog");
 
-            var handlerTask = ribbon.ObjectCreationHandlers["requirements.set-status"]();
-            await Task.Delay(20);
+            var registry = (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
+            ClickRibbonCommand(ribbon, "requirements.set-status", registry);
 
-            var textBox = inputDialog.GetLogicalDescendants().OfType<TextBox>().Single();
-            textBox.Text = "Reviewed";
-            var okButton = inputDialog.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "OK"));
-            okButton.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+            // The binding declares one value, validated against the real
+            // RequirementStatus set - the same validation the hand-written
+            // handler used to spell out inline.
+            await AnswerPromptsAsync(inputDialog, "Reviewed");
 
-            await handlerTask;
-
+            // `TD-119`: the ribbon dispatch is fire-and-forget over real disk I/O; bounded poll
+            // re-reading the real state each iteration, assertion unchanged.
             var reread = await requirementsService.FindAsync(target.Id);
+            var setStatusDeadline = DateTime.UtcNow.AddSeconds(2);
+            while (!(reread is not null && reread.Status == RequirementStatus.Reviewed) && DateTime.UtcNow < setStatusDeadline)
+            {
+                await Task.Delay(10);
+                reread = await requirementsService.FindAsync(target.Id);
+            }
+
             Assert.Equal(RequirementStatus.Reviewed, reread!.Status);
         }
         finally
@@ -171,16 +280,29 @@ public sealed class FeatureCompletionTests
             var ribbon = GetPrivateField<RibbonView>(window, "_ribbon");
             var confirmationDialog = GetPrivateField<ConfirmationDialog>(window, "_confirmationDialog");
 
-            var handlerTask = ribbon.ObjectCreationHandlers["calculations.duplicate"]();
-            await Task.Delay(20);
+            var registry = (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
+            ClickRibbonCommand(ribbon, "calculations.duplicate", registry);
 
-            var confirmButton = confirmationDialog.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "Duplicate"));
-            confirmButton.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+            // Still unconditionally confirmed - now because the binding
+            // declares a ConfirmationMessage, not because one closure
+            // happened to call the dialog.
+            await ConfirmAsync(confirmationDialog, "Continue");
 
-            await handlerTask;
-            await Task.Delay(20);
+            // `TD-119`: structurally identical to
+            // `MechanicalDuplicate_OnARealPart_ActuallyCreatesARealCopy`, which CI
+            // failed at `384e47f`. Breaks on `>=` but still asserts equality, so a
+            // duplicate that ever created two objects fails at 14.
+            int countAfter;
+            var calcDuplicateDeadline = DateTime.UtcNow.AddSeconds(2);
+            while (true)
+            {
+                countAfter = await CountAllObjectNodesAsync(workspace.ProjectExplorer, await workspace.ProjectExplorer.GetRootNodesAsync());
+                if (countAfter >= countBefore + 1 || DateTime.UtcNow >= calcDuplicateDeadline)
+                    break;
 
-            var countAfter = await CountAllObjectNodesAsync(workspace.ProjectExplorer, await workspace.ProjectExplorer.GetRootNodesAsync());
+                await Task.Delay(10);
+            }
+
             Assert.Equal(countBefore + 1, countAfter);
         }
         finally
@@ -209,19 +331,30 @@ public sealed class FeatureCompletionTests
             var ribbon = GetPrivateField<RibbonView>(window, "_ribbon");
             var inputDialog = GetPrivateField<InputDialog>(window, "_inputDialog");
 
-            var handlerTask = ribbon.ObjectCreationHandlers["verification.create"]();
-            await Task.Delay(20);
+            var registry = (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
+            ClickRibbonCommand(ribbon, "verification.create", registry);
 
-            var textBox = inputDialog.GetLogicalDescendants().OfType<TextBox>().Single();
-            textBox.Text = "WP10.7A Test Verification Activity";
-            var okButton = inputDialog.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "OK"));
-            okButton.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+            // The binding declares the name and the method. The method's
+            // own default is still "Inspection" - the value the old closure
+            // hard-coded - so accepting the offered default reproduces the
+            // shipped behaviour exactly; the subject is still the selection.
+            await AnswerPromptsAsync(inputDialog, "WP10.7A Test Verification Activity", "Inspection");
 
-            await handlerTask;
-            await Task.Delay(20);
+            // `TD-119`: the create completes on a continuation this test has no
+            // task for. Switching area and walking the tree are reads, never
+            // writes, so re-running them cannot manufacture the object.
+            ProjectExplorerNode? created = null;
+            var verificationDeadline = DateTime.UtcNow.AddSeconds(2);
+            while (true)
+            {
+                await workspace.Navigation.SwitchAreaAsync(VerificationWorkspaceExplorerModule.NavigationItemId);
+                created = await FindFirstObjectNodeOfKindAsync(workspace.ProjectExplorer, await workspace.ProjectExplorer.GetRootNodesAsync(), "VerificationActivity", "WP10.7A Test Verification Activity");
+                if (created is not null || DateTime.UtcNow >= verificationDeadline)
+                    break;
 
-            await workspace.Navigation.SwitchAreaAsync(VerificationWorkspaceExplorerModule.NavigationItemId);
-            var created = await FindFirstObjectNodeOfKindAsync(workspace.ProjectExplorer, await workspace.ProjectExplorer.GetRootNodesAsync(), "VerificationActivity", "WP10.7A Test Verification Activity");
+                await Task.Delay(10);
+            }
+
             Assert.NotNull(created);
 
             var reread = await domainContext.Repository.FindAsync(created!.Id);
@@ -261,26 +394,24 @@ public sealed class FeatureCompletionTests
             var ribbon = GetPrivateField<RibbonView>(window, "_ribbon");
             var inputDialog = GetPrivateField<InputDialog>(window, "_inputDialog");
 
-            Assert.True(ribbon.ObjectCreationHandlers.ContainsKey("manufacturing.record-inspection-result"), "Expected a real handler wired for 'manufacturing.record-inspection-result'.");
-            var handlerTask = ribbon.ObjectCreationHandlers["manufacturing.record-inspection-result"]();
-            await Task.Delay(20);
+            var registry = (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
+            ClickRibbonCommand(ribbon, "manufacturing.record-inspection-result", registry);
 
-            var outcomeBox = inputDialog.GetLogicalDescendants().OfType<TextBox>().Single();
-            outcomeBox.Text = "Pass";
-            inputDialog.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "OK"))
-                .RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
-            await Task.Delay(20);
-
-            var methodBox = inputDialog.GetLogicalDescendants().OfType<TextBox>().Single();
-            methodBox.Text = "Inspection";
-            inputDialog.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "OK"))
-                .RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
-
-            await handlerTask;
+            // Cross-discipline reuse, unchanged: this Manufacturing
+            // descriptor's own binding builds Verification's
+            // RecordVerificationResultCommand, scoped to the Inspection Kind.
+            await AnswerPromptsAsync(inputDialog, "Pass", "Inspection");
 
             var statusBar = GetPrivateField<StatusBarView>(window, "_statusBar");
+
+            // `TD-119`: the dispatch reports into the live status bar on its own
+            // continuation; bounded poll on that real text, assertion unchanged.
+            var inspectionDeadline = DateTime.UtcNow.AddSeconds(2);
+            while (!(statusBar.GetLogicalDescendants().OfType<TextBlock>().Any(t => t.Text != null && t.Text.Contains("Record Inspection Result", StringComparison.Ordinal) && t.Text.Contains("completed", StringComparison.Ordinal))) && DateTime.UtcNow < inspectionDeadline)
+                await Task.Delay(10);
+
             var statusText = statusBar.GetLogicalDescendants().OfType<TextBlock>()
-                .FirstOrDefault(t => t.Text != null && t.Text.Contains("Result recorded", StringComparison.Ordinal));
+                .FirstOrDefault(t => t.Text != null && t.Text.Contains("Record Inspection Result", StringComparison.Ordinal) && t.Text.Contains("completed", StringComparison.Ordinal));
             Assert.NotNull(statusText);
         }
         finally
@@ -314,15 +445,21 @@ public sealed class FeatureCompletionTests
             var ribbon = GetPrivateField<RibbonView>(window, "_ribbon");
             var inputDialog = GetPrivateField<InputDialog>(window, "_inputDialog");
 
-            var handlerTask = ribbon.ObjectCreationHandlers["mechanical.create"]();
-            await Task.Delay(20);
+            var registry = (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
+            ClickRibbonCommand(ribbon, "mechanical.create", registry);
 
-            var textBox = inputDialog.GetLogicalDescendants().OfType<TextBox>().Single();
-            textBox.Text = "WP12.4B Test Part";
-            var okButton = inputDialog.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "OK"));
-            okButton.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+            // The Kind the old closure hard-coded is now the binding's own
+            // offered default, so accepting it and naming the object
+            // reproduces the shipped behaviour - and the Kind is finally
+            // visible and changeable rather than silently fixed.
+            await AnswerPromptsAsync(inputDialog, "Part", "WP12.4B Test Part");
 
-            await handlerTask;
+            // `TD-119`: the ribbon dispatch is fire-and-forget over real disk I/O; bounded poll
+            // re-reading the real state each iteration, assertion unchanged.
+            var createPartDeadline = DateTime.UtcNow.AddSeconds(2);
+            while (!((await domainContext.Repository.ListByKindAsync("Part")).Any(o => o is IHasBusinessIdentifier named && named.DisplayName == "WP12.4B Test Part")) && DateTime.UtcNow < createPartDeadline)
+                await Task.Delay(10);
+
 
             // A new "Part" with no explicit parent (Mechanical Create's
             // own honest, disclosed scope — "defaults to Kind Part," no
@@ -362,16 +499,33 @@ public sealed class FeatureCompletionTests
             var ribbon = GetPrivateField<RibbonView>(window, "_ribbon");
             var confirmationDialog = GetPrivateField<ConfirmationDialog>(window, "_confirmationDialog");
 
-            var handlerTask = ribbon.ObjectCreationHandlers["mechanical.duplicate"]();
-            await Task.Delay(20);
+            var registry = (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
+            ClickRibbonCommand(ribbon, "mechanical.duplicate", registry);
+            await ConfirmAsync(confirmationDialog, "Continue");
 
-            var confirmButton = confirmationDialog.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "Duplicate"));
-            confirmButton.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+            // `TD-119`: the Continue click dispatches an `async void`
+            // handler, and the duplicate is created and persisted on a
+            // continuation this test has no task for. A fixed `Task.Delay`
+            // sampled the tree once, after a guess: this assertion failed on
+            // CI at `384e47f` with `Expected: 13, Actual: 12` — short by
+            // exactly the one object still being written — while the
+            // push-triggered run on the identical SHA passed. Same
+            // bounded-poll remedy as `TD-46`/`WP 13.12.9`, re-walking the
+            // real tree every iteration. The loop breaks on `>=`, but the
+            // assertion below is still equality: if `duplicate` ever created
+            // two objects the loop would not stop early, and the assertion
+            // would fail at 14 exactly as it should.
+            int countAfter;
+            var duplicateDeadline = DateTime.UtcNow.AddSeconds(2);
+            while (true)
+            {
+                countAfter = await CountAllObjectNodesAsync(workspace.ProjectExplorer, await workspace.ProjectExplorer.GetRootNodesAsync());
+                if (countAfter >= countBefore + 1 || DateTime.UtcNow >= duplicateDeadline)
+                    break;
 
-            await handlerTask;
-            await Task.Delay(20);
+                await Task.Delay(10);
+            }
 
-            var countAfter = await CountAllObjectNodesAsync(workspace.ProjectExplorer, await workspace.ProjectExplorer.GetRootNodesAsync());
             Assert.Equal(countBefore + 1, countAfter);
         }
         finally
@@ -415,7 +569,26 @@ public sealed class FeatureCompletionTests
             var ribbon = GetPrivateField<RibbonView>(window, "_ribbon");
             var statusBar = GetPrivateField<StatusBarView>(window, "_statusBar");
 
-            var exception = await Record.ExceptionAsync(() => ribbon.ObjectCreationHandlers["documents.approve"]());
+            var registry = (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
+
+            // A real lifecycle rule refusing a real transition, reported
+            // rather than thrown - unchanged by TD-77 Stage 5, and now
+            // reached through the command framework's own dispatch.
+            // `TD-119`: every assertion below is negative — the status must NOT
+            // have advanced and the success sentence must NOT appear — so there
+            // is nothing to poll for in them. The refusal is still reported
+            // through `ActionCompleted`, which is the real positive signal that
+            // the dispatch finished; the test waits for that, then asserts
+            // exactly what it always did.
+            var rejections = new List<string>();
+            ribbon.ActionCompleted += (message, _) => rejections.Add(message);
+
+            var exception = Record.Exception(() => ClickRibbonCommand(ribbon, "documents.approve", registry));
+
+            // `TD-119`: wait for the refusal to be reported before asserting it changed nothing.
+            var approveRejectedDeadline = DateTime.UtcNow.AddSeconds(2);
+            while (!(rejections.Count > 0) && DateTime.UtcNow < approveRejectedDeadline)
+                await Task.Delay(10);
 
             Assert.Null(exception);
             var after = await domainContext.Repository.FindAsync(target.Id);
@@ -464,9 +637,17 @@ public sealed class FeatureCompletionTests
             var explorerView = GetPrivateField<ProjectExplorerView>(window, "_explorerView");
 
             RaiseObjectMoveRequested(explorerView, dragged.Id, dragged.Kind!, newParent.Id);
-            await Task.Delay(50);
 
+            // `TD-119`: the move is dispatched fire-and-forget; bounded poll re-reading the
+            // real tree each iteration, assertion unchanged.
             var newParentChildren = await workspace.ProjectExplorer.GetChildrenAsync(newParent.Id);
+            var moveDeadline = DateTime.UtcNow.AddSeconds(2);
+            while (!(newParentChildren.Any(c => c.Id == dragged.Id)) && DateTime.UtcNow < moveDeadline)
+            {
+                await Task.Delay(10);
+                newParentChildren = await workspace.ProjectExplorer.GetChildrenAsync(newParent.Id);
+            }
+
             Assert.Contains(newParentChildren, c => c.Id == dragged.Id);
         }
         finally
@@ -488,7 +669,12 @@ public sealed class FeatureCompletionTests
             var statusBar = GetPrivateField<StatusBarView>(window, "_statusBar");
 
             var exception = Record.Exception(() => RaiseObjectMoveRequested(explorerView, Guid.NewGuid(), "RequirementCollection", null));
-            await Task.Delay(50);
+
+            // `TD-119`: the honest refusal is reported on an asynchronous continuation;
+            // bounded poll on the real status text, assertions unchanged.
+            var unsupportedMoveDeadline = DateTime.UtcNow.AddSeconds(2);
+            while (!(statusBar.GetLogicalDescendants().OfType<TextBlock>().Any(t => t.Text != null && t.Text.Contains("isn't supported yet", StringComparison.Ordinal))) && DateTime.UtcNow < unsupportedMoveDeadline)
+                await Task.Delay(10);
 
             Assert.Null(exception);
             var statusText = statusBar.GetLogicalDescendants().OfType<TextBlock>()
@@ -509,14 +695,6 @@ public sealed class FeatureCompletionTests
         var del = (Action<Guid, string, Guid?>?)field.GetValue(explorerView);
         del?.Invoke(id, kind, newParentId);
     }
-
-    private static T GetPrivateField<T>(object instance, string fieldName)
-    {
-        var field = instance.GetType().GetField(fieldName, BindingFlags.NonPublic | BindingFlags.Instance)
-            ?? throw new InvalidOperationException($"Field '{fieldName}' not found on {instance.GetType().Name}.");
-        return (T)field.GetValue(instance)!;
-    }
-
     private static async Task<ProjectExplorerNode?> FindFirstObjectNodeAsync(IProjectExplorer explorer, IReadOnlyList<ProjectExplorerNode> nodes)
     {
         foreach (var node in nodes)

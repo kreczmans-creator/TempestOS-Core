@@ -1,4 +1,5 @@
 using Avalonia.Controls;
+using Avalonia.Threading;
 using Tempest.App.Workspace;
 using Tempest.Desktop.Theming;
 using Tempest.Desktop.Views;
@@ -50,11 +51,9 @@ namespace Tempest.Desktop.Composition;
 /// </remarks>
 internal sealed class UndoRedoCoordinator
 {
-    private readonly StatusBarView _statusBar;
-    private readonly ToastHost _toastHost;
     private readonly ProjectExplorerView _explorerView;
-    private readonly Action<string> _recordHistory;
     private readonly Action _refreshCockpit;
+    private readonly ActionOutcomeReporter _reporter;
 
     /// <summary>Gets the session-only Undo/Redo stack (`ADR-0099`) — never persisted across a restart.</summary>
     public IUndoRedoStack Stack { get; } = new UndoRedoStack();
@@ -66,19 +65,15 @@ internal sealed class UndoRedoCoordinator
     public Button RedoButton { get; } = new() { Content = "↷ Redo", MinHeight = DesignTokens.MinControlSize };
 
     /// <summary>Initialises a new instance of the <see cref="UndoRedoCoordinator"/> class.</summary>
-    public UndoRedoCoordinator(StatusBarView statusBar, ToastHost toastHost, ProjectExplorerView explorerView, Action<string> recordHistory, Action refreshCockpit)
+    public UndoRedoCoordinator(ProjectExplorerView explorerView, Action refreshCockpit, ActionOutcomeReporter reporter)
     {
-        ArgumentNullException.ThrowIfNull(statusBar);
-        ArgumentNullException.ThrowIfNull(toastHost);
         ArgumentNullException.ThrowIfNull(explorerView);
-        ArgumentNullException.ThrowIfNull(recordHistory);
         ArgumentNullException.ThrowIfNull(refreshCockpit);
+        ArgumentNullException.ThrowIfNull(reporter);
 
-        _statusBar = statusBar;
-        _toastHost = toastHost;
         _explorerView = explorerView;
-        _recordHistory = recordHistory;
         _refreshCockpit = refreshCockpit;
+        _reporter = reporter;
 
         ToolTip.SetTip(UndoButton, "Nothing to undo");
         ToolTip.SetTip(RedoButton, "Nothing to redo");
@@ -90,8 +85,49 @@ internal sealed class UndoRedoCoordinator
         Stack.Changed += RefreshButtons;
     }
 
-    /// <summary>Refreshes <see cref="UndoButton"/>/<see cref="RedoButton"/>'s own enablement/tooltip from <see cref="Stack"/>'s own real, current state.</summary>
+    /// <summary>
+    /// Refreshes <see cref="UndoButton"/>/<see cref="RedoButton"/>'s own
+    /// enablement/tooltip from <see cref="Stack"/>'s own real, current
+    /// state — on the UI thread, whichever thread raised
+    /// <see cref="IUndoRedoStack.Changed"/> (`TD-117`, `ADR-0119`).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Why this marshals.</b> <see cref="UndoRedoStack.UndoAsync"/> awaits
+    /// the undone action with <c>ConfigureAwait(false)</c> — correct for a
+    /// <c>Tempest.App</c> type, which knows nothing of a dispatcher and must
+    /// not — and then raises <c>Changed</c> on whatever thread that
+    /// continuation landed on. An action that genuinely yields lands on the
+    /// thread pool, and both real ones do: the favourite toggle writes a
+    /// file, and the Object Editor's rename undo dispatches through the
+    /// document store. Setting <c>Button.IsEnabled</c> from
+    /// there throws <see cref="InvalidOperationException"/> out of
+    /// <c>Changed</c>, which faulted the fire-and-forget undo and left the
+    /// data changed with no toast, no status bar, no refresh and stale
+    /// buttons.
+    /// </para>
+    /// <para>
+    /// <b>Why the fast path is not decoration.</b> <c>Record</c> is
+    /// synchronous and raises <c>Changed</c> on its caller's thread, which is
+    /// always the UI thread; callers rely on the buttons being correct the
+    /// instant it returns. Posting unconditionally would make that
+    /// asynchronous and break them. <see cref="Dispatcher.CheckAccess"/>
+    /// keeps the synchronous case exactly as it was and marshals only the
+    /// case that was broken — the same shape
+    /// <c>PlatformNotificationToastBridge</c> and <c>ThemeService</c> already
+    /// use for the identical problem.
+    /// </para>
+    /// </remarks>
     private void RefreshButtons()
+    {
+        if (Dispatcher.UIThread.CheckAccess())
+            RefreshButtonsCore();
+        else
+            Dispatcher.UIThread.Post(RefreshButtonsCore);
+    }
+
+    /// <summary>The refresh itself — always executed on the UI thread, never called directly except through <see cref="RefreshButtons"/>.</summary>
+    private void RefreshButtonsCore()
     {
         UndoButton.IsEnabled = Stack.CanUndo;
         RedoButton.IsEnabled = Stack.CanRedo;
@@ -106,12 +142,13 @@ internal sealed class UndoRedoCoordinator
         if (result is null)
             return;
 
-        var message = result.Succeeded ? "Undo completed." : result.Message ?? "Undo failed.";
-        _statusBar.SetText(message);
-        _toastHost.Show(message, result.Succeeded ? FeedbackSeverity.Success : FeedbackSeverity.Error);
-        _recordHistory(message);
-        await _explorerView.LoadAsync().ConfigureAwait(true);
-        _refreshCockpit();
+        // Reported through the one shared tail (`WP-D1`); success-gated
+        // (`TD-58`), because a failed undo changed nothing.
+        await _reporter.ReportAsync(result, "Undo completed.", "Undo failed.", refresh: async () =>
+        {
+            await _explorerView.LoadAsync().ConfigureAwait(true);
+            _refreshCockpit();
+        }).ConfigureAwait(true);
     }
 
     /// <summary>Re-applies the most recently undone action, if any (`WP 10.6A`, `ADR-0099`) — mirrors <see cref="UndoAsync"/>'s own identical shape.</summary>
@@ -121,11 +158,12 @@ internal sealed class UndoRedoCoordinator
         if (result is null)
             return;
 
-        var message = result.Succeeded ? "Redo completed." : result.Message ?? "Redo failed.";
-        _statusBar.SetText(message);
-        _toastHost.Show(message, result.Succeeded ? FeedbackSeverity.Success : FeedbackSeverity.Error);
-        _recordHistory(message);
-        await _explorerView.LoadAsync().ConfigureAwait(true);
-        _refreshCockpit();
+        // Reported through the one shared tail (`WP-D1`); success-gated
+        // (`TD-58`), because a failed redo changed nothing.
+        await _reporter.ReportAsync(result, "Redo completed.", "Redo failed.", refresh: async () =>
+        {
+            await _explorerView.LoadAsync().ConfigureAwait(true);
+            _refreshCockpit();
+        }).ConfigureAwait(true);
     }
 }

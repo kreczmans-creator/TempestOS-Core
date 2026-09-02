@@ -1028,14 +1028,14 @@ Coverage Note).
 |---|---|
 | **Category** | Workspace |
 | **Description** | `Attachment`/`IAttachment` (`WP8.2C`) carry descriptive metadata only (`FileName`/`ContentType`/`SizeInBytes`) — no actual file bytes, no resolvable path, no URL-fetch capability exists anywhere in this platform. A real implementation would need a genuine Platform Service decision (local filesystem storage? a blob-storage abstraction? an external document-management-system integration?). |
-| **Status** | Identified — disclosed directly by `TD-31` |
-| **Priority** | Low — metadata-only Attachments already satisfy every scope item `WP 9.4A`'s own controlling instruction names |
+| **Status** | **Implemented** — `ADR-0114`, 2026-08-29. The open design question is answered with the store this platform already has, in its byte shape: `IBinaryPersistenceStore` on the same `PersistenceStore` instance and root, with `IAttachmentContentStore` writing one record per attachment. No blob abstraction, no external DMS integration, and no new service to operate. `TD-31` is closed. |
+| **Priority** | Low — was low while metadata-only Attachments satisfied every scope item `WP 9.4A` named; raised and delivered by `TD-80`'s need for something real to render |
 | **Business Value** | Unknown — dependent on a real, demonstrated need for actual file content |
 | **Engineering Effort** | Medium-High — a genuine new Platform Service design question, not a mechanical add |
 | **Dependencies** | None yet identified |
 | **Proposed Target Release** | Unscheduled |
-| **Related ADRs** | None yet |
-| **Related Work Packages** | `WP 8.2C` (defined the current, metadata-only `Attachment` shape); `WP 9.4A` (disclosed the gap via `TD-31`) |
+| **Related ADRs** | `ADR-0114` (the implementing decision); `ADR-0053` (the substrate reused); `ADR-0113` (the metadata/state split this mirrors) |
+| **Related Work Packages** | `WP 8.2C` (defined the current, metadata-only `Attachment` shape); `WP 9.4A` (disclosed the gap via `TD-31`); 2026-08-29 Attachment Content Storage (implemented it) |
 | **Academy Impact** | Would extend `WP9.4A-engineering-documents-workspace.md` once implemented |
 | **Notes** | Raised directly by `WP9.4A Future Capability Assessment.md` and `WP9.4A Technical Debt Assessment.md` (`TD-31`). |
 
@@ -1062,16 +1062,16 @@ Coverage Note).
 |---|---|
 | **Category** | Workspace |
 | **Description** | `Issue`/`Risk`/`Hazard`/`Decision`/`Assumption` (`Contracts/GovernanceRisk.cs`, `WP 8.2C`) are all already real, compiled, `EngineeringObjectBase`-derived concrete classes, architecturally ready for the same Kind-keyed Workspace treatment every other discipline has now received four times, but none has its own Explorer area, Property Inspector Kind registration, or dedicated commands. `WP 9.4A` creates one live `Decision` and reads one already-live `Risk` purely to satisfy its own Digital Thread scope item, proving the underlying Domain classes are Workspace-ready without any further Domain-layer work. **`WP 10.1A` update**: `EngineeringCockpit.OpenDecisions`/`RiskSummary` (plus `Milestone`/`Task` reads) are no longer placeholder — real Cockpit-level reads now exist over this exact Domain family (a read-only dashboard summary, not the Explorer/commands/Property Inspector presence this capability itself still names) — strengthening, not resolving, this capability's own case: the Cockpit now visibly surfaces exactly how little of this already-Workspace-ready Domain family has real presence anywhere else. |
-| **Status** | Identified |
-| **Priority** | Low — no dedicated Governance & Risk Workspace presence has been requested yet, though `WP 10.1A`'s own Cockpit reads give it a real, visible summary for the first time |
+| **Status** | **Implemented** (2026-08-30, `WP — Project Risks, Issues & Decisions`) — the Project Workspace's Risks area is a real surface over `Risk`, `Hazard`, `Issue` and `Decision`: raised, retitled, scored, owned, assigned, prioritised and moved through their own status vocabularies, filtered to the open project transitively through `ProjectMembership`, and durable across a restart via the production rehydration path (`TD-104`). `Assumption` is deliberately **not** surfaced — see Notes. |
+| **Priority** | Resolved for the four families that had a workflow to give them; see Notes for the one deliberately left |
 | **Business Value** | Unknown — dependent on a real, demonstrated need for dedicated Risk/Decision browsing and management, beyond the indirect Digital Thread reachability `WP 9.4A` already provides |
 | **Engineering Effort** | Low — mirrors the now four-times-proven Kind-keyed Workspace pattern directly; no Domain-layer work is anticipated |
 | **Dependencies** | `Contracts/GovernanceRisk.cs`/`Implementation/GovernanceRisk.cs` (Implemented, `WP 8.2C`) |
 | **Proposed Target Release** | Unscheduled |
-| **Related ADRs** | None yet |
-| **Related Work Packages** | `WP 8.2C` (defined and implemented the underlying Domain classes); `WP 9.4A` (first to instantiate a live `Decision`, and to read the base sample's own live `Risk`); `WP 10.1A` (first Workspace surface — the Cockpit — to actually read this family) |
+| **Related ADRs** | None — the feature reuses `IFamilySpecificState` (declared by the platform, first used by the task family) and `ADR-0116`'s principal boundary, and introduced no new architectural decision |
+| **Related Work Packages** | `WP 8.2C` (defined and implemented the underlying Domain classes); `WP 9.4A` (first to instantiate a live `Decision`, and to read the base sample's own live `Risk`); `WP 10.1A` (first Workspace surface — the Cockpit — to actually read this family); **`WP — Project Risks, Issues & Decisions`** (the surface itself) |
 | **Academy Impact** | Would be a new Academy article, mirroring the shape of every prior discipline's own |
-| **Notes** | Raised directly by `WP9.4A Future Capability Assessment.md`. See also `TD-37` (`WP10.1A Technical Debt Review.md`) — a sample-module registration defect currently prevents most of this family's own sample data from seeding at all, a real blocker any future Governance & Risk Workspace Work Package would need resolved first. |
+| **Notes** | Raised directly by `WP9.4A Future Capability Assessment.md`. **Delivered as one area rather than three**, because `ProjectAreas` has always described the Risks tab as "risks, issues and decisions for this project"; they are three switchable registers inside it. **`Assumption` is deliberately not surfaced.** The other four each have a workflow a team actually runs — a risk is scored and closed, an issue is triaged and resolved, a decision is taken or rejected — while an assumption is a statement that is either still standing or has been invalidated, and inventing a status vocabulary for it would have been designing a capability nobody asked for. It remains a real, persistable, rehydratable Kind, reachable through the Engineering Workspace like any other. The `TD-37` sample-seeding blocker named here is moot: the surface reads the user's own objects through `ProjectMembership` and depends on no sample data at all. |
 
 #### FCR-0057 — `VerificationService.RecordAsync` Additionally Linking Through `IHasRelationships` When the Subject Is a Real Domain Object
 

@@ -125,4 +125,31 @@ public sealed class MechanicalObjectFactoryRegistry
 
         return created;
     }
+
+    /// <summary>
+    /// Registers how each of this discipline's own eight Kinds comes back
+    /// after a restart (`TD-85`).
+    /// </summary>
+    /// <remarks>
+    /// The rehydrating counterpart of <see cref="CreateAsync"/>, and
+    /// deliberately in the same class: this registry is the canonical owner
+    /// of these eight Kind strings (`ADR-0105`), so it is also the right
+    /// place to say which type each of them comes back as. The reconstruction
+    /// itself belongs to each type, in <c>Tempest.Core</c> — nothing about
+    /// any type's own fields is known here.
+    /// </remarks>
+    public static void RegisterRehydrators(IEngineeringObjectRehydratorRegistry registry, EngineeringDomainContext context)
+    {
+        ArgumentNullException.ThrowIfNull(registry);
+        ArgumentNullException.ThrowIfNull(context);
+
+        registry.Register<Tempest.Core.EngineeringDomain.Project>(Project, context);
+        registry.Register<Tempest.Core.EngineeringDomain.Assembly>(Assembly, context);
+        registry.Register<Tempest.Core.EngineeringDomain.SubAssembly>(SubAssembly, context);
+        registry.Register<Tempest.Core.EngineeringDomain.Part>(Part, context);
+        registry.Register<Tempest.Core.EngineeringDomain.Component>(Component, context);
+        registry.Register<Tempest.Core.EngineeringDomain.Configuration>(Configuration, context);
+        registry.Register<Tempest.Core.EngineeringDomain.Baseline>(Baseline, context);
+        registry.Register<Tempest.Core.EngineeringDomain.Release>(Release, context);
+    }
 }

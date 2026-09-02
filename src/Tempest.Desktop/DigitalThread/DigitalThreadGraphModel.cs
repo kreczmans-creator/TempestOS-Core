@@ -311,17 +311,18 @@ public sealed class DigitalThreadGraphModel
         if (target is null)
             return;
 
-        if (target is IHasRelationships hasRelationships)
-        {
-            var outgoing = hasRelationships.GetRelationshipsAsync().GetAwaiter().GetResult();
-            foreach (var relationship in outgoing)
-                AddNeighbour(objectId, relationship.SourceId, relationship.TargetId, relationship.RelationshipKind, relationship.Category);
-        }
-
-        var incoming = _domainContext.RelationshipRepository.GetIncomingAsync(objectId).GetAwaiter().GetResult();
-        foreach (var relationship in incoming)
-            AddNeighbour(objectId, relationship.SourceId, relationship.TargetId, relationship.RelationshipKind, relationship.Category);
-
+        // Verification records first, deliberately. `AddNode` is
+        // first-wins, so whichever path reaches a record document first
+        // decides whether it renders as a non-expandable result leaf or as
+        // an ordinary, expandable neighbour. A record is a record however
+        // it was discovered, so the read that actually knows it is one runs
+        // first, rather than the node's identity depending on whether the
+        // Activity to Record link happens to be present in the in-memory
+        // relationship index — which it is after a restart rebuilds the
+        // index from the durable references (`TD-85`), and is not in a
+        // session that recorded the result itself (`WP9.3A`:
+        // `VerificationService.RecordAsync` links through the raw document
+        // store, never through the Domain object's own `LinkAsync`).
         if (string.Equals(target.Kind, VerificationActivityFactoryRegistry.SupportedKind, StringComparison.Ordinal))
         {
             var records = VerificationRecordReader.GetResultHistoryAsync(_domainContext, objectId).GetAwaiter().GetResult();
@@ -332,6 +333,17 @@ public sealed class DigitalThreadGraphModel
                 AddEdge(objectId, record.RecordId, VerificationService.VerifiedByRelationshipKind, RelationshipCategory.Verification);
             }
         }
+
+        if (target is IHasRelationships hasRelationships)
+        {
+            var outgoing = hasRelationships.GetRelationshipsAsync().GetAwaiter().GetResult();
+            foreach (var relationship in outgoing)
+                AddNeighbour(objectId, relationship.SourceId, relationship.TargetId, relationship.RelationshipKind, relationship.Category);
+        }
+
+        var incoming = _domainContext.RelationshipRepository.GetIncomingAsync(objectId).GetAwaiter().GetResult();
+        foreach (var relationship in incoming)
+            AddNeighbour(objectId, relationship.SourceId, relationship.TargetId, relationship.RelationshipKind, relationship.Category);
     }
 
     /// <summary>

@@ -1,8 +1,12 @@
+using Avalonia;
 using Avalonia.Controls;
+using Avalonia.LogicalTree;
+using Avalonia.VisualTree;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Tempest.App.Workspace;
 using Tempest.Core.Commands;
+using Tempest.Desktop.Composition;
 using Tempest.Desktop.Theming;
 
 namespace Tempest.Desktop.Views;
@@ -21,40 +25,33 @@ namespace Tempest.Desktop.Views;
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>Selection-aware, real dispatch — three verbs, honestly scoped.</b>
-/// `CommandDescriptor.CreateDefault` is `null` for every one of this
-/// platform's own ~80 registered descriptors (confirmed by direct
-/// `grep` — no discipline has ever set it), so
-/// <see cref="ICommandRegistry.InvokeAsync"/> cannot invoke any of them
-/// by Id alone. Rather than inventing a new, generic parameter-binding
-/// mechanism (explicitly out of scope — "No new command framework"),
-/// this class reuses the three real, already-Kind-keyed dispatch verbs
-/// `ADR-0096`/`ADR-0097` already built for exactly this problem:
-/// <b>Delete</b> dispatches immediately
-/// (<see cref="IWorkspaceManager.DeleteObjectAsync"/>, needs no
-/// additional input beyond the current selection); <b>Rename</b>/
-/// <b>Edit</b> (Revise) route to the real editing surface that already
-/// collects the required text input — the Object Editor tab
-/// (`WP 10.3A`) — rather than duplicating a text box inside the ribbon
-/// itself. Every other command (Create, Move, Copy, Duplicate,
-/// Execute, Set Status, ...) is shown, per `ADR-0070`'s own "disabled,
-/// not hidden" discoverability principle, but honestly reports it needs
-/// more input than a button click supplies, rather than silently doing
-/// nothing (the identical, genuine, previously-undisclosed defect
-/// `CommandPaletteOverlay.InvokeSelectedAsync` had for the exact same
-/// reason — found while building this class, fixed alongside it, see
-/// `WP10.3B Engineering Review.md` §2).
+/// <b>Every button asks the command framework, and does what it says.</b>
+/// A click evaluates the command against the current selection
+/// (<see cref="ICommandRegistry.Evaluate"/>) and then invokes it through
+/// <see cref="ICommandRegistry.InvokeAsync(string, CommandContext, CommandParameterPrompt?, CancellationToken)"/>,
+/// which builds the real command from the descriptor's own binding
+/// (TD-77). Enablement asks the same question. Nothing here re-derives
+/// what a command needs, and there is no generic "isn't available yet"
+/// message left: an unavailable command reports its own declared reason,
+/// visible and disabled rather than hidden (<c>ADR-0070</c>).
 /// </para>
 /// <para>
-/// <b>Command grouping and icons are both derived, not authored.</b> No
-/// descriptor sets <see cref="CommandDescriptor.Icon"/> either (the
-/// identical, confirmed-by-`grep` finding) — real per-command icons
-/// remain disclosed future work (`FCR-0069`). This class instead
-/// classifies every command by its own Id's own verb suffix
-/// (`.rename`, `.delete`, `.create`, ...) into one of five groups
-/// (Create/Edit/Organize/Lifecycle/Actions), each with its own
-/// deterministic glyph — a real, disclosed, rendering-time heuristic,
-/// never a fabricated per-command choice.
+/// <b>Two product decisions route elsewhere, named explicitly.</b>
+/// Rename/Edit open the Object Editor, which is the real surface for
+/// collecting text (<c>ADR-0096</c>/<c>ADR-0097</c>); Delete dispatches
+/// through <see cref="IWorkspaceManager.DeleteObjectAsync"/>, which is
+/// where a successful delete clears the selection (<c>TD-58</c>). Both are
+/// lists of command Ids in <see cref="SurfaceCommandPolicy"/> — never
+/// recovered by parsing an Id, which is what previously left
+/// <c>requirements.delete-group</c> and <c>requirements.revise</c>
+/// unreachable.
+/// </para>
+/// <para>
+/// <b>Command grouping and icons are still derived, not authored.</b> No
+/// descriptor sets <see cref="CommandDescriptor.Icon"/> (real per-command
+/// icons remain <c>FCR-0069</c>), so this class picks a tab group and a
+/// glyph from the Id's own trailing word — a rendering heuristic, and the
+/// only thing that suffix is still read for.
 /// </para>
 /// </remarks>
 public sealed class RibbonView : UserControl
@@ -67,13 +64,48 @@ public sealed class RibbonView : UserControl
     private readonly TabControl _tabs = new();
     private readonly List<string> _recentCommandIds = [];
     private readonly List<(Button Button, CommandDescriptor Descriptor)> _selectionAwareButtons = [];
+    private readonly Dictionary<string, ContentControl> _recentSectionHosts = new(StringComparer.Ordinal);
+    private readonly List<Control> _tabContents = [];
     private bool _suppressTabSelection;
+    private bool _isCollapsed;
 
-    /// <summary>Raised after a ribbon action completes (successfully or not), carrying a human-readable status message — mirrors every other Desktop View's own identical <c>ActionCompleted</c> convention.</summary>
-    public event Action<string>? ActionCompleted;
+    /// <summary>Raised after a ribbon action completes (successfully or not), carrying a human-readable status message and its <see cref="ActionOutcome"/> — mirrors every other Desktop View's own identical <c>ActionCompleted</c> convention (`TD-58`: the outcome is what lets the subscriber refresh dependent surfaces only when the workspace actually changed).</summary>
+    public event Action<string, ActionOutcome>? ActionCompleted;
 
     /// <summary>Raised when the user clicks a discipline tab directly (not via <see cref="SelectTabForArea"/>) — the caller's own cue to switch the Navigation area to match.</summary>
     public event Action<string>? CategorySelected;
+
+    /// <summary>Raised after <see cref="SetCollapsed"/> changes the ribbon's own collapsed state, carrying the new state — the caller's own cue to persist it (`TD-70`).</summary>
+    public event Action<bool>? CollapsedChanged;
+
+    /// <summary>
+    /// Gets whether the ribbon is minimised to its own tab strip
+    /// (`TD-70`) — the standard ribbon affordance for reclaiming vertical
+    /// space on a laptop or split screen. Every tab header stays visible
+    /// and clickable; only the command content area is hidden, so no
+    /// command becomes unreachable.
+    /// </summary>
+    public bool IsCollapsed => _isCollapsed;
+
+    /// <summary>Minimises the ribbon to its own tab strip, or restores it (`TD-70`).</summary>
+    public void SetCollapsed(bool collapsed)
+    {
+        if (_isCollapsed == collapsed)
+            return;
+
+        _isCollapsed = collapsed;
+        ApplyCollapsedState();
+        CollapsedChanged?.Invoke(collapsed);
+    }
+
+    /// <summary>Toggles <see cref="IsCollapsed"/> — the double-click/keyboard affordance's own target.</summary>
+    public void ToggleCollapsed() => SetCollapsed(!_isCollapsed);
+
+    private void ApplyCollapsedState()
+    {
+        foreach (var content in _tabContents)
+            content.IsVisible = !_isCollapsed;
+    }
 
     /// <summary>An optional confirmation gate (`WP 10.5B`, Dialog Framework — "Delete Confirmation") — mirrors <see cref="ProjectExplorerView.ConfirmDeleteAsync"/> exactly, including its own identical "unwired means proceed immediately" default.</summary>
     public Func<string, Task<bool>>? ConfirmDeleteAsync { get; set; }
@@ -93,6 +125,18 @@ public sealed class RibbonView : UserControl
         _openDocument = openDocument;
 
         Content = _tabs;
+
+        // Double-click a tab header to minimise/restore — the convention
+        // every ribbon application shares (`TD-70`).
+        _tabs.DoubleTapped += (_, e) =>
+        {
+            if (e.Source is Visual source && source.FindAncestorOfType<TabItem>(includeSelf: true) is not null)
+            {
+                ToggleCollapsed();
+                e.Handled = true;
+            }
+        };
+
         _tabs.SelectionChanged += (_, _) =>
         {
             if (!_suppressTabSelection && _tabs.SelectedItem is TabItem { Tag: string category })
@@ -108,6 +152,8 @@ public sealed class RibbonView : UserControl
         var selected = (_tabs.SelectedItem as TabItem)?.Tag as string;
         _tabs.Items.Clear();
         _selectionAwareButtons.Clear();
+        _recentSectionHosts.Clear();
+        _tabContents.Clear();
 
         var byCategory = _commandRegistry.Items
             .GroupBy(d => d.Category ?? "General")
@@ -115,7 +161,9 @@ public sealed class RibbonView : UserControl
 
         foreach (var group in byCategory)
         {
-            var tab = new TabItem { Header = BuildTabHeader(group.Key), Tag = group.Key, Content = BuildTabContent(group.Key, group.ToList()) };
+            var content = BuildTabContent(group.Key, group.ToList());
+            _tabContents.Add(content);
+            var tab = new TabItem { Header = BuildTabHeader(group.Key), Tag = group.Key, Content = content };
             _tabs.Items.Add(tab);
         }
 
@@ -134,6 +182,10 @@ public sealed class RibbonView : UserControl
         // immediately after opening, before the user has selected
         // anything at all.
         RefreshEnablement();
+
+        // A rebuild recreates every content panel — re-apply the current
+        // minimised state so it survives (`TD-70`).
+        ApplyCollapsedState();
     }
 
     /// <summary>
@@ -181,33 +233,47 @@ public sealed class RibbonView : UserControl
     /// </summary>
     public void RefreshEnablement()
     {
-        var selection = _workspace.Selection.Current;
+        // TD-77 Stage 5: one question, asked of the command framework.
+        // This used to classify each command by the text after the last
+        // dot in its Id and then re-derive eligibility from the manager -
+        // which left every Id the parser had not anticipated
+        // ("requirements.delete-group", "requirements.revise") permanently
+        // enabled and permanently unreachable, and left Move/Copy/Link
+        // looking available right up until the click failed.
+        var context = CurrentContext();
 
         foreach (var (button, descriptor) in _selectionAwareButtons)
         {
-            var verb = ClassifyVerbSuffix(descriptor.Id);
-            var enabled = selection is not null && verb switch
-            {
-                "rename" => _manager.CanRename(selection.Kind),
-                "edit" => _manager.CanRevise(selection.Kind),
-                "delete" => _manager.CanDelete(selection.Kind),
-                _ => true,
-            };
+            var availability = _commandRegistry.Evaluate(descriptor.Id, context);
 
-            button.IsEnabled = enabled;
-            ToolTip.SetTip(button, enabled
+            button.IsEnabled = availability.IsAvailable;
+
+            // ADR-0070: an unavailable command stays visible and says why,
+            // in its own words rather than one generic sentence.
+            ToolTip.SetTip(button, availability.IsAvailable
                 ? descriptor.Description ?? descriptor.DisplayName
-                : $"{descriptor.DisplayName} — select an object this command applies to first.");
+                : availability.Reason);
         }
     }
+
+    /// <summary>
+    /// The Workspace's own live selection, as the Command Framework sees
+    /// it — built through the one shared adapter, never assembled here.
+    /// </summary>
+    private CommandContext CurrentContext() => WorkspaceCommandContext.From(_workspace.Selection);
 
     private Control BuildTabContent(string category, IReadOnlyList<CommandDescriptor> descriptors)
     {
         var root = new StackPanel { Orientation = Orientation.Vertical, Spacing = DesignTokens.SpaceXs, Margin = DesignTokens.PanelPadding };
 
-        var recentSection = BuildRecentSection(category);
-        if (recentSection is not null)
-            root.Children.Add(recentSection);
+        // A stable per-tab host for the "Recently Used" row, so
+        // RecordRecent can update just this row instead of tearing down
+        // and rebuilding every tab and button on every command click
+        // (`TD-58` — the full rebuild also destroyed keyboard focus).
+        var recentSectionHost = new ContentControl { IsVisible = false };
+        _recentSectionHosts[category] = recentSectionHost;
+        root.Children.Add(recentSectionHost);
+        UpdateRecentSection(category);
 
         var groupsRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceLg };
         foreach (var groupedByVerb in descriptors.GroupBy(d => ClassifyGroup(d.Id)).OrderBy(g => GroupOrder(g.Key)))
@@ -333,91 +399,118 @@ public sealed class RibbonView : UserControl
 
     private async Task OnCommandButtonClickAsync(CommandDescriptor descriptor)
     {
-        var verb = ClassifyVerbSuffix(descriptor.Id);
-        var selection = _workspace.Selection.Current;
+        var context = CurrentContext();
 
-        if (verb == "delete")
+        // The single availability implementation, consulted rather than
+        // re-derived. Everything below assumes only what it established.
+        var availability = _commandRegistry.Evaluate(descriptor.Id, context);
+        if (!availability.IsAvailable)
         {
-            if (selection is null || !_manager.CanDelete(selection.Kind))
-            {
-                ActionCompleted?.Invoke($"'{descriptor.DisplayName}' needs a selected object first.");
-                return;
-            }
-
-            if (ConfirmDeleteAsync is { } confirm && !await confirm($"Delete the selected {selection.Kind}? This cannot be undone.").ConfigureAwait(true))
-                return;
-
-            var result = await _manager.DeleteObjectAsync(selection.ObjectId, selection.Kind).ConfigureAwait(true);
-            RecordRecent(descriptor.Id);
-            RefreshEnablement();
-            ActionCompleted?.Invoke(result.Succeeded ? $"Deleted via '{descriptor.DisplayName}'." : result.Message ?? "Delete failed.");
+            // The command's own reason - a Move says it needs a destination
+            // picker, a wrong-Kind selection says which Kinds it applies to.
+            // There is no generic fallback message any more.
+            ActionCompleted?.Invoke(availability.Reason!, ActionOutcome.Failed);
             return;
         }
 
-        if (verb is "rename" or "edit")
+        // Product decision, not a classification: Rename/Edit open the real
+        // editing surface (ADR-0096/ADR-0097). Named explicitly in
+        // SurfaceCommandPolicy, never recovered from the Id's own text.
+        if (SurfaceCommandPolicy.ObjectEditorCommandIds.Contains(descriptor.Id))
         {
-            var canEdit = selection is not null && (verb == "rename" ? _manager.CanRename(selection.Kind) : _manager.CanRevise(selection.Kind));
-            if (!canEdit)
-            {
-                ActionCompleted?.Invoke($"'{descriptor.DisplayName}' needs a selected object this command applies to.");
-                return;
-            }
-
-            var view = await _workspace.Navigation.OpenAsync(selection!.ObjectId, selection.Kind).ConfigureAwait(true);
-            _openDocument(view);
-            RecordRecent(descriptor.Id);
-            ActionCompleted?.Invoke($"Opened for editing via '{descriptor.DisplayName}' — use the Name/Content fields in the editor tab.");
+            await OpenForEditingAsync(descriptor, context).ConfigureAwait(true);
             return;
         }
 
-        if (descriptor.CreateDefault is not null)
+        // Product decision: deleting goes through the Workspace manager,
+        // because that is where a successful delete clears the selection
+        // (TD-58). See SurfaceCommandPolicy.DeleteCommandIds.
+        if (SurfaceCommandPolicy.DeleteCommandIds.Contains(descriptor.Id))
         {
-            var result = await _commandRegistry.InvokeAsync(descriptor.Id).ConfigureAwait(true);
-            RecordRecent(descriptor.Id);
-            ActionCompleted?.Invoke(result.Succeeded ? $"'{descriptor.DisplayName}' completed." : result.Message ?? "Command failed.");
+            await DeleteAsync(descriptor, context).ConfigureAwait(true);
             return;
         }
 
-        // Real "object creation/duplicate workflow" (`WP 10.5B` scope,
-        // extended broadly by `WP 10.7A`) — `ObjectCreationHandlers` names
-        // every command Id this platform has wired to a genuine dispatch
-        // flow: Create/Duplicate/status-transitions across all six
-        // disciplines. What remains unwired (Copy — no destination-parent
-        // picker dialog exists anywhere in this platform, `FCR-0073`) is
-        // named honestly by the fallback message below, never claiming a
-        // command works when it still falls through here.
-        if (ObjectCreationHandlers.TryGetValue(descriptor.Id, out var createFlow))
-        {
-            await createFlow().ConfigureAwait(true);
-            RecordRecent(descriptor.Id);
-            return;
-        }
+        var invocation = await _commandRegistry
+            .InvokeAsync(descriptor.Id, context, ParameterPrompt)
+            .ConfigureAwait(true);
 
-        // Honest fallback (`WP 10.8A`) — deliberately names no alternative
-        // surface. Confirmed by direct investigation that neither
-        // alternative this message used to name actually helps: the
-        // Command Palette cannot invoke any real discipline command by Id
-        // (no `CommandDescriptor.CreateDefault` is ever set for one,
-        // `CommandPaletteOverlay`'s own remarks), and the Project
-        // Explorer's own context menu offers only Open/Rename/Delete/
-        // Favourite — never Copy or any other command that reaches this
-        // branch. Claiming either would be exactly the "misleading
-        // messaging" this Work Package's own controlling instruction
-        // forbids.
-        ActionCompleted?.Invoke($"'{descriptor.DisplayName}' isn't available yet — no destination picker or additional-input UI exists in this platform to collect what it needs.");
+        switch (invocation.Outcome)
+        {
+            case CommandOutcome.Executed:
+                var result = invocation.Result!;
+                RecordRecent(descriptor.Id);
+                RefreshEnablement();
+                ActionCompleted?.Invoke(
+                    result.Succeeded
+                        ? $"'{descriptor.DisplayName}' completed."
+                        : result.Message ?? $"'{descriptor.DisplayName}' failed.",
+                    ActionOutcome.From(result.Succeeded));
+                break;
+
+            case CommandOutcome.Cancelled:
+                // Declining is not failing. Nothing ran, nothing changed,
+                // and nothing is reported - no toast, no status text, and
+                // no history entry.
+                break;
+
+            default:
+                ActionCompleted?.Invoke(invocation.Reason!, ActionOutcome.Failed);
+                break;
+        }
     }
 
     /// <summary>
-    /// Real, wired Create/Duplicate/Move/Copy flows, keyed by
-    /// <see cref="CommandDescriptor.Id"/> — set once by
-    /// <see cref="MainWindow"/> after construction (mirrors
-    /// <see cref="ConfirmDeleteAsync"/>'s own identical "optional, set
-    /// post-construction, unwired means fall through to the honest
-    /// message" discipline). Empty by default — a caller that never wires
-    /// this (any existing test constructing this view directly) sees the
-    /// identical pre-`WP 10.5B` fallback behaviour, unaffected.
+    /// Opens the selected object in the Object Editor — the real surface
+    /// that collects a new name or new content, with the object in front of
+    /// the user rather than a one-line box floating over the ribbon
+    /// (<c>ADR-0096</c>/<c>ADR-0097</c>, deliberately kept by TD-77 Stage 5).
     /// </summary>
-    public IDictionary<string, Func<Task>> ObjectCreationHandlers { get; } = new Dictionary<string, Func<Task>>();
+    private async Task OpenForEditingAsync(CommandDescriptor descriptor, CommandContext context)
+    {
+        var primary = context.Primary!;
+        var view = await _workspace.Navigation.OpenAsync(primary.ObjectId, primary.Kind).ConfigureAwait(true);
+        _openDocument(view);
+        RecordRecent(descriptor.Id);
+        ActionCompleted?.Invoke(
+            $"Opened for editing via '{descriptor.DisplayName}' — use the Name/Content fields in the editor tab.",
+            ActionOutcome.NoChange);
+    }
+
+    /// <summary>
+    /// Deletes through <see cref="IWorkspaceManager.DeleteObjectAsync"/>,
+    /// which is where a successful delete clears the selection (<c>TD-58</c>).
+    /// The confirmation text is the binding's own
+    /// <see cref="CommandBinding.ConfirmationMessage"/>, so Core still says
+    /// what to ask; whether to ask at all remains
+    /// <see cref="ConfirmDeleteAsync"/>'s settings-controlled decision.
+    /// </summary>
+    private async Task DeleteAsync(CommandDescriptor descriptor, CommandContext context)
+    {
+        var primary = context.Primary!;
+        var message = descriptor.Binding?.ConfirmationMessage
+            ?? $"Delete the selected {primary.Kind}? This cannot be undone.";
+
+        if (ConfirmDeleteAsync is { } confirm && !await confirm(message).ConfigureAwait(true))
+            return;
+
+        var result = await _manager.DeleteObjectAsync(primary.ObjectId, primary.Kind).ConfigureAwait(true);
+        RecordRecent(descriptor.Id);
+        RefreshEnablement();
+        ActionCompleted?.Invoke(
+            result.Succeeded ? $"Deleted via '{descriptor.DisplayName}'." : result.Message ?? "Delete failed.",
+            ActionOutcome.From(result.Succeeded));
+    }
+
+    /// <summary>
+    /// Collects the values and confirmations a command's own binding
+    /// declares — supplied by <c>MainWindow</c> after construction, exactly
+    /// as <see cref="ConfirmDeleteAsync"/> is. Left unwired (any test
+    /// constructing this view directly), a command needing input reports
+    /// that honestly through <see cref="ActionCompleted"/> rather than
+    /// running without asking.
+    /// </summary>
+    public CommandParameterPrompt? ParameterPrompt { get; set; }
 
     private void RecordRecent(string id)
     {
@@ -426,7 +519,23 @@ public sealed class RibbonView : UserControl
         if (_recentCommandIds.Count > 5)
             _recentCommandIds.RemoveAt(_recentCommandIds.Count - 1);
 
-        Rebuild();
+        // Only the "Recently Used" rows changed — updating them in place
+        // (instead of the previous full Rebuild()) keeps every existing
+        // tab and button alive, preserving keyboard focus and avoiding a
+        // second RefreshEnablement pass per click (`TD-58`).
+        foreach (var category in _recentSectionHosts.Keys)
+            UpdateRecentSection(category);
+    }
+
+    /// <summary>Recomputes one tab's own "Recently Used" row inside its stable host — the incremental complement to <see cref="Rebuild"/> (`TD-58`).</summary>
+    private void UpdateRecentSection(string category)
+    {
+        if (!_recentSectionHosts.TryGetValue(category, out var host))
+            return;
+
+        var section = BuildRecentSection(category);
+        host.Content = section;
+        host.IsVisible = section is not null;
     }
 
     /// <summary>
@@ -436,7 +545,7 @@ public sealed class RibbonView : UserControl
     /// already provides, never a fabricated per-command choice (see class
     /// remarks).
     /// </summary>
-    private static string ClassifyGroup(string id) => ClassifyVerbSuffix(id) switch
+    private static string ClassifyGroup(string id) => PresentationVerbSuffix(id) switch
     {
         "create" => "Create",
         "rename" or "edit" or "move" or "copy" or "duplicate" => "Organize",
@@ -453,13 +562,28 @@ public sealed class RibbonView : UserControl
         _ => 3,
     };
 
-    private static string ClassifyVerbSuffix(string id)
+    /// <summary>
+    /// The text after the last dot in <paramref name="id"/> — used to pick
+    /// a tab group and a glyph, and for nothing else.
+    /// </summary>
+    /// <remarks>
+    /// <b>Presentation only, and named to say so.</b> This was once
+    /// <c>ClassifyVerbSuffix</c> and decided which command dispatched where
+    /// and which button was enabled; TD-77 Stage 5 moved both of those to
+    /// <see cref="ICommandRegistry.Evaluate"/> and
+    /// <see cref="SurfaceCommandPolicy"/>. Choosing a folder icon from a
+    /// name is a rendering heuristic and stays fine; deciding what a
+    /// command <i>is</i> from its name was the defect that made
+    /// <c>requirements.delete-group</c> and <c>requirements.revise</c>
+    /// unreachable.
+    /// </remarks>
+    private static string PresentationVerbSuffix(string id)
     {
         var lastDot = id.LastIndexOf('.');
         return lastDot >= 0 ? id[(lastDot + 1)..] : id;
     }
 
-    private static string GlyphFor(string id) => ClassifyVerbSuffix(id) switch
+    private static string GlyphFor(string id) => PresentationVerbSuffix(id) switch
     {
         "create" or "create-group" or "create-collection" => "➕",
         "rename" => "✏️",

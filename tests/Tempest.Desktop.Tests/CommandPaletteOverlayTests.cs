@@ -60,9 +60,10 @@ public sealed class CommandPaletteOverlayTests
             palette.Open();
 
             CommandDescriptor? unavailable = null;
+            string? unavailableReason = null;
             CommandDescriptor? invoked = null;
-            palette.CommandUnavailable += d => unavailable = d;
-            palette.CommandInvoked += d => invoked = d;
+            palette.CommandUnavailable += (d, r) => { unavailable = d; unavailableReason = r; };
+            palette.CommandInvoked += (d, _) => invoked = d;
 
             // OnQueryKeyDown is wired to the palette's own inner query
             // TextBox (its own first child), not the palette Border

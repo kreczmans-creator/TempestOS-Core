@@ -13,7 +13,7 @@ namespace Tempest.Desktop.Tests;
 /// progress-bar KPI rendering) — neither needs a real
 /// <see cref="Tempest.App.Workspace.WorkspaceHost"/> to prove, unlike
 /// their own real consumers (<see cref="RibbonViewTests"/>,
-/// <see cref="EngineeringCockpitTests"/>), which do.
+/// <see cref="CockpitViewHonestyTests"/>), which do.
 /// </summary>
 public sealed class CommercialUxTests
 {

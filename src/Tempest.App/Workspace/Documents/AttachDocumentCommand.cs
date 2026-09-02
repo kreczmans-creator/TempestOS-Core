@@ -15,6 +15,11 @@ namespace Tempest.App.Workspace.Documents;
 /// </summary>
 public sealed class AttachDocumentCommand : IWorkspaceCommand
 {
+    /// <summary>
+    /// Records attachment metadata alone — a file this platform names but
+    /// does not hold. Retained unchanged for the callers that only ever
+    /// had metadata to give.
+    /// </summary>
     public AttachDocumentCommand(Guid targetObjectId, string targetKind, string fileName, string contentType, long sizeInBytes)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(targetKind);
@@ -27,6 +32,35 @@ public sealed class AttachDocumentCommand : IWorkspaceCommand
         ContentType = contentType;
         SizeInBytes = sizeInBytes;
     }
+
+    /// <summary>
+    /// Attaches a real file, content included (`TD-31`).
+    /// </summary>
+    /// <remarks>
+    /// No size parameter: the size of a file is a property of its bytes,
+    /// not a claim the caller gets to make separately from them. It is
+    /// derived on the way in, along with the hash, so the metadata cannot
+    /// describe content the store does not hold.
+    /// </remarks>
+    public AttachDocumentCommand(Guid targetObjectId, string targetKind, string fileName, string contentType, ReadOnlyMemory<byte> content)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(targetKind);
+        ArgumentException.ThrowIfNullOrWhiteSpace(fileName);
+        ArgumentException.ThrowIfNullOrWhiteSpace(contentType);
+
+        TargetObjectId = targetObjectId;
+        TargetKind = targetKind;
+        FileName = fileName;
+        ContentType = contentType;
+        SizeInBytes = content.Length;
+        Content = content;
+    }
+
+    /// <summary>
+    /// Gets the file's bytes, or <see langword="null"/> for a
+    /// metadata-only attachment (`TD-31`).
+    /// </summary>
+    public ReadOnlyMemory<byte>? Content { get; }
 
     /// <inheritdoc />
     public Guid TargetObjectId { get; }
@@ -62,6 +96,16 @@ public sealed class AttachDocumentCommandHandler : ICommandHandler<AttachDocumen
 
         if (target is not IHasAttachments attachable)
             return CommandResult.Failure($"'{command.TargetObjectId}' was not found, or its own Kind cannot carry attachments.");
+
+        if (command.Content is { } content)
+        {
+            // The durable path (`TD-31`): the bytes are stored first and the
+            // metadata is derived from them, so a successful result means
+            // the platform actually holds the file.
+            await attachable.AttachContentAsync(command.FileName, command.ContentType, content, cancellationToken).ConfigureAwait(false);
+
+            return CommandResult.Success($"Attached '{command.FileName}' ({content.Length} bytes) to '{command.TargetObjectId}'.");
+        }
 
         var attachment = new Attachment(command.FileName, command.ContentType, command.SizeInBytes);
         await attachable.AttachAsync(attachment, cancellationToken).ConfigureAwait(false);

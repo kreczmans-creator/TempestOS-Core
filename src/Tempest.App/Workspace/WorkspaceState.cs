@@ -1,3 +1,4 @@
+using Tempest.Core.Logging;
 using System.Text.Json;
 using Tempest.Core.Settings;
 
@@ -27,13 +28,14 @@ internal sealed class WorkspaceState : IWorkspaceState
     public const string SettingKey = "Workspace.State";
 
     private readonly ISettingsProvider _settingsProvider;
+    private readonly SettingsDocument<WorkspaceStateDto> _document;
     private readonly IReadOnlyList<WorkspacePanelPlacement> _defaultPlacements;
     private List<Guid> _openViewIds = [];
 
     /// <summary>Initialises a new instance of the <see cref="WorkspaceState"/> class.</summary>
     /// <param name="settingsProvider">The Settings service this state persists through.</param>
     /// <param name="defaultPlacements">The default panel placements a first-run/missing session yields.</param>
-    public WorkspaceState(ISettingsProvider settingsProvider, IReadOnlyList<WorkspacePanelPlacement> defaultPlacements)
+    public WorkspaceState(ISettingsProvider settingsProvider, IReadOnlyList<WorkspacePanelPlacement> defaultPlacements, ILogger? logger = null)
     {
         ArgumentNullException.ThrowIfNull(settingsProvider);
         ArgumentNullException.ThrowIfNull(defaultPlacements);
@@ -42,16 +44,7 @@ internal sealed class WorkspaceState : IWorkspaceState
         _defaultPlacements = defaultPlacements;
         Layout = new WorkspaceLayout(defaultPlacements);
 
-        try
-        {
-            _settingsProvider.RegisterDefinition(new SettingDefinition(SettingKey, "Workspace Layout", string.Empty));
-        }
-        catch (DuplicateSettingDefinitionException)
-        {
-            // Already registered by a prior IWorkspaceManager.StartAsync call
-            // against the same ISettingsProvider instance (a restart) —
-            // idempotent, not an error.
-        }
+        _document = new SettingsDocument<WorkspaceStateDto>(settingsProvider, SettingKey, "Workspace Layout", logger);
     }
 
     /// <inheritdoc />
@@ -77,17 +70,13 @@ internal sealed class WorkspaceState : IWorkspaceState
     public async Task SaveAsync(CancellationToken cancellationToken = default)
     {
         var dto = new WorkspaceStateDto(Layout.PanelPlacements, _openViewIds, LastSelection);
-        var json = JsonSerializer.Serialize(dto);
-
-        await _settingsProvider.SetValueAsync(SettingKey, json, cancellationToken).ConfigureAwait(false);
+        await _document.SaveAsync(dto, cancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc />
     public async Task LoadAsync(CancellationToken cancellationToken = default)
     {
-        var json = await _settingsProvider.GetValueAsync(SettingKey, cancellationToken).ConfigureAwait(false);
-
-        var dto = string.IsNullOrEmpty(json) ? null : JsonSerializer.Deserialize<WorkspaceStateDto>(json);
+        var dto = await _document.LoadAsync(cancellationToken).ConfigureAwait(false);
 
         if (dto is null)
         {

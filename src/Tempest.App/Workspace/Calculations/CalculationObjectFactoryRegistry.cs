@@ -72,4 +72,14 @@ public sealed class CalculationObjectFactoryRegistry
 
         return created;
     }
+
+    /// <summary>Registers how each of this discipline's own two Kinds comes back after a restart (`TD-85`) — see <c>MechanicalObjectFactoryRegistry.RegisterRehydrators</c> for the rationale.</summary>
+    public static void RegisterRehydrators(IEngineeringObjectRehydratorRegistry registry, EngineeringDomainContext context)
+    {
+        ArgumentNullException.ThrowIfNull(registry);
+        ArgumentNullException.ThrowIfNull(context);
+
+        registry.Register<Calculation>(CalculationKind, context);
+        registry.Register<CalculationSet>(CalculationSetKind, context);
+    }
 }

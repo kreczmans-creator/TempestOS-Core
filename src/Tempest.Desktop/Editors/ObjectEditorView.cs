@@ -154,11 +154,18 @@ public sealed class ObjectEditorView : UserControl
     private bool _isDirty;
     private bool _suppressDirtyTracking;
 
+    private Action<IHasAttachments, IAttachment>? _openAttachmentRequested;
+
+    // The object the sections were last built from, so the attachment rows
+    // can be rebuilt when OpenAttachmentRequested gains its first
+    // subscriber without going back to the repository for a second read.
+    private IEngineeringObject? _populatedTarget;
+
     /// <summary>Raised whenever <see cref="IsDirty"/> changes.</summary>
     public event Action<bool>? DirtyChanged;
 
-    /// <summary>Raised after Save/Cancel completes, carrying a human-readable status message — the caller's own hook to refresh the Status Bar/Cockpit/Property Inspector, mirroring every other Desktop View's own identical <c>ActionCompleted</c> convention.</summary>
-    public event Action<string>? ActionCompleted;
+    /// <summary>Raised after Save/Cancel completes, carrying a human-readable status message and its <see cref="ActionOutcome"/> — the caller's own hook to refresh the Status Bar/Cockpit/Property Inspector, mirroring every other Desktop View's own identical <c>ActionCompleted</c> convention (`TD-58`).</summary>
+    public event Action<string, ActionOutcome>? ActionCompleted;
 
     /// <summary>
     /// Raised after a successful Rename — carries a ready-to-record
@@ -171,6 +178,45 @@ public sealed class ObjectEditorView : UserControl
     /// commit path every discipline's own Object Editor already shares.
     /// </summary>
     public event Action<UndoableAction>? UndoableActionRecorded;
+
+    /// <summary>
+    /// Raised when the user asks to view one of this object's attachments
+    /// (`TD-80`).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// An event rather than a direct call into the viewer: this editor
+    /// knows an object and its attachments, and deliberately not the
+    /// workspace it is docked in. The shell decides where a document
+    /// opens, which is what keeps the editor usable outside the docked
+    /// workspace and keeps the viewer out of its dependencies.
+    /// </para>
+    /// <para>
+    /// A custom accessor, for one reason found by the `TD-80` visual
+    /// audit: <see cref="TryCreate"/> populates the editor before it
+    /// returns, so the shell cannot possibly have subscribed by the time
+    /// the attachment rows are built — and the rows only carry an Open
+    /// button when something can handle it. The button therefore never
+    /// existed in the running application, and the whole viewer was
+    /// unreachable from the UI until some later refresh happened to rebuild
+    /// the section. Re-populating on the first subscriber closes that
+    /// ordering hazard where it lives, rather than requiring every caller
+    /// to remember to refresh after wiring up.
+    /// </para>
+    /// </remarks>
+    public event Action<IHasAttachments, IAttachment>? OpenAttachmentRequested
+    {
+        add
+        {
+            var hadNone = _openAttachmentRequested is null;
+            _openAttachmentRequested += value;
+
+            if (hadNone && _openAttachmentRequested is not null && _populatedTarget is not null)
+                PopulateAttachments(_populatedTarget);
+        }
+
+        remove => _openAttachmentRequested -= value;
+    }
 
     private ObjectEditorView(
         Guid objectId, string objectKind, EngineeringDomainContext domainContext, IWorkspaceManager manager, Action<Guid, string> navigateToObject,
@@ -365,6 +411,7 @@ public sealed class ObjectEditorView : UserControl
     private void PopulateFrom(IEngineeringObject target)
     {
         _suppressDirtyTracking = true;
+        _populatedTarget = target;
 
         var identifier = (target as IHasBusinessIdentifier)?.Identifier;
         _identityReadout.Text = identifier is null
@@ -598,7 +645,7 @@ public sealed class ObjectEditorView : UserControl
         if (result.Succeeded)
             Refresh();
         _bomStatusMessage.Text = message;
-        ActionCompleted?.Invoke(message);
+        ActionCompleted?.Invoke(message, ActionOutcome.From(result.Succeeded));
     }
 
     /// <summary>
@@ -643,7 +690,7 @@ public sealed class ObjectEditorView : UserControl
         if (!ownerResult.Succeeded)
         {
             _requirementStatusMessage.Text = ownerResult.Message ?? "Set owner failed.";
-            ActionCompleted?.Invoke(_requirementStatusMessage.Text);
+            ActionCompleted?.Invoke(_requirementStatusMessage.Text, ActionOutcome.Failed);
             return;
         }
 
@@ -653,14 +700,17 @@ public sealed class ObjectEditorView : UserControl
         if (!priorityResult.Succeeded)
         {
             _requirementStatusMessage.Text = priorityResult.Message ?? "Set priority failed.";
-            ActionCompleted?.Invoke(_requirementStatusMessage.Text);
+
+            // The Owner half already dispatched successfully above, so the
+            // workspace did change even though this action failed overall.
+            ActionCompleted?.Invoke(_requirementStatusMessage.Text, new ActionOutcome(Succeeded: false, WorkspaceChanged: true));
             return;
         }
 
         // Refresh() before the final message — see OnSaveBomAsync's own identical remarks.
         Refresh();
         _requirementStatusMessage.Text = "Owner/Priority saved.";
-        ActionCompleted?.Invoke(_requirementStatusMessage.Text);
+        ActionCompleted?.Invoke(_requirementStatusMessage.Text, ActionOutcome.Changed);
     }
 
     /// <summary>
@@ -724,7 +774,7 @@ public sealed class ObjectEditorView : UserControl
         if (result.Succeeded)
             Refresh();
         _calculationStatusMessage.Text = message;
-        ActionCompleted?.Invoke(message);
+        ActionCompleted?.Invoke(message, ActionOutcome.From(result.Succeeded));
     }
 
     /// <summary>
@@ -761,17 +811,22 @@ public sealed class ObjectEditorView : UserControl
         if (result.Succeeded)
             Refresh();
         _verificationStatusMessage.Text = message;
-        ActionCompleted?.Invoke(message);
+        ActionCompleted?.Invoke(message, ActionOutcome.From(result.Succeeded));
     }
 
     /// <summary>
     /// The Documents Attachments section (`WP 10.7A`) — gated on
     /// <see cref="IHasAttachments"/>. Lists already-attached metadata via
     /// the real <see cref="IHasAttachments.GetAttachmentsAsync"/> read;
-    /// the Attach mini-form collects exactly what <c>Attachment</c>
-    /// genuinely carries (`TD-31`, Technical Debt Register — descriptive
-    /// metadata only) — no file-picker affordance is offered, since there
-    /// is nowhere in this platform for real file bytes to go.
+    /// the Attach mini-form collects the metadata an attachment carries.
+    ///
+    /// `TD-80`: each attachment now also offers <b>Open</b>, which is the
+    /// entry point to the real viewer. It is offered for every attachment
+    /// rather than only for those with stored content, because "this
+    /// attachment has no content" is something the viewer says clearly and
+    /// a disabled button does not — a greyed-out Open leaves the user
+    /// guessing whether the file is missing, the format is unsupported, or
+    /// the application is broken.
     /// </summary>
     private void PopulateAttachments(IEngineeringObject target)
     {
@@ -793,11 +848,30 @@ public sealed class ObjectEditorView : UserControl
         {
             foreach (var attachment in attachments)
             {
-                _attachmentsListPanel.Children.Add(new TextBlock
+                var row = new StackPanel
                 {
-                    Text = $"📎 {attachment.FileName}  ({attachment.ContentType}, {attachment.SizeInBytes:N0} bytes)",
-                    FontSize = DesignTokens.FontSizeBody,
-                });
+                    Orientation = Avalonia.Layout.Orientation.Horizontal,
+                    Spacing = 8,
+                    Children =
+                    {
+                        new TextBlock
+                        {
+                            Text = $"📎 {attachment.FileName}  ({attachment.ContentType}, {attachment.SizeInBytes:N0} bytes)",
+                            FontSize = DesignTokens.FontSizeBody,
+                            VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
+                        },
+                    },
+                };
+
+                if (_openAttachmentRequested is not null)
+                {
+                    var open = new Button { Content = "Open", Padding = new Thickness(10, 1), FontSize = DesignTokens.FontSizeBody };
+                    var captured = attachment;
+                    open.Click += (_, _) => _openAttachmentRequested?.Invoke(attachable, captured);
+                    row.Children.Add(open);
+                }
+
+                _attachmentsListPanel.Children.Add(row);
             }
         }
 
@@ -832,7 +906,7 @@ public sealed class ObjectEditorView : UserControl
         if (result.Succeeded)
             Refresh();
         _attachmentStatusMessage.Text = message;
-        ActionCompleted?.Invoke(message);
+        ActionCompleted?.Invoke(message, ActionOutcome.From(result.Succeeded));
     }
 
     private static string? NullIfEmpty(string? value) => string.IsNullOrWhiteSpace(value) ? null : value;
@@ -892,7 +966,7 @@ public sealed class ObjectEditorView : UserControl
             if (!result.Succeeded)
             {
                 _statusMessage.Text = result.Message ?? "Rename failed.";
-                ActionCompleted?.Invoke(_statusMessage.Text);
+                ActionCompleted?.Invoke(_statusMessage.Text, ActionOutcome.Failed);
                 return;
             }
 
@@ -911,7 +985,12 @@ public sealed class ObjectEditorView : UserControl
             if (!result.Succeeded)
             {
                 _statusMessage.Text = result.Message ?? "Revise failed.";
-                ActionCompleted?.Invoke(_statusMessage.Text);
+
+                // A rename in the same Save may already have been applied
+                // above, in which case the workspace did change even
+                // though this Save failed overall.
+                var renameApplied = nameChanged && _manager.CanRename(_objectKind);
+                ActionCompleted?.Invoke(_statusMessage.Text, new ActionOutcome(Succeeded: false, WorkspaceChanged: renameApplied));
                 return;
             }
         }
@@ -919,7 +998,7 @@ public sealed class ObjectEditorView : UserControl
         Refresh();
         DirtyChanged?.Invoke(false);
         _statusMessage.Text = "Saved.";
-        ActionCompleted?.Invoke(_statusMessage.Text);
+        ActionCompleted?.Invoke(_statusMessage.Text, ActionOutcome.Changed);
     }
 
     private void OnCancel()

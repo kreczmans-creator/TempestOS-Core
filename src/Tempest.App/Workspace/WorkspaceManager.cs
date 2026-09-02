@@ -6,7 +6,6 @@ using Tempest.Core.Navigation;
 using Tempest.Core.Requirements;
 using Tempest.Core.Runtime;
 using Tempest.Core.Settings;
-using Tempest.Samples;
 
 namespace Tempest.App.Workspace;
 
@@ -63,12 +62,14 @@ public sealed class WorkspaceManager : IWorkspaceManager, IAsyncDisposable
 
         _host = host;
 
-        // Forces Tempest.Samples to load before Discovery runs — the same
-        // documented necessity first found by WP 5.0D: reading a const
-        // member alone does not force the assembly to load, and
-        // Discovery's own AppDomain scan would otherwise find zero
-        // Tempest.Samples modules.
-        _ = typeof(NavigationSampleModule).Assembly;
+        // `TD-75` phase 1: the forced load of Tempest.Samples that used to
+        // stand here is gone. It existed because the six discipline
+        // explorer modules lived in that assembly, so Discovery's own scan
+        // had to be made to see it before the product's own navigation
+        // would appear. Those modules are now declared by the disciplines
+        // that own them, in this assembly, which Discovery already scans —
+        // so the product no longer reaches into the sample harness to find
+        // its own navigation.
     }
 
     /// <inheritdoc />
@@ -111,7 +112,8 @@ public sealed class WorkspaceManager : IWorkspaceManager, IAsyncDisposable
             new(propertyInspector.Id, WorkspaceDockPosition.Right, 30, true),
         };
 
-        var state = new WorkspaceState(settingsProvider, defaultPlacements);
+        var stateLogger = (Tempest.Core.Logging.ILogger)services.GetService(typeof(Tempest.Core.Logging.ILogger));
+        var state = new WorkspaceState(settingsProvider, defaultPlacements, stateLogger);
         await state.LoadAsync(cancellationToken).ConfigureAwait(false);
 
         var selectionService = new SelectionService(eventBus, _context);
@@ -245,14 +247,24 @@ public sealed class WorkspaceManager : IWorkspaceManager, IAsyncDisposable
     }
 
     /// <inheritdoc />
-    public Task<CommandResult> DeleteObjectAsync(Guid id, string kind, CancellationToken cancellationToken = default)
+    public async Task<CommandResult> DeleteObjectAsync(Guid id, string kind, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(kind);
 
         if (!_deleteFactories.TryGetValue(kind, out var factory))
-            return Task.FromResult(CommandResult.Failure($"No delete capability is registered for Kind '{kind}'."));
+            return CommandResult.Failure($"No delete capability is registered for Kind '{kind}'.");
 
-        return DispatchObjectCommandAsync(factory(id, kind), cancellationToken);
+        var result = await DispatchObjectCommandAsync(factory(id, kind), cancellationToken).ConfigureAwait(false);
+
+        // A deleted object must not stay selected (`TD-58` stale-UI
+        // closure): every deleting surface (Ribbon, Project Explorer
+        // context menu, Delete key) converges here, so this one clear
+        // keeps Delete/Rename enablement, the Property Inspector, and
+        // any repeat-delete dispatch from acting on a dead Id.
+        if (result.Succeeded && Current?.Selection.Current is { } selection && selection.ObjectId == id)
+            await Current.Selection.ClearAsync(cancellationToken).ConfigureAwait(false);
+
+        return result;
     }
 
     /// <inheritdoc />

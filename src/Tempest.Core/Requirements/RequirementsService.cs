@@ -331,8 +331,7 @@ public sealed class RequirementsService : IRequirementsService
             return null;
 
         var history = await _documentStore.GetRevisionHistoryAsync(collectionId, cancellationToken).ConfigureAwait(false);
-        var dto = JsonSerializer.Deserialize<RequirementCollectionDto>(history[^1].Content)
-            ?? throw new EngineeringDataException($"Requirement collection '{collectionId}' could not be deserialised.");
+        var dto = DeserialiseContent<RequirementCollectionDto>(history[^1].Content, $"Requirement collection '{collectionId}'");
 
         var members = await _documentStore.GetReferencesAsync(collectionId, cancellationToken).ConfigureAwait(false);
         var memberIds = members
@@ -351,8 +350,7 @@ public sealed class RequirementsService : IRequirementsService
             throw new EngineeringDocumentNotFoundException(collectionId);
 
         var history = await _documentStore.GetRevisionHistoryAsync(collectionId, cancellationToken).ConfigureAwait(false);
-        var current = JsonSerializer.Deserialize<RequirementCollectionDto>(history[^1].Content)
-            ?? throw new EngineeringDataException($"Requirement collection '{collectionId}' could not be deserialised.");
+        var current = DeserialiseContent<RequirementCollectionDto>(history[^1].Content, $"Requirement collection '{collectionId}'");
 
         var dto = current with { IsDeleted = true };
         await _documentStore.ReviseAsync(collectionId, JsonSerializer.Serialize(dto), "Deleted.", cancellationToken)
@@ -484,7 +482,17 @@ public sealed class RequirementsService : IRequirementsService
 
         foreach (var documentIdKey in documentIds)
         {
-            var collection = await FindCollectionAsync(Guid.ParseExact(documentIdKey, "N"), cancellationToken).ConfigureAwait(false);
+            // A registry key is by construction a "N"-format document Id;
+            // any other file name in the registry directory (a foreign
+            // file dropped beside the store's own) is not a registry
+            // entry, and must not abort the whole listing (`TD-60`).
+            if (!Guid.TryParseExact(documentIdKey, "N", out var documentId))
+            {
+                _logger?.Warning($"Ignoring non-registry key '{documentIdKey}' in collection registry '{CollectionRegistryCollectionName}'.");
+                continue;
+            }
+
+            var collection = await FindCollectionAsync(documentId, cancellationToken).ConfigureAwait(false);
             if (collection is not null)
                 collections.Add(collection);
         }
@@ -500,7 +508,14 @@ public sealed class RequirementsService : IRequirementsService
 
         foreach (var documentIdKey in documentIds)
         {
-            var group = await FindGroupAsync(Guid.ParseExact(documentIdKey, "N"), cancellationToken).ConfigureAwait(false);
+            // Same non-registry-key guard as ListCollectionsAsync (`TD-60`).
+            if (!Guid.TryParseExact(documentIdKey, "N", out var documentId))
+            {
+                _logger?.Warning($"Ignoring non-registry key '{documentIdKey}' in group registry '{GroupRegistryCollectionName}'.");
+                continue;
+            }
+
+            var group = await FindGroupAsync(documentId, cancellationToken).ConfigureAwait(false);
             if (group is not null)
                 groups.Add(group);
         }
@@ -508,10 +523,25 @@ public sealed class RequirementsService : IRequirementsService
         return groups;
     }
 
+    /// <summary>
+    /// Resolves <paramref name="identifier"/>'s backing document Id from
+    /// the index. A malformed index value throws a controlled
+    /// <see cref="EngineeringDataException"/> naming the entry (`TD-60`) —
+    /// never a raw <see cref="FormatException"/>, and never
+    /// <see langword="null"/>, which would silently misreport corruption
+    /// as "no such requirement".
+    /// </summary>
     private async Task<Guid?> ReadDocumentIdAsync(string identifier, CancellationToken cancellationToken)
     {
         var value = await _persistenceStore.ReadAsync(IdentifierIndexCollectionName, identifier, cancellationToken).ConfigureAwait(false);
-        return value is null ? null : Guid.ParseExact(value, "N");
+        if (value is null)
+            return null;
+
+        if (!Guid.TryParseExact(value, "N", out var documentId))
+            throw new EngineeringDataException(
+                $"Requirement index entry for '{identifier}' is corrupted: '{value}' is not a valid document Id.");
+
+        return documentId;
     }
 
     private async Task<RequirementDto?> ReadDtoAsync(Guid requirementId, CancellationToken cancellationToken)
@@ -521,8 +551,7 @@ public sealed class RequirementsService : IRequirementsService
             return null;
 
         var history = await _documentStore.GetRevisionHistoryAsync(requirementId, cancellationToken).ConfigureAwait(false);
-        return JsonSerializer.Deserialize<RequirementDto>(history[^1].Content)
-            ?? throw new EngineeringDataException($"Requirement '{requirementId}' could not be deserialised.");
+        return DeserialiseContent<RequirementDto>(history[^1].Content, $"Requirement '{requirementId}'");
     }
 
     private async Task<IRequirement?> ReadRequirementAsync(Guid requirementId, CancellationToken cancellationToken)
@@ -533,8 +562,7 @@ public sealed class RequirementsService : IRequirementsService
 
         var history = await _documentStore.GetRevisionHistoryAsync(requirementId, cancellationToken).ConfigureAwait(false);
         var currentRevision = history[^1];
-        var dto = JsonSerializer.Deserialize<RequirementDto>(currentRevision.Content)
-            ?? throw new EngineeringDataException($"Requirement '{requirementId}' could not be deserialised.");
+        var dto = DeserialiseContent<RequirementDto>(currentRevision.Content, $"Requirement '{requirementId}'");
 
         return ToRequirement(requirementId, dto, currentRevision.RevisionNumber);
     }
@@ -553,8 +581,21 @@ public sealed class RequirementsService : IRequirementsService
             return null;
 
         var history = await _documentStore.GetRevisionHistoryAsync(groupId, cancellationToken).ConfigureAwait(false);
-        return JsonSerializer.Deserialize<RequirementGroupDto>(history[^1].Content)
-            ?? throw new EngineeringDataException($"Requirement group '{groupId}' could not be deserialised.");
+        return DeserialiseContent<RequirementGroupDto>(history[^1].Content, $"Requirement group '{groupId}'");
+    }
+
+    /// <summary>Deserialises one revision's content, converting any malformed-content failure into a controlled <see cref="EngineeringDataException"/> (`TD-60`) rather than a raw <see cref="JsonException"/>.</summary>
+    private static T DeserialiseContent<T>(string content, string subject)
+    {
+        try
+        {
+            return JsonSerializer.Deserialize<T>(content)
+                ?? throw new EngineeringDataException($"{subject} could not be deserialised.");
+        }
+        catch (JsonException ex)
+        {
+            throw new EngineeringDataException($"{subject} could not be deserialised.", ex);
+        }
     }
 
     /// <summary>

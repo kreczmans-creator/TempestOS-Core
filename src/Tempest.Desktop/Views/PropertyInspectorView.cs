@@ -42,8 +42,8 @@ public sealed class PropertyInspectorView : UserControl
     private System.Guid _currentId;
     private string? _currentKind;
 
-    /// <summary>Raised after an inline edit (currently: Rename) completes — successfully or not.</summary>
-    public event Action<string>? ActionCompleted;
+    /// <summary>Raised after an inline edit (currently: Rename) completes — successfully or not — carrying the message and its <see cref="ActionOutcome"/> (`TD-58`).</summary>
+    public event Action<string, ActionOutcome>? ActionCompleted;
 
     /// <summary>Initialises a new instance of the <see cref="PropertyInspectorView"/> class.</summary>
     /// <param name="inspector">The Workspace's own Property Inspector panel this View renders.</param>
@@ -124,6 +124,21 @@ public sealed class PropertyInspectorView : UserControl
     {
         _currentId = id;
         _currentKind = kind;
+    }
+
+    /// <summary>
+    /// Re-runs the inspection for the currently displayed object, then
+    /// re-renders — for callers reporting a mutation of that object
+    /// (`TD-58`: <see cref="Refresh"/> alone re-renders the cached
+    /// <see cref="IPropertyInspector.CurrentFacets"/>, which still hold
+    /// the pre-mutation values).
+    /// </summary>
+    public async Task RefreshFromSourceAsync()
+    {
+        if (_currentKind is not null && _currentId != System.Guid.Empty)
+            await _inspector.InspectAsync(_currentId, _currentKind).ConfigureAwait(true);
+
+        Refresh();
     }
 
     /// <summary>Refreshes this View's own display from <see cref="IPropertyInspector.CurrentFacets"/> — called after every selection change.</summary>
@@ -321,7 +336,7 @@ public sealed class PropertyInspectorView : UserControl
                 return;
 
             var result = await _manager.RenameObjectAsync(_currentId, _currentKind, newName).ConfigureAwait(true);
-            ActionCompleted?.Invoke(result.Succeeded ? $"Renamed to '{newName}'." : result.Message ?? "Rename failed.");
+            ActionCompleted?.Invoke(result.Succeeded ? $"Renamed to '{newName}'." : result.Message ?? "Rename failed.", ActionOutcome.From(result.Succeeded));
         }
 
         box.KeyDown += (_, e) =>

@@ -24,9 +24,9 @@
 |---|---|---|---|---|
 | `Tempest.Core.Modules` | Tempest.Core | 23 | Discovery, Registration, Lifecycle, Module SDK, `ModuleMetadataAttribute` | WP 2.1–2.3, extended WP 4.1, WP 4.4B |
 | `Tempest.Core.Plugins` | Tempest.Core | 13 | Plugin manifest, discovery, loading | WP 4.2 |
-| `Tempest.Core.DependencyInjection` | Tempest.Core | 13 | Custom DI container | WP 2.4 |
-| `Tempest.Core.Logging` | Tempest.Core | 10 | `ILogger`, sinks, factory, `CompositeLogSink` | WP 2.6, extended WP 5.2 |
-| `Tempest.Core.Configuration` | Tempest.Core | 9 | Configuration sources, builder, provider | WP 2.5 |
+| `Tempest.Core.DependencyInjection` | Tempest.Core | 12 | Custom DI container | WP 2.4; `ServiceProviderExtensions` — the public `GetService<T>()` convenience — removed `WP-F` (`TD-114`, `F-15`): zero production callers, 32 test call sites, and production resolved through `GetService(typeof(T))` in 40 places regardless. A public API on a plugin-hosting assembly that only tests used; the tests were migrated to the form production already used rather than production migrated to it |
+| `Tempest.Core.Logging` | Tempest.Core | 9 | `ILogger`, sinks, factory, `CompositeLogSink` | WP 2.6, extended WP 5.2; the legacy `LoggingService` removed `WP-C` (`TD-01`) |
+| `Tempest.Core.Configuration` | Tempest.Core | 7 | Configuration sources, builder, provider | WP 2.5; the legacy `ConfigurationService` and the `ApplicationConfiguration` it returned both removed `WP-C` (`TD-110`) |
 | `Tempest.Core.BackgroundServices` | Tempest.Core | 9 | Hosted service contracts, discovery, orchestration | WP 4.0 (contracts), WP 4.5 (infrastructure) |
 | `Tempest.Core.Runtime` | Tempest.Core | 7 | `TempestHost`, `TempestHostBuilder`, `HostState` | WP 2.7B; distinct from `Tempest.Core.Hosting` per ADR-0016 |
 | `Tempest.Core.Events` | Tempest.Core | 4 | `IEvent`, `IEventHandler<T>`, `IEventBus`, `EventBus` | WP 4.0 (contracts), WP 4.4D (bus) |
@@ -34,11 +34,11 @@
 | `Tempest.Samples` | Tempest.Samples | 46 | `ClockModule`, `ClockLifecycleObserverModule`, `ClockModuleLifecycleEvent`, `NavigationSampleModule`, `SecondaryNavigationSampleModule`, `CommandSampleModule`, `IncrementCounterCommand`/`Handler`, `NavigateToSampleHomeCommand`/`Handler`, `DiagnosticsSampleModule`, `GetDiagnosticsSummaryCommand`/`Handler`, `IdentitySampleModule`, `CheckSamplePermissionCommand`/`Handler`, `SettingsSampleModule`, `GetSampleSettingCommand`/`Handler`, `SetSampleSettingCommand`/`Handler`, `AuditSampleModule`, `RecordSampleAuditActionCommand`/`Handler`, `QuerySampleAuditRecordsCommand`/`Handler`, `NotificationSampleModule`, `NotificationSampleHostedService`, `PublishSampleNotificationCommand`/`Handler`, `ReportingSampleModule`, `SampleSummaryReportDefinition`, `SampleSummaryReportRenderer`, `GenerateSampleReportCommand`/`Handler`, `ApiSampleModule`, `ExportImportSampleModule`, `SettingExportImportAdapter`, `SampleExportArtifactStore`, `ExportSampleDataCommand`/`Handler`, `ImportSampleDataCommand`/`Handler`, `LicensingSampleModule`, `CheckSampleCapabilityCommand`/`Handler` | WP 4.3, extended WP 4.4E, WP 5.0B, WP 5.1B, WP 5.2, WP 6.1, WP 6.4, WP 6.5, WP 6.2, WP 6.0, WP 6.3, WP 6.7, WP 6.6; `DuplicateNavigationSampleModule` moved out WP 12.3B (ADR-0102, see `Tempest.Validation.FaultInjection`) |
 | `Tempest.Validation.FaultInjection` | Tempest.Validation | 1 | `DuplicateNavigationModule` — fault-injection modules, excluded from default Discovery, never referenced by `Tempest.App`/`Tempest.Desktop` | WP 12.3B (moved from `Tempest.Samples`, renamed, ADR-0102) |
 | `Tempest.Core.Versioning` | Tempest.Core | 3 | `IPlatformVersionProvider`, `PlatformVersionProvider`, `PlatformVersion` | WP 4.2A |
-| `Tempest.Core.Repositories` | Tempest.Core | 2 | Pre-module-pipeline project repository (`IProjectRepository`, `JsonProjectRepository`) | Pre-dates Claude-developed history (Unknown exact origin) |
-| `Tempest.Core.Projects` | Tempest.Core | 1 | Pre-module-pipeline project service | Pre-dates Claude-developed history (Unknown exact origin) |
-| `Tempest.Core.Hosting` | Tempest.Core | 1 | Pre-module-pipeline `HostingService` — environment/deployment adapters, reframed (not replaced) by ADR-0016 | Pre-dates Claude-developed history (Unknown exact origin) |
+| `Tempest.Core.Repositories` | Tempest.Core | 0 — **retired, `WP-C`** | Formerly the pre-module-pipeline project repository (`IProjectRepository`, `JsonProjectRepository`) — unreferenced by any production or test code; deleted as genuinely dead (`TD-110`, discharging `TD-01`'s revisit trigger) | Pre-dates Claude-developed history (Unknown exact origin); retired `WP-C` |
+| `Tempest.Core.Projects` | Tempest.Core | 0 — **retired, `WP-C`** | Formerly the pre-module-pipeline project service (`ProjectService`, `ProjectNumberGenerator`) — superseded by `Tempest.App.Projects`; deleted as genuinely dead (`TD-110`) | Pre-dates Claude-developed history (Unknown exact origin); retired `WP-C` |
+| `Tempest.Core.Hosting` | Tempest.Core | 0 — **retired, `WP-C`** | Formerly the pre-module-pipeline `HostingService`, reframed (not replaced) by ADR-0016 — superseded in practice by `Tempest.Core.Runtime`; deleted as genuinely dead (`TD-110`) | Pre-dates Claude-developed history (Unknown exact origin); retired `WP-C` |
 | `Tempest.Core.Commands` | Tempest.Core | 14 | `ICommand` (`WP 4.0`), `ICommandHandler<T>`, `ICommandDispatcher`/`CommandDispatcher`, `ICommandRegistry`/`CommandRegistry`, `CommandDescriptor`, `CommandResult`, `CommandHandlerTable`, `CommandException` and four subtypes | WP 4.0 (contract), WP 5.1A (design), WP 5.1B (implementation) |
-| `Tempest.Core.Bootstrap` | Tempest.Core | 1 | Pre-module-pipeline `BootstrapService` | Pre-dates Claude-developed history (Unknown exact origin) |
+| `Tempest.Core.Bootstrap` | Tempest.Core | 0 — **retired, `WP-C`** | Formerly the pre-module-pipeline `BootstrapService`, the sole consumer of `ConfigurationService`/`HostingService`/`LoggingService` and itself referenced by nothing; deleted as genuinely dead (`TD-110`) | Pre-dates Claude-developed history (Unknown exact origin); retired `WP-C` |
 | `Tempest.App.Shell` | Tempest.App | 0 — **retired, `WP 11.3B`** | Formerly `IPage`, `PlaceholderPage`, `TempestShell` (`Tempest.App`'s own composition root at `v0.5.0`) — unreachable from any running entry point since `ADR-0068` (`WP 8.1A`, `v0.8.0`); retired as dead code and this namespace removed entirely once `ADR-0101` formally classified `Tempest.App`/`WorkspaceShell` as TempestOS's Internal Engineering Harness | WP 5.0C (design), WP 5.0D (implementation), retired WP 11.3B |
 | `Tempest.Core.Diagnostics` | Tempest.Core | 2 | `IDiagnosticsProvider`/`DiagnosticsProvider` — read-only projection over Host/module/hosted-service lifecycle state | WP 5.2 |
 | `Tempest.Core.Identity` | Tempest.Core | 18 | `IIdentity`/`PlatformIdentity`, `IPrincipal`/`PlatformPrincipal`, `Permission`, `IRole`/`Role`, `IRoleProvider`/`RoleProvider`, `ICurrentPrincipalAccessor`/`CurrentPrincipalAccessor`, `IPermissionEvaluator`/`PermissionEvaluator`, `IIdentityService`/`IdentityService`, `IdentityException` and two subtypes | WP 6.1 |
@@ -68,6 +68,18 @@ and 3 new `Tempest.Samples` files (`LicensingSampleModule.cs`,
 `CheckSampleCapabilityCommand.cs`, `CheckSampleCapabilityCommandHandler.cs`).**
 
 ## A Note on the Four Pre-Claude Namespaces
+
+**Update, `WP-C` (2026-08-31):** all four are now **retired**. `ApplicationConfiguration`,
+the settings record `ConfigurationService` produced and `HostingService`/`BootstrapService`
+consumed, became unreferenced as a direct consequence and was removed with them as
+`WP-C`'s own completion. The full-repository
+architecture and dead-code audit demonstrated that every type in them was
+unreferenced by any production or test code, and that the only surviving
+mentions were comments describing the code as retired. `TD-01`'s own recorded
+revisit trigger — "the legacy bootstrap code is either genuinely revived or
+deliberately deleted" — was discharged by deletion (`TD-110`). The rows above
+are retained rather than removed, following `Tempest.App.Shell`'s own
+established retirement convention. The historical note below stands unchanged.
 
 `Tempest.Core.Repositories`, `Tempest.Core.Projects`, `Tempest.Core.Hosting`,
 and `Tempest.Core.Bootstrap` are **Inferred** to predate this repository's

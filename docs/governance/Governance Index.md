@@ -71,6 +71,8 @@ validation gates, and test coverage.
 - [Validation Register](Quality/Validation%20Register.md)
 - [Test Register](Quality/Test%20Register.md)
 - [Repository Metrics Register](Quality/Repository%20Metrics%20Register.md)
+- [Finding Closure Verification (2026-08-28)](Quality/Finding%20Closure%20Verification%20%282026-08-28%29.md) — the independent falsification pass over the 16-item review finding list: for every finding, whether the original defect still exists in source, whether its closure test exercises the real production path, and the mutation that proves that test meaningful.
+- [Product Compliance Audit (2026-08-28)](Quality/Product%20Compliance%20Audit%20%282026-08-28%29.md) — the adversarial product/UX/functional audit against the original design brief and mock-ups; the source of `TD-70`/`TD-71`/`TD-72` and of the Product Convergence & Recovery programme.
 
 ## Documentation
 

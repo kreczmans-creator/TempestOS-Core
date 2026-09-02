@@ -25,6 +25,7 @@ namespace Tempest.Desktop.Views;
 public sealed class StatusBarView : UserControl
 {
     private readonly TextBlock _project = new() { FontSize = DesignTokens.FontSizeCaption };
+    private readonly TextBlock _location = new() { FontSize = DesignTokens.FontSizeCaption };
     private readonly TextBlock _selection = new() { FontSize = DesignTokens.FontSizeCaption };
     private readonly TextBlock _area = new() { FontSize = DesignTokens.FontSizeCaption };
     private readonly TextBlock _hostState = new() { FontSize = DesignTokens.FontSizeCaption };
@@ -38,6 +39,7 @@ public sealed class StatusBarView : UserControl
         var bar = new StackPanel { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceLg, Margin = new Avalonia.Thickness(DesignTokens.SpaceMd, DesignTokens.SpaceXs) };
 
         bar.Children.Add(_project);
+        bar.Children.Add(_location);
         bar.Children.Add(Separator());
         bar.Children.Add(_selection);
         bar.Children.Add(Separator());
@@ -53,6 +55,7 @@ public sealed class StatusBarView : UserControl
 
         Content = bar;
         SetProject(null);
+        SetLocation(null);
         SetText("Ready.");
         SetArea(null);
         SetNotifications(0);
@@ -87,6 +90,22 @@ public sealed class StatusBarView : UserControl
 
     /// <summary>Sets the "Active Workspace" segment to the current Navigation area's own title.</summary>
     public void SetArea(string? areaTitle) => _area.Text = $"🧭 {areaTitle ?? "No area"}";
+
+    /// <summary>
+    /// Sets the shell-location segment (`TD-89`) — which global module the
+    /// user is in, which project area when inside one, and which
+    /// engineering scope when in Engineering.
+    /// </summary>
+    /// <remarks>
+    /// Deliberately a <b>separate</b> segment from <see cref="SetArea"/>.
+    /// That one names the Engineering Workspace's own discipline area
+    /// (Mechanical, Requirements, …) and is owned by the Ribbon; this one
+    /// names where the user is in the product. Sharing a segment would have
+    /// meant each overwriting the other, so the user could never see both
+    /// at once — and the product rule is that they must always be able to
+    /// tell where they are <em>and</em> what they are working in.
+    /// </remarks>
+    public void SetLocation(string? location) => _location.Text = $"🧩 {location ?? "—"}";
 
     /// <summary>Sets the "Host State"/"Diagnostics" segments from a real <see cref="IDiagnosticsProvider"/> read — never a cached or assumed value.</summary>
     public void SetDiagnostics(IDiagnosticsProvider diagnostics)

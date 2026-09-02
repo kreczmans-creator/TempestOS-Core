@@ -1,7 +1,6 @@
 using Tempest.Core.Calculations;
 using Tempest.Core.Commands;
 using Tempest.Core.EngineeringDomain;
-using Tempest.Samples;
 
 namespace Tempest.App.Workspace.Calculations;
 
@@ -81,51 +80,181 @@ public static class CalculationsWorkspaceRegistration
         commandDispatcher.RegisterHandler<ExecuteCalculationCommand>(executeHandler);
         commandDispatcher.RegisterHandler<RecalculateCalculationCommand>(new RecalculateCalculationCommandHandler(executeHandler));
 
+        // TD-77 Stage 3 — descriptor binding. Every binding below is a
+        // hand-written lambda closing over the same constructor the handler
+        // registered above already expects: nothing here dispatches, and
+        // nothing reaches a handler except through the registry's own
+        // CommandHandlerTable path.
+        //
+        // Kind restrictions reuse CalculationObjectFactoryRegistry's own
+        // SupportedKinds — the two real EngineeringDomainContext-backed
+        // Kinds — never this class's own three-entry SupportedKinds, which
+        // adds the synthetic "CalculationTemplate" Kind. That is the
+        // identical exclusion the Rename/Delete/Revise factory registration
+        // above already makes, for the identical reason: every command here
+        // resolves its target through EngineeringDomainContext.Repository,
+        // which a Calculation Template is not in.
+        var boundKinds = CalculationObjectFactoryRegistry.SupportedKinds;
+
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
             id: "calculations.create", displayName: "Create Calculation", category: "Calculations",
-            description: "Creates a new Calculation or Calculation Set."));
+            description: "Creates a new Calculation or Calculation Set.")
+        {
+            Binding = new CommandBinding(
+                CommandContextRequirement.None,
+                (_, values) => new CreateCalculationObjectCommand(
+                    WorkspaceCommandBindings.Canonical(boundKinds, values["kind"]), values["displayName"]),
+                [
+                    WorkspaceCommandBindings.Choice("kind", "Kind", boundKinds, CalculationObjectFactoryRegistry.CalculationKind),
+                    WorkspaceCommandBindings.ObjectName("displayName", "Name"),
+                ]),
+        });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
             id: "calculations.rename", displayName: "Rename Calculation", category: "Calculations",
-            description: "Renames the selected Calculation Domain object."));
+            description: "Renames the selected Calculation Domain object.")
+        {
+            // Bound for the Palette and every other future Id-based
+            // consumer. The Ribbon still routes "rename"/"edit" to the
+            // Object Editor before it ever reads a binding (RibbonView's own
+            // verb branch), so this changes nothing there.
+            Binding = new CommandBinding(
+                CommandContextRequirement.SelectedObject,
+                (context, values) => new RenameCalculationObjectCommand(
+                    WorkspaceCommandBindings.Target(context).ObjectId,
+                    WorkspaceCommandBindings.Target(context).Kind,
+                    values["newDisplayName"]),
+                [WorkspaceCommandBindings.ObjectName("newDisplayName", "New name")],
+                boundKinds),
+        });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
             id: "calculations.edit", displayName: "Edit Calculation", category: "Calculations",
-            description: "Records a new content revision of the selected Calculation's own method statement."));
+            description: "Records a new content revision of the selected Calculation's own method statement.")
+        {
+            // ChangeSummary is left at ReviseCalculationCommand's own
+            // optional default, exactly as the Object Editor's own revise
+            // path already leaves it — a binding that can proceed without a
+            // value declares no parameter for it.
+            Binding = new CommandBinding(
+                CommandContextRequirement.SelectedObject,
+                (context, values) => new ReviseCalculationCommand(
+                    WorkspaceCommandBindings.Target(context).ObjectId,
+                    WorkspaceCommandBindings.Target(context).Kind,
+                    values["newContent"]),
+                [WorkspaceCommandBindings.Text("newContent", "New content")],
+                boundKinds),
+        });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
             id: "calculations.delete", displayName: "Delete Calculation", category: "Calculations",
-            description: "Soft-deletes the selected Calculation Domain object."));
+            description: "Soft-deletes the selected Calculation Domain object.")
+        {
+            // The confirmation is what keeps a soft-delete out of an
+            // unattended macro. Ribbon deletion is untouched: it never
+            // reaches a binding, and still clears selection on success
+            // through its own WorkspaceManager.DeleteObjectAsync path.
+            Binding = new CommandBinding(
+                CommandContextRequirement.SelectedObject,
+                (context, _) => new DeleteCalculationObjectCommand(
+                    WorkspaceCommandBindings.Target(context).ObjectId,
+                    WorkspaceCommandBindings.Target(context).Kind),
+                appliesToKinds: boundKinds,
+                confirmationMessage: WorkspaceCommandBindings.DeleteConfirmation("Calculation")),
+        });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
             id: "calculations.move", displayName: "Move Calculation", category: "Calculations",
-            description: "Reparents the selected Calculation Domain object."));
+            description: "Reparents the selected Calculation Domain object.")
+        {
+            Binding = CommandBinding.Unavailable(
+                WorkspaceCommandBindings.ObjectPickerRequired("Moving a Calculation needs a destination parent chosen from the object tree")),
+        });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
             id: "calculations.copy", displayName: "Copy Calculation", category: "Calculations",
-            description: "Creates a copy of the selected object under a chosen target parent."));
+            description: "Creates a copy of the selected object under a chosen target parent.")
+        {
+            Binding = CommandBinding.Unavailable(
+                WorkspaceCommandBindings.ObjectPickerRequired("Copying a Calculation needs a destination parent chosen from the object tree")),
+        });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
             id: "calculations.duplicate", displayName: "Duplicate Calculation", category: "Calculations",
-            description: "Creates a copy of the selected object under its own current parent."));
+            description: "Creates a copy of the selected object under its own current parent.")
+        {
+            // NewIdentifier is left at the command's own optional default,
+            // exactly as the Ribbon's own duplicate flow already leaves it.
+            Binding = new CommandBinding(
+                CommandContextRequirement.SelectedObject,
+                (context, _) => new DuplicateCalculationObjectCommand(
+                    WorkspaceCommandBindings.Target(context).ObjectId,
+                    WorkspaceCommandBindings.Target(context).Kind),
+                appliesToKinds: boundKinds,
+                confirmationMessage: WorkspaceCommandBindings.DuplicateConfirmation("Calculation")),
+        });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
             id: "calculations.execute", displayName: "Execute Calculation", category: "Calculations",
-            description: "Executes a registered Calculation Template against the selected object, recording a new CalculationRecord."));
+            description: "Executes a registered Calculation Template against the selected object, recording a new CalculationRecord.")
+        {
+            Binding = CommandBinding.Unavailable(
+                WorkspaceCommandBindings.StructuredInputRequired(
+                    "Executing a Calculation needs the chosen Template's own structured input document — a different set of typed fields per Template, supplied as JSON")),
+        });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
             id: "calculations.recalculate", displayName: "Recalculate", category: "Calculations",
-            description: "Re-executes a Calculation Template already executed against the selected object, with fresh input."));
+            description: "Re-executes a Calculation Template already executed against the selected object, with fresh input.")
+        {
+            Binding = CommandBinding.Unavailable(
+                WorkspaceCommandBindings.StructuredInputRequired(
+                    "Recalculating needs the Template's own structured input document again, with fresh values — a different set of typed fields per Template, supplied as JSON")),
+        });
+
+        // The five status transitions. Each needs only the selection, so
+        // each is the one shape that can run unattended in a macro
+        // (ADR-0098): no parameters to collect, and nothing to confirm.
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
             id: "calculations.lock", displayName: "Lock Calculation", category: "Calculations",
-            description: "Locks the selected Calculation against further edits by transitioning its own status to Approved (SetCalculationStatusCommand)."));
+            description: "Locks the selected Calculation against further edits by transitioning its own status to Approved (SetCalculationStatusCommand).")
+        {
+            Binding = StatusBinding(LifecycleState.Approved, boundKinds),
+        });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
             id: "calculations.unlock", displayName: "Unlock Calculation", category: "Calculations",
-            description: "Unlocks the selected Calculation for further edits by transitioning its own status back to Draft (SetCalculationStatusCommand)."));
+            description: "Unlocks the selected Calculation for further edits by transitioning its own status back to Draft (SetCalculationStatusCommand).")
+        {
+            Binding = StatusBinding(LifecycleState.Draft, boundKinds),
+        });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
             id: "calculations.request-review", displayName: "Request Review", category: "Calculations",
-            description: "Transitions the selected Calculation's own status to InReview (SetCalculationStatusCommand)."));
+            description: "Transitions the selected Calculation's own status to InReview (SetCalculationStatusCommand).")
+        {
+            Binding = StatusBinding(LifecycleState.InReview, boundKinds),
+        });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
             id: "calculations.approve", displayName: "Approve Calculation", category: "Calculations",
-            description: "Transitions the selected Calculation's own status to Approved (SetCalculationStatusCommand)."));
+            description: "Transitions the selected Calculation's own status to Approved (SetCalculationStatusCommand).")
+        {
+            Binding = StatusBinding(LifecycleState.Approved, boundKinds),
+        });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
             id: "calculations.archive", displayName: "Archive Calculation", category: "Calculations",
-            description: "Transitions the selected Calculation's own status to Archived, a terminal state (SetCalculationStatusCommand)."));
+            description: "Transitions the selected Calculation's own status to Archived, a terminal state (SetCalculationStatusCommand).")
+        {
+            Binding = StatusBinding(LifecycleState.Archived, boundKinds),
+        });
 
         return templateRegistry;
     }
+
+    /// <summary>
+    /// The one binding shape the five Calculation status transitions share
+    /// — <c>SetCalculationStatusCommand</c>'s own constructor, closed over
+    /// the fixed <see cref="LifecycleState"/> each descriptor transitions
+    /// to. Declares no parameter and no confirmation, which is precisely
+    /// what makes these five macro-eligible.
+    /// </summary>
+    private static CommandBinding StatusBinding(LifecycleState status, IReadOnlyList<string> appliesToKinds) =>
+        new(CommandContextRequirement.SelectedObject,
+            (context, _) => new SetCalculationStatusCommand(
+                WorkspaceCommandBindings.Target(context).ObjectId,
+                WorkspaceCommandBindings.Target(context).Kind,
+                status),
+            appliesToKinds: appliesToKinds);
 
     /// <summary>
     /// Registers this Work Package's own five representative Calculation

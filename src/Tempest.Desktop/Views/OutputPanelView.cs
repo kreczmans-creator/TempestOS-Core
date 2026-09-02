@@ -27,7 +27,7 @@ namespace Tempest.Desktop.Views;
 /// (<see cref="RefreshBackgroundTasks"/>) and Command History
 /// (<see cref="RefreshHistory"/>) — reusing this already-existing,
 /// already-docked surface rather than adding a new dock panel/
-/// <c>DockingGrid</c> slot for either.
+/// dedicated layout slot for either — it is an ordinary dockable panel (`TD-72`).
 /// </remarks>
 public sealed class OutputPanelView : UserControl
 {

@@ -4,6 +4,7 @@ using Tempest.App.Workspace;
 using Tempest.Core.Commands;
 using Tempest.Desktop.Views;
 using Tempest.Samples;
+using Tempest.App.Workspace.Mechanical;
 
 namespace Tempest.Desktop.Tests;
 
@@ -117,13 +118,22 @@ public sealed class RibbonViewTests
             var ribbon = new RibbonView(registry, host.Manager!, host.Workspace!, _ => { }, _ => { });
 
             var messages = new List<string>();
-            ribbon.ActionCompleted += messages.Add;
+            var outcomes = new List<Tempest.Desktop.ActionOutcome>();
+            ribbon.ActionCompleted += (message, outcome) => { messages.Add(message); outcomes.Add(outcome); };
 
             var deleteButton = FindButtonById(ribbon, registry, "mechanical.delete");
             deleteButton.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
-            await Task.Delay(50);
 
+            // `TD-119`/Class B: no wait. An unavailable command is refused
+            // synchronously — `RibbonView.OnCommandButtonClickAsync` evaluates
+            // availability and raises `ActionCompleted` before its first
+            // `await`, so the message is already recorded when `RaiseEvent`
+            // returns.
             Assert.Contains(messages, m => m.Contains("selected", StringComparison.OrdinalIgnoreCase));
+
+            // `TD-58`: a refusal reports Failed with no workspace change,
+            // so subscribers must not rebuild anything for it.
+            Assert.All(outcomes, o => Assert.Equal(Tempest.Desktop.ActionOutcome.Failed, o));
         }
         finally
         {
@@ -141,18 +151,28 @@ public sealed class RibbonViewTests
             await host.StartAsync();
             var workspace = host.Workspace!;
             var registry = (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
-            var target = await GetRealMechanicalObjectNodeAsync(workspace);
+            var target = await GetRealLeafMechanicalObjectNodeAsync(workspace);
             await workspace.Selection.SelectAsync(target.Id, target.Kind!);
 
             var ribbon = new RibbonView(registry, host.Manager!, workspace, _ => { }, _ => { });
             var messages = new List<string>();
-            ribbon.ActionCompleted += messages.Add;
+            var outcomes = new List<Tempest.Desktop.ActionOutcome>();
+            ribbon.ActionCompleted += (message, outcome) => { messages.Add(message); outcomes.Add(outcome); };
 
             var deleteButton = FindButtonById(ribbon, registry, "mechanical.delete");
             deleteButton.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
-            await Task.Delay(50);
+
+            // `TD-119`: the click dispatches asynchronously; bounded poll on the real reported
+            // state, assertions unchanged.
+            var deleteDeadline = DateTime.UtcNow.AddSeconds(2);
+            while (!(messages.Count > 0) && DateTime.UtcNow < deleteDeadline)
+                await Task.Delay(10);
 
             Assert.Contains(messages, m => m.Contains("Deleted", StringComparison.OrdinalIgnoreCase));
+
+            // `TD-58`: a successful delete reports Changed — the one case
+            // dependent surfaces must refresh for.
+            Assert.Contains(outcomes, o => o == Tempest.Desktop.ActionOutcome.Changed);
         }
         finally
         {
@@ -178,7 +198,12 @@ public sealed class RibbonViewTests
 
             var renameButton = FindButtonById(ribbon, registry, "mechanical.rename");
             renameButton.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
-            await Task.Delay(50);
+
+            // `TD-119`: the click dispatches asynchronously; bounded poll on the real reported
+            // state, assertions unchanged.
+            var renameDeadline = DateTime.UtcNow.AddSeconds(2);
+            while (!(opened is not null) && DateTime.UtcNow < renameDeadline)
+                await Task.Delay(10);
 
             Assert.NotNull(opened);
             Assert.Equal(target.Id, opened!.ObjectId);
@@ -191,7 +216,7 @@ public sealed class RibbonViewTests
     }
 
     [AvaloniaFact]
-    public async Task CreateButton_HasNoCreateDefaultAndNoSelectionRoute_ReportsHonestlyRatherThanSilentlyDoingNothing()
+    public async Task AnUninvocableCommand_ReportsItsOwnDeclaredReason_NeverAGenericFallback()
     {
         var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
         try
@@ -201,19 +226,43 @@ public sealed class RibbonViewTests
             var ribbon = new RibbonView(registry, host.Manager!, host.Workspace!, _ => { }, _ => { });
 
             var messages = new List<string>();
-            ribbon.ActionCompleted += messages.Add;
+            var outcomes = new List<Tempest.Desktop.ActionOutcome>();
+            ribbon.ActionCompleted += (message, outcome) => { messages.Add(message); outcomes.Add(outcome); };
 
-            var createButton = FindButtonById(ribbon, registry, "mechanical.create");
-            createButton.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
-            await Task.Delay(50);
+            // TD-77 Stage 5 replaced one catch-all sentence with each
+            // command's own reason. A Move declares that it needs a
+            // destination chosen from the object tree, and says so by name.
+            FindButtonById(ribbon, registry, "mechanical.move")
+                .RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
 
-            // `WP 10.8A` — the message itself was rewritten to stop
-            // claiming the Command Palette/Project Explorer context menu
-            // can help (confirmed by direct investigation that neither
-            // genuinely can, for any command reaching this fallback) —
-            // this assertion now checks the new, honest wording's own
-            // core claim instead of the old "additional input" phrase.
-            Assert.Contains(messages, m => m.Contains("destination picker", StringComparison.OrdinalIgnoreCase));
+            // `TD-119`/Class B: no wait. An unavailable command is refused
+            // synchronously — `RibbonView.OnCommandButtonClickAsync` evaluates
+            // availability and raises `ActionCompleted` before its first
+            // `await`, so the message is already recorded when `RaiseEvent`
+            // returns.
+            Assert.Contains(messages, m => m.Contains("Moving a Mechanical object", StringComparison.Ordinal));
+            Assert.Contains(messages, m => m.Contains("object picker", StringComparison.OrdinalIgnoreCase));
+
+            // A Create needs values, and this view was constructed with no
+            // prompt wired - so it says that, rather than running without
+            // asking or silently doing nothing.
+            messages.Clear();
+            FindButtonById(ribbon, registry, "mechanical.create")
+                .RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+
+            // `TD-119`/Class B: no wait. An unavailable command is refused
+            // synchronously — `RibbonView.OnCommandButtonClickAsync` evaluates
+            // availability and raises `ActionCompleted` before its first
+            // `await`, so the message is already recorded when `RaiseEvent`
+            // returns.
+            Assert.Contains(messages, m => m.Contains("needs additional input", StringComparison.Ordinal));
+
+            // `TD-58`: every refusal is Failed, with no workspace change
+            // and no dependent rebuild.
+            Assert.All(outcomes, o => Assert.Equal(Tempest.Desktop.ActionOutcome.Failed, o));
+
+            // And the generic sentence is gone for good.
+            Assert.DoesNotContain(messages, m => m.Contains("isn't available yet", StringComparison.OrdinalIgnoreCase));
         }
         finally
         {
@@ -267,7 +316,12 @@ public sealed class RibbonViewTests
 
             var deleteButton = FindButtonById(ribbon, registry, "mechanical.delete");
             deleteButton.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
-            await Task.Delay(50);
+
+            // `TD-119`: the click dispatches asynchronously; bounded poll on the real reported
+            // state, assertions unchanged.
+            var recentDeadline = DateTime.UtcNow.AddSeconds(2);
+            while (!(CollectAllText(ribbon).Contains("Recently Used", StringComparison.Ordinal)) && DateTime.UtcNow < recentDeadline)
+                await Task.Delay(10);
 
             Assert.Contains("Recently Used", CollectAllText(ribbon));
         }
@@ -276,6 +330,34 @@ public sealed class RibbonViewTests
             await host.ShutdownAsync();
             await host.DisposeAsync();
         }
+    }
+
+    /// <summary>Finds a real, childless Mechanical object node — a delete against a node with children is refused by the discipline's own handler, so delete-success tests must target a leaf.</summary>
+    private static async Task<ProjectExplorerNode> GetRealLeafMechanicalObjectNodeAsync(IWorkspace workspace)
+    {
+        await workspace.Navigation.SwitchAreaAsync(MechanicalWorkspaceExplorerModule.NavigationItemId);
+        var roots = await workspace.ProjectExplorer.GetRootNodesAsync();
+        var node = await FindFirstLeafObjectNodeAsync(workspace.ProjectExplorer, roots);
+        Assert.NotNull(node);
+        return node!;
+    }
+
+    private static async Task<ProjectExplorerNode?> FindFirstLeafObjectNodeAsync(IProjectExplorer explorer, IReadOnlyList<ProjectExplorerNode> nodes)
+    {
+        foreach (var node in nodes)
+        {
+            if (node.NodeType == ProjectExplorerNodeType.Object && !node.HasChildren)
+                return node;
+
+            if (node.HasChildren)
+            {
+                var found = await FindFirstLeafObjectNodeAsync(explorer, await explorer.GetChildrenAsync(node.Id));
+                if (found is not null)
+                    return found;
+            }
+        }
+
+        return null;
     }
 
     private static async Task<ProjectExplorerNode> GetRealMechanicalObjectNodeAsync(IWorkspace workspace)
@@ -388,5 +470,135 @@ public sealed class RibbonViewTests
                 }
             }
         }
+    }
+
+    // ----------------------------------------------------------------
+    // `TD-58` — redundant rebuilds: a command click must not tear down
+    // and rebuild the whole ribbon, must recompute enablement exactly
+    // once, and must still update the Recently Used row.
+    // ----------------------------------------------------------------
+
+    [AvaloniaFact]
+    public async Task CommandClicks_DoNotRebuildTabs_AvoidSpuriousEnablementPasses_AndUpdateRecentRowInPlace()
+    {
+        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
+        try
+        {
+            await host.StartAsync();
+            var workspace = host.Workspace!;
+            var registry = (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
+            var target = await GetRealLeafMechanicalObjectNodeAsync(workspace);
+            await workspace.Selection.SelectAsync(target.Id, target.Kind!);
+
+            var manager = new CountingWorkspaceManager(host.Manager!);
+            var ribbon = new RibbonView(registry, manager, workspace, _ => { }, _ => { });
+            var tabsBefore = ((TabControl)ribbon.Content!).Items.OfType<TabItem>().ToList();
+
+            // `TD-119`: both assertions below are negative or count-based, so
+            // there is nothing to poll for in them. `ActionCompleted` is the
+            // real positive signal that a click finished — every RibbonView
+            // dispatch path raises it — so the test observes that, then asserts
+            // exactly what it always did.
+            var completions = new List<string>();
+            ribbon.ActionCompleted += (message, _) => completions.Add(message);
+
+            // Rename/Edit opens a document and records a recent command —
+            // it does not change enablement inputs, so it must not
+            // recompute enablement at all. The old RecordRecent→Rebuild()
+            // path ran a full spurious pass here on every click (`TD-58`).
+            manager.CanDeleteCalls = 0;
+            var renameButton = FindButtonById(ribbon, registry, "mechanical.rename");
+            completions.Clear();
+            renameButton.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+
+            // `TD-119`: the click dispatches asynchronously; bounded poll on the real reported
+            // state, assertions unchanged.
+            var renameClickDeadline = DateTime.UtcNow.AddSeconds(2);
+            while (!(completions.Count > 0) && DateTime.UtcNow < renameClickDeadline)
+                await Task.Delay(10);
+
+            Assert.Equal(0, manager.CanDeleteCalls);
+
+            // Delete really deletes, reports Changed, clears the dead
+            // selection, and refreshes enablement against the now-cleared
+            // selection.
+            //
+            // TD-77 Stage 5: CanDelete is no longer consulted at all. Both
+            // the click guard and enablement now ask
+            // ICommandRegistry.Evaluate, which is the single availability
+            // implementation for every command rather than a per-verb
+            // manager query the Ribbon re-derived. Dispatch still goes
+            // through DeleteObjectAsync, which is what clears the selection
+            // (`TD-58`) - that is the assertion that must not move.
+            manager.CanDeleteCalls = 0;
+            manager.DeleteCalls = 0;
+            var deleteButton = FindButtonById(ribbon, registry, "mechanical.delete");
+            completions.Clear();
+            deleteButton.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+
+            // `TD-119`: the click dispatches asynchronously; bounded poll on the real reported
+            // state, assertions unchanged.
+            var deleteClickDeadline = DateTime.UtcNow.AddSeconds(2);
+            while (!(completions.Count > 0 && manager.DeleteCalls == 1) && DateTime.UtcNow < deleteClickDeadline)
+                await Task.Delay(10);
+
+            Assert.Equal(1, manager.DeleteCalls);
+            Assert.Equal(0, manager.CanDeleteCalls);
+            Assert.Null(workspace.Selection.Current); // `TD-58` stale-selection closure
+            Assert.False(deleteButton.IsEnabled);     // enablement recomputed against the cleared selection
+
+            // The tabs are the same live instances throughout — nothing
+            // was torn down by either click.
+            var tabsAfter = ((TabControl)ribbon.Content!).Items.OfType<TabItem>().ToList();
+            Assert.Equal(tabsBefore.Count, tabsAfter.Count);
+            for (var i = 0; i < tabsBefore.Count; i++)
+                Assert.Same(tabsBefore[i], tabsAfter[i]);
+
+            // And the Recently Used row still appeared, updated in place.
+            var category = registry.Items.Single(d => d.Id == "mechanical.delete").Category;
+            var commandTab = tabsAfter.Single(t => Equals(t.Tag, category));
+            Assert.Contains("Recently Used", CollectAllText((Control)commandTab.Content!));
+        }
+        finally
+        {
+            await host.ShutdownAsync();
+            await host.DisposeAsync();
+        }
+    }
+
+    /// <summary>A delegating <see cref="IWorkspaceManager"/> that counts the calls `TD-58`'s refresh-count assertions measure — every operation forwards to the real manager.</summary>
+    private sealed class CountingWorkspaceManager(IWorkspaceManager inner) : IWorkspaceManager
+    {
+        public int CanDeleteCalls;
+        public int DeleteCalls;
+
+        public IWorkspace? Current => inner.Current;
+
+        public Task<IWorkspace> StartAsync(CancellationToken cancellationToken = default) => inner.StartAsync(cancellationToken);
+        public Task ShutdownAsync(CancellationToken cancellationToken = default) => inner.ShutdownAsync(cancellationToken);
+        public void RegisterView(string kind, IWorkspaceViewFactory factory) => inner.RegisterView(kind, factory);
+        public void RegisterExplorerArea(string kind, IProjectExplorerNodeProvider provider) => inner.RegisterExplorerArea(kind, provider);
+        public void RegisterFacetProvider(string kind, IPropertyFacetProvider provider) => inner.RegisterFacetProvider(kind, provider);
+        public void RegisterRenameFactory(string kind, Func<Guid, string, string, IWorkspaceCommand> factory) => inner.RegisterRenameFactory(kind, factory);
+        public void RegisterDeleteFactory(string kind, Func<Guid, string, IWorkspaceCommand> factory) => inner.RegisterDeleteFactory(kind, factory);
+        public void RegisterReviseFactory(string kind, Func<Guid, string, string, IWorkspaceCommand> factory) => inner.RegisterReviseFactory(kind, factory);
+        public bool CanRename(string kind) => inner.CanRename(kind);
+
+        public bool CanDelete(string kind)
+        {
+            CanDeleteCalls++;
+            return inner.CanDelete(kind);
+        }
+
+        public bool CanRevise(string kind) => inner.CanRevise(kind);
+        public Task<CommandResult> RenameObjectAsync(Guid id, string kind, string newDisplayName, CancellationToken cancellationToken = default) => inner.RenameObjectAsync(id, kind, newDisplayName, cancellationToken);
+
+        public Task<CommandResult> DeleteObjectAsync(Guid id, string kind, CancellationToken cancellationToken = default)
+        {
+            DeleteCalls++;
+            return inner.DeleteObjectAsync(id, kind, cancellationToken);
+        }
+
+        public Task<CommandResult> ReviseObjectAsync(Guid id, string kind, string newContent, CancellationToken cancellationToken = default) => inner.ReviseObjectAsync(id, kind, newContent, cancellationToken);
     }
 }

@@ -95,8 +95,20 @@ public sealed class AuditQuery : IAuditQuery
             if (json is null)
                 continue;
 
-            var dto = JsonSerializer.Deserialize<AuditRecordDto>(json)
-                ?? throw new AuditException($"Audit record '{key}' could not be deserialised.");
+            AuditRecordDto dto;
+            try
+            {
+                dto = JsonSerializer.Deserialize<AuditRecordDto>(json)
+                    ?? throw new AuditException($"Audit record '{key}' could not be deserialised.");
+            }
+            catch (JsonException ex)
+            {
+                // Malformed stored content surfaces as this framework's
+                // own controlled exception type, never a raw
+                // JsonException from a passive query (`TD-60`).
+                throw new AuditException($"Audit record '{key}' could not be deserialised.", ex);
+            }
+
             var record = new AuditRecord(dto.ActorId, dto.Action, dto.OccurredAt, dto.Detail);
 
             if (criteria.ActorId is not null && !string.Equals(record.ActorId, criteria.ActorId, StringComparison.Ordinal))

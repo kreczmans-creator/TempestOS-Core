@@ -14,6 +14,31 @@ public sealed class EngineeringDomainContext
     public IEvidenceComposer EvidenceComposer { get; }
     public ICurrentPrincipalAccessor CurrentPrincipalAccessor { get; }
 
+    /// <summary>
+    /// The durable engineering-object state store (`TD-85`), or
+    /// <see langword="null"/> where no rehydration substrate is composed.
+    /// </summary>
+    /// <remarks>
+    /// Optional so every existing hand-assembled context in tests and
+    /// samples keeps working unchanged: with no store, objects behave
+    /// exactly as they did before `TD-85` (in-memory only). The production
+    /// Host always supplies one.
+    /// </remarks>
+    public IEngineeringObjectStateStore? ObjectStateStore { get; }
+
+    /// <summary>
+    /// The durable store of attachment bytes, or <see langword="null"/>
+    /// where none is configured (`TD-31`).
+    /// </summary>
+    /// <remarks>
+    /// Optional for the same reason <see cref="ObjectStateStore"/> is: the
+    /// many hand-assembled domain pipelines in this repository's own tests
+    /// predate both, and must keep behaving exactly as they did. An object
+    /// in a context without one can still record attachment metadata; it
+    /// simply cannot hold a file, and says so rather than pretending.
+    /// </remarks>
+    public IAttachmentContentStore? AttachmentContentStore { get; }
+
     public EngineeringDomainContext(
         IEngineeringDocumentStore store,
         IEngineeringObjectRepository repository,
@@ -21,7 +46,9 @@ public sealed class EngineeringDomainContext
         ILifecycleTransitionTable lifecycleTable,
         IValidationRuleSet validationRuleSet,
         IEvidenceComposer evidenceComposer,
-        ICurrentPrincipalAccessor currentPrincipalAccessor)
+        ICurrentPrincipalAccessor currentPrincipalAccessor,
+        IEngineeringObjectStateStore? objectStateStore = null,
+        IAttachmentContentStore? attachmentContentStore = null)
     {
         ArgumentNullException.ThrowIfNull(store);
         ArgumentNullException.ThrowIfNull(repository);
@@ -38,6 +65,8 @@ public sealed class EngineeringDomainContext
         ValidationRuleSet = validationRuleSet;
         EvidenceComposer = evidenceComposer;
         CurrentPrincipalAccessor = currentPrincipalAccessor;
+        ObjectStateStore = objectStateStore;
+        AttachmentContentStore = attachmentContentStore;
     }
 
     public string ResolveCurrentPrincipalId() =>

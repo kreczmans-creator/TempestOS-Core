@@ -75,6 +75,7 @@ internal sealed class EngineeringCockpit
     private readonly NavigationService _navigationService;
     private readonly ICommandRegistry _commandRegistry;
     private readonly EngineeringDomainContext _domainContext;
+    private readonly Func<DateTimeOffset> _now;
     private readonly IRequirementValidationService _requirementValidationService;
 
     private readonly MechanicalCockpitReadModel _mechanical;
@@ -84,10 +85,14 @@ internal sealed class EngineeringCockpit
     private readonly VerificationCockpitReadModel _verification;
     private readonly ManufacturingCockpitReadModel _manufacturing;
 
+    /// <summary>The per-refresh read scope every persistence-backed discipline read-model above shares (`WP-E`).</summary>
+    private readonly CockpitReadScope _readScope = new();
+
     /// <summary>Initialises a new instance of the <see cref="EngineeringCockpit"/> class.</summary>
     public EngineeringCockpit(
         NavigationService navigationService, ICommandRegistry commandRegistry, EngineeringDomainContext domainContext,
-        IRequirementsService requirementsService, IRequirementValidationService requirementValidationService)
+        IRequirementsService requirementsService, IRequirementValidationService requirementValidationService,
+        Func<DateTimeOffset>? now = null)
     {
         ArgumentNullException.ThrowIfNull(navigationService);
         ArgumentNullException.ThrowIfNull(commandRegistry);
@@ -100,16 +105,46 @@ internal sealed class EngineeringCockpit
         _domainContext = domainContext;
         _requirementValidationService = requirementValidationService;
 
+        // The clock "overdue" is measured against. Optional, so every
+        // existing caller is unchanged; injectable so a test can state the
+        // date rather than depend on the day it runs.
+        _now = now ?? (() => DateTimeOffset.UtcNow);
+
         // Composition root (ADR-0103): each collaborator is constructed
         // exactly once, with `new`, receiving only the dependencies it
         // actually requires — never the whole set above "in case."
         _mechanical = new MechanicalCockpitReadModel(domainContext);
-        _requirements = new RequirementsCockpitReadModel(requirementsService, requirementValidationService);
-        _calculations = new CalculationsCockpitReadModel(domainContext);
+        _requirements = new RequirementsCockpitReadModel(requirementsService, requirementValidationService, _readScope);
+        _calculations = new CalculationsCockpitReadModel(domainContext, _readScope);
         _documents = new DocumentsCockpitReadModel(domainContext);
-        _verification = new VerificationCockpitReadModel(domainContext);
-        _manufacturing = new ManufacturingCockpitReadModel(domainContext);
+        _verification = new VerificationCockpitReadModel(domainContext, _readScope);
+        _manufacturing = new ManufacturingCockpitReadModel(domainContext, _readScope);
     }
+
+    /// <summary>
+    /// Opens one Cockpit read pass (`WP-E`) — dispose the handle to close
+    /// it. Every persistence-backed read behind these properties runs once
+    /// inside the pass, and every property derived from one sees the same
+    /// snapshot of it.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A surface that renders the whole Cockpit — <c>CockpitView.Refresh</c>
+    /// is the one that does — should wrap its render in this. Without it
+    /// nothing breaks and nothing is cached: every property reads live, as
+    /// it always did, which is what keeps every existing caller and test
+    /// honest. What the pass removes is the repetition: one render read
+    /// <c>LiveRequirements</c> upwards of twenty times and re-ran the
+    /// whole <c>O(N)</c>-per-requirement validation pass eight times, each
+    /// of those synchronously, on the UI thread.
+    /// </para>
+    /// <para>
+    /// The scope is deliberately not opened here, per read, or for the
+    /// object's lifetime. Per read it would do nothing; for the lifetime
+    /// it would make a live read-model a stale one.
+    /// </para>
+    /// </remarks>
+    public IDisposable BeginReadScope() => _readScope.Begin();
 
     // ------------------------------------------------------------
     // Where am I?
@@ -265,23 +300,88 @@ internal sealed class EngineeringCockpit
     }
 
     /// <summary>
-    /// Gets the "Overdue Actions" region's own entries - a disclosed,
-    /// honest placeholder, deliberately not upgraded: no due-date field
-    /// exists anywhere in this Domain to compute "overdue" from honestly.
+    /// Gets the "Overdue Actions" region's own entries — real overdue work,
+    /// read from the domain.
     /// </summary>
-    public IReadOnlyList<CockpitActionItem> OverdueActions { get; } = [];
+    /// <remarks>
+    /// <para>
+    /// This property was an empty list for as long as it existed, and said
+    /// so: "a disclosed, honest placeholder, deliberately not upgraded: no
+    /// due-date field exists anywhere in this Domain to compute overdue
+    /// from honestly". That was the right call then. It is wired up now
+    /// because the reason is gone — <see cref="EngineeringTask.DueDate"/>
+    /// is real, durable state, and <see cref="EngineeringTask.IsOverdue"/>
+    /// is the domain's own answer rather than this card's guess.
+    /// </para>
+    /// <para>
+    /// An empty list is still the common case and still correct: a project
+    /// with nothing overdue has nothing to show here. What changed is that
+    /// the emptiness now means "nothing is overdue" rather than "we cannot
+    /// tell".
+    /// </para>
+    /// </remarks>
+    public IReadOnlyList<CockpitActionItem> OverdueActions
+    {
+        get
+        {
+            var asOf = _now();
 
-    /// <summary>Gets every live (non-deleted) Task/Action (`"Task"`/`"Action"` Kinds) - a real read, the honest substitute named in <see cref="OverdueActions"/>'s own remarks.</summary>
+            return
+            [
+                .. LiveTasks
+                    .OfType<EngineeringTask>()
+                    .Where(t => t.IsOverdue(asOf))
+                    .OrderBy(t => t.DueDate)
+                    .ThenBy(t => t.DisplayName, StringComparer.OrdinalIgnoreCase)
+                    .Select(t => new CockpitActionItem(
+                        t.DisplayName,
+                        t.AssignedToPrincipalId ?? CockpitActionItem.NobodyAssigned,
+                        t.DueDate!.Value,
+                        (int)Math.Floor((asOf - t.DueDate!.Value).TotalDays))),
+            ];
+        }
+    }
+
+    /// <summary>
+    /// Gets the Overdue Actions card's own lines, ready to render.
+    /// </summary>
+    /// <remarks>
+    /// A formatted projection rather than the records themselves, because
+    /// <c>CockpitActionItem</c> is internal to this assembly and every
+    /// other Cockpit region already hands the view scalars
+    /// (<see cref="HealthScoreDisplay"/> is the same shape). Making the
+    /// record public to render four fields would widen this assembly's own
+    /// surface for one card.
+    /// </remarks>
+    public IReadOnlyList<string> OverdueActionLines =>
+    [
+        .. OverdueActions.Select(a =>
+            $"{a.Title} — {a.Owner} · due {a.DueDate:yyyy-MM-dd} ({a.DaysOverdue} day(s) overdue)"),
+    ];
+
+    /// <summary>Gets every live (non-deleted) Task/Action (`"Task"`/`"Action"` Kinds).</summary>
     private IReadOnlyList<ITask> LiveTasks =>
-        new[] { "Task", "Action" }
+        new[] { CanonicalObjectKinds.Task, CanonicalObjectKinds.Action }
             .SelectMany(kind => _domainContext.Repository.ListByKindAsync(kind).GetAwaiter().GetResult())
             .Where(o => o is not IDeletable { IsDeleted: true })
             .OfType<ITask>()
             .ToList();
 
-    /// <summary>Gets the number of live Tasks/Actions not yet <see cref="LifecycleState.Released"/>, <see cref="LifecycleState.Archived"/>, <see cref="LifecycleState.Obsolete"/>, or <see cref="LifecycleState.Cancelled"/> - real, honest "open" count, distinct from "overdue".</summary>
+    /// <summary>Gets the number of live Tasks/Actions that still need doing.</summary>
+    /// <remarks>
+    /// Counted from the task family's own <see cref="TaskWorkState"/> where
+    /// the object is a real <see cref="EngineeringTask"/>, falling back to
+    /// the canonical lifecycle for anything else implementing
+    /// <see cref="ITask"/>. Both say the same thing —
+    /// <see cref="TaskWorkStates"/> maps Done to
+    /// <see cref="LifecycleState.Released"/> — but asking the task family
+    /// directly means a reopened task counts as open again, which the
+    /// canonical lifecycle alone could never express.
+    /// </remarks>
     public int OpenTaskCount =>
-        LiveTasks.Count(t => t is IHasLifecycle { Status: not (LifecycleState.Released or LifecycleState.Archived or LifecycleState.Obsolete or LifecycleState.Cancelled) });
+        LiveTasks.Count(t => t is EngineeringTask task
+            ? TaskWorkStates.IsOpen(task.WorkState)
+            : t is IHasLifecycle { Status: not (LifecycleState.Released or LifecycleState.Archived or LifecycleState.Obsolete or LifecycleState.Cancelled) });
 
     // ------------------------------------------------------------
     // Is the project healthy?
@@ -498,7 +598,11 @@ internal sealed class EngineeringCockpit
             if (AreaCount > 0)
                 actions.Add("Browse an Area below to explore the Project Explorer.");
 
-            if (AvailableCommands.Count > 0)
+            // Whether any command is available *right now* depends on a
+            // context this read model deliberately does not hold (`WP-A1`).
+            // This hint only claims the Global Commands section exists, so
+            // it asks the question it can actually answer.
+            if (_commandRegistry.Items.Count > 0)
                 actions.Add("Run a Global Command below.");
 
             return actions;
@@ -520,25 +624,66 @@ internal sealed class EngineeringCockpit
     /// <summary>
     /// Gets every currently-available global command - the Cockpit's own
     /// Command Palette integration (`ADR-0070`): a real, live read of
-    /// <see cref="ICommandRegistry.Items"/>, filtered by each descriptor's
-    /// own <see cref="CommandDescriptor.CanExecute"/>.
+    /// <see cref="ICommandRegistry.Items"/>, filtered by
+    /// <see cref="ICommandRegistry.Evaluate"/> against <paramref name="context"/>.
     /// </summary>
-    public IReadOnlyList<CommandDescriptor> AvailableCommands =>
-        _commandRegistry.Items.Where(d => d.CanExecute is null || d.CanExecute()).ToList();
+    /// <param name="context">
+    /// The caller's own context. The Cockpit is a read model and holds no
+    /// selection of its own (`WP-A1`): whoever is presenting it owns the
+    /// context and supplies it here, which is also what keeps this list
+    /// honest — a command is listed only if it could actually run right now.
+    /// </param>
+    /// <returns>Every command <see cref="ICommandRegistry.Evaluate"/> reports as available.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="context"/> is <see langword="null"/>.</exception>
+    /// <remarks>
+    /// <b>This used to filter on <see cref="CommandDescriptor.CanExecute"/>
+    /// alone</b>, which no production descriptor sets — so it reported all
+    /// seventy-four discipline commands as "available" and
+    /// <see cref="InvokeCommandAsync"/> then threw
+    /// <see cref="CommandException"/> on every one of them, because it
+    /// invoked through the Id-only overload that needs a
+    /// <see cref="CommandDescriptor.CreateDefault"/> none of them has. The
+    /// name and the behaviour now agree.
+    /// </remarks>
+    public IReadOnlyList<CommandDescriptor> AvailableCommands(CommandContext context)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+
+        return [.. _commandRegistry.Items.Where(d => _commandRegistry.Evaluate(d.Id, context).IsAvailable)];
+    }
 
     /// <summary>
     /// Invokes the <paramref name="index"/>-th command in
-    /// <see cref="AvailableCommands"/> (1-based).
+    /// <see cref="AvailableCommands"/> for <paramref name="context"/> (1-based).
     /// </summary>
+    /// <param name="index">The 1-based position in <see cref="AvailableCommands"/>.</param>
+    /// <param name="context">
+    /// The caller's own context — the same one <see cref="AvailableCommands"/>
+    /// was listed for, so the command invoked is the command shown.
+    /// </param>
+    /// <param name="prompt">
+    /// Collects any values the command's own binding declares.
+    /// <see langword="null"/> — a caller with no input surface — reports that
+    /// honestly rather than invoking without asking.
+    /// </param>
+    /// <param name="cancellationToken">A token observed while invoking.</param>
+    /// <returns>Whether the command ran, was declined, or could not be invoked.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="context"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="index"/> is out of range.</exception>
-    public Task<CommandResult> InvokeCommandAsync(int index, CancellationToken cancellationToken = default)
+    public Task<CommandInvocation> InvokeCommandAsync(
+        int index,
+        CommandContext context,
+        CommandParameterPrompt? prompt = null,
+        CancellationToken cancellationToken = default)
     {
-        var commands = AvailableCommands;
+        ArgumentNullException.ThrowIfNull(context);
+
+        var commands = AvailableCommands(context);
 
         if (index < 1 || index > commands.Count)
             throw new ArgumentOutOfRangeException(nameof(index), index, $"Must be between 1 and {commands.Count}.");
 
-        return _commandRegistry.InvokeAsync(commands[index - 1].Id, cancellationToken);
+        return _commandRegistry.InvokeAsync(commands[index - 1].Id, context, prompt, cancellationToken);
     }
 
     /// <summary>
