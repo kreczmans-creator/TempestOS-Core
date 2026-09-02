@@ -4,10 +4,14 @@
 **Executed against:** `44c4701`, branch
 `claude/stage-3-descriptor-binding-6wz401`
 **Amended:** `WP-Z4` Stage 5, 2026-09-01, at HEAD `384e47f` — §4, §6, §7
-and §8 record the PR #5 CI recurrence now tracked as `TD-119`. §1's
-release range and commit count remain anchored at `44c4701`, the commit
-they were derived from, and are deliberately not restated. **The
-recommended verdict is unchanged.**
+and §8 record the PR #5 CI recurrence now tracked as `TD-119`.
+**Amended again:** `WP-Z4` Stage 15, 2026-09-02, at HEAD `f0fcad6` — §4,
+§6 and §7 record the further recurrences, the Stage 8/11/13 remediation and
+the Stage 14 dual-event CI verification. §1's release range and commit
+count remain anchored at `44c4701`, the commit they were derived from, and
+are deliberately not restated; the three commits added since are test-only
+`TD-119` remediation. **The recommended verdict is unchanged in both
+amendments.**
 **Model:** `ADR-0106` / `docs/architecture/Engineering Readiness Review
 Architecture.md` — five categories, three-kind blocking taxonomy, four-verdict
 vocabulary.
@@ -105,45 +109,76 @@ directions), `WP-H` 5/5, `WP-D1` 4/4, `WP-F` 4/4, `WP-G` both event seams,
 is now killed** — `WP-E` 8/8 after a survivor exposed genuinely redundant
 code, `WP-Z2` 2/2.
 
-**Finding (Disclosed, Non-Blocking) — `TD-119`, the third recurrence of a
-documented Desktop test flake.** The figures above were obtained locally
-and on the push-triggered CI run. They did **not** reproduce on the
-pull-request run of PR #5.
+**Finding (Disclosed, Non-Blocking) — `TD-119`, now remediated.** The
+figures above were first obtained locally and on a push-triggered CI run,
+and they did **not** initially reproduce across both CI events. Four
+consecutive head commits disagreed between the `push` and `pull_request`
+runs at an identical SHA, with the failing side alternating:
 
-| | Push run `33543456336` | PR run `33545260056` |
+| Head SHA | `push` run | `pull_request` run | Failing test |
+|---|---|---|---|
+| `384e47f` | `33543456336` ✅ | `33545260056` ❌ | `Journey_ProposeADecision_…` (Debug) **and** `MechanicalDuplicate_…` (Release) |
+| `b09a620` | `33557502598` ❌ | `33557508143` ✅ | `Ribbon_RequirementsDeleteGroup_…` (Release) |
+| `a1e64d2` | `33565731714` ✅ | `33565738694` ❌ | `Journey_CreateATask_…` (Release) |
+| `e7357b6` | `33644145385` ❌ | `33644153729` ✅ | `ADueDateSetThroughTheDialog_…` (Debug) |
+| **`f0fcad6`** | **`33653617714` ✅** | **`33653636667` ✅** | **none** |
+
+Every failure was the same mechanism: an assertion placed after a fixed
+`Task.Delay` against an asynchronous command and persistence chain the
+test never joined — the mechanism `TD-46`/`WP 11.4A` named and
+`WP 13.12.8`/`WP 13.12.9` met again at `v0.13.0`. In every case the build
+succeeded with zero warnings, artefacts uploaded, and no timeout, runner
+loss, out-of-memory, disk-space or quota evidence existed.
+
+**Classified as test-suite synchronisation debt, not a product defect**:
+each SHA passed on the other event; local runs passed 372/372 throughout;
+no regression path exists in the release range; and `MechanicalDuplicate`
+had shipped green through `v0.12.0`, `v0.13.0` and `v0.13.1`.
+
+**Remediation, test-only and with zero `src/` changes.** `WP-Z4` Stage 8
+converted the three demonstrated races; the flake immediately moved to a
+structurally identical unremediated test, which is what settled the
+question of whether targeted fixes were enough. Stage 10 audited all 52
+remaining fixed waits, Stage 11 converted 45 of them, and Stage 13
+finished the acceptance-test helpers. **52 fixed waits became 1**: 59
+`Task.Delay` occurrences remain across 16 Desktop test files, 58 of them
+bounded-poll back-offs or deliberate yields. The single retained site is
+`WorkflowInteractionTests.cs:335`, whose assertions are negative and whose
+cancelled path raises no completion signal to join — a reasoned retention,
+not an unfinished conversion.
+
+**Stage 14 — definitive dual-event CI verification at `f0fcad6`.** Both
+the `push` run **`33653617714`** and the `pull_request` run
+**`33653636667`** ran against the **identical SHA
+`f0fcad6e56769dfe7fdb2811496950f9ad60c9bf`**, and in **both**:
+
+| Check | `push` `33653617714` | `pull_request` `33653636667` |
 |---|---|---|
-| Head SHA | `384e47fc` | `384e47fc` — **identical** |
-| `Build & Test (Debug)` | Pass 372/372 | **Fail 371/372** |
-| `Build & Test (Release)` | Pass 372/372 | **Fail 371/372** |
-| `Governance Health Check` | Pass | Pass |
-| `CI Gate` | Pass | **Fail** (aggregation of the two above) |
-| Window (UTC) | 18:24 – 18:36 | 18:42 – 18:52 |
+| Build & Test (Debug) | ✅ **Pass** | ✅ **Pass** |
+| Build & Test (Release) | ✅ **Pass** | ✅ **Pass** |
+| Governance Health Check | ✅ **Pass** | ✅ **Pass** |
+| `CI Gate` | ✅ **Pass** | ✅ **Pass** |
 
-The two failures are different tests in different files:
-`ProjectGovernanceAcceptanceTests.Journey_ProposeADecision_AcceptIt_ThenRelaunch_AndSupersedeIt`
-in Debug (`Assert.Single() Failure: The collection was empty`) and
-`FeatureCompletionTests.MechanicalDuplicate_OnARealPart_ActuallyCreatesARealCopy`
-in Release (`Assert.Equal() Failure: Expected 13, Actual 12`). Both assert
-after a fixed `Task.Delay` against an asynchronous command and persistence
-chain the test never joins — the mechanism `TD-46`/`WP 11.4A` named and
-`WP 13.12.8`/`WP 13.12.9` met again at `v0.13.0`. Both builds succeeded
-with zero warnings; both runs uploaded their artefacts successfully; no
-timeout, runner loss, out-of-memory, disk-space or quota evidence exists.
+**No test failures. No warnings or errors** — every step of every job
+concluded `success`, on `run_attempt: 1`, with no re-runs. All eight check
+runs on the head commit are green. **This is the first SHA in the sequence
+where the two event runs agree completely**, which is precisely why the
+standard was set at both events on one SHA rather than at any single green
+run: on a suite of this construction one green run established nothing.
 
-**Classified as test-suite synchronisation debt, not a product defect**,
-on four grounds: the identical SHA passed all four checks on a
-non-overlapping push run; four local Desktop runs at this SHA passed
-372/372; no regression path exists in the `v0.13.1..384e47f` range — its
-only behavioural changes are `CockpitReadScope` (inert outside an active
-scope, and on neither failing path) and one dispatcher wrapper in
-`UndoRedoCoordinator`; and `MechanicalDuplicate` is pre-existing, having
-shipped green through `v0.12.0`, `v0.13.0` and `v0.13.1`. Recorded as
-`TD-119`, **deferred — remediation is explicitly not part of this
-release's implementation.**
+Local verification of the same commit: Desktop **372/372** three times in
+Debug and three times in Release, Core **3,088/3,088** in both, zero
+warnings under `TreatWarningsAsErrors`. Mutation evidence is recorded in
+`TD-119`; the decisive pair is that forcing stale observations into the
+polls still passes, while setting their deadlines to zero reproduces the
+`e7357b6` CI failure message verbatim — the wait is what removes the race,
+not the machine's speed.
 
-**This report does not claim the tests are fixed, that `CI Gate` has
-passed on PR #5, or that the flake will not recur.** It records that the
-failure has been investigated, classified against evidence, and tracked.
+**What this report still does not claim.** It does not claim the flake can
+never recur, that the retained site has been fixed, or that a green gate
+alone certifies the release. It records that the mechanism has been
+removed from 51 of 52 sites and that the result has been verified on both
+CI events at one SHA.
 
 **Status: Pass, with observations.**
 
@@ -177,16 +212,16 @@ Register.md` Test Gate row still reads 552.
 | Release notes | `docs/releases/v0.14.0/Release Notes.md` — present, summary/features/fixes/validation/limitations/next milestone. |
 | Work Package inventory | `docs/releases/v0.14.0/WorkPackages.md` — present, derived from git. |
 | Release Register | `v0.14.0` row added, stating **in preparation** — accurate at the time of writing. |
-| PR #5 `CI Gate` | **Failed once, on run `33545260056`, to `TD-119` (§4).** Not passed at the time of writing. The gate must be green on the pull request before the merge is proposed; this report neither claims that it is nor authorises proceeding without it. |
+| PR #5 `CI Gate` | **Passed at `f0fcad6`, on both events** — `push` `33653617714` and `pull_request` `33653636667`, all four checks green against the identical SHA (§4). Earlier heads failed this gate on one event or the other to `TD-119`; that mechanism is now remediated. Passing the gate is a precondition of proposing the merge, not an authorisation to perform it. |
 | Build/Test Gates on `main` pre-tag (§7.3) | **Not yet performed.** Cannot be, before the merge. |
 | `release.yml` against the tagged commit | **Not yet performed.** |
 | Product Approval authorisation | **Not sought.** Required per-occasion for the branch push, the merge, and the tag push (§7.5, §7.6). |
 
 **Status: Pass, with observations** — every release-preparation artefact
-is complete; the outstanding items are a pull-request gate that has not
-yet gone green and two release-time verifications that cannot be performed
-from a feature branch. This report explicitly does **not** claim to have
-satisfied any of the three.
+is complete and the pull-request gate is now green on both events. The two
+outstanding verifications are release-time actions that cannot be performed
+from a feature branch, and this report explicitly does **not** claim to
+have satisfied either.
 
 ## 7. Technical debt and limitations, classified
 
@@ -197,7 +232,7 @@ satisfied any of the three.
 | `TD-109` — `MainWindow` 1,052 lines | **Pre-Existing, Unaffected.** |
 | `TD-115` — three unreachable commands | **Pre-Existing, Unaffected.** Pinned both ways. |
 | `TD-118` — async Cockpit conversion | **Disclosed, Non-Blocking.** Deferred with a revisit trigger. |
-| `TD-119` — fixed `Task.Delay` synchronisation in `Tempest.Desktop.Tests` | **Disclosed, Non-Blocking.** Test-suite debt, not product behaviour: 61 fixed waits across 16 Desktop test files, third documented recurrence, remedy known (`WP 13.12.9`'s bounded poll, generalised) and **deferred out of this release**. See §4. |
+| `TD-119` — fixed `Task.Delay` synchronisation in `Tempest.Desktop.Tests` | **Disclosed, Non-Blocking — now Partially resolved.** Test-suite debt, never product behaviour. Remediated test-only across Stages 8/11/13 with zero `src/` changes: **52 fixed waits became 1**, with 59 `Task.Delay` occurrences remaining across 16 Desktop test files of which **58 are legitimate** bounded-poll back-offs or deliberate yields. The single retained site is `WorkflowInteractionTests.cs:335`, whose assertions are negative and whose cancelled path raises no completion signal to join. Verified dual-event at `f0fcad6` (§4). |
 | `AT-10`, `AT-23`, `AT-26` | Decided positions, not debt. |
 | Pre-programme / `v0.11.0` retrospective gaps | **Disclosed, Non-Blocking.** |
 
@@ -209,11 +244,12 @@ Per §4's priority table: no category is **Not Ready**; **Disclosed,
 Non-Blocking** findings exist (§4, `TD-119`; §5, `TD-118`; §5, the
 pre-programme and `v0.11.0` retrospective gaps). Row 2 fires. `TD-119`
 does not change the verdict: it is tracked test-suite debt with no
-identified product-defect path, and §4's gates pass in every execution not
-lost to it — locally in both configurations, and on the push-triggered CI
-run at the identical SHA. It does, however, add a precondition to the
-sequence below: **step 2 requires a green `CI Gate` on PR #5, which does
-not exist at the time of writing.**
+identified product-defect path, it is now Partially resolved, and §4's
+gates pass on both CI events at `f0fcad6`. The precondition it added to the
+sequence below — a green `CI Gate` on PR #5 — **is now satisfied**. The
+verdict is **not** upgraded on that account: a green gate removes a
+blocker, it does not by itself raise a recommendation, and the observations
+in §5 and §7 stand unchanged.
 
 > ### Recommended verdict: **ACCEPT WITH OBSERVATIONS**
 

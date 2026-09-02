@@ -6768,7 +6768,7 @@ Experience phase is now complete.
 
 ## Repository Metrics
 
-**Corrected, `WP-Z1` (2026-09-01); figures advanced `WP-Z2`, `WP-Z3`, `WP-Z4` and `WP-Z4` Stage 5.** The table below is stale — its figures
+**Corrected, `WP-Z1` (2026-09-01); figures advanced `WP-Z2`, `WP-Z3`, `WP-Z4`, `WP-Z4` Stage 5 and `WP-Z4` Stage 15.** The table below is stale — its figures
 were last advanced by `WP 10.2A` (`v0.10.0`) and drifted across every
 release since. Re-derived directly from the repository at `e4bc3ee`:
 
@@ -6777,10 +6777,10 @@ release since. Re-derived directly from the repository at `e4bc3ee`:
 | Automated tests | **3,460** — `Tempest.Core.Tests` 3,088 + `Tempest.Desktop.Tests` 372, Debug and Release, 0 failures, 0 warnings, `-p:TreatWarningsAsErrors=true` |
 | ADRs | **119** (`ADR-0001`–`ADR-0119`, no gaps) — `ADR-0118` added by `WP-B2`, `ADR-0119` by `WP-Z2` |
 | Rejected Designs | **45** (`RD-0001`–`RD-0045`) |
-| Academy articles | **232** (plus `Academy Index.md`; 233 `.md` files in total — the count `governance-healthcheck.ps1` reports is 232, excluding the index it checks against), of which **158** are Work Package retrospectives. **The programme's own fifteen were written by `WP-Z3`**, closing the Engineering Governance §6 gap the pre-release audit found; the figure previously read "eleven are owed", which undercounted — see the `WP-Z3` retrospective for the reconciliation |
+| Academy articles | **233** (plus `Academy Index.md`; 234 `.md` files in total — the count `governance-healthcheck.ps1` reports is 233, excluding the index it checks against), of which **159** are Work Package retrospectives. **+1, `WP-Z4` Stage 15**: the `WP-Z4` Stages 4–14 `TD-119` remediation retrospective. **The programme's own fifteen were written by `WP-Z3`**, closing the Engineering Governance §6 gap the pre-release audit found; the figure previously read "eleven are owed", which undercounted — see the `WP-Z3` retrospective for the reconciliation |
 | Governance registers | **27** registers, **38** governance documents in `docs/governance/` |
 | Architecture documents | **29** under `docs/architecture/` |
-| Technical debt | **119** tracked (36 Resolved, 6 Closed, 74 Open, 3 Partially resolved) plus **26** accepted trade-offs — **+1, `WP-Z4` Stage 5**: `TD-119`, fixed `Task.Delay` synchronisation in `Tempest.Desktop.Tests`, Open and deferred out of `v0.14.0` |
+| Technical debt | **120** tracked (36 Resolved, 6 Closed, 74 Open, 4 Partially resolved) plus **26** accepted trade-offs — **`WP-Z4` Stage 15**: `TD-119` moves Open → **Partially resolved** (52 fixed `Task.Delay` waits reduced to 1 across Stages 8/11/13, test-only, zero `src/` changes; the retained site is `WorkflowInteractionTests.cs:335`), and **+1 `TD-120`**, the Desktop suite not deleting its isolated persistence roots. Previously **+1, `WP-Z4` Stage 5**: `TD-119` raised |
 
 Only the metrics above were re-derived. The stale table that follows is
 retained, not deleted, and a full historical re-derivation of this file's
