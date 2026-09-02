@@ -72,7 +72,7 @@ public sealed class ProjectGovernanceAcceptanceTests
             // --- 2. Raise one through the real button and dialog ----
             await ClickAsync(risks, "Raise Risk");
             await AnswerDialogAsync(window, "Impeller cavitation at low flow");
-            await window.RenderCurrentModuleAsync();
+            await RenderUntilAsync(window, () => RisksSurfaceOrNull(window) is { } s && s.Risks.Count == 1);
 
             risks = RisksSurfaceOf(window);
             var risk = Assert.Single(risks.Risks);
@@ -85,10 +85,10 @@ public sealed class ProjectGovernanceAcceptanceTests
             Assert.False(risk.IsScored);
 
             // --- 3. Score it (two prompts, both axes together) ------
-            await ClickAsync(RisksSurfaceOf(window), "Score");
+            await ClickWhenPresentAsync(() => RisksSurfaceOf(window), "Score");
             await AnswerDialogAsync(window, "Likely");
             await AnswerDialogAsync(window, "Severe");
-            await window.RenderCurrentModuleAsync();
+            await RenderUntilAsync(window, () => RisksSurfaceOrNull(window) is { Risks.Count: 1 } s && s.Risks[0].IsScored);
 
             risk = Assert.Single(RisksSurfaceOf(window).Risks);
             Assert.True(risk.IsScored);
@@ -96,16 +96,16 @@ public sealed class ProjectGovernanceAcceptanceTests
             Assert.Equal("Severe", risk.Severity);
 
             // --- 4. Take ownership ---------------------------------
-            await ClickAsync(RisksSurfaceOf(window), "Own this");
-            await window.RenderCurrentModuleAsync();
+            await ClickWhenPresentAsync(() => RisksSurfaceOf(window), "Own this");
+            await RenderUntilAsync(window, () => RisksSurfaceOrNull(window) is { Risks.Count: 1 } s && !s.Risks[0].IsUnowned);
 
             risk = Assert.Single(RisksSurfaceOf(window).Risks);
             Assert.False(risk.IsUnowned);
             Assert.Equal(ownerId, risk.OwnedByPrincipalId);
 
             // --- 5. Move it to Mitigating --------------------------
-            await ClickAsync(RisksSurfaceOf(window), "Mitigating");
-            await window.RenderCurrentModuleAsync();
+            await ClickWhenPresentAsync(() => RisksSurfaceOf(window), "Mitigating");
+            await RenderUntilAsync(window, () => RisksSurfaceOrNull(window) is { Risks.Count: 1 } s && s.Risks[0].Status == RiskStatus.Mitigating);
 
             risk = Assert.Single(RisksSurfaceOf(window).Risks);
             Assert.Equal(RiskStatus.Mitigating, risk.Status);
@@ -126,6 +126,7 @@ public sealed class ProjectGovernanceAcceptanceTests
             var window = new MainWindow(second);
 
             await GoToRisksAsync(second, window, projectId);
+            await RenderUntilAsync(window, () => RisksSurfaceOrNull(window) is { } s && s.Risks.Count == 1);
 
             var risk = Assert.Single(RisksSurfaceOf(window).Risks);
 
@@ -143,8 +144,8 @@ public sealed class ProjectGovernanceAcceptanceTests
             Assert.Equal(projectId, await ProjectMembership.ResolveOwningProjectAsync(DomainOf(second).Repository, riskId));
 
             // --- 6. And it can still be closed ---------------------
-            await ClickAsync(RisksSurfaceOf(window), "Closed");
-            await window.RenderCurrentModuleAsync();
+            await ClickWhenPresentAsync(() => RisksSurfaceOf(window), "Closed");
+            await RenderUntilAsync(window, () => RisksSurfaceOrNull(window) is { Risks.Count: 1 } s && s.Risks[0].Status == RiskStatus.Closed);
 
             risk = Assert.Single(RisksSurfaceOf(window).Risks);
             Assert.Equal(RiskStatus.Closed, risk.Status);
@@ -178,15 +179,15 @@ public sealed class ProjectGovernanceAcceptanceTests
             // Switching register is part of the journey: all three families
             // share one area, so the user gets to Issues by switching.
             await ClickAsync(RisksSurfaceOf(window), "Issues (0)");
-            await window.RenderCurrentModuleAsync();
+            await RenderUntilAsync(window, () => RisksSurfaceOrNull(window) is { } s && s.SelectedTab == GovernanceRegisterTab.Issues);
 
             var surface = RisksSurfaceOf(window);
             Assert.Equal(GovernanceRegisterTab.Issues, surface.SelectedTab);
             Assert.True(surface.IsShowingEmptyState);
 
-            await ClickAsync(surface, "Raise Issue");
+            await ClickWhenPresentAsync(() => surface, "Raise Issue");
             await AnswerDialogAsync(window, "Blade cracked during the 120% overspeed run");
-            await window.RenderCurrentModuleAsync();
+            await RenderUntilAsync(window, () => RisksSurfaceOrNull(window) is { } s && s.Issues.Count == 1);
 
             surface = RisksSurfaceOf(window);
             surface.SelectTab(GovernanceRegisterTab.Issues);
@@ -198,14 +199,14 @@ public sealed class ProjectGovernanceAcceptanceTests
             Assert.Equal(WorkPriority.Normal, issue.Priority);
             Assert.True(issue.IsUnassigned);
 
-            await ClickAsync(RisksSurfaceOf(window), "Assign to me");
-            await window.RenderCurrentModuleAsync();
+            await ClickWhenPresentAsync(() => RisksSurfaceOf(window), "Assign to me");
+            await RenderUntilAsync(window, () => RisksSurfaceOrNull(window) is { Issues.Count: 1 } s && !s.Issues[0].IsUnassigned);
 
             RisksSurfaceOf(window).SelectTab(GovernanceRegisterTab.Issues);
             Assert.False(Assert.Single(RisksSurfaceOf(window).Issues).IsUnassigned);
 
-            await ClickAsync(RisksSurfaceOf(window), "Resolved");
-            await window.RenderCurrentModuleAsync();
+            await ClickWhenPresentAsync(() => RisksSurfaceOf(window), "Resolved");
+            await RenderUntilAsync(window, () => RisksSurfaceOrNull(window) is { Issues.Count: 1 } s && s.Issues[0].Status == IssueStatus.Resolved);
 
             RisksSurfaceOf(window).SelectTab(GovernanceRegisterTab.Issues);
             issue = Assert.Single(RisksSurfaceOf(window).Issues);
@@ -228,6 +229,7 @@ public sealed class ProjectGovernanceAcceptanceTests
             var window = new MainWindow(second);
 
             await GoToRisksAsync(second, window, projectId);
+            await RenderUntilAsync(window, () => RisksSurfaceOrNull(window) is { } s && s.Issues.Count == 1);
             RisksSurfaceOf(window).SelectTab(GovernanceRegisterTab.Issues);
 
             var issue = Assert.Single(RisksSurfaceOf(window).Issues);
@@ -366,7 +368,7 @@ public sealed class ProjectGovernanceAcceptanceTests
 
             await ClickAsync(RisksSurfaceOf(window), "Raise Risk");
             await AnswerDialogAsync(window, "Cavitation");
-            await window.RenderCurrentModuleAsync();
+            await RenderUntilAsync(window, () => RisksSurfaceOrNull(window) is { } s && s.Risks.Count == 1);
 
             var captions = ButtonCaptions(RisksSurfaceOf(window));
 
@@ -517,7 +519,67 @@ public sealed class ProjectGovernanceAcceptanceTests
         Assert.True(button is not null, $"No '{caption}' button on this surface. Present: {string.Join(", ", ButtonCaptions(surface))}");
 
         button!.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
-        await Task.Delay(20);
+
+        // `TD-119`: no fixed wait. The click is dispatched fire-and-forget, so a
+        // duration here would only be a guess; every caller now joins on the real
+        // state its own assertion reads.
+    }
+
+    /// <summary>Clicks <paramref name="caption"/> once it is actually present on the freshly re-queried surface.</summary>
+    /// <remarks>
+    /// `TD-119`. Row-level buttons such as "Score" or "Own this" exist only once
+    /// the row they belong to has rendered, which happens on an asynchronous
+    /// continuation. <see cref="ClickAsync"/> deliberately still fails at once for
+    /// a button that ought to be there already; this is for targets legitimately
+    /// produced asynchronously. The surface is re-queried every iteration, the
+    /// click is raised exactly once, and a button that never appears fails with
+    /// the same message <see cref="ClickAsync"/> would give.
+    /// </remarks>
+    private static async Task ClickWhenPresentAsync(Func<Control> surface, string caption)
+    {
+        Button? button;
+        var deadline = DateTime.UtcNow.AddSeconds(2);
+        while (true)
+        {
+            button = surface().GetLogicalDescendants().OfType<Button>()
+                .FirstOrDefault(b => string.Equals(b.Content?.ToString(), caption, StringComparison.Ordinal));
+
+            if (button is not null || DateTime.UtcNow >= deadline)
+                break;
+
+            await Task.Delay(10);
+        }
+
+        Assert.True(button is not null, $"No '{caption}' button on this surface. Present: {string.Join(", ", ButtonCaptions(surface()))}");
+
+        button!.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+    }
+
+    /// <summary>Re-renders the current module until <paramref name="condition"/> holds, or a two-second deadline expires.</summary>
+    /// <remarks>
+    /// `TD-119`. The generalisation of <see cref="RenderUntilDecisionsAsync"/> to
+    /// the whole surface. Rendering is a read, so this loop cannot manufacture the
+    /// state it waits for; it decides only *when* to assert, and every assertion
+    /// at the call sites is unchanged.
+    /// </remarks>
+    private static async Task RenderUntilAsync(MainWindow window, Func<bool> condition)
+    {
+        var deadline = DateTime.UtcNow.AddSeconds(2);
+        while (true)
+        {
+            await window.RenderCurrentModuleAsync();
+            if (condition() || DateTime.UtcNow >= deadline)
+                return;
+
+            await Task.Delay(10);
+        }
+    }
+
+    /// <summary>The risks surface, or null while the tree holds no single one.</summary>
+    private static ProjectRisksView? RisksSurfaceOrNull(MainWindow window)
+    {
+        var found = window.GetLogicalDescendants().OfType<ProjectRisksView>().Distinct().ToList();
+        return found.Count == 1 ? found[0] : null;
     }
 
     private static async Task AnswerDialogAsync(MainWindow window, string answer)
@@ -540,6 +602,7 @@ public sealed class ProjectGovernanceAcceptanceTests
         var ok = dialog.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "OK"));
         ok.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
 
-        await Task.Delay(50);
+        // `TD-119`: no fixed wait. The dialog is answered exactly once above; the
+        // work that releases is joined at the caller's own assertion.
     }
 }

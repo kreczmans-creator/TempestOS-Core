@@ -72,7 +72,7 @@ public sealed class ProjectTaskAcceptanceTests
             // --- 3. Create one through the real button and dialog ---
             await ClickAsync(tasks, "New Task");
             await AnswerDialogAsync(window, "Balance the impeller");
-            await window.RenderCurrentModuleAsync();
+            await RenderUntilAsync(window, () => TasksSurfaceOrNull(window) is { } s && s.Entries.Count == 1);
 
             tasks = TasksSurfaceOf(window);
             var entry = Assert.Single(tasks.Entries);
@@ -84,20 +84,20 @@ public sealed class ProjectTaskAcceptanceTests
             Assert.True(entry.IsUnassigned);
 
             // --- 4. Assign it to whoever is using the product -------
-            await ClickAsync(TasksSurfaceOf(window), "Assign to me");
-            await window.RenderCurrentModuleAsync();
+            await ClickWhenPresentAsync(() => TasksSurfaceOf(window), "Assign to me");
+            await RenderUntilAsync(window, () => TasksSurfaceOrNull(window) is { Entries.Count: 1 } s && !s.Entries[0].IsUnassigned);
 
             entry = Assert.Single(TasksSurfaceOf(window).Entries);
             Assert.False(entry.IsUnassigned);
             Assert.Equal(first.SessionPrincipal!.Identity.Id, entry.AssignedToPrincipalId);
 
             // --- 5. Move it through its states ----------------------
-            await ClickAsync(TasksSurfaceOf(window), "In progress");
-            await window.RenderCurrentModuleAsync();
+            await ClickWhenPresentAsync(() => TasksSurfaceOf(window), "In progress");
+            await RenderUntilAsync(window, () => TasksSurfaceOrNull(window) is { Entries.Count: 1 } s && s.Entries[0].WorkState == TaskWorkState.InProgress);
             Assert.Equal(TaskWorkState.InProgress, Assert.Single(TasksSurfaceOf(window).Entries).WorkState);
 
-            await ClickAsync(TasksSurfaceOf(window), "Done");
-            await window.RenderCurrentModuleAsync();
+            await ClickWhenPresentAsync(() => TasksSurfaceOf(window), "Done");
+            await RenderUntilAsync(window, () => TasksSurfaceOrNull(window) is { Entries.Count: 1 } s && s.Entries[0].WorkState == TaskWorkState.Done);
 
             entry = Assert.Single(TasksSurfaceOf(window).Entries);
             Assert.Equal(TaskWorkState.Done, entry.WorkState);
@@ -120,6 +120,7 @@ public sealed class ProjectTaskAcceptanceTests
             // --- 6. The task came back, with everything it carried --
             await GoToTasksAsync(second, window, projectId);
 
+            await RenderUntilAsync(window, () => TasksSurfaceOrNull(window) is { } s && s.Entries.Count == 1);
             var tasks = TasksSurfaceOf(window);
             var entry = Assert.Single(tasks.Entries);
 
@@ -133,17 +134,17 @@ public sealed class ProjectTaskAcceptanceTests
             Assert.Equal(projectId, await ProjectMembership.ResolveOwningProjectAsync(DomainOf(second).Repository, taskId));
 
             // --- 7. Reopen it --------------------------------------
-            await ClickAsync(TasksSurfaceOf(window), "In progress");
-            await window.RenderCurrentModuleAsync();
+            await ClickWhenPresentAsync(() => TasksSurfaceOf(window), "In progress");
+            await RenderUntilAsync(window, () => TasksSurfaceOrNull(window) is { Entries.Count: 1 } s && s.Entries[0].WorkState == TaskWorkState.InProgress);
 
             entry = Assert.Single(TasksSurfaceOf(window).Entries);
             Assert.Equal(TaskWorkState.InProgress, entry.WorkState);
             Assert.True(entry.IsOpen);
 
             // --- 8. Edit it ----------------------------------------
-            await ClickAsync(TasksSurfaceOf(window), "Edit");
+            await ClickWhenPresentAsync(() => TasksSurfaceOf(window), "Edit");
             await AnswerDialogAsync(window, "Balance and re-test the impeller");
-            await window.RenderCurrentModuleAsync();
+            await RenderUntilAsync(window, () => TasksSurfaceOrNull(window) is { Entries.Count: 1 } s && s.Entries[0].DisplayName == "Balance and re-test the impeller");
 
             entry = Assert.Single(TasksSurfaceOf(window).Entries);
             Assert.Equal(taskId, entry.ObjectId);
@@ -172,11 +173,11 @@ public sealed class ProjectTaskAcceptanceTests
 
             await ClickAsync(TasksSurfaceOf(window), "New Task");
             await AnswerDialogAsync(window, "Overdue work");
-            await window.RenderCurrentModuleAsync();
+            await RenderUntilAsync(window, () => TasksSurfaceOrNull(window) is { } s && s.Entries.Count == 1);
 
-            await ClickAsync(TasksSurfaceOf(window), "Due date");
+            await ClickWhenPresentAsync(() => TasksSurfaceOf(window), "Due date");
             await AnswerDialogAsync(window, "2020-01-01");
-            await window.RenderCurrentModuleAsync();
+            await RenderUntilAsync(window, () => TasksSurfaceOrNull(window) is { Entries.Count: 1 } s && s.Entries[0].DueDate is not null);
 
             var entry = Assert.Single(TasksSurfaceOf(window).Entries);
             Assert.Equal(new DateTimeOffset(2020, 1, 1, 0, 0, 0, TimeSpan.Zero), entry.DueDate);
@@ -194,6 +195,7 @@ public sealed class ProjectTaskAcceptanceTests
             var window = new MainWindow(second);
             await GoToTasksAsync(second, window, projectId);
 
+            await RenderUntilAsync(window, () => TasksSurfaceOrNull(window) is { } s && s.Entries.Count == 1);
             var entry = Assert.Single(TasksSurfaceOf(window).Entries);
             Assert.Equal(new DateTimeOffset(2020, 1, 1, 0, 0, 0, TimeSpan.Zero), entry.DueDate);
             Assert.True(entry.IsOverdue);
@@ -230,16 +232,17 @@ public sealed class ProjectTaskAcceptanceTests
             await GoToTasksAsync(host, window, apollo.Id);
             await ClickAsync(TasksSurfaceOf(window), "New Task");
             await AnswerDialogAsync(window, "Apollo work");
-            await window.RenderCurrentModuleAsync();
+            await RenderUntilAsync(window, () => TasksSurfaceOrNull(window) is { Entries.Count: 1 } s && s.Entries[0].DisplayName == "Apollo work");
 
             await GoToTasksAsync(host, window, gemini.Id);
             await ClickAsync(TasksSurfaceOf(window), "New Task");
             await AnswerDialogAsync(window, "Gemini work");
-            await window.RenderCurrentModuleAsync();
+            await RenderUntilAsync(window, () => TasksSurfaceOrNull(window) is { Entries.Count: 1 } s && s.Entries[0].DisplayName == "Gemini work");
 
             Assert.Equal("Gemini work", Assert.Single(TasksSurfaceOf(window).Entries).DisplayName);
 
             await GoToTasksAsync(host, window, apollo.Id);
+            await RenderUntilAsync(window, () => TasksSurfaceOrNull(window) is { } s && s.Entries.Count == 1);
             Assert.Equal("Apollo work", Assert.Single(TasksSurfaceOf(window).Entries).DisplayName);
         }
         finally
@@ -264,7 +267,7 @@ public sealed class ProjectTaskAcceptanceTests
 
             await ClickAsync(TasksSurfaceOf(window), "New Task");
             await AnswerDialogAsync(window, "Deep work");
-            await window.RenderCurrentModuleAsync();
+            await RenderUntilAsync(window, () => TasksSurfaceOrNull(window) is { } s && s.Entries.Count == 1);
 
             var taskId = Assert.Single(TasksSurfaceOf(window).Entries).ObjectId;
 
@@ -276,6 +279,7 @@ public sealed class ProjectTaskAcceptanceTests
             await ((IHasParent)(await domain.Repository.FindAsync(taskId))!).MoveAsync(part);
 
             await GoToTasksAsync(host, window, project.Id);
+            await RenderUntilAsync(window, () => TasksSurfaceOrNull(window) is { } s && s.Entries.Count == 1);
             Assert.Equal(taskId, Assert.Single(TasksSurfaceOf(window).Entries).ObjectId);
         }
         finally
@@ -338,7 +342,7 @@ public sealed class ProjectTaskAcceptanceTests
 
             await ClickAsync(TasksSurfaceOf(window), "New Task");
             await AnswerDialogAsync(window, "Only task");
-            await window.RenderCurrentModuleAsync();
+            await RenderUntilAsync(window, () => TasksSurfaceOrNull(window) is { } s && s.Entries.Count == 1);
 
             var tasks = TasksSurfaceOf(window);
             Assert.False(tasks.IsShowingBoard);
@@ -376,7 +380,7 @@ public sealed class ProjectTaskAcceptanceTests
 
             await ClickAsync(TasksSurfaceOf(window), "New Task");
             await AnswerDialogAsync(window, "Only task");
-            await window.RenderCurrentModuleAsync();
+            await RenderUntilAsync(window, () => TasksSurfaceOrNull(window) is { } s && s.Entries.Count == 1);
 
             // A new task is Todo, so every state but Todo is reachable.
             var captions = ButtonCaptions(TasksSurfaceOf(window));
@@ -386,8 +390,8 @@ public sealed class ProjectTaskAcceptanceTests
 
             // Finished work offers only the two reopen moves — a button
             // whose only outcome is an error is never shown.
-            await ClickAsync(TasksSurfaceOf(window), "Done");
-            await window.RenderCurrentModuleAsync();
+            await ClickWhenPresentAsync(() => TasksSurfaceOf(window), "Done");
+            await RenderUntilAsync(window, () => TasksSurfaceOrNull(window) is { Entries.Count: 1 } s && s.Entries[0].WorkState == TaskWorkState.Done);
 
             captions = ButtonCaptions(TasksSurfaceOf(window));
             Assert.Contains("To do", captions);
@@ -420,11 +424,11 @@ public sealed class ProjectTaskAcceptanceTests
             Assert.Single(window.GetLogicalDescendants().OfType<ProjectTasksView>().Distinct());
 
             await host.ShellNavigator!.OpenProjectAsync(project.Id, ProjectArea.Documents);
-            await window.RenderCurrentModuleAsync();
+            await RenderUntilAsync(window, () => TasksSurfaceOrNull(window) is null);
             Assert.Single(window.GetLogicalDescendants().OfType<ProjectDocumentsView>().Distinct());
 
             await host.ShellNavigator!.OpenProjectAsync(project.Id, ProjectArea.Requirements);
-            await window.RenderCurrentModuleAsync();
+            await RenderUntilAsync(window, () => TasksSurfaceOrNull(window) is null);
             Assert.Single(window.GetLogicalDescendants().OfType<ProjectRequirementsView>().Distinct());
 
             // And navigating away and back keeps the project context.
@@ -461,7 +465,7 @@ public sealed class ProjectTaskAcceptanceTests
 
             await ClickAsync(TasksSurfaceOf(window), "New Task");
             await AnswerDialogAsync(window, "Balance the impeller");
-            await window.RenderCurrentModuleAsync();
+            await RenderUntilAsync(window, () => TasksSurfaceOrNull(window) is { } s && s.Entries.Count == 1);
 
             await LayOutAsync(window);
 
@@ -560,7 +564,68 @@ public sealed class ProjectTaskAcceptanceTests
         Assert.True(button is not null, $"No '{caption}' button on this surface. Present: {string.Join(", ", ButtonCaptions(surface))}");
 
         button!.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
-        await Task.Delay(20);
+
+        // `TD-119`: no fixed wait. The click is dispatched fire-and-forget, so a
+        // duration here would only be a guess; every caller now joins on the real
+        // state its own assertion reads.
+    }
+
+    /// <summary>Clicks <paramref name="caption"/> once it is actually present on the freshly re-queried surface.</summary>
+    /// <remarks>
+    /// `TD-119`. This is the failure CI hit at <c>e7357b6</c>: "Due date" is a
+    /// per-task-row button, so it does not exist until the row has rendered on an
+    /// asynchronous continuation, and <see cref="ClickAsync"/> failed with
+    /// "No 'Due date' button on this surface. Present: New Task, View as board".
+    /// <see cref="ClickAsync"/> deliberately still fails at once for a button that
+    /// ought to be there already; this is for targets legitimately produced
+    /// asynchronously. The surface is re-queried every iteration, the click is
+    /// raised exactly once and never retried, and a button that never appears
+    /// fails with the same message <see cref="ClickAsync"/> would give.
+    /// </remarks>
+    private static async Task ClickWhenPresentAsync(Func<Control> surface, string caption)
+    {
+        Button? button;
+        var deadline = DateTime.UtcNow.AddSeconds(2);
+        while (true)
+        {
+            button = surface().GetLogicalDescendants().OfType<Button>()
+                .FirstOrDefault(b => string.Equals(b.Content?.ToString(), caption, StringComparison.Ordinal));
+
+            if (button is not null || DateTime.UtcNow >= deadline)
+                break;
+
+            await Task.Delay(10);
+        }
+
+        Assert.True(button is not null, $"No '{caption}' button on this surface. Present: {string.Join(", ", ButtonCaptions(surface()))}");
+
+        button!.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+    }
+
+    /// <summary>Re-renders the current module until <paramref name="condition"/> holds, or a two-second deadline expires.</summary>
+    /// <remarks>
+    /// `TD-119`. Rendering is a read, so this loop cannot manufacture the state it
+    /// waits for; it decides only *when* to assert, and every assertion at the
+    /// call sites is unchanged.
+    /// </remarks>
+    private static async Task RenderUntilAsync(MainWindow window, Func<bool> condition)
+    {
+        var deadline = DateTime.UtcNow.AddSeconds(2);
+        while (true)
+        {
+            await window.RenderCurrentModuleAsync();
+            if (condition() || DateTime.UtcNow >= deadline)
+                return;
+
+            await Task.Delay(10);
+        }
+    }
+
+    /// <summary>The tasks surface, or null while the tree holds no single one.</summary>
+    private static ProjectTasksView? TasksSurfaceOrNull(MainWindow window)
+    {
+        var found = window.GetLogicalDescendants().OfType<ProjectTasksView>().Distinct().ToList();
+        return found.Count == 1 ? found[0] : null;
     }
 
     /// <summary>Types <paramref name="answer"/> into the shell's input dialog and confirms it.</summary>
@@ -584,7 +649,8 @@ public sealed class ProjectTaskAcceptanceTests
         var ok = dialog.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "OK"));
         ok.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
 
-        await Task.Delay(50);
+        // `TD-119`: no fixed wait. The dialog is answered exactly once above; the
+        // work that releases is joined at the caller's own assertion.
     }
 
     private static async Task<Guid> CreatePartAsync(EngineeringDomainContext domain, string identifier, string name, Guid parentId)

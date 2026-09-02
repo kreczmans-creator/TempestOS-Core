@@ -66,7 +66,7 @@ public sealed class ProjectTimelineAcceptanceTests
             await ClickAsync(timeline, "Set Milestone");
             await AnswerDialogAsync(window, "Critical Design Review");
             await AnswerDialogAsync(window, "2026-11-30");
-            await window.RenderCurrentModuleAsync();
+            await RenderUntilAsync(window, () => TimelineSurfaceOrNull(window) is { } t && t.Milestones.Count == 1);
 
             timeline = TimelineSurfaceOf(window);
             var milestone = Assert.Single(timeline.Milestones);
@@ -81,9 +81,9 @@ public sealed class ProjectTimelineAcceptanceTests
             Assert.False(milestone.HasLinkedWork);
 
             // --- 3. Add a deliverable against it --------------------
-            await ClickAsync(TimelineSurfaceOf(window), "Add Deliverable");
+            await ClickWhenPresentAsync(() => TimelineSurfaceOf(window), "Add Deliverable");
             await AnswerDialogAsync(window, "Stress report");
-            await window.RenderCurrentModuleAsync();
+            await RenderUntilAsync(window, () => TimelineSurfaceOrNull(window) is { Milestones.Count: 1 } t && t.Milestones[0].Deliverables.Count == 1);
 
             milestone = Assert.Single(TimelineSurfaceOf(window).Milestones);
             deliverableId = Assert.Single(milestone.Deliverables).ObjectId;
@@ -98,7 +98,7 @@ public sealed class ProjectTimelineAcceptanceTests
             var task = await first.ProjectTaskWorkflow!.CreateAsync(projectId, "TSK-001", "Run the stress case");
             await first.ProjectTaskWorkflow!.ContributeToAsync(task.Id, deliverableId);
 
-            await window.RenderCurrentModuleAsync();
+            await RenderUntilAsync(window, () => TimelineSurfaceOrNull(window) is { Milestones.Count: 1 } t && t.Milestones[0].Contributions.Count == 1);
 
             milestone = Assert.Single(TimelineSurfaceOf(window).Milestones);
             var contribution = Assert.Single(milestone.Contributions);
@@ -125,6 +125,7 @@ public sealed class ProjectTimelineAcceptanceTests
             var window = new MainWindow(second);
 
             await GoToTimelineAsync(second, window, projectId);
+            await RenderUntilAsync(window, () => TimelineSurfaceOrNull(window) is { } t && t.Milestones.Count == 1);
 
             var milestone = Assert.Single(TimelineSurfaceOf(window).Milestones);
 
@@ -227,7 +228,72 @@ public sealed class ProjectTimelineAcceptanceTests
         Assert.True(button is not null, $"No '{caption}' button on this surface. Present: {string.Join(", ", ButtonCaptions(surface))}");
 
         button!.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
-        await Task.Delay(20);
+
+        // `TD-119`: no fixed wait. The click is dispatched fire-and-forget, so a
+        // duration here would only be a guess; every caller now joins on the real
+        // state its own assertion reads, through `RenderUntilAsync`.
+    }
+
+    /// <summary>Clicks <paramref name="caption"/> once it is actually present on the freshly re-queried surface.</summary>
+    /// <remarks>
+    /// `TD-119`. Row-level buttons such as "Add Deliverable" exist only once the
+    /// row they belong to has rendered, which happens on an asynchronous
+    /// continuation. <see cref="ClickAsync"/> deliberately still fails at once for
+    /// a button that ought to be there already; this is for targets legitimately
+    /// produced asynchronously. The surface is re-queried every iteration, the
+    /// click is raised exactly once, and a button that never appears fails with
+    /// the same message <see cref="ClickAsync"/> would give.
+    /// </remarks>
+    private static async Task ClickWhenPresentAsync(Func<Control> surface, string caption)
+    {
+        Button? button;
+        var deadline = DateTime.UtcNow.AddSeconds(2);
+        while (true)
+        {
+            button = surface().GetLogicalDescendants().OfType<Button>()
+                .FirstOrDefault(b => string.Equals(b.Content?.ToString(), caption, StringComparison.Ordinal));
+
+            if (button is not null || DateTime.UtcNow >= deadline)
+                break;
+
+            await Task.Delay(10);
+        }
+
+        Assert.True(button is not null, $"No '{caption}' button on this surface. Present: {string.Join(", ", ButtonCaptions(surface()))}");
+
+        button!.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+    }
+
+    /// <summary>Re-renders the current module until <paramref name="condition"/> holds, or a two-second deadline expires.</summary>
+    /// <remarks>
+    /// `TD-119`. Rendering is a read — `ProjectWorkspaceView.RefreshAsync` lists
+    /// and shows — so this loop cannot manufacture the state it waits for. It
+    /// decides only *when* to assert; every assertion at the call sites is
+    /// unchanged, and still fails on its own message if the state never arrives.
+    /// </remarks>
+    private static async Task RenderUntilAsync(MainWindow window, Func<bool> condition)
+    {
+        var deadline = DateTime.UtcNow.AddSeconds(2);
+        while (true)
+        {
+            await window.RenderCurrentModuleAsync();
+            if (condition() || DateTime.UtcNow >= deadline)
+                return;
+
+            await Task.Delay(10);
+        }
+    }
+
+    /// <summary>The timeline surface, or null while the tree holds no single one.</summary>
+    /// <remarks>
+    /// Used only to decide when to stop re-rendering. Every assertion reads
+    /// through <see cref="TimelineSurfaceOf"/> directly and unguarded, so a tree
+    /// that never settles still fails there rather than being swallowed here.
+    /// </remarks>
+    private static ProjectTimelineView? TimelineSurfaceOrNull(MainWindow window)
+    {
+        var found = window.GetLogicalDescendants().OfType<ProjectTimelineView>().Distinct().ToList();
+        return found.Count == 1 ? found[0] : null;
     }
 
     private static async Task AnswerDialogAsync(MainWindow window, string answer)
@@ -250,6 +316,7 @@ public sealed class ProjectTimelineAcceptanceTests
         var ok = dialog.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "OK"));
         ok.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
 
-        await Task.Delay(50);
+        // `TD-119`: no fixed wait. The dialog is answered exactly once above; the
+        // work that releases is joined at the caller's own assertion.
     }
 }
