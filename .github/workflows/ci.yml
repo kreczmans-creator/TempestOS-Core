@@ -121,8 +121,16 @@ jobs:
       # failing run still publishes exactly what it got through — the
       # same "disclose what actually happened" instinct this project
       # applies everywhere else, applied to its own CI output.
+      # This summary is diagnostic output, never a verification gate — the
+      # same reasoning the artefact uploads below carry, and the same
+      # `continue-on-error`. Added against direct evidence: in run
+      # 33659184434 `Test (Debug)` passed and this step then failed the job
+      # on a .trx path it could not parse, so a green test run reported red.
+      # Build, Test, the Governance Health Check and CI Gate are deliberately
+      # untouched and remain hard gates.
       - name: Publish build & test summary
         if: always()
+        continue-on-error: true
         shell: pwsh
         run: |
           $config = "${{ matrix.configuration }}"
@@ -159,7 +167,11 @@ jobs:
             $lines.Add("| Test result file | Total | Passed | Failed |")
             $lines.Add("|---|---|---|---|")
             foreach ($file in $trxFiles) {
-              [xml]$trx = Get-Content $file.FullName
+              # `-LiteralPath`: when two assemblies' .trx names collide the
+              # runner de-duplicates by appending `[1]`, and `-Path` would
+              # read that as a wildcard character class and fail to find a
+              # file that exists (run 33659184434).
+              [xml]$trx = Get-Content -LiteralPath $file.FullName
               $counters = $trx.TestRun.ResultSummary.Counters
               $lines.Add("| $($file.Name) | $($counters.total) | $($counters.passed) | $($counters.failed) |")
               $failedResults += $trx.TestRun.Results.UnitTestResult |
