@@ -263,7 +263,12 @@ public sealed class MainWindowCompositionTests
             Assert.False(macroManagerDialog.IsVisible);
 
             macrosButton.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
-            await Task.Delay(50);
+
+            // `TD-119`: the Macros click opens the dialog on an asynchronous
+            // continuation; bounded poll on the real visibility, assertion unchanged.
+            var macrosDeadline = DateTime.UtcNow.AddSeconds(2);
+            while (!(macroManagerDialog.IsVisible) && DateTime.UtcNow < macrosDeadline)
+                await Task.Delay(10);
 
             Assert.True(macroManagerDialog.IsVisible);
         }

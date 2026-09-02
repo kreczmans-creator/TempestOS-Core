@@ -221,7 +221,12 @@ public sealed class ProductSpineAcceptanceTests
                 .Single(b => Avalonia.Automation.AutomationProperties.GetName(b) == "Engineering");
 
             engineering.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
-            await Task.Delay(50);
+
+            // `TD-119`: the rail navigates on an asynchronous continuation; bounded poll on
+            // the real navigator state, assertions unchanged.
+            var railDeadline = DateTime.UtcNow.AddSeconds(2);
+            while (!(navigator.Current.Area == ShellArea.Engineering) && DateTime.UtcNow < railDeadline)
+                await Task.Delay(10);
 
             Assert.Equal(ShellArea.Engineering, navigator.Current.Area);
             Assert.True(navigator.Current.IsStandaloneEngineering);

@@ -123,8 +123,12 @@ public sealed class RibbonViewTests
 
             var deleteButton = FindButtonById(ribbon, registry, "mechanical.delete");
             deleteButton.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
-            await Task.Delay(50);
 
+            // `TD-119`/Class B: no wait. An unavailable command is refused
+            // synchronously — `RibbonView.OnCommandButtonClickAsync` evaluates
+            // availability and raises `ActionCompleted` before its first
+            // `await`, so the message is already recorded when `RaiseEvent`
+            // returns.
             Assert.Contains(messages, m => m.Contains("selected", StringComparison.OrdinalIgnoreCase));
 
             // `TD-58`: a refusal reports Failed with no workspace change,
@@ -157,7 +161,12 @@ public sealed class RibbonViewTests
 
             var deleteButton = FindButtonById(ribbon, registry, "mechanical.delete");
             deleteButton.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
-            await Task.Delay(50);
+
+            // `TD-119`: the click dispatches asynchronously; bounded poll on the real reported
+            // state, assertions unchanged.
+            var deleteDeadline = DateTime.UtcNow.AddSeconds(2);
+            while (!(messages.Count > 0) && DateTime.UtcNow < deleteDeadline)
+                await Task.Delay(10);
 
             Assert.Contains(messages, m => m.Contains("Deleted", StringComparison.OrdinalIgnoreCase));
 
@@ -189,7 +198,12 @@ public sealed class RibbonViewTests
 
             var renameButton = FindButtonById(ribbon, registry, "mechanical.rename");
             renameButton.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
-            await Task.Delay(50);
+
+            // `TD-119`: the click dispatches asynchronously; bounded poll on the real reported
+            // state, assertions unchanged.
+            var renameDeadline = DateTime.UtcNow.AddSeconds(2);
+            while (!(opened is not null) && DateTime.UtcNow < renameDeadline)
+                await Task.Delay(10);
 
             Assert.NotNull(opened);
             Assert.Equal(target.Id, opened!.ObjectId);
@@ -220,8 +234,12 @@ public sealed class RibbonViewTests
             // destination chosen from the object tree, and says so by name.
             FindButtonById(ribbon, registry, "mechanical.move")
                 .RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
-            await Task.Delay(50);
 
+            // `TD-119`/Class B: no wait. An unavailable command is refused
+            // synchronously — `RibbonView.OnCommandButtonClickAsync` evaluates
+            // availability and raises `ActionCompleted` before its first
+            // `await`, so the message is already recorded when `RaiseEvent`
+            // returns.
             Assert.Contains(messages, m => m.Contains("Moving a Mechanical object", StringComparison.Ordinal));
             Assert.Contains(messages, m => m.Contains("object picker", StringComparison.OrdinalIgnoreCase));
 
@@ -231,8 +249,12 @@ public sealed class RibbonViewTests
             messages.Clear();
             FindButtonById(ribbon, registry, "mechanical.create")
                 .RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
-            await Task.Delay(50);
 
+            // `TD-119`/Class B: no wait. An unavailable command is refused
+            // synchronously — `RibbonView.OnCommandButtonClickAsync` evaluates
+            // availability and raises `ActionCompleted` before its first
+            // `await`, so the message is already recorded when `RaiseEvent`
+            // returns.
             Assert.Contains(messages, m => m.Contains("needs additional input", StringComparison.Ordinal));
 
             // `TD-58`: every refusal is Failed, with no workspace change
@@ -294,7 +316,12 @@ public sealed class RibbonViewTests
 
             var deleteButton = FindButtonById(ribbon, registry, "mechanical.delete");
             deleteButton.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
-            await Task.Delay(50);
+
+            // `TD-119`: the click dispatches asynchronously; bounded poll on the real reported
+            // state, assertions unchanged.
+            var recentDeadline = DateTime.UtcNow.AddSeconds(2);
+            while (!(CollectAllText(ribbon).Contains("Recently Used", StringComparison.Ordinal)) && DateTime.UtcNow < recentDeadline)
+                await Task.Delay(10);
 
             Assert.Contains("Recently Used", CollectAllText(ribbon));
         }
@@ -467,14 +494,28 @@ public sealed class RibbonViewTests
             var ribbon = new RibbonView(registry, manager, workspace, _ => { }, _ => { });
             var tabsBefore = ((TabControl)ribbon.Content!).Items.OfType<TabItem>().ToList();
 
+            // `TD-119`: both assertions below are negative or count-based, so
+            // there is nothing to poll for in them. `ActionCompleted` is the
+            // real positive signal that a click finished — every RibbonView
+            // dispatch path raises it — so the test observes that, then asserts
+            // exactly what it always did.
+            var completions = new List<string>();
+            ribbon.ActionCompleted += (message, _) => completions.Add(message);
+
             // Rename/Edit opens a document and records a recent command —
             // it does not change enablement inputs, so it must not
             // recompute enablement at all. The old RecordRecent→Rebuild()
             // path ran a full spurious pass here on every click (`TD-58`).
             manager.CanDeleteCalls = 0;
             var renameButton = FindButtonById(ribbon, registry, "mechanical.rename");
+            completions.Clear();
             renameButton.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
-            await Task.Delay(50);
+
+            // `TD-119`: the click dispatches asynchronously; bounded poll on the real reported
+            // state, assertions unchanged.
+            var renameClickDeadline = DateTime.UtcNow.AddSeconds(2);
+            while (!(completions.Count > 0) && DateTime.UtcNow < renameClickDeadline)
+                await Task.Delay(10);
 
             Assert.Equal(0, manager.CanDeleteCalls);
 
@@ -492,8 +533,14 @@ public sealed class RibbonViewTests
             manager.CanDeleteCalls = 0;
             manager.DeleteCalls = 0;
             var deleteButton = FindButtonById(ribbon, registry, "mechanical.delete");
+            completions.Clear();
             deleteButton.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
-            await Task.Delay(50);
+
+            // `TD-119`: the click dispatches asynchronously; bounded poll on the real reported
+            // state, assertions unchanged.
+            var deleteClickDeadline = DateTime.UtcNow.AddSeconds(2);
+            while (!(completions.Count > 0 && manager.DeleteCalls == 1) && DateTime.UtcNow < deleteClickDeadline)
+                await Task.Delay(10);
 
             Assert.Equal(1, manager.DeleteCalls);
             Assert.Equal(0, manager.CanDeleteCalls);

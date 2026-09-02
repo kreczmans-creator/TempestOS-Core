@@ -207,7 +207,12 @@ public sealed class ActionOutcomeReportingTests
             var before = history.Entries.Count;
 
             Click(ribbon, registry, "calculations.request-review");
-            await Task.Delay(120);
+
+            // `TD-119`: the ribbon dispatch is fire-and-forget and is reported on the subscriber's own continuation; bounded poll on the real
+            // history count, assertions unchanged.
+            var ribbonDeadline = DateTime.UtcNow.AddSeconds(2);
+            while (!(history.Entries.Count > before) && DateTime.UtcNow < ribbonDeadline)
+                await Task.Delay(10);
 
             Assert.Contains(
                 statusBar.GetLogicalDescendants().OfType<TextBlock>().Select(t => t.Text ?? string.Empty),
@@ -259,7 +264,12 @@ public sealed class ActionOutcomeReportingTests
             var renamed = await host.Manager!.RenameObjectAsync(node.Id, node.Kind!, NewName);
             Assert.True(renamed.Succeeded, renamed.Message);
             RaiseActionCompleted(inspector, $"Renamed to '{NewName}'.", ActionOutcome.From(renamed.Succeeded));
-            await Task.Delay(150);
+
+            // `TD-119`: the report fans out to reported on the subscriber's own continuation; bounded poll on the real
+            // history count, assertions unchanged.
+            var inspectorDeadline = DateTime.UtcNow.AddSeconds(2);
+            while (!(history.Entries.Count > before) && DateTime.UtcNow < inspectorDeadline)
+                await Task.Delay(10);
 
             Assert.Contains(
                 statusBar.GetLogicalDescendants().OfType<TextBlock>().Select(t => t.Text ?? string.Empty),
@@ -301,7 +311,12 @@ public sealed class ActionOutcomeReportingTests
 
             // Raised exactly as the Explorer's own context menu raises it.
             RaiseActionCompleted(explorer, $"Renamed to 'WP-D1 {node.Title}'.", ActionOutcome.Changed);
-            await Task.Delay(120);
+
+            // `TD-119`: the report fans out to reported on the subscriber's own continuation; bounded poll on the real
+            // history count, assertions unchanged.
+            var explorerDeadline = DateTime.UtcNow.AddSeconds(2);
+            while (!(history.Entries.Count > before) && DateTime.UtcNow < explorerDeadline)
+                await Task.Delay(10);
 
             Assert.Contains(
                 statusBar.GetLogicalDescendants().OfType<TextBlock>().Select(t => t.Text ?? string.Empty),
@@ -342,7 +357,12 @@ public sealed class ActionOutcomeReportingTests
             Assert.NotNull(editor);
 
             RaiseActionCompleted(editor!, "Saved 'WP-D1 Editor Save'.", ActionOutcome.Changed);
-            await Task.Delay(120);
+
+            // `TD-119`: the report fans out to reported on the subscriber's own continuation; bounded poll on the real
+            // history count, assertions unchanged.
+            var editorDeadline = DateTime.UtcNow.AddSeconds(2);
+            while (!(history.Entries.Count > before) && DateTime.UtcNow < editorDeadline)
+                await Task.Delay(10);
 
             Assert.Contains(
                 statusBar.GetLogicalDescendants().OfType<TextBlock>().Select(t => t.Text ?? string.Empty),

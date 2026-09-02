@@ -83,7 +83,17 @@ public sealed class SurfaceCommandIntegrationTests
 
             palette.Open();
             Query(palette).Text = "mechanical.move";
-            await Task.Delay(20);
+
+            // `TD-119`: `ApplyFilter` itself is synchronous, but `TextBox`
+            // raises `TextChanged` on a later dispatcher pass rather than inside
+            // the assignment — so the filtered rows are genuinely not ready when
+            // this returns. Bounded poll on the real row count; the assertions
+            // below are unchanged.
+            var filterDeadline = DateTime.UtcNow.AddSeconds(2);
+            while (((System.Collections.IEnumerable)Results(palette).ItemsSource!).Cast<ListBoxItem>().Count() != 1
+                   && DateTime.UtcNow < filterDeadline)
+                await Task.Delay(10);
+
 
             var rows = ((System.Collections.IEnumerable)Results(palette).ItemsSource!).Cast<ListBoxItem>().ToList();
             var row = Assert.Single(rows);
@@ -100,7 +110,12 @@ public sealed class SurfaceCommandIntegrationTests
                 RoutedEvent = Avalonia.Input.InputElement.KeyDownEvent,
                 Key = Avalonia.Input.Key.Enter,
             });
-            await Task.Delay(20);
+
+            // `TD-119`: bounded poll on the real reported reason; the assertions
+            // below are unchanged.
+            var reasonDeadline = DateTime.UtcNow.AddSeconds(2);
+            while (reason is null && DateTime.UtcNow < reasonDeadline)
+                await Task.Delay(10);
 
             Assert.NotNull(reason);
             Assert.Contains("destination parent", reason!, StringComparison.OrdinalIgnoreCase);
@@ -256,7 +271,13 @@ public sealed class SurfaceCommandIntegrationTests
             ribbon.ActionCompleted += (message, _) => messages.Add(message);
 
             Click(ribbon, registry, "requirements.revise");
-            await Task.Delay(80);
+
+            // `TD-119`: same fire-and-forget dispatch as
+            // `Ribbon_RequirementsDeleteGroup_...` above. Bounded poll on the
+            // real reported message; the assertions below are unchanged.
+            var reviseDeadline = DateTime.UtcNow.AddSeconds(2);
+            while (messages.Count == 0 && DateTime.UtcNow < reviseDeadline)
+                await Task.Delay(10);
 
             // ADR-0097's product decision, kept: the editor is the real
             // text-collection surface. Previously this Id reached the
@@ -336,7 +357,13 @@ public sealed class SurfaceCommandIntegrationTests
 
             var before = history.Entries.Count;
             Click(ribbon, registry, "calculations.request-review");
-            await Task.Delay(80);
+
+            // `TD-119`: the history entry is written on the dispatch's own
+            // continuation. Bounded poll on the real count; the assertions
+            // below are unchanged.
+            var historyDeadline = DateTime.UtcNow.AddSeconds(2);
+            while (history.Entries.Count <= before && DateTime.UtcNow < historyDeadline)
+                await Task.Delay(10);
 
             // The old RibbonObjectActionHandlers closures reported through
             // their own local ReportAsync - StatusBar and Toast only - and
@@ -463,20 +490,53 @@ public sealed class SurfaceCommandIntegrationTests
         palette.Open();
 
         Query(palette).Text = commandId;
-        await Task.Delay(20);
 
-        var index = registry.Items
+        // `TD-119`: `TextChanged` reaches `ApplyFilter` on a later dispatcher
+        // pass, so the palette's own rows must be observed rather than assumed.
+        // Bounded poll until they match the same filter this helper applies.
+        var expected = registry.Items
             .Where(d => d.DisplayName.Contains(commandId, StringComparison.OrdinalIgnoreCase) || d.Id.Contains(commandId, StringComparison.OrdinalIgnoreCase))
-            .ToList()
-            .FindIndex(d => d.Id == commandId);
+            .ToList();
+
+        var paletteDeadline = DateTime.UtcNow.AddSeconds(2);
+        while (((System.Collections.IEnumerable)Results(palette).ItemsSource!).Cast<ListBoxItem>().Count() != expected.Count
+               && DateTime.UtcNow < paletteDeadline)
+            await Task.Delay(10);
+
+        var index = expected.FindIndex(d => d.Id == commandId);
         Assert.True(index >= 0, $"'{commandId}' was not among the filtered results.");
         Results(palette).SelectedIndex = index;
 
-        Query(palette).RaiseEvent(new Avalonia.Input.KeyEventArgs
+        // `TD-119`: Enter runs `CommandPaletteOverlay.InvokeSelectedAsync`, which
+        // awaits the real `ICommandRegistry.InvokeAsync`. The palette raises
+        // exactly one of `CommandInvoked`/`CommandUnavailable` when that dispatch
+        // finishes, which is a real completion signal every caller can share —
+        // so this helper joins on it rather than guessing a duration. A declined
+        // prompt is `Cancelled` and deliberately raises neither; that caller
+        // reaches the deadline and then asserts, correctly, that nothing
+        // happened.
+        var settled = false;
+        void OnInvoked(CommandDescriptor _, CommandResult __) => settled = true;
+        void OnUnavailable(CommandDescriptor _, string __) => settled = true;
+
+        palette.CommandInvoked += OnInvoked;
+        palette.CommandUnavailable += OnUnavailable;
+        try
         {
-            RoutedEvent = Avalonia.Input.InputElement.KeyDownEvent,
-            Key = Avalonia.Input.Key.Enter,
-        });
-        await Task.Delay(80);
+            Query(palette).RaiseEvent(new Avalonia.Input.KeyEventArgs
+            {
+                RoutedEvent = Avalonia.Input.InputElement.KeyDownEvent,
+                Key = Avalonia.Input.Key.Enter,
+            });
+
+            var invokeDeadline = DateTime.UtcNow.AddSeconds(2);
+            while (!settled && DateTime.UtcNow < invokeDeadline)
+                await Task.Delay(10);
+        }
+        finally
+        {
+            palette.CommandInvoked -= OnInvoked;
+            palette.CommandUnavailable -= OnUnavailable;
+        }
     }
 }

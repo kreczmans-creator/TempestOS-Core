@@ -207,7 +207,13 @@ public sealed class ObjectRehydrationAcceptanceTests
             Assert.True(index >= 0, "The recovered project was not listed by the real project browser's own source.");
             list.SelectedIndex = index;
             openButton.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
-            await Task.Delay(50);
+
+            // `TD-119`: opening a project is dispatched fire-and-forget; bounded poll on the
+            // real navigator state, assertions unchanged.
+            var openDeadline = DateTime.UtcNow.AddSeconds(2);
+            while (!(navigator.Current.Area == ShellArea.ProjectWorkspace && navigator.Current.ProjectId == projectId) && DateTime.UtcNow < openDeadline)
+                await Task.Delay(10);
+
             await window.RenderCurrentModuleAsync();
 
             // --- 17. Shell navigation and project context are coherent

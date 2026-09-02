@@ -75,7 +75,9 @@ public sealed class FeatureCompletionTests
             dialog.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "OK"))
                 .RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
 
-            await Task.Delay(20);
+            // `TD-119`: no fixed wait here. The next iteration waits for the next
+            // prompt to actually become visible, and every caller now joins on the
+            // real state its own assertion reads.
         }
     }
 
@@ -87,7 +89,8 @@ public sealed class FeatureCompletionTests
         dialog.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, confirmText))
             .RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
 
-        await Task.Delay(20);
+        // `TD-119`: no fixed wait here — every caller joins on the real state its
+        // own assertion reads.
     }
 
     private static async Task WaitUntilVisibleAsync(Control control)
@@ -131,15 +134,31 @@ public sealed class FeatureCompletionTests
             // Both transitions need nobody present: no values, no
             // confirmation. That is what makes them macro-safe too.
             ClickRibbonCommand(ribbon, "calculations.request-review", registry);
-            await Task.Delay(60);
 
+            // `TD-119`: the ribbon dispatch is fire-and-forget over real disk I/O; bounded poll
+            // re-reading the real state each iteration, assertion unchanged.
             var afterRequestReview = await domainContext.Repository.FindAsync(target.Id);
+            var requestReviewDeadline = DateTime.UtcNow.AddSeconds(2);
+            while (!(afterRequestReview is not null && ((IHasLifecycle)afterRequestReview).Status == LifecycleState.InReview) && DateTime.UtcNow < requestReviewDeadline)
+            {
+                await Task.Delay(10);
+                afterRequestReview = await domainContext.Repository.FindAsync(target.Id);
+            }
+
             Assert.Equal(LifecycleState.InReview, ((IHasLifecycle)afterRequestReview!).Status);
 
             ClickRibbonCommand(ribbon, "calculations.approve", registry);
-            await Task.Delay(60);
 
+            // `TD-119`: the ribbon dispatch is fire-and-forget over real disk I/O; bounded poll
+            // re-reading the real state each iteration, assertion unchanged.
             var afterApprove = await domainContext.Repository.FindAsync(target.Id);
+            var approveDeadline = DateTime.UtcNow.AddSeconds(2);
+            while (!(afterApprove is not null && ((IHasLifecycle)afterApprove).Status == LifecycleState.Approved) && DateTime.UtcNow < approveDeadline)
+            {
+                await Task.Delay(10);
+                afterApprove = await domainContext.Repository.FindAsync(target.Id);
+            }
+
             Assert.Equal(LifecycleState.Approved, ((IHasLifecycle)afterApprove!).Status);
         }
         finally
@@ -169,9 +188,17 @@ public sealed class FeatureCompletionTests
 
             var registry = (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
             ClickRibbonCommand(ribbon, "documents.request-review", registry);
-            await Task.Delay(60);
 
+            // `TD-119`: the ribbon dispatch is fire-and-forget over real disk I/O; bounded poll
+            // re-reading the real state each iteration, assertion unchanged.
             var reread = await domainContext.Repository.FindAsync(target.Id);
+            var documentsDeadline = DateTime.UtcNow.AddSeconds(2);
+            while (!(reread is not null && ((IHasLifecycle)reread).Status == LifecycleState.InReview) && DateTime.UtcNow < documentsDeadline)
+            {
+                await Task.Delay(10);
+                reread = await domainContext.Repository.FindAsync(target.Id);
+            }
+
             Assert.Equal(LifecycleState.InReview, ((IHasLifecycle)reread!).Status);
         }
         finally
@@ -213,9 +240,17 @@ public sealed class FeatureCompletionTests
             // RequirementStatus set - the same validation the hand-written
             // handler used to spell out inline.
             await AnswerPromptsAsync(inputDialog, "Reviewed");
-            await Task.Delay(60);
 
+            // `TD-119`: the ribbon dispatch is fire-and-forget over real disk I/O; bounded poll
+            // re-reading the real state each iteration, assertion unchanged.
             var reread = await requirementsService.FindAsync(target.Id);
+            var setStatusDeadline = DateTime.UtcNow.AddSeconds(2);
+            while (!(reread is not null && reread.Status == RequirementStatus.Reviewed) && DateTime.UtcNow < setStatusDeadline)
+            {
+                await Task.Delay(10);
+                reread = await requirementsService.FindAsync(target.Id);
+            }
+
             Assert.Equal(RequirementStatus.Reviewed, reread!.Status);
         }
         finally
@@ -252,9 +287,22 @@ public sealed class FeatureCompletionTests
             // declares a ConfirmationMessage, not because one closure
             // happened to call the dialog.
             await ConfirmAsync(confirmationDialog, "Continue");
-            await Task.Delay(60);
 
-            var countAfter = await CountAllObjectNodesAsync(workspace.ProjectExplorer, await workspace.ProjectExplorer.GetRootNodesAsync());
+            // `TD-119`: structurally identical to
+            // `MechanicalDuplicate_OnARealPart_ActuallyCreatesARealCopy`, which CI
+            // failed at `384e47f`. Breaks on `>=` but still asserts equality, so a
+            // duplicate that ever created two objects fails at 14.
+            int countAfter;
+            var calcDuplicateDeadline = DateTime.UtcNow.AddSeconds(2);
+            while (true)
+            {
+                countAfter = await CountAllObjectNodesAsync(workspace.ProjectExplorer, await workspace.ProjectExplorer.GetRootNodesAsync());
+                if (countAfter >= countBefore + 1 || DateTime.UtcNow >= calcDuplicateDeadline)
+                    break;
+
+                await Task.Delay(10);
+            }
+
             Assert.Equal(countBefore + 1, countAfter);
         }
         finally
@@ -291,10 +339,22 @@ public sealed class FeatureCompletionTests
             // hard-coded - so accepting the offered default reproduces the
             // shipped behaviour exactly; the subject is still the selection.
             await AnswerPromptsAsync(inputDialog, "WP10.7A Test Verification Activity", "Inspection");
-            await Task.Delay(60);
 
-            await workspace.Navigation.SwitchAreaAsync(VerificationWorkspaceExplorerModule.NavigationItemId);
-            var created = await FindFirstObjectNodeOfKindAsync(workspace.ProjectExplorer, await workspace.ProjectExplorer.GetRootNodesAsync(), "VerificationActivity", "WP10.7A Test Verification Activity");
+            // `TD-119`: the create completes on a continuation this test has no
+            // task for. Switching area and walking the tree are reads, never
+            // writes, so re-running them cannot manufacture the object.
+            ProjectExplorerNode? created = null;
+            var verificationDeadline = DateTime.UtcNow.AddSeconds(2);
+            while (true)
+            {
+                await workspace.Navigation.SwitchAreaAsync(VerificationWorkspaceExplorerModule.NavigationItemId);
+                created = await FindFirstObjectNodeOfKindAsync(workspace.ProjectExplorer, await workspace.ProjectExplorer.GetRootNodesAsync(), "VerificationActivity", "WP10.7A Test Verification Activity");
+                if (created is not null || DateTime.UtcNow >= verificationDeadline)
+                    break;
+
+                await Task.Delay(10);
+            }
+
             Assert.NotNull(created);
 
             var reread = await domainContext.Repository.FindAsync(created!.Id);
@@ -341,9 +401,15 @@ public sealed class FeatureCompletionTests
             // descriptor's own binding builds Verification's
             // RecordVerificationResultCommand, scoped to the Inspection Kind.
             await AnswerPromptsAsync(inputDialog, "Pass", "Inspection");
-            await Task.Delay(60);
 
             var statusBar = GetPrivateField<StatusBarView>(window, "_statusBar");
+
+            // `TD-119`: the dispatch reports into the live status bar on its own
+            // continuation; bounded poll on that real text, assertion unchanged.
+            var inspectionDeadline = DateTime.UtcNow.AddSeconds(2);
+            while (!(statusBar.GetLogicalDescendants().OfType<TextBlock>().Any(t => t.Text != null && t.Text.Contains("Record Inspection Result", StringComparison.Ordinal) && t.Text.Contains("completed", StringComparison.Ordinal))) && DateTime.UtcNow < inspectionDeadline)
+                await Task.Delay(10);
+
             var statusText = statusBar.GetLogicalDescendants().OfType<TextBlock>()
                 .FirstOrDefault(t => t.Text != null && t.Text.Contains("Record Inspection Result", StringComparison.Ordinal) && t.Text.Contains("completed", StringComparison.Ordinal));
             Assert.NotNull(statusText);
@@ -387,7 +453,13 @@ public sealed class FeatureCompletionTests
             // reproduces the shipped behaviour - and the Kind is finally
             // visible and changeable rather than silently fixed.
             await AnswerPromptsAsync(inputDialog, "Part", "WP12.4B Test Part");
-            await Task.Delay(60);
+
+            // `TD-119`: the ribbon dispatch is fire-and-forget over real disk I/O; bounded poll
+            // re-reading the real state each iteration, assertion unchanged.
+            var createPartDeadline = DateTime.UtcNow.AddSeconds(2);
+            while (!((await domainContext.Repository.ListByKindAsync("Part")).Any(o => o is IHasBusinessIdentifier named && named.DisplayName == "WP12.4B Test Part")) && DateTime.UtcNow < createPartDeadline)
+                await Task.Delay(10);
+
 
             // A new "Part" with no explicit parent (Mechanical Create's
             // own honest, disclosed scope — "defaults to Kind Part," no
@@ -502,8 +574,21 @@ public sealed class FeatureCompletionTests
             // A real lifecycle rule refusing a real transition, reported
             // rather than thrown - unchanged by TD-77 Stage 5, and now
             // reached through the command framework's own dispatch.
+            // `TD-119`: every assertion below is negative — the status must NOT
+            // have advanced and the success sentence must NOT appear — so there
+            // is nothing to poll for in them. The refusal is still reported
+            // through `ActionCompleted`, which is the real positive signal that
+            // the dispatch finished; the test waits for that, then asserts
+            // exactly what it always did.
+            var rejections = new List<string>();
+            ribbon.ActionCompleted += (message, _) => rejections.Add(message);
+
             var exception = Record.Exception(() => ClickRibbonCommand(ribbon, "documents.approve", registry));
-            await Task.Delay(60);
+
+            // `TD-119`: wait for the refusal to be reported before asserting it changed nothing.
+            var approveRejectedDeadline = DateTime.UtcNow.AddSeconds(2);
+            while (!(rejections.Count > 0) && DateTime.UtcNow < approveRejectedDeadline)
+                await Task.Delay(10);
 
             Assert.Null(exception);
             var after = await domainContext.Repository.FindAsync(target.Id);
@@ -552,9 +637,17 @@ public sealed class FeatureCompletionTests
             var explorerView = GetPrivateField<ProjectExplorerView>(window, "_explorerView");
 
             RaiseObjectMoveRequested(explorerView, dragged.Id, dragged.Kind!, newParent.Id);
-            await Task.Delay(50);
 
+            // `TD-119`: the move is dispatched fire-and-forget; bounded poll re-reading the
+            // real tree each iteration, assertion unchanged.
             var newParentChildren = await workspace.ProjectExplorer.GetChildrenAsync(newParent.Id);
+            var moveDeadline = DateTime.UtcNow.AddSeconds(2);
+            while (!(newParentChildren.Any(c => c.Id == dragged.Id)) && DateTime.UtcNow < moveDeadline)
+            {
+                await Task.Delay(10);
+                newParentChildren = await workspace.ProjectExplorer.GetChildrenAsync(newParent.Id);
+            }
+
             Assert.Contains(newParentChildren, c => c.Id == dragged.Id);
         }
         finally
@@ -576,7 +669,12 @@ public sealed class FeatureCompletionTests
             var statusBar = GetPrivateField<StatusBarView>(window, "_statusBar");
 
             var exception = Record.Exception(() => RaiseObjectMoveRequested(explorerView, Guid.NewGuid(), "RequirementCollection", null));
-            await Task.Delay(50);
+
+            // `TD-119`: the honest refusal is reported on an asynchronous continuation;
+            // bounded poll on the real status text, assertions unchanged.
+            var unsupportedMoveDeadline = DateTime.UtcNow.AddSeconds(2);
+            while (!(statusBar.GetLogicalDescendants().OfType<TextBlock>().Any(t => t.Text != null && t.Text.Contains("isn't supported yet", StringComparison.Ordinal))) && DateTime.UtcNow < unsupportedMoveDeadline)
+                await Task.Delay(10);
 
             Assert.Null(exception);
             var statusText = statusBar.GetLogicalDescendants().OfType<TextBlock>()

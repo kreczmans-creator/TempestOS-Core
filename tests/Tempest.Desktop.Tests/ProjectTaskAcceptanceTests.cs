@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.LogicalTree;
+using Avalonia.Threading;
 using Tempest.App.Projects;
 using Tempest.App.Shell;
 using Tempest.App.Workspace;
@@ -500,9 +501,14 @@ public sealed class ProjectTaskAcceptanceTests
     /// <summary>Runs a real layout pass, twice, so content added during the render is measured too.</summary>
     private static async Task LayOutAsync(MainWindow window)
     {
+        // `TD-119`/Class B: both passes are kept — content added during the
+        // first render is measured by the second — but the queued dispatcher
+        // work is now drained deterministically rather than guessed at with a
+        // fixed delay. `RunJobs` is the repository's established drain
+        // (`UndoRedoThreadingTests`, `WP-Z2`).
         for (var pass = 0; pass < 2; pass++)
         {
-            await Task.Delay(40);
+            Dispatcher.UIThread.RunJobs();
             window.Measure(new Size(1400, 900));
             window.Arrange(new Rect(0, 0, 1400, 900));
         }
@@ -561,6 +567,16 @@ public sealed class ProjectTaskAcceptanceTests
     private static async Task AnswerDialogAsync(MainWindow window, string answer)
     {
         var dialog = window.GetLogicalDescendants().OfType<InputDialog>().Single();
+
+        // `TD-119`: the prompt is raised on an asynchronous continuation, so the
+        // dialog need not be showing yet when this helper is called — a second,
+        // distinct race from the fixed wait below, which remains disclosed debt.
+        // Bounded wait on its real visibility before typing into it.
+        var dialogDeadline = DateTime.UtcNow.AddSeconds(2);
+        while (!dialog.IsVisible && DateTime.UtcNow < dialogDeadline)
+            await Task.Delay(10);
+
+        Assert.True(dialog.IsVisible, "The input dialog never became visible.");
 
         var textBox = dialog.GetLogicalDescendants().OfType<TextBox>().Single();
         textBox.Text = answer;

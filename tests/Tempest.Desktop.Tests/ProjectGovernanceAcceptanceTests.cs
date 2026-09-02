@@ -524,6 +524,16 @@ public sealed class ProjectGovernanceAcceptanceTests
     {
         var dialog = window.GetLogicalDescendants().OfType<InputDialog>().Single();
 
+        // `TD-119`: the prompt is raised on an asynchronous continuation, so the
+        // dialog need not be showing yet when this helper is called — a second,
+        // distinct race from the fixed wait below, which remains disclosed debt.
+        // Bounded wait on its real visibility before typing into it.
+        var dialogDeadline = DateTime.UtcNow.AddSeconds(2);
+        while (!dialog.IsVisible && DateTime.UtcNow < dialogDeadline)
+            await Task.Delay(10);
+
+        Assert.True(dialog.IsVisible, "The input dialog never became visible.");
+
         var textBox = dialog.GetLogicalDescendants().OfType<TextBox>().Single();
         textBox.Text = answer;
 

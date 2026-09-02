@@ -227,14 +227,16 @@ public sealed class WorkspaceModernisationTests
             // A query no object title can match: the tree must empty, and the
             // View must say so rather than silently showing everything.
             filter.Text = "zzz-no-such-object-zzz";
-            await Task.Delay(20);
+
+            // `TD-119`/Class B: no wait. `ProjectExplorerView` wires
+            // `_filter.PropertyChanged` straight to a synchronous `ApplyFilter()`,
+            // so the tree is already refiltered when the assignment returns.
 
             Assert.Equal(0, VisibleNodeCount(tree.ItemsSource));
 
             // Clearing it restores exactly what was there — filtering is a
             // view over the loaded tree, not a re-query that could lose nodes.
             filter.Text = string.Empty;
-            await Task.Delay(20);
 
             Assert.Equal(unfiltered, VisibleNodeCount(tree.ItemsSource));
         }

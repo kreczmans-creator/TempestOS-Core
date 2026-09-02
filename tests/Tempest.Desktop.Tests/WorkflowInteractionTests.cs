@@ -370,11 +370,20 @@ public sealed class WorkflowInteractionTests
 
             var deleteButton = FindButtonById(ribbon, registry, "mechanical.delete");
             deleteButton.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
-            await Task.Delay(200);
+
+            // `TD-119`: the confirmed delete runs asynchronously through
+            // `IWorkspaceManager.DeleteObjectAsync`. Bounded poll re-reading the
+            // real object each iteration; the assertions below are unchanged.
+            var stillFindable = await domainContext.Repository.FindAsync(target.Id);
+            var deleteDeadline = DateTime.UtcNow.AddSeconds(2);
+            while ((stillFindable is null || !((Tempest.Core.EngineeringDomain.IDeletable)stillFindable).IsDeleted) && DateTime.UtcNow < deleteDeadline)
+            {
+                await Task.Delay(10);
+                stillFindable = await domainContext.Repository.FindAsync(target.Id);
+            }
 
             // Soft delete (see remarks above) — `IsDeleted` is the real
             // assertion, not `FindAsync` returning null.
-            var stillFindable = await domainContext.Repository.FindAsync(target.Id);
             Assert.NotNull(stillFindable);
             Assert.True(((Tempest.Core.EngineeringDomain.IDeletable)stillFindable!).IsDeleted);
             Assert.False(string.IsNullOrEmpty(promptSeen));
@@ -404,7 +413,12 @@ public sealed class WorkflowInteractionTests
 
             var deleteButton = FindButtonById(ribbon, registry, "mechanical.delete");
             deleteButton.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
-            await Task.Delay(50);
+
+            // `TD-119`: the click dispatches asynchronously; bounded poll on the real reported
+            // state, assertions unchanged.
+            var unwiredDeadline = DateTime.UtcNow.AddSeconds(2);
+            while (!(messages.Count > 0) && DateTime.UtcNow < unwiredDeadline)
+                await Task.Delay(10);
 
             Assert.Contains(messages, m => m.Contains("Deleted", StringComparison.OrdinalIgnoreCase));
         }
@@ -438,8 +452,12 @@ public sealed class WorkflowInteractionTests
 
             var createButton = FindButtonById(ribbon, registry, "mechanical.create");
             createButton.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
-            await Task.Delay(50);
 
+            // `TD-119`/Class B: no wait. An unavailable command is refused
+            // synchronously — `RibbonView.OnCommandButtonClickAsync` evaluates
+            // availability and raises `ActionCompleted` before its first
+            // `await`, so the message is already recorded when `RaiseEvent`
+            // returns.
             Assert.Contains(messages, m => m.Contains("needs additional input", StringComparison.Ordinal));
         }
         finally
