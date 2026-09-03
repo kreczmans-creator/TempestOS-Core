@@ -1,5 +1,6 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Layout;
 using Tempest.Desktop.Theming;
 
@@ -53,6 +54,26 @@ public sealed class ConfirmationDialog : Border
         _title.FontSize = DesignTokens.FontSizeTitle;
         _cancelButton.Click += (_, _) => Complete(false);
         _confirmButton.Click += (_, _) => Complete(true);
+        KeyDown += OnKeyDown;
+    }
+
+    /// <summary>
+    /// <c>Escape</c> cancels from anywhere in the dialog (mirroring
+    /// <see cref="InputDialog"/>'s identical convention). <c>Enter</c>
+    /// needs no explicit handling here — Avalonia's own <see cref="Button"/>
+    /// already invokes <c>Click</c> on a focused button's own <c>Enter</c>,
+    /// and <see cref="ConfirmAsync"/> deliberately focuses
+    /// <see cref="_cancelButton"/> first, so pressing <c>Enter</c> before
+    /// tabbing anywhere takes the safe action, never the (often
+    /// irreversible) confirm one.
+    /// </summary>
+    private void OnKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Escape)
+        {
+            Complete(false);
+            e.Handled = true;
+        }
     }
 
     /// <summary>
@@ -74,6 +95,10 @@ public sealed class ConfirmationDialog : Border
         _message.Text = message;
         _confirmButton.Content = confirmText;
         IsVisible = true;
+        // The safe action gets initial focus — pressing Enter before
+        // tabbing anywhere cancels, never confirms (this dialog is used
+        // for irreversible/data-losing actions as often as benign ones).
+        _cancelButton.Focus();
 
         _pending = new TaskCompletionSource<bool>();
         return _pending.Task;

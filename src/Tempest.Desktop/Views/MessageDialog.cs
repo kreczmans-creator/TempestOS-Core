@@ -1,5 +1,6 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Layout;
 using Tempest.Desktop.Theming;
 
@@ -60,6 +61,24 @@ public sealed class MessageDialog : Border
         _title.FontFamily = DesignTokens.TitleFont;
         _title.FontSize = DesignTokens.FontSizeTitle;
         _okButton.Click += (_, _) => Complete();
+        KeyDown += OnKeyDown;
+    }
+
+    /// <summary>
+    /// <c>Escape</c> dismisses exactly like <c>OK</c> — an acknowledgement
+    /// dialog has only one outcome, so there is nothing for cancelling to
+    /// mean. <c>Enter</c> needs no explicit handling: Avalonia's own
+    /// <see cref="Button"/> already invokes <c>Click</c> on a focused
+    /// button's own <c>Enter</c>, and <see cref="ShowAsync"/> focuses
+    /// <see cref="_okButton"/> — its only actionable control — on open.
+    /// </summary>
+    private void OnKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Escape)
+        {
+            Complete();
+            e.Handled = true;
+        }
     }
 
     /// <summary>Shows this dialog with <paramref name="severity"/>'s own glyph/colour, returning once the user acknowledges it (OK). Never blocks indefinitely — always resolves on a real user click.</summary>
@@ -79,6 +98,7 @@ public sealed class MessageDialog : Border
         _detailsText.Text = details ?? string.Empty;
 
         IsVisible = true;
+        _okButton.Focus();
 
         _pending = new TaskCompletionSource<bool>();
         return _pending.Task;
