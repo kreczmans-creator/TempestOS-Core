@@ -32,7 +32,20 @@ internal sealed class ExplorerNodeItem
 
     public ExplorerNodeItem? Parent { get; }
 
-    public string Display => $"{IconRegistry.Resolve(Node.Kind)}  {Node.Title}";
+    /// <summary>
+    /// The row's own display text — the Kind glyph, the title, and (`WP-Z4`
+    /// Productisation Phase 1, backlog item 3) a real child count for any
+    /// node that has children. No App-layer change was needed for this:
+    /// <see cref="ProjectExplorerView.LoadAsync"/> already loads the
+    /// area's entire tree eagerly, one level at a time via
+    /// <see cref="IProjectExplorer.GetChildrenAsync"/> (see that method's
+    /// own remarks), so every node's real child count is already sitting
+    /// in <see cref="Children"/> by the time this ever renders — counting
+    /// what was already fetched, never a second query.
+    /// </summary>
+    public string Display => Node.HasChildren
+        ? $"{IconRegistry.Resolve(Node.Kind)}  {Node.Title} ({Children.Count})"
+        : $"{IconRegistry.Resolve(Node.Kind)}  {Node.Title}";
 
     public AvaloniaList<ExplorerNodeItem> Children { get; } = [];
 
@@ -402,6 +415,8 @@ public sealed class ProjectExplorerView : UserControl
     public async Task LoadAsync(CancellationToken cancellationToken = default)
     {
         var selectedId = (_tree.SelectedItem as ExplorerNodeItem)?.Node.Id;
+        var oldIds = new HashSet<Guid>();
+        CollectIds(_allItems, oldIds);
 
         var roots = await _explorer.GetRootNodesAsync(cancellationToken).ConfigureAwait(true);
         var items = new AvaloniaList<ExplorerNodeItem>();
@@ -412,7 +427,35 @@ public sealed class ProjectExplorerView : UserControl
         _allItems = items;
         ApplyFilter();
 
-        if (selectedId is { } id && FindById(_allItems, id) is { } restored)
+        // Scroll-to-new-item (`WP-Z4` Productisation Phase 1, backlog item
+        // 4). No Core/App change was possible here: the generic Create
+        // path (Ribbon → ICommandRegistry.InvokeAsync → this LoadAsync)
+        // reports only a CommandResult (Succeeded/Message) — the created
+        // object's own Id, embedded in each Create command handler's own
+        // success message, is discarded and replaced by RibbonView's own
+        // generic per-descriptor wording before this view ever sees it
+        // (see class remarks / final report for the precise trace). A
+        // structured "created object Id" would need a CommandResult shape
+        // change threaded through eight Create command handlers and the
+        // Ribbon's own reporting path — a real Core contract change this
+        // Work Package's own scope does not extend to for a scroll
+        // convenience.
+        //
+        // A before/after diff of this view's own already-loaded node Ids
+        // needs none of that: a real create is exactly "one Id appeared
+        // that was not there before, and nothing disappeared" — distinct
+        // from a rename/revise/execute (no Id changes at all), a delete
+        // (one Id disappears), and a first load or an area switch (many
+        // Ids appear/disappear at once, guarded by requiring oldIds to be
+        // non-empty and exactly one net addition).
+        var newIds = new HashSet<Guid>();
+        CollectIds(_allItems, newIds);
+        var added = newIds.Except(oldIds).ToList();
+        var removedAny = oldIds.Except(newIds).Any();
+
+        if (oldIds.Count > 0 && added.Count == 1 && !removedAny && FindById(_allItems, added[0]) is { } created)
+            SelectAndReveal(created);
+        else if (selectedId is { } id && FindById(_allItems, id) is { } restored)
             SelectAndReveal(restored);
 
         UpdateBreadcrumbs();
@@ -431,6 +474,16 @@ public sealed class ProjectExplorerView : UserControl
         }
 
         return null;
+    }
+
+    /// <summary>Collects every node's own real Id, depth-first, into <paramref name="into"/> — the before/after snapshot <see cref="LoadAsync"/>'s own scroll-to-new-item diff compares.</summary>
+    private static void CollectIds(IEnumerable<ExplorerNodeItem> items, HashSet<Guid> into)
+    {
+        foreach (var item in items)
+        {
+            into.Add(item.Node.Id);
+            CollectIds(item.Children, into);
+        }
     }
 
     private async Task<ExplorerNodeItem> BuildAsync(ProjectExplorerNode node, ExplorerNodeItem? parent, CancellationToken cancellationToken)

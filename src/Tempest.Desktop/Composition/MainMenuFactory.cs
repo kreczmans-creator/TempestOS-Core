@@ -1,4 +1,5 @@
 using Avalonia.Controls;
+using Avalonia.Input;
 using Tempest.App.Workspace;
 using Tempest.Core.Diagnostics;
 using Tempest.Desktop.Docking;
@@ -134,15 +135,30 @@ internal static class MainMenuFactory
         };
         help.Items.Add(about);
 
+        // `WP-Z4` Productisation Phase 1 (backlog item 1) — the shortcut
+        // text used to be hand-appended to the Header string. The real
+        // key handling has only ever lived in KeyboardShortcuts.Register's
+        // own KeyDown handler on the main window (Ctrl+K/Ctrl+Tab/Ctrl+
+        // Shift+Tab, unchanged here); MenuItem.InputGesture is Avalonia's
+        // own property for the identical text, right-aligned by the
+        // platform's own MenuItem template instead of hand-spaced with
+        // extra name-string whitespace. Setting it duplicates no gesture
+        // handling and invents no second shortcut system — it is a label
+        // for the one that already exists.
         var commands = new MenuItem { Header = "_Commands" };
-        var openPalette = new MenuItem { Header = "Command Palette...   (Ctrl+K)", Icon = IconGeometry.Build(IconGeometry.Command, 14) };
+        var openPalette = new MenuItem
+        {
+            Header = "Command Palette...",
+            Icon = IconGeometry.Build(IconGeometry.Command, 14),
+            InputGesture = new KeyGesture(Key.K, KeyModifiers.Control),
+        };
         openPalette.Click += (_, _) => commandPalette.Open();
         commands.Items.Add(openPalette);
 
         var document = new MenuItem { Header = "_Document" };
-        var nextDoc = new MenuItem { Header = "Next Tab   (Ctrl+Tab)" };
+        var nextDoc = new MenuItem { Header = "Next Tab", InputGesture = new KeyGesture(Key.Tab, KeyModifiers.Control) };
         nextDoc.Click += (_, _) => documentArea.SelectNextTab();
-        var prevDoc = new MenuItem { Header = "Previous Tab   (Ctrl+Shift+Tab)" };
+        var prevDoc = new MenuItem { Header = "Previous Tab", InputGesture = new KeyGesture(Key.Tab, KeyModifiers.Control | KeyModifiers.Shift) };
         prevDoc.Click += (_, _) => documentArea.SelectPreviousTab();
         document.Items.Add(nextDoc);
         document.Items.Add(prevDoc);

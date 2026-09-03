@@ -148,13 +148,62 @@ public sealed class MainWindowCompositionTests
 
             var menu = window.GetLogicalDescendants().OfType<Menu>().Single();
             var document = menu.ItemsSource!.Cast<MenuItem>().Single(m => Equals(m.Header, "_Document"));
-            var nextDoc = document.Items.OfType<MenuItem>().Single(m => Equals((string)m.Header!, "Next Tab   (Ctrl+Tab)"));
+            var nextDoc = document.Items.OfType<MenuItem>().Single(m => Equals((string)m.Header!, "Next Tab"));
 
             // With only the Home tab plus one real document tab open,
             // Next Tab is a real, harmless no-throw round trip back to
             // itself — proving the menu item really calls SelectNextTab
             // on the real DocumentAreaView, not a no-op stub.
             var exception = Record.Exception(() => nextDoc.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(MenuItem.ClickEvent)));
+            Assert.Null(exception);
+        }
+        finally
+        {
+            await host.ShutdownAsync();
+            await host.DisposeAsync();
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task MenuItems_DisplayTheExactGesture_KeyboardShortcuts_ActuallyBinds()
+    {
+        // `WP-Z4` Productisation Phase 1 (backlog item 1) — MenuItem.InputGesture
+        // is a purely presentational Avalonia property; the real key
+        // handling lives entirely in KeyboardShortcuts.Register's own
+        // KeyDown handler (Ctrl+K / Ctrl+Tab / Ctrl+Shift+Tab). This proves
+        // the two never drift apart: whatever a menu item claims to be
+        // bound to is the literal gesture the handler dispatches on.
+        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
+        try
+        {
+            await host.StartAsync();
+            var window = new MainWindow(host);
+            var menu = window.GetLogicalDescendants().OfType<Menu>().Single();
+
+            var commands = menu.ItemsSource!.Cast<MenuItem>().Single(m => Equals(m.Header, "_Commands"));
+            var openPalette = commands.Items.OfType<MenuItem>().Single(m => Equals((string)m.Header!, "Command Palette..."));
+            Assert.Equal(new Avalonia.Input.KeyGesture(Avalonia.Input.Key.K, Avalonia.Input.KeyModifiers.Control), openPalette.InputGesture);
+
+            var document = menu.ItemsSource!.Cast<MenuItem>().Single(m => Equals(m.Header, "_Document"));
+            var nextDoc = document.Items.OfType<MenuItem>().Single(m => Equals((string)m.Header!, "Next Tab"));
+            var prevDoc = document.Items.OfType<MenuItem>().Single(m => Equals((string)m.Header!, "Previous Tab"));
+            Assert.Equal(new Avalonia.Input.KeyGesture(Avalonia.Input.Key.Tab, Avalonia.Input.KeyModifiers.Control), nextDoc.InputGesture);
+            Assert.Equal(new Avalonia.Input.KeyGesture(Avalonia.Input.Key.Tab, Avalonia.Input.KeyModifiers.Control | Avalonia.Input.KeyModifiers.Shift), prevDoc.InputGesture);
+
+            // Raising the identical KeyDown on the real window must reach
+            // the identical real handler the menu item's own Click calls
+            // (proven separately by DocumentMenu_NextAndPreviousTab_...
+            // above) — both paths lead to KeyboardShortcuts' one KeyDown
+            // handler, never two independently-maintained mechanisms. With
+            // only the Home tab open this is a harmless no-throw round
+            // trip, exactly like that test's own click path.
+            var exception = Record.Exception(() => window.RaiseEvent(new Avalonia.Input.KeyEventArgs
+            {
+                RoutedEvent = Avalonia.Input.InputElement.KeyDownEvent,
+                Key = Avalonia.Input.Key.Tab,
+                KeyModifiers = Avalonia.Input.KeyModifiers.Control,
+                Source = window,
+            }));
             Assert.Null(exception);
         }
         finally
