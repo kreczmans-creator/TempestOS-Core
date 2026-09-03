@@ -2,6 +2,7 @@ using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Tempest.App.Workspace;
 using Tempest.Core.Commands;
+using Tempest.Desktop.Theming;
 using Tempest.Desktop.Views;
 using Tempest.Samples;
 using Tempest.App.Workspace.Mechanical;
@@ -73,6 +74,41 @@ public sealed class RibbonViewTests
 
             var distinctAccents = disciplines.Select(d => accentsByCategory[d]).Distinct().Count();
             Assert.Equal(disciplines.Length, distinctAccents);
+        }
+        finally
+        {
+            await host.ShutdownAsync();
+            await host.DisposeAsync();
+        }
+    }
+
+    /// <summary>
+    /// Button hierarchy: the ribbon's own Create group is the one
+    /// commit-shaped action per discipline tab (a large tile, `BuildGroup`)
+    /// — before this fix it was styled identically (`ChromeStyles.Flat`) to
+    /// every Organize/Lifecycle/Actions button, distinguished only by size.
+    /// It must now carry the same accent-filled primary treatment every
+    /// other "+ New"/commit action in the shell already uses
+    /// (`ProjectRisksView`/`ProjectTasksView`/`ObjectEditorView.Save`, ...),
+    /// while a secondary command (Rename, in Organize) stays flat.
+    /// </summary>
+    [AvaloniaFact]
+    public async Task CreateGroupButtons_AreStyledPrimary_OtherGroupsStayFlat()
+    {
+        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
+        try
+        {
+            await host.StartAsync();
+            var registry = (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
+            var ribbon = new RibbonView(registry, host.Manager!, host.Workspace!, _ => { }, _ => { });
+
+            var createButton = FindButtonById(ribbon, registry, "mechanical.create");
+            Assert.Contains(ChromeStyles.Primary, createButton.Classes);
+            Assert.DoesNotContain(ChromeStyles.Flat, createButton.Classes);
+
+            var renameButton = FindButtonById(ribbon, registry, "mechanical.rename");
+            Assert.Contains(ChromeStyles.Flat, renameButton.Classes);
+            Assert.DoesNotContain(ChromeStyles.Primary, renameButton.Classes);
         }
         finally
         {

@@ -299,9 +299,23 @@ public sealed class PropertyInspectorView : UserControl
             row.Children.Add(name);
 
             var isDisplayNameField = editable && facet.Name.Equals("Name", StringComparison.OrdinalIgnoreCase);
-            Control valueControl = isDisplayNameField && _currentKind is not null && _manager.CanRename(_currentKind)
+            var canRenameCurrentKind = _currentKind is not null && _manager.CanRename(_currentKind);
+            Control valueControl = isDisplayNameField && canRenameCurrentKind
                 ? BuildEditableNameField(facet.Value)
                 : new TextBlock { Text = facet.Value, TextWrapping = TextWrapping.Wrap, FontSize = DesignTokens.FontSizeBody };
+
+            if (isDisplayNameField && !canRenameCurrentKind && _currentKind is not null)
+            {
+                // Every other facet in this View is *always* read-only text
+                // (this class's own remarks), so on its own this row would
+                // look identical to those — silently indistinguishable from
+                // one that was never going to be editable. A tooltip says,
+                // honestly, why this specific Kind's own Name renders the
+                // same as every other row instead of the editable field it
+                // is for every renamable Kind, rather than leaving the
+                // difference unexplained.
+                ToolTip.SetTip(valueControl, $"Renaming isn't available for '{_currentKind}' objects.");
+            }
 
             Grid.SetColumn(valueControl, 1);
             row.Children.Add(valueControl);
