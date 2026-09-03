@@ -124,15 +124,38 @@ public sealed class DocumentAreaView : UserControl
     }
 
     /// <summary>Removes <paramref name="viewId"/>'s own tab, if present — a no-op otherwise.</summary>
+    /// <remarks>
+    /// <b>Closing the active tab must land on a neighbouring document, not
+    /// on the Cockpit.</b> <see cref="TabControl"/>'s own default reaction
+    /// to its selected container disappearing is to reset
+    /// <see cref="SelectingItemsControl.SelectedIndex"/> to <c>0</c> — the
+    /// Home tab, always first — rather than the tab that visually took the
+    /// closed one's place. Confirmed live: with four tabs open and the
+    /// third one active, closing it silently dumped the user back to the
+    /// Cockpit instead of the fourth tab sliding into view, the exact
+    /// "lose context switching between objects" defect this Work Package
+    /// exists to close. Selecting the tab now sitting at the closed one's
+    /// former index — clamped to the last tab if it was the rightmost —
+    /// keeps the user on a document exactly as every mainstream tab strip
+    /// does, and leaves an unrelated close (the closed tab was not active)
+    /// untouched, since <see cref="TabControl"/> never moves selection for
+    /// that case on its own.
+    /// </remarks>
     public void RemoveTab(Guid viewId)
     {
         if (_tabsByViewId.Remove(viewId, out var tab))
         {
+            var wasActive = ReferenceEquals(_tabs.SelectedItem, tab);
+            var index = _tabs.Items.IndexOf(tab);
+
             _tabs.Items.Remove(tab);
             _pinnedViewIds.Remove(viewId);
             _headerTextBlocks.Remove(viewId);
             _headerBaseText.Remove(viewId);
             _extraDirtyFlags.Remove(viewId);
+
+            if (wasActive && _tabs.Items.Count > 0)
+                _tabs.SelectedIndex = Math.Min(index, _tabs.Items.Count - 1);
         }
     }
 

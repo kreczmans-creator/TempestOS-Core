@@ -4,6 +4,7 @@ using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Tempest.App.Shell;
+using Tempest.Desktop.Icons;
 using Tempest.Desktop.Theming;
 
 namespace Tempest.Desktop.Views;
@@ -36,7 +37,7 @@ public sealed class DeclaredCapabilityView : UserControl
     /// <summary>Builds the surface for a declared global module.</summary>
     public DeclaredCapabilityView(ShellAreaDescriptor descriptor, string? projectLabel = null)
         : this(
-            (descriptor ?? throw new ArgumentNullException(nameof(descriptor))).Glyph,
+            IconFor((descriptor ?? throw new ArgumentNullException(nameof(descriptor))).Area),
             descriptor.Title,
             descriptor.Availability,
             descriptor.Note,
@@ -48,7 +49,7 @@ public sealed class DeclaredCapabilityView : UserControl
     /// <summary>Builds the surface for a declared project area.</summary>
     public DeclaredCapabilityView(ProjectAreaDescriptor descriptor, string? projectLabel = null)
         : this(
-            (descriptor ?? throw new ArgumentNullException(nameof(descriptor))).Glyph,
+            IconFor((descriptor ?? throw new ArgumentNullException(nameof(descriptor))).Area),
             descriptor.Title,
             descriptor.Availability,
             descriptor.Note,
@@ -58,7 +59,7 @@ public sealed class DeclaredCapabilityView : UserControl
     }
 
     private DeclaredCapabilityView(
-        string glyph, string title, NavigationAvailability availability, string note, string? trackedBy, string? projectLabel)
+        StreamGeometry icon, string title, NavigationAvailability availability, string note, string? trackedBy, string? projectLabel)
     {
         var stack = new StackPanel
         {
@@ -69,15 +70,19 @@ public sealed class DeclaredCapabilityView : UserControl
             Spacing = DesignTokens.SpaceSm,
         };
 
-        var glyphText = new TextBlock
-        {
-            Text = glyph,
-            FontSize = DesignTokens.IconSizeLarge - 8,
-            HorizontalAlignment = HorizontalAlignment.Center,
-            VerticalAlignment = VerticalAlignment.Center,
-            Opacity = 0.55,
-        };
-        ThemeReactiveBrush.Bind(glyphText, TextBlock.ForegroundProperty, BrandPalette.MutedTextBrushKey);
+        // The same crisp vector iconography the nav rail and project tab
+        // strip use for this exact module — never the raw Unicode glyph
+        // `ShellAreaDescriptor`/`ProjectAreaDescriptor` carry for those
+        // text-only contexts. Rendering that glyph here (a single Unicode
+        // character, system-font-dependent) previously gave a "not yet
+        // implemented" surface a different, uncontrolled icon from the one
+        // the user just clicked in the rail — the exact "belongs to a
+        // different application" seam this view exists to avoid.
+        var iconGlyph = IconGeometry.Build(icon, DesignTokens.IconSizeLarge - 8);
+        iconGlyph.HorizontalAlignment = HorizontalAlignment.Center;
+        iconGlyph.VerticalAlignment = VerticalAlignment.Center;
+        iconGlyph.Opacity = 0.55;
+        ThemeReactiveBrush.Bind(iconGlyph, Avalonia.Controls.Documents.TextElement.ForegroundProperty, BrandPalette.MutedTextBrushKey);
         var glyphFrame = new Border
         {
             Width = 56,
@@ -86,7 +91,7 @@ public sealed class DeclaredCapabilityView : UserControl
             BorderThickness = new Thickness(1),
             HorizontalAlignment = HorizontalAlignment.Center,
             Margin = new Thickness(0, 0, 0, DesignTokens.SpaceMd),
-            Child = glyphText,
+            Child = iconGlyph,
         };
         ThemeReactiveBrush.Bind(glyphFrame, Border.BorderBrushProperty, BrandPalette.HairlineStrongBrushKey);
         ThemeReactiveBrush.Bind(glyphFrame, Border.BackgroundProperty, BrandPalette.SurfaceBackgroundBrushKey);
@@ -167,4 +172,41 @@ public sealed class DeclaredCapabilityView : UserControl
         AutomationProperties.SetName(this, title);
         Content = stack;
     }
+
+    /// <summary>
+    /// The exact icon <see cref="GlobalNavigationRail"/> renders for
+    /// <paramref name="area"/> — kept in lock-step by construction rather
+    /// than by convention, so a declared module's own "not yet
+    /// implemented" surface always shows the same glyph the user just
+    /// clicked in the rail, never <see cref="ShellAreaDescriptor.Glyph"/>'s
+    /// plain-text character (that field remains for the rail's own
+    /// text-only contexts, e.g. automation names).
+    /// </summary>
+    private static StreamGeometry IconFor(ShellArea area) => area switch
+    {
+        ShellArea.Home => IconGeometry.Home,
+        ShellArea.Projects or ShellArea.ProjectWorkspace => IconGeometry.Folder,
+        ShellArea.Engineering => IconGeometry.Gear,
+        ShellArea.Tasks => IconGeometry.CheckSquare,
+        ShellArea.Commercial => IconGeometry.Currency,
+        ShellArea.Resources => IconGeometry.People,
+        ShellArea.Knowledge => IconGeometry.Book,
+        ShellArea.Administration => IconGeometry.Shield,
+        _ => IconGeometry.Dot,
+    };
+
+    /// <summary>The project-area counterpart of <see cref="IconFor(ShellArea)"/> — one vector icon per area, chosen for what the area actually is.</summary>
+    private static StreamGeometry IconFor(ProjectArea area) => area switch
+    {
+        ProjectArea.Overview => IconGeometry.Compass,
+        ProjectArea.Engineering => IconGeometry.Gear,
+        ProjectArea.Documents => IconGeometry.Document,
+        ProjectArea.Requirements => IconGeometry.Requirement,
+        ProjectArea.Tasks => IconGeometry.CheckSquare,
+        ProjectArea.Risks => IconGeometry.Warning,
+        ProjectArea.Timeline => IconGeometry.Clock,
+        ProjectArea.Reports => IconGeometry.Chart,
+        ProjectArea.Settings => IconGeometry.Sliders,
+        _ => IconGeometry.Dot,
+    };
 }
