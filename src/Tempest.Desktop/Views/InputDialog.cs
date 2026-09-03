@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Layout;
+using Tempest.Desktop.Editors;
 using Tempest.Desktop.Theming;
 
 namespace Tempest.Desktop.Views;
@@ -27,7 +28,11 @@ public sealed class InputDialog : Border
     private readonly TextBlock _title = new() { FontSize = DesignTokens.FontSizeHeading, FontWeight = DesignTokens.WeightHeading };
     private readonly TextBlock _label = new() { FontSize = DesignTokens.FontSizeBody, Opacity = 0.8, Margin = new Thickness(0, DesignTokens.SpaceSm, 0, DesignTokens.SpaceXs) };
     private readonly TextBox _input = new() { MinHeight = DesignTokens.ControlSizeMedium };
-    private readonly TextBlock _validationMessage = new() { FontSize = DesignTokens.FontSizeCaption, Foreground = SeverityColors.Resolve(FeedbackSeverity.Error), Margin = new Thickness(0, DesignTokens.SpaceXs, 0, 0), IsVisible = false };
+    // A real severity row (glyph + colour, `ObjectEditorView.BuildSeverityRow`
+    // — the same reusable row `PropertyInspectorView`'s own Validation
+    // section already shares), not a bare-coloured string: colour alone is
+    // never this platform's feedback vocabulary.
+    private readonly ContentControl _validationSlot = new() { Margin = new Thickness(0, DesignTokens.SpaceXs, 0, 0), IsVisible = false };
     private readonly Button _okButton = new() { Content = "OK", MinHeight = DesignTokens.ControlSizeMedium };
     private readonly Button _cancelButton = new() { Content = "Cancel", MinHeight = DesignTokens.ControlSizeMedium };
 
@@ -57,7 +62,7 @@ public sealed class InputDialog : Border
         body.Children.Add(_title);
         body.Children.Add(_label);
         body.Children.Add(_input);
-        body.Children.Add(_validationMessage);
+        body.Children.Add(_validationSlot);
         body.Children.Add(buttons);
         Child = body;
 
@@ -98,7 +103,8 @@ public sealed class InputDialog : Border
         _label.Text = label;
         _input.Text = initialValue;
         _validate = validate;
-        _validationMessage.IsVisible = false;
+        _validationSlot.IsVisible = false;
+        _validationSlot.Content = null;
         IsVisible = true;
         _input.Focus();
         _input.SelectAll();
@@ -128,8 +134,8 @@ public sealed class InputDialog : Border
 
     private void ShowValidationError(string message)
     {
-        _validationMessage.Text = message;
-        _validationMessage.IsVisible = true;
+        _validationSlot.Content = ObjectEditorView.BuildSeverityRow(FeedbackSeverity.Error, message);
+        _validationSlot.IsVisible = true;
     }
 
     private void Complete(string? result)

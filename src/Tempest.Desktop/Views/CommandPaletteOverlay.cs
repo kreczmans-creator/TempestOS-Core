@@ -104,7 +104,19 @@ public sealed class CommandPaletteOverlay : Border
         panel.Children.Add(_results);
         Child = panel;
 
-        _query.TextChanged += (_, _) => ApplyFilter();
+        // `PropertyChanged`, not the `TextChanged` routed event — the same
+        // reliability gap `ObjectEditorView`/`ProjectExplorerView` already
+        // documented and fixed (`WP 10.3A`/`WP 10.5B`): `TextChanged` does
+        // not reliably fire for a purely programmatic `.Text =` assignment
+        // (only for real keystrokes), where `PropertyChanged` fires for
+        // both. A real keyboard already worked here; a caller that sets
+        // `_query.Text` itself (a "clear search" affordance, a restored
+        // query) would not have re-filtered.
+        _query.PropertyChanged += (_, e) =>
+        {
+            if (e.Property == TextBox.TextProperty)
+                ApplyFilter();
+        };
         _query.KeyDown += OnQueryKeyDown;
         _results.DoubleTapped += async (_, _) => await InvokeSelectedAsync().ConfigureAwait(true);
     }
@@ -145,7 +157,10 @@ public sealed class CommandPaletteOverlay : Border
             .ToList();
 
         if (_filtered.Count > 0)
+        {
             _results.SelectedIndex = 0;
+            _results.ScrollIntoView(0);
+        }
     }
 
     /// <summary>The label for one row: the command, and — when it cannot run — why not.</summary>
@@ -172,12 +187,18 @@ public sealed class CommandPaletteOverlay : Border
                 break;
             case Key.Down:
                 if (_results.SelectedIndex < _filtered.Count - 1)
+                {
                     _results.SelectedIndex++;
+                    _results.ScrollIntoView(_results.SelectedIndex);
+                }
                 e.Handled = true;
                 break;
             case Key.Up:
                 if (_results.SelectedIndex > 0)
+                {
                     _results.SelectedIndex--;
+                    _results.ScrollIntoView(_results.SelectedIndex);
+                }
                 e.Handled = true;
                 break;
         }
