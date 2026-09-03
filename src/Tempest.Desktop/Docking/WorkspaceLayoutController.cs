@@ -1,6 +1,7 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
+using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Tempest.App.Workspace.Layout;
 
@@ -304,12 +305,46 @@ public sealed class WorkspaceLayoutController
     /// <paramref name="fallback"/> when nothing was saved or what was saved
     /// is unreadable, and dropping any panel that is no longer registered.
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>The continuation is marshalled back to the UI thread before any
+    /// visual work.</b> <see cref="IWorkspaceLayoutStore.LoadAsync"/> reaches
+    /// <c>Tempest.Core</c>'s own settings substrate, whose async methods
+    /// <c>ConfigureAwait(false)</c> internally — so once that read genuinely
+    /// completes asynchronously (reliably the case on Windows), the
+    /// continuation here resumes on a thread-pool thread, not the Avalonia
+    /// UI thread. <see cref="Load"/> synchronously drives the visual tree
+    /// (<c>Adopt</c> → <see cref="WorkspaceLayoutHost.Update"/> →
+    /// <see cref="WorkspaceLayoutHost.HideFlyout"/> → <c>Visual.IsVisible</c>),
+    /// and every <see cref="AvaloniaObject"/> read there calls
+    /// <see cref="Dispatcher.VerifyAccess"/>. Off the UI thread that throws
+    /// <see cref="InvalidOperationException"/> ("Call from invalid thread"),
+    /// and because the one caller awaits this from an <c>async void</c>
+    /// <see cref="Window.Opened"/> handler the throw was unhandled and killed
+    /// the process moments after the window appeared.
+    /// </para>
+    /// <para>
+    /// <c>ConfigureAwait(false)</c> is deliberately <b>kept</b> on the Core
+    /// read — that call has no UI affinity and should not pay for a context
+    /// capture. Only <see cref="Load"/> is marshalled, using the same
+    /// <c>CheckAccess</c>/<c>Invoke</c> shape
+    /// <see cref="Tempest.Desktop.Theming.ThemeService"/> already established
+    /// for this identical Core-async/UI-thread boundary. Tree construction
+    /// (<see cref="DropUnknownPanels"/>) touches no UI state and stays off
+    /// the UI thread.
+    /// </para>
+    /// </remarks>
     public async Task RestoreAsync(WorkspaceLayoutTree fallback, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(fallback);
 
         var saved = await _store.LoadAsync(cancellationToken).ConfigureAwait(false);
-        Load(saved is null ? fallback : DropUnknownPanels(saved, fallback));
+        var tree = saved is null ? fallback : DropUnknownPanels(saved, fallback);
+
+        if (Dispatcher.UIThread.CheckAccess())
+            Load(tree);
+        else
+            Dispatcher.UIThread.Invoke(() => Load(tree));
     }
 
     /// <summary>
