@@ -411,7 +411,17 @@ public sealed class RibbonView : UserControl
             Padding = large ? new Avalonia.Thickness(DesignTokens.SpaceSm, DesignTokens.SpaceMd) : new Avalonia.Thickness(DesignTokens.SpaceMd, DesignTokens.SpaceSm),
             VerticalContentAlignment = VerticalAlignment.Center,
         };
-        button.Classes.Add(ChromeStyles.Flat);
+        // `large` is exactly the Create group's own tiles (see `BuildGroup`)
+        // — the ribbon's one commit-shaped action per discipline, styled
+        // accent-filled like every other primary create/commit action in
+        // the shell (`ProjectRisksView`/`ProjectTasksView`/`ProjectTimelineView`'s
+        // own "+ New" buttons, `ObjectEditorView.Save`, ...). Every other
+        // command (Organize/Lifecycle/Actions, and any command reappearing
+        // in a compact "Recently Used" row) stays the flat, secondary
+        // treatment — before this fix every ribbon button looked identical
+        // regardless of importance, sized apart but never distinguished by
+        // weight or colour.
+        button.Classes.Add(large ? ChromeStyles.Primary : ChromeStyles.Flat);
 
         ToolTip.SetTip(button, descriptor.Description ?? descriptor.DisplayName);
         button.PointerEntered += (_, _) => _setHint(descriptor.Description ?? descriptor.DisplayName);

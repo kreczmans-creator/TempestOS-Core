@@ -4,10 +4,12 @@ using Avalonia.LogicalTree;
 using Tempest.App.Workspace;
 using Tempest.Core.Diagnostics;
 using Tempest.Core.EngineeringDomain;
+using Tempest.Core.Requirements;
 using Tempest.Core.Runtime;
 using Tempest.Desktop.Views;
 using Tempest.Samples;
 using Tempest.App.Workspace.Mechanical;
+using Tempest.App.Workspace.Requirements;
 
 namespace Tempest.Desktop.Tests;
 
@@ -191,6 +193,96 @@ public sealed class WorkspaceModernisationTests
             var validationExpander = view.GetLogicalDescendants().OfType<Expander>().Single(e => Equals(e.Header, "Validation"));
             var text = validationExpander.GetLogicalDescendants().OfType<TextBlock>().Single().Text;
             Assert.Equal("Real validation is not available for this object here.", text);
+        }
+        finally
+        {
+            await host.ShutdownAsync();
+            await host.DisposeAsync();
+        }
+    }
+
+    /// <summary>
+    /// The Identity group's own Name row is the one facet this View ever
+    /// renders as an editable control — but only for a Kind
+    /// <see cref="IWorkspaceManager.CanRename"/> actually supports; for
+    /// every other Kind it falls back to the same plain read-only text
+    /// every other facet already uses, with nothing distinguishing it from
+    /// them. A real Requirement Group (no rename factory registered
+    /// anywhere in <c>RequirementsWorkspaceRegistration</c>) is a real,
+    /// honest case of that fallback — this proves the row now carries a
+    /// tooltip explaining why, rather than looking silently identical to a
+    /// field that was never going to be editable.
+    /// </summary>
+    [AvaloniaFact]
+    public async Task PropertyInspectorView_NameFacet_ForAKindThatCannotRename_CarriesAnExplanatoryTooltip()
+    {
+        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
+        try
+        {
+            await host.StartAsync();
+            var workspace = host.Workspace!;
+            var manager = host.Manager!;
+            var requirements = (IRequirementsService)host.Services!.GetService(typeof(IRequirementsService));
+
+            var group = await requirements.CreateGroupAsync("WP-Ribbon-PropInspector Tooltip Group");
+            Assert.False(manager.CanRename(RequirementsService.RequirementGroupDocumentKind), "This test's own premise requires a real Kind with no rename factory registered.");
+
+            await workspace.PropertyInspector.InspectAsync(group.Id, RequirementsService.RequirementGroupDocumentKind);
+
+            var view = new PropertyInspectorView(workspace.PropertyInspector, manager);
+            view.SetCurrentSelection(group.Id, RequirementsService.RequirementGroupDocumentKind);
+            view.Refresh();
+
+            var identitySection = view.GetLogicalDescendants().OfType<Expander>().Single(e => Equals(e.Header, "Identity"));
+            var nameRow = identitySection.GetLogicalDescendants().OfType<Grid>()
+                .Single(g => g.Children.OfType<TextBlock>().Any(t => t.Text == "Name"));
+            var valueControl = (Control)nameRow.Children[1];
+
+            Assert.IsType<TextBlock>(valueControl); // still honestly read-only, never a fabricated editable control
+            Assert.Equal($"Renaming isn't available for '{RequirementsService.RequirementGroupDocumentKind}' objects.", ToolTip.GetTip(valueControl));
+        }
+        finally
+        {
+            await host.ShutdownAsync();
+            await host.DisposeAsync();
+        }
+    }
+
+    /// <summary>
+    /// The same Name row, for a real Mechanical object whose Kind
+    /// genuinely does support rename (`ADR-0096`) — the editable
+    /// <see cref="TextBox"/> case must carry no such tooltip, since there
+    /// is nothing to explain: the field really is editable here.
+    /// </summary>
+    [AvaloniaFact]
+    public async Task PropertyInspectorView_NameFacet_ForARenamableKind_CarriesNoExplanatoryTooltip()
+    {
+        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
+        try
+        {
+            await host.StartAsync();
+            var workspace = host.Workspace!;
+            var manager = host.Manager!;
+            await workspace.Navigation.SwitchAreaAsync(MechanicalWorkspaceExplorerModule.NavigationItemId);
+
+            var roots = await workspace.ProjectExplorer.GetRootNodesAsync();
+            var objectNodes = await CollectObjectNodesAsync(workspace.ProjectExplorer, roots);
+            var target = objectNodes.First();
+            Assert.True(manager.CanRename(target.Kind!));
+
+            await workspace.PropertyInspector.InspectAsync(target.Id, target.Kind!);
+
+            var view = new PropertyInspectorView(workspace.PropertyInspector, manager);
+            view.SetCurrentSelection(target.Id, target.Kind!);
+            view.Refresh();
+
+            var identitySection = view.GetLogicalDescendants().OfType<Expander>().Single(e => Equals(e.Header, "Identity"));
+            var nameRow = identitySection.GetLogicalDescendants().OfType<Grid>()
+                .Single(g => g.Children.OfType<TextBlock>().Any(t => t.Text == "Name"));
+            var valueControl = (Control)nameRow.Children[1];
+
+            Assert.IsType<TextBox>(valueControl);
+            Assert.Null(ToolTip.GetTip(valueControl));
         }
         finally
         {
