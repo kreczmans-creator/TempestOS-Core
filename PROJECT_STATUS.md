@@ -3,12 +3,14 @@
 **Last Updated:** 2026-09-01 (`WP-Z4`, Release Preparation — following
 `WP-Z1` Governance Correction, `WP-Z2` `TD-117`, and `WP-Z3` Academy
 retrospectives).
-**The `v0.13.x` train remains CLOSED. `v0.14.0` is IN PREPARATION: `VERSION`
-is bumped and the release documentation is written, but the work is NOT
-merged to `main`, NOT tagged, NOT published and NOT certified.**
+**The `v0.13.x` train remains CLOSED. `v0.14.0` is RELEASED AND PUBLISHED
+(2026-09-03): merged to `main` as `026ed7c`, tagged `v0.14.0`, and published
+as GitHub Release `381878529` with both required assets. It is NOT
+CERTIFIED — a §9 Product Approval verdict has not been issued, and
+publication is not certification.**
 
 **`v0.14.0` — "Durability, Review Readiness & Command-Path Convergence"**
-is prepared on `claude/stage-3-descriptor-binding-6wz401`: **52 commits over
+shipped from `claude/stage-3-descriptor-binding-6wz401` via PR #5: **52 commits over
 the `v0.13.1` tag**, of which the sixteen Work Packages below are a
 minority. The rest is the engineering body of work that preceded them —
 durable object state and attachments (`ADR-0113`/`0114`), the workspace
@@ -3376,12 +3378,25 @@ project's own convention.
 
 ## Current Release
 
-**Corrected, `WP-Z4` (2026-09-01).** This field is stale. The last
-*released* version is **`v0.13.1`** — tagged, merged to `main`, and
-published with both assets. **`v0.14.0` is IN PREPARATION**: `VERSION` reads
-`0.14.0` and `docs/releases/v0.14.0/` holds the Release Notes, Work Package
-inventory and Engineering Release Report, but **no tag exists, no merge to
-`main` has occurred, and nothing has been published or certified**.
+**Corrected, `WP-Z4` Stage 24 (2026-09-03).** The current released version
+is **`v0.14.0`** — merged to `main` as merge commit `026ed7c` (parents
+`00f7f394` + `ad7ecf4`, the final PR head) from PR #5, gated on `main`
+itself at that commit under §7.3 (run `33670715277`), tagged `v0.14.0`
+(annotated object `04d03d31`), and published 2026-09-03T09:06:19Z as GitHub
+Release `381878529` by `release.yml` run `33736273125`, with both required
+assets — `TempestOS-v0.14.0.zip` and
+`TempestOS-v0.14.0-engineering-harness.zip` — confirmed present by reading
+the Release itself rather than inferring publication from workflow success
+(`TD-42`). **It is not certified**: certification is Product Approval's own
+act under §9 and no verdict has been issued.
+
+**Previously stated, `WP-Z4` (2026-09-01).** This field was stale. The last
+*released* version was **`v0.13.1`** — tagged, merged to `main`, and
+published with both assets. **`v0.14.0` was then IN PREPARATION**: `VERSION`
+read `0.14.0` and `docs/releases/v0.14.0/` held the Release Notes, Work
+Package inventory and Engineering Release Report, but **no tag existed, no
+merge to `main` had occurred, and nothing had been published or
+certified**.
 
 **Previously corrected, `WP-Z1` (2026-09-01).** The last released version
 was **`v0.13.1`**; no release was then in preparation. The `WP 13.12.2` correction below
@@ -6768,7 +6783,7 @@ Experience phase is now complete.
 
 ## Repository Metrics
 
-**Corrected, `WP-Z1` (2026-09-01); figures advanced `WP-Z2`, `WP-Z3`, `WP-Z4`, `WP-Z4` Stage 5 and `WP-Z4` Stage 15.** The table below is stale — its figures
+**Corrected, `WP-Z1` (2026-09-01); figures advanced `WP-Z2`, `WP-Z3`, `WP-Z4`, `WP-Z4` Stage 5, `WP-Z4` Stage 15 and `WP-Z4` Stage 24 (release closure).** The table below is stale — its figures
 were last advanced by `WP 10.2A` (`v0.10.0`) and drifted across every
 release since. Re-derived directly from the repository at `e4bc3ee`:
 

@@ -1,8 +1,10 @@
 # TempestOS v0.14.0 — Release Notes
 
-**Status: in preparation.** Not yet merged to `main`, not tagged, not
-published. This document is written at release-preparation time; the
-Release Register carries the authoritative state.
+**Status: released.** Merged to `main`, tagged `v0.14.0`, and published
+2026-09-03. The Release Register carries the authoritative state; this
+document was written at release-preparation time and its status and
+validation sections were reconciled at closure. Certification remains
+Product Approval's own act — publication is not certification.
 
 ---
 
@@ -128,11 +130,17 @@ while lacking one itself.
 | ADR Register vs `docs/adr/` | 119 / 119, exact match |
 | Working tree | Clean |
 
-**Verification still outstanding at the time of writing:** the Build and
-Test Gates must pass on `main` itself immediately before tagging
-(Engineering Governance §7.3), and `release.yml` must succeed against the
-tagged commit and publish both assets. A release is not shipped until that
-second, independent verification passes.
+**Both release-time verifications have since passed.** The Build and Test
+Gates ran on `main` itself at the merge commit `026ed7c` immediately before
+tagging (Engineering Governance §7.3) — `Build & Test (Debug)`,
+`Build & Test (Release)`, `Governance Health Check` and `CI Gate` all green,
+run `33670715277`. `release.yml` then ran against the tagged commit
+(run `33736273125`), re-building and re-testing Release a second,
+independent time before publishing GitHub Release `381878529` at
+2026-09-03T09:06:19Z with both required assets attached —
+`TempestOS-v0.14.0.zip` and `TempestOS-v0.14.0-engineering-harness.zip`.
+Publication was confirmed by reading the Release's own asset list, not
+inferred from the workflow succeeding (`TD-42`).
 
 ## Accepted technical debt and known limitations
 

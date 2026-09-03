@@ -10,20 +10,31 @@ and §8 record the PR #5 CI recurrence now tracked as `TD-119`.
 the Stage 14 dual-event CI verification. §1's release range and commit
 count remain anchored at `44c4701`, the commit they were derived from, and
 are deliberately not restated; the three commits added since are test-only
-`TD-119` remediation. **The recommended verdict is unchanged in both
+`TD-119` remediation.
+**Amended a third time:** `WP-Z4` Stage 24, 2026-09-03, at HEAD `026ed7c` —
+§4, §6 and §8 record the completed release. The final PR head merged was
+**`ad7ecf4`**; the merge commit — which is also the §7.3-gated commit, the
+tag target and the published release commit — is
+**`026ed7c3e7ee1a260f4ff11cb582628c5c919ac9`**. Earlier citations of
+`f0fcad6` are **retained deliberately**: that commit is the historical
+evidence for the Stage 14 dual-event CI result and nothing later
+supersedes it as such. **The recommended verdict is unchanged in all three
 amendments.**
 **Model:** `ADR-0106` / `docs/architecture/Engineering Readiness Review
 Architecture.md` — five categories, three-kind blocking taxonomy, four-verdict
 vocabulary.
 
-> **This report does not claim the release has shipped.** At the time of
-> writing, `v0.14.0` is **not merged to `main`, not tagged, not published,
-> and not certified.** Certification is Product Approval's act
-> (Engineering Governance §9); this report *recommends*. Two mandatory
-> verifications — the Build and Test Gates on `main` itself immediately
-> pre-tag (§7.3), and `release.yml`'s independent run against the tagged
-> commit — **have not yet been performed and cannot be, from a feature
-> branch.**
+> **This report recommends; it does not certify.** As first written,
+> `v0.14.0` was not merged, tagged or published, and the two mandatory
+> release-time verifications could not be performed from a feature branch.
+> **Both have since been performed and passed** — the Build and Test Gates
+> on `main` at the merge commit `026ed7c` (§7.3, run `33670715277`), and
+> `release.yml`'s independent run against the tagged commit (run
+> `33736273125`), which published GitHub Release `381878529` on
+> 2026-09-03 with both required assets. **`v0.14.0` is released and
+> published. It is still not *certified*:** certification is Product
+> Approval's own act (Engineering Governance §9), and publication is not
+> a substitute for it.
 
 ---
 
@@ -211,17 +222,17 @@ Register.md` Test Gate row still reads 552.
 | `VERSION` | **`0.14.0`** — bumped by `WP-Z4`. Single source of truth; `Directory.Build.props` reads it, and no other file carries a version string. |
 | Release notes | `docs/releases/v0.14.0/Release Notes.md` — present, summary/features/fixes/validation/limitations/next milestone. |
 | Work Package inventory | `docs/releases/v0.14.0/WorkPackages.md` — present, derived from git. |
-| Release Register | `v0.14.0` row added, stating **in preparation** — accurate at the time of writing. |
+| Release Register | `v0.14.0` row **closed at Stage 24**: **Released, published, merged to `main`, 2026-09-03**, carrying the tag object, merge parents, §7.3 run, `release.yml` run, Release id, publication timestamp and both asset names and sizes as evidence. |
 | PR #5 `CI Gate` | **Passed at `f0fcad6`, on both events** — `push` `33653617714` and `pull_request` `33653636667`, all four checks green against the identical SHA (§4). Earlier heads failed this gate on one event or the other to `TD-119`; that mechanism is now remediated. Passing the gate is a precondition of proposing the merge, not an authorisation to perform it. |
-| Build/Test Gates on `main` pre-tag (§7.3) | **Not yet performed.** Cannot be, before the merge. |
-| `release.yml` against the tagged commit | **Not yet performed.** |
-| Product Approval authorisation | **Not sought.** Required per-occasion for the branch push, the merge, and the tag push (§7.5, §7.6). |
+| Build/Test Gates on `main` pre-tag (§7.3) | ✅ **Passed** at the merge commit `026ed7c` — run `33670715277`, `run_attempt` 1, all four checks green, every step `success`. Note this is a single-event gate by construction: `main` receives only the `push` event, so the dual-event standard applied to the PR head cannot apply here. |
+| `release.yml` against the tagged commit | ✅ **Passed** — run `33736273125`, `run_attempt` 1, head `026ed7c`, ref `v0.14.0`; Build (Release) and a full 5 m 52 s Test (Release) re-executed at the tag before packaging and publishing. |
+| Product Approval authorisation | **Obtained per-occasion** for the branch push, the merge and the tag push (§7.5, §7.6), each authorised separately rather than as one blanket approval. **A §9 certification verdict has still not been issued** and is not claimed. |
 
-**Status: Pass, with observations** — every release-preparation artefact
-is complete and the pull-request gate is now green on both events. The two
-outstanding verifications are release-time actions that cannot be performed
-from a feature branch, and this report explicitly does **not** claim to
-have satisfied either.
+**Status: Pass, with observations** — every release-preparation artefact is
+complete, the pull-request gate went green on both events, and both
+release-time verifications have since passed at the merge commit and the
+tag. What remains outstanding is not a gate but a decision: the §9
+certification verdict.
 
 ## 7. Technical debt and limitations, classified
 
@@ -253,24 +264,33 @@ in §5 and §7 stand unchanged.
 
 > ### Recommended verdict: **ACCEPT WITH OBSERVATIONS**
 
-The repository is **ready for the final merge and tag sequence**, and only
-now that the release-preparation artefacts are complete. The recommendation
-is contingent on the mandatory verifications that remain — a green
-`CI Gate` on PR #5, the Build and Test Gates on `main` itself, and
-`release.yml` against the tagged commit — in this order:
+The recommendation was contingent on the mandatory verifications that then
+remained. **All seven steps have since been executed and independently
+verified**, each under its own per-occasion approval:
 
-1. **Push** this branch — explicit, per-occasion Product Approval (§7.5).
-2. **Pull request into `main`**, gated on `CI Gate`, merged as a merge
-   commit, never squash or rebase (§7.7) — explicit approval (§7.6).
-3. **Build and Test Gates green on `main` itself**, immediately pre-tag
-   (§7.3).
-4. **`scripts/new-release.ps1 -Version 0.14.0`** from `main`, without
-   `-Push`.
-5. **Push the tag** — a separate, explicit approval (§7.5).
-6. **Verify publication independently** (`gh release view`), not from
-   workflow success — `TD-42`. Both assets required.
-7. Close the Release Register row.
+1. ✅ **Branch pushed** (§7.5).
+2. ✅ **PR #5 merged into `main`** as a merge commit, never squash or
+   rebase (§7.7, §7.6) — merge commit `026ed7c`, parents `00f7f394` +
+   **`ad7ecf4`** (the final PR head), `CI Gate` green on both events at
+   that head.
+3. ✅ **Build and Test Gates green on `main` itself**, at `026ed7c`,
+   immediately pre-tag (§7.3) — run `33670715277`.
+4. ✅ **`scripts/new-release.ps1 -Version 0.14.0`** run from `main`
+   without `-Push`; annotated tag `v0.14.0` (object `04d03d31`) created
+   against `026ed7c`, verified by object inspection rather than from the
+   script's success banner.
+5. ✅ **Tag pushed** as a separate, explicit approval (§7.5).
+6. ✅ **Publication verified independently** — GitHub Release `381878529`,
+   published 2026-09-03T09:06:19Z, not a draft and not a prerelease, both
+   assets present and `uploaded`: `TempestOS-v0.14.0.zip` and
+   `TempestOS-v0.14.0-engineering-harness.zip`. Confirmed from the
+   Release's own asset list, never from `release.yml` succeeding
+   (`TD-42`).
+7. ✅ **Release Register row closed** — Stage 24.
 
-Only Product Approval issues the verdict. This report recommends it; it
-does not confer it, and nothing in this release has been merged, tagged,
-published or certified at the time of writing.
+**The verdict itself is unchanged and is not upgraded by any of this.** A
+completed, verified release sequence removes the contingency; it does not
+raise a recommendation, and every observation in §5 and §7 stands. Only
+Product Approval issues a verdict: this report recommends one, and
+**`v0.14.0` remains uncertified under §9** notwithstanding that it is
+merged, tagged and published.
