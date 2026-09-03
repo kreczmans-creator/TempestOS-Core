@@ -56,6 +56,9 @@ public sealed class MessageDialog : Border
         body.Children.Add(_okButton);
         Child = body;
 
+        _okButton.Classes.Add(ChromeStyles.Primary);
+        _title.FontFamily = DesignTokens.TitleFont;
+        _title.FontSize = DesignTokens.FontSizeTitle;
         _okButton.Click += (_, _) => Complete();
     }
 

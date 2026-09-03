@@ -1,7 +1,10 @@
+using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Layout;
+using Avalonia.Media;
 using Tempest.App.Workspace;
 using Tempest.Core.EngineeringDomain;
+using Tempest.Desktop.Icons;
 using Tempest.Desktop.Theming;
 using Tempest.Desktop.Views;
 
@@ -9,21 +12,27 @@ namespace Tempest.Desktop.Composition;
 
 /// <summary>
 /// Builds the Quick Access Toolbar (`WP 10.3B`) — a small, always-visible,
-/// fixed strip of the platform's own highest-frequency convenience
-/// actions, above the Ribbon's own tab strip, exactly like every
-/// mainstream ribbon UI's own QAT convention — extracted, `WP 12.0B`
-/// (`ADR-0103`), from <see cref="MainWindow"/>'s own previous
-/// <c>BuildQuickAccessToolbar</c> member, unmodified in behaviour. A
-/// collaborator under `ADR-0103`: a stateless static factory (rule 5's
-/// own named "pure construction" shape) — takes every dependency as a
-/// parameter, builds and returns the <see cref="StackPanel"/>, holds
-/// nothing itself, is never itself constructed. <c>Reset Layout</c> is
-/// taken as a delegate, never a direct reference to
-/// <c>WorkspaceLayoutPresetCoordinator</c>; Undo/Redo are the plain
-/// <see cref="Button"/>s <c>UndoRedoCoordinator</c> already owns, passed
-/// once as a value — the composition root's own wiring (`ADR-0103`'s "a
-/// collaborator never depends on a sibling collaborator directly" rule).
+/// fixed strip of the Engineering surface's own highest-frequency
+/// convenience actions, sharing one row with the menu above the Ribbon —
+/// extracted, `WP 12.0B` (`ADR-0103`), from <see cref="MainWindow"/>'s own
+/// previous <c>BuildQuickAccessToolbar</c> member. A collaborator under
+/// `ADR-0103`: a stateless static factory (rule 5's own named "pure
+/// construction" shape) — takes every dependency as a parameter, builds
+/// and returns the <see cref="StackPanel"/>, holds nothing itself, is
+/// never itself constructed. <c>Reset Layout</c> is taken as a delegate,
+/// never a direct reference to <c>WorkspaceLayoutPresetCoordinator</c>;
+/// Undo/Redo are the plain <see cref="Button"/>s <c>UndoRedoCoordinator</c>
+/// already owns, passed once as a value.
 /// </summary>
+/// <remarks>
+/// Since the Desktop brand alignment the global search / command palette
+/// and the theme switch live in the shell header (<see cref="ShellHeaderView"/>),
+/// present in every module — so this strip no longer duplicates them and
+/// carries only what is specific to working in Engineering. Every button
+/// is a monochrome vector icon beside its label (the design system bans
+/// emoji), classed <see cref="ChromeStyles.Flat"/>, and named for
+/// automation so a test or a screen reader finds it by what it does.
+/// </remarks>
 internal static class QuickAccessToolbarFactory
 {
     /// <summary>Builds the complete Quick Access Toolbar.</summary>
@@ -37,7 +46,7 @@ internal static class QuickAccessToolbarFactory
     /// </param>
     public static StackPanel Build(
         IWorkspace workspace, EngineeringDomainContext domainContext, Action<Guid, string> navigateToObject,
-        StatusBarView statusBar, DocumentAreaView documentArea, CommandPaletteOverlay commandPalette, ThemeService theme,
+        StatusBarView statusBar, DocumentAreaView documentArea,
         Action resetLayout, MacroManagerDialog macroManagerDialog, Button undoButton, Button redoButton,
         Dictionary<Guid, IWorkspaceView> openGraphViewsByRootId)
     {
@@ -46,25 +55,19 @@ internal static class QuickAccessToolbarFactory
         ArgumentNullException.ThrowIfNull(navigateToObject);
         ArgumentNullException.ThrowIfNull(statusBar);
         ArgumentNullException.ThrowIfNull(documentArea);
-        ArgumentNullException.ThrowIfNull(commandPalette);
-        ArgumentNullException.ThrowIfNull(theme);
         ArgumentNullException.ThrowIfNull(resetLayout);
         ArgumentNullException.ThrowIfNull(macroManagerDialog);
         ArgumentNullException.ThrowIfNull(undoButton);
         ArgumentNullException.ThrowIfNull(redoButton);
         ArgumentNullException.ThrowIfNull(openGraphViewsByRootId);
 
-        var bar = new StackPanel { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceSm, Margin = DesignTokens.PanelHeaderPadding };
-
-        var paletteButton = new Button { Content = "🔎 Command Palette", MinHeight = DesignTokens.MinControlSize };
-        ToolTip.SetTip(paletteButton, "Search every registered command (Ctrl+K)");
-        paletteButton.Click += (_, _) => commandPalette.Open();
-
-        var themeButton = new Button { Content = "🌓 Theme", MinHeight = DesignTokens.MinControlSize };
-        themeButton.Click += async (_, _) => await theme.ToggleAsync().ConfigureAwait(true);
-
-        var resetLayoutButton = new Button { Content = "↺ Reset Layout", MinHeight = DesignTokens.MinControlSize };
-        resetLayoutButton.Click += (_, _) => resetLayout();
+        var bar = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            Spacing = DesignTokens.SpaceXs,
+            Margin = new Avalonia.Thickness(DesignTokens.SpaceMd, DesignTokens.SpaceXs),
+            VerticalAlignment = VerticalAlignment.Center,
+        };
 
         // The Digital Thread graph (`WP 10.4A`, `ADR-0093`) — opened for
         // the current selection, deduplicated per root object so
@@ -75,8 +78,7 @@ internal static class QuickAccessToolbarFactory
         // Desktop view, not tied to one Kind's own factory) — shown
         // directly via `DocumentAreaView.ShowTab`, the same bypass the
         // Cockpit's own Home tab and `OpenRecentAsync` already use.
-        var graphButton = new Button { Content = "🕸 View Relationships", MinHeight = DesignTokens.MinControlSize };
-        ToolTip.SetTip(graphButton, "Open the Digital Thread graph for the current selection");
+        var graphButton = ToolbarButton(IconGeometry.Graph, "View Relationships", "Open the Digital Thread graph for the current selection");
         graphButton.Click += (_, _) =>
         {
             var selection = workspace.Selection.Current;
@@ -105,17 +107,49 @@ internal static class QuickAccessToolbarFactory
         };
 
         // User Command Macros (`WP 10.6A` — "foundation").
-        var macrosButton = new Button { Content = "🧩 Macros", MinHeight = DesignTokens.MinControlSize };
-        ToolTip.SetTip(macrosButton, "Browse, create, and run Command Macros");
+        var macrosButton = ToolbarButton(IconGeometry.Macro, "Macros", "Browse, create, and run Command Macros");
         macrosButton.Click += async (_, _) => await macroManagerDialog.ShowAsync().ConfigureAwait(true);
 
-        bar.Children.Add(paletteButton);
-        bar.Children.Add(themeButton);
-        bar.Children.Add(resetLayoutButton);
-        bar.Children.Add(graphButton);
+        var resetLayoutButton = ToolbarButton(IconGeometry.LayoutReset, "Reset Layout", "Return every panel to the default arrangement");
+        resetLayoutButton.Click += (_, _) => resetLayout();
+
         bar.Children.Add(undoButton);
         bar.Children.Add(redoButton);
+        bar.Children.Add(Divider());
+        bar.Children.Add(graphButton);
         bar.Children.Add(macrosButton);
+        bar.Children.Add(Divider());
+        bar.Children.Add(resetLayoutButton);
         return bar;
+    }
+
+    /// <summary>One toolbar action — a vector icon beside its label, flat until hovered, named for automation by its label.</summary>
+    public static Button ToolbarButton(StreamGeometry icon, string label, string tooltip)
+    {
+        ArgumentNullException.ThrowIfNull(icon);
+        ArgumentNullException.ThrowIfNull(label);
+
+        var content = new StackPanel { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceSm + 2, VerticalAlignment = VerticalAlignment.Center };
+        content.Children.Add(IconGeometry.Build(icon, 14));
+        content.Children.Add(new TextBlock { Text = label, FontSize = DesignTokens.FontSizeBody, VerticalAlignment = VerticalAlignment.Center });
+
+        var button = new Button
+        {
+            Content = content,
+            MinHeight = DesignTokens.MinControlSize,
+            Padding = new Avalonia.Thickness(DesignTokens.SpaceMd, DesignTokens.SpaceSm),
+            VerticalAlignment = VerticalAlignment.Center,
+        };
+        button.Classes.Add(ChromeStyles.Flat);
+        AutomationProperties.SetName(button, label);
+        ToolTip.SetTip(button, tooltip);
+        return button;
+    }
+
+    private static Border Divider()
+    {
+        var line = new Border { Width = 1, Height = 16, Margin = new Avalonia.Thickness(DesignTokens.SpaceSm, 0), VerticalAlignment = VerticalAlignment.Center };
+        ThemeReactiveBrush.Bind(line, Border.BackgroundProperty, BrandPalette.HairlineStrongBrushKey);
+        return line;
     }
 }

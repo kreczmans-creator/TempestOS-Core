@@ -62,6 +62,8 @@ public sealed class DocumentAreaView : UserControl
     public DocumentAreaView(Func<IWorkspaceView, Control>? contentBuilder = null)
     {
         _contentBuilder = contentBuilder ?? BuildDefaultBody;
+        _tabs.Padding = new Avalonia.Thickness(0);
+        ThemeReactiveBrush.Bind(_tabs, BackgroundProperty, BrandPalette.PageBackgroundBrushKey);
         Content = _tabs;
         _tabs.SelectionChanged += (_, _) => UpdateActiveHighlighting();
     }
@@ -91,7 +93,13 @@ public sealed class DocumentAreaView : UserControl
         if (_homeTab is not null)
             _tabs.Items.Remove(_homeTab);
 
-        _homeTab = new TabItem { Header = new TextBlock { Text = "🏠 Cockpit" }, Content = content };
+        // The Home tab carries the mark itself — the one place in the
+        // document strip the brand appears, so the Cockpit is visibly the
+        // product's own landing surface rather than one document among many.
+        var header = new StackPanel { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceSm + 2, VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center };
+        header.Children.Add(new Branding.TempestLogoControl { Width = 14, Height = 14, VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center });
+        header.Children.Add(new TextBlock { Text = "Cockpit", VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center });
+        _homeTab = new TabItem { Header = header, Content = content };
         _tabs.Items.Insert(0, _homeTab);
         _tabs.SelectedItem = _homeTab;
     }
@@ -213,16 +221,19 @@ public sealed class DocumentAreaView : UserControl
 
     private Control BuildHeader(IWorkspaceView view, TabItem tab)
     {
-        var header = new StackPanel { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceXs };
+        var header = new StackPanel { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceSm, VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center };
 
         var pin = new Button
         {
-            Content = "📌",
-            Padding = new Avalonia.Thickness(2),
-            Background = Avalonia.Media.Brushes.Transparent,
-            BorderThickness = new Avalonia.Thickness(0),
-            Opacity = _pinnedViewIds.Contains(view.Id) ? 1.0 : 0.35,
+            Content = IconGeometry.Build(IconGeometry.Pin, 11),
+            Padding = new Avalonia.Thickness(DesignTokens.SpaceXs),
+            MinWidth = 0,
+            MinHeight = 0,
+            VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
+            Opacity = _pinnedViewIds.Contains(view.Id) ? 1.0 : 0.4,
         };
+        pin.Classes.Add(ChromeStyles.Flat);
+        Avalonia.Automation.AutomationProperties.SetName(pin, $"Pin {view.Title}");
         ToolTip.SetTip(pin, "Pin this tab");
         pin.Click += (_, _) => TogglePin(view.Id, tab, pin);
         header.Children.Add(pin);
@@ -230,6 +241,7 @@ public sealed class DocumentAreaView : UserControl
         var baseText = $"{IconRegistry.Resolve(view.ObjectKind)}  {view.Title}";
         var text = new TextBlock
         {
+            VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
             // Combines this class's own new, real, buffered dirty-state
             // (`WP 10.3A`, MarkDirty) with view.IsDirty itself — every
             // concrete IWorkspaceView still hard-codes false today (`WP
@@ -244,7 +256,18 @@ public sealed class DocumentAreaView : UserControl
 
         if (!_pinnedViewIds.Contains(view.Id))
         {
-            var closeButton = new Button { Content = "✕", Padding = new Avalonia.Thickness(2), Background = Avalonia.Media.Brushes.Transparent, BorderThickness = new Avalonia.Thickness(0) };
+            var closeButton = new Button
+            {
+                Content = IconGeometry.Build(IconGeometry.Close, 10),
+                Padding = new Avalonia.Thickness(DesignTokens.SpaceXs),
+                MinWidth = 0,
+                MinHeight = 0,
+                VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
+                Opacity = 0.6,
+            };
+            closeButton.Classes.Add(ChromeStyles.Flat);
+            Avalonia.Automation.AutomationProperties.SetName(closeButton, $"Close {view.Title}");
+            ToolTip.SetTip(closeButton, "Close this tab");
             closeButton.Click += (_, _) => TabCloseRequested?.Invoke(view.Id);
             header.Children.Add(closeButton);
         }

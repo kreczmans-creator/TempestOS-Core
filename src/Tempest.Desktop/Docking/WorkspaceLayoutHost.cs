@@ -65,7 +65,9 @@ public sealed class WorkspaceLayoutHost : UserControl
         ArgumentNullException.ThrowIfNull(registry);
         _registry = registry;
 
-        ThemeReactiveBrush.Bind(_flyout, Border.BackgroundProperty, ApplicationPalette.PanelBackgroundBrushKey);
+        ThemeReactiveBrush.Bind(_flyout, Border.BackgroundProperty, BrandPalette.RaisedBackgroundBrushKey);
+        ThemeReactiveBrush.Bind(_flyout, Border.BorderBrushProperty, BrandPalette.HairlineStrongBrushKey);
+        _flyout.BorderThickness = new Thickness(0, 0, 1, 0);
         _flyout.HorizontalAlignment = HorizontalAlignment.Left;
         _flyout.VerticalAlignment = VerticalAlignment.Stretch;
         AutomationProperties.SetName(_flyout, "Auto-hide flyout");
@@ -117,13 +119,10 @@ public sealed class WorkspaceLayoutHost : UserControl
         LayoutChanged?.Invoke(updated);
     }
 
-    private static Control BuildEmptyState() => new TextBlock
-    {
-        Text = "Every panel is closed. Restore the default layout from the View menu.",
-        HorizontalAlignment = HorizontalAlignment.Center,
-        VerticalAlignment = VerticalAlignment.Center,
-        Opacity = 0.7,
-    };
+    private static Control BuildEmptyState() => new Views.EmptyStateView(
+        "▭",
+        "Every panel is closed.",
+        "Restore the default layout from the View menu, or choose a layout preset, to bring the Explorer, Documents and Inspector back.");
 
     private Control Render(WorkspaceLayoutNode node, List<LayoutTabGroupView> groups) => node switch
     {

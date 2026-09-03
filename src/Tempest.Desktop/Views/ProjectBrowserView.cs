@@ -27,11 +27,14 @@ public sealed class ProjectBrowserView : UserControl
     private readonly Func<string, string, Task<bool>> _promptForNewProject;
 
     private readonly ListBox _projects = new() { MinHeight = 240 };
-    private readonly TextBlock _status = new() { FontSize = DesignTokens.FontSizeCaption, Opacity = 0.85 };
-    private readonly Button _openButton = new() { Content = "Open Project", MinHeight = DesignTokens.MinControlSize };
-    private readonly Button _newButton = new() { Content = "New Project…", MinHeight = DesignTokens.MinControlSize };
+    private readonly TextBlock _status = new() { FontSize = DesignTokens.FontSizeCaption };
+    private readonly Button _openButton = new() { Content = "Open Project", MinHeight = DesignTokens.ControlSizeMedium };
+    private readonly Button _newButton = new() { Content = "New Project…", MinHeight = DesignTokens.ControlSizeMedium };
 
     private IReadOnlyList<ProjectSummary> _current = [];
+
+    /// <summary>The catalogue's own empty state — shown in place of an empty list, with the one action that fills it.</summary>
+    private readonly EmptyStateView _empty = new("▣", "No projects yet", "Engineering work happens inside a project. Create the first one to give requirements, calculations, documents and verification a home.") { IsVisible = false };
 
     /// <summary>Raised after a project is opened, so the shell can render its workspace.</summary>
     public event Action? ProjectOpened;
@@ -52,21 +55,36 @@ public sealed class ProjectBrowserView : UserControl
 
         AutomationProperties.SetName(_projects, "Projects");
 
-        var root = new StackPanel { Spacing = DesignTokens.SpaceMd, Margin = DesignTokens.PanelPadding };
-        root.Children.Add(new TextBlock { Text = "Projects", FontSize = DesignTokens.FontSizeTitle, FontWeight = FontWeight.Bold });
-        root.Children.Add(new TextBlock
-        {
-            Text = "Every project is a real engineering object — open one to work inside it.",
-            FontSize = DesignTokens.FontSizeCaption,
-            Opacity = 0.8,
-            TextWrapping = TextWrapping.Wrap,
-        });
-        root.Children.Add(_projects);
+        var root = new StackPanel { Spacing = DesignTokens.SpaceLg, Margin = DesignTokens.PagePadding, MaxWidth = 960, HorizontalAlignment = HorizontalAlignment.Left };
+        root.Children.Add(PageHeading.Label("PROJECTS"));
+        root.Children.Add(PageHeading.Title("Projects"));
+        root.Children.Add(PageHeading.Lead("Every project is a real engineering object — open one to work inside it, or create the next one."));
 
+        _projects.Background = Brushes.Transparent;
+        _projects.BorderThickness = new Thickness(0);
+        _empty.SetAction("Create your first project", () => _ = CreateAsync());
+        var listBody = new Panel { MinHeight = 240 };
+        listBody.Children.Add(_projects);
+        listBody.Children.Add(_empty);
+        var list = new Border
+        {
+            Child = listBody,
+            CornerRadius = new CornerRadius(DesignTokens.PanelCornerRadius),
+            BorderThickness = new Thickness(1),
+            Padding = new Thickness(DesignTokens.SpaceSm),
+            Margin = new Thickness(0, DesignTokens.SpaceSm, 0, 0),
+        };
+        ThemeReactiveBrush.Bind(list, Border.BackgroundProperty, BrandPalette.SurfaceBackgroundBrushKey);
+        ThemeReactiveBrush.Bind(list, Border.BorderBrushProperty, BrandPalette.HairlineBrushKey);
+        root.Children.Add(list);
+
+        _openButton.Classes.Add(ChromeStyles.Primary);
+        _newButton.Classes.Add(ChromeStyles.Subtle);
         var buttons = new StackPanel { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceMd };
         buttons.Children.Add(_openButton);
         buttons.Children.Add(_newButton);
         root.Children.Add(buttons);
+        ThemeReactiveBrush.Bind(_status, TextBlock.ForegroundProperty, BrandPalette.MutedTextBrushKey);
         root.Children.Add(_status);
 
         _openButton.Click += async (_, _) => await OpenSelectedAsync().ConfigureAwait(true);
@@ -81,6 +99,10 @@ public sealed class ProjectBrowserView : UserControl
     {
         _current = await _directory.ListAsync().ConfigureAwait(true);
         _projects.ItemsSource = _current.Select(p => $"{p.Label}  —  {p.Status}").ToList();
+
+        _empty.IsVisible = _current.Count == 0;
+        _projects.IsVisible = _current.Count > 0;
+        _openButton.IsEnabled = _current.Count > 0;
 
         _status.Text = _current.Count == 0
             ? "No projects yet. Create one to begin — engineering work happens inside a project."

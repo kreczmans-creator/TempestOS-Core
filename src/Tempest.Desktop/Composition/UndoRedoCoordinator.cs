@@ -59,10 +59,10 @@ internal sealed class UndoRedoCoordinator
     public IUndoRedoStack Stack { get; } = new UndoRedoStack();
 
     /// <summary>Gets the Quick Access Toolbar's own Undo button.</summary>
-    public Button UndoButton { get; } = new() { Content = "↶ Undo", MinHeight = DesignTokens.MinControlSize };
+    public Button UndoButton { get; } = QuickAccessToolbarFactory.ToolbarButton(Icons.IconGeometry.Undo, "Undo", "Undo the last recorded action (Ctrl+Z)");
 
     /// <summary>Gets the Quick Access Toolbar's own Redo button.</summary>
-    public Button RedoButton { get; } = new() { Content = "↷ Redo", MinHeight = DesignTokens.MinControlSize };
+    public Button RedoButton { get; } = QuickAccessToolbarFactory.ToolbarButton(Icons.IconGeometry.Redo, "Redo", "Redo the last undone action (Ctrl+Y)");
 
     /// <summary>Initialises a new instance of the <see cref="UndoRedoCoordinator"/> class.</summary>
     public UndoRedoCoordinator(ProjectExplorerView explorerView, Action refreshCockpit, ActionOutcomeReporter reporter)

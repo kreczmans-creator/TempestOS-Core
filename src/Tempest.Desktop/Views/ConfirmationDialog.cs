@@ -47,6 +47,10 @@ public sealed class ConfirmationDialog : Border
         body.Children.Add(buttons);
         Child = body;
 
+        _confirmButton.Classes.Add(ChromeStyles.Danger);
+        _cancelButton.Classes.Add(ChromeStyles.Subtle);
+        _title.FontFamily = DesignTokens.TitleFont;
+        _title.FontSize = DesignTokens.FontSizeTitle;
         _cancelButton.Click += (_, _) => Complete(false);
         _confirmButton.Click += (_, _) => Complete(true);
     }

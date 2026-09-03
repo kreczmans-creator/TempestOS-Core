@@ -50,8 +50,9 @@ namespace Tempest.Desktop.Views;
 /// <b>Command grouping and icons are still derived, not authored.</b> No
 /// descriptor sets <see cref="CommandDescriptor.Icon"/> (real per-command
 /// icons remain <c>FCR-0069</c>), so this class picks a tab group and a
-/// glyph from the Id's own trailing word — a rendering heuristic, and the
-/// only thing that suffix is still read for.
+/// vector icon (<see cref="Icons.IconGeometry"/>) from the Id's own
+/// trailing word — a rendering heuristic, and the only thing that suffix
+/// is still read for.
 /// </para>
 /// </remarks>
 public sealed class RibbonView : UserControl
@@ -124,6 +125,13 @@ public sealed class RibbonView : UserControl
         _setHint = setHint;
         _openDocument = openDocument;
 
+        // The ribbon is a surface with a hairline beneath it; the tab strip
+        // itself stays this control's own Content (a view over the
+        // registry, and what every test reaches for).
+        _tabs.Padding = new Avalonia.Thickness(0);
+        ThemeReactiveBrush.Bind(_tabs, BackgroundProperty, BrandPalette.SurfaceBackgroundBrushKey);
+        BorderThickness = new Avalonia.Thickness(0, 0, 0, 1);
+        ThemeReactiveBrush.Bind(this, BorderBrushProperty, BrandPalette.HairlineBrushKey);
         Content = _tabs;
 
         // Double-click a tab header to minimise/restore — the convention
@@ -264,7 +272,7 @@ public sealed class RibbonView : UserControl
 
     private Control BuildTabContent(string category, IReadOnlyList<CommandDescriptor> descriptors)
     {
-        var root = new StackPanel { Orientation = Orientation.Vertical, Spacing = DesignTokens.SpaceXs, Margin = DesignTokens.PanelPadding };
+        var root = new StackPanel { Orientation = Orientation.Vertical, Spacing = DesignTokens.SpaceXs, Margin = new Avalonia.Thickness(DesignTokens.SpaceLg, DesignTokens.SpaceSm, DesignTokens.SpaceLg, DesignTokens.SpaceMd) };
 
         // A stable per-tab host for the "Recently Used" row, so
         // RecordRecent can update just this row instead of tearing down
@@ -275,7 +283,7 @@ public sealed class RibbonView : UserControl
         root.Children.Add(recentSectionHost);
         UpdateRecentSection(category);
 
-        var groupsRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceLg };
+        var groupsRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceSm };
         foreach (var groupedByVerb in descriptors.GroupBy(d => ClassifyGroup(d.Id)).OrderBy(g => GroupOrder(g.Key)))
             groupsRow.Children.Add(BuildGroup(groupedByVerb.Key, groupedByVerb.ToList()));
 
@@ -296,7 +304,7 @@ public sealed class RibbonView : UserControl
     /// </summary>
     private static Control BuildTabHeader(string category)
     {
-        var row = new StackPanel { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceXs, VerticalAlignment = VerticalAlignment.Center };
+        var row = new StackPanel { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceSm + 2, VerticalAlignment = VerticalAlignment.Center };
         row.Children.Add(new Border { Width = 8, Height = 8, CornerRadius = new Avalonia.CornerRadius(4), Background = DisciplineColors.Resolve(category), VerticalAlignment = VerticalAlignment.Center });
         row.Children.Add(new TextBlock { Text = category, VerticalAlignment = VerticalAlignment.Center });
         return row;
@@ -334,57 +342,76 @@ public sealed class RibbonView : UserControl
 
     private static Border BuildSectionWithLabel(string label, Control content)
     {
+        // The group's own name is a wide-tracked micro label in the
+        // structural face beneath its buttons — the design system's
+        // chrome-label treatment, so the group reads as a ribbon section
+        // rather than as a caption.
+        var caption = new TextBlock
+        {
+            Text = label,
+            FontFamily = DesignTokens.TitleFont,
+            FontSize = DesignTokens.FontSizeLabel,
+            FontWeight = DesignTokens.WeightLabel,
+            LetterSpacing = DesignTokens.LabelTracking,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            Margin = new Avalonia.Thickness(0, DesignTokens.SpaceXs, 0, 0),
+        };
+        ThemeReactiveBrush.Bind(caption, TextBlock.ForegroundProperty, BrandPalette.FaintTextBrushKey);
+
         var stack = new StackPanel { Spacing = DesignTokens.SpaceXs };
         stack.Children.Add(content);
-        stack.Children.Add(new TextBlock { Text = label, FontSize = DesignTokens.FontSizeCaption, Opacity = 0.7, HorizontalAlignment = HorizontalAlignment.Center });
+        stack.Children.Add(caption);
 
         var divider = new Border
         {
             BorderThickness = new Avalonia.Thickness(0, 0, 1, 0),
-            Padding = new Avalonia.Thickness(DesignTokens.SpaceMd, DesignTokens.SpaceXs),
+            Padding = new Avalonia.Thickness(DesignTokens.SpaceMd, DesignTokens.SpaceXs, DesignTokens.SpaceLg, DesignTokens.SpaceXs),
             Child = stack,
         };
 
-        // A genuine, real theme-reactive fix (`WP 10.5C`) — this group
-        // divider's own border was a fixed `Brushes.Gray` since `WP
-        // 10.3B`, the identical `TD-39` class of defect this Work
-        // Package also found and fixed in `CockpitCardControl`.
-        ThemeReactiveBrush.Bind(divider, Border.BorderBrushProperty, ApplicationPalette.PanelBorderBrushKey);
+        // Theme-reactive (`WP 10.5C`, closes the `TD-39` class of defect
+        // here) — the brand's hairline, never a fixed grey.
+        ThemeReactiveBrush.Bind(divider, Border.BorderBrushProperty, BrandPalette.HairlineBrushKey);
         return divider;
     }
 
     private Button BuildCommandButton(CommandDescriptor descriptor, bool large, bool registerForEnablement)
     {
-        var glyph = GlyphFor(descriptor.Id);
+        // One monochrome vector icon per verb (`IconGeometry`), tinted by
+        // the button's own foreground — never a colour emoji.
+        var icon = IconFor(descriptor.Id);
         Control content = large
             ? new StackPanel
             {
-                Spacing = DesignTokens.SpaceXs,
+                Spacing = DesignTokens.SpaceSm,
                 HorizontalAlignment = HorizontalAlignment.Center,
                 Children =
                 {
-                    new TextBlock { Text = glyph, FontSize = 22, HorizontalAlignment = HorizontalAlignment.Center },
-                    new TextBlock { Text = descriptor.DisplayName, FontSize = DesignTokens.FontSizeCaption, TextWrapping = Avalonia.Media.TextWrapping.Wrap, TextAlignment = Avalonia.Media.TextAlignment.Center, MaxWidth = 64 },
+                    Icons.IconGeometry.Build(icon, 22, strokeThickness: 1.5),
+                    new TextBlock { Text = descriptor.DisplayName, FontSize = DesignTokens.FontSizeCaption, TextWrapping = Avalonia.Media.TextWrapping.Wrap, TextAlignment = Avalonia.Media.TextAlignment.Center, MaxWidth = 68, LineHeight = 13 },
                 },
             }
             : new StackPanel
             {
                 Orientation = Orientation.Horizontal,
-                Spacing = DesignTokens.SpaceXs,
+                Spacing = DesignTokens.SpaceSm + 1,
                 Children =
                 {
-                    new TextBlock { Text = glyph, FontSize = DesignTokens.FontSizeBody },
-                    new TextBlock { Text = descriptor.DisplayName, FontSize = DesignTokens.FontSizeCaption },
+                    Icons.IconGeometry.Build(icon, 14),
+                    new TextBlock { Text = descriptor.DisplayName, FontSize = DesignTokens.FontSizeCaption, VerticalAlignment = VerticalAlignment.Center },
                 },
             };
 
         var button = new Button
         {
             Content = content,
-            MinHeight = large ? 56 : DesignTokens.MinControlSize,
-            MinWidth = large ? 64 : DesignTokens.MinControlSize,
-            Margin = new Avalonia.Thickness(DesignTokens.SpaceXs),
+            MinHeight = large ? 60 : DesignTokens.MinControlSize,
+            MinWidth = large ? 68 : DesignTokens.MinControlSize,
+            Margin = new Avalonia.Thickness(DesignTokens.SpaceXs, 0),
+            Padding = large ? new Avalonia.Thickness(DesignTokens.SpaceSm, DesignTokens.SpaceMd) : new Avalonia.Thickness(DesignTokens.SpaceMd, DesignTokens.SpaceSm),
+            VerticalContentAlignment = VerticalAlignment.Center,
         };
+        button.Classes.Add(ChromeStyles.Flat);
 
         ToolTip.SetTip(button, descriptor.Description ?? descriptor.DisplayName);
         button.PointerEntered += (_, _) => _setHint(descriptor.Description ?? descriptor.DisplayName);
@@ -583,31 +610,31 @@ public sealed class RibbonView : UserControl
         return lastDot >= 0 ? id[(lastDot + 1)..] : id;
     }
 
-    private static string GlyphFor(string id) => PresentationVerbSuffix(id) switch
+    private static Avalonia.Media.StreamGeometry IconFor(string id) => PresentationVerbSuffix(id) switch
     {
-        "create" or "create-group" or "create-collection" => "➕",
-        "rename" => "✏️",
-        "edit" or "revise" => "📝",
-        "delete" or "delete-group" or "delete-collection" => "🗑️",
-        "move" or "move-group" => "↔️",
-        "copy" => "📋",
-        "duplicate" => "📑",
-        "execute" => "▶️",
-        "recalculate" => "🔄",
-        "lock" => "🔒",
-        "unlock" => "🔓",
-        "request-review" => "👁️",
-        "approve" => "✅",
-        "archive" => "🗄️",
-        "release" => "📤",
-        "attach" => "📎",
-        "link" => "🔗",
-        "record-result" or "record-inspection-result" => "📊",
-        "compare-baselines" => "⚖️",
-        "validate-configuration" => "✔️",
-        "set-bom-line" or "set-status" or "set-owner" or "set-priority" => "⚙️",
-        "add-to-collection" => "📥",
-        "bulk-set-status" or "bulk-set-owner" or "bulk-set-priority" => "🗂️",
-        _ => "🔹",
+        "create" or "create-group" or "create-collection" => Icons.IconGeometry.Plus,
+        "rename" => Icons.IconGeometry.Pencil,
+        "edit" or "revise" => Icons.IconGeometry.Edit,
+        "delete" or "delete-group" or "delete-collection" => Icons.IconGeometry.Trash,
+        "move" or "move-group" => Icons.IconGeometry.Move,
+        "copy" => Icons.IconGeometry.Copy,
+        "duplicate" => Icons.IconGeometry.Duplicate,
+        "execute" => Icons.IconGeometry.Play,
+        "recalculate" => Icons.IconGeometry.Refresh,
+        "lock" => Icons.IconGeometry.Lock,
+        "unlock" => Icons.IconGeometry.Unlock,
+        "request-review" => Icons.IconGeometry.Eye,
+        "approve" => Icons.IconGeometry.CheckCircle,
+        "archive" => Icons.IconGeometry.Archive,
+        "release" => Icons.IconGeometry.Upload,
+        "attach" => Icons.IconGeometry.Paperclip,
+        "link" => Icons.IconGeometry.Link,
+        "record-result" or "record-inspection-result" => Icons.IconGeometry.Chart,
+        "compare-baselines" => Icons.IconGeometry.Scales,
+        "validate-configuration" => Icons.IconGeometry.CheckCircle,
+        "set-bom-line" or "set-status" or "set-owner" or "set-priority" => Icons.IconGeometry.Sliders,
+        "add-to-collection" => Icons.IconGeometry.Inbox,
+        "bulk-set-status" or "bulk-set-owner" or "bulk-set-priority" => Icons.IconGeometry.Layers,
+        _ => Icons.IconGeometry.Dot,
     };
 }

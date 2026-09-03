@@ -1,4 +1,5 @@
 using Avalonia.Media;
+using Avalonia.Media.Immutable;
 
 namespace Tempest.Desktop.Theming;
 
@@ -31,21 +32,34 @@ internal static class DisciplineColors
     public static IBrush Resolve(string? category)
     {
         if (category is null)
-            return Brushes.Gray;
+            return Neutral;
 
         if (category.Contains("Mechanical", StringComparison.OrdinalIgnoreCase))
-            return Brushes.SteelBlue;
+            return Mechanical;
         if (category.Contains("Requirement", StringComparison.OrdinalIgnoreCase))
-            return Brushes.MediumPurple;
+            return Requirements;
         if (category.Contains("Calculation", StringComparison.OrdinalIgnoreCase))
-            return Brushes.DarkOrange;
+            return Calculations;
         if (category.Contains("Verification", StringComparison.OrdinalIgnoreCase))
-            return Brushes.SeaGreen;
+            return Verification;
         if (category.Contains("Document", StringComparison.OrdinalIgnoreCase))
-            return Brushes.Goldenrod;
+            return Documents;
         if (category.Contains("Manufacturing", StringComparison.OrdinalIgnoreCase))
-            return Brushes.Teal;
+            return Manufacturing;
 
-        return Brushes.Gray;
+        return Neutral;
     }
+
+    // Six hues from the brand triad and its machine-state family, each
+    // legible on both the navy and the paper ground. Cyan is the
+    // Mechanical/product-structure discipline (the platform's primary
+    // object graph carries the primary accent); violet, the brand's own
+    // secondary, marks Requirements.
+    private static readonly IBrush Mechanical = new ImmutableSolidColorBrush(BrandPalette.Cyan500);
+    private static readonly IBrush Requirements = new ImmutableSolidColorBrush(Color.Parse("#9d6cf0"));
+    private static readonly IBrush Calculations = new ImmutableSolidColorBrush(BrandPalette.Amber500);
+    private static readonly IBrush Verification = new ImmutableSolidColorBrush(BrandPalette.Green500);
+    private static readonly IBrush Documents = new ImmutableSolidColorBrush(Color.Parse("#5fb8b0"));
+    private static readonly IBrush Manufacturing = new ImmutableSolidColorBrush(Color.Parse("#f27e5c"));
+    private static readonly IBrush Neutral = new ImmutableSolidColorBrush(BrandPalette.Slate500);
 }

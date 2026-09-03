@@ -1,5 +1,7 @@
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
+using Avalonia.Platform;
 using Tempest.App.Projects;
 using Tempest.App.Shell;
 using Tempest.App.Workspace;
@@ -77,6 +79,7 @@ public sealed class MainWindow : Window
     private readonly IShellNavigator _navigator;
     private readonly IProjectContext _projectContext;
     private readonly GlobalNavigationRail _navigationRail;
+    private readonly ShellHeaderView _header = new();
     private readonly ProjectBrowserView _projectBrowser;
     private readonly ProjectWorkspaceView _projectWorkspace;
     private readonly ContentControl _moduleHost = new();
@@ -117,9 +120,19 @@ public sealed class MainWindow : Window
         var composition = new DesktopCompositionRoot(services);
         _diagnostics = composition.Diagnostics;
 
-        Title = "TempestOS — Engineering Workspace";
+        Title = "TempestOS";
         MinWidth = 960;
         MinHeight = 600;
+
+        // The brand's own shell chrome: the prose face for every control,
+        // the page ground behind every module, the three button
+        // treatments (`ChromeStyles`) every surface beneath classes
+        // against, and the mark as the window's own icon.
+        FontFamily = DesignTokens.BodyFont;
+        FontSize = 12.5;
+        ThemeReactiveBrush.Bind(this, BackgroundProperty, BrandPalette.PageBackgroundBrushKey);
+        ChromeStyles.Install(this);
+        ApplyBrandIcon();
 
         // Desktop-local session state (`ADR-0103` collaborator #2) —
         // every independent, synchronously-loaded, per-session persisted
@@ -424,14 +437,25 @@ public sealed class MainWindow : Window
             _session.PanelUiState, _dockingComposer.OutputPanel, _dockingComposer.OutputView, _diagnostics,
             _theme, _settingsDialog, _messageDialog, _commandPalette, _documentArea, _ribbon, _layoutPresets.Apply, _layoutPresets.Reset);
         var quickAccessToolbar = QuickAccessToolbarFactory.Build(
-            workspace, composition.DomainContext, _viewCoordinator.NavigateToObject, _statusBar, _documentArea, _commandPalette, _theme,
+            workspace, composition.DomainContext, _viewCoordinator.NavigateToObject, _statusBar, _documentArea,
             _layoutPresets.Reset, _macroManagerDialog, _undoRedo.UndoButton, _undoRedo.RedoButton, _openGraphViewsByRootId);
 
+        // One command row, not two: the menu on the left and the Quick
+        // Access Toolbar on the right share a single strip above the
+        // Ribbon, so the Engineering surface spends one row less on chrome
+        // before the user reaches their work.
+        var commandRow = new DockPanel { LastChildFill = true };
+        DockPanel.SetDock(quickAccessToolbar, Dock.Right);
+        menu.VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center;
+        commandRow.Children.Add(quickAccessToolbar);
+        commandRow.Children.Add(menu);
+        var commandRowFrame = new Border { Child = commandRow, BorderThickness = new Thickness(0, 0, 0, 1) };
+        ThemeReactiveBrush.Bind(commandRowFrame, Border.BorderBrushProperty, BrandPalette.HairlineBrushKey);
+        ThemeReactiveBrush.Bind(commandRowFrame, Border.BackgroundProperty, BrandPalette.SurfaceBackgroundBrushKey);
+
         var topStack = new StackPanel();
-        topStack.Children.Add(menu);
-        topStack.Children.Add(quickAccessToolbar);
+        topStack.Children.Add(commandRowFrame);
         topStack.Children.Add(_ribbon);
-        topStack.Children.Add(new Separator());
 
         // ---- The Product Spine's own shell composition (`TD-84`) ----
         // The Engineering surface (ribbon + docking grid) is no longer the
@@ -527,15 +551,36 @@ public sealed class MainWindow : Window
             _ => _engineeringSurface,
         };
 
+        // The brand header — where am I, what project am I in, what can I
+        // do here — is the one strip every module shares; its search field
+        // and theme switch reach the same palette and ThemeService the
+        // menu and keyboard already do, never a second path.
+        _header.SearchRequested += () => _commandPalette.Open();
+        _header.ThemeToggleRequested += async () => await _theme.ToggleAsync().ConfigureAwait(true);
+        _header.SetPrincipal(host.SessionPrincipal?.Identity.DisplayName);
+
         var shell = new DockPanel();
         DockPanel.SetDock(_navigationRail, Dock.Left);
         shell.Children.Add(_navigationRail);
         shell.Children.Add(_moduleHost);
 
         var dock = new DockPanel();
+        DockPanel.SetDock(_header, Dock.Top);
         DockPanel.SetDock(_statusBar, Dock.Bottom);
+        dock.Children.Add(_header);
         dock.Children.Add(_statusBar);
         dock.Children.Add(shell);
+
+        // Responsive shell chrome: below the compact threshold the rail
+        // folds to its icons and the header's search field to its glyph,
+        // so a narrow window or a split screen gives the room back to the
+        // module the user is working in rather than to navigation.
+        SizeChanged += (_, e) =>
+        {
+            var compact = e.NewSize.Width < DesignTokens.CompactShellWidth;
+            _navigationRail.SetCompact(compact);
+            _header.SetCompact(compact);
+        };
 
         // `WP 10.5A`'s own three new overlay surfaces — added last, so
         // each renders above every other root child (Grid Z-order follows
@@ -934,8 +979,44 @@ public sealed class MainWindow : Window
     /// </summary>
     private void RefreshProjectStatus()
     {
+        var location = _navigator.Current;
         _statusBar.SetProject(_projectContext.Current?.Label);
-        _statusBar.SetLocation(DescribeLocation(_navigator.Current));
+        _statusBar.SetLocation(DescribeLocation(location));
+        _header.SetContext(DescribeModule(location), _projectContext.Current?.Label, DescribeDetail(location));
+    }
+
+    /// <summary>The module the header names — the rail's own title for the current area, so the two can never disagree.</summary>
+    internal static string DescribeModule(ShellLocation location)
+    {
+        ArgumentNullException.ThrowIfNull(location);
+
+        return location.Area == ShellArea.ProjectWorkspace
+            ? ShellAreas.For(ShellArea.Projects).Title
+            : ShellAreas.For(location.Area).Title;
+    }
+
+    /// <summary>The second-level detail the header shows after the project — the project area inside a project, or the engineering scope.</summary>
+    internal static string? DescribeDetail(ShellLocation location)
+    {
+        ArgumentNullException.ThrowIfNull(location);
+
+        return location.Area switch
+        {
+            ShellArea.ProjectWorkspace when location.ProjectArea is { } area => ProjectAreas.For(area).Title,
+            ShellArea.Engineering => location.IsStandaloneEngineering ? "Standalone engineering" : "Project engineering",
+            _ => null,
+        };
+    }
+
+    /// <summary>Sets the window's own icon to the TempestOS mark — the brand pack's own app icon artwork, shipped as an embedded asset.</summary>
+    private void ApplyBrandIcon()
+    {
+        var uri = new Uri("avares://Tempest.Desktop/Assets/Brand/tempest-appicon-256.png");
+        if (AssetLoader.Exists(uri))
+        {
+            using var stream = AssetLoader.Open(uri);
+            Icon = new WindowIcon(stream);
+        }
     }
 
     /// <summary>
@@ -957,6 +1038,7 @@ public sealed class MainWindow : Window
         var objects = await _engineeringScope.ListObjectsAsync().ConfigureAwait(true);
 
         _statusBar.SetLocation($"{DescribeLocation(_navigator.Current)} · {scope.Label} · {objects.Count} object(s)");
+        _header.SetContext(DescribeModule(_navigator.Current), _projectContext.Current?.Label, $"{scope.Label} · {objects.Count} object(s)");
     }
 
     /// <summary>

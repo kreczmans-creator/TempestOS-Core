@@ -114,6 +114,8 @@ public sealed class LayoutTabGroupView : UserControl
             VerticalAlignment = VerticalAlignment.Stretch,
             Padding = new Thickness(0),
         };
+        button.Classes.Add(ChromeStyles.Flat);
+        ThemeReactiveBrush.Bind(label, TextBlock.ForegroundProperty, BrandPalette.MutedTextBrushKey);
 
         AutomationProperties.SetName(button, $"Expand {title}");
 
@@ -129,8 +131,9 @@ public sealed class LayoutTabGroupView : UserControl
                 FlyoutRequested?.Invoke(_node.SelectedPanelId);
         };
 
-        var host = new Border { Width = StripSize, Child = button };
-        ThemeReactiveBrush.Bind(host, Border.BackgroundProperty, ApplicationPalette.PanelBackgroundBrushKey);
+        var host = new Border { Width = StripSize, Child = button, BorderThickness = new Thickness(0, 0, 1, 0) };
+        ThemeReactiveBrush.Bind(host, Border.BackgroundProperty, BrandPalette.SunkenBackgroundBrushKey);
+        ThemeReactiveBrush.Bind(host, Border.BorderBrushProperty, BrandPalette.HairlineBrushKey);
         return host;
     }
 
@@ -148,7 +151,9 @@ public sealed class LayoutTabGroupView : UserControl
             // from whatever previously held it so the selection and scroll
             // state the user had survive a re-render.
             Detach(descriptor.Content);
-            root.Children.Add(descriptor.Content);
+            var surface = new Border { Child = descriptor.Content };
+            ThemeReactiveBrush.Bind(surface, Border.BackgroundProperty, BrandPalette.SurfaceBackgroundBrushKey);
+            root.Children.Add(surface);
         }
         else
         {
@@ -165,33 +170,50 @@ public sealed class LayoutTabGroupView : UserControl
 
     private Control BuildTabStrip()
     {
-        var tabs = new StackPanel { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceXs };
+        var tabs = new StackPanel { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceXs, ClipToBounds = true };
 
         foreach (var panelId in _node.PanelIds)
         {
             var descriptor = _registry.Find(panelId);
             var isSelected = panelId == _node.SelectedPanelId;
 
+            // A panel tab is an UPPERCASE chrome label (the design system's
+            // own panel-title treatment); the selected one carries the
+            // heading colour and a 2px accent rule beneath it — never
+            // colour alone.
             var tab = new Button
             {
-                Content = descriptor?.Title ?? "Panel",
-                FontWeight = isSelected ? FontWeight.Bold : FontWeight.Normal,
+                Content = new TextBlock
+                {
+                    Text = (descriptor?.Title ?? "Panel").ToUpperInvariant(),
+                    FontFamily = DesignTokens.TitleFont,
+                    FontSize = DesignTokens.FontSizeLabel + 1,
+                    FontWeight = isSelected ? DesignTokens.WeightHeading : DesignTokens.WeightLabel,
+                    LetterSpacing = DesignTokens.LabelTracking,
+                    VerticalAlignment = VerticalAlignment.Center,
+                    TextTrimming = TextTrimming.CharacterEllipsis,
+                    MaxWidth = 160,
+                },
                 MinHeight = DesignTokens.ControlSizeSmall,
-                Padding = new Thickness(DesignTokens.SpaceSm, DesignTokens.SpaceXs),
+                Padding = new Thickness(DesignTokens.SpaceLg, DesignTokens.SpaceXs),
+                VerticalAlignment = VerticalAlignment.Stretch,
                 Tag = panelId,
             };
+            tab.Classes.Add(ChromeStyles.Flat);
+            ThemeReactiveBrush.Bind(tab, ForegroundProperty, isSelected ? BrandPalette.HeadingTextBrushKey : BrandPalette.FaintTextBrushKey);
 
             AutomationProperties.SetName(tab, descriptor?.Title ?? "Panel");
-            ThemeReactiveBrush.Bind(
-                tab,
-                BackgroundProperty,
-                isSelected ? ApplicationPalette.AccentPanelBackgroundBrushKey : ApplicationPalette.PanelBackgroundBrushKey);
 
             var captured = panelId;
             tab.Click += (_, _) => PanelSelected?.Invoke(captured);
             tab.AddHandler(PointerPressedEvent, (_, e) => TabDragStarted?.Invoke(captured, e), Avalonia.Interactivity.RoutingStrategies.Tunnel);
 
-            tabs.Children.Add(tab);
+            var rule = new Border { Height = DesignTokens.RuleThickness, VerticalAlignment = VerticalAlignment.Bottom, IsVisible = isSelected, IsHitTestVisible = false };
+            ThemeReactiveBrush.Bind(rule, Border.BackgroundProperty, BrandPalette.AccentBrushKey);
+            var layered = new Panel();
+            layered.Children.Add(tab);
+            layered.Children.Add(rule);
+            tabs.Children.Add(layered);
         }
 
         var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceXs, HorizontalAlignment = HorizontalAlignment.Right };
@@ -199,35 +221,47 @@ public sealed class LayoutTabGroupView : UserControl
         var presentation = _tree.PresentationOf(selected);
         var selectedDescriptor = _registry.Find(selected);
 
-        actions.Children.Add(ChromeButton("▭", $"Collapse {selectedDescriptor?.Title ?? "panel"}", () => CollapseToggled?.Invoke(selected, true)));
+        actions.Children.Add(ChromeButton(Icons.IconGeometry.Collapse, $"Collapse {selectedDescriptor?.Title ?? "panel"}", () => CollapseToggled?.Invoke(selected, true)));
         actions.Children.Add(ChromeButton(
-            presentation.IsPinned ? "📌" : "📍",
+            presentation.IsPinned ? Icons.IconGeometry.Pin : Icons.IconGeometry.PinOff,
             presentation.IsPinned ? $"Auto-hide {selectedDescriptor?.Title ?? "panel"}" : $"Pin {selectedDescriptor?.Title ?? "panel"}",
             () => PinToggled?.Invoke(selected, !presentation.IsPinned)));
 
         if (selectedDescriptor?.CanClose != false)
-            actions.Children.Add(ChromeButton("✕", $"Close {selectedDescriptor?.Title ?? "panel"}", () => PanelClosed?.Invoke(selected)));
+            actions.Children.Add(ChromeButton(Icons.IconGeometry.Close, $"Close {selectedDescriptor?.Title ?? "panel"}", () => PanelClosed?.Invoke(selected)));
+
+        actions.Margin = new Thickness(0, 0, DesignTokens.SpaceSm, 0);
 
         var strip = new DockPanel { Height = DesignTokens.ControlSizeSmall + DesignTokens.SpaceSm };
         DockPanel.SetDock(actions, Dock.Right);
         strip.Children.Add(actions);
         strip.Children.Add(tabs);
 
-        ThemeReactiveBrush.Bind(strip, BackgroundProperty, ApplicationPalette.PanelBackgroundBrushKey);
-        return strip;
+        // The strip is a sunken instrument surface with a hairline beneath
+        // it, so a panel's own title row reads as chrome and its content
+        // as the surface — the same two-tier treatment the shell's header
+        // and status bar use.
+        var frame = new Border { Child = strip, BorderThickness = new Thickness(0, 0, 0, 1) };
+        ThemeReactiveBrush.Bind(frame, Border.BackgroundProperty, BrandPalette.SunkenBackgroundBrushKey);
+        ThemeReactiveBrush.Bind(frame, Border.BorderBrushProperty, BrandPalette.HairlineBrushKey);
+        return frame;
     }
 
-    private static Button ChromeButton(string glyph, string name, Action onClick)
+    private static Button ChromeButton(StreamGeometry icon, string name, Action onClick)
     {
         var button = new Button
         {
-            Content = glyph,
-            FontSize = DesignTokens.FontSizeCaption,
-            MinHeight = DesignTokens.ControlSizeSmall,
-            Padding = new Thickness(DesignTokens.SpaceXs, 0),
+            Content = Icons.IconGeometry.Build(icon, 12),
+            MinHeight = DesignTokens.ControlSizeSmall - DesignTokens.SpaceSm,
+            MinWidth = DesignTokens.ControlSizeSmall - DesignTokens.SpaceSm,
+            Padding = new Thickness(DesignTokens.SpaceSm, 0),
+            VerticalAlignment = VerticalAlignment.Center,
         };
+        button.Classes.Add(ChromeStyles.Flat);
+        ThemeReactiveBrush.Bind(button, ForegroundProperty, BrandPalette.MutedTextBrushKey);
 
         AutomationProperties.SetName(button, name);
+        ToolTip.SetTip(button, name);
         button.Click += (_, _) => onClick();
         return button;
     }
