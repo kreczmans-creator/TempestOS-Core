@@ -129,6 +129,17 @@ internal sealed class CockpitView : UserControl
 
         // The detail cards.
         AddRecentActivityCard();
+
+        // `WP-Z4` Productisation Phase 1 (P1) — `EngineeringCockpit.KpiCards`,
+        // the one real cross-discipline aggregate (Requirements/
+        // Verification/Calculations/Documentation/Review/Risks totals,
+        // `ADR-0103`), was fully computed but never rendered anywhere:
+        // only the five per-discipline KPI sets below ever reached this
+        // view. Placed first among the KPI cards — the summary before the
+        // detail, the same order the Cockpit's own information
+        // architecture already uses everywhere else (hero, then tiles,
+        // then per-discipline detail).
+        AddKpiCard(IconGeometry.Chart, "Engineering Overview", _cockpit.KpiCards);
         AddKpiCard(IconGeometry.Requirement, "Requirements KPIs", _cockpit.RequirementsKpiCards);
         AddKpiCard(IconGeometry.Calculator, "Calculations KPIs", _cockpit.CalculationsKpiCards);
         AddKpiCard(IconGeometry.CheckCircle, "Verification KPIs", _cockpit.VerificationKpiCards);

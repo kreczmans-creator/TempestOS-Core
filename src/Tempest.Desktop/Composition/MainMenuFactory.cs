@@ -2,6 +2,7 @@ using Avalonia.Controls;
 using Tempest.App.Workspace;
 using Tempest.Core.Diagnostics;
 using Tempest.Desktop.Docking;
+using Tempest.Desktop.Icons;
 using Tempest.Desktop.Theming;
 using Tempest.Desktop.Views;
 
@@ -103,17 +104,21 @@ internal static class MainMenuFactory
         layoutMenu.Items.Add(BuildLayoutPresetItem("Review", WorkspaceLayoutPreset.Review, applyPreset));
         layoutMenu.Items.Add(BuildLayoutPresetItem("Documentation", WorkspaceLayoutPreset.Documentation, applyPreset));
         layoutMenu.Items.Add(new Separator());
-        var resetLayoutItem = new MenuItem { Header = "Reset Layout" };
+        // `WP-Z4` Productisation Phase 1 (P1) — a first icon pass on the
+        // Menu System: the items with an existing IconGeometry glyph that
+        // names them exactly now carry it, rather than every menu in the
+        // shell being bare text next to a fully iconised Ribbon/QAT.
+        var resetLayoutItem = new MenuItem { Header = "Reset Layout", Icon = IconGeometry.Build(IconGeometry.LayoutReset, 14) };
         resetLayoutItem.Click += (_, _) => resetLayout();
         layoutMenu.Items.Add(resetLayoutItem);
         view.Items.Add(layoutMenu);
 
         var themeMenu = new MenuItem { Header = "_Theme" };
-        var toggleTheme = new MenuItem { Header = "Toggle Light/Dark" };
+        var toggleTheme = new MenuItem { Header = "Toggle Light/Dark", Icon = IconGeometry.Build(IconGeometry.Theme, 14) };
         toggleTheme.Click += async (_, _) => await theme.ToggleAsync().ConfigureAwait(true);
         themeMenu.Items.Add(toggleTheme);
         themeMenu.Items.Add(new Separator());
-        var preferences = new MenuItem { Header = "Preferences..." };
+        var preferences = new MenuItem { Header = "Preferences...", Icon = IconGeometry.Build(IconGeometry.Gear, 14) };
         preferences.Click += async (_, _) => await settingsDialog.ShowAsync().ConfigureAwait(true);
         themeMenu.Items.Add(preferences);
 
@@ -130,7 +135,7 @@ internal static class MainMenuFactory
         help.Items.Add(about);
 
         var commands = new MenuItem { Header = "_Commands" };
-        var openPalette = new MenuItem { Header = "Command Palette...   (Ctrl+K)" };
+        var openPalette = new MenuItem { Header = "Command Palette...   (Ctrl+K)", Icon = IconGeometry.Build(IconGeometry.Command, 14) };
         openPalette.Click += (_, _) => commandPalette.Open();
         commands.Items.Add(openPalette);
 

@@ -385,8 +385,24 @@ public sealed class ProjectExplorerView : UserControl
     }
 
     /// <summary>Loads (or reloads) the current area's own complete tree from <see cref="IProjectExplorer"/>.</summary>
+    /// <remarks>
+    /// `WP-Z4` Productisation Phase 1 (P0): every reload rebuilds an
+    /// entirely fresh <see cref="ExplorerNodeItem"/> tree, and
+    /// <see cref="TreeView.SelectedItem"/> matches by reference — so the
+    /// selection silently vanished on every single reload (renaming an
+    /// object, creating a sibling, switching areas and back), even though
+    /// the same real object was still right there in the new tree under a
+    /// new wrapper. Recording the selected node's own real Id before the
+    /// rebuild and re-selecting whichever new item now carries that same
+    /// Id closes the gap without needing <see cref="ExplorerNodeItem"/> to
+    /// become a value type or override equality — a much larger change
+    /// this Work Package's own "preserve existing architecture" instruction
+    /// argues against attempting here.
+    /// </remarks>
     public async Task LoadAsync(CancellationToken cancellationToken = default)
     {
+        var selectedId = (_tree.SelectedItem as ExplorerNodeItem)?.Node.Id;
+
         var roots = await _explorer.GetRootNodesAsync(cancellationToken).ConfigureAwait(true);
         var items = new AvaloniaList<ExplorerNodeItem>();
 
@@ -395,7 +411,26 @@ public sealed class ProjectExplorerView : UserControl
 
         _allItems = items;
         ApplyFilter();
+
+        if (selectedId is { } id && FindById(_allItems, id) is { } restored)
+            SelectAndReveal(restored);
+
         UpdateBreadcrumbs();
+    }
+
+    /// <summary>Searches <paramref name="roots"/> and every descendant, depth-first, for the node carrying <paramref name="id"/> — the real Domain Id, stable across a reload even though every <see cref="ExplorerNodeItem"/> wrapper is rebuilt from scratch.</summary>
+    private static ExplorerNodeItem? FindById(IEnumerable<ExplorerNodeItem> roots, Guid id)
+    {
+        foreach (var item in roots)
+        {
+            if (item.Node.Id == id)
+                return item;
+
+            if (FindById(item.Children, id) is { } found)
+                return found;
+        }
+
+        return null;
     }
 
     private async Task<ExplorerNodeItem> BuildAsync(ProjectExplorerNode node, ExplorerNodeItem? parent, CancellationToken cancellationToken)

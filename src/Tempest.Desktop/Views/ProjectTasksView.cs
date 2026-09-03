@@ -72,9 +72,14 @@ public sealed class ProjectTasksView : UserControl
         var heading = new TextBlock
         {
             Text = Heading,
+            FontFamily = DesignTokens.TitleFont,
             FontSize = DesignTokens.FontSizeHeading,
             FontWeight = DesignTokens.WeightHeading,
         };
+
+        // `WP-Z4` Productisation Phase 1 (P1) — the one primary
+        // call-to-action this area offers.
+        _newTask.Classes.Add(ChromeStyles.Primary);
 
         AutomationProperties.SetName(_newTask, "Create a task in this project");
         _newTask.Click += (_, _) => CreateRequested?.Invoke();
@@ -241,6 +246,7 @@ public sealed class ProjectTasksView : UserControl
         stack.Children.Add(new TextBlock
         {
             Text = headline,
+            FontFamily = DesignTokens.TitleFont,
             FontSize = DesignTokens.FontSizeHeading,
             FontWeight = DesignTokens.WeightHeading,
             HorizontalAlignment = HorizontalAlignment.Center,
@@ -320,6 +326,7 @@ public sealed class ProjectTasksView : UserControl
         };
 
         AutomationProperties.SetName(border, $"Task {entry.Identifier ?? entry.DisplayName}");
+        ThemeReactiveBrush.Bind(border, Border.BackgroundProperty, ApplicationPalette.PanelBackgroundBrushKey);
         ThemeReactiveBrush.Bind(border, Border.BorderBrushProperty, ApplicationPalette.PanelBorderBrushKey);
         return border;
     }
