@@ -4,6 +4,7 @@ using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Tempest.App.Projects;
+using Tempest.Desktop.Icons;
 using Tempest.Desktop.Theming;
 
 namespace Tempest.Desktop.Views;
@@ -56,9 +57,25 @@ public sealed class ProjectDocumentsView : UserControl
     private readonly HashSet<Guid> _opened = [];
     private readonly TextBlock _summary = new() { FontSize = DesignTokens.FontSizeCaption, Opacity = 0.85, TextWrapping = TextWrapping.Wrap };
 
+    // `WP-Z4` Productisation Phase 1 (P1) — this area had no create/
+    // open-in-Engineering affordance at all, despite its own empty state
+    // instructing the user to "Create a Document or Drawing in the
+    // Engineering Workspace". Mirrors ProjectRequirementsView's identical
+    // EngineeringRequested event and button exactly — same discipline,
+    // same reason: documents are authored in Engineering, not here.
+    private readonly Button _openWorkspace = new()
+    {
+        Content = "Open in Engineering →",
+        MinHeight = DesignTokens.MinControlSize,
+        HorizontalAlignment = HorizontalAlignment.Left,
+    };
+
     /// <summary>Raised when the user asks to open one of this project's files.</summary>
     /// <remarks>Carries the owning object and the attachment, which is exactly what the `TD-80` launcher needs.</remarks>
     public event Action<Guid, Guid>? OpenAttachmentRequested;
+
+    /// <summary>Raised when the user asks to work on documents in the Engineering Workspace.</summary>
+    public event Action? EngineeringRequested;
 
     /// <summary>Initialises a new instance of the <see cref="ProjectDocumentsView"/> class.</summary>
     public ProjectDocumentsView()
@@ -66,12 +83,18 @@ public sealed class ProjectDocumentsView : UserControl
         var heading = new TextBlock
         {
             Text = Heading,
+            FontFamily = DesignTokens.TitleFont,
             FontSize = DesignTokens.FontSizeHeading,
             FontWeight = DesignTokens.WeightHeading,
         };
 
+        _openWorkspace.Classes.Add(ChromeStyles.Primary);
+        AutomationProperties.SetName(_openWorkspace, "Open documents in the Engineering Workspace");
+        _openWorkspace.Click += (_, _) => EngineeringRequested?.Invoke();
+
         var root = new StackPanel { Spacing = DesignTokens.SpaceMd, Margin = DesignTokens.PanelPadding };
         root.Children.Add(heading);
+        root.Children.Add(_openWorkspace);
         root.Children.Add(_summary);
         root.Children.Add(_list);
 
@@ -157,6 +180,7 @@ public sealed class ProjectDocumentsView : UserControl
         stack.Children.Add(new TextBlock
         {
             Text = headline,
+            FontFamily = DesignTokens.TitleFont,
             FontSize = DesignTokens.FontSizeHeading,
             FontWeight = DesignTokens.WeightHeading,
             HorizontalAlignment = HorizontalAlignment.Center,
@@ -217,6 +241,7 @@ public sealed class ProjectDocumentsView : UserControl
             Child = rows,
         };
 
+        ThemeReactiveBrush.Bind(border, Border.BackgroundProperty, ApplicationPalette.PanelBackgroundBrushKey);
         ThemeReactiveBrush.Bind(border, Border.BorderBrushProperty, ApplicationPalette.PanelBorderBrushKey);
         return border;
     }
@@ -230,9 +255,10 @@ public sealed class ProjectDocumentsView : UserControl
             Margin = new Thickness(DesignTokens.SpaceLg, 0, 0, 0),
         };
 
+        row.Children.Add(IconGeometry.Build(IconGeometry.Paperclip, 13));
         row.Children.Add(new TextBlock
         {
-            Text = $"📎 {attachment.FileName}",
+            Text = attachment.FileName,
             FontSize = DesignTokens.FontSizeBody,
             VerticalAlignment = VerticalAlignment.Center,
         });
@@ -252,6 +278,7 @@ public sealed class ProjectDocumentsView : UserControl
             FontSize = DesignTokens.FontSizeBody,
         };
 
+        open.Classes.Add(ChromeStyles.Flat);
         AutomationProperties.SetName(open, $"Open {attachment.FileName}");
 
         // Offered for every attachment rather than only those with stored

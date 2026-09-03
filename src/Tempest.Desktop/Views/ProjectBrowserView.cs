@@ -130,6 +130,23 @@ public sealed class ProjectBrowserView : UserControl
             return;
 
         await RefreshAsync().ConfigureAwait(true);
+
+        // "Create your first project" (and every subsequent New Project…)
+        // used to leave the user back on the now-populated, but still
+        // unopened, list — a dead end the empty state's own instruction
+        // ("Create the first one...") never actually resolved. The
+        // identifier generated above is exactly the one the newly created
+        // project carries, so it is found in the just-refreshed list
+        // without a second directory capability — reusing OpenSelectedAsync's
+        // own OpenProjectAsync path, never a second "current project"
+        // notion of this view's own.
+        var created = _current.FirstOrDefault(p => string.Equals(p.Identifier, identifier, StringComparison.OrdinalIgnoreCase));
+        if (created is null)
+            return;
+
+        await _navigator.OpenProjectAsync(created.Id).ConfigureAwait(true);
+        _status.Text = $"Opened {created.Label}.";
+        ProjectOpened?.Invoke();
     }
 
     /// <summary>Suggests the next free <c>P-NNNN</c> identifier, continuing whatever the catalogue already uses.</summary>

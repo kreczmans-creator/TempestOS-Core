@@ -557,6 +557,20 @@ public sealed class MainWindow : Window
         // menu and keyboard already do, never a second path.
         _header.SearchRequested += () => _commandPalette.Open();
         _header.ThemeToggleRequested += async () => await _theme.ToggleAsync().ConfigureAwait(true);
+
+        // `WP-Z4` Productisation Phase 1 (P0) — the project chip is the
+        // one existing way back into the open project from anywhere else
+        // in the shell, most notably Engineering, which previously had no
+        // path back at all (`ReturnToProjectAsync` existed with zero
+        // Desktop call sites). The chip itself only raises this while a
+        // project is open (`ShellHeaderView.SetContext` disables it
+        // otherwise), so no guard is needed here.
+        _header.ReturnToProjectRequested += async () =>
+        {
+            await _navigator.ReturnToProjectAsync().ConfigureAwait(true);
+            await RenderCurrentModuleAsync().ConfigureAwait(true);
+        };
+
         _header.SetPrincipal(host.SessionPrincipal?.Identity.DisplayName);
 
         var shell = new DockPanel();

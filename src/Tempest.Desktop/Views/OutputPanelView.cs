@@ -3,6 +3,7 @@ using Avalonia.Layout;
 using Tempest.Core.BackgroundServices;
 using Tempest.Core.Diagnostics;
 using Tempest.Core.Modules;
+using Tempest.Desktop.Editors;
 using Tempest.Desktop.History;
 using Tempest.Desktop.Tasks;
 using Tempest.Desktop.Theming;
@@ -79,11 +80,11 @@ public sealed class OutputPanelView : UserControl
         _hostState.Text = $"Host state: {diagnostics.HostState}";
 
         _modules.ItemsSource = diagnostics.Modules
-            .Select(m => $"{StateGlyph(m.State)} {m.Descriptor.Name} — {m.State}")
+            .Select(m => ObjectEditorView.BuildSeverityRow(SeverityFor(m.State), $"{m.Descriptor.Name} — {m.State}"))
             .ToList();
 
         _hostedServices.ItemsSource = diagnostics.HostedServices
-            .Select(s => $"{StateGlyph(s.State)} {s.ServiceType.Name} — {s.State}")
+            .Select(s => ObjectEditorView.BuildSeverityRow(SeverityFor(s.State), $"{s.ServiceType.Name} — {s.State}"))
             .ToList();
     }
 
@@ -93,7 +94,7 @@ public sealed class OutputPanelView : UserControl
         ArgumentNullException.ThrowIfNull(backgroundTaskRunner);
 
         _backgroundTasks.ItemsSource = backgroundTaskRunner.Tasks
-            .Select(t => $"{StateGlyph(t.State)} {t.Title} — {t.State}{(t.OutcomeMessage is null ? string.Empty : $" ({t.OutcomeMessage})")}")
+            .Select(t => ObjectEditorView.BuildSeverityRow(SeverityFor(t.State), $"{t.Title} — {t.State}{(t.OutcomeMessage is null ? string.Empty : $" ({t.OutcomeMessage})")}"))
             .ToList();
     }
 
@@ -104,29 +105,39 @@ public sealed class OutputPanelView : UserControl
 
         _history.ItemsSource = history.Entries
             .Reverse()
-            .Select(e => $"{(e.Succeeded ? "✓" : "⚠")} {e.Timestamp:HH:mm:ss} — {e.Description}")
+            .Select(e => ObjectEditorView.BuildSeverityRow(
+                e.Succeeded ? FeedbackSeverity.Success : FeedbackSeverity.Warning,
+                $"{e.Timestamp:HH:mm:ss} — {e.Description}"))
             .ToList();
     }
 
-    private static string StateGlyph(BackgroundTaskState state) => state switch
+    // `WP-Z4` Productisation Phase 1 (P1) — every row in this panel now
+    // reuses ObjectEditorView.BuildSeverityRow, the platform's one
+    // "glyph + colour, never colour alone" row shape (`WP 10.5A`), instead
+    // of concatenating an emoji-free-but-still-uncoloured glyph directly
+    // into a plain string ItemsSource — the previous shape rendered every
+    // glyph in the same default text colour as its label, so Failed and
+    // Running looked identical at a glance.
+
+    private static FeedbackSeverity SeverityFor(BackgroundTaskState state) => state switch
     {
-        BackgroundTaskState.Failed => "⚠",
-        BackgroundTaskState.Succeeded => "✓",
-        BackgroundTaskState.Cancelled => "⊘",
-        _ => "…",
+        BackgroundTaskState.Failed => FeedbackSeverity.Error,
+        BackgroundTaskState.Succeeded => FeedbackSeverity.Success,
+        BackgroundTaskState.Cancelled => FeedbackSeverity.Warning,
+        _ => FeedbackSeverity.Info,
     };
 
-    private static string StateGlyph(ModuleState state) => state switch
+    private static FeedbackSeverity SeverityFor(ModuleState state) => state switch
     {
-        ModuleState.Failed => "⚠",
-        ModuleState.Running => "✓",
-        _ => "•",
+        ModuleState.Failed => FeedbackSeverity.Error,
+        ModuleState.Running => FeedbackSeverity.Success,
+        _ => FeedbackSeverity.Info,
     };
 
-    private static string StateGlyph(HostedServiceState state) => state switch
+    private static FeedbackSeverity SeverityFor(HostedServiceState state) => state switch
     {
-        HostedServiceState.Failed => "⚠",
-        HostedServiceState.Running => "✓",
-        _ => "•",
+        HostedServiceState.Failed => FeedbackSeverity.Error,
+        HostedServiceState.Running => FeedbackSeverity.Success,
+        _ => FeedbackSeverity.Info,
     };
 }

@@ -56,8 +56,8 @@ public sealed class DigitalThreadGraphView : UserControl, IWorkspaceView
     private readonly EngineeringDomainContext _domainContext;
     private readonly Action<Guid, string> _navigateToObject;
 
-    private readonly TextBlock _titleBlock = new() { FontSize = DesignTokens.FontSizeTitle, FontWeight = FontWeight.Bold };
-    private readonly TextBox _searchBox = new() { Watermark = "🔎 Search this graph…", MinWidth = 200, MinHeight = DesignTokens.MinControlSize };
+    private readonly TextBlock _titleBlock = new() { FontFamily = DesignTokens.TitleFont, FontSize = DesignTokens.FontSizeTitle, FontWeight = DesignTokens.WeightHeading };
+    private readonly TextBox _searchBox = new() { Watermark = "Search this graph…", MinWidth = 200, MinHeight = DesignTokens.MinControlSize };
     private readonly ComboBox _layoutSelector = new() { MinHeight = DesignTokens.MinControlSize, MinWidth = 150 };
     private readonly StackPanel _breadcrumbBar = new() { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceXs };
     private readonly Canvas _graphCanvas = new() { Width = CanvasSize, Height = CanvasSize };
@@ -84,6 +84,8 @@ public sealed class DigitalThreadGraphView : UserControl, IWorkspaceView
         _navigateToObject = navigateToObject;
 
         Content = BuildLayout();
+
+        ThemeReactiveBrush.Bind(_titleBlock, TextBlock.ForegroundProperty, BrandPalette.HeadingTextBrushKey);
 
         _searchBox.PropertyChanged += (_, e) =>
         {
@@ -195,9 +197,22 @@ public sealed class DigitalThreadGraphView : UserControl, IWorkspaceView
     private Control BuildLayout()
     {
         var header = new StackPanel { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceMd, Margin = DesignTokens.PanelHeaderPadding };
-        var resetZoomButton = new Button { Content = "⊙ Reset View", MinHeight = DesignTokens.MinControlSize };
+
+        // `WP-Z4` Productisation Phase 1 (backlog item 2) — the title
+        // used to carry a spider-web emoji; a real IconGeometry glyph
+        // (Graph, drawn for exactly this surface) replaces it, matching
+        // ShellHeaderView/PageHeading's own icon+title convention.
+        var titleRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceSm, VerticalAlignment = VerticalAlignment.Center };
+        titleRow.Children.Add(IconGeometry.Build(IconGeometry.Graph, 18));
+        titleRow.Children.Add(_titleBlock);
+
+        var resetZoomContent = new StackPanel { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceXs };
+        resetZoomContent.Children.Add(IconGeometry.Build(IconGeometry.Refresh, 13));
+        resetZoomContent.Children.Add(new TextBlock { Text = "Reset View", VerticalAlignment = VerticalAlignment.Center });
+        var resetZoomButton = new Button { Content = resetZoomContent, MinHeight = DesignTokens.MinControlSize };
+        resetZoomButton.Classes.Add(ChromeStyles.Subtle);
         resetZoomButton.Click += (_, _) => { _model.ResetView(); UpdateTransform(); };
-        header.Children.Add(_titleBlock);
+        header.Children.Add(titleRow);
         header.Children.Add(_searchBox);
         header.Children.Add(_layoutSelector);
         header.Children.Add(resetZoomButton);
@@ -235,10 +250,10 @@ public sealed class DigitalThreadGraphView : UserControl, IWorkspaceView
                 Margin = DesignTokens.PanelPadding,
                 Children =
                 {
-                    new TextBlock { Text = "Legend", FontWeight = DesignTokens.WeightHeading, FontSize = DesignTokens.FontSizeHeading },
+                    new TextBlock { Text = "Legend", FontFamily = DesignTokens.TitleFont, FontWeight = DesignTokens.WeightHeading, FontSize = DesignTokens.FontSizeHeading },
                     _legendPanel,
                     new Separator(),
-                    new TextBlock { Text = "Relationship Inspector", FontWeight = DesignTokens.WeightHeading, FontSize = DesignTokens.FontSizeHeading },
+                    new TextBlock { Text = "Relationship Inspector", FontFamily = DesignTokens.TitleFont, FontWeight = DesignTokens.WeightHeading, FontSize = DesignTokens.FontSizeHeading },
                     _inspectorPanel,
                 },
             },
@@ -324,7 +339,7 @@ public sealed class DigitalThreadGraphView : UserControl, IWorkspaceView
         var centre = nodes.FirstOrDefault(n => n.IsCentre);
         Title = $"Relationships: {centre.DisplayName}";
         ObjectKind = centre.Kind;
-        _titleBlock.Text = $"🕸 {Title}";
+        _titleBlock.Text = Title;
 
         RebuildBreadcrumb(centre);
         RebuildLegend();
@@ -344,6 +359,7 @@ public sealed class DigitalThreadGraphView : UserControl, IWorkspaceView
             var entry = _model.Breadcrumb[i];
             var index = i;
             var crumbButton = new Button { Content = entry.DisplayName, FontSize = DesignTokens.FontSizeCaption, Padding = new Thickness(DesignTokens.SpaceSm, DesignTokens.SpaceXs) };
+            crumbButton.Classes.Add(ChromeStyles.Flat);
             crumbButton.Click += (_, _) => { if (_model.JumpToBreadcrumb(index)) Rebuild(); };
             _breadcrumbBar.Children.Add(crumbButton);
             _breadcrumbBar.Children.Add(new TextBlock { Text = "›", VerticalAlignment = VerticalAlignment.Center, Opacity = 0.6 });
@@ -464,12 +480,12 @@ public sealed class DigitalThreadGraphView : UserControl, IWorkspaceView
         {
             var toggle = new Button
             {
-                Content = node.IsExpanded ? "▾" : "▸",
-                FontSize = DesignTokens.FontSizeCaption,
+                Content = IconGeometry.Build(node.IsExpanded ? IconGeometry.ChevronDown : IconGeometry.ChevronRight, 11),
                 Padding = new Thickness(DesignTokens.SpaceXs),
                 MinWidth = 20,
                 MinHeight = 20,
             };
+            toggle.Classes.Add(ChromeStyles.Flat);
             toggle.Click += (_, e) =>
             {
                 if (node.IsExpanded)

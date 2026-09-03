@@ -1,7 +1,9 @@
 using Avalonia.Controls;
+using Avalonia.Input;
 using Tempest.App.Workspace;
 using Tempest.Core.Diagnostics;
 using Tempest.Desktop.Docking;
+using Tempest.Desktop.Icons;
 using Tempest.Desktop.Theming;
 using Tempest.Desktop.Views;
 
@@ -103,17 +105,21 @@ internal static class MainMenuFactory
         layoutMenu.Items.Add(BuildLayoutPresetItem("Review", WorkspaceLayoutPreset.Review, applyPreset));
         layoutMenu.Items.Add(BuildLayoutPresetItem("Documentation", WorkspaceLayoutPreset.Documentation, applyPreset));
         layoutMenu.Items.Add(new Separator());
-        var resetLayoutItem = new MenuItem { Header = "Reset Layout" };
+        // `WP-Z4` Productisation Phase 1 (P1) — a first icon pass on the
+        // Menu System: the items with an existing IconGeometry glyph that
+        // names them exactly now carry it, rather than every menu in the
+        // shell being bare text next to a fully iconised Ribbon/QAT.
+        var resetLayoutItem = new MenuItem { Header = "Reset Layout", Icon = IconGeometry.Build(IconGeometry.LayoutReset, 14) };
         resetLayoutItem.Click += (_, _) => resetLayout();
         layoutMenu.Items.Add(resetLayoutItem);
         view.Items.Add(layoutMenu);
 
         var themeMenu = new MenuItem { Header = "_Theme" };
-        var toggleTheme = new MenuItem { Header = "Toggle Light/Dark" };
+        var toggleTheme = new MenuItem { Header = "Toggle Light/Dark", Icon = IconGeometry.Build(IconGeometry.Theme, 14) };
         toggleTheme.Click += async (_, _) => await theme.ToggleAsync().ConfigureAwait(true);
         themeMenu.Items.Add(toggleTheme);
         themeMenu.Items.Add(new Separator());
-        var preferences = new MenuItem { Header = "Preferences..." };
+        var preferences = new MenuItem { Header = "Preferences...", Icon = IconGeometry.Build(IconGeometry.Gear, 14) };
         preferences.Click += async (_, _) => await settingsDialog.ShowAsync().ConfigureAwait(true);
         themeMenu.Items.Add(preferences);
 
@@ -129,15 +135,30 @@ internal static class MainMenuFactory
         };
         help.Items.Add(about);
 
+        // `WP-Z4` Productisation Phase 1 (backlog item 1) — the shortcut
+        // text used to be hand-appended to the Header string. The real
+        // key handling has only ever lived in KeyboardShortcuts.Register's
+        // own KeyDown handler on the main window (Ctrl+K/Ctrl+Tab/Ctrl+
+        // Shift+Tab, unchanged here); MenuItem.InputGesture is Avalonia's
+        // own property for the identical text, right-aligned by the
+        // platform's own MenuItem template instead of hand-spaced with
+        // extra name-string whitespace. Setting it duplicates no gesture
+        // handling and invents no second shortcut system — it is a label
+        // for the one that already exists.
         var commands = new MenuItem { Header = "_Commands" };
-        var openPalette = new MenuItem { Header = "Command Palette...   (Ctrl+K)" };
+        var openPalette = new MenuItem
+        {
+            Header = "Command Palette...",
+            Icon = IconGeometry.Build(IconGeometry.Command, 14),
+            InputGesture = new KeyGesture(Key.K, KeyModifiers.Control),
+        };
         openPalette.Click += (_, _) => commandPalette.Open();
         commands.Items.Add(openPalette);
 
         var document = new MenuItem { Header = "_Document" };
-        var nextDoc = new MenuItem { Header = "Next Tab   (Ctrl+Tab)" };
+        var nextDoc = new MenuItem { Header = "Next Tab", InputGesture = new KeyGesture(Key.Tab, KeyModifiers.Control) };
         nextDoc.Click += (_, _) => documentArea.SelectNextTab();
-        var prevDoc = new MenuItem { Header = "Previous Tab   (Ctrl+Shift+Tab)" };
+        var prevDoc = new MenuItem { Header = "Previous Tab", InputGesture = new KeyGesture(Key.Tab, KeyModifiers.Control | KeyModifiers.Shift) };
         prevDoc.Click += (_, _) => documentArea.SelectPreviousTab();
         document.Items.Add(nextDoc);
         document.Items.Add(prevDoc);

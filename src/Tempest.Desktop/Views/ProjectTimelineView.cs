@@ -71,9 +71,14 @@ public sealed class ProjectTimelineView : UserControl
         var heading = new TextBlock
         {
             Text = Heading,
+            FontFamily = DesignTokens.TitleFont,
             FontSize = DesignTokens.FontSizeHeading,
             FontWeight = DesignTokens.WeightHeading,
         };
+
+        // `WP-Z4` Productisation Phase 1 (P1) — the one primary
+        // call-to-action this area offers.
+        _newMilestone.Classes.Add(ChromeStyles.Primary);
 
         AutomationProperties.SetName(_newMilestone, "Set a milestone in this project");
         _newMilestone.Click += (_, _) => CreateMilestoneRequested?.Invoke();
@@ -204,6 +209,7 @@ public sealed class ProjectTimelineView : UserControl
         };
 
         AutomationProperties.SetName(border, $"Milestone {entry.Identifier ?? entry.DisplayName}");
+        ThemeReactiveBrush.Bind(border, Border.BackgroundProperty, ApplicationPalette.PanelBackgroundBrushKey);
         ThemeReactiveBrush.Bind(border, Border.BorderBrushProperty, ApplicationPalette.PanelBorderBrushKey);
         return border;
     }
@@ -266,6 +272,7 @@ public sealed class ProjectTimelineView : UserControl
         stack.Children.Add(new TextBlock
         {
             Text = headline,
+            FontFamily = DesignTokens.TitleFont,
             FontSize = DesignTokens.FontSizeHeading,
             FontWeight = DesignTokens.WeightHeading,
             HorizontalAlignment = HorizontalAlignment.Center,

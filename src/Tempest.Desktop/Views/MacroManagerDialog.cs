@@ -76,8 +76,30 @@ public sealed class MacroManagerDialog : Border
         BuildBrowsePanel();
         BuildEditorPanel();
 
+        // Chrome treatments (`WP-Z4` Productisation Phase 1) — this dialog
+        // predates ChromeStyles (`WP 10.0A`) and had never been brought
+        // forward; every button now carries the same three treatments the
+        // rest of the shell uses instead of the unstyled default button.
+        _newButton.Classes.Add(ChromeStyles.Primary);
+        _runButton.Classes.Add(ChromeStyles.Subtle);
+        _deleteButton.Classes.Add(ChromeStyles.Danger);
+        _closeButton.Classes.Add(ChromeStyles.Flat);
+        _addStepButton.Classes.Add(ChromeStyles.Subtle);
+        _removeStepButton.Classes.Add(ChromeStyles.Subtle);
+        _saveMacroButton.Classes.Add(ChromeStyles.Primary);
+        _cancelEditorButton.Classes.Add(ChromeStyles.Flat);
+
         var root = new StackPanel();
-        root.Children.Add(new TextBlock { Text = "Macros", FontSize = DesignTokens.FontSizeTitle, FontWeight = FontWeight.Bold, Margin = new Thickness(0, 0, 0, DesignTokens.SpaceMd) });
+        var title = new TextBlock
+        {
+            Text = "Macros",
+            FontFamily = DesignTokens.TitleFont,
+            FontSize = DesignTokens.FontSizeTitle,
+            FontWeight = DesignTokens.WeightHeading,
+            Margin = new Thickness(0, 0, 0, DesignTokens.SpaceMd),
+        };
+        ThemeReactiveBrush.Bind(title, TextBlock.ForegroundProperty, BrandPalette.HeadingTextBrushKey);
+        root.Children.Add(title);
         root.Children.Add(_browsePanel);
         root.Children.Add(_editorPanel);
         root.Children.Add(_statusText);

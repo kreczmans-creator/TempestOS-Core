@@ -51,6 +51,7 @@ public sealed class ProjectRequirementsView : UserControl
         var heading = new TextBlock
         {
             Text = Heading,
+            FontFamily = DesignTokens.TitleFont,
             FontSize = DesignTokens.FontSizeHeading,
             FontWeight = DesignTokens.WeightHeading,
         };
@@ -61,6 +62,11 @@ public sealed class ProjectRequirementsView : UserControl
             MinHeight = DesignTokens.MinControlSize,
             HorizontalAlignment = HorizontalAlignment.Left,
         };
+
+        // `WP-Z4` Productisation Phase 1 (P1) — this area has no create
+        // action of its own (requirements are authored in Engineering),
+        // so "Open in Engineering" is its one real call-to-action.
+        openWorkspace.Classes.Add(ChromeStyles.Primary);
 
         AutomationProperties.SetName(openWorkspace, "Open requirements in the Engineering Workspace");
         openWorkspace.Click += (_, _) => EngineeringRequested?.Invoke();
@@ -138,6 +144,7 @@ public sealed class ProjectRequirementsView : UserControl
         stack.Children.Add(new TextBlock
         {
             Text = headline,
+            FontFamily = DesignTokens.TitleFont,
             FontSize = DesignTokens.FontSizeHeading,
             FontWeight = DesignTokens.WeightHeading,
             HorizontalAlignment = HorizontalAlignment.Center,
@@ -223,6 +230,7 @@ public sealed class ProjectRequirementsView : UserControl
             Child = rows,
         };
 
+        ThemeReactiveBrush.Bind(border, Border.BackgroundProperty, ApplicationPalette.PanelBackgroundBrushKey);
         ThemeReactiveBrush.Bind(border, Border.BorderBrushProperty, ApplicationPalette.PanelBorderBrushKey);
         return border;
     }

@@ -52,7 +52,16 @@ public sealed class ShellHeaderView : UserControl
         MaxWidth = 320,
     };
 
-    private readonly Border _projectChip = new()
+    // A Button, not a Border — `WP-Z4` Productisation Phase 1 (P0):
+    // clicking back into the open project used to have no affordance
+    // anywhere once inside Engineering (`ReturnToProjectAsync` existed on
+    // `IShellNavigator` with zero call sites in Desktop). This chip is the
+    // one place the shell already names the open project, so it is the
+    // natural "how do I get back" target — a bespoke chip look (like the
+    // Search field below), not one of the three ChromeStyles treatments,
+    // so its Background/BorderBrush stay direct properties exactly as the
+    // Border they replace already used.
+    private readonly Button _projectChip = new()
     {
         CornerRadius = new CornerRadius(DesignTokens.ControlCornerRadius),
         BorderThickness = new Thickness(1),
@@ -77,6 +86,17 @@ public sealed class ShellHeaderView : UserControl
 
     /// <summary>Raised when the user asks to switch theme.</summary>
     public event Action? ThemeToggleRequested;
+
+    /// <summary>
+    /// Raised when the user clicks the current-project chip (`WP-Z4`
+    /// Productisation Phase 1, P0) — the one existing affordance back into
+    /// the open project's own workspace from anywhere else in the shell,
+    /// most notably Engineering, which previously had no way back at all
+    /// (<c>IShellNavigator.ReturnToProjectAsync</c> existed with zero
+    /// Desktop call sites). Only raised while a project is open — see
+    /// <see cref="SetContext"/>, which disables the chip otherwise.
+    /// </summary>
+    public event Action? ReturnToProjectRequested;
 
     /// <summary>Initialises a new instance of the <see cref="ShellHeaderView"/> class.</summary>
     public ShellHeaderView()
@@ -111,10 +131,11 @@ public sealed class ShellHeaderView : UserControl
         var folder = IconGeometry.Build(IconGeometry.Folder, 13);
         chipRow.Children.Add(folder);
         chipRow.Children.Add(_projectLabel);
-        _projectChip.Child = chipRow;
-        ThemeReactiveBrush.Bind(_projectChip, Border.BackgroundProperty, BrandPalette.SurfaceBackgroundBrushKey);
-        ThemeReactiveBrush.Bind(_projectChip, Border.BorderBrushProperty, BrandPalette.HairlineStrongBrushKey);
-        AutomationProperties.SetName(_projectChip, "Current project");
+        _projectChip.Content = chipRow;
+        ThemeReactiveBrush.Bind(_projectChip, Button.BackgroundProperty, BrandPalette.SurfaceBackgroundBrushKey);
+        ThemeReactiveBrush.Bind(_projectChip, Button.BorderBrushProperty, BrandPalette.HairlineStrongBrushKey);
+        AutomationProperties.SetName(_projectChip, "Return to project");
+        _projectChip.Click += (_, _) => ReturnToProjectRequested?.Invoke();
         context.Children.Add(_projectChip);
 
         ThemeReactiveBrush.Bind(_detail, TextBlock.ForegroundProperty, BrandPalette.MutedTextBrushKey);
@@ -193,7 +214,8 @@ public sealed class ShellHeaderView : UserControl
         var hasProject = !string.IsNullOrWhiteSpace(projectLabel);
         _projectLabel.Text = hasProject ? projectLabel : "No project open";
         _projectChip.Opacity = hasProject ? 1.0 : 0.6;
-        ToolTip.SetTip(_projectChip, hasProject ? $"Working in {projectLabel}" : "Open a project from the Projects module to work inside it.");
+        _projectChip.IsEnabled = hasProject;
+        ToolTip.SetTip(_projectChip, hasProject ? $"Return to {projectLabel}" : "Open a project from the Projects module to work inside it.");
 
         _detail.Text = string.IsNullOrWhiteSpace(detail) ? string.Empty : $"·  {detail}";
         _detail.IsVisible = !string.IsNullOrWhiteSpace(detail);

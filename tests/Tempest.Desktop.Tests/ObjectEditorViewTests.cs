@@ -136,7 +136,7 @@ public sealed class ObjectEditorViewTests
             var nameBox = FindByLabel<TextBox>(editor, "Name");
             nameBox.Text = "Renamed By WP10.3A Test";
 
-            var saveButton = FindButtonByContent(editor, "💾 Save");
+            var saveButton = FindButtonByContent(editor, "Save");
             saveButton.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
 
             // `TD-119`: the Save/Attach click runs an `async void` handler over
@@ -176,7 +176,7 @@ public sealed class ObjectEditorViewTests
             var contentBox = FindContentBox(editor);
             contentBox.Text = "Revised content, WP 10.3A test.";
 
-            var saveButton = FindButtonByContent(editor, "💾 Save");
+            var saveButton = FindButtonByContent(editor, "Save");
             saveButton.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
 
             // Poll the repository for the revised object — re-reading every
@@ -295,7 +295,7 @@ public sealed class ObjectEditorViewTests
             if (editor is null)
                 return; // this Kind has no real Engineering Domain object behind it — nothing to prove here.
 
-            var openButtons = editor.GetLogicalDescendants().OfType<Button>().Where(b => Equals(b.Content, "Open →")).ToList();
+            var openButtons = editor.GetLogicalDescendants().OfType<Button>().Where(b => Avalonia.Automation.AutomationProperties.GetName(b) == "Open").ToList();
             if (openButtons.Count == 0)
                 return; // this particular object has no relationships recorded — honestly nothing to click.
 
@@ -346,7 +346,7 @@ public sealed class ObjectEditorViewTests
             var quantityBox = FindByLabelWithin<TextBox>(bomExpander, "Quantity");
             quantityBox.Text = "42";
 
-            var saveButton = editor.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "💾 Save BOM Line"));
+            var saveButton = editor.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "Save BOM Line"));
             saveButton.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
 
             // `TD-119`: the Save/Attach click runs an `async void` handler over
@@ -425,7 +425,7 @@ public sealed class ObjectEditorViewTests
             var priorityBox = FindByLabelWithin<ComboBox>(requirementExpander, "Priority");
             priorityBox.SelectedItem = "High";
 
-            var saveButton = editor.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "💾 Save Owner/Priority"));
+            var saveButton = editor.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "Save Owner/Priority"));
             saveButton.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
 
             // `TD-119`: the Save/Attach click runs an `async void` handler over
@@ -544,7 +544,7 @@ public sealed class ObjectEditorViewTests
             var resultExpander = editor.GetLogicalDescendants().OfType<Expander>().Single(e => Equals(e.Header, "Record Result"));
             Assert.True(resultExpander.IsVisible);
 
-            var passButton = resultExpander.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "✅ Pass"));
+            var passButton = resultExpander.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "Pass"));
             passButton.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
 
             // Deterministic synchronisation, not a fixed delay: the "Record
@@ -607,7 +607,7 @@ public sealed class ObjectEditorViewTests
             var sizeBox = FindByLabelWithin<TextBox>(attachmentsExpander, "Size (bytes)");
             sizeBox.Text = "1024";
 
-            var attachButton = attachmentsExpander.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "📎 Attach"));
+            var attachButton = attachmentsExpander.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "Attach"));
             attachButton.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
 
             // `TD-119`: the Save/Attach click runs an `async void` handler over

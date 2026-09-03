@@ -123,9 +123,18 @@ public sealed class ProjectRisksView : UserControl
         var heading = new TextBlock
         {
             Text = Heading,
+            FontFamily = DesignTokens.TitleFont,
             FontSize = DesignTokens.FontSizeHeading,
             FontWeight = DesignTokens.WeightHeading,
         };
+
+        // `WP-Z4` Productisation Phase 1 (P1) — the one primary
+        // call-to-action this area offers (Raise Risk/Raise Issue/Propose
+        // Decision, whichever register is selected) now carries the same
+        // accent-filled treatment every other primary CTA in the shell
+        // uses, instead of rendering identically to every secondary
+        // action button on the page.
+        _create.Classes.Add(ChromeStyles.Primary);
 
         _create.Click += (_, _) =>
         {
@@ -527,6 +536,7 @@ public sealed class ProjectRisksView : UserControl
         };
 
         AutomationProperties.SetName(border, automationName);
+        ThemeReactiveBrush.Bind(border, Border.BackgroundProperty, ApplicationPalette.PanelBackgroundBrushKey);
         ThemeReactiveBrush.Bind(border, Border.BorderBrushProperty, ApplicationPalette.PanelBorderBrushKey);
         return border;
     }
@@ -544,6 +554,7 @@ public sealed class ProjectRisksView : UserControl
         stack.Children.Add(new TextBlock
         {
             Text = headline,
+            FontFamily = DesignTokens.TitleFont,
             FontSize = DesignTokens.FontSizeHeading,
             FontWeight = DesignTokens.WeightHeading,
             HorizontalAlignment = HorizontalAlignment.Center,

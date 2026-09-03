@@ -186,6 +186,15 @@ public sealed class ProjectWorkspaceView : UserControl
             EngineeringRequested?.Invoke();
         };
 
+        // `WP-Z4` Productisation Phase 1 (P1) — Documents gains the same
+        // real path into Engineering Requirements already has, closing
+        // the gap its own empty state named but never actually offered.
+        _documentsView.EngineeringRequested += async () =>
+        {
+            await _navigator.GoToEngineeringAsync().ConfigureAwait(true);
+            EngineeringRequested?.Invoke();
+        };
+
         // The Tasks surface raises intent and performs nothing. The shell
         // holds IProjectTaskService and does the work, exactly as it does
         // for opening a document — a view that mutated the domain directly
