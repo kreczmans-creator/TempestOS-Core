@@ -98,8 +98,8 @@ public sealed class ObjectEditorView : UserControl
     private readonly TextBlock _identityReadout = new() { Opacity = 0.7, FontSize = DesignTokens.FontSizeCaption };
     private readonly TextBox _nameBox = new() { FontSize = DesignTokens.FontSizeBody, MinHeight = DesignTokens.MinControlSize };
     private readonly TextBox _contentBox = new() { AcceptsReturn = true, TextWrapping = TextWrapping.Wrap, MinHeight = 140, FontSize = DesignTokens.FontSizeBody };
-    private readonly ToggleButton _readOnlyToggle = new() { Content = "🔓 Editable", MinHeight = DesignTokens.MinControlSize };
-    private readonly Button _saveButton = new() { Content = "💾 Save", MinHeight = DesignTokens.MinControlSize };
+    private readonly ToggleButton _readOnlyToggle = new() { Content = "Editable", MinHeight = DesignTokens.MinControlSize };
+    private readonly Button _saveButton = new() { Content = "Save", MinHeight = DesignTokens.MinControlSize };
     private readonly Button _cancelButton = new() { Content = "Cancel", MinHeight = DesignTokens.MinControlSize };
     private readonly TextBlock _statusMessage = new() { FontSize = DesignTokens.FontSizeCaption, Opacity = 0.8 };
     private readonly StackPanel _lifecyclePanel = new() { Spacing = DesignTokens.SpaceXs };
@@ -116,27 +116,27 @@ public sealed class ObjectEditorView : UserControl
     private readonly TextBox _bomFindNumberBox = new() { FontSize = DesignTokens.FontSizeBody, MinHeight = DesignTokens.MinControlSize };
     private readonly TextBox _bomItemNumberBox = new() { FontSize = DesignTokens.FontSizeBody, MinHeight = DesignTokens.MinControlSize };
     private readonly TextBox _bomReferenceDesignatorBox = new() { FontSize = DesignTokens.FontSizeBody, MinHeight = DesignTokens.MinControlSize };
-    private readonly Button _bomSaveButton = new() { Content = "💾 Save BOM Line", MinHeight = DesignTokens.MinControlSize };
+    private readonly Button _bomSaveButton = new() { Content = "Save BOM Line", MinHeight = DesignTokens.MinControlSize };
     private readonly TextBlock _bomStatusMessage = new() { FontSize = DesignTokens.FontSizeCaption, Opacity = 0.8 };
     private Expander _bomSection = null!;
 
     private readonly TextBox _requirementOwnerBox = new() { FontSize = DesignTokens.FontSizeBody, MinHeight = DesignTokens.MinControlSize };
     private readonly ComboBox _requirementPriorityBox = new() { MinHeight = DesignTokens.MinControlSize, ItemsSource = new[] { "(none)", "Low", "Medium", "High", "Critical" } };
-    private readonly Button _requirementSaveButton = new() { Content = "💾 Save Owner/Priority", MinHeight = DesignTokens.MinControlSize };
+    private readonly Button _requirementSaveButton = new() { Content = "Save Owner/Priority", MinHeight = DesignTokens.MinControlSize };
     private readonly TextBlock _requirementStatusMessage = new() { FontSize = DesignTokens.FontSizeCaption, Opacity = 0.8 };
     private Expander _requirementSection = null!;
 
     private readonly ComboBox _calculationTemplatePicker = new() { MinHeight = DesignTokens.MinControlSize };
     private readonly TextBox _calculationInputJsonBox = new() { AcceptsReturn = true, TextWrapping = TextWrapping.Wrap, MinHeight = 80, FontSize = DesignTokens.FontSizeBody, Watermark = "{ ... }" };
-    private readonly Button _calculationExecuteButton = new() { Content = "▶ Execute", MinHeight = DesignTokens.MinControlSize };
+    private readonly Button _calculationExecuteButton = new() { Content = "Execute", MinHeight = DesignTokens.MinControlSize };
     private readonly TextBlock _calculationStatusMessage = new() { FontSize = DesignTokens.FontSizeCaption, Opacity = 0.8 };
     private Expander _calculationSection = null!;
     private IReadOnlyList<CalculationTemplateDescriptor> _availableTemplates = [];
     private bool _calculationHasBeenExecuted;
 
-    private readonly Button _verificationPassButton = new() { Content = "✅ Pass", MinHeight = DesignTokens.MinControlSize };
-    private readonly Button _verificationFailButton = new() { Content = "❌ Fail", MinHeight = DesignTokens.MinControlSize };
-    private readonly Button _verificationConditionalButton = new() { Content = "⚠ Conditional", MinHeight = DesignTokens.MinControlSize };
+    private readonly Button _verificationPassButton = new() { Content = "Pass", MinHeight = DesignTokens.MinControlSize };
+    private readonly Button _verificationFailButton = new() { Content = "Fail", MinHeight = DesignTokens.MinControlSize };
+    private readonly Button _verificationConditionalButton = new() { Content = "Conditional", MinHeight = DesignTokens.MinControlSize };
     private readonly TextBox _verificationMethodBox = new() { FontSize = DesignTokens.FontSizeBody, MinHeight = DesignTokens.MinControlSize };
     private readonly TextBlock _verificationStatusMessage = new() { FontSize = DesignTokens.FontSizeCaption, Opacity = 0.8 };
     private Expander _verificationResultSection = null!;
@@ -145,7 +145,7 @@ public sealed class ObjectEditorView : UserControl
     private readonly TextBox _attachmentFileNameBox = new() { FontSize = DesignTokens.FontSizeBody, MinHeight = DesignTokens.MinControlSize };
     private readonly TextBox _attachmentContentTypeBox = new() { FontSize = DesignTokens.FontSizeBody, MinHeight = DesignTokens.MinControlSize };
     private readonly TextBox _attachmentSizeBox = new() { FontSize = DesignTokens.FontSizeBody, MinHeight = DesignTokens.MinControlSize };
-    private readonly Button _attachmentAddButton = new() { Content = "📎 Attach", MinHeight = DesignTokens.MinControlSize };
+    private readonly Button _attachmentAddButton = new() { Content = "Attach", MinHeight = DesignTokens.MinControlSize };
     private readonly TextBlock _attachmentStatusMessage = new() { FontSize = DesignTokens.FontSizeCaption, Opacity = 0.8 };
     private Expander _attachmentsSection = null!;
 
@@ -233,6 +233,22 @@ public sealed class ObjectEditorView : UserControl
 
         Content = BuildLayout();
 
+        // Chrome treatments (`WP-Z4` Productisation Phase 1) — this editor
+        // predates ChromeStyles/IconGeometry (`WP 10.0A`) and had never
+        // been brought forward; every button now carries the same three
+        // treatments the rest of the shell uses, rather than the
+        // unstyled default FluentTheme button it rendered as before.
+        _readOnlyToggle.Classes.Add(ChromeStyles.Subtle);
+        _saveButton.Classes.Add(ChromeStyles.Primary);
+        _cancelButton.Classes.Add(ChromeStyles.Subtle);
+        _bomSaveButton.Classes.Add(ChromeStyles.Primary);
+        _requirementSaveButton.Classes.Add(ChromeStyles.Primary);
+        _calculationExecuteButton.Classes.Add(ChromeStyles.Primary);
+        _verificationPassButton.Classes.Add(ChromeStyles.Primary);
+        _verificationFailButton.Classes.Add(ChromeStyles.Danger);
+        _verificationConditionalButton.Classes.Add(ChromeStyles.Subtle);
+        _attachmentAddButton.Classes.Add(ChromeStyles.Primary);
+
         // PropertyChanged, not the TextChanged routed event — fires
         // reliably for every Text value change regardless of source (real
         // user keystrokes or a direct `.Text =` assignment, the latter
@@ -300,7 +316,15 @@ public sealed class ObjectEditorView : UserControl
     {
         var header = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto,Auto,Auto") };
         var titleStack = new StackPanel();
-        titleStack.Children.Add(new TextBlock { Text = $"{IconRegistry.Resolve(_objectKind)} {_objectKind}", FontSize = DesignTokens.FontSizeTitle, FontWeight = FontWeight.Bold });
+        var titleText = new TextBlock
+        {
+            Text = $"{IconRegistry.Resolve(_objectKind)} {_objectKind}",
+            FontFamily = DesignTokens.TitleFont,
+            FontSize = DesignTokens.FontSizeTitle,
+            FontWeight = DesignTokens.WeightHeading,
+        };
+        ThemeReactiveBrush.Bind(titleText, TextBlock.ForegroundProperty, BrandPalette.HeadingTextBrushKey);
+        titleStack.Children.Add(titleText);
         titleStack.Children.Add(_identityReadout);
         Grid.SetColumn(titleStack, 0);
         Grid.SetColumn(_readOnlyToggle, 1);
@@ -528,7 +552,12 @@ public sealed class ObjectEditorView : UserControl
 
         if (other is not null)
         {
-            var openButton = new Button { Content = "Open →", FontSize = DesignTokens.FontSizeCaption, Padding = new Avalonia.Thickness(DesignTokens.SpaceSm, DesignTokens.SpaceXs) };
+            var openContent = new StackPanel { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceXs };
+            openContent.Children.Add(new TextBlock { Text = "Open", FontSize = DesignTokens.FontSizeCaption, VerticalAlignment = VerticalAlignment.Center });
+            openContent.Children.Add(IconGeometry.Build(IconGeometry.ChevronRight, 11));
+            var openButton = new Button { Content = openContent, Padding = new Avalonia.Thickness(DesignTokens.SpaceSm, DesignTokens.SpaceXs) };
+            openButton.Classes.Add(ChromeStyles.Flat);
+            Avalonia.Automation.AutomationProperties.SetName(openButton, "Open");
             openButton.Click += (_, _) => _navigateToObject(otherId, otherKind);
             Grid.SetColumn(openButton, 2);
             row.Children.Add(openButton);
@@ -744,7 +773,7 @@ public sealed class ObjectEditorView : UserControl
             && hasRelationships.GetRelationshipsAsync().GetAwaiter().GetResult()
                 .Any(r => r.RelationshipKind == CalculationTemplateRegistry.CalculatedByRelationshipKind);
 
-        _calculationExecuteButton.Content = _calculationHasBeenExecuted ? "↻ Recalculate" : "▶ Execute";
+        _calculationExecuteButton.Content = _calculationHasBeenExecuted ? "Recalculate" : "Execute";
         _calculationInputJsonBox.Text = string.Empty;
         _calculationStatusMessage.Text = string.Empty;
     }
@@ -854,9 +883,10 @@ public sealed class ObjectEditorView : UserControl
                     Spacing = 8,
                     Children =
                     {
+                        IconGeometry.Build(IconGeometry.Paperclip, 13),
                         new TextBlock
                         {
-                            Text = $"📎 {attachment.FileName}  ({attachment.ContentType}, {attachment.SizeInBytes:N0} bytes)",
+                            Text = $"{attachment.FileName}  ({attachment.ContentType}, {attachment.SizeInBytes:N0} bytes)",
                             FontSize = DesignTokens.FontSizeBody,
                             VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
                         },
@@ -866,6 +896,7 @@ public sealed class ObjectEditorView : UserControl
                 if (_openAttachmentRequested is not null)
                 {
                     var open = new Button { Content = "Open", Padding = new Thickness(10, 1), FontSize = DesignTokens.FontSizeBody };
+                    open.Classes.Add(ChromeStyles.Flat);
                     var captured = attachment;
                     open.Click += (_, _) => _openAttachmentRequested?.Invoke(attachable, captured);
                     row.Children.Add(open);
@@ -928,7 +959,7 @@ public sealed class ObjectEditorView : UserControl
     private void ApplyReadOnlyState()
     {
         var readOnly = _readOnlyToggle.IsChecked == true;
-        _readOnlyToggle.Content = readOnly ? "🔒 Read-Only" : "🔓 Editable";
+        _readOnlyToggle.Content = readOnly ? "Read-Only" : "Editable";
 
         if (readOnly && _isDirty)
             OnCancel();
