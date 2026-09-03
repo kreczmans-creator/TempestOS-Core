@@ -46,6 +46,10 @@ out/
 # Rider / other IDEs
 .idea/
 
+# Claude Code local tooling state (worktrees created for isolated background
+# agents, session-local config) - ephemeral, machine-local, never source
+.claude/
+
 # MSBuild / test results
 TestResults/
 *.trx
