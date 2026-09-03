@@ -22,6 +22,13 @@ public sealed class App : Application
     /// <inheritdoc />
     public override void Initialize()
     {
+        // The crash record (`WP-Z4` Stage 28) — installed first, before any
+        // theme, window or Runtime Host exists, so a failure anywhere in
+        // start-up still leaves a trace. `Tempest.Desktop` is a `WinExe`
+        // with no console and the platform has no file log sink, so without
+        // this an unhandled start-up exception is invisible.
+        Diagnostics.CrashLog.Install();
+
         Name = "TempestOS";
 
         // The brand's home ground is the instrument (dark) theme —
