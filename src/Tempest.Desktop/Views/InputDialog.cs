@@ -27,7 +27,7 @@ public sealed class InputDialog : Border
     private readonly TextBlock _title = new() { FontSize = DesignTokens.FontSizeHeading, FontWeight = DesignTokens.WeightHeading };
     private readonly TextBlock _label = new() { FontSize = DesignTokens.FontSizeBody, Opacity = 0.8, Margin = new Thickness(0, DesignTokens.SpaceSm, 0, DesignTokens.SpaceXs) };
     private readonly TextBox _input = new() { MinHeight = DesignTokens.ControlSizeMedium };
-    private readonly TextBlock _validationMessage = new() { FontSize = DesignTokens.FontSizeCaption, Foreground = Avalonia.Media.Brushes.Crimson, Margin = new Thickness(0, DesignTokens.SpaceXs, 0, 0), IsVisible = false };
+    private readonly TextBlock _validationMessage = new() { FontSize = DesignTokens.FontSizeCaption, Foreground = SeverityColors.Resolve(FeedbackSeverity.Error), Margin = new Thickness(0, DesignTokens.SpaceXs, 0, 0), IsVisible = false };
     private readonly Button _okButton = new() { Content = "OK", MinHeight = DesignTokens.ControlSizeMedium };
     private readonly Button _cancelButton = new() { Content = "Cancel", MinHeight = DesignTokens.ControlSizeMedium };
 
@@ -61,6 +61,10 @@ public sealed class InputDialog : Border
         body.Children.Add(buttons);
         Child = body;
 
+        _okButton.Classes.Add(ChromeStyles.Primary);
+        _cancelButton.Classes.Add(ChromeStyles.Subtle);
+        _title.FontFamily = DesignTokens.TitleFont;
+        _title.FontSize = DesignTokens.FontSizeTitle;
         _cancelButton.Click += (_, _) => Complete(null);
         _okButton.Click += (_, _) => TryComplete();
         _input.KeyDown += (_, e) =>

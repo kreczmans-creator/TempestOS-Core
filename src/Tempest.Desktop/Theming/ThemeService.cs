@@ -30,7 +30,7 @@ public sealed class ThemeService
 
         try
         {
-            _settingsProvider.RegisterDefinition(new SettingDefinition(SettingKey, "Desktop Theme (Light/Dark)", nameof(ThemeVariant.Light)));
+            _settingsProvider.RegisterDefinition(new SettingDefinition(SettingKey, "Desktop Theme (Light/Dark)", nameof(ThemeVariant.Dark)));
         }
         catch (DuplicateSettingDefinitionException)
         {
@@ -43,11 +43,11 @@ public sealed class ThemeService
     /// <summary>Gets the theme variant currently applied to <see cref="Application.Current"/>.</summary>
     public ThemeVariant Current => Application.Current?.RequestedThemeVariant ?? ThemeVariant.Light;
 
-    /// <summary>Reads the persisted theme choice (defaulting to Light on a missing/first-run value) and applies it.</summary>
+    /// <summary>Reads the persisted theme choice and applies it — defaulting, on a missing/first-run value, to the instrument (dark) theme, the brand's own home ground ("Dark first", the Tempest Engineering Design System's own words); an explicit persisted <c>Light</c> is the paper theme.</summary>
     public async Task LoadAsync(CancellationToken cancellationToken = default)
     {
         var value = await _settingsProvider.GetValueAsync(SettingKey, cancellationToken).ConfigureAwait(false);
-        Apply(string.Equals(value, nameof(ThemeVariant.Dark), StringComparison.Ordinal) ? ThemeVariant.Dark : ThemeVariant.Light);
+        Apply(string.Equals(value, nameof(ThemeVariant.Light), StringComparison.Ordinal) ? ThemeVariant.Light : ThemeVariant.Dark);
     }
 
     /// <summary>Toggles between Light and Dark, applies the new variant immediately, and persists the choice.</summary>

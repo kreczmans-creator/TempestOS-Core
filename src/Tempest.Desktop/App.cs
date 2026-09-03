@@ -1,16 +1,17 @@
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Styling;
-using Avalonia.Themes.Fluent;
 using Tempest.Desktop.Theming;
 
 namespace Tempest.Desktop;
 
 /// <summary>
 /// The Application Bootstrap's own Avalonia entry point (`WP 10.0B`).
-/// Applies the Fluent theme (Theme Framework's own visual foundation —
-/// `WP10.0A Visual Design System.md` §1) and, once Avalonia's own framework
-/// initialisation completes, builds the Engineering Workspace
+/// Applies the TempestOS theme — the Fluent control theme recoloured and
+/// re-shaped to the Tempest Engineering Design System
+/// (<see cref="TempestTheme"/>; `WP10.0A Visual Design System.md` §1's
+/// Theme Framework, realigned to the brand) — and, once Avalonia's own
+/// framework initialisation completes, builds the Engineering Workspace
 /// (<see cref="WorkspaceHost"/>) and shows the <see cref="MainWindow"/> —
 /// the graphical presentation layer's own equivalent of
 /// <see cref="Tempest.App.Workspace.WorkspaceShell"/>'s construction plus
@@ -21,14 +22,19 @@ public sealed class App : Application
     /// <inheritdoc />
     public override void Initialize()
     {
-        Styles.Add(new FluentTheme());
-        RequestedThemeVariant = ThemeVariant.Light;
+        Name = "TempestOS";
 
-        // The platform's own theme-reactive custom brush resources
-        // (`WP 10.5A`, `ApplicationPalette`) — registered here, before any
-        // Window/control exists, so every control's own first render
-        // already resolves the correct Light-variant value.
-        ApplicationPalette.Register(this);
+        // The brand's home ground is the instrument (dark) theme —
+        // "Dark first", the design system's own words. The persisted
+        // choice (`ThemeService`) still wins the moment the window opens.
+        RequestedThemeVariant = ThemeVariant.Dark;
+
+        // The control theme, the platform's own theme-reactive brush
+        // resources (`WP 10.5A`, `ApplicationPalette`) and the brand's
+        // semantic palette — registered here, before any Window/control
+        // exists, so every control's own first render already resolves
+        // the correct variant value.
+        TempestTheme.Apply(this);
     }
 
     /// <inheritdoc />
@@ -70,15 +76,13 @@ public sealed class App : Application
             // does via WorkspaceManager.ShutdownAsync (ADR-0064, unchanged).
             // Every Desktop-local save (panel UI state, `WP 10.2B`; window
             // geometry, `WP 10.5B`) — plus the real unsaved-work
-            // confirmation gate — now lives entirely in `MainWindow.Closing`
-            // (`WP 10.5B`, consolidated from this handler's own previous,
-            // no-confirmation, unconditional `SaveDesktopUiStateAsync`
-            // call): by the time `ShutdownRequested` fires, `Closing` has
-            // already run to completion (a genuine `Closing` cancellation
-            // keeps the window, and therefore the application, open — this
-            // handler is never reached until the user has actually agreed
-            // to exit), so only the Workspace's own separate save remains
-            // here.
+            // confirmation gate — lives entirely in `MainWindow.Closing`
+            // (`WP 10.5B`): by the time `ShutdownRequested` fires, `Closing`
+            // has already run to completion (a genuine `Closing`
+            // cancellation keeps the window, and therefore the application,
+            // open — this handler is never reached until the user has
+            // actually agreed to exit), so only the Workspace's own
+            // separate save remains here.
             desktop.ShutdownRequested += (_, _) =>
             {
                 host.ShutdownAsync().GetAwaiter().GetResult();

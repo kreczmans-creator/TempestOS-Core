@@ -4,6 +4,7 @@ using Avalonia.Controls.Shapes;
 using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
+using Avalonia.Media.Immutable;
 using Tempest.App.Workspace;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Desktop.Icons;
@@ -62,7 +63,7 @@ public sealed class DigitalThreadGraphView : UserControl, IWorkspaceView
     private readonly Canvas _graphCanvas = new() { Width = CanvasSize, Height = CanvasSize };
     private readonly Border _viewport = new() { ClipToBounds = true, Background = Brushes.Transparent };
     private readonly Canvas _miniMap = new() { Width = MiniMapWidth, Height = MiniMapHeight };
-    private readonly Border _miniMapViewportRect = new() { BorderBrush = Brushes.OrangeRed, BorderThickness = new Thickness(1.5), IsHitTestVisible = false };
+    private readonly Border _miniMapViewportRect = new() { BorderBrush = new ImmutableSolidColorBrush(Theming.BrandPalette.Cyan500), BorderThickness = new Thickness(1.5), IsHitTestVisible = false };
     private readonly StackPanel _legendPanel = new() { Spacing = DesignTokens.SpaceXs };
     private readonly StackPanel _inspectorPanel = new() { Spacing = DesignTokens.SpaceXs };
     private readonly TextBlock _statusMessage = new() { FontSize = DesignTokens.FontSizeCaption, Opacity = 0.8 };
@@ -506,7 +507,7 @@ public sealed class DigitalThreadGraphView : UserControl, IWorkspaceView
             Width = width,
             Height = height,
             CornerRadius = new CornerRadius(6),
-            BorderBrush = isSelected || isMatch ? Brushes.Gold : (node.IsCentre ? Brushes.SteelBlue : Brushes.Gray),
+            BorderBrush = isSelected || isMatch ? new ImmutableSolidColorBrush(Theming.BrandPalette.Amber500) : (node.IsCentre ? new ImmutableSolidColorBrush(Theming.BrandPalette.Cyan500) : new ImmutableSolidColorBrush(Theming.BrandPalette.Slate500)),
             BorderThickness = new Thickness(node.IsCentre || isSelected || isMatch ? 2.5 : 1),
             Padding = new Thickness(DesignTokens.SpaceXs),
             Child = grid,
@@ -569,7 +570,7 @@ public sealed class DigitalThreadGraphView : UserControl, IWorkspaceView
             {
                 Width = node.IsCentre ? 8 : 5,
                 Height = node.IsCentre ? 8 : 5,
-                Fill = node.IsCentre ? Brushes.OrangeRed : Brushes.LightSteelBlue,
+                Fill = node.IsCentre ? new ImmutableSolidColorBrush(Theming.BrandPalette.Cyan500) : new ImmutableSolidColorBrush(Theming.BrandPalette.Slate400),
             };
             Canvas.SetLeft(dot, dotX - dot.Width / 2);
             Canvas.SetTop(dot, dotY - dot.Height / 2);
@@ -638,11 +639,16 @@ internal static class CategoryColors
 {
     private static readonly IReadOnlyList<IBrush> Palette = new IBrush[]
     {
-        Brushes.SteelBlue, Brushes.MediumPurple, Brushes.DarkOrange, Brushes.SeaGreen,
-        Brushes.Crimson, Brushes.Goldenrod, Brushes.Teal, Brushes.SlateGray,
-        Brushes.Chocolate, Brushes.DarkCyan, Brushes.IndianRed, Brushes.MediumSeaGreen,
-        Brushes.DarkSlateBlue, Brushes.Sienna, Brushes.DarkGoldenrod, Brushes.CadetBlue,
-        Brushes.RosyBrown,
+        // Brand-derived, each distinct and legible on navy and on paper.
+        new ImmutableSolidColorBrush(Theming.BrandPalette.Cyan500), new ImmutableSolidColorBrush(Color.Parse("#9d6cf0")),
+        new ImmutableSolidColorBrush(Theming.BrandPalette.Amber500), new ImmutableSolidColorBrush(Theming.BrandPalette.Green500),
+        new ImmutableSolidColorBrush(Theming.BrandPalette.Red500), new ImmutableSolidColorBrush(Color.Parse("#5fb8b0")),
+        new ImmutableSolidColorBrush(Color.Parse("#f27e5c")), new ImmutableSolidColorBrush(Theming.BrandPalette.Slate400),
+        new ImmutableSolidColorBrush(Color.Parse("#7b8ff5")), new ImmutableSolidColorBrush(Theming.BrandPalette.Cyan600),
+        new ImmutableSolidColorBrush(Color.Parse("#c084fc")), new ImmutableSolidColorBrush(Color.Parse("#34d399")),
+        new ImmutableSolidColorBrush(Color.Parse("#fbbf24")), new ImmutableSolidColorBrush(Color.Parse("#60a5fa")),
+        new ImmutableSolidColorBrush(Color.Parse("#f472b6")), new ImmutableSolidColorBrush(Color.Parse("#a3e635")),
+        new ImmutableSolidColorBrush(Color.Parse("#e879f9")),
     };
 
     public static IBrush Resolve(RelationshipCategory category) => Palette[(int)category % Palette.Count];
@@ -658,16 +664,24 @@ internal static class CategoryColors
 /// </summary>
 internal static class LifecycleColors
 {
+    // The design system's machine-state hues: amber in review, green
+    // approved, brand cyan once released, red cancelled, faint otherwise.
+    private static readonly IBrush Neutral = new ImmutableSolidColorBrush(Theming.BrandPalette.Slate500);
+    private static readonly IBrush Warning = new ImmutableSolidColorBrush(Theming.BrandPalette.Amber500);
+    private static readonly IBrush Success = new ImmutableSolidColorBrush(Theming.BrandPalette.Green500);
+    private static readonly IBrush Released = new ImmutableSolidColorBrush(Theming.BrandPalette.Cyan500);
+    private static readonly IBrush Danger = new ImmutableSolidColorBrush(Theming.BrandPalette.Red500);
+
     public static IBrush Resolve(LifecycleState state) => state switch
     {
-        LifecycleState.Draft => Brushes.Gray,
-        LifecycleState.InReview => Brushes.DarkOrange,
-        LifecycleState.Approved => Brushes.SeaGreen,
-        LifecycleState.Released => Brushes.SeaGreen,
-        LifecycleState.Superseded => Brushes.Gray,
-        LifecycleState.Obsolete => Brushes.Gray,
-        LifecycleState.Archived => Brushes.Gray,
-        LifecycleState.Cancelled => Brushes.Crimson,
-        _ => Brushes.Gray,
+        LifecycleState.Draft => Neutral,
+        LifecycleState.InReview => Warning,
+        LifecycleState.Approved => Success,
+        LifecycleState.Released => Released,
+        LifecycleState.Superseded => Neutral,
+        LifecycleState.Obsolete => Neutral,
+        LifecycleState.Archived => Neutral,
+        LifecycleState.Cancelled => Danger,
+        _ => Neutral,
     };
 }

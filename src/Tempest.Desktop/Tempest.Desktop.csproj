@@ -32,7 +32,23 @@
     -->
     <PackageReference Include="Tmds.DBus.Protocol" Version="0.94.2" />
     <PackageReference Include="PDFtoImage" Version="4.1.1" />
+    <!--
+      The Tempest Engineering Design System's prose face (Inter) ships in
+      this official Avalonia package; Chakra Petch and Space Mono are
+      embedded below under their own OFL licences (Assets/Fonts/OFL-*.txt)
+      - recovered from the Companion brand alignment (WP 14.1A).
+    -->
+    <PackageReference Include="Avalonia.Fonts.Inter" Version="11.2.3" />
   </ItemGroup>
+
+  <ItemGroup>
+    <AvaloniaResource Include="Assets\**" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <!-- The TempestOS mark as the executable's own icon (Windows shell, taskbar, Alt-Tab). -->
+    <ApplicationIcon>Assets\Brand\tempestos.ico</ApplicationIcon>
+  </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Tempest.App\Tempest.App.csproj" />

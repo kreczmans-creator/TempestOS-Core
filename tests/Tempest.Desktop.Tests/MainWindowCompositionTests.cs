@@ -175,7 +175,7 @@ public sealed class MainWindowCompositionTests
             workspace.Layout.SetPlacement(workspace.ProjectExplorer.Id, workspace.Layout.GetPlacement(workspace.ProjectExplorer.Id) with { IsVisible = false });
 
             var window = new MainWindow(host);
-            var resetButton = window.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "↺ Reset Layout"));
+            var resetButton = window.GetLogicalDescendants().OfType<Button>().Single(b => Avalonia.Automation.AutomationProperties.GetName(b) == "Reset Layout");
 
             resetButton.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
 
@@ -197,7 +197,7 @@ public sealed class MainWindowCompositionTests
             await host.StartAsync();
             var window = new MainWindow(host);
             var statusBar = GetPrivateField<StatusBarView>(window, "_statusBar");
-            var graphButton = window.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "🕸 View Relationships"));
+            var graphButton = window.GetLogicalDescendants().OfType<Button>().Single(b => Avalonia.Automation.AutomationProperties.GetName(b) == "View Relationships");
 
             graphButton.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
 
@@ -223,7 +223,7 @@ public sealed class MainWindowCompositionTests
             await workspace.Navigation.SwitchAreaAsync(MechanicalWorkspaceExplorerModule.NavigationItemId);
             var window = new MainWindow(host);
 
-            var undoButton = window.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "↶ Undo"));
+            var undoButton = window.GetLogicalDescendants().OfType<Button>().Single(b => Avalonia.Automation.AutomationProperties.GetName(b) == "Undo");
             Assert.False(undoButton.IsEnabled);
 
             // Ctrl+D (Toggle Favourite) records a real, trivially
@@ -257,7 +257,7 @@ public sealed class MainWindowCompositionTests
         {
             await host.StartAsync();
             var window = new MainWindow(host);
-            var macrosButton = window.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "🧩 Macros"));
+            var macrosButton = window.GetLogicalDescendants().OfType<Button>().Single(b => Avalonia.Automation.AutomationProperties.GetName(b) == "Macros");
             var macroManagerDialog = GetPrivateField<MacroManagerDialog>(window, "_macroManagerDialog");
 
             Assert.False(macroManagerDialog.IsVisible);

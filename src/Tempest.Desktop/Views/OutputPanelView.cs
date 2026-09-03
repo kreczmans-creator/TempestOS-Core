@@ -76,7 +76,7 @@ public sealed class OutputPanelView : UserControl
     {
         ArgumentNullException.ThrowIfNull(diagnostics);
 
-        _hostState.Text = $"⚙ Host State: {diagnostics.HostState}";
+        _hostState.Text = $"Host state: {diagnostics.HostState}";
 
         _modules.ItemsSource = diagnostics.Modules
             .Select(m => $"{StateGlyph(m.State)} {m.Descriptor.Name} — {m.State}")

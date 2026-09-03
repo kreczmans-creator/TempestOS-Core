@@ -99,7 +99,11 @@ public sealed class ToastNotification : Border
         Padding = DesignTokens.DialogPadding;
         BorderThickness = new Avalonia.Thickness(1);
         ThemeReactiveBrush.Bind(this, BackgroundProperty, ApplicationPalette.PanelBackgroundBrushKey);
-        ThemeReactiveBrush.Bind(this, BorderBrushProperty, ApplicationPalette.PanelBorderBrushKey);
+
+        // The severity as a 2px rule on the top edge — the design system's
+        // card status rule — beside the glyph and the word, never colour alone.
+        BorderThickness = new Avalonia.Thickness(1, DesignTokens.RuleThickness + 1, 1, 1);
+        BorderBrush = SeverityColors.Resolve(severity);
 
         var row = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,*,Auto") };
 
@@ -124,13 +128,13 @@ public sealed class ToastNotification : Border
 
         var close = new Button
         {
-            Content = "✕",
-            FontSize = DesignTokens.FontSizeCaption,
+            Content = Icons.IconGeometry.Build(Icons.IconGeometry.Close, 10),
             Padding = new Avalonia.Thickness(DesignTokens.SpaceXs),
-            Background = Brushes.Transparent,
-            BorderThickness = new Avalonia.Thickness(0),
+            MinWidth = 0,
+            MinHeight = 0,
             VerticalAlignment = Avalonia.Layout.VerticalAlignment.Top,
         };
+        close.Classes.Add(ChromeStyles.Flat);
         ToolTip.SetTip(close, "Dismiss");
         close.Click += (_, _) => RequestDismiss();
         Grid.SetColumn(close, 2);

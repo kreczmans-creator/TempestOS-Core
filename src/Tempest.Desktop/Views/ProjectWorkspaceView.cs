@@ -42,12 +42,12 @@ public sealed class ProjectWorkspaceView : UserControl
     private readonly IProjectGovernanceRegister _governance;
     private readonly IProjectMilestoneRegister _milestones;
 
-    private readonly TextBlock _title = new() { FontSize = DesignTokens.FontSizeTitle, FontWeight = FontWeight.Bold };
-    private readonly TextBlock _subtitle = new() { FontSize = DesignTokens.FontSizeCaption, Opacity = 0.85 };
+    private readonly TextBlock _title = PageHeading.Title(string.Empty);
+    private readonly TextBlock _subtitle = PageHeading.Lead(string.Empty);
     private readonly TabControl _areas = new();
     private readonly StackPanel _overview = new() { Spacing = DesignTokens.SpaceSm };
-    private readonly Button _enterEngineering = new() { Content = "Enter Engineering →", MinHeight = DesignTokens.MinControlSize };
-    private readonly Button _closeProject = new() { Content = "Close Project", MinHeight = DesignTokens.MinControlSize };
+    private readonly Button _enterEngineering = new() { Content = "Enter Engineering →", MinHeight = DesignTokens.ControlSizeMedium };
+    private readonly Button _closeProject = new() { Content = "Close Project", MinHeight = DesignTokens.ControlSizeMedium };
 
     private readonly List<ContentControl> _areaHosts = [];
 
@@ -248,16 +248,22 @@ public sealed class ProjectWorkspaceView : UserControl
             ProjectClosed?.Invoke();
         };
 
+        _enterEngineering.Classes.Add(ChromeStyles.Primary);
+        _closeProject.Classes.Add(ChromeStyles.Subtle);
+
         var header = new StackPanel { Spacing = DesignTokens.SpaceXs };
+        header.Children.Add(PageHeading.Label("PROJECT WORKSPACE"));
         header.Children.Add(_title);
         header.Children.Add(_subtitle);
 
-        var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceMd, Margin = new Thickness(0, DesignTokens.SpaceSm, 0, 0) };
+        var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceMd, Margin = new Thickness(0, DesignTokens.SpaceMd, 0, 0) };
         actions.Children.Add(_enterEngineering);
         actions.Children.Add(_closeProject);
         header.Children.Add(actions);
 
-        var root = new StackPanel { Spacing = DesignTokens.SpaceMd, Margin = DesignTokens.PanelPadding };
+        var root = new DockPanel { Margin = DesignTokens.PagePadding };
+        header.Margin = new Thickness(0, 0, 0, DesignTokens.SpaceLg);
+        DockPanel.SetDock(header, Dock.Top);
         root.Children.Add(header);
         root.Children.Add(_areas);
         Content = root;
@@ -305,16 +311,13 @@ public sealed class ProjectWorkspaceView : UserControl
             project.Label);
         _timelineView.Show(await _milestones.ListAsync(project.Id).ConfigureAwait(true), project.Label);
         _overview.Children.Clear();
-        _overview.Children.Add(new TextBlock { Text = $"Engineering objects in this project: {contents.Count}" });
-        _overview.Children.Add(new TextBlock
-        {
-            Text = contents.Count == 0
-                ? "This project has no engineering objects yet — enter Engineering to create some."
-                : "Open Engineering to work on them.",
-            FontSize = DesignTokens.FontSizeCaption,
-            Opacity = 0.8,
-            TextWrapping = TextWrapping.Wrap,
-        });
+        _overview.Margin = new Thickness(0, DesignTokens.SpaceXl, 0, 0);
+        var overviewCard = new CockpitCardControl(Icons.IconGeometry.Layers, "Engineering objects") { Margin = new Thickness(0), HorizontalAlignment = HorizontalAlignment.Left };
+        overviewCard.AddReadout(contents.Count.ToString(System.Globalization.CultureInfo.InvariantCulture), contents.Count == 0
+            ? "This project has no engineering objects yet — enter Engineering to create some."
+            : "engineering object(s) in this project. Open Engineering to work on them.");
+        _overview.Children.Add(overviewCard);
+        _overview.Children.Add(new TextBlock { Text = $"Engineering objects in this project: {contents.Count}", FontSize = DesignTokens.FontSizeCaption, Opacity = 0.0, Height = 0 });
 
         RefreshAreaSurfaces();
         SyncSelectedArea();

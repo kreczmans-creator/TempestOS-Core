@@ -66,9 +66,9 @@ public sealed class ProjectExplorerView : UserControl
     private readonly IWorkspaceManager _manager;
     private readonly TreeView _tree = new() { SelectionMode = SelectionMode.Multiple };
     private readonly TextBox _filter = new() { Watermark = "Filter... (Ctrl+F)", Margin = DesignTokens.ControlMargin };
-    private readonly Button _recentSearchesButton = new() { Content = "🕐", Padding = new Thickness(DesignTokens.SpaceSm), MinWidth = DesignTokens.MinControlSize, MinHeight = DesignTokens.MinControlSize };
-    private readonly Button _recentObjectsButton = new() { Content = "🕓", Padding = new Thickness(DesignTokens.SpaceSm), MinWidth = DesignTokens.MinControlSize, MinHeight = DesignTokens.MinControlSize };
-    private readonly Button _favouritesButton = new() { Content = "⭐", Padding = new Thickness(DesignTokens.SpaceSm), MinWidth = DesignTokens.MinControlSize, MinHeight = DesignTokens.MinControlSize };
+    private readonly Button _recentSearchesButton = ChromeIconButton(IconGeometry.Filter, "Recent searches");
+    private readonly Button _recentObjectsButton = ChromeIconButton(IconGeometry.Clock, "Recent objects");
+    private readonly Button _favouritesButton = ChromeIconButton(IconGeometry.Star, "Favourite objects");
     private readonly List<string> _recentSearches = [];
     private string _lastNonEmptyFilterText = string.Empty;
     private readonly StackPanel _breadcrumbs = new() { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceXs, Margin = DesignTokens.ControlMargin };
@@ -235,7 +235,10 @@ public sealed class ProjectExplorerView : UserControl
         ToolTip.SetTip(_recentSearchesButton, "Recent searches");
         ToolTip.SetTip(_recentObjectsButton, "Recent objects");
         ToolTip.SetTip(_favouritesButton, "Favourite objects (Ctrl+D to toggle)");
-        var filterRow = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto,Auto,Auto") };
+        _filter.FontSize = DesignTokens.FontSizeBody;
+        _filter.MinHeight = DesignTokens.MinControlSize;
+        _filter.Margin = new Thickness(0, 0, DesignTokens.SpaceSm, 0);
+        var filterRow = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto,Auto,Auto"), Margin = new Thickness(DesignTokens.SpaceMd, DesignTokens.SpaceMd, DesignTokens.SpaceMd, DesignTokens.SpaceSm) };
         Grid.SetColumn(_filter, 0);
         Grid.SetColumn(_recentSearchesButton, 1);
         Grid.SetColumn(_recentObjectsButton, 2);
@@ -247,15 +250,36 @@ public sealed class ProjectExplorerView : UserControl
 
         var content = new DockPanel();
         DockPanel.SetDock(filterRow, Dock.Top);
-        DockPanel.SetDock(_breadcrumbs, Dock.Top);
+        _breadcrumbs.Margin = new Thickness(DesignTokens.SpaceMd, 0, DesignTokens.SpaceMd, DesignTokens.SpaceSm);
+        var crumbRow = new Border { Child = _breadcrumbs, BorderThickness = new Thickness(0, 0, 0, 1), Padding = new Thickness(0, 0, 0, DesignTokens.SpaceXs) };
+        ThemeReactiveBrush.Bind(crumbRow, Border.BorderBrushProperty, BrandPalette.HairlineBrushKey);
+        DockPanel.SetDock(crumbRow, Dock.Top);
         content.Children.Add(filterRow);
-        content.Children.Add(_breadcrumbs);
+        content.Children.Add(crumbRow);
+        _tree.Margin = new Thickness(DesignTokens.SpaceSm, DesignTokens.SpaceSm, DesignTokens.SpaceSm, 0);
         var body = new Panel();
         body.Children.Add(_tree);
         body.Children.Add(_emptyHint);
         content.Children.Add(body);
 
         Content = content;
+    }
+
+    /// <summary>One filter-row chrome button — a flat, theme-tinted vector icon named for automation by what it opens.</summary>
+    private static Button ChromeIconButton(StreamGeometry icon, string name)
+    {
+        var button = new Button
+        {
+            Content = IconGeometry.Build(icon, 14),
+            Padding = new Thickness(DesignTokens.SpaceSm),
+            MinWidth = DesignTokens.MinControlSize,
+            MinHeight = DesignTokens.MinControlSize,
+            VerticalAlignment = VerticalAlignment.Center,
+        };
+        button.Classes.Add(ChromeStyles.Flat);
+        ThemeReactiveBrush.Bind(button, ForegroundProperty, BrandPalette.MutedTextBrushKey);
+        Avalonia.Automation.AutomationProperties.SetName(button, name);
+        return button;
     }
 
     /// <summary>Moves keyboard focus to the filter box — <c>Ctrl+F</c>'s own target (`WP 10.2A` Navigation, Keyboard Shortcut Framework).</summary>
@@ -461,7 +485,9 @@ public sealed class ProjectExplorerView : UserControl
 
         if (_tree.SelectedItem is not ExplorerNodeItem selected)
         {
-            _breadcrumbs.Children.Add(new TextBlock { Text = "No selection", Opacity = 0.6, FontSize = DesignTokens.FontSizeCaption });
+            var none = new TextBlock { Text = "No selection", FontSize = DesignTokens.FontSizeCaption, VerticalAlignment = VerticalAlignment.Center };
+            ThemeReactiveBrush.Bind(none, TextBlock.ForegroundProperty, BrandPalette.FaintTextBrushKey);
+            _breadcrumbs.Children.Add(none);
             return;
         }
 
@@ -478,10 +504,11 @@ public sealed class ProjectExplorerView : UserControl
                 Content = segment.Node.Title,
                 FontSize = DesignTokens.FontSizeCaption,
                 FontWeight = isLast ? DesignTokens.WeightHeading : DesignTokens.WeightBody,
-                Padding = new Thickness(DesignTokens.SpaceXs, 0),
-                Background = Brushes.Transparent,
-                BorderThickness = new Thickness(0),
+                Padding = new Thickness(DesignTokens.SpaceSm, DesignTokens.SpaceXs),
+                MinHeight = 0,
             };
+            crumb.Classes.Add(ChromeStyles.Flat);
+            ThemeReactiveBrush.Bind(crumb, ForegroundProperty, isLast ? BrandPalette.HeadingTextBrushKey : BrandPalette.MutedTextBrushKey);
             crumb.Click += (_, _) => SelectAndReveal(segment);
             _breadcrumbs.Children.Add(crumb);
         }

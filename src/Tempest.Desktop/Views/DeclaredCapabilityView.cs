@@ -64,37 +64,69 @@ public sealed class DeclaredCapabilityView : UserControl
         {
             HorizontalAlignment = HorizontalAlignment.Center,
             VerticalAlignment = VerticalAlignment.Center,
-            MaxWidth = 460,
-            Margin = DesignTokens.PanelPadding,
+            MaxWidth = 520,
+            Margin = DesignTokens.PagePadding,
             Spacing = DesignTokens.SpaceSm,
         };
 
-        stack.Children.Add(new TextBlock
+        var glyphText = new TextBlock
         {
             Text = glyph,
-            FontSize = DesignTokens.IconSizeLarge,
+            FontSize = DesignTokens.IconSizeLarge - 8,
             HorizontalAlignment = HorizontalAlignment.Center,
-            Opacity = 0.6,
-        });
+            VerticalAlignment = VerticalAlignment.Center,
+            Opacity = 0.55,
+        };
+        ThemeReactiveBrush.Bind(glyphText, TextBlock.ForegroundProperty, BrandPalette.MutedTextBrushKey);
+        var glyphFrame = new Border
+        {
+            Width = 56,
+            Height = 56,
+            CornerRadius = new CornerRadius(DesignTokens.PanelCornerRadius),
+            BorderThickness = new Thickness(1),
+            HorizontalAlignment = HorizontalAlignment.Center,
+            Margin = new Thickness(0, 0, 0, DesignTokens.SpaceMd),
+            Child = glyphText,
+        };
+        ThemeReactiveBrush.Bind(glyphFrame, Border.BorderBrushProperty, BrandPalette.HairlineStrongBrushKey);
+        ThemeReactiveBrush.Bind(glyphFrame, Border.BackgroundProperty, BrandPalette.SurfaceBackgroundBrushKey);
+        stack.Children.Add(glyphFrame);
 
-        stack.Children.Add(new TextBlock
+        var titleText = new TextBlock
         {
             Text = title,
-            FontSize = DesignTokens.FontSizeHeading,
+            FontFamily = DesignTokens.TitleFont,
+            FontSize = DesignTokens.FontSizeDisplay,
             FontWeight = DesignTokens.WeightHeading,
             HorizontalAlignment = HorizontalAlignment.Center,
-        });
+        };
+        ThemeReactiveBrush.Bind(titleText, TextBlock.ForegroundProperty, BrandPalette.HeadingTextBrushKey);
+        stack.Children.Add(titleText);
 
         if (availability == NavigationAvailability.Declared)
         {
+            // The badge is the brand's violet — strictly secondary, the
+            // colour the design system reserves for badges and category
+            // rules — as an UPPERCASE label, never a filled call-to-action.
+            var badgeText = new TextBlock
+            {
+                Text = NotImplementedBadge.ToUpperInvariant(),
+                FontFamily = DesignTokens.TitleFont,
+                FontSize = DesignTokens.FontSizeLabel,
+                FontWeight = DesignTokens.WeightHeading,
+                LetterSpacing = DesignTokens.LabelTracking,
+            };
+            ThemeReactiveBrush.Bind(badgeText, TextBlock.ForegroundProperty, BrandPalette.SecondaryAccentBrushKey);
             var badge = new Border
             {
-                Padding = new Thickness(DesignTokens.SpaceSm, DesignTokens.SpaceXs),
-                CornerRadius = new CornerRadius(DesignTokens.SpaceXs),
+                Padding = new Thickness(DesignTokens.SpaceMd, DesignTokens.SpaceXs + 1),
+                CornerRadius = new CornerRadius(DesignTokens.BadgeCornerRadius),
+                BorderThickness = new Thickness(1),
                 HorizontalAlignment = HorizontalAlignment.Center,
-                Child = new TextBlock { Text = NotImplementedBadge, FontSize = DesignTokens.FontSizeCaption, FontWeight = FontWeight.Bold },
+                Margin = new Thickness(0, DesignTokens.SpaceSm, 0, DesignTokens.SpaceSm),
+                Child = badgeText,
             };
-            ThemeReactiveBrush.Bind(badge, Border.BackgroundProperty, ApplicationPalette.AccentPanelBackgroundBrushKey);
+            ThemeReactiveBrush.Bind(badge, Border.BorderBrushProperty, BrandPalette.SecondaryAccentBrushKey);
             AutomationProperties.SetName(badge, $"{title} — {NotImplementedBadge}");
             stack.Children.Add(badge);
         }
@@ -110,14 +142,16 @@ public sealed class DeclaredCapabilityView : UserControl
             });
         }
 
-        stack.Children.Add(new TextBlock
+        var noteText = new TextBlock
         {
             Text = note,
             FontSize = DesignTokens.FontSizeBody,
-            Opacity = 0.78,
             TextAlignment = TextAlignment.Center,
             TextWrapping = TextWrapping.Wrap,
-        });
+            LineHeight = 18,
+        };
+        ThemeReactiveBrush.Bind(noteText, TextBlock.ForegroundProperty, BrandPalette.MutedTextBrushKey);
+        stack.Children.Add(noteText);
 
         if (trackedBy is { Length: > 0 })
         {

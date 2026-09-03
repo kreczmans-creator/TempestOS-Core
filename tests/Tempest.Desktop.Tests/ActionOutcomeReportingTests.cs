@@ -44,8 +44,9 @@ public sealed class ActionOutcomeReportingTests
     private sealed record Reported(StatusBarView StatusBar, ToastHost Toasts, List<string> History, List<int> RefreshCalls)
     {
         public string StatusText => StatusBar.GetLogicalDescendants().OfType<TextBlock>()
+            .Where(t => Avalonia.Automation.AutomationProperties.GetName(t) == "Selected object")
             .Select(t => t.Text ?? string.Empty)
-            .FirstOrDefault(t => t.StartsWith("🔹", StringComparison.Ordinal)) ?? string.Empty;
+            .FirstOrDefault() ?? string.Empty;
 
         public ToastNotification LastToast => Toasts.Children.OfType<ToastNotification>().Last();
     }

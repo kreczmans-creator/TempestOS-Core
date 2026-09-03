@@ -1,4 +1,5 @@
 using Avalonia.Media;
+using Avalonia.Media.Immutable;
 using Tempest.App.Workspace;
 
 namespace Tempest.Desktop.Theming;
@@ -25,14 +26,21 @@ public enum FeedbackSeverity
 /// </summary>
 internal static class SeverityColors
 {
+    // The design system's machine-state hues; Info is the brand cyan.
+    private static readonly IBrush Info = new ImmutableSolidColorBrush(BrandPalette.Cyan500);
+    private static readonly IBrush Success = new ImmutableSolidColorBrush(BrandPalette.Green500);
+    private static readonly IBrush Warning = new ImmutableSolidColorBrush(BrandPalette.Amber500);
+    private static readonly IBrush Error = new ImmutableSolidColorBrush(BrandPalette.Red500);
+    private static readonly IBrush Neutral = new ImmutableSolidColorBrush(BrandPalette.Slate500);
+
     /// <summary>Resolves the accent brush for <paramref name="severity"/>.</summary>
     public static IBrush Resolve(FeedbackSeverity severity) => severity switch
     {
-        FeedbackSeverity.Info => Brushes.SteelBlue,
-        FeedbackSeverity.Success => Brushes.SeaGreen,
-        FeedbackSeverity.Warning => Brushes.DarkOrange,
-        FeedbackSeverity.Error => Brushes.Crimson,
-        _ => Brushes.Gray,
+        FeedbackSeverity.Info => Info,
+        FeedbackSeverity.Success => Success,
+        FeedbackSeverity.Warning => Warning,
+        FeedbackSeverity.Error => Error,
+        _ => Neutral,
     };
 
     /// <summary>A single-codepoint, text-default-presentation Unicode glyph for <paramref name="severity"/> — chosen specifically to avoid emoji-presentation codepoints (Unicode UTR#51), so it renders as a plain, monochrome, theme-tinted symbol via inherited <c>Foreground</c> on every platform, never a colour-forced pictograph.</summary>

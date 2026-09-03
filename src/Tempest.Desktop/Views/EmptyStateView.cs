@@ -14,10 +14,10 @@ namespace Tempest.Desktop.Views;
 /// </summary>
 public sealed class EmptyStateView : UserControl
 {
-    private readonly TextBlock _icon = new() { FontSize = DesignTokens.IconSizeLarge, HorizontalAlignment = HorizontalAlignment.Center, Opacity = 0.6 };
-    private readonly TextBlock _heading = new() { FontSize = DesignTokens.FontSizeHeading, FontWeight = DesignTokens.WeightHeading, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, DesignTokens.SpaceMd, 0, 0) };
-    private readonly TextBlock _guidance = new() { FontSize = DesignTokens.FontSizeBody, Opacity = 0.75, HorizontalAlignment = HorizontalAlignment.Center, TextAlignment = Avalonia.Media.TextAlignment.Center, TextWrapping = Avalonia.Media.TextWrapping.Wrap, MaxWidth = 360, Margin = new Thickness(0, DesignTokens.SpaceSm, 0, 0) };
-    private readonly Button _action = new() { HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, DesignTokens.SpaceLg, 0, 0), MinHeight = DesignTokens.ControlSizeMedium, IsVisible = false };
+    private readonly TextBlock _icon = new() { FontSize = DesignTokens.IconSizeLarge - 8, HorizontalAlignment = HorizontalAlignment.Center, Opacity = 0.55 };
+    private readonly TextBlock _heading = new() { FontFamily = DesignTokens.TitleFont, FontSize = DesignTokens.FontSizeTitle, FontWeight = DesignTokens.WeightHeading, HorizontalAlignment = HorizontalAlignment.Center, TextAlignment = Avalonia.Media.TextAlignment.Center, TextWrapping = Avalonia.Media.TextWrapping.Wrap, Margin = new Thickness(0, DesignTokens.SpaceMd, 0, 0) };
+    private readonly TextBlock _guidance = new() { FontSize = DesignTokens.FontSizeBody, HorizontalAlignment = HorizontalAlignment.Center, TextAlignment = Avalonia.Media.TextAlignment.Center, TextWrapping = Avalonia.Media.TextWrapping.Wrap, MaxWidth = 380, Margin = new Thickness(0, DesignTokens.SpaceSm, 0, 0), LineHeight = 18 };
+    private readonly Button _action = new() { HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, DesignTokens.SpaceXl, 0, 0), MinHeight = DesignTokens.ControlSizeMedium, IsVisible = false };
 
     /// <summary>Initialises a new instance of the <see cref="EmptyStateView"/> class.</summary>
     /// <param name="icon">A single glyph (<see cref="Icons.IconRegistry"/>-style or plain Unicode) shown large and muted above the heading.</param>
@@ -33,13 +33,32 @@ public sealed class EmptyStateView : UserControl
         _heading.Text = heading;
         _guidance.Text = guidance;
 
+        // The design system's empty state: a muted glyph in a hairline
+        // frame, a structural heading, prose guidance, one primary action.
+        ThemeReactiveBrush.Bind(_icon, TextBlock.ForegroundProperty, BrandPalette.MutedTextBrushKey);
+        ThemeReactiveBrush.Bind(_heading, TextBlock.ForegroundProperty, BrandPalette.HeadingTextBrushKey);
+        ThemeReactiveBrush.Bind(_guidance, TextBlock.ForegroundProperty, BrandPalette.MutedTextBrushKey);
+        _action.Classes.Add(ChromeStyles.Primary);
+
         var stack = new StackPanel
         {
             HorizontalAlignment = HorizontalAlignment.Center,
             VerticalAlignment = VerticalAlignment.Center,
-            Margin = DesignTokens.PanelPadding,
+            Margin = DesignTokens.PagePadding,
         };
-        stack.Children.Add(_icon);
+        var iconFrame = new Border
+        {
+            Width = 56,
+            Height = 56,
+            CornerRadius = new CornerRadius(DesignTokens.PanelCornerRadius),
+            BorderThickness = new Thickness(1),
+            HorizontalAlignment = HorizontalAlignment.Center,
+            Child = _icon,
+        };
+        _icon.VerticalAlignment = VerticalAlignment.Center;
+        ThemeReactiveBrush.Bind(iconFrame, Border.BorderBrushProperty, BrandPalette.HairlineStrongBrushKey);
+        ThemeReactiveBrush.Bind(iconFrame, Border.BackgroundProperty, BrandPalette.SurfaceBackgroundBrushKey);
+        stack.Children.Add(iconFrame);
         stack.Children.Add(_heading);
         stack.Children.Add(_guidance);
         stack.Children.Add(_action);

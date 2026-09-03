@@ -69,6 +69,9 @@ public sealed class SettingsDialog : Border
         body.Children.Add(buttons);
         Child = body;
 
+        _saveButton.Classes.Add(ChromeStyles.Primary);
+        _cancelButton.Classes.Add(ChromeStyles.Subtle);
+        title.FontFamily = DesignTokens.TitleFont;
         _cancelButton.Click += (_, _) => Complete(false);
         _saveButton.Click += async (_, _) => await SaveAsync().ConfigureAwait(true);
     }

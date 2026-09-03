@@ -37,7 +37,7 @@ public sealed class PropertyInspectorView : UserControl
     private readonly IWorkspaceManager _manager;
     private readonly EngineeringDomainContext? _domainContext;
     private readonly StackPanel _panel = new() { Spacing = DesignTokens.SpaceXs, Margin = DesignTokens.PanelPadding };
-    private readonly TextBlock _empty = new() { Text = "No selection. Select an object in Project Explorer to inspect it.", TextWrapping = TextWrapping.Wrap, Opacity = 0.7 };
+    private readonly EmptyStateView _empty = new("◎", "No selection", "Select an object in the Project Explorer to inspect its identity, lifecycle, discipline facets, relationships and validation here.");
 
     private System.Guid _currentId;
     private string? _currentKind;
@@ -65,6 +65,7 @@ public sealed class PropertyInspectorView : UserControl
         _manager = manager;
         _domainContext = domainContext;
         Content = new ScrollViewer { Content = _panel };
+        Refresh();
     }
 
     /// <summary>
@@ -291,8 +292,9 @@ public sealed class PropertyInspectorView : UserControl
 
         foreach (var facet in facets)
         {
-            var row = new Grid { ColumnDefinitions = new ColumnDefinitions("120,*,Auto") };
-            var name = new TextBlock { Text = facet.Name, Opacity = 0.8, FontSize = DesignTokens.FontSizeBody };
+            var row = new Grid { ColumnDefinitions = new ColumnDefinitions("120,*,Auto"), Margin = new Thickness(0, DesignTokens.SpaceXs) };
+            var name = new TextBlock { Text = facet.Name, FontSize = DesignTokens.FontSizeCaption, VerticalAlignment = VerticalAlignment.Center };
+            ThemeReactiveBrush.Bind(name, TextBlock.ForegroundProperty, BrandPalette.MutedTextBrushKey);
             Grid.SetColumn(name, 0);
             row.Children.Add(name);
 
@@ -315,6 +317,10 @@ public sealed class PropertyInspectorView : UserControl
             body.Children.Add(row);
         }
 
+        // The header stays the plain section title (the string every
+        // caller and test reads back); its structural-face, tracked
+        // treatment is a theme rule on the Expander header itself
+        // (`TempestTheme`), so every Expander in the product agrees.
         return new Expander
         {
             Header = title,
