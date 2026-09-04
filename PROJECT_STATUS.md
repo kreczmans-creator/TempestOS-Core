@@ -1,34 +1,45 @@
 # TempestOS — Project Status
 
-**Last Updated:** 2026-09-04 (`WP 15.1A`, `v0.15.0` Release Preparation &
-Governance Closure — following `WP 11.5A` Governance Currency &
-Documentation Integrity, `WP-Z4` Release Preparation, `WP-Z1` Governance
-Correction, `WP-Z2` `TD-117`, and `WP-Z3` Academy retrospectives).
+**Last Updated:** 2026-09-04 (`WP 15.2A`, Desktop Test Suite Persistence
+Root Cleanup — following `WP 15.1B` Release Readiness Review, `WP 15.1A`
+Release Preparation & Governance Closure, `WP 11.5A` Governance Currency
+& Documentation Integrity, `WP-Z4` Release Preparation, `WP-Z1`
+Governance Correction, `WP-Z2` `TD-117`, and `WP-Z3` Academy
+retrospectives).
 
-**`v0.15.0` is IN PREPARATION, on `feature/v0.15.0-release-prep` — not
-merged, tagged, or published.** `WP 15.1A` formalises the 20-commit range
-`WP 11.5A` first disclosed (below, retained as "Previously stated") as
-`WP 15.0A`–`D` plus `WP 11.5A` itself, all retroactively retrospected;
-`VERSION` bumped `0.14.0` → `0.15.0` on that branch. Current state at
-`a417ade` (`main`'s own tip, before this branch's two additional
-documentation-only commits): Debug and Release both 0 Warnings/0 Errors;
-**Tempest.Core.Tests 3,088/3,088**, **Tempest.Desktop.Tests 408/408**;
-real GitHub-hosted CI green on every commit in the range, `a417ade`
-included (workflow run `33854541471`, all four jobs `success`). No
-genuine release blocker was found — see `docs/releases/v0.15.0/WP15.1A
-v0.15.0 Release Preparation Report.md` for the full account, including
-two real defects (a Windows startup crash, the Ribbon scrollbar) found
-already fixed with no prior Technical Debt Register entry (now `TD-121`/
-`TD-122`, both Resolved) and a stale `FCR-0092` cross-reference this
-repository's own Future Capability Register does not resolve. `v0.14.0`'s
-tag itself remains untouched throughout.
+**`v0.15.0` is RELEASED AND PUBLISHED (2026-09-04): merged to `main`
+(`350922d`, plus one follow-up documentation commit `a35365a`), tagged
+`v0.15.0` (pointing to `a35365a`), and published as GitHub Release
+`382812261` with both required assets. It is NOT CERTIFIED — a §9
+Product Approval verdict has not been issued, and publication is not
+certification.** `WP 15.1B`'s own independent review found and corrected
+one gap in `WP 15.1A`'s own accounting (a missing commit, `b755685`, in
+the range's own inventory) before recommending release; both builds and
+the full test suite were re-verified fresh a second time. `main` has
+since taken one further Work Package: `WP 15.2A` closes `TD-120` (the
+Desktop test suite never removed its own isolated persistence roots,
+filling disk across repeated runs) — test infrastructure only, zero
+`src/` files touched, `Tempest.Desktop.Tests` now 412/412. See
+`docs/releases/v0.16.0/WP15.2A Desktop Test Suite Persistence Root
+Cleanup — Implementation Report.md` (moved there from `docs/releases/
+v0.15.1/` by `WP 16.0B` per `D-026`, Proposed — `VERSION` remains
+`0.15.0`, no `v0.15.1` release was or will be cut).
 
-**Previously stated (`WP 11.5A`, superseded by `WP 15.1A` above, retained
-per this file's own convention rather than deleted):** "`main` has
-diverged from the `v0.14.0` tag. 18 commits, 86 files, +5,777/−779 have
-landed on `main` since the `v0.14.0` tag (`026ed7c`)... This is a real,
-verified currency gap, not fixed within `WP 11.5A`'s own scope... Recorded
-here as the next release-preparation Work Package's own starting point."
+**Previously stated (`WP 15.1A`, superseded above, retained per this
+file's own convention rather than deleted):** "`v0.15.0` is IN
+PREPARATION, on `feature/v0.15.0-release-prep` — not merged, tagged, or
+published... No genuine release blocker was found... two real defects (a
+Windows startup crash, the Ribbon scrollbar) found already fixed with no
+prior Technical Debt Register entry (now `TD-121`/`TD-122`, both
+Resolved) and a stale `FCR-0092` cross-reference this repository's own
+Future Capability Register does not resolve."
+
+**Previously stated (`WP 11.5A`, retained per this file's own convention
+rather than deleted):** "`main` has diverged from the `v0.14.0` tag. 18
+commits, 86 files, +5,777/−779 have landed on `main` since the `v0.14.0`
+tag (`026ed7c`)... This is a real, verified currency gap, not fixed
+within `WP 11.5A`'s own scope... Recorded here as the next
+release-preparation Work Package's own starting point."
 **The `v0.13.x` train remains CLOSED. `v0.14.0` is RELEASED AND PUBLISHED
 (2026-09-03): merged to `main` as `026ed7c`, tagged `v0.14.0`, and published
 as GitHub Release `381878529` with both required assets. It is NOT
