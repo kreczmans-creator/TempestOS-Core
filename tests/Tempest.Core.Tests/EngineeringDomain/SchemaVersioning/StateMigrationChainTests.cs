@@ -57,7 +57,7 @@ public class StateMigrationChainTests
         // every other one in this file — actually run at all: the read
         // path's loop stops the moment a record's own SchemaVersion
         // already equals its target.
-        var store = new EngineeringObjectStateStore(persistence, registry, targetSchemaVersion: 2);
+        var store = new EngineeringObjectStateStore(persistence, registry, null, 2);
         var state = await store.FindAsync(id);
 
         Assert.NotNull(state);
@@ -76,7 +76,7 @@ public class StateMigrationChainTests
         registry.Register(new LoggingMigration(TestKind, 1, "A", log));
         registry.Register(new LoggingMigration(TestKind, 2, "B", log));
 
-        var store = new EngineeringObjectStateStore(persistence, registry, targetSchemaVersion: 3);
+        var store = new EngineeringObjectStateStore(persistence, registry, null, 3);
         var state = await store.FindAsync(id);
 
         Assert.NotNull(state);
@@ -95,7 +95,7 @@ public class StateMigrationChainTests
         var registry = new StateMigrationRegistry();
         registry.Register(new LoggingMigration(null, 1, "Common", log));
 
-        var store = new EngineeringObjectStateStore(persistence, registry, targetSchemaVersion: 2);
+        var store = new EngineeringObjectStateStore(persistence, registry, null, 2);
 
         var part = await store.FindAsync(partId);
         var assembly = await store.FindAsync(assemblyId);
@@ -116,7 +116,7 @@ public class StateMigrationChainTests
         registry.Register(new LoggingMigration(TestKind, 1, "KindSpecific", log));
         registry.Register(new LoggingMigration(null, 1, "Common", log));
 
-        var store = new EngineeringObjectStateStore(persistence, registry, targetSchemaVersion: 2);
+        var store = new EngineeringObjectStateStore(persistence, registry, null, 2);
         var state = await store.FindAsync(id);
 
         Assert.NotNull(state);

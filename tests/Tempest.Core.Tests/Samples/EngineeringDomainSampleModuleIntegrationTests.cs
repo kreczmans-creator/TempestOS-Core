@@ -78,11 +78,6 @@ public class EngineeringDomainSampleModuleIntegrationTests
         // collaborator missing here is a rig that no longer stands in for
         // the real graph (same reasoning as IBinaryPersistenceStore below).
         services.Singleton<IStateMigrationRegistry, StateMigrationRegistry>();
-        // `TD-87`/`ADR-0120` — EngineeringObjectStateStore's own
-        // `int? targetSchemaVersion` constructor parameter, registered
-        // exactly as TempestHost registers it (see that file's own
-        // remarks on why AddInstance, not Singleton, is required here).
-        services.AddInstance(typeof(int?), (object)(int?)EngineeringObjectStateStore.CurrentSchemaVersion);
         // `TD-85` — the durable object-state store EngineeringDomainContext
         // now takes as a collaborator, registered exactly as TempestHost
         // registers it, so this rig stays a faithful stand-in for the real

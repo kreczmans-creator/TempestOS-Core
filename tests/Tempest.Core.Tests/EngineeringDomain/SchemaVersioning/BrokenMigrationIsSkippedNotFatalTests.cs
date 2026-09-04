@@ -70,7 +70,7 @@ public class BrokenMigrationIsSkippedNotFatalTests
         var registry = new StateMigrationRegistry();
         registry.Register(new ThrowingMigration(ThrowingKind, 1));
 
-        var states = await new EngineeringObjectStateStore(persistence, registry, targetSchemaVersion: 2).ListAsync();
+        var states = await new EngineeringObjectStateStore(persistence, registry, null, 2).ListAsync();
 
         var survivor = Assert.Single(states);
         Assert.Equal(goodId, survivor.Id);
@@ -94,7 +94,7 @@ public class BrokenMigrationIsSkippedNotFatalTests
         await plainStore.SaveAsync(BuildState(goodId, "Part", 2, "X-GOOD"));
 
         var logger = new RecordingLogger();
-        var target2Store = new EngineeringObjectStateStore(persistence, logger: logger, targetSchemaVersion: 2);
+        var target2Store = new EngineeringObjectStateStore(persistence, null, logger, 2);
 
         var stuck = await target2Store.FindAsync(stuckId);
         Assert.Null(stuck);

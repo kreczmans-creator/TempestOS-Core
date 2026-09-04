@@ -73,7 +73,17 @@ public sealed class EngineeringObjectStateStore : IEngineeringObjectStateStore
     private readonly IStateMigrationRegistry? _migrations;
     private readonly ILogger? _logger;
 
-    /// <summary>Initialises a new instance of the <see cref="EngineeringObjectStateStore"/> class.</summary>
+    /// <summary>
+    /// Initialises a new instance of the <see cref="EngineeringObjectStateStore"/>
+    /// class, targeting <see cref="CurrentSchemaVersion"/> — the one
+    /// constructor visible to this platform's DI container
+    /// (`TempestServiceProvider`), which requires exactly one public
+    /// constructor and resolves every one of its parameters, so this stays
+    /// the container-facing shape rather than growing a raw <c>int</c> or
+    /// <c>int?</c> the container would have to be taught to satisfy
+    /// (`TD-69`'s missing-default-parameter-support defect class, handed
+    /// to `WP 16.4B`, not worked around here).
+    /// </summary>
     /// <param name="persistenceStore">The substrate every state record is written to and read from.</param>
     /// <param name="migrations">
     /// The migration chain(s) a record may need to reach
@@ -83,28 +93,46 @@ public sealed class EngineeringObjectStateStore : IEngineeringObjectStateStore
     /// passing unchanged.
     /// </param>
     /// <param name="logger">An optional logger used to record a skipped record.</param>
-    /// <param name="targetSchemaVersion">
-    /// The <see cref="EngineeringObjectState.SchemaVersion"/> this store's
-    /// own read path requires a record to reach before handing it back —
-    /// <see langword="null"/> (the default; every production caller) means
-    /// <see cref="CurrentSchemaVersion"/>. Exists so a test can exercise a
-    /// migration chain that runs past this build's own current version
-    /// without bumping <see cref="CurrentSchemaVersion"/> itself (`TD-87`,
-    /// `ADR-0120`).
-    /// </param>
     /// <exception cref="ArgumentNullException"><paramref name="persistenceStore"/> is <see langword="null"/>.</exception>
     public EngineeringObjectStateStore(
         IPersistenceStore persistenceStore,
         IStateMigrationRegistry? migrations = null,
-        ILogger? logger = null,
-        int? targetSchemaVersion = null)
+        ILogger? logger = null)
+        : this(persistenceStore, migrations, logger, CurrentSchemaVersion)
+    {
+    }
+
+    /// <summary>
+    /// The test-only seam behind <see cref="TargetSchemaVersion"/> (`TD-87`,
+    /// `ADR-0120`): lets a test build a store whose read path targets a
+    /// schema version other than <see cref="CurrentSchemaVersion"/>, to
+    /// exercise a migration chain that runs past this build's own fixed
+    /// current version without bumping that constant. <c>internal</c> —
+    /// reachable only from <c>Tempest.Core.Tests</c>
+    /// (<c>InternalsVisibleTo</c>, <c>AssemblyInfo.cs</c>) — deliberately
+    /// not the container-visible constructor above, for the same reason
+    /// that one exists: the container requires exactly one <em>public</em>
+    /// constructor, so this stays invisible to it rather than becoming a
+    /// second one it would refuse to resolve at all
+    /// (<see cref="Tempest.Core.DependencyInjection.AmbiguousConstructorException"/>).
+    /// </summary>
+    /// <param name="persistenceStore">The substrate every state record is written to and read from.</param>
+    /// <param name="migrations">The migration chain(s) a record may need to reach <paramref name="targetSchemaVersion"/>.</param>
+    /// <param name="logger">An optional logger used to record a skipped record.</param>
+    /// <param name="targetSchemaVersion">The <see cref="EngineeringObjectState.SchemaVersion"/> this store's own read path requires a record to reach before handing it back.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="persistenceStore"/> is <see langword="null"/>.</exception>
+    internal EngineeringObjectStateStore(
+        IPersistenceStore persistenceStore,
+        IStateMigrationRegistry? migrations,
+        ILogger? logger,
+        int targetSchemaVersion)
     {
         ArgumentNullException.ThrowIfNull(persistenceStore);
 
         _persistenceStore = persistenceStore;
         _migrations = migrations;
         _logger = logger;
-        TargetSchemaVersion = targetSchemaVersion ?? CurrentSchemaVersion;
+        TargetSchemaVersion = targetSchemaVersion;
     }
 
     /// <summary>
