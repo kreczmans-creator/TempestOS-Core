@@ -174,9 +174,9 @@ guide, in this order, once steps 1–6 above make sense:
 
 ## After This Path
 
-You should now be able to open `docs/releases/v0.5.0/WorkPackages.md`
-(the current release plan — `docs/releases/v0.4.0/WorkPackages.md` is
-its own, now-shipped predecessor, retained for history, not where new
+You should now be able to open `docs/releases/v0.16.0/WorkPackages.md`
+(the current release plan — every prior release's own `WorkPackages.md`
+is its own, now-shipped predecessor, retained for history, not where new
 work is scoped), find the Work Package you are about to change, read its
 own retrospective (if one already exists) or its own scope entry (if
 it's still ahead), and proceed — following the Engineering Lifecycle,
@@ -185,7 +185,12 @@ standing expectations every future Work Package must meet. **Correction,
 `WP 5.4`**: this section previously pointed to `v0.4.0/WorkPackages.md`
 even after `v0.5.0`'s own plan superseded it — a real, previously
 unnoticed onboarding drift, corrected here as part of that Work Package's
-own Developer Experience review.
+own Developer Experience review. **Correction, `WP 16.2B`**: this
+section still pointed to `v0.5.0/WorkPackages.md` — eleven releases
+stale, the identical class of drift `WP 5.4` corrected once already.
+First disclosed, not fixed, by `WP 11.9.0`'s own Workflow Engineer
+review (`v0.11.0`); left uncorrected across five further releases until
+now.
 
 ## Related Documents
 
