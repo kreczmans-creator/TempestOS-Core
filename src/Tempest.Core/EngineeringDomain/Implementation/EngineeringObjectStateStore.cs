@@ -33,12 +33,13 @@ namespace Tempest.Core.EngineeringDomain;
 /// <see cref="EngineeringObjectState.SchemaVersion"/> (or <c>0</c>)
 /// normalises to <c>1</c> explicitly, and an optional
 /// <see cref="IStateMigrationRegistry"/> supplied at construction walks
-/// the record forward one version at a time until no further migration
-/// applies. A record a migration cannot bridge — its migration throws, or
-/// it is left short of or, from a newer build, ahead of
-/// <see cref="CurrentSchemaVersion"/> — is logged and skipped exactly as
-/// an unparseable record already is; migration never runs on write
-/// (`ADR-0120` Decision 2/5).
+/// the record forward one version at a time until it reaches
+/// <see cref="TargetSchemaVersion"/> or no further migration applies,
+/// whichever comes first. A record that does not end the walk exactly at
+/// <see cref="TargetSchemaVersion"/> — no migration path reaches it, one
+/// throws, or the record started ahead of it (a newer build) — is logged
+/// and skipped exactly as an unparseable record already is; migration
+/// never runs on write (`ADR-0120` Decision 2/5).
 /// </para>
 /// </remarks>
 public sealed class EngineeringObjectStateStore : IEngineeringObjectStateStore
@@ -76,22 +77,43 @@ public sealed class EngineeringObjectStateStore : IEngineeringObjectStateStore
     /// <param name="persistenceStore">The substrate every state record is written to and read from.</param>
     /// <param name="migrations">
     /// The migration chain(s) a record may need to reach
-    /// <see cref="CurrentSchemaVersion"/> (`TD-87`, `ADR-0120`).
+    /// <see cref="TargetSchemaVersion"/> (`TD-87`, `ADR-0120`).
     /// <see langword="null"/> — the default — runs only the normalisation
     /// step: every existing hand-assembled store keeps compiling and
     /// passing unchanged.
     /// </param>
     /// <param name="logger">An optional logger used to record a skipped record.</param>
+    /// <param name="targetSchemaVersion">
+    /// The <see cref="EngineeringObjectState.SchemaVersion"/> this store's
+    /// own read path requires a record to reach before handing it back —
+    /// <see langword="null"/> (the default; every production caller) means
+    /// <see cref="CurrentSchemaVersion"/>. Exists so a test can exercise a
+    /// migration chain that runs past this build's own current version
+    /// without bumping <see cref="CurrentSchemaVersion"/> itself (`TD-87`,
+    /// `ADR-0120`).
+    /// </param>
     /// <exception cref="ArgumentNullException"><paramref name="persistenceStore"/> is <see langword="null"/>.</exception>
     public EngineeringObjectStateStore(
-        IPersistenceStore persistenceStore, IStateMigrationRegistry? migrations = null, ILogger? logger = null)
+        IPersistenceStore persistenceStore,
+        IStateMigrationRegistry? migrations = null,
+        ILogger? logger = null,
+        int? targetSchemaVersion = null)
     {
         ArgumentNullException.ThrowIfNull(persistenceStore);
 
         _persistenceStore = persistenceStore;
         _migrations = migrations;
         _logger = logger;
+        TargetSchemaVersion = targetSchemaVersion ?? CurrentSchemaVersion;
     }
+
+    /// <summary>
+    /// The <see cref="EngineeringObjectState.SchemaVersion"/> this store's
+    /// own read path requires a record to reach — <see cref="CurrentSchemaVersion"/>
+    /// unless a different value was supplied at construction (`TD-87`,
+    /// `ADR-0120`).
+    /// </summary>
+    public int TargetSchemaVersion { get; }
 
     /// <inheritdoc />
     public Task SaveAsync(EngineeringObjectState state, CancellationToken cancellationToken = default)
@@ -170,27 +192,32 @@ public sealed class EngineeringObjectStateStore : IEngineeringObjectStateStore
         // forward — there is nothing to migrate it "back" with, and no
         // migration will ever be registered for a version this build does
         // not yet know about. Caught before the migration loop below,
-        // which would otherwise simply find nothing and return the record
-        // unmigrated, silently accepting a shape this build was never
-        // told how to read (`ADR-0120` Decision 5).
-        if (state.SchemaVersion > CurrentSchemaVersion)
+        // which would otherwise simply find nothing to apply and fall
+        // through to the "no migration path" check below anyway — this
+        // earlier, more specific check exists only to log a clearer,
+        // distinct reason ("ahead", not merely "stuck").
+        if (state.SchemaVersion > TargetSchemaVersion)
         {
             _logger?.Warning(
                 $"Engineering object state '{objectId}' (Kind '{state.Kind}') is stuck at schema version " +
-                $"{state.SchemaVersion}, newer than this build's current version {CurrentSchemaVersion} — it was " +
-                "NOT reconstructed and was skipped.");
+                $"{state.SchemaVersion}, newer than this build's target schema version {TargetSchemaVersion} — it " +
+                "was NOT reconstructed and was skipped.");
             return null;
         }
 
         try
         {
             // `ADR-0120` Decision 2: the common (Kind-less) chain first,
-            // then that Kind's own chain, repeated until no further
-            // migration applies — `IStateMigrationRegistry.Find` embodies
-            // that ordering for a single version step, so this loop only
-            // has to keep asking for the next one.
-            while (_migrations?.Find(state.Kind, state.SchemaVersion) is { } migration)
+            // then that Kind's own chain, repeated until the record
+            // reaches TargetSchemaVersion or no further migration applies
+            // — `IStateMigrationRegistry.Find` embodies that ordering for
+            // a single version step, so this loop only has to keep asking
+            // for the next one.
+            while (state.SchemaVersion != TargetSchemaVersion)
             {
+                if (_migrations?.Find(state.Kind, state.SchemaVersion) is not { } migration)
+                    break;
+
                 state = migration.Migrate(state) with { SchemaVersion = migration.FromVersion + 1 };
             }
         }
@@ -199,6 +226,20 @@ public sealed class EngineeringObjectStateStore : IEngineeringObjectStateStore
             _logger?.Warning(
                 $"Engineering object state '{objectId}' (Kind '{state.Kind}') is stuck at schema version " +
                 $"{state.SchemaVersion} — its migration threw and the record was skipped.", ex);
+            return null;
+        }
+
+        // `ADR-0120` Decision 5: "no migration path to the store's current
+        // [target] version" — the loop above stopped short (a version
+        // step nothing bridges) rather than throwing, so it must be
+        // checked here explicitly; falling through silently would return
+        // a record at the wrong schema version rather than skipping it.
+        if (state.SchemaVersion != TargetSchemaVersion)
+        {
+            _logger?.Warning(
+                $"Engineering object state '{objectId}' (Kind '{state.Kind}') is stuck at schema version " +
+                $"{state.SchemaVersion}, with no migration path to this build's target schema version " +
+                $"{TargetSchemaVersion} — it was NOT reconstructed and was skipped.");
             return null;
         }
 

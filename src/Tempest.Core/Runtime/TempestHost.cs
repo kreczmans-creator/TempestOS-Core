@@ -621,6 +621,18 @@ public sealed class TempestHost : ITempestHost
         // IEngineeringObjectRehydratorRegistry already has.
         services.Singleton<IStateMigrationRegistry, StateMigrationRegistry>();
 
+        // TD-87/ADR-0120: EngineeringObjectStateStore's own optional
+        // `int? targetSchemaVersion` constructor parameter (see that
+        // class's own remarks) has no default-parameter-value support in
+        // this container - every constructor parameter, whatever its C#
+        // default, is resolved through this same registry (see
+        // TempestServiceProvider's own "Dependency resolution" remarks).
+        // AddInstance is this container's own established answer for "a
+        // value the container cannot construct on its own"; registering
+        // it here, unconditionally CurrentSchemaVersion, keeps this call
+        // producing exactly the store's own default target, unchanged.
+        services.AddInstance(typeof(int?), (object)(int?)EngineeringObjectStateStore.CurrentSchemaVersion);
+
         // TD-85: the durable half of the Engineering Domain. Registered
         // before EngineeringDomainContext, which takes it as a
         // collaborator. Built on the same IPersistenceStore

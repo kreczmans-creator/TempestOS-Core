@@ -136,7 +136,7 @@ public interface IStateMigration
 public interface IStateMigrationRegistry
 {
     void Register(IStateMigration migration);
-    IStateMigration? Find(string kind, int fromVersion);  // Kind-specific first, then common
+    IStateMigration? Find(string kind, int fromVersion);  // common first, then that Kind's own
 }
 ```
 

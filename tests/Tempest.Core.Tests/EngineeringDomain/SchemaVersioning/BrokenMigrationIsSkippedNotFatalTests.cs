@@ -40,7 +40,10 @@ public class BrokenMigrationIsSkippedNotFatalTests
         registry.Register(new ThrowingMigration(ThrowingKind, 1));
 
         var logger = new RecordingLogger();
-        var store = new EngineeringObjectStateStore(persistence, registry, logger);
+        // CurrentSchemaVersion is a fixed const 1 this release, so an
+        // explicit, higher target is what lets the store's own read path
+        // attempt this FromVersion:1 migration at all.
+        var store = new EngineeringObjectStateStore(persistence, registry, logger, targetSchemaVersion: 2);
 
         var state = await store.FindAsync(id);
 
@@ -60,15 +63,50 @@ public class BrokenMigrationIsSkippedNotFatalTests
         var brokenId = Guid.NewGuid();
         var goodId = Guid.NewGuid();
         await store.SaveAsync(BuildState(brokenId, ThrowingKind, 1, "X-BROKEN"));
-        await store.SaveAsync(BuildState(goodId, "TD87TestOtherKind", 1, "X-GOOD"));
+        // Seeded already at the target version, so its own survival is not
+        // itself dependent on a migration running for its Kind.
+        await store.SaveAsync(BuildState(goodId, "TD87TestOtherKind", 2, "X-GOOD"));
 
         var registry = new StateMigrationRegistry();
         registry.Register(new ThrowingMigration(ThrowingKind, 1));
 
-        var states = await new EngineeringObjectStateStore(persistence, registry).ListAsync();
+        var states = await new EngineeringObjectStateStore(persistence, registry, targetSchemaVersion: 2).ListAsync();
 
         var survivor = Assert.Single(states);
         Assert.Equal(goodId, survivor.Id);
+    }
+
+    [Fact]
+    public async Task ARecordWithNoMigrationPathToItsTarget_IsSkipped_AndEveryOtherObjectStillComesBack()
+    {
+        // `ADR-0120` Decision 5's other named case: not a throwing
+        // migration, not a record from the future — simply a v1 record at
+        // a target (2) nothing bridges to, because no migration for
+        // (kind, 1) was registered at all. The surviving record is seeded
+        // directly at the target version, so its own success is not
+        // itself dependent on any migration running.
+        var persistence = new InMemoryPersistenceStore();
+        var plainStore = new EngineeringObjectStateStore(persistence);
+
+        var stuckId = Guid.NewGuid();
+        var goodId = Guid.NewGuid();
+        await plainStore.SaveAsync(BuildState(stuckId, "TD87TestNoPathKind", 1, "X-STUCK"));
+        await plainStore.SaveAsync(BuildState(goodId, "Part", 2, "X-GOOD"));
+
+        var logger = new RecordingLogger();
+        var target2Store = new EngineeringObjectStateStore(persistence, logger: logger, targetSchemaVersion: 2);
+
+        var stuck = await target2Store.FindAsync(stuckId);
+        Assert.Null(stuck);
+        var message = Assert.Single(logger.Messages, m => m.Contains(stuckId.ToString(), StringComparison.Ordinal));
+        Assert.Contains("TD87TestNoPathKind", message, StringComparison.Ordinal);
+        Assert.Contains("1", message, StringComparison.Ordinal); // the stuck version
+        Assert.Contains("2", message, StringComparison.Ordinal); // the target version
+
+        var states = await target2Store.ListAsync();
+        var survivor = Assert.Single(states);
+        Assert.Equal(goodId, survivor.Id);
+        Assert.Equal(2, survivor.SchemaVersion);
     }
 
     [Fact]

@@ -51,7 +51,13 @@ public class StateMigrationChainTests
         var registry = new StateMigrationRegistry();
         registry.Register(new LoggingMigration(TestKind, 1, "A", log));
 
-        var store = new EngineeringObjectStateStore(persistence, registry);
+        // CurrentSchemaVersion is a fixed const 1 this release (`ADR-0120`
+        // ships the mechanism, not a version bump), so an explicit,
+        // higher targetSchemaVersion is what lets this migration — and
+        // every other one in this file — actually run at all: the read
+        // path's loop stops the moment a record's own SchemaVersion
+        // already equals its target.
+        var store = new EngineeringObjectStateStore(persistence, registry, targetSchemaVersion: 2);
         var state = await store.FindAsync(id);
 
         Assert.NotNull(state);
@@ -70,7 +76,7 @@ public class StateMigrationChainTests
         registry.Register(new LoggingMigration(TestKind, 1, "A", log));
         registry.Register(new LoggingMigration(TestKind, 2, "B", log));
 
-        var store = new EngineeringObjectStateStore(persistence, registry);
+        var store = new EngineeringObjectStateStore(persistence, registry, targetSchemaVersion: 3);
         var state = await store.FindAsync(id);
 
         Assert.NotNull(state);
@@ -89,7 +95,7 @@ public class StateMigrationChainTests
         var registry = new StateMigrationRegistry();
         registry.Register(new LoggingMigration(null, 1, "Common", log));
 
-        var store = new EngineeringObjectStateStore(persistence, registry);
+        var store = new EngineeringObjectStateStore(persistence, registry, targetSchemaVersion: 2);
 
         var part = await store.FindAsync(partId);
         var assembly = await store.FindAsync(assemblyId);
@@ -110,7 +116,7 @@ public class StateMigrationChainTests
         registry.Register(new LoggingMigration(TestKind, 1, "KindSpecific", log));
         registry.Register(new LoggingMigration(null, 1, "Common", log));
 
-        var store = new EngineeringObjectStateStore(persistence, registry);
+        var store = new EngineeringObjectStateStore(persistence, registry, targetSchemaVersion: 2);
         var state = await store.FindAsync(id);
 
         Assert.NotNull(state);
