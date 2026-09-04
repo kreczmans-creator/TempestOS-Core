@@ -74,26 +74,14 @@ public class DocumentPageSourceTests
         0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82,
     ];
 
-    /// <summary>
-    /// Whether the platform these tests run on decodes images for real.
-    /// </summary>
-    /// <remarks>
-    /// The headless platform substitutes a stub decoder that reports every
-    /// image as 1x1 and accepts bytes that are not an image at all. That
-    /// is a property of the test platform, not of
-    /// <see cref="ImageDocumentPageSource"/>, and asserting real
-    /// dimensions against it would be asserting a falsehood. Probed with a
-    /// PNG of known size rather than assumed from the platform name, and
-    /// the image assertions below say plainly which half of this they are
-    /// in. Real decoding is exercised on a real platform, and is
-    /// disclosed as untested here rather than quietly claimed.
-    /// </remarks>
-    private static bool ImageDecodingIsReal()
-    {
-        using var stream = new MemoryStream(Png(), writable: false);
-        using var bitmap = new Bitmap(stream);
-        return bitmap.PixelSize.Width == 4 && bitmap.PixelSize.Height == 3;
-    }
+    // `WP 16.4A` (part 2), `TD-100`: the headless test host used to
+    // substitute a stub decoder that reported every image as 1x1 and
+    // accepted bytes that were not an image at all, which forced the image
+    // assertions below to probe for real decoding and skip themselves when
+    // it was absent. `TestAppBuilder.cs` now runs a real Skia rendering
+    // subsystem, so those tests assert real dimensions and real pixel
+    // content unconditionally, and the probe this comment used to document
+    // is gone along with the condition it existed to check.
 
     /// <summary>
     /// How many pixels of <paramref name="bitmap"/> are not white.
@@ -236,43 +224,30 @@ public class DocumentPageSourceTests
     [AvaloniaFact]
     public void AnImage_IsASinglePage_AtItsOwnPixelSize()
     {
+        // `WP 16.4A` (part 2), `TD-100`: the headless test host now runs a
+        // real Skia rendering subsystem (`TestAppBuilder.cs`), so this
+        // asserts the PNG's actual 4x3 size and actual red content
+        // unconditionally — no stub-decoder probe, no vacuous pass.
         using var source = DocumentPageSourceFactory.Create(ViewableDocumentFormat.Image, Png())!;
 
-        // True on every platform: an image is one page, and its natural
-        // size is a positive number of pixels rather than a DIP size that
-        // depends on whatever DPI the file claims.
         Assert.Equal(1, source.PageCount);
-        Assert.True(source.PageSize(0).Width > 0);
-        Assert.True(source.PageSize(0).Height > 0);
-
-        if (!ImageDecodingIsReal())
-            return;
-
         Assert.Equal(4, source.PageSize(0).Width);
         Assert.Equal(3, source.PageSize(0).Height);
+
+        // The assertion that separates a real decoder from a stub that
+        // reports plausible dimensions for a bitmap with no real content:
+        // every one of the 4x3 = 12 pixels must be the fixture's red, not
+        // the white a blank or mis-decoded bitmap would read back as.
+        using var page = source.RenderPage(0, 1.0);
+        Assert.Equal(12, CountNonWhitePixels(page));
     }
 
     [AvaloniaFact]
     public void BytesThatAreNotAnImage_AreReportedAsUndecodable()
     {
-        if (!ImageDecodingIsReal())
-        {
-            // The stub decoder accepts anything. What can still be checked
-            // is that the failure path does not itself crash: whatever the
-            // decoder returns, opening it either yields a usable source or
-            // this layer's own exception — never an unhandled one.
-            try
-            {
-                using var lenient = DocumentPageSourceFactory.Create(ViewableDocumentFormat.Image, [1, 2, 3, 4, 5, 6, 7, 8]);
-                Assert.True(lenient is null || lenient.PageCount == 1);
-            }
-            catch (DocumentRenderException)
-            {
-            }
-
-            return;
-        }
-
+        // `WP 16.4A` (part 2), `TD-100`: real Skia decoding rejects bytes
+        // that are not an image, so this is unconditional too — the
+        // headless stub decoder that used to accept anything is gone.
         Assert.Throws<DocumentRenderException>(() =>
             DocumentPageSourceFactory.Create(ViewableDocumentFormat.Image, [1, 2, 3, 4, 5, 6, 7, 8]));
     }

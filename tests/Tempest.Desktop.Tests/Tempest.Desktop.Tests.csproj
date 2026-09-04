@@ -21,6 +21,14 @@
     <PackageReference Include="xunit" Version="2.9.3" />
     <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4" />
     <PackageReference Include="Avalonia.Headless.XUnit" Version="11.3.20" />
+    <!--
+      WP 16.4A (part 2), TD-100: a real Skia rendering subsystem for the
+      headless test host, so Avalonia.Media.Imaging.Bitmap decodes real
+      image bytes instead of the headless platform's stub decoder (which
+      reports every image as 1x1 regardless of its actual content).
+      Pinned to the same version as Avalonia.Headless.XUnit above.
+    -->
+    <PackageReference Include="Avalonia.Skia" Version="11.3.20" />
   </ItemGroup>
 
   <ItemGroup>
