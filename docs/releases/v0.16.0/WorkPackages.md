@@ -2,7 +2,7 @@
 
 ## Status
 
-**Proposed, not approved; not started.** Scope, sequencing, and
+**Proposed, not approved; in execution on `feature/v0.16.0`.** Scope, sequencing, and
 acceptance for every row are in `v0.16.0 Release Plan.md` in this
 folder. `VERSION` remains `0.15.0` until `WP 16.9.0`. This folder
 exists so the plan lives where this project keeps release plans; it is
@@ -19,17 +19,17 @@ Closes with the first Product Approval verdict since `v0.12.0`.
 
 | Work Package | Scope | Type | Wave | Closes | Status |
 |---|---|---|---|---|---|
-| `WP 16.0A` | v1.0 Scope & Support Decision Record — six decisions (governing definition, Companion, plugins, REST/`AT-10`, platform matrix, `v0.15.1` folder), each a `D-0xx` entry; `Product Roadmap.md` Phase 5.5 | Decision | 0 | Audit §2, M1, M9 | Not started |
-| `WP 16.0B` | Integrate off-`main` work — merge `WP 15.2A`; fold `docs/releases/v0.15.1/` into this release; Companion branch decision applied; `FCR-0092` citation resolved | Governance/Integration | 1 | `TD-120`, `TD-82` | Not started |
-| `WP 16.1A` | Enforce the release gate — GitHub branch protection per `WP11.1B` §4; `CI Gate` depends on `Governance Health Check` | Configuration | 1 | `TD-45` | Not started |
-| `WP 16.3A` | Durable state schema versioning — architecture, `ADR-0120` | Architecture | 1 | `TD-87` (design) | Not started |
-| `WP 16.4A` | Test determinism — `CompositeLogSink` console dependency, last fixed wait, real image decode, `MainWindow` resize coverage; five consecutive CI runs | Implementation (tests) | 1 | `TD-34`, `TD-119`, `TD-100`, `TD-83` | Not started |
-| `WP 16.5B` | Linux/X11 — timeboxed Avalonia/`Tmds.DBus.Protocol` upgrade spike; fix, or state the support matrix in three documents | Implementation or Documentation | 1 | `TD-116` | Not started |
-| `WP 16.2A` | Register & status currency — six `TD-57` registers, Feature and Release registers, Repository Metrics, `Product Roadmap.md`, `PROJECT_STATUS.md` lower sections archived and re-derived | Documentation/Governance | 2 | `TD-57`, `DNB-7` | Not started |
-| `WP 16.3B` | Durable state schema versioning — implementation, migration chain, golden corpus | Implementation | 2 | `TD-87` | Not started |
-| `WP 16.5A` | Accessibility baseline — modal dialogs, automation names, live regions, graph keyboard operability, contrast; modality test | Implementation | 2 | `TD-65` (partial) | Not started |
-| `WP 16.1B` | Health-check extension — Interface/Exception/Namespace registers re-derived from `src/`, TD/FCR summary consistency, ADR count; script exception path | Implementation | 3 | `TD-57` root cause, `TD-43` | Not started |
-| `WP 16.2B` | Academy retrospective backfill — `v0.11.0`'s ten, `WP 15.1A`/`15.1B`, the pre-`v0.14.0` programme (~20); Academy Register annotations; Learning Path pointer | Documentation | 3 | `WP-Z3` §12 gap | Not started |
+| `WP 16.0A` | v1.0 Scope & Support Decision Record — six decisions (governing definition, Companion, plugins, REST/`AT-10`, platform matrix, `v0.15.1` folder), each a `D-0xx` entry; `Product Roadmap.md` Phase 5.5 | Decision | 0 | Audit §2, M1, M9 | **Drafted** — `D-021`–`D-026` Proposed (`fb8b90c`), awaiting Product Owner approval (PR #6) |
+| `WP 16.0B` | Integrate off-`main` work — merge `WP 15.2A`; fold `docs/releases/v0.15.1/` into this release; Companion branch decision applied; `FCR-0092` citation resolved | Governance/Integration | 1 | `TD-120`, `TD-82` | **Complete** (`4198289`, merged `a4f891b`) |
+| `WP 16.1A` | Enforce the release gate — GitHub branch protection per `WP11.1B` §4; `CI Gate` depends on `Governance Health Check` | Configuration | 1 | `TD-45` | **Complete — workflow half** (`6338330`); GitHub branch-protection setting is a Product Owner action, `TD-45` stays Open |
+| `WP 16.3A` | Durable state schema versioning — architecture, `ADR-0120` | Architecture | 1 | `TD-87` (design) | **Complete** (`a80e95d`, `ADR-0120` accepted at Technical Review) |
+| `WP 16.4A` | Test determinism — `CompositeLogSink` console dependency, last fixed wait, real image decode, `MainWindow` resize coverage; five consecutive CI runs | Implementation (tests) | 1 | `TD-34`, `TD-119`, `TD-100`, `TD-83` | In progress |
+| `WP 16.5B` | Linux/X11 — timeboxed Avalonia/`Tmds.DBus.Protocol` upgrade spike; fix, or state the support matrix in three documents | Implementation or Documentation | 1 | `TD-116` | **Complete** (`309c15d`; Linux launches; `TD-116` Resolved) |
+| `WP 16.2A` | Register & status currency — six `TD-57` registers, Feature and Release registers, Repository Metrics, `Product Roadmap.md`, `PROJECT_STATUS.md` lower sections archived and re-derived | Documentation/Governance | 2 | `TD-57`, `DNB-7` | **Complete** (`40e267d`; `TD-57` Resolved) |
+| `WP 16.3B` | Durable state schema versioning — implementation, migration chain, golden corpus | Implementation | 2 | `TD-87` | In progress (Technical Review revision) |
+| `WP 16.5A` | Accessibility baseline — modal dialogs, automation names, live regions, graph keyboard operability, contrast; modality test | Implementation | 2 | `TD-65` (partial) | In progress |
+| `WP 16.1B` | Health-check extension — Interface/Exception/Namespace registers re-derived from `src/`, TD/FCR summary consistency, ADR count; script exception path | Implementation | 3 | `TD-57` root cause, `TD-43` | In progress |
+| `WP 16.2B` | Academy retrospective backfill — `v0.11.0`'s ten, `WP 15.1A`/`15.1B`, the pre-`v0.14.0` programme (~20); Academy Register annotations; Learning Path pointer | Documentation | 3 | `WP-Z3` §12 gap | **Complete** (three branches + closure; 41 retrospectives, 21 rows backfilled) |
 | `WP 16.4B` | Durability & loopback hygiene — orphan detection and sweep, attachment content release, bounded keyed lock, DI duplicate guard, gated OpenAPI route, REST listener off by default | Implementation | 3 | `TD-67`, `TD-68`, `TD-69`, `TD-97`, `TD-62`, `AT-10` decision | Not started |
 | `WP 16.9.0` | Engineering Readiness Review, `VERSION` 0.16.0, Release Notes, merge/tag/publish under the enforced gate, **Product Approval verdict recorded** | Verification/Release | 4 | Audit finding 2 | Not started |
 

@@ -1,7 +1,7 @@
 # TempestOS — Project Status
 
-**Last Updated:** 2026-09-04 (`WP 16.2A`, Register and Status Currency,
-`v0.16.0`) — this file was rewritten from a ~9,068-line/565 KB
+**Last Updated:** 2026-09-04 (`WP 16.2B` closure, following `WP 16.2A`'s
+rewrite, `v0.16.0`) — this file was rewritten from a ~9,068-line/565 KB
 accumulation of superseded status paragraphs into the short, current
 dashboard below. Everything previously here of standing value is
 retained, not deleted: see `docs/governance/Documentation/PROJECT_STATUS
@@ -64,19 +64,20 @@ Release Plan):
 | `WP 16.0A` | Drafted `D-021`–`D-026` (v1.0 scope decisions), all Proposed, ratification pending PR #6 | `docs/releases/v0.16.0/WP16.0A v0.16.0 Scope Decision.md` |
 | `WP 16.1A` | CI workflow half of `TD-45` (release-gate enforcement); GitHub branch-protection settings handed to the Product Owner | `docs/releases/v0.16.0/WP16.1A Enforce the Release Gate.md` |
 | `WP 15.2A` (carried in) | Closed `TD-120` — Desktop test suite persistence-root cleanup; `Tempest.Desktop.Tests` 412/412 | `docs/releases/v0.16.0/WP15.2A Desktop Test Suite Persistence Root Cleanup — Implementation Report.md` |
-| `WP 16.2A` (this Work Package) | Register and status currency — re-derived every count in every touched governance register; this file's own rewrite | `docs/releases/v0.16.0/WP16.2A Register and Status Currency Report.md` |
+| `WP 16.2A` | Register and status currency — re-derived every count in every touched governance register; this file's own rewrite | `docs/releases/v0.16.0/WP16.2A Register and Status Currency Report.md` |
+| `WP 16.0B` | Merged `WP 15.2A`; folded the former v0.15.1 folder into this release (`D-026`, Proposed); Companion deferred (`D-022`, Proposed) | `docs/releases/v0.16.0/WP16.0B Integration Report.md` |
+| `WP 16.3A` | `ADR-0120` — durable state carries a schema version, migrations apply only on read; accepted at Technical Review | `docs/adr/ADR-0120-durable-state-carries-a-schema-version-and-migrations-apply-only-on-read.md`; `docs/architecture/State Schema Versioning Architecture.md` |
+| `WP 16.5B` | Linux/X11 launch fixed: Avalonia 11.3.20, `Tmds.DBus.Protocol` 0.21.3; `TD-116` Resolved; advisory Linux launch smoke job in CI | `docs/releases/v0.16.0/WP16.5B Linux Launch Spike Report.md` |
+| `WP 16.2B` | 41 Academy retrospectives written, 21 register rows backfilled; Academy at 206 retrospectives | `docs/releases/v0.16.0/WP16.2B Academy Retrospective Backfill Report.md` |
 
-**Disclosed gap, found by `WP 16.2A`.** `docs/releases/v0.16.0/
-WorkPackages.md` names `WP 16.0B` (integrating `WP 15.2A` and folding
-the former v0.15.1 folder (`v0.15.1`) into this release) as part of
-Wave 1, and its effects are visible directly — `WP15.2A`'s report
-already lives under `docs/releases/v0.16.0/`, not the former v0.15.1
-folder, which no longer exists — but **no `WP 16.0B` report file was
-found at this
-Work Package's own base commit.** Recorded here rather than silently
-assumed complete or silently omitted; the next Work Package to touch
-this section should confirm whether `WP 16.0B`'s own report has since
-landed and update this table accordingly.
+**`WP 16.2A`'s disclosed gap, resolved.** `WP 16.2A` found no standalone
+`WP 16.0B` report at its base; the report now exists (row above), written
+at the `WP 16.2B` closure. `WP 16.2A` also recorded `WP 16.3A` as not
+landed; it was — its base `8b4c394` is the `WP 16.3A` merge commit.
+
+**In progress on their own branches** (not yet merged): `WP 16.4A`,
+`WP 16.3B` (under Technical Review revision), `WP 16.5A`, `WP 16.1B`.
+`WP 16.4B` is sequenced behind `WP 16.3B`.
 
 ## Repository Metrics
 
@@ -111,6 +112,18 @@ authoritative current statement, including the disclosed distinction
 between the 2,725 test-method count and the 3,088/408/412 executed-run
 counts.
 
+**Since `WP 16.5B` (Avalonia 11.3.20), locally on Linux** — the
+`feature/v0.16.0` merge base was rebuilt and re-tested in this session:
+Release build 0 warnings / 0 errors with `TreatWarningsAsErrors`;
+`Tempest.Desktop.Tests` 412/412; the Desktop launched under Xvfb with a
+full startup log and no crash log. **CI note:** every GitHub-hosted run on
+this private repository from 22:34 UTC on 2026-09-04 failed within
+seconds with no runner assigned (Windows and Ubuntu alike, on unchanged
+workflow files, with no GitHub incident reported) — the signature of an
+exhausted Actions allowance or spending limit, a Product Owner action.
+Until it is restored, the figures above are local, not CI-verified, and
+are labelled as such wherever they are cited.
+
 Build: 0 warnings, 0 errors, both configurations, at the `v0.15.0` tag
 — every merge to `main` is now gated by real CI (`WP 11.1A`) and, as of
 `WP 16.1A`, `CI Gate` depends on `Governance Health Check` passing.
@@ -134,7 +147,7 @@ points to it:
 - **Product roadmap** — `docs/governance/Product Roadmap.md` (Phase 5 marked delivered, Phase 5.5 added, `WP 16.2A`).
 - **Governance suite index** — `docs/governance/Governance Index.md`.
 - **Documentation inventory** — `docs/governance/Documentation/Documentation Register.md`.
-- **Academy inventory** — `docs/governance/Documentation/Academy Register.md` (owned by `WP 16.2B`, not touched by this Work Package).
+- **Academy inventory** — `docs/governance/Documentation/Academy Register.md` (206 retrospectives, reconciled `WP 16.2B`).
 - **Overall governance audit** — `docs/governance/Governance Audit Report.md`.
 
 ## Known Unknowns
@@ -166,17 +179,14 @@ The remaining `v0.16.0` waves, per `docs/releases/v0.16.0/v0.16.0
 Release Plan.md` and the live status list in `docs/releases/v0.16.0/
 WorkPackages.md`:
 
-- **Wave 1** — `WP 16.0B` (integration, in progress or landed — see
-  the disclosed gap under "Current Work Package" above).
-- **Wave 2** — `WP 16.2B` (Academy retrospective backfill), `WP 16.3A`/
-  `WP 16.3B` (durable state schema versioning, `ADR-0120`).
-- **Wave 3** — `WP 16.1B` (machine-assisted register cross-checks),
-  `WP 16.4A` (test determinism), `WP 16.4B` (durability/loopback
-  hygiene).
-- **Wave 4** — `WP 16.5A` (accessibility baseline), `WP 16.5B`
-  (Linux/X11 fix-or-state spike).
+- **Landed** — Wave 0/1: `WP 16.0A` (Proposed records), `WP 16.0B`,
+  `WP 16.1A` (workflow half), `WP 16.3A`, `WP 16.5B`; Wave 2: `WP 16.2A`,
+  `WP 16.2B`.
+- **In progress** — `WP 16.4A`, `WP 16.3B`, `WP 16.5A`, `WP 16.1B`.
+- **Sequenced** — `WP 16.4B` (after `WP 16.3B`).
 - **Closing** — `WP 16.9.0` (Engineering Readiness Review and the
-  first §9 Product Approval verdict recorded since `v0.12.0`).
+  first §9 Product Approval verdict recorded since `v0.12.0`), preceded
+  by the release review board.
 
 ## Maintaining This Document
 

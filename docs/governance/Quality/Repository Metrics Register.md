@@ -407,8 +407,8 @@ figures.
 | ADRs | 39 (`ADR-0001`–`ADR-0039`) | **120** (`ADR-0001`–`ADR-0120`) — `ls docs/adr/ \| grep -c "^ADR-"` |
 | Rejected Designs entries | 45 (`RD-0001`–`RD-0045`) | **65** (`RD-0001`–`RD-0065`) — `grep -cE "^## RD-[0-9]{4}" docs/architecture/"Rejected Designs.md"`. **Disclosed, not fixed**: `Rejected Designs Register.md` (the governance index of this same log) itself still reads 45 — stale since `v0.5.0`, outside this Work Package's own itemized scope; this figure is drawn from the actual source log, `docs/architecture/Rejected Designs.md`, its own declared Source of Truth |
 | Decision Register entries | 20 | **20** (unchanged) — `grep -oE "D-0[0-9]{2}" "Decision Register.md" \| sort -u \| wc -l`. `D-021`–`D-026` (`WP 16.0A`) are drafted and Proposed in `docs/releases/v0.16.0/WP16.0A v0.16.0 Scope Decision.md` but **not yet entered in the register itself**, ratification pending PR #6 — correctly excluded from this count |
-| Academy articles (`docs/academy/`, all subfolders) | 77 | **240** — `find docs/academy -name "*.md" \| wc -l` |
-| `docs/academy/03 Work Packages/` retrospectives | 35 | **165** — `find "docs/academy/03 Work Packages" -name "*.md" \| wc -l` |
+| Academy articles (`docs/academy/`, all subfolders) | 77 | **281** — `find docs/academy -name "*.md" \| wc -l` (240 at `WP 16.2A`'s own derivation; +41 by `WP 16.2B`, same day) |
+| `docs/academy/03 Work Packages/` retrospectives | 35 | **206** — `find "docs/academy/03 Work Packages" -name "*.md" \| wc -l` (165 at `WP 16.2A`'s own derivation; +41 by `WP 16.2B`, same day) |
 | `docs/` `.md` files (total) | 191 | **923** — `find docs -name "*.md" \| wc -l` |
 | Governance documents (`docs/governance/`, all subfolders) | 32 | **38** — `find docs/governance -name "*.md" \| wc -l` |
 | Architecture documents (`docs/architecture/`) | Not tracked at `WP 5.4` | **30** — `find docs/architecture -name "*.md" \| wc -l` |
