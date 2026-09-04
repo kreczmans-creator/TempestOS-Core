@@ -68,7 +68,11 @@ public abstract class EngineeringObjectBase :
     /// <summary>
     /// Captures this object's own complete state for persistence
     /// (`TD-85`) — everything that must come back after a restart for
-    /// this to be the same object.
+    /// this to be the same object. Always stamped with
+    /// <see cref="EngineeringObjectStateStore.CurrentSchemaVersion"/>
+    /// (`TD-87`, `ADR-0120`) — an object in memory has exactly one shape,
+    /// the current one, whether it arrived via a factory or a rehydrator;
+    /// migration is a read-path concern only.
     /// </summary>
     internal EngineeringObjectState CaptureState()
     {
@@ -80,6 +84,7 @@ public abstract class EngineeringObjectBase :
             lock (_structuralLock)
             {
                 return new EngineeringObjectState(
+                    EngineeringObjectStateStore.CurrentSchemaVersion,
                     Id,
                     Kind,
                     Identifier,

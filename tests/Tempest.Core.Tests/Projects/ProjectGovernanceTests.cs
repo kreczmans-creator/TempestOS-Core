@@ -504,7 +504,7 @@ public sealed class ProjectGovernanceTests
         // an older build has no RiskStatus key at all, and "a risk nobody
         // ever closed" is honestly Open.
         var legacy = new EngineeringObjectState(
-            Guid.NewGuid(), CanonicalObjectKinds.Risk, "RSK-OLD", "Old risk",
+            1, Guid.NewGuid(), CanonicalObjectKinds.Risk, "RSK-OLD", "Old risk",
             EngineeringObjectMetadata.Empty, LifecycleState.Draft, null, false,
             EngineeringObjectBomLineState.Default, [], [],
             new Dictionary<string, string?> { ["Likelihood"] = "Low" });
