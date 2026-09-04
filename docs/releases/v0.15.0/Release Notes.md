@@ -1,9 +1,10 @@
 # TempestOS v0.15.0 — Release Notes
 
-**Status: in preparation.** Merged to `main` (`350922d`), not yet tagged
-or published. This document is written before tagging, per this
-project's own established convention, and its validation section will
-be reconciled at closure if anything changes between now and the tag.
+**Status: released, published.** Merged to `main` (`350922d`, with one
+follow-up commit `a35365a` adding this document), tagged `v0.15.0`
+(pointing to `a35365a`), and published as GitHub Release `382812261`
+on 2026-09-04T15:00:00Z with both required assets. Certification remains
+Product Approval's own act — publication is not certification.
 
 ---
 
@@ -81,10 +82,14 @@ already on `main` before this release formalised them.
 Re-verified independently twice: once by `WP 15.1A` on
 `feature/v0.15.0-release-prep`, and again by `WP 15.1B`'s own review
 (all four test/configuration combinations run fresh, not carried
-forward). Real GitHub-hosted CI confirmed green for both the feature
-branch's own final commit (`d2f1fae`, run `33861940494`) and, separately,
-for `main` itself at the merge commit (see the Release Register's own
-`v0.15.0` row for that run's ID once tagging closes).
+forward). Real GitHub-hosted CI confirmed green for the feature
+branch's own final commit (`d2f1fae`, run `33861940494`), for `main`
+itself at `a35365a` (run `33864515369` — `Build & Test (Debug)`,
+`Build & Test (Release)`, `CI Gate`, `Governance Health Check` all
+`success`), and again on the tag push itself (`ci.yml` run
+`33885783239`). `release.yml` (run `33885783286`) then independently
+rebuilt and retested Release a further time before publishing the
+GitHub Release.
 
 ## Accepted technical debt and known limitations
 
