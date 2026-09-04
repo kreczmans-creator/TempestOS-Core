@@ -1,4 +1,5 @@
 using Avalonia;
+using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
@@ -100,6 +101,14 @@ public sealed class ToastNotification : Border
         BorderThickness = new Avalonia.Thickness(1);
         ThemeReactiveBrush.Bind(this, BackgroundProperty, ApplicationPalette.PanelBackgroundBrushKey);
 
+        // A live region (`WP 16.5A`, `TD-65`) — a screen reader announces
+        // this the moment it appears, without the user needing to have
+        // focus anywhere near it; `Assertive` (interrupts, rather than
+        // waiting its turn) because a toast is transient and auto-dismisses
+        // — `Polite` could mean it is gone again before it is ever
+        // announced.
+        AutomationProperties.SetLiveSetting(this, AutomationLiveSetting.Assertive);
+
         // The severity as a 2px rule on the top edge — the design system's
         // card status rule — beside the glyph and the word, never colour alone.
         BorderThickness = new Avalonia.Thickness(1, DesignTokens.RuleThickness + 1, 1, 1);
@@ -135,6 +144,7 @@ public sealed class ToastNotification : Border
             VerticalAlignment = Avalonia.Layout.VerticalAlignment.Top,
         };
         close.Classes.Add(ChromeStyles.Flat);
+        AutomationProperties.SetName(close, "Dismiss notification");
         ToolTip.SetTip(close, "Dismiss");
         close.Click += (_, _) => RequestDismiss();
         Grid.SetColumn(close, 2);

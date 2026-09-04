@@ -1,6 +1,7 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Presenters;
+using Avalonia.Controls.Primitives;
 using Avalonia.Markup.Xaml.MarkupExtensions;
 using Avalonia.Media;
 using Avalonia.Styling;
@@ -91,6 +92,37 @@ internal static class ChromeStyles
         host.Styles.Add(Presenter(Danger, ":pointerover",
             (ContentPresenter.BackgroundProperty, Dyn(BrandPalette.DangerBrushKey)),
             (ContentPresenter.ForegroundProperty, Dyn(BrandPalette.OnAccentBrushKey))));
+
+        // ---- Focus-visible (`WP 16.5A`, `TD-65`) -------------------------
+        // The declared `FocusRing` tokens (`DesignTokens.FocusRingThickness`,
+        // `ApplicationPalette.FocusRingBrushKey`) had no consumer anywhere
+        // in the shell before this — a real, disclosed accessibility gap.
+        // Avalonia sets the `:focus-visible` pseudo-class itself, and only
+        // for keyboard-driven focus (never a pointer click), so targeting
+        // it here draws the ring exactly for the users who need it, with
+        // no click/tap ever showing one.
+        foreach (var styleClass in new[] { Flat, Subtle, Primary, Danger })
+        {
+            host.Styles.Add(Presenter(styleClass, ":focus-visible",
+                (ContentPresenter.BorderBrushProperty, Dyn(ApplicationPalette.FocusRingBrushKey)),
+                (ContentPresenter.BorderThicknessProperty, new Thickness(DesignTokens.FocusRingThickness))));
+        }
+
+        // A generic fallback for a focusable, templated control this shell
+        // gives none of the four treatments above and that carries no
+        // competing `:focus-visible` styling of its own. Disclosed limit,
+        // found empirically (`FocusVisibleStyleTests`): Fluent's own
+        // `ControlTheme` for `TextBox`/`CheckBox`/an untreated `Button`
+        // already declares its own `:focus-visible` handling, at a
+        // specificity this plain, generically-scoped `Style` does not
+        // outrank (the four treatment styles above only win because
+        // `.Class(styleClass)` makes their own selector more specific than
+        // Fluent's) — so this reaches a future custom `TemplatedControl`
+        // with no theme of its own, not every existing Fluent control.
+        var genericFocusVisible = new Style(x => x.OfType<TemplatedControl>().Class(":focus-visible"));
+        genericFocusVisible.Setters.Add(new Setter(TemplatedControl.BorderBrushProperty, Dyn(ApplicationPalette.FocusRingBrushKey)));
+        genericFocusVisible.Setters.Add(new Setter(TemplatedControl.BorderThicknessProperty, new Thickness(DesignTokens.FocusRingThickness)));
+        host.Styles.Add(genericFocusVisible);
 
         // Every button's own disabled state is the pack's 40% — one rule,
         // not one per treatment.

@@ -248,6 +248,10 @@ public sealed class ProjectExplorerView : UserControl
         ToolTip.SetTip(_recentSearchesButton, "Recent searches");
         ToolTip.SetTip(_recentObjectsButton, "Recent objects");
         ToolTip.SetTip(_favouritesButton, "Favourite objects (Ctrl+D to toggle)");
+        // A watermark alone names nothing to a screen reader (`WP 16.5A`,
+        // `TD-65`).
+        Avalonia.Automation.AutomationProperties.SetName(_filter, "Filter project explorer");
+        ToolTip.SetTip(_filter, "Filter... (Ctrl+F)");
         _filter.FontSize = DesignTokens.FontSizeBody;
         _filter.MinHeight = DesignTokens.MinControlSize;
         _filter.Margin = new Thickness(0, 0, DesignTokens.SpaceSm, 0);
