@@ -39,9 +39,9 @@ completeness.
 Registers tracking *decisions* — what was decided, what was rejected, and
 where the reasoning lives.
 
-- [ADR Register](Architecture/ADR%20Register.md) — all 39 Architecture Decision Records.
+- [ADR Register](Architecture/ADR%20Register.md) — all 119 Architecture Decision Records.
 - [Rejected Designs Register](Architecture/Rejected%20Designs%20Register.md) — all 45 Rejected Designs entries.
-- [Architecture Document Register](Architecture/Architecture%20Document%20Register.md) — all 20 standing architecture documents.
+- [Architecture Document Register](Architecture/Architecture%20Document%20Register.md) — all 31 standing architecture documents.
 - [Decision Register](Architecture/Decision%20Register.md) — significant process/sequencing decisions that don't meet ADR criteria.
 
 ## Engineering

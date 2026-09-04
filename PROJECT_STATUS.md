@@ -1,8 +1,27 @@
 # TempestOS — Project Status
 
-**Last Updated:** 2026-09-01 (`WP-Z4`, Release Preparation — following
+**Last Updated:** 2026-09-04 (`WP 11.5A`, Governance Currency &
+Documentation Integrity — following `WP-Z4` Release Preparation,
 `WP-Z1` Governance Correction, `WP-Z2` `TD-117`, and `WP-Z3` Academy
 retrospectives).
+
+**Disclosed by `WP 11.5A`: `main` has diverged from the `v0.14.0` tag.**
+18 commits, 86 files, +5,777/−779 have landed on `main` since the
+`v0.14.0` tag (`026ed7c`) — a Desktop UI/UX productisation programme (two
+phases, brand/navigation/dynamic-data/dialog/command-palette/property-
+inspector work) and one Ribbon-responsiveness fix, merged directly to
+`main` with no new version folder, no `WorkPackages.md` entry, and no
+`VERSION` bump (`VERSION` still reads `0.14.0`). Current `main`
+(`d9488b2`): Debug and Release both 0 Warnings/0 Errors;
+**Tempest.Core.Tests 3,088/3,088**, **Tempest.Desktop.Tests 408/408**
+(372 → 408 since the `v0.14.0` tag). This is a real, verified currency
+gap, not fixed within `WP 11.5A`'s own scope — writing the release
+documentation this body of work needs (a `v0.15.0` folder, its own
+`WorkPackages.md`, Academy retrospectives) is release-preparation work
+in its own right, the same class of undertaking `WP 11.9.0`/`WP-Z4`
+each already were, not a documentation-currency correction. Recorded
+here as the next release-preparation Work Package's own starting point.
+The `v0.14.0` tag itself is untouched.
 **The `v0.13.x` train remains CLOSED. `v0.14.0` is RELEASED AND PUBLISHED
 (2026-09-03): merged to `main` as `026ed7c`, tagged `v0.14.0`, and published
 as GitHub Release `381878529` with both required assets. It is NOT
