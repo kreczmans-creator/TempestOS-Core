@@ -1,6 +1,7 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
+using Avalonia.Threading;
 using Tempest.App.Workspace.Layout;
 using Tempest.Core.Events;
 using Tempest.Core.Settings;
@@ -54,8 +55,18 @@ public sealed class WorkspaceLayoutControllerTests
         // Force a real layout pass so the rendered panes have genuine
         // bounds — drop targeting is geometry, so a test of it against
         // zero-sized panes would prove nothing.
+        //
+        // WP 16.5B: Avalonia 11.3.20's headless backend defers part of the
+        // layout pass onto the dispatcher queue, where 11.2.3 applied it
+        // synchronously within Measure/Arrange; without draining it first,
+        // `Bounds` on the tab groups below reads back as a zero-sized rect
+        // at the origin. `Dispatcher.UIThread.RunJobs()` is this
+        // repository's own established drain for exactly this
+        // (`ProjectTaskAcceptanceTests.LayOutAsync`, `UndoRedoThreadingTests`).
+        Dispatcher.UIThread.RunJobs();
         controller.Host.Measure(new Size(1280, 800));
         controller.Host.Arrange(new Rect(0, 0, 1280, 800));
+        Dispatcher.UIThread.RunJobs();
 
         return new Rig(controller, window, floated);
     }

@@ -301,13 +301,79 @@ jobs:
           }
           exit $exitCode
 
+  # WP 16.5B — Linux/X11 launch smoke test. `TD-116` (a Linux `TypeLoadException`
+  # inside Avalonia.FreeDesktop's DBus/X11 IME path, root-caused to a security
+  # pin — `Tmds.DBus.Protocol` 0.94.2 — that Avalonia.FreeDesktop 11.2.3
+  # could not bind against) is resolved by this Work Package's Avalonia
+  # 11.3.20 / Tmds.DBus.Protocol 0.21.3 upgrade (see
+  # "docs/releases/v0.16.0/WP16.5B Linux Launch Spike Report.md"). This job
+  # is the ongoing verification: it launches the real, built
+  # Tempest.Desktop.dll under Xvfb and treats "still running when the
+  # timeout fires" (exit code 124, or 137 if the grace period's SIGKILL was
+  # needed — see the spike report's launch-evidence section for why a bare
+  # SIGTERM does not always end the process) as success; any other exit
+  # (a crash) fails the job.
+  #
+  # Deliberately advisory, not required — NOT in `gate`'s `needs:` list
+  # below, matching this Work Package's brief: Linux joins Windows as
+  # CI-verified in effect once this job exists and is proven reliable
+  # across real runs, but `gate` stays the one hard, required check for
+  # this release rather than being widened on a single spike's evidence.
+  # A future Work Package can promote it into `gate` once it has a track
+  # record.
+  linux-launch-smoke:
+    name: Linux Launch Smoke (advisory)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up .NET SDK (from global.json)
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Restore
+        run: dotnet restore "${{ env.SOLUTION_PATH }}"
+
+      - name: Build Tempest.Desktop (Release)
+        run: dotnet build src/Tempest.Desktop/Tempest.Desktop.csproj --configuration Release --no-restore
+
+      - name: Install Xvfb
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb
+
+      - name: Launch under Xvfb (smoke)
+        run: |
+          set +e
+          xvfb-run -a timeout --kill-after=10 25 \
+            dotnet src/Tempest.Desktop/bin/Release/net10.0/Tempest.Desktop.dll \
+            > launch.log 2>&1
+          code=$?
+          echo "Exit code: $code"
+          cat launch.log
+          if [ -f src/Tempest.Desktop/bin/Release/net10.0/logs/tempestos-crash.log ]; then
+            echo "::error::A crash log was written - see logs/tempestos-crash.log"
+            cat src/Tempest.Desktop/bin/Release/net10.0/logs/tempestos-crash.log
+            exit 1
+          fi
+          if [ "$code" -eq 124 ] || [ "$code" -eq 137 ]; then
+            echo "Still running when the timeout fired - launched successfully."
+            exit 0
+          fi
+          echo "::error::Tempest.Desktop exited on its own (code $code) - see launch.log above."
+          exit 1
+
   # A single, named job every branch-protection rule can require, so
   # "the pipeline is green" has one unambiguous status check rather than
   # requiring both matrix legs to be individually named in every
   # protection rule — and so a future contributor reads one job name,
   # not the matrix's own internal shape, to know whether it is safe to
   # merge. Deliberately depends on build-and-test only, not
-  # governance-health-check — see the comment above that job for why.
+  # governance-health-check, and not linux-launch-smoke (WP 16.5B,
+  # advisory for this release) — see the comments above those jobs for why.
   gate:
     name: CI Gate
     needs: build-and-test
