@@ -288,6 +288,32 @@ public sealed class RibbonView : UserControl
             groupsRow.Children.Add(BuildGroup(groupedByVerb.Key, groupedByVerb.ToList()));
 
         var scroller = new ScrollViewer { Content = groupsRow, HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto };
+
+        // The real, root cause fix (`WP-Z4`, responsive Ribbon closure):
+        // a ScrollViewer's `Auto` horizontal scrollbar only ever occupies
+        // room its own final size already has *slack* for — it never
+        // grows itself purely to make room for its own scrollbar. Nothing
+        // upstream of this ScrollViewer (a vertical StackPanel, itself
+        // sized to content) ever gives it more height than the button
+        // rows alone need, so at any width narrow enough that
+        // `groupsRow` genuinely overflows, the ScrollViewer had nowhere
+        // to draw the one affordance that would tell the user horizontal
+        // scrolling was even possible — the command groups past that
+        // width were simply clipped, in total silence. Reserving one
+        // scrollbar's worth of height (`DesignTokens.SpaceXl`, the
+        // platform's own existing spacing step, not a new magic number)
+        // costs nothing at a width wide enough that no scrollbar ever
+        // appears, and is exactly what lets `Auto` actually show one the
+        // moment it is needed. Read once after the first real layout
+        // pass, from `groupsRow`'s own measured height — itself
+        // independent of window width — never a literal pixel total.
+        void ReserveScrollbarHeightOnce(object? _, EventArgs __)
+        {
+            scroller.LayoutUpdated -= ReserveScrollbarHeightOnce;
+            scroller.MinHeight = groupsRow.DesiredSize.Height + DesignTokens.SpaceXl;
+        }
+
+        scroller.LayoutUpdated += ReserveScrollbarHeightOnce;
         root.Children.Add(scroller);
 
         return root;
