@@ -85,7 +85,9 @@ public class CompositeLogSinkTests
         var before = new RecordingLogSink();
         var throwing = new ThrowingLogSink();
         var after = new RecordingLogSink();
-        var composite = new CompositeLogSink([before, throwing, after]);
+        // Injected StringWriter, not the default Console.Error — see the
+        // TD-34 note above the throwing-sink tests below.
+        var composite = new CompositeLogSink([before, throwing, after], new StringWriter());
         var entry = CreateEntry();
 
         composite.Write(entry);
@@ -95,24 +97,52 @@ public class CompositeLogSinkTests
         Assert.Same(entry, Assert.Single(after.Entries));
     }
 
+    // Every throwing-sink test below injects a private StringWriter rather
+    // than relying on the process-global Console.Error, both so the
+    // assertion is a real, positive check of the failure report's content
+    // (not just "did not throw") and so this class carries no dependency
+    // on the shared, static Console stream — closes TD-34 (Technical Debt
+    // Register.md): this class previously wrote to Console.Error via the
+    // default constructor and, sitting outside
+    // [Collection("Console output capture")], raced every other test class
+    // doing the same under full-suite parallel execution.
+
     [Fact]
-    public void Write_OneSinkThrows_ExceptionNeverPropagatesToTheCaller()
+    public void Write_OneSinkThrows_ExceptionNeverPropagatesToTheCaller_AndReportsToTheInjectedErrorWriter()
     {
-        var composite = new CompositeLogSink([new ThrowingLogSink(), new RecordingLogSink()]);
+        var errorWriter = new StringWriter();
+        var composite = new CompositeLogSink([new ThrowingLogSink(), new RecordingLogSink()], errorWriter);
 
         var exception = Record.Exception(() => composite.Write(CreateEntry()));
 
         Assert.Null(exception);
+        var reported = errorWriter.ToString();
+        Assert.Contains(nameof(ThrowingLogSink), reported);
+        Assert.Contains("Simulated sink failure.", reported);
     }
 
     [Fact]
-    public void Write_AllSinksThrow_ExceptionNeverPropagatesToTheCaller()
+    public void Write_AllSinksThrow_ExceptionNeverPropagatesToTheCaller_AndReportsEachFailureToTheInjectedErrorWriter()
     {
-        var composite = new CompositeLogSink([new ThrowingLogSink(), new ThrowingLogSink()]);
+        var errorWriter = new StringWriter();
+        var composite = new CompositeLogSink([new ThrowingLogSink(), new ThrowingLogSink()], errorWriter);
 
         var exception = Record.Exception(() => composite.Write(CreateEntry()));
 
         Assert.Null(exception);
+        var reported = errorWriter.ToString();
+        Assert.Equal(2, reported.Split("Simulated sink failure.").Length - 1);
+    }
+
+    [Fact]
+    public void Write_EveryChildSucceeds_NothingIsWrittenToTheInjectedErrorWriter()
+    {
+        var errorWriter = new StringWriter();
+        var composite = new CompositeLogSink([new RecordingLogSink(), new RecordingLogSink()], errorWriter);
+
+        composite.Write(CreateEntry());
+
+        Assert.Equal(string.Empty, errorWriter.ToString());
     }
 
     // ------------------------------------------------------------------

@@ -30,9 +30,47 @@ namespace Tempest.Core.Tests.Projects;
 /// <see cref="ProjectMembership"/> rather than through a field of their own.
 /// </para>
 /// </remarks>
-public sealed class ProjectGovernanceTests
+public sealed class ProjectGovernanceTests : IDisposable
 {
     private static readonly DateTimeOffset Today = new(2026, 8, 30, 12, 0, 0, TimeSpan.Zero);
+
+    private readonly List<string> _fixtureRoots = [];
+
+    /// <summary>
+    /// Creates a <see cref="GovernanceFixture"/> and remembers its isolated
+    /// persistence root for <see cref="Dispose"/> — the one path every test
+    /// below reaches the fixture through, so no individual test needs its
+    /// own cleanup. Closes the Core-side leak <c>TD-120</c>
+    /// (Technical Debt Register.md) left open — see
+    /// <see cref="ProjectFixtureRoot"/>.
+    /// </summary>
+    private async Task<GovernanceFixture> CreateFixtureAsync(Func<DateTimeOffset>? now = null)
+    {
+        var fixture = await GovernanceFixture.CreateAsync(now);
+        _fixtureRoots.Add(fixture.Root);
+        return fixture;
+    }
+
+    /// <summary>Deletes every persistence root this instance's own test created — xUnit constructs a fresh instance per test, so this runs once per test, not once per class.</summary>
+    public void Dispose()
+    {
+        foreach (var root in _fixtureRoots)
+        {
+            try
+            {
+                if (Directory.Exists(root))
+                    Directory.Delete(root, recursive: true);
+            }
+            catch (IOException)
+            {
+                // Best-effort: a locked file must not mask the test's own
+                // result as a cleanup failure.
+            }
+            catch (UnauthorizedAccessException)
+            {
+            }
+        }
+    }
 
     // ================================================================
     // Each family's state vocabulary is its own, and maps to canonical
@@ -139,7 +177,7 @@ public sealed class ProjectGovernanceTests
     [Fact]
     public async Task ARefusedTransition_ThrowsAndChangesNothing()
     {
-        var fixture = await GovernanceFixture.CreateAsync();
+        var fixture = await CreateFixtureAsync();
         var project = await fixture.CreateProjectAsync("P-1", "Apollo");
         var decision = await fixture.Workflow.CreateDecisionAsync(project.Id, "DEC-001", "Use titanium", "Lighter for the same stiffness.");
 
@@ -164,7 +202,7 @@ public sealed class ProjectGovernanceTests
     [Fact]
     public async Task AllThreeFamilies_JoinAProjectThroughTheParentChain_NotAField()
     {
-        var fixture = await GovernanceFixture.CreateAsync();
+        var fixture = await CreateFixtureAsync();
         var project = await fixture.CreateProjectAsync("P-1", "Apollo");
         var assembly = await fixture.CreatePartAsync("ASM-1", "Turbopump", project.Id);
         var part = await fixture.CreatePartAsync("PRT-1", "Impeller", assembly.Id);
@@ -188,7 +226,7 @@ public sealed class ProjectGovernanceTests
     [Fact]
     public async Task OneProjectsGovernance_NeverLeaksIntoAnother()
     {
-        var fixture = await GovernanceFixture.CreateAsync();
+        var fixture = await CreateFixtureAsync();
         var apollo = await fixture.CreateProjectAsync("P-1", "Apollo");
         var gemini = await fixture.CreateProjectAsync("P-2", "Gemini");
 
@@ -205,7 +243,7 @@ public sealed class ProjectGovernanceTests
     [Fact]
     public async Task AHazardAppearsOnTheRiskRegister_BecauseAHazardIsARisk()
     {
-        var fixture = await GovernanceFixture.CreateAsync();
+        var fixture = await CreateFixtureAsync();
         var project = await fixture.CreateProjectAsync("P-1", "Apollo");
 
         await fixture.Workflow.CreateRiskAsync(project.Id, "RSK-001", "Schedule slip");
@@ -226,7 +264,7 @@ public sealed class ProjectGovernanceTests
         // The rule this feature had to respect: membership is answered once,
         // by the parent chain. A ProjectId property on any of the three
         // would be a second, competing answer.
-        var fixture = await GovernanceFixture.CreateAsync();
+        var fixture = await CreateFixtureAsync();
         var project = await fixture.CreateProjectAsync("P-1", "Apollo");
         var risk = await fixture.Workflow.CreateRiskAsync(project.Id, "RSK-001", "Cavitation");
         var issue = await fixture.Workflow.CreateIssueAsync(project.Id, "ISS-001", "Cracked blade");
@@ -248,7 +286,7 @@ public sealed class ProjectGovernanceTests
     [Fact]
     public async Task ARaisedRisk_StartsOpenUnownedAndUnscored()
     {
-        var fixture = await GovernanceFixture.CreateAsync();
+        var fixture = await CreateFixtureAsync();
         var project = await fixture.CreateProjectAsync("P-1", "Apollo");
 
         await fixture.Workflow.CreateRiskAsync(project.Id, "RSK-001", "Cavitation");
@@ -264,7 +302,7 @@ public sealed class ProjectGovernanceTests
     [Fact]
     public async Task ARiskScoredOnOneAxisOnly_IsStillUnscored()
     {
-        var fixture = await GovernanceFixture.CreateAsync();
+        var fixture = await CreateFixtureAsync();
         var project = await fixture.CreateProjectAsync("P-1", "Apollo");
         var risk = await fixture.Workflow.CreateRiskAsync(project.Id, "RSK-001", "Cavitation");
 
@@ -285,7 +323,7 @@ public sealed class ProjectGovernanceTests
     [Fact]
     public async Task TakingOwnershipReadsThePrincipalBoundary_NotAnArgument()
     {
-        var fixture = await GovernanceFixture.CreateAsync();
+        var fixture = await CreateFixtureAsync();
         fixture.SignInAs("ada");
 
         var project = await fixture.CreateProjectAsync("P-1", "Apollo");
@@ -302,7 +340,7 @@ public sealed class ProjectGovernanceTests
     [Fact]
     public async Task ADecisionRecordsWhoDecidedAndWhen_OnlyAtTheMomentOfDeciding()
     {
-        var fixture = await GovernanceFixture.CreateAsync(() => Today);
+        var fixture = await CreateFixtureAsync(() => Today);
         fixture.SignInAs("grace");
 
         var project = await fixture.CreateProjectAsync("P-1", "Apollo");
@@ -328,7 +366,7 @@ public sealed class ProjectGovernanceTests
     [Fact]
     public async Task EditingRewritesTheTitleAndAddsARevision_RatherThanOverwritingHistory()
     {
-        var fixture = await GovernanceFixture.CreateAsync();
+        var fixture = await CreateFixtureAsync();
         var project = await fixture.CreateProjectAsync("P-1", "Apollo");
         var risk = await fixture.Workflow.CreateRiskAsync(project.Id, "RSK-001", "Cavitaton");
 
@@ -354,7 +392,7 @@ public sealed class ProjectGovernanceTests
     [Fact]
     public async Task AnOperationNamingTheWrongFamily_FailsWithAnActionableMessage()
     {
-        var fixture = await GovernanceFixture.CreateAsync();
+        var fixture = await CreateFixtureAsync();
         var project = await fixture.CreateProjectAsync("P-1", "Apollo");
         var issue = await fixture.Workflow.CreateIssueAsync(project.Id, "ISS-001", "Cracked blade");
 
@@ -374,7 +412,7 @@ public sealed class ProjectGovernanceTests
     [Fact]
     public async Task TheRiskRegister_PutsLiveRisksFirst_AndUnscoredAboveScored()
     {
-        var fixture = await GovernanceFixture.CreateAsync();
+        var fixture = await CreateFixtureAsync();
         var project = await fixture.CreateProjectAsync("P-1", "Apollo");
 
         var closed = await fixture.Workflow.CreateRiskAsync(project.Id, "RSK-001", "Closed one");
@@ -398,7 +436,7 @@ public sealed class ProjectGovernanceTests
     [Fact]
     public async Task TheDecisionLog_PutsUndecidedFirst()
     {
-        var fixture = await GovernanceFixture.CreateAsync(() => Today);
+        var fixture = await CreateFixtureAsync(() => Today);
         var project = await fixture.CreateProjectAsync("P-1", "Apollo");
 
         var decided = await fixture.Workflow.CreateDecisionAsync(project.Id, "DEC-001", "Decided", "Because.");
@@ -420,7 +458,7 @@ public sealed class ProjectGovernanceTests
     [Fact]
     public async Task ARiskThatMaterialised_LinksToItsIssue_AndTheIssueReportsItBackwards()
     {
-        var fixture = await GovernanceFixture.CreateAsync();
+        var fixture = await CreateFixtureAsync();
         var project = await fixture.CreateProjectAsync("P-1", "Apollo");
 
         var risk = await fixture.Workflow.CreateRiskAsync(project.Id, "RSK-001", "Cavitation");
@@ -438,7 +476,7 @@ public sealed class ProjectGovernanceTests
     [Fact]
     public async Task RecordingARiskAsRealisedBySomethingThatIsNotAnIssue_IsRefused()
     {
-        var fixture = await GovernanceFixture.CreateAsync();
+        var fixture = await CreateFixtureAsync();
         var project = await fixture.CreateProjectAsync("P-1", "Apollo");
         var risk = await fixture.Workflow.CreateRiskAsync(project.Id, "RSK-001", "Cavitation");
 
@@ -456,7 +494,7 @@ public sealed class ProjectGovernanceTests
         // The lesson the Tasks work package learned the hard way: every
         // assertion that reads the object it just changed cannot tell
         // "saved" from "set on this instance". These read the store back.
-        var fixture = await GovernanceFixture.CreateAsync(() => Today);
+        var fixture = await CreateFixtureAsync(() => Today);
         fixture.SignInAs("ada");
 
         var project = await fixture.CreateProjectAsync("P-1", "Apollo");
@@ -515,6 +553,37 @@ public sealed class ProjectGovernanceTests
     }
 
     // ================================================================
+    // TD-120 (Core side): the fixture's own persistence root is deleted
+    // ================================================================
+
+    [Fact]
+    public async Task DisposingThisTestInstance_DeletesTheFixturesOwnPersistenceRoot()
+    {
+        // A real write, not just construction — `PersistenceStore` creates
+        // its collection directories lazily on first write (see
+        // `PersistenceStore.cs`), so the root only exists on disk once
+        // something has actually been saved to it, exactly like every
+        // other test in this file.
+        var fixture = await CreateFixtureAsync();
+        await fixture.CreateProjectAsync("P-CLEANUP", "Proves the root is removed");
+
+        Assert.True(
+            Directory.Exists(fixture.Root),
+            $"Expected the fixture to have created its own persistence root at '{fixture.Root}'.");
+
+        // xUnit calls this again itself once this test method returns
+        // (a fresh instance per test, `IDisposable` on every test class) —
+        // calling it here too is what makes this a real, direct proof
+        // rather than an inference, and the loop's own `Directory.Exists`
+        // guard makes the second call a no-op.
+        Dispose();
+
+        Assert.False(
+            Directory.Exists(fixture.Root),
+            $"Expected 'Dispose' to have deleted '{fixture.Root}' — the Core-side leak `TD-120` (Technical Debt Register.md) named.");
+    }
+
+    // ================================================================
     // Fixture
     // ================================================================
 
@@ -522,16 +591,20 @@ public sealed class ProjectGovernanceTests
     {
         private GovernanceFixture(
             EngineeringDomainContext domain, CurrentPrincipalAccessor principal,
-            EngineeringObjectStateStore states, Func<DateTimeOffset> now)
+            EngineeringObjectStateStore states, Func<DateTimeOffset> now, string root)
         {
             Domain = domain;
             Principal = principal;
             States = states;
             Register = new ProjectGovernanceRegister(domain);
             Workflow = new ProjectGovernanceService(domain, now);
+            Root = root;
         }
 
         private EngineeringObjectStateStore States { get; }
+
+        /// <summary>This fixture's own isolated persistence root — the caller's own <c>Dispose</c> deletes it (`TD-120` Core-side closure).</summary>
+        public string Root { get; }
 
         public EngineeringDomainContext Domain { get; }
 
@@ -547,7 +620,7 @@ public sealed class ProjectGovernanceTests
 
         public static Task<GovernanceFixture> CreateAsync(Func<DateTimeOffset>? now = null)
         {
-            var root = Path.Combine(Path.GetTempPath(), "tempest-project-governance-" + Guid.NewGuid().ToString("N"));
+            var root = ProjectFixtureRoot.NewIsolatedRoot("governance");
             var configuration = new ConfigurationBuilder()
                 .AddSource(new MemoryConfigurationSource(
                 [
@@ -568,7 +641,7 @@ public sealed class ProjectGovernanceTests
                 new EvidenceComposer(discovery, repository), principal,
                 states, new AttachmentContentStore(store));
 
-            return Task.FromResult(new GovernanceFixture(domain, principal, states, now ?? (() => DateTimeOffset.UtcNow)));
+            return Task.FromResult(new GovernanceFixture(domain, principal, states, now ?? (() => DateTimeOffset.UtcNow), root));
         }
 
         public void SignInAs(string identityId) =>

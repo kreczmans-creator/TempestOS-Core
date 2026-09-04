@@ -331,8 +331,18 @@ public sealed class WorkflowInteractionTests
             var ribbon = new RibbonView(registry, host.Manager!, workspace, _ => { }, _ => { }) { ConfirmDeleteAsync = _ => Task.FromResult(false) };
 
             var deleteButton = FindButtonById(ribbon, registry, "mechanical.delete");
+            // No wait needed here (TD-119, Technical Debt Register.md — the
+            // formerly sole retained fixed wait, `Task.Delay(50)`, removed
+            // after 20/20 clean runs): the declined path is synchronous end
+            // to end. `ConfirmDeleteAsync` above returns `Task.FromResult(false)`
+            // — an already-completed task — so `RibbonView.DeleteAsync`'s
+            // `await confirm(message)` (`src/Tempest.Desktop/Views/RibbonView.cs`)
+            // never yields to the dispatcher; it resumes synchronously and
+            // hits the bare `return;` on the same call stack `RaiseEvent`
+            // is on. There is no completion event to join for this branch
+            // by design (declining does not raise `ActionCompleted`), but
+            // there is also nothing left running after `RaiseEvent` returns.
             deleteButton.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
-            await Task.Delay(50);
 
             // `IDeletable.DeleteAsync` is a soft delete (`IsDeleted`,
             // `Tempest.Core.EngineeringDomain`, unchanged) — the object
