@@ -24,7 +24,27 @@ own opening:
    `main` before this document existed. `WP 15.1A` is the first Work
    Package in this release actually planned and numbered before it
    started.
-2. **`WP 11.5A` predates this release's own numbering scheme** and keeps
+2. **`b755685` ("WP-Z4 Stage 24: close the v0.14.0 release record") is
+   the 20th commit and is not a `WP 15.x` item.** Found missing from this
+   table by `WP 15.1B`'s own independent readiness review — `WP 15.1A`'s
+   original accounting covered only 19 of the range's 20 commits. `git
+   log v0.14.0..main` includes it because the `v0.14.0` tag points to
+   `026ed7c` (the merge commit) while `b755685` landed on `main`
+   afterwards, before the tag object itself was created (tagger date
+   2026-09-03 08:56:07 UTC; `b755685` committed 2026-09-03 09:32:18
+   UTC — the tag was cut against an earlier commit than `main`'s tip at
+   the time, not against whatever `HEAD` was). Its own content —
+   correcting `v0.14.0`'s Release Register row, `PROJECT_STATUS.md`,
+   `TD-119`, and two `v0.14.0` release documents from "in preparation" to
+   "released" — is squarely `v0.14.0`'s own release-closure work, not new
+   `v0.15.0` material, and does not need a `v0.15.0`-scoped retrospective.
+   It is recorded here, not backfilled into `v0.14.0`'s own
+   `WorkPackages.md`, so that this document's own "20 commits" claim is
+   honest and this range is completely accounted for. Zero `src/`/
+   `tests/` files changed. **Documentation only; not fixed retroactively
+   by `WP 15.1B`, corrected in place** — see `docs/releases/v0.15.0/
+   WP15.1B v0.15.0 Release Readiness Report.md`.
+3. **`WP 11.5A` predates this release's own numbering scheme** and keeps
    its own, out-of-sequence number (see its own report,
    `docs/releases/v0.11.0/WP11.5A Governance Currency & Documentation
    Integrity.md`, for why it is filed under `v0.11.0/` rather than here)
