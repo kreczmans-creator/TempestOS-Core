@@ -89,9 +89,10 @@ reflected here until now).
 | `Tempest.App.Workspace.Layout` | Tempest.App | 9 | Docking/panel layout infrastructure (`DockingGrid`, `PanelHostControl`, `PredefinedLayouts`) shared across every discipline's own Workspace view | WP 10.2B onward — backfilled `WP 16.2A` |
 | `Tempest.App.Workspace.Macros` | Tempest.App | 1 | Workspace-layer macro command-history collaborator | WP 10.6A — backfilled `WP 16.2A` |
 | `Tempest.App.Workspace.Viewing` | Tempest.App | 3 | Digital Thread graph read-model collaborators shared with `Tempest.Desktop`'s own visualisation | `v0.10.0` — backfilled `WP 16.2A` |
-| *(no namespace declared — global namespace)* | Tempest.Core, Tempest.App | 4 | `AssemblyInfo.cs` (×2), `Program.cs` (rewritten `WP 5.0D` as the real entry point; still top-level statements, still global namespace), `ProjectModel.cs` — `ApplicationConfiguration.cs`, `ConfigurationService.cs`, `LoggingService.cs`, `ProjectNumberGenerator.cs` (present at this row's last review) have since been deleted as genuinely dead (`WP-C`, `TD-110`); `ProjectModel.cs` itself was not part of that deletion and remains unmigrated | Pre-dates Claude-developed history (Unknown exact origin); corrected `WP 16.2A` |
+| `Tempest.Core.Models` | Tempest.Core | 1 | `ProjectModel.cs` — the bootstrap-era project model (`Threat Model.md`'s dead-code trace; `TD-01`/`TD-110` scope). **Corrected `WP 16.1B` integration (2026-09-04):** the file begins with a UTF-8 byte-order mark, which makes `grep -rhoP "^namespace"` (this register's own documented derivation command) miss its `namespace Tempest.Core.Models;` line — `WP 16.2A`'s re-derivation therefore filed it under the global-namespace row below. The health check's new Namespace check reads files with the BOM stripped and found it; recorded here as its own row | Pre-dates Claude-developed history (Unknown exact origin) |
+| *(no namespace declared — global namespace)* | Tempest.Core, Tempest.App | 3 | `AssemblyInfo.cs` (×2), `Program.cs` (rewritten `WP 5.0D` as the real entry point; still top-level statements, still global namespace) — `ProjectModel.cs` was listed here by `WP 16.2A` in error (see the `Tempest.Core.Models` row above); `ApplicationConfiguration.cs`, `ConfigurationService.cs`, `LoggingService.cs`, `ProjectNumberGenerator.cs` (present at this row's last review) have since been deleted as genuinely dead (`WP-C`, `TD-110`); `ProjectModel.cs` itself was not part of that deletion and remains unmigrated | Pre-dates Claude-developed history (Unknown exact origin); corrected `WP 16.2A` |
 
-**Total: 46 namespaces** — the 46 rows above declaring a real
+**Total: 47 namespaces** (corrected `WP 16.1B` integration, 2026-09-04: `Tempest.Core.Models` added — see its row) — the 47 rows above declaring a real
 `namespace X;` with at least one file. The four **retired** rows
 (`Tempest.Core.Repositories`/`.Projects`/`.Hosting`/`.Bootstrap`, zero
 files) and the 1 *(no namespace declared — global namespace)* row are
@@ -120,7 +121,7 @@ convention) and `src/Plugins/` (0 `.cs` files), `src/` holds 802 `.cs`
 files across 61 distinct namespaces in total —
 `grep -rhoP "^namespace \K[\w.]+" src --include=*.cs | sort -u | wc -l`
 returns 61; `find src -name "*.cs" | wc -l` returns 802 — of which this
-register's own declared scope covers 713 files (89%) and 46 namespaces
+register's own declared scope covers 713 files (89%) and 47 namespaces
 (75%).**
 
 ## A Note on the Four Pre-Claude Namespaces

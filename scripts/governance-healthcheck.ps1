@@ -1085,12 +1085,10 @@ function Test-AcademyRegisterWorkPackagesCoverage
         $failDetails += "File(s) under docs/academy/03 Work Packages/ with no Academy Register row: $($filesWithoutRow -join ', ')"
     }
 
-    # Header count sub-check: KNOWN stale at this Work Package's own base
-    # (states 142; 206 files actually present). The WP 16.2B backfill this
-    # header's own count belongs to lands its content in docs/academy/**,
-    # which is WP 16.2B's own file ownership, not this Work Package's - so
-    # reported as Warn, not Fail, for this release only; promote to Fail
-    # after WP 16.2B closure re-derives this header for real.
+    # Header count sub-check. Was Warn at WP 16.1B's own base (the header
+    # then stated 142 against 206 files, pending WP 16.2B's closure);
+    # promoted to Fail at the WP 16.1B integration once that closure
+    # re-derived the header, so the two can never silently diverge again.
     $warnDetails = @()
     $actualFileCount = @($files).Count
     if ($headerMatch.Success)
@@ -1098,12 +1096,12 @@ function Test-AcademyRegisterWorkPackagesCoverage
         $statedHeaderCount = [int]$headerMatch.Groups[1].Value
         if ($statedHeaderCount -ne $actualFileCount)
         {
-            $warnDetails += "'## 03 Work Packages' header states ($statedHeaderCount retrospectives); docs/academy/03 Work Packages/ actually contains $actualFileCount file(s) - known stale at WP 16.1B's own base, promote to Fail after WP 16.2B closure."
+            $failDetails += "'## 03 Work Packages' header states ($statedHeaderCount retrospectives); docs/academy/03 Work Packages/ actually contains $actualFileCount file(s)."
         }
     }
     else
     {
-        $warnDetails += "Could not locate the '## 03 Work Packages (N retrospectives)' header count in '$registerPath'."
+        $failDetails += "Could not locate the '## 03 Work Packages (N retrospectives)' header count in '$registerPath'."
     }
 
     $status = if ($failDetails.Count -gt 0) { "Fail" } elseif ($warnDetails.Count -gt 0) { "Warn" } else { "Pass" }
@@ -1140,17 +1138,16 @@ function Test-DocumentationRegisterWorkPackagesCount
 
     $statedCount = [int]$rowMatch.Groups[1].Value
 
-    # KNOWN stale at this Work Package's own base (states 165; 206 files
-    # actually present) - the same WP 16.2B backfill gap Check 15's header
-    # sub-check discloses, in a second document. Reported as Warn, not
-    # Fail, for this release only; promote to Fail after WP 16.2B closure.
+    # Was Warn at WP 16.1B's own base (165 stated against 206 files,
+    # pending WP 16.2B's closure); promoted to Fail at the WP 16.1B
+    # integration once that closure re-derived the row.
     $details = @()
     if ($statedCount -ne $actualFileCount)
     {
-        $details += "'docs/academy/03 Work Packages/' row states $statedCount Work Package retrospectives; the directory actually contains $actualFileCount file(s) - known stale at WP 16.1B's own base, promote to Fail after WP 16.2B closure."
+        $details += "'docs/academy/03 Work Packages/' row states $statedCount Work Package retrospectives; the directory actually contains $actualFileCount file(s)."
     }
 
-    $status = if ($details.Count -eq 0) { "Pass" } else { "Warn" }
+    $status = if ($details.Count -eq 0) { "Pass" } else { "Fail" }
     New-CheckResult -Name "Documentation Register 03 Work Packages/ row matches file count ($actualFileCount files, $statedCount stated)" -Status $status -Details $details
 }
 
