@@ -526,7 +526,7 @@ public sealed class ProjectTaskTests : IDisposable
         // an older build has no WorkState key at all, and "a task nobody
         // ever gave a state" is honestly Todo at Normal priority.
         var legacy = new EngineeringObjectState(
-            Guid.NewGuid(), CanonicalObjectKinds.Task, "TSK-OLD", "Old task",
+            1, Guid.NewGuid(), CanonicalObjectKinds.Task, "TSK-OLD", "Old task",
             EngineeringObjectMetadata.Empty, LifecycleState.Draft, null, false,
             EngineeringObjectBomLineState.Default, [], [],
             new Dictionary<string, string?> { ["AssignedToPrincipalId"] = "ada" });

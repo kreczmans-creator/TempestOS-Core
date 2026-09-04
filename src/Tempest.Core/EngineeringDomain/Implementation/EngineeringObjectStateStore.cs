@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Tempest.Core.Logging;
 using Tempest.Core.Persistence;
 
@@ -24,24 +25,123 @@ namespace Tempest.Core.EngineeringDomain;
 /// passive read paths — one unreadable object must not cost the user
 /// every other object they own.
 /// </para>
+/// <para>
+/// <b>`TD-87`/`ADR-0120`: schema versioning.</b> Every write stamps
+/// <see cref="CurrentSchemaVersion"/> and every enum reachable from
+/// <see cref="EngineeringObjectState"/> serialises as its member name
+/// (<see cref="StateJsonOptions"/>). On read, a record with no
+/// <see cref="EngineeringObjectState.SchemaVersion"/> (or <c>0</c>)
+/// normalises to <c>1</c> explicitly, and an optional
+/// <see cref="IStateMigrationRegistry"/> supplied at construction walks
+/// the record forward one version at a time until it reaches
+/// <see cref="TargetSchemaVersion"/> or no further migration applies,
+/// whichever comes first. A record that does not end the walk exactly at
+/// <see cref="TargetSchemaVersion"/> — no migration path reaches it, one
+/// throws, or the record started ahead of it (a newer build) — is logged
+/// and skipped exactly as an unparseable record already is; migration
+/// never runs on write (`ADR-0120` Decision 2/5).
+/// </para>
 /// </remarks>
 public sealed class EngineeringObjectStateStore : IEngineeringObjectStateStore
 {
     /// <summary>The <see cref="IPersistenceStore"/> collection engineering object state lives in.</summary>
     public const string StateCollectionName = "EngineeringDomain.ObjectState";
 
+    /// <summary>
+    /// The <see cref="EngineeringObjectState.SchemaVersion"/> this build
+    /// captures and expects a fully-migrated record to hold (`TD-87`,
+    /// `ADR-0120`). <c>1</c> at first release; bumped only alongside the
+    /// migration(s) that let every existing record reach it.
+    /// </summary>
+    public const int CurrentSchemaVersion = 1;
+
+    /// <summary>
+    /// The shared serialiser options for both <see cref="SaveAsync"/> and
+    /// <see cref="Deserialise"/> — every enum reachable from
+    /// <see cref="EngineeringObjectState"/> writes as its member name from
+    /// this build onward (`ADR-0120` Decision 4). The built-in converter
+    /// reads both a name and a number, so a record written before this
+    /// change — still numeric — still deserialises identically; no
+    /// migration is needed for this specific change.
+    /// </summary>
+    private static readonly JsonSerializerOptions StateJsonOptions = new()
+    {
+        Converters = { new JsonStringEnumConverter() },
+    };
+
     private readonly IPersistenceStore _persistenceStore;
+    private readonly IStateMigrationRegistry? _migrations;
     private readonly ILogger? _logger;
 
-    /// <summary>Initialises a new instance of the <see cref="EngineeringObjectStateStore"/> class.</summary>
+    /// <summary>
+    /// Initialises a new instance of the <see cref="EngineeringObjectStateStore"/>
+    /// class, targeting <see cref="CurrentSchemaVersion"/> — the one
+    /// constructor visible to this platform's DI container
+    /// (`TempestServiceProvider`), which requires exactly one public
+    /// constructor and resolves every one of its parameters, so this stays
+    /// the container-facing shape rather than growing a raw <c>int</c> or
+    /// <c>int?</c> the container would have to be taught to satisfy
+    /// (`TD-69`'s missing-default-parameter-support defect class, handed
+    /// to `WP 16.4B`, not worked around here).
+    /// </summary>
+    /// <param name="persistenceStore">The substrate every state record is written to and read from.</param>
+    /// <param name="migrations">
+    /// The migration chain(s) a record may need to reach
+    /// <see cref="TargetSchemaVersion"/> (`TD-87`, `ADR-0120`).
+    /// <see langword="null"/> — the default — runs only the normalisation
+    /// step: every existing hand-assembled store keeps compiling and
+    /// passing unchanged.
+    /// </param>
+    /// <param name="logger">An optional logger used to record a skipped record.</param>
     /// <exception cref="ArgumentNullException"><paramref name="persistenceStore"/> is <see langword="null"/>.</exception>
-    public EngineeringObjectStateStore(IPersistenceStore persistenceStore, ILogger? logger = null)
+    public EngineeringObjectStateStore(
+        IPersistenceStore persistenceStore,
+        IStateMigrationRegistry? migrations = null,
+        ILogger? logger = null)
+        : this(persistenceStore, migrations, logger, CurrentSchemaVersion)
+    {
+    }
+
+    /// <summary>
+    /// The test-only seam behind <see cref="TargetSchemaVersion"/> (`TD-87`,
+    /// `ADR-0120`): lets a test build a store whose read path targets a
+    /// schema version other than <see cref="CurrentSchemaVersion"/>, to
+    /// exercise a migration chain that runs past this build's own fixed
+    /// current version without bumping that constant. <c>internal</c> —
+    /// reachable only from <c>Tempest.Core.Tests</c>
+    /// (<c>InternalsVisibleTo</c>, <c>AssemblyInfo.cs</c>) — deliberately
+    /// not the container-visible constructor above, for the same reason
+    /// that one exists: the container requires exactly one <em>public</em>
+    /// constructor, so this stays invisible to it rather than becoming a
+    /// second one it would refuse to resolve at all
+    /// (<see cref="Tempest.Core.DependencyInjection.AmbiguousConstructorException"/>).
+    /// </summary>
+    /// <param name="persistenceStore">The substrate every state record is written to and read from.</param>
+    /// <param name="migrations">The migration chain(s) a record may need to reach <paramref name="targetSchemaVersion"/>.</param>
+    /// <param name="logger">An optional logger used to record a skipped record.</param>
+    /// <param name="targetSchemaVersion">The <see cref="EngineeringObjectState.SchemaVersion"/> this store's own read path requires a record to reach before handing it back.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="persistenceStore"/> is <see langword="null"/>.</exception>
+    internal EngineeringObjectStateStore(
+        IPersistenceStore persistenceStore,
+        IStateMigrationRegistry? migrations,
+        ILogger? logger,
+        int targetSchemaVersion)
     {
         ArgumentNullException.ThrowIfNull(persistenceStore);
 
         _persistenceStore = persistenceStore;
+        _migrations = migrations;
         _logger = logger;
+        TargetSchemaVersion = targetSchemaVersion;
     }
+
+    /// <summary>
+    /// The <see cref="EngineeringObjectState.SchemaVersion"/> this store's
+    /// own read path requires a record to reach — <see cref="CurrentSchemaVersion"/>
+    /// unless a different value was supplied at construction (`TD-87`,
+    /// `ADR-0120`).
+    /// </summary>
+    public int TargetSchemaVersion { get; }
 
     /// <inheritdoc />
     public Task SaveAsync(EngineeringObjectState state, CancellationToken cancellationToken = default)
@@ -51,7 +151,7 @@ public sealed class EngineeringObjectStateStore : IEngineeringObjectStateStore
         return _persistenceStore.WriteAsync(
             StateCollectionName,
             state.Id.ToString("N"),
-            JsonSerializer.Serialize(state),
+            JsonSerializer.Serialize(state, StateJsonOptions),
             cancellationToken);
     }
 
@@ -94,14 +194,113 @@ public sealed class EngineeringObjectStateStore : IEngineeringObjectStateStore
 
     private EngineeringObjectState? Deserialise(Guid objectId, string json)
     {
+        EngineeringObjectState? state;
         try
         {
-            return JsonSerializer.Deserialize<EngineeringObjectState>(json);
+            state = JsonSerializer.Deserialize<EngineeringObjectState>(json, StateJsonOptions);
         }
         catch (JsonException ex)
         {
             _logger?.Warning($"Engineering object state '{objectId}' is unreadable and was skipped during rehydration.", ex);
             return null;
         }
+
+        if (state is null)
+            return null;
+
+        // `TD-87`/`ADR-0120` Decision 1: a record written before
+        // `SchemaVersion` existed leaves it at the CLR default for `int`
+        // (`0`), not `1` — normalised explicitly rather than trusted to a
+        // serialiser default that is not this platform's contract to rely
+        // on.
+        if (state.SchemaVersion <= 0)
+            state = state with { SchemaVersion = 1 };
+
+        // A record from a newer build than this one cannot be bridged
+        // forward — there is nothing to migrate it "back" with, and no
+        // migration will ever be registered for a version this build does
+        // not yet know about. Caught before the migration loop below,
+        // which would otherwise simply find nothing to apply and fall
+        // through to the "no migration path" check below anyway — this
+        // earlier, more specific check exists only to log a clearer,
+        // distinct reason ("ahead", not merely "stuck").
+        if (state.SchemaVersion > TargetSchemaVersion)
+        {
+            _logger?.Warning(
+                $"Engineering object state '{objectId}' (Kind '{state.Kind}') is stuck at schema version " +
+                $"{state.SchemaVersion}, newer than this build's target schema version {TargetSchemaVersion} — it " +
+                "was NOT reconstructed and was skipped.");
+            return null;
+        }
+
+        try
+        {
+            // `ADR-0120` Decision 2: the common (Kind-less) chain first,
+            // then that Kind's own chain, repeated until the record
+            // reaches TargetSchemaVersion or no further migration applies
+            // — `IStateMigrationRegistry.Find` embodies that ordering for
+            // a single version step, so this loop only has to keep asking
+            // for the next one.
+            while (state.SchemaVersion != TargetSchemaVersion)
+            {
+                if (_migrations?.Find(state.Kind, state.SchemaVersion) is not { } migration)
+                    break;
+
+                state = migration.Migrate(state) with { SchemaVersion = migration.FromVersion + 1 };
+            }
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            _logger?.Warning(
+                $"Engineering object state '{objectId}' (Kind '{state.Kind}') is stuck at schema version " +
+                $"{state.SchemaVersion} — its migration threw and the record was skipped.", ex);
+            return null;
+        }
+
+        // `ADR-0120` Decision 5: "no migration path to the store's current
+        // [target] version" — the loop above stopped short (a version
+        // step nothing bridges) rather than throwing, so it must be
+        // checked here explicitly; falling through silently would return
+        // a record at the wrong schema version rather than skipping it.
+        if (state.SchemaVersion != TargetSchemaVersion)
+        {
+            _logger?.Warning(
+                $"Engineering object state '{objectId}' (Kind '{state.Kind}') is stuck at schema version " +
+                $"{state.SchemaVersion}, with no migration path to this build's target schema version " +
+                $"{TargetSchemaVersion} — it was NOT reconstructed and was skipped.");
+            return null;
+        }
+
+        return state;
+    }
+}
+
+/// <summary>The concrete <see cref="IStateMigrationRegistry"/> (`TD-87`, `ADR-0120`).</summary>
+public sealed class StateMigrationRegistry : IStateMigrationRegistry
+{
+    private readonly Dictionary<string, Dictionary<int, IStateMigration>> _byKind = new(StringComparer.Ordinal);
+    private readonly Dictionary<int, IStateMigration> _common = new();
+
+    /// <inheritdoc />
+    public void Register(IStateMigration migration)
+    {
+        ArgumentNullException.ThrowIfNull(migration);
+
+        var chain = migration.Kind is { } kind
+            ? _byKind.TryGetValue(kind, out var existing) ? existing : _byKind[kind] = new Dictionary<int, IStateMigration>()
+            : _common;
+
+        chain[migration.FromVersion] = migration;
+    }
+
+    /// <inheritdoc />
+    public IStateMigration? Find(string kind, int fromVersion)
+    {
+        if (_common.TryGetValue(fromVersion, out var common))
+            return common;
+
+        return _byKind.TryGetValue(kind, out var chain) && chain.TryGetValue(fromVersion, out var migration)
+            ? migration
+            : null;
     }
 }

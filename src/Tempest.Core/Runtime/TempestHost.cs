@@ -613,6 +613,14 @@ public sealed class TempestHost : ITempestHost
         services.Singleton<IImpactAnalysis, RelationshipDiscoveryService>();
         services.Singleton<IEvidenceComposer, EvidenceComposer>();
 
+        // TD-87/ADR-0120: the migration chain(s) EngineeringObjectStateStore's
+        // own read path walks. Registered before that store, which takes
+        // it as an optional collaborator - empty until a Kind's own
+        // declaring class registers a migration onto it, the same
+        // "empty is a legal, zero-cost default" shape
+        // IEngineeringObjectRehydratorRegistry already has.
+        services.Singleton<IStateMigrationRegistry, StateMigrationRegistry>();
+
         // TD-85: the durable half of the Engineering Domain. Registered
         // before EngineeringDomainContext, which takes it as a
         // collaborator. Built on the same IPersistenceStore

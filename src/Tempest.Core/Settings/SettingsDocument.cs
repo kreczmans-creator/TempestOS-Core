@@ -1,3 +1,4 @@
+using System.Reflection;
 using System.Text.Json;
 using Tempest.Core.Logging;
 
@@ -30,12 +31,35 @@ namespace Tempest.Core.Settings;
 /// conflated. A caller that supplies no <see cref="ILogger"/> keeps exactly
 /// the old behaviour.
 /// </para>
+/// <para>
+/// <b>`TD-87`/`ADR-0120` Decision 6: an optional schema-version chain,
+/// for a document that is a JSON object.</b> A caller that supplies no
+/// <paramref name="migrations"/> — every current caller — keeps exactly
+/// today's behaviour, at no cost: <see cref="LoadAsync"/> only ever
+/// inspects <typeparamref name="TDocument"/> for a <c>SchemaVersion</c>
+/// property when a chain was actually supplied. When one is, and
+/// <typeparamref name="TDocument"/> declares a public, writable
+/// <c>int SchemaVersion</c>, an absent or <c>0</c> value normalises to
+/// <c>1</c> the same explicit way <c>EngineeringObjectStateStore</c>'s
+/// own read path does, and the chain is walked the same way: repeatedly
+/// applying whichever migration's <c>FromVersion</c> matches the
+/// document's current version, until none does.
+/// </para>
 /// </remarks>
 public sealed class SettingsDocument<TDocument>
     where TDocument : class
 {
+    /// <summary>
+    /// The <typeparamref name="TDocument"/>'s own <c>SchemaVersion</c>
+    /// property, found once per closed generic type rather than by name
+    /// on every load — <see langword="null"/> for the great majority of
+    /// documents, which declare none.
+    /// </summary>
+    private static readonly PropertyInfo? SchemaVersionProperty = typeof(TDocument).GetProperty("SchemaVersion", typeof(int));
+
     private readonly ISettingsProvider _settingsProvider;
     private readonly ILogger? _logger;
+    private readonly IReadOnlyList<ISettingsMigration<TDocument>>? _migrations;
 
     /// <summary>
     /// Initialises a new instance of the <see cref="SettingsDocument{TDocument}"/>
@@ -49,9 +73,20 @@ public sealed class SettingsDocument<TDocument>
     /// <see langword="null"/> reproduces the previous, silent behaviour
     /// exactly.
     /// </param>
+    /// <param name="migrations">
+    /// The ordered migration chain a stored <typeparamref name="TDocument"/>
+    /// may need to reach its current schema (`TD-87`, `ADR-0120`
+    /// Decision 6). <see langword="null"/> — the default — runs no
+    /// normalisation and no chain at all: today's behaviour, unchanged.
+    /// </param>
     /// <exception cref="ArgumentNullException"><paramref name="settingsProvider"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException"><paramref name="key"/> or <paramref name="displayName"/> is <see langword="null"/>, empty, or whitespace.</exception>
-    public SettingsDocument(ISettingsProvider settingsProvider, string key, string displayName, ILogger? logger = null)
+    public SettingsDocument(
+        ISettingsProvider settingsProvider,
+        string key,
+        string displayName,
+        ILogger? logger = null,
+        IReadOnlyList<ISettingsMigration<TDocument>>? migrations = null)
     {
         ArgumentNullException.ThrowIfNull(settingsProvider);
         ArgumentException.ThrowIfNullOrWhiteSpace(key);
@@ -59,6 +94,7 @@ public sealed class SettingsDocument<TDocument>
 
         _settingsProvider = settingsProvider;
         _logger = logger;
+        _migrations = migrations;
         Key = key;
 
         try
@@ -93,9 +129,10 @@ public sealed class SettingsDocument<TDocument>
         if (string.IsNullOrEmpty(json))
             return null;
 
+        TDocument? document;
         try
         {
-            return JsonSerializer.Deserialize<TDocument>(json);
+            document = JsonSerializer.Deserialize<TDocument>(json);
         }
         catch (JsonException ex)
         {
@@ -108,6 +145,53 @@ public sealed class SettingsDocument<TDocument>
 
             return null;
         }
+
+        // `TD-87`/`ADR-0120` Decision 6: only when a chain was actually
+        // supplied, and only when TDocument declares a SchemaVersion, is
+        // there anything to normalise or migrate — every other caller
+        // pays nothing.
+        if (document is not null && _migrations is not null && SchemaVersionProperty is { CanRead: true, CanWrite: true })
+            document = ApplyMigrations(document);
+
+        return document;
+    }
+
+    /// <summary>
+    /// Walks <paramref name="document"/> forward through <see cref="_migrations"/>,
+    /// normalising an absent/<c>0</c> <c>SchemaVersion</c> to <c>1</c> the
+    /// same explicit way <c>EngineeringObjectStateStore</c>'s own read
+    /// path does, then repeatedly applying whichever migration's
+    /// <c>FromVersion</c> matches the document's current version until
+    /// none does.
+    /// </summary>
+    private TDocument ApplyMigrations(TDocument document)
+    {
+        var version = (int)SchemaVersionProperty!.GetValue(document)!;
+        if (version <= 0)
+        {
+            version = 1;
+            SchemaVersionProperty.SetValue(document, version);
+        }
+
+        while (FindMigration(version) is { } migration)
+        {
+            document = migration.Migrate(document);
+            version = migration.FromVersion + 1;
+            SchemaVersionProperty.SetValue(document, version);
+        }
+
+        return document;
+    }
+
+    private ISettingsMigration<TDocument>? FindMigration(int fromVersion)
+    {
+        foreach (var migration in _migrations!)
+        {
+            if (migration.FromVersion == fromVersion)
+                return migration;
+        }
+
+        return null;
     }
 
     /// <summary>Writes <paramref name="document"/> as this key's stored value.</summary>
