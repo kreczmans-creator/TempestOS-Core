@@ -262,6 +262,9 @@ jobs:
   # always producing this report over silently skipping it because an
   # unrelated build step failed). Read-only: scripts/governance-
   # healthcheck.ps1 never writes inside the repository it validates.
+  # WP 16.1A: this job's result is now a required input to the CI Gate
+  # job below; the if: always() here is unchanged so the report is still
+  # produced on a red build.
   governance-health-check:
     name: Governance Health Check
     needs: build-and-test
@@ -306,19 +309,33 @@ jobs:
   # requiring both matrix legs to be individually named in every
   # protection rule — and so a future contributor reads one job name,
   # not the matrix's own internal shape, to know whether it is safe to
-  # merge. Deliberately depends on build-and-test only, not
-  # governance-health-check — see the comment above that job for why.
+  # merge.
+  #
+  # WP 16.1A (v0.16.0): the gate now also requires governance-health-check
+  # to succeed. WP 11.2A deliberately left it advisory ("machine-detectable
+  # but not machine-enforced", FCR-0005) until the tool had demonstrated
+  # itself on real drift; five releases and one further undocumented
+  # 20-commit range later (WP 15.1A), a governance Fail is treated exactly
+  # like a build Fail: red at the gate, not beside it. The
+  # governance-health-check job itself still runs with if: always(), so the
+  # report is produced even when the build is red.
   gate:
     name: CI Gate
-    needs: build-and-test
+    needs: [build-and-test, governance-health-check]
     if: always()
     runs-on: windows-2022
     steps:
-      - name: Confirm every configuration passed
+      - name: Confirm every configuration and the governance check passed
         shell: pwsh
         run: |
+          $failed = $false
           if ("${{ needs.build-and-test.result }}" -ne "success") {
             Write-Error "One or more Build & Test configurations did not succeed - see the build-and-test job matrix for details."
-            exit 1
+            $failed = $true
           }
-          Write-Host "All Build & Test configurations succeeded."
+          if ("${{ needs.governance-health-check.result }}" -ne "success") {
+            Write-Error "Governance Health Check did not succeed - see that job's step summary for the failing check(s)."
+            $failed = $true
+          }
+          if ($failed) { exit 1 }
+          Write-Host "All Build & Test configurations and the Governance Health Check succeeded."
