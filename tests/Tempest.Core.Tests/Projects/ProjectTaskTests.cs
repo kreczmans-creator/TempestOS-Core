@@ -28,9 +28,43 @@ namespace Tempest.Core.Tests.Projects;
 /// field of its own.
 /// </para>
 /// </remarks>
-public sealed class ProjectTaskTests
+public sealed class ProjectTaskTests : IDisposable
 {
     private static readonly DateTimeOffset Today = new(2026, 8, 29, 12, 0, 0, TimeSpan.Zero);
+
+    private readonly List<string> _fixtureRoots = [];
+
+    /// <summary>
+    /// Creates a <see cref="TaskFixture"/> and remembers its isolated
+    /// persistence root for <see cref="Dispose"/> — closes the Core-side
+    /// leak <c>TD-120</c> (Technical Debt Register.md) left open, see
+    /// <see cref="ProjectFixtureRoot"/>.
+    /// </summary>
+    private async Task<TaskFixture> CreateFixtureAsync()
+    {
+        var fixture = await TaskFixture.CreateAsync();
+        _fixtureRoots.Add(fixture.Root);
+        return fixture;
+    }
+
+    /// <summary>Deletes every persistence root this instance's own test created — xUnit constructs a fresh instance per test, so this runs once per test, not once per class.</summary>
+    public void Dispose()
+    {
+        foreach (var root in _fixtureRoots)
+        {
+            try
+            {
+                if (Directory.Exists(root))
+                    Directory.Delete(root, recursive: true);
+            }
+            catch (IOException)
+            {
+            }
+            catch (UnauthorizedAccessException)
+            {
+            }
+        }
+    }
 
     // ================================================================
     // The work state is the task family's own, and it can be reopened
@@ -98,7 +132,7 @@ public sealed class ProjectTaskTests
     [Fact]
     public async Task ATaskMovesThroughItsLifecycle_AndCanBeCompletedThenReopened()
     {
-        var fixture = await TaskFixture.CreateAsync();
+        var fixture = await CreateFixtureAsync();
         var project = await fixture.CreateProjectAsync("P-1", "Apollo");
 
         var task = await fixture.Workflow.CreateAsync(project.Id, "TSK-001", "Balance the impeller");
@@ -120,7 +154,7 @@ public sealed class ProjectTaskTests
     [Fact]
     public async Task AnImpossibleMove_IsRefusedByName_RatherThanSilentlyIgnored()
     {
-        var fixture = await TaskFixture.CreateAsync();
+        var fixture = await CreateFixtureAsync();
         var project = await fixture.CreateProjectAsync("P-1", "Apollo");
         var task = await fixture.Workflow.CreateAsync(project.Id, "TSK-001", "Balance the impeller");
 
@@ -137,7 +171,7 @@ public sealed class ProjectTaskTests
     [Fact]
     public async Task AssigningToTheCurrentPrincipal_UsesTheBoundary_NotAHardCodedName()
     {
-        var fixture = await TaskFixture.CreateAsync();
+        var fixture = await CreateFixtureAsync();
         var project = await fixture.CreateProjectAsync("P-1", "Apollo");
         var task = await fixture.Workflow.CreateAsync(project.Id, "TSK-001", "Balance the impeller");
 
@@ -160,7 +194,7 @@ public sealed class ProjectTaskTests
     [Fact]
     public async Task ATaskCanBeUnassigned_BecauseNobodyOwningItIsARealState()
     {
-        var fixture = await TaskFixture.CreateAsync();
+        var fixture = await CreateFixtureAsync();
         var project = await fixture.CreateProjectAsync("P-1", "Apollo");
         var task = await fixture.Workflow.CreateAsync(project.Id, "TSK-001", "Balance the impeller", assignedToPrincipalId: "ada");
 
@@ -177,7 +211,7 @@ public sealed class ProjectTaskTests
     [Fact]
     public async Task ATaskIsOverdueOnlyWhileItIsStillOpen()
     {
-        var fixture = await TaskFixture.CreateAsync();
+        var fixture = await CreateFixtureAsync();
         var project = await fixture.CreateProjectAsync("P-1", "Apollo");
         var task = await fixture.Workflow.CreateAsync(project.Id, "TSK-001", "Late work", dueDate: Today.AddDays(-3));
 
@@ -196,7 +230,7 @@ public sealed class ProjectTaskTests
     [Fact]
     public async Task EditingATask_RenamesIt_AndKeepsWhatItUsedToSay()
     {
-        var fixture = await TaskFixture.CreateAsync();
+        var fixture = await CreateFixtureAsync();
         var project = await fixture.CreateProjectAsync("P-1", "Apollo");
         var task = await fixture.Workflow.CreateAsync(project.Id, "TSK-001", "Balence the impeler", "Original wording.");
 
@@ -227,7 +261,7 @@ public sealed class ProjectTaskTests
     [Fact]
     public async Task ATaskCreatedInAProject_BelongsToThatProject_ByTheParentChain()
     {
-        var fixture = await TaskFixture.CreateAsync();
+        var fixture = await CreateFixtureAsync();
         var project = await fixture.CreateProjectAsync("P-1", "Apollo");
 
         var task = await fixture.Workflow.CreateAsync(project.Id, "TSK-001", "Balance the impeller");
@@ -240,7 +274,7 @@ public sealed class ProjectTaskTests
     [Fact]
     public async Task ATaskNestedDeepInsideAProject_IsStillAProjectTask()
     {
-        var fixture = await TaskFixture.CreateAsync();
+        var fixture = await CreateFixtureAsync();
         var project = await fixture.CreateProjectAsync("P-1", "Apollo");
         var assembly = await fixture.CreatePartAsync("ASM-1", "Pump", project.Id);
         var part = await fixture.CreatePartAsync("PRT-1", "Impeller", assembly.Id);
@@ -257,7 +291,7 @@ public sealed class ProjectTaskTests
     [Fact]
     public async Task OneProjectsTasks_AreNeverAnotherProjectsTasks()
     {
-        var fixture = await TaskFixture.CreateAsync();
+        var fixture = await CreateFixtureAsync();
         var apollo = await fixture.CreateProjectAsync("P-1", "Apollo");
         var gemini = await fixture.CreateProjectAsync("P-2", "Gemini");
 
@@ -274,7 +308,7 @@ public sealed class ProjectTaskTests
     [Fact]
     public async Task AnEmptyProject_ReportsNoTasks_RatherThanEveryTask()
     {
-        var fixture = await TaskFixture.CreateAsync();
+        var fixture = await CreateFixtureAsync();
         var apollo = await fixture.CreateProjectAsync("P-1", "Apollo");
         var empty = await fixture.CreateProjectAsync("P-2", "Nothing yet");
 
@@ -292,7 +326,7 @@ public sealed class ProjectTaskTests
     [Fact]
     public async Task ATaskOutsideEveryProject_BelongsToNoProjectsRegister()
     {
-        var fixture = await TaskFixture.CreateAsync();
+        var fixture = await CreateFixtureAsync();
         var project = await fixture.CreateProjectAsync("P-1", "Apollo");
 
         // A standalone task — created through the factory directly, never
@@ -311,7 +345,7 @@ public sealed class ProjectTaskTests
     [Fact]
     public async Task ActionsAreListedAlongsideTasks_BecauseAnActionIsATask()
     {
-        var fixture = await TaskFixture.CreateAsync();
+        var fixture = await CreateFixtureAsync();
         var project = await fixture.CreateProjectAsync("P-1", "Apollo");
 
         var task = await fixture.Workflow.CreateAsync(project.Id, "TSK-001", "Ordinary work");
@@ -326,7 +360,7 @@ public sealed class ProjectTaskTests
     [Fact]
     public async Task TheRegisterOrdersWhatNeedsAttentionFirst()
     {
-        var fixture = await TaskFixture.CreateAsync();
+        var fixture = await CreateFixtureAsync();
         var project = await fixture.CreateProjectAsync("P-1", "Apollo");
 
         var undated = await fixture.Workflow.CreateAsync(project.Id, "TSK-003", "Someday");
@@ -343,7 +377,7 @@ public sealed class ProjectTaskTests
     [Fact]
     public async Task TheBoardPutsEachTaskInItsOwnColumn_AndKeepsTheEmptyOnes()
     {
-        var fixture = await TaskFixture.CreateAsync();
+        var fixture = await CreateFixtureAsync();
         var project = await fixture.CreateProjectAsync("P-1", "Apollo");
 
         var todo = await fixture.Workflow.CreateAsync(project.Id, "TSK-001", "Not started");
@@ -362,7 +396,7 @@ public sealed class ProjectTaskTests
     [Fact]
     public async Task ATaskLinkedToAMilestone_ReportsItAndItsTargetDate()
     {
-        var fixture = await TaskFixture.CreateAsync();
+        var fixture = await CreateFixtureAsync();
         var project = await fixture.CreateProjectAsync("P-1", "Apollo");
 
         var milestone = await fixture.CreateMilestoneAsync("MS-1", "Design freeze", project.Id, Today.AddMonths(2));
@@ -381,7 +415,7 @@ public sealed class ProjectTaskTests
     [Fact]
     public async Task ATaskLinkedToADeliverable_ReportsTheMilestoneDateItIsWorkingTo()
     {
-        var fixture = await TaskFixture.CreateAsync();
+        var fixture = await CreateFixtureAsync();
         var project = await fixture.CreateProjectAsync("P-1", "Apollo");
 
         var milestone = await fixture.CreateMilestoneAsync("MS-1", "Design freeze", project.Id, Today.AddMonths(2));
@@ -401,7 +435,7 @@ public sealed class ProjectTaskTests
     [Fact]
     public async Task ATaskCannotContributeToSomethingThatIsNotAMilestoneOrDeliverable()
     {
-        var fixture = await TaskFixture.CreateAsync();
+        var fixture = await CreateFixtureAsync();
         var project = await fixture.CreateProjectAsync("P-1", "Apollo");
         var part = await fixture.CreatePartAsync("PRT-1", "Impeller", project.Id);
         var task = await fixture.Workflow.CreateAsync(project.Id, "TSK-001", "Balance the impeller");
@@ -413,7 +447,7 @@ public sealed class ProjectTaskTests
     [Fact]
     public async Task OperatingOnSomethingThatIsNotATask_FailsByName()
     {
-        var fixture = await TaskFixture.CreateAsync();
+        var fixture = await CreateFixtureAsync();
         var project = await fixture.CreateProjectAsync("P-1", "Apollo");
         var part = await fixture.CreatePartAsync("PRT-1", "Impeller", project.Id);
 
@@ -429,7 +463,7 @@ public sealed class ProjectTaskTests
     [Fact]
     public async Task EverythingATaskCarries_IsWrittenIntoItsPersistedState()
     {
-        var fixture = await TaskFixture.CreateAsync();
+        var fixture = await CreateFixtureAsync();
         var project = await fixture.CreateProjectAsync("P-1", "Apollo");
 
         var task = await fixture.Workflow.CreateAsync(
@@ -458,7 +492,7 @@ public sealed class ProjectTaskTests
         // that reads the object it just changed cannot tell the difference
         // between "saved" and "set on this instance" — so this one reads
         // what the store actually holds.
-        var fixture = await TaskFixture.CreateAsync();
+        var fixture = await CreateFixtureAsync();
         var project = await fixture.CreateProjectAsync("P-1", "Apollo");
         var task = await fixture.Workflow.CreateAsync(project.Id, "TSK-001", "Balance the impeller");
 
@@ -511,16 +545,20 @@ public sealed class ProjectTaskTests
 
     private sealed class TaskFixture
     {
-        private TaskFixture(EngineeringDomainContext domain, CurrentPrincipalAccessor principal, EngineeringObjectStateStore states)
+        private TaskFixture(EngineeringDomainContext domain, CurrentPrincipalAccessor principal, EngineeringObjectStateStore states, string root)
         {
             Domain = domain;
             Principal = principal;
             States = states;
             Register = new ProjectTaskRegister(domain, () => Today);
             Workflow = new ProjectTaskService(domain);
+            Root = root;
         }
 
         private EngineeringObjectStateStore States { get; }
+
+        /// <summary>This fixture's own isolated persistence root — the caller's own <c>Dispose</c> deletes it (`TD-120` Core-side closure).</summary>
+        public string Root { get; }
 
         /// <summary>Reads back what the store actually holds for <paramref name="objectId"/>.</summary>
         public async Task<EngineeringObjectState> LoadStoredStateAsync(Guid objectId) =>
@@ -536,7 +574,7 @@ public sealed class ProjectTaskTests
 
         public static Task<TaskFixture> CreateAsync()
         {
-            var root = Path.Combine(Path.GetTempPath(), "tempest-project-tasks-" + Guid.NewGuid().ToString("N"));
+            var root = ProjectFixtureRoot.NewIsolatedRoot("tasks");
             var configuration = new ConfigurationBuilder()
                 .AddSource(new MemoryConfigurationSource(
                 [
@@ -558,7 +596,7 @@ public sealed class ProjectTaskTests
                 new EvidenceComposer(discovery, repository), principal,
                 states, new AttachmentContentStore(store));
 
-            return Task.FromResult(new TaskFixture(domain, principal, states));
+            return Task.FromResult(new TaskFixture(domain, principal, states, root));
         }
 
         public void SignInAs(string identityId) =>
