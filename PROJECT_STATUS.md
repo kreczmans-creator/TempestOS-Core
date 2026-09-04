@@ -20,9 +20,10 @@ since taken one further Work Package: `WP 15.2A` closes `TD-120` (the
 Desktop test suite never removed its own isolated persistence roots,
 filling disk across repeated runs) — test infrastructure only, zero
 `src/` files touched, `Tempest.Desktop.Tests` now 412/412. See
-`docs/releases/v0.15.1/WP15.2A Desktop Test Suite Persistence Root
-Cleanup — Implementation Report.md` (that folder documents `WP 15.2A`
-only — `VERSION` remains `0.15.0`, no new release has been cut).
+`docs/releases/v0.16.0/WP15.2A Desktop Test Suite Persistence Root
+Cleanup — Implementation Report.md` (moved there from `docs/releases/
+v0.15.1/` by `WP 16.0B` per `D-026`, Proposed — `VERSION` remains
+`0.15.0`, no `v0.15.1` release was or will be cut).
 
 **Previously stated (`WP 15.1A`, superseded above, retained per this
 file's own convention rather than deleted):** "`v0.15.0` is IN

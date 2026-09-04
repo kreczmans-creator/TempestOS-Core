@@ -37,7 +37,7 @@ Closes with the first Product Approval verdict since `v0.12.0`.
 
 | Work Package | Scope | Status |
 |---|---|---|
-| `WP 15.2A` | Desktop Test Suite Persistence Root Cleanup (closes `TD-120`) — delivered on `feature/wp15.2a-td120-persistence-root-cleanup`, CI green, not yet merged | **Complete on branch** |
+| `WP 15.2A` | Desktop Test Suite Persistence Root Cleanup (closes `TD-120`) — delivered on `feature/wp15.2a-td120-persistence-root-cleanup`, CI green; merged into `feature/v0.16.0` by `WP 16.0B`, its report now at `docs/releases/v0.16.0/WP15.2A Desktop Test Suite Persistence Root Cleanup — Implementation Report.md`, the `v0.15.1` folder deleted (`D-026`, Proposed) | **Complete — merged** |
 
 ## Deferred out of this release, by the plan
 
