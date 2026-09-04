@@ -21,6 +21,19 @@ namespace Tempest.Desktop.Tests;
 /// wired to the running window's own resize rather than reachable only
 /// from a test (`TD-83`).
 /// </remarks>
+/// <remarks>
+/// <b>Found and fixed, `WP 15.2A`:</b> this class builds three real
+/// <see cref="WorkspaceHost"/> instances (via
+/// <see cref="WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath"/>)
+/// but, unlike every other class that does so, carried no
+/// <see cref="CollectionAttribute"/> — so xUnit ran it in its own,
+/// unserialised default collection, exposed to exactly the process-wide
+/// headless-dispatcher hazard <see cref="WorkspacePersistenceCollection"/>'s
+/// own <c>DisableParallelization</c> exists to prevent. Joining that
+/// collection also brings this class under
+/// <see cref="PersistenceRootCleanupFixture"/>'s own cleanup (`TD-120`).
+/// </remarks>
+[Collection("Tempest.Desktop WorkspaceHost persistence")]
 public sealed class ResponsiveWorkspaceTests
 {
     // ----------------------------------------------------------------
