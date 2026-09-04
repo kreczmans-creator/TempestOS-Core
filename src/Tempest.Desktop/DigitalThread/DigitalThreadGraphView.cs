@@ -1,4 +1,5 @@
 using Avalonia;
+using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Controls.Shapes;
 using Avalonia.Input;
@@ -52,6 +53,15 @@ public sealed class DigitalThreadGraphView : UserControl, IWorkspaceView
     private const double MiniMapWidth = 168;
     private const double MiniMapHeight = 120;
 
+    /// <summary>The keyboard pan step, in canvas pixels (`WP 16.5A`, `TD-65`) — a fixed, deliberately generous step so a handful of key presses crosses the visible viewport.</summary>
+    private const double KeyboardPanStep = 60;
+
+    /// <summary>The keyboard zoom factor per +/- press — the same step the pointer wheel already uses (see the <c>PointerWheelChanged</c> handler), so keyboard and pointer zoom feel identical.</summary>
+    private const double KeyboardZoomFactor = 1.1;
+
+    /// <summary>The invisible, wider hit-test stroke drawn under every visible relationship line (`WP 16.5A`, `TD-65` — the 1.4px visible line was also the hit target). Never rendered (fully transparent); shares the visible line's own click handler.</summary>
+    private const double EdgeHitTestStrokeThickness = 8;
+
     private readonly DigitalThreadGraphModel _model;
     private readonly EngineeringDomainContext _domainContext;
     private readonly Action<Guid, string> _navigateToObject;
@@ -86,6 +96,11 @@ public sealed class DigitalThreadGraphView : UserControl, IWorkspaceView
         Content = BuildLayout();
 
         ThemeReactiveBrush.Bind(_titleBlock, TextBlock.ForegroundProperty, BrandPalette.HeadingTextBrushKey);
+
+        // A watermark alone names nothing to a screen reader (`WP 16.5A`,
+        // `TD-65`).
+        AutomationProperties.SetName(_searchBox, "Search this graph");
+        ToolTip.SetTip(_searchBox, "Search this graph…");
 
         _searchBox.PropertyChanged += (_, e) =>
         {
@@ -139,7 +154,90 @@ public sealed class DigitalThreadGraphView : UserControl, IWorkspaceView
 
         _miniMap.PointerPressed += (_, e) => JumpMiniMap(e.GetPosition(_miniMap));
 
+        // Keyboard operability (`WP 16.5A`, `TD-65`) — the graph was
+        // entirely pointer-only. Attached at the root so it fires
+        // regardless of which node (if any) currently holds focus.
+        KeyDown += OnGraphKeyDown;
+
         Rebuild();
+    }
+
+    /// <summary>
+    /// <c>+</c>/<c>=</c> and <c>-</c> zoom (the numpad and OEM forms of
+    /// each, so both a full keyboard and a laptop's top-row keys work);
+    /// arrow keys pan by <see cref="KeyboardPanStep"/>; <c>Enter</c>/<c>Space</c>
+    /// on a focused node selects it (<see cref="SelectNode"/>) and — only
+    /// for a node that carries the expand/collapse chevron in the first
+    /// place (a real relationship, never the centre or a bare record) —
+    /// also toggles its expansion, mirroring exactly what clicking that
+    /// same chevron does. Deliberately does <em>not</em> also navigate
+    /// (the pointer path's own single-click does, via
+    /// <see cref="_navigateToObject"/>): navigating away would defocus the
+    /// graph entirely, a surprising side effect for a keyboard user still
+    /// exploring the graph — opening the object is one more, explicit
+    /// press away (`Enter`/click again once selected, unchanged).
+    /// </summary>
+    private void OnGraphKeyDown(object? sender, KeyEventArgs e)
+    {
+        switch (e.Key)
+        {
+            case Key.Add:
+            case Key.OemPlus:
+                ZoomBy(KeyboardZoomFactor);
+                e.Handled = true;
+                break;
+
+            case Key.Subtract:
+            case Key.OemMinus:
+                ZoomBy(1 / KeyboardZoomFactor);
+                e.Handled = true;
+                break;
+
+            case Key.Left:
+                PanBy(new Vector(KeyboardPanStep, 0));
+                e.Handled = true;
+                break;
+
+            case Key.Right:
+                PanBy(new Vector(-KeyboardPanStep, 0));
+                e.Handled = true;
+                break;
+
+            case Key.Up:
+                PanBy(new Vector(0, KeyboardPanStep));
+                e.Handled = true;
+                break;
+
+            case Key.Down:
+                PanBy(new Vector(0, -KeyboardPanStep));
+                e.Handled = true;
+                break;
+
+            case Key.Enter:
+            case Key.Space:
+                if (e.Source is Border { Tag: Guid nodeId })
+                    ActivateFocusedNode(nodeId);
+                e.Handled = true;
+                break;
+        }
+    }
+
+    /// <summary>Selects <paramref name="nodeId"/> and, only if it is a real (non-centre, non-record) node — i.e. the one <see cref="BuildNodeVisual"/> gave a chevron to — toggles its expansion, exactly like clicking that chevron.</summary>
+    private void ActivateFocusedNode(Guid nodeId)
+    {
+        var node = _model.Nodes.FirstOrDefault(n => n.ObjectId == nodeId);
+        if (node.ObjectId != nodeId)
+            return;
+
+        SelectNode(nodeId);
+
+        if (node.IsCentre || node.IsRecord)
+            return;
+
+        if (node.IsExpanded)
+            CollapseNode(nodeId);
+        else
+            ExpandNode(nodeId);
     }
 
     // ------------------------------------------------------------
@@ -335,6 +433,15 @@ public sealed class DigitalThreadGraphView : UserControl, IWorkspaceView
 
     private void Rebuild()
     {
+        // The whole visual tree is rebuilt from scratch below (this
+        // class's own documented discipline — see the class remarks), so
+        // a keyboard-focused node's own Border is about to be destroyed
+        // and replaced by a new instance for the same node Id. Captured
+        // here and refocused once the replacement exists, so pressing
+        // Enter/Space to expand/collapse/select a node (`WP 16.5A`) never
+        // silently drops focus back to nothing.
+        var focusedNodeId = (TopLevel.GetTopLevel(this)?.FocusManager?.GetFocusedElement() as Border)?.Tag as Guid?;
+
         var nodes = _model.Nodes;
         var centre = nodes.FirstOrDefault(n => n.IsCentre);
         Title = $"Relationships: {centre.DisplayName}";
@@ -349,6 +456,9 @@ public sealed class DigitalThreadGraphView : UserControl, IWorkspaceView
         UpdateTransform();
 
         _statusMessage.Text = $"{nodes.Count} node(s), {_model.Edges.Count} relationship(s) — {_model.Layout} layout.";
+
+        if (focusedNodeId is { } id)
+            _graphCanvas.Children.OfType<Border>().FirstOrDefault(b => Equals(b.Tag, id))?.Focus();
     }
 
     private void RebuildBreadcrumb(DigitalThreadNodeSnapshot centre)
@@ -447,7 +557,26 @@ public sealed class DigitalThreadGraphView : UserControl, IWorkspaceView
                 Opacity = isHighlighted ? 1.0 : 0.75,
                 ZIndex = 0,
             };
-            line.PointerPressed += (_, e) => { _model.SelectEdge(edge); Rebuild(); e.Handled = true; };
+            void SelectThisEdge(object? _, Avalonia.Input.PointerPressedEventArgs e) { _model.SelectEdge(edge); Rebuild(); e.Handled = true; }
+            line.PointerPressed += SelectThisEdge;
+
+            // An invisible, wider hit-test line under the visible one
+            // (`WP 16.5A`, `TD-65` — the 1.4px visible stroke was also the
+            // only hit target). Fully transparent (never rendered) rather
+            // than thickening the visible line itself, which would change
+            // the graph's own look; shares the identical click handler, so
+            // clicking anywhere within the wider band selects the same
+            // edge the thin visible line represents.
+            var hitTestLine = new Line
+            {
+                StartPoint = new Point(x1, y1),
+                EndPoint = new Point(x2, y2),
+                Stroke = Brushes.Transparent,
+                StrokeThickness = EdgeHitTestStrokeThickness,
+                ZIndex = 0,
+            };
+            hitTestLine.PointerPressed += SelectThisEdge;
+            _graphCanvas.Children.Add(hitTestLine);
             _graphCanvas.Children.Add(line);
 
             var label = new TextBlock
@@ -462,11 +591,16 @@ public sealed class DigitalThreadGraphView : UserControl, IWorkspaceView
             _graphCanvas.Children.Add(label);
         }
 
+        // A deterministic tab order (`WP 16.5A`, `TD-65`) — the same,
+        // stable order the nodes are already rendered in (`_model.Nodes`'s
+        // own order, unchanged by anything here), so Tab always visits
+        // them in the same sequence a sighted user reads the model in.
+        var tabIndex = 0;
         foreach (var node in nodes)
-            _graphCanvas.Children.Add(BuildNodeVisual(node));
+            _graphCanvas.Children.Add(BuildNodeVisual(node, tabIndex++));
     }
 
-    private Control BuildNodeVisual(DigitalThreadNodeSnapshot node)
+    private Control BuildNodeVisual(DigitalThreadNodeSnapshot node, int tabIndex)
     {
         var width = node.IsCentre ? CentreNodeWidth : NodeWidth;
         var height = node.IsCentre ? CentreNodeHeight : NodeHeight;
@@ -482,10 +616,21 @@ public sealed class DigitalThreadGraphView : UserControl, IWorkspaceView
             {
                 Content = IconGeometry.Build(node.IsExpanded ? IconGeometry.ChevronDown : IconGeometry.ChevronRight, 11),
                 Padding = new Thickness(DesignTokens.SpaceXs),
-                MinWidth = 20,
-                MinHeight = 20,
+                // Raised to the platform's own real, applied minimum
+                // interactive control size (`WP 16.5A`, `TD-65` — this
+                // chevron sat at 20px, below `DesignTokens.MinControlSize`).
+                MinWidth = DesignTokens.MinControlSize,
+                MinHeight = DesignTokens.MinControlSize,
             };
             toggle.Classes.Add(ChromeStyles.Flat);
+            // An icon alone names nothing to a screen reader, and a fixed
+            // name would go stale the instant the chevron's own state
+            // flips (`WP 16.5A`, `TD-65`) — recomputed every rebuild, so
+            // it always names the action this press will take, not the
+            // one it already took.
+            var toggleName = $"{(node.IsExpanded ? "Collapse" : "Expand")} {node.DisplayName}";
+            AutomationProperties.SetName(toggle, toggleName);
+            ToolTip.SetTip(toggle, toggleName);
             toggle.Click += (_, e) =>
             {
                 if (node.IsExpanded)
@@ -518,18 +663,51 @@ public sealed class DigitalThreadGraphView : UserControl, IWorkspaceView
         Grid.SetColumn(textStack, col);
         grid.Children.Add(textStack);
 
+        var normalBorderBrush = isSelected || isMatch ? new ImmutableSolidColorBrush(Theming.BrandPalette.Amber500) : (node.IsCentre ? new ImmutableSolidColorBrush(Theming.BrandPalette.Cyan500) : new ImmutableSolidColorBrush(Theming.BrandPalette.Slate500));
+        var normalBorderThickness = new Thickness(node.IsCentre || isSelected || isMatch ? 2.5 : 1);
+
         var border = new Border
         {
             Width = width,
             Height = height,
             CornerRadius = new CornerRadius(6),
-            BorderBrush = isSelected || isMatch ? new ImmutableSolidColorBrush(Theming.BrandPalette.Amber500) : (node.IsCentre ? new ImmutableSolidColorBrush(Theming.BrandPalette.Cyan500) : new ImmutableSolidColorBrush(Theming.BrandPalette.Slate500)),
-            BorderThickness = new Thickness(node.IsCentre || isSelected || isMatch ? 2.5 : 1),
+            BorderBrush = normalBorderBrush,
+            BorderThickness = normalBorderThickness,
             Padding = new Thickness(DesignTokens.SpaceXs),
             Child = grid,
             Cursor = new Cursor(node.IsRecord ? StandardCursorType.Arrow : StandardCursorType.Hand),
             ZIndex = 1,
+            // Keyboard operability (`WP 16.5A`, `TD-65`) — every real node
+            // (never a bare record — the same condition that already
+            // decides whether a click does anything below) is a Tab stop,
+            // in the same deterministic order it renders in. `Tag` carries
+            // the node's own Id, read back by `OnGraphKeyDown`/`Rebuild`'s
+            // own focus-restore.
+            Focusable = !node.IsRecord,
+            TabIndex = tabIndex,
+            Tag = node.ObjectId,
         };
+        AutomationProperties.SetName(border, node.DisplayName);
+
+        if (!node.IsRecord)
+        {
+            // Consumes the declared FocusRing tokens (`WP 16.5A`, `TD-65`)
+            // — this node already paints its own selection/search-match
+            // border as a local value (set above), which a `:focus-visible`
+            // style could never win against (a local value always outranks
+            // a style setter), so the ring is applied/removed directly
+            // here instead, exactly mirroring what a style would do.
+            border.GotFocus += (_, _) =>
+            {
+                border.BorderBrush = BrandPalette.Brush(ApplicationPalette.FocusRingBrushKey);
+                border.BorderThickness = new Thickness(DesignTokens.FocusRingThickness);
+            };
+            border.LostFocus += (_, _) =>
+            {
+                border.BorderBrush = normalBorderBrush;
+                border.BorderThickness = normalBorderThickness;
+            };
+        }
 
         // Theme-reactive node fill (`WP 10.5A`) — replaces this class's own
         // previously-hardcoded, non-theme-reactive hex colours (`#2D4F7C`/

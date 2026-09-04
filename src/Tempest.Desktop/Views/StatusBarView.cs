@@ -210,6 +210,13 @@ public sealed class StatusBarView : UserControl
     {
         var text = new TextBlock { FontSize = DesignTokens.FontSizeCaption, VerticalAlignment = VerticalAlignment.Center };
         ThemeReactiveBrush.Bind(text, TextBlock.ForegroundProperty, BrandPalette.MutedTextBrushKey);
+        // A live region (`WP 16.5A`, `TD-65`) — every segment's own text
+        // change is announced. `Polite` (waits for the screen reader to
+        // finish whatever it is already saying) rather than `Assertive`:
+        // this bar updates constantly (selection, hint, host/diagnostics
+        // state) and interrupting on every one of those would be worse
+        // than saying nothing.
+        AutomationProperties.SetLiveSetting(text, AutomationLiveSetting.Polite);
         return text;
     }
 

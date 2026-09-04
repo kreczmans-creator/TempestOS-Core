@@ -105,6 +105,17 @@ public sealed class MainWindow : Window
     private string? _currentAreaTitle;
     private bool _closeConfirmed;
 
+    // `WP 16.5A` — `TD-65`/`TD-83`: real dialog modality. `_dock` is the
+    // shell's own content behind every overlay (header, status bar, rail,
+    // module host) — Tab must never reach it while a dialog/palette is
+    // open. `_modalCount` counts overlapping opens (in principle more
+    // than one of the six could be visible at once) so the dock's own
+    // prior tab-navigation mode is restored only once every one of them
+    // has closed, never prematurely on the first of several to close.
+    private readonly DockPanel _dock = new();
+    private int _modalCount;
+    private KeyboardNavigationMode _dockTabNavigationBeforeModal;
+
     /// <summary>Initialises a new instance of the <see cref="MainWindow"/> class over an already-started <see cref="WorkspaceHost"/>.</summary>
     public MainWindow(WorkspaceHost host)
     {
@@ -578,12 +589,11 @@ public sealed class MainWindow : Window
         shell.Children.Add(_navigationRail);
         shell.Children.Add(_moduleHost);
 
-        var dock = new DockPanel();
         DockPanel.SetDock(_header, Dock.Top);
         DockPanel.SetDock(_statusBar, Dock.Bottom);
-        dock.Children.Add(_header);
-        dock.Children.Add(_statusBar);
-        dock.Children.Add(shell);
+        _dock.Children.Add(_header);
+        _dock.Children.Add(_statusBar);
+        _dock.Children.Add(shell);
 
         // Responsive shell chrome: below the compact threshold the rail
         // folds to its icons and the header's search field to its glyph,
@@ -601,7 +611,7 @@ public sealed class MainWindow : Window
         // Children order for overlapping siblings), exactly like
         // `_commandPalette` already does.
         var root = new Grid();
-        root.Children.Add(dock);
+        root.Children.Add(_dock);
         root.Children.Add(_busyOverlay);
         root.Children.Add(_commandPalette);
         root.Children.Add(_confirmationDialog);
@@ -611,6 +621,16 @@ public sealed class MainWindow : Window
         root.Children.Add(_macroManagerDialog);
         root.Children.Add(_toastHost);
         Content = root;
+
+        // `WP 16.5A` — `TD-83`: while any dialog/the palette is open, Tab
+        // must never reach the shell content behind it. Each of the six
+        // overlays already flips its own `IsVisible` as its open/close
+        // signal (`DialogModality`'s own identical premise); tracking that
+        // here, once, covers every dialog's own many call sites (spread
+        // across this class and `DesktopCommandPrompt`) without needing to
+        // wrap each one individually.
+        foreach (var modal in new Border[] { _confirmationDialog, _inputDialog, _messageDialog, _settingsDialog, _macroManagerDialog, _commandPalette })
+            TrackModal(modal);
 
         var shortcutActions = new KeyboardShortcutActions(
             openCommandPalette: () => _commandPalette.Open(),
@@ -1031,6 +1051,37 @@ public sealed class MainWindow : Window
             using var stream = AssetLoader.Open(uri);
             Icon = new WindowIcon(stream);
         }
+    }
+
+    /// <summary>
+    /// Wires <paramref name="modal"/>'s own <c>IsVisible</c> into this
+    /// window's modal count (`WP 16.5A`, `TD-83`) — Tab is trapped inside
+    /// <see cref="_dock"/> the moment the first of the six overlays opens,
+    /// and released the moment the last one closes.
+    /// </summary>
+    private void TrackModal(Border modal)
+    {
+        modal.PropertyChanged += (_, e) =>
+        {
+            if (e.Property != Visual.IsVisibleProperty)
+                return;
+
+            if (modal.IsVisible)
+            {
+                if (_modalCount == 0)
+                {
+                    _dockTabNavigationBeforeModal = KeyboardNavigation.GetTabNavigation(_dock);
+                    KeyboardNavigation.SetTabNavigation(_dock, KeyboardNavigationMode.None);
+                }
+                _modalCount++;
+            }
+            else if (_modalCount > 0)
+            {
+                _modalCount--;
+                if (_modalCount == 0)
+                    KeyboardNavigation.SetTabNavigation(_dock, _dockTabNavigationBeforeModal);
+            }
+        };
     }
 
     /// <summary>

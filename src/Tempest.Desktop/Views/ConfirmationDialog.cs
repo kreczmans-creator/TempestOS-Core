@@ -55,6 +55,12 @@ public sealed class ConfirmationDialog : Border
         _cancelButton.Click += (_, _) => Complete(false);
         _confirmButton.Click += (_, _) => Complete(true);
         KeyDown += OnKeyDown;
+
+        // Real modal behaviour (`WP 16.5A`, `TD-65`) — Tab is trapped
+        // inside this dialog, and focus is captured on open/restored on
+        // close, driven by this dialog's own `IsVisible` (see
+        // `DialogModality`'s own remarks).
+        DialogModality.Install(this);
     }
 
     /// <summary>

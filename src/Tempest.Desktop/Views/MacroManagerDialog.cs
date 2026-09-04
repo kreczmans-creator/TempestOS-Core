@@ -1,5 +1,7 @@
 using Avalonia;
+using Avalonia.Automation;
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Tempest.Core.Commands;
@@ -29,7 +31,11 @@ public sealed class MacroManagerDialog : Border
     private readonly StackPanel _browsePanel = new();
     private readonly StackPanel _editorPanel = new() { IsVisible = false };
 
-    private readonly ListBox _macroList = new() { MinHeight = 160, MinWidth = 320 };
+    // `Focusable` set explicitly (`WP 16.5A`, `TD-65`) — `ListBox`'s own
+    // class default is `false`; only the Fluent theme's control theme
+    // turns it on, once a template is actually applied, which is too
+    // late for `ShowAsync`'s own deterministic initial-focus call below.
+    private readonly ListBox _macroList = new() { MinHeight = 160, MinWidth = 320, Focusable = true };
     private readonly Button _newButton = new() { Content = "New Macro..." };
     private readonly Button _runButton = new() { Content = "Run" };
     private readonly Button _deleteButton = new() { Content = "Delete" };
@@ -73,6 +79,11 @@ public sealed class MacroManagerDialog : Border
         ThemeReactiveBrush.Bind(this, BackgroundProperty, ApplicationPalette.PanelBackgroundBrushKey);
         ThemeReactiveBrush.Bind(this, BorderBrushProperty, ApplicationPalette.PanelBorderBrushKey);
 
+        // A watermark alone names nothing to a screen reader (`WP 16.5A`,
+        // `TD-65`).
+        AutomationProperties.SetName(_nameBox, "Macro name");
+        ToolTip.SetTip(_nameBox, "Macro name");
+
         BuildBrowsePanel();
         BuildEditorPanel();
 
@@ -104,6 +115,34 @@ public sealed class MacroManagerDialog : Border
         root.Children.Add(_editorPanel);
         root.Children.Add(_statusText);
         Child = root;
+
+        KeyDown += OnKeyDown;
+
+        // Real modal behaviour (`WP 16.5A`, `TD-65`) — see
+        // `DialogModality`'s own remarks.
+        DialogModality.Install(this);
+    }
+
+    /// <summary>
+    /// <c>Escape</c> cancels one step at a time: mid-authoring (the
+    /// editor panel showing), it returns to the browse panel — the exact
+    /// same outcome as its own <see cref="_cancelEditorButton"/> — rather
+    /// than abruptly discarding the whole dialog and losing the browse
+    /// context; browsing, it closes the dialog outright, mirroring
+    /// <see cref="_closeButton"/>. <c>Enter</c> needs no explicit
+    /// handling — native <see cref="Button"/> behaviour, unchanged.
+    /// </summary>
+    private void OnKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (e.Key != Key.Escape)
+            return;
+
+        if (_editorPanel.IsVisible)
+            CloseEditor();
+        else
+            IsVisible = false;
+
+        e.Handled = true;
     }
 
     private void BuildBrowsePanel()
@@ -163,6 +202,10 @@ public sealed class MacroManagerDialog : Border
         await RefreshMacroListAsync().ConfigureAwait(true);
         CloseEditor();
         IsVisible = true;
+        // The browse list, never a button — a ListBox does not invoke
+        // anything on Enter, so an unintentional Enter right after
+        // opening can never trigger Run/Delete.
+        _macroList.Focus();
     }
 
     private async Task RefreshMacroListAsync()
@@ -183,6 +226,7 @@ public sealed class MacroManagerDialog : Border
 
         _browsePanel.IsVisible = false;
         _editorPanel.IsVisible = true;
+        _nameBox.Focus();
     }
 
     /// <summary>
