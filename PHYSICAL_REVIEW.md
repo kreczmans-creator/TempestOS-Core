@@ -244,17 +244,25 @@ Commercial, Resources, Knowledge, Administration and cross-project Tasks modules
 
 ## 8. Known limitations that affect a physical review
 
-1. **The desktop application does not launch on Linux/X11** (`TD-116`). It
-   fails with `System.TypeLoadException: Could not load type
+1. **The desktop application now launches on Linux/X11** (`TD-116`,
+   resolved by `WP 16.5B`). It previously failed with
+   `System.TypeLoadException: Could not load type
    'Tmds.DBus.Protocol.Connection'` during Avalonia's X11 platform
-   initialisation, before any window is created. The cause is a deliberate
-   security pin: `Tmds.DBus.Protocol` is pinned to `0.94.2` to remediate
-   `GHSA-xrw6-gwf8-vvr9`, and `Avalonia.FreeDesktop 11.2.3` binds against
-   the type layout of the `0.20.0` it would otherwise pull. **Windows and
-   macOS are unaffected** — the FreeDesktop/X11 path is never initialised
-   there. Building and the full test suite are unaffected on Linux, because
-   `Avalonia.Headless` does not initialise X11 either. **Review on
-   Windows.**
+   initialisation, before any window is created, because the security pin
+   then in place — `Tmds.DBus.Protocol 0.94.2`, remediating
+   `GHSA-xrw6-gwf8-vvr9` — sat on an API line `Avalonia.FreeDesktop 11.2.3`
+   could not bind against. `WP 16.5B`'s spike upgraded `Avalonia`,
+   `Avalonia.Desktop`, `Avalonia.Themes.Fluent` and `Avalonia.Fonts.Inter`
+   to `11.3.20` and repinned `Tmds.DBus.Protocol` to `0.21.3` — the
+   advisory's own backported fix on the API line `Avalonia.FreeDesktop
+   11.3.x` binds against — verified by launching the built application
+   under `xvfb-run` on Linux with the full Desktop and Core suites green.
+   See `docs/releases/v0.16.0/WP16.5B Linux Launch Spike Report.md` for the
+   reproduction, the fix, and the launch evidence. Per `D-025`: **Windows
+   is CI-verified; macOS is supported by design, not CI-verified; Linux
+   now launches (see that report for exactly what this evidence does and
+   does not establish) with an advisory `linux-launch-smoke` CI job, not
+   yet a required gate. Review on Windows or Linux.**
 2. **Data location follows the working directory** (§4). Not a defect, but
    the single most likely way to conclude wrongly that persistence is
    broken.
