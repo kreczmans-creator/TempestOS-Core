@@ -276,21 +276,85 @@ public sealed class EngineeringObjectStateStore : IEngineeringObjectStateStore
 }
 
 /// <summary>The concrete <see cref="IStateMigrationRegistry"/> (`TD-87`, `ADR-0120`).</summary>
+/// <remarks>
+/// <b>Review-board finding, `v0.16.0`.</b> Two collisions used to be
+/// possible and silent: registering two migrations for the identical
+/// <c>(Kind, FromVersion)</c> pair (last-wins, `TD-69`'s DI-container
+/// defect class recurring here); and registering a common (Kind-less)
+/// migration and a Kind-specific migration at the <em>same</em>
+/// <see cref="IStateMigration.FromVersion"/> — since <see cref="Find"/>
+/// always returns the common chain's entry first (`ADR-0120` Decision 2),
+/// the Kind-specific migration would never run, yet the record would
+/// still advance to the target version and look fully migrated. Both are
+/// now impossible: <see cref="Register"/> throws
+/// <see cref="DuplicateStateMigrationException"/> or
+/// <see cref="ConflictingStateMigrationException"/> instead of allowing
+/// either registration to complete, in either order. No opt-in replace
+/// exists — unlike `IServiceCollection.Add`'s own <c>allowReplace</c>,
+/// nothing depends on being able to override a migration once
+/// registered, so no escape hatch was added for a hazard that would only
+/// reopen.
+/// </remarks>
 public sealed class StateMigrationRegistry : IStateMigrationRegistry
 {
     private readonly Dictionary<string, Dictionary<int, IStateMigration>> _byKind = new(StringComparer.Ordinal);
     private readonly Dictionary<int, IStateMigration> _common = new();
 
     /// <inheritdoc />
+    /// <exception cref="DuplicateStateMigrationException">
+    /// A migration is already registered for the identical chain (common,
+    /// or that same Kind) and <see cref="IStateMigration.FromVersion"/>.
+    /// </exception>
+    /// <exception cref="ConflictingStateMigrationException">
+    /// Registering <paramref name="migration"/> would leave a common
+    /// migration and a Kind-specific migration both targeting the same
+    /// <see cref="IStateMigration.FromVersion"/> — regardless of which of
+    /// the two is registered first, since <see cref="Find"/> always
+    /// prefers the common chain (`ADR-0120` Decision 2), so the other one
+    /// would never run.
+    /// </exception>
     public void Register(IStateMigration migration)
     {
         ArgumentNullException.ThrowIfNull(migration);
 
-        var chain = migration.Kind is { } kind
-            ? _byKind.TryGetValue(kind, out var existing) ? existing : _byKind[kind] = new Dictionary<int, IStateMigration>()
-            : _common;
+        var fromVersion = migration.FromVersion;
 
-        chain[migration.FromVersion] = migration;
+        if (migration.Kind is not { } kind)
+        {
+            // Registering a common (Kind-less) migration.
+            if (_common.TryGetValue(fromVersion, out _))
+                throw new DuplicateStateMigrationException(null, fromVersion);
+
+            // Would this common migration silently shadow an
+            // already-registered Kind-specific migration at the same
+            // FromVersion, for any Kind? Checked before the write below,
+            // not after — a guard that only catches "common registered
+            // second" and not "common registered first" is worse than
+            // none, because it reads as complete.
+            foreach (var (existingKind, chain) in _byKind)
+            {
+                if (chain.ContainsKey(fromVersion))
+                    throw new ConflictingStateMigrationException(existingKind, fromVersion);
+            }
+
+            _common[fromVersion] = migration;
+            return;
+        }
+
+        var kindChain = _byKind.TryGetValue(kind, out var existingChain)
+            ? existingChain
+            : _byKind[kind] = new Dictionary<int, IStateMigration>();
+
+        if (kindChain.TryGetValue(fromVersion, out _))
+            throw new DuplicateStateMigrationException(kind, fromVersion);
+
+        // The symmetric direction of the same check: a common migration
+        // already registered at this FromVersion would shadow the
+        // Kind-specific migration being registered now.
+        if (_common.TryGetValue(fromVersion, out _))
+            throw new ConflictingStateMigrationException(kind, fromVersion);
+
+        kindChain[fromVersion] = migration;
     }
 
     /// <inheritdoc />
@@ -303,4 +367,67 @@ public sealed class StateMigrationRegistry : IStateMigrationRegistry
             ? migration
             : null;
     }
+}
+
+/// <summary>
+/// Thrown when <see cref="StateMigrationRegistry.Register"/> is called
+/// for a chain (common, or a specific Kind) that already has a migration
+/// registered for the same <see cref="IStateMigration.FromVersion"/> —
+/// first registration wins; a colliding, later registration is rejected,
+/// never a silent last-wins overwrite (the same `TD-69` defect class
+/// `WP 16.4B` fixed for <see cref="Tempest.Core.DependencyInjection.IServiceCollection.Add"/>,
+/// recurring here one file away).
+/// </summary>
+public sealed class DuplicateStateMigrationException : EngineeringDomainException
+{
+    /// <summary>Initialises a new instance of the <see cref="DuplicateStateMigrationException"/> class.</summary>
+    /// <param name="kind">The contested Kind, or <see langword="null"/> for the common (Kind-less) chain.</param>
+    /// <param name="fromVersion">The contested <see cref="IStateMigration.FromVersion"/>.</param>
+    public DuplicateStateMigrationException(string? kind, int fromVersion)
+        : base(kind is null
+            ? $"A common (Kind-less) migration is already registered for FromVersion {fromVersion}."
+            : $"A migration is already registered for Kind '{kind}' at FromVersion {fromVersion}.")
+    {
+        Kind = kind;
+        FromVersion = fromVersion;
+    }
+
+    /// <summary>The contested Kind, or <see langword="null"/> for the common (Kind-less) chain.</summary>
+    public string? Kind { get; }
+
+    /// <summary>The contested <see cref="IStateMigration.FromVersion"/>.</summary>
+    public int FromVersion { get; }
+}
+
+/// <summary>
+/// Thrown when <see cref="StateMigrationRegistry.Register"/> would leave
+/// a common (Kind-less) migration and a Kind-specific migration both
+/// registered for the same <see cref="IStateMigration.FromVersion"/> —
+/// <see cref="StateMigrationRegistry.Find"/> always prefers the common
+/// chain (`ADR-0120` Decision 2), so the Kind-specific migration would
+/// never run, yet the record would still advance to the target version
+/// and look fully migrated. Rejected regardless of which of the two is
+/// registered first.
+/// </summary>
+public sealed class ConflictingStateMigrationException : EngineeringDomainException
+{
+    /// <summary>Initialises a new instance of the <see cref="ConflictingStateMigrationException"/> class.</summary>
+    /// <param name="kind">The Kind whose own migration collides with the common chain at <paramref name="fromVersion"/>.</param>
+    /// <param name="fromVersion">The contested <see cref="IStateMigration.FromVersion"/>.</param>
+    public ConflictingStateMigrationException(string kind, int fromVersion)
+        : base(
+            $"A common (Kind-less) migration and a Kind-specific migration for Kind '{kind}' both target " +
+            $"FromVersion {fromVersion}. The common migration always runs first (ADR-0120 Decision 2), so the " +
+            "Kind-specific one would never run even though the record would still advance to the target version. " +
+            "Register only one migration for this FromVersion.")
+    {
+        Kind = kind;
+        FromVersion = fromVersion;
+    }
+
+    /// <summary>The Kind whose own migration collides with the common chain at <see cref="FromVersion"/>.</summary>
+    public string Kind { get; }
+
+    /// <summary>The contested <see cref="IStateMigration.FromVersion"/>.</summary>
+    public int FromVersion { get; }
 }

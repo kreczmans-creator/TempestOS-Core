@@ -55,6 +55,18 @@ public interface IStateMigrationRegistry
     /// <see cref="IStateMigration.Kind"/> (or the common chain, when
     /// <see langword="null"/>) and <see cref="IStateMigration.FromVersion"/>.
     /// </summary>
+    /// <remarks>
+    /// Both collisions this could once produce are rejected outright,
+    /// never silently resolved: registering twice for the identical
+    /// chain and <see cref="IStateMigration.FromVersion"/> (last-wins,
+    /// `TD-69`'s defect class), and registering a common migration and a
+    /// Kind-specific migration at the same
+    /// <see cref="IStateMigration.FromVersion"/> — since <see cref="Find"/>
+    /// always prefers the common chain, the Kind-specific one would
+    /// otherwise never run while the record still advanced to the target
+    /// version. The second check applies in either registration order.
+    /// See the concrete <c>StateMigrationRegistry</c>'s own remarks.
+    /// </remarks>
     void Register(IStateMigration migration);
 
     /// <summary>
