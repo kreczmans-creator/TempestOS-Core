@@ -47,12 +47,17 @@ or not started — is `docs/releases/v0.16.0/WorkPackages.md`; it is not
 duplicated here, so this file cannot go stale relative to it the way
 the pre-`WP 16.2A` file repeatedly did.
 
-`v1.0` scope itself is **not yet decided**: `WP 16.0A` drafted six
-decision records (`D-021`–`D-026`), all `Proposed — awaiting Product
-Owner approval`, ratification pending PR #6. Nothing in this file or
-in `docs/governance/Product Roadmap.md`'s new "Phase 5.5" entry should
-be read as approved until that PR merges — see `docs/releases/v0.16.0/
-WP16.0A v0.16.0 Scope Decision.md`.
+`v1.0` scope is **decided**: the six decision records `WP 16.0A` drafted
+(`D-021`–`D-026`) were **ratified by the Product Owner on 2026-09-05**
+and are now entered in `Decision Register.md`; `Product Roadmap.md`'s
+"Phase 5.5" entry is promoted from Proposed to Decided accordingly.
+Approval evidence: `docs/releases/v0.16.0/WP16.0A Product Owner Ratification — D-021 to D-026.md`.
+
+They were `Proposed — awaiting Product Owner approval` from 2026-09-04
+until then, and the whole of v0.16.0 was built while they were, which
+this file said at the time and the register's own rows still record.
+Ratification is **Product Owner gate 1 of 4** and settles scope only —
+it authorises no merge, no tag, no publication, and no release verdict.
 
 ## Current Work Package
 
@@ -61,7 +66,7 @@ Release Plan):
 
 | Work Package | What it did | Report |
 |---|---|---|
-| `WP 16.0A` | Drafted `D-021`–`D-026` (v1.0 scope decisions), all Proposed, ratification pending PR #6 | `docs/releases/v0.16.0/WP16.0A v0.16.0 Scope Decision.md` |
+| `WP 16.0A` | Drafted `D-021`–`D-026` (v1.0 scope decisions); Proposed 2026-09-04, **ratified by the Product Owner 2026-09-05** | `docs/releases/v0.16.0/WP16.0A v0.16.0 Scope Decision.md` |
 | `WP 16.1A` | CI workflow half of `TD-45` (release-gate enforcement); GitHub branch-protection settings handed to the Product Owner | `docs/releases/v0.16.0/WP16.1A Enforce the Release Gate.md` |
 | `WP 15.2A` (carried in) | Closed `TD-120` — Desktop test suite persistence-root cleanup; `Tempest.Desktop.Tests` 412/412 | `docs/releases/v0.16.0/WP15.2A Desktop Test Suite Persistence Root Cleanup — Implementation Report.md` |
 | `WP 16.2A` | Register and status currency — re-derived every count in every touched governance register; this file's own rewrite | `docs/releases/v0.16.0/WP16.2A Register and Status Currency Report.md` |

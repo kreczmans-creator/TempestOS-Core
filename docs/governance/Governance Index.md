@@ -42,7 +42,7 @@ where the reasoning lives.
 - [ADR Register](Architecture/ADR%20Register.md) — all 123 Architecture Decision Records (`ADR-0001`–`ADR-0123`; `ADR-0121`/`ADR-0122` added `WP 16.4B-R1` after the `v0.16.0` review board found two decisions this release took without the ADR Governance §5 requires).
 - [Rejected Designs Register](Architecture/Rejected%20Designs%20Register.md) — 65 Rejected Designs entries exist in the source log (`docs/architecture/Rejected Designs.md`, `RD-0001`–`RD-0065`, re-derived `WP 16.2A`); this register's own indexed count remains 45, stale since `v0.5.0` — disclosed, not fixed, outside `WP 16.2A`'s own itemized scope.
 - [Architecture Document Register](Architecture/Architecture%20Document%20Register.md) — all 31 standing architecture documents.
-- [Decision Register](Architecture/Decision%20Register.md) — significant process/sequencing decisions that don't meet ADR criteria.
+- [Decision Register](Architecture/Decision%20Register.md) — significant process, sequencing and product-boundary decisions that don't meet ADR criteria.
 
 ## Engineering
 

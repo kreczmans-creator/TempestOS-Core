@@ -9,15 +9,21 @@ on the frozen candidate `d7d3f3b`. `VERSION` is `0.16.0`, bumped by
 `WP 16.9.0`. Scope, sequencing and acceptance for every row are in
 `v0.16.0 Release Plan.md` in this folder.
 
+`D-021`–`D-026` — the six scope decisions every row below cites — were
+**ratified by the Product Owner on 2026-09-05** and are entered in
+`Decision Register.md`. They were Proposed for the whole of the
+engineering programme, and the register records that rather than showing
+only the ratified state. Evidence: `docs/releases/v0.16.0/WP16.0A Product Owner Ratification — D-021 to D-026.md`
+
 What "complete" does **not** mean, stated here because the row statuses
-below are the thing most likely to be read alone: the release is not
-merged to `main`, not tagged, not published, and carries no Product
-Approval verdict. `D-021`–`D-026` remain **Proposed**. Governance §7.1
-permits a release to be cut only from `main` and §9 reserves the merge,
-the tag and the verdict to Product Approval — so those four are not
-engineering's to perform, and their absence is the correct state, not an
-omission. Recommendation and evidence:
-`WP16.9.0 Engineering Release Report.md`.
+below are the thing most likely to be read alone: the release is **not
+merged** to `main`, **not tagged**, **not published**, and carries **no
+Product Approval verdict**. Ratification was Product Owner gate 1 of 4
+and authorises none of those. Governance §7.1 permits a release to be cut
+only from `main` and §9 reserves the merge, the tag and the verdict to
+Product Approval — so those three remain not engineering's to perform,
+and their absence is the correct state, not an omission. Recommendation
+and evidence: `WP16.9.0 Engineering Release Report.md`.
 
 ## Purpose
 
@@ -30,7 +36,7 @@ Closes with the first Product Approval verdict since `v0.12.0`.
 
 | Work Package | Scope | Type | Wave | Closes | Status |
 |---|---|---|---|---|---|
-| `WP 16.0A` | v1.0 Scope & Support Decision Record — six decisions (governing definition, Companion, plugins, REST/`AT-10`, platform matrix, `v0.15.1` folder), each a `D-0xx` entry; `Product Roadmap.md` Phase 5.5 | Decision | 0 | Audit §2, M1, M9 | **Drafted** — `D-021`–`D-026` Proposed (`fb8b90c`), awaiting Product Owner approval (PR #6) |
+| `WP 16.0A` | v1.0 Scope & Support Decision Record — six decisions (governing definition, Companion, plugins, REST/`AT-10`, platform matrix, `v0.15.1` folder), each a `D-0xx` entry; `Product Roadmap.md` Phase 5.5 | Decision | 0 | Audit §2, M1, M9 | **Complete** — `D-021`–`D-026` drafted and reserved Proposed (`fb8b90c`, 2026-09-04), then **ratified by the Product Owner on 2026-09-05** and entered in `Decision Register.md` (20 → 26 entries). `D-025` carries a ratification constraint: Linux is not to be recorded as "supported" without qualification, nor claimed CI-verified. `D-026`'s already-performed folder deletion was disclosed at the gate and ratified in that knowledge. Evidence: `docs/releases/v0.16.0/WP16.0A Product Owner Ratification — D-021 to D-026.md` |
 | `WP 16.0B` | Integrate off-`main` work — merge `WP 15.2A`; fold `docs/releases/v0.15.1/` into this release; Companion branch decision applied; `FCR-0092` citation resolved | Governance/Integration | 1 | `TD-120`, `TD-82` | **Complete** (`4198289`, merged `a4f891b`) |
 | `WP 16.1A` | Enforce the release gate — GitHub branch protection per `WP11.1B` §4; `CI Gate` depends on `Governance Health Check` | Configuration | 1 | `TD-45` | **Complete — workflow half** (`6338330`); GitHub branch-protection setting is a Product Owner action, `TD-45` stays Open |
 | `WP 16.3A` | Durable state schema versioning — architecture, `ADR-0120` | Architecture | 1 | `TD-87` (design) | **Complete** (`a80e95d`, `ADR-0120` accepted at Technical Review) |

@@ -10,7 +10,7 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | `docs/governance/Delivery/Release Register.md` (what has actually shipped); `Future Capability Register.md` (what is identified but not yet scheduled); `VISION.md` (why the sequencing below is the sequencing chosen). |
 | **Review Frequency** | Reviewed at every release boundary, and whenever a new phase's own scope is approved. |
-| **Last Reviewed** | 2026-09-04 (`WP 16.2A`, Register and Status Currency) — **Phase 5 (Engineering Modules) marked Delivered through `v0.15.0`**: all six Engineering Disciplines shipped (`v0.9.0`), plus the Desktop application (`v0.10.0`), Plugin & Registration Trust Isolation (`v0.13.0`/`v0.13.1`), and Engineering Object Durability (`v0.14.0`) — none anticipated by the phase's own original working premise, preserved below for the historical record per this document's own convention. **Phase 5.5 — v1.0 Readiness added**, restating Definition 2 verbatim from `docs/releases/v0.11.0/WP11.0B Architecture Roadmap.md` §1, labelled per `D-021` (Proposed, `WP 16.0A`; ratification pending PR #6) — not yet approved scope, disclosed as such; Definition 3 (`TD-84`, the project-centric product decision) noted as the `v1.x` roadmap, per `D-021`'s own text, not adopted for `v1.0` itself. See `docs/releases/v0.16.0/WP16.2A Register and Status Currency Report.md`. Previously reviewed 2026-07-30 (`WP 7.2A`, Strategic Roadmap Selection & Programme Architecture) — Phase 4 (Engineering Foundation) confirmed complete, in a different shape than this document's own original "working premise" anticipated (the Engineering Foundation frameworks were built, not the Platform/Infrastructure hardening items this phase originally named — disclosed explicitly in `WP7.2A Strategic Roadmap Review.md` §4, not silently reconciled). Phase 5 (Engineering Modules) sequencing recommended: Systems Engineering (`FCR-0027`) first, per `WP7.2A Recommended Programme.md` — still a recommendation, not an approval. Previously reviewed 2026-07-30 (`WP 7.0A`, Future Capability Register & Product Vision — established). |
+| **Last Reviewed** | 2026-09-04 (`WP 16.2A`, Register and Status Currency) — **Phase 5 (Engineering Modules) marked Delivered through `v0.15.0`**: all six Engineering Disciplines shipped (`v0.9.0`), plus the Desktop application (`v0.10.0`), Plugin & Registration Trust Isolation (`v0.13.0`/`v0.13.1`), and Engineering Object Durability (`v0.14.0`) — none anticipated by the phase's own original working premise, preserved below for the historical record per this document's own convention. **Phase 5.5 — v1.0 Readiness added**, restating Definition 2 verbatim from `docs/releases/v0.11.0/WP11.0B Architecture Roadmap.md` §1, labelled per `D-021` — Proposed when `WP 16.2A` wrote it, **ratified by the Product Owner 2026-09-05** and promoted to Decided (`WP16.0A Product Owner Ratification — D-021 to D-026.md`); recorded as unapproved scope for the period it was; Definition 3 (`TD-84`, the project-centric product decision) noted as the `v1.x` roadmap, per `D-021`'s own text, not adopted for `v1.0` itself. See `docs/releases/v0.16.0/WP16.2A Register and Status Currency Report.md`. Previously reviewed 2026-07-30 (`WP 7.2A`, Strategic Roadmap Selection & Programme Architecture) — Phase 4 (Engineering Foundation) confirmed complete, in a different shape than this document's own original "working premise" anticipated (the Engineering Foundation frameworks were built, not the Platform/Infrastructure hardening items this phase originally named — disclosed explicitly in `WP7.2A Strategic Roadmap Review.md` §4, not silently reconciled). Phase 5 (Engineering Modules) sequencing recommended: Systems Engineering (`FCR-0027`) first, per `WP7.2A Recommended Programme.md` — still a recommendation, not an approval. Previously reviewed 2026-07-30 (`WP 7.0A`, Future Capability Register & Product Vision — established). |
 | **Related Documents** | `Future Capability Register.md`; `Capability Categories.md`; `VISION.md`; `docs/governance/Delivery/Release Register.md`; `docs/releases/v0.7.0/WorkPackages.md`. |
 | **Related ADRs** | ADR-0013. |
 | **Related Academy Articles** | None yet. |
@@ -164,15 +164,22 @@ finding, re-confirmed unchanged by `WP 7.2A`."
 
 ### Phase 5.5 — v1.0 Readiness (Platform Hardening & Release Engineering)
 
-**Status: per `D-021` (Proposed, `WP 16.0A`; ratification pending PR #6).**
-This phase is not yet approved scope — it is written here, disclosed as
-Proposed rather than silently presented as decided, because `D-021`
-itself directs that `Product Roadmap.md` gain this entry restating
-Definition 2 verbatim, and `WP 16.2A` is the Work Package that action
-was deferred to (`WP16.0A v0.16.0 Scope Decision.md`, "What This Work
-Package Deliberately Did Not Do"). Once `D-021` is ratified through
-PR #6, this status line is the one edit required to promote this phase
-from Proposed to Decided — no other text below changes.
+**Status: Decided — `D-021` ratified by the Product Owner, 2026-09-05.**
+This phase is approved scope. `D-021` directs that `Product Roadmap.md`
+carry this entry restating Definition 2 verbatim, and `WP 16.2A` is the
+Work Package that action was deferred to (`WP16.0A v0.16.0 Scope
+Decision.md`, "What This Work Package Deliberately Did Not Do").
+
+It stood here as **Proposed** from `WP 16.2A` (2026-09-04) until
+ratification, disclosed as unapproved scope rather than silently
+presented as decided, and that is left on the record rather than edited
+away. Ratification came by direct Product Owner instruction at the
+v0.16.0 release gate, not through PR #6 — which the earlier status line
+had anticipated as the route, and which remains open and superseded as a
+merge vehicle. Evidence: `docs/releases/v0.16.0/WP16.0A Product Owner
+Ratification — D-021 to D-026.md`. As that earlier line promised, this
+status is the only edit the promotion required; no other text below
+changed.
 
 **Definition 2, restated verbatim from `docs/releases/v0.11.0/WP11.0B
 Architecture Roadmap.md` §1 ("Recommended Definition of `TempestOS
@@ -225,8 +232,10 @@ scope, undelivered, exactly as Definition 2 recommends. Whether this
 means `v1.0.0` is now reachable, or whether the six-discipline scope
 itself needs revisiting given `v0.13.0`'s Plugin Trust and `v0.14.0`'s
 Durability work landed *after* this definition was written, is exactly
-the question `D-021`'s own ratification (PR #6) resolves — not
-pre-empted here.
+the question `D-021`'s ratification resolves — and it has now resolved
+it: Definition 2 governs `v1.0`, ratified 2026-09-05. The six-discipline
+scope is not revisited for `v1.0`; `v0.13.0`'s Plugin Trust and
+`v0.14.0`'s Durability work land inside it rather than reopening it.
 
 **Definition 3, noted but not adopted here:** the 2026-08-28
 project-centric product decision (`TD-84`, "TempestOS is a

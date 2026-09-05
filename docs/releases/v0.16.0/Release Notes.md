@@ -1,7 +1,10 @@
 # TempestOS v0.16.0 — Release Notes
 
-**Status: engineering complete, awaiting Product Approval.** Not merged
-to `main`, not tagged, not published. `D-021`–`D-026` remain **Proposed**.
+**Status: engineering complete; scope decisions ratified; awaiting merge,
+tag and Product Approval.** Not merged to `main`, not tagged, not
+published. `D-021`–`D-026` were **ratified by the Product Owner on
+2026-09-05** — gate 1 of four, settling scope only. Merge, tag and the
+Product Approval verdict are gates 2, 3 and 4, and none is authorised.
 Certification is Product Approval's own act (Engineering Governance §9);
 nothing in this document constitutes it.
 

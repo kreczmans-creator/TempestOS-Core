@@ -6,11 +6,11 @@
 |---|---|
 | **Register Name** | Decision Register |
 | **Purpose** | Records significant project decisions that shaped TempestOS but do **not** meet Engineering Governance §5's ADR criteria (no genuine rejected alternative, or a process/sequencing decision rather than an architectural one) — so these decisions are not lost simply because no ADR captures them. Complements, and explicitly does not duplicate, the ADR Register. |
-| **Scope** | Governance-process decisions (adopting a new discipline or document type) and release-sequencing decisions (reordering or splitting Work Packages) found in `WorkPackages.md`, `CHANGELOG.md`, and Work Package retrospectives. Architectural decisions with a genuine rejected alternative belong in the ADR Register, not here — see "Relationship to the ADR Register," below. |
+| **Scope** | Governance-process decisions (adopting a new discipline or document type), release-sequencing decisions (reordering or splitting Work Packages), and — from `D-021` (`WP 16.0A`, 2026-09-05) — **product decisions that set a scope or support boundary** (what a release contains, what is deferred, what the platform matrix claims). The first two are found in `WorkPackages.md`, `CHANGELOG.md`, and Work Package retrospectives; the third originates in a scope-decision Work Package and is entered only on Product Owner ratification, never on drafting. Architectural decisions with a genuine rejected alternative belong in the ADR Register, not here — see "Relationship to the ADR Register," below. |
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | `docs/releases/v0.4.0/WorkPackages.md`, `docs/releases/v0.4.0/CHANGELOG.md`, and the individual Work Package retrospectives named in each entry below. |
 | **Review Frequency** | Updated whenever a Work Package makes a significant process or sequencing decision that is not itself ADR-eligible. |
-| **Last Reviewed** | 2026-07-28 (WP 5.2, Diagnostics Improvements). |
+| **Last Reviewed** | 2026-09-05 (v0.16.0 Product Owner gate 1) — **`D-021`–`D-026` ratified by the Product Owner** and recorded, each row carrying both its ratification date and the fact that it was proposed 2026-09-04; approval evidence `docs/releases/v0.16.0/WP16.0A Product Owner Ratification — D-021 to D-026.md`. Total 20 → 26 entries. A third Type value, `Product`, enters the register with `D-021` (see "Common Pattern"). The `Common Pattern` paragraph was found stale in the same pass — it claimed "thirteen of the eighteen entries" and five sequencing decisions against a register already holding twenty rows and six — and is corrected by direct recount, disclosed rather than quietly amended. Ratification is Product Owner gate 1 of 4 and confers no merge, tag, publish or release-verdict authority. Previously reviewed 2026-07-28 (WP 5.2, Diagnostics Improvements). |
 | **Related Documents** | `ADR Register.md`; `Rejected Designs Register.md`; `Governance Register.md`; `Engineering Evolution Register.md`. |
 | **Related ADRs** | None directly — by definition, every entry below was judged *not* to require one. Where a decision later hardened into an ADR-eligible one, this is noted per entry. |
 | **Related Academy Articles** | `docs/academy/06 Engineering Standards/Engineering Governance.md` (§5, the ADR/non-ADR boundary this register exists to respect). |
@@ -53,18 +53,60 @@ source document cited in its own row.
 | D-019 | Redirect a brief written as "Event Framework Implementation" (against a non-existent "Event Framework Architecture.md" and an already-fully-implemented Event Bus) into the real, current `WP 5.2` (Diagnostics Improvements) per `docs/releases/v0.5.0/WorkPackages.md`, following investigation and explicit user confirmation — mirrors `D-009`'s "premise verification before implementation" pattern exactly | 2026-07-28 | This Work Package's own brief; `docs/releases/v0.5.0/WorkPackages.md`'s `WP 5.2` entry (Diagnostics Improvements); `docs/academy/03 Work Packages/WP5.2-diagnostics-improvements.md` | Process — premise verification before implementation |
 | D-020 | Re-scope `TD-01` (legacy `LoggingService` migration) forward again rather than migrating it, since `Program.cs` has not called this code since `WP 5.0D` — migrating dead code carries no behavioural benefit and only risk | 2026-07-28 | This Work Package's own brief and Repository Investigation; `Technical Debt Register.md` (`TD-01`); `docs/academy/03 Work Packages/WP5.2-diagnostics-improvements.md` | Sequencing — deliberate non-action on a named debt item, not a scope reduction |
 
-**Total: 20 entries.**
+| D-021 | `WP11.0B Architecture Roadmap.md` §1 (Definition 2) is the governing scope of `v1.0.0`; the 2026-08-28 project-centric decision (`TD-84`) becomes the v1.x roadmap; `Product Roadmap.md`'s Phase 5.5 formulation is retained as this decision's downstream expression | **Ratified 2026-09-05** (Product Owner); proposed 2026-09-04 | `docs/releases/v0.16.0/WP16.0A Product Owner Ratification — D-021 to D-026.md` (approval evidence); `docs/releases/v0.16.0/WP16.0A v0.16.0 Scope Decision.md` (the proposal); `v1.0.0 Release Candidate Audit.md` §2 | Product — scope boundary |
+| D-022 | The Companion mobile application (`WP 14.0A`–`14.2.1`, branch `claude/tempestos-companion-mobile-ubznt3`) is formally deferred to v1.1; the branch is retained, neither merged nor deleted; `TD-82` becomes Deferred by decision; `FCR-0092` remains Companion-scoped | **Ratified 2026-09-05** (Product Owner); proposed 2026-09-04 | `docs/releases/v0.16.0/WP16.0A Product Owner Ratification — D-021 to D-026.md` (approval evidence); `docs/releases/v0.16.0/WP16.0A v0.16.0 Scope Decision.md` (the proposal); `Technical Debt Register.md` (`TD-82`) | Product — scope boundary |
+| D-023 | No third-party plugin support is included in `v1.0.0`; `src/Plugins/` remains empty by design; `TD-49`/`50`/`56`/`61`/`64` retain their "before enablement" grading and are not v1.0 blockers | **Ratified 2026-09-05** (Product Owner); proposed 2026-09-04 | `docs/releases/v0.16.0/WP16.0A Product Owner Ratification — D-021 to D-026.md` (approval evidence); `docs/releases/v0.16.0/WP16.0A v0.16.0 Scope Decision.md` (the proposal); `FCR-0002`; Security Principle 7 | Product — scope boundary |
+| D-024 | REST remains loopback-only and its listener is disabled by default, enabled explicitly through the established configuration mechanism (`Runtime:RestApi:Enabled`, default `false`, implemented by `WP 16.4B`); `TD-13`/`14`/`16` and `FCR-0003`/`0004` remain declared debt for v1.0 | **Ratified 2026-09-05** (Product Owner); proposed 2026-09-04 | `docs/releases/v0.16.0/WP16.0A Product Owner Ratification — D-021 to D-026.md` (approval evidence); `docs/releases/v0.16.0/WP16.0A v0.16.0 Scope Decision.md` (the proposal); `src/Tempest.Core/Api/RestApiHostedService.cs`; `AT-10` | Product — scope boundary |
+| D-025 | v1.0 platform support boundary: **Windows** supported and CI-verified; **macOS** supported by design but **not** CI-verified; **Linux** launches successfully under Avalonia 11.3.20, on advisory smoke evidence and its determinism track record, but is **not CI-verified in the same sense as Windows**. Linux is not to be recorded as "supported" without qualification, is not to be claimed CI-verified, and the distinction between launch evidence and formal CI verification is to be retained | **Ratified 2026-09-05** (Product Owner); proposed 2026-09-04 | `docs/releases/v0.16.0/WP16.0A Product Owner Ratification — D-021 to D-026.md` (approval evidence); `docs/releases/v0.16.0/WP16.0A v0.16.0 Scope Decision.md` (the proposal); `docs/releases/v0.16.0/WP16.5B Linux Launch Spike Report.md` §8; `TD-116` | Product — support boundary |
+| D-026 | `WP 15.2A` is carried into `v0.16.0`; `docs/releases/v0.15.1/` remains deleted; no `v0.15.1` release exists. The folder disposition had already been performed and is irreversible; it was disclosed as such at the gate and is accepted and ratified in that knowledge | **Ratified 2026-09-05** (Product Owner); proposed 2026-09-04 | `docs/releases/v0.16.0/WP16.0A Product Owner Ratification — D-021 to D-026.md` (approval evidence); `docs/releases/v0.16.0/WP16.0A v0.16.0 Scope Decision.md` (the proposal); `WP16.0B Integration Report.md` | Sequencing — release folder disposition |
+
+**Total: 26 entries.**
+
+> **`D-021`–`D-026` were Proposed before they were ratified, and the
+> register says so in each row's own "When" cell rather than showing only
+> the ratified state.** They were reserved by number on 2026-09-04 by
+> `WP 16.0A` with their approval dates deliberately blank, and the whole
+> of v0.16.0 — thirteen Work Packages, two review boards and the
+> Engineering Readiness Review — was executed while they were still
+> unratified, disclosed at each step rather than assumed. The Product
+> Owner ratified all six on 2026-09-05. No earlier document is amended to
+> imply approval came sooner. Full status history and the ratification
+> instruction: `docs/releases/v0.16.0/WP16.0A Product Owner Ratification —
+> D-021 to D-026.md`.
+>
+> Ratification of these six is **Product Owner gate 1 of 4** for v0.16.0.
+> It carries no authority to merge, tag, publish, or record a release
+> verdict; those are gates 2, 3 and 4, held separately.
 
 ## Common Pattern
 
-Thirteen of the eighteen entries above are **process decisions** (how the
-project works), not **architectural decisions** (how the software is
-built) — the correct classification under §5, since none introduced a
-genuine, seriously-considered-and-rejected technical alternative of its
-own. The five sequencing decisions (D-006, D-007, D-008, D-016, D-018) are
-downstream consequences of risk assessment or investigation findings, not
-architecture in the ADR sense — reordering or extending *when* something
-is built, not deciding *how*.
+Re-derived directly from the rows rather than carried forward: of the 26
+entries above, **14 are process decisions** (how the project works), **7
+are sequencing decisions** (D-006, D-007, D-008, D-016, D-018, D-020,
+D-026), and **5 are product decisions** (D-021–D-025). None is an
+architectural decision under §5, since none introduced a genuine,
+seriously-considered-and-rejected technical alternative of its own.
+
+The sequencing entries are downstream consequences of risk assessment or
+investigation findings — reordering or extending *when* something is
+built, not deciding *how*.
+
+**`Product` is a third category, new with `D-021`.** It was introduced by
+`WP 16.0A` for decisions that set a scope or support boundary: what is in
+v1.0, what is deferred, what the platform matrix claims. Those are neither
+process nor sequencing — they do not say how the project works or when
+work happens, they say what the product is — and forcing them into either
+existing category would have misfiled them. They remain correctly outside
+the ADR Register for the §5 reason above: a scope boundary is a product
+judgement, not a rejected technical alternative.
+
+This paragraph previously read "thirteen of the eighteen entries" with
+five sequencing decisions named, against a register that already held
+twenty rows with six sequencing entries. Both figures were stale — the
+prose had not been re-derived when D-019 and D-020 were added. Corrected
+here by direct recount, and noted rather than silently fixed, because
+this register's own `Coverage Status` claims its entries are Verified from
+source and a summary that drifts undermines that claim.
 
 ## Cross-Reference Check
 
