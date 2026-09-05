@@ -193,6 +193,30 @@ public sealed class SettingsDocument<TDocument>
         // a hole at `version`: a migration exists for some later version
         // that this document can never arrive at.
         var targetVersion = HighestReachableVersion();
+
+        // **Deliberately asymmetric with `EngineeringObjectStateStore`, and
+        // this is the reasoning rather than an oversight.** That store has
+        // a fixed, platform-wide `CurrentSchemaVersion`, so a record above
+        // it genuinely means "written by a newer build" and is rightly
+        // discarded. Here the target is derived from *the calling
+        // consumer's own supplied chain*, which is not a build version at
+        // all: a caller supplying one migration at `FromVersion` 1 has a
+        // target of 2, and a document at 5 is not thereby "from the
+        // future" — it simply sits past everything this caller claims to
+        // transform. Discarding it would throw away a document no
+        // migration ever said it could not read.
+        // The `v0.16.0` independent security review proposed a symmetric
+        // "ahead" discard here by analogy with the state store. The
+        // analogy does not hold, for the reason above; the analysis was
+        // run, the change was written, and it broke
+        // `ADocumentAlreadyPastEveryRegisteredMigration_IsLeftAlone`, a
+        // pre-existing test that encodes this intent. Reverted rather than
+        // overridden. The residual risk the reviewer correctly identified
+        // — an older build silently reading a document a newer build gave
+        // a new meaning to — is real but needs a per-consumer declared
+        // current version, which this seam does not have; recorded as
+        // `TD-134` rather than approximated with a target that means
+        // something else.
         if (version < targetVersion)
         {
             _logger?.Warning(

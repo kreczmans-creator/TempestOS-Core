@@ -14,7 +14,7 @@
 | **Related Documents** | `docs/architecture/Host Lifecycle.md` (Phase 6); `docs/architecture/Ownership Matrix.md`; `Interface Register.md`. |
 | **Related ADRs** | ADR-0005 through ADR-0009, ADR-0011, ADR-0017, ADR-0020, ADR-0036, ADR-0039, ADR-0040–ADR-0057. |
 | **Related Academy Articles** | `docs/academy/01 Engineering Principles/05-dependency-injection.md`; `docs/academy/03 Work Packages/WP2.4-dependency-injection.md`. |
-| **Coverage Status** | **Complete, re-verified at the `WP 16.4B` integration (2026-09-05).** Re-derived directly against `src/Tempest.Core/Runtime/TempestHost.cs`'s own Phase 6 registration block — 59 of 59 registration statements accounted for (54 named rows + 2 discovered-type rows, with 3 named rows dual-registered). `WP 16.2A`'s own pass, which stated 55/50, was correct against the tree it measured; `WP 16.3B` then added `IStateMigrationRegistry` without a row here, found by the `v0.16.0` review board and corrected — see the Total block below. |
+| **Coverage Status** | **Complete, re-verified at the `WP 16.4B` integration (2026-09-05).** Re-derived directly against `src/Tempest.Core/Runtime/TempestHost.cs`'s own Phase 6 registration block — 60 of 60 registration statements accounted for (55 named rows + 2 discovered-type rows, with 3 named rows dual-registered). `WP 16.2A`'s own pass, which stated 55/50, was correct against the tree it measured; `WP 16.3B` then added `IStateMigrationRegistry` without a row here, found by the `v0.16.0` review board and corrected — see the Total block below. |
 
 ---
 
@@ -87,6 +87,7 @@ In registration order, exactly as they appear in
 | `IRequirementsReconciliationService` | `Singleton<IRequirementsReconciliationService, RequirementsReconciliationService>()` | Ordinary container-constructed singleton (`v0.16.0`, `WP 16.4B`, `TD-67`), depends on `IEngineeringDocumentStore` and `IPersistenceStore` — registered immediately after `IRequirementValidationService`. Explicit `DetectAsync`/`SweepAsync` only; nothing in the startup phase table, and no command or user-facing surface, invokes a sweep |
 | `IMaterialCatalogReconciliationService` | `Singleton<IMaterialCatalogReconciliationService, MaterialCatalogReconciliationService>()` | Ordinary container-constructed singleton (`v0.16.0`, `WP 16.4B`, `TD-67`), same dependencies and same explicit-invocation-only discipline as the row above |
 | `IAttachmentContentReconciliationService` | `Singleton<IAttachmentContentReconciliationService, AttachmentContentReconciliationService>()` | Ordinary container-constructed singleton (`v0.16.0`, `WP 16.4B`, `TD-97`), depends on `IPersistenceStore`, `IEngineeringObjectStateStore` and `IAttachmentContentStore` — registered after all three. Explicit `DetectAsync`/`SweepAsync` only |
+| `IAttachmentWriteIntentStore` | `Singleton<IAttachmentWriteIntentStore, AttachmentWriteIntentStore>()` | Ordinary container-constructed singleton (`v0.16.0`, `WP 16.4B-R2`, `TD-97`) — the durable marker recording that an attachment's content write is in flight, so the attachment sweep can skip content whose owning object state has not landed yet. Added here at the independent post-remediation review: `WP 16.4B-R2` registered it in `TempestHost.cs` Phase 6 without a row, the third recurrence in this release of the `TD-57`/`TD-123` failure mode, and on the very service that closed the release's own data-loss defect |
 | `EngineeringDomainContext` | `Singleton<EngineeringDomainContext>()` | Ordinary container-constructed singleton (`WP 8.2C`), depends on `IEngineeringDocumentStore` and all nine services immediately above plus `ICurrentPrincipalAccessor` — the shared collaborator bundle every `EngineeringObjectFactory<T>` needs |
 | `EngineeringObjectRehydrationService` | `Singleton<EngineeringObjectRehydrationService>()` | Ordinary container-constructed singleton (`v0.14.0`, `TD-85`, `ADR-0116`) — the startup rehydration driver, registered immediately after `EngineeringDomainContext`; not itself resolved by any Platform Service, only by `TempestHost`'s own startup sequence — backfilled `WP 16.2A` |
 | `IMaterialCatalog` | `Singleton<IMaterialCatalog, MaterialCatalog>()` | Ordinary container-constructed singleton (`WP 7.1C`, ADR-0055), a thin, typed index over `IEngineeringDocumentStore` plus a direct `IPersistenceStore` dependency of its own for its `materialId` index — registered after both |
@@ -98,7 +99,7 @@ In registration order, exactly as they appear in
 | Every discovered module type | `AddDiscoveredModules` → `Singleton(type, type)` per type | Self-referential singleton |
 | Every discovered hosted service type | `AddDiscoveredHostedServices` → `Singleton(type, type)` per type | Self-referential singleton |
 
-**Total: 54 individually-named registrations above (three of which —
+**Total: 55 individually-named registrations above (three of which —
 `ICurrentPrincipalAccessor`/`CurrentPrincipalAccessor`,
 `IImportService`/`ImportService`, and (new, `WP 16.2A`)
 `ICurrentComponentAccessor`/`CurrentComponentAccessor` — are each
@@ -107,14 +108,16 @@ further rows (`AddDiscoveredModules`, `AddDiscoveredHostedServices`)
 each registering a dynamic set of discovered types. Verified directly
 (re-derived at the `WP 16.4B` integration, 2026-09-05): `grep -c
 'services\.\(Singleton\|AddInstance\)' src/Tempest.Core/Runtime/
-TempestHost.cs` returns 57; `grep -c 'AddDiscovered'
-src/Tempest.Core/Runtime/TempestHost.cs` returns 2; 57 + 2 = 59 total
+TempestHost.cs` returns 58; `grep -c 'AddDiscovered'
+src/Tempest.Core/Runtime/TempestHost.cs` returns 2; 58 + 2 = 60 total
 registration statements in `TempestHost.cs`'s own Phase 6 block,
-matching this table's own 54 named single/dual registrations (54 rows,
-accounting for 57 raw `Singleton`/`AddInstance` calls: 54 rows + 3
+matching this table's own 55 named single/dual registrations (55 rows,
+accounting for 58 raw `Singleton`/`AddInstance` calls: 55 rows + 3
 extra calls for the three dual-registered rows named above) plus 2
-discovered-type rows exactly — re-derived at the `WP 16.4B` integration,
-2026-09-05, which added the three reconciliation services. **Found-and-fixed drift, disclosed rather
+discovered-type rows exactly — re-derived at the independent
+post-remediation review, 2026-09-05, which added
+`IAttachmentWriteIntentStore` after `WP 16.4B-R2` registered it without
+a row here. **Found-and-fixed drift, disclosed rather
 than silently corrected:** `WP 16.3B` registered
 `IStateMigrationRegistry` without adding its row here, so this register
 stated 55 statements / 50 named rows against a tree carrying 56 / 51 —
@@ -124,7 +127,7 @@ because that script derives the Interface, Exception and Namespace
 registers from source but **not** this one. Raised as a review-board
 finding at the `v0.16.0` review board and corrected here; the standing
 gap (this register, the Platform Services Register and the Validation
-Register have no machine derivation) is recorded as `TD-121`. This register had gone stale since
+Register have no machine derivation) is recorded as `TD-123`. This register had gone stale since
 `v0.13.0`: 6 registrations were never added at implementation time —
 `ICurrentComponentAccessor`/`CurrentComponentAccessor` (`v0.13.0`,
 `ADR-0111`), `IEngineeringObjectStateStore`, `IBinaryPersistenceStore`,

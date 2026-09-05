@@ -16,7 +16,7 @@ says so rather than implying more than was tested.
 | Requirement | Detail |
 |---|---|
 | **.NET SDK** | The version pinned in [`global.json`](global.json) — **10.0.302**, `rollForward: latestFeature`. Any 10.0.3xx SDK satisfies it. This is the only mandatory install. |
-| **Operating system** | **Windows** is the verified platform: CI runs on `windows-2022`, and the desktop application is known to launch there. macOS is expected to work and is untested. **Linux launches the desktop application** as of `WP 16.5B` (Avalonia 11.3.20) — but on weaker evidence than Windows: one local `xvfb-run` launch plus an advisory `linux-launch-smoke` CI job that is not a required check. See §8, item 1. Building and running the full test suite works on all three. |
+| **Operating system** | **Windows** is the CI-verified platform for **build and test**: `ci.yml` restores, builds and runs the full suite on `windows-2022`, both configurations, on every push. Stated precisely, because the distinction matters and this document's own standard demands it: **no CI step on any platform launches the real windowed application on Windows** — the suite is Avalonia headless. That the app launches on Windows is the development team's direct experience, not a CI artefact; it is asserted here without a citation, unlike the Linux claim below, and that asymmetry was found by the `v0.16.0` independent review rather than volunteered. macOS is expected to work and is untested. **Linux launches the desktop application** as of `WP 16.5B` (Avalonia 11.3.20) — but on weaker evidence than Windows: one local `xvfb-run` launch plus an advisory `linux-launch-smoke` CI job that is not a required check. See §8, item 1. Building and running the full test suite works on all three. |
 | **PowerShell** | Only for the governance health check (§2.5). CI uses PowerShell 7 (`pwsh`); the script uses no PowerShell 7-only syntax, so Windows PowerShell 5.1 is expected to work, but that has not been verified. |
 | **Network** | Needed **once**, for `dotnet restore`. Packages come from the default nuget.org feed; the repository declares no `NuGet.config` and no private feed. After restore, build/test/run are offline. |
 | **Not required** | No .NET workloads (`dotnet workload install` is never needed). No Visual Studio. No Node, Python or Docker. No database. No SDK-external build tools. No code generation step. No environment variables. No secrets, licence file, API key, account or sign-in of any kind. |
@@ -55,13 +55,13 @@ dotnet build src/TempestOS.slnx --configuration Release --no-restore -p:TreatWar
 applies it, so a local build behaves as it always has while the gate stays
 the same gate.
 
-**2.3 Core tests** — 3,088 tests, ~30 seconds
+**2.3 Core tests** — 3,199 tests, ~35 seconds (was 3,088 at the `v0.15.0` tag; re-derived 2026-09-05)
 
 ```
 dotnet test tests/Tempest.Core.Tests/Tempest.Core.Tests.csproj --configuration Debug --no-build
 ```
 
-**2.4 Desktop tests** — 372 tests, ~3 minutes
+**2.4 Desktop tests** — 474 tests, ~1–2 minutes (was 372; re-derived 2026-09-05)
 
 ```
 dotnet test tests/Tempest.Desktop.Tests/Tempest.Desktop.Tests.csproj --configuration Debug --no-build

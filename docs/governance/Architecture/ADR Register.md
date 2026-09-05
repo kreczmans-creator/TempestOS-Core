@@ -155,6 +155,7 @@ line, verified directly.
 | ADR-0120 | Durable State Carries a Schema Version, and Migrations Apply Only on Read | Accepted | `WP 16.3A` — addresses `TD-87` (closed by `WP 16.3B`) | 2026-09-04 | Verified |
 | ADR-0121 | A Test-Only Construction Seam Is an `internal` Constructor, Never a Container-Visible One | Accepted | `WP 16.4B-R1` — records a `WP 16.3B` decision established under Technical Review and found undocumented by the `v0.16.0` review board | 2026-09-05 | Verified |
 | ADR-0122 | Registering a Service Twice Is an Error, Not a Replacement | Accepted | `WP 16.4B-R1` — records `WP 16.4B`'s change to the DI container's registration contract (`TD-69`), found undocumented by the `v0.16.0` review board | 2026-09-05 | Verified |
+| ADR-0123 | A Migration-Chain Collision Is a Registration Error, With No Opt-Out | Accepted | `WP 16.4B-R3` — records `WP 16.4B-R1`'s collision guard, which that Work Package closed with an explicit "No ADR"; the independent post-remediation review found that judgement wrong under §5 | 2026-09-05 | Verified |
 
 **Total: 104 ADRs — corrected directly (`ls docs/adr | wc -l`) — this
 field had drifted stale at "100" even before this Work Package (rows
@@ -199,10 +200,10 @@ text — the identical recurring drift class `WP 9.1A`/`WP 10.0A`/`WP
 this same field, now caught by `WP 13.0B`'s own independent audit rather
 than by the tool, since `governance-healthcheck.ps1` validates only
 row-count-vs-file-count parity, not this free-text sentence. **Total:
-122 ADRs** — 120 Accepted, 2 Superseded (`ADR-0065`, `ADR-0066`,
+123 ADRs** — 121 Accepted, 2 Superseded (`ADR-0065`, `ADR-0066`,
 unchanged since `WP 10.0A`) — re-verified directly at the `WP 16.4B-R1`
-integration, 2026-09-05 (`ls docs/adr/*.md`, 122; Entries table above,
-122 rows; `governance-healthcheck.ps1`, "122 files, 122 register rows").
+integration, 2026-09-05 (`ls docs/adr/*.md`, 123; Entries table above,
+123 rows; `governance-healthcheck.ps1`, "123 files, 123 register rows").
 This free-text total had itself drifted stale at 111 across eleven
 subsequent ADRs — the machine check enforces row-count-vs-file-count
 parity, which is why it stayed green throughout, and not this sentence.
