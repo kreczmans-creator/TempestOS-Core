@@ -153,6 +153,8 @@ line, verified directly.
 | ADR-0118 | Kind Eligibility Is Two Mechanisms Held Together by One Invariant, Not One Source of Truth | Accepted | `WP-B2` — closes `TD-107` (`F-03`) | 2026-09-01 | Verified |
 | ADR-0119 | UI-Thread Marshalling Is the Desktop's Job — `Tempest.App` Stays Dispatcher-Free | Accepted | `WP-Z2` — resolves `TD-117` | 2026-09-01 | Verified |
 | ADR-0120 | Durable State Carries a Schema Version, and Migrations Apply Only on Read | Accepted | `WP 16.3A` — addresses `TD-87` (closed by `WP 16.3B`) | 2026-09-04 | Verified |
+| ADR-0121 | A Test-Only Construction Seam Is an `internal` Constructor, Never a Container-Visible One | Accepted | `WP 16.4B-R1` — records a `WP 16.3B` decision established under Technical Review and found undocumented by the `v0.16.0` review board | 2026-09-05 | Verified |
+| ADR-0122 | Registering a Service Twice Is an Error, Not a Replacement | Accepted | `WP 16.4B-R1` — records `WP 16.4B`'s change to the DI container's registration contract (`TD-69`), found undocumented by the `v0.16.0` review board | 2026-09-05 | Verified |
 
 **Total: 104 ADRs — corrected directly (`ls docs/adr | wc -l`) — this
 field had drifted stale at "100" even before this Work Package (rows
@@ -197,10 +199,14 @@ text — the identical recurring drift class `WP 9.1A`/`WP 10.0A`/`WP
 this same field, now caught by `WP 13.0B`'s own independent audit rather
 than by the tool, since `governance-healthcheck.ps1` validates only
 row-count-vs-file-count parity, not this free-text sentence. **Total:
-111 ADRs** — 109 Accepted, 2 Superseded (`ADR-0065`, `ADR-0066`,
-unchanged since `WP 10.0A`) — re-verified directly (`ls docs/adr/*.md`,
-111; Entries table above, 111 rows; `governance-healthcheck.ps1`,
-"111 files, 111 register rows").
+122 ADRs** — 120 Accepted, 2 Superseded (`ADR-0065`, `ADR-0066`,
+unchanged since `WP 10.0A`) — re-verified directly at the `WP 16.4B-R1`
+integration, 2026-09-05 (`ls docs/adr/*.md`, 122; Entries table above,
+122 rows; `governance-healthcheck.ps1`, "122 files, 122 register rows").
+This free-text total had itself drifted stale at 111 across eleven
+subsequent ADRs — the machine check enforces row-count-vs-file-count
+parity, which is why it stayed green throughout, and not this sentence.
+Found by the `v0.16.0` review board and corrected rather than left.
 
 ## Numbering Integrity
 
