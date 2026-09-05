@@ -174,10 +174,88 @@ public abstract class EngineeringObjectBase :
     /// is composed, so every pre-`TD-85` hand-assembled context keeps
     /// working exactly as it did.
     /// </summary>
-    protected Task PersistStateAsync(CancellationToken cancellationToken = default) =>
-        _context.ObjectStateStore is { } store
-            ? store.SaveAsync(CaptureState(), cancellationToken)
-            : Task.CompletedTask;
+    /// <remarks>
+    /// <b>The lost update this closes (`WP 16.4B-R3`).</b>
+    /// <see cref="CaptureState"/> reads the live fields under short-lived
+    /// per-field locks and <see cref="EngineeringObjectStateStore.SaveAsync"/>
+    /// is an unconditional whole-record overwrite with no version check —
+    /// nothing used to serialise the capture-then-save pair as a whole.
+    /// Two concurrent mutations could have their saves land in the
+    /// opposite order to their captures, and the later-landing, earlier
+    /// captured snapshot silently dropped the other's change from disk —
+    /// including an attachment reference, which
+    /// <see cref="AttachmentContentReconciliationService.SweepAsync"/> then
+    /// permanently deletes as an orphan, because it is behaving exactly as
+    /// designed against durable state that no longer names a file the
+    /// caller was told exists. Found by the independent post-remediation
+    /// review that reproduced it against the real classes; the
+    /// `WP 16.4B-R2` write-intent marker does not touch this — both
+    /// concurrent writes complete and clear their markers correctly, and
+    /// the marker's own window is separate from this one.
+    /// <para>
+    /// <b>Why the lock is keyed by <see cref="Id"/>, not held on this
+    /// instance.</b> An instance-level lock only serialises callers that
+    /// share this exact <see cref="EngineeringObjectBase"/> object, and
+    /// that is not always true for one Id: <see cref="ReviseAsync"/>
+    /// constructs a second, independently-mutable instance for the same
+    /// <see cref="Id"/> and registers it in place of this one, while
+    /// nothing requires every caller holding a reference to <em>this</em>
+    /// instance to have noticed the replacement — a caller that mutates
+    /// the original after a concurrent revision is racing the revised
+    /// successor for the identical durable record. <see cref="Context"/>
+    /// (<see cref="EngineeringDomainContext"/>) is the one collaborator
+    /// every instance for a given Id is guaranteed to share (it is
+    /// threaded through every constructor and every self-factory/rehydrator
+    /// closure), so the lock lives there, keyed by <see cref="Id"/> rather
+    /// than by any one instance —
+    /// <see cref="EngineeringDomainContext.AcquireObjectWriteLockAsync"/>.
+    /// </para>
+    /// <para>
+    /// <b>Re-entrancy.</b> <see cref="Concurrency.AsyncKeyedLock"/> is not
+    /// reentrant. Every mutator on this hierarchy calls this method at
+    /// most once, and never while already holding this object's write
+    /// lock (audited across the whole <c>EngineeringDomain</c> tree and
+    /// every composed caller in <c>Tempest.App</c> for `WP 16.4B-R3`) — a
+    /// method that performs more than one durable step (for example
+    /// <see cref="MoveAsync"/>'s link followed by its own persist) always
+    /// completes its non-locking steps first and calls this method
+    /// exactly once, last.
+    /// </para>
+    /// </remarks>
+    protected async Task PersistStateAsync(CancellationToken cancellationToken = default)
+    {
+        if (_context.ObjectStateStore is not { } store)
+            return;
+
+        using (await _context.AcquireObjectWriteLockAsync(Id, cancellationToken).ConfigureAwait(false))
+        {
+            await store.SaveAsync(CaptureState(), cancellationToken).ConfigureAwait(false);
+        }
+    }
+
+    /// <summary>
+    /// Persists a freshly-created object's initial state (`TD-85`)
+    /// through the same per-object write lock as every later mutation
+    /// (`WP 16.4B-R3` — see <see cref="PersistStateAsync"/>).
+    /// </summary>
+    /// <remarks>
+    /// Exists only for <see cref="EngineeringObjectFactory{T}.CreateAsync"/>:
+    /// that type is not part of this hierarchy, so it cannot reach the
+    /// <see langword="protected"/> <see cref="PersistStateAsync"/>
+    /// directly — the same reason <see cref="CaptureState"/> itself is
+    /// <see langword="internal"/> rather than <see langword="protected"/>.
+    /// Before `WP 16.4B-R3` the factory captured and saved this object's
+    /// state directly, unprotected by any lock, after already registering
+    /// the instance in the repository — a window, however narrow, in
+    /// which a concurrent caller that found the object through the
+    /// repository could race the factory's own initial save exactly as
+    /// two mutators could race each other. Routing it through this same
+    /// locked path closes that window too, rather than leaving one
+    /// capture-then-save call outside the serialisation this Work Package
+    /// exists to add.
+    /// </remarks>
+    internal Task PersistInitialStateAsync(CancellationToken cancellationToken = default) =>
+        PersistStateAsync(cancellationToken);
 
     // IEngineeringObject
     public Guid Id => Document.Id;

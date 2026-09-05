@@ -165,6 +165,44 @@ public class StateMigrationChainTests
     }
 
     [Fact]
+    public void RegisteringAKindSpecificMigration_ThatConflicts_LeavesNoPhantomChainForItsKind()
+    {
+        // `WP 16.4B-R3`. Register created this Kind's own chain dictionary
+        // and wired it into `_byKind` *before* running either collision
+        // check — a throw here used to leave a phantom, empty chain
+        // behind for a Kind that was never actually registered,
+        // contradicting Register's own documented guarantee that a
+        // throwing registration does not complete. `HasChainFor` is the
+        // test-only seam (`InternalsVisibleTo`) that observes `_byKind`'s
+        // key set directly, since nothing in production ever reads it.
+        var registry = new StateMigrationRegistry();
+        registry.Register(new LoggingMigration(null, 1, "Common", []));
+
+        Assert.Throws<ConflictingStateMigrationException>(
+            () => registry.Register(new LoggingMigration(TestKind, 1, "KindSpecific", [])));
+
+        Assert.False(registry.HasChainFor(TestKind));
+    }
+
+    [Fact]
+    public void RegisteringADuplicateKindSpecificMigration_ThatConflicts_LeavesTheExistingChainUntouched()
+    {
+        // The companion case: the Kind's chain already legitimately exists
+        // (a prior, successful registration) before the throwing call —
+        // that real chain must survive a later throw unchanged, not be
+        // replaced or cleared by it.
+        var registry = new StateMigrationRegistry();
+        registry.Register(new LoggingMigration(TestKind, 2, "Existing", []));
+        registry.Register(new LoggingMigration(null, 1, "Common", []));
+
+        Assert.Throws<ConflictingStateMigrationException>(
+            () => registry.Register(new LoggingMigration(TestKind, 1, "KindSpecific", [])));
+
+        Assert.True(registry.HasChainFor(TestKind));
+        Assert.NotNull(registry.Find(TestKind, 2));
+    }
+
+    [Fact]
     public async Task ANonCollidingCommonMigration_FollowedByThatKindsOwnLaterMigration_MigratesEndToEndInOrder()
     {
         // Common at FromVersion 1 (1 -> 2), that Kind's own migration at

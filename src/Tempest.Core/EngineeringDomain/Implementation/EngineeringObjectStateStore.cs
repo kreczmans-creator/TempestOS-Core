@@ -341,9 +341,12 @@ public sealed class StateMigrationRegistry : IStateMigrationRegistry
             return;
         }
 
-        var kindChain = _byKind.TryGetValue(kind, out var existingChain)
-            ? existingChain
-            : _byKind[kind] = new Dictionary<int, IStateMigration>();
+        // Looked up, never written, until every check below has passed —
+        // see this method's own remarks: a throwing registration must
+        // leave no trace, including no empty chain for a Kind that was
+        // never actually registered (`WP 16.4B-R3`).
+        var kindChainAlreadyExists = _byKind.TryGetValue(kind, out var existingChain);
+        var kindChain = kindChainAlreadyExists ? existingChain! : new Dictionary<int, IStateMigration>();
 
         if (kindChain.TryGetValue(fromVersion, out _))
             throw new DuplicateStateMigrationException(kind, fromVersion);
@@ -355,7 +358,26 @@ public sealed class StateMigrationRegistry : IStateMigrationRegistry
             throw new ConflictingStateMigrationException(kind, fromVersion);
 
         kindChain[fromVersion] = migration;
+
+        // Only wired into `_byKind` now that this registration is
+        // actually succeeding — a brand-new chain built above for a throw
+        // that happened first (either check above) never reaches here, so
+        // `_byKind` never gains a phantom empty entry for a Kind whose
+        // registration failed.
+        if (!kindChainAlreadyExists)
+            _byKind[kind] = kindChain;
     }
+
+    /// <summary>
+    /// Whether a chain — populated or not — exists for <paramref name="kind"/>.
+    /// Internal, and reached only by <c>Tempest.Core.Tests</c>
+    /// (<c>InternalsVisibleTo</c>), to verify a throwing
+    /// <see cref="Register"/> call left no phantom entry — see that
+    /// method's own remarks (`WP 16.4B-R3`). Not read anywhere in
+    /// production: <see cref="Find"/> never needs to know whether a chain
+    /// merely exists, only whether it holds a migration for one version.
+    /// </summary>
+    internal bool HasChainFor(string kind) => _byKind.ContainsKey(kind);
 
     /// <inheritdoc />
     public IStateMigration? Find(string kind, int fromVersion)
