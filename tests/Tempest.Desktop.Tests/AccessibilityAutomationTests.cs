@@ -110,8 +110,22 @@ public sealed class AccessibilityAutomationTests
     // Live regions
     // ------------------------------------------------------------
 
+    /// <summary>
+    /// Review board finding #5 (`WP 16.5A-R1`) — the fix. Seven of the
+    /// eight segments (Current project, Location, Selected object, Active
+    /// area, Host state, Diagnostics, Notifications) change because a
+    /// real, discrete backend/navigation event happened, and stay
+    /// `Polite`. `Hint` alone is wired to `RibbonView`'s own
+    /// `PointerEntered`/`PointerExited`, fired on *every* ribbon button —
+    /// before this fix a screen-reader user sweeping the pointer across
+    /// the ribbon got one `Polite` announcement per hover-enter/exit, on
+    /// top of the button's own accessible name, for every button passed
+    /// over. This test replaces the prior version of itself, which
+    /// asserted the bug (<c>Polite</c> on all eight, hint included) as if
+    /// it were the correct behaviour.
+    /// </summary>
     [AvaloniaFact]
-    public void StatusBarView_EverySegmentValue_CarriesAPoliteLiveSetting()
+    public void StatusBarView_SevenSegmentValues_CarryAPoliteLiveSetting_ButHintDoesNot()
     {
         var statusBar = new StatusBarView();
 
@@ -125,7 +139,15 @@ public sealed class AccessibilityAutomationTests
             .ToList();
 
         Assert.Equal(8, segmentValues.Count);
-        Assert.All(segmentValues, t => Assert.Equal(AutomationLiveSetting.Polite, AutomationProperties.GetLiveSetting(t)));
+
+        var hint = segmentValues.Single(t => AutomationProperties.GetName(t) == "Hint");
+        var others = segmentValues.Where(t => t != hint).ToList();
+
+        Assert.Equal(7, others.Count);
+        Assert.All(others, t => Assert.Equal(AutomationLiveSetting.Polite, AutomationProperties.GetLiveSetting(t)));
+
+        Assert.NotEqual(AutomationLiveSetting.Polite, AutomationProperties.GetLiveSetting(hint));
+        Assert.Equal(AutomationLiveSetting.Off, AutomationProperties.GetLiveSetting(hint));
     }
 
     [AvaloniaFact]

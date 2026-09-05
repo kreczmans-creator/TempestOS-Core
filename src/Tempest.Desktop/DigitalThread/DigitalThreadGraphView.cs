@@ -309,6 +309,12 @@ public sealed class DigitalThreadGraphView : UserControl, IWorkspaceView
         resetZoomContent.Children.Add(new TextBlock { Text = "Reset View", VerticalAlignment = VerticalAlignment.Center });
         var resetZoomButton = new Button { Content = resetZoomContent, MinHeight = DesignTokens.MinControlSize };
         resetZoomButton.Classes.Add(ChromeStyles.Subtle);
+        // Review board finding #3 (`WP 16.5A-R1`): `Content` here is a
+        // `StackPanel` (icon + `TextBlock`) with no `ToString` override,
+        // so the automation peer's own name fallback resolved to the
+        // literal type name — in a file `WP 16.5A` explicitly claimed to
+        // have audited for automation names.
+        AutomationProperties.SetName(resetZoomButton, "Reset View");
         resetZoomButton.Click += (_, _) => { _model.ResetView(); UpdateTransform(); };
         header.Children.Add(titleRow);
         header.Children.Add(_searchBox);

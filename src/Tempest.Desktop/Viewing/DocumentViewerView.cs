@@ -1,4 +1,5 @@
 using Avalonia;
+using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Layout;
@@ -28,6 +29,9 @@ namespace Tempest.Desktop.Viewing;
 /// </remarks>
 public sealed class DocumentViewerView : UserControl
 {
+    /// <summary>Arrow-key pan distance, in rendered pixels per keypress (review board finding #4, `WP 16.5A-R1`).</summary>
+    private const double KeyboardPanStep = 40;
+
     private readonly Image _page = new() { Stretch = Stretch.Fill };
     private readonly Canvas _canvas = new() { Background = new SolidColorBrush(Color.FromRgb(0x3A, 0x3D, 0x41)) };
     private readonly TextBlock _pageIndicator = new() { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(8, 0) };
@@ -95,6 +99,17 @@ public sealed class DocumentViewerView : UserControl
         // The viewport belongs to the view's real size, so a resize is a
         // viewport change rather than a re-fit that discards the user's place.
         _canvas.SizeChanged += (_, e) => Apply(s => s.WithViewport(s.Viewport.WithViewportSize(e.NewSize.Width, e.NewSize.Height)));
+
+        // Keyboard operability (review board finding #4, `WP 16.5A-R1`) —
+        // panning a zoomed document previously worked only through the
+        // pointer handlers above. Attached at the root, exactly the
+        // pattern `DigitalThreadGraphView.OnGraphKeyDown` already
+        // established for this codebase's other pannable/zoomable
+        // surface: it fires regardless of which of this view's own
+        // controls (any toolbar button — all real tab stops already)
+        // currently holds focus, rather than requiring a new focus target
+        // of its own.
+        KeyDown += OnViewerKeyDown;
 
         Refresh();
     }
@@ -424,6 +439,47 @@ public sealed class DocumentViewerView : UserControl
         e.Handled = true;
     }
 
+    /// <summary>
+    /// Review board finding #4 (`WP 16.5A-R1`) — arrow-key panning, the
+    /// keyboard-only path <see cref="OnPointerPressed"/>/<see cref="OnPointerMoved"/>/
+    /// <see cref="OnPointerReleased"/> above never offered. Direction
+    /// follows the same convention <see cref="OnPointerMoved"/>'s own
+    /// remarks already state for the pointer path ("drag right, see what
+    /// was to the left" — i.e. a positive <see cref="PanBy(double, double)"/>
+    /// delta reveals content further right/down): <c>Right</c>/<c>Down</c>
+    /// reveal what is to the right/below (positive delta), <c>Left</c>/<c>Up</c>
+    /// reveal what is to the left/above (negative delta) — the same
+    /// direction a mouse-wheel/scrollbar user already expects.
+    /// </summary>
+    private void OnViewerKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (Session is not { IsReady: true })
+            return;
+
+        switch (e.Key)
+        {
+            case Key.Left:
+                PanBy(-KeyboardPanStep, 0);
+                e.Handled = true;
+                break;
+
+            case Key.Right:
+                PanBy(KeyboardPanStep, 0);
+                e.Handled = true;
+                break;
+
+            case Key.Up:
+                PanBy(0, -KeyboardPanStep);
+                e.Handled = true;
+                break;
+
+            case Key.Down:
+                PanBy(0, KeyboardPanStep);
+                e.Handled = true;
+                break;
+        }
+    }
+
     private static Button ToolbarButton(string caption, string tooltip, Action onClick)
     {
         var button = new Button
@@ -434,6 +490,13 @@ public sealed class DocumentViewerView : UserControl
         };
 
         ToolTip.SetTip(button, tooltip);
+        // Review board finding #4 (`WP 16.5A-R1`): the glyph-only buttons
+        // ("‹"/"›"/"−"/"+") had no `AutomationProperties.SetName`, so
+        // their accessible name resolved to the bare glyph character.
+        // `tooltip` is already the real, descriptive name every caller
+        // passes ("Previous page", "Next page", "Zoom out", "Zoom in",
+        // …) — set uniformly here rather than per-button.
+        AutomationProperties.SetName(button, tooltip);
         button.Click += (_, _) => onClick();
         return button;
     }

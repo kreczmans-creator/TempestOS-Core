@@ -1,4 +1,5 @@
 using Avalonia;
+using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.LogicalTree;
 using Avalonia.VisualTree;
@@ -448,6 +449,16 @@ public sealed class RibbonView : UserControl
         // regardless of importance, sized apart but never distinguished by
         // weight or colour.
         button.Classes.Add(large ? ChromeStyles.Primary : ChromeStyles.Flat);
+
+        // Review board finding #2 (`WP 16.5A-R1`): `Content` is a
+        // `StackPanel` (icon + `TextBlock`) with no `ToString` override,
+        // so `ContentControlAutomationPeer.GetNameCore()`'s own fallback
+        // (`Owner.Content?.ToString()`) resolved to the literal type name
+        // ("Avalonia.Controls.StackPanel") — every ribbon command
+        // announced the same wrong name. Set explicitly from the command
+        // descriptor's own display name, the same text the visible label
+        // already shows.
+        AutomationProperties.SetName(button, descriptor.DisplayName);
 
         ToolTip.SetTip(button, descriptor.Description ?? descriptor.DisplayName);
         button.PointerEntered += (_, _) => _setHint(descriptor.Description ?? descriptor.DisplayName);
