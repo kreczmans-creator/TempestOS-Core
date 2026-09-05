@@ -74,7 +74,7 @@ reflected here until now).
 | `Tempest.Core.Calculations` | Tempest.Core | 18 | `ICalculationDefinition<TInput, TResult>`/`ICalculationEngine`/`CalculationEngine`, `CalculationRecord`/`CalculationContext`, `CalculationException` and three subtypes, `EngineeringCalculationDefinitions` | WP 7.1D, `ADR-0056` — backfilled `WP 16.2A` |
 | `Tempest.Core.Verification` | Tempest.Core | 9 | `IVerificationRecord`/`VerificationRecord`, `IVerificationService`/`VerificationService`, `VerificationContext`/`VerificationCriterion`/`VerificationOutcome`/`VerificationEvidenceEntry` | WP 7.1E, `ADR-0057` — backfilled `WP 16.2A` |
 | `Tempest.Core.Requirements` | Tempest.Core | 28 | `IRequirement`/`Requirement`, `IRequirementCollection`/`RequirementCollection`, `IRequirementGroup`/`RequirementGroup`, `IRequirementEvidence`, `IRequirementsService`/`RequirementsService`, `IRequirementValidationService`/`RequirementValidationService` (`WP 9.1A`), `RequirementsException` and four subtypes | WP 7.3A, `ADR-0058`, extended WP 9.1A — backfilled `WP 16.2A` |
-| `Tempest.Core.EngineeringDomain` | Tempest.Core | 68 | The canonical Engineering Object model: `IEngineeringObject`/`EngineeringObjectBase`, every Physical/Configuration/Programme/Governance/Supply-Chain/Test-Manufacturing/Documentation-Design object and facet contract (`IHasLifecycle`, `IHasParent`, `IHasRelationships`, `IHasAttachments`, `IDeletable`, `IRenamable`, and others), `IEngineeringObjectRepository`/`IEngineeringRelationshipRepository`, `ILifecycleTransitionTable`, `IValidationRuleSet`, `IReferenceIntegrityChecker`, `IRelationshipDiscovery`/`IDependencyTraversal`/`IImpactAnalysis`, `IEvidenceComposer`, `EngineeringDomainContext`, `EngineeringDomainException` and its subtypes; durability/rehydration/attachment-content additions (`v0.14.0`): `EngineeringObjectState`/`IEngineeringObjectStateStore`, `IAttachmentContentStore`/`AttachmentContent`, `IRehydratable<TSelf>`/`IEngineeringObjectRehydrator`/`IEngineeringObjectRehydratorRegistry`/`EngineeringObjectRehydrationService` | WP 8.2C, `ADR-0075`–`ADR-0081`, extended `v0.9.0` (`IRenamable`/`IHasParent`/`IDeletable`/`IHasBomLine`) and `v0.14.0` (`TD-85`, `ADR-0113`/`ADR-0116`) — backfilled `WP 16.2A` |
+| `Tempest.Core.EngineeringDomain` | Tempest.Core | 70 | The canonical Engineering Object model: `IEngineeringObject`/`EngineeringObjectBase`, every Physical/Configuration/Programme/Governance/Supply-Chain/Test-Manufacturing/Documentation-Design object and facet contract (`IHasLifecycle`, `IHasParent`, `IHasRelationships`, `IHasAttachments`, `IDeletable`, `IRenamable`, and others), `IEngineeringObjectRepository`/`IEngineeringRelationshipRepository`, `ILifecycleTransitionTable`, `IValidationRuleSet`, `IReferenceIntegrityChecker`, `IRelationshipDiscovery`/`IDependencyTraversal`/`IImpactAnalysis`, `IEvidenceComposer`, `EngineeringDomainContext`, `EngineeringDomainException` and its subtypes; durability/rehydration/attachment-content additions (`v0.14.0`): `EngineeringObjectState`/`IEngineeringObjectStateStore`, `IAttachmentContentStore`/`AttachmentContent`, `IRehydratable<TSelf>`/`IEngineeringObjectRehydrator`/`IEngineeringObjectRehydratorRegistry`/`EngineeringObjectRehydrationService` | WP 8.2C, `ADR-0075`–`ADR-0081`, extended `v0.9.0` (`IRenamable`/`IHasParent`/`IDeletable`/`IHasBomLine`) and `v0.14.0` (`TD-85`, `ADR-0113`/`ADR-0116`) — backfilled `WP 16.2A` |
 | `Tempest.Core.Macros` | Tempest.Core | 5 | `ICommandMacro`/`CommandMacro`, `IMacroManager`/`MacroManager`, `RunMacroCommand` — an ordered, named sequence of registered Command Ids | WP 10.6A, `ADR-0099` — backfilled `WP 16.2A` |
 | `Tempest.Core.Input` | Tempest.Core | 4 | `IInputBindingProvider`/`IExternalControllerProvider`, `IInputBindingRegistry`/`InputBindingRouter` | WP 10.6A, `ADR-0100` — backfilled `WP 16.2A` |
 | `Tempest.App.Composition` | Tempest.App | 1 | `EngineeringWorkspaceComposer` — the shared collaborator-bundle composer every discipline's own `Program.cs`/`Tempest.Desktop` composition root calls | `v0.8.0` onward — backfilled `WP 16.2A` |
@@ -101,13 +101,14 @@ not counted toward the 47. Across 4 in-scope projects/areas (`Tempest.Core`, `Te
 `Tempest.Samples`, `Tempest.Validation`) — **re-derived at the `WP 16.4B`
 integration (2026-09-05), after `WP 16.3B`, `WP 16.4B` and `WP 16.5A`
 landed:** 47 namespaces; summing every namespace's own file count above
-(723) plus the 3 global-namespace files gives **726**, matching a direct
+(725) plus the 3 global-namespace files gives **728**, matching a direct
 count of `.cs` files under the four in-scope roots excluding `bin/` and
-`obj/` (432 + 211 + 82 + 1 = 726) exactly. `WP 16.4B` added nine files
+`obj/` (434 + 211 + 82 + 1 = 728) exactly. `WP 16.4B` added nine files
 across three existing namespaces — `Tempest.Core.Requirements` 24 → 28,
 `Tempest.Core.Materials` 14 → 17, `Tempest.Core.EngineeringDomain`
-66 → 68 and `Tempest.Core.DependencyInjection` 12 → 14 — and no new
-namespace. Two derivation corrections are
+66 → 70 (the last two at `WP 16.4B-R2`, for the attachment write-intent
+marker that closes the sweep's data-loss race) and
+`Tempest.Core.DependencyInjection` 12 → 14 — and no new namespace. Two derivation corrections are
 recorded here rather than left implicit: the register's own documented
 command `grep -rhoP "^namespace \K[\w.]+"` misses any file carrying a
 UTF-8 byte-order mark (see the `Tempest.Core.Models` row) and a plain
@@ -136,10 +137,10 @@ revisited by `WP 16.2A` — extending scope to a full second
 project's worth of namespaces remains a separate, substantial
 undertaking, per the `WP 12.0B` follow-up entry below. Combined with
 `src/Templates/` (1 file, 1 namespace, out of scope by declared
-convention) and `src/Plugins/` (0 `.cs` files), `src/` holds **816 `.cs`
+convention) and `src/Plugins/` (0 `.cs` files), `src/` holds **818 `.cs`
 files across 62 distinct namespaces** in total (BOM-aware, `bin/`/`obj/`
 pruned; 47 + 14 + 1 = 62) — of which this register's own declared scope
-covers 726 files (89%) and 47 namespaces (76%).**
+covers 728 files (89%) and 47 namespaces (76%).**
 
 ## A Note on the Four Pre-Claude Namespaces
 
