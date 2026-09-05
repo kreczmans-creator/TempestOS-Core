@@ -31,7 +31,7 @@ public class RestApiHostedServiceTests
             new RecordingLevelLogger());
 
     // Every test that needs the listener to actually start opts in
-    // explicitly via Runtime:RestApi:Enabled=true (D-024, Proposed) -
+    // explicitly via Runtime:RestApi:Enabled=true (D-024, ratified 2026-09-05) -
     // mirroring exactly what a real caller now has to do.
     private static IConfigurationProvider ConfigurationWithPort(string port, bool enabled = true) =>
         new ConfigurationBuilder().AddSource(new MemoryConfigurationSource(
@@ -41,7 +41,7 @@ public class RestApiHostedServiceTests
         ])).Build();
 
     // ----------------------------------------------------------------
-    // D-024 (Proposed): the listener is disabled unless explicitly
+    // D-024 (ratified 2026-09-05): the listener is disabled unless explicitly
     // enabled via configuration.
     // ----------------------------------------------------------------
 

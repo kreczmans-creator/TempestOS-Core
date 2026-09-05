@@ -102,6 +102,21 @@ the marker sampled *between* the content scan and the state scan — the
 ordering is what makes it airtight rather than merely narrow. The first
 remediation attempt was rejected for getting that ordering wrong.
 
+**A second lost update was found inside the fix for the first — twice
+over.** Board 2 found that `PersistStateAsync` could lose a durable write
+and closed it by keying the write lock on the object's Id rather than on
+the instance. That fix's own doc comment explained it was keyed that way
+*because* `ReviseAsync` creates a second live instance for one Id — and
+then never routed `ReviseAsync` itself through the lock. Board 3, running
+against the release PR, reproduced the consequence against the real
+classes: attach a file to an object, revise it, rename the revision, and
+the attachment is gone from disk; with real content attached, the
+reconciliation sweep then deletes the file's bytes as an orphan. Closed by
+`WP 16.4B-R4`, which makes the revision hand-off atomic and refuses
+durable writes through a superseded instance rather than silently
+discarding them. Ordering two writers, it turns out, is not the same as
+stopping one from overwriting the other from a stale snapshot.
+
 **The accessibility baseline shipped an invisible focus ring.** The
 `:focus-visible` ring was painted in a brush that resolved to the same
 colour as the Primary button's own fill — 1.00:1 in both themes, on the

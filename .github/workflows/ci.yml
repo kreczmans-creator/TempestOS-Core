@@ -329,12 +329,24 @@ jobs:
   # (a crash) fails the job.
   #
   # Deliberately advisory, not required — NOT in `gate`'s `needs:` list
-  # below, matching this Work Package's brief: Linux joins Windows as
-  # CI-verified in effect once this job exists and is proven reliable
-  # across real runs, but `gate` stays the one hard, required check for
-  # this release rather than being widened on a single spike's evidence.
-  # A future Work Package can promote it into `gate` once it has a track
-  # record.
+  # below, and this job passing does NOT make Linux CI-verified.
+  #
+  # `D-025`, ratified by the Product Owner on 2026-09-05, fixes the
+  # support boundary and binds this comment: Windows is supported and
+  # CI-verified; macOS is supported by design but not CI-verified; Linux
+  # launches, on advisory smoke evidence and its determinism track
+  # record, but is NOT CI-verified in the same sense as Windows. The
+  # distinction between launch evidence and formal CI verification is to
+  # be retained, and Linux is not to be recorded as "supported" without
+  # qualification.
+  #
+  # This comment previously said Linux became "CI-verified in effect once
+  # this job exists". It was written by `WP 16.5B` before ratification;
+  # every document was hedged afterwards and this one was missed, until
+  # the final release review found it (`WP 16.5B-R1`). A future Work
+  # Package can promote this job into `gate` once it has a track record —
+  # and only that promotion, not this job's existence, would change the
+  # boundary.
   linux-launch-smoke:
     name: Linux Launch Smoke (advisory)
     runs-on: ubuntu-latest
