@@ -122,13 +122,18 @@ dotnet run --project src/Tempest.App/Tempest.App.csproj
 
 ### What happens on first launch
 
-- The Runtime Host starts, discovers six Engineering Discipline modules,
-  and starts one hosted service.
-- **A local HTTP listener binds `http://127.0.0.1:5080`** — the REST API
-  hosted service, discovered and started automatically. It is loopback-only,
-  so it should not raise a firewall prompt. If port 5080 is already in use,
-  the service fails, the failure is logged and isolated, and **the
-  application still launches normally** — it is not a critical service.
+- The Runtime Host starts and discovers six Engineering Discipline modules.
+- **The REST API's listener does not bind by default** (`D-024`,
+  Proposed — awaiting Product Owner approval). The hosted service is
+  still discovered and started, but `StartAsync` reads
+  `Runtime:RestApi:Enabled` before touching ASP.NET Core at all and, when
+  that key is absent (the shipped default), logs that the REST API is
+  disabled and returns without binding any port. Set
+  `Runtime:RestApi:Enabled` to `true` in configuration to opt in; once
+  enabled, it binds loopback-only on `http://127.0.0.1:5080` (overridable
+  via `Api:Port`), and a port conflict then fails and isolates exactly as
+  before — **the application still launches normally** either way, since
+  this is not a critical service.
 - Licensing reports `Unlicensed` with zero capabilities. Nothing is gated
   behind a licence; no action is needed.
 - No plugins are found (`Plugins/` is empty by design) and no trusted
@@ -266,8 +271,13 @@ Commercial, Resources, Knowledge, Administration and cross-project Tasks modules
 2. **Data location follows the working directory** (§4). Not a defect, but
    the single most likely way to conclude wrongly that persistence is
    broken.
-3. **Port 5080** is bound on loopback at launch. A conflict is isolated and
-   logged, and the application still starts.
+3. **Port 5080 is not bound by default** (`D-024`, Proposed — awaiting
+   Product Owner approval). The REST API's listener starts only when
+   `Runtime:RestApi:Enabled` is configured `true`; absent, empty, or
+   unparseable all resolve to disabled. When enabled, it still binds
+   loopback-only on port 5080 (overridable via `Api:Port`), and a
+   conflict is isolated and logged exactly as before — the application
+   still starts.
 
 ---
 
