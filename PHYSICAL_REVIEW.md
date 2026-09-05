@@ -124,7 +124,7 @@ dotnet run --project src/Tempest.App/Tempest.App.csproj
 
 - The Runtime Host starts and discovers six Engineering Discipline modules.
 - **The REST API's listener does not bind by default** (`D-024`,
-  Proposed — awaiting Product Owner approval). The hosted service is
+  ratified by the Product Owner on 2026-09-05). The hosted service is
   still discovered and started, but `StartAsync` reads
   `Runtime:RestApi:Enabled` before touching ASP.NET Core at all and, when
   that key is absent (the shipped default), logs that the REST API is
@@ -271,8 +271,8 @@ Commercial, Resources, Knowledge, Administration and cross-project Tasks modules
 2. **Data location follows the working directory** (§4). Not a defect, but
    the single most likely way to conclude wrongly that persistence is
    broken.
-3. **Port 5080 is not bound by default** (`D-024`, Proposed — awaiting
-   Product Owner approval). The REST API's listener starts only when
+3. **Port 5080 is not bound by default** (`D-024`, ratified by the Product
+   Owner on 2026-09-05). The REST API's listener starts only when
    `Runtime:RestApi:Enabled` is configured `true`; absent, empty, or
    unparseable all resolve to disabled. When enabled, it still binds
    loopback-only on port 5080 (overridable via `Api:Port`), and a
