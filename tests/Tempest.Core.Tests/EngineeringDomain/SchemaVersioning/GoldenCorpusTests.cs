@@ -54,6 +54,85 @@ public class GoldenCorpusTests
         Assert.NotNull(state);
         Assert.Equal(EngineeringObjectStateStore.CurrentSchemaVersion, state!.SchemaVersion);
         Assert.Equal(objectId, state.Id);
+
+        // `v0.16.0` review board: asserting only `Id` and `SchemaVersion`
+        // let a mutation that dropped or corrupted every *other* field pass
+        // this test silently — which defeats the corpus's own stated
+        // purpose, since a real data-transforming migration is exactly
+        // where such a loss would happen. Every field-bearing branch of
+        // the fixture is now compared against what the read path handed
+        // back.
+        AssertEveryFieldSurvived(json, state);
+    }
+
+    /// <summary>
+    /// Compares every field the fixture actually declares against the
+    /// record the real read path produced. Fixtures differ in shape (a
+    /// deleted object, a part with attachments, a bare object), so each
+    /// branch is compared only when the fixture carries it — an absent
+    /// property is not a failure, but a present one that came back
+    /// different is.
+    /// </summary>
+    private static void AssertEveryFieldSurvived(string json, EngineeringObjectState state)
+    {
+        var root = JsonDocument.Parse(json).RootElement;
+
+        Assert.Equal(root.GetProperty("Kind").GetString(), state.Kind);
+        Assert.Equal(root.GetProperty("DisplayName").GetString(), state.DisplayName);
+
+        if (root.TryGetProperty("Identifier", out var identifier))
+            Assert.Equal(identifier.ValueKind == JsonValueKind.Null ? null : identifier.GetString(), state.Identifier);
+
+        if (root.TryGetProperty("IsDeleted", out var isDeleted))
+            Assert.Equal(isDeleted.GetBoolean(), state.IsDeleted);
+
+        if (root.TryGetProperty("ParentId", out var parentId))
+        {
+            Assert.Equal(
+                parentId.ValueKind == JsonValueKind.Null ? null : parentId.GetGuid(),
+                state.ParentId);
+        }
+
+        // The fixtures are pre-`v0.16.0` records, so `Status` is a numeric
+        // ordinal. That it still lands on the same `LifecycleState` member
+        // after `ADR-0120` Decision 4 made enums serialise as strings is
+        // the single most important thing this corpus proves — `TD-87`'s
+        // named failure was exactly a status silently reinterpreted.
+        if (root.TryGetProperty("Status", out var status) && status.ValueKind == JsonValueKind.Number)
+            Assert.Equal(status.GetInt32(), (int)state.Status);
+
+        if (root.TryGetProperty("BomLine", out var bomLine) && bomLine.ValueKind == JsonValueKind.Object)
+            Assert.Equal(bomLine.GetProperty("Quantity").GetDecimal(), state.BomLine.Quantity);
+
+        if (root.TryGetProperty("History", out var history) && history.ValueKind == JsonValueKind.Array)
+            Assert.Equal(history.GetArrayLength(), state.History.Count);
+
+        if (root.TryGetProperty("Attachments", out var attachments) && attachments.ValueKind == JsonValueKind.Array)
+        {
+            Assert.Equal(attachments.GetArrayLength(), state.Attachments.Count);
+
+            var index = 0;
+            foreach (var attachment in attachments.EnumerateArray())
+            {
+                var loaded = state.Attachments[index++];
+
+                Assert.Equal(attachment.GetProperty("Id").GetGuid(), loaded.Id);
+                Assert.Equal(attachment.GetProperty("FileName").GetString(), loaded.FileName);
+                Assert.Equal(attachment.GetProperty("SizeInBytes").GetInt64(), loaded.SizeInBytes);
+                Assert.Equal(attachment.GetProperty("ContentHash").GetString(), loaded.ContentHash);
+            }
+        }
+
+        if (root.TryGetProperty("TypeState", out var typeState) && typeState.ValueKind == JsonValueKind.Object)
+        {
+            foreach (var property in typeState.EnumerateObject())
+            {
+                Assert.True(state.TypeState.ContainsKey(property.Name), $"TypeState lost '{property.Name}'.");
+                Assert.Equal(
+                    property.Value.ValueKind == JsonValueKind.Null ? null : property.Value.GetString(),
+                    state.TypeState[property.Name]);
+            }
+        }
     }
 
     [Fact]

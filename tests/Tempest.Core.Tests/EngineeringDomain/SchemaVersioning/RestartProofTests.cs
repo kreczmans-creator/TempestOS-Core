@@ -29,6 +29,16 @@ namespace Tempest.Core.Tests.EngineeringDomain.SchemaVersioning;
 /// `Tempest.Core.Tests/Workspace/`, so this stays in `Tempest.Core.Tests`
 /// rather than moving to `Tempest.Desktop.Tests`.
 /// </remarks>
+// `TD-34` (`WP 16.4A`): this class redirects the process-wide
+// `Console.Out` in `StartHostAsync`, so it must run inside the
+// collection that serialises every class doing so — otherwise xUnit
+// runs it in parallel with the other 51 and the redirection races,
+// which is the exact defect `TD-34` closed. Added at the `v0.16.0`
+// review board, which found this the only redirecting class outside
+// the collection: the file landed on a parallel branch hours after
+// `WP 16.4A` joined the last stragglers to it, so its author never
+// saw the freshly-reinforced convention.
+[Collection("Console output capture")]
 public sealed class RestartProofTests
 {
     [Fact]
