@@ -20,26 +20,92 @@ namespace Tempest.Core.Tests.Api;
 [Collection("Console output capture")]
 public class RestApiHostedServiceTests
 {
-    private static RestApiHostedService BuildService(IConfigurationProvider configuration) =>
+    private static RestApiHostedService BuildService(IConfigurationProvider configuration, IPermissionEvaluator? permissionEvaluator = null) =>
         new(
             new ApiEndpointRegistry(),
             new CommandRegistryStub(),
             new IdentityServiceStub(),
-            new PermissionEvaluatorStub(),
+            permissionEvaluator ?? new PermissionEvaluatorStub(),
             new AuditRecorderStub(),
             configuration,
             new RecordingLevelLogger());
 
-    private static IConfigurationProvider ConfigurationWithPort(string port) =>
+    // Every test that needs the listener to actually start opts in
+    // explicitly via Runtime:RestApi:Enabled=true (D-024, Proposed) -
+    // mirroring exactly what a real caller now has to do.
+    private static IConfigurationProvider ConfigurationWithPort(string port, bool enabled = true) =>
         new ConfigurationBuilder().AddSource(new MemoryConfigurationSource(
         [
             new KeyValuePair<string, string>(RestApiHostedService.PortConfigurationKey, port),
+            new KeyValuePair<string, string>(RestApiHostedService.EnabledConfigurationKey, enabled.ToString()),
         ])).Build();
+
+    // ----------------------------------------------------------------
+    // D-024 (Proposed): the listener is disabled unless explicitly
+    // enabled via configuration.
+    // ----------------------------------------------------------------
+
+    [Fact]
+    public async Task StartAsync_EnabledKeyAbsent_DisabledByDefault_DoesNotBindAnything()
+    {
+        // The shipped default: no Runtime:RestApi:Enabled key at all.
+        var configuration = new ConfigurationBuilder().Build();
+        var service = BuildService(configuration);
+
+        await service.StartAsync(CancellationToken.None);
+
+        Assert.Null(service.BoundPort);
+
+        // StopAsync must stay safe even though the service never started.
+        await service.StopAsync(CancellationToken.None);
+    }
+
+    [Theory]
+    [InlineData("false")]
+    [InlineData("")]
+    [InlineData("not-a-boolean")]
+    public async Task StartAsync_EnabledKeyFalseOrBlankOrUnparseable_DoesNotBindAnything(string rawEnabledValue)
+    {
+        var configuration = new ConfigurationBuilder().AddSource(new MemoryConfigurationSource(
+        [
+            new KeyValuePair<string, string>(RestApiHostedService.PortConfigurationKey, "0"),
+            new KeyValuePair<string, string>(RestApiHostedService.EnabledConfigurationKey, rawEnabledValue),
+        ])).Build();
+        var service = BuildService(configuration);
+
+        await service.StartAsync(CancellationToken.None);
+
+        Assert.Null(service.BoundPort);
+        await service.StopAsync(CancellationToken.None);
+    }
+
+    [Fact]
+    public async Task StartAsync_EnabledKeyTrue_BindsToAnOsAssignedPort()
+    {
+        var service = BuildService(ConfigurationWithPort("0", enabled: true));
+
+        await service.StartAsync(CancellationToken.None);
+        try
+        {
+            Assert.NotNull(service.BoundPort);
+        }
+        finally
+        {
+            await service.StopAsync(CancellationToken.None);
+        }
+    }
+
+    // ----------------------------------------------------------------
+    // TD-62: the OpenAPI document goes through the same identity +
+    // permission pipeline as every command route.
+    // ----------------------------------------------------------------
 
     [Fact]
     public async Task StartAsync_BindsToAnOsAssignedPort_ReachableOverRealHttp()
     {
-        var service = BuildService(ConfigurationWithPort("0"));
+        var service = BuildService(
+            ConfigurationWithPort("0"),
+            new PermissionEvaluatorStub(ApiRequestHandler.OpenApiDocumentPermission.Key));
 
         await service.StartAsync(CancellationToken.None);
         try
@@ -47,9 +113,84 @@ public class RestApiHostedServiceTests
             Assert.NotNull(service.BoundPort);
 
             using var client = new HttpClient();
-            var response = await client.GetAsync($"http://127.0.0.1:{service.BoundPort}{RestApiHostedService.OpenApiPath}");
+            var request = new HttpRequestMessage(HttpMethod.Get, $"http://127.0.0.1:{service.BoundPort}{RestApiHostedService.OpenApiPath}");
+            request.Headers.Add(ApiRequestHandler.IdentityHeaderName, "sample.identity");
+            var response = await client.SendAsync(request);
 
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        }
+        finally
+        {
+            await service.StopAsync(CancellationToken.None);
+        }
+    }
+
+    [Fact]
+    public async Task GetOpenApiDocument_NoIdentityHeader_Returns401_NotTheDocument()
+    {
+        // TD-62: previously this returned 200 with the full route ->
+        // required-permission map to any unauthenticated caller. It must
+        // now behave exactly like an unauthenticated command-route
+        // caller.
+        var service = BuildService(ConfigurationWithPort("0"));
+
+        await service.StartAsync(CancellationToken.None);
+        try
+        {
+            using var client = new HttpClient();
+            var response = await client.GetAsync($"http://127.0.0.1:{service.BoundPort}{RestApiHostedService.OpenApiPath}");
+
+            Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        }
+        finally
+        {
+            await service.StopAsync(CancellationToken.None);
+        }
+    }
+
+    [Fact]
+    public async Task GetOpenApiDocument_IdentityWithoutPermission_Returns403()
+    {
+        var service = BuildService(ConfigurationWithPort("0")); // PermissionEvaluatorStub grants nothing by default.
+
+        await service.StartAsync(CancellationToken.None);
+        try
+        {
+            using var client = new HttpClient();
+            var request = new HttpRequestMessage(HttpMethod.Get, $"http://127.0.0.1:{service.BoundPort}{RestApiHostedService.OpenApiPath}");
+            request.Headers.Add(ApiRequestHandler.IdentityHeaderName, "sample.identity");
+
+            var response = await client.SendAsync(request);
+
+            Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+        }
+        finally
+        {
+            await service.StopAsync(CancellationToken.None);
+        }
+    }
+
+    [Fact]
+    public async Task GetOpenApiDocument_AuthorisedCaller_ReturnsTheFullDocument()
+    {
+        var service = BuildService(
+            ConfigurationWithPort("0"),
+            new PermissionEvaluatorStub(ApiRequestHandler.OpenApiDocumentPermission.Key));
+
+        await service.StartAsync(CancellationToken.None);
+        try
+        {
+            using var client = new HttpClient();
+            var request = new HttpRequestMessage(HttpMethod.Get, $"http://127.0.0.1:{service.BoundPort}{RestApiHostedService.OpenApiPath}");
+            request.Headers.Add(ApiRequestHandler.IdentityHeaderName, "sample.identity");
+
+            var response = await client.SendAsync(request);
+            var body = await response.Content.ReadAsStringAsync();
+
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            Assert.Equal("application/json", response.Content.Headers.ContentType?.MediaType);
+            Assert.Contains("openapi", body);
+            Assert.Contains("\"paths\"", body);
         }
         finally
         {
@@ -136,10 +277,18 @@ public class RestApiHostedServiceTests
 
     private sealed class PermissionEvaluatorStub : IPermissionEvaluator
     {
-        public bool HasPermission(IPrincipal principal, Permission permission) => false;
+        private readonly HashSet<string> _grantedPermissionKeys;
 
-        public void RequirePermission(IPrincipal principal, Permission permission) =>
-            throw new PermissionDeniedException(principal, permission);
+        public PermissionEvaluatorStub(params string[] grantedPermissionKeys) =>
+            _grantedPermissionKeys = new HashSet<string>(grantedPermissionKeys, StringComparer.Ordinal);
+
+        public bool HasPermission(IPrincipal principal, Permission permission) => _grantedPermissionKeys.Contains(permission.Key);
+
+        public void RequirePermission(IPrincipal principal, Permission permission)
+        {
+            if (!HasPermission(principal, permission))
+                throw new PermissionDeniedException(principal, permission);
+        }
     }
 
     private sealed class AuditRecorderStub : IAuditRecorder
