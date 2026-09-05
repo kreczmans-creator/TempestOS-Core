@@ -166,11 +166,18 @@ def main(check_only: bool = False) -> int:
         entry = {
             "kind": kind_of(rel),
             "path": rel,
-            "bytes": len(raw),
-            "sha256": hashlib.sha256(raw).hexdigest(),
             "ext": ext,
         }
-        if ext not in CONTENT_EXT:
+        # This validator's own outputs are excluded from size/hash recording:
+        # a register that records its own hash can never be stable, and would
+        # show a diff on every run whether or not anything real had changed.
+        if rel.startswith("governance/generated/"):
+            entry["self_generated"] = True
+            entry["note"] = "size and hash not self-recorded — see comment in tools/validate.py"
+        else:
+            entry["bytes"] = len(raw)
+            entry["sha256"] = hashlib.sha256(raw).hexdigest()
+        if ext not in CONTENT_EXT or entry.get("self_generated"):
             records.append(entry)
             continue
 
