@@ -65,13 +65,34 @@ public class ServiceCollectionTests
             services.Add(typeof(IGreeter), typeof(GreeterConsumer), ServiceLifetime.Singleton));
     }
 
+    // TD-69: a second Add for the same service type is far more likely to
+    // be a mistake (an accidental re-registration silently swapping the
+    // platform implementation) than a genuine need to replace one, so it
+    // throws by default; allowReplace: true opts in to the rare deliberate
+    // case explicitly. This test replaces the old
+    // Add_SameServiceTypeTwice_LastRegistrationWins, which asserted the
+    // exact silent-overwrite behaviour TD-69 closes.
     [Fact]
-    public void Add_SameServiceTypeTwice_LastRegistrationWins()
+    public void Add_SameServiceTypeTwice_ThrowsDuplicateServiceRegistrationException()
     {
         var services = new ServiceCollection();
 
         services.Singleton<IGreeter, Greeter>();
-        services.Transient<IGreeter, Greeter>();
+
+        var exception = Assert.Throws<DuplicateServiceRegistrationException>(() =>
+            services.Transient<IGreeter, Greeter>());
+
+        Assert.Equal(typeof(IGreeter), exception.ServiceType);
+        Assert.Contains("IGreeter", exception.Message);
+    }
+
+    [Fact]
+    public void Add_SameServiceTypeTwiceWithAllowReplace_ReplacesTheRegistration()
+    {
+        var services = new ServiceCollection();
+
+        services.Add(typeof(IGreeter), typeof(Greeter), ServiceLifetime.Singleton);
+        services.Add(typeof(IGreeter), typeof(Greeter), ServiceLifetime.Transient, allowReplace: true);
 
         var descriptor = Assert.Single(services.Descriptors);
         Assert.Equal(ServiceLifetime.Transient, descriptor.Lifetime);
@@ -90,6 +111,43 @@ public class ServiceCollectionTests
         Assert.Equal(typeof(Greeter), descriptor.ImplementationType);
         Assert.Equal(ServiceLifetime.Singleton, descriptor.Lifetime);
         Assert.Same(greeter, descriptor.ExistingInstance);
+    }
+
+    [Fact]
+    public void AddInstance_SameServiceTypeTwice_ThrowsDuplicateServiceRegistrationException()
+    {
+        var services = new ServiceCollection();
+        services.AddInstance<IGreeter>(new Greeter());
+
+        var exception = Assert.Throws<DuplicateServiceRegistrationException>(() =>
+            services.AddInstance<IGreeter>(new Greeter()));
+
+        Assert.Equal(typeof(IGreeter), exception.ServiceType);
+        Assert.Contains("IGreeter", exception.Message);
+    }
+
+    [Fact]
+    public void AddInstance_SameServiceTypeTwiceWithAllowReplace_ReplacesTheRegistration()
+    {
+        var services = new ServiceCollection();
+        var first = new Greeter();
+        var second = new Greeter();
+
+        services.AddInstance(typeof(IGreeter), first);
+        services.AddInstance(typeof(IGreeter), second, allowReplace: true);
+
+        var descriptor = Assert.Single(services.Descriptors);
+        Assert.Same(second, descriptor.ExistingInstance);
+    }
+
+    [Fact]
+    public void Add_ThenAddInstanceSameServiceType_ThrowsDuplicateServiceRegistrationException()
+    {
+        var services = new ServiceCollection();
+        services.Singleton<IGreeter, Greeter>();
+
+        Assert.Throws<DuplicateServiceRegistrationException>(() =>
+            services.AddInstance<IGreeter>(new Greeter()));
     }
 
     [Fact]

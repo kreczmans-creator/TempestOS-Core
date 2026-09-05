@@ -613,6 +613,14 @@ public sealed class TempestHost : ITempestHost
         services.Singleton<IImpactAnalysis, RelationshipDiscoveryService>();
         services.Singleton<IEvidenceComposer, EvidenceComposer>();
 
+        // TD-87/ADR-0120: the migration chain(s) EngineeringObjectStateStore's
+        // own read path walks. Registered before that store, which takes
+        // it as an optional collaborator - empty until a Kind's own
+        // declaring class registers a migration onto it, the same
+        // "empty is a legal, zero-cost default" shape
+        // IEngineeringObjectRehydratorRegistry already has.
+        services.Singleton<IStateMigrationRegistry, StateMigrationRegistry>();
+
         // TD-85: the durable half of the Engineering Domain. Registered
         // before EngineeringDomainContext, which takes it as a
         // collaborator. Built on the same IPersistenceStore
@@ -630,6 +638,17 @@ public sealed class TempestHost : ITempestHost
         // a whole object graph never loads a file.
         services.Singleton<IBinaryPersistenceStore, PersistenceStore>();
         services.Singleton<IAttachmentContentStore, AttachmentContentStore>();
+
+        // WP 16.4B-R2: the durable write-intent marker for an attachment
+        // whose content write has landed but whose state write has not.
+        // Registered here, alongside AttachmentContentStore, and taken as
+        // an optional collaborator by both EngineeringDomainContext (which
+        // marks/clears it around AttachContentAsync's two writes) and
+        // AttachmentContentReconciliationService (whose sweep skips
+        // whatever it still marks) - the production Host always composes
+        // the two together, closing the race a content-key-vs-object-state
+        // comparison alone cannot.
+        services.Singleton<IAttachmentWriteIntentStore, AttachmentWriteIntentStore>();
 
         // TD-85: the Kind-to-type map startup rehydration resolves through.
         // Empty until each Kind's own declaring class registers it -
@@ -689,6 +708,20 @@ public sealed class TempestHost : ITempestHost
         // - IValidationRule itself is scoped to IEngineeringObject, which
         // no Requirements type implements (ADR-0084).
         services.Singleton<IRequirementValidationService, RequirementValidationService>();
+
+        // TD-67/TD-97 reconciliation services (`WP 16.4B`). Registered as
+        // ordinary Platform Services so that the reconcile/repair path
+        // TD-67 named as absent genuinely exists and is reachable, rather
+        // than sitting in the assembly with no way to reach it. Each is
+        // explicit `DetectAsync`/`SweepAsync` only: nothing here, and
+        // nothing in the startup phase table, ever invokes a sweep on its
+        // own - this platform does not repair a user's data behind their
+        // back. No command or user-facing surface invokes them either;
+        // adding one would be product capability, which `v0.16.0` is
+        // scoped out of.
+        services.Singleton<IRequirementsReconciliationService, RequirementsReconciliationService>();
+        services.Singleton<IMaterialCatalogReconciliationService, MaterialCatalogReconciliationService>();
+        services.Singleton<IAttachmentContentReconciliationService, AttachmentContentReconciliationService>();
 
         // Composition Root pattern (ADR-0009), like Configuration/Logging/
         // PlatformVersionProvider above: DiagnosticsProvider needs references

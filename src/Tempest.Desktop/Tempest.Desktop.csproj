@@ -19,18 +19,42 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Avalonia" Version="11.2.3" />
-    <PackageReference Include="Avalonia.Desktop" Version="11.2.3" />
-    <PackageReference Include="Avalonia.Themes.Fluent" Version="11.2.3" />
+    <PackageReference Include="Avalonia" Version="11.3.20" />
+    <PackageReference Include="Avalonia.Desktop" Version="11.3.20" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.20" />
     <!--
-      Avalonia.Desktop 11.2.3 transitively pulls Tmds.DBus.Protocol 0.20.0
-      (its own Linux X11/DBus clipboard integration), which carries a known
-      high-severity advisory (GHSA-xrw6-gwf8-vvr9). Pinned directly to the
-      latest patched release — the standard NuGet remediation for a
-      vulnerable transitive dependency, disclosed here rather than
-      suppressed, per WP 10.0B's own "0 Warnings" requirement.
+      WP 16.5B (TD-116): Avalonia.Desktop 11.3.x transitively pulls
+      Avalonia.FreeDesktop 11.3.x (its own Linux X11/DBus clipboard and IME
+      integration), which itself depends on Tmds.DBus.Protocol >= 0.21.3.
+      That floor is deliberate, not incidental: 0.21.3 is where advisory
+      GHSA-xrw6-gwf8-vvr9 (the same high-severity Tmds.DBus.Protocol
+      vulnerability originally remediated here) was backported-fixed on the
+      pre-rewrite 0.2x API line — the line Avalonia.FreeDesktop's compiled
+      IL still binds against by member layout. Pinned here at exactly that
+      floor, the lowest version that is both patched and binary-compatible.
+      The previous pin, 0.94.2, is also patched but sits on the 0.9x line,
+      a full API rewrite (new type layout, member signatures) that broke at
+      runtime with `System.TypeLoadException: Could not load type
+      'Tmds.DBus.Protocol.Connection'` inside
+      `Avalonia.FreeDesktop.DBusIme.X11DBusImeHelper.DetectAndRegister()`
+      during `AvaloniaX11Platform.Initialize` — this was TD-116, reproduced
+      and now resolved by this pin. See "WP16.5B Linux Launch Spike
+      Report.md" for the reproduction and verification evidence.
     -->
-    <PackageReference Include="Tmds.DBus.Protocol" Version="0.94.2" />
+    <PackageReference Include="Tmds.DBus.Protocol" Version="0.21.3" />
+    <!--
+      Pinned deliberately at 4.1.1 rather than tracking latest (5.x).
+      Recorded at the `v0.16.0` review board, which flagged that this was
+      the one version-sensitive pin in this file carrying no rationale
+      while every other one does. It is not a security hold: a
+      vulnerable-transitive-package scan is clean across all projects and
+      NuGet shows no deprecation on 4.1.1. It is simply not
+      yet evaluated — 5.x changes the native SkiaSharp/PDFium dependency
+      set, which is exactly the class of change that produced `TD-116`,
+      so bumping it wants its own timeboxed spike with a real Linux and
+      Windows launch behind it, not a version bump in a release whose
+      scope is hygiene. Tracked for evaluation before `v1.0.0`.
+    -->
     <PackageReference Include="PDFtoImage" Version="4.1.1" />
     <!--
       The Tempest Engineering Design System's prose face (Inter) ships in
@@ -38,7 +62,7 @@
       embedded below under their own OFL licences (Assets/Fonts/OFL-*.txt)
       - recovered from the Companion brand alignment (WP 14.1A).
     -->
-    <PackageReference Include="Avalonia.Fonts.Inter" Version="11.2.3" />
+    <PackageReference Include="Avalonia.Fonts.Inter" Version="11.3.20" />
   </ItemGroup>
 
   <ItemGroup>

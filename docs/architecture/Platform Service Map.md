@@ -43,12 +43,18 @@ of date is worse than no map at all, because it will be trusted.
 | Export/Import | **Implemented — WP 6.7** (`IExportable`/`IExportService`/`ExportService`, `IImportService`/`ImportService`, `Tempest.Core.ExportImport`) — orthogonal to Persistence per ADR-0051; additive `IExportableKind`/`IImportable` Kind-routing, `IExportFormat`/`JsonExportFormat` artifact framing, and optional `IExportPayloadSerializer`/`JsonExportPayloadSerializer` general-purpose shapes | Dependency Injection | `ExportImportSampleModule` (real contributor, round-tripping two Settings values as a single multi-source artifact, also demonstrating Identity/Audit/Notifications integration at the calling layer); a plausible future consumer for Licensing and any engineering module |
 | Licensing | **Implemented — WP 6.6** (`ILicense`/`ILicenseValidator`/`LicenseValidator`, `ILicenseProvider`/`LicenseProvider`, `Tempest.Core.Licensing`) — pre-container, Host-fatal validation gate per ADR-0050, except a missing license file, which is a valid, unrestricted-but-uncapable default (resolving Risk Register R5) | `System.Text.Json` (BCL) only | `LicensingSampleModule` (real contributor, also demonstrating Identity/Settings/Audit/Notifications/REST API integration at the calling layer); a plausible future consumer for any commercially licensed engineering module |
 | Plugin Manifest | **Implemented — WP 4.2** (`Tempest.Core.Plugins`) | Host (Phases 3.1/3.2, ADR-0026 — a pre-Discovery step) | Module Discovery (unchanged), any real plugin |
+| Plugin Trust & Capability Enforcement | **Implemented — `v0.13.0`** (`IPluginTrustStore`/`PluginTrustStore`, `IPluginRegistry`/`PluginRegistry`, `IPluginDeniedTypeRegistry`/`PluginDeniedTypeRegistry`, `IPluginComponentPrincipalRegistry`/`PluginComponentPrincipalRegistry`, `Tempest.Core.Plugins`) — signature verification, trust-tier assignment, dependency-graph validation, and the deny-list both Module and Hosted Service Registration filter against; Host-owned collaborators, never DI-registered (ADR-0017), constructed ahead of Plugin Discovery. Section backfilled `WP 16.4B-R1` (`TD-126`) | Host construction only — no container dependency | Plugin Manifest (Discovery/Loading write into these registries as they go); Module Registration and Hosted Service Registration (read `IPluginDeniedTypeRegistry` to exclude a denied plugin's already-loaded types); `IDiagnosticsProvider.Plugins` (the only DI-reachable projection) |
+| Engineering Object Durability & Rehydration | **Implemented — `v0.14.0`** (`IEngineeringObjectStateStore`/`EngineeringObjectStateStore`, `IEngineeringObjectRehydrator`/`EngineeringObjectRehydrator<T>`, `IEngineeringObjectRehydratorRegistry`/`EngineeringObjectRehydratorRegistry`, `EngineeringObjectRehydrationService`, `IRehydratable<TSelf>`, `Tempest.Core.EngineeringDomain`) — what makes an engineering object survive a process restart (`TD-85`). Section backfilled `WP 16.4B-R1` (`TD-126`) | Dependency Injection, Persistence (`IPersistenceStore`, reused, not a second storage mechanism), `EngineeringDomainContext` | Every canonical engineering object type (`IRehydratable<TSelf>`); `EngineeringObjectFactory<T>` (writes state on every mutation); production startup rehydration (`ADR-0116`) |
+| Attachment Content Store | **Implemented — `v0.14.0`** (`IAttachmentContentStore`/`AttachmentContentStore`, `IBinaryPersistenceStore`, `Tempest.Core.EngineeringDomain`/`Tempest.Core.Persistence`) — the durable store of attachment *bytes*, distinct from `IPersistenceStore`'s text-valued store and from `IAttachment`'s own metadata (`TD-31`). Section backfilled `WP 16.4B-R1` (`TD-126`) | Dependency Injection, Persistence (its own `IBinaryPersistenceStore`-shaped collection) | Any engineering object's own attachment read/write path; `IAttachmentContentReconciliationService` (`v0.16.0`, below) |
 | Engineering Data Model | **Implemented — WP 7.1A, ADR-0053** (`IEngineeringDocumentStore`/`EngineeringDocumentStore`, `Tempest.Core.EngineeringData`) — the shared, discipline-neutral document/revision/reference substrate every later Engineering Core framework and the Engineering Domain (`WP 8.2C`) are built on | Dependency Injection, Persistence, Identity & Permissions | Materials, Engineering Calculations, Verification, Requirements Engine, the Engineering Domain (`EngineeringDomainContext`, `WP 8.2C`); `EngineeringDataSampleModule` (real contributor) |
 | Materials | **Implemented — WP 7.1C, ADR-0055** (`IMaterialCatalog`/`MaterialCatalog`, `Tempest.Core.Materials`) — a thin, typed index over the Engineering Data Model (`Kind = "MaterialSpecification"`), plus a direct `IPersistenceStore` dependency of its own for its `materialId` index | Dependency Injection, Engineering Data Model, Persistence | `MaterialsSampleModule` (real contributor); the base `EngineeringDomainSampleModule` (`WP 8.2C`) |
 | Engineering Calculations | **Implemented — WP 7.1D, ADR-0056** (`ICalculationEngine`/`CalculationEngine`, `Tempest.Core.Calculations`) — durable, evidentiary calculation execution against a registered `ICalculationDefinition<TInput, TResult>`, every execution recorded as an Engineering Data Model document | Dependency Injection, Engineering Data Model, Identity & Permissions | `CalculationSampleModule` (real contributor); `Tempest.App.Workspace.Calculations` (`WP 9.2A`, the third real Engineering Discipline wired into the Workspace) |
 | Verification | **Implemented — WP 7.1E, ADR-0057** (`IVerificationService`/`VerificationService`, `Tempest.Core.Verification`) — records a verification outcome (criteria, evidence) against a subject document; permission-gated history query, reusing the Engineering Data Model's own `LinkAsync`/`GetReferencesAsync` mechanism, never a new index | Dependency Injection, Engineering Data Model, Identity & Permissions | `VerificationSampleModule` (real contributor); Requirements Engine (`GetEvidenceAsync` composition); `Tempest.App.Workspace.Verification` (`WP 9.3A`) and `.Manufacturing` (`WP 9.5A`, reuses `RecordVerificationResultCommand` directly) |
 | Project Engine | Planned | Undetermined | Undetermined |
 | Requirements Engine | **Implemented — WP 7.3A** (`IRequirementsService`/`RequirementsService`, `Tempest.Core.Requirements`) — the canonical, discipline-neutral requirement representation per `ADR-0058`; requirements/collections/groups are `IEngineeringDocument`s, relationships are `DocumentReference`s, zero new storage mechanism | Dependency Injection, Engineering Data Model, Verification | `RequirementsSampleModule` (real contributor, also demonstrating Identity/Audit/Reporting/Export-Import integration at the calling layer); a plausible future consumer for any discipline-specific engineering module |
+| Requirements Reconciliation | **Implemented — `WP 16.4B`** (`IRequirementsReconciliationService`/`RequirementsReconciliationService`, `Tempest.Core.Requirements`) — detects and repairs an orphaned Requirement/Requirement Collection/Requirement Group document whose index or registry entry was lost to a crash between the two writes (`TD-67`). Explicit `DetectAsync`/`SweepAsync` only — **nothing invokes either method**: no startup hook, no command, no user-facing surface | Dependency Injection, Engineering Data Model (`IEngineeringDocumentStore`), Persistence (`IPersistenceStore`, the identifier index) | Nothing yet — an operator-invoked repair path with no caller this release; a plausible future admin command or diagnostics surface |
+| Material Catalog Reconciliation | **Implemented — `WP 16.4B`** (`IMaterialCatalogReconciliationService`/`MaterialCatalogReconciliationService`, `Tempest.Core.Materials`) — the sibling sweep for `MaterialCatalog`'s own `materialId` index, identical shape and discipline to Requirements Reconciliation (`TD-67`, `ADR-0055` Decision 3). Explicit `DetectAsync`/`SweepAsync` only — **nothing invokes either method** | Dependency Injection, Engineering Data Model (`IEngineeringDocumentStore`), Persistence (`IPersistenceStore`, the `materialId` index) | Nothing yet — an operator-invoked repair path with no caller this release |
+| Attachment Content Reconciliation | **Implemented — `WP 16.4B`** (`IAttachmentContentReconciliationService`/`AttachmentContentReconciliationService`, `Tempest.Core.EngineeringDomain`) — finds and, on request, collects attachment content bytes nothing references any more, the sweep `ADR-0114` Decision 4's own Consequences section names as the closure for its crash window (`TD-97`). Explicit `DetectAsync`/`SweepAsync` only — **nothing invokes either method** | Dependency Injection, Persistence (`IPersistenceStore`), Engineering Object Durability & Rehydration (`IEngineeringObjectStateStore`, every live or soft-deleted object's attachment Ids), Attachment Content Store (`IAttachmentContentStore`) | Nothing yet — an operator-invoked repair path with no caller this release |
 
 Arrows in this table point from a service to what it *needs*; read the third
 column as "the following depend on this row." "Depends on" and "Depended on
@@ -1506,6 +1512,208 @@ Architecture.md*; Rejected Designs RD-0008 through RD-0014.
 
 ---
 
+## Plugin Trust & Capability Enforcement *(implemented — `v0.13.0`, ADR-0107–ADR-0112)*
+
+**Backfilled `WP 16.4B-R1`, closing `TD-126`.** This service shipped at
+`v0.13.0`; `WP 16.2A` added its row to the Platform Services Register
+but this Map section, and the "At a Glance" row above, did not exist
+until now — the review board found both gaps and re-raised the residual
+as `TD-126`; see that row's own Status cell.
+
+**Responsibility.** Everything beyond Plugin Manifest's own parse/
+discover/load concern: verifying a plugin's detached signature against a
+local trust store, assigning it a trust tier (Unsigned-Local /
+VerifiedSigned / FirstParty), validating its declared dependency graph
+(cycles, version constraints, missing dependencies), and recording —
+never enforcing directly itself — which already-loaded types a denied
+plugin owns, so Module and Hosted Service Registration can exclude them.
+Plugin Manifest answers "is this plugin describable and loadable";
+this service answers "is this plugin's code trusted to run, and under
+which capability tier."
+
+**Key types.** `IPluginTrustStore`/`PluginTrustStore` (ADR-0112, local
+publisher-certificate trust store), `IPluginRegistry`/`PluginRegistry`
+(the queryable catalogue of every candidate's outcome this run),
+`IPluginDeniedTypeRegistry`/`PluginDeniedTypeRegistry` (`WP 13.9.4`,
+excludes a denied plugin's already-loaded types from both pipelines),
+`IPluginComponentPrincipalRegistry`/`PluginComponentPrincipalRegistry`
+(ADR-0111, maps a discovered `IModule` `Type` back to the plugin's own
+component principal), `PluginException` and five Plugin Trust &
+Dependencies subtypes (`CircularPluginDependencyException`,
+`IncompatiblePluginDependencyVersionException`,
+`MissingPluginDependencyException`,
+`PluginSignatureVerificationFailedException`, `PluginTrustDeniedException`,
+`PluginUnsignedLoadNotAllowedException`) — all `Tempest.Core.Plugins`.
+
+**Dependencies.** None from the container — every key type above is a
+**Host-owned collaborator**, constructed directly in `TempestHost`
+ahead of Plugin Discovery (mirroring `IRuntimeModuleManager`'s own
+ADR-0017 boundary), never added to the DI `ServiceCollection`. A module
+able to reach these directly could, in principle, be given write access
+later by a careless change, or be mistaken for a legitimate place to
+drive plugin loading rather than observe its outcome — the same reason
+`IPluginRegistry`'s own remarks give.
+
+**Consumers.** `PluginManifestDiscoveryService`/`PluginAssemblyLoader`
+(Plugin Manifest, Phases 3.1/3.2) write into these registries as
+discovery and loading proceed; Module Registration's and Hosted Service
+Registration's own filters read `IPluginDeniedTypeRegistry` to exclude a
+denied plugin's types from whichever pipeline(s) would otherwise still
+find them (closing the gap where an already-loaded assembly — ADR-0015:
+that step cannot be undone — could still be separately rediscovered);
+`ModuleLifecycleManager`'s `componentScopeProvider` closure reads
+`IPluginComponentPrincipalRegistry`. The only DI-reachable surface is
+`IDiagnosticsProvider.Plugins` (ADR-0039), a read-only projection over
+`IPluginRegistry`, never the interface itself.
+
+**Lifecycle.** Host-owned, constructed once per run, before Plugin
+Discovery (Phase 3.1) begins — not a container-constructed singleton,
+not resolved through DI by any module. No new Host Lifecycle phase; it
+lives inside the existing Plugin Discovery/Loading phases (ADR-0026).
+
+**ADR references.** ADR-0107 (dependency graph resolution and extended
+failure classification), ADR-0108 (load/upgrade/uninstall without live
+unload), ADR-0109 (plugin service-registration boundary), ADR-0110
+(capability-scoped isolation boundary, not ALC or process separation),
+ADR-0111 (trust/capability model extends `IPermissionEvaluator` via
+component principal), ADR-0112 (signing is a detached manifest and
+assembly hash, verified at discovery).
+
+**Academy references.** `03 Work Packages/WP13.0A-plugin-and-
+registration-trust-isolation-architecture.md` through
+`WP13.11D-v0.13.0-plugin-platform-exit-review.md` (the full `v0.13.0`
+Plugin Trust programme); `02 Runtime Architecture/07-plugin-
+architecture.md`.
+
+---
+
+## Engineering Object Durability & Rehydration *(implemented — `v0.14.0`, `TD-85`, ADR-0113, ADR-0116)*
+
+**Backfilled `WP 16.4B-R1`, closing `TD-126`.** Shipped at `v0.14.0`;
+this section and the "At a Glance" row above did not exist until now —
+see the Plugin Trust & Capability Enforcement entry, immediately above,
+for the shared disclosure both sections carry.
+
+**Responsibility.** What makes an engineering object survive a process
+restart. `EngineeringObjectState` is the durable, Kind-tagged snapshot
+of an object's mutable state (`EngineeringObjectStateStore`, written on
+every mutation, one record per object); each canonical type declares how
+to reconstruct itself from that snapshot via `IRehydratable<TSelf>`,
+registered under its own Kind in `IEngineeringObjectRehydratorRegistry`;
+`EngineeringObjectRehydrationService` walks every stored record at
+startup and rebuilds the live in-memory object graph
+(`IEngineeringObjectRepository`/`IEngineeringRelationshipRepository`)
+from it. `TD-87`/`ADR-0120`'s schema-versioning and migration mechanism
+(`v0.16.0`) lives in this same store — see `StateMigrationRegistry`'s
+own remarks for the collision guard `WP 16.4B-R1` added there.
+
+**Key types.** `EngineeringObjectState`, `IEngineeringObjectStateStore`/
+`EngineeringObjectStateStore`, `IStateMigration`/
+`IStateMigrationRegistry`/`StateMigrationRegistry` (`TD-87`,
+`ADR-0120`), `IRehydratable<TSelf>`, `IEngineeringObjectRehydrator`/
+`EngineeringObjectRehydrator<T>`, `IEngineeringObjectRehydratorRegistry`/
+`EngineeringObjectRehydratorRegistry`, `EngineeringObjectRehydrationService`,
+`EngineeringDomainException` and its Engineering Domain subtypes
+including `DuplicateRehydratorRegistrationException`,
+`DuplicateStateMigrationException` and `ConflictingStateMigrationException`
+(`WP 16.4B-R1`) — all `Tempest.Core.EngineeringDomain`.
+
+**Dependencies.** Dependency Injection; `IPersistenceStore` (Persistence,
+reused, the same single storage mechanism `IEngineeringDocumentStore`
+already uses, split by concern — the document owns identity/Kind/
+revisions, this owns the object state a document was never designed to
+carry); `EngineeringDomainContext` (the shared collaborator bundle every
+`EngineeringObjectFactory<T>` needs).
+
+**Consumers.** Every canonical engineering object type implements
+`IRehydratable<TSelf>` and registers its own rehydrator under its own
+Kind (`ADR-0105`); `EngineeringObjectFactory<T>` writes state through
+`IEngineeringObjectStateStore` on every mutation; production startup
+rehydration is owned by the product and the session principal comes
+from one boundary (`ADR-0116`) — the real, non-sample consumer of
+`EngineeringObjectRehydrationService`. `IAttachmentContentReconciliationService`
+(`v0.16.0`, below) reads `IEngineeringObjectStateStore` to find every
+live-or-soft-deleted object's attachment Ids.
+
+**Lifecycle.** Ordinary DI-public, container-constructed singletons,
+registered in `TempestHost`'s existing Platform Services Registered
+block (Phase 6) — `IStateMigrationRegistry` first (an optional
+collaborator, empty until a Kind's own declaring class registers a
+migration onto it), then `IEngineeringObjectStateStore`, then
+`IEngineeringObjectRehydratorRegistry`, then `EngineeringDomainContext`,
+then `EngineeringObjectRehydrationService` — no new Host Lifecycle
+phase.
+
+**ADR references.** ADR-0113 (engineering object state is durable and
+each canonical type rehydrates itself through a Kind-keyed registry);
+ADR-0116 (production rehydration is owned by the product and the
+session principal comes from one boundary); `ADR-0120` (durable state
+carries a schema version and migrations apply only on read — `TD-87`,
+`v0.16.0`).
+
+**Academy references.** `02 Runtime Architecture/34-engineering-object-
+rehydration.md`; `02 Runtime Architecture/40-production-rehydration-and-
+the-principal-boundary.md`; `03 Work Packages/v0.14.0-TD-85-durable-
+engineering-object-state.md`; `03 Work Packages/v0.14.0-ADR-0116-
+production-rehydration-and-the-principal-boundary.md`; `03 Work
+Packages/WP16.3B-durable-state-schema-versioning-implementation.md`.
+
+---
+
+## Attachment Content Store *(implemented — `v0.14.0`, `TD-31`, ADR-0113, ADR-0114)*
+
+**Backfilled `WP 16.4B-R1`, closing `TD-126`.** Shipped at `v0.14.0`;
+this section and the "At a Glance" row above did not exist until now —
+see the Plugin Trust & Capability Enforcement entry, above, for the
+shared disclosure all three backfilled sections carry.
+
+**Responsibility.** The durable store of attachment *bytes* — what
+makes an attached file a file this platform actually holds rather than
+a description of one. Deliberately separate from `IAttachment`, which
+carries the metadata (file name, content type, size, content hash): the
+engineering object owns the fact that a file is attached and what it
+is; this store owns the bytes, so an object can be read, rehydrated,
+listed, and rendered without ever loading a megabyte of PDF, and the
+bytes can be verified without reopening the object. `ADR-0114` Decision
+4 deliberately writes content before the metadata that names it, so a
+crash in between leaves bytes nothing references — `TD-97`'s own
+sweep, `IAttachmentContentReconciliationService` (`v0.16.0`, below), is
+the named closure for that window, not a change to the ordering.
+
+**Key types.** `IAttachmentContentStore`/`AttachmentContentStore`,
+`AttachmentContentResult` (`Tempest.Core.EngineeringDomain`);
+`IBinaryPersistenceStore` (`Tempest.Core.Persistence`) — the byte-shaped
+counterpart to `IPersistenceStore`'s text-valued store, same single
+persistence substrate, its own collection.
+
+**Dependencies.** Dependency Injection; `IBinaryPersistenceStore`
+(`PersistenceStore`, registered under this interface specifically for
+this store's own byte-valued collection — no second storage mechanism).
+
+**Consumers.** Any engineering object's own attachment read/write path
+(`IAttachment` metadata plus this store's bytes, together forming one
+attachment); `IAttachmentContentReconciliationService` (`v0.16.0`,
+below) compares this store's own keys against every attachment Id any
+persisted `EngineeringObjectState` references, to find and collect
+orphaned content.
+
+**Lifecycle.** Ordinary DI-public, container-constructed singletons,
+registered in `TempestHost`'s existing Platform Services Registered
+block (Phase 6) — `IBinaryPersistenceStore` then `IAttachmentContentStore`,
+immediately after `IEngineeringObjectStateStore`, on the same terms — no
+new Host Lifecycle phase.
+
+**ADR references.** ADR-0113 (engineering object state and attachment
+content are both durable, `TD-85`/`TD-31` share one design); ADR-0114
+(attachment content is durable bytes in the same store, addressed by
+attachment Id, verified on read).
+
+**Academy references.** `02 Runtime Architecture/37-attachment-content-
+storage.md`; `03 Work Packages/v0.14.0-TD-31-attachment-content-
+storage.md`.
+
+---
+
 ## Engineering Data Model *(implemented — WP 7.1A, ADR-0053)*
 
 **Responsibility.** The shared, discipline-neutral document/revision/
@@ -1781,3 +1989,167 @@ ADR-0060 (concurrency and traceability integrity — `TD-25`), ADR-0061
 
 **Academy references.** `02 Runtime Architecture/16-requirements-engine.md`;
 `03 Work Packages/WP7.3A-requirements-engine-implementation.md`.
+
+---
+
+## Requirements Reconciliation *(implemented — `WP 16.4B`, `TD-67`)*
+
+**Responsibility.** The reconcile/repair path `TD-67` named as absent:
+`RequirementsService.CreateAsync`/`CreateCollectionAsync`/
+`CreateGroupAsync` each write their own backing `IEngineeringDocument`
+before registering it in this service's own identifier index or
+registry, so a crash — or an index/registry write failure — between the
+two leaves a document nothing can find through the normal read paths,
+yet it keeps consuming storage forever. `DetectAsync` scans every
+Requirement/Requirement Collection/Requirement Group without changing
+anything; `SweepAsync` repeats the scan and repairs every finding it
+can: a missing index/registry entry is re-written from the orphan
+document's own recorded identity (never inferred or guessed); a genuine
+identifier collision is left alone and reported unrepaired; a stale
+entry (naming a document that no longer exists or is no longer of the
+expected Kind) is removed.
+
+**Nothing invokes this service.** No startup hook, no command, no
+user-facing surface calls `DetectAsync` or `SweepAsync` — this platform
+does not repair a user's own data behind their back. A caller (an admin
+command, a diagnostics page, a test) decides when to look and when to
+act; none exists yet this release. Registered in `TempestHost` Phase 6
+as an ordinary singleton so the path is genuinely reachable, not merely
+present in the assembly with no way to reach it — do not mistake its
+absence of a caller for dead code.
+
+**Key types.** `IRequirementsReconciliationService`/
+`RequirementsReconciliationService`, `RequirementsReconciliationReport`,
+`RequirementsReconciliationFinding` — all `Tempest.Core.Requirements`.
+
+**Dependencies.** Dependency Injection; `IEngineeringDocumentStore`
+(Engineering Data Model, the same store `IRequirementsService` itself
+reads); `IPersistenceStore` directly (Persistence, the identifier index
+`RequirementsService.CreateAsync` writes and this service repairs).
+
+**Consumers.** None this release — see "Nothing invokes this service,"
+above.
+
+**Lifecycle.** Ordinary DI-public, container-constructed singleton,
+registered in `TempestHost`'s existing Platform Services Registered
+block (Phase 6), alongside Material Catalog Reconciliation and
+Attachment Content Reconciliation, immediately after Requirements
+Validation — no new Host Lifecycle phase, no hosted service, no
+scheduled sweep.
+
+**ADR references.** None dedicated — `TD-67`'s own register row and
+`docs/releases/v0.16.0/WP16.4B-3 Durability.md` are this service's own
+design record; it reuses Engineering Data Model (ADR-0053) and
+Requirements Engine's own identifier-index precedent (`ADR-0058`)
+without introducing a new decision of its own.
+
+**Academy references.** `docs/releases/v0.16.0/WP16.4B-3 Durability.md`
+— no dedicated `03 Work Packages/` retrospective exists yet for
+`WP 16.4B`.
+
+---
+
+## Material Catalog Reconciliation *(implemented — `WP 16.4B`, `TD-67`, `ADR-0055` Decision 3)*
+
+**Responsibility.** The sibling sweep for `MaterialCatalog`'s own
+`materialId` index: `MaterialCatalog.RegisterAsync` writes the backing
+`IEngineeringDocument` before registering it in the index, so a crash or
+an index-write failure between the two leaves a material document
+nothing can find through `FindAsync`/`ListAsync`, yet it keeps consuming
+storage forever. Mirrors Requirements Reconciliation's own identical
+shape and repair discipline for the sibling index this namespace owns.
+`DetectAsync` scans without changing anything; `SweepAsync` repairs
+every finding it can — a missing index entry re-written from the
+orphan's own recorded `materialId` (a genuine collision left alone and
+reported); a stale entry (naming a document that no longer exists or is
+no longer a `MaterialSpecification`) removed.
+
+**Nothing invokes this service.** Identical discipline to Requirements
+Reconciliation, immediately above — no startup hook, no command, no
+user-facing surface, by the same platform-wide rule against repairing a
+user's data behind their back. Registered in `TempestHost` Phase 6 so
+the path exists and is reachable; not dead code for having no caller
+yet.
+
+**Key types.** `IMaterialCatalogReconciliationService`/
+`MaterialCatalogReconciliationService`,
+`MaterialCatalogReconciliationReport`,
+`MaterialCatalogReconciliationFinding` — all `Tempest.Core.Materials`.
+
+**Dependencies.** Dependency Injection; `IEngineeringDocumentStore`
+(Engineering Data Model); `IPersistenceStore` directly (Persistence, the
+`materialId` index `MaterialCatalog` itself writes and this service
+repairs).
+
+**Consumers.** None this release — see "Nothing invokes this service,"
+above.
+
+**Lifecycle.** Ordinary DI-public, container-constructed singleton,
+registered in `TempestHost`'s existing Platform Services Registered
+block (Phase 6), alongside Requirements Reconciliation and Attachment
+Content Reconciliation, immediately after Requirements Validation — no
+new Host Lifecycle phase, no hosted service, no scheduled sweep.
+
+**ADR references.** ADR-0055 Decision 3 (Materials is a thin, typed
+index over the Engineering Data Model — the same index this service
+repairs); `TD-67`'s own register row and
+`docs/releases/v0.16.0/WP16.4B-3 Durability.md` are this service's own
+design record.
+
+**Academy references.** `docs/releases/v0.16.0/WP16.4B-3 Durability.md`
+— no dedicated `03 Work Packages/` retrospective exists yet for
+`WP 16.4B`.
+
+---
+
+## Attachment Content Reconciliation *(implemented — `WP 16.4B`, `TD-97`, `ADR-0114` Decision 4)*
+
+**Responsibility.** The sweep `TD-97`'s own register entry names: "a
+sweep comparing content keys against live attachment Ids closes it
+whenever disk cost justifies one." `ADR-0114` Decision 4 deliberately
+writes attachment content before the metadata that names it, so a crash
+in between leaves bytes nothing references — this service is the named
+closure for that window, never a reversal of the ordering decision it
+implements. `DetectAsync` compares every content record
+`IAttachmentContentStore` holds against every attachment Id any
+currently-persisted `EngineeringObjectState` references — live or
+soft-deleted alike, since a deleted object's own attachment *metadata*
+is never erased, only its content released, at delete time — and
+reports whatever nothing references; `SweepAsync` repeats the scan and
+deletes every orphaned content record it finds.
+
+**Nothing invokes this service.** Identical discipline to the two
+Reconciliation services above — no startup hook, no command, no
+user-facing surface; collecting content is only ever a caller's own
+deliberate act. Registered in `TempestHost` Phase 6 so the path exists
+and is reachable; not dead code for having no caller yet.
+
+**Key types.** `IAttachmentContentReconciliationService`/
+`AttachmentContentReconciliationService`,
+`AttachmentContentReconciliationReport`, `OrphanedAttachmentContent` —
+all `Tempest.Core.EngineeringDomain`.
+
+**Dependencies.** Dependency Injection; `IPersistenceStore` (Persistence,
+to enumerate every stored content key); `IEngineeringObjectStateStore`
+(Engineering Object Durability & Rehydration, every live-or-soft-deleted
+object's own recorded attachment Ids); `IAttachmentContentStore`
+(Attachment Content Store, the content records being checked).
+
+**Consumers.** None this release — see "Nothing invokes this service,"
+above.
+
+**Lifecycle.** Ordinary DI-public, container-constructed singleton,
+registered in `TempestHost`'s existing Platform Services Registered
+block (Phase 6), alongside Requirements Reconciliation and Material
+Catalog Reconciliation, immediately after Requirements Validation — no
+new Host Lifecycle phase, no hosted service, no scheduled sweep.
+
+**ADR references.** ADR-0114 Decision 4 (attachment content is written
+before the metadata that names it — the ordering this sweep closes the
+resulting window for, without reversing); `TD-97`'s own register row
+and `docs/releases/v0.16.0/WP16.4B-3 Durability.md` are this service's
+own design record.
+
+**Academy references.** `docs/releases/v0.16.0/WP16.4B-3 Durability.md`
+— no dedicated `03 Work Packages/` retrospective exists yet for
+`WP 16.4B`.

@@ -248,6 +248,10 @@ public sealed class ProjectExplorerView : UserControl
         ToolTip.SetTip(_recentSearchesButton, "Recent searches");
         ToolTip.SetTip(_recentObjectsButton, "Recent objects");
         ToolTip.SetTip(_favouritesButton, "Favourite objects (Ctrl+D to toggle)");
+        // A watermark alone names nothing to a screen reader (`WP 16.5A`,
+        // `TD-65`).
+        Avalonia.Automation.AutomationProperties.SetName(_filter, "Filter project explorer");
+        ToolTip.SetTip(_filter, "Filter... (Ctrl+F)");
         _filter.FontSize = DesignTokens.FontSizeBody;
         _filter.MinHeight = DesignTokens.MinControlSize;
         _filter.Margin = new Thickness(0, 0, DesignTokens.SpaceSm, 0);
@@ -792,6 +796,19 @@ public sealed class ProjectExplorerView : UserControl
     private const string DragFormat = "TempestOS.ExplorerNode";
     private const string DragFormatKind = "TempestOS.ExplorerNode.Kind";
 
+    // WP 16.5B: Avalonia 11.3.20 (the version this Work Package's spike
+    // upgraded to — see Tempest.Desktop.csproj) marks the string-keyed
+    // IDataObject/DoDragDrop drag/drop API obsolete in favour of a new
+    // typed DataTransfer/DataFormat<T>/DoDragDropAsync API. The old API
+    // is still present and fully functional (Avalonia only warns, it does
+    // not remove it), and this project's TreatWarningsAsErrors gate turns
+    // that warning into a build break. Migrating to the new API is a real
+    // rewrite — DataFormat<T> has no built-in Guid format, so the dragged
+    // node id would need a custom serializer — which is out of scope for
+    // this one-day spike (its objective is the Linux/X11 launch failure,
+    // TD-116, not a drag/drop API migration). Suppressed narrowly, with
+    // no behaviour change, rather than refactored.
+#pragma warning disable CS0618 // 'DataObject'/'DragDrop.DoDragDrop'/'DragEventArgs.Data' are obsolete
     private async void OnTreePointerPressedForDrag(object? sender, PointerPressedEventArgs e)
     {
         if (e.GetCurrentPoint(_tree).Properties.IsLeftButtonPressed
@@ -808,6 +825,7 @@ public sealed class ProjectExplorerView : UserControl
     {
         e.DragEffects = e.Data.Contains(DragFormat) ? DragDropEffects.Move : DragDropEffects.None;
     }
+#pragma warning restore CS0618
 
     /// <summary>
     /// Resolves the real drop target and raises <see cref="ObjectMoveRequested"/>
@@ -818,6 +836,10 @@ public sealed class ProjectExplorerView : UserControl
     /// onto its own descendant (an honest <see cref="ActionCompleted"/>
     /// message, never a crash or a silently-accepted structural loop).
     /// </summary>
+    // See the WP 16.5B remark above OnTreePointerPressedForDrag: same
+    // obsolete-but-functional drag/drop API, narrowly suppressed rather
+    // than migrated within this spike's timebox.
+#pragma warning disable CS0618 // 'DragEventArgs.Data' is obsolete
     private void OnTreeDrop(object? sender, DragEventArgs e)
     {
         e.DragEffects = DragDropEffects.None;
@@ -850,4 +872,5 @@ public sealed class ProjectExplorerView : UserControl
 
         ObjectMoveRequested?.Invoke(draggedId, draggedKind, targetItem?.Node.Id);
     }
+#pragma warning restore CS0618
 }

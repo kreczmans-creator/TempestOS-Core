@@ -40,7 +40,18 @@ public sealed class StatusBarView : UserControl
     private readonly TextBlock _hostState = Value();
     private readonly TextBlock _diagnostics = Value();
     private readonly TextBlock _notifications = Value();
-    private readonly TextBlock _hint = Value();
+    // Review board finding #5 (`WP 16.5A-R1`): every other segment's own
+    // text changes because a real, discrete backend/navigation event
+    // happened — a project opened, a location or area was navigated to,
+    // an object was selected, host/diagnostics/notification state
+    // changed. `Hint` alone is driven by `RibbonView`'s own
+    // `PointerEntered`/`PointerExited`, wired onto *every* ribbon
+    // button — a screen-reader user sweeping the pointer across the
+    // ribbon got one `Polite` announcement per hover-enter/exit, on top
+    // of the button's own accessible name, for every button passed over.
+    // `announceChanges: false` below is what excludes it; see `Value`'s
+    // own remarks.
+    private readonly TextBlock _hint = Value(announceChanges: false);
     private readonly Border _hostDot = Dot();
     private readonly Border _diagnosticsDot = Dot();
 
@@ -206,10 +217,31 @@ public sealed class StatusBarView : UserControl
         return row;
     }
 
-    private static TextBlock Value()
+    /// <param name="announceChanges">
+    /// Whether this segment's own text changes are announced at all
+    /// (review board finding #5, `WP 16.5A-R1`). <see langword="true"/>
+    /// (the default) for every segment whose text changes because a
+    /// real, discrete state change happened — <see langword="false"/>
+    /// only for `Hint`, whose changes are driven by continuous pointer
+    /// movement across the Ribbon rather than a discrete event, and would
+    /// otherwise announce once per hover-enter/exit on every button swept
+    /// over.
+    /// </param>
+    private static TextBlock Value(bool announceChanges = true)
     {
         var text = new TextBlock { FontSize = DesignTokens.FontSizeCaption, VerticalAlignment = VerticalAlignment.Center };
         ThemeReactiveBrush.Bind(text, TextBlock.ForegroundProperty, BrandPalette.MutedTextBrushKey);
+        // A live region (`WP 16.5A`, `TD-65`) — every segment's own text
+        // change is announced. `Polite` (waits for the screen reader to
+        // finish whatever it is already saying) rather than `Assertive`:
+        // this bar updates constantly (project, location, area, selection,
+        // host/diagnostics state) and interrupting on every one of those
+        // would be worse than saying nothing. Deliberately NOT set at all
+        // for `Hint` (`announceChanges: false`) — an explicit `Off` would
+        // still be a live region declaration; omitting the property
+        // entirely is the more honest "this is not one".
+        if (announceChanges)
+            AutomationProperties.SetLiveSetting(text, AutomationLiveSetting.Polite);
         return text;
     }
 

@@ -16,7 +16,7 @@ says so rather than implying more than was tested.
 | Requirement | Detail |
 |---|---|
 | **.NET SDK** | The version pinned in [`global.json`](global.json) — **10.0.302**, `rollForward: latestFeature`. Any 10.0.3xx SDK satisfies it. This is the only mandatory install. |
-| **Operating system** | **Windows** is the verified platform: CI runs on `windows-2022`, and the desktop application is known to launch there. macOS is expected to work and is untested. **Linux cannot currently launch the desktop application** — see §8. Building and running the full test suite works on all three. |
+| **Operating system** | **Windows** is the CI-verified platform for **build and test**: `ci.yml` restores, builds and runs the full suite on `windows-2022`, both configurations, on every push. Stated precisely, because the distinction matters and this document's own standard demands it: **no CI step on any platform launches the real windowed application on Windows** — the suite is Avalonia headless. That the app launches on Windows is the development team's direct experience, not a CI artefact; it is asserted here without a citation, unlike the Linux claim below, and that asymmetry was found by the `v0.16.0` independent review rather than volunteered. macOS is expected to work and is untested. **Linux launches the desktop application** as of `WP 16.5B` (Avalonia 11.3.20) — but on weaker evidence than Windows: one local `xvfb-run` launch plus an advisory `linux-launch-smoke` CI job that is not a required check. See §8, item 1. Building and running the full test suite works on all three. |
 | **PowerShell** | Only for the governance health check (§2.5). CI uses PowerShell 7 (`pwsh`); the script uses no PowerShell 7-only syntax, so Windows PowerShell 5.1 is expected to work, but that has not been verified. |
 | **Network** | Needed **once**, for `dotnet restore`. Packages come from the default nuget.org feed; the repository declares no `NuGet.config` and no private feed. After restore, build/test/run are offline. |
 | **Not required** | No .NET workloads (`dotnet workload install` is never needed). No Visual Studio. No Node, Python or Docker. No database. No SDK-external build tools. No code generation step. No environment variables. No secrets, licence file, API key, account or sign-in of any kind. |
@@ -55,13 +55,13 @@ dotnet build src/TempestOS.slnx --configuration Release --no-restore -p:TreatWar
 applies it, so a local build behaves as it always has while the gate stays
 the same gate.
 
-**2.3 Core tests** — 3,088 tests, ~30 seconds
+**2.3 Core tests** — 3,199 tests, ~35 seconds (was 3,088 at the `v0.15.0` tag; re-derived 2026-09-05)
 
 ```
 dotnet test tests/Tempest.Core.Tests/Tempest.Core.Tests.csproj --configuration Debug --no-build
 ```
 
-**2.4 Desktop tests** — 372 tests, ~3 minutes
+**2.4 Desktop tests** — 474 tests, ~1–2 minutes (was 372; re-derived 2026-09-05)
 
 ```
 dotnet test tests/Tempest.Desktop.Tests/Tempest.Desktop.Tests.csproj --configuration Debug --no-build
@@ -122,13 +122,18 @@ dotnet run --project src/Tempest.App/Tempest.App.csproj
 
 ### What happens on first launch
 
-- The Runtime Host starts, discovers six Engineering Discipline modules,
-  and starts one hosted service.
-- **A local HTTP listener binds `http://127.0.0.1:5080`** — the REST API
-  hosted service, discovered and started automatically. It is loopback-only,
-  so it should not raise a firewall prompt. If port 5080 is already in use,
-  the service fails, the failure is logged and isolated, and **the
-  application still launches normally** — it is not a critical service.
+- The Runtime Host starts and discovers six Engineering Discipline modules.
+- **The REST API's listener does not bind by default** (`D-024`,
+  ratified by the Product Owner on 2026-09-05). The hosted service is
+  still discovered and started, but `StartAsync` reads
+  `Runtime:RestApi:Enabled` before touching ASP.NET Core at all and, when
+  that key is absent (the shipped default), logs that the REST API is
+  disabled and returns without binding any port. Set
+  `Runtime:RestApi:Enabled` to `true` in configuration to opt in; once
+  enabled, it binds loopback-only on `http://127.0.0.1:5080` (overridable
+  via `Api:Port`), and a port conflict then fails and isolates exactly as
+  before — **the application still launches normally** either way, since
+  this is not a critical service.
 - Licensing reports `Unlicensed` with zero capabilities. Nothing is gated
   behind a licence; no action is needed.
 - No plugins are found (`Plugins/` is empty by design) and no trusted
@@ -244,22 +249,35 @@ Commercial, Resources, Knowledge, Administration and cross-project Tasks modules
 
 ## 8. Known limitations that affect a physical review
 
-1. **The desktop application does not launch on Linux/X11** (`TD-116`). It
-   fails with `System.TypeLoadException: Could not load type
+1. **The desktop application now launches on Linux/X11** (`TD-116`,
+   resolved by `WP 16.5B`). It previously failed with
+   `System.TypeLoadException: Could not load type
    'Tmds.DBus.Protocol.Connection'` during Avalonia's X11 platform
-   initialisation, before any window is created. The cause is a deliberate
-   security pin: `Tmds.DBus.Protocol` is pinned to `0.94.2` to remediate
-   `GHSA-xrw6-gwf8-vvr9`, and `Avalonia.FreeDesktop 11.2.3` binds against
-   the type layout of the `0.20.0` it would otherwise pull. **Windows and
-   macOS are unaffected** — the FreeDesktop/X11 path is never initialised
-   there. Building and the full test suite are unaffected on Linux, because
-   `Avalonia.Headless` does not initialise X11 either. **Review on
-   Windows.**
+   initialisation, before any window is created, because the security pin
+   then in place — `Tmds.DBus.Protocol 0.94.2`, remediating
+   `GHSA-xrw6-gwf8-vvr9` — sat on an API line `Avalonia.FreeDesktop 11.2.3`
+   could not bind against. `WP 16.5B`'s spike upgraded `Avalonia`,
+   `Avalonia.Desktop`, `Avalonia.Themes.Fluent` and `Avalonia.Fonts.Inter`
+   to `11.3.20` and repinned `Tmds.DBus.Protocol` to `0.21.3` — the
+   advisory's own backported fix on the API line `Avalonia.FreeDesktop
+   11.3.x` binds against — verified by launching the built application
+   under `xvfb-run` on Linux with the full Desktop and Core suites green.
+   See `docs/releases/v0.16.0/WP16.5B Linux Launch Spike Report.md` for the
+   reproduction, the fix, and the launch evidence. Per `D-025`: **Windows
+   is CI-verified; macOS is supported by design, not CI-verified; Linux
+   now launches (see that report for exactly what this evidence does and
+   does not establish) with an advisory `linux-launch-smoke` CI job, not
+   yet a required gate. Review on Windows or Linux.**
 2. **Data location follows the working directory** (§4). Not a defect, but
    the single most likely way to conclude wrongly that persistence is
    broken.
-3. **Port 5080** is bound on loopback at launch. A conflict is isolated and
-   logged, and the application still starts.
+3. **Port 5080 is not bound by default** (`D-024`, ratified by the Product
+   Owner on 2026-09-05). The REST API's listener starts only when
+   `Runtime:RestApi:Enabled` is configured `true`; absent, empty, or
+   unparseable all resolve to disabled. When enabled, it still binds
+   loopback-only on port 5080 (overridable via `Api:Port`), and a
+   conflict is isolated and logged exactly as before — the application
+   still starts.
 
 ---
 
@@ -272,4 +290,4 @@ Commercial, Resources, Knowledge, Administration and cross-project Tasks modules
 | Build fails with warnings-as-errors | Confirm it fails without `-p:TreatWarningsAsErrors=true` too; a clean tree builds with zero warnings in both configurations. |
 | Desktop tests appear to hang | They take about three minutes with no output. Let them finish. |
 | The application starts empty after a relaunch | Working directory (§4), before anything else. |
-| The application will not start on Linux | §8, item 1. |
+| The application will not start on Linux | §8, item 1 — this was `TD-116`, resolved by `WP 16.5B`; if you still see it, that is a new defect, not the known one. |

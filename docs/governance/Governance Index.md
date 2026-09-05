@@ -39,10 +39,10 @@ completeness.
 Registers tracking *decisions* — what was decided, what was rejected, and
 where the reasoning lives.
 
-- [ADR Register](Architecture/ADR%20Register.md) — all 119 Architecture Decision Records.
-- [Rejected Designs Register](Architecture/Rejected%20Designs%20Register.md) — all 45 Rejected Designs entries.
+- [ADR Register](Architecture/ADR%20Register.md) — all 123 Architecture Decision Records (`ADR-0001`–`ADR-0123`; `ADR-0121`/`ADR-0122` added `WP 16.4B-R1` after the `v0.16.0` review board found two decisions this release took without the ADR Governance §5 requires).
+- [Rejected Designs Register](Architecture/Rejected%20Designs%20Register.md) — 65 Rejected Designs entries exist in the source log (`docs/architecture/Rejected Designs.md`, `RD-0001`–`RD-0065`, re-derived `WP 16.2A`); this register's own indexed count remains 45, stale since `v0.5.0` — disclosed, not fixed, outside `WP 16.2A`'s own itemized scope.
 - [Architecture Document Register](Architecture/Architecture%20Document%20Register.md) — all 31 standing architecture documents.
-- [Decision Register](Architecture/Decision%20Register.md) — significant process/sequencing decisions that don't meet ADR criteria.
+- [Decision Register](Architecture/Decision%20Register.md) — significant process, sequencing and product-boundary decisions that don't meet ADR criteria.
 
 ## Engineering
 
@@ -83,6 +83,7 @@ lives and whether the Academy's own maintenance obligation is being met.
 - [Academy Register](Documentation/Academy%20Register.md)
 - [Engineering Standards Register](Documentation/Engineering%20Standards%20Register.md)
 - [Governance Register](Documentation/Governance%20Register.md)
+- [PROJECT_STATUS Archive (v0.5.0–v0.15.0)](Documentation/PROJECT_STATUS%20Archive%20%28v0.5.0%E2%80%93v0.15.0%29.md) — the verbatim retained content `WP 16.2A` moved out of `PROJECT_STATUS.md` when it rewrote that file as a short, current dashboard; retained, not deleted.
 
 ## Security
 

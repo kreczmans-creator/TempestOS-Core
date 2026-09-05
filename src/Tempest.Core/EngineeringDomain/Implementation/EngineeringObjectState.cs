@@ -36,6 +36,16 @@ namespace Tempest.Core.EngineeringDomain;
 /// rather than one central switch knowing every type's fields.
 /// </para>
 /// </remarks>
+/// <param name="SchemaVersion">
+/// The shape of this record, versioned (`TD-87`, `ADR-0120`). A record
+/// written before this field existed has no such property; the store's
+/// own read path normalises the resulting CLR default (<c>0</c>) to
+/// <c>1</c> explicitly — this component is never relied upon to default
+/// itself correctly. Always <see cref="Tempest.Core.EngineeringDomain.EngineeringObjectStateStore.CurrentSchemaVersion"/>
+/// for a record captured by this build; a lower value only appears
+/// transiently, before <see cref="Tempest.Core.EngineeringDomain.EngineeringObjectStateStore"/>'s
+/// migration step runs.
+/// </param>
 /// <param name="Id">The object's own identity — the same <see cref="IEngineeringObject.Id"/> it had before restart.</param>
 /// <param name="Kind">The object's own Kind, used to resolve its rehydrator.</param>
 /// <param name="Identifier">The business identifier.</param>
@@ -49,6 +59,7 @@ namespace Tempest.Core.EngineeringDomain;
 /// <param name="Attachments">Every recorded attachment's own metadata.</param>
 /// <param name="TypeState">The concrete type's own state, written and read by that type.</param>
 public sealed record EngineeringObjectState(
+    int SchemaVersion,
     Guid Id,
     string Kind,
     string? Identifier,

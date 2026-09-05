@@ -25,4 +25,13 @@
     <ProjectReference Include="..\..\src\Validation\Tempest.Validation\Tempest.Validation.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- TD-87/ADR-0120: the golden corpus of pre-`WP 16.3B` state records —
+         the exact byte-for-byte shape `v1` ever produced — plain files
+         next to the test binaries at run time, read the same way every
+         other test in this suite reads its own inputs (no embedded-resource
+         indirection). -->
+    <None Include="EngineeringDomain/SchemaVersioning/GoldenCorpus/**/*.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

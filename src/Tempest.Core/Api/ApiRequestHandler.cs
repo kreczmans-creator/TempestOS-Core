@@ -23,10 +23,11 @@ namespace Tempest.Core.Api;
 /// handler extends that exact same trust model over HTTP, via the
 /// <see cref="IdentityHeaderName"/> request header — it does not verify
 /// the header's own value against any credential. This is a disclosed,
-/// deliberate limitation (see <c>ADR-0052</c>), not an oversight; by
-/// default (see <see cref="RestApiHostedService"/>) this platform binds
-/// only to the loopback address, limiting real-world exposure until a
-/// genuine authentication mechanism is designed.
+/// deliberate limitation (see <c>ADR-0052</c>), not an oversight; when
+/// enabled (see <see cref="RestApiHostedService"/> — the listener is
+/// disabled by default, <c>D-024</c>, Proposed) this platform binds only
+/// to the loopback address, limiting real-world exposure until a genuine
+/// authentication mechanism is designed.
 /// </para>
 /// <para>
 /// <b>Never establishes the shared, ambient current principal.</b>
@@ -59,6 +60,21 @@ public sealed class ApiRequestHandler
     /// why this is not ambient-principal auto-attribution.
     /// </summary>
     public const string CallerIdentityDetailKey = "CallerIdentityId";
+
+    /// <summary>
+    /// The permission a caller must hold to read the generated OpenAPI
+    /// document (<see cref="RestApiHostedService.OpenApiPath"/>) via
+    /// <see cref="HandleOpenApiDocumentAsync"/> — closing <c>TD-62</c>:
+    /// the document previously disclosed the entire route →
+    /// required-permission map to any caller with no identity and no
+    /// permission check at all. No existing permission (all either
+    /// sample-module-scoped, e.g. <c>reporting.generate</c>, or
+    /// unrelated) fit this document's own Core-level concern, so this is
+    /// a new, dedicated key — following
+    /// <see cref="Audit.AuditQuery.QueryPermission"/>'s own precedent for
+    /// a Core-defined, non-sample permission.
+    /// </summary>
+    public static readonly Permission OpenApiDocumentPermission = new("api.openapi.read");
 
     private readonly IApiEndpointRegistry _endpointRegistry;
     private readonly ICommandRegistry _commandRegistry;
@@ -120,29 +136,9 @@ public sealed class ApiRequestHandler
             return new ApiResponse(404, "Not Found");
         }
 
-        if (string.IsNullOrWhiteSpace(identityHeaderValue))
-        {
-            Log(method, path, 401, null);
-            return new ApiResponse(401, "Unauthorized: no identity supplied.");
-        }
-
-        var principal = _identityService.GetPrincipal(identityHeaderValue);
-
-        if (!_permissionEvaluator.HasPermission(principal, route.RequiredPermission))
-        {
-            Log(method, path, 403, identityHeaderValue);
-            return new ApiResponse(403, $"Forbidden: principal '{identityHeaderValue}' does not hold '{route.RequiredPermission.Key}'.");
-        }
-
-        await _auditRecorder.RecordAsync(
-            RequestAuditAction,
-            new Dictionary<string, string>
-            {
-                ["Method"] = method,
-                ["Path"] = path,
-                [CallerIdentityDetailKey] = identityHeaderValue,
-            },
-            cancellationToken).ConfigureAwait(false);
+        var denial = await AuthorizeAsync(method, path, identityHeaderValue, route.RequiredPermission, cancellationToken).ConfigureAwait(false);
+        if (denial is not null)
+            return denial;
 
         CommandResult result;
 
@@ -169,6 +165,90 @@ public sealed class ApiRequestHandler
         var statusCode = result.Succeeded ? 200 : 400;
         Log(method, path, statusCode, identityHeaderValue);
         return new ApiResponse(statusCode, result.Message);
+    }
+
+    /// <summary>
+    /// Handles a request for the generated OpenAPI document
+    /// (<see cref="RestApiHostedService.OpenApiPath"/>) — routed through
+    /// exactly the same identity resolution, permission enforcement, and
+    /// audit recording every command route goes through
+    /// (<see cref="AuthorizeAsync"/>), guarded by
+    /// <see cref="OpenApiDocumentPermission"/>, rather than a second,
+    /// parallel check (<c>TD-62</c>). An unauthenticated caller gets the
+    /// identical <c>401</c> a command-route caller with no identity gets;
+    /// a caller lacking the permission gets the identical <c>403</c>.
+    /// </summary>
+    /// <param name="path">The inbound request's own path.</param>
+    /// <param name="identityHeaderValue">
+    /// The value of <see cref="IdentityHeaderName"/>, or <see langword="null"/>
+    /// if the caller supplied none.
+    /// </param>
+    /// <param name="cancellationToken">A token observed while the audit record is written.</param>
+    public async Task<ApiResponse> HandleOpenApiDocumentAsync(string path, string? identityHeaderValue, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(path);
+
+        const string method = "GET";
+
+        var denial = await AuthorizeAsync(method, path, identityHeaderValue, OpenApiDocumentPermission, cancellationToken).ConfigureAwait(false);
+        if (denial is not null)
+            return denial;
+
+        var document = OpenApiDocumentGenerator.Generate(_endpointRegistry.Routes);
+        Log(method, path, 200, identityHeaderValue);
+        return new ApiResponse(200, document);
+    }
+
+    /// <summary>
+    /// The identity + permission + audit path shared by
+    /// <see cref="HandleAsync"/> and <see cref="HandleOpenApiDocumentAsync"/>:
+    /// resolves the caller, enforces <paramref name="requiredPermission"/>,
+    /// and records the Audit entry for an authorized request. Returns the
+    /// <see cref="ApiResponse"/> to send back (401/403) if authorization
+    /// fails; <see langword="null"/> if the caller is authorized to proceed.
+    /// </summary>
+    private async Task<ApiResponse?> AuthorizeAsync(string method, string path, string? identityHeaderValue, Permission requiredPermission, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(identityHeaderValue))
+        {
+            Log(method, path, 401, null);
+            return new ApiResponse(401, "Unauthorized: no identity supplied.");
+        }
+
+        var principal = _identityService.GetPrincipal(identityHeaderValue);
+
+        if (!_permissionEvaluator.HasPermission(principal, requiredPermission))
+        {
+            // The response body is deliberately generic (`WP 16.4B-R2`,
+            // closing the finding the review board raised): an
+            // unauthenticated caller can supply any non-empty
+            // X-Identity-Id and resolve to a valid, zero-permission
+            // principal (IdentityService.GetPrincipal never rejects an
+            // unknown id), so a body naming the principal and the
+            // required permission key handed that caller the exact
+            // route -> permission map TD-62 closed a different, single-
+            // document disclosure of. The full detail this body used to
+            // carry is not thrown away - it goes to the log, right here,
+            // which is where an operator investigating a denied request
+            // already looks (never to the Audit record: recording every
+            // denied request there is a deliberate, separately-tested
+            // design choice - see HandleAsync_UnauthorizedRequest_RecordsNoAuditEntry
+            // - that this fix leaves untouched).
+            _logger?.Information($"{method} {path} -> 403 (principal '{identityHeaderValue}' does not hold '{requiredPermission.Key}').");
+            return new ApiResponse(403, "Forbidden.");
+        }
+
+        await _auditRecorder.RecordAsync(
+            RequestAuditAction,
+            new Dictionary<string, string>
+            {
+                ["Method"] = method,
+                ["Path"] = path,
+                [CallerIdentityDetailKey] = identityHeaderValue,
+            },
+            cancellationToken).ConfigureAwait(false);
+
+        return null;
     }
 
     private void Log(string method, string path, int statusCode, string? principalId) =>

@@ -51,7 +51,6 @@ public class RequirementsSampleModuleIntegrationTests
         var currentComponentAccessor = new Tempest.Core.Identity.CurrentComponentAccessor();
         services.AddInstance<Tempest.Core.Identity.ICurrentComponentAccessor>(currentComponentAccessor);
         services.AddInstance(currentComponentAccessor);
-        services.AddInstance<Tempest.Core.Identity.IPermissionEvaluator>(new Tempest.Core.Identity.PermissionEvaluator());
         services.AddInstance<IConfigurationProvider>(configuration);
         services.AddInstance<ILogger>(new Tempest.Core.Tests.Events.RecordingLevelLogger());
         services.Singleton<IEventBus, EventBus>();

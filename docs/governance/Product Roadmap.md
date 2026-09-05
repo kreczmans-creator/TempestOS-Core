@@ -10,7 +10,7 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | `docs/governance/Delivery/Release Register.md` (what has actually shipped); `Future Capability Register.md` (what is identified but not yet scheduled); `VISION.md` (why the sequencing below is the sequencing chosen). |
 | **Review Frequency** | Reviewed at every release boundary, and whenever a new phase's own scope is approved. |
-| **Last Reviewed** | 2026-07-30 (`WP 7.2A`, Strategic Roadmap Selection & Programme Architecture) — Phase 4 (Engineering Foundation) confirmed complete, in a different shape than this document's own original "working premise" anticipated (the Engineering Foundation frameworks were built, not the Platform/Infrastructure hardening items this phase originally named — disclosed explicitly in `WP7.2A Strategic Roadmap Review.md` §4, not silently reconciled). Phase 5 (Engineering Modules) sequencing recommended: Systems Engineering (`FCR-0027`) first, per `WP7.2A Recommended Programme.md` — still a recommendation, not an approval. Previously reviewed 2026-07-30 (`WP 7.0A`, Future Capability Register & Product Vision — established). |
+| **Last Reviewed** | 2026-09-04 (`WP 16.2A`, Register and Status Currency) — **Phase 5 (Engineering Modules) marked Delivered through `v0.15.0`**: all six Engineering Disciplines shipped (`v0.9.0`), plus the Desktop application (`v0.10.0`), Plugin & Registration Trust Isolation (`v0.13.0`/`v0.13.1`), and Engineering Object Durability (`v0.14.0`) — none anticipated by the phase's own original working premise, preserved below for the historical record per this document's own convention. **Phase 5.5 — v1.0 Readiness added**, restating Definition 2 verbatim from `docs/releases/v0.11.0/WP11.0B Architecture Roadmap.md` §1, labelled per `D-021` — Proposed when `WP 16.2A` wrote it, **ratified by the Product Owner 2026-09-05** and promoted to Decided (`WP16.0A Product Owner Ratification — D-021 to D-026.md`); recorded as unapproved scope for the period it was; Definition 3 (`TD-84`, the project-centric product decision) noted as the `v1.x` roadmap, per `D-021`'s own text, not adopted for `v1.0` itself. See `docs/releases/v0.16.0/WP16.2A Register and Status Currency Report.md`. Previously reviewed 2026-07-30 (`WP 7.2A`, Strategic Roadmap Selection & Programme Architecture) — Phase 4 (Engineering Foundation) confirmed complete, in a different shape than this document's own original "working premise" anticipated (the Engineering Foundation frameworks were built, not the Platform/Infrastructure hardening items this phase originally named — disclosed explicitly in `WP7.2A Strategic Roadmap Review.md` §4, not silently reconciled). Phase 5 (Engineering Modules) sequencing recommended: Systems Engineering (`FCR-0027`) first, per `WP7.2A Recommended Programme.md` — still a recommendation, not an approval. Previously reviewed 2026-07-30 (`WP 7.0A`, Future Capability Register & Product Vision — established). |
 | **Related Documents** | `Future Capability Register.md`; `Capability Categories.md`; `VISION.md`; `docs/governance/Delivery/Release Register.md`; `docs/releases/v0.7.0/WorkPackages.md`. |
 | **Related ADRs** | ADR-0013. |
 | **Related Academy Articles** | None yet. |
@@ -96,9 +96,53 @@ in its own authentication, governance tooling, and trust-boundary
 enforcement is a weaker foundation for a first Engineering Module than
 one without them."
 
-### Phase 5 — Engineering Modules (Sequencing Recommended, Not Yet Scoped)
+### Phase 5 — Engineering Modules (Delivered through `v0.15.0`)
 
-The phase `VISION.md` names as TempestOS's own reason for existing: real
+**Shipped as:** `v0.8.0` (Engineering Domain and the Workspace shell),
+`v0.9.0` (six real Engineering Disciplines), `v0.10.0` (`Tempest.Desktop`,
+a real graphical desktop application), `v0.11.0`–`v0.12.0` (release
+engineering, governance and composition-root hardening), `v0.13.0`/
+`v0.13.1` (Plugin & Registration Trust Isolation), `v0.14.0` (Engineering
+Object Durability & Rehydration, data-driven workspace layout, the
+document viewer, project management), `v0.15.0` (Desktop productisation
+and governance currency). Re-derived directly, `WP 16.2A` — see
+`Feature Register.md`'s own `v0.6.0`–`v0.15.0` sections for the full,
+per-Work-Package attribution this summary condenses.
+
+**The six Engineering Disciplines `Capability Categories.md` scoped for
+this phase all shipped**, end to end, each with a browsable Project
+Explorer area, real Property Inspector, full command set, real Digital
+Thread links, and real Cockpit KPIs: Mechanical Product Structure
+(`WP 9.0A`/`WP 9.0B`), Requirements Management (`WP 9.1A`, following
+the Requirements Engine foundation `WP 7.3A` shipped in Phase 4),
+Engineering Calculations (`WP 9.2A`), Documents (`WP 9.4A`),
+Verification (`WP 9.3A`), and Manufacturing (`WP 9.5A`) — `WP 7.2A`'s
+own recommendation to begin with Systems Engineering (`FCR-0027`) was
+realised as this phase's own Requirements Management discipline. The
+Project Management category (`FCR-0028`) shipped as `Tempest.App.Projects`
+(`v0.9.0` onward) and, substantively, as `v0.14.0`'s own Project
+Management capability (Tasks, Milestones, Deliverables, Risks, Issues,
+Decisions — `ADR-0117`) and the `TD-84` Product Spine (`IProjectContext`,
+`IShellNavigator`, the Desktop shell) — the remaining three discipline
+categories `Capability Categories.md` named without a Phase 5 candidate
+(Structural, Electrical, Building Services/HVAC) remain genuinely
+undelivered, carried forward rather than silently dropped.
+
+**Beyond the six disciplines, this phase also delivered capability the
+phase's own original text did not name**, because the platform's own
+needs changed as real code accumulated: a real graphical desktop
+application (`v0.10.0`, `Tempest.Desktop`, `ADR-0092`/`ADR-0094`,
+superseding the terminal-realised Workspace `v0.8.0` shipped);
+Plugin & Registration Trust Isolation (`v0.13.0`/`v0.13.1`,
+`ADR-0107`–`ADR-0112`, closing `TD-09`/`TD-10`/`TD-11`); and
+Engineering Object Durability & Rehydration plus the Attachment Content
+Store (`v0.14.0`, `ADR-0113`/`ADR-0114`/`ADR-0116`, `TD-85`) — none of
+which this phase's own original working premise (below) anticipated,
+since it predates the Desktop, Plugin Trust, and Durability decisions
+by several releases.
+
+*Original working premise, preserved for the historical record:* "The
+phase `VISION.md` names as TempestOS's own reason for existing: real
 capability for the Engineering Discipline categories `Capability
 Categories.md` establishes (Systems Engineering, Project Management,
 Mechanical, Structural, Electrical, Building Services/HVAC, Materials,
@@ -116,7 +160,93 @@ five still-unidentified disciplines' own scope still cannot be written
 today — that depends on a dedicated capability-identification exercise
 engaging real engineering-domain stakeholders, not a documentation-only
 exercise, per `WP7.0B Engineering Discipline Assessment.md`'s own
-finding, re-confirmed unchanged by `WP 7.2A`.
+finding, re-confirmed unchanged by `WP 7.2A`."
+
+### Phase 5.5 — v1.0 Readiness (Platform Hardening & Release Engineering)
+
+**Status: Decided — `D-021` ratified by the Product Owner, 2026-09-05.**
+This phase is approved scope. `D-021` directs that `Product Roadmap.md`
+carry this entry restating Definition 2 verbatim, and `WP 16.2A` is the
+Work Package that action was deferred to (`WP16.0A v0.16.0 Scope
+Decision.md`, "What This Work Package Deliberately Did Not Do").
+
+It stood here as **Proposed** from `WP 16.2A` (2026-09-04) until
+ratification, disclosed as unapproved scope rather than silently
+presented as decided, and that is left on the record rather than edited
+away. Ratification came by direct Product Owner instruction at the
+v0.16.0 release gate, not through PR #6 — which the earlier status line
+had anticipated as the route, and which remains open and superseded as a
+merge vehicle. Evidence: `docs/releases/v0.16.0/WP16.0A Product Owner
+Ratification — D-021 to D-026.md`. As that earlier line promised, this
+status is the only edit the promotion required; no other text below
+changed.
+
+**Definition 2, restated verbatim from `docs/releases/v0.11.0/WP11.0B
+Architecture Roadmap.md` §1 ("Recommended Definition of `TempestOS
+v1.0`"):**
+
+> **v1.0.0 is a commercially credible, single-user (or small-trusted-team),
+> locally-trusted desktop engineering platform**, covering the six
+> Engineering Disciplines already shipped through `v0.10.0` (Mechanical,
+> Requirements, Calculations, Verification, Documents, Manufacturing),
+> running on:
+>
+> - A CI-verified build (every merge to `main` gated by an automated build
+>   and full test run — currently absent, `R-1`).
+> - A decomposed, single-responsibility Desktop composition root — not the
+>   current 1,556-line `MainWindow`/1,398-line `EngineeringCockpit`
+>   concentration of risk (`A-1`).
+> - One deliberately-chosen, documented presentation surface, or an
+>   explicit, costed decision to maintain two (`A-2`).
+> - A compile-time safety net around the classification/relationship
+>   vocabulary that now underpins all six disciplines (`A-6`).
+> - An internally-consistent governance suite, with the recurring
+>   register-staleness pattern (`A-5`/`FCR-0005`) closed by tooling rather
+>   than caught by the seventh manual audit in a row.
+>
+> **Explicitly out of `v1.0` scope, by recommendation:** third-party plugin
+> support (`FCR-0002`) and REST API exposure beyond a trusted local
+> network (`FCR-0003`/`FCR-0004`). Both remain correctly gated on a real
+> trigger that has not fired — building either now would be building ahead
+> of demonstrated need, the same discipline `WP7.2A Recommended
+> Programme.md` already applied to this exact material (see §4). If the
+> Product Owner instead commits `v1.0` to either capability, §5 names the
+> conditional release (`v0.13.0`) that closes the corresponding trust gap
+> first.
+>
+> This definition does not add new Engineering Discipline breadth beyond
+> what `v0.10.0` already shipped — that is a product-scope decision outside
+> this review's evidence base, not an architectural one, and is
+> deliberately left to the Product Owner rather than assumed here.
+
+**Status against Definition 2, re-derived `WP 16.2A` at `v0.15.0`/
+`v0.16.0` currency:** every named precondition has since shipped —
+CI (`WP 11.1A`, `.github/workflows/ci.yml`), the decomposed Desktop
+composition root (`ADR-0103`, `WP 12.0A`/`WP 12.0B`), the single
+presentation surface decision (`ADR-0101`, `TempestShell` retired,
+`WP 11.3B`), the vocabulary safety net (`ADR-0105`, `WP 12.1A`/
+`WP 12.1B`), and register-staleness tooling (`FCR-0005`,
+`scripts/governance-healthcheck.ps1`, `WP 11.2A`, extended `WP 16.1A`).
+Third-party plugins and REST-beyond-trusted-network remain out of
+scope, undelivered, exactly as Definition 2 recommends. Whether this
+means `v1.0.0` is now reachable, or whether the six-discipline scope
+itself needs revisiting given `v0.13.0`'s Plugin Trust and `v0.14.0`'s
+Durability work landed *after* this definition was written, is exactly
+the question `D-021`'s ratification resolves — and it has now resolved
+it: Definition 2 governs `v1.0`, ratified 2026-09-05. The six-discipline
+scope is not revisited for `v1.0`; `v0.13.0`'s Plugin Trust and
+`v0.14.0`'s Durability work land inside it rather than reopening it.
+
+**Definition 3, noted but not adopted here:** the 2026-08-28
+project-centric product decision (`TD-84`, "TempestOS is a
+project-centric engineering operating environment:
+`TempestOS → Module → Project → Workspace → Engineering Object →
+Evidence`") is **the `v1.x` roadmap, not the `v1.0` line** — per
+`D-021`'s own text. Choosing Definition 3 for `v1.0` itself would pull
+the `v1.0.0 Release Candidate Audit`'s conditional groups C1–C8 into
+`v1.0` scope and add at least one further release; `D-021` recommends
+against that, keeping Definition 3's own broader ambition for the
+release(s) after `v1.0.0`.
 
 ### Phase 6 — Professional Features (Not Yet Scoped)
 

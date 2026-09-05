@@ -11,15 +11,42 @@ namespace Tempest.Core.Tests.Modules;
 /// <see cref="ModuleLifecycleManager"/> via reflection (no constructor injection
 /// is available to hand fixtures a per-test instance).
 /// </summary>
+/// <remarks>
+/// Guarded by a lock rather than left a bare, non-thread-safe
+/// <see cref="List{T}"/> — its sole consumer, <c>ModuleLifecycleManagerTests</c>,
+/// invokes lifecycle methods sequentially within a test (a <c>foreach</c>
+/// in <see cref="ModuleLifecycleManager"/>, not a parallel fan-out), so no
+/// concurrent write has ever actually raced here; the lock is a small,
+/// self-contained closure of the latent hazard against any future
+/// consumer added to this static without re-deriving that fact, cheaper
+/// than a <c>[Collection]</c> guard that would protect only against
+/// whatever else joined the same named collection.
+/// </remarks>
 internal static class LifecycleTestLog
 {
+    private static readonly object Gate = new();
     private static List<string> _entries = new();
 
-    public static void Reset() => _entries = new List<string>();
+    public static void Reset()
+    {
+        lock (Gate)
+            _entries = new List<string>();
+    }
 
-    public static void Record(string entry) => _entries.Add(entry);
+    public static void Record(string entry)
+    {
+        lock (Gate)
+            _entries.Add(entry);
+    }
 
-    public static IReadOnlyList<string> Entries => _entries;
+    public static IReadOnlyList<string> Entries
+    {
+        get
+        {
+            lock (Gate)
+                return _entries.ToList();
+        }
+    }
 }
 
 internal abstract class RecordingLifecycleModuleBase : IModule, IModuleLifecycle

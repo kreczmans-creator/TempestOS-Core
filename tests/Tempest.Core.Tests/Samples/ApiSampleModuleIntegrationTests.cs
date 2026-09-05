@@ -34,6 +34,7 @@ public class ApiSampleModuleIntegrationTests
         {
             new(PersistenceStore.RootPathConfigurationKey, persistenceRootPath),
             new(RestApiHostedService.PortConfigurationKey, "0"),
+            new(RestApiHostedService.EnabledConfigurationKey, "true"), // D-024 (Proposed): opt in explicitly, exactly as a real caller now must.
         };
 
         var permissions = grantedPermissions?.ToList();
@@ -140,16 +141,38 @@ public class ApiSampleModuleIntegrationTests
     }
 
     [Fact]
-    public async Task GetOpenApiDocument_ReturnsAJsonDocumentDescribingTheMappedRoute()
+    public async Task GetOpenApiDocument_AuthorisedCaller_ReturnsAJsonDocumentDescribingTheMappedRoute()
     {
+        // TD-62: the OpenAPI document now goes through the same identity +
+        // permission pipeline as every command route - an identity header
+        // and ApiRequestHandler.OpenApiDocumentPermission are both required.
+        await RunAgainstRealHttpAsync(
+            [ReportingSampleModule.GenerateReportPermissionKey, ApiRequestHandler.OpenApiDocumentPermission.Key],
+            async (client, _, _) =>
+            {
+                var request = new HttpRequestMessage(HttpMethod.Get, RestApiHostedService.OpenApiPath);
+                request.Headers.Add(ApiRequestHandler.IdentityHeaderName, ReportingSampleModule.SampleIdentityId);
+
+                var response = await client.SendAsync(request);
+                var body = await response.Content.ReadAsStringAsync();
+
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                Assert.Contains(ApiSampleModule.GenerateReportRoutePath, body);
+                Assert.Contains("openapi", body);
+            });
+    }
+
+    [Fact]
+    public async Task GetOpenApiDocument_NoIdentityHeader_Returns401()
+    {
+        // TD-62: previously this route returned the full document,
+        // unauthenticated, with a 200. It must now behave exactly like an
+        // unauthenticated command-route caller.
         await RunAgainstRealHttpAsync([ReportingSampleModule.GenerateReportPermissionKey], async (client, _, _) =>
         {
             var response = await client.GetAsync(RestApiHostedService.OpenApiPath);
-            var body = await response.Content.ReadAsStringAsync();
 
-            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-            Assert.Contains(ApiSampleModule.GenerateReportRoutePath, body);
-            Assert.Contains("openapi", body);
+            Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
         });
     }
 
@@ -239,6 +262,7 @@ public class ApiSampleModuleIntegrationTests
             [
                 new KeyValuePair<string, string>(PersistenceStore.RootPathConfigurationKey, temp.Path),
                 new KeyValuePair<string, string>(RestApiHostedService.PortConfigurationKey, occupiedPort.ToString()),
+                new KeyValuePair<string, string>(RestApiHostedService.EnabledConfigurationKey, "true"), // D-024 (Proposed): this test proves the port-in-use failure path, which requires the listener to actually attempt to start.
             ]))
             .Build();
         var originalOut = Console.Out;

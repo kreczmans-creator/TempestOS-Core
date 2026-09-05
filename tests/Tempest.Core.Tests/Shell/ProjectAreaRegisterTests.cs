@@ -7,6 +7,7 @@ using Tempest.Core.Configuration;
 using Tempest.Core.Identity;
 using Tempest.Core.Persistence;
 using Tempest.Core.Requirements;
+using Tempest.Core.Tests.Projects;
 using Tempest.Core.Verification;
 
 namespace Tempest.Core.Tests.Shell;
@@ -23,8 +24,42 @@ namespace Tempest.Core.Tests.Shell;
 /// documents are never another's) and <b>transitivity</b> (a drawing on a
 /// Part three levels down is in the project).
 /// </remarks>
-public sealed class ProjectAreaRegisterTests
+public sealed class ProjectAreaRegisterTests : IDisposable
 {
+    private readonly List<string> _fixtureRoots = [];
+
+    /// <summary>
+    /// Creates a <see cref="RegisterFixture"/> and remembers its isolated
+    /// persistence root for <see cref="Dispose"/> — closes the Core-side
+    /// leak <c>TD-120</c> (Technical Debt Register.md) left open, see
+    /// <see cref="ProjectFixtureRoot"/>.
+    /// </summary>
+    private async Task<RegisterFixture> CreateFixtureAsync()
+    {
+        var fixture = await RegisterFixture.CreateAsync();
+        _fixtureRoots.Add(fixture.Root);
+        return fixture;
+    }
+
+    /// <summary>Deletes every persistence root this instance's own test created — xUnit constructs a fresh instance per test, so this runs once per test, not once per class.</summary>
+    public void Dispose()
+    {
+        foreach (var root in _fixtureRoots)
+        {
+            try
+            {
+                if (Directory.Exists(root))
+                    Directory.Delete(root, recursive: true);
+            }
+            catch (IOException)
+            {
+            }
+            catch (UnauthorizedAccessException)
+            {
+            }
+        }
+    }
+
     // ================================================================
     // Documents
     // ================================================================
@@ -32,7 +67,7 @@ public sealed class ProjectAreaRegisterTests
     [Fact]
     public async Task DocumentRegister_ListsTheProjectsOwnDocuments_AndNeverAnotherProjects()
     {
-        var fixture = await RegisterFixture.CreateAsync();
+        var fixture = await CreateFixtureAsync();
 
         var apollo = await fixture.CreateProjectAsync("P-0027", "Apollo");
         var vulcan = await fixture.CreateProjectAsync("P-0031", "Vulcan");
@@ -55,7 +90,7 @@ public sealed class ProjectAreaRegisterTests
         // attached to the Part. Direct-child-only membership would find
         // nothing here, and that is exactly how a real product structure
         // is shaped.
-        var fixture = await RegisterFixture.CreateAsync();
+        var fixture = await CreateFixtureAsync();
         var project = await fixture.CreateProjectAsync("P-0027", "Apollo");
 
         var assembly = await fixture.CreatePartAsync("ASM-1", "Pump assembly", project.Id);
@@ -78,7 +113,7 @@ public sealed class ProjectAreaRegisterTests
         // "This project has no documents" and "this document has no file"
         // are different statements, and a user has to be able to tell them
         // apart.
-        var fixture = await RegisterFixture.CreateAsync();
+        var fixture = await CreateFixtureAsync();
         var project = await fixture.CreateProjectAsync("P-0027", "Apollo");
 
         await fixture.CreateDocumentAsync("DOC-1", "Specification", project.Id, attachmentFileName: null);
@@ -93,7 +128,7 @@ public sealed class ProjectAreaRegisterTests
     [Fact]
     public async Task DocumentRegister_AnEmptyProject_IsEmpty_NotAnError()
     {
-        var fixture = await RegisterFixture.CreateAsync();
+        var fixture = await CreateFixtureAsync();
         var project = await fixture.CreateProjectAsync("P-0099", "Nothing yet");
 
         Assert.Empty(await fixture.Documents.ListAsync(project.Id));
@@ -102,7 +137,7 @@ public sealed class ProjectAreaRegisterTests
     [Fact]
     public async Task DocumentRegister_SkipsProjectObjectsCarryingNeitherDocumentNorFile()
     {
-        var fixture = await RegisterFixture.CreateAsync();
+        var fixture = await CreateFixtureAsync();
         var project = await fixture.CreateProjectAsync("P-0027", "Apollo");
 
         await fixture.CreatePartAsync("PRT-9", "Plain part, no drawing", project.Id);
@@ -113,7 +148,7 @@ public sealed class ProjectAreaRegisterTests
     [Fact]
     public async Task DocumentRegister_OrdersDeterministically_AcrossRepeatedReads()
     {
-        var fixture = await RegisterFixture.CreateAsync();
+        var fixture = await CreateFixtureAsync();
         var project = await fixture.CreateProjectAsync("P-0027", "Apollo");
 
         await fixture.CreateDocumentAsync("DWG-3", "Third", project.Id, "c.pdf");
@@ -134,7 +169,7 @@ public sealed class ProjectAreaRegisterTests
     [Fact]
     public async Task RequirementRegister_ListsARequirementAllocatedIntoTheProject_AndNotOneAllocatedElsewhere()
     {
-        var fixture = await RegisterFixture.CreateAsync();
+        var fixture = await CreateFixtureAsync();
 
         var apollo = await fixture.CreateProjectAsync("P-0027", "Apollo");
         var vulcan = await fixture.CreateProjectAsync("P-0031", "Vulcan");
@@ -159,7 +194,7 @@ public sealed class ProjectAreaRegisterTests
         // The honest consequence of joining on the link the platform
         // actually records: a requirement nobody has allocated is not yet
         // part of any project's work, and no register should pretend it is.
-        var fixture = await RegisterFixture.CreateAsync();
+        var fixture = await CreateFixtureAsync();
         var project = await fixture.CreateProjectAsync("P-0027", "Apollo");
         await fixture.CreatePartAsync("PRT-A", "Impeller", project.Id);
 
@@ -171,7 +206,7 @@ public sealed class ProjectAreaRegisterTests
     [Fact]
     public async Task RequirementRegister_ReportsWhatVerificationRecorded_NotWhatTheStatusClaims()
     {
-        var fixture = await RegisterFixture.CreateAsync();
+        var fixture = await CreateFixtureAsync();
         var project = await fixture.CreateProjectAsync("P-0027", "Apollo");
         var part = await fixture.CreatePartAsync("PRT-A", "Impeller", project.Id);
 
@@ -209,7 +244,7 @@ public sealed class ProjectAreaRegisterTests
         // A requirement that failed, was fixed, and passed is verified.
         // Reporting the worst outcome ever recorded would leave it looking
         // failed forever.
-        var fixture = await RegisterFixture.CreateAsync();
+        var fixture = await CreateFixtureAsync();
         var project = await fixture.CreateProjectAsync("P-0027", "Apollo");
         var part = await fixture.CreatePartAsync("PRT-A", "Impeller", project.Id);
 
@@ -232,7 +267,7 @@ public sealed class ProjectAreaRegisterTests
         // the surface state something false about the engineering data on
         // the strength of a permission check — and throwing would empty a
         // register the user is perfectly entitled to see.
-        var fixture = await RegisterFixture.CreateAsync();
+        var fixture = await CreateFixtureAsync();
         var project = await fixture.CreateProjectAsync("P-0027", "Apollo");
         var part = await fixture.CreatePartAsync("PRT-A", "Impeller", project.Id);
 
@@ -252,7 +287,7 @@ public sealed class ProjectAreaRegisterTests
     [Fact]
     public async Task RequirementRegister_AnEmptyProject_IsEmpty()
     {
-        var fixture = await RegisterFixture.CreateAsync();
+        var fixture = await CreateFixtureAsync();
         var project = await fixture.CreateProjectAsync("P-0099", "Nothing yet");
 
         Assert.Empty(await fixture.Requirements.ListAsync(project.Id));
@@ -268,7 +303,8 @@ public sealed class ProjectAreaRegisterTests
             EngineeringDomainContext domain,
             IRequirementsService requirements,
             IVerificationService verification,
-            CurrentPrincipalAccessor principal)
+            CurrentPrincipalAccessor principal,
+            string root)
         {
             Domain = domain;
             RequirementsService = requirements;
@@ -276,7 +312,11 @@ public sealed class ProjectAreaRegisterTests
             Principal = principal;
             Documents = new ProjectDocumentRegister(domain);
             Requirements = new ProjectRequirementRegister(requirements, domain);
+            Root = root;
         }
+
+        /// <summary>This fixture's own isolated persistence root — the caller's own <c>Dispose</c> deletes it (`TD-120` Core-side closure).</summary>
+        public string Root { get; }
 
         public EngineeringDomainContext Domain { get; }
 
@@ -296,7 +336,7 @@ public sealed class ProjectAreaRegisterTests
             // in-memory double implements only the text contract. Using the
             // real store also means these tests exercise the same
             // persistence the product does.
-            var root = Path.Combine(Path.GetTempPath(), "tempest-project-areas-" + Guid.NewGuid().ToString("N"));
+            var root = ProjectFixtureRoot.NewIsolatedRoot("areas");
             var configuration = new ConfigurationBuilder()
                 .AddSource(new MemoryConfigurationSource(
                 [
@@ -325,7 +365,7 @@ public sealed class ProjectAreaRegisterTests
             // test rather than being the accidental default here.
             principal.SetCurrent(new PlatformPrincipal(new PlatformIdentity("engineer", "engineer"), [Core.Verification.VerificationService.ReadPermission]));
 
-            return Task.FromResult(new RegisterFixture(domain, requirements, verification, principal));
+            return Task.FromResult(new RegisterFixture(domain, requirements, verification, principal, root));
         }
 
         public async Task<IProject> CreateProjectAsync(string identifier, string name)
