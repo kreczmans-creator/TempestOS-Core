@@ -106,7 +106,8 @@ public interface IRequirementsService
     /// current <see cref="IRequirementGroup.ParentGroupId"/>. Also records a permanent <see cref="RequirementRelationshipKinds.GroupedUnder"/>
     /// relationship link, never removing any prior one, mirroring <see cref="MoveToGroupAsync"/>'s own identical reasoning.
     /// </summary>
-    /// <exception cref="EngineeringDocumentNotFoundException"><paramref name="groupId"/>, or <paramref name="newParentGroupId"/> if not <see langword="null"/>, does not exist.</exception>
+    /// <exception cref="EngineeringDocumentNotFoundException"><paramref name="groupId"/> does not exist; or <paramref name="newParentGroupId"/> is not <see langword="null"/> and does not exist or does not identify a <c>RequirementGroup</c> (`TD-67`).</exception>
+    /// <exception cref="RequirementGroupCycleException"><paramref name="newParentGroupId"/> is <paramref name="groupId"/> itself, or one of its own descendants (`TD-67`).</exception>
     Task<IRequirementGroup> MoveGroupAsync(Guid groupId, Guid? newParentGroupId, CancellationToken cancellationToken = default);
 
     /// <summary>Soft-deletes the group.</summary>

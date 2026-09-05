@@ -3,6 +3,7 @@ using Avalonia.Headless.XUnit;
 using Avalonia.Input;
 using Avalonia.LogicalTree;
 using Tempest.Core.Commands;
+using Tempest.Core.Macros;
 using Tempest.Desktop.Composition;
 using Tempest.Desktop.Theming;
 using Tempest.Desktop.Views;
@@ -295,6 +296,326 @@ public sealed class DialogFrameworkKeyboardTests
             var domainContext = (Tempest.Core.EngineeringDomain.EngineeringDomainContext)host.Services!.GetService(typeof(Tempest.Core.EngineeringDomain.EngineeringDomainContext));
             var created = await domainContext.Repository.ListByKindAsync("Part");
             Assert.Contains(created, o => (o as Tempest.Core.EngineeringDomain.IHasBusinessIdentifier)?.DisplayName == "Palette Test Part");
+        }
+        finally
+        {
+            await host.ShutdownAsync();
+            await host.DisposeAsync();
+        }
+    }
+
+    // ------------------------------------------------------------
+    // `WP 16.5A` — real modal behaviour (`TD-65`): SettingsDialog and
+    // MacroManagerDialog gain Escape/initial-focus; every one of the six
+    // dialogs gains focus capture-on-open/restore-on-close.
+    // ------------------------------------------------------------
+
+    [AvaloniaFact]
+    public async Task SettingsDialog_Show_FocusesTheCancelButton_TheSafeDefault()
+    {
+        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
+        try
+        {
+            await host.StartAsync();
+            var settingsProvider = (Tempest.Core.Settings.ISettingsProvider)host.Services!.GetService(typeof(Tempest.Core.Settings.ISettingsProvider));
+            var dialog = new SettingsDialog(new ThemeService(settingsProvider), new UserSettings(settingsProvider));
+            var window = new Window { Content = dialog };
+            window.Show();
+
+            _ = dialog.ShowAsync();
+
+            var cancelButton = dialog.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "Cancel"));
+            Assert.True(cancelButton.IsFocused);
+        }
+        finally
+        {
+            await host.ShutdownAsync();
+            await host.DisposeAsync();
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task SettingsDialog_Escape_ResolvesFalse_AndHidesTheDialog_LeavingSettingsUnchanged()
+    {
+        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
+        try
+        {
+            await host.StartAsync();
+            var settingsProvider = (Tempest.Core.Settings.ISettingsProvider)host.Services!.GetService(typeof(Tempest.Core.Settings.ISettingsProvider));
+            var settings = new UserSettings(settingsProvider);
+            var dialog = new SettingsDialog(new ThemeService(settingsProvider), settings);
+            var window = new Window { Content = dialog };
+            window.Show();
+
+            var showTask = dialog.ShowAsync();
+            Assert.True(dialog.IsVisible);
+
+            var checkbox = dialog.GetLogicalDescendants().OfType<CheckBox>().Single();
+            checkbox.IsChecked = false; // a pending, unsaved change
+
+            dialog.RaiseEvent(new KeyEventArgs { RoutedEvent = InputElement.KeyDownEvent, Key = Key.Escape });
+
+            Assert.False(await showTask);
+            Assert.False(dialog.IsVisible);
+            Assert.True(settings.ConfirmBeforeDelete); // unchanged — Escape discarded, never saved
+        }
+        finally
+        {
+            await host.ShutdownAsync();
+            await host.DisposeAsync();
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task MacroManagerDialog_Show_FocusesTheMacroList_NeverAButton()
+    {
+        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
+        try
+        {
+            await host.StartAsync();
+            var macroManager = (IMacroManager)host.Services!.GetService(typeof(IMacroManager));
+            var commandRegistry = (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
+            var dialog = new MacroManagerDialog(macroManager, commandRegistry, runMacro: _ => Task.FromResult(CommandResult.Success()));
+            var window = new Window { Content = dialog };
+            window.Show();
+
+            await dialog.ShowAsync();
+
+            var macroList = dialog.GetLogicalDescendants().OfType<ListBox>().First();
+            Assert.True(macroList.IsFocused);
+        }
+        finally
+        {
+            await host.ShutdownAsync();
+            await host.DisposeAsync();
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task MacroManagerDialog_Escape_WhileBrowsing_ClosesTheDialog()
+    {
+        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
+        try
+        {
+            await host.StartAsync();
+            var macroManager = (IMacroManager)host.Services!.GetService(typeof(IMacroManager));
+            var commandRegistry = (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
+            var dialog = new MacroManagerDialog(macroManager, commandRegistry, runMacro: _ => Task.FromResult(CommandResult.Success()));
+            var window = new Window { Content = dialog };
+            window.Show();
+
+            await dialog.ShowAsync();
+            Assert.True(dialog.IsVisible);
+
+            dialog.RaiseEvent(new KeyEventArgs { RoutedEvent = InputElement.KeyDownEvent, Key = Key.Escape });
+
+            Assert.False(dialog.IsVisible);
+        }
+        finally
+        {
+            await host.ShutdownAsync();
+            await host.DisposeAsync();
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task MacroManagerDialog_Escape_WhileEditing_ReturnsToTheBrowsePanel_WithoutClosingTheDialog()
+    {
+        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
+        try
+        {
+            await host.StartAsync();
+            var macroManager = (IMacroManager)host.Services!.GetService(typeof(IMacroManager));
+            var commandRegistry = (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
+            var dialog = new MacroManagerDialog(macroManager, commandRegistry, runMacro: _ => Task.FromResult(CommandResult.Success()));
+            var window = new Window { Content = dialog };
+            window.Show();
+
+            await dialog.ShowAsync();
+            var newButton = dialog.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "New Macro..."));
+            newButton.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+
+            var nameBox = dialog.GetLogicalDescendants().OfType<TextBox>().Single();
+            Assert.True(nameBox.IsFocused); // editor's own initial focus
+
+            dialog.RaiseEvent(new KeyEventArgs { RoutedEvent = InputElement.KeyDownEvent, Key = Key.Escape });
+
+            Assert.True(dialog.IsVisible); // still open — Escape cancelled the editor, not the dialog
+            var macroList = dialog.GetLogicalDescendants().OfType<ListBox>().First();
+            Assert.True(macroList.IsVisible);
+        }
+        finally
+        {
+            await host.ShutdownAsync();
+            await host.DisposeAsync();
+        }
+    }
+
+    // ------------------------------------------------------------
+    // Focus capture-on-open / restore-on-close — every one of the six
+    // dialogs, via the shared `DialogModality` helper.
+    // ------------------------------------------------------------
+
+    [AvaloniaFact]
+    public async Task ConfirmationDialog_Close_RestoresFocusToThePreviouslyFocusedControl()
+    {
+        var dialog = new ConfirmationDialog();
+        var sibling = new Button { Content = "Sibling" };
+        var panel = new Panel();
+        panel.Children.Add(sibling);
+        panel.Children.Add(dialog);
+        var window = new Window { Content = panel };
+        window.Show();
+        sibling.Focus();
+        Assert.True(sibling.IsFocused);
+
+        var confirmTask = dialog.ConfirmAsync("Delete?", "This cannot be undone.", "Delete");
+        Assert.False(sibling.IsFocused);
+
+        dialog.RaiseEvent(new KeyEventArgs { RoutedEvent = InputElement.KeyDownEvent, Key = Key.Escape });
+
+        Assert.False(await confirmTask);
+        Assert.True(sibling.IsFocused);
+        await Task.CompletedTask;
+    }
+
+    [AvaloniaFact]
+    public async Task MessageDialog_Close_RestoresFocusToThePreviouslyFocusedControl()
+    {
+        var dialog = new MessageDialog();
+        var sibling = new Button { Content = "Sibling" };
+        var panel = new Panel();
+        panel.Children.Add(sibling);
+        panel.Children.Add(dialog);
+        var window = new Window { Content = panel };
+        window.Show();
+        sibling.Focus();
+
+        var showTask = dialog.ShowAsync(FeedbackSeverity.Info, "Saved", "Your changes were saved.");
+        Assert.False(sibling.IsFocused);
+
+        dialog.RaiseEvent(new KeyEventArgs { RoutedEvent = InputElement.KeyDownEvent, Key = Key.Escape });
+
+        await showTask;
+        Assert.True(sibling.IsFocused);
+    }
+
+    [AvaloniaFact]
+    public async Task InputDialog_Close_RestoresFocusToThePreviouslyFocusedControl()
+    {
+        var dialog = new InputDialog();
+        var sibling = new Button { Content = "Sibling" };
+        var panel = new Panel();
+        panel.Children.Add(sibling);
+        panel.Children.Add(dialog);
+        var window = new Window { Content = panel };
+        window.Show();
+        sibling.Focus();
+
+        var promptTask = dialog.PromptAsync("New Part", "Name:");
+        Assert.False(sibling.IsFocused);
+
+        // InputDialog's own Escape handling lives on `_input` itself
+        // (unlike the other five, which handle it on the dialog root) —
+        // raised there, exactly where a real user's keystroke would land
+        // (`PromptAsync`'s own initial focus).
+        var input = dialog.GetLogicalDescendants().OfType<TextBox>().Single();
+        input.RaiseEvent(new KeyEventArgs { RoutedEvent = InputElement.KeyDownEvent, Key = Key.Escape });
+
+        Assert.Null(await promptTask);
+        Assert.True(sibling.IsFocused);
+    }
+
+    [AvaloniaFact]
+    public async Task SettingsDialog_Close_RestoresFocusToThePreviouslyFocusedControl()
+    {
+        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
+        try
+        {
+            await host.StartAsync();
+            var settingsProvider = (Tempest.Core.Settings.ISettingsProvider)host.Services!.GetService(typeof(Tempest.Core.Settings.ISettingsProvider));
+            var dialog = new SettingsDialog(new ThemeService(settingsProvider), new UserSettings(settingsProvider));
+            var sibling = new Button { Content = "Sibling" };
+            var panel = new Panel();
+            panel.Children.Add(sibling);
+            panel.Children.Add(dialog);
+            var window = new Window { Content = panel };
+            window.Show();
+            sibling.Focus();
+
+            var showTask = dialog.ShowAsync();
+            Assert.False(sibling.IsFocused);
+
+            var cancelButton = dialog.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "Cancel"));
+            cancelButton.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+
+            Assert.False(await showTask);
+            Assert.True(sibling.IsFocused);
+        }
+        finally
+        {
+            await host.ShutdownAsync();
+            await host.DisposeAsync();
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task MacroManagerDialog_Close_RestoresFocusToThePreviouslyFocusedControl()
+    {
+        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
+        try
+        {
+            await host.StartAsync();
+            var macroManager = (IMacroManager)host.Services!.GetService(typeof(IMacroManager));
+            var commandRegistry = (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
+            var dialog = new MacroManagerDialog(macroManager, commandRegistry, runMacro: _ => Task.FromResult(CommandResult.Success()));
+            var sibling = new Button { Content = "Sibling" };
+            var panel = new Panel();
+            panel.Children.Add(sibling);
+            panel.Children.Add(dialog);
+            var window = new Window { Content = panel };
+            window.Show();
+            sibling.Focus();
+
+            await dialog.ShowAsync();
+            Assert.False(sibling.IsFocused);
+
+            var closeButton = dialog.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "Close"));
+            closeButton.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+
+            Assert.False(dialog.IsVisible);
+            Assert.True(sibling.IsFocused);
+        }
+        finally
+        {
+            await host.ShutdownAsync();
+            await host.DisposeAsync();
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task CommandPaletteOverlay_Close_RestoresFocusToThePreviouslyFocusedControl()
+    {
+        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
+        try
+        {
+            await host.StartAsync();
+            var registry = (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
+            var palette = new CommandPaletteOverlay(registry);
+            var sibling = new Button { Content = "Sibling" };
+            var panel = new Panel();
+            panel.Children.Add(sibling);
+            panel.Children.Add(palette);
+            var window = new Window { Content = panel };
+            window.Show();
+            sibling.Focus();
+
+            palette.Open();
+            Assert.False(sibling.IsFocused);
+
+            palette.Close();
+
+            Assert.True(sibling.IsFocused);
         }
         finally
         {

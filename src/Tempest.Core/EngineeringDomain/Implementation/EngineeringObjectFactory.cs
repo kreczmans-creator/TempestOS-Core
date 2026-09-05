@@ -42,9 +42,16 @@ public sealed class EngineeringObjectFactory<T> : IEngineeringObjectFactory
         // type-specific field — existed nowhere but in memory. Persisting the
         // object's own state here is what makes the object, rather than only
         // its document, survive a restart. A context composed without a state
-        // store (every pre-`TD-85` hand-assembled one) is unaffected.
-        if (_context.ObjectStateStore is { } stateStore)
-            await stateStore.SaveAsync(instance.CaptureState(), cancellationToken).ConfigureAwait(false);
+        // store (every pre-`TD-85` hand-assembled one) is unaffected — see
+        // PersistInitialStateAsync's own no-op branch.
+        //
+        // Routed through the same per-object write lock as every later
+        // mutation (`WP 16.4B-R3`) rather than capturing and saving
+        // directly here: this instance is already registered above, so a
+        // concurrent caller that finds it through the repository could
+        // otherwise race this very save exactly as two mutators could
+        // race each other.
+        await instance.PersistInitialStateAsync(cancellationToken).ConfigureAwait(false);
 
         return instance;
     }

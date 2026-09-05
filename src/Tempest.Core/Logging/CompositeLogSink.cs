@@ -15,19 +15,20 @@ namespace Tempest.Core.Logging;
 /// wrapping it alongside any other <see cref="ILogSink"/> implementation.
 /// </para>
 /// <para>
-/// Each child sink's own failure is isolated: caught, reported directly
-/// to <see cref="Console.Error"/> — bypassing the failed sink, never the
-/// remaining ones — and never allowed to prevent a sibling sink from
-/// receiving the same entry. This mirrors <see cref="Logger"/>'s own
-/// established sink-failure-isolation convention exactly (see that
-/// class's remarks), applied here one level down so that a single
-/// failing child cannot silently swallow delivery to every sink after
-/// it in the list.
+/// Each child sink's own failure is isolated: caught, reported to an
+/// injected <see cref="TextWriter"/> (<see cref="Console.Error"/> by
+/// default) — bypassing the failed sink, never the remaining ones — and
+/// never allowed to prevent a sibling sink from receiving the same entry.
+/// This mirrors <see cref="Logger"/>'s own established
+/// sink-failure-isolation convention exactly (see that class's remarks),
+/// applied here one level down so that a single failing child cannot
+/// silently swallow delivery to every sink after it in the list.
 /// </para>
 /// </remarks>
 public sealed class CompositeLogSink : ILogSink
 {
     private readonly IReadOnlyList<ILogSink> _sinks;
+    private readonly TextWriter _errorWriter;
 
     /// <summary>
     /// Initialises a new instance of the <see cref="CompositeLogSink"/> class.
@@ -36,11 +37,22 @@ public sealed class CompositeLogSink : ILogSink
     /// The child sinks to fan a log entry out to, in the order they should
     /// be written.
     /// </param>
+    /// <param name="errorWriter">
+    /// The writer a child sink's own failure is reported to. Defaults to
+    /// <see cref="Console.Error"/> when <see langword="null"/> or omitted —
+    /// the process-wide stream is captured once, at construction, rather
+    /// than re-read from <see cref="Console.Error"/> on every failing write,
+    /// so a caller that supplies its own writer (a test's private
+    /// <see cref="StringWriter"/>, for one) is never raced by a concurrent
+    /// <c>Console.SetError</c> redirection elsewhere in the process — closes
+    /// <c>TD-34</c> (<c>Technical Debt Register.md</c>). Additive: every
+    /// existing single-argument call site keeps compiling unchanged.
+    /// </param>
     /// <exception cref="ArgumentNullException"><paramref name="sinks"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException">
     /// <paramref name="sinks"/> is empty, or contains a <see langword="null"/> entry.
     /// </exception>
-    public CompositeLogSink(IEnumerable<ILogSink> sinks)
+    public CompositeLogSink(IEnumerable<ILogSink> sinks, TextWriter? errorWriter = null)
     {
         ArgumentNullException.ThrowIfNull(sinks);
 
@@ -53,6 +65,7 @@ public sealed class CompositeLogSink : ILogSink
             throw new ArgumentException("Sinks must not contain a null entry.", nameof(sinks));
 
         _sinks = materialised;
+        _errorWriter = errorWriter ?? Console.Error;
     }
 
     /// <summary>
@@ -64,10 +77,11 @@ public sealed class CompositeLogSink : ILogSink
     /// <inheritdoc />
     /// <remarks>
     /// Writes <paramref name="entry"/> to every child sink, in order. A
-    /// child sink's own exception is caught and reported to
-    /// <see cref="Console.Error"/>; it never prevents a later sink in the
-    /// list from receiving the same entry, and never propagates to this
-    /// method's own caller.
+    /// child sink's own exception is caught and reported to this
+    /// instance's error writer (<see cref="Console.Error"/> unless a
+    /// constructor override was supplied); it never prevents a later sink
+    /// in the list from receiving the same entry, and never propagates to
+    /// this method's own caller.
     /// </remarks>
     public void Write(LogEntry entry)
     {
@@ -81,7 +95,7 @@ public sealed class CompositeLogSink : ILogSink
             }
             catch (Exception ex)
             {
-                Console.Error.WriteLine(
+                _errorWriter.WriteLine(
                     $"[CompositeLogSink] Sink '{sink.GetType().Name}' failed while writing a log entry: {ex}");
             }
         }

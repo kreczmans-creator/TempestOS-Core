@@ -10,11 +10,11 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | `docs/releases/v0.4.0/ReleaseChecklist.md`; `docs/releases/v0.4.0/Testing.md`; `docs/academy/06 Engineering Standards/Engineering Governance.md` (§2 Review Gates, §3 Definition of Done). |
 | **Review Frequency** | Checked at the end of every Work Package (per-Work-Package gates) and before every release tag (release-level gates). |
-| **Last Reviewed** | 2026-07-28 (WP 5.3, Developer Experience Improvements) — Build/Test Gates re-run directly; 552/552, 10 new tests. |
+| **Last Reviewed** | 2026-09-04 (WP 16.2A, Register and Status Currency) — **staleness disclosure and current-state correction, not a full per-Work-Package re-run.** This register's own header fields (Scope/Source of Truth citing `docs/releases/v0.4.0/ReleaseChecklist.md`) and its Per-Work-Package Gates table (frozen at `WP 5.3`, "552/552 tests") had not been updated in ten releases — `VERSION` now reads `0.15.0`, not `0.4.0`. See the new **Current State (`WP 16.2A`)** section below for the re-derived, current figures (2,725 `[Fact]`/`[Theory]` attributes; last real, CI-verified totals 3,088 Core / 408 Desktop at the `v0.15.0` tag, 412 Desktop after `WP 15.2A`) and the extended Release-Level Gates summary through `v0.15.0`. The Per-Work-Package Gates table and its `WP 5.3` "Last Reviewed" figure below are retained verbatim as the historical record they are — not deleted, not silently updated — per this register's own disclosure convention. See `docs/releases/v0.16.0/WP16.2A Register and Status Currency Report.md`. Previously reviewed 2026-07-28 (WP 5.3, Developer Experience Improvements) — Build/Test Gates re-run directly; 552/552, 10 new tests. |
 | **Related Documents** | `docs/releases/v0.4.0/ReleaseChecklist.md`; `docs/releases/v0.4.0/Testing.md`; `Test Register.md`; `Repository Metrics Register.md`. |
 | **Related ADRs** | None directly — this register concerns process gates, not architectural decisions. |
 | **Related Academy Articles** | `docs/academy/06 Engineering Standards/02-testing-strategy.md`. |
-| **Coverage Status** | Complete. |
+| **Coverage Status** | **Partial — current-state figures re-derived `WP 16.2A`; full per-Work-Package gate history not reconstructed for `v0.6.0`–`v0.15.0`.** See **Current State (`WP 16.2A`)** below. |
 
 ---
 
@@ -32,6 +32,33 @@
 | Academy documentation created/updated in the same Work Package | Per Work Package | **Verified** — see `Academy Register.md`. |
 | `Architecture.md`'s reuse map checked | Per Work Package | Not independently re-audited for every historical Work Package — **Inferred** from `docs/releases/v0.4.0/Architecture.md`'s own content remaining internally consistent with `CHANGELOG.md` at every review point this baseline checked. |
 | Work remains on the release's feature branch, unmerged into `main`, until the release is cut | Per Work Package | **Verified for WP 5.3** — `git branch` confirms `feature/v0.5.0-developer-experience` is current; no merge to `main` has occurred. (Historical note: this row previously tracked `feature/v0.4.0-platform-services`, which *did* merge to `main` at the `v0.4.0` Release Engineering milestone — see the now-superseded "Release-Level Gates" table below, retained rather than deleted.) |
+
+## Current State (`WP 16.2A`)
+
+The Per-Work-Package Gates table below and the Release-Level Gates
+tables for `v0.4.0`/`v0.5.0` are a frozen historical snapshot from
+`WP 5.3` (2026-07-28) — retained verbatim, not updated, per this
+register's own disclosure convention. This section states what is
+actually current, at this Work Package's own base commit:
+
+| Fact | Value | Derivation |
+|---|---|---|
+| `VERSION` | `0.15.0`, not `0.4.0` | `cat VERSION` |
+| Test method count | 2,725 `[Fact]`/`[Theory]` attributes under `tests/` | `grep -rE '\[Fact\]\|\[Theory\]' tests --include=*.cs \| wc -l` |
+| Last real, CI-verified full-suite totals | **3,088/3,088 Core, 408/408 Desktop**, 0 failures, both configurations, at the `v0.15.0` tag | `docs/releases/v0.15.0/Release Notes.md` §"Test Results" |
+| Desktop total after the next landed Work Package | **412/412 Desktop**, 0 failures (Debug) | `docs/releases/v0.16.0/WP15.2A Desktop Test Suite Persistence Root Cleanup — Implementation Report.md` (its own directly-run suite output) |
+
+The 2,725 attribute count is a **method** count, not a **run** count —
+it is not directly comparable to the 3,088/408 CI totals above (a
+`[Theory]` method with multiple `[InlineData]` cases runs more than
+once; the CI totals are actual executed-test counts from a real
+`dotnet test` run). Both figures are reported here, distinctly labelled,
+rather than conflated into one misleading "test count." Neither this
+Work Package nor `WP 16.1A` (Release Gate enforcement) re-ran the full
+suite directly — that is `dotnet test`, explicitly not required by this
+Work Package's own controlling instruction (attribute-counting is
+sufficient); the 3,088/408/412 figures above are cited from already-
+published, CI-backed sources, not re-executed here.
 
 ## Coverage Note
 
@@ -70,6 +97,47 @@ Unknown/Inferred is preferable to a fabricated Verified claim.
 these gates are release-tagging gates, checked once, at the point of
 tagging, not at every Work Package. **Review Trigger.** The Work Package
 that proposes cutting the `v0.5.0` release tag.
+
+**Superseded, `WP 16.2A`.** `v0.5.0` was released after this section was
+written; its "Not Yet Applicable" rows are stale and retained verbatim
+as the historical snapshot they are, per this register's own disclosure
+convention. `v0.5.0`'s own real release facts, and every release
+through `v0.15.0`, are in the summary table immediately below.
+
+## Release-Level Gates Summary — `v0.5.0` through `v0.15.0` (`WP 16.2A`)
+
+The per-release, per-gate tables above (`v0.4.0`, `v0.5.0`) are this
+register's own original, detailed format — one table per release, one
+row per gate. `WP 16.2A` extends coverage through `v0.15.0` as a single
+summary table rather than ten more full detailed tables, a disclosed
+simplification: reconstructing full per-gate detail for nine already-
+released versions is a separate, substantial undertaking outside this
+Work Package's own scope (register **currency**, not a historical
+audit). `Release Register.md` is the fuller, corrected authority for
+per-release facts (tag, merge commit, CI run, certification); this
+table cross-checks against it directly.
+
+| Release | Tag → Commit | Merged to `main` | Test Gate at release | Certified (§9 verdict) |
+|---|---|---|---|---|
+| `v0.6.0` | `v0.6.0` → `99ed285` | Yes | Not re-verified by `WP 16.2A` — see `Release Register.md` | Not recorded (pre-dates the `ADR-0106` ERR process) |
+| `v0.7.0` | `v0.7.0` | Yes | Not re-verified by `WP 16.2A` — see `Release Register.md` | Not recorded |
+| `v0.8.0` | `v0.8.0` | Yes | Not re-verified by `WP 16.2A` — see `Release Register.md` | Not recorded |
+| `v0.9.0` | `v0.9.0` | Yes | Not re-verified by `WP 16.2A` — see `Release Register.md` | Not recorded |
+| `v0.10.0` | `v0.10.0` | Yes | Not re-verified by `WP 16.2A` — see `Release Register.md` | Not recorded |
+| `v0.11.0` | `v0.11.0` | Yes | Not re-verified by `WP 16.2A` — see `Release Register.md` | Not recorded |
+| `v0.12.0` | `v0.12.0` | Yes | Not re-verified by `WP 16.2A` — see `Release Register.md` | Not recorded |
+| `v0.13.0` / `v0.13.1` | `v0.13.0`, `v0.13.1` | Yes | Not re-verified by `WP 16.2A` — see `Release Register.md` | Not recorded |
+| `v0.14.0` | `v0.14.0` | Yes | Not re-verified by `WP 16.2A` — see `Release Register.md` | Not recorded |
+| `v0.15.0` | `v0.15.0` → `a35365a` | Yes (`350922d` + follow-up `a35365a`) | **Verified** — 3,088/3,088 Core, 408/408 Desktop, 0 failures, both configurations (`Release Notes.md` §"Test Results") | **No** — GitHub Release `382812261` published without a §9 Product Approval verdict recorded in `Release Register.md`; see that register's own `v0.15.0` row, corrected `WP 16.2A` |
+
+Every "Yes" in the "Merged to `main`" column is `git tag --merged main`
+against this Work Package's own base branch — every listed tag is
+reachable from `main`, confirmed directly. Per-gate detail (Build Gate
+0/0, exact Test Gate figures, documentation gates) for `v0.6.0`–`v0.14.0`
+is not reconstructed here; each release's own `docs/releases/vX.Y.0/`
+folder (`WorkPackages.md`, Release Notes where one exists) remains the
+authoritative source until a future Work Package backfills this
+register's own detailed format.
 
 ## Cross-Reference Check
 

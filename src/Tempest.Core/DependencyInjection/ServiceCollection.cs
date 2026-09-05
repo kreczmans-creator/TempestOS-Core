@@ -26,7 +26,7 @@ public sealed class ServiceCollection : IServiceCollection
     public IReadOnlyList<ServiceDescriptor> Descriptors => _descriptorsByType.Values.ToList();
 
     /// <inheritdoc />
-    public IServiceCollection Add(Type serviceType, Type implementationType, ServiceLifetime lifetime)
+    public IServiceCollection Add(Type serviceType, Type implementationType, ServiceLifetime lifetime, bool allowReplace = false)
     {
         ArgumentNullException.ThrowIfNull(serviceType);
         ArgumentNullException.ThrowIfNull(implementationType);
@@ -38,6 +38,9 @@ public sealed class ServiceCollection : IServiceCollection
                 nameof(implementationType));
         }
 
+        if (!allowReplace && _descriptorsByType.ContainsKey(serviceType))
+            throw new DuplicateServiceRegistrationException(serviceType);
+
         _descriptorsByType[serviceType] = new ServiceDescriptor(serviceType, implementationType, lifetime);
 
         _logger?.Information(
@@ -47,7 +50,7 @@ public sealed class ServiceCollection : IServiceCollection
     }
 
     /// <inheritdoc />
-    public IServiceCollection AddInstance(Type serviceType, object instance)
+    public IServiceCollection AddInstance(Type serviceType, object instance, bool allowReplace = false)
     {
         ArgumentNullException.ThrowIfNull(serviceType);
         ArgumentNullException.ThrowIfNull(instance);
@@ -58,6 +61,9 @@ public sealed class ServiceCollection : IServiceCollection
                 $"'{instance.GetType().Name}' is not assignable to '{serviceType.Name}'.",
                 nameof(instance));
         }
+
+        if (!allowReplace && _descriptorsByType.ContainsKey(serviceType))
+            throw new DuplicateServiceRegistrationException(serviceType);
 
         _descriptorsByType[serviceType] =
             new ServiceDescriptor(serviceType, instance.GetType(), ServiceLifetime.Singleton, instance);

@@ -50,6 +50,35 @@ internal static class ApplicationPalette
     /// <summary>The keyboard-focus-visible ring colour — the brand's 2px cyan ring (`WP 10.5A`, "keyboard focus visibility").</summary>
     public const string FocusRingBrushKey = "Tempest.FocusRingBrush";
 
+    // ------------------------------------------------------------
+    // Cockpit health text (`WP 16.5A`, `TD-65`) — `HealthColors.Resolve`
+    // used to return the same four fixed `BrandPalette` machine-state
+    // brushes in both themes. On the light theme's own white Cockpit
+    // surface (`BrandPalette.SurfaceBackgroundBrushKey` = `Paper000`),
+    // three of those four measured well under WCAG AA's 4.5:1 body-text
+    // floor: Green500 2.54:1, Amber500 2.04:1, Slate500 3.72:1 (Red500
+    // 3.91:1 also fell short). The four keys below give the light theme
+    // its own darker, hue-preserved values, each measured ≥ 4.5:1 on
+    // `#ffffff` (see `HealthColorContrastTests`, which recomputes every
+    // ratio against the real resolved surface brush rather than trusting
+    // a comment); the dark values are unchanged from `BrandPalette`'s own
+    // originals, which already clear 4.5:1 on the dark Cockpit surface
+    // (`Navy700`) with real margin. See `WP16.5A Accessibility Baseline
+    // Report.md` for the full measured table in both themes.
+    // ------------------------------------------------------------
+
+    /// <summary>Cockpit health text — Healthy (green).</summary>
+    public const string HealthTextHealthyBrushKey = "Tempest.HealthText.Healthy";
+
+    /// <summary>Cockpit health text — Attention (amber).</summary>
+    public const string HealthTextAttentionBrushKey = "Tempest.HealthText.Attention";
+
+    /// <summary>Cockpit health text — Blocked (red).</summary>
+    public const string HealthTextBlockedBrushKey = "Tempest.HealthText.Blocked";
+
+    /// <summary>Cockpit health text — Unknown (slate).</summary>
+    public const string HealthTextUnknownBrushKey = "Tempest.HealthText.Unknown";
+
     /// <summary>
     /// Registers every key above into <paramref name="app"/>'s own
     /// <see cref="Application.Resources"/>, alongside <see cref="BrandPalette"/>'s
@@ -75,6 +104,12 @@ internal static class ApplicationPalette
             [PanelBorderBrushKey] = new ImmutableSolidColorBrush(BrandPalette.Ink900, 0.10),
             [AccentPanelBackgroundBrushKey] = new ImmutableSolidColorBrush(BrandPalette.Cyan500, 0.14),
             [FocusRingBrushKey] = new ImmutableSolidColorBrush(BrandPalette.Indigo600),
+            // Hue-preserved, darkened for ≥ 4.5:1 on `#ffffff` — see the
+            // field group's own remarks above for the measured originals.
+            [HealthTextHealthyBrushKey] = new ImmutableSolidColorBrush(Color.Parse("#0a7a53")),
+            [HealthTextAttentionBrushKey] = new ImmutableSolidColorBrush(Color.Parse("#996208")),
+            [HealthTextBlockedBrushKey] = new ImmutableSolidColorBrush(Color.Parse("#d92b31")),
+            [HealthTextUnknownBrushKey] = new ImmutableSolidColorBrush(Color.Parse("#6f7179")),
         };
         var dark = new ResourceDictionary
         {
@@ -83,6 +118,12 @@ internal static class ApplicationPalette
             [PanelBorderBrushKey] = new ImmutableSolidColorBrush(BrandPalette.Paper050, 0.10),
             [AccentPanelBackgroundBrushKey] = new ImmutableSolidColorBrush(BrandPalette.Cyan500, 0.14),
             [FocusRingBrushKey] = new ImmutableSolidColorBrush(BrandPalette.Cyan500),
+            // Unchanged from `BrandPalette`'s own originals — already
+            // ≥ 4.5:1 on the dark Cockpit surface (`Navy700`).
+            [HealthTextHealthyBrushKey] = new ImmutableSolidColorBrush(BrandPalette.Green500),
+            [HealthTextAttentionBrushKey] = new ImmutableSolidColorBrush(BrandPalette.Amber500),
+            [HealthTextBlockedBrushKey] = new ImmutableSolidColorBrush(BrandPalette.Red500),
+            [HealthTextUnknownBrushKey] = new ImmutableSolidColorBrush(BrandPalette.Slate500),
         };
 
         dictionary.ThemeDictionaries[ThemeVariant.Light] = light;

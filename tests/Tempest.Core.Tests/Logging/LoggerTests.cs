@@ -2,6 +2,13 @@ using Tempest.Core.Logging;
 
 namespace Tempest.Core.Tests.Logging;
 
+// CaptureConsoleError (below) redirects the process-global Console.Error
+// via Console.SetError, so this class must be serialised against every
+// other test doing the same — TD-34 (Technical Debt Register.md): this
+// was the more direct collider (Console.Error is the exact stream
+// CompositeLogSink.Write's own default error path writes to) found
+// outside this collection alongside ConsoleLogSinkTests.
+[Collection("Console output capture")]
 public class LoggerTests
 {
     [Theory]

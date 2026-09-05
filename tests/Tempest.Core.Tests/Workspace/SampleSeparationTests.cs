@@ -267,6 +267,48 @@ public sealed class SampleSeparationTests
             $"Could not locate the repository root (global.json) above '{AppContext.BaseDirectory}'.");
     }
 
+    /// <summary>
+    /// Enumerates every <c>*.csproj</c> under <paramref name="root"/>,
+    /// pruning version-control/tooling and build-output directories as it
+    /// walks rather than filtering their results out afterward — any
+    /// directory whose name starts with <c>.</c> (<c>.git</c>, and this
+    /// project's own git worktrees, each a full nested checkout of the
+    /// repository under <c>.claude/worktrees/&lt;name&gt;</c> with its own
+    /// <c>tests/**/*.csproj</c>), plus <c>bin</c> and <c>obj</c>.
+    /// </summary>
+    /// <remarks>
+    /// Environment-dependent otherwise: <see cref="Directory.EnumerateFiles(string, string, SearchOption)"/>
+    /// with <see cref="SearchOption.AllDirectories"/> has no way to prune a
+    /// directory from the walk, so a checkout carrying extra worktrees
+    /// (this repository's own tooling creates them under
+    /// <c>.claude/worktrees</c>) would have this enumeration return project
+    /// files that belong to a nested checkout, not to the tree under test —
+    /// passing in CI, where no such directory exists, and failing in any
+    /// checkout that has one.
+    /// </remarks>
+    private static IEnumerable<string> EnumerateProjectFiles(string root)
+    {
+        var pending = new Stack<string>();
+        pending.Push(root);
+
+        while (pending.Count > 0)
+        {
+            var directory = pending.Pop();
+
+            foreach (var file in Directory.EnumerateFiles(directory, "*.csproj"))
+                yield return file;
+
+            foreach (var subdirectory in Directory.EnumerateDirectories(directory))
+            {
+                var name = Path.GetFileName(subdirectory);
+                if (name.StartsWith(".", StringComparison.Ordinal) || name is "bin" or "obj")
+                    continue;
+
+                pending.Push(subdirectory);
+            }
+        }
+    }
+
     [Fact]
     public void NoTypeInTempestApp_ComesFromTheSampleAssembly()
     {
@@ -353,8 +395,7 @@ public sealed class SampleSeparationTests
         // which meant the sample harness could not be deleted without
         // breaking the validation harness.
         var root = FindRepositoryRoot();
-        var offenders = Directory
-            .EnumerateFiles(Path.Combine(root, "src"), "*.csproj", SearchOption.AllDirectories)
+        var offenders = EnumerateProjectFiles(Path.Combine(root, "src"))
             .Where(path => !path.Contains(Path.Combine("src", "Samples"), StringComparison.Ordinal))
             .Where(path => DeclaredReferences(path).Contains(SampleAssembly, StringComparer.OrdinalIgnoreCase))
             .Select(path => Path.GetRelativePath(root, path))
@@ -375,8 +416,7 @@ public sealed class SampleSeparationTests
         // the product still builds. Only the two test projects may hold it,
         // and they hold it to drive fixtures, not to ship anything.
         var root = FindRepositoryRoot();
-        var holders = Directory
-            .EnumerateFiles(root, "*.csproj", SearchOption.AllDirectories)
+        var holders = EnumerateProjectFiles(root)
             .Where(path => !path.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
             .Where(path => !path.Contains(Path.Combine("src", "Samples"), StringComparison.Ordinal))
             .Where(path => DeclaredReferences(path).Contains(SampleAssembly, StringComparer.OrdinalIgnoreCase))

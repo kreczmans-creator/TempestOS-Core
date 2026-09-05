@@ -62,6 +62,10 @@ public sealed class MessageDialog : Border
         _title.FontSize = DesignTokens.FontSizeTitle;
         _okButton.Click += (_, _) => Complete();
         KeyDown += OnKeyDown;
+
+        // Real modal behaviour (`WP 16.5A`, `TD-65`) — see
+        // `DialogModality`'s own remarks.
+        DialogModality.Install(this);
     }
 
     /// <summary>

@@ -1,5 +1,6 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Styling;
@@ -74,6 +75,27 @@ public sealed class SettingsDialog : Border
         title.FontFamily = DesignTokens.TitleFont;
         _cancelButton.Click += (_, _) => Complete(false);
         _saveButton.Click += async (_, _) => await SaveAsync().ConfigureAwait(true);
+        KeyDown += OnKeyDown;
+
+        // Real modal behaviour (`WP 16.5A`, `TD-65`) — see
+        // `DialogModality`'s own remarks.
+        DialogModality.Install(this);
+    }
+
+    /// <summary>
+    /// <c>Escape</c> cancels — nothing this dialog changes is applied
+    /// until <see cref="SaveAsync"/> actually runs, so discarding on
+    /// Escape (mirroring <see cref="_cancelButton"/>) never loses an
+    /// already-applied change. <c>Enter</c> needs no explicit handling —
+    /// native <see cref="Button"/> behaviour, unchanged.
+    /// </summary>
+    private void OnKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Escape)
+        {
+            Complete(false);
+            e.Handled = true;
+        }
     }
 
     /// <summary>Shows this dialog, pre-populated with the current live settings, returning <see langword="true"/> once the user Saves (and the new values are already applied/persisted), <see langword="false"/> on Cancel (nothing changed).</summary>
@@ -91,6 +113,10 @@ public sealed class SettingsDialog : Border
         _confirmBeforeDelete.IsChecked = _settings.ConfirmBeforeDelete;
 
         IsVisible = true;
+        // The safe action gets initial focus (mirroring
+        // `ConfirmationDialog`'s own identical convention) — Enter before
+        // tabbing anywhere discards rather than saves.
+        _cancelButton.Focus();
 
         _pending = new TaskCompletionSource<bool>();
         return _pending.Task;

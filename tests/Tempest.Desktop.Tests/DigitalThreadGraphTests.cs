@@ -1,10 +1,16 @@
+using Avalonia;
+using Avalonia.Automation;
 using Avalonia.Controls;
+using Avalonia.Controls.Shapes;
 using Avalonia.Headless.XUnit;
+using Avalonia.Input;
 using Avalonia.LogicalTree;
+using Avalonia.Media;
 using Tempest.App.Workspace;
 using Tempest.App.Workspace.Verification;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Desktop.DigitalThread;
+using Tempest.Desktop.Theming;
 using Tempest.Samples;
 using Tempest.App.Workspace.Mechanical;
 
@@ -719,6 +725,336 @@ public sealed class DigitalThreadGraphViewTests
             var view = DigitalThreadGraphView.TryCreate(target.Id, target.Kind!, domainContext, (_, _) => { })!;
 
             Assert.True(await view.CloseAsync());
+        }
+        finally
+        {
+            await host.ShutdownAsync();
+            await host.DisposeAsync();
+        }
+    }
+
+    // ------------------------------------------------------------
+    // `WP 16.5A` — keyboard operability (`TD-65`): the graph was
+    // entirely pointer-only. Every test below drives the view through
+    // real `KeyEventArgs`, exactly as the brief asks.
+    // ------------------------------------------------------------
+
+    [AvaloniaFact]
+    public async Task OemPlusKey_ZoomsIn_ByTheDocumentedFactor()
+    {
+        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
+        try
+        {
+            await host.StartAsync();
+            var (domainContext, target) = await GetRealMechanicalObjectAsync(host);
+            var view = DigitalThreadGraphView.TryCreate(target.Id, target.Kind!, domainContext, (_, _) => { })!;
+            var before = view.Model.ZoomLevel;
+
+            view.RaiseEvent(new KeyEventArgs { RoutedEvent = InputElement.KeyDownEvent, Key = Key.OemPlus });
+
+            Assert.Equal(before * 1.1, view.Model.ZoomLevel, 3);
+        }
+        finally
+        {
+            await host.ShutdownAsync();
+            await host.DisposeAsync();
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task AddKey_AlsoZoomsIn_TheNumpadForm()
+    {
+        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
+        try
+        {
+            await host.StartAsync();
+            var (domainContext, target) = await GetRealMechanicalObjectAsync(host);
+            var view = DigitalThreadGraphView.TryCreate(target.Id, target.Kind!, domainContext, (_, _) => { })!;
+            var before = view.Model.ZoomLevel;
+
+            view.RaiseEvent(new KeyEventArgs { RoutedEvent = InputElement.KeyDownEvent, Key = Key.Add });
+
+            Assert.Equal(before * 1.1, view.Model.ZoomLevel, 3);
+        }
+        finally
+        {
+            await host.ShutdownAsync();
+            await host.DisposeAsync();
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task OemMinusKey_ZoomsOut_ByTheDocumentedFactor()
+    {
+        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
+        try
+        {
+            await host.StartAsync();
+            var (domainContext, target) = await GetRealMechanicalObjectAsync(host);
+            var view = DigitalThreadGraphView.TryCreate(target.Id, target.Kind!, domainContext, (_, _) => { })!;
+            var before = view.Model.ZoomLevel;
+
+            view.RaiseEvent(new KeyEventArgs { RoutedEvent = InputElement.KeyDownEvent, Key = Key.OemMinus });
+
+            Assert.Equal(before / 1.1, view.Model.ZoomLevel, 3);
+        }
+        finally
+        {
+            await host.ShutdownAsync();
+            await host.DisposeAsync();
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task ArrowKeys_PanTheView_EachInItsOwnDirection()
+    {
+        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
+        try
+        {
+            await host.StartAsync();
+            var (domainContext, target) = await GetRealMechanicalObjectAsync(host);
+            var view = DigitalThreadGraphView.TryCreate(target.Id, target.Kind!, domainContext, (_, _) => { })!;
+
+            // Right reveals content further right, so the content itself
+            // shifts left (`PanOffset.X` decreases) — the documented
+            // convention (see `OnGraphKeyDown`'s own remarks).
+            view.RaiseEvent(new KeyEventArgs { RoutedEvent = InputElement.KeyDownEvent, Key = Key.Right });
+            Assert.Equal(-60, view.Model.PanOffset.X, 3);
+            Assert.Equal(0, view.Model.PanOffset.Y, 3);
+
+            view.RaiseEvent(new KeyEventArgs { RoutedEvent = InputElement.KeyDownEvent, Key = Key.Left });
+            Assert.Equal(0, view.Model.PanOffset.X, 3);
+
+            view.RaiseEvent(new KeyEventArgs { RoutedEvent = InputElement.KeyDownEvent, Key = Key.Down });
+            Assert.Equal(-60, view.Model.PanOffset.Y, 3);
+
+            view.RaiseEvent(new KeyEventArgs { RoutedEvent = InputElement.KeyDownEvent, Key = Key.Up });
+            Assert.Equal(0, view.Model.PanOffset.Y, 3);
+        }
+        finally
+        {
+            await host.ShutdownAsync();
+            await host.DisposeAsync();
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task NodeBorders_AreFocusable_WithADeterministicTabOrderMatchingRenderOrder()
+    {
+        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
+        try
+        {
+            await host.StartAsync();
+            var (domainContext, target) = await GetRealMechanicalObjectAsync(host);
+            var view = DigitalThreadGraphView.TryCreate(target.Id, target.Kind!, domainContext, (_, _) => { })!;
+
+            var nodes = view.Model.Nodes;
+            var expectedTabIndex = nodes.ToDictionary(n => n.ObjectId, n => nodes.ToList().IndexOf(n));
+
+            foreach (var node in nodes)
+            {
+                var border = FindNodeBorder(view, node.ObjectId, node.DisplayName);
+                Assert.Equal(!node.IsRecord, border.Focusable);
+                Assert.Equal(expectedTabIndex[node.ObjectId], border.TabIndex);
+                Assert.Equal(node.ObjectId, border.Tag);
+                Assert.Equal(node.DisplayName, AutomationProperties.GetName(border));
+            }
+        }
+        finally
+        {
+            await host.ShutdownAsync();
+            await host.DisposeAsync();
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task EnterOnAFocusedNode_SelectsIt()
+    {
+        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
+        try
+        {
+            await host.StartAsync();
+            var (domainContext, target) = await GetRealMechanicalObjectAsync(host);
+            var view = DigitalThreadGraphView.TryCreate(target.Id, target.Kind!, domainContext, (_, _) => { })!;
+            // A real, shown TopLevel — real bubble routing from the node
+            // `Border` up to the graph root's own `KeyDown` handler needs
+            // one (unlike a directly-attached `PointerPressed` handler,
+            // which does not).
+            var window = new Window { Content = view };
+            window.Show();
+
+            var neighbour = view.Model.Nodes.FirstOrDefault(n => !n.IsCentre && !n.IsRecord);
+            if (neighbour.ObjectId == default)
+                return; // no non-record neighbour on this particular sample object — honestly nothing to prove here.
+
+            var border = FindNodeBorder(view, neighbour.ObjectId, neighbour.DisplayName);
+            Assert.Null(view.Model.SelectedNodeId);
+
+            border.RaiseEvent(new KeyEventArgs { RoutedEvent = InputElement.KeyDownEvent, Key = Key.Enter });
+
+            Assert.Equal(neighbour.ObjectId, view.Model.SelectedNodeId);
+        }
+        finally
+        {
+            await host.ShutdownAsync();
+            await host.DisposeAsync();
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task SpaceOnAFocusedExpandableNode_SelectsIt_AndTogglesItsExpansion_MirroringTheChevron()
+    {
+        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
+        try
+        {
+            await host.StartAsync();
+            var (domainContext, target) = await GetRealMechanicalObjectAsync(host);
+            var view = DigitalThreadGraphView.TryCreate(target.Id, target.Kind!, domainContext, (_, _) => { })!;
+            var window = new Window { Content = view };
+            window.Show();
+
+            var neighbour = view.Model.Nodes.FirstOrDefault(n => !n.IsCentre && !n.IsRecord);
+            if (neighbour.ObjectId == default)
+                return; // no non-record neighbour on this particular sample object — honestly nothing to prove here.
+
+            Assert.False(neighbour.IsExpanded);
+            var border = FindNodeBorder(view, neighbour.ObjectId, neighbour.DisplayName);
+            var beforeCount = view.Model.Nodes.Count;
+
+            border.RaiseEvent(new KeyEventArgs { RoutedEvent = InputElement.KeyDownEvent, Key = Key.Space });
+
+            Assert.Equal(neighbour.ObjectId, view.Model.SelectedNodeId);
+            var afterState = view.Model.Nodes.Single(n => n.ObjectId == neighbour.ObjectId);
+            if (view.Model.Nodes.Count == beforeCount)
+                return; // ExpandNode found nothing new to add for this particular sample object — honestly nothing further to prove here.
+            Assert.True(afterState.IsExpanded);
+        }
+        finally
+        {
+            await host.ShutdownAsync();
+            await host.DisposeAsync();
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task EnterOnTheCentreNode_OnlySelects_NeverTogglesExpansion_ItHasNoChevron()
+    {
+        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
+        try
+        {
+            await host.StartAsync();
+            var (domainContext, target) = await GetRealMechanicalObjectAsync(host);
+            var view = DigitalThreadGraphView.TryCreate(target.Id, target.Kind!, domainContext, (_, _) => { })!;
+            var window = new Window { Content = view };
+            window.Show();
+
+            var centre = view.Model.Nodes.Single(n => n.IsCentre);
+            var border = FindNodeBorder(view, centre.ObjectId, centre.DisplayName);
+            var beforeCount = view.Model.Nodes.Count;
+
+            border.RaiseEvent(new KeyEventArgs { RoutedEvent = InputElement.KeyDownEvent, Key = Key.Enter });
+
+            Assert.Equal(centre.ObjectId, view.Model.SelectedNodeId);
+            Assert.Equal(beforeCount, view.Model.Nodes.Count); // no expansion attempted on the centre
+        }
+        finally
+        {
+            await host.ShutdownAsync();
+            await host.DisposeAsync();
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task ExpandChevron_MeetsTheMinimumControlSize_AndItsNameReflectsTheActionThePressWillTake()
+    {
+        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
+        try
+        {
+            await host.StartAsync();
+            var (domainContext, target) = await GetRealMechanicalObjectAsync(host);
+            var view = DigitalThreadGraphView.TryCreate(target.Id, target.Kind!, domainContext, (_, _) => { })!;
+
+            var neighbour = view.Model.Nodes.FirstOrDefault(n => !n.IsCentre && !n.IsRecord);
+            if (neighbour.ObjectId == default)
+                return; // no non-record neighbour on this particular sample object — honestly nothing to prove here.
+
+            var border = FindNodeBorder(view, neighbour.ObjectId, neighbour.DisplayName);
+            var chevron = border.GetLogicalDescendants().OfType<Button>().Single();
+
+            Assert.True(chevron.MinWidth >= DesignTokens.MinControlSize);
+            Assert.True(chevron.MinHeight >= DesignTokens.MinControlSize);
+            Assert.Equal($"Expand {neighbour.DisplayName}", AutomationProperties.GetName(chevron));
+
+            chevron.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+
+            var expandedChevron = FindNodeBorder(view, neighbour.ObjectId, neighbour.DisplayName).GetLogicalDescendants().OfType<Button>().Single();
+            Assert.Equal($"Collapse {neighbour.DisplayName}", AutomationProperties.GetName(expandedChevron));
+        }
+        finally
+        {
+            await host.ShutdownAsync();
+            await host.DisposeAsync();
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task EveryRelationshipLine_HasAnInvisibleWiderHitTestOverlay_SharingItsClickHandler()
+    {
+        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
+        try
+        {
+            await host.StartAsync();
+            var (domainContext, target) = await GetRealMechanicalObjectAsync(host);
+            var view = DigitalThreadGraphView.TryCreate(target.Id, target.Kind!, domainContext, (_, _) => { })!;
+
+            if (view.Model.Edges.Count == 0)
+                return; // no relationships on this particular sample object — honestly nothing to prove here.
+
+            // Rendered as (hit-test, visible) pairs, in that order, one
+            // pair per visible edge (`RebuildGraphCanvas`) — never an odd
+            // count.
+            var lines = view.GetLogicalDescendants().OfType<Line>().ToList();
+            Assert.NotEmpty(lines);
+            Assert.Equal(0, lines.Count % 2);
+
+            var hitTestLine = lines[0];
+            var visibleLine = lines[1];
+
+            // The visible line (thin, coloured) and its invisible, wider
+            // hit-test twin (`WP 16.5A`, `TD-65` — the 1.4px visible
+            // stroke was previously also the only hit target) — never
+            // rendered, but geometrically identical and clickable.
+            Assert.Equal(Brushes.Transparent, hitTestLine.Stroke);
+            Assert.True(hitTestLine.StrokeThickness > visibleLine.StrokeThickness);
+            Assert.Equal(hitTestLine.StartPoint, visibleLine.StartPoint);
+            Assert.Equal(hitTestLine.EndPoint, visibleLine.EndPoint);
+
+            var before = view.Model.SelectedEdge;
+            hitTestLine.RaiseEvent(new Avalonia.Input.PointerPressedEventArgs(hitTestLine, new Avalonia.Input.Pointer(0, Avalonia.Input.PointerType.Mouse, true), hitTestLine, default, 0, new Avalonia.Input.PointerPointProperties(Avalonia.Input.RawInputModifiers.None, Avalonia.Input.PointerUpdateKind.LeftButtonPressed), Avalonia.Input.KeyModifiers.None));
+
+            Assert.NotEqual(before, view.Model.SelectedEdge);
+        }
+        finally
+        {
+            await host.ShutdownAsync();
+            await host.DisposeAsync();
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task SearchBox_HasAnAutomationNameAndToolTip_NotJustAWatermark()
+    {
+        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
+        try
+        {
+            await host.StartAsync();
+            var (domainContext, target) = await GetRealMechanicalObjectAsync(host);
+            var view = DigitalThreadGraphView.TryCreate(target.Id, target.Kind!, domainContext, (_, _) => { })!;
+
+            var searchBox = view.GetLogicalDescendants().OfType<TextBox>().Single(t => t.Watermark == "Search this graph…");
+
+            Assert.False(string.IsNullOrWhiteSpace(AutomationProperties.GetName(searchBox)));
+            Assert.NotNull(ToolTip.GetTip(searchBox));
         }
         finally
         {

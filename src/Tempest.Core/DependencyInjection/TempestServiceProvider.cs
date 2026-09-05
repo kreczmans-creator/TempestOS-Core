@@ -25,8 +25,12 @@ namespace Tempest.Core.DependencyInjection;
 /// dependencies, are constructed automatically. A dependency chain that revisits a type
 /// already being constructed is a circular dependency and throws
 /// <see cref="CircularServiceDependencyException"/>; a dependency with no registration
-/// throws <see cref="ServiceNotRegisteredException"/>. Both exceptions carry the full
-/// construction chain, not just the immediately failing type.
+/// throws <see cref="ServiceNotRegisteredException"/> — <b>unless</b> the constructor
+/// parameter itself declares a default value (<see cref="System.Reflection.ParameterInfo.HasDefaultValue"/>),
+/// in which case that declared default is passed instead (TD-69), exactly as platform
+/// types such as <c>EventBus(ILogger? logger = null, ...)</c> already expect. Both
+/// exceptions, when thrown, carry the full construction chain, not just the immediately
+/// failing type.
 /// </para>
 /// <para>
 /// Singleton instances are cached per <see cref="ServiceDescriptor.ServiceType"/> and
@@ -135,10 +139,27 @@ public sealed class TempestServiceProvider : ITempestServiceProvider
             throw new AmbiguousConstructorException(implementationType, constructors.Length, resolutionChain);
 
         var parameters = constructors[0].GetParameters();
-        var arguments = new object[parameters.Length];
+        var arguments = new object?[parameters.Length];
 
         for (var i = 0; i < parameters.Length; i++)
-            arguments[i] = Resolve(parameters[i].ParameterType, resolutionChain);
+        {
+            var parameterType = parameters[i].ParameterType;
+
+            // TD-69: platform types declare optional constructor parameters
+            // precisely so the container can still build them when the
+            // parameter's own type has no registration at all (e.g.
+            // EventBus(ILogger? logger = null, ...)). Only that specific
+            // case - no descriptor for the parameter's exact type - falls
+            // back to the declared default; a registered type that fails to
+            // resolve for some other reason (a circular dependency, a
+            // deeper missing dependency of its own) still propagates
+            // through the ordinary Resolve call below exactly as before,
+            // rather than being silently masked by the fallback.
+            if (!_descriptorsByType.ContainsKey(parameterType) && parameters[i].HasDefaultValue)
+                arguments[i] = parameters[i].DefaultValue;
+            else
+                arguments[i] = Resolve(parameterType, resolutionChain);
+        }
 
         return constructors[0].Invoke(arguments);
     }

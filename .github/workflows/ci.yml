@@ -103,6 +103,15 @@ jobs:
             exit $LASTEXITCODE
           }
 
+      # `--blame-hang`/`--blame-hang-timeout` (`WP16.4A-R1`): without these,
+      # a test that hangs — a gated seam that stops being reached, for
+      # instance — has no backstop but this job's own 30-minute
+      # `timeout-minutes`, which kills the whole matrix leg with no
+      # indication of which test caused it. 5 minutes is comfortably above
+      # this suite's real run time (well under a minute) and comfortably
+      # below the 30-minute job timeout, so a genuine hang is caught and
+      # named — with a hang dump collected — long before the job itself
+      # would otherwise be killed with no diagnostic at all.
       - name: Test (${{ matrix.configuration }})
         shell: pwsh
         run: |
@@ -111,7 +120,9 @@ jobs:
             --no-build `
             --logger trx `
             --logger "console;verbosity=normal" `
-            --results-directory "TestResults/${{ matrix.configuration }}"
+            --results-directory "TestResults/${{ matrix.configuration }}" `
+            --blame-hang `
+            --blame-hang-timeout 5m
           if ($LASTEXITCODE -ne 0) {
             Write-Error "One or more tests failed for configuration '${{ matrix.configuration }}' (exit code $LASTEXITCODE)."
             exit $LASTEXITCODE
@@ -262,6 +273,9 @@ jobs:
   # always producing this report over silently skipping it because an
   # unrelated build step failed). Read-only: scripts/governance-
   # healthcheck.ps1 never writes inside the repository it validates.
+  # WP 16.1A: this job's result is now a required input to the CI Gate
+  # job below; the if: always() here is unchanged so the report is still
+  # produced on a red build.
   governance-health-check:
     name: Governance Health Check
     needs: build-and-test
@@ -301,24 +315,121 @@ jobs:
           }
           exit $exitCode
 
+  # WP 16.5B — Linux/X11 launch smoke test. `TD-116` (a Linux `TypeLoadException`
+  # inside Avalonia.FreeDesktop's DBus/X11 IME path, root-caused to a security
+  # pin — `Tmds.DBus.Protocol` 0.94.2 — that Avalonia.FreeDesktop 11.2.3
+  # could not bind against) is resolved by this Work Package's Avalonia
+  # 11.3.20 / Tmds.DBus.Protocol 0.21.3 upgrade (see
+  # "docs/releases/v0.16.0/WP16.5B Linux Launch Spike Report.md"). This job
+  # is the ongoing verification: it launches the real, built
+  # Tempest.Desktop.dll under Xvfb and treats "still running when the
+  # timeout fires" (exit code 124, or 137 if the grace period's SIGKILL was
+  # needed — see the spike report's launch-evidence section for why a bare
+  # SIGTERM does not always end the process) as success; any other exit
+  # (a crash) fails the job.
+  #
+  # Deliberately advisory, not required — NOT in `gate`'s `needs:` list
+  # below, matching this Work Package's brief: Linux joins Windows as
+  # CI-verified in effect once this job exists and is proven reliable
+  # across real runs, but `gate` stays the one hard, required check for
+  # this release rather than being widened on a single spike's evidence.
+  # A future Work Package can promote it into `gate` once it has a track
+  # record.
+  linux-launch-smoke:
+    name: Linux Launch Smoke (advisory)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up .NET SDK (from global.json)
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Restore
+        run: dotnet restore "${{ env.SOLUTION_PATH }}"
+
+      - name: Build Tempest.Desktop (Release)
+        run: dotnet build src/Tempest.Desktop/Tempest.Desktop.csproj --configuration Release --no-restore
+
+      - name: Install Xvfb
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb
+
+      - name: Launch under Xvfb (smoke)
+        run: |
+          set +e
+          xvfb-run -a timeout --kill-after=10 25 \
+            dotnet src/Tempest.Desktop/bin/Release/net10.0/Tempest.Desktop.dll \
+            > launch.log 2>&1
+          code=$?
+          echo "Exit code: $code"
+          cat launch.log
+          if [ -f src/Tempest.Desktop/bin/Release/net10.0/logs/tempestos-crash.log ]; then
+            echo "::error::A crash log was written - see logs/tempestos-crash.log"
+            cat src/Tempest.Desktop/bin/Release/net10.0/logs/tempestos-crash.log
+            exit 1
+          fi
+          # `WP 16.1A-R1` (v0.16.0 review board): "still running when the
+          # timeout fired" is not by itself evidence of a successful
+          # launch — a process that deadlocks *after* Avalonia platform
+          # init (a stuck DI resolution, a frozen dispatcher loop) is also
+          # still running at 25 seconds and used to pass this job
+          # identically to a healthy one. Require a positive late-startup
+          # marker in the captured log as well, so a hang before that
+          # point fails even on the timeout branch. The marker is
+          # `TempestHost.EnterRunning`'s own log line, verified empirically
+          # against a real `xvfb-run` launch on this branch rather than
+          # assumed from a grep of the source.
+          if [ "$code" -eq 124 ] || [ "$code" -eq 137 ]; then
+            if grep -q "Host -> Running." launch.log; then
+              echo "Still running when the timeout fired, and startup reached 'Host -> Running.' - launched successfully."
+              exit 0
+            fi
+            echo "::error::Still running when the timeout fired, but the launch log never reached 'Host -> Running.' - the process hung during startup rather than launching."
+            exit 1
+          fi
+          echo "::error::Tempest.Desktop exited on its own (code $code) - see launch.log above."
+          exit 1
+
   # A single, named job every branch-protection rule can require, so
   # "the pipeline is green" has one unambiguous status check rather than
   # requiring both matrix legs to be individually named in every
   # protection rule — and so a future contributor reads one job name,
   # not the matrix's own internal shape, to know whether it is safe to
-  # merge. Deliberately depends on build-and-test only, not
-  # governance-health-check — see the comment above that job for why.
+  # merge.
+  #
+  # WP 16.1A (v0.16.0): the gate now also requires governance-health-check
+  # to succeed. WP 11.2A deliberately left it advisory ("machine-detectable
+  # but not machine-enforced", FCR-0005) until the tool had demonstrated
+  # itself on real drift; five releases and one further undocumented
+  # 20-commit range later (WP 15.1A), a governance Fail is treated exactly
+  # like a build Fail: red at the gate, not beside it. The
+  # governance-health-check job itself still runs with if: always(), so the
+  # report is produced even when the build is red.
+  #
+  # linux-launch-smoke (WP 16.5B) is deliberately NOT in the needs list:
+  # advisory for this release — see the comment above that job for why.
   gate:
     name: CI Gate
-    needs: build-and-test
+    needs: [build-and-test, governance-health-check]
     if: always()
     runs-on: windows-2022
     steps:
-      - name: Confirm every configuration passed
+      - name: Confirm every configuration and the governance check passed
         shell: pwsh
         run: |
+          $failed = $false
           if ("${{ needs.build-and-test.result }}" -ne "success") {
             Write-Error "One or more Build & Test configurations did not succeed - see the build-and-test job matrix for details."
-            exit 1
+            $failed = $true
           }
-          Write-Host "All Build & Test configurations succeeded."
+          if ("${{ needs.governance-health-check.result }}" -ne "success") {
+            Write-Error "Governance Health Check did not succeed - see that job's step summary for the failing check(s)."
+            $failed = $true
+          }
+          if ($failed) { exit 1 }
+          Write-Host "All Build & Test configurations and the Governance Health Check succeeded."

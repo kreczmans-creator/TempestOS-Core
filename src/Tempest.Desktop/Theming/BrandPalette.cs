@@ -87,8 +87,17 @@ public static class BrandPalette
     /// <summary>--cyan-400 — cyan's hover step.</summary>
     public static readonly Color Cyan400 = Color.Parse("#68bde2");
 
-    /// <summary>--cyan-600 — cyan's press step.</summary>
-    public static readonly Color Cyan600 = Color.Parse("#2b7fa5");
+    /// <summary>
+    /// --cyan-600 — cyan's press step. Lightened from the design system's
+    /// original `#2b7fa5` (review board finding #6, `WP 16.5A-R1`):
+    /// `AccentPressBrushKey`'s own text (`OnAccentBrushKey` =
+    /// <see cref="Navy900"/> in the dark theme) measured only 4.42:1 on
+    /// it, under WCAG AA's 4.5:1 body-text floor. Hue/saturation
+    /// preserved, lightness nudged just enough to clear 4.5:1 (measured
+    /// 4.60:1) — see `WP16.5A-R1 Accessibility Remediation.md` for the
+    /// full before/after table.
+    /// </summary>
+    public static readonly Color Cyan600 = Color.Parse("#2c82a9");
 
     /// <summary>--violet-500 — brand violet, strictly secondary (badges, category rules; the mark's inner strokes).</summary>
     public static readonly Color Violet500 = Color.Parse("#6c29d9");
@@ -220,7 +229,21 @@ public static class BrandPalette
             [HeadingTextBrushKey] = Solid(Ink900),
             [BodyTextBrushKey] = Solid(Slate700),
             [MutedTextBrushKey] = Solid(Slate600),
-            [FaintTextBrushKey] = Solid(Slate500),
+            // Darkened from the raw `Slate500` (review board finding #6,
+            // `WP 16.5A-R1`) — `FaintTextBrushKey` is real text (captions,
+            // disabled labels, separators), and `Slate500` measured only
+            // 3.72:1 on `Surface`/`Paper000` and 3.27:1 on
+            // `Sunken`/`Paper100`, both well under WCAG AA's 4.5:1 floor.
+            // Hue/saturation preserved, lightness nudged just enough to
+            // clear 4.5:1 against both real surfaces this key is drawn on
+            // (measured 5.30:1 / 4.66:1) — the same darken-for-light-theme
+            // treatment `ApplicationPalette`'s own `HealthText*` keys
+            // already used for the same reason. The dark theme's own
+            // value is untouched: `Slate500` already clears 4.5:1 on the
+            // dark Cockpit surfaces this key is drawn on. See
+            // `WP16.5A-R1 Accessibility Remediation.md` for the full
+            // before/after table.
+            [FaintTextBrushKey] = Solid(Color.Parse("#696b75")),
             [AccentBrushKey] = Solid(Indigo600),
             [AccentHoverBrushKey] = Solid(Color.Parse("#2a3db0")),
             [AccentPressBrushKey] = Solid(Color.Parse("#16247a")),
@@ -231,7 +254,16 @@ public static class BrandPalette
             [GridLineBrushKey] = Solid(Indigo600, 0.055),
             [SuccessBrushKey] = Solid(Color.Parse("#0f9a6c")),
             [WarningBrushKey] = Solid(Color.Parse("#c97f0c")),
-            [DangerBrushKey] = Solid(Color.Parse("#d03a3f")),
+            // Darkened from `#d03a3f` (review board finding #6,
+            // `WP 16.5A-R1`): the `Danger` treatment's own `:pointerover`
+            // text (`OnAccentBrushKey` = `Paper050`) measured only 4.46:1
+            // on it, under WCAG AA's 4.5:1 floor. Hue/saturation
+            // preserved, lightness nudged just enough to clear 4.5:1
+            // (measured 4.60:1); the dark theme's `Red500` already clears
+            // 4.5:1 for the same pair (measured 5.07:1) and is untouched.
+            // See `WP16.5A-R1 Accessibility Remediation.md` for the full
+            // before/after table.
+            [DangerBrushKey] = Solid(Color.Parse("#cf353b")),
         };
 
         dictionary.ThemeDictionaries[ThemeVariant.Dark] = dark;

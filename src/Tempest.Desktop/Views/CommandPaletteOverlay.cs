@@ -1,3 +1,4 @@
+using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Tempest.App.Workspace;
@@ -99,6 +100,12 @@ public sealed class CommandPaletteOverlay : Border
         VerticalAlignment = Avalonia.Layout.VerticalAlignment.Top;
         Margin = new Avalonia.Thickness(0, 60, 0, 0);
 
+        // A watermark alone names nothing to a screen reader (`WP 16.5A`,
+        // `TD-65`) — the same real gap the header search field, the
+        // Explorer filter, and the Digital Thread search box all had.
+        AutomationProperties.SetName(_query, "Command palette query");
+        ToolTip.SetTip(_query, "Type a command...");
+
         var panel = new StackPanel();
         panel.Children.Add(_query);
         panel.Children.Add(_results);
@@ -119,6 +126,10 @@ public sealed class CommandPaletteOverlay : Border
         };
         _query.KeyDown += OnQueryKeyDown;
         _results.DoubleTapped += async (_, _) => await InvokeSelectedAsync().ConfigureAwait(true);
+
+        // Real modal behaviour (`WP 16.5A`, `TD-65`) — see
+        // `DialogModality`'s own remarks.
+        DialogModality.Install(this);
     }
 
     /// <summary>Opens the palette: clears the query, re-reads every registered command, and gives the query box focus.</summary>

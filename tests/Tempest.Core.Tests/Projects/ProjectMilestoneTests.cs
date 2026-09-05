@@ -30,9 +30,43 @@ namespace Tempest.Core.Tests.Projects;
 /// inventing a "milestone achieved" fact the domain does not hold.
 /// </para>
 /// </remarks>
-public sealed class ProjectMilestoneTests
+public sealed class ProjectMilestoneTests : IDisposable
 {
     private static readonly DateTimeOffset Today = new(2026, 8, 30, 12, 0, 0, TimeSpan.Zero);
+
+    private readonly List<string> _fixtureRoots = [];
+
+    /// <summary>
+    /// Creates a <see cref="MilestoneFixture"/> and remembers its isolated
+    /// persistence root for <see cref="Dispose"/> — closes the Core-side
+    /// leak <c>TD-120</c> (Technical Debt Register.md) left open, see
+    /// <see cref="ProjectFixtureRoot"/>.
+    /// </summary>
+    private async Task<MilestoneFixture> CreateFixtureAsync(Func<DateTimeOffset>? now = null)
+    {
+        var fixture = await MilestoneFixture.CreateAsync(now);
+        _fixtureRoots.Add(fixture.Root);
+        return fixture;
+    }
+
+    /// <summary>Deletes every persistence root this instance's own test created — xUnit constructs a fresh instance per test, so this runs once per test, not once per class.</summary>
+    public void Dispose()
+    {
+        foreach (var root in _fixtureRoots)
+        {
+            try
+            {
+                if (Directory.Exists(root))
+                    Directory.Delete(root, recursive: true);
+            }
+            catch (IOException)
+            {
+            }
+            catch (UnauthorizedAccessException)
+            {
+            }
+        }
+    }
 
     // ================================================================
     // Membership, transitively and by parenting
@@ -41,7 +75,7 @@ public sealed class ProjectMilestoneTests
     [Fact]
     public async Task AMilestoneJoinsAProjectThroughTheParentChain_NotAField()
     {
-        var fixture = await MilestoneFixture.CreateAsync();
+        var fixture = await CreateFixtureAsync();
         var project = await fixture.CreateProjectAsync("P-1", "Apollo");
 
         var milestone = await fixture.Workflow.CreateMilestoneAsync(project.Id, "MS-001", "Critical Design Review", Today.AddDays(30));
@@ -58,7 +92,7 @@ public sealed class ProjectMilestoneTests
     [Fact]
     public async Task ADeliverableReachesTheProjectThroughItsMilestone()
     {
-        var fixture = await MilestoneFixture.CreateAsync();
+        var fixture = await CreateFixtureAsync();
         var project = await fixture.CreateProjectAsync("P-1", "Apollo");
         var milestone = await fixture.Workflow.CreateMilestoneAsync(project.Id, "MS-001", "CDR", Today.AddDays(30));
 
@@ -76,7 +110,7 @@ public sealed class ProjectMilestoneTests
     [Fact]
     public async Task AMilestoneRaisedDeepInTheStructure_IsStillAProjectMilestone()
     {
-        var fixture = await MilestoneFixture.CreateAsync();
+        var fixture = await CreateFixtureAsync();
         var project = await fixture.CreateProjectAsync("P-1", "Apollo");
         var assembly = await fixture.CreatePartAsync("ASM-1", "Turbopump", project.Id);
         var part = await fixture.CreatePartAsync("PRT-1", "Impeller", assembly.Id);
@@ -90,7 +124,7 @@ public sealed class ProjectMilestoneTests
     [Fact]
     public async Task OneProjectsMilestones_NeverLeakIntoAnother()
     {
-        var fixture = await MilestoneFixture.CreateAsync();
+        var fixture = await CreateFixtureAsync();
         var apollo = await fixture.CreateProjectAsync("P-1", "Apollo");
         var gemini = await fixture.CreateProjectAsync("P-2", "Gemini");
 
@@ -107,7 +141,7 @@ public sealed class ProjectMilestoneTests
     [Fact]
     public async Task WorkReachesAMilestoneDirectly_AndThroughADeliverable_AndTheRegisterKeepsTheDifference()
     {
-        var fixture = await MilestoneFixture.CreateAsync();
+        var fixture = await CreateFixtureAsync();
         var project = await fixture.CreateProjectAsync("P-1", "Apollo");
         var milestone = await fixture.Workflow.CreateMilestoneAsync(project.Id, "MS-001", "CDR", Today.AddDays(30));
         var deliverable = await fixture.Workflow.CreateDeliverableAsync(project.Id, milestone.Id, "DEL-001", "Stress report");
@@ -137,7 +171,7 @@ public sealed class ProjectMilestoneTests
     [Fact]
     public async Task AnActionContributesLikeATask_BecauseAnActionIsATask()
     {
-        var fixture = await MilestoneFixture.CreateAsync();
+        var fixture = await CreateFixtureAsync();
         var project = await fixture.CreateProjectAsync("P-1", "Apollo");
         var milestone = await fixture.Workflow.CreateMilestoneAsync(project.Id, "MS-001", "CDR", Today.AddDays(30));
 
@@ -152,7 +186,7 @@ public sealed class ProjectMilestoneTests
     [Fact]
     public async Task WorkContributingToAnotherProjectsMilestone_IsNotCounted()
     {
-        var fixture = await MilestoneFixture.CreateAsync();
+        var fixture = await CreateFixtureAsync();
         var apollo = await fixture.CreateProjectAsync("P-1", "Apollo");
         var gemini = await fixture.CreateProjectAsync("P-2", "Gemini");
 
@@ -172,7 +206,7 @@ public sealed class ProjectMilestoneTests
     [Fact]
     public async Task APastDateWithOpenWork_IsReportedAsSuch_AndIsNotCalledMissed()
     {
-        var fixture = await MilestoneFixture.CreateAsync(() => Today);
+        var fixture = await CreateFixtureAsync(() => Today);
         var project = await fixture.CreateProjectAsync("P-1", "Apollo");
         var milestone = await fixture.Workflow.CreateMilestoneAsync(project.Id, "MS-001", "Slipped review", Today.AddDays(-5));
 
@@ -191,7 +225,7 @@ public sealed class ProjectMilestoneTests
     [Fact]
     public async Task APastDateWhoseWorkIsAllDone_IsNoLongerOutstanding()
     {
-        var fixture = await MilestoneFixture.CreateAsync(() => Today);
+        var fixture = await CreateFixtureAsync(() => Today);
         var project = await fixture.CreateProjectAsync("P-1", "Apollo");
         var milestone = await fixture.Workflow.CreateMilestoneAsync(project.Id, "MS-001", "Done review", Today.AddDays(-5));
 
@@ -214,7 +248,7 @@ public sealed class ProjectMilestoneTests
     [Fact]
     public async Task APastDateWithNothingLinked_IsItsOwnDistinctProblem()
     {
-        var fixture = await MilestoneFixture.CreateAsync(() => Today);
+        var fixture = await CreateFixtureAsync(() => Today);
         var project = await fixture.CreateProjectAsync("P-1", "Apollo");
         await fixture.Workflow.CreateMilestoneAsync(project.Id, "MS-001", "A date nobody used", Today.AddDays(-5));
 
@@ -231,7 +265,7 @@ public sealed class ProjectMilestoneTests
     [Fact]
     public async Task AFutureMilestone_IsNotPast()
     {
-        var fixture = await MilestoneFixture.CreateAsync(() => Today);
+        var fixture = await CreateFixtureAsync(() => Today);
         var project = await fixture.CreateProjectAsync("P-1", "Apollo");
         await fixture.Workflow.CreateMilestoneAsync(project.Id, "MS-001", "Upcoming", Today.AddDays(30));
 
@@ -245,7 +279,7 @@ public sealed class ProjectMilestoneTests
     [Fact]
     public async Task AMilestoneWithADeliverableButNoTasks_CountsAsHavingLinkedWork()
     {
-        var fixture = await MilestoneFixture.CreateAsync(() => Today);
+        var fixture = await CreateFixtureAsync(() => Today);
         var project = await fixture.CreateProjectAsync("P-1", "Apollo");
         var milestone = await fixture.Workflow.CreateMilestoneAsync(project.Id, "MS-001", "CDR", Today.AddDays(-1));
         await fixture.Workflow.CreateDeliverableAsync(project.Id, milestone.Id, "DEL-001", "Stress report");
@@ -265,7 +299,7 @@ public sealed class ProjectMilestoneTests
     [Fact]
     public async Task MilestonesAreListedInDateOrder_EvenWhenOneIsOverdue()
     {
-        var fixture = await MilestoneFixture.CreateAsync(() => Today);
+        var fixture = await CreateFixtureAsync(() => Today);
         var project = await fixture.CreateProjectAsync("P-1", "Apollo");
 
         var later = await fixture.Workflow.CreateMilestoneAsync(project.Id, "MS-003", "Later", Today.AddDays(60));
@@ -287,7 +321,7 @@ public sealed class ProjectMilestoneTests
     [Fact]
     public async Task ADeliverableCannotBeAddedToSomethingThatIsNotAMilestone()
     {
-        var fixture = await MilestoneFixture.CreateAsync();
+        var fixture = await CreateFixtureAsync();
         var project = await fixture.CreateProjectAsync("P-1", "Apollo");
         var task = await fixture.Tasks.CreateAsync(project.Id, "TSK-001", "Not a milestone");
 
@@ -298,7 +332,7 @@ public sealed class ProjectMilestoneTests
     [Fact]
     public async Task AMilestoneCannotBeSetInAProjectThatDoesNotExist()
     {
-        var fixture = await MilestoneFixture.CreateAsync();
+        var fixture = await CreateFixtureAsync();
 
         await Assert.ThrowsAsync<ProjectNotFoundException>(
             () => fixture.Workflow.CreateMilestoneAsync(Guid.NewGuid(), "MS-001", "Nowhere", Today));
@@ -307,7 +341,7 @@ public sealed class ProjectMilestoneTests
     [Fact]
     public async Task TheTargetDateReachesTheStore_NotOnlyTheInstance()
     {
-        var fixture = await MilestoneFixture.CreateAsync();
+        var fixture = await CreateFixtureAsync();
         var project = await fixture.CreateProjectAsync("P-1", "Apollo");
 
         var milestone = await fixture.Workflow.CreateMilestoneAsync(project.Id, "MS-001", "CDR", Today.AddDays(30));
@@ -318,7 +352,7 @@ public sealed class ProjectMilestoneTests
     [Fact]
     public async Task EditingAMilestoneRetitlesItAndAddsARevision()
     {
-        var fixture = await MilestoneFixture.CreateAsync();
+        var fixture = await CreateFixtureAsync();
         var project = await fixture.CreateProjectAsync("P-1", "Apollo");
         var milestone = await fixture.Workflow.CreateMilestoneAsync(project.Id, "MS-001", "Critcal Design Review", Today.AddDays(30));
 
@@ -341,16 +375,20 @@ public sealed class ProjectMilestoneTests
     private sealed class MilestoneFixture
     {
         private MilestoneFixture(
-            EngineeringDomainContext domain, EngineeringObjectStateStore states, Func<DateTimeOffset> now)
+            EngineeringDomainContext domain, EngineeringObjectStateStore states, Func<DateTimeOffset> now, string root)
         {
             Domain = domain;
             States = states;
             Register = new ProjectMilestoneRegister(domain, now);
             Workflow = new ProjectMilestoneService(domain);
             Tasks = new ProjectTaskService(domain);
+            Root = root;
         }
 
         private EngineeringObjectStateStore States { get; }
+
+        /// <summary>This fixture's own isolated persistence root — the caller's own <c>Dispose</c> deletes it (`TD-120` Core-side closure).</summary>
+        public string Root { get; }
 
         public EngineeringDomainContext Domain { get; }
 
@@ -365,7 +403,7 @@ public sealed class ProjectMilestoneTests
 
         public static Task<MilestoneFixture> CreateAsync(Func<DateTimeOffset>? now = null)
         {
-            var root = Path.Combine(Path.GetTempPath(), "tempest-project-milestones-" + Guid.NewGuid().ToString("N"));
+            var root = ProjectFixtureRoot.NewIsolatedRoot("milestones");
             var configuration = new ConfigurationBuilder()
                 .AddSource(new MemoryConfigurationSource(
                 [
@@ -386,7 +424,7 @@ public sealed class ProjectMilestoneTests
                 new EvidenceComposer(discovery, repository), principal,
                 states, new AttachmentContentStore(store));
 
-            return Task.FromResult(new MilestoneFixture(domain, states, now ?? (() => DateTimeOffset.UtcNow)));
+            return Task.FromResult(new MilestoneFixture(domain, states, now ?? (() => DateTimeOffset.UtcNow), root));
         }
 
         public async Task<IProject> CreateProjectAsync(string identifier, string name)

@@ -78,3 +78,29 @@ internal sealed class CircularServiceB
     {
     }
 }
+
+// TD-69: exercises Construct's fallback to a constructor parameter's own
+// declared default when the parameter's type has no registration at all -
+// mirroring real platform types such as EventBus(ILogger? logger = null, ...).
+internal sealed class OptionalDependencyConsumer
+{
+    public OptionalDependencyConsumer(IGreeter greeter, IUnregisteredService? optional = null)
+    {
+        Greeter = greeter;
+        Optional = optional;
+    }
+
+    public IGreeter Greeter { get; }
+
+    public IUnregisteredService? Optional { get; }
+}
+
+// A required parameter of an unregistered type must still fail exactly as
+// before, even alongside an unrelated optional one - the optional-parameter
+// fallback must never mask a genuinely missing, required dependency.
+internal sealed class RequiredAndOptionalDependencyConsumer
+{
+    public RequiredAndOptionalDependencyConsumer(IUnregisteredService required, IGreeter? optional = null)
+    {
+    }
+}

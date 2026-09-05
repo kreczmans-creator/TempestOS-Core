@@ -93,6 +93,25 @@ public sealed class EngineeringDocumentStore : IEngineeringDocumentStore
         $"EngineeringData.References.{sourceDocumentId:N}";
 
     /// <inheritdoc />
+    /// <remarks>
+    /// <b>`TD-67` closure — revision-before-document ordering.</b> Writes
+    /// revision 1 first, then the document record — the exact inversion of
+    /// this method's own original ordering, and exactly the ordering
+    /// <see cref="ReviseAsync"/> already used (write the new revision,
+    /// then the document record that advances
+    /// <see cref="EngineeringDocumentDto.CurrentRevisionNumber"/> to name
+    /// it). The document's own Id is minted locally
+    /// (<see cref="Guid.NewGuid"/>) before either write, so nothing about
+    /// revision 1's own identity depends on the document record existing
+    /// first: there was no correctness reason for the original ordering,
+    /// only an incidental one. A crash between the two writes now leaves an orphaned
+    /// revision 1 with no document record — invisible to
+    /// <see cref="FindAsync"/>/<see cref="GetRevisionHistoryAsync"/> (both
+    /// key off the document record, which does not exist, so both report
+    /// "not found" rather than throwing), never the "internally
+    /// inconsistent" <see cref="EngineeringDataException"/> the old
+    /// ordering's own crash window produced.
+    /// </remarks>
     public async Task<IEngineeringDocument> CreateAsync(string kind, string initialContent, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(kind);
@@ -102,13 +121,13 @@ public sealed class EngineeringDocumentStore : IEngineeringDocumentStore
         var createdAt = DateTimeOffset.UtcNow;
         var authorPrincipalId = ResolveAuthorPrincipalId();
 
-        await WriteDocumentAsync(documentId, new EngineeringDocumentDto(kind, createdAt, CurrentRevisionNumber: 1), cancellationToken)
-            .ConfigureAwait(false);
         await WriteRevisionAsync(
             documentId,
             revisionNumber: 1,
             new DocumentRevisionDto(initialContent, ChangeSummary: null, authorPrincipalId, createdAt),
             cancellationToken)
+            .ConfigureAwait(false);
+        await WriteDocumentAsync(documentId, new EngineeringDocumentDto(kind, createdAt, CurrentRevisionNumber: 1), cancellationToken)
             .ConfigureAwait(false);
 
         _logger?.Information($"Engineering document created: '{documentId}' (kind '{kind}').");

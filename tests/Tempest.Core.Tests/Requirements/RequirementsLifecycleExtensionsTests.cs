@@ -201,6 +201,53 @@ public class RequirementsLifecycleExtensionsTests
         Assert.Null(moved.ParentGroupId);
     }
 
+    // ---- MoveGroupAsync: `TD-67` Kind and ancestry-cycle guards ----
+
+    [Fact]
+    public async Task MoveGroupAsync_ParentIsARequirementNotAGroup_ThrowsEngineeringDocumentNotFoundException()
+    {
+        var (requirements, _) = BuildServices();
+        var group = await requirements.CreateGroupAsync("Group A");
+        var requirement = await requirements.CreateAsync("REQ-1", "The system shall do X.");
+
+        await Assert.ThrowsAsync<EngineeringDocumentNotFoundException>(() => requirements.MoveGroupAsync(group.Id, requirement.Id));
+    }
+
+    [Fact]
+    public async Task MoveGroupAsync_UnderItself_ThrowsRequirementGroupCycleException()
+    {
+        var (requirements, _) = BuildServices();
+        var group = await requirements.CreateGroupAsync("Group A");
+
+        await Assert.ThrowsAsync<RequirementGroupCycleException>(() => requirements.MoveGroupAsync(group.Id, group.Id));
+    }
+
+    [Fact]
+    public async Task MoveGroupAsync_UnderItsOwnDescendant_ThrowsRequirementGroupCycleException()
+    {
+        var (requirements, _) = BuildServices();
+        var root = await requirements.CreateGroupAsync("Root");
+        var child = await requirements.CreateGroupAsync("Child", root.Id);
+        var grandchild = await requirements.CreateGroupAsync("Grandchild", child.Id);
+
+        await Assert.ThrowsAsync<RequirementGroupCycleException>(() => requirements.MoveGroupAsync(root.Id, grandchild.Id));
+    }
+
+    [Fact]
+    public async Task MoveGroupAsync_UnderAnUnrelatedGroup_StillSucceeds()
+    {
+        // Confirms the cycle guard does not over-fire against a perfectly
+        // legal move between two unrelated branches.
+        var (requirements, _) = BuildServices();
+        var branchA = await requirements.CreateGroupAsync("Branch A");
+        var branchB = await requirements.CreateGroupAsync("Branch B");
+        var child = await requirements.CreateGroupAsync("Child", branchA.Id);
+
+        var moved = await requirements.MoveGroupAsync(child.Id, branchB.Id);
+
+        Assert.Equal(branchB.Id, moved.ParentGroupId);
+    }
+
     // ---- DeleteGroupAsync ----
 
     [Fact]

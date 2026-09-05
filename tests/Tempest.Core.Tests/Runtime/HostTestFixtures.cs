@@ -18,6 +18,18 @@ namespace Tempest.Core.Tests.Runtime;
 /// </summary>
 internal static class BlockingModuleGate
 {
+    /// <summary>
+    /// How long <see cref="WaitUntilEnteredAsync"/> and the paused module
+    /// itself wait before giving up (`WP16.4A-R1`). Both sides of this
+    /// gate are released deterministically by the same test, in well
+    /// under a second — this exists purely so a future change that stops
+    /// the host from ever reaching this module's own
+    /// <c>InitialiseAsync</c> fails fast with a named
+    /// <see cref="TimeoutException"/> instead of hanging silently until
+    /// CI's own 30-minute job timeout kills the whole matrix leg.
+    /// </summary>
+    public static readonly TimeSpan GateTimeout = TimeSpan.FromSeconds(10);
+
     private static TaskCompletionSource _entered = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private static TaskCompletionSource _release = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
@@ -27,14 +39,14 @@ internal static class BlockingModuleGate
         _release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
     }
 
-    public static Task WaitUntilEnteredAsync() => _entered.Task;
+    public static Task WaitUntilEnteredAsync() => _entered.Task.WaitAsync(GateTimeout);
 
     public static void Release() => _release.TrySetResult();
 
     public static async Task EnterAndWaitForReleaseAsync()
     {
         _entered.TrySetResult();
-        await _release.Task.ConfigureAwait(false);
+        await _release.Task.WaitAsync(GateTimeout).ConfigureAwait(false);
     }
 }
 

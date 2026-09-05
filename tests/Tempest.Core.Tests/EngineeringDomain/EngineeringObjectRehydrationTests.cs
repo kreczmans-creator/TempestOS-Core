@@ -2,7 +2,9 @@ using Tempest.App.Workspace.Mechanical;
 using Tempest.Core.EngineeringData;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Identity;
+using Tempest.Core.Logging;
 using Tempest.Core.Persistence;
+using Tempest.Core.Tests.Logging;
 
 namespace Tempest.Core.Tests.EngineeringDomain;
 
@@ -27,14 +29,16 @@ public class EngineeringObjectRehydrationTests
         IEngineeringObjectStateStore StateStore,
         CurrentPrincipalAccessor Principal);
 
-    private static Lifetime NewLifetime(IPersistenceStore persistence, bool registerMechanical = true)
+    private static Lifetime NewLifetime(
+        IPersistenceStore persistence, bool registerMechanical = true,
+        IStateMigrationRegistry? migrations = null, ILogger? logger = null)
     {
         var principal = new CurrentPrincipalAccessor();
         var documentStore = new EngineeringDocumentStore(persistence, principal);
         var repository = new InMemoryEngineeringObjectRepository();
         var relationships = new InMemoryEngineeringRelationshipRepository();
         var discovery = new RelationshipDiscoveryService(relationships, repository);
-        var stateStore = new EngineeringObjectStateStore(persistence);
+        var stateStore = new EngineeringObjectStateStore(persistence, migrations, logger);
 
         var domain = new EngineeringDomainContext(
             documentStore, repository, relationships, new LifecycleTransitionTable(), new ValidationRuleSet(),
@@ -522,6 +526,7 @@ public class EngineeringObjectRehydrationTests
 
         var orphanId = Guid.NewGuid();
         await first.StateStore.SaveAsync(new EngineeringObjectState(
+            EngineeringObjectStateStore.CurrentSchemaVersion,
             orphanId, MechanicalObjectFactoryRegistry.Part, "PN-GONE", "Gone", EngineeringObjectMetadata.Empty,
             LifecycleState.Draft, null, false, EngineeringObjectBomLineState.Default, [], [],
             new Dictionary<string, string?>()));
@@ -550,6 +555,65 @@ public class EngineeringObjectRehydrationTests
         Assert.Equal(1, result.ObjectCount);
         Assert.NotNull(await second.Domain.Repository.FindAsync(good.Id));
         Assert.Null(await second.Domain.Repository.FindAsync(bad.Id));
+    }
+
+    // ----------------------------------------------------------------
+    // `TD-87`/`ADR-0120` Decision 5 — a record whose schema version
+    // cannot be bridged is logged and skipped, the same discipline
+    // `ACorruptedStateRecord_IsSkipped...` above already proves for
+    // malformed JSON, extended to a record's own state store read path.
+    // ----------------------------------------------------------------
+
+    [Fact]
+    public async Task ARehydrationBatchContainingAStuckRecord_StillReturnsEveryOtherObject()
+    {
+        var persistence = new Materials.InMemoryPersistenceStore();
+        var first = NewLifetime(persistence);
+        var good = await CreatePartAsync(first.Domain);
+
+        // A record from a build newer than this one — nothing can migrate
+        // "the future" backward, so it can never be bridged to this
+        // build's own EngineeringObjectStateStore.CurrentSchemaVersion.
+        var stuckId = Guid.NewGuid();
+        await first.StateStore.SaveAsync(new EngineeringObjectState(
+            99, stuckId, MechanicalObjectFactoryRegistry.Part, "PN-STUCK", "Stuck Part", EngineeringObjectMetadata.Empty,
+            LifecycleState.Draft, null, false, EngineeringObjectBomLineState.Default, [], [],
+            new Dictionary<string, string?>()));
+
+        var second = NewLifetime(persistence);
+        var result = await second.Service.RehydrateAsync();
+
+        Assert.Equal(1, result.ObjectCount);
+        Assert.NotNull(await second.Domain.Repository.FindAsync(good.Id));
+        Assert.Null(await second.Domain.Repository.FindAsync(stuckId));
+    }
+
+    [Fact]
+    public async Task AStuckRecordEncounteredDuringRehydration_IsLoggedNamingItsIdKindAndStuckVersion()
+    {
+        // `ADR-0120` Decision 5 places the stuck-vs-corrupt distinction in
+        // "the log line a caller reads" — not a new EngineeringRehydrationResult
+        // field — the small increase in logging vocabulary its own
+        // Consequences describe, reached here through the full rehydration
+        // path (EngineeringObjectRehydrationService -> ListAsync -> Deserialise),
+        // not only through the state store directly.
+        var persistence = new Materials.InMemoryPersistenceStore();
+        var first = NewLifetime(persistence);
+
+        var stuckId = Guid.NewGuid();
+        await first.StateStore.SaveAsync(new EngineeringObjectState(
+            99, stuckId, MechanicalObjectFactoryRegistry.Part, "PN-STUCK", "Stuck Part", EngineeringObjectMetadata.Empty,
+            LifecycleState.Draft, null, false, EngineeringObjectBomLineState.Default, [], [],
+            new Dictionary<string, string?>()));
+
+        var logger = new RecordingLogger();
+        var second = NewLifetime(persistence, logger: logger);
+
+        await second.Service.RehydrateAsync();
+
+        var message = Assert.Single(logger.Messages, m => m.Contains(stuckId.ToString(), StringComparison.Ordinal));
+        Assert.Contains(MechanicalObjectFactoryRegistry.Part, message, StringComparison.Ordinal);
+        Assert.Contains("99", message, StringComparison.Ordinal);
     }
 
     [Fact]

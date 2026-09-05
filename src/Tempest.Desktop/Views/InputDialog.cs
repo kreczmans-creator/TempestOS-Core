@@ -79,6 +79,10 @@ public sealed class InputDialog : Border
             else if (e.Key == Key.Escape)
                 Complete(null);
         };
+
+        // Real modal behaviour (`WP 16.5A`, `TD-65`) — see
+        // `DialogModality`'s own remarks.
+        DialogModality.Install(this);
     }
 
     /// <summary>

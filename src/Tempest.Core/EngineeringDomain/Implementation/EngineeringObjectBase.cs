@@ -68,7 +68,11 @@ public abstract class EngineeringObjectBase :
     /// <summary>
     /// Captures this object's own complete state for persistence
     /// (`TD-85`) — everything that must come back after a restart for
-    /// this to be the same object.
+    /// this to be the same object. Always stamped with
+    /// <see cref="EngineeringObjectStateStore.CurrentSchemaVersion"/>
+    /// (`TD-87`, `ADR-0120`) — an object in memory has exactly one shape,
+    /// the current one, whether it arrived via a factory or a rehydrator;
+    /// migration is a read-path concern only.
     /// </summary>
     internal EngineeringObjectState CaptureState()
     {
@@ -80,6 +84,7 @@ public abstract class EngineeringObjectBase :
             lock (_structuralLock)
             {
                 return new EngineeringObjectState(
+                    EngineeringObjectStateStore.CurrentSchemaVersion,
                     Id,
                     Kind,
                     Identifier,
@@ -169,10 +174,88 @@ public abstract class EngineeringObjectBase :
     /// is composed, so every pre-`TD-85` hand-assembled context keeps
     /// working exactly as it did.
     /// </summary>
-    protected Task PersistStateAsync(CancellationToken cancellationToken = default) =>
-        _context.ObjectStateStore is { } store
-            ? store.SaveAsync(CaptureState(), cancellationToken)
-            : Task.CompletedTask;
+    /// <remarks>
+    /// <b>The lost update this closes (`WP 16.4B-R3`).</b>
+    /// <see cref="CaptureState"/> reads the live fields under short-lived
+    /// per-field locks and <see cref="EngineeringObjectStateStore.SaveAsync"/>
+    /// is an unconditional whole-record overwrite with no version check —
+    /// nothing used to serialise the capture-then-save pair as a whole.
+    /// Two concurrent mutations could have their saves land in the
+    /// opposite order to their captures, and the later-landing, earlier
+    /// captured snapshot silently dropped the other's change from disk —
+    /// including an attachment reference, which
+    /// <see cref="AttachmentContentReconciliationService.SweepAsync"/> then
+    /// permanently deletes as an orphan, because it is behaving exactly as
+    /// designed against durable state that no longer names a file the
+    /// caller was told exists. Found by the independent post-remediation
+    /// review that reproduced it against the real classes; the
+    /// `WP 16.4B-R2` write-intent marker does not touch this — both
+    /// concurrent writes complete and clear their markers correctly, and
+    /// the marker's own window is separate from this one.
+    /// <para>
+    /// <b>Why the lock is keyed by <see cref="Id"/>, not held on this
+    /// instance.</b> An instance-level lock only serialises callers that
+    /// share this exact <see cref="EngineeringObjectBase"/> object, and
+    /// that is not always true for one Id: <see cref="ReviseAsync"/>
+    /// constructs a second, independently-mutable instance for the same
+    /// <see cref="Id"/> and registers it in place of this one, while
+    /// nothing requires every caller holding a reference to <em>this</em>
+    /// instance to have noticed the replacement — a caller that mutates
+    /// the original after a concurrent revision is racing the revised
+    /// successor for the identical durable record. <see cref="Context"/>
+    /// (<see cref="EngineeringDomainContext"/>) is the one collaborator
+    /// every instance for a given Id is guaranteed to share (it is
+    /// threaded through every constructor and every self-factory/rehydrator
+    /// closure), so the lock lives there, keyed by <see cref="Id"/> rather
+    /// than by any one instance —
+    /// <see cref="EngineeringDomainContext.AcquireObjectWriteLockAsync"/>.
+    /// </para>
+    /// <para>
+    /// <b>Re-entrancy.</b> <see cref="Concurrency.AsyncKeyedLock"/> is not
+    /// reentrant. Every mutator on this hierarchy calls this method at
+    /// most once, and never while already holding this object's write
+    /// lock (audited across the whole <c>EngineeringDomain</c> tree and
+    /// every composed caller in <c>Tempest.App</c> for `WP 16.4B-R3`) — a
+    /// method that performs more than one durable step (for example
+    /// <see cref="MoveAsync"/>'s link followed by its own persist) always
+    /// completes its non-locking steps first and calls this method
+    /// exactly once, last.
+    /// </para>
+    /// </remarks>
+    protected async Task PersistStateAsync(CancellationToken cancellationToken = default)
+    {
+        if (_context.ObjectStateStore is not { } store)
+            return;
+
+        using (await _context.AcquireObjectWriteLockAsync(Id, cancellationToken).ConfigureAwait(false))
+        {
+            await store.SaveAsync(CaptureState(), cancellationToken).ConfigureAwait(false);
+        }
+    }
+
+    /// <summary>
+    /// Persists a freshly-created object's initial state (`TD-85`)
+    /// through the same per-object write lock as every later mutation
+    /// (`WP 16.4B-R3` — see <see cref="PersistStateAsync"/>).
+    /// </summary>
+    /// <remarks>
+    /// Exists only for <see cref="EngineeringObjectFactory{T}.CreateAsync"/>:
+    /// that type is not part of this hierarchy, so it cannot reach the
+    /// <see langword="protected"/> <see cref="PersistStateAsync"/>
+    /// directly — the same reason <see cref="CaptureState"/> itself is
+    /// <see langword="internal"/> rather than <see langword="protected"/>.
+    /// Before `WP 16.4B-R3` the factory captured and saved this object's
+    /// state directly, unprotected by any lock, after already registering
+    /// the instance in the repository — a window, however narrow, in
+    /// which a concurrent caller that found the object through the
+    /// repository could race the factory's own initial save exactly as
+    /// two mutators could race each other. Routing it through this same
+    /// locked path closes that window too, rather than leaving one
+    /// capture-then-save call outside the serialisation this Work Package
+    /// exists to add.
+    /// </remarks>
+    internal Task PersistInitialStateAsync(CancellationToken cancellationToken = default) =>
+        PersistStateAsync(cancellationToken);
 
     // IEngineeringObject
     public Guid Id => Document.Id;
@@ -313,6 +396,21 @@ public abstract class EngineeringObjectBase :
     }
 
     /// <inheritdoc />
+    /// <remarks>
+    /// <b>Write-intent marker (`WP 16.4B-R2`).</b> A marker for
+    /// <c>attachmentId</c> is recorded before the content write and
+    /// cleared only after the state write that references it succeeds —
+    /// bracketing both writes without reordering either of them.
+    /// <c>ADR-0114</c> Decision 4 (content before the state that names it)
+    /// is unchanged: the marker is additional, durable information a
+    /// sweep can consult, never a change to what gets written when. See
+    /// <see cref="IAttachmentWriteIntentStore"/> for why a marker can only
+    /// ever prevent a sweep from collecting content, never cause it to.
+    /// Skipped entirely (no marker, no failure) when this domain has no
+    /// <see cref="EngineeringDomainContext.AttachmentWriteIntentStore"/>
+    /// configured — see that property's own remarks for why that is not a
+    /// regression.
+    /// </remarks>
     public async Task<IAttachment> AttachContentAsync(
         string fileName,
         string contentType,
@@ -327,7 +425,14 @@ public abstract class EngineeringObjectBase :
                 "This engineering domain has no attachment content store configured, so file content cannot be stored. " +
                 "Use AttachAsync to record attachment metadata alone.");
 
+        var writeIntentStore = _context.AttachmentWriteIntentStore;
         var attachmentId = Guid.NewGuid();
+
+        // Mark first: any sweep that can see this attachment's content
+        // from this point forward must also be able to see that it is
+        // still being written, and skip it.
+        if (writeIntentStore is not null)
+            await writeIntentStore.MarkAsync(attachmentId, cancellationToken).ConfigureAwait(false);
 
         // Content first: a crash between the two writes leaves unreferenced
         // bytes, not an attachment promising content nobody stored.
@@ -337,6 +442,13 @@ public abstract class EngineeringObjectBase :
 
         lock (_attachments) { _attachments.Add(attachment); }
         await PersistStateAsync(cancellationToken).ConfigureAwait(false);
+
+        // Clear last, only once the state that references this attachment
+        // is itself durable — a crash before this point leaves a stale
+        // marker, whose only effect is that this content is never swept
+        // (the pre-existing, disclosed `TD-97` outcome), never data loss.
+        if (writeIntentStore is not null)
+            await writeIntentStore.ClearAsync(attachmentId, cancellationToken).ConfigureAwait(false);
 
         return attachment;
     }
@@ -434,6 +546,22 @@ public abstract class EngineeringObjectBase :
         get { lock (_structuralLock) { return _isDeleted; } }
     }
 
+    /// <remarks>
+    /// <b>`TD-97` closure — attachment content is released on delete.</b>
+    /// This object's metadata (<see cref="IAttachment"/> records) is never
+    /// erased — deletion is soft, and the platform's own append-only,
+    /// nothing-silently-destroyed ethos keeps every attachment's history
+    /// intact for a deleted object exactly as for a live one. The
+    /// <em>bytes</em> a deleted object's attachments held are a different
+    /// matter: nothing can ever view them again through this object, so
+    /// they are released via <see cref="IAttachmentContentStore.DeleteAsync"/>
+    /// once <see cref="IsDeleted"/> is durably recorded — after, not
+    /// before, so a crash between the two leaves the object durably
+    /// deleted with its content merely unreleased yet (the pre-existing,
+    /// disclosed `TD-97` state — closed the rest of the way by the
+    /// content sweep, never by reordering this write ahead of the
+    /// deletion it depends on).
+    /// </remarks>
     public async Task DeleteAsync(CancellationToken cancellationToken = default)
     {
         var all = await _context.Repository.ListAllAsync(cancellationToken).ConfigureAwait(false);
@@ -451,6 +579,15 @@ public abstract class EngineeringObjectBase :
         }
 
         await PersistStateAsync(cancellationToken).ConfigureAwait(false);
+
+        if (_context.AttachmentContentStore is { } contentStore)
+        {
+            List<IAttachment> attachmentsSnapshot;
+            lock (_attachments) { attachmentsSnapshot = _attachments.ToList(); }
+
+            foreach (var attachment in attachmentsSnapshot)
+                await contentStore.DeleteAsync(attachment.Id, cancellationToken).ConfigureAwait(false);
+        }
     }
 
     // IHasBomLine (WP 9.0B — additive; see BillOfMaterials.cs)
