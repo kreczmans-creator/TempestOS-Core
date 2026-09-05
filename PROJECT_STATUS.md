@@ -120,13 +120,19 @@ counts.
 Release build 0 warnings / 0 errors with `TreatWarningsAsErrors`;
 after the Wave 2/3 merges **`Tempest.Core.Tests` 3,124/3,124 and
 `Tempest.Desktop.Tests` 453/453** (Release); the Desktop launched under
-Xvfb with a full startup log and no crash log. **CI note:** every GitHub-hosted run on
-this private repository from 22:34 UTC on 2026-09-04 failed within
-seconds with no runner assigned (Windows and Ubuntu alike, on unchanged
-workflow files, with no GitHub incident reported) — the signature of an
-exhausted Actions allowance or spending limit, a Product Owner action.
-Until it is restored, the figures above are local, not CI-verified, and
-are labelled as such wherever they are cited.
+Xvfb with a full startup log and no crash log. **CI outage — occurred, diagnosed, and now
+resolved.** Every GitHub-hosted run on this repository from 22:34 UTC on
+2026-09-04 failed within seconds with no runner assigned (Windows and
+Ubuntu alike, on unchanged workflow files, with no GitHub incident
+reported) — the signature of an exhausted Actions allowance on a private
+repository. It was resolved on 2026-09-05 by the Product Owner making
+the repository public, which restores free hosted-runner minutes: run
+`171` at 06:06 UTC is the first success after the last failure (run
+`170`, 05:44 UTC, dead in ten seconds). Work Package reports written
+during the window state their evidence as local-only, correctly for when
+they were written; `WP 16.9.0` re-establishes CI evidence on the
+integrated tree rather than carrying those local figures forward as the
+release's certification.
 
 Build: 0 warnings, 0 errors, both configurations, at the `v0.15.0` tag
 — every merge to `main` is now gated by real CI (`WP 11.1A`) and, as of
