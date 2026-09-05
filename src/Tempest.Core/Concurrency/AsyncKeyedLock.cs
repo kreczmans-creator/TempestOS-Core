@@ -10,10 +10,14 @@ namespace Tempest.Core.Concurrency;
 /// Used internally by <see cref="Persistence.PersistenceStore"/>,
 /// <see cref="Settings.SettingsProvider"/>,
 /// <see cref="EngineeringData.EngineeringDocumentStore"/>,
-/// <see cref="Materials.MaterialCatalog"/>, and
-/// <see cref="Requirements.RequirementsService"/> to serialise concurrent
-/// operations against the same key without serialising access to two
-/// different keys against each other — each service's own Thread Safety
+/// <see cref="Materials.MaterialCatalog"/>,
+/// <see cref="Requirements.RequirementsService"/>, and
+/// <see cref="EngineeringDomain.EngineeringDomainContext"/> (`WP 16.4B-R3`
+/// — every <see cref="EngineeringDomain.EngineeringObjectBase"/>
+/// instance's own capture-then-persist sequence, keyed by object Id) to
+/// serialise concurrent operations against the same key without
+/// serialising access to two different keys against each other — each
+/// service's own Thread Safety
 /// Expectations (<c>Platform Service Contracts.md</c>) require exactly
 /// this granularity. Placed in its own small, neutral namespace rather
 /// than inside any one consumer's own folder, since it genuinely serves

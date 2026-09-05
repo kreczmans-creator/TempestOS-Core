@@ -1,3 +1,4 @@
+using Tempest.Core.Concurrency;
 using Tempest.Core.EngineeringData;
 using Tempest.Core.Identity;
 
@@ -6,6 +7,23 @@ namespace Tempest.Core.EngineeringDomain;
 /// <summary>The shared collaborators every <see cref="EngineeringObjectBase"/> instance and factory needs — bundled to keep per-Kind constructors small.</summary>
 public sealed class EngineeringDomainContext
 {
+    /// <summary>
+    /// Serialises each engineering object's own capture-then-persist
+    /// sequence, keyed by object Id (`WP 16.4B-R3`) — see
+    /// <see cref="EngineeringObjectBase.PersistStateAsync"/> for the lost
+    /// update this closes and why the key is the object's Id rather than
+    /// any one instance. Shared by construction across every
+    /// <see cref="EngineeringObjectBase"/> instance for the same Id,
+    /// because <see cref="EngineeringObjectBase.ReviseAsync"/> proves more
+    /// than one live instance can answer to the same Id at once (the
+    /// original and its revised successor, both registered and both
+    /// reachable) — an instance-level lock would not serialise those two
+    /// against each other, but a lock keyed by Id, held here where every
+    /// instance already shares one <see cref="EngineeringDomainContext"/>,
+    /// does.
+    /// </summary>
+    private readonly AsyncKeyedLock _objectWriteLock = new();
+
     public IEngineeringDocumentStore Store { get; }
     public IEngineeringObjectRepository Repository { get; }
     public IEngineeringRelationshipRepository RelationshipRepository { get; }
@@ -92,4 +110,14 @@ public sealed class EngineeringDomainContext
 
     public string ResolveCurrentPrincipalId() =>
         CurrentPrincipalAccessor.Current?.Identity.Id ?? InMemoryEngineeringDocumentStore.UnknownAuthorPrincipalId;
+
+    /// <summary>
+    /// Acquires <see cref="_objectWriteLock"/> for <paramref name="objectId"/>
+    /// (`WP 16.4B-R3`). Dispose the returned value to release. Internal —
+    /// reached only by <see cref="EngineeringObjectBase.PersistStateAsync"/>
+    /// and <see cref="EngineeringObjectFactory{T}.CreateAsync"/>, the only
+    /// two places that ever capture then persist an object's state.
+    /// </summary>
+    internal Task<IDisposable> AcquireObjectWriteLockAsync(Guid objectId, CancellationToken cancellationToken = default) =>
+        _objectWriteLock.AcquireAsync(objectId.ToString("N"), cancellationToken);
 }

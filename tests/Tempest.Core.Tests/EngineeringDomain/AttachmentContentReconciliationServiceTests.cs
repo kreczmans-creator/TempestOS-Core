@@ -561,6 +561,63 @@ public sealed class AttachmentContentReconciliationServiceTests : IDisposable
         Assert.Equal(AttachmentContentStatus.Available, liveResult.Status);
     }
 
+    // ---- The lost update (`WP 16.4B-R3`) ----
+
+    /// <summary>
+    /// The independent post-remediation review's own end-to-end repro:
+    /// two concurrent <see cref="EngineeringObjectBase.AttachContentAsync"/>
+    /// calls on one <see cref="Part"/>, forced into the interleaving that
+    /// used to lose the second attachment from durable state — the first
+    /// call's state is captured (holding only its own attachment) and
+    /// paused before landing; the second, free to run to completion while
+    /// the first is paused, adds its own attachment and used to land a
+    /// full snapshot that the first call's stale, later-landing one then
+    /// overwrote. A sweep run only once both calls have actually
+    /// completed must find nothing to collect, and both attachments'
+    /// content must still read back — proving the write-serialisation
+    /// fix, not the `WP 16.4B-R2` marker, which only ever protected one
+    /// in-flight write and never touched this ordering (both calls here
+    /// mark and clear correctly; the loss was never about the marker).
+    /// </summary>
+    [Fact]
+    public async Task SweepAsync_AfterTwoConcurrentAttaches_CollectsNeitherAttachmentsContent()
+    {
+        var (fixture, gate) = BuildGated(Build());
+        var part = await CreatePartAsync(fixture.Context, "PART-1", "Bracket");
+
+        var reachedSave = gate.ArmNextSave();
+        var attach1 = part.AttachContentAsync("first.pdf", "application/pdf", new byte[] { 1, 2, 3 });
+        await reachedSave;
+
+        // Started here, deliberately not awaited yet: with the per-object
+        // write lock in place (`WP 16.4B-R3`), this call's own state
+        // write blocks until the first call's paused write is released
+        // below. Nothing here awaits it first, so this cannot hang the
+        // test either way.
+        var attach2 = part.AttachContentAsync("second.pdf", "application/pdf", new byte[] { 4, 5, 6 });
+
+        gate.ReleaseSave();
+
+        var attachment1 = await attach1;
+        var attachment2 = await attach2;
+
+        var sweep = new AttachmentContentReconciliationService(fixture.Persistence, fixture.StateStore, fixture.ContentStore, fixture.WriteIntentStore);
+        var report = await sweep.SweepAsync();
+
+        Assert.Empty(report.Orphans);
+
+        var result1 = await fixture.ContentStore.ReadAsync(attachment1.Id, attachment1.ContentHash, attachment1.SizeInBytes);
+        Assert.Equal(AttachmentContentStatus.Available, result1.Status);
+
+        var result2 = await fixture.ContentStore.ReadAsync(attachment2.Id, attachment2.ContentHash, attachment2.SizeInBytes);
+        Assert.Equal(AttachmentContentStatus.Available, result2.Status);
+
+        var state = await fixture.StateStore.FindAsync(part.Id);
+        Assert.NotNull(state);
+        Assert.Contains(state.Attachments, a => a.Id == attachment1.Id);
+        Assert.Contains(state.Attachments, a => a.Id == attachment2.Id);
+    }
+
     [Fact]
     public void Constructor_NullPersistenceStore_Throws()
     {
