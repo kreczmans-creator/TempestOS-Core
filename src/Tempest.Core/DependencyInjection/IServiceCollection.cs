@@ -30,15 +30,29 @@ public interface IServiceCollection
     /// The concrete type to construct. Must be assignable to <paramref name="serviceType"/>.
     /// </param>
     /// <param name="lifetime">How long the constructed instance should be kept alive.</param>
+    /// <param name="allowReplace">
+    /// <see langword="true"/> to deliberately replace an existing registration for
+    /// <paramref name="serviceType"/> instead of throwing; <see langword="false"/> — the
+    /// default — treats a pre-existing registration as a mistake (TD-69). Ignored when
+    /// no registration for <paramref name="serviceType"/> exists yet.
+    /// </param>
     /// <returns>This collection, to allow chaining.</returns>
     /// <remarks>
-    /// Registering the same <paramref name="serviceType"/> more than once replaces the
-    /// previous registration; the most recent registration wins.
+    /// Registering the same <paramref name="serviceType"/> a second time without
+    /// <paramref name="allowReplace"/> throws <see cref="DuplicateServiceRegistrationException"/>
+    /// rather than silently replacing the previous registration — a mistaken
+    /// re-registration (of, say, <c>IEventBus</c>) is far more likely than a genuine need
+    /// to replace one, and silently swapping the platform implementation with no
+    /// exception and no log was exactly TD-69's own defect.
     /// </remarks>
     /// <exception cref="ArgumentException">
     /// <paramref name="implementationType"/> is not assignable to <paramref name="serviceType"/>.
     /// </exception>
-    IServiceCollection Add(Type serviceType, Type implementationType, ServiceLifetime lifetime);
+    /// <exception cref="DuplicateServiceRegistrationException">
+    /// A registration for <paramref name="serviceType"/> already exists and
+    /// <paramref name="allowReplace"/> is <see langword="false"/>.
+    /// </exception>
+    IServiceCollection Add(Type serviceType, Type implementationType, ServiceLifetime lifetime, bool allowReplace = false);
 
     /// <summary>
     /// Registers an already-constructed instance to satisfy requests for
@@ -47,6 +61,12 @@ public interface IServiceCollection
     /// <param name="serviceType">The type consumers will ask the container to resolve.</param>
     /// <param name="instance">
     /// The instance to hand out. Must be assignable to <paramref name="serviceType"/>.
+    /// </param>
+    /// <param name="allowReplace">
+    /// <see langword="true"/> to deliberately replace an existing registration for
+    /// <paramref name="serviceType"/> instead of throwing; <see langword="false"/> — the
+    /// default — treats a pre-existing registration as a mistake (TD-69). Ignored when
+    /// no registration for <paramref name="serviceType"/> exists yet.
     /// </param>
     /// <returns>This collection, to allow chaining.</returns>
     /// <remarks>
@@ -61,13 +81,18 @@ public interface IServiceCollection
     /// <para>
     /// An instance registration is always effectively a singleton: there is exactly
     /// one instance, and every resolution of <paramref name="serviceType"/> returns
-    /// it. Registering the same <paramref name="serviceType"/> more than once
-    /// (whether via <see cref="Add"/> or <see cref="AddInstance"/>) replaces the
-    /// previous registration; the most recent registration wins.
+    /// it. Registering the same <paramref name="serviceType"/> a second time (whether
+    /// via <see cref="Add"/> or <see cref="AddInstance"/>) without <paramref name="allowReplace"/>
+    /// throws <see cref="DuplicateServiceRegistrationException"/> — see <see cref="Add"/>'s
+    /// own remarks (TD-69).
     /// </para>
     /// </remarks>
     /// <exception cref="ArgumentException">
     /// <paramref name="instance"/> is not assignable to <paramref name="serviceType"/>.
     /// </exception>
-    IServiceCollection AddInstance(Type serviceType, object instance);
+    /// <exception cref="DuplicateServiceRegistrationException">
+    /// A registration for <paramref name="serviceType"/> already exists and
+    /// <paramref name="allowReplace"/> is <see langword="false"/>.
+    /// </exception>
+    IServiceCollection AddInstance(Type serviceType, object instance, bool allowReplace = false);
 }
