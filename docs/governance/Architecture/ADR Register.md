@@ -156,6 +156,7 @@ line, verified directly.
 | ADR-0121 | A Test-Only Construction Seam Is an `internal` Constructor, Never a Container-Visible One | Accepted | `WP 16.4B-R1` — records a `WP 16.3B` decision established under Technical Review and found undocumented by the `v0.16.0` review board | 2026-09-05 | Verified |
 | ADR-0122 | Registering a Service Twice Is an Error, Not a Replacement | Accepted | `WP 16.4B-R1` — records `WP 16.4B`'s change to the DI container's registration contract (`TD-69`), found undocumented by the `v0.16.0` review board | 2026-09-05 | Verified |
 | ADR-0123 | A Migration-Chain Collision Is a Registration Error, With No Opt-Out | Accepted | `WP 16.4B-R3` — records `WP 16.4B-R1`'s collision guard, which that Work Package closed with an explicit "No ADR"; the independent post-remediation review found that judgement wrong under §5 | 2026-09-05 | Verified |
+| ADR-0124 | Bearing Reference Data Is Type-Aware, and Serialises Its Own Canonical Types | Accepted | `A4` (Bearing Library, P01 Engineering Reference Data) — family-scoped property applicability, direct serialisation of the canonical types instead of a parallel DTO graph, and two new dimensions in `UnitsAndQuantities` | 2026-09-05 | Verified |
 
 **Total: 104 ADRs — corrected directly (`ls docs/adr | wc -l`) — this
 field had drifted stale at "100" even before this Work Package (rows

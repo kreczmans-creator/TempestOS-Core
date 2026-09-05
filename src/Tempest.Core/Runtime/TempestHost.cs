@@ -1,6 +1,7 @@
 using Tempest.Core.Api;
 using Tempest.Core.Audit;
 using Tempest.Core.BackgroundServices;
+using Tempest.Core.Bearings;
 using Tempest.Core.Calculations;
 using Tempest.Core.Commands;
 using Tempest.Core.Configuration;
@@ -674,6 +675,18 @@ public sealed class TempestHost : ITempestHost
         // arbitrary-string capability to provide - registered after both,
         // which it depends on.
         services.Singleton<IMaterialCatalog, MaterialCatalog>();
+
+        // ADR-0124: the Bearing Library is the same thin, typed index over
+        // the Engineering Data Model (Kind = "BearingReference") that
+        // Materials is, plus a direct IPersistenceStore dependency of its
+        // own for two indexes - bearingId and manufacturer-part-number -
+        // for the identical reason (IEngineeringDocumentStore has no
+        // lookup-by-arbitrary-string and no enumerate-by-Kind). Registered
+        // after Materials, whose catalogue its validation service takes as
+        // an optional collaborator when confirming that a bearing's own
+        // material references resolve.
+        services.Singleton<IBearingCatalog, BearingCatalog>();
+        services.Singleton<IBearingValidationService, BearingValidationService>();
 
         // ADR-0056: every calculation execution is durably recorded as an
         // Engineering Data Model document (Kind = "CalculationRecord"),

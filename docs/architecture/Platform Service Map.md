@@ -48,6 +48,8 @@ of date is worse than no map at all, because it will be trusted.
 | Attachment Content Store | **Implemented — `v0.14.0`** (`IAttachmentContentStore`/`AttachmentContentStore`, `IBinaryPersistenceStore`, `Tempest.Core.EngineeringDomain`/`Tempest.Core.Persistence`) — the durable store of attachment *bytes*, distinct from `IPersistenceStore`'s text-valued store and from `IAttachment`'s own metadata (`TD-31`). Section backfilled `WP 16.4B-R1` (`TD-126`) | Dependency Injection, Persistence (its own `IBinaryPersistenceStore`-shaped collection) | Any engineering object's own attachment read/write path; `IAttachmentContentReconciliationService` (`v0.16.0`, below) |
 | Engineering Data Model | **Implemented — WP 7.1A, ADR-0053** (`IEngineeringDocumentStore`/`EngineeringDocumentStore`, `Tempest.Core.EngineeringData`) — the shared, discipline-neutral document/revision/reference substrate every later Engineering Core framework and the Engineering Domain (`WP 8.2C`) are built on | Dependency Injection, Persistence, Identity & Permissions | Materials, Engineering Calculations, Verification, Requirements Engine, the Engineering Domain (`EngineeringDomainContext`, `WP 8.2C`); `EngineeringDataSampleModule` (real contributor) |
 | Materials | **Implemented — WP 7.1C, ADR-0055** (`IMaterialCatalog`/`MaterialCatalog`, `Tempest.Core.Materials`) — a thin, typed index over the Engineering Data Model (`Kind = "MaterialSpecification"`), plus a direct `IPersistenceStore` dependency of its own for its `materialId` index | Dependency Injection, Engineering Data Model, Persistence | `MaterialsSampleModule` (real contributor); the base `EngineeringDomainSampleModule` (`WP 8.2C`) |
+| Bearing Library | **Implemented — `A4`, ADR-0124** (`IBearingCatalog`/`BearingCatalog`, `Tempest.Core.Bearings`) — the authoritative bearing reference-data catalogue: the same typed index over the Engineering Data Model (`Kind = "BearingReference"`) Materials is, plus two direct `IPersistenceStore` indexes (`bearingId`, manufacturer-part-number), a provenance-gated validation lifecycle, released-record immutability with supersession, deterministic query and structured comparison | Dependency Injection, Engineering Data Model, Persistence | None yet — the library ships with the population requirement disclosed, not with fabricated catalogue data (`docs/architecture/A4 Bearing Library.md` §14) |
+| Bearing Validation | **Implemented — `A4`, ADR-0124** (`IBearingValidationService`/`BearingValidationService`, `Tempest.Core.Bearings`) — bearing data-quality rules (`TEMPEST-BRG-001`…`022`) and the catalogue-wide data-quality report; reports, never repairs | Dependency Injection, Bearing Library, Materials (optional) | None yet — see the row above |
 | Engineering Calculations | **Implemented — WP 7.1D, ADR-0056** (`ICalculationEngine`/`CalculationEngine`, `Tempest.Core.Calculations`) — durable, evidentiary calculation execution against a registered `ICalculationDefinition<TInput, TResult>`, every execution recorded as an Engineering Data Model document | Dependency Injection, Engineering Data Model, Identity & Permissions | `CalculationSampleModule` (real contributor); `Tempest.App.Workspace.Calculations` (`WP 9.2A`, the third real Engineering Discipline wired into the Workspace) |
 | Verification | **Implemented — WP 7.1E, ADR-0057** (`IVerificationService`/`VerificationService`, `Tempest.Core.Verification`) — records a verification outcome (criteria, evidence) against a subject document; permission-gated history query, reusing the Engineering Data Model's own `LinkAsync`/`GetReferencesAsync` mechanism, never a new index | Dependency Injection, Engineering Data Model, Identity & Permissions | `VerificationSampleModule` (real contributor); Requirements Engine (`GetEvidenceAsync` composition); `Tempest.App.Workspace.Verification` (`WP 9.3A`) and `.Manufacturing` (`WP 9.5A`, reuses `RecordVerificationResultCommand` directly) |
 | Project Engine | Planned | Undetermined | Undetermined |
@@ -1821,6 +1823,95 @@ record.
 the "At a Glance" table above, did not exist before `WP 9.8B` — see the
 Engineering Data Model entry, immediately above, for the full disclosure
 this backfill shares with all four Engineering Foundation frameworks.
+
+---
+
+## Bearing Library *(implemented — `A4`, ADR-0124)*
+
+**Responsibility.** The authoritative, structured, traceable bearing
+reference library — the same thin, typed index over the Engineering Data
+Model that Materials is (`Kind = "BearingReference"`), extended with the
+governance reference data needs: a provenance-gated
+Draft→Checked→Validated→Released lifecycle, released-record immutability
+with supersession, revision-addressable reads, a deterministic query
+contract, and structured cross-family comparison.
+
+**Key types.** `IBearingCatalog`/`BearingCatalog`, `IBearing`/`Bearing`,
+`BearingDefinition` and its dimensional, load-rating, speed,
+configuration, construction, lubrication, standards and provenance
+records; `BearingFamily`/`BearingFamilyTraits` (the taxonomy and its
+type-aware applicability model); `BearingValidationState`/
+`BearingValidationStates`; `BearingQuery`/`BearingQueryEvaluator`;
+`BearingComparer`/`BearingComparisonProperties`;
+`BearingsException` and six subtypes — all
+`Tempest.Core.Bearings`.
+
+**Dependencies.** Dependency Injection; `IEngineeringDocumentStore`
+(Engineering Data Model, every bearing record's own real storage);
+`IPersistenceStore` directly (Persistence, for two indexes — a
+`bearingId` index of exactly the shape Materials and Requirements Engine
+already use, and a manufacturer-part-number index the first cannot
+provide); `Tempest.Core.UnitsAndQuantities` for every dimensioned value,
+extended by this Work Package with `RotationalSpeed` and `PlaneAngle`.
+
+**Consumers.** None yet. The library ships architecturally complete and
+empty: no authoritative bearing dataset exists in this repository, and
+inventing manufacturer specifications to populate it is prohibited — see
+`docs/architecture/A4 Bearing Library.md` §14 for the assessment and the
+population requirement.
+
+**Boundaries.** Reference data only. No bearing selection, no
+calculation methodology, no suitability judgement, and no supplier or
+commercial data — see `A4 Bearing Library.md` §11–§13.
+
+**Lifecycle.** Ordinary DI-public, container-constructed singleton,
+registered in `TempestHost`'s Platform Services Registered block
+(Phase 6) immediately after `IMaterialCatalog` — no new Host Lifecycle
+phase.
+
+**ADR references.** ADR-0053 (Engineering Data Model, reused not
+duplicated); ADR-0055 (the reference-data catalogue pattern this service
+follows); ADR-0072 (canonical objects are `EngineeringDocumentStore`-backed
+Kinds); ADR-0073 (open-string relationships); ADR-0074 (family-specific
+lifecycle specialisation); ADR-0124 (*Bearing Reference Data Is
+Type-Aware, and Serialises Its Own Canonical Types*).
+
+**Architecture references.** `docs/architecture/A4 Bearing Library.md`.
+
+---
+
+## Bearing Validation *(implemented — `A4`, ADR-0124)*
+
+**Responsibility.** Bearing data-quality validation: the rules a bearing
+reference record must satisfy to be trustworthy engineering data
+(`TEMPEST-BRG-001`…`022`), and the catalogue-wide
+`BearingDataQualityReport` a reviewer reads before deciding a dataset is
+fit to release. Read-only — it reports what it finds and never repairs
+it, mirroring the reconciliation services' own discipline.
+
+**Key types.** `IBearingValidationService`/`BearingValidationService`,
+`BearingValidationRules`, `BearingDataQualityReport`/
+`BearingDataQualityFinding` — all `Tempest.Core.Bearings`. Results use
+`Tempest.Core.EngineeringDomain`'s own `IValidationResult`/
+`IValidationDiagnostic` shape, exactly as `IRequirementValidationService`
+does and for the identical structural reason.
+
+**Dependencies.** Dependency Injection; `IBearingCatalog`;
+`IMaterialCatalog` **optionally** — with it, a bearing's own material
+references are confirmed to resolve against the canonical Materials
+catalogue; without it, that one rule is simply not evaluated, so a
+bearing stays recordable before the material it names has been
+registered.
+
+**Consumers.** None yet — see the Bearing Library entry above.
+
+**Lifecycle.** Ordinary DI-public, container-constructed singleton,
+registered in Phase 6 immediately after `IBearingCatalog`.
+
+**ADR references.** ADR-0124.
+
+**Architecture references.** `docs/architecture/A4 Bearing Library.md`
+§8.
 
 ---
 

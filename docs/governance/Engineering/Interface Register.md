@@ -26,6 +26,9 @@
 | `IAuditQuery` | `Tempest.Core.Audit` | DI-public | Permission-gated, filtered query over recorded actions (`WP 6.5`) |
 | `IAuditRecord` | `Tempest.Core.Audit` | Platform API (data contract) | The shape of one recorded action (`WP 6.5`) |
 | `IAuditRecorder` | `Tempest.Core.Audit` | DI-public | Records an attributable action (`WP 6.5`) |
+| `IBearing` | `Tempest.Core.Bearings` | Platform API (data contract) | One registered bearing reference record: its canonical engineering description plus its catalogue governance (`A4`, `ADR-0124`) |
+| `IBearingCatalog` | `Tempest.Core.Bearings` | DI-public | Register/retrieve/revise/govern/query bearing reference data — a typed index over `IEngineeringDocumentStore` (`A4`, `ADR-0124`) |
+| `IBearingValidationService` | `Tempest.Core.Bearings` | DI-public | Bearing data-quality validation and the catalogue-wide data-quality report (`A4`, `ADR-0124`) |
 | `IBinaryPersistenceStore` | `Tempest.Core.Persistence` | DI-public | The byte-valued counterpart of `IPersistenceStore`, same durable store/root/records, for values that are not text (`v0.14.0`, `ADR-0113`) |
 | `ICalculationDefinition<TInput, TResult>` | `Tempest.Core.Calculations` | Platform API (contract, registered by Id, not itself DI-registered) | A pure, registrable calculation's own input/output/formula contract (`WP 7.1D`, `ADR-0056`) |
 | `ICalculationEngine` | `Tempest.Core.Calculations` | DI-public | Registration/dispatch of `ICalculationDefinition<TInput, TResult>` by Id, mirroring `ICommandRegistry`'s own shape (`WP 7.1D`, `ADR-0056`) |

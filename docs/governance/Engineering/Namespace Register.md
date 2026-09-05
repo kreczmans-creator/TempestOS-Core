@@ -69,7 +69,8 @@ reflected here until now).
 | `Tempest.Core.ExportImport` | Tempest.Core | 16 | `IExportable`/`IExportService`/`ExportService`, `IImportService`/`ImportService`, `ExportImportException` and one approved subtype (`IncompatibleExportSchemaException`), additive `IExportableKind`/`IImportable`/`ExportSection`, `IExportFormat`/`JsonExportFormat`, `IExportPayloadSerializer`/`JsonExportPayloadSerializer`, `CorruptedExportArtifactException`, `DuplicateImportableKindException` | WP 6.7 |
 | `Tempest.Core.Licensing` | Tempest.Core | 10 | `ILicense`/`License`, `ILicenseValidator`/`LicenseValidator`, `LicenseValidationResult`, `ILicenseProvider`/`LicenseProvider`, `LicensingException` and one approved subtype (`LicenseValidationException`), `LicenseDto` | WP 6.6 |
 | `Tempest.Core.EngineeringData` | Tempest.Core | 12 | `IEngineeringDocument`/`EngineeringDocument`, `IDocumentRevision`/`DocumentRevision`, `IEngineeringDocumentStore`/`EngineeringDocumentStore`, `DocumentReference`, `EngineeringDataException` and one subtype — the identity/revision foundation every canonical Engineering Object is built on | WP 7.1A, `ADR-0053` — backfilled `WP 16.2A` |
-| `Tempest.Core.UnitsAndQuantities` | Tempest.Core | 20 | `Quantity<TDimension>`/`Unit<TDimension>`/`IDimension`, per-dimension unit families (`Length`, `Mass`, `Area`, `Volume`, `Force`, `Pressure`, `Duration`), `IncompatibleUnitsException` | WP 7.1B, `ADR-0054` — backfilled `WP 16.2A` |
+| `Tempest.Core.UnitsAndQuantities` | Tempest.Core | 24 | `Quantity<TDimension>`/`Unit<TDimension>`/`IDimension`, per-dimension unit families (`Length`, `Mass`, `Area`, `Volume`, `Force`, `Pressure`, `Duration`, and — added `A4` — `RotationalSpeed`, `PlaneAngle`), `IncompatibleUnitsException` | WP 7.1B, `ADR-0054`, extended `A4`/`ADR-0124` — backfilled `WP 16.2A` |
+| `Tempest.Core.Bearings` | Tempest.Core | 45 | `IBearingCatalog`/`BearingCatalog`, `IBearing`/`Bearing`/`BearingDefinition` and its dimensional, load-rating, speed, configuration, construction, lubrication, standards and provenance types, `BearingFamily`/`BearingFamilyTraits`, `BearingValidationState`/`BearingValidationStates`, `BearingQuery`/`BearingQueryEvaluator`, `BearingComparer`/`BearingComparisonProperties`, `IBearingValidationService`/`BearingValidationService`/`BearingValidationRules`, `BearingsException` and six subtypes | A4, `ADR-0124` |
 | `Tempest.Core.Materials` | Tempest.Core | 17 | `IMaterialCatalog`/`MaterialCatalog`, `IMaterialSpecification`/`MaterialSpecification`, `MaterialProperty` and its provenance/confidence/validation-status types, `MaterialsException` and two subtypes | WP 7.1C, `ADR-0055` — backfilled `WP 16.2A` |
 | `Tempest.Core.Calculations` | Tempest.Core | 18 | `ICalculationDefinition<TInput, TResult>`/`ICalculationEngine`/`CalculationEngine`, `CalculationRecord`/`CalculationContext`, `CalculationException` and three subtypes, `EngineeringCalculationDefinitions` | WP 7.1D, `ADR-0056` — backfilled `WP 16.2A` |
 | `Tempest.Core.Verification` | Tempest.Core | 9 | `IVerificationRecord`/`VerificationRecord`, `IVerificationService`/`VerificationService`, `VerificationContext`/`VerificationCriterion`/`VerificationOutcome`/`VerificationEvidenceEntry` | WP 7.1E, `ADR-0057` — backfilled `WP 16.2A` |
@@ -92,18 +93,21 @@ reflected here until now).
 | `Tempest.Core.Models` | Tempest.Core | 1 | `ProjectModel.cs` — the bootstrap-era project model (`Threat Model.md`'s dead-code trace; `TD-01`/`TD-110` scope). **Corrected `WP 16.1B` integration (2026-09-04):** the file begins with a UTF-8 byte-order mark, which makes `grep -rhoP "^namespace"` (this register's own documented derivation command) miss its `namespace Tempest.Core.Models;` line — `WP 16.2A`'s re-derivation therefore filed it under the global-namespace row below. The health check's new Namespace check reads files with the BOM stripped and found it; recorded here as its own row | Pre-dates Claude-developed history (Unknown exact origin) |
 | *(no namespace declared — global namespace)* | Tempest.Core, Tempest.App | 3 | `AssemblyInfo.cs` (×2), `Program.cs` (rewritten `WP 5.0D` as the real entry point; still top-level statements, still global namespace) — `ProjectModel.cs` was listed here by `WP 16.2A` in error (see the `Tempest.Core.Models` row above); `ApplicationConfiguration.cs`, `ConfigurationService.cs`, `LoggingService.cs`, `ProjectNumberGenerator.cs` (present at this row's last review) have since been deleted as genuinely dead (`WP-C`, `TD-110`); `ProjectModel.cs` itself was not part of that deletion and remains unmigrated | Pre-dates Claude-developed history (Unknown exact origin); corrected `WP 16.2A` |
 
-**Total: 47 namespaces** (corrected `WP 16.1B` integration, 2026-09-04: `Tempest.Core.Models` added — see its row) — the 47 rows above declaring a real
+**Total: 48 namespaces** (`A4`, 2026-09-05: `Tempest.Core.Bearings` added — see its row; previously 47, corrected at the `WP 16.1B` integration, 2026-09-04, when `Tempest.Core.Models` was added) — the 48 rows above declaring a real
 `namespace X;` with at least one file. The four **retired** rows
 (`Tempest.Core.Repositories`/`.Projects`/`.Hosting`/`.Bootstrap`, zero
 files) and the 1 *(no namespace declared — global namespace)* row are
 both shown for continuity/completeness but are not namespaces and are
-not counted toward the 47. Across 4 in-scope projects/areas (`Tempest.Core`, `Tempest.App`,
+not counted toward the 48. Across 4 in-scope projects/areas (`Tempest.Core`, `Tempest.App`,
 `Tempest.Samples`, `Tempest.Validation`) — **re-derived at the `WP 16.4B`
 integration (2026-09-05), after `WP 16.3B`, `WP 16.4B` and `WP 16.5A`
-landed:** 47 namespaces; summing every namespace's own file count above
-(725) plus the 3 global-namespace files gives **728**, matching a direct
-count of `.cs` files under the four in-scope roots excluding `bin/` and
-`obj/` (434 + 211 + 82 + 1 = 728) exactly. `WP 16.4B` added nine files
+landed, and re-derived again at `A4` (2026-09-05):** 48 namespaces;
+summing every namespace's own file count above (774) plus the 3
+global-namespace files gives **777**, matching a direct count of `.cs`
+files under the four in-scope roots excluding `bin/` and `obj/`
+(483 + 211 + 82 + 1 = 777) exactly. `A4` added 49 files — the wholly new
+`Tempest.Core.Bearings` namespace (45) and four new dimension/unit-catalogue
+files in `Tempest.Core.UnitsAndQuantities` (20 → 24). `WP 16.4B` added nine files
 across three existing namespaces — `Tempest.Core.Requirements` 24 → 28,
 `Tempest.Core.Materials` 14 → 17, `Tempest.Core.EngineeringDomain`
 66 → 70 (the last two at `WP 16.4B-R2`, for the attachment write-intent

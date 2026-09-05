@@ -81,6 +81,13 @@
 | `MaterialsException` | `Exception` | Materials | Application logic's own error (not Host-level); base type, never thrown directly (`WP 7.1C`) — backfilled `WP 16.2A` |
 | `MaterialNotFoundException` | `MaterialsException` | Materials | Application logic's own error (not Host-level); thrown for an unregistered material specification — backfilled `WP 16.2A` |
 | `DuplicateMaterialException` | `MaterialsException` | Materials | Application logic's own error (not Host-level); thrown by the material catalogue — first registration wins — backfilled `WP 16.2A` |
+| `BearingsException` | `Exception` | Bearings | Application logic's own error (not Host-level); base type, never thrown directly (`A4`) |
+| `BearingNotFoundException` | `BearingsException` | Bearings | Application logic's own error; thrown for an unregistered bearing (`A4`) |
+| `DuplicateBearingException` | `BearingsException` | Bearings | Application logic's own error; thrown when a `bearingId` is already registered (`A4`) |
+| `DuplicateBearingPartNumberException` | `BearingsException` | Bearings | Application logic's own error; thrown when a write would leave two records sharing one manufacturer and part number (`A4`) |
+| `InvalidBearingValidationStateTransitionException` | `BearingsException` | Bearings | Application logic's own error; thrown for a validation-state transition the table does not permit (`A4`) |
+| `BearingProvenanceIncompleteException` | `BearingsException` | Bearings | Application logic's own error; thrown when a record's own provenance cannot support the state requested (`A4`) |
+| `ReleasedBearingImmutableException` | `BearingsException` | Bearings | Application logic's own error; thrown when a released or superseded record's engineering content would be revised (`A4`) |
 | `IncompatibleUnitsException` | `Exception` | Units & Quantities | Application logic's own error (not Host-level); thrown by `Quantity<TDimension>.ConvertTo` for a dimensionally incompatible conversion (`WP 7.1B`, `ADR-0054`) — backfilled `WP 16.2A` |
 | `EngineeringDataException` | `Exception` | Engineering Data | Application logic's own error (not Host-level); base type, never thrown directly (`WP 7.1A`, `ADR-0053`) — backfilled `WP 16.2A` |
 | `EngineeringDocumentNotFoundException` | `EngineeringDataException` | Engineering Data | Application logic's own error (not Host-level); thrown by `IEngineeringDocumentStore` for an unresolvable document Id — backfilled `WP 16.2A` |
@@ -126,10 +133,10 @@ Reviewed** field and
 `docs/releases/v0.16.0/WP16.2A Register and Status Currency Report.md`
 for the full derivation.
 
-**Total: 89 custom exception types — Verified directly against
+**Total: 96 custom exception types — Verified directly against
 `src/Tempest.Core/` (`grep -rEn "^public (sealed |abstract )?class \w+Exception\b" src/Tempest.Core --include=*.cs`
-returns exactly 89 matches, matching the 89 rows in the Entries table (87 at the `WP 16.4B` integration, plus `DuplicateStateMigrationException` and `ConflictingStateMigrationException` at `WP 16.4B-R1`, 2026-09-05; 84 at `WP 16.2A`, plus `RequirementGroupCycleException`, `ServiceRegistrationException` and `DuplicateServiceRegistrationException` at the `WP 16.4B` integration)
-above, re-derived directly by `WP 16.4B-R1`). Corrected,
+returns exactly 96 matches, matching the 96 rows in the Entries table (89 at `WP 16.4B-R1`, plus the seven `Bearings` rows at `A4`, 2026-09-05; 87 at the `WP 16.4B` integration, plus `DuplicateStateMigrationException` and `ConflictingStateMigrationException` at `WP 16.4B-R1`; 84 at `WP 16.2A`, plus `RequirementGroupCycleException`, `ServiceRegistrationException` and `DuplicateServiceRegistrationException` at the `WP 16.4B` integration)
+above, re-derived directly by `A4`). Corrected,
 `WP 5.4`: this total previously read "30," undercounting
 by one against this register's own Entries table and Distribution table
 (both of which had, at that point, always summed to 31) — a genuine, internal
@@ -264,6 +271,7 @@ respectively). Application logic's own error (not Host-level); see
 | Licensing | 2 |
 | Calculations | 4 |
 | Materials | 3 |
+| Bearings | 7 |
 | Units & Quantities | 1 |
 | Engineering Data | 2 |
 | Engineering Domain | 9 |
@@ -271,7 +279,7 @@ respectively). Application logic's own error (not Host-level); see
 | Requirements | 6 |
 | Plugin Trust & Dependencies | 6 |
 
-**Total: 4+6+2+3+2+6+2+0+3+5+3+2+3+1+1+3+2+4+2+4+3+1+2+9+4+6+6 = 89**,
+**Total: 4+6+2+3+2+6+2+0+3+5+3+2+3+1+1+3+2+4+2+4+3+7+1+2+9+4+6+6 = 96**,
 matching the Entries table above and the direct `grep` count
 (`WP 16.4B-R1`, re-derived row by row against the Entries table above,
 2026-09-05). **Correction, `WP 16.4B-R1`:** this table had not been

@@ -91,6 +91,8 @@ In registration order, exactly as they appear in
 | `EngineeringDomainContext` | `Singleton<EngineeringDomainContext>()` | Ordinary container-constructed singleton (`WP 8.2C`), depends on `IEngineeringDocumentStore` and all nine services immediately above plus `ICurrentPrincipalAccessor` — the shared collaborator bundle every `EngineeringObjectFactory<T>` needs |
 | `EngineeringObjectRehydrationService` | `Singleton<EngineeringObjectRehydrationService>()` | Ordinary container-constructed singleton (`v0.14.0`, `TD-85`, `ADR-0116`) — the startup rehydration driver, registered immediately after `EngineeringDomainContext`; not itself resolved by any Platform Service, only by `TempestHost`'s own startup sequence — backfilled `WP 16.2A` |
 | `IMaterialCatalog` | `Singleton<IMaterialCatalog, MaterialCatalog>()` | Ordinary container-constructed singleton (`WP 7.1C`, ADR-0055), a thin, typed index over `IEngineeringDocumentStore` plus a direct `IPersistenceStore` dependency of its own for its `materialId` index — registered after both |
+| `IBearingCatalog` | `Singleton<IBearingCatalog, BearingCatalog>()` | Ordinary container-constructed singleton (`A4`, ADR-0124), the same thin typed index over `IEngineeringDocumentStore` that `IMaterialCatalog` is, plus a direct `IPersistenceStore` dependency of its own for two indexes (`bearingId`, manufacturer-part-number) — registered immediately after `IMaterialCatalog`, after both stores it depends on |
+| `IBearingValidationService` | `Singleton<IBearingValidationService, BearingValidationService>()` | Ordinary container-constructed singleton (`A4`, ADR-0124), depends on `IBearingCatalog` and, optionally, `IMaterialCatalog` — registered after both |
 | `ICalculationEngine` | `Singleton<ICalculationEngine, CalculationEngine>()` | Ordinary container-constructed singleton (`WP 7.1D`, ADR-0056), depends on `IEngineeringDocumentStore` only — registered immediately after `IMaterialCatalog` |
 | `IVerificationService` | `Singleton<IVerificationService, VerificationService>()` | Ordinary container-constructed singleton (`WP 7.1E`, ADR-0057), depends on `IEngineeringDocumentStore` and Identity & Permissions — registered immediately after `ICalculationEngine` |
 | `IRequirementsService` | `Singleton<IRequirementsService, RequirementsService>()` | Ordinary container-constructed singleton (`WP 7.3A`, ADR-0058), depends on `IEngineeringDocumentStore`, `IPersistenceStore`, Identity & Permissions, and `IVerificationService` — registered immediately after `IVerificationService` |
@@ -99,25 +101,26 @@ In registration order, exactly as they appear in
 | Every discovered module type | `AddDiscoveredModules` → `Singleton(type, type)` per type | Self-referential singleton |
 | Every discovered hosted service type | `AddDiscoveredHostedServices` → `Singleton(type, type)` per type | Self-referential singleton |
 
-**Total: 55 individually-named registrations above (three of which —
+**Total: 57 individually-named registrations above (three of which —
 `ICurrentPrincipalAccessor`/`CurrentPrincipalAccessor`,
 `IImportService`/`ImportService`, and (new, `WP 16.2A`)
 `ICurrentComponentAccessor`/`CurrentComponentAccessor` — are each
 dual-registered via two `AddInstance` calls under two keys), plus 2
 further rows (`AddDiscoveredModules`, `AddDiscoveredHostedServices`)
 each registering a dynamic set of discovered types. Verified directly
-(re-derived at the `WP 16.4B` integration, 2026-09-05): `grep -c
+(re-derived at `A4`, 2026-09-05): `grep -c
 'services\.\(Singleton\|AddInstance\)' src/Tempest.Core/Runtime/
-TempestHost.cs` returns 58; `grep -c 'AddDiscovered'
-src/Tempest.Core/Runtime/TempestHost.cs` returns 2; 58 + 2 = 60 total
+TempestHost.cs` returns 60; `grep -c 'AddDiscovered'
+src/Tempest.Core/Runtime/TempestHost.cs` returns 2; 60 + 2 = 62 total
 registration statements in `TempestHost.cs`'s own Phase 6 block,
-matching this table's own 55 named single/dual registrations (55 rows,
-accounting for 58 raw `Singleton`/`AddInstance` calls: 55 rows + 3
+matching this table's own 57 named single/dual registrations (57 rows,
+accounting for 60 raw `Singleton`/`AddInstance` calls: 57 rows + 3
 extra calls for the three dual-registered rows named above) plus 2
-discovered-type rows exactly — re-derived at the independent
-post-remediation review, 2026-09-05, which added
-`IAttachmentWriteIntentStore` after `WP 16.4B-R2` registered it without
-a row here. **Found-and-fixed drift, disclosed rather
+discovered-type rows exactly. `A4` added the two Bearing Library rows
+(`IBearingCatalog`, `IBearingValidationService`); 55 → 57. Previously
+re-derived at the independent post-remediation review, 2026-09-05,
+which added `IAttachmentWriteIntentStore` after `WP 16.4B-R2`
+registered it without a row here. **Found-and-fixed drift, disclosed rather
 than silently corrected:** `WP 16.3B` registered
 `IStateMigrationRegistry` without adding its row here, so this register
 stated 55 statements / 50 named rows against a tree carrying 56 / 51 —
