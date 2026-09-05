@@ -2,6 +2,7 @@ using Tempest.Core.EngineeringData;
 using Tempest.Core.Identity;
 using Tempest.Core.Materials;
 using Tempest.Core.Persistence;
+using Tempest.Core.Tests.Persistence;
 using Tempest.Core.UnitsAndQuantities;
 
 namespace Tempest.Core.Tests.Materials;
@@ -127,10 +128,20 @@ public class MaterialCatalogReconciliationServiceTests
     /// Deterministically reproduces the reviewer's exact scenario: a
     /// sweep interleaved with an in-flight <see cref="MaterialCatalog.RegisterAsync"/>
     /// call must never make the fully-registered material unfindable. No
-    /// timing, no <see cref="Task.Delay(int)"/> — <see cref="GatedListKeysPersistenceStore"/>
-    /// pauses the sweep's own document scan (the second, authoritative-side
-    /// read under the fixed order) until the test releases it, and the
-    /// registration runs to completion entirely inside that pause.
+    /// timing, no <see cref="Task.Delay(int)"/> —
+    /// <see cref="OrderAgnosticGatedListKeysPersistenceStore"/> pauses the
+    /// sweep's own document scan (the second, authoritative-side read
+    /// under the fixed order) until the test releases it, and the
+    /// registration runs to completion entirely inside that pause. The
+    /// gate is deliberately order-agnostic — armed on the pair {index,
+    /// documents} and pausing on whichever of the two is read <em>second</em>
+    /// by arrival, not by name — so this test still exercises the real
+    /// interleaving (and still fails) if the sweep's read order is ever
+    /// reverted to documents-first; a gate keyed to the documents
+    /// collection's name alone would instead pause on the very first call
+    /// in that reverted order, let the whole registration run to
+    /// completion before either scan had read anything, and pass against
+    /// broken code (`WP16.4A-R1`).
     /// </summary>
     [Fact]
     public async Task SweepAsync_InterleavedWithAnInFlightRegistration_NeverMakesTheMaterialUnfindable()
@@ -139,7 +150,8 @@ public class MaterialCatalogReconciliationServiceTests
         var documentStore = new EngineeringDocumentStore(persistence, new CurrentPrincipalAccessor());
         var catalog = new MaterialCatalog(documentStore, persistence);
 
-        var gated = new GatedListKeysPersistenceStore(persistence, EngineeringDocumentStore.DocumentsCollectionName);
+        var gated = new OrderAgnosticGatedListKeysPersistenceStore(
+            persistence, MaterialCatalog.IndexCollectionName, EngineeringDocumentStore.DocumentsCollectionName);
         var reconciliation = new MaterialCatalogReconciliationService(documentStore, gated);
 
         var sweepTask = reconciliation.SweepAsync();
@@ -147,7 +159,7 @@ public class MaterialCatalogReconciliationServiceTests
         // The sweep has already captured its (empty) index snapshot — the
         // derived side — and is paused about to scan documents — the
         // authoritative side.
-        await gated.ReachedGate;
+        await gated.ReachedGate.WaitAsync(OrderAgnosticGatedListKeysPersistenceStore.GateTimeout);
 
         var material = await catalog.RegisterAsync("AL-RACE-1", "Aluminium Race", BuildProperties());
 
@@ -164,49 +176,9 @@ public class MaterialCatalogReconciliationServiceTests
             f.Category == MaterialCatalogReconciliationService.StaleIndexEntryCategory && f.DocumentId == material.UnderlyingDocumentId);
     }
 
-    /// <summary>
-    /// A wrapper around a real <see cref="IPersistenceStore"/> that pauses
-    /// one specific collection's <see cref="ListKeysAsync"/> call until
-    /// released — the deterministic interleaving seam these race tests
-    /// use in place of any timing dependency.
-    /// </summary>
-    private sealed class GatedListKeysPersistenceStore : IPersistenceStore
-    {
-        private readonly IPersistenceStore _inner;
-        private readonly string _gatedCollection;
-        private readonly TaskCompletionSource _reachedGate = new(TaskCreationOptions.RunContinuationsAsynchronously);
-        private readonly TaskCompletionSource _releaseGate = new(TaskCreationOptions.RunContinuationsAsynchronously);
-
-        public GatedListKeysPersistenceStore(IPersistenceStore inner, string gatedCollection)
-        {
-            _inner = inner;
-            _gatedCollection = gatedCollection;
-        }
-
-        public Task ReachedGate => _reachedGate.Task;
-
-        public void Release() => _releaseGate.TrySetResult();
-
-        public async Task<IReadOnlyList<string>> ListKeysAsync(string collection, CancellationToken cancellationToken = default)
-        {
-            if (string.Equals(collection, _gatedCollection, StringComparison.Ordinal))
-            {
-                _reachedGate.TrySetResult();
-                await _releaseGate.Task.ConfigureAwait(false);
-            }
-
-            return await _inner.ListKeysAsync(collection, cancellationToken).ConfigureAwait(false);
-        }
-
-        public Task<string?> ReadAsync(string collection, string key, CancellationToken cancellationToken = default) =>
-            _inner.ReadAsync(collection, key, cancellationToken);
-
-        public Task WriteAsync(string collection, string key, string value, CancellationToken cancellationToken = default) =>
-            _inner.WriteAsync(collection, key, value, cancellationToken);
-
-        public Task DeleteAsync(string collection, string key, CancellationToken cancellationToken = default) =>
-            _inner.DeleteAsync(collection, key, cancellationToken);
-    }
+    // The gate itself — order-agnostic, shared with the Requirements
+    // sibling of this race test — lives in
+    // Tempest.Core.Tests.Persistence.OrderAgnosticGatedListKeysPersistenceStore.
 
     [Fact]
     public void Constructor_NullDocumentStore_Throws()
