@@ -18,6 +18,14 @@ delimited file (CSV or equivalent) with a stated header row, a stated
 unit for every dimensional column, and a cited source for every row.
 An uncited row is not accepted, however plausible.
 
+**Schema contract (added 2026-09-05).** `A.1`, `A.3` and `A.7` are authored against
+`docs/data/Materials, Fastener & Process — Field Definitions.md`, which fixes the exact
+column names, permitted unit symbols, controlled vocabularies and the mandatory provenance
+block before authoring begins. Where a "Data / content fields" list below and that document
+differ, **that document governs** — it is derived from the real `Tempest.Core` types; the
+lists below were written before it and are indicative. It also supersedes the per-dataset
+`— Field Definitions.md` artefacts named in `A.1` and `A.3`, which are not produced separately.
+
 **Standing rule for this programme:** where a value is genuinely not
 known, the cell reads `Unknown` — never an invented number. A materials
 table with fifty honest rows is worth more than two hundred with
