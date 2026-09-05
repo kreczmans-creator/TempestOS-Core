@@ -136,4 +136,74 @@ public class SettingsDocumentSchemaVersionTests
         Assert.NotNull(loaded);
         Assert.Equal(1, loaded!.SchemaVersion);
     }
+
+    // ==================================================================
+    // A document the supplied chain cannot carry to its own highest
+    // reachable version is discarded and logged, never handed back at
+    // whatever version the walk stopped at (`v0.16.0` review board —
+    // this seam lacked the check `EngineeringObjectStateStore` has had
+    // since `WP 16.3B`, where Technical Review rejected an
+    // implementation once for omitting exactly it).
+    // ==================================================================
+
+    [Fact]
+    public async Task WhenTheChainHasAHole_TheDocumentIsDiscardedRatherThanReturnedAtTheWrongVersion()
+    {
+        var provider = Provider();
+
+        // Migrations exist at 1 and at 3, but nothing bridges 2 -> 3, so a
+        // v1 document walks to 2 and stops two versions short of the 4 this
+        // chain can otherwise reach.
+        var document = new SettingsDocument<TestDto>(
+            provider,
+            Key,
+            "Test",
+            migrations: [new AppendMigration(1, "-a"), new AppendMigration(3, "-c")]);
+
+        await provider.SetValueAsync(Key, "{\"SchemaVersion\":1,\"Name\":\"stuck\"}");
+
+        var loaded = await document.LoadAsync();
+
+        Assert.Null(loaded);
+    }
+
+    [Fact]
+    public async Task WhenTheChainCarriesTheDocumentAllTheWay_ItIsReturned()
+    {
+        var provider = Provider();
+
+        var document = new SettingsDocument<TestDto>(
+            provider,
+            Key,
+            "Test",
+            migrations: [new AppendMigration(1, "-a"), new AppendMigration(2, "-b")]);
+
+        await provider.SetValueAsync(Key, "{\"SchemaVersion\":1,\"Name\":\"ok\"}");
+
+        var loaded = await document.LoadAsync();
+
+        Assert.NotNull(loaded);
+        Assert.Equal(3, loaded!.SchemaVersion);
+        Assert.Equal("ok-a-b", loaded.Name);
+    }
+
+    [Fact]
+    public async Task ADocumentAlreadyAtTheHighestReachableVersion_IsNotTreatedAsStuck()
+    {
+        var provider = Provider();
+
+        var document = new SettingsDocument<TestDto>(
+            provider,
+            Key,
+            "Test",
+            migrations: [new AppendMigration(1, "-a")]);
+
+        await provider.SetValueAsync(Key, "{\"SchemaVersion\":2,\"Name\":\"current\"}");
+
+        var loaded = await document.LoadAsync();
+
+        Assert.NotNull(loaded);
+        Assert.Equal(2, loaded!.SchemaVersion);
+        Assert.Equal("current", loaded.Name);
+    }
 }

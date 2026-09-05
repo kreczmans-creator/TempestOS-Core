@@ -164,7 +164,7 @@ public sealed class SettingsDocument<TDocument>
     /// <c>FromVersion</c> matches the document's current version until
     /// none does.
     /// </summary>
-    private TDocument ApplyMigrations(TDocument document)
+    private TDocument? ApplyMigrations(TDocument document)
     {
         var version = (int)SchemaVersionProperty!.GetValue(document)!;
         if (version <= 0)
@@ -180,7 +180,49 @@ public sealed class SettingsDocument<TDocument>
             SchemaVersionProperty.SetValue(document, version);
         }
 
+        // `TD-87`/`ADR-0120`: a document the chain could not carry all the
+        // way is discarded and logged, never handed back at whatever
+        // version the walk happened to stop at. `EngineeringObjectStateStore`
+        // has had this check since `WP 16.3B` — where Technical Review
+        // rejected the implementation once, specifically for omitting it —
+        // and this seam did not, an asymmetry the `v0.16.0` review board
+        // found. There is no `TargetSchemaVersion` constant here, because
+        // the chain is supplied per consumer rather than fixed by the
+        // platform, so the target is the highest version this consumer's
+        // own migrations can reach. Stopping below it means the chain has
+        // a hole at `version`: a migration exists for some later version
+        // that this document can never arrive at.
+        var targetVersion = HighestReachableVersion();
+        if (version < targetVersion)
+        {
+            _logger?.Warning(
+                $"Stored setting '{Key}' is at schema version {version} and no migration bridges it to " +
+                $"version {targetVersion}; it was discarded and the caller's own defaults apply. " +
+                "This is a gap in the supplied migration chain, not a malformed document.");
+
+            return null;
+        }
+
         return document;
+    }
+
+    /// <summary>
+    /// The schema version this consumer's own supplied migration chain can
+    /// carry a document to — one past the highest <c>FromVersion</c> any
+    /// supplied migration declares. <c>1</c> when no migration is supplied,
+    /// so a document already at <c>1</c> is never treated as stuck.
+    /// </summary>
+    private int HighestReachableVersion()
+    {
+        var highest = 1;
+
+        foreach (var migration in _migrations!)
+        {
+            if (migration.FromVersion + 1 > highest)
+                highest = migration.FromVersion + 1;
+        }
+
+        return highest;
     }
 
     private ISettingsMigration<TDocument>? FindMigration(int fromVersion)
