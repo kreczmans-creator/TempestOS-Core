@@ -97,7 +97,7 @@ directly: `docs/governance/Quality/Repository Metrics Register.md`
 | ADRs | 123 (`ADR-0001`–`ADR-0123`) |
 | Public interfaces (`src/Tempest.Core/`) | 195 (194 distinct names) |
 | Custom exception types | 89 |
-| Technical Debt Register rows | 134 (`TD-001`–`TD-134`): 52 Resolved, 6 Closed, 70 Open, 5 Partially resolved, 1 Deferred |
+| Technical Debt Register rows | 135 (`TD-001`–`TD-135`): 53 Resolved, 6 Closed, 70 Open, 5 Partially resolved, 1 Deferred |
 | Total commits | 322 |
 
 ## Repository Health
