@@ -115,6 +115,7 @@ informal "Car Park" discussion with a permanent, cited register.
 - [Future Capability Register](Future%20Capability%20Register.md) — every identified future capability, `FCR-0001` onward, each traced to a specific prior document.
 - [Capability Categories](Capability%20Categories.md) — the fixed classification vocabulary the Future Capability Register uses.
 - [Product Roadmap](Product%20Roadmap.md) — high-level, phase-based sequencing of what has shipped and what may come next.
+- [`docs/roadmap/Parallel Work Programme A–G`](../roadmap/Parallel%20Work%20Programme%20A–G.md) — the **non-code**, lettered parallel work programme (Programmes A–G, forty sub-packages `A.1`–`G.7`): reference data, decision rules, commercial intelligence, business structures, engineering assets, knowledge content and business governance, defined so it can be produced in parallel with, and independently of, the numbered technical Work Packages. Established 2026-09-05. Letters mean parallel content work; numbers mean technical Work Packages — see that document's own §2 for the convention and for the disclosed collision with `WP 7.2A`'s own historical Programme A–G vocabulary.
 
 ## Top-Level Governance Documents
 

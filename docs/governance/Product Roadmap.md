@@ -10,8 +10,8 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | `docs/governance/Delivery/Release Register.md` (what has actually shipped); `Future Capability Register.md` (what is identified but not yet scheduled); `VISION.md` (why the sequencing below is the sequencing chosen). |
 | **Review Frequency** | Reviewed at every release boundary, and whenever a new phase's own scope is approved. |
-| **Last Reviewed** | 2026-09-04 (`WP 16.2A`, Register and Status Currency) — **Phase 5 (Engineering Modules) marked Delivered through `v0.15.0`**: all six Engineering Disciplines shipped (`v0.9.0`), plus the Desktop application (`v0.10.0`), Plugin & Registration Trust Isolation (`v0.13.0`/`v0.13.1`), and Engineering Object Durability (`v0.14.0`) — none anticipated by the phase's own original working premise, preserved below for the historical record per this document's own convention. **Phase 5.5 — v1.0 Readiness added**, restating Definition 2 verbatim from `docs/releases/v0.11.0/WP11.0B Architecture Roadmap.md` §1, labelled per `D-021` — Proposed when `WP 16.2A` wrote it, **ratified by the Product Owner 2026-09-05** and promoted to Decided (`WP16.0A Product Owner Ratification — D-021 to D-026.md`); recorded as unapproved scope for the period it was; Definition 3 (`TD-84`, the project-centric product decision) noted as the `v1.x` roadmap, per `D-021`'s own text, not adopted for `v1.0` itself. See `docs/releases/v0.16.0/WP16.2A Register and Status Currency Report.md`. Previously reviewed 2026-07-30 (`WP 7.2A`, Strategic Roadmap Selection & Programme Architecture) — Phase 4 (Engineering Foundation) confirmed complete, in a different shape than this document's own original "working premise" anticipated (the Engineering Foundation frameworks were built, not the Platform/Infrastructure hardening items this phase originally named — disclosed explicitly in `WP7.2A Strategic Roadmap Review.md` §4, not silently reconciled). Phase 5 (Engineering Modules) sequencing recommended: Systems Engineering (`FCR-0027`) first, per `WP7.2A Recommended Programme.md` — still a recommendation, not an approval. Previously reviewed 2026-07-30 (`WP 7.0A`, Future Capability Register & Product Vision — established). |
-| **Related Documents** | `Future Capability Register.md`; `Capability Categories.md`; `VISION.md`; `docs/governance/Delivery/Release Register.md`; `docs/releases/v0.7.0/WorkPackages.md`. |
+| **Last Reviewed** | 2026-09-05 (Parallel Work Programme A–G, established) — **no phase, sequencing or status below changed**; one new section, "Parallel, Non-Code Work — Programmes A–G", added before the Phase Sequence, pointing at `docs/roadmap/Parallel Work Programme A–G.md` and recording why the lettered parallel programme is kept separate from the numbered technical phases this document sequences. Previously reviewed 2026-09-04 (`WP 16.2A`, Register and Status Currency) — **Phase 5 (Engineering Modules) marked Delivered through `v0.15.0`**: all six Engineering Disciplines shipped (`v0.9.0`), plus the Desktop application (`v0.10.0`), Plugin & Registration Trust Isolation (`v0.13.0`/`v0.13.1`), and Engineering Object Durability (`v0.14.0`) — none anticipated by the phase's own original working premise, preserved below for the historical record per this document's own convention. **Phase 5.5 — v1.0 Readiness added**, restating Definition 2 verbatim from `docs/releases/v0.11.0/WP11.0B Architecture Roadmap.md` §1, labelled per `D-021` — Proposed when `WP 16.2A` wrote it, **ratified by the Product Owner 2026-09-05** and promoted to Decided (`WP16.0A Product Owner Ratification — D-021 to D-026.md`); recorded as unapproved scope for the period it was; Definition 3 (`TD-84`, the project-centric product decision) noted as the `v1.x` roadmap, per `D-021`'s own text, not adopted for `v1.0` itself. See `docs/releases/v0.16.0/WP16.2A Register and Status Currency Report.md`. Previously reviewed 2026-07-30 (`WP 7.2A`, Strategic Roadmap Selection & Programme Architecture) — Phase 4 (Engineering Foundation) confirmed complete, in a different shape than this document's own original "working premise" anticipated (the Engineering Foundation frameworks were built, not the Platform/Infrastructure hardening items this phase originally named — disclosed explicitly in `WP7.2A Strategic Roadmap Review.md` §4, not silently reconciled). Phase 5 (Engineering Modules) sequencing recommended: Systems Engineering (`FCR-0027`) first, per `WP7.2A Recommended Programme.md` — still a recommendation, not an approval. Previously reviewed 2026-07-30 (`WP 7.0A`, Future Capability Register & Product Vision — established). |
+| **Related Documents** | `Future Capability Register.md`; `Capability Categories.md`; `VISION.md`; `docs/governance/Delivery/Release Register.md`; `docs/releases/v0.7.0/WorkPackages.md`; `docs/roadmap/Parallel Work Programme A–G.md` (the non-code parallel programme, added 2026-09-05). |
 | **Related ADRs** | ADR-0013. |
 | **Related Academy Articles** | None yet. |
 | **Coverage Status** | Complete for phases already shipped or actively planned (Platform Foundation, Engineering Foundation); **sequencing only, not scoped**, for every phase beyond that — see each phase's own note. |
@@ -35,6 +35,37 @@ next.
 already shipped or a branch already exists — per this Work Package's own
 instruction not to commit to specific release numbers unless already
 approved.
+
+## Parallel, Non-Code Work — Programmes A–G
+
+This document sequences the **technical product**. A second, deliberately
+separate programme sequences the **non-code work** that supports it:
+`docs/roadmap/Parallel Work Programme A–G.md`, established 2026-09-05 —
+seven lettered programmes (A–G), forty sub-packages (`A.1`–`G.7`)
+covering engineering reference data, engineering decision rules,
+commercial intelligence, business structures, engineering assets,
+knowledge and Academy content, and business governance.
+
+Three things keep the two apart, on purpose:
+
+1. **Letters, not numbers.** Every technical Work Package keeps its
+   numeric identifier (`WP 16` and every predecessor); the parallel
+   programme uses letters only. Nothing there renames or renumbers
+   anything here.
+2. **No code.** Not one of the forty sub-packages requires Claude Code,
+   and none authorises a code, schema, migration, dependency or
+   architecture change. Claude Code capacity stays concentrated on
+   `WP 16`.
+3. **Deliberate integration, later.** Where a sub-package's output is a
+   plausible import into TempestOS — the materials, fastener, bearing
+   and process datasets, the calculation packs, the verification
+   artefacts — that import is a separate, numbered technical Work
+   Package, scoped under `Future Work Package Guidelines.md` like any
+   other. It is never smuggled in as part of the content work.
+
+Its own recommended order is A → G → C → E → F → B, with D concurrent,
+and its rationale for that order is stated there rather than restated
+here.
 
 ## Phase Sequence
 
