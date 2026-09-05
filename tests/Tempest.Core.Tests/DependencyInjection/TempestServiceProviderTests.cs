@@ -183,6 +183,42 @@ public class TempestServiceProviderTests
         Assert.Same(first, second);
     }
 
+    // TD-69: a constructor parameter whose type has no registration falls
+    // back to the parameter's own declared default rather than throwing,
+    // mirroring real platform types such as EventBus(ILogger? logger = null, ...).
+    [Fact]
+    public void GetService_OptionalDependencyUnregistered_UsesDeclaredDefault()
+    {
+        var services = new ServiceCollection();
+        services.Singleton<IGreeter, Greeter>();
+        services.Transient<OptionalDependencyConsumer>();
+
+        var provider = new TempestServiceProvider(services);
+
+        var consumer = (OptionalDependencyConsumer)provider.GetService(typeof(OptionalDependencyConsumer));
+
+        Assert.Equal("Hello", consumer.Greeter.Greet());
+        Assert.Null(consumer.Optional);
+    }
+
+    // A required (non-optional) parameter of an unregistered type must
+    // still fail exactly as before - the optional-parameter fallback must
+    // never mask a genuinely missing, required dependency.
+    [Fact]
+    public void GetService_RequiredDependencyUnregistered_AlongsideAnOptionalOne_StillThrowsServiceNotRegisteredException()
+    {
+        var services = new ServiceCollection();
+        services.Singleton<IGreeter, Greeter>();
+        services.Transient<RequiredAndOptionalDependencyConsumer>();
+
+        var provider = new TempestServiceProvider(services);
+
+        var exception = Assert.Throws<ServiceNotRegisteredException>(() =>
+            (RequiredAndOptionalDependencyConsumer)provider.GetService(typeof(RequiredAndOptionalDependencyConsumer)));
+
+        Assert.Equal(typeof(IUnregisteredService), exception.MissingServiceType);
+    }
+
     [Fact]
     public void GetService_WithLogger_DoesNotThrowAndRecordsProgress()
     {

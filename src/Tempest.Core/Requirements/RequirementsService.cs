@@ -423,13 +423,39 @@ public sealed class RequirementsService : IRequirementsService
     }
 
     /// <inheritdoc />
+    /// <remarks>
+    /// <b>`TD-67` closure — Kind and ancestry-cycle guards.</b> Before this
+    /// fix, <paramref name="newParentGroupId"/> was checked only for
+    /// existence (via <see cref="IEngineeringDocumentStore.FindAsync"/>),
+    /// never for being a <c>RequirementGroup</c> itself or for creating a
+    /// cycle in the group hierarchy — either would have silently corrupted
+    /// <see cref="IRequirementGroup.ParentGroupId"/>'s own tree shape (a
+    /// group parented under a Requirement document, or under its own
+    /// descendant, produces an infinite loop the first caller that walks
+    /// the hierarchy — a Property Inspector facet or a future ancestry
+    /// query — would hang on). The
+    /// ancestry walk in <see cref="GuardAgainstGroupCycleAsync"/> mirrors
+    /// <c>EngineeringDomain.EngineeringObjectBase.GuardAgainstCircularParentAsync</c>'s
+    /// own identical algorithm one layer up, over
+    /// <see cref="RequirementGroupDto.ParentGroupId"/> instead of
+    /// <c>IHasParent.ParentId</c>.
+    /// </remarks>
     public async Task<IRequirementGroup> MoveGroupAsync(Guid groupId, Guid? newParentGroupId, CancellationToken cancellationToken = default)
     {
         var current = await ReadGroupDtoAsync(groupId, cancellationToken).ConfigureAwait(false)
             ?? throw new EngineeringDocumentNotFoundException(groupId);
 
-        if (newParentGroupId is not null && await _documentStore.FindAsync(newParentGroupId.Value, cancellationToken).ConfigureAwait(false) is null)
-            throw new EngineeringDocumentNotFoundException(newParentGroupId.Value);
+        if (newParentGroupId is { } candidateParentId)
+        {
+            // Wrong-Kind and missing both read as "not found" — the
+            // identical idiom this service's own FindGroupAsync/
+            // DeleteCollectionAsync already use for a Kind mismatch, never
+            // a raw existence check alone.
+            if (await ReadGroupDtoAsync(candidateParentId, cancellationToken).ConfigureAwait(false) is null)
+                throw new EngineeringDocumentNotFoundException(candidateParentId);
+
+            await GuardAgainstGroupCycleAsync(groupId, candidateParentId, cancellationToken).ConfigureAwait(false);
+        }
 
         var dto = current with { ParentGroupId = newParentGroupId };
         await _documentStore.ReviseAsync(groupId, JsonSerializer.Serialize(dto), $"Moved under group '{newParentGroupId?.ToString() ?? "(none)"}'.", cancellationToken)
@@ -627,5 +653,36 @@ public sealed class RequirementsService : IRequirementsService
         var liveGroupChildren = allGroups.Count(g => !g.IsDeleted && g.Id != groupId && g.ParentGroupId == groupId);
 
         return liveRequirementChildren + liveGroupChildren;
+    }
+
+    /// <summary>
+    /// Throws <see cref="RequirementGroupCycleException"/> if moving
+    /// <paramref name="groupId"/> under <paramref name="candidateParentId"/>
+    /// would make <paramref name="groupId"/> its own ancestor (`TD-67`) —
+    /// <see cref="MoveGroupAsync"/>'s own guard, mirroring
+    /// <c>EngineeringDomain.EngineeringObjectBase.GuardAgainstCircularParentAsync</c>'s
+    /// own identical walk-the-chain algorithm, over
+    /// <see cref="RequirementGroupDto.ParentGroupId"/> instead of
+    /// <c>IHasParent.ParentId</c>.
+    /// </summary>
+    private async Task GuardAgainstGroupCycleAsync(Guid groupId, Guid candidateParentId, CancellationToken cancellationToken)
+    {
+        if (candidateParentId == groupId)
+            throw new RequirementGroupCycleException(groupId, candidateParentId);
+
+        var current = candidateParentId;
+        var visited = new HashSet<Guid> { groupId };
+
+        while (visited.Add(current))
+        {
+            var candidateDto = await ReadGroupDtoAsync(current, cancellationToken).ConfigureAwait(false);
+            if (candidateDto?.ParentGroupId is not { } nextParentId)
+                return;
+
+            if (nextParentId == groupId)
+                throw new RequirementGroupCycleException(groupId, candidateParentId);
+
+            current = nextParentId;
+        }
     }
 }

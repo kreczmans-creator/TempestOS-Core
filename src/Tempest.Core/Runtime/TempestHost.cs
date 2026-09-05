@@ -698,6 +698,20 @@ public sealed class TempestHost : ITempestHost
         // no Requirements type implements (ADR-0084).
         services.Singleton<IRequirementValidationService, RequirementValidationService>();
 
+        // TD-67/TD-97 reconciliation services (`WP 16.4B`). Registered as
+        // ordinary Platform Services so that the reconcile/repair path
+        // TD-67 named as absent genuinely exists and is reachable, rather
+        // than sitting in the assembly with no way to reach it. Each is
+        // explicit `DetectAsync`/`SweepAsync` only: nothing here, and
+        // nothing in the startup phase table, ever invokes a sweep on its
+        // own - this platform does not repair a user's data behind their
+        // back. No command or user-facing surface invokes them either;
+        // adding one would be product capability, which `v0.16.0` is
+        // scoped out of.
+        services.Singleton<IRequirementsReconciliationService, RequirementsReconciliationService>();
+        services.Singleton<IMaterialCatalogReconciliationService, MaterialCatalogReconciliationService>();
+        services.Singleton<IAttachmentContentReconciliationService, AttachmentContentReconciliationService>();
+
         // Composition Root pattern (ADR-0009), like Configuration/Logging/
         // PlatformVersionProvider above: DiagnosticsProvider needs references
         // to _lifecycleManager/_hostedServiceManager, both Host-owned and

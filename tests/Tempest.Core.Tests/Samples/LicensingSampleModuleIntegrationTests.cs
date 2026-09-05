@@ -47,7 +47,6 @@ public class LicensingSampleModuleIntegrationTests
         var currentComponentAccessor = new Tempest.Core.Identity.CurrentComponentAccessor();
         services.AddInstance<Tempest.Core.Identity.ICurrentComponentAccessor>(currentComponentAccessor);
         services.AddInstance(currentComponentAccessor);
-        services.AddInstance<Tempest.Core.Identity.IPermissionEvaluator>(new Tempest.Core.Identity.PermissionEvaluator());
         services.AddInstance(configuration);
         services.AddInstance<ILogger>(new Tempest.Core.Tests.Events.RecordingLevelLogger());
         services.Singleton<IEventBus, EventBus>();
@@ -293,6 +292,7 @@ public class LicensingSampleModuleIntegrationTests
         {
             new(PersistenceStore.RootPathConfigurationKey, persistenceRootPath),
             new(RestApiHostedService.PortConfigurationKey, "0"),
+            new(RestApiHostedService.EnabledConfigurationKey, "true"), // D-024 (Proposed): opt in explicitly, exactly as a real caller now must.
         };
 
         var permissions = grantedPermissions?.ToList();

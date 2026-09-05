@@ -43,7 +43,12 @@ namespace Tempest.Core.Api;
 /// <c>HttpContext.RequestServices</c> for anything TempestOS-specific.
 /// </para>
 /// <para>
-/// Binds to the loopback address only by default
+/// <b>Disabled by default</b> (<c>D-024</c>, Proposed — awaiting Product
+/// Owner approval): <see cref="StartAsync"/> reads
+/// <see cref="EnabledConfigurationKey"/> before constructing any ASP.NET
+/// Core object at all, and returns without binding anything unless that
+/// key is present and parses as <see langword="true"/>. When enabled, the
+/// listener binds to the loopback address only
 /// (<see cref="DefaultPort"/>), overridable via
 /// <see cref="PortConfigurationKey"/> — a disclosed mitigation for the
 /// absence of real authentication (<see cref="ApiRequestHandler"/>'s own
@@ -54,6 +59,16 @@ namespace Tempest.Core.Api;
 /// </remarks>
 public sealed class RestApiHostedService : IHostedService
 {
+    /// <summary>
+    /// The configuration key gating whether the REST API's listener
+    /// starts at all (<c>D-024</c>, Proposed — awaiting Product Owner
+    /// approval). Absent, empty, or unparseable resolves to
+    /// <see langword="false"/> — the platform's own fail-closed default
+    /// for a configuration switch, matching <c>ADR-0112</c>'s identical
+    /// convention for <c>Plugins:AllowUnsignedLoad</c> (<see cref="StartAsync"/>).
+    /// </summary>
+    public const string EnabledConfigurationKey = "Runtime:RestApi:Enabled";
+
     /// <summary>The configuration key read for the listening port.</summary>
     public const string PortConfigurationKey = "Api:Port";
 
@@ -106,6 +121,21 @@ public sealed class RestApiHostedService : IHostedService
     /// <inheritdoc />
     public async Task StartAsync(CancellationToken cancellationToken)
     {
+        // D-024 (Proposed): evaluated before any ASP.NET Core object is
+        // constructed - no WebApplication, no port binding, when the
+        // operator has not explicitly opted in. Mirrors ADR-0112's own
+        // fail-closed reading of Plugins:AllowUnsignedLoad: absent, empty,
+        // or unparseable all resolve to disabled.
+        var enabled = _configuration.TryGetValue(EnabledConfigurationKey, out var rawEnabled)
+            && bool.TryParse(rawEnabled, out var parsedEnabled)
+            && parsedEnabled;
+
+        if (!enabled)
+        {
+            _logger?.Information($"REST API is disabled (default). Set '{EnabledConfigurationKey}' to 'true' to enable it.");
+            return;
+        }
+
         var port = _configuration.TryGetValue(PortConfigurationKey, out var configuredPort) && int.TryParse(configuredPort, out var parsedPort)
             ? parsedPort
             : DefaultPort;
@@ -162,9 +192,21 @@ public sealed class RestApiHostedService : IHostedService
             await context.Response.WriteAsync(response.Body, context.RequestAborted).ConfigureAwait(false);
     }
 
-    private Task InvokeOpenApiAsync(HttpContext context)
+    private async Task InvokeOpenApiAsync(HttpContext context)
     {
-        context.Response.ContentType = "application/json";
-        return context.Response.WriteAsync(OpenApiDocumentGenerator.Generate(_endpointRegistry.Routes), context.RequestAborted);
+        var identityHeaderValue = context.Request.Headers.TryGetValue(ApiRequestHandler.IdentityHeaderName, out var values)
+            ? values.ToString()
+            : null;
+
+        var response = await _requestHandler.HandleOpenApiDocumentAsync(
+            context.Request.Path.Value ?? string.Empty,
+            identityHeaderValue,
+            context.RequestAborted).ConfigureAwait(false);
+
+        context.Response.StatusCode = response.StatusCode;
+        context.Response.ContentType = response.StatusCode == 200 ? "application/json" : "text/plain";
+
+        if (response.Body is not null)
+            await context.Response.WriteAsync(response.Body, context.RequestAborted).ConfigureAwait(false);
     }
 }
