@@ -10,11 +10,11 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | Direct source inspection; `docs/architecture/Failure Behaviour.md`; `docs/academy/06 Engineering Standards/01-exception-design.md`. |
 | **Review Frequency** | Updated whenever a new exception type is introduced. |
-| **Last Reviewed** | 2026-09-04 (WP 16.2A, Register and Status Currency) — full re-derivation against `grep -rEn "^public (sealed \|abstract )?class \w+Exception\b" src/Tempest.Core --include=*.cs`, 84 matches. Backfilled all 29 rows missing since `WP 6.6` (`v0.7.0`/`v0.8.0` Calculations, Materials, Units & Quantities, Engineering Data, Engineering Domain, Engineering Workflow, Requirements; `v0.13.0` Plugin Trust & Dependencies), closing the staleness `WP 9.0A` first disclosed. Total corrected 52 → 84; Distribution by Root Category gained 8 new rows summing to 84. See `docs/releases/v0.16.0/WP16.2A Register and Status Currency Report.md`. Previously reviewed 2026-08-05 (WP 9.1A, Requirements Management Workspace) — added `RequirementGroupHasChildrenException` (see Entries table, below); confirmed the disclosed staleness below is still open, now also naming the `Tempest.Core.Requirements` exception family explicitly (previously only implied by "every other `v0.7.0`/`v0.8.0` exception type"). Previously reviewed 2026-08-05 (WP 9.0A, Mechanical Product Structure) — added `CircularParentAssignmentException`, `EngineeringObjectHasChildrenException` (see Entries table, below); disclosed, not fixed, that this register's own Entries table and Total figure have gone stale since `WP 6.6` — every Engineering Domain and other `v0.7.0`/`v0.8.0` exception type is genuinely missing, a full backfill being out of this Work Package's own scope. Previously reviewed 2026-07-29 (WP 6.6, Licensing) — added `LicensingException`, `LicenseValidationException` (see Entries table, below); no other change to prior entries. |
+| **Last Reviewed** | 2026-09-05 (`WP 16.4B-R1`, Architecture remediation) — added `DuplicateStateMigrationException` and `ConflictingStateMigrationException`, both `EngineeringDomainException` subtypes, thrown by `StateMigrationRegistry.Register` (`src/Tempest.Core/EngineeringDomain/Implementation/EngineeringObjectStateStore.cs`) closing a review-board Architecture finding: two migrations could collide silently (a same-chain last-wins overwrite, and a common/Kind-specific ambiguity `Find` always resolved toward the common chain) with a record still advancing to its target schema version regardless. 87 → 89. See `docs/releases/v0.16.0/WP16.4B-R1 Migration Collision Guard and Platform Service Registration.md`. Previously reviewed 2026-09-04 (WP 16.2A, Register and Status Currency) — full re-derivation against `grep -rEn "^public (sealed \|abstract )?class \w+Exception\b" src/Tempest.Core --include=*.cs`, 84 matches. Backfilled all 29 rows missing since `WP 6.6` (`v0.7.0`/`v0.8.0` Calculations, Materials, Units & Quantities, Engineering Data, Engineering Domain, Engineering Workflow, Requirements; `v0.13.0` Plugin Trust & Dependencies), closing the staleness `WP 9.0A` first disclosed. Total corrected 52 → 84; Distribution by Root Category gained 8 new rows summing to 84. See `docs/releases/v0.16.0/WP16.2A Register and Status Currency Report.md`. Previously reviewed 2026-08-05 (WP 9.1A, Requirements Management Workspace) — added `RequirementGroupHasChildrenException` (see Entries table, below); confirmed the disclosed staleness below is still open, now also naming the `Tempest.Core.Requirements` exception family explicitly (previously only implied by "every other `v0.7.0`/`v0.8.0` exception type"). Previously reviewed 2026-08-05 (WP 9.0A, Mechanical Product Structure) — added `CircularParentAssignmentException`, `EngineeringObjectHasChildrenException` (see Entries table, below); disclosed, not fixed, that this register's own Entries table and Total figure have gone stale since `WP 6.6` — every Engineering Domain and other `v0.7.0`/`v0.8.0` exception type is genuinely missing, a full backfill being out of this Work Package's own scope. Previously reviewed 2026-07-29 (WP 6.6, Licensing) — added `LicensingException`, `LicenseValidationException` (see Entries table, below); no other change to prior entries. |
 | **Related Documents** | `docs/architecture/Failure Behaviour.md`; `Architectural Dependency Register.md`. |
 | **Related ADRs** | ADR-0013, ADR-0021, ADR-0025, ADR-0038, ADR-0040, ADR-0046, ADR-0047, ADR-0048, ADR-0050, ADR-0051. |
 | **Related Academy Articles** | `docs/academy/06 Engineering Standards/01-exception-design.md`. |
-| **Coverage Status** | **Complete, re-verified at the `WP 16.4B` integration (2026-09-05).** 87 of 87 classes matching `^public (sealed \|abstract )?class \w+Exception\b` under `src/Tempest.Core/` are listed below, zero omitted. `WP 16.2A`'s own pass, which stated 84/84, was correct against the tree it measured; `WP 16.4B` added three. |
+| **Coverage Status** | **Complete, re-verified at `WP 16.4B-R1` (2026-09-05, Architecture remediation).** 89 of 89 classes matching `^public (sealed \|abstract )?class \w+Exception\b` under `src/Tempest.Core/` are listed below, zero omitted. `WP 16.4B`'s own pass, which stated 87/87, was correct against the tree it measured; `WP 16.4B-R1` added two — `DuplicateStateMigrationException` and `ConflictingStateMigrationException` — for the migration-collision guard `StateMigrationRegistry.Register` now enforces (a `v0.16.0` review board Architecture finding). |
 
 ---
 
@@ -89,6 +89,8 @@
 | `InvalidLifecycleTransitionException` | `EngineeringDomainException` | Engineering Domain | Application logic's own error (not Host-level); thrown by `IHasLifecycle.TransitionAsync` for a transition `ILifecycleTransitionTable` does not permit — backfilled `WP 16.2A` |
 | `SelfReferentialRelationshipException` | `EngineeringDomainException` | Engineering Domain | Application logic's own error (not Host-level); thrown when a relationship's source and target are the same object — backfilled `WP 16.2A` |
 | `DuplicateRehydratorRegistrationException` | `EngineeringDomainException` | Engineering Domain | Application logic's own error (not Host-level); thrown by `IEngineeringObjectRehydratorRegistry.Register` when a *different* type is already registered for the same Kind (`v0.14.0`, `TD-85`, `ADR-0116`) — backfilled `WP 16.2A` |
+| `DuplicateStateMigrationException` | `EngineeringDomainException` | Engineering Domain | Application logic's own error (not Host-level); thrown by `StateMigrationRegistry.Register` when a migration is already registered for the identical chain (common, or that same Kind) and `FromVersion` (`TD-87`, `ADR-0120`, `v0.16.0` review board Architecture finding, `WP 16.4B-R1`) — first registration wins, mirroring `DuplicateRehydratorRegistrationException`/`DuplicateServiceRegistrationException` |
+| `ConflictingStateMigrationException` | `EngineeringDomainException` | Engineering Domain | Application logic's own error (not Host-level); thrown by `StateMigrationRegistry.Register` when registering would leave a common (Kind-less) migration and a Kind-specific migration both targeting the same `FromVersion` — `Find` always prefers the common chain (`ADR-0120` Decision 2), so the Kind-specific one would silently never run while the record still advanced to the target version; rejected in either registration order (`TD-87`, `v0.16.0` review board Architecture finding, `WP 16.4B-R1`) |
 | `CircularParentAssignmentException` | `EngineeringDomainException` | Engineering Domain | Application logic's own error (not Host-level); thrown by `IHasParent.MoveAsync` when the candidate parent is the object itself or one of its own descendants (`WP 9.0A`, `ADR-0081`, `TEMPEST-VAL-006` — corrected from `-002` by `WP 9.0B`; see that register's own disclosure) |
 | `EngineeringObjectHasChildrenException` | `EngineeringDomainException` | Engineering Domain | Application logic's own error (not Host-level); thrown by `IDeletable.DeleteAsync` when the object still has live (non-deleted) children (`WP 9.0A`, `ADR-0080`, `TEMPEST-VAL-007` — corrected from `-003` by `WP 9.0B`; see that register's own disclosure) |
 | `InvalidDecisionStatusTransitionException` | `InvalidOperationException` | Engineering Workflow | Application logic's own error (not Host-level); thrown by the `Decision` governance workflow for an unpermitted status change (`EngineeringDomain/GovernanceWorkflow.cs`) — backfilled `WP 16.2A` |
@@ -124,10 +126,10 @@ Reviewed** field and
 `docs/releases/v0.16.0/WP16.2A Register and Status Currency Report.md`
 for the full derivation.
 
-**Total: 87 custom exception types — Verified directly against
+**Total: 89 custom exception types — Verified directly against
 `src/Tempest.Core/` (`grep -rEn "^public (sealed |abstract )?class \w+Exception\b" src/Tempest.Core --include=*.cs`
-returns exactly 87 matches, matching the 87 rows in the Entries table (84 at `WP 16.2A`, plus `RequirementGroupCycleException`, `ServiceRegistrationException` and `DuplicateServiceRegistrationException` at the `WP 16.4B` integration, 2026-09-05)
-above, re-derived directly by `WP 16.2A`). Corrected,
+returns exactly 89 matches, matching the 89 rows in the Entries table (87 at the `WP 16.4B` integration, plus `DuplicateStateMigrationException` and `ConflictingStateMigrationException` at `WP 16.4B-R1`, 2026-09-05; 84 at `WP 16.2A`, plus `RequirementGroupCycleException`, `ServiceRegistrationException` and `DuplicateServiceRegistrationException` at the `WP 16.4B` integration)
+above, re-derived directly by `WP 16.4B-R1`). Corrected,
 `WP 5.4`: this total previously read "30," undercounting
 by one against this register's own Entries table and Distribution table
 (both of which had, at that point, always summed to 31) — a genuine, internal
@@ -242,7 +244,7 @@ respectively). Application logic's own error (not Host-level); see
 | Root Category | Exception Count |
 |---|---|
 | Configuration | 4 |
-| Dependency Injection | 4 |
+| Dependency Injection | 6 |
 | Module Discovery | 2 |
 | Module Registration | 3 |
 | Module Lifecycle | 2 |
@@ -264,15 +266,23 @@ respectively). Application logic's own error (not Host-level); see
 | Materials | 3 |
 | Units & Quantities | 1 |
 | Engineering Data | 2 |
-| Engineering Domain | 7 |
+| Engineering Domain | 9 |
 | Engineering Workflow | 4 |
-| Requirements | 5 |
+| Requirements | 6 |
 | Plugin Trust & Dependencies | 6 |
 
-**Total: 4+4+2+3+2+6+2+0+3+5+3+2+3+1+1+3+2+4+2+4+3+1+2+7+4+5+6 = 84**,
+**Total: 4+6+2+3+2+6+2+0+3+5+3+2+3+1+1+3+2+4+2+4+3+1+2+9+4+6+6 = 89**,
 matching the Entries table above and the direct `grep` count
-(`WP 16.2A`). The eight rows from "Calculations" through "Plugin Trust
-& Dependencies" are new this Work Package; every other row is
+(`WP 16.4B-R1`, re-derived row by row against the Entries table above,
+2026-09-05). **Correction, `WP 16.4B-R1`:** this table had not been
+updated when `ServiceRegistrationException`/`DuplicateServiceRegistrationException`
+(Dependency Injection) and `RequirementGroupCycleException` (Requirements)
+were added at the `WP 16.4B` integration — it still summed to 84 against
+an 87-row Entries table. Dependency Injection corrected 4 → 6 and
+Requirements 5 → 6 for that pre-existing gap, and both, plus Engineering
+Domain, again for this Work Package's own two new rows (Engineering
+Domain 7 → 9). The eight rows from "Calculations" through "Plugin Trust
+& Dependencies" were added at `WP 16.2A`; every other row is
 unchanged from `WP 6.6`, re-verified directly.
 
 ## Cross-Reference Check

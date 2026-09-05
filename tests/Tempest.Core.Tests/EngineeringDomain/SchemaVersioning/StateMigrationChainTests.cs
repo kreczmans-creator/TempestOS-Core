@@ -106,25 +106,85 @@ public class StateMigrationChainTests
     }
 
     [Fact]
-    public async Task WhenBothACommonAndAKindSpecificMigrationTargetTheSameVersion_TheCommonOneRunsFirst()
+    public void RegisteringTwoMigrationsForTheIdenticalChainAndFromVersion_Throws()
     {
+        var registry = new StateMigrationRegistry();
+        registry.Register(new LoggingMigration(TestKind, 1, "First", []));
+
+        var ex = Assert.Throws<DuplicateStateMigrationException>(
+            () => registry.Register(new LoggingMigration(TestKind, 1, "Second", [])));
+
+        Assert.Equal(TestKind, ex.Kind);
+        Assert.Equal(1, ex.FromVersion);
+    }
+
+    [Fact]
+    public void RegisteringTwoCommonMigrationsForTheIdenticalFromVersion_Throws()
+    {
+        var registry = new StateMigrationRegistry();
+        registry.Register(new LoggingMigration(null, 1, "First", []));
+
+        var ex = Assert.Throws<DuplicateStateMigrationException>(
+            () => registry.Register(new LoggingMigration(null, 1, "Second", [])));
+
+        Assert.Null(ex.Kind);
+        Assert.Equal(1, ex.FromVersion);
+    }
+
+    [Fact]
+    public void RegisteringACommonMigration_AfterAKindSpecificOneAtTheSameFromVersion_Throws()
+    {
+        // Registration order: Kind-specific first, common second — the
+        // common migration would silently start winning that FromVersion
+        // step for every Kind, including this one, from this point on.
+        var registry = new StateMigrationRegistry();
+        registry.Register(new LoggingMigration(TestKind, 1, "KindSpecific", []));
+
+        var ex = Assert.Throws<ConflictingStateMigrationException>(
+            () => registry.Register(new LoggingMigration(null, 1, "Common", [])));
+
+        Assert.Equal(TestKind, ex.Kind);
+        Assert.Equal(1, ex.FromVersion);
+    }
+
+    [Fact]
+    public void RegisteringAKindSpecificMigration_AfterACommonOneAtTheSameFromVersion_Throws()
+    {
+        // The reverse registration order from the test above: common
+        // first, Kind-specific second — a guard that only catches one of
+        // these two orders would still let the other one through, and
+        // would read as complete while doing so.
+        var registry = new StateMigrationRegistry();
+        registry.Register(new LoggingMigration(null, 1, "Common", []));
+
+        var ex = Assert.Throws<ConflictingStateMigrationException>(
+            () => registry.Register(new LoggingMigration(TestKind, 1, "KindSpecific", [])));
+
+        Assert.Equal(TestKind, ex.Kind);
+        Assert.Equal(1, ex.FromVersion);
+    }
+
+    [Fact]
+    public async Task ANonCollidingCommonMigration_FollowedByThatKindsOwnLaterMigration_MigratesEndToEndInOrder()
+    {
+        // Common at FromVersion 1 (1 -> 2), that Kind's own migration at
+        // FromVersion 2 (2 -> 3) — different versions, so no collision;
+        // this is ADR-0120 Decision 2's real, intended ordering (common
+        // chain first, then that Kind's own), still working correctly
+        // after the collision guard above was added.
         var persistence = new InMemoryPersistenceStore();
         var id = await SeedAsync(persistence, TestKind, 1);
 
         var log = new List<string>();
         var registry = new StateMigrationRegistry();
-        registry.Register(new LoggingMigration(TestKind, 1, "KindSpecific", log));
         registry.Register(new LoggingMigration(null, 1, "Common", log));
+        registry.Register(new LoggingMigration(TestKind, 2, "KindSpecific", log));
 
-        var store = new EngineeringObjectStateStore(persistence, registry, null, 2);
+        var store = new EngineeringObjectStateStore(persistence, registry, null, 3);
         var state = await store.FindAsync(id);
 
         Assert.NotNull(state);
-        // The common chain wins the FromVersion:1 step (ADR-0120 Decision 2:
-        // "common chain first"), so the Kind-specific migration registered
-        // for that same version never gets a turn — only one step happens,
-        // taking the record from 1 to 2, not 1 to 3.
-        Assert.Equal(2, state!.SchemaVersion);
-        Assert.Equal(["Common"], log);
+        Assert.Equal(3, state!.SchemaVersion);
+        Assert.Equal(["Common", "KindSpecific"], log);
     }
 }
