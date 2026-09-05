@@ -400,7 +400,7 @@ figures.
 |---|---|---|
 | `VERSION` | `0.4.0` (file not yet bumped at `WP 5.4`'s own review point) | **`0.15.0`** — `cat VERSION` |
 | Total commits | 62 | **267** — `git log --oneline \| wc -l` |
-| `src/` `.cs` files / lines | 144 / 9,043 | **802 / 75,955** — `find src -name "*.cs" \| wc -l`; `find src -name "*.cs" -exec cat {} + \| wc -l` |
+| `src/` `.cs` files / lines | 144 / 9,043 | **805 / 76,890** — re-derived 2026-09-05 with `bin/`/`obj/` pruned (a locally built checkout makes the bare `find` over-count); `WP 16.2A`'s 802 / 75,955 was correct against the tree it measured, before `WP 16.3B`/`WP 16.5A` |
 | `tests/` `.cs` files / lines | 71 / 10,872 | **348 / 78,161** — same method, `tests/` |
 | `[Fact]`/`[Theory]` attributes under `tests/` | Not tracked at `WP 5.4` | **2,725** — `grep -rE '\[Fact\]\|\[Theory\]' tests --include=*.cs \| wc -l` |
 | Last real, CI-verified executed-test totals | 552/552 (`dotnet test`, `WP 5.3`) | **3,088/3,088 Core, 408/408 Desktop** at the `v0.15.0` tag (412/412 Desktop after `WP 15.2A`) — cited from `docs/releases/v0.15.0/Release Notes.md`; `dotnet test` not re-run this Work Package (documentation-only, attribute-counting sufficient per controlling instruction) |
@@ -409,13 +409,13 @@ figures.
 | Decision Register entries | 20 | **20** (unchanged) — `grep -oE "D-0[0-9]{2}" "Decision Register.md" \| sort -u \| wc -l`. `D-021`–`D-026` (`WP 16.0A`) are drafted and Proposed in `docs/releases/v0.16.0/WP16.0A v0.16.0 Scope Decision.md` but **not yet entered in the register itself**, ratification pending PR #6 — correctly excluded from this count |
 | Academy articles (`docs/academy/`, all subfolders) | 77 | **281** — `find docs/academy -name "*.md" \| wc -l` (240 at `WP 16.2A`'s own derivation; +41 by `WP 16.2B`, same day) |
 | `docs/academy/03 Work Packages/` retrospectives | 35 | **206** — `find "docs/academy/03 Work Packages" -name "*.md" \| wc -l` (165 at `WP 16.2A`'s own derivation; +41 by `WP 16.2B`, same day) |
-| `docs/` `.md` files (total) | 191 | **923** — `find docs -name "*.md" \| wc -l` |
+| `docs/` `.md` files (total) | 191 | **973** — `find docs -name "*.md" \| wc -l`, re-derived 2026-09-05; the 923 figure was correct at `WP 16.2A` and was missed when `WP 16.2B`'s closure updated the Academy rows in this same table |
 | Governance documents (`docs/governance/`, all subfolders) | 32 | **38** — `find docs/governance -name "*.md" \| wc -l` |
 | Architecture documents (`docs/architecture/`) | Not tracked at `WP 5.4` | **30** — `find docs/architecture -name "*.md" \| wc -l` |
 | Custom exception types | 31 | **84** — `grep -rE '^public (sealed \|abstract )?class \w+Exception\b' src/Tempest.Core --include=*.cs \| wc -l`; see `Exception Register.md`'s own `WP 16.2A` re-derivation |
-| Public interfaces under `src/Tempest.Core/` | Not tracked at `WP 5.4` | **188** — `grep -rEn '^\s*public interface \w+' src/Tempest.Core --include=*.cs \| wc -l`; see `Interface Register.md`'s own `WP 16.2A` re-derivation |
+| Public interfaces under `src/Tempest.Core/` | Not tracked at `WP 5.4` | **191** (190 distinct names) — `grep -rEn '^\s*public interface \w+' src/Tempest.Core --include=*.cs \| wc -l`, re-derived 2026-09-05; `WP 16.2A`'s 188 predates `WP 16.3A`/`16.3B`'s three schema-versioning contracts |
 | Technical Debt Register rows | Not tracked at `WP 5.4` | **122** (`TD-001`–`TD-122`) — `grep -c "^\| TD-\|^\| \`TD-" "Technical Debt Register.md"`; see that register's own `WP 16.2A` closure of `TD-57` and pointer update to `TD-45` |
-| Namespaces / files in declared scope (`Tempest.Core`, `Tempest.App`, `Tempest.Samples`, `Tempest.Validation`) | Not tracked at `WP 5.4` | **46 / 713** — see `Namespace Register.md`'s own `WP 16.2A` full re-derivation; `src/`-wide (including `Tempest.Desktop`) is 61 namespaces / 802 files |
+| Namespaces / files in declared scope (`Tempest.Core`, `Tempest.App`, `Tempest.Samples`, `Tempest.Validation`) | Not tracked at `WP 5.4` | **47 / 715** — see `Namespace Register.md`'s own re-derivation; `src/`-wide (including `Tempest.Desktop`) is 62 namespaces / 805 files. Both figures are BOM-aware and prune `bin/`/`obj/`; the register records why the two obvious derivation commands get this wrong |
 | Build warnings/errors | 0/0 | Not re-run this Work Package (documentation-only; `WP 16.1A`'s own `ci.yml`/`Governance Health Check` gate the real thing on every push) |
 
 **Method note.** Every figure above was independently re-derived by the

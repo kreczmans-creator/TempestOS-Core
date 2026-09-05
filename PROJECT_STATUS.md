@@ -138,9 +138,9 @@ Each of the following registers is now the sole, current authority for
 its own subject — this file no longer duplicates their content, only
 points to it:
 
-- **Interfaces** — `docs/governance/Engineering/Interface Register.md` (188, re-derived `WP 16.2A`).
+- **Interfaces** — `docs/governance/Engineering/Interface Register.md` (191 rows / 190 distinct public interface names, re-derived `WP 16.2A`, +3 schema-versioning contracts at the Wave 2/3 closure).
 - **Exceptions** — `docs/governance/Engineering/Exception Register.md` (84, re-derived `WP 16.2A`).
-- **Dependency Injection** — `docs/governance/Engineering/Dependency Injection Register.md` (50 named registrations, 55 total statements, re-derived `WP 16.2A`).
+- **Dependency Injection** — `docs/governance/Engineering/Dependency Injection Register.md` (51 named registrations, 56 total statements, re-derived at the `WP 16.4B` integration after the review board found `WP 16.3B`'s `IStateMigrationRegistry` missing — see `TD-121`).
 - **Namespaces** — `docs/governance/Engineering/Namespace Register.md` (47 namespaces / 715 files in declared scope, 62/805 across all of `src/`, re-derived `WP 16.2A`, corrected at the `WP 16.1B` integration follow-up).
 - **Platform Services** — `docs/governance/Engineering/Platform Services Register.md` (35 entries, re-derived `WP 16.2A`).
 - **Feature history** — `docs/governance/Delivery/Feature Register.md` (extended through `v0.15.0`, `WP 16.2A`).

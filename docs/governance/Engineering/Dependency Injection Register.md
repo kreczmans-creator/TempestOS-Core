@@ -14,7 +14,7 @@
 | **Related Documents** | `docs/architecture/Host Lifecycle.md` (Phase 6); `docs/architecture/Ownership Matrix.md`; `Interface Register.md`. |
 | **Related ADRs** | ADR-0005 through ADR-0009, ADR-0011, ADR-0017, ADR-0020, ADR-0036, ADR-0039, ADR-0040–ADR-0057. |
 | **Related Academy Articles** | `docs/academy/01 Engineering Principles/05-dependency-injection.md`; `docs/academy/03 Work Packages/WP2.4-dependency-injection.md`. |
-| **Coverage Status** | **Complete, re-verified `WP 16.2A`.** Full backfill performed directly against `src/Tempest.Core/Runtime/TempestHost.cs`'s own Phase 6 registration block — 55 of 55 registration statements accounted for (50 named rows + 2 discovered-type rows, with 3 named rows dual-registered). |
+| **Coverage Status** | **Complete, re-verified at the `WP 16.4B` integration (2026-09-05).** Re-derived directly against `src/Tempest.Core/Runtime/TempestHost.cs`'s own Phase 6 registration block — 56 of 56 registration statements accounted for (51 named rows + 2 discovered-type rows, with 3 named rows dual-registered). `WP 16.2A`'s own pass, which stated 55/50, was correct against the tree it measured; `WP 16.3B` then added `IStateMigrationRegistry` without a row here, found by the `v0.16.0` review board and corrected — see the Total block below. |
 
 ---
 
@@ -83,6 +83,7 @@ In registration order, exactly as they appear in
 | `IBinaryPersistenceStore` | `Singleton<IBinaryPersistenceStore, PersistenceStore>()` | Ordinary container-constructed singleton (`v0.14.0`, `ADR-0113`) — the same `PersistenceStore` concrete type already registered under `IPersistenceStore` above, additionally registered under its byte-valued interface, mirroring no existing dual-registration precedent (two distinct interfaces over one shared instance, not the same interface twice) — backfilled `WP 16.2A` |
 | `IAttachmentContentStore` | `Singleton<IAttachmentContentStore, AttachmentContentStore>()` | Ordinary container-constructed singleton (`v0.14.0`, `ADR-0114`), depends on `IBinaryPersistenceStore` — registered immediately after it — backfilled `WP 16.2A` |
 | `IEngineeringObjectRehydratorRegistry` | `Singleton<IEngineeringObjectRehydratorRegistry, EngineeringObjectRehydratorRegistry>()` | Ordinary container-constructed singleton (`v0.14.0`, `TD-85`, `ADR-0116`) — the Kind-to-rehydrator map startup rehydration resolves through — backfilled `WP 16.2A` |
+| `IStateMigrationRegistry` | `Singleton<IStateMigrationRegistry, StateMigrationRegistry>()` | Ordinary container-constructed singleton (`v0.16.0`, `WP 16.3B`, `ADR-0120`) — the ordered migration chain `EngineeringObjectStateStore` walks on read, keyed by common chain then by `Kind`; registered in `TempestHost.cs`'s own Phase 6 block (`src/Tempest.Core/Runtime/TempestHost.cs:622`) — added at the `WP 16.4B` integration, not at implementation time (disclosed) |
 | `EngineeringDomainContext` | `Singleton<EngineeringDomainContext>()` | Ordinary container-constructed singleton (`WP 8.2C`), depends on `IEngineeringDocumentStore` and all nine services immediately above plus `ICurrentPrincipalAccessor` — the shared collaborator bundle every `EngineeringObjectFactory<T>` needs |
 | `EngineeringObjectRehydrationService` | `Singleton<EngineeringObjectRehydrationService>()` | Ordinary container-constructed singleton (`v0.14.0`, `TD-85`, `ADR-0116`) — the startup rehydration driver, registered immediately after `EngineeringDomainContext`; not itself resolved by any Platform Service, only by `TempestHost`'s own startup sequence — backfilled `WP 16.2A` |
 | `IMaterialCatalog` | `Singleton<IMaterialCatalog, MaterialCatalog>()` | Ordinary container-constructed singleton (`WP 7.1C`, ADR-0055), a thin, typed index over `IEngineeringDocumentStore` plus a direct `IPersistenceStore` dependency of its own for its `materialId` index — registered after both |
@@ -94,22 +95,32 @@ In registration order, exactly as they appear in
 | Every discovered module type | `AddDiscoveredModules` → `Singleton(type, type)` per type | Self-referential singleton |
 | Every discovered hosted service type | `AddDiscoveredHostedServices` → `Singleton(type, type)` per type | Self-referential singleton |
 
-**Total: 50 individually-named registrations above (three of which —
+**Total: 51 individually-named registrations above (three of which —
 `ICurrentPrincipalAccessor`/`CurrentPrincipalAccessor`,
 `IImportService`/`ImportService`, and (new, `WP 16.2A`)
 `ICurrentComponentAccessor`/`CurrentComponentAccessor` — are each
 dual-registered via two `AddInstance` calls under two keys), plus 2
 further rows (`AddDiscoveredModules`, `AddDiscoveredHostedServices`)
 each registering a dynamic set of discovered types. Verified directly
-(`WP 16.2A`, re-derived against the current base): `grep -c
+(re-derived at the `WP 16.4B` integration, 2026-09-05): `grep -c
 'services\.\(Singleton\|AddInstance\)' src/Tempest.Core/Runtime/
-TempestHost.cs` returns 53; `grep -c 'AddDiscovered'
-src/Tempest.Core/Runtime/TempestHost.cs` returns 2; 53 + 2 = 55 total
+TempestHost.cs` returns 54; `grep -c 'AddDiscovered'
+src/Tempest.Core/Runtime/TempestHost.cs` returns 2; 54 + 2 = 56 total
 registration statements in `TempestHost.cs`'s own Phase 6 block,
-matching this table's own 50 named single/dual registrations (50 rows,
-accounting for 53 raw `Singleton`/`AddInstance` calls: 50 rows + 3
+matching this table's own 51 named single/dual registrations (51 rows,
+accounting for 54 raw `Singleton`/`AddInstance` calls: 51 rows + 3
 extra calls for the three dual-registered rows named above) plus 2
-discovered-type rows exactly. This register had gone stale since
+discovered-type rows exactly. **Found-and-fixed drift, disclosed rather
+than silently corrected:** `WP 16.3B` registered
+`IStateMigrationRegistry` without adding its row here, so this register
+stated 55 statements / 50 named rows against a tree carrying 56 / 51 —
+the identical `TD-57` failure mode, recurring one Work Package after
+`TD-57` was closed, and invisible to `scripts/governance-healthcheck.ps1`
+because that script derives the Interface, Exception and Namespace
+registers from source but **not** this one. Raised as a review-board
+finding at the `v0.16.0` review board and corrected here; the standing
+gap (this register, the Platform Services Register and the Validation
+Register have no machine derivation) is recorded as `TD-121`. This register had gone stale since
 `v0.13.0`: 6 registrations were never added at implementation time —
 `ICurrentComponentAccessor`/`CurrentComponentAccessor` (`v0.13.0`,
 `ADR-0111`), `IEngineeringObjectStateStore`, `IBinaryPersistenceStore`,
