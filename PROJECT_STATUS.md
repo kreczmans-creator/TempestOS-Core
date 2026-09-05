@@ -65,7 +65,7 @@ Release Plan):
 | `WP 16.1A` | CI workflow half of `TD-45` (release-gate enforcement); GitHub branch-protection settings handed to the Product Owner | `docs/releases/v0.16.0/WP16.1A Enforce the Release Gate.md` |
 | `WP 15.2A` (carried in) | Closed `TD-120` — Desktop test suite persistence-root cleanup; `Tempest.Desktop.Tests` 412/412 | `docs/releases/v0.16.0/WP15.2A Desktop Test Suite Persistence Root Cleanup — Implementation Report.md` |
 | `WP 16.2A` | Register and status currency — re-derived every count in every touched governance register; this file's own rewrite | `docs/releases/v0.16.0/WP16.2A Register and Status Currency Report.md` |
-| `WP 16.0B` | Merged `WP 15.2A`; folded the former v0.15.1 folder into this release (`D-026`, Proposed); Companion deferred (`D-022`, Proposed) | `docs/releases/v0.16.0/WP16.0B Integration Report.md` |
+| `WP 16.0B` | Merged `WP 15.2A`; folded the short-lived release folder that had been created to hold it into this release (`D-026`, Proposed — that folder's own `WorkPackages.md` said "Not a release", and no tag or Release Register row for it ever existed); Companion deferred (`D-022`, Proposed) | `docs/releases/v0.16.0/WP16.0B Integration Report.md` |
 | `WP 16.3A` | `ADR-0120` — durable state carries a schema version, migrations apply only on read; accepted at Technical Review | `docs/releases/v0.16.0/WP16.3A Durable State Schema Versioning — Architecture Report.md` (written retrospectively at the review board, which found this the only landed Work Package without one); `docs/adr/ADR-0120-durable-state-carries-a-schema-version-and-migrations-apply-only-on-read.md`; `docs/architecture/State Schema Versioning Architecture.md` |
 | `WP 16.5B` | Linux/X11 launch fixed: Avalonia 11.3.20, `Tmds.DBus.Protocol` 0.21.3; `TD-116` Resolved; advisory Linux launch smoke job in CI | `docs/releases/v0.16.0/WP16.5B Linux Launch Spike Report.md` |
 | `WP 16.2B` | 41 Academy retrospectives written, 21 register rows backfilled; Academy at 206 retrospectives | `docs/releases/v0.16.0/WP16.2B Academy Retrospective Backfill Report.md` |
@@ -90,7 +90,7 @@ directly: `docs/governance/Quality/Repository Metrics Register.md`
 
 | Metric | Value |
 |---|---|
-| `VERSION` | `0.15.0` |
+| `VERSION` | `0.16.0` — bumped by `WP 16.9.0`. Not yet tagged, merged or published; `v0.15.0` remains the newest tag |
 | `src/` `.cs` files / lines | 805 / 76,890 |
 | `tests/` `.cs` files / lines | 371 / 83,485 |
 | `[Fact]`/`[Theory]` attributes | 3,197 (including `[AvaloniaFact]`/`[AvaloniaTheory]`) |

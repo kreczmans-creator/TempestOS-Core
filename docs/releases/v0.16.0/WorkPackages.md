@@ -2,7 +2,7 @@
 
 ## Status
 
-**Proposed, not approved; in execution on `feature/v0.16.0`.** Scope, sequencing, and
+**Engineering complete; awaiting Product Approval. Proposed, not approved.** Scope, sequencing, and
 acceptance for every row are in `v0.16.0 Release Plan.md` in this
 folder. `VERSION` remains `0.15.0` until `WP 16.9.0`. This folder
 exists so the plan lives where this project keeps release plans; it is
@@ -36,7 +36,7 @@ Closes with the first Product Approval verdict since `v0.12.0`.
 | `WP 16.1A-R1` | Release path enforcement — `release.yml` runs the Governance Health Check as a hard gate; `new-release.ps1` refuses to tag unless CI concluded `success`; `linux-launch-smoke` requires a verified startup marker, not just "still running"; two documentation corrections | Configuration | 3 | none — `TD-45` stays Open | **Complete** — raised by the review board's Build/CI perspective, which found the release path weaker than the merge path `WP 16.1A` had just hardened |
 | `WP 16.4B-R3` | Per-object write serialisation — closes a lost update that let the attachment sweep permanently delete a live file. `PersistStateAsync` now takes an `AsyncKeyedLock` keyed by object Id, owned by `EngineeringDomainContext`, before `CaptureState()` and holds it through `SaveAsync` | Implementation | 3 | `TD-135` | **Complete** — found by the independent post-remediation review, which reproduced it against the real classes; the `WP 16.4B-R2` marker could not reach it. An instance-level lock would not have closed it: `ReviseAsync` proves more than one live instance can answer to one Id |
 | `WP 16.4A-R1` | Test strength — three race tests that could not detect their own regression, a double-dispose test with a 0.45% detection rate, a golden corpus whose "every field" claim omitted `Metadata`, and unbounded interleaving gates | Implementation (tests) | 3 | none — strengthens `WP 16.4A`/`16.4B` | **Complete** — every fix mutation-proven: the fixed test demonstrated failing against the reverted production code and passing against the restored code. Gates now pause on whichever read arrives second rather than on a collection name; the double-dispose race is looped 2,000× (10/10 detection against a reverted guard); `--blame-hang-timeout` added to CI |
-| `WP 16.9.0` | Engineering Readiness Review, `VERSION` 0.16.0, Release Notes, merge/tag/publish under the enforced gate, **Product Approval verdict recorded** | Verification/Release | 4 | Audit finding 2 | Not started |
+| `WP 16.9.0` | Engineering Readiness Review, `VERSION` 0.16.0, Release Notes, merge/tag/publish under the enforced gate, **Product Approval verdict recorded** | Verification/Release | 4 | Audit finding 2 | **Engineering complete; blocked at the Product Approval boundary.** `VERSION` bumped to `0.16.0`; Release Notes and the Engineering Readiness Review written; the five-run CI determinism matrix obtained on the frozen release candidate. **Not done, and not engineering's to do** (Engineering Governance §7.1/§9): the merge to `main`, the tag, the publish, and the Product Approval verdict itself. Each requires an explicit, per-occasion instruction from the Product Owner, and `scripts/new-release.ps1` mechanically refuses to run anywhere but `main`. |
 
 ## Carried in from `main`'s own line, once `WP 16.0B` lands
 
