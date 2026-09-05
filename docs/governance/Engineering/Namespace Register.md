@@ -60,7 +60,7 @@ reflected here until now).
 | `Tempest.Core.Diagnostics` | Tempest.Core | 2 | `IDiagnosticsProvider`/`DiagnosticsProvider` — read-only projection over Host/module/hosted-service lifecycle state | WP 5.2 |
 | `Tempest.Core.Identity` | Tempest.Core | 21 | `IIdentity`/`PlatformIdentity`, `IPrincipal`/`PlatformPrincipal`, `Permission`, `IRole`/`Role`, `IRoleProvider`/`RoleProvider`, `ICurrentPrincipalAccessor`/`CurrentPrincipalAccessor`, `IPermissionEvaluator`/`PermissionEvaluator`, `IIdentityService`/`IdentityService`, `IdentityException` and two subtypes; `ICurrentComponentAccessor`/`CurrentComponentAccessor` (`v0.13.0`, `ADR-0111`), `ISessionPrincipalSource`/`LocalSessionPrincipalSource`/`SessionPrincipal` (`v0.14.0`) | WP 6.1, extended `v0.13.0`/`v0.14.0` |
 | `Tempest.Core.Persistence` | Tempest.Core | 5 | `IPersistenceStore`/`PersistenceStore`, `PersistenceException` and one subtype — established as part of `WP 6.4`'s own scope (ADR-0041); `IBinaryPersistenceStore` (`v0.14.0`, `ADR-0113`) added to the same `PersistenceStore` concrete type | WP 6.4, extended `v0.14.0` |
-| `Tempest.Core.Settings` | Tempest.Core | 10 | `ISettingDefinition`/`SettingDefinition`, `ISettingsProvider`/`SettingsProvider`, `ISettingsChangedEvent`/`SettingsChangedEvent`, `SettingsException` and two subtypes | WP 6.4 |
+| `Tempest.Core.Settings` | Tempest.Core | 11 | `ISettingsMigration` (`WP 16.3B`, `ADR-0120`), `ISettingDefinition`/`SettingDefinition`, `ISettingsProvider`/`SettingsProvider`, `ISettingsChangedEvent`/`SettingsChangedEvent`, `SettingsException` and two subtypes | WP 6.4 |
 | `Tempest.Core.Concurrency` | Tempest.Core | 1 | `AsyncKeyedLock` (internal) — a small, shared, per-key async lock used by both Persistence and Settings. Audit does not need it — every record's own key is unique (timestamp plus a random component), so no two writes ever target the same key | WP 6.4 |
 | `Tempest.Core.Audit` | Tempest.Core | 9 | `IAuditRecord`/`AuditRecord`, `IAuditRecorder`/`AuditRecorder`, `IAuditQuery`/`AuditQuery`, `AuditQueryCriteria`, `AuditRecordDto` (internal), `AuditException` | WP 6.5 |
 | `Tempest.Core.Notifications` | Tempest.Core | 8 | `INotification`, `INotificationHandler<T>`, `INotificationDispatcher`/`NotificationDispatcher`, `NotificationException`, `NotificationSeverity`, `IPlatformNotification`/`PlatformNotification` | WP 6.2 |
@@ -74,7 +74,7 @@ reflected here until now).
 | `Tempest.Core.Calculations` | Tempest.Core | 18 | `ICalculationDefinition<TInput, TResult>`/`ICalculationEngine`/`CalculationEngine`, `CalculationRecord`/`CalculationContext`, `CalculationException` and three subtypes, `EngineeringCalculationDefinitions` | WP 7.1D, `ADR-0056` — backfilled `WP 16.2A` |
 | `Tempest.Core.Verification` | Tempest.Core | 9 | `IVerificationRecord`/`VerificationRecord`, `IVerificationService`/`VerificationService`, `VerificationContext`/`VerificationCriterion`/`VerificationOutcome`/`VerificationEvidenceEntry` | WP 7.1E, `ADR-0057` — backfilled `WP 16.2A` |
 | `Tempest.Core.Requirements` | Tempest.Core | 24 | `IRequirement`/`Requirement`, `IRequirementCollection`/`RequirementCollection`, `IRequirementGroup`/`RequirementGroup`, `IRequirementEvidence`, `IRequirementsService`/`RequirementsService`, `IRequirementValidationService`/`RequirementValidationService` (`WP 9.1A`), `RequirementsException` and four subtypes | WP 7.3A, `ADR-0058`, extended WP 9.1A — backfilled `WP 16.2A` |
-| `Tempest.Core.EngineeringDomain` | Tempest.Core | 65 | The canonical Engineering Object model: `IEngineeringObject`/`EngineeringObjectBase`, every Physical/Configuration/Programme/Governance/Supply-Chain/Test-Manufacturing/Documentation-Design object and facet contract (`IHasLifecycle`, `IHasParent`, `IHasRelationships`, `IHasAttachments`, `IDeletable`, `IRenamable`, and others), `IEngineeringObjectRepository`/`IEngineeringRelationshipRepository`, `ILifecycleTransitionTable`, `IValidationRuleSet`, `IReferenceIntegrityChecker`, `IRelationshipDiscovery`/`IDependencyTraversal`/`IImpactAnalysis`, `IEvidenceComposer`, `EngineeringDomainContext`, `EngineeringDomainException` and its subtypes; durability/rehydration/attachment-content additions (`v0.14.0`): `EngineeringObjectState`/`IEngineeringObjectStateStore`, `IAttachmentContentStore`/`AttachmentContent`, `IRehydratable<TSelf>`/`IEngineeringObjectRehydrator`/`IEngineeringObjectRehydratorRegistry`/`EngineeringObjectRehydrationService` | WP 8.2C, `ADR-0075`–`ADR-0081`, extended `v0.9.0` (`IRenamable`/`IHasParent`/`IDeletable`/`IHasBomLine`) and `v0.14.0` (`TD-85`, `ADR-0113`/`ADR-0116`) — backfilled `WP 16.2A` |
+| `Tempest.Core.EngineeringDomain` | Tempest.Core | 66 | The canonical Engineering Object model: `IEngineeringObject`/`EngineeringObjectBase`, every Physical/Configuration/Programme/Governance/Supply-Chain/Test-Manufacturing/Documentation-Design object and facet contract (`IHasLifecycle`, `IHasParent`, `IHasRelationships`, `IHasAttachments`, `IDeletable`, `IRenamable`, and others), `IEngineeringObjectRepository`/`IEngineeringRelationshipRepository`, `ILifecycleTransitionTable`, `IValidationRuleSet`, `IReferenceIntegrityChecker`, `IRelationshipDiscovery`/`IDependencyTraversal`/`IImpactAnalysis`, `IEvidenceComposer`, `EngineeringDomainContext`, `EngineeringDomainException` and its subtypes; durability/rehydration/attachment-content additions (`v0.14.0`): `EngineeringObjectState`/`IEngineeringObjectStateStore`, `IAttachmentContentStore`/`AttachmentContent`, `IRehydratable<TSelf>`/`IEngineeringObjectRehydrator`/`IEngineeringObjectRehydratorRegistry`/`EngineeringObjectRehydrationService` | WP 8.2C, `ADR-0075`–`ADR-0081`, extended `v0.9.0` (`IRenamable`/`IHasParent`/`IDeletable`/`IHasBomLine`) and `v0.14.0` (`TD-85`, `ADR-0113`/`ADR-0116`) — backfilled `WP 16.2A` |
 | `Tempest.Core.Macros` | Tempest.Core | 5 | `ICommandMacro`/`CommandMacro`, `IMacroManager`/`MacroManager`, `RunMacroCommand` — an ordered, named sequence of registered Command Ids | WP 10.6A, `ADR-0099` — backfilled `WP 16.2A` |
 | `Tempest.Core.Input` | Tempest.Core | 4 | `IInputBindingProvider`/`IExternalControllerProvider`, `IInputBindingRegistry`/`InputBindingRouter` | WP 10.6A, `ADR-0100` — backfilled `WP 16.2A` |
 | `Tempest.App.Composition` | Tempest.App | 1 | `EngineeringWorkspaceComposer` — the shared collaborator-bundle composer every discipline's own `Program.cs`/`Tempest.Desktop` composition root calls | `v0.8.0` onward — backfilled `WP 16.2A` |
@@ -97,32 +97,45 @@ reflected here until now).
 (`Tempest.Core.Repositories`/`.Projects`/`.Hosting`/`.Bootstrap`, zero
 files) and the 1 *(no namespace declared — global namespace)* row are
 both shown for continuity/completeness but are not namespaces and are
-not counted toward the 46. Across 4 in-scope projects/areas (`Tempest.Core`, `Tempest.App`,
-`Tempest.Samples`, `Tempest.Validation`) — Verified directly, `WP 16.2A`:
-`grep -rhoP "^namespace \K[\w.]+" src/Tempest.Core src/Tempest.App
-src/Samples src/Validation --include=*.cs | sort -u | wc -l` returns 46;
-summing every namespace's own file count above plus the 4 global-namespace
-files gives 713, matching `find src/Tempest.Core src/Tempest.App
-src/Samples src/Validation -name "*.cs" | wc -l` (419 + 211 + 82 + 1 =
-713) exactly. The `Tempest.Templates.Module` sample-only project remains
+not counted toward the 47. Across 4 in-scope projects/areas (`Tempest.Core`, `Tempest.App`,
+`Tempest.Samples`, `Tempest.Validation`) — **re-derived `WP 16.1B`
+integration follow-up (2026-09-05), after `WP 16.3B` and `WP 16.5A`
+landed:** 47 namespaces; summing every namespace's own file count above
+(712) plus the 3 global-namespace files gives **715**, matching a direct
+count of `.cs` files under the four in-scope roots excluding `bin/` and
+`obj/` (421 + 211 + 82 + 1 = 715) exactly. Two derivation corrections are
+recorded here rather than left implicit: the register's own documented
+command `grep -rhoP "^namespace \K[\w.]+"` misses any file carrying a
+UTF-8 byte-order mark (see the `Tempest.Core.Models` row) and a plain
+`find src/... -name "*.cs"` counts build output under `bin/`/`obj/` in a
+checkout that has been built locally — both derivations must strip the
+BOM and prune those directories, as the health check's own Namespace
+check does. The previously stated 46 namespaces / 713 files were correct
+against the tree `WP 16.2A` measured; the movement since is `WP 16.3B`'s
+`Contracts/StateMigration.cs` (`Tempest.Core.EngineeringDomain` 65 → 66)
+and its settings-migration contract (`Tempest.Core.Settings` 10 → 11),
+plus the `Tempest.Core.Models` row split out of the global-namespace row
+at the `WP 16.1B` integration. The `Tempest.Templates.Module` sample-only project remains
 out of this register's own declared scope; its own single `.cs` file
 is not counted above.
 
 **`src/Tempest.Desktop/` remains explicitly out of this register's own
-declared Scope** (see the Scope field above) — 88 `.cs` files across 9
-namespaces (`Docking`, `Editors`, `History`, `Input`, `Tasks`, `Theming`,
-`Views`, `DigitalThread`, and the root `Tempest.Desktop` namespace
-itself), none counted anywhere in this register, a decision reaffirmed
-rather than revisited by `WP 16.2A` — extending scope to a full second
+declared Scope** (see the Scope field above) — **89 `.cs` files across 14
+namespaces**, re-derived 2026-09-05: `Branding`, `Composition`,
+`Diagnostics`, `DigitalThread`, `Docking`, `Editors`, `History`, `Icons`,
+`Input`, `Tasks`, `Theming`, `Viewing`, `Views`, and the root
+`Tempest.Desktop` namespace itself, plus one global-namespace file. (The
+"9 namespaces" stated by every prior pass listed only nine of them and was
+wrong on its own terms — corrected here, still out of scope.) None are
+counted anywhere in this register, a decision reaffirmed rather than
+revisited by `WP 16.2A` — extending scope to a full second
 project's worth of namespaces remains a separate, substantial
 undertaking, per the `WP 12.0B` follow-up entry below. Combined with
 `src/Templates/` (1 file, 1 namespace, out of scope by declared
-convention) and `src/Plugins/` (0 `.cs` files), `src/` holds 802 `.cs`
-files across 61 distinct namespaces in total —
-`grep -rhoP "^namespace \K[\w.]+" src --include=*.cs | sort -u | wc -l`
-returns 61; `find src -name "*.cs" | wc -l` returns 802 — of which this
-register's own declared scope covers 713 files (89%) and 47 namespaces
-(75%).**
+convention) and `src/Plugins/` (0 `.cs` files), `src/` holds **805 `.cs`
+files across 62 distinct namespaces** in total (BOM-aware, `bin/`/`obj/`
+pruned; 47 + 14 + 1 = 62) — of which this register's own declared scope
+covers 715 files (89%) and 47 namespaces (76%).**
 
 ## A Note on the Four Pre-Claude Namespaces
 

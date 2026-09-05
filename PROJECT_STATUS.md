@@ -69,15 +69,18 @@ Release Plan):
 | `WP 16.3A` | `ADR-0120` — durable state carries a schema version, migrations apply only on read; accepted at Technical Review | `docs/adr/ADR-0120-durable-state-carries-a-schema-version-and-migrations-apply-only-on-read.md`; `docs/architecture/State Schema Versioning Architecture.md` |
 | `WP 16.5B` | Linux/X11 launch fixed: Avalonia 11.3.20, `Tmds.DBus.Protocol` 0.21.3; `TD-116` Resolved; advisory Linux launch smoke job in CI | `docs/releases/v0.16.0/WP16.5B Linux Launch Spike Report.md` |
 | `WP 16.2B` | 41 Academy retrospectives written, 21 register rows backfilled; Academy at 206 retrospectives | `docs/releases/v0.16.0/WP16.2B Academy Retrospective Backfill Report.md` |
+| `WP 16.4A` | Test determinism: `TD-34`, `TD-119`, `TD-83`, `TD-100` Resolved; Core temp-directory leak closed; worktree-safe `SampleSeparationTests` | `docs/releases/v0.16.0/WP16.4A Test Determinism Report.md` |
+| `WP 16.3B` | Schema versioning implemented per `ADR-0120`; `TD-87` Resolved; golden corpus and restart proof committed | `docs/releases/v0.16.0/WP16.3B Schema Versioning Implementation Report.md` |
+| `WP 16.5A` | Accessibility baseline: modal dialogs, automation names, live regions, graph keyboard, focus ring, contrast ≥ 4.5:1; `TD-65` Partially resolved | `docs/releases/v0.16.0/WP16.5A Accessibility Baseline Report.md` |
+| `WP 16.1B` | Governance health check extended 8 → 16 checks with induced-failure proof; `TD-43` fixed; two register drifts it caught closed at integration | `docs/releases/v0.16.0/WP16.1B Health-Check Extension Report.md` |
 
 **`WP 16.2A`'s disclosed gap, resolved.** `WP 16.2A` found no standalone
 `WP 16.0B` report at its base; the report now exists (row above), written
 at the `WP 16.2B` closure. `WP 16.2A` also recorded `WP 16.3A` as not
 landed; it was — its base `8b4c394` is the `WP 16.3A` merge commit.
 
-**In progress on their own branches** (not yet merged): `WP 16.4A`,
-`WP 16.3B` (under Technical Review revision), `WP 16.5A`, `WP 16.1B`.
-`WP 16.4B` is sequenced behind `WP 16.3B`.
+**In progress on its own branch** (not yet merged): `WP 16.4B`
+(durability and loopback hygiene, `D-024`).
 
 ## Repository Metrics
 
@@ -88,13 +91,13 @@ directly: `docs/governance/Quality/Repository Metrics Register.md`
 | Metric | Value |
 |---|---|
 | `VERSION` | `0.15.0` |
-| `src/` `.cs` files / lines | 802 / 75,955 |
+| `src/` `.cs` files / lines | 805 / 76,890 |
 | `tests/` `.cs` files / lines | 348 / 78,161 |
 | `[Fact]`/`[Theory]` attributes | 2,725 |
 | ADRs | 120 (`ADR-0001`–`ADR-0120`) |
-| Public interfaces (`src/Tempest.Core/`) | 188 |
+| Public interfaces (`src/Tempest.Core/`) | 191 (190 distinct names) |
 | Custom exception types | 84 |
-| Technical Debt Register rows | 122 (`TD-001`–`TD-122`) |
+| Technical Debt Register rows | 122 (`TD-001`–`TD-122`): 45 Resolved, 6 Closed, 66 Open, 4 Partially resolved, 1 Deferred |
 | Total commits | 267 |
 
 ## Repository Health
@@ -115,8 +118,9 @@ counts.
 **Since `WP 16.5B` (Avalonia 11.3.20), locally on Linux** — the
 `feature/v0.16.0` merge base was rebuilt and re-tested in this session:
 Release build 0 warnings / 0 errors with `TreatWarningsAsErrors`;
-`Tempest.Desktop.Tests` 412/412; the Desktop launched under Xvfb with a
-full startup log and no crash log. **CI note:** every GitHub-hosted run on
+after the Wave 2/3 merges **`Tempest.Core.Tests` 3,124/3,124 and
+`Tempest.Desktop.Tests` 453/453** (Release); the Desktop launched under
+Xvfb with a full startup log and no crash log. **CI note:** every GitHub-hosted run on
 this private repository from 22:34 UTC on 2026-09-04 failed within
 seconds with no runner assigned (Windows and Ubuntu alike, on unchanged
 workflow files, with no GitHub incident reported) — the signature of an
@@ -137,7 +141,7 @@ points to it:
 - **Interfaces** — `docs/governance/Engineering/Interface Register.md` (188, re-derived `WP 16.2A`).
 - **Exceptions** — `docs/governance/Engineering/Exception Register.md` (84, re-derived `WP 16.2A`).
 - **Dependency Injection** — `docs/governance/Engineering/Dependency Injection Register.md` (50 named registrations, 55 total statements, re-derived `WP 16.2A`).
-- **Namespaces** — `docs/governance/Engineering/Namespace Register.md` (46 namespaces / 713 files in declared scope, 61/802 across all of `src/`, re-derived `WP 16.2A`).
+- **Namespaces** — `docs/governance/Engineering/Namespace Register.md` (47 namespaces / 715 files in declared scope, 62/805 across all of `src/`, re-derived `WP 16.2A`, corrected at the `WP 16.1B` integration follow-up).
 - **Platform Services** — `docs/governance/Engineering/Platform Services Register.md` (35 entries, re-derived `WP 16.2A`).
 - **Feature history** — `docs/governance/Delivery/Feature Register.md` (extended through `v0.15.0`, `WP 16.2A`).
 - **Release history** — `docs/governance/Delivery/Release Register.md` (17 versions referenced, `v0.15.0` corrected to Released, `WP 16.2A`).
@@ -182,8 +186,8 @@ WorkPackages.md`:
 - **Landed** — Wave 0/1: `WP 16.0A` (Proposed records), `WP 16.0B`,
   `WP 16.1A` (workflow half), `WP 16.3A`, `WP 16.5B`; Wave 2: `WP 16.2A`,
   `WP 16.2B`.
-- **In progress** — `WP 16.4A`, `WP 16.3B`, `WP 16.5A`, `WP 16.1B`.
-- **Sequenced** — `WP 16.4B` (after `WP 16.3B`).
+- **Landed** — Wave 2/3: `WP 16.4A`, `WP 16.3B`, `WP 16.5A`, `WP 16.1B`.
+- **In progress** — `WP 16.4B`.
 - **Closing** — `WP 16.9.0` (Engineering Readiness Review and the
   first §9 Product Approval verdict recorded since `v0.12.0`), preceded
   by the release review board.
