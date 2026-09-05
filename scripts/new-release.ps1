@@ -2,7 +2,15 @@ param(
     [Parameter(Mandatory)]
     [string]$Version,
 
-    [switch]$Push
+    [switch]$Push,
+
+    # Skips the hard 'CI Gate' verification below. Deliberately awkward to
+    # reach for: the only legitimate use is when 'gh' cannot query the run
+    # from where you are standing and you have confirmed on GitHub yourself
+    # that CI Gate concluded 'success' for the exact commit being tagged.
+    # It does not make an un-green commit taggable; it moves the check off
+    # the machine and onto the person, who then owns it (`WP 16.1A-R1`).
+    [switch]$SkipCiCheck
 )
 
 $ErrorActionPreference = "Stop"
@@ -109,24 +117,45 @@ if ($existingTag)
 # point in the release process a human is about to tag and push.
 #
 
+# `WP 16.1A-R1` (v0.16.0 review board): this check used to print a yellow
+# warning and continue, so a human who did not read it could tag and push a
+# commit whose `CI Gate` was red, cancelled, or had never run. Combined with
+# branch protection still being unconfigured (`TD-45`), nothing mechanically
+# stopped that. It is now a hard stop. Note the specific hazard the review
+# board caught live: a run superseded by a later push completes as
+# `cancelled`, not `failure` — so anything short of an explicit `success`
+# must block, never merely "not a failure".
+
 $ghAvailable = Get-Command gh -ErrorAction SilentlyContinue
 
-if ($ghAvailable)
+if ($SkipCiCheck)
+{
+    Write-Host "-SkipCiCheck was passed: the 'CI Gate' status for this commit was NOT verified by this script. You are asserting it is green." -ForegroundColor Yellow
+}
+elseif ($ghAvailable)
 {
     $headCommit = git rev-parse HEAD
 
     Write-Host "Checking CI status for $headCommit via 'gh'..."
 
-    & gh run list --commit $headCommit --workflow ci.yml --limit 1
+    $conclusion = & gh run list --commit $headCommit --workflow ci.yml --limit 1 --json conclusion --jq '.[0].conclusion'
 
     if ($LASTEXITCODE -ne 0)
     {
-        Write-Host "Could not query CI status via 'gh' - confirm the 'CI Gate' check is green for this commit before proceeding." -ForegroundColor Yellow
+        throw "Could not query CI status via 'gh' for $headCommit. The 'CI Gate' check must be confirmed green before tagging (Engineering Governance 7.3). Resolve the query failure, or re-run with -SkipCiCheck if you have confirmed the run on GitHub yourself."
     }
+
+    if ($conclusion -ne 'success')
+    {
+        $reported = if ([string]::IsNullOrWhiteSpace($conclusion)) { '(no completed run found)' } else { $conclusion }
+        throw "CI for $headCommit concluded '$reported', not 'success'. This tag will not be created. A run cancelled by a later push counts as not-green and must be re-run on the exact commit being tagged."
+    }
+
+    Write-Host "CI concluded 'success' for $headCommit." -ForegroundColor Green
 }
 else
 {
-    Write-Host "'gh' CLI not found - confirm the 'CI Gate' check (.github/workflows/ci.yml) is green for this commit on GitHub before proceeding." -ForegroundColor Yellow
+    throw "'gh' CLI not found, so the 'CI Gate' status for this commit cannot be verified. Install 'gh', or re-run with -SkipCiCheck if you have confirmed on GitHub that CI Gate is green for the exact commit being tagged."
 }
 
 #

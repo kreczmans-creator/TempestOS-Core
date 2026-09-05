@@ -362,9 +362,24 @@ jobs:
             cat src/Tempest.Desktop/bin/Release/net10.0/logs/tempestos-crash.log
             exit 1
           fi
+          # `WP 16.1A-R1` (v0.16.0 review board): "still running when the
+          # timeout fired" is not by itself evidence of a successful
+          # launch — a process that deadlocks *after* Avalonia platform
+          # init (a stuck DI resolution, a frozen dispatcher loop) is also
+          # still running at 25 seconds and used to pass this job
+          # identically to a healthy one. Require a positive late-startup
+          # marker in the captured log as well, so a hang before that
+          # point fails even on the timeout branch. The marker is
+          # `TempestHost.EnterRunning`'s own log line, verified empirically
+          # against a real `xvfb-run` launch on this branch rather than
+          # assumed from a grep of the source.
           if [ "$code" -eq 124 ] || [ "$code" -eq 137 ]; then
-            echo "Still running when the timeout fired - launched successfully."
-            exit 0
+            if grep -q "Host -> Running." launch.log; then
+              echo "Still running when the timeout fired, and startup reached 'Host -> Running.' - launched successfully."
+              exit 0
+            fi
+            echo "::error::Still running when the timeout fired, but the launch log never reached 'Host -> Running.' - the process hung during startup rather than launching."
+            exit 1
           fi
           echo "::error::Tempest.Desktop exited on its own (code $code) - see launch.log above."
           exit 1

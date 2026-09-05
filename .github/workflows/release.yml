@@ -91,6 +91,23 @@ jobs:
             exit $LASTEXITCODE
           }
 
+      # The release path must not be weaker than the merge path. `WP 16.1A`
+      # made `CI Gate` depend on the Governance Health Check, so no branch
+      # reaches `main` with a governance register that has drifted from
+      # source — but this workflow, which is what actually publishes, never
+      # ran that check at all. A tag could therefore be published carrying
+      # drift that the merge gate would have rejected. Raised by the
+      # `v0.16.0` review board (`WP 16.1A-R1`); the check is a hard gate
+      # here, exactly as it is in `CI Gate`.
+      - name: Governance Health Check
+        shell: pwsh
+        run: |
+          ./scripts/governance-healthcheck.ps1
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "The Governance Health Check failed for tag '${{ github.ref_name }}' - this tag will not be published."
+            exit $LASTEXITCODE
+          }
+
       # Two separate archives, deliberately not one — ADR-0101 (`WP 11.3B`):
       # Tempest.Desktop is TempestOS's shipped application; Tempest.App
       # (WorkspaceShell) is the Internal Engineering Harness. The primary

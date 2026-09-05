@@ -42,6 +42,19 @@
       Report.md" for the reproduction and verification evidence.
     -->
     <PackageReference Include="Tmds.DBus.Protocol" Version="0.21.3" />
+    <!--
+      Pinned deliberately at 4.1.1 rather than tracking latest (5.x).
+      Recorded at the `v0.16.0` review board, which flagged that this was
+      the one version-sensitive pin in this file carrying no rationale
+      while every other one does. It is not a security hold: a
+      vulnerable-transitive-package scan is clean across all projects and
+      NuGet shows no deprecation on 4.1.1. It is simply not
+      yet evaluated — 5.x changes the native SkiaSharp/PDFium dependency
+      set, which is exactly the class of change that produced `TD-116`,
+      so bumping it wants its own timeboxed spike with a real Linux and
+      Windows launch behind it, not a version bump in a release whose
+      scope is hygiene. Tracked for evaluation before `v1.0.0`.
+    -->
     <PackageReference Include="PDFtoImage" Version="4.1.1" />
     <!--
       The Tempest Engineering Design System's prose face (Inter) ships in

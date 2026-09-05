@@ -16,7 +16,7 @@ says so rather than implying more than was tested.
 | Requirement | Detail |
 |---|---|
 | **.NET SDK** | The version pinned in [`global.json`](global.json) — **10.0.302**, `rollForward: latestFeature`. Any 10.0.3xx SDK satisfies it. This is the only mandatory install. |
-| **Operating system** | **Windows** is the verified platform: CI runs on `windows-2022`, and the desktop application is known to launch there. macOS is expected to work and is untested. **Linux cannot currently launch the desktop application** — see §8. Building and running the full test suite works on all three. |
+| **Operating system** | **Windows** is the verified platform: CI runs on `windows-2022`, and the desktop application is known to launch there. macOS is expected to work and is untested. **Linux launches the desktop application** as of `WP 16.5B` (Avalonia 11.3.20) — but on weaker evidence than Windows: one local `xvfb-run` launch plus an advisory `linux-launch-smoke` CI job that is not a required check. See §8, item 1. Building and running the full test suite works on all three. |
 | **PowerShell** | Only for the governance health check (§2.5). CI uses PowerShell 7 (`pwsh`); the script uses no PowerShell 7-only syntax, so Windows PowerShell 5.1 is expected to work, but that has not been verified. |
 | **Network** | Needed **once**, for `dotnet restore`. Packages come from the default nuget.org feed; the repository declares no `NuGet.config` and no private feed. After restore, build/test/run are offline. |
 | **Not required** | No .NET workloads (`dotnet workload install` is never needed). No Visual Studio. No Node, Python or Docker. No database. No SDK-external build tools. No code generation step. No environment variables. No secrets, licence file, API key, account or sign-in of any kind. |
@@ -290,4 +290,4 @@ Commercial, Resources, Knowledge, Administration and cross-project Tasks modules
 | Build fails with warnings-as-errors | Confirm it fails without `-p:TreatWarningsAsErrors=true` too; a clean tree builds with zero warnings in both configurations. |
 | Desktop tests appear to hang | They take about three minutes with no output. Let them finish. |
 | The application starts empty after a relaunch | Working directory (§4), before anything else. |
-| The application will not start on Linux | §8, item 1. |
+| The application will not start on Linux | §8, item 1 — this was `TD-116`, resolved by `WP 16.5B`; if you still see it, that is a new defect, not the known one. |
