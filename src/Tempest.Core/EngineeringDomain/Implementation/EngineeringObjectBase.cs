@@ -439,6 +439,22 @@ public abstract class EngineeringObjectBase :
         get { lock (_structuralLock) { return _isDeleted; } }
     }
 
+    /// <remarks>
+    /// <b>`TD-97` closure — attachment content is released on delete.</b>
+    /// This object's metadata (<see cref="IAttachment"/> records) is never
+    /// erased — deletion is soft, and the platform's own append-only,
+    /// nothing-silently-destroyed ethos keeps every attachment's history
+    /// intact for a deleted object exactly as for a live one. The
+    /// <em>bytes</em> a deleted object's attachments held are a different
+    /// matter: nothing can ever view them again through this object, so
+    /// they are released via <see cref="IAttachmentContentStore.DeleteAsync"/>
+    /// once <see cref="IsDeleted"/> is durably recorded — after, not
+    /// before, so a crash between the two leaves the object durably
+    /// deleted with its content merely unreleased yet (the pre-existing,
+    /// disclosed `TD-97` state — closed the rest of the way by the
+    /// content sweep, never by reordering this write ahead of the
+    /// deletion it depends on).
+    /// </remarks>
     public async Task DeleteAsync(CancellationToken cancellationToken = default)
     {
         var all = await _context.Repository.ListAllAsync(cancellationToken).ConfigureAwait(false);
@@ -456,6 +472,15 @@ public abstract class EngineeringObjectBase :
         }
 
         await PersistStateAsync(cancellationToken).ConfigureAwait(false);
+
+        if (_context.AttachmentContentStore is { } contentStore)
+        {
+            List<IAttachment> attachmentsSnapshot;
+            lock (_attachments) { attachmentsSnapshot = _attachments.ToList(); }
+
+            foreach (var attachment in attachmentsSnapshot)
+                await contentStore.DeleteAsync(attachment.Id, cancellationToken).ConfigureAwait(false);
+        }
     }
 
     // IHasBomLine (WP 9.0B — additive; see BillOfMaterials.cs)
