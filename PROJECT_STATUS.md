@@ -102,9 +102,18 @@ directly: `docs/governance/Quality/Repository Metrics Register.md`
 
 ## Repository Health
 
-**Last real, CI-verified full-suite totals** (at the `v0.15.0` tag):
-**3,088/3,088 Core tests, 408/408 Desktop tests**, 0 failures, both
-configurations — `docs/releases/v0.15.0/Release Notes.md`. Desktop rose
+**Last real, CI-verified full-suite totals** (`d7d3f3b`, the frozen
+`v0.16.0` candidate): **3,204/3,204 Core tests, 474/474 Desktop tests**,
+0 failures, both configurations, on `windows-2022` — and verified five
+consecutive times, not once. `WP 16.4A`'s acceptance line required a
+five-run CI determinism matrix on one immutable commit; runs 195, 197,
+199, 201 and 202 all concluded `success`, every job in every run, with no
+retries. Evidence table:
+`docs/releases/v0.16.0/WP16.9.0 Engineering Release Report.md` §4.1.
+These figures are from the candidate, which is **not** merged or tagged;
+the last *released* CI-verified totals remain **3,088/3,088 Core,
+408/408 Desktop** at the `v0.15.0` tag —
+`docs/releases/v0.15.0/Release Notes.md`. Desktop rose
 to **412/412** after `WP 15.2A`'s own persistence-root cleanup —
 `docs/releases/v0.16.0/WP15.2A Desktop Test Suite Persistence Root
 Cleanup — Implementation Report.md`. Neither `WP 16.1A` nor `WP 16.2A`
@@ -130,9 +139,9 @@ the repository public, which restores free hosted-runner minutes: run
 `171` at 06:06 UTC is the first success after the last failure (run
 `170`, 05:44 UTC, dead in ten seconds). Work Package reports written
 during the window state their evidence as local-only, correctly for when
-they were written; `WP 16.9.0` re-establishes CI evidence on the
+they were written; `WP 16.9.0` re-established CI evidence on the
 integrated tree rather than carrying those local figures forward as the
-release's certification.
+release's certification — the five-run matrix on `d7d3f3b`, above.
 
 Build: 0 warnings, 0 errors, both configurations, at the `v0.15.0` tag
 — every merge to `main` is now gated by real CI (`WP 11.1A`) and, as of
