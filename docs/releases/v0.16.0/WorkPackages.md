@@ -2,11 +2,22 @@
 
 ## Status
 
-**Engineering complete; awaiting Product Approval. Proposed, not approved.** Scope, sequencing, and
-acceptance for every row are in `v0.16.0 Release Plan.md` in this
-folder. `VERSION` remains `0.15.0` until `WP 16.9.0`. This folder
-exists so the plan lives where this project keeps release plans; it is
-not a claim that `v0.16.0` has begun.
+**Engineering complete; blocked at the Product Approval boundary.** Every
+row below is delivered and validated, and `WP 16.4A`'s five-run CI
+determinism matrix — the last outstanding engineering gate — was obtained
+on the frozen candidate `d7d3f3b`. `VERSION` is `0.16.0`, bumped by
+`WP 16.9.0`. Scope, sequencing and acceptance for every row are in
+`v0.16.0 Release Plan.md` in this folder.
+
+What "complete" does **not** mean, stated here because the row statuses
+below are the thing most likely to be read alone: the release is not
+merged to `main`, not tagged, not published, and carries no Product
+Approval verdict. `D-021`–`D-026` remain **Proposed**. Governance §7.1
+permits a release to be cut only from `main` and §9 reserves the merge,
+the tag and the verdict to Product Approval — so those four are not
+engineering's to perform, and their absence is the correct state, not an
+omission. Recommendation and evidence:
+`WP16.9.0 Engineering Release Report.md`.
 
 ## Purpose
 
