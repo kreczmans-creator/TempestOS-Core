@@ -13,6 +13,15 @@ namespace Tempest.Core.Tests.Concurrency;
 // InternalsVisibleTo("Tempest.Core.Tests").
 public class AsyncKeyedLockTests
 {
+    // WP16.4A-R1: every TaskCompletionSource-based gate below waits at
+    // most this long — long enough that a correct, fast implementation
+    // never comes close, short enough that a seam which stops being
+    // reached (a regression in AcquireAsync, or a signal a future change
+    // forgets to send) fails in seconds with a named TimeoutException
+    // instead of hanging until CI's own 30-minute job timeout kills the
+    // whole matrix leg without saying why.
+    private static readonly TimeSpan GateTimeout = TimeSpan.FromSeconds(10);
+
     [Fact]
     public async Task AcquireAsync_SameKey_SerializesConcurrentAccess()
     {
@@ -24,10 +33,10 @@ public class AsyncKeyedLockTests
         {
             using var releaser = await keyedLock.AcquireAsync("key");
             firstAcquired.SetResult();
-            await releaseFirst.Task;
+            await releaseFirst.Task.WaitAsync(GateTimeout);
         });
 
-        await firstAcquired.Task;
+        await firstAcquired.Task.WaitAsync(GateTimeout);
 
         var secondAcquireTask = keyedLock.AcquireAsync("key");
 
@@ -72,10 +81,10 @@ public class AsyncKeyedLockTests
         {
             using var releaser = await keyedLock.AcquireAsync("key");
             firstAcquired.SetResult();
-            await releaseFirst.Task;
+            await releaseFirst.Task.WaitAsync(GateTimeout);
         });
 
-        await firstAcquired.Task;
+        await firstAcquired.Task.WaitAsync(GateTimeout);
 
         var secondAcquireTask = keyedLock.AcquireAsync("key");
 
@@ -144,46 +153,81 @@ public class AsyncKeyedLockTests
         Assert.Equal(0, keyedLock.TrackedKeyCount);
     }
 
+    // WP16.4A-R1: a single Barrier(2) race, run once, essentially never
+    // catches this bug. Reverting Releaser.Dispose()'s Interlocked.Exchange
+    // guard to a plain, non-atomic `bool` and running the single-shot
+    // version of this test 20 full times produced 0 detections; a
+    // standalone 2,000-trial probe against the same reverted guard caught
+    // it in 9 trials (0.45%). A single-shot test built on a race that thin
+    // buys no real confidence - it passes against genuinely broken code on
+    // all but a handful of runs in a thousand.
+    //
+    // The fix is not a better single race - no single Barrier(2) pairing
+    // can be made more reliable than the scheduler's own willingness to
+    // interleave two threads at the SignalAndWait release point, which is
+    // exactly what the 0.45% reflects - but many independent trials of
+    // that same race inside one test, bounded purely by iteration count
+    // (never wall-clock, per WP 16.4A's own no-flake discipline): the same
+    // looped-real-thread-race idiom NavigationServiceTrustTests already
+    // uses for its own registration race
+    // (Register_ConcurrentRegistrantsForSameId_HighestTierAlwaysEndsUpSoleOwner).
+    //
+    // Iteration count: treating the measured 9/2000 = 0.45% as this race's
+    // per-trial detection probability p, N independent iterations catch
+    // the bug at least once with probability 1 - (1 - p)^N. Solving
+    // 1 - (1 - 0.0045)^N >= 0.99 gives N >= ln(0.01) / ln(0.9955) ~= 1021.
+    // 2,000 iterations - the same order of magnitude as the reviewer's own
+    // probe, comfortably above that threshold - gives
+    // 1 - (0.9955)^2000 ~= 1 - e^-9 ~= 99.99% detection probability, while
+    // still running in well under a second: each iteration is just two
+    // Task.Run calls meeting at a barrier and disposing a Releaser, no I/O
+    // and no allocation-heavy work.
     [Fact]
     public async Task Releaser_DoubleDisposedConcurrently_ReleasesExactlyOnce()
     {
-        var keyedLock = new AsyncKeyedLock();
-        var releaser = await keyedLock.AcquireAsync("key");
+        const int iterations = 2000;
 
-        var exceptions = new ConcurrentBag<Exception>();
-        var barrier = new Barrier(2);
-
-        void DisposeOnce()
+        for (var iteration = 0; iteration < iterations; iteration++)
         {
-            barrier.SignalAndWait();
+            var keyedLock = new AsyncKeyedLock();
+            var releaser = await keyedLock.AcquireAsync("key");
 
-            try
+            var exceptions = new ConcurrentBag<Exception>();
+            using var barrier = new Barrier(2);
+
+            void DisposeOnce()
             {
-                releaser.Dispose();
+                barrier.SignalAndWait();
+
+                try
+                {
+                    releaser.Dispose();
+                }
+                catch (Exception ex)
+                {
+                    exceptions.Add(ex);
+                }
             }
-            catch (Exception ex)
+
+            // Both threads race to dispose the exact same Releaser at the
+            // same instant, via the barrier - a plain bool double-dispose
+            // guard has a window here where both observe "not yet
+            // released" and both go on to call SemaphoreSlim.Release(),
+            // which throws SemaphoreFullException on a
+            // SemaphoreSlim(1, 1)'s second call.
+            await Task.WhenAll(Task.Run(DisposeOnce), Task.Run(DisposeOnce));
+
+            Assert.Empty(exceptions);
+            Assert.Equal(0, keyedLock.TrackedKeyCount);
+
+            // Released exactly once: a fresh acquire on the same key
+            // succeeds immediately (the semaphore's count is a sane 1, not
+            // corrupted by an over-release), proving the double dispose
+            // above did not release twice.
+            using (await keyedLock.AcquireAsync("key"))
             {
-                exceptions.Add(ex);
+                Assert.Equal(1, keyedLock.TrackedKeyCount);
             }
-        }
-
-        // Both threads race to dispose the exact same Releaser at the same
-        // instant, via the barrier - a plain bool double-dispose guard has
-        // a window here where both observe "not yet released" and both go
-        // on to call SemaphoreSlim.Release(), which throws
-        // SemaphoreFullException on a SemaphoreSlim(1, 1)'s second call.
-        await Task.WhenAll(Task.Run(DisposeOnce), Task.Run(DisposeOnce));
-
-        Assert.Empty(exceptions);
-        Assert.Equal(0, keyedLock.TrackedKeyCount);
-
-        // Released exactly once: a fresh acquire on the same key succeeds
-        // immediately (the semaphore's count is a sane 1, not corrupted by
-        // an over-release), proving the double dispose above did not
-        // release twice.
-        using (await keyedLock.AcquireAsync("key"))
-        {
-            Assert.Equal(1, keyedLock.TrackedKeyCount);
         }
     }
 }

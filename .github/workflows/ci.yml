@@ -103,6 +103,15 @@ jobs:
             exit $LASTEXITCODE
           }
 
+      # `--blame-hang`/`--blame-hang-timeout` (`WP16.4A-R1`): without these,
+      # a test that hangs — a gated seam that stops being reached, for
+      # instance — has no backstop but this job's own 30-minute
+      # `timeout-minutes`, which kills the whole matrix leg with no
+      # indication of which test caused it. 5 minutes is comfortably above
+      # this suite's real run time (well under a minute) and comfortably
+      # below the 30-minute job timeout, so a genuine hang is caught and
+      # named — with a hang dump collected — long before the job itself
+      # would otherwise be killed with no diagnostic at all.
       - name: Test (${{ matrix.configuration }})
         shell: pwsh
         run: |
@@ -111,7 +120,9 @@ jobs:
             --no-build `
             --logger trx `
             --logger "console;verbosity=normal" `
-            --results-directory "TestResults/${{ matrix.configuration }}"
+            --results-directory "TestResults/${{ matrix.configuration }}" `
+            --blame-hang `
+            --blame-hang-timeout 5m
           if ($LASTEXITCODE -ne 0) {
             Write-Error "One or more tests failed for configuration '${{ matrix.configuration }}' (exit code $LASTEXITCODE)."
             exit $LASTEXITCODE

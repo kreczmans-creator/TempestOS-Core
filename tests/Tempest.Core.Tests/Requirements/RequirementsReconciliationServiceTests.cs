@@ -2,6 +2,7 @@ using Tempest.Core.EngineeringData;
 using Tempest.Core.Identity;
 using Tempest.Core.Persistence;
 using Tempest.Core.Requirements;
+using Tempest.Core.Tests.Persistence;
 using Tempest.Core.Verification;
 
 namespace Tempest.Core.Tests.Requirements;
@@ -198,9 +199,16 @@ public class RequirementsReconciliationServiceTests
     /// own race test: a sweep interleaved with an in-flight
     /// <see cref="RequirementsService.CreateAsync"/> call must never make
     /// the fully-created Requirement unfindable by identifier. No timing —
-    /// <see cref="GatedListKeysPersistenceStore"/> pauses the sweep's own
-    /// document scan (the authoritative side, read second under the fixed
-    /// order) until the registration inside that pause has completed.
+    /// <see cref="OrderAgnosticGatedListKeysPersistenceStore"/> pauses the
+    /// sweep's own document scan (the authoritative side, read second
+    /// under the fixed order) until the registration inside that pause
+    /// has completed. Armed on {identifier index, documents} and keyed to
+    /// arrival order rather than to either name, so this still fails if
+    /// the sweep's derived-then-authoritative read order is ever reverted
+    /// (`WP16.4A-R1`) — the pair still gates on whichever of the two
+    /// arrives second, even though that is now the identifier index
+    /// rather than documents, instead of firing on the very first call
+    /// and letting the whole race run to completion unobserved.
     /// </summary>
     [Fact]
     public async Task SweepAsync_InterleavedWithAnInFlightCreate_NeverMakesTheRequirementUnfindable()
@@ -212,11 +220,12 @@ public class RequirementsReconciliationServiceTests
         var verificationService = new VerificationService(documentStore, principalAccessor, permissionEvaluator);
         var requirementsService = new RequirementsService(documentStore, store, principalAccessor, verificationService);
 
-        var gated = new GatedListKeysPersistenceStore(store, EngineeringDocumentStore.DocumentsCollectionName);
+        var gated = new OrderAgnosticGatedListKeysPersistenceStore(
+            store, RequirementsService.IdentifierIndexCollectionName, EngineeringDocumentStore.DocumentsCollectionName);
         var reconciliation = new RequirementsReconciliationService(documentStore, gated);
 
         var sweepTask = reconciliation.SweepAsync();
-        await gated.ReachedGate;
+        await gated.ReachedGate.WaitAsync(OrderAgnosticGatedListKeysPersistenceStore.GateTimeout);
 
         var requirement = await requirementsService.CreateAsync("REQ-RACE-1", "The system shall survive a concurrent sweep.");
 
@@ -235,7 +244,9 @@ public class RequirementsReconciliationServiceTests
     /// The same race, for a <see cref="RequirementsService.CreateCollectionAsync"/>
     /// call and the Collection registry — the identical document-then-
     /// registry write order, reconciled by <c>ReconcileRegistryAsync</c>
-    /// rather than <c>ReconcileIdentifierIndexAsync</c>.
+    /// rather than <c>ReconcileIdentifierIndexAsync</c>. Armed on
+    /// {collection registry, documents}, for the same order-agnostic
+    /// reason as the Requirement race above.
     /// </summary>
     [Fact]
     public async Task SweepAsync_InterleavedWithAnInFlightCollectionCreate_NeverMakesTheCollectionUnlisted()
@@ -247,11 +258,12 @@ public class RequirementsReconciliationServiceTests
         var verificationService = new VerificationService(documentStore, principalAccessor, permissionEvaluator);
         var requirementsService = new RequirementsService(documentStore, store, principalAccessor, verificationService);
 
-        var gated = new GatedListKeysPersistenceStore(store, EngineeringDocumentStore.DocumentsCollectionName);
+        var gated = new OrderAgnosticGatedListKeysPersistenceStore(
+            store, RequirementsService.CollectionRegistryCollectionName, EngineeringDocumentStore.DocumentsCollectionName);
         var reconciliation = new RequirementsReconciliationService(documentStore, gated);
 
         var sweepTask = reconciliation.SweepAsync();
-        await gated.ReachedGate;
+        await gated.ReachedGate.WaitAsync(OrderAgnosticGatedListKeysPersistenceStore.GateTimeout);
 
         var collection = await requirementsService.CreateCollectionAsync("Race Set");
 
@@ -265,50 +277,9 @@ public class RequirementsReconciliationServiceTests
             f.Category == RequirementsReconciliationService.StaleCollectionRegistryEntryCategory && f.DocumentId == collection.Id);
     }
 
-    /// <summary>
-    /// A wrapper around a real <see cref="IPersistenceStore"/> that pauses
-    /// one specific collection's <see cref="ListKeysAsync"/> call until
-    /// released — mirrors <c>Materials.MaterialCatalogReconciliationServiceTests</c>'s
-    /// own identical seam, duplicated per this codebase's own small-
-    /// test-local-fake convention.
-    /// </summary>
-    private sealed class GatedListKeysPersistenceStore : IPersistenceStore
-    {
-        private readonly IPersistenceStore _inner;
-        private readonly string _gatedCollection;
-        private readonly TaskCompletionSource _reachedGate = new(TaskCreationOptions.RunContinuationsAsynchronously);
-        private readonly TaskCompletionSource _releaseGate = new(TaskCreationOptions.RunContinuationsAsynchronously);
-
-        public GatedListKeysPersistenceStore(IPersistenceStore inner, string gatedCollection)
-        {
-            _inner = inner;
-            _gatedCollection = gatedCollection;
-        }
-
-        public Task ReachedGate => _reachedGate.Task;
-
-        public void Release() => _releaseGate.TrySetResult();
-
-        public async Task<IReadOnlyList<string>> ListKeysAsync(string collection, CancellationToken cancellationToken = default)
-        {
-            if (string.Equals(collection, _gatedCollection, StringComparison.Ordinal))
-            {
-                _reachedGate.TrySetResult();
-                await _releaseGate.Task.ConfigureAwait(false);
-            }
-
-            return await _inner.ListKeysAsync(collection, cancellationToken).ConfigureAwait(false);
-        }
-
-        public Task<string?> ReadAsync(string collection, string key, CancellationToken cancellationToken = default) =>
-            _inner.ReadAsync(collection, key, cancellationToken);
-
-        public Task WriteAsync(string collection, string key, string value, CancellationToken cancellationToken = default) =>
-            _inner.WriteAsync(collection, key, value, cancellationToken);
-
-        public Task DeleteAsync(string collection, string key, CancellationToken cancellationToken = default) =>
-            _inner.DeleteAsync(collection, key, cancellationToken);
-    }
+    // The gate itself — order-agnostic, shared with the Materials
+    // sibling of this race test rather than duplicated a third time —
+    // lives in Tempest.Core.Tests.Persistence.OrderAgnosticGatedListKeysPersistenceStore.
 
     // ---- Constructor validation ----
 

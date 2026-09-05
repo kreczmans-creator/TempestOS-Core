@@ -101,11 +101,59 @@ public class GoldenCorpusTests
         if (root.TryGetProperty("Status", out var status) && status.ValueKind == JsonValueKind.Number)
             Assert.Equal(status.GetInt32(), (int)state.Status);
 
+        // `Metadata` — every fixture carries this facet, and two of them
+        // (`assembly-with-parent.json`) carry real, non-null values for
+        // it. Left unasserted, a read path that silently wiped the whole
+        // facet to `EngineeringObjectMetadata.Empty` passed this corpus
+        // (`WP16.4A-R1`'s own mutation proof).
+        if (root.TryGetProperty("Metadata", out var metadata) && metadata.ValueKind == JsonValueKind.Object)
+        {
+            static string? OptionalString(JsonElement parent, string name) =>
+                parent.TryGetProperty(name, out var value) && value.ValueKind != JsonValueKind.Null ? value.GetString() : null;
+
+            Assert.Equal(OptionalString(metadata, "Category"), state.Metadata.Category);
+            Assert.Equal(OptionalString(metadata, "Discipline"), state.Metadata.Discipline);
+            Assert.Equal(OptionalString(metadata, "Owner"), state.Metadata.Owner);
+            Assert.Equal(OptionalString(metadata, "Classification"), state.Metadata.Classification);
+            Assert.Equal(OptionalString(metadata, "Notes"), state.Metadata.Notes);
+
+            if (metadata.TryGetProperty("Tags", out var tags) && tags.ValueKind == JsonValueKind.Array)
+                Assert.Equal(tags.EnumerateArray().Select(t => t.GetString()), state.Metadata.TagsOrEmpty);
+            else
+                Assert.Empty(state.Metadata.TagsOrEmpty);
+        }
+
         if (root.TryGetProperty("BomLine", out var bomLine) && bomLine.ValueKind == JsonValueKind.Object)
+        {
             Assert.Equal(bomLine.GetProperty("Quantity").GetDecimal(), state.BomLine.Quantity);
 
+            static string? OptionalString(JsonElement parent, string name) =>
+                parent.TryGetProperty(name, out var value) && value.ValueKind != JsonValueKind.Null ? value.GetString() : null;
+
+            Assert.Equal(OptionalString(bomLine, "UnitOfMeasure"), state.BomLine.UnitOfMeasure);
+            Assert.Equal(OptionalString(bomLine, "FindNumber"), state.BomLine.FindNumber);
+            Assert.Equal(OptionalString(bomLine, "ItemNumber"), state.BomLine.ItemNumber);
+            Assert.Equal(OptionalString(bomLine, "ReferenceDesignator"), state.BomLine.ReferenceDesignator);
+        }
+
         if (root.TryGetProperty("History", out var history) && history.ValueKind == JsonValueKind.Array)
+        {
             Assert.Equal(history.GetArrayLength(), state.History.Count);
+
+            var index = 0;
+            foreach (var transition in history.EnumerateArray())
+            {
+                var loaded = state.History[index++];
+
+                Assert.Equal(transition.GetProperty("From").GetInt32(), (int)loaded.From);
+                Assert.Equal(transition.GetProperty("To").GetInt32(), (int)loaded.To);
+                Assert.Equal(transition.GetProperty("ActorPrincipalId").GetString(), loaded.ActorPrincipalId);
+                Assert.Equal(transition.GetProperty("OccurredAt").GetDateTimeOffset(), loaded.OccurredAt);
+
+                var approvalId = transition.GetProperty("ApprovalId");
+                Assert.Equal(approvalId.ValueKind == JsonValueKind.Null ? null : approvalId.GetGuid(), loaded.ApprovalId);
+            }
+        }
 
         if (root.TryGetProperty("Attachments", out var attachments) && attachments.ValueKind == JsonValueKind.Array)
         {
@@ -118,6 +166,7 @@ public class GoldenCorpusTests
 
                 Assert.Equal(attachment.GetProperty("Id").GetGuid(), loaded.Id);
                 Assert.Equal(attachment.GetProperty("FileName").GetString(), loaded.FileName);
+                Assert.Equal(attachment.GetProperty("ContentType").GetString(), loaded.ContentType);
                 Assert.Equal(attachment.GetProperty("SizeInBytes").GetInt64(), loaded.SizeInBytes);
                 Assert.Equal(attachment.GetProperty("ContentHash").GetString(), loaded.ContentHash);
             }
