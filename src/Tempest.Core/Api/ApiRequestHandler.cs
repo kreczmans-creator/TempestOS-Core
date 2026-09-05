@@ -25,7 +25,7 @@ namespace Tempest.Core.Api;
 /// the header's own value against any credential. This is a disclosed,
 /// deliberate limitation (see <c>ADR-0052</c>), not an oversight; when
 /// enabled (see <see cref="RestApiHostedService"/> — the listener is
-/// disabled by default, <c>D-024</c>, Proposed) this platform binds only
+/// disabled by default, <c>D-024</c>, ratified 2026-09-05) this platform binds only
 /// to the loopback address, limiting real-world exposure until a genuine
 /// authentication mechanism is designed.
 /// </para>

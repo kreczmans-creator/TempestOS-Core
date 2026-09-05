@@ -20,6 +20,15 @@ public abstract class EngineeringObjectBase :
     private readonly object _lifecycleLock = new();
     private readonly object _structuralLock = new();
     private Func<IEngineeringDocument, IDocumentRevision, EngineeringObjectBase>? _selfFactory;
+
+    // `WP 16.4B-R4`. Non-null once `ReviseAsync` has built a successor for
+    // this Id and registered it in place of this instance. Written and read
+    // only inside the per-object write lock, which is what makes it a real
+    // ordering point rather than a hint: a competing durable write either
+    // acquires the lock before the revision (and is therefore carried into
+    // the successor's snapshot) or after it (and is refused). It is not
+    // `volatile` precisely because every access is already inside that lock.
+    private EngineeringObjectBase? _supersededBy;
     private LifecycleState _status = LifecycleState.Draft;
     private string _displayName;
     private Guid? _parentId;
@@ -211,6 +220,23 @@ public abstract class EngineeringObjectBase :
     /// <see cref="EngineeringDomainContext.AcquireObjectWriteLockAsync"/>.
     /// </para>
     /// <para>
+    /// <b>Keying it by <see cref="Id"/> was necessary and not sufficient
+    /// (`WP 16.4B-R4`).</b> The paragraph above identified the
+    /// <see cref="ReviseAsync"/> multi-instance hazard correctly and then
+    /// under-solved it: a shared lock <em>orders</em> the predecessor's and
+    /// successor's writes, but ordering alone does not stop the second from
+    /// discarding the first, because the successor's snapshot was taken at
+    /// revision time and never learns of a predecessor write that lands
+    /// after it. The release review reproduced exactly that, against the
+    /// real classes. What closes it is <see cref="ReviseAsync"/> performing
+    /// its capture-and-handoff inside this same lock and retiring the
+    /// predecessor there, so a later predecessor write is refused with
+    /// <see cref="SupersededEngineeringObjectException"/> instead of
+    /// silently overwriting. This note is left in place rather than
+    /// rewritten, because the gap between a correctly-identified hazard and
+    /// a sufficient fix is the whole lesson.
+    /// </para>
+    /// <para>
     /// <b>Re-entrancy.</b> <see cref="Concurrency.AsyncKeyedLock"/> is not
     /// reentrant. Every mutator on this hierarchy calls this method at
     /// most once, and never while already holding this object's write
@@ -229,6 +255,16 @@ public abstract class EngineeringObjectBase :
 
         using (await _context.AcquireObjectWriteLockAsync(Id, cancellationToken).ConfigureAwait(false))
         {
+            // `WP 16.4B-R4`. Checked *inside* the lock, never before it.
+            // Checked outside, this would be a race of its own: a caller
+            // could pass the check, block on the lock while `ReviseAsync`
+            // completes, then wake and overwrite the record with a snapshot
+            // the successor has never seen. Inside, the lock orders the two
+            // absolutely — whichever of {this write, the revision} acquires
+            // first wins, and if the revision won, this write never happened.
+            if (_supersededBy is { } successor)
+                throw new SupersededEngineeringObjectException(Id, successor.CurrentRevisionNumber);
+
             await store.SaveAsync(CaptureState(), cancellationToken).ConfigureAwait(false);
         }
     }
@@ -337,8 +373,33 @@ public abstract class EngineeringObjectBase :
         // capture/restore pair rehydration already uses, so there is
         // exactly one definition of "this object's state" and a field added
         // to it can never again be forgotten by one of two copy paths.
-        revised.RestoreState(CaptureState());
-        _context.Repository.Register(revised);
+        // `WP 16.4B-R4`: the handoff is performed under this object's own
+        // durable-write lock, and the predecessor is retired inside it.
+        //
+        // The independent release review reproduced a permanent data-loss
+        // path here against the real classes. Capturing outside the lock let
+        // a concurrent mutation on *this* instance land durably after the
+        // snapshot was taken but before the successor became live; the
+        // successor's next mutation then wrote its own whole-record snapshot
+        // and silently discarded that write. Where the discarded field was
+        // an attachment reference, the reconciliation sweep afterwards saw
+        // content that was present, unmarked and unreferenced, and deleted
+        // the file's bytes as a genuine orphan — behaving exactly as
+        // designed against durable state that had quietly lost the truth.
+        //
+        // `WP 16.4B-R3` keyed the write lock by Id rather than by instance
+        // *because* of this multi-instance hazard, and its own remarks on
+        // `PersistStateAsync` name it. But serialising the two writes was
+        // never sufficient: an ordered pair of writes still loses the first
+        // if the second carries a snapshot taken before it. Closing it needs
+        // both halves — an atomic capture, and a predecessor that refuses to
+        // write again afterwards rather than overwriting from a stale view.
+        using (await _context.AcquireObjectWriteLockAsync(Id, cancellationToken).ConfigureAwait(false))
+        {
+            revised.RestoreState(CaptureState());
+            _supersededBy = revised;
+            _context.Repository.Register(revised);
+        }
 
         return revised;
     }

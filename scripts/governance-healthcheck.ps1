@@ -16,7 +16,7 @@
     (never from another register), closing the root cause TD-57 disclosed:
     six governance registers (Interface, Exception, DI, Namespace, Platform
     Services, Validation) had drifted from source with no automated check
-    to catch it. D-021 (Proposed, WP 16.0A) names trustworthy registers as
+    to catch it. D-021 (ratified 2026-09-05, WP 16.0A) names trustworthy registers as
     a v1.0 readiness precondition; TD-57 was resolved by WP 16.2A
     re-deriving those registers once — this Work Package's own job is
     making sure they cannot go silently stale again the same way. See

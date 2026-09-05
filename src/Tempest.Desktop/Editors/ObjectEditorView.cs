@@ -898,6 +898,26 @@ public sealed class ObjectEditorView : UserControl
                     var open = new Button { Content = "Open", Padding = new Thickness(10, 1), FontSize = DesignTokens.FontSizeBody };
                     open.Classes.Add(ChromeStyles.Flat);
                     var captured = attachment;
+
+                    // `WP 16.5A-R2`. Named explicitly, and named per file.
+                    //
+                    // Without this the button had no accessible name of its
+                    // own at all: `ContentControlAutomationPeer.GetNameCore()`
+                    // fell back to `Content?.ToString()`, which reads "Open"
+                    // only because `Content` happens to be that literal
+                    // string today. An object with several attachments
+                    // therefore announced "Open, button" once per row with
+                    // nothing to tell them apart, and any redesign that made
+                    // the content a panel or a glyph — the shape the sibling
+                    // relationship-row button already uses — would have
+                    // silently degraded the name to a type name with no test
+                    // to notice.
+                    //
+                    // Including the file name also avoids reproducing
+                    // `TD-132` here: that row's identical-name problem is the
+                    // reason this one is named for its target rather than for
+                    // its verb.
+                    Avalonia.Automation.AutomationProperties.SetName(open, $"Open {captured.FileName}");
                     open.Click += (_, _) => _openAttachmentRequested?.Invoke(attachable, captured);
                     row.Children.Add(open);
                 }

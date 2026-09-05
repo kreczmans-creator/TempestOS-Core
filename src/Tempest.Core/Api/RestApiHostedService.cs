@@ -43,7 +43,7 @@ namespace Tempest.Core.Api;
 /// <c>HttpContext.RequestServices</c> for anything TempestOS-specific.
 /// </para>
 /// <para>
-/// <b>Disabled by default</b> (<c>D-024</c>, Proposed — awaiting Product
+/// <b>Disabled by default</b> (<c>D-024</c>, ratified by the Product
 /// Owner approval): <see cref="StartAsync"/> reads
 /// <see cref="EnabledConfigurationKey"/> before constructing any ASP.NET
 /// Core object at all, and returns without binding anything unless that
@@ -61,7 +61,7 @@ public sealed class RestApiHostedService : IHostedService
 {
     /// <summary>
     /// The configuration key gating whether the REST API's listener
-    /// starts at all (<c>D-024</c>, Proposed — awaiting Product Owner
+    /// starts at all (<c>D-024</c>, ratified by the Product Owner
     /// approval). Absent, empty, or unparseable resolves to
     /// <see langword="false"/> — the platform's own fail-closed default
     /// for a configuration switch, matching <c>ADR-0112</c>'s identical
@@ -121,7 +121,7 @@ public sealed class RestApiHostedService : IHostedService
     /// <inheritdoc />
     public async Task StartAsync(CancellationToken cancellationToken)
     {
-        // D-024 (Proposed): evaluated before any ASP.NET Core object is
+        // D-024 (ratified 2026-09-05): evaluated before any ASP.NET Core object is
         // constructed - no WebApplication, no port binding, when the
         // operator has not explicitly opted in. Mirrors ADR-0112's own
         // fail-closed reading of Plugins:AllowUnsignedLoad: absent, empty,

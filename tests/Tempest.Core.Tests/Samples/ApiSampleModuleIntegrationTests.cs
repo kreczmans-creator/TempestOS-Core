@@ -34,7 +34,7 @@ public class ApiSampleModuleIntegrationTests
         {
             new(PersistenceStore.RootPathConfigurationKey, persistenceRootPath),
             new(RestApiHostedService.PortConfigurationKey, "0"),
-            new(RestApiHostedService.EnabledConfigurationKey, "true"), // D-024 (Proposed): opt in explicitly, exactly as a real caller now must.
+            new(RestApiHostedService.EnabledConfigurationKey, "true"), // D-024 (ratified 2026-09-05): opt in explicitly, exactly as a real caller now must.
         };
 
         var permissions = grantedPermissions?.ToList();
@@ -262,7 +262,7 @@ public class ApiSampleModuleIntegrationTests
             [
                 new KeyValuePair<string, string>(PersistenceStore.RootPathConfigurationKey, temp.Path),
                 new KeyValuePair<string, string>(RestApiHostedService.PortConfigurationKey, occupiedPort.ToString()),
-                new KeyValuePair<string, string>(RestApiHostedService.EnabledConfigurationKey, "true"), // D-024 (Proposed): this test proves the port-in-use failure path, which requires the listener to actually attempt to start.
+                new KeyValuePair<string, string>(RestApiHostedService.EnabledConfigurationKey, "true"), // D-024 (ratified 2026-09-05): this test proves the port-in-use failure path, which requires the listener to actually attempt to start.
             ]))
             .Build();
         var originalOut = Console.Out;
