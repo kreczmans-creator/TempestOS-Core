@@ -60,6 +60,16 @@ public sealed class MaterialCatalogReconciliationService : IMaterialCatalogRecon
     /// the repair path below re-reads the live index value before ever
     /// writing to it, so it can never race the in-flight registration's
     /// own write into a lost update.
+    /// <para>
+    /// <b>This safety has no independent backstop.</b> Unlike
+    /// <c>EngineeringDomain.AttachmentContentReconciliationService</c>'s
+    /// write-intent marker, there is no second, runtime-checked mechanism
+    /// here — it rests entirely on the two structural invariants named
+    /// above (document-before-index write order; no physical document
+    /// deletion) continuing to hold in <see cref="MaterialCatalog"/>. If
+    /// either ever changes, this ordering must be re-derived; nothing
+    /// here will otherwise catch the regression.
+    /// </para>
     /// </remarks>
     private async Task<MaterialCatalogReconciliationReport> RunAsync(bool repair, CancellationToken cancellationToken)
     {

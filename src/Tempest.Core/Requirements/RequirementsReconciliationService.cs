@@ -77,6 +77,16 @@ public sealed class RequirementsReconciliationService : IRequirementsReconciliat
     /// — a false "missing", not a deletion — and the repair path underneath
     /// re-reads the live value before ever writing, so it can never
     /// clobber the write the in-flight registration is about to make.
+    /// <para>
+    /// <b>This safety has no independent backstop.</b> Unlike
+    /// <c>EngineeringDomain.AttachmentContentReconciliationService</c>'s
+    /// write-intent marker, there is no second, runtime-checked mechanism
+    /// here — it rests entirely on the two structural invariants named
+    /// above (document-before-index/registry write order; no physical
+    /// document deletion) continuing to hold in <see cref="RequirementsService"/>.
+    /// If either ever changes, this ordering must be re-derived; nothing
+    /// here will otherwise catch the regression.
+    /// </para>
     /// </remarks>
     private async Task<RequirementsReconciliationReport> RunAsync(bool repair, CancellationToken cancellationToken)
     {

@@ -159,6 +159,91 @@ public sealed class AttachmentContentReconciliationServiceTests : IDisposable
             _inner.DeleteAsync(objectId, cancellationToken);
     }
 
+    /// <summary>
+    /// Pauses the <em>second</em> of two calls it is told about, regardless
+    /// of which of the two arrives first — the seam
+    /// <see cref="SweepAsync_InterleavedBetweenItsMarkerReadAndItsStateRead_NeverCollectsTheLiveContent"/>
+    /// uses to hold the sweep between its marker read and its state read
+    /// without hard-coding which of the two <see cref="AttachmentContentReconciliationService"/>
+    /// actually issues first (a deliberate reordering fix, itself under
+    /// test here, changed that).
+    /// </summary>
+    private sealed class SecondReadPausingGate
+    {
+        private int _callCount;
+        private readonly TaskCompletionSource _reachedSecondRead = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly TaskCompletionSource _releaseSecondRead = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        /// <summary>Completes once the second of the two gated calls has arrived and is paused.</summary>
+        public Task ReachedSecondRead => _reachedSecondRead.Task;
+
+        /// <summary>Lets the paused second call proceed.</summary>
+        public void ReleaseSecondRead() => _releaseSecondRead.TrySetResult();
+
+        /// <summary>Call before performing the real read. The first caller passes straight through; the second pauses until released.</summary>
+        public async Task BeforeReadAsync()
+        {
+            if (Interlocked.Increment(ref _callCount) == 2)
+            {
+                _reachedSecondRead.TrySetResult();
+                await _releaseSecondRead.Task.ConfigureAwait(false);
+            }
+        }
+    }
+
+    /// <summary>Wraps a real <see cref="IEngineeringObjectStateStore"/> so its <see cref="ListAsync"/> — the sweep's own read — reports to a shared <see cref="SecondReadPausingGate"/> before returning.</summary>
+    private sealed class ReadGatedStateStore : IEngineeringObjectStateStore
+    {
+        private readonly IEngineeringObjectStateStore _inner;
+        private readonly SecondReadPausingGate _gate;
+
+        public ReadGatedStateStore(IEngineeringObjectStateStore inner, SecondReadPausingGate gate)
+        {
+            _inner = inner;
+            _gate = gate;
+        }
+
+        public async Task<IReadOnlyList<EngineeringObjectState>> ListAsync(CancellationToken cancellationToken = default)
+        {
+            await _gate.BeforeReadAsync().ConfigureAwait(false);
+            return await _inner.ListAsync(cancellationToken).ConfigureAwait(false);
+        }
+
+        public Task SaveAsync(EngineeringObjectState state, CancellationToken cancellationToken = default) =>
+            _inner.SaveAsync(state, cancellationToken);
+
+        public Task<EngineeringObjectState?> FindAsync(Guid objectId, CancellationToken cancellationToken = default) =>
+            _inner.FindAsync(objectId, cancellationToken);
+
+        public Task DeleteAsync(Guid objectId, CancellationToken cancellationToken = default) =>
+            _inner.DeleteAsync(objectId, cancellationToken);
+    }
+
+    /// <summary>Wraps a real <see cref="IAttachmentWriteIntentStore"/> so its <see cref="ListMarkedAsync"/> — the sweep's own read — reports to a shared <see cref="SecondReadPausingGate"/> before returning.</summary>
+    private sealed class ReadGatedWriteIntentStore : IAttachmentWriteIntentStore
+    {
+        private readonly IAttachmentWriteIntentStore _inner;
+        private readonly SecondReadPausingGate _gate;
+
+        public ReadGatedWriteIntentStore(IAttachmentWriteIntentStore inner, SecondReadPausingGate gate)
+        {
+            _inner = inner;
+            _gate = gate;
+        }
+
+        public async Task<IReadOnlySet<Guid>> ListMarkedAsync(CancellationToken cancellationToken = default)
+        {
+            await _gate.BeforeReadAsync().ConfigureAwait(false);
+            return await _inner.ListMarkedAsync(cancellationToken).ConfigureAwait(false);
+        }
+
+        public Task MarkAsync(Guid attachmentId, CancellationToken cancellationToken = default) =>
+            _inner.MarkAsync(attachmentId, cancellationToken);
+
+        public Task ClearAsync(Guid attachmentId, CancellationToken cancellationToken = default) =>
+            _inner.ClearAsync(attachmentId, cancellationToken);
+    }
+
     private static async Task<Part> CreatePartAsync(EngineeringDomainContext context, string identifier, string name)
     {
         var factory = new EngineeringObjectFactory<Part>(
@@ -359,6 +444,64 @@ public sealed class AttachmentContentReconciliationServiceTests : IDisposable
 
         var attachments = await part.GetAttachmentsAsync();
         Assert.Contains(attachments, a => a.Id == attachment.Id);
+    }
+
+    /// <summary>
+    /// The interleaving the review board's second pass caught: sampling
+    /// the marker <em>after</em> the state read (this sweep's original
+    /// shape, before the fix below) reopens the exact same race one read
+    /// later — <c>content &lt; T1 &lt; T2(state) &lt; state-write &lt;
+    /// Clear &lt; T3(marker)</c> looks "present, unreferenced, unmarked"
+    /// and gets collected even though it is now fully live. This test
+    /// pauses the sweep between whichever of its state read and marker
+    /// read runs first and the one that runs second — via
+    /// <see cref="SecondReadPausingGate"/>, which does not care which
+    /// order the production code actually uses — and, inside that gap,
+    /// lets the attachment's state write <em>and</em> its marker clear
+    /// both complete. Against the fixed read order (content, marker,
+    /// state), the marker read is the one that runs first and it still
+    /// finds the marker in place, so the attachment is excluded before
+    /// the state read even matters. I confirmed the converse directly:
+    /// with the marker read moved back to last (this sweep's original
+    /// order), this exact test fails — the content is collected and
+    /// <see cref="AttachmentContentStatus.Missing"/> comes back for a
+    /// fully live attachment — restored immediately afterwards.
+    /// </summary>
+    [Fact]
+    public async Task SweepAsync_InterleavedBetweenItsMarkerReadAndItsStateRead_NeverCollectsTheLiveContent()
+    {
+        var (fixture, saveGate) = BuildGated(Build());
+        var part = await CreatePartAsync(fixture.Context, "PART-1", "Bracket");
+
+        // Content and the marker are both durable; the state write is
+        // paused before it lands (the same seam the previous test uses).
+        var reachedSave = saveGate.ArmNextSave();
+        var attachTask = part.AttachContentAsync("drawing.pdf", "application/pdf", new byte[] { 1, 2, 3, 4 });
+        await reachedSave;
+
+        // The sweep's own two reads of interest — state and markers —
+        // both route through this shared gate; whichever the production
+        // code issues first passes straight through, the second pauses.
+        var readGate = new SecondReadPausingGate();
+        var sweepStateStore = new ReadGatedStateStore(fixture.StateStore, readGate);
+        var sweepWriteIntentStore = new ReadGatedWriteIntentStore(fixture.WriteIntentStore, readGate);
+        var sweep = new AttachmentContentReconciliationService(fixture.Persistence, sweepStateStore, fixture.ContentStore, sweepWriteIntentStore);
+
+        var sweepTask = sweep.SweepAsync();
+        await readGate.ReachedSecondRead;
+
+        // Inside the gap between the sweep's first and second read: let
+        // the attachment's state write land, and let AttachContentAsync
+        // run all the way to its own marker clear.
+        saveGate.ReleaseSave();
+        var attachment = await attachTask;
+
+        readGate.ReleaseSecondRead();
+        var report = await sweepTask;
+
+        Assert.Empty(report.Orphans);
+        var result = await fixture.ContentStore.ReadAsync(attachment.Id, attachment.ContentHash, attachment.SizeInBytes);
+        Assert.Equal(AttachmentContentStatus.Available, result.Status);
     }
 
     /// <summary>A stale marker (a crash between the state write landing and the marker's own removal) leaves content uncollected, never errors.</summary>
