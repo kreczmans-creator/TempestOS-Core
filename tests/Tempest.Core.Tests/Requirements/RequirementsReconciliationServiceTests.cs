@@ -191,6 +191,125 @@ public class RequirementsReconciliationServiceTests
         Assert.Contains(listed, g => g.Id == group.Id);
     }
 
+    // ---- The race (`WP 16.4B-R2`) ----
+
+    /// <summary>
+    /// The Requirements sibling of <c>MaterialCatalogReconciliationServiceTests</c>'s
+    /// own race test: a sweep interleaved with an in-flight
+    /// <see cref="RequirementsService.CreateAsync"/> call must never make
+    /// the fully-created Requirement unfindable by identifier. No timing —
+    /// <see cref="GatedListKeysPersistenceStore"/> pauses the sweep's own
+    /// document scan (the authoritative side, read second under the fixed
+    /// order) until the registration inside that pause has completed.
+    /// </summary>
+    [Fact]
+    public async Task SweepAsync_InterleavedWithAnInFlightCreate_NeverMakesTheRequirementUnfindable()
+    {
+        var store = new InMemoryPersistenceStore();
+        var principalAccessor = new CurrentPrincipalAccessor();
+        var documentStore = new EngineeringDocumentStore(store, principalAccessor);
+        var permissionEvaluator = new PermissionEvaluator();
+        var verificationService = new VerificationService(documentStore, principalAccessor, permissionEvaluator);
+        var requirementsService = new RequirementsService(documentStore, store, principalAccessor, verificationService);
+
+        var gated = new GatedListKeysPersistenceStore(store, EngineeringDocumentStore.DocumentsCollectionName);
+        var reconciliation = new RequirementsReconciliationService(documentStore, gated);
+
+        var sweepTask = reconciliation.SweepAsync();
+        await gated.ReachedGate;
+
+        var requirement = await requirementsService.CreateAsync("REQ-RACE-1", "The system shall survive a concurrent sweep.");
+
+        gated.Release();
+        var report = await sweepTask;
+
+        var recovered = await requirementsService.FindByIdentifierAsync("REQ-RACE-1");
+        Assert.NotNull(recovered);
+        Assert.Equal(requirement.Id, recovered!.Id);
+
+        Assert.DoesNotContain(report.Findings, f =>
+            f.Category == RequirementsReconciliationService.StaleIdentifierIndexEntryCategory && f.DocumentId == requirement.Id);
+    }
+
+    /// <summary>
+    /// The same race, for a <see cref="RequirementsService.CreateCollectionAsync"/>
+    /// call and the Collection registry — the identical document-then-
+    /// registry write order, reconciled by <c>ReconcileRegistryAsync</c>
+    /// rather than <c>ReconcileIdentifierIndexAsync</c>.
+    /// </summary>
+    [Fact]
+    public async Task SweepAsync_InterleavedWithAnInFlightCollectionCreate_NeverMakesTheCollectionUnlisted()
+    {
+        var store = new InMemoryPersistenceStore();
+        var principalAccessor = new CurrentPrincipalAccessor();
+        var documentStore = new EngineeringDocumentStore(store, principalAccessor);
+        var permissionEvaluator = new PermissionEvaluator();
+        var verificationService = new VerificationService(documentStore, principalAccessor, permissionEvaluator);
+        var requirementsService = new RequirementsService(documentStore, store, principalAccessor, verificationService);
+
+        var gated = new GatedListKeysPersistenceStore(store, EngineeringDocumentStore.DocumentsCollectionName);
+        var reconciliation = new RequirementsReconciliationService(documentStore, gated);
+
+        var sweepTask = reconciliation.SweepAsync();
+        await gated.ReachedGate;
+
+        var collection = await requirementsService.CreateCollectionAsync("Race Set");
+
+        gated.Release();
+        var report = await sweepTask;
+
+        var listed = await requirementsService.ListCollectionsAsync();
+        Assert.Contains(listed, c => c.Id == collection.Id);
+
+        Assert.DoesNotContain(report.Findings, f =>
+            f.Category == RequirementsReconciliationService.StaleCollectionRegistryEntryCategory && f.DocumentId == collection.Id);
+    }
+
+    /// <summary>
+    /// A wrapper around a real <see cref="IPersistenceStore"/> that pauses
+    /// one specific collection's <see cref="ListKeysAsync"/> call until
+    /// released — mirrors <c>Materials.MaterialCatalogReconciliationServiceTests</c>'s
+    /// own identical seam, duplicated per this codebase's own small-
+    /// test-local-fake convention.
+    /// </summary>
+    private sealed class GatedListKeysPersistenceStore : IPersistenceStore
+    {
+        private readonly IPersistenceStore _inner;
+        private readonly string _gatedCollection;
+        private readonly TaskCompletionSource _reachedGate = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly TaskCompletionSource _releaseGate = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public GatedListKeysPersistenceStore(IPersistenceStore inner, string gatedCollection)
+        {
+            _inner = inner;
+            _gatedCollection = gatedCollection;
+        }
+
+        public Task ReachedGate => _reachedGate.Task;
+
+        public void Release() => _releaseGate.TrySetResult();
+
+        public async Task<IReadOnlyList<string>> ListKeysAsync(string collection, CancellationToken cancellationToken = default)
+        {
+            if (string.Equals(collection, _gatedCollection, StringComparison.Ordinal))
+            {
+                _reachedGate.TrySetResult();
+                await _releaseGate.Task.ConfigureAwait(false);
+            }
+
+            return await _inner.ListKeysAsync(collection, cancellationToken).ConfigureAwait(false);
+        }
+
+        public Task<string?> ReadAsync(string collection, string key, CancellationToken cancellationToken = default) =>
+            _inner.ReadAsync(collection, key, cancellationToken);
+
+        public Task WriteAsync(string collection, string key, string value, CancellationToken cancellationToken = default) =>
+            _inner.WriteAsync(collection, key, value, cancellationToken);
+
+        public Task DeleteAsync(string collection, string key, CancellationToken cancellationToken = default) =>
+            _inner.DeleteAsync(collection, key, cancellationToken);
+    }
+
     // ---- Constructor validation ----
 
     [Fact]

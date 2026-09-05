@@ -50,23 +50,100 @@ public sealed class RequirementsReconciliationService : IRequirementsReconciliat
     public Task<RequirementsReconciliationReport> SweepAsync(CancellationToken cancellationToken = default) =>
         RunAsync(repair: true, cancellationToken);
 
+    /// <remarks>
+    /// <b>Read order (`WP 16.4B-R2`):</b> every index/registry entry this
+    /// service can ever see was written strictly <em>after</em> the
+    /// document it names — <see cref="RequirementsService.CreateAsync"/>,
+    /// <c>CreateCollectionAsync</c> and <c>CreateGroupAsync</c> each create
+    /// their own document first and write the index/registry entry
+    /// second, never the other way round, and no document is ever deleted
+    /// out from under a live entry (`DeleteAsync` is a soft delete that
+    /// revises the document; it never removes the row or changes its
+    /// Kind). So a sweep that reads every index/registry (the derived
+    /// side) <em>before</em> it reads the documents (the authoritative
+    /// side) can never observe an index/registry entry whose document it
+    /// then fails to see: if the entry's write had already landed when
+    /// this sweep's derived-side read ran, the document write that
+    /// strictly preceded it had already landed too, and the
+    /// authoritative-side read — running later, not earlier — is
+    /// guaranteed to see it. Reading in the other order (documents first)
+    /// is exactly what let a document created after the document scan but
+    /// indexed before the index scan look "stale" and be deleted — the
+    /// live-data-loss shape this ordering removes by construction, not
+    /// merely narrows. A registration caught mid-flight by this ordering
+    /// (its document visible, its index/registry entry not yet, because
+    /// this sweep's own derived-side read simply ran first) is reported as
+    /// <c>*MissingIndexEntryCategory</c>/<c>*MissingRegistryEntryCategory</c>
+    /// — a false "missing", not a deletion — and the repair path underneath
+    /// re-reads the live value before ever writing, so it can never
+    /// clobber the write the in-flight registration is about to make.
+    /// </remarks>
     private async Task<RequirementsReconciliationReport> RunAsync(bool repair, CancellationToken cancellationToken)
     {
         var findings = new List<RequirementsReconciliationFinding>();
 
+        // Derived side first — every index/registry this service reconciles.
+        var identifierIndexEntries = await ReadIndexEntriesAsync(RequirementsService.IdentifierIndexCollectionName, cancellationToken).ConfigureAwait(false);
+        var collectionRegistryIds = await ReadRegistryIdsAsync(RequirementsService.CollectionRegistryCollectionName, cancellationToken).ConfigureAwait(false);
+        var groupRegistryIds = await ReadRegistryIdsAsync(RequirementsService.GroupRegistryCollectionName, cancellationToken).ConfigureAwait(false);
+
+        // Authoritative side second — the documents themselves.
         var (requirementIds, collectionIds, groupIds) = await PartitionDocumentsByKindAsync(cancellationToken).ConfigureAwait(false);
 
-        await ReconcileIdentifierIndexAsync(requirementIds, findings, repair, cancellationToken).ConfigureAwait(false);
+        await ReconcileIdentifierIndexAsync(requirementIds, identifierIndexEntries, findings, repair, cancellationToken).ConfigureAwait(false);
         await ReconcileRegistryAsync(
-            RequirementsService.CollectionRegistryCollectionName, collectionIds,
+            RequirementsService.CollectionRegistryCollectionName, collectionIds, collectionRegistryIds,
             CollectionMissingRegistryEntryCategory, StaleCollectionRegistryEntryCategory,
             findings, repair, cancellationToken).ConfigureAwait(false);
         await ReconcileRegistryAsync(
-            RequirementsService.GroupRegistryCollectionName, groupIds,
+            RequirementsService.GroupRegistryCollectionName, groupIds, groupRegistryIds,
             GroupMissingRegistryEntryCategory, StaleGroupRegistryEntryCategory,
             findings, repair, cancellationToken).ConfigureAwait(false);
 
         return new RequirementsReconciliationReport(findings);
+    }
+
+    /// <summary>
+    /// Every <c>(key, documentId)</c> pair currently in
+    /// <paramref name="indexCollectionName"/> — the raw scan
+    /// <see cref="ReconcileIdentifierIndexAsync"/> used to do inline,
+    /// pulled out so <see cref="RunAsync"/> can run every derived-side
+    /// read before any authoritative-side one (`WP 16.4B-R2`).
+    /// </summary>
+    private async Task<List<(string Key, Guid DocumentId)>> ReadIndexEntriesAsync(string indexCollectionName, CancellationToken cancellationToken)
+    {
+        var keys = await _persistenceStore.ListKeysAsync(indexCollectionName, cancellationToken).ConfigureAwait(false);
+        var entries = new List<(string Key, Guid DocumentId)>(keys.Count);
+
+        foreach (var key in keys)
+        {
+            var value = await _persistenceStore.ReadAsync(indexCollectionName, key, cancellationToken).ConfigureAwait(false);
+            if (value is not null && Guid.TryParseExact(value, "N", out var documentId))
+                entries.Add((key, documentId));
+        }
+
+        return entries;
+    }
+
+    /// <summary>
+    /// Every document Id currently registered in a Collection/Group
+    /// registry (both keyed by the document's own Id, mapped to itself)
+    /// — the raw scan <see cref="ReconcileRegistryAsync"/> used to do
+    /// inline, pulled out for the same reordering reason as
+    /// <see cref="ReadIndexEntriesAsync"/>.
+    /// </summary>
+    private async Task<HashSet<Guid>> ReadRegistryIdsAsync(string registryCollectionName, CancellationToken cancellationToken)
+    {
+        var registryKeys = await _persistenceStore.ListKeysAsync(registryCollectionName, cancellationToken).ConfigureAwait(false);
+
+        var registeredIds = new HashSet<Guid>();
+        foreach (var key in registryKeys)
+        {
+            if (Guid.TryParseExact(key, "N", out var registeredId))
+                registeredIds.Add(registeredId);
+        }
+
+        return registeredIds;
     }
 
     /// <summary>
@@ -113,19 +190,14 @@ public sealed class RequirementsReconciliationService : IRequirementsReconciliat
 
     private async Task ReconcileIdentifierIndexAsync(
         HashSet<Guid> requirementDocumentIds,
+        List<(string Key, Guid DocumentId)> indexEntries,
         List<RequirementsReconciliationFinding> findings,
         bool repair,
         CancellationToken cancellationToken)
     {
-        var indexedIdentifiers = await _persistenceStore.ListKeysAsync(RequirementsService.IdentifierIndexCollectionName, cancellationToken).ConfigureAwait(false);
-
         var indexedDocumentIds = new HashSet<Guid>();
-        foreach (var identifier in indexedIdentifiers)
+        foreach (var (identifier, indexedDocumentId) in indexEntries)
         {
-            var value = await _persistenceStore.ReadAsync(RequirementsService.IdentifierIndexCollectionName, identifier, cancellationToken).ConfigureAwait(false);
-            if (value is null || !Guid.TryParseExact(value, "N", out var indexedDocumentId))
-                continue;
-
             indexedDocumentIds.Add(indexedDocumentId);
 
             // Reverse direction: an index entry naming a document that is
@@ -205,21 +277,13 @@ public sealed class RequirementsReconciliationService : IRequirementsReconciliat
     private async Task ReconcileRegistryAsync(
         string registryCollectionName,
         HashSet<Guid> documentIds,
+        HashSet<Guid> registeredIds,
         string missingCategory,
         string staleCategory,
         List<RequirementsReconciliationFinding> findings,
         bool repair,
         CancellationToken cancellationToken)
     {
-        var registryKeys = await _persistenceStore.ListKeysAsync(registryCollectionName, cancellationToken).ConfigureAwait(false);
-
-        var registeredIds = new HashSet<Guid>();
-        foreach (var key in registryKeys)
-        {
-            if (Guid.TryParseExact(key, "N", out var registeredId))
-                registeredIds.Add(registeredId);
-        }
-
         foreach (var documentId in documentIds)
         {
             if (registeredIds.Contains(documentId))

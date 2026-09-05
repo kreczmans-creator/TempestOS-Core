@@ -639,6 +639,17 @@ public sealed class TempestHost : ITempestHost
         services.Singleton<IBinaryPersistenceStore, PersistenceStore>();
         services.Singleton<IAttachmentContentStore, AttachmentContentStore>();
 
+        // WP 16.4B-R2: the durable write-intent marker for an attachment
+        // whose content write has landed but whose state write has not.
+        // Registered here, alongside AttachmentContentStore, and taken as
+        // an optional collaborator by both EngineeringDomainContext (which
+        // marks/clears it around AttachContentAsync's two writes) and
+        // AttachmentContentReconciliationService (whose sweep skips
+        // whatever it still marks) - the production Host always composes
+        // the two together, closing the race a content-key-vs-object-state
+        // comparison alone cannot.
+        services.Singleton<IAttachmentWriteIntentStore, AttachmentWriteIntentStore>();
+
         // TD-85: the Kind-to-type map startup rehydration resolves through.
         // Empty until each Kind's own declaring class registers it -
         // nothing here declares a Kind of its own (ADR-0105).
