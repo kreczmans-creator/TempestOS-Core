@@ -1,0 +1,14 @@
+{
+  "version": "0.70.0",
+  "status": "worked-framework",
+  "problem": "Screen a slender metallic compression member.",
+  "workflow": [
+    "define effective length and end conditions",
+    "calculate Euler critical load",
+    "calculate slenderness",
+    "check yielding and local buckling",
+    "select applicable column design method",
+    "include imperfections",
+    "verify stability margin"
+  ]
+}

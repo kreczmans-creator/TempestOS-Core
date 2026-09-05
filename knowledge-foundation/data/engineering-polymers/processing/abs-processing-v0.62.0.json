@@ -1,0 +1,32 @@
+{
+  "version": "0.62.0",
+  "family": "ABS",
+  "processing_routes": [
+    "injection moulding",
+    "extrusion",
+    "thermoforming",
+    "FDM/FFF"
+  ],
+  "process_effects": [
+    "melt/processing temperature history",
+    "cooling rate",
+    "tool/mould temperature",
+    "holding/packing conditions",
+    "residual stress",
+    "flow orientation",
+    "post-processing/annealing where applicable"
+  ],
+  "design_controls": [
+    "grade-specific processing window",
+    "part thickness and geometry",
+    "gate/flow layout for moulded parts",
+    "cooling/tool temperature",
+    "conditioning requirements",
+    "post-process thermal treatment where applicable"
+  ],
+  "evidence_status": "screening-level qualitative record",
+  "design_use": "not approved",
+  "manufacturing_screen": "injection moulding, extrusion, thermoforming, FDM/FFF",
+  "dimensional_process_effects": "mould shrinkage and warpage are grade/process/tool dependent",
+  "anisotropy_note": "moulded-in orientation and residual stress can affect dimensions and cracking"
+}

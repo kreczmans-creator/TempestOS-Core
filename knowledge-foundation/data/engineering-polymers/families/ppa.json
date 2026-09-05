@@ -1,0 +1,29 @@
+{
+  "version": "0.57.0",
+  "family": "PPA",
+  "examples": [
+    "semi-aromatic PA",
+    "glass-filled PPA"
+  ],
+  "character": "high-temperature polyamide family",
+  "common_uses": [
+    "automotive",
+    "electrical connectors",
+    "under-hood components",
+    "structural mouldings"
+  ],
+  "selection_drivers": [
+    "temperature",
+    "strength",
+    "chemical resistance",
+    "dimensional stability"
+  ],
+  "watchouts": [
+    "moisture",
+    "processing",
+    "reinforcement orientation",
+    "creep"
+  ],
+  "evidence_status": "screening taxonomy",
+  "design_use": "screening_only"
+}

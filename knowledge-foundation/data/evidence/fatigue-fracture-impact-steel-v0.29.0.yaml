@@ -1,0 +1,94 @@
+- observation_id: LIT-13-8MO-FATIGUE-R01
+  material_state_id: MAT-STEEL-13-8MO
+  designation: PH 13-8 Mo / UNS S13800
+  property: fatigue_endurance_limit
+  value: 419
+  unit: MPa
+  stress_definition: stress amplitude
+  stress_ratio_R: 0.1
+  test_context: fretting-fatigue study; laboratory specimen; specific heat treatment
+    and fretting configuration
+  interpretation: Not a generic S-N endurance limit; retain the published test context.
+  source_id: LIT-IJF-2007-13-8MO
+  source_locator: International Journal of Fatigue 29 (2007), 2219–2229
+  source_url: https://www.sciencedirect.com/science/article/abs/pii/S0142112307000114
+  evidence_status: literature
+  review_status: reviewed
+  design_use: screening_only
+- observation_id: LIT-17-4PH-HIGH-T-FATIGUE
+  material_state_id: MAT-STEEL-17-4PH
+  designation: 17-4 PH / UNS S17400
+  property: high_cycle_fatigue_temperature_dependence
+  value: Condition and temperature dependent; study found H900 > A > H1150 at a given
+    temperature, with fatigue strength generally decreasing as temperature increased
+    in the short-life regime.
+  unit: qualitative
+  temperature_range_C:
+  - 20
+  - 400
+  test_context: high-cycle fatigue; A, H900 and H1150
+  source_id: LIT-MATERIALS-TRANS-2003-17-4
+  source_locator: Materials Transactions 44(4), 713–721
+  source_url: https://www.jstage.jst.go.jp/article/matertrans/44/4/44_4_713/_article
+  evidence_status: literature
+  review_status: reviewed
+  design_use: screening_only
+- observation_id: LIT-15-5PH-FRACTURE-AM
+  material_state_id: MAT-STEEL-15-5PH
+  designation: 15-5 PH / UNS S15500
+  property: fracture_toughness_Kq
+  value: 89
+  unit: MPa*sqrt(m)
+  condition: H1150M
+  manufacturing_route: L-PBF additive manufacturing
+  test_context: compact-tension fracture toughness; AM-specific study
+  interpretation: AM evidence is segregated from wrought-product evidence.
+  source_id: LIT-METALS-2026-15-5PH-AM
+  source_locator: Metals 2026, 16(5), 464; Table 4
+  source_url: https://www.mdpi.com/2075-4701/16/5/464
+  evidence_status: literature
+  review_status: reviewed
+  design_use: screening_only
+- observation_id: LIT-15-5PH-FRACTURE-TREATMENT
+  material_state_id: MAT-STEEL-15-5PH
+  designation: 15-5 PH / UNS S15500
+  property: fracture_toughness_heat_treatment_sensitivity
+  value: Fracture toughness Kq can change significantly with solution-heat-treatment
+    temperature tolerance even when yield strength remains nearly unchanged.
+  unit: qualitative
+  test_context: C(T) specimens; controlled heat-treatment study
+  source_id: LIT-EFA-2007-15-5PH
+  source_locator: Engineering Failure Analysis 14(4), 626–631
+  source_url: https://www.sciencedirect.com/science/article/pii/S1350630706000574
+  evidence_status: literature
+  review_status: reviewed
+  design_use: screening_only
+- observation_id: LIT-13-8MO-FRETTING-SUSCEPTIBILITY
+  material_state_id: MAT-STEEL-13-8MO
+  designation: PH 13-8 Mo / UNS S13800
+  property: fretting_fatigue_sensitivity
+  value: Fretting caused a substantial reduction in fatigue strength in the reported
+    experiments; cracking initiated very early in the fretting tests.
+  unit: qualitative
+  test_context: fretting fatigue; R=0.1 in endurance comparison
+  source_id: LIT-IJF-2001-13-8MO-FRETTING
+  source_locator: International Journal of Fatigue 23, Supplement 1, 437–444
+  source_url: https://www.sciencedirect.com/science/article/abs/pii/S0142112301001402
+  evidence_status: literature
+  review_status: reviewed
+  design_use: screening_only
+- observation_id: LIT-440C-TOUGHNESS-LIMITATION
+  material_state_id: MAT-STEEL-440C
+  designation: 440C / 1.4125 / UNS S44004
+  property: fatigue_and_toughness_context
+  value: The high-carbon/carbide structure supporting high hardness and wear resistance
+    is associated with limitations in toughness and fatigue resistance; corrosion
+    performance can also be sensitive to tempering.
+  unit: qualitative
+  test_context: stainless tool-steel technical literature
+  source_id: WEB-BOHLER-M380-440C
+  source_locator: BÖHLER M380 technical document, discussion of 440C
+  source_url: https://www.bohler-edelstahl.com/app/uploads/sites/248/productdb/api/m380en.pdf
+  evidence_status: supplier_technical_literature
+  review_status: reviewed
+  design_use: screening_only

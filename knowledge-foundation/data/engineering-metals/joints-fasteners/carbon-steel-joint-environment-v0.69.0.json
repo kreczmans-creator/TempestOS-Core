@@ -1,0 +1,15 @@
+{
+  "version": "0.69.0",
+  "family": "carbon-steel",
+  "controls": [
+    "material pairing",
+    "coating",
+    "sealant",
+    "drainage",
+    "galvanic isolation",
+    "lubrication",
+    "surface preparation"
+  ],
+  "rule": "Joint interfaces are frequent initiation sites for corrosion, fretting and fatigue.",
+  "status": "design-framework"
+}

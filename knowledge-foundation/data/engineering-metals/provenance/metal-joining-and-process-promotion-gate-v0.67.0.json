@@ -1,0 +1,19 @@
+{
+  "version": "0.67.0",
+  "minimum_evidence": [
+    "exact material/condition",
+    "product form",
+    "process route",
+    "process parameters where relevant",
+    "inspection method",
+    "test method",
+    "source and revision",
+    "traceability"
+  ],
+  "promotion_levels": [
+    "screening",
+    "verified",
+    "qualified"
+  ],
+  "rule": "Welded, heat-treated and surface-engineered states must not inherit parent-material allowables without evidence."
+}

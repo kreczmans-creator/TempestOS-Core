@@ -1,0 +1,45 @@
+{
+  "version": "0.41.0",
+  "status": "reference_bands_not_allowables",
+  "temperature_bands_C": [
+    -50,
+    20,
+    100,
+    150,
+    200
+  ],
+  "representative_strength_retention_fraction_vs_20C": {
+    "2xxx": [
+      0.95,
+      1.0,
+      0.75,
+      0.55,
+      0.35
+    ],
+    "5xxx": [
+      0.95,
+      1.0,
+      0.8,
+      0.6,
+      0.4
+    ],
+    "6xxx": [
+      0.95,
+      1.0,
+      0.78,
+      0.58,
+      0.38
+    ],
+    "7xxx": [
+      0.92,
+      1.0,
+      0.72,
+      0.5,
+      0.3
+    ]
+  },
+  "thermal_design_note": "Use actual temperature-dependent curves for design; banded retention factors are screening references only.",
+  "cryogenic_note": "Low-temperature ductility/toughness must be established from alloy- and condition-specific evidence.",
+  "evidence_status": "unverified_screening_reference",
+  "design_use": "screening_only"
+}

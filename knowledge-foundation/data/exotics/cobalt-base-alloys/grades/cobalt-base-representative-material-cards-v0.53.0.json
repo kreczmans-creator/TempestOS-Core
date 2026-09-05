@@ -1,0 +1,206 @@
+[
+  {
+    "designation": "CoCrMo",
+    "aliases": [
+      "cobalt-chromium-molybdenum",
+      "Co-Cr-Mo"
+    ],
+    "class": "cobalt-base corrosion/wear-resistant alloy",
+    "role": "biomedical and specialist wear/corrosion applications",
+    "strengthening": "solid-solution strengthening plus carbide/phase effects dependent on chemistry and processing",
+    "typical_product_forms": [
+      "castings",
+      "wrought product",
+      "powder/AM feedstock"
+    ],
+    "uses": [
+      "medical implants",
+      "wear components",
+      "valves",
+      "specialist fluid-handling components"
+    ],
+    "controls": [
+      "chemistry",
+      "carbide morphology",
+      "processing route",
+      "surface finish",
+      "environment",
+      "fatigue"
+    ],
+    "evidence_status": "screening taxonomy",
+    "design_use": "screening_only",
+    "provenance_required": [
+      "exact specification",
+      "product form",
+      "condition/heat treatment",
+      "temperature",
+      "environment",
+      "test method",
+      "orientation where relevant",
+      "source"
+    ]
+  },
+  {
+    "designation": "Stellite 6",
+    "aliases": [
+      "Co-Cr-W alloy",
+      "Stellite 6"
+    ],
+    "class": "cobalt-base hardfacing alloy",
+    "role": "wear-resistant and hot-hardness-focused material system",
+    "strengthening": "hard carbide phases in a cobalt-rich matrix",
+    "typical_product_forms": [
+      "hardfacing consumables",
+      "cast/wrought specialist forms"
+    ],
+    "uses": [
+      "valve seats",
+      "cutting/wear surfaces",
+      "high-temperature sliding/contact surfaces",
+      "erosion-resistant components"
+    ],
+    "controls": [
+      "deposition process",
+      "dilution",
+      "carbide morphology",
+      "substrate compatibility",
+      "thermal cycling",
+      "machining method"
+    ],
+    "evidence_status": "screening taxonomy",
+    "design_use": "screening_only",
+    "provenance_required": [
+      "exact specification",
+      "product form",
+      "condition/heat treatment",
+      "temperature",
+      "environment",
+      "test method",
+      "orientation where relevant",
+      "source"
+    ]
+  },
+  {
+    "designation": "Haynes 188",
+    "aliases": [
+      "UNS R30188"
+    ],
+    "class": "cobalt-base high-temperature alloy",
+    "role": "high-temperature strength and oxidation-resistance applications",
+    "strengthening": "solid-solution strengthening with carbide/precipitate contributions",
+    "typical_product_forms": [
+      "sheet",
+      "plate",
+      "bar",
+      "forgings",
+      "wire"
+    ],
+    "uses": [
+      "gas-turbine components",
+      "combustion hardware",
+      "high-temperature structures",
+      "industrial heat-resistant components"
+    ],
+    "controls": [
+      "temperature",
+      "creep",
+      "oxidation",
+      "grain structure",
+      "heat treatment",
+      "fabrication"
+    ],
+    "evidence_status": "screening taxonomy",
+    "design_use": "screening_only",
+    "provenance_required": [
+      "exact specification",
+      "product form",
+      "condition/heat treatment",
+      "temperature",
+      "environment",
+      "test method",
+      "orientation where relevant",
+      "source"
+    ]
+  },
+  {
+    "designation": "Haynes 25 / L-605",
+    "aliases": [
+      "UNS R30605",
+      "L-605"
+    ],
+    "class": "cobalt-base high-temperature alloy",
+    "role": "high-temperature sheet and structural applications with useful strength and oxidation resistance",
+    "strengthening": "solid-solution strengthening with carbide effects",
+    "typical_product_forms": [
+      "sheet",
+      "strip",
+      "bar",
+      "wire"
+    ],
+    "uses": [
+      "combustion hardware",
+      "high-temperature springs",
+      "aerospace components",
+      "heat-resistant sheet structures"
+    ],
+    "controls": [
+      "temperature",
+      "cold work",
+      "grain structure",
+      "oxidation",
+      "fatigue",
+      "forming route"
+    ],
+    "evidence_status": "screening taxonomy",
+    "design_use": "screening_only",
+    "provenance_required": [
+      "exact specification",
+      "product form",
+      "condition/heat treatment",
+      "temperature",
+      "environment",
+      "test method",
+      "orientation where relevant",
+      "source"
+    ]
+  },
+  {
+    "designation": "Haynes 188 / wrought cobalt alloy family",
+    "aliases": [
+      "cobalt-chromium-nickel-tungsten system"
+    ],
+    "class": "cobalt-base superalloy",
+    "role": "representative cobalt hot-service material family",
+    "strengthening": "primarily solid-solution strengthening with microstructural/carbide contributions",
+    "typical_product_forms": [
+      "wrought product",
+      "forgings",
+      "sheet",
+      "bar"
+    ],
+    "uses": [
+      "turbine/combustion systems",
+      "high-temperature fabricated structures"
+    ],
+    "controls": [
+      "heat treatment",
+      "weld condition",
+      "creep",
+      "rupture",
+      "oxidation",
+      "thermal cycling"
+    ],
+    "evidence_status": "screening taxonomy",
+    "design_use": "screening_only",
+    "provenance_required": [
+      "exact specification",
+      "product form",
+      "condition/heat treatment",
+      "temperature",
+      "environment",
+      "test method",
+      "orientation where relevant",
+      "source"
+    ]
+  }
+]

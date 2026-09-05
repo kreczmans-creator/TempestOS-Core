@@ -1,0 +1,86 @@
+- grade: 15-5 PH
+  status: active
+  next_data:
+  - H1100
+  - H1150
+  - H1150M
+  - fatigue
+  - fracture_toughness
+  - corrosion
+- grade: 13-8 Mo
+  status: active
+  next_data:
+  - H1000
+  - H1050
+  - H1100
+  - RH950
+  - fatigue
+  - fracture_toughness
+- grade: 310S
+  status: active
+  next_data:
+  - temperature-dependent_strength
+  - creep
+  - oxidation
+  - thermal_expansion
+- grade: '321'
+  status: active
+  next_data:
+  - temperature-dependent_strength
+  - creep
+  - fatigue
+  - thermal_properties
+- grade: '430'
+  status: active
+  next_data:
+  - temperature-dependent_properties
+  - fatigue
+  - corrosion_context
+- grade: 440C
+  status: active
+  next_data:
+  - hardened_condition_strength
+  - fatigue
+  - fracture_toughness
+  - bearing_data
+- grade: '410'
+  status: active
+  next_data:
+  - hardened_condition_strength
+  - fatigue
+  - impact
+  - temperature
+- grade: '420'
+  status: active
+  next_data:
+  - hardened_condition_strength
+  - fatigue
+  - impact
+  - temperature
+- grade: 17-4 PH
+  status: active
+  next_data:
+  - complete_ageing_matrix
+  - fatigue
+  - fracture_toughness
+  - corrosion
+- grade: H11/H12/H13 family
+  status: next
+  next_data:
+  - hot_work_tool_steel_family
+  - temperature_strength
+  - thermal_fatigue
+  - toughness
+- grade: A286
+  status: next
+  next_data:
+  - high_temperature_strength
+  - creep
+  - fatigue
+  - fasteners
+- grade: 15-7 PH
+  status: next
+  next_data:
+  - precipitation_hardening_sheet
+  - fatigue
+  - corrosion

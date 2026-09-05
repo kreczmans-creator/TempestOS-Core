@@ -1,0 +1,70 @@
+{
+  "version": "0.51.0",
+  "family": "titanium",
+  "selection": [
+    {
+      "application": "chemical processing",
+      "preferred_classes": [
+        "CP titanium"
+      ],
+      "drivers": [
+        "corrosion",
+        "formability",
+        "weldability",
+        "cost"
+      ]
+    },
+    {
+      "application": "aerospace primary structures",
+      "preferred_classes": [
+        "Ti-6Al-4V",
+        "alpha-beta titanium"
+      ],
+      "drivers": [
+        "specific strength",
+        "fatigue",
+        "fracture",
+        "qualification"
+      ]
+    },
+    {
+      "application": "aerospace elevated-temperature",
+      "preferred_classes": [
+        "near-alpha",
+        "alpha titanium"
+      ],
+      "drivers": [
+        "temperature",
+        "creep",
+        "oxidation",
+        "microstructure"
+      ]
+    },
+    {
+      "application": "medical",
+      "preferred_classes": [
+        "Ti-6Al-4V ELI"
+      ],
+      "drivers": [
+        "biocompatibility",
+        "fatigue",
+        "surface",
+        "qualification"
+      ]
+    },
+    {
+      "application": "precision mechanisms",
+      "preferred_classes": [
+        "CP",
+        "Ti-6Al-4V"
+      ],
+      "drivers": [
+        "CTE",
+        "stiffness",
+        "surface",
+        "corrosion",
+        "mass"
+      ]
+    }
+  ]
+}

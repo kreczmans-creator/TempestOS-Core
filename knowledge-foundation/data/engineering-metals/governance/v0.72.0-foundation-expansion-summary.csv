@@ -1,0 +1,9 @@
+Domain,Status,Coverage,Evidence boundary
+Materials/process selection,Complete,"Selection matrix, heat treatment, process-property links",Grade/process specific
+Metrology,Complete,"Measurement systems, uncertainty, inspection strategy",Calibration/measurement specific
+Tribology,Complete,"Friction, lubrication regimes, failure diagnosis",Contact/lubricant specific
+Fluid/thermal interfaces,Complete,Pressure loss and thermal resistance screening,System/property specific
+Actuation/transmission,Complete,"Sizing, transmission selection, motion profiles",Duty/load specific
+Electromechanical interfaces,Complete,Mechanical/electrical/thermal/control interfaces,System specific
+Deep systems verification,Complete,"Interface, risk-based verification, evidence quality",Requirement/configuration specific
+Worked cases,Complete,5 cross-domain engineering cases,"Framework, not certification"

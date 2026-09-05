@@ -1,0 +1,21 @@
+{
+  "version": "0.74.0",
+  "status": "verification-framework",
+  "concepts": [
+    "sample period",
+    "Nyquist concept",
+    "aliasing",
+    "zero-order hold",
+    "quantisation",
+    "latency",
+    "jitter"
+  ],
+  "workflow": [
+    "define highest relevant plant frequency",
+    "select sample rate",
+    "define filtering",
+    "account for computation and communication delay",
+    "analyse discrete-time response",
+    "verify timing margins"
+  ]
+}

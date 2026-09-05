@@ -1,0 +1,32 @@
+{
+  "version": "0.67.0",
+  "family": "titanium-alloy",
+  "joining_processes": [
+    "TIG",
+    "laser welding",
+    "electron-beam welding",
+    "friction welding",
+    "bolting"
+  ],
+  "critical_effects": [
+    "heat affected zone",
+    "residual stress",
+    "distortion",
+    "metallurgical transformation",
+    "porosity",
+    "lack of fusion",
+    "galvanic coupling",
+    "joint fatigue strength"
+  ],
+  "qualification_inputs": [
+    "joint design",
+    "material/condition",
+    "joint process",
+    "procedure parameters",
+    "operator/process qualification",
+    "inspection method",
+    "acceptance criteria"
+  ],
+  "rule": "Joint properties are not automatically equal to parent-material properties.",
+  "evidence_status": "foundation reference"
+}

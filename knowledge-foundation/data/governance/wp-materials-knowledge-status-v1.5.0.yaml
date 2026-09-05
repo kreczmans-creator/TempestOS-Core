@@ -1,0 +1,50 @@
+- section: '01'
+  workstream: Canonical schema & units
+  status: complete
+  notes: Schema, canonical units and property model exist.
+- section: '02'
+  workstream: Material family taxonomy
+  status: complete
+  notes: Seven remembered scope families plus subfamilies are represented.
+- section: '03'
+  workstream: Core property vocabulary
+  status: complete
+  notes: Mechanical, thermal, electrical and environmental property semantics exist.
+- section: '04'
+  workstream: Steel catalogue
+  status: complete
+  notes: Core + expanded steel records exist; condition-specific verification remains.
+- section: '05'
+  workstream: Aluminium catalogue
+  status: complete
+  notes: Core wrought aluminium records and multiple tempers exist.
+- section: '06'
+  workstream: Magnesium catalogue
+  status: complete
+  notes: AZ31B, AZ61A, AZ80A, AZ91D and WE43 exist.
+- section: '07'
+  workstream: Tungsten / refractory catalogue
+  status: complete
+  notes: Tungsten, tungsten heavy alloy, molybdenum and tantalum records exist.
+- section: 08
+  workstream: Exotic alloy catalogue
+  status: complete
+  notes: Nickel/cobalt/corrosion/high-temperature alloy records exist.
+- section: 09
+  workstream: Copper / copper-alloy catalogue
+  status: complete
+  notes: Copper and aluminium-bronze records exist.
+- section: '10'
+  workstream: Engineering + general polymer catalogues
+  status: complete
+  notes: Engineering and commodity polymer records exist.
+- section: '11'
+  workstream: Standards / provenance / designation governance
+  status: substantially_complete
+  notes: Standards catalogue, source registry and designation mappings exist; observation-level
+    source attachment and systematic verification remain.
+- section: '12'
+  workstream: Selection / validation / application intelligence
+  status: substantially_complete
+  notes: Selection contract, golden fixtures, environment/manufacturing layers and
+    validation rules exist; production integration and deeper sourced data remain.

@@ -1,0 +1,39 @@
+{
+  "version": "0.65.0",
+  "workflow": {
+    "source_capture": [
+      "supplier/source identity",
+      "document title",
+      "revision/date",
+      "page/location",
+      "property/value/unit",
+      "test method",
+      "temperature",
+      "conditioning",
+      "orientation",
+      "retrieval/verification date"
+    ],
+    "review": [
+      "technical plausibility",
+      "unit validation",
+      "test-method applicability",
+      "grade identity",
+      "condition match",
+      "conflict resolution",
+      "approval status"
+    ],
+    "promotion": [
+      "screening",
+      "verified",
+      "qualified"
+    ],
+    "release_controls": [
+      "immutable source reference",
+      "change history",
+      "reviewer",
+      "verification evidence",
+      "supersession status"
+    ]
+  },
+  "prohibition": "Do not convert an unverified source value into a controlled engineering allowable."
+}

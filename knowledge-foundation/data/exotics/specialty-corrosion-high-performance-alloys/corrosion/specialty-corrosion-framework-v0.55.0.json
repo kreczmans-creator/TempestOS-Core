@@ -1,0 +1,44 @@
+{
+  "version": "0.55.0",
+  "family": "specialty-corrosion-high-performance-alloys",
+  "environment_dimensions": [
+    "chemical species",
+    "concentration",
+    "pH",
+    "temperature",
+    "pressure",
+    "oxidising/reducing condition",
+    "chloride content",
+    "aeration",
+    "flow velocity",
+    "crevices",
+    "contamination"
+  ],
+  "failure_modes": [
+    "uniform corrosion",
+    "pitting",
+    "crevice corrosion",
+    "galvanic corrosion",
+    "stress corrosion cracking",
+    "intergranular corrosion",
+    "erosion-corrosion",
+    "hydrogen uptake/embrittlement"
+  ],
+  "controls": [
+    "material grade",
+    "heat treatment",
+    "weld condition",
+    "surface condition",
+    "joint design",
+    "galvanic isolation",
+    "cleanliness",
+    "coatings where appropriate"
+  ],
+  "environment_rule": "No generic 'corrosion resistant' label is sufficient for design approval.",
+  "comparative_principles": {
+    "zirconium": "exceptional in selected chemical-process environments but sensitive to specific chemistry, hydrogen and temperature limits",
+    "nickel_corrosion_alloys": "broad capability but selection depends strongly on oxidising/reducing chemistry and localized-corrosion mechanisms",
+    "MP35N": "corrosion resistance must be assessed alongside its high-strength condition",
+    "Nitinol": "surface chemistry and processing are particularly important for corrosion performance in biomedical applications"
+  }
+}

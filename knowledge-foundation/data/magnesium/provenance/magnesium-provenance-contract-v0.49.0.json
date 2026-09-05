@@ -1,0 +1,34 @@
+{
+  "version": "0.49.0",
+  "family": "magnesium",
+  "status": "ready_for_population",
+  "source_hierarchy": [
+    "material specification / recognised standard",
+    "manufacturer or producer technical data",
+    "qualified test report",
+    "peer-reviewed technical literature",
+    "engineering handbook/reference",
+    "secondary web/database source"
+  ],
+  "minimum_record_context": [
+    "designation",
+    "composition",
+    "product_form",
+    "temper",
+    "manufacturing_route",
+    "orientation",
+    "temperature",
+    "environment",
+    "test_method",
+    "source",
+    "source_revision"
+  ],
+  "confidence_states": [
+    "unverified",
+    "source-linked",
+    "cross-checked",
+    "engineering-reviewed",
+    "design-approved"
+  ],
+  "rule": "No record may enter design-approved state without sufficient provenance and applicability review."
+}

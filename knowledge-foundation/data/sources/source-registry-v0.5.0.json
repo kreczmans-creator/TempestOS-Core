@@ -1,0 +1,26 @@
+[
+  {
+    "id": "SRC-ISO",
+    "name": "ISO",
+    "type": "standards_publisher",
+    "url": "https://www.iso.org/"
+  },
+  {
+    "id": "SRC-ASTM",
+    "name": "ASTM International",
+    "type": "standards_publisher",
+    "url": "https://www.astm.org/"
+  },
+  {
+    "id": "SRC-MATWEB",
+    "name": "MatWeb",
+    "type": "engineering_reference",
+    "url": "https://www.matweb.com/"
+  },
+  {
+    "id": "SRC-ASM",
+    "name": "ASM International",
+    "type": "engineering_reference",
+    "url": "https://www.asminternational.org/"
+  }
+]

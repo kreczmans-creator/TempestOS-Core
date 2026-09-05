@@ -1,0 +1,18 @@
+{
+  "version": "0.69.0",
+  "problem": "Screen a preloaded bolted joint under external cyclic load.",
+  "workflow": [
+    "define joint load path",
+    "select bolt and joint material",
+    "set target preload",
+    "estimate stiffness ratio",
+    "calculate bolt load range",
+    "check proof/yield",
+    "check joint separation/slip",
+    "check fatigue",
+    "check environmental compatibility",
+    "define preload verification"
+  ],
+  "acceptance": "No generic torque value is accepted without accounting for friction, lubrication, coating and assembly method.",
+  "status": "worked-framework"
+}

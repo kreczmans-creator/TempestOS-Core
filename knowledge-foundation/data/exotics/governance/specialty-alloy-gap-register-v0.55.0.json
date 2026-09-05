@@ -1,0 +1,44 @@
+[
+  {
+    "id": "SP-GAP-001",
+    "severity": "AMBER",
+    "area": "Zirconium quantitative data",
+    "status": "open",
+    "next": "Populate exact grade/product-form mechanical, corrosion and thermal datasets."
+  },
+  {
+    "id": "SP-GAP-002",
+    "severity": "AMBER",
+    "area": "Ni corrosion alloys",
+    "status": "open",
+    "next": "Populate environment-specific corrosion datasets with test conditions."
+  },
+  {
+    "id": "SP-GAP-003",
+    "severity": "AMBER",
+    "area": "MP35N",
+    "status": "open",
+    "next": "Populate condition-specific strength, fatigue and corrosion evidence."
+  },
+  {
+    "id": "SP-GAP-004",
+    "severity": "AMBER",
+    "area": "Nitinol",
+    "status": "open",
+    "next": "Populate transformation, superelastic, functional-fatigue and surface evidence."
+  },
+  {
+    "id": "SP-GAP-005",
+    "severity": "YELLOW",
+    "area": "Standards",
+    "status": "open",
+    "next": "Resolve exact standard numbers and editions."
+  },
+  {
+    "id": "SP-GAP-006",
+    "severity": "YELLOW",
+    "area": "Corrosion test schema",
+    "status": "open",
+    "next": "Add structured environment/test-method fields for comparable corrosion data."
+  }
+]

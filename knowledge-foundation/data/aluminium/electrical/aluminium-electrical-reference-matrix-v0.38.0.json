@@ -1,0 +1,122 @@
+[
+  {
+    "designation": "1050A",
+    "reference_temper": "H14",
+    "electrical_resistivity_ohm_mm2_m_at_20C": 0.0282,
+    "evidence_class": "engineering_reference",
+    "design_use": "screening_only",
+    "note": "Electrical resistivity varies with alloy, temper and temperature; verify exact value for electrical design."
+  },
+  {
+    "designation": "1200",
+    "reference_temper": "H14",
+    "electrical_resistivity_ohm_mm2_m_at_20C": 0.0285,
+    "evidence_class": "engineering_reference",
+    "design_use": "screening_only",
+    "note": "Electrical resistivity varies with alloy, temper and temperature; verify exact value for electrical design."
+  },
+  {
+    "designation": "2014A",
+    "reference_temper": "T6",
+    "electrical_resistivity_ohm_mm2_m_at_20C": 0.05,
+    "evidence_class": "engineering_reference",
+    "design_use": "screening_only",
+    "note": "Electrical resistivity varies with alloy, temper and temperature; verify exact value for electrical design."
+  },
+  {
+    "designation": "2024",
+    "reference_temper": "T3/T4",
+    "electrical_resistivity_ohm_mm2_m_at_20C": 0.052,
+    "evidence_class": "engineering_reference",
+    "design_use": "screening_only",
+    "note": "Electrical resistivity varies with alloy, temper and temperature; verify exact value for electrical design."
+  },
+  {
+    "designation": "2219",
+    "reference_temper": "T851",
+    "electrical_resistivity_ohm_mm2_m_at_20C": 0.054,
+    "evidence_class": "engineering_reference",
+    "design_use": "screening_only",
+    "note": "Electrical resistivity varies with alloy, temper and temperature; verify exact value for electrical design."
+  },
+  {
+    "designation": "5083",
+    "reference_temper": "H116",
+    "electrical_resistivity_ohm_mm2_m_at_20C": 0.059,
+    "evidence_class": "engineering_reference",
+    "design_use": "screening_only",
+    "note": "Electrical resistivity varies with alloy, temper and temperature; verify exact value for electrical design."
+  },
+  {
+    "designation": "5086",
+    "reference_temper": "H116",
+    "electrical_resistivity_ohm_mm2_m_at_20C": 0.059,
+    "evidence_class": "engineering_reference",
+    "design_use": "screening_only",
+    "note": "Electrical resistivity varies with alloy, temper and temperature; verify exact value for electrical design."
+  },
+  {
+    "designation": "6060",
+    "reference_temper": "T6",
+    "electrical_resistivity_ohm_mm2_m_at_20C": 0.034,
+    "evidence_class": "engineering_reference",
+    "design_use": "screening_only",
+    "note": "Electrical resistivity varies with alloy, temper and temperature; verify exact value for electrical design."
+  },
+  {
+    "designation": "6061",
+    "reference_temper": "T6",
+    "electrical_resistivity_ohm_mm2_m_at_20C": 0.04,
+    "evidence_class": "engineering_reference",
+    "design_use": "screening_only",
+    "note": "Electrical resistivity varies with alloy, temper and temperature; verify exact value for electrical design."
+  },
+  {
+    "designation": "6082",
+    "reference_temper": "T6",
+    "electrical_resistivity_ohm_mm2_m_at_20C": 0.042,
+    "evidence_class": "engineering_reference",
+    "design_use": "screening_only",
+    "note": "Electrical resistivity varies with alloy, temper and temperature; verify exact value for electrical design."
+  },
+  {
+    "designation": "7020",
+    "reference_temper": "T6",
+    "electrical_resistivity_ohm_mm2_m_at_20C": 0.05,
+    "evidence_class": "engineering_reference",
+    "design_use": "screening_only",
+    "note": "Electrical resistivity varies with alloy, temper and temperature; verify exact value for electrical design."
+  },
+  {
+    "designation": "7075",
+    "reference_temper": "T6",
+    "electrical_resistivity_ohm_mm2_m_at_20C": 0.051,
+    "evidence_class": "engineering_reference",
+    "design_use": "screening_only",
+    "note": "Electrical resistivity varies with alloy, temper and temperature; verify exact value for electrical design."
+  },
+  {
+    "designation": "7050",
+    "reference_temper": "T7451",
+    "electrical_resistivity_ohm_mm2_m_at_20C": 0.052,
+    "evidence_class": "engineering_reference",
+    "design_use": "screening_only",
+    "note": "Electrical resistivity varies with alloy, temper and temperature; verify exact value for electrical design."
+  },
+  {
+    "designation": "A356",
+    "reference_temper": "T6",
+    "electrical_resistivity_ohm_mm2_m_at_20C": 0.045,
+    "evidence_class": "engineering_reference",
+    "design_use": "screening_only",
+    "note": "Electrical resistivity varies with alloy, temper and temperature; verify exact value for electrical design."
+  },
+  {
+    "designation": "AlSi10Mg",
+    "reference_temper": "T6/reference",
+    "electrical_resistivity_ohm_mm2_m_at_20C": 0.045,
+    "evidence_class": "engineering_reference",
+    "design_use": "screening_only",
+    "note": "Electrical resistivity varies with alloy, temper and temperature; verify exact value for electrical design."
+  }
+]

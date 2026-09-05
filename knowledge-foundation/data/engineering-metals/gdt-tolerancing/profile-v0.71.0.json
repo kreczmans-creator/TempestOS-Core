@@ -1,0 +1,15 @@
+{
+  "version": "0.71.0",
+  "status": "design-framework",
+  "uses": [
+    "complex surfaces",
+    "contoured interfaces",
+    "combined form/orientation/location control"
+  ],
+  "checks": [
+    "datum references",
+    "profile zone",
+    "inspection method",
+    "functional surface definition"
+  ]
+}

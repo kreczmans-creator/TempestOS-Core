@@ -1,0 +1,151 @@
+{
+  "version": "0.45.0",
+  "status": "screening_reference_layer",
+  "records": [
+    {
+      "family": "commercially pure tungsten",
+      "behaviour": {
+        "room_temperature": "Very high stiffness; room-temperature ductility can be limited by processing and microstructure.",
+        "1000C": "Substantial strength retention compared with conventional engineering metals; oxidation in air becomes a major constraint.",
+        "1500C": "High-temperature capability remains strong in controlled atmospheres, but recrystallisation and creep become increasingly important.",
+        "2000C_plus": "Specialist high-temperature/vacuum/inert applications; property data must be grade- and process-specific."
+      },
+      "creep_relevance": "high",
+      "recrystallisation_relevance": "high",
+      "oxidation_relevance_in_air": "very_high",
+      "design_controls": [
+        "temperature-time exposure",
+        "grain size and processing history",
+        "recrystallisation state",
+        "creep strain/rate",
+        "atmosphere",
+        "thermal gradients"
+      ]
+    },
+    {
+      "family": "tungsten-rhenium",
+      "behaviour": {
+        "room_temperature": "Generally improved ductility/workability relative to susceptible pure-tungsten conditions.",
+        "1000C": "High-temperature mechanical performance remains relevant for instrumentation and specialist components.",
+        "1500C": "Grade-specific strength, creep and recrystallisation evidence required.",
+        "2000C_plus": "Specialist applications only; environment and grain stability are critical."
+      },
+      "creep_relevance": "very_high",
+      "recrystallisation_relevance": "high",
+      "oxidation_relevance_in_air": "very_high",
+      "design_controls": [
+        "Re concentration",
+        "thermomechanical condition",
+        "thermocouple/application standard",
+        "temperature cycling",
+        "atmosphere"
+      ]
+    },
+    {
+      "family": "tungsten heavy alloy",
+      "behaviour": {
+        "room_temperature": "Ductile binder phase gives substantially different behaviour from monolithic tungsten.",
+        "500C": "Strength and ductility become increasingly grade-dependent.",
+        "1000C": "Binder phase and microstructural stability govern performance; creep and phase stability require evidence.",
+        "1500C": "Generally unsuitable for many structural uses without highly specific grade/environment evidence."
+      },
+      "creep_relevance": "high",
+      "recrystallisation_relevance": "medium",
+      "oxidation_relevance_in_air": "high",
+      "design_controls": [
+        "tungsten volume/mass fraction",
+        "binder chemistry",
+        "sintering condition",
+        "temperature",
+        "load duration",
+        "oxidising environment"
+      ]
+    },
+    {
+      "family": "cemented tungsten carbide",
+      "behaviour": {
+        "room_temperature": "Extremely high hardness and compressive capability; fracture and edge chipping can govern.",
+        "500C": "Hardness and strength reduce with temperature; binder phase becomes increasingly important.",
+        "800C": "Hot hardness and oxidation/phase stability become application-critical.",
+        "1000C_plus": "Specialist high-temperature use requires grade-specific evidence; conventional room-temperature properties are not transferable."
+      },
+      "creep_relevance": "medium_to_high",
+      "recrystallisation_relevance": "low_as_metallic_recrystallisation_concept_but_microstructure_stability_high",
+      "oxidation_relevance_in_air": "high",
+      "design_controls": [
+        "WC grain size",
+        "binder fraction",
+        "binder chemistry",
+        "temperature",
+        "thermal shock",
+        "contact stress",
+        "wear mechanism"
+      ]
+    },
+    {
+      "family": "tungsten-copper composite",
+      "behaviour": {
+        "room_temperature": "High conductivity combined with high stiffness/density.",
+        "300C": "Copper phase increasingly influences thermal and mechanical response.",
+        "600C": "Thermal mismatch and copper softening can dominate local performance.",
+        "1000C_plus": "Generally not a conventional structural high-temperature material; use requires composition-specific evidence."
+      },
+      "creep_relevance": "high_for_copper_phase",
+      "recrystallisation_relevance": "composition_dependent",
+      "oxidation_relevance_in_air": "high",
+      "design_controls": [
+        "W/Cu ratio",
+        "interface integrity",
+        "thermal cycling",
+        "copper creep/softening",
+        "temperature gradient"
+      ]
+    },
+    {
+      "family": "lanthanated tungsten",
+      "behaviour": {
+        "room_temperature": "High stiffness with dispersion-strengthened behaviour.",
+        "1000C": "Improved resistance to deformation/recrystallisation relative to some unalloyed conditions.",
+        "1500C": "High-temperature performance remains grade/process dependent.",
+        "2000C_plus": "Specialist electrode/furnace applications require source-specific evidence."
+      },
+      "creep_relevance": "high",
+      "recrystallisation_relevance": "very_high",
+      "oxidation_relevance_in_air": "very_high",
+      "design_controls": [
+        "La2O3 content",
+        "dispersion distribution",
+        "processing route",
+        "temperature cycling",
+        "atmosphere"
+      ]
+    }
+  ],
+  "screening_temperature_ranges_C": {
+    "pure_tungsten": [
+      -196,
+      3000
+    ],
+    "tungsten_rhenium": [
+      -196,
+      2500
+    ],
+    "tungsten_heavy_alloy": [
+      -196,
+      1200
+    ],
+    "cemented_tungsten_carbide": [
+      -196,
+      1000
+    ],
+    "tungsten_copper": [
+      -196,
+      900
+    ],
+    "lanthanated_tungsten": [
+      -196,
+      3000
+    ]
+  },
+  "warning": "Temperature limits are library screening envelopes, not service limits."
+}

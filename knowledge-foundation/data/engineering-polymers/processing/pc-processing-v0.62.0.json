@@ -1,0 +1,32 @@
+{
+  "version": "0.62.0",
+  "family": "PC",
+  "processing_routes": [
+    "injection moulding",
+    "extrusion",
+    "thermoforming",
+    "additive manufacturing"
+  ],
+  "process_effects": [
+    "melt/processing temperature history",
+    "cooling rate",
+    "tool/mould temperature",
+    "holding/packing conditions",
+    "residual stress",
+    "flow orientation",
+    "post-processing/annealing where applicable"
+  ],
+  "design_controls": [
+    "grade-specific processing window",
+    "part thickness and geometry",
+    "gate/flow layout for moulded parts",
+    "cooling/tool temperature",
+    "conditioning requirements",
+    "post-process thermal treatment where applicable"
+  ],
+  "evidence_status": "screening-level qualitative record",
+  "design_use": "not approved",
+  "manufacturing_screen": "injection moulding, extrusion, thermoforming, additive manufacturing",
+  "dimensional_process_effects": "moulding shrinkage/warpage and residual stress can be significant",
+  "anisotropy_note": "stress cracking risk makes process-induced stress important"
+}

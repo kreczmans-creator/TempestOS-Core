@@ -1,0 +1,68 @@
+{
+  "version": "0.41.0",
+  "status": "quantitative_screening_framework",
+  "cycle_reference_points": [
+    100000.0,
+    500000.0,
+    1000000.0,
+    10000000.0
+  ],
+  "records": [
+    {
+      "family": "2xxx wrought",
+      "screening_fatigue_strength_MPa_at_1e7_cycles": [
+        90,
+        150
+      ],
+      "environment": "laboratory_air",
+      "detail": "smooth_polished_reference",
+      "status": "unverified"
+    },
+    {
+      "family": "5xxx wrought",
+      "screening_fatigue_strength_MPa_at_1e7_cycles": [
+        80,
+        140
+      ],
+      "environment": "laboratory_air",
+      "detail": "smooth_reference",
+      "status": "unverified"
+    },
+    {
+      "family": "6xxx wrought",
+      "screening_fatigue_strength_MPa_at_1e7_cycles": [
+        70,
+        130
+      ],
+      "environment": "laboratory_air",
+      "detail": "smooth_reference",
+      "status": "unverified"
+    },
+    {
+      "family": "7xxx wrought",
+      "screening_fatigue_strength_MPa_at_1e7_cycles": [
+        100,
+        180
+      ],
+      "environment": "laboratory_air",
+      "detail": "smooth_reference",
+      "status": "unverified"
+    },
+    {
+      "family": "cast Al-Si-Mg",
+      "screening_fatigue_strength_MPa_at_1e7_cycles": [
+        45,
+        100
+      ],
+      "environment": "laboratory_air",
+      "detail": "casting_reference",
+      "status": "unverified"
+    }
+  ],
+  "critical_controls": [
+    "These ranges are screening references, not allowables.",
+    "Fatigue performance depends strongly on surface finish, defects, stress concentration, mean stress, environment, product form and detail class.",
+    "Welded and cast details require separate evidence."
+  ],
+  "design_use": "not_for_allowables"
+}

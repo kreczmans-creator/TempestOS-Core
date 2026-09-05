@@ -1,0 +1,23 @@
+{
+  "version": "0.61.0",
+  "core_properties": [
+    "creep strain",
+    "creep compliance",
+    "creep modulus",
+    "stress relaxation",
+    "retained stress",
+    "creep rupture life"
+  ],
+  "minimum_context": [
+    "exact grade",
+    "stress/strain level",
+    "temperature",
+    "time",
+    "conditioning",
+    "specimen/product form",
+    "orientation where relevant",
+    "test method",
+    "source"
+  ],
+  "selection_rule": "For sustained-load components, long-term time-dependent data take precedence over short-term tensile properties."
+}

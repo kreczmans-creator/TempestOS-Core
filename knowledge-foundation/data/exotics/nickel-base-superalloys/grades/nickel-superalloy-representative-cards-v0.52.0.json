@@ -1,0 +1,208 @@
+[
+  {
+    "designation": "Alloy 718 / Inconel 718",
+    "aliases": [
+      "UNS N07718"
+    ],
+    "class": "Ni-Fe-Cr precipitation-strengthened",
+    "strengthening": "gamma-double-prime and gamma-prime precipitation with grain-boundary/carbonitride effects",
+    "selection_role": "general-purpose high-strength nickel alloy with strong fabrication/weldability balance",
+    "typical_product_forms": [
+      "bar",
+      "forgings",
+      "sheet",
+      "plate",
+      "wire",
+      "powder/AM feedstock"
+    ],
+    "typical_uses": [
+      "gas-turbine components",
+      "aerospace structures",
+      "high-temperature fasteners",
+      "pressure hardware",
+      "AM components"
+    ],
+    "key_controls": [
+      "heat treatment",
+      "product form",
+      "grain size",
+      "notch sensitivity",
+      "fatigue",
+      "creep/rupture",
+      "weld condition"
+    ],
+    "evidence_status": "screening taxonomy",
+    "design_use": "screening_only",
+    "provenance_required": [
+      "exact specification",
+      "product form",
+      "condition/heat treatment",
+      "temperature",
+      "test method",
+      "orientation where relevant",
+      "source"
+    ]
+  },
+  {
+    "designation": "Alloy 625 / Inconel 625",
+    "aliases": [
+      "UNS N06625"
+    ],
+    "class": "Ni-Cr-Mo-Nb solid-solution strengthened",
+    "strengthening": "molybdenum/niobium/chromium solid-solution strengthening",
+    "selection_role": "corrosion-resistant nickel alloy with strong weldability and useful elevated-temperature capability",
+    "typical_product_forms": [
+      "bar",
+      "sheet",
+      "plate",
+      "tube",
+      "forgings",
+      "wire",
+      "powder/AM feedstock"
+    ],
+    "typical_uses": [
+      "chemical processing",
+      "marine equipment",
+      "heat exchangers",
+      "aerospace",
+      "exhaust/combustion hardware",
+      "AM components"
+    ],
+    "key_controls": [
+      "environment",
+      "temperature",
+      "welding",
+      "sensitisation/precipitation",
+      "surface condition",
+      "fatigue"
+    ],
+    "evidence_status": "screening taxonomy",
+    "design_use": "screening_only",
+    "provenance_required": [
+      "exact specification",
+      "product form",
+      "condition/heat treatment",
+      "temperature",
+      "test method",
+      "orientation where relevant",
+      "source"
+    ]
+  },
+  {
+    "designation": "Haynes 230",
+    "aliases": [
+      "UNS N06230"
+    ],
+    "class": "Ni-Cr-W-Mo solid-solution strengthened",
+    "strengthening": "tungsten/molybdenum solid-solution strengthening with controlled microstructure",
+    "selection_role": "high-temperature oxidation-resistant nickel alloy for prolonged elevated-temperature service",
+    "typical_product_forms": [
+      "sheet",
+      "plate",
+      "bar",
+      "wire"
+    ],
+    "typical_uses": [
+      "combustion systems",
+      "industrial furnaces",
+      "heat exchangers",
+      "high-temperature tooling",
+      "power-generation hardware"
+    ],
+    "key_controls": [
+      "temperature",
+      "creep",
+      "oxidation",
+      "grain structure",
+      "fabrication",
+      "thermal cycling"
+    ],
+    "evidence_status": "screening taxonomy",
+    "design_use": "screening_only",
+    "provenance_required": [
+      "exact specification",
+      "product form",
+      "condition/heat treatment",
+      "temperature",
+      "test method",
+      "orientation where relevant",
+      "source"
+    ]
+  },
+  {
+    "designation": "Alloy 718Plus",
+    "aliases": [
+      "718Plus"
+    ],
+    "class": "Ni-base precipitation-strengthened",
+    "strengthening": "precipitation strengthening designed to extend useful temperature capability beyond conventional 718",
+    "selection_role": "candidate where 718-like processing/fabrication is desired with enhanced elevated-temperature capability",
+    "typical_product_forms": [
+      "forgings",
+      "bar",
+      "sheet",
+      "specialist product forms"
+    ],
+    "typical_uses": [
+      "aerospace engine components",
+      "high-temperature rotating hardware"
+    ],
+    "key_controls": [
+      "heat treatment",
+      "microstructure",
+      "creep",
+      "rupture",
+      "fatigue",
+      "qualification"
+    ],
+    "evidence_status": "screening taxonomy",
+    "design_use": "screening_only",
+    "provenance_required": [
+      "exact specification",
+      "product form",
+      "condition/heat treatment",
+      "temperature",
+      "test method",
+      "orientation where relevant",
+      "source"
+    ]
+  },
+  {
+    "designation": "Waspaloy",
+    "aliases": [
+      "Waspaloy"
+    ],
+    "class": "Ni-base precipitation-strengthened",
+    "strengthening": "gamma-prime precipitation",
+    "selection_role": "high-strength elevated-temperature alloy for demanding aerospace service",
+    "typical_product_forms": [
+      "forgings",
+      "bar",
+      "sheet"
+    ],
+    "typical_uses": [
+      "aerospace engine components",
+      "discs",
+      "shafts",
+      "fasteners"
+    ],
+    "key_controls": [
+      "heat treatment",
+      "grain size",
+      "creep",
+      "fatigue",
+      "forging route"
+    ],
+    "evidence_status": "screening taxonomy",
+    "design_use": "screening_only",
+    "provenance_required": [
+      "exact specification",
+      "product form",
+      "condition/heat treatment",
+      "temperature",
+      "test method",
+      "orientation where relevant",
+      "source"
+    ]
+  }
+]

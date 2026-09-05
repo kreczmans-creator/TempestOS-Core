@@ -1,0 +1,13 @@
+{
+  "version": "0.74.0",
+  "status": "foundation-framework",
+  "elements": [
+    "characteristic",
+    "specification",
+    "measurement method",
+    "sampling frequency",
+    "acceptance criterion",
+    "reaction plan",
+    "record"
+  ]
+}

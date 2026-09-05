@@ -1,0 +1,58 @@
+[
+  {
+    "id": "W-GAP-001",
+    "area": "grade-specific composition",
+    "status": "open",
+    "priority": "high",
+    "next": "Populate specification-linked compositions and grade designations."
+  },
+  {
+    "id": "W-GAP-002",
+    "area": "temperature-dependent strength",
+    "status": "open",
+    "priority": "high",
+    "next": "Add strength, creep and recrystallisation datasets by grade and processing condition."
+  },
+  {
+    "id": "W-GAP-003",
+    "area": "ductile-brittle transition",
+    "status": "open",
+    "priority": "high",
+    "next": "Capture transition behaviour, test temperature and product form."
+  },
+  {
+    "id": "W-GAP-004",
+    "area": "thermal/electrical data",
+    "status": "screening_only",
+    "priority": "medium",
+    "next": "Replace ranges with authoritative grade-specific temperature-dependent data."
+  },
+  {
+    "id": "W-GAP-005",
+    "area": "tungsten carbide",
+    "status": "foundation_only",
+    "priority": "high",
+    "next": "Separate WC grain size, binder chemistry and grade-specific properties."
+  },
+  {
+    "id": "W-GAP-006",
+    "area": "heavy alloys",
+    "status": "foundation_only",
+    "priority": "high",
+    "next": "Capture W-Ni-Fe and W-Ni-Cu grade families and binder fractions."
+  },
+  {
+    "id": "W-GAP-007",
+    "area": "manufacturing",
+    "status": "qualitative",
+    "priority": "medium",
+    "next": "Add powder route, density, HIP/sintering and finishing evidence."
+  },
+  {
+    "id": "W-GAP-008",
+    "area": "standards",
+    "status": "framework_only",
+    "priority": "medium",
+    "next": "Link exact standards and editions to applicable records."
+  }
+]

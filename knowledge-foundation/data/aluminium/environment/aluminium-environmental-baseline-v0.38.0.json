@@ -1,0 +1,10 @@
+{
+  "wrought_pure_and_1xxx": "Generally strong atmospheric corrosion resistance due to protective oxide film; aggressive environments can still cause localized attack.",
+  "2xxx": "Copper-bearing alloys generally have lower corrosion resistance than 5xxx/6xxx families and commonly require protection in demanding environments.",
+  "5xxx": "Generally good corrosion resistance, especially in marine environments, but sensitization/intergranular corrosion can matter for certain compositions, thermal histories and service conditions.",
+  "6xxx": "Generally good corrosion resistance with broad engineering utility.",
+  "7xxx": "High-strength grades can be more environmentally sensitive; stress-corrosion and exfoliation behaviour must be assessed against exact temper/product form.",
+  "cast_and_am": "Porosity, microstructure, surface condition and process history can materially affect corrosion performance.",
+  "galvanic": "Aluminium is relatively anodic; dissimilar-metal coupling in electrolyte requires galvanic compatibility assessment.",
+  "hydrogen": "Hydrogen effects are not represented as a universal alloy property; assess where process/service charging and fracture consequences make it relevant."
+}

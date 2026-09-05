@@ -1,0 +1,15 @@
+{
+  "version": "0.74.0",
+  "status": "worked-framework",
+  "problem": "Close a multi-domain interface between a mechanical actuator and its controlled load.",
+  "workflow": [
+    "define allocated requirements",
+    "create interface definition",
+    "identify mechanical/electrical/thermal/data constraints",
+    "define operating modes",
+    "identify fault states",
+    "allocate budgets and margins",
+    "verify interface performance",
+    "close traceability"
+  ]
+}

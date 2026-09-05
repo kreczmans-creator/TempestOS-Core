@@ -1,0 +1,55 @@
+{
+  "version": "0.53.0",
+  "family": "cobalt-base-alloys",
+  "selection_framework": {
+    "strength": "Use exact grade, product form, heat treatment and temperature; cobalt-base alloys are not interchangeable merely because they share a nominal Co-Cr system.",
+    "hot_hardness": "A principal advantage of several cobalt-base wear alloys is retention of hardness at elevated temperature.",
+    "fatigue": "Assess surface condition, carbide morphology, notch sensitivity, thermal cycling, mean stress and environment.",
+    "fracture": "Cast, hardfaced and wrought material can have materially different defect populations and fracture behaviour.",
+    "wear": "Wear performance is strongly application-specific; hardness alone is not a sufficient wear model.",
+    "microstructure": "Carbide type, size, distribution and matrix condition can dominate mechanical and wear behaviour."
+  },
+  "screening_comparison": [
+    {
+      "need": "wear/hardfacing",
+      "candidate": "Stellite 6",
+      "dominant": [
+        "hardness",
+        "carbide structure",
+        "temperature",
+        "contact regime"
+      ]
+    },
+    {
+      "need": "medical Co-Cr alloy",
+      "candidate": "CoCrMo",
+      "dominant": [
+        "biocompatibility",
+        "corrosion",
+        "fatigue",
+        "surface"
+      ]
+    },
+    {
+      "need": "hot structural alloy",
+      "candidate": "Haynes 188",
+      "dominant": [
+        "creep",
+        "oxidation",
+        "fatigue",
+        "temperature"
+      ]
+    },
+    {
+      "need": "high-temperature sheet/spring application",
+      "candidate": "Haynes 25 / L-605",
+      "dominant": [
+        "temperature",
+        "cold work",
+        "fatigue",
+        "oxidation"
+      ]
+    }
+  ],
+  "design_rule": "Never select a cobalt-base material from hardness or room-temperature tensile strength alone."
+}

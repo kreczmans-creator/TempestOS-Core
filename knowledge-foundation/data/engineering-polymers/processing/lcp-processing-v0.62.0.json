@@ -1,0 +1,30 @@
+{
+  "version": "0.62.0",
+  "family": "LCP",
+  "processing_routes": [
+    "injection moulding",
+    "extrusion in selected grades"
+  ],
+  "process_effects": [
+    "melt/processing temperature history",
+    "cooling rate",
+    "tool/mould temperature",
+    "holding/packing conditions",
+    "residual stress",
+    "flow orientation",
+    "post-processing/annealing where applicable"
+  ],
+  "design_controls": [
+    "grade-specific processing window",
+    "part thickness and geometry",
+    "gate/flow layout for moulded parts",
+    "cooling/tool temperature",
+    "conditioning requirements",
+    "post-process thermal treatment where applicable"
+  ],
+  "evidence_status": "screening-level qualitative record",
+  "design_use": "not approved",
+  "manufacturing_screen": "injection moulding, extrusion in selected grades",
+  "dimensional_process_effects": "very strong flow orientation can produce anisotropy",
+  "anisotropy_note": "gate design and flow direction are fundamental design variables"
+}

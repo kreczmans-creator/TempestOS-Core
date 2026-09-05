@@ -1,0 +1,22 @@
+{
+  "version": "0.72.0",
+  "status": "design-framework",
+  "contributors": [
+    "instrument",
+    "fixture",
+    "operator",
+    "environment",
+    "calibration",
+    "sampling",
+    "part temperature",
+    "surface condition"
+  ],
+  "workflow": [
+    "define measurand",
+    "identify uncertainty contributors",
+    "estimate standard uncertainties",
+    "combine contributors",
+    "apply coverage factor where appropriate",
+    "compare expanded uncertainty with tolerance"
+  ]
+}

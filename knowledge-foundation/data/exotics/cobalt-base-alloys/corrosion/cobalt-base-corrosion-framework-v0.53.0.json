@@ -1,0 +1,22 @@
+{
+  "version": "0.53.0",
+  "family": "cobalt-base-alloys",
+  "environments": [
+    "aqueous corrosion",
+    "high-temperature oxidation",
+    "hot corrosion",
+    "erosion-corrosion",
+    "body-fluid environments for qualified biomedical alloys"
+  ],
+  "controls": [
+    "chromium content and passive-film behaviour",
+    "temperature",
+    "chlorides and contaminants",
+    "galvanic coupling",
+    "surface finish",
+    "microstructure",
+    "welding or deposition condition"
+  ],
+  "galvanic": "Assess cobalt-base alloys as part of the complete galvanic couple; coatings and electrical isolation can change the system behaviour.",
+  "rule": "Corrosion claims must be tied to the actual environment and product condition."
+}

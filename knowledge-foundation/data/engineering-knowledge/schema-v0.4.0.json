@@ -1,0 +1,25 @@
+{
+  "schema_name": "TempestOS Engineering Knowledge Base",
+  "schema_version": "0.4.0",
+  "status": "foundation",
+  "entities": [
+    "Material",
+    "MaterialCondition",
+    "MaterialPropertyObservation",
+    "PropertyDefinition",
+    "Source",
+    "Provenance",
+    "Standard"
+  ],
+  "authority_states": [
+    "unresolved",
+    "candidate_reference",
+    "source_verified",
+    "calculation_authoritative"
+  ],
+  "rules": [
+    "Engineering values must preserve source and applicability context.",
+    "Existing TempestOS UnitsAndQuantities / EngineeringData abstractions are authoritative for quantities and units.",
+    "Conflicting source observations are retained rather than silently averaged or overwritten."
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "version": "0.74.0",
+  "status": "foundation-framework",
+  "drivers": [
+    "access",
+    "fastener accessibility",
+    "tool clearance",
+    "diagnostics",
+    "replaceable modules",
+    "connector access",
+    "alignment features",
+    "service documentation"
+  ],
+  "metrics": [
+    "mean time to repair",
+    "inspection time",
+    "replacement time",
+    "diagnostic time"
+  ]
+}

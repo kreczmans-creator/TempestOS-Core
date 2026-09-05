@@ -1,0 +1,19 @@
+{
+  "version": "0.50.0",
+  "scope": "exotics",
+  "mechanisms": [
+    "oxidation",
+    "hot corrosion",
+    "aqueous corrosion",
+    "galvanic corrosion",
+    "hydrogen effects where applicable",
+    "erosion/wear",
+    "thermal cycling"
+  ],
+  "rules": [
+    "Corrosion resistance is environment-specific.",
+    "High-temperature oxidation is distinct from room-temperature corrosion resistance.",
+    "Coatings and surface treatments must be modelled as part of the material system.",
+    "Dissimilar-material contact requires galvanic assessment."
+  ]
+}

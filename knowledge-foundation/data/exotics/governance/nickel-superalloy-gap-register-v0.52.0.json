@@ -1,0 +1,37 @@
+[
+  {
+    "id": "NI-GAP-001",
+    "severity": "AMBER",
+    "area": "718 quantitative evidence",
+    "status": "open",
+    "next": "Populate exact heat-treatment/product-form datasets and high-temperature allowables."
+  },
+  {
+    "id": "NI-GAP-002",
+    "severity": "AMBER",
+    "area": "625 quantitative evidence",
+    "status": "open",
+    "next": "Populate exact product-form/environment datasets."
+  },
+  {
+    "id": "NI-GAP-003",
+    "severity": "AMBER",
+    "area": "Haynes 230",
+    "status": "open",
+    "next": "Populate creep, oxidation and temperature-dependent mechanical evidence."
+  },
+  {
+    "id": "NI-GAP-004",
+    "severity": "AMBER",
+    "area": "fatigue/creep interaction",
+    "status": "open",
+    "next": "Add validated combined-damage evidence where application demands it."
+  },
+  {
+    "id": "NI-GAP-005",
+    "severity": "YELLOW",
+    "area": "standards",
+    "status": "open",
+    "next": "Resolve exact standard numbers and editions."
+  }
+]

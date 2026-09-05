@@ -1,0 +1,15 @@
+{
+  "version": "0.71.0",
+  "status": "design-framework",
+  "controls": [
+    "straightness",
+    "flatness",
+    "circularity",
+    "cylindricity",
+    "angularity",
+    "parallelism",
+    "perpendicularity",
+    "position"
+  ],
+  "selection_rule": "Specify the characteristic that controls the actual functional requirement; avoid adding geometric controls without a demonstrated purpose."
+}

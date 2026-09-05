@@ -1,0 +1,308 @@
+- observation_id: OBS-155PH-H900-UPM
+  material_state_id: MAT-STEEL-15-5PH
+  designation: 15-5 PH / UNS S15500
+  condition: H900
+  properties:
+    ultimate_tensile_strength:
+      value: 1310
+      unit: MPa
+    yield_strength_0p2:
+      value: 1172
+      unit: MPa
+    elongation:
+      value: 6
+      unit: percent
+    hardness_brinell:
+      value: 388
+      unit: HB
+  source_id: WEB-UPMET-15-5PH
+  source_url: https://www.upmet.com/sites/default/files/datasheets/15-5ph.pdf
+  source_locator: Mechanical Properties table; condition H900; AMS 5862
+  evidence_status: sourced
+  review_status: reviewed
+  data_class: SUPPLIER_PRODUCT_DATA
+  design_use: screening_only
+- observation_id: OBS-155PH-H1025-UPM
+  material_state_id: MAT-STEEL-15-5PH
+  designation: 15-5 PH / UNS S15500
+  condition: H1025
+  properties:
+    ultimate_tensile_strength:
+      value: 1069
+      unit: MPa
+    yield_strength_0p2:
+      value: 1000
+      unit: MPa
+    elongation:
+      value: 8
+      unit: percent
+    hardness_brinell:
+      value: 331
+      unit: HB
+  source_id: WEB-UPMET-15-5PH
+  source_url: https://www.upmet.com/sites/default/files/datasheets/15-5ph.pdf
+  source_locator: Mechanical Properties table; condition H1025; AMS 5862
+  evidence_status: sourced
+  review_status: reviewed
+  data_class: SUPPLIER_PRODUCT_DATA
+  design_use: screening_only
+- observation_id: OBS-155PH-H1075-UPM
+  material_state_id: MAT-STEEL-15-5PH
+  designation: 15-5 PH / UNS S15500
+  condition: H1075
+  properties:
+    ultimate_tensile_strength:
+      value: 1000
+      unit: MPa
+    yield_strength_0p2:
+      value: 862
+      unit: MPa
+    elongation:
+      value: 9
+      unit: percent
+    hardness_brinell:
+      value: 331
+      unit: HB
+  source_id: WEB-UPMET-15-5PH
+  source_url: https://www.upmet.com/sites/default/files/datasheets/15-5ph.pdf
+  source_locator: Mechanical Properties table; condition H1075; AMS 5862
+  evidence_status: sourced
+  review_status: reviewed
+  data_class: SUPPLIER_PRODUCT_DATA
+  design_use: screening_only
+- observation_id: OBS-155PH-H1100-UPM
+  material_state_id: MAT-STEEL-15-5PH
+  designation: 15-5 PH / UNS S15500
+  condition: H1100
+  properties:
+    ultimate_tensile_strength:
+      value: 965
+      unit: MPa
+    yield_strength_0p2:
+      value: 793
+      unit: MPa
+    elongation:
+      value: 10
+      unit: percent
+    hardness_brinell:
+      value: 311
+      unit: HB
+  source_id: WEB-UPMET-15-5PH
+  source_url: https://www.upmet.com/sites/default/files/datasheets/15-5ph.pdf
+  source_locator: Mechanical Properties table; condition H1100; AMS 5862
+  evidence_status: sourced
+  review_status: reviewed
+  data_class: SUPPLIER_PRODUCT_DATA
+  design_use: screening_only
+- observation_id: OBS-155PH-H1150-UPM
+  material_state_id: MAT-STEEL-15-5PH
+  designation: 15-5 PH / UNS S15500
+  condition: H1150
+  properties:
+    ultimate_tensile_strength:
+      value: 931
+      unit: MPa
+    yield_strength_0p2:
+      value: 724
+      unit: MPa
+    elongation:
+      value: 11
+      unit: percent
+    hardness_brinell:
+      value: 277
+      unit: HB
+  source_id: WEB-UPMET-15-5PH
+  source_url: https://www.upmet.com/sites/default/files/datasheets/15-5ph.pdf
+  source_locator: Mechanical Properties table; condition H1150; AMS 5862
+  evidence_status: sourced
+  review_status: reviewed
+  data_class: SUPPLIER_PRODUCT_DATA
+  design_use: screening_only
+- observation_id: OBS-155PH-PHYSICAL-UPM
+  material_state_id: MAT-STEEL-15-5PH
+  designation: 15-5 PH / UNS S15500
+  source_id: WEB-UPMET-15-5PH-PHYSICAL
+  source_url: https://www.upmdevsite.com/sites/default/files/products/datasheet/15-5-ph-datasheet.pdf
+  source_locator: Physical Properties table; Conditions A/H900/H1075/H1150
+  properties:
+    density:
+      A:
+        value: 7.75
+        unit: g/cm3
+      H900:
+        value: 7.81
+        unit: g/cm3
+      H1075:
+        value: 7.83
+        unit: g/cm3
+      H1150:
+        value: 7.86
+        unit: g/cm3
+    electrical_resistivity:
+      A:
+        value: 98
+        unit: microohm*cm
+      H900:
+        value: 77
+        unit: microohm*cm
+      H1075:
+        value: 80
+        unit: microohm*cm
+      H1150:
+        value: 86
+        unit: microohm*cm
+    thermal_conductivity:
+      70_212F:
+        A:
+          value: 10.6
+          unit: Btu-in/hr-ft2-F
+        H900:
+          value: 10.3
+          unit: Btu-in/hr-ft2-F
+      70_932F:
+        A:
+          value: 13.1
+          unit: Btu-in/hr-ft2-F
+        H900:
+          value: 13.1
+          unit: Btu-in/hr-ft2-F
+  evidence_status: sourced
+  review_status: reviewed
+  data_class: SUPPLIER_PRODUCT_DATA
+  design_use: screening_only
+- observation_id: OBS-138MO-H950-AEROSPACE-METALS
+  material_state_id: MAT-STEEL-13-8MO
+  designation: PH 13-8 Mo / UNS S13800 / 1.4534
+  condition: H950
+  source_id: WEB-AEROSPACEMETALS-138MO
+  source_url: https://www.aerospacemetals.com/wp-content/uploads/2023/08/AISI-Type-S13800-Stainless-Steel-PH-13-8-Mo-longitudinal-properties-condition-H950.pdf
+  source_locator: Mechanical Properties table; longitudinal properties; H950
+  properties:
+    ultimate_tensile_strength:
+      value: 1550
+      unit: MPa
+    yield_strength_0p2:
+      value: 1450
+      unit: MPa
+    elongation:
+      value: 12
+      unit: percent
+    modulus_of_elasticity:
+      value: 197
+      unit: GPa
+    charpy_impact:
+      value: 45
+      unit: J
+      test_temperature: room temperature
+  physical_properties:
+    density:
+      value: 7.8
+      unit: g/cm3
+  evidence_status: sourced
+  review_status: reviewed
+  data_class: SUPPLIER_PRODUCT_DATA
+  design_use: screening_only
+- observation_id: OBS-310S-OUTOKUMPU
+  material_state_id: MAT-STEEL-310S
+  designation: EN 1.4845 / ASTM 310S / UNS S31008
+  microstructure: austenitic
+  source_id: WEB-OUTOKUMPU-THERMA
+  source_url: https://www.outokumpu.com/products/product-ranges/therma
+  source_locator: Therma 310S/4845 product entry
+  characteristic_properties:
+  - good oxidation resistance
+  - good resistance to high-temperature corrosion
+  - good mechanical strength at elevated temperatures
+  service_context: high-temperature applications, particularly above approximately
+    550 °C where creep strength and high-temperature corrosion are important
+  applications:
+  - industrial furnace equipment
+  - heat treatment baskets
+  - heat exchangers
+  - steam boilers
+  - thermowells
+  - energy conversion plants
+  - cement industry
+  product_forms:
+  - hot rolled coil
+  - quarto plate
+  - cold rolled coil
+  evidence_status: sourced
+  review_status: reviewed
+  data_class: SUPPLIER_PRODUCT_DATA
+  design_use: screening_only
+- observation_id: OBS-321-OUTOKUMPU
+  material_state_id: MAT-STEEL-321
+  designation: EN 1.4541 / ASTM 321 / UNS S32100
+  microstructure: austenitic
+  source_id: WEB-OUTOKUMPU-321
+  source_url: https://www.outokumpu.com/en/products/product-ranges/-/media/files/products/moda/outokumpu-moda-range-datasheet.pdf
+  source_locator: Core 321/4541 product entry
+  characteristic_properties:
+  - titanium-stabilized
+  - improved intergranular corrosion resistance
+  - usable at elevated temperatures
+  service_context: elevated-temperature service; high-temperature variant 321H/4878
+    is recommended for more demanding high-temperature applications
+  product_forms:
+  - many product forms and dimensions
+  evidence_status: sourced
+  review_status: reviewed
+  data_class: SUPPLIER_PRODUCT_DATA
+  design_use: screening_only
+- observation_id: OBS-430-OUTOKUMPU-MECHANICAL
+  material_state_id: MAT-STEEL-430
+  designation: EN 1.4016 / ASTM 430 / UNS S43000
+  property: mechanical_properties_20C
+  product_forms:
+    cold_rolled_coil_and_sheet:
+      yield_strength_Rp0p2_MPa: 280
+      tensile_strength_MPa:
+      - 430
+      - 600
+      elongation_percent: 20
+    hot_rolled_coil_and_sheet:
+      yield_strength_Rp0p2_MPa: 260
+      tensile_strength_MPa:
+      - 430
+      - 600
+      elongation_percent: 18
+  source_id: WEB-OUTOKUMPU-MODA
+  source_url: https://www.outokumpu.com/en/products/product-ranges/moda
+  source_locator: Moda datasheet Table 4; EN 10088-2; mechanical properties at 20
+    °C
+  evidence_status: sourced
+  review_status: reviewed
+  data_class: SUPPLIER_PRODUCT_DATA
+  design_use: screening_only
+- observation_id: OBS-440C-BOHLER-IDENTITY
+  material_state_id: MAT-STEEL-440C
+  designation: 440C / 1.4125 / X105CrMo17 / UNS S44004
+  microstructure: martensitic
+  source_id: WEB-BOHLER-N695
+  source_url: https://www.bohler-edelstahl.com/en/products/n695/
+  source_locator: BÖHLER N695 product page; 440C / 1.4125 mapping and technical data
+  standards:
+  - ASTM A276/A276M
+  - ASTM F899
+  characteristic_properties:
+  - high hardness
+  - very high wear resistance
+  - good corrosion resistance
+  - good dimensional stability
+  - good polishability
+  hardness_context: typically 58–60 HRC depending on part design/application; manufacturer
+    states hardness up to 60 HRC
+  applications:
+  - bearings
+  - cutting instruments
+  - surgical instruments
+  - wear parts
+  - mechanical engineering
+  - electronic industry
+  product_forms:
+  - long products
+  evidence_status: sourced
+  review_status: reviewed
+  data_class: SUPPLIER_PRODUCT_DATA
+  design_use: screening_only

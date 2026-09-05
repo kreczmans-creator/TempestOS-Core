@@ -1,0 +1,38 @@
+{
+  "1xxx": {
+    "machinability": "low_to_moderate",
+    "forming": "excellent",
+    "welding": "generally_good",
+    "extrusion": "excellent"
+  },
+  "2xxx": {
+    "machinability": "good_to_excellent",
+    "forming": "condition_dependent",
+    "welding": "limited_or_specialist_for_common_high-strength_grades",
+    "extrusion": "moderate"
+  },
+  "5xxx": {
+    "machinability": "moderate",
+    "forming": "good_to_excellent",
+    "welding": "excellent_for_common_grades",
+    "extrusion": "good"
+  },
+  "6xxx": {
+    "machinability": "good",
+    "forming": "good",
+    "welding": "good",
+    "extrusion": "excellent"
+  },
+  "7xxx": {
+    "machinability": "good",
+    "forming": "condition_dependent",
+    "welding": "grade_specific_and_often_limited",
+    "extrusion": "good"
+  },
+  "cast_and_am": {
+    "machinability": "generally_good_after_casting/process_control",
+    "forming": "not_primary_route",
+    "welding": "process_and_defect_sensitive",
+    "additive": "process-parameter and post-treatment dependent"
+  }
+}

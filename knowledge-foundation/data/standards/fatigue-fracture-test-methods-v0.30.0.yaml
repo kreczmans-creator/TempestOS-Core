@@ -1,0 +1,30 @@
+-
+  id: TEST-ASTM-E466
+  designation: ASTM E466
+  domain: fatigue
+  purpose: constant-amplitude axial fatigue testing of metallic materials
+-
+  id: TEST-ASTM-E647
+  designation: ASTM E647
+  domain: fatigue_crack_growth
+  purpose: measurement of fatigue crack growth rates
+-
+  id: TEST-ASTM-E399
+  designation: ASTM E399
+  domain: fracture_toughness
+  purpose: linear-elastic plane-strain fracture toughness KIC
+-
+  id: TEST-ASTM-E1820
+  designation: ASTM E1820
+  domain: fracture_toughness
+  purpose: fracture toughness using J-integral and CTOD/K-based methods
+-
+  id: TEST-ASTM-E23
+  designation: ASTM E23
+  domain: impact
+  purpose: Charpy V-notch and Izod pendulum impact testing
+-
+  id: TEST-ISO-12135
+  designation: ISO 12135
+  domain: fracture_toughness
+  purpose: quasi-static fracture toughness testing of metallic materials

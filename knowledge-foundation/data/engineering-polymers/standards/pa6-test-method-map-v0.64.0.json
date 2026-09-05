@@ -1,0 +1,50 @@
+{
+  "version": "0.64.0",
+  "family": "PA6",
+  "applicable_property_domains": [
+    "mechanical",
+    "thermal",
+    "environmental",
+    "electrical",
+    "time_dependent",
+    "tribology",
+    "flammability"
+  ],
+  "methods": {
+    "mechanical": [
+      "ISO 527 / ASTM D638 — tensile properties",
+      "ISO 178 / ASTM D790 — flexural properties",
+      "ISO 179 / ISO 180 / ASTM D256 — impact properties",
+      "ISO 604 — compression properties"
+    ],
+    "thermal": [
+      "ISO 75 / ASTM D648 — deflection temperature under load",
+      "ISO 306 / ASTM D1525 — Vicat softening temperature",
+      "ISO 11357 — DSC / thermal analysis",
+      "ISO 1133 — melt mass-flow rate"
+    ],
+    "environmental": [
+      "ISO 62 / ASTM D570 — water absorption",
+      "ISO 175 / ASTM D543 — chemical resistance",
+      "ISO 4892 / ASTM G154/G155 — artificial weathering"
+    ],
+    "electrical": [
+      "IEC 60243 — electric strength",
+      "IEC 60093 — volume/surface resistivity",
+      "IEC 60250 — permittivity and dissipation factor"
+    ],
+    "time_dependent": [
+      "ISO 899-1 — creep behaviour in tension",
+      "ISO 899-2 — creep behaviour in flexure",
+      "ISO 3384 — stress relaxation of elastomers (applicability must be checked)"
+    ],
+    "tribology": [
+      "ASTM G99 — pin-on-disk wear (method applicability must be checked)",
+      "ASTM G137 — ranking resistance of plastics to sliding wear"
+    ],
+    "flammability": [
+      "UL 94 — flammability classification"
+    ]
+  },
+  "verification_requirement": "Confirm exact grade, specimen conditioning, test method, edition and supplier datasheet before using numerical results."
+}

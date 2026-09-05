@@ -1,0 +1,16 @@
+{
+  "version": "0.69.0",
+  "family": "stainless-steel",
+  "relationships": [
+    "cylindrical hoop stress ≈ p·r/t",
+    "cylindrical longitudinal stress ≈ p·r/(2t)"
+  ],
+  "assumptions": [
+    "thin wall relative to radius",
+    "appropriate pressure definition",
+    "simple geometry",
+    "no severe local discontinuities"
+  ],
+  "boundary": "Do not use the simplified relationship as a substitute for the governing pressure-vessel design code.",
+  "status": "design-framework"
+}

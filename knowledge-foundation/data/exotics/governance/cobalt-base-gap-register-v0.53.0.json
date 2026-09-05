@@ -1,0 +1,44 @@
+[
+  {
+    "id": "CO-GAP-001",
+    "severity": "AMBER",
+    "area": "CoCrMo quantitative data",
+    "status": "open",
+    "next": "Populate exact wrought/cast/medical specification datasets."
+  },
+  {
+    "id": "CO-GAP-002",
+    "severity": "AMBER",
+    "area": "Stellite wear data",
+    "status": "open",
+    "next": "Populate process- and tribosystem-specific wear evidence."
+  },
+  {
+    "id": "CO-GAP-003",
+    "severity": "AMBER",
+    "area": "Haynes 188 hot-service data",
+    "status": "open",
+    "next": "Populate temperature-dependent strength, creep and rupture evidence."
+  },
+  {
+    "id": "CO-GAP-004",
+    "severity": "AMBER",
+    "area": "L-605 hot-service data",
+    "status": "open",
+    "next": "Populate condition-specific fatigue, creep and oxidation evidence."
+  },
+  {
+    "id": "CO-GAP-005",
+    "severity": "YELLOW",
+    "area": "standards",
+    "status": "open",
+    "next": "Resolve exact standard numbers and editions."
+  },
+  {
+    "id": "CO-GAP-006",
+    "severity": "YELLOW",
+    "area": "tribology",
+    "status": "open",
+    "next": "Add standardised test-condition schema for comparative wear data."
+  }
+]

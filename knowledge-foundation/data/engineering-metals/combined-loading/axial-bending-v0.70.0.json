@@ -1,0 +1,17 @@
+{
+  "version": "0.70.0",
+  "status": "design-framework",
+  "purpose": "Screen combined axial force and bending in a metallic member.",
+  "relationships": [
+    "σ = N/A ± M·y/I",
+    "identify tensile and compressive extremes"
+  ],
+  "checks": [
+    "yield",
+    "local stress concentration",
+    "buckling",
+    "fatigue",
+    "load-path correctness"
+  ],
+  "boundary": "Linear elastic screening is insufficient where plasticity, instability or nonlinear contact governs."
+}

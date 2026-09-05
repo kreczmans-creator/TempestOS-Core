@@ -1,0 +1,15 @@
+{
+  "version": "0.72.0",
+  "status": "design-framework",
+  "concepts": [
+    "accuracy",
+    "precision",
+    "resolution",
+    "repeatability",
+    "reproducibility",
+    "bias",
+    "traceability",
+    "uncertainty"
+  ],
+  "rule": "A measurement result is evidence only when its uncertainty and traceability are appropriate to the requirement."
+}

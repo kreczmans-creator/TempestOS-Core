@@ -1,0 +1,51 @@
+{
+  "version": "0.52.0",
+  "family": "nickel-base-superalloys",
+  "selection_framework": {
+    "room_temperature_strength": "Useful for screening only; high-temperature capability cannot be inferred from room-temperature tensile strength.",
+    "yield_vs_rupture": "For hot-section design, creep and rupture capability can be more limiting than yield strength.",
+    "modulus": "Retain temperature dependence for thermal-mechanical FEA.",
+    "fatigue": "Assess LCF/HCF, mean stress, dwell, oxidation, surface finish and notch effects as applicable.",
+    "fracture": "Use toughness and crack-growth evidence matched to product form, microstructure and environment.",
+    "microstructure": "Grain size, precipitate population, segregation and heat treatment can materially change performance.",
+    "anisotropy": "Forging direction, grain structure and product form may produce directional behaviour."
+  },
+  "material_selection_logic": [
+    {
+      "need": "high strength around intermediate elevated temperatures",
+      "candidate": "Alloy 718",
+      "watch": [
+        "temperature limit",
+        "creep/rupture",
+        "heat treatment"
+      ]
+    },
+    {
+      "need": "aggressive aqueous/chemical environment",
+      "candidate": "Alloy 625",
+      "watch": [
+        "exact chemistry",
+        "temperature",
+        "welding"
+      ]
+    },
+    {
+      "need": "prolonged high-temperature oxidation resistance",
+      "candidate": "Haynes 230",
+      "watch": [
+        "creep",
+        "oxidation",
+        "grain structure"
+      ]
+    },
+    {
+      "need": "higher temperature capability than conventional 718",
+      "candidate": "718Plus/Waspaloy",
+      "watch": [
+        "qualification",
+        "heat treatment",
+        "creep/rupture"
+      ]
+    }
+  ]
+}

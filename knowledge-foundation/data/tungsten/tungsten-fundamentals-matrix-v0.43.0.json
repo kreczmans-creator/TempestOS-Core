@@ -1,0 +1,240 @@
+[
+  {
+    "id": "W-CP-001",
+    "designation": "W",
+    "family": "commercially pure tungsten",
+    "composition": "W, commercially pure grade",
+    "density_g_cm3": 19.25,
+    "melting_point_C": 3422,
+    "elastic_modulus_GPa": 400,
+    "poissons_ratio": 0.28,
+    "thermal_conductivity_W_mK": [
+      160,
+      180
+    ],
+    "cte_20_100C_per_K": 4.5e-06,
+    "electrical_resistivity_ohm_m": [
+      5.3e-08,
+      5.7e-08
+    ],
+    "hardness": "high; strongly condition/process dependent",
+    "mechanical_behaviour": "High stiffness and strength potential; comparatively low room-temperature ductility in many product conditions; temperature and recrystallisation state are critical.",
+    "manufacturing": "Powder metallurgy, pressing/sintering, swaging, rolling and specialised high-temperature processing.",
+    "machinability": "difficult; carbide tooling, EDM and specialised processes commonly used",
+    "environment": "Good high-temperature stability in inert/vacuum environments; oxidation becomes important at elevated temperature in air.",
+    "cost": "expensive",
+    "availability": "specialist; common in technical/industrial supply rather than general stock",
+    "uses": [
+      "high-temperature components",
+      "electrodes",
+      "counterweights",
+      "radiation shielding",
+      "specialist furnace components"
+    ],
+    "evidence_class": "engineering_reference_estimate",
+    "evidence_status": "unverified",
+    "design_use": "screening_only",
+    "provenance_requirement": "Link to authoritative specification/standard/manufacturer or primary literature before design use."
+  },
+  {
+    "id": "W-RH-001",
+    "designation": "W-3Re",
+    "family": "tungsten-rhenium",
+    "composition": "Tungsten with nominal 3% rhenium",
+    "density_g_cm3": 19.3,
+    "melting_point_C": 3180,
+    "elastic_modulus_GPa": 380,
+    "poissons_ratio": 0.28,
+    "thermal_conductivity_W_mK": [
+      80,
+      110
+    ],
+    "cte_20_100C_per_K": 5e-06,
+    "electrical_resistivity_ohm_m": [
+      8e-08,
+      1e-07
+    ],
+    "hardness": "high",
+    "mechanical_behaviour": "Improved ductility and high-temperature mechanical performance relative to some unalloyed tungsten conditions.",
+    "manufacturing": "Powder metallurgy followed by thermomechanical processing; specialist supply chain.",
+    "machinability": "difficult",
+    "environment": "High-temperature oxidation requires control in air.",
+    "cost": "very expensive",
+    "availability": "specialist",
+    "uses": [
+      "thermocouples",
+      "high-temperature instrumentation",
+      "specialist aerospace/energy components"
+    ],
+    "evidence_class": "engineering_reference_estimate",
+    "evidence_status": "unverified",
+    "design_use": "screening_only",
+    "provenance_requirement": "Link to authoritative specification/standard/manufacturer or primary literature before design use."
+  },
+  {
+    "id": "W-RH-002",
+    "designation": "W-25Re",
+    "family": "tungsten-rhenium",
+    "composition": "Tungsten with nominal 25% rhenium",
+    "density_g_cm3": 19.0,
+    "melting_point_C": 3120,
+    "elastic_modulus_GPa": 350,
+    "poissons_ratio": 0.29,
+    "thermal_conductivity_W_mK": [
+      35,
+      60
+    ],
+    "cte_20_100C_per_K": 6e-06,
+    "electrical_resistivity_ohm_m": [
+      1.4e-07,
+      1.8e-07
+    ],
+    "hardness": "high",
+    "mechanical_behaviour": "Alloying improves ductility/workability and high-temperature capability; properties remain condition dependent.",
+    "manufacturing": "Specialist powder metallurgy and thermomechanical processing.",
+    "machinability": "difficult",
+    "environment": "Oxidation protection required for elevated-temperature air exposure.",
+    "cost": "very expensive",
+    "availability": "very specialist",
+    "uses": [
+      "high-temperature structural/instrumentation applications",
+      "specialist electrical contacts"
+    ],
+    "evidence_class": "engineering_reference_estimate",
+    "evidence_status": "unverified",
+    "design_use": "screening_only",
+    "provenance_requirement": "Link to authoritative specification/standard/manufacturer or primary literature before design use."
+  },
+  {
+    "id": "W-CU-001",
+    "designation": "W-Cu",
+    "family": "tungsten-copper composite",
+    "composition": "Tungsten-copper composite; composition varies by grade",
+    "density_g_cm3": [
+      13.8,
+      17.0
+    ],
+    "melting_point_C": 1083,
+    "elastic_modulus_GPa": [
+      250,
+      330
+    ],
+    "poissons_ratio": 0.28,
+    "thermal_conductivity_W_mK": [
+      150,
+      250
+    ],
+    "cte_20_100C_per_K": [
+      6e-06,
+      1e-05
+    ],
+    "electrical_resistivity_ohm_m": [
+      4e-08,
+      1e-07
+    ],
+    "hardness": "high; composition dependent",
+    "mechanical_behaviour": "Composite combines tungsten's stiffness/erosion resistance with copper's conductivity; thermal/electrical performance is strongly composition dependent.",
+    "manufacturing": "Infiltration or powder-metallurgy routes; specialised joining and finishing.",
+    "machinability": "difficult to moderate depending on grade",
+    "environment": "Copper phase governs some environmental behaviour; high-temperature oxidation requires consideration.",
+    "cost": "expensive",
+    "availability": "specialist",
+    "uses": [
+      "electrical contacts",
+      "heat sinks",
+      "resistance welding electrodes",
+      "high-current components"
+    ],
+    "evidence_class": "engineering_reference_estimate",
+    "evidence_status": "unverified",
+    "design_use": "screening_only",
+    "provenance_requirement": "Link to authoritative specification/standard/manufacturer or primary literature before design use."
+  },
+  {
+    "id": "WC-001",
+    "designation": "WC-Co",
+    "family": "tungsten carbide",
+    "composition": "Tungsten carbide with cobalt binder; grade dependent",
+    "density_g_cm3": [
+      14.0,
+      15.2
+    ],
+    "melting_point_C": 2870,
+    "elastic_modulus_GPa": [
+      500,
+      650
+    ],
+    "poissons_ratio": 0.22,
+    "thermal_conductivity_W_mK": [
+      50,
+      120
+    ],
+    "cte_20_100C_per_K": [
+      4.5e-06,
+      6.5e-06
+    ],
+    "electrical_resistivity_ohm_m": [
+      1.5e-07,
+      5e-07
+    ],
+    "hardness": "extremely high",
+    "mechanical_behaviour": "Exceptional hardness, wear resistance and compressive performance; brittle compared with metallic tungsten and sensitive to binder content and defects.",
+    "manufacturing": "Powder pressing, sintering and grinding; binder composition is a primary grade variable.",
+    "machinability": "poor by conventional cutting; grinding/EDM/specialised methods",
+    "environment": "Cobalt binder and corrosion environment must be considered; thermal shock and edge chipping can govern performance.",
+    "cost": "expensive",
+    "availability": "widely available in industrial tooling grades; specialist grades vary",
+    "uses": [
+      "cutting tools",
+      "wear components",
+      "dies",
+      "mining tooling",
+      "nozzles"
+    ],
+    "evidence_class": "engineering_reference_estimate",
+    "evidence_status": "unverified",
+    "design_use": "screening_only",
+    "provenance_requirement": "Link to authoritative specification/standard/manufacturer or primary literature before design use."
+  },
+  {
+    "id": "W-LA-001",
+    "designation": "W-La2O3",
+    "family": "lanthanated tungsten",
+    "composition": "Tungsten with lanthanum oxide dispersion; grade dependent",
+    "density_g_cm3": [
+      18.8,
+      19.1
+    ],
+    "melting_point_C": 3420,
+    "elastic_modulus_GPa": [
+      390,
+      410
+    ],
+    "poissons_ratio": 0.28,
+    "thermal_conductivity_W_mK": [
+      120,
+      170
+    ],
+    "cte_20_100C_per_K": 4.5e-06,
+    "electrical_resistivity_ohm_m": [
+      5.5e-08,
+      7e-08
+    ],
+    "hardness": "high",
+    "mechanical_behaviour": "Dispersion strengthening improves high-temperature behaviour and recrystallisation resistance in relevant grades.",
+    "manufacturing": "Powder metallurgy and thermomechanical processing.",
+    "machinability": "difficult",
+    "environment": "Oxidation remains a primary limitation for hot exposure in air.",
+    "cost": "very expensive",
+    "availability": "specialist",
+    "uses": [
+      "non-consumable welding electrodes",
+      "high-temperature electrodes",
+      "specialist furnace components"
+    ],
+    "evidence_class": "engineering_reference_estimate",
+    "evidence_status": "unverified",
+    "design_use": "screening_only",
+    "provenance_requirement": "Link to authoritative specification/standard/manufacturer or primary literature before design use."
+  }
+]

@@ -1,0 +1,51 @@
+- family: steels
+  processes:
+    machining:
+      rating: good_to_grade_dependent
+      notes: Heat treatment and hardness can dominate machinability.
+    welding:
+      rating: grade_dependent
+      notes: Carbon equivalent, section size, preheat and post-weld treatment can
+        matter.
+    forming:
+      rating: grade_and_condition_dependent
+      notes: Cold-worked/heat-treated states can substantially change formability.
+    additive_manufacturing:
+      rating: process_dependent
+      notes: Powder/wire route and post-processing must be specified.
+- family: aluminium_alloys
+  processes:
+    machining:
+      rating: generally_good
+      notes: Chip control and temper influence machining behaviour.
+    welding:
+      rating: grade_and_process_dependent
+      notes: Heat input can reduce local strength in heat-treatable alloys.
+    forming:
+      rating: condition_dependent
+      notes: Temper strongly affects formability.
+    extrusion:
+      rating: widely_used
+      notes: Many wrought aluminium alloys are available as extrusions.
+- family: magnesium_alloys
+  processes:
+    machining:
+      rating: good_with_process_controls
+      notes: Fire/chip management and appropriate process controls are important.
+    welding:
+      rating: specialist
+      notes: Process qualification and protection are important.
+    forming:
+      rating: temperature_and_alloy_dependent
+      notes: Warm forming is commonly relevant to difficult conditions.
+- family: engineering_polymers
+  processes:
+    machining:
+      rating: good_for_stock_shapes
+      notes: Tooling, heat generation and clamping can affect dimensional accuracy.
+    injection_moulding:
+      rating: grade_dependent
+      notes: Shrinkage, fibre orientation and process conditions affect final properties.
+    3d_printing:
+      rating: process_dependent
+      notes: Layer orientation, porosity and thermal history affect properties.

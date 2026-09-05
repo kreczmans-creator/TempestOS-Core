@@ -1,0 +1,34 @@
+{
+  "version": "0.51.0",
+  "family": "titanium",
+  "methods": {
+    "welding": {
+      "status": "established but contamination-sensitive",
+      "controls": [
+        "inert gas shielding",
+        "joint cleanliness",
+        "heat input",
+        "post-weld condition",
+        "inspection"
+      ]
+    },
+    "bolting": {
+      "controls": [
+        "galling prevention",
+        "preload control",
+        "thread condition",
+        "lubricant/coating compatibility",
+        "galvanic isolation where needed"
+      ]
+    },
+    "brazing": {
+      "status": "specialist",
+      "controls": [
+        "filler compatibility",
+        "temperature exposure",
+        "surface preparation"
+      ]
+    }
+  },
+  "rule": "Joining process is part of the qualified material system where it changes microstructure, corrosion behaviour or fatigue performance."
+}

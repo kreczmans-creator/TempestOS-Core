@@ -1,0 +1,15 @@
+{
+  "version": "0.70.0",
+  "status": "worked-framework",
+  "problem": "Screen a structural component exposed to periodic excitation.",
+  "workflow": [
+    "estimate mass/stiffness",
+    "calculate first natural frequency",
+    "compare with excitation spectrum",
+    "include damping uncertainty",
+    "screen dynamic amplification",
+    "calculate dynamic stress",
+    "assess fatigue",
+    "correlate with test where critical"
+  ]
+}

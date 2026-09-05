@@ -1,0 +1,293 @@
+- id: MAT-POLY-PEEK
+  designation: PEEK unfilled
+  family: engineering_thermoplastic
+  standard_references:
+  - ISO 11542 family context
+  - ASTM D6262 family context
+  cost_tier: very_expensive
+  availability: high
+  typical_uses:
+  - bearings
+  - seals
+  - electrical insulation
+  - high-temperature mechanical components
+  data_status: candidate_reference
+  reference_condition: indicative room-temperature baseline; exact condition, product
+    form and processing route must be resolved
+  properties:
+    density:
+      value: 1320
+      unit: kg/m^3
+    youngs_modulus:
+      value: 3600000000.0
+      unit: Pa
+    yield_strength:
+      value: 90000000.0
+      unit: Pa
+    ultimate_tensile_strength:
+      value: 100000000.0
+      unit: Pa
+    elongation:
+      value: 0.2
+      unit: '1'
+    coefficient_of_thermal_expansion:
+      value: 4.7e-05
+      unit: 1/K
+    thermal_conductivity:
+      value: 0.25
+      unit: W/(m*K)
+    electrical_resistivity:
+      value: 10000000000000.0
+      unit: ohm*m
+  provenance:
+    source_id: SRC-TO-VERIFY
+    verification_required: true
+    note: Screening/reference data only; verify exact grade, condition, standard edition,
+      product form and source before authoritative design use.
+  data_governance:
+    authority_state: candidate_reference
+    source_attachment_required: true
+- id: MAT-POLY-PA66-GF30
+  designation: PA66 GF30
+  family: glass_filled_polyamide
+  standard_references:
+  - ISO 1874 family
+  - ISO 527
+  cost_tier: medium
+  availability: very_high
+  typical_uses:
+  - gears
+  - housings
+  - brackets
+  - automotive/electromechanical components
+  data_status: candidate_reference
+  reference_condition: indicative room-temperature baseline; exact condition, product
+    form and processing route must be resolved
+  properties:
+    density:
+      value: 1360
+      unit: kg/m^3
+    youngs_modulus:
+      value: 8500000000.0
+      unit: Pa
+    yield_strength:
+      value: 120000000.0
+      unit: Pa
+    ultimate_tensile_strength:
+      value: 190000000.0
+      unit: Pa
+    elongation:
+      value: 0.03
+      unit: '1'
+    coefficient_of_thermal_expansion:
+      value: 2.9999999999999997e-05
+      unit: 1/K
+    thermal_conductivity:
+      value: 0.3
+      unit: W/(m*K)
+    electrical_resistivity:
+      value: 1000000000000.0
+      unit: ohm*m
+  provenance:
+    source_id: SRC-TO-VERIFY
+    verification_required: true
+    note: Screening/reference data only; verify exact grade, condition, standard edition,
+      product form and source before authoritative design use.
+  data_governance:
+    authority_state: candidate_reference
+    source_attachment_required: true
+- id: MAT-POLY-POM
+  designation: POM unfilled
+  family: engineering_thermoplastic
+  standard_references:
+  - ISO 9988 family
+  - ISO 527
+  cost_tier: medium
+  availability: very_high
+  typical_uses:
+  - gears
+  - bushes
+  - slides
+  - precision mechanical parts
+  data_status: candidate_reference
+  reference_condition: indicative room-temperature baseline; exact condition, product
+    form and processing route must be resolved
+  properties:
+    density:
+      value: 1410
+      unit: kg/m^3
+    youngs_modulus:
+      value: 3000000000.0
+      unit: Pa
+    yield_strength:
+      value: 60000000.0
+      unit: Pa
+    ultimate_tensile_strength:
+      value: 70000000.0
+      unit: Pa
+    elongation:
+      value: 0.2
+      unit: '1'
+    coefficient_of_thermal_expansion:
+      value: 0.00010999999999999999
+      unit: 1/K
+    thermal_conductivity:
+      value: 0.31
+      unit: W/(m*K)
+    electrical_resistivity:
+      value: 10000000000000.0
+      unit: ohm*m
+  provenance:
+    source_id: SRC-TO-VERIFY
+    verification_required: true
+    note: Screening/reference data only; verify exact grade, condition, standard edition,
+      product form and source before authoritative design use.
+  data_governance:
+    authority_state: candidate_reference
+    source_attachment_required: true
+- id: MAT-POLY-PC
+  designation: Polycarbonate
+  family: engineering_thermoplastic
+  standard_references:
+  - ISO 7391 family
+  - ISO 527
+  cost_tier: medium
+  availability: very_high
+  typical_uses:
+  - guards
+  - transparent covers
+  - housings
+  - impact-resistant parts
+  data_status: candidate_reference
+  reference_condition: indicative room-temperature baseline; exact condition, product
+    form and processing route must be resolved
+  properties:
+    density:
+      value: 1200
+      unit: kg/m^3
+    youngs_modulus:
+      value: 2350000000.0
+      unit: Pa
+    yield_strength:
+      value: 60000000.0
+      unit: Pa
+    ultimate_tensile_strength:
+      value: 65000000.0
+      unit: Pa
+    elongation:
+      value: 1.0
+      unit: '1'
+    coefficient_of_thermal_expansion:
+      value: 6.599999999999999e-05
+      unit: 1/K
+    thermal_conductivity:
+      value: 0.2
+      unit: W/(m*K)
+    electrical_resistivity:
+      value: 1000000000000000.0
+      unit: ohm*m
+  provenance:
+    source_id: SRC-TO-VERIFY
+    verification_required: true
+    note: Screening/reference data only; verify exact grade, condition, standard edition,
+      product form and source before authoritative design use.
+  data_governance:
+    authority_state: candidate_reference
+    source_attachment_required: true
+- id: MAT-POLY-PEI
+  designation: PEI / Ultem
+  family: high_temperature_engineering_thermoplastic
+  standard_references:
+  - ISO 7391 family
+  - ISO 527
+  cost_tier: very_expensive
+  availability: medium
+  typical_uses:
+  - electrical insulation
+  - aerospace
+  - high-temperature housings
+  - precision components
+  data_status: candidate_reference
+  reference_condition: indicative room-temperature baseline; exact condition, product
+    form and processing route must be resolved
+  properties:
+    density:
+      value: 1270
+      unit: kg/m^3
+    youngs_modulus:
+      value: 3200000000.0
+      unit: Pa
+    yield_strength:
+      value: 105000000.0
+      unit: Pa
+    ultimate_tensile_strength:
+      value: 110000000.0
+      unit: Pa
+    elongation:
+      value: 0.6
+      unit: '1'
+    coefficient_of_thermal_expansion:
+      value: 5.6e-05
+      unit: 1/K
+    thermal_conductivity:
+      value: 0.22
+      unit: W/(m*K)
+    electrical_resistivity:
+      value: 100000000000000.0
+      unit: ohm*m
+  provenance:
+    source_id: SRC-TO-VERIFY
+    verification_required: true
+    note: Screening/reference data only; verify exact grade, condition, standard edition,
+      product form and source before authoritative design use.
+  data_governance:
+    authority_state: candidate_reference
+    source_attachment_required: true
+- id: MAT-POLY-PPS
+  designation: PPS unfilled
+  family: high_temperature_engineering_thermoplastic
+  standard_references:
+  - ISO 20558 family
+  - ISO 527
+  cost_tier: expensive
+  availability: medium
+  typical_uses:
+  - electrical components
+  - chemical service
+  - high-temperature housings
+  data_status: candidate_reference
+  reference_condition: indicative room-temperature baseline; exact condition, product
+    form and processing route must be resolved
+  properties:
+    density:
+      value: 1350
+      unit: kg/m^3
+    youngs_modulus:
+      value: 3500000000.0
+      unit: Pa
+    yield_strength:
+      value: 85000000.0
+      unit: Pa
+    ultimate_tensile_strength:
+      value: 110000000.0
+      unit: Pa
+    elongation:
+      value: 0.05
+      unit: '1'
+    coefficient_of_thermal_expansion:
+      value: 4.9999999999999996e-05
+      unit: 1/K
+    thermal_conductivity:
+      value: 0.3
+      unit: W/(m*K)
+    electrical_resistivity:
+      value: 100000000000000.0
+      unit: ohm*m
+  provenance:
+    source_id: SRC-TO-VERIFY
+    verification_required: true
+    note: Screening/reference data only; verify exact grade, condition, standard edition,
+      product form and source before authoritative design use.
+  data_governance:
+    authority_state: candidate_reference
+    source_attachment_required: true

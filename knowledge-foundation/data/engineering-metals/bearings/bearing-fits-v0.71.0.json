@@ -1,0 +1,12 @@
+{
+  "version": "0.71.0",
+  "status": "design-framework",
+  "checks": [
+    "ring load",
+    "shaft/housing tolerance",
+    "creep",
+    "mounting method",
+    "thermal expansion",
+    "internal clearance change"
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "version": "0.67.0",
+  "family": "stainless-steel",
+  "failure_mechanisms": [
+    "pitting",
+    "crevice corrosion",
+    "galvanic corrosion",
+    "stress-corrosion cracking",
+    "intergranular corrosion"
+  ],
+  "surface_controls": [
+    "material selection",
+    "coatings",
+    "conversion treatments",
+    "plating",
+    "passivation where applicable",
+    "anodising where applicable",
+    "surface finish",
+    "drainage and crevice control",
+    "galvanic isolation"
+  ],
+  "design_checks": [
+    "environment",
+    "temperature",
+    "exposure duration",
+    "stress state",
+    "surface preparation",
+    "dissimilar materials",
+    "inspection/maintenance"
+  ],
+  "rule": "Surface treatment is part of the functional material system, not merely cosmetic finish.",
+  "evidence_status": "foundation reference"
+}

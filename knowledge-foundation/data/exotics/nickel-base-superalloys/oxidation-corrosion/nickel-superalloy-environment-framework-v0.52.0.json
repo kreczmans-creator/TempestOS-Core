@@ -1,0 +1,25 @@
+{
+  "version": "0.52.0",
+  "family": "nickel-base-superalloys",
+  "mechanisms": [
+    "high-temperature oxidation",
+    "hot corrosion",
+    "aqueous corrosion",
+    "thermal cycling",
+    "oxidation-assisted fatigue"
+  ],
+  "selection": {
+    "Alloy_625": "strong corrosion-focused candidate",
+    "Alloy_718": "balanced structural/high-strength candidate with environment still application-dependent",
+    "Haynes_230": "high-temperature oxidation-focused candidate"
+  },
+  "controls": [
+    "temperature",
+    "atmosphere",
+    "contaminants",
+    "coatings",
+    "surface condition",
+    "exposure time"
+  ],
+  "rule": "A nominal corrosion-resistant grade does not eliminate environment-specific qualification."
+}

@@ -1,0 +1,61 @@
+{
+  "version": "0.53.0",
+  "family": "cobalt-base-alloys",
+  "mapping_targets": [
+    {
+      "designation": "CoCrMo",
+      "bodies": [
+        "ASTM",
+        "ISO",
+        "medical-device specifications"
+      ],
+      "note": "Exact standard depends on wrought/cast form and biomedical application."
+    },
+    {
+      "designation": "Stellite 6",
+      "bodies": [
+        "supplier/manufacturer specifications",
+        "hardfacing standards as applicable"
+      ],
+      "note": "Trade-name systems require exact supplier grade and deposition specification."
+    },
+    {
+      "designation": "Haynes 188",
+      "identifiers": [
+        "UNS R30188"
+      ],
+      "bodies": [
+        "ASTM",
+        "AMS",
+        "ASME/manufacturer specifications"
+      ],
+      "note": "Resolve exact product form and condition."
+    },
+    {
+      "designation": "Haynes 25 / L-605",
+      "identifiers": [
+        "UNS R30605"
+      ],
+      "bodies": [
+        "ASTM",
+        "AMS",
+        "ASME/manufacturer specifications"
+      ],
+      "note": "Resolve exact product form and condition."
+    }
+  ],
+  "record_fields": [
+    "designation",
+    "UNS_if_applicable",
+    "standard_number",
+    "edition",
+    "product_form",
+    "condition",
+    "chemistry",
+    "mechanical_requirements",
+    "test_methods",
+    "source",
+    "verification_date"
+  ],
+  "status": "framework; exact standard editions remain open"
+}

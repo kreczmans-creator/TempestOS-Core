@@ -1,0 +1,27 @@
+{
+  "version": "0.71.0",
+  "status": "design-framework",
+  "inputs": [
+    "radial load",
+    "axial load",
+    "speed",
+    "life requirement",
+    "temperature",
+    "lubrication",
+    "contamination",
+    "misalignment",
+    "stiffness"
+  ],
+  "checks": [
+    "dynamic load rating",
+    "static load rating",
+    "fatigue life",
+    "speed",
+    "lubrication",
+    "sealing",
+    "fit",
+    "internal clearance",
+    "preload"
+  ],
+  "boundary": "Final bearing selection requires the bearing manufacturer's rating methodology and application constraints."
+}

@@ -1,0 +1,27 @@
+{
+  "version": "0.40.0",
+  "scope": "Aluminium fracture evidence architecture",
+  "record_dimensions": [
+    "alloy",
+    "temper",
+    "product_form",
+    "orientation",
+    "thickness",
+    "temperature",
+    "environment",
+    "specimen_geometry",
+    "test_standard",
+    "K_IC_or_equivalent",
+    "J_IC_or_equivalent",
+    "crack_growth_parameters"
+  ],
+  "engineering_rules": [
+    "Fracture toughness must be tied to material condition and test configuration.",
+    "Crack-growth behaviour must be distinguished from static fracture toughness.",
+    "Orientation and product form are essential for wrought products where anisotropy matters.",
+    "Do not substitute UTS, yield strength or hardness for fracture toughness."
+  ],
+  "status": "evidence-model-ready",
+  "quantitative_records": 0,
+  "design_use": "not_for_allowables"
+}

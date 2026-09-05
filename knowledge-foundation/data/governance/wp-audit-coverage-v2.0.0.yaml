@@ -1,0 +1,20 @@
+version: 2.0.0
+steel_source_review:
+  observations_reviewed: 12
+  observations_verified: 0
+  observations_approved_for_design: 0
+  reviewed_but_not_verified: 12
+overall_wp:
+  logical_workstreams: 12
+  complete: 10
+  substantially_complete: 2
+  not_started: 0
+  completion_percent: 83
+remaining_material_scope:
+- remaining steel source verification
+- aluminium source verification
+- temperature-dependent properties
+- fatigue and fracture toughness
+- corrosion/environment compatibility
+- cost and availability evidence
+- production selection/validation integration

@@ -1,0 +1,65 @@
+- source_id: STD-EN10025-2
+  source_type: standard
+  title: EN 10025-2
+  publisher: CEN
+  edition_or_revision: current edition to be verified
+  publication_date_or_year: null
+  scope: Hot rolled products of structural steels — non-alloy structural steels
+  verification_status: source_identified
+- source_id: STD-EN10083-2
+  source_type: standard
+  title: EN 10083-2
+  publisher: CEN
+  edition_or_revision: current edition to be verified
+  publication_date_or_year: null
+  scope: Steels for quenching and tempering — non-alloy steels
+  verification_status: source_identified
+- source_id: STD-EN10083-3
+  source_type: standard
+  title: EN 10083-3
+  publisher: CEN
+  edition_or_revision: current edition to be verified
+  publication_date_or_year: null
+  scope: Steels for quenching and tempering — alloy steels
+  verification_status: source_identified
+- source_id: STD-EN10088-1
+  source_type: standard
+  title: EN 10088-1
+  publisher: CEN
+  edition_or_revision: current edition to be verified
+  publication_date_or_year: null
+  scope: Stainless steels — list of stainless steels
+  verification_status: source_identified
+- source_id: STD-ISO4957
+  source_type: standard
+  title: ISO 4957
+  publisher: ISO
+  edition_or_revision: current edition to be verified
+  publication_date_or_year: null
+  scope: Tool steels
+  verification_status: source_identified
+- source_id: STD-ASTM-A240
+  source_type: standard
+  title: ASTM A240/A240M
+  publisher: ASTM International
+  edition_or_revision: current edition to be verified
+  publication_date_or_year: null
+  scope: Chromium and chromium-nickel stainless steel plate, sheet and strip
+  verification_status: source_identified
+- source_id: STD-ASTM-A564
+  source_type: standard
+  title: ASTM A564/A564M
+  publisher: ASTM International
+  edition_or_revision: current edition to be verified
+  publication_date_or_year: null
+  scope: Hot-rolled and cold-finished age-hardening stainless steel bars and shapes
+  verification_status: source_identified
+- source_id: STD-ASTM-A1008
+  source_type: standard
+  title: ASTM A1008/A1008M
+  publisher: ASTM International
+  edition_or_revision: current edition to be verified
+  publication_date_or_year: null
+  scope: Steel sheet, cold-rolled, carbon, structural, high-strength low-alloy and
+    high-strength low-alloy with improved formability
+  verification_status: source_identified

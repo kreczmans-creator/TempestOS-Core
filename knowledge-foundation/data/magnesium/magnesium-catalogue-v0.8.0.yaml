@@ -1,0 +1,249 @@
+- id: MAT-MG-AZ31B
+  designation: AZ31B
+  family: wrought_magnesium_alloy
+  standard_references:
+  - ASTM B107/B107M
+  - ASTM B93/B93M
+  cost_tier: medium_expensive
+  availability: high
+  typical_uses:
+  - sheet
+  - extrusions
+  - lightweight housings
+  - transport structures
+  notes: Common wrought Mg alloy; temper, sheet thickness and direction strongly affect
+    properties.
+  data_status: candidate_reference
+  reference_condition: indicative room-temperature baseline; exact condition/product
+    form/process must be resolved
+  properties:
+    density:
+      value: 1770
+      unit: kg/m^3
+    youngs_modulus:
+      value: 45000000000.0
+      unit: Pa
+    yield_strength:
+      value: 200000000.0
+      unit: Pa
+    ultimate_tensile_strength:
+      value: 260000000.0
+      unit: Pa
+    elongation:
+      value: 0.09
+      unit: '1'
+    coefficient_of_thermal_expansion:
+      value: 2.6e-05
+      unit: 1/K
+    thermal_conductivity:
+      value: 96
+      unit: W/(m*K)
+    electrical_resistivity:
+      value: 9.0e-08
+      unit: ohm*m
+  provenance:
+    source_id: SRC-TO-VERIFY
+    verification_required: true
+    note: Screening/reference data only. Verify exact grade, condition, process, product
+      form, standard edition and source before authoritative design use.
+  data_governance:
+    authority_state: candidate_reference
+    source_attachment_required: true
+- id: MAT-MG-AZ61A
+  designation: AZ61A
+  family: wrought_magnesium_alloy
+  standard_references:
+  - ASTM B107/B107M
+  cost_tier: medium_expensive
+  availability: medium
+  typical_uses:
+  - extrusions
+  - tubing
+  - forgings
+  - lightweight structural components
+  notes: Higher-strength wrought magnesium family than AZ31; exact condition is required
+    for defensible properties.
+  data_status: candidate_reference
+  reference_condition: indicative room-temperature baseline; exact condition/product
+    form/process must be resolved
+  properties:
+    density:
+      value: 1800
+      unit: kg/m^3
+    youngs_modulus:
+      value: 45000000000.0
+      unit: Pa
+    yield_strength:
+      value: 240000000.0
+      unit: Pa
+    ultimate_tensile_strength:
+      value: 300000000.0
+      unit: Pa
+    elongation:
+      value: 0.08
+      unit: '1'
+    coefficient_of_thermal_expansion:
+      value: 2.6e-05
+      unit: 1/K
+    thermal_conductivity:
+      value: 95
+      unit: W/(m*K)
+    electrical_resistivity:
+      value: 9.0e-08
+      unit: ohm*m
+  provenance:
+    source_id: SRC-TO-VERIFY
+    verification_required: true
+    note: Screening/reference data only. Verify exact grade, condition, process, product
+      form, standard edition and source before authoritative design use.
+  data_governance:
+    authority_state: candidate_reference
+    source_attachment_required: true
+- id: MAT-MG-AZ80A
+  designation: AZ80A
+  family: wrought_magnesium_alloy
+  standard_references:
+  - ASTM B107/B107M
+  cost_tier: expensive
+  availability: medium
+  typical_uses:
+  - high-strength extrusions
+  - aerospace/transport components
+  - shafts
+  notes: High-strength wrought magnesium alloy; ageing/temper and product form are
+    critical.
+  data_status: candidate_reference
+  reference_condition: indicative room-temperature baseline; exact condition/product
+    form/process must be resolved
+  properties:
+    density:
+      value: 1810
+      unit: kg/m^3
+    youngs_modulus:
+      value: 45000000000.0
+      unit: Pa
+    yield_strength:
+      value: 280000000.0
+      unit: Pa
+    ultimate_tensile_strength:
+      value: 350000000.0
+      unit: Pa
+    elongation:
+      value: 0.07
+      unit: '1'
+    coefficient_of_thermal_expansion:
+      value: 2.6e-05
+      unit: 1/K
+    thermal_conductivity:
+      value: 105
+      unit: W/(m*K)
+    electrical_resistivity:
+      value: 9.0e-08
+      unit: ohm*m
+  provenance:
+    source_id: SRC-TO-VERIFY
+    verification_required: true
+    note: Screening/reference data only. Verify exact grade, condition, process, product
+      form, standard edition and source before authoritative design use.
+  data_governance:
+    authority_state: candidate_reference
+    source_attachment_required: true
+- id: MAT-MG-AZ91D
+  designation: AZ91D
+  family: cast_magnesium_alloy
+  standard_references:
+  - ASTM B93/B93M
+  cost_tier: medium_expensive
+  availability: high
+  typical_uses:
+  - die castings
+  - housings
+  - covers
+  - automotive/electronic components
+  notes: Widely used die-cast Mg alloy; casting process and section geometry influence
+    properties.
+  data_status: candidate_reference
+  reference_condition: indicative room-temperature baseline; exact condition/product
+    form/process must be resolved
+  properties:
+    density:
+      value: 1810
+      unit: kg/m^3
+    youngs_modulus:
+      value: 45000000000.0
+      unit: Pa
+    yield_strength:
+      value: 160000000.0
+      unit: Pa
+    ultimate_tensile_strength:
+      value: 230000000.0
+      unit: Pa
+    elongation:
+      value: 0.03
+      unit: '1'
+    coefficient_of_thermal_expansion:
+      value: 2.6e-05
+      unit: 1/K
+    thermal_conductivity:
+      value: 72
+      unit: W/(m*K)
+    electrical_resistivity:
+      value: 9.5e-08
+      unit: ohm*m
+  provenance:
+    source_id: SRC-TO-VERIFY
+    verification_required: true
+    note: Screening/reference data only. Verify exact grade, condition, process, product
+      form, standard edition and source before authoritative design use.
+  data_governance:
+    authority_state: candidate_reference
+    source_attachment_required: true
+- id: MAT-MG-WE43
+  designation: WE43
+  family: rare_earth_magnesium_alloy
+  standard_references:
+  - ASTM B107/B107M family context
+  cost_tier: very_expensive
+  availability: low
+  typical_uses:
+  - aerospace
+  - high-temperature lightweight components
+  - specialist cast/wrought parts
+  notes: Rare-earth magnesium alloy for demanding applications; exact processing route
+    and heat treatment must be specified.
+  data_status: candidate_reference
+  reference_condition: indicative room-temperature baseline; exact condition/product
+    form/process must be resolved
+  properties:
+    density:
+      value: 1840
+      unit: kg/m^3
+    youngs_modulus:
+      value: 44000000000.0
+      unit: Pa
+    yield_strength:
+      value: 220000000.0
+      unit: Pa
+    ultimate_tensile_strength:
+      value: 280000000.0
+      unit: Pa
+    elongation:
+      value: 0.05
+      unit: '1'
+    coefficient_of_thermal_expansion:
+      value: 2.6e-05
+      unit: 1/K
+    thermal_conductivity:
+      value: 60
+      unit: W/(m*K)
+    electrical_resistivity:
+      value: 1.0e-07
+      unit: ohm*m
+  provenance:
+    source_id: SRC-TO-VERIFY
+    verification_required: true
+    note: Screening/reference data only. Verify exact grade, condition, process, product
+      form, standard edition and source before authoritative design use.
+  data_governance:
+    authority_state: candidate_reference
+    source_attachment_required: true

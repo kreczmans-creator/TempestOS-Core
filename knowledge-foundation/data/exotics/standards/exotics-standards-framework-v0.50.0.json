@@ -1,0 +1,27 @@
+{
+  "version": "0.50.0",
+  "scope": "exotics",
+  "status": "framework",
+  "mapping_domains": [
+    "ASTM International material/product specifications",
+    "SAE/AMS aerospace material specifications",
+    "ISO material/test standards",
+    "EN/CEN material/product standards",
+    "manufacturer proprietary specifications where legitimately controlling"
+  ],
+  "record_fields": [
+    "material",
+    "designation",
+    "standard_body",
+    "standard_number",
+    "edition",
+    "product_form",
+    "condition",
+    "composition",
+    "properties",
+    "test_methods",
+    "source",
+    "verification_date"
+  ],
+  "rule": "Do not treat trade names as material specifications; map trade names to exact material designations and controlling documents."
+}

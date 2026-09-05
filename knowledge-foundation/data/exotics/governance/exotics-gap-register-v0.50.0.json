@@ -1,0 +1,50 @@
+[
+  {
+    "id": "EX-GAP-001",
+    "severity": "AMBER",
+    "area": "titanium",
+    "finding": "Representative cards require exact source-linked property datasets.",
+    "disposition": "screening only",
+    "next": "populate authoritative grade/product-form evidence"
+  },
+  {
+    "id": "EX-GAP-002",
+    "severity": "AMBER",
+    "area": "nickel superalloys",
+    "finding": "Creep/rupture and temperature-dependent properties require grade/condition datasets.",
+    "disposition": "screening only",
+    "next": "populate authoritative high-temperature evidence"
+  },
+  {
+    "id": "EX-GAP-003",
+    "severity": "AMBER",
+    "area": "cobalt alloys",
+    "finding": "Wear/hot-hardness/carbide microstructure evidence not yet populated.",
+    "disposition": "framework only",
+    "next": "add representative cobalt wear grades"
+  },
+  {
+    "id": "EX-GAP-004",
+    "severity": "AMBER",
+    "area": "refractory metals",
+    "finding": "Oxidation/coating/joining evidence requires dedicated treatment.",
+    "disposition": "taxonomy only",
+    "next": "populate Mo/Nb/Ta families"
+  },
+  {
+    "id": "EX-GAP-005",
+    "severity": "AMBER",
+    "area": "specialty systems",
+    "finding": "NiTi and metallic-glass families need dedicated property schemas.",
+    "disposition": "taxonomy only",
+    "next": "populate specialist material systems"
+  },
+  {
+    "id": "EX-GAP-006",
+    "severity": "YELLOW",
+    "area": "standards",
+    "finding": "Exact specification editions are not yet source-linked.",
+    "disposition": "non-blocking foundation observation",
+    "next": "populate provenance"
+  }
+]

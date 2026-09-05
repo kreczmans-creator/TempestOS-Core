@@ -1,0 +1,15 @@
+{
+  "version": "0.38.0",
+  "scope": "Aluminium family foundation \u2014 first population",
+  "priority_alloy_count": 15,
+  "mechanical_reference_coverage": "15/15",
+  "thermal_reference_coverage": "15/15",
+  "electrical_reference_coverage": "15/15",
+  "environmental_family_coverage": "6/6",
+  "manufacturing_family_coverage": "6/6",
+  "standards_framework_coverage": "common frameworks established",
+  "commercial_metadata_coverage": "15/15",
+  "verified": 0,
+  "approved_for_design": 0,
+  "next": "expand aluminium evidence depth and audit family coverage"
+}

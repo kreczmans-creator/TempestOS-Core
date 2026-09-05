@@ -1,0 +1,20 @@
+{
+  "version": "0.68.0",
+  "dimensions": [
+    "strength",
+    "stiffness",
+    "density",
+    "toughness",
+    "fatigue",
+    "corrosion",
+    "wear",
+    "temperature",
+    "manufacturability",
+    "joining",
+    "cost",
+    "availability",
+    "traceability"
+  ],
+  "decision": "Only approve substitution after demonstrating equivalence or acceptable change against each critical requirement.",
+  "status": "design-framework"
+}

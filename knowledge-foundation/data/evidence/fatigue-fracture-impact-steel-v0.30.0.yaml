@@ -1,0 +1,151 @@
+-
+  observation_id: LIT-17-4PH-FCG-ROOMTEMP
+  material_state_id: MAT-STEEL-17-4PH
+  designation: 17-4 PH / UNS S17400
+  property: fatigue_crack_growth
+  condition: H1050
+  product_form: rolled plate
+  test_method: SEN tension
+  environment: ambient laboratory air
+  stress_ratio_R:
+    - 0.04
+    - 0.4
+    - 0.67
+    - 0.8
+  measured_quantity: da/dN versus Delta K
+  source: ASTM STP — cyclic crack propagation in 17-4 PH
+  source_url: https://store.astm.org/stp29199s.html
+  design_use: screening_only
+-
+  observation_id: LIT-17-4PH-FCG-HOT
+  material_state_id: MAT-STEEL-17-4PH
+  designation: 17-4 PH / UNS S17400
+  property: fatigue_crack_growth_temperature_dependence
+  conditions:
+    - A
+    - H900
+    - H1150
+  temperature_C:
+    - 300
+    - 400
+    - 500
+  stress_ratio_R: 0.1
+  frequency_Hz: 2
+  source: Metallurgical and Materials Transactions A 35(9), 3018–3024
+  source_url: https://doi.org/10.1007/s11661-004-0044-5
+  design_use: screening_only
+  notes: At 300–400 °C, H1150 and H900 generally showed the lowest and highest FCGR respectively; at 500 °C the curves converged in the reported study.
+-
+  observation_id: LIT-17-4PH-CORROSION-FCG
+  material_state_id: MAT-STEEL-17-4PH
+  designation: 17-4 PH / UNS S17400
+  property: corrosion_fatigue_crack_growth
+  conditions:
+    - SA
+    - H900
+    - H1150
+  environment: aerated 3.5 wt% NaCl solution
+  frequencies_Hz:
+    - 1
+    - 20
+  source: ASTM STP11096S — Corrosion Fatigue Behavior of 17-4 PH Stainless Steel in Different Tempers
+  source_url: https://store.astm.org/stp11096s.html
+  design_use: screening_only
+  notes: Load ratio and frequency materially affect reported corrosion-fatigue behaviour.
+-
+  observation_id: LIT-17-4PH-FATIGUE-ROTBEAM
+  material_state_id: MAT-STEEL-17-4PH
+  designation: 17-4 PH / UNS S17400
+  property: fatigue_strength
+  conditions:
+    - H900
+    - H925
+    - H1025
+    - H1150
+  product_form: 18–25 mm diameter bar
+  test_method: R. R. Moore rotating-beam fatigue
+  cycles:
+    - 10000000
+    - 100000000
+  temperature_C: 24
+  values_MPa:
+    H900:
+      - 621
+      - 503
+    H925:
+      - 607
+      - 510
+    H1025:
+      - 572
+      - 538
+    H1150:
+      - 621
+      - 621
+  source: ARMCO 17-4 PH Product Data Bulletin, Table 8
+  source_url: https://studylib.net/doc/26328284/17-4-ph-stainless
+  design_use: screening_only
+-
+  observation_id: LIT-17-4PH-FATIGUE-600F
+  material_state_id: MAT-STEEL-17-4PH
+  designation: 17-4 PH / UNS S17400
+  property: fatigue_strength
+  conditions:
+    - H900
+    - H1025
+  product_form: 18–25 mm diameter bar
+  test_method: R. R. Moore rotating-beam fatigue
+  cycles:
+    - 10000000
+    - 100000000
+  temperature_C: 316
+  values_MPa:
+    H900:
+      - 531
+      - 427
+    H1025:
+      - 517
+      - 448
+  source: ARMCO 17-4 PH Product Data Bulletin, Table 8
+  source_url: https://studylib.net/doc/26328284/17-4-ph-stainless
+  design_use: screening_only
+-
+  observation_id: LIT-17-4PH-FCG-AM
+  material_state_id: MAT-STEEL-17-4PH
+  designation: 17-4 PH / UNS S17400
+  property: fatigue_threshold_and_cyclic_toughness
+  condition: CA-H900
+  manufacturing_route: L-PBF additive manufacturing
+  orientations:
+    - 0 degree
+    - 45 degree
+    - 90 degree
+  stress_ratio_R: 0.1
+  values:
+    wrought:
+      DeltaK_threshold_MPa_sqrt_m: 6.95
+      cyclic_toughness_A_MPa_sqrt_m: 84.5
+    stress_relief_0:
+      DeltaK_threshold_MPa_sqrt_m: 10.3
+      cyclic_toughness_A_MPa_sqrt_m: 82.4
+    stress_relief_45:
+      DeltaK_threshold_MPa_sqrt_m: 8.25
+      cyclic_toughness_A_MPa_sqrt_m: 107.2
+    stress_relief_90:
+      DeltaK_threshold_MPa_sqrt_m: 6.65
+      cyclic_toughness_A_MPa_sqrt_m: 128.4
+    HIP:
+      DeltaK_threshold_MPa_sqrt_m: 10.32
+      cyclic_toughness_A_MPa_sqrt_m: 112.5
+  source: Materials 2020, 13, 2223; Table 2
+  source_url: https://repository.tudelft.nl/file/File_deb6191b-17ad-4748-9fa3-0aca589db9da
+  design_use: screening_only
+-
+  observation_id: LIT-15-5PH-FCG-AM
+  material_state_id: MAT-STEEL-15-5PH
+  designation: 15-5 PH / UNS S15500
+  property: fatigue_crack_growth_and_fracture_toughness
+  manufacturing_route: L-PBF additive manufacturing
+  orientation: orientation-dependent
+  source: Materials Science and Engineering A 861 (2022), 144356
+  source_url: https://doi.org/10.1016/j.msea.2022.144356
+  design_use: screening_only

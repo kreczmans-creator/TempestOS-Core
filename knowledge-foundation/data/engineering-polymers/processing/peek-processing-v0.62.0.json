@@ -1,0 +1,33 @@
+{
+  "version": "0.62.0",
+  "family": "PEEK",
+  "processing_routes": [
+    "injection moulding",
+    "extrusion",
+    "compression moulding",
+    "additive manufacturing",
+    "machining from stock"
+  ],
+  "process_effects": [
+    "melt/processing temperature history",
+    "cooling rate",
+    "tool/mould temperature",
+    "holding/packing conditions",
+    "residual stress",
+    "flow orientation",
+    "post-processing/annealing where applicable"
+  ],
+  "design_controls": [
+    "grade-specific processing window",
+    "part thickness and geometry",
+    "gate/flow layout for moulded parts",
+    "cooling/tool temperature",
+    "conditioning requirements",
+    "post-process thermal treatment where applicable"
+  ],
+  "evidence_status": "screening-level qualitative record",
+  "design_use": "not approved",
+  "manufacturing_screen": "injection moulding, extrusion, compression moulding, additive manufacturing, machining from stock",
+  "dimensional_process_effects": "crystallinity and processing history strongly affect dimensions/properties",
+  "anisotropy_note": "annealing and thermal history can be critical"
+}

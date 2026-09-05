@@ -1,0 +1,32 @@
+{
+  "version": "0.72.0",
+  "status": "design-framework",
+  "purpose": "Select candidate materials against the complete engineering requirement set.",
+  "criteria": [
+    "strength",
+    "stiffness",
+    "density",
+    "toughness",
+    "fatigue",
+    "temperature",
+    "corrosion",
+    "wear",
+    "manufacturability",
+    "joining",
+    "surface treatment",
+    "availability",
+    "cost",
+    "traceability"
+  ],
+  "workflow": [
+    "define functional requirements",
+    "define environment and temperature",
+    "identify load/failure modes",
+    "select candidate material families",
+    "compare grade and condition",
+    "assess product form/process",
+    "assess supply and certification",
+    "identify verification needs",
+    "freeze controlled material definition"
+  ]
+}

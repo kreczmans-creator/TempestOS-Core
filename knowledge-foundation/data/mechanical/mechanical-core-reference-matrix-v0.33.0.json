@@ -1,0 +1,434 @@
+[
+  {
+    "grade": "S235JR",
+    "family": "low-carbon structural steel",
+    "evidence_class": "reference_range",
+    "design_use": "screening_only",
+    "source_policy": "Representative engineering-reference range; confirm exact specification/condition before design use.",
+    "density_kg_m3": 7850,
+    "yield_MPa": [
+      235,
+      275
+    ],
+    "uts_MPa": [
+      360,
+      510
+    ],
+    "E_GPa": 210,
+    "nu": 0.3,
+    "G_GPa": 80.8,
+    "elongation_pct": [
+      17,
+      26
+    ],
+    "hardness_HB": [
+      120,
+      180
+    ]
+  },
+  {
+    "grade": "S355JR",
+    "family": "low-alloy structural steel",
+    "evidence_class": "reference_range",
+    "design_use": "screening_only",
+    "source_policy": "Representative engineering-reference range; confirm exact specification/condition before design use.",
+    "density_kg_m3": 7850,
+    "yield_MPa": [
+      355,
+      355
+    ],
+    "uts_MPa": [
+      470,
+      630
+    ],
+    "E_GPa": 210,
+    "nu": 0.3,
+    "G_GPa": 80.8,
+    "elongation_pct": [
+      18,
+      22
+    ],
+    "hardness_HB": [
+      140,
+      200
+    ]
+  },
+  {
+    "grade": "C45",
+    "family": "medium-carbon steel",
+    "evidence_class": "reference_range",
+    "design_use": "screening_only",
+    "source_policy": "Representative engineering-reference range; confirm exact specification/condition before design use.",
+    "density_kg_m3": 7850,
+    "yield_MPa": [
+      340,
+      490
+    ],
+    "uts_MPa": [
+      570,
+      700
+    ],
+    "E_GPa": 210,
+    "nu": 0.3,
+    "G_GPa": 80.8,
+    "elongation_pct": [
+      14,
+      19
+    ],
+    "hardness_HB": [
+      170,
+      220
+    ]
+  },
+  {
+    "grade": "42CrMo4",
+    "family": "chromium-molybdenum alloy steel",
+    "evidence_class": "reference_range",
+    "design_use": "screening_only",
+    "source_policy": "Representative engineering-reference range; confirm exact specification/condition before design use.",
+    "density_kg_m3": 7850,
+    "yield_MPa": [
+      650,
+      1000
+    ],
+    "uts_MPa": [
+      850,
+      1100
+    ],
+    "E_GPa": 210,
+    "nu": 0.3,
+    "G_GPa": 80.8,
+    "elongation_pct": [
+      10,
+      14
+    ],
+    "hardness_HB": [
+      240,
+      330
+    ]
+  },
+  {
+    "grade": "304",
+    "family": "austenitic stainless steel",
+    "evidence_class": "reference_range",
+    "design_use": "screening_only",
+    "source_policy": "Representative engineering-reference range; confirm exact specification/condition before design use.",
+    "density_kg_m3": 8000,
+    "yield_MPa": [
+      215,
+      215
+    ],
+    "uts_MPa": [
+      505,
+      750
+    ],
+    "E_GPa": 193,
+    "nu": 0.29,
+    "G_GPa": 74.8,
+    "elongation_pct": [
+      40,
+      60
+    ],
+    "hardness_HB": [
+      123,
+      201
+    ]
+  },
+  {
+    "grade": "316L",
+    "family": "austenitic stainless steel",
+    "evidence_class": "reference_range",
+    "design_use": "screening_only",
+    "source_policy": "Representative engineering-reference range; confirm exact specification/condition before design use.",
+    "density_kg_m3": 8000,
+    "yield_MPa": [
+      170,
+      170
+    ],
+    "uts_MPa": [
+      485,
+      700
+    ],
+    "E_GPa": 193,
+    "nu": 0.3,
+    "G_GPa": 74.2,
+    "elongation_pct": [
+      40,
+      60
+    ],
+    "hardness_HB": [
+      120,
+      200
+    ]
+  },
+  {
+    "grade": "17-4 PH",
+    "family": "precipitation-hardening martensitic stainless steel",
+    "evidence_class": "reference_range",
+    "design_use": "screening_only",
+    "source_policy": "Representative engineering-reference range; confirm exact specification/condition before design use.",
+    "density_kg_m3": 7800,
+    "yield_MPa": [
+      275,
+      1170
+    ],
+    "uts_MPa": [
+      930,
+      1310
+    ],
+    "E_GPa": 197,
+    "nu": 0.27,
+    "G_GPa": 77.6,
+    "elongation_pct": [
+      5,
+      20
+    ],
+    "hardness_HRC": [
+      28,
+      44
+    ]
+  },
+  {
+    "grade": "H13",
+    "family": "hot-work tool steel",
+    "evidence_class": "reference_range",
+    "design_use": "screening_only",
+    "source_policy": "Representative engineering-reference range; confirm exact specification/condition before design use.",
+    "density_kg_m3": 7800,
+    "yield_MPa": [
+      900,
+      1400
+    ],
+    "uts_MPa": [
+      1000,
+      1600
+    ],
+    "E_GPa": 210,
+    "nu": 0.3,
+    "G_GPa": 80.8,
+    "elongation_pct": [
+      8,
+      15
+    ],
+    "hardness_HRC": [
+      44,
+      54
+    ]
+  },
+  {
+    "grade": "410",
+    "family": "martensitic stainless steel",
+    "evidence_class": "reference_range",
+    "design_use": "screening_only",
+    "source_policy": "Representative engineering-reference range; confirm exact specification/condition before design use.",
+    "density_kg_m3": 7750,
+    "yield_MPa": [
+      275,
+      965
+    ],
+    "uts_MPa": [
+      480,
+      1380
+    ],
+    "E_GPa": 200,
+    "nu": 0.27,
+    "G_GPa": 78.7,
+    "elongation_pct": [
+      8,
+      25
+    ],
+    "hardness_HRC": [
+      20,
+      45
+    ]
+  },
+  {
+    "grade": "420",
+    "family": "martensitic stainless steel",
+    "evidence_class": "reference_range",
+    "design_use": "screening_only",
+    "source_policy": "Representative engineering-reference range; confirm exact specification/condition before design use.",
+    "density_kg_m3": 7750,
+    "yield_MPa": [
+      345,
+      1200
+    ],
+    "uts_MPa": [
+      690,
+      1600
+    ],
+    "E_GPa": 200,
+    "nu": 0.27,
+    "G_GPa": 78.7,
+    "elongation_pct": [
+      5,
+      25
+    ],
+    "hardness_HRC": [
+      45,
+      55
+    ]
+  },
+  {
+    "grade": "15-5 PH",
+    "family": "precipitation-hardening martensitic stainless steel",
+    "evidence_class": "reference_range",
+    "design_use": "screening_only",
+    "source_policy": "Representative engineering-reference range; confirm exact specification/condition before design use.",
+    "density_kg_m3": 7800,
+    "yield_MPa": [
+      275,
+      1200
+    ],
+    "uts_MPa": [
+      930,
+      1350
+    ],
+    "E_GPa": 197,
+    "nu": 0.27,
+    "G_GPa": 77.6,
+    "elongation_pct": [
+      5,
+      20
+    ],
+    "hardness_HRC": [
+      28,
+      45
+    ]
+  },
+  {
+    "grade": "13-8 Mo",
+    "family": "precipitation-hardening stainless steel",
+    "evidence_class": "reference_range",
+    "design_use": "screening_only",
+    "source_policy": "Representative engineering-reference range; confirm exact specification/condition before design use.",
+    "density_kg_m3": 7800,
+    "yield_MPa": [
+      275,
+      1500
+    ],
+    "uts_MPa": [
+      930,
+      1600
+    ],
+    "E_GPa": 200,
+    "nu": 0.29,
+    "G_GPa": 77.5,
+    "elongation_pct": [
+      5,
+      20
+    ],
+    "hardness_HRC": [
+      30,
+      48
+    ]
+  },
+  {
+    "grade": "310S",
+    "family": "austenitic stainless steel",
+    "evidence_class": "reference_range",
+    "design_use": "screening_only",
+    "source_policy": "Representative engineering-reference range; confirm exact specification/condition before design use.",
+    "density_kg_m3": 7900,
+    "yield_MPa": [
+      205,
+      205
+    ],
+    "uts_MPa": [
+      515,
+      700
+    ],
+    "E_GPa": 200,
+    "nu": 0.3,
+    "G_GPa": 76.9,
+    "elongation_pct": [
+      40,
+      50
+    ],
+    "hardness_HB": [
+      150,
+      220
+    ]
+  },
+  {
+    "grade": "321",
+    "family": "austenitic titanium-stabilised stainless steel",
+    "evidence_class": "reference_range",
+    "design_use": "screening_only",
+    "source_policy": "Representative engineering-reference range; confirm exact specification/condition before design use.",
+    "density_kg_m3": 8020,
+    "yield_MPa": [
+      205,
+      205
+    ],
+    "uts_MPa": [
+      515,
+      700
+    ],
+    "E_GPa": 193,
+    "nu": 0.29,
+    "G_GPa": 74.8,
+    "elongation_pct": [
+      40,
+      50
+    ],
+    "hardness_HB": [
+      150,
+      220
+    ]
+  },
+  {
+    "grade": "430",
+    "family": "ferritic stainless steel",
+    "evidence_class": "reference_range",
+    "design_use": "screening_only",
+    "source_policy": "Representative engineering-reference range; confirm exact specification/condition before design use.",
+    "density_kg_m3": 7750,
+    "yield_MPa": [
+      205,
+      310
+    ],
+    "uts_MPa": [
+      450,
+      600
+    ],
+    "E_GPa": 200,
+    "nu": 0.29,
+    "G_GPa": 77.5,
+    "elongation_pct": [
+      20,
+      30
+    ],
+    "hardness_HB": [
+      140,
+      200
+    ]
+  },
+  {
+    "grade": "440C",
+    "family": "high-carbon martensitic stainless steel",
+    "evidence_class": "reference_range",
+    "design_use": "screening_only",
+    "source_policy": "Representative engineering-reference range; confirm exact specification/condition before design use.",
+    "density_kg_m3": 7650,
+    "yield_MPa": [
+      450,
+      1900
+    ],
+    "uts_MPa": [
+      760,
+      2000
+    ],
+    "E_GPa": 200,
+    "nu": 0.28,
+    "G_GPa": 78.1,
+    "elongation_pct": [
+      1,
+      15
+    ],
+    "hardness_HRC": [
+      58,
+      62
+    ]
+  }
+]

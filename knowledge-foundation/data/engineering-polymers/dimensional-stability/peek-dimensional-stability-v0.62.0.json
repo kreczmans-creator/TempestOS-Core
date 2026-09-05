@@ -1,0 +1,24 @@
+{
+  "version": "0.62.0",
+  "family": "PEEK",
+  "dimensional_screen": "crystallinity and processing history strongly affect dimensions/properties",
+  "anisotropy": "annealing and thermal history can be critical",
+  "critical_variables": [
+    "mould/process shrinkage",
+    "thermal expansion",
+    "moisture uptake",
+    "temperature",
+    "time",
+    "orientation",
+    "reinforcement",
+    "residual stress",
+    "annealing/thermal history"
+  ],
+  "tolerance_guidance": [
+    "Use process-specific capability data for production tolerances.",
+    "Do not assign metal-like general tolerances to polymer parts without process evidence.",
+    "Functional datums and environmental conditions should be defined before tolerance allocation."
+  ],
+  "evidence_status": "screening-level qualitative record",
+  "design_use": "not approved"
+}

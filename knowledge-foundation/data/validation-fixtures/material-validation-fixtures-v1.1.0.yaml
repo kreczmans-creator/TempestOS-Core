@@ -1,0 +1,18 @@
+- fixture_id: FIX-UNIT-001
+  purpose: Reject strength observation without unit
+  expected: FAIL
+- fixture_id: FIX-CONDITION-001
+  purpose: Reject promoted strength observation without material state
+  expected: FAIL
+- fixture_id: FIX-EQUIV-001
+  purpose: Keep legacy designation comparison as non-equivalence
+  expected: PASS_WITH_WARNING
+- fixture_id: FIX-TEMPER-001
+  purpose: Keep 6082-T6 and 6082-T651 separate
+  expected: PASS
+- fixture_id: FIX-POLYMER-001
+  purpose: Flag polymer observation missing conditioning context
+  expected: WARN
+- fixture_id: FIX-SOURCE-001
+  purpose: Require provenance for authoritative observation
+  expected: FAIL

@@ -1,0 +1,218 @@
+[
+  {
+    "material_standards": [
+      "EN 10025-2",
+      "EN 10027"
+    ],
+    "test_standards": [
+      "EN ISO 6892-1",
+      "EN ISO 6506",
+      "EN ISO 148-1"
+    ],
+    "grade": "S235JR",
+    "mapping_status": "common_reference_mapping",
+    "procurement_control": "Verify current edition, product form, condition and certification requirements against the purchase specification."
+  },
+  {
+    "material_standards": [
+      "EN 10025-2",
+      "EN 10027"
+    ],
+    "test_standards": [
+      "EN ISO 6892-1",
+      "EN ISO 6506",
+      "EN ISO 148-1"
+    ],
+    "grade": "S355JR",
+    "mapping_status": "common_reference_mapping",
+    "procurement_control": "Verify current edition, product form, condition and certification requirements against the purchase specification."
+  },
+  {
+    "material_standards": [
+      "EN 10083-2",
+      "EN 10027"
+    ],
+    "test_standards": [
+      "EN ISO 6892-1",
+      "EN ISO 6506",
+      "EN ISO 148-1"
+    ],
+    "grade": "C45",
+    "mapping_status": "common_reference_mapping",
+    "procurement_control": "Verify current edition, product form, condition and certification requirements against the purchase specification."
+  },
+  {
+    "material_standards": [
+      "EN 10083-3",
+      "EN 10027"
+    ],
+    "test_standards": [
+      "EN ISO 6892-1",
+      "EN ISO 6506",
+      "EN ISO 148-1"
+    ],
+    "grade": "42CrMo4",
+    "mapping_status": "common_reference_mapping",
+    "procurement_control": "Verify current edition, product form, condition and certification requirements against the purchase specification."
+  },
+  {
+    "material_standards": [
+      "EN 10088-2",
+      "ASTM A240/A276"
+    ],
+    "test_standards": [
+      "EN ISO 6892-1",
+      "EN ISO 6506"
+    ],
+    "grade": "304",
+    "mapping_status": "common_reference_mapping",
+    "procurement_control": "Verify current edition, product form, condition and certification requirements against the purchase specification."
+  },
+  {
+    "material_standards": [
+      "EN 10088-2",
+      "ASTM A240/A276"
+    ],
+    "test_standards": [
+      "EN ISO 6892-1",
+      "EN ISO 6506"
+    ],
+    "grade": "316L",
+    "mapping_status": "common_reference_mapping",
+    "procurement_control": "Verify current edition, product form, condition and certification requirements against the purchase specification."
+  },
+  {
+    "material_standards": [
+      "EN 10088-3",
+      "ASTM A564"
+    ],
+    "test_standards": [
+      "ASTM E8/E8M",
+      "ASTM E18",
+      "ASTM E23"
+    ],
+    "grade": "17-4 PH",
+    "mapping_status": "common_reference_mapping",
+    "procurement_control": "Verify current edition, product form, condition and certification requirements against the purchase specification."
+  },
+  {
+    "material_standards": [
+      "EN ISO 4957",
+      "ASTM A681"
+    ],
+    "test_standards": [
+      "ASTM E8/E8M",
+      "ASTM E18"
+    ],
+    "grade": "H13",
+    "mapping_status": "common_reference_mapping",
+    "procurement_control": "Verify current edition, product form, condition and certification requirements against the purchase specification."
+  },
+  {
+    "material_standards": [
+      "EN 10088-3",
+      "ASTM A276"
+    ],
+    "test_standards": [
+      "EN ISO 6892-1",
+      "EN ISO 6506"
+    ],
+    "grade": "410",
+    "mapping_status": "common_reference_mapping",
+    "procurement_control": "Verify current edition, product form, condition and certification requirements against the purchase specification."
+  },
+  {
+    "material_standards": [
+      "EN 10088-3",
+      "ASTM A276"
+    ],
+    "test_standards": [
+      "EN ISO 6892-1",
+      "EN ISO 6506"
+    ],
+    "grade": "420",
+    "mapping_status": "common_reference_mapping",
+    "procurement_control": "Verify current edition, product form, condition and certification requirements against the purchase specification."
+  },
+  {
+    "material_standards": [
+      "ASTM A564",
+      "AMS 5862"
+    ],
+    "test_standards": [
+      "ASTM E8/E8M",
+      "ASTM E18",
+      "ASTM E23"
+    ],
+    "grade": "15-5 PH",
+    "mapping_status": "common_reference_mapping",
+    "procurement_control": "Verify current edition, product form, condition and certification requirements against the purchase specification."
+  },
+  {
+    "material_standards": [
+      "AMS 5629",
+      "AMS 5864"
+    ],
+    "test_standards": [
+      "ASTM E8/E8M",
+      "ASTM E18",
+      "ASTM E23"
+    ],
+    "grade": "13-8 Mo",
+    "mapping_status": "common_reference_mapping",
+    "procurement_control": "Verify current edition, product form, condition and certification requirements against the purchase specification."
+  },
+  {
+    "material_standards": [
+      "EN 10088-2",
+      "ASTM A240"
+    ],
+    "test_standards": [
+      "EN ISO 6892-1",
+      "EN ISO 6506"
+    ],
+    "grade": "310S",
+    "mapping_status": "common_reference_mapping",
+    "procurement_control": "Verify current edition, product form, condition and certification requirements against the purchase specification."
+  },
+  {
+    "material_standards": [
+      "EN 10088-2",
+      "ASTM A240"
+    ],
+    "test_standards": [
+      "EN ISO 6892-1",
+      "EN ISO 6506"
+    ],
+    "grade": "321",
+    "mapping_status": "common_reference_mapping",
+    "procurement_control": "Verify current edition, product form, condition and certification requirements against the purchase specification."
+  },
+  {
+    "material_standards": [
+      "EN 10088-2",
+      "ASTM A240"
+    ],
+    "test_standards": [
+      "EN ISO 6892-1",
+      "EN ISO 6506"
+    ],
+    "grade": "430",
+    "mapping_status": "common_reference_mapping",
+    "procurement_control": "Verify current edition, product form, condition and certification requirements against the purchase specification."
+  },
+  {
+    "material_standards": [
+      "EN 10088-3",
+      "ASTM A276"
+    ],
+    "test_standards": [
+      "EN ISO 6892-1",
+      "EN ISO 6506",
+      "EN ISO 6508"
+    ],
+    "grade": "440C",
+    "mapping_status": "common_reference_mapping",
+    "procurement_control": "Verify current edition, product form, condition and certification requirements against the purchase specification."
+  }
+]

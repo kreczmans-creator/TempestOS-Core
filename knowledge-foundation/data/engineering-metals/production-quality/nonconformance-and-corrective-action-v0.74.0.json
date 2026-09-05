@@ -1,0 +1,13 @@
+{
+  "version": "0.74.0",
+  "status": "foundation-framework",
+  "workflow": [
+    "contain nonconformance",
+    "identify affected configuration",
+    "record objective evidence",
+    "determine root cause",
+    "define corrective action",
+    "verify effectiveness",
+    "assess recurrence risk"
+  ]
+}

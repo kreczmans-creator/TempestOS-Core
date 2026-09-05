@@ -1,0 +1,31 @@
+{
+  "version": "0.62.0",
+  "family": "PA6",
+  "processing_routes": [
+    "injection moulding",
+    "extrusion",
+    "fibre-filled compounds"
+  ],
+  "process_effects": [
+    "melt/processing temperature history",
+    "cooling rate",
+    "tool/mould temperature",
+    "holding/packing conditions",
+    "residual stress",
+    "flow orientation",
+    "post-processing/annealing where applicable"
+  ],
+  "design_controls": [
+    "grade-specific processing window",
+    "part thickness and geometry",
+    "gate/flow layout for moulded parts",
+    "cooling/tool temperature",
+    "conditioning requirements",
+    "post-process thermal treatment where applicable"
+  ],
+  "evidence_status": "screening-level qualitative record",
+  "design_use": "not approved",
+  "manufacturing_screen": "injection moulding, extrusion, fibre-filled compounds",
+  "dimensional_process_effects": "moisture uptake can materially change dimensions",
+  "anisotropy_note": "conditioning state and fibre orientation must be specified"
+}

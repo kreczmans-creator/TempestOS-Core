@@ -1,0 +1,126 @@
+- observation_id: OBS-430-PHYSICAL-OUTOKUMPU
+  material_state_id: MAT-STEEL-430
+  designation: EN 1.4016 / ASTM 430 / UNS S43000
+  temperature_C: 20
+  properties:
+    density:
+      value: 7.7
+      unit: kg/dm3
+    modulus_of_elasticity:
+      value: 220
+      unit: GPa
+    thermal_conductivity:
+      value: 25
+      unit: W/m/K
+    electrical_resistivity:
+      value: 0.6
+      unit: ohm*mm2/m
+    specific_heat:
+      value: 460
+      unit: J/kg/K
+  source_id: WEB-OUTOKUMPU-MODA
+  source_locator: Physical properties; 430/4016
+  source_url: https://www.outokumpu.com/en/products/product-ranges/moda
+  evidence_status: sourced
+  review_status: reviewed
+  design_use: screening_only
+- observation_id: OBS-310S-PHYSICAL-OUTOKUMPU
+  material_state_id: MAT-STEEL-310S
+  designation: EN 1.4845 / ASTM 310S / UNS S31008
+  temperature_C: 20
+  properties:
+    density:
+      value: 8.0
+      unit: kg/dm3
+    modulus_of_elasticity:
+      value: 200
+      unit: GPa
+    thermal_conductivity:
+      value: 15
+      unit: W/m/K
+    electrical_resistivity:
+      value: 0.78
+      unit: ohm*mm2/m
+  source_id: WEB-OUTOKUMPU-THERMA
+  source_locator: Therma physical properties; 310S/4845
+  source_url: https://www.outokumpu.com/products/product-ranges/therma
+  evidence_status: sourced
+  review_status: reviewed
+  design_use: screening_only
+- observation_id: OBS-321-PHYSICAL-OUTOKUMPU
+  material_state_id: MAT-STEEL-321
+  designation: EN 1.4541 / ASTM 321 / UNS S32100
+  temperature_C: 20
+  properties:
+    density:
+      value: 7.9
+      unit: kg/dm3
+    modulus_of_elasticity:
+      value: 193
+      unit: GPa
+    thermal_conductivity:
+      value: 16
+      unit: W/m/K
+    electrical_resistivity:
+      value: 0.71
+      unit: ohm*mm2/m
+  source_id: WEB-OUTOKUMPU-MODA
+  source_locator: Physical properties; 321/4541
+  source_url: https://www.outokumpu.com/en/products/product-ranges/moda
+  evidence_status: sourced
+  review_status: reviewed
+  design_use: screening_only
+- observation_id: OBS-440C-PHYSICAL-BOHLER
+  material_state_id: MAT-STEEL-440C
+  designation: 440C / 1.4125 / X105CrMo17 / UNS S44004
+  temperature_C: 20
+  properties:
+    density:
+      value: 7.7
+      unit: g/cm3
+    modulus_of_elasticity:
+      value: 215
+      unit: GPa
+  source_id: WEB-BOHLER-N695
+  source_locator: BÖHLER N695 technical data; physical properties
+  source_url: https://www.bohler-edelstahl.com/en/products/n695/
+  evidence_status: sourced
+  review_status: reviewed
+  design_use: screening_only
+- observation_id: OBS-410-CORROSION-CONTEXT
+  material_state_id: MAT-STEEL-410
+  designation: EN 1.4006 / ASTM 410 / UNS S41000
+  property: corrosion_resistance_context
+  value: Useful corrosion resistance in mildly corrosive environments; condition,
+    surface and environment dependent.
+  source_id: WEB-OUTOKUMPU-DURA
+  source_locator: Dura 410/4006 product information
+  source_url: https://www.outokumpu.com/en/products/product-ranges/dura
+  evidence_status: sourced
+  review_status: reviewed
+  design_use: screening_only
+- observation_id: OBS-420-CORROSION-CONTEXT
+  material_state_id: MAT-STEEL-420
+  designation: EN 1.4021 / ASTM 420 / UNS S42000
+  property: corrosion_resistance_context
+  value: Corrosion performance is strongly dependent on heat treatment, surface condition
+    and environment.
+  source_id: WEB-OUTOKUMPU-DURA
+  source_locator: Dura 420/4021 product information
+  source_url: https://www.outokumpu.com/en/products/product-ranges/dura
+  evidence_status: sourced
+  review_status: reviewed
+  design_use: screening_only
+- observation_id: OBS-310S-SERVICE-CONTEXT
+  material_state_id: MAT-STEEL-310S
+  designation: EN 1.4845 / ASTM 310S / UNS S31008
+  property: elevated_temperature_service_context
+  value: High-temperature oxidation/corrosion resistance and retained mechanical performance
+    are primary selection drivers; creep must be assessed for sustained high-temperature
+    loading.
+  source_id: WEB-OUTOKUMPU-THERMA
+  source_locator: Therma 310S/4845 application guidance
+  source_url: https://www.outokumpu.com/products/product-ranges/therma
+  evidence_status: sourced
+  review_status: reviewed
+  design_use: screening_only

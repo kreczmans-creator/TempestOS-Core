@@ -1,0 +1,24 @@
+{
+  "version": "0.62.0",
+  "family": "LCP",
+  "dimensional_screen": "very strong flow orientation can produce anisotropy",
+  "anisotropy": "gate design and flow direction are fundamental design variables",
+  "critical_variables": [
+    "mould/process shrinkage",
+    "thermal expansion",
+    "moisture uptake",
+    "temperature",
+    "time",
+    "orientation",
+    "reinforcement",
+    "residual stress",
+    "annealing/thermal history"
+  ],
+  "tolerance_guidance": [
+    "Use process-specific capability data for production tolerances.",
+    "Do not assign metal-like general tolerances to polymer parts without process evidence.",
+    "Functional datums and environmental conditions should be defined before tolerance allocation."
+  ],
+  "evidence_status": "screening-level qualitative record",
+  "design_use": "not approved"
+}

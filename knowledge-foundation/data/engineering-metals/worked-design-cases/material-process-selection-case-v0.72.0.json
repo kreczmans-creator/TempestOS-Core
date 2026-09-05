@@ -1,0 +1,16 @@
+{
+  "version": "0.72.0",
+  "status": "worked-framework",
+  "problem": "Select a material and manufacturing route for a fatigue-critical bracket.",
+  "workflow": [
+    "define loads/environment/life",
+    "identify failure modes",
+    "compare candidate material families",
+    "compare product forms",
+    "compare manufacturing routes",
+    "assess surface and heat treatment",
+    "assess inspection and supply chain",
+    "define verification plan",
+    "freeze material/process definition"
+  ]
+}

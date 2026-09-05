@@ -1,0 +1,10 @@
+{
+  "version": "0.44.0",
+  "decision": "Separate tungsten heavy alloys and cemented carbides from monolithic tungsten in the material ontology.",
+  "rationale": [
+    "Composition and binder phase materially change density, stiffness, strength, toughness and thermal/electrical behaviour.",
+    "Cemented carbide is a particulate composite rather than a conventional tungsten alloy.",
+    "Design selection needs grade-specific grain size, binder chemistry and processing context."
+  ],
+  "status": "adopted_in_library_model"
+}

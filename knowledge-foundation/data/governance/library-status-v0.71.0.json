@@ -1,0 +1,9 @@
+{
+  "version": "0.71.0",
+  "engineering_polymers": "foundation complete at screening/knowledge level",
+  "engineering_metals": "broad mechanical design foundation established; deeper specialist domains remain",
+  "design_integration": "manufacturing, GD&T, mechanisms, bearings, gears and systems verification established",
+  "current_milestone": "v0.71.0",
+  "next": "Materials/process selection, metrology, tribology, fluid/thermal interfaces, actuation/transmission, electromechanical interfaces and deeper verification",
+  "data_boundary": "reference/design frameworks are not certified design allowables"
+}

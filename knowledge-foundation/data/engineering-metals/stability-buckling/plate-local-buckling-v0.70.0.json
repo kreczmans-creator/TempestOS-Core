@@ -1,0 +1,19 @@
+{
+  "version": "0.70.0",
+  "status": "design-framework",
+  "purpose": "Screen local instability of thin metallic plates.",
+  "variables": [
+    "plate width",
+    "thickness",
+    "boundary restraint",
+    "elastic modulus",
+    "Poisson ratio",
+    "compressive/shear stress"
+  ],
+  "checks": [
+    "slenderness",
+    "effective section behaviour",
+    "post-buckling assumptions",
+    "stiffener interaction"
+  ]
+}

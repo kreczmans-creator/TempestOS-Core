@@ -1,0 +1,15 @@
+{
+  "version": "0.72.0",
+  "status": "worked-framework",
+  "problem": "Select a lubrication strategy for a loaded rolling/sliding contact.",
+  "workflow": [
+    "define contact type",
+    "define load/speed/temperature",
+    "identify lubrication regime",
+    "select lubricant family",
+    "check material/seal compatibility",
+    "consider contamination",
+    "define replenishment/maintenance",
+    "verify operating temperature and wear"
+  ]
+}

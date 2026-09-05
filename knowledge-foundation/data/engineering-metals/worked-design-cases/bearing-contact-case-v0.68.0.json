@@ -1,0 +1,22 @@
+{
+  "version": "0.68.0",
+  "problem": "Screen a hardened steel rolling/contact component.",
+  "inputs": [
+    "normal load",
+    "contact radius/geometry",
+    "speed",
+    "lubrication",
+    "surface hardness",
+    "life"
+  ],
+  "workflow": [
+    "define contact geometry",
+    "calculate contact pressure using the applicable model",
+    "check subsurface stress",
+    "assess pitting/spalling/fretting risk",
+    "check lubrication and contamination",
+    "define inspection/life evidence"
+  ],
+  "output": "Contact-design workflow; final rating requires the applicable bearing/contact standard.",
+  "status": "worked-framework"
+}

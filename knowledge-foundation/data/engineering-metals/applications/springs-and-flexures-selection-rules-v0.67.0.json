@@ -1,0 +1,15 @@
+{
+  "version": "0.67.0",
+  "application": "springs-and-flexures",
+  "checks": [
+    "cyclic stress",
+    "fatigue",
+    "yield margin",
+    "surface finish",
+    "residual stress",
+    "temperature",
+    "corrosion"
+  ],
+  "selection": "Fatigue and surface condition generally govern before nominal tensile strength.",
+  "evidence_boundary": "Screening guidance; exact alloy, condition, geometry, process and service environment require application-specific verification."
+}

@@ -1,0 +1,57 @@
+- observation_id: OBS-304-cold rolled coil and sheet-MECH-OUTOKUMPU
+  material_state_id: MAT-STEEL-304
+  designation: EN 1.4301 / ASTM Type 304 / UNS S30400
+  product_form: cold rolled coil and sheet
+  yield_strength_Rp0.2_MPa: 230
+  yield_strength_Rp1.0_MPa: 260
+  ultimate_tensile_strength_MPa:
+    min: 540
+    max: 750
+  elongation_A_percent: 45
+  source_id: WEB-OUTOKUMPU-CORE-304
+  source_url: https://www.outokumpu.com/en/products/product-ranges/-/media/files/products/core/outokumpu-core-range-datasheet.pdf
+  source_locator: Table 5 — Mechanical properties at 20 °C; Core 304/4301; EN 10088-2
+  applicability:
+    temperature_C: 20
+    standard_basis: EN 10088-2
+  evidence_status: sourced
+  review_status: reviewed
+  design_use: screening_only
+- observation_id: OBS-304-hot rolled coil and sheet-MECH-OUTOKUMPU
+  material_state_id: MAT-STEEL-304
+  designation: EN 1.4301 / ASTM Type 304 / UNS S30400
+  product_form: hot rolled coil and sheet
+  yield_strength_Rp0.2_MPa: 210
+  yield_strength_Rp1.0_MPa: 250
+  ultimate_tensile_strength_MPa:
+    min: 520
+    max: 720
+  elongation_A_percent: 45
+  source_id: WEB-OUTOKUMPU-CORE-304
+  source_url: https://www.outokumpu.com/en/products/product-ranges/-/media/files/products/core/outokumpu-core-range-datasheet.pdf
+  source_locator: Table 5 — Mechanical properties at 20 °C; Core 304/4301; EN 10088-2
+  applicability:
+    temperature_C: 20
+    standard_basis: EN 10088-2
+  evidence_status: sourced
+  review_status: reviewed
+  design_use: screening_only
+- observation_id: OBS-304-quarto plate-MECH-OUTOKUMPU
+  material_state_id: MAT-STEEL-304
+  designation: EN 1.4301 / ASTM Type 304 / UNS S30400
+  product_form: quarto plate
+  yield_strength_Rp0.2_MPa: 210
+  yield_strength_Rp1.0_MPa: 250
+  ultimate_tensile_strength_MPa:
+    min: 520
+    max: 720
+  elongation_A_percent: 45
+  source_id: WEB-OUTOKUMPU-CORE-304
+  source_url: https://www.outokumpu.com/en/products/product-ranges/-/media/files/products/core/outokumpu-core-range-datasheet.pdf
+  source_locator: Table 5 — Mechanical properties at 20 °C; Core 304/4301; EN 10088-2
+  applicability:
+    temperature_C: 20
+    standard_basis: EN 10088-2
+  evidence_status: sourced
+  review_status: reviewed
+  design_use: screening_only

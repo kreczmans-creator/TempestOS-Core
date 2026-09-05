@@ -1,0 +1,22 @@
+version: 0.23.0
+logical_workstreams: 12
+complete: 10
+substantially_complete: 2
+not_started: 0
+completion_percent: 83
+new_observations: 3
+steel_source_backed_grades:
+- S235JR
+- S355JR
+- C45
+- 42CrMo4
+- '304'
+- 316L
+- 17-4 PH
+- H13
+new_scope:
+- 304 physical/electrical
+- 316L physical/electrical
+- 17-4 PH condition-dependent physical properties
+- H13 conventional wrought source binding
+verification_status: No observations promoted to verified or approved_for_design.

@@ -1,0 +1,16 @@
+{
+  "version": "0.69.0",
+  "problem": "Assess a welded structural bracket carrying static and cyclic loads.",
+  "workflow": [
+    "map load path",
+    "identify weld details",
+    "calculate nominal stresses",
+    "evaluate local stress concentrations",
+    "select weld fatigue classification/method",
+    "assess HAZ and fabrication state",
+    "check distortion and buckling",
+    "define NDT and acceptance criteria"
+  ],
+  "acceptance": "Parent-metal yield strength alone cannot justify welded-joint fatigue life.",
+  "status": "worked-framework"
+}

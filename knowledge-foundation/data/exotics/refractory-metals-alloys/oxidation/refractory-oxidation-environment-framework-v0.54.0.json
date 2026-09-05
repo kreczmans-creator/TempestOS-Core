@@ -1,0 +1,28 @@
+{
+  "version": "0.54.0",
+  "family": "refractory-metals-alloys",
+  "core_issue": "Many refractory metals have excellent high-temperature strength but poor oxidation resistance in air at temperatures where they remain mechanically capable.",
+  "environment_classes": [
+    "high vacuum",
+    "high-purity inert gas",
+    "reducing atmosphere",
+    "air/oxygen",
+    "reactive process gases"
+  ],
+  "selection_controls": [
+    "oxygen partial pressure",
+    "temperature",
+    "exposure duration",
+    "contaminants",
+    "coating/protection",
+    "thermal cycling",
+    "surface area"
+  ],
+  "material_notes": {
+    "molybdenum": "oxidation is a primary design limitation in oxidising atmospheres",
+    "niobium": "requires careful environmental/surface protection at elevated temperature",
+    "tantalum": "excellent corrosion resistance in many chemical environments but oxidation remains a high-temperature consideration",
+    "rhenium": "high-temperature capability is constrained by oxidation and environmental protection"
+  },
+  "rule": "Do not approve a refractory-metal air-service application without explicit oxidation/protection evidence."
+}

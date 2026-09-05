@@ -1,0 +1,15 @@
+{
+  "version": "0.71.0",
+  "status": "worked-framework",
+  "problem": "Select a bearing arrangement for a rotating shaft.",
+  "workflow": [
+    "define radial/axial load spectrum",
+    "define speed and temperature",
+    "select bearing arrangement",
+    "select fits and internal clearance/preload",
+    "check static and dynamic rating",
+    "check lubrication/sealing",
+    "check shaft/housing stiffness",
+    "define verification evidence"
+  ]
+}

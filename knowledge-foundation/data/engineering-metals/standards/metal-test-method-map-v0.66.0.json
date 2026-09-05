@@ -1,0 +1,35 @@
+{
+  "version": "0.66.0",
+  "purpose": "Reference map of common metallic-material test methods.",
+  "domains": {
+    "tensile": [
+      "ISO 6892-1 — metallic materials tensile testing at room temperature",
+      "ASTM E8/E8M — tension testing of metallic materials"
+    ],
+    "fatigue": [
+      "ISO 1099 — axial force-controlled fatigue",
+      "ASTM E466 — constant-amplitude axial fatigue"
+    ],
+    "fracture": [
+      "ASTM E399 — linear-elastic plane-strain fracture toughness"
+    ],
+    "hardness": [
+      "ISO 6506 — Brinell hardness",
+      "ISO 6507 — Vickers hardness",
+      "ISO 6508 — Rockwell hardness"
+    ],
+    "impact": [
+      "ISO 148-1 — Charpy pendulum impact test",
+      "ASTM E23 — notched-bar impact testing"
+    ],
+    "corrosion": [
+      "ISO 9227 — salt spray tests",
+      "ASTM G31 — laboratory immersion corrosion testing"
+    ],
+    "metallography": [
+      "ASTM E3 — preparation of metallographic specimens",
+      "ASTM E407 — microetching metals and alloys"
+    ]
+  },
+  "status": "reference only; confirm exact material standard, product form and edition."
+}

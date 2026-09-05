@@ -1,0 +1,73 @@
+{
+  "version": "0.48.0",
+  "family": "magnesium",
+  "status": "foundation",
+  "treatments": [
+    {
+      "treatment": "conversion coating",
+      "purpose": [
+        "corrosion protection",
+        "paint adhesion"
+      ],
+      "qualification_controls": [
+        "bath/process",
+        "substrate preparation",
+        "coating thickness",
+        "environment"
+      ]
+    },
+    {
+      "treatment": "anodizing",
+      "purpose": [
+        "corrosion protection",
+        "surface functionalisation"
+      ],
+      "qualification_controls": [
+        "process chemistry",
+        "seal",
+        "thickness",
+        "substrate alloy"
+      ]
+    },
+    {
+      "treatment": "organic coating/paint",
+      "purpose": [
+        "barrier corrosion protection",
+        "appearance"
+      ],
+      "qualification_controls": [
+        "pretreatment",
+        "adhesion",
+        "thickness",
+        "edge coverage",
+        "environment"
+      ]
+    },
+    {
+      "treatment": "plating",
+      "purpose": [
+        "corrosion control",
+        "wear/contact function"
+      ],
+      "qualification_controls": [
+        "interlayer compatibility",
+        "galvanic isolation",
+        "adhesion",
+        "process"
+      ]
+    },
+    {
+      "treatment": "shot/abrasive surface treatment",
+      "purpose": [
+        "surface preparation"
+      ],
+      "qualification_controls": [
+        "surface damage",
+        "roughness",
+        "residual stress",
+        "cleanliness"
+      ]
+    }
+  ],
+  "rule": "Surface treatment is part of the corrosion system and must not be evaluated independently of fasteners, mating materials and environment."
+}

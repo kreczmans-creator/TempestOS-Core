@@ -1,0 +1,16 @@
+{
+  "version": "0.67.0",
+  "application": "brackets-and-housings",
+  "checks": [
+    "static stress",
+    "fatigue",
+    "buckling",
+    "bearing loads",
+    "distortion",
+    "machining allowances",
+    "corrosion",
+    "joining effects"
+  ],
+  "selection": "Select material and process as a combined structural system.",
+  "evidence_boundary": "Screening guidance; exact alloy, condition, geometry, process and service environment require application-specific verification."
+}

@@ -1,0 +1,1497 @@
+- id: MAT-STEEL-S235JR
+  designation: S235JR
+  family: carbon_and_low_alloy_steels
+  material_class: metal
+  state:
+    condition: representative_screening_state
+    temperature_C: 20
+  properties:
+    density:
+      value: 7850
+      unit: kg/m^3
+    youngs_modulus:
+      value: 210000000000.0
+      unit: Pa
+    poissons_ratio:
+      value: 0.3
+      unit: '1'
+    yield_strength:
+      value: 250000000.0
+      unit: Pa
+    ultimate_tensile_strength:
+      value: 360000000.0
+      unit: Pa
+    elongation:
+      value: 0.26
+      unit: '1'
+    hardness:
+      value: 51
+      unit: HB
+    coefficient_of_thermal_expansion:
+      value: 1.4999999999999999e-05
+      unit: 1/K
+    electrical_resistivity:
+      value: 1.4e-07
+      unit: ohm*m
+  standard_references:
+  - EN 10025-2
+  cost_tier: to_be_populated
+  availability: to_be_populated
+  typical_uses: []
+  evidence:
+    status: candidate_reference
+    source_class: engineering_reference
+    source_id: SRC-TO-VERIFY
+    promotion_required: true
+    important_note: Indicative screening values; not design allowables or guaranteed
+      standard minima.
+  data_quality:
+    condition_specificity: insufficient_for_design
+    product_form_specificity: insufficient_for_design
+    temperature_coverage: single_reference_temperature
+    fatigue_coverage: missing
+    fracture_toughness_coverage: missing
+- id: MAT-STEEL-S275JR
+  designation: S275JR
+  family: carbon_and_low_alloy_steels
+  material_class: metal
+  state:
+    condition: representative_screening_state
+    temperature_C: 20
+  properties:
+    density:
+      value: 7850
+      unit: kg/m^3
+    youngs_modulus:
+      value: 210000000000.0
+      unit: Pa
+    poissons_ratio:
+      value: 0.3
+      unit: '1'
+    yield_strength:
+      value: 275000000.0
+      unit: Pa
+    ultimate_tensile_strength:
+      value: 430000000.0
+      unit: Pa
+    elongation:
+      value: 0.23
+      unit: '1'
+    hardness:
+      value: 51
+      unit: HB
+    coefficient_of_thermal_expansion:
+      value: 1.4999999999999999e-05
+      unit: 1/K
+    electrical_resistivity:
+      value: 1.4e-07
+      unit: ohm*m
+  standard_references:
+  - EN 10025-2
+  cost_tier: to_be_populated
+  availability: to_be_populated
+  typical_uses: []
+  evidence:
+    status: candidate_reference
+    source_class: engineering_reference
+    source_id: SRC-TO-VERIFY
+    promotion_required: true
+    important_note: Indicative screening values; not design allowables or guaranteed
+      standard minima.
+  data_quality:
+    condition_specificity: insufficient_for_design
+    product_form_specificity: insufficient_for_design
+    temperature_coverage: single_reference_temperature
+    fatigue_coverage: missing
+    fracture_toughness_coverage: missing
+- id: MAT-STEEL-S355JR
+  designation: S355JR
+  family: carbon_and_low_alloy_steels
+  material_class: metal
+  state:
+    condition: representative_screening_state
+    temperature_C: 20
+  properties:
+    density:
+      value: 7850
+      unit: kg/m^3
+    youngs_modulus:
+      value: 210000000000.0
+      unit: Pa
+    poissons_ratio:
+      value: 0.3
+      unit: '1'
+    yield_strength:
+      value: 355000000.0
+      unit: Pa
+    ultimate_tensile_strength:
+      value: 510000000.0
+      unit: Pa
+    elongation:
+      value: 0.22
+      unit: '1'
+    hardness:
+      value: 51
+      unit: HB
+    coefficient_of_thermal_expansion:
+      value: 1.4999999999999999e-05
+      unit: 1/K
+    electrical_resistivity:
+      value: 1.4e-07
+      unit: ohm*m
+  standard_references:
+  - EN 10025-2
+  cost_tier: to_be_populated
+  availability: to_be_populated
+  typical_uses: []
+  evidence:
+    status: candidate_reference
+    source_class: engineering_reference
+    source_id: SRC-TO-VERIFY
+    promotion_required: true
+    important_note: Indicative screening values; not design allowables or guaranteed
+      standard minima.
+  data_quality:
+    condition_specificity: insufficient_for_design
+    product_form_specificity: insufficient_for_design
+    temperature_coverage: single_reference_temperature
+    fatigue_coverage: missing
+    fracture_toughness_coverage: missing
+- id: MAT-STEEL-C45
+  designation: C45
+  family: carbon_and_low_alloy_steels
+  material_class: metal
+  state:
+    condition: representative_screening_state
+    temperature_C: 20
+  properties:
+    density:
+      value: 7850
+      unit: kg/m^3
+    youngs_modulus:
+      value: 210000000000.0
+      unit: Pa
+    poissons_ratio:
+      value: 0.3
+      unit: '1'
+    yield_strength:
+      value: 370000000.0
+      unit: Pa
+    ultimate_tensile_strength:
+      value: 650000000.0
+      unit: Pa
+    elongation:
+      value: 0.16
+      unit: '1'
+    hardness:
+      value: 200
+      unit: HB
+    coefficient_of_thermal_expansion:
+      value: 1.4999999999999999e-05
+      unit: 1/K
+    electrical_resistivity:
+      value: 1.6e-07
+      unit: ohm*m
+  standard_references:
+  - EN 10083-2
+  cost_tier: to_be_populated
+  availability: to_be_populated
+  typical_uses: []
+  evidence:
+    status: candidate_reference
+    source_class: engineering_reference
+    source_id: SRC-TO-VERIFY
+    promotion_required: true
+    important_note: Indicative screening values; not design allowables or guaranteed
+      standard minima.
+  data_quality:
+    condition_specificity: insufficient_for_design
+    product_form_specificity: insufficient_for_design
+    temperature_coverage: single_reference_temperature
+    fatigue_coverage: missing
+    fracture_toughness_coverage: missing
+- id: MAT-STEEL-EN8
+  designation: EN8
+  family: carbon_and_low_alloy_steels
+  material_class: metal
+  state:
+    condition: representative_screening_state
+    temperature_C: 20
+  properties:
+    density:
+      value: 7850
+      unit: kg/m^3
+    youngs_modulus:
+      value: 210000000000.0
+      unit: Pa
+    poissons_ratio:
+      value: 0.3
+      unit: '1'
+    yield_strength:
+      value: 400000000.0
+      unit: Pa
+    ultimate_tensile_strength:
+      value: 600000000.0
+      unit: Pa
+    elongation:
+      value: 0.17
+      unit: '1'
+    hardness:
+      value: 190
+      unit: HB
+    coefficient_of_thermal_expansion:
+      value: 1.4999999999999999e-05
+      unit: 1/K
+    electrical_resistivity:
+      value: 1.6e-07
+      unit: ohm*m
+  standard_references: []
+  cost_tier: to_be_populated
+  availability: to_be_populated
+  typical_uses: []
+  evidence:
+    status: candidate_reference
+    source_class: engineering_reference
+    source_id: SRC-TO-VERIFY
+    promotion_required: true
+    important_note: Indicative screening values; not design allowables or guaranteed
+      standard minima.
+  data_quality:
+    condition_specificity: insufficient_for_design
+    product_form_specificity: insufficient_for_design
+    temperature_coverage: single_reference_temperature
+    fatigue_coverage: missing
+    fracture_toughness_coverage: missing
+- id: MAT-STEEL-42CRMO4
+  designation: 42CrMo4
+  family: low_alloy_steels
+  material_class: metal
+  state:
+    condition: representative_screening_state
+    temperature_C: 20
+  properties:
+    density:
+      value: 7850
+      unit: kg/m^3
+    youngs_modulus:
+      value: 210000000000.0
+      unit: Pa
+    poissons_ratio:
+      value: 0.3
+      unit: '1'
+    yield_strength:
+      value: 800000000.0
+      unit: Pa
+    ultimate_tensile_strength:
+      value: 1000000000.0
+      unit: Pa
+    elongation:
+      value: 0.11
+      unit: '1'
+    hardness:
+      value: 300
+      unit: HB
+    coefficient_of_thermal_expansion:
+      value: 1.23e-05
+      unit: 1/K
+    electrical_resistivity:
+      value: 2.3e-07
+      unit: ohm*m
+  standard_references:
+  - EN 10083-3
+  cost_tier: to_be_populated
+  availability: to_be_populated
+  typical_uses: []
+  evidence:
+    status: candidate_reference
+    source_class: engineering_reference
+    source_id: SRC-TO-VERIFY
+    promotion_required: true
+    important_note: Indicative screening values; not design allowables or guaranteed
+      standard minima.
+  data_quality:
+    condition_specificity: insufficient_for_design
+    product_form_specificity: insufficient_for_design
+    temperature_coverage: single_reference_temperature
+    fatigue_coverage: missing
+    fracture_toughness_coverage: missing
+- id: MAT-STEEL-4140
+  designation: AISI/SAE 4140
+  family: low_alloy_steels
+  material_class: metal
+  state:
+    condition: representative_screening_state
+    temperature_C: 20
+  properties:
+    density:
+      value: 7850
+      unit: kg/m^3
+    youngs_modulus:
+      value: 210000000000.0
+      unit: Pa
+    poissons_ratio:
+      value: 0.3
+      unit: '1'
+    yield_strength:
+      value: 850000000.0
+      unit: Pa
+    ultimate_tensile_strength:
+      value: 1050000000.0
+      unit: Pa
+    elongation:
+      value: 0.1
+      unit: '1'
+    hardness:
+      value: 300
+      unit: HB
+    coefficient_of_thermal_expansion:
+      value: 1.23e-05
+      unit: 1/K
+    electrical_resistivity:
+      value: 2.3e-07
+      unit: ohm*m
+  standard_references: []
+  cost_tier: to_be_populated
+  availability: to_be_populated
+  typical_uses: []
+  evidence:
+    status: candidate_reference
+    source_class: engineering_reference
+    source_id: SRC-TO-VERIFY
+    promotion_required: true
+    important_note: Indicative screening values; not design allowables or guaranteed
+      standard minima.
+  data_quality:
+    condition_specificity: insufficient_for_design
+    product_form_specificity: insufficient_for_design
+    temperature_coverage: single_reference_temperature
+    fatigue_coverage: missing
+    fracture_toughness_coverage: missing
+- id: MAT-STEEL-4340
+  designation: AISI/SAE 4340
+  family: low_alloy_steels
+  material_class: metal
+  state:
+    condition: representative_screening_state
+    temperature_C: 20
+  properties:
+    density:
+      value: 7850
+      unit: kg/m^3
+    youngs_modulus:
+      value: 210000000000.0
+      unit: Pa
+    poissons_ratio:
+      value: 0.29
+      unit: '1'
+    yield_strength:
+      value: 1080000000.0
+      unit: Pa
+    ultimate_tensile_strength:
+      value: 1200000000.0
+      unit: Pa
+    elongation:
+      value: 0.12
+      unit: '1'
+    hardness:
+      value: 350
+      unit: HB
+    coefficient_of_thermal_expansion:
+      value: 1.23e-05
+      unit: 1/K
+    electrical_resistivity:
+      value: 2.3e-07
+      unit: ohm*m
+  standard_references: []
+  cost_tier: to_be_populated
+  availability: to_be_populated
+  typical_uses: []
+  evidence:
+    status: candidate_reference
+    source_class: engineering_reference
+    source_id: SRC-TO-VERIFY
+    promotion_required: true
+    important_note: Indicative screening values; not design allowables or guaranteed
+      standard minima.
+  data_quality:
+    condition_specificity: insufficient_for_design
+    product_form_specificity: insufficient_for_design
+    temperature_coverage: single_reference_temperature
+    fatigue_coverage: missing
+    fracture_toughness_coverage: missing
+- id: MAT-STEEL-304
+  designation: AISI 304 / UNS S30400
+  family: stainless_steels
+  material_class: metal
+  state:
+    condition: representative_screening_state
+    temperature_C: 20
+  properties:
+    density:
+      value: 8000
+      unit: kg/m^3
+    youngs_modulus:
+      value: 193000000000.0
+      unit: Pa
+    poissons_ratio:
+      value: 0.29
+      unit: '1'
+    yield_strength:
+      value: 215000000.0
+      unit: Pa
+    ultimate_tensile_strength:
+      value: 505000000.0
+      unit: Pa
+    elongation:
+      value: 0.4
+      unit: '1'
+    hardness:
+      value: 215
+      unit: HB
+    coefficient_of_thermal_expansion:
+      value: 1.6e-05
+      unit: 1/K
+    electrical_resistivity:
+      value: 7.2e-07
+      unit: ohm*m
+  standard_references:
+  - EN 10088-1
+  - ASTM A240/A240M
+  cost_tier: to_be_populated
+  availability: to_be_populated
+  typical_uses: []
+  evidence:
+    status: candidate_reference
+    source_class: engineering_reference
+    source_id: SRC-TO-VERIFY
+    promotion_required: true
+    important_note: Indicative screening values; not design allowables or guaranteed
+      standard minima.
+  data_quality:
+    condition_specificity: insufficient_for_design
+    product_form_specificity: insufficient_for_design
+    temperature_coverage: single_reference_temperature
+    fatigue_coverage: missing
+    fracture_toughness_coverage: missing
+- id: MAT-STEEL-316L
+  designation: AISI 316L / UNS S31603
+  family: stainless_steels
+  material_class: metal
+  state:
+    condition: representative_screening_state
+    temperature_C: 20
+  properties:
+    density:
+      value: 8000
+      unit: kg/m^3
+    youngs_modulus:
+      value: 193000000000.0
+      unit: Pa
+    poissons_ratio:
+      value: 0.3
+      unit: '1'
+    yield_strength:
+      value: 170000000.0
+      unit: Pa
+    ultimate_tensile_strength:
+      value: 485000000.0
+      unit: Pa
+    elongation:
+      value: 0.4
+      unit: '1'
+    hardness:
+      value: 150
+      unit: HB
+    coefficient_of_thermal_expansion:
+      value: 1.59e-05
+      unit: 1/K
+    electrical_resistivity:
+      value: 7.4e-07
+      unit: ohm*m
+  standard_references:
+  - EN 10088-1
+  - ASTM A240/A240M
+  cost_tier: to_be_populated
+  availability: to_be_populated
+  typical_uses: []
+  evidence:
+    status: candidate_reference
+    source_class: engineering_reference
+    source_id: SRC-TO-VERIFY
+    promotion_required: true
+    important_note: Indicative screening values; not design allowables or guaranteed
+      standard minima.
+  data_quality:
+    condition_specificity: insufficient_for_design
+    product_form_specificity: insufficient_for_design
+    temperature_coverage: single_reference_temperature
+    fatigue_coverage: missing
+    fracture_toughness_coverage: missing
+- id: MAT-STEEL-17-4PH
+  designation: 17-4 PH / UNS S17400
+  family: precipitation_hardening_stainless
+  material_class: metal
+  state:
+    condition: representative_screening_state
+    temperature_C: 20
+  properties:
+    density:
+      value: 7780
+      unit: kg/m^3
+    youngs_modulus:
+      value: 197000000000.0
+      unit: Pa
+    poissons_ratio:
+      value: 0.27
+      unit: '1'
+    yield_strength:
+      value: 1170000000.0
+      unit: Pa
+    ultimate_tensile_strength:
+      value: 1310000000.0
+      unit: Pa
+    elongation:
+      value: 0.1
+      unit: '1'
+    hardness:
+      value: 380
+      unit: HB
+    coefficient_of_thermal_expansion:
+      value: 1.08e-05
+      unit: 1/K
+    electrical_resistivity:
+      value: 7.8e-07
+      unit: ohm*m
+  standard_references:
+  - ASTM A564/A564M
+  - AMS 5604
+  cost_tier: to_be_populated
+  availability: to_be_populated
+  typical_uses: []
+  evidence:
+    status: candidate_reference
+    source_class: engineering_reference
+    source_id: SRC-TO-VERIFY
+    promotion_required: true
+    important_note: Indicative screening values; not design allowables or guaranteed
+      standard minima.
+  data_quality:
+    condition_specificity: insufficient_for_design
+    product_form_specificity: insufficient_for_design
+    temperature_coverage: single_reference_temperature
+    fatigue_coverage: missing
+    fracture_toughness_coverage: missing
+- id: MAT-STEEL-15-5PH
+  designation: 15-5 PH / UNS S15500
+  family: precipitation_hardening_stainless
+  material_class: metal
+  state:
+    condition: representative_screening_state
+    temperature_C: 20
+  properties:
+    density:
+      value: 7800
+      unit: kg/m^3
+    youngs_modulus:
+      value: 197000000000.0
+      unit: Pa
+    poissons_ratio:
+      value: 0.27
+      unit: '1'
+    yield_strength:
+      value: 1170000000.0
+      unit: Pa
+    ultimate_tensile_strength:
+      value: 1310000000.0
+      unit: Pa
+    elongation:
+      value: 0.1
+      unit: '1'
+    hardness:
+      value: 380
+      unit: HB
+    coefficient_of_thermal_expansion:
+      value: 1.08e-05
+      unit: 1/K
+    electrical_resistivity:
+      value: 7.8e-07
+      unit: ohm*m
+  standard_references:
+  - ASTM A564/A564M
+  cost_tier: to_be_populated
+  availability: to_be_populated
+  typical_uses: []
+  evidence:
+    status: candidate_reference
+    source_class: engineering_reference
+    source_id: SRC-TO-VERIFY
+    promotion_required: true
+    important_note: Indicative screening values; not design allowables or guaranteed
+      standard minima.
+  data_quality:
+    condition_specificity: insufficient_for_design
+    product_form_specificity: insufficient_for_design
+    temperature_coverage: single_reference_temperature
+    fatigue_coverage: missing
+    fracture_toughness_coverage: missing
+- id: MAT-STEEL-D2
+  designation: D2 / X153CrMoV12
+  family: tool_steels
+  material_class: metal
+  state:
+    condition: representative_screening_state
+    temperature_C: 20
+  properties:
+    density:
+      value: 7700
+      unit: kg/m^3
+    youngs_modulus:
+      value: 210000000000.0
+      unit: Pa
+    poissons_ratio:
+      value: 0.3
+      unit: '1'
+    yield_strength:
+      value: 1400000000.0
+      unit: Pa
+    ultimate_tensile_strength:
+      value: 1600000000.0
+      unit: Pa
+    elongation:
+      value: 0.05
+      unit: '1'
+    hardness:
+      value: 600
+      unit: HB
+    coefficient_of_thermal_expansion:
+      value: 1.05e-05
+      unit: 1/K
+    electrical_resistivity:
+      value: 5.5e-07
+      unit: ohm*m
+  standard_references:
+  - EN ISO 4957
+  cost_tier: to_be_populated
+  availability: to_be_populated
+  typical_uses: []
+  evidence:
+    status: candidate_reference
+    source_class: engineering_reference
+    source_id: SRC-TO-VERIFY
+    promotion_required: true
+    important_note: Indicative screening values; not design allowables or guaranteed
+      standard minima.
+  data_quality:
+    condition_specificity: insufficient_for_design
+    product_form_specificity: insufficient_for_design
+    temperature_coverage: single_reference_temperature
+    fatigue_coverage: missing
+    fracture_toughness_coverage: missing
+- id: MAT-STEEL-H13
+  designation: H13 / X40CrMoV5-1
+  family: tool_steels
+  material_class: metal
+  state:
+    condition: representative_screening_state
+    temperature_C: 20
+  properties:
+    density:
+      value: 7800
+      unit: kg/m^3
+    youngs_modulus:
+      value: 210000000000.0
+      unit: Pa
+    poissons_ratio:
+      value: 0.3
+      unit: '1'
+    yield_strength:
+      value: 1100000000.0
+      unit: Pa
+    ultimate_tensile_strength:
+      value: 1300000000.0
+      unit: Pa
+    elongation:
+      value: 0.08
+      unit: '1'
+    hardness:
+      value: 520
+      unit: HB
+    coefficient_of_thermal_expansion:
+      value: 1.15e-05
+      unit: 1/K
+    electrical_resistivity:
+      value: 5.5e-07
+      unit: ohm*m
+  standard_references:
+  - EN ISO 4957
+  cost_tier: to_be_populated
+  availability: to_be_populated
+  typical_uses: []
+  evidence:
+    status: candidate_reference
+    source_class: engineering_reference
+    source_id: SRC-TO-VERIFY
+    promotion_required: true
+    important_note: Indicative screening values; not design allowables or guaranteed
+      standard minima.
+  data_quality:
+    condition_specificity: insufficient_for_design
+    product_form_specificity: insufficient_for_design
+    temperature_coverage: single_reference_temperature
+    fatigue_coverage: missing
+    fracture_toughness_coverage: missing
+- id: MAT-STEEL-M2
+  designation: M2 / HS6-5-2C
+  family: high_speed_tool_steels
+  material_class: metal
+  state:
+    condition: representative_screening_state
+    temperature_C: 20
+  properties:
+    density:
+      value: 8150
+      unit: kg/m^3
+    youngs_modulus:
+      value: 220000000000.0
+      unit: Pa
+    poissons_ratio:
+      value: 0.3
+      unit: '1'
+    yield_strength:
+      value: 1800000000.0
+      unit: Pa
+    ultimate_tensile_strength:
+      value: 2200000000.0
+      unit: Pa
+    elongation:
+      value: 0.03
+      unit: '1'
+    hardness:
+      value: 650
+      unit: HB
+    coefficient_of_thermal_expansion:
+      value: 9.999999999999999e-06
+      unit: 1/K
+    electrical_resistivity:
+      value: 5.0e-07
+      unit: ohm*m
+  standard_references:
+  - EN ISO 4957
+  cost_tier: to_be_populated
+  availability: to_be_populated
+  typical_uses: []
+  evidence:
+    status: candidate_reference
+    source_class: engineering_reference
+    source_id: SRC-TO-VERIFY
+    promotion_required: true
+    important_note: Indicative screening values; not design allowables or guaranteed
+      standard minima.
+  data_quality:
+    condition_specificity: insufficient_for_design
+    product_form_specificity: insufficient_for_design
+    temperature_coverage: single_reference_temperature
+    fatigue_coverage: missing
+    fracture_toughness_coverage: missing
+- id: MAT-STEEL-1008
+  designation: AISI 1008
+  family: carbon_and_low_alloy_steels
+  material_class: metal
+  state:
+    condition: representative_screening_state
+    temperature_C: 20
+  properties:
+    density:
+      value: 7850
+      unit: kg/m^3
+    youngs_modulus:
+      value: 205000000000.0
+      unit: Pa
+    poissons_ratio:
+      value: 0.29
+      unit: '1'
+    yield_strength:
+      value: 250000000.0
+      unit: Pa
+    ultimate_tensile_strength:
+      value: 350000000.0
+      unit: Pa
+    elongation:
+      value: 0.3
+      unit: '1'
+    hardness:
+      value: 140
+      unit: HB
+    coefficient_of_thermal_expansion:
+      value: 1.1699999999999998e-05
+      unit: 1/K
+    electrical_resistivity:
+      value: 1.5e-07
+      unit: ohm*m
+  standard_references:
+  - ASTM A1008/A1008M
+  cost_tier: to_be_populated
+  availability: to_be_populated
+  typical_uses: []
+  evidence:
+    status: candidate_reference
+    source_class: engineering_reference
+    source_id: SRC-TO-VERIFY
+    promotion_required: true
+    important_note: Indicative screening values; not design allowables or guaranteed
+      standard minima.
+  data_quality:
+    condition_specificity: insufficient_for_design
+    product_form_specificity: insufficient_for_design
+    temperature_coverage: single_reference_temperature
+    fatigue_coverage: missing
+    fracture_toughness_coverage: missing
+- id: MAT-AL-1050A-H14
+  designation: EN AW-1050A-H14
+  family: wrought_aluminium
+  material_class: metal
+  state:
+    condition: representative_screening_state
+    temperature_C: 20
+  properties:
+    density:
+      value: 2710
+      unit: kg/m^3
+    youngs_modulus:
+      value: 69000000000.0
+      unit: Pa
+    poissons_ratio:
+      value: 0.33
+      unit: '1'
+    yield_strength:
+      value: 120000000.0
+      unit: Pa
+    ultimate_tensile_strength:
+      value: 150000000.0
+      unit: Pa
+    elongation:
+      value: 0.04
+      unit: '1'
+    hardness:
+      value: 40
+      unit: HB
+    coefficient_of_thermal_expansion:
+      value: 2.36e-05
+      unit: 1/K
+    electrical_resistivity:
+      value: 2.9e-08
+      unit: ohm*m
+  standard_references:
+  - EN 573-3
+  - EN 485-2
+  cost_tier: to_be_populated
+  availability: to_be_populated
+  typical_uses: []
+  evidence:
+    status: candidate_reference
+    source_class: engineering_reference
+    source_id: SRC-TO-VERIFY
+    promotion_required: true
+    important_note: Indicative screening values; not design allowables or guaranteed
+      standard minima.
+  data_quality:
+    condition_specificity: insufficient_for_design
+    product_form_specificity: insufficient_for_design
+    temperature_coverage: single_reference_temperature
+    fatigue_coverage: missing
+    fracture_toughness_coverage: missing
+- id: MAT-AL-5083-H116
+  designation: EN AW-5083-H116
+  family: wrought_aluminium
+  material_class: metal
+  state:
+    condition: representative_screening_state
+    temperature_C: 20
+  properties:
+    density:
+      value: 2660
+      unit: kg/m^3
+    youngs_modulus:
+      value: 72000000000.0
+      unit: Pa
+    poissons_ratio:
+      value: 0.33
+      unit: '1'
+    yield_strength:
+      value: 215000000.0
+      unit: Pa
+    ultimate_tensile_strength:
+      value: 305000000.0
+      unit: Pa
+    elongation:
+      value: 0.12
+      unit: '1'
+    hardness:
+      value: 117
+      unit: HB
+    coefficient_of_thermal_expansion:
+      value: 2.38e-05
+      unit: 1/K
+    electrical_resistivity:
+      value: 6.0e-08
+      unit: ohm*m
+  standard_references:
+  - EN 573-3
+  - EN 485-2
+  cost_tier: to_be_populated
+  availability: to_be_populated
+  typical_uses: []
+  evidence:
+    status: candidate_reference
+    source_class: engineering_reference
+    source_id: SRC-TO-VERIFY
+    promotion_required: true
+    important_note: Indicative screening values; not design allowables or guaranteed
+      standard minima.
+  data_quality:
+    condition_specificity: insufficient_for_design
+    product_form_specificity: insufficient_for_design
+    temperature_coverage: single_reference_temperature
+    fatigue_coverage: missing
+    fracture_toughness_coverage: missing
+- id: MAT-AL-5754-H22
+  designation: EN AW-5754-H22
+  family: wrought_aluminium
+  material_class: metal
+  state:
+    condition: representative_screening_state
+    temperature_C: 20
+  properties:
+    density:
+      value: 2670
+      unit: kg/m^3
+    youngs_modulus:
+      value: 70000000000.0
+      unit: Pa
+    poissons_ratio:
+      value: 0.33
+      unit: '1'
+    yield_strength:
+      value: 130000000.0
+      unit: Pa
+    ultimate_tensile_strength:
+      value: 220000000.0
+      unit: Pa
+    elongation:
+      value: 0.1
+      unit: '1'
+    hardness:
+      value: 80
+      unit: HB
+    coefficient_of_thermal_expansion:
+      value: 2.3699999999999997e-05
+      unit: 1/K
+    electrical_resistivity:
+      value: 5.5e-08
+      unit: ohm*m
+  standard_references:
+  - EN 573-3
+  - EN 485-2
+  cost_tier: to_be_populated
+  availability: to_be_populated
+  typical_uses: []
+  evidence:
+    status: candidate_reference
+    source_class: engineering_reference
+    source_id: SRC-TO-VERIFY
+    promotion_required: true
+    important_note: Indicative screening values; not design allowables or guaranteed
+      standard minima.
+  data_quality:
+    condition_specificity: insufficient_for_design
+    product_form_specificity: insufficient_for_design
+    temperature_coverage: single_reference_temperature
+    fatigue_coverage: missing
+    fracture_toughness_coverage: missing
+- id: MAT-AL-6061-T6
+  designation: 6061-T6
+  family: wrought_aluminium
+  material_class: metal
+  state:
+    condition: representative_screening_state
+    temperature_C: 20
+  properties:
+    density:
+      value: 2700
+      unit: kg/m^3
+    youngs_modulus:
+      value: 69000000000.0
+      unit: Pa
+    poissons_ratio:
+      value: 0.33
+      unit: '1'
+    yield_strength:
+      value: 276000000.0
+      unit: Pa
+    ultimate_tensile_strength:
+      value: 310000000.0
+      unit: Pa
+    elongation:
+      value: 0.12
+      unit: '1'
+    hardness:
+      value: 167
+      unit: HB
+    coefficient_of_thermal_expansion:
+      value: 2.36e-05
+      unit: 1/K
+    electrical_resistivity:
+      value: 4.0e-08
+      unit: ohm*m
+  standard_references:
+  - ASTM B209
+  - ASTM B221
+  cost_tier: to_be_populated
+  availability: to_be_populated
+  typical_uses: []
+  evidence:
+    status: candidate_reference
+    source_class: engineering_reference
+    source_id: SRC-TO-VERIFY
+    promotion_required: true
+    important_note: Indicative screening values; not design allowables or guaranteed
+      standard minima.
+  data_quality:
+    condition_specificity: insufficient_for_design
+    product_form_specificity: insufficient_for_design
+    temperature_coverage: single_reference_temperature
+    fatigue_coverage: missing
+    fracture_toughness_coverage: missing
+- id: MAT-AL-6082-T6
+  designation: EN AW-6082-T6
+  family: wrought_aluminium
+  material_class: metal
+  state:
+    condition: representative_screening_state
+    temperature_C: 20
+  properties:
+    density:
+      value: 2700
+      unit: kg/m^3
+    youngs_modulus:
+      value: 70000000000.0
+      unit: Pa
+    poissons_ratio:
+      value: 0.33
+      unit: '1'
+    yield_strength:
+      value: 250000000.0
+      unit: Pa
+    ultimate_tensile_strength:
+      value: 310000000.0
+      unit: Pa
+    elongation:
+      value: 0.1
+      unit: '1'
+    hardness:
+      value: 190
+      unit: HB
+    coefficient_of_thermal_expansion:
+      value: 2.3199999999999998e-05
+      unit: 1/K
+    electrical_resistivity:
+      value: 4.0e-08
+      unit: ohm*m
+  standard_references:
+  - EN 573-3
+  - EN 755-2
+  - EN 485-2
+  cost_tier: to_be_populated
+  availability: to_be_populated
+  typical_uses: []
+  evidence:
+    status: candidate_reference
+    source_class: engineering_reference
+    source_id: SRC-TO-VERIFY
+    promotion_required: true
+    important_note: Indicative screening values; not design allowables or guaranteed
+      standard minima.
+  data_quality:
+    condition_specificity: insufficient_for_design
+    product_form_specificity: insufficient_for_design
+    temperature_coverage: single_reference_temperature
+    fatigue_coverage: missing
+    fracture_toughness_coverage: missing
+- id: MAT-AL-6082-T651
+  designation: EN AW-6082-T651
+  family: wrought_aluminium
+  material_class: metal
+  state:
+    condition: representative_screening_state
+    temperature_C: 20
+  properties:
+    density:
+      value: 2700
+      unit: kg/m^3
+    youngs_modulus:
+      value: 70000000000.0
+      unit: Pa
+    poissons_ratio:
+      value: 0.33
+      unit: '1'
+    yield_strength:
+      value: 260000000.0
+      unit: Pa
+    ultimate_tensile_strength:
+      value: 315000000.0
+      unit: Pa
+    elongation:
+      value: 0.1
+      unit: '1'
+    hardness:
+      value: 190
+      unit: HB
+    coefficient_of_thermal_expansion:
+      value: 2.3199999999999998e-05
+      unit: 1/K
+    electrical_resistivity:
+      value: 4.0e-08
+      unit: ohm*m
+  standard_references:
+  - EN 573-3
+  - EN 755-2
+  - EN 485-2
+  cost_tier: to_be_populated
+  availability: to_be_populated
+  typical_uses: []
+  evidence:
+    status: candidate_reference
+    source_class: engineering_reference
+    source_id: SRC-TO-VERIFY
+    promotion_required: true
+    important_note: Indicative screening values; not design allowables or guaranteed
+      standard minima.
+  data_quality:
+    condition_specificity: insufficient_for_design
+    product_form_specificity: insufficient_for_design
+    temperature_coverage: single_reference_temperature
+    fatigue_coverage: missing
+    fracture_toughness_coverage: missing
+- id: MAT-AL-6063-T6
+  designation: EN AW-6063-T6
+  family: wrought_aluminium
+  material_class: metal
+  state:
+    condition: representative_screening_state
+    temperature_C: 20
+  properties:
+    density:
+      value: 2700
+      unit: kg/m^3
+    youngs_modulus:
+      value: 69000000000.0
+      unit: Pa
+    poissons_ratio:
+      value: 0.33
+      unit: '1'
+    yield_strength:
+      value: 170000000.0
+      unit: Pa
+    ultimate_tensile_strength:
+      value: 215000000.0
+      unit: Pa
+    elongation:
+      value: 0.12
+      unit: '1'
+    hardness:
+      value: 150
+      unit: HB
+    coefficient_of_thermal_expansion:
+      value: 2.35e-05
+      unit: 1/K
+    electrical_resistivity:
+      value: 5.0e-08
+      unit: ohm*m
+  standard_references:
+  - EN 573-3
+  - EN 755-2
+  cost_tier: to_be_populated
+  availability: to_be_populated
+  typical_uses: []
+  evidence:
+    status: candidate_reference
+    source_class: engineering_reference
+    source_id: SRC-TO-VERIFY
+    promotion_required: true
+    important_note: Indicative screening values; not design allowables or guaranteed
+      standard minima.
+  data_quality:
+    condition_specificity: insufficient_for_design
+    product_form_specificity: insufficient_for_design
+    temperature_coverage: single_reference_temperature
+    fatigue_coverage: missing
+    fracture_toughness_coverage: missing
+- id: MAT-AL-2024-T3
+  designation: 2024-T3
+  family: wrought_aluminium
+  material_class: metal
+  state:
+    condition: representative_screening_state
+    temperature_C: 20
+  properties:
+    density:
+      value: 2780
+      unit: kg/m^3
+    youngs_modulus:
+      value: 73000000000.0
+      unit: Pa
+    poissons_ratio:
+      value: 0.33
+      unit: '1'
+    yield_strength:
+      value: 325000000.0
+      unit: Pa
+    ultimate_tensile_strength:
+      value: 470000000.0
+      unit: Pa
+    elongation:
+      value: 0.18
+      unit: '1'
+    hardness:
+      value: 121
+      unit: HB
+    coefficient_of_thermal_expansion:
+      value: 2.3199999999999998e-05
+      unit: 1/K
+    electrical_resistivity:
+      value: 5.5e-08
+      unit: ohm*m
+  standard_references:
+  - ASTM B209
+  - AMS 4037
+  cost_tier: to_be_populated
+  availability: to_be_populated
+  typical_uses: []
+  evidence:
+    status: candidate_reference
+    source_class: engineering_reference
+    source_id: SRC-TO-VERIFY
+    promotion_required: true
+    important_note: Indicative screening values; not design allowables or guaranteed
+      standard minima.
+  data_quality:
+    condition_specificity: insufficient_for_design
+    product_form_specificity: insufficient_for_design
+    temperature_coverage: single_reference_temperature
+    fatigue_coverage: missing
+    fracture_toughness_coverage: missing
+- id: MAT-AL-2024-T351
+  designation: 2024-T351
+  family: wrought_aluminium
+  material_class: metal
+  state:
+    condition: representative_screening_state
+    temperature_C: 20
+  properties:
+    density:
+      value: 2780
+      unit: kg/m^3
+    youngs_modulus:
+      value: 73000000000.0
+      unit: Pa
+    poissons_ratio:
+      value: 0.33
+      unit: '1'
+    yield_strength:
+      value: 325000000.0
+      unit: Pa
+    ultimate_tensile_strength:
+      value: 470000000.0
+      unit: Pa
+    elongation:
+      value: 0.19
+      unit: '1'
+    hardness:
+      value: 121
+      unit: HB
+    coefficient_of_thermal_expansion:
+      value: 2.3199999999999998e-05
+      unit: 1/K
+    electrical_resistivity:
+      value: 5.5e-08
+      unit: ohm*m
+  standard_references:
+  - ASTM B209
+  - AMS 4037
+  cost_tier: to_be_populated
+  availability: to_be_populated
+  typical_uses: []
+  evidence:
+    status: candidate_reference
+    source_class: engineering_reference
+    source_id: SRC-TO-VERIFY
+    promotion_required: true
+    important_note: Indicative screening values; not design allowables or guaranteed
+      standard minima.
+  data_quality:
+    condition_specificity: insufficient_for_design
+    product_form_specificity: insufficient_for_design
+    temperature_coverage: single_reference_temperature
+    fatigue_coverage: missing
+    fracture_toughness_coverage: missing
+- id: MAT-AL-7075-T6
+  designation: 7075-T6
+  family: wrought_aluminium
+  material_class: metal
+  state:
+    condition: representative_screening_state
+    temperature_C: 20
+  properties:
+    density:
+      value: 2810
+      unit: kg/m^3
+    youngs_modulus:
+      value: 71700000000.0
+      unit: Pa
+    poissons_ratio:
+      value: 0.33
+      unit: '1'
+    yield_strength:
+      value: 500000000.0
+      unit: Pa
+    ultimate_tensile_strength:
+      value: 570000000.0
+      unit: Pa
+    elongation:
+      value: 0.11
+      unit: '1'
+    hardness:
+      value: 130
+      unit: HB
+    coefficient_of_thermal_expansion:
+      value: 2.36e-05
+      unit: 1/K
+    electrical_resistivity:
+      value: 5.1e-08
+      unit: ohm*m
+  standard_references:
+  - ASTM B209
+  - AMS 4045
+  cost_tier: to_be_populated
+  availability: to_be_populated
+  typical_uses: []
+  evidence:
+    status: candidate_reference
+    source_class: engineering_reference
+    source_id: SRC-TO-VERIFY
+    promotion_required: true
+    important_note: Indicative screening values; not design allowables or guaranteed
+      standard minima.
+  data_quality:
+    condition_specificity: insufficient_for_design
+    product_form_specificity: insufficient_for_design
+    temperature_coverage: single_reference_temperature
+    fatigue_coverage: missing
+    fracture_toughness_coverage: missing
+- id: MAT-AL-7075-T651
+  designation: 7075-T651
+  family: wrought_aluminium
+  material_class: metal
+  state:
+    condition: representative_screening_state
+    temperature_C: 20
+  properties:
+    density:
+      value: 2810
+      unit: kg/m^3
+    youngs_modulus:
+      value: 71700000000.0
+      unit: Pa
+    poissons_ratio:
+      value: 0.33
+      unit: '1'
+    yield_strength:
+      value: 500000000.0
+      unit: Pa
+    ultimate_tensile_strength:
+      value: 570000000.0
+      unit: Pa
+    elongation:
+      value: 0.11
+      unit: '1'
+    hardness:
+      value: 130
+      unit: HB
+    coefficient_of_thermal_expansion:
+      value: 2.36e-05
+      unit: 1/K
+    electrical_resistivity:
+      value: 5.1e-08
+      unit: ohm*m
+  standard_references:
+  - ASTM B209
+  - AMS 4045
+  cost_tier: to_be_populated
+  availability: to_be_populated
+  typical_uses: []
+  evidence:
+    status: candidate_reference
+    source_class: engineering_reference
+    source_id: SRC-TO-VERIFY
+    promotion_required: true
+    important_note: Indicative screening values; not design allowables or guaranteed
+      standard minima.
+  data_quality:
+    condition_specificity: insufficient_for_design
+    product_form_specificity: insufficient_for_design
+    temperature_coverage: single_reference_temperature
+    fatigue_coverage: missing
+    fracture_toughness_coverage: missing
+- id: MAT-AL-7050-T7451
+  designation: 7050-T7451
+  family: wrought_aluminium
+  material_class: metal
+  state:
+    condition: representative_screening_state
+    temperature_C: 20
+  properties:
+    density:
+      value: 2830
+      unit: kg/m^3
+    youngs_modulus:
+      value: 71000000000.0
+      unit: Pa
+    poissons_ratio:
+      value: 0.33
+      unit: '1'
+    yield_strength:
+      value: 430000000.0
+      unit: Pa
+    ultimate_tensile_strength:
+      value: 510000000.0
+      unit: Pa
+    elongation:
+      value: 0.15
+      unit: '1'
+    hardness:
+      value: 150
+      unit: HB
+    coefficient_of_thermal_expansion:
+      value: 2.35e-05
+      unit: 1/K
+    electrical_resistivity:
+      value: 5.0e-08
+      unit: ohm*m
+  standard_references:
+  - AMS 4050
+  cost_tier: to_be_populated
+  availability: to_be_populated
+  typical_uses: []
+  evidence:
+    status: candidate_reference
+    source_class: engineering_reference
+    source_id: SRC-TO-VERIFY
+    promotion_required: true
+    important_note: Indicative screening values; not design allowables or guaranteed
+      standard minima.
+  data_quality:
+    condition_specificity: insufficient_for_design
+    product_form_specificity: insufficient_for_design
+    temperature_coverage: single_reference_temperature
+    fatigue_coverage: missing
+    fracture_toughness_coverage: missing

@@ -1,0 +1,23 @@
+{
+  "version": "0.73.0",
+  "status": "foundation-framework",
+  "environments": [
+    "temperature",
+    "humidity",
+    "vibration",
+    "shock",
+    "dust",
+    "water",
+    "corrosive atmosphere",
+    "altitude",
+    "solar/thermal exposure"
+  ],
+  "workflow": [
+    "define mission environment",
+    "identify credible extremes",
+    "identify combined environments",
+    "map environment to failure mechanisms",
+    "derive design margins",
+    "define verification tests"
+  ]
+}

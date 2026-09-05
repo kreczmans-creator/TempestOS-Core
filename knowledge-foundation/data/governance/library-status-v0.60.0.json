@@ -1,0 +1,7 @@
+{
+  "version": "0.60.0",
+  "engineering_polymers": "electrical + environmental/chemical screening foundation complete",
+  "general_polymers": "not started",
+  "next": "Engineering Polymers creep, stress relaxation, fatigue and wear",
+  "data_boundary": "screening records are not design allowables"
+}

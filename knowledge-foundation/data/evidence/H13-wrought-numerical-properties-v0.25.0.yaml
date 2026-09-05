@@ -1,0 +1,43 @@
+- observation_id: OBS-H13-W302-HARDNESS-ANNEALED
+  material_state_id: MAT-STEEL-H13
+  designation: H13 / 1.2344 / X40CrMoV5-1 / UNS T20813
+  condition: annealed
+  property: hardness
+  value: 229
+  unit: HB max
+  source_id: WEB-BOHLER-W302-DATASHEET
+  source_locator: BÖHLER W302 ISOBLOC technical data; delivery condition annealed
+  source_url: https://www.us.bohler.com/app/uploads/sites/248/productdb/api/w302-isobloc_en_us.pdf
+  evidence_status: sourced
+  review_status: reviewed
+  design_use: screening_only
+- observation_id: OBS-H13-W302-HARDENED-TEMPERED
+  material_state_id: MAT-STEEL-H13
+  designation: H13 / 1.2344 / X40CrMoV5-1 / UNS T20813
+  condition: hardened and tempered
+  property: hardness
+  value:
+    min: 40
+    max: 55
+  unit: HRC
+  source_id: WEB-BOHLER-W302-DATASHEET
+  source_locator: BÖHLER W302 ISOBLOC technical data; hardened and tempered bars (BHT)
+  source_url: https://www.us.bohler.com/app/uploads/sites/248/productdb/api/w302-isobloc_en_us.pdf
+  evidence_status: sourced
+  review_status: reviewed
+  design_use: screening_only
+- observation_id: OBS-H13-W302-HARDENED-TEMPERED-ALT
+  material_state_id: MAT-STEEL-H13
+  designation: H13 / 1.2344 / X40CrMoV5-1 / UNS T20813
+  condition: hardened and tempered
+  property: hardness
+  value:
+    min: 30
+    max: 44
+  unit: HRC
+  source_id: WEB-BOHLER-W302-DATASHEET
+  source_locator: BÖHLER W302 ISOBLOC technical data; hardened and tempered condition
+  source_url: https://www.us.bohler.com/app/uploads/sites/248/productdb/api/w302-isobloc_en_us.pdf
+  evidence_status: sourced
+  review_status: reviewed
+  design_use: screening_only

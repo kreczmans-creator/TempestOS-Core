@@ -1,0 +1,19 @@
+{
+  "version": "0.66.0",
+  "family": "carbon-steel",
+  "material_classes": [
+    "low-carbon steel",
+    "medium/high-carbon steel",
+    "engineering carbon steel"
+  ],
+  "identity_fields": [
+    "base alloy/family",
+    "standard designation",
+    "grade/temper/condition",
+    "product form",
+    "heat treatment",
+    "surface/coating state"
+  ],
+  "rule": "Engineering identity includes grade, condition and product form; family name alone is insufficient.",
+  "evidence_status": "foundation reference"
+}

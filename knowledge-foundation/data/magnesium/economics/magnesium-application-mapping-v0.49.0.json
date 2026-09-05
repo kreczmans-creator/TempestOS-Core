@@ -1,0 +1,63 @@
+{
+  "version": "0.49.0",
+  "family": "magnesium",
+  "applications": [
+    {
+      "use": "lightweight housings",
+      "candidate_families": [
+        "AZ91D",
+        "AZ31B"
+      ],
+      "selection_controls": [
+        "stiffness",
+        "corrosion",
+        "casting/wrought route",
+        "surface protection"
+      ]
+    },
+    {
+      "use": "aerospace/lightweight structures",
+      "candidate_families": [
+        "AZ31B",
+        "WE43",
+        "ZK60A"
+      ],
+      "selection_controls": [
+        "specific strength",
+        "temperature",
+        "certification",
+        "fatigue",
+        "corrosion"
+      ]
+    },
+    {
+      "use": "motorsport/specialist lightweight components",
+      "candidate_families": [
+        "WE43",
+        "ZK60A",
+        "AZ31B"
+      ],
+      "selection_controls": [
+        "strength",
+        "fatigue",
+        "temperature",
+        "manufacturability"
+      ]
+    },
+    {
+      "use": "precision mechanisms",
+      "candidate_families": [
+        "AZ31B",
+        "specialist wrought grades"
+      ],
+      "selection_controls": [
+        "CTE",
+        "stiffness",
+        "surface stability",
+        "corrosion",
+        "dimensional stability"
+      ]
+    }
+  ],
+  "rule": "Application mappings are candidate-use guidance only; final selection requires requirements and verified material evidence."
+}

@@ -1,0 +1,19 @@
+{
+  "version": "0.74.0",
+  "status": "foundation-framework",
+  "types": [
+    "incremental encoder",
+    "absolute encoder",
+    "resolver",
+    "hall-effect position sensing"
+  ],
+  "checks": [
+    "resolution",
+    "accuracy",
+    "latency",
+    "update rate",
+    "index/reference",
+    "direction",
+    "loss-of-signal behaviour"
+  ]
+}

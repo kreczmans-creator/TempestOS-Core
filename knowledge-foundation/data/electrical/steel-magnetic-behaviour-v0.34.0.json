@@ -1,0 +1,23 @@
+{
+  "ferromagnetic": [
+    "S235JR",
+    "S355JR",
+    "C45",
+    "42CrMo4",
+    "17-4 PH",
+    "H13",
+    "410",
+    "420",
+    "15-5 PH",
+    "13-8 Mo",
+    "430",
+    "440C"
+  ],
+  "generally_non_magnetic_at_room_temperature": [
+    "304",
+    "316L",
+    "310S",
+    "321"
+  ],
+  "qualification_note": "Austenitic stainless steels can become measurably magnetic after cold work or phase transformation; condition must be retained."
+}

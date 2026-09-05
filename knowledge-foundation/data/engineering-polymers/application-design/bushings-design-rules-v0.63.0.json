@@ -1,0 +1,31 @@
+{
+  "version": "0.63.0",
+  "application": "bushings",
+  "selection_rule": "Evaluate the complete sliding pair rather than polymer alone; account for clearance growth from temperature, moisture and creep.",
+  "principal_failure_modes": [
+    "wear",
+    "scoring",
+    "seizure",
+    "creep closure of clearance",
+    "thermal expansion interference",
+    "counterface damage"
+  ],
+  "engineering_controls": [
+    "PV",
+    "pressure",
+    "speed",
+    "clearance",
+    "CTE",
+    "moisture",
+    "shaft condition",
+    "lubrication"
+  ],
+  "candidate_families": [
+    "POM",
+    "PA12",
+    "PEEK",
+    "PPS"
+  ],
+  "evidence_status": "screening-level design rule",
+  "design_use": "decision support only; validate application-specific design"
+}

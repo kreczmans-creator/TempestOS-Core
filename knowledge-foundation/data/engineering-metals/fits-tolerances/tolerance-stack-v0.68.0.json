@@ -1,0 +1,25 @@
+{
+  "version": "0.68.0",
+  "methods": [
+    "worst-case",
+    "statistical/RSS where justified",
+    "Monte Carlo where justified"
+  ],
+  "workflow": [
+    "define functional requirement",
+    "identify contributors",
+    "assign distributions/tolerances",
+    "calculate stack",
+    "identify sensitivity",
+    "allocate tolerances",
+    "verify capability"
+  ],
+  "checks": [
+    "datum structure",
+    "measurement uncertainty",
+    "temperature",
+    "process capability",
+    "assembly state"
+  ],
+  "status": "design-framework"
+}

@@ -1,0 +1,27 @@
+{
+  "version": "0.57.0",
+  "scope": "Engineering polymers",
+  "required_properties": [
+    "volume_resistivity",
+    "surface_resistivity",
+    "dielectric_strength",
+    "relative_permittivity",
+    "dissipation_factor",
+    "arc_resistance_where_relevant",
+    "tracking_resistance_where_relevant"
+  ],
+  "environmental_dependencies": [
+    "temperature",
+    "frequency",
+    "humidity",
+    "conditioning time",
+    "contamination",
+    "surface condition"
+  ],
+  "selection_rules": [
+    "Electrical properties must be taken at the relevant frequency and conditioning state.",
+    "Moisture can alter dielectric behaviour in hygroscopic polymer families.",
+    "Filled grades can have substantially different electrical properties from unfilled grades.",
+    "Flame-retardant packages may alter electrical and mechanical performance."
+  ]
+}

@@ -1,0 +1,105 @@
+{
+  "version": "0.50.0",
+  "family": "exotics",
+  "purpose": "Controlled taxonomy for specialist/exotic engineering materials.",
+  "principle": "Exotics are grouped by engineering behaviour and material system, not merely by rarity or price.",
+  "families": [
+    {
+      "id": "EX-TI",
+      "name": "Titanium and titanium alloys",
+      "rationale": "high specific strength, corrosion resistance, elevated-temperature capability",
+      "examples": [
+        "Ti-6Al-4V",
+        "Ti-6Al-2Sn-4Zr-2Mo",
+        "commercially pure titanium"
+      ]
+    },
+    {
+      "id": "EX-NI",
+      "name": "Nickel-base superalloys",
+      "rationale": "high-temperature strength, creep resistance and oxidation resistance",
+      "examples": [
+        "Inconel 718",
+        "Inconel 625",
+        "Haynes 230"
+      ]
+    },
+    {
+      "id": "EX-CO",
+      "name": "Cobalt-base alloys",
+      "rationale": "wear, hot hardness and high-temperature capability",
+      "examples": [
+        "Stellite family",
+        "Haynes cobalt alloys"
+      ]
+    },
+    {
+      "id": "EX-REF",
+      "name": "Refractory metals and alloys",
+      "rationale": "extreme-temperature capability",
+      "examples": [
+        "molybdenum alloys",
+        "niobium alloys",
+        "tantalum alloys"
+      ]
+    },
+    {
+      "id": "EX-ZR",
+      "name": "Zirconium and specialist reactive metals",
+      "rationale": "special corrosion/chemical-service behaviour",
+      "examples": [
+        "zirconium alloys"
+      ]
+    },
+    {
+      "id": "EX-CU",
+      "name": "Specialty copper alloys",
+      "rationale": "high conductivity combined with strength/wear/temperature capability",
+      "examples": [
+        "CuCrZr",
+        "beryllium-free high-strength copper families"
+      ]
+    },
+    {
+      "id": "EX-HI",
+      "name": "High-hardness / wear-resistant specialty alloys",
+      "rationale": "wear and surface engineering",
+      "examples": [
+        "cobalt/chromium wear alloys",
+        "tool-material families"
+      ]
+    },
+    {
+      "id": "EX-SM",
+      "name": "Specialty metal systems",
+      "rationale": "application-specific performance not captured by mainstream alloy families",
+      "examples": [
+        "NiTi shape-memory alloys",
+        "metallic glass families"
+      ]
+    }
+  ],
+  "exclusions": [
+    "ordinary steels",
+    "mainstream aluminium alloys",
+    "mainstream magnesium alloys",
+    "engineering polymers",
+    "general polymers",
+    "ceramics unless explicitly introduced as a later material family",
+    "composites unless explicitly introduced as a later material family"
+  ],
+  "selection_axes": [
+    "specific strength",
+    "temperature capability",
+    "creep",
+    "oxidation/corrosion",
+    "wear",
+    "electrical conductivity",
+    "thermal conductivity",
+    "manufacturability",
+    "joining",
+    "availability",
+    "cost",
+    "qualification burden"
+  ]
+}

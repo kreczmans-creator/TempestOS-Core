@@ -1,0 +1,89 @@
+- id: CHEM-304
+  designation: AISI 304
+  material_id: MAT-STEEL-304
+  elements:
+  - element: Cr
+    min_wt_pct: 17.5
+    max_wt_pct: 19.5
+  - element: Ni
+    min_wt_pct: 8.0
+    max_wt_pct: 10.5
+  - element: C
+    max_wt_pct: 0.08
+  - element: Mn
+    max_wt_pct: 2.0
+  - element: Si
+    max_wt_pct: 1.0
+  basis: representative standard-range screening
+  verification_required: true
+- id: CHEM-316L
+  designation: AISI 316L
+  material_id: MAT-STEEL-316L
+  elements:
+  - element: Cr
+    min_wt_pct: 16.0
+    max_wt_pct: 18.0
+  - element: Ni
+    min_wt_pct: 10.0
+    max_wt_pct: 14.0
+  - element: Mo
+    min_wt_pct: 2.0
+    max_wt_pct: 3.0
+  - element: C
+    max_wt_pct: 0.03
+  basis: representative standard-range screening
+  verification_required: true
+- id: CHEM-6082
+  designation: EN AW-6082
+  material_id: MAT-AL-6082-T6
+  elements:
+  - element: Si
+    min_wt_pct: 0.7
+    max_wt_pct: 1.3
+  - element: Mg
+    min_wt_pct: 0.6
+    max_wt_pct: 1.2
+  - element: Mn
+    min_wt_pct: 0.4
+    max_wt_pct: 1.0
+  - element: Fe
+    max_wt_pct: 0.5
+  basis: representative standard-range screening
+  verification_required: true
+- id: CHEM-7075
+  designation: EN AW-7075
+  material_id: MAT-AL-7075-T6
+  elements:
+  - element: Zn
+    min_wt_pct: 5.1
+    max_wt_pct: 6.1
+  - element: Mg
+    min_wt_pct: 2.1
+    max_wt_pct: 2.9
+  - element: Cu
+    min_wt_pct: 1.2
+    max_wt_pct: 2.0
+  - element: Cr
+    min_wt_pct: 0.18
+    max_wt_pct: 0.28
+  basis: representative standard-range screening
+  verification_required: true
+- id: CHEM-IN625
+  designation: Inconel 625
+  material_id: MAT-NI-INCONEL625
+  elements:
+  - element: Ni
+    basis: balance
+  - element: Cr
+    min_wt_pct: 20.0
+    max_wt_pct: 23.0
+  - element: Mo
+    min_wt_pct: 8.0
+    max_wt_pct: 10.0
+  - element: Nb+Ta
+    min_wt_pct: 3.15
+    max_wt_pct: 4.15
+  - element: Fe
+    max_wt_pct: 5.0
+  basis: representative alloy chemistry screening
+  verification_required: true

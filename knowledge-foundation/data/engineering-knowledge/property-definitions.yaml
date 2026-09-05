@@ -1,0 +1,136 @@
+- id: density
+  description: Mass per unit volume
+  canonical_unit: kg/m^3
+  group: physical
+- id: youngs_modulus
+  description: Elastic modulus
+  canonical_unit: Pa
+  group: mechanical
+- id: shear_modulus
+  description: Elastic shear modulus
+  canonical_unit: Pa
+  group: mechanical
+- id: bulk_modulus
+  description: Elastic volumetric modulus
+  canonical_unit: Pa
+  group: mechanical
+- id: poissons_ratio
+  description: Poisson's ratio
+  canonical_unit: '1'
+  group: mechanical
+- id: yield_strength
+  description: Specified yield stress
+  canonical_unit: Pa
+  group: mechanical
+- id: ultimate_tensile_strength
+  description: Maximum tensile stress
+  canonical_unit: Pa
+  group: mechanical
+- id: compressive_strength
+  description: Specified compressive strength
+  canonical_unit: Pa
+  group: mechanical
+- id: shear_strength
+  description: Specified shear strength
+  canonical_unit: Pa
+  group: mechanical
+- id: elongation
+  description: Specified tensile elongation
+  canonical_unit: '1'
+  group: mechanical
+- id: hardness
+  description: Hardness by specified method
+  canonical_unit: scale-dependent
+  group: mechanical
+- id: fatigue_strength
+  description: Stress at specified fatigue life
+  canonical_unit: Pa
+  group: mechanical
+- id: fracture_toughness
+  description: Critical stress intensity
+  canonical_unit: Pa*sqrt(m)
+  group: mechanical
+- id: impact_toughness
+  description: Impact energy
+  canonical_unit: J
+  group: mechanical
+- id: coefficient_of_thermal_expansion
+  description: Linear thermal expansion coefficient
+  canonical_unit: 1/K
+  group: thermal
+- id: thermal_conductivity
+  description: Thermal conductivity
+  canonical_unit: W/(m*K)
+  group: thermal
+- id: specific_heat_capacity
+  description: Specific heat capacity
+  canonical_unit: J/(kg*K)
+  group: thermal
+- id: melting_range
+  description: Melting range
+  canonical_unit: K
+  group: thermal
+- id: glass_transition_temperature
+  description: Glass transition temperature
+  canonical_unit: K
+  group: thermal
+- id: heat_deflection_temperature
+  description: Heat deflection temperature
+  canonical_unit: K
+  group: thermal
+- id: continuous_service_temperature
+  description: Indicative continuous service temperature
+  canonical_unit: K
+  group: thermal
+- id: electrical_resistivity
+  description: Electrical resistivity
+  canonical_unit: ohm*m
+  group: electrical
+- id: electrical_conductivity
+  description: Electrical conductivity
+  canonical_unit: S/m
+  group: electrical
+- id: dielectric_constant
+  description: Relative permittivity
+  canonical_unit: '1'
+  group: electrical
+- id: dielectric_strength
+  description: Dielectric breakdown field
+  canonical_unit: V/m
+  group: electrical
+- id: machinability
+  description: Machining suitability
+  canonical_unit: categorical
+  group: manufacturing
+- id: weldability
+  description: Welding suitability
+  canonical_unit: categorical
+  group: manufacturing
+- id: castability
+  description: Casting suitability
+  canonical_unit: categorical
+  group: manufacturing
+- id: formability
+  description: Forming suitability
+  canonical_unit: categorical
+  group: manufacturing
+- id: additive_manufacturability
+  description: Additive process suitability
+  canonical_unit: categorical
+  group: manufacturing
+- id: corrosion_resistance
+  description: Corrosion resistance
+  canonical_unit: categorical
+  group: environmental
+- id: chemical_resistance
+  description: Chemical resistance
+  canonical_unit: categorical
+  group: environmental
+- id: uv_resistance
+  description: UV resistance
+  canonical_unit: categorical
+  group: environmental
+- id: moisture_sensitivity
+  description: Moisture sensitivity
+  canonical_unit: categorical
+  group: environmental

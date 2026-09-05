@@ -1,0 +1,25 @@
+{
+  "version": "0.72.0",
+  "status": "design-framework",
+  "options": [
+    "spur/helical gearing",
+    "worm gearing",
+    "belt drive",
+    "chain drive",
+    "ball screw",
+    "lead screw",
+    "direct drive"
+  ],
+  "criteria": [
+    "ratio",
+    "efficiency",
+    "backlash",
+    "stiffness",
+    "speed",
+    "load",
+    "life",
+    "noise",
+    "lubrication",
+    "maintenance"
+  ]
+}

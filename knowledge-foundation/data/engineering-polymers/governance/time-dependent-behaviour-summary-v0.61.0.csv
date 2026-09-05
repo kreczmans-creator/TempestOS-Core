@@ -1,0 +1,13 @@
+Family,Creep,Stress relaxation,Fatigue,Wear/tribology,Status
+ABS,moderate-to-high; temperature and sustained stress sensitive,significant under sustained strain,moderate; notch/environment sensitive,moderate; grade/contact dependent,Screening only
+PA6,significant; strongly affected by moisture and temperature,significant; moisture and temperature dependent,"generally good relative to many amorphous plastics, but condition dependent",often good; lubrication and counterface important,Screening only
+PA66,significant; moisture and temperature dependent,significant; condition dependent,generally good; grade and conditioning dependent,often good; grade/lubrication dependent,Screening only
+PA12,moderate; moisture and temperature dependent,moderate-to-significant,generally good; grade and environment dependent,often good; lubrication/counterface dependent,Screening only
+POM,low-to-moderate relative to many thermoplastics,moderate; temperature dependent,generally good for cyclic mechanical components,generally good; commonly used for sliding/gear applications,Screening only
+PC,"moderate-to-high, especially at elevated temperature",significant,moderate; notch and environment sensitive,moderate-to-poor without suitable formulation,Screening only
+PBT,moderate; reinforced grades can differ substantially,moderate,moderate-to-good; grade dependent,moderate; tribological grade may be required,Screening only
+PPS,low-to-moderate; strong temperature capability,low-to-moderate,generally good; formulation dependent,often good; filled tribological grades can be much better,Screening only
+PEI,low-to-moderate; temperature dependent,moderate,moderate; notch/environment dependent,moderate; grade dependent,Screening only
+PPA,moderate; moisture and temperature dependent,moderate-to-significant,good potential in reinforced grades; condition dependent,grade dependent; tribological formulations available,Screening only
+LCP,low; excellent dimensional stability potential,low-to-moderate,good in appropriate grades; strong anisotropy possible,grade dependent; filled grades may be preferred,Screening only
+PEEK,low-to-moderate; strong high-temperature performance,low-to-moderate,generally excellent for high-performance thermoplastic applications,excellent potential; tribological grades widely used,Screening only

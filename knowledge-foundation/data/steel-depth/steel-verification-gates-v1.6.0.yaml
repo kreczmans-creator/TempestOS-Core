@@ -1,0 +1,37 @@
+schema_version: 1.0.0
+scope: steel
+verification_gates:
+- id: STL-E01
+  check: identity
+  required: Grade/designation and UNS/EN equivalence confirmed where claimed.
+- id: STL-E02
+  check: condition
+  required: Heat treatment/temper/condition explicitly recorded.
+- id: STL-E03
+  check: product_form
+  required: Plate, sheet, bar, tube, forging, etc. recorded where source depends on
+    form.
+- id: STL-E04
+  check: thickness
+  required: Thickness/section range recorded where the standard property varies with
+    size.
+- id: STL-E05
+  check: mechanical_properties
+  required: Yield/UTS/elongation/hardness tied to exact source and condition.
+- id: STL-E06
+  check: test_method
+  required: Applicable tensile/hardness method recorded when available.
+- id: STL-E07
+  check: temperature
+  required: Room-temperature values are not used as elevated-temperature allowables.
+- id: STL-E08
+  check: fatigue_fracture
+  required: Separate evidence required; tensile data must not be substituted.
+- id: STL-E09
+  check: corrosion
+  required: Environment-specific compatibility remains a separate evidence domain.
+- id: STL-E10
+  check: promotion
+  required: Only verified/approved observations can progress toward design use.
+current_state: candidate_reference
+records_in_scope: 16

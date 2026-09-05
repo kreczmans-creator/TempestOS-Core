@@ -1,0 +1,34 @@
+{
+  "version": "0.60.0",
+  "family": "PA12",
+  "domain": "environmental_chemical",
+  "compatibility_screen": {
+    "water": "lower uptake than PA6/PA66 but still relevant",
+    "dilute_acids_alkalis": "variable",
+    "oils_fuels": "often good",
+    "organic_solvents": "variable",
+    "UV": "grade dependent",
+    "hydrolysis": "possible in severe conditions",
+    "vacuum_outgassing": "application dependent"
+  },
+  "critical_variables": [
+    "chemical identity",
+    "concentration",
+    "temperature",
+    "exposure duration",
+    "stress state",
+    "surface condition"
+  ],
+  "failure_modes": [
+    "swelling",
+    "plasticisation",
+    "stress cracking",
+    "hydrolysis",
+    "oxidation",
+    "UV degradation",
+    "embrittlement",
+    "loss of strength"
+  ],
+  "evidence_status": "screening-level qualitative record",
+  "design_use": "not approved"
+}

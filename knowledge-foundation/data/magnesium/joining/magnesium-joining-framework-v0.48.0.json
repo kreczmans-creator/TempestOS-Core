@@ -1,0 +1,64 @@
+{
+  "version": "0.48.0",
+  "family": "magnesium",
+  "status": "foundation",
+  "methods": [
+    {
+      "method": "TIG/GTAW",
+      "assessment": "possible but process-sensitive; oxide control and heat input are important",
+      "risks": [
+        "porosity",
+        "oxidation",
+        "distortion"
+      ]
+    },
+    {
+      "method": "MIG/GMAW",
+      "assessment": "established for suitable magnesium alloys and controlled procedures",
+      "risks": [
+        "heat input",
+        "porosity",
+        "oxidation",
+        "distortion"
+      ]
+    },
+    {
+      "method": "resistance welding",
+      "assessment": "potentially suitable for sheet/product-specific applications",
+      "risks": [
+        "electrode interaction",
+        "surface condition",
+        "process window"
+      ]
+    },
+    {
+      "method": "mechanical fastening",
+      "assessment": "widely applicable",
+      "risks": [
+        "galvanic corrosion",
+        "bearing/bypass strength",
+        "local stress concentration"
+      ]
+    },
+    {
+      "method": "adhesive bonding",
+      "assessment": "potentially useful for lightweight assemblies",
+      "risks": [
+        "surface preparation",
+        "environmental durability",
+        "peel stress",
+        "coefficient-of-expansion mismatch"
+      ]
+    },
+    {
+      "method": "friction-based joining",
+      "assessment": "specialist process family with potential for high-integrity joints",
+      "risks": [
+        "tooling",
+        "local microstructure",
+        "process qualification"
+      ]
+    }
+  ],
+  "rule": "Joint performance is process- and configuration-specific; parent-metal properties cannot be assumed to represent joint allowables."
+}

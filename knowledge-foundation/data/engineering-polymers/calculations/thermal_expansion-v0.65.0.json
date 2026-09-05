@@ -1,0 +1,18 @@
+{
+  "version": "0.65.0",
+  "purpose": "Estimate free thermal dimensional change.",
+  "equation": "ΔL = α·L0·ΔT",
+  "inputs": [
+    "initial dimension L0",
+    "coefficient of thermal expansion α",
+    "temperature change ΔT"
+  ],
+  "checks": [
+    "α direction/grade state",
+    "temperature range",
+    "constraints and assembly loads",
+    "reinforcement orientation"
+  ],
+  "warning": "Use qualified anisotropic/process-specific α where required.",
+  "status": "screening calculation pattern"
+}

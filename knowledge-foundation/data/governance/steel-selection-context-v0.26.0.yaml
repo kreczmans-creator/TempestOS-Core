@@ -1,0 +1,69 @@
+- material_state_id: MAT-STEEL-15-5PH
+  relative_cost: expensive
+  general_availability: medium
+  typical_uses:
+  - aerospace
+  - chemical processing
+  - valves
+  - pumps
+  - fasteners
+  - precision mechanical components
+  selection_notes:
+  - high strength with precipitation-hardening
+  - condition selection materially changes strength and ductility
+- material_state_id: MAT-STEEL-13-8MO
+  relative_cost: expensive
+  general_availability: specialist
+  typical_uses:
+  - aerospace structural components
+  - landing gear
+  - valves
+  - shafts
+  - high-strength fasteners
+  selection_notes:
+  - high strength/toughness combination
+  - condition-specific data required
+- material_state_id: MAT-STEEL-310S
+  relative_cost: expensive
+  general_availability: medium
+  typical_uses:
+  - furnaces
+  - heat treatment equipment
+  - heat exchangers
+  - boilers
+  selection_notes:
+  - selected primarily for elevated-temperature oxidation/corrosion performance
+- material_state_id: MAT-STEEL-321
+  relative_cost: medium-expensive
+  general_availability: good
+  typical_uses:
+  - chemical equipment
+  - exhaust systems
+  - high-temperature piping
+  - fabricated components
+  selection_notes:
+  - titanium-stabilized austenitic stainless; distinguish 321 from 321H for elevated-temperature
+    design
+- material_state_id: MAT-STEEL-430
+  relative_cost: cheap-medium
+  general_availability: very_good
+  typical_uses:
+  - appliances
+  - kitchen equipment
+  - sinks
+  - flanges
+  - valves
+  selection_notes:
+  - ferritic, non-hardenable stainless; useful where mild corrosion resistance and
+    formability are sufficient
+- material_state_id: MAT-STEEL-440C
+  relative_cost: expensive
+  general_availability: medium
+  typical_uses:
+  - bearings
+  - wear parts
+  - knives
+  - surgical instruments
+  selection_notes:
+  - high hardness/wear resistance; corrosion resistance depends strongly on heat treatment
+    and environment

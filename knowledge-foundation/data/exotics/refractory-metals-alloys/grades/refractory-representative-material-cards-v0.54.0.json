@@ -1,0 +1,337 @@
+[
+  {
+    "designation": "Molybdenum",
+    "aliases": [
+      "Mo"
+    ],
+    "class": "refractory metal",
+    "role": "high-temperature structural and thermal-management applications in controlled environments",
+    "strengthening": "purity, grain structure, solid solution and alloying effects",
+    "representative_alloys": [
+      "TZM",
+      "Mo-Re"
+    ],
+    "typical_product_forms": [
+      "sheet",
+      "plate",
+      "bar",
+      "rod",
+      "wire",
+      "machined components"
+    ],
+    "uses": [
+      "high-temperature furnace components",
+      "heat shields",
+      "electrodes",
+      "thermal hardware",
+      "specialist tooling"
+    ],
+    "critical_constraints": [
+      "oxidation in air at elevated temperature",
+      "brittle-to-ductile transition behaviour",
+      "fabrication sensitivity",
+      "contamination/embrittlement"
+    ],
+    "evidence_status": "screening taxonomy",
+    "design_use": "screening_only",
+    "provenance_required": [
+      "exact specification",
+      "composition",
+      "product form",
+      "condition",
+      "processing route",
+      "temperature",
+      "environment",
+      "test method",
+      "source"
+    ]
+  },
+  {
+    "designation": "TZM",
+    "aliases": [
+      "Mo-0.5Ti-0.08Zr nominal family",
+      "titanium-zirconium-strengthened molybdenum"
+    ],
+    "class": "molybdenum alloy",
+    "role": "strengthened molybdenum for elevated-temperature service",
+    "strengthening": "titanium/zirconium/carbon-related dispersion and microstructural strengthening",
+    "typical_product_forms": [
+      "sheet",
+      "plate",
+      "bar",
+      "rod",
+      "forgings"
+    ],
+    "uses": [
+      "furnace hardware",
+      "high-temperature tooling",
+      "die components",
+      "specialist thermal structures"
+    ],
+    "critical_constraints": [
+      "oxidation",
+      "ductility transition",
+      "grain structure",
+      "fabrication route",
+      "temperature/time exposure"
+    ],
+    "evidence_status": "screening taxonomy",
+    "design_use": "screening_only",
+    "provenance_required": [
+      "exact specification",
+      "composition",
+      "product form",
+      "condition",
+      "processing route",
+      "temperature",
+      "environment",
+      "test method",
+      "source"
+    ]
+  },
+  {
+    "designation": "Niobium",
+    "aliases": [
+      "Nb"
+    ],
+    "class": "refractory metal",
+    "role": "specialist high-temperature and superconducting/materials applications",
+    "strengthening": "purity, alloying and microstructure dependent",
+    "typical_product_forms": [
+      "sheet",
+      "plate",
+      "bar",
+      "wire",
+      "foil"
+    ],
+    "uses": [
+      "superconducting systems",
+      "specialist high-temperature hardware",
+      "vacuum components",
+      "chemical-processing equipment"
+    ],
+    "critical_constraints": [
+      "rapid oxidation at elevated temperature",
+      "surface protection",
+      "contamination",
+      "joining"
+    ],
+    "evidence_status": "screening taxonomy",
+    "design_use": "screening_only",
+    "provenance_required": [
+      "exact specification",
+      "composition",
+      "product form",
+      "condition",
+      "processing route",
+      "temperature",
+      "environment",
+      "test method",
+      "source"
+    ]
+  },
+  {
+    "designation": "Nb-1Zr",
+    "aliases": [
+      "niobium-1 zirconium",
+      "Nb-1Zr"
+    ],
+    "class": "niobium alloy",
+    "role": "strengthened niobium for elevated-temperature specialist applications",
+    "strengthening": "zirconium alloying and microstructural effects",
+    "typical_product_forms": [
+      "sheet",
+      "bar",
+      "rod",
+      "wire"
+    ],
+    "uses": [
+      "reactor-related hardware",
+      "high-temperature vacuum components",
+      "specialist thermal systems"
+    ],
+    "critical_constraints": [
+      "oxidation",
+      "vacuum/inert-environment dependence",
+      "fabrication",
+      "contamination"
+    ],
+    "evidence_status": "screening taxonomy",
+    "design_use": "screening_only",
+    "provenance_required": [
+      "exact specification",
+      "composition",
+      "product form",
+      "condition",
+      "processing route",
+      "temperature",
+      "environment",
+      "test method",
+      "source"
+    ]
+  },
+  {
+    "designation": "Tantalum",
+    "aliases": [
+      "Ta"
+    ],
+    "class": "refractory metal",
+    "role": "exceptional corrosion resistance and high-temperature specialist applications",
+    "strengthening": "purity and alloying/microstructure dependent",
+    "typical_product_forms": [
+      "sheet",
+      "plate",
+      "bar",
+      "wire",
+      "tube"
+    ],
+    "uses": [
+      "chemical processing",
+      "heat exchangers",
+      "vacuum hardware",
+      "specialist high-temperature components"
+    ],
+    "critical_constraints": [
+      "cost",
+      "density",
+      "oxidation at elevated temperature",
+      "fabrication",
+      "contamination"
+    ],
+    "evidence_status": "screening taxonomy",
+    "design_use": "screening_only",
+    "provenance_required": [
+      "exact specification",
+      "composition",
+      "product form",
+      "condition",
+      "processing route",
+      "temperature",
+      "environment",
+      "test method",
+      "source"
+    ]
+  },
+  {
+    "designation": "Ta-10W",
+    "aliases": [
+      "tantalum-10 tungsten"
+    ],
+    "class": "tantalum alloy",
+    "role": "strengthened tantalum for demanding chemical and elevated-temperature service",
+    "strengthening": "tungsten solid-solution strengthening",
+    "typical_product_forms": [
+      "sheet",
+      "plate",
+      "bar",
+      "tube",
+      "specialist fabricated forms"
+    ],
+    "uses": [
+      "chemical-processing equipment",
+      "high-temperature hardware",
+      "specialist corrosion-resistant components"
+    ],
+    "critical_constraints": [
+      "oxidation",
+      "density",
+      "cost",
+      "joining",
+      "hydrogen/impurity effects"
+    ],
+    "evidence_status": "screening taxonomy",
+    "design_use": "screening_only",
+    "provenance_required": [
+      "exact specification",
+      "composition",
+      "product form",
+      "condition",
+      "processing route",
+      "temperature",
+      "environment",
+      "test method",
+      "source"
+    ]
+  },
+  {
+    "designation": "Rhenium",
+    "aliases": [
+      "Re"
+    ],
+    "class": "refractory metal",
+    "role": "ultra-high-temperature specialist alloying and component material",
+    "strengthening": "intrinsic high-temperature strength with alloying/microstructural effects",
+    "typical_product_forms": [
+      "wire",
+      "sheet",
+      "foil",
+      "specialist components"
+    ],
+    "uses": [
+      "turbine components",
+      "high-temperature thermocouple systems",
+      "specialist aerospace hardware",
+      "superalloy alloying"
+    ],
+    "critical_constraints": [
+      "extreme cost",
+      "density",
+      "processing difficulty",
+      "oxidation",
+      "supply constraints"
+    ],
+    "evidence_status": "screening taxonomy",
+    "design_use": "screening_only",
+    "provenance_required": [
+      "exact specification",
+      "composition",
+      "product form",
+      "condition",
+      "processing route",
+      "temperature",
+      "environment",
+      "test method",
+      "source"
+    ]
+  },
+  {
+    "designation": "Mo-Re",
+    "aliases": [
+      "molybdenum-rhenium alloy"
+    ],
+    "class": "molybdenum-rhenium refractory alloy",
+    "role": "improved ductility/toughness and specialist high-temperature capability relative to unalloyed molybdenum",
+    "strengthening": "rhenium alloying and microstructural effects",
+    "typical_product_forms": [
+      "wire",
+      "sheet",
+      "rod",
+      "specialist components"
+    ],
+    "uses": [
+      "high-temperature electrical components",
+      "aerospace/space hardware",
+      "thermionic and specialist systems"
+    ],
+    "critical_constraints": [
+      "cost",
+      "oxidation",
+      "processing",
+      "environment",
+      "rhenium supply"
+    ],
+    "evidence_status": "screening taxonomy",
+    "design_use": "screening_only",
+    "provenance_required": [
+      "exact specification",
+      "composition",
+      "product form",
+      "condition",
+      "processing route",
+      "temperature",
+      "environment",
+      "test method",
+      "source"
+    ]
+  }
+]

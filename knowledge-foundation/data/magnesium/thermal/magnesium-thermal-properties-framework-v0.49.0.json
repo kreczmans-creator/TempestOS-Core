@@ -1,0 +1,30 @@
+{
+  "version": "0.49.0",
+  "family": "magnesium",
+  "status": "foundation",
+  "properties": {
+    "thermal_conductivity": "Moderate-to-high for a structural metal; strongly grade/process/temperature dependent.",
+    "specific_heat": "Requires temperature-specific evidence for high-accuracy thermal models.",
+    "cte": "High relative to steels; dimensional calculations should retain alloy and temperature context.",
+    "melting_range": "Alloy-specific; use specification/manufacturer data rather than a universal magnesium value.",
+    "thermal_diffusivity": "Derive only from compatible conductivity, density and specific-heat datasets.",
+    "emissivity": "Surface-condition and temperature dependent; do not use an unqualified universal value."
+  },
+  "engineering_rules": [
+    "Thermal properties are not interchangeable between pure Mg and Mg alloys.",
+    "Thermal expansion can be significant in precision assemblies and dissimilar-material joints.",
+    "For transient thermal analysis, retain temperature dependence where it materially affects the result.",
+    "For fire or severe overheating scenarios, treat magnesium as a specific hazard case rather than ordinary metallic material."
+  ],
+  "required_fields": [
+    "grade",
+    "temper",
+    "product_form",
+    "temperature_C",
+    "property",
+    "value",
+    "unit",
+    "test_method",
+    "source"
+  ]
+}

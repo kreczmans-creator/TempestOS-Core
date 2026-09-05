@@ -1,0 +1,18 @@
+{
+  "version": "0.68.0",
+  "required_for_design_release": [
+    "exact material designation and condition",
+    "product form",
+    "manufacturing process",
+    "surface/joining state",
+    "applicable design/test standard",
+    "validated material data",
+    "geometry and load definition",
+    "environment and temperature",
+    "life requirement",
+    "calculation assumptions",
+    "verification evidence",
+    "traceability"
+  ],
+  "rule": "A design framework can structure the decision but cannot substitute for qualified material or application evidence."
+}

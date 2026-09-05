@@ -1,0 +1,22 @@
+{
+  "version": "0.71.0",
+  "status": "design-framework",
+  "casting_checks": [
+    "draft",
+    "parting line",
+    "uniform section transitions",
+    "shrinkage",
+    "porosity",
+    "machining stock",
+    "NDT access"
+  ],
+  "forging_checks": [
+    "forging direction",
+    "die access",
+    "section transitions",
+    "parting line",
+    "grain flow",
+    "machining stock",
+    "heat treatment"
+  ]
+}

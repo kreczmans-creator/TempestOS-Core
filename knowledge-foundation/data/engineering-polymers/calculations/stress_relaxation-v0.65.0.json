@@ -1,0 +1,20 @@
+{
+  "version": "0.65.0",
+  "purpose": "Screen retained stress under constrained strain.",
+  "equation": "σ(t) = E_rel(t,T,condition)·ε for linear viscoelastic screening where applicable",
+  "inputs": [
+    "imposed strain",
+    "time",
+    "temperature",
+    "conditioning",
+    "relaxation modulus"
+  ],
+  "checks": [
+    "strain level",
+    "temperature",
+    "environment",
+    "geometry and constraints"
+  ],
+  "warning": "Use application-relevant relaxation data for clamp-load retention.",
+  "status": "screening calculation pattern"
+}

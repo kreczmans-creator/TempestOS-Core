@@ -1,0 +1,30 @@
+{
+  "version": "0.57.0",
+  "family": "PPS",
+  "examples": [
+    "unfilled PPS",
+    "glass-filled PPS",
+    "mineral-filled PPS"
+  ],
+  "character": "high-temperature engineering thermoplastic with strong chemical resistance and low moisture uptake",
+  "common_uses": [
+    "electrical components",
+    "automotive under-hood parts",
+    "chemical-process components",
+    "precision mouldings"
+  ],
+  "selection_drivers": [
+    "temperature",
+    "chemical resistance",
+    "dimensional stability",
+    "electrical insulation"
+  ],
+  "watchouts": [
+    "brittleness in some grades",
+    "processing",
+    "weld-line effects",
+    "filler orientation"
+  ],
+  "evidence_status": "screening taxonomy",
+  "design_use": "screening_only"
+}

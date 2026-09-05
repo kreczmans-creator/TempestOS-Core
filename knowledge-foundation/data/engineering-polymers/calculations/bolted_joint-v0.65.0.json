@@ -1,0 +1,19 @@
+{
+  "version": "0.65.0",
+  "purpose": "Screen polymer bolted-joint behaviour.",
+  "equation": "Bearing stress = clamp load / effective bearing area",
+  "inputs": [
+    "clamp load",
+    "bearing area",
+    "washer/insert geometry"
+  ],
+  "checks": [
+    "local bearing",
+    "thread engagement",
+    "creep",
+    "stress relaxation",
+    "temperature cycling"
+  ],
+  "warning": "Polymer preload retention is time dependent.",
+  "status": "screening calculation pattern"
+}

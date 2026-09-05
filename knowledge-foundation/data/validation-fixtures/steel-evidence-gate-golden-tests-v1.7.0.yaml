@@ -1,0 +1,33 @@
+- id: EVID-STL-001
+  case: No source locator
+  input:
+    source_id: STD-EN10025-2
+    source_locator: null
+  expected: reject_promotion
+- id: EVID-STL-002
+  case: Source identified but condition missing
+  input:
+    source_id: STD-EN10083-3
+    condition: null
+  expected: reject_promotion
+- id: EVID-STL-003
+  case: Source + condition + form + temperature present
+  input:
+    source_id: STD-EN10083-3
+    condition: quenched_and_tempered
+    product_form: bar
+    temperature_C: 20
+    source_locator: exact page/table required
+  expected: eligible_for_review
+- id: EVID-STL-004
+  case: Supplier certificate used as generic grade property
+  input:
+    source_type: material_certificate
+    scope: generic_grade
+  expected: reject_promotion
+- id: EVID-STL-005
+  case: Conflicting same-applicability observations
+  input:
+    conflict: true
+    same_applicability: true
+  expected: flag_for_resolution

@@ -1,0 +1,496 @@
+[
+  {
+    "designation": "1050A",
+    "family": "wrought, commercially pure aluminium",
+    "reference_temper": "H14",
+    "density_kg_m3": 2705,
+    "yield_strength_MPa": [
+      75,
+      110
+    ],
+    "ultimate_tensile_strength_MPa": [
+      105,
+      145
+    ],
+    "elastic_modulus_GPa": 69,
+    "poissons_ratio": 0.33,
+    "thermal_conductivity_W_mK": 222,
+    "coefficient_thermal_expansion_um_mK": [
+      23.1,
+      23.6
+    ],
+    "specific_heat_J_kgK": 900,
+    "electrical_resistivity_ohm_mm2_m_at_20C": 0.0282,
+    "relative_cost": "cheap",
+    "availability": "very_high",
+    "common_uses": [
+      "sheet",
+      "heat exchangers",
+      "electrical/general fabrication"
+    ],
+    "evidence_class": "engineering_reference",
+    "design_use": "screening_only",
+    "provenance_requirement": "Confirm alloy designation, product form, temper, thickness, specification edition and source before design use."
+  },
+  {
+    "designation": "1200",
+    "family": "wrought, commercially pure aluminium",
+    "reference_temper": "H14",
+    "density_kg_m3": 2705,
+    "yield_strength_MPa": [
+      80,
+      120
+    ],
+    "ultimate_tensile_strength_MPa": [
+      110,
+      155
+    ],
+    "elastic_modulus_GPa": 69,
+    "poissons_ratio": 0.33,
+    "thermal_conductivity_W_mK": 215,
+    "coefficient_thermal_expansion_um_mK": [
+      23.1,
+      23.6
+    ],
+    "specific_heat_J_kgK": 900,
+    "electrical_resistivity_ohm_mm2_m_at_20C": 0.0285,
+    "relative_cost": "cheap",
+    "availability": "high",
+    "common_uses": [
+      "sheet",
+      "general fabrication",
+      "thermal/electrical applications"
+    ],
+    "evidence_class": "engineering_reference",
+    "design_use": "screening_only",
+    "provenance_requirement": "Confirm alloy designation, product form, temper, thickness, specification edition and source before design use."
+  },
+  {
+    "designation": "2014A",
+    "family": "wrought Al-Cu-Mg-Si alloy",
+    "reference_temper": "T6",
+    "density_kg_m3": 2800,
+    "yield_strength_MPa": [
+      350,
+      450
+    ],
+    "ultimate_tensile_strength_MPa": [
+      400,
+      480
+    ],
+    "elastic_modulus_GPa": 73,
+    "poissons_ratio": 0.33,
+    "thermal_conductivity_W_mK": 150,
+    "coefficient_thermal_expansion_um_mK": [
+      22.5,
+      23.5
+    ],
+    "specific_heat_J_kgK": 880,
+    "electrical_resistivity_ohm_mm2_m_at_20C": 0.05,
+    "relative_cost": "medium",
+    "availability": "high",
+    "common_uses": [
+      "machined aerospace/machine components",
+      "structures",
+      "high-strength parts"
+    ],
+    "evidence_class": "engineering_reference",
+    "design_use": "screening_only",
+    "provenance_requirement": "Confirm alloy designation, product form, temper, thickness, specification edition and source before design use."
+  },
+  {
+    "designation": "2024",
+    "family": "wrought Al-Cu-Mg alloy",
+    "reference_temper": "T3/T4",
+    "density_kg_m3": 2780,
+    "yield_strength_MPa": [
+      280,
+      350
+    ],
+    "ultimate_tensile_strength_MPa": [
+      400,
+      470
+    ],
+    "elastic_modulus_GPa": 73,
+    "poissons_ratio": 0.33,
+    "thermal_conductivity_W_mK": 120,
+    "coefficient_thermal_expansion_um_mK": [
+      22.5,
+      23.5
+    ],
+    "specific_heat_J_kgK": 875,
+    "electrical_resistivity_ohm_mm2_m_at_20C": 0.052,
+    "relative_cost": "medium",
+    "availability": "very_high",
+    "common_uses": [
+      "aerospace structures",
+      "machined parts",
+      "sheet"
+    ],
+    "evidence_class": "engineering_reference",
+    "design_use": "screening_only",
+    "provenance_requirement": "Confirm alloy designation, product form, temper, thickness, specification edition and source before design use."
+  },
+  {
+    "designation": "2219",
+    "family": "wrought Al-Cu alloy",
+    "reference_temper": "T851",
+    "density_kg_m3": 2840,
+    "yield_strength_MPa": [
+      300,
+      430
+    ],
+    "ultimate_tensile_strength_MPa": [
+      390,
+      480
+    ],
+    "elastic_modulus_GPa": 73,
+    "poissons_ratio": 0.33,
+    "thermal_conductivity_W_mK": 115,
+    "coefficient_thermal_expansion_um_mK": [
+      22.5,
+      23.5
+    ],
+    "specific_heat_J_kgK": 880,
+    "electrical_resistivity_ohm_mm2_m_at_20C": 0.054,
+    "relative_cost": "expensive",
+    "availability": "medium",
+    "common_uses": [
+      "aerospace",
+      "cryogenic/pressure structures",
+      "welded structures"
+    ],
+    "evidence_class": "engineering_reference",
+    "design_use": "screening_only",
+    "provenance_requirement": "Confirm alloy designation, product form, temper, thickness, specification edition and source before design use."
+  },
+  {
+    "designation": "5083",
+    "family": "wrought Al-Mg alloy",
+    "reference_temper": "H116",
+    "density_kg_m3": 2660,
+    "yield_strength_MPa": [
+      215,
+      260
+    ],
+    "ultimate_tensile_strength_MPa": [
+      300,
+      340
+    ],
+    "elastic_modulus_GPa": 70,
+    "poissons_ratio": 0.33,
+    "thermal_conductivity_W_mK": 117,
+    "coefficient_thermal_expansion_um_mK": [
+      23.5,
+      24.0
+    ],
+    "specific_heat_J_kgK": 900,
+    "electrical_resistivity_ohm_mm2_m_at_20C": 0.059,
+    "relative_cost": "medium",
+    "availability": "very_high",
+    "common_uses": [
+      "marine structures",
+      "pressure vessels",
+      "fabrication"
+    ],
+    "evidence_class": "engineering_reference",
+    "design_use": "screening_only",
+    "provenance_requirement": "Confirm alloy designation, product form, temper, thickness, specification edition and source before design use."
+  },
+  {
+    "designation": "5086",
+    "family": "wrought Al-Mg alloy",
+    "reference_temper": "H116",
+    "density_kg_m3": 2660,
+    "yield_strength_MPa": [
+      190,
+      240
+    ],
+    "ultimate_tensile_strength_MPa": [
+      275,
+      330
+    ],
+    "elastic_modulus_GPa": 70,
+    "poissons_ratio": 0.33,
+    "thermal_conductivity_W_mK": 117,
+    "coefficient_thermal_expansion_um_mK": [
+      23.5,
+      24.0
+    ],
+    "specific_heat_J_kgK": 900,
+    "electrical_resistivity_ohm_mm2_m_at_20C": 0.059,
+    "relative_cost": "medium",
+    "availability": "high",
+    "common_uses": [
+      "marine fabrication",
+      "tanks",
+      "structures"
+    ],
+    "evidence_class": "engineering_reference",
+    "design_use": "screening_only",
+    "provenance_requirement": "Confirm alloy designation, product form, temper, thickness, specification edition and source before design use."
+  },
+  {
+    "designation": "6060",
+    "family": "wrought Al-Mg-Si extrusion alloy",
+    "reference_temper": "T6",
+    "density_kg_m3": 2700,
+    "yield_strength_MPa": [
+      150,
+      220
+    ],
+    "ultimate_tensile_strength_MPa": [
+      190,
+      250
+    ],
+    "elastic_modulus_GPa": 69,
+    "poissons_ratio": 0.33,
+    "thermal_conductivity_W_mK": 200,
+    "coefficient_thermal_expansion_um_mK": [
+      23.0,
+      23.7
+    ],
+    "specific_heat_J_kgK": 900,
+    "electrical_resistivity_ohm_mm2_m_at_20C": 0.034,
+    "relative_cost": "cheap",
+    "availability": "very_high",
+    "common_uses": [
+      "extrusions",
+      "enclosures",
+      "frames"
+    ],
+    "evidence_class": "engineering_reference",
+    "design_use": "screening_only",
+    "provenance_requirement": "Confirm alloy designation, product form, temper, thickness, specification edition and source before design use."
+  },
+  {
+    "designation": "6061",
+    "family": "wrought Al-Mg-Si alloy",
+    "reference_temper": "T6",
+    "density_kg_m3": 2700,
+    "yield_strength_MPa": [
+      240,
+      280
+    ],
+    "ultimate_tensile_strength_MPa": [
+      290,
+      330
+    ],
+    "elastic_modulus_GPa": 69,
+    "poissons_ratio": 0.33,
+    "thermal_conductivity_W_mK": 167,
+    "coefficient_thermal_expansion_um_mK": [
+      23.0,
+      23.6
+    ],
+    "specific_heat_J_kgK": 896,
+    "electrical_resistivity_ohm_mm2_m_at_20C": 0.04,
+    "relative_cost": "cheap",
+    "availability": "very_high",
+    "common_uses": [
+      "machined parts",
+      "structures",
+      "extrusions"
+    ],
+    "evidence_class": "engineering_reference",
+    "design_use": "screening_only",
+    "provenance_requirement": "Confirm alloy designation, product form, temper, thickness, specification edition and source before design use."
+  },
+  {
+    "designation": "6082",
+    "family": "wrought Al-Mg-Si alloy",
+    "reference_temper": "T6",
+    "density_kg_m3": 2700,
+    "yield_strength_MPa": [
+      250,
+      310
+    ],
+    "ultimate_tensile_strength_MPa": [
+      290,
+      350
+    ],
+    "elastic_modulus_GPa": 69,
+    "poissons_ratio": 0.33,
+    "thermal_conductivity_W_mK": 170,
+    "coefficient_thermal_expansion_um_mK": [
+      23.0,
+      23.6
+    ],
+    "specific_heat_J_kgK": 900,
+    "electrical_resistivity_ohm_mm2_m_at_20C": 0.042,
+    "relative_cost": "cheap",
+    "availability": "very_high",
+    "common_uses": [
+      "structures",
+      "machined parts",
+      "extrusions"
+    ],
+    "evidence_class": "engineering_reference",
+    "design_use": "screening_only",
+    "provenance_requirement": "Confirm alloy designation, product form, temper, thickness, specification edition and source before design use."
+  },
+  {
+    "designation": "7020",
+    "family": "wrought Al-Zn-Mg alloy",
+    "reference_temper": "T6",
+    "density_kg_m3": 2780,
+    "yield_strength_MPa": [
+      280,
+      350
+    ],
+    "ultimate_tensile_strength_MPa": [
+      350,
+      410
+    ],
+    "elastic_modulus_GPa": 72,
+    "poissons_ratio": 0.33,
+    "thermal_conductivity_W_mK": 150,
+    "coefficient_thermal_expansion_um_mK": [
+      22.8,
+      23.5
+    ],
+    "specific_heat_J_kgK": 880,
+    "electrical_resistivity_ohm_mm2_m_at_20C": 0.05,
+    "relative_cost": "medium",
+    "availability": "high",
+    "common_uses": [
+      "welded structures",
+      "transport structures",
+      "machined parts"
+    ],
+    "evidence_class": "engineering_reference",
+    "design_use": "screening_only",
+    "provenance_requirement": "Confirm alloy designation, product form, temper, thickness, specification edition and source before design use."
+  },
+  {
+    "designation": "7075",
+    "family": "wrought Al-Zn-Mg-Cu alloy",
+    "reference_temper": "T6",
+    "density_kg_m3": 2810,
+    "yield_strength_MPa": [
+      430,
+      510
+    ],
+    "ultimate_tensile_strength_MPa": [
+      500,
+      570
+    ],
+    "elastic_modulus_GPa": 71.7,
+    "poissons_ratio": 0.33,
+    "thermal_conductivity_W_mK": 130,
+    "coefficient_thermal_expansion_um_mK": [
+      23.0,
+      23.5
+    ],
+    "specific_heat_J_kgK": 960,
+    "electrical_resistivity_ohm_mm2_m_at_20C": 0.051,
+    "relative_cost": "medium",
+    "availability": "very_high",
+    "common_uses": [
+      "aerospace structures",
+      "high-strength machined components",
+      "mechanisms"
+    ],
+    "evidence_class": "engineering_reference",
+    "design_use": "screening_only",
+    "provenance_requirement": "Confirm alloy designation, product form, temper, thickness, specification edition and source before design use."
+  },
+  {
+    "designation": "7050",
+    "family": "wrought Al-Zn-Mg-Cu alloy",
+    "reference_temper": "T7451",
+    "density_kg_m3": 2830,
+    "yield_strength_MPa": [
+      430,
+      500
+    ],
+    "ultimate_tensile_strength_MPa": [
+      500,
+      570
+    ],
+    "elastic_modulus_GPa": 71.7,
+    "poissons_ratio": 0.33,
+    "thermal_conductivity_W_mK": 140,
+    "coefficient_thermal_expansion_um_mK": [
+      23.0,
+      23.5
+    ],
+    "specific_heat_J_kgK": 960,
+    "electrical_resistivity_ohm_mm2_m_at_20C": 0.052,
+    "relative_cost": "expensive",
+    "availability": "medium",
+    "common_uses": [
+      "aerospace thick plate",
+      "high-strength structures"
+    ],
+    "evidence_class": "engineering_reference",
+    "design_use": "screening_only",
+    "provenance_requirement": "Confirm alloy designation, product form, temper, thickness, specification edition and source before design use."
+  },
+  {
+    "designation": "A356",
+    "family": "cast Al-Si-Mg alloy",
+    "reference_temper": "T6",
+    "density_kg_m3": 2680,
+    "yield_strength_MPa": [
+      180,
+      230
+    ],
+    "ultimate_tensile_strength_MPa": [
+      250,
+      320
+    ],
+    "elastic_modulus_GPa": 72,
+    "poissons_ratio": 0.33,
+    "thermal_conductivity_W_mK": 150,
+    "coefficient_thermal_expansion_um_mK": [
+      21.0,
+      22.5
+    ],
+    "specific_heat_J_kgK": 963,
+    "electrical_resistivity_ohm_mm2_m_at_20C": 0.045,
+    "relative_cost": "cheap",
+    "availability": "high",
+    "common_uses": [
+      "cast housings",
+      "automotive components",
+      "general engineering castings"
+    ],
+    "evidence_class": "engineering_reference",
+    "design_use": "screening_only",
+    "provenance_requirement": "Confirm alloy designation, product form, temper, thickness, specification edition and source before design use."
+  },
+  {
+    "designation": "AlSi10Mg",
+    "family": "cast/additive Al-Si-Mg alloy",
+    "reference_temper": "T6/reference",
+    "density_kg_m3": 2670,
+    "yield_strength_MPa": [
+      200,
+      280
+    ],
+    "ultimate_tensile_strength_MPa": [
+      300,
+      370
+    ],
+    "elastic_modulus_GPa": 70,
+    "poissons_ratio": 0.33,
+    "thermal_conductivity_W_mK": 140,
+    "coefficient_thermal_expansion_um_mK": [
+      20.5,
+      22.0
+    ],
+    "specific_heat_J_kgK": 900,
+    "electrical_resistivity_ohm_mm2_m_at_20C": 0.045,
+    "relative_cost": "medium",
+    "availability": "high",
+    "common_uses": [
+      "castings",
+      "AM components",
+      "complex housings"
+    ],
+    "evidence_class": "engineering_reference",
+    "design_use": "screening_only",
+    "provenance_requirement": "Confirm alloy designation, product form, temper, thickness, specification edition and source before design use."
+  }
+]

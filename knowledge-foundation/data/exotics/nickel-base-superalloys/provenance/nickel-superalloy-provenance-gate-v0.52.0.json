@@ -1,0 +1,28 @@
+{
+  "version": "0.52.0",
+  "family": "nickel-base-superalloys",
+  "minimum_identity": [
+    "designation",
+    "UNS if applicable",
+    "specification",
+    "product form",
+    "heat treatment",
+    "condition"
+  ],
+  "hot_service_context": [
+    "temperature",
+    "stress",
+    "time",
+    "environment",
+    "microstructure",
+    "orientation"
+  ],
+  "evidence_states": [
+    "unverified",
+    "source-linked",
+    "cross-checked",
+    "engineering-reviewed",
+    "design-approved"
+  ],
+  "promotion_rule": "A screening card cannot become a design allowable by inheritance from a related alloy."
+}

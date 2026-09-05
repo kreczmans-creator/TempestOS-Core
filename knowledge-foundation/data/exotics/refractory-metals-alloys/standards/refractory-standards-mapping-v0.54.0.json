@@ -1,0 +1,57 @@
+{
+  "version": "0.54.0",
+  "family": "refractory-metals-alloys",
+  "mapping_targets": [
+    {
+      "designation": "Molybdenum / TZM",
+      "bodies": [
+        "ASTM",
+        "AMS",
+        "supplier specifications"
+      ],
+      "note": "Resolve exact grade, product form and composition limits."
+    },
+    {
+      "designation": "Niobium / Nb-1Zr",
+      "bodies": [
+        "ASTM",
+        "AMS",
+        "supplier specifications"
+      ],
+      "note": "Resolve exact composition and product form."
+    },
+    {
+      "designation": "Tantalum / Ta-10W",
+      "bodies": [
+        "ASTM",
+        "AMS",
+        "supplier specifications"
+      ],
+      "note": "Resolve exact alloy chemistry and product form."
+    },
+    {
+      "designation": "Rhenium / Mo-Re",
+      "bodies": [
+        "ASTM",
+        "AMS",
+        "supplier specifications"
+      ],
+      "note": "Specialist materials require source-specific qualification."
+    }
+  ],
+  "record_fields": [
+    "designation",
+    "standard_number",
+    "edition",
+    "composition",
+    "product_form",
+    "condition",
+    "processing_route",
+    "mechanical_requirements",
+    "environmental_requirements",
+    "test_methods",
+    "source",
+    "verification_date"
+  ],
+  "status": "framework; exact standard numbers/editions remain open"
+}

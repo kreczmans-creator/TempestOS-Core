@@ -1,0 +1,37 @@
+[
+  {
+    "id": "TI-GAP-001",
+    "severity": "AMBER",
+    "area": "quantitative properties",
+    "status": "open",
+    "next": "Populate authoritative grade/product-form/condition datasets."
+  },
+  {
+    "id": "TI-GAP-002",
+    "severity": "AMBER",
+    "area": "fatigue/fracture",
+    "status": "open",
+    "next": "Populate S-N, crack-growth and toughness evidence with test context."
+  },
+  {
+    "id": "TI-GAP-003",
+    "severity": "AMBER",
+    "area": "elevated temperature",
+    "status": "open",
+    "next": "Populate creep, rupture and temperature-dependent strength data."
+  },
+  {
+    "id": "TI-GAP-004",
+    "severity": "YELLOW",
+    "area": "standards",
+    "status": "open",
+    "next": "Resolve exact standard numbers and editions."
+  },
+  {
+    "id": "TI-GAP-005",
+    "severity": "YELLOW",
+    "area": "manufacturing",
+    "status": "open",
+    "next": "Add process-specific property knockdowns and surface-integrity evidence."
+  }
+]

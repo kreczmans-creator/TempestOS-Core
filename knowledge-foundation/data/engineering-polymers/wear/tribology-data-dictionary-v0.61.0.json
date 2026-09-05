@@ -1,0 +1,23 @@
+{
+  "version": "0.61.0",
+  "core_properties": [
+    "coefficient of friction",
+    "wear rate",
+    "PV limit",
+    "specific wear rate",
+    "counterface compatibility",
+    "lubrication dependence"
+  ],
+  "minimum_context": [
+    "exact grade",
+    "counterface",
+    "surface roughness",
+    "contact pressure",
+    "sliding speed",
+    "temperature",
+    "lubrication",
+    "test method",
+    "source"
+  ],
+  "selection_rule": "Wear performance is a contact-system property, not solely a material property."
+}

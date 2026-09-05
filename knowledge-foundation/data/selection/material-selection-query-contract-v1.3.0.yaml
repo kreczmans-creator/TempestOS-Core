@@ -1,0 +1,66 @@
+schema_version: 1.0.0
+query:
+  required:
+  - constraints
+  fields:
+    constraints:
+      type: object
+      description: Hard eligibility constraints. Missing data must never be interpreted
+        as passing.
+    ranking:
+      type: array
+      description: Ordered soft preferences applied only after hard eligibility.
+    scope:
+      type: object
+      description: Optional family, designation, standard, geography or availability
+        scope.
+    exclusions:
+      type: array
+      description: Explicit material/state IDs or families to exclude.
+    evidence_policy:
+      type: object
+      description: Minimum evidence state required for the result.
+constraint_operators:
+- eq
+- neq
+- lt
+- lte
+- gt
+- gte
+- in
+- not_in
+- between
+- exists
+result:
+  required:
+  - query_id
+  - status
+  - candidates
+  - excluded
+  - evidence_gaps
+  status_values:
+  - no_match
+  - screening_match
+  - verified_match
+  - evidence_required
+  candidate_fields:
+  - material_id
+  - material_state_id
+  - designation
+  - eligibility
+  - ranking_score
+  - matched_constraints
+  - ranking_factors
+  - evidence_state
+  - warnings
+governance:
+  unknown_policy: unknown_is_not_pass
+  equivalence_policy: designation_mapping_is_not_certification_equivalence
+  promotion_path:
+  - candidate
+  - sourced
+  - reviewed
+  - verified
+  - approved_for_design
+  design_use_rule: Only approved_for_design observations may be used as authoritative
+    design inputs.

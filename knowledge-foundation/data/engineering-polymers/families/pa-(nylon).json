@@ -1,0 +1,34 @@
+{
+  "version": "0.57.0",
+  "family": "PA (Nylon)",
+  "examples": [
+    "PA6",
+    "PA66",
+    "PA12",
+    "reinforced PA grades"
+  ],
+  "character": "engineering thermoplastic family with good strength, toughness and wear performance",
+  "common_uses": [
+    "gears",
+    "bushings",
+    "fasteners",
+    "housings",
+    "automotive components"
+  ],
+  "selection_drivers": [
+    "strength",
+    "toughness",
+    "wear",
+    "cost",
+    "processability"
+  ],
+  "watchouts": [
+    "moisture absorption",
+    "property variation with humidity",
+    "creep",
+    "temperature",
+    "reinforcement orientation"
+  ],
+  "evidence_status": "screening taxonomy",
+  "design_use": "screening_only"
+}

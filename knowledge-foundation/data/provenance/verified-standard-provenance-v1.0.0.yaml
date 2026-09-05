@@ -1,0 +1,38 @@
+- id: PROV-ISO-1101-2017
+  source_id: SRC-ISO
+  document: ISO 1101:2017
+  status: published_confirmed
+  verified_date: '2026-09-05'
+  evidence: 'ISO catalogue: Edition 4, stage 90.93 confirmed.'
+- id: PROV-ISO-6892-1-2019
+  source_id: SRC-ISO
+  document: ISO 6892-1:2019
+  status: current
+  verified_date: '2026-09-05'
+  evidence: 'ISO catalogue: reviewed and confirmed in 2025; remains current.'
+- id: PROV-ISO-683-17-2023
+  source_id: SRC-ISO
+  document: ISO 683-17:2023
+  status: published
+  verified_date: '2026-09-05'
+  evidence: 'ISO catalogue: 2023 edition published; earlier editions withdrawn.'
+- id: PROV-ASTM-A240-24A
+  source_id: SRC-ASTM
+  document: ASTM A240/A240M-24a
+  status: publisher_listed
+  verified_date: '2026-09-05'
+  evidence: ASTM publisher page lists 2024a for chromium and chromium-nickel stainless
+    plate, sheet and strip.
+- id: PROV-ASTM-B221-21
+  source_id: SRC-ASTM
+  document: ASTM B221-21
+  status: publisher_listed
+  verified_date: '2026-09-05'
+  evidence: ASTM publisher page lists B221-21 for aluminium/alloy extruded bars, rods,
+    wire, profiles and tubes.
+- id: PROV-ISO-9988-2004
+  source_id: SRC-ISO
+  document: ISO 9988-1:2004
+  status: published_reference
+  verified_date: '2026-09-05'
+  evidence: ISO catalogue describes the POM designation system and basis for specifications.

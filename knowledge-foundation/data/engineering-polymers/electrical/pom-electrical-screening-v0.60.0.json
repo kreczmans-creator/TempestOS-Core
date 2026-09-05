@@ -1,0 +1,34 @@
+{
+  "version": "0.60.0",
+  "family": "POM",
+  "domain": "electrical",
+  "electrical_class": "insulating engineering thermoplastic",
+  "volume_resistivity": "typically high",
+  "dielectric_strength": "generally good",
+  "relative_permittivity": "moderate and frequency dependent",
+  "dissipation_factor": "generally low-to-moderate",
+  "moisture_sensitivity": "low-to-moderate",
+  "key_controls": [
+    "frequency",
+    "temperature",
+    "additives/fillers"
+  ],
+  "required_quantitative_fields": [
+    "volume_resistivity",
+    "surface_resistivity",
+    "dielectric_strength",
+    "relative_permittivity",
+    "dissipation_factor",
+    "arc_resistance_where_relevant",
+    "tracking_resistance_where_relevant"
+  ],
+  "test_context": [
+    "frequency",
+    "temperature",
+    "humidity/conditioning",
+    "specimen/product form",
+    "test method"
+  ],
+  "evidence_status": "screening-level qualitative record",
+  "design_use": "not approved"
+}

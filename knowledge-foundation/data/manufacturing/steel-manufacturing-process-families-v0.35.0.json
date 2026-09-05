@@ -1,0 +1,44 @@
+{
+  "carbon_low_alloy": [
+    "machining",
+    "welding",
+    "forming",
+    "heat_treatment",
+    "coating"
+  ],
+  "austenitic_stainless": [
+    "machining",
+    "welding",
+    "forming",
+    "solution_annealing",
+    "passivation"
+  ],
+  "martensitic_stainless": [
+    "machining",
+    "welding_with_preheat_control",
+    "heat_treatment",
+    "grinding",
+    "passivation"
+  ],
+  "precipitation_hardening_stainless": [
+    "machining",
+    "welding_with_condition_control",
+    "solution_treatment",
+    "age_hardening",
+    "passivation"
+  ],
+  "tool_steel": [
+    "machining",
+    "heat_treatment",
+    "grinding",
+    "coating",
+    "welding_with_specialist_procedure"
+  ],
+  "ferritic_stainless": [
+    "machining",
+    "welding",
+    "forming",
+    "annealing",
+    "passivation"
+  ]
+}

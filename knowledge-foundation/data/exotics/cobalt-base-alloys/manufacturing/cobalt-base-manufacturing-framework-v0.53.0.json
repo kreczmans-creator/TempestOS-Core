@@ -1,0 +1,46 @@
+{
+  "version": "0.53.0",
+  "family": "cobalt-base-alloys",
+  "routes": {
+    "casting": [
+      "solidification control",
+      "segregation",
+      "porosity",
+      "carbide morphology",
+      "heat treatment",
+      "inspection"
+    ],
+    "forging": [
+      "temperature window",
+      "reduction",
+      "grain structure",
+      "heat treatment",
+      "surface condition"
+    ],
+    "machining": [
+      "high cutting forces",
+      "tool wear",
+      "heat generation",
+      "rigidity",
+      "coolant",
+      "surface integrity"
+    ],
+    "hardfacing": [
+      "substrate preparation",
+      "deposition energy",
+      "dilution",
+      "cracking",
+      "layer geometry",
+      "post-process machining"
+    ],
+    "additive": [
+      "powder/feedstock quality",
+      "build parameters",
+      "porosity",
+      "anisotropy",
+      "residual stress",
+      "post-processing"
+    ]
+  },
+  "rule": "For deposited or cast cobalt alloys, the manufacturing route is part of the material identity."
+}

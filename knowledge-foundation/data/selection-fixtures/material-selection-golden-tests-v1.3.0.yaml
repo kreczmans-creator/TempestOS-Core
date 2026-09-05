@@ -1,0 +1,92 @@
+- id: GOLD-SEL-001
+  name: Density and strength hard filter
+  query:
+    constraints:
+      density:
+        lte: 3000
+        unit: kg/m^3
+      yield_strength:
+        gte: 200
+        unit: MPa
+    ranking:
+    - specific_strength
+    - cost_tier
+  expected:
+    status: screening_match
+    unknown_is_not_pass: true
+    required_candidate_families:
+    - aluminium_alloys
+    - magnesium_alloys
+- id: GOLD-SEL-002
+  name: Missing temperature data requires evidence
+  query:
+    constraints:
+      service_temperature:
+        gte: 500
+        unit: degC
+      yield_strength:
+        gte: 400
+        unit: MPa
+    ranking:
+    - temperature_capability
+    - yield_strength
+  expected:
+    status: evidence_required
+    reason: No temperature-dependent strength evidence is currently attached to every
+      candidate.
+- id: GOLD-SEL-003
+  name: Explicit exclusion
+  query:
+    constraints:
+      yield_strength:
+        gte: 300
+        unit: MPa
+    exclusions:
+    - MAT-STEEL-42CRMO4
+    ranking:
+    - density
+  expected:
+    excluded:
+    - MAT-STEEL-42CRMO4
+    exclusion_must_override_eligibility: true
+- id: GOLD-SEL-004
+  name: Designation mapping cannot create equivalence
+  query:
+    scope:
+      designation: AISI/SAE 4340
+    constraints:
+      yield_strength:
+        gte: 800
+        unit: MPa
+  expected:
+    status: evidence_required
+    reason: A legacy designation mapping alone cannot supply a verified property observation.
+- id: GOLD-SEL-005
+  name: Polymer environment gap
+  query:
+    scope:
+      family: engineering_polymers
+    constraints:
+      environment:
+        eq: oils_and_fuels
+      service_temperature:
+        gte: 80
+        unit: degC
+    ranking:
+    - chemical_compatibility
+    - temperature_capability
+  expected:
+    status: evidence_required
+    reason: Specific fluid compatibility and temperature-dependent evidence are required.
+- id: GOLD-SEL-006
+  name: Stable deterministic ordering
+  query:
+    constraints:
+      exists:
+        property: density
+    ranking:
+    - density
+    - cost_tier
+  expected:
+    tie_break: stable_material_state_id
+    repeatable: true

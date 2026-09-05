@@ -1,0 +1,48 @@
+{
+  "version": "0.54.0",
+  "family": "refractory-metals-alloys",
+  "methods": [
+    {
+      "method": "fusion welding",
+      "controls": [
+        "atmosphere purity",
+        "shielding",
+        "heat input",
+        "HAZ",
+        "contamination",
+        "joint cracking"
+      ]
+    },
+    {
+      "method": "brazing",
+      "controls": [
+        "filler compatibility",
+        "brazing temperature",
+        "surface preparation",
+        "atmosphere",
+        "interfacial phases"
+      ]
+    },
+    {
+      "method": "diffusion bonding",
+      "controls": [
+        "surface finish",
+        "cleanliness",
+        "temperature",
+        "pressure",
+        "time"
+      ]
+    },
+    {
+      "method": "mechanical fastening",
+      "controls": [
+        "CTE mismatch",
+        "preload",
+        "galling",
+        "thermal cycling",
+        "environment"
+      ]
+    }
+  ],
+  "rule": "Joining qualification must consider both material metallurgy and environmental protection during joining."
+}

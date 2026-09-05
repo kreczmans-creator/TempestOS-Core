@@ -1,0 +1,26 @@
+{
+  "version": "0.71.0",
+  "status": "design-framework",
+  "purpose": "Connect component geometry to manufacturing process capability.",
+  "principles": [
+    "select process before freezing critical geometry",
+    "identify process constraints early",
+    "minimise unnecessary setups and datum changes",
+    "provide access for tooling and inspection",
+    "control critical characteristics explicitly",
+    "separate functional requirements from cosmetic preferences"
+  ],
+  "checks": [
+    "material and product form",
+    "minimum feature size",
+    "wall/section thickness",
+    "tool access",
+    "draft where relevant",
+    "machining allowance",
+    "distortion",
+    "surface finish",
+    "inspection access",
+    "process capability"
+  ],
+  "boundary": "Generic DFM rules are screening guidance; actual capability must be established for the selected supplier/process."
+}

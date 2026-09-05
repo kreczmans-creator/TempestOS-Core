@@ -1,0 +1,15 @@
+{
+  "version": "0.73.0",
+  "status": "foundation-framework",
+  "workflow": [
+    "identify hazard",
+    "identify hazardous event",
+    "estimate severity",
+    "estimate likelihood/exposure",
+    "define risk controls",
+    "verify controls",
+    "record residual risk",
+    "assign ownership"
+  ],
+  "principle": "Risk reduction should prioritise inherent design measures before relying on warnings or procedural controls."
+}

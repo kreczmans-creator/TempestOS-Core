@@ -1,0 +1,18 @@
+{
+  "version": "0.71.0",
+  "status": "design-framework",
+  "methods": [
+    "worst-case",
+    "statistical/RSS when justified",
+    "Monte Carlo when justified"
+  ],
+  "workflow": [
+    "define functional gap or alignment",
+    "identify contributors",
+    "assign tolerances and distributions",
+    "calculate stack",
+    "perform sensitivity analysis",
+    "allocate tolerances",
+    "verify manufacturing capability"
+  ]
+}

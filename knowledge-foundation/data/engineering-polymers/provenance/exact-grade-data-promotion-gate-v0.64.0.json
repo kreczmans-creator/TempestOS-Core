@@ -1,0 +1,29 @@
+{
+  "version": "0.64.0",
+  "promotion_levels": [
+    {
+      "level": "screening",
+      "requirement": "family-level guidance with explicit uncertainty"
+    },
+    {
+      "level": "verified",
+      "requirement": "traceable grade-level source and test context"
+    },
+    {
+      "level": "qualified",
+      "requirement": "application-relevant evidence, verification record and controlled provenance"
+    }
+  ],
+  "mandatory_traceability": [
+    "exact grade",
+    "supplier",
+    "source",
+    "revision/date",
+    "property",
+    "unit",
+    "test method",
+    "condition",
+    "temperature where relevant"
+  ],
+  "rule": "Commercial metadata never substitutes for technical qualification."
+}

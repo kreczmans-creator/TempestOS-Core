@@ -1,0 +1,202 @@
+- observation_id: OBS-S235JR-YIELD-TK-HOTSTRIP
+  material_state_id: MAT-STEEL-S235JR
+  property: yield_strength
+  value: 235
+  unit: MPa
+  source_id: WEB-TK-EN10025-2-DELIVERY-PROGRAM
+  source_url: https://ucpcdn.thyssenkrupp.com/_legacy/UCPthyssenkruppBAMXProcessingEuropeSpain/assets.files/downloads/tkmpe_delivery_program_doppelseiten_en_20190807.pdf
+  source_locator: 'Table: Non-alloy/general structural steel — EN 10025-2; S235JR'
+  applicability:
+    product_form: hot strip
+    orientation: transverse
+    thickness_note: table gives e ≤ 16 mm for yield strength
+    temperature_C: 20
+  evidence_status: sourced
+  design_use: screening_only
+- observation_id: OBS-S235JR-UTS-TK-HOTSTRIP
+  material_state_id: MAT-STEEL-S235JR
+  property: ultimate_tensile_strength
+  value:
+    min: 360
+    max: 510
+  unit: MPa
+  source_id: WEB-TK-EN10025-2-DELIVERY-PROGRAM
+  source_url: https://ucpcdn.thyssenkrupp.com/_legacy/UCPthyssenkruppBAMXProcessingEuropeSpain/assets.files/downloads/tkmpe_delivery_program_doppelseiten_en_20190807.pdf
+  source_locator: 'Table: Non-alloy/general structural steel — EN 10025-2; S235JR'
+  applicability:
+    product_form: hot strip
+    orientation: transverse
+    temperature_C: 20
+  evidence_status: sourced
+  design_use: screening_only
+- observation_id: OBS-S355JR-YIELD-TK-HOTSTRIP
+  material_state_id: MAT-STEEL-S355JR
+  property: yield_strength
+  value: 355
+  unit: MPa
+  source_id: WEB-TK-EN10025-2-DELIVERY-PROGRAM
+  source_url: https://ucpcdn.thyssenkrupp.com/_legacy/UCPthyssenkruppBAMXProcessingEuropeSpain/assets.files/downloads/tkmpe_delivery_program_doppelseiten_en_20190807.pdf
+  source_locator: 'Table: Non-alloy/general structural steel — EN 10025-2; S355JR'
+  applicability:
+    product_form: hot strip
+    orientation: transverse
+    thickness_note: table gives e ≤ 16 mm for yield strength
+    temperature_C: 20
+  evidence_status: sourced
+  design_use: screening_only
+- observation_id: OBS-S355JR-UTS-TK-HOTSTRIP
+  material_state_id: MAT-STEEL-S355JR
+  property: ultimate_tensile_strength
+  value:
+    min: 510
+    max: 680
+  unit: MPa
+  source_id: WEB-TK-EN10025-2-DELIVERY-PROGRAM
+  source_url: https://ucpcdn.thyssenkrupp.com/_legacy/UCPthyssenkruppBAMXProcessingEuropeSpain/assets.files/downloads/tkmpe_delivery_program_doppelseiten_en_20190807.pdf
+  source_locator: 'Table: Non-alloy/general structural steel — EN 10025-2; S355JR'
+  applicability:
+    product_form: hot strip
+    orientation: transverse
+    temperature_C: 20
+  evidence_status: sourced
+  design_use: screening_only
+- observation_id: OBS-42CRMO4-QT-YIELD-OVAKO
+  material_state_id: MAT-STEEL-42CRMO4
+  property: yield_strength
+  value: 750
+  unit: MPa
+  source_id: WEB-OVAKO-42CRMO4
+  source_url: https://steelnavigator.ovako.com/steel-grades/42crmo4/
+  source_locator: Mechanical Properties table; 42CrMo4 M (6082), MoC 410 M; +QT; round
+    bar; 25 < 40 mm
+  applicability:
+    condition: +QT quenched and tempered
+    product_form: round bar
+    dimension_mm: 25 < 40
+    temperature_C: 20
+  evidence_status: sourced
+  design_use: screening_only
+- observation_id: OBS-42CRMO4-QT-UTS-OVAKO
+  material_state_id: MAT-STEEL-42CRMO4
+  property: ultimate_tensile_strength
+  value:
+    min: 1000
+    max: 1200
+  unit: MPa
+  source_id: WEB-OVAKO-42CRMO4
+  source_url: https://steelnavigator.ovako.com/steel-grades/42crmo4/
+  source_locator: Mechanical Properties table; 42CrMo4 M (6082), MoC 410 M; +QT; round
+    bar; 25 < 40 mm
+  applicability:
+    condition: +QT quenched and tempered
+    product_form: round bar
+    dimension_mm: 25 < 40
+    temperature_C: 20
+  evidence_status: sourced
+  design_use: screening_only
+- observation_id: OBS-42CRMO4-QT-HARDNESS-OVAKO
+  material_state_id: MAT-STEEL-42CRMO4
+  property: hardness
+  value:
+    min: 300
+    max: 350
+  unit: HB
+  source_id: WEB-OVAKO-42CRMO4
+  source_url: https://steelnavigator.ovako.com/steel-grades/42crmo4/
+  source_locator: Mechanical Properties table; 42CrMo4 M (6082), MoC 410 M; +QT; round
+    bar; 25 < 40 mm
+  applicability:
+    condition: +QT quenched and tempered
+    product_form: round bar
+    dimension_mm: 25 < 40
+    temperature_C: 20
+  evidence_status: sourced
+  design_use: screening_only
+- observation_id: OBS-42CRMO4-QT-ELONG-OVAKO
+  material_state_id: MAT-STEEL-42CRMO4
+  property: elongation
+  value: 0.11
+  unit: '1'
+  source_id: WEB-OVAKO-42CRMO4
+  source_url: https://steelnavigator.ovako.com/steel-grades/42crmo4/
+  source_locator: Mechanical Properties table; 42CrMo4 M (6082), MoC 410 M; +QT; round
+    bar; 25 < 40 mm
+  applicability:
+    condition: +QT quenched and tempered
+    product_form: round bar
+    dimension_mm: 25 < 40
+    temperature_C: 20
+  evidence_status: sourced
+  design_use: screening_only
+- observation_id: OBS-42CRMO4-QT-IMPACT-OVAKO
+  material_state_id: MAT-STEEL-42CRMO4
+  property: impact_toughness
+  value: 35
+  unit: J
+  source_id: WEB-OVAKO-42CRMO4
+  source_url: https://steelnavigator.ovako.com/steel-grades/42crmo4/
+  source_locator: Mechanical Properties table; +QT; round bar; 25 < 40 mm
+  applicability:
+    condition: +QT quenched and tempered
+    product_form: round bar
+    dimension_mm: 25 < 40
+    temperature_C: 20
+    test_method: ISO-V Charpy
+    orientation: longitudinal
+  evidence_status: sourced
+  design_use: screening_only
+- observation_id: OBS-C45-SB5081-QT-YIELD-OVAKO
+  material_state_id: MAT-STEEL-C45
+  property: yield_strength
+  value: 430
+  unit: MPa
+  source_id: WEB-OVAKO-C45
+  source_url: https://steelnavigator.ovako.com/steel-grades/c45/
+  source_locator: Mechanical Properties table; variant 5081; +QT; round bar; 20 <
+    40 mm
+  applicability:
+    supplier_variant: '5081'
+    condition: +QT quenched and tempered
+    product_form: round bar
+    dimension_mm: 20 < 40
+    temperature_C: 20
+  evidence_status: sourced
+  design_use: screening_only
+- observation_id: OBS-C45-SB5081-QT-UTS-OVAKO
+  material_state_id: MAT-STEEL-C45
+  property: ultimate_tensile_strength
+  value:
+    min: 650
+    max: 800
+  unit: MPa
+  source_id: WEB-OVAKO-C45
+  source_url: https://steelnavigator.ovako.com/steel-grades/c45/
+  source_locator: Mechanical Properties table; variant 5081; +QT; round bar; 20 <
+    40 mm
+  applicability:
+    supplier_variant: '5081'
+    condition: +QT quenched and tempered
+    product_form: round bar
+    dimension_mm: 20 < 40
+    temperature_C: 20
+  evidence_status: sourced
+  design_use: screening_only
+- observation_id: OBS-C45-SB5081-QT-HARDNESS-OVAKO
+  material_state_id: MAT-STEEL-C45
+  property: hardness
+  value:
+    min: 190
+    max: 240
+  unit: HB
+  source_id: WEB-OVAKO-C45
+  source_url: https://steelnavigator.ovako.com/steel-grades/c45/
+  source_locator: Mechanical Properties table; variant 5081; +QT; round bar; 20 <
+    40 mm
+  applicability:
+    supplier_variant: '5081'
+    condition: +QT quenched and tempered
+    product_form: round bar
+    dimension_mm: 20 < 40
+    temperature_C: 20
+  evidence_status: sourced
+  design_use: screening_only

@@ -1,0 +1,44 @@
+[
+  {
+    "id": "MG-GAP-001",
+    "severity": "AMBER",
+    "area": "authoritative provenance",
+    "status": "open",
+    "next": "Attach source-level evidence to each grade/product-form/temper record."
+  },
+  {
+    "id": "MG-GAP-002",
+    "severity": "AMBER",
+    "area": "fatigue",
+    "status": "open",
+    "next": "Populate S-N and fatigue-notch data by grade, condition and surface state."
+  },
+  {
+    "id": "MG-GAP-003",
+    "severity": "AMBER",
+    "area": "corrosion",
+    "status": "open",
+    "next": "Add quantitative corrosion/galvanic evidence and test-method mapping."
+  },
+  {
+    "id": "MG-GAP-004",
+    "severity": "AMBER",
+    "area": "temperature",
+    "status": "open",
+    "next": "Populate temperature-dependent tensile, creep and fatigue data."
+  },
+  {
+    "id": "MG-GAP-005",
+    "severity": "AMBER",
+    "area": "machining fire",
+    "status": "open",
+    "next": "Add controlled safety guidance and recognised fire-test/source references."
+  },
+  {
+    "id": "MG-GAP-006",
+    "severity": "YELLOW",
+    "area": "standards",
+    "status": "open",
+    "next": "Map exact standards editions and product forms."
+  }
+]

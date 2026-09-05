@@ -1,0 +1,35 @@
+{
+  "version": "0.60.0",
+  "family": "ABS",
+  "domain": "electrical",
+  "electrical_class": "generally insulating engineering thermoplastic",
+  "volume_resistivity": "typically high for unfilled grades",
+  "dielectric_strength": "generally good; grade/test-condition dependent",
+  "relative_permittivity": "moderate; frequency and conditioning dependent",
+  "dissipation_factor": "moderate/grade dependent",
+  "moisture_sensitivity": "low-to-moderate compared with hygroscopic polyamides",
+  "key_controls": [
+    "temperature",
+    "frequency",
+    "humidity",
+    "flame-retardant/additive package"
+  ],
+  "required_quantitative_fields": [
+    "volume_resistivity",
+    "surface_resistivity",
+    "dielectric_strength",
+    "relative_permittivity",
+    "dissipation_factor",
+    "arc_resistance_where_relevant",
+    "tracking_resistance_where_relevant"
+  ],
+  "test_context": [
+    "frequency",
+    "temperature",
+    "humidity/conditioning",
+    "specimen/product form",
+    "test method"
+  ],
+  "evidence_status": "screening-level qualitative record",
+  "design_use": "not approved"
+}

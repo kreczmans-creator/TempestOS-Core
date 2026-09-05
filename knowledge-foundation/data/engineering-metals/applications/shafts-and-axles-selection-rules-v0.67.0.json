@@ -1,0 +1,16 @@
+{
+  "version": "0.67.0",
+  "application": "shafts-and-axles",
+  "checks": [
+    "torsion",
+    "bending",
+    "fatigue",
+    "keyway stress concentration",
+    "surface integrity",
+    "bearing fits",
+    "corrosion",
+    "critical speed"
+  ],
+  "selection": "Select alloy/condition against strength, fatigue, toughness, manufacturability and environment.",
+  "evidence_boundary": "Screening guidance; exact alloy, condition, geometry, process and service environment require application-specific verification."
+}

@@ -1,0 +1,54 @@
+- source_id: WEB-NPL-MATERIALS-STEEL
+  source_type: reference_database
+  title: Engineering Materials Data / steel property reference
+  publisher: National Physical Laboratory
+  edition_or_revision: web resource
+  scope: Engineering material property reference and measurement context
+  status: source_candidate
+  use: Cross-check generic physical/mechanical values; not a substitute for product-standard
+    minima.
+- source_id: WEB-MATWEB-STEEL
+  source_type: database
+  title: MatWeb material property database
+  publisher: MatWeb
+  edition_or_revision: web resource
+  scope: Grade/condition-specific material property data where available
+  status: source_candidate
+  use: Secondary cross-check; exact grade/condition and source provenance must be
+    retained.
+- source_id: STD-EN10025-2
+  source_type: standard
+  title: EN 10025-2
+  publisher: CEN
+  scope: Hot rolled products of structural steels — non-alloy structural steels
+  status: identified
+  use: Primary normative source for applicable structural-steel mechanical requirements.
+- source_id: STD-EN10083-2
+  source_type: standard
+  title: EN 10083-2
+  publisher: CEN
+  scope: Steels for quenching and tempering — non-alloy steels
+  status: identified
+  use: Primary normative source for applicable non-alloy Q&T steel requirements.
+- source_id: STD-EN10083-3
+  source_type: standard
+  title: EN 10083-3
+  publisher: CEN
+  scope: Steels for quenching and tempering — alloy steels
+  status: identified
+  use: Primary normative source for applicable alloy Q&T steel requirements.
+- source_id: STD-EN10088-1
+  source_type: standard
+  title: EN 10088-1
+  publisher: CEN
+  scope: Stainless steels — list of stainless steels
+  status: identified
+  use: Primary designation/composition framework; product mechanical requirements
+    may reside in other parts.
+- source_id: STD-ISO4957
+  source_type: standard
+  title: ISO 4957
+  publisher: ISO
+  scope: Tool steels
+  status: identified
+  use: Primary designation/material requirement framework for tool steels.

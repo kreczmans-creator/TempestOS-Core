@@ -1,0 +1,245 @@
+- id: MAT-POLY-ABS
+  designation: ABS
+  family: general_thermoplastic
+  standard_references:
+  - ISO 2580 family
+  - ISO 527
+  cost_tier: cheap
+  availability: very_high
+  typical_uses:
+  - enclosures
+  - consumer products
+  - prototype parts
+  - general mouldings
+  data_status: candidate_reference
+  reference_condition: indicative room-temperature baseline; exact condition, product
+    form and processing route must be resolved
+  properties:
+    density:
+      value: 1040
+      unit: kg/m^3
+    youngs_modulus:
+      value: 2200000000.0
+      unit: Pa
+    yield_strength:
+      value: 35000000.0
+      unit: Pa
+    ultimate_tensile_strength:
+      value: 45000000.0
+      unit: Pa
+    elongation:
+      value: 0.2
+      unit: '1'
+    coefficient_of_thermal_expansion:
+      value: 8.999999999999999e-05
+      unit: 1/K
+    thermal_conductivity:
+      value: 0.18
+      unit: W/(m*K)
+    electrical_resistivity:
+      value: 1000000000000000.0
+      unit: ohm*m
+  provenance:
+    source_id: SRC-TO-VERIFY
+    verification_required: true
+    note: Screening/reference data only; verify exact grade, condition, standard edition,
+      product form and source before authoritative design use.
+  data_governance:
+    authority_state: candidate_reference
+    source_attachment_required: true
+- id: MAT-POLY-PP
+  designation: Polypropylene
+  family: general_thermoplastic
+  standard_references:
+  - ISO 1873 family
+  - ISO 527
+  cost_tier: very_cheap
+  availability: very_high
+  typical_uses:
+  - containers
+  - living hinges
+  - chemical-resistant components
+  - general mouldings
+  data_status: candidate_reference
+  reference_condition: indicative room-temperature baseline; exact condition, product
+    form and processing route must be resolved
+  properties:
+    density:
+      value: 905
+      unit: kg/m^3
+    youngs_modulus:
+      value: 1500000000.0
+      unit: Pa
+    yield_strength:
+      value: 25000000.0
+      unit: Pa
+    ultimate_tensile_strength:
+      value: 35000000.0
+      unit: Pa
+    elongation:
+      value: 2.0
+      unit: '1'
+    coefficient_of_thermal_expansion:
+      value: 9.999999999999999e-05
+      unit: 1/K
+    thermal_conductivity:
+      value: 0.22
+      unit: W/(m*K)
+    electrical_resistivity:
+      value: 1000000000000000.0
+      unit: ohm*m
+  provenance:
+    source_id: SRC-TO-VERIFY
+    verification_required: true
+    note: Screening/reference data only; verify exact grade, condition, standard edition,
+      product form and source before authoritative design use.
+  data_governance:
+    authority_state: candidate_reference
+    source_attachment_required: true
+- id: MAT-POLY-HDPE
+  designation: HDPE
+  family: general_thermoplastic
+  standard_references:
+  - ISO 1872 family
+  - ISO 527
+  cost_tier: very_cheap
+  availability: very_high
+  typical_uses:
+  - tanks
+  - liners
+  - wear strips
+  - low-cost chemical-resistant components
+  data_status: candidate_reference
+  reference_condition: indicative room-temperature baseline; exact condition, product
+    form and processing route must be resolved
+  properties:
+    density:
+      value: 950
+      unit: kg/m^3
+    youngs_modulus:
+      value: 1000000000.0
+      unit: Pa
+    yield_strength:
+      value: 20000000.0
+      unit: Pa
+    ultimate_tensile_strength:
+      value: 30000000.0
+      unit: Pa
+    elongation:
+      value: 5.0
+      unit: '1'
+    coefficient_of_thermal_expansion:
+      value: 0.00019999999999999998
+      unit: 1/K
+    thermal_conductivity:
+      value: 0.45
+      unit: W/(m*K)
+    electrical_resistivity:
+      value: 1000000000000000.0
+      unit: ohm*m
+  provenance:
+    source_id: SRC-TO-VERIFY
+    verification_required: true
+    note: Screening/reference data only; verify exact grade, condition, standard edition,
+      product form and source before authoritative design use.
+  data_governance:
+    authority_state: candidate_reference
+    source_attachment_required: true
+- id: MAT-POLY-PVC-U
+  designation: PVC-U
+  family: rigid_thermoplastic
+  standard_references:
+  - ISO 1163 family
+  - ISO 527
+  cost_tier: very_cheap
+  availability: very_high
+  typical_uses:
+  - pipework
+  - guards
+  - ducting
+  - chemical service
+  data_status: candidate_reference
+  reference_condition: indicative room-temperature baseline; exact condition, product
+    form and processing route must be resolved
+  properties:
+    density:
+      value: 1400
+      unit: kg/m^3
+    youngs_modulus:
+      value: 3000000000.0
+      unit: Pa
+    yield_strength:
+      value: 45000000.0
+      unit: Pa
+    ultimate_tensile_strength:
+      value: 55000000.0
+      unit: Pa
+    elongation:
+      value: 0.25
+      unit: '1'
+    coefficient_of_thermal_expansion:
+      value: 7.999999999999999e-05
+      unit: 1/K
+    thermal_conductivity:
+      value: 0.16
+      unit: W/(m*K)
+    electrical_resistivity:
+      value: 100000000000000.0
+      unit: ohm*m
+  provenance:
+    source_id: SRC-TO-VERIFY
+    verification_required: true
+    note: Screening/reference data only; verify exact grade, condition, standard edition,
+      product form and source before authoritative design use.
+  data_governance:
+    authority_state: candidate_reference
+    source_attachment_required: true
+- id: MAT-POLY-PMMA
+  designation: PMMA
+  family: general_thermoplastic
+  standard_references:
+  - ISO 7823 family
+  - ISO 527
+  cost_tier: cheap
+  availability: very_high
+  typical_uses:
+  - transparent guards
+  - covers
+  - optical components
+  - signage
+  data_status: candidate_reference
+  reference_condition: indicative room-temperature baseline; exact condition, product
+    form and processing route must be resolved
+  properties:
+    density:
+      value: 1180
+      unit: kg/m^3
+    youngs_modulus:
+      value: 3200000000.0
+      unit: Pa
+    yield_strength:
+      value: 65000000.0
+      unit: Pa
+    ultimate_tensile_strength:
+      value: 75000000.0
+      unit: Pa
+    elongation:
+      value: 0.05
+      unit: '1'
+    coefficient_of_thermal_expansion:
+      value: 7.0e-05
+      unit: 1/K
+    thermal_conductivity:
+      value: 0.19
+      unit: W/(m*K)
+    electrical_resistivity:
+      value: 100000000000000.0
+      unit: ohm*m
+  provenance:
+    source_id: SRC-TO-VERIFY
+    verification_required: true
+    note: Screening/reference data only; verify exact grade, condition, standard edition,
+      product form and source before authoritative design use.
+  data_governance:
+    authority_state: candidate_reference
+    source_attachment_required: true

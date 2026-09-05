@@ -1,0 +1,22 @@
+{
+  "version": "0.74.0",
+  "status": "foundation-framework",
+  "functions": [
+    "amplification",
+    "attenuation",
+    "filtering",
+    "level shifting",
+    "buffering",
+    "isolation",
+    "anti-alias filtering"
+  ],
+  "checks": [
+    "input/output range",
+    "offset and gain error",
+    "noise",
+    "bandwidth",
+    "loading",
+    "power supply limits",
+    "fault behaviour"
+  ]
+}

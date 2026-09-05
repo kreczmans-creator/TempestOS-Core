@@ -1,0 +1,36 @@
+{
+  "version": "0.63.0",
+  "application": "gears",
+  "selection_rule": "Prefer low-friction, wear-resistant, dimensionally stable grades; validate tooth stress, temperature, lubrication and PV/contact conditions.",
+  "principal_failure_modes": [
+    "tooth root fatigue",
+    "tooth flank wear",
+    "adhesive wear",
+    "abrasive wear",
+    "thermal softening",
+    "creep-driven backlash change",
+    "moisture-driven dimensional change"
+  ],
+  "engineering_controls": [
+    "tooth bending stress",
+    "contact stress",
+    "speed",
+    "torque",
+    "temperature",
+    "PV",
+    "lubrication",
+    "counterface",
+    "humidity",
+    "cycle count"
+  ],
+  "candidate_families": [
+    "POM",
+    "PA6",
+    "PA66",
+    "PA12",
+    "PEEK",
+    "PPS"
+  ],
+  "evidence_status": "screening-level design rule",
+  "design_use": "decision support only; validate application-specific design"
+}

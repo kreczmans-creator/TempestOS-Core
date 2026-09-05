@@ -1,0 +1,32 @@
+version: 0.26.0
+complete: 10
+substantially_complete: 2
+not_started: 0
+completion_percent: 83
+new_records: 12
+new_grade_states:
+- 15-5 PH
+- 13-8 Mo
+- 310S
+- '321'
+- '430'
+- 440C
+source_backed_states:
+- S235JR
+- S355JR
+- C45
+- 42CrMo4
+- '304'
+- 316L
+- 17-4 PH
+- H13
+- '410'
+- '420'
+- 15-5 PH
+- 13-8 Mo
+- 310S
+- '321'
+- '430'
+- 440C
+verified: 0
+approved_for_design: 0

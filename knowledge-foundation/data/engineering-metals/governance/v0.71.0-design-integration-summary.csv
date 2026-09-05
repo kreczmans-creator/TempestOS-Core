@@ -1,0 +1,8 @@
+Domain,Status,Coverage,Evidence boundary
+Manufacturing/design integration,Complete,"DFM, machining, casting, forging",Supplier/process specific
+GD&T/tolerance engineering,Complete,"Datums, geometric controls, profile, stacks, inspection",Drawing/inspection specific
+Mechanisms/motion,Complete,"Four-bar, cams, linkages, backlash/clearance",Geometry/load specific
+Bearings,Complete,"Selection, fits, failure modes",Manufacturer/application specific
+Gears,Complete,"Train basics, tooth strength, backlash",Standard/manufacturer specific
+Systems verification,Complete,"V-model, method selection, evidence chain",Requirement specific
+Worked cases,Complete,5 integrated cases,"Framework, not certification"

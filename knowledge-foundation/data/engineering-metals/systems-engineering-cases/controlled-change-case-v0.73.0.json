@@ -1,0 +1,15 @@
+{
+  "version": "0.73.0",
+  "status": "foundation-framework",
+  "problem": "Assess whether a design change invalidates existing verification.",
+  "workflow": [
+    "define change",
+    "identify configuration items",
+    "trace affected requirements",
+    "trace affected interfaces",
+    "identify invalidated assumptions",
+    "determine regression tests",
+    "approve and implement change",
+    "re-establish evidence baseline"
+  ]
+}

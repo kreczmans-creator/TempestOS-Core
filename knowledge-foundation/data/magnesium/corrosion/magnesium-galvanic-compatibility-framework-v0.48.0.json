@@ -1,0 +1,38 @@
+{
+  "version": "0.48.0",
+  "family": "magnesium",
+  "status": "system-level-engineering-framework",
+  "galvanic_series_rule": "Magnesium is highly anodic relative to many engineering metals; electrical contact with dissimilar conductive materials can accelerate attack.",
+  "controls": [
+    "dissimilar-metal pairing",
+    "electrical isolation",
+    "coating integrity",
+    "fastener material",
+    "electrolyte exposure",
+    "drainage",
+    "crevice geometry",
+    "surface preparation"
+  ],
+  "screening_compatibility": {
+    "aluminium": "high attention required",
+    "steel": "high attention required",
+    "stainless_steel": "high attention required",
+    "copper_and_copper_alloys": "very_high attention required",
+    "carbon_fibre_composites": "very_high attention required where conductive pathways/electrolyte exist"
+  },
+  "design_outputs": [
+    "galvanic-risk flag",
+    "isolation requirement",
+    "coating requirement",
+    "environment qualification requirement"
+  ],
+  "quantitative_data_required": [
+    "corrosion_rate",
+    "galvanic_current",
+    "environment",
+    "area_ratio",
+    "temperature",
+    "test_method",
+    "source"
+  ]
+}

@@ -1,0 +1,42 @@
+[
+  {
+    "colour": "RED",
+    "finding": "No authoritative source-linked quantitative records",
+    "evidence": "Provenance contract + audit",
+    "disposition": "BLOCKS design qualification, not foundation freeze",
+    "remediation": "Source-link quantitative records",
+    "verification": "Pending"
+  },
+  {
+    "colour": "AMBER",
+    "finding": "Grade-level creep/recrystallisation/oxidation evidence incomplete",
+    "evidence": "High-temperature schemas/frameworks",
+    "disposition": "Open evidence work",
+    "remediation": "Populate authoritative datasets",
+    "verification": "Pending"
+  },
+  {
+    "colour": "AMBER",
+    "finding": "Carbide hot-hardness/thermal-shock/wear evidence incomplete",
+    "evidence": "Carbide framework",
+    "disposition": "Open evidence work",
+    "remediation": "Grade-specific evidence",
+    "verification": "Pending"
+  },
+  {
+    "colour": "YELLOW",
+    "finding": "Exact standards edition linkage incomplete",
+    "evidence": "Standards framework",
+    "disposition": "Non-blocking foundation observation",
+    "remediation": "Populate source mappings",
+    "verification": "Pending"
+  },
+  {
+    "colour": "GREEN",
+    "finding": "Tungsten fundamentals ontology and family separation established",
+    "evidence": "0.43\u20130.45 layers + 0.46 audit",
+    "disposition": "Accepted",
+    "remediation": "None",
+    "verification": "Baseline audit passed"
+  }
+]

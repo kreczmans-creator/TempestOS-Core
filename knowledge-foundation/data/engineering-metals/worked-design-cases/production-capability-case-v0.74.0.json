@@ -1,0 +1,15 @@
+{
+  "version": "0.74.0",
+  "status": "worked-framework",
+  "problem": "Determine whether a manufacturing process can hold a critical dimension.",
+  "workflow": [
+    "define characteristic and tolerance",
+    "select measurement method",
+    "establish process stability",
+    "collect representative samples",
+    "evaluate capability",
+    "identify dominant variation",
+    "define control/reaction plan",
+    "verify sustained capability"
+  ]
+}

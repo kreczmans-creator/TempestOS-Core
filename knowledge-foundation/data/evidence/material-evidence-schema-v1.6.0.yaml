@@ -1,0 +1,53 @@
+schema_version: 1.0.0
+source_record:
+  required:
+  - source_id
+  - source_type
+  - title
+  - publisher
+  - edition_or_revision
+  - publication_date_or_year
+  - locator
+  source_type_values:
+  - standard
+  - manufacturer_datasheet
+  - material_certificate
+  - handbook
+  - peer_reviewed_paper
+  - test_report
+  - database
+  - other
+  locator_description: Stable page/table/section/URL locator sufficient for an engineer
+    to reproduce the observation.
+observation_binding:
+  required:
+  - observation_id
+  - material_state_id
+  - property
+  - source_id
+  - source_locator
+  - applicability
+  applicability:
+  - material_grade
+  - condition
+  - product_form
+  - thickness_or_section
+  - temperature
+  - test_method
+promotion:
+  states:
+  - candidate_reference
+  - sourced
+  - reviewed
+  - verified
+  - approved_for_design
+  minimum_for_design: approved_for_design
+  review_checks:
+  - identity confirmed
+  - condition confirmed
+  - product form confirmed
+  - units and conversion verified
+  - source locator reproducible
+  - test method applicable
+  - conflicts resolved or explicitly represented
+  - uncertainty/allowable basis documented

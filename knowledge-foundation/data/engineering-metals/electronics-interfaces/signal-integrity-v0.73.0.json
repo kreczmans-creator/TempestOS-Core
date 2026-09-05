@@ -1,0 +1,23 @@
+{
+  "version": "0.73.0",
+  "status": "foundation-framework",
+  "concepts": [
+    "noise",
+    "shielding",
+    "ground loops",
+    "termination",
+    "impedance",
+    "bandwidth",
+    "filtering",
+    "sampling"
+  ],
+  "workflow": [
+    "identify signal source",
+    "identify receiving input",
+    "define signal amplitude and bandwidth",
+    "map noise sources",
+    "select cable/interface",
+    "define grounding/shielding",
+    "verify signal margin"
+  ]
+}

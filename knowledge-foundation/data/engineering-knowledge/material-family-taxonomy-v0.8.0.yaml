@@ -1,0 +1,41 @@
+material_family_taxonomy_version: 0.8.0
+families:
+  ferrous:
+    steel:
+    - carbon_structural_steel
+    - low_carbon_steel
+    - medium_carbon_steel
+    - alloy_steel
+    - chromium_molybdenum_steel
+    - nickel_chromium_molybdenum_steel
+    - austenitic_stainless
+    - stabilised_austenitic_stainless
+    - martensitic_stainless
+    - precipitation_hardening_stainless
+    - hot_work_tool_steel
+    - cold_work_tool_steel
+    - spring_steel
+    - silicon_manganese_spring_steel
+    - wear_resistant_plate
+    - pressure_vessel_steel
+    - bearing_steel
+    - case_hardening_steel
+    - ultra_high_strength_steel
+  non_ferrous:
+    aluminium:
+    - commercial_purity_aluminium
+    - marine_aluminium
+    - heat_treatable_aluminium
+    - high_strength_aluminium
+    - aerospace_aluminium
+    - stress_relieved_aluminium
+    magnesium:
+    - wrought_magnesium_alloy
+    - cast_magnesium_alloy
+    - rare_earth_magnesium_alloy
+    tungsten:
+    - tungsten
+    - tungsten_electrode_material
+    - tungsten_heavy_alloy
+    refractory:
+    - refractory_metal

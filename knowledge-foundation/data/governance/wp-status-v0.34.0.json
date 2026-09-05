@@ -1,0 +1,11 @@
+{
+  "version": "0.34.0",
+  "scope": "Steel thermal, electrical and magnetic fundamentals",
+  "priority_grades": 16,
+  "thermal_reference_coverage": "16/16",
+  "electrical_reference_coverage": "16/16",
+  "magnetic_classification": "16/16",
+  "verified": 0,
+  "approved_for_design": 0,
+  "next_phase": "environmental/corrosion fundamentals"
+}

@@ -1,0 +1,26 @@
+{
+  "version": "0.72.0",
+  "status": "design-framework",
+  "inputs": [
+    "force",
+    "torque",
+    "stroke",
+    "speed",
+    "duty cycle",
+    "acceleration",
+    "load inertia",
+    "environment",
+    "life",
+    "backdrivability"
+  ],
+  "workflow": [
+    "define motion/load profile",
+    "calculate peak and continuous demand",
+    "include acceleration/inertia",
+    "account for transmission efficiency",
+    "select actuator technology",
+    "check thermal duty",
+    "check life and fault conditions",
+    "verify performance"
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "version": "0.71.0",
+  "status": "worked-framework",
+  "problem": "Allocate component tolerances to achieve a functional assembly gap.",
+  "workflow": [
+    "define functional requirement",
+    "establish datum scheme",
+    "identify contributors",
+    "build worst-case stack",
+    "perform sensitivity analysis",
+    "consider statistical allocation if justified",
+    "define inspection characteristics",
+    "verify assembly capability"
+  ]
+}

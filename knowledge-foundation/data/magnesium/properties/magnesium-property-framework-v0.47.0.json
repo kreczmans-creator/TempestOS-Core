@@ -1,0 +1,44 @@
+{
+  "version": "0.47.0",
+  "family": "magnesium",
+  "fundamental_property_groups": [
+    "identity_and_composition",
+    "density",
+    "elastic_properties",
+    "tensile_properties",
+    "fatigue",
+    "fracture",
+    "thermal_properties",
+    "electrical_properties",
+    "corrosion",
+    "flammability_and_chip_fire",
+    "manufacturing",
+    "machinability",
+    "joining",
+    "surface_treatment",
+    "cost",
+    "availability",
+    "common_uses"
+  ],
+  "design_context_fields": [
+    "grade",
+    "product_form",
+    "temper",
+    "grain_orientation",
+    "temperature",
+    "environment",
+    "surface_condition",
+    "loading_rate",
+    "fatigue_spectrum",
+    "manufacturing_route"
+  ],
+  "special_magnesium_controls": [
+    "galvanic corrosion",
+    "stress-corrosion/environmental effects where applicable",
+    "chip ignition and machining fire",
+    "limited high-temperature capability of common grades",
+    "texture-induced anisotropy in wrought products",
+    "porosity/microstructure in cast products"
+  ],
+  "status": "foundation_framework"
+}

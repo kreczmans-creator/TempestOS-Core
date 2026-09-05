@@ -1,0 +1,27 @@
+{
+  "version": "0.57.0",
+  "scope": "Engineering polymers",
+  "required_properties": [
+    "density",
+    "tensile_strength",
+    "yield_or_proof_strength_where_defined",
+    "elastic_modulus",
+    "elongation",
+    "Poisson_ratio_where_available",
+    "hardness",
+    "impact_toughness",
+    "compressive_strength",
+    "shear_strength",
+    "fatigue",
+    "creep",
+    "fracture_toughness_where_relevant"
+  ],
+  "fundamental_effects": [
+    "temperature strongly affects modulus and strength",
+    "time-dependent viscoelasticity makes load duration fundamental",
+    "humidity can materially change properties of hygroscopic polymers",
+    "reinforcement produces direction-dependent properties",
+    "processing can create orientation, residual stress and weld-line weakness"
+  ],
+  "design_rule": "Do not treat polymer tensile strength at room temperature as a substitute for long-term structural performance."
+}
