@@ -39,6 +39,25 @@ public sealed class EngineeringDomainContext
     /// </remarks>
     public IAttachmentContentStore? AttachmentContentStore { get; }
 
+    /// <summary>
+    /// The durable write-intent marker store (`WP 16.4B-R2`), or
+    /// <see langword="null"/> where none is configured.
+    /// </summary>
+    /// <remarks>
+    /// Optional for the same reason <see cref="AttachmentContentStore"/>
+    /// is: every hand-assembled context in this repository's own tests
+    /// that predates it must keep compiling and behaving unchanged.
+    /// <b>With no marker store, <see cref="EngineeringObjectBase.AttachContentAsync"/>
+    /// simply skips marking</b> — it does not fail, and it does not
+    /// silently reopen a bigger hole than the one before this Work
+    /// Package: a context with an <see cref="AttachmentContentStore"/> but
+    /// no marker store is exactly as exposed to the race as `WP 16.4B`
+    /// shipped, never more so. The production Host always composes both
+    /// together (<c>TempestHost</c>), so this combination is a test-only
+    /// shape, not a production one.
+    /// </remarks>
+    public IAttachmentWriteIntentStore? AttachmentWriteIntentStore { get; }
+
     public EngineeringDomainContext(
         IEngineeringDocumentStore store,
         IEngineeringObjectRepository repository,
@@ -48,7 +67,8 @@ public sealed class EngineeringDomainContext
         IEvidenceComposer evidenceComposer,
         ICurrentPrincipalAccessor currentPrincipalAccessor,
         IEngineeringObjectStateStore? objectStateStore = null,
-        IAttachmentContentStore? attachmentContentStore = null)
+        IAttachmentContentStore? attachmentContentStore = null,
+        IAttachmentWriteIntentStore? attachmentWriteIntentStore = null)
     {
         ArgumentNullException.ThrowIfNull(store);
         ArgumentNullException.ThrowIfNull(repository);
@@ -67,6 +87,7 @@ public sealed class EngineeringDomainContext
         CurrentPrincipalAccessor = currentPrincipalAccessor;
         ObjectStateStore = objectStateStore;
         AttachmentContentStore = attachmentContentStore;
+        AttachmentWriteIntentStore = attachmentWriteIntentStore;
     }
 
     public string ResolveCurrentPrincipalId() =>

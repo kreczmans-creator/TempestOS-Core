@@ -318,6 +318,21 @@ public abstract class EngineeringObjectBase :
     }
 
     /// <inheritdoc />
+    /// <remarks>
+    /// <b>Write-intent marker (`WP 16.4B-R2`).</b> A marker for
+    /// <c>attachmentId</c> is recorded before the content write and
+    /// cleared only after the state write that references it succeeds —
+    /// bracketing both writes without reordering either of them.
+    /// <c>ADR-0114</c> Decision 4 (content before the state that names it)
+    /// is unchanged: the marker is additional, durable information a
+    /// sweep can consult, never a change to what gets written when. See
+    /// <see cref="IAttachmentWriteIntentStore"/> for why a marker can only
+    /// ever prevent a sweep from collecting content, never cause it to.
+    /// Skipped entirely (no marker, no failure) when this domain has no
+    /// <see cref="EngineeringDomainContext.AttachmentWriteIntentStore"/>
+    /// configured — see that property's own remarks for why that is not a
+    /// regression.
+    /// </remarks>
     public async Task<IAttachment> AttachContentAsync(
         string fileName,
         string contentType,
@@ -332,7 +347,14 @@ public abstract class EngineeringObjectBase :
                 "This engineering domain has no attachment content store configured, so file content cannot be stored. " +
                 "Use AttachAsync to record attachment metadata alone.");
 
+        var writeIntentStore = _context.AttachmentWriteIntentStore;
         var attachmentId = Guid.NewGuid();
+
+        // Mark first: any sweep that can see this attachment's content
+        // from this point forward must also be able to see that it is
+        // still being written, and skip it.
+        if (writeIntentStore is not null)
+            await writeIntentStore.MarkAsync(attachmentId, cancellationToken).ConfigureAwait(false);
 
         // Content first: a crash between the two writes leaves unreferenced
         // bytes, not an attachment promising content nobody stored.
@@ -342,6 +364,13 @@ public abstract class EngineeringObjectBase :
 
         lock (_attachments) { _attachments.Add(attachment); }
         await PersistStateAsync(cancellationToken).ConfigureAwait(false);
+
+        // Clear last, only once the state that references this attachment
+        // is itself durable — a crash before this point leaves a stale
+        // marker, whose only effect is that this content is never swept
+        // (the pre-existing, disclosed `TD-97` outcome), never data loss.
+        if (writeIntentStore is not null)
+            await writeIntentStore.ClearAsync(attachmentId, cancellationToken).ConfigureAwait(false);
 
         return attachment;
     }

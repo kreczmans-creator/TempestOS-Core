@@ -219,8 +219,23 @@ public sealed class ApiRequestHandler
 
         if (!_permissionEvaluator.HasPermission(principal, requiredPermission))
         {
-            Log(method, path, 403, identityHeaderValue);
-            return new ApiResponse(403, $"Forbidden: principal '{identityHeaderValue}' does not hold '{requiredPermission.Key}'.");
+            // The response body is deliberately generic (`WP 16.4B-R2`,
+            // closing the finding the review board raised): an
+            // unauthenticated caller can supply any non-empty
+            // X-Identity-Id and resolve to a valid, zero-permission
+            // principal (IdentityService.GetPrincipal never rejects an
+            // unknown id), so a body naming the principal and the
+            // required permission key handed that caller the exact
+            // route -> permission map TD-62 closed a different, single-
+            // document disclosure of. The full detail this body used to
+            // carry is not thrown away - it goes to the log, right here,
+            // which is where an operator investigating a denied request
+            // already looks (never to the Audit record: recording every
+            // denied request there is a deliberate, separately-tested
+            // design choice - see HandleAsync_UnauthorizedRequest_RecordsNoAuditEntry
+            // - that this fix leaves untouched).
+            _logger?.Information($"{method} {path} -> 403 (principal '{identityHeaderValue}' does not hold '{requiredPermission.Key}').");
+            return new ApiResponse(403, "Forbidden.");
         }
 
         await _auditRecorder.RecordAsync(

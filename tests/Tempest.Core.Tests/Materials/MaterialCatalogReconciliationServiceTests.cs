@@ -121,6 +121,93 @@ public class MaterialCatalogReconciliationServiceTests
         Assert.Null(await persistence.ReadAsync(MaterialCatalog.IndexCollectionName, "GHOST-1"));
     }
 
+    // ---- The race (`WP 16.4B-R2`) ----
+
+    /// <summary>
+    /// Deterministically reproduces the reviewer's exact scenario: a
+    /// sweep interleaved with an in-flight <see cref="MaterialCatalog.RegisterAsync"/>
+    /// call must never make the fully-registered material unfindable. No
+    /// timing, no <see cref="Task.Delay(int)"/> — <see cref="GatedListKeysPersistenceStore"/>
+    /// pauses the sweep's own document scan (the second, authoritative-side
+    /// read under the fixed order) until the test releases it, and the
+    /// registration runs to completion entirely inside that pause.
+    /// </summary>
+    [Fact]
+    public async Task SweepAsync_InterleavedWithAnInFlightRegistration_NeverMakesTheMaterialUnfindable()
+    {
+        var persistence = new InMemoryPersistenceStore();
+        var documentStore = new EngineeringDocumentStore(persistence, new CurrentPrincipalAccessor());
+        var catalog = new MaterialCatalog(documentStore, persistence);
+
+        var gated = new GatedListKeysPersistenceStore(persistence, EngineeringDocumentStore.DocumentsCollectionName);
+        var reconciliation = new MaterialCatalogReconciliationService(documentStore, gated);
+
+        var sweepTask = reconciliation.SweepAsync();
+
+        // The sweep has already captured its (empty) index snapshot — the
+        // derived side — and is paused about to scan documents — the
+        // authoritative side.
+        await gated.ReachedGate;
+
+        var material = await catalog.RegisterAsync("AL-RACE-1", "Aluminium Race", BuildProperties());
+
+        gated.Release();
+        var report = await sweepTask;
+
+        // The one assertion that matters: still findable.
+        var recovered = await catalog.FindAsync("AL-RACE-1");
+        Assert.NotNull(recovered);
+        Assert.Equal(material.UnderlyingDocumentId, recovered!.UnderlyingDocumentId);
+
+        // No finding may have been a deletion of the live entry.
+        Assert.DoesNotContain(report.Findings, f =>
+            f.Category == MaterialCatalogReconciliationService.StaleIndexEntryCategory && f.DocumentId == material.UnderlyingDocumentId);
+    }
+
+    /// <summary>
+    /// A wrapper around a real <see cref="IPersistenceStore"/> that pauses
+    /// one specific collection's <see cref="ListKeysAsync"/> call until
+    /// released — the deterministic interleaving seam these race tests
+    /// use in place of any timing dependency.
+    /// </summary>
+    private sealed class GatedListKeysPersistenceStore : IPersistenceStore
+    {
+        private readonly IPersistenceStore _inner;
+        private readonly string _gatedCollection;
+        private readonly TaskCompletionSource _reachedGate = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly TaskCompletionSource _releaseGate = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public GatedListKeysPersistenceStore(IPersistenceStore inner, string gatedCollection)
+        {
+            _inner = inner;
+            _gatedCollection = gatedCollection;
+        }
+
+        public Task ReachedGate => _reachedGate.Task;
+
+        public void Release() => _releaseGate.TrySetResult();
+
+        public async Task<IReadOnlyList<string>> ListKeysAsync(string collection, CancellationToken cancellationToken = default)
+        {
+            if (string.Equals(collection, _gatedCollection, StringComparison.Ordinal))
+            {
+                _reachedGate.TrySetResult();
+                await _releaseGate.Task.ConfigureAwait(false);
+            }
+
+            return await _inner.ListKeysAsync(collection, cancellationToken).ConfigureAwait(false);
+        }
+
+        public Task<string?> ReadAsync(string collection, string key, CancellationToken cancellationToken = default) =>
+            _inner.ReadAsync(collection, key, cancellationToken);
+
+        public Task WriteAsync(string collection, string key, string value, CancellationToken cancellationToken = default) =>
+            _inner.WriteAsync(collection, key, value, cancellationToken);
+
+        public Task DeleteAsync(string collection, string key, CancellationToken cancellationToken = default) =>
+            _inner.DeleteAsync(collection, key, cancellationToken);
+    }
+
     [Fact]
     public void Constructor_NullDocumentStore_Throws()
     {
