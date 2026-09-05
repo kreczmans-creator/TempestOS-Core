@@ -120,7 +120,7 @@
 | `IVerificationRecord` | `Tempest.Core.Verification` | Platform API (data contract) | The complete, structured account of one recorded verification outcome (`WP 7.1E`, `ADR-0057`) |
 | `IVerificationService` | `Tempest.Core.Verification` | DI-public | Records a verification outcome against a subject document; permission-gated history query (`WP 7.1E`, `ADR-0057`) |
 
-**Total: 191 public interfaces under `src/Tempest.Core/` (190 distinct names — `IRequirement` is declared in two namespaces) — corrected at the `WP 16.3B` integration (2026-09-04): `IStateMigration`, `IStateMigrationRegistry`, `ISettingsMigration<TDocument>` added (`ADR-0120`); previously corrected
+**Total: 194 public interfaces under `src/Tempest.Core/` (193 distinct names — `IRequirement` is declared in two namespaces) — corrected at the `WP 16.4B` integration (2026-09-05): `IAttachmentContentReconciliationService`, `IMaterialCatalogReconciliationService`, `IRequirementsReconciliationService` added (`TD-67`, `TD-97`); corrected at the `WP 16.3B` integration (2026-09-04): `IStateMigration`, `IStateMigrationRegistry`, `ISettingsMigration<TDocument>` added (`ADR-0120`); previously corrected
 `WP 16.2A` (174 → 188: 15 rows backfilled for `v0.13.0` Plugin Trust and
 `v0.14.0` Durability/Rehydration/Attachment Content, none added at their
 own implementation time; 1 stale row, `IProjectRepository`, removed —
@@ -218,6 +218,9 @@ contracts with no concrete realisation in this namespace, by design.
 | `IEngineeringObjectRehydratorRegistry` | `Tempest.Core.EngineeringDomain` | DI-public | The Kind-to-rehydrator map startup rehydration resolves through (`v0.14.0`, `TD-85`, `ADR-0116`) |
 | `IStateMigration` | `Tempest.Core.EngineeringDomain` | DI-public | One ordered step of an `EngineeringObjectState` schema-migration chain: `Kind` (or null for every Kind), `FromVersion`, `Migrate` (`WP 16.3B`, `ADR-0120`) |
 | `IStateMigrationRegistry` | `Tempest.Core.EngineeringDomain` | DI-public | Registry of `IStateMigration` steps, common chain and per-Kind chains, consulted by `EngineeringObjectStateStore`'s read path (`WP 16.3B`, `ADR-0120`) |
+| `IAttachmentContentReconciliationService` | `Tempest.Core.EngineeringDomain` | DI-public | Detects, and on request collects, attachment content records that no live attachment Id references — the sweep `TD-97` named as the closing action (`WP 16.4B`, `ADR-0114` unchanged). Explicit `DetectAsync`/`SweepAsync` only; nothing invokes it automatically |
+| `IMaterialCatalogReconciliationService` | `Tempest.Core.Materials` | DI-public | Detects, and on request repairs, backing documents with no catalogue index entry and index entries with no document — half of the reconcile/repair path `TD-67` named as absent (`WP 16.4B`) |
+| `IRequirementsReconciliationService` | `Tempest.Core.Requirements` | DI-public | Detects, and on request repairs, orphaned requirement/collection/group documents against the identifier index and the collection and group registries — the other half of `TD-67`'s reconcile/repair path (`WP 16.4B`) |
 | `IEngineeringObjectRepository` | `Tempest.Core.EngineeringDomain` | DI-public | The new, in-memory, Kind-queryable object index (`WP 8.2C`, `ADR-0077`) |
 | `IEngineeringObjectStateStore` | `Tempest.Core.EngineeringDomain` | DI-public | The durable store of `EngineeringObjectState` — what makes an engineering object survive a process restart (`v0.14.0`, `TD-85`, `ADR-0113`) |
 | `IEngineeringRelationship` | `Tempest.Core.EngineeringDomain` | Platform API (data contract) | The one generic relationship shape, never a closed set of per-category types (`WP 8.2B`, `ADR-0076`) |

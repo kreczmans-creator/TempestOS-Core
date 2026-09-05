@@ -14,7 +14,7 @@
 | **Related Documents** | `docs/architecture/Failure Behaviour.md`; `Architectural Dependency Register.md`. |
 | **Related ADRs** | ADR-0013, ADR-0021, ADR-0025, ADR-0038, ADR-0040, ADR-0046, ADR-0047, ADR-0048, ADR-0050, ADR-0051. |
 | **Related Academy Articles** | `docs/academy/06 Engineering Standards/01-exception-design.md`. |
-| **Coverage Status** | **Complete, re-verified `WP 16.2A`.** 84 of 84 classes matching `^public (sealed \|abstract )?class \w+Exception\b` under `src/Tempest.Core/` are listed below, zero omitted. |
+| **Coverage Status** | **Complete, re-verified at the `WP 16.4B` integration (2026-09-05).** 87 of 87 classes matching `^public (sealed \|abstract )?class \w+Exception\b` under `src/Tempest.Core/` are listed below, zero omitted. `WP 16.2A`'s own pass, which stated 84/84, was correct against the tree it measured; `WP 16.4B` added three. |
 
 ---
 
@@ -100,6 +100,9 @@
 | `DuplicateRequirementIdentifierException` | `RequirementsException` | Requirements | Application logic's own error (not Host-level); thrown by `IRequirementsService` — first registration of a business identifier wins — backfilled `WP 16.2A` |
 | `InvalidRequirementStatusTransitionException` | `RequirementsException` | Requirements | Application logic's own error (not Host-level); thrown for an unpermitted requirement status change — backfilled `WP 16.2A` |
 | `RequirementGroupHasChildrenException` | `RequirementsException` | Requirements | Application logic's own error (not Host-level); thrown by `IRequirementsService.DeleteGroupAsync` when the group still has live (non-deleted) grouped requirements or live sub-groups (`WP 9.1A`, `ADR-0084`) — mirrors `EngineeringObjectHasChildrenException`'s own identical reasoning, for a genuinely different base exception type (`RequirementsException`, `WP 7.3A`, not `EngineeringDomainException`) |
+| `RequirementGroupCycleException` | `RequirementsException` | Requirements | Application logic's own error (not Host-level); thrown by `IRequirementsService.MoveGroupAsync` when the requested new parent is the group itself or one of its own descendants, which would make the group hierarchy cyclic (`WP 16.4B`, `TD-67`). No existing type fitted: `RequirementGroupHasChildrenException` is about deletion, and `CircularParentAssignmentException` is scoped to `IEngineeringObject`, which no Requirements type implements (`ADR-0084`) |
+| `ServiceRegistrationException` | `Exception` | Dependency Injection | Base type, never thrown directly (`WP 16.4B`, `TD-69`). Deliberately a separate root from `ServiceResolutionException`: that covers failures while an already-built `ITempestServiceProvider` resolves a service, this covers failures while an `IServiceCollection` is still being built and no provider exists — the same registration/resolution split `ModuleRegistrationException`/`ModuleDiscoveryException` already draw for modules |
+| `DuplicateServiceRegistrationException` | `ServiceRegistrationException` | Dependency Injection | Application logic's own error (not Host-level); thrown by `IServiceCollection.Add`/`AddInstance` when the service type already has a registration (`WP 16.4B`, `TD-69`) — first registration wins, mirroring `DuplicateApiRouteException`/`DuplicateReportDefinitionException`. Replacing one deliberately requires `allowReplace: true`; before this, a mistaken re-registration silently swapped the platform implementation with no exception and no log |
 | `CircularPluginDependencyException` | `PluginException` | Plugin Trust & Dependencies | Isolated per plugin (ADR-0025); thrown when a plugin's own declared dependency graph cycles (`v0.13.0`) — backfilled `WP 16.2A` |
 | `IncompatiblePluginDependencyVersionException` | `PluginException` | Plugin Trust & Dependencies | Isolated per plugin (ADR-0025); thrown when a plugin's own declared dependency version constraint is not satisfied (`v0.13.0`) — backfilled `WP 16.2A` |
 | `MissingPluginDependencyException` | `PluginException` | Plugin Trust & Dependencies | Isolated per plugin (ADR-0025); thrown when a plugin's own declared dependency is not present (`v0.13.0`) — backfilled `WP 16.2A` |
@@ -121,9 +124,9 @@ Reviewed** field and
 `docs/releases/v0.16.0/WP16.2A Register and Status Currency Report.md`
 for the full derivation.
 
-**Total: 84 custom exception types — Verified directly against
+**Total: 87 custom exception types — Verified directly against
 `src/Tempest.Core/` (`grep -rEn "^public (sealed |abstract )?class \w+Exception\b" src/Tempest.Core --include=*.cs`
-returns exactly 84 matches, matching the 84 rows in the Entries table
+returns exactly 87 matches, matching the 87 rows in the Entries table (84 at `WP 16.2A`, plus `RequirementGroupCycleException`, `ServiceRegistrationException` and `DuplicateServiceRegistrationException` at the `WP 16.4B` integration, 2026-09-05)
 above, re-derived directly by `WP 16.2A`). Corrected,
 `WP 5.4`: this total previously read "30," undercounting
 by one against this register's own Entries table and Distribution table

@@ -41,7 +41,7 @@ reflected here until now).
 |---|---|---|---|---|
 | `Tempest.Core.Modules` | Tempest.Core | 24 | Discovery, Registration, Lifecycle, Module SDK, `ModuleMetadataAttribute` | WP 2.1–2.3, extended WP 4.1, WP 4.4B |
 | `Tempest.Core.Plugins` | Tempest.Core | 39 | Plugin manifest, discovery, loading (WP 4.2); Plugin Trust & Capability Enforcement — trust store, tiers, signature verification, dependency graph, denied-type/component-principal registries (`v0.13.0`, `ADR-0107`–`ADR-0112`) | WP 4.2, extended `v0.13.0` |
-| `Tempest.Core.DependencyInjection` | Tempest.Core | 12 | Custom DI container | WP 2.4; `ServiceProviderExtensions` — the public `GetService<T>()` convenience — removed `WP-F` (`TD-114`, `F-15`): zero production callers, 32 test call sites, and production resolved through `GetService(typeof(T))` in 40 places regardless. A public API on a plugin-hosting assembly that only tests used; the tests were migrated to the form production already used rather than production migrated to it |
+| `Tempest.Core.DependencyInjection` | Tempest.Core | 14 | Custom DI container | WP 2.4; `ServiceProviderExtensions` — the public `GetService<T>()` convenience — removed `WP-F` (`TD-114`, `F-15`): zero production callers, 32 test call sites, and production resolved through `GetService(typeof(T))` in 40 places regardless. A public API on a plugin-hosting assembly that only tests used; the tests were migrated to the form production already used rather than production migrated to it |
 | `Tempest.Core.Logging` | Tempest.Core | 10 | `ILogger`, sinks, factory, `CompositeLogSink` | WP 2.6, extended WP 5.2; the legacy `LoggingService` removed `WP-C` (`TD-01`) |
 | `Tempest.Core.Configuration` | Tempest.Core | 9 | Configuration sources, builder, provider | WP 2.5; the legacy `ConfigurationService` and the `ApplicationConfiguration` it returned both removed `WP-C` (`TD-110`) |
 | `Tempest.Core.BackgroundServices` | Tempest.Core | 9 | Hosted service contracts, discovery, orchestration | WP 4.0 (contracts), WP 4.5 (infrastructure) |
@@ -70,11 +70,11 @@ reflected here until now).
 | `Tempest.Core.Licensing` | Tempest.Core | 10 | `ILicense`/`License`, `ILicenseValidator`/`LicenseValidator`, `LicenseValidationResult`, `ILicenseProvider`/`LicenseProvider`, `LicensingException` and one approved subtype (`LicenseValidationException`), `LicenseDto` | WP 6.6 |
 | `Tempest.Core.EngineeringData` | Tempest.Core | 12 | `IEngineeringDocument`/`EngineeringDocument`, `IDocumentRevision`/`DocumentRevision`, `IEngineeringDocumentStore`/`EngineeringDocumentStore`, `DocumentReference`, `EngineeringDataException` and one subtype — the identity/revision foundation every canonical Engineering Object is built on | WP 7.1A, `ADR-0053` — backfilled `WP 16.2A` |
 | `Tempest.Core.UnitsAndQuantities` | Tempest.Core | 20 | `Quantity<TDimension>`/`Unit<TDimension>`/`IDimension`, per-dimension unit families (`Length`, `Mass`, `Area`, `Volume`, `Force`, `Pressure`, `Duration`), `IncompatibleUnitsException` | WP 7.1B, `ADR-0054` — backfilled `WP 16.2A` |
-| `Tempest.Core.Materials` | Tempest.Core | 14 | `IMaterialCatalog`/`MaterialCatalog`, `IMaterialSpecification`/`MaterialSpecification`, `MaterialProperty` and its provenance/confidence/validation-status types, `MaterialsException` and two subtypes | WP 7.1C, `ADR-0055` — backfilled `WP 16.2A` |
+| `Tempest.Core.Materials` | Tempest.Core | 17 | `IMaterialCatalog`/`MaterialCatalog`, `IMaterialSpecification`/`MaterialSpecification`, `MaterialProperty` and its provenance/confidence/validation-status types, `MaterialsException` and two subtypes | WP 7.1C, `ADR-0055` — backfilled `WP 16.2A` |
 | `Tempest.Core.Calculations` | Tempest.Core | 18 | `ICalculationDefinition<TInput, TResult>`/`ICalculationEngine`/`CalculationEngine`, `CalculationRecord`/`CalculationContext`, `CalculationException` and three subtypes, `EngineeringCalculationDefinitions` | WP 7.1D, `ADR-0056` — backfilled `WP 16.2A` |
 | `Tempest.Core.Verification` | Tempest.Core | 9 | `IVerificationRecord`/`VerificationRecord`, `IVerificationService`/`VerificationService`, `VerificationContext`/`VerificationCriterion`/`VerificationOutcome`/`VerificationEvidenceEntry` | WP 7.1E, `ADR-0057` — backfilled `WP 16.2A` |
-| `Tempest.Core.Requirements` | Tempest.Core | 24 | `IRequirement`/`Requirement`, `IRequirementCollection`/`RequirementCollection`, `IRequirementGroup`/`RequirementGroup`, `IRequirementEvidence`, `IRequirementsService`/`RequirementsService`, `IRequirementValidationService`/`RequirementValidationService` (`WP 9.1A`), `RequirementsException` and four subtypes | WP 7.3A, `ADR-0058`, extended WP 9.1A — backfilled `WP 16.2A` |
-| `Tempest.Core.EngineeringDomain` | Tempest.Core | 66 | The canonical Engineering Object model: `IEngineeringObject`/`EngineeringObjectBase`, every Physical/Configuration/Programme/Governance/Supply-Chain/Test-Manufacturing/Documentation-Design object and facet contract (`IHasLifecycle`, `IHasParent`, `IHasRelationships`, `IHasAttachments`, `IDeletable`, `IRenamable`, and others), `IEngineeringObjectRepository`/`IEngineeringRelationshipRepository`, `ILifecycleTransitionTable`, `IValidationRuleSet`, `IReferenceIntegrityChecker`, `IRelationshipDiscovery`/`IDependencyTraversal`/`IImpactAnalysis`, `IEvidenceComposer`, `EngineeringDomainContext`, `EngineeringDomainException` and its subtypes; durability/rehydration/attachment-content additions (`v0.14.0`): `EngineeringObjectState`/`IEngineeringObjectStateStore`, `IAttachmentContentStore`/`AttachmentContent`, `IRehydratable<TSelf>`/`IEngineeringObjectRehydrator`/`IEngineeringObjectRehydratorRegistry`/`EngineeringObjectRehydrationService` | WP 8.2C, `ADR-0075`–`ADR-0081`, extended `v0.9.0` (`IRenamable`/`IHasParent`/`IDeletable`/`IHasBomLine`) and `v0.14.0` (`TD-85`, `ADR-0113`/`ADR-0116`) — backfilled `WP 16.2A` |
+| `Tempest.Core.Requirements` | Tempest.Core | 28 | `IRequirement`/`Requirement`, `IRequirementCollection`/`RequirementCollection`, `IRequirementGroup`/`RequirementGroup`, `IRequirementEvidence`, `IRequirementsService`/`RequirementsService`, `IRequirementValidationService`/`RequirementValidationService` (`WP 9.1A`), `RequirementsException` and four subtypes | WP 7.3A, `ADR-0058`, extended WP 9.1A — backfilled `WP 16.2A` |
+| `Tempest.Core.EngineeringDomain` | Tempest.Core | 68 | The canonical Engineering Object model: `IEngineeringObject`/`EngineeringObjectBase`, every Physical/Configuration/Programme/Governance/Supply-Chain/Test-Manufacturing/Documentation-Design object and facet contract (`IHasLifecycle`, `IHasParent`, `IHasRelationships`, `IHasAttachments`, `IDeletable`, `IRenamable`, and others), `IEngineeringObjectRepository`/`IEngineeringRelationshipRepository`, `ILifecycleTransitionTable`, `IValidationRuleSet`, `IReferenceIntegrityChecker`, `IRelationshipDiscovery`/`IDependencyTraversal`/`IImpactAnalysis`, `IEvidenceComposer`, `EngineeringDomainContext`, `EngineeringDomainException` and its subtypes; durability/rehydration/attachment-content additions (`v0.14.0`): `EngineeringObjectState`/`IEngineeringObjectStateStore`, `IAttachmentContentStore`/`AttachmentContent`, `IRehydratable<TSelf>`/`IEngineeringObjectRehydrator`/`IEngineeringObjectRehydratorRegistry`/`EngineeringObjectRehydrationService` | WP 8.2C, `ADR-0075`–`ADR-0081`, extended `v0.9.0` (`IRenamable`/`IHasParent`/`IDeletable`/`IHasBomLine`) and `v0.14.0` (`TD-85`, `ADR-0113`/`ADR-0116`) — backfilled `WP 16.2A` |
 | `Tempest.Core.Macros` | Tempest.Core | 5 | `ICommandMacro`/`CommandMacro`, `IMacroManager`/`MacroManager`, `RunMacroCommand` — an ordered, named sequence of registered Command Ids | WP 10.6A, `ADR-0099` — backfilled `WP 16.2A` |
 | `Tempest.Core.Input` | Tempest.Core | 4 | `IInputBindingProvider`/`IExternalControllerProvider`, `IInputBindingRegistry`/`InputBindingRouter` | WP 10.6A, `ADR-0100` — backfilled `WP 16.2A` |
 | `Tempest.App.Composition` | Tempest.App | 1 | `EngineeringWorkspaceComposer` — the shared collaborator-bundle composer every discipline's own `Program.cs`/`Tempest.Desktop` composition root calls | `v0.8.0` onward — backfilled `WP 16.2A` |
@@ -98,12 +98,16 @@ reflected here until now).
 files) and the 1 *(no namespace declared — global namespace)* row are
 both shown for continuity/completeness but are not namespaces and are
 not counted toward the 47. Across 4 in-scope projects/areas (`Tempest.Core`, `Tempest.App`,
-`Tempest.Samples`, `Tempest.Validation`) — **re-derived `WP 16.1B`
-integration follow-up (2026-09-05), after `WP 16.3B` and `WP 16.5A`
+`Tempest.Samples`, `Tempest.Validation`) — **re-derived at the `WP 16.4B`
+integration (2026-09-05), after `WP 16.3B`, `WP 16.4B` and `WP 16.5A`
 landed:** 47 namespaces; summing every namespace's own file count above
-(712) plus the 3 global-namespace files gives **715**, matching a direct
+(723) plus the 3 global-namespace files gives **726**, matching a direct
 count of `.cs` files under the four in-scope roots excluding `bin/` and
-`obj/` (421 + 211 + 82 + 1 = 715) exactly. Two derivation corrections are
+`obj/` (432 + 211 + 82 + 1 = 726) exactly. `WP 16.4B` added nine files
+across three existing namespaces — `Tempest.Core.Requirements` 24 → 28,
+`Tempest.Core.Materials` 14 → 17, `Tempest.Core.EngineeringDomain`
+66 → 68 and `Tempest.Core.DependencyInjection` 12 → 14 — and no new
+namespace. Two derivation corrections are
 recorded here rather than left implicit: the register's own documented
 command `grep -rhoP "^namespace \K[\w.]+"` misses any file carrying a
 UTF-8 byte-order mark (see the `Tempest.Core.Models` row) and a plain
@@ -132,10 +136,10 @@ revisited by `WP 16.2A` — extending scope to a full second
 project's worth of namespaces remains a separate, substantial
 undertaking, per the `WP 12.0B` follow-up entry below. Combined with
 `src/Templates/` (1 file, 1 namespace, out of scope by declared
-convention) and `src/Plugins/` (0 `.cs` files), `src/` holds **805 `.cs`
+convention) and `src/Plugins/` (0 `.cs` files), `src/` holds **816 `.cs`
 files across 62 distinct namespaces** in total (BOM-aware, `bin/`/`obj/`
 pruned; 47 + 14 + 1 = 62) — of which this register's own declared scope
-covers 715 files (89%) and 47 namespaces (76%).**
+covers 726 files (89%) and 47 namespaces (76%).**
 
 ## A Note on the Four Pre-Claude Namespaces
 
