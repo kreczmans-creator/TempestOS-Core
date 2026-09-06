@@ -176,15 +176,37 @@ public sealed record MaterialSelectionResult(
     /// Whether an engineer must decide before this result is acted on.
     /// </summary>
     /// <remarks>
-    /// Always true when anything is unresolved, and always true when
-    /// more than one candidate satisfies the constraints — because
-    /// choosing between them is exactly the judgement `P02` does not make.
-    /// It is also true when none does, because that is a design problem
-    /// rather than an answer.
+    /// <para>
+    /// <b>Always true.</b> Choosing a material is an engineering decision,
+    /// and `P02` does not make it. Even where exactly one candidate
+    /// satisfied every stated constraint, the result is a statement about
+    /// the criteria that were checked and is silent about everything that
+    /// was not — cost, availability, the supplier's actual stock, whether
+    /// the criteria were the right ones. A result that reported "no
+    /// decision needed" would be claiming otherwise.
+    /// </para>
+    /// <para>
+    /// The narrowing information an engineer actually wants is in
+    /// <see cref="SatisfyingCandidates"/>,
+    /// <see cref="UnresolvedCandidates"/> and
+    /// <see cref="HasOutstandingQuestions"/>, which say what the
+    /// assessment established rather than what to do about it.
+    /// </para>
     /// </remarks>
     [System.Text.Json.Serialization.JsonIgnore]
-    public bool RequiresHumanDecision =>
+    public bool RequiresHumanDecision => true;
+
+    /// <summary>
+    /// Whether something the assessment tried to settle is still open —
+    /// an unresolved candidate, or a rule that asked for human review.
+    /// </summary>
+    /// <remarks>
+    /// Distinct from <see cref="RequiresHumanDecision"/>: this is about
+    /// the assessment being incomplete, not about who takes the decision.
+    /// An assessment with nothing outstanding still needs an engineer.
+    /// </remarks>
+    [System.Text.Json.Serialization.JsonIgnore]
+    public bool HasOutstandingQuestions =>
         UnresolvedCandidates.Count > 0
-        || SatisfyingCandidates.Count != 1
         || Candidates.Any(c => c.RuleEvaluations.Any(e => e.RequiresHumanReview));
 }

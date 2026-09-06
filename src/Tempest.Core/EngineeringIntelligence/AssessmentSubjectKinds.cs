@@ -32,7 +32,16 @@ public static class AssessmentSubjectKinds
     public const string Bearing = "Bearing";
 
     /// <summary>A spring, gear, drive element or standard machine component, from `A5`.</summary>
-    public const string Component = "Component";
+    /// <remarks>
+    /// The value is <c>MechanicalComponent</c> rather than the bare
+    /// <c>Component</c> or <c>ComponentReference</c>: the first is the
+    /// mechanical workspace's own object Kind and the second is the Kind
+    /// `A5`'s stored records carry, and one value must keep one meaning.
+    /// This is neither of those — it is `P02`'s name for the <i>kind of
+    /// thing being assessed</i>, which a rule's applicability is written
+    /// against.
+    /// </remarks>
+    public const string Component = "MechanicalComponent";
 
     /// <summary>A manufacturing process, from `A7`.</summary>
     public const string Process = "Process";
