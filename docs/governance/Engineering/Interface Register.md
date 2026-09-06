@@ -31,6 +31,8 @@
 | `IBearingValidationService` | `Tempest.Core.Bearings` | DI-public | Bearing data-quality validation and the catalogue-wide data-quality report (`A4`, `ADR-0124`) |
 | `IBinaryPersistenceStore` | `Tempest.Core.Persistence` | DI-public | The byte-valued counterpart of `IPersistenceStore`, same durable store/root/records, for values that are not text (`v0.14.0`, `ADR-0113`) |
 | `ICalculationDefinition<TInput, TResult>` | `Tempest.Core.Calculations` | Platform API (contract, registered by Id, not itself DI-registered) | A pure, registrable calculation's own input/output/formula contract (`WP 7.1D`, `ADR-0056`) |
+| `IBusinessRiskCatalog` | `Tempest.Core.BusinessGovernance.Risk` | DI-public | The organisation's own risk register — register/retrieve/revise/govern/query business risks (`C2`, `ADR-0129`) |
+| `IBusinessRiskValidationService` | `Tempest.Core.BusinessGovernance.Risk` | DI-public | Governance of the risk register itself — `TEMPEST-BGR-001..013` (`C2`) |
 | `ICalculationEngine` | `Tempest.Core.Calculations` | DI-public | Registration/dispatch of `ICalculationDefinition<TInput, TResult>` by Id, mirroring `ICommandRegistry`'s own shape (`WP 7.1D`, `ADR-0056`) |
 | `ICommand` | `Tempest.Core.Commands` | Platform API (contract only) | Command Framework marker — dispatched by concrete type (`ICommandDispatcher`, `WP 5.1B`) |
 | `ICommandDispatcher` | `Tempest.Core.Commands` | DI-public | Type-keyed handler registration/dispatch (ADR-0036/ADR-0037) |
@@ -43,9 +45,14 @@
 | `IConfigurationSource` | `Tempest.Core.Configuration` | Not DI-registered (input to `ConfigurationBuilder`) | A source `ConfigurationBuilder` reads |
 | `IConstantCatalog` | `Tempest.Core.Constants` | DI-public | Register/retrieve/revise/govern/query engineering constants, and the released-only seam (`A6`, `ADR-0126`) |
 | `IConstantValidationService` | `Tempest.Core.Constants` | DI-public | Engineering-constant data-quality validation and the library-wide data-quality report (`A6`) |
+| `IContractService` | `Tempest.Core.BusinessGovernance.Contracts` | DI-public | Prepare a contract from a released template pinned to its revision, resolve that revision, and report obligations; executes nothing (`C1`, `ADR-0130`) |
+| `IContractTemplateCatalog` | `Tempest.Core.BusinessGovernance.Contracts` | DI-public | The library of controlled contract templates (`C1`, `ADR-0129`) |
+| `IContractTemplateValidationService` | `Tempest.Core.BusinessGovernance.Contracts` | DI-public | Governance of contract templates — completeness, never legality (`C1`) |
 | `ICriticalBackgroundService` | `Tempest.Core.BackgroundServices` | Platform API (marker) | Opt-in critical-failure escalation (ADR-0021) |
 | `ICurrentComponentAccessor` | `Tempest.Core.Identity` | DI-public (via `AddInstance`, dual-registered under its own concrete type, mirroring `ICurrentPrincipalAccessor`) | Resolves which loaded component's own code is currently executing — a second, independent identity axis alongside `ICurrentPrincipalAccessor` (`v0.13.0`, `ADR-0111`) |
 | `ICurrentPrincipalAccessor` | `Tempest.Core.Identity` | DI-public (via `AddInstance`, dual-registered under its own concrete type per ADR-0044) | Read-only view of the ambient current principal (`WP 6.1`) |
+| `IDataAssetCatalog` | `Tempest.Core.BusinessGovernance.Assets` | DI-public | The organisation's data-asset register (`C3`, `ADR-0129`) |
+| `IDataAssetValidationService` | `Tempest.Core.BusinessGovernance.Assets` | DI-public | Governance of the data-asset register — records whose determination compliance is, never makes one (`C3`) |
 | `IDecisionTreeCatalog` | `Tempest.Core.EngineeringIntelligence.Decisions` | DI-public | Register/retrieve/revise/govern/query manufacturing decision trees (`B2`, `ADR-0128`) |
 | `IDecisionTreeValidationService` | `Tempest.Core.EngineeringIntelligence.Decisions` | DI-public | Governance of decision-tree definitions themselves — `TEMPEST-EID-001..014` (`B2`) |
 | `IDesignRuleService` | `Tempest.Core.EngineeringIntelligence.DesignRules` | DI-public | Assess a subject against released design rules, stating what was and was not checked (`B3`, `ADR-0127`) |
@@ -67,16 +74,27 @@
 | `IFastenerCatalog` | `Tempest.Core.Fasteners` | DI-public | Register/retrieve/revise/govern/query fastener reference data (`A3`, `ADR-0126`) |
 | `IFastenerValidationService` | `Tempest.Core.Fasteners` | DI-public | Fastener data-quality validation and the library-wide data-quality report (`A3`) |
 | `IFaultInjectionModule` | `Tempest.Core.Modules` | Platform API (marker, extends `IModule`) | Discovery-time fault-injection classification — a candidate implementing it is excluded from `ReflectionFrameworkDiscoveryService`'s discovery by default, unless the host's own builder called `EnableFaultInjectionModules()` (`WP 12.3B`, `ADR-0102`) |
+| `IFinancialAssumptionCatalog` | `Tempest.Core.BusinessGovernance.Finance` | DI-public | The library of governed financial assumptions (`C5`, `ADR-0129`) |
+| `IFinancialAssumptionValidationService` | `Tempest.Core.BusinessGovernance.Finance` | DI-public | Governance of financial assumptions — `TEMPEST-BGF-001..004` (`C5`) |
+| `IFinancialControlService` | `Tempest.Core.BusinessGovernance.Finance` | DI-public | Compare expectation against actual, and one scenario against another; posts, recognises and computes no tax (`C5`, `ADR-0130`) |
+| `IFinancialScenarioCatalog` | `Tempest.Core.BusinessGovernance.Finance` | DI-public | The library of financial scenarios (`C5`, `ADR-0129`) |
+| `IFinancialScenarioValidationService` | `Tempest.Core.BusinessGovernance.Finance` | DI-public | Governance of financial scenarios — traceability, not whether the numbers are right (`C5`) |
 | `IFrameworkDiscoveryService` | `Tempest.Core.Modules` | Host-owned, never DI-public (ADR-0017) | Module Discovery |
 | `IHostedService` | `Tempest.Core.BackgroundServices` | Platform API (contract) | Background service Start/Stop |
 | `IHostedServiceDiscoveryService` | `Tempest.Core.BackgroundServices` | Host-owned, never DI-public (ADR-0017) | Hosted service discovery |
 | `IHostedServiceManager` | `Tempest.Core.BackgroundServices` | Host-owned, never DI-public (ADR-0017) | Hosted service start/stop orchestration |
+| `IIPAssetCatalog` | `Tempest.Core.BusinessGovernance.Assets` | DI-public | The organisation's intellectual property register (`C3`, `ADR-0129`) |
+| `IIPAssetValidationService` | `Tempest.Core.BusinessGovernance.Assets` | DI-public | Governance of the IP register — reports an unevidenced ownership position, never determines ownership (`C3`) |
 | `IIdentity` | `Tempest.Core.Identity` | Platform API (data contract) | The shape of a claimed identity (`WP 6.1`) |
 | `IIdentityService` | `Tempest.Core.Identity` | DI-public | Establishes/resolves a principal; additive, not in the original catalogue (`WP 6.1`) |
 | `IImportService` | `Tempest.Core.ExportImport` | DI-public (dual-registered under its own concrete type, mirroring `ICurrentPrincipalAccessor`) | Reads a previously exported artifact back into the owning service(s) |
 | `IImportable` | `Tempest.Core.ExportImport` | Registered via `ImportService.RegisterImportable`, not itself a DI service type | Read-back counterpart to `IExportable`, routed to by `Kind` |
 | `IInputBindingProvider` | `Tempest.Core.Input` | Platform API (contract) | A source of physical/virtual input that can request a registered Command Id be invoked (`WP 10.6A`, `ADR-0100`) |
 | `IInputBindingRegistry` | `Tempest.Core.Input` | DI-public | Tracks every registered `IInputBindingProvider`, routing each one's own request to `ICommandRegistry.InvokeAsync` (`WP 10.6A`, `ADR-0100`) |
+| `IInsurancePolicyCatalog` | `Tempest.Core.BusinessGovernance.Risk` | DI-public | The library of insurance policies the organisation holds (`C2`, `ADR-0129`) |
+| `IInsurancePolicyValidationService` | `Tempest.Core.BusinessGovernance.Risk` | DI-public | Governance of policy records — whether cover could be demonstrated, never what the wording means (`C2`) |
+| `IIssuedContractCatalog` | `Tempest.Core.BusinessGovernance.Contracts` | DI-public | The library of contracts the organisation has issued or entered into (`C1`, `ADR-0129`) |
+| `IIssuedContractValidationService` | `Tempest.Core.BusinessGovernance.Contracts` | DI-public | Governance of issued contracts — `TEMPEST-BGC-007..022` (`C1`) |
 | `ILicense` | `Tempest.Core.Licensing` | Platform API (contract) | A single, validated, immutable license |
 | `ILicenseProvider` | `Tempest.Core.Licensing` | DI-public (via `AddInstance`) | Read-only, post-validation view of the current license |
 | `ILicenseValidator` | `Tempest.Core.Licensing` | Not DI-registered (Composition-Root-constructed, pre-container leaf, mirroring `IPlatformVersionProvider`) | Validates a license at Host startup, before the container exists |
@@ -95,8 +113,13 @@
 | `INotification` | `Tempest.Core.Notifications` | Platform API (contract) | Marks a published notification (`WP 6.2`) |
 | `INotificationDispatcher` | `Tempest.Core.Notifications` | DI-public | Subscribes and publishes notifications, isolating subscriber failures (`WP 6.2`) |
 | `INotificationHandler<T>` | `Tempest.Core.Notifications` | Platform API (contract) | Consumer-facing subscription contract (`WP 6.2`) |
+| `IOperatingScenarioCatalog` | `Tempest.Core.BusinessGovernance.Operating` | DI-public | The library of operating models and scale scenarios (`C7`, `ADR-0129`) |
+| `IOperatingScenarioValidationService` | `Tempest.Core.BusinessGovernance.Operating` | DI-public | Governance of operating models, including reporting a met decision gate as a finding for a person (`C7`, `ADR-0130`) |
+| `IOpportunityCatalog` | `Tempest.Core.BusinessGovernance.Development` | DI-public | The organisation's opportunity pipeline (`C6`, `ADR-0129`) |
+| `IOpportunityValidationService` | `Tempest.Core.BusinessGovernance.Development` | DI-public | Governance of the pipeline — `TEMPEST-BGD-001..011` (`C6`) |
 | `IPermissionEvaluator` | `Tempest.Core.Identity` | DI-public | The single authorization enforcement point (`WP 6.1`, ADR-0044) |
 | `IPersistenceStore` | `Tempest.Core.Persistence` | DI-public | Internal, platform-owned key-value/document storage (`WP 6.4`, ADR-0041) |
+| `IPipelineService` | `Tempest.Core.BusinessGovernance.Development` | DI-public | Report the pipeline, keeping contracted and potential revenue apart and producing no weighted figure (`C6`, `ADR-0130`) |
 | `IPlatformNotification` | `Tempest.Core.Notifications` | Platform API (additive general-purpose shape, extends `INotification` and `Events.IEvent`) | Severity/category-bearing general-purpose notification (`WP 6.2`) |
 | `IPlatformVersionProvider` | `Tempest.Core.Versioning` | DI-public (via `AddInstance`) | Platform version query |
 | `IPluginAssemblyLoader` | `Tempest.Core.Plugins` | Host-owned, never DI-public (ADR-0017 extended) | Plugin assembly loading |
@@ -108,12 +131,15 @@
 | `IPluginRegistry` | `Tempest.Core.Plugins` | Host-owned, never DI-public (constructed directly during bootstrap, before the Phase 6 DI container exists) | The read side of the Plugin Registry — the queryable catalogue of every plugin candidate a run attempted, and its outcome (`v0.13.0`, `ADR-0107`) |
 | `IPluginRegistryRecorder` | `Tempest.Core.Plugins` | Host-owned, never DI-public (constructed directly during bootstrap, mirroring `IPluginRegistry`) | The write side of the Plugin Registry, used only by Plugins-owned discovery/loading services (`v0.13.0`, `ADR-0107`) |
 | `IPluginTrustStore` | `Tempest.Core.Plugins` | Host-owned, never DI-public (constructed directly during bootstrap, mirroring `IPluginRegistry`) | The local trust store of publisher certificates plugin signatures are verified against (`v0.13.0`, `ADR-0112`) |
+| `IPricingService` | `Tempest.Core.BusinessGovernance.Pricing` | DI-public | Quote from a released, approved rate card, and reproduce a historical quotation from its pin (`C4`, `ADR-0130`) |
 | `IPrincipal` | `Tempest.Core.Identity` | Platform API (data contract) | The shape of an authenticated/established identity plus its roles (`WP 6.1`) |
 | `IProcessCatalog` | `Tempest.Core.Manufacturing` | DI-public | Register/retrieve/revise/govern/query manufacturing process reference data (`A7`, `ADR-0126`) |
 | `IProcessValidationService` | `Tempest.Core.Manufacturing` | DI-public | Manufacturing-process data-quality validation and the library-wide data-quality report (`A7`) |
 | `IReferenceDataCatalog<TDefinition>` | `Tempest.Core.ReferenceData` | Platform API (contract, implemented per library, not itself DI-registered) | The register/retrieve/revise/govern/supersede operations every `Group A` reference library shares (`ADR-0126`) |
 | `IReferenceRecord<TDefinition>` | `Tempest.Core.ReferenceData` | Platform API (data contract) | One registered reference record: its domain engineering description plus its catalogue governance (`ADR-0126`) |
 | `IReferenceValidationService<TDefinition>` | `Tempest.Core.ReferenceData` | Platform API (contract, implemented per library, not itself DI-registered) | The data-quality validation surface every `Group A` reference library offers (`ADR-0126`) |
+| `IRateCardCatalog` | `Tempest.Core.BusinessGovernance.Pricing` | DI-public | The library of published, effective-dated rate cards (`C4`, `ADR-0129`) |
+| `IRateCardValidationService` | `Tempest.Core.BusinessGovernance.Pricing` | DI-public | Governance of rate cards — usability and period collision, never whether a price is right (`C4`) |
 | `IReleasedConstantSource` | `Tempest.Core.ReferenceData` | DI-public | The narrow seam a calculation consumes a constant through — hands back nothing until a record is Released (`A6`) |
 | `IReportDefinition` | `Tempest.Core.Reporting` | Platform API (contract) | Identifies a registrable report (`WP 6.0`) |
 | `IReportRenderer<T>` | `Tempest.Core.Reporting` | Platform API (contract) | Produces a report definition's own output (`WP 6.0`) |
@@ -127,6 +153,7 @@
 | `IRequirementsService` | `Tempest.Core.Requirements` | DI-public | Create/find/revise/set-status/link/list requirements, collections, and groups; no internal permission gating; plus (`WP 9.1A`, additive) set-owner/set-priority/delete/move-to-group/move-group/delete-group/delete-collection/list-collections/list-groups (`WP 7.3A`, `ADR-0058`/`ADR-0061`; `ADR-0084`) |
 | `IReviewDefinitionCatalog` | `Tempest.Core.EngineeringIntelligence.Reviews` | DI-public | Register/retrieve/revise/govern/query engineering review definitions (`B4`, `ADR-0128`) |
 | `IReviewDefinitionValidationService` | `Tempest.Core.EngineeringIntelligence.Reviews` | DI-public | Governance of review definitions themselves — `TEMPEST-EIV-001..009` (`B4`) |
+| `IRiskAndInsuranceService` | `Tempest.Core.BusinessGovernance.Risk` | DI-public | Report what the records support about a risk's insurance position and the register's own state; accepts no risk and asserts no cover (`C2`, `ADR-0130`) |
 | `IRole` | `Tempest.Core.Identity` | Platform API (data contract, additive — `WP 6.1`) | A named grouping of permissions |
 | `IRoleProvider` | `Tempest.Core.Identity` | DI-public (additive — `WP 6.1`) | Config-sourced role resolution |
 | `IRuleCatalog` | `Tempest.Core.EngineeringIntelligence` | DI-public | Register/retrieve/revise/govern/query engineering design rules, and find the released rules applicable to a subject (`P02`, `ADR-0128`) |
@@ -151,7 +178,7 @@
 | `IVerificationRecord` | `Tempest.Core.Verification` | Platform API (data contract) | The complete, structured account of one recorded verification outcome (`WP 7.1E`, `ADR-0057`) |
 | `IVerificationService` | `Tempest.Core.Verification` | DI-public | Records a verification outcome against a subject document; permission-gated history query (`WP 7.1E`, `ADR-0057`) |
 
-**Total: 225 public interfaces under `src/Tempest.Core/` (224 distinct names — `IRequirement` is declared in two namespaces) — re-derived at `Group B` (2026-09-06) against the repository itself, by the Interface Register check in `scripts/governance-healthcheck.ps1`, which reported 225 declared against 211 rows. `Group B` adds the 14 rows the gap named: `IRuleCatalog`, `IRuleValidationService`, `IAssessmentSubject`, `IDecisionTreeCatalog`, `IDecisionTreeValidationService`, `IManufacturingDecisionService`, `IMaterialSelectionService`, `IDesignRuleService`, `IReviewDefinitionCatalog`, `IReviewDefinitionValidationService`, `IEngineeringReviewService`, `ITradeStudyCatalog`, `ITradeStudyValidationService` and `ITradeStudyService` — the whole of `P02`'s public surface. Historic narrative, stated when the total was 195: corrected at the `WP 16.4B-R2` integration (2026-09-05): `IAttachmentWriteIntentStore` added (`TD-97`); corrected at the `WP 16.4B` integration (2026-09-05): `IAttachmentContentReconciliationService`, `IMaterialCatalogReconciliationService`, `IRequirementsReconciliationService` added (`TD-67`, `TD-97`); corrected at the `WP 16.3B` integration (2026-09-04): `IStateMigration`, `IStateMigrationRegistry`, `ISettingsMigration<TDocument>` added (`ADR-0120`); previously corrected
+**Total: 252 public interfaces under `src/Tempest.Core/` (251 distinct names — `IRequirement` is declared in two namespaces) — re-derived at `Group C` (2026-09-06) by the Interface Register check in `scripts/governance-healthcheck.ps1`, which reported 252 declared against 225 rows. `Group C` adds the 27 rows the gap named: the eleven `P07` catalogues, their eleven validation services and the five reasoning services (`IContractService`, `IRiskAndInsuranceService`, `IPricingService`, `IFinancialControlService`, `IPipelineService`) — the whole of `P07`'s public surface. Historic narrative, stated when the total was 225: re-derived at `Group B` (2026-09-06) against the repository itself, by the Interface Register check in `scripts/governance-healthcheck.ps1`, which reported 225 declared against 211 rows. `Group B` adds the 14 rows the gap named: `IRuleCatalog`, `IRuleValidationService`, `IAssessmentSubject`, `IDecisionTreeCatalog`, `IDecisionTreeValidationService`, `IManufacturingDecisionService`, `IMaterialSelectionService`, `IDesignRuleService`, `IReviewDefinitionCatalog`, `IReviewDefinitionValidationService`, `IEngineeringReviewService`, `ITradeStudyCatalog`, `ITradeStudyValidationService` and `ITradeStudyService` — the whole of `P02`'s public surface. Historic narrative, stated when the total was 195: corrected at the `WP 16.4B-R2` integration (2026-09-05): `IAttachmentWriteIntentStore` added (`TD-97`); corrected at the `WP 16.4B` integration (2026-09-05): `IAttachmentContentReconciliationService`, `IMaterialCatalogReconciliationService`, `IRequirementsReconciliationService` added (`TD-67`, `TD-97`); corrected at the `WP 16.3B` integration (2026-09-04): `IStateMigration`, `IStateMigrationRegistry`, `ISettingsMigration<TDocument>` added (`ADR-0120`); previously corrected
 `WP 16.2A` (174 → 188: 15 rows backfilled for `v0.13.0` Plugin Trust and
 `v0.14.0` Durability/Rehydration/Attachment Content, none added at their
 own implementation time; 1 stale row, `IProjectRepository`, removed —
