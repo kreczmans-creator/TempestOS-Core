@@ -404,9 +404,20 @@ public abstract class EngineeringObjectBase :
     /// </summary>
     /// <remarks>
     /// <para>
-    /// <b>The invariant this exists to hold: an operation the platform
-    /// reports as failed must not become durable, and must not change this
-    /// instance either.</b> Every mutator on this type used to mutate its
+    /// <b>The invariant this exists to hold, stated with the scope it
+    /// actually has: an operation refused because this instance has been
+    /// superseded must not become durable and must not change this
+    /// instance either.</b> It is deliberately not the wider claim that no
+    /// failed operation can become durable — that claim is false of this
+    /// code and `TD-143` records why. When the durable write itself fails,
+    /// rather than being refused, the mutation has already been applied
+    /// under this lock: a rejected `TransitionAsync` still leaves its
+    /// `LifecycleTransitionRecord` in the append-only history, and a
+    /// rejected `DeleteAsync` still leaves `_isDeleted` set with no
+    /// undelete path anywhere in the type. Read the bolded sentence as
+    /// bounded by supersession, because a reader who takes it as the
+    /// general guarantee will conclude the coverage is complete when it is
+    /// not. Every mutator on this type used to mutate its
     /// in-memory field first and only then call
     /// <see cref="PersistStateAsync"/>, which is where the write lock and
     /// <see cref="ThrowIfSuperseded"/> live. A concurrent
