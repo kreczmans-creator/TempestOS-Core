@@ -14,6 +14,11 @@ using Tempest.Core.EngineeringDomain;
 using Tempest.Core.BusinessGovernance.Assets;
 using Tempest.Core.CommercialIntelligence.Costs;
 using Tempest.Core.EngineeringAssets.CalculationPacks;
+using Tempest.Core.Knowledge.Academy;
+using Tempest.Core.Knowledge.Challenges;
+using Tempest.Core.Knowledge.Lessons;
+using Tempest.Core.Knowledge.Prompts;
+using Tempest.Core.Knowledge.WorkedExamples;
 using Tempest.Core.EngineeringAssets.DesignReviews;
 using Tempest.Core.EngineeringAssets.TechnicalDocumentation;
 using Tempest.Core.EngineeringAssets.Templates;
@@ -900,6 +905,32 @@ public sealed class TempestHost : ITempestHost
 
         services.Singleton<ITechnicalDocumentCatalog, TechnicalDocumentCatalog>();
         services.Singleton<ITechnicalDocumentValidationService, TechnicalDocumentValidationService>();
+
+        // `Group F` (P06): AI knowledge and Academy. Prompts, Academy
+        // nodes, challenges, lessons and worked examples are authored,
+        // sourced, reviewed, revisioned and superseded records like every
+        // other library, and sit on the same shared
+        // ReferenceDataCatalog<T> base (`ADR-0141`).
+        //
+        // Registered last. `P06` is the knowledge layer and is
+        // deliberately separate from AI execution: no executor, no agent,
+        // no model binding and no provider dependency is registered here
+        // or exists anywhere in the programme. It reads `P05` to confirm a
+        // cited calculation pack exists and reads nothing else.
+        services.Singleton<IPromptCatalog, PromptCatalog>();
+        services.Singleton<IPromptValidationService, PromptValidationService>();
+
+        services.Singleton<IAcademyCatalog, AcademyCatalog>();
+        services.Singleton<IAcademyValidationService, AcademyValidationService>();
+
+        services.Singleton<IChallengeCatalog, ChallengeCatalog>();
+        services.Singleton<IChallengeValidationService, ChallengeValidationService>();
+
+        services.Singleton<ILessonCatalog, LessonCatalog>();
+        services.Singleton<ILessonValidationService, LessonValidationService>();
+
+        services.Singleton<IWorkedExampleCatalog, WorkedExampleCatalog>();
+        services.Singleton<IWorkedExampleValidationService, WorkedExampleValidationService>();
 
         // ADR-0056: every calculation execution is durably recorded as an
         // Engineering Data Model document (Kind = "CalculationRecord"),
