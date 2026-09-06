@@ -85,6 +85,9 @@
 | `InvalidReferenceStateTransitionException` | `ReferenceDataException` | Reference Data | Application logic's own error; thrown for a validation-state transition the shared table does not permit (`Group A`, `ADR-0126`) |
 | `ReferenceProvenanceIncompleteException` | `ReferenceDataException` | Reference Data | Application logic's own error; thrown when a record's own provenance cannot support the state requested (`Group A`, `ADR-0126`) |
 | `ReleasedReferenceImmutableException` | `ReferenceDataException` | Reference Data | Application logic's own error; thrown when a released or superseded record's engineering content would be revised (`Group A`, `ADR-0126`) |
+| `UnreleasedDecisionTreeException` | `ReferenceDataException` | Engineering Intelligence | Application logic's own error; thrown when a decision tree that is not Released would be walked — a tree nobody has finished reviewing must not produce an engineering decision (`WP02.2`, `ADR-0128`) |
+| `UnreleasedReviewDefinitionException` | `ReferenceDataException` | Engineering Intelligence | Application logic's own error; thrown when a review definition that is not Released would be conducted (`WP02.4`, `ADR-0128`) |
+| `UnreleasedTradeStudyException` | `ReferenceDataException` | Engineering Intelligence | Application logic's own error; thrown when a trade study that is not Released would be run — a decision must not rest on a study still being drafted (`WP02.5`, `ADR-0128`) |
 | `IncompatibleUnitsException` | `Exception` | Units & Quantities | Application logic's own error (not Host-level); thrown by `Quantity<TDimension>.ConvertTo` for a dimensionally incompatible conversion (`WP 7.1B`, `ADR-0054`) — backfilled `WP 16.2A` |
 | `EngineeringDataException` | `Exception` | Engineering Data | Application logic's own error (not Host-level); base type, never thrown directly (`WP 7.1A`, `ADR-0053`) — backfilled `WP 16.2A` |
 | `EngineeringDocumentNotFoundException` | `EngineeringDataException` | Engineering Data | Application logic's own error (not Host-level); thrown by `IEngineeringDocumentStore` for an unresolvable document Id — backfilled `WP 16.2A` |
@@ -130,7 +133,7 @@ Reviewed** field and
 `docs/releases/v0.16.0/WP16.2A Register and Status Currency Report.md`
 for the full derivation.
 
-**Total: 96 custom exception types — Verified directly against
+**Total: 96 custom exception types — re-derived at `Group B` (2026-09-06) by the Exception Register check in `scripts/governance-healthcheck.ps1`, which reported 96 declared against 93 rows before this pass — 93 because the three `P02` exceptions had no rows yet; `Group B` adds exactly those three — `UnreleasedDecisionTreeException`, `UnreleasedReviewDefinitionException` and `UnreleasedTradeStudyException`, one per `P02` content library that refuses to act on unreleased guidance. All three derive from the existing `ReferenceDataException` rather than starting a fourth exception family. Historic narrative, stated when the total was 96 — Verified directly against
 `src/Tempest.Core/` (`grep -rEn "^public (sealed |abstract )?class \w+Exception\b" src/Tempest.Core --include=*.cs`
 returns exactly 96 matches, matching the 96 rows in the Entries table (89 at `WP 16.4B-R1`, plus the seven `Bearings` rows at `A4`, 2026-09-05; 87 at the `WP 16.4B` integration, plus `DuplicateStateMigrationException` and `ConflictingStateMigrationException` at `WP 16.4B-R1`; 84 at `WP 16.2A`, plus `RequirementGroupCycleException`, `ServiceRegistrationException` and `DuplicateServiceRegistrationException` at the `WP 16.4B` integration)
 above, re-derived directly by `A4`). Corrected,
@@ -267,16 +270,16 @@ respectively). Application logic's own error (not Host-level); see
 | Export/Import | 4 |
 | Licensing | 2 |
 | Calculations | 4 |
-| Materials | 3 |
-| Bearings | 7 |
+| Reference Data | 7 |
 | Units & Quantities | 1 |
 | Engineering Data | 2 |
 | Engineering Domain | 9 |
 | Engineering Workflow | 4 |
 | Requirements | 6 |
 | Plugin Trust & Dependencies | 6 |
+| Engineering Intelligence | 3 |
 
-**Total: 4+6+2+3+2+6+2+0+3+5+3+2+3+1+1+3+2+4+2+4+3+7+1+2+9+4+6+6 = 96**,
+**Total: 4+6+2+3+2+6+2+0+3+5+3+2+3+1+1+3+2+4+2+4+7+1+2+9+4+6+6+3 = 96**, matching the Entries table above and the direct `grep` count, both re-derived at `Group B` (2026-09-06). **Correction, `Group B`:** this table still carried `Materials | 3` and `Bearings | 7` from before `Group A` folded both libraries' exception families into the one shared `ReferenceDataException` hierarchy — 10 rows where the Entries table has 7 (`Reference Data`). That is where the register's own "96 rows" narrative and its actual 93 rows diverged, and it is corrected here rather than carried forward: the two stale rows are replaced by `Reference Data | 7`, and `Engineering Intelligence | 3` is added for `P02`'s three unreleased-content exceptions. Historic narrative follows.
 matching the Entries table above and the direct `grep` count
 (`WP 16.4B-R1`, re-derived row by row against the Entries table above,
 2026-09-05). **Correction, `WP 16.4B-R1`:** this table had not been
