@@ -4,27 +4,33 @@ using Tempest.Core.BackgroundServices;
 using Tempest.Core.Bearings;
 using Tempest.Core.Calculations;
 using Tempest.Core.Commands;
+using Tempest.Core.Components;
+using Tempest.Core.Constants;
 using Tempest.Core.Configuration;
 using Tempest.Core.DependencyInjection;
 using Tempest.Core.Diagnostics;
 using Tempest.Core.EngineeringData;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Events;
+using Tempest.Core.Fasteners;
 using Tempest.Core.ExportImport;
 using Tempest.Core.Identity;
 using Tempest.Core.Input;
 using Tempest.Core.Licensing;
 using Tempest.Core.Logging;
 using Tempest.Core.Macros;
+using Tempest.Core.Manufacturing;
 using Tempest.Core.Materials;
 using Tempest.Core.Modules;
 using Tempest.Core.Navigation;
 using Tempest.Core.Notifications;
 using Tempest.Core.Persistence;
 using Tempest.Core.Plugins;
+using Tempest.Core.ReferenceData;
 using Tempest.Core.Reporting;
 using Tempest.Core.Requirements;
 using Tempest.Core.Settings;
+using Tempest.Core.Standards;
 using Tempest.Core.Verification;
 using Tempest.Core.Versioning;
 
@@ -674,7 +680,18 @@ public sealed class TempestHost : ITempestHost
         // index IEngineeringDocumentStore's own contract has no lookup-by-
         // arbitrary-string capability to provide - registered after both,
         // which it depends on.
+        // `Group A` (P01): the Standards Library is registered before every
+        // other reference library because they all cite it. Its narrow
+        // IStandardResolver seam is registered through a forwarder rather
+        // than by mapping StandardCatalog to two service types, which would
+        // construct two catalogues over one store, each with its own write
+        // locks - see StandardCatalogResolver's own remarks.
+        services.Singleton<IStandardCatalog, StandardCatalog>();
+        services.Singleton<IStandardResolver, StandardCatalogResolver>();
+        services.Singleton<IStandardValidationService, StandardValidationService>();
+
         services.Singleton<IMaterialCatalog, MaterialCatalog>();
+        services.Singleton<IMaterialValidationService, MaterialValidationService>();
 
         // ADR-0124: the Bearing Library is the same thin, typed index over
         // the Engineering Data Model (Kind = "BearingReference") that
@@ -687,6 +704,33 @@ public sealed class TempestHost : ITempestHost
         // material references resolve.
         services.Singleton<IBearingCatalog, BearingCatalog>();
         services.Singleton<IBearingValidationService, BearingValidationService>();
+
+        // `Group A` (P01): the four remaining reference libraries, each the
+        // same thin, typed index over the Engineering Data Model that
+        // Materials and Bearings are, over the shared
+        // ReferenceDataCatalog<T> base (`ADR-0126`). Registered after
+        // Materials and Standards, whose catalogue and resolver their
+        // validation services take as optional collaborators when
+        // confirming that material and standard references resolve; the
+        // container supplies each optional parameter from the container
+        // where it is registered, and leaves it null where it is not.
+        services.Singleton<IFastenerCatalog, FastenerCatalog>();
+        services.Singleton<IFastenerValidationService, FastenerValidationService>();
+
+        services.Singleton<IComponentCatalog, ComponentCatalog>();
+        services.Singleton<IComponentValidationService, ComponentValidationService>();
+
+        // The released-constant seam is forwarded to the single registered
+        // catalogue for the same reason IStandardResolver is - see
+        // ConstantCatalogReleasedSource's own remarks. It is the only way a
+        // future calculation capability should reach a constant: it hands
+        // back nothing at all until a record is Released.
+        services.Singleton<IConstantCatalog, ConstantCatalog>();
+        services.Singleton<IReleasedConstantSource, ConstantCatalogReleasedSource>();
+        services.Singleton<IConstantValidationService, ConstantValidationService>();
+
+        services.Singleton<IProcessCatalog, ProcessCatalog>();
+        services.Singleton<IProcessValidationService, ProcessValidationService>();
 
         // ADR-0056: every calculation execution is durably recorded as an
         // Engineering Data Model document (Kind = "CalculationRecord"),

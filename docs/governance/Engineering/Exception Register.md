@@ -78,16 +78,13 @@
 | `CalculationDefinitionNotFoundException` | `CalculationException` | Calculations | Application logic's own error (not Host-level); thrown for an unregistered calculation Id — backfilled `WP 16.2A` |
 | `CalculationInputInvalidException` | `CalculationException` | Calculations | Application logic's own error (not Host-level); thrown when a calculation's own input fails validation — backfilled `WP 16.2A` |
 | `DuplicateCalculationException` | `CalculationException` | Calculations | Application logic's own error (not Host-level); thrown by `RegisterDefinition` — first registration wins — backfilled `WP 16.2A` |
-| `MaterialsException` | `Exception` | Materials | Application logic's own error (not Host-level); base type, never thrown directly (`WP 7.1C`) — backfilled `WP 16.2A` |
-| `MaterialNotFoundException` | `MaterialsException` | Materials | Application logic's own error (not Host-level); thrown for an unregistered material specification — backfilled `WP 16.2A` |
-| `DuplicateMaterialException` | `MaterialsException` | Materials | Application logic's own error (not Host-level); thrown by the material catalogue — first registration wins — backfilled `WP 16.2A` |
-| `BearingsException` | `Exception` | Bearings | Application logic's own error (not Host-level); base type, never thrown directly (`A4`) |
-| `BearingNotFoundException` | `BearingsException` | Bearings | Application logic's own error; thrown for an unregistered bearing (`A4`) |
-| `DuplicateBearingException` | `BearingsException` | Bearings | Application logic's own error; thrown when a `bearingId` is already registered (`A4`) |
-| `DuplicateBearingPartNumberException` | `BearingsException` | Bearings | Application logic's own error; thrown when a write would leave two records sharing one manufacturer and part number (`A4`) |
-| `InvalidBearingValidationStateTransitionException` | `BearingsException` | Bearings | Application logic's own error; thrown for a validation-state transition the table does not permit (`A4`) |
-| `BearingProvenanceIncompleteException` | `BearingsException` | Bearings | Application logic's own error; thrown when a record's own provenance cannot support the state requested (`A4`) |
-| `ReleasedBearingImmutableException` | `BearingsException` | Bearings | Application logic's own error; thrown when a released or superseded record's engineering content would be revised (`A4`) |
+| `ReferenceDataException` | `Exception` | Reference Data | Application logic's own error (not Host-level); base type for every `Group A` reference library, carrying the library's own name so a message says which one failed (`Group A`, `ADR-0126`) |
+| `ReferenceRecordNotFoundException` | `ReferenceDataException` | Reference Data | Application logic's own error; thrown for an unregistered record in any reference library (`Group A`, `ADR-0126`) |
+| `DuplicateReferenceRecordException` | `ReferenceDataException` | Reference Data | Application logic's own error; thrown when a record Id is already registered — first registration wins (`Group A`, `ADR-0126`) |
+| `DuplicateReferenceKeyException` | `ReferenceDataException` | Reference Data | Application logic's own error; thrown when a write would leave two records sharing a library's own secondary uniqueness key (`Group A`, `ADR-0126`) |
+| `InvalidReferenceStateTransitionException` | `ReferenceDataException` | Reference Data | Application logic's own error; thrown for a validation-state transition the shared table does not permit (`Group A`, `ADR-0126`) |
+| `ReferenceProvenanceIncompleteException` | `ReferenceDataException` | Reference Data | Application logic's own error; thrown when a record's own provenance cannot support the state requested (`Group A`, `ADR-0126`) |
+| `ReleasedReferenceImmutableException` | `ReferenceDataException` | Reference Data | Application logic's own error; thrown when a released or superseded record's engineering content would be revised (`Group A`, `ADR-0126`) |
 | `IncompatibleUnitsException` | `Exception` | Units & Quantities | Application logic's own error (not Host-level); thrown by `Quantity<TDimension>.ConvertTo` for a dimensionally incompatible conversion (`WP 7.1B`, `ADR-0054`) — backfilled `WP 16.2A` |
 | `EngineeringDataException` | `Exception` | Engineering Data | Application logic's own error (not Host-level); base type, never thrown directly (`WP 7.1A`, `ADR-0053`) — backfilled `WP 16.2A` |
 | `EngineeringDocumentNotFoundException` | `EngineeringDataException` | Engineering Data | Application logic's own error (not Host-level); thrown by `IEngineeringDocumentStore` for an unresolvable document Id — backfilled `WP 16.2A` |

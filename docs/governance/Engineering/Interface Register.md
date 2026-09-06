@@ -26,7 +26,6 @@
 | `IAuditQuery` | `Tempest.Core.Audit` | DI-public | Permission-gated, filtered query over recorded actions (`WP 6.5`) |
 | `IAuditRecord` | `Tempest.Core.Audit` | Platform API (data contract) | The shape of one recorded action (`WP 6.5`) |
 | `IAuditRecorder` | `Tempest.Core.Audit` | DI-public | Records an attributable action (`WP 6.5`) |
-| `IBearing` | `Tempest.Core.Bearings` | Platform API (data contract) | One registered bearing reference record: its canonical engineering description plus its catalogue governance (`A4`, `ADR-0124`) |
 | `IBearingCatalog` | `Tempest.Core.Bearings` | DI-public | Register/retrieve/revise/govern/query bearing reference data — a typed index over `IEngineeringDocumentStore` (`A4`, `ADR-0124`) |
 | `IBearingValidationService` | `Tempest.Core.Bearings` | DI-public | Bearing data-quality validation and the catalogue-wide data-quality report (`A4`, `ADR-0124`) |
 | `IBinaryPersistenceStore` | `Tempest.Core.Persistence` | DI-public | The byte-valued counterpart of `IPersistenceStore`, same durable store/root/records, for values that are not text (`v0.14.0`, `ADR-0113`) |
@@ -37,8 +36,12 @@
 | `ICommandHandler<T>` | `Tempest.Core.Commands` | Platform API (contract) | Consumer-facing command handler contract |
 | `ICommandMacro` | `Tempest.Core.Macros` | Platform API (data contract) | An ordered, named sequence of registered Command Ids (`WP 10.6A`, `ADR-0099`) |
 | `ICommandRegistry` | `Tempest.Core.Commands` | DI-public | Id-keyed command catalogue/invocation (ADR-0036/ADR-0037) |
+| `IComponentCatalog` | `Tempest.Core.Components` | DI-public | Register/retrieve/revise/govern/query spring, gear, drive-element and standard-component reference data (`A5`, `ADR-0126`) |
+| `IComponentValidationService` | `Tempest.Core.Components` | DI-public | Mechanical-component data-quality validation and the library-wide data-quality report (`A5`) |
 | `IConfigurationProvider` | `Tempest.Core.Configuration` | DI-public (via `AddInstance`) | Read-only configuration access |
 | `IConfigurationSource` | `Tempest.Core.Configuration` | Not DI-registered (input to `ConfigurationBuilder`) | A source `ConfigurationBuilder` reads |
+| `IConstantCatalog` | `Tempest.Core.Constants` | DI-public | Register/retrieve/revise/govern/query engineering constants, and the released-only seam (`A6`, `ADR-0126`) |
+| `IConstantValidationService` | `Tempest.Core.Constants` | DI-public | Engineering-constant data-quality validation and the library-wide data-quality report (`A6`) |
 | `ICriticalBackgroundService` | `Tempest.Core.BackgroundServices` | Platform API (marker) | Opt-in critical-failure escalation (ADR-0021) |
 | `ICurrentComponentAccessor` | `Tempest.Core.Identity` | DI-public (via `AddInstance`, dual-registered under its own concrete type, mirroring `ICurrentPrincipalAccessor`) | Resolves which loaded component's own code is currently executing — a second, independent identity axis alongside `ICurrentPrincipalAccessor` (`v0.13.0`, `ADR-0111`) |
 | `ICurrentPrincipalAccessor` | `Tempest.Core.Identity` | DI-public (via `AddInstance`, dual-registered under its own concrete type per ADR-0044) | Read-only view of the ambient current principal (`WP 6.1`) |
@@ -56,6 +59,8 @@
 | `IExportable` | `Tempest.Core.ExportImport` | Platform API (contract) | Marks a source's data as exportable, round-trip-safe (ADR-0051) |
 | `IExportableKind` | `Tempest.Core.ExportImport` | Platform API (optional companion contract) | Supplies a source's own stable artifact-section identifier |
 | `IExternalControllerProvider` | `Tempest.Core.Input` | Platform API (contract, extends `IInputBindingProvider`) | An `IInputBindingProvider` backed by a physical external device — no production implementation ships this Work Package, only a test-only double (`WP 10.6A`, `ADR-0100`) |
+| `IFastenerCatalog` | `Tempest.Core.Fasteners` | DI-public | Register/retrieve/revise/govern/query fastener reference data (`A3`, `ADR-0126`) |
+| `IFastenerValidationService` | `Tempest.Core.Fasteners` | DI-public | Fastener data-quality validation and the library-wide data-quality report (`A3`) |
 | `IFaultInjectionModule` | `Tempest.Core.Modules` | Platform API (marker, extends `IModule`) | Discovery-time fault-injection classification — a candidate implementing it is excluded from `ReflectionFrameworkDiscoveryService`'s discovery by default, unless the host's own builder called `EnableFaultInjectionModules()` (`WP 12.3B`, `ADR-0102`) |
 | `IFrameworkDiscoveryService` | `Tempest.Core.Modules` | Host-owned, never DI-public (ADR-0017) | Module Discovery |
 | `IHostedService` | `Tempest.Core.BackgroundServices` | Platform API (contract) | Background service Start/Stop |
@@ -75,7 +80,7 @@
 | `ILoggerFactory` | `Tempest.Core.Logging` | DI-public (via `AddInstance`) | Produces `ILogger` instances |
 | `IMacroManager` | `Tempest.Core.Macros` | DI-public | Creates/lists/deletes `ICommandMacro`s, keeping each one's own `CommandDescriptor` registered against `ICommandRegistry` (`WP 10.6A`, `ADR-0099`) |
 | `IMaterialCatalog` | `Tempest.Core.Materials` | DI-public | Register/find/revise/list named materials — a thin, typed index over `IEngineeringDocumentStore` (`WP 7.1C`, `ADR-0055`) |
-| `IMaterialSpecification` | `Tempest.Core.Materials` | Platform API (data contract) | A registered material's own Id, name, category, and provenance-carrying properties (`WP 7.1C`, `ADR-0055`) |
+| `IMaterialValidationService` | `Tempest.Core.Materials` | DI-public | Material data-quality validation and the library-wide data-quality report (`A1`, `ADR-0126`) |
 | `IModule` | `Tempest.Core.Modules` | Discovered/registered, not DI-registered as an interface | Module identity contract |
 | `IModuleLifecycle` | `Tempest.Core.Modules` | Discovered/registered | Module lifecycle contract |
 | `IModuleLifecycleManager` | `Tempest.Core.Modules` | Host-owned, never DI-public (ADR-0017) | Module lifecycle orchestration |
@@ -97,6 +102,12 @@
 | `IPluginRegistryRecorder` | `Tempest.Core.Plugins` | Host-owned, never DI-public (constructed directly during bootstrap, mirroring `IPluginRegistry`) | The write side of the Plugin Registry, used only by Plugins-owned discovery/loading services (`v0.13.0`, `ADR-0107`) |
 | `IPluginTrustStore` | `Tempest.Core.Plugins` | Host-owned, never DI-public (constructed directly during bootstrap, mirroring `IPluginRegistry`) | The local trust store of publisher certificates plugin signatures are verified against (`v0.13.0`, `ADR-0112`) |
 | `IPrincipal` | `Tempest.Core.Identity` | Platform API (data contract) | The shape of an authenticated/established identity plus its roles (`WP 6.1`) |
+| `IProcessCatalog` | `Tempest.Core.Manufacturing` | DI-public | Register/retrieve/revise/govern/query manufacturing process reference data (`A7`, `ADR-0126`) |
+| `IProcessValidationService` | `Tempest.Core.Manufacturing` | DI-public | Manufacturing-process data-quality validation and the library-wide data-quality report (`A7`) |
+| `IReferenceDataCatalog<TDefinition>` | `Tempest.Core.ReferenceData` | Platform API (contract, implemented per library, not itself DI-registered) | The register/retrieve/revise/govern/supersede operations every `Group A` reference library shares (`ADR-0126`) |
+| `IReferenceRecord<TDefinition>` | `Tempest.Core.ReferenceData` | Platform API (data contract) | One registered reference record: its domain engineering description plus its catalogue governance (`ADR-0126`) |
+| `IReferenceValidationService<TDefinition>` | `Tempest.Core.ReferenceData` | Platform API (contract, implemented per library, not itself DI-registered) | The data-quality validation surface every `Group A` reference library offers (`ADR-0126`) |
+| `IReleasedConstantSource` | `Tempest.Core.ReferenceData` | DI-public | The narrow seam a calculation consumes a constant through — hands back nothing until a record is Released (`A6`) |
 | `IReportDefinition` | `Tempest.Core.Reporting` | Platform API (contract) | Identifies a registrable report (`WP 6.0`) |
 | `IReportRenderer<T>` | `Tempest.Core.Reporting` | Platform API (contract) | Produces a report definition's own output (`WP 6.0`) |
 | `IReportTemplate<T>` | `Tempest.Core.Reporting` | Not DI-registered (optional collaborator, additive — `WP 6.0`) | Separates layout/rendering from a renderer's own data-gathering |
@@ -116,6 +127,9 @@
 | `ISettingsChangedEvent` | `Tempest.Core.Settings` | Platform API (contract, an `IEvent`) | Published through the Event Bus on a setting value change (`WP 6.4`) |
 | `ISettingsProvider` | `Tempest.Core.Settings` | DI-public | Reads/writes runtime-mutable setting values (`WP 6.4`) |
 | `ISettingsMigration<TDocument>` | `Tempest.Core.Settings` | DI-public | One ordered step of a `SettingsDocument<TDocument>` schema-migration chain, applied on read only (`WP 16.3B`, `ADR-0120`) |
+| `IStandardCatalog` | `Tempest.Core.Standards` | DI-public | Register/retrieve/revise/govern/query engineering standards (`A2`, `ADR-0126`) |
+| `IStandardResolver` | `Tempest.Core.ReferenceData` | DI-public | The narrow seam a citing library confirms its own standard citations resolve through, without depending on `A2` (`A2`) |
+| `IStandardValidationService` | `Tempest.Core.Standards` | DI-public | Standards-register data-quality validation and the register-wide data-quality report (`A2`) |
 | `ITempestHost` | `Tempest.Core.Runtime` | Not DI-registered (returned by the builder) | The running Host instance |
 | `ITempestHostBuilder` | `Tempest.Core.Runtime` | Not DI-registered (the composition root's own entry point) | Assembles and produces a `TempestHost`; also opts the resulting host's Discovery phase into `IFaultInjectionModule` candidates via the new `EnableFaultInjectionModules()` member (`WP 12.3B`, `ADR-0102`) — every other member unchanged |
 | `ITempestServiceProvider` | `Tempest.Core.DependencyInjection` | The container itself | Constructs and resolves service instances |

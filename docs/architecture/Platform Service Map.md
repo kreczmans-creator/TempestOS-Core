@@ -50,6 +50,18 @@ of date is worse than no map at all, because it will be trusted.
 | Materials | **Implemented — WP 7.1C, ADR-0055** (`IMaterialCatalog`/`MaterialCatalog`, `Tempest.Core.Materials`) — a thin, typed index over the Engineering Data Model (`Kind = "MaterialSpecification"`), plus a direct `IPersistenceStore` dependency of its own for its `materialId` index | Dependency Injection, Engineering Data Model, Persistence | `MaterialsSampleModule` (real contributor); the base `EngineeringDomainSampleModule` (`WP 8.2C`) |
 | Bearing Library | **Implemented — `A4`, ADR-0124** (`IBearingCatalog`/`BearingCatalog`, `Tempest.Core.Bearings`) — the authoritative bearing reference-data catalogue: the same typed index over the Engineering Data Model (`Kind = "BearingReference"`) Materials is, plus two direct `IPersistenceStore` indexes (`bearingId`, manufacturer-part-number), a provenance-gated validation lifecycle, released-record immutability with supersession, deterministic query and structured comparison | Dependency Injection, Engineering Data Model, Persistence | None yet — the library ships with the population requirement disclosed, not with fabricated catalogue data (`docs/architecture/A4 Bearing Library.md` §14) |
 | Bearing Validation | **Implemented — `A4`, ADR-0124** (`IBearingValidationService`/`BearingValidationService`, `Tempest.Core.Bearings`) — bearing data-quality rules (`TEMPEST-BRG-001`…`022`) and the catalogue-wide data-quality report; reports, never repairs | Dependency Injection, Bearing Library, Materials (optional) | None yet — see the row above |
+| Reference Data (shared layer) | **Implemented — `Group A`, ADR-0126** (`Tempest.Core.ReferenceData`) — the provenance, lifecycle, catalogue, sourced-value, comparison, validation and exception infrastructure all seven reference libraries share. Not itself DI-registered: `IReferenceDataCatalog<T>` and `IReferenceValidationService<T>` are implemented per library | Engineering Data Model, Persistence, Units & Quantities | Consumed by all seven libraries below; see `docs/architecture/Group A Engineering Reference Data.md` |
+| Standards Library | **Implemented — `A2`, ADR-0126** (`IStandardCatalog`/`StandardCatalog`, `Tempest.Core.Standards`) — the register of engineering standards (`Kind = "StandardReference"`): bibliographic identity, publisher status kept distinct from record validation state, and cross-body equivalence. Holds no standard content. Implements `IStandardResolver`, the seam every other library confirms its own citations through | Dependency Injection, Reference Data, Engineering Data Model, Persistence | None yet — the register ships empty (`FCR-0093`) |
+| Standards Validation | **Implemented — `A2`, ADR-0126** (`IStandardValidationService`/`StandardValidationService`) — standards register rules (`TEMPEST-STD-001`…`014`), including the copyright guard on a scope summary | Dependency Injection, Standards Library | None yet — see the row above |
+| Materials Validation | **Implemented — `A1`, ADR-0126** (`IMaterialValidationService`/`MaterialValidationService`, `Tempest.Core.Materials`) — materials rules (`TEMPEST-MAT-001`…`013`): property-name dimension checking, values physics forbids, family-aware applicability | Dependency Injection, Materials, Standards (optional) | The Materials catalogue itself predates `Group A`; this validation service is new |
+| Fastener Library | **Implemented — `A3`, ADR-0126** (`IFastenerCatalog`/`FastenerCatalog`, `Tempest.Core.Fasteners`) — bolts, screws, set screws, studs, nuts, washers, inserts, retaining rings, rivets and pins (`Kind = "FastenerReference"`); records published torque figures and computes none | Dependency Injection, Reference Data, Engineering Data Model, Persistence | None yet — the library ships empty (`FCR-0093`) |
+| Fastener Validation | **Implemented — `A3`, ADR-0126** (`IFastenerValidationService`/`FastenerValidationService`) — fastener rules (`TEMPEST-FST-001`…`020`) | Dependency Injection, Fastener Library, Materials (optional), Standards (optional) | None yet — see the row above |
+| Mechanical Components Library | **Implemented — `A5`, ADR-0125/ADR-0126** (`IComponentCatalog`/`ComponentCatalog`, `Tempest.Core.Components`) — springs, gears, drive elements and standard machine components under one taxonomy (`Kind = "ComponentReference"`), with three typed detail records gated by family traits | Dependency Injection, Reference Data, Engineering Data Model, Persistence, Units & Quantities | None yet — the library ships empty (`FCR-0093`) |
+| Mechanical Components Validation | **Implemented — `A5`, ADR-0126** (`IComponentValidationService`/`ComponentValidationService`) — component rules (`TEMPEST-CMP-001`…`024`), including which typed detail a family may carry | Dependency Injection, Mechanical Components Library, Materials (optional), Standards (optional) | None yet — see the row above |
+| Engineering Constants Library | **Implemented — `A6`, ADR-0126** (`IConstantCatalog`/`ConstantCatalog`, `Tempest.Core.Constants`) — dimensioned constant values with uncertainty and applicability (`Kind = "EngineeringConstant"`). Implements `IReleasedConstantSource`, the released-only seam a future calculation consumes a constant through | Dependency Injection, Reference Data, Engineering Data Model, Persistence, Units & Quantities | None yet — the library ships empty (`FCR-0093`), and the seam correctly returns nothing until a record is Released |
+| Engineering Constants Validation | **Implemented — `A6`, ADR-0126** (`IConstantValidationService`/`ConstantValidationService`) — constants rules (`TEMPEST-CON-001`…`014`) | Dependency Injection, Engineering Constants Library, Standards (optional) | None yet — see the row above |
+| Manufacturing Process Library | **Implemented — `A7`, ADR-0126** (`IProcessCatalog`/`ProcessCatalog`, `Tempest.Core.Manufacturing`) — process families with capability bands, material compatibility, production scale and constraints (`Kind = "ManufacturingProcessReference"`, deliberately distinct from the workspace's `ManufacturingOperation`) | Dependency Injection, Reference Data, Engineering Data Model, Persistence, Units & Quantities, Materials (taxonomy) | None yet — the library ships empty (`FCR-0093`) |
+| Manufacturing Process Validation | **Implemented — `A7`, ADR-0126** (`IProcessValidationService`/`ProcessValidationService`) — process rules (`TEMPEST-MFG-001`…`017`) | Dependency Injection, Manufacturing Process Library, Materials (optional), Standards (optional) | None yet — see the row above |
 | Engineering Calculations | **Implemented — WP 7.1D, ADR-0056** (`ICalculationEngine`/`CalculationEngine`, `Tempest.Core.Calculations`) — durable, evidentiary calculation execution against a registered `ICalculationDefinition<TInput, TResult>`, every execution recorded as an Engineering Data Model document | Dependency Injection, Engineering Data Model, Identity & Permissions | `CalculationSampleModule` (real contributor); `Tempest.App.Workspace.Calculations` (`WP 9.2A`, the third real Engineering Discipline wired into the Workspace) |
 | Verification | **Implemented — WP 7.1E, ADR-0057** (`IVerificationService`/`VerificationService`, `Tempest.Core.Verification`) — records a verification outcome (criteria, evidence) against a subject document; permission-gated history query, reusing the Engineering Data Model's own `LinkAsync`/`GetReferencesAsync` mechanism, never a new index | Dependency Injection, Engineering Data Model, Identity & Permissions | `VerificationSampleModule` (real contributor); Requirements Engine (`GetEvidenceAsync` composition); `Tempest.App.Workspace.Verification` (`WP 9.3A`) and `.Manufacturing` (`WP 9.5A`, reuses `RecordVerificationResultCommand` directly) |
 | Project Engine | Planned | Undetermined | Undetermined |
@@ -1843,8 +1855,15 @@ records; `BearingFamily`/`BearingFamilyTraits` (the taxonomy and its
 type-aware applicability model); `BearingValidationState`/
 `BearingValidationStates`; `BearingQuery`/`BearingQueryEvaluator`;
 `BearingComparer`/`BearingComparisonProperties`;
-`BearingsException` and six subtypes — all
-`Tempest.Core.Bearings`.
+`IBearingValidationService`/`BearingValidationService`/
+`BearingValidationRules` — all `Tempest.Core.Bearings`. **Corrected
+`Group A` (2026-09-06):** this list previously named `IBearing`,
+`BearingValidationState`/`BearingValidationStates` and
+`BearingsException` and six subtypes. All were removed when A4
+migrated onto the shared reference-data layer (`ADR-0126`), which now
+supplies `IReferenceRecord<T>`, `ReferenceValidationState` and
+`ReferenceDataException` in their place. The behaviour is unchanged;
+the types are shared rather than bearing-specific.
 
 **Dependencies.** Dependency Injection; `IEngineeringDocumentStore`
 (Engineering Data Model, every bearing record's own real storage);
@@ -1852,7 +1871,9 @@ type-aware applicability model); `BearingValidationState`/
 `bearingId` index of exactly the shape Materials and Requirements Engine
 already use, and a manufacturer-part-number index the first cannot
 provide); `Tempest.Core.UnitsAndQuantities` for every dimensioned value,
-extended by this Work Package with `RotationalSpeed` and `PlaneAngle`.
+extended by this Work Package with `RotationalSpeed` and `PlaneAngle`;
+and, since `Group A`, `Tempest.Core.ReferenceData` for the catalogue,
+lifecycle and provenance machinery A4 originally built for itself.
 
 **Consumers.** None yet. The library ships architecturally complete and
 empty: no authoritative bearing dataset exists in this repository, and
@@ -1912,6 +1933,83 @@ registered in Phase 6 immediately after `IBearingCatalog`.
 
 **Architecture references.** `docs/architecture/A4 Bearing Library.md`
 §8.
+
+---
+
+## Engineering Reference Data — Group A *(implemented — `Group A`, ADR-0125/ADR-0126)*
+
+**Responsibility.** Six further reference libraries alongside A4 —
+Materials (`A1`), Standards (`A2`), Fasteners (`A3`), Mechanical
+Components (`A5`), Engineering Constants (`A6`) and Manufacturing
+Processes (`A7`) — and the one shared layer beneath all seven.
+
+**Why one section rather than seven.** These services are architecturally
+identical everywhere it matters: the same storage, the same lifecycle,
+the same provenance gates, the same comparison semantics, the same
+boundaries. What differs is engineering content, and that belongs in each
+library's own architecture document rather than here. Repeating the same
+seven paragraphs with the nouns changed would be exactly the cosmetic
+uniformity `ADR-0126` declines.
+
+**Key types (shared layer).** `IReferenceDataCatalog<T>`/
+`ReferenceDataCatalog<T>`; `IReferenceRecord<T>`/`ReferenceRecord<T>`;
+`ReferenceProvenance`, `ReferenceExtractionMethod`,
+`ReferenceVerificationStatus`; `ReferenceValidationState`/
+`ReferenceValidationStates`; `ReferenceValue<T>`, `ReferenceRange<T>`,
+`ReferenceQuantityValue`, `ReferenceQuantityCodec`; `ReferenceComparer`
+and its comparison result; `IReferenceValidationService<T>`/
+`ReferenceValidationService<T>`/`ReferenceValidationRules`;
+`StandardReference`; `IStandardResolver` and `IReleasedConstantSource`;
+`ReferenceDataException` and six subtypes — all
+`Tempest.Core.ReferenceData`.
+
+**Key types (per library).** Each library's own definition record, family
+taxonomy, family-traits table, query and evaluator, comparison property
+list, validation service and rule series, in its own namespace. Listed in
+the Namespace Register and in each library's own architecture document.
+
+**Dependencies.** Dependency Injection; `IEngineeringDocumentStore`
+(every record's real storage, one `Kind` per library);
+`IPersistenceStore` directly (two index collections per library, for the
+same reason Materials, Requirements and Bearings each needed one);
+`Tempest.Core.UnitsAndQuantities` for every dimensioned value, extended
+by this programme with affine units (`ADR-0125`) and thirteen further
+dimensions. A7 additionally depends on A1's `MaterialFamily` taxonomy
+rather than declaring a second list of materials.
+
+**Cross-service seams.** `IStandardResolver` (implemented by A2) and
+`IReleasedConstantSource` (implemented by A6) are declared in the shared
+layer, so no library takes a compile-time dependency on another. Both are
+**optional** collaborators wherever consumed: no library is a hard
+prerequisite for holding data in another. Each resolves through a
+forwarder rather than a second container mapping, so there is one
+catalogue behind both seams rather than two with independent write locks.
+
+**Consumers.** None yet. Every library ships architecturally complete and
+**empty**: no authoritative dataset for any of these domains exists in
+this repository, and inventing values is prohibited. See
+`docs/architecture/Group A Engineering Reference Data.md` §9 and
+`FCR-0093`.
+
+**Boundaries.** Reference data only. No selection, no calculation, no
+suitability judgement, no cost or commercial data, no supplier
+capability, no conformity assessment. Each library's own document
+restates the boundary it is most likely to be pushed across.
+
+**Lifecycle.** Ordinary DI-public, container-constructed singletons,
+registered in `TempestHost`'s Platform Services Registered block
+(Phase 6) around `IMaterialCatalog`/`IBearingCatalog` — Standards first,
+because every other library cites it. No new Host Lifecycle phase.
+
+**ADR references.** ADR-0053, ADR-0055, ADR-0058, ADR-0072, ADR-0073,
+ADR-0074, ADR-0084, ADR-0124 (followed, not re-decided); ADR-0125
+(*Affine Units Are Represented by an Offset on `Unit<TDimension>`, and
+Arithmetic on Them Is Refused*); ADR-0126 (*Group A Reference Libraries
+Share One Catalogue Layer, and Keep Their Own Engineering Semantics*).
+
+**Architecture references.**
+`docs/architecture/Group A Engineering Reference Data.md` and the seven
+per-library documents it indexes.
 
 ---
 
