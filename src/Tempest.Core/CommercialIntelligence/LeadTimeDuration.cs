@@ -196,4 +196,27 @@ public static class LeadTimeKinds
     /// <summary>Whether the figure is somebody's expectation rather than evidence or a promise.</summary>
     public static bool IsExpectation(LeadTimeKind kind) =>
         kind is LeadTimeKind.Estimated or LeadTimeKind.Typical or LeadTimeKind.Unspecified;
+
+    /// <summary>
+    /// How strong a claim the kind makes, for ordering. Higher is
+    /// stronger.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="LeadTimeKind.Actual"/> ranks highest because a measured
+    /// outcome is the only figure that cannot be wrong about what
+    /// happened — though it says nothing on its own about what will
+    /// happen next time, which is why the weaker kinds are still worth
+    /// reading.
+    /// </remarks>
+    public static int Strength(LeadTimeKind kind) => kind switch
+    {
+        LeadTimeKind.Unspecified => 0,
+        LeadTimeKind.Estimated => 1,
+        LeadTimeKind.Typical => 2,
+        LeadTimeKind.Historical => 3,
+        LeadTimeKind.Quoted => 4,
+        LeadTimeKind.Committed => 5,
+        LeadTimeKind.Actual => 6,
+        _ => 0,
+    };
 }
