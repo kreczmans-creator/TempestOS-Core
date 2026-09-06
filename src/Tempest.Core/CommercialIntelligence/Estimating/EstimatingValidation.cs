@@ -288,52 +288,6 @@ public sealed class CostEstimateValidationService : ReferenceValidationService<C
     }
 }
 
-/// <summary>
-/// Resolves a <see cref="ReferencePin"/> into one library, so an
-/// estimate's sources can be checked without D4 taking a dependency on
-/// every library an estimate might cite.
-/// </summary>
-public interface IReferencePinResolver
-{
-    /// <summary>The library this resolver answers for, matching <see cref="ReferencePin.Library"/>.</summary>
-    string LibraryName { get; }
-
-    /// <summary>The pinned record's current validation state, or <see langword="null"/> where the library no longer holds it.</summary>
-    /// <exception cref="ArgumentNullException"><paramref name="pin"/> is <see langword="null"/>.</exception>
-    Task<ReferenceValidationState?> ResolveAsync(ReferencePin pin, CancellationToken cancellationToken = default);
-}
-
-/// <summary>An <see cref="IReferencePinResolver"/> over any reference-data catalogue.</summary>
-/// <typeparam name="TDefinition">The library's own definition type.</typeparam>
-public sealed class CatalogPinResolver<TDefinition> : IReferencePinResolver
-    where TDefinition : class
-{
-    private readonly IReferenceDataCatalog<TDefinition> _catalog;
-
-    /// <summary>Initialises a new instance of the <see cref="CatalogPinResolver{TDefinition}"/> class.</summary>
-    /// <param name="catalog">The catalogue this resolver answers for.</param>
-    /// <exception cref="ArgumentNullException"><paramref name="catalog"/> is <see langword="null"/>.</exception>
-    public CatalogPinResolver(IReferenceDataCatalog<TDefinition> catalog)
-    {
-        ArgumentNullException.ThrowIfNull(catalog);
-
-        _catalog = catalog;
-    }
-
-    /// <inheritdoc />
-    public string LibraryName => _catalog.LibraryName;
-
-    /// <inheritdoc />
-    public async Task<ReferenceValidationState?> ResolveAsync(ReferencePin pin, CancellationToken cancellationToken = default)
-    {
-        ArgumentNullException.ThrowIfNull(pin);
-
-        var record = await _catalog.FindAsync(pin.RecordId, cancellationToken).ConfigureAwait(false);
-
-        return record?.ValidationState;
-    }
-}
-
 /// <summary>Governance of the supplier-quote library itself.</summary>
 public interface ISupplierQuoteValidationService : IReferenceValidationService<SupplierQuote>
 {
