@@ -8,7 +8,7 @@ namespace Tempest.Core.EngineeringIntelligence.Decisions;
 
 /// <summary>
 /// Reasons from a part's requirements to candidate manufacturing processes
-/// (`WP02.2`).
+/// (`B2`).
 /// </summary>
 /// <remarks>
 /// <para>

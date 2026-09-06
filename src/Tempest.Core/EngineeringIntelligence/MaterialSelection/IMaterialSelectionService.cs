@@ -5,7 +5,7 @@ namespace Tempest.Core.EngineeringIntelligence.MaterialSelection;
 
 /// <summary>
 /// Assesses material candidates against an application's requirements
-/// (`WP02.1`).
+/// (`B1`).
 /// </summary>
 /// <remarks>
 /// <para>

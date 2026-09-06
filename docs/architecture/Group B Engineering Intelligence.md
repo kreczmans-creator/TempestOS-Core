@@ -20,11 +20,11 @@ against:
 
 | Work Package | Capability | Namespace |
 |---|---|---|
-| WP02.1 | Material selection logic | `…EngineeringIntelligence.MaterialSelection` |
-| WP02.2 | Manufacturing decision trees | `…EngineeringIntelligence.Decisions` |
-| WP02.3 | Mechanical design rules | `…EngineeringIntelligence.DesignRules` |
-| WP02.4 | Engineering review logic | `…EngineeringIntelligence.Reviews` |
-| WP02.5 | Design trade-off framework | `…EngineeringIntelligence.TradeStudies` |
+| B1 | Material selection logic | `…EngineeringIntelligence.MaterialSelection` |
+| B2 | Manufacturing decision trees | `…EngineeringIntelligence.Decisions` |
+| B3 | Mechanical design rules | `…EngineeringIntelligence.DesignRules` |
+| B4 | Engineering review logic | `…EngineeringIntelligence.Reviews` |
+| B5 | Design trade-off framework | `…EngineeringIntelligence.TradeStudies` |
 
 All five sit on one shared core in the root namespace.
 
@@ -163,7 +163,7 @@ and standard-reference checks come for free.
 
 ---
 
-## 5. WP02.1 — Material selection
+## 5. B1 — Material selection
 
 A caller supplies a `MaterialRequirementSet`: an application description,
 `MaterialCriterion` values, and `MaterialEvidenceCriterion` values for
@@ -182,7 +182,7 @@ information is in `HasOutstandingQuestions`.
 
 ---
 
-## 6. WP02.2 — Manufacturing decision trees
+## 6. B2 — Manufacturing decision trees
 
 `DecisionTree` is nodes, branches and terminal outcomes.
 `DecisionTreeWalker.Walk` is pure and bounded (`MaximumSteps = 256`).
@@ -201,7 +201,7 @@ invented capability numbers.
 
 ---
 
-## 7. WP02.3 — Mechanical design rules
+## 7. B3 — Mechanical design rules
 
 `DesignRuleService` assesses a subject against every applicable released
 rule, narrowed by an optional `DesignRuleScope` (domains, severities,
@@ -215,7 +215,7 @@ result for a design nobody checked.
 
 ---
 
-## 8. WP02.4 — Engineering review logic
+## 8. B4 — Engineering review logic
 
 A `ReviewDefinition` is criteria across 14 `ReviewArea` values. A
 criterion naming a rule is answered by that rule; a criterion no rule can
@@ -231,7 +231,7 @@ evidence. Overruling a rule is legitimate; doing it invisibly is not.
 
 ---
 
-## 9. WP02.5 — Design trade-off framework
+## 9. B5 — Design trade-off framework
 
 Not a weighted-score spreadsheet. The concepts a scoring matrix destroys
 are kept structurally distinct:

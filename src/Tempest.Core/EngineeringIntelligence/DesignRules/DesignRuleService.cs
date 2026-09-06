@@ -5,7 +5,7 @@ namespace Tempest.Core.EngineeringIntelligence.DesignRules;
 
 /// <summary>
 /// Runs the mechanical design rule library against an engineering subject
-/// (`WP02.3`).
+/// (`B3`).
 /// </summary>
 /// <remarks>
 /// <para>

@@ -46,15 +46,15 @@
 | `ICriticalBackgroundService` | `Tempest.Core.BackgroundServices` | Platform API (marker) | Opt-in critical-failure escalation (ADR-0021) |
 | `ICurrentComponentAccessor` | `Tempest.Core.Identity` | DI-public (via `AddInstance`, dual-registered under its own concrete type, mirroring `ICurrentPrincipalAccessor`) | Resolves which loaded component's own code is currently executing — a second, independent identity axis alongside `ICurrentPrincipalAccessor` (`v0.13.0`, `ADR-0111`) |
 | `ICurrentPrincipalAccessor` | `Tempest.Core.Identity` | DI-public (via `AddInstance`, dual-registered under its own concrete type per ADR-0044) | Read-only view of the ambient current principal (`WP 6.1`) |
-| `IDecisionTreeCatalog` | `Tempest.Core.EngineeringIntelligence.Decisions` | DI-public | Register/retrieve/revise/govern/query manufacturing decision trees (`WP02.2`, `ADR-0128`) |
-| `IDecisionTreeValidationService` | `Tempest.Core.EngineeringIntelligence.Decisions` | DI-public | Governance of decision-tree definitions themselves — `TEMPEST-EID-001..014` (`WP02.2`) |
-| `IDesignRuleService` | `Tempest.Core.EngineeringIntelligence.DesignRules` | DI-public | Assess a subject against released design rules, stating what was and was not checked (`WP02.3`, `ADR-0127`) |
+| `IDecisionTreeCatalog` | `Tempest.Core.EngineeringIntelligence.Decisions` | DI-public | Register/retrieve/revise/govern/query manufacturing decision trees (`B2`, `ADR-0128`) |
+| `IDecisionTreeValidationService` | `Tempest.Core.EngineeringIntelligence.Decisions` | DI-public | Governance of decision-tree definitions themselves — `TEMPEST-EID-001..014` (`B2`) |
+| `IDesignRuleService` | `Tempest.Core.EngineeringIntelligence.DesignRules` | DI-public | Assess a subject against released design rules, stating what was and was not checked (`B3`, `ADR-0127`) |
 | `IDiagnosticsProvider` | `Tempest.Core.Diagnostics` | DI-public (via `AddInstance`) | Read-only projection over Host/module/hosted-service lifecycle state (ADR-0039) |
 | `IDimension` | `Tempest.Core.UnitsAndQuantities` | Platform API (generic marker, no members) | Phantom-type dimension tag for `Quantity<TDimension>`/`Unit<TDimension>` — compile-time-only, never instantiated (`WP 7.1B`, `ADR-0054`) |
 | `IDocumentRevision` | `Tempest.Core.EngineeringData` | Platform API (data contract) | One immutable, retrievable revision of an `IEngineeringDocument` (`WP 7.1A`, `ADR-0053`) |
 | `IEngineeringDocument` | `Tempest.Core.EngineeringData` | Platform API (data contract) | Identity and current-revision pointer for a tracked engineering entity (`WP 7.1A`, `ADR-0053`) |
 | `IEngineeringDocumentStore` | `Tempest.Core.EngineeringData` | DI-public | Create/find/revise/link/query engineering documents and their references (`WP 7.1A`, `ADR-0053`) |
-| `IEngineeringReviewService` | `Tempest.Core.EngineeringIntelligence.Reviews` | DI-public | Conduct an engineering review, answer what a rule can answer, and record an engineer's own findings (`WP02.4`) |
+| `IEngineeringReviewService` | `Tempest.Core.EngineeringIntelligence.Reviews` | DI-public | Conduct an engineering review, answer what a rule can answer, and record an engineer's own findings (`B4`) |
 | `IEvent` | `Tempest.Core.Events` | Platform API (contract) | Marks a published fact |
 | `IEventBus` | `Tempest.Core.Events` | DI-public | Publish/subscribe dispatch (ADR-0020) |
 | `IEventHandler<T>` | `Tempest.Core.Events` | Platform API (contract) | Consumer-facing subscription contract |
@@ -84,9 +84,9 @@
 | `ILogger` | `Tempest.Core.Logging` | DI-public (via `AddInstance`) | Structured logging abstraction |
 | `ILoggerFactory` | `Tempest.Core.Logging` | DI-public (via `AddInstance`) | Produces `ILogger` instances |
 | `IMacroManager` | `Tempest.Core.Macros` | DI-public | Creates/lists/deletes `ICommandMacro`s, keeping each one's own `CommandDescriptor` registered against `ICommandRegistry` (`WP 10.6A`, `ADR-0099`) |
-| `IManufacturingDecisionService` | `Tempest.Core.EngineeringIntelligence.Decisions` | DI-public | Screen processes against part requirements and walk released decision trees (`WP02.2`) |
+| `IManufacturingDecisionService` | `Tempest.Core.EngineeringIntelligence.Decisions` | DI-public | Screen processes against part requirements and walk released decision trees (`B2`) |
 | `IMaterialCatalog` | `Tempest.Core.Materials` | DI-public | Register/find/revise/list named materials — a thin, typed index over `IEngineeringDocumentStore` (`WP 7.1C`, `ADR-0055`) |
-| `IMaterialSelectionService` | `Tempest.Core.EngineeringIntelligence.MaterialSelection` | DI-public | Assess material candidates against an application's constraints and preferences; never selects (`WP02.1`, `ADR-0127`) |
+| `IMaterialSelectionService` | `Tempest.Core.EngineeringIntelligence.MaterialSelection` | DI-public | Assess material candidates against an application's constraints and preferences; never selects (`B1`, `ADR-0127`) |
 | `IMaterialValidationService` | `Tempest.Core.Materials` | DI-public | Material data-quality validation and the library-wide data-quality report (`A1`, `ADR-0126`) |
 | `IModule` | `Tempest.Core.Modules` | Discovered/registered, not DI-registered as an interface | Module identity contract |
 | `IModuleLifecycle` | `Tempest.Core.Modules` | Discovered/registered | Module lifecycle contract |
@@ -125,8 +125,8 @@
 | `IRequirementGroup` | `Tempest.Core.Requirements` | Platform API (data contract) | A hierarchical requirement categorisation node; parent reference now the DTO's own live, current value (`WP 9.1A`, corrected from a `.FirstOrDefault()`-over-relationships resolution), plus (`WP 9.1A`, additive) IsDeleted (`WP 7.3A`, `ADR-0058`; `ADR-0084`) |
 | `IRequirementValidationService` | `Tempest.Core.Requirements` | DI-public | Validates one requirement: duplicate identifier, orphan, missing verification, missing allocation, advisory relationship kind — reuses `IValidationResult`/`IValidationDiagnostic`'s own generic result shape, never `IValidationRule` (scoped to `IEngineeringObject`, structurally incompatible with `IRequirement`) (`WP 9.1A`, `ADR-0084`) |
 | `IRequirementsService` | `Tempest.Core.Requirements` | DI-public | Create/find/revise/set-status/link/list requirements, collections, and groups; no internal permission gating; plus (`WP 9.1A`, additive) set-owner/set-priority/delete/move-to-group/move-group/delete-group/delete-collection/list-collections/list-groups (`WP 7.3A`, `ADR-0058`/`ADR-0061`; `ADR-0084`) |
-| `IReviewDefinitionCatalog` | `Tempest.Core.EngineeringIntelligence.Reviews` | DI-public | Register/retrieve/revise/govern/query engineering review definitions (`WP02.4`, `ADR-0128`) |
-| `IReviewDefinitionValidationService` | `Tempest.Core.EngineeringIntelligence.Reviews` | DI-public | Governance of review definitions themselves — `TEMPEST-EIV-001..009` (`WP02.4`) |
+| `IReviewDefinitionCatalog` | `Tempest.Core.EngineeringIntelligence.Reviews` | DI-public | Register/retrieve/revise/govern/query engineering review definitions (`B4`, `ADR-0128`) |
+| `IReviewDefinitionValidationService` | `Tempest.Core.EngineeringIntelligence.Reviews` | DI-public | Governance of review definitions themselves — `TEMPEST-EIV-001..009` (`B4`) |
 | `IRole` | `Tempest.Core.Identity` | Platform API (data contract, additive — `WP 6.1`) | A named grouping of permissions |
 | `IRoleProvider` | `Tempest.Core.Identity` | DI-public (additive — `WP 6.1`) | Config-sourced role resolution |
 | `IRuleCatalog` | `Tempest.Core.EngineeringIntelligence` | DI-public | Register/retrieve/revise/govern/query engineering design rules, and find the released rules applicable to a subject (`P02`, `ADR-0128`) |
@@ -144,9 +144,9 @@
 | `ITempestHost` | `Tempest.Core.Runtime` | Not DI-registered (returned by the builder) | The running Host instance |
 | `ITempestHostBuilder` | `Tempest.Core.Runtime` | Not DI-registered (the composition root's own entry point) | Assembles and produces a `TempestHost`; also opts the resulting host's Discovery phase into `IFaultInjectionModule` candidates via the new `EnableFaultInjectionModules()` member (`WP 12.3B`, `ADR-0102`) — every other member unchanged |
 | `ITempestServiceProvider` | `Tempest.Core.DependencyInjection` | The container itself | Constructs and resolves service instances |
-| `ITradeStudyCatalog` | `Tempest.Core.EngineeringIntelligence.TradeStudies` | DI-public | Register/retrieve/revise/govern/query engineering trade-study definitions (`WP02.5`, `ADR-0128`) |
-| `ITradeStudyService` | `Tempest.Core.EngineeringIntelligence.TradeStudies` | DI-public | Run a trade study, record an engineer's judgement, and attach the decision a person took; nothing here chooses an option (`WP02.5`, `ADR-0127`) |
-| `ITradeStudyValidationService` | `Tempest.Core.EngineeringIntelligence.TradeStudies` | DI-public | Governance of trade-study definitions themselves — `TEMPEST-EIT-001..017` (`WP02.5`) |
+| `ITradeStudyCatalog` | `Tempest.Core.EngineeringIntelligence.TradeStudies` | DI-public | Register/retrieve/revise/govern/query engineering trade-study definitions (`B5`, `ADR-0128`) |
+| `ITradeStudyService` | `Tempest.Core.EngineeringIntelligence.TradeStudies` | DI-public | Run a trade study, record an engineer's judgement, and attach the decision a person took; nothing here chooses an option (`B5`, `ADR-0127`) |
+| `ITradeStudyValidationService` | `Tempest.Core.EngineeringIntelligence.TradeStudies` | DI-public | Governance of trade-study definitions themselves — `TEMPEST-EIT-001..017` (`B5`) |
 | `IUnitConverter` | `Tempest.Core.UnitsAndQuantities` | Not DI-registered (each `Unit<TDimension>` carries its own conversion factor; no registration/lookup service exists) | Reserved conversion-service contract; the framework's own actual conversion path is `Quantity<TDimension>.ConvertTo`, not this interface (`WP 7.1B`, `ADR-0054`) |
 | `IVerificationRecord` | `Tempest.Core.Verification` | Platform API (data contract) | The complete, structured account of one recorded verification outcome (`WP 7.1E`, `ADR-0057`) |
 | `IVerificationService` | `Tempest.Core.Verification` | DI-public | Records a verification outcome against a subject document; permission-gated history query (`WP 7.1E`, `ADR-0057`) |

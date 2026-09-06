@@ -4,7 +4,7 @@ using Tempest.Core.ReferenceData;
 namespace Tempest.Core.EngineeringIntelligence.Reviews;
 
 /// <summary>
-/// Carries out structured engineering reviews (`WP02.4`).
+/// Carries out structured engineering reviews (`B4`).
 /// </summary>
 /// <remarks>
 /// <para>
