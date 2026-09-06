@@ -13,6 +13,11 @@ using Tempest.Core.EngineeringData;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.BusinessGovernance.Assets;
 using Tempest.Core.CommercialIntelligence.Costs;
+using Tempest.Core.EngineeringAssets.CalculationPacks;
+using Tempest.Core.EngineeringAssets.DesignReviews;
+using Tempest.Core.EngineeringAssets.TechnicalDocumentation;
+using Tempest.Core.EngineeringAssets.Templates;
+using Tempest.Core.EngineeringAssets.Verification;
 using Tempest.Core.CommercialIntelligence.Estimating;
 using Tempest.Core.CommercialIntelligence.LeadTimes;
 using Tempest.Core.CommercialIntelligence.Procurement;
@@ -867,6 +872,34 @@ public sealed class TempestHost : ITempestHost
         services.Singleton<ISourcingComparisonCatalog, SourcingComparisonCatalog>();
         services.Singleton<ISourcingComparisonValidationService, SourcingComparisonValidationService>();
         services.Singleton<ISourcingComparisonService, SourcingComparisonService>();
+
+        // `Group E` (P05): engineering assets. Templates, calculation
+        // packs, verification artefacts, design review packs and technical
+        // documentation are authored, evidenced, reviewed, revisioned and
+        // superseded records like every other library, and sit on the same
+        // shared ReferenceDataCatalog<T> base (`ADR-0136`).
+        //
+        // Registered after `P01`, `P03` and `P07`, all of which `P05`
+        // references and none of which it duplicates: `E2` links the
+        // platform's own calculation records rather than recomputing them,
+        // `E3` references `Tempest.Core.Requirements` rather than copying a
+        // requirement, and `E5` points at `EngineeringData` documents
+        // rather than storing content a second time.
+        services.Singleton<ITemplateCatalog, TemplateCatalog>();
+        services.Singleton<ITemplateValidationService, TemplateValidationService>();
+
+        services.Singleton<ICalculationPackCatalog, CalculationPackCatalog>();
+        services.Singleton<ICalculationPackValidationService, CalculationPackValidationService>();
+
+        services.Singleton<IVerificationArtefactCatalog, VerificationArtefactCatalog>();
+        services.Singleton<IVerificationArtefactValidationService, VerificationArtefactValidationService>();
+        services.Singleton<IVerificationTraceService, VerificationTraceService>();
+
+        services.Singleton<IDesignReviewCatalog, DesignReviewCatalog>();
+        services.Singleton<IDesignReviewValidationService, DesignReviewValidationService>();
+
+        services.Singleton<ITechnicalDocumentCatalog, TechnicalDocumentCatalog>();
+        services.Singleton<ITechnicalDocumentValidationService, TechnicalDocumentValidationService>();
 
         // ADR-0056: every calculation execution is durably recorded as an
         // Engineering Data Model document (Kind = "CalculationRecord"),

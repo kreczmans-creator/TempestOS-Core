@@ -262,6 +262,11 @@ public sealed record VerificationArtefact
     public AssetGovernanceFacts Governance { get; init; } = new();
 
     /// <summary>Why the requirement does not apply, where <see cref="Standing"/> is <see cref="VerificationStanding.NotApplicable"/>. <see langword="null"/> otherwise.</summary>
+    /// <remarks>
+    /// Blank is not a reason. A whitespace value leaves the artefact at
+    /// <see cref="VerificationStanding.NotPerformed"/> rather than
+    /// letting an empty string retire a requirement.
+    /// </remarks>
     public string? NotApplicableReason { get; init; }
 
     /// <summary>Anything else about it. <see langword="null"/> if nothing.</summary>
@@ -275,7 +280,9 @@ public sealed record VerificationArtefact
     /// record a pass without a result that says so.
     /// </remarks>
     public VerificationStanding Standing => Result?.Standing
-        ?? (NotApplicableReason is not null ? VerificationStanding.NotApplicable : VerificationStanding.NotPerformed);
+        ?? (string.IsNullOrWhiteSpace(NotApplicableReason)
+            ? VerificationStanding.NotPerformed
+            : VerificationStanding.NotApplicable);
 
     /// <summary>Whether the requirement has actually been shown to be met.</summary>
     public bool IsDemonstrated => VerificationStandings.IsDemonstrated(Standing);
