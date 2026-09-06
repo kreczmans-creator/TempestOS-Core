@@ -16,6 +16,10 @@ public static class LengthUnits
     public static readonly Unit<Length> Millimetre = new("mm", 0.001);
 
     /// <summary>SI.</summary>
+    /// <summary>SI — the unit a surface roughness or a fine machining tolerance is quoted in.</summary>
+    /// <remarks>Added by `Group A` (P01 Engineering Reference Data) — purely additive, exactly as this catalogue's own "starting set, extensible" remarks anticipate. Needed by <c>Tempest.Core.Manufacturing</c>.</remarks>
+    public static readonly Unit<Length> Micrometre = new("um", 1e-6);
+
     public static readonly Unit<Length> Centimetre = new("cm", 0.01);
 
     /// <summary>SI.</summary>
@@ -34,5 +38,5 @@ public static class LengthUnits
     public static readonly Unit<Length> Mile = new("mi", 1609.344);
 
     /// <summary>Every unit in this catalogue, for use with <see cref="Quantity{TDimension}.TryParse"/>.</summary>
-    public static IReadOnlyList<Unit<Length>> All { get; } = [Metre, Millimetre, Centimetre, Kilometre, Inch, Foot, Yard, Mile];
+    public static IReadOnlyList<Unit<Length>> All { get; } = [Metre, Millimetre, Micrometre, Centimetre, Kilometre, Inch, Foot, Yard, Mile];
 }
