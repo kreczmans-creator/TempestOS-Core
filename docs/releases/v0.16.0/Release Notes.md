@@ -1,12 +1,23 @@
 # TempestOS v0.16.0 — Release Notes
 
-**Status: engineering complete; scope decisions ratified; awaiting merge,
-tag and Product Approval.** Not merged to `main`, not tagged, not
-published. `D-021`–`D-026` were **ratified by the Product Owner on
-2026-09-05** — gate 1 of four, settling scope only. Merge, tag and the
-Product Approval verdict are gates 2, 3 and 4, and none is authorised.
-Certification is Product Approval's own act (Engineering Governance §9);
-nothing in this document constitutes it.
+**Status: engineering complete; scope decisions ratified; merged to
+`main`; awaiting tag and Product Approval.** **Not tagged, not
+published, and no Product Approval verdict is recorded.**
+`D-021`–`D-026` were **ratified by the Product Owner on 2026-09-05** —
+gate 1 of four, settling scope only. The merge to `main` is gate 2: it
+was **authorised by the Product Owner on 2026-09-05 and performed**
+(`cc7ef4d`, then `9bba720`, most recently `58c4cba` on 2026-09-06); the
+per-occasion approval record Engineering Governance §7 item 6 requires
+is in `WP16.9.0 Engineering Release Report.md` §7. The tag and the
+Product Approval verdict are gates 3 and 4, and **neither is
+authorised**. Certification is Product Approval's own act (Engineering
+Governance §9); nothing in this document constitutes it.
+*(Corrected `WP 16.4B-R6`, 2026-09-06: this paragraph read "awaiting
+merge … Not merged to `main`" and described all three remaining gates as
+unauthorised. The release had been merged since 2026-09-05. The
+"not tagged / not published / no verdict" negations were correct and are
+kept; only the merge claim was false. Raised as `P4-04` by the fifth
+review board.)*
 
 ---
 

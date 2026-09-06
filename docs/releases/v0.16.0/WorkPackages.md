@@ -2,12 +2,26 @@
 
 ## Status
 
-**Engineering complete; blocked at the Product Approval boundary.** Every
-row below is delivered and validated, and `WP 16.4A`'s five-run CI
-determinism matrix — the last outstanding engineering gate — was obtained
-on the frozen candidate `d7d3f3b`. `VERSION` is `0.16.0`, bumped by
-`WP 16.9.0`. Scope, sequencing and acceptance for every row are in
-`v0.16.0 Release Plan.md` in this folder.
+**Engineering complete; merged to `main`; blocked at the tag and Product
+Approval boundary.** Every row below is delivered and validated.
+`WP 16.4A`'s five-run CI determinism matrix — the last outstanding
+engineering gate — has been obtained on each candidate in turn as each
+superseded the last; **the matrix that covers the released tree is the
+RC4 matrix, 5/5 on `58c4cbaa1affec1cddb01a089fc5cbc0547634a4`, runs
+231–235, recorded in `WP16.9.0 Engineering Release Report.md` §4.3.**
+`VERSION` is `0.16.0`, bumped by `WP 16.9.0`. Scope, sequencing and
+acceptance for every row are in `v0.16.0 Release Plan.md` in this folder.
+
+*(Corrected `WP 16.4B-R6`, 2026-09-06: this paragraph said the matrix
+"was obtained on the frozen candidate `d7d3f3b`", unqualified. That
+matrix had by then been superseded **twice** — by `fce2166`/`f593e5c`,
+then by `58c4cba` — because each remediation changed `src/` and
+`tests/`. Superseded matrices are historical and are retained as such in
+ERR §4.1 and §4.2, together with run 214's genuine failure on `fce2166`;
+they are not the acceptance evidence for this release. Raised as
+`P4-06` by the fifth review board. Note also that `WP 16.4B-R6` itself
+changes `src/` and `tests/`, so the RC4 matrix covers `58c4cba` and no
+later tree, and a fourth matrix is outstanding for the next candidate.)*
 
 `D-021`–`D-026` — the six scope decisions every row below cites — were
 **ratified by the Product Owner on 2026-09-05** and are entered in
@@ -17,13 +31,23 @@ only the ratified state. Evidence: `docs/releases/v0.16.0/WP16.0A Product Owner 
 
 What "complete" does **not** mean, stated here because the row statuses
 below are the thing most likely to be read alone: the release is **not
-merged** to `main`, **not tagged**, **not published**, and carries **no
-Product Approval verdict**. Ratification was Product Owner gate 1 of 4
-and authorises none of those. Governance §7.1 permits a release to be cut
-only from `main` and §9 reserves the merge, the tag and the verdict to
-Product Approval — so those three remain not engineering's to perform,
-and their absence is the correct state, not an omission. Recommendation
-and evidence: `WP16.9.0 Engineering Release Report.md`.
+tagged**, **not published**, and carries **no Product Approval verdict**.
+It **is** merged to `main` — gate 2, authorised by the Product Owner on
+2026-09-05 and performed (`cc7ef4d`, `9bba720`, most recently `58c4cba`
+on 2026-09-06); the per-occasion approval record Engineering Governance
+§7 item 6 requires is in `WP16.9.0 Engineering Release Report.md` §7.
+Ratification was Product Owner gate 1 of 4 and authorised none of the
+rest. Governance §7.1 permits a release to be cut only from `main` and §9
+reserves the tag and the verdict to Product Approval — so those two
+remain not engineering's to perform, and their absence is the correct
+state, not an omission. Recommendation and evidence:
+`WP16.9.0 Engineering Release Report.md`.
+
+*(Corrected `WP 16.4B-R6`, 2026-09-06: this paragraph asserted the
+release was "**not merged** to `main`" and that all four gates were
+open. The merge had happened on 2026-09-05. The other three negations
+were correct and are kept unchanged. Raised as `P4-05` by the fifth
+review board.)*
 
 ## Purpose
 
@@ -40,7 +64,7 @@ Closes with the first Product Approval verdict since `v0.12.0`.
 | `WP 16.0B` | Integrate off-`main` work — merge `WP 15.2A`; fold `docs/releases/v0.15.1/` into this release; Companion branch decision applied; `FCR-0092` citation resolved | Governance/Integration | 1 | `TD-120`, `TD-82` | **Complete** (`4198289`, merged `a4f891b`) |
 | `WP 16.1A` | Enforce the release gate — GitHub branch protection per `WP11.1B` §4; `CI Gate` depends on `Governance Health Check` | Configuration | 1 | `TD-45` | **Complete — workflow half** (`6338330`); GitHub branch-protection setting is a Product Owner action, `TD-45` stays Open |
 | `WP 16.3A` | Durable state schema versioning — architecture, `ADR-0120` | Architecture | 1 | `TD-87` (design) | **Complete** (`a80e95d`, `ADR-0120` accepted at Technical Review) |
-| `WP 16.4A` | Test determinism — `CompositeLogSink` console dependency, last fixed wait, real image decode, `MainWindow` resize coverage; five consecutive CI runs | Implementation (tests) | 1 | `TD-34`, `TD-119`, `TD-100`, `TD-83` | **Complete, acceptance bar met.** (`1dbb8ab` + part 2 `30f5cb2`; `TD-34`, `TD-83`, `TD-100`, `TD-119` Resolved; Core temp-dir leak closed.) The plan's acceptance line is "5/5 clean runs both configurations in CI". It went unmet for most of this release: GitHub Actions could not assign a runner from 2026-09-04 22:34 UTC, and three local Release runs stood in. An independent reviewer measured 16/16 clean locally across four configurations and still judged it insufficient, citing this project's own `WP 13.12.9` precedent — a flake that reproduced zero times in 25 local attempts and still failed a real release run. The reviewer was right to refuse the substitution: **the matrix has now run in CI**, five for five on the frozen candidate `d7d3f3b`, both configurations plus the governance check and CI Gate, all 25 jobs green, no retries — runs 195/197/199/201/202, evidence in the ERR §4.1. |
+| `WP 16.4A` | Test determinism — `CompositeLogSink` console dependency, last fixed wait, real image decode, `MainWindow` resize coverage; five consecutive CI runs | Implementation (tests) | 1 | `TD-34`, `TD-119`, `TD-100`, `TD-83` | **Complete, acceptance bar met.** (`1dbb8ab` + part 2 `30f5cb2`; `TD-34`, `TD-83`, `TD-100`, `TD-119` Resolved; Core temp-dir leak closed.) The plan's acceptance line is "5/5 clean runs both configurations in CI". It went unmet for most of this release: GitHub Actions could not assign a runner from 2026-09-04 22:34 UTC, and three local Release runs stood in. An independent reviewer measured 16/16 clean locally across four configurations and still judged it insufficient, citing this project's own `WP 13.12.9` precedent — a flake that reproduced zero times in 25 local attempts and still failed a real release run. The reviewer was right to refuse the substitution: **the matrix has now run in CI**. It first ran five for five on the then-frozen candidate `d7d3f3b` — both configurations plus the governance check and CI Gate, all 25 jobs green, no retries; runs 195/197/199/201/202, ERR §4.1 — **but that matrix is historical and has been superseded twice**, because `fce2166` and then `58c4cba` changed `src/` and `tests/`. **The matrix that closes this acceptance line for the released tree is the RC4 matrix: 5/5 on `58c4cba`, runs 231–235, all `workflow_dispatch` at attempt 1, ERR §4.3.** Between the two sits run 214's genuine failure on `fce2166` and the superseded `f593e5c` matrix (runs 218/220/223/226/227), both retained in ERR §4.2. *(Corrected `WP 16.4B-R6`, 2026-09-06 — `P4-06`.)* |
 | `WP 16.5B` | Linux/X11 — timeboxed Avalonia/`Tmds.DBus.Protocol` upgrade spike; fix, or state the support matrix in three documents | Implementation or Documentation | 1 | `TD-116` | **Complete** (`309c15d`; Linux launches; `TD-116` Resolved) |
 | `WP 16.2A` | Register & status currency — six `TD-57` registers, Feature and Release registers, Repository Metrics, `Product Roadmap.md`, `PROJECT_STATUS.md` lower sections archived and re-derived | Documentation/Governance | 2 | `TD-57`, `DNB-7` | **Complete** (`40e267d`; `TD-57` Resolved) |
 | `WP 16.3B` | Durable state schema versioning — implementation, migration chain, golden corpus | Implementation | 2 | `TD-87` | **Complete** (`67e7ce3` after two Technical Review rounds; `TD-87` Resolved) |
@@ -56,7 +80,7 @@ Closes with the first Product Approval verdict since `v0.12.0`.
 | `WP 16.4B-R4` | Close the lost update on the one durable-write path `WP 16.4B-R3` did not route through its lock — `ReviseAsync`'s unlocked capture and the stale predecessor that could overwrite after it | Implementation | 3 | `TD-136` | **Complete** — capture, hand-off and registration now happen inside the per-object write lock, and the predecessor is retired there; a later write through a retired instance throws `SupersededEngineeringObjectException` rather than silently discarding. Found by the final release review board, reproduced against the real classes. Mutation-proven both ways: 3 of 5 new tests fail against the reverted fix (one showing the on-disk attachment collection empty after an accepted write), 5 of 5 pass against it. Two of the five exist to catch over-correction — a predecessor write arriving *before* the revision must still be carried into the successor, because that is the rename-then-revise sequence every `Revise*Command` performs |
 | `WP 16.5B-R1` | Bring `ci.yml`'s Linux comment into line with ratified `D-025` | Documentation (CI) | 3 | none | **Complete** — the comment claimed Linux becomes "CI-verified in effect once this job exists". `D-025` as ratified says the opposite and forbids that claim. Written before ratification and missed when every document was hedged; found by the final release review board's platform reviewer |
 | `WP 16.5A-R2` | Give the Object Editor's attachment "Open" button a real accessible name | Implementation (UI) | 3 | none — undisclosed, outside `TD-132`'s scope | **Complete** — the button set no automation name at all and relied on `ContentControlAutomationPeer`'s `Content?.ToString()` fallback, so several attachments announced "Open, button" identically. Now named per file rather than per verb, which also avoids reproducing `TD-132`'s duplicate-name defect here |
-| `WP 16.9.0` | Engineering Readiness Review, `VERSION` 0.16.0, Release Notes, merge/tag/publish under the enforced gate, **Product Approval verdict recorded** | Verification/Release | 4 | Audit finding 2 | **Engineering complete; blocked at the Product Approval boundary.** `VERSION` bumped to `0.16.0`; Release Notes and the Engineering Readiness Review written; the five-run CI determinism matrix obtained on the frozen release candidate. **Not done, and not engineering's to do** (Engineering Governance §7.1/§9): the merge to `main`, the tag, the publish, and the Product Approval verdict itself. Each requires an explicit, per-occasion instruction from the Product Owner, and `scripts/new-release.ps1` mechanically refuses to run anywhere but `main`. |
+| `WP 16.9.0` | Engineering Readiness Review, `VERSION` 0.16.0, Release Notes, merge/tag/publish under the enforced gate, **Product Approval verdict recorded** | Verification/Release | 4 | Audit finding 2 | **Engineering complete; merged; blocked at the tag and Product Approval boundary.** `VERSION` bumped to `0.16.0`; Release Notes and the Engineering Readiness Review written; the five-run CI determinism matrix obtained on the release candidate `58c4cba` (RC4, runs 231–235, ERR §4.3). **Done, on explicit per-occasion Product Owner authorisation given 2026-09-05:** the merge to `main` (ERR §7 item 2 carries the §7.6 approval record). **Not done, and not engineering's to do** (Engineering Governance §7.1/§9): the tag, the publish, and the Product Approval verdict itself. Each requires its own explicit, per-occasion instruction from the Product Owner, and `scripts/new-release.ps1` mechanically refuses to run anywhere but `main`. *(Corrected `WP 16.4B-R6`, 2026-09-06: this cell listed the merge among the things not done.)* |
 
 ## Carried in from `main`'s own line, once `WP 16.0B` lands
 

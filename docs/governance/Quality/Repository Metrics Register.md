@@ -10,7 +10,7 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | Direct repository inspection (`find`, `wc`, `git log`) performed as part of this Work Package. |
 | **Review Frequency** | Re-measured at each Governance Baseline review, or on request. |
-| **Last Reviewed** | 2026-09-04 (WP 16.2A, Register and Status Currency) — new snapshot added, first since `WP 5.4` (eleven releases stale). Every count independently re-derived directly from the file system and git history at this Work Package's own base commit; see the new "Snapshot: 2026-09-04" section below. See `docs/releases/v0.16.0/WP16.2A Register and Status Currency Report.md`. Previously reviewed 2026-07-28 (WP 5.4, v0.5.0 Release Candidate & Engineering Sign-Off) — every count below independently re-derived from the file system directly, not carried forward from the previous snapshot's own arithmetic; two genuine, silent undercounts found and corrected (Exception Register total; Academy article/Work-Package-retrospective counts). |
+| **Last Reviewed** | 2026-09-06 (`WP 16.4B-R6`, fifth-review-board remediation) — the `WP 16.2A` snapshot table re-derived in full at `58c4cba` after individual rows had been refreshed piecemeal while the column stayed labelled `WP 16.2A`; see the note under that table. Previously reviewed 2026-09-04 (WP 16.2A, Register and Status Currency) — new snapshot added, first since `WP 5.4` (eleven releases stale). Every count independently re-derived directly from the file system and git history at this Work Package's own base commit; see the new "Snapshot: 2026-09-04" section below. See `docs/releases/v0.16.0/WP16.2A Register and Status Currency Report.md`. Previously reviewed 2026-07-28 (WP 5.4, v0.5.0 Release Candidate & Engineering Sign-Off) — every count below independently re-derived from the file system directly, not carried forward from the previous snapshot's own arithmetic; two genuine, silent undercounts found and corrected (Exception Register total; Academy article/Work-Package-retrospective counts). |
 | **Related Documents** | `Test Register.md`; `Namespace Register.md`; `Engineering Evolution Register.md`. |
 | **Related ADRs** | None directly. |
 | **Related Academy Articles** | None directly — this is a raw metrics snapshot, not a teaching document. |
@@ -388,34 +388,55 @@ documentation, not corrected reality. See this Work Package's own
 retrospective for the full discussion and the standing-practice
 recommendation this finding produced.
 
-## Snapshot: 2026-09-04 (WP 16.2A — Register and Status Currency)
+## Snapshot: 2026-09-06 at `58c4cba` (`WP 16.4B-R6`) — opened 2026-09-04 by `WP 16.2A`
 
 This register had not been re-measured since `WP 5.4` (`v0.5.0`,
-2026-07-28) — eleven releases stale. Every figure below is re-derived
-directly from the file system and git history at this Work Package's
-own base commit (`8b4c3948`), not incremented from `WP 5.4`'s own
-figures.
+2026-07-28) — eleven releases stale. `WP 16.2A` re-derived every figure
+directly from the file system and git history at its own base commit
+(`8b4c3948`), not incremented from `WP 5.4`'s own figures.
 
-| Metric | WP 5.4 (`v0.5.0`) | WP 16.2A (current, `v0.16.0` in progress) |
+**Re-derived in full, `WP 16.4B-R6`, 2026-09-06.** After `WP 16.2A`,
+individual rows in the table below were refreshed piecemeal — some on
+2026-09-05, some at `WP 16.2B`'s closure — while the column stayed
+labelled "`WP 16.2A` (current)" and the rest of the rows stayed at their
+2026-09-04 values. **A snapshot with some rows quietly updated is neither
+a snapshot nor a current count.** Every row is therefore re-derived
+together here, at one named commit, with each row's prior values kept
+visible in parentheses. This is the same defect the fifth `v0.16.0`
+review board observed in `PROJECT_STATUS.md`'s own metrics table
+(`P4-20`), found here by extending that finding to this register rather
+than waiting for a board to raise it separately.
+
+**Two cautions this Work Package hit and records rather than leaving for
+the next reader.** (1) `src/` and `tests/` were being modified by
+`WP 16.4B-R6`'s own implementation stream while these figures were taken,
+so the `src/`, `tests/` and attribute rows are derived from the
+**committed tree at `58c4cba`** (`git ls-tree -r --name-only HEAD`), not
+from the working tree, and they will move again when that work lands.
+(2) `git ls-tree` quotes any path containing a non-ASCII character, so a
+naive `grep '\.md$'` over its output silently drops such files — it
+undercounts `docs/governance/` by exactly one.
+
+| Metric | WP 5.4 (`v0.5.0`) | **`WP 16.4B-R6`, re-derived at `58c4cba`, 2026-09-06** (`v0.16.0` merged, not tagged) |
 |---|---|---|
-| `VERSION` | `0.4.0` (file not yet bumped at `WP 5.4`'s own review point) | **`0.15.0`** — `cat VERSION` |
-| Total commits | 62 | **267** — `git log --oneline \| wc -l` |
-| `src/` `.cs` files / lines | 144 / 9,043 | **805 / 76,890** — re-derived 2026-09-05 with `bin/`/`obj/` pruned (a locally built checkout makes the bare `find` over-count); `WP 16.2A`'s 802 / 75,955 was correct against the tree it measured, before `WP 16.3B`/`WP 16.5A` |
-| `tests/` `.cs` files / lines | 71 / 10,872 | **348 / 78,161** — same method, `tests/` |
-| `[Fact]`/`[Theory]` attributes under `tests/` | Not tracked at `WP 5.4` | **2,725** — `grep -rE '\[Fact\]\|\[Theory\]' tests --include=*.cs \| wc -l` |
+| `VERSION` | `0.4.0` (file not yet bumped at `WP 5.4`'s own review point) | **`0.16.0`** — `cat VERSION`. (Read `0.15.0` when `WP 16.2A` measured, before `WP 16.9.0` bumped it.) |
+| Total commits | 62 | **348** — `git log --oneline \| wc -l` at `58c4cba`. (267 at `WP 16.2A`.) |
+| `src/` `.cs` files / lines | 144 / 9,043 | **818 / 79,271** — re-derived at `58c4cba` from the committed tree (`git ls-tree -r --name-only HEAD -- src`, `.cs` only, `bin/`/`obj/` excluded), because a locally built checkout makes a bare `find` over-count **and** because `src/` is being modified by `WP 16.4B-R6` as this row is written. 805 / 76,890 was correct at 2026-09-05, and `WP 16.2A`'s 802 / 75,955 against the tree it measured |
+| `tests/` `.cs` files / lines | 71 / 10,872 | **375 / 84,530** — same method, `tests/`, at `58c4cba`. (348 / 78,161 at `WP 16.2A`.) |
+| `[Fact]`/`[Theory]` attributes under `tests/` | Not tracked at `WP 5.4` | **2,844** by this register's own command — `grep -rE '\[Fact\]\|\[Theory\]' tests --include=*.cs \| wc -l` at `58c4cba`, which counts *matching lines* and does **not** match `[AvaloniaFact]`/`[AvaloniaTheory]`. Counting every attribute occurrence including the Avalonia variants (`grep -ohE '\[(Avalonia)?(Fact\|Theory)'`) gives **3,212** — the figure `PROJECT_STATUS.md` carries. Both are stated because the two commands have always measured different things and the difference was previously undisclosed. (2,725 at `WP 16.2A`.) |
 | Last real, CI-verified executed-test totals | 552/552 (`dotnet test`, `WP 5.3`) | **3,088/3,088 Core, 408/408 Desktop** at the `v0.15.0` tag (412/412 Desktop after `WP 15.2A`) — cited from `docs/releases/v0.15.0/Release Notes.md`; `dotnet test` not re-run this Work Package (documentation-only, attribute-counting sufficient per controlling instruction) |
-| ADRs | 39 (`ADR-0001`–`ADR-0039`) | **120** (`ADR-0001`–`ADR-0120`) — `ls docs/adr/ \| grep -c "^ADR-"` |
+| ADRs | 39 (`ADR-0001`–`ADR-0039`) | **123** (`ADR-0001`–`ADR-0123`) — `ls docs/adr/ \| grep -c "^ADR-"` at `58c4cba`. (120 at `WP 16.2A`.) |
 | Rejected Designs entries | 45 (`RD-0001`–`RD-0045`) | **65** (`RD-0001`–`RD-0065`) — `grep -cE "^## RD-[0-9]{4}" docs/architecture/"Rejected Designs.md"`. **Disclosed, not fixed**: `Rejected Designs Register.md` (the governance index of this same log) itself still reads 45 — stale since `v0.5.0`, outside this Work Package's own itemized scope; this figure is drawn from the actual source log, `docs/architecture/Rejected Designs.md`, its own declared Source of Truth |
 | Decision Register entries | 20 | **26** (`D-001`–`D-026`) — `grep -oE "D-0[0-9]{2}" "Decision Register.md" \| sort -u \| wc -l`, re-derived 2026-09-05. This row read **20 (unchanged)** when `WP 16.2A` wrote it, correctly: `D-021`–`D-026` were drafted and Proposed in `WP16.0A v0.16.0 Scope Decision.md` and deliberately **not** entered in the register while unratified. The Product Owner ratified all six on 2026-09-05 and they were entered then — `docs/releases/v0.16.0/WP16.0A Product Owner Ratification — D-021 to D-026.md`. |
-| Academy articles (`docs/academy/`, all subfolders) | 77 | **281** — `find docs/academy -name "*.md" \| wc -l` (240 at `WP 16.2A`'s own derivation; +41 by `WP 16.2B`, same day) |
-| `docs/academy/03 Work Packages/` retrospectives | 35 | **206** — `find "docs/academy/03 Work Packages" -name "*.md" \| wc -l` (165 at `WP 16.2A`'s own derivation; +41 by `WP 16.2B`, same day) |
-| `docs/` `.md` files (total) | 191 | **973** — `find docs -name "*.md" \| wc -l`, re-derived 2026-09-05; the 923 figure was correct at `WP 16.2A` and was missed when `WP 16.2B`'s closure updated the Academy rows in this same table |
-| Governance documents (`docs/governance/`, all subfolders) | 32 | **38** — `find docs/governance -name "*.md" \| wc -l` |
+| Academy articles (`docs/academy/`, all subfolders) | 77 | **298** — `find docs/academy -name "*.md" \| wc -l` at `58c4cba`. (240 at `WP 16.2A`'s own derivation; 281 after `WP 16.2B`'s +41; 298 after `WP 16.2C`'s `v0.16.0` retrospectives.) |
+| `docs/academy/03 Work Packages/` retrospectives | 35 | **223** — `find "docs/academy/03 Work Packages" -name "*.md" \| wc -l` at `58c4cba`, matching `Academy Register.md`'s own heading and `Documentation Register.md`. (165 at `WP 16.2A`; 206 after `WP 16.2B`; 223 after `WP 16.2C`.) |
+| `docs/` `.md` files (total) | 191 | **1,008** — `find docs -name "*.md" \| wc -l` at `58c4cba`. (923 at `WP 16.2A`; 973 at 2026-09-05.) |
+| Governance documents (`docs/governance/`, all subfolders) | 32 | **39** — `find docs/governance -name "*.md" \| wc -l` at `58c4cba`. Note for anyone re-deriving with `git ls-tree`: one of the 39, `PROJECT_STATUS Archive (v0.5.0–v0.15.0).md`, contains an en dash, so git quotes the path and a naive `grep '\.md$'` over `ls-tree` output drops it and returns 38. (38 at `WP 16.2A`.) |
 | Architecture documents (`docs/architecture/`) | Not tracked at `WP 5.4` | **30** — `find docs/architecture -name "*.md" \| wc -l` |
-| Custom exception types | 31 | **84** — `grep -rE '^public (sealed \|abstract )?class \w+Exception\b' src/Tempest.Core --include=*.cs \| wc -l`; see `Exception Register.md`'s own `WP 16.2A` re-derivation |
-| Public interfaces under `src/Tempest.Core/` | Not tracked at `WP 5.4` | **191** (190 distinct names) — `grep -rEn '^\s*public interface \w+' src/Tempest.Core --include=*.cs \| wc -l`, re-derived 2026-09-05; `WP 16.2A`'s 188 predates `WP 16.3A`/`16.3B`'s three schema-versioning contracts |
-| Technical Debt Register rows | Not tracked at `WP 5.4` | **122** (`TD-001`–`TD-122`) — `grep -c "^\| TD-\|^\| \`TD-" "Technical Debt Register.md"`; see that register's own `WP 16.2A` closure of `TD-57` and pointer update to `TD-45` |
-| Namespaces / files in declared scope (`Tempest.Core`, `Tempest.App`, `Tempest.Samples`, `Tempest.Validation`) | Not tracked at `WP 5.4` | **47 / 715** — see `Namespace Register.md`'s own re-derivation; `src/`-wide (including `Tempest.Desktop`) is 62 namespaces / 805 files. Both figures are BOM-aware and prune `bin/`/`obj/`; the register records why the two obvious derivation commands get this wrong |
+| Custom exception types | 31 | **90** — `grep -rE '^public (sealed \|abstract )?class \w+Exception\b' src/Tempest.Core --include=*.cs \| wc -l` at `58c4cba`; matches `Exception Register.md`'s 90 Entries rows and its Distribution table, both re-derived `WP 16.4B-R6`. (84 at `WP 16.2A`; 87 at the `WP 16.4B` integration; 89 at `WP 16.4B-R1`; 90 at `WP 16.4B-R4`.) |
+| Public interfaces under `src/Tempest.Core/` | Not tracked at `WP 5.4` | **195** (194 distinct names) — `grep -rEn '^\s*public interface \w+' src/Tempest.Core --include=*.cs \| wc -l` at `58c4cba`, matching `PROJECT_STATUS.md`. (188 at `WP 16.2A`; 191 at 2026-09-05.) |
+| Technical Debt Register rows | Not tracked at `WP 5.4` | **139** (`TD-001`–`TD-139`) — `grep -c "^\| TD-\|^\| \`TD-" "Technical Debt Register.md"` at `58c4cba`; contiguous, no gaps or duplicates, and the register's own summary line (56 Resolved, 6 Closed, 71 Open, 5 Partially resolved, 1 Deferred) tallies exactly against its rows. (122 at `WP 16.2A`.) |
+| Namespaces / files in declared scope (`Tempest.Core`, `Tempest.App`, `Tempest.Samples`, `Tempest.Validation`) | Not tracked at `WP 5.4` | **47 / 728** (725 files carrying a namespace plus 3 global-namespace files), re-derived `WP 16.4B-R6` at `58c4cba`; `src/`-wide is **62 namespaces / 818 files** (47 in scope + 14 in `Tempest.Desktop` + 1 in `Templates`). Both figures are BOM-aware (a UTF-8 byte-order mark defeats `grep -rhoP "^namespace"`) and prune `bin/`/`obj/` (a locally built checkout defeats a bare `find`); `Namespace Register.md` records why the two obvious derivation commands get this wrong. **Corrected `WP 16.4B-R6`:** this cell read **47 / 715** in scope and 62 / 805 `src/`-wide — the namespace count was right, both file counts were stale, and the in-scope figure also contradicted the Namespace Register's own Total line of 728. (`WP 16.2A` did not track this row.) |
 | Build warnings/errors | 0/0 | Not re-run this Work Package (documentation-only; `WP 16.1A`'s own `ci.yml`/`Governance Health Check` gate the real thing on every push) |
 
 **Method note.** Every figure above was independently re-derived by the
@@ -451,3 +472,23 @@ cross-checked directly against `ADR Register.md`, `Rejected Designs
 Register.md`, `Academy Register.md`, `Test Register.md`, and `Validation
 Register.md` respectively — all consistent, no discrepancy found, as of
 `WP 5.4`'s own direct re-verification.
+
+**Cross-check of the current column, `WP 16.4B-R6` (2026-09-06, at
+`58c4cba`).** Each figure was checked against the register that owns it,
+not merely re-derived: ADRs **123** against `ADR Register.md`'s own
+range; `docs/academy/03 Work Packages/` **223** against
+`Academy Register.md`'s own "03 Work Packages (223 retrospectives)"
+heading and `Documentation Register.md`; custom exception types **90**
+against `Exception Register.md`'s 90 Entries rows *and* its Distribution
+table (both re-derived this Work Package); namespaces/files **47 / 728**
+against `Namespace Register.md`'s Entries table, Total line and Coverage
+Status (all three now agreeing, which they did not before this Work
+Package); Technical Debt rows **139** against
+`Technical Debt Register.md`'s own summary line, which tallies exactly.
+**One disclosed inconsistency is not closed here and is repeated so it is
+not lost:** `Rejected Designs Register.md` still states **45** where the
+source log `docs/architecture/Rejected Designs.md` holds **65**
+(`grep -cE "^## RD-[0-9]{4}"`) — stale since `v0.5.0`, disclosed by
+`WP 16.2A` and still open. It is a register-versus-source drift of the
+same class this campaign keeps producing, and it deserves its own pass
+rather than a drive-by edit inside a remediation Work Package.
