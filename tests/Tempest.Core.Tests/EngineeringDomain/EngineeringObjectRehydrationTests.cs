@@ -51,9 +51,12 @@ public class EngineeringObjectRehydrationTests
         return new Lifetime(domain, rehydrators, new EngineeringObjectRehydrationService(domain, rehydrators), stateStore, principal);
     }
 
+    // `WP 16.4B-R6`: `EngineeringObjectFactory<T>` now requires the Kind's
+    // own `IRehydratable<T>` reader (see that type). Every canonical Kind
+    // already implements it — this constraint only restates that.
     private static async Task<T> CreateAsync<T>(
         EngineeringDomainContext domain, string kind, Func<IEngineeringDocument, IDocumentRevision, T> ctor)
-        where T : EngineeringObjectBase
+        where T : EngineeringObjectBase, IRehydratable<T>
     {
         var factory = new EngineeringObjectFactory<T>(kind, domain, ctor);
         return (T)await factory.CreateAsync($"{kind} — for test purposes.");

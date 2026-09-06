@@ -50,7 +50,13 @@ public sealed class EngineeringObjectRehydrator<T> : IEngineeringObjectRehydrato
         // The same self-factory every created object gets, so a rehydrated
         // object is not a second-class one: it can still revise itself, and
         // its successor is correctly typed.
-        instance.AttachSelfFactory((doc, rev) => T.Rehydrate(doc, rev, _context, state));
+        //
+        // `WP 16.4B-R6`: the state comes from the caller at revision time,
+        // not from this closure. Closing over `state` meant a successor was
+        // reconstructed from the record as it stood *at rehydration*, so
+        // every type-specific field mutated during this lifetime was
+        // silently reverted by an ordinary `ReviseAsync`.
+        instance.AttachSelfFactory((doc, rev, revisionState) => T.Rehydrate(doc, rev, _context, revisionState));
 
         // Everything a constructor cannot carry — lifecycle, history,
         // parent, deletion, BOM line, attachments.

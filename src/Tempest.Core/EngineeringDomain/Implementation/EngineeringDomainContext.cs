@@ -113,11 +113,27 @@ public sealed class EngineeringDomainContext
 
     /// <summary>
     /// Acquires <see cref="_objectWriteLock"/> for <paramref name="objectId"/>
-    /// (`WP 16.4B-R3`). Dispose the returned value to release. Internal —
-    /// reached only by <see cref="EngineeringObjectBase.PersistStateAsync"/>
-    /// and <see cref="EngineeringObjectFactory{T}.CreateAsync"/>, the only
-    /// two places that ever capture then persist an object's state.
+    /// (`WP 16.4B-R3`). Dispose the returned value to release.
     /// </summary>
+    /// <remarks>
+    /// Internal, and acquired from exactly four places inside
+    /// <see cref="EngineeringObjectBase"/> — corrected here for
+    /// `WP 16.4B-R6` after the review board found the previous note wrong
+    /// in both halves (it named <see cref="EngineeringObjectFactory{T}.CreateAsync"/>,
+    /// which has reached this only indirectly through
+    /// <c>PersistInitialStateAsync</c> since `WP 16.4B-R3`, and omitted
+    /// <c>ReviseAsync</c>, which has acquired it directly since
+    /// `WP 16.4B-R4`):
+    /// <list type="bullet">
+    /// <item><description><see cref="EngineeringObjectBase.PersistStateAsync"/> — every ordinary mutation, and, via <c>PersistInitialStateAsync</c>, every creation.</description></item>
+    /// <item><description><see cref="EngineeringObjectBase.ReviseAsync"/> — the whole revision hand-off, so a successor is minted and the predecessor retired atomically.</description></item>
+    /// <item><description><see cref="EngineeringObjectBase.AttachAsync"/> — the supersession check and the in-memory add, together.</description></item>
+    /// <item><description><see cref="EngineeringObjectBase.AttachContentAsync"/> — the whole mark/content/state/clear sequence, so an attach is atomic with respect to a revision.</description></item>
+    /// </list>
+    /// This lock is not reentrant (<see cref="AsyncKeyedLock"/>), so those
+    /// last three use <c>PersistStateHoldingWriteLockAsync</c> rather than
+    /// re-entering <see cref="EngineeringObjectBase.PersistStateAsync"/>.
+    /// </remarks>
     internal Task<IDisposable> AcquireObjectWriteLockAsync(Guid objectId, CancellationToken cancellationToken = default) =>
         _objectWriteLock.AcquireAsync(objectId.ToString("N"), cancellationToken);
 }

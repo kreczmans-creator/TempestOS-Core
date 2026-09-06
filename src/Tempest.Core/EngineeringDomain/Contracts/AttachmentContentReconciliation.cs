@@ -7,7 +7,28 @@ public sealed record OrphanedAttachmentContent(Guid AttachmentId, bool Collected
 
 /// <summary>The complete result of one <see cref="IAttachmentContentReconciliationService"/> pass.</summary>
 /// <param name="Orphans">Every orphaned content record this pass found. Empty if every stored record is referenced.</param>
-public sealed record AttachmentContentReconciliationReport(IReadOnlyList<OrphanedAttachmentContent> Orphans);
+/// <param name="SkippedByMarker">
+/// Every unreferenced content record this pass declined to collect because
+/// a write-intent marker still protects it (`WP 16.4B-R2`). Empty on a
+/// healthy store.
+/// </param>
+/// <remarks>
+/// <b>Why <paramref name="SkippedByMarker"/> exists (`WP 16.4B-R6`).</b>
+/// A marker that outlives the attach it was protecting leaves bytes this
+/// sweep must refuse to collect for ever. That outcome is deliberate and
+/// bounded — `TD-97`'s disclosed leak, and always the safe end of the
+/// trade against deleting content something still believes in — but until
+/// this member existed it was also completely <em>unobservable</em>: the
+/// sweep skipped the key with no report entry and no log line, while a
+/// collected orphan got both, so the only way to find one was to read the
+/// marker collection by hand. The fifth review board raised that as its
+/// own finding, and a bounded leak nobody can see is indistinguishable
+/// from a leak nobody has. The sweep already computes this set exactly;
+/// it now reports it.
+/// </remarks>
+public sealed record AttachmentContentReconciliationReport(
+    IReadOnlyList<OrphanedAttachmentContent> Orphans,
+    IReadOnlyList<Guid> SkippedByMarker);
 
 /// <summary>
 /// The sweep `TD-97`'s own register entry names: "a sweep comparing

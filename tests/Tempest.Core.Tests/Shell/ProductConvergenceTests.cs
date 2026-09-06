@@ -63,9 +63,12 @@ public class ProductConvergenceTests
         return new Spine(domain, directory, context, navigator, scope, settingsProvider, store);
     }
 
+    // `WP 16.4B-R6`: `EngineeringObjectFactory<T>` now requires the Kind's
+    // own `IRehydratable<T>` reader (see that type). Every canonical Kind
+    // already implements it — this constraint only restates that.
     private static async Task<T> CreateAsync<T>(
         EngineeringDomainContext domain, string kind, Func<IEngineeringDocument, IDocumentRevision, T> ctor, Guid? parentId = null)
-        where T : EngineeringObjectBase
+        where T : EngineeringObjectBase, IRehydratable<T>
     {
         var created = (T)await new EngineeringObjectFactory<T>(kind, domain, ctor).CreateAsync($"{kind} — test.");
         if (parentId is { } id)

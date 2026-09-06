@@ -146,6 +146,7 @@ public sealed class AttachmentContentReconciliationService : IAttachmentContentR
                 referencedAttachmentIds.Add(attachment.Id);
 
         var orphans = new List<OrphanedAttachmentContent>();
+        var skippedByMarker = new List<Guid>();
 
         foreach (var key in contentKeys)
         {
@@ -159,7 +160,19 @@ public sealed class AttachmentContentReconciliationService : IAttachmentContentR
                 continue;
 
             if (markedAttachmentIds.Contains(attachmentId))
+            {
+                // `WP 16.4B-R6`. Unreferenced content a marker protects is
+                // an in-flight write or a leak, and this sweep cannot tell
+                // which — so it still declines to collect it, exactly as
+                // before. What changed is that it says so. See
+                // `AttachmentContentReconciliationReport.SkippedByMarker`
+                // for why silence here was itself a finding.
+                skippedByMarker.Add(attachmentId);
+                _logger?.Information(
+                    $"Skipped unreferenced attachment content '{attachmentId}': a write-intent marker still protects it. " +
+                    "This is an in-flight attach, or a marker stranded by an interrupted one.");
                 continue;
+            }
 
             var collected = false;
             if (collect)
@@ -172,6 +185,6 @@ public sealed class AttachmentContentReconciliationService : IAttachmentContentR
             orphans.Add(new OrphanedAttachmentContent(attachmentId, collected));
         }
 
-        return new AttachmentContentReconciliationReport(orphans);
+        return new AttachmentContentReconciliationReport(orphans, skippedByMarker);
     }
 }

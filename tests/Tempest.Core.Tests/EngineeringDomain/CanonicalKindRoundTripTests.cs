@@ -306,8 +306,12 @@ public sealed class CanonicalKindRoundTripTests : IDisposable
             _ => await Make<Part>((d, r) => new Part(d, r, context, identifier, name, metadata), kind),
         };
 
+        // `WP 16.4B-R6`: `EngineeringObjectFactory<T>` now requires the
+        // Kind's own `IRehydratable<T>` reader, because that is what
+        // `ReviseAsync` builds a successor with. Every canonical Kind
+        // already implements it — this constraint only restates that.
         async Task<IEngineeringObject> Make<T>(Func<IEngineeringDocument, IDocumentRevision, T> ctor, string? kindOverride = null)
-            where T : EngineeringObjectBase =>
+            where T : EngineeringObjectBase, IRehydratable<T> =>
             await new EngineeringObjectFactory<T>(kindOverride ?? kind, context, ctor).CreateAsync(reason);
     }
 }

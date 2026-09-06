@@ -21,11 +21,29 @@ namespace Tempest.Core.Tests.EngineeringDomain;
 /// reachable by ordinary concurrent use, with no crash involved.
 /// </para>
 /// <para>
-/// The fix compensates rather than unwinding blindly: the in-memory
-/// attachment is removed, the content is deleted, and only then is the
-/// marker cleared — that order, so that a failure inside the compensation
-/// leaves a bounded leak rather than content the sweep would collect while
-/// something still believed it existed.
+/// `WP 16.4B-R5` compensated: the in-memory attachment was removed, the
+/// content deleted, and only then the marker cleared — that order, so that
+/// a failure inside the compensation left a bounded leak rather than
+/// content the sweep would collect while something still believed it
+/// existed. <b>That compensation is gone (`WP 16.4B-R6`), and this record
+/// of it is kept rather than rewritten because the reason matters.</b> The
+/// fifth review board reproduced the compensation deleting the bytes of an
+/// attachment a concurrent <c>ReviseAsync</c> successor had legitimately
+/// inherited and would persist — permanent data loss, in place of the
+/// bounded leak it was written to close. <c>AttachContentAsync</c> now
+/// takes the per-object write lock before its first durable step and holds
+/// it to the end, so a revision cannot interleave and a refusal happens
+/// before anything is written. There is nothing left to roll back, which
+/// is why nothing rolls back.
+/// </para>
+/// <para>
+/// <b>The three refusal facts below still hold, and still discriminate</b>
+/// — they assert that a refused attach strands no marker, orphans no
+/// bytes and leaves the instance claiming nothing, which are properties of
+/// the outcome and not of the mechanism that produces it. What each one
+/// means has changed from "written, then correctly undone" to "never
+/// written". <c>AttachmentRevisionAtomicityTests</c> pins that stronger
+/// reading, and the interleaving this file never reached.
 /// </para>
 /// </remarks>
 public sealed class AttachContentCompensationTests
@@ -53,8 +71,11 @@ public sealed class AttachContentCompensationTests
     }
 
     /// <summary>
-    /// And no orphaned bytes either — the compensation deletes the content
-    /// it wrote, so the sweep is never handed an orphan to reason about.
+    /// And no orphaned bytes either, so the sweep is never handed an
+    /// orphan to reason about. (`WP 16.4B-R5` achieved this by deleting
+    /// the content it had written; since `WP 16.4B-R6` the content is
+    /// never written, which satisfies the same assertion for a stronger
+    /// reason.)
     /// </summary>
     [Fact]
     public async Task WhenTheStateWriteIsRefused_TheContentBytesAreNotOrphaned()
@@ -141,6 +162,25 @@ public sealed class AttachContentCompensationTests
     /// so every trial replays the small-list region where resizes are
     /// densest, and the trial count is derived from a measured detection
     /// rate rather than guessed — see the arithmetic at the loop itself.
+    /// </para>
+    /// <para>
+    /// <b>Two later measurements, recorded rather than replacing the one
+    /// above.</b> The fifth review board could not reproduce the
+    /// per-trial rate the arithmetic at the loop is solved from: on its
+    /// hardware, 20,000 trials gave 0.17% per trial, not 0.297%, which
+    /// puts 2,000 trials at about 96.7% rather than 99.74%. Read the
+    /// figures at the loop as hardware-dependent, not as a constant of the
+    /// code. Then `WP 16.4B-R6` made <see cref="IHasAttachments.AttachAsync"/>
+    /// take the per-object write lock, so each add now awaits — which
+    /// widens the reader's overlap with the writer's resize window
+    /// considerably. Measured here after that change, against the
+    /// <c>lock (_attachments)</c> in <c>CaptureAttachmentState</c> reverted
+    /// in a scratch copy: <b>5 detections in 5 runs</b>, each within a few
+    /// hundred milliseconds, with the same
+    /// <see cref="NullReferenceException"/> from inside the projection; and
+    /// <b>10 passes in 10 runs</b> against the fixed code. The trial count
+    /// is left at 2,000 rather than lowered: it is now amply conservative,
+    /// and it costs about a second.
     /// </para>
     /// </remarks>
     [Fact]

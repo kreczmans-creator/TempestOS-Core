@@ -61,9 +61,12 @@ public class ProjectEngineeringIntegrationTests
             persistence, documentStore, principal);
     }
 
+    // `WP 16.4B-R6`: `EngineeringObjectFactory<T>` now requires the Kind's
+    // own `IRehydratable<T>` reader (see that type). Every canonical Kind
+    // already implements it — this constraint only restates that.
     private static async Task<T> CreateInProjectAsync<T>(
         EngineeringDomainContext domain, string kind, Guid projectId,
-        Func<IEngineeringDocument, IDocumentRevision, T> ctor) where T : EngineeringObjectBase
+        Func<IEngineeringDocument, IDocumentRevision, T> ctor) where T : EngineeringObjectBase, IRehydratable<T>
     {
         var factory = new EngineeringObjectFactory<T>(kind, domain, ctor);
         var created = (T)await factory.CreateAsync($"{kind} — for test purposes.");
