@@ -227,6 +227,93 @@ public sealed class AcademyTests
     }
 
     [Fact]
+    public async Task A_three_node_prerequisite_cycle_is_an_error()
+    {
+        // The review board's AMBER-1: the diagnostic claimed "directly or
+        // through a chain" and the code only checked the direct pair, so
+        // A -> B -> C -> A went undetected and a learner could start none
+        // of them.
+        var catalog = KnowledgeFixtures.BuildAcademyCatalog();
+
+        await KnowledgeFixtures.RegisterAsync(catalog, "les-a", KnowledgeFixtures.Node("LES-A") with
+        {
+            PrerequisiteReferences = ["LES-B"],
+        });
+
+        await KnowledgeFixtures.RegisterAsync(catalog, "les-b", KnowledgeFixtures.Node("LES-B") with
+        {
+            PrerequisiteReferences = ["LES-C"],
+        });
+
+        var service = new AcademyValidationService(catalog, KnowledgeFixtures.Clock());
+
+        var result = await service.ValidateDefinitionAsync(
+            KnowledgeFixtures.Node("LES-C") with { PrerequisiteReferences = ["LES-A"] },
+            KnowledgeFixtures.Verified());
+
+        Assert.Contains(result.Errors, e => e.Code == AcademyValidationRules.PrerequisiteCycle);
+    }
+
+    [Fact]
+    public async Task A_long_prerequisite_chain_that_does_not_close_is_not_an_error()
+    {
+        var catalog = KnowledgeFixtures.BuildAcademyCatalog();
+
+        await KnowledgeFixtures.RegisterAsync(catalog, "les-a", KnowledgeFixtures.Node("LES-A"));
+        await KnowledgeFixtures.RegisterAsync(catalog, "les-b", KnowledgeFixtures.Node("LES-B") with
+        {
+            PrerequisiteReferences = ["LES-A"],
+        });
+
+        var service = new AcademyValidationService(catalog, KnowledgeFixtures.Clock());
+
+        var result = await service.ValidateDefinitionAsync(
+            KnowledgeFixtures.Node("LES-C") with { PrerequisiteReferences = ["LES-B"] },
+            KnowledgeFixtures.Verified());
+
+        Assert.DoesNotContain(result.Errors, e => e.Code == AcademyValidationRules.PrerequisiteCycle);
+    }
+
+    [Fact]
+    public async Task Every_node_a_lesson_requires_first_is_reachable_through_the_chain()
+    {
+        var catalog = KnowledgeFixtures.BuildAcademyCatalog();
+
+        await KnowledgeFixtures.RegisterAsync(catalog, "les-a", KnowledgeFixtures.Node("LES-A"));
+        await KnowledgeFixtures.RegisterAsync(catalog, "les-b", KnowledgeFixtures.Node("LES-B") with
+        {
+            PrerequisiteReferences = ["LES-A"],
+        });
+        await KnowledgeFixtures.RegisterAsync(catalog, "les-c", KnowledgeFixtures.Node("LES-C") with
+        {
+            PrerequisiteReferences = ["LES-B"],
+        });
+
+        var all = await catalog.FindAllPrerequisitesAsync("LES-C");
+
+        Assert.Equal(["LES-B", "LES-A"], all);
+    }
+
+    [Fact]
+    public async Task Walking_a_cyclic_prerequisite_chain_terminates()
+    {
+        var catalog = KnowledgeFixtures.BuildAcademyCatalog();
+
+        await KnowledgeFixtures.RegisterAsync(catalog, "les-a", KnowledgeFixtures.Node("LES-A") with
+        {
+            PrerequisiteReferences = ["LES-B"],
+        });
+        await KnowledgeFixtures.RegisterAsync(catalog, "les-b", KnowledgeFixtures.Node("LES-B") with
+        {
+            PrerequisiteReferences = ["LES-A"],
+        });
+
+        var all = await catalog.FindAllPrerequisitesAsync("LES-A");
+
+        Assert.Equal(2, all.Count);
+    }
+
+    [Fact]
     public async Task An_outcome_nothing_assesses_is_reported()
     {
         var catalog = KnowledgeFixtures.BuildAcademyCatalog();

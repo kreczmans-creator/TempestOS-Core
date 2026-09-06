@@ -51,6 +51,21 @@ public interface IAcademyCatalog : IReferenceDataCatalog<AcademyNode>
     /// </remarks>
     /// <exception cref="ArgumentException"><paramref name="reference"/> is null, empty, or whitespace.</exception>
     Task<IReadOnlyList<AcademyNode>> FindPathToAsync(string reference, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Every node <paramref name="reference"/> requires first, directly
+    /// or through a chain.
+    /// </summary>
+    /// <remarks>
+    /// Walks the whole prerequisite chain rather than one step, because a
+    /// three-node cycle is a curriculum a learner can no more start than
+    /// a two-node one. Bounded by <see cref="MaximumPathDepth"/> and by a
+    /// visited set, so a cycle terminates the walk instead of hanging it
+    /// — validation reports the cycle, and a read must not depend on the
+    /// library being well formed.
+    /// </remarks>
+    /// <exception cref="ArgumentException"><paramref name="reference"/> is null, empty, or whitespace.</exception>
+    Task<IReadOnlyList<string>> FindAllPrerequisitesAsync(string reference, CancellationToken cancellationToken = default);
 }
 
 /// <summary>The concrete <see cref="IAcademyCatalog"/> implementation.</summary>
@@ -148,6 +163,38 @@ public sealed class AcademyCatalog : ReferenceDataCatalog<AcademyNode>, IAcademy
         path.Reverse();
 
         return path;
+    }
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<string>> FindAllPrerequisitesAsync(string reference, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(reference);
+
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var ordered = new List<string>();
+        var queue = new Queue<string>();
+
+        queue.Enqueue(reference.Trim());
+
+        while (queue.Count > 0 && ordered.Count < MaximumPathDepth * MaximumPathDepth)
+        {
+            var current = queue.Dequeue();
+            var record = await FindByReferenceAsync(current, cancellationToken).ConfigureAwait(false);
+
+            if (record is null)
+                continue;
+
+            foreach (var prerequisite in record.Definition.PrerequisiteReferences)
+            {
+                if (!seen.Add(prerequisite))
+                    continue;
+
+                ordered.Add(prerequisite);
+                queue.Enqueue(prerequisite);
+            }
+        }
+
+        return ordered;
     }
 
     /// <inheritdoc />
@@ -376,10 +423,18 @@ public sealed class AcademyValidationService : ReferenceValidationService<Academ
                 continue;
             }
 
-            if (prerequisite.Definition.PrerequisiteReferences.Contains(definition.Reference, StringComparer.OrdinalIgnoreCase))
+            // The whole chain, not one step. A --> B --> C --> A is a
+            // curriculum a learner can no more start than a two-node
+            // cycle, and checking only the direct pair would miss it.
+            var chain = await _academy.FindAllPrerequisitesAsync(prerequisiteReference, cancellationToken).ConfigureAwait(false);
+
+            if (chain.Contains(definition.Reference, StringComparer.OrdinalIgnoreCase))
                 errors.Add(KnowledgeGovernanceValidation.Diagnostic(
                     AcademyValidationRules.PrerequisiteCycle,
-                    $"{subject} and '{prerequisiteReference}' each require the other first. A learner can start neither."));
+                    chain.Count == 1
+                        ? $"{subject} and '{prerequisiteReference}' each require the other first. A learner can start neither."
+                        : $"{subject} requires '{prerequisiteReference}' first, which requires {subject} back through a "
+                          + $"chain of {chain.Count} node(s). A learner can start none of them."));
 
             if (definition.Applicability.Level != KnowledgeLevel.Unspecified
                 && prerequisite.Definition.Applicability.Level != KnowledgeLevel.Unspecified
