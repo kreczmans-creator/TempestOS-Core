@@ -50,6 +50,16 @@ public enum CostCertainty
 /// </remarks>
 public sealed record CostFigure
 {
+    /// <summary>Initialises a new instance of the <see cref="CostFigure"/> class.</summary>
+    /// <remarks>
+    /// Private so that every figure is built through a factory that says
+    /// what kind of figure it is, and annotated so that a persisted figure
+    /// can still be read back. Without the annotation the serialiser has
+    /// no constructor to call and every cost record in the library fails
+    /// to load — the same class of defect `P07` found in
+    /// <see cref="Money"/>, guarded here by a round-trip test.
+    /// </remarks>
+    [System.Text.Json.Serialization.JsonConstructor]
     private CostFigure(CostCertainty certainty, Money? lowest, Money? highest)
     {
         Certainty = certainty;
