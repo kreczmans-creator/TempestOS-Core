@@ -311,24 +311,36 @@ public abstract class EngineeringObjectBase :
     /// </para>
     /// <para>
     /// <b>Re-entrancy.</b> <see cref="Concurrency.AsyncKeyedLock"/> is not
-    /// reentrant. Every mutator on this hierarchy calls this method at
-    /// most once, and never while already holding this object's write
-    /// lock (audited across the whole <c>EngineeringDomain</c> tree and
-    /// every composed caller in <c>Tempest.App</c> for `WP 16.4B-R3`) — a
-    /// method that performs more than one durable step (for example
-    /// <see cref="MoveAsync"/>'s link followed by its own persist) always
-    /// completes its non-locking steps first and calls this method
-    /// exactly once, last.
+    /// reentrant, so no caller of this method may already hold this
+    /// object's write lock — a call that did would deadlock against
+    /// itself.
     /// </para>
     /// <para>
-    /// <b>The three methods that need more than a persist inside one hold
-    /// of the lock (`WP 16.4B-R6`)</b> — <see cref="ReviseAsync"/>,
-    /// <see cref="AttachAsync"/> and <see cref="AttachContentAsync"/> —
-    /// acquire it themselves and call
-    /// <c>PersistStateHoldingWriteLockAsync</c> instead of this method, for
-    /// exactly the non-reentrancy reason above. They are the whole of the
-    /// exception: a mutator that has nothing to keep atomic with its own
-    /// durable write still calls this method and should.
+    /// <b>Who actually calls this, at this commit (`WP 16.4B-R6b`).</b>
+    /// The list is short, and is written from the call sites rather than
+    /// from intent, because the review board found the previous version of
+    /// this paragraph — added by `WP 16.4B-R6` to correct an earlier wrong
+    /// comment — wrong in two of its three claims: it named
+    /// <see cref="ReviseAsync"/>, which performs no durable state write at
+    /// all and calls neither this method nor
+    /// <see cref="PersistStateHoldingWriteLockAsync"/>, and
+    /// <see cref="AttachAsync"/>, which at that commit reached
+    /// <c>store.SaveAsync</c> directly.
+    /// <list type="bullet">
+    /// <item><description><c>PersistInitialStateAsync</c> — the one durable write <see cref="EngineeringObjectFactory{T}.CreateAsync"/> performs at creation.</description></item>
+    /// <item><description>The type-specific mutators on the concrete Kinds in this namespace (for example <c>EngineeringTask.AssignAsync</c> and the <c>GovernanceRisk</c> setters), which mutate their own fields under their own monitor and then call this.</description></item>
+    /// </list>
+    /// Every mutator declared on <em>this</em> type — the two attachment
+    /// entry points, <see cref="TransitionAsync"/>,
+    /// <see cref="RenameAsync"/>, <see cref="MoveAsync"/>,
+    /// <see cref="DeleteAsync"/> and <see cref="SetBomLineAsync"/> —
+    /// acquires the lock itself and calls
+    /// <see cref="PersistStateHoldingWriteLockAsync"/> instead, so that the
+    /// supersession refusal happens before the mutation rather than after
+    /// it (<see cref="MutateAndPersistAsync"/>). That is what makes a
+    /// refused write leave nothing behind; a mutator that reaches its
+    /// durable write through <em>this</em> method has already mutated
+    /// itself by the time the refusal is raised.
     /// </para>
     /// </remarks>
     protected async Task PersistStateAsync(CancellationToken cancellationToken = default)
@@ -349,10 +361,14 @@ public abstract class EngineeringObjectBase :
     /// <remarks>
     /// <see cref="Concurrency.AsyncKeyedLock"/> is not reentrant, so a
     /// method that must do more than persist inside one uninterrupted hold
-    /// of the lock — <see cref="AttachContentAsync"/>, which has a content
-    /// write to keep atomic with its state write — cannot call
-    /// <see cref="PersistStateAsync"/> and must call this instead.
-    /// <b>Every caller of this method must already hold
+    /// of the lock cannot call <see cref="PersistStateAsync"/> and must
+    /// call this instead. Two things need that hold: keeping another
+    /// durable step atomic with the state write
+    /// (<see cref="AttachContentAsync"/>'s content write,
+    /// <see cref="MoveAsync"/>'s <c>groupedUnder</c> link), and — since
+    /// `WP 16.4B-R6b` — keeping the supersession <em>refusal</em> atomic
+    /// with the mutation it is refusing, which is every mutator declared on
+    /// this type. <b>Every caller of this method must already hold
     /// <see cref="EngineeringDomainContext.AcquireObjectWriteLockAsync"/>
     /// for <see cref="Id"/>.</b>
     /// </remarks>
@@ -379,6 +395,86 @@ public abstract class EngineeringObjectBase :
     {
         if (_supersededBy is { } successor)
             throw new SupersededEngineeringObjectException(Id, successor.CurrentRevisionNumber);
+    }
+
+    /// <summary>
+    /// Runs <paramref name="mutate"/> and the durable write that records it
+    /// inside one hold of this object's write lock, <b>after</b> refusing a
+    /// superseded instance (`WP 16.4B-R6b`).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>The invariant this exists to hold: an operation the platform
+    /// reports as failed must not become durable, and must not change this
+    /// instance either.</b> Every mutator on this type used to mutate its
+    /// in-memory field first and only then call
+    /// <see cref="PersistStateAsync"/>, which is where the write lock and
+    /// <see cref="ThrowIfSuperseded"/> live. A concurrent
+    /// <see cref="ReviseAsync"/> that took the lock in between captured the
+    /// mutation into the successor, became the live registered object, and
+    /// only then made the mutator's own write throw — so the caller was
+    /// told the change did not happen while it had in fact landed on the
+    /// only instance that still answers for this Id, and became durable on
+    /// that successor's next write. `WP 16.4B-R6` closed this for the two
+    /// attachment entry points by hoisting the check above the mutation;
+    /// this method is the same three lines, made available to every other
+    /// mutator so the treatment is uniform rather than per-method.
+    /// </para>
+    /// <para>
+    /// <b>Why the window could not simply be narrowed.</b> It is not the
+    /// few instructions between the mutation and the semaphore enqueue: a
+    /// revision already queued ahead of the mutator makes the window
+    /// exactly as long as the current lock hold, which
+    /// <c>AttachContentAsync</c>'s content write can make arbitrarily long.
+    /// Deciding {refuse, or apply and record} once, before anything has
+    /// been touched, removes it instead of shrinking it.
+    /// </para>
+    /// <para>
+    /// <b>Ordering inside the lock.</b> <see cref="ThrowIfSuperseded"/>
+    /// first, so a retired instance refuses before it validates, mutates or
+    /// writes anything; then <paramref name="mutate"/>, which may itself
+    /// reject the operation on this object's own state (an impermissible
+    /// lifecycle transition, say) and is free to throw — nothing durable
+    /// has happened yet either way; then the persist. Because the whole
+    /// sequence is one uninterrupted hold, <c>_supersededBy</c> cannot
+    /// change between the check and the write.
+    /// </para>
+    /// <para>
+    /// <b>Re-entrancy.</b> <see cref="Concurrency.AsyncKeyedLock"/> is not
+    /// reentrant, so this calls
+    /// <see cref="PersistStateHoldingWriteLockAsync"/> and never
+    /// <see cref="PersistStateAsync"/>, which would deadlock against the
+    /// lock this method already holds. <paramref name="mutate"/> is
+    /// therefore also required to be a plain synchronous field update that
+    /// never re-enters this type's public surface.
+    /// </para>
+    /// <para>
+    /// <b>No state store, no change in behaviour.</b> A context without an
+    /// <see cref="EngineeringDomainContext.ObjectStateStore"/> has no
+    /// durable record, no supersession semantics to enforce and nothing to
+    /// serialise against — the pre-`TD-85` in-memory-only shape every
+    /// hand-assembled context in this repository's tests and samples still
+    /// uses. It mutates without taking the lock, exactly as it did before,
+    /// which is the same branch <see cref="AttachAsync"/> and
+    /// <see cref="AttachContentAsync"/> already take.
+    /// </para>
+    /// </remarks>
+    private async Task MutateAndPersistAsync(Action mutate, CancellationToken cancellationToken)
+    {
+        if (_context.ObjectStateStore is not { } store)
+        {
+            mutate();
+            return;
+        }
+
+        using (await _context.AcquireObjectWriteLockAsync(Id, cancellationToken).ConfigureAwait(false))
+        {
+            ThrowIfSuperseded();
+
+            mutate();
+
+            await PersistStateHoldingWriteLockAsync(store, cancellationToken).ConfigureAwait(false);
+        }
     }
 
     /// <summary>
@@ -438,21 +534,39 @@ public abstract class EngineeringObjectBase :
         get { lock (_lifecycleLock) { return _history.ToList(); } }
     }
 
-    public Task TransitionAsync(LifecycleState target, CancellationToken cancellationToken = default)
-    {
-        lock (_lifecycleLock)
-        {
-            if (!_context.LifecycleTable.IsPermitted(_status, target))
-                throw new InvalidLifecycleTransitionException(_status, target);
+    /// <inheritdoc />
+    /// <remarks>
+    /// <b>A refused transition writes no history entry (`WP 16.4B-R6b`).</b>
+    /// This used to append the <see cref="LifecycleTransitionRecord"/> and
+    /// move <c>_status</c> under <c>_lifecycleLock</c> and only then call
+    /// <see cref="PersistStateAsync"/>, which is where the supersession
+    /// check lived — so a transition the caller was told had been
+    /// <em>rejected</em> had already stamped an actor principal id and a
+    /// wall-clock timestamp into the append-only history this platform
+    /// treats as its governance record, and a concurrent
+    /// <see cref="ReviseAsync"/> then carried that fabricated entry into the
+    /// successor and made it durable. There is no removal path for a
+    /// history entry, by design, so the refusal has to happen before the
+    /// entry exists rather than be compensated afterwards. It now runs
+    /// inside the same hold of the write lock that performs the write —
+    /// see <see cref="MutateAndPersistAsync"/>.
+    /// </remarks>
+    public Task TransitionAsync(LifecycleState target, CancellationToken cancellationToken = default) =>
+        // A lifecycle change is state (`TD-85`) — persisted, so it survives
+        // restart rather than living only in this instance.
+        MutateAndPersistAsync(
+            () =>
+            {
+                lock (_lifecycleLock)
+                {
+                    if (!_context.LifecycleTable.IsPermitted(_status, target))
+                        throw new InvalidLifecycleTransitionException(_status, target);
 
-            _history.Add(new LifecycleTransitionRecord(_status, target, _context.ResolveCurrentPrincipalId(), DateTimeOffset.UtcNow, approvalId: null));
-            _status = target;
-        }
-
-        // A lifecycle change is state (`TD-85`) — persisted here, so it
-        // survives restart rather than living only in this instance.
-        return PersistStateAsync(cancellationToken);
-    }
+                    _history.Add(new LifecycleTransitionRecord(_status, target, _context.ResolveCurrentPrincipalId(), DateTimeOffset.UtcNow, approvalId: null));
+                    _status = target;
+                }
+            },
+            cancellationToken);
 
     // IHasRevisions
     public string Content => CurrentRevision.Content;
@@ -617,7 +731,14 @@ public abstract class EngineeringObjectBase :
 
             lock (_attachments) { _attachments.Add(attachment); }
 
-            await store.SaveAsync(CaptureState(), cancellationToken).ConfigureAwait(false);
+            // `WP 16.4B-R6b`: the same capture-and-save this always did,
+            // routed through the one helper every mutator on this type now
+            // uses, so there is a single durable-write body rather than one
+            // method reaching past it to `store.SaveAsync` directly. Its
+            // repeat of `ThrowIfSuperseded` is redundant here and
+            // deliberately not special-cased — the answer cannot have
+            // changed inside one hold of the lock.
+            await PersistStateHoldingWriteLockAsync(store, cancellationToken).ConfigureAwait(false);
         }
     }
 
@@ -847,16 +968,22 @@ public abstract class EngineeringObjectBase :
         string.Join(' ', new[] { DisplayName, Identifier, Category, Content }.Where(s => !string.IsNullOrWhiteSpace(s)));
 
     // IRenamable (WP 9.0A — additive; see StructuralMutation.cs)
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// Argument validation stays outside the lock: a malformed name is a
+    /// contract violation of this call, answered before any collaborator is
+    /// involved, exactly as it was. The rename itself and the durable write
+    /// that records it are one hold of the write lock, refusing first
+    /// (`WP 16.4B-R6b`) — see <see cref="MutateAndPersistAsync"/>.
+    /// </remarks>
     public Task RenameAsync(string newDisplayName, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(newDisplayName);
 
-        lock (_structuralLock)
-        {
-            _displayName = newDisplayName;
-        }
-
-        return PersistStateAsync(cancellationToken);
+        return MutateAndPersistAsync(
+            () => { lock (_structuralLock) { _displayName = newDisplayName; } },
+            cancellationToken);
     }
 
     // IHasParent (WP 9.0A — additive; see StructuralMutation.cs)
@@ -865,25 +992,79 @@ public abstract class EngineeringObjectBase :
         get { lock (_structuralLock) { return _parentId; } }
     }
 
+    /// <inheritdoc />
+    /// <remarks>
+    /// <para>
+    /// <b>A refused move records no relationship (`WP 16.4B-R6b`).</b> The
+    /// <c>groupedUnder</c> link below is permanent and append-only — the
+    /// platform has no path that removes one — and it used to be written
+    /// before <see cref="PersistStateAsync"/>, which is where the
+    /// supersession check lived. A move the caller was told had been
+    /// refused therefore left a durable relationship claiming it happened,
+    /// and the reparent itself leaked into a concurrent
+    /// <see cref="ReviseAsync"/>'s successor. The refusal now precedes
+    /// both, inside one hold of the write lock that also performs them.
+    /// </para>
+    /// <para>
+    /// <b>Why <see cref="GuardAgainstCircularParentAsync"/> runs outside
+    /// that lock.</b> It mutates nothing — it walks other objects' parent
+    /// edges through the repository purely to decide whether to throw — so
+    /// there is nothing about it that has to be atomic with this object's
+    /// own write, and a caller it rejects has changed nothing either way.
+    /// Against that, moving it inside would lengthen the hold by an
+    /// unbounded chain walk (the widened-window failure the review board
+    /// raised against `WP 16.4B-R6`), and it calls
+    /// <see cref="IHasParent.ParentId"/> on arbitrary other objects,
+    /// including types outside this assembly, from inside a lock that is
+    /// not reentrant — a deadlock surface that does not exist today. It
+    /// therefore stays where it was. The consequence, unchanged by this
+    /// Work Package and pre-existing, is that two concurrent moves can
+    /// still each pass the guard and between them form a cycle; that is a
+    /// separate defect and is recorded, not fixed here.
+    /// </para>
+    /// </remarks>
     public async Task MoveAsync(Guid? newParentId, CancellationToken cancellationToken = default)
     {
         if (newParentId is { } candidateParentId)
             await GuardAgainstCircularParentAsync(candidateParentId, cancellationToken).ConfigureAwait(false);
 
-        lock (_structuralLock)
+        // Kept inline rather than routed through `MutateAndPersistAsync`,
+        // because the durable link has to land inside the same hold of the
+        // lock, between the mutation and the persist. The lock ordering is
+        // the one `ReviseAsync` already established and the board verified:
+        // object write lock, then `EngineeringDocumentStore`'s persistence
+        // keys. `LinkAsync` makes no callback into this domain and never
+        // re-enters `AcquireObjectWriteLockAsync`, so there is no inversion
+        // and no re-entrancy.
+        if (_context.ObjectStateStore is not { } store)
         {
-            _parentId = newParentId;
+            lock (_structuralLock) { _parentId = newParentId; }
+
+            if (newParentId is { } unpersistedParentId)
+                await LinkAsync(unpersistedParentId, "groupedUnder", cancellationToken).ConfigureAwait(false);
+
+            return;
         }
 
-        // Permanent, append-only audit trail — the old "groupedUnder" link (if
-        // any) is never removed, so a full move history survives even though
-        // ParentId itself only ever reflects the latest move (WP 9.0A).
-        if (newParentId is { } parentId)
-            await LinkAsync(parentId, "groupedUnder", cancellationToken).ConfigureAwait(false);
+        using (await _context.AcquireObjectWriteLockAsync(Id, cancellationToken).ConfigureAwait(false))
+        {
+            ThrowIfSuperseded();
 
-        // The structural parent is the edge that makes an object belong to
-        // a project — it must survive restart (`TD-85`).
-        await PersistStateAsync(cancellationToken).ConfigureAwait(false);
+            lock (_structuralLock)
+            {
+                _parentId = newParentId;
+            }
+
+            // Permanent, append-only audit trail — the old "groupedUnder" link (if
+            // any) is never removed, so a full move history survives even though
+            // ParentId itself only ever reflects the latest move (WP 9.0A).
+            if (newParentId is { } parentId)
+                await LinkAsync(parentId, "groupedUnder", cancellationToken).ConfigureAwait(false);
+
+            // The structural parent is the edge that makes an object belong to
+            // a project — it must survive restart (`TD-85`).
+            await PersistStateHoldingWriteLockAsync(store, cancellationToken).ConfigureAwait(false);
+        }
     }
 
     private async Task GuardAgainstCircularParentAsync(Guid candidateParentId, CancellationToken cancellationToken)
@@ -929,6 +1110,29 @@ public abstract class EngineeringObjectBase :
     /// disclosed `TD-97` state — closed the rest of the way by the
     /// content sweep, never by reordering this write ahead of the
     /// deletion it depends on).
+    /// <para>
+    /// <b>A refused delete deletes nothing (`WP 16.4B-R6b`).</b>
+    /// <c>_isDeleted</c> was set under <c>_structuralLock</c> before
+    /// <see cref="PersistStateAsync"/>, which is where the supersession
+    /// check lived, so a delete the caller was told had been refused still
+    /// left the object soft-deleted — in memory, and durably once a
+    /// concurrent <see cref="ReviseAsync"/>'s successor had inherited the
+    /// flag and written it. That is not recoverable divergence:
+    /// <c>_isDeleted</c> has no writer anywhere that clears it (the field
+    /// is set here and restored by <see cref="RestoreState"/>, and there is
+    /// no undelete on any facet), and every read model filters
+    /// <c>IDeletable { IsDeleted: true }</c> out — so an operation reported
+    /// as <em>failed</em> removed the object from the whole product with no
+    /// supported way back, and skipped the `TD-97` byte release on the way
+    /// past. The refusal now happens before the flag is set.
+    /// </para>
+    /// <para>
+    /// The byte release below is deliberately left exactly where it was:
+    /// after the state write, outside the write lock, on the success path
+    /// only. A refusal throws above it and therefore never reaches it —
+    /// which is the correct outcome for bytes belonging to an object that
+    /// is, after the refusal, not deleted.
+    /// </para>
     /// </remarks>
     public async Task DeleteAsync(CancellationToken cancellationToken = default)
     {
@@ -941,12 +1145,10 @@ public abstract class EngineeringObjectBase :
         if (liveChildren > 0)
             throw new EngineeringObjectHasChildrenException(Id, liveChildren);
 
-        lock (_structuralLock)
-        {
-            _isDeleted = true;
-        }
-
-        await PersistStateAsync(cancellationToken).ConfigureAwait(false);
+        await MutateAndPersistAsync(
+            () => { lock (_structuralLock) { _isDeleted = true; } },
+            cancellationToken)
+            .ConfigureAwait(false);
 
         if (_context.AttachmentContentStore is { } contentStore)
         {
@@ -984,6 +1186,14 @@ public abstract class EngineeringObjectBase :
         get { lock (_structuralLock) { return _referenceDesignator; } }
     }
 
+    /// <inheritdoc />
+    /// <remarks>
+    /// Argument validation stays outside the lock, as it was: a
+    /// non-positive quantity is a contract violation of this call, not a
+    /// question about this object's durable state. The five fields and the
+    /// write that records them are one hold of the write lock, refusing
+    /// first (`WP 16.4B-R6b`) — see <see cref="MutateAndPersistAsync"/>.
+    /// </remarks>
     public Task SetBomLineAsync(
         decimal quantity, string? unitOfMeasure = null, string? findNumber = null,
         string? itemNumber = null, string? referenceDesignator = null, CancellationToken cancellationToken = default)
@@ -991,15 +1201,18 @@ public abstract class EngineeringObjectBase :
         if (quantity <= 0)
             throw new ArgumentOutOfRangeException(nameof(quantity), quantity, $"Quantity must be positive ({StructuralValidationRules.QuantityMustBePositive}).");
 
-        lock (_structuralLock)
-        {
-            _quantity = quantity;
-            _unitOfMeasure = unitOfMeasure;
-            _findNumber = findNumber;
-            _itemNumber = itemNumber;
-            _referenceDesignator = referenceDesignator;
-        }
-
-        return PersistStateAsync(cancellationToken);
+        return MutateAndPersistAsync(
+            () =>
+            {
+                lock (_structuralLock)
+                {
+                    _quantity = quantity;
+                    _unitOfMeasure = unitOfMeasure;
+                    _findNumber = findNumber;
+                    _itemNumber = itemNumber;
+                    _referenceDesignator = referenceDesignator;
+                }
+            },
+            cancellationToken);
     }
 }
