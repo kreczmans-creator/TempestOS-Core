@@ -512,7 +512,7 @@ public sealed class TechnicalDocumentTests
         var target = Guid.NewGuid();
         var document = AssetFixtures.Document() with
         {
-            Relationships = [new DocumentRelationship(DocumentRelationship.Kinds.Supersedes, target)],
+            Relationships = [new DocumentRelationship(Tempest.Core.EngineeringDomain.GovernanceRelationshipKinds.Supersedes, target)],
         };
 
         var links = document.ToDocumentReferences("engineer-1", DateTimeOffset.UnixEpoch);

@@ -138,15 +138,21 @@ public sealed record DocumentRelationship(
 
     /// <summary>The relationship kinds `E5` itself reasons about.</summary>
     /// <remarks>
+    /// <para>
     /// Not a closed set. <see cref="EngineeringData.DocumentReference"/>
     /// deliberately enforces no vocabulary, and `E5` does not impose one
     /// on it; these are the values `E5`'s own validation understands.
+    /// </para>
+    /// <para>
+    /// <b>Supersession is not declared here.</b> It is platform-wide and
+    /// canonically owned by
+    /// <see cref="EngineeringDomain.GovernanceRelationshipKinds.Supersedes"/>
+    /// — one value, one declaring class (`ADR-0105`). Use that constant
+    /// for a supersession link; <see cref="All"/> includes it.
+    /// </para>
     /// </remarks>
     public static class Kinds
     {
-        /// <summary>This document replaces the target.</summary>
-        public const string Supersedes = "supersedes";
-
         /// <summary>This document is derived from the target.</summary>
         public const string DerivedFrom = "derivedFrom";
 
@@ -162,9 +168,16 @@ public sealed record DocumentRelationship(
         /// <summary>This document is part of the target.</summary>
         public const string PartOf = "partOf";
 
-        /// <summary>Every kind `E5` reasons about.</summary>
+        /// <summary>Every kind `E5` reasons about, including the canonically owned supersession value.</summary>
         public static IReadOnlyList<string> All { get; } =
-            [Supersedes, DerivedFrom, Implements, Verifies, References, PartOf];
+        [
+            EngineeringDomain.GovernanceRelationshipKinds.Supersedes,
+            DerivedFrom,
+            Implements,
+            Verifies,
+            References,
+            PartOf,
+        ];
     }
 }
 
@@ -178,7 +191,7 @@ public sealed record DocumentRelationship(
 /// <c>Tempest.Core.EngineeringData</c> and stay there. `E5` records what
 /// the organisation needs to <em>govern</em> a document — what it is,
 /// what state it is in, who owns it, when it takes effect, and what it
-/// replaces — and points at the underlying document by Id (`ADR-0140`).
+/// replaces — and points at the underlying document by Id (`ADR-0137`).
 /// </para>
 /// <para>
 /// <b>Status is separate from the record lifecycle.</b> A Released,

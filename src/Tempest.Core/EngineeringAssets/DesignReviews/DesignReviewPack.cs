@@ -108,7 +108,7 @@ public enum ObservationSeverity
 /// may notice something and propose nothing; the meeting may agree an
 /// action; the organisation may later decide something different. `E4`
 /// keeps the three as separate records precisely because collapsing them
-/// is how "somebody mentioned it" becomes "it was agreed" (`ADR-0139`).
+/// is how "somebody mentioned it" becomes "it was agreed" (`ADR-0138`).
 /// </remarks>
 /// <param name="Reference">The observation's own identifier within the pack. Required.</param>
 /// <param name="Statement">What was noticed. Required.</param>
@@ -217,7 +217,7 @@ public sealed record ReviewAction(
 /// <remarks>
 /// A review outcome is the reviewers' collective engineering judgement.
 /// It is not an approval: approval commits the organisation and is an act
-/// of authority a named person performs (`ADR-0139`).
+/// of authority a named person performs (`ADR-0138`).
 /// </remarks>
 public enum ReviewOutcome
 {
@@ -298,7 +298,7 @@ public sealed record ReviewDecision(
 /// a review produced. Running the review, chasing the actions and
 /// obtaining the approval are organisational activities that belong to
 /// later operational integration, and nothing here drives them
-/// (`ADR-0139`).
+/// (`ADR-0138`).
 /// </para>
 /// <para>
 /// Six things are kept apart: what was <b>reviewed</b>, what was
