@@ -11,6 +11,12 @@ using Tempest.Core.DependencyInjection;
 using Tempest.Core.Diagnostics;
 using Tempest.Core.EngineeringData;
 using Tempest.Core.EngineeringDomain;
+using Tempest.Core.EngineeringIntelligence;
+using Tempest.Core.EngineeringIntelligence.Decisions;
+using Tempest.Core.EngineeringIntelligence.DesignRules;
+using Tempest.Core.EngineeringIntelligence.MaterialSelection;
+using Tempest.Core.EngineeringIntelligence.Reviews;
+using Tempest.Core.EngineeringIntelligence.TradeStudies;
 using Tempest.Core.Events;
 using Tempest.Core.Fasteners;
 using Tempest.Core.ExportImport;
@@ -731,6 +737,40 @@ public sealed class TempestHost : ITempestHost
 
         services.Singleton<IProcessCatalog, ProcessCatalog>();
         services.Singleton<IProcessValidationService, ProcessValidationService>();
+
+        // `Group B` (P02): the engineering-reasoning layer. Rules, decision
+        // trees, review definitions and trade studies are all governed,
+        // authored, reviewed and revisioned records, so each library sits on
+        // the same shared ReferenceDataCatalog<T> base as `P01` rather than
+        // growing a second lifecycle (`ADR-0128`). Registered after every
+        // `Group A` library, because the reasoning services read them: the
+        // rule catalogue for rules a review criterion names, the
+        // released-constant source for a symbolic threshold, and each
+        // subject library for the record a rule is being applied to.
+        //
+        // `P02` reads `P01` and never the other way round, so nothing above
+        // this point takes a dependency on anything below it.
+        services.Singleton<IRuleCatalog, RuleCatalog>();
+        services.Singleton<IRuleValidationService, RuleValidationService>();
+
+        services.Singleton<IDecisionTreeCatalog, DecisionTreeCatalog>();
+        services.Singleton<IDecisionTreeValidationService, DecisionTreeValidationService>();
+
+        services.Singleton<IReviewDefinitionCatalog, ReviewDefinitionCatalog>();
+        services.Singleton<IReviewDefinitionValidationService, ReviewDefinitionValidationService>();
+
+        services.Singleton<ITradeStudyCatalog, TradeStudyCatalog>();
+        services.Singleton<ITradeStudyValidationService, TradeStudyValidationService>();
+
+        // The five reasoning services. Each is stateless over its
+        // catalogues, and each takes the clock and the current principal so
+        // that what a result records about when and by whom is testable
+        // rather than read from the ambient environment.
+        services.Singleton<IMaterialSelectionService, MaterialSelectionService>();
+        services.Singleton<IManufacturingDecisionService, ManufacturingDecisionService>();
+        services.Singleton<IDesignRuleService, DesignRuleService>();
+        services.Singleton<IEngineeringReviewService, EngineeringReviewService>();
+        services.Singleton<ITradeStudyService, TradeStudyService>();
 
         // ADR-0056: every calculation execution is durably recorded as an
         // Engineering Data Model document (Kind = "CalculationRecord"),
