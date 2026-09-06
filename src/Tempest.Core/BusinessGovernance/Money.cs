@@ -1,4 +1,6 @@
 using System.Globalization;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Tempest.Core.BusinessGovernance;
 
@@ -34,6 +36,13 @@ public readonly record struct Money : IComparable<Money>
     /// <param name="amount">The amount, exact to the currency's own minor unit.</param>
     /// <param name="currency">The currency the amount is stated in.</param>
     /// <exception cref="ArgumentException"><paramref name="currency"/> is not a well-formed currency code.</exception>
+    /// <remarks>
+    /// Marked <see cref="JsonConstructorAttribute"/> because the struct's
+    /// properties are get-only: without it a serialiser falls back to the
+    /// implicit parameterless constructor and every persisted amount comes
+    /// back as zero in an unspecified currency.
+    /// </remarks>
+    [JsonConstructor]
     public Money(decimal amount, CurrencyCode currency)
     {
         if (!currency.IsSpecified)
@@ -159,6 +168,7 @@ public readonly record struct Money : IComparable<Money>
 /// registry ships with this platform and pretending otherwise would be
 /// asserting something unverified.
 /// </remarks>
+[JsonConverter(typeof(CurrencyCodeJsonConverter))]
 public readonly record struct CurrencyCode : IComparable<CurrencyCode>
 {
     private readonly string? _code;
@@ -192,6 +202,43 @@ public readonly record struct CurrencyCode : IComparable<CurrencyCode>
 
     /// <inheritdoc />
     public override string ToString() => _code ?? "(unspecified)";
+}
+
+/// <summary>
+/// Serialises a <see cref="CurrencyCode"/> as the three-letter code
+/// itself.
+/// </summary>
+/// <remarks>
+/// Necessary rather than decorative. The code is held in a private field
+/// so that a malformed value cannot be constructed, which leaves the
+/// struct with no public property for a serialiser to write — and a
+/// currency that serialises to <c>{}</c> comes back as unspecified,
+/// taking every monetary amount in the record with it. This converter is
+/// what makes a persisted <see cref="Money"/> round-trip.
+/// </remarks>
+public sealed class CurrencyCodeJsonConverter : JsonConverter<CurrencyCode>
+{
+    /// <inheritdoc />
+    public override CurrencyCode Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        if (reader.TokenType == JsonTokenType.Null)
+            return default;
+
+        var code = reader.GetString();
+
+        return string.IsNullOrWhiteSpace(code) ? default : new CurrencyCode(code);
+    }
+
+    /// <inheritdoc />
+    public override void Write(Utf8JsonWriter writer, CurrencyCode value, JsonSerializerOptions options)
+    {
+        ArgumentNullException.ThrowIfNull(writer);
+
+        if (value.IsSpecified)
+            writer.WriteStringValue(value.ToString());
+        else
+            writer.WriteNullValue();
+    }
 }
 
 /// <summary>Thrown when an operation would combine or compare amounts in different currencies.</summary>

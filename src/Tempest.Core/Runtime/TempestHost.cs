@@ -11,6 +11,13 @@ using Tempest.Core.DependencyInjection;
 using Tempest.Core.Diagnostics;
 using Tempest.Core.EngineeringData;
 using Tempest.Core.EngineeringDomain;
+using Tempest.Core.BusinessGovernance.Assets;
+using Tempest.Core.BusinessGovernance.Contracts;
+using Tempest.Core.BusinessGovernance.Development;
+using Tempest.Core.BusinessGovernance.Finance;
+using Tempest.Core.BusinessGovernance.Operating;
+using Tempest.Core.BusinessGovernance.Pricing;
+using Tempest.Core.BusinessGovernance.Risk;
 using Tempest.Core.EngineeringIntelligence;
 using Tempest.Core.EngineeringIntelligence.Decisions;
 using Tempest.Core.EngineeringIntelligence.DesignRules;
@@ -771,6 +778,53 @@ public sealed class TempestHost : ITempestHost
         services.Singleton<IDesignRuleService, DesignRuleService>();
         services.Singleton<IEngineeringReviewService, EngineeringReviewService>();
         services.Singleton<ITradeStudyService, TradeStudyService>();
+
+        // `Group C` (P07): business governance. Contract templates and
+        // contracts, the risk register and insurance, IP and data assets,
+        // rate cards, financial assumptions and scenarios, the opportunity
+        // pipeline and the operating model are all authored, evidenced,
+        // approved, revisioned and superseded records, so each library sits
+        // on the same shared ReferenceDataCatalog<T> base as `P01` and
+        // `P02` rather than growing a third lifecycle (`ADR-0129`).
+        //
+        // Registered last, and depending on nothing above it: `P07` reads
+        // the platform's own document store, persistence and identity, and
+        // does not read `P01` or `P02`. Business governance and engineering
+        // reasoning are independent programmes and the container reflects
+        // that.
+        services.Singleton<IContractTemplateCatalog, ContractTemplateCatalog>();
+        services.Singleton<IContractTemplateValidationService, ContractTemplateValidationService>();
+        services.Singleton<IIssuedContractCatalog, IssuedContractCatalog>();
+        services.Singleton<IIssuedContractValidationService, IssuedContractValidationService>();
+        services.Singleton<IContractService, ContractService>();
+
+        services.Singleton<IBusinessRiskCatalog, BusinessRiskCatalog>();
+        services.Singleton<IBusinessRiskValidationService, BusinessRiskValidationService>();
+        services.Singleton<IInsurancePolicyCatalog, InsurancePolicyCatalog>();
+        services.Singleton<IInsurancePolicyValidationService, InsurancePolicyValidationService>();
+        services.Singleton<IRiskAndInsuranceService, RiskAndInsuranceService>();
+
+        services.Singleton<IIPAssetCatalog, IPAssetCatalog>();
+        services.Singleton<IIPAssetValidationService, IPAssetValidationService>();
+        services.Singleton<IDataAssetCatalog, DataAssetCatalog>();
+        services.Singleton<IDataAssetValidationService, DataAssetValidationService>();
+
+        services.Singleton<IRateCardCatalog, RateCardCatalog>();
+        services.Singleton<IRateCardValidationService, RateCardValidationService>();
+        services.Singleton<IPricingService, PricingService>();
+
+        services.Singleton<IFinancialAssumptionCatalog, FinancialAssumptionCatalog>();
+        services.Singleton<IFinancialAssumptionValidationService, FinancialAssumptionValidationService>();
+        services.Singleton<IFinancialScenarioCatalog, FinancialScenarioCatalog>();
+        services.Singleton<IFinancialScenarioValidationService, FinancialScenarioValidationService>();
+        services.Singleton<IFinancialControlService, FinancialControlService>();
+
+        services.Singleton<IOpportunityCatalog, OpportunityCatalog>();
+        services.Singleton<IOpportunityValidationService, OpportunityValidationService>();
+        services.Singleton<IPipelineService, PipelineService>();
+
+        services.Singleton<IOperatingScenarioCatalog, OperatingScenarioCatalog>();
+        services.Singleton<IOperatingScenarioValidationService, OperatingScenarioValidationService>();
 
         // ADR-0056: every calculation execution is durably recorded as an
         // Engineering Data Model document (Kind = "CalculationRecord"),
