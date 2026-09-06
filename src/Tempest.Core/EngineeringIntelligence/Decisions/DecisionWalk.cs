@@ -1,3 +1,5 @@
+using Tempest.Core.ReferenceData;
+
 namespace Tempest.Core.EngineeringIntelligence.Decisions;
 
 /// <summary>One step a walk took through a decision tree.</summary>

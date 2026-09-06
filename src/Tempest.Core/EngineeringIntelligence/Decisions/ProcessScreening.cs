@@ -1,3 +1,5 @@
+using Tempest.Core.ReferenceData;
+
 namespace Tempest.Core.EngineeringIntelligence.Decisions;
 
 /// <summary>What one requirement concluded about one candidate process.</summary>

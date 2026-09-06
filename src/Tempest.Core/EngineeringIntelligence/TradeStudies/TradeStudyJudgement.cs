@@ -1,3 +1,5 @@
+using Tempest.Core.ReferenceData;
+
 namespace Tempest.Core.EngineeringIntelligence.TradeStudies;
 
 /// <summary>Who or what settled a judgement.</summary>

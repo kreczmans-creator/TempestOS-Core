@@ -1,3 +1,5 @@
+using Tempest.Core.ReferenceData;
+
 namespace Tempest.Core.EngineeringIntelligence.Reviews;
 
 /// <summary>What was decided about a finding.</summary>

@@ -1,4 +1,4 @@
-namespace Tempest.Core.EngineeringIntelligence;
+namespace Tempest.Core.ReferenceData;
 
 /// <summary>
 /// An exact, permanent identification of one reference-data record at one

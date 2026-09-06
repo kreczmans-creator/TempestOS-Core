@@ -1,3 +1,5 @@
+using Tempest.Core.ReferenceData;
+
 namespace Tempest.Core.EngineeringIntelligence;
 
 /// <summary>What kind of thing an <see cref="EvidenceReference"/> points at.</summary>
