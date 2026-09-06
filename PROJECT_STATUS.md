@@ -1,6 +1,10 @@
 # TempestOS — Project Status
 
-**Last Updated:** 2026-09-06 (`WP 16.4B-R6`, fifth-review-board
+**Last Updated:** 2026-09-06 (`WP 16.4B-R6` **round 2**, sixth-board
+governance remediation — the candidate under review named, the
+Engineering Readiness Review's recommended verdict recorded as `NOT
+READY`, and the Technical Debt Register index line moved to 141 rows /
+73 Open; before it `WP 16.4B-R6`, fifth-review-board
 governance remediation — Repository Metrics re-derived, the determinism
 evidence pointed at the RC4 matrix on `58c4cba`, the merge status and the
 truncated Current Development Branch sentence corrected; previously
@@ -45,7 +49,7 @@ Release Notes.md`.
 
 **`main`** — `v0.16.0` was merged on 2026-09-05 (`cc7ef4d`), again at `9bba720` to carry the `WP 16.4B-R4` remediation the first merge predated, and again at `58c4cba` on 2026-09-06 carrying `WP 16.4B-R5`. That merge was **authorised by the Product Owner on 2026-09-05**; the per-occasion approval record Engineering Governance §7 item 6 requires is in `docs/releases/v0.16.0/WP16.9.0 Engineering Release Report.md` §7 item 2. It is **not tagged and not published**, and carries **no Product Approval verdict**, so `v0.15.0` above remains the current *released* version.
 
-`feature/v0.16.0` was cut from `main` at the `v0.15.0` tag commit (`a35365a`) and remains the working branch for the release's outstanding remediation. Scope, waves and acceptance criteria: `docs/releases/v0.16.0/v0.16.0 Release Plan.md`. The live, authoritative Work Package status list — what is landed, in progress, or not started — is `docs/releases/v0.16.0/WorkPackages.md`, not this file; this section summarises and that document governs. *(Completed `WP 16.4B-R6`, 2026-09-06: `WP 16.4B-R5` replaced a seven-line paragraph here with two and left this sentence truncated mid-clause at "The live," — raised as `P4-08` by the fifth review board. Restored from the sentence the `-` side of `git show 58c4cba -- PROJECT_STATUS.md` shows it replaced.)*
+`feature/v0.16.0` was cut from `main` at the `v0.15.0` tag commit (`a35365a`) and remains the working branch for the release's outstanding remediation. **The candidate under review is `3dd74d8dc0627038af57c9d2a2367e796f23ad16` on `feature/v0.16.0-wp16.4b-r6`, not merged** — `WP 16.4B-R6`, the remediation of the fifth review board's findings, which a sixth independent board then failed on four findings (`docs/releases/v0.16.0/v0.16.0 Review Board Disposition.md` §8). That SHA changes again when the round-2 remediation is integrated. The `WP 16.9.0` Engineering Readiness Review's recommended verdict is **`NOT READY`** as of 2026-09-06 — a recommendation not to proceed, not a Product Approval verdict, of which there is still none. *(Added `WP 16.4B-R6` round 2, 2026-09-06.)* Scope, waves and acceptance criteria: `docs/releases/v0.16.0/v0.16.0 Release Plan.md`. The live, authoritative Work Package status list — what is landed, in progress, or not started — is `docs/releases/v0.16.0/WorkPackages.md`, not this file; this section summarises and that document governs. *(Completed `WP 16.4B-R6`, 2026-09-06: `WP 16.4B-R5` replaced a seven-line paragraph here with two and left this sentence truncated mid-clause at "The live," — raised as `P4-08` by the fifth review board. Restored from the sentence the `-` side of `git show 58c4cba -- PROJECT_STATUS.md` shows it replaced.)*
 
 `v1.0` scope is **decided**: the six decision records `WP 16.0A` drafted
 (`D-021`–`D-026`) were **ratified by the Product Owner on 2026-09-05**
@@ -140,7 +144,13 @@ the same list through `xargs cat | wc -l` → 79,271; the `tests` equivalents
 **These figures are for `58c4cba` and no later tree** — `WP 16.4B-R6`
 changes `src/` and `tests/` again, so the `src/`, `tests/` and
 `[Fact]`/`[Theory]` rows will move with it and are not restated here in
-advance.
+advance. *(Added `WP 16.4B-R6` round 2, 2026-09-06: the Technical Debt
+Register row has moved too. The register holds **141 rows — 56 Resolved,
+6 Closed, 73 Open, 5 Partially resolved, 1 Deferred** since `TD-140` and
+`TD-141` were added, and `governance-healthcheck.ps1` Check 12 agrees.
+The 139 in the table above remains correct **for `58c4cba`**, which is
+what this table is a snapshot of, and is deliberately not refreshed
+piecemeal — that is the `P4-20` defect this caption exists to prevent.)*
 
 ## Repository Health
 
@@ -196,7 +206,7 @@ points to it:
 - **Platform Services** — `docs/governance/Engineering/Platform Services Register.md` (**38 entries** — 36 Implemented — per that register's own Total line; this file said 35, stale since `WP 16.2A`, corrected `WP 16.4B-R6`).
 - **Feature history** — `docs/governance/Delivery/Feature Register.md` (extended through `v0.15.0`, `WP 16.2A`).
 - **Release history** — `docs/governance/Delivery/Release Register.md` (17 versions referenced, `v0.15.0` corrected to Released, `WP 16.2A`).
-- **Technical Debt** — `docs/governance/Quality/Technical Debt Register.md` (**139 rows**, `TD-001`–`TD-139`, contiguous: 56 Resolved, 6 Closed, 71 Open, 5 Partially resolved, 1 Deferred, tallying exactly against that register's own summary line; count corrected here `WP 16.4B-R6`, stale at 122 since `WP 16.2A`).
+- **Technical Debt** — `docs/governance/Quality/Technical Debt Register.md` (**141 rows**, `TD-001`–`TD-141`, contiguous: 56 Resolved, 6 Closed, 73 Open, 5 Partially resolved, 1 Deferred — `TD-140` and `TD-141` added `WP 16.4B-R6` round 2, 2026-09-06, both Open; the figure read 139 / 71 Open before that, tallying exactly against that register's own summary line; count corrected here `WP 16.4B-R6`, stale at 122 since `WP 16.2A`).
 - **Validation / test gates** — `docs/governance/Quality/Validation Register.md` (current-state section added, `WP 16.2A`).
 - **Repository size/shape** — `docs/governance/Quality/Repository Metrics Register.md` (snapshot opened `WP 16.2A`, **every row re-derived together at `58c4cba` by `WP 16.4B-R6`** after rows had been refreshed piecemeal under a `WP 16.2A` label).
 - **Product roadmap** — `docs/governance/Product Roadmap.md` (Phase 5 marked delivered, Phase 5.5 added, `WP 16.2A`).

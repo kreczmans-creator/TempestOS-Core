@@ -546,7 +546,7 @@ review found and this follow-up removes):
 
 | Verdict | Meaning (§4's own priority row) | Precedent |
 |---|---|---|
-| **NOT READY** | §4 row 1: any category Not Ready | Not yet used; the case this taxonomy exists to make unambiguous |
+| **NOT READY** | §4 row 1: any category Not Ready | **Used.** *(Corrected `WP 16.4B-R6` round 2, 2026-09-06: this cell read "Not yet used; the case this taxonomy exists to make unambiguous", which was already false when written — `WP 12.9.0` and `WP 12.9.2` both derived `NOT READY` on Verification readiness, and `WP 12.9.4` records its own verdict moving from `NOT READY` to `ACCEPT WITH OBSERVATIONS` in place. It is now false a second way: `v0.16.0`'s Engineering Release Report recommends `NOT READY` on one open Release Blocking finding, `TD-140`. Corrected here only because leaving it would contradict a live release document; the pre-existing `v0.12.0` inaccuracy is recorded, not investigated further, as it is outside that Work Package's scope.)* |
 | **ACCEPT WITH OBSERVATIONS** | §4 row 2: no category Not Ready, but ≥ 1 Disclosed, Non-Blocking finding exists anywhere | `v0.11.0`'s own wording, formalised |
 | **CERTIFIED WITH ACCEPTED TECHNICAL DEBT** | §4 row 3: no Not Ready category, no Disclosed, Non-Blocking finding, but ≥ 1 Pre-Existing, Unaffected finding exists anywhere | `v0.6.0`'s own wording, formalised |
 | **CERTIFIED** | §4 row 4: no finding of any of the three kinds exists, anywhere, in the entire review | Not yet used; the ideal case |
