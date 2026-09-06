@@ -76,6 +76,9 @@ public sealed class SupplierCatalog : ReferenceDataCatalog<SupplierRecord>, ISup
     /// </remarks>
     public const string SupplierDocumentKind = "CommercialSupplierReference";
 
+    /// <summary>The <see cref="ReferenceDataCatalog{TDefinition}.LibraryName"/> a <see cref="ReferencePin"/> into this library carries.</summary>
+    public const string SupplierLibraryName = "CommercialSuppliers";
+
     /// <summary>The <see cref="IPersistenceStore"/> collection mapping each registered <c>supplierId</c> to its own backing document Id.</summary>
     public const string IndexCollection = "CommercialSuppliers.Index";
 
@@ -92,7 +95,7 @@ public sealed class SupplierCatalog : ReferenceDataCatalog<SupplierRecord>, ISup
     }
 
     /// <inheritdoc />
-    public override string LibraryName => "CommercialSuppliers";
+    public override string LibraryName => SupplierLibraryName;
 
     /// <inheritdoc />
     public override string DocumentKind => SupplierDocumentKind;
