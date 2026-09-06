@@ -14,7 +14,7 @@
 | **Related Documents** | `docs/architecture/Failure Behaviour.md`; `Architectural Dependency Register.md`. |
 | **Related ADRs** | ADR-0013, ADR-0021, ADR-0025, ADR-0038, ADR-0040, ADR-0046, ADR-0047, ADR-0048, ADR-0050, ADR-0051. |
 | **Related Academy Articles** | `docs/academy/06 Engineering Standards/01-exception-design.md`. |
-| **Coverage Status** | **Complete, re-verified at `WP 16.4B-R1` (2026-09-05, Architecture remediation).** 89 of 89 classes matching `^public (sealed \|abstract )?class \w+Exception\b` under `src/Tempest.Core/` are listed below, zero omitted. `WP 16.4B`'s own pass, which stated 87/87, was correct against the tree it measured; `WP 16.4B-R1` added two — `DuplicateStateMigrationException` and `ConflictingStateMigrationException` — for the migration-collision guard `StateMigrationRegistry.Register` now enforces (a `v0.16.0` review board Architecture finding). |
+| **Coverage Status** | **Complete, re-verified at `WP 16.4B-R5` (2026-09-06, release-board remediation).** `SupersededEngineeringObjectException` was added by `WP 16.4B-R4` and entered in the table below at that time, but this field and the Total line were left reading 89 — the free-text-drifts-from-its-own-rows defect this register has now produced twice. Found by the fresh release board and re-derived directly: 90 classes, 90 rows. Previously re-verified at `WP 16.4B-R1` (2026-09-05, Architecture remediation). 90 of 90 classes matching `^public (sealed \|abstract )?class \w+Exception\b` under `src/Tempest.Core/` are listed below, zero omitted. `WP 16.4B`'s own pass, which stated 87/87, was correct against the tree it measured; `WP 16.4B-R1` added two — `DuplicateStateMigrationException` and `ConflictingStateMigrationException` — for the migration-collision guard `StateMigrationRegistry.Register` now enforces (a `v0.16.0` review board Architecture finding). |
 
 ---
 
@@ -127,7 +127,7 @@ Reviewed** field and
 `docs/releases/v0.16.0/WP16.2A Register and Status Currency Report.md`
 for the full derivation.
 
-**Total: 89 custom exception types — Verified directly against
+**Total: 90 custom exception types — Verified directly against
 `src/Tempest.Core/` (`grep -rEn "^public (sealed |abstract )?class \w+Exception\b" src/Tempest.Core --include=*.cs`
 returns exactly 90 matches, matching the 90 rows in the Entries table (87 at the `WP 16.4B` integration, plus `DuplicateStateMigrationException` and `ConflictingStateMigrationException` at `WP 16.4B-R1`, and `SupersededEngineeringObjectException` at `WP 16.4B-R4`, all 2026-09-05; 84 at `WP 16.2A`, plus `RequirementGroupCycleException`, `ServiceRegistrationException` and `DuplicateServiceRegistrationException` at the `WP 16.4B` integration)
 above, re-derived directly by `WP 16.4B-R1`). Corrected,

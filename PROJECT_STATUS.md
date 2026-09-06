@@ -1,6 +1,6 @@
 # TempestOS — Project Status
 
-**Last Updated:** 2026-09-04 (`WP 16.2B` closure, following `WP 16.2A`'s
+**Last Updated:** 2026-09-06 (`WP 16.2B` closure, following `WP 16.2A`'s
 rewrite, `v0.16.0`) — this file was rewritten from a ~9,068-line/565 KB
 accumulation of superseded status paragraphs into the short, current
 dashboard below. Everything previously here of standing value is
@@ -39,13 +39,9 @@ Release Notes.md`.
 
 ## Current Development Branch
 
-**`feature/v0.16.0`**, cut from `main` at the `v0.15.0` tag commit
-(`a35365a`). Scope, waves, and acceptance criteria for the full
-release: `docs/releases/v0.16.0/v0.16.0 Release Plan.md`. The live,
-authoritative Work Package status list — what is landed, in progress,
-or not started — is `docs/releases/v0.16.0/WorkPackages.md`; it is not
-duplicated here, so this file cannot go stale relative to it the way
-the pre-`WP 16.2A` file repeatedly did.
+**`main`** — `v0.16.0` was merged on 2026-09-05 (`cc7ef4d`), and again at `9bba720` to carry the `WP 16.4B-R4` remediation the first merge predated. It is **not tagged and not published**, and carries **no Product Approval verdict**, so `v0.15.0` above remains the current *released* version.
+
+`feature/v0.16.0` was cut from `main` at the `v0.15.0` tag commit (`a35365a`) and remains the working branch for the release's outstanding remediation. Scope, waves and acceptance criteria: `docs/releases/v0.16.0/v0.16.0 Release Plan.md`. The live,
 
 `v1.0` scope is **decided**: the six decision records `WP 16.0A` drafted
 (`D-021`–`D-026`) were **ratified by the Product Owner on 2026-09-05**
@@ -101,33 +97,19 @@ directly: `docs/governance/Quality/Repository Metrics Register.md`
 | `[Fact]`/`[Theory]` attributes | 3,197 (including `[AvaloniaFact]`/`[AvaloniaTheory]`) |
 | ADRs | 123 (`ADR-0001`–`ADR-0123`) |
 | Public interfaces (`src/Tempest.Core/`) | 195 (194 distinct names) |
-| Custom exception types | 89 |
-| Technical Debt Register rows | 136 (`TD-001`–`TD-136`): 54 Resolved, 6 Closed, 70 Open, 5 Partially resolved, 1 Deferred |
+| Custom exception types | 90 (`SupersededEngineeringObjectException` added `WP 16.4B-R4`) |
+| Technical Debt Register rows | 139 (`TD-001`–`TD-139`): 56 Resolved, 6 Closed, 71 Open, 5 Partially resolved, 1 Deferred |
 | Total commits | 322 |
 
 ## Repository Health
 
-**Last real, CI-verified full-suite totals** (`d7d3f3b`, the frozen
-`v0.16.0` candidate): **3,209/3,209 Core tests, 474/474 Desktop tests**,
-0 failures, both configurations, on `windows-2022` — and verified five
-consecutive times, not once. `WP 16.4A`'s acceptance line required a
-five-run CI determinism matrix on one immutable commit; runs 195, 197,
-199, 201 and 202 all concluded `success`, every job in every run, with no
-retries. Evidence table:
-`docs/releases/v0.16.0/WP16.9.0 Engineering Release Report.md` §4.1.
-These figures are from the candidate, which is **not** merged or tagged;
-the last *released* CI-verified totals remain **3,088/3,088 Core,
-408/408 Desktop** at the `v0.15.0` tag —
-`docs/releases/v0.15.0/Release Notes.md`. Desktop rose
-to **412/412** after `WP 15.2A`'s own persistence-root cleanup —
-`docs/releases/v0.16.0/WP15.2A Desktop Test Suite Persistence Root
-Cleanup — Implementation Report.md`. Neither `WP 16.1A` nor `WP 16.2A`
-re-ran the full suite directly (`dotnet test` is not required for
-documentation-only Work Packages); `docs/governance/Quality/Validation
-Register.md`'s own "Current State (`WP 16.2A`)" section is the
-authoritative current statement, including the disclosed distinction
-between the 2,725 test-method count and the 3,088/408/412 executed-run
-counts.
+**Last real, CI-verified full-suite totals** (`f593e5c`): **3,209/3,209 Core tests, 474/474 Desktop tests**, 0 failures, both configurations, on `windows-2022` — verified five consecutive times, not once. `WP 16.4A`'s acceptance required a five-run CI determinism matrix on one immutable commit; runs 218, 220, 223, 226 and 227 all concluded `success`, every job in every run, no retries.
+
+That matrix is the **second** one this release obtained. The first ran on `d7d3f3b` (runs 195–202) and was invalidated when review-board remediation changed `src/`, `tests/`, `scripts/` and `.github/`; its re-run's first attempt then failed genuinely (run 214 on `fce2166`, Governance Health Check) and is preserved in the record rather than deleted. Full evidence, including that failure: `docs/releases/v0.16.0/WP16.9.0 Engineering Release Report.md` §4.1–§4.3.
+
+A **third** matrix is required and outstanding: `WP 16.4B-R5` again changes `src/` and `tests/`, so the `f593e5c` evidence no longer covers the tree being released.
+
+These figures are from a candidate merged to `main` but **not tagged and not published**; the last *released* CI-verified totals remain **3,088/3,088 Core, 408/408 Desktop** at the `v0.15.0` tag — `docs/releases/v0.15.0/Release Notes.md`.
 
 **Since `WP 16.5B` (Avalonia 11.3.20), locally on Linux** — the
 `feature/v0.16.0` merge base was rebuilt and re-tested in this session:

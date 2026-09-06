@@ -104,7 +104,7 @@ public abstract class EngineeringObjectBase :
                     _isDeleted,
                     new EngineeringObjectBomLineState(_quantity, _unitOfMeasure, _findNumber, _itemNumber, _referenceDesignator),
                     _history.Select(h => new EngineeringObjectTransitionState(h.From, h.To, h.ActorPrincipalId, h.OccurredAt, h.ApprovalId)).ToList(),
-                    _attachments.Select(a => new EngineeringObjectAttachmentState(a.Id, a.FileName, a.ContentType, a.SizeInBytes, a.ContentHash)).ToList(),
+                    CaptureAttachmentState(),
                     typeState);
             }
         }
@@ -122,6 +122,40 @@ public abstract class EngineeringObjectBase :
     /// what lives in mutable fields instead: lifecycle state and its
     /// history, structural parent, deletion, BOM line, and attachments.
     /// </remarks>
+    /// <summary>
+    /// Projects <c>_attachments</c> under the monitor its own writers use.
+    /// </summary>
+    /// <remarks>
+    /// `WP 16.4B-R5`. Every mutator of <c>_attachments</c> writes under
+    /// <c>lock (_attachments)</c>, but <see cref="CaptureState"/> read it
+    /// under <c>_structuralLock</c> — a different monitor, so the read was
+    /// not synchronised against the writes at all. The release review board
+    /// reproduced a <see cref="NullReferenceException"/> thrown from inside
+    /// the projection (a torn read of the list's backing array) on a
+    /// concurrent attach and rename, twice in three hundred attempts, with
+    /// no revision involved. It predates the whole `WP 16.4B` chain — it
+    /// arrived with `TD-85`'s original <see cref="CaptureState"/> — but it
+    /// also made `WP 16.4B-R4`'s claim of "an atomic capture" untrue in
+    /// general, which is why it is closed here rather than deferred.
+    /// <para>
+    /// Nesting order: this is taken innermost, inside
+    /// <c>_lifecycleLock</c> and <c>_structuralLock</c>. That is safe
+    /// because no site anywhere in this type holds <c>_attachments</c>
+    /// while acquiring either of the other two — every other use is a
+    /// short, non-nested critical section — so no lock-order inversion is
+    /// introduced.
+    /// </para>
+    /// </remarks>
+    private List<EngineeringObjectAttachmentState> CaptureAttachmentState()
+    {
+        lock (_attachments)
+        {
+            return _attachments
+                .Select(a => new EngineeringObjectAttachmentState(a.Id, a.FileName, a.ContentType, a.SizeInBytes, a.ContentHash))
+                .ToList();
+        }
+    }
+
     internal void RestoreState(EngineeringObjectState state)
     {
         ArgumentNullException.ThrowIfNull(state);
@@ -502,7 +536,69 @@ public abstract class EngineeringObjectBase :
         var attachment = new Attachment(attachmentId, fileName, contentType, content.Length, contentHash);
 
         lock (_attachments) { _attachments.Add(attachment); }
-        await PersistStateAsync(cancellationToken).ConfigureAwait(false);
+
+        // `WP 16.4B-R5`: the state write is compensated, not merely awaited.
+        //
+        // Until `WP 16.4B-R4`, only a process crash could interrupt between
+        // the marker being set and its being cleared, and the comment below
+        // reasoned from exactly that: a crash leaves a stale marker whose
+        // only effect is that this content is never swept — the disclosed
+        // `TD-97` outcome, never data loss. `WP 16.4B-R4` then taught
+        // `PersistStateAsync` to throw `SupersededEngineeringObjectException`
+        // when a concurrent `ReviseAsync` retires this instance mid-call,
+        // which put an *ordinary*, non-crash exception inside that window and
+        // silently falsified the premise. The release review board
+        // reproduced the result: marker set, bytes durably written, state
+        // write refused, `ClearAsync` never reached — a marker stranded set
+        // for ever, and content the sweep must therefore refuse to collect
+        // for ever. A permanent leak, reachable without any crash at all.
+        //
+        // The compensation restores the pre-call state rather than leaving
+        // the caller half-applied. Content is deleted *before* the marker is
+        // cleared, never after: if the delete itself fails, the marker stays
+        // set and the bytes stay uncollectable, which is the conservative
+        // end of the trade — a bounded leak rather than content the sweep
+        // would delete while something still believed it existed. The
+        // original exception always wins; a failure inside the compensation
+        // is suppressed rather than allowed to mask why the write failed.
+        //
+        // <b>It catches this one exception type and no other, and that is
+        // the whole safety argument.</b> The supersession guard throws
+        // strictly *before* `store.SaveAsync`, so on this path — and only on
+        // this path — it is known that nothing was written and deleting the
+        // content is a true rollback. Any other exception may have been
+        // raised *after* the state landed durably, in which case the
+        // attachment is live and referenced and deleting its bytes would be
+        // real data loss, not cleanup. The first version of this fix caught
+        // everything, and `SweepAsync_AStaleMarker_LeavesContentUncollected‐
+        // RatherThanErroring` — which simulates a failure after a successful
+        // save — caught it doing exactly that. For those cases the original,
+        // conservative behaviour stands: a stale marker, content left
+        // uncollected, and no deletion.
+        try
+        {
+            await PersistStateAsync(cancellationToken).ConfigureAwait(false);
+        }
+        catch (SupersededEngineeringObjectException)
+        {
+            lock (_attachments) { _attachments.Remove(attachment); }
+
+            try
+            {
+                await contentStore.DeleteAsync(attachmentId, CancellationToken.None).ConfigureAwait(false);
+
+                if (writeIntentStore is not null)
+                    await writeIntentStore.ClearAsync(attachmentId, CancellationToken.None).ConfigureAwait(false);
+            }
+            catch
+            {
+                // Deliberately swallowed. The marker remains set and the
+                // bytes remain uncollectable, which is safe; re-throwing
+                // here would replace the real cause with a cleanup failure.
+            }
+
+            throw;
+        }
 
         // Clear last, only once the state that references this attachment
         // is itself durable — a crash before this point leaves a stale
