@@ -34,7 +34,7 @@ public static class ReferenceQuantityCodec
     public const string SupportedDimensionNames =
         "Length, Mass, Duration, Force, Pressure, Area, Volume, RotationalSpeed, PlaneAngle, Temperature, "
         + "MassDensity, Stiffness, Torque, ThermalConductivity, ThermalExpansion, SpecificHeatCapacity, "
-        + "Acceleration, Energy, Velocity, Dimensionless";
+        + "Acceleration, Energy, Velocity, Power, TorsionalStiffness, Dimensionless";
 
     /// <summary>Returns whether <paramref name="value"/> is a supported <see cref="Quantity{TDimension}"/> closed generic.</summary>
     public static bool IsSupported(object value) => value switch
@@ -58,6 +58,8 @@ public static class ReferenceQuantityCodec
         Quantity<Acceleration> => true,
         Quantity<Energy> => true,
         Quantity<Velocity> => true,
+        Quantity<Power> => true,
+        Quantity<TorsionalStiffness> => true,
         Quantity<Dimensionless> => true,
         _ => false
     };
@@ -84,6 +86,8 @@ public static class ReferenceQuantityCodec
         Quantity<Acceleration> => "Acceleration",
         Quantity<Energy> => "Energy",
         Quantity<Velocity> => "Velocity",
+        Quantity<Power> => "Power",
+        Quantity<TorsionalStiffness> => "TorsionalStiffness",
         Quantity<Dimensionless> => "Dimensionless",
         _ => null
     };
@@ -120,6 +124,8 @@ public static class ReferenceQuantityCodec
             Quantity<Acceleration> q => Parts(q.Value, q.Unit.Symbol, q.Unit.ToBaseUnitFactor, q.Unit.ToBaseUnitOffset),
             Quantity<Energy> q => Parts(q.Value, q.Unit.Symbol, q.Unit.ToBaseUnitFactor, q.Unit.ToBaseUnitOffset),
             Quantity<Velocity> q => Parts(q.Value, q.Unit.Symbol, q.Unit.ToBaseUnitFactor, q.Unit.ToBaseUnitOffset),
+            Quantity<Power> q => Parts(q.Value, q.Unit.Symbol, q.Unit.ToBaseUnitFactor, q.Unit.ToBaseUnitOffset),
+            Quantity<TorsionalStiffness> q => Parts(q.Value, q.Unit.Symbol, q.Unit.ToBaseUnitFactor, q.Unit.ToBaseUnitOffset),
             Quantity<Dimensionless> q => Parts(q.Value, q.Unit.Symbol, q.Unit.ToBaseUnitFactor, q.Unit.ToBaseUnitOffset),
             _ => throw new ReferenceDataException("ReferenceData", $"Unsupported quantity '{value.GetType()}'."),
         };
@@ -156,6 +162,8 @@ public static class ReferenceQuantityCodec
             "Acceleration" => new Quantity<Acceleration>(value, new Unit<Acceleration>(symbol, factor, offset)),
             "Energy" => new Quantity<Energy>(value, new Unit<Energy>(symbol, factor, offset)),
             "Velocity" => new Quantity<Velocity>(value, new Unit<Velocity>(symbol, factor, offset)),
+            "Power" => new Quantity<Power>(value, new Unit<Power>(symbol, factor, offset)),
+            "TorsionalStiffness" => new Quantity<TorsionalStiffness>(value, new Unit<TorsionalStiffness>(symbol, factor, offset)),
             "Dimensionless" => new Quantity<Dimensionless>(value, new Unit<Dimensionless>(symbol, factor, offset)),
             _ => throw new ReferenceDataException(
                 "ReferenceData",
