@@ -1,8 +1,9 @@
+using Tempest.Core.ReferenceData;
 using Tempest.Core.UnitsAndQuantities;
 
 namespace Tempest.Core.Bearings;
 
-/// <summary>The stable property keys a <see cref="BearingComparisonResult"/> uses for its own rows.</summary>
+/// <summary>The stable property keys a <see cref="ReferenceComparisonResult"/> uses for its own rows.</summary>
 public static class BearingComparisonProperties
 {
     /// <summary>Manufacturer.</summary>
@@ -106,7 +107,7 @@ public static class BearingComparisonProperties
 /// </para>
 /// <para>
 /// Bearings of different families compare perfectly well here — that is
-/// the point of <see cref="BearingPropertyAvailability.NotApplicable"/>.
+/// the point of <see cref="ReferencePropertyAvailability.NotApplicable"/>.
 /// Comparing a tapered roller bearing against a deep-groove ball bearing
 /// yields a contact-angle row where one cell holds a value and the other
 /// says the property does not apply, rather than a blank that reads as a
@@ -121,31 +122,14 @@ public static class BearingComparer
     /// </summary>
     /// <exception cref="ArgumentNullException"><paramref name="bearings"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException"><paramref name="bearings"/> is empty, or contains a <see langword="null"/>.</exception>
-    public static BearingComparisonResult Compare(IReadOnlyList<IBearing> bearings)
-    {
-        ArgumentNullException.ThrowIfNull(bearings);
+    public static ReferenceComparisonResult Compare(IReadOnlyList<IReferenceRecord<BearingDefinition>> bearings) =>
+        ReferenceComparer.Compare(
+            bearings,
+            BearingComparisonProperties.All,
+            CellFor,
+            bearing => bearing.Definition.Family.ToString());
 
-        if (bearings.Count == 0)
-            throw new ArgumentException("A comparison needs at least one bearing.", nameof(bearings));
-
-        if (bearings.Any(bearing => bearing is null))
-            throw new ArgumentException("A comparison cannot include a null bearing.", nameof(bearings));
-
-        var rows = BearingComparisonProperties.All
-            .Select(property => new BearingComparisonRow(
-                property,
-                bearings.Select(bearing => CellFor(bearing, property)).ToList()))
-            .ToList();
-
-        return new BearingComparisonResult(
-            bearings.Select(bearing => bearing.BearingId).ToList(),
-            rows)
-        {
-            IsSingleFamily = bearings.Select(bearing => bearing.Definition.Family).Distinct().Count() == 1,
-        };
-    }
-
-    private static BearingComparisonCell CellFor(IBearing bearing, string property)
+    private static ReferenceComparisonCell CellFor(IReferenceRecord<BearingDefinition> bearing, string property)
     {
         var definition = bearing.Definition;
         var family = definition.Family;
@@ -182,7 +166,7 @@ public static class BearingComparer
             BearingComparisonProperties.ContactAngle => ContactAngleCell(configuration, family),
 
             BearingComparisonProperties.ConstructionClass => construction is null || construction.Class == BearingConstructionClass.Unspecified
-                ? BearingComparisonCell.NotRecorded
+                ? ReferenceComparisonCell.NotRecorded
                 : Text(construction.Class.ToString()),
             BearingComparisonProperties.RingMaterial => Text(construction?.RingMaterialId),
             BearingComparisonProperties.RollingElementMaterial => ApplicableText(
@@ -192,15 +176,15 @@ public static class BearingComparer
 
             BearingComparisonProperties.ValidationState => Text(bearing.ValidationState.ToString()),
 
-            _ => BearingComparisonCell.NotRecorded
+            _ => ReferenceComparisonCell.NotRecorded
         };
     }
 
-    private static BearingComparisonCell SealingCell(BearingConfiguration? configuration)
+    private static ReferenceComparisonCell SealingCell(BearingConfiguration? configuration)
     {
         var sealing = configuration?.Sealing;
         if (sealing is null)
-            return BearingComparisonCell.NotRecorded;
+            return ReferenceComparisonCell.NotRecorded;
 
         // The manufacturer's own designation is shown alongside the common
         // classification, never instead of it: a reader comparing an
@@ -210,58 +194,44 @@ public static class BearingComparer
             ? sealing.Type.ToString()
             : $"{sealing.Type} ({sealing.ManufacturerDesignation})";
 
-        return new BearingComparisonCell(BearingPropertyAvailability.Recorded, display);
+        return new ReferenceComparisonCell(ReferencePropertyAvailability.Recorded, display);
     }
 
-    private static BearingComparisonCell RowsCell(BearingConfiguration? configuration, BearingFamily family)
+    private static ReferenceComparisonCell RowsCell(BearingConfiguration? configuration, BearingFamily family)
     {
         if (BearingFamilyTraits.IsApplicabilityKnown(family) && !BearingFamilyTraits.HasRowConfiguration(family))
-            return BearingComparisonCell.NotApplicable;
+            return ReferenceComparisonCell.NotApplicable;
 
         var rows = configuration?.Rows ?? BearingRowConfiguration.Unspecified;
         return rows == BearingRowConfiguration.Unspecified
-            ? BearingComparisonCell.NotRecorded
-            : new BearingComparisonCell(BearingPropertyAvailability.Recorded, rows.ToString());
+            ? ReferenceComparisonCell.NotRecorded
+            : new ReferenceComparisonCell(ReferencePropertyAvailability.Recorded, rows.ToString());
     }
 
-    private static BearingComparisonCell ContactAngleCell(BearingConfiguration? configuration, BearingFamily family)
+    private static ReferenceComparisonCell ContactAngleCell(BearingConfiguration? configuration, BearingFamily family)
     {
         if (BearingFamilyTraits.IsApplicabilityKnown(family) && !BearingFamilyTraits.HasContactAngle(family))
-            return BearingComparisonCell.NotApplicable;
+            return ReferenceComparisonCell.NotApplicable;
 
         return Dimensioned(configuration?.ContactAngle);
     }
 
-    private static BearingComparisonCell Speed(BearingDefinition definition, BearingSpeedRatingKind kind)
+    private static ReferenceComparisonCell Speed(BearingDefinition definition, BearingSpeedRatingKind kind)
     {
         var rating = definition.SpeedRatings.FirstOrDefault(speed => speed.Kind == kind);
-        return rating is null
-            ? BearingComparisonCell.NotRecorded
-            : new BearingComparisonCell(BearingPropertyAvailability.Recorded, rating.Rating.Value.ToString(), rating.Rating.CanonicalValue);
+        return ReferenceComparer.Sourced(rating?.Rating);
     }
 
-    private static BearingComparisonCell Rated<TDimension>(BearingRatedValue<TDimension>? rated)
-        where TDimension : IDimension =>
-        rated is null
-            ? BearingComparisonCell.NotRecorded
-            : new BearingComparisonCell(BearingPropertyAvailability.Recorded, rated.Value.ToString(), rated.CanonicalValue);
+    // Cell construction itself is shared with every other Group A library
+    // — only which cell a bearing property maps to is bearing-specific.
+    private static ReferenceComparisonCell Rated<TDimension>(ReferenceValue<TDimension>? rated)
+        where TDimension : IDimension => ReferenceComparer.Sourced(rated);
 
-    private static BearingComparisonCell Dimensioned<TDimension>(Quantity<TDimension>? quantity)
-        where TDimension : IDimension =>
-        quantity is null
-            ? BearingComparisonCell.NotRecorded
-            : new BearingComparisonCell(
-                BearingPropertyAvailability.Recorded,
-                quantity.Value.ToString(),
-                quantity.Value.Value * quantity.Value.Unit.ToBaseUnitFactor);
+    private static ReferenceComparisonCell Dimensioned<TDimension>(Quantity<TDimension>? quantity)
+        where TDimension : IDimension => ReferenceComparer.Dimensioned(quantity);
 
-    private static BearingComparisonCell Text(string? value) =>
-        string.IsNullOrWhiteSpace(value)
-            ? BearingComparisonCell.NotRecorded
-            : new BearingComparisonCell(BearingPropertyAvailability.Recorded, value);
+    private static ReferenceComparisonCell Text(string? value) => ReferenceComparisonCell.Text(value);
 
-    private static BearingComparisonCell ApplicableText(string? value, BearingFamily family, bool applicable) =>
-        BearingFamilyTraits.IsApplicabilityKnown(family) && !applicable
-            ? BearingComparisonCell.NotApplicable
-            : Text(value);
+    private static ReferenceComparisonCell ApplicableText(string? value, BearingFamily family, bool applicable) =>
+        ReferenceComparisonCell.Applicable(value, applicable, BearingFamilyTraits.IsApplicabilityKnown(family));
 }

@@ -1,4 +1,5 @@
 using Tempest.Core.Bearings;
+using Tempest.Core.ReferenceData;
 using Tempest.Core.UnitsAndQuantities;
 
 namespace Tempest.Core.Tests.Bearings;
@@ -28,7 +29,7 @@ public class BearingSearchTests
 
         var results = await catalog.SearchAsync(new BearingQuery());
 
-        Assert.Equal(["brg-large", "brg-medium", "brg-plain", "brg-small", "brg-taper"], results.Select(b => b.BearingId));
+        Assert.Equal(["brg-large", "brg-medium", "brg-plain", "brg-small", "brg-taper"], results.Select(b => b.Id));
     }
 
     [Fact]
@@ -66,7 +67,7 @@ public class BearingSearchTests
 
         var results = await catalog.SearchAsync(new BearingQuery { PartNumberContains = "62" });
 
-        Assert.Equal(["brg-medium"], results.Select(b => b.BearingId));
+        Assert.Equal(["brg-medium"], results.Select(b => b.Id));
     }
 
     [Fact]
@@ -76,7 +77,7 @@ public class BearingSearchTests
 
         var results = await catalog.SearchAsync(new BearingQuery { DesignationContains = "fx-63" });
 
-        Assert.Equal(["brg-large"], results.Select(b => b.BearingId));
+        Assert.Equal(["brg-large"], results.Select(b => b.Id));
     }
 
     [Fact]
@@ -86,7 +87,7 @@ public class BearingSearchTests
 
         var results = await catalog.SearchAsync(new BearingQuery { Series = "FX-302" });
 
-        Assert.Equal(["brg-taper"], results.Select(b => b.BearingId));
+        Assert.Equal(["brg-taper"], results.Select(b => b.Id));
     }
 
     [Fact]
@@ -96,7 +97,7 @@ public class BearingSearchTests
 
         var results = await catalog.SearchAsync(new BearingQuery { Series = "FX-60" });
 
-        Assert.DoesNotContain("brg-plain", results.Select(b => b.BearingId));
+        Assert.DoesNotContain("brg-plain", results.Select(b => b.Id));
     }
 
     [Fact]
@@ -109,7 +110,7 @@ public class BearingSearchTests
             Families = [BearingFamily.TaperedRoller, BearingFamily.Plain],
         });
 
-        Assert.Equal(["brg-plain", "brg-taper"], results.Select(b => b.BearingId));
+        Assert.Equal(["brg-plain", "brg-taper"], results.Select(b => b.Id));
     }
 
     [Fact]
@@ -123,7 +124,7 @@ public class BearingSearchTests
             BoreMaximum = BearingFixtures.Millimetres(25),
         });
 
-        Assert.Equal(["brg-medium", "brg-plain", "brg-small", "brg-taper"], results.Select(b => b.BearingId));
+        Assert.Equal(["brg-medium", "brg-plain", "brg-small", "brg-taper"], results.Select(b => b.Id));
     }
 
     [Fact]
@@ -138,7 +139,7 @@ public class BearingSearchTests
             BoreMinimum = new Quantity<Length>(1.5, LengthUnits.Inch),
         });
 
-        Assert.Equal(["brg-large"], results.Select(b => b.BearingId));
+        Assert.Equal(["brg-large"], results.Select(b => b.Id));
     }
 
     [Fact]
@@ -151,7 +152,7 @@ public class BearingSearchTests
             OutsideDiameterMinimum = BearingFixtures.Millimetres(50),
         });
 
-        Assert.Equal(["brg-large", "brg-medium"], results.Select(b => b.BearingId));
+        Assert.Equal(["brg-large", "brg-medium"], results.Select(b => b.Id));
     }
 
     [Fact]
@@ -164,7 +165,7 @@ public class BearingSearchTests
             WidthMinimum = BearingFixtures.Millimetres(15),
         });
 
-        Assert.Equal(["brg-large", "brg-medium"], results.Select(b => b.BearingId));
+        Assert.Equal(["brg-large", "brg-medium"], results.Select(b => b.Id));
     }
 
     [Fact]
@@ -177,7 +178,7 @@ public class BearingSearchTests
             BasicDynamicRadialMinimum = BearingFixtures.Kilonewtons(10),
         });
 
-        Assert.Equal(["brg-taper"], results.Select(b => b.BearingId));
+        Assert.Equal(["brg-taper"], results.Select(b => b.Id));
     }
 
     [Fact]
@@ -190,7 +191,7 @@ public class BearingSearchTests
             BasicStaticRadialMinimum = BearingFixtures.Kilonewtons(5),
         });
 
-        Assert.Equal(["brg-taper"], results.Select(b => b.BearingId));
+        Assert.Equal(["brg-taper"], results.Select(b => b.Id));
     }
 
     [Fact]
@@ -205,7 +206,7 @@ public class BearingSearchTests
             BasicDynamicRadialMinimum = BearingFixtures.Kilonewtons(0.001),
         });
 
-        Assert.DoesNotContain("brg-plain", results.Select(b => b.BearingId));
+        Assert.DoesNotContain("brg-plain", results.Select(b => b.Id));
     }
 
     [Fact]
@@ -218,7 +219,7 @@ public class BearingSearchTests
             MassMaximum = BearingFixtures.Kilograms(0.005),
         });
 
-        Assert.Equal(["brg-plain"], results.Select(b => b.BearingId));
+        Assert.Equal(["brg-plain"], results.Select(b => b.Id));
     }
 
     [Fact]
@@ -231,7 +232,7 @@ public class BearingSearchTests
             SpeedMinimum = BearingFixtures.RevolutionsPerMinute(25000),
         });
 
-        Assert.Equal(["brg-large", "brg-medium", "brg-small"], results.Select(b => b.BearingId));
+        Assert.Equal(["brg-large", "brg-medium", "brg-small"], results.Select(b => b.Id));
     }
 
     [Fact]
@@ -263,7 +264,7 @@ public class BearingSearchTests
 
         var results = await catalog.SearchAsync(new BearingQuery { Sealing = BearingSealingType.ContactSeal });
 
-        Assert.Equal(["brg-sealed"], results.Select(b => b.BearingId));
+        Assert.Equal(["brg-sealed"], results.Select(b => b.Id));
     }
 
     [Fact]
@@ -273,7 +274,7 @@ public class BearingSearchTests
 
         var results = await catalog.SearchAsync(new BearingQuery { InternalClearanceClass = "cn" });
 
-        Assert.Equal(["brg-large", "brg-medium", "brg-small"], results.Select(b => b.BearingId));
+        Assert.Equal(["brg-large", "brg-medium", "brg-small"], results.Select(b => b.Id));
     }
 
     [Fact]
@@ -288,7 +289,7 @@ public class BearingSearchTests
 
         var results = await catalog.SearchAsync(new BearingQuery { PrecisionClass = "P5" });
 
-        Assert.Equal(["brg-precision"], results.Select(b => b.BearingId));
+        Assert.Equal(["brg-precision"], results.Select(b => b.Id));
     }
 
     [Fact]
@@ -310,8 +311,8 @@ public class BearingSearchTests
         var byElement = await catalog.SearchAsync(new BearingQuery { ReferencesMaterialId = "ceramic-si3n4" });
         var byClass = await catalog.SearchAsync(new BearingQuery { ConstructionClass = BearingConstructionClass.Hybrid });
 
-        Assert.Equal(["brg-hybrid"], byElement.Select(b => b.BearingId));
-        Assert.Equal(["brg-hybrid"], byClass.Select(b => b.BearingId));
+        Assert.Equal(["brg-hybrid"], byElement.Select(b => b.Id));
+        Assert.Equal(["brg-hybrid"], byClass.Select(b => b.Id));
     }
 
     [Fact]
@@ -319,12 +320,12 @@ public class BearingSearchTests
     {
         var catalog = BearingFixtures.BuildCatalog();
         await catalog.RegisterAsync("brg-draft", BearingFixtures.DeepGrooveBall("FX-6000"));
-        await catalog.RegisterAsync("brg-released", BearingFixtures.DeepGrooveBall("FX-6205", provenance: BearingFixtures.VerifiedProvenance()));
+        await catalog.RegisterAsync("brg-released", BearingFixtures.DeepGrooveBall("FX-6205"), BearingFixtures.VerifiedProvenance());
         await BearingFixtures.ReleaseAsync(catalog, "brg-released");
 
-        var released = await catalog.SearchAsync(new BearingQuery { ValidationStates = [BearingValidationState.Released] });
+        var released = await catalog.SearchAsync(new BearingQuery { ValidationStates = [ReferenceValidationState.Released] });
 
-        Assert.Equal(["brg-released"], released.Select(b => b.BearingId));
+        Assert.Equal(["brg-released"], released.Select(b => b.Id));
     }
 
     [Fact]
@@ -337,10 +338,10 @@ public class BearingSearchTests
             Families = [BearingFamily.DeepGrooveBall],
             BoreMinimum = BearingFixtures.Millimetres(20),
             OutsideDiameterMaximum = BearingFixtures.Millimetres(60),
-            ValidationStates = [BearingValidationState.Draft],
+            ValidationStates = [ReferenceValidationState.Draft],
         });
 
-        Assert.Equal(["brg-medium"], results.Select(b => b.BearingId));
+        Assert.Equal(["brg-medium"], results.Select(b => b.Id));
     }
 
     [Fact]
@@ -366,6 +367,6 @@ public class BearingSearchTests
         var first = await catalog.SearchAsync(query);
         var second = await catalog.SearchAsync(query);
 
-        Assert.Equal(first.Select(b => b.BearingId), second.Select(b => b.BearingId));
+        Assert.Equal(first.Select(b => b.Id), second.Select(b => b.Id));
     }
 }

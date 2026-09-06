@@ -1,4 +1,5 @@
 using Tempest.Core.Bearings;
+using Tempest.Core.ReferenceData;
 
 namespace Tempest.Core.Tests.Bearings;
 
@@ -7,9 +8,9 @@ namespace Tempest.Core.Tests.Bearings;
 // that a cross-family comparison depends on.
 public class BearingComparisonTests
 {
-    private static async Task<IReadOnlyList<IBearing>> RegisterAsync(BearingCatalog catalog, params (string Id, BearingDefinition Definition)[] entries)
+    private static async Task<IReadOnlyList<IReferenceRecord<BearingDefinition>>> RegisterAsync(BearingCatalog catalog, params (string Id, BearingDefinition Definition)[] entries)
     {
-        var bearings = new List<IBearing>();
+        var bearings = new List<IReferenceRecord<BearingDefinition>>();
         foreach (var (id, definition) in entries)
             bearings.Add(await catalog.RegisterAsync(id, definition));
 
@@ -39,7 +40,7 @@ public class BearingComparisonTests
 
         var comparison = BearingComparer.Compare(bearings);
 
-        Assert.Equal(["brg-0001", "brg-0002"], comparison.BearingIds);
+        Assert.Equal(["brg-0001", "brg-0002"], comparison.RecordIds);
         Assert.Equal(BearingComparisonProperties.All.Count, comparison.Rows.Count);
         Assert.All(comparison.Rows, row => Assert.Equal(2, row.Cells.Count));
     }
@@ -55,7 +56,7 @@ public class BearingComparisonTests
 
         var bore = BearingComparer.Compare(bearings).Row(BearingComparisonProperties.Bore)!;
 
-        Assert.All(bore.Cells, cell => Assert.Equal(BearingPropertyAvailability.Recorded, cell.Availability));
+        Assert.All(bore.Cells, cell => Assert.Equal(ReferencePropertyAvailability.Recorded, cell.Availability));
         Assert.Equal(0.010, bore.Cells[0].CanonicalValue!.Value, 12);
         Assert.Equal(0.025, bore.Cells[1].CanonicalValue!.Value, 12);
     }
@@ -83,7 +84,7 @@ public class BearingComparisonTests
 
         var row = BearingComparer.Compare(bearings).Row(BearingComparisonProperties.BasicDynamicAxial)!;
 
-        Assert.All(row.Cells, cell => Assert.Equal(BearingPropertyAvailability.NotRecorded, cell.Availability));
+        Assert.All(row.Cells, cell => Assert.Equal(ReferencePropertyAvailability.NotRecorded, cell.Availability));
         Assert.All(row.Cells, cell => Assert.Null(cell.Display));
         Assert.All(row.Cells, cell => Assert.Null(cell.CanonicalValue));
         Assert.False(row.AnyRecorded);
@@ -99,8 +100,8 @@ public class BearingComparisonTests
         var bearings = await RegisterAsync(catalog, ("brg-0001", withMass), ("brg-0002", withoutMass));
         var row = BearingComparer.Compare(bearings).Row(BearingComparisonProperties.Mass)!;
 
-        Assert.Equal(BearingPropertyAvailability.Recorded, row.Cells[0].Availability);
-        Assert.Equal(BearingPropertyAvailability.NotRecorded, row.Cells[1].Availability);
+        Assert.Equal(ReferencePropertyAvailability.Recorded, row.Cells[0].Availability);
+        Assert.Equal(ReferencePropertyAvailability.NotRecorded, row.Cells[1].Availability);
         Assert.True(row.AnyRecorded);
     }
 
@@ -119,8 +120,8 @@ public class BearingComparisonTests
         var comparison = BearingComparer.Compare(bearings);
         var contactAngle = comparison.Row(BearingComparisonProperties.ContactAngle)!;
 
-        Assert.Equal(BearingPropertyAvailability.NotApplicable, contactAngle.Cells[0].Availability);
-        Assert.Equal(BearingPropertyAvailability.Recorded, contactAngle.Cells[1].Availability);
+        Assert.Equal(ReferencePropertyAvailability.NotApplicable, contactAngle.Cells[0].Availability);
+        Assert.Equal(ReferencePropertyAvailability.Recorded, contactAngle.Cells[1].Availability);
         Assert.False(comparison.IsSingleFamily);
     }
 
@@ -135,10 +136,10 @@ public class BearingComparisonTests
 
         var comparison = BearingComparer.Compare(bearings);
 
-        Assert.Equal(BearingPropertyAvailability.NotApplicable, comparison.Row(BearingComparisonProperties.Rows)!.Cells[1].Availability);
-        Assert.Equal(BearingPropertyAvailability.NotApplicable, comparison.Row(BearingComparisonProperties.InternalClearanceClass)!.Cells[1].Availability);
-        Assert.Equal(BearingPropertyAvailability.NotApplicable, comparison.Row(BearingComparisonProperties.RollingElementMaterial)!.Cells[1].Availability);
-        Assert.Equal(BearingPropertyAvailability.NotApplicable, comparison.Row(BearingComparisonProperties.CageMaterial)!.Cells[1].Availability);
+        Assert.Equal(ReferencePropertyAvailability.NotApplicable, comparison.Row(BearingComparisonProperties.Rows)!.Cells[1].Availability);
+        Assert.Equal(ReferencePropertyAvailability.NotApplicable, comparison.Row(BearingComparisonProperties.InternalClearanceClass)!.Cells[1].Availability);
+        Assert.Equal(ReferencePropertyAvailability.NotApplicable, comparison.Row(BearingComparisonProperties.RollingElementMaterial)!.Cells[1].Availability);
+        Assert.Equal(ReferencePropertyAvailability.NotApplicable, comparison.Row(BearingComparisonProperties.CageMaterial)!.Cells[1].Availability);
     }
 
     [Fact]
@@ -185,7 +186,7 @@ public class BearingComparisonTests
     {
         var catalog = BearingFixtures.BuildCatalog();
         await catalog.RegisterAsync("brg-draft", BearingFixtures.DeepGrooveBall("FX-6000"));
-        await catalog.RegisterAsync("brg-released", BearingFixtures.DeepGrooveBall("FX-6205", 25, 52, 15, BearingFixtures.VerifiedProvenance()));
+        await catalog.RegisterAsync("brg-released", BearingFixtures.DeepGrooveBall("FX-6205", 25, 52, 15), BearingFixtures.VerifiedProvenance());
         await BearingFixtures.ReleaseAsync(catalog, "brg-released");
 
         var bearings = new[] { (await catalog.FindAsync("brg-draft"))!, (await catalog.FindAsync("brg-released"))! };

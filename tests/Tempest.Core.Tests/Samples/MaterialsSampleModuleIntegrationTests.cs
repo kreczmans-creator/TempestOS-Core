@@ -101,7 +101,7 @@ public class MaterialsSampleModuleIntegrationTests
 
         Assert.NotNull(material);
         Assert.Equal(2, material!.RevisionNumber);
-        var yieldStrength = (Quantity<Pressure>)material.Properties["YieldStrength"].Value;
+        var yieldStrength = (Quantity<Pressure>)material.Definition.Properties["YieldStrength"].Value;
         Assert.Equal(105.0, yieldStrength.Value);
     }
 

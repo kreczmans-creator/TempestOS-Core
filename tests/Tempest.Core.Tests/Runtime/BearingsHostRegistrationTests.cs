@@ -1,4 +1,5 @@
 using Tempest.Core.Bearings;
+using Tempest.Core.ReferenceData;
 using Tempest.Core.Configuration;
 using Tempest.Core.Persistence;
 using Tempest.Core.Runtime;
@@ -106,15 +107,14 @@ public class BearingsHostRegistrationTests
                         10.0, Tempest.Core.UnitsAndQuantities.LengthUnits.Millimetre),
                     OutsideDiameter: new Tempest.Core.UnitsAndQuantities.Quantity<Tempest.Core.UnitsAndQuantities.Length>(
                         26.0, Tempest.Core.UnitsAndQuantities.LengthUnits.Millimetre)),
-                Provenance = BearingProvenance.Unknown,
             };
 
-            var bearing = await catalog.RegisterAsync("registration-test", definition);
-            var found = await catalog.FindAsync(bearing.BearingId);
+            var bearing = await catalog.RegisterAsync("registration-test", definition, ReferenceProvenance.Unknown);
+            var found = await catalog.FindAsync(bearing.Id);
 
             Assert.NotNull(found);
             Assert.Equal("FX-REG-001", found!.Definition.Identity.ManufacturerPartNumber);
-            Assert.Equal(BearingValidationState.Draft, found.ValidationState);
+            Assert.Equal(ReferenceValidationState.Draft, found.ValidationState);
         });
     }
 
@@ -137,14 +137,13 @@ public class BearingsHostRegistrationTests
                         10.0, Tempest.Core.UnitsAndQuantities.LengthUnits.Millimetre),
                     OutsideDiameter: new Tempest.Core.UnitsAndQuantities.Quantity<Tempest.Core.UnitsAndQuantities.Length>(
                         26.0, Tempest.Core.UnitsAndQuantities.LengthUnits.Millimetre)),
-                Provenance = BearingProvenance.Unknown,
                 Construction = new BearingConstruction(RingMaterialId: "never-registered-material"),
             };
 
-            await catalog.RegisterAsync("registration-materials-test", definition);
+            await catalog.RegisterAsync("registration-materials-test", definition, ReferenceProvenance.Unknown);
             var result = await validator.ValidateAsync("registration-materials-test");
 
-            Assert.Contains(result.Warnings, warning => warning.Code == BearingValidationRules.MaterialReferenceUnresolved);
+            Assert.Contains(result.Warnings, warning => warning.Code == ReferenceValidationRules.MaterialReferenceUnresolved);
         });
     }
 }

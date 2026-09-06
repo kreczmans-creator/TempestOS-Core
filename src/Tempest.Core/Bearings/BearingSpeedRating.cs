@@ -1,5 +1,7 @@
 using Tempest.Core.UnitsAndQuantities;
 
+using Tempest.Core.ReferenceData;
+
 namespace Tempest.Core.Bearings;
 
 /// <summary>
@@ -15,5 +17,5 @@ namespace Tempest.Core.Bearings;
 /// <param name="ManufacturerDesignation">The source's own label for this rating, verbatim. <see langword="null"/> if none was given.</param>
 public sealed record BearingSpeedRating(
     BearingSpeedRatingKind Kind,
-    BearingRatedValue<RotationalSpeed> Rating,
+    ReferenceValue<RotationalSpeed> Rating,
     string? ManufacturerDesignation = null);

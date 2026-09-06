@@ -5,6 +5,7 @@ using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Events;
 using Tempest.Core.Identity;
 using Tempest.Core.Materials;
+using Tempest.Core.ReferenceData;
 using Tempest.Core.Persistence;
 using Tempest.Core.Requirements;
 using Tempest.Core.Settings;
@@ -91,12 +92,11 @@ public class ProjectEngineeringIntegrationTests
         await rig.Navigator.GoToEngineeringAsync();
 
         // Material — a real catalogue entry with real provenance.
-        var material = await materials.RegisterAsync(
-            "AL-7075", "Aluminium 7075-T6", BuildProperties(), category: "Metal");
+        var material = await materials.RegisterAsync("AL-7075", BuildDefinition(), FixtureProvenance);
 
         // Component, owned by the project, referencing that material.
         var part = await CreateInProjectAsync(rig.Domain, "Part", project.Id,
-            (doc, rev) => new Part(doc, rev, rig.Domain, "PN-1001", "Impeller", EngineeringObjectMetadata.Empty, material.MaterialId));
+            (doc, rev) => new Part(doc, rev, rig.Domain, "PN-1001", "Impeller", EngineeringObjectMetadata.Empty, material.Id));
 
         // Calculation, owned by the same project.
         var calculation = await CreateInProjectAsync(rig.Domain, "Calculation", project.Id,
@@ -116,8 +116,8 @@ public class ProjectEngineeringIntegrationTests
         Assert.Equal("AL-7075", part.MaterialId);
         var resolved = await materials.FindAsync(part.MaterialId!);
         Assert.NotNull(resolved);
-        Assert.Equal("Aluminium 7075-T6", resolved!.Name);
-        Assert.True(resolved.Properties.ContainsKey("YieldStrength"));
+        Assert.Equal("Fixture Aluminium Alloy", resolved!.Definition.Name);
+        Assert.True(resolved.Definition.Properties.ContainsKey(MaterialPropertyNames.YieldStrength));
 
         // Validation runs against the real rule set.
         var validation = await ((IValidatable)part).ValidateAsync();
@@ -226,17 +226,22 @@ public class ProjectEngineeringIntegrationTests
         Assert.DoesNotContain(manifoldPart.Id, apolloContents);
     }
 
-    private static IReadOnlyDictionary<string, MaterialProperty> BuildProperties() =>
-        new Dictionary<string, MaterialProperty>
+    private static ReferenceProvenance FixtureProvenance { get; } = new(
+        SourceOrganisation: "TestFixture Publications",
+        SourceDocument: "Test fixture — not a real material standard",
+        Notes: "Fictional test value.");
+
+    private static MaterialDefinition BuildDefinition() => new()
+    {
+        Name = "Fixture Aluminium Alloy",
+        Family = MaterialFamily.Aluminium,
+        Designation = "AL-FIXTURE-1",
+        Properties = new Dictionary<string, ReferenceQuantityValue>
         {
-            ["YieldStrength"] = new MaterialProperty(
+            [MaterialPropertyNames.YieldStrength] = new ReferenceQuantityValue(
                 new Quantity<Pressure>(503.0, PressureUnits.Megapascal),
-                new MaterialPropertyProvenance(
-                    SourceReference: "Test fixture — not a real material standard",
-                    SourceRevision: 1,
-                    ValidationStatus: MaterialPropertyValidationStatus.Validated,
-                    ConfidenceLevel: MaterialPropertyConfidenceLevel.High,
-                    ApplicableConditions: "Room temperature",
-                    Notes: "Fictional test value.")),
-        };
+                ReferenceValueOrigin.Unknown,
+                conditions: "Room temperature"),
+        },
+    };
 }

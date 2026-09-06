@@ -1,3 +1,4 @@
+using Tempest.Core.ReferenceData;
 using Tempest.Core.UnitsAndQuantities;
 
 namespace Tempest.Core.Bearings;
@@ -11,7 +12,7 @@ namespace Tempest.Core.Bearings;
 /// </remarks>
 internal static class BearingQueryEvaluator
 {
-    public static bool Matches(IBearing bearing, BearingQuery query)
+    public static bool Matches(IReferenceRecord<BearingDefinition> bearing, BearingQuery query)
     {
         var definition = bearing.Definition;
         var identity = definition.Identity;

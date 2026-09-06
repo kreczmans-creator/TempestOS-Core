@@ -1,5 +1,6 @@
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Materials;
+using Tempest.Core.ReferenceData;
 using Tempest.Core.UnitsAndQuantities;
 
 namespace Tempest.Core.Bearings;
@@ -7,103 +8,39 @@ namespace Tempest.Core.Bearings;
 /// <summary>The concrete <see cref="IBearingValidationService"/> implementation.</summary>
 /// <remarks>
 /// <para>
-/// A read-only service over <see cref="IBearingCatalog"/>, mirroring
-/// <see cref="Requirements.RequirementValidationService"/>'s own shape:
-/// it stores nothing, changes nothing, and never repairs what it finds.
+/// Provenance, verification attributability, supersession and reference
+/// resolution are checked by
+/// <see cref="ReferenceValidationService{TDefinition}"/>, shared with
+/// every Group A library. Everything below is bearing engineering: the
+/// dimensional relationships a bearing must satisfy, the ratings it must
+/// state positively where it states them at all, and the type-aware
+/// applicability <see cref="BearingFamilyTraits"/> defines.
 /// </para>
 /// <para>
-/// <see cref="IMaterialCatalog"/> is an <em>optional</em> collaborator.
-/// With it, a bearing's own material references are confirmed to resolve
-/// against the canonical Materials catalogue
-/// (<see cref="BearingValidationRules.MaterialReferenceUnresolved"/>);
-/// without it, that one rule is simply not evaluated. Optional rather than
-/// required deliberately — a bearing record must be recordable and
-/// checkable before the material it names has been registered, and A4 must
-/// not make the Materials system a hard prerequisite for holding bearing
-/// data at all.
+/// <see cref="IMaterialCatalog"/> is an optional collaborator — see the
+/// base class's own remarks for why.
 /// </para>
 /// </remarks>
-public sealed class BearingValidationService : IBearingValidationService
+public sealed class BearingValidationService : ReferenceValidationService<BearingDefinition>, IBearingValidationService
 {
     private const double DegreesPerRadian = 180.0 / Math.PI;
-
-    private readonly IBearingCatalog _catalog;
-    private readonly IMaterialCatalog? _materialCatalog;
 
     /// <summary>
     /// Initialises a new instance of the <see cref="BearingValidationService"/> class.
     /// </summary>
     /// <param name="catalog">The catalogue whose records this service validates.</param>
     /// <param name="materialCatalog">The canonical Materials catalogue, for confirming material references resolve. Optional.</param>
-    /// <exception cref="ArgumentNullException"><paramref name="catalog"/> is <see langword="null"/>.</exception>
-    public BearingValidationService(IBearingCatalog catalog, IMaterialCatalog? materialCatalog = null)
+    /// <param name="standardResolver">Resolves a cited standard against the Standards Library. Optional.</param>
+    public BearingValidationService(
+        IBearingCatalog catalog,
+        IMaterialCatalog? materialCatalog = null,
+        IStandardResolver? standardResolver = null)
+        : base(catalog, materialCatalog, standardResolver)
     {
-        ArgumentNullException.ThrowIfNull(catalog);
-
-        _catalog = catalog;
-        _materialCatalog = materialCatalog;
     }
 
     /// <inheritdoc />
-    public async Task<IValidationResult> ValidateAsync(string bearingId, CancellationToken cancellationToken = default)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(bearingId);
-
-        var bearing = await _catalog.FindAsync(bearingId, cancellationToken).ConfigureAwait(false)
-            ?? throw new BearingNotFoundException(bearingId);
-
-        return await ValidateAsync(bearing, catalogue: null, cancellationToken).ConfigureAwait(false);
-    }
-
-    /// <summary>
-    /// The shared body of both public validate paths.
-    /// <paramref name="catalogue"/> is the already-loaded catalogue when
-    /// one is available — <see cref="ValidateCatalogueAsync"/> reads the
-    /// whole catalogue once and passes it down, so validating N records
-    /// costs one enumeration rather than N.
-    /// </summary>
-    private async Task<IValidationResult> ValidateAsync(IBearing bearing, IReadOnlyList<IBearing>? catalogue, CancellationToken cancellationToken)
-    {
-        var errors = new List<IValidationDiagnostic>();
-        var warnings = new List<IValidationDiagnostic>();
-
-        await EvaluateDefinitionAsync(bearing.Definition, errors, warnings, cancellationToken).ConfigureAwait(false);
-        await EvaluateRecordAsync(bearing, catalogue, errors, warnings, cancellationToken).ConfigureAwait(false);
-
-        return new ValidationResult(errors, warnings);
-    }
-
-    /// <inheritdoc />
-    public async Task<IValidationResult> ValidateDefinitionAsync(BearingDefinition definition, CancellationToken cancellationToken = default)
-    {
-        ArgumentNullException.ThrowIfNull(definition);
-
-        var errors = new List<IValidationDiagnostic>();
-        var warnings = new List<IValidationDiagnostic>();
-
-        await EvaluateDefinitionAsync(definition, errors, warnings, cancellationToken).ConfigureAwait(false);
-
-        return new ValidationResult(errors, warnings);
-    }
-
-    /// <inheritdoc />
-    public async Task<BearingDataQualityReport> ValidateCatalogueAsync(CancellationToken cancellationToken = default)
-    {
-        var bearings = await _catalog.ListAsync(cancellationToken).ConfigureAwait(false);
-        var findings = new List<BearingDataQualityFinding>();
-
-        foreach (var bearing in bearings)
-        {
-            var result = await ValidateAsync(bearing, bearings, cancellationToken).ConfigureAwait(false);
-            if (result.Errors.Count > 0 || result.Warnings.Count > 0)
-                findings.Add(new BearingDataQualityFinding(bearing.BearingId, bearing.ValidationState, result));
-        }
-
-        return new BearingDataQualityReport(findings, bearings.Count);
-    }
-
-    /// <summary>Rules that read only the record's own engineering content.</summary>
-    private async Task EvaluateDefinitionAsync(
+    protected override async Task EvaluateDefinitionAsync(
         BearingDefinition definition,
         List<IValidationDiagnostic> errors,
         List<IValidationDiagnostic> warnings,
@@ -115,41 +52,41 @@ public sealed class BearingValidationService : IBearingValidationService
         EvaluateSpeedRatings(definition, errors, warnings);
         EvaluateMass(definition, errors);
         EvaluateConfiguration(definition, errors);
-        EvaluateProvenance(definition, errors, warnings);
-        await EvaluateMaterialsAsync(definition, warnings, cancellationToken).ConfigureAwait(false);
+        EvaluateConstruction(definition, warnings);
+
+        await EvaluateStandardReferencesAsync(definition.Standards, warnings, cancellationToken).ConfigureAwait(false);
+        await EvaluateMaterialReferencesAsync(
+            definition.Construction?.ReferencedMaterialIds ?? [],
+            warnings,
+            cancellationToken).ConfigureAwait(false);
     }
 
-    /// <summary>Rules that need the registered record, not just its content.</summary>
-    private async Task EvaluateRecordAsync(
-        IBearing bearing,
-        IReadOnlyList<IBearing>? catalogue,
+    /// <inheritdoc />
+    protected override async Task EvaluateRecordAsync(
+        IReferenceRecord<BearingDefinition> record,
+        IReadOnlyList<IReferenceRecord<BearingDefinition>>? library,
         List<IValidationDiagnostic> errors,
         List<IValidationDiagnostic> warnings,
         CancellationToken cancellationToken)
     {
-        if (bearing.ValidationState == BearingValidationState.Superseded && bearing.SupersededByBearingId is null)
-            warnings.Add(Diagnostic(
-                BearingValidationRules.SupersededWithoutReplacement,
-                $"Bearing '{bearing.BearingId}' is superseded but names no replacement."));
-
-        // Defence in depth: BearingCatalog already prevents this at write
-        // time (DuplicateBearingPartNumberException). Confirming it on read
+        // Defence in depth: the catalogue already prevents this at write
+        // time (DuplicateReferenceKeyException). Confirming it on read
         // catches a catalogue whose part-number index was written before
         // that guard existed, or corrupted since — the same reasoning
         // RequirementValidationService applies to duplicate identifiers.
-        var key = bearing.Definition.Identity.PartNumberKey;
-        var others = catalogue ?? await _catalog.ListAsync(cancellationToken).ConfigureAwait(false);
+        var key = record.Definition.Identity.PartNumberKey;
+        var others = library ?? await Catalog.ListAsync(cancellationToken).ConfigureAwait(false);
         var collisions = others
-            .Where(other => !string.Equals(other.BearingId, bearing.BearingId, StringComparison.Ordinal))
+            .Where(other => !string.Equals(other.Id, record.Id, StringComparison.Ordinal))
             .Where(other => string.Equals(other.Definition.Identity.PartNumberKey, key, StringComparison.Ordinal))
-            .Select(other => other.BearingId)
+            .Select(other => other.Id)
             .ToList();
 
         if (collisions.Count > 0)
             errors.Add(Diagnostic(
                 BearingValidationRules.DuplicatePartNumber,
-                $"Manufacturer '{bearing.Definition.Identity.Manufacturer}' part number "
-                + $"'{bearing.Definition.Identity.ManufacturerPartNumber}' is also registered as: {string.Join(", ", collisions)}."));
+                $"Manufacturer '{record.Definition.Identity.Manufacturer}' part number "
+                + $"'{record.Definition.Identity.ManufacturerPartNumber}' is also registered as: {string.Join(", ", collisions)}."));
     }
 
     private static void EvaluateClassification(BearingDefinition definition, List<IValidationDiagnostic> errors, List<IValidationDiagnostic> warnings)
@@ -208,7 +145,7 @@ public sealed class BearingValidationService : IBearingValidationService
     {
         var ratings = definition.LoadRatings;
 
-        if (ratings is null || !AnyRatingRecorded(ratings))
+        if (ratings is null || NamedRatings(ratings).Count == 0)
         {
             if (BearingFamilyTraits.HasRollingElements(definition.Family) && BearingFamilyTraits.IsApplicabilityKnown(definition.Family))
                 warnings.Add(Diagnostic(
@@ -219,38 +156,18 @@ public sealed class BearingValidationService : IBearingValidationService
         }
 
         foreach (var (label, rating) in NamedRatings(ratings))
-        {
-            if (rating.CanonicalValue <= 0)
-                errors.Add(Diagnostic(
-                    BearingValidationRules.LoadRatingMustBePositive,
-                    $"Load rating '{label}' is {rating.Value}; a recorded rating must be greater than zero. Omit it instead if the source gave none."));
-
-            if (rating.Origin == BearingValueOrigin.DerivedByTempestOS)
-                warnings.Add(Diagnostic(
-                    BearingValidationRules.DerivedValuePresent,
-                    $"Load rating '{label}' is derived by TempestOS and must not be presented as manufacturer reference data."));
-        }
+            EvaluatePositiveValue(rating, $"Load rating '{label}'", BearingValidationRules.LoadRatingMustBePositive, errors, warnings);
     }
 
     private static void EvaluateSpeedRatings(BearingDefinition definition, List<IValidationDiagnostic> errors, List<IValidationDiagnostic> warnings)
     {
         foreach (var speed in definition.SpeedRatings)
-        {
-            if (speed.Rating.CanonicalValue <= 0)
-                errors.Add(Diagnostic(
-                    BearingValidationRules.SpeedRatingMustBePositive,
-                    $"Speed rating '{speed.Kind}' is {speed.Rating.Value}; a recorded speed must be greater than zero."));
-
-            if (speed.Rating.Origin == BearingValueOrigin.DerivedByTempestOS)
-                warnings.Add(Diagnostic(
-                    BearingValidationRules.DerivedValuePresent,
-                    $"Speed rating '{speed.Kind}' is derived by TempestOS and must not be presented as manufacturer reference data."));
-        }
+            EvaluatePositiveValue(speed.Rating, $"Speed rating '{speed.Kind}'", BearingValidationRules.SpeedRatingMustBePositive, errors, warnings);
     }
 
     private static void EvaluateMass(BearingDefinition definition, List<IValidationDiagnostic> errors)
     {
-        if (definition.Mass is { } mass && mass.Value * mass.Unit.ToBaseUnitFactor < 0)
+        if (definition.Mass is { } mass && mass.BaseValue < 0)
             errors.Add(Diagnostic(
                 BearingValidationRules.MassMustNotBeNegative,
                 $"Mass is {mass}; a mass cannot be negative."));
@@ -272,7 +189,7 @@ public sealed class BearingValidationService : IBearingValidationService
                     BearingValidationRules.ContactAngleNotApplicableToFamily,
                     $"A contact angle is recorded, but a nominal contact angle is not a characteristic of a {family} bearing."));
 
-            var degrees = contactAngle.Value * contactAngle.Unit.ToBaseUnitFactor * DegreesPerRadian;
+            var degrees = contactAngle.BaseValue * DegreesPerRadian;
             if (degrees is <= 0 or > 90)
                 errors.Add(Diagnostic(
                     BearingValidationRules.ContactAngleOutOfRange,
@@ -297,22 +214,7 @@ public sealed class BearingValidationService : IBearingValidationService
                 $"Maximum radial internal clearance {configuration.RadialInternalClearanceMaximum} is less than the minimum {configuration.RadialInternalClearanceMinimum}."));
     }
 
-    private static void EvaluateProvenance(BearingDefinition definition, List<IValidationDiagnostic> errors, List<IValidationDiagnostic> warnings)
-    {
-        var provenance = definition.Provenance;
-
-        if (!provenance.IdentifiesASource)
-            warnings.Add(Diagnostic(
-                BearingValidationRules.ProvenanceMustIdentifyASource,
-                "Provenance names neither a source organisation nor a source document; this record cannot leave Draft until it does."));
-
-        if (provenance.VerificationStatus == BearingVerificationStatus.VerifiedAgainstSource && !provenance.IsVerified)
-            errors.Add(Diagnostic(
-                BearingValidationRules.VerificationMustBeAttributable,
-                "The record is marked verified against its source but names no reviewer, no verification date, or neither."));
-    }
-
-    private async Task EvaluateMaterialsAsync(BearingDefinition definition, List<IValidationDiagnostic> warnings, CancellationToken cancellationToken)
+    private static void EvaluateConstruction(BearingDefinition definition, List<IValidationDiagnostic> warnings)
     {
         var construction = definition.Construction;
         if (construction is null)
@@ -324,25 +226,11 @@ public sealed class BearingValidationService : IBearingValidationService
             warnings.Add(Diagnostic(
                 BearingValidationRules.RollingElementNotApplicableToFamily,
                 $"A rolling-element material is recorded, but a {definition.Family} bearing has no rolling elements."));
-
-        if (_materialCatalog is null)
-            return;
-
-        foreach (var materialId in construction.ReferencedMaterialIds)
-        {
-            var material = await _materialCatalog.FindAsync(materialId, cancellationToken).ConfigureAwait(false);
-            if (material is null)
-                warnings.Add(Diagnostic(
-                    BearingValidationRules.MaterialReferenceUnresolved,
-                    $"Material '{materialId}' is referenced but is not registered in the Materials catalogue."));
-        }
     }
 
-    private static bool AnyRatingRecorded(BearingLoadRatings ratings) => NamedRatings(ratings).Count > 0;
-
-    private static IReadOnlyList<(string Label, BearingRatedValue<Force> Rating)> NamedRatings(BearingLoadRatings ratings)
+    private static IReadOnlyList<(string Label, ReferenceValue<Force> Rating)> NamedRatings(BearingLoadRatings ratings)
     {
-        var named = new List<(string, BearingRatedValue<Force>)>();
+        var named = new List<(string, ReferenceValue<Force>)>();
 
         if (ratings.BasicDynamicRadial is { } c) named.Add(("C", c));
         if (ratings.BasicStaticRadial is { } c0) named.Add(("C0", c0));
@@ -355,6 +243,4 @@ public sealed class BearingValidationService : IBearingValidationService
 
         return named;
     }
-
-    private static IValidationDiagnostic Diagnostic(string code, string message) => new ValidationDiagnostic(code, message);
 }

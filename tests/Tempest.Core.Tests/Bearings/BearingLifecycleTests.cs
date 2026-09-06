@@ -1,4 +1,5 @@
 using Tempest.Core.Bearings;
+using Tempest.Core.ReferenceData;
 using Tempest.Core.EngineeringData;
 using Tempest.Core.EngineeringDomain;
 
@@ -19,9 +20,9 @@ public class BearingLifecycleTests
         var catalog = BearingFixtures.BuildCatalog();
         await catalog.RegisterAsync("brg-0001", BearingFixtures.DeepGrooveBall());
 
-        var checkedRecord = await catalog.SetValidationStateAsync("brg-0001", BearingValidationState.Checked, "Checked against fixture source.");
+        var checkedRecord = await catalog.SetValidationStateAsync("brg-0001", ReferenceValidationState.Checked, "Checked against fixture source.");
 
-        Assert.Equal(BearingValidationState.Checked, checkedRecord.ValidationState);
+        Assert.Equal(ReferenceValidationState.Checked, checkedRecord.ValidationState);
     }
 
     [Fact]
@@ -30,11 +31,11 @@ public class BearingLifecycleTests
         var catalog = BearingFixtures.BuildCatalog();
         await catalog.RegisterAsync("brg-0001", BearingFixtures.DeepGrooveBall());
 
-        var exception = await Assert.ThrowsAsync<InvalidBearingValidationStateTransitionException>(
-            () => catalog.SetValidationStateAsync("brg-0001", BearingValidationState.Released, null));
+        var exception = await Assert.ThrowsAsync<InvalidReferenceStateTransitionException>(
+            () => catalog.SetValidationStateAsync("brg-0001", ReferenceValidationState.Released, null));
 
-        Assert.Equal(BearingValidationState.Draft, exception.From);
-        Assert.Equal(BearingValidationState.Released, exception.To);
+        Assert.Equal(ReferenceValidationState.Draft, exception.From);
+        Assert.Equal(ReferenceValidationState.Released, exception.To);
     }
 
     [Fact]
@@ -42,11 +43,11 @@ public class BearingLifecycleTests
     {
         var catalog = BearingFixtures.BuildCatalog();
         await catalog.RegisterAsync("brg-0001", BearingFixtures.DeepGrooveBall());
-        await catalog.SetValidationStateAsync("brg-0001", BearingValidationState.Checked, null);
+        await catalog.SetValidationStateAsync("brg-0001", ReferenceValidationState.Checked, null);
 
-        var back = await catalog.SetValidationStateAsync("brg-0001", BearingValidationState.Draft, "Defect found during validation.");
+        var back = await catalog.SetValidationStateAsync("brg-0001", ReferenceValidationState.Draft, "Defect found during validation.");
 
-        Assert.Equal(BearingValidationState.Draft, back.ValidationState);
+        Assert.Equal(ReferenceValidationState.Draft, back.ValidationState);
     }
 
     [Fact]
@@ -58,7 +59,7 @@ public class BearingLifecycleTests
         await catalog.RegisterAsync("brg-0001", BearingFixtures.DeepGrooveBall());
 
         await Assert.ThrowsAsync<ArgumentException>(
-            () => catalog.SetValidationStateAsync("brg-0001", BearingValidationState.Superseded, null));
+            () => catalog.SetValidationStateAsync("brg-0001", ReferenceValidationState.Superseded, null));
     }
 
     [Fact]
@@ -66,8 +67,8 @@ public class BearingLifecycleTests
     {
         var catalog = BearingFixtures.BuildCatalog();
 
-        await Assert.ThrowsAsync<BearingNotFoundException>(
-            () => catalog.SetValidationStateAsync("brg-missing", BearingValidationState.Checked, null));
+        await Assert.ThrowsAsync<ReferenceRecordNotFoundException>(
+            () => catalog.SetValidationStateAsync("brg-missing", ReferenceValidationState.Checked, null));
     }
 
     [Fact]
@@ -76,7 +77,7 @@ public class BearingLifecycleTests
         var catalog = BearingFixtures.BuildCatalog();
         await catalog.RegisterAsync("brg-0001", BearingFixtures.DeepGrooveBall());
 
-        var checkedRecord = await catalog.SetValidationStateAsync("brg-0001", BearingValidationState.Checked, "Checked.");
+        var checkedRecord = await catalog.SetValidationStateAsync("brg-0001", ReferenceValidationState.Checked, "Checked.");
 
         Assert.Equal(2, checkedRecord.RevisionNumber);
     }
@@ -89,12 +90,12 @@ public class BearingLifecycleTests
     public async Task SetValidationStateAsync_LeavingDraftWithoutASource_Throws()
     {
         var catalog = BearingFixtures.BuildCatalog();
-        await catalog.RegisterAsync("brg-0001", BearingFixtures.DeepGrooveBall(provenance: BearingProvenance.Unknown));
+        await catalog.RegisterAsync("brg-0001", BearingFixtures.DeepGrooveBall(), ReferenceProvenance.Unknown);
 
-        var exception = await Assert.ThrowsAsync<BearingProvenanceIncompleteException>(
-            () => catalog.SetValidationStateAsync("brg-0001", BearingValidationState.Checked, null));
+        var exception = await Assert.ThrowsAsync<ReferenceProvenanceIncompleteException>(
+            () => catalog.SetValidationStateAsync("brg-0001", ReferenceValidationState.Checked, null));
 
-        Assert.Equal(BearingValidationState.Checked, exception.RequestedState);
+        Assert.Equal(ReferenceValidationState.Checked, exception.RequestedState);
     }
 
     [Fact]
@@ -103,26 +104,26 @@ public class BearingLifecycleTests
         // Being imported is not being verified — the rule this gate exists
         // for.
         var catalog = BearingFixtures.BuildCatalog();
-        await catalog.RegisterAsync("brg-0001", BearingFixtures.DeepGrooveBall(provenance: BearingFixtures.SourcedProvenance()));
-        await catalog.SetValidationStateAsync("brg-0001", BearingValidationState.Checked, null);
-        await catalog.SetValidationStateAsync("brg-0001", BearingValidationState.Validated, null);
+        await catalog.RegisterAsync("brg-0001", BearingFixtures.DeepGrooveBall(), BearingFixtures.SourcedProvenance());
+        await catalog.SetValidationStateAsync("brg-0001", ReferenceValidationState.Checked, null);
+        await catalog.SetValidationStateAsync("brg-0001", ReferenceValidationState.Validated, null);
 
-        var exception = await Assert.ThrowsAsync<BearingProvenanceIncompleteException>(
-            () => catalog.SetValidationStateAsync("brg-0001", BearingValidationState.Released, null));
+        var exception = await Assert.ThrowsAsync<ReferenceProvenanceIncompleteException>(
+            () => catalog.SetValidationStateAsync("brg-0001", ReferenceValidationState.Released, null));
 
-        Assert.Equal(BearingValidationState.Released, exception.RequestedState);
+        Assert.Equal(ReferenceValidationState.Released, exception.RequestedState);
     }
 
     [Fact]
     public async Task SetValidationStateAsync_ReleasingVerifiedData_Succeeds()
     {
         var catalog = BearingFixtures.BuildCatalog();
-        await catalog.RegisterAsync("brg-0001", BearingFixtures.DeepGrooveBall(provenance: BearingFixtures.VerifiedProvenance()));
+        await catalog.RegisterAsync("brg-0001", BearingFixtures.DeepGrooveBall(), BearingFixtures.VerifiedProvenance());
 
         var released = await BearingFixtures.ReleaseAsync(catalog, "brg-0001");
 
-        Assert.Equal(BearingValidationState.Released, released.ValidationState);
-        Assert.True(BearingValidationStates.IsReleased(released.ValidationState));
+        Assert.Equal(ReferenceValidationState.Released, released.ValidationState);
+        Assert.True(ReferenceValidationStates.IsReleased(released.ValidationState));
     }
 
     [Fact]
@@ -130,11 +131,11 @@ public class BearingLifecycleTests
     {
         var catalog = BearingFixtures.BuildCatalog();
         await catalog.RegisterAsync("brg-0001", BearingFixtures.DeepGrooveBall());
-        await catalog.SetValidationStateAsync("brg-0001", BearingValidationState.Checked, null);
+        await catalog.SetValidationStateAsync("brg-0001", ReferenceValidationState.Checked, null);
 
-        var back = await catalog.SetValidationStateAsync("brg-0001", BearingValidationState.Draft, null);
+        var back = await catalog.SetValidationStateAsync("brg-0001", ReferenceValidationState.Draft, null);
 
-        Assert.Equal(BearingValidationState.Draft, back.ValidationState);
+        Assert.Equal(ReferenceValidationState.Draft, back.ValidationState);
     }
 
     // ----------------------------------------------------------------
@@ -145,25 +146,25 @@ public class BearingLifecycleTests
     public async Task ReviseAsync_ReleasedRecord_Throws()
     {
         var catalog = BearingFixtures.BuildCatalog();
-        await catalog.RegisterAsync("brg-0001", BearingFixtures.DeepGrooveBall(provenance: BearingFixtures.VerifiedProvenance()));
+        await catalog.RegisterAsync("brg-0001", BearingFixtures.DeepGrooveBall(), BearingFixtures.VerifiedProvenance());
         await BearingFixtures.ReleaseAsync(catalog, "brg-0001");
 
-        var exception = await Assert.ThrowsAsync<ReleasedBearingImmutableException>(
+        var exception = await Assert.ThrowsAsync<ReleasedReferenceImmutableException>(
             () => catalog.ReviseAsync("brg-0001", BearingFixtures.DeepGrooveBall(widthMillimetres: 9.0), "Should be refused."));
 
-        Assert.Equal(BearingValidationState.Released, exception.State);
+        Assert.Equal(ReferenceValidationState.Released, exception.State);
     }
 
     [Fact]
     public async Task ReviseAsync_SupersededRecord_Throws()
     {
         var catalog = BearingFixtures.BuildCatalog();
-        await catalog.RegisterAsync("brg-0001", BearingFixtures.DeepGrooveBall("FX-6000", provenance: BearingFixtures.VerifiedProvenance()));
-        await catalog.RegisterAsync("brg-0002", BearingFixtures.DeepGrooveBall("FX-6000-B", provenance: BearingFixtures.VerifiedProvenance()));
+        await catalog.RegisterAsync("brg-0001", BearingFixtures.DeepGrooveBall("FX-6000"), BearingFixtures.VerifiedProvenance());
+        await catalog.RegisterAsync("brg-0002", BearingFixtures.DeepGrooveBall("FX-6000-B"), BearingFixtures.VerifiedProvenance());
         await BearingFixtures.ReleaseAsync(catalog, "brg-0001");
         await catalog.SupersedeAsync("brg-0001", "brg-0002", "Superseded by catalogue revision 2.");
 
-        await Assert.ThrowsAsync<ReleasedBearingImmutableException>(
+        await Assert.ThrowsAsync<ReleasedReferenceImmutableException>(
             () => catalog.ReviseAsync("brg-0001", BearingFixtures.DeepGrooveBall("FX-6000"), null));
     }
 
@@ -171,12 +172,12 @@ public class BearingLifecycleTests
     public async Task ReleasedRecord_RemainsReadableExactlyAsReleased()
     {
         var catalog = BearingFixtures.BuildCatalog();
-        await catalog.RegisterAsync("brg-0001", BearingFixtures.DeepGrooveBall(provenance: BearingFixtures.VerifiedProvenance()));
+        await catalog.RegisterAsync("brg-0001", BearingFixtures.DeepGrooveBall(), BearingFixtures.VerifiedProvenance());
         await BearingFixtures.ReleaseAsync(catalog, "brg-0001");
 
         var found = await catalog.FindAsync("brg-0001");
 
-        Assert.Equal(BearingValidationState.Released, found!.ValidationState);
+        Assert.Equal(ReferenceValidationState.Released, found!.ValidationState);
         Assert.Equal(4.6, found.Definition.LoadRatings!.BasicDynamicRadial!.Value.Value);
     }
 
@@ -188,14 +189,14 @@ public class BearingLifecycleTests
     public async Task SupersedeAsync_MarksTheRecordSupersededAndNamesItsReplacement()
     {
         var catalog = BearingFixtures.BuildCatalog();
-        await catalog.RegisterAsync("brg-0001", BearingFixtures.DeepGrooveBall("FX-6000", provenance: BearingFixtures.VerifiedProvenance()));
-        await catalog.RegisterAsync("brg-0002", BearingFixtures.DeepGrooveBall("FX-6000-B", provenance: BearingFixtures.VerifiedProvenance()));
+        await catalog.RegisterAsync("brg-0001", BearingFixtures.DeepGrooveBall("FX-6000"), BearingFixtures.VerifiedProvenance());
+        await catalog.RegisterAsync("brg-0002", BearingFixtures.DeepGrooveBall("FX-6000-B"), BearingFixtures.VerifiedProvenance());
         await BearingFixtures.ReleaseAsync(catalog, "brg-0001");
 
         var superseded = await catalog.SupersedeAsync("brg-0001", "brg-0002", "Catalogue revision 2.");
 
-        Assert.Equal(BearingValidationState.Superseded, superseded.ValidationState);
-        Assert.Equal("brg-0002", superseded.SupersededByBearingId);
+        Assert.Equal(ReferenceValidationState.Superseded, superseded.ValidationState);
+        Assert.Equal("brg-0002", superseded.SupersededByRecordId);
     }
 
     [Fact]
@@ -206,8 +207,8 @@ public class BearingLifecycleTests
         // Decision.SupersedesAsync — A4 introduces no second vocabulary
         // value for one concept (`ADR-0073`).
         var catalog = BearingFixtures.BuildCatalog(out var documentStore);
-        var original = await catalog.RegisterAsync("brg-0001", BearingFixtures.DeepGrooveBall("FX-6000", provenance: BearingFixtures.VerifiedProvenance()));
-        var replacement = await catalog.RegisterAsync("brg-0002", BearingFixtures.DeepGrooveBall("FX-6000-B", provenance: BearingFixtures.VerifiedProvenance()));
+        var original = await catalog.RegisterAsync("brg-0001", BearingFixtures.DeepGrooveBall("FX-6000"), BearingFixtures.VerifiedProvenance());
+        var replacement = await catalog.RegisterAsync("brg-0002", BearingFixtures.DeepGrooveBall("FX-6000-B"), BearingFixtures.VerifiedProvenance());
         await BearingFixtures.ReleaseAsync(catalog, "brg-0001");
 
         await catalog.SupersedeAsync("brg-0001", "brg-0002", null);
@@ -225,7 +226,7 @@ public class BearingLifecycleTests
         await catalog.RegisterAsync("brg-0001", BearingFixtures.DeepGrooveBall("FX-6000"));
         await catalog.RegisterAsync("brg-0002", BearingFixtures.DeepGrooveBall("FX-6000-B"));
 
-        await Assert.ThrowsAsync<InvalidBearingValidationStateTransitionException>(
+        await Assert.ThrowsAsync<InvalidReferenceStateTransitionException>(
             () => catalog.SupersedeAsync("brg-0001", "brg-0002", null));
     }
 
@@ -233,20 +234,20 @@ public class BearingLifecycleTests
     public async Task SupersedeAsync_UnknownReplacement_Throws()
     {
         var catalog = BearingFixtures.BuildCatalog();
-        await catalog.RegisterAsync("brg-0001", BearingFixtures.DeepGrooveBall(provenance: BearingFixtures.VerifiedProvenance()));
+        await catalog.RegisterAsync("brg-0001", BearingFixtures.DeepGrooveBall(), BearingFixtures.VerifiedProvenance());
         await BearingFixtures.ReleaseAsync(catalog, "brg-0001");
 
-        var exception = await Assert.ThrowsAsync<BearingNotFoundException>(
+        var exception = await Assert.ThrowsAsync<ReferenceRecordNotFoundException>(
             () => catalog.SupersedeAsync("brg-0001", "brg-missing", null));
 
-        Assert.Equal("brg-missing", exception.BearingId);
+        Assert.Equal("brg-missing", exception.RecordId);
     }
 
     [Fact]
     public async Task SupersedeAsync_ByItself_Throws()
     {
         var catalog = BearingFixtures.BuildCatalog();
-        await catalog.RegisterAsync("brg-0001", BearingFixtures.DeepGrooveBall(provenance: BearingFixtures.VerifiedProvenance()));
+        await catalog.RegisterAsync("brg-0001", BearingFixtures.DeepGrooveBall(), BearingFixtures.VerifiedProvenance());
         await BearingFixtures.ReleaseAsync(catalog, "brg-0001");
 
         await Assert.ThrowsAsync<ArgumentException>(() => catalog.SupersedeAsync("brg-0001", "brg-0001", null));
@@ -258,8 +259,8 @@ public class BearingLifecycleTests
         // The whole point of supersession over deletion: what a past
         // calculation consumed must remain readable.
         var catalog = BearingFixtures.BuildCatalog();
-        await catalog.RegisterAsync("brg-0001", BearingFixtures.DeepGrooveBall("FX-6000", provenance: BearingFixtures.VerifiedProvenance()));
-        await catalog.RegisterAsync("brg-0002", BearingFixtures.DeepGrooveBall("FX-6000-B", provenance: BearingFixtures.VerifiedProvenance()));
+        await catalog.RegisterAsync("brg-0001", BearingFixtures.DeepGrooveBall("FX-6000"), BearingFixtures.VerifiedProvenance());
+        await catalog.RegisterAsync("brg-0002", BearingFixtures.DeepGrooveBall("FX-6000-B"), BearingFixtures.VerifiedProvenance());
         await BearingFixtures.ReleaseAsync(catalog, "brg-0001");
         await catalog.SupersedeAsync("brg-0001", "brg-0002", null);
 
@@ -279,7 +280,7 @@ public class BearingLifecycleTests
         var catalog = BearingFixtures.BuildCatalog();
         await catalog.RegisterAsync("brg-0001", BearingFixtures.DeepGrooveBall());
         await catalog.ReviseAsync("brg-0001", BearingFixtures.DeepGrooveBall(widthMillimetres: 9.0), "Width corrected.");
-        await catalog.SetValidationStateAsync("brg-0001", BearingValidationState.Checked, "Checked.");
+        await catalog.SetValidationStateAsync("brg-0001", ReferenceValidationState.Checked, "Checked.");
 
         var history = await catalog.GetHistoryAsync("brg-0001");
 
@@ -315,7 +316,7 @@ public class BearingLifecycleTests
     {
         var catalog = BearingFixtures.BuildCatalog();
 
-        await Assert.ThrowsAsync<BearingNotFoundException>(() => catalog.GetHistoryAsync("brg-missing"));
+        await Assert.ThrowsAsync<ReferenceRecordNotFoundException>(() => catalog.GetHistoryAsync("brg-missing"));
     }
 
     [Fact]
@@ -346,7 +347,7 @@ public class BearingLifecycleTests
     {
         var catalog = BearingFixtures.BuildCatalog();
 
-        await Assert.ThrowsAsync<BearingNotFoundException>(() => catalog.GetRevisionAsync("brg-missing", 1));
+        await Assert.ThrowsAsync<ReferenceRecordNotFoundException>(() => catalog.GetRevisionAsync("brg-missing", 1));
     }
 
     [Fact]

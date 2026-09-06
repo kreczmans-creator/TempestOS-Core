@@ -1,5 +1,7 @@
 using Tempest.Core.UnitsAndQuantities;
 
+using Tempest.Core.ReferenceData;
+
 namespace Tempest.Core.Bearings;
 
 /// <summary>
@@ -40,7 +42,7 @@ public sealed record BearingQuery
     public IReadOnlyList<BearingFamily> Families { get; init; } = [];
 
     /// <summary>Matches any of these validation states. Never <see langword="null"/>; empty matches any. The filter that separates released reference data from drafts and unverified imports.</summary>
-    public IReadOnlyList<BearingValidationState> ValidationStates { get; init; } = [];
+    public IReadOnlyList<ReferenceValidationState> ValidationStates { get; init; } = [];
 
     /// <summary>Inclusive lower bound on <see cref="BearingGeometry.Bore"/>. <see langword="null"/> for no lower bound.</summary>
     public Quantity<Length>? BoreMinimum { get; init; }

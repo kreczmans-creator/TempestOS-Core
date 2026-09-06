@@ -57,5 +57,14 @@ public sealed record BearingIdentity(
     /// Not an identity — see this type's own remarks.
     /// </summary>
     [System.Text.Json.Serialization.JsonIgnore]
-    public string PartNumberKey => $"{Manufacturer.Trim()} {ManufacturerPartNumber.Trim()}".ToUpperInvariant();
+    public string PartNumberKey => PartNumberKeyFor(Manufacturer, ManufacturerPartNumber);
+
+    /// <summary>
+    /// Builds the uniqueness key from a manufacturer and part number that
+    /// are not (yet) an identity — the lookup path. Shared with
+    /// <see cref="PartNumberKey"/> so a query and a registration can never
+    /// normalise differently.
+    /// </summary>
+    public static string PartNumberKeyFor(string manufacturer, string partNumber) =>
+        $"{manufacturer.Trim()} {partNumber.Trim()}".ToUpperInvariant();
 }

@@ -1,5 +1,6 @@
 using Tempest.Core.Commands;
 using Tempest.Core.Materials;
+using Tempest.Core.ReferenceData;
 using Tempest.Core.Modules;
 using Tempest.Core.UnitsAndQuantities;
 
@@ -78,28 +79,36 @@ public sealed class MaterialsSampleModule : ModuleLifecycleBase
     public bool HasRegistered { get; private set; }
 
     /// <summary>Builds the two fictional, dimensioned demonstration properties this module registers and revises with.</summary>
-    internal static IReadOnlyDictionary<string, MaterialProperty> BuildSampleProperties(double yieldStrengthMPa, double referenceLengthMm) =>
-        new Dictionary<string, MaterialProperty>
+    internal static IReadOnlyDictionary<string, ReferenceQuantityValue> BuildSampleProperties(double yieldStrengthMPa, double referenceLengthMm) =>
+        new Dictionary<string, ReferenceQuantityValue>
         {
-            ["YieldStrength"] = new MaterialProperty(
+            [MaterialPropertyNames.YieldStrength] = new ReferenceQuantityValue(
                 new Quantity<Pressure>(yieldStrengthMPa, PressureUnits.Megapascal),
-                new MaterialPropertyProvenance(
-                    SourceReference: "Fictional test fixture — not a real material standard",
-                    SourceRevision: null,
-                    ValidationStatus: MaterialPropertyValidationStatus.Unvalidated,
-                    ConfidenceLevel: MaterialPropertyConfidenceLevel.Unknown,
-                    ApplicableConditions: "Demonstration only — no real applicable conditions",
-                    Notes: "Invented for WP 7.1C's own living-reference module; never a real, published value.")),
-            ["ReferenceLength"] = new MaterialProperty(
+                ReferenceValueOrigin.Unknown,
+                conditions: "Demonstration only — no real applicable conditions"),
+            ["ReferenceLength"] = new ReferenceQuantityValue(
                 new Quantity<Length>(referenceLengthMm, LengthUnits.Millimetre),
-                new MaterialPropertyProvenance(
-                    SourceReference: "Fictional test fixture — not a real material standard",
-                    SourceRevision: null,
-                    ValidationStatus: MaterialPropertyValidationStatus.Unvalidated,
-                    ConfidenceLevel: MaterialPropertyConfidenceLevel.Unknown,
-                    ApplicableConditions: null,
-                    Notes: "Invented for WP 7.1C's own living-reference module; never a real, published value.")),
+                ReferenceValueOrigin.Unknown),
         };
+
+    /// <summary>
+    /// The provenance every record this module registers carries: openly
+    /// fictional, and therefore never verifiable, so it can never be
+    /// released.
+    /// </summary>
+    internal static ReferenceProvenance SampleProvenance { get; } = new(
+        SourceOrganisation: "TempestOS sample module",
+        SourceDocument: "Fictional test fixture — not a real material standard",
+        Notes: "Invented for WP 7.1C's own living-reference module; never a real, published value.");
+
+    /// <summary>Builds the fictional demonstration material this module registers and revises.</summary>
+    internal static MaterialDefinition BuildSampleDefinition(double yieldStrengthMPa, double referenceLengthMm) => new()
+    {
+        Name = "Fictional Test Alloy",
+        Family = MaterialFamily.Other,
+        SourceClassification = "TestFixture",
+        Properties = BuildSampleProperties(yieldStrengthMPa, referenceLengthMm),
+    };
 
     /// <inheritdoc />
     /// <remarks>
@@ -135,22 +144,22 @@ public sealed class MaterialsSampleModule : ModuleLifecycleBase
             // same persistence store (TD-37) - reuse it rather than
             // re-attempting RegisterAsync, which would throw
             // DuplicateMaterialException.
-            RegisteredMaterialId = existing.MaterialId;
+            RegisteredMaterialId = existing.Id;
         }
         else
         {
             var material = await _materialCatalog.RegisterAsync(
                 SampleMaterialId,
-                "Fictional Test Alloy",
-                BuildSampleProperties(yieldStrengthMPa: 100.0, referenceLengthMm: 10.0),
-                category: "TestFixture",
+                BuildSampleDefinition(yieldStrengthMPa: 100.0, referenceLengthMm: 10.0),
+                SampleProvenance,
                 cancellationToken)
                 .ConfigureAwait(false);
-            RegisteredMaterialId = material.MaterialId;
+            RegisteredMaterialId = material.Id;
 
             await _materialCatalog.ReviseAsync(
                 SampleMaterialId,
-                BuildSampleProperties(yieldStrengthMPa: 105.0, referenceLengthMm: 10.0),
+                BuildSampleDefinition(yieldStrengthMPa: 105.0, referenceLengthMm: 10.0),
+                SampleProvenance,
                 "Sample revision — fictional updated test value.",
                 cancellationToken)
                 .ConfigureAwait(false);

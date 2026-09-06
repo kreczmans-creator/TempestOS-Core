@@ -1,4 +1,5 @@
 using Tempest.Core.Bearings;
+using Tempest.Core.ReferenceData;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.UnitsAndQuantities;
 
@@ -88,7 +89,6 @@ public class BearingModelTests
             Identity = BearingFixtures.Identity(),
             Family = BearingFamily.DeepGrooveBall,
             Geometry = new BearingGeometry(),
-            Provenance = BearingProvenance.Unknown,
         };
 
         Assert.Null(definition.LoadRatings);
@@ -150,7 +150,7 @@ public class BearingModelTests
     [Fact]
     public void BearingRatedValue_CanonicalValue_ConvertsToTheDimensionsOwnBaseUnit()
     {
-        var rating = new BearingRatedValue<Force>(BearingFixtures.Kilonewtons(4.6), BearingValueOrigin.ManufacturerCatalogue);
+        var rating = new ReferenceValue<Force>(BearingFixtures.Kilonewtons(4.6), ReferenceValueOrigin.ManufacturerCatalogue);
 
         Assert.Equal(4600.0, rating.CanonicalValue, 9);
     }
@@ -158,7 +158,7 @@ public class BearingModelTests
     [Fact]
     public void BearingRatedValue_KeepsTheUnitTheSourceQuoted()
     {
-        var rating = new BearingRatedValue<Force>(BearingFixtures.Kilonewtons(4.6), BearingValueOrigin.ManufacturerCatalogue);
+        var rating = new ReferenceValue<Force>(BearingFixtures.Kilonewtons(4.6), ReferenceValueOrigin.ManufacturerCatalogue);
 
         Assert.Equal("kN", rating.Value.Unit.Symbol);
         Assert.Equal(4.6, rating.Value.Value);
@@ -167,23 +167,23 @@ public class BearingModelTests
     [Fact]
     public void BearingRatedValue_DerivedValues_AreDistinguishableFromManufacturerData()
     {
-        var manufacturer = new BearingRatedValue<Force>(BearingFixtures.Kilonewtons(4.6), BearingValueOrigin.ManufacturerCatalogue);
-        var derived = new BearingRatedValue<Force>(BearingFixtures.Kilonewtons(4.6), BearingValueOrigin.DerivedByTempestOS);
+        var manufacturer = new ReferenceValue<Force>(BearingFixtures.Kilonewtons(4.6), ReferenceValueOrigin.ManufacturerCatalogue);
+        var derived = new ReferenceValue<Force>(BearingFixtures.Kilonewtons(4.6), ReferenceValueOrigin.DerivedByTempestOS);
 
         Assert.NotEqual(manufacturer.Origin, derived.Origin);
-        Assert.Equal(BearingValueOrigin.DerivedByTempestOS, derived.Origin);
+        Assert.Equal(ReferenceValueOrigin.DerivedByTempestOS, derived.Origin);
     }
 
     [Fact]
     public void BearingProvenance_Unknown_IsHonestlyEmptyRatherThanGuessed()
     {
-        var provenance = BearingProvenance.Unknown;
+        var provenance = ReferenceProvenance.Unknown;
 
         Assert.Null(provenance.SourceOrganisation);
         Assert.Null(provenance.SourceDocument);
         Assert.Null(provenance.ReviewerPrincipalId);
-        Assert.Equal(BearingExtractionMethod.Unknown, provenance.ExtractionMethod);
-        Assert.Equal(BearingVerificationStatus.NotVerified, provenance.VerificationStatus);
+        Assert.Equal(ReferenceExtractionMethod.Unknown, provenance.ExtractionMethod);
+        Assert.Equal(ReferenceVerificationStatus.NotVerified, provenance.VerificationStatus);
         Assert.False(provenance.IdentifiesASource);
         Assert.False(provenance.IsVerified);
     }
@@ -193,7 +193,7 @@ public class BearingModelTests
     {
         var provenance = BearingFixtures.SourcedProvenance() with
         {
-            VerificationStatus = BearingVerificationStatus.VerifiedAgainstSource,
+            VerificationStatus = ReferenceVerificationStatus.VerifiedAgainstSource,
         };
 
         Assert.False(provenance.IsVerified);
@@ -311,64 +311,64 @@ public class BearingModelTests
     // ----------------------------------------------------------------
 
     [Theory]
-    [InlineData(BearingValidationState.Draft, BearingValidationState.Checked)]
-    [InlineData(BearingValidationState.Checked, BearingValidationState.Validated)]
-    [InlineData(BearingValidationState.Checked, BearingValidationState.Draft)]
-    [InlineData(BearingValidationState.Validated, BearingValidationState.Released)]
-    [InlineData(BearingValidationState.Validated, BearingValidationState.Checked)]
-    [InlineData(BearingValidationState.Released, BearingValidationState.Superseded)]
-    public void BearingValidationStates_PermittedTransitions(BearingValidationState from, BearingValidationState to)
+    [InlineData(ReferenceValidationState.Draft, ReferenceValidationState.Checked)]
+    [InlineData(ReferenceValidationState.Checked, ReferenceValidationState.Validated)]
+    [InlineData(ReferenceValidationState.Checked, ReferenceValidationState.Draft)]
+    [InlineData(ReferenceValidationState.Validated, ReferenceValidationState.Released)]
+    [InlineData(ReferenceValidationState.Validated, ReferenceValidationState.Checked)]
+    [InlineData(ReferenceValidationState.Released, ReferenceValidationState.Superseded)]
+    public void BearingValidationStates_PermittedTransitions(ReferenceValidationState from, ReferenceValidationState to)
     {
-        Assert.True(BearingValidationStates.IsPermitted(from, to));
+        Assert.True(ReferenceValidationStates.IsPermitted(from, to));
     }
 
     [Theory]
-    [InlineData(BearingValidationState.Draft, BearingValidationState.Released)]
-    [InlineData(BearingValidationState.Draft, BearingValidationState.Validated)]
-    [InlineData(BearingValidationState.Checked, BearingValidationState.Released)]
-    [InlineData(BearingValidationState.Released, BearingValidationState.Draft)]
-    [InlineData(BearingValidationState.Released, BearingValidationState.Validated)]
-    [InlineData(BearingValidationState.Superseded, BearingValidationState.Released)]
-    [InlineData(BearingValidationState.Draft, BearingValidationState.Draft)]
-    public void BearingValidationStates_RejectedTransitions(BearingValidationState from, BearingValidationState to)
+    [InlineData(ReferenceValidationState.Draft, ReferenceValidationState.Released)]
+    [InlineData(ReferenceValidationState.Draft, ReferenceValidationState.Validated)]
+    [InlineData(ReferenceValidationState.Checked, ReferenceValidationState.Released)]
+    [InlineData(ReferenceValidationState.Released, ReferenceValidationState.Draft)]
+    [InlineData(ReferenceValidationState.Released, ReferenceValidationState.Validated)]
+    [InlineData(ReferenceValidationState.Superseded, ReferenceValidationState.Released)]
+    [InlineData(ReferenceValidationState.Draft, ReferenceValidationState.Draft)]
+    public void BearingValidationStates_RejectedTransitions(ReferenceValidationState from, ReferenceValidationState to)
     {
-        Assert.False(BearingValidationStates.IsPermitted(from, to));
+        Assert.False(ReferenceValidationStates.IsPermitted(from, to));
     }
 
     [Fact]
     public void BearingValidationStates_SupersededIsTerminal()
     {
-        Assert.Empty(BearingValidationStates.GetPermittedTargets(BearingValidationState.Superseded));
+        Assert.Empty(ReferenceValidationStates.GetPermittedTargets(ReferenceValidationState.Superseded));
     }
 
     [Theory]
-    [InlineData(BearingValidationState.Draft, LifecycleState.Draft)]
-    [InlineData(BearingValidationState.Checked, LifecycleState.InReview)]
-    [InlineData(BearingValidationState.Validated, LifecycleState.Approved)]
-    [InlineData(BearingValidationState.Released, LifecycleState.Released)]
-    [InlineData(BearingValidationState.Superseded, LifecycleState.Superseded)]
-    public void BearingValidationStates_MapOntoThePlatformsOwnCanonicalVocabulary(BearingValidationState state, LifecycleState expected)
+    [InlineData(ReferenceValidationState.Draft, LifecycleState.Draft)]
+    [InlineData(ReferenceValidationState.Checked, LifecycleState.InReview)]
+    [InlineData(ReferenceValidationState.Validated, LifecycleState.Approved)]
+    [InlineData(ReferenceValidationState.Released, LifecycleState.Released)]
+    [InlineData(ReferenceValidationState.Superseded, LifecycleState.Superseded)]
+    public void BearingValidationStates_MapOntoThePlatformsOwnCanonicalVocabulary(ReferenceValidationState state, LifecycleState expected)
     {
         // ADR-0074: a family-specific specialisation of the canonical
         // vocabulary, never a competing parallel state model.
-        Assert.Equal(expected, BearingValidationStates.CanonicalEquivalent(state));
+        Assert.Equal(expected, ReferenceValidationStates.CanonicalEquivalent(state));
     }
 
     [Theory]
-    [InlineData(BearingValidationState.Draft, true)]
-    [InlineData(BearingValidationState.Checked, true)]
-    [InlineData(BearingValidationState.Validated, true)]
-    [InlineData(BearingValidationState.Released, false)]
-    [InlineData(BearingValidationState.Superseded, false)]
-    public void BearingValidationStates_ReleasedAndSupersededRecordsAreNotRevisable(BearingValidationState state, bool expected)
+    [InlineData(ReferenceValidationState.Draft, true)]
+    [InlineData(ReferenceValidationState.Checked, true)]
+    [InlineData(ReferenceValidationState.Validated, true)]
+    [InlineData(ReferenceValidationState.Released, false)]
+    [InlineData(ReferenceValidationState.Superseded, false)]
+    public void BearingValidationStates_ReleasedAndSupersededRecordsAreNotRevisable(ReferenceValidationState state, bool expected)
     {
-        Assert.Equal(expected, BearingValidationStates.IsRevisable(state));
+        Assert.Equal(expected, ReferenceValidationStates.IsRevisable(state));
     }
 
     [Fact]
     public void BearingStandardReference_WithoutADesignation_Throws()
     {
-        Assert.Throws<ArgumentException>(() => new BearingStandardReference("  "));
+        Assert.Throws<ArgumentException>(() => new StandardReference("  "));
     }
 
     [Fact]

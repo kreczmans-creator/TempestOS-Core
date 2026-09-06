@@ -1,4 +1,5 @@
 using Tempest.Core.Bearings;
+using Tempest.Core.ReferenceData;
 using Tempest.Core.EngineeringData;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Identity;
@@ -22,15 +23,20 @@ public class BearingLibraryIntegrationTests
 
         var material = await materials.RegisterAsync(
             "fixture-ring-steel",
-            "Fixture ring steel",
-            new Dictionary<string, MaterialProperty>
+            new MaterialDefinition
             {
-                ["ReferenceLength"] = new(new Quantity<Length>(1.0, LengthUnits.Metre), MaterialPropertyProvenance.Unknown),
-            });
+                Name = "Fixture ring steel",
+                Family = MaterialFamily.Steel,
+                Properties = new Dictionary<string, ReferenceQuantityValue>
+                {
+                    ["ReferenceLength"] = new(new Quantity<Length>(1.0, LengthUnits.Metre), ReferenceValueOrigin.Unknown),
+                },
+            },
+            BearingFixtures.SourcedProvenance());
 
         var bearing = await bearings.RegisterAsync("brg-0001", BearingFixtures.DeepGrooveBall() with
         {
-            Construction = new BearingConstruction(RingMaterialId: material.MaterialId),
+            Construction = new BearingConstruction(RingMaterialId: material.Id),
         });
 
         // Two different Kinds in one store, each still resolvable through
@@ -85,35 +91,36 @@ public class BearingLibraryIntegrationTests
         var validator = new BearingValidationService(catalog);
 
         // 1. Recorded from a source, unverified.
-        await catalog.RegisterAsync("brg-0001", BearingFixtures.DeepGrooveBall("FX-6000", provenance: BearingFixtures.SourcedProvenance()));
-        Assert.Equal(BearingValidationState.Draft, (await catalog.FindAsync("brg-0001"))!.ValidationState);
+        await catalog.RegisterAsync("brg-0001", BearingFixtures.DeepGrooveBall("FX-6000"), BearingFixtures.SourcedProvenance());
+        Assert.Equal(ReferenceValidationState.Draft, (await catalog.FindAsync("brg-0001"))!.ValidationState);
 
         // 2. Checked, then found to need a correction, then re-checked.
-        await catalog.SetValidationStateAsync("brg-0001", BearingValidationState.Checked, "Checked against fixture source.");
-        await catalog.SetValidationStateAsync("brg-0001", BearingValidationState.Draft, "Width transcription error found.");
+        await catalog.SetValidationStateAsync("brg-0001", ReferenceValidationState.Checked, "Checked against fixture source.");
+        await catalog.SetValidationStateAsync("brg-0001", ReferenceValidationState.Draft, "Width transcription error found.");
         await catalog.ReviseAsync(
             "brg-0001",
-            BearingFixtures.DeepGrooveBall("FX-6000", widthMillimetres: 9.0, provenance: BearingFixtures.VerifiedProvenance()),
+            BearingFixtures.DeepGrooveBall("FX-6000", widthMillimetres: 9.0),
+            BearingFixtures.VerifiedProvenance(),
             "Width corrected against source; verified by reviewer-1.");
-        await catalog.SetValidationStateAsync("brg-0001", BearingValidationState.Checked, "Re-checked.");
+        await catalog.SetValidationStateAsync("brg-0001", ReferenceValidationState.Checked, "Re-checked.");
 
         // 3. Validated against the data-quality rules, then released.
         Assert.True((await validator.ValidateAsync("brg-0001")).IsValid);
-        await catalog.SetValidationStateAsync("brg-0001", BearingValidationState.Validated, "Rules pass.");
-        var released = await catalog.SetValidationStateAsync("brg-0001", BearingValidationState.Released, "Released.");
-        Assert.True(BearingValidationStates.IsReleased(released.ValidationState));
+        await catalog.SetValidationStateAsync("brg-0001", ReferenceValidationState.Validated, "Rules pass.");
+        var released = await catalog.SetValidationStateAsync("brg-0001", ReferenceValidationState.Released, "Released.");
+        Assert.True(ReferenceValidationStates.IsReleased(released.ValidationState));
 
         // 4. Released data is immutable; a later catalogue revision is a
         //    new record superseding it, and both survive.
-        await Assert.ThrowsAsync<ReleasedBearingImmutableException>(
+        await Assert.ThrowsAsync<ReleasedReferenceImmutableException>(
             () => catalog.ReviseAsync("brg-0001", BearingFixtures.DeepGrooveBall("FX-6000"), "Refused."));
 
-        await catalog.RegisterAsync("brg-0002", BearingFixtures.DeepGrooveBall("FX-6000-B", provenance: BearingFixtures.VerifiedProvenance()));
+        await catalog.RegisterAsync("brg-0002", BearingFixtures.DeepGrooveBall("FX-6000-B"), BearingFixtures.VerifiedProvenance());
         await catalog.SupersedeAsync("brg-0001", "brg-0002", "Superseded by fixture catalogue revision 2.");
 
         var superseded = await catalog.FindAsync("brg-0001");
-        Assert.Equal(BearingValidationState.Superseded, superseded!.ValidationState);
-        Assert.Equal("brg-0002", superseded.SupersededByBearingId);
+        Assert.Equal(ReferenceValidationState.Superseded, superseded!.ValidationState);
+        Assert.Equal("brg-0002", superseded.SupersededByRecordId);
 
         // 5. Every step is in the history, in order, with its own reason.
         var history = await catalog.GetHistoryAsync("brg-0001");
@@ -134,24 +141,24 @@ public class BearingLibraryIntegrationTests
         var catalog = BearingFixtures.BuildCatalog();
 
         await catalog.RegisterAsync("brg-draft", BearingFixtures.DeepGrooveBall("FX-6000"));
-        await catalog.RegisterAsync("brg-import", BearingFixtures.DeepGrooveBall("FX-6001", provenance: BearingFixtures.SourcedProvenance() with
-        {
-            ExtractionMethod = BearingExtractionMethod.StructuredImport,
-        }));
-        await catalog.RegisterAsync("brg-incomplete", BearingFixtures.DeepGrooveBall("FX-6002", provenance: BearingProvenance.Unknown) with
-        {
-            LoadRatings = null,
-        });
-        await catalog.RegisterAsync("brg-released", BearingFixtures.DeepGrooveBall("FX-6003", provenance: BearingFixtures.VerifiedProvenance()));
+        await catalog.RegisterAsync(
+            "brg-import",
+            BearingFixtures.DeepGrooveBall("FX-6001"),
+            BearingFixtures.SourcedProvenance() with { ExtractionMethod = ReferenceExtractionMethod.StructuredImport });
+        await catalog.RegisterAsync(
+            "brg-incomplete",
+            BearingFixtures.DeepGrooveBall("FX-6002") with { LoadRatings = null },
+            ReferenceProvenance.Unknown);
+        await catalog.RegisterAsync("brg-released", BearingFixtures.DeepGrooveBall("FX-6003"), BearingFixtures.VerifiedProvenance());
         await BearingFixtures.ReleaseAsync(catalog, "brg-released");
 
-        var released = await catalog.SearchAsync(new BearingQuery { ValidationStates = [BearingValidationState.Released] });
+        var released = await catalog.SearchAsync(new BearingQuery { ValidationStates = [ReferenceValidationState.Released] });
         var notReleased = await catalog.SearchAsync(new BearingQuery
         {
-            ValidationStates = [BearingValidationState.Draft, BearingValidationState.Checked, BearingValidationState.Validated],
+            ValidationStates = [ReferenceValidationState.Draft, ReferenceValidationState.Checked, ReferenceValidationState.Validated],
         });
 
-        Assert.Equal(["brg-released"], released.Select(b => b.BearingId));
+        Assert.Equal(["brg-released"], released.Select(b => b.Id));
         Assert.Equal(3, notReleased.Count);
     }
 

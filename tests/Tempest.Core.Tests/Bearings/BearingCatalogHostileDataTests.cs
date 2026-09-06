@@ -1,4 +1,5 @@
 using Tempest.Core.Bearings;
+using Tempest.Core.ReferenceData;
 using Tempest.Core.EngineeringData;
 using Tempest.Core.Identity;
 
@@ -21,9 +22,9 @@ public class BearingCatalogHostileDataTests
     public async Task FindAsync_CorruptedIndexEntry_ThrowsAControlledExceptionNamingTheEntry()
     {
         var catalog = Build(out var persistenceStore, out _);
-        await persistenceStore.WriteAsync(BearingCatalog.IndexCollectionName, "brg-0001", "not-a-guid");
+        await persistenceStore.WriteAsync(BearingCatalog.IndexCollection, "brg-0001", "not-a-guid");
 
-        var exception = await Assert.ThrowsAsync<BearingsException>(() => catalog.FindAsync("brg-0001"));
+        var exception = await Assert.ThrowsAsync<ReferenceDataException>(() => catalog.FindAsync("brg-0001"));
 
         Assert.Contains("brg-0001", exception.Message, StringComparison.Ordinal);
         Assert.Contains("not-a-guid", exception.Message, StringComparison.Ordinal);
@@ -33,7 +34,7 @@ public class BearingCatalogHostileDataTests
     public async Task FindAsync_IndexPointingAtAMissingDocument_ReadsAsNoSuchBearing()
     {
         var catalog = Build(out var persistenceStore, out _);
-        await persistenceStore.WriteAsync(BearingCatalog.IndexCollectionName, "brg-0001", Guid.NewGuid().ToString("N"));
+        await persistenceStore.WriteAsync(BearingCatalog.IndexCollection, "brg-0001", Guid.NewGuid().ToString("N"));
 
         Assert.Null(await catalog.FindAsync("brg-0001"));
     }
@@ -43,7 +44,7 @@ public class BearingCatalogHostileDataTests
     {
         var catalog = Build(out var persistenceStore, out var documentStore);
         var foreign = await documentStore.CreateAsync("MaterialSpecification", "{}");
-        await persistenceStore.WriteAsync(BearingCatalog.IndexCollectionName, "brg-0001", foreign.Id.ToString("N"));
+        await persistenceStore.WriteAsync(BearingCatalog.IndexCollection, "brg-0001", foreign.Id.ToString("N"));
 
         Assert.Null(await catalog.FindAsync("brg-0001"));
     }
@@ -55,7 +56,7 @@ public class BearingCatalogHostileDataTests
         var bearing = await catalog.RegisterAsync("brg-0001", BearingFixtures.DeepGrooveBall());
         await documentStore.ReviseAsync(bearing.UnderlyingDocumentId, "{ not json", "Corrupted.");
 
-        var exception = await Assert.ThrowsAsync<BearingsException>(() => catalog.FindAsync("brg-0001"));
+        var exception = await Assert.ThrowsAsync<ReferenceDataException>(() => catalog.FindAsync("brg-0001"));
 
         Assert.Contains("brg-0001", exception.Message, StringComparison.Ordinal);
         Assert.IsType<System.Text.Json.JsonException>(exception.InnerException);
@@ -71,7 +72,7 @@ public class BearingCatalogHostileDataTests
             "{\"BearingId\":\"brg-0001\",\"ValidationState\":\"Draft\"}",
             "Definition removed.");
 
-        var exception = await Assert.ThrowsAsync<BearingsException>(() => catalog.FindAsync("brg-0001"));
+        var exception = await Assert.ThrowsAsync<ReferenceDataException>(() => catalog.FindAsync("brg-0001"));
 
         Assert.Contains("brg-0001", exception.Message, StringComparison.Ordinal);
     }
@@ -88,7 +89,7 @@ public class BearingCatalogHostileDataTests
             .Replace("\"DeepGrooveBall\"", "\"MagneticLevitation\"", StringComparison.Ordinal);
         await documentStore.ReviseAsync(bearing.UnderlyingDocumentId, content, "Unknown family.");
 
-        await Assert.ThrowsAsync<BearingsException>(() => catalog.FindAsync("brg-0001"));
+        await Assert.ThrowsAsync<ReferenceDataException>(() => catalog.FindAsync("brg-0001"));
     }
 
     [Fact]
@@ -96,18 +97,18 @@ public class BearingCatalogHostileDataTests
     {
         var catalog = Build(out var persistenceStore, out _);
         await catalog.RegisterAsync("brg-0001", BearingFixtures.DeepGrooveBall("FX-6000"));
-        await persistenceStore.WriteAsync(BearingCatalog.IndexCollectionName, "brg-stale", Guid.NewGuid().ToString("N"));
+        await persistenceStore.WriteAsync(BearingCatalog.IndexCollection, "brg-stale", Guid.NewGuid().ToString("N"));
 
         var listed = await catalog.ListAsync();
 
-        Assert.Equal(["brg-0001"], listed.Select(b => b.BearingId));
+        Assert.Equal(["brg-0001"], listed.Select(b => b.Id));
     }
 
     [Fact]
     public async Task FindByPartNumberAsync_PartNumberIndexPointingAtAMissingBearing_ReturnsNull()
     {
         var catalog = Build(out var persistenceStore, out _);
-        await persistenceStore.WriteAsync(BearingCatalog.PartNumberIndexCollectionName, "TESTFIXTURE BEARINGS FX-6000", "brg-gone");
+        await persistenceStore.WriteAsync(BearingCatalog.PartNumberIndexCollection, "TESTFIXTURE BEARINGS FX-6000", "brg-gone");
 
         Assert.Null(await catalog.FindByPartNumberAsync("TestFixture Bearings", "FX-6000"));
     }

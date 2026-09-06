@@ -1,4 +1,5 @@
 using Tempest.Core.Bearings;
+using Tempest.Core.ReferenceData;
 using Tempest.Core.UnitsAndQuantities;
 
 namespace Tempest.Core.Tests.Bearings;
@@ -19,7 +20,7 @@ public class BearingCatalogTests
 
         var bearing = await catalog.RegisterAsync("brg-0001", definition);
 
-        Assert.Equal("brg-0001", bearing.BearingId);
+        Assert.Equal("brg-0001", bearing.Id);
         Assert.Equal(BearingFamily.DeepGrooveBall, bearing.Definition.Family);
         Assert.Equal(BearingFixtures.Millimetres(10), bearing.Definition.Geometry.Bore);
         Assert.Equal(1, bearing.RevisionNumber);
@@ -33,8 +34,8 @@ public class BearingCatalogTests
 
         var bearing = await catalog.RegisterAsync("brg-0001", BearingFixtures.DeepGrooveBall());
 
-        Assert.Equal(BearingValidationState.Draft, bearing.ValidationState);
-        Assert.Null(bearing.SupersededByBearingId);
+        Assert.Equal(ReferenceValidationState.Draft, bearing.ValidationState);
+        Assert.Null(bearing.SupersededByRecordId);
     }
 
     [Fact]
@@ -55,10 +56,10 @@ public class BearingCatalogTests
         var catalog = BearingFixtures.BuildCatalog();
         await catalog.RegisterAsync("brg-0001", BearingFixtures.DeepGrooveBall("FX-6000"));
 
-        var exception = await Assert.ThrowsAsync<DuplicateBearingException>(
+        var exception = await Assert.ThrowsAsync<DuplicateReferenceRecordException>(
             () => catalog.RegisterAsync("brg-0001", BearingFixtures.DeepGrooveBall("FX-6001")));
 
-        Assert.Equal("brg-0001", exception.BearingId);
+        Assert.Equal("brg-0001", exception.RecordId);
     }
 
     [Fact]
@@ -67,11 +68,12 @@ public class BearingCatalogTests
         var catalog = BearingFixtures.BuildCatalog();
         await catalog.RegisterAsync("brg-0001", BearingFixtures.DeepGrooveBall("FX-6000"));
 
-        var exception = await Assert.ThrowsAsync<DuplicateBearingPartNumberException>(
+        var exception = await Assert.ThrowsAsync<DuplicateReferenceKeyException>(
             () => catalog.RegisterAsync("brg-0002", BearingFixtures.DeepGrooveBall("FX-6000")));
 
-        Assert.Equal("brg-0001", exception.ExistingBearingId);
-        Assert.Equal("FX-6000", exception.PartNumber);
+        Assert.Equal("brg-0001", exception.ExistingRecordId);
+        Assert.Contains("FX-6000", exception.Message, StringComparison.Ordinal);
+        Assert.Equal("Bearings", exception.Library);
     }
 
     [Fact]
@@ -86,7 +88,7 @@ public class BearingCatalogTests
         await catalog.RegisterAsync("brg-0001", first);
         var registered = await catalog.RegisterAsync("brg-0002", second);
 
-        Assert.Equal("brg-0002", registered.BearingId);
+        Assert.Equal("brg-0002", registered.Id);
     }
 
     [Fact]
@@ -98,7 +100,7 @@ public class BearingCatalogTests
         var collidingIdentity = new BearingIdentity(" testfixture bearings ", " fx-6000 ");
         var colliding = BearingFixtures.DeepGrooveBall() with { Identity = collidingIdentity };
 
-        await Assert.ThrowsAsync<DuplicateBearingPartNumberException>(
+        await Assert.ThrowsAsync<DuplicateReferenceKeyException>(
             () => catalog.RegisterAsync("brg-0002", colliding));
     }
 
@@ -133,7 +135,7 @@ public class BearingCatalogTests
                     await catalog.RegisterAsync("brg-race", BearingFixtures.DeepGrooveBall($"FX-{i:0000}"));
                     return true;
                 }
-                catch (BearingsException)
+                catch (ReferenceDataException)
                 {
                     return false;
                 }
@@ -158,7 +160,7 @@ public class BearingCatalogTests
                     await catalog.RegisterAsync($"brg-{i:0000}", BearingFixtures.DeepGrooveBall("FX-SHARED"));
                     return true;
                 }
-                catch (BearingsException)
+                catch (ReferenceDataException)
                 {
                     return false;
                 }
@@ -208,7 +210,7 @@ public class BearingCatalogTests
         Assert.Equal(BearingFixtures.Millimetres(0.3), read.Geometry.ChamferMinimum);
         Assert.Equal(4.6, read.LoadRatings!.BasicDynamicRadial!.Value.Value);
         Assert.Equal("kN", read.LoadRatings.BasicDynamicRadial.Value.Unit.Symbol);
-        Assert.Equal(BearingValueOrigin.ManufacturerCatalogue, read.LoadRatings.BasicDynamicRadial.Origin);
+        Assert.Equal(ReferenceValueOrigin.ManufacturerCatalogue, read.LoadRatings.BasicDynamicRadial.Origin);
         Assert.Equal(2, read.SpeedRatings.Count);
         Assert.Equal("Oil lubrication", read.SpeedRatings[0].Rating.Conditions);
         Assert.Equal(BearingSealingType.Open, read.Configuration!.Sealing!.Type);
@@ -222,8 +224,8 @@ public class BearingCatalogTests
         Assert.Equal("Fixture general-purpose", read.ApplicationClassification);
         Assert.Equal(new DateOnly(2026, 3, 1), read.EffectiveDate);
         Assert.Equal("verbatim", read.ManufacturerAttributes["Fixture note"]);
-        Assert.Equal(BearingExtractionMethod.ManualTranscription, read.Provenance.ExtractionMethod);
-        Assert.Equal("Table 1", read.Provenance.SourceLocation);
+        Assert.Equal(ReferenceExtractionMethod.ManualTranscription, found.Provenance.ExtractionMethod);
+        Assert.Equal("Table 1", found.Provenance.SourceLocation);
     }
 
     [Fact]
@@ -265,7 +267,7 @@ public class BearingCatalogTests
 
         var found = await catalog.FindByPartNumberAsync(" testfixture bearings ", " fx-6000 ");
 
-        Assert.Equal("brg-0001", found!.BearingId);
+        Assert.Equal("brg-0001", found!.Id);
     }
 
     [Fact]
@@ -294,7 +296,7 @@ public class BearingCatalogTests
 
         var listed = await catalog.ListAsync();
 
-        Assert.Equal(["brg-0001", "brg-0002", "brg-0003"], listed.Select(b => b.BearingId));
+        Assert.Equal(["brg-0001", "brg-0002", "brg-0003"], listed.Select(b => b.Id));
     }
 
     // ----------------------------------------------------------------
@@ -312,8 +314,8 @@ public class BearingCatalogTests
             BearingFixtures.DeepGrooveBall() with
             {
                 LoadRatings = new BearingLoadRatings(
-                    BasicDynamicRadial: new BearingRatedValue<Tempest.Core.UnitsAndQuantities.Force>(
-                        BearingFixtures.Kilonewtons(4.75), BearingValueOrigin.ManufacturerCatalogue)),
+                    BasicDynamicRadial: new ReferenceValue<Tempest.Core.UnitsAndQuantities.Force>(
+                        BearingFixtures.Kilonewtons(4.75), ReferenceValueOrigin.ManufacturerCatalogue)),
             },
             "Catalogue revision 2 restated C.");
 
@@ -325,12 +327,12 @@ public class BearingCatalogTests
     public async Task ReviseAsync_LeavesTheValidationStateAlone()
     {
         var catalog = BearingFixtures.BuildCatalog();
-        await catalog.RegisterAsync("brg-0001", BearingFixtures.DeepGrooveBall(provenance: BearingFixtures.SourcedProvenance()));
-        await catalog.SetValidationStateAsync("brg-0001", BearingValidationState.Checked, "Checked.");
+        await catalog.RegisterAsync("brg-0001", BearingFixtures.DeepGrooveBall(), BearingFixtures.SourcedProvenance());
+        await catalog.SetValidationStateAsync("brg-0001", ReferenceValidationState.Checked, "Checked.");
 
         var revised = await catalog.ReviseAsync("brg-0001", BearingFixtures.DeepGrooveBall(), "Correction.");
 
-        Assert.Equal(BearingValidationState.Checked, revised.ValidationState);
+        Assert.Equal(ReferenceValidationState.Checked, revised.ValidationState);
     }
 
     [Fact]
@@ -338,10 +340,10 @@ public class BearingCatalogTests
     {
         var catalog = BearingFixtures.BuildCatalog();
 
-        var exception = await Assert.ThrowsAsync<BearingNotFoundException>(
+        var exception = await Assert.ThrowsAsync<ReferenceRecordNotFoundException>(
             () => catalog.ReviseAsync("brg-missing", BearingFixtures.DeepGrooveBall(), null));
 
-        Assert.Equal("brg-missing", exception.BearingId);
+        Assert.Equal("brg-missing", exception.RecordId);
     }
 
     [Fact]
@@ -353,7 +355,7 @@ public class BearingCatalogTests
         await catalog.ReviseAsync("brg-0001", BearingFixtures.DeepGrooveBall("FX-6000-B"), "Part number corrected.");
 
         Assert.Null(await catalog.FindByPartNumberAsync("TestFixture Bearings", "FX-6000"));
-        Assert.Equal("brg-0001", (await catalog.FindByPartNumberAsync("TestFixture Bearings", "FX-6000-B"))!.BearingId);
+        Assert.Equal("brg-0001", (await catalog.FindByPartNumberAsync("TestFixture Bearings", "FX-6000-B"))!.Id);
     }
 
     [Fact]
@@ -363,7 +365,7 @@ public class BearingCatalogTests
         await catalog.RegisterAsync("brg-0001", BearingFixtures.DeepGrooveBall("FX-6000"));
         await catalog.RegisterAsync("brg-0002", BearingFixtures.DeepGrooveBall("FX-6001"));
 
-        await Assert.ThrowsAsync<DuplicateBearingPartNumberException>(
+        await Assert.ThrowsAsync<DuplicateReferenceKeyException>(
             () => catalog.ReviseAsync("brg-0002", BearingFixtures.DeepGrooveBall("FX-6000"), "Collide."));
     }
 

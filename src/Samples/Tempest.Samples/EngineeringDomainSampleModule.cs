@@ -155,11 +155,19 @@ public sealed class EngineeringDomainSampleModule : ModuleLifecycleBase
         await assembly.LinkAsync(subAssembly.Id, "groupedUnder", cancellationToken).ConfigureAwait(false);
 
         var materialSpecification = await _materialCatalog.RegisterAsync(
-            "SAMPLE-MAT-001", "Fictional Sample Alloy", new Dictionary<string, MaterialProperty>(), category: "metal", cancellationToken)
+            "SAMPLE-MAT-001",
+            new MaterialDefinition
+            {
+                Name = "Fictional Sample Alloy",
+                Family = MaterialFamily.Other,
+                SourceClassification = "metal",
+            },
+            MaterialsSampleModule.SampleProvenance,
+            cancellationToken)
             .ConfigureAwait(false);
 
         var partFactory = new EngineeringObjectFactory<Part>(
-            "Part", _context, (doc, rev) => new Part(doc, rev, _context, "SAMPLE-PART-001", "Sample Part", EngineeringObjectMetadata.Empty, materialSpecification.MaterialId));
+            "Part", _context, (doc, rev) => new Part(doc, rev, _context, "SAMPLE-PART-001", "Sample Part", EngineeringObjectMetadata.Empty, materialSpecification.Id));
         var part = (Part)await partFactory.CreateAsync("Fictional sample part — for demonstration only.", cancellationToken).ConfigureAwait(false);
         SamplePartId = part.Id;
         objectIds.Add(part.Id);

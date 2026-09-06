@@ -57,21 +57,35 @@ public readonly record struct Quantity<TDimension> : IComparable<Quantity<TDimen
 
     /// <summary>Returns an equivalent quantity expressed in <paramref name="targetUnit"/>.</summary>
     /// <param name="targetUnit">The unit to convert to.</param>
+    /// <remarks>
+    /// Converts through the dimension's own base unit, honouring each
+    /// unit's own offset as well as its factor, so an affine scale
+    /// (degrees Celsius, `ADR-0125`) converts correctly in both
+    /// directions. For the ordinary multiplicative case, where both
+    /// offsets are zero, this is exactly the factor-only arithmetic it
+    /// has always been.
+    /// </remarks>
     public Quantity<TDimension> ConvertTo(Unit<TDimension> targetUnit)
     {
         if (Unit == targetUnit)
             return this;
 
-        var baseValue = Value * Unit.ToBaseUnitFactor;
-        var convertedValue = baseValue / targetUnit.ToBaseUnitFactor;
-        return new Quantity<TDimension>(convertedValue, targetUnit);
+        return new Quantity<TDimension>(targetUnit.FromBase(Unit.ToBase(Value)), targetUnit);
     }
+
+    /// <summary>
+    /// This quantity's own value expressed in its dimension's base unit —
+    /// the form two quantities recorded in different units must be
+    /// compared in.
+    /// </summary>
+    public double BaseValue => Unit.ToBase(Value);
 
     /// <summary>Adds two quantities expressed in the exact same <see cref="Unit"/>.</summary>
     /// <exception cref="IncompatibleUnitsException"><paramref name="left"/> and <paramref name="right"/> do not share the exact same <see cref="Unit"/>.</exception>
     public static Quantity<TDimension> operator +(Quantity<TDimension> left, Quantity<TDimension> right)
     {
         RequireSameUnit(left, right);
+        RequireNotAffine(left.Unit, "added");
         return new Quantity<TDimension>(left.Value + right.Value, left.Unit);
     }
 
@@ -80,20 +94,27 @@ public readonly record struct Quantity<TDimension> : IComparable<Quantity<TDimen
     public static Quantity<TDimension> operator -(Quantity<TDimension> left, Quantity<TDimension> right)
     {
         RequireSameUnit(left, right);
+        RequireNotAffine(left.Unit, "subtracted");
         return new Quantity<TDimension>(left.Value - right.Value, left.Unit);
     }
 
     /// <summary>Scales a quantity by a dimensionless factor, preserving its unit.</summary>
-    public static Quantity<TDimension> operator *(Quantity<TDimension> quantity, double scalar) =>
-        new(quantity.Value * scalar, quantity.Unit);
+    public static Quantity<TDimension> operator *(Quantity<TDimension> quantity, double scalar)
+    {
+        RequireNotAffine(quantity.Unit, "scaled");
+        return new Quantity<TDimension>(quantity.Value * scalar, quantity.Unit);
+    }
 
     /// <summary>Scales a quantity by a dimensionless factor, preserving its unit.</summary>
     public static Quantity<TDimension> operator *(double scalar, Quantity<TDimension> quantity) =>
         quantity * scalar;
 
     /// <summary>Divides a quantity by a dimensionless factor, preserving its unit.</summary>
-    public static Quantity<TDimension> operator /(Quantity<TDimension> quantity, double scalar) =>
-        new(quantity.Value / scalar, quantity.Unit);
+    public static Quantity<TDimension> operator /(Quantity<TDimension> quantity, double scalar)
+    {
+        RequireNotAffine(quantity.Unit, "scaled");
+        return new Quantity<TDimension>(quantity.Value / scalar, quantity.Unit);
+    }
 
     /// <inheritdoc />
     /// <exception cref="IncompatibleUnitsException">This instance and <paramref name="other"/> do not share the exact same <see cref="Unit"/>.</exception>
@@ -172,6 +193,20 @@ public readonly record struct Quantity<TDimension> : IComparable<Quantity<TDimen
         }
 
         return false;
+    }
+
+    /// <summary>
+    /// Refuses arithmetic that has no meaning on an affine scale
+    /// (`ADR-0125`). Twenty degrees Celsius plus five degrees Celsius is
+    /// not twenty-five degrees Celsius — the operands are positions on a
+    /// scale, not magnitudes — and this framework fails loudly rather
+    /// than returning a number that looks like an answer.
+    /// </summary>
+    private static void RequireNotAffine(Unit<TDimension> unit, string operation)
+    {
+        if (unit.IsAffine)
+            throw new IncompatibleUnitsException(
+                $"A quantity expressed in '{unit.Symbol}' cannot be {operation}: that unit sits on an affine scale, where the operation has no physical meaning. Convert to an absolute unit of the same dimension first.");
     }
 
     private static void RequireSameUnit(Quantity<TDimension> left, Quantity<TDimension> right)

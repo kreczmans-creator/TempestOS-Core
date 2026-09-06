@@ -1,3 +1,4 @@
+using Tempest.Core.ReferenceData;
 using Tempest.Core.UnitsAndQuantities;
 
 namespace Tempest.Core.Bearings;
@@ -9,9 +10,10 @@ namespace Tempest.Core.Bearings;
 /// <remarks>
 /// <para>
 /// <b>What this type is not.</b> It carries no TempestOS identity, no
-/// validation state and no revision number — those belong to
-/// <see cref="IBearing"/>, the registered record, because they are
-/// catalogue governance rather than engineering description. It carries no
+/// provenance, no validation state and no revision number — those belong
+/// to the registered record (<see cref="IReferenceRecord{TDefinition}"/>),
+/// because they are catalogue governance rather than engineering
+/// description. It carries no
 /// supplier, price, lead time or stock information — those belong to a
 /// future commercial capability (P03). It carries no statement of
 /// suitability for any application — that is engineering judgement and
@@ -42,9 +44,6 @@ public sealed record BearingDefinition
     /// <summary>The bearing's own dimensional data. Required as a record (individual dimensions within it are each optional).</summary>
     public required BearingGeometry Geometry { get; init; }
 
-    /// <summary>Where this record's own data came from, and how far it can be trusted. Required — never optional, never fabricated.</summary>
-    public required BearingProvenance Provenance { get; init; }
-
     /// <summary>The load ratings the source stated. <see langword="null"/> if the source gave none.</summary>
     public BearingLoadRatings? LoadRatings { get; init; }
 
@@ -64,7 +63,7 @@ public sealed record BearingDefinition
     public Quantity<Mass>? Mass { get; init; }
 
     /// <summary>Every standard this record's own information is stated against. Never <see langword="null"/>; empty if none is cited.</summary>
-    public IReadOnlyList<BearingStandardReference> Standards { get; init; } = [];
+    public IReadOnlyList<StandardReference> Standards { get; init; } = [];
 
     /// <summary>
     /// The source's own application classification for the bearing (e.g. a

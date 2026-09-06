@@ -1,4 +1,5 @@
 using Tempest.Core.Bearings;
+using Tempest.Core.ReferenceData;
 using Tempest.Core.EngineeringData;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Identity;
@@ -36,7 +37,7 @@ public class BearingValidationServiceTests
     {
         var (_, validator) = Build();
 
-        await Assert.ThrowsAsync<BearingNotFoundException>(() => validator.ValidateAsync("brg-missing"));
+        await Assert.ThrowsAsync<ReferenceRecordNotFoundException>(() => validator.ValidateAsync("brg-missing"));
     }
 
     [Fact]
@@ -187,7 +188,7 @@ public class BearingValidationServiceTests
         var definition = BearingFixtures.DeepGrooveBall() with
         {
             LoadRatings = new BearingLoadRatings(
-                BasicDynamicRadial: new BearingRatedValue<Force>(BearingFixtures.Kilonewtons(0), BearingValueOrigin.ManufacturerCatalogue)),
+                BasicDynamicRadial: new ReferenceValue<Force>(BearingFixtures.Kilonewtons(0), ReferenceValueOrigin.ManufacturerCatalogue)),
         };
 
         Assert.True(HasError(await validator.ValidateDefinitionAsync(definition), BearingValidationRules.LoadRatingMustBePositive));
@@ -200,9 +201,9 @@ public class BearingValidationServiceTests
         var definition = BearingFixtures.DeepGrooveBall() with
         {
             LoadRatings = new BearingLoadRatings(
-                ManufacturerRatings: new Dictionary<string, BearingRatedValue<Force>>
+                ManufacturerRatings: new Dictionary<string, ReferenceValue<Force>>
                 {
-                    ["Fixture rating"] = new(BearingFixtures.Kilonewtons(-1), BearingValueOrigin.ManufacturerCatalogue),
+                    ["Fixture rating"] = new(BearingFixtures.Kilonewtons(-1), ReferenceValueOrigin.ManufacturerCatalogue),
                 }),
         };
 
@@ -239,7 +240,7 @@ public class BearingValidationServiceTests
             [
                 new BearingSpeedRating(
                     BearingSpeedRatingKind.LimitingSpeed,
-                    new BearingRatedValue<RotationalSpeed>(BearingFixtures.RevolutionsPerMinute(0), BearingValueOrigin.ManufacturerCatalogue)),
+                    new ReferenceValue<RotationalSpeed>(BearingFixtures.RevolutionsPerMinute(0), ReferenceValueOrigin.ManufacturerCatalogue)),
             ],
         };
 
@@ -253,10 +254,10 @@ public class BearingValidationServiceTests
         var definition = BearingFixtures.DeepGrooveBall() with
         {
             LoadRatings = new BearingLoadRatings(
-                BasicDynamicRadial: new BearingRatedValue<Force>(BearingFixtures.Kilonewtons(4.6), BearingValueOrigin.DerivedByTempestOS)),
+                BasicDynamicRadial: new ReferenceValue<Force>(BearingFixtures.Kilonewtons(4.6), ReferenceValueOrigin.DerivedByTempestOS)),
         };
 
-        Assert.True(HasWarning(await validator.ValidateDefinitionAsync(definition), BearingValidationRules.DerivedValuePresent));
+        Assert.True(HasWarning(await validator.ValidateDefinitionAsync(definition), ReferenceValidationRules.DerivedValuePresent));
     }
 
     // ----------------------------------------------------------------
@@ -418,21 +419,25 @@ public class BearingValidationServiceTests
     public async Task ValidateDefinitionAsync_NoSourceIdentified_IsAWarning()
     {
         var (_, validator) = Build();
-        var definition = BearingFixtures.DeepGrooveBall(provenance: BearingProvenance.Unknown);
+        var definition = BearingFixtures.DeepGrooveBall();
 
-        Assert.True(HasWarning(await validator.ValidateDefinitionAsync(definition), BearingValidationRules.ProvenanceMustIdentifyASource));
+        Assert.True(HasWarning(
+            await validator.ValidateDefinitionAsync(definition, ReferenceProvenance.Unknown),
+            ReferenceValidationRules.ProvenanceMustIdentifyASource));
     }
 
     [Fact]
     public async Task ValidateDefinitionAsync_VerifiedWithoutAReviewer_IsAnError()
     {
         var (_, validator) = Build();
-        var definition = BearingFixtures.DeepGrooveBall(provenance: BearingFixtures.SourcedProvenance() with
+        var provenance = BearingFixtures.SourcedProvenance() with
         {
-            VerificationStatus = BearingVerificationStatus.VerifiedAgainstSource,
-        });
+            VerificationStatus = ReferenceVerificationStatus.VerifiedAgainstSource,
+        };
 
-        Assert.True(HasError(await validator.ValidateDefinitionAsync(definition), BearingValidationRules.VerificationMustBeAttributable));
+        Assert.True(HasError(
+            await validator.ValidateDefinitionAsync(BearingFixtures.DeepGrooveBall(), provenance),
+            ReferenceValidationRules.VerificationMustBeAttributable));
     }
 
     [Fact]
@@ -440,10 +445,10 @@ public class BearingValidationServiceTests
     {
         var (_, validator) = Build();
 
-        var result = await validator.ValidateDefinitionAsync(BearingFixtures.DeepGrooveBall(provenance: BearingFixtures.VerifiedProvenance()));
+        var result = await validator.ValidateDefinitionAsync(BearingFixtures.DeepGrooveBall(), BearingFixtures.VerifiedProvenance());
 
-        Assert.False(HasError(result, BearingValidationRules.VerificationMustBeAttributable));
-        Assert.False(HasWarning(result, BearingValidationRules.ProvenanceMustIdentifyASource));
+        Assert.False(HasError(result, ReferenceValidationRules.VerificationMustBeAttributable));
+        Assert.False(HasWarning(result, ReferenceValidationRules.ProvenanceMustIdentifyASource));
     }
 
     // ----------------------------------------------------------------
@@ -467,7 +472,7 @@ public class BearingValidationServiceTests
             .Replace("\"ValidationState\":\"Draft\"", "\"ValidationState\":\"Superseded\"", StringComparison.Ordinal);
         await documentStore.ReviseAsync(bearing.UnderlyingDocumentId, content, "Hand-written state.");
 
-        Assert.True(HasWarning(await validator.ValidateAsync("brg-0001"), BearingValidationRules.SupersededWithoutReplacement));
+        Assert.True(HasWarning(await validator.ValidateAsync("brg-0001"), ReferenceValidationRules.SupersededWithoutReplacement));
     }
 
     [Fact]
@@ -506,7 +511,7 @@ public class BearingValidationServiceTests
             Construction = new BearingConstruction(RingMaterialId: "never-registered"),
         });
 
-        Assert.False(HasWarning(await validator.ValidateAsync("brg-0001"), BearingValidationRules.MaterialReferenceUnresolved));
+        Assert.False(HasWarning(await validator.ValidateAsync("brg-0001"), ReferenceValidationRules.MaterialReferenceUnresolved));
     }
 
     [Fact]
@@ -523,7 +528,7 @@ public class BearingValidationServiceTests
             Construction = new BearingConstruction(RingMaterialId: "never-registered"),
         });
 
-        Assert.True(HasWarning(await validator.ValidateAsync("brg-0001"), BearingValidationRules.MaterialReferenceUnresolved));
+        Assert.True(HasWarning(await validator.ValidateAsync("brg-0001"), ReferenceValidationRules.MaterialReferenceUnresolved));
     }
 
     [Fact]
@@ -537,16 +542,15 @@ public class BearingValidationServiceTests
 
         await materials.RegisterAsync(
             "fixture-ring-steel",
-            "Fixture ring steel",
-            new Dictionary<string, MaterialProperty>(),
-            category: "TestFixture");
+            new MaterialDefinition { Name = "Fixture ring steel", Family = MaterialFamily.Steel },
+            BearingFixtures.SourcedProvenance());
 
         await catalog.RegisterAsync("brg-0001", BearingFixtures.DeepGrooveBall() with
         {
             Construction = new BearingConstruction(RingMaterialId: "fixture-ring-steel"),
         });
 
-        Assert.False(HasWarning(await validator.ValidateAsync("brg-0001"), BearingValidationRules.MaterialReferenceUnresolved));
+        Assert.False(HasWarning(await validator.ValidateAsync("brg-0001"), ReferenceValidationRules.MaterialReferenceUnresolved));
     }
 
     // ----------------------------------------------------------------
@@ -558,9 +562,9 @@ public class BearingValidationServiceTests
     {
         var (_, validator) = Build();
 
-        var report = await validator.ValidateCatalogueAsync();
+        var report = await validator.ValidateLibraryAsync();
 
-        Assert.Equal(0, report.BearingsExamined);
+        Assert.Equal(0, report.RecordsExamined);
         Assert.Empty(report.Findings);
         Assert.True(report.IsClean);
     }
@@ -572,11 +576,11 @@ public class BearingValidationServiceTests
         await catalog.RegisterAsync("brg-good", BearingFixtures.DeepGrooveBall("FX-6000"));
         await catalog.RegisterAsync("brg-bad", BearingFixtures.DeepGrooveBall("FX-6001", boreMillimetres: 30, outsideDiameterMillimetres: 20));
 
-        var report = await validator.ValidateCatalogueAsync();
+        var report = await validator.ValidateLibraryAsync();
 
-        Assert.Equal(2, report.BearingsExamined);
-        Assert.Equal(["brg-bad"], report.Findings.Select(f => f.BearingId));
-        Assert.Equal(1, report.BearingsWithErrors);
+        Assert.Equal(2, report.RecordsExamined);
+        Assert.Equal(["brg-bad"], report.Findings.Select(f => f.RecordId));
+        Assert.Equal(1, report.RecordsWithErrors);
         Assert.False(report.IsClean);
     }
 
@@ -586,9 +590,9 @@ public class BearingValidationServiceTests
         var (catalog, validator) = Build();
         await catalog.RegisterAsync("brg-bad", BearingFixtures.DeepGrooveBall(boreMillimetres: 30, outsideDiameterMillimetres: 20));
 
-        var report = await validator.ValidateCatalogueAsync();
+        var report = await validator.ValidateLibraryAsync();
 
-        Assert.Equal(BearingValidationState.Draft, report.Findings[0].ValidationState);
+        Assert.Equal(ReferenceValidationState.Draft, report.Findings[0].ValidationState);
     }
 
     [Fact]
@@ -597,10 +601,10 @@ public class BearingValidationServiceTests
         var (catalog, validator) = Build();
         await catalog.RegisterAsync("brg-warn", BearingFixtures.DeepGrooveBall() with { LoadRatings = null });
 
-        var report = await validator.ValidateCatalogueAsync();
+        var report = await validator.ValidateLibraryAsync();
 
-        Assert.Equal(0, report.BearingsWithErrors);
-        Assert.Equal(1, report.BearingsWithWarnings);
+        Assert.Equal(0, report.RecordsWithErrors);
+        Assert.Equal(1, report.RecordsWithWarnings);
         Assert.True(report.IsClean);
     }
 }

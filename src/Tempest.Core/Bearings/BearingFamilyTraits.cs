@@ -1,3 +1,5 @@
+using Tempest.Core.ReferenceData;
+
 namespace Tempest.Core.Bearings;
 
 /// <summary>
@@ -11,8 +13,8 @@ namespace Tempest.Core.Bearings;
 /// record: a deep-groove ball bearing has no nominal contact angle to
 /// record, and a plain bush has no rolling elements or internal clearance
 /// class. Reading applicability from here lets a missing value be reported
-/// as <see cref="BearingPropertyAvailability.NotApplicable"/> — genuinely
-/// distinct from <see cref="BearingPropertyAvailability.NotRecorded"/>,
+/// as <see cref="ReferencePropertyAvailability.NotApplicable"/> — genuinely
+/// distinct from <see cref="ReferencePropertyAvailability.NotRecorded"/>,
 /// which is a data gap.
 /// </para>
 /// <para>

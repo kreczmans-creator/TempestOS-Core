@@ -1,5 +1,7 @@
 using Tempest.Core.UnitsAndQuantities;
 
+using Tempest.Core.ReferenceData;
+
 namespace Tempest.Core.Bearings;
 
 /// <summary>
@@ -25,14 +27,14 @@ namespace Tempest.Core.Bearings;
 /// Never <see langword="null"/>; empty if none.
 /// </param>
 public sealed record BearingLoadRatings(
-    BearingRatedValue<Force>? BasicDynamicRadial = null,
-    BearingRatedValue<Force>? BasicStaticRadial = null,
-    BearingRatedValue<Force>? BasicDynamicAxial = null,
-    BearingRatedValue<Force>? BasicStaticAxial = null,
-    BearingRatedValue<Force>? FatigueLoadLimit = null,
-    IReadOnlyDictionary<string, BearingRatedValue<Force>>? ManufacturerRatings = null)
+    ReferenceValue<Force>? BasicDynamicRadial = null,
+    ReferenceValue<Force>? BasicStaticRadial = null,
+    ReferenceValue<Force>? BasicDynamicAxial = null,
+    ReferenceValue<Force>? BasicStaticAxial = null,
+    ReferenceValue<Force>? FatigueLoadLimit = null,
+    IReadOnlyDictionary<string, ReferenceValue<Force>>? ManufacturerRatings = null)
 {
     /// <summary>Further rated forces a manufacturer quotes that this shape does not name. Never <see langword="null"/>.</summary>
-    public IReadOnlyDictionary<string, BearingRatedValue<Force>> ManufacturerRatings { get; init; } =
-        ManufacturerRatings ?? new Dictionary<string, BearingRatedValue<Force>>();
+    public IReadOnlyDictionary<string, ReferenceValue<Force>> ManufacturerRatings { get; init; } =
+        ManufacturerRatings ?? new Dictionary<string, ReferenceValue<Force>>();
 }

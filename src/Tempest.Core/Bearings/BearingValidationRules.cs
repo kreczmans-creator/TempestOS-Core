@@ -6,13 +6,16 @@ namespace Tempest.Core.Bearings;
 /// a message string.
 /// </summary>
 /// <remarks>
-/// Numbered in their own <c>TEMPEST-BRG-</c> series rather than continuing
-/// <see cref="EngineeringDomain.StructuralValidationRules"/>'s own
-/// <c>TEMPEST-VAL-</c> numbering: those codes are scoped to
-/// <see cref="EngineeringDomain.IEngineeringObject"/> structural
-/// integrity, which no bearing record is, and interleaving two unrelated
-/// rule families in one number space is exactly how
-/// <c>TEMPEST-VAL-002</c>'s own documented collision happened.
+/// Bearing engineering only. The rules about being reference data at all
+/// — provenance completeness, verification attributability, supersession,
+/// derived values, unresolved material and standard references — are
+/// <see cref="ReferenceData.ReferenceValidationRules"/>'s own
+/// <c>TEMPEST-REF-</c> series, shared with every Group A library and not
+/// restated here. Five codes this library once declared for those rules
+/// (<c>TEMPEST-BRG-010</c>, <c>-011</c>, <c>-018</c>, <c>-019</c>,
+/// <c>-020</c>) moved there when the shared layer was extracted; their
+/// numbers are deliberately left unreused, so a reader meeting one in an
+/// older report can still find what it meant.
 /// </remarks>
 public static class BearingValidationRules
 {
@@ -43,12 +46,6 @@ public static class BearingValidationRules
     /// <summary>A record should carry a designation as well as a part number.</summary>
     public const string DesignationShouldBeRecorded = "TEMPEST-BRG-009";
 
-    /// <summary>Provenance must name a source organisation and a source document.</summary>
-    public const string ProvenanceMustIdentifyASource = "TEMPEST-BRG-010";
-
-    /// <summary>A record marked verified must name the reviewer and the date of verification.</summary>
-    public const string VerificationMustBeAttributable = "TEMPEST-BRG-011";
-
     /// <summary>A contact angle is recorded on a family for which a nominal contact angle is not a defining characteristic.</summary>
     public const string ContactAngleNotApplicableToFamily = "TEMPEST-BRG-012";
 
@@ -66,15 +63,6 @@ public static class BearingValidationRules
 
     /// <summary>Two records share one manufacturer and manufacturer part number.</summary>
     public const string DuplicatePartNumber = "TEMPEST-BRG-017";
-
-    /// <summary>A referenced <c>materialId</c> is not registered in the canonical Materials catalogue.</summary>
-    public const string MaterialReferenceUnresolved = "TEMPEST-BRG-018";
-
-    /// <summary>A superseded record does not name the bearing that replaced it.</summary>
-    public const string SupersededWithoutReplacement = "TEMPEST-BRG-019";
-
-    /// <summary>A load rating is marked as derived by TempestOS, and so must not be read as manufacturer reference data.</summary>
-    public const string DerivedValuePresent = "TEMPEST-BRG-020";
 
     /// <summary>An overall width, where recorded, must not be less than the nominal width.</summary>
     public const string OverallWidthLessThanWidth = "TEMPEST-BRG-021";
