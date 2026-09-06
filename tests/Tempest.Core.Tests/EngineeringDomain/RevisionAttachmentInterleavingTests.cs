@@ -374,12 +374,20 @@ public sealed class RevisionAttachmentInterleavingTests
     /// window in which a concurrent predecessor write is refused rather
     /// than accepted. A rename issued while a revision is still writing
     /// its document revision used to be accepted (the revision had not yet
-    /// taken the lock); it is now refused — <b>and, because P1-F4 is still
-    /// open for <c>RenameAsync</c>, it still lands on the successor
-    /// anyway</b>. So R6 did not create that leak, but it did widen the
-    /// window in which it is reachable, by exactly the duration of the
-    /// document write. That is a behaviour change with no board finding
-    /// behind it, so it is recorded rather than left to be rediscovered.
+    /// taken the lock); it is now refused. The cost is real and is left
+    /// recorded here: R6 made a refusal reachable for the whole duration
+    /// of a document write.
+    /// </para>
+    /// <para>
+    /// <b>What that widening cost, until `WP 16.4B-R6b`.</b> The line below
+    /// used to assert
+    /// <c>Assert.Equal("Issued while the document was being written",
+    /// successor.DisplayName)</c> — the refused rename reached the
+    /// successor anyway (P1-F4), so R6 had widened the window on a leak it
+    /// had not closed. `WP 16.4B-R6b` closed the leak for
+    /// <c>RenameAsync</c> and the other four, and the assertion is
+    /// inverted here rather than removed: the widened window is still
+    /// exactly as wide, and now there is nothing in it to leak.
     /// </para>
     /// </remarks>
     [Fact]
@@ -404,12 +412,13 @@ public sealed class RevisionAttachmentInterleavingTests
         var successor = (RevisableFixture)await revising;
         await Assert.ThrowsAsync<SupersededEngineeringObjectException>(() => renaming);
 
-        // And the refused rename nonetheless reached the successor — P1-F4
-        // again, in a window this change made wider. See
-        // `RefusedMutationSuccessorLeakageTests`, which is where that open
-        // defect is characterised; asserted here so this fact records the
-        // widening rather than implying it does not happen.
-        Assert.Equal("Issued while the document was being written", successor.DisplayName);
+        // And the refused rename reached neither the successor nor the
+        // predecessor (`WP 16.4B-R6b`). This assertion was the opposite
+        // until that Work Package: the widened window is unchanged, and it
+        // no longer carries a leak. See
+        // `RefusedMutationSuccessorLeakageTests` for the closure in full.
+        Assert.Equal("Bracket", successor.DisplayName);
+        Assert.Equal("Bracket", part.DisplayName);
     }
 
     // ================================================================
