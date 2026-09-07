@@ -134,15 +134,31 @@ public sealed class R7FalsificationTests : IDisposable
     // ================================================================
 
     /// <summary>
-    /// ATTACK 1/7. <c>DurableRecordAlreadyShowsThisStateAsync</c> guards
-    /// only <c>store.FindAsync</c>. The comparison that consumes its answer
-    /// — and <c>CaptureState()</c>, which it calls — sit OUTSIDE that
-    /// try/catch, inside <c>RollBackOnFailureAsync</c>'s catch block. A
-    /// throw there replaces the caller's real exception AND skips the undo,
-    /// reinstating `TD-143` on the very path that was meant to close it.
+    /// ATTACK 1/7. A throw from the evidence step — the comparison, or the
+    /// <c>CaptureState()</c> that feeds it — leaves the caller's real
+    /// exception intact and still performs the undo.
     /// </summary>
+    /// <remarks>
+    /// <b>INVERTED by `WP 16.4B-R7` round 2 (`B-F1`), on this file's own
+    /// standing instruction; it was a characterisation and is now a
+    /// guard-rail.</b> It stood as
+    /// <c>AThrowFromTheEvidenceComparison_ReplacesTheRealFailureAndSkipsTheUndo</c>
+    /// and asserted the defect it found: <c>DurableRecordAlreadyShowsThis-
+    /// StateAsync</c> guarded only <c>store.FindAsync</c>, leaving the
+    /// comparison and <c>CaptureState()</c> outside that try/catch and
+    /// inside <c>RollBackOnFailureAsync</c>'s catch, so a throw there
+    /// replaced the caller's real exception with an
+    /// <c>ArgumentNullException</c> AND skipped the undo — `TD-143` in full,
+    /// on the path built to close it, and the object's next successful write
+    /// then made the attach durable. Agent A moved the comparison inside the
+    /// guard. Every assertion below is the same one, negated.
+    /// <para>
+    /// <b>Mutant that kills it:</b> move that <c>return</c> line back
+    /// outside the <c>try</c>.
+    /// </para>
+    /// </remarks>
     [Fact]
-    public async Task AThrowFromTheEvidenceComparison_ReplacesTheRealFailureAndSkipsTheUndo()
+    public async Task AThrowFromTheEvidenceComparison_LeavesTheRealFailureIntactAndStillUndoes()
     {
         var rig = new Rig();
         var part = await rig.CreatePartAsync("P-1", "Bracket");
@@ -157,22 +173,18 @@ public sealed class R7FalsificationTests : IDisposable
 
         var thrown = await Record.ExceptionAsync(() => part.AttachAsync(attachment));
 
-        // FALSIFIED. What the caller should see is the IOException the store
-        // raised. What it actually sees is the evidence comparison's own
-        // ArgumentNullException, thrown from inside `RollBackOnFailureAsync`'s
-        // catch block — which both destroys the real cause and skips the
-        // `throw;` and the `RollBackTo` that were to follow it.
-        Assert.IsType<ArgumentNullException>(thrown);
-        Assert.DoesNotContain("could not be written", thrown!.Message, StringComparison.Ordinal);
+        // The caller sees the IOException the store raised, not the evidence
+        // step's own fault.
+        Assert.IsType<IOException>(thrown);
+        Assert.Contains("could not be written", thrown!.Message, StringComparison.Ordinal);
 
-        // And the mutation is still on the instance: `TD-143` in full, on the
-        // path built to close it. The object's next successful write of
-        // anything at all makes this attach durable.
-        Assert.Single(await part.GetAttachmentsAsync());
+        // And the mutation is gone from the instance, so the object's next
+        // successful write of anything at all carries nothing.
+        Assert.Empty(await part.GetAttachmentsAsync());
 
         rig.States.HollowOutHistoryOnRead = false;
         await part.RenameAsync("Renamed");
-        Assert.Single(rig.States.Peek(part.Id)!.Attachments);
+        Assert.Empty(rig.States.Peek(part.Id)!.Attachments);
     }
 
     /// <summary>
