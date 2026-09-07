@@ -743,9 +743,10 @@ public sealed class MutatorRefusalAdversarialTests
     }
 
     /// <summary>
-    /// A store that commits, throws, and is then <b>unreadable</b> has its
-    /// mutation undone anyway — and the instance therefore disagrees with
-    /// its own durable record until a restart rehydrates it.
+    /// A store that commits, throws, and whose re-read then <b>fails</b>
+    /// has its mutation undone anyway — and the instance therefore
+    /// disagrees with its own durable record until a restart rehydrates it.
+    /// One member of a family; see the remarks.
     /// </summary>
     /// <remarks>
     /// <para>
@@ -763,12 +764,23 @@ public sealed class MutatorRefusalAdversarialTests
     /// inference: memory and disk disagree, and no later write on this
     /// object repairs it, because the object's own state no longer carries
     /// the change. <b>This is the reason `WP 16.4B-R7` does not claim
-    /// atomicity.</b> It is bounded by requiring a store that commits,
-    /// then throws, and is then unreadable — which the store this platform
-    /// ships does not do, since `WP 16.4B-R7` removed the only two steps it
-    /// ran after its commit point, and which
-    /// <c>IEngineeringObjectStateStore.SaveAsync</c> now forbids in
-    /// writing for any other implementation.
+    /// atomicity.</b>
+    /// </para>
+    /// <para>
+    /// <b>A FAILING RE-READ IS ONLY ONE MEMBER OF THE FAMILY, and this
+    /// fact must not be read as bounding it (`WP 16.4B-R7` round 2,
+    /// `B-F2`).</b> The real condition is "the write landed and the re-read
+    /// does not confirm it", which a perfectly healthy store can satisfy:
+    /// see <see cref="AMutationWhoseStoreCommitsAndThenAnswersNoRecord_IsUndoneAnyway"/>
+    /// for the route the shipped <c>EngineeringObjectStateStore</c> itself
+    /// takes — it answers <see langword="null"/>, with a warning and no
+    /// exception, for a record that is present but unparseable or at an
+    /// unmigratable schema version — and a stale read from a caching store
+    /// does the same. The mirror case, where the evidence test is satisfied
+    /// by a record this object never wrote and the undo is wrongly
+    /// declined, is real too: the per-object lock is per-
+    /// <c>EngineeringDomainContext</c> and per-process. All of it is
+    /// enumerated on <c>RollBackOnFailureAsync</c>.
     /// </para>
     /// <para>
     /// If a later board decides this must be closed — by a durable undo
@@ -778,7 +790,7 @@ public sealed class MutatorRefusalAdversarialTests
     /// </para>
     /// </remarks>
     [Fact]
-    public async Task AMutationWhoseStoreCommitsThrowsAndIsThenUnreadable_IsUndoneAnyway_LeavingTheInstanceDisagreeingWithDisk()
+    public async Task AMutationWhoseStoreCommitsThrowsAndWhoseReReadFails_IsUndoneAnyway_LeavingTheInstanceDisagreeingWithDisk()
     {
         var rig = new ProbeRig();
         var part = await rig.CreatePartAsync("PRT-1", "Bracket");
@@ -834,6 +846,148 @@ public sealed class MutatorRefusalAdversarialTests
         var survivor = Assert.Single(await part.GetAttachmentsAsync());
         Assert.Same(original, survivor);
         Assert.Same(historyBefore, Assert.Single(part.History));
+    }
+
+    /// <summary>
+    /// A store that commits, throws, and then answers the re-read with
+    /// <b>no record at all</b> — without failing — has its mutation undone
+    /// just as wrongly.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Characterisation, new in `WP 16.4B-R7` round 2 (`B-F2b`). This
+    /// fact exists because the first version of this Work Package's report
+    /// bounded the residual risk as requiring a store that is
+    /// "unreadable", and that was materially narrower than the truth.</b>
+    /// The shipped <c>EngineeringObjectStateStore.Deserialise</c> returns
+    /// <see langword="null"/>, with a logged warning and no exception, for
+    /// a record that is present but unparseable, or at a schema version
+    /// this build has no migration path to. <c>DurableRecordAlreadyShows-
+    /// ThisStateAsync</c> reads <see langword="null"/> as "the write did
+    /// not land". So a perfectly healthy, perfectly readable store reaches
+    /// the identical wrong undo.
+    /// </para>
+    /// <para>
+    /// The real condition is <b>"the write landed and the re-read does not
+    /// confirm it"</b>. Same standing instruction as its sibling: if a
+    /// later board closes this, invert it, do not delete it.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public async Task AMutationWhoseStoreCommitsAndThenAnswersNoRecord_IsUndoneAnyway()
+    {
+        var rig = new ProbeRig();
+        var part = await rig.CreatePartAsync("PRT-1", "Bracket");
+
+        rig.States.CommitThenFailNextSave();
+        rig.States.ReadsNothing = true;
+
+        var failure = await Record.ExceptionAsync(() => part.RenameAsync("Committed but unconfirmed").WaitAsync(Timeout));
+        Assert.IsType<IOException>(failure);
+
+        rig.States.ReadsNothing = false;
+
+        // The write landed, the store never failed a read, and the
+        // instance undid it anyway.
+        var state = await rig.States.FindAsync(part.Id);
+        Assert.NotNull(state);
+        Assert.Equal("Committed but unconfirmed", state.DisplayName);
+        Assert.Equal("Bracket", part.DisplayName);
+    }
+
+    /// <summary>
+    /// A throw from the <b>evidence step itself</b> — the comparison, or
+    /// the state re-capture that feeds it — leaves the caller's real
+    /// exception intact and still undoes the mutation.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Guard-rail, new in `WP 16.4B-R7` round 2 (`B-F1`), and it pins a
+    /// RED that was in the shipped fix.</b> The first version of
+    /// <c>DurableRecordAlreadyShowsThisStateAsync</c> wrapped only
+    /// <c>store.FindAsync</c> in its <c>try</c> and left the comparison —
+    /// and the <c>CaptureState()</c> feeding it — outside. The whole method
+    /// runs inside <c>RollBackOnFailureAsync</c>'s <c>catch</c>, so a throw
+    /// there replaced the caller's real exception with the diagnostic's,
+    /// <b>skipped <c>RollBackTo</c></b>, and skipped the rethrow —
+    /// reinstating `TD-143` in full on the path built to close it.
+    /// </para>
+    /// <para>
+    /// <b>The instrument is not contrived.</b> A state record whose
+    /// <c>History</c> is <see langword="null"/> is what the shipped
+    /// <c>EngineeringObjectStateStore</c> really returns, non-null, for a
+    /// record whose JSON lacks that property: its <c>Deserialise</c>
+    /// catches only <c>JsonException</c> and
+    /// <c>EngineeringObjectState</c>'s collection members are ordinary
+    /// non-<c>required</c> positional parameters. A foreign or hand-edited
+    /// record, an <c>IStateMigration</c> that returns one, or any
+    /// third-party <c>IEngineeringObjectStateStore</c> all produce it.
+    /// <c>AttachAsync</c> is the mutator that reaches it most readily,
+    /// because an attach changes no scalar field and the <c>&amp;&amp;</c>
+    /// chain therefore runs all the way to the collection comparison.
+    /// </para>
+    /// <para>
+    /// <b>Mutant that kills it:</b> move the <c>return persisted is not
+    /// null &amp;&amp; HoldsTheSameMutableState(...)</c> line back outside
+    /// the <c>try</c>. Verified: the caller then receives
+    /// <c>ArgumentNullException</c>, the attachment survives, and the next
+    /// write makes it durable.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public async Task AThrowFromTheEvidenceStep_LeavesTheCallersExceptionIntact_AndStillUndoesTheMutation()
+    {
+        var rig = new ProbeRig();
+        var part = await rig.CreatePartAsync("PRT-1", "Bracket");
+
+        var phantom = new Attachment("phantom.txt", "text/plain", 3);
+
+        rig.States.ReadsHollowRecords = true;
+        rig.States.FailNextSave();
+
+        var failure = await Record.ExceptionAsync(() => part.AttachAsync(phantom).WaitAsync(Timeout));
+
+        // The store's own failure, not the evidence step's.
+        Assert.IsType<IOException>(failure);
+
+        // And the undo still ran.
+        Assert.DoesNotContain(await part.GetAttachmentsAsync(), a => a.Id == phantom.Id);
+
+        rig.States.ReadsHollowRecords = false;
+        await part.RenameAsync("Renamed after the failed attach").WaitAsync(Timeout);
+
+        var state = await rig.States.FindAsync(part.Id);
+        Assert.NotNull(state);
+        Assert.DoesNotContain(state.Attachments, a => a.Id == phantom.Id);
+    }
+
+    /// <summary>
+    /// The same, on the path where the throwing comparison is reached with
+    /// <b>certainty</b>: an ordinary validation rejection, which mutates
+    /// nothing, so every scalar field matches and the comparison always
+    /// runs to the collections.
+    /// </summary>
+    /// <remarks>
+    /// <b>Guard-rail (`B-F1`, `B-F4`).</b> An impermissible lifecycle
+    /// transition is a routine, user-facing outcome — five `Tempest.App`
+    /// command handlers turn it into an ordinary failure result — and it is
+    /// the one class of failure on which the pre-fix defect fired every
+    /// single time rather than occasionally. The caller must receive
+    /// <see cref="InvalidLifecycleTransitionException"/> and nothing else.
+    /// </remarks>
+    [Fact]
+    public async Task AValidationRejection_AgainstAHollowRecord_StillRaisesItsOwnException()
+    {
+        var rig = new ProbeRig();
+        var part = await rig.CreatePartAsync("PRT-1", "Bracket");
+
+        rig.States.ReadsHollowRecords = true;
+
+        var failure = await Record.ExceptionAsync(() => part.TransitionAsync(LifecycleState.Released).WaitAsync(Timeout));
+
+        Assert.IsType<InvalidLifecycleTransitionException>(failure);
+        Assert.Equal(LifecycleState.Draft, part.Status);
+        Assert.Empty(part.History);
     }
 
     // ================================================================
@@ -1474,6 +1628,27 @@ public sealed class MutatorRefusalAdversarialTests
         /// </summary>
         public bool FailReads { get; set; }
 
+        /// <summary>
+        /// Reads answer "no record" without failing — what the shipped
+        /// <c>EngineeringObjectStateStore</c> does, with a warning and no
+        /// exception, for a record that is present but unparseable or at a
+        /// schema version it has no migration path to (`WP 16.4B-R7`
+        /// round 2, `B-F2b`).
+        /// </summary>
+        public bool ReadsNothing { get; set; }
+
+        /// <summary>
+        /// Reads answer a NON-NULL record whose <c>History</c> is
+        /// <see langword="null"/> — which the shipped
+        /// <c>EngineeringObjectStateStore</c> really does return for a
+        /// record whose JSON lacks that property, since its
+        /// <c>Deserialise</c> catches only <c>JsonException</c> and
+        /// <c>EngineeringObjectState</c>'s collection members are ordinary
+        /// non-<c>required</c> positional parameters (`WP 16.4B-R7`
+        /// round 2, `B-F1`).
+        /// </summary>
+        public bool ReadsHollowRecords { get; set; }
+
         /// <summary>The next <see cref="SaveAsync"/> throws the ordinary durable-store failure every store in this platform can raise.</summary>
         public void FailNextSave() => _failNext = true;
 
@@ -1512,7 +1687,19 @@ public sealed class MutatorRefusalAdversarialTests
             if (FailReads)
                 throw new IOException("The state record could not be read.");
 
-            lock (_states) { return Task.FromResult(_states.TryGetValue(id, out var state) ? state : null); }
+            if (ReadsNothing)
+                return Task.FromResult<EngineeringObjectState?>(null);
+
+            lock (_states)
+            {
+                if (!_states.TryGetValue(id, out var state))
+                    return Task.FromResult<EngineeringObjectState?>(null);
+
+                if (ReadsHollowRecords)
+                    state = state with { History = null! };
+
+                return Task.FromResult<EngineeringObjectState?>(state);
+            }
         }
 
         public Task DeleteAsync(Guid id, CancellationToken cancellationToken = default)

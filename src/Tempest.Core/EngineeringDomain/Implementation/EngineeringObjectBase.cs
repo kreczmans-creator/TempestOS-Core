@@ -422,27 +422,48 @@ public abstract class EngineeringObjectBase :
     /// then threw, and it also covers a mutation that was durably a no-op
     /// (renaming to the name already on disk), where undoing is equally
     /// unwanted and equally harmless to skip. If the record does not show
-    /// this state then the write did not land, and restoring the instance
-    /// to what it was before the call is exact.
+    /// this state then, so far as anything here can be told, the write did
+    /// not land, and restoring the instance to what it was before the call
+    /// is exact.
     /// </para>
     /// <para>
-    /// <b>What is still not guaranteed, stated plainly because it is the
-    /// residual risk and it is not zero.</b> The re-read can itself fail —
-    /// most plausibly for the same reason the write did, a store that is
-    /// simply unavailable. That case cannot be resolved from here: the
-    /// method has no way to learn whether the write landed, and it must
-    /// either undo or not undo. It undoes, because "the operation did not
-    /// happen" is the far more likely reading of a failed write followed by
-    /// a failed read, and because leaving the mutation in place is the
-    /// `TD-143` behaviour with a known and demonstrated harm. <b>So: against
-    /// a store that commits, then throws, and is then unreadable, this
-    /// leaves the instance disagreeing with its durable record until the
-    /// next restart rehydrates it. That is a real, stated limitation, not
-    /// an atomicity guarantee.</b> It is made as small as it can be from
-    /// here, and smaller still in the store this platform ships, whose
-    /// commit point now has nothing fallible after it; the requirement is
+    /// <b>WHAT IS NOT GUARANTEED. Read this as the boundary of the risk,
+    /// because it is wider than "the store broke" (`WP 16.4B-R7`, round 2,
+    /// `B-F2`).</b> The undo is wrong in <b>every</b> case where the write
+    /// did land and the re-read does not confirm it — not merely where the
+    /// store is unreadable. <see cref="DurableRecordAlreadyShowsThisStateAsync"/>
+    /// answers <see langword="false"/>, and this method therefore undoes a
+    /// committed mutation, when:
+    /// <list type="bullet">
+    /// <item><description>the re-read <b>throws</b> — most plausibly for the same reason the write did;</description></item>
+    /// <item><description>the re-read returns <b>no record</b> without failing at all: <c>EngineeringObjectStateStore.Deserialise</c> answers <see langword="null"/>, with a warning and no exception, for a record that is present but unparseable, or at a schema version this build has no migration path to;</description></item>
+    /// <item><description>the re-read returns a <b>stale but perfectly readable</b> value, from a caching or replicated store;</description></item>
+    /// <item><description>the comparison or the re-capture throws, which is now also answered <see langword="false"/> (`B-F1`).</description></item>
+    /// </list>
+    /// In each of those the instance ends up disagreeing with its own
+    /// durable record until a restart rehydrates it, and no later write on
+    /// this object repairs it, because the object's own state no longer
+    /// carries the change. <b>And the mirror case is real too: the test can
+    /// be satisfied by a record this call did not write</b> — the per-object
+    /// lock is per-<see cref="EngineeringDomainContext"/> and per-process
+    /// (see <see cref="DurableRecordAlreadyShowsThisStateAsync"/>) — in
+    /// which case the undo is wrongly <em>declined</em> and the instance
+    /// keeps a mutation the caller was told had failed.
+    /// </para>
+    /// <para>
+    /// The honest summary is therefore: <b>this converts an unconditional
+    /// wrong answer into a conditional one, and states the condition. It is
+    /// not atomicity and nothing here should be read as claiming it.</b>
+    /// The choice, where nothing can be established, is to undo — because
+    /// "the operation did not happen" is the far more likely reading of a
+    /// failed write, and because leaving the mutation in place is the
+    /// `TD-143` behaviour with a known and demonstrated harm. The exposure
+    /// is smaller in the store this platform ships, whose commit point now
+    /// has nothing fallible after it, and the all-or-nothing requirement is
     /// written down for any other implementation on
-    /// <see cref="IEngineeringObjectStateStore.SaveAsync"/>.
+    /// <see cref="IEngineeringObjectStateStore.SaveAsync"/> — but a
+    /// requirement is not a proof, which is exactly why the evidence is
+    /// re-read rather than assumed.
     /// </para>
     /// <para>
     /// <b>Scope of the catch.</b> It is deliberately unconditional —
@@ -480,13 +501,33 @@ public abstract class EngineeringObjectBase :
     /// </summary>
     /// <remarks>
     /// <para>
-    /// <b>Must be called while holding this object's write lock</b>, which
-    /// is what makes the answer meaningful: every durable writer for this
-    /// Id — every mutator, <see cref="ReviseAsync"/>, and
-    /// <see cref="PersistInitialStateAsync"/> — goes through the same
-    /// per-Id lock, so no other write can land between the failed one and
-    /// this read. The store's own per-key lock is already released by the
-    /// time the failure reaches us, so this cannot deadlock against it.
+    /// <b>Must be called while holding this object's write lock.</b> Within
+    /// one <see cref="EngineeringDomainContext"/> in one process that is
+    /// what makes the answer meaningful: every durable writer for this Id —
+    /// every mutator on this type, the type-specific mutators,
+    /// <see cref="ReviseAsync"/> and <see cref="PersistInitialStateAsync"/>
+    /// — reaches <c>store.SaveAsync</c> through the one call site in
+    /// <see cref="PersistStateHoldingWriteLockAsync"/>, and every caller of
+    /// that holds this lock, so no second in-process writer of that context
+    /// can land in the gap. The store's own per-key lock is already
+    /// released by the time the failure reaches us, so this cannot deadlock
+    /// against it.
+    /// </para>
+    /// <para>
+    /// <b>That exclusion stops at the context boundary, and the answer must
+    /// not be read as stronger than it is (`WP 16.4B-R7`, round 2,
+    /// `B-F2c`).</b> The lock is an instance field of one
+    /// <see cref="EngineeringDomainContext"/>, and
+    /// <c>PersistenceStore</c>'s own per-key lock is likewise per-instance
+    /// with no file locking anywhere, so neither excludes a second context
+    /// in this process or a second process over the same persistence root.
+    /// <b>This method therefore establishes "the durable record shows this
+    /// state", and never "the write this call made is the one that landed".
+    /// Those are different propositions</b>, and a record written by
+    /// somebody else that happens to match satisfies the test. That is
+    /// stated here because the consequence — declining an undo on the
+    /// strength of a foreign record — is a real outcome and not a corner
+    /// this class can close; see <see cref="RollBackOnFailureAsync"/>.
     /// </para>
     /// <para>
     /// <see cref="CancellationToken.None"/> deliberately: the most common
@@ -497,30 +538,60 @@ public abstract class EngineeringObjectBase :
     /// <see cref="AttachContentAsync"/>'s marker clear (board 5 `P2-3`).
     /// </para>
     /// <para>
-    /// A failure of the read itself is answered <see langword="false"/> —
-    /// "not established", the conservative reading, which sends the caller
-    /// down the undo path. It is not swallowed in order to hide anything:
-    /// the original exception is still what the caller receives, unchanged,
-    /// and this method's only output is a decision about this instance's
-    /// own fields. Rethrowing here would replace the real cause of the
-    /// failure with a diagnostic read's, which is strictly worse for the
-    /// caller.
+    /// <b>A failure of ANY part of this method — the read, the re-capture,
+    /// or the comparison — is answered <see langword="false"/></b>, which
+    /// is "not established", the conservative reading, and which sends the
+    /// caller down the undo path. It is not swallowed in order to hide
+    /// anything: the original exception is still what the caller receives,
+    /// unchanged, and this method's only output is a decision about this
+    /// instance's own fields. Letting anything escape from here would
+    /// replace the real cause of the failure with a diagnostic's <em>and
+    /// skip the undo</em>, which is the defect this whole mechanism exists
+    /// to remove.
+    /// </para>
+    /// <para>
+    /// <b>The whole body is inside the guard, and that placement is
+    /// load-bearing rather than tidy (`WP 16.4B-R7`, round 2, `B-F1`).</b>
+    /// The first version of this method guarded only the
+    /// <see cref="IEngineeringObjectStateStore.FindAsync"/> call and left
+    /// the comparison outside it, which made the paragraph above false: a
+    /// throw from the comparison, or from the <see cref="CaptureState"/>
+    /// that feeds it — which reaches the derived type's own
+    /// <see cref="CaptureTypeState"/> — propagated out of
+    /// <see cref="RollBackOnFailureAsync"/>'s <c>catch</c>, destroyed the
+    /// caller's real exception and skipped <see cref="RollBackTo"/>,
+    /// reinstating `TD-143` on the path built to close it. It was not
+    /// theoretical: <c>EngineeringObjectStateStore.FindAsync</c> returns a
+    /// <b>non-null</b> record with a <see langword="null"/> <c>History</c>
+    /// for a record whose JSON lacks that property, because its
+    /// <c>Deserialise</c> catches only <see cref="System.Text.Json.JsonException"/>
+    /// and <see cref="EngineeringObjectState"/>'s collection members are
+    /// ordinary non-<c>required</c> positional parameters — reachable
+    /// through a foreign or hand-edited record file, an
+    /// <c>IStateMigration</c> that returns one, or any third-party
+    /// implementation of this interface. A record this platform's own
+    /// <see cref="CaptureState"/> wrote always carries its collections, so
+    /// the exposure was bounded, but the <c>&amp;&amp;</c> chain
+    /// short-circuits on the scalars first and therefore reached the
+    /// throwing comparison <em>with certainty</em> on every failure that
+    /// had mutated nothing — an ordinary
+    /// <see cref="InvalidLifecycleTransitionException"/> among them.
+    /// A malformed record is now simply "not established": the record does
+    /// not demonstrate that this state landed, so the mutation is undone.
     /// </para>
     /// </remarks>
     private async Task<bool> DurableRecordAlreadyShowsThisStateAsync(IEngineeringObjectStateStore store)
     {
-        EngineeringObjectState? persisted;
-
         try
         {
-            persisted = await store.FindAsync(Id, CancellationToken.None).ConfigureAwait(false);
+            var persisted = await store.FindAsync(Id, CancellationToken.None).ConfigureAwait(false);
+
+            return persisted is not null && HoldsTheSameMutableState(persisted, CaptureState());
         }
         catch
         {
             return false;
         }
-
-        return persisted is not null && HoldsTheSameMutableState(persisted, CaptureState());
     }
 
     /// <summary>
@@ -1623,6 +1694,45 @@ public abstract class EngineeringObjectBase :
     /// inside the same hold; the byte release is reached only when the
     /// write completed, so it still cannot run for an object that is not
     /// deleted.
+    /// </para>
+    /// <para>
+    /// <b>WHAT THIS METHOD STILL DOES NOT COVER, disclosed here because it
+    /// is the same product harm by a route the undo cannot reach
+    /// (`WP 16.4B-R7`, round 2, `B-F5`). The byte release below runs AFTER
+    /// the state write has committed, so if
+    /// <see cref="IAttachmentContentStore.DeleteAsync"/> throws, this
+    /// method reports failure for an object that is already durably and
+    /// irreversibly soft-deleted</b> — no undelete anywhere, twenty-one
+    /// `Tempest.App` sites filtering it out. It is outside the invariant
+    /// stated on <see cref="RollBackOnFailureAsync"/>, whose premise is a
+    /// durable write that did <em>not</em> complete, and it is not a
+    /// regression: the release has always run here. It is nonetheless the
+    /// sharpest member of that excluded class and it belongs in writing
+    /// beside <see cref="AttachContentAsync"/>'s marker clear, which is the
+    /// other one.
+    /// </para>
+    /// <para>
+    /// <b>It is deliberately NOT closed here, and the reason is not
+    /// scope alone.</b> The obvious closure — demote the release to
+    /// best-effort so a committed delete reports success, exactly as
+    /// `WP 16.4B-R7` demoted the two post-commit steps in
+    /// <c>PersistenceStore.WriteAsync</c> — cannot be done honestly from
+    /// this type: <see cref="EngineeringDomainContext"/> exposes no logger,
+    /// so the failure would be swallowed in <em>silence</em>. And silence
+    /// here is worse than a loud failure, because the leak it hides is
+    /// permanent: <c>AttachmentContentReconciliationService</c> counts an
+    /// attachment as referenced if <b>any</b> persisted state record names
+    /// it, and a soft delete does not erase attachment metadata, so a
+    /// deleted object's unreleased bytes are never orphans and the sweep
+    /// will never collect them. (That also makes this method's own
+    /// paragraph above — "closed the rest of the way by the content sweep"
+    /// — untrue of the post-delete residue; recorded, not rewritten,
+    /// because it is `TD-97`'s claim and not this Work Package's.) Until
+    /// this type can log, the thrown exception is the only signal that
+    /// exists, and removing it would trade a wrong report for an invisible
+    /// permanent leak. Closing it properly means giving the release a
+    /// reporting channel, which is `TD-97`'s work and a board's decision,
+    /// not a line of this one.
     /// </para>
     /// </remarks>
     public async Task DeleteAsync(CancellationToken cancellationToken = default)

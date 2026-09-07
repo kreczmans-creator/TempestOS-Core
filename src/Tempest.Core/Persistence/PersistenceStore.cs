@@ -90,10 +90,16 @@ namespace Tempest.Core.Persistence;
 /// now best-effort and logged: they cannot turn a committed write into a
 /// reported failure. Neither is load-bearing for correctness — the
 /// stale temporary file is unreferenced by any key, and a surviving
-/// legacy file is inert because <see cref="ResolveReadablePath"/> prefers
-/// the current-encoding record whenever it exists and
-/// <see cref="ListKeysAsync"/> de-duplicates the pair — and the next
-/// successful write of the same key retries both.
+/// legacy file is inert <b>for as long as the current-encoding record
+/// exists</b>, because <see cref="ResolveReadablePath"/> prefers that
+/// record whenever it is present and <see cref="ListKeysAsync"/>
+/// de-duplicates the pair — and the next successful write of the same key
+/// retries both. The qualifier is real and is spelled out on
+/// <see cref="MigrateLegacyRecordAfterCommit"/>: <see cref="DeleteAsync"/>
+/// removes the current record first, so a delete that then fails on the
+/// legacy record makes the stale value live again. That is a defect of
+/// this store's delete ordering, pre-existing and out of `TD-143`'s
+/// scope, and it is recorded rather than quietly fixed here.
 /// </para>
 /// </remarks>
 public sealed class PersistenceStore : IPersistenceStore, IBinaryPersistenceStore
@@ -438,13 +444,37 @@ public sealed class PersistenceStore : IPersistenceStore, IBinaryPersistenceStor
     /// is one of the two places that used to make that false.
     /// </para>
     /// <para>
-    /// <b>Why leaving the file is safe.</b> The legacy file is only ever
-    /// consulted when the current-encoding file is absent
+    /// <b>Why leaving the file is safe for this write.</b> The legacy file
+    /// is only ever consulted when the current-encoding file is absent
     /// (<see cref="ResolveReadablePath"/>), which it no longer is, so it
     /// cannot shadow this write; <see cref="ListKeysAsync"/> already
     /// de-duplicates the pair because both names decode to the same key;
-    /// <see cref="DeleteAsync"/> removes both. It is stale, inert, and
-    /// removed by the next successful write of the same key.
+    /// nothing else in this platform enumerates a collection directory. It
+    /// is removed by the next successful write of the same key.
+    /// </para>
+    /// <para>
+    /// <b>QUALIFIER, and it is not a footnote (`WP 16.4B-R7`, round 2,
+    /// `B-F3`). The surviving legacy file is inert only FOR AS LONG AS THE
+    /// CURRENT-ENCODING RECORD EXISTS.</b> <see cref="DeleteAsync"/>
+    /// removes the current-encoding file <em>first</em> and the legacy file
+    /// second, so a delete that succeeds on the first removal and fails on
+    /// the second leaves the stale legacy value as the <em>live</em> record
+    /// for that key — a value the caller believed overwritten, readable
+    /// again. That ordering is pre-existing, is not reached by any
+    /// `TD-143` path (no mutator on <c>EngineeringObjectBase</c> calls
+    /// <see cref="IEngineeringObjectStateStore.DeleteAsync"/>, and nothing
+    /// in <c>src/</c> does), and is deliberately NOT changed here: it is a
+    /// defect of <see cref="DeleteAsync"/>'s own removal order, it wants
+    /// its own register row and its own board, and reordering a shipped
+    /// store's delete semantics is not in `TD-143`'s scope.
+    /// <b>What `WP 16.4B-R7` does change is the signal.</b> Before it, a
+    /// legacy file that could not be removed made <em>every</em> write of
+    /// that key fail loudly; now it produces the warning below and nothing
+    /// else. That trade is deliberate — failing a committed write is the
+    /// `TD-143` defect at this layer and could not be kept — but it means
+    /// the condition under which the paragraph above stops holding no
+    /// longer announces itself, which is why the warning names the
+    /// consequence rather than merely reporting the failure.
     /// </para>
     /// </remarks>
     private void MigrateLegacyRecordAfterCommit(string collection, string key, string path)
@@ -459,7 +489,10 @@ public sealed class PersistenceStore : IPersistenceStore, IBinaryPersistenceStor
         {
             _logger?.Warning(
                 $"Persistence committed the write for collection '{collection}', key '{key}', but could not remove " +
-                "the superseded legacy-encoded record. The write stands and the stale file is inert.", ex);
+                "the superseded legacy-encoded record. The write stands and reads of this key are unaffected while " +
+                "the current-encoding record exists. It will be retried by the next successful write of this key. " +
+                "Until it is removed, a delete of this key that fails part-way would leave the stale legacy value " +
+                "readable as the live record.", ex);
         }
     }
 
