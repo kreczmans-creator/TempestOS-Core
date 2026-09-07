@@ -5,11 +5,13 @@ using Tempest.App.Shell;
 using Tempest.App.Workspace.Calculations;
 using Tempest.App.Workspace;
 using Tempest.Core.Bearings;
+using Tempest.Core.Calculations;
 using Tempest.Core.Configuration;
 using Tempest.Core.Constants;
 using Tempest.Core.DependencyInjection;
 using Tempest.Core.EngineeringAssets.CalculationPacks;
 using Tempest.Core.EngineeringAssets.Templates;
+using Tempest.Core.EngineeringAssets.Verification;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Events;
 using Tempest.Core.Fasteners;
@@ -17,6 +19,7 @@ using Tempest.Core.Identity;
 using Tempest.Core.Manufacturing;
 using Tempest.Core.Materials;
 using Tempest.Core.Persistence;
+using Tempest.Core.ReferenceData.Review;
 using Tempest.Core.Requirements;
 using Tempest.Core.Runtime;
 using Tempest.Core.Settings;
@@ -214,6 +217,24 @@ public sealed class WorkspaceHost : IAsyncDisposable
             (IBearingCatalog)host.Services!.GetService(typeof(IBearingCatalog)),
             (IProcessCatalog)host.Services!.GetService(typeof(IProcessCatalog)));
 
+        // The bracket section check's governed entry point. Constructed the
+        // same way as the read models: it composes the Materials Library and
+        // the calculation engine, both already registered, and holds no
+        // state of its own. This is the whole of the application surface the
+        // first calculation needs — the engineer selects a material, supplies
+        // the geometry and load, and gets a result or a refusal.
+        BracketCheck = new GovernedBracketCheckService(
+            (IMaterialCatalog)host.Services!.GetService(typeof(IMaterialCatalog)),
+            (ICalculationEngine)host.Services!.GetService(typeof(ICalculationEngine)));
+
+        BracketEngineeringRecords = new BracketEngineeringRecordService(
+            (ICalculationPackCatalog)host.Services!.GetService(typeof(ICalculationPackCatalog)),
+            (IVerificationArtefactCatalog)host.Services!.GetService(typeof(IVerificationArtefactCatalog)));
+
+        ReferenceReview = new ReferenceReviewService(
+            (ICurrentPrincipalAccessor)host.Services!.GetService(typeof(ICurrentPrincipalAccessor)),
+            logger: hostLogger);
+
         EngineeringTrace = new EngineeringTraceRegister(
             (ICalculationPackCatalog)host.Services!.GetService(typeof(ICalculationPackCatalog)),
             (IMaterialCatalog)host.Services!.GetService(typeof(IMaterialCatalog)),
@@ -287,6 +308,30 @@ public sealed class WorkspaceHost : IAsyncDisposable
     /// completes.
     /// </summary>
     public IEngineeringTraceRegister? EngineeringTrace { get; private set; }
+
+    /// <summary>
+    /// Gets the governed bracket section check — <see langword="null"/>
+    /// before <see cref="StartAsync"/> completes.
+    /// </summary>
+    public GovernedBracketCheckService? BracketCheck { get; private set; }
+
+    /// <summary>
+    /// Gets the service that writes an executed bracket check into its
+    /// calculation pack and verification artefact — <see langword="null"/>
+    /// before <see cref="StartAsync"/> completes.
+    /// </summary>
+    public BracketEngineeringRecordService? BracketEngineeringRecords { get; private set; }
+
+    /// <summary>
+    /// Gets the governed reference review and release act —
+    /// <see langword="null"/> before <see cref="StartAsync"/> completes.
+    /// </summary>
+    /// <remarks>
+    /// It takes the reviewer from the session's own principal, so a review
+    /// performed through the application is attributable to whoever is
+    /// signed in and to nobody else.
+    /// </remarks>
+    public ReferenceReviewService? ReferenceReview { get; private set; }
 
     /// <summary>Setting milestones and deliverables, as the Project Workspace performs it.</summary>
     public IProjectMilestoneService? ProjectMilestoneWorkflow { get; private set; }

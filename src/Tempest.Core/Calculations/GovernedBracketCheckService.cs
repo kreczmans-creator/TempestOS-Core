@@ -39,12 +39,19 @@ public enum BracketCheckRefusal
 /// <param name="Record">The persisted calculation record. <see langword="null"/> when the check was refused.</param>
 /// <param name="MaterialPin">The record and revision the properties came from. <see langword="null"/> when the material could not be resolved.</param>
 /// <param name="MaterialProvenance">Where the pinned material's own values came from. <see langword="null"/> when the material could not be resolved.</param>
+/// <param name="Request">
+/// What was asked. Carried back so a caller writing the check into an
+/// engineering record does not have to hold the request alongside the
+/// answer — a result that cannot state its own inputs is a poor engineering
+/// record.
+/// </param>
 public sealed record GovernedBracketCheck(
     BracketCheckRefusal Refusal,
     string? Reason,
     CalculationRecord<BracketSectionCheckResult>? Record,
     ReferencePin? MaterialPin,
-    ReferenceProvenance? MaterialProvenance)
+    ReferenceProvenance? MaterialProvenance,
+    GovernedBracketCheckRequest Request)
 {
     /// <summary>Whether a calculation was actually performed.</summary>
     public bool WasPerformed => Refusal == BracketCheckRefusal.None && Record is not null;
@@ -159,6 +166,7 @@ public sealed class GovernedBracketCheckService
         if (record is null)
         {
             return Refuse(
+                request,
                 BracketCheckRefusal.MaterialNotFound,
                 $"No material '{request.MaterialRecordId}' is registered in {_materials.LibraryName}.");
         }
@@ -168,6 +176,7 @@ public sealed class GovernedBracketCheckService
         if (record.ValidationState != ReferenceValidationState.Released)
         {
             return Refuse(
+                request,
                 BracketCheckRefusal.MaterialNotReleased,
                 $"Material '{record.Id}' is {record.ValidationState}, not Released. Engineering work may not "
                 + "rely on reference data nobody has verified against its source.",
@@ -176,10 +185,10 @@ public sealed class GovernedBracketCheckService
         }
 
         if (!TryReadProperty<Pressure>(record, AllowableStressProperty, out var allowable, out var stressFailure))
-            return Refuse(stressFailure!.Value.Refusal, stressFailure.Value.Reason, pin, record.Provenance);
+            return Refuse(request, stressFailure!.Value.Refusal, stressFailure.Value.Reason, pin, record.Provenance);
 
         if (!TryReadProperty<MassDensity>(record, DensityProperty, out var density, out var densityFailure))
-            return Refuse(densityFailure!.Value.Refusal, densityFailure.Value.Reason, pin, record.Provenance);
+            return Refuse(request, densityFailure!.Value.Refusal, densityFailure.Value.Reason, pin, record.Provenance);
 
         var executed = await _engine.ExecuteAsync<BracketSectionCheckInput, BracketSectionCheckResult>(
             BracketSectionCheckCalculationDefinition.Id,
@@ -193,7 +202,7 @@ public sealed class GovernedBracketCheckService
                 request.MassLimit),
             cancellationToken).ConfigureAwait(false);
 
-        return new GovernedBracketCheck(BracketCheckRefusal.None, null, executed, pin, record.Provenance);
+        return new GovernedBracketCheck(BracketCheckRefusal.None, null, executed, pin, record.Provenance, request);
     }
 
     private bool TryReadProperty<TDimension>(
@@ -234,9 +243,10 @@ public sealed class GovernedBracketCheckService
     }
 
     private static GovernedBracketCheck Refuse(
+        GovernedBracketCheckRequest request,
         BracketCheckRefusal refusal,
         string reason,
         ReferencePin? pin = null,
         ReferenceProvenance? provenance = null) =>
-        new(refusal, reason, null, pin, provenance);
+        new(refusal, reason, null, pin, provenance, request);
 }
