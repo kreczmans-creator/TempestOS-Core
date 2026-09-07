@@ -81,6 +81,7 @@ came from* — the record that lets any populated value be traced back to
 the document it was transcribed from.
 
 - [Seed Data Sources Register](Data/Seed%20Data%20Sources%20Register.md) — every external source the seed corpus was transcribed from, what was taken from it, what may not be concluded from it, licensing, and the datasets deliberately left empty with reasons.
+- [Seed Data Review Set](Data/Seed%20Data%20Review%20Set.md) — what a human reviewer would have to check, and against what, before any seeded record may be released. Carries the three known data issues forward explicitly.
 
 ## Documentation
 

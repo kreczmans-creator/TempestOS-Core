@@ -59,6 +59,24 @@ this file said at the time and the register's own rows still record.
 Ratification is **Product Owner gate 1 of 4** and settles scope only —
 it authorises no merge, no tag, no publication, and no release verdict.
 
+## Programme Phase
+
+**Foundation complete → Population complete → Integration underway**
+(as at 2026-09-07, branch `claude/tempestos-a4-bearing-library-unobtf`).
+
+| Phase | State | Closing evidence |
+|---|---|---|
+| Foundation | **Complete** | 40/40 original work packages structurally complete — `docs/releases/v0.16.0/Foundation Skeleton Completion Certification.md` |
+| Population | **Complete** | 79 source-backed records across 16 libraries, all `Draft` — `docs/releases/v0.16.0/Population Phase Completion Report.md` |
+| Integration | **Underway** | The bracket scenario runs through the real services; traceability, revision reproduction and refusal behaviour proven — `docs/releases/v0.16.0/Integration Phase Report.md` |
+
+**The gate between population and use has not been passed.** Every
+seeded record is `Draft` and unverified, so P02's reasoning services
+correctly refuse to act on any of it. What a reviewer would have to check
+is set out in `docs/governance/Data/Seed Data Review Set.md`; performing
+that review is a human action this programme has deliberately not
+simulated.
+
 ## Current Work Package
 
 **Landed on `feature/v0.16.0` as of this review** (Wave 0/1 of the

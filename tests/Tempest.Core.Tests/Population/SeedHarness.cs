@@ -10,6 +10,7 @@ using Tempest.Core.EngineeringAssets.Templates;
 using Tempest.Core.EngineeringAssets.Verification;
 using Tempest.Core.EngineeringData;
 using Tempest.Core.EngineeringIntelligence;
+using Tempest.Core.EngineeringIntelligence.Decisions;
 using Tempest.Core.Fasteners;
 using Tempest.Core.Identity;
 using Tempest.Core.Knowledge.Academy;
@@ -47,6 +48,7 @@ internal class SeedHarness
         Bearings = new BearingCatalog(DocumentStore, PersistenceStore);
         Processes = new ProcessCatalog(DocumentStore, PersistenceStore);
         Rules = new RuleCatalog(DocumentStore, PersistenceStore);
+        DecisionTrees = new DecisionTreeCatalog(DocumentStore, PersistenceStore);
         Suppliers = new SupplierCatalog(DocumentStore, PersistenceStore);
         Costs = new ProcessCostCatalog(DocumentStore, PersistenceStore);
         LeadTimes = new LeadTimeCatalog(DocumentStore, PersistenceStore);
@@ -90,6 +92,9 @@ internal class SeedHarness
     public ProcessCatalog Processes { get; }
 
     public RuleCatalog Rules { get; }
+
+    /// <summary>Empty: no decision tree is seeded, so screening runs on capability data alone.</summary>
+    public DecisionTreeCatalog DecisionTrees { get; }
 
     public SupplierCatalog Suppliers { get; }
 

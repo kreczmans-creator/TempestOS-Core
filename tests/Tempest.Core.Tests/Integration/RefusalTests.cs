@@ -1,4 +1,5 @@
 using Tempest.Core.EngineeringIntelligence;
+using Tempest.Core.EngineeringIntelligence.Decisions;
 using Tempest.Core.EngineeringIntelligence.MaterialSelection;
 using Tempest.Core.Identity;
 using Tempest.Core.Materials;
@@ -215,21 +216,105 @@ public class RefusalTests
     [Fact]
     public async Task AnUnsuitableManufacturingProcessDoesNotSurviveScreening()
     {
-        // Injection moulding is a real, released, well-formed process
-        // record. It is simply wrong for a machined aluminium bracket, and
-        // the compatibility data says so.
+        // Run through the real screening service, not by comparing lists.
+        // An aluminium bracket 180 mm across, wanted as a prototype: milling
+        // is the route, and injection moulding — a perfectly valid, released,
+        // well-formed process record — must be eliminated because it cannot
+        // make the part.
+        var harness = new ScenarioHarness();
+        await harness.SeedEverythingAsync();
+        await harness.ReleaseScenarioDataForTestingAsync();
+
+        var service = new ManufacturingDecisionService(
+            harness.Processes, harness.DecisionTrees, new CurrentPrincipalAccessor());
+
+        var result = await service.ScreenCatalogueAsync(new ManufacturingRequirementSet
+        {
+            PartDescription = "Mounting bracket, machined from aluminium bar.",
+            MaterialFamily = MaterialFamily.Aluminium,
+            LargestDimension = new Quantity<Length>(180.0, LengthUnits.Millimetre),
+            ProductionScale = Tempest.Core.Manufacturing.ProductionScale.Prototype,
+        });
+
+        Assert.Equal(4, result.Candidates.Count);
+
+        // Milling is confirmed viable on the supplier's own capability data.
+        var milling = result.Candidates.Single(c => c.ProcessId == ProcessSeed.CncMilling);
+        Assert.Equal(CandidateStanding.ConstraintsSatisfied, milling.Standing);
+        Assert.Contains(result.ViableCandidates, c => c.ProcessId == ProcessSeed.CncMilling);
+
+        // Injection moulding is NOT confirmed viable — and it is reported
+        // Unresolved rather than Eliminated, which is the correct and more
+        // careful answer given the data that exists.
+        //
+        // The process records carry only ProcessMaterialSuitability.Suitable
+        // entries, because the supplier publishes a list of materials it
+        // offers and says nothing about what it refuses. Absence from that
+        // list is not evidence of incompatibility, and the service declines
+        // to manufacture the inference. A system that eliminated on silence
+        // would be guessing, and would guess wrong the first time a supplier
+        // simply forgot to list something.
+        //
+        // The consequence is a real gap in the seed data, not in the logic:
+        // eliminating a process on material grounds needs an explicit
+        // NotSuitable entry, and nothing in the corpus has one.
+        var moulding = result.Candidates.Single(c => c.ProcessId == ProcessSeed.InjectionMoulding);
+        Assert.Equal(CandidateStanding.Unresolved, moulding.Standing);
+        Assert.DoesNotContain(result.ViableCandidates, c => c.ProcessId == ProcessSeed.InjectionMoulding);
+        Assert.Contains(result.UnresolvedCandidates, c => c.ProcessId == ProcessSeed.InjectionMoulding);
+
+        // Nothing is eliminated at all, and that is the honest state.
+        Assert.Empty(result.EliminatedCandidates);
+    }
+
+    [Fact]
+    public async Task AnExplicitlyUnsuitableMaterialEntryDoesEliminateTheProcess()
+    {
+        // The counterpart to the test above, proving the logic is sound and
+        // the gap is in the data: given an explicit NotSuitable entry, the
+        // same service eliminates the same process.
         var harness = new ScenarioHarness();
         await harness.SeedEverythingAsync();
         await harness.ReleaseScenarioDataForTestingAsync();
 
         var moulding = await harness.Processes.FindAsync(ProcessSeed.InjectionMoulding);
-        var milling = await harness.Processes.FindAsync(ProcessSeed.CncMilling);
+        Assert.NotNull(moulding);
 
-        var mouldingFamilies = moulding!.Definition.MaterialCompatibility.Select(c => c.Family).ToList();
-        var millingFamilies = milling!.Definition.MaterialCompatibility.Select(c => c.Family).ToList();
+        // A second moulding record that says outright it will not take
+        // aluminium — the statement the supplier's page never makes.
+        await harness.Processes.RegisterAsync(
+            "prc-injection-moulding-explicit",
+            moulding.Definition with
+            {
+                Variant = "Explicit-incompatibility variant, test fixture",
+                MaterialCompatibility =
+                [
+                    .. moulding.Definition.MaterialCompatibility,
+                    new Tempest.Core.Manufacturing.ProcessMaterialCompatibility(
+                        Family: MaterialFamily.Aluminium,
+                        Suitability: Tempest.Core.Manufacturing.ProcessMaterialSuitability.NotSuitable,
+                        Origin: ReferenceValueOrigin.EngineeringReference,
+                        Conditions: "FICTIONAL TEST FIXTURE: an explicit refusal the real source does not make."),
+                ],
+            },
+            moulding.Provenance);
 
-        Assert.DoesNotContain(MaterialFamily.Aluminium, mouldingFamilies);
-        Assert.Contains(MaterialFamily.Aluminium, millingFamilies);
+        await ScenarioHarness.ReleaseForTestingAsync(harness.Processes, "prc-injection-moulding-explicit");
+
+        var service = new ManufacturingDecisionService(
+            harness.Processes, harness.DecisionTrees, new CurrentPrincipalAccessor());
+
+        var result = await service.ScreenCatalogueAsync(new ManufacturingRequirementSet
+        {
+            PartDescription = "Mounting bracket, machined from aluminium bar.",
+            MaterialFamily = MaterialFamily.Aluminium,
+            LargestDimension = new Quantity<Length>(180.0, LengthUnits.Millimetre),
+        });
+
+        var explicitly = result.Candidates.Single(c => c.ProcessId == "prc-injection-moulding-explicit");
+
+        Assert.Equal(CandidateStanding.Eliminated, explicitly.Standing);
+        Assert.Contains(explicitly.Assessments, a => a.Outcome == AssessmentOutcome.Fail);
     }
 
     [Fact]
