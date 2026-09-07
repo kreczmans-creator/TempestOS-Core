@@ -29,12 +29,17 @@ namespace Tempest.Core.Tests.EngineeringDomain;
 /// B finding it pins (<c>B-F1</c>…<c>B-F5</c>, `scratchpad/r7-agentB-report.md`).
 /// <b>When one of those defects is fixed, invert the assertion — do not delete
 /// the fact</b>, exactly as `WP 16.4B-R6b` and `WP 16.4B-R7` inverted the facts
-/// they closed. Five facts are characterisations:
+/// they closed. <b>`B-F1` has since been fixed and its characterisation was
+/// duly inverted into a guard-rail:
+/// <see cref="AThrowFromTheEvidenceComparison_LeavesTheRealFailureIntactAndStillUndoes"/>,
+/// which stood here under the name
+/// <c>AThrowFromTheEvidenceComparison_ReplacesTheRealFailureAndSkipsTheUndo</c>
+/// until `WP 16.4B-R7` round 2. It is therefore no longer one of the
+/// characterisations listed below.</b> Six facts are characterisations:
 /// <see cref="ALegacyRecordThatOutlivesTheCurrentOne_BecomesTheLiveRecordAgain"/>
 /// (`B-F3`),
-/// <see cref="AThrowFromTheEvidenceComparison_ReplacesTheRealFailureAndSkipsTheUndo"/>
-/// and <see cref="TheShippedStateStoreHappilyReturnsARecordWithNoHistory"/>
-/// (`B-F1`),
+/// <see cref="TheShippedStateStoreHappilyReturnsARecordWithNoHistory"/>
+/// (`B-F1`'s remaining half, which pins reachability and not the defect),
 /// <see cref="AStoreThatCommitsThrowsAndThenReadsStale_IsUndoneJustAsWrongly"/>
 /// and <see cref="TheEvidenceTest_AcceptsARecordThisObjectNeverWrote"/> (`B-F2`),
 /// <see cref="AnOrdinaryValidationRejection_NowPerformsADurableRead"/> (`B-F4`)
