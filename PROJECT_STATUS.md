@@ -1,7 +1,28 @@
 # TempestOS — Project Status
 
 **Last Updated:** 2026-09-07 (**`v0.16.0` pre-release integration build —
-Engineering Calculation surface added**. `TD-159` is **Resolved**,
+Engineering Calculations workspace usability completion**, `WP 16.4B`
+follow-on, `feature/v0.16.0-integration` @ `6da6f6c`, not merged. A
+calculation run from that workspace is now given the platform's own
+governed `Calculation` Domain object, linked to its immutable record by the
+existing `calculatedBy` relationship, so it can be named, found by that
+name among others, renamed through `RenameCalculationObjectCommand`,
+organised by the `IHasParent` project membership `ProjectMembership`
+already defines, and retired out of the active list through
+`SetCalculationStatusCommand` — never `IDeletable.DeleteAsync`, which the
+platform has no undo for. No new concept and no folders: every mechanism
+was already registered by `CalculationsWorkspaceRegistration`. `TD-168` is
+**Resolved**; `TD-169` (the canonical lifecycle permits no `Draft` ->
+`Archived`, so a freshly recorded calculation retires to `Cancelled`) and
+`TD-170` (naming's uncompensated create-then-link, depending on `TD-147`)
+are opened. Gate: 5,153 Core + 499 Desktop, 0 failed, 0 skipped, 0 warnings
+and 0 errors in both configurations; governance 15 passed / 1 pre-existing
+warn / 0 failed. Nine-perspective Colour Review Board run and remediated.
+**Still not merged, not tagged, not published, not certified, and `TD-147`
+remains the only Release Blocking row, untouched.** Report:
+`docs/releases/v0.16.0/WP16.4B Follow-On — Engineering Calculations Workspace Usability Completion.md`.
+Before it, the Engineering Calculation surface itself: `TD-159` is
+**Resolved**,
 mutation-proven: the product's five calculations are registered by
 `TempestHost` before the first module initialises, so a shipped Desktop run
 holds them — previously the only registrations were in `Tempest.Samples`,
@@ -301,7 +322,7 @@ points to it:
 - **Platform Services** — `docs/governance/Engineering/Platform Services Register.md` — **known stale and disclosed, not fixed.** Its Coverage Status and Total line both say 41 entries, its own Entries table holds more, and `docs/architecture/Platform Service Map.md` — the Source of Truth it declares — holds a third number. Like the DI Register it has no machine derivation (`TD-123`); see `TD-153`.
 - **Feature history** — `docs/governance/Delivery/Feature Register.md` (extended through `v0.15.0`, `WP 16.2A`).
 - **Release history** — `docs/governance/Delivery/Release Register.md` (17 versions referenced, `v0.15.0` corrected to Released, `WP 16.2A`).
-- **Technical Debt** — `docs/governance/Quality/Technical Debt Register.md` (**168 rows**, `TD-01`–`TD-168`, contiguous: 62 Resolved, 6 Closed, 91 Open, 8 Partially resolved, 1 Deferred, re-derived by Check 12's own rule. The merge reconciled 151; the integration build's own four-reviewer pass then opened `TD-152`–`TD-164`, of which exactly one (`TD-164`) is a finding the integration introduced. Exactly one row in the whole register is Release Blocking — `TD-147`, pre-existing and unresolved. Historic, before the integration: **146 rows**, `TD-001`–`TD-146`, contiguous: 57 Resolved, 6 Closed, 77 Open, 5 Partially resolved, 1 Deferred — `TD-140`–`TD-146` added across `WP 16.4B-R6` round 2, 2026-09-06, with `TD-140` since Resolved for the supersession-refusal route only; the figure read 141 / 73 Open mid-round and 139 / 71 Open before it, tallying exactly against that register's own summary line; count corrected here `WP 16.4B-R6`, stale at 122 since `WP 16.2A`).
+- **Technical Debt** — `docs/governance/Quality/Technical Debt Register.md` (**170 rows**, `TD-01`–`TD-170`, contiguous: 63 Resolved, 6 Closed, 93 Open, 7 Partially resolved, 1 Deferred, re-derived by Check 12's own rule. The `WP 16.4B` follow-on usability pass, 2026-09-07, resolved `TD-168` and opened `TD-169` and `TD-170`. The merge reconciled 151; the integration build's own four-reviewer pass then opened `TD-152`–`TD-164`, of which exactly one (`TD-164`) is a finding the integration introduced. Exactly one row in the whole register is Release Blocking — `TD-147`, pre-existing and unresolved. Historic, before the integration: **146 rows**, `TD-001`–`TD-146`, contiguous: 57 Resolved, 6 Closed, 77 Open, 5 Partially resolved, 1 Deferred — `TD-140`–`TD-146` added across `WP 16.4B-R6` round 2, 2026-09-06, with `TD-140` since Resolved for the supersession-refusal route only; the figure read 141 / 73 Open mid-round and 139 / 71 Open before it, tallying exactly against that register's own summary line; count corrected here `WP 16.4B-R6`, stale at 122 since `WP 16.2A`).
 - **Validation / test gates** — `docs/governance/Quality/Validation Register.md` (current-state section added, `WP 16.2A`).
 - **Repository size/shape** — `docs/governance/Quality/Repository Metrics Register.md` (snapshot opened `WP 16.2A`, **every row re-derived together at `58c4cba` by `WP 16.4B-R6`** after rows had been refreshed piecemeal under a `WP 16.2A` label).
 - **Product roadmap** — `docs/governance/Product Roadmap.md` (Phase 5 marked delivered, Phase 5.5 added, `WP 16.2A`).
