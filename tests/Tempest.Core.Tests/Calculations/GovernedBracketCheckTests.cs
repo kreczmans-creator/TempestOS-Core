@@ -537,7 +537,7 @@ public class GovernedBracketCheckTests
             var wrongType = await Assert.ThrowsAsync<CalculationException>(
                 () => Engine(host).FindRecordAsync<BoltShearCapacityResult>(check.Record!.Id));
 
-            Assert.Contains(check.Record.Id.ToString(), wrongType.Message, StringComparison.Ordinal);
+            Assert.Contains(check.Record!.Id.ToString(), wrongType.Message, StringComparison.Ordinal);
         });
     }
 
