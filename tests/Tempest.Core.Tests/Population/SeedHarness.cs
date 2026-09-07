@@ -3,13 +3,25 @@ using Tempest.Core.CommercialIntelligence.Costs;
 using Tempest.Core.CommercialIntelligence.LeadTimes;
 using Tempest.Core.CommercialIntelligence.Suppliers;
 using Tempest.Core.Constants;
+using Tempest.Core.EngineeringAssets.CalculationPacks;
+using Tempest.Core.EngineeringAssets.DesignReviews;
+using Tempest.Core.EngineeringAssets.TechnicalDocumentation;
+using Tempest.Core.EngineeringAssets.Templates;
+using Tempest.Core.EngineeringAssets.Verification;
 using Tempest.Core.EngineeringData;
 using Tempest.Core.EngineeringIntelligence;
 using Tempest.Core.Fasteners;
 using Tempest.Core.Identity;
+using Tempest.Core.Knowledge.Academy;
+using Tempest.Core.Knowledge.Challenges;
+using Tempest.Core.Knowledge.Prompts;
+using Tempest.Core.Knowledge.WorkedExamples;
 using Tempest.Core.Manufacturing;
 using Tempest.Core.Materials;
 using Tempest.Core.Persistence;
+using Tempest.Core.Requirements;
+using Tempest.Core.Verification;
+using Tempest.Core.ReferenceData;
 using Tempest.Core.ReferenceData.Seeding;
 using Tempest.Core.ReferenceData.Seeding.Datasets;
 using Tempest.Core.Standards;
@@ -38,9 +50,28 @@ internal sealed class SeedHarness
         Suppliers = new SupplierCatalog(DocumentStore, PersistenceStore);
         Costs = new ProcessCostCatalog(DocumentStore, PersistenceStore);
         LeadTimes = new LeadTimeCatalog(DocumentStore, PersistenceStore);
+        Templates = new TemplateCatalog(DocumentStore, PersistenceStore);
+        CalculationPacks = new CalculationPackCatalog(DocumentStore, PersistenceStore);
+        VerificationArtefacts = new VerificationArtefactCatalog(DocumentStore, PersistenceStore);
+        DesignReviews = new DesignReviewCatalog(DocumentStore, PersistenceStore);
+        TechnicalDocuments = new TechnicalDocumentCatalog(DocumentStore, PersistenceStore);
+        Prompts = new PromptCatalog(DocumentStore, PersistenceStore);
+        AcademyNodes = new AcademyCatalog(DocumentStore, PersistenceStore);
+        Challenges = new ChallengeCatalog(DocumentStore, PersistenceStore);
+        WorkedExamples = new WorkedExampleCatalog(DocumentStore, PersistenceStore);
+
+        var principals = new CurrentPrincipalAccessor();
+        Requirements = new RequirementsService(
+            (EngineeringDocumentStore)DocumentStore,
+            PersistenceStore,
+            principals,
+            new VerificationService((EngineeringDocumentStore)DocumentStore, principals, new PermissionEvaluator()));
 
         Seeder = new ReferenceSeedService();
     }
+
+    /// <summary>The identifier of the requirement the seeded assets hang from.</summary>
+    public const string BracketRequirementIdentifier = "REQ-BRACKET-001";
 
     public InMemoryPersistenceStore PersistenceStore { get; }
 
@@ -66,16 +97,39 @@ internal sealed class SeedHarness
 
     public LeadTimeCatalog LeadTimes { get; }
 
+    public TemplateCatalog Templates { get; }
+
+    public CalculationPackCatalog CalculationPacks { get; }
+
+    public VerificationArtefactCatalog VerificationArtefacts { get; }
+
+    public DesignReviewCatalog DesignReviews { get; }
+
+    public TechnicalDocumentCatalog TechnicalDocuments { get; }
+
+    public PromptCatalog Prompts { get; }
+
+    public AcademyCatalog AcademyNodes { get; }
+
+    public ChallengeCatalog Challenges { get; }
+
+    public WorkedExampleCatalog WorkedExamples { get; }
+
+    public RequirementsService Requirements { get; }
+
     public ReferenceSeedService Seeder { get; }
 
     /// <summary>Applies every P01 seed dataset, in citation order.</summary>
     public async Task<IReadOnlyList<ReferenceSeedOutcome>> SeedEverythingAsync()
     {
-        // Standards first: every other dataset cites records in it, and
-        // seeding in citation order means a reference is resolvable the
-        // moment the record carrying it exists.
-        return
-        [
+        // Citation order, and it matters. Standards come first because
+        // every reference library cites them; materials before the assets
+        // that pin material revisions; the template before the calculation
+        // pack that pins the template. Seeding in this order means a
+        // reference is resolvable the moment the record carrying it exists,
+        // rather than dangling until a later pass repairs it.
+        var outcomes = new List<ReferenceSeedOutcome>
+        {
             await Seeder.ApplyAsync(Standards, StandardSeed.Instance),
             await Seeder.ApplyAsync(Materials, MaterialSeed.Instance),
             await Seeder.ApplyAsync(Constants, ConstantSeed.Instance),
@@ -86,6 +140,46 @@ internal sealed class SeedHarness
             await Seeder.ApplyAsync(Suppliers, CommercialSeed.Suppliers),
             await Seeder.ApplyAsync(Costs, CommercialSeed.Costs),
             await Seeder.ApplyAsync(LeadTimes, CommercialSeed.LeadTimes),
-        ];
+            await Seeder.ApplyAsync(Templates, EngineeringAssetSeed.Templates),
+        };
+
+        // A real requirement, created before the assets that cite it. The
+        // verification model refuses an artefact naming an empty identity,
+        // so the alternative to creating one was to seed no verification
+        // artefact at all — and a requirement is the head of the scenario
+        // the next phase has to exercise anyway.
+        var requirement = await Requirements.FindByIdentifierAsync(BracketRequirementIdentifier)
+            ?? await Requirements.CreateAsync(
+                BracketRequirementIdentifier,
+                "The bracket shall carry its design load with a positive margin against the material's "
+                + "specified minimum proof stress.",
+                "Structural");
+
+        var verifiedRequirement = new Tempest.Core.EngineeringAssets.Verification.VerifiedRequirement(
+            requirement.Id,
+            requirement.Identifier,
+            requirement.Statement,
+            requirement.RevisionNumber);
+
+        // Built rather than declared: the assets pin the revisions the
+        // material and template records are actually at, which is a fact
+        // about this catalogue and cannot be written as a literal.
+        var assets = await EngineeringAssetSeed.CreateAsync(Materials, Templates, verifiedRequirement);
+
+        outcomes.Add(await Seeder.ApplyAsync(CalculationPacks, assets.CalculationPacks));
+        outcomes.Add(await Seeder.ApplyAsync(VerificationArtefacts, assets.VerificationArtefacts));
+        outcomes.Add(await Seeder.ApplyAsync(DesignReviews, assets.DesignReviews));
+        outcomes.Add(await Seeder.ApplyAsync(TechnicalDocuments, assets.TechnicalDocuments));
+
+        outcomes.Add(await Seeder.ApplyAsync(Prompts, KnowledgeSeed.Prompts));
+        outcomes.Add(await Seeder.ApplyAsync(AcademyNodes, KnowledgeSeed.AcademyNodes));
+        outcomes.Add(await Seeder.ApplyAsync(Challenges, KnowledgeSeed.Challenges));
+
+        var aluminium = await Materials.FindAsync(MaterialSeed.Aluminium6082T6);
+        outcomes.Add(await Seeder.ApplyAsync(
+            WorkedExamples,
+            KnowledgeSeed.WorkedExamples(ReferencePin.For(Materials.LibraryName, aluminium!))));
+
+        return outcomes;
     }
 }

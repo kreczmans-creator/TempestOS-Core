@@ -39,6 +39,15 @@ public class SeedDatasetTests
         Assert.Equal(3, counts[harness.Suppliers.LibraryName]);
         Assert.Equal(1, counts[harness.Costs.LibraryName]);
         Assert.Equal(2, counts[harness.LeadTimes.LibraryName]);
+        Assert.Equal(1, counts[harness.Templates.LibraryName]);
+        Assert.Equal(1, counts[harness.CalculationPacks.LibraryName]);
+        Assert.Equal(1, counts[harness.VerificationArtefacts.LibraryName]);
+        Assert.Equal(1, counts[harness.DesignReviews.LibraryName]);
+        Assert.Equal(1, counts[harness.TechnicalDocuments.LibraryName]);
+        Assert.Equal(2, counts[harness.Prompts.LibraryName]);
+        Assert.Equal(1, counts[harness.AcademyNodes.LibraryName]);
+        Assert.Equal(1, counts[harness.Challenges.LibraryName]);
+        Assert.Equal(1, counts[harness.WorkedExamples.LibraryName]);
     }
 
     [Fact]
