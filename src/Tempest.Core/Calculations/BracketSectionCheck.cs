@@ -65,6 +65,7 @@ public sealed record BracketSectionCheckInput(
 /// <param name="MaterialPin">The reference record and revision the allowable stress and density came from.</param>
 /// <param name="AppliedStress">The direct stress on the section, F / A.</param>
 /// <param name="AllowableStress">The allowable stress the applied stress was compared against.</param>
+/// <param name="Density">The material density the mass estimate used.</param>
 /// <param name="StressMargin">
 /// The margin of safety, <c>(allowable / applied) − 1</c>. Zero means the
 /// section is exactly at its allowable; negative means it is over.
@@ -78,6 +79,7 @@ public sealed record BracketSectionCheckResult(
     ReferencePin MaterialPin,
     Quantity<Pressure> AppliedStress,
     Quantity<Pressure> AllowableStress,
+    Quantity<MassDensity> Density,
     double StressMargin,
     Quantity<Mass> EstimatedMass,
     Quantity<Mass> MassLimit,
@@ -267,6 +269,7 @@ public sealed class BracketSectionCheckCalculationDefinition
             input.MaterialPin,
             appliedStress,
             input.AllowableStress,
+            input.Density,
             stressMargin,
             estimatedMass,
             input.MassLimit,

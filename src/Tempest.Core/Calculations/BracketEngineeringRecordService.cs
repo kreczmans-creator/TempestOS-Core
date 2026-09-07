@@ -121,8 +121,7 @@ public sealed class BracketEngineeringRecordService
                 Dimension: nameof(Length)),
             new("IN-DENSITY",
                 "Material density",
-                Format(result.EstimatedMass.BaseValue
-                    / (check.Request.SectionArea.BaseValue * check.Request.MemberLength.BaseValue), "kg/m3"),
+                Format(result.Density.ConvertTo(MassDensityUnits.KilogramPerCubicMetre).Value, "kg/m3"),
                 SourcePin: result.MaterialPin,
                 SourceDescription: "Taken from the pinned material record's own Density property.",
                 Dimension: nameof(MassDensity)),
@@ -183,6 +182,12 @@ public sealed class BracketEngineeringRecordService
     /// <param name="independent">What an independent checker computed, and how.</param>
     /// <param name="verifierPrincipalId">Who performed the independent check.</param>
     /// <param name="performedOn">When they performed it.</param>
+    /// <param name="calculationPackReference">
+    /// The calculation pack this verification relates to, where there is
+    /// one. Supplied by the caller rather than assumed: this service has no
+    /// way to know which pack an artefact belongs to, and naming one it
+    /// guessed would put a wrong cross-reference on an engineering record.
+    /// </param>
     /// <param name="cancellationToken">A token observed while writing.</param>
     /// <returns>The revised artefact.</returns>
     public async Task<IReferenceRecord<VerificationArtefact>> RecordVerificationAsync(
@@ -191,6 +196,7 @@ public sealed class BracketEngineeringRecordService
         IndependentCheck independent,
         string verifierPrincipalId,
         DateOnly performedOn,
+        string? calculationPackReference = null,
         CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(artefactRecordId);
@@ -234,7 +240,7 @@ public sealed class BracketEngineeringRecordService
                     PerformedByPrincipalId: verifierPrincipalId,
                     PerformedOn: performedOn,
                     VerificationRecordId: check.Record!.Id,
-                    CalculationPackReference: "TDE-CPK-001"),
+                    CalculationPackReference: calculationPackReference),
                 SourcePins = [result.MaterialPin],
             },
             artefact.Provenance,

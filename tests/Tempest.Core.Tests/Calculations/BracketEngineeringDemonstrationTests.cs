@@ -126,7 +126,8 @@ public class BracketEngineeringDemonstrationTests
                 IndependentMargin,
                 new Quantity<Mass>(IndependentMassKilograms, MassUnits.Kilogram)),
             CheckerId,
-            new DateOnly(2026, 9, 7));
+            new DateOnly(2026, 9, 7),
+            calculationPackReference: "TDE-CPK-001");
 
         Assert.Equal(VerificationStanding.Passed, artefact.Definition.Result!.Standing);
         Assert.Equal(CheckerId, artefact.Definition.Result.PerformedByPrincipalId);
@@ -172,6 +173,14 @@ public class BracketEngineeringDemonstrationTests
         // either end.
         var materialInput = pack.Definition.Inputs.Single(i => i.Reference == "IN-MATERIAL");
         Assert.Equal(pin, materialInput.SourcePin);
+
+        // The density input states the material's own figure rather than
+        // being reconstructed by dividing the mass back out.
+        var densityInput = pack.Definition.Inputs.Single(i => i.Reference == "IN-DENSITY");
+        Assert.Equal("2700 kg/m3", densityInput.Value);
+        Assert.Equal(pin, densityInput.SourcePin);
+
+        Assert.Equal("TDE-CPK-001", artefact.Definition.Result.CalculationPackReference);
     }
 
     [Fact]
