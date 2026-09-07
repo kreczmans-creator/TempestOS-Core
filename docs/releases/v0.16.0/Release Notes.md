@@ -198,10 +198,30 @@ need to go back.
 
 `D-021` through `D-026` — the six decisions defining v1.0 scope, the
 Companion disposition, plugins, REST, the platform matrix and the
-`v0.15.1` folder — are **Proposed and unratified**. The Decision Register
-contains `D-001`–`D-020`. PR #6 is open with its Product Approval section
-blank. Every Work Package in this release cites them as Proposed; none
-claims otherwise.
+`v0.15.1` folder — were **ratified by the Product Owner on 2026-09-05**
+(proposed 2026-09-04) and are entered in `Decision Register.md`, which
+holds all 26 entries, `D-001`–`D-026`. `D-025` was ratified with a binding
+constraint: **Linux is not to be recorded as "supported" without
+qualification, nor claimed CI-verified.** Ratification is Product Owner
+gate 1 of 4 and settles scope only — it authorises no merge, no tag, no
+publication and no release verdict. Approval evidence:
+`docs/releases/v0.16.0/WP16.0A Product Owner Ratification — D-021 to D-026.md`.
+The Work Packages in this release cite the six as Proposed, which is what
+they were for the whole of the engineering programme; the register records
+the proposed-then-ratified history rather than only the ratified state.
+
+*(Corrected `WP 16.4B-R7` governance closure, 2026-09-07. This paragraph
+read: "`D-021` through `D-026` … are **Proposed and unratified**. The
+Decision Register contains `D-001`–`D-020`. PR #6 is open with its Product
+Approval section blank. Every Work Package in this release cites them as
+Proposed; none claims otherwise." **All three factual clauses were false,
+and had been since 2026-09-05** — while this document's own opening
+paragraph, eight lines from the top, said the six were ratified that day.
+`v0.16.0 Engineering Status Report.md` carries a reconciliation note
+correcting exactly this sentence in its own §3; the equivalent correction
+was never made here. Nothing about PR #6's state was verified by this
+pass, so the claim about it is removed rather than replaced with a
+different assertion. The old text is retained above rather than deleted.)*
 
 `WP 16.0A`'s own closing line stated that `WP 16.0B` would not begin until
 the six were approved. The programme proceeded on later, explicit Product

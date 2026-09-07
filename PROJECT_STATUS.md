@@ -1,7 +1,11 @@
 # TempestOS — Project Status
 
-**Last Updated:** 2026-09-06 (`WP 16.4B-R6` **round 2**, sixth-board
-governance remediation — the candidate under review named, the
+**Last Updated:** 2026-09-07 (`WP 16.4B-R7` **governance closure** — the
+candidate SHA carried to `d6af7ec`, the determinism evidence re-derived
+against ERR §4.4 and its supersession, and the in-progress Work Package
+corrected; the `NOT READY` recommendation is unchanged and no blocker is
+renamed by that pass. Before it, 2026-09-06, `WP 16.4B-R6` **round 2**,
+sixth-board governance remediation — the candidate under review named, the
 Engineering Readiness Review's recommended verdict recorded as `NOT
 READY`, the candidate SHA carried through integration to `261ba34` after
 Agent C failed the candidate for leaving it at `3dd74d8` (`C-R1`), and the
@@ -51,7 +55,7 @@ Release Notes.md`.
 
 **`main`** — `v0.16.0` was merged on 2026-09-05 (`cc7ef4d`), again at `9bba720` to carry the `WP 16.4B-R4` remediation the first merge predated, and again at `58c4cba` on 2026-09-06 carrying `WP 16.4B-R5`. That merge was **authorised by the Product Owner on 2026-09-05**; the per-occasion approval record Engineering Governance §7 item 6 requires is in `docs/releases/v0.16.0/WP16.9.0 Engineering Release Report.md` §7 item 2. It is **not tagged and not published**, and carries **no Product Approval verdict**, so `v0.15.0` above remains the current *released* version.
 
-`feature/v0.16.0` was cut from `main` at the `v0.15.0` tag commit (`a35365a`) and remains the working branch for the release's outstanding remediation. **The candidate under review is `261ba344cb8504e0fc7af2223597f9232df8eb7d` on `feature/v0.16.0-wp16.4b-r6`, not merged** — `WP 16.4B-R6` round 2, integrating the code and governance remediation of the sixth independent board's four findings (`docs/releases/v0.16.0/v0.16.0 Review Board Disposition.md` §8), independently verified by Agent C, which found four further open defects and one RED in the governance half (§9). The `WP 16.9.0` Engineering Readiness Review's recommended verdict is **`NOT READY`** as of 2026-09-06 — a recommendation not to proceed, not a Product Approval verdict, of which there is still none. No determinism matrix exists for this tree and no board has reviewed it. *(Added `WP 16.4B-R6` round 2, 2026-09-06; SHA updated the same day from `3dd74d8` once the two round-2 streams were integrated — the omission Agent C raised as `C-R1`.)* Scope, waves and acceptance criteria: `docs/releases/v0.16.0/v0.16.0 Release Plan.md`. The live, authoritative Work Package status list — what is landed, in progress, or not started — is `docs/releases/v0.16.0/WorkPackages.md`, not this file; this section summarises and that document governs. *(Completed `WP 16.4B-R6`, 2026-09-06: `WP 16.4B-R5` replaced a seven-line paragraph here with two and left this sentence truncated mid-clause at "The live," — raised as `P4-08` by the fifth review board. Restored from the sentence the `-` side of `git show 58c4cba -- PROJECT_STATUS.md` shows it replaced.)*
+`feature/v0.16.0` was cut from `main` at the `v0.15.0` tag commit (`a35365a`) and remains the working branch for the release's outstanding remediation. **The candidate under review is `d6af7ec7bd2e2d182eba5ef77bbe703a8a38134c` on `feature/v0.16.0-wp16.4b-r6`, not merged** — `WP 16.4B-R6` round 2, integrating the code and governance remediation of the sixth independent board's four findings (`docs/releases/v0.16.0/v0.16.0 Review Board Disposition.md` §8), independently verified by Agent C, which found four further open defects and one RED in the governance half (§9). The `WP 16.9.0` Engineering Readiness Review's recommended verdict is **`NOT READY`** as of 2026-09-06 — a recommendation not to proceed, not a Product Approval verdict, of which there is still none. **No determinism matrix exists for this tree and no board has reviewed it.** *(Added `WP 16.4B-R6` round 2, 2026-09-06; SHA updated the same day from `3dd74d8` once the two round-2 streams were integrated — the omission Agent C raised as `C-R1`. **Re-derived `WP 16.4B-R7` governance closure, 2026-09-07**, from the repository: the SHA above read `261ba34` — two candidates out of date, because it was not updated when the candidate moved to `888ef63` and then not updated again when `WP 16.4B-R7` moved it to `d6af7ec`. That is `C-R1` recurring twice, and the instrument written to prevent it — `v0.16.0 Review Board Disposition.md` §8.7, row 13 — was again not run. The two negations remain true **of `d6af7ec`** and are re-derived rather than carried forward: the fourth determinism matrix ran 5/5 on `888ef63` (runs 253–257, ERR §4.4) and is superseded, because `WP 16.4B-R7` changed three files under `src/` and five under `tests/` after it, so a **fifth** matrix is outstanding and `d6af7ec` is not matrix-certified; and although a seventh board reviewed the `WP 16.4B-R6` round-2 remediation at `888ef63` and returned PASS with six AMBERs and no RED, **no board has reviewed `d6af7ec` and no disposition for it exists in this repository**. `WP 16.4B-R7` — the round that produced this candidate — is recorded in no document in `docs/`; recording it, and settling which finding the `NOT READY` recommendation now rests on, is the Technical Debt Register pass's work and the chair's, not this file's.)* Scope, waves and acceptance criteria: `docs/releases/v0.16.0/v0.16.0 Release Plan.md`. The live, authoritative Work Package status list — what is landed, in progress, or not started — is `docs/releases/v0.16.0/WorkPackages.md`, not this file; this section summarises and that document governs. *(Completed `WP 16.4B-R6`, 2026-09-06: `WP 16.4B-R5` replaced a seven-line paragraph here with two and left this sentence truncated mid-clause at "The live," — raised as `P4-08` by the fifth review board. Restored from the sentence the `-` side of `git show 58c4cba -- PROJECT_STATUS.md` shows it replaced.)*
 
 `v1.0` scope is **decided**: the six decision records `WP 16.0A` drafted
 (`D-021`–`D-026`) were **ratified by the Product Owner on 2026-09-05**
@@ -96,9 +100,13 @@ did `WP 16.4B-R1` through `-R5` (`58c4cba`, 2026-09-06) and the
 `WP 16.4A-R1`, `16.5A-R1`, `16.5A-R2`, `16.1A-R1`, `16.5B-R1` and
 `16.9.0` packages. The table above is headed "Landed on
 `feature/v0.16.0` as of this review" and is a snapshot of Wave 0/1; it
-does not list them. **`WP 16.4B-R6` — the remediation of the fifth
-review board's findings — is the only Work Package in progress and is
-not merged.** For the authoritative per-Work-Package status read
+does not list them. **`WP 16.4B-R7` — the current link in the `WP 16.4B` remediation chain
+— is the only Work Package in progress and is not merged.** *(Corrected
+`WP 16.4B-R7` governance closure, 2026-09-07: this named `WP 16.4B-R6`,
+"the remediation of the fifth review board's findings", which was two
+rounds and one board out of date — `-R6` round 2 answered the **sixth**
+board, and `-R7` followed it. `WP 16.4B-R7` has no row in
+`WorkPackages.md` and appears in no document in `docs/`.)* For the authoritative per-Work-Package status read
 `docs/releases/v0.16.0/WorkPackages.md`. *(Corrected `WP 16.4B-R6`,
 2026-09-06: this paragraph read "**In progress on its own branch** (not
 yet merged): `WP 16.4B`" — `P4-09`.)*
@@ -159,7 +167,7 @@ piecemeal — that is the `P4-20` defect this caption exists to prevent.)*
 
 **Last real, CI-verified full-suite totals** (`58c4cba`): **3,214/3,214 Core tests, 474/474 Desktop tests**, 0 failures, both configurations, on `windows-2022` — verified five consecutive times, not once. `WP 16.4A`'s acceptance required a five-run CI determinism matrix on one immutable commit; the RC4 matrix's runs 231, 232, 233, 234 and 235 all concluded `success`, every job in every run, all `workflow_dispatch` at attempt 1, no retries. Run 230 (a `push` run, `cancelled` before any test executed) is excluded and not counted.
 
-That matrix is the **third** one this release obtained. The first ran on `d7d3f3b` (runs 195–202) and was invalidated when review-board remediation changed `src/`, `tests/`, `scripts/` and `.github/`; its re-run's first attempt then failed genuinely (run 214 on `fce2166`, Governance Health Check) and is preserved in the record rather than deleted; the second then passed 5/5 on `f593e5c` (runs 218/220/223/226/227) and was in turn invalidated by `58c4cba`, which again changed `src/` and `tests/`. Full evidence for all three, including that failure: `docs/releases/v0.16.0/WP16.9.0 Engineering Release Report.md` §4.1–§4.3.
+That matrix is the **third** one this release obtained. *(A **fourth** has since run — 5/5 on `888ef63`, runs 253–257, ERR §4.4 — and is itself superseded by `WP 16.4B-R7`. Noted `WP 16.4B-R7` governance closure, 2026-09-07; the RC4 figures in this section stay scoped to `58c4cba`, which is what they are evidence for.)* The first ran on `d7d3f3b` (runs 195–202) and was invalidated when review-board remediation changed `src/`, `tests/`, `scripts/` and `.github/`; its re-run's first attempt then failed genuinely (run 214 on `fce2166`, Governance Health Check) and is preserved in the record rather than deleted; the second then passed 5/5 on `f593e5c` (runs 218/220/223/226/227) and was in turn invalidated by `58c4cba`, which again changed `src/` and `tests/`. Full evidence for all three, including that failure: `docs/releases/v0.16.0/WP16.9.0 Engineering Release Report.md` §4.1–§4.3.
 
 A **fourth** matrix is required and outstanding: `WP 16.4B-R6` — the remediation of the fifth review board's findings — again changes `src/` and `tests/`, so the RC4 evidence above covers `58c4cba` and no later tree. *(Corrected `WP 16.4B-R6`, 2026-09-06: this paragraph, and the two above it, still described the `f593e5c` matrix as the current evidence and the third matrix as outstanding. The third matrix was obtained on `58c4cba` — runs 231–235 — and had been recorded in no document at all until now, which the fifth review board raised as `P4-17`.)*
 
@@ -182,12 +190,20 @@ the repository public, which restores free hosted-runner minutes: run
 during the window state their evidence as local-only, correctly for when
 they were written; `WP 16.9.0` re-established CI evidence on the
 integrated tree rather than carrying those local figures forward as the
-release's certification. The matrix that stands as this release's CI
-evidence is the RC4 matrix on `58c4cba` (runs 231–235), described in
-"Repository Health" above; the `d7d3f3b` matrix `WP 16.9.0` first
-obtained, and the `f593e5c` matrix after it, are both superseded and are
-retained in `docs/releases/v0.16.0/WP16.9.0 Engineering Release Report.md`
-§4.1 and §4.2. *(Corrected `WP 16.4B-R6`, 2026-09-06: this sentence
+release's certification. The most recent matrix is the **fourth**, 5/5 on
+`888ef63` (runs 253–257), in
+`docs/releases/v0.16.0/WP16.9.0 Engineering Release Report.md` §4.4; the
+RC4 matrix on `58c4cba` (runs 231–235, §4.3), the `d7d3f3b` matrix
+`WP 16.9.0` first obtained (§4.1) and the `f593e5c` matrix after it (§4.2)
+are all superseded and are retained there rather than deleted.
+**The fourth matrix is superseded too, and no matrix covers the candidate
+under review.** *(Corrected `WP 16.4B-R7` governance closure, 2026-09-07:
+this sentence named the RC4 matrix as "the matrix that stands as this
+release's CI evidence" and did not mention §4.4, which had by then been
+written. `WP 16.4B-R7` changed three files under `src/` and five under
+`tests/` between `888ef63` and `d6af7ec`, so on the same rule that retired
+the three before it a **fifth** matrix is outstanding, against `d6af7ec`.
+This pass did not run it.)* *(Corrected `WP 16.4B-R6`, 2026-09-06: this sentence
 pointed at "the five-run matrix on `d7d3f3b`, **above**", but "above" had
 been rewritten to describe a different matrix — a back-reference to a
 statement that no longer existed. Raised as `P4-11`.)*
@@ -251,7 +267,7 @@ WorkPackages.md`:
   `WP 16.1A` (workflow half), `WP 16.3A`, `WP 16.5B`; Wave 2: `WP 16.2A`,
   `WP 16.2B`.
 - **Landed** — Wave 2/3: `WP 16.4A`, `WP 16.3B`, `WP 16.5A`, `WP 16.1B`.
-- **In progress** — `WP 16.4B`.
+- **In progress** — the `WP 16.4B` remediation chain, currently `WP 16.4B-R7`. *(Corrected `WP 16.4B-R7` governance closure, 2026-09-07.)*
 - **Closing** — `WP 16.9.0` (Engineering Readiness Review and the
   first §9 Product Approval verdict recorded since `v0.12.0`), preceded
   by the release review board.
