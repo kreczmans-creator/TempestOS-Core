@@ -37,4 +37,19 @@ public interface ICalculationEngine
     /// <param name="cancellationToken">A token observed while reading.</param>
     /// <exception cref="CalculationException">The stored record cannot be read as <typeparamref name="TResult"/>.</exception>
     Task<CalculationRecord<TResult>?> FindRecordAsync<TResult>(Guid recordId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Every calculation record this engine has executed and indexed, newest
+    /// first — enough of each to identify it without opening it.
+    /// </summary>
+    /// <remarks>
+    /// Summaries rather than records, deliberately:
+    /// <see cref="FindRecordAsync{TResult}"/> needs the result type, and a
+    /// listing cannot know one type for a heterogeneous set. Open a summary
+    /// by Id, with the type its <see cref="CalculationRecordSummary.ResultTypeName"/> names.
+    /// Returns empty where the engine was constructed without a record index.
+    /// </remarks>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>The summaries, newest execution first.</returns>
+    Task<IReadOnlyList<CalculationRecordSummary>> ListRecordsAsync(CancellationToken cancellationToken = default);
 }

@@ -249,7 +249,8 @@ public sealed class WorkspaceHost : IAsyncDisposable
             ReferenceReview,
             BracketCheck,
             (ICalculationEngine)host.Services!.GetService(typeof(ICalculationEngine)),
-            (ISettingsProvider)host.Services!.GetService(typeof(ISettingsProvider)));
+            (ISettingsProvider)host.Services!.GetService(typeof(ISettingsProvider)),
+            (IVerificationArtefactCatalog)host.Services!.GetService(typeof(IVerificationArtefactCatalog)));
 
         EngineeringTrace = new EngineeringTraceRegister(
             (ICalculationPackCatalog)host.Services!.GetService(typeof(ICalculationPackCatalog)),

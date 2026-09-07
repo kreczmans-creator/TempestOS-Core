@@ -1,3 +1,4 @@
+using Avalonia;
 using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Layout;
@@ -9,19 +10,25 @@ using Tempest.Desktop.Theming;
 namespace Tempest.Desktop.Views;
 
 /// <summary>
-/// The Engineering Calculation surface: choose a governed reference
-/// material, enter the section inputs, run the real bracket section check,
-/// and read the result beside the reference revision it stood on.
+/// The Engineering Calculations workspace: what has been calculated, what
+/// governed reference data is held, and one active calculation with its
+/// inputs, result, traceability and verification.
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>This view decides nothing.</b> Every answer it shows —  which
-/// materials are held, whether one may be used, what the check produced,
-/// what it stood on — is composed by
-/// <see cref="BracketCalculationWorkbench"/> in <c>Tempest.App</c>. The
-/// view collects text, hands it over, and renders what comes back. It
-/// parses no quantity, applies no rule, and knows no formula: the same
-/// discipline <see cref="ProjectRequirementsView"/> follows.
+/// <b>List and detail, the shape the rest of the shell already uses.</b>
+/// Left: the calculations that exist and the reference library they stand
+/// on. Right: the active calculation. Selecting a calculation opens it
+/// read-only; <see cref="NewCalculationCaption"/> starts an editable one.
+/// </para>
+/// <para>
+/// <b>This view decides nothing.</b> Every answer it shows — which
+/// calculations exist, which materials are held, whether one may be used,
+/// what a check produced, what it stood on, whether verification evidence
+/// exists — is composed by <see cref="BracketCalculationWorkbench"/> in
+/// <c>Tempest.App</c>. The view collects text, raises intent, and renders
+/// what comes back. It parses no quantity, applies no rule, and knows no
+/// formula.
 /// </para>
 /// <para>
 /// <b>Nothing here approves anything.</b> Releasing a material is the
@@ -45,12 +52,25 @@ public sealed class EngineeringCalculationView : UserControl
     /// <summary>The caption on the button that performs the governed review and release.</summary>
     public const string ReleaseCaption = "Verify and Release Material";
 
+    /// <summary>The caption on the button that starts a new calculation.</summary>
+    public const string NewCalculationCaption = "New Calculation";
+
+    /// <summary>The caption on the button that opens the selected calculation.</summary>
+    public const string OpenCaption = "Open Calculation";
+
     /// <summary>What the surface shows when no material is held at all.</summary>
     public const string EmptyLibraryGuidance =
         "No material records are held yet. Press \"" + PopulateCaption + "\" below to add the shipped reference records as Draft, "
         + "then select one and release it through review before it can be used for engineering work.";
 
-    private readonly ComboBox _materialPicker = new()
+    /// <summary>What the surface shows when nothing has been calculated yet.</summary>
+    public const string EmptyCalculationsGuidance =
+        "Nothing has been calculated yet. Press \"" + NewCalculationCaption + "\", choose a calculation, "
+        + "pick a released reference material, enter the inputs and press \"" + CalculateCaption + "\".";
+
+    private readonly ListBox _calculationList = new() { MinHeight = 120, MaxHeight = 220, FontSize = DesignTokens.FontSizeBody };
+    private readonly ListBox _referenceList = new() { MinHeight = 120, MaxHeight = 220, FontSize = DesignTokens.FontSizeBody };
+    private readonly ComboBox _definitionPicker = new()
     {
         FontSize = DesignTokens.FontSizeBody,
         MinHeight = DesignTokens.MinControlSize,
@@ -67,31 +87,25 @@ public sealed class EngineeringCalculationView : UserControl
 
     private readonly Button _calculateButton = new() { Content = CalculateCaption, MinHeight = DesignTokens.MinControlSize };
     private readonly Button _populateButton = new() { Content = PopulateCaption, MinHeight = DesignTokens.MinControlSize };
-
-    private readonly TextBlock _populateExplanation = new()
-    {
-        Text = "Adds the shipped reference material records to this library as Draft. "
-            + "Nothing is released and nothing is approved by populating, and running it again "
-            + "adds only what is missing — it never overwrites a record somebody has corrected.",
-        FontSize = DesignTokens.FontSizeCaption,
-        TextWrapping = TextWrapping.Wrap,
-        MaxWidth = 520,
-        Opacity = 0.8,
-    };
     private readonly Button _releaseButton = new() { Content = ReleaseCaption, MinHeight = DesignTokens.MinControlSize };
+    private readonly Button _newButton = new() { Content = NewCalculationCaption, MinHeight = DesignTokens.MinControlSize };
+    private readonly Button _openButton = new() { Content = OpenCaption, MinHeight = DesignTokens.MinControlSize };
+
+    private readonly TextBlock _populateExplanation = Caption(
+        "Adds the shipped reference material records to this library as Draft. Nothing is released and nothing "
+        + "is approved by populating, and running it again adds only what is missing — it never overwrites a "
+        + "record somebody has corrected.");
+
+    private readonly TextBlock _calculationsEmpty = Caption(EmptyCalculationsGuidance);
+    private readonly TextBlock _definitionNote = Caption(string.Empty);
+    private readonly TextBlock _activeMode = Caption(string.Empty);
+    private readonly TextBlock _materialState = Caption(string.Empty);
+    private readonly TextBlock _statusMessage = Caption(string.Empty);
 
     private readonly StackPanel _validationPanel = new() { Spacing = DesignTokens.SpaceXs };
     private readonly StackPanel _resultPanel = new() { Spacing = DesignTokens.SpaceXs };
     private readonly StackPanel _traceabilityPanel = new() { Spacing = DesignTokens.SpaceXs };
-    private readonly TextBlock _materialState = new()
-    {
-        FontSize = DesignTokens.FontSizeCaption,
-        TextWrapping = TextWrapping.Wrap,
-        MaxWidth = 520,
-        Opacity = 0.85,
-    };
-
-    private readonly TextBlock _statusMessage = new() { FontSize = DesignTokens.FontSizeCaption, Opacity = 0.8, TextWrapping = TextWrapping.Wrap, MaxWidth = 520 };
+    private readonly StackPanel _verificationPanel = new() { Spacing = DesignTokens.SpaceXs };
 
     /// <summary>Initialises a new instance of the <see cref="EngineeringCalculationView"/> class.</summary>
     public EngineeringCalculationView()
@@ -99,14 +113,20 @@ public sealed class EngineeringCalculationView : UserControl
         AutomationProperties.SetName(this, Heading);
 
         _calculateButton.Classes.Add(ChromeStyles.Primary);
+        _newButton.Classes.Add(ChromeStyles.Primary);
         _populateButton.Classes.Add(ChromeStyles.Flat);
         _releaseButton.Classes.Add(ChromeStyles.Flat);
+        _openButton.Classes.Add(ChromeStyles.Flat);
 
-        AutomationProperties.SetName(_populateButton, PopulateCaption);
-        ToolTip.SetTip(_populateButton, "Add the shipped reference material records to this library as Draft.");
-        AutomationProperties.SetName(_releaseButton, ReleaseCaption);
-        AutomationProperties.SetName(_calculateButton, CalculateCaption);
-        AutomationProperties.SetName(_materialPicker, "Governed reference material");
+        Describe(_populateButton, PopulateCaption, "Add the shipped reference material records to this library as Draft.");
+        Describe(_releaseButton, ReleaseCaption, "Verify this material against the source you name, then release it for engineering work.");
+        Describe(_calculateButton, CalculateCaption, "Run the calculation against the inputs above.");
+        Describe(_newButton, NewCalculationCaption, "Start a new calculation from the product's registered catalogue.");
+        Describe(_openButton, OpenCaption, "Open the selected calculation, read-only, exactly as it was recorded.");
+
+        AutomationProperties.SetName(_calculationList, "Existing calculations");
+        AutomationProperties.SetName(_referenceList, "Reference library");
+        AutomationProperties.SetName(_definitionPicker, "Calculation to run");
         AutomationProperties.SetName(_loadBox, "Axial load in kilonewtons");
         AutomationProperties.SetName(_areaBox, "Section area in square millimetres");
         AutomationProperties.SetName(_lengthBox, "Member length in millimetres");
@@ -118,7 +138,13 @@ public sealed class EngineeringCalculationView : UserControl
         _calculateButton.Click += (_, _) => CalculateRequested?.Invoke();
         _populateButton.Click += (_, _) => PopulateRequested?.Invoke();
         _releaseButton.Click += (_, _) => ReleaseRequested?.Invoke();
-        _materialPicker.SelectionChanged += (_, _) => ShowSelectedMaterialState();
+        _newButton.Click += (_, _) => NewCalculationRequested?.Invoke();
+        _openButton.Click += (_, _) => RaiseOpen();
+
+        _referenceList.SelectionChanged += (_, _) => ShowSelectedMaterialState();
+        _calculationList.SelectionChanged += (_, _) => _openButton.IsEnabled = SelectedCalculation is not null;
+        _calculationList.DoubleTapped += (_, _) => RaiseOpen();
+        _definitionPicker.SelectionChanged += (_, _) => ShowSelectedDefinition();
 
         Content = BuildLayout();
     }
@@ -132,17 +158,52 @@ public sealed class EngineeringCalculationView : UserControl
     /// <summary>Raised when the engineer asks for the selected material to be verified and released.</summary>
     public event Action? ReleaseRequested;
 
+    /// <summary>Raised when the engineer asks to start a new calculation.</summary>
+    public event Action? NewCalculationRequested;
+
+    /// <summary>Raised when the engineer asks to open a persisted calculation.</summary>
+    public event Action<Guid>? OpenCalculationRequested;
+
+    /// <summary>The persisted calculations currently listed, newest first.</summary>
+    public IReadOnlyList<CalculationListEntry> Calculations { get; private set; } = [];
+
+    /// <summary>The calculation currently selected in the list, or <see langword="null"/>.</summary>
+    public CalculationListEntry? SelectedCalculation => _calculationList.SelectedItem as CalculationListEntry;
+
+    /// <summary>The product's registered calculation catalogue, as offered.</summary>
+    public IReadOnlyList<CalculationCatalogueEntry> Catalogue { get; private set; } = [];
+
+    /// <summary>The calculation chosen for a new run, or <see langword="null"/>.</summary>
+    public CalculationCatalogueEntry? SelectedDefinition => _definitionPicker.SelectedItem as CalculationCatalogueEntry;
+
     /// <summary>The materials currently offered, in the order they are offered.</summary>
     public IReadOnlyList<BracketMaterialOption> Materials { get; private set; } = [];
 
     /// <summary>The material currently selected, or <see langword="null"/> where none is.</summary>
-    public BracketMaterialOption? SelectedMaterial => _materialPicker.SelectedItem as BracketMaterialOption;
+    public BracketMaterialOption? SelectedMaterial => _referenceList.SelectedItem as BracketMaterialOption;
 
     /// <summary>Whether the surface is telling the engineer the library is empty.</summary>
     public bool IsShowingEmptyLibrary => Materials.Count == 0;
 
+    /// <summary>Whether the surface is telling the engineer nothing has been calculated.</summary>
+    public bool IsShowingEmptyCalculations => Calculations.Count == 0;
+
+    /// <summary>
+    /// Whether the active calculation is a persisted record being viewed
+    /// rather than a new one being entered.
+    /// </summary>
+    /// <remarks>
+    /// Viewing never edits: in this state the inputs and the Calculate
+    /// action are disabled, so opening a record cannot recalculate it or
+    /// write to it. <see cref="NewCalculationCaption"/> leaves the state.
+    /// </remarks>
+    public bool IsReadOnly { get; private set; }
+
     /// <summary>The outcome currently displayed, or <see langword="null"/> where none is.</summary>
     public BracketCalculationOutcome? DisplayedOutcome { get; private set; }
+
+    /// <summary>The verification evidence currently displayed, or <see langword="null"/>.</summary>
+    public VerificationEvidence? DisplayedVerification { get; private set; }
 
     /// <summary>What the engineer has typed, ready to hand to the workbench.</summary>
     public BracketCalculationInputs CurrentInputs => new(
@@ -161,6 +222,32 @@ public sealed class EngineeringCalculationView : UserControl
     /// <summary>The last status line shown.</summary>
     public string StatusMessage => _statusMessage.Text ?? string.Empty;
 
+    /// <summary>Shows the persisted calculations, keeping the current selection where it survives.</summary>
+    /// <param name="calculations">Every calculation the engine has recorded.</param>
+    public void ShowCalculations(IReadOnlyList<CalculationListEntry> calculations)
+    {
+        ArgumentNullException.ThrowIfNull(calculations);
+
+        var keep = SelectedCalculation?.RecordId;
+        Calculations = calculations;
+        _calculationList.ItemsSource = calculations;
+        _calculationList.SelectedItem = calculations.FirstOrDefault(c => c.RecordId == keep);
+        _calculationsEmpty.IsVisible = calculations.Count == 0;
+        _openButton.IsEnabled = SelectedCalculation is not null;
+    }
+
+    /// <summary>Shows the product's registered calculation catalogue.</summary>
+    /// <param name="catalogue">Every calculation the product registers.</param>
+    public void ShowCatalogue(IReadOnlyList<CalculationCatalogueEntry> catalogue)
+    {
+        ArgumentNullException.ThrowIfNull(catalogue);
+
+        Catalogue = catalogue;
+        _definitionPicker.ItemsSource = catalogue;
+        _definitionPicker.SelectedItem ??= catalogue.FirstOrDefault(c => c.IsDrivableHere) ?? catalogue.FirstOrDefault();
+        ShowSelectedDefinition();
+    }
+
     /// <summary>Shows the governed materials on offer, keeping the current selection where it survives.</summary>
     /// <param name="materials">Every material the library holds.</param>
     /// <param name="selectRecordId">The record to select, where one should be.</param>
@@ -171,29 +258,24 @@ public sealed class EngineeringCalculationView : UserControl
         Materials = materials;
         var keep = selectRecordId ?? SelectedMaterial?.RecordId;
 
-        _materialPicker.ItemsSource = materials;
-        _materialPicker.SelectedItem = materials.FirstOrDefault(m => m.RecordId == keep)
+        _referenceList.ItemsSource = materials;
+        _referenceList.SelectedItem = materials.FirstOrDefault(m => m.RecordId == keep)
             ?? materials.FirstOrDefault(m => m.IsUsableForEngineering)
             ?? materials.FirstOrDefault();
 
-        // `IsVisible` is NOT set here, deliberately. This action used to be
-        // hidden whenever the library held anything at all, which made the
-        // one action the whole workflow starts with disappear the moment it
-        // had ever been used — and made it invisible in any composition
-        // that already held a material. The first manual review on Windows
-        // could not find it. It is now always present and always says what
-        // it does; running it twice is harmless, because seeding is
-        // additive and idempotent.
         ShowSelectedMaterialState();
     }
 
     /// <summary>Shows an outcome — a result, a refusal, or a rejected input.</summary>
     /// <param name="outcome">What the workbench answered.</param>
-    public void ShowOutcome(BracketCalculationOutcome outcome)
+    /// <param name="readOnly">Whether this is a persisted record being viewed rather than a new run.</param>
+    public void ShowOutcome(BracketCalculationOutcome outcome, bool readOnly = false)
     {
         ArgumentNullException.ThrowIfNull(outcome);
 
         DisplayedOutcome = outcome;
+        SetReadOnly(readOnly);
+
         _validationPanel.Children.Clear();
         _resultPanel.Children.Clear();
         _traceabilityPanel.Children.Clear();
@@ -256,11 +338,36 @@ public sealed class EngineeringCalculationView : UserControl
             _traceabilityPanel.Children.Add(Readout("Assumption", assumption));
     }
 
+    /// <summary>Shows the verification evidence, or the honest account of why there is none.</summary>
+    /// <param name="evidence">What the workbench found.</param>
+    public void ShowVerification(VerificationEvidence evidence)
+    {
+        ArgumentNullException.ThrowIfNull(evidence);
+
+        DisplayedVerification = evidence;
+        _verificationPanel.Children.Clear();
+
+        if (!evidence.Exists)
+        {
+            _verificationPanel.Children.Add(ObjectEditorView.BuildSeverityRow(FeedbackSeverity.Warning, evidence.WhyAbsent ?? "No verification artefact is held."));
+            return;
+        }
+
+        _verificationPanel.Children.Add(Readout("Artefact", evidence.Reference ?? evidence.ArtefactRecordId));
+        _verificationPanel.Children.Add(Readout("Standing", evidence.Standing ?? "Not performed"));
+
+        if (evidence.Summary is not null)
+            _verificationPanel.Children.Add(Readout("Summary", evidence.Summary));
+
+        if (evidence.PerformedByPrincipalId is not null)
+            _verificationPanel.Children.Add(Readout("Performed by", $"{evidence.PerformedByPrincipalId} on {evidence.PerformedOn:yyyy-MM-dd}"));
+    }
+
     /// <summary>Shows what just happened, as a status line.</summary>
     /// <param name="message">The message.</param>
     public void ShowStatus(string message) => _statusMessage.Text = message ?? string.Empty;
 
-    /// <summary>Puts previously-entered figures back into the boxes, after recovering a stored calculation.</summary>
+    /// <summary>Puts previously-entered figures back into the boxes.</summary>
     /// <param name="inputs">The figures to restore.</param>
     public void RestoreInputs(BracketCalculationInputs inputs)
     {
@@ -270,6 +377,57 @@ public sealed class EngineeringCalculationView : UserControl
         _areaBox.Text = inputs.SectionAreaSquareMillimetres;
         _lengthBox.Text = inputs.MemberLengthMillimetres;
         _massLimitBox.Text = inputs.MassLimitGrams;
+    }
+
+    /// <summary>Leaves read-only view and offers an editable calculation.</summary>
+    public void BeginNewCalculation()
+    {
+        SetReadOnly(false);
+        _calculationList.SelectedItem = null;
+        ShowStatus($"Enter the inputs and press \"{CalculateCaption}\".");
+    }
+
+    private void RaiseOpen()
+    {
+        if (SelectedCalculation is { } selected)
+            OpenCalculationRequested?.Invoke(selected.RecordId);
+    }
+
+    private void SetReadOnly(bool readOnly)
+    {
+        IsReadOnly = readOnly;
+
+        // Disabled rather than hidden: an engineer looking at a recorded
+        // calculation should still see the figures it was run with, and see
+        // plainly that they are not editing them.
+        foreach (var box in new[] { _loadBox, _areaBox, _lengthBox, _massLimitBox })
+            box.IsEnabled = !readOnly;
+
+        _calculateButton.IsEnabled = !readOnly;
+        _activeMode.Text = readOnly
+            ? "Viewing a recorded calculation. It is read-only: opening a record never recalculates it and never writes to it. "
+              + $"Press \"{NewCalculationCaption}\" to start a new one."
+            : "New calculation.";
+    }
+
+    private void ShowSelectedDefinition()
+    {
+        var selected = SelectedDefinition;
+
+        if (selected is null)
+        {
+            _definitionNote.Text = string.Empty;
+            return;
+        }
+
+        _definitionNote.Text = selected.IsDrivableHere
+            ? selected.Description
+            : $"{selected.Description}  —  {selected.WhyNotDrivable}";
+
+        // A calculation this workspace cannot drive must not offer a
+        // Calculate button that would throw. `TD-159` produced exactly that
+        // once already.
+        _calculateButton.IsEnabled = selected.IsDrivableHere && !IsReadOnly;
     }
 
     private void ShowSelectedMaterialState()
@@ -285,31 +443,46 @@ public sealed class EngineeringCalculationView : UserControl
 
         _materialState.Text = $"{selected.StateExplanation}  {selected.Provenance}";
 
-        // The governed review is offered only where it is the thing
-        // standing between the engineer and a calculation — never as a
-        // permanent button inviting a release nobody needs.
+        // The governed review is offered where it is the thing standing
+        // between the engineer and a calculation — never as a permanent
+        // button inviting a release nobody needs.
         _releaseButton.IsVisible = !selected.IsUsableForEngineering;
     }
 
     private Control BuildLayout()
     {
-        var body = new StackPanel { Spacing = DesignTokens.SpaceMd, Margin = DesignTokens.PagePadding };
+        var page = new Grid { ColumnDefinitions = new ColumnDefinitions("420,*"), Margin = DesignTokens.PagePadding };
 
-        body.Children.Add(PageHeading.Label("Engineering"));
-        body.Children.Add(PageHeading.Title(Heading));
-        body.Children.Add(PageHeading.Lead(
-            "A first-order direct-stress and mass check on one bracket section, run against a released reference material. "
-            + "The result records the reference revision it stood on, so it stays true after that reference moves on."));
+        // ---- Left: what exists -------------------------------------
+        var left = new StackPanel { Spacing = DesignTokens.SpaceMd };
+
+        var calculations = new StackPanel { Spacing = DesignTokens.SpaceSm };
+        calculations.Children.Add(_newButton);
+        calculations.Children.Add(LabelledRow("Calculation", _definitionPicker));
+        calculations.Children.Add(_definitionNote);
+        calculations.Children.Add(_calculationsEmpty);
+        calculations.Children.Add(_calculationList);
+        calculations.Children.Add(_openButton);
+        left.Children.Add(Section("Calculations", calculations));
 
         var reference = new StackPanel { Spacing = DesignTokens.SpaceSm };
-        reference.Children.Add(LabelledRow("Material", _materialPicker));
+        reference.Children.Add(_referenceList);
         reference.Children.Add(_materialState);
         reference.Children.Add(_populateButton);
         reference.Children.Add(_populateExplanation);
         reference.Children.Add(LabelledRow("Source consulted", _sourceConsultedBox));
         reference.Children.Add(LabelledRow("Release rationale", _releaseRationaleBox));
         reference.Children.Add(_releaseButton);
-        body.Children.Add(Section("Governed reference", reference));
+        left.Children.Add(Section("Reference Library", reference));
+
+        // ---- Right: the active calculation --------------------------
+        var right = new StackPanel { Spacing = DesignTokens.SpaceMd };
+        right.Children.Add(PageHeading.Label("Engineering"));
+        right.Children.Add(PageHeading.Title(Heading));
+        right.Children.Add(PageHeading.Lead(
+            "A first-order direct-stress and mass check on one bracket section, run against a released reference material. "
+            + "The result records the reference revision it stood on, so it stays true after that reference moves on."));
+        right.Children.Add(_activeMode);
 
         var inputs = new StackPanel { Spacing = DesignTokens.SpaceSm };
         inputs.Children.Add(LabelledRow("Load (kN)", _loadBox));
@@ -319,16 +492,30 @@ public sealed class EngineeringCalculationView : UserControl
         inputs.Children.Add(_calculateButton);
         inputs.Children.Add(_validationPanel);
         inputs.Children.Add(_statusMessage);
-        body.Children.Add(Section("Inputs", inputs));
+        right.Children.Add(Section("Inputs", inputs));
 
-        body.Children.Add(Section("Result", _resultPanel));
-        body.Children.Add(Section("Traceability", _traceabilityPanel));
+        right.Children.Add(Section("Results", _resultPanel));
+        right.Children.Add(Section("Traceability", _traceabilityPanel));
+        right.Children.Add(Section("Verification", _verificationPanel));
+
+        Grid.SetColumn(left, 0);
+        Grid.SetColumn(right, 1);
+        page.Children.Add(new ScrollViewer { Content = left, Margin = new Thickness(0, 0, DesignTokens.SpaceLg, 0) });
+        page.Children.Add(new ScrollViewer { Content = right });
 
         _validationPanel.IsVisible = false;
         _resultPanel.IsVisible = false;
         _traceabilityPanel.IsVisible = false;
+        _openButton.IsEnabled = false;
+        SetReadOnly(false);
 
-        return new ScrollViewer { Content = body };
+        return page;
+    }
+
+    private static void Describe(Control control, string name, string tip)
+    {
+        AutomationProperties.SetName(control, name);
+        ToolTip.SetTip(control, tip);
     }
 
     private static Expander Section(string title, Control content) => new()
@@ -339,9 +526,18 @@ public sealed class EngineeringCalculationView : UserControl
         Content = content,
     };
 
+    private static TextBlock Caption(string text) => new()
+    {
+        Text = text,
+        FontSize = DesignTokens.FontSizeCaption,
+        TextWrapping = TextWrapping.Wrap,
+        MaxWidth = 520,
+        Opacity = 0.8,
+    };
+
     private static Control LabelledRow(string label, Control control)
     {
-        var row = new Grid { ColumnDefinitions = new ColumnDefinitions("180,*") };
+        var row = new Grid { ColumnDefinitions = new ColumnDefinitions("160,*") };
         var text = new TextBlock
         {
             Text = label,
@@ -359,7 +555,7 @@ public sealed class EngineeringCalculationView : UserControl
 
     private static Control Readout(string label, string value)
     {
-        var row = new Grid { ColumnDefinitions = new ColumnDefinitions("180,*") };
+        var row = new Grid { ColumnDefinitions = new ColumnDefinitions("160,*") };
         var name = new TextBlock
         {
             Text = label,

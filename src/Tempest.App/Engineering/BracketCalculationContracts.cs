@@ -239,3 +239,59 @@ internal sealed record RememberedCalculation(Guid RecordId, BracketCalculationIn
         return true;
     }
 }
+
+/// <summary>One persisted calculation, as a list should present it.</summary>
+/// <param name="RecordId">The record's own identity.</param>
+/// <param name="Title">A short human label — the calculation's name and the first eight characters of its identity.</param>
+/// <param name="CalculationId">Which calculation produced it.</param>
+/// <param name="CalculationName">That calculation's own name.</param>
+/// <param name="RevisionNumber">The record's revision.</param>
+/// <param name="ExecutedAt">When it ran.</param>
+/// <param name="ExecutedByPrincipalId">Who ran it.</param>
+/// <param name="MaterialRecordId">The reference it stood on, where the record names one.</param>
+/// <param name="PinnedRevision">The revision it is pinned to, where the record names one.</param>
+/// <param name="Outcome">Acceptance in words.</param>
+/// <param name="MeetsCriteria">Whether it met its criteria, or <see langword="null"/> where that is not a question this record answers.</param>
+/// <param name="ResultSummary">Enough of the numbers to recognise it.</param>
+/// <param name="CanBeOpenedHere">Whether this workspace can display the record in full.</param>
+public sealed record CalculationListEntry(
+    Guid RecordId,
+    string Title,
+    string CalculationId,
+    string CalculationName,
+    int RevisionNumber,
+    DateTimeOffset ExecutedAt,
+    string ExecutedByPrincipalId,
+    string? MaterialRecordId,
+    int? PinnedRevision,
+    string Outcome,
+    bool? MeetsCriteria,
+    string ResultSummary,
+    bool CanBeOpenedHere)
+{
+    /// <summary>The single line a list row shows.</summary>
+    public string Label =>
+        $"{Title}  ·  {Outcome}  ·  rev {RevisionNumber}  ·  {ExecutedAt:yyyy-MM-dd HH:mm} UTC";
+
+    /// <inheritdoc />
+    public override string ToString() => Label;
+}
+
+/// <summary>The verification evidence held for the bracket work, or why none is.</summary>
+/// <param name="Exists">Whether an artefact is held at all.</param>
+/// <param name="ArtefactRecordId">The artefact's own record identity.</param>
+/// <param name="Reference">Its engineering reference, e.g. <c>TDE-VER-001</c>.</param>
+/// <param name="Standing">Passed, Failed, Not performed — whatever the artefact records.</param>
+/// <param name="Summary">What the verifier said.</param>
+/// <param name="PerformedByPrincipalId">Who performed it.</param>
+/// <param name="PerformedOn">When.</param>
+/// <param name="WhyAbsent">Why there is no artefact, where there is none. Never a fabricated one.</param>
+public sealed record VerificationEvidence(
+    bool Exists,
+    string ArtefactRecordId,
+    string? Reference,
+    string? Standing,
+    string? Summary,
+    string? PerformedByPrincipalId,
+    DateOnly? PerformedOn,
+    string? WhyAbsent);

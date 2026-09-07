@@ -493,8 +493,15 @@ public sealed class EngineeringCalculationJourneyTests
     private static EngineeringCalculationView SurfaceOf(MainWindow window) =>
         window.GetLogicalDescendants().OfType<EngineeringCalculationView>().Distinct().Single();
 
-    private static ComboBox PickerOf(EngineeringCalculationView view) =>
-        view.GetLogicalDescendants().OfType<ComboBox>().Distinct().Single();
+    /// <summary>The Reference Library list, located by the name a screen reader announces.</summary>
+    private static ListBox PickerOf(EngineeringCalculationView view) =>
+        view.GetLogicalDescendants().OfType<ListBox>().Distinct()
+            .Single(l => string.Equals(AutomationProperties.GetName(l), "Reference library", StringComparison.Ordinal));
+
+    /// <summary>The Calculations list, located the same way.</summary>
+    private static ListBox CalculationListOf(EngineeringCalculationView view) =>
+        view.GetLogicalDescendants().OfType<ListBox>().Distinct()
+            .Single(l => string.Equals(AutomationProperties.GetName(l), "Existing calculations", StringComparison.Ordinal));
 
     private static void SignIn(WorkspaceHost host)
     {

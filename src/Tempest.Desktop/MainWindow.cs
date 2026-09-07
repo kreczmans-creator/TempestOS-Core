@@ -517,6 +517,8 @@ public sealed class MainWindow : Window
         _engineeringCalculation.PopulateRequested += () => _ = _engineeringCalculationCoordinator.PopulateAsync();
         _engineeringCalculation.ReleaseRequested += () => _ = _engineeringCalculationCoordinator.VerifyAndReleaseAsync();
         _engineeringCalculation.CalculateRequested += () => _ = _engineeringCalculationCoordinator.CalculateAsync();
+        _engineeringCalculation.NewCalculationRequested += () => _engineeringCalculationCoordinator.BeginNewCalculation();
+        _engineeringCalculation.OpenCalculationRequested += recordId => _ = _engineeringCalculationCoordinator.OpenAsync(recordId);
 
         _navigationRail = new GlobalNavigationRail(_navigator);
 

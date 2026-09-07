@@ -57,7 +57,10 @@ internal sealed class EngineeringCalculationCoordinator
     /// <param name="restoreInputs">Whether to put the remembered figures back into the boxes — done on the first entry of a session, not on every return, so a half-typed input is not discarded by navigating away and back.</param>
     public async Task RefreshAsync(bool restoreInputs = false)
     {
+        _view.ShowCatalogue(EngineeringCalculationCatalogue.All());
         _view.ShowMaterials(await _workbench.ListMaterialsAsync().ConfigureAwait(true));
+        _view.ShowCalculations(await _workbench.ListCalculationsAsync().ConfigureAwait(true));
+        _view.ShowVerification(await _workbench.ReadVerificationAsync().ConfigureAwait(true));
 
         var (outcome, inputs) = await _workbench.RecoverLastAsync().ConfigureAwait(true);
 
@@ -70,10 +73,32 @@ internal sealed class EngineeringCalculationCoordinator
         if (outcome is null)
             return;
 
-        _view.ShowOutcome(outcome);
+        // Recovered from a record, so it is a recorded calculation being
+        // viewed, not one being entered.
+        _view.ShowOutcome(outcome, readOnly: true);
 
         if (restoreInputs)
-            _view.ShowStatus($"Recovered the calculation of {outcome.ExecutedAt:yyyy-MM-dd HH:mm:ss} UTC from its persisted record.");
+            _view.ShowStatus($"Recovered the calculation of {outcome.ExecutedAt:yyyy-MM-dd HH:mm:ss} UTC from its persisted record. It is read-only.");
+    }
+
+    /// <summary>Starts a new, editable calculation.</summary>
+    public void BeginNewCalculation() => _view.BeginNewCalculation();
+
+    /// <summary>Opens one persisted calculation, read-only, exactly as recorded.</summary>
+    /// <param name="recordId">The record to open.</param>
+    public async Task OpenAsync(Guid recordId)
+    {
+        var outcome = await _workbench.OpenAsync(recordId).ConfigureAwait(true);
+
+        if (outcome is null)
+        {
+            _view.ShowStatus("That calculation is recorded, but this workspace cannot display its result type yet.");
+            return;
+        }
+
+        _view.ShowOutcome(outcome, readOnly: true);
+        _view.ShowVerification(await _workbench.ReadVerificationAsync().ConfigureAwait(true));
+        _view.ShowStatus($"Opened the calculation of {outcome.ExecutedAt:yyyy-MM-dd HH:mm:ss} UTC, read-only. Nothing was recalculated.");
     }
 
     /// <summary>Populates the material library from the shipped seed corpus.</summary>
@@ -139,6 +164,10 @@ internal sealed class EngineeringCalculationCoordinator
 
         if (outcome.Performed)
         {
+            // The list is re-read so the calculation just recorded appears
+            // where the engineer will look for it next.
+            _view.ShowCalculations(await _workbench.ListCalculationsAsync().ConfigureAwait(true));
+            _view.ShowVerification(await _workbench.ReadVerificationAsync().ConfigureAwait(true));
             _view.ShowStatus($"{outcome.OutcomeLabel}. Recorded as {outcome.CalculationRecordId}, pinned to {outcome.MaterialLibrary}/{outcome.MaterialRecordId} revision {outcome.PinnedRevision}.");
             return;
         }

@@ -1,5 +1,6 @@
 using System.Globalization;
 using Tempest.Core.Calculations;
+using Tempest.Core.EngineeringAssets.Verification;
 using Tempest.Core.Materials;
 using Tempest.Core.ReferenceData;
 using Tempest.Core.ReferenceData.Review;
@@ -53,6 +54,7 @@ public sealed class BracketCalculationWorkbench
     private readonly GovernedBracketCheckService _check;
     private readonly ICalculationEngine _engine;
     private readonly ISettingsProvider _settings;
+    private readonly IVerificationArtefactCatalog _verifications;
 
     /// <summary>Initialises a new instance of the <see cref="BracketCalculationWorkbench"/> class.</summary>
     public BracketCalculationWorkbench(
@@ -61,7 +63,8 @@ public sealed class BracketCalculationWorkbench
         ReferenceReviewService review,
         GovernedBracketCheckService check,
         ICalculationEngine engine,
-        ISettingsProvider settings)
+        ISettingsProvider settings,
+        IVerificationArtefactCatalog verifications)
     {
         ArgumentNullException.ThrowIfNull(materials);
         ArgumentNullException.ThrowIfNull(seeder);
@@ -69,6 +72,7 @@ public sealed class BracketCalculationWorkbench
         ArgumentNullException.ThrowIfNull(check);
         ArgumentNullException.ThrowIfNull(engine);
         ArgumentNullException.ThrowIfNull(settings);
+        ArgumentNullException.ThrowIfNull(verifications);
 
         _materials = materials;
         _seeder = seeder;
@@ -76,6 +80,7 @@ public sealed class BracketCalculationWorkbench
         _check = check;
         _engine = engine;
         _settings = settings;
+        _verifications = verifications;
 
         _settings.RegisterDefinition(new SettingDefinition(
             LastCalculationSettingKey, "Engineering Calculation — last bracket check", string.Empty));
@@ -137,6 +142,123 @@ public sealed class BracketCalculationWorkbench
         var released = await _review.ReleaseAsync(_materials, recordId, releaseRationale, cancellationToken).ConfigureAwait(false);
 
         return Describe(released);
+    }
+
+    /// <summary>
+    /// Every calculation this engine has recorded, newest first, as the
+    /// surface should list them.
+    /// </summary>
+    /// <remarks>
+    /// A bracket record is opened so the list can show its outcome and the
+    /// reference it stood on; a record of any other calculation is listed
+    /// from its summary alone, because this workbench knows no other result
+    /// type and will not guess at one.
+    /// </remarks>
+    public async Task<IReadOnlyList<CalculationListEntry>> ListCalculationsAsync(CancellationToken cancellationToken = default)
+    {
+        var summaries = await _engine.ListRecordsAsync(cancellationToken).ConfigureAwait(false);
+        var entries = new List<CalculationListEntry>(summaries.Count);
+
+        foreach (var summary in summaries)
+        {
+            var isBracket = string.Equals(summary.CalculationId, BracketSectionCheckCalculationDefinition.Id, StringComparison.Ordinal);
+            var catalogue = EngineeringCalculationCatalogue.For(summary.CalculationId);
+            BracketSectionCheckResult? result = null;
+
+            if (isBracket)
+            {
+                var record = await _engine
+                    .FindRecordAsync<BracketSectionCheckResult>(summary.Id, cancellationToken)
+                    .ConfigureAwait(false);
+                result = record?.Result;
+            }
+
+            entries.Add(new CalculationListEntry(
+                RecordId: summary.Id,
+                Title: $"{catalogue?.Name ?? summary.CalculationId} {summary.Id.ToString("N")[..8]}",
+                CalculationId: summary.CalculationId,
+                CalculationName: catalogue?.Name ?? summary.CalculationId,
+                RevisionNumber: summary.RevisionNumber,
+                ExecutedAt: summary.ExecutedAt,
+                ExecutedByPrincipalId: summary.ExecutedByPrincipalId,
+                MaterialRecordId: result?.MaterialPin.RecordId,
+                PinnedRevision: result?.MaterialPin.RevisionNumber,
+                Outcome: result is null
+                    ? "Recorded"
+                    : result.Outcome == BracketCheckOutcome.MeetsCriteria ? "Meets criteria" : "Does not meet criteria",
+                MeetsCriteria: result is null ? null : result.Outcome == BracketCheckOutcome.MeetsCriteria,
+                ResultSummary: result is null
+                    ? "Open it to read the record."
+                    : $"{Format(result.AppliedStress.ConvertTo(PressureUnits.Megapascal).Value, "MPa")} of {Format(result.AllowableStress.ConvertTo(PressureUnits.Megapascal).Value, "MPa")}, margin {result.StressMargin.ToString("0.####", CultureInfo.InvariantCulture)}",
+                CanBeOpenedHere: isBracket));
+        }
+
+        return entries;
+    }
+
+    /// <summary>
+    /// Opens one persisted calculation, read-only, exactly as it was
+    /// recorded.
+    /// </summary>
+    /// <remarks>
+    /// <b>Nothing is recalculated and nothing is written.</b> The result
+    /// comes out of the immutable record; only the "reference now" fields
+    /// are read live, so the panel can say the reference has moved on
+    /// without the result moving with it.
+    /// </remarks>
+    /// <param name="recordId">The record to open.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>The outcome, or <see langword="null"/> where no such bracket record is held.</returns>
+    public async Task<BracketCalculationOutcome?> OpenAsync(Guid recordId, CancellationToken cancellationToken = default)
+    {
+        var record = await _engine
+            .FindRecordAsync<BracketSectionCheckResult>(recordId, cancellationToken)
+            .ConfigureAwait(false);
+
+        return record is null ? null : await DescribeAsync(record, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// The verification evidence held for a calculation, or an honest
+    /// account of why none is.
+    /// </summary>
+    /// <remarks>
+    /// This reads the governed verification artefact catalogue. It never
+    /// creates one: an artefact whose required requirement does not exist is
+    /// reported as absent, with the reason, rather than manufactured
+    /// (`TD-165`).
+    /// </remarks>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    public async Task<VerificationEvidence> ReadVerificationAsync(CancellationToken cancellationToken = default)
+    {
+        var artefact = await _verifications
+            .FindAsync(EngineeringAssetSeed.VerificationRecordId, cancellationToken)
+            .ConfigureAwait(false);
+
+        if (artefact is null)
+        {
+            return new VerificationEvidence(
+                Exists: false,
+                ArtefactRecordId: EngineeringAssetSeed.VerificationRecordId,
+                Reference: null,
+                Standing: null,
+                Summary: null,
+                PerformedByPrincipalId: null,
+                PerformedOn: null,
+                WhyAbsent: "No verification artefact is held. The shipped one is built only when a real requirement exists to verify against — "
+                    + "the model refuses an artefact that names no requirement, and the seed respects that refusal rather than minting an "
+                    + "identity to get past it. Recorded as TD-165; nothing here fabricates one.");
+        }
+
+        return new VerificationEvidence(
+            Exists: true,
+            ArtefactRecordId: artefact.Id,
+            Reference: artefact.Definition.Reference,
+            Standing: artefact.Definition.Result?.Standing.ToString() ?? "Not performed",
+            Summary: artefact.Definition.Result?.Summary,
+            PerformedByPrincipalId: artefact.Definition.Result?.PerformedByPrincipalId,
+            PerformedOn: artefact.Definition.Result?.PerformedOn,
+            WhyAbsent: null);
     }
 
     /// <summary>Runs the bracket section check, remembers it, and describes the outcome.</summary>

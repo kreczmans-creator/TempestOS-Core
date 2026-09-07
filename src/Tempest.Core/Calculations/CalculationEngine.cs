@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using System.Text.Json;
 using Tempest.Core.EngineeringData;
 using Tempest.Core.Identity;
+using Tempest.Core.Persistence;
 using Tempest.Core.Logging;
 
 namespace Tempest.Core.Calculations;
@@ -47,10 +48,30 @@ public sealed class CalculationEngine : ICalculationEngine
     /// <summary>The <see cref="CalculationRecord{TResult}.ExecutedByPrincipalId"/> recorded when no principal is currently established.</summary>
     public const string UnknownExecutorPrincipalId = "unknown";
 
+    /// <summary>
+    /// The index collection every executed record's identity is written to,
+    /// so <see cref="ListRecordsAsync"/> can answer "what has been
+    /// calculated" without a second store.
+    /// </summary>
+    /// <remarks>
+    /// <b>Added because the premise this class's own remarks recorded stopped
+    /// being true.</b> They said no index was required because a record is
+    /// "never looked up later by a caller-chosen key" — true while the only
+    /// consumer was the caller that had just executed it and still held the
+    /// Id. A Desktop surface that lists what exists cannot hold every Id, and
+    /// neither <see cref="IEngineeringDocumentStore"/> nor this interface
+    /// could enumerate them. This is the same
+    /// <see cref="IPersistenceStore"/> index convention every reference
+    /// catalogue already uses — the existing mechanism, not a new one, and
+    /// the records themselves still live where they always did.
+    /// </remarks>
+    public const string RecordIndexCollection = "Calculations.RecordIndex";
+
     private readonly ConcurrentDictionary<string, object> _definitions = new();
     private readonly IEngineeringDocumentStore _documentStore;
     private readonly ICurrentPrincipalAccessor _currentPrincipalAccessor;
     private readonly ILogger? _logger;
+    private readonly IPersistenceStore? _recordIndex;
 
     /// <summary>
     /// Initialises a new instance of the <see cref="CalculationEngine"/> class.
@@ -58,8 +79,18 @@ public sealed class CalculationEngine : ICalculationEngine
     /// <param name="documentStore">The store this instance's own calculation records are durably held in.</param>
     /// <param name="currentPrincipalAccessor">The service this instance resolves the acting principal from.</param>
     /// <param name="logger">An optional logger for diagnostic output.</param>
+    /// <param name="recordIndex">
+    /// The store this engine records executed-record identities in, so a
+    /// surface can list what has been calculated. Optional: without it the
+    /// engine behaves exactly as before, writing no index and listing
+    /// nothing.
+    /// </param>
     /// <exception cref="ArgumentNullException"><paramref name="documentStore"/> or <paramref name="currentPrincipalAccessor"/> is <see langword="null"/>.</exception>
-    public CalculationEngine(IEngineeringDocumentStore documentStore, ICurrentPrincipalAccessor currentPrincipalAccessor, ILogger? logger = null)
+    public CalculationEngine(
+        IEngineeringDocumentStore documentStore,
+        ICurrentPrincipalAccessor currentPrincipalAccessor,
+        ILogger? logger = null,
+        IPersistenceStore? recordIndex = null)
     {
         ArgumentNullException.ThrowIfNull(documentStore);
         ArgumentNullException.ThrowIfNull(currentPrincipalAccessor);
@@ -67,6 +98,7 @@ public sealed class CalculationEngine : ICalculationEngine
         _documentStore = documentStore;
         _currentPrincipalAccessor = currentPrincipalAccessor;
         _logger = logger;
+        _recordIndex = recordIndex;
     }
 
     /// <inheritdoc />
@@ -103,6 +135,18 @@ public sealed class CalculationEngine : ICalculationEngine
 
         var document = await _documentStore.CreateAsync(CalculationRecordDocumentKind, JsonSerializer.Serialize(dto), cancellationToken)
             .ConfigureAwait(false);
+
+        if (_recordIndex is not null)
+        {
+            // Value is the calculation Id so a listing can name the type
+            // without opening every document. Written after the document is
+            // durable: an index entry pointing at nothing would be worse
+            // than a record the listing cannot see, and the record itself is
+            // still findable by Id either way.
+            await _recordIndex
+                .WriteAsync(RecordIndexCollection, document.Id.ToString("N"), calculationId, cancellationToken)
+                .ConfigureAwait(false);
+        }
 
         _logger?.Information($"Calculation executed: '{calculationId}' (document '{document.Id}').");
 
@@ -173,6 +217,78 @@ public sealed class CalculationEngine : ICalculationEngine
             dto.ExecutedAt,
             dto.ExecutedByPrincipalId,
             revisions[^1].RevisionNumber);
+    }
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<CalculationRecordSummary>> ListRecordsAsync(CancellationToken cancellationToken = default)
+    {
+        if (_recordIndex is null)
+            return [];
+
+        var keys = await _recordIndex.ListKeysAsync(RecordIndexCollection, cancellationToken).ConfigureAwait(false);
+        var summaries = new List<CalculationRecordSummary>(keys.Count);
+
+        foreach (var key in keys)
+        {
+            if (!Guid.TryParseExact(key, "N", out var recordId))
+                continue;
+
+            var document = await _documentStore.FindAsync(recordId, cancellationToken).ConfigureAwait(false);
+
+            // A stale index entry — its document gone, or of another Kind —
+            // is skipped rather than aborting the whole listing, mirroring
+            // the guard every reference catalogue's own ListAsync applies.
+            if (document is null || !string.Equals(document.Kind, CalculationRecordDocumentKind, StringComparison.Ordinal))
+                continue;
+
+            var revisions = await _documentStore.GetRevisionHistoryAsync(recordId, cancellationToken).ConfigureAwait(false);
+
+            if (revisions.Count == 0)
+                continue;
+
+            var summary = ReadSummary(recordId, revisions[^1].Content, document.CurrentRevisionNumber);
+
+            if (summary is not null)
+                summaries.Add(summary);
+        }
+
+        return [.. summaries.OrderByDescending(s => s.ExecutedAt)];
+    }
+
+    /// <summary>Reads the fields every record carries, whatever its result type is.</summary>
+    /// <remarks>
+    /// Parsed as a document rather than deserialised into
+    /// <c>CalculationRecordDto&lt;TResult&gt;</c>, because a listing has no
+    /// TResult to name. A record that cannot be parsed is omitted rather
+    /// than throwing: one unreadable entry must not cost the engineer the
+    /// whole list.
+    /// </remarks>
+    private static CalculationRecordSummary? ReadSummary(Guid recordId, string content, int revisionNumber)
+    {
+        try
+        {
+            using var parsed = JsonDocument.Parse(content);
+            var root = parsed.RootElement;
+
+            if (!root.TryGetProperty(nameof(CalculationRecord<object>.CalculationId), out var calculationId))
+                return null;
+
+            return new CalculationRecordSummary(
+                recordId,
+                calculationId.GetString() ?? string.Empty,
+                root.TryGetProperty(nameof(CalculationRecord<object>.ExecutedAt), out var at) && at.TryGetDateTimeOffset(out var executedAt)
+                    ? executedAt
+                    : default,
+                root.TryGetProperty(nameof(CalculationRecord<object>.ExecutedByPrincipalId), out var by)
+                    ? by.GetString() ?? UnknownExecutorPrincipalId
+                    : UnknownExecutorPrincipalId,
+                revisionNumber,
+                root.TryGetProperty("ResultTypeName", out var typeName) ? typeName.GetString() : null);
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
     }
 
     private string ResolveExecutorPrincipalId() =>
