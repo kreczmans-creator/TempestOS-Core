@@ -60,6 +60,7 @@ using Tempest.Core.Notifications;
 using Tempest.Core.Persistence;
 using Tempest.Core.Plugins;
 using Tempest.Core.ReferenceData;
+using Tempest.Core.ReferenceData.Seeding;
 using Tempest.Core.Reporting;
 using Tempest.Core.Requirements;
 using Tempest.Core.Settings;
@@ -719,6 +720,16 @@ public sealed class TempestHost : ITempestHost
         // than by mapping StandardCatalog to two service types, which would
         // construct two catalogues over one store, each with its own write
         // locks - see StandardCatalogResolver's own remarks.
+        // The population seam. One service, registered alongside the
+        // libraries it writes into, because seeding is an ordinary write
+        // through the ordinary catalogues and needs nothing else: no
+        // pipeline, no staging store, no second persistence mechanism. It
+        // is registered but never invoked from here — the host does not
+        // seed itself at start-up, because deciding when a library gets
+        // populated is a governance choice and not a side effect of
+        // booting.
+        services.Singleton<ReferenceSeedService>();
+
         services.Singleton<IStandardCatalog, StandardCatalog>();
         services.Singleton<IStandardResolver, StandardCatalogResolver>();
         services.Singleton<IStandardValidationService, StandardValidationService>();

@@ -74,6 +74,14 @@ validation gates, and test coverage.
 - [Finding Closure Verification (2026-08-28)](Quality/Finding%20Closure%20Verification%20%282026-08-28%29.md) — the independent falsification pass over the 16-item review finding list: for every finding, whether the original defect still exists in source, whether its closure test exercises the real production path, and the mutation that proves that test meaningful.
 - [Product Compliance Audit (2026-08-28)](Quality/Product%20Compliance%20Audit%20%282026-08-28%29.md) — the adversarial product/UX/functional audit against the original design brief and mock-ups; the source of `TD-70`/`TD-71`/`TD-72` and of the Product Convergence & Recovery programme.
 
+## Data
+
+Standing documents tracking *what data the platform holds and where it
+came from* — the record that lets any populated value be traced back to
+the document it was transcribed from.
+
+- [Seed Data Sources Register](Data/Seed%20Data%20Sources%20Register.md) — every external source the seed corpus was transcribed from, what was taken from it, what may not be concluded from it, licensing, and the datasets deliberately left empty with reasons.
+
 ## Documentation
 
 Registers tracking *the documentation itself* — where every document
