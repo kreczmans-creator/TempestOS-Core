@@ -182,6 +182,32 @@ public static class SeedSources
             + "Not checked back against the source by a person.");
 
     /// <summary>
+    /// Content Tempest Design Engineering wrote itself, as its own
+    /// engineering or business artefact.
+    /// </summary>
+    /// <param name="artefact">The kind of artefact this is part of.</param>
+    /// <param name="note">Why it was written and when it was adopted.</param>
+    /// <returns>Provenance naming Tempest as the author.</returns>
+    /// <remarks>
+    /// The third of the three categories the population phase must keep
+    /// distinguishable: source-backed, authored, and fictional test data.
+    /// Authored content has a real author and a real owner, so it names
+    /// them — but it is still unverified, because being the author of a
+    /// rule is not the same as having reviewed it, and the reviewer fields
+    /// stay empty until somebody does.
+    /// </remarks>
+    public static ReferenceProvenance TempestAuthored(string artefact, string note) => new(
+        SourceOrganisation: "Tempest Design Engineering",
+        SourceDocument: $"Tempest Design Engineering — {artefact}",
+        SourceRevision: null,
+        SourceDate: RetrievedOn,
+        SourceLocation: null,
+        ExtractionMethod: ReferenceExtractionMethod.ManualTranscription,
+        Notes: $"AUTHORED, not sourced. {note} Written by Tempest Design Engineering rather than taken from an "
+            + "external document, and therefore carrying Tempest's own authority and nobody else's. Authoring "
+            + "is not reviewing: this has not been checked by a second person.");
+
+    /// <summary>
     /// Bibliographic facts about a published standard — its designation,
     /// title, issuing body and edition — as the issuing body's own public
     /// catalogue states them.

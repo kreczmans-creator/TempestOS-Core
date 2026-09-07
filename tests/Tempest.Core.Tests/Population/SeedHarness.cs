@@ -1,6 +1,10 @@
 using Tempest.Core.Bearings;
+using Tempest.Core.CommercialIntelligence.Costs;
+using Tempest.Core.CommercialIntelligence.LeadTimes;
+using Tempest.Core.CommercialIntelligence.Suppliers;
 using Tempest.Core.Constants;
 using Tempest.Core.EngineeringData;
+using Tempest.Core.EngineeringIntelligence;
 using Tempest.Core.Fasteners;
 using Tempest.Core.Identity;
 using Tempest.Core.Manufacturing;
@@ -30,6 +34,10 @@ internal sealed class SeedHarness
         Fasteners = new FastenerCatalog(DocumentStore, PersistenceStore);
         Bearings = new BearingCatalog(DocumentStore, PersistenceStore);
         Processes = new ProcessCatalog(DocumentStore, PersistenceStore);
+        Rules = new RuleCatalog(DocumentStore, PersistenceStore);
+        Suppliers = new SupplierCatalog(DocumentStore, PersistenceStore);
+        Costs = new ProcessCostCatalog(DocumentStore, PersistenceStore);
+        LeadTimes = new LeadTimeCatalog(DocumentStore, PersistenceStore);
 
         Seeder = new ReferenceSeedService();
     }
@@ -50,6 +58,14 @@ internal sealed class SeedHarness
 
     public ProcessCatalog Processes { get; }
 
+    public RuleCatalog Rules { get; }
+
+    public SupplierCatalog Suppliers { get; }
+
+    public ProcessCostCatalog Costs { get; }
+
+    public LeadTimeCatalog LeadTimes { get; }
+
     public ReferenceSeedService Seeder { get; }
 
     /// <summary>Applies every P01 seed dataset, in citation order.</summary>
@@ -66,6 +82,10 @@ internal sealed class SeedHarness
             await Seeder.ApplyAsync(Fasteners, FastenerSeed.Instance),
             await Seeder.ApplyAsync(Bearings, BearingSeed.Instance),
             await Seeder.ApplyAsync(Processes, ProcessSeed.Instance),
+            await Seeder.ApplyAsync(Rules, RuleSeed.Instance),
+            await Seeder.ApplyAsync(Suppliers, CommercialSeed.Suppliers),
+            await Seeder.ApplyAsync(Costs, CommercialSeed.Costs),
+            await Seeder.ApplyAsync(LeadTimes, CommercialSeed.LeadTimes),
         ];
     }
 }

@@ -35,6 +35,10 @@ public class SeedDatasetTests
         Assert.Equal(2, counts[harness.Bearings.LibraryName]);
         Assert.Equal(4, counts[harness.Processes.LibraryName]);
         Assert.Equal(14, counts[harness.Standards.LibraryName]);
+        Assert.Equal(5, counts[harness.Rules.LibraryName]);
+        Assert.Equal(3, counts[harness.Suppliers.LibraryName]);
+        Assert.Equal(1, counts[harness.Costs.LibraryName]);
+        Assert.Equal(2, counts[harness.LeadTimes.LibraryName]);
     }
 
     [Fact]
@@ -89,6 +93,10 @@ public class SeedDatasetTests
             await new Tempest.Core.Fasteners.FastenerValidationService(harness.Fasteners).ValidateLibraryAsync(),
             await new Tempest.Core.Bearings.BearingValidationService(harness.Bearings).ValidateLibraryAsync(),
             await new Tempest.Core.Manufacturing.ProcessValidationService(harness.Processes).ValidateLibraryAsync(),
+            await new Tempest.Core.EngineeringIntelligence.RuleValidationService(harness.Rules).ValidateLibraryAsync(),
+            await new Tempest.Core.CommercialIntelligence.Suppliers.SupplierValidationService(harness.Suppliers).ValidateLibraryAsync(),
+            await new Tempest.Core.CommercialIntelligence.Costs.ProcessCostValidationService(harness.Costs).ValidateLibraryAsync(),
+            await new Tempest.Core.CommercialIntelligence.LeadTimes.LeadTimeValidationService(harness.LeadTimes).ValidateLibraryAsync(),
         };
 
         foreach (var report in reports)
@@ -122,6 +130,14 @@ public class SeedDatasetTests
             provenances.Add(("Bearings", record.Id, record.Provenance, record.ValidationState));
         foreach (var record in await harness.Processes.ListAsync())
             provenances.Add(("Processes", record.Id, record.Provenance, record.ValidationState));
+        foreach (var record in await harness.Rules.ListAsync())
+            provenances.Add(("Rules", record.Id, record.Provenance, record.ValidationState));
+        foreach (var record in await harness.Suppliers.ListAsync())
+            provenances.Add(("Suppliers", record.Id, record.Provenance, record.ValidationState));
+        foreach (var record in await harness.Costs.ListAsync())
+            provenances.Add(("Costs", record.Id, record.Provenance, record.ValidationState));
+        foreach (var record in await harness.LeadTimes.ListAsync())
+            provenances.Add(("LeadTimes", record.Id, record.Provenance, record.ValidationState));
 
         Assert.NotEmpty(provenances);
 
