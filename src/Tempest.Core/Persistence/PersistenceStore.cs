@@ -75,6 +75,26 @@ namespace Tempest.Core.Persistence;
 /// target, so an interrupted write can never leave a torn file where a
 /// previous good value used to be.
 /// </para>
+/// <para>
+/// <b>All-or-nothing reporting (`TD-143`, `WP 16.4B-R7`).</b> A write
+/// that throws has not changed the stored value, and a write that
+/// returns has. That is a stronger statement than crash-safety and it
+/// is what makes an in-memory rollback by a caller
+/// (<c>EngineeringObjectBase</c>'s mutators) correct rather than a
+/// guess: before `WP 16.4B-R7` two steps ran <em>after</em>
+/// <c>File.Move</c> had already committed the new value — the
+/// temporary-file cleanup and the forward migration of a legacy-encoded
+/// record — and either could raise, so
+/// <see cref="PersistenceStoreUnavailableException"/> was thrown on both
+/// sides of the commit point with nothing to tell them apart. Both are
+/// now best-effort and logged: they cannot turn a committed write into a
+/// reported failure. Neither is load-bearing for correctness — the
+/// stale temporary file is unreferenced by any key, and a surviving
+/// legacy file is inert because <see cref="ResolveReadablePath"/> prefers
+/// the current-encoding record whenever it exists and
+/// <see cref="ListKeysAsync"/> de-duplicates the pair — and the next
+/// successful write of the same key retries both.
+/// </para>
 /// </remarks>
 public sealed class PersistenceStore : IPersistenceStore, IBinaryPersistenceStore
 {
@@ -164,15 +184,14 @@ public sealed class PersistenceStore : IPersistenceStore, IBinaryPersistenceStor
                         "discard that key's record.");
 
                 Directory.CreateDirectory(GetCollectionDirectory(collection));
+
+                // Everything above this line is pre-commit: it can throw and
+                // the stored value is unchanged. `WriteAtomicallyAsync`
+                // commits at its `File.Move`; nothing after it may fail the
+                // write. See `MigrateLegacyRecordAfterCommit`.
                 await WriteAtomicallyAsync(path, value, cancellationToken).ConfigureAwait(false);
 
-                // Migrate forward: a record persisted under the plain
-                // Uri.EscapeDataString encoding of a key that EncodeSegment
-                // now encodes differently would otherwise shadow this
-                // write on the legacy-fallback read path.
-                var legacyPath = GetLegacyFilePath(collection, key);
-                if (!string.Equals(legacyPath, path, StringComparison.Ordinal) && ExistsWithExactName(legacyPath))
-                    File.Delete(legacyPath);
+                MigrateLegacyRecordAfterCommit(collection, key, path);
             }
             catch (PersistenceStoreUnavailableException)
             {
@@ -282,9 +301,10 @@ public sealed class PersistenceStore : IPersistenceStore, IBinaryPersistenceStor
     /// <inheritdoc />
     /// <remarks>
     /// The byte twin of <see cref="WriteAsync"/>, including the
-    /// case-variant collision guard and the forward migration of a
-    /// legacy-encoded record, so the two shapes cannot disagree about
-    /// which file a key names.
+    /// case-variant collision guard, the forward migration of a
+    /// legacy-encoded record and the same commit boundary (`TD-143`), so
+    /// the two shapes cannot disagree about which file a key names or
+    /// about when a write has landed.
     /// </remarks>
     public async Task WriteBytesAsync(string collection, string key, ReadOnlyMemory<byte> value, CancellationToken cancellationToken = default)
     {
@@ -304,11 +324,12 @@ public sealed class PersistenceStore : IPersistenceStore, IBinaryPersistenceStor
                         "discard that key's record.");
 
                 Directory.CreateDirectory(GetCollectionDirectory(collection));
+
+                // Pre-commit above, commit inside, best-effort after — the
+                // identical boundary as the text overload (`TD-143`).
                 await WriteAtomicallyAsync(path, value, cancellationToken).ConfigureAwait(false);
 
-                var legacyPath = GetLegacyFilePath(collection, key);
-                if (!string.Equals(legacyPath, path, StringComparison.Ordinal) && ExistsWithExactName(legacyPath))
-                    File.Delete(legacyPath);
+                MigrateLegacyRecordAfterCommit(collection, key, path);
             }
             catch (PersistenceStoreUnavailableException)
             {
@@ -333,12 +354,13 @@ public sealed class PersistenceStore : IPersistenceStore, IBinaryPersistenceStor
         try
         {
             await File.WriteAllBytesAsync(temporaryPath, value, cancellationToken).ConfigureAwait(false);
+
+            // THE COMMIT POINT.
             File.Move(temporaryPath, path, overwrite: true);
         }
         finally
         {
-            if (File.Exists(temporaryPath))
-                File.Delete(temporaryPath);
+            DiscardTemporaryFile(temporaryPath);
         }
     }
 
@@ -354,12 +376,90 @@ public sealed class PersistenceStore : IPersistenceStore, IBinaryPersistenceStor
         try
         {
             await File.WriteAllTextAsync(temporaryPath, value, cancellationToken).ConfigureAwait(false);
+
+            // THE COMMIT POINT. `File.Move` with `overwrite: true` is a
+            // rename within `_rootPath`, so it either replaces the target
+            // wholly or leaves it wholly untouched. Every statement before
+            // it can fail without changing the stored value; no statement
+            // after it is allowed to fail the write (`TD-143`).
             File.Move(temporaryPath, path, overwrite: true);
         }
         finally
         {
+            DiscardTemporaryFile(temporaryPath);
+        }
+    }
+
+    /// <summary>
+    /// Removes the temporary file <see cref="WriteAtomicallyAsync(string, string, CancellationToken)"/>
+    /// staged the value in, without ever letting that removal decide the
+    /// outcome of the write (`TD-143`, `WP 16.4B-R7`).
+    /// </summary>
+    /// <remarks>
+    /// This runs in a <c>finally</c>, so on the success path it runs
+    /// <em>after</em> the commit — where a throw would report a landed
+    /// write as failed, which is the defect `TD-143` exists for — and on
+    /// the failure path it would replace the real cause of the failure
+    /// with a cleanup fault. Neither is wanted, and in both cases what is
+    /// left behind is one unreferenced <c>write-*.tmp</c> file that no key
+    /// resolves to. The exception is logged rather than silently
+    /// discarded: nothing here is being hidden, it is being denied the
+    /// power to fail somebody else's operation.
+    /// </remarks>
+    private void DiscardTemporaryFile(string temporaryPath)
+    {
+        try
+        {
             if (File.Exists(temporaryPath))
                 File.Delete(temporaryPath);
+        }
+        catch (Exception ex)
+        {
+            _logger?.Warning($"Persistence could not remove its temporary file '{temporaryPath}'.", ex);
+        }
+    }
+
+    /// <summary>
+    /// Removes the superseded legacy-encoded record for
+    /// <paramref name="key"/> after the current-encoding record has
+    /// already been committed — best-effort, and never able to fail the
+    /// write it follows (`TD-143`, `WP 16.4B-R7`).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Why this may not throw.</b> It runs after
+    /// <see cref="WriteAtomicallyAsync(string, string, CancellationToken)"/>
+    /// has committed, so a caller told the write failed here would have
+    /// been told a lie about durable state it cannot check — and
+    /// <see cref="PersistenceStoreUnavailableException"/> is the same type
+    /// this method's pre-commit siblings raise, so no caller could tell the
+    /// two apart. <c>EngineeringObjectBase</c> rolls a failed mutation back
+    /// in memory on the strength of "threw, therefore did not land"; this
+    /// is one of the two places that used to make that false.
+    /// </para>
+    /// <para>
+    /// <b>Why leaving the file is safe.</b> The legacy file is only ever
+    /// consulted when the current-encoding file is absent
+    /// (<see cref="ResolveReadablePath"/>), which it no longer is, so it
+    /// cannot shadow this write; <see cref="ListKeysAsync"/> already
+    /// de-duplicates the pair because both names decode to the same key;
+    /// <see cref="DeleteAsync"/> removes both. It is stale, inert, and
+    /// removed by the next successful write of the same key.
+    /// </para>
+    /// </remarks>
+    private void MigrateLegacyRecordAfterCommit(string collection, string key, string path)
+    {
+        try
+        {
+            var legacyPath = GetLegacyFilePath(collection, key);
+            if (!string.Equals(legacyPath, path, StringComparison.Ordinal) && ExistsWithExactName(legacyPath))
+                File.Delete(legacyPath);
+        }
+        catch (Exception ex)
+        {
+            _logger?.Warning(
+                $"Persistence committed the write for collection '{collection}', key '{key}', but could not remove " +
+                "the superseded legacy-encoded record. The write stands and the stale file is inert.", ex);
         }
     }
 

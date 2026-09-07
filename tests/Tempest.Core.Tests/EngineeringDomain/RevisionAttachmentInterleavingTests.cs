@@ -633,37 +633,43 @@ public sealed class RevisionAttachmentInterleavingTests
     }
 
     /// <summary>
-    /// <b>Characterisation, not a pass mark.</b> What a genuine I/O
-    /// failure of the object <em>state</em> write leaves behind, now that
-    /// there is no compensation at all.
+    /// What a genuine I/O failure of the object <em>state</em> write leaves
+    /// behind: a marker and bytes, and — since `WP 16.4B-R7` — no
+    /// in-memory claim.
     /// </summary>
     /// <remarks>
     /// <para>
-    /// This is the one exit path `WP 16.4B-R5` correctly refused to
-    /// compensate and `WP 16.4B-R6` still refuses to: the state write can
-    /// fail after the record has landed, so deleting the bytes could be
-    /// real data loss. The consequence, spelled out here so a reader does
-    /// not have to infer it from three layers of comment:
+    /// <b>Partially INVERTED by `WP 16.4B-R7` (`TD-143`).</b> It was a
+    /// characterisation named
+    /// <c>AGenuineStateWriteFailure_LeavesAMarkerBytesAndAnInMemoryClaim_AllOfThemObservable</c>,
+    /// and the third of its three findings — that the instance kept its
+    /// in-memory claim on an attachment the caller was told had failed — is
+    /// now negated below. The other two are unchanged and are the point of
+    /// keeping the fact: this is still the one exit path `WP 16.4B-R5`
+    /// wrongly compensated and `WP 16.4B-R6` and R7 both refuse to, because
+    /// the state write can fail after the record has landed and deleting
+    /// the bytes could be real data loss.
     /// </para>
     /// <list type="bullet">
     /// <item><description>the write-intent marker stays set — <b>permanently</b>, since nothing ever revisits it;</description></item>
     /// <item><description>the bytes stay written and, being marked, are never collected by the sweep;</description></item>
-    /// <item><description>the instance keeps its in-memory claim on the attachment even though the caller was told the attach failed.</description></item>
+    /// <item><description><b>and the instance no longer claims the attachment</b> — `WP 16.4B-R7` undoes the in-memory add, so nothing in memory or on disk names those bytes.</description></item>
     /// </list>
     /// <para>
     /// The leak is <b>bounded</b> — one marker and one content record per
-    /// failed attach, never growing on its own — and <b>observable</b>, in
-    /// two independent places: through <c>GetAttachmentsAsync</c>
-    /// immediately, and through the reconciliation report's
-    /// <c>SkippedByMarker</c> afterwards (asserted in
+    /// failed attach, never growing on its own. It is now observable in
+    /// <b>one</b> place rather than two: the reconciliation report's
+    /// <c>SkippedByMarker</c> (asserted in
     /// <see cref="AttachmentContentReconciliationServiceTests"/>, which can
-    /// name that member). What is <em>not</em> bounded is the count across
-    /// repeated failures: a store that fails every time leaks one of each
-    /// per attempt.
+    /// name that member). That is a deliberate trade and it is worth
+    /// stating plainly: the second observation channel was the instance
+    /// disagreeing with its caller, which was itself the `TD-143` defect.
+    /// What is <em>not</em> bounded is the count across repeated failures:
+    /// a store that fails every time leaks one of each per attempt.
     /// </para>
     /// </remarks>
     [Fact]
-    public async Task AGenuineStateWriteFailure_LeavesAMarkerBytesAndAnInMemoryClaim_AllOfThemObservable()
+    public async Task AGenuineStateWriteFailure_LeavesAMarkerAndBytes_AndNoInMemoryClaim()
     {
         var rig = new Rig();
         var part = await rig.CreateAsync();
@@ -677,10 +683,9 @@ public sealed class RevisionAttachmentInterleavingTests
         var stored = Assert.Single(rig.ContentStore.StoredKeys);
         Assert.Equal(marked, stored);
 
-        // Observable in memory, immediately: the instance disagrees with
-        // what the caller was told.
-        var claimed = Assert.Single(await part.GetAttachmentsAsync());
-        Assert.Equal(marked, claimed.Id);
+        // No longer observable in memory: the instance agrees with what the
+        // caller was told (`WP 16.4B-R7`).
+        Assert.Empty(await part.GetAttachmentsAsync());
 
         // Nothing was deleted, and the durable record does not name it.
         Assert.Equal(0, rig.ContentStore.DeleteCallCount);
@@ -690,25 +695,32 @@ public sealed class RevisionAttachmentInterleavingTests
     }
 
     /// <summary>
-    /// The same residue through the metadata-only entry point, so the
-    /// scope of what `WP 16.4B-R6` closed is not overstated.
+    /// The same boundary through the metadata-only entry point, so the
+    /// scope of what was closed is not overstated in either direction.
     /// </summary>
     /// <remarks>
-    /// R6 closed P1-F4 for both attach entry points <em>as a refusal</em>:
-    /// a superseded instance now checks before it adds, so a refused
-    /// attach claims nothing. It did not, and does not claim to, close the
-    /// same divergence for an <b>I/O failure</b> of the state write —
-    /// <c>AttachAsync</c> still adds to the list and then saves, inside
-    /// one hold of the lock, so a save that throws leaves the instance
-    /// claiming an attachment the caller was told was not recorded. That
-    /// is the identical shape to
-    /// <see cref="AGenuineStateWriteFailure_LeavesAMarkerBytesAndAnInMemoryClaim_AllOfThemObservable"/>,
-    /// and it is recorded separately because the two entry points are
-    /// separately reachable and a future fix could easily close one and
+    /// <para>
+    /// <b>INVERTED by `WP 16.4B-R7` (`TD-143`).</b> It was a
+    /// characterisation named
+    /// <c>AGenuineStateWriteFailureDuringAttachAsync_AlsoLeavesTheInstanceClaimingTheAttachment</c>.
+    /// R6 closed `P1-F4` for both attach entry points <em>as a refusal</em>
+    /// only: a superseded instance checks before it adds, so a refused
+    /// attach claims nothing. It did not close the same divergence for an
+    /// <b>I/O failure</b> of the state write, and this fact recorded that
+    /// it did not. R7 closes it, on both entry points at once, and this
+    /// fact now checks it on this one — kept separate because the two are
+    /// separately reachable and a future change could easily break one and
     /// not the other, exactly as `WP 16.4B-R5` did.
+    /// </para>
+    /// <para>
+    /// The last assertion is the one that matters most: the object's next
+    /// successful write no longer carries the failed attach to disk, which
+    /// is the mechanism by which `TD-143` turned a reported failure into a
+    /// durable success.
+    /// </para>
     /// </remarks>
     [Fact]
-    public async Task AGenuineStateWriteFailureDuringAttachAsync_AlsoLeavesTheInstanceClaimingTheAttachment()
+    public async Task AGenuineStateWriteFailureDuringAttachAsync_LeavesTheInstanceClaimingNothing()
     {
         var rig = new Rig();
         var part = await rig.CreateAsync();
@@ -718,45 +730,50 @@ public sealed class RevisionAttachmentInterleavingTests
 
         await Assert.ThrowsAsync<IOException>(() => part.AttachAsync(attachment));
 
-        Assert.Contains(await part.GetAttachmentsAsync(), a => a.Id == attachment.Id);
+        Assert.DoesNotContain(await part.GetAttachmentsAsync(), a => a.Id == attachment.Id);
 
         var state = await rig.StateStore.FindAsync(part.Id);
         Assert.NotNull(state);
         Assert.DoesNotContain(state.Attachments, a => a.Id == attachment.Id);
 
-        // ...and the next successful write makes it durable.
+        // ...and the next successful write has nothing to make durable.
         await part.RenameAsync("Written afterwards");
 
         var after = await rig.StateStore.FindAsync(part.Id);
         Assert.NotNull(after);
-        Assert.Contains(after.Attachments, a => a.Id == attachment.Id);
+        Assert.DoesNotContain(after.Attachments, a => a.Id == attachment.Id);
+        Assert.Equal("Written afterwards", after.DisplayName);
     }
 
     /// <summary>
-    /// The tail of the same story, and the part a reader is most likely to
-    /// get wrong: the retained in-memory claim means the <em>next</em>
-    /// successful write on this object silently makes the "failed" attach
-    /// durable.
+    /// The tail of the same story: a retry after a failed attach produces
+    /// <b>one</b> attachment, not two, because the failed one was never
+    /// retained to be carried to disk by the next successful write.
     /// </summary>
     /// <remarks>
     /// <para>
-    /// Recorded as a characterisation because it is not obviously wrong —
-    /// the bytes do exist, so the reference the later write persists is a
-    /// valid one, and this is the outcome that converts the stranded
-    /// content from a leak into a live attachment. It is nonetheless a
-    /// surprise worth having in writing: a caller that saw
-    /// <c>AttachContentAsync</c> throw and retried now has <b>two</b>
-    /// attachments and two content records for one intended file, and no
-    /// API tells it so.
+    /// <b>INVERTED by `WP 16.4B-R7` (`TD-143`), on this fact's own
+    /// standing instruction.</b> It was named
+    /// <c>AfterAFailedStateWrite_TheNextSuccessfulWriteMakesTheFailedAttachDurable</c>
+    /// and it ended: <i>"If a later board decides a failed attach must not
+    /// become durable, this test is where that decision lands, and it must
+    /// be inverted rather than deleted."</i> That decision is `TD-143` and
+    /// this is that inversion. What it used to assert: after a failed
+    /// <c>AttachContentAsync</c>, a caller that retried had <b>two</b>
+    /// attachments and two content records on disk for one intended file,
+    /// with no API telling it so.
     /// </para>
     /// <para>
-    /// If a later board decides a failed attach must not become durable,
-    /// this test is where that decision lands, and it must be inverted
-    /// rather than deleted.
+    /// The durable content record of the failed attempt is <em>still</em>
+    /// there — R7 deletes nothing — and is still marked, so the sweep still
+    /// declines to collect it. That is the bounded, disclosed `TD-97`
+    /// residue and it is asserted below so this inversion cannot be read as
+    /// a claim that the failed attach left nothing at all behind. What
+    /// changed is that no durable <em>state</em> record ever names it.
     /// </para>
     /// </remarks>
     [Fact]
-    public async Task AfterAFailedStateWrite_TheNextSuccessfulWriteMakesTheFailedAttachDurable()
+    public async Task AfterAFailedStateWrite_TheNextSuccessfulWriteMakesOnlyTheRetryDurable()
     {
         var rig = new Rig();
         var part = await rig.CreateAsync();
@@ -765,7 +782,8 @@ public sealed class RevisionAttachmentInterleavingTests
         await Assert.ThrowsAsync<IOException>(
             () => part.AttachContentAsync("drawing.pdf", "application/pdf", Bytes));
 
-        var firstAttempt = Assert.Single(await part.GetAttachmentsAsync());
+        var strandedContent = Assert.Single(rig.ContentStore.StoredKeys);
+        Assert.Empty(await part.GetAttachmentsAsync());
 
         // The caller, having been told the attach failed, retries.
         var retried = await part.AttachContentAsync("drawing.pdf", "application/pdf", Bytes);
@@ -773,25 +791,40 @@ public sealed class RevisionAttachmentInterleavingTests
         var state = await rig.StateStore.FindAsync(part.Id);
         Assert.NotNull(state);
 
-        Assert.Equal(2, state.Attachments.Count);
-        Assert.Contains(state.Attachments, a => a.Id == firstAttempt.Id);
-        Assert.Contains(state.Attachments, a => a.Id == retried.Id);
-        Assert.NotEqual(firstAttempt.Id, retried.Id);
+        var only = Assert.Single(state.Attachments);
+        Assert.Equal(retried.Id, only.Id);
+        Assert.NotEqual(strandedContent, retried.Id);
+
+        // The first attempt's bytes are still on disk and still marked —
+        // nothing was deleted, and nothing durable references them.
+        Assert.Contains(strandedContent, rig.ContentStore.StoredKeys);
+        Assert.Contains(strandedContent, await rig.WriteIntentStore.ListMarkedAsync());
+        Assert.Equal(0, rig.ContentStore.DeleteCallCount);
     }
 
     /// <summary>
     /// Cancellation arriving between the content write and the state
-    /// write. Characterisation: the marker is stranded, exactly as for any
-    /// other failure of the state write, because the R6 <c>catch</c>
-    /// wraps only the content write.
+    /// write: the marker is stranded, exactly as for any other failure of
+    /// the state write, and — since `WP 16.4B-R7` — the in-memory add is
+    /// undone, exactly as for any other failure of the state write.
     /// </summary>
     /// <remarks>
+    /// <para>
+    /// <b>Partially INVERTED by `WP 16.4B-R7` (`TD-143`).</b> The
+    /// assertion that the instance still claimed the attachment is now
+    /// negated; the marker and byte assertions are unchanged. A cancelled
+    /// operation is an operation reported as failed, so it is undone on the
+    /// same terms as any other — which is why the undo's <c>catch</c> is
+    /// unconditional rather than filtered by exception type.
+    /// </para>
+    /// <para>
     /// The complement of
     /// <c>CancellationArrivingAfterTheStateWriteLands_DoesNotStrandTheMarker</c>:
     /// there, cancellation after a landed write is deliberately ignored so
     /// the marker is cleared; here it arrives one step earlier, where it
     /// can still prevent work, and is honoured — leaving the same bounded
     /// residue as any other state-write failure.
+    /// </para>
     /// </remarks>
     [Fact]
     public async Task CancellationBetweenTheContentWriteAndTheStateWrite_LeavesTheSameBoundedResidue()
@@ -807,7 +840,7 @@ public sealed class RevisionAttachmentInterleavingTests
 
         var marked = Assert.Single(await rig.WriteIntentStore.ListMarkedAsync());
         Assert.Contains(marked, rig.ContentStore.StoredKeys);
-        Assert.Contains(await part.GetAttachmentsAsync(), a => a.Id == marked);
+        Assert.DoesNotContain(await part.GetAttachmentsAsync(), a => a.Id == marked);
         Assert.Equal(0, rig.ContentStore.DeleteCallCount);
     }
 

@@ -332,25 +332,47 @@ public sealed class MutatorRefusalAdversarialTests
     }
 
     // ================================================================
-    // §3 CHARACTERISATION — the boundary of the invariant round 2 claims
+    // §3 THE BOUNDARY OF THE INVARIANT — round 2 claimed it for one
+    //    exception type; `WP 16.4B-R7` closed the rest (`TD-143`)
     //
-    // "An operation the platform reports as failed must not become
-    // durable, and must not change this instance either." Round 2 makes
-    // that true when the report is a SupersededEngineeringObjectException.
-    // It is NOT true when the report is anything else. These four facts
-    // pin where the boundary actually is, so that no register row can
-    // claim the wider statement.
+    // These four facts were written by round 2's independent verifier as
+    // CHARACTERISATIONS: they pinned the boundary of round 2's invariant
+    // by asserting that a mutation whose durable write FAILED kept its
+    // in-memory mutation on all seven mutators, and that the object's next
+    // successful write made it durable. `TD-143` recorded that, and
+    // `WP 16.4B-R7` fixed it.
+    //
+    // Per this file's own standing instruction, they are INVERTED and NOT
+    // DELETED. Each one now asserts the opposite outcome, on the same rig,
+    // through the same failure, and each names in its remarks what it used
+    // to assert. From here on they are guard-rails: any regression of the
+    // undo in `EngineeringObjectBase.RollBackOnFailureAsync` turns them red
+    // again.
+    //
+    // §3b then pins what R7 deliberately did NOT do, which is where the
+    // next reader is most likely to over-read the fix: it does not undo
+    // durable content or relationships, and it does not claim atomicity
+    // against a store that commits and then throws.
     // ================================================================
 
     /// <summary>
-    /// A move whose durable <c>groupedUnder</c> link write fails still
-    /// reparents the instance, and the object's <b>next successful write of
-    /// any kind</b> makes that reparent durable.
+    /// A move whose durable <c>groupedUnder</c> link write fails leaves the
+    /// parent where it was, and the object's next successful write of any
+    /// kind carries nothing.
     /// </summary>
     /// <remarks>
     /// <para>
-    /// <b>Characterisation — open defect, no register row.</b> Nothing here
-    /// is contrived: the target simply has no document, which
+    /// <b>INVERTED by `WP 16.4B-R7` (`TD-143`); it was a characterisation
+    /// and is now a guard-rail.</b> It previously asserted the opposite,
+    /// under the name
+    /// <c>AMoveWhoseDurableLinkWriteFails_StillReparentsTheInstance_AndTheNextWriteMakesItDurable</c>:
+    /// that <c>part.ParentId</c> was the stray id after the failure and
+    /// that the following rename made it durable. Both assertions are kept
+    /// below, negated, so the fix is checked at exactly the point the
+    /// defect was measured.
+    /// </para>
+    /// <para>
+    /// Nothing here is contrived: the target simply has no document, which
     /// <c>GuardAgainstCircularParentAsync</c> does not detect (an unknown
     /// id is not <c>IHasParent</c>, so the walk returns) and which
     /// <c>EngineeringDocumentStore</c>/<c>InMemoryEngineeringDocumentStore</c>
@@ -360,17 +382,22 @@ public sealed class MutatorRefusalAdversarialTests
     /// the same durable write behaves identically.
     /// </para>
     /// <para>
-    /// This is the one place round 2 chose not to route through
-    /// <c>MutateAndPersistAsync</c>, and it is the one mutator whose
-    /// failure path can therefore still leave the instance changed. It is
-    /// pre-existing — the same ordering held before round 2 — and it is
-    /// <b>narrower</b> than it was, because the hold now prevents a
-    /// concurrent revision from adopting the orphan parent. It is not
-    /// closed.
+    /// <b>Scope.</b> This is the in-memory half of what the register
+    /// records as `TD-144`, closed here as a consequence of `TD-143`'s fix
+    /// rather than as a separate piece of work — the undo cannot sensibly
+    /// distinguish which of a move's two durable writes failed. It does not
+    /// close what happens when the link write <em>succeeds</em> and the
+    /// state write then fails; that is
+    /// <see cref="AMoveWhoseStateWriteFailsAfterItsLinkWrite_RestoresTheParent_ButLeavesTheGroupedUnderLink"/>,
+    /// below, and it is not closed.
+    /// </para>
+    /// <para>
+    /// <b>Mutant that kills it:</b> remove the <c>RollBackOnFailureAsync</c>
+    /// wrapper from <c>MoveAsync</c>.
     /// </para>
     /// </remarks>
     [Fact]
-    public async Task AMoveWhoseDurableLinkWriteFails_StillReparentsTheInstance_AndTheNextWriteMakesItDurable()
+    public async Task AMoveWhoseDurableLinkWriteFails_LeavesTheParentWhereItWas_AndTheNextWriteCarriesNothing()
     {
         var rig = new ProbeRig();
         var part = await rig.CreatePartAsync("PRT-1", "Bracket");
@@ -380,50 +407,63 @@ public sealed class MutatorRefusalAdversarialTests
         var failure = await Record.ExceptionAsync(() => part.MoveAsync(strayParentId).WaitAsync(Timeout));
         Assert.IsType<EngineeringDocumentNotFoundException>(failure);
 
-        // The caller was told the move failed. The instance disagrees.
-        Assert.Equal(strayParentId, part.ParentId);
+        // The caller was told the move failed. The instance agrees.
+        Assert.Null(part.ParentId);
 
         // The move's own write never happened...
         var afterMove = await rig.States.FindAsync(part.Id);
         Assert.NotNull(afterMove);
         Assert.Null(afterMove.ParentId);
 
-        // ...but the next unrelated, successful operation carries it to disk.
+        // ...and the next unrelated, successful operation has nothing to
+        // carry to disk.
         await part.RenameAsync("Renamed after the failed move").WaitAsync(Timeout);
 
         var afterRename = await rig.States.FindAsync(part.Id);
         Assert.NotNull(afterRename);
-        Assert.Equal(strayParentId, afterRename.ParentId);
+        Assert.Null(afterRename.ParentId);
+        Assert.Equal("Renamed after the failed move", afterRename.DisplayName);
     }
 
     /// <summary>
-    /// A lifecycle transition whose durable write fails still stamps an
-    /// actor principal id and a timestamp into the append-only transition
-    /// history, and the next successful write makes that entry durable.
+    /// A lifecycle transition whose durable write fails stamps nothing into
+    /// the append-only transition history, and the next successful write
+    /// has no entry to make durable.
     /// </summary>
     /// <remarks>
     /// <para>
-    /// <b>Characterisation — the highest-consequence member of §3.</b>
-    /// `TD-140` closed exactly this outcome for the supersession refusal,
-    /// on the stated ground that the transition history is this platform's
-    /// governance record and has no removal path. Both of those grounds
-    /// hold identically here; only the exception type differs. The fact is
-    /// written to make that impossible to overlook: it asserts the
-    /// fabricated entry's <em>actor and target state</em> on disk, not
-    /// merely that the history is non-empty.
+    /// <b>INVERTED by `WP 16.4B-R7` (`TD-143`); it was the
+    /// highest-consequence characterisation in §3 and is now the
+    /// highest-consequence guard-rail.</b> It previously asserted, under
+    /// the name
+    /// <c>ATransitionWhoseDurableWriteFails_StillStampsTheAuditEntry_AndTheNextWriteMakesItDurable</c>,
+    /// that a fabricated <c>LifecycleTransitionRecord</c> carrying a real
+    /// actor principal id and target state survived the failure and was
+    /// made durable by the following rename. `TD-140` had closed exactly
+    /// that outcome for the supersession refusal, on the stated ground that
+    /// the transition history is this platform's governance record and has
+    /// no removal path; both grounds held identically for a failing write,
+    /// and only the exception type differed. The assertions below are the
+    /// same ones, negated — including the checks on the entry's actor and
+    /// target state, so a fix that merely emptied the list would not be
+    /// mistaken for one that never wrote the entry.
     /// </para>
     /// <para>
     /// The failing write is an ordinary <see cref="IOException"/> from the
     /// state store — the class every durable store in this platform can
     /// raise, and the class `WP 16.4B-R5` was told not to compensate for.
-    /// No register row covers it for any of the seven mutators; the closest
-    /// is Agent C's <c>C-F3</c>, which is about the two attachment paths
-    /// and is itself recorded only in test remarks (the independent board's
-    /// <c>D-A4</c>).
+    /// The undo is not a removal path for a recorded transition: it
+    /// restores <c>_history</c> to the contents it had moments earlier,
+    /// inside the hold of the write lock that appended to it, so no reader
+    /// and no later write ever sees the entry.
+    /// </para>
+    /// <para>
+    /// <b>Mutant that kills it:</b> remove the <c>RollBackOnFailureAsync</c>
+    /// wrapper from <c>MutateAndPersistAsync</c>.
     /// </para>
     /// </remarks>
     [Fact]
-    public async Task ATransitionWhoseDurableWriteFails_StillStampsTheAuditEntry_AndTheNextWriteMakesItDurable()
+    public async Task ATransitionWhoseDurableWriteFails_StampsNoAuditEntry_AndTheNextWriteMakesNothingDurable()
     {
         var rig = new ProbeRig();
         var part = await rig.CreatePartAsync("PRT-1", "Bracket");
@@ -433,41 +473,62 @@ public sealed class MutatorRefusalAdversarialTests
         var failure = await Record.ExceptionAsync(() => part.TransitionAsync(LifecycleState.InReview).WaitAsync(Timeout));
         Assert.IsType<IOException>(failure);
 
-        // The caller was told the transition failed. The audit trail
-        // disagrees, and there is no path that removes an entry.
-        Assert.Equal(LifecycleState.InReview, part.Status);
-        var fabricated = Assert.Single(part.History);
-        Assert.Equal(LifecycleState.Draft, fabricated.From);
-        Assert.Equal(LifecycleState.InReview, fabricated.To);
-        Assert.False(string.IsNullOrWhiteSpace(fabricated.ActorPrincipalId));
+        // The caller was told the transition failed. The audit trail agrees:
+        // no entry exists, so no removal path is needed for one.
+        Assert.Equal(LifecycleState.Draft, part.Status);
+        Assert.Empty(part.History);
 
         await part.RenameAsync("Renamed after the failed transition").WaitAsync(Timeout);
 
         var state = await rig.States.FindAsync(part.Id);
         Assert.NotNull(state);
-        Assert.Equal(LifecycleState.InReview, state.Status);
-        var durable = Assert.Single(state.History);
-        Assert.Equal(LifecycleState.InReview, durable.To);
+        Assert.Equal(LifecycleState.Draft, state.Status);
+        Assert.Empty(state.History);
+
+        // And the object is still usable: the failure undid its own
+        // mutation, it did not retire the instance.
+        await part.TransitionAsync(LifecycleState.InReview).WaitAsync(Timeout);
+
+        var afterRetry = await rig.States.FindAsync(part.Id);
+        Assert.NotNull(afterRetry);
+        var recorded = Assert.Single(afterRetry.History);
+        Assert.Equal(LifecycleState.Draft, recorded.From);
+        Assert.Equal(LifecycleState.InReview, recorded.To);
+        Assert.False(string.IsNullOrWhiteSpace(recorded.ActorPrincipalId));
     }
 
     /// <summary>
-    /// A delete whose durable write fails still soft-deletes the instance —
+    /// A delete whose durable write fails leaves the instance undeleted —
     /// the outcome `TD-140` describes as removing the object from the whole
     /// product with no supported way back — and the next successful write
-    /// makes it durable.
+    /// makes nothing durable.
     /// </summary>
     /// <remarks>
-    /// <b>Characterisation.</b> The `TD-140` reasoning about
-    /// <c>DeleteAsync</c> (one writer, no undelete, twenty-one read models
-    /// filtering <c>IDeletable { IsDeleted: true }</c>) is a property of the
-    /// flag, not of the exception that interrupts the write. This fact
-    /// records that the round-2 fix removed the supersession route to that
-    /// outcome and did not remove the failure route to it. Note also that
-    /// the `TD-97` byte release is skipped, exactly as it was on the
-    /// refusal path before the fix.
+    /// <para>
+    /// <b>INVERTED by `WP 16.4B-R7` (`TD-143`).</b> It previously asserted,
+    /// under the name
+    /// <c>ADeleteWhoseDurableWriteFails_StillSoftDeletesTheInstance_AndTheNextWriteMakesItDurable</c>,
+    /// that <c>part.IsDeleted</c> was <see langword="true"/> after the
+    /// failure and that the following rename made it durable. The `TD-140`
+    /// reasoning about <c>DeleteAsync</c> — one writer, no undelete
+    /// anywhere, twenty-one read models filtering
+    /// <c>IDeletable { IsDeleted: true }</c> — is a property of the flag and
+    /// not of the exception that interrupts the write, which is why the
+    /// failure route had to be closed as well as the refusal route.
+    /// </para>
+    /// <para>
+    /// The `TD-97` byte release is still skipped, and that is now the
+    /// correct outcome rather than a second defect: the object is not
+    /// deleted, so its attachment content must not be released. The
+    /// assertion on <c>StoredKeys</c> is kept for exactly that reason.
+    /// </para>
+    /// <para>
+    /// <b>Mutant that kills it:</b> remove the <c>RollBackOnFailureAsync</c>
+    /// wrapper from <c>MutateAndPersistAsync</c>.
+    /// </para>
     /// </remarks>
     [Fact]
-    public async Task ADeleteWhoseDurableWriteFails_StillSoftDeletesTheInstance_AndTheNextWriteMakesItDurable()
+    public async Task ADeleteWhoseDurableWriteFails_LeavesTheInstanceUndeleted_AndTheNextWriteMakesNothingDurable()
     {
         var rig = new ProbeRig();
         var part = await rig.CreatePartAsync("PRT-1", "Bracket");
@@ -479,55 +540,300 @@ public sealed class MutatorRefusalAdversarialTests
         var failure = await Record.ExceptionAsync(() => part.DeleteAsync().WaitAsync(Timeout));
         Assert.IsType<IOException>(failure);
 
-        Assert.True(part.IsDeleted, "A delete the caller was told had failed left the object soft-deleted.");
+        Assert.False(part.IsDeleted, "A delete the caller was told had failed left the object soft-deleted.");
+
+        // Still correct, and now for the right reason: the object is not
+        // deleted, so its content must not have been released.
         Assert.Contains(attachment.Id, rig.Content.StoredKeys);
 
         await part.RenameAsync("Renamed after the failed delete").WaitAsync(Timeout);
 
         var state = await rig.States.FindAsync(part.Id);
         Assert.NotNull(state);
-        Assert.True(state.IsDeleted);
+        Assert.False(state.IsDeleted);
+
+        // And a delete that is then retried against a healthy store works,
+        // releasing the content exactly as it always did — the undo did not
+        // leave the object in a state that cannot be deleted.
+        await part.DeleteAsync().WaitAsync(Timeout);
+
+        var afterRetry = await rig.States.FindAsync(part.Id);
+        Assert.NotNull(afterRetry);
+        Assert.True(afterRetry.IsDeleted);
+        Assert.DoesNotContain(attachment.Id, rig.Content.StoredKeys);
     }
 
     /// <summary>
     /// The same failure boundary, on the four remaining mutators: each
-    /// keeps its in-memory mutation when the durable write fails.
+    /// undoes its in-memory mutation when the durable write fails — and
+    /// <c>AttachContentAsync</c>'s durable content and marker are still
+    /// left exactly where they were.
     /// </summary>
     /// <remarks>
-    /// <b>Characterisation.</b> Stated for the whole set rather than one
-    /// example, so that a register row derived from this file cannot
-    /// describe the boundary as a quirk of one method. <c>AttachAsync</c>
-    /// and <c>AttachContentAsync</c> are included: this is Agent C's
-    /// <c>C-F3</c>, still open, now asserted alongside its five siblings.
+    /// <para>
+    /// <b>INVERTED by `WP 16.4B-R7` (`TD-143`).</b> It previously asserted,
+    /// under the name
+    /// <c>TheOtherFourMutators_AlsoKeepTheirMutation_WhenTheDurableWriteFails</c>,
+    /// that each of these four kept its mutation. Stated for the whole set
+    /// rather than one example, so that a register row derived from this
+    /// file cannot describe the boundary as a quirk of one method.
+    /// </para>
+    /// <para>
+    /// <b>The last three assertions are unchanged on purpose and are the
+    /// most important lines in the fact.</b> The content bytes and the
+    /// write-intent marker written by the failed <c>AttachContentAsync</c>
+    /// are still there. R7 undoes an in-memory mutation and deletes nothing
+    /// durable — precisely the `WP 16.4B-R5` compensation the fifth review
+    /// board proved destroys content a live successor references. A "fix"
+    /// that also cleaned up the bytes would turn these three lines red, and
+    /// should.
+    /// </para>
     /// </remarks>
     [Fact]
-    public async Task TheOtherFourMutators_AlsoKeepTheirMutation_WhenTheDurableWriteFails()
+    public async Task TheOtherFourMutators_AlsoUndoTheirMutation_WhenTheDurableWriteFails_AndDeleteNothingDurable()
     {
         var rig = new ProbeRig();
 
         var renamed = await rig.CreatePartAsync("PRT-1", "Bracket");
         rig.States.FailNextSave();
         Assert.IsType<IOException>(await Record.ExceptionAsync(() => renamed.RenameAsync("Leaked name").WaitAsync(Timeout)));
-        Assert.Equal("Leaked name", renamed.DisplayName);
+        Assert.Equal("Bracket", renamed.DisplayName);
 
         var bommed = await rig.CreatePartAsync("PRT-2", "Housing");
         rig.States.FailNextSave();
         Assert.IsType<IOException>(await Record.ExceptionAsync(() => bommed.SetBomLineAsync(17m, "each", "FN-9").WaitAsync(Timeout)));
-        Assert.Equal(17m, bommed.Quantity);
-        Assert.Equal("FN-9", bommed.FindNumber);
+        Assert.Equal(1m, bommed.Quantity);
+        Assert.Null(bommed.FindNumber);
 
         var attached = await rig.CreatePartAsync("PRT-3", "Plate");
         var phantom = new Attachment("phantom.txt", "text/plain", 3);
         rig.States.FailNextSave();
         Assert.IsType<IOException>(await Record.ExceptionAsync(() => attached.AttachAsync(phantom).WaitAsync(Timeout)));
-        Assert.Contains(await attached.GetAttachmentsAsync(), a => a.Id == phantom.Id);
+        Assert.DoesNotContain(await attached.GetAttachmentsAsync(), a => a.Id == phantom.Id);
 
         var contented = await rig.CreatePartAsync("PRT-4", "Cover");
         rig.States.FailNextSave();
         Assert.IsType<IOException>(await Record.ExceptionAsync(() => contented.AttachContentAsync("drawing.pdf", "application/pdf", Bytes).WaitAsync(Timeout)));
-        Assert.Single(await contented.GetAttachmentsAsync());
+        Assert.Empty(await contented.GetAttachmentsAsync());
+
+        // Unchanged, and deliberately so: nothing durable is undone.
         Assert.Single(rig.Content.StoredKeys);
         Assert.Single(await rig.WriteIntents.ListMarkedAsync());
+    }
+
+    // ================================================================
+    // §3b THE EDGE OF `WP 16.4B-R7` — what the undo deliberately does NOT
+    //     do, and the one case it cannot get right
+    //
+    // Every fact here exists so that the next reader cannot mistake
+    // `TD-143`'s closure for a claim of atomicity. Two are guard-rails on
+    // the fix's own restraint; one is a characterisation of a residue that
+    // is accepted and stated rather than compensated; one is a
+    // characterisation of the single case the design cannot resolve and
+    // says so in its own remarks.
+    // ================================================================
+
+    /// <summary>
+    /// A move whose <c>groupedUnder</c> link write <b>succeeds</b> and
+    /// whose state write then fails restores the parent — and leaves the
+    /// relationship behind.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Characterisation of an accepted residue, new with
+    /// `WP 16.4B-R7`.</b> This is the half of a failed move that cannot be
+    /// undone honestly. The platform has no path that removes a
+    /// relationship — <c>MoveAsync</c>'s own remarks have said so since
+    /// `WP 9.0A`, because the <c>groupedUnder</c> trail is deliberately an
+    /// append-only move history — so removing this one would be a delete of
+    /// durable state without proven ownership, which is the shape of the
+    /// `WP 16.4B-R5` regression the fifth review board proved destroys
+    /// data. It is therefore left.
+    /// </para>
+    /// <para>
+    /// <b>What the residue does and does not assert.</b> The trail already
+    /// contains, by design, every superseded <c>groupedUnder</c> edge of
+    /// every earlier move, so an extra edge is not a claim about the
+    /// current parent — <c>ParentId</c> alone answers that, and the undo
+    /// has restored it, which is what the first two assertions check. What
+    /// is left is one edge in a history, indistinguishable from a
+    /// historical one.
+    /// </para>
+    /// <para>
+    /// Reversing the two durable steps would remove this residue and buy
+    /// something strictly worse: a link write failing after the state write
+    /// had committed would report failure for a move that had landed
+    /// durably, which no in-memory undo can answer at all. That trade is
+    /// recorded in <c>MoveAsync</c>'s own block comment.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public async Task AMoveWhoseStateWriteFailsAfterItsLinkWrite_RestoresTheParent_ButLeavesTheGroupedUnderLink()
+    {
+        var rig = new ProbeRig();
+        var parent = await rig.CreatePartAsync("PRT-P", "Housing");
+        var part = await rig.CreatePartAsync("PRT-1", "Bracket");
+
+        rig.States.FailNextSave();
+
+        var failure = await Record.ExceptionAsync(() => part.MoveAsync(parent.Id).WaitAsync(Timeout));
+        Assert.IsType<IOException>(failure);
+
+        // The reparent is undone, in memory and on disk, and no later
+        // write can carry it.
+        Assert.Null(part.ParentId);
+        await part.RenameAsync("Renamed after the failed move").WaitAsync(Timeout);
+        var state = await rig.States.FindAsync(part.Id);
+        Assert.NotNull(state);
+        Assert.Null(state.ParentId);
+
+        // The relationship, however, was written before the state write and
+        // is NOT removed. Asserted rather than tidied away.
+        var relationships = await part.GetRelationshipsAsync();
+        Assert.Contains(relationships, r => r.TargetId == parent.Id && r.RelationshipKind == "groupedUnder");
+    }
+
+    /// <summary>
+    /// A store that <b>commits and then throws</b> does not have its
+    /// mutation undone — because undoing it is what would create the
+    /// divergence.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Guard-rail, and the fact that kills the naive fix.</b> The
+    /// obvious way to close `TD-143` is to catch and revert unconditionally.
+    /// That is wrong, and not hypothetically: this platform's own
+    /// <c>PersistenceStore.WriteAsync</c> ran a legacy-record cleanup
+    /// <em>after</em> its <c>File.Move</c> commit point until
+    /// `WP 16.4B-R7`, and reported a failure of it with the same exception
+    /// type it raises before the commit. An unconditional revert in that
+    /// window reverts a change that landed, and because the revert is only
+    /// in memory, a restart rehydrates the committed value.
+    /// </para>
+    /// <para>
+    /// <c>EngineeringObjectBase.RollBackOnFailureAsync</c> therefore
+    /// re-reads the record and undoes only what the record does not show.
+    /// This fact drives exactly that: the save lands and then throws, and
+    /// the instance must keep the mutation, because the disk has it.
+    /// </para>
+    /// <para>
+    /// <b>Mutant that kills it:</b> make the undo unconditional (drop the
+    /// <c>DurableRecordAlreadyShowsThisStateAsync</c> check). Verified:
+    /// this fact fails and
+    /// <see cref="AttachmentContentReconciliationServiceTests"/>'s stale-marker
+    /// fact fails with it.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public async Task AMutationWhoseStoreCommitsAndThenThrows_IsNotUndone_BecauseTheRecordShowsIt()
+    {
+        var rig = new ProbeRig();
+        var part = await rig.CreatePartAsync("PRT-1", "Bracket");
+
+        rig.States.CommitThenFailNextSave();
+
+        var failure = await Record.ExceptionAsync(() => part.RenameAsync("Committed then reported failed").WaitAsync(Timeout));
+        Assert.IsType<IOException>(failure);
+
+        // The write landed. The instance must not disagree with it.
+        var state = await rig.States.FindAsync(part.Id);
+        Assert.NotNull(state);
+        Assert.Equal("Committed then reported failed", state.DisplayName);
+        Assert.Equal("Committed then reported failed", part.DisplayName);
+    }
+
+    /// <summary>
+    /// A store that commits, throws, and is then <b>unreadable</b> has its
+    /// mutation undone anyway — and the instance therefore disagrees with
+    /// its own durable record until a restart rehydrates it.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Characterisation of a stated limitation, not a defect this Work
+    /// Package hid.</b> <c>RollBackOnFailureAsync</c> decides on evidence,
+    /// and here there is none: the write failed and the re-read that would
+    /// settle whether it landed fails too — the most likely cause of both
+    /// being a store that is simply unavailable. It must either undo or not
+    /// undo, and it undoes, because "the operation did not happen" is the
+    /// far likelier reading and because not undoing is the `TD-143`
+    /// behaviour with a demonstrated harm.
+    /// </para>
+    /// <para>
+    /// The consequence is asserted here rather than left to a reader's
+    /// inference: memory and disk disagree, and no later write on this
+    /// object repairs it, because the object's own state no longer carries
+    /// the change. <b>This is the reason `WP 16.4B-R7` does not claim
+    /// atomicity.</b> It is bounded by requiring a store that commits,
+    /// then throws, and is then unreadable — which the store this platform
+    /// ships does not do, since `WP 16.4B-R7` removed the only two steps it
+    /// ran after its commit point, and which
+    /// <c>IEngineeringObjectStateStore.SaveAsync</c> now forbids in
+    /// writing for any other implementation.
+    /// </para>
+    /// <para>
+    /// If a later board decides this must be closed — by a durable undo
+    /// log, or by refusing to serve an instance whose durable state is
+    /// unknown — this test is where that decision lands, and it must be
+    /// inverted rather than deleted.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public async Task AMutationWhoseStoreCommitsThrowsAndIsThenUnreadable_IsUndoneAnyway_LeavingTheInstanceDisagreeingWithDisk()
+    {
+        var rig = new ProbeRig();
+        var part = await rig.CreatePartAsync("PRT-1", "Bracket");
+
+        rig.States.CommitThenFailNextSave();
+        rig.States.FailReads = true;
+
+        var failure = await Record.ExceptionAsync(() => part.RenameAsync("Committed but unverifiable").WaitAsync(Timeout));
+        Assert.IsType<IOException>(failure);
+
+        rig.States.FailReads = false;
+
+        // The write landed...
+        var state = await rig.States.FindAsync(part.Id);
+        Assert.NotNull(state);
+        Assert.Equal("Committed but unverifiable", state.DisplayName);
+
+        // ...and the instance, unable to establish that, undid it.
+        Assert.Equal("Bracket", part.DisplayName);
+    }
+
+    /// <summary>
+    /// The undo restores the <b>same</b> attachment and history instances
+    /// the object already held, not equal-valued copies of them.
+    /// </summary>
+    /// <remarks>
+    /// <b>Guard-rail.</b> The obvious way to build the undo is to capture
+    /// an <c>EngineeringObjectState</c> and put it back through
+    /// <c>RestoreState</c>. That would silently replace a caller's own
+    /// <c>IAttachment</c> implementation with this assembly's
+    /// <c>Attachment</c> and swap every history record for an equal-valued
+    /// copy — a rollback that is observable, which is not a rollback.
+    /// <c>MutationRollbackPoint</c> exists for this reason and this fact is
+    /// what holds it there. <b>Mutant that kills it:</b> implement
+    /// <c>RollBackTo</c> as <c>RestoreState(capturedState)</c>.
+    /// </remarks>
+    [Fact]
+    public async Task TheUndoRestoresTheSameInstances_NotEqualValuedCopies()
+    {
+        var rig = new ProbeRig();
+        var part = await rig.CreatePartAsync("PRT-1", "Bracket");
+
+        var original = new Attachment("kept.txt", "text/plain", 3);
+        await part.AttachAsync(original).WaitAsync(Timeout);
+        await part.TransitionAsync(LifecycleState.InReview).WaitAsync(Timeout);
+
+        var historyBefore = Assert.Single(part.History);
+
+        rig.States.FailNextSave();
+        Assert.IsType<IOException>(await Record.ExceptionAsync(
+            () => part.AttachAsync(new Attachment("rolled-back.txt", "text/plain", 3)).WaitAsync(Timeout)));
+
+        var survivor = Assert.Single(await part.GetAttachmentsAsync());
+        Assert.Same(original, survivor);
+        Assert.Same(historyBefore, Assert.Single(part.History));
     }
 
     // ================================================================
@@ -1158,11 +1464,27 @@ public sealed class MutatorRefusalAdversarialTests
     {
         private readonly Dictionary<Guid, EngineeringObjectState> _states = new();
         private bool _failNext;
+        private bool _commitThenFailNext;
 
         public Contention StateWrite { get; } = new();
 
+        /// <summary>
+        /// Reads throw instead of answering — the store that cannot say
+        /// whether its own last write landed (`WP 16.4B-R7`, §3b).
+        /// </summary>
+        public bool FailReads { get; set; }
+
         /// <summary>The next <see cref="SaveAsync"/> throws the ordinary durable-store failure every store in this platform can raise.</summary>
         public void FailNextSave() => _failNext = true;
+
+        /// <summary>
+        /// The next <see cref="SaveAsync"/> stores the record and
+        /// <em>then</em> throws — the post-commit failure window
+        /// <c>PersistenceStore.WriteAsync</c> itself had until
+        /// `WP 16.4B-R7`, and the case an unconditional in-memory undo gets
+        /// wrong (`TD-143`).
+        /// </summary>
+        public void CommitThenFailNextSave() => _commitThenFailNext = true;
 
         public Task SaveAsync(EngineeringObjectState state, CancellationToken cancellationToken = default)
         {
@@ -1175,11 +1497,21 @@ public sealed class MutatorRefusalAdversarialTests
             }
 
             lock (_states) { _states[state.Id] = state; }
+
+            if (_commitThenFailNext)
+            {
+                _commitThenFailNext = false;
+                throw new IOException("The state record landed, and the write then failed anyway.");
+            }
+
             return Task.CompletedTask;
         }
 
         public Task<EngineeringObjectState?> FindAsync(Guid id, CancellationToken cancellationToken = default)
         {
+            if (FailReads)
+                throw new IOException("The state record could not be read.");
+
             lock (_states) { return Task.FromResult(_states.TryGetValue(id, out var state) ? state : null); }
         }
 

@@ -48,7 +48,9 @@ public sealed class AttachmentLeakObservabilityTests : IDisposable
 
     /// <summary>
     /// A state write that fails strands a marker over real bytes, the
-    /// sweep declines to collect them — and says so, by name.
+    /// sweep declines to collect them — and says so, by name. Since
+    /// `WP 16.4B-R7` (`TD-143`) that report is the only place the residue
+    /// shows, because the instance no longer claims the attachment.
     /// </summary>
     [Fact]
     public async Task AStateWriteFailureDuringAnAttach_ProducesALeakTheSweepNamesRatherThanPassesOverInSilence()
@@ -101,10 +103,16 @@ public sealed class AttachmentLeakObservabilityTests : IDisposable
         var stillThere = await contentStore.ReadAsync(leaked, expectedHash: null, expectedSizeInBytes: Bytes.Length);
         Assert.True(stillThere.IsAvailable);
 
-        // And the instance still claims the attachment the caller was told
-        // had failed, which is the other, independent way an operator can
-        // see this residue.
-        Assert.Contains(await part.GetAttachmentsAsync(), a => a.Id == leaked);
+        // And the instance does NOT claim the attachment the caller was
+        // told had failed (`WP 16.4B-R7`, `TD-143`). This assertion is the
+        // inversion of the one that stood here before: the instance's
+        // disagreement with its caller used to be a second, independent way
+        // an operator could see this residue, and it was also the `TD-143`
+        // defect. Removing it makes the reconciliation report the ONLY
+        // channel through which this leak is visible, which raises the
+        // stakes on everything asserted above rather than lowering them —
+        // if the sweep ever stops naming it, nothing else will.
+        Assert.DoesNotContain(await part.GetAttachmentsAsync(), a => a.Id == leaked);
     }
 
     private sealed class FailableObjectStateStore : IEngineeringObjectStateStore
