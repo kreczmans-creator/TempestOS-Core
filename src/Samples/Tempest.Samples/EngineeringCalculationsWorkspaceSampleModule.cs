@@ -123,11 +123,14 @@ public sealed class EngineeringCalculationsWorkspaceSampleModule : ModuleLifecyc
     {
         _identityService.EstablishCurrentPrincipal(SampleIdentityId);
 
-        _calculationEngine.RegisterDefinition(new BoltShearCapacityCalculationDefinition());
-        _calculationEngine.RegisterDefinition(new BeamBendingStressCalculationDefinition());
-        _calculationEngine.RegisterDefinition(new BearingLoadCapacityCalculationDefinition());
-        _calculationEngine.RegisterDefinition(new PressureVesselWallThicknessCalculationDefinition());
-        _calculationEngine.RegisterDefinition(new MaterialSelectionMarginCalculationDefinition());
+        // `TD-159`: the five product calculations are no longer registered
+        // here. `TempestHost` registers them from
+        // `ProductCalculationCatalogue` before any module initialises, so
+        // they are already in the engine by the time this runs — in a
+        // shipped Desktop run as well as in a test host, which was the
+        // whole defect. This module demonstrates the calculations; it does
+        // not own them, and `TD-75` phase 1 moved them out of this
+        // assembly for exactly that reason.
 
         // ---- Wing Attach Bolt Shear Check -> InReview -> Approved ----
         var boltShear = await CreateCalculationAsync(

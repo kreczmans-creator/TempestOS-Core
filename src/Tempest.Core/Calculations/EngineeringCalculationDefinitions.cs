@@ -382,3 +382,94 @@ public sealed record MaterialSelectionMarginInput(string MaterialId, Quantity<Pr
 
 /// <param name="MarginRatio">The ratio of allowable to applied stress — at least 1.0 for an acceptable margin.</param>
 public sealed record MaterialSelectionMarginResult(double MarginRatio);
+
+/// <summary>
+/// The product's own calculation catalogue, as a registration: the five
+/// definitions above, put into an <see cref="ICalculationEngine"/> so the
+/// running application can execute them.
+/// </summary>
+/// <remarks>
+/// <para>
+/// <b>Why this exists (`TD-159`).</b> `TD-75` phase 1 moved the five
+/// definitions out of <c>Tempest.Samples</c> and into this file, because a
+/// calculation catalogue is product content rather than sample content.
+/// It moved the <em>declarations</em> and left the <em>registrations</em>
+/// behind: until this type existed, the only
+/// <see cref="ICalculationEngine.RegisterDefinition{TInput, TResult}"/>
+/// calls for these five were in
+/// <c>EngineeringCalculationsWorkspaceSampleModule</c>, an assembly neither
+/// <c>Tempest.App</c> nor <c>Tempest.Desktop</c> references. The shipped
+/// Desktop application therefore offered five Calculation Templates in the
+/// Object Editor and threw
+/// <see cref="CalculationDefinitionNotFoundException"/> on executing any of
+/// them, while every test passed — because both test projects <em>do</em>
+/// reference the sample assembly, so the test-process composition was not
+/// the production composition. <c>SampleSeparationTests</c> guarded the
+/// declarations and never checked the registrations, which is why the half
+/// that was missing stayed missing.
+/// </para>
+/// <para>
+/// <b>Why the host calls this, and not the workspace registration.</b>
+/// <c>Tempest.App.Workspace.Calculations.CalculationsWorkspaceRegistration</c>
+/// is the composition root for the Calculations discipline and would be the
+/// natural home, but it runs <em>after</em> module initialisation
+/// (<c>WorkspaceHost.StartAsync</c> awaits <c>manager.StartAsync()</c>
+/// first), and a module may legitimately execute a calculation while
+/// initialising. Registering here — during host start-up, before the first
+/// module initialises — means every consumer finds the catalogue already
+/// present, whoever asks first. Nothing new is coupled: this type and
+/// <c>TempestHost</c> are the same assembly.
+/// </para>
+/// </remarks>
+public static class ProductCalculationCatalogue
+{
+    /// <summary>Every calculation Id this catalogue registers, in registration order.</summary>
+    /// <remarks>
+    /// Exposed so a test can assert the product's own catalogue is complete
+    /// and executable without restating the list, and so a reader can see
+    /// what a running host holds without reading the method body.
+    /// </remarks>
+    public static IReadOnlyList<string> CalculationIds { get; } =
+    [
+        BoltShearCapacityCalculationDefinition.Id,
+        BeamBendingStressCalculationDefinition.Id,
+        BearingLoadCapacityCalculationDefinition.Id,
+        PressureVesselWallThicknessCalculationDefinition.Id,
+        MaterialSelectionMarginCalculationDefinition.Id,
+    ];
+
+    /// <summary>Registers the product's five engineering calculations with <paramref name="engine"/>.</summary>
+    /// <remarks>
+    /// Idempotent by design rather than by accident: a definition already
+    /// present is left alone. Two hosts sharing one engine, or a module that
+    /// registered a definition explicitly before the host reached this
+    /// point, are both ordinary rather than a failure — and the definitions
+    /// are immutable stateless types, so the instance the engine already
+    /// holds computes exactly what a replacement would.
+    /// </remarks>
+    /// <param name="engine">The engine to register into.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="engine"/> is <see langword="null"/>.</exception>
+    public static void RegisterAll(ICalculationEngine engine)
+    {
+        ArgumentNullException.ThrowIfNull(engine);
+
+        Register(() => engine.RegisterDefinition(new BoltShearCapacityCalculationDefinition()));
+        Register(() => engine.RegisterDefinition(new BeamBendingStressCalculationDefinition()));
+        Register(() => engine.RegisterDefinition(new BearingLoadCapacityCalculationDefinition()));
+        Register(() => engine.RegisterDefinition(new PressureVesselWallThicknessCalculationDefinition()));
+        Register(() => engine.RegisterDefinition(new MaterialSelectionMarginCalculationDefinition()));
+    }
+
+    private static void Register(Action register)
+    {
+        try
+        {
+            register();
+        }
+        catch (DuplicateCalculationException)
+        {
+            // Already registered. See RegisterAll's own remarks: the engine
+            // holds the same immutable type this would have added.
+        }
+    }
+}

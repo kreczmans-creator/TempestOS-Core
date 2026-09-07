@@ -1084,6 +1084,27 @@ public sealed class TempestHost : ITempestHost
         var lifecycleManager = new ModuleLifecycleManager(moduleManager, serviceProvider, logger, componentScopeProvider);
         _lifecycleManager = lifecycleManager;
 
+        // `TD-159`: the product's own five engineering calculations, put
+        // into the engine before the first module initialises.
+        //
+        // `TD-75` phase 1 moved these definitions out of `Tempest.Samples`
+        // and into `Tempest.Core.Calculations` because they are product
+        // content, but it moved only the declarations. The registrations
+        // stayed in the sample module, which neither `Tempest.App` nor
+        // `Tempest.Desktop` references — so a shipped Desktop run offered
+        // five Calculation Templates in the Object Editor and threw
+        // `CalculationDefinitionNotFoundException` on executing any of
+        // them. Both test projects DO reference the sample assembly, so
+        // every test passed against a composition no user ever ran.
+        //
+        // Registered here rather than in `CalculationsWorkspaceRegistration`
+        // (the discipline's own composition root, and the natural home)
+        // because that runs after `manager.StartAsync()` returns, and a
+        // module may legitimately execute a calculation while initialising.
+        // Here, the catalogue is present before anyone can ask for it.
+        ProductCalculationCatalogue.RegisterAll((ICalculationEngine)serviceProvider.GetService(typeof(ICalculationEngine)));
+        logger.Information($"Product calculation catalogue registered: {ProductCalculationCatalogue.CalculationIds.Count} calculations.");
+
         await lifecycleManager.InitialiseAllAsync(runToken).ConfigureAwait(false);
         await lifecycleManager.StartAllAsync(runToken).ConfigureAwait(false);
         logger.Information("Host lifecycle phase completed: Module Initialisation.");
