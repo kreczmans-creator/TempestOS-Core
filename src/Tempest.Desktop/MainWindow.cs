@@ -522,6 +522,7 @@ public sealed class MainWindow : Window
         _engineeringCalculation.RenameRequested += (objectId, name) => _ = _engineeringCalculationCoordinator.RenameAsync(objectId, name);
         _engineeringCalculation.RetireRequested += objectId => _ = _engineeringCalculationCoordinator.RetireAsync(objectId);
         _engineeringCalculation.ShowRetiredChanged += include => _ = _engineeringCalculationCoordinator.SetShowRetiredAsync(include);
+        _engineeringCalculation.SelectionMoved += () => _engineeringCalculationCoordinator.ForgetPendingRetirement();
 
         _navigationRail = new GlobalNavigationRail(_navigator);
 

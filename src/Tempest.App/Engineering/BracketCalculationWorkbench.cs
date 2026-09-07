@@ -55,7 +55,7 @@ public sealed class BracketCalculationWorkbench
     private readonly ICalculationEngine _engine;
     private readonly ISettingsProvider _settings;
     private readonly IVerificationArtefactCatalog _verifications;
-    private readonly EngineeringCalculationRegister? _register;
+    private readonly EngineeringCalculationRegister _register;
 
     /// <summary>Initialises a new instance of the <see cref="BracketCalculationWorkbench"/> class.</summary>
     public BracketCalculationWorkbench(
@@ -66,7 +66,7 @@ public sealed class BracketCalculationWorkbench
         ICalculationEngine engine,
         ISettingsProvider settings,
         IVerificationArtefactCatalog verifications,
-        EngineeringCalculationRegister? register = null)
+        EngineeringCalculationRegister register)
     {
         ArgumentNullException.ThrowIfNull(materials);
         ArgumentNullException.ThrowIfNull(seeder);
@@ -75,6 +75,7 @@ public sealed class BracketCalculationWorkbench
         ArgumentNullException.ThrowIfNull(engine);
         ArgumentNullException.ThrowIfNull(settings);
         ArgumentNullException.ThrowIfNull(verifications);
+        ArgumentNullException.ThrowIfNull(register);
 
         _materials = materials;
         _seeder = seeder;
@@ -162,9 +163,7 @@ public sealed class BracketCalculationWorkbench
     {
         var summaries = await _engine.ListRecordsAsync(cancellationToken).ConfigureAwait(false);
         var entries = new List<CalculationListEntry>(summaries.Count);
-        var named = _register is null
-            ? []
-            : await _register.ListAsync(cancellationToken).ConfigureAwait(false);
+        var named = await _register.ListAsync(cancellationToken).ConfigureAwait(false);
 
         // One name per record. A record named twice would be a defect
         // upstream of this listing, so the first — the newest, since the
@@ -217,8 +216,7 @@ public sealed class BracketCalculationWorkbench
                 CanBeOpenedHere: isBracket,
                 ObjectId: name?.ObjectId,
                 Status: name?.Status,
-                IsRetired: name?.IsRetired ?? false,
-                ProjectLabel: name?.ParentLabel));
+                ProjectLabel: name?.ProjectLabel));
         }
 
         return entries;
@@ -327,23 +325,28 @@ public sealed class BracketCalculationWorkbench
 
         string? namingProblem = null;
 
-        if (_register is not null)
+        try
         {
-            try
-            {
-                await _register
-                    .NameAsync(check.Record!.Id, DefaultedName(displayName, check.Record!.ExecutedAt), cancellationToken)
-                    .ConfigureAwait(false);
-            }
-            catch (Exception ex) when (ex is not OperationCanceledException)
-            {
-                // The calculation itself is already recorded and durable.
-                // Reported, never swallowed and never allowed to present
-                // as a failed calculation — see NamingProblem's own remarks.
-                namingProblem =
-                    $"The calculation ran and is recorded, but it could not be named: {ex.Message} "
-                    + "It is listed under its own identity and can still be opened.";
-            }
+            await _register
+                .NameAsync(check.Record!.Id, DefaultedName(displayName, check.Record!.ExecutedAt), cancellationToken)
+                .ConfigureAwait(false);
+        }
+        catch (EngineeringCalculationNamingException partial)
+        {
+            // The object was created and named but not linked. Its own
+            // message says exactly that, and says it verbatim rather than
+            // paraphrased — the two failures below leave the product in
+            // different states and an engineer needs to know which.
+            namingProblem = partial.Message;
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            // The calculation itself is already recorded and durable.
+            // Reported, never swallowed and never allowed to present as a
+            // failed calculation — see NamingProblem's own remarks.
+            namingProblem =
+                $"The calculation ran and is recorded, but it could not be named: {ex.Message} "
+                + "It is listed under its own identity and can still be opened.";
         }
 
         var described = await DescribeAsync(check.Record!, cancellationToken).ConfigureAwait(false);
@@ -351,29 +354,50 @@ public sealed class BracketCalculationWorkbench
         return namingProblem is null ? described : described with { NamingProblem = namingProblem };
     }
 
+    /// <summary>The named calculation carrying <paramref name="recordId"/>, or <see langword="null"/> where nobody has named that record.</summary>
+    /// <param name="recordId">The calculation record to look up.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    public Task<NamedCalculation?> FindNamedAsync(Guid recordId, CancellationToken cancellationToken = default) =>
+        _register.FindByRecordAsync(recordId, cancellationToken);
+
     /// <summary>Changes what a named calculation is called, and nothing else.</summary>
     /// <param name="calculationObjectId">The named calculation to rename.</param>
     /// <param name="newDisplayName">Its new display name.</param>
     /// <param name="cancellationToken">A cancellation token.</param>
-    public async Task<CalculationRegisterOutcome> RenameAsync(
+    public Task<CalculationRegisterOutcome> RenameAsync(
         Guid calculationObjectId, string? newDisplayName, CancellationToken cancellationToken = default) =>
-        _register is null
-            ? new CalculationRegisterOutcome(false, "Renaming is not available in this composition.")
-            : await _register.RenameAsync(calculationObjectId, newDisplayName, cancellationToken).ConfigureAwait(false);
+        _register.RenameAsync(calculationObjectId, newDisplayName, cancellationToken);
 
     /// <summary>Takes a named calculation out of the active list without deleting anything.</summary>
     /// <param name="calculationObjectId">The named calculation to retire.</param>
     /// <param name="cancellationToken">A cancellation token.</param>
-    public async Task<CalculationRegisterOutcome> RetireAsync(
+    public Task<CalculationRegisterOutcome> RetireAsync(
         Guid calculationObjectId, CancellationToken cancellationToken = default) =>
-        _register is null
-            ? new CalculationRegisterOutcome(false, "Retiring is not available in this composition.")
-            : await _register.RetireAsync(calculationObjectId, cancellationToken).ConfigureAwait(false);
+        _register.RetireAsync(calculationObjectId, cancellationToken);
 
-    private static string DefaultedName(string? displayName, DateTimeOffset executedAt) =>
-        string.IsNullOrWhiteSpace(displayName)
-            ? $"{new BracketSectionCheckCalculationDefinition().Metadata.Name} {executedAt:yyyy-MM-dd HH:mm:ss} UTC"
-            : displayName.Trim();
+    /// <summary>
+    /// What retiring one named calculation would actually do, in words, so
+    /// a surface can say it before doing it rather than afterwards.
+    /// </summary>
+    /// <param name="calculationObjectId">The named calculation in question.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    public Task<CalculationRegisterOutcome> DescribeRetirementAsync(
+        Guid calculationObjectId, CancellationToken cancellationToken = default) =>
+        _register.DescribeRetirementAsync(calculationObjectId, cancellationToken);
+
+    private static string DefaultedName(string? displayName, DateTimeOffset executedAt)
+    {
+        if (!string.IsNullOrWhiteSpace(displayName))
+            return displayName.Trim();
+
+        var name = EngineeringCalculationCatalogue.For(BracketSectionCheckCalculationDefinition.Id)?.Name
+            ?? BracketSectionCheckCalculationDefinition.Id;
+
+        // Invariant, like every other formatted value this workbench hands
+        // out: a default name whose time separator follows the machine's
+        // culture would not match the timestamp shown beside it.
+        return $"{name} {executedAt.UtcDateTime.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture)} UTC";
+    }
 
     /// <summary>
     /// Recovers the last calculation this workbench ran, reading the result

@@ -108,6 +108,14 @@ public sealed class EngineeringCalculationLifecycleTests
             Assert.Equal(before.Title, renameBox.Text);
 
             renameBox.Text = "Bracket check — issued for review";
+
+            // A refresh that is not a change of selection must not discard
+            // what the engineer is halfway through typing.
+            CheckBoxOf(view, EngineeringCalculationView.ShowRetiredCaption).IsChecked = true;
+            await RenderUntilAsync(window, () => SurfaceOf(window).StatusMessage.Contains("Showing retired", StringComparison.Ordinal));
+            Assert.Equal("Bracket check — issued for review", TextBoxOf(SurfaceOf(window), "New name for the selected calculation").Text);
+
+            view = SurfaceOf(window);
             await ClickAsync(window, view, EngineeringCalculationView.RenameCaption);
             await RenderUntilAsync(window, () =>
                 SurfaceOf(window).Calculations.Any(c => c.RecordId == executed.CalculationRecordId && c.Title == "Bracket check — issued for review"));
@@ -190,6 +198,24 @@ public sealed class EngineeringCalculationLifecycleTests
             var retire = ButtonOf(view, EngineeringCalculationView.RetireCaption);
             AssertUsable(window, retire, "the retire button");
 
+            // --- the first press says what it will do, and does nothing --
+            await ClickAsync(window, view, EngineeringCalculationView.RetireCaption);
+            await RenderUntilAsync(window, () => SurfaceOf(window).StatusMessage.Contains("terminal state", StringComparison.Ordinal));
+
+            view = SurfaceOf(window);
+
+            // It names the state it will reach, says it cannot be undone,
+            // and says nothing is deleted — before anything happens.
+            Assert.Contains("terminal state", view.StatusMessage, StringComparison.Ordinal);
+            Assert.Contains("cannot be moved back", view.StatusMessage, StringComparison.Ordinal);
+            Assert.Contains("Nothing is deleted", view.StatusMessage, StringComparison.Ordinal);
+
+            // And the calculation is still exactly where it was.
+            Assert.Contains(view.Calculations, c => c.RecordId == executed.CalculationRecordId && !c.IsRetired);
+            Assert.False(EngineeringCalculationRegister.IsRetired(
+                ((IHasLifecycle)(await DomainOf(host).Repository.FindAsync(objectId))!).Status));
+
+            // --- the second press does it ------------------------------
             await ClickAsync(window, view, EngineeringCalculationView.RetireCaption);
             await RenderUntilAsync(window, () => SurfaceOf(window).Calculations.All(c => c.RecordId != executed.CalculationRecordId));
 
@@ -236,7 +262,7 @@ public sealed class EngineeringCalculationLifecycleTests
             Assert.Equal(executed.CalculationRecordId, view.DisplayedOutcome!.CalculationRecordId);
             Assert.False(ButtonOf(view, EngineeringCalculationView.CalculateCaption).IsEnabled);
 
-            // Retiring it twice is refused rather than repeated.
+            // Retiring it twice is not offered at all.
             SelectAsync(window, SurfaceOf(window), back);
             Assert.False(ButtonOf(SurfaceOf(window), EngineeringCalculationView.RetireCaption).IsEnabled);
         });
@@ -369,6 +395,72 @@ public sealed class EngineeringCalculationLifecycleTests
         }
     }
 
+    [AvaloniaFact]
+    public async Task ARetiredCalculationRecoveredOnRelaunch_SaysItIsRetired_RatherThanPresentingItAsCurrent()
+    {
+        var root = WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath();
+
+        var first = new WorkspaceHost(root);
+        try
+        {
+            await first.StartAsync();
+            SignIn(first);
+
+            var window = new MainWindow(first) { Width = 1600, Height = 1000 };
+            window.Show();
+            await OpenFromTheRailAsync(first, window);
+
+            var executed = await RunNamedCheckAsync(window, SurfaceOf(window), "Bracket check — retired before relaunch", area: "60");
+            var listed = SurfaceOf(window).Calculations.Single(c => c.RecordId == executed.CalculationRecordId);
+
+            SelectAsync(window, SurfaceOf(window), listed);
+
+            // Two presses: the first describes, the second acts.
+            await ClickAsync(window, SurfaceOf(window), EngineeringCalculationView.RetireCaption);
+            await RenderUntilAsync(window, () => SurfaceOf(window).StatusMessage.Contains("terminal state", StringComparison.Ordinal));
+            await ClickAsync(window, SurfaceOf(window), EngineeringCalculationView.RetireCaption);
+            await RenderUntilAsync(window, () => SurfaceOf(window).Calculations.All(c => c.RecordId != executed.CalculationRecordId));
+
+            await first.ShutdownAsync();
+        }
+        finally
+        {
+            await first.DisposeAsync();
+        }
+
+        var second = new WorkspaceHost(root);
+        try
+        {
+            await second.StartAsync();
+            SignIn(second);
+
+            var window = new MainWindow(second) { Width = 1600, Height = 1000 };
+            window.Show();
+            await OpenFromTheRailAsync(second, window);
+
+            // The last calculation is still recovered — the record is the
+            // authority and nothing was deleted — but the surface says
+            // plainly that it has been retired, rather than presenting it
+            // as the calculation currently being worked on while the list
+            // beside it does not contain it.
+            await RenderUntilAsync(window, () => SurfaceOf(window).StatusMessage.Contains("Recovered the calculation", StringComparison.Ordinal));
+
+            var view = SurfaceOf(window);
+
+            Assert.True(view.IsReadOnly);
+            Assert.Contains("Recovered the calculation", view.StatusMessage, StringComparison.Ordinal);
+            Assert.Contains("has since been retired", view.StatusMessage, StringComparison.Ordinal);
+            Assert.Contains("nothing was deleted", view.StatusMessage, StringComparison.Ordinal);
+            Assert.DoesNotContain(view.Calculations, c => c.RecordId == view.DisplayedOutcome!.CalculationRecordId);
+
+            await second.ShutdownAsync();
+        }
+        finally
+        {
+            await second.DisposeAsync();
+        }
+    }
+
     // ---- harness ----
 
     private static async Task InWorkspaceAsync(Func<WorkspaceHost, MainWindow, EngineeringCalculationView, Task> body)
@@ -442,10 +534,22 @@ public sealed class EngineeringCalculationLifecycleTests
         AssertUsable(window, nameBox, "the calculation name box");
         nameBox.Text = name;
 
-        TextBoxOf(view, "Axial load in kilonewtons").Text = "12";
-        TextBoxOf(view, "Section area in square millimetres").Text = area;
-        TextBoxOf(view, "Member length in millimetres").Text = "150";
-        TextBoxOf(view, "Mass limit in grams").Text = "50";
+        // Every input is checked usable before it is driven — Avalonia will
+        // happily accept .Text on a disabled TextBox, so a regression that
+        // left these disabled after a read-only view would otherwise be
+        // driven successfully and never caught.
+        foreach (var (automationName, text) in new[]
+        {
+            ("Axial load in kilonewtons", "12"),
+            ("Section area in square millimetres", area),
+            ("Member length in millimetres", "150"),
+            ("Mass limit in grams", "50"),
+        })
+        {
+            var box = TextBoxOf(view, automationName);
+            AssertUsable(window, box, $"the '{automationName}' box");
+            box.Text = text;
+        }
 
         // Which record was on screen before this run — so the wait below
         // is for THIS calculation's record and not satisfied instantly by

@@ -270,8 +270,7 @@ internal sealed record RememberedCalculation(Guid RecordId, BracketCalculationIn
 /// <param name="CanBeOpenedHere">Whether this workspace can display the record in full.</param>
 /// <param name="ObjectId">The governed <c>Calculation</c> Domain object naming this record, where one names it — what a rename or a retirement addresses. <see langword="null"/> for a record nobody has named, which is every record executed before naming existed and every record a sample module ran.</param>
 /// <param name="Status">That object's own governed lifecycle status, where one exists.</param>
-/// <param name="IsRetired">Whether it has been retired out of the active list. Retired is not deleted: the record, the object and the evidence are all still held.</param>
-/// <param name="ProjectLabel">The project it belongs to, where it was created inside one.</param>
+/// <param name="ProjectLabel">The project it belongs to, resolved through the platform's own project membership, or <see langword="null"/> where it belongs to none.</param>
 public sealed record CalculationListEntry(
     Guid RecordId,
     string Title,
@@ -288,11 +287,20 @@ public sealed record CalculationListEntry(
     bool CanBeOpenedHere,
     Guid? ObjectId = null,
     LifecycleState? Status = null,
-    bool IsRetired = false,
     string? ProjectLabel = null)
 {
     /// <summary>Whether this record can be renamed or retired — only a named calculation can, because only a named calculation has a governed object to address.</summary>
     public bool IsNamed => ObjectId is not null;
+
+    /// <summary>
+    /// Whether it has been retired out of the active list. Retired is not
+    /// deleted: the record, the object and the evidence are all still held.
+    /// </summary>
+    /// <remarks>
+    /// Derived from <see cref="Status"/> rather than supplied alongside it,
+    /// so the two cannot be constructed disagreeing.
+    /// </remarks>
+    public bool IsRetired => Status is { } status && EngineeringCalculationRegister.IsRetired(status);
 
     /// <summary>The single line a list row shows.</summary>
     public string Label =>

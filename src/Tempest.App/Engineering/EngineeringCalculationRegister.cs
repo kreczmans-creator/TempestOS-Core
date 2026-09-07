@@ -22,7 +22,20 @@ namespace Tempest.App.Engineering;
 /// <see cref="SetCalculationStatusCommand"/>; belonging to a project is
 /// <see cref="IHasParent"/>. Every one of those was registered by
 /// <see cref="CalculationsWorkspaceRegistration"/> long before this type
-/// existed, and this type adds no mutation of its own.
+/// existed.
+/// </para>
+/// <para>
+/// <b>Two of its operations are dispatched; two are not, and that is
+/// stated rather than glossed.</b> Renaming and retiring go through
+/// <see cref="ICommandDispatcher"/> and the handlers
+/// <see cref="CalculationsWorkspaceRegistration"/> registers. Creating the
+/// object and writing its <c>calculatedBy</c> link go directly through
+/// <see cref="CalculationObjectFactoryRegistry"/> and
+/// <see cref="IHasRelationships.LinkAsync"/> — the same factory
+/// <c>CreateCalculationObjectCommandHandler</c> itself calls — because
+/// <see cref="CommandResult"/> carries no created identity and this
+/// surface needs the new object's Id in order to link it. No
+/// authorisation gate is skipped by that: the dispatcher performs none.
 /// </para>
 /// <para>
 /// <b>The record is the evidence; the object is the label.</b> A
@@ -104,9 +117,24 @@ public sealed class EngineeringCalculationRegister
 
         if (created is IHasRelationships relationships)
         {
-            await relationships
-                .LinkAsync(recordId, CalculationTemplateRegistry.CalculatedByRelationshipKind, cancellationToken)
-                .ConfigureAwait(false);
+            try
+            {
+                await relationships
+                    .LinkAsync(recordId, CalculationTemplateRegistry.CalculatedByRelationshipKind, cancellationToken)
+                    .ConfigureAwait(false);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                // Reported precisely, because "it could not be named" would
+                // be untrue: the object exists, durably, and carries the
+                // name. What is missing is its link to the record, and this
+                // workspace lists a named calculation by that link, so the
+                // object will not appear here. It cannot be undone from
+                // here either — `IEngineeringObjectRepository` exposes no
+                // unregister anywhere in the platform, which is `TD-147`'s
+                // own disclosure and not this type's to close.
+                throw new EngineeringCalculationNamingException(created.Id, recordId, displayName, ex);
+            }
         }
 
         return await DescribeAsync(created, cancellationToken).ConfigureAwait(false);
@@ -136,6 +164,16 @@ public sealed class EngineeringCalculationRegister
         }
 
         return [.. named.OrderByDescending(n => n.CreatedAt)];
+    }
+
+    /// <summary>The named calculation carrying <paramref name="recordId"/>, or <see langword="null"/> where nobody has named that record.</summary>
+    /// <param name="recordId">The calculation record to look up.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    public async Task<NamedCalculation?> FindByRecordAsync(Guid recordId, CancellationToken cancellationToken = default)
+    {
+        var named = await ListAsync(cancellationToken).ConfigureAwait(false);
+
+        return named.FirstOrDefault(n => n.RecordId == recordId);
     }
 
     /// <summary>
@@ -173,50 +211,98 @@ public sealed class EngineeringCalculationRegister
     /// </remarks>
     /// <param name="calculationObjectId">The named calculation to retire.</param>
     /// <param name="cancellationToken">A cancellation token.</param>
+    /// <summary>
+    /// What retiring <paramref name="calculationObjectId"/> would do, in
+    /// the same words the act itself would use, without doing it.
+    /// </summary>
+    /// <remarks>
+    /// <b>Every retained terminal state is terminal.</b>
+    /// <see cref="LifecycleTransitionTable"/> gives both
+    /// <see cref="LifecycleState.Archived"/> and
+    /// <see cref="LifecycleState.Cancelled"/> no permitted targets at all,
+    /// so a retirement cannot be undone through the lifecycle any more than
+    /// a soft delete can be undone through the repository — the difference,
+    /// and it is the whole difference, is that a retired calculation stays
+    /// visible, listable and openable while a soft-deleted one does not.
+    /// A surface must therefore be able to say what will happen before it
+    /// happens, which is what this exists for.
+    /// </remarks>
+    /// <param name="calculationObjectId">The named calculation in question.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns><see cref="CalculationRegisterOutcome.Succeeded"/> is whether the retirement <em>could</em> proceed; nothing is changed either way.</returns>
+    public async Task<CalculationRegisterOutcome> DescribeRetirementAsync(
+        Guid calculationObjectId, CancellationToken cancellationToken = default)
+    {
+        var (refusal, reachable, status) = await ResolveRetirementAsync(calculationObjectId, cancellationToken).ConfigureAwait(false);
+
+        if (refusal is not null)
+            return refusal;
+
+        return new CalculationRegisterOutcome(
+            true,
+            $"Retiring this calculation will move it from {status} to {reachable}, which is a terminal state — it cannot be moved back afterwards. "
+            + "Nothing is deleted: the calculation, its record and its evidence stay held, and it stays openable under \"Show retired calculations\". "
+            + "Press Retire again to confirm.");
+    }
+
     public async Task<CalculationRegisterOutcome> RetireAsync(
         Guid calculationObjectId, CancellationToken cancellationToken = default)
     {
-        var target = await _domain.Repository.FindAsync(calculationObjectId, cancellationToken).ConfigureAwait(false);
+        var (refusal, reachable, _) = await ResolveRetirementAsync(calculationObjectId, cancellationToken).ConfigureAwait(false);
 
-        if (target is not IHasLifecycle lifecycle)
-            return new CalculationRegisterOutcome(false, "That calculation is no longer held, or has no lifecycle status.");
-
-        if (RetiredStates.Contains(lifecycle.Status))
-            return new CalculationRegisterOutcome(false, $"That calculation is already {lifecycle.Status} and is not in the active list.");
-
-        var table = new LifecycleTransitionTable();
-        LifecycleState? reachable = null;
-
-        foreach (var candidate in RetiredStates)
-        {
-            if (!table.IsPermitted(lifecycle.Status, candidate))
-                continue;
-
-            reachable = candidate;
-            break;
-        }
-
-        if (reachable is not { } retiredState)
-        {
-            var permitted = table.GetPermittedTargets(lifecycle.Status);
-
-            return new CalculationRegisterOutcome(
-                false,
-                $"A calculation that is {lifecycle.Status} cannot be retired directly — the platform's lifecycle permits only "
-                + (permitted.Count == 0 ? "no further transition at all" : string.Join(", ", permitted))
-                + " from there. Nothing was changed and nothing was deleted.");
-        }
+        if (refusal is not null)
+            return refusal;
 
         var result = await _dispatcher
-            .DispatchAsync(new SetCalculationStatusCommand(calculationObjectId, CalculationObjectFactoryRegistry.CalculationKind, retiredState), cancellationToken)
+            .DispatchAsync(new SetCalculationStatusCommand(calculationObjectId, CalculationObjectFactoryRegistry.CalculationKind, reachable!.Value), cancellationToken)
             .ConfigureAwait(false);
 
         return result.Succeeded
             ? new CalculationRegisterOutcome(
                 true,
-                $"Retired from the active list as {retiredState}. Nothing was deleted — the calculation, its record and its evidence are all still held, "
+                $"Retired from the active list as {reachable}. Nothing was deleted — the calculation, its record and its evidence are all still held, "
                 + "and it can still be opened.")
             : new CalculationRegisterOutcome(false, result.Message ?? "The retirement was refused.");
+    }
+
+    /// <summary>
+    /// The one place that decides whether a retirement can proceed and
+    /// where to, shared by the description and the act so the two can
+    /// never disagree.
+    /// </summary>
+    private async Task<(CalculationRegisterOutcome? Refusal, LifecycleState? Reachable, LifecycleState Status)> ResolveRetirementAsync(
+        Guid calculationObjectId, CancellationToken cancellationToken)
+    {
+        var target = await _domain.Repository.FindAsync(calculationObjectId, cancellationToken).ConfigureAwait(false);
+
+        if (target is not IHasLifecycle lifecycle)
+            return (new CalculationRegisterOutcome(false, "That calculation is no longer held, or has no lifecycle status."), null, LifecycleState.Draft);
+
+        if (RetiredStates.Contains(lifecycle.Status))
+            return (new CalculationRegisterOutcome(false, $"That calculation is already {lifecycle.Status} and is not in the active list."), null, lifecycle.Status);
+
+        // The injected table, never a fresh LifecycleTransitionTable: this
+        // must agree with the one SetCalculationStatusCommandHandler
+        // actually transitions against, or a permitted retirement gets
+        // refused with a fabricated reason.
+        var table = _domain.LifecycleTable;
+
+        foreach (var candidate in RetiredStates)
+        {
+            if (table.IsPermitted(lifecycle.Status, candidate))
+                return (null, candidate, lifecycle.Status);
+        }
+
+        var permitted = table.GetPermittedTargets(lifecycle.Status);
+
+        return (
+            new CalculationRegisterOutcome(
+                false,
+                $"A calculation that is {lifecycle.Status} cannot be retired directly — the platform's lifecycle permits only "
+                + (permitted.Count == 0 ? "no further transition at all" : string.Join(", ", permitted))
+                + " from there. Nothing was changed and nothing was deleted."),
+            null,
+            lifecycle.Status);
     }
 
     /// <summary>
@@ -246,52 +332,111 @@ public sealed class EngineeringCalculationRegister
         {
             var links = await relationships.GetRelationshipsAsync(cancellationToken).ConfigureAwait(false);
 
+            // A Calculation object can carry more than one `calculatedBy`
+            // link — the Calculations workspace's own Execute and
+            // Recalculate commands append one per execution — so the
+            // newest is taken, and taken by CreatedAt rather than by
+            // arrival order, which is what CalculationRecordReader's own
+            // GetLatestAsync already does with the same links. Relying on
+            // enumeration order would let a restart change the answer,
+            // because the index is rebuilt document by document.
             recordId = links
-                .FirstOrDefault(l => string.Equals(l.RelationshipKind, CalculationTemplateRegistry.CalculatedByRelationshipKind, StringComparison.Ordinal))
+                .Where(l => string.Equals(l.RelationshipKind, CalculationTemplateRegistry.CalculatedByRelationshipKind, StringComparison.Ordinal))
+                .OrderBy(l => l.CreatedAt)
+                .LastOrDefault()
                 ?.TargetId;
         }
 
         var status = subject is IHasLifecycle lifecycle ? lifecycle.Status : LifecycleState.Draft;
-        var parentId = subject is IHasParent { ParentId: { } pid } ? pid : (Guid?)null;
-        var parentLabel = parentId is null ? null : await DescribeParentAsync(parentId.Value, cancellationToken).ConfigureAwait(false);
+
+        // Which project it belongs to is asked of ProjectMembership, the
+        // platform's single definition of that question, which walks the
+        // whole IHasParent chain. Reading one hop and labelling whatever it
+        // finds would be a second, wrong answer: a calculation filed under
+        // a Calculation Set inside a project has the set as its parent and
+        // the project as its owner, and the project directory reads the
+        // owner.
+        var projectId = await ProjectMembership
+            .ResolveOwningProjectAsync(_domain.Repository, subject.Id, cancellationToken)
+            .ConfigureAwait(false);
 
         return new NamedCalculation(
             ObjectId: subject.Id,
             DisplayName: subject is IHasBusinessIdentifier identified ? identified.DisplayName : subject.Kind,
             RecordId: recordId,
             Status: status,
-            IsRetired: IsRetired(status),
-            ParentId: parentId,
-            ParentLabel: parentLabel,
+            ProjectId: projectId,
+            ProjectLabel: projectId is null ? null : await DescribeProjectAsync(projectId.Value, cancellationToken).ConfigureAwait(false),
             CreatedAt: subject.CreatedAt);
     }
 
-    private async Task<string?> DescribeParentAsync(Guid parentId, CancellationToken cancellationToken)
+    private async Task<string?> DescribeProjectAsync(Guid projectId, CancellationToken cancellationToken)
     {
-        var parent = await _domain.Repository.FindAsync(parentId, cancellationToken).ConfigureAwait(false);
+        var project = await _domain.Repository.FindAsync(projectId, cancellationToken).ConfigureAwait(false);
 
-        return parent is IHasBusinessIdentifier identified ? identified.DisplayName : parent?.Kind;
+        return project is IHasBusinessIdentifier identified ? identified.DisplayName : project?.Kind;
     }
 }
 
 /// <summary>One named calculation, as a surface should present it.</summary>
 /// <param name="ObjectId">The governed Domain object's own Id — what a rename or a retirement addresses.</param>
 /// <param name="DisplayName">What it is called.</param>
-/// <param name="RecordId">The immutable calculation record behind it, where one is linked.</param>
+/// <param name="RecordId">The newest immutable calculation record linked to it, where one is linked.</param>
 /// <param name="Status">Its governed lifecycle status.</param>
-/// <param name="IsRetired">Whether that status means it has left the active list.</param>
-/// <param name="ParentId">The object it belongs to — a project, where one was open when it was created.</param>
-/// <param name="ParentLabel">That object's own display name.</param>
+/// <param name="ProjectId">The project it belongs to, resolved by <see cref="ProjectMembership"/>, or <see langword="null"/> where it belongs to none — a real, supported state.</param>
+/// <param name="ProjectLabel">That project's own display name.</param>
 /// <param name="CreatedAt">When it was named.</param>
 public sealed record NamedCalculation(
     Guid ObjectId,
     string DisplayName,
     Guid? RecordId,
     LifecycleState Status,
-    bool IsRetired,
-    Guid? ParentId,
-    string? ParentLabel,
-    DateTimeOffset CreatedAt);
+    Guid? ProjectId,
+    string? ProjectLabel,
+    DateTimeOffset CreatedAt)
+{
+    /// <summary>Whether its status means it has left the active list. Derived, never supplied, so it cannot disagree with <see cref="Status"/>.</summary>
+    public bool IsRetired => EngineeringCalculationRegister.IsRetired(Status);
+}
+
+/// <summary>
+/// A calculation object was created and named, durably, but could not be
+/// linked to the record it was named for.
+/// </summary>
+/// <remarks>
+/// Distinct from a failure to create the object at all, because the two
+/// leave the product in different states and an engineer needs to be told
+/// which happened. See <see cref="EngineeringCalculationRegister.NameAsync"/>'s
+/// own catch, and `TD-147` for why the created object cannot be withdrawn.
+/// </remarks>
+public sealed class EngineeringCalculationNamingException : Exception
+{
+    /// <summary>Initialises a new instance of the <see cref="EngineeringCalculationNamingException"/> class.</summary>
+    /// <param name="calculationObjectId">The object that was created and named.</param>
+    /// <param name="recordId">The record it could not be linked to.</param>
+    /// <param name="displayName">The name it carries.</param>
+    /// <param name="innerException">What the link failed with.</param>
+    public EngineeringCalculationNamingException(Guid calculationObjectId, Guid recordId, string displayName, Exception innerException)
+        : base(
+            $"The calculation object '{calculationObjectId}' was created and named \"{displayName}\", durably, but could not be linked to record "
+            + $"'{recordId}': {innerException.Message} The calculation itself is recorded and unaffected. The named object exists and will not appear "
+            + "in this workspace's list, which finds a named calculation by that link; the platform has no operation to withdraw it (TD-147).",
+            innerException)
+    {
+        CalculationObjectId = calculationObjectId;
+        RecordId = recordId;
+        DisplayName = displayName;
+    }
+
+    /// <summary>The object that was created and named.</summary>
+    public Guid CalculationObjectId { get; }
+
+    /// <summary>The record it could not be linked to.</summary>
+    public Guid RecordId { get; }
+
+    /// <summary>The name the created object carries.</summary>
+    public string DisplayName { get; }
+}
 
 /// <summary>What happened when a surface asked for a rename or a retirement, in words the engineer should read.</summary>
 /// <param name="Succeeded">Whether the governed act was performed.</param>

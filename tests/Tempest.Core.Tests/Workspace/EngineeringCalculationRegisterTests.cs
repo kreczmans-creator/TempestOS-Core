@@ -4,6 +4,7 @@ using Tempest.App.Workspace.Calculations;
 using Tempest.Core.Calculations;
 using Tempest.Core.Commands;
 using Tempest.Core.Configuration;
+using Tempest.Core.EngineeringData;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Persistence;
 using Tempest.Core.Runtime;
@@ -130,6 +131,85 @@ public class EngineeringCalculationRegisterTests
         var linksAfter = await ((IHasRelationships)after!).GetRelationshipsAsync();
         Assert.Equal(linksBefore.Count, linksAfter.Count);
         Assert.Contains(linksAfter, l => l.TargetId == recordId);
+    }
+
+    [Fact]
+    public async Task ANamingThatCreatesTheObjectButCannotLinkIt_SaysExactlyThat_RatherThanSayingItWasNotNamed()
+    {
+        using var temp = new TempDirectory();
+        var (register, domain, _) = await StartAsync(temp.Path);
+
+        // A record Id with no document behind it is the one reliable way to
+        // make the link step fail while the create step succeeds — which is
+        // precisely the partial state the product must report accurately.
+        var absentRecordId = Guid.NewGuid();
+
+        var thrown = await Assert.ThrowsAsync<EngineeringCalculationNamingException>(
+            () => register.NameAsync(absentRecordId, "Bracket check — half named"));
+
+        // It names the object that really was created, the record it could
+        // not be linked to, and the name that object now carries.
+        Assert.Equal(absentRecordId, thrown.RecordId);
+        Assert.Equal("Bracket check — half named", thrown.DisplayName);
+        Assert.NotEqual(Guid.Empty, thrown.CalculationObjectId);
+        Assert.IsType<EngineeringDocumentNotFoundException>(thrown.InnerException);
+
+        // The message must not claim the calculation was not named — it
+        // was, durably, which is the whole point of reporting this
+        // separately.
+        Assert.Contains("was created and named", thrown.Message, StringComparison.Ordinal);
+        Assert.Contains("TD-147", thrown.Message, StringComparison.Ordinal);
+
+        // And the object really is there, carrying that name, with no
+        // record link — the residue the message discloses.
+        var orphan = await domain.Repository.FindAsync(thrown.CalculationObjectId);
+        Assert.NotNull(orphan);
+        Assert.Equal("Bracket check — half named", ((IHasBusinessIdentifier)orphan!).DisplayName);
+        Assert.Empty(await ((IHasRelationships)orphan!).GetRelationshipsAsync());
+
+        // It is a named calculation with no record behind it, which is
+        // exactly what the message says. The workspace's own list is driven
+        // from the engine's records and matches names to them by that link,
+        // so a name with no link has nothing to attach to and does not
+        // appear there — which is the residue the message discloses, and it
+        // is disclosed rather than hidden.
+        var orphaned = (await register.ListAsync()).Single(n => n.ObjectId == thrown.CalculationObjectId);
+        Assert.Null(orphaned.RecordId);
+        Assert.Null(await register.FindByRecordAsync(absentRecordId));
+    }
+
+    [Fact]
+    public async Task ACalculationThatReachedSupersededRetiresToArchived_NotToCancelled()
+    {
+        using var temp = new TempDirectory();
+        var (register, domain, host) = await StartAsync(temp.Path);
+
+        var named = await register.NameAsync(await ExecuteOneAsync(host), "Bracket check — issued then superseded");
+        var subject = (IHasLifecycle)(await domain.Repository.FindAsync(named.ObjectId))!;
+
+        // Walk it along the platform's own permitted route to Superseded,
+        // which is the only way Archived becomes reachable at all.
+        foreach (var step in new[] { LifecycleState.InReview, LifecycleState.Approved, LifecycleState.Released, LifecycleState.Superseded })
+            await subject.TransitionAsync(step);
+
+        Assert.Equal(LifecycleState.Superseded, subject.Status);
+
+        var described = await register.DescribeRetirementAsync(named.ObjectId);
+        Assert.True(described.Succeeded);
+        Assert.Contains("Archived", described.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("Cancelled", described.Message, StringComparison.Ordinal);
+
+        // Describing it changed nothing.
+        Assert.Equal(LifecycleState.Superseded, subject.Status);
+
+        var retired = await register.RetireAsync(named.ObjectId);
+        Assert.True(retired.Succeeded);
+        Assert.Equal(LifecycleState.Archived, subject.Status);
+
+        // Archived is preferred over Cancelled wherever it is reachable —
+        // reversing that preference would put a superseded calculation in
+        // the wrong state, and this is what would catch it.
+        Assert.Contains("Retired from the active list as Archived", retired.Message, StringComparison.Ordinal);
     }
 
     /// <summary>
