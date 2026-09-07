@@ -519,6 +519,9 @@ public sealed class MainWindow : Window
         _engineeringCalculation.CalculateRequested += () => _ = _engineeringCalculationCoordinator.CalculateAsync();
         _engineeringCalculation.NewCalculationRequested += () => _engineeringCalculationCoordinator.BeginNewCalculation();
         _engineeringCalculation.OpenCalculationRequested += recordId => _ = _engineeringCalculationCoordinator.OpenAsync(recordId);
+        _engineeringCalculation.RenameRequested += (objectId, name) => _ = _engineeringCalculationCoordinator.RenameAsync(objectId, name);
+        _engineeringCalculation.RetireRequested += objectId => _ = _engineeringCalculationCoordinator.RetireAsync(objectId);
+        _engineeringCalculation.ShowRetiredChanged += include => _ = _engineeringCalculationCoordinator.SetShowRetiredAsync(include);
 
         _navigationRail = new GlobalNavigationRail(_navigator);
 

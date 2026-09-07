@@ -55,6 +55,7 @@ public sealed class BracketCalculationWorkbench
     private readonly ICalculationEngine _engine;
     private readonly ISettingsProvider _settings;
     private readonly IVerificationArtefactCatalog _verifications;
+    private readonly EngineeringCalculationRegister? _register;
 
     /// <summary>Initialises a new instance of the <see cref="BracketCalculationWorkbench"/> class.</summary>
     public BracketCalculationWorkbench(
@@ -64,7 +65,8 @@ public sealed class BracketCalculationWorkbench
         GovernedBracketCheckService check,
         ICalculationEngine engine,
         ISettingsProvider settings,
-        IVerificationArtefactCatalog verifications)
+        IVerificationArtefactCatalog verifications,
+        EngineeringCalculationRegister? register = null)
     {
         ArgumentNullException.ThrowIfNull(materials);
         ArgumentNullException.ThrowIfNull(seeder);
@@ -81,6 +83,7 @@ public sealed class BracketCalculationWorkbench
         _engine = engine;
         _settings = settings;
         _verifications = verifications;
+        _register = register;
 
         _settings.RegisterDefinition(new SettingDefinition(
             LastCalculationSettingKey, "Engineering Calculation — last bracket check", string.Empty));
@@ -154,13 +157,34 @@ public sealed class BracketCalculationWorkbench
     /// from its summary alone, because this workbench knows no other result
     /// type and will not guess at one.
     /// </remarks>
-    public async Task<IReadOnlyList<CalculationListEntry>> ListCalculationsAsync(CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<CalculationListEntry>> ListCalculationsAsync(
+        bool includeRetired = false, CancellationToken cancellationToken = default)
     {
         var summaries = await _engine.ListRecordsAsync(cancellationToken).ConfigureAwait(false);
         var entries = new List<CalculationListEntry>(summaries.Count);
+        var named = _register is null
+            ? []
+            : await _register.ListAsync(cancellationToken).ConfigureAwait(false);
+
+        // One name per record. A record named twice would be a defect
+        // upstream of this listing, so the first — the newest, since the
+        // register orders newest first — is the one shown, rather than
+        // throwing here and leaving the engineer with no list at all.
+        var namesByRecord = new Dictionary<Guid, NamedCalculation>();
+
+        foreach (var name in named)
+        {
+            if (name.RecordId is { } recordId)
+                namesByRecord.TryAdd(recordId, name);
+        }
 
         foreach (var summary in summaries)
         {
+            namesByRecord.TryGetValue(summary.Id, out var name);
+
+            if (name is { IsRetired: true } && !includeRetired)
+                continue;
+
             var isBracket = string.Equals(summary.CalculationId, BracketSectionCheckCalculationDefinition.Id, StringComparison.Ordinal);
             var catalogue = EngineeringCalculationCatalogue.For(summary.CalculationId);
             BracketSectionCheckResult? result = null;
@@ -175,7 +199,7 @@ public sealed class BracketCalculationWorkbench
 
             entries.Add(new CalculationListEntry(
                 RecordId: summary.Id,
-                Title: $"{catalogue?.Name ?? summary.CalculationId} {summary.Id.ToString("N")[..8]}",
+                Title: name?.DisplayName ?? $"{catalogue?.Name ?? summary.CalculationId} {summary.Id.ToString("N")[..8]}",
                 CalculationId: summary.CalculationId,
                 CalculationName: catalogue?.Name ?? summary.CalculationId,
                 RevisionNumber: summary.RevisionNumber,
@@ -190,7 +214,11 @@ public sealed class BracketCalculationWorkbench
                 ResultSummary: result is null
                     ? "Open it to read the record."
                     : $"{Format(result.AppliedStress.ConvertTo(PressureUnits.Megapascal).Value, "MPa")} of {Format(result.AllowableStress.ConvertTo(PressureUnits.Megapascal).Value, "MPa")}, margin {result.StressMargin.ToString("0.####", CultureInfo.InvariantCulture)}",
-                CanBeOpenedHere: isBracket));
+                CanBeOpenedHere: isBracket,
+                ObjectId: name?.ObjectId,
+                Status: name?.Status,
+                IsRetired: name?.IsRetired ?? false,
+                ProjectLabel: name?.ParentLabel));
         }
 
         return entries;
@@ -261,9 +289,29 @@ public sealed class BracketCalculationWorkbench
             WhyAbsent: null);
     }
 
-    /// <summary>Runs the bracket section check, remembers it, and describes the outcome.</summary>
+    /// <summary>Runs the bracket section check, names and remembers it, and describes the outcome.</summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Naming happens only after the calculation has actually run.</b> A
+    /// governed <c>Calculation</c> object is created for a record that
+    /// exists, never for a refused or rejected attempt — a name for
+    /// something that was never calculated would be an entry in the
+    /// workspace with no evidence behind it.
+    /// </para>
+    /// <para>
+    /// <b>A blank name is not a refusal.</b> The engineer is asked for one
+    /// and gets a serviceable default if they do not give one, because the
+    /// alternative — refusing to record a calculation that has already been
+    /// performed because a text box is empty — would lose real work over a
+    /// label. The default names the calculation and when it ran, and can be
+    /// renamed afterwards like any other.
+    /// </para>
+    /// </remarks>
+    /// <param name="inputs">What the engineer entered.</param>
+    /// <param name="displayName">What they want it called. Blank takes the default described above.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
     public async Task<BracketCalculationOutcome> RunAsync(
-        BracketCalculationInputs inputs, CancellationToken cancellationToken = default)
+        BracketCalculationInputs inputs, string? displayName = null, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(inputs);
 
@@ -277,8 +325,55 @@ public sealed class BracketCalculationWorkbench
 
         await RememberAsync(check.Record!.Id, inputs, cancellationToken).ConfigureAwait(false);
 
-        return await DescribeAsync(check.Record!, cancellationToken).ConfigureAwait(false);
+        string? namingProblem = null;
+
+        if (_register is not null)
+        {
+            try
+            {
+                await _register
+                    .NameAsync(check.Record!.Id, DefaultedName(displayName, check.Record!.ExecutedAt), cancellationToken)
+                    .ConfigureAwait(false);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                // The calculation itself is already recorded and durable.
+                // Reported, never swallowed and never allowed to present
+                // as a failed calculation — see NamingProblem's own remarks.
+                namingProblem =
+                    $"The calculation ran and is recorded, but it could not be named: {ex.Message} "
+                    + "It is listed under its own identity and can still be opened.";
+            }
+        }
+
+        var described = await DescribeAsync(check.Record!, cancellationToken).ConfigureAwait(false);
+
+        return namingProblem is null ? described : described with { NamingProblem = namingProblem };
     }
+
+    /// <summary>Changes what a named calculation is called, and nothing else.</summary>
+    /// <param name="calculationObjectId">The named calculation to rename.</param>
+    /// <param name="newDisplayName">Its new display name.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    public async Task<CalculationRegisterOutcome> RenameAsync(
+        Guid calculationObjectId, string? newDisplayName, CancellationToken cancellationToken = default) =>
+        _register is null
+            ? new CalculationRegisterOutcome(false, "Renaming is not available in this composition.")
+            : await _register.RenameAsync(calculationObjectId, newDisplayName, cancellationToken).ConfigureAwait(false);
+
+    /// <summary>Takes a named calculation out of the active list without deleting anything.</summary>
+    /// <param name="calculationObjectId">The named calculation to retire.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    public async Task<CalculationRegisterOutcome> RetireAsync(
+        Guid calculationObjectId, CancellationToken cancellationToken = default) =>
+        _register is null
+            ? new CalculationRegisterOutcome(false, "Retiring is not available in this composition.")
+            : await _register.RetireAsync(calculationObjectId, cancellationToken).ConfigureAwait(false);
+
+    private static string DefaultedName(string? displayName, DateTimeOffset executedAt) =>
+        string.IsNullOrWhiteSpace(displayName)
+            ? $"{new BracketSectionCheckCalculationDefinition().Metadata.Name} {executedAt:yyyy-MM-dd HH:mm:ss} UTC"
+            : displayName.Trim();
 
     /// <summary>
     /// Recovers the last calculation this workbench ran, reading the result

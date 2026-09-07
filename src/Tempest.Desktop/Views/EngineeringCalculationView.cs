@@ -58,6 +58,20 @@ public sealed class EngineeringCalculationView : UserControl
     /// <summary>The caption on the button that opens the selected calculation.</summary>
     public const string OpenCaption = "Open Calculation";
 
+    /// <summary>The caption on the button that changes what the selected calculation is called.</summary>
+    public const string RenameCaption = "Rename";
+
+    /// <summary>The caption on the button that takes the selected calculation out of the active list without deleting it.</summary>
+    public const string RetireCaption = "Retire from Active List";
+
+    /// <summary>The caption on the box that shows retired calculations alongside the active ones.</summary>
+    public const string ShowRetiredCaption = "Show retired calculations";
+
+    /// <summary>What the surface says when a record has no governed object behind it to rename or retire.</summary>
+    public const string UnnamedGuidance =
+        "This calculation was recorded before it could be named, so there is no name to change and nothing to retire. "
+        + "Its record and its evidence are unaffected — it can still be opened.";
+
     /// <summary>What the surface shows when no material is held at all.</summary>
     public const string EmptyLibraryGuidance =
         "No material records are held yet. Press \"" + PopulateCaption + "\" below to add the shipped reference records as Draft, "
@@ -82,6 +96,9 @@ public sealed class EngineeringCalculationView : UserControl
     private readonly TextBox _lengthBox = Input("150");
     private readonly TextBox _massLimitBox = Input("50");
 
+    private readonly TextBox _nameBox = Input(string.Empty, "What to call this calculation");
+    private readonly TextBox _renameBox = Input(string.Empty, "A new name for the selected calculation");
+
     private readonly TextBox _sourceConsultedBox = Input(string.Empty, "What you checked this record against");
     private readonly TextBox _releaseRationaleBox = Input(string.Empty, "Why it is being released");
 
@@ -90,6 +107,15 @@ public sealed class EngineeringCalculationView : UserControl
     private readonly Button _releaseButton = new() { Content = ReleaseCaption, MinHeight = DesignTokens.MinControlSize };
     private readonly Button _newButton = new() { Content = NewCalculationCaption, MinHeight = DesignTokens.MinControlSize };
     private readonly Button _openButton = new() { Content = OpenCaption, MinHeight = DesignTokens.MinControlSize };
+    private readonly Button _renameButton = new() { Content = RenameCaption, MinHeight = DesignTokens.MinControlSize };
+    private readonly Button _retireButton = new() { Content = RetireCaption, MinHeight = DesignTokens.MinControlSize };
+
+    private readonly CheckBox _showRetiredBox = new()
+    {
+        Content = ShowRetiredCaption,
+        MinHeight = DesignTokens.MinControlSize,
+        FontSize = DesignTokens.FontSizeBody,
+    };
 
     private readonly TextBlock _populateExplanation = Caption(
         "Adds the shipped reference material records to this library as Draft. Nothing is released and nothing "
@@ -97,6 +123,7 @@ public sealed class EngineeringCalculationView : UserControl
         + "record somebody has corrected.");
 
     private readonly TextBlock _calculationsEmpty = Caption(EmptyCalculationsGuidance);
+    private readonly TextBlock _selectedCalculationNote = Caption(string.Empty);
     private readonly TextBlock _definitionNote = Caption(string.Empty);
     private readonly TextBlock _activeMode = Caption(string.Empty);
     private readonly TextBlock _materialState = Caption(string.Empty);
@@ -117,12 +144,16 @@ public sealed class EngineeringCalculationView : UserControl
         _populateButton.Classes.Add(ChromeStyles.Flat);
         _releaseButton.Classes.Add(ChromeStyles.Flat);
         _openButton.Classes.Add(ChromeStyles.Flat);
+        _renameButton.Classes.Add(ChromeStyles.Flat);
+        _retireButton.Classes.Add(ChromeStyles.Flat);
 
         Describe(_populateButton, PopulateCaption, "Add the shipped reference material records to this library as Draft.");
         Describe(_releaseButton, ReleaseCaption, "Verify this material against the source you name, then release it for engineering work.");
         Describe(_calculateButton, CalculateCaption, "Run the calculation against the inputs above.");
         Describe(_newButton, NewCalculationCaption, "Start a new calculation from the product's registered catalogue.");
         Describe(_openButton, OpenCaption, "Open the selected calculation, read-only, exactly as it was recorded.");
+        Describe(_renameButton, RenameCaption, "Change what the selected calculation is called. Its record, revisions and references are unchanged.");
+        Describe(_retireButton, RetireCaption, "Take the selected calculation out of the active list. Nothing is deleted and it can still be opened.");
 
         AutomationProperties.SetName(_calculationList, "Existing calculations");
         AutomationProperties.SetName(_referenceList, "Reference library");
@@ -131,6 +162,9 @@ public sealed class EngineeringCalculationView : UserControl
         AutomationProperties.SetName(_areaBox, "Section area in square millimetres");
         AutomationProperties.SetName(_lengthBox, "Member length in millimetres");
         AutomationProperties.SetName(_massLimitBox, "Mass limit in grams");
+        AutomationProperties.SetName(_nameBox, "Calculation name");
+        AutomationProperties.SetName(_renameBox, "New name for the selected calculation");
+        AutomationProperties.SetName(_showRetiredBox, ShowRetiredCaption);
         AutomationProperties.SetName(_sourceConsultedBox, "Source consulted");
         AutomationProperties.SetName(_releaseRationaleBox, "Release rationale");
         AutomationProperties.SetLiveSetting(_statusMessage, AutomationLiveSetting.Polite);
@@ -140,9 +174,12 @@ public sealed class EngineeringCalculationView : UserControl
         _releaseButton.Click += (_, _) => ReleaseRequested?.Invoke();
         _newButton.Click += (_, _) => NewCalculationRequested?.Invoke();
         _openButton.Click += (_, _) => RaiseOpen();
+        _renameButton.Click += (_, _) => RaiseRename();
+        _retireButton.Click += (_, _) => RaiseRetire();
+        _showRetiredBox.IsCheckedChanged += (_, _) => ShowRetiredChanged?.Invoke(ShowRetired);
 
         _referenceList.SelectionChanged += (_, _) => ShowSelectedMaterialState();
-        _calculationList.SelectionChanged += (_, _) => _openButton.IsEnabled = SelectedCalculation is not null;
+        _calculationList.SelectionChanged += (_, _) => ShowSelectedCalculationActions();
         _calculationList.DoubleTapped += (_, _) => RaiseOpen();
         _definitionPicker.SelectionChanged += (_, _) => ShowSelectedDefinition();
 
@@ -163,6 +200,15 @@ public sealed class EngineeringCalculationView : UserControl
 
     /// <summary>Raised when the engineer asks to open a persisted calculation.</summary>
     public event Action<Guid>? OpenCalculationRequested;
+
+    /// <summary>Raised when the engineer asks to change what the selected calculation is called, with its governed object's Id and the new name.</summary>
+    public event Action<Guid, string>? RenameRequested;
+
+    /// <summary>Raised when the engineer asks to take the selected calculation out of the active list, with its governed object's Id.</summary>
+    public event Action<Guid>? RetireRequested;
+
+    /// <summary>Raised when the engineer asks to see, or stop seeing, retired calculations.</summary>
+    public event Action<bool>? ShowRetiredChanged;
 
     /// <summary>The persisted calculations currently listed, newest first.</summary>
     public IReadOnlyList<CalculationListEntry> Calculations { get; private set; } = [];
@@ -205,6 +251,15 @@ public sealed class EngineeringCalculationView : UserControl
     /// <summary>The verification evidence currently displayed, or <see langword="null"/>.</summary>
     public VerificationEvidence? DisplayedVerification { get; private set; }
 
+    /// <summary>Whether retired calculations are being shown alongside the active ones.</summary>
+    public bool ShowRetired => _showRetiredBox.IsChecked == true;
+
+    /// <summary>What the engineer wants the calculation they are entering to be called. Blank takes the workbench's own default.</summary>
+    public string CalculationName => _nameBox.Text ?? string.Empty;
+
+    /// <summary>The new name typed for the selected calculation.</summary>
+    public string NewName => _renameBox.Text ?? string.Empty;
+
     /// <summary>What the engineer has typed, ready to hand to the workbench.</summary>
     public BracketCalculationInputs CurrentInputs => new(
         SelectedMaterial?.RecordId ?? string.Empty,
@@ -233,7 +288,7 @@ public sealed class EngineeringCalculationView : UserControl
         _calculationList.ItemsSource = calculations;
         _calculationList.SelectedItem = calculations.FirstOrDefault(c => c.RecordId == keep);
         _calculationsEmpty.IsVisible = calculations.Count == 0;
-        _openButton.IsEnabled = SelectedCalculation is not null;
+        ShowSelectedCalculationActions();
     }
 
     /// <summary>Shows the product's registered calculation catalogue.</summary>
@@ -384,13 +439,58 @@ public sealed class EngineeringCalculationView : UserControl
     {
         SetReadOnly(false);
         _calculationList.SelectedItem = null;
-        ShowStatus($"Enter the inputs and press \"{CalculateCaption}\".");
+        _nameBox.Text = string.Empty;
+        ShowStatus($"Name it, enter the inputs and press \"{CalculateCaption}\".");
     }
 
     private void RaiseOpen()
     {
         if (SelectedCalculation is { } selected)
             OpenCalculationRequested?.Invoke(selected.RecordId);
+    }
+
+    private void RaiseRename()
+    {
+        if (SelectedCalculation?.ObjectId is { } objectId)
+            RenameRequested?.Invoke(objectId, NewName);
+    }
+
+    private void RaiseRetire()
+    {
+        if (SelectedCalculation?.ObjectId is { } objectId)
+            RetireRequested?.Invoke(objectId);
+    }
+
+    /// <summary>
+    /// Offers exactly the actions the selected calculation can actually
+    /// take, and says why where it can take none.
+    /// </summary>
+    /// <remarks>
+    /// Rename and retire address the governed <c>Calculation</c> object, so
+    /// they are enabled only for a record that has one. A record executed
+    /// before naming existed, or by a module rather than by a person, has
+    /// none — and is honestly reported as having none rather than offered a
+    /// button that would fail. This is the same discipline the catalogue
+    /// applies to a calculation this workspace cannot drive.
+    /// </remarks>
+    private void ShowSelectedCalculationActions()
+    {
+        var selected = SelectedCalculation;
+
+        _openButton.IsEnabled = selected is not null;
+        _renameButton.IsEnabled = selected?.IsNamed == true;
+        _retireButton.IsEnabled = selected is { IsNamed: true, IsRetired: false };
+        _renameBox.IsEnabled = selected?.IsNamed == true;
+        _renameBox.Text = selected?.IsNamed == true ? selected.Title : string.Empty;
+
+        _selectedCalculationNote.Text = selected switch
+        {
+            null => string.Empty,
+            { IsNamed: false } => UnnamedGuidance,
+            { IsRetired: true } => $"Retired ({selected.Status}). It is not in the active list, nothing was deleted, and it can still be opened.",
+            { ProjectLabel: { Length: > 0 } project } => $"In {project}. Renaming changes only what it is called.",
+            _ => "Not in a project — it was created outside one. Renaming changes only what it is called.",
+        };
     }
 
     private void SetReadOnly(bool readOnly)
@@ -400,7 +500,7 @@ public sealed class EngineeringCalculationView : UserControl
         // Disabled rather than hidden: an engineer looking at a recorded
         // calculation should still see the figures it was run with, and see
         // plainly that they are not editing them.
-        foreach (var box in new[] { _loadBox, _areaBox, _lengthBox, _massLimitBox })
+        foreach (var box in new[] { _nameBox, _loadBox, _areaBox, _lengthBox, _massLimitBox })
             box.IsEnabled = !readOnly;
 
         _calculateButton.IsEnabled = !readOnly;
@@ -462,7 +562,12 @@ public sealed class EngineeringCalculationView : UserControl
         calculations.Children.Add(_definitionNote);
         calculations.Children.Add(_calculationsEmpty);
         calculations.Children.Add(_calculationList);
+        calculations.Children.Add(_showRetiredBox);
+        calculations.Children.Add(_selectedCalculationNote);
         calculations.Children.Add(_openButton);
+        calculations.Children.Add(LabelledRow("Name", _renameBox));
+        calculations.Children.Add(_renameButton);
+        calculations.Children.Add(_retireButton);
         left.Children.Add(Section("Calculations", calculations));
 
         var reference = new StackPanel { Spacing = DesignTokens.SpaceSm };
@@ -485,6 +590,7 @@ public sealed class EngineeringCalculationView : UserControl
         right.Children.Add(_activeMode);
 
         var inputs = new StackPanel { Spacing = DesignTokens.SpaceSm };
+        inputs.Children.Add(LabelledRow("Name", _nameBox));
         inputs.Children.Add(LabelledRow("Load (kN)", _loadBox));
         inputs.Children.Add(LabelledRow("Section area (mm2)", _areaBox));
         inputs.Children.Add(LabelledRow("Member length (mm)", _lengthBox));
@@ -506,7 +612,7 @@ public sealed class EngineeringCalculationView : UserControl
         _validationPanel.IsVisible = false;
         _resultPanel.IsVisible = false;
         _traceabilityPanel.IsVisible = false;
-        _openButton.IsEnabled = false;
+        ShowSelectedCalculationActions();
         SetReadOnly(false);
 
         return page;

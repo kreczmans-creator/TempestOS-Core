@@ -29,6 +29,14 @@ internal sealed class EngineeringCalculationCoordinator
     private readonly BracketCalculationWorkbench _workbench;
     private readonly EngineeringCalculationView _view;
 
+    /// <summary>
+    /// Whether retired calculations are being listed alongside the active
+    /// ones. Held here rather than read from the view at each call so that
+    /// every refresh — a calculation, a release, a rename — honours the
+    /// engineer's own choice instead of quietly reverting it.
+    /// </summary>
+    private bool _includeRetired;
+
     /// <summary>Initialises a new instance of the <see cref="EngineeringCalculationCoordinator"/> class.</summary>
     /// <param name="workbench">The application-side answer behind the surface.</param>
     /// <param name="view">The surface itself.</param>
@@ -59,7 +67,7 @@ internal sealed class EngineeringCalculationCoordinator
     {
         _view.ShowCatalogue(EngineeringCalculationCatalogue.All());
         _view.ShowMaterials(await _workbench.ListMaterialsAsync().ConfigureAwait(true));
-        _view.ShowCalculations(await _workbench.ListCalculationsAsync().ConfigureAwait(true));
+        _view.ShowCalculations(await _workbench.ListCalculationsAsync(_includeRetired).ConfigureAwait(true));
         _view.ShowVerification(await _workbench.ReadVerificationAsync().ConfigureAwait(true));
 
         var (outcome, inputs) = await _workbench.RecoverLastAsync().ConfigureAwait(true);
@@ -158,7 +166,7 @@ internal sealed class EngineeringCalculationCoordinator
     /// <summary>Runs the bracket section check against what the engineer entered.</summary>
     public async Task CalculateAsync()
     {
-        var outcome = await _workbench.RunAsync(_view.CurrentInputs).ConfigureAwait(true);
+        var outcome = await _workbench.RunAsync(_view.CurrentInputs, _view.CalculationName).ConfigureAwait(true);
 
         _view.ShowOutcome(outcome);
 
@@ -166,14 +174,58 @@ internal sealed class EngineeringCalculationCoordinator
         {
             // The list is re-read so the calculation just recorded appears
             // where the engineer will look for it next.
-            _view.ShowCalculations(await _workbench.ListCalculationsAsync().ConfigureAwait(true));
+            _view.ShowCalculations(await _workbench.ListCalculationsAsync(_includeRetired).ConfigureAwait(true));
             _view.ShowVerification(await _workbench.ReadVerificationAsync().ConfigureAwait(true));
-            _view.ShowStatus($"{outcome.OutcomeLabel}. Recorded as {outcome.CalculationRecordId}, pinned to {outcome.MaterialLibrary}/{outcome.MaterialRecordId} revision {outcome.PinnedRevision}.");
+            var recorded = $"{outcome.OutcomeLabel}. Recorded as {outcome.CalculationRecordId}, pinned to {outcome.MaterialLibrary}/{outcome.MaterialRecordId} revision {outcome.PinnedRevision}.";
+
+            _view.ShowStatus(outcome.NamingProblem is null ? recorded : $"{recorded} {outcome.NamingProblem}");
             return;
         }
 
         _view.ShowStatus(outcome.RefusalReason is not null
             ? "The calculation was refused. The reason is shown above."
             : "The inputs are not complete. What is wrong is shown above.");
+    }
+
+    /// <summary>Changes what one calculation is called, and nothing else.</summary>
+    /// <param name="calculationObjectId">The governed calculation object to rename.</param>
+    /// <param name="newName">Its new display name.</param>
+    public async Task RenameAsync(Guid calculationObjectId, string newName)
+    {
+        var outcome = await _workbench.RenameAsync(calculationObjectId, newName).ConfigureAwait(true);
+
+        if (outcome.Succeeded)
+            _view.ShowCalculations(await _workbench.ListCalculationsAsync(_includeRetired).ConfigureAwait(true));
+
+        _view.ShowStatus(outcome.Message);
+    }
+
+    /// <summary>
+    /// Takes one calculation out of the active list. Nothing is deleted —
+    /// see <c>EngineeringCalculationRegister</c>'s own remarks and
+    /// <c>TD-169</c> for why this is a lifecycle transition and not a
+    /// delete.
+    /// </summary>
+    /// <param name="calculationObjectId">The governed calculation object to retire.</param>
+    public async Task RetireAsync(Guid calculationObjectId)
+    {
+        var outcome = await _workbench.RetireAsync(calculationObjectId).ConfigureAwait(true);
+
+        if (outcome.Succeeded)
+            _view.ShowCalculations(await _workbench.ListCalculationsAsync(_includeRetired).ConfigureAwait(true));
+
+        _view.ShowStatus(outcome.Message);
+    }
+
+    /// <summary>Shows, or stops showing, retired calculations alongside the active ones.</summary>
+    /// <param name="includeRetired">Whether retired calculations should be listed.</param>
+    public async Task SetShowRetiredAsync(bool includeRetired)
+    {
+        _includeRetired = includeRetired;
+
+        _view.ShowCalculations(await _workbench.ListCalculationsAsync(_includeRetired).ConfigureAwait(true));
+        _view.ShowStatus(includeRetired
+            ? "Showing retired calculations as well as active ones. A retired calculation is still held and can still be opened."
+            : "Showing active calculations only. Retired ones are still held — tick the box to see them.");
     }
 }

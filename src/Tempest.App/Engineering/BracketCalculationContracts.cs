@@ -1,5 +1,6 @@
 using System.Globalization;
 using Tempest.Core.Calculations;
+using Tempest.Core.EngineeringDomain;
 using Tempest.Core.ReferenceData;
 using Tempest.Core.UnitsAndQuantities;
 
@@ -177,6 +178,19 @@ public sealed record BracketCalculationOutcome(
     DateOnly? VerificationDate,
     IReadOnlyList<string> Assumptions)
 {
+    /// <summary>
+    /// Why the calculation could not be given a name, where it ran but
+    /// naming it failed. <see langword="null"/> where naming succeeded or
+    /// was not attempted.
+    /// </summary>
+    /// <remarks>
+    /// A calculation that has run is recorded, durably, before it is ever
+    /// named. Losing that result because a label could not be written would
+    /// be a far worse outcome than an unnamed calculation, so the failure
+    /// is reported here and the result is still returned in full.
+    /// </remarks>
+    public string? NamingProblem { get; init; }
+
     /// <summary>The surface rejected the input before asking the platform for anything.</summary>
     /// <param name="problems">Every reason it was rejected.</param>
     public static BracketCalculationOutcome Rejected(IReadOnlyList<string> problems) =>
@@ -242,7 +256,7 @@ internal sealed record RememberedCalculation(Guid RecordId, BracketCalculationIn
 
 /// <summary>One persisted calculation, as a list should present it.</summary>
 /// <param name="RecordId">The record's own identity.</param>
-/// <param name="Title">A short human label — the calculation's name and the first eight characters of its identity.</param>
+/// <param name="Title">A short human label — the name the engineer gave it, or the calculation's own name and the first eight characters of its identity where nobody has named it.</param>
 /// <param name="CalculationId">Which calculation produced it.</param>
 /// <param name="CalculationName">That calculation's own name.</param>
 /// <param name="RevisionNumber">The record's revision.</param>
@@ -254,6 +268,10 @@ internal sealed record RememberedCalculation(Guid RecordId, BracketCalculationIn
 /// <param name="MeetsCriteria">Whether it met its criteria, or <see langword="null"/> where that is not a question this record answers.</param>
 /// <param name="ResultSummary">Enough of the numbers to recognise it.</param>
 /// <param name="CanBeOpenedHere">Whether this workspace can display the record in full.</param>
+/// <param name="ObjectId">The governed <c>Calculation</c> Domain object naming this record, where one names it — what a rename or a retirement addresses. <see langword="null"/> for a record nobody has named, which is every record executed before naming existed and every record a sample module ran.</param>
+/// <param name="Status">That object's own governed lifecycle status, where one exists.</param>
+/// <param name="IsRetired">Whether it has been retired out of the active list. Retired is not deleted: the record, the object and the evidence are all still held.</param>
+/// <param name="ProjectLabel">The project it belongs to, where it was created inside one.</param>
 public sealed record CalculationListEntry(
     Guid RecordId,
     string Title,
@@ -267,11 +285,22 @@ public sealed record CalculationListEntry(
     string Outcome,
     bool? MeetsCriteria,
     string ResultSummary,
-    bool CanBeOpenedHere)
+    bool CanBeOpenedHere,
+    Guid? ObjectId = null,
+    LifecycleState? Status = null,
+    bool IsRetired = false,
+    string? ProjectLabel = null)
 {
+    /// <summary>Whether this record can be renamed or retired — only a named calculation can, because only a named calculation has a governed object to address.</summary>
+    public bool IsNamed => ObjectId is not null;
+
     /// <summary>The single line a list row shows.</summary>
     public string Label =>
-        $"{Title}  ·  {Outcome}  ·  rev {RevisionNumber}  ·  {ExecutedAt:yyyy-MM-dd HH:mm} UTC";
+        $"{Title}{Where}  ·  {Outcome}  ·  rev {RevisionNumber}  ·  {ExecutedAt:yyyy-MM-dd HH:mm} UTC{Retirement}";
+
+    private string Where => string.IsNullOrWhiteSpace(ProjectLabel) ? string.Empty : $"  ·  {ProjectLabel}";
+
+    private string Retirement => IsRetired ? $"  ·  retired ({Status})" : string.Empty;
 
     /// <inheritdoc />
     public override string ToString() => Label;

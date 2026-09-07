@@ -5,6 +5,7 @@ using Tempest.App.Shell;
 using Tempest.App.Workspace.Calculations;
 using Tempest.App.Workspace;
 using Tempest.Core.Bearings;
+using Tempest.Core.Commands;
 using Tempest.Core.Calculations;
 using Tempest.Core.ReferenceData.Seeding;
 using Tempest.Core.Configuration;
@@ -250,7 +251,19 @@ public sealed class WorkspaceHost : IAsyncDisposable
             BracketCheck,
             (ICalculationEngine)host.Services!.GetService(typeof(ICalculationEngine)),
             (ISettingsProvider)host.Services!.GetService(typeof(ISettingsProvider)),
-            (IVerificationArtefactCatalog)host.Services!.GetService(typeof(IVerificationArtefactCatalog)));
+            (IVerificationArtefactCatalog)host.Services!.GetService(typeof(IVerificationArtefactCatalog)),
+            // The workspace's governed index of named calculations. It adds
+            // no concept: a named calculation is the platform's own
+            // `Calculation` Domain object, renamed through the rename
+            // command CalculationsWorkspaceRegistration already registered,
+            // retired through the status command it already registered, and
+            // organised by the IHasParent membership every discipline
+            // already uses. Constructed here over already-resolved
+            // services, the same ADR-0103 shape as every collaborator above.
+            new EngineeringCalculationRegister(
+                domainContext,
+                (ICommandDispatcher)host.Services!.GetService(typeof(ICommandDispatcher)),
+                projectContext));
 
         EngineeringTrace = new EngineeringTraceRegister(
             (ICalculationPackCatalog)host.Services!.GetService(typeof(ICalculationPackCatalog)),
