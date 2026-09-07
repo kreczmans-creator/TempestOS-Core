@@ -30,7 +30,15 @@ later tree, and a fourth matrix is outstanding for the next candidate.)*
 > - **The candidate under review is
 >   `d6af7ec7bd2e2d182eba5ef77bbe703a8a38134c`** on
 >   `feature/v0.16.0-wp16.4b-r6` — **not merged** (`main` is `58c4cba`),
->   not tagged, not published, no Product Approval verdict. **No branch
+>   not tagged, not published, no Product Approval verdict.
+>   **Superseded at the `v0.16.0` pre-release integration build
+>   (2026-09-07): `d6af7ec` IS now merged** — it is an ancestor of
+>   `feature/v0.16.0-integration` @ `3e60019`, which also carries the
+>   `v1.0.0` Release Candidate Audit and the
+>   Foundation/Population/Integration/First-Calculation line. The
+>   candidate is `3e60019`, **no determinism matrix and no board
+>   disposition covers it**, and it remains not tagged, not published
+>   and without a Product Approval verdict. **No branch
 >   named `feature/v0.16.0-wp16.4b-r7` exists**; `WP 16.4B-R7` was
 >   developed on the `-r6` branch.
 > - **The RC4 matrix sentence above is correct only of `main`.** `58c4cba`

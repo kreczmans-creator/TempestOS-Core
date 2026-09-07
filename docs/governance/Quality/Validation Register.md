@@ -60,7 +60,18 @@ Work Package's own controlling instruction (attribute-counting is
 sufficient); the 3,088/408/412 figures above are cited from already-
 published, CI-backed sources, not re-executed here.
 
-### Current State (`Group A`, 2026-09-06)
+### `Group A` snapshot (2026-09-06) — superseded, retained as a record
+
+> **Not the current state.** This section was headed "Current State" and
+> was correct for `Group A`'s tree on 2026-09-06. Eight programmes landed
+> after it and the `v0.16.0` pre-release integration build merged three
+> workstreams on top, so every figure below is stale — the Core suite it
+> records as 3,788 is 5,144 on `feature/v0.16.0-integration` @ `3e60019`,
+> and its Desktop attribute figure of 77 was wrong even for its own date.
+> The current gate figures are in `docs/governance/Quality/Test Register.md`
+> and in `docs/releases/v0.16.0/v0.16.0 Integration Build Report.md`.
+> Nothing machine-checks this register — that is `TD-123`.
+
 
 `Group A` (P01 Engineering Reference Data) **did** run the full suite
 directly, in both configurations, so this section can state executed

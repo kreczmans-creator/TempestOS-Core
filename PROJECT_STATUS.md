@@ -1,6 +1,17 @@
 # TempestOS — Project Status
 
-**Last Updated:** 2026-09-07 (`WP 16.4B-R7` **governance closure** — the
+**Last Updated:** 2026-09-07 (**`v0.16.0` pre-release integration build**,
+`feature/v0.16.0-integration` @ `3e60019`, cut from `origin/main` at
+`58c4cba` — four workstreams integrated with `--no-ff` merges: the
+`v1.0.0` Release Candidate Audit (`eb6f58b`), `WP 16.4B-R6`/`-R7`
+(`44c076b`), and the Foundation/Population/Integration/First-Calculation
+line (`921744b`). Two workstreams were examined and deliberately **not**
+integrated: the Companion mobile branch, excluded by the ratified
+`D-022`, and the Parallel Work Programme A–G branch, which targets its
+own `0.7x` version line and touches no `src/` or `tests/` file. **This
+build is a technical review build. It is not tagged, not published, not
+certified, and carries no Product Approval verdict.** Before it,
+2026-09-07, `WP 16.4B-R7` **governance closure** — the
 candidate SHA carried to `d6af7ec`, the determinism evidence re-derived
 against ERR §4.4 and its supersession, and the in-progress Work Package
 corrected; the `NOT READY` recommendation is unchanged and no blocker is
@@ -53,9 +64,23 @@ Release Notes.md`.
 
 ## Current Development Branch
 
-**`main`** — `v0.16.0` was merged on 2026-09-05 (`cc7ef4d`), again at `9bba720` to carry the `WP 16.4B-R4` remediation the first merge predated, and again at `58c4cba` on 2026-09-06 carrying `WP 16.4B-R5`. That merge was **authorised by the Product Owner on 2026-09-05**; the per-occasion approval record Engineering Governance §7 item 6 requires is in `docs/releases/v0.16.0/WP16.9.0 Engineering Release Report.md` §7 item 2. It is **not tagged and not published**, and carries **no Product Approval verdict**, so `v0.15.0` above remains the current *released* version.
+**`feature/v0.16.0-integration`** @ `3e60019` — the `v0.16.0` pre-release
+technical review build, cut from `origin/main` at `58c4cba` and carrying
+three `--no-ff` integration merges (`eb6f58b`, `44c076b`, `921744b`) plus
+one build fix. `main` is 109 commits behind it (`git rev-list --count`:
+386 against 277). Nothing on this branch is tagged, published or
+certified, and the merges it carries are **not** a Product Approval gate
+2 authorisation.
 
-`feature/v0.16.0` was cut from `main` at the `v0.15.0` tag commit (`a35365a`) and remains the working branch for the release's outstanding remediation. **The candidate under review is `d6af7ec7bd2e2d182eba5ef77bbe703a8a38134c` on `feature/v0.16.0-wp16.4b-r6`, not merged** — `WP 16.4B-R6` round 2, integrating the code and governance remediation of the sixth independent board's four findings (`docs/releases/v0.16.0/v0.16.0 Review Board Disposition.md` §8), independently verified by Agent C, which found four further open defects and one RED in the governance half (§9). The `WP 16.9.0` Engineering Readiness Review's recommended verdict is **`NOT READY`** as of 2026-09-06 — a recommendation not to proceed, not a Product Approval verdict, of which there is still none. **No determinism matrix exists for this tree and no board has reviewed it.** *(Added `WP 16.4B-R6` round 2, 2026-09-06; SHA updated the same day from `3dd74d8` once the two round-2 streams were integrated — the omission Agent C raised as `C-R1`. **Re-derived `WP 16.4B-R7` governance closure, 2026-09-07**, from the repository: the SHA above read `261ba34` — two candidates out of date, because it was not updated when the candidate moved to `888ef63` and then not updated again when `WP 16.4B-R7` moved it to `d6af7ec`. That is `C-R1` recurring twice, and the instrument written to prevent it — `v0.16.0 Review Board Disposition.md` §8.7, row 13 — was again not run. The two negations remain true **of `d6af7ec`** and are re-derived rather than carried forward: the fourth determinism matrix ran 5/5 on `888ef63` (runs 253–257, ERR §4.4) and is superseded, because `WP 16.4B-R7` changed three files under `src/` and five under `tests/` after it, so a **fifth** matrix is outstanding and `d6af7ec` is not matrix-certified; and although a seventh board reviewed the `WP 16.4B-R6` round-2 remediation at `888ef63` and returned PASS with six AMBERs and no RED, **no board has reviewed `d6af7ec` and no disposition for it exists in this repository**. `WP 16.4B-R7` — the round that produced this candidate — is recorded in no document in `docs/`; recording it, and settling which finding the `NOT READY` recommendation now rests on, is the Technical Debt Register pass's work and the chair's, not this file's.)* Scope, waves and acceptance criteria: `docs/releases/v0.16.0/v0.16.0 Release Plan.md`. The live, authoritative Work Package status list — what is landed, in progress, or not started — is `docs/releases/v0.16.0/WorkPackages.md`, not this file; this section summarises and that document governs. *(Completed `WP 16.4B-R6`, 2026-09-06: `WP 16.4B-R5` replaced a seven-line paragraph here with two and left this sentence truncated mid-clause at "The live," — raised as `P4-08` by the fifth review board. Restored from the sentence the `-` side of `git show 58c4cba -- PROJECT_STATUS.md` shows it replaced.)*
+*History, true of `main` and unchanged by the integration:* `v0.16.0` was merged on 2026-09-05 (`cc7ef4d`), again at `9bba720` to carry the `WP 16.4B-R4` remediation the first merge predated, and again at `58c4cba` on 2026-09-06 carrying `WP 16.4B-R5`. That merge was **authorised by the Product Owner on 2026-09-05**; the per-occasion approval record Engineering Governance §7 item 6 requires is in `docs/releases/v0.16.0/WP16.9.0 Engineering Release Report.md` §7 item 2. It is **not tagged and not published**, and carries **no Product Approval verdict**, so `v0.15.0` above remains the current *released* version.
+
+`feature/v0.16.0` was cut from `main` at the `v0.15.0` tag commit (`a35365a`) and remains the working branch for the release's outstanding remediation. **Superseded by the integration build.** `d6af7ec` is now an ancestor of
+`HEAD` (`git merge-base --is-ancestor d6af7ec HEAD` succeeds), so it is
+merged and is no longer the candidate. The candidate is `3e60019` on
+`feature/v0.16.0-integration`, and **no determinism matrix and no board
+disposition covers it**. The paragraph below is retained as the position
+that was true before the integration: at that time the candidate was
+`d6af7ec7bd2e2d182eba5ef77bbe703a8a38134c` on `feature/v0.16.0-wp16.4b-r6`, not merged** — `WP 16.4B-R6` round 2, integrating the code and governance remediation of the sixth independent board's four findings (`docs/releases/v0.16.0/v0.16.0 Review Board Disposition.md` §8), independently verified by Agent C, which found four further open defects and one RED in the governance half (§9). The `WP 16.9.0` Engineering Readiness Review's recommended verdict is **`NOT READY`** as of 2026-09-06 — a recommendation not to proceed, not a Product Approval verdict, of which there is still none. **No determinism matrix exists for this tree and no board has reviewed it.** *(Added `WP 16.4B-R6` round 2, 2026-09-06; SHA updated the same day from `3dd74d8` once the two round-2 streams were integrated — the omission Agent C raised as `C-R1`. **Re-derived `WP 16.4B-R7` governance closure, 2026-09-07**, from the repository: the SHA above read `261ba34` — two candidates out of date, because it was not updated when the candidate moved to `888ef63` and then not updated again when `WP 16.4B-R7` moved it to `d6af7ec`. That is `C-R1` recurring twice, and the instrument written to prevent it — `v0.16.0 Review Board Disposition.md` §8.7, row 13 — was again not run. The two negations remain true **of `d6af7ec`** and are re-derived rather than carried forward: the fourth determinism matrix ran 5/5 on `888ef63` (runs 253–257, ERR §4.4) and is superseded, because `WP 16.4B-R7` changed three files under `src/` and five under `tests/` after it, so a **fifth** matrix is outstanding and `d6af7ec` is not matrix-certified; and although a seventh board reviewed the `WP 16.4B-R6` round-2 remediation at `888ef63` and returned PASS with six AMBERs and no RED, **no board has reviewed `d6af7ec` and no disposition for it exists in this repository**. `WP 16.4B-R7` — the round that produced this candidate — is recorded in no document in `docs/`; recording it, and settling which finding the `NOT READY` recommendation now rests on, is the Technical Debt Register pass's work and the chair's, not this file's.)* Scope, waves and acceptance criteria: `docs/releases/v0.16.0/v0.16.0 Release Plan.md`. The live, authoritative Work Package status list — what is landed, in progress, or not started — is `docs/releases/v0.16.0/WorkPackages.md`, not this file; this section summarises and that document governs. *(Completed `WP 16.4B-R6`, 2026-09-06: `WP 16.4B-R5` replaced a seven-line paragraph here with two and left this sentence truncated mid-clause at "The live," — raised as `P4-08` by the fifth review board. Restored from the sentence the `-` side of `git show 58c4cba -- PROJECT_STATUS.md` shows it replaced.)*
 
 `v1.0` scope is **decided**: the six decision records `WP 16.0A` drafted
 (`D-021`–`D-026`) were **ratified by the Product Owner on 2026-09-05**
@@ -71,14 +96,24 @@ it authorises no merge, no tag, no publication, and no release verdict.
 
 ## Programme Phase
 
-**Foundation complete → Population complete → Integration underway**
-(as at 2026-09-07, branch `claude/tempestos-a4-bearing-library-unobtf`).
+**Foundation complete → Population complete → Integration complete →
+First calculation complete** (as at 2026-09-07, integrated onto
+`feature/v0.16.0-integration` @ `3e60019`; the phases were delivered on
+`claude/tempestos-a4-bearing-library-unobtf`, which this build merges).
+
+*Corrected at the integration build:* this block previously read
+"Integration **underway**" while the row below it recorded the First
+Calculation as **Complete** — a later phase cannot be complete while its
+predecessor is underway. The Integration phase's own evidence document is
+titled "Integration Phase — Completion Report" and closes with a Colour
+Review Board verdict of PASS (0 RED). Integration is therefore Complete,
+with its 3 AMBER and 7 YELLOW carried forward openly.
 
 | Phase | State | Closing evidence |
 |---|---|---|
 | Foundation | **Complete** | 40/40 original work packages structurally complete — `docs/releases/v0.16.0/Foundation Skeleton Completion Certification.md` |
 | Population | **Complete** | 79 source-backed records across 16 libraries, all `Draft` — `docs/releases/v0.16.0/Population Phase Completion Report.md` |
-| Integration | **Underway** | The bracket scenario runs through the real services; traceability, revision reproduction and refusal behaviour proven — `docs/releases/v0.16.0/Integration Phase Report.md` |
+| Integration | **Complete** (3 AMBER, 7 YELLOW open — see §13 of its report) | The bracket scenario runs through the real services; traceability, revision reproduction and refusal behaviour proven — `docs/releases/v0.16.0/Integration Phase Report.md` |
 | First calculation | **Complete** | Governed release → numerical result → independent verification → persisted, traceable artefact — `docs/releases/v0.16.0/First Engineering Calculation Report.md` |
 
 **The gate between population and use can now be passed, and has not
@@ -121,8 +156,11 @@ did `WP 16.4B-R1` through `-R5` (`58c4cba`, 2026-09-06) and the
 `WP 16.4A-R1`, `16.5A-R1`, `16.5A-R2`, `16.1A-R1`, `16.5B-R1` and
 `16.9.0` packages. The table above is headed "Landed on
 `feature/v0.16.0` as of this review" and is a snapshot of Wave 0/1; it
-does not list them. **`WP 16.4B-R7` — the current link in the `WP 16.4B` remediation chain
-— is the only Work Package in progress and is not merged.** *(Corrected
+does not list them. **No Work Package is in progress.** `WP 16.4B-R7` is merged, at
+`44c076b` on `feature/v0.16.0-integration`, together with three other
+workstreams. *(Corrected at the integration build, 2026-09-07: this read
+"the only Work Package in progress and is not merged", which the merge
+falsified.)* *(Corrected
 `WP 16.4B-R7` governance closure, 2026-09-07: this named `WP 16.4B-R6`,
 "the remediation of the fifth review board's findings", which was two
 rounds and one board out of date — `-R6` round 2 answered the **sixth**
@@ -239,14 +277,14 @@ Each of the following registers is now the sole, current authority for
 its own subject — this file no longer duplicates their content, only
 points to it:
 
-- **Interfaces** — `docs/governance/Engineering/Interface Register.md` (195 rows / 194 distinct public interface names, re-derived `WP 16.2A`, +3 schema-versioning contracts at the Wave 2/3 closure).
-- **Exceptions** — `docs/governance/Engineering/Exception Register.md` (**90**, re-derived `WP 16.4B-R6` at `58c4cba`; Entries table, Total line and Distribution by Root Category all now agree — the last of those three was the fifth review board's `P4-01`).
-- **Dependency Injection** — `docs/governance/Engineering/Dependency Injection Register.md` (55 named registrations, 60 total statements, re-derived at the independent post-remediation review, 2026-09-05, which found `WP 16.4B-R2`'s `IAttachmentWriteIntentStore` missing — the third recurrence of the gap `TD-123` records).
-- **Namespaces** — `docs/governance/Engineering/Namespace Register.md` (**47 namespaces / 728 files** in declared scope — 725 in a namespace plus 3 global — and **62 / 818** across all of `src/`, re-derived `WP 16.4B-R6` at `58c4cba`; the Coverage Status field, which had read 46 / 724, was the fifth review board's `P4-02`).
-- **Platform Services** — `docs/governance/Engineering/Platform Services Register.md` (**38 entries** — 36 Implemented — per that register's own Total line; this file said 35, stale since `WP 16.2A`, corrected `WP 16.4B-R6`).
+- **Interfaces** — `docs/governance/Engineering/Interface Register.md` (**312 rows / 311 distinct** public interface names under `src/Tempest.Core/`, re-derived at the integration build; `IRequirement` is declared in two namespaces. That register's own Total line read 311/310 and was corrected here — it is an off-by-one that double-counted the dedup).
+- **Exceptions** — `docs/governance/Engineering/Exception Register.md` (**101**, re-derived at the integration build; Coverage Status, Entries table, Total line and Distribution by Root Category all agree, all four re-derived rather than adjusted from either incoming figure).
+- **Dependency Injection** — `docs/governance/Engineering/Dependency Injection Register.md` — **known stale and disclosed, not fixed.** Its Coverage Status says 60 statements, its own Total line says 62, and its own stated command (`grep -c 'services\.\(Singleton\|AddInstance\)' src/Tempest.Core/Runtime/TempestHost.cs`) returns **171** on this tree. Three figures, none agreeing. This register has no machine derivation, which is exactly what `TD-123` records; see `TD-152`.
+- **Namespaces** — `docs/governance/Engineering/Namespace Register.md` (**97 namespaces / 1,080 files** in declared scope — 1,077 in a namespace plus 3 global — and **111 / 1,170** across all of `src/`, re-derived at the integration build with that register's own methodology. Its Total line already said 97; its Coverage Status field still said 47 / 728 and was corrected here — the same field, and the same defect, the fifth review board raised as `P4-02`).
+- **Platform Services** — `docs/governance/Engineering/Platform Services Register.md` — **known stale and disclosed, not fixed.** Its Coverage Status and Total line both say 41 entries, its own Entries table holds more, and `docs/architecture/Platform Service Map.md` — the Source of Truth it declares — holds a third number. Like the DI Register it has no machine derivation (`TD-123`); see `TD-153`.
 - **Feature history** — `docs/governance/Delivery/Feature Register.md` (extended through `v0.15.0`, `WP 16.2A`).
 - **Release history** — `docs/governance/Delivery/Release Register.md` (17 versions referenced, `v0.15.0` corrected to Released, `WP 16.2A`).
-- **Technical Debt** — `docs/governance/Quality/Technical Debt Register.md` (**146 rows**, `TD-001`–`TD-146`, contiguous: 57 Resolved, 6 Closed, 77 Open, 5 Partially resolved, 1 Deferred — `TD-140`–`TD-146` added across `WP 16.4B-R6` round 2, 2026-09-06, with `TD-140` since Resolved for the supersession-refusal route only; the figure read 141 / 73 Open mid-round and 139 / 71 Open before it, tallying exactly against that register's own summary line; count corrected here `WP 16.4B-R6`, stale at 122 since `WP 16.2A`).
+- **Technical Debt** — `docs/governance/Quality/Technical Debt Register.md` (**164 rows** at the integration build, `TD-01`–`TD-164`, contiguous: 59 Resolved, 6 Closed, 92 Open, 6 Partially resolved, 1 Deferred, re-derived by Check 12's own rule. The merge reconciled 151; the integration build's own four-reviewer pass then opened `TD-152`–`TD-164`, of which exactly one (`TD-164`) is a finding the integration introduced. Exactly one row in the whole register is Release Blocking — `TD-147`, pre-existing and unresolved. Historic, before the integration: **146 rows**, `TD-001`–`TD-146`, contiguous: 57 Resolved, 6 Closed, 77 Open, 5 Partially resolved, 1 Deferred — `TD-140`–`TD-146` added across `WP 16.4B-R6` round 2, 2026-09-06, with `TD-140` since Resolved for the supersession-refusal route only; the figure read 141 / 73 Open mid-round and 139 / 71 Open before it, tallying exactly against that register's own summary line; count corrected here `WP 16.4B-R6`, stale at 122 since `WP 16.2A`).
 - **Validation / test gates** — `docs/governance/Quality/Validation Register.md` (current-state section added, `WP 16.2A`).
 - **Repository size/shape** — `docs/governance/Quality/Repository Metrics Register.md` (snapshot opened `WP 16.2A`, **every row re-derived together at `58c4cba` by `WP 16.4B-R6`** after rows had been refreshed piecemeal under a `WP 16.2A` label).
 - **Product roadmap** — `docs/governance/Product Roadmap.md` (Phase 5 marked delivered, Phase 5.5 added, `WP 16.2A`).
@@ -288,7 +326,7 @@ WorkPackages.md`:
   `WP 16.1A` (workflow half), `WP 16.3A`, `WP 16.5B`; Wave 2: `WP 16.2A`,
   `WP 16.2B`.
 - **Landed** — Wave 2/3: `WP 16.4A`, `WP 16.3B`, `WP 16.5A`, `WP 16.1B`.
-- **In progress** — the `WP 16.4B` remediation chain, currently `WP 16.4B-R7`. *(Corrected `WP 16.4B-R7` governance closure, 2026-09-07.)*
+- **In progress** — nothing. The `WP 16.4B` remediation chain through `WP 16.4B-R7` is integrated at `44c076b`; what is outstanding is review of the integration build itself, which no board has seen. *(Corrected at the integration build, 2026-09-07.)*
 - **Closing** — `WP 16.9.0` (Engineering Readiness Review and the
   first §9 Product Approval verdict recorded since `v0.12.0`), preceded
   by the release review board.
