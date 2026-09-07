@@ -130,6 +130,32 @@ public static class SeedSources
             + "Not checked back against the source by a person.");
 
     /// <summary>
+    /// A manufacturing service supplier's own published capability
+    /// statement.
+    /// </summary>
+    /// <param name="documentTitle">The page's own title, exactly as printed.</param>
+    /// <param name="location">Which part of the page the figures were taken from.</param>
+    /// <returns>Provenance naming that capability statement.</returns>
+    /// <remarks>
+    /// A supplier's capability page describes what that supplier will
+    /// undertake to do, which is a commercial commitment rather than a
+    /// property of the process. Figures taken from one are worth having —
+    /// they are real, current and attributable — but they generalise to
+    /// nothing, and the records that carry them say so.
+    /// </remarks>
+    public static ReferenceProvenance Protolabs(string documentTitle, string location) => new(
+        SourceOrganisation: "Proto Labs, Inc.",
+        SourceDocument: $"Proto Labs service capability page — {documentTitle}",
+        SourceRevision: null,
+        SourceDate: null,
+        SourceLocation: location,
+        ExtractionMethod: ReferenceExtractionMethod.AutomatedExtraction,
+        Notes: $"Retrieved {RetrievedOn:yyyy-MM-dd} from https://www.protolabs.com/services/. "
+            + "A commercial capability statement, not a process specification: the figures describe what this "
+            + "supplier offers and will change when its equipment or policy changes. Any price or lead time "
+            + "quoted is current only as at the retrieval date. Not checked back against the source by a person.");
+
+    /// <summary>
     /// A tertiary encyclopaedic reference, used only where the primary
     /// standard is paywalled and no manufacturer restatement was reachable.
     /// </summary>

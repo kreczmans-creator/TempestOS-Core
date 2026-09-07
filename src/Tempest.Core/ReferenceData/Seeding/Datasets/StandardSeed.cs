@@ -55,6 +55,9 @@ public sealed class StandardSeed : IReferenceSeed<StandardDefinition>
     /// <summary>The identity of the ISO limits-and-fits tables standard.</summary>
     public const string Iso286Part2 = "std-iso-286-2";
 
+    /// <summary>The identity of the ISO general tolerances standard.</summary>
+    public const string Iso2768Part1 = "std-iso-2768-1";
+
     /// <summary>The identity of the European stainless steel semi-finished product standard.</summary>
     public const string En10088Part3 = "std-en-10088-3";
 
@@ -76,14 +79,14 @@ public sealed class StandardSeed : IReferenceSeed<StandardDefinition>
     /// <summary>The identity of the European copper rod, bar and section standard.</summary>
     public const string En13601 = "std-en-13601";
 
-    /// <summary>The single instance of this dataset.</summary>
-    public static StandardSeed Instance { get; } = new();
-
     private static readonly StandardsBody Iso =
         new("ISO", "International Organization for Standardization", StandardsBodyKind.International);
 
     private static readonly StandardsBody Cen =
         new("EN", "European Committee for Standardization (CEN)", StandardsBodyKind.Regional);
+
+    /// <summary>The single instance of this dataset.</summary>
+    public static StandardSeed Instance { get; } = new();
 
     private StandardSeed()
     {
@@ -137,6 +140,14 @@ public sealed class StandardSeed : IReferenceSeed<StandardDefinition>
             [StandardDiscipline.Metrology, StandardDiscipline.Manufacturing],
             "The IT grade tables machining capability is ordinarily expressed against. Title recorded as the "
             + "index stated it, which gives the part title without the parent title."),
+
+        Untitled(Iso2768Part1, Iso, "ISO 2768-1", "1989",
+            StandardClassification.DimensionalStandard,
+            [StandardDiscipline.Metrology, StandardDiscipline.Manufacturing],
+            "General tolerances for linear and angular dimensions without individual tolerance indications. "
+            + "Cited by the machining capability source as the tolerance class its unmarked dimensions are held "
+            + "to. No title was obtained: the ISO catalogue refused automated retrieval and the tertiary index "
+            + "read did not carry this entry."),
 
         // --- CEN, cited by the datasheets but with no title obtained ---
         Untitled(En10088Part3, Cen, "EN 10088-3", "2005",
