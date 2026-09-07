@@ -33,7 +33,7 @@ namespace Tempest.Core.Tests.Population;
 // exactly as the running host wires them — so a cross-library reference in
 // these tests resolves the same way it resolves in the product, rather
 // than only inside a per-test fake.
-internal sealed class SeedHarness
+internal class SeedHarness
 {
     public SeedHarness()
     {

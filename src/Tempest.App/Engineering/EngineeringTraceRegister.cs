@@ -270,13 +270,21 @@ public sealed class EngineeringTraceRegister : IEngineeringTraceRegister
         {
             pinned = await catalog.GetRevisionAsync(pin.RecordId, pin.RevisionNumber, cancellationToken).ConfigureAwait(false);
         }
-        catch (ReferenceDataException exception)
+        catch (Exception exception) when (exception is ReferenceDataException or ArgumentOutOfRangeException)
         {
-            // The record exists but the pinned revision does not. That is a
-            // genuine integrity failure — history should never be missing —
-            // and it is reported rather than quietly falling back to the
-            // current revision, which would silently answer a different
-            // question from the one asked.
+            // The record exists but the pinned revision does not — either
+            // the history is missing, or the pin names a revision that was
+            // never written. Both are genuine integrity failures, and both
+            // are reported rather than quietly falling back to the current
+            // revision, which would silently answer a different question
+            // from the one asked.
+            //
+            // Two exception types, because the catalogue distinguishes
+            // them: a revision outside the range that exists is an
+            // ArgumentOutOfRangeException, while a stored revision that
+            // cannot be read is a ReferenceDataException. A traceability
+            // surface that let either escape would turn a reportable broken
+            // pin into a crash in whatever surface asked the question.
             return new TracedReference(
                 pin.Library,
                 pin.RecordId,
