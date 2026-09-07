@@ -1,17 +1,26 @@
 using Tempest.App.Composition;
+using Tempest.App.Engineering;
 using Tempest.App.Projects;
 using Tempest.App.Shell;
-using Tempest.App.Workspace;
 using Tempest.App.Workspace.Calculations;
+using Tempest.App.Workspace;
+using Tempest.Core.Bearings;
+using Tempest.Core.Configuration;
+using Tempest.Core.Constants;
+using Tempest.Core.DependencyInjection;
+using Tempest.Core.EngineeringAssets.CalculationPacks;
+using Tempest.Core.EngineeringAssets.Templates;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Events;
+using Tempest.Core.Fasteners;
 using Tempest.Core.Identity;
+using Tempest.Core.Manufacturing;
+using Tempest.Core.Materials;
 using Tempest.Core.Persistence;
 using Tempest.Core.Requirements;
-using Tempest.Core.Settings;
-using Tempest.Core.Configuration;
-using Tempest.Core.DependencyInjection;
 using Tempest.Core.Runtime;
+using Tempest.Core.Settings;
+using Tempest.Core.Standards;
 
 namespace Tempest.Desktop;
 
@@ -191,6 +200,25 @@ public sealed class WorkspaceHost : IAsyncDisposable
         ProjectRequirements = new ProjectRequirementRegister(
             (IRequirementsService)host.Services!.GetService(typeof(IRequirementsService)), domainContext);
 
+        // The two reference-data read models, constructed the same way and
+        // for the same reason: both compose governed catalogues that
+        // already exist and hold no state of their own. They are what lets
+        // the application see the populated reference libraries and trace
+        // an engineering result back to the revisions it stood on, without
+        // any surface reaching past the catalogues to do it.
+        ReferenceLibraries = new ReferenceLibraryRegister(
+            (IStandardCatalog)host.Services!.GetService(typeof(IStandardCatalog)),
+            (IMaterialCatalog)host.Services!.GetService(typeof(IMaterialCatalog)),
+            (IConstantCatalog)host.Services!.GetService(typeof(IConstantCatalog)),
+            (IFastenerCatalog)host.Services!.GetService(typeof(IFastenerCatalog)),
+            (IBearingCatalog)host.Services!.GetService(typeof(IBearingCatalog)),
+            (IProcessCatalog)host.Services!.GetService(typeof(IProcessCatalog)));
+
+        EngineeringTrace = new EngineeringTraceRegister(
+            (ICalculationPackCatalog)host.Services!.GetService(typeof(ICalculationPackCatalog)),
+            (IMaterialCatalog)host.Services!.GetService(typeof(IMaterialCatalog)),
+            (ITemplateCatalog)host.Services!.GetService(typeof(ITemplateCatalog)));
+
         // Recover where the user was, and which project they were in.
         // Order matters: the navigator's own restore opens the project,
         // so loading the context first would be redundant work, not a
@@ -245,6 +273,20 @@ public sealed class WorkspaceHost : IAsyncDisposable
 
     /// <summary>The project's own milestone register.</summary>
     public IProjectMilestoneRegister? ProjectMilestones { get; private set; }
+
+    /// <summary>
+    /// Gets what reference data the platform holds and whether it may be
+    /// relied on — <see langword="null"/> before <see cref="StartAsync"/>
+    /// completes.
+    /// </summary>
+    public IReferenceLibraryRegister? ReferenceLibraries { get; private set; }
+
+    /// <summary>
+    /// Gets the read model answering "where did this engineering result
+    /// come from?" — <see langword="null"/> before <see cref="StartAsync"/>
+    /// completes.
+    /// </summary>
+    public IEngineeringTraceRegister? EngineeringTrace { get; private set; }
 
     /// <summary>Setting milestones and deliverables, as the Project Workspace performs it.</summary>
     public IProjectMilestoneService? ProjectMilestoneWorkflow { get; private set; }

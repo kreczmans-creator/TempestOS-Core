@@ -273,4 +273,34 @@ public class SeedDatasetTests
         Assert.Equal(1.25, pitch.Value, 6);
         Assert.Equal("mm", pitch.Unit.Symbol);
     }
+
+    [Fact]
+    public async Task NoStandardRepeatsItsOwnBodyCodeInItsDesignation()
+    {
+        // Found by the integration pass, not by population: every indexed
+        // standard was rendering as "EN EN 10025-2:2019", because the seed
+        // wrote the body prefix into Designation and FullDesignation adds
+        // it again. The model's contract is clear — Designation is the
+        // number, Body.Code is the prefix — so the data was wrong, and this
+        // test stops it drifting back.
+        var harness = new SeedHarness();
+        await harness.SeedEverythingAsync();
+
+        foreach (var record in await harness.Standards.ListAsync())
+        {
+            var definition = record.Definition;
+
+            Assert.DoesNotContain(
+                $"{definition.Body.Code} {definition.Body.Code} ",
+                definition.FullDesignation,
+                StringComparison.Ordinal);
+
+            Assert.False(
+                definition.Designation.StartsWith(definition.Body.Code + " ", StringComparison.OrdinalIgnoreCase),
+                $"{record.Id} writes the body code into its own designation: '{definition.Designation}'.");
+        }
+
+        var iso15 = await harness.Standards.FindAsync(StandardSeed.Iso15);
+        Assert.Equal("ISO 15:2017", iso15!.Definition.FullDesignation);
+    }
 }
