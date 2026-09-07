@@ -92,6 +92,9 @@ public static class ShellAreas
             "Standards, reference data and engineering knowledge. Materials, units and calculation templates exist as real platform services, but no knowledge surface aggregates them.",
             "TD-79"),
 
+        new(ShellArea.EngineeringCalculation, "Calculation", "∑", NavigationAvailability.Implemented,
+            "The governed engineering calculation surface — choose a released reference material, enter the section inputs, run the real calculation, and read the result together with the reference revision it stood on."),
+
         new(ShellArea.Administration, "Administration", "⚙", NavigationAvailability.Declared,
             "Users, roles, permissions and platform settings. Identity, roles and permissions are real, enforced platform services — the administrative surface over them is not built.",
             "TD-81"),

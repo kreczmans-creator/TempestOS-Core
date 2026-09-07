@@ -46,4 +46,15 @@ public enum ShellArea
 
     /// <summary>Users, roles, permissions and platform settings (`TD-81`).</summary>
     Administration,
+
+    /// <summary>
+    /// The governed engineering calculation surface — pick a released
+    /// reference, enter the inputs, run the real calculation, and read the
+    /// result with the reference revision it stood on.
+    /// </summary>
+    /// <remarks>
+    /// Appended, not inserted, because <c>ShellLocation</c> is persisted by
+    /// ordinal and inserting would silently relocate every saved session.
+    /// </remarks>
+    EngineeringCalculation,
 }

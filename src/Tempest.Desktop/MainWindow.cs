@@ -89,6 +89,9 @@ public sealed class MainWindow : Window
     // The open project's own tasks/milestones/deliverables and its
     // risks/issues/decisions (`ADR-0103` collaborators, `WP-G`) — the CRUD
     // interaction logic `TD-109` named, moved out of this class verbatim.
+    private readonly EngineeringCalculationView _engineeringCalculation;
+    private readonly EngineeringCalculationCoordinator _engineeringCalculationCoordinator;
+    private bool _engineeringCalculationLoaded;
     private readonly ProjectDeliveryCoordinator _projectDelivery;
     private readonly ProjectGovernanceCoordinator _projectGovernanceCoordinator;
 
@@ -502,6 +505,19 @@ public sealed class MainWindow : Window
             _projectContext, host.ProjectGovernanceWorkflow!, host.ProjectGovernance!,
             _projectWorkspace, _inputDialog, _toastHost, RecordHistory);
 
+        // The Engineering Calculation surface and its own collaborator
+        // (`ADR-0103`, the same shape as the two above). The view raises
+        // intent; the coordinator performs it through the App-layer
+        // workbench and renders the answer. No engineering rule, no
+        // lifecycle rule and no formula lives on this side of the seam.
+        _engineeringCalculation = new EngineeringCalculationView();
+        _engineeringCalculationCoordinator = new EngineeringCalculationCoordinator(
+            host.BracketCalculations!, _engineeringCalculation);
+
+        _engineeringCalculation.PopulateRequested += () => _ = _engineeringCalculationCoordinator.PopulateAsync();
+        _engineeringCalculation.ReleaseRequested += () => _ = _engineeringCalculationCoordinator.VerifyAndReleaseAsync();
+        _engineeringCalculation.CalculateRequested += () => _ = _engineeringCalculationCoordinator.CalculateAsync();
+
         _navigationRail = new GlobalNavigationRail(_navigator);
 
         _navigationRail.NavigationRequested += () => _ = RenderCurrentModuleAsync();
@@ -559,6 +575,7 @@ public sealed class MainWindow : Window
         {
             ShellArea.Projects => _projectBrowser,
             ShellArea.ProjectWorkspace => _projectWorkspace,
+            ShellArea.EngineeringCalculation => _engineeringCalculation,
             _ => _engineeringSurface,
         };
 
@@ -986,6 +1003,20 @@ public sealed class MainWindow : Window
                 // the open project, or standalone (`TD-89`) — which the
                 // surface reads from the navigator rather than from here.
                 _moduleHost.Content = _engineeringSurface;
+                break;
+
+            case ShellArea.EngineeringCalculation:
+                // The governed calculation surface. The library is re-read
+                // on every entry, because a material released elsewhere in
+                // the session must not still read as Draft here; the stored
+                // calculation is recovered once, on the first entry of the
+                // session, which is what makes a relaunch show the result
+                // the engineer left behind.
+                await _engineeringCalculationCoordinator
+                    .RefreshAsync(restoreInputs: !_engineeringCalculationLoaded)
+                    .ConfigureAwait(true);
+                _engineeringCalculationLoaded = true;
+                _moduleHost.Content = _engineeringCalculation;
                 break;
 
             default:

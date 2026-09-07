@@ -6,6 +6,7 @@ using Tempest.App.Workspace.Calculations;
 using Tempest.App.Workspace;
 using Tempest.Core.Bearings;
 using Tempest.Core.Calculations;
+using Tempest.Core.ReferenceData.Seeding;
 using Tempest.Core.Configuration;
 using Tempest.Core.Constants;
 using Tempest.Core.DependencyInjection;
@@ -235,6 +236,21 @@ public sealed class WorkspaceHost : IAsyncDisposable
             (ICurrentPrincipalAccessor)host.Services!.GetService(typeof(ICurrentPrincipalAccessor)),
             logger: hostLogger);
 
+        // The Engineering Calculation surface's own read model. It composes
+        // the four governed acts a calculation journey needs - populate,
+        // review and release, check, recover - and owns none of them: the
+        // arithmetic stays in the definition, the lifecycle in the review
+        // service, the population in the seeder. It exists so the Desktop
+        // view renders finished answers and decides nothing, the same
+        // discipline ProjectRequirementRegister already follows.
+        BracketCalculations = new BracketCalculationWorkbench(
+            (IMaterialCatalog)host.Services!.GetService(typeof(IMaterialCatalog)),
+            (ReferenceSeedService)host.Services!.GetService(typeof(ReferenceSeedService)),
+            ReferenceReview,
+            BracketCheck,
+            (ICalculationEngine)host.Services!.GetService(typeof(ICalculationEngine)),
+            (ISettingsProvider)host.Services!.GetService(typeof(ISettingsProvider)));
+
         EngineeringTrace = new EngineeringTraceRegister(
             (ICalculationPackCatalog)host.Services!.GetService(typeof(ICalculationPackCatalog)),
             (IMaterialCatalog)host.Services!.GetService(typeof(IMaterialCatalog)),
@@ -332,6 +348,17 @@ public sealed class WorkspaceHost : IAsyncDisposable
     /// signed in and to nobody else.
     /// </remarks>
     public ReferenceReviewService? ReferenceReview { get; private set; }
+
+    /// <summary>
+    /// Gets the Engineering Calculation surface's own read model -
+    /// <see langword="null"/> before <see cref="StartAsync"/> completes.
+    /// </summary>
+    /// <remarks>
+    /// This is what the <c>EngineeringCalculation</c> shell area renders.
+    /// It reaches the governed services this host already composes and adds
+    /// no rule of its own.
+    /// </remarks>
+    public BracketCalculationWorkbench? BracketCalculations { get; private set; }
 
     /// <summary>Setting milestones and deliverables, as the Project Workspace performs it.</summary>
     public IProjectMilestoneService? ProjectMilestoneWorkflow { get; private set; }
