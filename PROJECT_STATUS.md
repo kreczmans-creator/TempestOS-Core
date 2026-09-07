@@ -1,6 +1,23 @@
 # TempestOS — Project Status
 
-**Last Updated:** 2026-09-07 (**`v0.16.0` pre-release integration build**,
+**Last Updated:** 2026-09-07 (**`v0.16.0` pre-release integration build —
+Engineering Calculation surface added**. `TD-159` is **Resolved**,
+mutation-proven: the product's five calculations are registered by
+`TempestHost` before the first module initialises, so a shipped Desktop run
+holds them — previously the only registrations were in `Tempest.Samples`,
+which the app does not reference and both test projects do. `TD-160` is
+**Partially resolved**: `ShellArea.EngineeringCalculation` is a real rail
+destination where an engineer populates the governed material library,
+releases a record in their own words, runs the bracket section check and
+reads the result with the reference revision it stood on; the other five
+libraries and the trace register are still un-surfaced. `TD-165` opened for
+the verification artefact the surface deliberately stops short of. Gate:
+5,148 Core + 486 Desktop, 0 failed, 0 skipped, 0 warnings, 0 errors in both
+configurations. **Still not tagged, not published, not certified, and
+`TD-147` remains the only Release Blocking row, untouched.** Before it,
+the integration build itself:
+
+**Integration build, as first cut:** (
 `feature/v0.16.0-integration` @ `3e60019`, cut from `origin/main` at
 `58c4cba` — four workstreams integrated with `--no-ff` merges: the
 `v1.0.0` Release Candidate Audit (`eb6f58b`), `WP 16.4B-R6`/`-R7`
@@ -284,7 +301,7 @@ points to it:
 - **Platform Services** — `docs/governance/Engineering/Platform Services Register.md` — **known stale and disclosed, not fixed.** Its Coverage Status and Total line both say 41 entries, its own Entries table holds more, and `docs/architecture/Platform Service Map.md` — the Source of Truth it declares — holds a third number. Like the DI Register it has no machine derivation (`TD-123`); see `TD-153`.
 - **Feature history** — `docs/governance/Delivery/Feature Register.md` (extended through `v0.15.0`, `WP 16.2A`).
 - **Release history** — `docs/governance/Delivery/Release Register.md` (17 versions referenced, `v0.15.0` corrected to Released, `WP 16.2A`).
-- **Technical Debt** — `docs/governance/Quality/Technical Debt Register.md` (**164 rows** at the integration build, `TD-01`–`TD-164`, contiguous: 59 Resolved, 6 Closed, 92 Open, 6 Partially resolved, 1 Deferred, re-derived by Check 12's own rule. The merge reconciled 151; the integration build's own four-reviewer pass then opened `TD-152`–`TD-164`, of which exactly one (`TD-164`) is a finding the integration introduced. Exactly one row in the whole register is Release Blocking — `TD-147`, pre-existing and unresolved. Historic, before the integration: **146 rows**, `TD-001`–`TD-146`, contiguous: 57 Resolved, 6 Closed, 77 Open, 5 Partially resolved, 1 Deferred — `TD-140`–`TD-146` added across `WP 16.4B-R6` round 2, 2026-09-06, with `TD-140` since Resolved for the supersession-refusal route only; the figure read 141 / 73 Open mid-round and 139 / 71 Open before it, tallying exactly against that register's own summary line; count corrected here `WP 16.4B-R6`, stale at 122 since `WP 16.2A`).
+- **Technical Debt** — `docs/governance/Quality/Technical Debt Register.md` (**165 rows**, `TD-01`–`TD-165`, contiguous: 60 Resolved, 6 Closed, 91 Open, 7 Partially resolved, 1 Deferred, re-derived by Check 12's own rule. The merge reconciled 151; the integration build's own four-reviewer pass then opened `TD-152`–`TD-164`, of which exactly one (`TD-164`) is a finding the integration introduced. Exactly one row in the whole register is Release Blocking — `TD-147`, pre-existing and unresolved. Historic, before the integration: **146 rows**, `TD-001`–`TD-146`, contiguous: 57 Resolved, 6 Closed, 77 Open, 5 Partially resolved, 1 Deferred — `TD-140`–`TD-146` added across `WP 16.4B-R6` round 2, 2026-09-06, with `TD-140` since Resolved for the supersession-refusal route only; the figure read 141 / 73 Open mid-round and 139 / 71 Open before it, tallying exactly against that register's own summary line; count corrected here `WP 16.4B-R6`, stale at 122 since `WP 16.2A`).
 - **Validation / test gates** — `docs/governance/Quality/Validation Register.md` (current-state section added, `WP 16.2A`).
 - **Repository size/shape** — `docs/governance/Quality/Repository Metrics Register.md` (snapshot opened `WP 16.2A`, **every row re-derived together at `58c4cba` by `WP 16.4B-R6`** after rows had been refreshed piecemeal under a `WP 16.2A` label).
 - **Product roadmap** — `docs/governance/Product Roadmap.md` (Phase 5 marked delivered, Phase 5.5 added, `WP 16.2A`).
