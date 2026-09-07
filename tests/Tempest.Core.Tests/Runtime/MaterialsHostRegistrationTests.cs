@@ -1,5 +1,6 @@
 using Tempest.Core.Configuration;
 using Tempest.Core.Materials;
+using Tempest.Core.ReferenceData;
 using Tempest.Core.Persistence;
 using Tempest.Core.Runtime;
 using Tempest.Core.Tests.Plugins;
@@ -84,19 +85,25 @@ public class MaterialsHostRegistrationTests
         {
             var catalog = (IMaterialCatalog)host.Services!.GetService(typeof(IMaterialCatalog));
 
-            var properties = new Dictionary<string, MaterialProperty>
+            var definition = new MaterialDefinition
             {
-                ["ReferenceLength"] = new MaterialProperty(
-                    new Tempest.Core.UnitsAndQuantities.Quantity<Tempest.Core.UnitsAndQuantities.Length>(
-                        1.0, Tempest.Core.UnitsAndQuantities.LengthUnits.Metre),
-                    MaterialPropertyProvenance.Unknown),
+                Name = "Registration Test Material",
+                Family = MaterialFamily.Other,
+                SourceClassification = "TestFixture",
+                Properties = new Dictionary<string, ReferenceQuantityValue>
+                {
+                    ["ReferenceLength"] = new ReferenceQuantityValue(
+                        new Tempest.Core.UnitsAndQuantities.Quantity<Tempest.Core.UnitsAndQuantities.Length>(
+                            1.0, Tempest.Core.UnitsAndQuantities.LengthUnits.Metre),
+                        ReferenceValueOrigin.Unknown),
+                },
             };
 
-            var material = await catalog.RegisterAsync("registration-test", "Registration Test Material", properties);
-            var found = await catalog.FindAsync(material.MaterialId);
+            var material = await catalog.RegisterAsync("registration-test", definition, ReferenceProvenance.Unknown);
+            var found = await catalog.FindAsync(material.Id);
 
             Assert.NotNull(found);
-            Assert.Equal("Registration Test Material", found!.Name);
+            Assert.Equal("Registration Test Material", found!.Definition.Name);
         });
     }
 }

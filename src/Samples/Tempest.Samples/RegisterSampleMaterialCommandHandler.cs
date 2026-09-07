@@ -27,14 +27,18 @@ public sealed class RegisterSampleMaterialCommandHandler : ICommandHandler<Regis
     {
         var materialId = $"sample.materials-command-{Guid.NewGuid():N}";
 
+        var definition = MaterialsSampleModule.BuildSampleDefinition(yieldStrengthMPa: 100.0, referenceLengthMm: 10.0) with
+        {
+            Name = "Fictional Command-Registered Material",
+        };
+
         var material = await _materialCatalog.RegisterAsync(
             materialId,
-            "Fictional Command-Registered Material",
-            MaterialsSampleModule.BuildSampleProperties(yieldStrengthMPa: 100.0, referenceLengthMm: 10.0),
-            category: "TestFixture",
+            definition,
+            MaterialsSampleModule.SampleProvenance,
             cancellationToken)
             .ConfigureAwait(false);
 
-        return CommandResult.Success($"Registered material '{material.MaterialId}'.");
+        return CommandResult.Success($"Registered material '{material.Id}'.");
     }
 }

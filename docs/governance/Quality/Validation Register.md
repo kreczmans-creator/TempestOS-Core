@@ -10,7 +10,7 @@
 | **Owner** | Project Maintainer. |
 | **Source of Truth** | `docs/releases/v0.4.0/ReleaseChecklist.md`; `docs/releases/v0.4.0/Testing.md`; `docs/academy/06 Engineering Standards/Engineering Governance.md` (§2 Review Gates, §3 Definition of Done). |
 | **Review Frequency** | Checked at the end of every Work Package (per-Work-Package gates) and before every release tag (release-level gates). |
-| **Last Reviewed** | 2026-09-04 (WP 16.2A, Register and Status Currency) — **staleness disclosure and current-state correction, not a full per-Work-Package re-run.** This register's own header fields (Scope/Source of Truth citing `docs/releases/v0.4.0/ReleaseChecklist.md`) and its Per-Work-Package Gates table (frozen at `WP 5.3`, "552/552 tests") had not been updated in ten releases — `VERSION` now reads `0.15.0`, not `0.4.0`. See the new **Current State (`WP 16.2A`)** section below for the re-derived, current figures (2,725 `[Fact]`/`[Theory]` attributes; last real, CI-verified totals 3,088 Core / 408 Desktop at the `v0.15.0` tag, 412 Desktop after `WP 15.2A`) and the extended Release-Level Gates summary through `v0.15.0`. The Per-Work-Package Gates table and its `WP 5.3` "Last Reviewed" figure below are retained verbatim as the historical record they are — not deleted, not silently updated — per this register's own disclosure convention. See `docs/releases/v0.16.0/WP16.2A Register and Status Currency Report.md`. Previously reviewed 2026-07-28 (WP 5.3, Developer Experience Improvements) — Build/Test Gates re-run directly; 552/552, 10 new tests. |
+| **Last Reviewed** | 2026-09-06 (`Group A`, P01 Engineering Reference Data) — adds a **Current State (`Group A`)** section below with directly-executed rather than cited figures: Build Gate pass (0 errors, 0 warnings, both configurations), Test Gate pass (3,788 Core / 474 Desktop, identical in Debug and Release), Governance Gate pass (13/3/0 of 16). The `WP 16.2A` section and the historical `WP 5.3` table below are retained verbatim, per this register's own disclosure convention, and the `v0.15.0` CI-verified row is explicitly **not** superseded: these are local, feature-branch totals, not totals at a tag. Previously reviewed 2026-09-04 (WP 16.2A, Register and Status Currency) — **staleness disclosure and current-state correction, not a full per-Work-Package re-run.** This register's own header fields (Scope/Source of Truth citing `docs/releases/v0.4.0/ReleaseChecklist.md`) and its Per-Work-Package Gates table (frozen at `WP 5.3`, "552/552 tests") had not been updated in ten releases — `VERSION` now reads `0.15.0`, not `0.4.0`. See the new **Current State (`WP 16.2A`)** section below for the re-derived, current figures (2,725 `[Fact]`/`[Theory]` attributes; last real, CI-verified totals 3,088 Core / 408 Desktop at the `v0.15.0` tag, 412 Desktop after `WP 15.2A`) and the extended Release-Level Gates summary through `v0.15.0`. The Per-Work-Package Gates table and its `WP 5.3` "Last Reviewed" figure below are retained verbatim as the historical record they are — not deleted, not silently updated — per this register's own disclosure convention. See `docs/releases/v0.16.0/WP16.2A Register and Status Currency Report.md`. Previously reviewed 2026-07-28 (WP 5.3, Developer Experience Improvements) — Build/Test Gates re-run directly; 552/552, 10 new tests. |
 | **Related Documents** | `docs/releases/v0.4.0/ReleaseChecklist.md`; `docs/releases/v0.4.0/Testing.md`; `Test Register.md`; `Repository Metrics Register.md`. |
 | **Related ADRs** | None directly — this register concerns process gates, not architectural decisions. |
 | **Related Academy Articles** | `docs/academy/06 Engineering Standards/02-testing-strategy.md`. |
@@ -59,6 +59,29 @@ suite directly — that is `dotnet test`, explicitly not required by this
 Work Package's own controlling instruction (attribute-counting is
 sufficient); the 3,088/408/412 figures above are cited from already-
 published, CI-backed sources, not re-executed here.
+
+### Current State (`Group A`, 2026-09-06)
+
+`Group A` (P01 Engineering Reference Data) **did** run the full suite
+directly, in both configurations, so this section can state executed
+totals rather than cite them:
+
+| Fact | Value | Derivation |
+|---|---|---|
+| Build Gate | **Pass** — 0 errors, 0 warnings, Debug and Release | `dotnet build src/TempestOS.slnx -c Debug` and `-c Release` |
+| Test Gate | **Pass** — 3,788/3,788 Core, 474/474 Desktop, 0 failures, 0 skipped, **both configurations, identical totals** | `dotnet test src/TempestOS.slnx -c Debug` and `-c Release` |
+| Governance Gate | **Pass** — 13 passed, 3 warned, 0 failed of 16 checks | `scripts/governance-healthcheck.ps1` |
+| Test method count | 3,318 `[Fact]`/`[Theory]` attributes under `tests/` (3,241 Core + 77 Desktop, non-comment lines only) | Direct derivation, per `Test Register.md`'s own `WP-Z1` convention |
+
+The three warned governance checks are pre-existing and environmental,
+not findings against this programme: two are the "no git tags available"
+limitation the tool itself discloses for a working clone, and the third
+is two historical release folders (`v0.9.0`, `v0.10.0`) that never had a
+`WorkPackages.md`, informational by the tool's own definition.
+
+**Not claimed:** these are locally-executed totals on a feature branch,
+not CI-verified totals at a tag. The `v0.15.0` row above remains the last
+CI-verified figure, and is not superseded by this section.
 
 ## Coverage Note
 

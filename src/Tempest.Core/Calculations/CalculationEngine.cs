@@ -99,7 +99,7 @@ public sealed class CalculationEngine : ICalculationEngine
 
         var dto = new CalculationRecordDto<TResult>(
             calculationId, result, definition.Metadata.Assumptions, context.IntermediateResults,
-            validation, context.ReferencedMaterialIds, executedAt, executedBy);
+            validation, context.ReferencedMaterialIds, executedAt, executedBy, typeof(TResult).FullName);
 
         var document = await _documentStore.CreateAsync(CalculationRecordDocumentKind, JsonSerializer.Serialize(dto), cancellationToken)
             .ConfigureAwait(false);
@@ -109,6 +109,70 @@ public sealed class CalculationEngine : ICalculationEngine
         return new CalculationRecord<TResult>(
             document.Id, calculationId, result, definition.Metadata.Assumptions, context.IntermediateResults,
             validation, context.ReferencedMaterialIds, executedAt, executedBy, document.CurrentRevisionNumber);
+    }
+
+    /// <inheritdoc />
+    public async Task<CalculationRecord<TResult>?> FindRecordAsync<TResult>(
+        Guid recordId, CancellationToken cancellationToken = default)
+    {
+        var document = await _documentStore.FindAsync(recordId, cancellationToken).ConfigureAwait(false);
+
+        if (document is null)
+            return null;
+
+        if (!string.Equals(document.Kind, CalculationRecordDocumentKind, StringComparison.Ordinal))
+        {
+            throw new CalculationException(
+                $"Document '{recordId}' is a '{document.Kind}', not a {CalculationRecordDocumentKind}.");
+        }
+
+        var revisions = await _documentStore.GetRevisionHistoryAsync(recordId, cancellationToken).ConfigureAwait(false);
+
+        if (revisions.Count == 0)
+            return null;
+
+        CalculationRecordDto<TResult>? dto;
+
+        try
+        {
+            dto = JsonSerializer.Deserialize<CalculationRecordDto<TResult>>(revisions[^1].Content);
+        }
+        catch (JsonException exception)
+        {
+            // A stored record that will not deserialise is corruption or a
+            // result-type mismatch. Either way it is reported rather than
+            // returned as null, which a caller would read as "no such
+            // calculation" and quietly move past.
+            throw new CalculationException(
+                $"Calculation record '{recordId}' could not be read as {typeof(TResult).Name}: {exception.Message}");
+        }
+
+        if (dto is null)
+            throw new CalculationException($"Calculation record '{recordId}' deserialised to nothing.");
+
+        // A record written by a different calculation deserialises happily
+        // into the wrong result type, producing a well-formed object full of
+        // defaults. Refuse it: a plausible-looking zero is the worst answer
+        // an engineering tool can give.
+        if (dto.ResultTypeName is { } storedType && !string.Equals(storedType, typeof(TResult).FullName, StringComparison.Ordinal))
+        {
+            throw new CalculationException(
+                $"Calculation record '{recordId}' holds a '{storedType}' result and was asked for a "
+                + $"'{typeof(TResult).FullName}'. Reading it as the requested type would return defaults "
+                + "rather than an answer.");
+        }
+
+        return new CalculationRecord<TResult>(
+            recordId,
+            dto.CalculationId,
+            dto.Result,
+            dto.Assumptions,
+            dto.IntermediateResults,
+            dto.Validation,
+            dto.ReferencedMaterialIds,
+            dto.ExecutedAt,
+            dto.ExecutedByPrincipalId,
+            revisions[^1].RevisionNumber);
     }
 
     private string ResolveExecutorPrincipalId() =>

@@ -1,6 +1,7 @@
 using Tempest.Core.EngineeringData;
 using Tempest.Core.Identity;
 using Tempest.Core.Materials;
+using Tempest.Core.ReferenceData;
 using Tempest.Core.Persistence;
 using Tempest.Core.Tests.Persistence;
 using Tempest.Core.UnitsAndQuantities;
@@ -28,26 +29,13 @@ public class MaterialCatalogReconciliationServiceTests
         return (catalog, documentStore, persistence, reconciliation);
     }
 
-    private static IReadOnlyDictionary<string, MaterialProperty> BuildProperties(double yieldStrengthMPa = 100.0) =>
-        new Dictionary<string, MaterialProperty>
-        {
-            ["YieldStrength"] = new MaterialProperty(
-                new Quantity<Pressure>(yieldStrengthMPa, PressureUnits.Megapascal),
-                new MaterialPropertyProvenance(
-                    SourceReference: "Test fixture — not a real material standard",
-                    SourceRevision: 3,
-                    ValidationStatus: MaterialPropertyValidationStatus.Validated,
-                    ConfidenceLevel: MaterialPropertyConfidenceLevel.High,
-                    ApplicableConditions: "Room temperature",
-                    Notes: "Fictional test value.")),
-        };
 
     [Fact]
     public async Task DetectAsync_FindsAMaterialWithNoIndexEntry()
     {
         var (catalog, _, persistence, reconciliation) = Build();
-        var material = await catalog.RegisterAsync("AL-7075", "Aluminium 7075", BuildProperties());
-        await persistence.DeleteAsync(MaterialCatalog.IndexCollectionName, "AL-7075");
+        var material = await catalog.RegisterAsync("AL-7075", MaterialCatalogTestExtensions.Definition());
+        await persistence.DeleteAsync(MaterialCatalog.IndexCollection, "AL-7075");
 
         var report = await reconciliation.DetectAsync();
 
@@ -61,8 +49,8 @@ public class MaterialCatalogReconciliationServiceTests
     public async Task DetectAsync_DoesNotChangeAnything()
     {
         var (catalog, _, persistence, reconciliation) = Build();
-        await catalog.RegisterAsync("AL-7075", "Aluminium 7075", BuildProperties());
-        await persistence.DeleteAsync(MaterialCatalog.IndexCollectionName, "AL-7075");
+        await catalog.RegisterAsync("AL-7075", MaterialCatalogTestExtensions.Definition());
+        await persistence.DeleteAsync(MaterialCatalog.IndexCollection, "AL-7075");
 
         await reconciliation.DetectAsync();
 
@@ -73,8 +61,8 @@ public class MaterialCatalogReconciliationServiceTests
     public async Task SweepAsync_RepairsTheMissingIndexEntry()
     {
         var (catalog, _, persistence, reconciliation) = Build();
-        var material = await catalog.RegisterAsync("AL-7075", "Aluminium 7075", BuildProperties());
-        await persistence.DeleteAsync(MaterialCatalog.IndexCollectionName, "AL-7075");
+        var material = await catalog.RegisterAsync("AL-7075", MaterialCatalogTestExtensions.Definition());
+        await persistence.DeleteAsync(MaterialCatalog.IndexCollection, "AL-7075");
 
         var report = await reconciliation.SweepAsync();
 
@@ -88,8 +76,8 @@ public class MaterialCatalogReconciliationServiceTests
     public async Task SweepAsync_NeverTouchesALiveCorrectlyIndexedMaterial()
     {
         var (catalog, _, _, reconciliation) = Build();
-        await catalog.RegisterAsync("AL-7075", "Aluminium 7075", BuildProperties());
-        await catalog.RegisterAsync("TI-6AL-4V", "Titanium 6Al-4V", BuildProperties(880.0));
+        await catalog.RegisterAsync("AL-7075", MaterialCatalogTestExtensions.Definition());
+        await catalog.RegisterAsync("TI-6AL-4V", MaterialCatalogTestExtensions.Definition("Fixture Titanium", MaterialFamily.Titanium));
 
         var report = await reconciliation.SweepAsync();
 
@@ -102,7 +90,7 @@ public class MaterialCatalogReconciliationServiceTests
     public async Task DetectAsync_FindsAStaleIndexEntry()
     {
         var (_, _, persistence, reconciliation) = Build();
-        await persistence.WriteAsync(MaterialCatalog.IndexCollectionName, "GHOST-1", Guid.NewGuid().ToString("N"));
+        await persistence.WriteAsync(MaterialCatalog.IndexCollection, "GHOST-1", Guid.NewGuid().ToString("N"));
 
         var report = await reconciliation.DetectAsync();
 
@@ -115,11 +103,11 @@ public class MaterialCatalogReconciliationServiceTests
     public async Task SweepAsync_RemovesAStaleIndexEntry()
     {
         var (_, _, persistence, reconciliation) = Build();
-        await persistence.WriteAsync(MaterialCatalog.IndexCollectionName, "GHOST-1", Guid.NewGuid().ToString("N"));
+        await persistence.WriteAsync(MaterialCatalog.IndexCollection, "GHOST-1", Guid.NewGuid().ToString("N"));
 
         await reconciliation.SweepAsync();
 
-        Assert.Null(await persistence.ReadAsync(MaterialCatalog.IndexCollectionName, "GHOST-1"));
+        Assert.Null(await persistence.ReadAsync(MaterialCatalog.IndexCollection, "GHOST-1"));
     }
 
     // ---- The race (`WP 16.4B-R2`) ----
@@ -151,7 +139,7 @@ public class MaterialCatalogReconciliationServiceTests
         var catalog = new MaterialCatalog(documentStore, persistence);
 
         var gated = new OrderAgnosticGatedListKeysPersistenceStore(
-            persistence, MaterialCatalog.IndexCollectionName, EngineeringDocumentStore.DocumentsCollectionName);
+            persistence, MaterialCatalog.IndexCollection, EngineeringDocumentStore.DocumentsCollectionName);
         var reconciliation = new MaterialCatalogReconciliationService(documentStore, gated);
 
         var sweepTask = reconciliation.SweepAsync();
@@ -161,7 +149,7 @@ public class MaterialCatalogReconciliationServiceTests
         // authoritative side.
         await gated.ReachedGate.WaitAsync(OrderAgnosticGatedListKeysPersistenceStore.GateTimeout);
 
-        var material = await catalog.RegisterAsync("AL-RACE-1", "Aluminium Race", BuildProperties());
+        var material = await catalog.RegisterAsync("AL-RACE-1", MaterialCatalogTestExtensions.Definition());
 
         gated.Release();
         var report = await sweepTask;
@@ -192,4 +180,34 @@ public class MaterialCatalogReconciliationServiceTests
         var documentStore = new EngineeringDocumentStore(new InMemoryPersistenceStore(), new CurrentPrincipalAccessor());
         Assert.Throws<ArgumentNullException>(() => new MaterialCatalogReconciliationService(documentStore, null!));
     }
+}
+
+/// <summary>
+/// Test-only conveniences over <see cref="IMaterialCatalog"/>, so tests
+/// that are not about provenance need not restate it.
+/// </summary>
+internal static class MaterialCatalogTestExtensions
+{
+    public static ReferenceProvenance Sourced { get; } = new(
+        SourceOrganisation: "TestFixture Publications",
+        SourceDocument: "Fixture handbook (not a real publication)",
+        Notes: "Fictional fixture data.");
+
+    public static MaterialDefinition Definition(
+        string name = "Fixture Alloy",
+        MaterialFamily family = MaterialFamily.Steel,
+        string? designation = null,
+        IReadOnlyDictionary<string, ReferenceQuantityValue>? properties = null) => new()
+    {
+        Name = name,
+        Family = family,
+        Designation = designation,
+        Properties = properties ?? new Dictionary<string, ReferenceQuantityValue>(),
+    };
+
+    public static Task<IReferenceRecord<MaterialDefinition>> RegisterAsync(
+        this IMaterialCatalog catalog,
+        string materialId,
+        MaterialDefinition definition) =>
+        catalog.RegisterAsync(materialId, definition, Sourced);
 }

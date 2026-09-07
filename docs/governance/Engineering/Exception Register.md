@@ -14,7 +14,7 @@
 | **Related Documents** | `docs/architecture/Failure Behaviour.md`; `Architectural Dependency Register.md`. |
 | **Related ADRs** | ADR-0013, ADR-0021, ADR-0025, ADR-0038, ADR-0040, ADR-0046, ADR-0047, ADR-0048, ADR-0050, ADR-0051. |
 | **Related Academy Articles** | `docs/academy/06 Engineering Standards/01-exception-design.md`. |
-| **Coverage Status** | **Complete, re-verified at `WP 16.4B-R6` (2026-09-06, fifth-review-board remediation): 90 classes in source, 90 rows in the Entries table, and the Distribution by Root Category table re-derived category by category from those rows and now summing to 90.** The Distribution table had been left at 9 Engineering Domain rows / 89 total — see the correction note under that table. Previously re-verified at `WP 16.4B-R5` (2026-09-06, release-board remediation). `SupersededEngineeringObjectException` was added by `WP 16.4B-R4` and entered in the table below at that time, but this field and the Total line were left reading 89 — the free-text-drifts-from-its-own-rows defect this register has now produced twice. Found by the fresh release board and re-derived directly: 90 classes, 90 rows. Previously re-verified at `WP 16.4B-R1` (2026-09-05, Architecture remediation). 90 of 90 classes matching `^public (sealed \|abstract )?class \w+Exception\b` under `src/Tempest.Core/` are listed below, zero omitted. `WP 16.4B`'s own pass, which stated 87/87, was correct against the tree it measured; `WP 16.4B-R1` added two — `DuplicateStateMigrationException` and `ConflictingStateMigrationException` — for the migration-collision guard `StateMigrationRegistry.Register` now enforces (a `v0.16.0` review board Architecture finding). |
+| **Coverage Status** | **Complete, re-derived at the `v0.16.0` pre-release integration build (2026-09-07, `feature/v0.16.0-integration`): 101 classes in source, 101 rows in the Entries table, and the Distribution by Root Category table re-derived category by category from those rows and now summing to 101.** All three statements of this number — this field, the Total line, and the Distribution table — were re-derived independently from the merged tree rather than adjusted from either incoming figure, because both were stale the moment the two lines met and because Check 10 compares row names to source class names only and cannot see any of the three. Previously re-verified at `WP 16.4B-R6` (2026-09-06, fifth-review-board remediation): 90 classes in source, 90 rows in the Entries table, and the Distribution by Root Category table re-derived category by category from those rows and now summing to 90.** The Distribution table had been left at 9 Engineering Domain rows / 89 total — see the correction note under that table. Previously re-verified at `WP 16.4B-R5` (2026-09-06, release-board remediation). `SupersededEngineeringObjectException` was added by `WP 16.4B-R4` and entered in the table below at that time, but this field and the Total line were left reading 89 — the free-text-drifts-from-its-own-rows defect this register has now produced twice. Found by the fresh release board and re-derived directly: 90 classes, 90 rows. Previously re-verified at `WP 16.4B-R1` (2026-09-05, Architecture remediation). 90 of 90 classes matching `^public (sealed \|abstract )?class \w+Exception\b` under `src/Tempest.Core/` are listed below, zero omitted. `WP 16.4B`'s own pass, which stated 87/87, was correct against the tree it measured; `WP 16.4B-R1` added two — `DuplicateStateMigrationException` and `ConflictingStateMigrationException` — for the migration-collision guard `StateMigrationRegistry.Register` now enforces (a `v0.16.0` review board Architecture finding). |
 
 ---
 
@@ -78,9 +78,20 @@
 | `CalculationDefinitionNotFoundException` | `CalculationException` | Calculations | Application logic's own error (not Host-level); thrown for an unregistered calculation Id — backfilled `WP 16.2A` |
 | `CalculationInputInvalidException` | `CalculationException` | Calculations | Application logic's own error (not Host-level); thrown when a calculation's own input fails validation — backfilled `WP 16.2A` |
 | `DuplicateCalculationException` | `CalculationException` | Calculations | Application logic's own error (not Host-level); thrown by `RegisterDefinition` — first registration wins — backfilled `WP 16.2A` |
-| `MaterialsException` | `Exception` | Materials | Application logic's own error (not Host-level); base type, never thrown directly (`WP 7.1C`) — backfilled `WP 16.2A` |
-| `MaterialNotFoundException` | `MaterialsException` | Materials | Application logic's own error (not Host-level); thrown for an unregistered material specification — backfilled `WP 16.2A` |
-| `DuplicateMaterialException` | `MaterialsException` | Materials | Application logic's own error (not Host-level); thrown by the material catalogue — first registration wins — backfilled `WP 16.2A` |
+| `ReferenceDataException` | `Exception` | Reference Data | Application logic's own error (not Host-level); base type for every `Group A` reference library, carrying the library's own name so a message says which one failed (`Group A`, `ADR-0126`) |
+| `ReferenceRecordNotFoundException` | `ReferenceDataException` | Reference Data | Application logic's own error; thrown for an unregistered record in any reference library (`Group A`, `ADR-0126`) |
+| `DuplicateReferenceRecordException` | `ReferenceDataException` | Reference Data | Application logic's own error; thrown when a record Id is already registered — first registration wins (`Group A`, `ADR-0126`) |
+| `DuplicateReferenceKeyException` | `ReferenceDataException` | Reference Data | Application logic's own error; thrown when a write would leave two records sharing a library's own secondary uniqueness key (`Group A`, `ADR-0126`) |
+| `InvalidReferenceStateTransitionException` | `ReferenceDataException` | Reference Data | Application logic's own error; thrown for a validation-state transition the shared table does not permit (`Group A`, `ADR-0126`) |
+| `ReferenceReviewException` | `ReferenceDataException` | Reference Data | Application logic's own error; thrown when a governed review or release act is refused — nobody signed in to perform it, the record is already verified, or it has not been verified yet. Distinct from `ReferenceProvenanceIncompleteException`, which says a provenance cannot support a state rather than that the act was not permitted (First Calculation phase) |
+| `ReferenceProvenanceIncompleteException` | `ReferenceDataException` | Reference Data | Application logic's own error; thrown when a record's own provenance cannot support the state requested (`Group A`, `ADR-0126`) |
+| `ReleasedReferenceImmutableException` | `ReferenceDataException` | Reference Data | Application logic's own error; thrown when a released or superseded record's engineering content would be revised (`Group A`, `ADR-0126`) |
+| `UnreleasedDecisionTreeException` | `ReferenceDataException` | Engineering Intelligence | Application logic's own error; thrown when a decision tree that is not Released would be walked — a tree nobody has finished reviewing must not produce an engineering decision (`B2`, `ADR-0128`) |
+| `UnreleasedReviewDefinitionException` | `ReferenceDataException` | Engineering Intelligence | Application logic's own error; thrown when a review definition that is not Released would be conducted (`B4`, `ADR-0128`) |
+| `UnreleasedTradeStudyException` | `ReferenceDataException` | Engineering Intelligence | Application logic's own error; thrown when a trade study that is not Released would be run — a decision must not rest on a study still being drafted (`B5`, `ADR-0128`) |
+| `UnreleasedContractTemplateException` | `ReferenceDataException` | Business Governance | Application logic's own error; thrown when a contract would be drawn from a template that is not Released (`C1`, `ADR-0129`) |
+| `RateCardUnusableException` | `ReferenceDataException` | Business Governance | Application logic's own error; thrown when a quotation is attempted against a rate card that is unreleased, unapproved, or did not apply on the date (`C4`, `ADR-0130`) |
+| `CurrencyMismatchException` | `Exception` | Business Governance | Application logic's own error (not Host-level); thrown when an operation would combine or compare amounts in different currencies. An exception rather than a conversion: converting needs a rate and a date, neither of which TempestOS holds (`P07`, `ADR-0130`) |
 | `IncompatibleUnitsException` | `Exception` | Units & Quantities | Application logic's own error (not Host-level); thrown by `Quantity<TDimension>.ConvertTo` for a dimensionally incompatible conversion (`WP 7.1B`, `ADR-0054`) — backfilled `WP 16.2A` |
 | `EngineeringDataException` | `Exception` | Engineering Data | Application logic's own error (not Host-level); base type, never thrown directly (`WP 7.1A`, `ADR-0053`) — backfilled `WP 16.2A` |
 | `EngineeringDocumentNotFoundException` | `EngineeringDataException` | Engineering Data | Application logic's own error (not Host-level); thrown by `IEngineeringDocumentStore` for an unresolvable document Id — backfilled `WP 16.2A` |
@@ -127,7 +138,25 @@ Reviewed** field and
 `docs/releases/v0.16.0/WP16.2A Register and Status Currency Report.md`
 for the full derivation.
 
-**Total: 90 custom exception types — Verified directly against
+**Total: 101 custom exception types — re-derived at the `v0.16.0` pre-release integration
+build (2026-09-07, `feature/v0.16.0-integration`) directly against the merged tree:
+`grep -rEn "^public (sealed |abstract )?class \w+Exception\b" src/Tempest.Core --include=*.cs`
+returns exactly 101 matches, matching the 101 rows in the Entries table above. The integration
+declares no exception type of its own. Neither incoming figure was carried forward and neither
+was reconciled by arithmetic: `main`'s line stated 90 (including `SupersededEngineeringObjectException`,
+added by `WP 16.4B-R4` and counted by `WP 16.4B-R6`) and the Foundation/First-Calculation line
+stated 100 over a base that predates it. 101 is the derived count, not 90 + 11 and not 100 + 1.
+This is the exact drift the fourth `v0.16.0` review board's `R8` finding named — a free-text
+headline contradicting the rows beside it — and it would not have been caught automatically,
+because Governance Health Check Check 10 compares Entries-table row names to source class names
+and never parses this sentence.** Both prior narratives are preserved below, neither rewritten.
+
+*Superseded narrative — current on the Foundation/First-Calculation line, before integration:* **Total: 100 custom exception types — re-derived at the First Calculation phase (2026-09-07) by the Exception Register check in `scripts/governance-healthcheck.ps1`. That phase adds exactly one, `ReferenceReviewException`. Previously 99 — re-derived at `Group C` (2026-09-06) by the Exception Register check in `scripts/governance-healthcheck.ps1`, which reported 99 declared against 96 rows; `Group C` adds the three rows the gap named. `CurrencyMismatchException` derives from `Exception` rather than `ReferenceDataException` deliberately: it is a units-style arithmetic refusal, not a reference-data governance failure, and mirrors `IncompatibleUnitsException`. Historic narrative, stated when the total was 96 — re-derived at `Group B` (2026-09-06) by the Exception Register check in `scripts/governance-healthcheck.ps1`, which reported 96 declared against 93 rows before this pass — 93 because the three `P02` exceptions had no rows yet; `Group B` adds exactly those three — `UnreleasedDecisionTreeException`, `UnreleasedReviewDefinitionException` and `UnreleasedTradeStudyException`, one per `P02` content library that refuses to act on unreleased guidance. All three derive from the existing `ReferenceDataException` rather than starting a fourth exception family. Historic narrative, stated when the total was 96 — Verified directly against
+`src/Tempest.Core/` (`grep -rEn "^public (sealed |abstract )?class \w+Exception\b" src/Tempest.Core --include=*.cs`
+returns exactly 96 matches, matching the 96 rows in the Entries table (89 at `WP 16.4B-R1`, plus the seven `Bearings` rows at `A4`, 2026-09-05; 87 at the `WP 16.4B` integration, plus `DuplicateStateMigrationException` and `ConflictingStateMigrationException` at `WP 16.4B-R1`; 84 at `WP 16.2A`, plus `RequirementGroupCycleException`, `ServiceRegistrationException` and `DuplicateServiceRegistrationException` at the `WP 16.4B` integration)
+above, re-derived directly by `A4`). Corrected,
+
+*Superseded narrative — current on `main` at `58c4cba`, before integration:* **Total: 90 custom exception types — Verified directly against
 `src/Tempest.Core/` (`grep -rEn "^public (sealed |abstract )?class \w+Exception\b" src/Tempest.Core --include=*.cs`
 returns exactly 90 matches, matching the 90 rows in the Entries table (87 at the `WP 16.4B` integration, plus `DuplicateStateMigrationException` and `ConflictingStateMigrationException` at `WP 16.4B-R1`, and `SupersededEngineeringObjectException` at `WP 16.4B-R4`, all 2026-09-05; 84 at `WP 16.2A`, plus `RequirementGroupCycleException`, `ServiceRegistrationException` and `DuplicateServiceRegistrationException` at the `WP 16.4B` integration)
 above, re-derived directly by `WP 16.4B-R1`). Corrected,
@@ -264,15 +293,35 @@ respectively). Application logic's own error (not Host-level); see
 | Export/Import | 4 |
 | Licensing | 2 |
 | Calculations | 4 |
-| Materials | 3 |
+| Reference Data | 8 |
 | Units & Quantities | 1 |
 | Engineering Data | 2 |
 | Engineering Domain | 10 |
 | Engineering Workflow | 4 |
 | Requirements | 6 |
 | Plugin Trust & Dependencies | 6 |
+| Engineering Intelligence | 3 |
+| Business Governance | 3 |
 
-**Total: 4+6+2+3+2+6+2+0+3+5+3+2+3+1+1+3+2+4+2+4+3+1+2+10+4+6+6 = 90**,
+**Total: 4+6+2+3+2+6+2+0+3+5+3+2+3+1+1+3+2+4+2+4+8+1+2+10+4+6+6+3+3 = 101**,
+matching the 101 rows in the Entries table above and the direct `grep`
+count, every category re-derived from the Entries table itself at the
+`v0.16.0` pre-release integration build (2026-09-07) rather than
+hand-adjusted. **Correction, integration build:** the auto-merged
+category table above carried `Reference Data | 7` from the
+Foundation line, which stated `ReferenceReviewException` as a separate
+trailing `+1` outside the table instead of inside its own category;
+the Entries table holds 8 `Reference Data` rows. Corrected to 8 here
+and in the table above, so the three statements of this number — the
+headline Total, this sum, and the category table — now agree with the
+rows and with each other. Both prior narratives are preserved below.
+
+*Superseded sum — Foundation/First-Calculation line:* **Total: 4+6+2+3+2+6+2+0+3+5+3+2+3+1+1+3+2+4+2+4+7+1+2+9+4+6+6+3+3+1 = 100** (the trailing +1 is `ReferenceReviewException`, added at the First Calculation phase), matching the Entries table above and the direct `grep` count, both re-derived at `Group B` (2026-09-06). **Correction, `Group B`:** this table still carried `Materials | 3` and `Bearings | 7` from before `Group A` folded both libraries' exception families into the one shared `ReferenceDataException` hierarchy — 10 rows where the Entries table has 7 (`Reference Data`). That is where the register's own "96 rows" narrative and its actual 93 rows diverged, and it is corrected here rather than carried forward: the two stale rows are replaced by `Reference Data | 7`, and `Engineering Intelligence | 3` is added for `P02`'s three unreleased-content exceptions. Historic narrative follows.
+matching the Entries table above and the direct `grep` count
+(`WP 16.4B-R1`, re-derived row by row against the Entries table above,
+2026-09-05). **Correction, `WP 16.4B-R1`:** this table had not been
+
+*Superseded sum — `main` at `58c4cba`:* **Total: 4+6+2+3+2+6+2+0+3+5+3+2+3+1+1+3+2+4+2+4+3+1+2+10+4+6+6 = 90**,
 matching the 90 rows in the Entries table above and the direct `grep`
 count (`WP 16.4B-R6`, 2026-09-06 — every one of the 27 category rows
 re-derived from the Entries table itself, not hand-adjusted, with

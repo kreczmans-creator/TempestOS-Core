@@ -13,6 +13,9 @@ public static class PressureUnits
     /// <summary>SI.</summary>
     public static readonly Unit<Pressure> Megapascal = new("MPa", 1_000_000.0);
 
+    /// <summary>SI — added by `Group A`, the unit an elastic modulus is universally quoted in.</summary>
+    public static readonly Unit<Pressure> Gigapascal = new("GPa", 1_000_000_000.0);
+
     /// <summary>Metric, non-SI, in wide engineering use.</summary>
     public static readonly Unit<Pressure> Bar = new("bar", 100_000.0);
 
@@ -20,5 +23,5 @@ public static class PressureUnits
     public static readonly Unit<Pressure> Psi = new("psi", 6894.757293168);
 
     /// <summary>Every unit in this catalogue, for use with <see cref="Quantity{TDimension}.TryParse"/>.</summary>
-    public static IReadOnlyList<Unit<Pressure>> All { get; } = [Pascal, Kilopascal, Megapascal, Bar, Psi];
+    public static IReadOnlyList<Unit<Pressure>> All { get; } = [Pascal, Kilopascal, Megapascal, Gigapascal, Bar, Psi];
 }

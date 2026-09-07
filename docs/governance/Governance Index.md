@@ -39,7 +39,7 @@ completeness.
 Registers tracking *decisions* — what was decided, what was rejected, and
 where the reasoning lives.
 
-- [ADR Register](Architecture/ADR%20Register.md) — all 123 Architecture Decision Records (`ADR-0001`–`ADR-0123`; `ADR-0121`/`ADR-0122` added `WP 16.4B-R1` after the `v0.16.0` review board found two decisions this release took without the ADR Governance §5 requires).
+- [ADR Register](Architecture/ADR%20Register.md) — all 143 Architecture Decision Records (`ADR-0001`–`ADR-0143`; `ADR-0143` added at the First Calculation phase for a calculation carrying the reference revision it stood on; `ADR-0142` added `P04` for the operational layer owning no model another programme holds; `ADR-0139`–`ADR-0141` added `Group F` for knowledge provenance with derived authority, for `P06` taking no AI runtime dependency, and for structuring knowledge without shipping it or judging a response; `ADR-0136`–`ADR-0138` added `Group E` for the engineering-asset lifecycle with template revision pinning, for `P05` referencing rather than duplicating the calculation, requirements and document models, and for keeping verification, review, decision and approval distinct so missing evidence is never a pass; `ADR-0131`–`ADR-0135` added `Group D` for supplier identity never being merged, commercial intelligence reusing the shared lifecycle and `P07`'s money, a working day not being a duration, the four quote/estimate types being four types rather than four states, and `P03` recommending without ever procuring; `ADR-0129`/`ADR-0130` added `Group C` for the business-governance lifecycle and for exact money with no autonomous business authority; `ADR-0127`/`ADR-0128` added `Group B` for `P02`'s reports-never-decides position and for engineering rules being governed reference records; `ADR-0125`/`ADR-0126` added `Group A` for affine units and the shared reference-data layer; `ADR-0124` added `A4` for the Bearing Library; `ADR-0121`/`ADR-0122` added `WP 16.4B-R1` after the `v0.16.0` review board found two decisions this release took without the ADR Governance §5 requires).
 - [Rejected Designs Register](Architecture/Rejected%20Designs%20Register.md) — 65 Rejected Designs entries exist in the source log (`docs/architecture/Rejected Designs.md`, `RD-0001`–`RD-0065`, re-derived `WP 16.2A`); this register's own indexed count remains 45, stale since `v0.5.0` — disclosed, not fixed, outside `WP 16.2A`'s own itemized scope.
 - [Architecture Document Register](Architecture/Architecture%20Document%20Register.md) — all 31 standing architecture documents.
 - [Decision Register](Architecture/Decision%20Register.md) — significant process, sequencing and product-boundary decisions that don't meet ADR criteria.
@@ -74,6 +74,15 @@ validation gates, and test coverage.
 - [Finding Closure Verification (2026-08-28)](Quality/Finding%20Closure%20Verification%20%282026-08-28%29.md) — the independent falsification pass over the 16-item review finding list: for every finding, whether the original defect still exists in source, whether its closure test exercises the real production path, and the mutation that proves that test meaningful.
 - [Product Compliance Audit (2026-08-28)](Quality/Product%20Compliance%20Audit%20%282026-08-28%29.md) — the adversarial product/UX/functional audit against the original design brief and mock-ups; the source of `TD-70`/`TD-71`/`TD-72` and of the Product Convergence & Recovery programme.
 
+## Data
+
+Standing documents tracking *what data the platform holds and where it
+came from* — the record that lets any populated value be traced back to
+the document it was transcribed from.
+
+- [Seed Data Sources Register](Data/Seed%20Data%20Sources%20Register.md) — every external source the seed corpus was transcribed from, what was taken from it, what may not be concluded from it, licensing, and the datasets deliberately left empty with reasons.
+- [Seed Data Review Set](Data/Seed%20Data%20Review%20Set.md) — what a human reviewer would have to check, and against what, before any seeded record may be released. Carries the three known data issues forward explicitly.
+
 ## Documentation
 
 Registers tracking *the documentation itself* — where every document
@@ -105,6 +114,7 @@ the project's own evolving discipline, and end-to-end traceability.
 - [Release Register](Delivery/Release%20Register.md)
 - [Engineering Evolution Register](Delivery/Engineering%20Evolution%20Register.md)
 - [Traceability Matrix](Delivery/Traceability%20Matrix.md) — the capstone: Requirement → Work Package → ADR → Architecture → Implementation → Tests → Academy → Release, per major capability.
+- [Original Roadmap 40-WP Audit](Delivery/Original%20Roadmap%2040-WP%20Audit.md) — evidence-based status of every work package in the original seven-programme roadmap, and the group-letter to programme-identifier mapping (`Group B` is `P02`).
 
 ## Product & Roadmap
 

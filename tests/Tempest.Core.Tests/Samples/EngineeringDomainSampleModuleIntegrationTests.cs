@@ -196,7 +196,7 @@ public class EngineeringDomainSampleModuleIntegrationTests
         var material = await materialCatalog.FindAsync(part.MaterialId!);
 
         Assert.NotNull(material);
-        Assert.Equal("Fictional Sample Alloy", material!.Name);
+        Assert.Equal("Fictional Sample Alloy", material!.Definition.Name);
     }
 
     [Fact]

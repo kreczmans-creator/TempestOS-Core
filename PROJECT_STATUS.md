@@ -69,6 +69,27 @@ this file said at the time and the register's own rows still record.
 Ratification is **Product Owner gate 1 of 4** and settles scope only —
 it authorises no merge, no tag, no publication, and no release verdict.
 
+## Programme Phase
+
+**Foundation complete → Population complete → Integration underway**
+(as at 2026-09-07, branch `claude/tempestos-a4-bearing-library-unobtf`).
+
+| Phase | State | Closing evidence |
+|---|---|---|
+| Foundation | **Complete** | 40/40 original work packages structurally complete — `docs/releases/v0.16.0/Foundation Skeleton Completion Certification.md` |
+| Population | **Complete** | 79 source-backed records across 16 libraries, all `Draft` — `docs/releases/v0.16.0/Population Phase Completion Report.md` |
+| Integration | **Underway** | The bracket scenario runs through the real services; traceability, revision reproduction and refusal behaviour proven — `docs/releases/v0.16.0/Integration Phase Report.md` |
+| First calculation | **Complete** | Governed release → numerical result → independent verification → persisted, traceable artefact — `docs/releases/v0.16.0/First Engineering Calculation Report.md` |
+
+**The gate between population and use can now be passed, and has not
+been.** `ReferenceReviewService` provides the governed review act: the
+reviewer is taken from the signed-in principal and cannot be supplied by a
+caller, so a release is attributable. Nobody has used it on the shipped
+corpus — every seeded record is still `Draft` and unverified, and P02's
+reasoning services correctly refuse to act on any of it. What a reviewer
+would have to check is set out in `docs/governance/Data/Seed Data Review
+Set.md`; performing that review remains a human action.
+
 ## Current Work Package
 
 **Landed on `feature/v0.16.0` as of this review** (Wave 0/1 of the

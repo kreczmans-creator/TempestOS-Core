@@ -1,17 +1,29 @@
 using Tempest.App.Composition;
+using Tempest.App.Engineering;
 using Tempest.App.Projects;
 using Tempest.App.Shell;
-using Tempest.App.Workspace;
 using Tempest.App.Workspace.Calculations;
+using Tempest.App.Workspace;
+using Tempest.Core.Bearings;
+using Tempest.Core.Calculations;
+using Tempest.Core.Configuration;
+using Tempest.Core.Constants;
+using Tempest.Core.DependencyInjection;
+using Tempest.Core.EngineeringAssets.CalculationPacks;
+using Tempest.Core.EngineeringAssets.Templates;
+using Tempest.Core.EngineeringAssets.Verification;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Events;
+using Tempest.Core.Fasteners;
 using Tempest.Core.Identity;
+using Tempest.Core.Manufacturing;
+using Tempest.Core.Materials;
 using Tempest.Core.Persistence;
+using Tempest.Core.ReferenceData.Review;
 using Tempest.Core.Requirements;
-using Tempest.Core.Settings;
-using Tempest.Core.Configuration;
-using Tempest.Core.DependencyInjection;
 using Tempest.Core.Runtime;
+using Tempest.Core.Settings;
+using Tempest.Core.Standards;
 
 namespace Tempest.Desktop;
 
@@ -191,6 +203,43 @@ public sealed class WorkspaceHost : IAsyncDisposable
         ProjectRequirements = new ProjectRequirementRegister(
             (IRequirementsService)host.Services!.GetService(typeof(IRequirementsService)), domainContext);
 
+        // The two reference-data read models, constructed the same way and
+        // for the same reason: both compose governed catalogues that
+        // already exist and hold no state of their own. They are what lets
+        // the application see the populated reference libraries and trace
+        // an engineering result back to the revisions it stood on, without
+        // any surface reaching past the catalogues to do it.
+        ReferenceLibraries = new ReferenceLibraryRegister(
+            (IStandardCatalog)host.Services!.GetService(typeof(IStandardCatalog)),
+            (IMaterialCatalog)host.Services!.GetService(typeof(IMaterialCatalog)),
+            (IConstantCatalog)host.Services!.GetService(typeof(IConstantCatalog)),
+            (IFastenerCatalog)host.Services!.GetService(typeof(IFastenerCatalog)),
+            (IBearingCatalog)host.Services!.GetService(typeof(IBearingCatalog)),
+            (IProcessCatalog)host.Services!.GetService(typeof(IProcessCatalog)));
+
+        // The bracket section check's governed entry point. Constructed the
+        // same way as the read models: it composes the Materials Library and
+        // the calculation engine, both already registered, and holds no
+        // state of its own. This is the whole of the application surface the
+        // first calculation needs — the engineer selects a material, supplies
+        // the geometry and load, and gets a result or a refusal.
+        BracketCheck = new GovernedBracketCheckService(
+            (IMaterialCatalog)host.Services!.GetService(typeof(IMaterialCatalog)),
+            (ICalculationEngine)host.Services!.GetService(typeof(ICalculationEngine)));
+
+        BracketEngineeringRecords = new BracketEngineeringRecordService(
+            (ICalculationPackCatalog)host.Services!.GetService(typeof(ICalculationPackCatalog)),
+            (IVerificationArtefactCatalog)host.Services!.GetService(typeof(IVerificationArtefactCatalog)));
+
+        ReferenceReview = new ReferenceReviewService(
+            (ICurrentPrincipalAccessor)host.Services!.GetService(typeof(ICurrentPrincipalAccessor)),
+            logger: hostLogger);
+
+        EngineeringTrace = new EngineeringTraceRegister(
+            (ICalculationPackCatalog)host.Services!.GetService(typeof(ICalculationPackCatalog)),
+            (IMaterialCatalog)host.Services!.GetService(typeof(IMaterialCatalog)),
+            (ITemplateCatalog)host.Services!.GetService(typeof(ITemplateCatalog)));
+
         // Recover where the user was, and which project they were in.
         // Order matters: the navigator's own restore opens the project,
         // so loading the context first would be redundant work, not a
@@ -245,6 +294,44 @@ public sealed class WorkspaceHost : IAsyncDisposable
 
     /// <summary>The project's own milestone register.</summary>
     public IProjectMilestoneRegister? ProjectMilestones { get; private set; }
+
+    /// <summary>
+    /// Gets what reference data the platform holds and whether it may be
+    /// relied on — <see langword="null"/> before <see cref="StartAsync"/>
+    /// completes.
+    /// </summary>
+    public IReferenceLibraryRegister? ReferenceLibraries { get; private set; }
+
+    /// <summary>
+    /// Gets the read model answering "where did this engineering result
+    /// come from?" — <see langword="null"/> before <see cref="StartAsync"/>
+    /// completes.
+    /// </summary>
+    public IEngineeringTraceRegister? EngineeringTrace { get; private set; }
+
+    /// <summary>
+    /// Gets the governed bracket section check — <see langword="null"/>
+    /// before <see cref="StartAsync"/> completes.
+    /// </summary>
+    public GovernedBracketCheckService? BracketCheck { get; private set; }
+
+    /// <summary>
+    /// Gets the service that writes an executed bracket check into its
+    /// calculation pack and verification artefact — <see langword="null"/>
+    /// before <see cref="StartAsync"/> completes.
+    /// </summary>
+    public BracketEngineeringRecordService? BracketEngineeringRecords { get; private set; }
+
+    /// <summary>
+    /// Gets the governed reference review and release act —
+    /// <see langword="null"/> before <see cref="StartAsync"/> completes.
+    /// </summary>
+    /// <remarks>
+    /// It takes the reviewer from the session's own principal, so a review
+    /// performed through the application is attributable to whoever is
+    /// signed in and to nobody else.
+    /// </remarks>
+    public ReferenceReviewService? ReferenceReview { get; private set; }
 
     /// <summary>Setting milestones and deliverables, as the Project Workspace performs it.</summary>
     public IProjectMilestoneService? ProjectMilestoneWorkflow { get; private set; }

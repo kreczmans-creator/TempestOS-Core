@@ -34,7 +34,8 @@ public sealed class ReviseSampleMaterialCommandHandler : ICommandHandler<ReviseS
 
         var revised = await _materialCatalog.ReviseAsync(
             materialId,
-            MaterialsSampleModule.BuildSampleProperties(yieldStrengthMPa: 110.0, referenceLengthMm: 10.0),
+            MaterialsSampleModule.BuildSampleDefinition(yieldStrengthMPa: 110.0, referenceLengthMm: 10.0),
+            MaterialsSampleModule.SampleProvenance,
             "Revised via command — fictional updated test value.",
             cancellationToken)
             .ConfigureAwait(false);
