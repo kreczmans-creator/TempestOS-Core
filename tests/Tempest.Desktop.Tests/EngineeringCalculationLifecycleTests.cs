@@ -453,12 +453,53 @@ public sealed class EngineeringCalculationLifecycleTests
             Assert.Contains("nothing was deleted", view.StatusMessage, StringComparison.Ordinal);
             Assert.DoesNotContain(view.Calculations, c => c.RecordId == view.DisplayedOutcome!.CalculationRecordId);
 
+            // And it is shown under its own name. The list is filtered, so
+            // a retired calculation is not in it — reading the name from
+            // there alone would leave the box blank for a calculation that
+            // has one.
+            Assert.Equal("Bracket check — retired before relaunch", TextBoxOf(view, "Calculation name").Text);
+
             await second.ShutdownAsync();
         }
         finally
         {
             await second.DisposeAsync();
         }
+    }
+
+    [AvaloniaFact]
+    public async Task ArmingARetirementAndThenDoingSomethingElse_DisarmsIt_SoTheNextSinglePressCannotRetire()
+    {
+        await InWorkspaceAsync(async (host, window, view) =>
+        {
+            var executed = await RunNamedCheckAsync(window, view, "Bracket check — armed then abandoned", area: "60");
+            view = SurfaceOf(window);
+
+            var listed = view.Calculations.Single(c => c.RecordId == executed.CalculationRecordId);
+            var objectId = listed.ObjectId!.Value;
+
+            SelectAsync(window, view, listed);
+
+            // Arm the confirmation.
+            await ClickAsync(window, SurfaceOf(window), EngineeringCalculationView.RetireCaption);
+            await RenderUntilAsync(window, () => SurfaceOf(window).StatusMessage.Contains("terminal state", StringComparison.Ordinal));
+
+            // Now do something else. The warning leaves the screen — the
+            // status line is the whole warning, there is no dialog — so the
+            // confirmation must leave with it.
+            await ClickAsync(window, SurfaceOf(window), EngineeringCalculationView.OpenCaption);
+            await RenderUntilAsync(window, () => SurfaceOf(window).StatusMessage.Contains("Opened the calculation", StringComparison.Ordinal));
+
+            Assert.DoesNotContain("terminal state", SurfaceOf(window).StatusMessage, StringComparison.Ordinal);
+
+            // The next single press must describe again, not retire.
+            await ClickAsync(window, SurfaceOf(window), EngineeringCalculationView.RetireCaption);
+            await RenderUntilAsync(window, () => SurfaceOf(window).StatusMessage.Contains("terminal state", StringComparison.Ordinal));
+
+            Assert.Contains(SurfaceOf(window).Calculations, c => c.RecordId == executed.CalculationRecordId && !c.IsRetired);
+            Assert.False(EngineeringCalculationRegister.IsRetired(
+                ((IHasLifecycle)(await DomainOf(host).Repository.FindAsync(objectId))!).Status));
+        });
     }
 
     // ---- harness ----
@@ -512,9 +553,20 @@ public sealed class EngineeringCalculationLifecycleTests
 
         if (!view.Materials.Any(m => m.RecordId == MaterialSeed.Aluminium6082T6 && m.IsUsableForEngineering))
         {
-            PickerOf(view).SelectedItem = view.Materials.Single(m => m.RecordId == MaterialSeed.Aluminium6082T6);
-            TextBoxOf(view, "Source consulted").Text = "Aalco 6082-T6 extrusions datasheet";
-            TextBoxOf(view, "Release rationale").Text = "Required for the bracket section check.";
+            var picker = PickerOf(view);
+            AssertUsable(window, picker, "the reference library list");
+            picker.SelectedItem = view.Materials.Single(m => m.RecordId == MaterialSeed.Aluminium6082T6);
+
+            foreach (var (automationName, text) in new[]
+            {
+                ("Source consulted", "Aalco 6082-T6 extrusions datasheet"),
+                ("Release rationale", "Required for the bracket section check."),
+            })
+            {
+                var box = TextBoxOf(view, automationName);
+                AssertUsable(window, box, $"the '{automationName}' box");
+                box.Text = text;
+            }
 
             await ClickAsync(window, view, EngineeringCalculationView.ReleaseCaption);
             await RenderUntilAsync(window, () =>
@@ -528,7 +580,9 @@ public sealed class EngineeringCalculationLifecycleTests
         await RenderUntilAsync(window, () => !SurfaceOf(window).IsReadOnly);
         view = SurfaceOf(window);
 
-        PickerOf(view).SelectedItem = view.Materials.Single(m => m.RecordId == MaterialSeed.Aluminium6082T6);
+        var materials = PickerOf(view);
+        AssertUsable(window, materials, "the reference library list");
+        materials.SelectedItem = view.Materials.Single(m => m.RecordId == MaterialSeed.Aluminium6082T6);
 
         var nameBox = TextBoxOf(view, "Calculation name");
         AssertUsable(window, nameBox, "the calculation name box");

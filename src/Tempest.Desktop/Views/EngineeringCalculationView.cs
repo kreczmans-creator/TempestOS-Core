@@ -355,7 +355,13 @@ public sealed class EngineeringCalculationView : UserControl
     /// <summary>Shows an outcome — a result, a refusal, or a rejected input.</summary>
     /// <param name="outcome">What the workbench answered.</param>
     /// <param name="readOnly">Whether this is a persisted record being viewed rather than a new run.</param>
-    public void ShowOutcome(BracketCalculationOutcome outcome, bool readOnly = false)
+    /// <param name="recordedName">
+    /// What the recorded calculation is called, where the caller knows.
+    /// Supplied because the list this view holds is filtered — a retired
+    /// calculation is not in it — so falling back to the list alone would
+    /// show a blank name for a calculation that has one.
+    /// </param>
+    public void ShowOutcome(BracketCalculationOutcome outcome, bool readOnly = false, string? recordedName = null)
     {
         ArgumentNullException.ThrowIfNull(outcome);
 
@@ -368,8 +374,8 @@ public sealed class EngineeringCalculationView : UserControl
         // would misattribute the record on screen.
         if (readOnly)
         {
-            _nameBox.Text = Calculations
-                .FirstOrDefault(c => c.RecordId == outcome.CalculationRecordId && c.IsNamed)?.Title
+            _nameBox.Text = recordedName
+                ?? Calculations.FirstOrDefault(c => c.RecordId == outcome.CalculationRecordId && c.IsNamed)?.Title
                 ?? string.Empty;
         }
 

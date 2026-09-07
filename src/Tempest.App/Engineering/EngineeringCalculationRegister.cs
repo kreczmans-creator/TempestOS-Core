@@ -48,8 +48,11 @@ namespace Tempest.App.Engineering;
 /// behind it.
 /// </para>
 /// <para>
-/// <b>Retiring is not deleting, deliberately (`TD-169`).</b> This type
-/// never calls <see cref="IDeletable.DeleteAsync"/>. That is a soft delete
+/// <b>Retiring is not deleting, deliberately (`TD-169`).</b> Retiring never
+/// calls <see cref="IDeletable.DeleteAsync"/>. (The one place this type
+/// does call it is withdrawing an object whose own creation failed, which
+/// is residue rather than anybody's engineering work — see
+/// <see cref="NameAsync"/>.) That is a soft delete
 /// the platform has no undo for — <c>EngineeringObjectBase.DeleteAsync</c>
 /// states in its own remarks that no writer anywhere clears the flag and
 /// that every read model filters the object out — so using it would make a
@@ -125,15 +128,32 @@ public sealed class EngineeringCalculationRegister
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
-                // Reported precisely, because "it could not be named" would
-                // be untrue: the object exists, durably, and carries the
-                // name. What is missing is its link to the record, and this
-                // workspace lists a named calculation by that link, so the
-                // object will not appear here. It cannot be undone from
-                // here either — `IEngineeringObjectRepository` exposes no
-                // unregister anywhere in the platform, which is `TD-147`'s
-                // own disclosure and not this type's to close.
-                throw new EngineeringCalculationNamingException(created.Id, recordId, displayName, ex);
+                // Compensate, then report precisely which of the two
+                // outcomes actually happened.
+                //
+                // The object exists durably at this point and carries the
+                // name, so "it could not be named" would be untrue. What is
+                // missing is its link to the record, and this workspace
+                // finds a named calculation by that link, so the object
+                // would sit in the repository reachable by every other
+                // read model and by none of this one's.
+                //
+                // The repository has no unregister — that is `TD-147`'s
+                // disclosure — but a soft delete does remove the object
+                // from every read model that filters `IsDeleted`, this
+                // one's `ListAsync` included. It is the right instrument
+                // *here* and only here: this object is not somebody's
+                // engineering work, it is the residue of a creation that
+                // failed, and it has existed for the length of one failed
+                // call. That is the opposite of the case this type refuses
+                // to use `DeleteAsync` for elsewhere.
+                //
+                // The compensation can itself fail — most likely for the
+                // very reason the link did — so its outcome is carried in
+                // the exception rather than assumed.
+                var compensated = await TryWithdrawAsync(created, cancellationToken).ConfigureAwait(false);
+
+                throw new EngineeringCalculationNamingException(created.Id, recordId, displayName, compensated, ex);
             }
         }
 
@@ -164,6 +184,35 @@ public sealed class EngineeringCalculationRegister
         }
 
         return [.. named.OrderByDescending(n => n.CreatedAt)];
+    }
+
+    /// <summary>
+    /// Withdraws an object whose creation did not complete, and reports
+    /// whether that succeeded.
+    /// </summary>
+    /// <remarks>
+    /// Soft-deleting it is the only withdrawal the platform offers, and it
+    /// removes the object from every read model that filters
+    /// <see cref="IDeletable.IsDeleted"/> — which is all of them. Failure
+    /// is returned rather than thrown, because the caller is already
+    /// reporting a failure and a second exception thrown from inside the
+    /// first one's handling would replace the accurate account with a
+    /// less accurate one.
+    /// </remarks>
+    private static async Task<bool> TryWithdrawAsync(IEngineeringObject created, CancellationToken cancellationToken)
+    {
+        if (created is not IDeletable deletable)
+            return false;
+
+        try
+        {
+            await deletable.DeleteAsync(cancellationToken).ConfigureAwait(false);
+            return true;
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            return false;
+        }
     }
 
     /// <summary>The named calculation carrying <paramref name="recordId"/>, or <see langword="null"/> where nobody has named that record.</summary>
@@ -199,19 +248,6 @@ public sealed class EngineeringCalculationRegister
     }
 
     /// <summary>
-    /// Takes a calculation out of the active list without deleting
-    /// anything, by transitioning its Domain object to the nearest retained
-    /// terminal lifecycle state its current state permits.
-    /// </summary>
-    /// <remarks>
-    /// Where no permitted retained terminal state exists from where the
-    /// object currently is, this refuses and says so rather than forcing
-    /// one — an unreachable transition is a governance answer, not an error
-    /// to route around.
-    /// </remarks>
-    /// <param name="calculationObjectId">The named calculation to retire.</param>
-    /// <param name="cancellationToken">A cancellation token.</param>
-    /// <summary>
     /// What retiring <paramref name="calculationObjectId"/> would do, in
     /// the same words the act itself would use, without doing it.
     /// </summary>
@@ -245,6 +281,21 @@ public sealed class EngineeringCalculationRegister
             + "Press Retire again to confirm.");
     }
 
+    /// <summary>
+    /// Takes a calculation out of the active list without deleting
+    /// anything, by transitioning its Domain object to the nearest retained
+    /// terminal lifecycle state its current state permits.
+    /// </summary>
+    /// <remarks>
+    /// Where no permitted retained terminal state exists from where the
+    /// object currently is, this refuses and says so rather than forcing
+    /// one — an unreachable transition is a governance answer, not an error
+    /// to route around. <see cref="DescribeRetirementAsync"/> answers the
+    /// same question without acting, so a surface can say what will happen
+    /// before it happens.
+    /// </remarks>
+    /// <param name="calculationObjectId">The named calculation to retire.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
     public async Task<CalculationRegisterOutcome> RetireAsync(
         Guid calculationObjectId, CancellationToken cancellationToken = default)
     {
@@ -415,18 +466,27 @@ public sealed class EngineeringCalculationNamingException : Exception
     /// <param name="calculationObjectId">The object that was created and named.</param>
     /// <param name="recordId">The record it could not be linked to.</param>
     /// <param name="displayName">The name it carries.</param>
+    /// <param name="wasWithdrawn">Whether the half-created object was successfully withdrawn afterwards.</param>
     /// <param name="innerException">What the link failed with.</param>
-    public EngineeringCalculationNamingException(Guid calculationObjectId, Guid recordId, string displayName, Exception innerException)
+    public EngineeringCalculationNamingException(
+        Guid calculationObjectId, Guid recordId, string displayName, bool wasWithdrawn, Exception innerException)
         : base(
             $"The calculation object '{calculationObjectId}' was created and named \"{displayName}\", durably, but could not be linked to record "
-            + $"'{recordId}': {innerException.Message} The calculation itself is recorded and unaffected. The named object exists and will not appear "
-            + "in this workspace's list, which finds a named calculation by that link; the platform has no operation to withdraw it (TD-147).",
+            + $"'{recordId}': {innerException.Message} The calculation itself is recorded and unaffected. "
+            + (wasWithdrawn
+                ? "The half-created object was withdrawn, so nothing was left behind."
+                : "The half-created object could not be withdrawn either, so it remains in the repository, carrying that name and belonging to whatever "
+                  + "project was open, and will not appear in this workspace's list, which finds a named calculation by its record link (TD-170)."),
             innerException)
     {
         CalculationObjectId = calculationObjectId;
         RecordId = recordId;
         DisplayName = displayName;
+        WasWithdrawn = wasWithdrawn;
     }
+
+    /// <summary>Whether the half-created object was withdrawn afterwards, leaving nothing behind.</summary>
+    public bool WasWithdrawn { get; }
 
     /// <summary>The object that was created and named.</summary>
     public Guid CalculationObjectId { get; }

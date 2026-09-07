@@ -15,9 +15,9 @@ was already registered by `CalculationsWorkspaceRegistration`. `TD-168` is
 **Resolved**; `TD-169` (the canonical lifecycle permits no `Draft` ->
 `Archived`, so a freshly recorded calculation retires to `Cancelled`) and
 `TD-170` (naming's uncompensated create-then-link, depending on `TD-147`)
-are opened. Gate: 5,153 Core + 499 Desktop, 0 failed, 0 skipped, 0 warnings
+are opened. Gate: 5,153 Core + 500 Desktop, 0 failed, 0 skipped, 0 warnings
 and 0 errors in both configurations; governance 15 passed / 1 pre-existing
-warn / 0 failed. Nine-perspective Colour Review Board run and remediated.
+warn / 0 failed. Nine-perspective Colour Review Board run, remediated, re-reviewed, and the three defects that re-review found in the remediation itself remediated in turn.
 **Still not merged, not tagged, not published, not certified, and `TD-147`
 remains the only Release Blocking row, untouched.** Report:
 `docs/releases/v0.16.0/WP16.4B Follow-On — Engineering Calculations Workspace Usability Completion.md`.

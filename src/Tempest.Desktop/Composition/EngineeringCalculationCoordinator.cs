@@ -35,6 +35,17 @@ internal sealed class EngineeringCalculationCoordinator
     /// is. Retirement reaches a terminal lifecycle state, so it is said
     /// before it is done.
     /// </summary>
+    /// <remarks>
+    /// <b>The confirmation is armed only while the sentence describing it
+    /// is still the one on screen.</b> The status line is the whole warning
+    /// — there is no dialog — so anything that replaces it disarms this
+    /// too. Every other operation on this surface therefore calls
+    /// <see cref="ForgetPendingRetirement"/> before it writes a status of
+    /// its own; without that, opening a calculation after arming would
+    /// clear the warning from the screen while leaving the next single
+    /// press able to retire it, which is exactly the unconfirmed terminal
+    /// transition the confirmation exists to prevent.
+    /// </remarks>
     private Guid? _retirementAwaitingConfirmation;
 
     /// <summary>Initialises a new instance of the <see cref="EngineeringCalculationCoordinator"/> class.</summary>
@@ -63,8 +74,12 @@ internal sealed class EngineeringCalculationCoordinator
     /// is precisely the claim this panel exists to prevent.
     /// </remarks>
     /// <param name="restoreInputs">Whether to put the remembered figures back into the boxes — done on the first entry of a session, not on every return, so a half-typed input is not discarded by navigating away and back.</param>
-    public async Task RefreshAsync(bool restoreInputs = false)
+    public Task RefreshAsync(bool restoreInputs = false) => GuardedAsync(() => RefreshCoreAsync(restoreInputs), "load the workspace");
+
+    private async Task RefreshCoreAsync(bool restoreInputs)
     {
+        ForgetPendingRetirement();
+
         _view.ShowCatalogue(EngineeringCalculationCatalogue.All());
         _view.ShowMaterials(await _workbench.ListMaterialsAsync().ConfigureAwait(true));
         _view.ShowCalculations(await _workbench.ListCalculationsAsync(_view.ShowRetired).ConfigureAwait(true));
@@ -81,18 +96,21 @@ internal sealed class EngineeringCalculationCoordinator
         if (outcome is null)
             return;
 
+        // Whether it has since been retired is part of the answer. Showing
+        // a retired calculation as "the calculation you were last working
+        // on" without saying so would contradict the list it is no longer
+        // in, and leave the engineer with no way to tell why. It is also
+        // where the name comes from: the list is filtered, so a retired
+        // calculation is not in it to be read from.
+        var named = await _workbench.FindNamedAsync(outcome.CalculationRecordId).ConfigureAwait(true);
+
         // Recovered from a record, so it is a recorded calculation being
         // viewed, not one being entered.
-        _view.ShowOutcome(outcome, readOnly: true);
+        _view.ShowOutcome(outcome, readOnly: true, recordedName: named?.DisplayName);
 
         if (!restoreInputs)
             return;
 
-        // Whether it has since been retired is part of the answer. Showing
-        // a retired calculation as "the calculation you were last working
-        // on" without saying so would contradict the list it is no longer
-        // in, and leave the engineer with no way to tell why.
-        var named = await _workbench.FindNamedAsync(outcome.CalculationRecordId).ConfigureAwait(true);
         var retired = named is { IsRetired: true }
             ? $" It has since been retired out of the active list — its governed status is {named.Status} — and nothing was deleted."
             : string.Empty;
@@ -102,12 +120,20 @@ internal sealed class EngineeringCalculationCoordinator
     }
 
     /// <summary>Starts a new, editable calculation.</summary>
-    public void BeginNewCalculation() => _view.BeginNewCalculation();
+    public void BeginNewCalculation()
+    {
+        ForgetPendingRetirement();
+        _view.BeginNewCalculation();
+    }
 
     /// <summary>Opens one persisted calculation, read-only, exactly as recorded.</summary>
     /// <param name="recordId">The record to open.</param>
-    public async Task OpenAsync(Guid recordId)
+    public Task OpenAsync(Guid recordId) => GuardedAsync(() => OpenCoreAsync(recordId), "open that calculation");
+
+    private async Task OpenCoreAsync(Guid recordId)
     {
+        ForgetPendingRetirement();
+
         var outcome = await _workbench.OpenAsync(recordId).ConfigureAwait(true);
 
         if (outcome is null)
@@ -116,14 +142,20 @@ internal sealed class EngineeringCalculationCoordinator
             return;
         }
 
-        _view.ShowOutcome(outcome, readOnly: true);
+        var named = await _workbench.FindNamedAsync(recordId).ConfigureAwait(true);
+
+        _view.ShowOutcome(outcome, readOnly: true, recordedName: named?.DisplayName);
         _view.ShowVerification(await _workbench.ReadVerificationAsync().ConfigureAwait(true));
         _view.ShowStatus($"Opened the calculation of {outcome.ExecutedAt:yyyy-MM-dd HH:mm:ss} UTC, read-only. Nothing was recalculated.");
     }
 
     /// <summary>Populates the material library from the shipped seed corpus.</summary>
-    public async Task PopulateAsync()
+    public Task PopulateAsync() => GuardedAsync(PopulateCoreAsync, "populate the material library");
+
+    private async Task PopulateCoreAsync()
     {
+        ForgetPendingRetirement();
+
         var added = await _workbench.PopulateMaterialLibraryAsync().ConfigureAwait(true);
 
         await RefreshAsync().ConfigureAwait(true);
@@ -133,8 +165,12 @@ internal sealed class EngineeringCalculationCoordinator
     }
 
     /// <summary>Verifies and releases the selected material, in the engineer's own words.</summary>
-    public async Task VerifyAndReleaseAsync()
+    public Task VerifyAndReleaseAsync() => GuardedAsync(VerifyAndReleaseCoreAsync, "verify and release that material");
+
+    private async Task VerifyAndReleaseCoreAsync()
     {
+        ForgetPendingRetirement();
+
         var selected = _view.SelectedMaterial;
 
         if (selected is null)
@@ -176,8 +212,12 @@ internal sealed class EngineeringCalculationCoordinator
     }
 
     /// <summary>Runs the bracket section check against what the engineer entered.</summary>
-    public async Task CalculateAsync()
+    public Task CalculateAsync() => GuardedAsync(CalculateCoreAsync, "run the calculation");
+
+    private async Task CalculateCoreAsync()
     {
+        ForgetPendingRetirement();
+
         var outcome = await _workbench.RunAsync(_view.CurrentInputs, _view.CalculationName).ConfigureAwait(true);
 
         _view.ShowOutcome(outcome);
@@ -202,13 +242,17 @@ internal sealed class EngineeringCalculationCoordinator
     /// <summary>Changes what one calculation is called, and nothing else.</summary>
     /// <param name="calculationObjectId">The governed calculation object to rename.</param>
     /// <param name="newName">Its new display name.</param>
-    public async Task RenameAsync(Guid calculationObjectId, string newName)
+    public Task RenameAsync(Guid calculationObjectId, string newName) => GuardedAsync(() => RenameCoreAsync(calculationObjectId, newName), "rename that calculation");
+
+    private async Task RenameCoreAsync(Guid calculationObjectId, string newName)
     {
+        ForgetPendingRetirement();
+
         // A handler's own exception propagates out of the dispatcher by
         // design (`ADR-0038`), and the shell starts this as a discarded
         // task, so an unguarded failure would be an unobserved fault and a
         // status line that never changes. Caught here and said out loud.
-        var outcome = await GuardedAsync(() => _workbench.RenameAsync(calculationObjectId, newName), "rename").ConfigureAwait(true);
+        var outcome = await _workbench.RenameAsync(calculationObjectId, newName).ConfigureAwait(true);
 
         if (outcome.Succeeded)
             _view.ShowCalculations(await _workbench.ListCalculationsAsync(_view.ShowRetired).ConfigureAwait(true));
@@ -223,7 +267,9 @@ internal sealed class EngineeringCalculationCoordinator
     /// delete.
     /// </summary>
     /// <param name="calculationObjectId">The governed calculation object to retire.</param>
-    public async Task RetireAsync(Guid calculationObjectId)
+    public Task RetireAsync(Guid calculationObjectId) => GuardedAsync(() => RetireCoreAsync(calculationObjectId), "retire that calculation");
+
+    private async Task RetireCoreAsync(Guid calculationObjectId)
     {
         // Retirement reaches a terminal lifecycle state, so the first press
         // says exactly what will happen and to which state, and the second
@@ -232,7 +278,7 @@ internal sealed class EngineeringCalculationCoordinator
         // that will act on it.
         if (_retirementAwaitingConfirmation != calculationObjectId)
         {
-            var described = await GuardedAsync(() => _workbench.DescribeRetirementAsync(calculationObjectId), "retire").ConfigureAwait(true);
+            var described = await _workbench.DescribeRetirementAsync(calculationObjectId).ConfigureAwait(true);
 
             _retirementAwaitingConfirmation = described.Succeeded ? calculationObjectId : null;
             _view.ShowStatus(described.Message);
@@ -241,7 +287,7 @@ internal sealed class EngineeringCalculationCoordinator
 
         _retirementAwaitingConfirmation = null;
 
-        var outcome = await GuardedAsync(() => _workbench.RetireAsync(calculationObjectId), "retire").ConfigureAwait(true);
+        var outcome = await _workbench.RetireAsync(calculationObjectId).ConfigureAwait(true);
 
         if (outcome.Succeeded)
             _view.ShowCalculations(await _workbench.ListCalculationsAsync(_view.ShowRetired).ConfigureAwait(true));
@@ -252,22 +298,37 @@ internal sealed class EngineeringCalculationCoordinator
     /// <summary>Forgets any retirement waiting on a confirmation — called when the engineer's attention moves elsewhere.</summary>
     public void ForgetPendingRetirement() => _retirementAwaitingConfirmation = null;
 
-    /// <summary>Runs one governed act, turning an unexpected failure into a sentence rather than an unobserved fault.</summary>
-    private static async Task<CalculationRegisterOutcome> GuardedAsync(Func<Task<CalculationRegisterOutcome>> act, string what)
+    /// <summary>
+    /// Runs one whole operation, turning an unexpected failure into a
+    /// sentence on the status line rather than an unobserved fault.
+    /// </summary>
+    /// <remarks>
+    /// <b>Every public entry point on this coordinator goes through here,
+    /// and the whole body is inside it — not just the governed call.</b>
+    /// The shell starts each of these as a discarded task, a command
+    /// handler's own exception propagates out of the dispatcher by design
+    /// (`ADR-0038`), and a durable write can throw from anywhere in the
+    /// body including the list re-read that follows a successful write. A
+    /// guard around only the write would still leave a failure after it
+    /// silent, which is the shape this exists to close.
+    /// </remarks>
+    private async Task GuardedAsync(Func<Task> operation, string what)
     {
         try
         {
-            return await act().ConfigureAwait(true);
+            await operation().ConfigureAwait(true);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            return new CalculationRegisterOutcome(false, $"The {what} failed and nothing was changed: {ex.Message}");
+            _view.ShowStatus($"Could not {what}: {ex.Message}");
         }
     }
 
     /// <summary>Shows, or stops showing, retired calculations alongside the active ones.</summary>
     /// <param name="includeRetired">Whether retired calculations should be listed.</param>
-    public async Task SetShowRetiredAsync(bool includeRetired)
+    public Task SetShowRetiredAsync(bool includeRetired) => GuardedAsync(() => SetShowRetiredCoreAsync(includeRetired), "change what the list shows");
+
+    private async Task SetShowRetiredCoreAsync(bool includeRetired)
     {
         _retirementAwaitingConfirmation = null;
 

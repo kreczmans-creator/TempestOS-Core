@@ -158,23 +158,22 @@ public class EngineeringCalculationRegisterTests
         // was, durably, which is the whole point of reporting this
         // separately.
         Assert.Contains("was created and named", thrown.Message, StringComparison.Ordinal);
-        Assert.Contains("TD-147", thrown.Message, StringComparison.Ordinal);
 
-        // And the object really is there, carrying that name, with no
-        // record link — the residue the message discloses.
-        var orphan = await domain.Repository.FindAsync(thrown.CalculationObjectId);
-        Assert.NotNull(orphan);
-        Assert.Equal("Bracket check — half named", ((IHasBusinessIdentifier)orphan!).DisplayName);
-        Assert.Empty(await ((IHasRelationships)orphan!).GetRelationshipsAsync());
+        // The half-created object is withdrawn rather than left behind.
+        // Withdrawing residue from a creation that failed is the one place
+        // this type uses a soft delete, and it is the opposite of the case
+        // it refuses to use one for: this is not anybody's engineering
+        // work, and it has existed for the length of one failed call.
+        Assert.True(thrown.WasWithdrawn, "The half-created object should have been withdrawn.");
+        Assert.Contains("nothing was left behind", thrown.Message, StringComparison.Ordinal);
 
-        // It is a named calculation with no record behind it, which is
-        // exactly what the message says. The workspace's own list is driven
-        // from the engine's records and matches names to them by that link,
-        // so a name with no link has nothing to attach to and does not
-        // appear there — which is the residue the message discloses, and it
-        // is disclosed rather than hidden.
-        var orphaned = (await register.ListAsync()).Single(n => n.ObjectId == thrown.CalculationObjectId);
-        Assert.Null(orphaned.RecordId);
+        var withdrawn = await domain.Repository.FindAsync(thrown.CalculationObjectId);
+        Assert.NotNull(withdrawn);
+        Assert.True(((IDeletable)withdrawn!).IsDeleted);
+
+        // So it is in no read model: not this register's list, and not
+        // findable by the record it was never linked to.
+        Assert.DoesNotContain(await register.ListAsync(), n => n.ObjectId == thrown.CalculationObjectId);
         Assert.Null(await register.FindByRecordAsync(absentRecordId));
     }
 
