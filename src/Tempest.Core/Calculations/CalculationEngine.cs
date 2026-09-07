@@ -99,7 +99,7 @@ public sealed class CalculationEngine : ICalculationEngine
 
         var dto = new CalculationRecordDto<TResult>(
             calculationId, result, definition.Metadata.Assumptions, context.IntermediateResults,
-            validation, context.ReferencedMaterialIds, executedAt, executedBy);
+            validation, context.ReferencedMaterialIds, executedAt, executedBy, typeof(TResult).FullName);
 
         var document = await _documentStore.CreateAsync(CalculationRecordDocumentKind, JsonSerializer.Serialize(dto), cancellationToken)
             .ConfigureAwait(false);
@@ -149,6 +149,18 @@ public sealed class CalculationEngine : ICalculationEngine
 
         if (dto is null)
             throw new CalculationException($"Calculation record '{recordId}' deserialised to nothing.");
+
+        // A record written by a different calculation deserialises happily
+        // into the wrong result type, producing a well-formed object full of
+        // defaults. Refuse it: a plausible-looking zero is the worst answer
+        // an engineering tool can give.
+        if (dto.ResultTypeName is { } storedType && !string.Equals(storedType, typeof(TResult).FullName, StringComparison.Ordinal))
+        {
+            throw new CalculationException(
+                $"Calculation record '{recordId}' holds a '{storedType}' result and was asked for a "
+                + $"'{typeof(TResult).FullName}'. Reading it as the requested type would return defaults "
+                + "rather than an answer.");
+        }
 
         return new CalculationRecord<TResult>(
             recordId,

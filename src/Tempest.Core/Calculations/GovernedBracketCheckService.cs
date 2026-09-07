@@ -106,6 +106,16 @@ public sealed class GovernedBracketCheckService
     /// <summary>Initialises a new instance of the <see cref="GovernedBracketCheckService"/> class.</summary>
     /// <param name="materials">The Materials Library the check resolves against.</param>
     /// <param name="engine">The calculation engine, which must already have <see cref="BracketSectionCheckCalculationDefinition"/> registered.</param>
+    /// <remarks>
+    /// Registers <see cref="BracketSectionCheckCalculationDefinition"/> with
+    /// <paramref name="engine"/> if it is not already registered. The
+    /// container offers no factory registration, so the alternative was to
+    /// make every caller remember to register the definition before
+    /// resolving this service — a coupling that would be discovered at run
+    /// time, once, by whoever forgot. A duplicate registration is treated as
+    /// the same definition already being present rather than as an error,
+    /// so constructing the service twice is harmless.
+    /// </remarks>
     public GovernedBracketCheckService(IMaterialCatalog materials, ICalculationEngine engine)
     {
         ArgumentNullException.ThrowIfNull(materials);
@@ -113,6 +123,17 @@ public sealed class GovernedBracketCheckService
 
         _materials = materials;
         _engine = engine;
+
+        try
+        {
+            _engine.RegisterDefinition(new BracketSectionCheckCalculationDefinition());
+        }
+        catch (DuplicateCalculationException)
+        {
+            // Already registered — by an earlier instance of this service,
+            // or by a module that registered it explicitly. Either way the
+            // definition the engine holds is this same immutable type.
+        }
     }
 
     /// <summary>The material property the allowable stress is taken from.</summary>
