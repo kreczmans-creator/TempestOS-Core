@@ -754,7 +754,7 @@ function Test-NamespaceRegisterMatchesSource
     # "0 - retired, ..." is a deliberately-kept historical row for a
     # namespace with zero real files today (WP-C); excluded from both the
     # name and the file-count comparison below, exactly as the register's
-    # own "Total: 46 namespaces" line excludes it.
+    # own "Total: 47 namespaces" line excludes it.
     $rowMatches = [regex]::Matches($tableBody, '(?m)^\|\s*`([^`]+)`\s*\|\s*[^|]+\|\s*(\d+)')
     $registerRows = foreach ($m in $rowMatches)
     {

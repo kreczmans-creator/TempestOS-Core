@@ -50,6 +50,15 @@ namespace Tempest.Core.EngineeringDomain;
 /// now merely reached by a different path. Nothing reads a stale marker
 /// as a fault.
 /// </para>
+/// <para>
+/// <b>It is, however, now visible (`WP 16.4B-R6`).</b> "Not a fault" was
+/// read as "not worth reporting", and the sweep skipped a marked content
+/// key with no report entry and no log line while a collected orphan got
+/// both — so the bounded leak this paragraph describes could not be
+/// observed by an operator at all. It is reported in
+/// <see cref="AttachmentContentReconciliationReport.SkippedByMarker"/>.
+/// Reporting it changes nothing about what gets collected.
+/// </para>
 /// </remarks>
 public interface IAttachmentWriteIntentStore
 {

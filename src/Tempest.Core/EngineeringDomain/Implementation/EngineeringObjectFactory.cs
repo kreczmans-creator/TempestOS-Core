@@ -8,7 +8,7 @@ namespace Tempest.Core.EngineeringDomain;
 /// root rather than resolved from any registry (§8: no registry contract is proposed by WP8.2B).
 /// </summary>
 public sealed class EngineeringObjectFactory<T> : IEngineeringObjectFactory
-    where T : EngineeringObjectBase
+    where T : EngineeringObjectBase, IRehydratable<T>
 {
     private readonly EngineeringDomainContext _context;
     private readonly Func<IEngineeringDocument, IDocumentRevision, T> _constructor;
@@ -33,7 +33,16 @@ public sealed class EngineeringObjectFactory<T> : IEngineeringObjectFactory
         var currentRevision = revisions[^1];
 
         var instance = _constructor(document, currentRevision);
-        instance.AttachSelfFactory((doc, rev) => _constructor(doc, rev));
+        // `WP 16.4B-R6`. The successor `ReviseAsync` builds is produced by
+        // this type's own state reader, given the state captured at the
+        // moment of the revision — not by re-running this factory's
+        // construction closure, which only ever knew the values passed to
+        // *this* call and therefore reverted every type-specific field a
+        // caller had changed since. `IRehydratable{T}` is the interface that
+        // reader already lives on (`TD-85`), which is why it is required
+        // here; every canonical Kind in the platform implements it, because
+        // every canonical Kind has to survive a restart.
+        instance.AttachSelfFactory((doc, rev, state) => T.Rehydrate(doc, rev, _context, state));
         _context.Repository.Register(instance);
 
         // `TD-85`. The document alone only ever carried Kind, created-at and

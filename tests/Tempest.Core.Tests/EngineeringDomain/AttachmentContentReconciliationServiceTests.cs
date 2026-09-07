@@ -537,6 +537,63 @@ public sealed class AttachmentContentReconciliationServiceTests : IDisposable
         Assert.Contains(attachments, a => a.Id == attachmentId);
     }
 
+    /// <summary>
+    /// `WP 16.4B-R6`, board finding `P2-4`: a marker-protected content
+    /// record is <em>reported</em>, not merely skipped in silence.
+    /// </summary>
+    /// <remarks>
+    /// The sweep has always declined to collect these, and still does —
+    /// that is the safe end of the trade and is unchanged here. What was
+    /// wrong is that it said nothing: a collected orphan produced a report
+    /// entry and a log line, and a skipped one produced neither, so the
+    /// bounded leak `TD-97` and `TD-139` both disclose was invisible to
+    /// every operator-facing surface the platform has. A bounded leak
+    /// nobody can see is indistinguishable from a leak nobody has.
+    /// </remarks>
+    [Fact]
+    public async Task SweepAsync_AMarkerProtectedContentRecord_IsReportedAsSkippedRatherThanPassedOverInSilence()
+    {
+        var fixture = Build();
+
+        // The state a marker exists to protect: content present, nothing
+        // referencing it, a marker still set. Written directly, because
+        // `AttachContentAsync` no longer leaves this behind by itself.
+        var protectedId = Guid.NewGuid();
+        await fixture.ContentStore.SaveAsync(protectedId, new byte[] { 7, 7, 7 });
+        await fixture.WriteIntentStore.MarkAsync(protectedId);
+
+        var orphanId = Guid.NewGuid();
+        await fixture.ContentStore.SaveAsync(orphanId, new byte[] { 9, 9, 9 });
+
+        var sweep = new AttachmentContentReconciliationService(fixture.Persistence, fixture.StateStore, fixture.ContentStore, fixture.WriteIntentStore);
+        var report = await sweep.SweepAsync();
+
+        // Still protected, and now visible.
+        Assert.Equal(protectedId, Assert.Single(report.SkippedByMarker));
+        Assert.Equal(AttachmentContentStatus.Available, (await fixture.ContentStore.ReadAsync(protectedId, expectedHash: null, expectedSizeInBytes: 3)).Status);
+
+        // The genuine orphan alongside it is unaffected — reporting the
+        // skipped one does not change what gets collected.
+        var orphan = Assert.Single(report.Orphans);
+        Assert.Equal(orphanId, orphan.AttachmentId);
+        Assert.True(orphan.Collected);
+    }
+
+    /// <summary>And a healthy store reports nothing skipped — the list is a signal, not noise.</summary>
+    [Fact]
+    public async Task SweepAsync_AfterAnOrdinaryAttach_ReportsNothingSkippedByMarker()
+    {
+        var fixture = Build();
+        var part = await CreatePartAsync(fixture.Context, "PART-1", "Bracket");
+        _ = await part.AttachContentAsync("drawing.pdf", "application/pdf", new byte[] { 1, 2, 3, 4 });
+
+        var sweep = new AttachmentContentReconciliationService(fixture.Persistence, fixture.StateStore, fixture.ContentStore, fixture.WriteIntentStore);
+        var report = await sweep.SweepAsync();
+
+        Assert.Empty(report.SkippedByMarker);
+        Assert.Empty(report.Orphans);
+    }
+
     /// <summary>The marker is removed on the success path, so an ordinary, unrelated orphan is still collectable afterwards.</summary>
     [Fact]
     public async Task SweepAsync_AfterAnOrdinaryAttach_TheMarkerIsClearedAndUnrelatedOrphansStillCollect()

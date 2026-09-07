@@ -38,7 +38,8 @@ public sealed class InvalidLifecycleTransitionException : EngineeringDomainExcep
 /// <summary>
 /// `WP 16.4B-R4`: a durable write was attempted on an Engineering Object
 /// instance that <see cref="IHasRevisions.ReviseAsync"/> has already
-/// superseded.
+/// superseded — or (`WP 16.4B-R6`) a second revision was attempted through
+/// such an instance.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -61,6 +62,19 @@ public sealed class InvalidLifecycleTransitionException : EngineeringDomainExcep
 /// — letting it succeed — is the permanent, silent loss of whatever it
 /// wrote, and where the lost field is an attachment reference the
 /// reconciliation sweep then deletes the file's bytes as an orphan.
+/// </para>
+/// <para>
+/// <b>A second revision through the same instance raises it too
+/// (`WP 16.4B-R6`).</b> An identity has at most one live successor.
+/// Revising an already-revised predecessor used to mint a second one,
+/// overwrite the predecessor's own retirement pointer and leave the first
+/// successor un-retired — two independently mutable instances on one
+/// durable record, which is precisely the lost update above with the
+/// ordering point removed. So a revision that would create the second
+/// successor is refused here, exactly as a durable write through the
+/// predecessor is. Revising a <em>successor</em> is untouched: the guard
+/// is per instance, and a successor is its own unrevised instance until it
+/// is itself revised.
 /// </para>
 /// <para>
 /// Recovering from this is to re-fetch the object from
