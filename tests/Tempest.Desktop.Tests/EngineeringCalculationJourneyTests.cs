@@ -49,6 +49,9 @@ namespace Tempest.Desktop.Tests;
 [Collection("Tempest.Desktop WorkspaceHost persistence")]
 public sealed class EngineeringCalculationJourneyTests
 {
+    /// <summary>The rail entry an engineer looks for. Deliberately the words, not the enum name.</summary>
+    private const string CalculationsRailEntry = "Engineering Calculations";
+
     private const string EngineerId = "desktop-journey-engineer";
     private const string SourceConsulted = "Aalco 6082-T6 extrusions datasheet, mechanical and physical property tables";
     private const string ReleaseRationale = "Required for the bracket section check.";
@@ -64,13 +67,10 @@ public sealed class EngineeringCalculationJourneyTests
         {
             await first.StartAsync();
             SignIn(first);
-            var window = new MainWindow(first);
+            var window = OpenWindow(first);
 
-            // --- 1. Navigation reaches the calculation workspace ---------
-            await first.ShellNavigator!.GoToModuleAsync(ShellArea.EngineeringCalculation);
-            await window.RenderCurrentModuleAsync();
-
-            Assert.Equal(ShellArea.EngineeringCalculation, first.ShellNavigator.Current.Area);
+            // --- 1. Discover and open it from the rail, as a person does -
+            await OpenCalculationsFromTheRailAsync(first, window);
             var view = SurfaceOf(window);
             Assert.NotNull(view);
 
@@ -87,7 +87,7 @@ public sealed class EngineeringCalculationJourneyTests
             // the shipped seed corpus is absent until somebody asks for it.
             Assert.DoesNotContain(view.Materials, m => m.RecordId == MaterialSeed.Aluminium6082T6);
 
-            await ClickAsync(view, EngineeringCalculationView.PopulateCaption);
+            await ClickAsync(window, view, EngineeringCalculationView.PopulateCaption);
             await RenderUntilAsync(window, () => SurfaceOf(window).Materials.Any(m => m.RecordId == MaterialSeed.Aluminium6082T6));
 
             view = SurfaceOf(window);
@@ -104,7 +104,7 @@ public sealed class EngineeringCalculationJourneyTests
 
             // --- 4. An unreleased reference is refused, visibly ----------
             EnterInputs(view, load: "12", area: "60", length: "150", massLimit: "50");
-            await ClickAsync(view, EngineeringCalculationView.CalculateCaption);
+            await ClickAsync(window, view, EngineeringCalculationView.CalculateCaption);
             await RenderUntilAsync(window, () => SurfaceOf(window).DisplayedOutcome is not null);
 
             view = SurfaceOf(window);
@@ -119,7 +119,7 @@ public sealed class EngineeringCalculationJourneyTests
             // --- 5. The governed review, in the engineer's own words -----
             EnterText(view, "Source consulted", SourceConsulted);
             EnterText(view, "Release rationale", ReleaseRationale);
-            await ClickAsync(view, EngineeringCalculationView.ReleaseCaption);
+            await ClickAsync(window, view, EngineeringCalculationView.ReleaseCaption);
             await RenderUntilAsync(window, () =>
                 SurfaceOf(window).Materials.Any(m => m.RecordId == MaterialSeed.Aluminium6082T6 && m.IsUsableForEngineering));
 
@@ -133,7 +133,7 @@ public sealed class EngineeringCalculationJourneyTests
 
             // --- 6. The calculation, through the real button ------------
             EnterInputs(view, load: "12", area: "60", length: "150", massLimit: "50");
-            await ClickAsync(view, EngineeringCalculationView.CalculateCaption);
+            await ClickAsync(window, view, EngineeringCalculationView.CalculateCaption);
             await RenderUntilAsync(window, () => SurfaceOf(window).DisplayedOutcome is { Performed: true });
 
             view = SurfaceOf(window);
@@ -179,10 +179,9 @@ public sealed class EngineeringCalculationJourneyTests
         {
             await second.StartAsync();
             SignIn(second);
-            var window = new MainWindow(second);
+            var window = OpenWindow(second);
 
-            await second.ShellNavigator!.GoToModuleAsync(ShellArea.EngineeringCalculation);
-            await window.RenderCurrentModuleAsync();
+            await OpenCalculationsFromTheRailAsync(second, window);
             await RenderUntilAsync(window, () => SurfaceOf(window).DisplayedOutcome is { Performed: true });
 
             var view = SurfaceOf(window);
@@ -215,7 +214,7 @@ public sealed class EngineeringCalculationJourneyTests
         {
             await host.StartAsync();
             SignIn(host);
-            var window = new MainWindow(host);
+            var window = OpenWindow(host);
 
             var outcome = await RunTheKnownCheckAsync(host, window);
             var pinnedRevision = outcome.PinnedRevision;
@@ -290,18 +289,17 @@ public sealed class EngineeringCalculationJourneyTests
         {
             await host.StartAsync();
             SignIn(host);
-            var window = new MainWindow(host);
+            var window = OpenWindow(host);
 
-            await host.ShellNavigator!.GoToModuleAsync(ShellArea.EngineeringCalculation);
-            await window.RenderCurrentModuleAsync();
+            await OpenCalculationsFromTheRailAsync(host, window);
 
             var view = SurfaceOf(window);
-            await ClickAsync(view, EngineeringCalculationView.PopulateCaption);
+            await ClickAsync(window, view, EngineeringCalculationView.PopulateCaption);
             await RenderUntilAsync(window, () => SurfaceOf(window).Materials.Any(m => m.RecordId == MaterialSeed.Aluminium6082T6));
             view = SurfaceOf(window);
 
             EnterInputs(view, load: "not a number", area: string.Empty, length: "-5", massLimit: "0");
-            await ClickAsync(view, EngineeringCalculationView.CalculateCaption);
+            await ClickAsync(window, view, EngineeringCalculationView.CalculateCaption);
             await RenderUntilAsync(window, () => SurfaceOf(window).DisplayedOutcome is not null);
 
             view = SurfaceOf(window);
@@ -336,13 +334,12 @@ public sealed class EngineeringCalculationJourneyTests
         try
         {
             await host.StartAsync();
-            var window = new MainWindow(host);
+            var window = OpenWindow(host);
 
-            await host.ShellNavigator!.GoToModuleAsync(ShellArea.EngineeringCalculation);
-            await window.RenderCurrentModuleAsync();
+            await OpenCalculationsFromTheRailAsync(host, window);
 
             var view = SurfaceOf(window);
-            await ClickAsync(view, EngineeringCalculationView.PopulateCaption);
+            await ClickAsync(window, view, EngineeringCalculationView.PopulateCaption);
             await RenderUntilAsync(window, () => SurfaceOf(window).Materials.Any(m => m.RecordId == MaterialSeed.Aluminium6082T6));
             view = SurfaceOf(window);
 
@@ -355,7 +352,7 @@ public sealed class EngineeringCalculationJourneyTests
             var principals = (ICurrentPrincipalAccessor)host.Services!.GetService(typeof(ICurrentPrincipalAccessor));
             ((CurrentPrincipalAccessor)principals).SetCurrent(null);
 
-            await ClickAsync(view, EngineeringCalculationView.ReleaseCaption);
+            await ClickAsync(window, view, EngineeringCalculationView.ReleaseCaption);
             await RenderUntilAsync(window, () => SurfaceOf(window).StatusMessage.Length > 0);
 
             view = SurfaceOf(window);
@@ -373,15 +370,100 @@ public sealed class EngineeringCalculationJourneyTests
         }
     }
 
+    [AvaloniaFact]
+    public async Task ThePopulateAction_IsVisibleAtNonZeroBounds_WheneverTheSurfaceIsOpen()
+    {
+        var root = WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath();
+        var host = new WorkspaceHost(root);
+        try
+        {
+            await host.StartAsync();
+            SignIn(host);
+            var window = OpenWindow(host);
+
+            await OpenCalculationsFromTheRailAsync(host, window);
+
+            var view = SurfaceOf(window);
+            var button = view.GetLogicalDescendants().OfType<Button>().Distinct()
+                .FirstOrDefault(b => string.Equals(b.Content?.ToString(), EngineeringCalculationView.PopulateCaption, StringComparison.Ordinal));
+
+            Assert.True(button is not null, "There is no Populate button at all.");
+            Assert.True(button!.IsVisible, $"The Populate button exists but IsVisible=false. Materials in library at entry: {view.Materials.Count}.");
+
+            for (var pass = 0; pass < 2; pass++)
+            {
+                Dispatcher.UIThread.RunJobs();
+                window.Measure(new Avalonia.Size(1400, 900));
+                window.Arrange(new Avalonia.Rect(0, 0, 1400, 900));
+            }
+
+            Assert.True(button.Bounds.Width > 0 && button.Bounds.Height > 0, $"The Populate button rendered at {button.Bounds}.");
+
+            // And it stays visible after the library is no longer empty:
+            // hiding it once it had been used is the defect this test was
+            // written to reproduce.
+            await ClickAsync(window, view, EngineeringCalculationView.PopulateCaption);
+            await RenderUntilAsync(window, () => SurfaceOf(window).Materials.Any(m => m.RecordId == MaterialSeed.Aluminium6082T6));
+
+            LayOut(window);
+            view = SurfaceOf(window);
+            var again = view.GetLogicalDescendants().OfType<Button>().Distinct()
+                .First(b => string.Equals(b.Content?.ToString(), EngineeringCalculationView.PopulateCaption, StringComparison.Ordinal));
+
+            Assert.True(again.IsVisible, "The Populate button disappeared once the library held records.");
+            Assert.True(again.Bounds.Width > 0 && again.Bounds.Height > 0, $"The Populate button rendered at {again.Bounds} after populating.");
+
+            // The real catalogue, not the view's copy: pressing the button
+            // ran ReferenceSeedService against IMaterialCatalog, and the
+            // records are Draft, which is the only state seeding produces.
+            var materials = (IMaterialCatalog)host.Services!.GetService(typeof(IMaterialCatalog));
+            var seeded = await materials.FindAsync(MaterialSeed.Aluminium6082T6);
+
+            Assert.NotNull(seeded);
+            Assert.Equal(ReferenceValidationState.Draft, seeded!.ValidationState);
+            Assert.False(seeded.Provenance.IsVerified);
+            Assert.Null(seeded.Provenance.ReviewerPrincipalId);
+
+            var everySeededRecord = await materials.ListAsync();
+            Assert.All(
+                MaterialSeed.Instance.Records.Select(r => r.RecordId),
+                id => Assert.Contains(everySeededRecord, m => m.Id == id));
+
+            // The engineer is told what happened, on screen.
+            Assert.Contains("Added", view.StatusMessage, StringComparison.Ordinal);
+            Assert.Contains("Draft", view.StatusMessage, StringComparison.Ordinal);
+            AssertRenderedContains(window, view, "Added");
+
+            // And pressing it again is harmless and says so, rather than
+            // duplicating records or overwriting one somebody corrected.
+            await ClickAsync(window, view, EngineeringCalculationView.PopulateCaption);
+            await RenderUntilAsync(window, () => SurfaceOf(window).StatusMessage.Contains("already held", StringComparison.Ordinal));
+
+            view = SurfaceOf(window);
+            Assert.Contains("already held", view.StatusMessage, StringComparison.Ordinal);
+            Assert.Equal(everySeededRecord.Count, (await materials.ListAsync()).Count);
+
+            // The populated material is then selectable by the calculation
+            // workflow — the point of populating at all.
+            PickerOf(view).SelectedItem = view.Materials.Single(m => m.RecordId == MaterialSeed.Aluminium6082T6);
+            Assert.Equal(MaterialSeed.Aluminium6082T6, view.CurrentInputs.MaterialRecordId);
+
+            await host.ShutdownAsync();
+        }
+        finally
+        {
+            await host.DisposeAsync();
+        }
+    }
+
     // ---- the journey, reused by the tests that need a result to exist ----
 
     private static async Task<BracketCalculationOutcome> RunTheKnownCheckAsync(WorkspaceHost host, MainWindow window)
     {
-        await host.ShellNavigator!.GoToModuleAsync(ShellArea.EngineeringCalculation);
-        await window.RenderCurrentModuleAsync();
+        await OpenCalculationsFromTheRailAsync(host, window);
 
         var view = SurfaceOf(window);
-        await ClickAsync(view, EngineeringCalculationView.PopulateCaption);
+        await ClickAsync(window, view, EngineeringCalculationView.PopulateCaption);
         await RenderUntilAsync(window, () => SurfaceOf(window).Materials.Any(m => m.RecordId == MaterialSeed.Aluminium6082T6));
 
         view = SurfaceOf(window);
@@ -389,13 +471,13 @@ public sealed class EngineeringCalculationJourneyTests
         EnterText(view, "Source consulted", SourceConsulted);
         EnterText(view, "Release rationale", ReleaseRationale);
 
-        await ClickAsync(view, EngineeringCalculationView.ReleaseCaption);
+        await ClickAsync(window, view, EngineeringCalculationView.ReleaseCaption);
         await RenderUntilAsync(window, () =>
             SurfaceOf(window).Materials.Any(m => m.RecordId == MaterialSeed.Aluminium6082T6 && m.IsUsableForEngineering));
 
         view = SurfaceOf(window);
         EnterInputs(view, load: "12", area: "60", length: "150", massLimit: "50");
-        await ClickAsync(view, EngineeringCalculationView.CalculateCaption);
+        await ClickAsync(window, view, EngineeringCalculationView.CalculateCaption);
         await RenderUntilAsync(window, () => SurfaceOf(window).DisplayedOutcome is { Performed: true });
 
         return SurfaceOf(window).DisplayedOutcome!;
@@ -442,16 +524,93 @@ public sealed class EngineeringCalculationJourneyTests
         box!.Text = text;
     }
 
-    /// <summary>Clicks the button with <paramref name="caption"/>, exactly as a user would.</summary>
-    private static async Task ClickAsync(Control surface, string caption)
+    /// <summary>
+    /// Clicks the button with <paramref name="caption"/>, exactly as a user
+    /// would — and refuses to click one a user could not.
+    /// </summary>
+    /// <remarks>
+    /// <b>The visibility and bounds assertions are the point.</b> A
+    /// synthetic <c>Button.ClickEvent</c> reaches a control that is
+    /// <c>IsVisible=false</c> or laid out at zero just as happily as one on
+    /// screen, so a test using a bare click can pass against a product
+    /// whose button nobody can find. That is not hypothetical: the first
+    /// version of these tests clicked "Populate Material Library" while it
+    /// was hidden, and the first manual review on Windows could not find
+    /// that button at all. Every click in this file now goes through here.
+    /// </remarks>
+    private static async Task ClickAsync(MainWindow window, Control surface, string caption)
     {
+        LayOut(window);
+
         var button = surface.GetLogicalDescendants().OfType<Button>().Distinct()
             .FirstOrDefault(b => string.Equals(b.Content?.ToString(), caption, StringComparison.Ordinal));
 
         Assert.True(button is not null, $"No '{caption}' button on this surface. Present: {string.Join(", ", surface.GetLogicalDescendants().OfType<Button>().Select(b => b.Content?.ToString()))}");
+        Assert.True(button!.IsVisible, $"The '{caption}' button exists but IsVisible is false — a user cannot click it.");
+        Assert.True(
+            button.Bounds.Width > 0 && button.Bounds.Height > 0,
+            $"The '{caption}' button rendered at {button.Bounds} — a user cannot click it.");
 
-        button!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
         await Task.Yield();
+    }
+
+    /// <summary>Runs a real layout pass, twice, so content added during the render is measured too.</summary>
+    private static void LayOut(MainWindow window)
+    {
+        if (!window.IsVisible)
+            window.Show();
+
+        for (var pass = 0; pass < 2; pass++)
+        {
+            Dispatcher.UIThread.RunJobs();
+            window.Measure(new Avalonia.Size(1400, 900));
+            window.Arrange(new Avalonia.Rect(0, 0, 1400, 900));
+        }
+    }
+
+    /// <summary>Opens the shell the way a launch does, at a real size so layout is real.</summary>
+    private static MainWindow OpenWindow(WorkspaceHost host)
+    {
+        var window = new MainWindow(host) { Width = 1400, Height = 900 };
+        window.Show();
+        return window;
+    }
+
+    /// <summary>
+    /// Reaches Engineering Calculations the way a person does: by finding
+    /// the entry in the global navigation rail and clicking it.
+    /// </summary>
+    /// <remarks>
+    /// Located by the name a screen reader announces, which
+    /// <c>GlobalNavigationRail</c> sets from the module's own title — so
+    /// this test fails if the rail entry is renamed to something an
+    /// engineer would not look for.
+    /// </remarks>
+    private static async Task OpenCalculationsFromTheRailAsync(WorkspaceHost host, MainWindow window)
+    {
+        LayOut(window);
+
+        var rail = window.GetLogicalDescendants().OfType<GlobalNavigationRail>().Distinct().Single();
+        var entry = rail.GetLogicalDescendants().OfType<Button>().Distinct()
+            .FirstOrDefault(b => string.Equals(AutomationProperties.GetName(b), CalculationsRailEntry, StringComparison.Ordinal));
+
+        Assert.True(entry is not null, $"The rail has no '{CalculationsRailEntry}' entry. Present: {string.Join(", ", rail.GetLogicalDescendants().OfType<Button>().Select(AutomationProperties.GetName))}");
+        Assert.True(entry!.IsVisible, $"The '{CalculationsRailEntry}' rail entry exists but IsVisible is false.");
+        Assert.True(entry.Bounds.Width > 0 && entry.Bounds.Height > 0, $"The '{CalculationsRailEntry}' rail entry rendered at {entry.Bounds}.");
+
+        entry.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+
+        // `TD-119`: the rail navigates on an asynchronous continuation.
+        var deadline = DateTime.UtcNow.AddSeconds(5);
+        while (host.ShellNavigator!.Current.Area != ShellArea.EngineeringCalculation && DateTime.UtcNow < deadline)
+        {
+            await Task.Delay(10);
+            Dispatcher.UIThread.RunJobs();
+        }
+
+        Assert.Equal(ShellArea.EngineeringCalculation, host.ShellNavigator!.Current.Area);
+        await window.RenderCurrentModuleAsync();
     }
 
     /// <summary>Re-renders until <paramref name="condition"/> holds, or a deadline expires. `TD-119`: no fixed wait.</summary>

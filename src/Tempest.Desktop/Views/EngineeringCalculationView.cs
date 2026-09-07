@@ -34,7 +34,7 @@ namespace Tempest.Desktop.Views;
 public sealed class EngineeringCalculationView : UserControl
 {
     /// <summary>The heading, and this surface's own automation name.</summary>
-    public const string Heading = "Engineering Calculation";
+    public const string Heading = "Engineering Calculations";
 
     /// <summary>The caption on the button that runs the check.</summary>
     public const string CalculateCaption = "Calculate";
@@ -47,7 +47,8 @@ public sealed class EngineeringCalculationView : UserControl
 
     /// <summary>What the surface shows when no material is held at all.</summary>
     public const string EmptyLibraryGuidance =
-        "No materials are held. Populating the library adds the shipped reference records as Draft — nothing is released, and nothing is approved, by populating.";
+        "No material records are held yet. Press \"" + PopulateCaption + "\" below to add the shipped reference records as Draft, "
+        + "then select one and release it through review before it can be used for engineering work.";
 
     private readonly ComboBox _materialPicker = new()
     {
@@ -66,6 +67,17 @@ public sealed class EngineeringCalculationView : UserControl
 
     private readonly Button _calculateButton = new() { Content = CalculateCaption, MinHeight = DesignTokens.MinControlSize };
     private readonly Button _populateButton = new() { Content = PopulateCaption, MinHeight = DesignTokens.MinControlSize };
+
+    private readonly TextBlock _populateExplanation = new()
+    {
+        Text = "Adds the shipped reference material records to this library as Draft. "
+            + "Nothing is released and nothing is approved by populating, and running it again "
+            + "adds only what is missing — it never overwrites a record somebody has corrected.",
+        FontSize = DesignTokens.FontSizeCaption,
+        TextWrapping = TextWrapping.Wrap,
+        MaxWidth = 520,
+        Opacity = 0.8,
+    };
     private readonly Button _releaseButton = new() { Content = ReleaseCaption, MinHeight = DesignTokens.MinControlSize };
 
     private readonly StackPanel _validationPanel = new() { Spacing = DesignTokens.SpaceXs };
@@ -90,6 +102,10 @@ public sealed class EngineeringCalculationView : UserControl
         _populateButton.Classes.Add(ChromeStyles.Flat);
         _releaseButton.Classes.Add(ChromeStyles.Flat);
 
+        AutomationProperties.SetName(_populateButton, PopulateCaption);
+        ToolTip.SetTip(_populateButton, "Add the shipped reference material records to this library as Draft.");
+        AutomationProperties.SetName(_releaseButton, ReleaseCaption);
+        AutomationProperties.SetName(_calculateButton, CalculateCaption);
         AutomationProperties.SetName(_materialPicker, "Governed reference material");
         AutomationProperties.SetName(_loadBox, "Axial load in kilonewtons");
         AutomationProperties.SetName(_areaBox, "Section area in square millimetres");
@@ -160,7 +176,14 @@ public sealed class EngineeringCalculationView : UserControl
             ?? materials.FirstOrDefault(m => m.IsUsableForEngineering)
             ?? materials.FirstOrDefault();
 
-        _populateButton.IsVisible = materials.Count == 0;
+        // `IsVisible` is NOT set here, deliberately. This action used to be
+        // hidden whenever the library held anything at all, which made the
+        // one action the whole workflow starts with disappear the moment it
+        // had ever been used — and made it invisible in any composition
+        // that already held a material. The first manual review on Windows
+        // could not find it. It is now always present and always says what
+        // it does; running it twice is harmless, because seeding is
+        // additive and idempotent.
         ShowSelectedMaterialState();
     }
 
@@ -282,6 +305,7 @@ public sealed class EngineeringCalculationView : UserControl
         reference.Children.Add(LabelledRow("Material", _materialPicker));
         reference.Children.Add(_materialState);
         reference.Children.Add(_populateButton);
+        reference.Children.Add(_populateExplanation);
         reference.Children.Add(LabelledRow("Source consulted", _sourceConsultedBox));
         reference.Children.Add(LabelledRow("Release rationale", _releaseRationaleBox));
         reference.Children.Add(_releaseButton);

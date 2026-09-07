@@ -76,6 +76,16 @@ public static class ShellAreas
         new(ShellArea.Engineering, "Engineering", "⚙", NavigationAvailability.Implemented,
             "The Engineering Workspace — inside the open project, or standalone for quick calculations and calculation sets."),
 
+        // Rail order is this list's own order, and it is deliberate: an
+        // Implemented engineering destination sits beside Engineering,
+        // above the five modules that are only Declared. Appended last it
+        // sat at the bottom of the rail under those five, which is where
+        // the first manual review could not find it. Only the RAIL order
+        // moves — `ShellArea`'s own ordinal is untouched, because
+        // `ShellLocation` is persisted by it.
+        new(ShellArea.EngineeringCalculation, "Engineering Calculations", "∑", NavigationAvailability.Implemented,
+            "Governed engineering calculations — populate the reference material library, release a material through review, run a calculation, and read the result with the reference revision it stood on."),
+
         new(ShellArea.Tasks, "Tasks", "☑", NavigationAvailability.Declared,
             "Task management across every project at once — one person's work, or one team's, wherever it lives. Tasks inside a single project are built and reachable from that project's own Tasks tab: create, assign, prioritise, date, board and reopen. What is missing here is only the cross-project view over them.",
             "TD-81"),
@@ -91,9 +101,6 @@ public static class ShellAreas
         new(ShellArea.Knowledge, "Knowledge", "◫", NavigationAvailability.Declared,
             "Standards, reference data and engineering knowledge. Materials, units and calculation templates exist as real platform services, but no knowledge surface aggregates them.",
             "TD-79"),
-
-        new(ShellArea.EngineeringCalculation, "Calculation", "∑", NavigationAvailability.Implemented,
-            "The governed engineering calculation surface — choose a released reference material, enter the section inputs, run the real calculation, and read the result together with the reference revision it stood on."),
 
         new(ShellArea.Administration, "Administration", "⚙", NavigationAvailability.Declared,
             "Users, roles, permissions and platform settings. Identity, roles and permissions are real, enforced platform services — the administrative surface over them is not built.",
