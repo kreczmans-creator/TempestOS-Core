@@ -111,6 +111,58 @@ public sealed class CalculationEngine : ICalculationEngine
             validation, context.ReferencedMaterialIds, executedAt, executedBy, document.CurrentRevisionNumber);
     }
 
+    /// <inheritdoc />
+    public async Task<CalculationRecord<TResult>?> FindRecordAsync<TResult>(
+        Guid recordId, CancellationToken cancellationToken = default)
+    {
+        var document = await _documentStore.FindAsync(recordId, cancellationToken).ConfigureAwait(false);
+
+        if (document is null)
+            return null;
+
+        if (!string.Equals(document.Kind, CalculationRecordDocumentKind, StringComparison.Ordinal))
+        {
+            throw new CalculationException(
+                $"Document '{recordId}' is a '{document.Kind}', not a {CalculationRecordDocumentKind}.");
+        }
+
+        var revisions = await _documentStore.GetRevisionHistoryAsync(recordId, cancellationToken).ConfigureAwait(false);
+
+        if (revisions.Count == 0)
+            return null;
+
+        CalculationRecordDto<TResult>? dto;
+
+        try
+        {
+            dto = JsonSerializer.Deserialize<CalculationRecordDto<TResult>>(revisions[^1].Content);
+        }
+        catch (JsonException exception)
+        {
+            // A stored record that will not deserialise is corruption or a
+            // result-type mismatch. Either way it is reported rather than
+            // returned as null, which a caller would read as "no such
+            // calculation" and quietly move past.
+            throw new CalculationException(
+                $"Calculation record '{recordId}' could not be read as {typeof(TResult).Name}: {exception.Message}");
+        }
+
+        if (dto is null)
+            throw new CalculationException($"Calculation record '{recordId}' deserialised to nothing.");
+
+        return new CalculationRecord<TResult>(
+            recordId,
+            dto.CalculationId,
+            dto.Result,
+            dto.Assumptions,
+            dto.IntermediateResults,
+            dto.Validation,
+            dto.ReferencedMaterialIds,
+            dto.ExecutedAt,
+            dto.ExecutedByPrincipalId,
+            revisions[^1].RevisionNumber);
+    }
+
     private string ResolveExecutorPrincipalId() =>
         _currentPrincipalAccessor.Current?.Identity.Id ?? UnknownExecutorPrincipalId;
 
