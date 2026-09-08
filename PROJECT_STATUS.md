@@ -34,11 +34,12 @@ None. Every `v0.17.0` Work Package (`17.0A`, `17.0B`, `17.0C`, `17.1A`,
 
 ## Gate (this release's own figures, filled in by `WP 17.9.0`)
 
-- Core tests: `<n>` passed, 0 failed, 0 skipped
-- Desktop tests: `<n>` passed, 0 failed, 0 skipped
+- Core tests: 4,922 passed, 0 failed, 0 skipped (three consecutive Debug runs and one Release run, local, `TEMPEST_TEST_TIMEOUT_FACTOR=3`; 14–20 s each)
+- Desktop tests: 496 passed, 0 failed, 0 skipped (same four runs; about 2.5 min each)
 - Build: 0 warnings, 0 errors, both configurations, `TreatWarningsAsErrors`
-- Architecture invariants (`DependencyDirectionTests`): `<n>`/`<n>` green
-- Governance health check: `<n>`/`<n>` passed
+- Architecture invariants (`DependencyDirectionTests`): 5/5 green
+- Governance health check: 5/5 passed (Windows PowerShell 5.1 and PowerShell 7)
+- CI: not yet run — nothing pushed until Windows verification (see Release Notes, Warnings)
 
 ## Where things are recorded now
 

@@ -55,13 +55,13 @@ dotnet build src/TempestOS.slnx --configuration Release --no-restore -p:TreatWar
 applies it, so a local build behaves as it always has while the gate stays
 the same gate.
 
-**2.3 Core tests** — 3,199 tests, ~35 seconds (was 3,088 at the `v0.15.0` tag; re-derived 2026-09-05)
+**2.3 Core tests** — 4,922 tests, ~20 seconds (re-derived at `v0.17.0`, 2026-09-08; the `v0.16.0` tree had 5,153 before WP 17.0C removed scaffolding and WP 17.2A froze the plugin, REST and licensing suites)
 
 ```
 dotnet test tests/Tempest.Core.Tests/Tempest.Core.Tests.csproj --configuration Debug --no-build
 ```
 
-**2.4 Desktop tests** — 474 tests, ~1–2 minutes (was 372; re-derived 2026-09-05)
+**2.4 Desktop tests** — 496 tests, ~2.5–3 minutes (re-derived at `v0.17.0`, 2026-09-08; set `TEMPEST_TEST_TIMEOUT_FACTOR=3` when the machine is busy)
 
 ```
 dotnet test tests/Tempest.Desktop.Tests/Tempest.Desktop.Tests.csproj --configuration Debug --no-build

@@ -66,7 +66,7 @@ second person could pick up on day one.
 | 17.2A | Plugin trust, signing, capability enforcement, the inbound REST API and Licensing frozen to `src/Frozen/` (41 files) and `tests/Frozen/` (37 files) outside the build; their seams removed from EventBus, Commands, Identity, Navigation, Modules, Hosted Services and the Host (about 1,000 lines); manifest discovery stays. Microsoft.Extensions.Configuration as the operator source; rolling file log sink and an M.E.Logging bridge; per-call DI, event and command chatter demoted to Debug; `ISessionPrincipal` with an OS-derived identity id; audit rows on calculation execution and reference verify/release. ADR-0146. |
 | 17.2B | `Tempest.App` becomes `Tempest.Workspace` (class library, root namespace `Tempest.Workspace`) and `Tempest.Harness` (console exe); `InternalsVisibleTo` to the Desktop removed by promoting `IWorkspace.Cockpit` and the cockpit types to public; dependency-direction tests rewritten for the four-project graph. ADR-0101 amended. |
 | 17.3A | Units are a runtime seven-exponent dimension vector; same-dimension quantities add, subtract and compare with automatic conversion (reversing ADR-0054's exact-unit rule); cross-dimension multiply and divide; temperature deltas; eight new dimensions including second moment of area and section modulus; the generic `Quantity<TDimension>` kept as a typed facade; 37 property-based tests (CsCheck) including result invariance under input-unit change for all six calculations. ADR-0147. |
-| Unplanned | Command invocations are tracked from request to completion; `WorkspaceManager` drains them before disposal; the ribbon's report-then-refresh tail tolerates a disposed platform. Found by an intermittent Desktop failure that became deterministic once the store became disposable. The native SQLite provider is bound eagerly after a first-use race was reproduced once under parallel tests. |
+| Unplanned | Command invocations are tracked from request to completion; `WorkspaceManager` drains them before disposal; the ribbon's report-then-refresh tail tolerates a disposed platform. Found by an intermittent Desktop failure that became deterministic once the store became disposable. The native SQLite provider is bound eagerly after a first-use race was reproduced once under parallel tests. The store's dispose clears only its own connection pool: the process-wide `ClearAllPools` it first used disposed the native handle under every other live store in the process, which the release gate exposed as one Core failure in roughly every four runs and which any two hosts in one process could have hit. |
 
 ## Figures
 
@@ -75,8 +75,8 @@ second person could pick up on day one.
 | Live source lines (`src/`, excluding `Frozen/`) | 138,244 | 136,532 |
 | Live test lines (`tests/`, excluding `Frozen/`) | 118,042 | 103,585 |
 | Frozen out of the build | — | 42 source, 37 test files |
-| Core tests | 5,153 | see gate below |
-| Desktop tests | 500 | see gate below |
+| Core tests | 5,153 | 4,922 |
+| Desktop tests | 500 | 496 |
 | Core suite duration (local, Debug) | ~5 min | ~20 s to 1 m 20 s |
 | Desktop suite duration (local, Debug) | ~15 min | ~3 min |
 | Live documentation files | 1,062 | 257 |
@@ -116,10 +116,12 @@ second person could pick up on day one.
 - **Stryker has a configuration and no score yet.** The first scoped run
   did not complete inside its budget locally; the scheduled CI job owns
   the first timed run.
-- **One intermittent was seen and not chased**:
-  `ReconciliationHostRegistrationTests` failed in 2 of 6 full runs in one
-  worktree on SQLite lock contention during parallel host starts, and
-  passed in every run on the release branch. Watch it in CI.
+- **The intermittent seen during WP 17.1B is explained.**
+  `ReconciliationHostRegistrationTests` failing in 2 of 6 worktree runs
+  "on SQLite lock contention" was the process-wide pool clear above, not
+  lock contention; after the fix the Core suite passed eight consecutive
+  local runs and the release gate's three Debug runs plus one Release run
+  with no failure. Watch the first CI runs regardless.
 - **Test counts fell by design.** Console-capture scaffolding, six
   defect-characterisation facts, frozen-layer tests and duplicated
   doubles are gone; behaviour coverage is not.
