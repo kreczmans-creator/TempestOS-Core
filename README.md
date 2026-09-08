@@ -68,30 +68,38 @@ tests/
                                # rendering — no display attached, no mocks
 ```
 
-For the full platform picture — every platform service, module, hosted
-service, and plugin that exists, what's implemented versus contract-only,
-and how it's all cross-referenced — see
-[`docs/governance/Governance Index.md`](docs/governance/Governance%20Index.md)
-and [`docs/architecture/Platform Service Map.md`](docs/architecture/Platform%20Service%20Map.md).
 For why `Tempest.App` and `Tempest.Desktop` both exist and what each one
 is for, see [`ADR-0101`](docs/adr/ADR-0101-tempest-app-workspaceshell-is-tempestos-internal-engineering-harness-not-a-shipped-product.md).
+The wider governance register suite this section used to point to — every
+platform service, module and piece of technical debt indexed and
+cross-referenced — was archived by `WP 17.0B` (below); `docs/adr/` and
+`BACKLOG.md` are now the live sources for the two questions it answered
+most often: what was decided, and what still needs doing.
 
 ## Documentation
 
-This repository documents itself in five places, each with one stated job:
+`WP 17.0B` ("Governance reset") archived the Work Package retrospective
+and governance-register suite this repository used to carry live —
+archive/docs-2026-09/. What remains live is deliberately smaller:
 
-- **`docs/adr/`** — Architecture Decision Records: what was decided, and why.
-- **`docs/architecture/`** — standing architecture reference (Runtime Host,
-  Host Lifecycle, failure model, and more).
-- **`docs/academy/`** — teaching material: principles, patterns, case
-  studies, and a retrospective for every Work Package. Start at
-  [`docs/academy/Academy Index.md`](docs/academy/Academy%20Index.md).
-- **`docs/releases/`** — `FOUNDATION.md` (the permanent constitution) plus
-  one subtree per release.
-- **`docs/governance/`** — the governance register suite: every ADR,
-  platform service, module, risk, and piece of technical debt indexed and
-  cross-referenced. Start at
-  [`docs/governance/Governance Index.md`](docs/governance/Governance%20Index.md).
+- **`docs/adr/`** — Architecture Decision Records: what was decided, and
+  why. Frozen in place; new ADRs are still written here.
+- **`docs/architecture/`** — the seventeen standing architecture documents
+  the running code still depends on (Runtime Host, Host Lifecycle,
+  Startup/Shutdown Sequence, Command Framework, Event Bus, and more).
+- **`docs/security/`** — the threat model and security principles the
+  platform is designed against.
+- **`docs/releases/`** — `FOUNDATION.md` (the permanent constitution),
+  `docs/releases/v1.0.0/WorkPackages.md` (the current programme), and one
+  `Release Notes.md` per shipped release.
+- **`BACKLOG.md`** (repository root) — the live technical-debt list a user
+  could still notice, each row mapped to the Work Package that owns it.
+- **`CONTRIBUTING.md`** (repository root) — how a Work Package becomes a
+  branch, a PR, and a merge.
+- **`archive/`** — everything superseded by this reset, moved with `git mv`
+  so its full history is intact: Work Package retrospectives, review-board
+  dispositions, superseded registers and architecture documents. Start at
+  [`archive/docs-2026-09/README.md`](archive/docs-2026-09/README.md).
 
 ## Build Instructions
 

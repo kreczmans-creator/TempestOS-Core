@@ -1,53 +1,42 @@
 <!--
-  WP 11.1B — Pull Request Expectations. See
-  docs/releases/v0.11.0/WP11.1B Engineering Workflow.md, "Pull Request
-  Expectations," and docs/academy/06 Engineering Standards/
-  Engineering Governance.md §9 (Decision Authority) for the full
-  reasoning behind every section below. Delete this comment before
-  submitting; keep every section that follows.
+  WP 17.0B — Governance reset. A Work Package is a branch and a PR;
+  this description IS the retrospective — there is no separate report.
+  See CONTRIBUTING.md for the full rules this template enforces.
+  Delete this comment before submitting; keep every section below.
 -->
 
 ## Work Package / Change
 
-<!-- e.g. "WP 12.0B — Desktop Composition Root Decomposition Implementation" -->
+<!-- e.g. "WP 17.1A — SQLite persistence" -->
 
-## Summary
+## What changed
 
-<!-- What changed and why, in a sentence or two. Link the Implementation
-     Report / retrospective if one exists (docs/releases/vX.Y.0/). -->
+<!-- What changed, in a few sentences. -->
 
-## Review Gates (Engineering Governance §2)
+## Why
 
-- [ ] **Build Gate** — CI is green for this commit (`CI Gate` check),
-      or a link to the run is included below.
-- [ ] **Test Gate** — every test passes, including every pre-existing
-      test — verified by the same CI run.
-- [ ] **Technical Review Gate** — any non-obvious architectural
-      decision, asymmetry, or deviation from an explicit brief
-      requirement is justified in writing (below, or in a linked
-      Implementation Report).
+<!-- Why this, why now — the problem it closes or the capability it adds. -->
 
-CI run: <!-- link -->
+## Evidence
 
-## Scope Confirmation
+- **Build:** 0 warnings, 0 errors, both configurations, under
+  `TreatWarningsAsErrors`. <!-- link the CI run -->
+- **Tests:** every test passing in both configurations, including the
+  architecture invariants (`DependencyDirectionTests`). <!-- link the CI run -->
+- **`PHYSICAL_REVIEW.md` §7 row:** <!-- link the row, or write "no new
+  user-facing surface" -->
+- **ADR:** <!-- link it, or write "no decision in this PR constrains
+  future code" -->
 
-- [ ] No production code behaviour changed, **or** the change is
-      described and justified above.
-- [ ] No architecture changed, **or** an architecture document was
-      updated in this same change.
-- [ ] No ADR modified, **or** a new/updated ADR is included and linked.
-- [ ] Documentation updated in the same change (`PROJECT_STATUS.md`,
-      `WorkPackages.md`, Academy, governance registers — whichever this
-      change's own subject matter touches, per Engineering Governance §4).
+## Findings filed to `BACKLOG.md`
 
-## Testing
+<!-- Anything the reviewer or author found that isn't fixed here, filed
+     as a row in BACKLOG.md, or "none". A finding is Release Blocking
+     only if it is data loss a user can reproduce from the running UI —
+     see CONTRIBUTING.md. -->
 
-<!-- What was tested, and how — new tests added, existing tests relied
-     on, or (rarely, and stated explicitly) manual verification only. -->
+## Markdown vs. code line count
 
-## Product Approval
-
-<!-- Left blank by the author. Engineering Governance §9: merging
-     into `main` requires an explicit, per-occasion approval from
-     Product Approval authority — this PR is not merged on Technical
-     Review's sign-off alone. -->
+<!-- This PR must not add more Markdown lines than code lines
+     (scripts/governance-healthcheck.ps1's own check enforces this).
+     State the two figures, or "n/a — no Markdown changed". -->
