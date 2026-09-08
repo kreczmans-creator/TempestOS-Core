@@ -593,19 +593,30 @@ public sealed class SqlitePersistenceStore
 
     /// <summary>
     /// Applies this store's four pragmas to <paramref name="connection"/>.
-    /// Run on every connection, not once per database: <c>busy_timeout</c>
-    /// and <c>foreign_keys</c> are per-connection settings, and a
-    /// connection handed back by the pool may not be the one that last set
-    /// them.
+    /// Run on every connection, not once per database: <c>busy_timeout</c>,
+    /// <c>synchronous</c> and <c>foreign_keys</c> are per-connection
+    /// settings, and a connection handed back by the pool may not be the
+    /// one that last set them.
     /// </summary>
+    /// <remarks>
+    /// <b><c>busy_timeout</c> is set first, and the order is load-bearing.</b>
+    /// SQLite's default busy timeout is zero, so any statement issued
+    /// before it — including <c>PRAGMA journal_mode</c>, which touches the
+    /// database header — fails outright with <c>SQLITE_BUSY</c> the
+    /// instant another connection holds a lock, instead of waiting the
+    /// five seconds this store is configured to wait. Setting the timeout
+    /// after the other three left a race that surfaced under concurrent
+    /// opens exactly once during this Work Package's own test runs, which
+    /// is once more than a persistence layer gets.
+    /// </remarks>
     private static void ApplyPragmas(SqliteConnection connection)
     {
         using var command = connection.CreateCommand();
         command.CommandText =
+            "PRAGMA busy_timeout = 5000; " +
             "PRAGMA journal_mode = WAL; " +
             "PRAGMA synchronous = FULL; " +
-            "PRAGMA foreign_keys = ON; " +
-            "PRAGMA busy_timeout = 5000;";
+            "PRAGMA foreign_keys = ON;";
         command.ExecuteNonQuery();
     }
 
