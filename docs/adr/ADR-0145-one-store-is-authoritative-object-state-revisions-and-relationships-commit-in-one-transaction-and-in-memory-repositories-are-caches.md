@@ -225,8 +225,12 @@ The compensation is removed, not kept alongside the fix:
 | The DI registrations for the write-intent store and the attachment sweep | `TempestHost` |
 | `InMemoryEngineeringDocumentStore` | `EngineeringDomain/Implementation` |
 
-`EngineeringObjectBase` falls from 1,819 lines to under 1,000 without any
-change to the public facet interfaces (`ADR-0075`).
+`EngineeringObjectBase` falls from 1,819 lines to 817, with a further 203
+in `EngineeringObjectBase.State.cs` — 1,020 across the two against 1,819
+before — and no change whatever to the public facet interfaces
+(`ADR-0075`). The split is along the seam the ADR creates: the mutators
+own *when* a change becomes durable, the state file owns *what* an
+object's state consists of, and the two now change for different reasons.
 
 `InMemoryEngineeringDocumentStore` goes because it was a second
 implementation of the document store, kept only so tests could avoid a
