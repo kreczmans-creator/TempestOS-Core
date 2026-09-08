@@ -1,7 +1,7 @@
 using Avalonia.Headless.XUnit;
 using Avalonia.Media;
 using Avalonia.Styling;
-using Tempest.App.Workspace;
+using Tempest.Workspace;
 using Tempest.Desktop.Theming;
 
 namespace Tempest.Desktop.Tests;

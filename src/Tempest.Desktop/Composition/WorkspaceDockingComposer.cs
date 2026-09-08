@@ -1,6 +1,6 @@
 using Avalonia.Controls;
-using Tempest.App.Workspace;
-using Tempest.App.Workspace.Layout;
+using Tempest.Workspace;
+using Tempest.Workspace.Layout;
 using Tempest.Desktop.Docking;
 using Tempest.Desktop.Views;
 

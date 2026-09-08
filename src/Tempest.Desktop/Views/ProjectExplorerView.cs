@@ -7,7 +7,7 @@ using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
-using Tempest.App.Workspace;
+using Tempest.Workspace;
 using Tempest.Desktop.DigitalThread;
 using Tempest.Desktop.Icons;
 using Tempest.Desktop.Theming;

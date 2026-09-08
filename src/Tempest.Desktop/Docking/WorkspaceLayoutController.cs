@@ -3,7 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
-using Tempest.App.Workspace.Layout;
+using Tempest.Workspace.Layout;
 
 namespace Tempest.Desktop.Docking;
 

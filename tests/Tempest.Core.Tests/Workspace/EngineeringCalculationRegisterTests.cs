@@ -1,6 +1,6 @@
-using Tempest.App.Engineering;
-using Tempest.App.Workspace;
-using Tempest.App.Workspace.Calculations;
+using Tempest.Workspace.Engineering;
+using Tempest.Workspace;
+using Tempest.Workspace.Calculations;
 using Tempest.Core.Calculations;
 using Tempest.Core.Commands;
 using Tempest.Core.Configuration;

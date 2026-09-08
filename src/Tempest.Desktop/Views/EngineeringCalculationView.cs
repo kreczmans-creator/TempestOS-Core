@@ -3,7 +3,7 @@ using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
-using Tempest.App.Engineering;
+using Tempest.Workspace.Engineering;
 using Tempest.Desktop.Editors;
 using Tempest.Desktop.Theming;
 
@@ -26,7 +26,7 @@ namespace Tempest.Desktop.Views;
 /// calculations exist, which materials are held, whether one may be used,
 /// what a check produced, what it stood on, whether verification evidence
 /// exists — is composed by <see cref="BracketCalculationWorkbench"/> in
-/// <c>Tempest.App</c>. The view collects text, raises intent, and renders
+/// <c>Tempest.Workspace</c>. The view collects text, raises intent, and renders
 /// what comes back. It parses no quantity, applies no rule, and knows no
 /// formula.
 /// </para>

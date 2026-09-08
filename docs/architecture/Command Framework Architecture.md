@@ -91,7 +91,7 @@ handler, no registration is exercised, because none exists.
   registration model below — confirmed by direct inspection of
   `TempestServiceProvider.cs` and `ServiceCollection.cs`; not assumed.
   See RD-0040.
-- **`Tempest.App.Shell`** (`WP 5.0C`/`WP 5.0D`, ADR-0033–ADR-0035) —
+- **`Tempest.Workspace.Shell`** (`WP 5.0C`/`WP 5.0D`, ADR-0033–ADR-0035) —
   already names Commands as a future consumer of its own input handling,
   without designing anything: "a menu selection may dispatch a command
   whose own handler calls `NavigationService.Navigate(...)`, exactly as
@@ -102,7 +102,7 @@ handler, no registration is exercised, because none exists.
 
 **No duplication found.** Nothing under `Tempest.Core` currently
 dispatches anything by an ID a UI could bind a keystroke to; nothing
-under `Tempest.App` currently presents a command surface. The boundary
+under `Tempest.Workspace` currently presents a command surface. The boundary
 this Work Package draws does not overlap or re-decide anything an
 existing platform service already owns.
 
@@ -398,7 +398,7 @@ Caller with only a string Id     ──▶ ICommandRegistry.InvokeAsync(id) ─�
   own `SaveProjectCommand → ProjectService.Save() → ProjectSavedEvent`
   illustration already shows) — but the Command Framework's own
   dispatch path never touches `IEventBus`.
-- `Tempest.App`'s Shell (or any future UI shell) depends downward on
+- `Tempest.Workspace`'s Shell (or any future UI shell) depends downward on
   `ICommandRegistry` (to enumerate `Items` for a menu/toolbar/keyboard-
   shortcut binding and to call `InvokeAsync`) exactly as it already
   depends downward on `INavigationProvider`/`IEventBus` via
@@ -513,7 +513,7 @@ permission model it does not yet need).
 **Desktop.** A menu item, a toolbar button, a keyboard shortcut, and a
 context menu entry are all, structurally, the same thing from the
 Command Framework's own point of view: a UI-specific trigger bound to a
-`CommandDescriptor.Id`. `Tempest.App`'s Shell (or any future desktop UI
+`CommandDescriptor.Id`. `Tempest.Workspace`'s Shell (or any future desktop UI
 technology) owns its *own* private mapping from a keystroke, a menu
 position, or a toolbar slot to a command Id — exactly the same shape the
 Shell already owns for `NavigationItem.Id` (`Shell & Composition

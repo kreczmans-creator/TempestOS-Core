@@ -1,6 +1,6 @@
-using Tempest.App.Workspace;
-using Tempest.App.Workspace.Requirements;
-using Tempest.App.Workspace.Verification;
+using Tempest.Workspace;
+using Tempest.Workspace.Requirements;
+using Tempest.Workspace.Verification;
 using Tempest.Core.Configuration;
 using Tempest.Core.EngineeringData;
 using Tempest.Core.EngineeringDomain;

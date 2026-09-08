@@ -38,14 +38,17 @@ src/
 │                            # Projects, Repositories) was deleted in full
 │                            # by WP-C (TD-110) — it is gone, not retired
 │                            # in place
-├── Tempest.App/             # TempestOS's Internal Engineering Harness
-│                            # (ADR-0101) — a console presentation
-│                            # (WorkspaceShell) over the shared Engineering
-│                            # Workspace domain layer, plus the domain layer
-│                            # itself (WorkspaceManager, all six Engineering
-│                            # Disciplines' commands/node providers).
-│                            # Tempest.Desktop depends on this project's
-│                            # shared domain layer; not a shipped product of
+├── Tempest.Workspace/       # The shared Engineering Workspace domain layer
+│                            # (WorkspaceManager, IWorkspace, all six
+│                            # Engineering Disciplines' commands/node
+│                            # providers) as its own class library
+│                            # (WP 17.2B). Both presentation layers below
+│                            # depend on it; it depends on Tempest.Core
+│                            # alone.
+├── Tempest.Harness/         # TempestOS's Internal Engineering Harness
+│                            # (ADR-0101, amended WP 17.2B) — a console exe
+│                            # (WorkspaceShell/Program.cs) over
+│                            # Tempest.Workspace. Not a shipped product of
 │                            # its own — a fast, scriptable verification
 │                            # tool, not TempestOS's application.
 ├── Tempest.Desktop/         # TempestOS's shipped desktop application
@@ -68,8 +71,9 @@ tests/
                                # rendering — no display attached, no mocks
 ```
 
-For why `Tempest.App` and `Tempest.Desktop` both exist and what each one
-is for, see [`ADR-0101`](docs/adr/ADR-0101-tempest-app-workspaceshell-is-tempestos-internal-engineering-harness-not-a-shipped-product.md).
+For why `Tempest.Harness` and `Tempest.Desktop` both exist and what each one
+is for, see [`ADR-0101`](docs/adr/ADR-0101-tempest-app-workspaceshell-is-tempestos-internal-engineering-harness-not-a-shipped-product.md)
+(amended by `WP 17.2B` — see its Status section).
 The wider governance register suite this section used to point to — every
 platform service, module and piece of technical debt indexed and
 cross-referenced — was archived by `WP 17.0B` (below); `docs/adr/` and
@@ -123,12 +127,12 @@ dotnet build src/TempestOS.slnx
 dotnet run --project src/Tempest.Desktop/Tempest.Desktop.csproj
 ```
 
-**Run the Internal Engineering Harness** (`Tempest.App`/`WorkspaceShell`
+**Run the Internal Engineering Harness** (`Tempest.Harness`/`WorkspaceShell`
 — a console verification tool, not a second application; see
 [`ADR-0101`](docs/adr/ADR-0101-tempest-app-workspaceshell-is-tempestos-internal-engineering-harness-not-a-shipped-product.md)):
 
 ```
-dotnet run --project src/Tempest.App/Tempest.App.csproj
+dotnet run --project src/Tempest.Harness/Tempest.Harness.csproj
 ```
 
 Run tests:

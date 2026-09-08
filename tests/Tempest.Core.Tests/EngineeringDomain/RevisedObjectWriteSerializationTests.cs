@@ -36,7 +36,7 @@ namespace Tempest.Core.Tests.EngineeringDomain;
 /// successor. The second matters as much as the first — a fix that
 /// simply stopped predecessors writing at all would pass the first test
 /// and quietly break ordinary edit-then-revise sequences, which is what
-/// every <c>Revise*Command</c> in <c>Tempest.App</c> actually does.
+/// every <c>Revise*Command</c> in <c>Tempest.Workspace</c> actually does.
 /// </para>
 /// </remarks>
 public sealed class RevisedObjectWriteSerializationTests

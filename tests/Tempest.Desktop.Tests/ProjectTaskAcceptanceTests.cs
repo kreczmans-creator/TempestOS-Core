@@ -3,9 +3,9 @@ using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.LogicalTree;
 using Avalonia.Threading;
-using Tempest.App.Projects;
-using Tempest.App.Shell;
-using Tempest.App.Workspace;
+using Tempest.Workspace.Projects;
+using Tempest.Workspace.Shell;
+using Tempest.Workspace;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Desktop.Views;
 
@@ -202,7 +202,7 @@ public sealed class ProjectTaskAcceptanceTests
 
             // And the Cockpit's Overdue Actions card, which was an empty
             // placeholder for want of a due-date field, now reports it.
-            var cockpit = ((Workspace)second.Workspace!).Cockpit;
+            var cockpit = second.Workspace!.Cockpit;
             Assert.Contains(cockpit.OverdueActionLines, line => line.Contains("Overdue work", StringComparison.Ordinal));
         }
         finally
@@ -656,7 +656,7 @@ public sealed class ProjectTaskAcceptanceTests
     private static async Task<Guid> CreatePartAsync(EngineeringDomainContext domain, string identifier, string name, Guid parentId)
     {
         var factory = new EngineeringObjectFactory<Part>(
-            Tempest.App.Workspace.Mechanical.MechanicalObjectFactoryRegistry.Part, domain,
+            Tempest.Workspace.Mechanical.MechanicalObjectFactoryRegistry.Part, domain,
             (d, r) => new Part(d, r, domain, identifier, name, EngineeringObjectMetadata.Empty));
 
         var part = await factory.CreateAsync($"Part {identifier}.");

@@ -1,7 +1,7 @@
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
-using Tempest.App.Workspace;
-using Tempest.App.Workspace.Mechanical;
+using Tempest.Workspace;
+using Tempest.Workspace.Mechanical;
 using Tempest.Core.Commands;
 using Tempest.Desktop.Composition;
 using static Tempest.Desktop.Tests.DesktopTestHelpers;

@@ -1,5 +1,5 @@
 using System.Text.Json;
-using Tempest.App.Workspace.Calculations;
+using Tempest.Workspace.Calculations;
 using Tempest.Core.Calculations;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Tests.EngineeringDomain;

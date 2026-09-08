@@ -2,17 +2,17 @@ using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Headless.XUnit;
 using Avalonia.LogicalTree;
-using Tempest.App.Workspace;
-using Tempest.App.Workspace.Calculations;
+using Tempest.Workspace;
+using Tempest.Workspace.Calculations;
 using Tempest.Core.Commands;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Requirements;
 using Tempest.Desktop.Editors;
 using Tempest.Samples;
-using Tempest.App.Workspace.Documents;
-using Tempest.App.Workspace.Mechanical;
-using Tempest.App.Workspace.Requirements;
-using Tempest.App.Workspace.Verification;
+using Tempest.Workspace.Documents;
+using Tempest.Workspace.Mechanical;
+using Tempest.Workspace.Requirements;
+using Tempest.Workspace.Verification;
 
 namespace Tempest.Desktop.Tests;
 

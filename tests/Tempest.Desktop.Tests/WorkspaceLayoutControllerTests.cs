@@ -2,7 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
-using Tempest.App.Workspace.Layout;
+using Tempest.Workspace.Layout;
 using Tempest.Core.Events;
 using Tempest.Core.Settings;
 using Tempest.Desktop.Docking;

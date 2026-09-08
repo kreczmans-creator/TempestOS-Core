@@ -1,6 +1,6 @@
 using Avalonia.Media;
 using Avalonia.Media.Immutable;
-using Tempest.App.Workspace;
+using Tempest.Workspace;
 
 namespace Tempest.Desktop.Theming;
 

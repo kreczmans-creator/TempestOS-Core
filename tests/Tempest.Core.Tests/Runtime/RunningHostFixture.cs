@@ -13,7 +13,7 @@ namespace Tempest.Core.Tests.Runtime;
 /// <para>
 /// <see cref="ITempestHost"/> exposes no non-polling "reached Running" signal
 /// — production code has exactly the same problem and solves it the same
-/// way: <see cref="Tempest.App.Workspace.WorkspaceManager"/>'s own
+/// way: <see cref="Tempest.Workspace.WorkspaceManager"/>'s own
 /// <c>WaitForServicesAsync</c> polls <c>IDiagnosticsProvider.HostState</c>
 /// with a bounded <c>Task.Delay</c> for the identical reason (see that
 /// method's remarks, <c>TD-26</c>). <see cref="WaitUntilRunningAsync"/>

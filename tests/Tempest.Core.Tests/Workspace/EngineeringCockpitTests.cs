@@ -1,4 +1,4 @@
-using Tempest.App.Workspace;
+using Tempest.Workspace;
 using Tempest.Core.Commands;
 using Tempest.Core.Configuration;
 using Tempest.Core.Persistence;
@@ -11,13 +11,13 @@ using Tempest.Samples;
 
 namespace Tempest.Core.Tests.Workspace;
 
-// Proves EngineeringCockpit (Tempest.App.Workspace) - the Workspace's own
+// Proves EngineeringCockpit (Tempest.Workspace) - the Workspace's own
 // default landing screen (ADR-0069), WP 8.1C - against real, production
 // collaborators: the real ICommandRegistry (resolved through a real,
 // running TempestHost) for the Cockpit's own Command Palette integration
 // (ADR-0070), and NavigationService (WP 8.1A/8.1B) for every real,
 // non-placeholder status indicator. EngineeringCockpit is internal, reached
-// here via Tempest.App's own InternalsVisibleTo grant (WP 8.1A).
+// here via Tempest.Workspace's own InternalsVisibleTo grant (WP 8.1A).
 public class EngineeringCockpitTests
 {
     private static async Task<(IWorkspace Workspace, WorkspaceManager Manager, ITempestHost Host)> StartAsync(string rootPath, params Type[] moduleTypes)
@@ -50,7 +50,7 @@ public class EngineeringCockpitTests
         // own identical precedent.
         using var temp = new TempDirectory();
         var (workspace, manager, _) = await StartAsync(temp.Path, Type.EmptyTypes);
-        var cockpit = ((Tempest.App.Workspace.Workspace)workspace).Cockpit;
+        var cockpit = ((Tempest.Workspace.Workspace)workspace).Cockpit;
 
         Assert.Equal("No Mechanical Project yet", cockpit.ProjectName);
 
@@ -62,7 +62,7 @@ public class EngineeringCockpitTests
     {
         using var temp = new TempDirectory();
         var (workspace, manager, _) = await StartAsync(temp.Path, Type.EmptyTypes);
-        var cockpit = ((Tempest.App.Workspace.Workspace)workspace).Cockpit;
+        var cockpit = ((Tempest.Workspace.Workspace)workspace).Cockpit;
 
         Assert.Equal(EngineeringHealthStatus.Unknown, cockpit.Health);
 
@@ -74,7 +74,7 @@ public class EngineeringCockpitTests
     {
         using var temp = new TempDirectory();
         var (workspace, manager, _) = await StartAsync(temp.Path, Type.EmptyTypes);
-        var cockpit = ((Tempest.App.Workspace.Workspace)workspace).Cockpit;
+        var cockpit = ((Tempest.Workspace.Workspace)workspace).Cockpit;
 
         Assert.NotEmpty(cockpit.AttentionItems);
 
@@ -86,7 +86,7 @@ public class EngineeringCockpitTests
     {
         using var temp = new TempDirectory();
         var (workspace, manager, _) = await StartAsync(temp.Path, Type.EmptyTypes);
-        var cockpit = ((Tempest.App.Workspace.Workspace)workspace).Cockpit;
+        var cockpit = ((Tempest.Workspace.Workspace)workspace).Cockpit;
 
         Assert.NotEmpty(cockpit.OpenActions);
 
@@ -98,7 +98,7 @@ public class EngineeringCockpitTests
     {
         using var temp = new TempDirectory();
         var (workspace, manager, _) = await StartAsync(temp.Path, Type.EmptyTypes);
-        var cockpit = ((Tempest.App.Workspace.Workspace)workspace).Cockpit;
+        var cockpit = ((Tempest.Workspace.Workspace)workspace).Cockpit;
 
         Assert.NotEmpty(cockpit.KpiCards);
         Assert.All(cockpit.KpiCards, kpi => Assert.True(kpi.IsPlaceholder));
@@ -116,7 +116,7 @@ public class EngineeringCockpitTests
         using var temp = new TempDirectory();
         var (workspace, manager, _) = await StartAsync(temp.Path, Type.EmptyTypes);
         manager.RegisterView("Requirement", new TestWorkspaceViewFactory("Requirement"));
-        var cockpit = ((Tempest.App.Workspace.Workspace)workspace).Cockpit;
+        var cockpit = ((Tempest.Workspace.Workspace)workspace).Cockpit;
         var objectId = Guid.NewGuid();
 
         await workspace.Navigation.OpenAsync(objectId, "Requirement");
@@ -132,7 +132,7 @@ public class EngineeringCockpitTests
     {
         using var temp = new TempDirectory();
         var (workspace, manager, _) = await StartAsync(temp.Path, typeof(NavigationSampleModule), typeof(SecondaryNavigationSampleModule));
-        var cockpit = ((Tempest.App.Workspace.Workspace)workspace).Cockpit;
+        var cockpit = ((Tempest.Workspace.Workspace)workspace).Cockpit;
 
         Assert.Equal(2, cockpit.AreaCount);
 
@@ -145,7 +145,7 @@ public class EngineeringCockpitTests
         using var temp = new TempDirectory();
         var (workspace, manager, _) = await StartAsync(temp.Path, Type.EmptyTypes);
         manager.RegisterView("Requirement", new TestWorkspaceViewFactory("Requirement"));
-        var cockpit = ((Tempest.App.Workspace.Workspace)workspace).Cockpit;
+        var cockpit = ((Tempest.Workspace.Workspace)workspace).Cockpit;
 
         await workspace.Navigation.OpenAsync(Guid.NewGuid(), "Requirement");
         await workspace.Navigation.OpenAsync(Guid.NewGuid(), "Requirement");
@@ -165,7 +165,7 @@ public class EngineeringCockpitTests
     {
         using var temp = new TempDirectory();
         var (workspace, manager, _) = await StartAsync(temp.Path, Type.EmptyTypes);
-        var cockpit = ((Tempest.App.Workspace.Workspace)workspace).Cockpit;
+        var cockpit = ((Tempest.Workspace.Workspace)workspace).Cockpit;
 
         Assert.Empty(cockpit.AvailableCommands(CommandContext.Empty));
 
@@ -177,7 +177,7 @@ public class EngineeringCockpitTests
     {
         using var temp = new TempDirectory();
         var (workspace, manager, _) = await StartAsync(temp.Path, typeof(CommandSampleModule));
-        var cockpit = ((Tempest.App.Workspace.Workspace)workspace).Cockpit;
+        var cockpit = ((Tempest.Workspace.Workspace)workspace).Cockpit;
 
         var available = cockpit.AvailableCommands(CommandContext.Empty);
 
@@ -212,7 +212,7 @@ public class EngineeringCockpitTests
             id: "test.not-invocable-by-id",
             displayName: "Not Invocable By Id",
             canExecute: () => true));
-        var cockpit = ((Tempest.App.Workspace.Workspace)workspace).Cockpit;
+        var cockpit = ((Tempest.Workspace.Workspace)workspace).Cockpit;
 
         var listed = cockpit.AvailableCommands(CommandContext.Empty);
 
@@ -229,7 +229,7 @@ public class EngineeringCockpitTests
     {
         using var temp = new TempDirectory();
         var (workspace, manager, _) = await StartAsync(temp.Path, typeof(CommandSampleModule));
-        var cockpit = ((Tempest.App.Workspace.Workspace)workspace).Cockpit;
+        var cockpit = ((Tempest.Workspace.Workspace)workspace).Cockpit;
         var index = cockpit.AvailableCommands(CommandContext.Empty)
             .Select((descriptor, i) => (descriptor, i))
             .Single(x => x.descriptor.Id == CommandSampleModule.IncrementCounterCommandId).i + 1;
@@ -248,7 +248,7 @@ public class EngineeringCockpitTests
     {
         using var temp = new TempDirectory();
         var (workspace, manager, _) = await StartAsync(temp.Path, Type.EmptyTypes);
-        var cockpit = ((Tempest.App.Workspace.Workspace)workspace).Cockpit;
+        var cockpit = ((Tempest.Workspace.Workspace)workspace).Cockpit;
 
         await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => cockpit.InvokeCommandAsync(0, CommandContext.Empty));
 
@@ -260,7 +260,7 @@ public class EngineeringCockpitTests
     {
         using var temp = new TempDirectory();
         var (workspace, manager, _) = await StartAsync(temp.Path, typeof(CommandSampleModule));
-        var cockpit = ((Tempest.App.Workspace.Workspace)workspace).Cockpit;
+        var cockpit = ((Tempest.Workspace.Workspace)workspace).Cockpit;
 
         await Assert.ThrowsAsync<ArgumentOutOfRangeException>(
             () => cockpit.InvokeCommandAsync(cockpit.AvailableCommands(CommandContext.Empty).Count + 1, CommandContext.Empty));
@@ -293,7 +293,7 @@ public class EngineeringCockpitTests
                 CommandContextRequirement.SelectedObject,
                 (context, _) => new RecordedCommandA(context.Primary!.ObjectId.ToString())),
         });
-        var cockpit = ((Tempest.App.Workspace.Workspace)workspace).Cockpit;
+        var cockpit = ((Tempest.Workspace.Workspace)workspace).Cockpit;
 
         Assert.DoesNotContain(cockpit.AvailableCommands(CommandContext.Empty), d => d.Id == "test.needs-selection");
         Assert.Contains(
@@ -320,7 +320,7 @@ public class EngineeringCockpitTests
         {
             Binding = CommandBinding.Unavailable("this platform has no object picker yet."),
         });
-        var cockpit = ((Tempest.App.Workspace.Workspace)workspace).Cockpit;
+        var cockpit = ((Tempest.Workspace.Workspace)workspace).Cockpit;
         var context = CommandContext.For(Guid.NewGuid(), "Requirement");
 
         var listed = cockpit.AvailableCommands(context);
@@ -362,7 +362,7 @@ public class EngineeringCockpitTests
                 CommandContextRequirement.SelectedObject,
                 (context, _) => new RecordedCommandA(context.Primary!.ObjectId.ToString())),
         });
-        var cockpit = ((Tempest.App.Workspace.Workspace)workspace).Cockpit;
+        var cockpit = ((Tempest.Workspace.Workspace)workspace).Cockpit;
 
         // Exactly what WorkspaceShell does: read the selection, translate it
         // through the one adapter, hand the result to the Cockpit.
@@ -390,7 +390,7 @@ public class EngineeringCockpitTests
     {
         using var temp = new TempDirectory();
         var (workspace, manager, _) = await StartAsync(temp.Path, Type.EmptyTypes);
-        var cockpit = ((Tempest.App.Workspace.Workspace)workspace).Cockpit;
+        var cockpit = ((Tempest.Workspace.Workspace)workspace).Cockpit;
 
         Assert.Null(cockpit.ContinueWhereILeftOff);
 
@@ -403,7 +403,7 @@ public class EngineeringCockpitTests
         using var temp = new TempDirectory();
         var (workspace, manager, _) = await StartAsync(temp.Path, Type.EmptyTypes);
         manager.RegisterView("Requirement", new TestWorkspaceViewFactory("Requirement"));
-        var cockpit = ((Tempest.App.Workspace.Workspace)workspace).Cockpit;
+        var cockpit = ((Tempest.Workspace.Workspace)workspace).Cockpit;
         var first = Guid.NewGuid();
         var second = Guid.NewGuid();
 
@@ -420,7 +420,7 @@ public class EngineeringCockpitTests
     {
         using var temp = new TempDirectory();
         var (workspace, manager, _) = await StartAsync(temp.Path, Type.EmptyTypes);
-        var cockpit = ((Tempest.App.Workspace.Workspace)workspace).Cockpit;
+        var cockpit = ((Tempest.Workspace.Workspace)workspace).Cockpit;
 
         await Assert.ThrowsAsync<InvalidOperationException>(() => cockpit.ContinueAsync());
 
@@ -433,7 +433,7 @@ public class EngineeringCockpitTests
         using var temp = new TempDirectory();
         var (workspace, manager, _) = await StartAsync(temp.Path, Type.EmptyTypes);
         manager.RegisterView("Requirement", new TestWorkspaceViewFactory("Requirement"));
-        var cockpit = ((Tempest.App.Workspace.Workspace)workspace).Cockpit;
+        var cockpit = ((Tempest.Workspace.Workspace)workspace).Cockpit;
         var objectId = Guid.NewGuid();
         var original = await workspace.Navigation.OpenAsync(objectId, "Requirement");
 
@@ -450,7 +450,7 @@ public class EngineeringCockpitTests
         using var temp = new TempDirectory();
         var (workspace, manager, _) = await StartAsync(temp.Path, Type.EmptyTypes);
         manager.RegisterView("Requirement", new TestWorkspaceViewFactory("Requirement"));
-        var cockpit = ((Tempest.App.Workspace.Workspace)workspace).Cockpit;
+        var cockpit = ((Tempest.Workspace.Workspace)workspace).Cockpit;
         var first = await workspace.Navigation.OpenAsync(Guid.NewGuid(), "Requirement");
         await workspace.Navigation.OpenAsync(Guid.NewGuid(), "Requirement");
 
@@ -466,7 +466,7 @@ public class EngineeringCockpitTests
     {
         using var temp = new TempDirectory();
         var (workspace, manager, _) = await StartAsync(temp.Path, Type.EmptyTypes);
-        var cockpit = ((Tempest.App.Workspace.Workspace)workspace).Cockpit;
+        var cockpit = ((Tempest.Workspace.Workspace)workspace).Cockpit;
 
         await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => cockpit.OpenRecentAsync(1));
 
@@ -483,7 +483,7 @@ public class EngineeringCockpitTests
     {
         using var temp = new TempDirectory();
         var (workspace, manager, _) = await StartAsync(temp.Path, Type.EmptyTypes);
-        var cockpit = ((Tempest.App.Workspace.Workspace)workspace).Cockpit;
+        var cockpit = ((Tempest.Workspace.Workspace)workspace).Cockpit;
 
         Assert.Equal(EngineeringHealthStatus.Unknown, cockpit.RequirementsStatus);
         Assert.Equal(EngineeringHealthStatus.Unknown, cockpit.VerificationStatus);
@@ -502,7 +502,7 @@ public class EngineeringCockpitTests
         // content — with no modules loaded, none exists.
         using var temp = new TempDirectory();
         var (workspace, manager, _) = await StartAsync(temp.Path, Type.EmptyTypes);
-        var cockpit = ((Tempest.App.Workspace.Workspace)workspace).Cockpit;
+        var cockpit = ((Tempest.Workspace.Workspace)workspace).Cockpit;
 
         Assert.Empty(cockpit.RecentProjects);
 
@@ -514,7 +514,7 @@ public class EngineeringCockpitTests
     {
         using var temp = new TempDirectory();
         var (workspace, manager, _) = await StartAsync(temp.Path, Type.EmptyTypes);
-        var cockpit = ((Tempest.App.Workspace.Workspace)workspace).Cockpit;
+        var cockpit = ((Tempest.Workspace.Workspace)workspace).Cockpit;
 
         Assert.Empty(cockpit.FavouriteProjects);
 
@@ -530,7 +530,7 @@ public class EngineeringCockpitTests
     {
         using var temp = new TempDirectory();
         var (workspace, manager, _) = await StartAsync(temp.Path, Type.EmptyTypes);
-        var cockpit = ((Tempest.App.Workspace.Workspace)workspace).Cockpit;
+        var cockpit = ((Tempest.Workspace.Workspace)workspace).Cockpit;
 
         Assert.Empty(cockpit.QuickActions);
 
@@ -542,7 +542,7 @@ public class EngineeringCockpitTests
     {
         using var temp = new TempDirectory();
         var (workspace, manager, _) = await StartAsync(temp.Path, typeof(NavigationSampleModule));
-        var cockpit = ((Tempest.App.Workspace.Workspace)workspace).Cockpit;
+        var cockpit = ((Tempest.Workspace.Workspace)workspace).Cockpit;
 
         Assert.Contains(cockpit.QuickActions, hint => hint.Contains("Browse an Area", StringComparison.Ordinal));
 
@@ -555,7 +555,7 @@ public class EngineeringCockpitTests
         using var temp = new TempDirectory();
         var (workspace, manager, _) = await StartAsync(temp.Path, Type.EmptyTypes);
         manager.RegisterView("Requirement", new TestWorkspaceViewFactory("Requirement"));
-        var cockpit = ((Tempest.App.Workspace.Workspace)workspace).Cockpit;
+        var cockpit = ((Tempest.Workspace.Workspace)workspace).Cockpit;
 
         await workspace.Navigation.OpenAsync(Guid.NewGuid(), "Requirement");
 
@@ -569,7 +569,7 @@ public class EngineeringCockpitTests
     {
         using var temp = new TempDirectory();
         var (workspace, manager, _) = await StartAsync(temp.Path, typeof(CommandSampleModule));
-        var cockpit = ((Tempest.App.Workspace.Workspace)workspace).Cockpit;
+        var cockpit = ((Tempest.Workspace.Workspace)workspace).Cockpit;
 
         Assert.Contains(cockpit.QuickActions, hint => hint.Contains("Run a Global Command", StringComparison.Ordinal));
 
@@ -587,7 +587,7 @@ public class EngineeringCockpitTests
     {
         using var temp = new TempDirectory();
         var (workspace, manager, _) = await StartAsync(temp.Path, Type.EmptyTypes);
-        var cockpit = ((Tempest.App.Workspace.Workspace)workspace).Cockpit;
+        var cockpit = ((Tempest.Workspace.Workspace)workspace).Cockpit;
 
         var requirementsCard = Assert.Single(cockpit.KpiCards, c => c.Label == "Requirements");
         Assert.True(requirementsCard.IsPlaceholder);
@@ -602,7 +602,7 @@ public class EngineeringCockpitTests
         var (workspace, manager, host) = await StartAsync(temp.Path, Type.EmptyTypes);
         var requirementsService = (IRequirementsService)host.Services!.GetService(typeof(IRequirementsService));
         await requirementsService.CreateAsync("REQ-1", "The system shall do X.");
-        var cockpit = ((Tempest.App.Workspace.Workspace)workspace).Cockpit;
+        var cockpit = ((Tempest.Workspace.Workspace)workspace).Cockpit;
 
         var requirementsCard = Assert.Single(cockpit.KpiCards, c => c.Label == "Requirements");
         Assert.False(requirementsCard.IsPlaceholder);
@@ -616,7 +616,7 @@ public class EngineeringCockpitTests
     {
         using var temp = new TempDirectory();
         var (workspace, manager, _) = await StartAsync(temp.Path, Type.EmptyTypes);
-        var cockpit = ((Tempest.App.Workspace.Workspace)workspace).Cockpit;
+        var cockpit = ((Tempest.Workspace.Workspace)workspace).Cockpit;
 
         var cards = cockpit.RequirementsKpiCards.ToDictionary(c => c.Label, c => c.Value);
 
@@ -639,7 +639,7 @@ public class EngineeringCockpitTests
         await requirementsService.CreateAsync("REQ-2", "Draft two.");
         var third = await requirementsService.CreateAsync("REQ-3", "Reviewed one.");
         await requirementsService.SetStatusAsync(third.Id, RequirementStatus.Reviewed);
-        var cockpit = ((Tempest.App.Workspace.Workspace)workspace).Cockpit;
+        var cockpit = ((Tempest.Workspace.Workspace)workspace).Cockpit;
 
         var cards = cockpit.RequirementsKpiCards.ToDictionary(c => c.Label, c => c.Value);
 
@@ -658,7 +658,7 @@ public class EngineeringCockpitTests
         var requirementsService = (IRequirementsService)host.Services!.GetService(typeof(IRequirementsService));
         var requirement = await requirementsService.CreateAsync("REQ-1", "The system shall do X.");
         await requirementsService.DeleteAsync(requirement.Id);
-        var cockpit = ((Tempest.App.Workspace.Workspace)workspace).Cockpit;
+        var cockpit = ((Tempest.Workspace.Workspace)workspace).Cockpit;
 
         var cards = cockpit.RequirementsKpiCards.ToDictionary(c => c.Label, c => c.Value);
 
@@ -679,7 +679,7 @@ public class EngineeringCockpitTests
         var target = await requirementsService.CreateAsync("REQ-TARGET", "Allocation target.");
         await requirementsService.LinkAsync(verified.Id, target.Id, RequirementRelationshipKinds.AllocatedTo);
         await verificationService.RecordAsync(verified.Id, VerificationOutcome.Pass, "Inspection", new VerificationContext());
-        var cockpit = ((Tempest.App.Workspace.Workspace)workspace).Cockpit;
+        var cockpit = ((Tempest.Workspace.Workspace)workspace).Cockpit;
 
         var cards = cockpit.RequirementsKpiCards.ToDictionary(c => c.Label, c => c.Value);
 
@@ -708,7 +708,7 @@ public class EngineeringCockpitTests
     {
         using var temp = new TempDirectory();
         var (workspace, manager, _) = await StartAsync(temp.Path, Type.EmptyTypes);
-        var cockpit = ((Tempest.App.Workspace.Workspace)workspace).Cockpit;
+        var cockpit = ((Tempest.Workspace.Workspace)workspace).Cockpit;
 
         var percentByLabel = cockpit.RequirementsKpiCards.ToDictionary(c => c.Label, c => c.PercentValue);
 
@@ -725,7 +725,7 @@ public class EngineeringCockpitTests
         var (workspace, manager, host) = await StartAsync(temp.Path, Type.EmptyTypes);
         var requirementsService = (IRequirementsService)host.Services!.GetService(typeof(IRequirementsService));
         await requirementsService.CreateAsync("REQ-1", "An orphan requirement with no relationships.");
-        var cockpit = ((Tempest.App.Workspace.Workspace)workspace).Cockpit;
+        var cockpit = ((Tempest.Workspace.Workspace)workspace).Cockpit;
 
         Assert.Equal(EngineeringHealthStatus.Attention, cockpit.RequirementsStatus);
 
@@ -740,7 +740,7 @@ public class EngineeringCockpitTests
         var requirementsService = (IRequirementsService)host.Services!.GetService(typeof(IRequirementsService));
         await requirementsService.CreateAsync("REQ-1", "An orphan requirement.");
         await requirementsService.CreateAsync("REQ-2", "Another orphan requirement.");
-        var cockpit = ((Tempest.App.Workspace.Workspace)workspace).Cockpit;
+        var cockpit = ((Tempest.Workspace.Workspace)workspace).Cockpit;
 
         Assert.Equal(2, cockpit.OutstandingRequirementActions);
 
@@ -754,7 +754,7 @@ public class EngineeringCockpitTests
         var (workspace, manager, host) = await StartAsync(temp.Path, Type.EmptyTypes);
         var requirementsService = (IRequirementsService)host.Services!.GetService(typeof(IRequirementsService));
         await requirementsService.CreateAsync("REQ-1", "The system shall do X.");
-        var cockpit = ((Tempest.App.Workspace.Workspace)workspace).Cockpit;
+        var cockpit = ((Tempest.Workspace.Workspace)workspace).Cockpit;
 
         Assert.Contains(cockpit.AttentionItems, item => item.Title == "Requirements Management is live");
 
@@ -768,7 +768,7 @@ public class EngineeringCockpitTests
         var (workspace, manager, host) = await StartAsync(temp.Path, Type.EmptyTypes);
         var requirementsService = (IRequirementsService)host.Services!.GetService(typeof(IRequirementsService));
         await requirementsService.CreateAsync("REQ-1", "An orphan requirement.");
-        var cockpit = ((Tempest.App.Workspace.Workspace)workspace).Cockpit;
+        var cockpit = ((Tempest.Workspace.Workspace)workspace).Cockpit;
 
         Assert.Contains("Triage", cockpit.OpenActions[0].Title);
 

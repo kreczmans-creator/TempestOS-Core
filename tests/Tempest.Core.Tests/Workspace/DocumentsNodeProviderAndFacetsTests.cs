@@ -1,5 +1,5 @@
-using Tempest.App.Workspace;
-using Tempest.App.Workspace.Documents;
+using Tempest.Workspace;
+using Tempest.Workspace.Documents;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Tests.EngineeringDomain;
 

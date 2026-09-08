@@ -1,7 +1,7 @@
-using Tempest.App.Workspace;
-using Tempest.App.Workspace.Documents;
-using Tempest.App.Workspace.Manufacturing;
-using Tempest.App.Workspace.Verification;
+using Tempest.Workspace;
+using Tempest.Workspace.Documents;
+using Tempest.Workspace.Manufacturing;
+using Tempest.Workspace.Verification;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Identity;
 using Tempest.Core.Tests.EngineeringDomain;

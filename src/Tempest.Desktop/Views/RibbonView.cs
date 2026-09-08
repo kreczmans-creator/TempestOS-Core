@@ -5,7 +5,7 @@ using Avalonia.LogicalTree;
 using Avalonia.VisualTree;
 using Avalonia.Layout;
 using Avalonia.Media;
-using Tempest.App.Workspace;
+using Tempest.Workspace;
 using Tempest.Core.Commands;
 using Tempest.Desktop.Composition;
 using Tempest.Desktop.Theming;

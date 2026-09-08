@@ -111,13 +111,13 @@ Windows).
 > look like it lost your work when it has simply looked in a different
 > place.
 
-`Tempest.App` is **not** a second application — it is the Internal
+`Tempest.Harness` is **not** a second application — it is the Internal
 Engineering Harness, a console verification tool
-([`ADR-0101`](docs/adr/ADR-0101-tempest-app-workspaceshell-is-tempestos-internal-engineering-harness-not-a-shipped-product.md)).
-It is not part of the review:
+([`ADR-0101`](docs/adr/ADR-0101-tempest-app-workspaceshell-is-tempestos-internal-engineering-harness-not-a-shipped-product.md),
+amended `WP 17.2B`). It is not part of the review:
 
 ```
-dotnet run --project src/Tempest.App/Tempest.App.csproj
+dotnet run --project src/Tempest.Harness/Tempest.Harness.csproj
 ```
 
 ### What happens on first launch
@@ -179,7 +179,7 @@ All persisted state is written under a single folder:
 - There is no registry use, no `%APPDATA%`/`~/.config` use, and no file
   written outside this folder and the build output.
 - **Logs go to `logs/` under this same root, and to the console when one
-  is genuinely attached** (`Tempest.App`'s own console harness; never
+  is genuinely attached** (`Tempest.Harness`'s own console harness; never
   `Tempest.Desktop`, which has none) — `WP 17.2A` (ADR-0146). Before this,
   logs went to the console only, and the application wrote no log file.
 

@@ -1,4 +1,4 @@
-using Tempest.App.Workspace;
+using Tempest.Workspace;
 using Tempest.Core.Configuration;
 using Tempest.Core.Persistence;
 using Tempest.Core.Runtime;
@@ -7,7 +7,7 @@ using Tempest.Samples;
 
 namespace Tempest.Core.Tests.Workspace;
 
-// Proves INavigationService (Tempest.App.Workspace) against real,
+// Proves INavigationService (Tempest.Workspace) against real,
 // production collaborators: the real INavigationProvider (resolved through
 // a real, running TempestHost) for Areas/SwitchAreaAsync, and real,
 // minimal test-double IWorkspaceViewFactory instances (this project does
@@ -237,7 +237,7 @@ public class NavigationServiceTests
     // History / GoBackAsync / GoForwardAsync (WP 8.1B — a genuine,
     // disclosed implementation-phase addition, not part of the twelve
     // WP8.0B contracts; NavigationService is internal, reached here via
-    // Tempest.App's own InternalsVisibleTo grant, WP 8.1A)
+    // Tempest.Workspace's own InternalsVisibleTo grant, WP 8.1A)
     // ----------------------------------------------------------------
 
     [Fact]

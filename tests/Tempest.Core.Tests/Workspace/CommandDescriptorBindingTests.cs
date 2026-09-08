@@ -1,12 +1,12 @@
 using System.Text.RegularExpressions;
-using Tempest.App.Composition;
-using Tempest.App.Workspace;
-using Tempest.App.Workspace.Calculations;
-using Tempest.App.Workspace.Documents;
-using Tempest.App.Workspace.Manufacturing;
-using Tempest.App.Workspace.Mechanical;
-using Tempest.App.Workspace.Requirements;
-using Tempest.App.Workspace.Verification;
+using Tempest.Workspace.Composition;
+using Tempest.Workspace;
+using Tempest.Workspace.Calculations;
+using Tempest.Workspace.Documents;
+using Tempest.Workspace.Manufacturing;
+using Tempest.Workspace.Mechanical;
+using Tempest.Workspace.Requirements;
+using Tempest.Workspace.Verification;
 using Tempest.Core.Commands;
 using Tempest.Core.Configuration;
 using Tempest.Core.Persistence;
@@ -356,7 +356,7 @@ public sealed class CommandDescriptorBindingTests : IAsyncLifetime
             yield return (
                 file,
                 File.ReadAllText(Path.Combine(
-                    RepositoryPaths.RepositoryRoot, "src", "Tempest.App", "Workspace", folder, file)));
+                    RepositoryPaths.RepositoryRoot, "src", "Tempest.Workspace", "Workspace", folder, file)));
         }
     }
 

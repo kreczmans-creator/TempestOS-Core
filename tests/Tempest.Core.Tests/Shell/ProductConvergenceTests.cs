@@ -1,6 +1,6 @@
-using Tempest.App.Projects;
-using Tempest.App.Shell;
-using Tempest.App.Workspace.Mechanical;
+using Tempest.Workspace.Projects;
+using Tempest.Workspace.Shell;
+using Tempest.Workspace.Mechanical;
 using Tempest.Core.EngineeringData;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Events;
@@ -49,8 +49,8 @@ public class ProductConvergenceTests
 
         var rehydrators = new EngineeringObjectRehydratorRegistry();
         MechanicalObjectFactoryRegistry.RegisterRehydrators(rehydrators, domain);
-        Tempest.App.Workspace.Calculations.CalculationObjectFactoryRegistry.RegisterRehydrators(rehydrators, domain);
-        Tempest.App.Workspace.Documents.DocumentObjectFactoryRegistry.RegisterRehydrators(rehydrators, domain);
+        Tempest.Workspace.Calculations.CalculationObjectFactoryRegistry.RegisterRehydrators(rehydrators, domain);
+        Tempest.Workspace.Documents.DocumentObjectFactoryRegistry.RegisterRehydrators(rehydrators, domain);
         await new EngineeringObjectRehydrationService(domain, rehydrators).RehydrateAsync();
 
         var eventBus = new EventBus();

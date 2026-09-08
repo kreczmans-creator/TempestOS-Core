@@ -27,7 +27,7 @@ public class FaultInjectionModuleDiscoveryTests
     public async Task DefaultHost_WithNavigationAndDuplicateCandidates_NeverDiscoversTheFaultInjectionModule()
     {
         // No EnableFaultInjectionModules() call - the exact shape
-        // Tempest.App's own EngineeringWorkspaceComposer/WorkspaceHost uses.
+        // Tempest.Workspace's own EngineeringWorkspaceComposer/WorkspaceHost uses.
         var host = new TempestHostBuilder([typeof(NavigationSampleModule), typeof(DuplicateNavigationModule)]).WithIsolatedPersistenceRoot().Build();
 
         await RunUntilRunningAsync(host, async () =>

@@ -1,4 +1,4 @@
-using Tempest.App.Workspace;
+using Tempest.Workspace;
 using Tempest.Samples;
 
 namespace Tempest.Core.Tests.Workspace.Samples;

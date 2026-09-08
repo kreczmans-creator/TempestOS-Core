@@ -1,6 +1,6 @@
 using Avalonia.Controls;
 using Avalonia.Threading;
-using Tempest.App.Workspace;
+using Tempest.Workspace;
 using Tempest.Desktop.Theming;
 using Tempest.Desktop.Views;
 
@@ -95,7 +95,7 @@ internal sealed class UndoRedoCoordinator
     /// <para>
     /// <b>Why this marshals.</b> <see cref="UndoRedoStack.UndoAsync"/> awaits
     /// the undone action with <c>ConfigureAwait(false)</c> — correct for a
-    /// <c>Tempest.App</c> type, which knows nothing of a dispatcher and must
+    /// <c>Tempest.Workspace</c> type, which knows nothing of a dispatcher and must
     /// not — and then raises <c>Changed</c> on whatever thread that
     /// continuation landed on. An action that genuinely yields lands on the
     /// thread pool, and both real ones do: the favourite toggle writes a

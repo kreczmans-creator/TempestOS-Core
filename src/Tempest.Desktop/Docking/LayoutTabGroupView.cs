@@ -4,7 +4,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
-using Tempest.App.Workspace.Layout;
+using Tempest.Workspace.Layout;
 using Tempest.Desktop.Theming;
 
 namespace Tempest.Desktop.Docking;

@@ -3,7 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
-using Tempest.App.Workspace;
+using Tempest.Workspace;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Desktop.DigitalThread;
 using Tempest.Desktop.Editors;

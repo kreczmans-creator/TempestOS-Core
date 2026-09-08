@@ -1,6 +1,6 @@
 using Avalonia.Headless.XUnit;
 using Avalonia.Input;
-using Tempest.App.Workspace.Viewing;
+using Tempest.Workspace.Viewing;
 using Tempest.Desktop.Viewing;
 
 namespace Tempest.Desktop.Tests;

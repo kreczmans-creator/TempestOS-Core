@@ -1,8 +1,8 @@
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.LogicalTree;
-using Tempest.App.Workspace;
-using Tempest.App.Workspace.Mechanical;
+using Tempest.Workspace;
+using Tempest.Workspace.Mechanical;
 using Tempest.Desktop.Views;
 using Tempest.Samples;
 

@@ -3,8 +3,8 @@ using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
-using Tempest.App.Projects;
-using Tempest.App.Shell;
+using Tempest.Workspace.Projects;
+using Tempest.Workspace.Shell;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Desktop.Theming;
 

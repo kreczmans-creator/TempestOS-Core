@@ -11,7 +11,7 @@ namespace Tempest.Desktop.Tests;
 /// primitives directly — <see cref="DisciplineColors"/> (the "engineering
 /// colour language") and <see cref="CockpitCardControl.AddKpiRow"/> (real
 /// progress-bar KPI rendering) — neither needs a real
-/// <see cref="Tempest.App.Workspace.WorkspaceHost"/> to prove, unlike
+/// <see cref="Tempest.Workspace.WorkspaceHost"/> to prove, unlike
 /// their own real consumers (<see cref="RibbonViewTests"/>,
 /// <see cref="CockpitViewHonestyTests"/>), which do.
 /// </summary>

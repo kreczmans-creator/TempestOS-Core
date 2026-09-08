@@ -11,7 +11,7 @@ namespace Tempest.Desktop.Theming;
 /// `WP10.0A Visual Design System.md` §1 specified ("theme data is a
 /// Settings value, exactly like panel layout... no new 'Theming Service'
 /// is introduced"). Introduces zero new persistence mechanism — the
-/// identical <c>ADR-0064</c> pattern <see cref="Tempest.App.Workspace.WorkspaceState"/>
+/// identical <c>ADR-0064</c> pattern <see cref="Tempest.Workspace.WorkspaceState"/>
 /// already established for layout, applied here to one further string
 /// value.
 /// </summary>

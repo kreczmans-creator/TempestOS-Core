@@ -229,7 +229,7 @@ public sealed class CockpitCardControl : Border
     /// The same Healthy/Attention/Blocked thresholds and colours
     /// <see cref="HealthColors"/> already established platform-wide
     /// (`WP 10.1A`), applied to a raw coverage percentage rather than an
-    /// <see cref="Tempest.App.Workspace.EngineeringHealthStatus"/> value —
+    /// <see cref="Tempest.Workspace.EngineeringHealthStatus"/> value —
     /// a real, deliberate reuse of the platform's own existing colour
     /// language, never a new, competing percentage-colour scheme.
     /// </summary>

@@ -1,5 +1,5 @@
-using Tempest.App.Workspace;
-using Tempest.App.Workspace.Mechanical;
+using Tempest.Workspace;
+using Tempest.Workspace.Mechanical;
 using Tempest.Core.Commands;
 using Tempest.Core.Configuration;
 using Tempest.Core.EngineeringDomain;

@@ -2,9 +2,9 @@ using System.Reflection;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.LogicalTree;
-using Tempest.App.Workspace;
-using Tempest.App.Workspace.Mechanical;
-using Tempest.App.Workspace.Requirements;
+using Tempest.Workspace;
+using Tempest.Workspace.Mechanical;
+using Tempest.Workspace.Requirements;
 using Tempest.Core.Commands;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Requirements;
@@ -348,7 +348,7 @@ public sealed class SurfaceCommandIntegrationTests
         {
             await host.StartAsync();
             var workspace = host.Workspace!;
-            await SelectFirstAsync(workspace, Tempest.App.Workspace.Calculations.CalculationsWorkspaceExplorerModule.NavigationItemId, "Calculation");
+            await SelectFirstAsync(workspace, Tempest.Workspace.Calculations.CalculationsWorkspaceExplorerModule.NavigationItemId, "Calculation");
 
             var window = new MainWindow(host);
             var ribbon = GetPrivateField<RibbonView>(window, "_ribbon");

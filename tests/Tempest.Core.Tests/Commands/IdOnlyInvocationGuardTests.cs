@@ -144,10 +144,10 @@ public class IdOnlyInvocationGuardTests
         // WP-A1's actual deliverable, asserted as a fact about the repository
         // rather than as a count: the one LIVE caller is gone, and it is gone
         // by migration rather than by being excused.
-        Assert.DoesNotContain("src/Tempest.App/Workspace/EngineeringCockpit.cs", SanctionedCallers.Keys);
+        Assert.DoesNotContain("src/Tempest.Workspace/Workspace/EngineeringCockpit.cs", SanctionedCallers.Keys);
 
         var cockpit = File.ReadAllText(Path.Combine(
-            RepositoryPaths.RepositoryRoot, "src", "Tempest.App", "Workspace", "EngineeringCockpit.cs"));
+            RepositoryPaths.RepositoryRoot, "src", "Tempest.Workspace", "Workspace", "EngineeringCockpit.cs"));
 
         Assert.DoesNotContain(CodeLines(cockpit), IdOnlyCall.IsMatch);
         Assert.Contains("InvokeAsync(commands[index - 1].Id, context, prompt, cancellationToken)", cockpit, StringComparison.Ordinal);

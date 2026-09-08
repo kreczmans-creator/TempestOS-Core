@@ -1,6 +1,6 @@
 using Avalonia.Headless.XUnit;
 using Avalonia.LogicalTree;
-using Tempest.App.Workspace;
+using Tempest.Workspace;
 using Tempest.Desktop.Views;
 
 namespace Tempest.Desktop.Tests;
@@ -23,7 +23,7 @@ public sealed class CockpitEngineeringOverviewCardTests
         {
             await host.StartAsync();
             var workspace = host.Workspace!;
-            var cockpit = ((Workspace)workspace).Cockpit;
+            var cockpit = workspace.Cockpit;
 
             var view = new CockpitView(
                 cockpit,

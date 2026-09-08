@@ -1,4 +1,4 @@
-using Tempest.App.Workspace.Mechanical;
+using Tempest.Workspace.Mechanical;
 using Tempest.Core.Audit;
 using Tempest.Core.EngineeringData;
 using Tempest.Core.EngineeringDomain;

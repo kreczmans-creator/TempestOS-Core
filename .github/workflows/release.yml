@@ -12,10 +12,10 @@ name: Release Publish
 # time, against the tag itself, not only against whatever CI run the
 # feature branch happened to produce earlier — then publishes a GitHub
 # Release with two separate assets attached: Tempest.Desktop's own build
-# (TempestOS's shipped application) and, separately, Tempest.App's own
-# build (the Internal Engineering Harness, ADR-0101) — never bundled
-# into one artefact, so it is never ambiguous which download is the
-# actual product (WP 11.3B).
+# (TempestOS's shipped application) and, separately, Tempest.Harness's
+# own build (the Internal Engineering Harness, ADR-0101, amended
+# WP 17.2B) — never bundled into one artefact, so it is never ambiguous
+# which download is the actual product (WP 11.3B).
 #
 # This is this project's rollback procedure's own mechanical foundation:
 # every tagged release gets a durable (non-expiring, unlike this
@@ -108,13 +108,14 @@ jobs:
             exit $LASTEXITCODE
           }
 
-      # Two separate archives, deliberately not one — ADR-0101 (`WP 11.3B`):
-      # Tempest.Desktop is TempestOS's shipped application; Tempest.App
-      # (WorkspaceShell) is the Internal Engineering Harness. The primary
-      # asset ("TempestOS-<tag>.zip") is Tempest.Desktop alone, so it is
-      # unambiguous on the GitHub Release page which download *is*
-      # TempestOS; the harness build is a separate, clearly-named asset,
-      # never implied to be a second, co-equal product.
+      # Two separate archives, deliberately not one — ADR-0101 (`WP 11.3B`,
+      # amended `WP 17.2B`): Tempest.Desktop is TempestOS's shipped
+      # application; Tempest.Harness (WorkspaceShell) is the Internal
+      # Engineering Harness. The primary asset ("TempestOS-<tag>.zip") is
+      # Tempest.Desktop alone, so it is unambiguous on the GitHub Release
+      # page which download *is* TempestOS; the harness build is a
+      # separate, clearly-named asset, never implied to be a second,
+      # co-equal product.
       - name: Package Release build output
         shell: pwsh
         run: |
@@ -127,7 +128,7 @@ jobs:
 
           $harnessDir = "TempestOS-$tag-engineering-harness"
           New-Item -ItemType Directory -Path $harnessDir -Force | Out-Null
-          Copy-Item -Path "src/Tempest.App/bin/Release/net10.0/*" -Destination $harnessDir -Recurse
+          Copy-Item -Path "src/Tempest.Harness/bin/Release/net10.0/*" -Destination $harnessDir -Recurse
           Compress-Archive -Path $harnessDir -DestinationPath "$harnessDir.zip"
 
       # Release notes are looked up by directory convention

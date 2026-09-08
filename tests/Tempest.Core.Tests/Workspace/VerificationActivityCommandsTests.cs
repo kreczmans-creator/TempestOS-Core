@@ -1,4 +1,4 @@
-using Tempest.App.Workspace.Verification;
+using Tempest.Workspace.Verification;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Identity;
 using Tempest.Core.Tests.EngineeringDomain;

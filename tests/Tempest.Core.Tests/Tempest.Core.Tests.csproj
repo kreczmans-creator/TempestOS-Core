@@ -22,7 +22,8 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Tempest.Core\Tempest.Core.csproj" />
     <ProjectReference Include="..\..\src\Samples\Tempest.Samples\Tempest.Samples.csproj" />
-    <ProjectReference Include="..\..\src\Tempest.App\Tempest.App.csproj" />
+    <ProjectReference Include="..\..\src\Tempest.Workspace\Tempest.Workspace.csproj" />
+    <ProjectReference Include="..\..\src\Tempest.Harness\Tempest.Harness.csproj" />
     <ProjectReference Include="..\..\src\Validation\Tempest.Validation\Tempest.Validation.csproj" />
   </ItemGroup>
 

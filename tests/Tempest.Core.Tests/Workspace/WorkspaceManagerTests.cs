@@ -1,4 +1,4 @@
-using Tempest.App.Workspace;
+using Tempest.Workspace;
 using Tempest.Core.Configuration;
 using Tempest.Core.Persistence;
 using Tempest.Core.Runtime;
@@ -6,7 +6,7 @@ using Tempest.Core.Tests.Plugins;
 
 namespace Tempest.Core.Tests.Workspace;
 
-// Proves WP 8.1A end to end: WorkspaceManager (Tempest.App.Workspace) is a
+// Proves WP 8.1A end to end: WorkspaceManager (Tempest.Workspace) is a
 // real composition root layered above a real, unmodified TempestHost,
 // exactly as ADR-0062 designs - constructs and runs the real Host, resolves
 // the real INavigationProvider/IEventBus/ISettingsProvider through the real

@@ -1,4 +1,4 @@
-using Tempest.App.Workspace;
+using Tempest.Workspace;
 using Tempest.Core.Configuration;
 using Tempest.Core.Persistence;
 using Tempest.Core.Runtime;
@@ -6,7 +6,7 @@ using Tempest.Core.Tests.Plugins;
 
 namespace Tempest.Core.Tests.Workspace;
 
-// Proves IPropertyInspector (Tempest.App.Workspace) reacts automatically to
+// Proves IPropertyInspector (Tempest.Workspace) reacts automatically to
 // WorkspaceSelectionChangedEvent - the Property Inspector never subscribes
 // to ISelectionService directly (WP8.0B Workspace Contracts.md §11) - and
 // that every displayed facet in this Work Package's own shell is derived

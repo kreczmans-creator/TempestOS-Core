@@ -1,5 +1,5 @@
-using Tempest.App.Projects;
-using Tempest.App.Shell;
+using Tempest.Workspace.Projects;
+using Tempest.Workspace.Shell;
 using Tempest.Core.EngineeringData;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Events;

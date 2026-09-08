@@ -1,9 +1,9 @@
-using Tempest.App.Composition;
-using Tempest.App.Engineering;
-using Tempest.App.Projects;
-using Tempest.App.Shell;
-using Tempest.App.Workspace.Calculations;
-using Tempest.App.Workspace;
+using Tempest.Workspace.Composition;
+using Tempest.Workspace.Engineering;
+using Tempest.Workspace.Projects;
+using Tempest.Workspace.Shell;
+using Tempest.Workspace.Calculations;
+using Tempest.Workspace;
 using Tempest.Core.Bearings;
 using Tempest.Core.Commands;
 using Tempest.Core.Calculations;
@@ -34,7 +34,7 @@ namespace Tempest.Desktop;
 /// pair for the lifetime of the desktop application — the graphical
 /// presentation layer's own equivalent of what <c>Program.cs</c>'s own
 /// top-level statements do for the console
-/// (<see cref="Tempest.App.Workspace.WorkspaceShell"/>).
+/// (<see cref="Tempest.Workspace.WorkspaceShell"/>).
 /// Composes through <see cref="EngineeringWorkspaceComposer"/>, shared with
 /// the console entry point, so the same six real Engineering Disciplines
 /// load identically in both presentation layers (`WP 10.0B`'s own explicit
@@ -52,7 +52,7 @@ public sealed class WorkspaceHost : IAsyncDisposable
     /// <summary>Gets the running <see cref="IWorkspace"/>, or <see langword="null"/> before <see cref="StartAsync"/> completes.</summary>
     public IWorkspace? Workspace { get; private set; }
 
-    /// <summary>Gets the owning <see cref="WorkspaceManager"/> — exposed so a graphical presentation layer can reach <see cref="WorkspaceManager.StatusBar"/> (internal, `InternalsVisibleTo`), the one Workspace facet with no dedicated public contract (`WP8.0A UI Architecture.md` §1).</summary>
+    /// <summary>Gets the owning <see cref="WorkspaceManager"/> — exposed so a graphical presentation layer can reach the public <see cref="WorkspaceManager.StatusBar"/> (`WP 17.2B`), the one Workspace facet with no dedicated `WP8.0A UI Architecture.md` §1 contract.</summary>
     public WorkspaceManager? Manager => _manager;
 
     /// <summary>Gets the running Host's own DI container — <see langword="null"/> before <see cref="StartAsync"/> completes.</summary>
@@ -83,7 +83,7 @@ public sealed class WorkspaceHost : IAsyncDisposable
     /// user relies on — the same isolation <c>Tempest.Core.Tests</c> has
     /// applied to every <see cref="Tempest.Core.Runtime.ITempestHostBuilder"/>
     /// construction since `WP 7.3A`, only now extended to
-    /// <see cref="Tempest.App.Composition.EngineeringWorkspaceComposer"/>'s
+    /// <see cref="Tempest.Workspace.Composition.EngineeringWorkspaceComposer"/>'s
     /// own callers (`WP 10.1B`, `TD-37`).
     /// </param>
     /// <param name="sessionPrincipals">
