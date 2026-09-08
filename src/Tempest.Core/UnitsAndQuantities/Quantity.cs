@@ -14,16 +14,34 @@ namespace Tempest.Core.UnitsAndQuantities;
 /// own "not every public type is a DI-registered service" precedent).
 /// </para>
 /// <para>
-/// <b>Never performs an implicit unit conversion.</b> Every arithmetic
-/// operator (<c>+</c>, <c>-</c>) and every comparison operator (<c>&lt;</c>,
-/// <c>&gt;</c>, and so on) requires both operands to share the exact same
-/// <see cref="Unit"/> — not merely the same <typeparamref name="TDimension"/>
-/// — throwing <see cref="IncompatibleUnitsException"/> otherwise. A caller
-/// combining quantities expressed in different units of the same dimension
-/// (5 m and 500 cm) must call <see cref="ConvertTo"/> explicitly first.
-/// Equality (inherited record structure equality, comparing <see cref="Value"/>
-/// and <see cref="Unit"/> exactly) follows the same rule: 5 m and 500 cm are
-/// <em>not</em> equal by <c>==</c>, for the identical reason.
+/// <b>Same-dimension automatic conversion (`ADR-0147`).</b> Every
+/// arithmetic operator (<c>+</c>, <c>-</c>), every comparison operator
+/// (<c>&lt;</c>, <c>&gt;</c>, and so on) and equality convert automatically
+/// between units of the same <typeparamref name="TDimension"/> — through
+/// the dimension's own base unit, and for <c>+</c>/<c>-</c> back to the
+/// left operand's own unit. 5 m and 500 cm are equal by <c>==</c>, and
+/// <c>new Quantity&lt;Length&gt;(5, Metre) + new Quantity&lt;Length&gt;(500, Centimetre)</c>
+/// returns 10 m, with no explicit <see cref="ConvertTo"/> required first.
+/// This reverses `ADR-0054`'s original "exact same unit only" rule, which
+/// this framework's own experience writing calculation code against this
+/// type found added ceremony without adding safety — <typeparamref name="TDimension"/>
+/// already guarantees dimensional compatibility at compile time, and unit
+/// mismatch within a dimension is exactly the case a physical measurement
+/// framework exists to resolve, not to refuse. Only a genuinely
+/// cross-dimension combination remains impossible, and it remains
+/// impossible at compile time via <typeparamref name="TDimension"/> itself
+/// — <see cref="IncompatibleUnitsException"/> is no longer reachable from
+/// these operators at all, and now guards only the affine-arithmetic
+/// refusal below.
+/// </para>
+/// <para>
+/// <b>Affine arithmetic is still refused (`ADR-0125`).</b> A quantity
+/// expressed in an affine unit (degrees Celsius, degrees Fahrenheit)
+/// cannot be added, subtracted or scaled — see <see cref="IsAffine"/>'s own
+/// remarks on <see cref="Unit{TDimension}"/> — even though it can now be
+/// added to or compared against a quantity in a <em>different</em>
+/// non-affine unit of the same dimension. This is unchanged from
+/// `ADR-0125`; only the exact-unit-match rule around it has widened.
 /// </para>
 /// </remarks>
 public readonly record struct Quantity<TDimension> : IComparable<Quantity<TDimension>>, IFormattable
@@ -80,23 +98,26 @@ public readonly record struct Quantity<TDimension> : IComparable<Quantity<TDimen
     /// </summary>
     public double BaseValue => Unit.ToBase(Value);
 
-    /// <summary>Adds two quantities expressed in the exact same <see cref="Unit"/>.</summary>
-    /// <exception cref="IncompatibleUnitsException"><paramref name="left"/> and <paramref name="right"/> do not share the exact same <see cref="Unit"/>.</exception>
+    /// <summary>Adds two quantities of the same dimension, converting <paramref name="right"/> into <paramref name="left"/>'s own unit automatically if they differ.</summary>
+    /// <exception cref="IncompatibleUnitsException"><paramref name="left"/>'s own unit sits on an affine scale.</exception>
     public static Quantity<TDimension> operator +(Quantity<TDimension> left, Quantity<TDimension> right)
     {
-        RequireSameUnit(left, right);
         RequireNotAffine(left.Unit, "added");
-        return new Quantity<TDimension>(left.Value + right.Value, left.Unit);
+        RequireNotAffine(right.Unit, "added");
+        return new Quantity<TDimension>(left.Value + ValueInLeftUnit(left, right), left.Unit);
     }
 
-    /// <summary>Subtracts two quantities expressed in the exact same <see cref="Unit"/>.</summary>
-    /// <exception cref="IncompatibleUnitsException"><paramref name="left"/> and <paramref name="right"/> do not share the exact same <see cref="Unit"/>.</exception>
+    /// <summary>Subtracts two quantities of the same dimension, converting <paramref name="right"/> into <paramref name="left"/>'s own unit automatically if they differ.</summary>
+    /// <exception cref="IncompatibleUnitsException"><paramref name="left"/>'s own unit sits on an affine scale.</exception>
     public static Quantity<TDimension> operator -(Quantity<TDimension> left, Quantity<TDimension> right)
     {
-        RequireSameUnit(left, right);
         RequireNotAffine(left.Unit, "subtracted");
-        return new Quantity<TDimension>(left.Value - right.Value, left.Unit);
+        RequireNotAffine(right.Unit, "subtracted");
+        return new Quantity<TDimension>(left.Value - ValueInLeftUnit(left, right), left.Unit);
     }
+
+    private static double ValueInLeftUnit(Quantity<TDimension> left, Quantity<TDimension> right) =>
+        left.Unit == right.Unit ? right.Value : left.Unit.FromBase(right.Unit.ToBase(right.Value));
 
     /// <summary>Scales a quantity by a dimensionless factor, preserving its unit.</summary>
     public static Quantity<TDimension> operator *(Quantity<TDimension> quantity, double scalar)
@@ -117,28 +138,31 @@ public readonly record struct Quantity<TDimension> : IComparable<Quantity<TDimen
     }
 
     /// <inheritdoc />
-    /// <exception cref="IncompatibleUnitsException">This instance and <paramref name="other"/> do not share the exact same <see cref="Unit"/>.</exception>
-    public int CompareTo(Quantity<TDimension> other)
-    {
-        RequireSameUnit(this, other);
-        return Value.CompareTo(other.Value);
-    }
+    /// <remarks>Compares <see cref="BaseValue"/> — two quantities of this same, compile-time-guaranteed dimension are always comparable regardless of which unit either is expressed in (`ADR-0147`).</remarks>
+    public int CompareTo(Quantity<TDimension> other) => BaseValue.CompareTo(other.BaseValue);
 
     /// <summary>Returns whether <paramref name="left"/> is less than <paramref name="right"/>.</summary>
-    /// <exception cref="IncompatibleUnitsException"><paramref name="left"/> and <paramref name="right"/> do not share the exact same <see cref="Unit"/>.</exception>
     public static bool operator <(Quantity<TDimension> left, Quantity<TDimension> right) => left.CompareTo(right) < 0;
 
     /// <summary>Returns whether <paramref name="left"/> is greater than <paramref name="right"/>.</summary>
-    /// <exception cref="IncompatibleUnitsException"><paramref name="left"/> and <paramref name="right"/> do not share the exact same <see cref="Unit"/>.</exception>
     public static bool operator >(Quantity<TDimension> left, Quantity<TDimension> right) => left.CompareTo(right) > 0;
 
     /// <summary>Returns whether <paramref name="left"/> is less than or equal to <paramref name="right"/>.</summary>
-    /// <exception cref="IncompatibleUnitsException"><paramref name="left"/> and <paramref name="right"/> do not share the exact same <see cref="Unit"/>.</exception>
     public static bool operator <=(Quantity<TDimension> left, Quantity<TDimension> right) => left.CompareTo(right) <= 0;
 
     /// <summary>Returns whether <paramref name="left"/> is greater than or equal to <paramref name="right"/>.</summary>
-    /// <exception cref="IncompatibleUnitsException"><paramref name="left"/> and <paramref name="right"/> do not share the exact same <see cref="Unit"/>.</exception>
     public static bool operator >=(Quantity<TDimension> left, Quantity<TDimension> right) => left.CompareTo(right) >= 0;
+
+    /// <summary>
+    /// Returns whether this quantity and <paramref name="other"/> represent
+    /// the same physical magnitude, regardless of which unit either is
+    /// expressed in (`ADR-0147`) — 5 m and 500 cm are equal.
+    /// </summary>
+    /// <remarks>Compares <see cref="BaseValue"/>, replacing the record structure's own field-by-field synthesized equality.</remarks>
+    public bool Equals(Quantity<TDimension> other) => BaseValue.Equals(other.BaseValue);
+
+    /// <inheritdoc cref="Equals(Quantity{TDimension})" />
+    public override int GetHashCode() => BaseValue.GetHashCode();
 
     /// <inheritdoc />
     public override string ToString() => ToString(format: null, formatProvider: null);
@@ -209,10 +233,27 @@ public readonly record struct Quantity<TDimension> : IComparable<Quantity<TDimen
                 $"A quantity expressed in '{unit.Symbol}' cannot be {operation}: that unit sits on an affine scale, where the operation has no physical meaning. Convert to an absolute unit of the same dimension first.");
     }
 
-    private static void RequireSameUnit(Quantity<TDimension> left, Quantity<TDimension> right)
+    /// <summary>
+    /// This quantity, re-expressed as a non-generic <see cref="UnitsAndQuantities.Quantity"/> —
+    /// the same value and unit, carrying <typeparamref name="TDimension"/>'s
+    /// own runtime <see cref="IDimension.Vector"/> rather than the
+    /// compile-time type parameter itself.
+    /// </summary>
+    /// <remarks>`ADR-0147`. The typed-to-runtime half of the facade; see <see cref="FromQuantity"/> for the other direction.</remarks>
+    public Quantity ToQuantity() => new(Value, Unit.UnitDefinition);
+
+    /// <summary>
+    /// Re-expresses a non-generic <see cref="UnitsAndQuantities.Quantity"/> as
+    /// this typed facade, provided its own runtime dimension matches
+    /// <typeparamref name="TDimension"/>'s own declared <see cref="IDimension.Vector"/>.
+    /// </summary>
+    /// <exception cref="IncompatibleUnitsException"><paramref name="quantity"/>'s own <see cref="UnitDefinition.Dimension"/> does not equal <typeparamref name="TDimension"/>'s own <see cref="IDimension.Vector"/>.</exception>
+    public static Quantity<TDimension> FromQuantity(Quantity quantity)
     {
-        if (left.Unit != right.Unit)
+        if (quantity.Unit.Dimension != TDimension.Vector)
             throw new IncompatibleUnitsException(
-                $"Cannot combine a quantity expressed in '{left.Unit.Symbol}' with one expressed in '{right.Unit.Symbol}' without an explicit {nameof(ConvertTo)} first.");
+                $"Cannot treat a quantity of dimension '{quantity.Unit.Dimension}' as {typeof(TDimension).Name} (dimension '{TDimension.Vector}'): the runtime dimension does not match.");
+
+        return new Quantity<TDimension>(quantity.Value, new Unit<TDimension>(quantity.Unit.Symbol, quantity.Unit.ToBaseFactor, quantity.Unit.ToBaseOffset));
     }
 }

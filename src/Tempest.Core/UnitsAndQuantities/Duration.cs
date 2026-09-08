@@ -7,6 +7,9 @@ namespace Tempest.Core.UnitsAndQuantities;
 /// </summary>
 public sealed class Duration : IDimension
 {
+    /// <summary>The runtime dimension vector for Duration â see <see cref="Dimensions.Duration"/>.</summary>
+    public static Dimension Vector => Dimensions.Duration;
+
     private Duration()
     {
     }

@@ -9,6 +9,9 @@ namespace Tempest.Core.UnitsAndQuantities;
 /// </remarks>
 public sealed class PlaneAngle : IDimension
 {
+    /// <summary>The runtime dimension vector for PlaneAngle â see <see cref="Dimensions.PlaneAngle"/>.</summary>
+    public static Dimension Vector => Dimensions.PlaneAngle;
+
     private PlaneAngle()
     {
     }

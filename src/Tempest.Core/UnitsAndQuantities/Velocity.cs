@@ -4,6 +4,9 @@ namespace Tempest.Core.UnitsAndQuantities;
 /// <remarks>Added by `Group A` (P01 Engineering Reference Data) — purely additive, exactly as <see cref="LengthUnits"/>'s own "starting set, extensible" remarks anticipate. Needed by <c>Tempest.Core.Manufacturing</c> for process speeds.</remarks>
 public sealed class Velocity : IDimension
 {
+    /// <summary>The runtime dimension vector for Velocity â see <see cref="Dimensions.Velocity"/>.</summary>
+    public static Dimension Vector => Dimensions.Velocity;
+
     private Velocity()
     {
     }
