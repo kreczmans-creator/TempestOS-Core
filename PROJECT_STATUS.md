@@ -1,7 +1,7 @@
 # TempestOS — Project Status
 
 **Branch:** `release/v0.17.0` (all v0.17.0 Work Packages land here; nothing is merged to `main` until the release is accepted)
-**VERSION:** `0.16.0` (not yet bumped — `v0.17.0` is in progress, not released)
+**VERSION:** `0.17.0` (bumped by `WP 17.9.0`; not yet tagged or published — awaiting Windows verification and Product Approval)
 
 ## What a user can do today
 
@@ -26,11 +26,11 @@ yet — the programme that builds them starts with this release:
 
 ## Work in flight
 
-`WP 17.0B` — **Governance reset**: archiving Work Package retrospectives,
-review-board dispositions and superseded registers; replacing this file
-and adding `BACKLOG.md`/`CONTRIBUTING.md`; reducing the governance
-health check to five source-derived checks. `WP 17.0A` (immediate
-defects) landed first on this branch.
+None. Every `v0.17.0` Work Package (`17.0A`, `17.0B`, `17.0C`, `17.1A`,
+`17.1B`, `17.2A` parts 1 and 2, `17.2B`, `17.3A`) is merged to
+`release/v0.17.0`. Next: Windows verification per `PHYSICAL_REVIEW.md`
+§7, then merge to `main`, tag `v0.17.0`, publish. The next release is
+`v0.18.0` Calculation as Document (`WP 18.0A` first).
 
 ## Gate (this release's own figures, filled in by `WP 17.9.0`)
 
