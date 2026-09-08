@@ -151,18 +151,29 @@ All persisted state is written under a single folder:
 
 ```
 <working directory>/persistence-data/
-├── Settings/          # Workspace session state, Desktop UI state,
-│                      # user preferences, window geometry, recents,
-│                      # favourites, macros
-└── <domain folders>/  # Projects and engineering objects, one folder
-                       # per collection, one file per object
+├── tempest.db      # Everything: settings, session and UI state, window
+│                   # geometry, recents, favourites, macros, projects,
+│                   # engineering objects, document revisions, audit rows
+│                   # and attachment bytes. One SQLite database.
+├── tempest.db-wal  # SQLite write-ahead log — present while running,
+├── tempest.db-shm  # and its shared-memory index. Both are part of the
+│                   # database, not caches you may delete separately.
+└── tempest.lock    # Held open exclusively while the application runs,
+                    # so a second instance on this folder is refused
+                    # rather than allowed to interleave writes.
 ```
 
 - The root is the value of `Persistence:RootPath`, and when that is not
   configured it is the **relative** path `persistence-data` — resolved
   against the **process working directory**, not the install location.
-- The folder is created on first write. It is listed in `.gitignore` and is
-  never source.
+- The folder is created on first launch. It is listed in `.gitignore` and
+  is never source.
+- **Before `v0.17.0` this folder held a tree of directories and files, one
+  file per record** (`ADR-0041`). It now holds one database (`ADR-0144`),
+  because a file tree could not fsync a write, answer a query without
+  scanning a directory, make two writes land together, or keep a second
+  instance out. `Persistence:Backend=files` restores the old layout for
+  `v0.17.0` only, and is deleted in `v0.18.0`.
 - There is no registry use, no `%APPDATA%`/`~/.config` use, and no file
   written outside this folder and the build output.
 - Logs go to the console. The application writes no log file. (A `logs/`
@@ -173,10 +184,14 @@ All persisted state is written under a single folder:
 
 ## 5. External dependencies
 
-**None at runtime.** No server, no database, no cloud service, no
-authentication, no network access after the initial package restore. The
-identity used for authorship and audit is taken from the operating-system
-account, with a safe fallback when none can be read.
+**None at runtime.** No server, no database *service*, no cloud service,
+no authentication, no network access after the initial package restore.
+Since `v0.17.0` the application's own data lives in an embedded SQLite
+file inside the persistence folder (`ADR-0144`): it runs in-process, it
+listens on nothing, it needs nothing installed, and there is no
+connection string to configure — the only knob is which folder it lives
+in. The identity used for authorship and audit is taken from the
+operating-system account, with a safe fallback when none can be read.
 
 The only listener is the loopback REST API described in §3, which the
 application itself starts and stops.
@@ -195,10 +210,18 @@ Remove-Item -Recurse -Force persistence-data
 rm -rf persistence-data
 ```
 
-That is the complete reset: it removes every project, every engineering
-object, all session state and all UI preferences, returning the application
-to exactly its first-run state. Nothing else needs to be cleaned, and
-nothing outside the folder is touched.
+That is the complete reset: it removes `tempest.db` and its `-wal`/`-shm`
+companions and `tempest.lock`, and with them every project, every
+engineering object, all session state and all UI preferences, returning
+the application to exactly its first-run state. Nothing else needs to be
+cleaned, and nothing outside the folder is touched.
+
+**Delete the whole folder, not files inside it.** `tempest.db`,
+`tempest.db-wal` and `tempest.db-shm` are one database in three files; a
+`-wal` left beside a deleted `.db`, or the reverse, is a broken store
+rather than a fresh one. Stopping the application first is not optional
+advice here either — while it runs it holds `tempest.lock` open
+exclusively, so the delete will be refused.
 
 To also reset the build:
 
@@ -236,7 +259,7 @@ from the repository root, so data lands in `<repo>/persistence-data`.
 | 13 | Close the application | It closes cleanly, prompting only if there is genuinely unsaved work. | A crash, a hang, or an error on exit. |
 | 14 | Relaunch — **from the same working directory** | The project, every object created, the last area and the window geometry all come back. | Anything created in steps 3–12 is missing. Before recording a failure, confirm the working directory is the same one (§4). |
 | 15 | Delete a test object | Ribbon **Delete** asks for confirmation first, naming what will be deleted. Confirm: the object goes, and the selection clears rather than pointing at something deleted. | No confirmation; the object stays; the Property Inspector still shows it. |
-| 16 | Reset | Close the application and delete `persistence-data` (§6). Relaunch: the application is back to a clean first run — no projects, no objects. | Anything survives the reset. |
+| 16 | Reset | Close the application and delete the whole `persistence-data` folder — `tempest.db`, its `-wal`/`-shm` companions and `tempest.lock` together (§6). Relaunch: the application is back to a clean first run — no projects, no objects. | Anything survives the reset. The delete is refused while the application is still running (that is the instance lock doing its job — close it and retry). |
 
 **What is out of scope for this smoke test**, because it does not exist
 yet: choosing a destination object for Copy/Move (no object picker — the

@@ -151,7 +151,7 @@ public class NotificationSampleModuleIntegrationTests
                 discoveryCandidateTypesOverride: [typeof(NotificationSampleModule)],
                 pluginsRootPathOverride: null,
                 hostedServiceCandidateTypesOverride: [typeof(NotificationSampleHostedService)])
-            .Build();
+            .WithIsolatedPersistenceRoot().Build();
         var originalOut = Console.Out;
 
         try
@@ -183,7 +183,7 @@ public class NotificationSampleModuleIntegrationTests
     [Fact]
     public async Task RunAsync_WithNotificationSampleModule_PublishSampleNotificationCommandInvokableThroughTheRealHost()
     {
-        var host = new TempestHostBuilder([typeof(NotificationSampleModule)]).Build();
+        var host = new TempestHostBuilder([typeof(NotificationSampleModule)]).WithIsolatedPersistenceRoot().Build();
         var originalOut = Console.Out;
 
         try

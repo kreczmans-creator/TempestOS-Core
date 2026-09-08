@@ -6,23 +6,22 @@ using Tempest.Core.Tests.Plugins;
 namespace Tempest.Core.Tests.Persistence;
 
 /// <summary>
-/// The byte shape of the platform's single store (`TD-31`), against the
-/// real <see cref="PersistenceStore"/> on a real file system.
+/// The byte shape of the platform's single store (`TD-31`), against a real
+/// store on real storage — run once per backend (`ADR-0144`,
+/// `WP 17.1A`).
 /// </summary>
 /// <remarks>
 /// These prove the two claims the shape exists to make: that bytes survive
 /// unchanged, and that they inherit — rather than re-implement — every
-/// property the text shape already had (reserved-name-safe naming,
-/// exact-name resolution, atomic replacement).
+/// property the text shape already had. On the file backend that meant
+/// reserved-name-safe naming, exact-name resolution and atomic
+/// replacement; on the SQLite backend it means the same row, the same
+/// exact key, and the same single-statement write. The tests do not name
+/// either mechanism, which is why they run against both.
 /// </remarks>
-public class BinaryPersistenceStoreTests
+public abstract class BinaryPersistenceStoreTests<TBackend> : PersistenceStoreBackendFixture<TBackend>
+    where TBackend : IPersistenceStoreBackend, new()
 {
-    private static IConfigurationProvider BuildConfiguration(string rootPath) =>
-        new ConfigurationBuilder().AddSource(new MemoryConfigurationSource(
-        [
-            new KeyValuePair<string, string>(PersistenceStore.RootPathConfigurationKey, rootPath),
-        ])).Build();
-
     public static TheoryData<string, string> RealFiles()
     {
         var data = new TheoryData<string, string>();
@@ -40,12 +39,10 @@ public class BinaryPersistenceStoreTests
     public async Task RealFileContent_RoundTripsByteForByte(string fileName, string contentType)
     {
         _ = contentType;
-        using var temp = new TempDirectory();
-        var store = new PersistenceStore(BuildConfiguration(temp.Path));
         var expected = BytesFor(fileName);
 
-        await store.WriteBytesAsync("content", fileName, expected);
-        var actual = await store.ReadBytesAsync("content", fileName);
+        await BinaryStore.WriteBytesAsync("content", fileName, expected);
+        var actual = await BinaryStore.ReadBytesAsync("content", fileName);
 
         Assert.NotNull(actual);
         Assert.Equal(expected, actual);
@@ -56,24 +53,20 @@ public class BinaryPersistenceStoreTests
     {
         // The one assertion that covers the whole alphabet: if any value is
         // dropped, translated or truncated on the way through, it is in here.
-        using var temp = new TempDirectory();
-        var store = new PersistenceStore(BuildConfiguration(temp.Path));
         var expected = AttachmentContentSamples.EveryByteValue();
 
-        await store.WriteBytesAsync("content", "all-bytes", expected);
+        await BinaryStore.WriteBytesAsync("content", "all-bytes", expected);
 
-        Assert.Equal(expected, await store.ReadBytesAsync("content", "all-bytes"));
+        Assert.Equal(expected, await BinaryStore.ReadBytesAsync("content", "all-bytes"));
     }
 
     [Fact]
     public async Task AMultiMegabyteRecord_RoundTripsIntact()
     {
-        using var temp = new TempDirectory();
-        var store = new PersistenceStore(BuildConfiguration(temp.Path));
         var expected = AttachmentContentSamples.LargeDeterministicBlob(4 * 1024 * 1024);
 
-        await store.WriteBytesAsync("content", "large", expected);
-        var actual = await store.ReadBytesAsync("content", "large");
+        await BinaryStore.WriteBytesAsync("content", "large", expected);
+        var actual = await BinaryStore.ReadBytesAsync("content", "large");
 
         Assert.NotNull(actual);
         Assert.Equal(expected.LongLength, actual.LongLength);
@@ -83,27 +76,21 @@ public class BinaryPersistenceStoreTests
     [Fact]
     public async Task AnEmptyRecord_IsStoredAndIsNotTheSameAsNoRecord()
     {
-        using var temp = new TempDirectory();
-        var store = new PersistenceStore(BuildConfiguration(temp.Path));
+        await BinaryStore.WriteBytesAsync("content", "empty", ReadOnlyMemory<byte>.Empty);
 
-        await store.WriteBytesAsync("content", "empty", ReadOnlyMemory<byte>.Empty);
-
-        var stored = await store.ReadBytesAsync("content", "empty");
+        var stored = await BinaryStore.ReadBytesAsync("content", "empty");
         Assert.NotNull(stored);
         Assert.Empty(stored);
 
-        // The distinction the attachment layer depends on: a zero-byte file
-        // is a file, and is not the absence of one.
-        Assert.Null(await store.ReadBytesAsync("content", "never-written"));
+        // The distinction the attachment layer depends on: a zero-byte
+        // record is a record, and is not the absence of one.
+        Assert.Null(await BinaryStore.ReadBytesAsync("content", "never-written"));
     }
 
     [Fact]
     public async Task ReadingAKeyThatWasNeverWritten_ReturnsNull_RatherThanThrowing()
     {
-        using var temp = new TempDirectory();
-        var store = new PersistenceStore(BuildConfiguration(temp.Path));
-
-        Assert.Null(await store.ReadBytesAsync("content", "absent"));
+        Assert.Null(await BinaryStore.ReadBytesAsync("content", "absent"));
     }
 
     [Theory]
@@ -113,16 +100,16 @@ public class BinaryPersistenceStoreTests
     [InlineData("PRN.pdf")]
     public async Task AReservedDeviceNameKey_IsSafeForBytesToo(string key)
     {
-        // Inherited from the text shape rather than re-implemented: the
-        // byte path shares GetFilePath, so `TD-59`'s encoding covers it.
-        using var temp = new TempDirectory();
-        var store = new PersistenceStore(BuildConfiguration(temp.Path));
+        // Inherited from the text shape rather than re-implemented: both
+        // backends resolve a key the same way whatever its value holds -
+        // the file store through `TD-59`'s encoding, SQLite by not having
+        // a file name in the first place.
         var expected = AttachmentContentSamples.Png();
 
-        await store.WriteBytesAsync("content", key, expected);
+        await BinaryStore.WriteBytesAsync("content", key, expected);
 
-        Assert.Equal(expected, await store.ReadBytesAsync("content", key));
-        Assert.Contains(key, await store.ListKeysAsync("content"));
+        Assert.Equal(expected, await BinaryStore.ReadBytesAsync("content", key));
+        Assert.Contains(key, await Store.ListKeysAsync("content"));
     }
 
     [Fact]
@@ -130,85 +117,74 @@ public class BinaryPersistenceStoreTests
     {
         // The failure this guards against is a shorter write leaving the
         // tail of a longer previous value in place, which a naive
-        // open-and-write would do and an atomic rename cannot.
-        using var temp = new TempDirectory();
-        var store = new PersistenceStore(BuildConfiguration(temp.Path));
-
-        await store.WriteBytesAsync("content", "key", AttachmentContentSamples.LargeDeterministicBlob(64 * 1024));
+        // open-and-write would do and neither an atomic rename nor a row
+        // update can.
+        await BinaryStore.WriteBytesAsync("content", "key", AttachmentContentSamples.LargeDeterministicBlob(64 * 1024));
         var replacement = AttachmentContentSamples.Png();
-        await store.WriteBytesAsync("content", "key", replacement);
+        await BinaryStore.WriteBytesAsync("content", "key", replacement);
 
-        Assert.Equal(replacement, await store.ReadBytesAsync("content", "key"));
+        Assert.Equal(replacement, await BinaryStore.ReadBytesAsync("content", "key"));
     }
 
     [Fact]
     public async Task DeletingARecord_RemovesIt_AndIsIdempotent()
     {
-        using var temp = new TempDirectory();
-        var store = new PersistenceStore(BuildConfiguration(temp.Path));
-        await store.WriteBytesAsync("content", "key", AttachmentContentSamples.Jpeg());
+        await BinaryStore.WriteBytesAsync("content", "key", AttachmentContentSamples.Jpeg());
 
-        await ((IBinaryPersistenceStore)store).DeleteAsync("content", "key");
-        Assert.Null(await store.ReadBytesAsync("content", "key"));
+        await BinaryStore.DeleteAsync("content", "key");
+        Assert.Null(await BinaryStore.ReadBytesAsync("content", "key"));
 
-        await ((IBinaryPersistenceStore)store).DeleteAsync("content", "key");
+        await BinaryStore.DeleteAsync("content", "key");
     }
 
     [Fact]
-    public async Task TheSameStoreInstance_SatisfiesBothShapes_WithoutASecondStore()
+    public async Task TheSameStoreInstance_SatisfiesEveryShape_WithoutASecondStore()
     {
         // The architectural claim, asserted rather than described: one
-        // object, one root, both contracts. If this ever needs two
+        // object, one root, every contract. If this ever needs two
         // instances, a second persistence mechanism has appeared.
-        using var temp = new TempDirectory();
-        var store = new PersistenceStore(BuildConfiguration(temp.Path));
+        Assert.IsAssignableFrom<IPersistenceStore>(Store);
+        Assert.IsAssignableFrom<IBinaryPersistenceStore>(Store);
+        Assert.IsAssignableFrom<IQueryablePersistenceStore>(Store);
 
-        Assert.IsAssignableFrom<IPersistenceStore>(store);
-        Assert.IsAssignableFrom<IBinaryPersistenceStore>(store);
+        await Store.WriteAsync("text", "key", "a string");
+        await BinaryStore.WriteBytesAsync("bytes", "key", AttachmentContentSamples.Png());
 
-        await store.WriteAsync("text", "key", "a string");
-        await store.WriteBytesAsync("bytes", "key", AttachmentContentSamples.Png());
-
-        Assert.Equal("a string", await store.ReadAsync("text", "key"));
-        Assert.Equal(AttachmentContentSamples.Png(), await store.ReadBytesAsync("bytes", "key"));
+        Assert.Equal("a string", await Store.ReadAsync("text", "key"));
+        Assert.Equal(AttachmentContentSamples.Png(), await BinaryStore.ReadBytesAsync("bytes", "key"));
     }
+
+    // Whether a record written through ONE shape reads as absent through
+    // the OTHER is NOT in this contract, because the two backends
+    // genuinely differ and only one of them can make the promise. The
+    // file store writes an untagged file, so bytes read back as text are
+    // whatever decoding them produces; SQLite knows which column the value
+    // went into and returns null from the other. `IBinaryPersistenceStore`
+    // always intended the separation ("bytes that happen to be valid UTF-8
+    // are still bytes"), and `ADR-0144` is the first backend able to
+    // enforce it rather than rely on collections being owned by one
+    // service. Asserted in SqlitePersistenceStoreTests, where it holds.
 
     [Fact]
     public async Task WritingBytesToOneCollection_DoesNotDisturbAnother()
     {
-        using var temp = new TempDirectory();
-        var store = new PersistenceStore(BuildConfiguration(temp.Path));
+        await BinaryStore.WriteBytesAsync("first", "key", AttachmentContentSamples.Pdf());
+        await BinaryStore.WriteBytesAsync("second", "key", AttachmentContentSamples.Png());
 
-        await store.WriteBytesAsync("first", "key", AttachmentContentSamples.Pdf());
-        await store.WriteBytesAsync("second", "key", AttachmentContentSamples.Png());
-
-        Assert.Equal(AttachmentContentSamples.Pdf(), await store.ReadBytesAsync("first", "key"));
-        Assert.Equal(AttachmentContentSamples.Png(), await store.ReadBytesAsync("second", "key"));
+        Assert.Equal(AttachmentContentSamples.Pdf(), await BinaryStore.ReadBytesAsync("first", "key"));
+        Assert.Equal(AttachmentContentSamples.Png(), await BinaryStore.ReadBytesAsync("second", "key"));
     }
 
     [Fact]
     public async Task ConcurrentWritesToDifferentKeys_AllArriveIntact()
     {
-        using var temp = new TempDirectory();
-        var store = new PersistenceStore(BuildConfiguration(temp.Path));
         var payloads = Enumerable.Range(0, 16)
             .ToDictionary(i => $"key-{i}", i => AttachmentContentSamples.LargeDeterministicBlob(4096 + i));
 
-        await Task.WhenAll(payloads.Select(p => store.WriteBytesAsync("content", p.Key, p.Value)));
+        await Task.WhenAll(payloads.Select(p => BinaryStore.WriteBytesAsync("content", p.Key, p.Value)));
 
         foreach (var (key, expected) in payloads)
-            Assert.Equal(expected, await store.ReadBytesAsync("content", key));
-    }
-
-    [Fact]
-    public async Task NoTemporaryFile_IsLeftBehindByAByteWrite()
-    {
-        using var temp = new TempDirectory();
-        var store = new PersistenceStore(BuildConfiguration(temp.Path));
-
-        await store.WriteBytesAsync("content", "key", AttachmentContentSamples.Pdf());
-
-        Assert.Empty(Directory.GetFiles(temp.Path, "*.tmp"));
+            Assert.Equal(expected, await BinaryStore.ReadBytesAsync("content", key));
     }
 
     [Theory]
@@ -217,12 +193,44 @@ public class BinaryPersistenceStoreTests
     [InlineData("   ")]
     public async Task AMissingCollectionOrKey_IsRejected(string? blank)
     {
-        using var temp = new TempDirectory();
-        var store = new PersistenceStore(BuildConfiguration(temp.Path));
+        await Assert.ThrowsAnyAsync<ArgumentException>(() => BinaryStore.WriteBytesAsync(blank!, "key", new byte[] { 1 }));
+        await Assert.ThrowsAnyAsync<ArgumentException>(() => BinaryStore.WriteBytesAsync("content", blank!, new byte[] { 1 }));
+        await Assert.ThrowsAnyAsync<ArgumentException>(() => BinaryStore.ReadBytesAsync(blank!, "key"));
+        await Assert.ThrowsAnyAsync<ArgumentException>(() => BinaryStore.ReadBytesAsync("content", blank!));
+    }
+}
 
-        await Assert.ThrowsAnyAsync<ArgumentException>(() => store.WriteBytesAsync(blank!, "key", new byte[] { 1 }));
-        await Assert.ThrowsAnyAsync<ArgumentException>(() => store.WriteBytesAsync("content", blank!, new byte[] { 1 }));
-        await Assert.ThrowsAnyAsync<ArgumentException>(() => store.ReadBytesAsync(blank!, "key"));
-        await Assert.ThrowsAnyAsync<ArgumentException>(() => store.ReadBytesAsync("content", blank!));
+/// <summary>The byte shape against the file-per-key backend.</summary>
+public sealed class FileBackedBinaryPersistenceStoreTests : BinaryPersistenceStoreTests<FileStoreBackend>;
+
+/// <summary>The byte shape against the SQLite backend (`ADR-0144`).</summary>
+public sealed class SqliteBackedBinaryPersistenceStoreTests : BinaryPersistenceStoreTests<SqliteStoreBackend>;
+
+/// <summary>
+/// The one byte-shape claim that is about the file backend's own medium:
+/// the temporary file its atomic write stages a value in must not survive
+/// the write.
+/// </summary>
+/// <remarks>
+/// There is no SQLite counterpart, and inventing one would be a different
+/// test wearing this one's name — the equivalent property there is that a
+/// rolled-back transaction leaves nothing behind, which
+/// <see cref="SqlitePersistenceStoreTests"/> asserts directly.
+/// </remarks>
+public class BinaryPersistenceStoreFileSystemTests
+{
+    [Fact]
+    public async Task NoTemporaryFile_IsLeftBehindByAByteWrite()
+    {
+        using var temp = new TempDirectory();
+        var configuration = new ConfigurationBuilder().AddSource(new MemoryConfigurationSource(
+        [
+            new KeyValuePair<string, string>(PersistenceStore.RootPathConfigurationKey, temp.Path),
+        ])).Build();
+        var store = new PersistenceStore(configuration);
+
+        await store.WriteBytesAsync("content", "key", AttachmentContentSamples.Pdf());
+
+        Assert.Empty(Directory.GetFiles(temp.Path, "*.tmp"));
     }
 }

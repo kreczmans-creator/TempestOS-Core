@@ -551,6 +551,7 @@ public class PluginPlatformPerformanceTests
         }
 
         var builder = new TempestHostBuilder(Type.EmptyTypes, temp.Path);
+        builder.WithIsolatedPersistenceRoot();
         builder.AddConfigurationSource(new MemoryConfigurationSource(
         [
             new KeyValuePair<string, string>("Plugins:AllowUnsignedLoad", "true"),

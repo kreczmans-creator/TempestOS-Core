@@ -21,7 +21,7 @@ graph was findable in the next session.
 
 | Layer | What it holds | Durable? | Authority |
 |---|---|---|---|
-| `IPersistenceStore` | Key/value collections, atomic writes | Yes | The substrate |
+| `IPersistenceStore` | Key/value collections, durable writes, and — since `ADR-0144` — prefix listing, whole-collection reads and multi-key transactions through `IQueryablePersistenceStore` | Yes | The substrate |
 | `IEngineeringDocumentStore` | Document identity, Kind, created-at, every revision, every outgoing reference | Yes | **Authoritative** for identity, content and links |
 | `IEngineeringObjectStateStore` | One `EngineeringObjectState` per object | Yes | **Authoritative** for object state |
 | `IEngineeringObjectRepository` / `IEngineeringRelationshipRepository` | The live object graph and its relationship index | No — rebuilt at startup | Derived, never authoritative |
@@ -30,6 +30,37 @@ The two stores are **one authority split by concern**, not two competing
 ones. The document owns what a document owns; the state record owns what a
 document was never designed to carry. Everything in memory is derived from
 them.
+
+### The substrate, since `ADR-0144`
+
+`IPersistenceStore` is one SQLite database, `tempest.db`, under the
+persistence root (`Persistence:RootPath`, default `persistence-data`), in
+WAL journal mode with `synchronous=FULL` — so a write that returns has
+been fsynced, and a write that throws has not landed. It was a tree of
+percent-encoded files per `collection`/`key` pair until `WP 17.1A`;
+nothing above it changed, because `IPersistenceStore` and
+`IBinaryPersistenceStore` are unchanged, but three things below it did and
+they matter to this document:
+
+- **Rehydration no longer scans a directory.** `EngineeringObjectStateStore`
+  reading every state record was one `readdir` plus one file open per
+  object; the same read is now one indexed query
+  (`IQueryablePersistenceStore.ReadAllAsync`). Moving the store onto that
+  call is `WP 17.1B`'s work, not this document's claim yet — but the cost
+  that made startup rehydration a scan is gone from the substrate.
+- **Keys are exact.** A collection or key is stored verbatim and
+  case-sensitively; it is no longer a file name, so it needs no encoding
+  and can be any Unicode string of any length.
+- **The store has a lifetime.** It holds `<root>/tempest.lock`
+  exclusively, so a second TempestOS instance on one root is refused
+  rather than allowed to interleave writes, and the Host disposes it at
+  its Service Disposal phase.
+
+The substrate now also has a **multi-key transaction**
+(`ExecuteInTransactionAsync`). This document's "What is not attempted
+here" section below still holds for `v0.17.0` — state is written per
+mutation, per object — but the reason has changed from "the store cannot"
+to "nothing has moved onto it yet", and `WP 17.1B` is where it moves.
 
 ## What is persisted, and when
 

@@ -180,7 +180,7 @@ public class IdentitySampleModuleIntegrationTests
                 new KeyValuePair<string, string>("Identity:Roles:SampleReader:Permissions", IdentitySampleModule.SamplePermissionKey),
                 new KeyValuePair<string, string>($"Identity:Principals:{IdentitySampleModule.SampleIdentityId}:Roles", "SampleReader"),
             ]))
-            .Build();
+            .WithIsolatedPersistenceRoot().Build();
         var originalOut = Console.Out;
         var writer = new StringWriter();
 

@@ -168,7 +168,7 @@ public class CommandSampleModuleIntegrationTests
     [Fact]
     public async Task RunAsync_WithCommandSampleModule_RegistersAndLogsThroughTheRealHost()
     {
-        var host = new TempestHostBuilder([typeof(CommandSampleModule)]).Build();
+        var host = new TempestHostBuilder([typeof(CommandSampleModule)]).WithIsolatedPersistenceRoot().Build();
         var originalOut = Console.Out;
         var writer = new StringWriter();
 

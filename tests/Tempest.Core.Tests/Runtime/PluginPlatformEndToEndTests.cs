@@ -79,6 +79,7 @@ public class PluginPlatformEndToEndTests
         var dependentModuleType = LoadPluginModuleType(dependentAssemblyPath);
 
         var builder = new TempestHostBuilder([dependentModuleType], temp.Path);
+        builder.WithIsolatedPersistenceRoot();
         var host = builder.Build();
 
         var originalOut = Console.Out;
@@ -216,6 +217,7 @@ public class PluginPlatformEndToEndTests
             name: "Ceiling Unsigned Local Plugin", requestedCapabilities: [PluginCapability.DiRegister]);
 
         var builder = new TempestHostBuilder(Type.EmptyTypes, temp.Path);
+        builder.WithIsolatedPersistenceRoot();
         builder.AddConfigurationSource(new MemoryConfigurationSource(
         [
             new KeyValuePair<string, string>("Plugins:AllowUnsignedLoad", "true"),
@@ -327,6 +329,7 @@ public class PluginPlatformEndToEndTests
             requestedCapabilities: [PluginCapability.DiRegister]);
 
         var builder = new TempestHostBuilder(Type.EmptyTypes, temp.Path);
+        builder.WithIsolatedPersistenceRoot();
         builder.AddConfigurationSource(new MemoryConfigurationSource(
         [
             new KeyValuePair<string, string>("Plugins:AllowUnsignedLoad", "true"),
@@ -459,6 +462,7 @@ public class PluginPlatformEndToEndTests
 
         var builder = new TempestHostBuilder(
             [typeof(FirstPartyNavigationOwnerFixtureModule), bbbType, cccType, dddType], temp.Path);
+        builder.WithIsolatedPersistenceRoot();
         var host = builder.Build();
 
         var originalOut = Console.Out;
@@ -546,6 +550,7 @@ public class PluginPlatformEndToEndTests
         Assert.Equal(2, moduleTypes.Count);
 
         var builder = new TempestHostBuilder(moduleTypes, temp.Path);
+        builder.WithIsolatedPersistenceRoot();
         builder.AddConfigurationSource(new MemoryConfigurationSource(
         [
             new KeyValuePair<string, string>("Plugins:AllowUnsignedLoad", "true"),
@@ -606,6 +611,7 @@ public class PluginPlatformEndToEndTests
         Assert.Equal(2, moduleTypes.Count);
 
         var builder = new TempestHostBuilder(moduleTypes, temp.Path);
+        builder.WithIsolatedPersistenceRoot();
         builder.AddConfigurationSource(new MemoryConfigurationSource(
         [
             new KeyValuePair<string, string>("Plugins:AllowUnsignedLoad", "true"),
@@ -674,6 +680,7 @@ public class PluginPlatformEndToEndTests
             requestedCapabilities: [PluginCapability.Navigation, PluginCapability.ServiceResolve(typeof(INavigationProvider).FullName!)]);
 
         var builder = new TempestHostBuilder(Type.EmptyTypes, temp.Path);
+        builder.WithIsolatedPersistenceRoot();
         builder.AddConfigurationSource(new MemoryConfigurationSource(
         [
             new KeyValuePair<string, string>("Plugins:AllowUnsignedLoad", "true"),

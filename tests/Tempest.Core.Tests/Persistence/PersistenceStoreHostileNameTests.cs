@@ -5,14 +5,188 @@ using Tempest.Core.Tests.Plugins;
 namespace Tempest.Core.Tests.Persistence;
 
 /// <summary>
-/// `TD-59` closure tests against the REAL <see cref="PersistenceStore"/>
-/// on a real file system — reserved Win32 device names, their case and
-/// extension variants, trailing dots, dot-names, and path-traversal
-/// shapes must all be unambiguously representable, round-trip through
-/// <see cref="IPersistenceStore.ListKeysAsync"/>, and never escape the
-/// store root or collapse into a missing or aliased record.
+/// Hostile names, against a real store on real storage — reserved Win32
+/// device names, their case and extension variants, trailing dots,
+/// dot-names, path-traversal shapes and arbitrary Unicode must all be
+/// unambiguously representable, round-trip through
+/// <see cref="IPersistenceStore.ListKeysAsync"/>, and never collapse into
+/// a missing or aliased record. Run once per backend (`ADR-0144`,
+/// `WP 17.1A`).
 /// </summary>
-public class PersistenceStoreHostileNameTests
+/// <remarks>
+/// <para>
+/// These began as `TD-59` closure tests against the file-per-key store,
+/// where every name in them was a file name and each was a real hazard.
+/// On the SQLite backend a key is a value in a column, so none of these
+/// names is dangerous any more — which is precisely why the tests still
+/// run there: the claim was never "the encoding is correct", it was "the
+/// caller's key comes back", and that claim outlives the encoding.
+/// </para>
+/// <para>
+/// What the two backends genuinely disagree about — the legacy-encoding
+/// fallback, and what happens to two keys differing only in case on a
+/// case-insensitive file system — is in
+/// <see cref="PersistenceStoreHostileNameFileSystemTests"/> below, and is
+/// about a file system rather than about a store.
+/// </para>
+/// </remarks>
+public abstract class PersistenceStoreHostileNameTests<TBackend> : PersistenceStoreBackendFixture<TBackend>
+    where TBackend : IPersistenceStoreBackend, new()
+{
+    // ----------------------------------------------------------------
+    // Reserved device names (`TD-59`'s original failure shape)
+    // ----------------------------------------------------------------
+
+    [Theory]
+    [InlineData("NUL")]
+    [InlineData("CON")]
+    [InlineData("PRN")]
+    [InlineData("AUX")]
+    [InlineData("COM1")]
+    [InlineData("LPT1")]
+    [InlineData("con")]
+    [InlineData("Con")]
+    [InlineData("CON.txt")]
+    [InlineData("con.json")]
+    [InlineData("NUL.tar.gz")]
+    public async Task ReservedDeviceNameKey_RoundTripsThroughWriteReadListDelete(string key)
+    {
+        await Store.WriteAsync("collection", key, "value-" + key);
+
+        Assert.Equal("value-" + key, await Store.ReadAsync("collection", key));
+        var keys = await Store.ListKeysAsync("collection");
+        Assert.Equal(1, keys.Count(k => k == key));
+
+        await Store.DeleteAsync("collection", key);
+        Assert.Null(await Store.ReadAsync("collection", key));
+        Assert.DoesNotContain(key, await Store.ListKeysAsync("collection"));
+    }
+
+    [Theory]
+    [InlineData("CON")]
+    [InlineData("..")]
+    public async Task ReservedCollectionName_RoundTrips(string collection)
+    {
+        await Store.WriteAsync(collection, "key", "value");
+
+        Assert.Equal("value", await Store.ReadAsync(collection, "key"));
+        Assert.Contains("key", await Store.ListKeysAsync(collection));
+    }
+
+    // ----------------------------------------------------------------
+    // Trailing dots and dot-names (Win32 strips trailing dots; "." and
+    // ".." are directory navigation, not file names)
+    // ----------------------------------------------------------------
+
+    [Fact]
+    public async Task TrailingDotKey_IsDistinctFromItsDotlessSibling()
+    {
+        await Store.WriteAsync("collection", "Rev1", "plain");
+        await Store.WriteAsync("collection", "Rev1.", "dotted");
+
+        Assert.Equal("plain", await Store.ReadAsync("collection", "Rev1"));
+        Assert.Equal("dotted", await Store.ReadAsync("collection", "Rev1."));
+        Assert.Equal(2, (await Store.ListKeysAsync("collection")).Count);
+    }
+
+    [Theory]
+    [InlineData(".")]
+    [InlineData("..")]
+    [InlineData("...")]
+    public async Task DotOnlyKeys_RoundTrip(string key)
+    {
+        await Store.WriteAsync("collection", key, "value-" + key.Length);
+
+        Assert.Equal("value-" + key.Length, await Store.ReadAsync("collection", key));
+        Assert.Contains(key, await Store.ListKeysAsync("collection"));
+    }
+
+    // ----------------------------------------------------------------
+    // Path traversal / separator injection
+    // ----------------------------------------------------------------
+
+    [Theory]
+    [InlineData("../escape")]
+    [InlineData("..\\escape")]
+    [InlineData("a/b")]
+    [InlineData("a\\b")]
+    [InlineData("/etc/passwd")]
+    [InlineData("%2e%2e%2fescape")]
+    public async Task TraversalShapedKey_RoundTripsAsAnOrdinaryKey(string key)
+    {
+        await Store.WriteAsync("collection", key, "contained");
+
+        Assert.Equal("contained", await Store.ReadAsync("collection", key));
+        Assert.Contains(key, await Store.ListKeysAsync("collection"));
+        Assert.Single(await Store.ListKeysAsync("collection"));
+    }
+
+    // ----------------------------------------------------------------
+    // Names no encoding scheme had to care about, and one now does not
+    // ----------------------------------------------------------------
+
+    [Theory]
+    [InlineData("Fußplatte")]
+    [InlineData("支持板")]
+    [InlineData("Ø-42×3 CHS")]
+    [InlineData("key with spaces")]
+    [InlineData("key\twith\ttabs")]
+    [InlineData("key\nwith\nnewlines")]
+    [InlineData("100% pinned")]
+    [InlineData("a+b=c&d?e#f")]
+    [InlineData("'; DROP TABLE records; --")]
+    public async Task AnArbitraryUnicodeOrPunctuatedKey_RoundTrips(string key)
+    {
+        // The SQL-injection-shaped entry is not decoration: every statement
+        // in `SqlitePersistenceStore` binds its collection and key as
+        // parameters, and a test that only ever passed identifier-shaped
+        // keys would not notice the day one of them stopped.
+        await Store.WriteAsync("collection", key, "value");
+
+        Assert.Equal("value", await Store.ReadAsync("collection", key));
+        Assert.Contains(key, await Store.ListKeysAsync("collection"));
+
+        await Store.DeleteAsync("collection", key);
+        Assert.Empty(await Store.ListKeysAsync("collection"));
+    }
+
+    // ----------------------------------------------------------------
+    // Case-exactness: a lookup never returns another key's record
+    // ----------------------------------------------------------------
+
+    [Fact]
+    public async Task ReadAsync_NeverReturnsACaseVariantsRecord()
+    {
+        await Store.WriteAsync("collection", "Steel", "capitalised");
+
+        Assert.Null(await Store.ReadAsync("collection", "steel"));
+        Assert.Null(await Store.ReadAsync("collection", "STEEL"));
+    }
+}
+
+/// <summary>Hostile names against the file-per-key backend.</summary>
+public sealed class FileBackedPersistenceStoreHostileNameTests : PersistenceStoreHostileNameTests<FileStoreBackend>;
+
+/// <summary>Hostile names against the SQLite backend (`ADR-0144`).</summary>
+public sealed class SqliteBackedPersistenceStoreHostileNameTests : PersistenceStoreHostileNameTests<SqliteStoreBackend>;
+
+/// <summary>
+/// The hostile-name claims that are about a FILE SYSTEM rather than about
+/// a store, and so are asserted against <see cref="PersistenceStore"/>
+/// only.
+/// </summary>
+/// <remarks>
+/// <para>
+/// Three groups, and each is file-store-only for the same reason: the
+/// behaviour it pins exists because a key had to become a file name.
+/// </para>
+/// <list type="bullet">
+/// <item><description><b>The encoding itself</b> — that no file the store creates has a reserved Win32 stem or a terminal dot, that a name adjacent to a reserved one still encodes plainly, and that a traversal-shaped key never leaves its collection directory. `ADR-0144` deletes the whole mechanism: a SQLite key is a column value and produces no path at all.</description></item>
+/// <item><description><b>The legacy-path fallback</b> — a record written under the pre-`TD-59` encoding stays readable and migrates forward. There has never been a legacy SQLite encoding to fall back from; the database is created at schema version 1 by this Work Package.</description></item>
+/// <item><description><b>The case-insensitive collision refusal</b> — where the file system cannot hold <c>Steel</c> and <c>steel</c> apart, the store refuses the second write rather than silently discarding the first key's record. On SQLite they are two rows under the BINARY collation, so there is no collision to refuse; the SQLite counterpart is asserted in <see cref="SqlitePersistenceStoreTests"/> as the plain statement that they are two distinct records.</description></item>
+/// </list>
+/// </remarks>
+public class PersistenceStoreHostileNameFileSystemTests
 {
     private static IConfigurationProvider BuildConfiguration(string rootPath) =>
         new ConfigurationBuilder().AddSource(new MemoryConfigurationSource(
@@ -98,36 +272,8 @@ public class PersistenceStoreHostileNameTests
     }
 
     // ----------------------------------------------------------------
-    // Reserved device names (`TD-59`'s original failure shape)
+    // The encoding itself
     // ----------------------------------------------------------------
-
-    [Theory]
-    [InlineData("NUL")]
-    [InlineData("CON")]
-    [InlineData("PRN")]
-    [InlineData("AUX")]
-    [InlineData("COM1")]
-    [InlineData("LPT1")]
-    [InlineData("con")]
-    [InlineData("Con")]
-    [InlineData("CON.txt")]
-    [InlineData("con.json")]
-    [InlineData("NUL.tar.gz")]
-    public async Task ReservedDeviceNameKey_RoundTripsThroughWriteReadListDelete(string key)
-    {
-        using var temp = new TempDirectory();
-        var store = new PersistenceStore(BuildConfiguration(temp.Path));
-
-        await store.WriteAsync("collection", key, "value-" + key);
-
-        Assert.Equal("value-" + key, await store.ReadAsync("collection", key));
-        var keys = await store.ListKeysAsync("collection");
-        Assert.Equal(1, keys.Count(k => k == key));
-
-        await store.DeleteAsync("collection", key);
-        Assert.Null(await store.ReadAsync("collection", key));
-        Assert.DoesNotContain(key, await store.ListKeysAsync("collection"));
-    }
 
     [Theory]
     [InlineData("NUL")]
@@ -152,40 +298,6 @@ public class PersistenceStoreHostileNameTests
     }
 
     [Fact]
-    public async Task ReservedDeviceNameCaseVariants_AreDistinctRecords_OrTheCollidingWriteIsRefused()
-    {
-        using var temp = new TempDirectory();
-        var store = new PersistenceStore(BuildConfiguration(temp.Path));
-
-        await store.WriteAsync("collection", "CON", "upper");
-
-        if (IsCaseInsensitiveFileSystem(temp.Path))
-        {
-            // "CON" and "Con" encode to file names differing only in
-            // case, so one physical file backs both keys and the store
-            // cannot keep them apart. What it must never do is overwrite:
-            // "CON"'s record survives intact, and "Con" reads as the
-            // absent record it is, rather than silently returning
-            // another key's value.
-            await Assert.ThrowsAsync<PersistenceStoreUnavailableException>(
-                () => store.WriteAsync("collection", "Con", "mixed"));
-
-            Assert.Equal("upper", await store.ReadAsync("collection", "CON"));
-            Assert.Null(await store.ReadAsync("collection", "Con"));
-            Assert.Single(await store.ListKeysAsync("collection"));
-            return;
-        }
-
-        await store.WriteAsync("collection", "con", "lower");
-        await store.WriteAsync("collection", "Con", "mixed");
-
-        Assert.Equal("upper", await store.ReadAsync("collection", "CON"));
-        Assert.Equal("lower", await store.ReadAsync("collection", "con"));
-        Assert.Equal("mixed", await store.ReadAsync("collection", "Con"));
-        Assert.Equal(3, (await store.ListKeysAsync("collection")).Count);
-    }
-
-    [Fact]
     public async Task ValidIdentifiersAdjacentToReservedNames_KeepTheirPlainEncoding()
     {
         // "CONX", "XCON", "COM10", "LPT" are NOT reserved — they must
@@ -205,23 +317,14 @@ public class PersistenceStoreHostileNameTests
             Assert.Equal("v-" + key, await store.ReadAsync("collection", key));
     }
 
-    // ----------------------------------------------------------------
-    // Trailing dots and dot-names (Win32 strips trailing dots; "." and
-    // ".." are directory navigation, not file names)
-    // ----------------------------------------------------------------
-
     [Fact]
-    public async Task TrailingDotKey_IsDistinctFromItsDotlessSibling()
+    public async Task TrailingDotKey_ProducesNoFileNameEndingInADot()
     {
         using var temp = new TempDirectory();
         var store = new PersistenceStore(BuildConfiguration(temp.Path));
 
         await store.WriteAsync("collection", "Rev1", "plain");
         await store.WriteAsync("collection", "Rev1.", "dotted");
-
-        Assert.Equal("plain", await store.ReadAsync("collection", "Rev1"));
-        Assert.Equal("dotted", await store.ReadAsync("collection", "Rev1."));
-        Assert.Equal(2, (await store.ListKeysAsync("collection")).Count);
 
         // The dotted key's file must not literally end in a dot (Win32
         // would strip it, silently aliasing the two records).
@@ -230,41 +333,18 @@ public class PersistenceStoreHostileNameTests
     }
 
     [Theory]
-    [InlineData(".")]
-    [InlineData("..")]
-    [InlineData("...")]
-    public async Task DotOnlyKeys_RoundTrip(string key)
-    {
-        using var temp = new TempDirectory();
-        var store = new PersistenceStore(BuildConfiguration(temp.Path));
-
-        await store.WriteAsync("collection", key, "value-" + key.Length);
-
-        Assert.Equal("value-" + key.Length, await store.ReadAsync("collection", key));
-        Assert.Contains(key, await store.ListKeysAsync("collection"));
-    }
-
-    // ----------------------------------------------------------------
-    // Path traversal / separator injection (the escaping guard itself —
-    // previously entirely unpinned by any test)
-    // ----------------------------------------------------------------
-
-    [Theory]
     [InlineData("../escape")]
     [InlineData("..\\escape")]
     [InlineData("a/b")]
     [InlineData("a\\b")]
     [InlineData("/etc/passwd")]
     [InlineData("%2e%2e%2fescape")]
-    public async Task TraversalShapedKey_StaysInsideItsCollectionDirectory_AndRoundTrips(string key)
+    public async Task TraversalShapedKey_StaysInsideItsCollectionDirectory(string key)
     {
         using var temp = new TempDirectory();
         var store = new PersistenceStore(BuildConfiguration(temp.Path));
 
         await store.WriteAsync("collection", key, "contained");
-
-        Assert.Equal("contained", await store.ReadAsync("collection", key));
-        Assert.Contains(key, await store.ListKeysAsync("collection"));
 
         // Exactly one file, inside the collection directory; nothing
         // anywhere else under (or beside) the root.
@@ -274,18 +354,23 @@ public class PersistenceStoreHostileNameTests
         Assert.Empty(Directory.GetFiles(temp.Path));
     }
 
-    [Theory]
-    [InlineData("CON")]
-    [InlineData("..")]
-    public async Task ReservedCollectionName_RoundTrips(string collection)
+    // ----------------------------------------------------------------
+    // Atomic-write hygiene
+    // ----------------------------------------------------------------
+
+    [Fact]
+    public async Task Writes_LeaveNoTemporaryFilesBehind()
     {
         using var temp = new TempDirectory();
         var store = new PersistenceStore(BuildConfiguration(temp.Path));
 
-        await store.WriteAsync(collection, "key", "value");
+        for (var i = 0; i < 10; i++)
+            await store.WriteAsync("collection", $"key-{i}", $"value-{i}");
+        await store.WriteAsync("collection", "key-0", "overwritten");
 
-        Assert.Equal("value", await store.ReadAsync(collection, "key"));
-        Assert.Contains("key", await store.ListKeysAsync(collection));
+        Assert.Empty(Directory.GetFiles(temp.Path, "*.tmp"));
+        Assert.Empty(Directory.GetFiles(temp.Path));
+        Assert.Equal("overwritten", await store.ReadAsync("collection", "key-0"));
     }
 
     // ----------------------------------------------------------------
@@ -366,27 +451,42 @@ public class PersistenceStoreHostileNameTests
     }
 
     // ----------------------------------------------------------------
-    // Atomic-write hygiene
+    // Case-insensitive collision refusal
     // ----------------------------------------------------------------
 
     [Fact]
-    public async Task Writes_LeaveNoTemporaryFilesBehind()
+    public async Task ReservedDeviceNameCaseVariants_AreDistinctRecords_OrTheCollidingWriteIsRefused()
     {
         using var temp = new TempDirectory();
         var store = new PersistenceStore(BuildConfiguration(temp.Path));
 
-        for (var i = 0; i < 10; i++)
-            await store.WriteAsync("collection", $"key-{i}", $"value-{i}");
-        await store.WriteAsync("collection", "key-0", "overwritten");
+        await store.WriteAsync("collection", "CON", "upper");
 
-        Assert.Empty(Directory.GetFiles(temp.Path, "*.tmp"));
-        Assert.Empty(Directory.GetFiles(temp.Path));
-        Assert.Equal("overwritten", await store.ReadAsync("collection", "key-0"));
+        if (IsCaseInsensitiveFileSystem(temp.Path))
+        {
+            // "CON" and "Con" encode to file names differing only in
+            // case, so one physical file backs both keys and the store
+            // cannot keep them apart. What it must never do is overwrite:
+            // "CON"'s record survives intact, and "Con" reads as the
+            // absent record it is, rather than silently returning
+            // another key's value.
+            await Assert.ThrowsAsync<PersistenceStoreUnavailableException>(
+                () => store.WriteAsync("collection", "Con", "mixed"));
+
+            Assert.Equal("upper", await store.ReadAsync("collection", "CON"));
+            Assert.Null(await store.ReadAsync("collection", "Con"));
+            Assert.Single(await store.ListKeysAsync("collection"));
+            return;
+        }
+
+        await store.WriteAsync("collection", "con", "lower");
+        await store.WriteAsync("collection", "Con", "mixed");
+
+        Assert.Equal("upper", await store.ReadAsync("collection", "CON"));
+        Assert.Equal("lower", await store.ReadAsync("collection", "con"));
+        Assert.Equal("mixed", await store.ReadAsync("collection", "Con"));
+        Assert.Equal(3, (await store.ListKeysAsync("collection")).Count);
     }
-
-    // ----------------------------------------------------------------
-    // Case-exactness: a lookup never returns another key's record
-    // ----------------------------------------------------------------
 
     [Fact]
     public async Task CaseVariantKeys_AreIndependentRecords_OrTheCollidingWriteIsRefused()
@@ -418,20 +518,5 @@ public class PersistenceStoreHostileNameTests
         await store.DeleteAsync("collection", "steel");
         Assert.Equal("capitalised", await store.ReadAsync("collection", "Steel"));
         Assert.Null(await store.ReadAsync("collection", "steel"));
-    }
-
-    [Fact]
-    public async Task ReadAsync_NeverReturnsACaseVariantsRecord()
-    {
-        // On this (case-sensitive) file system the OS already keeps the
-        // records apart; this pins the exact-name matching that makes
-        // the same lookup correct on case-insensitive file systems too.
-        using var temp = new TempDirectory();
-        var store = new PersistenceStore(BuildConfiguration(temp.Path));
-
-        await store.WriteAsync("collection", "Steel", "capitalised");
-
-        Assert.Null(await store.ReadAsync("collection", "steel"));
-        Assert.Null(await store.ReadAsync("collection", "STEEL"));
     }
 }

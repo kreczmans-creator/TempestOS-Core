@@ -239,7 +239,7 @@ public class NavigationSampleModuleIntegrationTests
     [Fact]
     public async Task RunAsync_WithNavigationSampleModule_RegistersAndLogsThroughTheRealHost()
     {
-        var host = new TempestHostBuilder([typeof(NavigationSampleModule)]).Build();
+        var host = new TempestHostBuilder([typeof(NavigationSampleModule)]).WithIsolatedPersistenceRoot().Build();
         var originalOut = Console.Out;
         var writer = new StringWriter();
 

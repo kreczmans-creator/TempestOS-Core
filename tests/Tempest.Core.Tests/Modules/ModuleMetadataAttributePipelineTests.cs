@@ -75,7 +75,7 @@ public class ModuleMetadataAttributePipelineTests
     [Fact]
     public async Task RunAsync_WithConstructorInjectedAttributeModule_ReachesRunning_LoggerWasInjected()
     {
-        var host = new TempestHostBuilder([typeof(HostInjectedModule)]).Build();
+        var host = new TempestHostBuilder([typeof(HostInjectedModule)]).WithIsolatedPersistenceRoot().Build();
         var originalOut = Console.Out;
         var writer = new StringWriter();
 
@@ -110,7 +110,7 @@ public class ModuleMetadataAttributePipelineTests
     [Fact]
     public async Task RunAsync_ClockModuleAlongsideConstructorInjectedModule_BothReachRunning_NoSpecialCasing()
     {
-        var host = new TempestHostBuilder([typeof(ClockModule), typeof(HostInjectedModule)]).Build();
+        var host = new TempestHostBuilder([typeof(ClockModule), typeof(HostInjectedModule)]).WithIsolatedPersistenceRoot().Build();
 
         var runTask = host.RunAsync();
 

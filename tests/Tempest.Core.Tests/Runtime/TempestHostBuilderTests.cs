@@ -9,6 +9,7 @@ public class TempestHostBuilderTests
     public void Build_ReturnsHostInCreatedState()
     {
         var builder = new TempestHostBuilder(Type.EmptyTypes);
+        builder.WithIsolatedPersistenceRoot();
 
         var host = builder.Build();
 
@@ -19,6 +20,7 @@ public class TempestHostBuilderTests
     public void AddConfigurationSource_ReturnsSameBuilder_ToAllowChaining()
     {
         var builder = new TempestHostBuilder(Type.EmptyTypes);
+        builder.WithIsolatedPersistenceRoot();
         var source = new MemoryConfigurationSource([]);
 
         var result = builder.AddConfigurationSource(source);
@@ -30,6 +32,7 @@ public class TempestHostBuilderTests
     public void AddConfigurationSource_ThrowsArgumentNullException_WhenSourceIsNull()
     {
         var builder = new TempestHostBuilder(Type.EmptyTypes);
+        builder.WithIsolatedPersistenceRoot();
 
         Assert.Throws<ArgumentNullException>(() => builder.AddConfigurationSource(null!));
     }
@@ -38,6 +41,7 @@ public class TempestHostBuilderTests
     public void Build_CalledTwice_ThrowsInvalidOperationException()
     {
         var builder = new TempestHostBuilder(Type.EmptyTypes);
+        builder.WithIsolatedPersistenceRoot();
         builder.Build();
 
         Assert.Throws<InvalidOperationException>(() => builder.Build());
@@ -47,6 +51,7 @@ public class TempestHostBuilderTests
     public void AddConfigurationSource_AfterBuild_ThrowsInvalidOperationException()
     {
         var builder = new TempestHostBuilder(Type.EmptyTypes);
+        builder.WithIsolatedPersistenceRoot();
         builder.Build();
 
         Assert.Throws<InvalidOperationException>(() =>
@@ -56,8 +61,8 @@ public class TempestHostBuilderTests
     [Fact]
     public void Build_ProducesADistinctHostEachTimeADifferentBuilderIsUsed()
     {
-        var first = new TempestHostBuilder(Type.EmptyTypes).Build();
-        var second = new TempestHostBuilder(Type.EmptyTypes).Build();
+        var first = new TempestHostBuilder(Type.EmptyTypes).WithIsolatedPersistenceRoot().Build();
+        var second = new TempestHostBuilder(Type.EmptyTypes).WithIsolatedPersistenceRoot().Build();
 
         Assert.NotSame(first, second);
     }
@@ -69,6 +74,7 @@ public class TempestHostBuilderTests
         // value proves the source added via AddConfigurationSource actually
         // reached the host's own ConfigurationBuilder.
         var builder = new TempestHostBuilder(Type.EmptyTypes);
+        builder.WithIsolatedPersistenceRoot();
         builder.AddConfigurationSource(new MemoryConfigurationSource(
         [
             new KeyValuePair<string, string>("Runtime:Logging:MinimumLevel", "NotARealLevel"),

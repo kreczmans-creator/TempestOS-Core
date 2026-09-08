@@ -20,7 +20,7 @@ public class LicenseHostRegistrationTests
     private static async Task RunAgainstRunningHostAsync(string? licenseFilePath, Func<ITempestHost, Task> body)
     {
         var host = new TempestHostBuilder(Type.EmptyTypes, pluginsRootPathOverride: null, hostedServiceCandidateTypesOverride: Type.EmptyTypes, licenseFilePathOverride: licenseFilePath)
-            .Build();
+            .WithIsolatedPersistenceRoot().Build();
         var originalOut = Console.Out;
 
         try
@@ -129,7 +129,7 @@ public class LicenseHostRegistrationTests
         File.WriteAllText(path, "not valid json {{{");
 
         var host = new TempestHostBuilder(Type.EmptyTypes, pluginsRootPathOverride: null, hostedServiceCandidateTypesOverride: Type.EmptyTypes, licenseFilePathOverride: path)
-            .Build();
+            .WithIsolatedPersistenceRoot().Build();
         var originalOut = Console.Out;
         var originalError = Console.Error;
 
@@ -158,7 +158,7 @@ public class LicenseHostRegistrationTests
         File.WriteAllText(path, $$"""{"LicenseeName":"Acme Corp","ExpiresAt":"{{pastExpiry}}"}""");
 
         var host = new TempestHostBuilder(Type.EmptyTypes, pluginsRootPathOverride: null, hostedServiceCandidateTypesOverride: Type.EmptyTypes, licenseFilePathOverride: path)
-            .Build();
+            .WithIsolatedPersistenceRoot().Build();
         var originalOut = Console.Out;
         var originalError = Console.Error;
 
@@ -187,7 +187,7 @@ public class LicenseHostRegistrationTests
         File.WriteAllText(path, """{"EnabledCapabilities":["feature.a"]}""");
 
         var host = new TempestHostBuilder(Type.EmptyTypes, pluginsRootPathOverride: null, hostedServiceCandidateTypesOverride: Type.EmptyTypes, licenseFilePathOverride: path)
-            .Build();
+            .WithIsolatedPersistenceRoot().Build();
         var originalOut = Console.Out;
         var originalError = Console.Error;
 

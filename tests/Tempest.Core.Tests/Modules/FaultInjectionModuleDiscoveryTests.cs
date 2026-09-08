@@ -28,7 +28,7 @@ public class FaultInjectionModuleDiscoveryTests
     {
         // No EnableFaultInjectionModules() call - the exact shape
         // Tempest.App's own EngineeringWorkspaceComposer/WorkspaceHost uses.
-        var host = new TempestHostBuilder([typeof(NavigationSampleModule), typeof(DuplicateNavigationModule)]).Build();
+        var host = new TempestHostBuilder([typeof(NavigationSampleModule), typeof(DuplicateNavigationModule)]).WithIsolatedPersistenceRoot().Build();
 
         await RunUntilRunningAsync(host, async () =>
         {
@@ -50,7 +50,7 @@ public class FaultInjectionModuleDiscoveryTests
     {
         var host = new TempestHostBuilder([typeof(NavigationSampleModule), typeof(DuplicateNavigationModule)])
             .EnableFaultInjectionModules()
-            .Build();
+            .WithIsolatedPersistenceRoot().Build();
 
         await RunUntilRunningAsync(host, async () =>
         {

@@ -15,4 +15,18 @@
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- ADR-0144: the first NuGet package this assembly has ever taken.
+         Persistence is SQLite in WAL mode with full synchronous writes;
+         `Microsoft.Data.Sqlite` is the ADO.NET provider for it, published
+         by the same team as the .NET SDK itself, and it carries exactly
+         one transitive dependency (`SQLitePCLRaw`, the native SQLite
+         binary and its P/Invoke shim). The alternative was to write our
+         own P/Invoke layer over `sqlite3`, which is a worse version of
+         this package with our name on it. Confined to
+         `SqlitePersistenceStore`; no other type in this assembly
+         references it, and no public signature exposes it. -->
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.11" />
+  </ItemGroup>
+
 </Project>

@@ -23,7 +23,7 @@ public class TempestHostTests
     [Fact]
     public void Build_ProducesHost_ThatHasNotStartedAnything()
     {
-        var host = new TempestHostBuilder(Type.EmptyTypes).Build();
+        var host = new TempestHostBuilder(Type.EmptyTypes).WithIsolatedPersistenceRoot().Build();
 
         Assert.Equal(HostState.Created, host.State);
     }
@@ -37,7 +37,7 @@ public class TempestHostTests
     {
         var host = new TempestHostBuilder(
             [typeof(HealthyHostTestModuleAlpha), typeof(HealthyHostTestModuleBeta)])
-            .Build();
+            .WithIsolatedPersistenceRoot().Build();
 
         var runTask = host.RunAsync();
 
@@ -50,7 +50,7 @@ public class TempestHostTests
     [Fact]
     public async Task RunAsync_LogsEveryLifecyclePhase()
     {
-        var host = new TempestHostBuilder([typeof(HealthyHostTestModuleAlpha)]).Build();
+        var host = new TempestHostBuilder([typeof(HealthyHostTestModuleAlpha)]).WithIsolatedPersistenceRoot().Build();
         var originalOut = Console.Out;
         var writer = new StringWriter();
 
@@ -85,7 +85,7 @@ public class TempestHostTests
     [Fact]
     public async Task RunAsync_WithNoModules_StillReachesRunning()
     {
-        var host = new TempestHostBuilder(Type.EmptyTypes).Build();
+        var host = new TempestHostBuilder(Type.EmptyTypes).WithIsolatedPersistenceRoot().Build();
 
         var runTask = host.RunAsync();
 
@@ -114,7 +114,7 @@ public class TempestHostTests
                 new KeyValuePair<string, string>("Duplicate", "one"),
                 new KeyValuePair<string, string>("Duplicate", "two"),
             ]))
-            .Build();
+            .WithIsolatedPersistenceRoot().Build();
 
         await Assert.ThrowsAsync<DuplicateConfigurationKeyException>(() => host.RunAsync());
 
@@ -130,7 +130,7 @@ public class TempestHostTests
     {
         var host = new TempestHostBuilder(
             [typeof(ThrowingHostTestModule), typeof(HealthyHostTestModuleAlpha)])
-            .Build();
+            .WithIsolatedPersistenceRoot().Build();
 
         var runTask = host.RunAsync();
 
@@ -152,7 +152,7 @@ public class TempestHostTests
     [Fact]
     public async Task RunAsync_CallerTokenAlreadyCancelled_ThrowsOperationCanceledException_HostReachesStopped()
     {
-        var host = new TempestHostBuilder(Type.EmptyTypes).Build();
+        var host = new TempestHostBuilder(Type.EmptyTypes).WithIsolatedPersistenceRoot().Build();
 
         using var cts = new CancellationTokenSource();
         cts.Cancel();
@@ -167,7 +167,7 @@ public class TempestHostTests
     {
         BlockingModuleGate.Reset();
 
-        var host = new TempestHostBuilder([typeof(BlockingHostTestModule)]).Build();
+        var host = new TempestHostBuilder([typeof(BlockingHostTestModule)]).WithIsolatedPersistenceRoot().Build();
         using var cts = new CancellationTokenSource();
 
         var runTask = host.RunAsync(cts.Token);
@@ -186,7 +186,7 @@ public class TempestHostTests
     {
         BlockingModuleGate.Reset();
 
-        var host = new TempestHostBuilder([typeof(BlockingHostTestModule)]).Build();
+        var host = new TempestHostBuilder([typeof(BlockingHostTestModule)]).WithIsolatedPersistenceRoot().Build();
 
         var runTask = host.RunAsync();
 
@@ -203,7 +203,7 @@ public class TempestHostTests
     [Fact]
     public async Task StopAsync_CalledWhileRunning_CompletesGracefully_WithoutThrowing()
     {
-        var host = new TempestHostBuilder([typeof(HealthyHostTestModuleAlpha)]).Build();
+        var host = new TempestHostBuilder([typeof(HealthyHostTestModuleAlpha)]).WithIsolatedPersistenceRoot().Build();
 
         var runTask = host.RunAsync();
 
@@ -227,7 +227,7 @@ public class TempestHostTests
     [Fact]
     public async Task StopAsync_BeforeRunAsyncWasEverCalled_ThrowsInvalidHostStateTransitionException()
     {
-        var host = new TempestHostBuilder(Type.EmptyTypes).Build();
+        var host = new TempestHostBuilder(Type.EmptyTypes).WithIsolatedPersistenceRoot().Build();
 
         var exception = await Assert.ThrowsAsync<InvalidHostStateTransitionException>(() => host.StopAsync());
 
@@ -238,7 +238,7 @@ public class TempestHostTests
     [Fact]
     public async Task RunAsync_CalledTwice_ThrowsInvalidHostStateTransitionException()
     {
-        var host = new TempestHostBuilder(Type.EmptyTypes).Build();
+        var host = new TempestHostBuilder(Type.EmptyTypes).WithIsolatedPersistenceRoot().Build();
 
         var firstRun = host.RunAsync();
         await host.StopAsync();
@@ -256,7 +256,7 @@ public class TempestHostTests
                 new KeyValuePair<string, string>("Duplicate", "one"),
                 new KeyValuePair<string, string>("Duplicate", "two"),
             ]))
-            .Build();
+            .WithIsolatedPersistenceRoot().Build();
 
         await Assert.ThrowsAsync<DuplicateConfigurationKeyException>(() => host.RunAsync());
 
@@ -266,7 +266,7 @@ public class TempestHostTests
     [Fact]
     public async Task RunAsync_AfterHostIsDisposed_ThrowsInvalidHostStateTransitionException()
     {
-        var host = new TempestHostBuilder(Type.EmptyTypes).Build();
+        var host = new TempestHostBuilder(Type.EmptyTypes).WithIsolatedPersistenceRoot().Build();
         await host.DisposeAsync();
 
         await Assert.ThrowsAsync<InvalidHostStateTransitionException>(() => host.RunAsync());
@@ -275,7 +275,7 @@ public class TempestHostTests
     [Fact]
     public async Task StopAsync_AfterHostIsDisposed_ThrowsInvalidHostStateTransitionException()
     {
-        var host = new TempestHostBuilder(Type.EmptyTypes).Build();
+        var host = new TempestHostBuilder(Type.EmptyTypes).WithIsolatedPersistenceRoot().Build();
         await host.DisposeAsync();
 
         var exception = await Assert.ThrowsAsync<InvalidHostStateTransitionException>(() => host.StopAsync());
@@ -290,7 +290,7 @@ public class TempestHostTests
     [Fact]
     public async Task Host_CannotBeRestarted_AfterReachingStopped()
     {
-        var host = new TempestHostBuilder(Type.EmptyTypes).Build();
+        var host = new TempestHostBuilder(Type.EmptyTypes).WithIsolatedPersistenceRoot().Build();
 
         var firstRun = host.RunAsync();
         await host.StopAsync();
@@ -307,7 +307,7 @@ public class TempestHostTests
     [Fact]
     public async Task DisposeAsync_WithoutEverCallingRunAsync_IsPermitted()
     {
-        var host = new TempestHostBuilder(Type.EmptyTypes).Build();
+        var host = new TempestHostBuilder(Type.EmptyTypes).WithIsolatedPersistenceRoot().Build();
 
         var exception = await Record.ExceptionAsync(() => host.DisposeAsync().AsTask());
 
@@ -318,7 +318,7 @@ public class TempestHostTests
     [Fact]
     public async Task DisposeAsync_CalledTwice_IsIdempotent()
     {
-        var host = new TempestHostBuilder(Type.EmptyTypes).Build();
+        var host = new TempestHostBuilder(Type.EmptyTypes).WithIsolatedPersistenceRoot().Build();
 
         await host.DisposeAsync();
         var exception = await Record.ExceptionAsync(() => host.DisposeAsync().AsTask());
@@ -330,7 +330,7 @@ public class TempestHostTests
     [Fact]
     public async Task DisposeAsync_AfterGracefulStop_DoesNotThrow_AndRemainsDisposed()
     {
-        var host = new TempestHostBuilder([typeof(HealthyHostTestModuleAlpha)]).Build();
+        var host = new TempestHostBuilder([typeof(HealthyHostTestModuleAlpha)]).WithIsolatedPersistenceRoot().Build();
 
         var runTask = host.RunAsync();
         await host.StopAsync();
@@ -348,7 +348,7 @@ public class TempestHostTests
         DisposalCounter.Reset();
         BlockingModuleGate.Reset();
 
-        var host = new TempestHostBuilder([typeof(DisposalTrackingHostTestModule)]).Build();
+        var host = new TempestHostBuilder([typeof(DisposalTrackingHostTestModule)]).WithIsolatedPersistenceRoot().Build();
         var runTask = host.RunAsync();
 
         await BlockingModuleGate.WaitUntilEnteredAsync();
@@ -366,7 +366,7 @@ public class TempestHostTests
     [Fact]
     public async Task DisposeAsync_CalledWhileStillRunning_WaitsForControlledShutdownThenDisposes()
     {
-        var host = new TempestHostBuilder([typeof(HealthyHostTestModuleAlpha)]).Build();
+        var host = new TempestHostBuilder([typeof(HealthyHostTestModuleAlpha)]).WithIsolatedPersistenceRoot().Build();
 
         var runTask = host.RunAsync();
 
@@ -387,7 +387,7 @@ public class TempestHostTests
     [Fact]
     public void Services_BeforeRunAsyncIsCalled_IsNull()
     {
-        var host = new TempestHostBuilder(Type.EmptyTypes).Build();
+        var host = new TempestHostBuilder(Type.EmptyTypes).WithIsolatedPersistenceRoot().Build();
 
         Assert.Null(host.Services);
     }
@@ -395,7 +395,7 @@ public class TempestHostTests
     [Fact]
     public async Task Services_OnceRunning_IsNotNull()
     {
-        var host = new TempestHostBuilder(Type.EmptyTypes).Build();
+        var host = new TempestHostBuilder(Type.EmptyTypes).WithIsolatedPersistenceRoot().Build();
 
         var runTask = host.RunAsync();
 
@@ -411,7 +411,7 @@ public class TempestHostTests
     [Fact]
     public async Task Services_ResolvesTheRealIEventBus()
     {
-        var host = new TempestHostBuilder(Type.EmptyTypes).Build();
+        var host = new TempestHostBuilder(Type.EmptyTypes).WithIsolatedPersistenceRoot().Build();
 
         var runTask = host.RunAsync();
 
@@ -429,7 +429,7 @@ public class TempestHostTests
     [Fact]
     public async Task Services_ResolvesTheRealINavigationProvider()
     {
-        var host = new TempestHostBuilder(Type.EmptyTypes).Build();
+        var host = new TempestHostBuilder(Type.EmptyTypes).WithIsolatedPersistenceRoot().Build();
 
         var runTask = host.RunAsync();
 
@@ -447,7 +447,7 @@ public class TempestHostTests
     [Fact]
     public async Task Services_ResolvingTheSameServiceTwice_ReturnsTheSameSingletonInstance()
     {
-        var host = new TempestHostBuilder(Type.EmptyTypes).Build();
+        var host = new TempestHostBuilder(Type.EmptyTypes).WithIsolatedPersistenceRoot().Build();
 
         var runTask = host.RunAsync();
 
@@ -466,7 +466,7 @@ public class TempestHostTests
     [Fact]
     public async Task Services_RemainsNonNull_AfterGracefulStop()
     {
-        var host = new TempestHostBuilder(Type.EmptyTypes).Build();
+        var host = new TempestHostBuilder(Type.EmptyTypes).WithIsolatedPersistenceRoot().Build();
 
         var runTask = host.RunAsync();
 
@@ -482,7 +482,7 @@ public class TempestHostTests
     [Fact]
     public async Task Services_RemainsNonNull_AfterDispose()
     {
-        var host = new TempestHostBuilder(Type.EmptyTypes).Build();
+        var host = new TempestHostBuilder(Type.EmptyTypes).WithIsolatedPersistenceRoot().Build();
 
         var runTask = host.RunAsync();
 
@@ -504,7 +504,7 @@ public class TempestHostTests
         // first place - proven here by resolving each one and observing the
         // same ServiceNotRegisteredException any other unregistered type
         // would produce, not some special-cased behaviour.
-        var host = new TempestHostBuilder(Type.EmptyTypes).Build();
+        var host = new TempestHostBuilder(Type.EmptyTypes).WithIsolatedPersistenceRoot().Build();
 
         var runTask = host.RunAsync();
 
