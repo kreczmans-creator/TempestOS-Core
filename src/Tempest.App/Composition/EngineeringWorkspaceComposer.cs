@@ -73,10 +73,22 @@ public static class EngineeringWorkspaceComposer
     /// without this composer's own production callers needing to know or
     /// care.
     /// </param>
+    /// <param name="commandLineArgs">
+    /// The process's own command-line arguments (<c>Program.Main(string[] args)</c>),
+    /// or <see langword="null"/> (the default) to contribute none — reaches
+    /// the resulting <see cref="ITempestHost"/>'s default configuration
+    /// source (`WP 17.2A`, ADR-0146) via
+    /// <see cref="ITempestHostBuilder.AddCommandLineArgs"/>.
+    /// </param>
     /// <returns>An unstarted <see cref="ITempestHost"/> and its owning, unstarted <see cref="WorkspaceManager"/>.</returns>
-    public static (ITempestHost Host, WorkspaceManager Manager) Build(IReadOnlyList<IConfigurationSource>? configurationSources = null)
+    public static (ITempestHost Host, WorkspaceManager Manager) Build(
+        IReadOnlyList<IConfigurationSource>? configurationSources = null,
+        IReadOnlyList<string>? commandLineArgs = null)
     {
         var builder = new TempestHostBuilder();
+
+        if (commandLineArgs is not null)
+            builder.AddCommandLineArgs(commandLineArgs);
 
         if (configurationSources is not null)
         {

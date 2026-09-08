@@ -20,6 +20,7 @@ public sealed class TempestHostBuilder : ITempestHostBuilder
     private readonly IEnumerable<Type>? _discoveryCandidateTypesOverride;
     private readonly string? _pluginsRootPathOverride;
     private readonly IEnumerable<Type>? _hostedServiceCandidateTypesOverride;
+    private IReadOnlyList<string> _commandLineArgs = [];
     private bool _includeFaultInjectionModules;
     private bool _built;
 
@@ -156,6 +157,17 @@ public sealed class TempestHostBuilder : ITempestHostBuilder
     }
 
     /// <inheritdoc />
+    public ITempestHostBuilder AddCommandLineArgs(IReadOnlyList<string> args)
+    {
+        ArgumentNullException.ThrowIfNull(args);
+        ThrowIfAlreadyBuilt();
+
+        _commandLineArgs = args;
+
+        return this;
+    }
+
+    /// <inheritdoc />
     public ITempestHostBuilder EnableFaultInjectionModules()
     {
         ThrowIfAlreadyBuilt();
@@ -182,8 +194,20 @@ public sealed class TempestHostBuilder : ITempestHostBuilder
         ThrowIfAlreadyBuilt();
         _built = true;
 
+        // `WP 17.2A` (ADR-0146): the default, operator-reachable source
+        // (appsettings.json, TEMPEST_ environment variables, the command
+        // line) is always first in the merged list, so any source added
+        // via AddConfigurationSource — an explicit in-memory override —
+        // is applied later and wins, per ConfigurationBuilder's own
+        // later-source-overrides-earlier convention.
+        IReadOnlyList<IConfigurationSource> sources =
+        [
+            new MicrosoftExtensionsConfigurationSource(_commandLineArgs),
+            .. _configurationSources,
+        ];
+
         return new TempestHost(
-            _configurationSources,
+            sources,
             _discoveryCandidateTypesOverride,
             _pluginsRootPathOverride,
             _hostedServiceCandidateTypesOverride,

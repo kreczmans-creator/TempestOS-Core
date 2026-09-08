@@ -25,4 +25,21 @@
     <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.11" />
   </ItemGroup>
 
+  <!-- WP 17.2A / ADR-0146, Decision B: Configuration and Logging adopt
+       Microsoft.Extensions' own abstractions where they are genuinely
+       better-shaped for the job than the platform's hand-rolled ones - a
+       hierarchical, multi-source configuration tree, and a levelled,
+       sink-based logging pipeline any future library code (an accounting
+       connector, SQLite diagnostics) can also log into - without pulling
+       the custom DI container along, which nothing here has found a
+       reason to replace. Every version below is pinned to the same
+       10.0.11 already used by Microsoft.Data.Sqlite above. -->
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="10.0.11" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="10.0.11" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="10.0.11" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.CommandLine" Version="10.0.11" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.11" />
+  </ItemGroup>
+
 </Project>

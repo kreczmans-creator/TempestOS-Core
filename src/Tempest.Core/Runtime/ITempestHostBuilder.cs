@@ -30,6 +30,26 @@ public interface ITempestHostBuilder
     ITempestHostBuilder AddConfigurationSource(IConfigurationSource source);
 
     /// <summary>
+    /// Supplies the process's own command-line arguments to the resulting
+    /// host's default configuration source (`WP 17.2A`, ADR-0146).
+    /// </summary>
+    /// <param name="args">The arguments <c>Program.Main(string[] args)</c> received.</param>
+    /// <returns>This builder, to allow chaining.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="args"/> is <see langword="null"/>.</exception>
+    /// <exception cref="InvalidOperationException">This builder has already built a host.</exception>
+    /// <remarks>
+    /// Every host already reads an <c>appsettings.json</c> file and
+    /// <c>TEMPEST_</c>-prefixed environment variables by default, through
+    /// <see cref="MicrosoftExtensionsConfigurationSource"/>; this method is
+    /// the one additional wire a composition root (<c>Tempest.Desktop</c>'s
+    /// and <c>Tempest.App</c>'s own <c>Program.Main</c>) must connect for
+    /// the command line to reach that same default source. Never called,
+    /// the command line simply contributes nothing — every other source
+    /// still applies.
+    /// </remarks>
+    ITempestHostBuilder AddCommandLineArgs(IReadOnlyList<string> args);
+
+    /// <summary>
     /// Opts the resulting host's Module Discovery phase into discovering
     /// <see cref="Modules.IFaultInjectionModule"/> candidates, which are
     /// excluded by default.
