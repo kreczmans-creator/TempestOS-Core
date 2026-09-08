@@ -4,16 +4,10 @@ using Tempest.Core.Events;
 using Tempest.Core.Modules;
 using Tempest.Core.Navigation;
 using Tempest.Core.Runtime;
+using Tempest.Core.Tests.Logging;
 
 namespace Tempest.Core.Tests.Runtime;
 
-// Shares a collection with TempestHostPluginLifecycleTests: both redirect the
-// process-global Console.Out to capture log output, and xUnit test classes
-// run concurrently by default - without this, two classes' redirect/restore
-// calls can interleave and corrupt each other's captured output (the same
-// hazard already found and fixed for SdkLifecycleLog between
-// ModuleLifecycleBaseTests and ModuleSdkIntegrationTests).
-[Collection("Console output capture")]
 public class TempestHostTests
 {
     // ----------------------------------------------------------------
@@ -50,36 +44,28 @@ public class TempestHostTests
     [Fact]
     public async Task RunAsync_LogsEveryLifecyclePhase()
     {
-        var host = new TempestHostBuilder([typeof(HealthyHostTestModuleAlpha)]).Build();
-        var originalOut = Console.Out;
-        var writer = new StringWriter();
+        var sink = new RecordingLogSink();
+        var host = new TempestHostBuilder([typeof(HealthyHostTestModuleAlpha)])
+            .AddLogSink(sink)
+            .Build();
 
-        try
-        {
-            Console.SetOut(writer);
+        var runTask = host.RunAsync();
+        await host.StopAsync();
+        await runTask;
 
-            var runTask = host.RunAsync();
-            await host.StopAsync();
-            await runTask;
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-        }
+        var messages = sink.Entries.Select(entry => entry.Message).ToList();
 
-        var output = writer.ToString();
-
-        Assert.Contains("Configuration Built", output);
-        Assert.Contains("Logging Built", output);
-        Assert.Contains("Platform version resolved", output);
-        Assert.Contains("Module Discovery", output);
-        Assert.Contains("Module Registration", output);
-        Assert.Contains("Platform Services Registered", output);
-        Assert.Contains("Dependency Injection Built", output);
-        Assert.Contains("Module Initialisation", output);
-        Assert.Contains("Host -> Running", output);
-        Assert.Contains("Host -> Stopping", output);
-        Assert.Contains("Host -> Stopped", output);
+        Assert.Contains(messages, message => message.Contains("Configuration Built"));
+        Assert.Contains(messages, message => message.Contains("Logging Built"));
+        Assert.Contains(messages, message => message.Contains("Platform version resolved"));
+        Assert.Contains(messages, message => message.Contains("Module Discovery"));
+        Assert.Contains(messages, message => message.Contains("Module Registration"));
+        Assert.Contains(messages, message => message.Contains("Platform Services Registered"));
+        Assert.Contains(messages, message => message.Contains("Dependency Injection Built"));
+        Assert.Contains(messages, message => message.Contains("Module Initialisation"));
+        Assert.Contains(messages, message => message.Contains("Host -> Running"));
+        Assert.Contains(messages, message => message.Contains("Host -> Stopping"));
+        Assert.Contains(messages, message => message.Contains("Host -> Stopped"));
     }
 
     [Fact]

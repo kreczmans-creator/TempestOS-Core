@@ -22,7 +22,7 @@ namespace Tempest.Core.Tests.Samples;
 // Framework. Nothing here is a mock or a test double standing in for a real
 // platform service, except a level-recording ILogger used only to observe
 // log output.
-[Collection("Console output capture")]
+[Collection("Dynamic plugin assembly emission")]
 public class DiagnosticsSampleModuleIntegrationTests
 {
     // Mirrors TempestHost's own composition exactly: DiagnosticsProvider is

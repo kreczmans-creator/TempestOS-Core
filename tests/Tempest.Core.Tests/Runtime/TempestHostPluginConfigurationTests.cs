@@ -10,7 +10,7 @@ namespace Tempest.Core.Tests.Runtime;
 // Manifest Convention": Runtime:Plugins:RootDirectory/ManifestFileName/
 // Disabled, resolved by TempestHost itself from configuration, end-to-end
 // through the real Host via ITempestHostBuilder.AddConfigurationSource.
-[Collection("Console output capture")]
+[Collection("Dynamic plugin assembly emission")]
 public class TempestHostPluginConfigurationTests
 {
     [Fact]

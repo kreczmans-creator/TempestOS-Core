@@ -14,10 +14,10 @@ namespace Tempest.Core.Tests.Plugins;
 // concurrently-loading assembly as if it were part of its own plugin's own
 // footprint - a test-harness-only race with no real-world counterpart
 // (Plugin Loading is a single, sequential Host-startup phase in
-// production). [Collection("Console output capture")] - the same,
+// production). [Collection("Dynamic plugin assembly emission")] - the same,
 // already-established serialization collection every real-assembly-loading
 // test in this suite uses - removes that race by construction.
-[Collection("Console output capture")]
+[Collection("Dynamic plugin assembly emission")]
 public class PluginAssemblyLoaderTests
 {
     // ----------------------------------------------------------------

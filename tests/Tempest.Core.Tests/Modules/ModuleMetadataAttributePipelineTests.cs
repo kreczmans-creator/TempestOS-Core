@@ -1,16 +1,16 @@
 using Tempest.Core.DependencyInjection;
 using Tempest.Core.Modules;
 using Tempest.Core.Runtime;
+using Tempest.Core.Tests.Logging;
+using Tempest.Core.Tests.Runtime;
 using Tempest.Samples;
 
-using Tempest.Core.Tests.Runtime;
 namespace Tempest.Core.Tests.Modules;
 
 // Proves ADR-0027 end-to-end: a discovered module with a genuinely
 // constructor-injected dependency travels through the real, unmodified
 // Platform Services pipeline, and existing modules (including the WP 4.3
 // sample module) are completely unaffected.
-[Collection("Console output capture")]
 public class ModuleMetadataAttributePipelineTests
 {
     // ----------------------------------------------------------------
@@ -76,30 +76,24 @@ public class ModuleMetadataAttributePipelineTests
     [Fact]
     public async Task RunAsync_WithConstructorInjectedAttributeModule_ReachesRunning_LoggerWasInjected()
     {
-        var host = new TempestHostBuilder([typeof(HostInjectedModule)]).Build();
-        var originalOut = Console.Out;
-        var writer = new StringWriter();
+        var sink = new RecordingLogSink();
+        var host = new TempestHostBuilder([typeof(HostInjectedModule)])
+            .AddLogSink(sink)
+            .Build();
 
-        try
-        {
-            Console.SetOut(writer);
+        var runTask = host.RunAsync();
 
-            var runTask = host.RunAsync();
+        await RunningHostFixture.WaitUntilRunningAsync(host);
 
-            await RunningHostFixture.WaitUntilRunningAsync(host);
+        Assert.Equal(HostState.Running, host.State);
 
-            Assert.Equal(HostState.Running, host.State);
-
-            await host.StopAsync();
-            await runTask;
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-        }
+        await host.StopAsync();
+        await runTask;
 
         Assert.Equal(HostState.Stopped, host.State);
-        Assert.Contains("HostInjectedModule initialised with a constructor-injected ILogger.", writer.ToString());
+        Assert.Contains(
+            sink.Entries.Select(entry => entry.Message),
+            message => message.Contains("HostInjectedModule initialised with a constructor-injected ILogger."));
     }
 
     // ----------------------------------------------------------------

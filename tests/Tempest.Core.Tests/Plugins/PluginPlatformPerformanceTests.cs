@@ -25,11 +25,11 @@ namespace Tempest.Core.Tests.Plugins;
 // the assertion exists to catch a genuine regression (e.g. an accidental
 // change from O(n) to O(n^2)), not to pin down an exact millisecond figure.
 //
-// [Collection("Console output capture")] mirrors every other TempestHost
+// [Collection("Dynamic plugin assembly emission")] mirrors every other TempestHost
 // integration test in this suite: it serialises this class's tests against
 // the rest of that collection so wall-clock measurements are not skewed by
 // unrelated tests contending for the same CPU cores at the same time.
-[Collection("Console output capture")]
+[Collection("Dynamic plugin assembly emission")]
 public class PluginPlatformPerformanceTests
 {
     private static readonly IPlatformVersionProvider DefaultVersionProvider =

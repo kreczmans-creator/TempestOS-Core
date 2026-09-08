@@ -16,7 +16,18 @@ namespace Tempest.Core.Tests.Runtime;
 // end-to-end through a real TempestHost run and IDiagnosticsProvider.Plugins
 // - the same DI-public projection a module would use. Neither path was
 // exercised anywhere in the existing Runtime test suite.
-[Collection("Console output capture")]
+//
+// A small number of tests here use RealTrustedPublishersFixture, writing
+// real certificates into the actual, non-overridable TrustedPublishers/
+// folder relative to AppContext.BaseDirectory, and every test here builds a
+// dynamically-emitted plugin assembly via DynamicPluginAssemblyBuilder
+// (System.Reflection.Emit's PersistedAssemblyBuilder - not safe to run
+// concurrently with another such build elsewhere in the process). Both
+// hazards are covered by this class sharing
+// [Collection("Dynamic plugin assembly emission")] with every other class
+// in this assembly that calls DynamicPluginAssemblyBuilder - see
+// PluginPlatformEndToEndTests.cs's own remarks.
+[Collection("Dynamic plugin assembly emission")]
 public class TempestHostPluginTrustTests
 {
     [Fact]
@@ -1000,7 +1011,7 @@ public class TempestHostPluginTrustTests
     /// <c>RunAsync_HostedServiceOnlyPlugin_LegitimateComponentAccessorGrant_...</c>
     /// needs: writing the First-Party certificate only). Safe here for the
     /// identical reason that file's own remarks state: every test in THIS
-    /// file is already tagged <c>[Collection("Console output capture")]</c>,
+    /// file is already tagged <c>[Collection("Dynamic plugin assembly emission")]</c>,
     /// serialising it against every other real-Host test in this assembly,
     /// and only the exact file this writes is ever deleted.
     /// </summary>

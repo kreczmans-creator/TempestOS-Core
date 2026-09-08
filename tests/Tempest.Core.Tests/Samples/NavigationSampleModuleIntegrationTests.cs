@@ -6,11 +6,12 @@ using Tempest.Core.Navigation;
 using Tempest.Core.Plugins;
 using Tempest.Core.Runtime;
 using Tempest.Core.Tests.Events;
+using Tempest.Core.Tests.Logging;
 using Tempest.Core.Tests.Plugins;
+using Tempest.Core.Tests.Runtime;
 using Tempest.Samples;
 using Tempest.Validation.FaultInjection;
 
-using Tempest.Core.Tests.Runtime;
 namespace Tempest.Core.Tests.Samples;
 
 // Proves WP 5.0B end-to-end: NavigationSampleModule (and its companion
@@ -23,10 +24,15 @@ namespace Tempest.Core.Tests.Samples;
 // platform service, except a level-recording ILogger used only to observe
 // log output.
 //
-// Shares the "Console output capture" collection with every other test class
-// that redirects Console.Out, for the same reason
-// ClockModuleEventIntegrationTests does.
-[Collection("Console output capture")]
+// WP 17.0C: observes its own host's log entries through a private
+// RecordingLogSink rather than redirecting the process-global Console.Out.
+// One test here still builds a dynamically-emitted plugin assembly via
+// DynamicPluginAssemblyBuilder (System.Reflection.Emit's
+// PersistedAssemblyBuilder) - not safe to run concurrently with another
+// such build elsewhere in the process, so this class shares
+// [Collection("Dynamic plugin assembly emission")] with every other class
+// in this assembly that calls DynamicPluginAssemblyBuilder.
+[Collection("Dynamic plugin assembly emission")]
 public class NavigationSampleModuleIntegrationTests
 {
     private static (RuntimeModuleManager RuntimeManager, TempestServiceProvider ServiceProvider) BuildPipeline(
@@ -240,33 +246,26 @@ public class NavigationSampleModuleIntegrationTests
     [Fact]
     public async Task RunAsync_WithNavigationSampleModule_RegistersAndLogsThroughTheRealHost()
     {
-        var host = new TempestHostBuilder([typeof(NavigationSampleModule)]).Build();
-        var originalOut = Console.Out;
-        var writer = new StringWriter();
+        var sink = new RecordingLogSink();
+        var host = new TempestHostBuilder([typeof(NavigationSampleModule)])
+            .AddLogSink(sink)
+            .Build();
 
-        try
-        {
-            Console.SetOut(writer);
+        var runTask = host.RunAsync();
 
-            var runTask = host.RunAsync();
+        await RunningHostFixture.WaitUntilRunningAsync(host);
 
-            await RunningHostFixture.WaitUntilRunningAsync(host);
+        Assert.Equal(HostState.Running, host.State);
 
-            Assert.Equal(HostState.Running, host.State);
-
-            await host.StopAsync();
-            await runTask;
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-        }
+        await host.StopAsync();
+        await runTask;
 
         Assert.Equal(HostState.Stopped, host.State);
 
-        var output = writer.ToString();
+        var messages = sink.Entries.Select(entry => entry.Message).ToList();
         Assert.Contains(
-            $"Navigation item '{NavigationSampleModule.NavigationItemId}' registered.", output);
+            messages,
+            message => message.Contains($"Navigation item '{NavigationSampleModule.NavigationItemId}' registered."));
     }
 
     // ----------------------------------------------------------------

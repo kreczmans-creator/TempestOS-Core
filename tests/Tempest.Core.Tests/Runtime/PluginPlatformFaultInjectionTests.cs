@@ -35,7 +35,7 @@ namespace Tempest.Core.Tests.Runtime;
 // GUID-derived name and deleted again in the scenario's own try/finally -
 // additive, never replacing another entry - so no risk of collision with
 // any other test in this serialized collection.
-[Collection("Console output capture")]
+[Collection("Dynamic plugin assembly emission")]
 public class PluginPlatformFaultInjectionTests
 {
     // ==================================================================

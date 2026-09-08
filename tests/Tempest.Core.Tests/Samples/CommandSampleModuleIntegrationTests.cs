@@ -7,10 +7,11 @@ using Tempest.Core.Navigation;
 using Tempest.Core.Plugins;
 using Tempest.Core.Runtime;
 using Tempest.Core.Tests.Events;
+using Tempest.Core.Tests.Logging;
 using Tempest.Core.Tests.Plugins;
+using Tempest.Core.Tests.Runtime;
 using Tempest.Samples;
 
-using Tempest.Core.Tests.Runtime;
 namespace Tempest.Core.Tests.Samples;
 
 // Proves WP 5.1B end-to-end: CommandSampleModule constructor-injects the
@@ -20,7 +21,14 @@ namespace Tempest.Core.Tests.Samples;
 // NavigationSampleModuleIntegrationTests already proves for Navigation.
 // Nothing here is a mock or a test double standing in for a real platform
 // service, except a level-recording ILogger used only to observe log output.
-[Collection("Console output capture")]
+//
+// One test here builds a dynamically-emitted plugin assembly via
+// DynamicPluginAssemblyBuilder (System.Reflection.Emit's
+// PersistedAssemblyBuilder) - not safe to run concurrently with another
+// such build elsewhere in the process, so this class shares
+// [Collection("Dynamic plugin assembly emission")] with every other class
+// in this assembly that calls DynamicPluginAssemblyBuilder.
+[Collection("Dynamic plugin assembly emission")]
 public class CommandSampleModuleIntegrationTests
 {
     private static (RuntimeModuleManager RuntimeManager, TempestServiceProvider ServiceProvider) BuildPipeline(
@@ -169,37 +177,30 @@ public class CommandSampleModuleIntegrationTests
     [Fact]
     public async Task RunAsync_WithCommandSampleModule_RegistersAndLogsThroughTheRealHost()
     {
-        var host = new TempestHostBuilder([typeof(CommandSampleModule)]).Build();
-        var originalOut = Console.Out;
-        var writer = new StringWriter();
+        var sink = new RecordingLogSink();
+        var host = new TempestHostBuilder([typeof(CommandSampleModule)])
+            .AddLogSink(sink)
+            .Build();
 
-        try
-        {
-            Console.SetOut(writer);
+        var runTask = host.RunAsync();
 
-            var runTask = host.RunAsync();
+        await RunningHostFixture.WaitUntilRunningAsync(host);
 
-            await RunningHostFixture.WaitUntilRunningAsync(host);
+        Assert.Equal(HostState.Running, host.State);
 
-            Assert.Equal(HostState.Running, host.State);
+        var registry = (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
+        var result = await registry.InvokeAsync(CommandSampleModule.IncrementCounterCommandId, CancellationToken.None);
+        Assert.True(result.Succeeded);
 
-            var registry = (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
-            var result = await registry.InvokeAsync(CommandSampleModule.IncrementCounterCommandId, CancellationToken.None);
-            Assert.True(result.Succeeded);
-
-            await host.StopAsync();
-            await runTask;
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-        }
+        await host.StopAsync();
+        await runTask;
 
         Assert.Equal(HostState.Stopped, host.State);
 
-        var output = writer.ToString();
+        var messages = sink.Entries.Select(entry => entry.Message).ToList();
         Assert.Contains(
-            $"Command descriptor registered: '{CommandSampleModule.IncrementCounterCommandId}'", output);
+            messages,
+            message => message.Contains($"Command descriptor registered: '{CommandSampleModule.IncrementCounterCommandId}'"));
     }
 
     // ----------------------------------------------------------------

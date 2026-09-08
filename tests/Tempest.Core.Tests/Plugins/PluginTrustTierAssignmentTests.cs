@@ -17,7 +17,7 @@ namespace Tempest.Core.Tests.Plugins;
 // | Signature present but fails to verify (any reason)             | Rejected (cat 15)|
 // WP 13.9.1: see PluginAssemblyLoaderTests.cs's own comment on this same
 // [Collection] attribute.
-[Collection("Console output capture")]
+[Collection("Dynamic plugin assembly emission")]
 public class PluginTrustTierAssignmentTests
 {
     private static readonly IPlatformVersionProvider DefaultVersionProvider =

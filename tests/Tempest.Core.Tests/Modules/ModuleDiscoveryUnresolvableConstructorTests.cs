@@ -30,14 +30,14 @@ namespace Tempest.Core.Tests.Modules;
 // no [ModuleMetadataAttribute]" case must still throw its own actionable
 // ModuleDiscoveryException, never be silently swallowed by the same catch.
 //
-// [Collection("Console output capture")] - see PluginAssemblyLoaderTests.cs's
+// [Collection("Dynamic plugin assembly emission")] - see PluginAssemblyLoaderTests.cs's
 // own comment on this same attribute: the real Assembly.LoadFrom calls the
 // helper below makes must not race against any other test class that also
 // loads a real assembly. ReflectionFrameworkDiscoveryServiceTests itself is
 // deliberately left out of that collection - it is pure in-memory and
 // parallel-safe, and tagging it would needlessly serialise a dozen unrelated
 // tests.
-[Collection("Console output capture")]
+[Collection("Dynamic plugin assembly emission")]
 public class ModuleDiscoveryUnresolvableConstructorTests
 {
     [Fact]

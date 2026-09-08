@@ -7,6 +7,7 @@ using Tempest.Core.Modules;
 using Tempest.Core.Navigation;
 using Tempest.Core.Plugins;
 using Tempest.Core.Runtime;
+using Tempest.Core.Tests.Logging;
 using Tempest.Core.Tests.Plugins;
 
 namespace Tempest.Core.Tests.Runtime;
@@ -32,12 +33,20 @@ namespace Tempest.Core.Tests.Runtime;
 // AppContext.BaseDirectory - the one path TempestHost's own
 // `new PluginTrustStore(logger)` construction reads from (no test seam
 // exists on TempestHost/TempestHostBuilder for this, unlike the plugins
-// root itself). This is safe here specifically because every test in this
-// file is tagged [Collection("Console output capture")] - the same,
-// already-established collection every other real-Host test in this
-// assembly uses, serialising all of them against each other - and because
-// RealTrustedPublishersFixture deletes only the exact files it wrote.
-[Collection("Console output capture")]
+// root itself), and because RealTrustedPublishersFixture deletes only the
+// exact files it wrote. Every test here also builds a dynamically-emitted
+// plugin assembly via DynamicPluginAssemblyBuilder (System.Reflection.Emit's
+// PersistedAssemblyBuilder) - not safe to run concurrently with another
+// such build elsewhere in the process (WP 17.0C found this the hard way: a
+// sibling class that stopped sharing this file's old, coarser collection
+// began failing intermittently under real parallelism). Both hazards are
+// covered by the same fix: every class in this assembly that calls
+// DynamicPluginAssemblyBuilder shares
+// [Collection("Dynamic plugin assembly emission")], serialising all of
+// them against each other; this class no longer has anything to do with
+// Console.Out - every test here observes its own host's log entries
+// through a private RecordingLogSink instead of a process-global redirect.
+[Collection("Dynamic plugin assembly emission")]
 public class PluginPlatformEndToEndTests
 {
     // ------------------------------------------------------------------
@@ -79,25 +88,15 @@ public class PluginPlatformEndToEndTests
         var dependentModuleType = LoadPluginModuleType(dependentAssemblyPath);
 
         var builder = new TempestHostBuilder([dependentModuleType], temp.Path);
-        var host = builder.Build();
+        var sink = new RecordingLogSink();
+        var host = builder.AddLogSink(sink).Build();
 
-        var originalOut = Console.Out;
-        var writer = new StringWriter();
-        Task runTask;
-        try
-        {
-            Console.SetOut(writer);
-            runTask = host.RunAsync();
+        var runTask = host.RunAsync();
 
-            await RunningHostFixture.WaitUntilRunningAsync(host);
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-        }
+        await RunningHostFixture.WaitUntilRunningAsync(host);
 
         Assert.Equal(HostState.Running, host.State);
-        var output = writer.ToString();
+        var output = string.Join(Environment.NewLine, sink.Entries.Select(entry => entry.Message));
 
         // Stage 1: the manifest was discovered (Plugin Discovery's own log line).
         Assert.Contains($"Plugin manifest accepted: '{baseId}'", output, StringComparison.Ordinal);
@@ -219,25 +218,15 @@ public class PluginPlatformEndToEndTests
         [
             new KeyValuePair<string, string>("Plugins:AllowUnsignedLoad", "true"),
         ]));
-        var host = builder.Build();
+        var sink = new RecordingLogSink();
+        var host = builder.AddLogSink(sink).Build();
 
-        var originalOut = Console.Out;
-        var writer = new StringWriter();
-        Task runTask;
-        try
-        {
-            Console.SetOut(writer);
-            runTask = host.RunAsync();
+        var runTask = host.RunAsync();
 
-            await RunningHostFixture.WaitUntilRunningAsync(host);
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-        }
+        await RunningHostFixture.WaitUntilRunningAsync(host);
 
         Assert.Equal(HostState.Running, host.State);
-        var output = writer.ToString();
+        var output = string.Join(Environment.NewLine, sink.Entries.Select(entry => entry.Message));
 
         var indexC = output.IndexOf($"Plugin assembly loaded: '{idC}'", StringComparison.Ordinal);
         var indexB = output.IndexOf($"Plugin assembly loaded: '{idB}'", StringComparison.Ordinal);
@@ -456,25 +445,15 @@ public class PluginPlatformEndToEndTests
 
         var builder = new TempestHostBuilder(
             [typeof(FirstPartyNavigationOwnerFixtureModule), bbbType, cccType, dddType], temp.Path);
-        var host = builder.Build();
+        var sink = new RecordingLogSink();
+        var host = builder.AddLogSink(sink).Build();
 
-        var originalOut = Console.Out;
-        var writer = new StringWriter();
-        Task runTask;
-        try
-        {
-            Console.SetOut(writer);
-            runTask = host.RunAsync();
+        var runTask = host.RunAsync();
 
-            await RunningHostFixture.WaitUntilRunningAsync(host);
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-        }
+        await RunningHostFixture.WaitUntilRunningAsync(host);
 
         Assert.Equal(HostState.Running, host.State);
-        var output = writer.ToString();
+        var output = string.Join(Environment.NewLine, sink.Entries.Select(entry => entry.Message));
 
         var diagnosticsProvider = (IDiagnosticsProvider)host.Services!.GetService(typeof(IDiagnosticsProvider));
 
