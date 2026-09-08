@@ -146,6 +146,18 @@ public sealed class SqlitePersistenceStore
     /// The root could not be created, the lock is already held by another
     /// instance, or the database could not be opened or initialised.
     /// </exception>
+    /// <summary>
+    /// Binds the native SQLite provider once, before any connection is
+    /// opened. Microsoft.Data.Sqlite otherwise binds it lazily on first
+    /// use, and two stores opening on two threads at the same instant — a
+    /// parallel test run is exactly that — have been seen to race that
+    /// first-use initialisation. <c>Batteries_V2.Init</c> is idempotent.
+    /// </summary>
+    static SqlitePersistenceStore()
+    {
+        SQLitePCL.Batteries_V2.Init();
+    }
+
     public SqlitePersistenceStore(IConfigurationProvider configuration, ILogger? logger = null)
     {
         ArgumentNullException.ThrowIfNull(configuration);
