@@ -713,16 +713,13 @@ public sealed class TempestHost : ITempestHost
         // impossible.
         services.Singleton<IAttachmentContentStore, AttachmentContentStore>();
 
-        // WP 16.4B-R2: the durable write-intent marker for an attachment
-        // whose content write has landed but whose state write has not.
-        // Registered here, alongside AttachmentContentStore, and taken as
-        // an optional collaborator by both EngineeringDomainContext (which
-        // marks/clears it around AttachContentAsync's two writes) and
-        // AttachmentContentReconciliationService (whose sweep skips
-        // whatever it still marks) - the production Host always composes
-        // the two together, closing the race a content-key-vs-object-state
-        // comparison alone cannot.
-        services.Singleton<IAttachmentWriteIntentStore, AttachmentWriteIntentStore>();
+        // ADR-0145: there is no write-intent marker here any more. The
+        // marker, its interface and the reconciliation sweep that read it
+        // existed because an attachment's bytes and the object state
+        // naming them were two writes with a window between them. They are
+        // now one write in one transaction, so the state the sweep
+        // repaired is unreachable and the sweep is deleted rather than
+        // left registered against a failure that cannot occur.
 
         // TD-85: the Kind-to-type map startup rehydration resolves through.
         // Empty until each Kind's own declaring class registers it -
@@ -1060,7 +1057,6 @@ public sealed class TempestHost : ITempestHost
         // scoped out of.
         services.Singleton<IRequirementsReconciliationService, RequirementsReconciliationService>();
         services.Singleton<IMaterialCatalogReconciliationService, MaterialCatalogReconciliationService>();
-        services.Singleton<IAttachmentContentReconciliationService, AttachmentContentReconciliationService>();
 
         // Composition Root pattern (ADR-0009), like Configuration/Logging/
         // PlatformVersionProvider above: DiagnosticsProvider needs references
