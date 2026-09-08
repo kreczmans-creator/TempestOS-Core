@@ -70,7 +70,7 @@ namespace Tempest.Workspace;
 /// are real; Materials is not wired to the Workspace at all).
 /// </para>
 /// </remarks>
-internal sealed class EngineeringCockpit
+public sealed class EngineeringCockpit
 {
     private readonly NavigationService _navigationService;
     private readonly ICommandRegistry _commandRegistry;
@@ -88,8 +88,16 @@ internal sealed class EngineeringCockpit
     /// <summary>The per-refresh read scope every persistence-backed discipline read-model above shares (`WP-E`).</summary>
     private readonly CockpitReadScope _readScope = new();
 
-    /// <summary>Initialises a new instance of the <see cref="EngineeringCockpit"/> class.</summary>
-    public EngineeringCockpit(
+    /// <summary>
+    /// Initialises a new instance of the <see cref="EngineeringCockpit"/>
+    /// class — internal: only <see cref="WorkspaceManager.StartAsync"/>
+    /// ever constructs one, and its <see cref="NavigationService"/>
+    /// parameter is itself internal (not one of the twelve `WP8.0B
+    /// Workspace Contracts.md` interfaces), so the class is public (`WP
+    /// 17.2B` — reached through <see cref="IWorkspace.Cockpit"/>) while
+    /// this constructor stays same-assembly-only.
+    /// </summary>
+    internal EngineeringCockpit(
         NavigationService navigationService, ICommandRegistry commandRegistry, EngineeringDomainContext domainContext,
         IRequirementsService requirementsService, IRequirementValidationService requirementValidationService,
         Func<DateTimeOffset>? now = null)

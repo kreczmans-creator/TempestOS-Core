@@ -75,8 +75,15 @@ public sealed class WorkspaceManager : IWorkspaceManager, IAsyncDisposable
     /// <inheritdoc />
     public IWorkspace? Current { get; private set; }
 
-    /// <summary>Gets the Status Bar's own current text — internal, since no public contract among the twelve `WP8.0B Workspace Contracts.md` names one; consumed directly by a same-assembly presentation layer such as <see cref="WorkspaceShell"/>.</summary>
-    internal WorkspaceStatusBar StatusBar => _statusBar;
+    /// <summary>
+    /// Gets the Status Bar's own current text — public, since no contract
+    /// among the twelve `WP8.0B Workspace Contracts.md` names one and
+    /// `WP 17.2B` split the harness and desktop presentation layers into
+    /// separate assemblies, each consuming this directly (<c>Tempest.Harness</c>'s
+    /// own <c>WorkspaceShell</c>, <c>Tempest.Desktop</c>'s own Status Bar
+    /// segment) with no reference to one another.
+    /// </summary>
+    public WorkspaceStatusBar StatusBar => _statusBar;
 
     /// <inheritdoc />
     /// <exception cref="InvalidOperationException">This instance has already been started.</exception>

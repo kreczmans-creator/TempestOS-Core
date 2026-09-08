@@ -52,7 +52,7 @@ public sealed class WorkspaceHost : IAsyncDisposable
     /// <summary>Gets the running <see cref="IWorkspace"/>, or <see langword="null"/> before <see cref="StartAsync"/> completes.</summary>
     public IWorkspace? Workspace { get; private set; }
 
-    /// <summary>Gets the owning <see cref="WorkspaceManager"/> — exposed so a graphical presentation layer can reach <see cref="WorkspaceManager.StatusBar"/> (internal, `InternalsVisibleTo`), the one Workspace facet with no dedicated public contract (`WP8.0A UI Architecture.md` §1).</summary>
+    /// <summary>Gets the owning <see cref="WorkspaceManager"/> — exposed so a graphical presentation layer can reach the public <see cref="WorkspaceManager.StatusBar"/> (`WP 17.2B`), the one Workspace facet with no dedicated `WP8.0A UI Architecture.md` §1 contract.</summary>
     public WorkspaceManager? Manager => _manager;
 
     /// <summary>Gets the running Host's own DI container — <see langword="null"/> before <see cref="StartAsync"/> completes.</summary>

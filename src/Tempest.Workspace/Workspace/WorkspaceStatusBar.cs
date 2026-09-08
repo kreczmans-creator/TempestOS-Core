@@ -9,9 +9,13 @@ namespace Tempest.Workspace;
 /// none of the twelve required it. Reacts to
 /// <see cref="WorkspaceSelectionChangedEvent"/> exactly as
 /// <see cref="PropertyInspector"/> does — the identical "who reacts to
-/// what" wiring, applied a second time.
+/// what" wiring, applied a second time. Public, not
+/// same-assembly-only-via-<c>InternalsVisibleTo</c>, since `WP 17.2B`:
+/// both <see cref="Tempest.Harness"/>'s own <c>WorkspaceShell</c> and
+/// <c>Tempest.Desktop</c>'s own Status Bar segment need it, and they are
+/// now two separate assemblies with no reference to each other.
 /// </summary>
-internal sealed class WorkspaceStatusBar : IEventHandler<WorkspaceSelectionChangedEvent>
+public sealed class WorkspaceStatusBar : IEventHandler<WorkspaceSelectionChangedEvent>
 {
     /// <summary>Gets the Status Bar's own current text.</summary>
     public string StatusText { get; private set; } = "Ready.";

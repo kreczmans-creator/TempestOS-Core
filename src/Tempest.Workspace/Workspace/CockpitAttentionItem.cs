@@ -9,4 +9,4 @@ namespace Tempest.Workspace;
 /// </summary>
 /// <param name="Title">A short, one-line summary of what needs attention.</param>
 /// <param name="Detail">A longer, one-sentence description.</param>
-internal sealed record CockpitAttentionItem(string Title, string Detail);
+public sealed record CockpitAttentionItem(string Title, string Detail);

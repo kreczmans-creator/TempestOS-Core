@@ -28,6 +28,18 @@ public interface IWorkspace
     /// <summary>Gets the Property Inspector panel.</summary>
     IPropertyInspector PropertyInspector { get; }
 
+    /// <summary>
+    /// Gets the Engineering Cockpit — the Workspace's own default landing
+    /// screen (`ADR-0069`). Not one of the twelve `WP8.0B Workspace
+    /// Contracts.md` interfaces; promoted onto <see cref="IWorkspace"/>
+    /// itself, rather than reached through a same-assembly-only cast to the
+    /// concrete <see cref="Workspace"/> class, by `WP 17.2B` — the cast
+    /// depended on <c>InternalsVisibleTo("Tempest.Desktop")</c>, which that
+    /// Work Package removes so Desktop and any future presentation layer
+    /// reach the Workspace only through its public contracts.
+    /// </summary>
+    EngineeringCockpit Cockpit { get; }
+
     /// <summary>Gets every view currently open in the Document Area, in tab order.</summary>
     IReadOnlyList<IWorkspaceView> OpenViews { get; }
 

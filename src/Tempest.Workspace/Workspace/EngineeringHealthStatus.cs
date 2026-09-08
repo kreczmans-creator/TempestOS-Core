@@ -8,7 +8,7 @@ namespace Tempest.Workspace;
 /// Contracts.md` interfaces — a genuine, disclosed implementation-phase
 /// addition, first used by <see cref="EngineeringCockpit"/>.
 /// </summary>
-internal enum EngineeringHealthStatus
+public enum EngineeringHealthStatus
 {
     /// <summary>No signal exists yet to derive a status from.</summary>
     Unknown,

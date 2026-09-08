@@ -13,4 +13,4 @@ namespace Tempest.Workspace;
 /// <param name="Kind">The object's own <c>Kind</c>.</param>
 /// <param name="Title">The object's own display title, captured at the time it was opened.</param>
 /// <param name="OpenedAt">When this object was most recently opened or jumped to.</param>
-internal sealed record RecentNavigationItem(Guid ObjectId, string Kind, string Title, DateTimeOffset OpenedAt);
+public sealed record RecentNavigationItem(Guid ObjectId, string Kind, string Title, DateTimeOffset OpenedAt);

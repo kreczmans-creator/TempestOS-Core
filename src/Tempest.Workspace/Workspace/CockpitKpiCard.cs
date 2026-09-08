@@ -25,4 +25,4 @@ namespace Tempest.Workspace;
 /// <c>FormatCoverage</c> display string — never a second, independent
 /// computation that could drift from the text it accompanies.
 /// </param>
-internal sealed record CockpitKpiCard(string Label, string Value, bool IsPlaceholder, int? PercentValue = null);
+public sealed record CockpitKpiCard(string Label, string Value, bool IsPlaceholder, int? PercentValue = null);

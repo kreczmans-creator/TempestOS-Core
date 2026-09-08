@@ -26,7 +26,7 @@ namespace Tempest.Workspace;
 /// <param name="Owner">Who it is assigned to, or a plain statement that nobody is.</param>
 /// <param name="DueDate">When it was due — <see langword="null"/> for an entry that is not a dated task.</param>
 /// <param name="DaysOverdue">How many whole days past due it is.</param>
-internal sealed record CockpitActionItem(string Title, string Owner, DateTimeOffset? DueDate = null, int DaysOverdue = 0)
+public sealed record CockpitActionItem(string Title, string Owner, DateTimeOffset? DueDate = null, int DaysOverdue = 0)
 {
     /// <summary>What the card shows when a task has no assignee.</summary>
     /// <remarks>

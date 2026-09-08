@@ -23,7 +23,7 @@ public sealed class CockpitEngineeringOverviewCardTests
         {
             await host.StartAsync();
             var workspace = host.Workspace!;
-            var cockpit = ((Tempest.Workspace.Workspace)workspace).Cockpit;
+            var cockpit = workspace.Cockpit;
 
             var view = new CockpitView(
                 cockpit,

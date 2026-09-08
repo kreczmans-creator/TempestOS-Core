@@ -308,12 +308,13 @@ public sealed class MainWindow : Window
 
         // The Engineering Cockpit (WP 10.1A, ADR-0069) — the Workspace's
         // own default landing screen, realised here as the Document Area's
-        // own permanent Home tab. Workspace (the concrete class) is
-        // internal, reached via InternalsVisibleTo("Tempest.Desktop")
-        // (granted `WP 10.0B`) — the identical, precedented pattern
-        // WorkspaceShell itself already uses internally to reach its own
-        // concrete Workspace instance.
-        var cockpit = ((Tempest.Workspace.Workspace)workspace).Cockpit;
+        // own permanent Home tab. Reached through IWorkspace.Cockpit
+        // directly (`WP 17.2B`) — no cast to the concrete internal
+        // Workspace class and no InternalsVisibleTo grant needed; Desktop
+        // and Tempest.Harness are now two separate assemblies with no
+        // reference to one another, each reaching the Workspace only
+        // through its public contracts.
+        var cockpit = workspace.Cockpit;
         _cockpitView = new CockpitView(
             cockpit,
             workspace.Navigation.Areas,

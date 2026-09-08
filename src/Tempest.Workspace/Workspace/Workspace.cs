@@ -70,13 +70,8 @@ internal sealed class Workspace : IWorkspace
     /// </summary>
     internal NavigationService NavigationServiceConcrete => _navigationService;
 
-    /// <summary>
-    /// Gets the Engineering Cockpit — the Workspace's own default landing
-    /// screen (`ADR-0069`). Not one of the twelve `WP8.0B Workspace
-    /// Contracts.md` interfaces, mirroring <see cref="ProjectExplorerConcrete"/>'s
-    /// own identical precedent.
-    /// </summary>
-    internal EngineeringCockpit Cockpit { get; }
+    /// <inheritdoc />
+    public EngineeringCockpit Cockpit { get; }
 
     /// <inheritdoc />
     public IPropertyInspector PropertyInspector { get; }
