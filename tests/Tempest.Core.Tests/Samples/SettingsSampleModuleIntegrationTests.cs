@@ -11,6 +11,7 @@ using Tempest.Core.Settings;
 using Tempest.Core.Tests.Plugins;
 using Tempest.Samples;
 
+using Tempest.Core.Tests.Runtime;
 namespace Tempest.Core.Tests.Samples;
 
 // Proves WP 6.4 end-to-end: SettingsSampleModule constructor-injects the
@@ -224,8 +225,7 @@ public class SettingsSampleModuleIntegrationTests
 
             var runTask = host.RunAsync();
 
-            while (host.State is HostState.Created or HostState.Starting)
-                await Task.Delay(5);
+            await RunningHostFixture.WaitUntilRunningAsync(host);
 
             Assert.Equal(HostState.Running, host.State);
 

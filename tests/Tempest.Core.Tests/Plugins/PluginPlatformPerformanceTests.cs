@@ -10,6 +10,7 @@ using Tempest.Core.Runtime;
 using Tempest.Core.Versioning;
 using Xunit.Abstractions;
 
+using Tempest.Core.Tests.Runtime;
 namespace Tempest.Core.Tests.Plugins;
 
 // WP 13.3A (Performance & Scalability sub-agent): stress/scale tests for the
@@ -560,8 +561,7 @@ public class PluginPlatformPerformanceTests
         var stopwatch = Stopwatch.StartNew();
         var runTask = host.RunAsync();
 
-        while (host.State is HostState.Created or HostState.Starting)
-            await Task.Delay(5);
+        await RunningHostFixture.WaitUntilRunningAsync(host);
 
         stopwatch.Stop();
 

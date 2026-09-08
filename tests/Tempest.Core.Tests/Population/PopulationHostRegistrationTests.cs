@@ -8,6 +8,7 @@ using Tempest.Core.Runtime;
 using Tempest.Core.Standards;
 using Tempest.Core.Tests.Plugins;
 
+using Tempest.Core.Tests.Runtime;
 namespace Tempest.Core.Tests.Population;
 
 // The minimal integration seam the population phase owes the next one: not
@@ -34,8 +35,7 @@ public class PopulationHostRegistrationTests
 
             var runTask = host.RunAsync();
 
-            while (host.State is HostState.Created or HostState.Starting)
-                await Task.Delay(5);
+            await RunningHostFixture.WaitUntilRunningAsync(host);
 
             await body(host);
 

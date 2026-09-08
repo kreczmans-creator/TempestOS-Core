@@ -89,8 +89,7 @@ public class PluginPlatformEndToEndTests
             Console.SetOut(writer);
             runTask = host.RunAsync();
 
-            while (host.State is HostState.Created or HostState.Starting)
-                await Task.Delay(5);
+            await RunningHostFixture.WaitUntilRunningAsync(host);
         }
         finally
         {
@@ -230,8 +229,7 @@ public class PluginPlatformEndToEndTests
             Console.SetOut(writer);
             runTask = host.RunAsync();
 
-            while (host.State is HostState.Created or HostState.Starting)
-                await Task.Delay(5);
+            await RunningHostFixture.WaitUntilRunningAsync(host);
         }
         finally
         {
@@ -335,8 +333,7 @@ public class PluginPlatformEndToEndTests
         var host = builder.Build();
 
         var runTask = host.RunAsync();
-        while (host.State is HostState.Created or HostState.Starting)
-            await Task.Delay(5);
+        await RunningHostFixture.WaitUntilRunningAsync(host);
 
         Assert.Equal(HostState.Running, host.State);
 
@@ -469,8 +466,7 @@ public class PluginPlatformEndToEndTests
             Console.SetOut(writer);
             runTask = host.RunAsync();
 
-            while (host.State is HostState.Created or HostState.Starting)
-                await Task.Delay(5);
+            await RunningHostFixture.WaitUntilRunningAsync(host);
         }
         finally
         {
@@ -553,8 +549,7 @@ public class PluginPlatformEndToEndTests
         var host = builder.Build();
 
         var runTask = host.RunAsync();
-        while (host.State is HostState.Created or HostState.Starting)
-            await Task.Delay(5);
+        await RunningHostFixture.WaitUntilRunningAsync(host);
 
         Assert.Equal(HostState.Running, host.State);
 
@@ -613,8 +608,7 @@ public class PluginPlatformEndToEndTests
         var host = builder.Build();
 
         var runTask = host.RunAsync();
-        while (host.State is HostState.Created or HostState.Starting)
-            await Task.Delay(5);
+        await RunningHostFixture.WaitUntilRunningAsync(host);
 
         // The Host itself is unaffected - one plugin's own module-level
         // activation failure is isolated, never Host-fatal.
@@ -681,8 +675,7 @@ public class PluginPlatformEndToEndTests
         var host = builder.Build();
 
         var runTask = host.RunAsync();
-        while (host.State is HostState.Created or HostState.Starting)
-            await Task.Delay(5);
+        await RunningHostFixture.WaitUntilRunningAsync(host);
 
         Assert.Equal(HostState.Running, host.State);
 

@@ -6,6 +6,7 @@ using Tempest.Core.Notifications;
 using Tempest.Core.Runtime;
 using Tempest.Samples;
 
+using Tempest.Core.Tests.Runtime;
 namespace Tempest.Core.Tests.Samples;
 
 // Proves WP 6.2 end-to-end: NotificationSampleModule constructor-injects
@@ -160,8 +161,7 @@ public class NotificationSampleModuleIntegrationTests
 
             var runTask = host.RunAsync();
 
-            while (host.State is HostState.Created or HostState.Starting)
-                await Task.Delay(5);
+            await RunningHostFixture.WaitUntilRunningAsync(host);
 
             Assert.Equal(HostState.Running, host.State);
 
@@ -192,8 +192,7 @@ public class NotificationSampleModuleIntegrationTests
 
             var runTask = host.RunAsync();
 
-            while (host.State is HostState.Created or HostState.Starting)
-                await Task.Delay(5);
+            await RunningHostFixture.WaitUntilRunningAsync(host);
 
             var registry = (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
 

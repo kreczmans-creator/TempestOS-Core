@@ -13,6 +13,7 @@ using Tempest.Core.Tests.Plugins;
 using Tempest.Core.Verification;
 using Tempest.Samples;
 
+using Tempest.Core.Tests.Runtime;
 namespace Tempest.Core.Tests.Samples;
 
 // Proves WP 7.1E end-to-end: VerificationSampleModule constructor-injects
@@ -207,8 +208,7 @@ public class VerificationSampleModuleIntegrationTests
 
             var runTask = host.RunAsync();
 
-            while (host.State is HostState.Created or HostState.Starting)
-                await Task.Delay(5);
+            await RunningHostFixture.WaitUntilRunningAsync(host);
 
             Assert.Equal(HostState.Running, host.State);
 

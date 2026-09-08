@@ -1,4 +1,5 @@
 using Tempest.Core.Configuration;
+using Tempest.Core.Logging;
 
 namespace Tempest.Core.Runtime;
 
@@ -44,6 +45,25 @@ public interface ITempestHostBuilder
     /// startup is unaffected.
     /// </remarks>
     ITempestHostBuilder EnableFaultInjectionModules();
+
+    /// <summary>
+    /// Adds an extra <see cref="ILogSink"/> the resulting host's Logging
+    /// Built phase writes every <see cref="Logging.LogEntry"/> to, alongside
+    /// its own <see cref="ConsoleLogSink"/> — never in place of it.
+    /// </summary>
+    /// <param name="sink">The additional sink to add.</param>
+    /// <returns>This builder, to allow chaining.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="sink"/> is <see langword="null"/>.</exception>
+    /// <exception cref="InvalidOperationException">This builder has already built a host.</exception>
+    /// <remarks>
+    /// WP 17.0C test seam (<c>TD-34</c>): the smallest addition that lets a
+    /// caller observe every log entry a real, running host produces without
+    /// redirecting <see cref="Console.Out"/> — composed underneath, via
+    /// <see cref="CompositeLogSink"/>, exactly as a production caller wiring
+    /// in a second sink (file, telemetry) would. Calling this more than once
+    /// adds each sink supplied, in order.
+    /// </remarks>
+    ITempestHostBuilder AddLogSink(ILogSink sink);
 
     /// <summary>
     /// Builds a <see cref="ITempestHost"/> from the inputs collected so far.

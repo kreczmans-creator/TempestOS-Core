@@ -1017,8 +1017,7 @@ public class PluginPlatformFaultInjectionTests
         var runTask = host.RunAsync();
         _runTasksByHost.AddOrUpdate(host, runTask);
 
-        while (host.State is HostState.Created or HostState.Starting)
-            await Task.Delay(5);
+        await RunningHostFixture.WaitUntilRunningAsync(host);
 
         Assert.Equal(HostState.Running, host.State);
     }

@@ -5,6 +5,7 @@ using Tempest.Core.Runtime;
 using Tempest.Samples;
 using Tempest.Validation.FaultInjection;
 
+using Tempest.Core.Tests.Runtime;
 namespace Tempest.Core.Tests.Modules;
 
 // Proves WP 12.3B end-to-end (ADR-0102): the real DuplicateNavigationModule
@@ -84,8 +85,7 @@ public class FaultInjectionModuleDiscoveryTests
 
             var runTask = host.RunAsync();
 
-            while (host.State is HostState.Created or HostState.Starting)
-                await Task.Delay(5);
+            await RunningHostFixture.WaitUntilRunningAsync(host);
 
             Assert.Equal(HostState.Running, host.State);
 

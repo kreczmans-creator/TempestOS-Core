@@ -3,6 +3,7 @@ using Tempest.Core.Modules;
 using Tempest.Core.Runtime;
 using Tempest.Samples;
 
+using Tempest.Core.Tests.Runtime;
 namespace Tempest.Core.Tests.Modules;
 
 // Proves ADR-0027 end-to-end: a discovered module with a genuinely
@@ -85,8 +86,7 @@ public class ModuleMetadataAttributePipelineTests
 
             var runTask = host.RunAsync();
 
-            while (host.State is HostState.Created or HostState.Starting)
-                await Task.Delay(5);
+            await RunningHostFixture.WaitUntilRunningAsync(host);
 
             Assert.Equal(HostState.Running, host.State);
 
@@ -114,8 +114,7 @@ public class ModuleMetadataAttributePipelineTests
 
         var runTask = host.RunAsync();
 
-        while (host.State is HostState.Created or HostState.Starting)
-            await Task.Delay(5);
+        await RunningHostFixture.WaitUntilRunningAsync(host);
 
         Assert.Equal(HostState.Running, host.State);
 

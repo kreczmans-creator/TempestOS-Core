@@ -6,6 +6,7 @@ using Tempest.Core.Runtime;
 using Tempest.Core.Tests.Events;
 using Tempest.Samples;
 
+using Tempest.Core.Tests.Runtime;
 namespace Tempest.Core.Tests.Samples;
 
 // Proves WP 4.4E end-to-end: ClockModule constructor-injects the real,
@@ -204,8 +205,7 @@ public class ClockModuleEventIntegrationTests
 
             var runTask = host.RunAsync();
 
-            while (host.State is HostState.Created or HostState.Starting)
-                await Task.Delay(5);
+            await RunningHostFixture.WaitUntilRunningAsync(host);
 
             Assert.Equal(HostState.Running, host.State);
 
@@ -266,8 +266,7 @@ public class ClockModuleEventIntegrationTests
 
             var runTask = host.RunAsync();
 
-            while (host.State is HostState.Created or HostState.Starting)
-                await Task.Delay(5);
+            await RunningHostFixture.WaitUntilRunningAsync(host);
 
             Assert.Equal(HostState.Running, host.State);
 

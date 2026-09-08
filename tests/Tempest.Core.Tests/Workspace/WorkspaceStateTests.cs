@@ -5,6 +5,7 @@ using Tempest.Core.Runtime;
 using Tempest.Core.Settings;
 using Tempest.Core.Tests.Plugins;
 
+using Tempest.Core.Tests.Runtime;
 namespace Tempest.Core.Tests.Workspace;
 
 // Proves IWorkspaceState (Tempest.App.Workspace) persists via the real,
@@ -28,8 +29,7 @@ public class WorkspaceStateTests
     private static async Task<T> RunAgainstRunningHostAsync<T>(ITempestHost host, Func<ITempestHost, Task<T>> body)
     {
         var runTask = host.RunAsync();
-        while (host.State is HostState.Created or HostState.Starting)
-            await Task.Delay(5);
+        await RunningHostFixture.WaitUntilRunningAsync(host);
 
         var originalOut = Console.Out;
         T result;

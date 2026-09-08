@@ -12,6 +12,7 @@ using Tempest.Core.Standards;
 using Tempest.Core.Tests.Plugins;
 using Tempest.Core.UnitsAndQuantities;
 
+using Tempest.Core.Tests.Runtime;
 namespace Tempest.Core.Tests.Integration;
 
 // Persistence, revision reproduction and traceability, exercised through
@@ -39,8 +40,7 @@ public class PersistenceAndTraceabilityTests
 
             var runTask = host.RunAsync();
 
-            while (host.State is HostState.Created or HostState.Starting)
-                await Task.Delay(5);
+            await RunningHostFixture.WaitUntilRunningAsync(host);
 
             await body(host);
 

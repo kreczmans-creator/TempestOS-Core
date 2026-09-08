@@ -52,8 +52,7 @@ public class TempestHostHostedServiceTests
         {
             var runTask = host.RunAsync();
 
-            while (host.State is HostState.Created or HostState.Starting)
-                await Task.Delay(5);
+            await RunningHostFixture.WaitUntilRunningAsync(host);
 
             Assert.Equal(HostState.Running, host.State);
 
@@ -122,8 +121,7 @@ public class TempestHostHostedServiceTests
         {
             var runTask = host.RunAsync();
 
-            while (host.State is HostState.Created or HostState.Starting)
-                await Task.Delay(5);
+            await RunningHostFixture.WaitUntilRunningAsync(host);
 
             Assert.Equal(HostState.Running, host.State);
 
@@ -150,8 +148,7 @@ public class TempestHostHostedServiceTests
         {
             var runTask = host.RunAsync();
 
-            while (host.State is HostState.Created or HostState.Starting)
-                await Task.Delay(5);
+            await RunningHostFixture.WaitUntilRunningAsync(host);
 
             Assert.Equal(HostState.Running, host.State);
 
@@ -194,8 +191,7 @@ public class TempestHostHostedServiceTests
 
         var runTask = host.RunAsync();
 
-        while (host.State is HostState.Created or HostState.Starting)
-            await Task.Delay(5);
+        await RunningHostFixture.WaitUntilRunningAsync(host);
 
         Assert.Equal(HostState.Running, host.State);
 
@@ -222,8 +218,7 @@ public class TempestHostHostedServiceTests
             {
                 var runTask = host.RunAsync();
 
-                while (host.State is HostState.Created or HostState.Starting)
-                    await Task.Delay(5);
+                await RunningHostFixture.WaitUntilRunningAsync(host);
 
                 Assert.Equal(HostState.Running, host.State);
 
@@ -244,8 +239,7 @@ public class TempestHostHostedServiceTests
 
         var runTask = host.RunAsync();
 
-        while (host.State is HostState.Created or HostState.Starting)
-            await Task.Delay(5);
+        await RunningHostFixture.WaitUntilRunningAsync(host);
 
         Assert.Equal(HostState.Running, host.State);
 

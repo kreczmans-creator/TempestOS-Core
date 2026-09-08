@@ -16,6 +16,7 @@ using Tempest.Core.Settings;
 using Tempest.Core.Tests.Plugins;
 using Tempest.Samples;
 
+using Tempest.Core.Tests.Runtime;
 namespace Tempest.Core.Tests.Samples;
 
 // Proves WP 6.6 end-to-end: LicensingSampleModule constructor-injects the
@@ -312,8 +313,7 @@ public class LicensingSampleModuleIntegrationTests
 
         _ = host.RunAsync();
 
-        while (host.State is HostState.Created or HostState.Starting)
-            await Task.Delay(5);
+        await RunningHostFixture.WaitUntilRunningAsync(host);
 
         var hostedService = (RestApiHostedService)host.Services!.GetService(typeof(RestApiHostedService));
 
