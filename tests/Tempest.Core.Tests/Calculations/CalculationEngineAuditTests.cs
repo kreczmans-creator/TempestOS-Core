@@ -27,7 +27,7 @@ public class CalculationEngineAuditTests
     {
         const string identityId = "engineer.ada";
 
-        var persistenceStore = new Tempest.Core.Tests.Audit.InMemoryPersistenceStore();
+        var persistenceStore = new Tempest.Core.Tests.Persistence.InMemoryQueryablePersistenceStore();
         var accessor = new CurrentPrincipalAccessor();
         var permissionEvaluator = new PermissionEvaluator();
 
@@ -55,7 +55,7 @@ public class CalculationEngineAuditTests
     [Fact]
     public async Task ExecuteAsync_WithNoAuditRecorderSupplied_BehavesExactlyAsBefore_AndWritesNoRow()
     {
-        var persistenceStore = new Tempest.Core.Tests.Audit.InMemoryPersistenceStore();
+        var persistenceStore = new Tempest.Core.Tests.Persistence.InMemoryQueryablePersistenceStore();
         var accessor = new CurrentPrincipalAccessor();
 
         var documentStore = new EngineeringDocumentStore(persistenceStore, accessor);

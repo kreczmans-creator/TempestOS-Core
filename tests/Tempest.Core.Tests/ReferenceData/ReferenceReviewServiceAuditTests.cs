@@ -72,8 +72,9 @@ public class ReferenceReviewServiceAuditTests
             // query resolve — the same "compose over already-resolved
             // Platform Services" shape WorkspaceHost itself uses.
             var persistenceStore = (IPersistenceStore)host.Services!.GetService(typeof(IPersistenceStore))!;
+            var queryableStore = (IQueryablePersistenceStore)host.Services!.GetService(typeof(IQueryablePersistenceStore))!;
             var auditRecorder = new AuditRecorder(persistenceStore, principals);
-            var auditQuery = new AuditQuery(persistenceStore, principals, new PermissionEvaluator());
+            var auditQuery = new AuditQuery(queryableStore, principals, new PermissionEvaluator());
             var review = new ReferenceReviewService(principals, auditRecorder: auditRecorder);
 
             var verified = await review.VerifyAsync(
@@ -111,8 +112,9 @@ public class ReferenceReviewServiceAuditTests
             // query resolve — the same "compose over already-resolved
             // Platform Services" shape WorkspaceHost itself uses.
             var persistenceStore = (IPersistenceStore)host.Services!.GetService(typeof(IPersistenceStore))!;
+            var queryableStore = (IQueryablePersistenceStore)host.Services!.GetService(typeof(IQueryablePersistenceStore))!;
             var auditRecorder = new AuditRecorder(persistenceStore, principals);
-            var auditQuery = new AuditQuery(persistenceStore, principals, new PermissionEvaluator());
+            var auditQuery = new AuditQuery(queryableStore, principals, new PermissionEvaluator());
             var review = new ReferenceReviewService(principals, auditRecorder: auditRecorder);
 
             await review.VerifyAsync(
