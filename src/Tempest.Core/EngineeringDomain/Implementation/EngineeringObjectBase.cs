@@ -738,8 +738,11 @@ public abstract partial class EngineeringObjectBase :
     /// </remarks>
     public async Task DeleteAsync(CancellationToken cancellationToken = default)
     {
-        List<Guid> attachmentIds;
-        lock (_attachments) { attachmentIds = _attachments.Select(a => a.Id).ToList(); }
+        // Read inside the projection, not before it: an attach that
+        // committed between here and the write lock would otherwise leave
+        // its payload behind, referenced by nothing, when this delete
+        // released only the attachments this instance knew about earlier.
+        List<Guid> attachmentIds = [];
 
         await MutateAndPersistAsync(
             current =>
@@ -753,17 +756,18 @@ public abstract partial class EngineeringObjectBase :
                 if (liveChildren > 0)
                     throw new EngineeringObjectHasChildrenException(Id, liveChildren);
 
+                attachmentIds = current.Attachments.Select(a => a.Id).ToList();
+
                 return current with { IsDeleted = true };
             },
             EngineeringAuditActions.Deleted,
-            attachmentIds.Count == 0 ? "Deleted." : $"Deleted, with {attachmentIds.Count} attachment payload(s).",
+            "Deleted, with any attachment payloads it held.",
             cancellationToken,
             alsoWrite: async (transaction, _, token) =>
             {
                 foreach (var attachmentId in attachmentIds)
                     await _context.AttachmentWriter.DeleteAsync(transaction, attachmentId, token).ConfigureAwait(false);
             }).ConfigureAwait(false);
-
     }
 
     /// <inheritdoc />
