@@ -4,6 +4,8 @@
 
 Accepted — `WP — Production Rehydration & Principal Boundary`, 2026-08-29. Builds on `ADR-0113` (`TD-85`, the single persistence/rehydration boundary), `ADR-0105` (vocabulary ownership) and `ADR-0043` (the local-only identity model). Resolves `TD-103` and `TD-104`; partially resolves `TD-75`.
 
+**Superseded in part by `ADR-0145`** (`WP 17.1B`, 2026-09-08): this ADR's write ordering — the instance mutated first and the durable write second, with a compensating undo when the write failed — is replaced by project, commit, apply, in which memory is touched only after the transaction commits. Everything this ADR decides about production ownership of rehydration and about the session principal coming from one boundary stands unchanged.
+
 ## Context
 
 Two defects, unrelated in subject and identical in shape: **the product worked because the sample harness happened to ship.**

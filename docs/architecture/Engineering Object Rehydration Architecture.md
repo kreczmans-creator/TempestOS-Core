@@ -31,6 +31,16 @@ ones. The document owns what a document owns; the state record owns what a
 document was never designed to carry. Everything in memory is derived from
 them.
 
+**Since `ADR-0145`, "split by concern" no longer means "written
+separately".** The two stores were, until `WP 17.1B`, two writers with no
+transaction between them, and the in-memory relationship repository was a
+third: a change that touched a document record and a state record was two
+durable writes, and a failure between them left them disagreeing. Both now
+write through the same `IPersistenceTransaction`, opened once per logical
+change by `EngineeringDomainContext.ExecuteWriteAsync` under one
+domain-wide write lock. The concern split survives as a *reading* split —
+which store answers which question — and the writing split is gone.
+
 ### The substrate, since `ADR-0144`
 
 `IPersistenceStore` is one SQLite database, `tempest.db`, under the
@@ -45,9 +55,11 @@ they matter to this document:
 - **Rehydration no longer scans a directory.** `EngineeringObjectStateStore`
   reading every state record was one `readdir` plus one file open per
   object; the same read is now one indexed query
-  (`IQueryablePersistenceStore.ReadAllAsync`). Moving the store onto that
-  call is `WP 17.1B`'s work, not this document's claim yet — but the cost
-  that made startup rehydration a scan is gone from the substrate.
+  (`IQueryablePersistenceStore.ReadAllAsync`), which `WP 17.1B` moved it
+  onto. `EngineeringObjectRehydrationService` reads every state record in
+  that single call. It stays **eager**: a lazy, per-kind warm-up is
+  deferred, because a cache that can be populated by two paths is a second
+  consistency problem and `ADR-0145` exists to remove one.
 - **Keys are exact.** A collection or key is stored verbatim and
   case-sensitively; it is no longer a file name, so it needs no encoding
   and can be any Unicode string of any length.
@@ -57,10 +69,18 @@ they matter to this document:
   its Service Disposal phase.
 
 The substrate now also has a **multi-key transaction**
-(`ExecuteInTransactionAsync`). This document's "What is not attempted
-here" section below still holds for `v0.17.0` — state is written per
-mutation, per object — but the reason has changed from "the store cannot"
-to "nothing has moved onto it yet", and `WP 17.1B` is where it moves.
+(`ExecuteInTransactionAsync`), and since `WP 17.1B` the engineering domain
+is built on it. State is still written per mutation, per object — one
+transaction per logical change — but every record that change touches now
+lands in that one transaction rather than in a sequence of independent
+writes.
+
+**The engineering domain therefore requires the SQLite backend.** The
+file-per-key store implements `ExecuteInTransactionAsync` as a bare
+sequence of writes, having no mechanism capable of being atomic, and its
+own implementation says so at the method. Running the engineering domain
+on `Persistence:Backend=files` gives up everything `ADR-0145` guarantees;
+`ADR-0144` retires that backend in `v0.18.0`.
 
 ## What is persisted, and when
 
@@ -203,11 +223,22 @@ it cannot be forgotten by one path and honoured by another.
 
 ## Relationships
 
-Relationship *edges* were always durable — `EngineeringObjectBase.LinkAsync`
-dual-writes to `IEngineeringDocumentStore.LinkAsync` (durable) and the
-in-memory index. Only the index was lost. Rehydration rebuilds it from
-`GetReferencesAsync`, deriving `Category` through
+Relationship *edges* were always durable. Rehydration rebuilds the
+in-memory index from `GetReferencesAsync`, deriving `Category` through
 `RelationshipKindCategoryMap.InferCategory`.
+
+**`ADR-0145` changed how that edge is written.** `LinkAsync` used to
+dual-write: the durable reference record through
+`IEngineeringDocumentStore.LinkAsync`, and the in-memory index separately,
+with nothing spanning the two. A failure between them left the index and
+the store disagreeing, and a `MoveAsync` whose state write failed after
+its link write left the `groupedUnder` edge behind for ever, because
+nothing in this platform removes a relationship (`TD-143`). The reference
+record, the object state that depends on it and the audit row are now one
+transaction; **the in-memory index is updated only after that transaction
+commits**, so it is a cache of committed state and never a co-equal
+writer. A failed link leaves neither an edge nor an index entry, and
+there is nothing to reconcile.
 
 `DocumentReference` gained optional `CreatedByPrincipalId`/`CreatedAt` so
 attribution survives too: without them, a rebuilt relationship would have
