@@ -82,7 +82,7 @@ namespace Tempest.Core.Persistence;
 /// </para>
 /// <para>
 /// <b>Disposal.</b> <see cref="DisposeAsync"/> releases the lock file and
-/// calls <see cref="SqliteConnection.ClearAllPools"/>, so no pooled
+/// clears its own connection pool (<see cref="SqliteConnection.ClearPool(SqliteConnection)"/>), so no pooled
 /// connection is left holding <c>tempest.db</c> and the root directory can
 /// be deleted — which is what a test's temporary root, and a user's
 /// "delete <c>persistence-data</c> to reset", both need.
@@ -492,8 +492,14 @@ public sealed class SqlitePersistenceStore
 
         // Pools first: an idle pooled connection still holds the database
         // file open, and every caller of this method is about to want the
-        // root directory to be deletable.
-        SqliteConnection.ClearAllPools();
+        // root directory to be deletable. THIS store's pool only: the
+        // process-wide ClearAllPools this used to call disposed the native
+        // handle under other, still-live stores in the same process — seen
+        // as `ObjectDisposedException: SQLitePCL.sqlite3` in roughly one of
+        // every four parallel test runs, and reachable in the product by any
+        // two hosts in one process.
+        using (var pooled = new SqliteConnection(_connectionString))
+            SqliteConnection.ClearPool(pooled);
 
         _lockFile.Dispose();
         TryDeleteLockFile();

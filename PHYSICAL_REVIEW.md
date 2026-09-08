@@ -17,7 +17,7 @@ says so rather than implying more than was tested.
 |---|---|
 | **.NET SDK** | The version pinned in [`global.json`](global.json) — **10.0.302**, `rollForward: latestFeature`. Any 10.0.3xx SDK satisfies it. This is the only mandatory install. |
 | **Operating system** | **Windows** is the CI-verified platform for **build and test**: `ci.yml` restores, builds and runs the full suite on `windows-2022`, both configurations, on every push. Stated precisely, because the distinction matters and this document's own standard demands it: **no CI step on any platform launches the real windowed application on Windows** — the suite is Avalonia headless. That the app launches on Windows is the development team's direct experience, not a CI artefact; it is asserted here without a citation, unlike the Linux claim below, and that asymmetry was found by the `v0.16.0` independent review rather than volunteered. macOS is expected to work and is untested. **Linux launches the desktop application** as of `WP 16.5B` (Avalonia 11.3.20) — but on weaker evidence than Windows: one local `xvfb-run` launch plus an advisory `linux-launch-smoke` CI job that is not a required check. See §8, item 1. Building and running the full test suite works on all three. |
-| **PowerShell** | Only for the governance health check (§2.5). CI uses PowerShell 7 (`pwsh`); the script uses no PowerShell 7-only syntax, so Windows PowerShell 5.1 is expected to work, but that has not been verified. |
+| **PowerShell** | Only for the governance health check (§2.5). CI uses PowerShell 7 (`pwsh`); the reduced script (`WP 17.0B`) was verified under Windows PowerShell 5.1 on 2026-09-08 (`powershell -NoProfile -File scripts/governance-healthcheck.ps1`, 5 passed). |
 | **Network** | Needed **once**, for `dotnet restore`. Packages come from the default nuget.org feed; the repository declares no `NuGet.config` and no private feed. After restore, build/test/run are offline. |
 | **Not required** | No .NET workloads (`dotnet workload install` is never needed). No Visual Studio. No Node, Python or Docker. No database. No SDK-external build tools. No code generation step. No environment variables. No secrets, licence file, API key, account or sign-in of any kind. |
 
@@ -29,7 +29,7 @@ An IDE is optional. Visual Studio 2022+, Rider or VS Code all open
 ## 2. Build and test
 
 Run from the repository root. `src/TempestOS.slnx` is the whole solution —
-seven projects, including both test projects.
+eight projects, including both test projects (`Tempest.Core`, `Tempest.Workspace`, `Tempest.Harness`, `Tempest.Desktop`, `Tempest.Samples`, `Tempest.Validation` and the two test projects; `src/Frozen/` is deliberately outside it).
 
 ```
 git clone <repository-url> TempestOS-Core
@@ -84,8 +84,9 @@ pwsh -File scripts/governance-healthcheck.ps1
 ```
 
 Read-only; it never writes inside the repository. Expect
-**7 passed, 1 warning, 0 failed**. The warning (two historical release
-folders without a `WorkPackages.md`) is pre-existing and informational.
+**5 passed, 0 warned, 0 failed** (`WP 17.0B` reduced the check set to
+the five that derive from source and git). On Windows without PowerShell 7,
+`powershell -NoProfile -File scripts/governance-healthcheck.ps1` works.
 
 > If you pass `-RepoRoot` explicitly, give it an **absolute** path. A
 > relative one produces spurious `FAIL` results.
@@ -123,21 +124,14 @@ dotnet run --project src/Tempest.Harness/Tempest.Harness.csproj
 ### What happens on first launch
 
 - The Runtime Host starts and discovers six Engineering Discipline modules.
-- **The REST API's listener does not bind by default** (`D-024`,
-  ratified by the Product Owner on 2026-09-05). The hosted service is
-  still discovered and started, but `StartAsync` reads
-  `Runtime:RestApi:Enabled` before touching ASP.NET Core at all and, when
-  that key is absent (the shipped default), logs that the REST API is
-  disabled and returns without binding any port. Set
-  `Runtime:RestApi:Enabled` to `true` in configuration to opt in; once
-  enabled, it binds loopback-only on `http://127.0.0.1:5080` (overridable
-  via `Api:Port`), and a port conflict then fails and isolates exactly as
-  before — **the application still launches normally** either way, since
-  this is not a critical service.
-- Licensing reports `Unlicensed` with zero capabilities. Nothing is gated
-  behind a licence; no action is needed.
-- No plugins are found (`Plugins/` is empty by design) and no trusted
-  publishers are configured. Both are logged and expected.
+- **There is no REST listener, no licence and no plugin trust to think
+  about.** The inbound REST API, Licensing and the plugin trust platform
+  are frozen out of the `v1.0` build (`ADR-0146`, `WP 17.2A`). Plugin
+  *manifest* discovery still runs and logs that `Plugins/` is empty,
+  which is expected.
+- The first run creates `persistence-data/tempest.db` and
+  `persistence-data/logs/` (§4) and takes `persistence-data/tempest.lock`
+  for as long as the application is open.
 - **There is no demo or sample data.** The shipped application does not
   reference the sample harness. Home, Projects and the Engineering
   Workspace all start genuinely empty. First-run state is deterministic:
