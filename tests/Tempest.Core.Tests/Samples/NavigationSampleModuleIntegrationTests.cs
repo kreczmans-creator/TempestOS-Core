@@ -52,9 +52,6 @@ public class NavigationSampleModuleIntegrationTests
             runtimeManager.Register(descriptor);
 
         var services = new ServiceCollection();
-        var currentComponentAccessor = new Tempest.Core.Identity.CurrentComponentAccessor();
-        services.AddInstance<Tempest.Core.Identity.ICurrentComponentAccessor>(currentComponentAccessor);
-        services.AddInstance(currentComponentAccessor);
         services.AddInstance<Tempest.Core.Identity.IPermissionEvaluator>(new Tempest.Core.Identity.PermissionEvaluator());
         services.AddInstance<ILogger>(new Tempest.Core.Tests.Events.RecordingLevelLogger());
         services.Singleton<IEventBus, EventBus>();
@@ -268,70 +265,9 @@ public class NavigationSampleModuleIntegrationTests
             message => message.Contains($"Navigation item '{NavigationSampleModule.NavigationItemId}' registered."));
     }
 
-    // ----------------------------------------------------------------
-    // Plugin compatibility: a module contributed by a plugin-loaded assembly
-    // registers navigation through the identical path an ordinarily-
-    // discovered module uses - no plugin-specific navigation mechanism of
-    // any kind. Mirrors
-    // PluginAssemblyLoaderTests.LoadPlugins_LoadedAssembly_IsVisibleToUnchangedModuleDiscovery's
-    // own "prove the existing mechanism needs no change" methodology.
-    // ----------------------------------------------------------------
-
-    [Fact]
-    public async Task PluginLoadedModule_RegistersNavigationItem_ThroughTheIdenticalPathAnOrdinaryModuleUses()
-    {
-        using var temp = new TempDirectory();
-        var assemblyPath = DynamicPluginAssemblyBuilder.BuildValidPluginAssemblyWithNavigationModule(
-            temp.Path,
-            "NavigationPlugin.dll",
-            "test.plugin.navigation",
-            "Navigation Plugin",
-            "1.0.0",
-            "test.plugin.navigation.page",
-            "Plugin Page");
-
-        // ADR-0111: the dynamically-built module's constructor injects
-        // INavigationProvider, which is not in the fixed always-allowed
-        // baseline (ILogger/IConfigurationProvider/IDiagnosticsProvider),
-        // so this plugin must explicitly request (and, at FirstParty tier,
-        // is eligible to be granted) a plugin.services.resolve:* capability
-        // naming it.
-        var manifest = new PluginManifest(
-            "test.plugin.navigation", "Navigation Plugin", "1.0.0",
-            new Version(0, 1, 0), Path.GetFileName(assemblyPath), assemblyPath,
-            PluginTrustTier.FirstParty,
-            requestedCapabilities: [PluginCapability.ServiceResolve(typeof(INavigationProvider).FullName!)]);
-
-        var loader = new PluginAssemblyLoader();
-        var loadedAssemblies = loader.LoadPlugins([manifest]);
-        var loadedAssembly = Assert.Single(loadedAssemblies);
-
-        // The exact same, completely unchanged discovery service the Host
-        // itself uses - scoped to just the newly-loaded plugin assembly.
-        var descriptors = new ReflectionFrameworkDiscoveryService([loadedAssembly]).DiscoverModules();
-        var descriptor = Assert.Single(descriptors);
-        Assert.Equal("test.plugin.navigation", descriptor.Id);
-
-        var runtimeManager = new RuntimeModuleManager();
-        runtimeManager.Register(descriptor);
-
-        var services = new ServiceCollection();
-        var currentComponentAccessor = new Tempest.Core.Identity.CurrentComponentAccessor();
-        services.AddInstance<Tempest.Core.Identity.ICurrentComponentAccessor>(currentComponentAccessor);
-        services.AddInstance(currentComponentAccessor);
-        services.AddInstance<Tempest.Core.Identity.IPermissionEvaluator>(new Tempest.Core.Identity.PermissionEvaluator());
-        services.AddInstance<ILogger>(new Tempest.Core.Tests.Events.RecordingLevelLogger());
-        services.Singleton<IEventBus, EventBus>();
-        services.Singleton<INavigationProvider, NavigationService>();
-        services.AddDiscoveredModules(runtimeManager.GetAll().Select(module => module.Descriptor));
-        var serviceProvider = new TempestServiceProvider(services);
-
-        var lifecycleManager = new ModuleLifecycleManager(runtimeManager, serviceProvider);
-        await lifecycleManager.InitialiseAllAsync(CancellationToken.None);
-
-        var navigationProvider = (INavigationProvider)serviceProvider.GetService(typeof(INavigationProvider));
-        var item = Assert.Single(navigationProvider.Items);
-        Assert.Equal("test.plugin.navigation.page", item.Id);
-        Assert.Equal("Plugin Page", item.Title);
-    }
+    // The plugin-compatibility test formerly here (a module contributed by
+    // a plugin-loaded assembly registering navigation through the identical
+    // path an ordinarily-discovered module uses) was frozen by ADR-0146
+    // (WP 17.2A) along with plugin assembly loading and trust tiers - see
+    // src/Frozen/README.md.
 }

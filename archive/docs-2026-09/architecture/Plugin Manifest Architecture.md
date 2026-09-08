@@ -1,5 +1,15 @@
 # Plugin Manifest Architecture
 
+**Frozen by ADR-0146 (v0.17.0), in part.** This document describes
+manifest discovery and the plugin trust it feeds. Manifest discovery
+itself — parsing, field validation, version compatibility, dependency
+graph resolution, and the Plugin Registry — stays live, in place, per
+`ADR-0146` and `WP 17.2A`: the Host still scans the plugin drop folder
+and records what it found, as `PluginRegistryState.Discovered`. Signing,
+the trust store, trust tiers and everything downstream of Discovery is
+frozen outside the build at `src/Frozen/Tempest.Core.Plugins` — see
+`Plugin Platform Architecture.md`.
+
 **Status: implemented — WP 4.2 (`Tempest.Core.Plugins`).** Every type and
 behaviour this document describes is now backed by working, tested code,
 not only design intent. All three prerequisites this document originally

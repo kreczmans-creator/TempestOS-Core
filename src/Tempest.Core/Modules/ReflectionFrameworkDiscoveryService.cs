@@ -28,20 +28,15 @@ namespace Tempest.Core.Modules;
 /// ADR-0102.
 /// </para>
 /// <para>
-/// <b>Corrected, WP 13.9.6</b> (Module Discovery Trust Boundary Remediation):
-/// an optional <c>isTypeExcluded</c> predicate, evaluated once per candidate
-/// immediately before <see cref="Activator.CreateInstance(Type)"/> would
-/// otherwise be reached for a type lacking <see cref="ModuleMetadataAttribute"/>.
-/// This class remains deliberately plugin-unaware at the type-reference level
-/// (ADR-0110) - the predicate is a generic <see cref="Func{T,TResult}"/>, never
-/// a reference to any <c>Tempest.Core.Plugins</c> type - but lets a caller
-/// (<c>TempestHost</c>) close the gap where an unattributed module belonging to
-/// a plugin already denied trust would otherwise still be constructed (and, if
-/// it also lacked a public parameterless constructor, would previously fault
-/// the whole Host via an uncaught <see cref="ModuleDiscoveryException"/>) purely
-/// because Module Discovery runs before the existing Module Registration
-/// trust-denial filter is ever consulted. See <c>TempestHost.cs</c>'s own
-/// <c>isTypeExcluded: deniedTypeRegistry.IsDenied</c> wiring.
+/// <b>Frozen by ADR-0146 (<c>WP 17.2A</c>).</b> This class used to take an
+/// optional, plugin-unaware <c>isTypeExcluded</c> predicate that
+/// <c>TempestHost</c> wired to the denied-type registry, so an unattributed
+/// module belonging to a plugin already denied trust was never constructed.
+/// Nothing third-party ever loaded, there is no denied-type registry any
+/// more, and the predicate is frozen with the rest of the trust platform at
+/// <c>src/Frozen/Tempest.Core.Plugins</c>. The
+/// <see cref="IFaultInjectionModule"/> exclusion above is <b>not</b> part of
+/// that: it is a modules concept (ADR-0102) and stays.
 /// </para>
 /// <para>
 /// <b>Corrected, WP 13.11B</b> (<c>TD-51</c>, reopened by <c>WP 13.11A</c>):
@@ -64,7 +59,6 @@ public class ReflectionFrameworkDiscoveryService : IFrameworkDiscoveryService
     private readonly IEnumerable<Assembly> _assemblies;
     private readonly ILogger? _logger;
     private readonly bool _includeFaultInjectionModules;
-    private readonly Func<Type, bool>? _isTypeExcluded;
 
     /// <summary>
     /// Initialises a new instance of the <see cref="ReflectionFrameworkDiscoveryService"/>
@@ -83,19 +77,8 @@ public class ReflectionFrameworkDiscoveryService : IFrameworkDiscoveryService
     /// ADR-0102). Every existing caller's behaviour is unchanged by this
     /// parameter's addition.
     /// </param>
-    /// <param name="isTypeExcluded">
-    /// An optional predicate (WP 13.9.6) evaluated once per candidate type
-    /// that already passed <see cref="IsValidModuleType"/>, immediately
-    /// before it would otherwise be constructed to read its metadata. A
-    /// candidate for which this returns <see langword="true"/> is skipped
-    /// entirely - never constructed, never included in the result. Defaults
-    /// to <see langword="null"/>, which excludes nothing, leaving every
-    /// existing caller's behaviour completely unchanged. See this class's
-    /// own remarks for the trust-boundary rationale.
-    /// </param>
-    public ReflectionFrameworkDiscoveryService(
-        ILogger? logger = null, bool includeFaultInjectionModules = false, Func<Type, bool>? isTypeExcluded = null)
-        : this(AppDomain.CurrentDomain.GetAssemblies(), logger, includeFaultInjectionModules, isTypeExcluded)
+    public ReflectionFrameworkDiscoveryService(ILogger? logger = null, bool includeFaultInjectionModules = false)
+        : this(AppDomain.CurrentDomain.GetAssemblies(), logger, includeFaultInjectionModules)
     {
     }
 
@@ -116,23 +99,14 @@ public class ReflectionFrameworkDiscoveryService : IFrameworkDiscoveryService
     /// explicit candidate-type list naming a fault-injection module still
     /// requires this flag to actually discover it.
     /// </param>
-    /// <param name="isTypeExcluded">
-    /// An optional predicate (WP 13.9.6) - see the other constructor's own
-    /// remarks for the complete rationale. Applies identically whether
-    /// candidates come from this constructor's own assembly scan or from an
-    /// explicit candidate-type list passed to
-    /// <see cref="DiscoverModules(IEnumerable{Type})"/>.
-    /// </param>
     public ReflectionFrameworkDiscoveryService(
         IEnumerable<Assembly> assemblies,
         ILogger? logger = null,
-        bool includeFaultInjectionModules = false,
-        Func<Type, bool>? isTypeExcluded = null)
+        bool includeFaultInjectionModules = false)
     {
         _assemblies = assemblies;
         _logger = logger;
         _includeFaultInjectionModules = includeFaultInjectionModules;
-        _isTypeExcluded = isTypeExcluded;
     }
 
     /// <inheritdoc />
@@ -168,12 +142,6 @@ public class ReflectionFrameworkDiscoveryService : IFrameworkDiscoveryService
             if (!IsValidModuleType(type))
                 continue;
 
-            if (_isTypeExcluded?.Invoke(type) == true)
-            {
-                _logger?.Warning($"Module type '{type.FullName}' excluded from discovery: its own plugin was denied trust (ADR-0110/ADR-0111/WP 13.9.6).");
-                continue;
-            }
-
             ModuleDescriptor descriptor;
 
             // WP 13.11B (TD-51, reopened by WP 13.11A): reading a candidate's
@@ -189,26 +157,11 @@ public class ReflectionFrameworkDiscoveryService : IFrameworkDiscoveryService
             // and nothing in this loop, in TempestHost.ExecuteStartupPhasesAsync,
             // or anywhere between caught it: it propagated to
             // TempestHost.RunAsync's own outer catch and faulted the whole
-            // Host. PluginAssemblyLoader's own WP 13.11B fix closes the root
-            // cause for every type its trust scan reaches, and is what
-            // actually keeps a denied plugin excluded; this is the fail-closed
-            // backstop for a class that is, by design, wholly plugin-unaware
-            // (ADR-0110) and whose isTypeExcluded predicate is optional -
-            // discovery must never fault the Host over a candidate whose own
-            // metadata cannot be read, whatever produced it. Excluded and
-            // logged, exactly like the WP 13.9.6 trust exclusion above: never
-            // a crash, and never a silent inclusion. Deliberately narrow -
-            // only the four CLR type-load failures, matching the guard shape
-            // PluginAssemblyLoader.DiscoverModuleTypes already uses, verbatim
-            // and uniquely. Corrected, WP 13.11C: this comment previously also
-            // cited PluginAssemblyLoader.LoadOne as the same shape, and the
-            // governance record inherited a WP 13.11A claim of "three other
-            // call sites". Both were wrong on the facts. LoadOne guards a
-            // different failure (Assembly.LoadFrom itself) with a different,
-            // three-exception filter - BadImageFormatException, FileLoadException,
-            // IOException - which omits TypeLoadException entirely and adds
-            // IOException. DiscoverModuleTypes' guard is the ONLY other
-            // occurrence of this exact four-exception filter in src/.
+            // Host. This is the fail-closed backstop: discovery must never
+            // fault the Host over a candidate whose own metadata cannot be
+            // read, whatever produced it. Excluded and logged: never a crash,
+            // and never a silent inclusion. Deliberately narrow - only the
+            // four CLR type-load failures.
             // ModuleDiscoveryException (including the WP 5.3
             // "no parameterless constructor and no [ModuleMetadataAttribute]"
             // guidance and every ValidateMetadata failure) derives from none

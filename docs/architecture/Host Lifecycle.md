@@ -37,6 +37,22 @@ ordinary self-referential singleton (`AddDiscoveredHostedServices`).
 Decimal phase numbers mean "between 8 and 9" / "between 10 and 11" — no
 existing phase was renumbered; see ADR-0030 for why.
 
+**Update, WP 17.2A (ADR-0146):** Phase 3.2 (Plugin Loading) is removed —
+Plugin Loading, signing, trust tiers and capability enforcement are frozen
+outside the build at `src/Frozen/Tempest.Core.Plugins`; see that folder's
+own `README.md`. Phase 3.1 (Plugin Discovery) is unchanged in shape but
+narrower in outcome: a candidate that survives dependency-graph
+resolution is now recorded as `PluginRegistryState.Discovered` and goes
+no further — nothing loads, signs, verifies, scopes or enforces it. Phase
+6 (Platform Services Registered) no longer registers
+`IApiEndpointRegistry` — the REST API is frozen at
+`src/Frozen/Tempest.Core.Api` — and no phase between Logging Built and
+Plugin Discovery reads a licence file: the licence-validation gate
+`ADR-0050` described (undocumented in this file, since it predated
+Phase 3.1 in code but was never given its own phase number here) is
+frozen at `src/Frozen/Tempest.Core.Licensing`, and the Host no longer
+reads a licence file at all.
+
 ## Purpose
 
 This document defines every phase the Runtime Host passes through, from
@@ -59,8 +75,7 @@ Host is in the single `Starting` state.
 | 1 | Host Created | `Created` |
 | 2 | Configuration Built | `Starting` |
 | 3 | Logging Built | `Starting` |
-| 3.1 | Plugin Discovery *(ADR-0026, implemented — WP 4.2)* | `Starting` |
-| 3.2 | Plugin Loading *(ADR-0026, implemented — WP 4.2)* | `Starting` |
+| 3.1 | Plugin Discovery *(ADR-0026, implemented — WP 4.2; loading and everything downstream frozen — ADR-0146, WP 17.2A)* | `Starting` |
 | 4 | Module Discovery | `Starting` |
 | 5 | Module Registration | `Starting` |
 | 6 | Platform Services Registered | `Starting` |
@@ -134,12 +149,15 @@ subsequent phase for diagnostics.
 ### 3.1. Plugin Discovery
 
 **Status: implemented — WP 4.2 (`PluginManifestDiscoveryService`,
-`Tempest.Core.Plugins`).**
+`Tempest.Core.Plugins`).** **Frozen by ADR-0146 (`WP 17.2A`), in part —
+this phase itself stays live and unchanged in shape; what it used to hand
+off to (Phase 3.2, Plugin Loading, and everything trust-related below) is
+frozen.**
 
 **Purpose.** Read and validate every plugin manifest found in the plugins
-directory, producing a deterministic, ordered list of eligible plugins.
-Loads no assembly — a pre-Discovery artifact describing a plugin, not yet
-touching it. See *Plugin Manifest Architecture.md*.
+directory, producing a deterministic, ordered list of discovered
+plugins. Loads no assembly — a pre-Discovery artifact describing a
+plugin, not yet touching it. See *Plugin Manifest Architecture.md*.
 
 **Entry criteria.** Logging Built has completed — a working `ILogger`
 exists. `PlatformVersionProvider` has been constructed (moved earlier than
@@ -152,7 +170,10 @@ every module do not exist yet, and none is needed.
 **Exit criteria.** A deterministic (sorted ordinally by candidate folder
 name), possibly empty, list of valid, version-compatible plugin manifests
 exists. Every candidate that failed validation has been isolated per
-ADR-0025, logged at its assigned severity, and excluded.
+ADR-0025, logged at its assigned severity, and excluded. Each surviving
+candidate is recorded in the Plugin Registry as
+`PluginRegistryState.Discovered` (`ADR-0146`) — the terminal state it
+reaches; nothing loads, signs, verifies, scopes or enforces it further.
 
 **Failure behaviour.** Fully governed by ADR-0025. Every plugin-scoped
 failure (malformed manifest, duplicate identity, incompatible version) is
@@ -161,86 +182,63 @@ rest. Only a genuine defect in this phase's own orchestration (not
 attributable to any specific plugin) is Host-fatal — `Faulted`, exactly
 the same transition Configuration Built and Logging Built already use.
 
-**Extended, `WP 13.0A` (architecture only — see `ADR-0107`, `ADR-0112`,
-`Plugin Platform Architecture.md`, `Plugin Trust & Isolation
-Architecture.md`).** After each candidate's manifest is individually
-validated exactly as above, this phase also: (a) checks the candidate's
-`Id` against the optional `Runtime:Plugins:Disabled` configuration list,
-isolating a match as `Disabled` before any further check; (b) verifies a
-manifest-carried `Signature`, assigning a trust tier
-(First-Party/Verified-Signed/Unsigned-Local/Untrusted) — a signature that
-fails to verify, or an absent signature with unsigned loading not
-explicitly enabled, isolates the candidate (`ADR-0025` categories 15–16,
-added by `ADR-0112`);
-(c) resolves a dependency graph (`PluginManifest.Dependencies`) over the
-surviving candidates via a fixed-point reduction, isolating any candidate
-with a missing or version-incompatible dependency, or membership in a
-circular dependency (`ADR-0025` categories 12–14). All three additions
-remain entirely side-effect-free — no assembly is loaded during any of
-them. **Exit criteria (extended).** The resulting list is additionally
-ordered for dependency-topological load order (folder name remains the
-tie-break), and each surviving candidate carries its assigned trust tier
-forward to Plugin Loading. **Failure behaviour (extended).** `ADR-0025`
-categories 12–16 (`ADR-0107`/`ADR-0112`) are isolated identically to
-every other plugin-scoped category above; the Host-fatal carve-out is
-unchanged and ungrown.
+**Extended, `WP 13.0A` (architecture; the trust half never reached
+implementation before being frozen — see below).** This phase also: (a)
+checks the candidate's `Id` against the optional
+`Runtime:Plugins:Disabled` configuration list, isolating a match as
+`Disabled` before any further check; (b) resolves a dependency graph
+(`PluginManifest.Dependencies`) over the surviving candidates via a
+fixed-point reduction, isolating any candidate with a missing or
+version-incompatible dependency, or membership in a circular dependency
+(`ADR-0025` categories 12–14, `ADR-0107`). Both additions remain
+side-effect-free — no assembly is loaded during either. **Exit criteria
+(extended).** The resulting list is additionally ordered for
+dependency-topological load order (folder name remains the tie-break).
+**Failure behaviour (extended).** `ADR-0025` categories 12–14
+(`ADR-0107`) are isolated identically to every other plugin-scoped
+category above.
+
+**Frozen, `WP 17.2A` (`ADR-0146`).** This phase used to also verify a
+manifest-carried `Signature` and assign a trust tier
+(First-Party/Verified-Signed/Unsigned-Local), isolating a candidate whose
+signature failed to verify or whose absence wasn't explicitly permitted
+(`ADR-0025` categories 15–16, `ADR-0112`), and hand the surviving,
+trust-tiered list to Plugin Loading (Phase 3.2). Signing, trust tiers and
+Phase 3.2 itself are frozen at `src/Frozen/Tempest.Core.Plugins`; this
+phase no longer does either.
 
 ---
 
-### 3.2. Plugin Loading
+### 3.2. Plugin Loading — Frozen (`ADR-0146`, `WP 17.2A`)
 
-**Status: implemented — WP 4.2 (`PluginAssemblyLoader`,
-`Tempest.Core.Plugins`).**
-
-**Purpose.** Load each eligible plugin's declared assembly file into the
-process, in the same deterministic order Plugin Discovery established.
-
-**Entry criteria.** Plugin Discovery has completed with its (possibly
-empty) list of validated manifests in hand.
-
-**Exit criteria.** Every eligible plugin's assembly has either been loaded
-into the process (now visible to
-`AppDomain.CurrentDomain.GetAssemblies()`, exactly like any other loaded
-assembly) or isolated per ADR-0025 (missing assembly file, load failure,
-or dependency load failure) and excluded. **This is the guarantee Module
-Discovery, entirely unchanged, depends on** — see Phase 4, below.
-
-**Failure behaviour.** Fully governed by ADR-0025, identical in shape to
-Plugin Discovery's own: plugin-scoped failures are isolated; a genuine
-defect in this phase's own orchestration is Host-fatal — `Faulted`.
-
-**Extended, `WP 13.0A` (architecture only — see `ADR-0107`, `ADR-0111`,
-`Plugin Platform Architecture.md`, `Plugin Trust & Isolation
-Architecture.md`).** "The same deterministic order Plugin Discovery
-established" is now dependency-topological order, folder name remaining
-the tie-break. This phase also now performs a capability-eligibility
-check (a plugin's `RequestedCapabilities` against its assigned trust
-tier's ceiling) and a constructor-conformance check (each discovered
-`IModule` implementer's constructor parameter types, against the fixed
-baseline plus the plugin's own granted capabilities) — a violation of
-either isolates the whole plugin (`ADR-0025` category 17, `ADR-0111`).
-This phase also populates a new, Host-owned Plugin Registry
-(`IPluginRegistry`) with one entry per candidate attempted, whether
-loaded or isolated — read-only, never DI-public (`ADR-0017`), projected
-for observation via `IDiagnosticsProvider.Plugins` (extended, `WP
-13.0A`) during Platform Services Registered (Phase 6), unchanged in this
-phase's own scope.
+This phase — loading each discovered plugin's declared assembly file into
+the process, the capability-eligibility and constructor-conformance
+checks `WP 13.0A` designed for it (`ADR-0111`), and populating the Plugin
+Registry with a `Loaded`/`TrustDenied` outcome per plugin — no longer
+exists. `PluginAssemblyLoader` and everything it depended on are frozen
+at `src/Frozen/Tempest.Core.Plugins`; see that folder's own `README.md`.
+Phase 3.1 (Plugin Discovery) is now the last plugin-related phase the
+Host runs, and Module Discovery (Phase 4, below) sees only whatever
+assemblies were already loaded into the process by ordinary .NET
+means — never anything Plugin Discovery found.
 
 ---
 
 ### 4. Module Discovery
 
 **Purpose.** Find every `IModule` implementation across loaded assemblies.
-**Requires no code change for plugin support** — any assembly Plugin
-Loading (Phase 3.2) loaded is already visible to this phase's own,
-unchanged `AppDomain.CurrentDomain.GetAssemblies()` default, exactly as any
-other loaded assembly already is. A run with zero plugins present behaves
-identically to today, byte-for-byte.
+**Frozen by ADR-0146 (`WP 17.2A`):** this phase used to also see whatever
+assembly Plugin Loading (Phase 3.2, now frozen) had loaded, via this
+phase's own unchanged `AppDomain.CurrentDomain.GetAssemblies()` default.
+Phase 3.2 no longer exists, so this phase now sees only assemblies loaded
+into the process by ordinary .NET means — never anything Plugin Discovery
+found. This phase's own code is unchanged either way, since it was always
+plugin-unaware (`ADR-0110`).
 
 **Entry criteria.** Logging Built has completed — Discovery takes an optional
 `ILogger` for diagnostics. Per ADR-0011 and ADR-0008, Discovery requires
 **no** DI container — none exists yet at this point, and none is needed.
-Plugin Loading (Phase 3.2) has completed, whether or not any plugin was
+Plugin Discovery (Phase 3.1) has completed, whether or not any plugin was
 actually present or eligible.
 
 **Exit criteria.** `IFrameworkDiscoveryService.DiscoverModules()` has returned
@@ -364,9 +362,10 @@ module has been given the chance to initialise and start, never
 interleaved with them.
 
 **Entry criteria.** Module Initialisation has completed, regardless of
-individual module outcomes (ADR-0013) — mirroring Plugin Loading's own
+individual module outcomes (ADR-0013) — mirroring Plugin Discovery's own
 "completed, whether or not anything was actually eligible" entry
-criterion.
+criterion (Plugin Loading, which this phrasing originally mirrored, is
+frozen — `ADR-0146`).
 
 **Exit criteria.** `IHostedServiceManager.StartAllAsync` has returned. Does
 **not** require every hosted service to have started successfully — an

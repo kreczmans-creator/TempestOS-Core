@@ -34,9 +34,6 @@ public class IdentitySampleModuleIntegrationTests
             runtimeManager.Register(descriptor);
 
         var services = new ServiceCollection();
-        var currentComponentAccessor = new Tempest.Core.Identity.CurrentComponentAccessor();
-        services.AddInstance<Tempest.Core.Identity.ICurrentComponentAccessor>(currentComponentAccessor);
-        services.AddInstance(currentComponentAccessor);
         services.AddInstance(configuration);
         services.AddInstance<ILogger>(new Tempest.Core.Tests.Events.RecordingLevelLogger());
         services.Singleton<IEventBus, EventBus>();

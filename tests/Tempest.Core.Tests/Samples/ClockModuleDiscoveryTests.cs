@@ -160,7 +160,10 @@ public class ClockModuleDiscoveryTests
         // that own them in `Tempest.App`, and are asserted there by
         // `SampleSeparationTests`. This count is the number of genuinely
         // fictional modules the harness ships.
-        Assert.Equal(27, result.Count);
+        // 27 → 25 (ADR-0146, WP 17.2A): ApiSampleModule and
+        // LicensingSampleModule were deleted along with the frozen Api and
+        // Licensing layers they demonstrated - see src/Frozen/README.md.
+        Assert.Equal(25, result.Count);
         Assert.Contains(result, d => d.Id == "tempest.samples.clock" && d.ModuleType == typeof(ClockModule));
         Assert.Contains(result, d => d.Id == "tempest.samples.clock.observer" && d.ModuleType == typeof(ClockLifecycleObserverModule));
         Assert.Contains(result, d => d.Id == "tempest.samples.navigation" && d.ModuleType == typeof(NavigationSampleModule));
@@ -172,9 +175,7 @@ public class ClockModuleDiscoveryTests
         Assert.Contains(result, d => d.Id == "tempest.samples.audit" && d.ModuleType == typeof(Tempest.Samples.AuditSampleModule));
         Assert.Contains(result, d => d.Id == "tempest.samples.notifications" && d.ModuleType == typeof(Tempest.Samples.NotificationSampleModule));
         Assert.Contains(result, d => d.Id == "tempest.samples.reporting" && d.ModuleType == typeof(Tempest.Samples.ReportingSampleModule));
-        Assert.Contains(result, d => d.Id == "tempest.samples.api" && d.ModuleType == typeof(Tempest.Samples.ApiSampleModule));
         Assert.Contains(result, d => d.Id == "tempest.samples.exportimport" && d.ModuleType == typeof(Tempest.Samples.ExportImportSampleModule));
-        Assert.Contains(result, d => d.Id == "tempest.samples.licensing" && d.ModuleType == typeof(Tempest.Samples.LicensingSampleModule));
         Assert.Contains(result, d => d.Id == "tempest.samples.engineeringdata" && d.ModuleType == typeof(Tempest.Samples.EngineeringDataSampleModule));
         Assert.Contains(result, d => d.Id == "tempest.samples.materials" && d.ModuleType == typeof(Tempest.Samples.MaterialsSampleModule));
         Assert.Contains(result, d => d.Id == "tempest.samples.calculations" && d.ModuleType == typeof(Tempest.Samples.CalculationSampleModule));

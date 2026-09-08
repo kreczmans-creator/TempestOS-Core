@@ -20,7 +20,6 @@ public sealed class TempestHostBuilder : ITempestHostBuilder
     private readonly IEnumerable<Type>? _discoveryCandidateTypesOverride;
     private readonly string? _pluginsRootPathOverride;
     private readonly IEnumerable<Type>? _hostedServiceCandidateTypesOverride;
-    private readonly string? _licenseFilePathOverride;
     private bool _includeFaultInjectionModules;
     private bool _built;
 
@@ -28,16 +27,14 @@ public sealed class TempestHostBuilder : ITempestHostBuilder
     /// Initialises a new instance of the <see cref="TempestHostBuilder"/> class.
     /// The resulting host discovers modules from every assembly currently
     /// loaded into the application domain, discovers plugins from the
-    /// conventional plugins directory, discovers hosted services from
-    /// every assembly currently loaded into the application domain, and
-    /// validates its license from the conventional license file.
+    /// conventional plugins directory, and discovers hosted services from
+    /// every assembly currently loaded into the application domain.
     /// </summary>
     public TempestHostBuilder()
         : this(
               discoveryCandidateTypesOverride: null,
               pluginsRootPathOverride: null,
-              hostedServiceCandidateTypesOverride: null,
-              licenseFilePathOverride: null)
+              hostedServiceCandidateTypesOverride: null)
     {
     }
 
@@ -131,61 +128,20 @@ public sealed class TempestHostBuilder : ITempestHostBuilder
     /// isolated from every other <c>IHostedService</c> fixture defined
     /// elsewhere in the test assembly, without changing the public API
     /// surface.
+    /// <b>Frozen by ADR-0146 (<c>WP 17.2A</c>).</b> This constructor used to
+    /// be the innermost of a chain that ended in a fifth, licence-file-path-
+    /// accepting constructor — licence validation is frozen at
+    /// <c>src/Frozen/Tempest.Core.Licensing</c>, and the Host no longer reads
+    /// a licence file at all, so this is now the innermost constructor.
     /// </remarks>
     internal TempestHostBuilder(
         IEnumerable<Type>? discoveryCandidateTypesOverride,
         string? pluginsRootPathOverride,
         IEnumerable<Type>? hostedServiceCandidateTypesOverride)
-        : this(discoveryCandidateTypesOverride, pluginsRootPathOverride, hostedServiceCandidateTypesOverride, licenseFilePathOverride: null)
-    {
-    }
-
-    /// <summary>
-    /// Initialises a new instance of the <see cref="TempestHostBuilder"/> class
-    /// whose host's discovery phase evaluates a specific, fixed set of
-    /// candidate types, whose plugin discovery phase scans a specific
-    /// plugins root directory, whose hosted service discovery phase
-    /// evaluates a specific, fixed set of candidate types, and whose
-    /// license validation phase reads a specific license file.
-    /// </summary>
-    /// <param name="discoveryCandidateTypesOverride">
-    /// The candidate types the resulting host's module discovery phase
-    /// evaluates, or <see langword="null"/> to scan every assembly currently
-    /// loaded into the application domain.
-    /// </param>
-    /// <param name="pluginsRootPathOverride">
-    /// The plugins root directory the resulting host's Plugin Discovery phase
-    /// scans, or <see langword="null"/> to use the conventional
-    /// <c>Plugins</c> directory relative to the application's base directory.
-    /// </param>
-    /// <param name="hostedServiceCandidateTypesOverride">
-    /// The candidate types the resulting host's hosted service discovery
-    /// phase evaluates, or <see langword="null"/> to scan every assembly
-    /// currently loaded into the application domain.
-    /// </param>
-    /// <param name="licenseFilePathOverride">
-    /// The license file the resulting host's license validation phase
-    /// reads, or <see langword="null"/> to use the conventional
-    /// <c>license.json</c> file relative to the application's base
-    /// directory.
-    /// </param>
-    /// <remarks>
-    /// Internal test seam — mirrors <see cref="Licensing.LicenseValidator"/>'s
-    /// own internal, path-accepting constructor, so a host's license
-    /// validation phase can be exercised deterministically against a
-    /// controlled temporary file in tests, without changing the public
-    /// API surface.
-    /// </remarks>
-    internal TempestHostBuilder(
-        IEnumerable<Type>? discoveryCandidateTypesOverride,
-        string? pluginsRootPathOverride,
-        IEnumerable<Type>? hostedServiceCandidateTypesOverride,
-        string? licenseFilePathOverride)
     {
         _discoveryCandidateTypesOverride = discoveryCandidateTypesOverride;
         _pluginsRootPathOverride = pluginsRootPathOverride;
         _hostedServiceCandidateTypesOverride = hostedServiceCandidateTypesOverride;
-        _licenseFilePathOverride = licenseFilePathOverride;
     }
 
     /// <inheritdoc />
@@ -231,7 +187,6 @@ public sealed class TempestHostBuilder : ITempestHostBuilder
             _discoveryCandidateTypesOverride,
             _pluginsRootPathOverride,
             _hostedServiceCandidateTypesOverride,
-            _licenseFilePathOverride,
             _includeFaultInjectionModules,
             _additionalLogSinks);
     }

@@ -323,9 +323,6 @@ public class NavigationServiceTests
     public void ServiceCollection_SingletonRegistration_ResolvesINavigationProviderToNavigationService()
     {
         var services = new ServiceCollection();
-        var currentComponentAccessor = new Tempest.Core.Identity.CurrentComponentAccessor();
-        services.AddInstance<Tempest.Core.Identity.ICurrentComponentAccessor>(currentComponentAccessor);
-        services.AddInstance(currentComponentAccessor);
         services.AddInstance<Tempest.Core.Identity.IPermissionEvaluator>(new Tempest.Core.Identity.PermissionEvaluator());
         services.AddInstance<ILogger>(new RecordingLevelLogger());
         services.Singleton<IEventBus, EventBus>();
@@ -341,9 +338,6 @@ public class NavigationServiceTests
     public void ServiceCollection_SingletonRegistration_ResolvesTheSameInstanceEveryTime()
     {
         var services = new ServiceCollection();
-        var currentComponentAccessor = new Tempest.Core.Identity.CurrentComponentAccessor();
-        services.AddInstance<Tempest.Core.Identity.ICurrentComponentAccessor>(currentComponentAccessor);
-        services.AddInstance(currentComponentAccessor);
         services.AddInstance<Tempest.Core.Identity.IPermissionEvaluator>(new Tempest.Core.Identity.PermissionEvaluator());
         services.AddInstance<ILogger>(new RecordingLevelLogger());
         services.Singleton<IEventBus, EventBus>();
@@ -360,9 +354,6 @@ public class NavigationServiceTests
     public async Task ServiceCollection_SingletonRegistration_NavigationServiceResolvesTheSameEventBusInstance()
     {
         var services = new ServiceCollection();
-        var currentComponentAccessor = new Tempest.Core.Identity.CurrentComponentAccessor();
-        services.AddInstance<Tempest.Core.Identity.ICurrentComponentAccessor>(currentComponentAccessor);
-        services.AddInstance(currentComponentAccessor);
         services.AddInstance<Tempest.Core.Identity.IPermissionEvaluator>(new Tempest.Core.Identity.PermissionEvaluator());
         services.AddInstance<ILogger>(new RecordingLevelLogger());
         services.Singleton<IEventBus, EventBus>();

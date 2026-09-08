@@ -37,7 +37,7 @@ public class PluginDependencyGraphResolutionTests
         var targetFolder = CreateCandidateFolder(temp.Path, "z-target");
         WriteManifest(targetFolder, Build(id: "test.a", assemblyFileName: "A.dll"));
 
-        var service = new PluginManifestDiscoveryService(temp.Path, DefaultVersionProvider, allowUnsignedLoad: true);
+        var service = new PluginManifestDiscoveryService(temp.Path, DefaultVersionProvider);
 
         var result = service.DiscoverManifests();
 
@@ -60,7 +60,7 @@ public class PluginDependencyGraphResolutionTests
         var aFolder = CreateCandidateFolder(temp.Path, "c-a-plugin");
         WriteManifest(aFolder, Build(id: "test.a", assemblyFileName: "A.dll"));
 
-        var service = new PluginManifestDiscoveryService(temp.Path, DefaultVersionProvider, allowUnsignedLoad: true);
+        var service = new PluginManifestDiscoveryService(temp.Path, DefaultVersionProvider);
 
         var result = service.DiscoverManifests();
 
@@ -85,7 +85,7 @@ public class PluginDependencyGraphResolutionTests
         WriteManifest(siblingFolder, Build(id: "test.sibling", assemblyFileName: "Sibling.dll"));
 
         var logger = new RecordingLevelLogger();
-        var service = new PluginManifestDiscoveryService(temp.Path, DefaultVersionProvider, logger, allowUnsignedLoad: true);
+        var service = new PluginManifestDiscoveryService(temp.Path, DefaultVersionProvider, logger);
 
         var result = service.DiscoverManifests();
 
@@ -115,7 +115,7 @@ public class PluginDependencyGraphResolutionTests
             dependencies: [DependencyFragment.On("test.target", "2.0.0")]));
 
         var logger = new RecordingLevelLogger();
-        var service = new PluginManifestDiscoveryService(temp.Path, DefaultVersionProvider, logger, allowUnsignedLoad: true);
+        var service = new PluginManifestDiscoveryService(temp.Path, DefaultVersionProvider, logger);
 
         var result = service.DiscoverManifests();
 
@@ -138,7 +138,7 @@ public class PluginDependencyGraphResolutionTests
             dependencies: [DependencyFragment.On("test.target", "1.0.0", "3.0.0")]));
 
         var logger = new RecordingLevelLogger();
-        var service = new PluginManifestDiscoveryService(temp.Path, DefaultVersionProvider, logger, allowUnsignedLoad: true);
+        var service = new PluginManifestDiscoveryService(temp.Path, DefaultVersionProvider, logger);
 
         var result = service.DiscoverManifests();
 
@@ -160,7 +160,7 @@ public class PluginDependencyGraphResolutionTests
             id: "test.dependent", assemblyFileName: "Dependent.dll",
             dependencies: [DependencyFragment.On("test.target", "1.0.0")]));
 
-        var service = new PluginManifestDiscoveryService(temp.Path, DefaultVersionProvider, allowUnsignedLoad: true);
+        var service = new PluginManifestDiscoveryService(temp.Path, DefaultVersionProvider);
 
         var result = service.DiscoverManifests();
 
@@ -186,7 +186,7 @@ public class PluginDependencyGraphResolutionTests
             dependencies: [DependencyFragment.On("test.target", "1.0.0")]));
 
         var logger = new RecordingLevelLogger();
-        var service = new PluginManifestDiscoveryService(temp.Path, DefaultVersionProvider, logger, allowUnsignedLoad: true);
+        var service = new PluginManifestDiscoveryService(temp.Path, DefaultVersionProvider, logger);
 
         var result = service.DiscoverManifests();
 
@@ -211,7 +211,7 @@ public class PluginDependencyGraphResolutionTests
         WriteManifest(bFolder, Build(id: "test.b", assemblyFileName: "B.dll", dependencies: [DependencyFragment.On("test.a", "1.0.0")]));
 
         var logger = new RecordingLevelLogger();
-        var service = new PluginManifestDiscoveryService(temp.Path, DefaultVersionProvider, logger, allowUnsignedLoad: true);
+        var service = new PluginManifestDiscoveryService(temp.Path, DefaultVersionProvider, logger);
 
         var result = service.DiscoverManifests();
 
@@ -239,7 +239,7 @@ public class PluginDependencyGraphResolutionTests
         WriteManifest(cFolder, Build(id: "test.c", assemblyFileName: "C.dll", dependencies: [DependencyFragment.On("test.a", "1.0.0")]));
 
         var registry = new PluginRegistry();
-        var service = new PluginManifestDiscoveryService(temp.Path, DefaultVersionProvider, registryRecorder: registry, allowUnsignedLoad: true);
+        var service = new PluginManifestDiscoveryService(temp.Path, DefaultVersionProvider, registryRecorder: registry);
 
         var result = service.DiscoverManifests();
 
@@ -273,7 +273,7 @@ public class PluginDependencyGraphResolutionTests
         WriteManifest(cFolder, Build(id: "test.c", assemblyFileName: "C.dll", dependencies: [DependencyFragment.On("test.a", "1.0.0")]));
 
         var logger = new RecordingLevelLogger();
-        var service = new PluginManifestDiscoveryService(temp.Path, DefaultVersionProvider, logger, allowUnsignedLoad: true);
+        var service = new PluginManifestDiscoveryService(temp.Path, DefaultVersionProvider, logger);
 
         var result = service.DiscoverManifests();
 
@@ -300,7 +300,7 @@ public class PluginDependencyGraphResolutionTests
         var dFolder = CreateCandidateFolder(temp.Path, "d-plugin");
         WriteManifest(dFolder, Build(id: "test.d", assemblyFileName: "D.dll"));
 
-        var service = new PluginManifestDiscoveryService(temp.Path, DefaultVersionProvider, allowUnsignedLoad: true);
+        var service = new PluginManifestDiscoveryService(temp.Path, DefaultVersionProvider);
 
         var result = service.DiscoverManifests();
 
@@ -321,7 +321,7 @@ public class PluginDependencyGraphResolutionTests
         var unrelatedFolder = CreateCandidateFolder(temp.Path, "b-unrelated");
         WriteManifest(unrelatedFolder, Build(id: "test.unrelated", assemblyFileName: "Unrelated.dll"));
 
-        var service = new PluginManifestDiscoveryService(temp.Path, DefaultVersionProvider, allowUnsignedLoad: true);
+        var service = new PluginManifestDiscoveryService(temp.Path, DefaultVersionProvider);
 
         var result = service.DiscoverManifests();
 
@@ -345,7 +345,7 @@ public class PluginDependencyGraphResolutionTests
         var bravoFolder = CreateCandidateFolder(temp.Path, "bravo-plugin");
         WriteManifest(bravoFolder, Build(id: "test.bravo", assemblyFileName: "Bravo.dll"));
 
-        var service = new PluginManifestDiscoveryService(temp.Path, DefaultVersionProvider, allowUnsignedLoad: true);
+        var service = new PluginManifestDiscoveryService(temp.Path, DefaultVersionProvider);
 
         var result = service.DiscoverManifests();
 
@@ -377,7 +377,7 @@ public class PluginDependencyGraphResolutionTests
         var targetFolder = CreateCandidateFolder(temp.Path, "b-target");
         WriteManifest(targetFolder, Build(id: "test.b", assemblyFileName: "B.dll"));
 
-        var service = new PluginManifestDiscoveryService(temp.Path, DefaultVersionProvider, allowUnsignedLoad: true);
+        var service = new PluginManifestDiscoveryService(temp.Path, DefaultVersionProvider);
 
         var result = service.DiscoverManifests();
 
@@ -387,7 +387,7 @@ public class PluginDependencyGraphResolutionTests
     }
 
     [Fact]
-    public void DiscoverManifests_DependentDeclaresSameTargetTwice_RecordsBothAsLoadedInRegistry()
+    public void DiscoverManifests_DependentDeclaresSameTargetTwice_RecordsBothAsDiscoveredInRegistry()
     {
         using var temp = new TempDirectory();
 
@@ -400,16 +400,16 @@ public class PluginDependencyGraphResolutionTests
         WriteManifest(targetFolder, Build(id: "test.b", assemblyFileName: "B.dll"));
 
         var registry = new PluginRegistry();
-        var service = new PluginManifestDiscoveryService(temp.Path, DefaultVersionProvider, registryRecorder: registry, allowUnsignedLoad: true);
+        var service = new PluginManifestDiscoveryService(temp.Path, DefaultVersionProvider, registryRecorder: registry);
 
         service.DiscoverManifests();
 
-        // A plugin that DiscoverManifests() returns is not itself recorded
-        // by Discovery (only isolated candidates are, per this Work
-        // Package's own design - Loaded is recorded later, by Plugin
-        // Loading) - so the correct proof that test.a was not silently
-        // dropped is the absence of any isolated-failure entry for it here.
-        Assert.DoesNotContain(registry.Entries, e => e.Id == "test.a");
+        // A plugin that DiscoverManifests() returns is recorded as
+        // Discovered (ADR-0146, WP 17.2A - Plugin Loading, which used to
+        // record Loaded later, is frozen) - the correct proof that test.a
+        // was not silently dropped is that it is recorded, not isolated.
+        var entry = Assert.Single(registry.Entries, e => e.Id == "test.a");
+        Assert.Equal(PluginRegistryState.Discovered, entry.State);
     }
 
     // ----------------------------------------------------------------

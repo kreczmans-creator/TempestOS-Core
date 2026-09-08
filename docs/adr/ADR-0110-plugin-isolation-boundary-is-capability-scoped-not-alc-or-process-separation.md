@@ -2,6 +2,8 @@
 
 ## Status
 
+**Status:** Frozen by ADR-0146 (v0.17.0)
+
 Accepted — `WP 13.0A` (Plugin & Registration Trust Isolation
 Architecture), 2026-08-13. Resolves `Security Roadmap.md` item 1, the
 central decision that roadmap item names as a prerequisite before

@@ -7,10 +7,19 @@ namespace Tempest.Core.Plugins;
 /// assigns its category, and logs it accordingly.
 /// </summary>
 /// <remarks>
-/// Shared by <see cref="PluginManifestDiscoveryService"/> and
-/// <see cref="PluginAssemblyLoader"/> so both phases report isolated failures
-/// identically — one place implements ADR-0025's severity table, rather than
-/// each phase reimplementing the same <c>switch</c>.
+/// Used by <see cref="PluginManifestDiscoveryService"/> so Manifest
+/// Discovery's own isolated failures all report identically — one place
+/// implements ADR-0025's severity table, rather than reimplementing the same
+/// <c>switch</c> at every throw site.
+/// <b>Frozen by ADR-0146 (<c>WP 17.2A</c>).</b> This class used to be shared
+/// with <c>PluginAssemblyLoader</c> too, and its two switches used to carry
+/// cases for assembly-loading and trust-denial exception types
+/// (<c>PluginAssemblyNotFoundException</c>, <c>PluginAssemblyLoadException</c>,
+/// <c>PluginSignatureVerificationFailedException</c>,
+/// <c>PluginUnsignedLoadNotAllowedException</c>, <c>PluginTrustDeniedException</c>).
+/// Assembly loading, signature verification and trust denial are all frozen
+/// at <c>src/Frozen/Tempest.Core.Plugins</c>; manifest discovery, which
+/// stays live, never throws any of them.
 /// </remarks>
 internal static class PluginFailureLogging
 {
@@ -46,14 +55,9 @@ internal static class PluginFailureLogging
         IncompatiblePluginVersionException => LogLevel.Information,
         InvalidPluginManifestException => LogLevel.Warning,
         DuplicatePluginIdException => LogLevel.Warning,
-        PluginAssemblyNotFoundException => LogLevel.Error,
-        PluginAssemblyLoadException => LogLevel.Error,
         MissingPluginDependencyException => LogLevel.Warning,
         IncompatiblePluginDependencyVersionException => LogLevel.Warning,
         CircularPluginDependencyException => LogLevel.Warning,
-        PluginSignatureVerificationFailedException => LogLevel.Error,
-        PluginUnsignedLoadNotAllowedException => LogLevel.Warning,
-        PluginTrustDeniedException => LogLevel.Warning,
         _ => LogLevel.Error,
     };
 
@@ -73,7 +77,7 @@ internal static class PluginFailureLogging
     /// would let a manifest that never fully validates — and so never
     /// reaches <see cref="DuplicatePluginIdException"/>'s own uniqueness
     /// check — inject a <see cref="PluginRegistryState.Failed"/> entry under
-    /// the exact declared Id of a genuine, unrelated, already-<see cref="PluginRegistryState.Loaded"/>
+    /// the exact declared Id of a genuine, unrelated, already-<see cref="PluginRegistryState.Discovered"/>
     /// plugin, since <see cref="Plugins.PluginRegistry.Record"/> performs no
     /// deduplication of its own). <see cref="InvalidPluginManifestException.PluginId"/>
     /// is instead surfaced only as free text inside the recorded
@@ -92,11 +96,6 @@ internal static class PluginFailureLogging
             MissingPluginDependencyException e => e.PluginId,
             IncompatiblePluginDependencyVersionException e => e.PluginId,
             CircularPluginDependencyException e => e.PluginId,
-            PluginAssemblyNotFoundException e => e.PluginId,
-            PluginAssemblyLoadException e => e.PluginId,
-            PluginSignatureVerificationFailedException e => e.PluginId,
-            PluginUnsignedLoadNotAllowedException e => e.PluginId,
-            PluginTrustDeniedException e => e.PluginId,
             _ => candidateFolderName,
         };
 
@@ -104,7 +103,6 @@ internal static class PluginFailureLogging
         {
             IncompatiblePluginVersionException => PluginRegistryState.Incompatible,
             MissingPluginDependencyException or IncompatiblePluginDependencyVersionException or CircularPluginDependencyException => PluginRegistryState.DependencyUnmet,
-            PluginTrustDeniedException => PluginRegistryState.TrustDenied,
             _ => PluginRegistryState.Failed,
         };
 

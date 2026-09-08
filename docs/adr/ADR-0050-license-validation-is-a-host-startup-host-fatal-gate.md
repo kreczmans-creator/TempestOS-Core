@@ -2,6 +2,8 @@
 
 ## Status
 
+**Status:** Frozen by ADR-0146 (v0.17.0)
+
 Accepted — `WP 6.6` (Licensing Framework), 2026-07-29.
 
 ## Context

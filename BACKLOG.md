@@ -90,10 +90,6 @@ lands and its tests pass, not by triage.
 | `TD-03` | No disposal tracking for reflection-constructed singletons | `WP 17.2A` |
 | `TD-04` | `IHostedService` name clashes with `Microsoft.Extensions.Hosting.IHostedService` | `WP 17.2A` |
 | `TD-12` | `IPersistenceStore` has no native query or filter capability | `WP 17.1A` |
-| `TD-13` | REST API identity resolution carries no real authentication | `WP 17.2A` |
-| `TD-14` | No TLS on the REST API's own Kestrel listener | `WP 17.2A` |
-| `TD-15` | Audit records the "unknown actor" for every REST-invoked command | `WP 17.2A` |
-| `TD-16` | License file contents are trusted with no signature verification | `WP 17.2A` |
 | `TD-18` | `LinkAsync` concurrency under many simultaneous calls is untested | `WP 17.1A` |
 | `TD-20` | `MaterialCatalog` reads a full revision history for a latest-only lookup | `WP 17.1A` |
 | `TD-21` | `ICalculationDefinition.Calculate` carries no `CancellationToken` | `WP 18.0A` |
@@ -103,20 +99,11 @@ lands and its tests pass, not by triage.
 | `TD-30` | `ICalculationResult`/`IVerificationResult`/`IApprovalGate` have zero implementations | `WP 18.0A` |
 | `TD-32` | Verification's `verifiedBy` link is invisible to `RelationshipRepository` | `WP 17.1B` |
 | `TD-36` | `PersistenceStore.DefaultRootPath` resolves relative to the process CWD | `WP 17.1A` |
-| `TD-49` | TOCTOU window between plugin signature verification and load | `WP 17.2A` |
-| `TD-50` | First-party certificate trust is a filename convention, not a certificate attribute | `WP 17.2A` |
-| `TD-53` | A hosted-service construction failure can be misclassified as non-critical | `WP 17.2A` |
-| `TD-54` | `ITempestServiceProvider`'s DI non-registration is incidental, not enforced | `WP 17.2A` |
-| `TD-55` | `PluginDeniedTypeRegistry` can wrongly deny an innocent shared assembly's types | `WP 17.2A` |
-| `TD-56` | A plugin constructor runs with a `null` (first-party) component scope | `WP 17.2A` |
-| `TD-61` | Plugin-folder containment check does not resolve symlinks | `WP 17.2A` |
-| `TD-64` | `TD-52`'s gate closure has no end-to-end production-wiring test | `WP 17.2A` |
 | `TD-67` | Crash-window write ordering can strand an invisible orphan document | `WP 17.1A` |
 | `TD-86` | Engineering object mutation writes are per-object and unbatched | `WP 17.1B` |
 | `TD-88` | Startup rehydration is eager and linear, never lazy or project-scoped | `WP 17.1A` |
 | `TD-95` | Attachment bytes are stored per attachment, never deduplicated by content | `WP 17.1B` |
 | `TD-96` | `IBinaryPersistenceStore` materialises whole file content in memory | `WP 17.1B` |
-| `TD-129` | REST 404-vs-401 split lets an unauthenticated caller enumerate routes | `WP 17.2A` |
 | `TD-130` | Reconciliation services (one of which deletes data) have no authorization seam | `WP 17.2A` |
 | `TD-137` | `PersistenceStore`'s atomic writes are crash-safe but not `fsync`'d | `WP 17.1A` |
 | `TD-141` | Two durable relationship-write paths carry no supersession guard | `WP 17.1B` |
@@ -157,8 +144,26 @@ Not debt in a product that does not ship the layer:
 | `TD-161` | New application surfaces write engineering assets with no project scope | `WP 19.0B` archives the P04/asset surfaces this concerns |
 | `TD-162` | `ProjectDependencyRegister` (`P04`) is unreferenced | `WP 19.0B` |
 | `TD-82` | Companion (mobile/field) application has zero implementation on this branch | Companion is explicitly out of `v1.0.0` scope (`docs/releases/v1.0.0/WorkPackages.md`, "What v1.0.0 is") |
+| `TD-13` | REST API identity resolution carries no real authentication | frozen by `WP 17.2A` — the inbound REST API moved to `src/Frozen/Tempest.Core.Api` (`ADR-0146`) |
+| `TD-14` | No TLS on the REST API's own Kestrel listener | frozen by `WP 17.2A` |
+| `TD-15` | Audit records the "unknown actor" for every REST-invoked command | frozen by `WP 17.2A` |
+| `TD-16` | License file contents are trusted with no signature verification | frozen by `WP 17.2A` — Licensing moved to `src/Frozen/Tempest.Core.Licensing` (`ADR-0146`) |
+| `TD-49` | TOCTOU window between plugin signature verification and load | frozen by `WP 17.2A` — the plugin trust platform moved to `src/Frozen/Tempest.Core.Plugins` (`ADR-0146`) |
+| `TD-50` | First-party certificate trust is a filename convention, not a certificate attribute | frozen by `WP 17.2A` |
+| `TD-53` | A hosted-service construction failure can be misclassified as non-critical | frozen by `WP 17.2A` |
+| `TD-54` | `ITempestServiceProvider`'s DI non-registration is incidental, not enforced | frozen by `WP 17.2A` |
+| `TD-55` | `PluginDeniedTypeRegistry` can wrongly deny an innocent shared assembly's types | frozen by `WP 17.2A` |
+| `TD-56` | A plugin constructor runs with a `null` (first-party) component scope | frozen by `WP 17.2A` |
+| `TD-61` | Plugin-folder containment check does not resolve symlinks | frozen by `WP 17.2A` |
+| `TD-64` | `TD-52`'s gate closure has no end-to-end production-wiring test | frozen by `WP 17.2A` |
+| `TD-129` | REST 404-vs-401 split lets an unauthenticated caller enumerate routes | frozen by `WP 17.2A` |
 
-Only three rows land here in the currently-*open* subset — the "about
-fifteen rows" `WorkPackages.md` estimates for this bucket counts the
-full register, most of which (the plugin-trust and REST rows, e.g.
-`TD-09`–`TD-11`) are already `Resolved` and never entered this triage.
+Sixteen rows land here in the currently-*open* subset — three from
+earlier triage, and thirteen moved by `WP 17.2A` (`ADR-0146`): the
+plugin-trust, REST and Licensing rows above, whose subject moved to
+`src/Frozen/` and out of the `v1.0.0` build. The "about fifteen rows"
+`WorkPackages.md` estimates for this bucket counts the full register,
+most of which (the plugin-trust and REST rows, e.g. `TD-09`–`TD-11`) were
+already `Resolved` and never entered this triage — this Work Package's
+own move is a second, later wave the estimate did not anticipate by
+number.
