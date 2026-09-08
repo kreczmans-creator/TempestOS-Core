@@ -152,6 +152,20 @@ internal sealed class ActionOutcomeReporter
         // `TD-58`: a refused action changed nothing, so its dependents keep
         // their current — still correct — state.
         if (outcome.WorkspaceChanged && refresh is not null)
-            await refresh().ConfigureAwait(true);
+        {
+            try
+            {
+                await refresh().ConfigureAwait(true);
+            }
+            catch (ObjectDisposedException)
+            {
+                // `WP 17.2A`: this tail runs on a UI continuation after the
+                // command itself has completed. If the platform was disposed
+                // in between — the window closed mid-command, a test tore
+                // down — there is nothing left to refresh, and throwing here
+                // would surface as a crash on the UI thread after the user
+                // had already left.
+            }
+        }
     }
 }

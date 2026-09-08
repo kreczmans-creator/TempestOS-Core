@@ -1,6 +1,7 @@
 using System.Reflection;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
+using Avalonia.Threading;
 using Avalonia.LogicalTree;
 using Tempest.App.Workspace;
 using Tempest.App.Workspace.Requirements;
@@ -340,20 +341,23 @@ public sealed class FeatureCompletionTests
             // shipped behaviour exactly; the subject is still the selection.
             await AnswerPromptsAsync(inputDialog, "WP10.7A Test Verification Activity", "Inspection");
 
-            // `TD-119`: the create completes on a continuation this test has no
-            // task for. Switching area and walking the tree are reads, never
-            // writes, so re-running them cannot manufacture the object.
-            ProjectExplorerNode? created = null;
-            var verificationDeadline = DesktopTestHelpers.Deadline(2);
-            while (true)
-            {
-                await workspace.Navigation.SwitchAreaAsync(VerificationWorkspaceExplorerModule.NavigationItemId);
-                created = await FindFirstObjectNodeOfKindAsync(workspace.ProjectExplorer, await workspace.ProjectExplorer.GetRootNodesAsync(), "VerificationActivity", "WP10.7A Test Verification Activity");
-                if (created is not null || DateTime.UtcNow >= verificationDeadline)
-                    break;
+            // `TD-119`/`WP 17.2A`: the create completes on a continuation this
+            // test has no task for. The registry now tracks it, so the test
+            // waits for the registry to go idle rather than polling against a
+            // deadline that a loaded machine could outrun — which is exactly
+            // how this test failed intermittently before.
+            await registry.WhenIdleAsync(TimeSpan.FromSeconds(30 * DesktopTestHelpers.TimeoutFactor));
 
-                await Task.Delay(10);
+            // The ribbon's own report-then-refresh tail runs on a UI
+            // continuation after the command completes; let it land.
+            for (var i = 0; i < 3; i++)
+            {
+                Dispatcher.UIThread.RunJobs();
+                await Task.Yield();
             }
+
+            await workspace.Navigation.SwitchAreaAsync(VerificationWorkspaceExplorerModule.NavigationItemId);
+            var created = await FindFirstObjectNodeOfKindAsync(workspace.ProjectExplorer, await workspace.ProjectExplorer.GetRootNodesAsync(), "VerificationActivity", "WP10.7A Test Verification Activity");
 
             Assert.NotNull(created);
 

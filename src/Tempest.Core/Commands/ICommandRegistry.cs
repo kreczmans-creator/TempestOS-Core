@@ -138,4 +138,17 @@ public interface ICommandRegistry
         CommandContext context,
         CommandParameterPrompt? prompt = null,
         CancellationToken cancellationToken = default);
+
+    /// <summary>The number of invocations currently executing through this registry (`WP 17.2A`).</summary>
+    int InFlightInvocations => 0;
+
+    /// <summary>
+    /// Completes once no invocation is executing, or after
+    /// <paramref name="timeout"/> — whichever comes first — without
+    /// throwing on the timeout (`WP 17.2A`). A UI raises a command from an
+    /// event handler and holds no task for it; anything that tears the
+    /// platform down underneath that continuation (host disposal, a test's
+    /// teardown) needs a way to let the work land first.
+    /// </summary>
+    Task WhenIdleAsync(TimeSpan timeout, CancellationToken cancellationToken = default) => Task.CompletedTask;
 }

@@ -308,6 +308,7 @@ public sealed class CommandRegistry : ICommandRegistry
     {
         CommandResult result;
 
+        BeginInvocation();
         try
         {
             result = await _table.DispatchAsync(command, cancellationToken).ConfigureAwait(false);
@@ -321,6 +322,10 @@ public sealed class CommandRegistry : ICommandRegistry
             _logger?.Error($"Command '{id}' handler threw.", ex);
             throw;
         }
+        finally
+        {
+            EndInvocation();
+        }
 
         if (result.Succeeded)
             _logger?.Information($"Command '{id}' invoked: Succeeded.");
@@ -328,5 +333,66 @@ public sealed class CommandRegistry : ICommandRegistry
             _logger?.Warning($"Command '{id}' invoked: Failed ({result.Message}).");
 
         return result;
+    }
+
+    // ---- In-flight tracking (`WP 17.2A`) ----------------------------------
+    //
+    // A Desktop command is raised from an event handler that holds no task
+    // for it. Before this, a host disposed while such a continuation was
+    // still writing produced an ObjectDisposedException out of the
+    // persistence store — seen as an intermittent failure in the Desktop
+    // suite, and reachable by a user closing the window mid-command.
+
+    private readonly object _idleGate = new();
+    private int _inFlight;
+    private TaskCompletionSource<bool> _idle = CompletedIdle();
+
+    private static TaskCompletionSource<bool> CompletedIdle()
+    {
+        var source = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        source.SetResult(true);
+        return source;
+    }
+
+    /// <inheritdoc />
+    public int InFlightInvocations => Volatile.Read(ref _inFlight);
+
+    private void BeginInvocation()
+    {
+        lock (_idleGate)
+        {
+            if (_inFlight++ == 0)
+                _idle = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        }
+    }
+
+    private void EndInvocation()
+    {
+        lock (_idleGate)
+        {
+            if (--_inFlight == 0)
+                _idle.TrySetResult(true);
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task WhenIdleAsync(TimeSpan timeout, CancellationToken cancellationToken = default)
+    {
+        Task idle;
+        lock (_idleGate)
+            idle = _idle.Task;
+
+        if (idle.IsCompleted)
+            return;
+
+        var completed = await Task.WhenAny(idle, Task.Delay(timeout, cancellationToken)).ConfigureAwait(false);
+
+        if (!ReferenceEquals(completed, idle))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            _logger?.Warning(
+                $"Waited {timeout.TotalSeconds:0.#} s for {InFlightInvocations} in-flight command invocation(s) to finish; " +
+                "proceeding without them.");
+        }
     }
 }

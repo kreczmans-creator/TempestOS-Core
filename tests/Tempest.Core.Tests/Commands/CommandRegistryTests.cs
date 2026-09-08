@@ -155,6 +155,68 @@ public class CommandRegistryTests
         Assert.Equal("from-registry", received.Payload);
     }
 
+    // `WP 17.2A`: the registry knows what it is executing, so a host (or a
+    // test) can let in-flight work land before tearing the platform down.
+    [Fact]
+    public async Task WhenIdleAsync_NothingInFlight_CompletesImmediately()
+    {
+        var (registry, _) = CreateRegistryAndDispatcher();
+
+        Assert.Equal(0, registry.InFlightInvocations);
+        var idle = registry.WhenIdleAsync(TimeSpan.FromSeconds(5));
+
+        Assert.True(idle.IsCompletedSuccessfully);
+    }
+
+    [Fact]
+    public async Task WhenIdleAsync_HandlerStillRunning_CompletesOnlyAfterItFinishes()
+    {
+        var (registry, dispatcher) = CreateRegistryAndDispatcher();
+        var release = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var handler = new RecordingCommandHandler<RecordedCommandA>(async (_, _) =>
+        {
+            await release.Task;
+            return CommandResult.Success();
+        });
+        dispatcher.RegisterHandler(handler);
+        registry.RegisterDescriptor(new CommandDescriptor(
+            "sample.a", "Sample A", createDefault: () => new RecordedCommandA("slow")));
+
+        var invocation = registry.InvokeAsync("sample.a", CancellationToken.None);
+        Assert.Equal(1, registry.InFlightInvocations);
+
+        var idle = registry.WhenIdleAsync(TimeSpan.FromSeconds(30));
+        await Task.Delay(50);
+        Assert.False(idle.IsCompleted);
+
+        release.SetResult(true);
+        await invocation;
+        await idle;
+
+        Assert.Equal(0, registry.InFlightInvocations);
+    }
+
+    [Fact]
+    public async Task WhenIdleAsync_HandlerNeverFinishes_ReturnsAfterTheTimeoutWithoutThrowing()
+    {
+        var (registry, dispatcher) = CreateRegistryAndDispatcher();
+        var never = new TaskCompletionSource<bool>();
+        dispatcher.RegisterHandler(new RecordingCommandHandler<RecordedCommandA>(async (_, _) =>
+        {
+            await never.Task;
+            return CommandResult.Success();
+        }));
+        registry.RegisterDescriptor(new CommandDescriptor(
+            "sample.a", "Sample A", createDefault: () => new RecordedCommandA("stuck")));
+
+        _ = registry.InvokeAsync("sample.a", CancellationToken.None);
+
+        await registry.WhenIdleAsync(TimeSpan.FromMilliseconds(100));
+
+        Assert.Equal(1, registry.InFlightInvocations);
+        never.SetResult(true);
+    }
+
     [Fact]
     public async Task InvokeAsync_HandlerSucceeds_ReturnsTheHandlersResult()
     {

@@ -300,6 +300,23 @@ public sealed class WorkspaceManager : IWorkspaceManager, IAsyncDisposable
     /// <inheritdoc />
     public async ValueTask DisposeAsync()
     {
+        // `WP 17.2A`: let any command still executing land before the
+        // platform it is writing to is disposed underneath it. Bounded, so a
+        // hung handler cannot hold the application open.
+        if (_host.Services is { } services
+            && services.GetService(typeof(Tempest.Core.Commands.ICommandRegistry)) is Tempest.Core.Commands.ICommandRegistry registry)
+        {
+            try
+            {
+                await registry.WhenIdleAsync(TimeSpan.FromSeconds(10)).ConfigureAwait(false);
+            }
+            catch (Exception)
+            {
+                // Disposal proceeds regardless; the wait is a courtesy to
+                // in-flight work, not a gate on shutdown.
+            }
+        }
+
         await _host.DisposeAsync().ConfigureAwait(false);
     }
 
