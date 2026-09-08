@@ -46,6 +46,7 @@ public class TempestHostPluginTrustTests
             """);
 
         var builder = new TempestHostBuilder(Type.EmptyTypes, temp.Path);
+        builder.WithIsolatedPersistenceRoot();
         builder.AddConfigurationSource(new MemoryConfigurationSource(
         [
             new KeyValuePair<string, string>("Plugins:AllowUnsignedLoad", "true"),
@@ -103,6 +104,7 @@ public class TempestHostPluginTrustTests
             """);
 
         var builder = new TempestHostBuilder(Type.EmptyTypes, temp.Path);
+        builder.WithIsolatedPersistenceRoot();
         builder.AddConfigurationSource(new MemoryConfigurationSource(
         [
             new KeyValuePair<string, string>("Plugins:AllowUnsignedLoad", "true"),
@@ -156,7 +158,7 @@ public class TempestHostPluginTrustTests
 
         // Deliberately no Plugins:AllowUnsignedLoad configuration at all -
         // the safe, fail-closed default (ADR-0112, category 16).
-        var host = new TempestHostBuilder(Type.EmptyTypes, temp.Path).Build();
+        var host = new TempestHostBuilder(Type.EmptyTypes, temp.Path).WithIsolatedPersistenceRoot().Build();
 
         var runTask = host.RunAsync();
 
@@ -243,6 +245,7 @@ public class TempestHostPluginTrustTests
         // exactly this reason).
         var moduleType = LoadPluginModuleType(assemblyPath);
         var builder = new TempestHostBuilder([moduleType], temp.Path);
+        builder.WithIsolatedPersistenceRoot();
         builder.AddConfigurationSource(new MemoryConfigurationSource(
         [
             new KeyValuePair<string, string>("Plugins:AllowUnsignedLoad", "true"),
@@ -311,6 +314,7 @@ public class TempestHostPluginTrustTests
 
         var moduleType = LoadPluginModuleType(assemblyPath);
         var builder = new TempestHostBuilder([moduleType], temp.Path);
+        builder.WithIsolatedPersistenceRoot();
         builder.AddConfigurationSource(new MemoryConfigurationSource(
         [
             new KeyValuePair<string, string>("Plugins:AllowUnsignedLoad", "true"),
@@ -385,6 +389,7 @@ public class TempestHostPluginTrustTests
         // candidate sets that would exclude it either way.
         var dualType = LoadPluginModuleType(assemblyPath);
         var builder = new TempestHostBuilder([dualType], temp.Path, [dualType]);
+        builder.WithIsolatedPersistenceRoot();
         builder.AddConfigurationSource(new MemoryConfigurationSource(
         [
             new KeyValuePair<string, string>("Plugins:AllowUnsignedLoad", "true"),
@@ -468,6 +473,7 @@ public class TempestHostPluginTrustTests
 
         var moduleType = LoadPluginModuleType(assemblyPath);
         var builder = new TempestHostBuilder([moduleType], temp.Path);
+        builder.WithIsolatedPersistenceRoot();
         builder.AddConfigurationSource(new MemoryConfigurationSource(
         [
             new KeyValuePair<string, string>("Plugins:AllowUnsignedLoad", "true"),
@@ -541,6 +547,7 @@ public class TempestHostPluginTrustTests
         // the hosted service discovery candidate set genuinely includes it.
         var hostedServiceType = LoadPluginHostedServiceType(assemblyPath);
         var builder = new TempestHostBuilder(Type.EmptyTypes, temp.Path, [hostedServiceType]);
+        builder.WithIsolatedPersistenceRoot();
         builder.AddConfigurationSource(new MemoryConfigurationSource(
         [
             new KeyValuePair<string, string>("Plugins:AllowUnsignedLoad", "true"),
@@ -614,6 +621,7 @@ public class TempestHostPluginTrustTests
 
         var hostedServiceType = LoadPluginHostedServiceType(assemblyPath);
         var builder = new TempestHostBuilder(Type.EmptyTypes, temp.Path, [hostedServiceType]);
+        builder.WithIsolatedPersistenceRoot();
         var host = builder.Build();
 
         var runTask = host.RunAsync();
@@ -693,6 +701,7 @@ public class TempestHostPluginTrustTests
 
         var moduleType = LoadPluginModuleType(assemblyPath);
         var builder = new TempestHostBuilder([moduleType], temp.Path);
+        builder.WithIsolatedPersistenceRoot();
         builder.AddConfigurationSource(new MemoryConfigurationSource(
         [
             new KeyValuePair<string, string>("Plugins:AllowUnsignedLoad", "true"),
@@ -769,6 +778,7 @@ public class TempestHostPluginTrustTests
 
         var moduleType = LoadPluginModuleType(assemblyPath);
         var builder = new TempestHostBuilder([moduleType], temp.Path);
+        builder.WithIsolatedPersistenceRoot();
         builder.AddConfigurationSource(new MemoryConfigurationSource(
         [
             new KeyValuePair<string, string>("Plugins:AllowUnsignedLoad", "true"),
@@ -829,6 +839,7 @@ public class TempestHostPluginTrustTests
 
         var moduleType = LoadPluginModuleType(assemblyPath);
         var builder = new TempestHostBuilder([moduleType], temp.Path);
+        builder.WithIsolatedPersistenceRoot();
         builder.AddConfigurationSource(new MemoryConfigurationSource(
         [
             new KeyValuePair<string, string>("Plugins:AllowUnsignedLoad", "true"),
@@ -944,6 +955,7 @@ public class TempestHostPluginTrustTests
         // staying Running proves something reachable was actually excluded.
         var moduleType = LoadPluginModuleType(assemblyPath);
         var builder = new TempestHostBuilder([moduleType], temp.Path);
+        builder.WithIsolatedPersistenceRoot();
         builder.AddConfigurationSource(new MemoryConfigurationSource(
         [
             new KeyValuePair<string, string>("Plugins:AllowUnsignedLoad", "true"),

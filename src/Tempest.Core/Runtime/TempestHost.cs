@@ -144,6 +144,14 @@ public sealed class TempestHost : ITempestHost
     private IHostedServiceManager? _hostedServiceManager;
     private ITempestServiceProvider? _services;
 
+    /// <summary>
+    /// Every already-constructed service instance this Host registered, in
+    /// registration order — what the Service Disposal phase disposes, in
+    /// reverse (`TD-03`, `WP 17.1A`). See <see cref="DisposeRegisteredServiceInstancesAsync"/>.
+    /// </summary>
+    private IReadOnlyList<object>? _registeredServiceInstances;
+    private bool _serviceInstancesDisposed;
+
     internal TempestHost(
         IReadOnlyList<IConfigurationSource> configurationSources,
         IEnumerable<Type>? discoveryCandidateTypesOverride,
@@ -568,10 +576,27 @@ public sealed class TempestHost : ITempestHost
         ILicenseProvider licenseProvider = new LicenseProvider(currentLicense);
         services.AddInstance(licenseProvider);
 
-        // ADR-0041: Persistence is established here, as part of Settings'
-        // own scope, ahead of Settings' own registration so the container
-        // can resolve IPersistenceStore for SettingsProvider's constructor.
-        services.Singleton<IPersistenceStore, PersistenceStore>();
+        // ADR-0041/ADR-0144: Persistence is established here, as part of
+        // Settings' own scope, ahead of Settings' own registration so the
+        // container can resolve IPersistenceStore for SettingsProvider's
+        // constructor.
+        //
+        // ADR-0144 changed two things about these lines. The backend is now
+        // SQLite by default, selected by `Persistence:Backend`
+        // (`files` still selects the file-per-key store for exactly one
+        // release). And ONE instance is constructed here and registered
+        // under all three store shapes, rather than three Singleton<>
+        // registrations that would each have constructed their own - which
+        // is what the two `Singleton<..., PersistenceStore>()` lines this
+        // replaces actually did: the text store and the byte store were two
+        // objects over one directory tree, harmless for a file store and
+        // impossible for one holding an exclusive lock on one database
+        // file. The dual-registration shape is ADR-0044's own, already used
+        // here for CurrentPrincipalAccessor and ImportService.
+        var persistenceStore = CreatePersistenceStore(configuration, logger);
+        services.AddInstance(typeof(IPersistenceStore), persistenceStore);
+        services.AddInstance(typeof(IBinaryPersistenceStore), persistenceStore);
+        services.AddInstance(typeof(IQueryablePersistenceStore), persistenceStore);
         services.Singleton<ISettingsProvider, SettingsProvider>();
 
         // WP 10.6A / ADR-0098 / ADR-0100: the Macro foundation and the
@@ -671,13 +696,16 @@ public sealed class TempestHost : ITempestHost
         // document was never designed to carry), never a second one.
         services.Singleton<IEngineeringObjectStateStore, EngineeringObjectStateStore>();
 
-        // TD-31: the durable bytes of an attached file. Registered here for
-        // the same reason and on the same terms as the state store above -
-        // the same single persistence store, in its byte shape
+        // TD-31: the durable bytes of an attached file. Built on the same
+        // single persistence store, in its byte shape
         // (IBinaryPersistenceStore), with its own collection. The metadata
         // stays on the object; only the content lives here, so rehydrating
         // a whole object graph never loads a file.
-        services.Singleton<IBinaryPersistenceStore, PersistenceStore>();
+        //
+        // IBinaryPersistenceStore itself is registered up with the rest of
+        // Persistence (ADR-0144) - it used to be registered here, a second
+        // time and as a second instance, which is now both unnecessary and
+        // impossible.
         services.Singleton<IAttachmentContentStore, AttachmentContentStore>();
 
         // WP 16.4B-R2: the durable write-intent marker for an attachment
@@ -1054,8 +1082,23 @@ public sealed class TempestHost : ITempestHost
 
         ITempestServiceProvider serviceProvider = new TempestServiceProvider(services, logger);
 
+        // `TD-03`/`WP 17.1A`: the Service Disposal phase's own subject.
+        // Captured from the descriptors rather than accumulated by hand so
+        // that a future AddInstance registration is covered by having been
+        // registered, not by somebody having remembered. Reference-distinct
+        // because one instance registered under three service types (the
+        // persistence store, ADR-0144) must be disposed once, not three
+        // times.
         lock (_gate)
+        {
             _services = serviceProvider;
+            _registeredServiceInstances = services.Descriptors
+                .Select(descriptor => descriptor.ExistingInstance)
+                .Where(instance => instance is not null)
+                .Select(instance => instance!)
+                .Distinct(ReferenceEqualityComparer.Instance)
+                .ToList();
+        }
 
         logger.Information("Host lifecycle phase completed: Dependency Injection Built.");
 
@@ -1241,9 +1284,15 @@ public sealed class TempestHost : ITempestHost
         if (stateAtEntry != HostState.Stopped && _lifecycleManager is not null)
             await _lifecycleManager.DisposeAllAsync(CancellationToken.None).ConfigureAwait(false);
 
-        // Service Disposal: no-op today - Configuration, Logging, and the DI
-        // container implement no IDisposable/IAsyncDisposable (see
-        // Failure Behaviour.md and the WP 2.7 Architectural Debt Assessment).
+        // Service Disposal (`TD-03`, `WP 17.1A`): every service registered
+        // as an already-constructed instance that implements
+        // IAsyncDisposable/IDisposable, in reverse registration order. It
+        // was a no-op until ADR-0144 gave the platform its first genuinely
+        // disposable service - a persistence store holding a database file
+        // and a cross-process lock, which the next Host on the same root
+        // cannot open until this one has let go. Idempotent, so the path
+        // that already stopped cleanly does not dispose twice.
+        await DisposeRegisteredServiceInstancesAsync().ConfigureAwait(false);
 
         lock (_gate)
             _state = HostState.Disposed;
@@ -1252,6 +1301,133 @@ public sealed class TempestHost : ITempestHost
 
         _shutdownRequested.Dispose();
         _stopEscalation.Dispose();
+    }
+
+    /// <summary>
+    /// Builds the one persistence store this Host registers under all
+    /// three store shapes, honouring <c>Persistence:Backend</c>
+    /// (`ADR-0144`).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <c>sqlite</c> — the default, and the only value a shipped
+    /// installation should ever use — gives
+    /// <see cref="SqlitePersistenceStore"/>. <c>files</c> gives the
+    /// file-per-key <see cref="PersistenceStore"/>, retained for exactly
+    /// one release so that a site which hits an unforeseen SQLite problem
+    /// in <c>v0.17.0</c> has somewhere to stand while it is fixed; it is
+    /// deleted in <c>v0.18.0</c> and nothing new may be built on it.
+    /// </para>
+    /// <para>
+    /// An unrecognised value is a Host-fatal configuration error rather
+    /// than a silent fall back to the default: a deployment that asked for
+    /// a backend and got a different one would be writing its data
+    /// somewhere its operator did not choose (`ADR-0013`).
+    /// </para>
+    /// </remarks>
+    private static object CreatePersistenceStore(IConfigurationProvider configuration, ILogger logger)
+    {
+        var backend = configuration.TryGetValue(SqlitePersistenceStore.BackendConfigurationKey, out var configured)
+            && !string.IsNullOrWhiteSpace(configured)
+            ? configured.Trim()
+            : SqlitePersistenceStore.SqliteBackendValue;
+
+        if (string.Equals(backend, SqlitePersistenceStore.SqliteBackendValue, StringComparison.OrdinalIgnoreCase))
+        {
+            var store = new SqlitePersistenceStore(configuration, logger);
+            logger.Information(
+                $"Persistence backend: SQLite (ADR-0144), database '{store.DatabasePath}', " +
+                $"schema version {SqlitePersistenceStore.SchemaVersion}.");
+            return store;
+        }
+
+        if (string.Equals(backend, SqlitePersistenceStore.FileBackendValue, StringComparison.OrdinalIgnoreCase))
+        {
+            var store = new PersistenceStore(configuration, logger);
+            logger.Warning(
+                $"Persistence backend: the file-per-key store, root '{store.RootPath}', selected by " +
+                $"'{SqlitePersistenceStore.BackendConfigurationKey}'. This backend does not fsync a write, " +
+                "cannot answer a query without scanning a directory, and cannot make two writes land together. " +
+                "It is retained for one release only and is deleted in v0.18.0 (ADR-0144).");
+            return store;
+        }
+
+        throw new PersistenceStoreUnavailableException(
+            $"'{SqlitePersistenceStore.BackendConfigurationKey}' is configured as '{backend}', which is not a " +
+            $"persistence backend this build has. Valid values are '{SqlitePersistenceStore.SqliteBackendValue}' " +
+            $"(the default) and '{SqlitePersistenceStore.FileBackendValue}'.");
+    }
+
+    /// <summary>
+    /// The Service Disposal lifecycle phase, for the services the Host
+    /// registered as already-constructed instances (`TD-03`, `WP 17.1A`).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Disposes every registered instance implementing
+    /// <see cref="IAsyncDisposable"/> or <see cref="IDisposable"/>, in
+    /// <b>reverse registration order</b> — the order a composition root
+    /// must use, because a service registered later may have been handed a
+    /// service registered earlier and must stop using it first. Async
+    /// disposal is preferred where a type offers both.
+    /// </para>
+    /// <para>
+    /// This closes `TD-03` for instance registrations, which is where the
+    /// platform's disposable services actually are: the persistence store
+    /// (`ADR-0144`) is registered this way, and it holds a database file
+    /// and a cross-process lock that a second Host on the same root cannot
+    /// take until this one lets go. It does <b>not</b> close `TD-03` for
+    /// container-constructed singletons; <c>TempestServiceProvider</c>
+    /// keeps no disposal list of what it built, and giving it one is a
+    /// change to the container rather than to the Host. That remains open
+    /// and is deliberately not claimed here.
+    /// </para>
+    /// <para>
+    /// Idempotent, and never allowed to fail shutdown: a failing dispose is
+    /// logged and the remaining instances are still disposed
+    /// (`FOUNDATION.md` principle 5).
+    /// </para>
+    /// </remarks>
+    private async Task DisposeRegisteredServiceInstancesAsync()
+    {
+        IReadOnlyList<object>? instances;
+
+        lock (_gate)
+        {
+            if (_serviceInstancesDisposed)
+                return;
+
+            _serviceInstancesDisposed = true;
+            instances = _registeredServiceInstances;
+        }
+
+        if (instances is null)
+            return;
+
+        for (var i = instances.Count - 1; i >= 0; i--)
+        {
+            var instance = instances[i];
+
+            try
+            {
+                switch (instance)
+                {
+                    case IAsyncDisposable asyncDisposable:
+                        await asyncDisposable.DisposeAsync().ConfigureAwait(false);
+                        break;
+                    case IDisposable disposable:
+                        disposable.Dispose();
+                        break;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.Warning(
+                    $"Service Disposal: '{instance.GetType().FullName}' threw while being disposed. Shutdown " +
+                    "continues; the remaining services are still disposed.",
+                    ex);
+            }
+        }
     }
 
     private void EnterStarting()
@@ -1336,7 +1512,8 @@ public sealed class TempestHost : ITempestHost
             _logger?.Information("Host lifecycle phase completed: Module Disposal (Dispose).");
         }
 
-        // Service Disposal: no-op today - see the remarks on DisposeAsync above.
+        // Service Disposal - see the remarks on DisposeRegisteredServiceInstancesAsync.
+        await DisposeRegisteredServiceInstancesAsync().ConfigureAwait(false);
         _logger?.Information("Host lifecycle phase completed: Service Disposal.");
 
         _logger?.Information("Shutdown complete.");

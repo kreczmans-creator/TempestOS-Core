@@ -13,7 +13,7 @@ public class ReportingHostRegistrationTests
 {
     private static async Task RunAgainstRunningHostAsync(Func<ITempestHost, Task> body)
     {
-        var host = new TempestHostBuilder(Type.EmptyTypes).Build();
+        var host = new TempestHostBuilder(Type.EmptyTypes).WithIsolatedPersistenceRoot().Build();
         var originalOut = Console.Out;
 
         try

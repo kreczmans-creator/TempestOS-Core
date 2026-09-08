@@ -63,7 +63,13 @@ public class SettingsHostRegistrationTests
         {
             var store = host.Services!.GetService(typeof(IPersistenceStore));
 
-            Assert.IsType<PersistenceStore>(store);
+            // `ADR-0144`: the default backend is SQLite. The three store
+            // shapes are one instance, not three - which is what actually
+            // matters here, and what two `Singleton<..., PersistenceStore>()`
+            // registrations used not to give.
+            Assert.IsType<SqlitePersistenceStore>(store);
+            Assert.Same(store, host.Services!.GetService(typeof(IBinaryPersistenceStore)));
+            Assert.Same(store, host.Services!.GetService(typeof(IQueryablePersistenceStore)));
 
             return Task.CompletedTask;
         });

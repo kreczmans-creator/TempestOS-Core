@@ -194,7 +194,7 @@ public class ClockModuleEventIntegrationTests
     [Fact]
     public async Task RunAsync_WithClockModuleAndObserver_ObserverLogsStartedAndStopped_ThroughTheRealHost()
     {
-        var host = new TempestHostBuilder([typeof(ClockModule), typeof(ClockLifecycleObserverModule)]).Build();
+        var host = new TempestHostBuilder([typeof(ClockModule), typeof(ClockLifecycleObserverModule)]).WithIsolatedPersistenceRoot().Build();
         var originalOut = Console.Out;
         var writer = new StringWriter();
 
@@ -262,7 +262,7 @@ public class ClockModuleEventIntegrationTests
         // not by re-running the same host instance.
         for (var i = 0; i < 2; i++)
         {
-            var host = new TempestHostBuilder([typeof(ClockModule), typeof(ClockLifecycleObserverModule)]).Build();
+            var host = new TempestHostBuilder([typeof(ClockModule), typeof(ClockLifecycleObserverModule)]).WithIsolatedPersistenceRoot().Build();
 
             var runTask = host.RunAsync();
 

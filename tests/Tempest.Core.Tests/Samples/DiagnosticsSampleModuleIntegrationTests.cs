@@ -171,7 +171,7 @@ public class DiagnosticsSampleModuleIntegrationTests
     [Fact]
     public async Task RunAsync_WithDiagnosticsSampleModule_RegistersAndReportsThroughTheRealHost()
     {
-        var host = new TempestHostBuilder([typeof(DiagnosticsSampleModule)]).Build();
+        var host = new TempestHostBuilder([typeof(DiagnosticsSampleModule)]).WithIsolatedPersistenceRoot().Build();
         var originalOut = Console.Out;
         var writer = new StringWriter();
 

@@ -562,6 +562,7 @@ public class PluginPlatformFaultInjectionTests
         var healthyModuleType = LoadSingleModuleType(healthyAssembly);
 
         var builder = new TempestHostBuilder([deniedModuleType, healthyModuleType], pluginsRoot);
+        builder.WithIsolatedPersistenceRoot();
         var host = builder.Build();
 
         await RunUntilRunningAsync(host);
@@ -614,6 +615,7 @@ public class PluginPlatformFaultInjectionTests
         var healthyModuleType = LoadSingleModuleType(healthyAssembly);
 
         var builder = new TempestHostBuilder([throwingModuleType, healthyModuleType], pluginsRoot);
+        builder.WithIsolatedPersistenceRoot();
         builder.AddConfigurationSource(new MemoryConfigurationSource(
         [
             new KeyValuePair<string, string>("Plugins:AllowUnsignedLoad", "true"),
@@ -672,6 +674,7 @@ public class PluginPlatformFaultInjectionTests
         var healthyModuleType = LoadSingleModuleType(healthyAssembly);
 
         var builder = new TempestHostBuilder([initModuleType, startModuleType, healthyModuleType], pluginsRoot);
+        builder.WithIsolatedPersistenceRoot();
         builder.AddConfigurationSource(new MemoryConfigurationSource(
         [
             new KeyValuePair<string, string>("Plugins:AllowUnsignedLoad", "true"),
@@ -998,6 +1001,7 @@ public class PluginPlatformFaultInjectionTests
     private static ITempestHost BuildUnsignedAllowedHost(string pluginsRoot)
     {
         var builder = new TempestHostBuilder(Type.EmptyTypes, pluginsRoot);
+        builder.WithIsolatedPersistenceRoot();
         builder.AddConfigurationSource(new MemoryConfigurationSource(
         [
             new KeyValuePair<string, string>("Plugins:AllowUnsignedLoad", "true"),

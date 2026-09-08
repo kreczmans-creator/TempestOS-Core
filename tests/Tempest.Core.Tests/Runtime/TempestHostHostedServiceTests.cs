@@ -20,10 +20,12 @@ namespace Tempest.Core.Tests.Runtime;
 [Collection("Console output capture")]
 public class TempestHostHostedServiceTests
 {
-    private static TempestHostBuilder BuilderWithHostedServices(params Type[] hostedServiceTypes) =>
-        new(discoveryCandidateTypesOverride: Type.EmptyTypes,
-            pluginsRootPathOverride: null,
-            hostedServiceCandidateTypesOverride: hostedServiceTypes);
+    private static ITempestHostBuilder BuilderWithHostedServices(params Type[] hostedServiceTypes) =>
+        new TempestHostBuilder(
+                discoveryCandidateTypesOverride: Type.EmptyTypes,
+                pluginsRootPathOverride: null,
+                hostedServiceCandidateTypesOverride: hostedServiceTypes)
+            .WithIsolatedPersistenceRoot();
 
     private static async Task<string> RunAndCaptureConsoleAsync(ITempestHost host, Func<Task> duringRun)
     {
@@ -89,7 +91,7 @@ public class TempestHostHostedServiceTests
                 discoveryCandidateTypesOverride: [typeof(HealthyHostTestModuleAlpha)],
                 pluginsRootPathOverride: null,
                 hostedServiceCandidateTypesOverride: [typeof(AlphaHostedService)])
-            .Build();
+            .WithIsolatedPersistenceRoot().Build();
 
         var output = await RunAndCaptureConsoleAsync(host, async () =>
         {

@@ -95,7 +95,7 @@ public class ClockModulePipelineTests
     [Fact]
     public async Task RunAsync_WithClockModule_ReachesRunningThenStopsGracefully_LikeAnyOtherModule()
     {
-        var host = new TempestHostBuilder([typeof(ClockModule)]).Build();
+        var host = new TempestHostBuilder([typeof(ClockModule)]).WithIsolatedPersistenceRoot().Build();
 
         var runTask = host.RunAsync();
 
@@ -116,7 +116,7 @@ public class ClockModulePipelineTests
         // ClockModule alongside another, unrelated module type - proving
         // its presence neither requires nor causes any special handling
         // relative to any other module in the same batch.
-        var host = new TempestHostBuilder([typeof(ClockModule), typeof(SampleModuleA)]).Build();
+        var host = new TempestHostBuilder([typeof(ClockModule), typeof(SampleModuleA)]).WithIsolatedPersistenceRoot().Build();
 
         var runTask = host.RunAsync();
 

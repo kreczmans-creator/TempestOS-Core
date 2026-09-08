@@ -24,7 +24,7 @@ public class TempestHostPluginLifecycleTests
     {
         using var temp = new TempDirectory();
 
-        var host = new TempestHostBuilder(Type.EmptyTypes, temp.Path).Build();
+        var host = new TempestHostBuilder(Type.EmptyTypes, temp.Path).WithIsolatedPersistenceRoot().Build();
         var originalOut = Console.Out;
         var writer = new StringWriter();
 
@@ -60,7 +60,7 @@ public class TempestHostPluginLifecycleTests
         using var temp = new TempDirectory();
         var missingPluginsRoot = Path.Combine(temp.Path, "does-not-exist");
 
-        var host = new TempestHostBuilder(Type.EmptyTypes, missingPluginsRoot).Build();
+        var host = new TempestHostBuilder(Type.EmptyTypes, missingPluginsRoot).WithIsolatedPersistenceRoot().Build();
 
         var runTask = host.RunAsync();
 
@@ -85,7 +85,7 @@ public class TempestHostPluginLifecycleTests
             Path.Combine(brokenPluginFolder, PluginManifestDiscoveryService.ManifestFileName),
             "{ not valid json");
 
-        var host = new TempestHostBuilder(Type.EmptyTypes, temp.Path).Build();
+        var host = new TempestHostBuilder(Type.EmptyTypes, temp.Path).WithIsolatedPersistenceRoot().Build();
 
         var runTask = host.RunAsync();
 
@@ -123,7 +123,7 @@ public class TempestHostPluginLifecycleTests
             }
             """);
 
-        var host = new TempestHostBuilder(Type.EmptyTypes, temp.Path).Build();
+        var host = new TempestHostBuilder(Type.EmptyTypes, temp.Path).WithIsolatedPersistenceRoot().Build();
 
         var runTask = host.RunAsync();
 
@@ -166,6 +166,7 @@ public class TempestHostPluginLifecycleTests
             """);
 
         var builder = new TempestHostBuilder(Type.EmptyTypes, temp.Path);
+        builder.WithIsolatedPersistenceRoot();
         builder.AddConfigurationSource(new MemoryConfigurationSource(
         [
             new KeyValuePair<string, string>("Plugins:AllowUnsignedLoad", "true"),
@@ -202,7 +203,7 @@ public class TempestHostPluginLifecycleTests
             Path.Combine(brokenPluginFolder, PluginManifestDiscoveryService.ManifestFileName),
             "{ not valid json");
 
-        var host = new TempestHostBuilder(Type.EmptyTypes, temp.Path).Build();
+        var host = new TempestHostBuilder(Type.EmptyTypes, temp.Path).WithIsolatedPersistenceRoot().Build();
 
         var runTask = host.RunAsync();
 
@@ -267,6 +268,7 @@ public class TempestHostPluginLifecycleTests
             """);
 
         var builder = new TempestHostBuilder(Type.EmptyTypes, temp.Path);
+        builder.WithIsolatedPersistenceRoot();
         builder.AddConfigurationSource(new MemoryConfigurationSource(
         [
             new KeyValuePair<string, string>("Plugins:AllowUnsignedLoad", "true"),
@@ -330,6 +332,7 @@ public class TempestHostPluginLifecycleTests
             """);
 
         var builder = new TempestHostBuilder(Type.EmptyTypes, temp.Path);
+        builder.WithIsolatedPersistenceRoot();
         builder.AddConfigurationSource(new MemoryConfigurationSource(
         [
             new KeyValuePair<string, string>("Plugins:AllowUnsignedLoad", "true"),

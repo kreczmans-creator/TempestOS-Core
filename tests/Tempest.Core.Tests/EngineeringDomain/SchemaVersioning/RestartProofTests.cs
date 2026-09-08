@@ -46,7 +46,6 @@ public sealed class RestartProofTests
     {
         using var temp = new TempDirectory();
         Guid partId;
-        IPersistenceStore firstPersistence;
 
         // ============================================================
         // FIRST HOST — create a real Part and move its Status, through
@@ -58,7 +57,6 @@ public sealed class RestartProofTests
             var (host, manager) = await StartHostAsync(temp.Path);
 
             var domain = (EngineeringDomainContext)host.Services!.GetService(typeof(EngineeringDomainContext));
-            firstPersistence = (IPersistenceStore)host.Services!.GetService(typeof(IPersistenceStore));
 
             var factory = new EngineeringObjectFactory<Part>(
                 MechanicalObjectFactoryRegistry.Part, domain,
@@ -92,7 +90,25 @@ public sealed class RestartProofTests
             "BomLine":{"Quantity":1,"UnitOfMeasure":null,"FindNumber":null,"ItemNumber":null,"ReferenceDesignator":null},
             "History":[],"Attachments":[],"TypeState":{} }
             """;
-        await firstPersistence.WriteAsync(EngineeringObjectStateStore.StateCollectionName, partId.ToString("N"), oldFormatJson);
+        // Written through a store this test owns and disposes, rather than
+        // through the first Host's own (`WP 17.1A`). Under `ADR-0144` a
+        // store holds its root's `tempest.lock` and its database handles
+        // for its lifetime, and the Host now disposes it at the Service
+        // Disposal phase - so the first Host's store is a closed store by
+        // the time this line is reached, and this rewrite has to open the
+        // root for itself in between the two Hosts, exactly as an operator
+        // editing the file between two launches would.
+        var rewriteConfiguration = new ConfigurationBuilder()
+            .AddSource(new MemoryConfigurationSource(
+            [
+                new KeyValuePair<string, string>(PersistenceStore.RootPathConfigurationKey, temp.Path),
+            ]))
+            .Build();
+
+        await using (var rewriter = new SqlitePersistenceStore(rewriteConfiguration))
+        {
+            await rewriter.WriteAsync(EngineeringObjectStateStore.StateCollectionName, partId.ToString("N"), oldFormatJson);
+        }
 
         // ============================================================
         // SECOND HOST — a genuinely new process shape over the same disk,

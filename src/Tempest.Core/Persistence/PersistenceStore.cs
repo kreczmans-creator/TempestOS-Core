@@ -11,6 +11,15 @@ namespace Tempest.Core.Persistence;
 /// </summary>
 /// <remarks>
 /// <para>
+/// <b>Superseded (`ADR-0144`, `WP 17.1A`).</b> This store is no longer the
+/// platform's default. <c>SqlitePersistenceStore</c> is, and this one is
+/// reachable only by setting <c>Persistence:Backend</c> to
+/// <c>files</c> — a one-release escape hatch, deleted in <c>v0.18.0</c>.
+/// Everything below still describes it accurately; what it cannot do is
+/// fsync a write, answer a query without scanning a directory, or make two
+/// writes land together, which is why it is being retired.
+/// </para>
+/// <para>
 /// Deliberately minimal, per this namespace's own scope: no schema, no
 /// querying beyond key lookup and full-collection key enumeration, no
 /// transactions across multiple keys. A <c>collection</c> maps to a
@@ -102,7 +111,7 @@ namespace Tempest.Core.Persistence;
 /// scope, and it is recorded rather than quietly fixed here.
 /// </para>
 /// </remarks>
-public sealed class PersistenceStore : IPersistenceStore, IBinaryPersistenceStore
+public sealed class PersistenceStore : IPersistenceStore, IBinaryPersistenceStore, IQueryablePersistenceStore
 {
     /// <summary>
     /// The configuration key the storage backend's root path is read
@@ -272,6 +281,112 @@ public sealed class PersistenceStore : IPersistenceStore, IBinaryPersistenceStor
             _logger?.Warning($"Persistence list failed for collection '{collection}'.", ex);
             throw new PersistenceStoreUnavailableException($"Failed to list collection '{collection}'.", ex);
         }
+    }
+
+    // ----------------------------------------------------------------
+    // IQueryablePersistenceStore (`ADR-0144`)
+    //
+    // Present so that a consumer may depend on the query shape without
+    // knowing which backend is configured. Every member below is the
+    // obvious O(N) reduction onto the four members this store already had
+    // — one directory scan and one file read per key — because a
+    // file-per-key tree has no index to do better with. That cost is the
+    // argument for `ADR-0144`, not a defect introduced by it.
+    // ----------------------------------------------------------------
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// A full directory scan, filtered in memory. On the SQLite backend
+    /// this is an indexed seek.
+    /// </remarks>
+    public async Task<IReadOnlyList<string>> ListKeysAsync(string collection, string keyPrefix, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(collection);
+        ArgumentNullException.ThrowIfNull(keyPrefix);
+
+        var keys = await ListKeysAsync(collection, cancellationToken).ConfigureAwait(false);
+
+        return keys
+            .Where(key => key.StartsWith(keyPrefix, StringComparison.Ordinal))
+            .OrderBy(key => key, StringComparer.Ordinal)
+            .ToList();
+    }
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// One file read per key, sequentially. A key whose record holds bytes
+    /// rather than text is skipped, matching <see cref="ReadAsync"/>'s own
+    /// rule for a single key — detected here by the read throwing or by the
+    /// value failing to be valid text, since a file carries no type tag.
+    /// </remarks>
+    public async Task<IReadOnlyList<KeyValuePair<string, string>>> ReadAllAsync(string collection, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(collection);
+
+        var keys = await ListKeysAsync(collection, cancellationToken).ConfigureAwait(false);
+        var results = new List<KeyValuePair<string, string>>(keys.Count);
+
+        foreach (var key in keys.OrderBy(key => key, StringComparer.Ordinal))
+        {
+            var value = await ReadAsync(collection, key, cancellationToken).ConfigureAwait(false);
+            if (value is not null)
+                results.Add(new KeyValuePair<string, string>(key, value));
+        }
+
+        return results;
+    }
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyDictionary<string, string?>> ReadManyAsync(
+        string collection,
+        IReadOnlyCollection<string> keys,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(collection);
+        ArgumentNullException.ThrowIfNull(keys);
+
+        var results = new Dictionary<string, string?>(StringComparer.Ordinal);
+
+        foreach (var key in keys.Distinct(StringComparer.Ordinal))
+            results[key] = await ReadAsync(collection, key, cancellationToken).ConfigureAwait(false);
+
+        return results;
+    }
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// <para>
+    /// <b>THIS BACKEND HAS NO TRANSACTION AND THIS METHOD DOES NOT GIVE IT
+    /// ONE.</b> The unit of work is run, and each of its writes lands
+    /// exactly when it is made. If the work throws half way through, the
+    /// writes it already made stand. There is no rollback, because a tree
+    /// of independently renamed files has nothing to roll back to.
+    /// </para>
+    /// <para>
+    /// It is implemented rather than thrown so that a consumer written
+    /// against <see cref="IQueryablePersistenceStore"/> still runs on the
+    /// <c>files</c> backend during the one release it survives — and it is
+    /// documented in capitals, and asserted by a test that names the
+    /// missing rollback, so that no caller can acquire the belief that it
+    /// is atomic here. `WP 17.1B`'s transactional object store is built on
+    /// the SQLite backend alone, and `ADR-0144` deletes this one in
+    /// <c>v0.18.0</c>.
+    /// </para>
+    /// </remarks>
+    public async Task ExecuteInTransactionAsync(
+        Func<IPersistenceTransaction, CancellationToken, Task> work,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(work);
+
+        _logger?.Warning(
+            "The file-per-key persistence backend is running a unit of work through " +
+            "ExecuteInTransactionAsync, which it cannot make atomic: each write lands as it is made, and a " +
+            "failure part way through leaves the earlier writes standing. Configure " +
+            $"'{SqlitePersistenceStore.BackendConfigurationKey}' as " +
+            $"'{SqlitePersistenceStore.SqliteBackendValue}' for a real transaction (`ADR-0144`).");
+
+        await work(new NonTransactionalScope(this), cancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc />
@@ -626,4 +741,32 @@ public sealed class PersistenceStore : IPersistenceStore, IBinaryPersistenceStor
     /// </summary>
     private static string LockKey(string collection, string key) =>
         $"{EncodeSegment(collection)}\n{EncodeSegment(key)}".ToUpperInvariant();
+
+    /// <summary>
+    /// The <see cref="IPersistenceTransaction"/> handle
+    /// <see cref="ExecuteInTransactionAsync"/> hands out on this backend: a
+    /// direct pass-through to the store, with no transaction behind it. See
+    /// that method's own remarks — this type exists to satisfy the shape,
+    /// not to claim the guarantee.
+    /// </summary>
+    private sealed class NonTransactionalScope(PersistenceStore store) : IPersistenceTransaction
+    {
+        public Task<string?> ReadAsync(string collection, string key, CancellationToken cancellationToken = default) =>
+            store.ReadAsync(collection, key, cancellationToken);
+
+        public Task WriteAsync(string collection, string key, string value, CancellationToken cancellationToken = default) =>
+            store.WriteAsync(collection, key, value, cancellationToken);
+
+        public Task DeleteAsync(string collection, string key, CancellationToken cancellationToken = default) =>
+            store.DeleteAsync(collection, key, cancellationToken);
+
+        public Task<byte[]?> ReadBytesAsync(string collection, string key, CancellationToken cancellationToken = default) =>
+            store.ReadBytesAsync(collection, key, cancellationToken);
+
+        public Task WriteBytesAsync(string collection, string key, ReadOnlyMemory<byte> value, CancellationToken cancellationToken = default) =>
+            store.WriteBytesAsync(collection, key, value, cancellationToken);
+
+        public Task<IReadOnlyList<string>> ListKeysAsync(string collection, string keyPrefix, CancellationToken cancellationToken = default) =>
+            store.ListKeysAsync(collection, keyPrefix, cancellationToken);
+    }
 }

@@ -29,6 +29,7 @@ public class TempestHostPluginConfigurationTests
         // No pluginsRootPathOverride (the 1-arg internal ctor leaves it
         // null) - the only way this plugin can be found is via configuration.
         var builder = new TempestHostBuilder(Type.EmptyTypes);
+        builder.WithIsolatedPersistenceRoot();
         builder.AddConfigurationSource(new MemoryConfigurationSource(
         [
             new KeyValuePair<string, string>("Runtime:Plugins:RootDirectory", temp.Path),
@@ -77,6 +78,7 @@ public class TempestHostPluginConfigurationTests
         // TempestHost's own documented precedence, this must win over the
         // configured Runtime:Plugins:RootDirectory below.
         var builder = new TempestHostBuilder(Type.EmptyTypes, overrideRoot.Path);
+        builder.WithIsolatedPersistenceRoot();
         builder.AddConfigurationSource(new MemoryConfigurationSource(
         [
             new KeyValuePair<string, string>("Runtime:Plugins:RootDirectory", configuredRoot.Path),
@@ -123,6 +125,7 @@ public class TempestHostPluginConfigurationTests
             PluginManifestJsonBuilder.Build(id: "test.ignored-default-name", name: "Ignored Plugin", assemblyFileName: "Ignored.dll"));
 
         var builder = new TempestHostBuilder(Type.EmptyTypes, temp.Path);
+        builder.WithIsolatedPersistenceRoot();
         builder.AddConfigurationSource(new MemoryConfigurationSource(
         [
             new KeyValuePair<string, string>("Runtime:Plugins:ManifestFileName", customManifestFileName),
@@ -166,6 +169,7 @@ public class TempestHostPluginConfigurationTests
             PluginManifestJsonBuilder.Build(id: "test.enabled-via-config", name: "Enabled Plugin", assemblyFileName: Path.GetFileName(enabledAssembly)));
 
         var builder = new TempestHostBuilder(Type.EmptyTypes, temp.Path);
+        builder.WithIsolatedPersistenceRoot();
         builder.AddConfigurationSource(new MemoryConfigurationSource(
         [
             // Deliberately messy: surrounding whitespace and an empty entry,
@@ -217,6 +221,7 @@ public class TempestHostPluginConfigurationTests
         // test process almost certainly has no "Plugins" folder - a
         // zero-plugin run, not a faulted Host.
         var builder = new TempestHostBuilder(Type.EmptyTypes);
+        builder.WithIsolatedPersistenceRoot();
         builder.AddConfigurationSource(new MemoryConfigurationSource(
         [
             new KeyValuePair<string, string>("Runtime:Plugins:RootDirectory", ""),
@@ -255,6 +260,7 @@ public class TempestHostPluginConfigurationTests
             PluginManifestJsonBuilder.Build(id: "test.default-manifest-name", name: "Default Manifest Name Plugin", assemblyFileName: Path.GetFileName(assemblyPath)));
 
         var builder = new TempestHostBuilder(Type.EmptyTypes, temp.Path);
+        builder.WithIsolatedPersistenceRoot();
         builder.AddConfigurationSource(new MemoryConfigurationSource(
         [
             new KeyValuePair<string, string>("Runtime:Plugins:ManifestFileName", "   "),
