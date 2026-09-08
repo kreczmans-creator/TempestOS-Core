@@ -272,7 +272,7 @@ public sealed class DialogFrameworkKeyboardTests
             // ("kind", "displayName"), each collected in turn through
             // InputDialog. Bounded poll, answering whichever prompt is
             // currently showing, until the command actually runs.
-            var deadline = DateTime.UtcNow.AddSeconds(5);
+            var deadline = DesktopTestHelpers.Deadline(5);
             while (invoked is null && unavailableReason is null && DateTime.UtcNow < deadline)
             {
                 if (inputDialog.IsVisible)

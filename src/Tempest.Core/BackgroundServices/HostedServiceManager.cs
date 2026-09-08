@@ -148,6 +148,14 @@ public sealed class HostedServiceManager : IHostedServiceManager
 
         _logger?.Information($"Hosted service '{tracked.ServiceType.FullName}' -> Starting.");
 
+        // Criticality is a property of the TYPE, decided before anything
+        // runs. Deciding it from `tracked.Instance` — as this did before
+        // `WP 17.0A` — meant a critical service whose CONSTRUCTOR threw was
+        // classified as ordinary (the instance was still null in the catch
+        // below) and quietly isolated, which is exactly the failure
+        // ADR-0021/ADR-0029 say must be Host-fatal.
+        var isCritical = typeof(ICriticalBackgroundService).IsAssignableFrom(tracked.ServiceType);
+
         try
         {
             tracked.Instance = (IHostedService)_serviceProvider.GetService(tracked.ServiceType);
@@ -172,7 +180,7 @@ public sealed class HostedServiceManager : IHostedServiceManager
                 tracked.FailureReason = ex;
             }
 
-            if (tracked.Instance is ICriticalBackgroundService)
+            if (isCritical)
             {
                 _logger?.Critical(
                     $"Critical hosted service '{tracked.ServiceType.FullName}' failed to start.",

@@ -310,6 +310,38 @@ public class HostedServiceManagerTests
         Assert.DoesNotContain(HostedServiceCallLog.Entries, e => e.Contains(nameof(GammaHostedService)));
     }
 
+    // `WP 17.0A`: a critical service whose constructor throws is Host-fatal,
+    // exactly as one whose StartAsync throws. Criticality is decided from
+    // the type, never from an instance that a failed constructor never made.
+    [Fact]
+    public async Task StartAllAsync_CriticalConstructorFailure_PropagatesUncaught_AndLogsAtCriticalLevel()
+    {
+        var logger = new RecordingLevelLogger();
+        var provider = BuildProvider(logger, typeof(CriticalConstructorFailureHostedService));
+        var manager = new HostedServiceManager([typeof(CriticalConstructorFailureHostedService)], provider, logger);
+
+        var exception = await Assert.ThrowsAnyAsync<Exception>(() => manager.StartAllAsync(CancellationToken.None));
+
+        Assert.Contains("Critical constructor failure", exception.ToString());
+        Assert.True(logger.HasEntryAt(LogLevel.Critical, "Critical hosted service"));
+        Assert.Contains($"{nameof(CriticalConstructorFailureHostedService)}:Construct", HostedServiceCallLog.Entries);
+    }
+
+    [Fact]
+    public async Task StartAllAsync_OrdinaryConstructorFailure_IsIsolated_AndSiblingsStillStart()
+    {
+        var logger = new RecordingLevelLogger();
+        var provider = BuildProvider(logger, typeof(AlphaHostedService), typeof(IsolatedConstructorFailureHostedService));
+        var manager = new HostedServiceManager([typeof(AlphaHostedService), typeof(IsolatedConstructorFailureHostedService)], provider, logger);
+
+        var exception = await Record.ExceptionAsync(() => manager.StartAllAsync(CancellationToken.None));
+
+        Assert.Null(exception);
+        Assert.Contains($"{nameof(AlphaHostedService)}:Start", HostedServiceCallLog.Entries);
+        Assert.True(logger.HasEntryAt(LogLevel.Error, "failed to start; isolated"));
+        Assert.False(logger.HasEntryAt(LogLevel.Critical, "Critical hosted service"));
+    }
+
     [Fact]
     public async Task StartAllAsync_CriticalFailure_LogsAtCriticalLevel()
     {

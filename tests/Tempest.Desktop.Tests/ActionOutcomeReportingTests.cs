@@ -211,7 +211,7 @@ public sealed class ActionOutcomeReportingTests
 
             // `TD-119`: the ribbon dispatch is fire-and-forget and is reported on the subscriber's own continuation; bounded poll on the real
             // history count, assertions unchanged.
-            var ribbonDeadline = DateTime.UtcNow.AddSeconds(2);
+            var ribbonDeadline = DesktopTestHelpers.Deadline(2);
             while (!(history.Entries.Count > before) && DateTime.UtcNow < ribbonDeadline)
                 await Task.Delay(10);
 
@@ -268,7 +268,7 @@ public sealed class ActionOutcomeReportingTests
 
             // `TD-119`: the report fans out to reported on the subscriber's own continuation; bounded poll on the real
             // history count, assertions unchanged.
-            var inspectorDeadline = DateTime.UtcNow.AddSeconds(2);
+            var inspectorDeadline = DesktopTestHelpers.Deadline(2);
             while (!(history.Entries.Count > before) && DateTime.UtcNow < inspectorDeadline)
                 await Task.Delay(10);
 
@@ -315,7 +315,7 @@ public sealed class ActionOutcomeReportingTests
 
             // `TD-119`: the report fans out to reported on the subscriber's own continuation; bounded poll on the real
             // history count, assertions unchanged.
-            var explorerDeadline = DateTime.UtcNow.AddSeconds(2);
+            var explorerDeadline = DesktopTestHelpers.Deadline(2);
             while (!(history.Entries.Count > before) && DateTime.UtcNow < explorerDeadline)
                 await Task.Delay(10);
 
@@ -361,7 +361,7 @@ public sealed class ActionOutcomeReportingTests
 
             // `TD-119`: the report fans out to reported on the subscriber's own continuation; bounded poll on the real
             // history count, assertions unchanged.
-            var editorDeadline = DateTime.UtcNow.AddSeconds(2);
+            var editorDeadline = DesktopTestHelpers.Deadline(2);
             while (!(history.Entries.Count > before) && DateTime.UtcNow < editorDeadline)
                 await Task.Delay(10);
 

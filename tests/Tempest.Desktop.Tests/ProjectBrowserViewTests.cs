@@ -49,7 +49,7 @@ public sealed class ProjectBrowserViewTests
             // (`EngineeringDocumentStore`) — bounded poll, the same
             // remedy `ObjectEditorViewTests` already uses for the
             // identical reason (`TD-119`).
-            var deadline = DateTime.UtcNow.AddSeconds(2);
+            var deadline = DesktopTestHelpers.Deadline(2);
             while (!projectContext.HasProject && DateTime.UtcNow < deadline)
                 await Task.Delay(10);
 

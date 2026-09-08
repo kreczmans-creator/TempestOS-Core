@@ -224,7 +224,7 @@ public sealed class ProductSpineAcceptanceTests
 
             // `TD-119`: the rail navigates on an asynchronous continuation; bounded poll on
             // the real navigator state, assertions unchanged.
-            var railDeadline = DateTime.UtcNow.AddSeconds(2);
+            var railDeadline = DesktopTestHelpers.Deadline(2);
             while (!(navigator.Current.Area == ShellArea.Engineering) && DateTime.UtcNow < railDeadline)
                 await Task.Delay(10);
 

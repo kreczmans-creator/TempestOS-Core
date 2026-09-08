@@ -325,7 +325,7 @@ public sealed class RibbonViewTests
 
             // `TD-119`: the click dispatches asynchronously; bounded poll on the real reported
             // state, assertions unchanged.
-            var deleteDeadline = DateTime.UtcNow.AddSeconds(2);
+            var deleteDeadline = DesktopTestHelpers.Deadline(2);
             while (!(messages.Count > 0) && DateTime.UtcNow < deleteDeadline)
                 await Task.Delay(10);
 
@@ -362,7 +362,7 @@ public sealed class RibbonViewTests
 
             // `TD-119`: the click dispatches asynchronously; bounded poll on the real reported
             // state, assertions unchanged.
-            var renameDeadline = DateTime.UtcNow.AddSeconds(2);
+            var renameDeadline = DesktopTestHelpers.Deadline(2);
             while (!(opened is not null) && DateTime.UtcNow < renameDeadline)
                 await Task.Delay(10);
 
@@ -480,7 +480,7 @@ public sealed class RibbonViewTests
 
             // `TD-119`: the click dispatches asynchronously; bounded poll on the real reported
             // state, assertions unchanged.
-            var recentDeadline = DateTime.UtcNow.AddSeconds(2);
+            var recentDeadline = DesktopTestHelpers.Deadline(2);
             while (!(CollectAllText(ribbon).Contains("Recently Used", StringComparison.Ordinal)) && DateTime.UtcNow < recentDeadline)
                 await Task.Delay(10);
 
@@ -674,7 +674,7 @@ public sealed class RibbonViewTests
 
             // `TD-119`: the click dispatches asynchronously; bounded poll on the real reported
             // state, assertions unchanged.
-            var renameClickDeadline = DateTime.UtcNow.AddSeconds(2);
+            var renameClickDeadline = DesktopTestHelpers.Deadline(2);
             while (!(completions.Count > 0) && DateTime.UtcNow < renameClickDeadline)
                 await Task.Delay(10);
 
@@ -699,7 +699,7 @@ public sealed class RibbonViewTests
 
             // `TD-119`: the click dispatches asynchronously; bounded poll on the real reported
             // state, assertions unchanged.
-            var deleteClickDeadline = DateTime.UtcNow.AddSeconds(2);
+            var deleteClickDeadline = DesktopTestHelpers.Deadline(2);
             while (!(completions.Count > 0 && manager.DeleteCalls == 1) && DateTime.UtcNow < deleteClickDeadline)
                 await Task.Delay(10);
 

@@ -89,7 +89,7 @@ public sealed class SurfaceCommandIntegrationTests
             // the assignment — so the filtered rows are genuinely not ready when
             // this returns. Bounded poll on the real row count; the assertions
             // below are unchanged.
-            var filterDeadline = DateTime.UtcNow.AddSeconds(2);
+            var filterDeadline = DesktopTestHelpers.Deadline(2);
             while (((System.Collections.IEnumerable)Results(palette).ItemsSource!).Cast<ListBoxItem>().Count() != 1
                    && DateTime.UtcNow < filterDeadline)
                 await Task.Delay(10);
@@ -113,7 +113,7 @@ public sealed class SurfaceCommandIntegrationTests
 
             // `TD-119`: bounded poll on the real reported reason; the assertions
             // below are unchanged.
-            var reasonDeadline = DateTime.UtcNow.AddSeconds(2);
+            var reasonDeadline = DesktopTestHelpers.Deadline(2);
             while (reason is null && DateTime.UtcNow < reasonDeadline)
                 await Task.Delay(10);
 
@@ -229,7 +229,7 @@ public sealed class SurfaceCommandIntegrationTests
             // its own message, rather than be waited out to the deadline and
             // reported as a timeout. A cancelled command raises nothing at
             // all, so it still fails here — exactly as it does today.
-            var outcomeDeadline = DateTime.UtcNow.AddSeconds(2);
+            var outcomeDeadline = DesktopTestHelpers.Deadline(2);
             while (outcomes.Count == 0 && DateTime.UtcNow < outcomeDeadline)
                 await Task.Delay(10);
 
@@ -275,7 +275,7 @@ public sealed class SurfaceCommandIntegrationTests
             // `TD-119`: same fire-and-forget dispatch as
             // `Ribbon_RequirementsDeleteGroup_...` above. Bounded poll on the
             // real reported message; the assertions below are unchanged.
-            var reviseDeadline = DateTime.UtcNow.AddSeconds(2);
+            var reviseDeadline = DesktopTestHelpers.Deadline(2);
             while (messages.Count == 0 && DateTime.UtcNow < reviseDeadline)
                 await Task.Delay(10);
 
@@ -361,7 +361,7 @@ public sealed class SurfaceCommandIntegrationTests
             // `TD-119`: the history entry is written on the dispatch's own
             // continuation. Bounded poll on the real count; the assertions
             // below are unchanged.
-            var historyDeadline = DateTime.UtcNow.AddSeconds(2);
+            var historyDeadline = DesktopTestHelpers.Deadline(2);
             while (history.Entries.Count <= before && DateTime.UtcNow < historyDeadline)
                 await Task.Delay(10);
 
@@ -498,7 +498,7 @@ public sealed class SurfaceCommandIntegrationTests
             .Where(d => d.DisplayName.Contains(commandId, StringComparison.OrdinalIgnoreCase) || d.Id.Contains(commandId, StringComparison.OrdinalIgnoreCase))
             .ToList();
 
-        var paletteDeadline = DateTime.UtcNow.AddSeconds(2);
+        var paletteDeadline = DesktopTestHelpers.Deadline(2);
         while (((System.Collections.IEnumerable)Results(palette).ItemsSource!).Cast<ListBoxItem>().Count() != expected.Count
                && DateTime.UtcNow < paletteDeadline)
             await Task.Delay(10);
@@ -529,7 +529,7 @@ public sealed class SurfaceCommandIntegrationTests
                 Key = Avalonia.Input.Key.Enter,
             });
 
-            var invokeDeadline = DateTime.UtcNow.AddSeconds(2);
+            var invokeDeadline = DesktopTestHelpers.Deadline(2);
             while (!settled && DateTime.UtcNow < invokeDeadline)
                 await Task.Delay(10);
         }

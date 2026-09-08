@@ -648,7 +648,7 @@ public sealed class EngineeringCalculationLifecycleTests
         AssertUsable(window, entry, $"the '{RailEntry}' rail entry");
         entry.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
 
-        var deadline = DateTime.UtcNow.AddSeconds(5);
+        var deadline = DesktopTestHelpers.Deadline(5);
         while (host.ShellNavigator!.Current.Area != ShellArea.EngineeringCalculation && DateTime.UtcNow < deadline)
         {
             await Task.Delay(10);
@@ -689,7 +689,12 @@ public sealed class EngineeringCalculationLifecycleTests
         LayOut(window);
         Assert.True(control.IsVisible, $"{what} exists but IsVisible is false.");
         Assert.True(control.IsEnabled, $"{what} is visible but disabled.");
-        Assert.True(control.Bounds.Width > 0 && control.Bounds.Height > 0, $"{what} rendered at {control.Bounds}.");
+        DesktopTestHelpers.AssertPlaced(control, what);
+
+        // And the column it lives in is placed, too: a usable control inside
+        // a column drawn over another column is not usable (`WP 17.0A`).
+        foreach (var column in control.GetLogicalAncestors().OfType<ScrollViewer>())
+            DesktopTestHelpers.AssertNoSiblingOverlap(column, $"the column holding {what}");
     }
 
     private static async Task ClickAsync(MainWindow window, Control surface, string caption)
@@ -708,7 +713,7 @@ public sealed class EngineeringCalculationLifecycleTests
 
     private static async Task RenderUntilAsync(MainWindow window, Func<bool> condition)
     {
-        var deadline = DateTime.UtcNow.AddSeconds(10);
+        var deadline = DesktopTestHelpers.Deadline(10);
         while (!condition() && DateTime.UtcNow < deadline)
         {
             await Task.Delay(10);

@@ -315,7 +315,7 @@ public sealed class MainWindowCompositionTests
 
             // `TD-119`: the Macros click opens the dialog on an asynchronous
             // continuation; bounded poll on the real visibility, assertion unchanged.
-            var macrosDeadline = DateTime.UtcNow.AddSeconds(2);
+            var macrosDeadline = DesktopTestHelpers.Deadline(2);
             while (!(macroManagerDialog.IsVisible) && DateTime.UtcNow < macrosDeadline)
                 await Task.Delay(10);
 

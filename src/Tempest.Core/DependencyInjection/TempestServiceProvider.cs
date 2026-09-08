@@ -1,3 +1,4 @@
+using System.Reflection;
 using Tempest.Core.Logging;
 
 namespace Tempest.Core.DependencyInjection;
@@ -156,11 +157,48 @@ public sealed class TempestServiceProvider : ITempestServiceProvider
             // through the ordinary Resolve call below exactly as before,
             // rather than being silently masked by the fallback.
             if (!_descriptorsByType.ContainsKey(parameterType) && parameters[i].HasDefaultValue)
-                arguments[i] = parameters[i].DefaultValue;
+            {
+                // `WP 17.0A`: the fallback is allowed only where the author
+                // said absence is a legitimate state — a nullable reference
+                // (`ILogger? logger = null`) or a value type with a default.
+                // A NON-nullable reference parameter that merely carries a
+                // default is not that: silently passing its default here is
+                // how `TD-64` disarmed a permission gate, so it is refused
+                // with the ordinary not-registered error instead. And a
+                // fallback that IS taken is logged at Warning, because a
+                // registration slip that lands here is otherwise invisible.
+                if (!IsAbsenceLegitimate(parameters[i]))
+                    arguments[i] = Resolve(parameterType, resolutionChain);
+                else
+                {
+                    _logger?.Warning(
+                        $"Constructing '{implementationType.Name}': parameter '{parameters[i].Name}' of type " +
+                        $"'{parameterType.Name}' has no registration; using its declared default. If that type " +
+                        "was meant to be registered, this is a registration slip, not an optional dependency.");
+                    arguments[i] = parameters[i].DefaultValue;
+                }
+            }
             else
                 arguments[i] = Resolve(parameterType, resolutionChain);
         }
 
         return constructors[0].Invoke(arguments);
+    }
+
+    /// <summary>
+    /// Whether a constructor parameter's own declaration says it may be
+    /// absent: a value type (whose default is a real value), a
+    /// <see cref="Nullable{T}"/>, or a reference type annotated nullable.
+    /// A non-nullable reference type with a default value is NOT counted,
+    /// however the default is spelled — the annotation is the author's
+    /// statement, and this container honours it.
+    /// </summary>
+    private static bool IsAbsenceLegitimate(ParameterInfo parameter)
+    {
+        if (parameter.ParameterType.IsValueType)
+            return true;
+
+        var nullability = new NullabilityInfoContext().Create(parameter);
+        return nullability.WriteState == NullabilityState.Nullable;
     }
 }

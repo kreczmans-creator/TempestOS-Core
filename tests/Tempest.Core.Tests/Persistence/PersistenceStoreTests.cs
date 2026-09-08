@@ -202,24 +202,34 @@ public class PersistenceStoreTests
     // Configuration
     // ----------------------------------------------------------------
 
+    // `WP 17.0A`: this test used to write into, and then recursively delete,
+    // PersistenceStore.DefaultRootPath — the real, cwd-relative folder the
+    // shipped application keeps a user's data in. Run from the wrong
+    // working directory it would have deleted that data. No test in this
+    // suite touches the default root any more; the default is asserted as
+    // the value the store resolves, against a root it is told to use.
     [Fact]
-    public async Task Constructor_NoRootPathConfigured_UsesDefaultRootPath()
+    public void Constructor_NoRootPathConfigured_ResolvesTheDefaultRootPath()
     {
         var configuration = new ConfigurationBuilder().AddSource(new MemoryConfigurationSource([])).Build();
+
         var store = new PersistenceStore(configuration);
-        var defaultDirectory = Path.Combine(PersistenceStore.DefaultRootPath, Uri.EscapeDataString("wp64-config-default-test"));
 
-        try
-        {
-            await store.WriteAsync("wp64-config-default-test", "key", "value");
+        Assert.Equal("persistence-data", PersistenceStore.DefaultRootPath);
+        Assert.Equal(PersistenceStore.DefaultRootPath, store.RootPath);
+    }
 
-            Assert.True(Directory.Exists(defaultDirectory));
-        }
-        finally
-        {
-            if (Directory.Exists(PersistenceStore.DefaultRootPath))
-                Directory.Delete(PersistenceStore.DefaultRootPath, recursive: true);
-        }
+    [Fact]
+    public void Constructor_RootPathConfigured_ResolvesThatPath()
+    {
+        var configured = Path.Combine(Path.GetTempPath(), $"tempest-root-{Guid.NewGuid():N}");
+        var configuration = new ConfigurationBuilder()
+            .AddSource(new MemoryConfigurationSource([new KeyValuePair<string, string>(PersistenceStore.RootPathConfigurationKey, configured)]))
+            .Build();
+
+        var store = new PersistenceStore(configuration);
+
+        Assert.Equal(configured, store.RootPath);
     }
 
     [Fact]

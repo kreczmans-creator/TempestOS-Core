@@ -145,7 +145,7 @@ public sealed class ObjectEditorViewTests
             // this file. The assertions below are unchanged and still fail if
             // the write genuinely never lands.
             var reread = await domainContext.Repository.FindAsync(target.Id);
-            var renameDeadline = DateTime.UtcNow.AddSeconds(2);
+            var renameDeadline = DesktopTestHelpers.Deadline(2);
             while ((reread is null || ((IHasBusinessIdentifier)reread).DisplayName != "Renamed By WP10.3A Test" || editor.IsDirty) && DateTime.UtcNow < renameDeadline)
             {
                 await Task.Delay(10);
@@ -198,7 +198,7 @@ public sealed class ObjectEditorViewTests
             // fails because the write merely took longer than an arbitrary
             // guess.
             IEngineeringObject? reread = null;
-            var deadline = DateTime.UtcNow.AddSeconds(2);
+            var deadline = DesktopTestHelpers.Deadline(2);
             while (DateTime.UtcNow < deadline)
             {
                 reread = await domainContext.Repository.FindAsync(target.Id);
@@ -355,7 +355,7 @@ public sealed class ObjectEditorViewTests
             // this file. The assertions below are unchanged and still fail if
             // the write genuinely never lands.
             var reread = await domainContext.Repository.FindAsync(target.Id);
-            var bomDeadline = DateTime.UtcNow.AddSeconds(2);
+            var bomDeadline = DesktopTestHelpers.Deadline(2);
             while ((reread is null || ((IHasBomLine)reread).Quantity != 42m) && DateTime.UtcNow < bomDeadline)
             {
                 await Task.Delay(10);
@@ -434,7 +434,7 @@ public sealed class ObjectEditorViewTests
             // this file. The assertions below are unchanged and still fail if
             // the write genuinely never lands.
             var reread = await requirementsService.FindAsync(target.Id);
-            var ownerDeadline = DateTime.UtcNow.AddSeconds(2);
+            var ownerDeadline = DesktopTestHelpers.Deadline(2);
             while ((reread is null || reread.Owner != "WP10.7A Test Owner") && DateTime.UtcNow < ownerDeadline)
             {
                 await Task.Delay(10);
@@ -507,7 +507,7 @@ public sealed class ObjectEditorViewTests
             // `TD-119`: Execute dispatches asynchronously and reports into the
             // live status TextBlock. Bounded poll on that real text; both
             // assertions below are unchanged.
-            var executeDeadline = DateTime.UtcNow.AddSeconds(2);
+            var executeDeadline = DesktopTestHelpers.Deadline(2);
             while (string.IsNullOrEmpty(statusMessage.Text) && DateTime.UtcNow < executeDeadline)
                 await Task.Delay(10);
 
@@ -561,7 +561,7 @@ public sealed class ObjectEditorViewTests
             // completes — it no longer fails because it merely ran slower
             // than an arbitrary guess.
             string? statusText = null;
-            var deadline = DateTime.UtcNow.AddSeconds(2);
+            var deadline = DesktopTestHelpers.Deadline(2);
             while (DateTime.UtcNow < deadline)
             {
                 statusText = resultExpander.GetLogicalDescendants().OfType<TextBlock>().Last().Text;
@@ -617,7 +617,7 @@ public sealed class ObjectEditorViewTests
             // the write genuinely never lands.
             var reread = await domainContext.Repository.FindAsync(target.Id);
             var attachments = await ((IHasAttachments)reread!).GetAttachmentsAsync();
-            var attachDeadline = DateTime.UtcNow.AddSeconds(2);
+            var attachDeadline = DesktopTestHelpers.Deadline(2);
             while (!attachments.Any(a => a.FileName == "wp107a-test.pdf" && a.SizeInBytes == 1024) && DateTime.UtcNow < attachDeadline)
             {
                 await Task.Delay(10);

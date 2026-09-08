@@ -609,7 +609,7 @@ public sealed class EngineeringCalculationJourneyTests
         entry.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
 
         // `TD-119`: the rail navigates on an asynchronous continuation.
-        var deadline = DateTime.UtcNow.AddSeconds(5);
+        var deadline = DesktopTestHelpers.Deadline(5);
         while (host.ShellNavigator!.Current.Area != ShellArea.EngineeringCalculation && DateTime.UtcNow < deadline)
         {
             await Task.Delay(10);
@@ -623,7 +623,7 @@ public sealed class EngineeringCalculationJourneyTests
     /// <summary>Re-renders until <paramref name="condition"/> holds, or a deadline expires. `TD-119`: no fixed wait.</summary>
     private static async Task RenderUntilAsync(MainWindow window, Func<bool> condition)
     {
-        var deadline = DateTime.UtcNow.AddSeconds(5);
+        var deadline = DesktopTestHelpers.Deadline(5);
         while (true)
         {
             if (condition())

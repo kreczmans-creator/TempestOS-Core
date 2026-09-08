@@ -58,3 +58,7 @@ TestResults/
 # .github/workflows/ci.yml's own Build step; harmless if reproduced
 # locally with the identical command, never source
 build-*.log
+# WP 17.0A: run artefacts a v0.16.0 launch and a manual backup left in the
+# repository root - never source
+/main.log
+/persistence-data.bak/

@@ -585,7 +585,7 @@ public sealed class ProjectTaskAcceptanceTests
     private static async Task ClickWhenPresentAsync(Func<Control> surface, string caption)
     {
         Button? button;
-        var deadline = DateTime.UtcNow.AddSeconds(2);
+        var deadline = DesktopTestHelpers.Deadline(2);
         while (true)
         {
             button = surface().GetLogicalDescendants().OfType<Button>()
@@ -610,7 +610,7 @@ public sealed class ProjectTaskAcceptanceTests
     /// </remarks>
     private static async Task RenderUntilAsync(MainWindow window, Func<bool> condition)
     {
-        var deadline = DateTime.UtcNow.AddSeconds(2);
+        var deadline = DesktopTestHelpers.Deadline(2);
         while (true)
         {
             await window.RenderCurrentModuleAsync();
@@ -637,7 +637,7 @@ public sealed class ProjectTaskAcceptanceTests
         // dialog need not be showing yet when this helper is called — a second,
         // distinct race from the fixed wait below, which remains disclosed debt.
         // Bounded wait on its real visibility before typing into it.
-        var dialogDeadline = DateTime.UtcNow.AddSeconds(2);
+        var dialogDeadline = DesktopTestHelpers.Deadline(2);
         while (!dialog.IsVisible && DateTime.UtcNow < dialogDeadline)
             await Task.Delay(10);
 

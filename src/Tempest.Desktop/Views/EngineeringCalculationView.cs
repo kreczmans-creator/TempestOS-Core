@@ -46,6 +46,12 @@ public sealed class EngineeringCalculationView : UserControl
     /// <summary>The caption on the button that runs the check.</summary>
     public const string CalculateCaption = "Calculate";
 
+    /// <summary>Automation name of the left column (calculations and reference library) — `WP 17.0A` layout assertions.</summary>
+    public const string LeftColumnAutomationName = "Engineering calculation left column";
+
+    /// <summary>Automation name of the right column (inputs, results, traceability, verification) — `WP 17.0A` layout assertions.</summary>
+    public const string RightColumnAutomationName = "Engineering calculation right column";
+
     /// <summary>The caption on the button that populates the material library from the shipped seed corpus.</summary>
     public const string PopulateCaption = "Populate Material Library";
 
@@ -666,10 +672,19 @@ public sealed class EngineeringCalculationView : UserControl
         right.Children.Add(Section("Traceability", _traceabilityPanel));
         right.Children.Add(Section("Verification", _verificationPanel));
 
-        Grid.SetColumn(left, 0);
-        Grid.SetColumn(right, 1);
-        page.Children.Add(new ScrollViewer { Content = left, Margin = new Thickness(0, 0, DesignTokens.SpaceLg, 0) });
-        page.Children.Add(new ScrollViewer { Content = right });
+        // The Grid's children are the two ScrollViewers, so the column
+        // must be set on them. Setting it on the StackPanels inside them
+        // (as this did before `WP 17.0A`) left both viewers in column 0,
+        // and every section of the right column rendered on top of the
+        // left — the overlap the first Windows launch of `v0.16.0` showed.
+        var leftColumn = new ScrollViewer { Content = left, Margin = new Thickness(0, 0, DesignTokens.SpaceLg, 0) };
+        var rightColumn = new ScrollViewer { Content = right };
+        Grid.SetColumn(leftColumn, 0);
+        Grid.SetColumn(rightColumn, 1);
+        AutomationProperties.SetName(leftColumn, LeftColumnAutomationName);
+        AutomationProperties.SetName(rightColumn, RightColumnAutomationName);
+        page.Children.Add(leftColumn);
+        page.Children.Add(rightColumn);
 
         _validationPanel.IsVisible = false;
         _resultPanel.IsVisible = false;

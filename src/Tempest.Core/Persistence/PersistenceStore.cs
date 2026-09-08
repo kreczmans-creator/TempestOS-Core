@@ -143,6 +143,9 @@ public sealed class PersistenceStore : IPersistenceStore, IBinaryPersistenceStor
         _logger = logger;
     }
 
+    /// <summary>The root directory this store reads and writes under, exactly as resolved at construction.</summary>
+    public string RootPath => _rootPath;
+
     /// <inheritdoc />
     public async Task<string?> ReadAsync(string collection, string key, CancellationToken cancellationToken = default)
     {
@@ -359,7 +362,7 @@ public sealed class PersistenceStore : IPersistenceStore, IBinaryPersistenceStor
         var temporaryPath = Path.Combine(_rootPath, $"write-{Guid.NewGuid():N}.tmp");
         try
         {
-            await File.WriteAllBytesAsync(temporaryPath, value, cancellationToken).ConfigureAwait(false);
+            await WriteThroughAsync(temporaryPath, value, cancellationToken).ConfigureAwait(false);
 
             // THE COMMIT POINT.
             File.Move(temporaryPath, path, overwrite: true);
@@ -381,7 +384,7 @@ public sealed class PersistenceStore : IPersistenceStore, IBinaryPersistenceStor
         var temporaryPath = Path.Combine(_rootPath, $"write-{Guid.NewGuid():N}.tmp");
         try
         {
-            await File.WriteAllTextAsync(temporaryPath, value, cancellationToken).ConfigureAwait(false);
+            await WriteThroughAsync(temporaryPath, System.Text.Encoding.UTF8.GetBytes(value), cancellationToken).ConfigureAwait(false);
 
             // THE COMMIT POINT. `File.Move` with `overwrite: true` is a
             // rename within `_rootPath`, so it either replaces the target
@@ -393,6 +396,34 @@ public sealed class PersistenceStore : IPersistenceStore, IBinaryPersistenceStor
         finally
         {
             DiscardTemporaryFile(temporaryPath);
+        }
+    }
+
+    /// <summary>
+    /// Writes <paramref name="value"/> to <paramref name="path"/> and does
+    /// not return until the bytes are on the medium, not merely in the
+    /// operating system's cache (`WP 17.0A`). Before this the rename that
+    /// followed was atomic against a process crash but not against a
+    /// power loss: the rename could reach the journal before the data,
+    /// leaving a correctly named empty or truncated record. The stream is
+    /// opened write-through and flushed to disk before it is closed, so
+    /// by the time <see cref="File.Move(string, string, bool)"/> runs the
+    /// staged file is durable.
+    /// </summary>
+    private static async Task WriteThroughAsync(string path, ReadOnlyMemory<byte> value, CancellationToken cancellationToken)
+    {
+        var stream = new FileStream(
+            path,
+            FileMode.CreateNew,
+            FileAccess.Write,
+            FileShare.None,
+            bufferSize: 1,
+            FileOptions.WriteThrough | FileOptions.Asynchronous);
+
+        await using (stream.ConfigureAwait(false))
+        {
+            await stream.WriteAsync(value, cancellationToken).ConfigureAwait(false);
+            stream.Flush(flushToDisk: true);
         }
     }
 

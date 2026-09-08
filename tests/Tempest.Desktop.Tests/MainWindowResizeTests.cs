@@ -169,7 +169,7 @@ public sealed class MainWindowResizeTests
     /// </summary>
     private static async Task WaitForInitialLayoutAsync(MainWindow window, double width, double height)
     {
-        var deadline = DateTime.UtcNow.AddSeconds(2);
+        var deadline = DesktopTestHelpers.Deadline(2);
         while (true)
         {
             Dispatcher.UIThread.RunJobs();

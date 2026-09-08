@@ -210,7 +210,7 @@ public sealed class ObjectRehydrationAcceptanceTests
 
             // `TD-119`: opening a project is dispatched fire-and-forget; bounded poll on the
             // real navigator state, assertions unchanged.
-            var openDeadline = DateTime.UtcNow.AddSeconds(2);
+            var openDeadline = DesktopTestHelpers.Deadline(2);
             while (!(navigator.Current.Area == ShellArea.ProjectWorkspace && navigator.Current.ProjectId == projectId) && DateTime.UtcNow < openDeadline)
                 await Task.Delay(10);
 

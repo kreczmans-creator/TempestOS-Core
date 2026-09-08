@@ -33,6 +33,42 @@ public sealed class EngineeringCalculationWorkspaceTests
     private const string EngineerId = "workspace-test-engineer";
     private const string RailEntry = "Engineering Calculations";
 
+    // `WP 17.0A`. The `v0.16.0` build set Grid.Column on the StackPanels
+    // inside the two ScrollViewers rather than on the viewers themselves,
+    // so both columns rendered in column 0, one over the other, and every
+    // "is it visible at non-zero size" assertion passed. This asserts
+    // placement: the right column starts where the left column's declared
+    // width ends, and neither is drawn over the other.
+    [AvaloniaFact]
+    public async Task TheTwoColumns_SitSideBySide_NeitherDrawnOverTheOther()
+    {
+        await InWorkspaceAsync(async (host, window, view) =>
+        {
+            LayOut(window);
+
+            var columns = view.GetLogicalDescendants().OfType<ScrollViewer>()
+                .Where(s => AutomationProperties.GetName(s) is EngineeringCalculationView.LeftColumnAutomationName
+                    or EngineeringCalculationView.RightColumnAutomationName)
+                .ToList();
+            Assert.Equal(2, columns.Count);
+
+            var left = columns.Single(c => AutomationProperties.GetName(c) == EngineeringCalculationView.LeftColumnAutomationName);
+            var right = columns.Single(c => AutomationProperties.GetName(c) == EngineeringCalculationView.RightColumnAutomationName);
+
+            DesktopTestHelpers.AssertPlaced(left, "the left column");
+            DesktopTestHelpers.AssertPlaced(right, "the right column");
+            Assert.True(
+                right.Bounds.X >= left.Bounds.Right - 0.5,
+                $"The right column starts at x={right.Bounds.X} but the left column ends at x={left.Bounds.Right}.");
+
+            // Every section header is placed beside its neighbours, not on them.
+            foreach (var expander in view.GetLogicalDescendants().OfType<Expander>())
+                DesktopTestHelpers.AssertPlaced(expander, $"the '{expander.Header}' section");
+
+            await Task.CompletedTask;
+        });
+    }
+
     [AvaloniaFact]
     public async Task TheWorkspaceOpensWithWhatExists_NotAnEmptyFeaturelessScreen()
     {
@@ -262,7 +298,7 @@ public sealed class EngineeringCalculationWorkspaceTests
         AssertUsable(window, entry, $"the '{RailEntry}' rail entry");
         entry.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
 
-        var deadline = DateTime.UtcNow.AddSeconds(5);
+        var deadline = DesktopTestHelpers.Deadline(5);
         while (host.ShellNavigator!.Current.Area != ShellArea.EngineeringCalculation && DateTime.UtcNow < deadline)
         {
             await Task.Delay(10);
@@ -318,7 +354,7 @@ public sealed class EngineeringCalculationWorkspaceTests
 
     private static async Task RenderUntilAsync(MainWindow window, Func<bool> condition)
     {
-        var deadline = DateTime.UtcNow.AddSeconds(5);
+        var deadline = DesktopTestHelpers.Deadline(5);
         while (!condition() && DateTime.UtcNow < deadline)
         {
             await Task.Delay(10);

@@ -219,6 +219,57 @@ public class TempestServiceProviderTests
         Assert.Equal(typeof(IUnregisteredService), exception.MissingServiceType);
     }
 
+    // `WP 17.0A`: the fallback to a declared default is taken only where the
+    // author annotated the parameter as nullable (or it is a value type).
+    // A non-nullable reference with a default is refused, and a fallback
+    // that IS taken is logged at Warning so a registration slip is visible.
+    [Fact]
+    public void GetService_NonNullableReferenceParameterWithDefault_OfUnregisteredType_ThrowsServiceNotRegisteredException()
+    {
+        var services = new ServiceCollection();
+        services.Singleton<IGreeter, Greeter>();
+        services.Transient<NonNullableDefaultedDependencyConsumer>();
+
+        var provider = new TempestServiceProvider(services);
+
+        var exception = Assert.Throws<ServiceNotRegisteredException>(() =>
+            provider.GetService(typeof(NonNullableDefaultedDependencyConsumer)));
+
+        Assert.Equal(typeof(IUnregisteredService), exception.MissingServiceType);
+    }
+
+    [Fact]
+    public void GetService_ValueTypeParametersWithDefaults_UseTheirDefaults()
+    {
+        var services = new ServiceCollection();
+        services.Singleton<IGreeter, Greeter>();
+        services.Transient<ValueTypeDefaultedConsumer>();
+
+        var provider = new TempestServiceProvider(services);
+
+        var consumer = (ValueTypeDefaultedConsumer)provider.GetService(typeof(ValueTypeDefaultedConsumer));
+
+        Assert.Equal(3, consumer.Retries);
+        Assert.Equal(TimeSpan.Zero, consumer.Timeout);
+    }
+
+    [Fact]
+    public void GetService_NullableOptionalDependencyUnregistered_LogsAWarningNamingTheParameter()
+    {
+        var logger = new RecordingLogger();
+        var services = new ServiceCollection(logger);
+        services.Singleton<IGreeter, Greeter>();
+        services.Transient<OptionalDependencyConsumer>();
+
+        var provider = new TempestServiceProvider(services, logger);
+
+        var consumer = (OptionalDependencyConsumer)provider.GetService(typeof(OptionalDependencyConsumer));
+
+        Assert.Null(consumer.Optional);
+        Assert.Contains(logger.Messages, m => m.Contains("no registration; using its declared default", StringComparison.Ordinal)
+            && m.Contains(nameof(IUnregisteredService), StringComparison.Ordinal));
+    }
+
     [Fact]
     public void GetService_WithLogger_DoesNotThrowAndRecordsProgress()
     {

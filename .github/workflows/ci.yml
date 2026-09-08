@@ -46,6 +46,10 @@ env:
   DOTNET_CLI_TELEMETRY_OPTOUT: "true"
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: "true"
   SOLUTION_PATH: src/TempestOS.slnx
+  # WP 17.0A: every render deadline in Tempest.Desktop.Tests is scaled by
+  # this factor (DesktopTestHelpers.Deadline). A fixed ten-second deadline
+  # passed on a quiet runner and failed on a loaded workstation.
+  TEMPEST_TEST_TIMEOUT_FACTOR: "3"
 
 jobs:
   build-and-test:
@@ -108,7 +112,9 @@ jobs:
       # instance — has no backstop but this job's own 30-minute
       # `timeout-minutes`, which kills the whole matrix leg with no
       # indication of which test caused it. 5 minutes is comfortably above
-      # this suite's real run time (well under a minute) and comfortably
+      # any single test's real run time (the whole Desktop assembly takes
+      # roughly fifteen minutes and the Core assembly five, measured `WP 17.0A`;
+      # no individual test approaches a minute) and comfortably
       # below the 30-minute job timeout, so a genuine hang is caught and
       # named — with a hang dump collected — long before the job itself
       # would otherwise be killed with no diagnostic at all.
