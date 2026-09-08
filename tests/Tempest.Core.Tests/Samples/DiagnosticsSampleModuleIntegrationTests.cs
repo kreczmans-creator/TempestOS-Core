@@ -42,9 +42,6 @@ public class DiagnosticsSampleModuleIntegrationTests
         IModuleLifecycleManager? lifecycleManager = null;
 
         var services = new ServiceCollection();
-        var currentComponentAccessor = new Tempest.Core.Identity.CurrentComponentAccessor();
-        services.AddInstance<Tempest.Core.Identity.ICurrentComponentAccessor>(currentComponentAccessor);
-        services.AddInstance(currentComponentAccessor);
         services.AddInstance<Tempest.Core.Identity.IPermissionEvaluator>(new Tempest.Core.Identity.PermissionEvaluator());
         services.AddInstance<ILogger>(new Tempest.Core.Tests.Events.RecordingLevelLogger());
         services.Singleton<IEventBus, EventBus>();
@@ -202,78 +199,8 @@ public class DiagnosticsSampleModuleIntegrationTests
         Assert.Equal(HostState.Stopped, host.State);
     }
 
-    // ----------------------------------------------------------------
-    // Plugin compatibility: IDiagnosticsProvider reports on a
-    // plugin-loaded module's lifecycle state through the identical
-    // ModuleLifecycleManager snapshot a built-in module's state is read
-    // from - proving the Acceptance Criteria's "a consumer can query
-    // every module's state" holds regardless of a module's origin, with
-    // no plugin-specific Diagnostics mechanism of any kind.
-    // ----------------------------------------------------------------
-
-    [Fact]
-    public async Task DiagnosticsProvider_ReportsAPluginLoadedModulesLifecycleState_ThroughTheSameSnapshotABuiltInModuleUses()
-    {
-        using var temp = new TempDirectory();
-        var assemblyPath = DynamicPluginAssemblyBuilder.BuildValidPluginAssemblyWithCommandModule(
-            temp.Path,
-            "DiagnosticsPlugin.dll",
-            "test.plugin.diagnostics",
-            "Diagnostics Plugin",
-            "1.0.0",
-            "test.plugin.diagnostics.increment",
-            "Plugin Increment");
-
-        // ADR-0111: the dynamically-built module's constructor injects
-        // ICommandDispatcher/ICommandRegistry - neither is in the fixed
-        // always-allowed baseline (ILogger/IConfigurationProvider/
-        // IDiagnosticsProvider), so this plugin must explicitly request
-        // (and, at FirstParty tier, is eligible to be granted) a
-        // plugin.services.resolve:* capability naming each.
-        var manifest = new PluginManifest(
-            "test.plugin.diagnostics", "Diagnostics Plugin", "1.0.0",
-            new Version(0, 1, 0), Path.GetFileName(assemblyPath), assemblyPath,
-            PluginTrustTier.FirstParty,
-            requestedCapabilities:
-            [
-                PluginCapability.ServiceResolve(typeof(ICommandDispatcher).FullName!),
-                PluginCapability.ServiceResolve(typeof(ICommandRegistry).FullName!),
-            ]);
-
-        var loader = new PluginAssemblyLoader();
-        var loadedAssemblies = loader.LoadPlugins([manifest]);
-        var loadedAssembly = Assert.Single(loadedAssemblies);
-
-        var descriptors = new ReflectionFrameworkDiscoveryService([loadedAssembly]).DiscoverModules();
-        var descriptor = Assert.Single(descriptors);
-
-        var runtimeManager = new RuntimeModuleManager();
-        runtimeManager.Register(descriptor);
-
-        IModuleLifecycleManager? lifecycleManager = null;
-
-        var services = new ServiceCollection();
-        var currentComponentAccessor = new Tempest.Core.Identity.CurrentComponentAccessor();
-        services.AddInstance<Tempest.Core.Identity.ICurrentComponentAccessor>(currentComponentAccessor);
-        services.AddInstance(currentComponentAccessor);
-        services.AddInstance<Tempest.Core.Identity.IPermissionEvaluator>(new Tempest.Core.Identity.PermissionEvaluator());
-        services.AddInstance<ILogger>(new Tempest.Core.Tests.Events.RecordingLevelLogger());
-        services.Singleton<IEventBus, EventBus>();
-        services.Singleton<INavigationProvider, NavigationService>();
-        services.Singleton<CommandHandlerTable>();
-        services.Singleton<ICommandDispatcher, CommandDispatcher>();
-        services.Singleton<ICommandRegistry, CommandRegistry>();
-        services.AddInstance<IDiagnosticsProvider>(new DiagnosticsProvider(
-            () => HostState.Running, () => lifecycleManager, () => null, new PluginRegistry()));
-        services.AddDiscoveredModules(runtimeManager.GetAll().Select(module => module.Descriptor));
-        var serviceProvider = new TempestServiceProvider(services);
-
-        lifecycleManager = new ModuleLifecycleManager(runtimeManager, serviceProvider);
-        await lifecycleManager.InitialiseAllAsync(CancellationToken.None);
-
-        var diagnosticsProvider = (IDiagnosticsProvider)serviceProvider.GetService(typeof(IDiagnosticsProvider));
-        var status = Assert.Single(diagnosticsProvider.Modules);
-        Assert.Equal("test.plugin.diagnostics", status.Descriptor.Id);
-        Assert.Equal(ModuleState.Initialised, status.State);
-    }
+    // The plugin-compatibility test formerly here (IDiagnosticsProvider
+    // reporting on a plugin-loaded module's lifecycle state) was frozen by
+    // ADR-0146 (WP 17.2A) along with plugin assembly loading and trust
+    // tiers - see src/Frozen/README.md.
 }

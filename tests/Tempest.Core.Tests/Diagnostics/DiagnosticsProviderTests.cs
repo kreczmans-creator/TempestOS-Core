@@ -158,13 +158,13 @@ public class DiagnosticsProviderTests
     public void Plugins_RegistryHasEntries_ReturnsThem()
     {
         var registry = new PluginRegistry();
-        registry.Record(new PluginRegistryEntry("test.plugin", "Test Plugin", "1.0.0", PluginRegistryState.Loaded, null));
+        registry.Record(new PluginRegistryEntry("test.plugin", "Test Plugin", "1.0.0", PluginRegistryState.Discovered, null));
 
         var provider = new DiagnosticsProvider(() => HostState.Running, () => null, () => null, registry);
 
         var entry = Assert.Single(provider.Plugins);
         Assert.Equal("test.plugin", entry.Id);
-        Assert.Equal(PluginRegistryState.Loaded, entry.State);
+        Assert.Equal(PluginRegistryState.Discovered, entry.State);
     }
 
     [Fact]
@@ -175,7 +175,7 @@ public class DiagnosticsProviderTests
 
         Assert.Empty(provider.Plugins);
 
-        registry.Record(new PluginRegistryEntry("test.plugin", "Test Plugin", "1.0.0", PluginRegistryState.Loaded, null));
+        registry.Record(new PluginRegistryEntry("test.plugin", "Test Plugin", "1.0.0", PluginRegistryState.Discovered, null));
 
         Assert.Single(provider.Plugins);
     }

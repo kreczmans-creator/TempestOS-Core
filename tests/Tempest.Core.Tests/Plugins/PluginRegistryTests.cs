@@ -18,7 +18,7 @@ public class PluginRegistryTests
     public void Record_ThenEntries_ReflectsTheRecordedEntry()
     {
         var registry = new PluginRegistry();
-        var entry = new PluginRegistryEntry("test.a", "A", "1.0.0", PluginRegistryState.Loaded, null);
+        var entry = new PluginRegistryEntry("test.a", "A", "1.0.0", PluginRegistryState.Discovered, null);
 
         registry.Record(entry);
 
@@ -30,7 +30,7 @@ public class PluginRegistryTests
     public void Record_MultipleEntries_AccumulateInRecordedOrder()
     {
         var registry = new PluginRegistry();
-        var first = new PluginRegistryEntry("test.a", "A", "1.0.0", PluginRegistryState.Loaded, null);
+        var first = new PluginRegistryEntry("test.a", "A", "1.0.0", PluginRegistryState.Discovered, null);
         var second = new PluginRegistryEntry("test.b", "B", "1.0.0", PluginRegistryState.Failed, "boom");
         var third = new PluginRegistryEntry("test.c", "C", "1.0.0", PluginRegistryState.Disabled, "disabled");
 
@@ -141,31 +141,11 @@ public class PluginRegistryTests
         Assert.Equal(PluginRegistryState.Failed, entry.State);
     }
 
-    [Fact]
-    public void RecordIsolatedFailure_PluginAssemblyNotFoundException_MapsToFailed()
-    {
-        var registry = new PluginRegistry();
-        var exception = new PluginAssemblyNotFoundException("test.a", "C:\\nowhere.dll");
-
-        PluginFailureLogging.RecordIsolatedFailure(registry, exception, "folder-a");
-
-        var entry = Assert.Single(registry.Entries);
-        Assert.Equal("test.a", entry.Id);
-        Assert.Equal(PluginRegistryState.Failed, entry.State);
-    }
-
-    [Fact]
-    public void RecordIsolatedFailure_PluginAssemblyLoadException_MapsToFailed()
-    {
-        var registry = new PluginRegistry();
-        var exception = new PluginAssemblyLoadException("test.a", "C:\\corrupt.dll", new InvalidOperationException("boom"));
-
-        PluginFailureLogging.RecordIsolatedFailure(registry, exception, "folder-a");
-
-        var entry = Assert.Single(registry.Entries);
-        Assert.Equal("test.a", entry.Id);
-        Assert.Equal(PluginRegistryState.Failed, entry.State);
-    }
+    // RecordIsolatedFailure_PluginAssemblyNotFoundException_MapsToFailed and
+    // RecordIsolatedFailure_PluginAssemblyLoadException_MapsToFailed were
+    // frozen by ADR-0146 (WP 17.2A): both exception types belong to plugin
+    // assembly loading, frozen at src/Frozen/Tempest.Core.Plugins - manifest
+    // discovery, which stays live, never throws either.
 
     [Fact]
     public void RecordIsolatedFailure_NullRecorder_DoesNotThrow()

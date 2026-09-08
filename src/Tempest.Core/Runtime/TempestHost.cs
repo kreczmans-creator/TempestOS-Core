@@ -1,4 +1,3 @@
-using Tempest.Core.Api;
 using Tempest.Core.Audit;
 using Tempest.Core.BackgroundServices;
 using Tempest.Core.Bearings;
@@ -49,7 +48,6 @@ using Tempest.Core.Fasteners;
 using Tempest.Core.ExportImport;
 using Tempest.Core.Identity;
 using Tempest.Core.Input;
-using Tempest.Core.Licensing;
 using Tempest.Core.Logging;
 using Tempest.Core.Macros;
 using Tempest.Core.Manufacturing;
@@ -110,18 +108,19 @@ namespace Tempest.Core.Runtime;
 /// matching the standard <see cref="IAsyncDisposable"/> convention.
 /// </para>
 /// <para>
-/// <b>Plugin trust and capability enforcement</b> (ADR-0110, ADR-0111,
-/// ADR-0112, WP 13.2A): this class constructs and holds every new
-/// Host-owned trust collaborator — <see cref="Plugins.PluginTrustStore"/>,
-/// <see cref="Plugins.PluginComponentPrincipalRegistry"/>, and
-/// <see cref="Identity.CurrentComponentAccessor"/> — and wires them into
-/// <see cref="Plugins.PluginManifestDiscoveryService"/>,
-/// <see cref="Plugins.PluginAssemblyLoader"/>, and
-/// <see cref="Modules.ModuleLifecycleManager"/>'s own construction, alongside
-/// the already-existing <see cref="Identity.IPermissionEvaluator"/>. None of
-/// the three new collaborators is ever added to the DI
-/// <see cref="DependencyInjection.ServiceCollection"/> (ADR-0017), mirroring
-/// <see cref="Plugins.PluginRegistry"/>'s own established boundary.
+/// <b>Frozen by ADR-0146 (<c>WP 17.2A</c>).</b> This class used to construct
+/// and hold three Host-owned trust collaborators — a plugin trust store, a
+/// component-principal registry, and a current-component accessor — wiring
+/// them into Plugin Discovery, Plugin Loading, and
+/// <see cref="Modules.ModuleLifecycleManager"/>/<see cref="BackgroundServices.HostedServiceManager"/>'s
+/// own construction; it ran a licence-validation phase (ADR-0050) ahead of
+/// even the logger, aborting startup Host-fatally on an invalid licence file;
+/// and it registered the REST API's own <c>IApiEndpointRegistry</c> singleton
+/// (ADR-0047). Signing, trust tiers, capability enforcement, plugin assembly
+/// loading, licensing and the inbound REST API are all frozen at
+/// <c>src/Frozen/</c> — see that folder's own <c>README.md</c>. Plugin
+/// Discovery (Phase 3.1) stays live: the Host still discovers and records
+/// what is in the plugin drop folder, and goes no further.
 /// </para>
 /// </remarks>
 public sealed class TempestHost : ITempestHost
@@ -131,7 +130,6 @@ public sealed class TempestHost : ITempestHost
     private readonly IEnumerable<Type>? _discoveryCandidateTypesOverride;
     private readonly string? _pluginsRootPathOverride;
     private readonly IEnumerable<Type>? _hostedServiceCandidateTypesOverride;
-    private readonly string? _licenseFilePathOverride;
     private readonly bool _includeFaultInjectionModules;
     private readonly IReadOnlyList<ILogSink> _additionalLogSinks;
     private readonly CancellationTokenSource _shutdownRequested = new();
@@ -158,7 +156,6 @@ public sealed class TempestHost : ITempestHost
         IEnumerable<Type>? discoveryCandidateTypesOverride,
         string? pluginsRootPathOverride,
         IEnumerable<Type>? hostedServiceCandidateTypesOverride,
-        string? licenseFilePathOverride,
         bool includeFaultInjectionModules = false,
         IReadOnlyList<ILogSink>? additionalLogSinks = null)
     {
@@ -166,7 +163,6 @@ public sealed class TempestHost : ITempestHost
         _discoveryCandidateTypesOverride = discoveryCandidateTypesOverride;
         _pluginsRootPathOverride = pluginsRootPathOverride;
         _hostedServiceCandidateTypesOverride = hostedServiceCandidateTypesOverride;
-        _licenseFilePathOverride = licenseFilePathOverride;
         _includeFaultInjectionModules = includeFaultInjectionModules;
         _additionalLogSinks = additionalLogSinks ?? [];
     }
@@ -251,31 +247,6 @@ public sealed class TempestHost : ITempestHost
 
         var configuration = configurationBuilder.Build();
 
-        // ADR-0050: License validation runs here, before the DI container
-        // (and even the logger) exists - Configuration's own value is
-        // irrelevant to this check, since Licensing never reads
-        // IConfigurationProvider itself (a fixed, documented file-path
-        // convention, mirroring Plugin Manifest's own fixed convention).
-        // An invalid license aborts startup immediately, Host-fatal, per
-        // ADR-0013's existing platform-service-failure classification,
-        // applied here without modification. A missing license file is
-        // not itself invalid - it resolves to a valid, unrestricted-but-
-        // uncapable default (see LicenseValidator's own remarks, and
-        // ADR-0050's own resolution of Risk Register.md's R5).
-        ILicenseValidator licenseValidator = _licenseFilePathOverride is not null
-            ? new LicenseValidator(_licenseFilePathOverride)
-            : new LicenseValidator();
-
-        var licenseValidationResult = licenseValidator.Validate();
-
-        if (!licenseValidationResult.IsValid)
-        {
-            Console.Error.WriteLine($"License validation failed: {licenseValidationResult.FailureReason}");
-            throw new LicenseValidationException(licenseValidationResult.FailureReason!);
-        }
-
-        var currentLicense = licenseValidationResult.License!;
-
         ILogSink sink = _additionalLogSinks.Count > 0
             ? new CompositeLogSink([new ConsoleLogSink(), .. _additionalLogSinks])
             : new ConsoleLogSink();
@@ -285,9 +256,6 @@ public sealed class TempestHost : ITempestHost
 
         logger.Information("Host lifecycle phase completed: Configuration Built.");
         logger.Information("Host lifecycle phase completed: Logging Built.");
-        logger.Information(
-            $"Host lifecycle phase completed: License Validated. Licensee: '{currentLicense.LicenseeName}', " +
-            $"{currentLicense.EnabledCapabilities.Count} capability(ies) enabled.");
 
         runToken.ThrowIfCancellationRequested();
 
@@ -328,106 +296,29 @@ public sealed class TempestHost : ITempestHost
             ? configuredDisabled.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
             : null;
 
-        // ADR-0112: the operator's own explicit opt-in for Unsigned-Local
-        // plugins to load at all. Absent or unparseable resolves to false -
-        // ADR-0112's own table names this the safe default (fail closed,
-        // mirroring ADR-0043's identical fail-closed precedent for an
-        // unrecognised identity).
-        var allowUnsignedLoad = configuration.TryGetValue("Plugins:AllowUnsignedLoad", out var rawAllowUnsigned)
-            && bool.TryParse(rawAllowUnsigned, out var parsedAllowUnsigned)
-            && parsedAllowUnsigned;
-
         // Plugin Platform Architecture.md, "Plugin Registry": Host-owned,
         // constructed immediately before Plugin Discovery ever runs, so
-        // both Discovery and Loading can record every candidate's outcome
-        // into it as they go. Never added to the DI ServiceCollection
-        // (ADR-0017's own Host-owned-collaborator boundary, applied to a
-        // fourth collaborator) — only IDiagnosticsProvider.Plugins, the
-        // DI-public read-only projection, ever reaches a module.
+        // Discovery can record every candidate's outcome into it as it
+        // goes. Never added to the DI ServiceCollection (ADR-0017's own
+        // Host-owned-collaborator boundary) — only IDiagnosticsProvider.Plugins,
+        // the DI-public read-only projection, ever reaches a module.
         var pluginRegistry = new PluginRegistry();
 
-        // ADR-0112: the local, flat-file trust store (TrustedPublishers/,
-        // fixed convention relative to AppContext.BaseDirectory) a signed
-        // candidate's PublisherCertificateThumbprint is resolved against.
-        // Host-owned, alongside pluginRegistry, for the identical reason.
-        var pluginTrustStore = new PluginTrustStore(logger);
-
-        // ADR-0111: the small, Host-owned registry mapping a discovered
-        // IModule Type back to the plugin's own component principal that
-        // owns it - written once, by PluginAssemblyLoader, for every plugin
-        // whose two static trust checks both pass; read later by the
-        // componentScopeProvider closure passed to ModuleLifecycleManager,
-        // below. Never added to the DI ServiceCollection, for the same
-        // ADR-0017 reason as pluginRegistry/pluginTrustStore.
-        var componentPrincipalRegistry = new PluginComponentPrincipalRegistry();
-
-        // WP 13.9.4: the small, Host-owned registry recording every
-        // discovered IModule or IHostedService Type belonging to a plugin
-        // PluginAssemblyLoader denies trust to - written once, by
-        // PluginAssemblyLoader, for every plugin either static trust check
-        // rejects; read twice, below, by Module Registration's own filter
-        // AND Hosted Service Registration's own filter - closing the gap
-        // where a denied plugin's already-loaded assembly (ADR-0015: that
-        // step cannot be undone) could still be separately rediscovered and
-        // fully lifecycle-run/started by Module Discovery or Hosted Service
-        // Discovery (both deliberately plugin-unaware, ADR-0110). One
-        // registry covers both pipelines - a single Type can implement both
-        // IModule and IHostedService, and denial must exclude it from
-        // whichever pipeline(s) would otherwise have found it. Never added
-        // to the DI ServiceCollection, for the identical ADR-0017 reason as
-        // componentPrincipalRegistry.
-        var deniedTypeRegistry = new PluginDeniedTypeRegistry();
-
-        // ADR-0111: the second, component-scoped identity axis, distinct
-        // from CurrentPrincipalAccessor's own user-scoped one (constructed
-        // below, at Platform Services Registered). Constructed here, ahead
-        // of Plugin Discovery, mirroring CurrentPrincipalAccessor's own
-        // early-construction convention - EventBus's own construction
-        // (Platform Services Registered, Phase 6, later) is what actually
-        // needs it; Plugin Discovery/Loading do not read it directly.
-        var currentComponentAccessor = new CurrentComponentAccessor();
-
+        // Frozen by ADR-0146 (WP 17.2A): this is now the whole of the
+        // plugin platform the Host still runs. Discovery reads, validates,
+        // version-checks, dependency-resolves and records what is in the
+        // plugin drop folder; nothing is signed, verified, trust-tiered,
+        // loaded or scoped. See src/Frozen/README.md.
         var pluginDiscoveryService = new PluginManifestDiscoveryService(
-            pluginsRootPath, platformVersionProvider, logger, manifestFileName, disabledPluginIds, pluginRegistry,
-            pluginTrustStore, allowUnsignedLoad);
+            pluginsRootPath, platformVersionProvider, logger, manifestFileName, disabledPluginIds, pluginRegistry);
 
         var pluginManifests = pluginDiscoveryService.DiscoverManifests();
-        logger.Information($"Host lifecycle phase completed: Plugin Discovery. {pluginManifests.Count} plugin(s) eligible.");
+        logger.Information($"Host lifecycle phase completed: Plugin Discovery. {pluginManifests.Count} plugin(s) discovered.");
 
         runToken.ThrowIfCancellationRequested();
 
-        // ADR-0110/ADR-0111: componentPrincipalRegistry is passed as the
-        // IPluginComponentPrincipalRecorder write side only - the loader
-        // records a trust-checked plugin's own component principal against
-        // each of its discovered IModule types here. WP 13.9.4:
-        // deniedTypeRegistry is passed as the IPluginDeniedTypeRecorder write
-        // side - the loader records every discovered IModule and
-        // IHostedService type belonging to a denied plugin here; Module
-        // Discovery's and Hosted Service Discovery's own scans below remain
-        // entirely unchanged and still plugin-unaware (ADR-0110) - only
-        // Module Registration and Hosted Service Registration, further
-        // below, are filtered against what this registry records.
-        IPluginAssemblyLoader pluginAssemblyLoader = new PluginAssemblyLoader(
-            logger, pluginRegistry, componentPrincipalRegistry, deniedTypeRegistry);
-        var loadedPluginAssemblies = pluginAssemblyLoader.LoadPlugins(pluginManifests);
-        logger.Information($"Host lifecycle phase completed: Plugin Loading. {loadedPluginAssemblies.Count} plugin assembly(ies) loaded.");
-
-        runToken.ThrowIfCancellationRequested();
-
-        // WP 13.9.6: isTypeExcluded is wired to deniedTypeRegistry.IsDenied,
-        // already fully populated by Plugin Loading, above - closing the
-        // trust boundary gap the WP 13.9.4 filters below could not: an
-        // unattributed IModule type belonging to a denied plugin was
-        // previously still constructed via Activator.CreateInstance inside
-        // CreateDescriptor, during Module Discovery itself, strictly before
-        // either filter below is ever consulted (a genuine, live constructor
-        // execution for a denied plugin's code), and - if that same type also
-        // lacked a public parameterless constructor - threw an uncaught
-        // ModuleDiscoveryException that faulted the whole Host. Both are
-        // closed by this one predicate; ReflectionFrameworkDiscoveryService
-        // itself gains no plugin awareness (ADR-0110) - see its own remarks.
         var discovery = new ReflectionFrameworkDiscoveryService(
-            logger, includeFaultInjectionModules: _includeFaultInjectionModules, isTypeExcluded: deniedTypeRegistry.IsDenied);
+            logger, includeFaultInjectionModules: _includeFaultInjectionModules);
 
         var descriptors = _discoveryCandidateTypesOverride is not null
             ? discovery.DiscoverModules(_discoveryCandidateTypesOverride)
@@ -439,41 +330,8 @@ public sealed class TempestHost : ITempestHost
 
         var moduleManager = new RuntimeModuleManager(logger);
 
-        // WP 13.9.4: the trust-denial execution boundary. A descriptor whose
-        // ModuleType was recorded by deniedTypeRegistry belongs to a plugin
-        // PluginAssemblyLoader already denied trust - its assembly remains
-        // resident in the process (ADR-0015: load cannot be undone) and
-        // Module Discovery, immediately above, is deliberately plugin-unaware
-        // (ADR-0110) and so still found it - but it must never reach Module
-        // Registration, and therefore never InitialiseAsync/StartAsync, and
-        // therefore never Command/Navigation/Event registration (all only
-        // reachable from inside a running module body). Hosted Service
-        // Registration, further below, is filtered identically -
-        // ReflectionFrameworkDiscoveryService, RuntimeModuleManager,
-        // ModuleLifecycleManager, HostedServiceDiscoveryService, and
-        // IHostedServiceManager themselves gain no trust awareness at all -
-        // these two filters are the only new logic, living entirely in this
-        // orchestration method, exactly where componentScopeProvider (below)
-        // already threads plugin-relevant data through otherwise fully
-        // generic machinery.
-        var deniedCount = 0;
-
         foreach (var descriptor in descriptors)
-        {
-            if (deniedTypeRegistry.IsDenied(descriptor.ModuleType))
-            {
-                deniedCount++;
-                logger.Warning(
-                    $"Module '{descriptor.ModuleType.FullName}' excluded from Module Registration: " +
-                    "its own plugin was denied trust (ADR-0110/ADR-0111/WP 13.9.4).");
-                continue;
-            }
-
             moduleManager.Register(descriptor);
-        }
-
-        if (deniedCount > 0)
-            logger.Warning($"{deniedCount} module(s) excluded from Module Registration due to plugin trust denial.");
 
         _moduleManager = moduleManager;
         logger.Information("Host lifecycle phase completed: Module Registration.");
@@ -482,41 +340,9 @@ public sealed class TempestHost : ITempestHost
 
         var hostedServiceDiscovery = new HostedServiceDiscoveryService(logger);
 
-        var discoveredHostedServiceTypes = _hostedServiceCandidateTypesOverride is not null
+        var hostedServiceTypes = _hostedServiceCandidateTypesOverride is not null
             ? hostedServiceDiscovery.DiscoverHostedServiceTypes(_hostedServiceCandidateTypesOverride)
             : hostedServiceDiscovery.DiscoverHostedServiceTypes();
-
-        // WP 13.9.4: the identical trust-denial execution boundary applied
-        // to Module Registration, above, applied here to Hosted Service
-        // Registration - a second, wholly independent discovery/registration
-        // pipeline (HostedServiceDiscoveryService/IHostedServiceManager) a
-        // denied plugin's already-loaded assembly could otherwise still
-        // reach, even for a type that ALSO implements IModule and was
-        // already correctly excluded above - deniedTypeRegistry is keyed on
-        // Type alone, covering both pipelines from the one recording pass.
-        var hostedServiceTypes = new List<Type>();
-        var deniedHostedServiceCount = 0;
-
-        foreach (var hostedServiceType in discoveredHostedServiceTypes)
-        {
-            if (deniedTypeRegistry.IsDenied(hostedServiceType))
-            {
-                deniedHostedServiceCount++;
-                logger.Warning(
-                    $"Hosted service '{hostedServiceType.FullName}' excluded from Hosted Service Registration: " +
-                    "its own plugin was denied trust (ADR-0110/ADR-0111/WP 13.9.4).");
-                continue;
-            }
-
-            hostedServiceTypes.Add(hostedServiceType);
-        }
-
-        if (deniedHostedServiceCount > 0)
-        {
-            logger.Warning(
-                $"{deniedHostedServiceCount} hosted service(s) excluded from Hosted Service Registration due to " +
-                "plugin trust denial.");
-        }
 
         var services = new ServiceCollection(logger);
         services.AddInstance(configuration);
@@ -524,14 +350,6 @@ public sealed class TempestHost : ITempestHost
         services.AddInstance(loggerFactory);
         services.AddInstance(logger);
         services.AddInstance(platformVersionProvider);
-        // ADR-0110/ADR-0111: EventBus, NavigationService, CommandHandlerTable,
-        // and CommandRegistry each gained new, optional, trailing constructor
-        // parameters (a component-scope accessor and/or IPermissionEvaluator)
-        // for the trust-ordered registration rule and capability-gated
-        // publish/register checks. No change is needed at these registration
-        // lines themselves - see currentComponentAccessor's own dual
-        // registration, below, and its remarks on lazy constructor-parameter
-        // resolution.
         services.Singleton<IEventBus, EventBus>();
         services.Singleton<IReportingService, ReportingService>();
         services.Singleton<INotificationDispatcher, NotificationDispatcher>();
@@ -554,32 +372,6 @@ public sealed class TempestHost : ITempestHost
         services.Singleton<IRoleProvider, RoleProvider>();
         services.Singleton<IPermissionEvaluator, PermissionEvaluator>();
         services.Singleton<IIdentityService, IdentityService>();
-
-        // ADR-0111: currentComponentAccessor was already constructed above,
-        // ahead of Plugin Discovery - registered here, under both its own
-        // concrete type (EventBus's own constructor needs the concrete type
-        // specifically, to call BeginScope) and ICurrentComponentAccessor
-        // (NavigationService/CommandRegistry/CommandHandlerTable only ever
-        // need the read-only interface), mirroring currentPrincipalAccessor's
-        // own dual-registration pattern immediately above. IPermissionEvaluator
-        // is already registered above (WP 6.1) - NavigationService,
-        // CommandRegistry, CommandHandlerTable, and EventBus (registered
-        // below) each resolve it, and currentComponentAccessor, through
-        // their own new, optional constructor parameters automatically:
-        // TempestServiceProvider resolves every constructor parameter type
-        // lazily, at first resolution, not at Singleton<> registration time
-        // (see ServiceCollection.cs/TempestServiceProvider.cs) - so no
-        // change is needed at any of those types' own Singleton<> lines
-        // below beyond what construction-time resolution already provides.
-        services.AddInstance<ICurrentComponentAccessor>(currentComponentAccessor);
-        services.AddInstance(currentComponentAccessor);
-
-        // ADR-0050: Licensing's ILicenseProvider wraps the already-
-        // validated license from before Phase 1 - registered via
-        // AddInstance, never container-constructed, exactly like
-        // IPlatformVersionProvider and IDiagnosticsProvider below.
-        ILicenseProvider licenseProvider = new LicenseProvider(currentLicense);
-        services.AddInstance(licenseProvider);
 
         // ADR-0041/ADR-0144: Persistence is established here, as part of
         // Settings' own scope, ahead of Settings' own registration so the
@@ -621,14 +413,6 @@ public sealed class TempestHost : ITempestHost
         // & Permissions, both of which it depends on.
         services.Singleton<IAuditRecorder, AuditRecorder>();
         services.Singleton<IAuditQuery, AuditQuery>();
-
-        // ADR-0047: the REST API's own hosted-service scaffold is
-        // registered separately, via hosted service discovery, below -
-        // IApiEndpointRegistry itself is an ordinary Phase 6 singleton,
-        // resolvable by any module wanting to map a route during its own
-        // initialisation, before the hosted service itself ever starts
-        // listening.
-        services.Singleton<IApiEndpointRegistry, ApiEndpointRegistry>();
 
         // ADR-0051: Export/Import reads from whatever service owns the
         // exported data (Settings, Reporting) via that service's own
@@ -1109,27 +893,7 @@ public sealed class TempestHost : ITempestHost
 
         runToken.ThrowIfCancellationRequested();
 
-        // ADR-0111: given a module Id, resolves the owning plugin's own
-        // component principal (if any - null for a genuine first-party
-        // module, or for a plugin whose types never made it past trust
-        // enforcement in PluginAssemblyLoader) and pushes it onto
-        // currentComponentAccessor for the duration of one lifecycle call.
-        // A linear scan per call is acceptable here - module counts are
-        // small, this is not a hot path comparable to per-request REST
-        // handling.
-        Func<string, IDisposable?> componentScopeProvider = moduleId =>
-        {
-            var descriptor = descriptors.FirstOrDefault(d => d.Id == moduleId);
-
-            if (descriptor is null)
-                return null;
-
-            var principal = componentPrincipalRegistry.GetPrincipalFor(descriptor.ModuleType);
-
-            return principal is not null ? currentComponentAccessor.BeginScope(principal) : null;
-        };
-
-        var lifecycleManager = new ModuleLifecycleManager(moduleManager, serviceProvider, logger, componentScopeProvider);
+        var lifecycleManager = new ModuleLifecycleManager(moduleManager, serviceProvider, logger);
         _lifecycleManager = lifecycleManager;
 
         // `TD-159`: the product's own five engineering calculations, put
@@ -1159,29 +923,7 @@ public sealed class TempestHost : ITempestHost
 
         runToken.ThrowIfCancellationRequested();
 
-        // WP 13.10B / TD-51: the identical component-scope mechanism
-        // componentScopeProvider (above) already gives ModuleLifecycleManager,
-        // extended to HostedServiceManager - a plugin's own hosted service
-        // previously ran with no ambient component principal at all (null,
-        // treated as First-Party), even when the plugin genuinely passed
-        // trust enforcement. Hosted services are natively Type-keyed (no
-        // string Id concept exists for one), so this closure takes the
-        // service's own Type directly - no moduleId-to-descriptor lookup
-        // step is needed, unlike componentScopeProvider above.
-        // componentPrincipalRegistry is now populated for hosted-service
-        // types too (PluginAssemblyLoader.EnforceTrust, WP 13.10B) - null
-        // here for a genuine first-party hosted service, or for a plugin's
-        // hosted service whose own types never made it past trust
-        // enforcement, identically to the module case.
-        Func<Type, IDisposable?> hostedServiceComponentScopeProvider = serviceType =>
-        {
-            var principal = componentPrincipalRegistry.GetPrincipalFor(serviceType);
-
-            return principal is not null ? currentComponentAccessor.BeginScope(principal) : null;
-        };
-
-        var hostedServiceManager = new HostedServiceManager(
-            hostedServiceTypes, serviceProvider, logger, hostedServiceComponentScopeProvider);
+        var hostedServiceManager = new HostedServiceManager(hostedServiceTypes, serviceProvider, logger);
         _hostedServiceManager = hostedServiceManager;
 
         await hostedServiceManager.StartAllAsync(runToken).ConfigureAwait(false);
