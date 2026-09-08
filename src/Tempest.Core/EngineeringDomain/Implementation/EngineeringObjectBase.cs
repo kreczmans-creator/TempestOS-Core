@@ -328,7 +328,17 @@ public abstract class EngineeringObjectBase :
     /// <para>
     /// The state it returns and the audit row are written through the same
     /// transaction, along with anything <paramref name="alsoWrite"/> adds.
-    /// The instance is updated only after that transaction commits.
+    /// </para>
+    /// <para>
+    /// <b>The apply step is <paramref name="alsoApply"/>, not something the
+    /// caller does afterwards.</b> It runs after the commit and <em>before
+    /// the write lock is released</em>, because a mutator projects from
+    /// this object's own fields: applying outside the lock would leave a
+    /// window in which the next writer projected from a value this write
+    /// had already replaced on disk, and committed over it. That is the
+    /// `WP 16.4B-R3` lost update, and keeping commit and apply in one
+    /// critical section is what keeps it closed. A caller that applied its
+    /// own change after awaiting this method would reintroduce it.
     /// </para>
     /// </remarks>
     private async Task<EngineeringObjectState> MutateAndPersistAsync(
@@ -336,7 +346,9 @@ public abstract class EngineeringObjectBase :
         string auditAction,
         string? auditDetail,
         CancellationToken cancellationToken,
-        Func<IPersistenceTransaction, EngineeringObjectState, CancellationToken, Task>? alsoWrite = null)
+        Func<IPersistenceTransaction, EngineeringObjectState, CancellationToken, Task>? alsoWrite = null,
+        Action<EngineeringObjectState>? alsoApply = null,
+        Func<IReadOnlyList<IAttachment>>? applyAttachments = null)
     {
         EngineeringObjectState? committed = null;
 
@@ -355,6 +367,11 @@ public abstract class EngineeringObjectBase :
                 await WriteAuditAsync(transaction, auditAction, auditDetail, token).ConfigureAwait(false);
 
                 committed = next;
+            },
+            afterCommit: () =>
+            {
+                ApplyCommittedState(committed!, applyAttachments?.Invoke());
+                alsoApply?.Invoke(committed!);
             },
             cancellationToken).ConfigureAwait(false);
 
@@ -423,9 +440,8 @@ public abstract class EngineeringObjectBase :
             },
             EngineeringAuditActions.StateChanged,
             auditDetail,
-            cancellationToken).ConfigureAwait(false);
-
-        apply();
+            cancellationToken,
+            alsoApply: _ => apply()).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -520,7 +536,7 @@ public abstract class EngineeringObjectBase :
         var occurredAt = DateTimeOffset.UtcNow;
         LifecycleState from = default;
 
-        var committed = await MutateAndPersistAsync(
+        await MutateAndPersistAsync(
             current =>
             {
                 if (!_context.LifecycleTable.IsPermitted(current.Status, target))
@@ -538,7 +554,6 @@ public abstract class EngineeringObjectBase :
             $"{from} to {target}.",
             cancellationToken).ConfigureAwait(false);
 
-        ApplyCommittedState(committed);
     }
 
     /// <inheritdoc />
@@ -596,12 +611,20 @@ public abstract class EngineeringObjectBase :
 
                 revised = successor;
             },
+            afterCommit: () =>
+            {
+                // Committed, and still under the write lock. Retiring the
+                // predecessor here is what makes `ThrowIfSuperseded` an
+                // ordering point rather than a hint: a mutator that takes
+                // the lock next sees the retirement, and one that took it
+                // first has already committed. Doing this after the lock
+                // were released would leave a window in which a mutation
+                // through the retired predecessor was neither refused nor
+                // visible to the successor.
+                _supersededBy = revised;
+                _context.Repository.Register(revised!);
+            },
             cancellationToken).ConfigureAwait(false);
-
-        // Committed. Only now does anything outside the transaction learn
-        // that this object has a successor.
-        _supersededBy = revised;
-        _context.Repository.Register(revised!);
 
         return revised!;
     }
@@ -641,9 +664,8 @@ public abstract class EngineeringObjectBase :
                 await _context.DocumentWriter.LinkAsync(transaction, Id, targetId, relationshipKind, token).ConfigureAwait(false);
                 await WriteAuditAsync(transaction, EngineeringAuditActions.Linked, $"{relationshipKind} to '{targetId:N}'.", token).ConfigureAwait(false);
             },
+            afterCommit: () => RecordRelationship(targetId, relationshipKind, principalId, createdAt),
             cancellationToken).ConfigureAwait(false);
-
-        RecordRelationship(targetId, relationshipKind, principalId, createdAt);
     }
 
     private void RecordRelationship(Guid targetId, string relationshipKind, string principalId, DateTimeOffset createdAt) =>
@@ -672,10 +694,7 @@ public abstract class EngineeringObjectBase :
     {
         ArgumentNullException.ThrowIfNull(attachment);
 
-        List<IAttachment> nextAttachments;
-        lock (_attachments) { nextAttachments = [.. _attachments, attachment]; }
-
-        var committed = await MutateAndPersistAsync(
+        await MutateAndPersistAsync(
             current => current with
             {
                 Attachments = [.. current.Attachments, new EngineeringObjectAttachmentState(
@@ -683,9 +702,14 @@ public abstract class EngineeringObjectBase :
             },
             EngineeringAuditActions.Attached,
             $"'{attachment.FileName}' ({attachment.SizeInBytes:N0} bytes).",
-            cancellationToken).ConfigureAwait(false);
-
-        ApplyCommittedState(committed, nextAttachments);
+            cancellationToken,
+            applyAttachments: () =>
+            {
+                // Read inside the lock hold, after the commit: the list
+                // this appends to must be the one the commit was projected
+                // from, not one read before the lock was taken.
+                lock (_attachments) { return [.. _attachments, attachment]; }
+            }).ConfigureAwait(false);
     }
 
     /// <inheritdoc />
@@ -735,10 +759,7 @@ public abstract class EngineeringObjectBase :
         var contentHash = AttachmentContentStore.ComputeHash(content.Span);
         var attachment = new Attachment(attachmentId, fileName, contentType, content.Length, contentHash);
 
-        List<IAttachment> nextAttachments;
-        lock (_attachments) { nextAttachments = [.. _attachments, attachment]; }
-
-        var committed = await MutateAndPersistAsync(
+        await MutateAndPersistAsync(
             current => current with
             {
                 Attachments = [.. current.Attachments, new EngineeringObjectAttachmentState(
@@ -748,10 +769,11 @@ public abstract class EngineeringObjectBase :
             $"'{fileName}' ({content.Length:N0} bytes).",
             cancellationToken,
             alsoWrite: async (transaction, _, token) =>
-                await _context.AttachmentWriter.SaveAsync(transaction, attachmentId, content, token).ConfigureAwait(false))
-            .ConfigureAwait(false);
-
-        ApplyCommittedState(committed, nextAttachments);
+                await _context.AttachmentWriter.SaveAsync(transaction, attachmentId, content, token).ConfigureAwait(false),
+            applyAttachments: () =>
+            {
+                lock (_attachments) { return [.. _attachments, attachment]; }
+            }).ConfigureAwait(false);
 
         return attachment;
     }
@@ -779,13 +801,12 @@ public abstract class EngineeringObjectBase :
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(newDisplayName);
 
-        var committed = await MutateAndPersistAsync(
+        await MutateAndPersistAsync(
             current => current with { DisplayName = newDisplayName },
             EngineeringAuditActions.Renamed,
             $"Renamed to '{newDisplayName}'.",
             cancellationToken).ConfigureAwait(false);
 
-        ApplyCommittedState(committed);
     }
 
     /// <inheritdoc />
@@ -808,7 +829,7 @@ public abstract class EngineeringObjectBase :
         var createdAt = DateTimeOffset.UtcNow;
         var principalId = _context.ResolveCurrentPrincipalId();
 
-        var committed = await MutateAndPersistAsync(
+        await MutateAndPersistAsync(
             current =>
             {
                 if (newParentId is { } candidateParentId)
@@ -827,12 +848,15 @@ public abstract class EngineeringObjectBase :
                         .LinkAsync(transaction, Id, parentId, GroupedUnderRelationshipKind, token)
                         .ConfigureAwait(false);
                 }
+            },
+            alsoApply: _ =>
+            {
+                // The edge reaches the in-memory relationship cache in the
+                // same lock hold as the state, so the cache can never hold
+                // a `groupedUnder` the store does not, or lag it.
+                if (newParentId is { } committedParentId)
+                    RecordRelationship(committedParentId, GroupedUnderRelationshipKind, principalId, createdAt);
             }).ConfigureAwait(false);
-
-        ApplyCommittedState(committed);
-
-        if (newParentId is { } committedParentId)
-            RecordRelationship(committedParentId, GroupedUnderRelationshipKind, principalId, createdAt);
     }
 
     /// <summary>The relationship kind a structural move records.</summary>
@@ -898,7 +922,7 @@ public abstract class EngineeringObjectBase :
         List<Guid> attachmentIds;
         lock (_attachments) { attachmentIds = _attachments.Select(a => a.Id).ToList(); }
 
-        var committed = await MutateAndPersistAsync(
+        await MutateAndPersistAsync(
             current =>
             {
                 var all = _context.Repository.ListAllAsync(CancellationToken.None).GetAwaiter().GetResult();
@@ -921,7 +945,6 @@ public abstract class EngineeringObjectBase :
                     await _context.AttachmentWriter.DeleteAsync(transaction, attachmentId, token).ConfigureAwait(false);
             }).ConfigureAwait(false);
 
-        ApplyCommittedState(committed);
     }
 
     /// <inheritdoc />
@@ -962,7 +985,7 @@ public abstract class EngineeringObjectBase :
         if (quantity <= 0)
             throw new ArgumentOutOfRangeException(nameof(quantity), quantity, $"Quantity must be positive ({StructuralValidationRules.QuantityMustBePositive}).");
 
-        var committed = await MutateAndPersistAsync(
+        await MutateAndPersistAsync(
             current => current with
             {
                 BomLine = new EngineeringObjectBomLineState(quantity, unitOfMeasure, findNumber, itemNumber, referenceDesignator),
@@ -971,6 +994,5 @@ public abstract class EngineeringObjectBase :
             $"Quantity {quantity}{(unitOfMeasure is null ? string.Empty : " " + unitOfMeasure)}.",
             cancellationToken).ConfigureAwait(false);
 
-        ApplyCommittedState(committed);
     }
 }

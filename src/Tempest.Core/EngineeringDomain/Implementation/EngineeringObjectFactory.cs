@@ -74,11 +74,12 @@ public sealed class EngineeringObjectFactory<T> : IEngineeringObjectFactory
 
                 instance = candidate;
             },
+            // Committed, and still under the write lock. Nothing before
+            // this point put the instance anywhere a second caller could
+            // find it, and nothing after the lock is released can find it
+            // missing.
+            afterCommit: () => _context.Repository.Register(instance!),
             cancellationToken).ConfigureAwait(false);
-
-        // Committed. Nothing before this line put the instance anywhere a
-        // second caller could find it.
-        _context.Repository.Register(instance!);
 
         return instance!;
     }
@@ -121,6 +122,7 @@ public sealed class EngineeringRelationshipFactory : IEngineeringRelationshipFac
 
         var principalId = _context.ResolveCurrentPrincipalId();
         var createdAt = DateTimeOffset.UtcNow;
+        var relationship = new EngineeringRelationship(sourceId, targetId, RelationshipKind, _category, principalId, createdAt);
 
         await _context.ExecuteWriteAsync(
             async (transaction, token) =>
@@ -139,10 +141,8 @@ public sealed class EngineeringRelationshipFactory : IEngineeringRelationshipFac
                     createdAt,
                     token).ConfigureAwait(false);
             },
+            afterCommit: () => _context.RelationshipRepository.Record(relationship),
             cancellationToken).ConfigureAwait(false);
-
-        var relationship = new EngineeringRelationship(sourceId, targetId, RelationshipKind, _category, principalId, createdAt);
-        _context.RelationshipRepository.Record(relationship);
 
         return relationship;
     }

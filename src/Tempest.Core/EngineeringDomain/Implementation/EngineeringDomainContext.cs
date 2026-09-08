@@ -196,18 +196,43 @@ public sealed class EngineeringDomainContext
     /// checked against the state that will actually be committed.
     /// </para>
     /// <para>
-    /// <b>It must not touch memory.</b> The caller computes the next
-    /// state, commits it here, and only then applies it to its own fields
-    /// and to the repositories. That ordering is what makes a failed
-    /// commit leave nothing behind — in memory or on disk — without any
-    /// undo step, which is the whole point of `ADR-0145`.
+    /// <b><paramref name="work"/> must not touch memory.</b> It computes
+    /// the next state and commits it; memory is written by
+    /// <paramref name="afterCommit"/>, which runs only if the transaction
+    /// committed. That ordering is what makes a failed commit leave
+    /// nothing behind — in memory or on disk — without any undo step,
+    /// which is the whole point of `ADR-0145`.
+    /// </para>
+    /// <para>
+    /// <b><paramref name="afterCommit"/> runs while this method still
+    /// holds the write lock, and that is load-bearing.</b> A mutator
+    /// projects its next state from the object's own in-memory fields, so
+    /// if memory were updated after the lock were released there would be
+    /// a window in which a second writer had taken the lock and projected
+    /// from fields the first writer had committed but not yet applied. The
+    /// second writer would then commit a state derived from a value the
+    /// store had already replaced, and the first writer's change would be
+    /// durably lost — which is exactly the lost update `WP 16.4B-R3`
+    /// closed with its per-object lock, and it would return the moment
+    /// "apply after commit" stopped meaning "apply before releasing".
+    /// Commit and apply are therefore one critical section, and no mutator
+    /// may apply its own change outside this call.
+    /// </para>
+    /// <para>
+    /// <paramref name="afterCommit"/> is synchronous and must not block,
+    /// await, or call back into a mutator: it runs under a non-reentrant
+    /// lock, so re-entry would deadlock rather than misbehave visibly.
+    /// Assigning fields and calling <c>Register</c>/<c>Record</c> on the
+    /// in-memory repositories is all it is for.
     /// </para>
     /// </remarks>
-    /// <param name="work">The unit of durable work.</param>
+    /// <param name="work">The unit of durable work. Must not touch memory.</param>
+    /// <param name="afterCommit">Applies the committed change to memory, under the same lock hold.</param>
     /// <param name="cancellationToken">Cancels the wait for the lock, and the transaction.</param>
     /// <exception cref="ArgumentNullException"><paramref name="work"/> is <see langword="null"/>.</exception>
     internal async Task ExecuteWriteAsync(
         Func<IPersistenceTransaction, CancellationToken, Task> work,
+        Action? afterCommit = null,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(work);
@@ -216,6 +241,10 @@ public sealed class EngineeringDomainContext
         try
         {
             await PersistenceStore.ExecuteInTransactionAsync(work, cancellationToken).ConfigureAwait(false);
+
+            // Committed. Memory is updated here, before the lock is
+            // released, so the next writer projects from it.
+            afterCommit?.Invoke();
         }
         finally
         {

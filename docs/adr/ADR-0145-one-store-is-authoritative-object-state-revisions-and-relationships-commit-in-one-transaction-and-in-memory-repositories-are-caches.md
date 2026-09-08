@@ -113,12 +113,32 @@ order is the decision:
    refusal simply is not an operation.
 2. **Commit.** Write the projected state, everything that goes with it,
    and the audit row, through the transaction.
-3. **Apply.** Only after the commit returns, write the change into the
-   instance's own fields and into the in-memory repositories.
+3. **Apply.** After the commit returns and **before the write lock is
+   released**, write the change into the instance's own fields and into
+   the in-memory repositories.
 
 **Memory is never mutated before the commit.** That single ordering rule
 is what makes a failed write leave nothing behind — in memory or on disk
 — with no undo step at all.
+
+**Memory is also never mutated after the lock is released**, and that
+second half is not decoration. A mutator projects its next state from the
+object's own in-memory fields. If apply happened after the lock were
+released there would be a window in which a second writer had taken the
+lock and projected from a field the first writer had committed but not
+yet applied; the second writer would commit a state derived from a value
+the store had already replaced, and the first writer's change would be
+durably lost. That is precisely the lost update `WP 16.4B-R3` closed with
+its per-object lock, and it would return the moment "apply after commit"
+stopped also meaning "apply before releasing". Commit and apply are one
+critical section: `ExecuteWriteAsync` takes an `afterCommit` callback and
+runs it inside the lock hold, and no mutator applies its own change after
+awaiting it.
+
+The same rule is what makes supersession an ordering point rather than a
+hint. `ReviseAsync` retires the predecessor and registers the successor
+in that callback, so a mutator taking the lock next sees the retirement
+and is refused, and one that took it first has already committed.
 
 ### Graph invariants are checked inside the transaction
 
