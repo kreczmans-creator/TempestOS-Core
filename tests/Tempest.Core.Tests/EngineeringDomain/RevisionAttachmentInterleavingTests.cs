@@ -1,48 +1,68 @@
+using Tempest.Core.Audit;
 using Tempest.Core.EngineeringData;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Identity;
 using Tempest.Core.Persistence;
+using Tempest.Core.Tests.Persistence;
 
 namespace Tempest.Core.Tests.EngineeringDomain;
 
 /// <summary>
-/// `WP 16.4B-R6`, independent adversarial cover for the interleavings
-/// between <see cref="EngineeringObjectBase.AttachContentAsync"/> and
-/// <see cref="EngineeringObjectBase.ReviseAsync"/> that the fifth review
-/// board did <b>not</b> name, plus a characterisation of what the new
-/// ordering actually leaves behind on a genuine I/O failure.
+/// Independent adversarial cover for the interleavings between
+/// <see cref="EngineeringObjectBase.AttachContentAsync"/> and
+/// <see cref="EngineeringObjectBase.ReviseAsync"/>, re-pointed at the
+/// transactional write path (`ADR-0145`, `WP 17.1B`).
 /// </summary>
 /// <remarks>
 /// <para>
-/// The board's own reproduction is "a revision parks inside its capture,
-/// an attach starts behind it". That one is pinned by
+/// The board's own reproduction — "a revision parks inside its capture, an
+/// attach starts behind it" — is pinned by
 /// <see cref="AttachmentRevisionAtomicityTests"/>. Everything here is a
 /// <em>different</em> interleaving or a different failure, chosen because
-/// this project's four-board failure mode is a fix that satisfies the
+/// this project's repeated failure mode is a fix that satisfies the
 /// reported reproduction and leaves the adjacent path broken:
 /// </para>
 /// <list type="bullet">
-/// <item><description>the attach starts <em>first</em> and the revision arrives while it is mid content-write;</description></item>
+/// <item><description>the attach starts <em>first</em> and the revision arrives while it is inside its transaction;</description></item>
 /// <item><description>two attaches race one revision, so the successor could inherit two byteless attachments rather than one;</description></item>
-/// <item><description>a content write that fails <em>after</em> writing its bytes — the case that decides whether `WP 16.4B-R6`'s new marker-clear really demotes the residue to a collectable orphan, or only claims to;</description></item>
-/// <item><description>a revision that fails part-way, which is the first time this method's whole body has run inside a <c>using</c> — a leaked write lock here would wedge every later write to that object for the life of the process;</description></item>
+/// <item><description>an attach whose commit fails, which decides whether the record, the bytes and the audit row are really one write or only described as one;</description></item>
+/// <item><description>a revision that fails part-way, which would wedge <b>every</b> later write in the process if it leaked the one domain write lock;</description></item>
 /// <item><description>a second revision arriving concurrently rather than in program order;</description></item>
-/// <item><description>the reconciliation sweep running against an attach parked between its content write and its state write, which is the interleaving the marker protocol exists for and the one `WP 16.4B-R6` moved the marker inside the lock underneath.</description></item>
+/// <item><description>a mutation re-entering the object from inside the transaction — the hazard the single non-reentrant lock creates.</description></item>
 /// </list>
 /// <para>
-/// <b>Determinism.</b> Nothing here sleeps, polls or races. Every fake
-/// store completes synchronously except where a test deliberately parks
-/// one, so a call runs on the calling thread as far as its first genuinely
-/// incomplete await and the returned <see cref="Task"/> is provably at
-/// that point on the next line. Where a test needs to know whether the
-/// per-object write lock is held, it asks
-/// <see cref="ObjectWriteLockIsHeld"/>, which reads
-/// <see cref="Task.IsCompleted"/> on an uncontended acquisition rather
-/// than waiting for a timeout — see that method's own remarks.
+/// <b>What `ADR-0145` deleted from this file, and why.</b> Three facts here
+/// described machinery rather than behaviour: the write-intent marker, the
+/// four separate durable steps of an attach and the ordering between them,
+/// and the per-object write lock the previous rounds nested the document
+/// store's own lock inside. There is one lock and one transaction now, so
+/// "the lock is held across all four steps" has no referent; the invariant
+/// underneath it does, and is asserted here as
+/// <see cref="AnAttachsRecord_ItsBytes_AndItsAuditRow_AreOneTransaction"/>.
+/// The per-object lock probe (<c>ObjectWriteLockIsHeld</c>) and its
+/// <c>DiskRig</c> are gone with the fakes they observed.
+/// </para>
+/// <para>
+/// <b>Determinism.</b> Nothing here sleeps, polls or races. A writer is
+/// parked either inside its own <c>CaptureTypeState</c> — which
+/// <c>CaptureState</c> calls from inside the transaction, under the domain
+/// write lock — or at the end of its transaction body with
+/// <see cref="GatedPersistenceStore"/>, with every write staged and both
+/// locks held. A second writer arriving then is blocked on the one domain
+/// write lock, so its returned <see cref="Task"/> is provably incomplete on
+/// the next line. The only timed values are upper bounds that turn a hang
+/// into a reported failure; no fact passes <em>because</em> of one.
 /// </para>
 /// </remarks>
 public sealed class RevisionAttachmentInterleavingTests
 {
+    /// <summary>
+    /// Long enough that no machine fails one of these by being slow, short
+    /// enough that a leaked domain write lock is a failed fact rather than
+    /// a hung test run. Nothing asserts a value measured against it.
+    /// </summary>
+    private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(30);
+
     private static readonly byte[] Bytes = [7, 8, 9];
     private static readonly byte[] OtherBytes = [10, 11, 12, 13];
 
@@ -52,66 +72,60 @@ public sealed class RevisionAttachmentInterleavingTests
 
     /// <summary>
     /// <b>The mirror of the board's interleaving.</b> The attach goes
-    /// first and is parked inside the content write; the revision arrives
-    /// behind it.
+    /// first and is parked at the end of its transaction — bytes staged,
+    /// record staged, nothing committed — and the revision arrives behind
+    /// it.
     /// </summary>
     /// <remarks>
     /// <para>
     /// The invariant asserted is the one that survives either outcome:
-    /// <em>an attach is all-or-nothing</em>. Either it succeeded, in which
-    /// case its bytes exist and the live successor carries the reference;
-    /// or it was refused, in which case <b>no content was ever written</b>
-    /// — not written-then-deleted, never written.
+    /// <em>an attach is all-or-nothing</em>. Before `WP 16.4B-R6` this
+    /// interleaving reached the losing branch with the bytes already
+    /// written and then deleted again by the R5 compensation — the
+    /// "written then rolled back" shape whose safety argument the board
+    /// falsified.
     /// </para>
     /// <para>
-    /// Before `WP 16.4B-R6` this interleaving reached the second branch
-    /// with <c>SaveCallCount == 1</c> and <c>DeleteCallCount == 1</c>: the
-    /// bytes were written outside any lock, the revision slipped past, the
-    /// state write was refused and the R5 compensation deleted them again.
-    /// That is the "written then rolled back" shape whose safety argument
-    /// the board falsified; asserting call counts rather than end states is
-    /// what makes the two distinguishable at all.
+    /// <b>What is asserted has changed with the mechanism.</b> The old
+    /// fact distinguished "never written" from "written then deleted" by
+    /// counting calls on a fake content store, because end states alone
+    /// could not tell them apart. The bytes are now staged inside the same
+    /// transaction as the record that names them, so the distinction is
+    /// visible directly in the store: while the attach is parked, nothing
+    /// is committed, and the revision cannot enter the write path at all.
     /// </para>
     /// </remarks>
     [Fact]
-    public async Task ARevisionArrivingWhileAnAttachIsMidContentWrite_LeavesNoWrittenThenDeletedBytes()
+    public async Task ARevisionArrivingWhileAnAttachIsInFlight_IsOrderedBehindIt_AndSeesAllOfItOrNoneOfIt()
     {
-        var rig = new Rig();
+        var rig = Rig.WithGate(out var gate);
         var part = await rig.CreateAsync();
 
-        var contentWriteEntered = rig.ContentStore.ParkNextSave();
-
-        // Runs on this thread up to the parked content write.
+        var parked = gate.ArmNextTransaction();
         var attaching = part.AttachContentAsync("drawing.pdf", "application/pdf", Bytes);
-        await contentWriteEntered;
+        await parked;
 
-        // Runs on this thread as far as it can get. After `WP 16.4B-R6`
-        // that is the write lock the parked attach is holding; before it,
-        // the whole revision completed here, in front of the attach.
+        // The attach has staged everything and holds the domain write
+        // lock. Nothing of it is committed, and the revision cannot start.
+        Assert.Empty(rig.ContentKeys);
+        Assert.Empty((await rig.StateStore.FindAsync(part.Id))!.Attachments);
+
         var revising = part.ReviseAsync("Revised content.", "Rev B.");
+        Assert.False(revising.IsCompleted, "A revision entered the write path while an attach held the domain write lock.");
 
-        rig.ContentStore.ReleaseParkedSave();
+        gate.Release();
 
-        var successor = (RevisableFixture)await revising;
-        var attached = await Outcome(attaching);
+        var attached = await attaching.WaitAsync(Timeout);
+        var successor = (RevisableFixture)await revising.WaitAsync(Timeout);
 
-        if (attached is null)
-        {
-            Assert.True(
-                rig.ContentStore.SaveCallCount == 0,
-                "The attach was refused, so nothing durable may ever have been written for it — but the content " +
-                $"store's SaveAsync was called {rig.ContentStore.SaveCallCount} time(s). A refusal that has already " +
-                "written bytes needs a rollback, and a rollback is what destroyed a live successor's content in R5.");
-            Assert.Equal(0, rig.ContentStore.DeleteCallCount);
-        }
-        else
-        {
-            Assert.Contains(await successor.GetAttachmentsAsync(), a => a.Id == attached.Id);
-            Assert.Contains(attached.Id, rig.ContentStore.StoredKeys);
-            Assert.Equal(0, rig.ContentStore.DeleteCallCount);
-        }
+        // All of it: the bytes, the record and the successor's inherited
+        // reference — with content that is really there.
+        Assert.True(rig.HasContent(attached.Id));
+        Assert.Contains(await successor.GetAttachmentsAsync(), a => a.Id == attached.Id);
 
-        Assert.Empty(await rig.WriteIntentStore.ListMarkedAsync());
+        var content = await successor.ReadAttachmentContentAsync(attached.Id);
+        Assert.True(content.IsAvailable);
+        Assert.Equal(Bytes, content.Bytes);
     }
 
     /// <summary>
@@ -122,11 +136,13 @@ public sealed class RevisionAttachmentInterleavingTests
     /// </summary>
     /// <remarks>
     /// Both attaches are started while the revision is parked inside its
-    /// own capture, holding the write lock. Before `WP 16.4B-R6` both got
-    /// as far as adding themselves to the list the parked capture was
-    /// about to copy, both were then refused, and both compensations
-    /// deleted their bytes — leaving the live successor claiming
-    /// <b>two</b> attachments whose content no longer existed.
+    /// own capture — inside its transaction, holding the domain write lock.
+    /// Before `WP 16.4B-R6` both got as far as adding themselves to the
+    /// list the parked capture was about to copy, both were then refused,
+    /// and both compensations deleted their bytes, leaving the live
+    /// successor claiming <b>two</b> attachments whose content no longer
+    /// existed. Neither can now add anything to the instance before it has
+    /// committed, which is asserted directly while they are blocked.
     /// </remarks>
     [Fact]
     public async Task TwoAttachesRacingOneRevision_NeverLeaveTheSuccessorClaimingBytelessAttachments()
@@ -141,101 +157,107 @@ public sealed class RevisionAttachmentInterleavingTests
         var first = part.AttachContentAsync("a.pdf", "application/pdf", Bytes);
         var second = part.AttachContentAsync("b.pdf", "application/pdf", OtherBytes);
 
+        // Neither has touched the instance the parked capture is reading.
+        Assert.Empty(await part.GetAttachmentsAsync());
+        Assert.Empty(rig.ContentKeys);
+
         part.ReleaseCapture();
 
-        var successor = (RevisableFixture)await revising;
+        var successor = (RevisableFixture)await revising.WaitAsync(Timeout);
         _ = await Outcome(first);
         _ = await Outcome(second);
 
         foreach (var attachment in await successor.GetAttachmentsAsync())
             Assert.True(
-                rig.ContentStore.StoredKeys.Contains(attachment.Id),
-                $"The live successor claims attachment '{attachment.Id}' ('{attachment.FileName}') but its content " +
-                "is gone. Nothing in this platform repairs a reference to content that does not exist — the sweep " +
-                "only hunts content nothing references.");
+                rig.HasContent(attachment.Id),
+                $"The live successor claims attachment '{attachment.Id}' ('{attachment.FileName}') but its content is gone.");
 
         // ...and durably, after one ordinary write by the live successor.
-        await successor.RenameAsync("Renamed");
+        await successor.RenameAsync("Renamed").WaitAsync(Timeout);
 
         var state = await rig.StateStore.FindAsync(part.Id);
         Assert.NotNull(state);
 
         foreach (var attachment in state.Attachments)
-            Assert.Contains(attachment.Id, rig.ContentStore.StoredKeys);
-
-        Assert.Equal(0, rig.ContentStore.DeleteCallCount);
+            Assert.True(rig.HasContent(attachment.Id), $"The durable record names attachment '{attachment.Id}' but its content is gone.");
     }
 
     /// <summary>
-    /// An attach racing a revision that <em>itself</em> then fails. The
-    /// predecessor is not superseded after all, so the attach must
-    /// succeed completely rather than being refused by a retirement that
-    /// never happened.
+    /// An attach following a revision that <em>itself</em> failed. The
+    /// predecessor is not superseded after all, so the attach must succeed
+    /// completely rather than being refused by a retirement that never
+    /// happened.
     /// </summary>
+    /// <remarks>
+    /// The revision's failure is injected at the commit — the whole body
+    /// ran, the revision record and the successor were built, and only the
+    /// commit did not land — because that is the case in which a
+    /// half-applied retirement would be easiest to leave behind.
+    /// </remarks>
     [Fact]
-    public async Task AnAttachRacingARevisionThatThenFails_StillSucceedsCompletely()
+    public async Task AnAttachAfterARevisionThatFailed_StillSucceedsCompletely()
     {
-        var rig = new Rig();
+        var rig = Rig.WithFailableCommit(out var failing);
         var part = await rig.CreateAsync();
 
-        rig.DocumentStore.FailNextRevise = true;
-
-        await Assert.ThrowsAsync<EngineeringDataException>(
+        failing.FailNextCommit = true;
+        await Assert.ThrowsAsync<PersistenceStoreUnavailableException>(
             () => part.ReviseAsync("Revised content.", "Rev B."));
 
-        var attachment = await part.AttachContentAsync("drawing.pdf", "application/pdf", Bytes);
+        var attachment = await part.AttachContentAsync("drawing.pdf", "application/pdf", Bytes).WaitAsync(Timeout);
 
-        Assert.Contains(attachment.Id, rig.ContentStore.StoredKeys);
+        Assert.True(rig.HasContent(attachment.Id));
         Assert.Contains(await part.GetAttachmentsAsync(), a => a.Id == attachment.Id);
-        Assert.Empty(await rig.WriteIntentStore.ListMarkedAsync());
 
         var state = await rig.StateStore.FindAsync(part.Id);
         Assert.NotNull(state);
         Assert.Contains(state.Attachments, a => a.Id == attachment.Id);
+
+        // The failed revision left nothing: the object is still at
+        // revision 1 and its history has no second entry.
+        Assert.Equal(1, part.CurrentRevisionNumber);
+        Assert.Single(await part.GetRevisionHistoryAsync());
     }
 
     // ================================================================
-    // The write lock's own new liabilities
+    // The one write lock's own liabilities
     // ================================================================
 
     /// <summary>
-    /// <b>A revision that fails part-way must not leak the per-object
-    /// write lock.</b>
+    /// <b>A revision that fails part-way must not leak the domain write
+    /// lock.</b>
     /// </summary>
     /// <remarks>
     /// <para>
-    /// `WP 16.4B-R6` moved <em>the whole of</em> <c>ReviseAsync</c> —
-    /// including the document store's own <c>ReviseAsync</c>, the Kind's
-    /// state reader and the repository registration — inside one hold of
-    /// this object's write lock. That is new: before it, only the capture
-    /// and hand-off were inside, and the document write could not fail
-    /// under the lock at all. Because the lock is not reentrant and is
-    /// keyed by Id rather than by instance, a lock leaked on a failure
-    /// path would not merely fail this call: it would wedge <b>every</b>
-    /// later durable write to this object, through any instance, for the
-    /// life of the process — a far worse outcome than the revision failing.
+    /// `ADR-0145` made the lock domain-wide, so the consequence of leaking
+    /// it is strictly worse than it was when the lock was per object: a
+    /// lock leaked on a failure path would not merely wedge later writes
+    /// to <em>this</em> object, it would wedge <b>every</b> durable write
+    /// in the process, to every object, for the life of the process.
     /// </para>
     /// <para>
-    /// Both reachable failure points are covered: the document store
-    /// throwing (before anything else has happened) and the Kind's own
-    /// <see cref="IRehydratable{TSelf}.Rehydrate"/> throwing (after a
-    /// durable revision record has already been minted). The check is
-    /// deterministic — see <see cref="ObjectWriteLockIsHeld"/>.
+    /// Both reachable failure points are covered: the commit failing
+    /// (after the whole body has run) and the Kind's own
+    /// <see cref="IRehydratable{TSelf}.Rehydrate"/> throwing from inside
+    /// the transaction body, after a revision record has been staged. The
+    /// check is behavioural rather than a probe on the semaphore — the
+    /// next write completing is what "released" has to mean in practice —
+    /// and it is bounded, so a leak is a red fact rather than a hung run.
     /// </para>
     /// </remarks>
     [Fact]
-    public async Task ARevisionThatFailsPartWay_ReleasesTheObjectWriteLock()
+    public async Task ARevisionThatFailsPartWay_ReleasesTheDomainWriteLock()
     {
-        var rig = new Rig();
+        var rig = Rig.WithFailableCommit(out var failing);
         var part = await rig.CreateAsync();
+        var other = await rig.CreateAsync();
 
-        rig.DocumentStore.FailNextRevise = true;
-        await Assert.ThrowsAsync<EngineeringDataException>(() => part.ReviseAsync("R1.", "Rev B."));
+        failing.FailNextCommit = true;
+        await Assert.ThrowsAsync<PersistenceStoreUnavailableException>(() => part.ReviseAsync("R1.", "Rev B."));
 
-        Assert.False(
-            ObjectWriteLockIsHeld(rig.Context, part.Id),
-            "A revision that failed in the document store left this object's write lock held. Every later durable " +
-            "write to this object — through any instance — would block for ever.");
+        // Any object at all can still be written — the lock is not this
+        // object's, so proving it on a second object is the honest check.
+        await other.RenameAsync("Still writable, on another object").WaitAsync(Timeout);
 
         RevisableFixture.FailNextRehydrate = true;
         try
@@ -247,178 +269,177 @@ public sealed class RevisionAttachmentInterleavingTests
             RevisableFixture.FailNextRehydrate = false;
         }
 
-        Assert.False(
-            ObjectWriteLockIsHeld(rig.Context, part.Id),
-            "A revision whose successor construction threw left this object's write lock held.");
+        await part.RenameAsync("Still writable").WaitAsync(Timeout);
 
-        // The object is still fully usable, which is what "released" has to
-        // mean in practice rather than only in a probe.
-        await part.RenameAsync("Still writable");
         var state = await rig.StateStore.FindAsync(part.Id);
         Assert.NotNull(state);
         Assert.Equal("Still writable", state.DisplayName);
     }
 
     /// <summary>
-    /// The lock-holding surface `WP 16.4B-R6` created, made executable.
+    /// An attach's object-state record, its attachment bytes and its audit
+    /// row are <b>one transaction</b>: a failed commit leaves none of the
+    /// three, and a successful one leaves all three.
     /// </summary>
     /// <remarks>
     /// <para>
-    /// After R6 the per-object write lock is held across <b>every</b>
-    /// collaborator call an attach makes: the write-intent mark, the
-    /// content byte write, the object state write and the marker clear.
-    /// Before it, only the state write was inside. This is the change that
-    /// buys the atomicity — and it is also the change that makes any
-    /// collaborator which calls back into the same object deadlock rather
-    /// than merely interleave, because <see cref="Concurrency.AsyncKeyedLock"/>
-    /// is not reentrant.
+    /// <b>This replaces the fact that asserted the per-object write lock
+    /// was held across all four durable steps of an attach.</b> There are
+    /// no longer four steps to hold a lock across: the write-intent mark
+    /// and the marker clear are deleted, and the two writes that remain go
+    /// through one <see cref="IPersistenceTransaction"/> together with the
+    /// audit row. The invariant the four-step hold bought — that no
+    /// interleaving and no failure can leave some of them without the
+    /// others — is what is asserted here, and it is now a property of the
+    /// transaction rather than of a lock hold that a later change could
+    /// quietly narrow.
     /// </para>
     /// <para>
-    /// Recording it as a test rather than only as a comment means the next
-    /// board can see the surface it has to reason about, and a future
-    /// change that quietly narrows the hold (which would reopen the
-    /// board's data-loss window) fails here rather than passing silently.
+    /// Each of the three is checked in the store itself rather than
+    /// through the object, so a fact that passes because the instance was
+    /// not updated is distinguishable from one that passes because nothing
+    /// was written.
     /// </para>
     /// </remarks>
     [Fact]
-    public async Task AnAttach_HoldsTheObjectWriteLockAcrossEveryOneOfItsFourDurableSteps()
+    public async Task AnAttachsRecord_ItsBytes_AndItsAuditRow_AreOneTransaction()
     {
-        var rig = new Rig();
+        var rig = Rig.WithFailableCommit(out var failing);
         var part = await rig.CreateAsync();
 
-        bool heldAtMark = false, heldAtContentWrite = false, heldAtStateWrite = false, heldAtClear = false;
+        var auditBefore = rig.AuditRowsFor(part.Id).Count;
+        var bodiesBefore = failing.BodiesCompleted;
 
-        rig.WriteIntentStore.OnMark = () => heldAtMark = ObjectWriteLockIsHeld(rig.Context, part.Id);
-        rig.ContentStore.OnSave = () => heldAtContentWrite = ObjectWriteLockIsHeld(rig.Context, part.Id);
-        rig.StateStore.OnSave = () => heldAtStateWrite = ObjectWriteLockIsHeld(rig.Context, part.Id);
-        rig.WriteIntentStore.OnClear = () => heldAtClear = ObjectWriteLockIsHeld(rig.Context, part.Id);
+        failing.FailNextCommit = true;
+        await Assert.ThrowsAsync<PersistenceStoreUnavailableException>(
+            () => part.AttachContentAsync("drawing.pdf", "application/pdf", Bytes));
 
-        await part.AttachContentAsync("drawing.pdf", "application/pdf", Bytes);
+        // The body ran to completion — every one of the three was staged —
+        // and none of them landed.
+        Assert.Equal(bodiesBefore + 1, failing.BodiesCompleted);
+        Assert.Empty(rig.ContentKeys);
+        Assert.Empty((await rig.StateStore.FindAsync(part.Id))!.Attachments);
+        Assert.Equal(auditBefore, rig.AuditRowsFor(part.Id).Count);
 
-        Assert.True(heldAtMark, "The write-intent marker is written outside this object's write lock — a revision can interleave between it and the state write.");
-        Assert.True(heldAtContentWrite, "The content bytes are written outside this object's write lock — this is the exact window the fifth review board turned into permanent content destruction.");
-        Assert.True(heldAtStateWrite, "The object state is written outside this object's write lock.");
-        Assert.True(heldAtClear, "The marker is cleared outside this object's write lock.");
+        // And the same three arrive together when the commit lands.
+        var attachment = await part.AttachContentAsync("drawing.pdf", "application/pdf", Bytes).WaitAsync(Timeout);
+
+        Assert.True(rig.HasContent(attachment.Id));
+        Assert.Single((await rig.StateStore.FindAsync(part.Id))!.Attachments);
+        Assert.Equal(auditBefore + 1, rig.AuditRowsFor(part.Id).Count);
     }
 
     /// <summary>
-    /// <b>Re-entrancy, characterised.</b> A collaborator that calls back
-    /// into the same object while an attach is running is now ordered
-    /// <em>behind</em> that attach rather than interleaved with it.
+    /// <b>Re-entrancy, characterised.</b> A mutation started on the same
+    /// object from inside a transaction is ordered <em>behind</em> that
+    /// transaction rather than interleaved with it.
     /// </summary>
     /// <remarks>
     /// <para>
-    /// This is the standing hazard `WP 16.4B-R6` creates, made visible
-    /// without hanging a test: the callback's mutation cannot make
-    /// progress while the attach holds the lock, so a collaborator that
-    /// <em>awaited</em> such a call synchronously would deadlock outright,
-    /// where before R6 it would merely have raced. Nothing in production
-    /// does this — every implementation of
-    /// <see cref="IAttachmentContentStore"/>,
-    /// <see cref="IEngineeringObjectStateStore"/> and
-    /// <see cref="IAttachmentWriteIntentStore"/> in <c>src/</c> reaches
-    /// <c>IPersistenceStore</c> and nothing else, and no
-    /// <c>CaptureTypeState</c> override or
+    /// This is the standing hazard `ADR-0145` creates, made visible
+    /// without hanging a test. The domain write lock is not reentrant and
+    /// is taken before the transaction is opened, so code that runs
+    /// <em>inside</em> a transaction body and <em>awaits</em> a mutator on
+    /// any object at all would deadlock outright — not merely race, and
+    /// not merely against this object, because the lock is domain-wide.
+    /// </para>
+    /// <para>
+    /// The seam is the Kind's own <c>CaptureTypeState</c>, which
+    /// <c>CaptureState</c> calls from inside the transaction: the same
+    /// extension point every concrete Kind overrides, and the one place
+    /// outside this assembly's own code that runs there. Nothing in
+    /// <c>src/</c> does this — no <c>CaptureTypeState</c> override and no
     /// <see cref="IRehydratable{TSelf}.Rehydrate"/> implementation touches
-    /// the context at all — which is precisely why it is worth an
-    /// executable record: the constraint is real, invisible from the call
-    /// site, and only enforced by nobody having broken it yet.
+    /// the context — which is precisely why it is worth an executable
+    /// record: the constraint is real, invisible from the call site, and
+    /// enforced only by nobody having broken it yet.
     /// </para>
     /// <para>
     /// The observation is deterministic, not timed: the task is inspected
-    /// for completion, never waited on.
+    /// for completion, never waited on, while the outer transaction is
+    /// still open.
     /// </para>
     /// </remarks>
     [Fact]
-    public async Task AMutationReenteringTheObjectFromAStoreCallback_CannotProceedUntilTheAttachReleasesTheLock()
+    public async Task AMutationReenteringTheObjectFromInsideTheTransaction_CannotProceedUntilItCommits()
     {
         var rig = new Rig();
         var part = await rig.CreateAsync();
 
         Task? reentrant = null;
-        rig.ContentStore.OnSave = () => reentrant = part.RenameAsync("Renamed from inside the content store");
+        part.OnNextCapture = () => reentrant = part.RenameAsync("Renamed from inside the transaction");
 
-        await part.AttachContentAsync("drawing.pdf", "application/pdf", Bytes);
+        await part.AttachContentAsync("drawing.pdf", "application/pdf", Bytes).WaitAsync(Timeout);
 
         Assert.NotNull(reentrant);
 
-        // It could not have completed inside the callback: the attach held
-        // this object's write lock for the whole of it.
-        await reentrant;
+        // It could not have completed inside the transaction: the attach
+        // held the one domain write lock for the whole of it.
+        await reentrant.WaitAsync(Timeout);
 
         var state = await rig.StateStore.FindAsync(part.Id);
         Assert.NotNull(state);
-        Assert.Equal("Renamed from inside the content store", state.DisplayName);
+        Assert.Equal("Renamed from inside the transaction", state.DisplayName);
         Assert.Single(state.Attachments);
     }
 
     /// <summary>
-    /// <b>The lock-ordering change, characterised.</b> `WP 16.4B-R6` moved
-    /// <c>IEngineeringDocumentStore.ReviseAsync</c> inside the per-object
-    /// write lock, so the object lock is now held across the document
-    /// store's own per-document lock.
+    /// A revision's <b>document write is inside its transaction</b>, so a
+    /// mutation issued while it is in flight is ordered behind it and can
+    /// see no part of it until it commits.
     /// </summary>
     /// <remarks>
     /// <para>
-    /// Two consequences, both asserted here. First, the nesting is
-    /// object-lock → document-lock, and it is one-directional: nothing in
-    /// <c>src/</c> takes the document lock and then asks for an object
-    /// lock — <see cref="EngineeringData.EngineeringDocumentStore"/> holds
-    /// no reference to <see cref="EngineeringDomainContext"/> and never
-    /// calls into <see cref="EngineeringObjectBase"/>. So there is no
-    /// cycle and no deadlock, only an ordering.
+    /// `WP 16.4B-R6` moved <c>IEngineeringDocumentStore.ReviseAsync</c>
+    /// inside the per-object write lock, and this fact asserted the
+    /// resulting nesting of two locks and the cost it bought: a rename
+    /// issued while a revision was writing its document record used to be
+    /// accepted and is now refused. `ADR-0145` removes the nesting — there
+    /// is one lock and one transaction, and the document store no longer
+    /// takes a lock of its own on this path — but the widened window is
+    /// exactly as wide, so the cost is unchanged and is still recorded
+    /// here.
     /// </para>
     /// <para>
-    /// Second, and this is the cost: a slow or stalled document write now
-    /// blocks <b>every</b> durable write to that object, and widens the
-    /// window in which a concurrent predecessor write is refused rather
-    /// than accepted. A rename issued while a revision is still writing
-    /// its document revision used to be accepted (the revision had not yet
-    /// taken the lock); it is now refused. The cost is real and is left
-    /// recorded here: R6 made a refusal reachable for the whole duration
-    /// of a document write.
-    /// </para>
-    /// <para>
-    /// <b>What that widening cost, until `WP 16.4B-R6b`.</b> The line below
-    /// used to assert
-    /// <c>Assert.Equal("Issued while the document was being written",
-    /// successor.DisplayName)</c> — the refused rename reached the
-    /// successor anyway (P1-F4), so R6 had widened the window on a leak it
-    /// had not closed. `WP 16.4B-R6b` closed the leak for
-    /// <c>RenameAsync</c> and the other four, and the assertion is
-    /// inverted here rather than removed: the widened window is still
-    /// exactly as wide, and now there is nothing in it to leak.
+    /// <b>The inverted clause is kept.</b> Until `WP 16.4B-R6b` the last
+    /// two assertions were the opposite: the refused rename reached the
+    /// successor anyway (P1-F4). They stay negated here, and are now
+    /// stronger, because a refused mutation never touches the instance at
+    /// all rather than being undone after the fact. See
+    /// <c>RefusedMutationSuccessorLeakageTests</c> for the closure in full.
     /// </para>
     /// </remarks>
     [Fact]
-    public async Task TheObjectWriteLockIsHeldAcrossTheDocumentStoresOwnWrite()
+    public async Task ARevisionsDocumentWriteIsInsideItsTransaction_AndAMutationIssuedDuringIt_IsOrderedBehindIt()
     {
-        var rig = new Rig();
+        var rig = Rig.WithGate(out var gate);
         var part = await rig.CreateAsync();
 
-        var documentWriteEntered = rig.DocumentStore.ParkNextRevise();
-        var revising = part.ReviseAsync("Revised content.", "Rev B.");
-        await documentWriteEntered;
+        var parked = gate.ArmNextTransaction();
+        var revising = Task.Run(() => part.ReviseAsync("Revised content.", "Rev B."));
+        await parked;
 
-        Assert.True(
-            ObjectWriteLockIsHeld(rig.Context, part.Id),
-            "The document revision is written outside this object's write lock, so a concurrent mutation can still " +
-            "land durably between the document write and the hand-off.");
+        // The revision record is staged and invisible: the document write
+        // happened inside the transaction, not before it.
+        Assert.Single(await part.GetRevisionHistoryAsync());
 
         var renaming = part.RenameAsync("Issued while the document was being written");
+        Assert.False(renaming.IsCompleted, "A rename entered the write path while a revision held the domain write lock.");
 
-        rig.DocumentStore.ReleaseParkedRevise();
+        gate.Release();
 
-        var successor = (RevisableFixture)await revising;
-        await Assert.ThrowsAsync<SupersededEngineeringObjectException>(() => renaming);
+        var successor = (RevisableFixture)await revising.WaitAsync(Timeout);
+        await Assert.ThrowsAsync<SupersededEngineeringObjectException>(() => renaming.WaitAsync(Timeout));
 
-        // And the refused rename reached neither the successor nor the
-        // predecessor (`WP 16.4B-R6b`). This assertion was the opposite
-        // until that Work Package: the widened window is unchanged, and it
-        // no longer carries a leak. See
-        // `RefusedMutationSuccessorLeakageTests` for the closure in full.
+        // The revision landed whole...
+        Assert.Equal(2, successor.CurrentRevisionNumber);
+        Assert.Equal(2, (await part.GetRevisionHistoryAsync()).Count);
+
+        // ...and the refused rename reached neither the successor nor the
+        // predecessor, nor the durable record.
         Assert.Equal("Bracket", successor.DisplayName);
         Assert.Equal("Bracket", part.DisplayName);
+        Assert.Equal("Bracket", (await rig.StateStore.FindAsync(part.Id))!.DisplayName);
     }
 
     // ================================================================
@@ -485,9 +506,12 @@ public sealed class RevisionAttachmentInterleavingTests
     /// The program-order case is pinned by
     /// <see cref="RevisionSuccessorUniquenessTests"/>. This is the
     /// concurrent one, made deterministic by parking the first revision
-    /// inside its own capture — at which point it is holding the write
-    /// lock and has already minted its revision record — and starting the
-    /// second on the calling thread behind it.
+    /// inside its own capture — at which point it is inside its
+    /// transaction, holding the one domain write lock, and has already
+    /// staged its revision record — and starting the second on the calling
+    /// thread behind it. The mid-flight assertion is what changed under
+    /// `ADR-0145`: while the first is parked, <em>neither</em> revision
+    /// record is durable, because a staged record is not a committed one.
     /// </remarks>
     [Fact]
     public async Task TwoConcurrentRevisionsOfOneInstance_MintExactlyOneSuccessorAndOneRevisionRecord()
@@ -500,11 +524,13 @@ public sealed class RevisionAttachmentInterleavingTests
         await parked;
 
         var second = part.ReviseAsync("Second.", "Rev C.");
+        Assert.False(second.IsCompleted, "A second revision entered the write path while the first held the domain write lock.");
+        Assert.Single(await part.GetRevisionHistoryAsync());
 
         part.ReleaseCapture();
 
-        var winner = (RevisableFixture)await first;
-        await Assert.ThrowsAsync<SupersededEngineeringObjectException>(() => second);
+        var winner = (RevisableFixture)await first.WaitAsync(Timeout);
+        await Assert.ThrowsAsync<SupersededEngineeringObjectException>(() => second.WaitAsync(Timeout));
 
         // ---- exactly one successor is live -------------------------
         var live = await rig.Context.Repository.FindAsync(part.Id);
@@ -518,8 +544,7 @@ public sealed class RevisionAttachmentInterleavingTests
         Assert.DoesNotContain(history, r => r.Content == "Second.");
 
         // ---- and the DURABLE OBJECT STATE, not an in-memory flag ----
-        // The winner's write lands.
-        await winner.RenameAsync("Written by the winner");
+        await winner.RenameAsync("Written by the winner").WaitAsync(Timeout);
 
         var state = await rig.StateStore.FindAsync(part.Id);
         Assert.NotNull(state);
@@ -527,45 +552,42 @@ public sealed class RevisionAttachmentInterleavingTests
 
         // The predecessor is durably retired: it cannot write again, and
         // nothing it does can displace the winner's record.
-        await Assert.ThrowsAsync<SupersededEngineeringObjectException>(() => part.RenameAsync("Written by the retired predecessor"));
+        await Assert.ThrowsAsync<SupersededEngineeringObjectException>(
+            () => part.RenameAsync("Written by the retired predecessor"));
 
         var after = await rig.StateStore.FindAsync(part.Id);
         Assert.NotNull(after);
         Assert.Equal("Written by the winner", after.DisplayName);
 
-        // The refused revision produced no second live instance at all —
-        // there is exactly one object answering for this Id, and it is the
-        // winner, at exactly one revision number.
         Assert.Same(winner, await rig.Context.Repository.FindAsync(part.Id));
     }
 
     /// <summary>
-    /// Characterisation: a revision that fails <em>after</em> the document
-    /// store has minted its revision leaves that revision in the
-    /// document's durable history with no object at it.
+    /// A revision that fails <em>after</em> its revision record has been
+    /// written leaves <b>no</b> revision in the document's durable history.
     /// </summary>
     /// <remarks>
     /// <para>
-    /// `WP 16.4B-R6` moved <c>IEngineeringDocumentStore.ReviseAsync</c>
-    /// inside the lock and behind <c>ThrowIfSuperseded</c>, so a revision
-    /// <b>refused</b> as a second revision now mints nothing — which is a
-    /// real improvement and is pinned elsewhere. It does not, and does not
-    /// claim to, make the revision record and the successor atomic: any
-    /// failure between the two still leaves the record. The document's
-    /// <c>CurrentRevisionNumber</c> advances, no live instance answers at
-    /// that number, and the next successful revision skips over it.
+    /// <b>This fact is inverted by `ADR-0145`, not deleted.</b> Its
+    /// predecessor — <c>ARevisionThatFailsAfterMintingItsRevisionRecord_LeavesThatRevisionInTheHistoryWithNoObjectAtIt</c>
+    /// — characterised a residue that `WP 16.4B-R6` explicitly did not
+    /// claim to close: the document store minted the revision, the Kind's
+    /// own state reader then threw, and the record stayed in the history
+    /// with no live object at that number, so the document's
+    /// <c>CurrentRevisionNumber</c> advanced and the next successful
+    /// revision skipped over it.
     /// </para>
     /// <para>
-    /// Reported rather than graded: the only realistic way to reach it is
-    /// an exception from a Kind's own <see cref="IRehydratable{TSelf}.Rehydrate"/>,
-    /// and every implementation in <c>src/</c> is a pure constructor call.
-    /// It is recorded because R6 is the change that put a second failure
-    /// point (the Kind's state reader) after the mint, where before there
-    /// was only a closure invocation.
+    /// The revision record and the successor are now written and built
+    /// inside one transaction, so a throw from
+    /// <see cref="IRehydratable{TSelf}.Rehydrate"/> rolls the record back
+    /// with everything else. The assertions below are the same ones,
+    /// negated — including the last, which used to prove the number was
+    /// skipped and now proves it is not.
     /// </para>
     /// </remarks>
     [Fact]
-    public async Task ARevisionThatFailsAfterMintingItsRevisionRecord_LeavesThatRevisionInTheHistoryWithNoObjectAtIt()
+    public async Task ARevisionThatFailsAfterWritingItsRevisionRecord_LeavesNoRevisionInTheHistory()
     {
         var rig = new Rig();
         var part = await rig.CreateAsync();
@@ -581,422 +603,17 @@ public sealed class RevisionAttachmentInterleavingTests
         }
 
         var history = await part.GetRevisionHistoryAsync();
-        Assert.Equal(2, history.Count);
-        Assert.Equal("Never adopted.", history[^1].Content);
+        Assert.Single(history);
+        Assert.DoesNotContain(history, r => r.Content == "Never adopted.");
 
-        // No object answers at revision 2, and the predecessor is still
-        // the live instance at revision 1.
+        // The predecessor is still the live instance, at revision 1.
         Assert.Equal(1, part.CurrentRevisionNumber);
         Assert.Same(part, await rig.Context.Repository.FindAsync(part.Id));
 
-        // The next revision skips over it.
+        // And the next revision does NOT skip a number, because none was
+        // consumed.
         var successor = (RevisableFixture)await part.ReviseAsync("Adopted.", "Rev C.");
-        Assert.Equal(3, successor.CurrentRevisionNumber);
-    }
-
-    // ================================================================
-    // Genuine I/O failures — what the residue actually is
-    // ================================================================
-
-    /// <summary>
-    /// <b>A content write that fails after writing its bytes leaves an
-    /// orphan the sweep can actually collect.</b>
-    /// </summary>
-    /// <remarks>
-    /// `WP 16.4B-R6` added a <c>catch</c> around the content write that
-    /// clears the marker, on the argument that the marker is protecting an
-    /// id nothing names, so withdrawing it "demotes whatever a
-    /// half-finished write left behind to an ordinary unreferenced orphan
-    /// the sweep can collect". That argument is only worth anything if the
-    /// sweep really does collect it, end to end. Before R6 the marker
-    /// stayed set for ever and those bytes were permanently uncollectable —
-    /// the leak the marker protocol was meant to bound, created by it.
-    /// </remarks>
-    [Fact]
-    public async Task AContentWriteThatFailsAfterWritingItsBytes_LeavesAnOrphanTheSweepCollects()
-    {
-        using var rig = new DiskRig();
-        var part = await rig.CreateAsync();
-
-        rig.ContentStore.StoreThenFailNextSave = true;
-
-        await Assert.ThrowsAsync<InvalidOperationException>(
-            () => part.AttachContentAsync("drawing.pdf", "application/pdf", Bytes));
-
-        var stranded = Assert.Single(rig.ContentStore.StoredKeys);
-        Assert.Empty(await part.GetAttachmentsAsync());
-
-        var report = await rig.Sweep.SweepAsync();
-
-        Assert.Contains(report.Orphans, o => o.AttachmentId == stranded && o.Collected);
-        Assert.Empty(rig.ContentStore.StoredKeys);
-    }
-
-    /// <summary>
-    /// What a genuine I/O failure of the object <em>state</em> write leaves
-    /// behind: a marker and bytes, and — since `WP 16.4B-R7` — no
-    /// in-memory claim.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// <b>Partially INVERTED by `WP 16.4B-R7` (`TD-143`).</b> It was a
-    /// characterisation named
-    /// <c>AGenuineStateWriteFailure_LeavesAMarkerBytesAndAnInMemoryClaim_AllOfThemObservable</c>,
-    /// and the third of its three findings — that the instance kept its
-    /// in-memory claim on an attachment the caller was told had failed — is
-    /// now negated below. The other two are unchanged and are the point of
-    /// keeping the fact: this is still the one exit path `WP 16.4B-R5`
-    /// wrongly compensated and `WP 16.4B-R6` and R7 both refuse to, because
-    /// the state write can fail after the record has landed and deleting
-    /// the bytes could be real data loss.
-    /// </para>
-    /// <list type="bullet">
-    /// <item><description>the write-intent marker stays set — <b>permanently</b>, since nothing ever revisits it;</description></item>
-    /// <item><description>the bytes stay written and, being marked, are never collected by the sweep;</description></item>
-    /// <item><description><b>and the instance no longer claims the attachment</b> — `WP 16.4B-R7` undoes the in-memory add, so nothing in memory or on disk names those bytes.</description></item>
-    /// </list>
-    /// <para>
-    /// The leak is <b>bounded</b> — one marker and one content record per
-    /// failed attach, never growing on its own. It is now observable in
-    /// <b>one</b> place rather than two: the reconciliation report's
-    /// <c>SkippedByMarker</c> (asserted in
-    /// <see cref="AttachmentContentReconciliationServiceTests"/>, which can
-    /// name that member). That is a deliberate trade and it is worth
-    /// stating plainly: the second observation channel was the instance
-    /// disagreeing with its caller, which was itself the `TD-143` defect.
-    /// What is <em>not</em> bounded is the count across repeated failures:
-    /// a store that fails every time leaks one of each per attempt.
-    /// </para>
-    /// </remarks>
-    [Fact]
-    public async Task AGenuineStateWriteFailure_LeavesAMarkerAndBytes_AndNoInMemoryClaim()
-    {
-        var rig = new Rig();
-        var part = await rig.CreateAsync();
-
-        rig.StateStore.FailNextSave = true;
-
-        await Assert.ThrowsAsync<IOException>(
-            () => part.AttachContentAsync("drawing.pdf", "application/pdf", Bytes));
-
-        var marked = Assert.Single(await rig.WriteIntentStore.ListMarkedAsync());
-        var stored = Assert.Single(rig.ContentStore.StoredKeys);
-        Assert.Equal(marked, stored);
-
-        // No longer observable in memory: the instance agrees with what the
-        // caller was told (`WP 16.4B-R7`).
-        Assert.Empty(await part.GetAttachmentsAsync());
-
-        // Nothing was deleted, and the durable record does not name it.
-        Assert.Equal(0, rig.ContentStore.DeleteCallCount);
-        var state = await rig.StateStore.FindAsync(part.Id);
-        Assert.NotNull(state);
-        Assert.DoesNotContain(state.Attachments, a => a.Id == marked);
-    }
-
-    /// <summary>
-    /// The same boundary through the metadata-only entry point, so the
-    /// scope of what was closed is not overstated in either direction.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// <b>INVERTED by `WP 16.4B-R7` (`TD-143`).</b> It was a
-    /// characterisation named
-    /// <c>AGenuineStateWriteFailureDuringAttachAsync_AlsoLeavesTheInstanceClaimingTheAttachment</c>.
-    /// R6 closed `P1-F4` for both attach entry points <em>as a refusal</em>
-    /// only: a superseded instance checks before it adds, so a refused
-    /// attach claims nothing. It did not close the same divergence for an
-    /// <b>I/O failure</b> of the state write, and this fact recorded that
-    /// it did not. R7 closes it, on both entry points at once, and this
-    /// fact now checks it on this one — kept separate because the two are
-    /// separately reachable and a future change could easily break one and
-    /// not the other, exactly as `WP 16.4B-R5` did.
-    /// </para>
-    /// <para>
-    /// The last assertion is the one that matters most: the object's next
-    /// successful write no longer carries the failed attach to disk, which
-    /// is the mechanism by which `TD-143` turned a reported failure into a
-    /// durable success.
-    /// </para>
-    /// </remarks>
-    [Fact]
-    public async Task AGenuineStateWriteFailureDuringAttachAsync_LeavesTheInstanceClaimingNothing()
-    {
-        var rig = new Rig();
-        var part = await rig.CreateAsync();
-        var attachment = new Attachment("drawing.pdf", "application/pdf", 3);
-
-        rig.StateStore.FailNextSave = true;
-
-        await Assert.ThrowsAsync<IOException>(() => part.AttachAsync(attachment));
-
-        Assert.DoesNotContain(await part.GetAttachmentsAsync(), a => a.Id == attachment.Id);
-
-        var state = await rig.StateStore.FindAsync(part.Id);
-        Assert.NotNull(state);
-        Assert.DoesNotContain(state.Attachments, a => a.Id == attachment.Id);
-
-        // ...and the next successful write has nothing to make durable.
-        await part.RenameAsync("Written afterwards");
-
-        var after = await rig.StateStore.FindAsync(part.Id);
-        Assert.NotNull(after);
-        Assert.DoesNotContain(after.Attachments, a => a.Id == attachment.Id);
-        Assert.Equal("Written afterwards", after.DisplayName);
-    }
-
-    /// <summary>
-    /// The tail of the same story: a retry after a failed attach produces
-    /// <b>one</b> attachment, not two, because the failed one was never
-    /// retained to be carried to disk by the next successful write.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// <b>INVERTED by `WP 16.4B-R7` (`TD-143`), on this fact's own
-    /// standing instruction.</b> It was named
-    /// <c>AfterAFailedStateWrite_TheNextSuccessfulWriteMakesTheFailedAttachDurable</c>
-    /// and it ended: <i>"If a later board decides a failed attach must not
-    /// become durable, this test is where that decision lands, and it must
-    /// be inverted rather than deleted."</i> That decision is `TD-143` and
-    /// this is that inversion. What it used to assert: after a failed
-    /// <c>AttachContentAsync</c>, a caller that retried had <b>two</b>
-    /// attachments and two content records on disk for one intended file,
-    /// with no API telling it so.
-    /// </para>
-    /// <para>
-    /// The durable content record of the failed attempt is <em>still</em>
-    /// there — R7 deletes nothing — and is still marked, so the sweep still
-    /// declines to collect it. That is the bounded, disclosed `TD-97`
-    /// residue and it is asserted below so this inversion cannot be read as
-    /// a claim that the failed attach left nothing at all behind. What
-    /// changed is that no durable <em>state</em> record ever names it.
-    /// </para>
-    /// </remarks>
-    [Fact]
-    public async Task AfterAFailedStateWrite_TheNextSuccessfulWriteMakesOnlyTheRetryDurable()
-    {
-        var rig = new Rig();
-        var part = await rig.CreateAsync();
-
-        rig.StateStore.FailNextSave = true;
-        await Assert.ThrowsAsync<IOException>(
-            () => part.AttachContentAsync("drawing.pdf", "application/pdf", Bytes));
-
-        var strandedContent = Assert.Single(rig.ContentStore.StoredKeys);
-        Assert.Empty(await part.GetAttachmentsAsync());
-
-        // The caller, having been told the attach failed, retries.
-        var retried = await part.AttachContentAsync("drawing.pdf", "application/pdf", Bytes);
-
-        var state = await rig.StateStore.FindAsync(part.Id);
-        Assert.NotNull(state);
-
-        var only = Assert.Single(state.Attachments);
-        Assert.Equal(retried.Id, only.Id);
-        Assert.NotEqual(strandedContent, retried.Id);
-
-        // The first attempt's bytes are still on disk and still marked —
-        // nothing was deleted, and nothing durable references them.
-        Assert.Contains(strandedContent, rig.ContentStore.StoredKeys);
-        Assert.Contains(strandedContent, await rig.WriteIntentStore.ListMarkedAsync());
-        Assert.Equal(0, rig.ContentStore.DeleteCallCount);
-    }
-
-    /// <summary>
-    /// Cancellation arriving between the content write and the state
-    /// write: the marker is stranded, exactly as for any other failure of
-    /// the state write, and — since `WP 16.4B-R7` — the in-memory add is
-    /// undone, exactly as for any other failure of the state write.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// <b>Partially INVERTED by `WP 16.4B-R7` (`TD-143`).</b> The
-    /// assertion that the instance still claimed the attachment is now
-    /// negated; the marker and byte assertions are unchanged. A cancelled
-    /// operation is an operation reported as failed, so it is undone on the
-    /// same terms as any other — which is why the undo's <c>catch</c> is
-    /// unconditional rather than filtered by exception type.
-    /// </para>
-    /// <para>
-    /// The complement of
-    /// <c>CancellationArrivingAfterTheStateWriteLands_DoesNotStrandTheMarker</c>:
-    /// there, cancellation after a landed write is deliberately ignored so
-    /// the marker is cleared; here it arrives one step earlier, where it
-    /// can still prevent work, and is honoured — leaving the same bounded
-    /// residue as any other state-write failure.
-    /// </para>
-    /// </remarks>
-    [Fact]
-    public async Task CancellationBetweenTheContentWriteAndTheStateWrite_LeavesTheSameBoundedResidue()
-    {
-        var rig = new Rig();
-        var part = await rig.CreateAsync();
-
-        using var cancellation = new CancellationTokenSource();
-        rig.ContentStore.AfterSave = () => cancellation.Cancel();
-
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(
-            () => part.AttachContentAsync("drawing.pdf", "application/pdf", Bytes, cancellation.Token));
-
-        var marked = Assert.Single(await rig.WriteIntentStore.ListMarkedAsync());
-        Assert.Contains(marked, rig.ContentStore.StoredKeys);
-        Assert.DoesNotContain(await part.GetAttachmentsAsync(), a => a.Id == marked);
-        Assert.Equal(0, rig.ContentStore.DeleteCallCount);
-    }
-
-    /// <summary>
-    /// Characterisation: the marker clear on the success path is not
-    /// guarded, so a store that fails there turns a fully committed attach
-    /// into a thrown exception.
-    /// </summary>
-    /// <remarks>
-    /// Pre-existing — `WP 16.4B-R5` and R6 both leave this line bare, and
-    /// no board has raised it — but it is the third way a caller can be
-    /// told an attach failed when it did not, so it belongs beside the
-    /// other two rather than being discovered again later. The attachment
-    /// is live, durable and referenced; only the marker is stranded, on
-    /// content that is legitimately referenced and therefore never a sweep
-    /// candidate anyway.
-    /// </remarks>
-    [Fact]
-    public async Task AFailingMarkerClearOnTheSuccessPath_ReportsAFailureForAFullyCommittedAttach()
-    {
-        var rig = new Rig();
-        var part = await rig.CreateAsync();
-
-        rig.WriteIntentStore.FailNextClear = true;
-
-        await Assert.ThrowsAsync<IOException>(
-            () => part.AttachContentAsync("drawing.pdf", "application/pdf", Bytes));
-
-        var state = await rig.StateStore.FindAsync(part.Id);
-        Assert.NotNull(state);
-
-        var persisted = Assert.Single(state.Attachments);
-        Assert.Contains(persisted.Id, rig.ContentStore.StoredKeys);
-        Assert.Contains(await part.GetAttachmentsAsync(), a => a.Id == persisted.Id);
-        Assert.Equal(0, rig.ContentStore.DeleteCallCount);
-    }
-
-    // ================================================================
-    // Reconciliation against work in flight
-    // ================================================================
-
-    /// <summary>
-    /// The sweep run against an attach parked <b>between</b> its content
-    /// write and its state write — the exact window
-    /// <c>ADR-0114</c> Decision 4 creates and the write-intent marker
-    /// exists to cover.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// `WP 16.4B-R6` moved the <c>MarkAsync</c> call from outside the
-    /// per-object write lock to inside it, and argued that this does not
-    /// weaken the sweep's T1/T2/T3 ordering argument because the marker
-    /// still precedes the content write. This is that argument executed:
-    /// the sweep sees content present, unreferenced and <em>marked</em>,
-    /// and must decline to collect it. Deleting here would be the original
-    /// `TD-97` bug, reached without any revision at all.
-    /// </para>
-    /// <para>
-    /// Run over a real <see cref="PersistenceStore"/> on disk, because the
-    /// sweep lists content keys through <c>IPersistenceStore</c> rather
-    /// than through the content store, and a fake that does not share that
-    /// substrate would not exercise the same read.
-    /// </para>
-    /// </remarks>
-    [Fact]
-    public async Task TheSweepRunningAgainstAnAttachParkedBeforeItsStateWrite_CollectsNothing()
-    {
-        using var rig = new DiskRig();
-        var part = await rig.CreateAsync();
-
-        var stateWriteEntered = rig.StateStore.ParkNextSave();
-        var attaching = part.AttachContentAsync("drawing.pdf", "application/pdf", Bytes);
-        await stateWriteEntered;
-
-        // Content is on disk, the marker is set, nothing references it yet.
-        var report = await rig.Sweep.SweepAsync();
-
-        Assert.Empty(report.Orphans);
-
-        rig.StateStore.ReleaseParkedSave();
-        var attachment = await attaching;
-
-        Assert.Contains(attachment.Id, rig.ContentStore.StoredKeys);
-
-        var readBack = await part.ReadAttachmentContentAsync(attachment.Id);
-        Assert.True(readBack.IsAvailable);
-        Assert.Equal(Bytes, readBack.Bytes);
-
-        // And once it is committed and unmarked, an ordinary sweep still
-        // leaves it alone — it is referenced now.
-        var after = await rig.Sweep.SweepAsync();
-        Assert.Empty(after.Orphans);
-        Assert.Contains(attachment.Id, rig.ContentStore.StoredKeys);
-    }
-
-    /// <summary>
-    /// The sweep run while a revision holds the per-object write lock.
-    /// </summary>
-    /// <remarks>
-    /// A regression pin, and deliberately one: it passed before
-    /// `WP 16.4B-R6` too. It is here because R6 widened what the object
-    /// write lock covers, and the sweep does not take that lock at all —
-    /// so the question "can a sweep now run against a half-built successor
-    /// and see a moment where the attachment is referenced by nothing?"
-    /// has to be answered rather than assumed. It cannot: the sweep reads
-    /// the durable state store, which no part of the revision has written
-    /// to, so the predecessor's committed record still names the
-    /// attachment throughout.
-    /// </remarks>
-    [Fact]
-    public async Task TheSweepRunningWhileARevisionHoldsTheWriteLock_CollectsNothing()
-    {
-        using var rig = new DiskRig();
-        var part = await rig.CreateAsync();
-
-        var attachment = await part.AttachContentAsync("drawing.pdf", "application/pdf", Bytes);
-
-        var parked = part.ArmNextCapture();
-        var revising = Task.Run(() => part.ReviseAsync("Revised content.", "Rev B."));
-        await parked;
-
-        var report = await rig.Sweep.SweepAsync();
-        Assert.Empty(report.Orphans);
-        Assert.Contains(attachment.Id, rig.ContentStore.StoredKeys);
-
-        part.ReleaseCapture();
-        var successor = (RevisableFixture)await revising;
-
-        Assert.Contains(await successor.GetAttachmentsAsync(), a => a.Id == attachment.Id);
-
-        var readBack = await successor.ReadAttachmentContentAsync(attachment.Id);
-        Assert.True(readBack.IsAvailable);
-    }
-
-    /// <summary>
-    /// Content present but unreferenced, with no marker, is still
-    /// collected — the sweep's actual job, asserted here so the tests
-    /// above cannot pass merely because the sweep collects nothing at all.
-    /// </summary>
-    [Fact]
-    public async Task UnreferencedUnmarkedContent_IsStillCollected()
-    {
-        using var rig = new DiskRig();
-        var part = await rig.CreateAsync();
-
-        var orphanId = Guid.NewGuid();
-        await rig.ContentStore.SaveAsync(orphanId, Bytes);
-
-        var kept = await part.AttachContentAsync("drawing.pdf", "application/pdf", Bytes);
-
-        var report = await rig.Sweep.SweepAsync();
-
-        Assert.Contains(report.Orphans, o => o.AttachmentId == orphanId && o.Collected);
-        Assert.DoesNotContain(report.Orphans, o => o.AttachmentId == kept.Id);
-        Assert.Contains(kept.Id, rig.ContentStore.StoredKeys);
-        Assert.DoesNotContain(orphanId, rig.ContentStore.StoredKeys);
+        Assert.Equal(2, successor.CurrentRevisionNumber);
     }
 
     // ================================================================
@@ -1005,13 +622,20 @@ public sealed class RevisionAttachmentInterleavingTests
 
     /// <summary>
     /// Every attachment a successor inherits must have readable content —
-    /// through the successor, over a real content store, for all of them
-    /// and not just the last.
+    /// through the successor, over the real
+    /// <see cref="AttachmentContentStore"/>, for all of them and not just
+    /// the last.
     /// </summary>
+    /// <remarks>
+    /// The content store is the shipped one and the bytes really go
+    /// through it, hash check and all; only the substrate underneath is in
+    /// memory. That is what makes "readable" a checked claim rather than a
+    /// dictionary lookup in a fake.
+    /// </remarks>
     [Fact]
     public async Task ASuccessorInheritsEveryAttachment_WithItsContentStillReadable()
     {
-        using var rig = new DiskRig();
+        var rig = new Rig();
         var part = await rig.CreateAsync();
 
         var expected = new Dictionary<Guid, byte[]>();
@@ -1070,45 +694,6 @@ public sealed class RevisionAttachmentInterleavingTests
     // Helpers
     // ================================================================
 
-    /// <summary>
-    /// Whether this object's per-object write lock is currently held, with
-    /// no timing whatsoever.
-    /// </summary>
-    /// <remarks>
-    /// <see cref="Concurrency.AsyncKeyedLock.AcquireAsync"/> is an
-    /// <see langword="async"/> method whose only await is
-    /// <see cref="SemaphoreSlim.WaitAsync(CancellationToken)"/>, which
-    /// returns an already-completed task when the semaphore's count is
-    /// positive. An uncontended acquisition therefore completes
-    /// synchronously and a contended one does not, so
-    /// <see cref="Task.IsCompleted"/> answers the question exactly — no
-    /// timeout, no sleep, no probability. A contended probe leaves a
-    /// waiter queued, which is released by the continuation below as soon
-    /// as the holder lets go.
-    /// </remarks>
-    private static bool ObjectWriteLockIsHeld(EngineeringDomainContext context, Guid objectId)
-    {
-        var probe = context.AcquireObjectWriteLockAsync(objectId, CancellationToken.None);
-
-        if (probe.IsCompleted)
-        {
-            probe.GetAwaiter().GetResult().Dispose();
-            return false;
-        }
-
-        _ = probe.ContinueWith(
-            static t =>
-            {
-                if (t.Status == TaskStatus.RanToCompletion)
-                    t.Result.Dispose();
-            },
-            CancellationToken.None,
-            TaskContinuationOptions.ExecuteSynchronously,
-            TaskScheduler.Default);
-
-        return true;
-    }
-
     /// <summary>The attachment an attach produced, or <see langword="null"/> if it was refused.</summary>
     private static async Task<IAttachment?> Outcome(Task<IAttachment> attaching)
     {
@@ -1123,31 +708,94 @@ public sealed class RevisionAttachmentInterleavingTests
     }
 
     // ================================================================
-    // Rigs
+    // Rig
     // ================================================================
 
-    /// <summary>Fakes only — every store completes synchronously unless parked.</summary>
+    /// <summary>
+    /// The shipped write path — the real
+    /// <see cref="EngineeringDocumentStore"/>,
+    /// <see cref="EngineeringObjectStateStore"/> and
+    /// <see cref="AttachmentContentStore"/> — over one
+    /// <see cref="InMemoryQueryablePersistenceStore"/>, optionally wrapped
+    /// so a fault or a gate can be injected at the store.
+    /// </summary>
+    /// <remarks>
+    /// This replaces the file's four hand-written doubles and its
+    /// <c>DiskRig</c>. A store double cannot take part in the one
+    /// transaction every engineering change commits through, so there is
+    /// nothing left for one to model: a test that wants to fail a write
+    /// fails <em>the</em> store, and a test that wants to see what landed
+    /// reads <em>the</em> store.
+    /// </remarks>
     private sealed class Rig
     {
         public Rig()
+            : this(new InMemoryQueryablePersistenceStore(), transactional: null)
         {
+        }
+
+        private Rig(InMemoryQueryablePersistenceStore store, IQueryablePersistenceStore? transactional)
+        {
+            Store = store;
+
             var principal = new CurrentPrincipalAccessor();
             var repository = new InMemoryEngineeringObjectRepository();
             var relationships = new InMemoryEngineeringRelationshipRepository();
             var discovery = new RelationshipDiscoveryService(relationships, repository);
 
-            DocumentStore = new FailableDocumentStore(new InMemoryEngineeringDocumentStore(principal));
+            StateStore = new EngineeringObjectStateStore(store);
+            ContentStore = new AttachmentContentStore(store);
 
             Context = new EngineeringDomainContext(
-                DocumentStore, repository, relationships, new LifecycleTransitionTable(), new ValidationRuleSet(),
-                new EvidenceComposer(discovery, repository), principal, StateStore, ContentStore, WriteIntentStore);
+                transactional ?? store,
+                new EngineeringDocumentStore(store, principal),
+                repository,
+                relationships,
+                new LifecycleTransitionTable(),
+                new ValidationRuleSet(),
+                new EvidenceComposer(discovery, repository),
+                principal,
+                StateStore,
+                ContentStore);
         }
 
-        public FailableDocumentStore DocumentStore { get; }
-        public FakeObjectStateStore StateStore { get; } = new();
-        public FakeAttachmentContentStore ContentStore { get; } = new();
-        public FakeWriteIntentStore WriteIntentStore { get; } = new();
+        /// <summary>The one durable store — the read surface for every "what landed?" assertion.</summary>
+        public InMemoryQueryablePersistenceStore Store { get; }
+
+        public EngineeringObjectStateStore StateStore { get; }
+
+        public AttachmentContentStore ContentStore { get; }
+
         public EngineeringDomainContext Context { get; }
+
+        /// <summary>Every committed attachment payload key.</summary>
+        public IReadOnlyList<string> ContentKeys => Store.CommittedKeys(AttachmentContentStore.ContentCollectionName);
+
+        /// <summary>Whether committed attachment content exists for <paramref name="attachmentId"/>.</summary>
+        public bool HasContent(Guid attachmentId) =>
+            Store.CommittedBytes(AttachmentContentStore.ContentCollectionName, attachmentId.ToString("N")) is not null;
+
+        /// <summary>The committed audit rows for one object, found by key prefix.</summary>
+        public IReadOnlyList<string> AuditRowsFor(Guid objectId) =>
+            Store.CommittedKeys(AuditRecorder.AuditCollectionName)
+                .Where(k => k.StartsWith(objectId.ToString("N"), StringComparison.Ordinal))
+                .ToList();
+
+        /// <summary>A rig whose transactions can be parked at the end of their bodies.</summary>
+        public static Rig WithGate(out GatedPersistenceStore gate)
+        {
+            var store = new InMemoryQueryablePersistenceStore();
+            gate = new GatedPersistenceStore(store);
+            return new Rig(store, gate);
+        }
+
+        /// <summary>A rig whose commits can be failed deterministically, after the whole body has run.</summary>
+        public static Rig WithFailableCommit(out CommitFailingPersistenceStore failing)
+        {
+            var store = new InMemoryQueryablePersistenceStore();
+            failing = new CommitFailingPersistenceStore(store);
+            return new Rig(store, failing);
+        }
 
         public async Task<RevisableFixture> CreateAsync() =>
             (RevisableFixture)await new EngineeringObjectFactory<RevisableFixture>(
@@ -1157,67 +805,17 @@ public sealed class RevisionAttachmentInterleavingTests
     }
 
     /// <summary>
-    /// The same object graph over a real <see cref="PersistenceStore"/> on
-    /// disk, for the facts that exercise the reconciliation sweep — which
-    /// lists content keys through <c>IPersistenceStore</c> directly and so
-    /// cannot be driven by a fake content store alone.
+    /// An ordinary Engineering Object with three seams, all on the one
+    /// extension point every concrete Kind already overrides: its
+    /// <c>CaptureTypeState</c> can be parked on demand, can run a one-shot
+    /// callback, and its state reader can be told to throw.
     /// </summary>
-    private sealed class DiskRig : IDisposable
-    {
-        private readonly string _root = Path.Combine(Path.GetTempPath(), "tempest-r6c-" + Guid.NewGuid().ToString("N"));
-
-        public DiskRig()
-        {
-            var configuration = new Core.Configuration.ConfigurationBuilder()
-                .AddSource(new Core.Configuration.MemoryConfigurationSource(
-                [
-                    new KeyValuePair<string, string>(PersistenceStore.RootPathConfigurationKey, _root),
-                ]))
-                .Build();
-
-            var persistence = new PersistenceStore(configuration);
-            var principal = new CurrentPrincipalAccessor();
-            var repository = new InMemoryEngineeringObjectRepository();
-            var relationships = new InMemoryEngineeringRelationshipRepository();
-            var discovery = new RelationshipDiscoveryService(relationships, repository);
-
-            ContentStore = new ObservableAttachmentContentStore(new AttachmentContentStore(persistence));
-            StateStore = new ObservableObjectStateStore(new EngineeringObjectStateStore(persistence));
-            WriteIntentStore = new AttachmentWriteIntentStore(persistence);
-
-            Context = new EngineeringDomainContext(
-                new EngineeringDocumentStore(persistence, principal), repository, relationships,
-                new LifecycleTransitionTable(), new ValidationRuleSet(),
-                new EvidenceComposer(discovery, repository), principal, StateStore, ContentStore, WriteIntentStore);
-
-            Sweep = new AttachmentContentReconciliationService(persistence, StateStore, ContentStore, WriteIntentStore);
-        }
-
-        public ObservableAttachmentContentStore ContentStore { get; }
-        public ObservableObjectStateStore StateStore { get; }
-        public AttachmentWriteIntentStore WriteIntentStore { get; }
-        public EngineeringDomainContext Context { get; }
-        public AttachmentContentReconciliationService Sweep { get; }
-
-        public async Task<RevisableFixture> CreateAsync() =>
-            (RevisableFixture)await new EngineeringObjectFactory<RevisableFixture>(
-                    RevisableFixture.KindName, Context,
-                    (d, r) => new RevisableFixture(d, r, Context, "PRT-1", "Bracket", EngineeringObjectMetadata.Empty))
-                .CreateAsync("Bracket — for test purposes.").ConfigureAwait(false);
-
-        public void Dispose()
-        {
-            if (Directory.Exists(_root))
-                Directory.Delete(_root, recursive: true);
-        }
-    }
-
-    /// <summary>
-    /// An ordinary Engineering Object with two seams: its
-    /// <c>CaptureTypeState</c> can be parked on demand (the same extension
-    /// point every concrete Kind overrides), and its state reader can be
-    /// told to throw.
-    /// </summary>
+    /// <remarks>
+    /// <c>CaptureTypeState</c> is reached from <c>CaptureState</c>, which
+    /// every mutator and <c>ReviseAsync</c> call from <b>inside</b> the
+    /// transaction, under the domain write lock — which is what makes it
+    /// the right place to park a writer or to re-enter the object.
+    /// </remarks>
     private sealed class RevisableFixture : EngineeringObjectBase, IRehydratable<RevisableFixture>
     {
         public const string KindName = "RevisableFixture";
@@ -1227,6 +825,7 @@ public sealed class RevisionAttachmentInterleavingTests
 
         private TaskCompletionSource? _parked;
         private TaskCompletionSource? _release;
+        private Action? _onNextCapture;
 
         public RevisableFixture(
             IEngineeringDocument document, IDocumentRevision currentRevision, EngineeringDomainContext context,
@@ -1242,6 +841,12 @@ public sealed class RevisionAttachmentInterleavingTests
             set => _failNextRehydrate = value;
         }
 
+        /// <summary>Runs once, inside the next transaction that captures this object's state.</summary>
+        public Action? OnNextCapture
+        {
+            set => _onNextCapture = value;
+        }
+
         public Task ArmNextCapture()
         {
             _release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -1253,6 +858,10 @@ public sealed class RevisionAttachmentInterleavingTests
 
         protected override void CaptureTypeState(IDictionary<string, string?> state)
         {
+            // Disarm first, so a re-entrant or successor capture is never
+            // gated by the same arming.
+            Interlocked.Exchange(ref _onNextCapture, null)?.Invoke();
+
             var parked = Interlocked.Exchange(ref _parked, null);
 
             if (parked is not null)
@@ -1270,300 +879,5 @@ public sealed class RevisionAttachmentInterleavingTests
 
             return new RevisableFixture(document, currentRevision, context, state.Identifier, state.DisplayName, state.Metadata);
         }
-    }
-
-    private sealed class FailableDocumentStore : IEngineeringDocumentStore
-    {
-        private readonly IEngineeringDocumentStore _inner;
-
-        public FailableDocumentStore(IEngineeringDocumentStore inner) => _inner = inner;
-
-        private TaskCompletionSource? _entered;
-        private TaskCompletionSource? _release;
-
-        public bool FailNextRevise { get; set; }
-
-        /// <summary>Parks the next document revision. Returns a task that completes once it has been entered.</summary>
-        public Task ParkNextRevise()
-        {
-            _release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-            _entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-            return _entered.Task;
-        }
-
-        public void ReleaseParkedRevise() => _release?.TrySetResult();
-
-        public Task<IEngineeringDocument> CreateAsync(string kind, string initialContent, CancellationToken cancellationToken = default) =>
-            _inner.CreateAsync(kind, initialContent, cancellationToken);
-
-        public Task<IEngineeringDocument?> FindAsync(Guid documentId, CancellationToken cancellationToken = default) =>
-            _inner.FindAsync(documentId, cancellationToken);
-
-        public async Task<IDocumentRevision> ReviseAsync(Guid documentId, string newContent, string? changeSummary, CancellationToken cancellationToken = default)
-        {
-            if (FailNextRevise)
-            {
-                FailNextRevise = false;
-                throw new EngineeringDataException("Simulated document store failure.");
-            }
-
-            var entered = Interlocked.Exchange(ref _entered, null);
-            if (entered is not null)
-            {
-                entered.TrySetResult();
-                await _release!.Task.ConfigureAwait(false);
-            }
-
-            return await _inner.ReviseAsync(documentId, newContent, changeSummary, cancellationToken).ConfigureAwait(false);
-        }
-
-        public Task<IReadOnlyList<IDocumentRevision>> GetRevisionHistoryAsync(Guid documentId, CancellationToken cancellationToken = default) =>
-            _inner.GetRevisionHistoryAsync(documentId, cancellationToken);
-
-        public Task LinkAsync(Guid sourceDocumentId, Guid targetDocumentId, string relationshipKind, CancellationToken cancellationToken = default) =>
-            _inner.LinkAsync(sourceDocumentId, targetDocumentId, relationshipKind, cancellationToken);
-
-        public Task<IReadOnlyList<DocumentReference>> GetReferencesAsync(Guid documentId, CancellationToken cancellationToken = default) =>
-            _inner.GetReferencesAsync(documentId, cancellationToken);
-    }
-
-    private sealed class FakeObjectStateStore : IEngineeringObjectStateStore
-    {
-        private readonly Dictionary<Guid, EngineeringObjectState> _states = new();
-
-        public bool FailNextSave { get; set; }
-
-        /// <summary>Runs at the top of a save, while whatever locks the caller holds are still held.</summary>
-        public Action? OnSave { get; set; }
-
-        public Task SaveAsync(EngineeringObjectState state, CancellationToken cancellationToken = default)
-        {
-            OnSave?.Invoke();
-            cancellationToken.ThrowIfCancellationRequested();
-
-            if (FailNextSave)
-            {
-                FailNextSave = false;
-                throw new IOException("Simulated object state store failure.");
-            }
-
-            lock (_states) { _states[state.Id] = state; }
-            return Task.CompletedTask;
-        }
-
-        public Task<EngineeringObjectState?> FindAsync(Guid id, CancellationToken cancellationToken = default)
-        {
-            lock (_states) { return Task.FromResult(_states.TryGetValue(id, out var state) ? state : null); }
-        }
-
-        public Task DeleteAsync(Guid id, CancellationToken cancellationToken = default)
-        {
-            lock (_states) { _states.Remove(id); }
-            return Task.CompletedTask;
-        }
-
-        public Task<IReadOnlyList<EngineeringObjectState>> ListAsync(CancellationToken cancellationToken = default)
-        {
-            lock (_states) { return Task.FromResult<IReadOnlyList<EngineeringObjectState>>(_states.Values.ToList()); }
-        }
-    }
-
-    private sealed class FakeAttachmentContentStore : IAttachmentContentStore
-    {
-        private readonly Dictionary<Guid, byte[]> _content = new();
-        private int _saveCallCount;
-        private int _deleteCallCount;
-        private TaskCompletionSource? _entered;
-        private TaskCompletionSource? _release;
-
-        /// <summary>Writes the bytes and <em>then</em> throws — a partially-completed durable write.</summary>
-        public bool StoreThenFailNextSave { get; set; }
-
-        /// <summary>Runs at the top of a save, while the caller's locks are still held.</summary>
-        public Action? OnSave { get; set; }
-
-        /// <summary>Runs after the bytes have landed and before the save returns — the seam a cancellation between the two durable writes needs.</summary>
-        public Action? AfterSave { get; set; }
-
-        public int SaveCallCount => Volatile.Read(ref _saveCallCount);
-        public int DeleteCallCount => Volatile.Read(ref _deleteCallCount);
-
-        public IReadOnlyCollection<Guid> StoredKeys
-        {
-            get { lock (_content) { return _content.Keys.ToList(); } }
-        }
-
-        /// <summary>Parks the next save. Returns a task that completes once it has been entered.</summary>
-        public Task ParkNextSave()
-        {
-            _release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-            _entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-            return _entered.Task;
-        }
-
-        public void ReleaseParkedSave() => _release?.TrySetResult();
-
-        public async Task<string> SaveAsync(Guid attachmentId, ReadOnlyMemory<byte> content, CancellationToken cancellationToken = default)
-        {
-            Interlocked.Increment(ref _saveCallCount);
-            OnSave?.Invoke();
-
-            var entered = Interlocked.Exchange(ref _entered, null);
-            if (entered is not null)
-            {
-                entered.TrySetResult();
-                await _release!.Task.ConfigureAwait(false);
-            }
-
-            cancellationToken.ThrowIfCancellationRequested();
-
-            if (StoreThenFailNextSave)
-            {
-                StoreThenFailNextSave = false;
-                lock (_content) { _content[attachmentId] = content.ToArray(); }
-                throw new InvalidOperationException("Simulated content store failure after the bytes landed.");
-            }
-
-            lock (_content) { _content[attachmentId] = content.ToArray(); }
-            AfterSave?.Invoke();
-            return Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(content.Span));
-        }
-
-        public Task<AttachmentContentResult> ReadAsync(Guid attachmentId, string? expectedHash, long expectedSizeInBytes, CancellationToken cancellationToken = default)
-        {
-            lock (_content)
-            {
-                return Task.FromResult(_content.TryGetValue(attachmentId, out var bytes)
-                    ? AttachmentContentResult.Available(bytes)
-                    : AttachmentContentResult.Missing());
-            }
-        }
-
-        public Task DeleteAsync(Guid attachmentId, CancellationToken cancellationToken = default)
-        {
-            Interlocked.Increment(ref _deleteCallCount);
-            lock (_content) { _content.Remove(attachmentId); }
-            return Task.CompletedTask;
-        }
-
-    }
-
-    private sealed class FakeWriteIntentStore : IAttachmentWriteIntentStore
-    {
-        private readonly HashSet<Guid> _marked = new();
-
-        public bool FailNextClear { get; set; }
-
-        public Action? OnMark { get; set; }
-        public Action? OnClear { get; set; }
-
-        public Task MarkAsync(Guid attachmentId, CancellationToken cancellationToken = default)
-        {
-            OnMark?.Invoke();
-            cancellationToken.ThrowIfCancellationRequested();
-            lock (_marked) { _marked.Add(attachmentId); }
-            return Task.CompletedTask;
-        }
-
-        public Task ClearAsync(Guid attachmentId, CancellationToken cancellationToken = default)
-        {
-            OnClear?.Invoke();
-            cancellationToken.ThrowIfCancellationRequested();
-
-            if (FailNextClear)
-            {
-                FailNextClear = false;
-                throw new IOException("Simulated write-intent store failure.");
-            }
-
-            lock (_marked) { _marked.Remove(attachmentId); }
-            return Task.CompletedTask;
-        }
-
-        public Task<IReadOnlySet<Guid>> ListMarkedAsync(CancellationToken cancellationToken = default)
-        {
-            lock (_marked) { return Task.FromResult<IReadOnlySet<Guid>>(new HashSet<Guid>(_marked)); }
-        }
-    }
-
-    /// <summary>The real on-disk content store, with a key list and a parkable save.</summary>
-    private sealed class ObservableAttachmentContentStore : IAttachmentContentStore
-    {
-        private readonly IAttachmentContentStore _inner;
-        private readonly HashSet<Guid> _keys = new();
-
-        public ObservableAttachmentContentStore(IAttachmentContentStore inner) => _inner = inner;
-
-        /// <summary>Writes the bytes through to the real store and <em>then</em> throws — a partially-completed durable write.</summary>
-        public bool StoreThenFailNextSave { get; set; }
-
-        public IReadOnlyCollection<Guid> StoredKeys
-        {
-            get { lock (_keys) { return _keys.ToList(); } }
-        }
-
-        public async Task<string> SaveAsync(Guid attachmentId, ReadOnlyMemory<byte> content, CancellationToken cancellationToken = default)
-        {
-            var hash = await _inner.SaveAsync(attachmentId, content, cancellationToken).ConfigureAwait(false);
-            lock (_keys) { _keys.Add(attachmentId); }
-
-            if (StoreThenFailNextSave)
-            {
-                StoreThenFailNextSave = false;
-                throw new InvalidOperationException("Simulated content store failure after the bytes landed.");
-            }
-
-            return hash;
-        }
-
-        public Task<AttachmentContentResult> ReadAsync(Guid attachmentId, string? expectedHash, long expectedSizeInBytes, CancellationToken cancellationToken = default) =>
-            _inner.ReadAsync(attachmentId, expectedHash, expectedSizeInBytes, cancellationToken);
-
-        public async Task DeleteAsync(Guid attachmentId, CancellationToken cancellationToken = default)
-        {
-            await _inner.DeleteAsync(attachmentId, cancellationToken).ConfigureAwait(false);
-            lock (_keys) { _keys.Remove(attachmentId); }
-        }
-
-    }
-
-    /// <summary>The real on-disk state store, with a parkable save.</summary>
-    private sealed class ObservableObjectStateStore : IEngineeringObjectStateStore
-    {
-        private readonly IEngineeringObjectStateStore _inner;
-        private TaskCompletionSource? _entered;
-        private TaskCompletionSource? _release;
-
-        public ObservableObjectStateStore(IEngineeringObjectStateStore inner) => _inner = inner;
-
-        public Task ParkNextSave()
-        {
-            _release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-            _entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-            return _entered.Task;
-        }
-
-        public void ReleaseParkedSave() => _release?.TrySetResult();
-
-        public async Task SaveAsync(EngineeringObjectState state, CancellationToken cancellationToken = default)
-        {
-            var entered = Interlocked.Exchange(ref _entered, null);
-            if (entered is not null)
-            {
-                entered.TrySetResult();
-                await _release!.Task.ConfigureAwait(false);
-            }
-
-            await _inner.SaveAsync(state, cancellationToken).ConfigureAwait(false);
-        }
-
-        public Task<EngineeringObjectState?> FindAsync(Guid id, CancellationToken cancellationToken = default) =>
-            _inner.FindAsync(id, cancellationToken);
-
-        public Task DeleteAsync(Guid id, CancellationToken cancellationToken = default) =>
-            _inner.DeleteAsync(id, cancellationToken);
-
-        public Task<IReadOnlyList<EngineeringObjectState>> ListAsync(CancellationToken cancellationToken = default) =>
-            _inner.ListAsync(cancellationToken);
     }
 }

@@ -4,6 +4,8 @@
 
 Accepted — `TD-85` (Engineering Object Rehydration / Persistence Boundary), 2026-08-28. Closes the gap `ADR-0077` disclosed in its own Consequences; extends, and does not reopen, `ADR-0072`/`ADR-0077`.
 
+**Superseded in part by `ADR-0145`** (`WP 17.1B`, 2026-09-08): the decomposition below, under which an object's durable state is written by this store while its document, revisions and references are written by another and its relationships live in a third place, is replaced by one transaction over one authoritative store. What this ADR decides about the shape of the state record, about each Kind rehydrating itself through the registry, and about `ReviseAsync` carrying the full captured state, all stands unchanged.
+
 **Corrected, `TD-85` closure audit, 2026-08-28.** Decision point 3 below now also governs `IHasRevisions.ReviseAsync`. That method carried only the structural half of an object's state onto its revised instance (`WP 9.0B`'s `CopyStructuralStateFrom`: rename, parent, delete, BOM line), so a revised object silently reverted to `Draft` with no history and no attachments. Before this ADR that loss was in-memory and discarded at restart anyway; **this ADR made it durable**, because the revised instance's next mutation persisted the reset over a recorded lifecycle state and its whole transition history. `ReviseAsync` now carries the full captured state — `revised.RestoreState(CaptureState())`, the same capture/restore pair rehydration uses — and the partial copy was deleted. One definition of "this object's state" therefore exists, and a field added to it cannot be forgotten by one of two copy paths. No contract changed.
 
 ## Context

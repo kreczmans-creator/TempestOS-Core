@@ -420,7 +420,7 @@ public sealed class ProjectMilestoneTests : IDisposable
             var states = new EngineeringObjectStateStore(store);
 
             var domain = new EngineeringDomainContext(
-                documents, repository, relationships, new LifecycleTransitionTable(), new ValidationRuleSet(),
+                store, documents, repository, relationships, new LifecycleTransitionTable(), new ValidationRuleSet(),
                 new EvidenceComposer(discovery, repository), principal,
                 states, new AttachmentContentStore(store));
 

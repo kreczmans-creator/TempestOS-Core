@@ -1,5 +1,6 @@
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Tests.Logging;
+using Tempest.Core.Tests.Persistence;
 
 namespace Tempest.Core.Tests.EngineeringDomain.SchemaVersioning;
 
@@ -32,7 +33,7 @@ public class BrokenMigrationIsSkippedNotFatalTests
     [Fact]
     public async Task AThrowingMigration_IsCaught_LoggedAsWarning_AndTheRecordIsSkipped()
     {
-        var persistence = new InMemoryPersistenceStore();
+        var persistence = new InMemoryQueryablePersistenceStore();
         var id = Guid.NewGuid();
         await new EngineeringObjectStateStore(persistence).SaveAsync(BuildState(id, ThrowingKind, 1, "X-1"));
 
@@ -57,7 +58,7 @@ public class BrokenMigrationIsSkippedNotFatalTests
     [Fact]
     public async Task AThrowingMigration_DoesNotCostTheNextRecordInAListAsyncBatch()
     {
-        var persistence = new InMemoryPersistenceStore();
+        var persistence = new InMemoryQueryablePersistenceStore();
         var store = new EngineeringObjectStateStore(persistence);
 
         var brokenId = Guid.NewGuid();
@@ -85,7 +86,7 @@ public class BrokenMigrationIsSkippedNotFatalTests
         // (kind, 1) was registered at all. The surviving record is seeded
         // directly at the target version, so its own success is not
         // itself dependent on any migration running.
-        var persistence = new InMemoryPersistenceStore();
+        var persistence = new InMemoryQueryablePersistenceStore();
         var plainStore = new EngineeringObjectStateStore(persistence);
 
         var stuckId = Guid.NewGuid();
@@ -112,7 +113,7 @@ public class BrokenMigrationIsSkippedNotFatalTests
     [Fact]
     public async Task ARecordFromANewerBuild_IsSkipped_NotThrown()
     {
-        var persistence = new InMemoryPersistenceStore();
+        var persistence = new InMemoryQueryablePersistenceStore();
         var id = Guid.NewGuid();
 
         // No migration registered for version 99 at all — nor could there
@@ -132,7 +133,7 @@ public class BrokenMigrationIsSkippedNotFatalTests
     [Fact]
     public async Task ARecordFromANewerBuild_DoesNotCostTheNextRecordInAListAsyncBatch()
     {
-        var persistence = new InMemoryPersistenceStore();
+        var persistence = new InMemoryQueryablePersistenceStore();
         var store = new EngineeringObjectStateStore(persistence);
 
         var futureId = Guid.NewGuid();

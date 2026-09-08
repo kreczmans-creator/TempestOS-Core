@@ -30,12 +30,13 @@ public sealed class RequirementsWorkspaceViewFactory : IWorkspaceViewFactory
     /// <exception cref="ArgumentException"><paramref name="objectId"/> does not identify a known object of this factory's own <see cref="Kind"/>.</exception>
     /// <remarks>
     /// <see cref="IWorkspaceViewFactory.Create"/> is a frozen, synchronous
-    /// `WP8.0B` contract; <see cref="RequirementsService"/>'s own backing
-    /// <c>InMemoryPersistenceStore</c>/<c>InMemoryEngineeringDocumentStore</c>
-    /// always completes synchronously already (no real I/O), so bridging
-    /// with <c>GetAwaiter().GetResult()</c> here introduces no actual
-    /// blocking — the same sync/async boundary <c>MechanicalWorkspaceViewFactory</c>
-    /// already crosses for the identical reason.
+    /// `WP8.0B` contract, so this bridges with
+    /// <c>GetAwaiter().GetResult()</c> — the same sync/async boundary
+    /// <c>MechanicalWorkspaceViewFactory</c> already crosses for the
+    /// identical reason. The read it bridges is a single keyed lookup on
+    /// the platform's one store; since `ADR-0144` that is an indexed
+    /// SQLite query rather than the directory scan the original note was
+    /// written against.
     /// </remarks>
     public IWorkspaceView Create(Guid objectId, IWorkspaceContext context)
     {

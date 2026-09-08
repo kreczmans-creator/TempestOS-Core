@@ -7,6 +7,7 @@ using Tempest.Core.Events;
 using Tempest.Core.Identity;
 using Tempest.Core.Persistence;
 using Tempest.Core.Settings;
+using Tempest.Core.Tests.Persistence;
 
 namespace Tempest.Core.Tests.Shell;
 
@@ -31,11 +32,11 @@ public class ProductConvergenceTests
         IShellNavigator Navigator,
         IEngineeringScope Scope,
         ISettingsProvider Settings,
-        IPersistenceStore Persistence);
+        InMemoryQueryablePersistenceStore Persistence);
 
-    private static async Task<Spine> BuildAsync(ISettingsProvider? settings = null, IPersistenceStore? persistence = null)
+    private static async Task<Spine> BuildAsync(ISettingsProvider? settings = null, InMemoryQueryablePersistenceStore? persistence = null)
     {
-        var store = persistence ?? new Materials.InMemoryPersistenceStore();
+        var store = persistence ?? new InMemoryQueryablePersistenceStore();
         var principal = new CurrentPrincipalAccessor();
         var documents = new EngineeringDocumentStore(store, principal);
         var repository = new InMemoryEngineeringObjectRepository();
@@ -43,7 +44,7 @@ public class ProductConvergenceTests
         var discovery = new RelationshipDiscoveryService(relationships, repository);
 
         var domain = new EngineeringDomainContext(
-            documents, repository, relationships, new LifecycleTransitionTable(), new ValidationRuleSet(),
+            store, documents, repository, relationships, new LifecycleTransitionTable(), new ValidationRuleSet(),
             new EvidenceComposer(discovery, repository), principal, new EngineeringObjectStateStore(store));
 
         var rehydrators = new EngineeringObjectRehydratorRegistry();
@@ -319,7 +320,7 @@ public class ProductConvergenceTests
         // session state lives in the settings substrate (`ADR-0064`). The
         // two are deliberately different mechanisms with different
         // lifetimes, and this proves they are genuinely independent.
-        var domainStore = new Materials.InMemoryPersistenceStore();
+        var domainStore = new InMemoryQueryablePersistenceStore();
         var settings = new SettingsProvider(new Materials.InMemoryPersistenceStore(), new EventBus());
 
         var first = await BuildAsync(settings, domainStore);
@@ -341,7 +342,7 @@ public class ProductConvergenceTests
 
         // Same session state, brand new domain data: the session cannot
         // restore a project that does not exist, and degrades honestly.
-        var freshDomain = await BuildAsync(settings, new Materials.InMemoryPersistenceStore());
+        var freshDomain = await BuildAsync(settings, new InMemoryQueryablePersistenceStore());
         await freshDomain.Navigator.LoadAsync();
         Assert.Equal(ShellArea.Home, freshDomain.Navigator.Current.Area);
         Assert.False(freshDomain.Context.HasProject);
@@ -354,7 +355,7 @@ public class ProductConvergenceTests
     [Fact]
     public async Task AfterRestart_AProjectScopedEngineeringLocation_RestoresBothTheProjectAndTheScope()
     {
-        var domainStore = new Materials.InMemoryPersistenceStore();
+        var domainStore = new InMemoryQueryablePersistenceStore();
         var settings = new SettingsProvider(new Materials.InMemoryPersistenceStore(), new EventBus());
 
         var first = await BuildAsync(settings, domainStore);
@@ -379,7 +380,7 @@ public class ProductConvergenceTests
     [Fact]
     public async Task AfterRestart_AStandaloneEngineeringLocation_RestoresAsStandalone_WithNoProject()
     {
-        var domainStore = new Materials.InMemoryPersistenceStore();
+        var domainStore = new InMemoryQueryablePersistenceStore();
         var settings = new SettingsProvider(new Materials.InMemoryPersistenceStore(), new EventBus());
 
         var first = await BuildAsync(settings, domainStore);

@@ -27,17 +27,20 @@ check's generic exception handler already names the failing check in
 its `Fail` result; carried forward unchanged into the reduced script).
 None of these nine appear below.
 
-## Live Backlog (28 of 30 cap)
+## Live Backlog (27 of 30 cap)
 
-`TD-147` is listed first and marked Release Blocking on purpose: it is
-mechanically a `WP 17.1B` closure like the other transactional-store
-rows below it, but it is also the first thing `v0.17.0`'s physical
-review checks, so it stays visible here rather than only in the table
-beneath.
+`TD-147` — an object creation whose initial durable write failed still
+registered the object in memory, so its next successful write made a
+reported failure real — was listed here first and marked Release
+Blocking. It is **closed by `WP 17.1B`** (`ADR-0145`) and no longer
+appears below: the document, its first revision, the object's state
+record and the creation audit row are one transaction, and
+`EngineeringObjectFactory<T>.CreateAsync` calls `Register` only after it
+commits, so a creation whose write fails leaves nothing in the repository
+and nothing on disk.
 
 | ID | Title | Owner |
 |---|---|---|
-| `TD-147` | **Release Blocking.** An object creation whose initial durable write fails still registers the object in memory; its next successful write makes a reported failure real | `WP 17.1B` |
 | `TD-05` | Module discovery still requires a parameterless constructor outside the `[ModuleMetadata]` lift | unowned |
 | `TD-17` | Document revision content is an opaque string with no structured payload support | `WP 18.0B` |
 | `TD-24` | `VerificationContext` has no bound on criteria, evidence or links recorded | unowned |
@@ -84,6 +87,35 @@ Packages, per that Work Package's own "Closes" column. These do not
 need a backlog entry of their own — they close when the Work Package
 lands and its tests pass, not by triage.
 
+### Closed by `WP 17.1B`
+
+Landed, with their tests, on `wp/17.1b-transactional` (`ADR-0145`). Each
+was a consequence of an engineering object's truth living in four places
+with no transaction boundary; all four writers now commit through one
+`IPersistenceTransaction` under one domain-wide write lock, and memory is
+mutated only after that commits.
+
+| ID | Title | Closed by |
+|---|---|---|
+| `TD-142` | The refuse-after-mutate defect recurs on twelve concrete-Kind mutators | `MutateTypeStateAndPersistAsync` projects and commits the Kind's next type state before applying it to the Kind's own fields, so a failed commit leaves the field agreeing with disk |
+| `TD-144` | A failed move's durable link write can leave a durable partial reparent | The `groupedUnder` reference record and the object state are written in one transaction; a failed move leaves neither |
+| `TD-145` | Two concurrent moves can form an undetected parent cycle | `GuardAgainstCircularParent` runs inside the transaction, under the one write lock that spans the check and the write, so the walk reads a graph that cannot change under it |
+| `TD-146` | A delete can commit while a concurrent move gives the object a live child | The live-children check runs inside the same transaction as the delete it guards |
+| `TD-147` | **Was Release Blocking.** An object creation whose initial durable write fails still registers the object in memory | `EngineeringObjectFactory<T>.CreateAsync` registers the instance only after the transaction commits |
+| `TD-148` | `DeleteAsync` can report failure after the soft delete already committed | There is one commit; a delete that reports failure did not commit |
+
+Three rows this Work Package owns are **not** closed by it and stay in
+the table below, with the reason: `TD-141` (the second relationship-write
+path, `EngineeringRelationshipFactory.CreateAsync`, is transactional but
+still carries no supersession guard, because it takes ids rather than an
+instance and there is no public way to ask whether a source object has
+been retired); `TD-158` and `TD-170` (both are compositions of several
+already-transactional calls in `ReferenceDataCatalog` and the calculation
+naming path, which need their own transaction boundary rather than this
+one); and `TD-86`, `TD-95`, `TD-96` (batching, content-addressed
+deduplication and streaming payloads, none of which this Work Package
+touched).
+
 | ID | Title | Owner |
 |---|---|---|
 | `TD-03` | No disposal tracking for reflection-constructed singletons | `WP 17.2A` |
@@ -106,16 +138,12 @@ lands and its tests pass, not by triage.
 | `TD-130` | Reconciliation services (one of which deletes data) have no authorization seam | `WP 17.2A` |
 | `TD-137` | `PersistenceStore`'s atomic writes are crash-safe but not `fsync`'d | `WP 17.1A` |
 | `TD-141` | Two durable relationship-write paths carry no supersession guard | `WP 17.1B` |
-| `TD-142` | The refuse-after-mutate defect recurs on twelve concrete-Kind mutators | `WP 17.1B` |
-| `TD-144` | A failed move's durable link write can leave a durable partial reparent | `WP 17.1B` |
-| `TD-145` | Two concurrent moves can form an undetected parent cycle | `WP 17.1B` |
-| `TD-146` | A delete can commit while a concurrent move gives the object a live child | `WP 17.1B` |
-| `TD-148` | `DeleteAsync` can report failure after the soft delete already committed | `WP 17.1B` |
 | `TD-149` | A deleted legacy-encoded record can resurrect as live on delete failure | `WP 17.1A` |
 | `TD-156` | A superseded reference record keeps its secondary index entry | `WP 17.1A` |
 | `TD-158` | `ReferenceDataCatalog` composes durable writes with no all-or-nothing semantics | `WP 17.1B` |
 | `TD-169` | The canonical lifecycle permits no `Draft` → `Archived` transition | `WP 18.0A` |
 | `TD-170` | Naming an executed calculation is create-then-link with no compensation | `WP 17.1B` |
+| `TD-171` | Three verification models remain (`Core/Verification`, `EngineeringDomain/RequirementsVerification`, `EngineeringAssets/Verification`); collapse deferred to `WP 18.2B` | `WP 18.2B` |
 | `TD-65` | Systemic Desktop accessibility gaps: dialogs, focus, `AutomationProperties` | `WP 19.2B` |
 | `TD-66` | Refresh-architecture debt beyond `TD-58`: Cockpit, Explorer, open tabs | `WP 18.1A` |
 | `TD-73` | Rail and ribbon never compact; `MinWidth` bars small displays | `WP 19.2B` |

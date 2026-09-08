@@ -53,7 +53,17 @@ public class EngineeringDomainSampleModuleIntegrationTests
         services.AddInstance(currentPrincipalAccessor);
         services.Singleton<IPermissionEvaluator, PermissionEvaluator>();
 
-        services.Singleton<IPersistenceStore, PersistenceStore>();
+        // One store instance under all three shapes, exactly as
+        // `TempestHost` registers it (`ADR-0144`). Registering the three
+        // interfaces separately would build three stores over one root;
+        // `EngineeringDomainContext` needs the query shape since
+        // `ADR-0145`, and it must be the same instance the document store
+        // and the state store write through.
+        var persistenceStore = new PersistenceStore(configuration);
+        services.AddInstance<IPersistenceStore>(persistenceStore);
+        services.AddInstance<IBinaryPersistenceStore>(persistenceStore);
+        services.AddInstance<IQueryablePersistenceStore>(persistenceStore);
+
         services.Singleton<IEngineeringDocumentStore, EngineeringDocumentStore>();
         services.Singleton<IMaterialCatalog, MaterialCatalog>();
 
@@ -82,7 +92,8 @@ public class EngineeringDomainSampleModuleIntegrationTests
         // reason: the container resolves every constructor parameter
         // whether or not it has a default, so a collaborator missing here
         // is a rig that no longer stands in for the real graph.
-        services.Singleton<IBinaryPersistenceStore, PersistenceStore>();
+        // `IBinaryPersistenceStore` is registered above, on the one store
+        // instance, alongside the text and query shapes.
         services.Singleton<IAttachmentContentStore, AttachmentContentStore>();
         services.Singleton<EngineeringDomainContext>();
 

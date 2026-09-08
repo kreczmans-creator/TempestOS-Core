@@ -1,6 +1,7 @@
 using Tempest.Core.Audit;
 using Tempest.Core.Identity;
 using Tempest.Core.Persistence;
+using Tempest.Core.Tests.Persistence;
 
 namespace Tempest.Core.Tests.Audit;
 
@@ -15,7 +16,7 @@ public class AuditQueryCorruptionTests
     [Fact]
     public async Task QueryAsync_CorruptedStoredRecord_ThrowsControlledAuditException()
     {
-        var store = new InMemoryPersistenceStore();
+        var store = new InMemoryQueryablePersistenceStore();
         var recorderAccessor = new CurrentPrincipalAccessor();
         var recorder = new AuditRecorder(store, recorderAccessor);
         await recorder.RecordAsync("action-a");
@@ -27,7 +28,7 @@ public class AuditQueryCorruptionTests
         await Assert.ThrowsAsync<AuditException>(() => query.QueryAsync(new AuditQueryCriteria()));
     }
 
-    private static AuditQuery BuildGrantedQuery(IPersistenceStore store)
+    private static AuditQuery BuildGrantedQuery(IQueryablePersistenceStore store)
     {
         var accessor = new CurrentPrincipalAccessor();
         accessor.SetCurrent(new PlatformPrincipal(new PlatformIdentity("auditor", "Auditor"), [AuditQuery.QueryPermission]));

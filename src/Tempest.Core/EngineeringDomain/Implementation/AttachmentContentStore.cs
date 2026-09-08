@@ -38,7 +38,7 @@ namespace Tempest.Core.EngineeringDomain;
 /// attachment instead of as silently wrong content handed to an engineer.
 /// </para>
 /// </remarks>
-public sealed class AttachmentContentStore : IAttachmentContentStore
+public sealed class AttachmentContentStore : IAttachmentContentStore, ITransactionalAttachmentWriter
 {
     /// <summary>The persistence-store collection attachment content lives in.</summary>
     public const string ContentCollectionName = "EngineeringDomain.AttachmentContent";
@@ -123,8 +123,44 @@ public sealed class AttachmentContentStore : IAttachmentContentStore
     }
 
     /// <inheritdoc />
+    /// <inheritdoc />
     public Task DeleteAsync(Guid attachmentId, CancellationToken cancellationToken = default) =>
         _binaryStore.DeleteAsync(ContentCollectionName, KeyOf(attachmentId), cancellationToken);
+
+    // ----------------------------------------------------------------
+    // ITransactionalAttachmentWriter (`ADR-0145`)
+    //
+    // The bytes go into the same database, in the same transaction as the
+    // object-state record that names them (`WP 17.1B`, binary payload
+    // consistency). A committed attachment reference can therefore never
+    // point at bytes that are not there, and a transaction that does not
+    // commit leaves none behind — which is the whole reason the
+    // write-intent marker and the reconciliation sweep were deleted
+    // rather than kept.
+    // ----------------------------------------------------------------
+
+    /// <inheritdoc />
+    async Task<string> ITransactionalAttachmentWriter.SaveAsync(
+        IPersistenceTransaction transaction, Guid attachmentId, ReadOnlyMemory<byte> content, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(transaction);
+
+        await transaction.WriteBytesAsync(ContentCollectionName, KeyOf(attachmentId), content, cancellationToken).ConfigureAwait(false);
+
+        return ComputeHash(content.Span);
+    }
+
+    /// <inheritdoc />
+    Task ITransactionalAttachmentWriter.DeleteAsync(IPersistenceTransaction transaction, Guid attachmentId, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(transaction);
+
+        // There is no DeleteBytesAsync on the transaction: a record is a
+        // record whatever shape its value has, so the one DeleteAsync
+        // removes it — the same single method `IBinaryPersistenceStore`
+        // and `IPersistenceStore` already share.
+        return transaction.DeleteAsync(ContentCollectionName, KeyOf(attachmentId), cancellationToken);
+    }
 
     private static string KeyOf(Guid attachmentId) => attachmentId.ToString("N");
 }

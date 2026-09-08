@@ -407,18 +407,7 @@ public sealed class RevisionRehydrationEquivalenceTests : IDisposable
             _ => Convert.ToString(value, System.Globalization.CultureInfo.InvariantCulture) ?? "<null>",
         };
 
-    private static EngineeringDomainContext BuildInMemoryContext()
-    {
-        var principal = new CurrentPrincipalAccessor();
-        var repository = new InMemoryEngineeringObjectRepository();
-        var relationships = new InMemoryEngineeringRelationshipRepository();
-        var discovery = new RelationshipDiscoveryService(relationships, repository);
-
-        return new EngineeringDomainContext(
-            new InMemoryEngineeringDocumentStore(principal), repository, relationships,
-            new LifecycleTransitionTable(), new ValidationRuleSet(),
-            new EvidenceComposer(discovery, repository), principal, new InMemoryObjectStateStore());
-    }
+    private static EngineeringDomainContext BuildInMemoryContext() => TestEngineeringDomain.NewContext();
 
     private sealed record Lifetime(EngineeringDomainContext Context, IEngineeringObjectRehydratorRegistry Rehydrators);
 
@@ -438,7 +427,7 @@ public sealed class RevisionRehydrationEquivalenceTests : IDisposable
         var discovery = new RelationshipDiscoveryService(relationships, repository);
 
         var context = new EngineeringDomainContext(
-            new EngineeringDocumentStore(persistence, principal), repository, relationships,
+            persistence, new EngineeringDocumentStore(persistence, principal), repository, relationships,
             new LifecycleTransitionTable(), new ValidationRuleSet(),
             new EvidenceComposer(discovery, repository), principal, new EngineeringObjectStateStore(persistence));
 
@@ -586,33 +575,6 @@ public sealed class RevisionRehydrationEquivalenceTests : IDisposable
         {
             Interlocked.Increment(ref _rehydrateCallCount);
             return new CountingFixture(document, currentRevision, context, state.Identifier, state.DisplayName, state.Metadata, state.TypeList(nameof(ReaderNotes)));
-        }
-    }
-
-    private sealed class InMemoryObjectStateStore : IEngineeringObjectStateStore
-    {
-        private readonly Dictionary<Guid, EngineeringObjectState> _states = new();
-
-        public Task SaveAsync(EngineeringObjectState state, CancellationToken cancellationToken = default)
-        {
-            lock (_states) { _states[state.Id] = state; }
-            return Task.CompletedTask;
-        }
-
-        public Task<EngineeringObjectState?> FindAsync(Guid id, CancellationToken cancellationToken = default)
-        {
-            lock (_states) { return Task.FromResult(_states.TryGetValue(id, out var state) ? state : null); }
-        }
-
-        public Task DeleteAsync(Guid id, CancellationToken cancellationToken = default)
-        {
-            lock (_states) { _states.Remove(id); }
-            return Task.CompletedTask;
-        }
-
-        public Task<IReadOnlyList<EngineeringObjectState>> ListAsync(CancellationToken cancellationToken = default)
-        {
-            lock (_states) { return Task.FromResult<IReadOnlyList<EngineeringObjectState>>(_states.Values.ToList()); }
         }
     }
 }

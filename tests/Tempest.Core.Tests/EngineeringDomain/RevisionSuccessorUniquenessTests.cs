@@ -40,8 +40,8 @@ public sealed class RevisionSuccessorUniquenessTests
     [Fact]
     public async Task RevisingAnAlreadyRevisedInstance_IsRefused()
     {
-        var stateStore = new InMemoryObjectStateStore();
-        var context = BuildContext(stateStore);
+        var context = TestEngineeringDomain.NewContext();
+        var stateStore = context.ObjectStateStore;
         var part = await CreatePartAsync(context, "PART-1", "Bracket");
 
         var first = (Part)await part.ReviseAsync("Second content.", "Rev B.");
@@ -67,8 +67,8 @@ public sealed class RevisionSuccessorUniquenessTests
     [Fact]
     public async Task ASecondSuccessor_CannotSilentlyDiscardTheFirstSuccessorsAcceptedDurableWrite()
     {
-        var stateStore = new InMemoryObjectStateStore();
-        var context = BuildContext(stateStore);
+        var context = TestEngineeringDomain.NewContext();
+        var stateStore = context.ObjectStateStore;
         var part = await CreatePartAsync(context, "PART-1", "Bracket");
 
         var a = (Part)await part.ReviseAsync("Second content.", null);
@@ -123,8 +123,8 @@ public sealed class RevisionSuccessorUniquenessTests
     [Fact]
     public async Task ARefusedRevision_MintsNoDurableRevisionRecord()
     {
-        var stateStore = new InMemoryObjectStateStore();
-        var context = BuildContext(stateStore);
+        var context = TestEngineeringDomain.NewContext();
+        var stateStore = context.ObjectStateStore;
         var part = await CreatePartAsync(context, "PART-1", "Bracket");
 
         _ = await part.ReviseAsync("Second content.", null);
@@ -155,8 +155,8 @@ public sealed class RevisionSuccessorUniquenessTests
     [Fact]
     public async Task ARevisionChain_IsUnaffected()
     {
-        var stateStore = new InMemoryObjectStateStore();
-        var context = BuildContext(stateStore);
+        var context = TestEngineeringDomain.NewContext();
+        var stateStore = context.ObjectStateStore;
         var part = await CreatePartAsync(context, "PART-1", "Bracket");
 
         var second = (Part)await part.ReviseAsync("Second.", null);
@@ -182,8 +182,8 @@ public sealed class RevisionSuccessorUniquenessTests
     [Fact]
     public async Task RenameThenRevise_ThenRenameThenReviseAgainOnTheLiveInstance_AllSucceed()
     {
-        var stateStore = new InMemoryObjectStateStore();
-        var context = BuildContext(stateStore);
+        var context = TestEngineeringDomain.NewContext();
+        var stateStore = context.ObjectStateStore;
         var part = await CreatePartAsync(context, "PART-1", "Bracket");
 
         await part.RenameAsync("Renamed once");
@@ -203,18 +203,6 @@ public sealed class RevisionSuccessorUniquenessTests
         Assert.Equal("Renamed twice", state.DisplayName);
     }
 
-    private static EngineeringDomainContext BuildContext(IEngineeringObjectStateStore stateStore)
-    {
-        var principalAccessor = new CurrentPrincipalAccessor();
-        var store = new InMemoryEngineeringDocumentStore(principalAccessor);
-        var repository = new InMemoryEngineeringObjectRepository();
-        var relationshipRepository = new InMemoryEngineeringRelationshipRepository();
-        var relationshipDiscovery = new RelationshipDiscoveryService(relationshipRepository, repository);
-
-        return new EngineeringDomainContext(
-            store, repository, relationshipRepository, new LifecycleTransitionTable(), new ValidationRuleSet(),
-            new EvidenceComposer(relationshipDiscovery, repository), principalAccessor, stateStore);
-    }
 
     private static async Task<Part> CreatePartAsync(EngineeringDomainContext context, string identifier, string name)
     {
@@ -222,32 +210,5 @@ public sealed class RevisionSuccessorUniquenessTests
             "Part", context, (doc, rev) => new Part(doc, rev, context, identifier, name, EngineeringObjectMetadata.Empty));
 
         return (Part)await factory.CreateAsync($"{name} — for test purposes.").ConfigureAwait(false);
-    }
-
-    private sealed class InMemoryObjectStateStore : IEngineeringObjectStateStore
-    {
-        private readonly Dictionary<Guid, EngineeringObjectState> _states = new();
-
-        public Task SaveAsync(EngineeringObjectState state, CancellationToken cancellationToken = default)
-        {
-            lock (_states) { _states[state.Id] = state; }
-            return Task.CompletedTask;
-        }
-
-        public Task<EngineeringObjectState?> FindAsync(Guid id, CancellationToken cancellationToken = default)
-        {
-            lock (_states) { return Task.FromResult(_states.TryGetValue(id, out var state) ? state : null); }
-        }
-
-        public Task DeleteAsync(Guid id, CancellationToken cancellationToken = default)
-        {
-            lock (_states) { _states.Remove(id); }
-            return Task.CompletedTask;
-        }
-
-        public Task<IReadOnlyList<EngineeringObjectState>> ListAsync(CancellationToken cancellationToken = default)
-        {
-            lock (_states) { return Task.FromResult<IReadOnlyList<EngineeringObjectState>>(_states.Values.ToList()); }
-        }
     }
 }
