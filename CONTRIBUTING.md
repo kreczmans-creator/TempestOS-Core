@@ -57,7 +57,9 @@ rules** for `main`:
   the one-round review discipline above are the gate instead.
 - No force pushes, no deletions of `main`.
 - Conversation resolution required before merging.
-- Administrators are **not** exempt from any of the above.
+- Administrators are **not blocked** by the review rule (`enforce_admins` is off), so the
+  solo owner can merge a green PR without a second account; the `CI Gate`
+  status check still applies to everyone.
 
 ## Out of scope for a Work Package PR
 

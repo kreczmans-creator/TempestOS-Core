@@ -1,6 +1,6 @@
 # TempestOS — Project Status
 
-**Branch:** `wp/17.0b-governance`, based on `release/v0.17.0` @ `eea8230`
+**Branch:** `release/v0.17.0` (all v0.17.0 Work Packages land here; nothing is merged to `main` until the release is accepted)
 **VERSION:** `0.16.0` (not yet bumped — `v0.17.0` is in progress, not released)
 
 ## What a user can do today
