@@ -41,7 +41,7 @@ namespace Tempest.Core.EngineeringData;
 /// failing the write when no principal is currently established.
 /// </para>
 /// </remarks>
-public sealed class EngineeringDocumentStore : IEngineeringDocumentStore
+public sealed class EngineeringDocumentStore : IEngineeringDocumentStore, EngineeringDomain.ITransactionalDocumentWriter
 {
     /// <summary>
     /// The <see cref="IPersistenceStore"/> collection every document's
@@ -253,6 +253,125 @@ public sealed class EngineeringDocumentStore : IEngineeringDocumentStore
         }
 
         return references;
+    }
+
+    // ----------------------------------------------------------------
+    // ITransactionalDocumentWriter (`ADR-0145`)
+    //
+    // The write half of this store, against one in-flight transaction.
+    // Same collections, same DTOs, same serialisation as the public
+    // methods above — the only difference is that the several writes one
+    // logical change needs land together or not at all, which is why the
+    // `TD-67` ordering note on CreateAsync no longer describes anything
+    // reachable through the domain.
+    // ----------------------------------------------------------------
+
+    /// <inheritdoc />
+    async Task<EngineeringDomain.DocumentCreation> EngineeringDomain.ITransactionalDocumentWriter.CreateAsync(
+        IPersistenceTransaction transaction, Guid documentId, string kind, string initialContent, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(transaction);
+        ArgumentException.ThrowIfNullOrWhiteSpace(kind);
+        ArgumentNullException.ThrowIfNull(initialContent);
+
+        var createdAt = DateTimeOffset.UtcNow;
+        var authorPrincipalId = ResolveAuthorPrincipalId();
+
+        await transaction.WriteAsync(
+            RevisionsCollectionName,
+            RevisionKey(documentId, 1),
+            JsonSerializer.Serialize(new DocumentRevisionDto(initialContent, ChangeSummary: null, authorPrincipalId, createdAt)),
+            cancellationToken).ConfigureAwait(false);
+
+        await transaction.WriteAsync(
+            DocumentsCollectionName,
+            documentId.ToString("N"),
+            JsonSerializer.Serialize(new EngineeringDocumentDto(kind, createdAt, CurrentRevisionNumber: 1)),
+            cancellationToken).ConfigureAwait(false);
+
+        return new EngineeringDomain.DocumentCreation(
+            new EngineeringDocument(documentId, kind, currentRevisionNumber: 1, createdAt),
+            new DocumentRevision(documentId, 1, initialContent, changeSummary: null, authorPrincipalId, createdAt));
+    }
+
+    /// <inheritdoc />
+    async Task<IDocumentRevision> EngineeringDomain.ITransactionalDocumentWriter.ReviseAsync(
+        IPersistenceTransaction transaction, Guid documentId, string newContent, string? changeSummary, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(transaction);
+        ArgumentNullException.ThrowIfNull(newContent);
+
+        // Read through the transaction, so the current revision number is
+        // the one this transaction will build on. The per-document
+        // AsyncKeyedLock the public ReviseAsync uses is not needed here
+        // and is deliberately not taken: the transaction's own write lock
+        // already serialises read-then-write against every other writer,
+        // including one in another process, which the in-process monitor
+        // never could.
+        var json = await transaction.ReadAsync(DocumentsCollectionName, documentId.ToString("N"), cancellationToken).ConfigureAwait(false)
+            ?? throw new EngineeringDocumentNotFoundException(documentId);
+
+        EngineeringDocumentDto dto;
+        try
+        {
+            dto = JsonSerializer.Deserialize<EngineeringDocumentDto>(json)
+                ?? throw new EngineeringDataException($"Document '{documentId}' could not be deserialised.");
+        }
+        catch (JsonException ex)
+        {
+            throw new EngineeringDataException($"Document '{documentId}' could not be deserialised.", ex);
+        }
+
+        var newRevisionNumber = dto.CurrentRevisionNumber + 1;
+        var revisedAt = DateTimeOffset.UtcNow;
+        var authorPrincipalId = ResolveAuthorPrincipalId();
+
+        await transaction.WriteAsync(
+            RevisionsCollectionName,
+            RevisionKey(documentId, newRevisionNumber),
+            JsonSerializer.Serialize(new DocumentRevisionDto(newContent, changeSummary, authorPrincipalId, revisedAt)),
+            cancellationToken).ConfigureAwait(false);
+
+        await transaction.WriteAsync(
+            DocumentsCollectionName,
+            documentId.ToString("N"),
+            JsonSerializer.Serialize(dto with { CurrentRevisionNumber = newRevisionNumber }),
+            cancellationToken).ConfigureAwait(false);
+
+        return new DocumentRevision(documentId, newRevisionNumber, newContent, changeSummary, authorPrincipalId, revisedAt);
+    }
+
+    /// <inheritdoc />
+    async Task EngineeringDomain.ITransactionalDocumentWriter.LinkAsync(
+        IPersistenceTransaction transaction, Guid sourceDocumentId, Guid targetDocumentId, string relationshipKind, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(transaction);
+        ArgumentException.ThrowIfNullOrWhiteSpace(relationshipKind);
+
+        var writer = (EngineeringDomain.ITransactionalDocumentWriter)this;
+
+        if (!await writer.ExistsAsync(transaction, sourceDocumentId, cancellationToken).ConfigureAwait(false))
+            throw new EngineeringDocumentNotFoundException(sourceDocumentId);
+
+        if (!await writer.ExistsAsync(transaction, targetDocumentId, cancellationToken).ConfigureAwait(false))
+            throw new EngineeringDocumentNotFoundException(targetDocumentId);
+
+        var dto = new DocumentReferenceDto(targetDocumentId, relationshipKind, ResolveAuthorPrincipalId(), DateTimeOffset.UtcNow);
+
+        await transaction.WriteAsync(
+            GetReferencesCollectionName(sourceDocumentId),
+            Guid.NewGuid().ToString("N"),
+            JsonSerializer.Serialize(dto),
+            cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <inheritdoc />
+    async Task<bool> EngineeringDomain.ITransactionalDocumentWriter.ExistsAsync(
+        IPersistenceTransaction transaction, Guid documentId, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(transaction);
+
+        return await transaction.ReadAsync(DocumentsCollectionName, documentId.ToString("N"), cancellationToken).ConfigureAwait(false) is not null;
     }
 
     private string ResolveAuthorPrincipalId() =>

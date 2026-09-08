@@ -1,3 +1,4 @@
+using Tempest.Core.Audit;
 using Tempest.Core.EngineeringData;
 
 namespace Tempest.Core.EngineeringDomain;
@@ -13,6 +14,7 @@ public sealed class EngineeringObjectFactory<T> : IEngineeringObjectFactory
     private readonly EngineeringDomainContext _context;
     private readonly Func<IEngineeringDocument, IDocumentRevision, T> _constructor;
 
+    /// <summary>Initialises a new instance of the <see cref="EngineeringObjectFactory{T}"/> class.</summary>
     public EngineeringObjectFactory(string kind, EngineeringDomainContext context, Func<IEngineeringDocument, IDocumentRevision, T> constructor)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(kind);
@@ -24,54 +26,74 @@ public sealed class EngineeringObjectFactory<T> : IEngineeringObjectFactory
         _constructor = constructor;
     }
 
+    /// <inheritdoc />
     public string Kind { get; }
 
+    /// <inheritdoc />
+    /// <remarks>
+    /// <para>
+    /// <b>One transaction, then registration (`ADR-0145`, `TD-147`).</b> The
+    /// document, its revision 1, the object's own state record and the
+    /// creation audit row are written through one transaction; the
+    /// instance reaches
+    /// <see cref="IEngineeringObjectRepository.Register"/> only after that
+    /// transaction commits. A creation whose write fails therefore leaves
+    /// nothing in the repository and nothing on disk — which is `TD-147`,
+    /// where the instance used to be registered first and stayed
+    /// registered, live and mutable, after its initial write threw.
+    /// </para>
+    /// <para>
+    /// The document Id is minted here, before the transaction, so the
+    /// instance can be constructed from a document record the transaction
+    /// has already written and read back nothing.
+    /// </para>
+    /// </remarks>
     public async Task<IEngineeringObject> CreateAsync(string initialContent, CancellationToken cancellationToken = default)
     {
-        var document = await _context.Store.CreateAsync(Kind, initialContent, cancellationToken).ConfigureAwait(false);
-        var revisions = await _context.Store.GetRevisionHistoryAsync(document.Id, cancellationToken).ConfigureAwait(false);
-        var currentRevision = revisions[^1];
+        var documentId = Guid.NewGuid();
+        T? instance = null;
 
-        var instance = _constructor(document, currentRevision);
-        // `WP 16.4B-R6`. The successor `ReviseAsync` builds is produced by
-        // this type's own state reader, given the state captured at the
-        // moment of the revision — not by re-running this factory's
-        // construction closure, which only ever knew the values passed to
-        // *this* call and therefore reverted every type-specific field a
-        // caller had changed since. `IRehydratable{T}` is the interface that
-        // reader already lives on (`TD-85`), which is why it is required
-        // here; every canonical Kind in the platform implements it, because
-        // every canonical Kind has to survive a restart.
-        instance.AttachSelfFactory((doc, rev, state) => T.Rehydrate(doc, rev, _context, state));
-        _context.Repository.Register(instance);
+        await _context.ExecuteWriteAsync(
+            async (transaction, token) =>
+            {
+                var created = await _context.DocumentWriter
+                    .CreateAsync(transaction, documentId, Kind, initialContent, token)
+                    .ConfigureAwait(false);
 
-        // `TD-85`. The document alone only ever carried Kind, created-at and
-        // prose; everything the caller passed through this factory's own
-        // constructor closure — identifier, display name, metadata, and every
-        // type-specific field — existed nowhere but in memory. Persisting the
-        // object's own state here is what makes the object, rather than only
-        // its document, survive a restart. A context composed without a state
-        // store (every pre-`TD-85` hand-assembled one) is unaffected — see
-        // PersistInitialStateAsync's own no-op branch.
-        //
-        // Routed through the same per-object write lock as every later
-        // mutation (`WP 16.4B-R3`) rather than capturing and saving
-        // directly here: this instance is already registered above, so a
-        // concurrent caller that finds it through the repository could
-        // otherwise race this very save exactly as two mutators could
-        // race each other.
-        await instance.PersistInitialStateAsync(cancellationToken).ConfigureAwait(false);
+                var candidate = _constructor(created.Document, created.Revision);
 
-        return instance;
+                // `WP 16.4B-R6`. The successor `ReviseAsync` builds is
+                // produced by this type's own state reader, given the state
+                // captured at the moment of the revision — not by re-running
+                // this factory's construction closure, which only ever knew
+                // the values passed to *this* call and therefore reverted
+                // every type-specific field a caller had changed since.
+                candidate.AttachSelfFactory((doc, rev, state) => T.Rehydrate(doc, rev, _context, state));
+
+                await candidate.WriteCreationAsync(transaction, token).ConfigureAwait(false);
+
+                instance = candidate;
+            },
+            cancellationToken).ConfigureAwait(false);
+
+        // Committed. Nothing before this line put the instance anywhere a
+        // second caller could find it.
+        _context.Repository.Register(instance!);
+
+        return instance!;
     }
 }
 
-/// <summary>A uniform <see cref="IEngineeringRelationshipFactory"/> — <see cref="IEngineeringRelationship"/>'s own shape needs no per-Kind specialisation, so one concrete type, instantiated once per named relationship kind, suffices (mirrors <see cref="EngineeringObjectFactory{T}"/>'s own reasoning).</summary>
+/// <summary>
+/// Creates a typed relationship between two existing objects, as one
+/// transaction (`ADR-0145`).
+/// </summary>
 public sealed class EngineeringRelationshipFactory : IEngineeringRelationshipFactory
 {
     private readonly EngineeringDomainContext _context;
     private readonly RelationshipCategory _category;
 
+    /// <summary>Initialises a new instance of the <see cref="EngineeringRelationshipFactory"/> class.</summary>
     public EngineeringRelationshipFactory(string relationshipKind, RelationshipCategory category, EngineeringDomainContext context)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(relationshipKind);
@@ -82,16 +104,44 @@ public sealed class EngineeringRelationshipFactory : IEngineeringRelationshipFac
         _context = context;
     }
 
+    /// <inheritdoc />
     public string RelationshipKind { get; }
 
+    /// <inheritdoc />
+    /// <remarks>
+    /// The reference record and its audit row are one transaction; the
+    /// in-memory relationship cache learns of the link only after it
+    /// commits, so a failed write leaves the cache and the store agreeing
+    /// that nothing happened (`TD-140`).
+    /// </remarks>
     public async Task<IEngineeringRelationship> CreateAsync(Guid sourceId, Guid targetId, CancellationToken cancellationToken = default)
     {
         if (sourceId == targetId)
             throw new SelfReferentialRelationshipException(sourceId);
 
-        await _context.Store.LinkAsync(sourceId, targetId, RelationshipKind, cancellationToken).ConfigureAwait(false);
+        var principalId = _context.ResolveCurrentPrincipalId();
+        var createdAt = DateTimeOffset.UtcNow;
 
-        var relationship = new EngineeringRelationship(sourceId, targetId, RelationshipKind, _category, _context.ResolveCurrentPrincipalId(), DateTimeOffset.UtcNow);
+        await _context.ExecuteWriteAsync(
+            async (transaction, token) =>
+            {
+                await _context.DocumentWriter.LinkAsync(transaction, sourceId, targetId, RelationshipKind, token).ConfigureAwait(false);
+
+                var source = await _context.Repository.FindAsync(sourceId, token).ConfigureAwait(false);
+
+                await AuditTransactionWriter.WriteAsync(
+                    transaction,
+                    sourceId,
+                    source?.Kind ?? "Unknown",
+                    EngineeringAuditActions.Linked,
+                    principalId,
+                    $"{RelationshipKind} to '{targetId:N}'.",
+                    createdAt,
+                    token).ConfigureAwait(false);
+            },
+            cancellationToken).ConfigureAwait(false);
+
+        var relationship = new EngineeringRelationship(sourceId, targetId, RelationshipKind, _category, principalId, createdAt);
         _context.RelationshipRepository.Record(relationship);
 
         return relationship;

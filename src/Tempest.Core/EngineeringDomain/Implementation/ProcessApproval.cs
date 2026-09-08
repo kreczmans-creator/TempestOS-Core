@@ -79,44 +79,60 @@ public class EngineeringTask : EngineeringObjectBase, ITask, IRehydratable<Engin
     /// </remarks>
     public Task AssignAsync(string? principalId, CancellationToken cancellationToken = default)
     {
-        lock (_taskLock)
-            _assignedToPrincipalId = Normalise(principalId);
+        var normalised = Normalise(principalId);
 
-        return PersistStateAsync(cancellationToken);
+        return MutateTypeStateAndPersistAsync(
+            projectTypeState: () => new Dictionary<string, string?>(StringComparer.Ordinal)
+            {
+                [nameof(AssignedToPrincipalId)] = normalised,
+            },
+            apply: () => { lock (_taskLock) { _assignedToPrincipalId = normalised; } },
+            auditDetail: normalised is null ? "Task unassigned." : $"Task assigned to '{normalised}'.",
+            cancellationToken: cancellationToken);
     }
 
     /// <summary>Moves this task to <paramref name="target"/>.</summary>
     /// <exception cref="InvalidTaskWorkStateTransitionException">The move is not permitted from the current state.</exception>
-    public Task ChangeWorkStateAsync(TaskWorkState target, CancellationToken cancellationToken = default)
-    {
-        lock (_taskLock)
-        {
-            if (!TaskWorkStateTransitions.IsPermitted(_workState, target))
-                throw new InvalidTaskWorkStateTransitionException(Id, _workState, target);
+    public Task ChangeWorkStateAsync(TaskWorkState target, CancellationToken cancellationToken = default) =>
+        MutateTypeStateAndPersistAsync(
+            projectTypeState: () =>
+            {
+                lock (_taskLock)
+                {
+                    if (!TaskWorkStateTransitions.IsPermitted(_workState, target))
+                        throw new InvalidTaskWorkStateTransitionException(Id, _workState, target);
+                }
 
-            _workState = target;
-        }
-
-        return PersistStateAsync(cancellationToken);
-    }
+                return new Dictionary<string, string?>(StringComparer.Ordinal)
+                {
+                    [nameof(WorkState)] = target.ToString(),
+                };
+            },
+            apply: () => { lock (_taskLock) { _workState = target; } },
+            auditDetail: $"Task work state set to '{target}'.",
+            cancellationToken: cancellationToken);
 
     /// <summary>Sets this task's priority.</summary>
-    public Task SetPriorityAsync(WorkPriority priority, CancellationToken cancellationToken = default)
-    {
-        lock (_taskLock)
-            _priority = priority;
-
-        return PersistStateAsync(cancellationToken);
-    }
+    public Task SetPriorityAsync(WorkPriority priority, CancellationToken cancellationToken = default) =>
+        MutateTypeStateAndPersistAsync(
+            projectTypeState: () => new Dictionary<string, string?>(StringComparer.Ordinal)
+            {
+                [nameof(Priority)] = priority.ToString(),
+            },
+            apply: () => { lock (_taskLock) { _priority = priority; } },
+            auditDetail: $"Task priority set to '{priority}'.",
+            cancellationToken: cancellationToken);
 
     /// <summary>Sets or clears this task's due date.</summary>
-    public Task SetDueDateAsync(DateTimeOffset? dueDate, CancellationToken cancellationToken = default)
-    {
-        lock (_taskLock)
-            _dueDate = dueDate;
-
-        return PersistStateAsync(cancellationToken);
-    }
+    public Task SetDueDateAsync(DateTimeOffset? dueDate, CancellationToken cancellationToken = default) =>
+        MutateTypeStateAndPersistAsync(
+            projectTypeState: () => new Dictionary<string, string?>(StringComparer.Ordinal)
+            {
+                [nameof(DueDate)] = dueDate?.ToString("O"),
+            },
+            apply: () => { lock (_taskLock) { _dueDate = dueDate; } },
+            auditDetail: dueDate is null ? "Task due date cleared." : $"Task due date set to {dueDate:O}.",
+            cancellationToken: cancellationToken);
 
     /// <summary>Links this task to the Milestone or Deliverable it contributes to.</summary>
     public Task ContributeToAsync(Guid milestoneOrDeliverableId, CancellationToken cancellationToken = default) =>

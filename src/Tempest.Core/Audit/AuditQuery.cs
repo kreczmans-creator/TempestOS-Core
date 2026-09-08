@@ -22,17 +22,23 @@ namespace Tempest.Core.Audit;
 /// condition.
 /// </para>
 /// <para>
-/// <b>Filtering is client-side, over
-/// <see cref="Persistence.IPersistenceStore.ListKeysAsync"/> plus a
-/// per-key <see cref="Persistence.IPersistenceStore.ReadAsync"/></b> —
-/// `IPersistenceStore` has no native query capability (confirmed,
-/// `ADR-0041`/`ADR-0045`; `docs/releases/v0.6.0/Risk Register.md`'s own
-/// `R8`). Every record in the collection is read and deserialised, then
-/// filtered in memory against <see cref="AuditQueryCriteria"/> — correct,
-/// but with a performance characteristic that scales linearly with the
-/// total number of audit records, disclosed explicitly rather than
-/// hidden; see this Work Package's own Platform Impact Assessment.
+/// <b>Two queries, not one scan (`ADR-0145`).</b> This used to list every
+/// key in the collection and then issue one read per key — the linear
+/// scan `TD-12` recorded, at two round trips per record. It now reads
+/// through <see cref="IQueryablePersistenceStore"/>:
 /// </para>
+/// <list type="bullet">
+/// <item><description>An <see cref="AuditQueryCriteria.ObjectId"/> query is
+/// one <see cref="IQueryablePersistenceStore.ListKeysAsync"/> on the
+/// object id prefix followed by one
+/// <see cref="IQueryablePersistenceStore.ReadManyAsync"/> — the reason
+/// <c>AuditTransactionWriter</c> puts the object id first in the key.</description></item>
+/// <item><description>Every other query is one
+/// <see cref="IQueryablePersistenceStore.ReadAllAsync"/>. Date, actor and
+/// action are still filtered in memory, because the key carries only the
+/// object id and the timestamp; that is disclosed rather than hidden, and
+/// it is now one round trip rather than <c>1 + n</c>.</description></item>
+/// </list>
 /// </remarks>
 public sealed class AuditQuery : IAuditQuery
 {
@@ -42,7 +48,7 @@ public sealed class AuditQuery : IAuditQuery
     /// </summary>
     public static readonly Permission QueryPermission = new("audit.query");
 
-    private readonly IPersistenceStore _persistenceStore;
+    private readonly IQueryablePersistenceStore _persistenceStore;
     private readonly ICurrentPrincipalAccessor _currentPrincipalAccessor;
     private readonly IPermissionEvaluator _permissionEvaluator;
     private readonly ILogger? _logger;
@@ -56,7 +62,7 @@ public sealed class AuditQuery : IAuditQuery
     /// <param name="logger">An optional logger for diagnostic output.</param>
     /// <exception cref="ArgumentNullException">Any parameter except <paramref name="logger"/> is <see langword="null"/>.</exception>
     public AuditQuery(
-        IPersistenceStore persistenceStore,
+        IQueryablePersistenceStore persistenceStore,
         ICurrentPrincipalAccessor currentPrincipalAccessor,
         IPermissionEvaluator permissionEvaluator,
         ILogger? logger = null)
@@ -80,21 +86,14 @@ public sealed class AuditQuery : IAuditQuery
             ?? new PlatformPrincipal(new PlatformIdentity(AuditRecorder.UnknownActorId, "Unauthenticated"), []);
         _permissionEvaluator.RequirePermission(principal, QueryPermission);
 
-        var keys = await _persistenceStore.ListKeysAsync(AuditRecorder.AuditCollectionName, cancellationToken).ConfigureAwait(false);
+        var stored = criteria.ObjectId is { } objectId
+            ? await ReadByObjectAsync(objectId, cancellationToken).ConfigureAwait(false)
+            : await _persistenceStore.ReadAllAsync(AuditRecorder.AuditCollectionName, cancellationToken).ConfigureAwait(false);
 
         var results = new List<IAuditRecord>();
 
-        foreach (var key in keys)
+        foreach (var (key, json) in stored)
         {
-            var json = await _persistenceStore.ReadAsync(AuditRecorder.AuditCollectionName, key, cancellationToken).ConfigureAwait(false);
-
-            // A benign race with a concurrent delete (not exposed by
-            // IAuditRecorder, which never deletes - but ReadAsync's own
-            // contract permits null for "no longer present") - skip
-            // rather than fail the whole query.
-            if (json is null)
-                continue;
-
             AuditRecordDto dto;
             try
             {
@@ -129,5 +128,36 @@ public sealed class AuditQuery : IAuditQuery
         _logger?.Information($"Audit query returned {results.Count} record(s).");
 
         return results.OrderBy(r => r.OccurredAt).ToList();
+    }
+
+    /// <summary>
+    /// Reads every audit row whose key begins with
+    /// <paramref name="objectId"/> — one prefix listing and one batched
+    /// read, rather than a scan of the whole collection.
+    /// </summary>
+    private async Task<IReadOnlyList<KeyValuePair<string, string>>> ReadByObjectAsync(Guid objectId, CancellationToken cancellationToken)
+    {
+        var keys = await _persistenceStore
+            .ListKeysAsync(AuditRecorder.AuditCollectionName, objectId.ToString("N"), cancellationToken)
+            .ConfigureAwait(false);
+
+        if (keys.Count == 0)
+            return [];
+
+        var values = await _persistenceStore
+            .ReadManyAsync(AuditRecorder.AuditCollectionName, keys, cancellationToken)
+            .ConfigureAwait(false);
+
+        var stored = new List<KeyValuePair<string, string>>(keys.Count);
+        foreach (var key in keys)
+        {
+            // A key listed and then absent is a benign race with a
+            // concurrent delete; skip it rather than fail the query, the
+            // same allowance the per-key read path made.
+            if (values.TryGetValue(key, out var json) && json is not null)
+                stored.Add(new KeyValuePair<string, string>(key, json));
+        }
+
+        return stored;
     }
 }
