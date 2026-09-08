@@ -27,7 +27,7 @@ check's generic exception handler already names the failing check in
 its `Fail` result; carried forward unchanged into the reduced script).
 None of these nine appear below.
 
-## Live Backlog (28 of 30 cap)
+## Live Backlog (29 of 30 cap)
 
 `TD-147` — an object creation whose initial durable write failed still
 registered the object in memory, so its next successful write made a
@@ -68,6 +68,8 @@ and nothing on disk.
 | `TD-155` | Materials library reuses an incompatible payload shape under the old document Kind | `WP 18.0B` |
 | `TD-157` | "Pinned source superseded" warning can never fire; the resolver is never wired up | `WP 18.0B` |
 | `TD-163` | 79 seeded reference records never reach the shipped product | `WP 18.0B` |
+| `TD-172` | Creation placement is inconsistent across disciplines: Documents, Calculations and Manufacturing create parentless objects that never join a project; a Requirement created from the Ribbon or Palette has no node in its own Explorer tree; "Create Manufacturing Object" with its default Kind always fails (no `PartId`); an object created while another discipline tab is active is not shown where the user is looking (design-freeze surface audit, 2026-09-08) | `WP 18.1A` |
+| `TD-173` | A verification result links its evidence to the Activity, never to the Requirement it names as Subject, so a Requirement's Verification Coverage always reads "Not Verified" (design-freeze surface audit, 2026-09-08) | `WP 18.2B` |
 
 **Judgement calls, not named in any Work Package's "Closes" column:**
 `TD-27` and `TD-150` sit squarely in the persistence/object-store
