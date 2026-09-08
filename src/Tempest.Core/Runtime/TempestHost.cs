@@ -424,6 +424,11 @@ public sealed class TempestHost : ITempestHost
         var currentPrincipalAccessor = new CurrentPrincipalAccessor();
         services.AddInstance<ICurrentPrincipalAccessor>(currentPrincipalAccessor);
         services.AddInstance(currentPrincipalAccessor);
+
+        // `WP 17.9.1`: identity ids are stored; names are shown. One directory
+        // over the same accessor, so every surface describes a principal the
+        // same way.
+        services.AddInstance<IPrincipalDirectory>(new PrincipalDirectory(currentPrincipalAccessor));
         services.Singleton<IPermissionEvaluator, PermissionEvaluator>();
 
         // ADR-0041/ADR-0144: Persistence is established here, as part of

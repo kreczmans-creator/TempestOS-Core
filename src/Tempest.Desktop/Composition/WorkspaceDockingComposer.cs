@@ -151,6 +151,37 @@ internal sealed class WorkspaceDockingComposer
     public void CloseFlyout() => Layout.Host.HideFlyout();
 
     /// <summary>
+    /// Guarantees the Project Explorer and Properties panels are part of the
+    /// arrangement — restored to their home edges if a saved layout, a preset
+    /// or an earlier close left them out. Panels already present are left
+    /// exactly as they are, collapsed or pinned.
+    /// </summary>
+    /// <remarks>
+    /// The first Windows review of `v0.17.0` entered Engineering from a
+    /// project and saw neither panel until "Engineering layout" was applied
+    /// by hand. Whatever left them closed on that machine, Engineering is
+    /// not usable without them, so entering it makes them present
+    /// (`WP 17.9.1`). Returns <see langword="true"/> when anything changed.
+    /// </remarks>
+    public bool EnsureCorePanelsPresent()
+    {
+        var changed = false;
+        if (!Layout.IsPanelVisible(ExplorerPanelId))
+        {
+            Layout.TogglePanel(ExplorerPanelId, DockRelation.Left);
+            changed = true;
+        }
+
+        if (!Layout.IsPanelVisible(InspectorPanelId))
+        {
+            Layout.TogglePanel(InspectorPanelId, DockRelation.Right);
+            changed = true;
+        }
+
+        return changed;
+    }
+
+    /// <summary>
     /// Keeps the frozen `WP8.0B` <see cref="IWorkspaceLayout"/> contract
     /// truthful as a projection of the layout tree (`TD-72`).
     /// </summary>

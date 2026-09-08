@@ -461,6 +461,11 @@ public sealed class SampleSeparationTests
                 if (name.StartsWith(".", StringComparison.Ordinal) || name is "bin" or "obj")
                     continue;
 
+                // A nested clone or worktree of another repository (its own `.git`)
+                // is not this repository: its project files must not be counted.
+                if (Directory.Exists(Path.Combine(subdirectory, ".git")) || File.Exists(Path.Combine(subdirectory, ".git")))
+                    continue;
+
                 pending.Push(subdirectory);
             }
         }

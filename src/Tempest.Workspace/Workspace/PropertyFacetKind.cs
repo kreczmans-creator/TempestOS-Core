@@ -17,4 +17,11 @@ public enum PropertyFacetKind
 
     /// <summary>A facet only the selected object's own <c>Kind</c> contributes — for example a Requirement's own <c>RequirementStatus</c>.</summary>
     DisciplineSpecific,
+
+    /// <summary>
+    /// A facet whose value is a stored identity id (`WP 17.9.1`) — who created,
+    /// revised, executed or verified. Stored as the stable id; shown through
+    /// <c>Tempest.Core.Identity.IPrincipalDirectory</c> as a name.
+    /// </summary>
+    Principal,
 }

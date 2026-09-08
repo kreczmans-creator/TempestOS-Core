@@ -90,7 +90,7 @@ public sealed class VerificationActivityPropertyFacetProvider : IPropertyFacetPr
         if (target is IHasRevisions revisions)
         {
             facets.Add(new("Revision", target.CurrentRevisionNumber.ToString(), PropertyFacetKind.Revision));
-            facets.Add(new("Last Revised By", revisions.AuthorPrincipalId, PropertyFacetKind.Provenance));
+            facets.Add(new("Last Revised By", revisions.AuthorPrincipalId, PropertyFacetKind.Principal));
         }
 
         if (target is IHasParent hasParent)
@@ -122,7 +122,7 @@ public sealed class VerificationActivityPropertyFacetProvider : IPropertyFacetPr
 
             facets.Add(new("Latest Outcome", latest.Outcome.ToString(), PropertyFacetKind.DisciplineSpecific));
             facets.Add(new("Latest Verified At", latest.VerifiedAt.ToString("u"), PropertyFacetKind.Provenance));
-            facets.Add(new("Latest Verified By", latest.VerifiedByPrincipalId, PropertyFacetKind.Provenance));
+            facets.Add(new("Latest Verified By", latest.VerifiedByPrincipalId, PropertyFacetKind.Principal));
 
             facets.Add(new(
                 "Latest Criteria",

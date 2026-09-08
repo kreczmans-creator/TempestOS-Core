@@ -143,7 +143,7 @@ public sealed class CalculationsPropertyFacetProvider : IPropertyFacetProvider
         if (target is IHasRevisions revisions)
         {
             facets.Add(new("Revision", target.CurrentRevisionNumber.ToString(), PropertyFacetKind.Revision));
-            facets.Add(new("Last Revised By", revisions.AuthorPrincipalId, PropertyFacetKind.Provenance));
+            facets.Add(new("Last Revised By", revisions.AuthorPrincipalId, PropertyFacetKind.Principal));
         }
 
         if (target is IHasParent hasParent)
@@ -194,7 +194,7 @@ public sealed class CalculationsPropertyFacetProvider : IPropertyFacetProvider
             facets.Add(new("Latest Result", latest.ResultDisplay, PropertyFacetKind.DisciplineSpecific));
             facets.Add(new("Latest Result Outcome", latest.Outcome.ToString(), PropertyFacetKind.DisciplineSpecific));
             facets.Add(new("Latest Executed At", latest.ExecutedAt.ToString("u"), PropertyFacetKind.Provenance));
-            facets.Add(new("Latest Executed By", latest.ExecutedByPrincipalId, PropertyFacetKind.Provenance));
+            facets.Add(new("Latest Executed By", latest.ExecutedByPrincipalId, PropertyFacetKind.Principal));
 
             var safetyFactor = latest.IntermediateResults.FirstOrDefault(i => i.Name.Contains("Safety Factor", StringComparison.Ordinal));
             if (safetyFactor.Name is not null)

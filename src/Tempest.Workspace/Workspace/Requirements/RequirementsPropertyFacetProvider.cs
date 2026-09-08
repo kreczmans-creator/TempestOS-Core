@@ -75,7 +75,7 @@ public sealed class RequirementsPropertyFacetProvider : IPropertyFacetProvider
             facets.Add(new("Priority", priority.ToString(), PropertyFacetKind.DisciplineSpecific));
 
         facets.Add(new("Revision", requirement.RevisionNumber.ToString(), PropertyFacetKind.Revision));
-        facets.Add(new("Created By", requirement.CreatedByPrincipalId, PropertyFacetKind.Provenance));
+        facets.Add(new("Created By", requirement.CreatedByPrincipalId, PropertyFacetKind.Principal));
         facets.Add(new("Created At", requirement.CreatedAt.ToString("u"), PropertyFacetKind.Provenance));
 
         if (requirement.GroupId is { } groupId)

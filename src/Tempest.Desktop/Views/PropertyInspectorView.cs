@@ -36,6 +36,7 @@ public sealed class PropertyInspectorView : UserControl
     private readonly IPropertyInspector _inspector;
     private readonly IWorkspaceManager _manager;
     private readonly EngineeringDomainContext? _domainContext;
+    private readonly Tempest.Core.Identity.IPrincipalDirectory? _principals;
     private readonly StackPanel _panel = new() { Spacing = DesignTokens.SpaceXs, Margin = DesignTokens.PanelPadding };
     private readonly EmptyStateView _empty = new("◎", "No selection", "Select an object in the Project Explorer to inspect its identity, lifecycle, discipline facets, relationships and validation here.");
 
@@ -57,13 +58,14 @@ public sealed class PropertyInspectorView : UserControl
     /// threads it through) leaves the Validation section at its own
     /// honest, pre-`WP 10.8A` disclosed-placeholder text — never a crash.
     /// </param>
-    public PropertyInspectorView(IPropertyInspector inspector, IWorkspaceManager manager, EngineeringDomainContext? domainContext = null)
+    public PropertyInspectorView(IPropertyInspector inspector, IWorkspaceManager manager, EngineeringDomainContext? domainContext = null, Tempest.Core.Identity.IPrincipalDirectory? principals = null)
     {
         ArgumentNullException.ThrowIfNull(inspector);
         ArgumentNullException.ThrowIfNull(manager);
         _inspector = inspector;
         _manager = manager;
         _domainContext = domainContext;
+        _principals = principals;
         Content = new ScrollViewer { Content = _panel };
         Refresh();
     }
@@ -300,9 +302,14 @@ public sealed class PropertyInspectorView : UserControl
 
             var isDisplayNameField = editable && facet.Name.Equals("Name", StringComparison.OrdinalIgnoreCase);
             var canRenameCurrentKind = _currentKind is not null && _manager.CanRename(_currentKind);
+            // `WP 17.9.1`: a principal facet holds the stored identity id (a
+            // Windows SID); the person reads a name.
+            var displayValue = facet.FacetKind == PropertyFacetKind.Principal && _principals is not null
+                ? _principals.Describe(facet.Value)
+                : facet.Value;
             Control valueControl = isDisplayNameField && canRenameCurrentKind
                 ? BuildEditableNameField(facet.Value)
-                : new TextBlock { Text = facet.Value, TextWrapping = TextWrapping.Wrap, FontSize = DesignTokens.FontSizeBody };
+                : new TextBlock { Text = displayValue, TextWrapping = TextWrapping.Wrap, FontSize = DesignTokens.FontSizeBody };
 
             if (isDisplayNameField && !canRenameCurrentKind && _currentKind is not null)
             {

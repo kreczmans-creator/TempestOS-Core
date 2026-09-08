@@ -108,7 +108,7 @@ public sealed class DocumentsPropertyFacetProvider : IPropertyFacetProvider
         if (target is IHasRevisions revisions)
         {
             facets.Add(new("Revision", target.CurrentRevisionNumber.ToString(), PropertyFacetKind.Revision));
-            facets.Add(new("Last Revised By", revisions.AuthorPrincipalId, PropertyFacetKind.Provenance));
+            facets.Add(new("Last Revised By", revisions.AuthorPrincipalId, PropertyFacetKind.Principal));
         }
 
         if (target is IHasParent hasParent)

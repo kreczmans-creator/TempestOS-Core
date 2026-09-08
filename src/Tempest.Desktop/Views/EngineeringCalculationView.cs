@@ -152,8 +152,15 @@ public sealed class EngineeringCalculationView : UserControl
     private readonly StackPanel _verificationPanel = new() { Spacing = DesignTokens.SpaceXs };
 
     /// <summary>Initialises a new instance of the <see cref="EngineeringCalculationView"/> class.</summary>
-    public EngineeringCalculationView()
+    private readonly Func<string?, string> _describePrincipal;
+
+    /// <param name="describePrincipal">
+    /// Turns a stored identity id into a name for display (`WP 17.9.1`);
+    /// <see langword="null"/> shows ids as recorded.
+    /// </param>
+    public EngineeringCalculationView(Func<string?, string>? describePrincipal = null)
     {
+        _describePrincipal = describePrincipal ?? (id => id ?? string.Empty);
         AutomationProperties.SetName(this, Heading);
 
         _calculateButton.Classes.Add(ChromeStyles.Primary);
@@ -425,7 +432,7 @@ public sealed class EngineeringCalculationView : UserControl
         _traceabilityPanel.Children.Add(Readout("Calculation", outcome.CalculationId));
         _traceabilityPanel.Children.Add(Readout("Calculation record", outcome.CalculationRecordId.ToString()));
         _traceabilityPanel.Children.Add(Readout("Calculation revision", outcome.CalculationRevision.ToString()));
-        _traceabilityPanel.Children.Add(Readout("Executed", $"{outcome.ExecutedAt:yyyy-MM-dd HH:mm:ss} UTC by {outcome.ExecutedByPrincipalId}"));
+        _traceabilityPanel.Children.Add(Readout("Executed", $"{outcome.ExecutedAt:yyyy-MM-dd HH:mm:ss} UTC by {_describePrincipal(outcome.ExecutedByPrincipalId)}"));
         _traceabilityPanel.Children.Add(Readout("Reference", $"{outcome.MaterialLibrary}/{outcome.MaterialRecordId}"));
         _traceabilityPanel.Children.Add(Readout("Pinned revision", outcome.PinnedRevision.ToString()));
         _traceabilityPanel.Children.Add(Readout("Reference now", $"revision {outcome.CurrentRevision?.ToString() ?? "—"}, {outcome.MaterialStateNow}"));
@@ -469,7 +476,7 @@ public sealed class EngineeringCalculationView : UserControl
             _verificationPanel.Children.Add(Readout("Summary", evidence.Summary));
 
         if (evidence.PerformedByPrincipalId is not null)
-            _verificationPanel.Children.Add(Readout("Performed by", $"{evidence.PerformedByPrincipalId} on {evidence.PerformedOn:yyyy-MM-dd}"));
+            _verificationPanel.Children.Add(Readout("Performed by", $"{_describePrincipal(evidence.PerformedByPrincipalId)} on {evidence.PerformedOn:yyyy-MM-dd}"));
     }
 
     /// <summary>Shows what just happened, as a status line.</summary>

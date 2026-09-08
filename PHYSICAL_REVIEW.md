@@ -55,13 +55,13 @@ dotnet build src/TempestOS.slnx --configuration Release --no-restore -p:TreatWar
 applies it, so a local build behaves as it always has while the gate stays
 the same gate.
 
-**2.3 Core tests** — 4,922 tests, ~20 seconds (re-derived at `v0.17.0`, 2026-09-08; the `v0.16.0` tree had 5,153 before WP 17.0C removed scaffolding and WP 17.2A froze the plugin, REST and licensing suites)
+**2.3 Core tests** — 4,931 tests, ~20–50 seconds (re-derived at `v0.17.0` after `WP 17.9.1`, 2026-09-08; the `v0.16.0` tree had 5,153 before WP 17.0C removed scaffolding and WP 17.2A froze the plugin, REST and licensing suites)
 
 ```
 dotnet test tests/Tempest.Core.Tests/Tempest.Core.Tests.csproj --configuration Debug --no-build
 ```
 
-**2.4 Desktop tests** — 496 tests, ~2.5–3 minutes (re-derived at `v0.17.0`, 2026-09-08; set `TEMPEST_TEST_TIMEOUT_FACTOR=3` when the machine is busy)
+**2.4 Desktop tests** — 498 tests, ~2.5–3 minutes (re-derived at `v0.17.0` after `WP 17.9.1`, 2026-09-08; set `TEMPEST_TEST_TIMEOUT_FACTOR=3` when the machine is busy)
 
 ```
 dotnet test tests/Tempest.Desktop.Tests/Tempest.Desktop.Tests.csproj --configuration Debug --no-build
@@ -266,7 +266,7 @@ from the repository root, so data lands in `<repo>/persistence-data`.
 | 9 | Invoke a status/lifecycle command from the palette | It runs against the selected object, and the outcome appears in the status bar and in Command History in the Output panel. | Nothing happens and nothing is reported either way. |
 | 10 | Project Workspace → **Requirements** | With no requirements yet, the area says so plainly. Create one from the Engineering Workspace's **Requirements** ribbon tab, then return: it is listed with its status. | The area claims to be unimplemented, or stays empty after a requirement exists. |
 | 11 | Project Workspace → **Documents** | Same shape: an honest empty state, then the document you create from the **Documents** ribbon tab appears. Opening one opens a real viewer panel. | The document does not appear, or the viewer fails to open it. |
-| 12 | Engineering Workspace → **Calculations** ribbon tab | Create a Calculation. **Note:** *executing* a calculation from this tab is deliberately unavailable — the command is registered and reports that this platform cannot yet collect structured input for it. Seeing that stated reason is the correct result. | The command is missing entirely, or claims to run and silently does nothing. |
+| 12 | Engineering Workspace → **Calculations** ribbon tab | Create a Calculation and open it in the editor. The editor shows Identity, Content, a **Calculation** note directing you to the Engineering Calculations workspace (rail), Attachments and Lifecycle — **no Execute section and no JSON box** (`WP 17.9.1`). Properties shows *Last Revised By* as your Windows account name, not a SID. A Calculation shows **no Bill of Materials section**; that section appears only on Assembly, Sub-Assembly, Part, Component and Configuration. | An "Execute" section or "Input (JSON)" box; a raw `S-1-5-…` value anywhere in Properties; Quantity / Find Number on a Calculation or a Project. |
 | 12a | Rail → **Engineering Calculations** | The workspace renders as **two side-by-side columns** — Calculations and Reference Library on the left, Inputs / Results / Traceability / Verification on the right — with nothing drawn over anything else (`v0.16.0` drew both columns on top of each other). | Overlapping text or controls anywhere on this surface. |
 | 12b | **Populate Material Library** | Six material records appear in the Reference Library list, each marked *Draft, rev 1*. Select one; the release panel asks what source you consulted and why it is being released. Enter both and press **Verify and Release Material**: the record shows *Released*. | Nothing appears; the release succeeds with either box empty. |
 | 12c | **New Calculation** → **Calculate** with the released material and the default inputs (12 kN, 60 mm², 150 mm, 50 g) | Results show applied stress **200 MPa** against the material's allowable, a margin, a mass of **24.3 g**, and *Meets criteria* for 6082-T6; Traceability names the material record **and the revision it was released at**. Name the calculation; it appears in the Calculations list. | A different number; no pinned revision; the calculation cannot be named or does not appear. |

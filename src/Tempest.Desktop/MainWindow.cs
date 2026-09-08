@@ -251,7 +251,8 @@ public sealed class MainWindow : Window
                 : Task.FromResult(true);
 
         _explorerView = new ProjectExplorerView(workspace.ProjectExplorer, manager) { ConfirmDeleteAsync = ConfirmDeleteAsync, RecentSearchCapacity = _session.UserSettings.RecentSearchCapacity };
-        _inspectorView = new PropertyInspectorView(workspace.PropertyInspector, manager, composition.DomainContext);
+        var principals = (Tempest.Core.Identity.IPrincipalDirectory)host.Services!.GetService(typeof(Tempest.Core.Identity.IPrincipalDirectory));
+        _inspectorView = new PropertyInspectorView(workspace.PropertyInspector, manager, composition.DomainContext, principals);
         _statusBar = new StatusBarView();
         _commandPalette = new CommandPaletteOverlay(composition.CommandRegistry);
 
@@ -511,7 +512,7 @@ public sealed class MainWindow : Window
         // intent; the coordinator performs it through the App-layer
         // workbench and renders the answer. No engineering rule, no
         // lifecycle rule and no formula lives on this side of the seam.
-        _engineeringCalculation = new EngineeringCalculationView();
+        _engineeringCalculation = new EngineeringCalculationView(principals.Describe);
         _engineeringCalculationCoordinator = new EngineeringCalculationCoordinator(
             host.BracketCalculations!, _engineeringCalculation);
 
@@ -1009,6 +1010,11 @@ public sealed class MainWindow : Window
                 // a panel within it. Engineering carries its own scope —
                 // the open project, or standalone (`TD-89`) — which the
                 // surface reads from the navigator rather than from here.
+                // `WP 17.9.1`: Engineering is not usable without the Project
+                // Explorer and Properties panels, so entering it guarantees
+                // they are present whatever a saved layout says.
+                if (location.Area == ShellArea.Engineering)
+                    _dockingComposer.EnsureCorePanelsPresent();
                 _moduleHost.Content = _engineeringSurface;
                 break;
 
