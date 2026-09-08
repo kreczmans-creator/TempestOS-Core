@@ -16,7 +16,6 @@ namespace Tempest.Core.Tests.Runtime;
 // governance layer is wired into the real, unmodified TempestHost, that
 // each library is one instance over one store, and that adding it changed
 // nothing about `Group A` or `Group B`.
-[Collection("Console output capture")]
 public class BusinessGovernanceHostRegistrationTests
 {
     private static async Task RunAgainstRunningHostAsync(string rootPath, Func<ITempestHost, Task> body)
@@ -27,26 +26,15 @@ public class BusinessGovernanceHostRegistrationTests
                 new KeyValuePair<string, string>(PersistenceStore.RootPathConfigurationKey, rootPath),
             ]))
             .Build();
-        var originalOut = Console.Out;
 
-        try
-        {
-            Console.SetOut(new StringWriter());
+        var runTask = host.RunAsync();
 
-            var runTask = host.RunAsync();
+        await RunningHostFixture.WaitUntilRunningAsync(host);
 
-            while (host.State is HostState.Created or HostState.Starting)
-                await Task.Delay(5);
+        await body(host);
 
-            await body(host);
-
-            await host.StopAsync();
-            await runTask;
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-        }
+        await host.StopAsync();
+        await runTask;
     }
 
     [Theory]

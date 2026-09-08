@@ -34,7 +34,6 @@ namespace Tempest.Core.Tests.Workspace;
 /// proving the "already works, zero new code" BOM finding empirically, not
 /// just asserted in prose.
 /// </summary>
-[Collection("Console output capture")]
 public class ManufacturingWorkspaceIntegrationTests
 {
     private static async Task<(IWorkspace Workspace, WorkspaceManager Manager, ITempestHost Host)> StartAsync(string rootPath)
@@ -59,17 +58,8 @@ public class ManufacturingWorkspaceIntegrationTests
             .Build();
         var manager = new WorkspaceManager(host);
 
-        var originalOut = Console.Out;
         IWorkspace workspace;
-        try
-        {
-            Console.SetOut(new StringWriter());
-            workspace = await manager.StartAsync();
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-        }
+        workspace = await manager.StartAsync();
 
         // Same disclosed, pre-existing platform timing characteristic
         // DocumentsWorkspaceIntegrationTests/VerificationWorkspaceIntegrationTests's

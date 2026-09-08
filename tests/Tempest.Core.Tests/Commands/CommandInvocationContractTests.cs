@@ -36,7 +36,6 @@ namespace Tempest.Core.Tests.Commands;
 /// hoped for.
 /// </para>
 /// </remarks>
-[Collection("Console output capture")]
 public sealed class CommandInvocationContractTests : IAsyncLifetime
 {
     private static readonly IReadOnlyList<string> Disciplines =
@@ -66,16 +65,7 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
             .Build();
         _manager = new WorkspaceManager(_host);
 
-        var originalOut = Console.Out;
-        try
-        {
-            Console.SetOut(new StringWriter());
-            await _manager.StartAsync();
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-        }
+        await _manager.StartAsync();
 
         EngineeringWorkspaceComposer.RegisterEngineeringDisciplines(_manager, _host);
         _registry = (ICommandRegistry)_host.Services!.GetService(typeof(ICommandRegistry));

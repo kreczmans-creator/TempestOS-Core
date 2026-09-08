@@ -29,7 +29,6 @@ namespace Tempest.Core.Tests.Commands;
 /// values or a confirmation needs a person, and a person is exactly what an
 /// unattended run does not have.
 /// </remarks>
-[Collection("Console output capture")]
 public sealed class MacroBindingEligibilityTests : IAsyncLifetime
 {
     private static readonly IReadOnlyList<string> Disciplines =
@@ -70,16 +69,7 @@ public sealed class MacroBindingEligibilityTests : IAsyncLifetime
             .Build();
         _manager = new WorkspaceManager(_host);
 
-        var originalOut = Console.Out;
-        try
-        {
-            Console.SetOut(new StringWriter());
-            await _manager.StartAsync();
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-        }
+        await _manager.StartAsync();
 
         EngineeringWorkspaceComposer.RegisterEngineeringDisciplines(_manager, _host);
         _registry = (ICommandRegistry)_host.Services!.GetService(typeof(ICommandRegistry));

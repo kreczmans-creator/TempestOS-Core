@@ -13,7 +13,7 @@ namespace Tempest.Core.Tests.Plugins;
 // primitive anywhere in this file.
 // WP 13.9.1: see PluginAssemblyLoaderTests.cs's own comment on this same
 // [Collection] attribute.
-[Collection("Console output capture")]
+[Collection("Dynamic plugin assembly emission")]
 public class PluginSignatureVerifierTests
 {
     // ------------------------------------------------------------------

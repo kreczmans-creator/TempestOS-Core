@@ -16,6 +16,7 @@ using Tempest.Core.Settings;
 using Tempest.Core.Tests.Plugins;
 using Tempest.Samples;
 
+using Tempest.Core.Tests.Runtime;
 namespace Tempest.Core.Tests.Samples;
 
 // Proves WP 6.6 end-to-end: LicensingSampleModule constructor-injects the
@@ -30,7 +31,6 @@ namespace Tempest.Core.Tests.Samples;
 // unmodified module and Host pipeline - mirroring
 // ReportingSampleModuleIntegrationTests'/ApiSampleModuleIntegrationTests'
 // own structure.
-[Collection("Console output capture")]
 public class LicensingSampleModuleIntegrationTests
 {
     private static (RuntimeModuleManager RuntimeManager, TempestServiceProvider ServiceProvider) BuildPipeline(
@@ -307,13 +307,12 @@ public class LicensingSampleModuleIntegrationTests
                 pluginsRootPathOverride: null,
                 hostedServiceCandidateTypesOverride: [typeof(RestApiHostedService)],
                 licenseFilePathOverride: licenseFilePath)
-            .AddConfigurationSource(new MemoryConfigurationSource(configurationEntries))
+            .AddConfigurationSource(new MemoryConfigurationSource(configurationEntries)).WithIsolatedPersistenceRoot()
             .Build();
 
         _ = host.RunAsync();
 
-        while (host.State is HostState.Created or HostState.Starting)
-            await Task.Delay(5);
+        await RunningHostFixture.WaitUntilRunningAsync(host);
 
         var hostedService = (RestApiHostedService)host.Services!.GetService(typeof(RestApiHostedService));
 
@@ -330,82 +329,52 @@ public class LicensingSampleModuleIntegrationTests
         using var licenseDirectory = new TempDirectory();
         var licensePath = Path.Combine(licenseDirectory.Path, "license.json");
         File.WriteAllText(licensePath, $$"""{"LicenseeName":"Acme Corp","EnabledCapabilities":["{{LicensingSampleModule.SampleCapabilityKey}}"]}""");
-        var originalOut = Console.Out;
+        var (hostedService, host) = await StartHostAsync(temp.Path, licensePath, [LicensingSampleModule.CapabilityCheckPermissionKey]);
 
-        try
-        {
-            Console.SetOut(new StringWriter());
-            var (hostedService, host) = await StartHostAsync(temp.Path, licensePath, [LicensingSampleModule.CapabilityCheckPermissionKey]);
+        using var client = new HttpClient { BaseAddress = new Uri($"http://127.0.0.1:{hostedService.BoundPort}/") };
+        var request = new HttpRequestMessage(HttpMethod.Post, LicensingSampleModule.CheckCapabilityRoutePath);
+        request.Headers.Add(ApiRequestHandler.IdentityHeaderName, LicensingSampleModule.SampleIdentityId);
 
-            using var client = new HttpClient { BaseAddress = new Uri($"http://127.0.0.1:{hostedService.BoundPort}/") };
-            var request = new HttpRequestMessage(HttpMethod.Post, LicensingSampleModule.CheckCapabilityRoutePath);
-            request.Headers.Add(ApiRequestHandler.IdentityHeaderName, LicensingSampleModule.SampleIdentityId);
+        var response = await client.SendAsync(request);
+        var body = await response.Content.ReadAsStringAsync();
 
-            var response = await client.SendAsync(request);
-            var body = await response.Content.ReadAsStringAsync();
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Contains(LicensingSampleModule.PremiumMessageSettingDefaultValue, body);
 
-            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-            Assert.Contains(LicensingSampleModule.PremiumMessageSettingDefaultValue, body);
-
-            await host.StopAsync();
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-        }
+        await host.StopAsync();
     }
 
     [Fact]
     public async Task PostToMappedRoute_NoLicenseFile_Returns400_CapabilityNotEnabled()
     {
         using var temp = new TempDirectory();
-        var originalOut = Console.Out;
+        var (hostedService, host) = await StartHostAsync(temp.Path, licenseFilePath: null, [LicensingSampleModule.CapabilityCheckPermissionKey]);
 
-        try
-        {
-            Console.SetOut(new StringWriter());
-            var (hostedService, host) = await StartHostAsync(temp.Path, licenseFilePath: null, [LicensingSampleModule.CapabilityCheckPermissionKey]);
+        using var client = new HttpClient { BaseAddress = new Uri($"http://127.0.0.1:{hostedService.BoundPort}/") };
+        var request = new HttpRequestMessage(HttpMethod.Post, LicensingSampleModule.CheckCapabilityRoutePath);
+        request.Headers.Add(ApiRequestHandler.IdentityHeaderName, LicensingSampleModule.SampleIdentityId);
 
-            using var client = new HttpClient { BaseAddress = new Uri($"http://127.0.0.1:{hostedService.BoundPort}/") };
-            var request = new HttpRequestMessage(HttpMethod.Post, LicensingSampleModule.CheckCapabilityRoutePath);
-            request.Headers.Add(ApiRequestHandler.IdentityHeaderName, LicensingSampleModule.SampleIdentityId);
+        var response = await client.SendAsync(request);
 
-            var response = await client.SendAsync(request);
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
 
-            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-
-            await host.StopAsync();
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-        }
+        await host.StopAsync();
     }
 
     [Fact]
     public async Task PostToMappedRoute_PermissionNotGranted_Returns403()
     {
         using var temp = new TempDirectory();
-        var originalOut = Console.Out;
+        var (hostedService, host) = await StartHostAsync(temp.Path, licenseFilePath: null, grantedPermissions: null);
 
-        try
-        {
-            Console.SetOut(new StringWriter());
-            var (hostedService, host) = await StartHostAsync(temp.Path, licenseFilePath: null, grantedPermissions: null);
+        using var client = new HttpClient { BaseAddress = new Uri($"http://127.0.0.1:{hostedService.BoundPort}/") };
+        var request = new HttpRequestMessage(HttpMethod.Post, LicensingSampleModule.CheckCapabilityRoutePath);
+        request.Headers.Add(ApiRequestHandler.IdentityHeaderName, LicensingSampleModule.SampleIdentityId);
 
-            using var client = new HttpClient { BaseAddress = new Uri($"http://127.0.0.1:{hostedService.BoundPort}/") };
-            var request = new HttpRequestMessage(HttpMethod.Post, LicensingSampleModule.CheckCapabilityRoutePath);
-            request.Headers.Add(ApiRequestHandler.IdentityHeaderName, LicensingSampleModule.SampleIdentityId);
+        var response = await client.SendAsync(request);
 
-            var response = await client.SendAsync(request);
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
 
-            Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
-
-            await host.StopAsync();
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-        }
+        await host.StopAsync();
     }
 }

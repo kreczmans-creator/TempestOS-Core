@@ -11,6 +11,7 @@ using Tempest.Core.Runtime;
 using Tempest.Core.Tests.Plugins;
 using Tempest.Samples;
 
+using Tempest.Core.Tests.Runtime;
 namespace Tempest.Core.Tests.Samples;
 
 // Proves WP 5.2 end-to-end: DiagnosticsSampleModule constructor-injects the
@@ -21,7 +22,7 @@ namespace Tempest.Core.Tests.Samples;
 // Framework. Nothing here is a mock or a test double standing in for a real
 // platform service, except a level-recording ILogger used only to observe
 // log output.
-[Collection("Console output capture")]
+[Collection("Dynamic plugin assembly emission")]
 public class DiagnosticsSampleModuleIntegrationTests
 {
     // Mirrors TempestHost's own composition exactly: DiagnosticsProvider is
@@ -172,43 +173,31 @@ public class DiagnosticsSampleModuleIntegrationTests
     public async Task RunAsync_WithDiagnosticsSampleModule_RegistersAndReportsThroughTheRealHost()
     {
         var host = new TempestHostBuilder([typeof(DiagnosticsSampleModule)]).WithIsolatedPersistenceRoot().Build();
-        var originalOut = Console.Out;
-        var writer = new StringWriter();
 
-        try
-        {
-            Console.SetOut(writer);
+        var runTask = host.RunAsync();
 
-            var runTask = host.RunAsync();
+        await RunningHostFixture.WaitUntilRunningAsync(host);
 
-            while (host.State is HostState.Created or HostState.Starting)
-                await Task.Delay(5);
+        Assert.Equal(HostState.Running, host.State);
 
-            Assert.Equal(HostState.Running, host.State);
+        var diagnosticsProvider = (IDiagnosticsProvider)host.Services!.GetService(typeof(IDiagnosticsProvider));
+        Assert.Equal(HostState.Running, diagnosticsProvider.HostState);
+        Assert.NotEmpty(diagnosticsProvider.Modules);
 
-            var diagnosticsProvider = (IDiagnosticsProvider)host.Services!.GetService(typeof(IDiagnosticsProvider));
-            Assert.Equal(HostState.Running, diagnosticsProvider.HostState);
-            Assert.NotEmpty(diagnosticsProvider.Modules);
+        // By the time RunAsync has reached Running, Hosted Services
+        // Started (Phase 10.1) has already completed, so - unlike
+        // during the module's own Initialise - HostedServices now
+        // legitimately reflects live data (empty here only because
+        // this Host has no hosted services of its own).
+        Assert.NotNull(diagnosticsProvider.HostedServices);
 
-            // By the time RunAsync has reached Running, Hosted Services
-            // Started (Phase 10.1) has already completed, so - unlike
-            // during the module's own Initialise - HostedServices now
-            // legitimately reflects live data (empty here only because
-            // this Host has no hosted services of its own).
-            Assert.NotNull(diagnosticsProvider.HostedServices);
+        var registry = (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
+        var result = await registry.InvokeAsync(
+            DiagnosticsSampleModule.GetDiagnosticsSummaryCommandId, CancellationToken.None);
+        Assert.True(result.Succeeded);
 
-            var registry = (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
-            var result = await registry.InvokeAsync(
-                DiagnosticsSampleModule.GetDiagnosticsSummaryCommandId, CancellationToken.None);
-            Assert.True(result.Succeeded);
-
-            await host.StopAsync();
-            await runTask;
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-        }
+        await host.StopAsync();
+        await runTask;
 
         Assert.Equal(HostState.Stopped, host.State);
     }

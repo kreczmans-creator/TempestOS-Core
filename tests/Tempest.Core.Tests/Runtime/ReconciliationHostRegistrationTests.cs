@@ -19,32 +19,20 @@ namespace Tempest.Core.Tests.Runtime;
 // does not repair a user's data behind their back. Their behaviour is
 // tested directly in the EngineeringDomain/Materials/Requirements test
 // folders; this file only proves they are wired.
-[Collection("Console output capture")]
 public class ReconciliationHostRegistrationTests
 {
     private static async Task RunAgainstRunningHostAsync(Func<ITempestHost, Task> body)
     {
         var host = new TempestHostBuilder(Type.EmptyTypes).WithIsolatedPersistenceRoot().Build();
-        var originalOut = Console.Out;
 
-        try
-        {
-            Console.SetOut(new StringWriter());
+        var runTask = host.RunAsync();
 
-            var runTask = host.RunAsync();
+        await RunningHostFixture.WaitUntilRunningAsync(host);
 
-            while (host.State is HostState.Created or HostState.Starting)
-                await Task.Delay(5);
+        await body(host);
 
-            await body(host);
-
-            await host.StopAsync();
-            await runTask;
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-        }
+        await host.StopAsync();
+        await runTask;
     }
 
     [Fact]

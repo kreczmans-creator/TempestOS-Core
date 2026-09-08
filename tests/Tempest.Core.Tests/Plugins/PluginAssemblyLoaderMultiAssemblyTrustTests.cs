@@ -31,7 +31,7 @@ namespace Tempest.Core.Tests.Plugins;
 // against any other test class that also loads a real assembly, given
 // EnforceTrust's own fixed-point AppDomain scan (the exact mechanism these
 // tests exercise).
-[Collection("Console output capture")]
+[Collection("Dynamic plugin assembly emission")]
 public class PluginAssemblyLoaderMultiAssemblyTrustTests
 {
     [Fact]

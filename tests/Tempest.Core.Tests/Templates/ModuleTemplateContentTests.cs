@@ -19,7 +19,6 @@ namespace Tempest.Core.Tests.Templates;
 // by the real templating engine; this test proves the template's own
 // file content compiles and is discoverable, using the real compiler and
 // the real, unmodified ReflectionFrameworkDiscoveryService.
-[Collection("Console output capture")]
 public class ModuleTemplateContentTests
 {
     private const string SourceNameToken = "TempestSampleModule";

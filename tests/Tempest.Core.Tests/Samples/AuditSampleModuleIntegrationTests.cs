@@ -12,6 +12,7 @@ using Tempest.Core.Runtime;
 using Tempest.Core.Tests.Plugins;
 using Tempest.Samples;
 
+using Tempest.Core.Tests.Runtime;
 namespace Tempest.Core.Tests.Samples;
 
 // Proves WP 6.5 end-to-end: AuditSampleModule constructor-injects the
@@ -21,7 +22,6 @@ namespace Tempest.Core.Tests.Samples;
 // the permission-denied-by-default and granted query paths - driven
 // entirely by the real, unmodified module pipeline, mirroring
 // SettingsSampleModuleIntegrationTests/IdentitySampleModuleIntegrationTests.
-[Collection("Console output capture")]
 public class AuditSampleModuleIntegrationTests
 {
     private static (RuntimeModuleManager RuntimeManager, TempestServiceProvider ServiceProvider) BuildPipeline(
@@ -255,35 +255,23 @@ public class AuditSampleModuleIntegrationTests
                 new KeyValuePair<string, string>($"Identity:Principals:{AuditSampleModule.SampleIdentityId}:Roles", "Auditor"),
             ]))
             .Build();
-        var originalOut = Console.Out;
-        var writer = new StringWriter();
 
-        try
-        {
-            Console.SetOut(writer);
+        var runTask = host.RunAsync();
 
-            var runTask = host.RunAsync();
+        await RunningHostFixture.WaitUntilRunningAsync(host);
 
-            while (host.State is HostState.Created or HostState.Starting)
-                await Task.Delay(5);
+        Assert.Equal(HostState.Running, host.State);
 
-            Assert.Equal(HostState.Running, host.State);
+        var registry = (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
 
-            var registry = (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
+        await registry.InvokeAsync(AuditSampleModule.RecordSampleAuditActionCommandId, CancellationToken.None);
+        var result = await registry.InvokeAsync(AuditSampleModule.QuerySampleAuditRecordsCommandId, CancellationToken.None);
 
-            await registry.InvokeAsync(AuditSampleModule.RecordSampleAuditActionCommandId, CancellationToken.None);
-            var result = await registry.InvokeAsync(AuditSampleModule.QuerySampleAuditRecordsCommandId, CancellationToken.None);
+        Assert.True(result.Succeeded);
+        Assert.Contains("Found", result.Message);
 
-            Assert.True(result.Succeeded);
-            Assert.Contains("Found", result.Message);
-
-            await host.StopAsync();
-            await runTask;
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-        }
+        await host.StopAsync();
+        await runTask;
 
         Assert.Equal(HostState.Stopped, host.State);
     }

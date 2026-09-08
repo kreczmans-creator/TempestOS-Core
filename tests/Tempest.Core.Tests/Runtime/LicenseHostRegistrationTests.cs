@@ -14,33 +14,21 @@ namespace Tempest.Core.Tests.Runtime;
 // (Unlicensed default); a malformed or expired one is Host-fatal,
 // mirroring RunAsync_ConfigurationFailure_IsHostFatal_TransitionsToFaulted's
 // own established pattern for a different pre-container failure.
-[Collection("Console output capture")]
 public class LicenseHostRegistrationTests
 {
     private static async Task RunAgainstRunningHostAsync(string? licenseFilePath, Func<ITempestHost, Task> body)
     {
-        var host = new TempestHostBuilder(Type.EmptyTypes, pluginsRootPathOverride: null, hostedServiceCandidateTypesOverride: Type.EmptyTypes, licenseFilePathOverride: licenseFilePath)
-            .WithIsolatedPersistenceRoot().Build();
-        var originalOut = Console.Out;
+        var host = new TempestHostBuilder(Type.EmptyTypes, pluginsRootPathOverride: null, hostedServiceCandidateTypesOverride: Type.EmptyTypes, licenseFilePathOverride: licenseFilePath).WithIsolatedPersistenceRoot()
+            .Build();
 
-        try
-        {
-            Console.SetOut(new StringWriter());
+        var runTask = host.RunAsync();
 
-            var runTask = host.RunAsync();
+        await RunningHostFixture.WaitUntilRunningAsync(host);
 
-            while (host.State is HostState.Created or HostState.Starting)
-                await Task.Delay(5);
+        await body(host);
 
-            await body(host);
-
-            await host.StopAsync();
-            await runTask;
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-        }
+        await host.StopAsync();
+        await runTask;
     }
 
     // ------------------------------------------------------------------
@@ -128,25 +116,12 @@ public class LicenseHostRegistrationTests
         var path = Path.Combine(directory.Path, "license.json");
         File.WriteAllText(path, "not valid json {{{");
 
-        var host = new TempestHostBuilder(Type.EmptyTypes, pluginsRootPathOverride: null, hostedServiceCandidateTypesOverride: Type.EmptyTypes, licenseFilePathOverride: path)
-            .WithIsolatedPersistenceRoot().Build();
-        var originalOut = Console.Out;
-        var originalError = Console.Error;
+        var host = new TempestHostBuilder(Type.EmptyTypes, pluginsRootPathOverride: null, hostedServiceCandidateTypesOverride: Type.EmptyTypes, licenseFilePathOverride: path).WithIsolatedPersistenceRoot()
+            .Build();
 
-        try
-        {
-            Console.SetOut(new StringWriter());
-            Console.SetError(new StringWriter());
+        await Assert.ThrowsAsync<LicenseValidationException>(() => host.RunAsync());
 
-            await Assert.ThrowsAsync<LicenseValidationException>(() => host.RunAsync());
-
-            Assert.Equal(HostState.Faulted, host.State);
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-            Console.SetError(originalError);
-        }
+        Assert.Equal(HostState.Faulted, host.State);
     }
 
     [Fact]
@@ -157,26 +132,13 @@ public class LicenseHostRegistrationTests
         var pastExpiry = DateTimeOffset.UtcNow.AddDays(-1).ToString("O");
         File.WriteAllText(path, $$"""{"LicenseeName":"Acme Corp","ExpiresAt":"{{pastExpiry}}"}""");
 
-        var host = new TempestHostBuilder(Type.EmptyTypes, pluginsRootPathOverride: null, hostedServiceCandidateTypesOverride: Type.EmptyTypes, licenseFilePathOverride: path)
-            .WithIsolatedPersistenceRoot().Build();
-        var originalOut = Console.Out;
-        var originalError = Console.Error;
+        var host = new TempestHostBuilder(Type.EmptyTypes, pluginsRootPathOverride: null, hostedServiceCandidateTypesOverride: Type.EmptyTypes, licenseFilePathOverride: path).WithIsolatedPersistenceRoot()
+            .Build();
 
-        try
-        {
-            Console.SetOut(new StringWriter());
-            Console.SetError(new StringWriter());
+        var exception = await Assert.ThrowsAsync<LicenseValidationException>(() => host.RunAsync());
 
-            var exception = await Assert.ThrowsAsync<LicenseValidationException>(() => host.RunAsync());
-
-            Assert.Contains("expired", exception.FailureReason, StringComparison.OrdinalIgnoreCase);
-            Assert.Equal(HostState.Faulted, host.State);
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-            Console.SetError(originalError);
-        }
+        Assert.Contains("expired", exception.FailureReason, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(HostState.Faulted, host.State);
     }
 
     [Fact]
@@ -186,24 +148,11 @@ public class LicenseHostRegistrationTests
         var path = Path.Combine(directory.Path, "license.json");
         File.WriteAllText(path, """{"EnabledCapabilities":["feature.a"]}""");
 
-        var host = new TempestHostBuilder(Type.EmptyTypes, pluginsRootPathOverride: null, hostedServiceCandidateTypesOverride: Type.EmptyTypes, licenseFilePathOverride: path)
-            .WithIsolatedPersistenceRoot().Build();
-        var originalOut = Console.Out;
-        var originalError = Console.Error;
+        var host = new TempestHostBuilder(Type.EmptyTypes, pluginsRootPathOverride: null, hostedServiceCandidateTypesOverride: Type.EmptyTypes, licenseFilePathOverride: path).WithIsolatedPersistenceRoot()
+            .Build();
 
-        try
-        {
-            Console.SetOut(new StringWriter());
-            Console.SetError(new StringWriter());
+        await Assert.ThrowsAsync<LicenseValidationException>(() => host.RunAsync());
 
-            await Assert.ThrowsAsync<LicenseValidationException>(() => host.RunAsync());
-
-            Assert.Equal(HostState.Faulted, host.State);
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-            Console.SetError(originalError);
-        }
+        Assert.Equal(HostState.Faulted, host.State);
     }
 }

@@ -14,7 +14,6 @@ namespace Tempest.Core.Tests.Runtime;
 // IPersistenceStore and IEngineeringDocumentStore instances every other
 // discipline resolves rather than a second, independent pair. Mirrors
 // MaterialsHostRegistrationTests exactly.
-[Collection("Console output capture")]
 public class BearingsHostRegistrationTests
 {
     private static async Task RunAgainstRunningHostAsync(string rootPath, Func<ITempestHost, Task> body)
@@ -25,26 +24,15 @@ public class BearingsHostRegistrationTests
                 new KeyValuePair<string, string>(PersistenceStore.RootPathConfigurationKey, rootPath),
             ]))
             .Build();
-        var originalOut = Console.Out;
 
-        try
-        {
-            Console.SetOut(new StringWriter());
+        var runTask = host.RunAsync();
 
-            var runTask = host.RunAsync();
+        await RunningHostFixture.WaitUntilRunningAsync(host);
 
-            while (host.State is HostState.Created or HostState.Starting)
-                await Task.Delay(5);
+        await body(host);
 
-            await body(host);
-
-            await host.StopAsync();
-            await runTask;
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-        }
+        await host.StopAsync();
+        await runTask;
     }
 
     [Fact]

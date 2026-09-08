@@ -10,7 +10,7 @@ namespace Tempest.Core.Tests.Runtime;
 // Manifest Convention": Runtime:Plugins:RootDirectory/ManifestFileName/
 // Disabled, resolved by TempestHost itself from configuration, end-to-end
 // through the real Host via ITempestHostBuilder.AddConfigurationSource.
-[Collection("Console output capture")]
+[Collection("Dynamic plugin assembly emission")]
 public class TempestHostPluginConfigurationTests
 {
     [Fact]
@@ -39,8 +39,7 @@ public class TempestHostPluginConfigurationTests
         await using var host = builder.Build();
         var runTask = host.RunAsync();
 
-        while (host.State is HostState.Created or HostState.Starting)
-            await Task.Delay(5);
+        await RunningHostFixture.WaitUntilRunningAsync(host);
 
         Assert.Equal(HostState.Running, host.State);
 
@@ -87,8 +86,7 @@ public class TempestHostPluginConfigurationTests
         await using var host = builder.Build();
         var runTask = host.RunAsync();
 
-        while (host.State is HostState.Created or HostState.Starting)
-            await Task.Delay(5);
+        await RunningHostFixture.WaitUntilRunningAsync(host);
 
         Assert.Equal(HostState.Running, host.State);
 
@@ -135,8 +133,7 @@ public class TempestHostPluginConfigurationTests
         await using var host = builder.Build();
         var runTask = host.RunAsync();
 
-        while (host.State is HostState.Created or HostState.Starting)
-            await Task.Delay(5);
+        await RunningHostFixture.WaitUntilRunningAsync(host);
 
         Assert.Equal(HostState.Running, host.State);
 
@@ -182,8 +179,7 @@ public class TempestHostPluginConfigurationTests
         await using var host = builder.Build();
         var runTask = host.RunAsync();
 
-        while (host.State is HostState.Created or HostState.Starting)
-            await Task.Delay(5);
+        await RunningHostFixture.WaitUntilRunningAsync(host);
 
         Assert.Equal(HostState.Running, host.State);
 
@@ -230,8 +226,7 @@ public class TempestHostPluginConfigurationTests
         await using var host = builder.Build();
         var runTask = host.RunAsync();
 
-        while (host.State is HostState.Created or HostState.Starting)
-            await Task.Delay(5);
+        await RunningHostFixture.WaitUntilRunningAsync(host);
 
         // The defect this regresses: the Host used to reach Faulted here,
         // not Running - a blank plugin-configuration value must never take
@@ -270,8 +265,7 @@ public class TempestHostPluginConfigurationTests
         await using var host = builder.Build();
         var runTask = host.RunAsync();
 
-        while (host.State is HostState.Created or HostState.Starting)
-            await Task.Delay(5);
+        await RunningHostFixture.WaitUntilRunningAsync(host);
 
         Assert.Equal(HostState.Running, host.State);
 

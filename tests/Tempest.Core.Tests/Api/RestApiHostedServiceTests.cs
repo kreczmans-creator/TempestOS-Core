@@ -17,7 +17,6 @@ namespace Tempest.Core.Tests.Api;
 // that would be indistinguishable from any other hosted service's own
 // isolated failure (ADR-0021) - see ApiSampleModuleIntegrationTests for
 // the full, real-Host, real-HTTP proof through TempestHost itself.
-[Collection("Console output capture")]
 public class RestApiHostedServiceTests
 {
     private static RestApiHostedService BuildService(IConfigurationProvider configuration, IPermissionEvaluator? permissionEvaluator = null) =>

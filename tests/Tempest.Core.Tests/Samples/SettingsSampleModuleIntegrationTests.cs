@@ -11,6 +11,7 @@ using Tempest.Core.Settings;
 using Tempest.Core.Tests.Plugins;
 using Tempest.Samples;
 
+using Tempest.Core.Tests.Runtime;
 namespace Tempest.Core.Tests.Samples;
 
 // Proves WP 6.4 end-to-end: SettingsSampleModule constructor-injects the
@@ -22,7 +23,6 @@ namespace Tempest.Core.Tests.Samples;
 // Permissions. Nothing here is a mock or a test double standing in for a
 // real platform service, except a level-recording ILogger used only to
 // observe log output.
-[Collection("Console output capture")]
 public class SettingsSampleModuleIntegrationTests
 {
     private static (RuntimeModuleManager RuntimeManager, TempestServiceProvider ServiceProvider) BuildPipeline(
@@ -215,36 +215,24 @@ public class SettingsSampleModuleIntegrationTests
                 new KeyValuePair<string, string>(PersistenceStore.RootPathConfigurationKey, temp.Path),
             ]))
             .Build();
-        var originalOut = Console.Out;
-        var writer = new StringWriter();
 
-        try
-        {
-            Console.SetOut(writer);
+        var runTask = host.RunAsync();
 
-            var runTask = host.RunAsync();
+        await RunningHostFixture.WaitUntilRunningAsync(host);
 
-            while (host.State is HostState.Created or HostState.Starting)
-                await Task.Delay(5);
+        Assert.Equal(HostState.Running, host.State);
 
-            Assert.Equal(HostState.Running, host.State);
+        var registry = (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
+        var dispatcher = (ICommandDispatcher)host.Services!.GetService(typeof(ICommandDispatcher));
 
-            var registry = (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
-            var dispatcher = (ICommandDispatcher)host.Services!.GetService(typeof(ICommandDispatcher));
+        await dispatcher.DispatchAsync(new SetSampleSettingCommand("via-real-host"), CancellationToken.None);
+        var result = await registry.InvokeAsync(SettingsSampleModule.GetSampleSettingCommandId, CancellationToken.None);
 
-            await dispatcher.DispatchAsync(new SetSampleSettingCommand("via-real-host"), CancellationToken.None);
-            var result = await registry.InvokeAsync(SettingsSampleModule.GetSampleSettingCommandId, CancellationToken.None);
+        Assert.True(result.Succeeded);
+        Assert.Equal("via-real-host", result.Message);
 
-            Assert.True(result.Succeeded);
-            Assert.Equal("via-real-host", result.Message);
-
-            await host.StopAsync();
-            await runTask;
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-        }
+        await host.StopAsync();
+        await runTask;
 
         Assert.Equal(HostState.Stopped, host.State);
     }

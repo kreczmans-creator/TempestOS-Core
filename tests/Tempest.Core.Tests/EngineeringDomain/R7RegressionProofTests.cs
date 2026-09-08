@@ -9,21 +9,25 @@ using Tempest.Core.Tests.Projects;
 namespace Tempest.Core.Tests.EngineeringDomain;
 
 /// <summary>
-/// <b>`WP 16.4B-R7`, Agent C — executable regression proof for `TD-143`,
-/// per mutator and per clause of the invariant.</b>
+/// Executable regression proof for `TD-143`'s undo-on-failure invariant,
+/// per mutator and per clause.
 /// </summary>
 /// <remarks>
 /// <para>
-/// The invariant Agent A states, and which every fact in §1 checks in full:
-/// <em>if a mutator reports failure because its durable write did not
-/// complete, it leaves no durable state, no in-memory state and no audit
-/// evidence representing the operation as having happened — including on
-/// this object's next successful write.</em>
+/// The invariant, which every fact in §1 checks in full: <em>if a mutator
+/// reports failure because its durable write did not complete, it leaves
+/// no durable state, no in-memory state and no audit evidence representing
+/// the operation as having happened — including on this object's next
+/// successful write.</em>
 /// </para>
 /// <para>
 /// <b>EVERY FACT IN THIS FILE HAS A MEASURED EVIDENTIARY STATUS, STATED IN
 /// ITS OWN REMARKS</b>, from a 47-mutant campaign run in a throwaway
-/// worktree against the whole `Tempest.Core.Tests` suite:
+/// worktree against the whole `Tempest.Core.Tests` suite. That campaign
+/// was a hand-run exercise — mutants introduced and killed by hand, not
+/// produced or scored by a mutation-testing tool — so its "killed by"
+/// claims below should be read as hand-mutation-checked (not
+/// tool-produced), not as output from an automated run:
 /// </para>
 /// <list type="bullet">
 /// <item><description><b>(a) behavioural regression proof</b> — it fails

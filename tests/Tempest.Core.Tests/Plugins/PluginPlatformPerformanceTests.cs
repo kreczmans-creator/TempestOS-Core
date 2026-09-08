@@ -10,6 +10,7 @@ using Tempest.Core.Runtime;
 using Tempest.Core.Versioning;
 using Xunit.Abstractions;
 
+using Tempest.Core.Tests.Runtime;
 namespace Tempest.Core.Tests.Plugins;
 
 // WP 13.3A (Performance & Scalability sub-agent): stress/scale tests for the
@@ -24,11 +25,11 @@ namespace Tempest.Core.Tests.Plugins;
 // the assertion exists to catch a genuine regression (e.g. an accidental
 // change from O(n) to O(n^2)), not to pin down an exact millisecond figure.
 //
-// [Collection("Console output capture")] mirrors every other TempestHost
+// [Collection("Dynamic plugin assembly emission")] mirrors every other TempestHost
 // integration test in this suite: it serialises this class's tests against
 // the rest of that collection so wall-clock measurements are not skewed by
 // unrelated tests contending for the same CPU cores at the same time.
-[Collection("Console output capture")]
+[Collection("Dynamic plugin assembly emission")]
 public class PluginPlatformPerformanceTests
 {
     private static readonly IPlatformVersionProvider DefaultVersionProvider =
@@ -561,8 +562,7 @@ public class PluginPlatformPerformanceTests
         var stopwatch = Stopwatch.StartNew();
         var runTask = host.RunAsync();
 
-        while (host.State is HostState.Created or HostState.Starting)
-            await Task.Delay(5);
+        await RunningHostFixture.WaitUntilRunningAsync(host);
 
         stopwatch.Stop();
 

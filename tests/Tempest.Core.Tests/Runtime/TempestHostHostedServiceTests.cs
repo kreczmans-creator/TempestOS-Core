@@ -1,5 +1,6 @@
 using Tempest.Core.Runtime;
 using Tempest.Core.Tests.BackgroundServices;
+using Tempest.Core.Tests.Logging;
 
 namespace Tempest.Core.Tests.Runtime;
 
@@ -13,49 +14,36 @@ namespace Tempest.Core.Tests.Runtime;
 // "sequential within a class" behaviour already makes it safe. Sharing it
 // here too, across two separate test classes that xUnit may run
 // concurrently by default, would reintroduce exactly the cross-test-class
-// static-state race already found and fixed once for SdkLifecycleLog and
-// once for Console.Out redirection - captured console output, already
-// serialised via the shared "Console output capture" collection, is used
-// instead.
-[Collection("Console output capture")]
+// static-state race already found and fixed once for SdkLifecycleLog - each
+// test attaches its own private RecordingLogSink (WP 17.0C) rather than
+// redirecting the process-global Console.Out, so no cross-class collection
+// is needed at all.
 public class TempestHostHostedServiceTests
 {
     private static ITempestHostBuilder BuilderWithHostedServices(params Type[] hostedServiceTypes) =>
-        new TempestHostBuilder(
-                discoveryCandidateTypesOverride: Type.EmptyTypes,
-                pluginsRootPathOverride: null,
-                hostedServiceCandidateTypesOverride: hostedServiceTypes)
+        new TempestHostBuilder(discoveryCandidateTypesOverride: Type.EmptyTypes,
+            pluginsRootPathOverride: null,
+            hostedServiceCandidateTypesOverride: hostedServiceTypes)
             .WithIsolatedPersistenceRoot();
 
-    private static async Task<string> RunAndCaptureConsoleAsync(ITempestHost host, Func<Task> duringRun)
+    private static async Task<string> RunAndCollectLogMessagesAsync(RecordingLogSink sink, Func<Task> duringRun)
     {
-        var originalOut = Console.Out;
-        var writer = new StringWriter();
+        await duringRun();
 
-        try
-        {
-            Console.SetOut(writer);
-            await duringRun();
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-        }
-
-        return writer.ToString();
+        return string.Join(Environment.NewLine, sink.Entries.Select(entry => entry.Message));
     }
 
     [Fact]
     public async Task RunAsync_WithHostedService_ReachesRunningThenStopsGracefully()
     {
-        var host = BuilderWithHostedServices(typeof(AlphaHostedService)).Build();
+        var sink = new RecordingLogSink();
+        var host = BuilderWithHostedServices(typeof(AlphaHostedService)).AddLogSink(sink).Build();
 
-        var output = await RunAndCaptureConsoleAsync(host, async () =>
+        var output = await RunAndCollectLogMessagesAsync(sink, async () =>
         {
             var runTask = host.RunAsync();
 
-            while (host.State is HostState.Created or HostState.Starting)
-                await Task.Delay(5);
+            await RunningHostFixture.WaitUntilRunningAsync(host);
 
             Assert.Equal(HostState.Running, host.State);
 
@@ -71,9 +59,10 @@ public class TempestHostHostedServiceTests
     [Fact]
     public async Task RunAsync_LogsHostedServicesStartedAndStoppedPhases()
     {
-        var host = BuilderWithHostedServices(typeof(AlphaHostedService)).Build();
+        var sink = new RecordingLogSink();
+        var host = BuilderWithHostedServices(typeof(AlphaHostedService)).AddLogSink(sink).Build();
 
-        var output = await RunAndCaptureConsoleAsync(host, async () =>
+        var output = await RunAndCollectLogMessagesAsync(sink, async () =>
         {
             var runTask = host.RunAsync();
             await host.StopAsync();
@@ -87,13 +76,15 @@ public class TempestHostHostedServiceTests
     [Fact]
     public async Task RunAsync_HostedServiceStartsAfterModuleInitialisation_StopsBeforeModuleDisposal()
     {
+        var sink = new RecordingLogSink();
         var host = new TempestHostBuilder(
                 discoveryCandidateTypesOverride: [typeof(HealthyHostTestModuleAlpha)],
                 pluginsRootPathOverride: null,
                 hostedServiceCandidateTypesOverride: [typeof(AlphaHostedService)])
-            .WithIsolatedPersistenceRoot().Build();
+            .AddLogSink(sink).WithIsolatedPersistenceRoot()
+            .Build();
 
-        var output = await RunAndCaptureConsoleAsync(host, async () =>
+        var output = await RunAndCollectLogMessagesAsync(sink, async () =>
         {
             var runTask = host.RunAsync();
             await host.StopAsync();
@@ -118,14 +109,14 @@ public class TempestHostHostedServiceTests
     [Fact]
     public async Task RunAsync_MultipleHostedServices_StartInDeterministicOrder_AllReachRunning()
     {
-        var host = BuilderWithHostedServices(typeof(GammaHostedService), typeof(AlphaHostedService), typeof(BetaHostedService)).Build();
+        var sink = new RecordingLogSink();
+        var host = BuilderWithHostedServices(typeof(GammaHostedService), typeof(AlphaHostedService), typeof(BetaHostedService)).AddLogSink(sink).Build();
 
-        var output = await RunAndCaptureConsoleAsync(host, async () =>
+        var output = await RunAndCollectLogMessagesAsync(sink, async () =>
         {
             var runTask = host.RunAsync();
 
-            while (host.State is HostState.Created or HostState.Starting)
-                await Task.Delay(5);
+            await RunningHostFixture.WaitUntilRunningAsync(host);
 
             Assert.Equal(HostState.Running, host.State);
 
@@ -146,14 +137,14 @@ public class TempestHostHostedServiceTests
     [Fact]
     public async Task RunAsync_IsolatedHostedServiceFailure_HostStillReachesRunning()
     {
-        var host = BuilderWithHostedServices(typeof(IsolatedThrowingHostedService), typeof(GammaHostedService)).Build();
+        var sink = new RecordingLogSink();
+        var host = BuilderWithHostedServices(typeof(IsolatedThrowingHostedService), typeof(GammaHostedService)).AddLogSink(sink).Build();
 
-        var output = await RunAndCaptureConsoleAsync(host, async () =>
+        var output = await RunAndCollectLogMessagesAsync(sink, async () =>
         {
             var runTask = host.RunAsync();
 
-            while (host.State is HostState.Created or HostState.Starting)
-                await Task.Delay(5);
+            await RunningHostFixture.WaitUntilRunningAsync(host);
 
             Assert.Equal(HostState.Running, host.State);
 
@@ -196,8 +187,7 @@ public class TempestHostHostedServiceTests
 
         var runTask = host.RunAsync();
 
-        while (host.State is HostState.Created or HostState.Starting)
-            await Task.Delay(5);
+        await RunningHostFixture.WaitUntilRunningAsync(host);
 
         Assert.Equal(HostState.Running, host.State);
 
@@ -218,14 +208,14 @@ public class TempestHostHostedServiceTests
         // proven with a fresh TempestHostBuilder/TempestHost pair each time.
         for (var i = 0; i < 2; i++)
         {
-            var host = BuilderWithHostedServices(typeof(AlphaHostedService)).Build();
+            var sink = new RecordingLogSink();
+            var host = BuilderWithHostedServices(typeof(AlphaHostedService)).AddLogSink(sink).Build();
 
-            var output = await RunAndCaptureConsoleAsync(host, async () =>
+            var output = await RunAndCollectLogMessagesAsync(sink, async () =>
             {
                 var runTask = host.RunAsync();
 
-                while (host.State is HostState.Created or HostState.Starting)
-                    await Task.Delay(5);
+                await RunningHostFixture.WaitUntilRunningAsync(host);
 
                 Assert.Equal(HostState.Running, host.State);
 
@@ -246,8 +236,7 @@ public class TempestHostHostedServiceTests
 
         var runTask = host.RunAsync();
 
-        while (host.State is HostState.Created or HostState.Starting)
-            await Task.Delay(5);
+        await RunningHostFixture.WaitUntilRunningAsync(host);
 
         Assert.Equal(HostState.Running, host.State);
 

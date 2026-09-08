@@ -12,6 +12,7 @@ using Tempest.Core.Runtime;
 using Tempest.Core.Tests.Plugins;
 using Tempest.Samples;
 
+using Tempest.Core.Tests.Runtime;
 namespace Tempest.Core.Tests.Samples;
 
 // Proves WP 7.1A end-to-end: EngineeringDataSampleModule constructor-
@@ -20,7 +21,6 @@ namespace Tempest.Core.Tests.Samples;
 // during its own initialisation, and demonstrates both the create and
 // revise command paths - driven entirely by the real, unmodified module
 // pipeline, mirroring AuditSampleModuleIntegrationTests.
-[Collection("Console output capture")]
 public class EngineeringDataSampleModuleIntegrationTests
 {
     private static (RuntimeModuleManager RuntimeManager, TempestServiceProvider ServiceProvider) BuildPipeline(
@@ -201,33 +201,21 @@ public class EngineeringDataSampleModuleIntegrationTests
                 new KeyValuePair<string, string>(PersistenceStore.RootPathConfigurationKey, temp.Path),
             ]))
             .Build();
-        var originalOut = Console.Out;
-        var writer = new StringWriter();
 
-        try
-        {
-            Console.SetOut(writer);
+        var runTask = host.RunAsync();
 
-            var runTask = host.RunAsync();
+        await RunningHostFixture.WaitUntilRunningAsync(host);
 
-            while (host.State is HostState.Created or HostState.Starting)
-                await Task.Delay(5);
+        Assert.Equal(HostState.Running, host.State);
 
-            Assert.Equal(HostState.Running, host.State);
+        var registry = (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
 
-            var registry = (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
+        var result = await registry.InvokeAsync(EngineeringDataSampleModule.CreateSampleDocumentCommandId, CancellationToken.None);
 
-            var result = await registry.InvokeAsync(EngineeringDataSampleModule.CreateSampleDocumentCommandId, CancellationToken.None);
+        Assert.True(result.Succeeded);
 
-            Assert.True(result.Succeeded);
-
-            await host.StopAsync();
-            await runTask;
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-        }
+        await host.StopAsync();
+        await runTask;
 
         Assert.Equal(HostState.Stopped, host.State);
     }

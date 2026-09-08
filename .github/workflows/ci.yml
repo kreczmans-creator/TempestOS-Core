@@ -34,6 +34,15 @@ on:
   push:
   pull_request:
   workflow_dispatch: {}
+  # WP 17.0C: the mutation job below (Stryker.NET) is deliberately scoped
+  # to this schedule and to workflow_dispatch only, not to push/pull_request
+  # - a mutation-testing run over even the narrow
+  # src/Tempest.Core/Calculations + UnitsAndQuantities scope takes
+  # substantially longer than the rest of this pipeline and is diagnostic,
+  # not a merge gate. Monday 06:00 UTC — ahead of the working week, clear
+  # of any push traffic.
+  schedule:
+    - cron: "0 6 * * 1"
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
@@ -119,6 +128,11 @@ jobs:
       # below the 30-minute job timeout, so a genuine hang is caught and
       # named — with a hang dump collected — long before the job itself
       # would otherwise be killed with no diagnostic at all.
+      # --collect:"XPlat Code Coverage" (WP 17.0C): coverlet.collector is
+      # already referenced by both test projects: this only switches the
+      # collector on. Writes one coverage.cobertura.xml per test project
+      # under TestResults/<configuration>/<guid>/ - read back, purely
+      # diagnostically, by the summary step below.
       - name: Test (${{ matrix.configuration }})
         shell: pwsh
         run: |
@@ -128,6 +142,7 @@ jobs:
             --logger trx `
             --logger "console;verbosity=normal" `
             --results-directory "TestResults/${{ matrix.configuration }}" `
+            --collect:"XPlat Code Coverage" `
             --blame-hang `
             --blame-hang-timeout 5m
           if ($LASTEXITCODE -ne 0) {
@@ -182,8 +197,14 @@ jobs:
 
           $trxFiles = Get-ChildItem -Path "TestResults/$config" -Filter "*.trx" -ErrorAction SilentlyContinue
           if ($trxFiles) {
-            $lines.Add("| Test result file | Total | Passed | Failed |")
-            $lines.Add("|---|---|---|---|")
+            # Duration is read from each .trx's own <Times start= finish=>
+            # (WP 17.0C) - the real wall-clock time that assembly's own
+            # `dotnet test` invocation took, not a per-test sum. Purely
+            # diagnostic, alongside the pass/fail counts already here:
+            # never a gate, and parse failures are swallowed per-file so
+            # one malformed .trx cannot blank the whole table.
+            $lines.Add("| Test result file | Total | Passed | Failed | Duration |")
+            $lines.Add("|---|---|---|---|---|")
             foreach ($file in $trxFiles) {
               # `-LiteralPath`: when two assemblies' .trx names collide the
               # runner de-duplicates by appending `[1]`, and `-Path` would
@@ -191,12 +212,51 @@ jobs:
               # file that exists (run 33659184434).
               [xml]$trx = Get-Content -LiteralPath $file.FullName
               $counters = $trx.TestRun.ResultSummary.Counters
-              $lines.Add("| $($file.Name) | $($counters.total) | $($counters.passed) | $($counters.failed) |")
+
+              $duration = "n/a"
+              try {
+                $times = $trx.TestRun.Times
+                if ($times -and $times.start -and $times.finish) {
+                  $span = [DateTimeOffset]::Parse($times.finish) - [DateTimeOffset]::Parse($times.start)
+                  $duration = $span.ToString("hh\:mm\:ss")
+                }
+              } catch {
+                # Diagnostic only - an unparsable Times element leaves
+                # duration as "n/a" rather than failing this step.
+              }
+
+              $lines.Add("| $($file.Name) | $($counters.total) | $($counters.passed) | $($counters.failed) | $duration |")
               $failedResults += $trx.TestRun.Results.UnitTestResult |
                 Where-Object { $_.outcome -eq "Failed" }
             }
           } else {
             $lines.Add("_No test results found - the test step did not complete._")
+          }
+
+          # Line coverage (WP 17.0C): one coverage.cobertura.xml per test
+          # project, written by --collect:"XPlat Code Coverage" under
+          # TestResults/$config/<guid>/. Diagnostic only, exactly like the
+          # pass/fail counts above - never a gate, and a missing or
+          # unparsable file is reported as such rather than failing this
+          # step.
+          $lines.Add("")
+          $coverageFiles = Get-ChildItem -Path "TestResults/$config" -Filter "coverage.cobertura.xml" -Recurse -ErrorAction SilentlyContinue
+          if ($coverageFiles) {
+            $lines.Add("| Coverage report | Line coverage |")
+            $lines.Add("|---|---|")
+            foreach ($file in $coverageFiles) {
+              $label = $file.Directory.Name
+              try {
+                [xml]$cobertura = Get-Content -LiteralPath $file.FullName
+                $lineRate = [double]$cobertura.coverage."line-rate"
+                $percent = [math]::Round($lineRate * 100, 1)
+                $lines.Add("| $label | $percent% |")
+              } catch {
+                $lines.Add("| $label | _unparsable coverage.cobertura.xml_ |")
+              }
+            }
+          } else {
+            $lines.Add("_No coverage.cobertura.xml found - the coverage collector did not produce output._")
           }
 
           if ($failedResults.Count -gt 0) {
@@ -417,6 +477,62 @@ jobs:
           fi
           echo "::error::Tempest.Desktop exited on its own (code $code) - see launch.log above."
           exit 1
+
+  # WP 17.0C — Mutation testing (Stryker.NET), scoped to
+  # src/Tempest.Core/Calculations/** and src/Tempest.Core/UnitsAndQuantities/**
+  # (stryker-config.json at the repository root). Deliberately NOT run on
+  # every push or pull request: a mutation-testing pass rebuilds the
+  # solution and re-runs the affected test project once per surviving
+  # mutant, which costs far more wall-clock time than this pipeline's own
+  # build-and-test job for a diagnostic signal, not a merge gate — see the
+  # `if:` below and the `schedule` trigger at the top of this file.
+  # Deliberately NOT in `gate`'s `needs:` list, and this job's own pass/fail
+  # (driven by stryker-config.json's break threshold) is informational
+  # here, same as everywhere else in this pipeline that is advisory rather
+  # than required.
+  mutation:
+    name: Mutation Testing (Stryker.NET)
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
+    runs-on: windows-2022
+    timeout-minutes: 180
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up .NET SDK (from global.json)
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Restore
+        run: dotnet restore "${{ env.SOLUTION_PATH }}"
+
+      - name: Restore dotnet tools (dotnet-stryker)
+        run: dotnet tool restore
+
+      # Reads stryker-config.json at the repository root by Stryker's own
+      # default convention (looks for that exact filename in the current
+      # working directory) - no -f flag needed. Its break threshold (70)
+      # is what makes this step's own exit code meaningful; it is not
+      # wired into `gate` regardless.
+      - name: Run Stryker.NET
+        run: dotnet stryker
+
+      # Diagnostic output, same reasoning and same continue-on-error as
+      # every other artefact upload in this workflow - the mutation run
+      # itself (the step above) is what actually reports pass/fail;
+      # losing the HTML/JSON report to an artefact-storage hiccup must
+      # never turn a real mutation-score result into a workflow failure
+      # nobody can diagnose.
+      - name: Upload mutation report
+        if: always()
+        uses: actions/upload-artifact@v4
+        continue-on-error: true
+        with:
+          name: stryker-mutation-report
+          path: StrykerOutput/**
+          if-no-files-found: warn
+          retention-days: 30
 
   # A single, named job every branch-protection rule can require, so
   # "the pipeline is green" has one unambiguous status check rather than

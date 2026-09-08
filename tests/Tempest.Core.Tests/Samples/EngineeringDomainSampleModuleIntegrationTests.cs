@@ -13,6 +13,7 @@ using Tempest.Core.Runtime;
 using Tempest.Core.Tests.Plugins;
 using Tempest.Samples;
 
+using Tempest.Core.Tests.Runtime;
 namespace Tempest.Core.Tests.Samples;
 
 // Proves WP 8.2C end-to-end: EngineeringDomainSampleModule constructor-injects
@@ -21,7 +22,6 @@ namespace Tempest.Core.Tests.Samples;
 // twelve-object, nine-family representative graph during initialisation -
 // driven entirely by the real, unmodified module pipeline, mirroring
 // RequirementsSampleModuleIntegrationTests' own structure.
-[Collection("Console output capture")]
 public class EngineeringDomainSampleModuleIntegrationTests
 {
     private static (RuntimeModuleManager RuntimeManager, TempestServiceProvider ServiceProvider) BuildPipeline(
@@ -237,32 +237,20 @@ public class EngineeringDomainSampleModuleIntegrationTests
                 new KeyValuePair<string, string>(PersistenceStore.RootPathConfigurationKey, temp.Path),
             ]))
             .Build();
-        var originalOut = Console.Out;
-        var writer = new StringWriter();
 
-        try
-        {
-            Console.SetOut(writer);
+        var runTask = host.RunAsync();
 
-            var runTask = host.RunAsync();
+        await RunningHostFixture.WaitUntilRunningAsync(host);
 
-            while (host.State is HostState.Created or HostState.Starting)
-                await Task.Delay(5);
+        Assert.Equal(HostState.Running, host.State);
 
-            Assert.Equal(HostState.Running, host.State);
+        var registry = (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
+        var result = await registry.InvokeAsync(EngineeringDomainSampleModule.GetGraphSummaryCommandId, CancellationToken.None);
 
-            var registry = (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
-            var result = await registry.InvokeAsync(EngineeringDomainSampleModule.GetGraphSummaryCommandId, CancellationToken.None);
+        Assert.True(result.Succeeded);
 
-            Assert.True(result.Succeeded);
-
-            await host.StopAsync();
-            await runTask;
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-        }
+        await host.StopAsync();
+        await runTask;
 
         Assert.Equal(HostState.Stopped, host.State);
     }

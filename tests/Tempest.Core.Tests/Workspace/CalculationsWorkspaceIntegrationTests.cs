@@ -27,7 +27,6 @@ namespace Tempest.Core.Tests.Workspace;
 /// — mirroring <c>RequirementsWorkspaceIntegrationTests</c>'s own identical
 /// shape.
 /// </summary>
-[Collection("Console output capture")]
 public class CalculationsWorkspaceIntegrationTests
 {
     private static async Task<(IWorkspace Workspace, WorkspaceManager Manager, ITempestHost Host)> StartAsync(string rootPath)
@@ -47,17 +46,8 @@ public class CalculationsWorkspaceIntegrationTests
             .Build();
         var manager = new WorkspaceManager(host);
 
-        var originalOut = Console.Out;
         IWorkspace workspace;
-        try
-        {
-            Console.SetOut(new StringWriter());
-            workspace = await manager.StartAsync();
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-        }
+        workspace = await manager.StartAsync();
 
         // Same disclosed, pre-existing platform timing characteristic
         // RequirementsWorkspaceIntegrationTests's own StartAsync already

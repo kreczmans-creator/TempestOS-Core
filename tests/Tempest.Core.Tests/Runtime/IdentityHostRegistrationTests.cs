@@ -11,32 +11,20 @@ namespace Tempest.Core.Tests.Runtime;
 // sharing one instance between ICurrentPrincipalAccessor and its own
 // concrete type (see CurrentPrincipalAccessor's own remarks for why this
 // matters).
-[Collection("Console output capture")]
 public class IdentityHostRegistrationTests
 {
     private static async Task RunAgainstRunningHostAsync(Func<ITempestHost, Task> body)
     {
         var host = new TempestHostBuilder(Type.EmptyTypes).WithIsolatedPersistenceRoot().Build();
-        var originalOut = Console.Out;
 
-        try
-        {
-            Console.SetOut(new StringWriter());
+        var runTask = host.RunAsync();
 
-            var runTask = host.RunAsync();
+        await RunningHostFixture.WaitUntilRunningAsync(host);
 
-            while (host.State is HostState.Created or HostState.Starting)
-                await Task.Delay(5);
+        await body(host);
 
-            await body(host);
-
-            await host.StopAsync();
-            await runTask;
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-        }
+        await host.StopAsync();
+        await runTask;
     }
 
     [Fact]

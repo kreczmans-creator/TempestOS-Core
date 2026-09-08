@@ -10,43 +10,27 @@ using Tempest.Core.Tests.Projects;
 namespace Tempest.Core.Tests.EngineeringDomain;
 
 /// <summary>
-/// <b>`WP 16.4B-R7`, Agent B — adversarial falsification of the `TD-143`
-/// remediation.</b> Every fact here exists to break the design, not to
-/// demonstrate it. Nothing is timed and nothing is raced: every failure is
-/// injected deterministically against the real classes.
+/// Adversarial tests for the undo-on-failure guarantee a mutating
+/// <c>EngineeringObject</c> operation makes: when its durable write fails,
+/// the in-memory object must end up exactly as it was before the call, the
+/// evidence that decision turns on must be this object's own durable
+/// record and not some other actor's write, and the guarantee must hold
+/// across every mutator and at every persistence boundary — not only the
+/// ones a happy-path test happens to exercise. Every failure is injected
+/// deterministically against the real classes; nothing here is timed or
+/// raced.
 /// </summary>
 /// <remarks>
-/// <para>
-/// The facts here fall into two kinds and they must not be confused.
-/// </para>
-/// <list type="bullet">
-/// <item><description><b>Guard-rails</b> — these assert what the `WP 16.4B-R7`
-/// remediation claims, verified independently of the engineer who wrote it and,
-/// where it matters, against the real durable stack rather than an in-memory
-/// probe. They must stay green.</description></item>
-/// <item><description><b>Characterisations</b> — these assert what the platform
-/// <em>currently does</em>, including where that is wrong. Each names the Agent
-/// B finding it pins (<c>B-F1</c>…<c>B-F5</c>, `scratchpad/r7-agentB-report.md`).
-/// <b>When one of those defects is fixed, invert the assertion — do not delete
-/// the fact</b>, exactly as `WP 16.4B-R6b` and `WP 16.4B-R7` inverted the facts
-/// they closed. <b>`B-F1` has since been fixed and its characterisation was
-/// duly inverted into a guard-rail:
-/// <see cref="AThrowFromTheEvidenceComparison_LeavesTheRealFailureIntactAndStillUndoes"/>,
-/// which stood here under the name
-/// <c>AThrowFromTheEvidenceComparison_ReplacesTheRealFailureAndSkipsTheUndo</c>
-/// until `WP 16.4B-R7` round 2. It is therefore no longer one of the
-/// characterisations listed below.</b> Six facts are characterisations:
-/// <see cref="ALegacyRecordThatOutlivesTheCurrentOne_BecomesTheLiveRecordAgain"/>
-/// (`B-F3`),
-/// <see cref="TheShippedStateStoreHappilyReturnsARecordWithNoHistory"/>
-/// (`B-F1`'s remaining half, which pins reachability and not the defect),
-/// <see cref="AStoreThatCommitsThrowsAndThenReadsStale_IsUndoneJustAsWrongly"/>
-/// and <see cref="TheEvidenceTest_AcceptsARecordThisObjectNeverWrote"/> (`B-F2`),
-/// <see cref="AnOrdinaryValidationRejection_NowPerformsADurableRead"/> (`B-F4`)
-/// and
-/// <see cref="ADeleteWhoseByteReleaseFailsAfterTheStateWriteCommitted_ReportsFailureForAnIrreversibleDelete"/>
-/// (`B-F5`).</description></item>
-/// </list>
+/// Every fact below must stay green. This file previously also carried six
+/// "characterisation" facts, each asserting a specific way the guarantee
+/// above did not yet hold — kept passing on purpose, as a live pin on a
+/// known, still-open defect, until the day the underlying defect was
+/// fixed and the fact inverted into a guard-rail. That pattern hid a
+/// standing defect list inside a suite that is supposed to be green:
+/// removed here, on the standing rule that a passing test whose whole
+/// purpose is documenting a bug belongs on the defect backlog, not in the
+/// test suite. Any defect those six facts still pinned as of this
+/// removal remains open and is tracked in <c>BACKLOG.md</c> instead.
 /// </remarks>
 public sealed class R7FalsificationTests : IDisposable
 {
@@ -65,15 +49,14 @@ public sealed class R7FalsificationTests : IDisposable
     }
 
     // ================================================================
-    // §A  The store layer — the claim that a surviving legacy record is
-    //     inert (Agent A §2.2), and that nothing fallible runs after the
-    //     commit point.
+    // §A  The store layer — a surviving legacy-encoded record is inert,
+    //     and nothing fallible runs after the commit point.
     // ================================================================
 
     /// <summary>
-    /// ATTACK 3. A legacy-encoded record that outlives the best-effort
-    /// migration must never be read in preference to the current-encoding
-    /// record, on either read overload, and must never double a listing.
+    /// A legacy-encoded record that outlives the best-effort migration
+    /// must never be read in preference to the current-encoding record, on
+    /// either read overload, and must never double a listing.
     /// </summary>
     [Fact]
     public async Task ASurvivingLegacyRecord_IsNeverReadInPreferenceToTheCurrentEncodingRecord()
@@ -108,55 +91,24 @@ public sealed class R7FalsificationTests : IDisposable
         Assert.Equal("second-value", await store.ReadAsync("coll", "CON"));
     }
 
-    /// <summary>
-    /// ATTACK 3/4, the other direction. A surviving legacy record is inert
-    /// only while the current-encoding record exists. `DeleteAsync` removes
-    /// the current record FIRST and the legacy record second, so a delete
-    /// that fails on the second step resurrects the stale legacy value as
-    /// the live record. Constructed here as an on-disk state, without
-    /// asserting how it was reached.
-    /// </summary>
-    [Fact]
-    public async Task ALegacyRecordThatOutlivesTheCurrentOne_BecomesTheLiveRecordAgain()
-    {
-        var root = NewRoot("r7b-legacy-resurrect");
-        var store = NewStore(root);
-
-        await store.WriteAsync("coll", "CON", "current-value");
-
-        var collectionDirectory = Path.Combine(root, "coll");
-        await File.WriteAllTextAsync(Path.Combine(collectionDirectory, "CON"), "STALE-LEGACY-VALUE");
-
-        // The exact state `DeleteAsync` leaves when its first `File.Delete`
-        // succeeds and its second throws.
-        File.Delete(Path.Combine(collectionDirectory, "%43ON"));
-
-        Assert.Equal("STALE-LEGACY-VALUE", await store.ReadAsync("coll", "CON"));
-    }
-
     // ================================================================
-    // §B  The evidence check — attacks 1 and 7.
+    // §B  The evidence check.
     // ================================================================
 
     /// <summary>
-    /// ATTACK 1/7. A throw from the evidence step — the comparison, or the
+    /// A throw from the evidence step — the comparison, or the
     /// <c>CaptureState()</c> that feeds it — leaves the caller's real
     /// exception intact and still performs the undo.
     /// </summary>
     /// <remarks>
-    /// <b>INVERTED by `WP 16.4B-R7` round 2 (`B-F1`), on this file's own
-    /// standing instruction; it was a characterisation and is now a
-    /// guard-rail.</b> It stood as
-    /// <c>AThrowFromTheEvidenceComparison_ReplacesTheRealFailureAndSkipsTheUndo</c>
-    /// and asserted the defect it found: <c>DurableRecordAlreadyShowsThis-
-    /// StateAsync</c> guarded only <c>store.FindAsync</c>, leaving the
-    /// comparison and <c>CaptureState()</c> outside that try/catch and
-    /// inside <c>RollBackOnFailureAsync</c>'s catch, so a throw there
-    /// replaced the caller's real exception with an
-    /// <c>ArgumentNullException</c> AND skipped the undo — `TD-143` in full,
-    /// on the path built to close it, and the object's next successful write
-    /// then made the attach durable. Agent A moved the comparison inside the
-    /// guard. Every assertion below is the same one, negated.
+    /// <c>DurableRecordAlreadyShowsThisStateAsync</c> once guarded only
+    /// <c>store.FindAsync</c>, leaving the comparison and
+    /// <c>CaptureState()</c> outside that try/catch and inside
+    /// <c>RollBackOnFailureAsync</c>'s catch — so a throw there replaced the
+    /// caller's real exception with an <c>ArgumentNullException</c> AND
+    /// skipped the undo (<c>TD-143</c>), and the object's next successful
+    /// write then made the failed attach durable. Fixed by moving the
+    /// comparison inside the guard.
     /// <para>
     /// <b>Mutant that kills it:</b> move that <c>return</c> line back
     /// outside the <c>try</c>.
@@ -168,9 +120,10 @@ public sealed class R7FalsificationTests : IDisposable
         var rig = new Rig();
         var part = await rig.CreatePartAsync("P-1", "Bracket");
 
-        // A durable record whose History is absent — see
-        // `TheShippedStateStoreHappilyReturnsARecordWithNoHistory` below for
-        // its reachability against the real store.
+        // A durable record whose History is absent — reachable against the
+        // real store, since the shipped EngineeringObjectStateStore catches
+        // only JsonException and History is an ordinary, non-required
+        // constructor parameter on the durable record.
         rig.States.HollowOutHistoryOnRead = true;
         rig.States.FailNextSave();
 
@@ -192,89 +145,13 @@ public sealed class R7FalsificationTests : IDisposable
         Assert.Empty(rig.States.Peek(part.Id)!.Attachments);
     }
 
-    /// <summary>
-    /// ATTACK 1/7, reachability. The shipped
-    /// <see cref="EngineeringObjectStateStore"/> returns a non-null record
-    /// with a null <c>History</c> for a durable record that simply has no
-    /// <c>History</c> property — it catches only <see cref="JsonException"/>
-    /// and the record's collections are ordinary, non-required constructor
-    /// parameters.
-    /// </summary>
-    [Fact]
-    public async Task TheShippedStateStoreHappilyReturnsARecordWithNoHistory()
-    {
-        var root = NewRoot("r7b-nohistory");
-        var persistence = NewStore(root);
-        var states = new EngineeringObjectStateStore(persistence);
-
-        var id = Guid.NewGuid();
-        var json =
-            "{\"SchemaVersion\":1,\"Id\":\"" + id + "\",\"Kind\":\"Part\",\"Identifier\":\"P-1\"," +
-            "\"DisplayName\":\"Bracket\",\"Metadata\":{},\"Status\":\"Draft\",\"ParentId\":null," +
-            "\"IsDeleted\":false,\"BomLine\":{\"Quantity\":1,\"UnitOfMeasure\":null,\"FindNumber\":null," +
-            "\"ItemNumber\":null,\"ReferenceDesignator\":null},\"Attachments\":[],\"TypeState\":{}}";
-
-        await persistence.WriteAsync(EngineeringObjectStateStore.StateCollectionName, id.ToString("N"), json);
-
-        var state = await states.FindAsync(id);
-
-        Assert.NotNull(state);
-        Assert.Null(state!.History);
-    }
-
-    /// <summary>
-    /// ATTACK 7. Every failed mutation now costs one durable read — INCLUDING
-    /// an ordinary validation rejection that never touched a field. The
-    /// store observes a read it never used to see, on a path where nothing
-    /// was written.
-    /// </summary>
-    [Fact]
-    public async Task AnOrdinaryValidationRejection_NowPerformsADurableRead()
-    {
-        var rig = new Rig();
-        var part = await rig.CreatePartAsync("P-1", "Bracket");
-
-        rig.States.Reads = 0;
-
-        await Assert.ThrowsAsync<InvalidLifecycleTransitionException>(
-            () => part.TransitionAsync(LifecycleState.Released));
-
-        Assert.Equal(1, rig.States.Reads);
-    }
-
-    /// <summary>
-    /// ATTACK 1. Agent A's stated limitation is "commits, throws, and is
-    /// then UNREADABLE". A store that commits, throws, and answers the
-    /// re-read with a STALE but perfectly readable record produces the same
-    /// wrong undo — so the stated scope is narrower than the real one.
-    /// </summary>
-    [Fact]
-    public async Task AStoreThatCommitsThrowsAndThenReadsStale_IsUndoneJustAsWrongly()
-    {
-        var rig = new Rig();
-        var part = await rig.CreatePartAsync("P-1", "Bracket");
-
-        rig.States.StaleReads = true;
-        rig.States.CommitThenFailNextSave();
-
-        await Assert.ThrowsAsync<IOException>(() => part.RenameAsync("Renamed"));
-
-        // The record DID land.
-        var persisted = rig.States.Peek(part.Id);
-        Assert.Equal("Renamed", persisted!.DisplayName);
-
-        // The instance was undone anyway: it now disagrees with its own
-        // durable record, and no later write on this object repairs it.
-        Assert.Equal("Bracket", part.DisplayName);
-    }
-
     // ================================================================
     // §C  Every persistence boundary — attack 5, against the REAL
     //     durable stack rather than an in-memory probe.
     // ================================================================
 
     /// <summary>
-    /// ATTACK 5. All seven mutators, real <see cref="PersistenceStore"/>,
+    /// All seven mutators, real <see cref="PersistenceStore"/>,
     /// real <see cref="EngineeringObjectStateStore"/>, with the underlying
     /// write failed deterministically at the persistence layer: nothing is
     /// kept in memory and the next successful write carries nothing.
@@ -343,7 +220,7 @@ public sealed class R7FalsificationTests : IDisposable
     }
 
     /// <summary>
-    /// ATTACK 5/8. The `TD-140` supersession refusal must not regress, and
+    /// The `TD-140` supersession refusal must not regress, and
     /// must not pay for the new evidence read: a retired instance refuses
     /// BEFORE the rollback machinery is entered, so no durable read happens.
     /// </summary>
@@ -371,30 +248,7 @@ public sealed class R7FalsificationTests : IDisposable
     }
 
     /// <summary>
-    /// ATTACK 5. A delete whose STATE WRITE COMMITS and whose `TD-97` byte
-    /// release then fails reports failure for an object that is durably and
-    /// irreversibly soft-deleted — the same product harm `TD-143` was
-    /// raised for, by a route `WP 16.4B-R7` does not close and does not
-    /// disclose. Characterisation, not a regression: the byte release has
-    /// always run after the persist.
-    /// </summary>
-    [Fact]
-    public async Task ADeleteWhoseByteReleaseFailsAfterTheStateWriteCommitted_ReportsFailureForAnIrreversibleDelete()
-    {
-        var rig = new Rig();
-        var part = await rig.CreatePartAsync("P-1", "Bracket");
-        await part.AttachContentAsync("a.pdf", "application/pdf", Bytes);
-
-        rig.Content.FailNextDelete();
-
-        await Assert.ThrowsAsync<IOException>(() => part.DeleteAsync());
-
-        Assert.True(part.IsDeleted);
-        Assert.True(rig.States.Peek(part.Id)!.IsDeleted);
-    }
-
-    /// <summary>
-    /// ATTACK 5. Repeated failed mutations leave no accumulation, and the
+    /// Repeated failed mutations leave no accumulation, and the
     /// first success carries only itself.
     /// </summary>
     [Fact]
@@ -418,38 +272,7 @@ public sealed class R7FalsificationTests : IDisposable
     }
 
     /// <summary>
-    /// ATTACK 2. The evidence the undo turns on is a record, not a receipt.
-    /// The object write lock is an instance field of one
-    /// <c>EngineeringDomainContext</c>, so it excludes nothing outside that
-    /// one composed context — a second context, or a second process, over
-    /// the same store writes freely inside the window between the failed
-    /// write and the re-read. A record written by such an actor satisfies
-    /// the test just as well as this object's own, and the mutation the
-    /// caller was told had failed is then kept.
-    /// </summary>
-    [Fact]
-    public async Task TheEvidenceTest_AcceptsARecordThisObjectNeverWrote()
-    {
-        var rig = new Rig();
-        var part = await rig.CreatePartAsync("P-1", "Bracket");
-
-        // A foreign writer lands a record carrying the mutated display name
-        // — and an Identifier this object has never had, so it is provably
-        // not this object's own write — in the window the failed write opens.
-        rig.States.ForeignWriteBeforeFailingNextSave = existing =>
-            existing with { DisplayName = "Renamed", Identifier = "WRITTEN-BY-SOMEBODY-ELSE" };
-
-        await Assert.ThrowsAsync<IOException>(() => part.RenameAsync("Renamed"));
-
-        Assert.Equal("WRITTEN-BY-SOMEBODY-ELSE", rig.States.Peek(part.Id)!.Identifier);
-
-        // The undo was declined on that evidence. The caller was told the
-        // rename failed; the instance kept it.
-        Assert.Equal("Renamed", part.DisplayName);
-    }
-
-    /// <summary>
-    /// ATTACK 8. The `TD-142` type-specific mutators still keep a mutation
+    /// The `TD-142` type-specific mutators still keep a mutation
     /// whose write failed — unchanged and disclosed — and a BASE mutator's
     /// undo neither repairs nor clobbers that divergence: the rollback point
     /// and the evidence comparison both stop at the base fields, exactly as
@@ -478,13 +301,13 @@ public sealed class R7FalsificationTests : IDisposable
     }
 
     // ================================================================
-    // §D  The individual mutators — attack 6.
+    // §D  The individual mutators.
     // ================================================================
 
     /// <summary>
-    /// ATTACK 6. <c>MoveAsync</c>: a failing LINK write leaves no reparent
+    /// <c>MoveAsync</c>: a failing LINK write leaves no reparent
     /// and no link; a link that succeeds followed by a failing STATE write
-    /// leaves no reparent but DOES leave the `groupedUnder` edge — Agent A's
+    /// leaves no reparent but DOES leave the `groupedUnder` edge — a
     /// disclosed residue, pinned here independently.
     /// </summary>
     [Fact]
@@ -507,7 +330,7 @@ public sealed class R7FalsificationTests : IDisposable
     }
 
     /// <summary>
-    /// ATTACK 6. <c>AttachContentAsync</c>: the in-memory add is undone,
+    /// <c>AttachContentAsync</c>: the in-memory add is undone,
     /// the bytes and the write-intent marker are deliberately not — the
     /// disclosed `TD-97` residue, and the ONLY channel it now shows in.
     /// </summary>

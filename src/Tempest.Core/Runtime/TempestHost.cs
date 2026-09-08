@@ -133,6 +133,7 @@ public sealed class TempestHost : ITempestHost
     private readonly IEnumerable<Type>? _hostedServiceCandidateTypesOverride;
     private readonly string? _licenseFilePathOverride;
     private readonly bool _includeFaultInjectionModules;
+    private readonly IReadOnlyList<ILogSink> _additionalLogSinks;
     private readonly CancellationTokenSource _shutdownRequested = new();
     private readonly CancellationTokenSource _stopEscalation = new();
     private readonly TaskCompletionSource _runCompletion = new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -158,7 +159,8 @@ public sealed class TempestHost : ITempestHost
         string? pluginsRootPathOverride,
         IEnumerable<Type>? hostedServiceCandidateTypesOverride,
         string? licenseFilePathOverride,
-        bool includeFaultInjectionModules = false)
+        bool includeFaultInjectionModules = false,
+        IReadOnlyList<ILogSink>? additionalLogSinks = null)
     {
         _configurationSources = configurationSources;
         _discoveryCandidateTypesOverride = discoveryCandidateTypesOverride;
@@ -166,6 +168,7 @@ public sealed class TempestHost : ITempestHost
         _hostedServiceCandidateTypesOverride = hostedServiceCandidateTypesOverride;
         _licenseFilePathOverride = licenseFilePathOverride;
         _includeFaultInjectionModules = includeFaultInjectionModules;
+        _additionalLogSinks = additionalLogSinks ?? [];
     }
 
     /// <inheritdoc />
@@ -273,7 +276,9 @@ public sealed class TempestHost : ITempestHost
 
         var currentLicense = licenseValidationResult.License!;
 
-        ILogSink sink = new ConsoleLogSink();
+        ILogSink sink = _additionalLogSinks.Count > 0
+            ? new CompositeLogSink([new ConsoleLogSink(), .. _additionalLogSinks])
+            : new ConsoleLogSink();
         ILoggerFactory loggerFactory = new LoggerFactory(configuration, sink);
         var logger = loggerFactory.CreateLogger(LoggingServiceCollectionExtensions.DefaultLoggerCategory);
         _logger = logger;

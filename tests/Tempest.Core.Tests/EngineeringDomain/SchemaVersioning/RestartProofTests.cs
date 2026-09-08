@@ -38,7 +38,6 @@ namespace Tempest.Core.Tests.EngineeringDomain.SchemaVersioning;
 // the collection: the file landed on a parallel branch hours after
 // `WP 16.4A` joined the last stragglers to it, so its author never
 // saw the freshly-reinforced convention.
-[Collection("Console output capture")]
 public sealed class RestartProofTests
 {
     [Fact]
@@ -148,16 +147,7 @@ public sealed class RestartProofTests
             .Build();
         var manager = new WorkspaceManager(host);
 
-        var originalOut = Console.Out;
-        try
-        {
-            Console.SetOut(new StringWriter());
-            await manager.StartAsync();
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-        }
+        await manager.StartAsync();
 
         EngineeringWorkspaceComposer.RegisterEngineeringDisciplines(manager, host);
 

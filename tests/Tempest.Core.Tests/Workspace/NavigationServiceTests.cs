@@ -12,7 +12,6 @@ namespace Tempest.Core.Tests.Workspace;
 // a real, running TempestHost) for Areas/SwitchAreaAsync, and real,
 // minimal test-double IWorkspaceViewFactory instances (this project does
 // not use a mocking framework) for Open/JumpTo/Close.
-[Collection("Console output capture")]
 public class NavigationServiceTests
 {
     private static async Task<(IWorkspace Workspace, WorkspaceManager Manager)> StartAsync(string rootPath, params Type[] moduleTypes)
@@ -25,17 +24,8 @@ public class NavigationServiceTests
             .Build();
         var manager = new WorkspaceManager(host);
 
-        var originalOut = Console.Out;
         IWorkspace workspace;
-        try
-        {
-            Console.SetOut(new StringWriter());
-            workspace = await manager.StartAsync();
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-        }
+        workspace = await manager.StartAsync();
 
         return (workspace, manager);
     }

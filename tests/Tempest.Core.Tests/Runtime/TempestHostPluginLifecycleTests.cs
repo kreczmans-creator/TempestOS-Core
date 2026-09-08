@@ -2,6 +2,7 @@ using Tempest.Core.Configuration;
 using Tempest.Core.Diagnostics;
 using Tempest.Core.Plugins;
 using Tempest.Core.Runtime;
+using Tempest.Core.Tests.Logging;
 using Tempest.Core.Tests.Plugins;
 
 namespace Tempest.Core.Tests.Runtime;
@@ -16,7 +17,14 @@ namespace Tempest.Core.Tests.Runtime;
 // via reflection; a real scan would fault on those, unrelated to plugins
 // entirely. "Assembly visibility to Module Discovery" is proven precisely,
 // without that hazard, in PluginAssemblyLoaderTests instead.
-[Collection("Console output capture")]
+//
+// Every test here builds a dynamically-emitted plugin assembly via
+// DynamicPluginAssemblyBuilder (System.Reflection.Emit's
+// PersistedAssemblyBuilder) - not safe to run concurrently with another
+// such build elsewhere in the process, so this class shares
+// [Collection("Dynamic plugin assembly emission")] with every other class
+// in this assembly that calls DynamicPluginAssemblyBuilder.
+[Collection("Dynamic plugin assembly emission")]
 public class TempestHostPluginLifecycleTests
 {
     [Fact]
@@ -24,28 +32,20 @@ public class TempestHostPluginLifecycleTests
     {
         using var temp = new TempDirectory();
 
-        var host = new TempestHostBuilder(Type.EmptyTypes, temp.Path).WithIsolatedPersistenceRoot().Build();
-        var originalOut = Console.Out;
-        var writer = new StringWriter();
+        var sink = new RecordingLogSink();
+        var host = new TempestHostBuilder(Type.EmptyTypes, temp.Path)
+            .AddLogSink(sink).WithIsolatedPersistenceRoot()
+            .Build();
 
-        try
-        {
-            Console.SetOut(writer);
+        var runTask = host.RunAsync();
+        await host.StopAsync();
+        await runTask;
 
-            var runTask = host.RunAsync();
-            await host.StopAsync();
-            await runTask;
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-        }
+        var messages = sink.Entries.Select(entry => entry.Message).ToList();
 
-        var output = writer.ToString();
-
-        var pluginDiscoveryIndex = output.IndexOf("Host lifecycle phase completed: Plugin Discovery", StringComparison.Ordinal);
-        var pluginLoadingIndex = output.IndexOf("Host lifecycle phase completed: Plugin Loading", StringComparison.Ordinal);
-        var moduleDiscoveryIndex = output.IndexOf("Host lifecycle phase completed: Module Discovery", StringComparison.Ordinal);
+        var pluginDiscoveryIndex = messages.FindIndex(message => message.Contains("Host lifecycle phase completed: Plugin Discovery"));
+        var pluginLoadingIndex = messages.FindIndex(message => message.Contains("Host lifecycle phase completed: Plugin Loading"));
+        var moduleDiscoveryIndex = messages.FindIndex(message => message.Contains("Host lifecycle phase completed: Module Discovery"));
 
         Assert.True(pluginDiscoveryIndex >= 0, "Plugin Discovery phase was not logged.");
         Assert.True(pluginLoadingIndex > pluginDiscoveryIndex, "Plugin Loading did not follow Plugin Discovery.");
@@ -64,8 +64,7 @@ public class TempestHostPluginLifecycleTests
 
         var runTask = host.RunAsync();
 
-        while (host.State is HostState.Created or HostState.Starting)
-            await Task.Delay(5);
+        await RunningHostFixture.WaitUntilRunningAsync(host);
 
         Assert.Equal(HostState.Running, host.State);
 
@@ -89,8 +88,7 @@ public class TempestHostPluginLifecycleTests
 
         var runTask = host.RunAsync();
 
-        while (host.State is HostState.Created or HostState.Starting)
-            await Task.Delay(5);
+        await RunningHostFixture.WaitUntilRunningAsync(host);
 
         Assert.Equal(HostState.Running, host.State);
 
@@ -127,8 +125,7 @@ public class TempestHostPluginLifecycleTests
 
         var runTask = host.RunAsync();
 
-        while (host.State is HostState.Created or HostState.Starting)
-            await Task.Delay(5);
+        await RunningHostFixture.WaitUntilRunningAsync(host);
 
         Assert.Equal(HostState.Running, host.State);
 
@@ -166,17 +163,15 @@ public class TempestHostPluginLifecycleTests
             """);
 
         var builder = new TempestHostBuilder(Type.EmptyTypes, temp.Path);
-        builder.WithIsolatedPersistenceRoot();
         builder.AddConfigurationSource(new MemoryConfigurationSource(
         [
             new KeyValuePair<string, string>("Plugins:AllowUnsignedLoad", "true"),
         ]));
-        var host = builder.Build();
+        var host = builder.WithIsolatedPersistenceRoot().Build();
 
         var runTask = host.RunAsync();
 
-        while (host.State is HostState.Created or HostState.Starting)
-            await Task.Delay(5);
+        await RunningHostFixture.WaitUntilRunningAsync(host);
 
         Assert.Equal(HostState.Running, host.State);
 
@@ -207,8 +202,7 @@ public class TempestHostPluginLifecycleTests
 
         var runTask = host.RunAsync();
 
-        while (host.State is HostState.Created or HostState.Starting)
-            await Task.Delay(5);
+        await RunningHostFixture.WaitUntilRunningAsync(host);
 
         Assert.Equal(HostState.Running, host.State);
 
@@ -268,17 +262,15 @@ public class TempestHostPluginLifecycleTests
             """);
 
         var builder = new TempestHostBuilder(Type.EmptyTypes, temp.Path);
-        builder.WithIsolatedPersistenceRoot();
         builder.AddConfigurationSource(new MemoryConfigurationSource(
         [
             new KeyValuePair<string, string>("Plugins:AllowUnsignedLoad", "true"),
         ]));
-        var host = builder.Build();
+        var host = builder.WithIsolatedPersistenceRoot().Build();
 
         var runTask = host.RunAsync();
 
-        while (host.State is HostState.Created or HostState.Starting)
-            await Task.Delay(5);
+        await RunningHostFixture.WaitUntilRunningAsync(host);
 
         Assert.Equal(HostState.Running, host.State);
 
@@ -332,17 +324,15 @@ public class TempestHostPluginLifecycleTests
             """);
 
         var builder = new TempestHostBuilder(Type.EmptyTypes, temp.Path);
-        builder.WithIsolatedPersistenceRoot();
         builder.AddConfigurationSource(new MemoryConfigurationSource(
         [
             new KeyValuePair<string, string>("Plugins:AllowUnsignedLoad", "true"),
         ]));
-        var host = builder.Build();
+        var host = builder.WithIsolatedPersistenceRoot().Build();
 
         var runTask = host.RunAsync();
 
-        while (host.State is HostState.Created or HostState.Starting)
-            await Task.Delay(5);
+        await RunningHostFixture.WaitUntilRunningAsync(host);
 
         Assert.Equal(HostState.Running, host.State);
 

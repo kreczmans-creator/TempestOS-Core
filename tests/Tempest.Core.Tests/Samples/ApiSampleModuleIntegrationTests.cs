@@ -5,7 +5,9 @@ using Tempest.Core.Audit;
 using Tempest.Core.Configuration;
 using Tempest.Core.Persistence;
 using Tempest.Core.Runtime;
+using Tempest.Core.Tests.Logging;
 using Tempest.Core.Tests.Plugins;
+using Tempest.Core.Tests.Runtime;
 using Tempest.Samples;
 
 namespace Tempest.Core.Tests.Samples;
@@ -24,7 +26,6 @@ namespace Tempest.Core.Tests.Samples;
 // port 0 (an OS-assigned, collision-free ephemeral port), read back via
 // RestApiHostedService.BoundPort, so no two tests can ever race for the
 // same port.
-[Collection("Console output capture")]
 public class ApiSampleModuleIntegrationTests
 {
     private static async Task<(RestApiHostedService HostedService, ITempestHost Host)> StartHostAsync(
@@ -48,13 +49,12 @@ public class ApiSampleModuleIntegrationTests
                 discoveryCandidateTypesOverride: [typeof(ReportingSampleModule), typeof(ApiSampleModule)],
                 pluginsRootPathOverride: null,
                 hostedServiceCandidateTypesOverride: [typeof(RestApiHostedService)])
-            .AddConfigurationSource(new MemoryConfigurationSource(configurationEntries))
+            .AddConfigurationSource(new MemoryConfigurationSource(configurationEntries)).WithIsolatedPersistenceRoot()
             .Build();
 
         _ = host.RunAsync();
 
-        while (host.State is HostState.Created or HostState.Starting)
-            await Task.Delay(5);
+        await RunningHostFixture.WaitUntilRunningAsync(host);
 
         var hostedService = (RestApiHostedService)host.Services!.GetService(typeof(RestApiHostedService));
 
@@ -67,22 +67,12 @@ public class ApiSampleModuleIntegrationTests
     private static async Task RunAgainstRealHttpAsync(IEnumerable<string>? grantedPermissions, Func<HttpClient, RestApiHostedService, ITempestHost, Task> body)
     {
         using var temp = new TempDirectory();
-        var originalOut = Console.Out;
+        var (hostedService, host) = await StartHostAsync(temp.Path, grantedPermissions);
 
-        try
-        {
-            Console.SetOut(new StringWriter());
-            var (hostedService, host) = await StartHostAsync(temp.Path, grantedPermissions);
+        using var client = new HttpClient { BaseAddress = new Uri($"http://127.0.0.1:{hostedService.BoundPort}/") };
+        await body(client, hostedService, host);
 
-            using var client = new HttpClient { BaseAddress = new Uri($"http://127.0.0.1:{hostedService.BoundPort}/") };
-            await body(client, hostedService, host);
-
-            await host.StopAsync();
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-        }
+        await host.StopAsync();
     }
 
     [Fact]
@@ -254,6 +244,7 @@ public class ApiSampleModuleIntegrationTests
         occupyingSocket.Listen();
         var occupiedPort = ((IPEndPoint)occupyingSocket.LocalEndPoint!).Port;
 
+        var sink = new RecordingLogSink();
         var host = new TempestHostBuilder(
                 discoveryCandidateTypesOverride: [typeof(ReportingSampleModule), typeof(ApiSampleModule)],
                 pluginsRootPathOverride: null,
@@ -264,30 +255,21 @@ public class ApiSampleModuleIntegrationTests
                 new KeyValuePair<string, string>(RestApiHostedService.PortConfigurationKey, occupiedPort.ToString()),
                 new KeyValuePair<string, string>(RestApiHostedService.EnabledConfigurationKey, "true"), // D-024 (ratified 2026-09-05): this test proves the port-in-use failure path, which requires the listener to actually attempt to start.
             ]))
+            .AddLogSink(sink)
             .Build();
-        var originalOut = Console.Out;
-        var writer = new StringWriter();
 
-        try
-        {
-            Console.SetOut(writer);
+        var runTask = host.RunAsync();
 
-            var runTask = host.RunAsync();
+        await RunningHostFixture.WaitUntilRunningAsync(host);
 
-            while (host.State is HostState.Created or HostState.Starting)
-                await Task.Delay(5);
+        Assert.Equal(HostState.Running, host.State);
 
-            Assert.Equal(HostState.Running, host.State);
-
-            await host.StopAsync();
-            await runTask;
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-        }
+        await host.StopAsync();
+        await runTask;
 
         Assert.Equal(HostState.Stopped, host.State);
-        Assert.Contains("failed to start; isolated", writer.ToString());
+        Assert.Contains(
+            sink.Entries.Select(entry => entry.Message),
+            message => message.Contains("failed to start; isolated"));
     }
 }

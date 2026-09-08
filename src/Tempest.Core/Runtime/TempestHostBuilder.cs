@@ -1,4 +1,5 @@
 using Tempest.Core.Configuration;
+using Tempest.Core.Logging;
 
 namespace Tempest.Core.Runtime;
 
@@ -15,6 +16,7 @@ namespace Tempest.Core.Runtime;
 public sealed class TempestHostBuilder : ITempestHostBuilder
 {
     private readonly List<IConfigurationSource> _configurationSources = [];
+    private readonly List<ILogSink> _additionalLogSinks = [];
     private readonly IEnumerable<Type>? _discoveryCandidateTypesOverride;
     private readonly string? _pluginsRootPathOverride;
     private readonly IEnumerable<Type>? _hostedServiceCandidateTypesOverride;
@@ -208,6 +210,17 @@ public sealed class TempestHostBuilder : ITempestHostBuilder
     }
 
     /// <inheritdoc />
+    public ITempestHostBuilder AddLogSink(ILogSink sink)
+    {
+        ArgumentNullException.ThrowIfNull(sink);
+        ThrowIfAlreadyBuilt();
+
+        _additionalLogSinks.Add(sink);
+
+        return this;
+    }
+
+    /// <inheritdoc />
     public ITempestHost Build()
     {
         ThrowIfAlreadyBuilt();
@@ -219,7 +232,8 @@ public sealed class TempestHostBuilder : ITempestHostBuilder
             _pluginsRootPathOverride,
             _hostedServiceCandidateTypesOverride,
             _licenseFilePathOverride,
-            _includeFaultInjectionModules);
+            _includeFaultInjectionModules,
+            _additionalLogSinks);
     }
 
     private void ThrowIfAlreadyBuilt()

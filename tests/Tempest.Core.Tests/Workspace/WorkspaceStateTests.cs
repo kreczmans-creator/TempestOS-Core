@@ -5,6 +5,7 @@ using Tempest.Core.Runtime;
 using Tempest.Core.Settings;
 using Tempest.Core.Tests.Plugins;
 
+using Tempest.Core.Tests.Runtime;
 namespace Tempest.Core.Tests.Workspace;
 
 // Proves IWorkspaceState (Tempest.App.Workspace) persists via the real,
@@ -14,7 +15,6 @@ namespace Tempest.Core.Tests.Workspace;
 // type, reachable here via Tempest.App's own InternalsVisibleTo grant,
 // added by this Work Package) and the full cross-restart round trip through
 // WorkspaceManager.
-[Collection("Console output capture")]
 public class WorkspaceStateTests
 {
     private static ITempestHost BuildHost(string rootPath) =>
@@ -28,20 +28,10 @@ public class WorkspaceStateTests
     private static async Task<T> RunAgainstRunningHostAsync<T>(ITempestHost host, Func<ITempestHost, Task<T>> body)
     {
         var runTask = host.RunAsync();
-        while (host.State is HostState.Created or HostState.Starting)
-            await Task.Delay(5);
+        await RunningHostFixture.WaitUntilRunningAsync(host);
 
-        var originalOut = Console.Out;
         T result;
-        try
-        {
-            Console.SetOut(new StringWriter());
-            result = await body(host);
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-        }
+        result = await body(host);
 
         await host.StopAsync();
         await runTask;
@@ -123,33 +113,15 @@ public class WorkspaceStateTests
 
         // First run: select something, then shut down (persists via SaveAsync).
         var firstManager = new WorkspaceManager(BuildHost(temp.Path));
-        var originalOut = Console.Out;
-        try
-        {
-            Console.SetOut(new StringWriter());
-            var firstWorkspace = await firstManager.StartAsync();
-            await firstWorkspace.Selection.SelectAsync(objectId, "Requirement");
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-        }
+        var firstWorkspace = await firstManager.StartAsync();
+        await firstWorkspace.Selection.SelectAsync(objectId, "Requirement");
         await firstManager.ShutdownAsync();
 
         // Second run: a brand-new ITempestHost (single-use) over the same
         // persistence root - proves this is a genuine restart, not reuse of
         // in-memory state.
         var secondManager = new WorkspaceManager(BuildHost(temp.Path));
-        IWorkspace secondWorkspace;
-        try
-        {
-            Console.SetOut(new StringWriter());
-            secondWorkspace = await secondManager.StartAsync();
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-        }
+        var secondWorkspace = await secondManager.StartAsync();
 
         Assert.Equal(new WorkspaceSelection(objectId, "Requirement"), secondWorkspace.State.LastSelection);
 

@@ -13,7 +13,6 @@ namespace Tempest.Core.Tests.Runtime;
 // singleton semantics, and Audit genuinely reuses the same
 // IPersistenceStore instance Settings resolves, not a second,
 // independent one.
-[Collection("Console output capture")]
 public class AuditHostRegistrationTests
 {
     private static async Task RunAgainstRunningHostAsync(string rootPath, Func<ITempestHost, Task> body)
@@ -26,26 +25,15 @@ public class AuditHostRegistrationTests
                 new KeyValuePair<string, string>("Identity:Principals:registration-test-auditor:Roles", "Auditor"),
             ]))
             .Build();
-        var originalOut = Console.Out;
 
-        try
-        {
-            Console.SetOut(new StringWriter());
+        var runTask = host.RunAsync();
 
-            var runTask = host.RunAsync();
+        await RunningHostFixture.WaitUntilRunningAsync(host);
 
-            while (host.State is HostState.Created or HostState.Starting)
-                await Task.Delay(5);
+        await body(host);
 
-            await body(host);
-
-            await host.StopAsync();
-            await runTask;
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-        }
+        await host.StopAsync();
+        await runTask;
     }
 
     // Every test below is deliberately `async Task`, awaiting

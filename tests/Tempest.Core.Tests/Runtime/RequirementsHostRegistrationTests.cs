@@ -12,7 +12,6 @@ namespace Tempest.Core.Tests.Runtime;
 // resolvable, ordinary singleton semantics, and the service genuinely reuses
 // the same IEngineeringDocumentStore every Engineering Core sibling resolves,
 // not a second, independent one.
-[Collection("Console output capture")]
 public class RequirementsHostRegistrationTests
 {
     private static async Task RunAgainstRunningHostAsync(string rootPath, Func<ITempestHost, Task> body)
@@ -23,26 +22,15 @@ public class RequirementsHostRegistrationTests
                 new KeyValuePair<string, string>(PersistenceStore.RootPathConfigurationKey, rootPath),
             ]))
             .Build();
-        var originalOut = Console.Out;
 
-        try
-        {
-            Console.SetOut(new StringWriter());
+        var runTask = host.RunAsync();
 
-            var runTask = host.RunAsync();
+        await RunningHostFixture.WaitUntilRunningAsync(host);
 
-            while (host.State is HostState.Created or HostState.Starting)
-                await Task.Delay(5);
+        await body(host);
 
-            await body(host);
-
-            await host.StopAsync();
-            await runTask;
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-        }
+        await host.StopAsync();
+        await runTask;
     }
 
     [Fact]

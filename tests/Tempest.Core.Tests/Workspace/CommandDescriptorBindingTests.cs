@@ -39,7 +39,6 @@ namespace Tempest.Core.Tests.Workspace;
 /// changed here, deliberately, for a production change to pass.
 /// </para>
 /// </remarks>
-[Collection("Console output capture")]
 public sealed class CommandDescriptorBindingTests : IAsyncLifetime
 {
     // ==================================================================
@@ -124,16 +123,7 @@ public sealed class CommandDescriptorBindingTests : IAsyncLifetime
             .Build();
         _manager = new WorkspaceManager(_host);
 
-        var originalOut = Console.Out;
-        try
-        {
-            Console.SetOut(new StringWriter());
-            await _manager.StartAsync();
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-        }
+        await _manager.StartAsync();
 
         EngineeringWorkspaceComposer.RegisterEngineeringDisciplines(_manager, _host);
         _registry = (ICommandRegistry)_host.Services!.GetService(typeof(ICommandRegistry));

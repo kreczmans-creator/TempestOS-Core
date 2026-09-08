@@ -15,7 +15,6 @@ namespace Tempest.Core.Tests.Runtime;
 // asset layer is wired into the real, unmodified TempestHost, that each
 // library is one instance over one store, and that a reasoning service
 // reads the same library the container hands out.
-[Collection("Console output capture")]
 public class EngineeringAssetsHostRegistrationTests
 {
     private static async Task RunAgainstRunningHostAsync(string rootPath, Func<ITempestHost, Task> body)
@@ -26,26 +25,15 @@ public class EngineeringAssetsHostRegistrationTests
                 new KeyValuePair<string, string>(PersistenceStore.RootPathConfigurationKey, rootPath),
             ]))
             .Build();
-        var originalOut = Console.Out;
 
-        try
-        {
-            Console.SetOut(new StringWriter());
+        var runTask = host.RunAsync();
 
-            var runTask = host.RunAsync();
+        await RunningHostFixture.WaitUntilRunningAsync(host);
 
-            while (host.State is HostState.Created or HostState.Starting)
-                await Task.Delay(5);
+        await body(host);
 
-            await body(host);
-
-            await host.StopAsync();
-            await runTask;
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-        }
+        await host.StopAsync();
+        await runTask;
     }
 
     [Theory]

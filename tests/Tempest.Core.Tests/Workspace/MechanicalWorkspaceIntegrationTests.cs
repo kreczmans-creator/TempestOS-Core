@@ -21,7 +21,6 @@ namespace Tempest.Core.Tests.Workspace;
 /// nine commands (six from `WP 9.0A`, three more from `WP 9.0B`) together,
 /// the "Workspace integration tests" both Work Packages name explicitly.
 /// </summary>
-[Collection("Console output capture")]
 public class MechanicalWorkspaceIntegrationTests
 {
     private static async Task<(IWorkspace Workspace, WorkspaceManager Manager, ITempestHost Host)> StartAsync(string rootPath)
@@ -34,17 +33,8 @@ public class MechanicalWorkspaceIntegrationTests
             .Build();
         var manager = new WorkspaceManager(host);
 
-        var originalOut = Console.Out;
         IWorkspace workspace;
-        try
-        {
-            Console.SetOut(new StringWriter());
-            workspace = await manager.StartAsync();
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-        }
+        workspace = await manager.StartAsync();
 
         // Disclosed, pre-existing platform timing characteristic (not
         // introduced by WP 9.0A): WorkspaceManager.StartAsync's own
