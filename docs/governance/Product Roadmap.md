@@ -248,6 +248,13 @@ the `v1.0.0 Release Candidate Audit`'s conditional groups C1–C8 into
 against that, keeping Definition 3's own broader ambition for the
 release(s) after `v1.0.0`.
 
+**Superseded, `WP 17.0B` (2026-09-08):** `docs/releases/v1.0.0/WorkPackages.md`
+is now the governing programme for everything this phase describes —
+it replaces the 2026-09-04 proposal this section otherwise documents,
+having found three substrates the wrong shape and four layers
+speculative for the business this platform actually serves. Read that
+document, not this phase, for the current `v1.0.0` scope and sequence.
+
 ### Phase 6 — Professional Features (Not Yet Scoped)
 
 Capability that makes an individual Engineering Module genuinely usable
