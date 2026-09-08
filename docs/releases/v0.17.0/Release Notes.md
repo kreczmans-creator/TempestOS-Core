@@ -141,8 +141,8 @@ second person could pick up on day one.
 | Live source lines (`src/`, excluding `Frozen/`) | 138,244 | 136,532 |
 | Live test lines (`tests/`, excluding `Frozen/`) | 118,042 | 103,585 |
 | Frozen out of the build | — | 42 source, 37 test files |
-| Core tests | 5,153 | 4,949 |
-| Desktop tests | 500 | 501 |
+| Core tests | 5,153 | 4,961 |
+| Desktop tests | 500 | 506 |
 | Core suite duration (local, Debug) | ~5 min | ~20 s to 1 m 20 s |
 | Desktop suite duration (local, Debug) | ~15 min | ~3 min |
 | Live documentation files | 1,062 | 257 |

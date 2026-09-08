@@ -332,6 +332,8 @@ The reasoning, in order of weight:
 
 If none of the triggers fires, `v1.0.0` ships on this line in January 2027 with a smaller, plainer codebase than it has today, and the fresh layout becomes what `v1.1` is built on if the firm decides it wants it.
 
+**Postscript, the same night.** On the Product Owner's instruction the two substrate conditions were met before the Windows verification, as `WP 17.9.3`: the release permission gate (H8) and the by-parent index (H4), plus the surface defects this review found (`TD-172`'s placement half across Documents, Calculations, Requirements and Manufacturing; `TD-173`; the Parent GUID; the editor's empty Content box) and the six stale ADR statuses. The residual of `TD-172` (an object created while another discipline tab is active is not shown where the user is looking) and everything in §5.2's `18.1B` remain with the programme.
+
 ---
 
 ## Appendices
