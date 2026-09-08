@@ -40,7 +40,7 @@ public class BracketCalculationJourneyTests
     {
         var principals = (ICurrentPrincipalAccessor)host.Services!.GetService(typeof(ICurrentPrincipalAccessor));
         ((CurrentPrincipalAccessor)principals).SetCurrent(
-            new PlatformPrincipal(new PlatformIdentity(EngineerId, EngineerId), []));
+            new PlatformPrincipal(new PlatformIdentity(EngineerId, EngineerId), ApplicationPermissions.LocalSession));
     }
 
     private static async Task SeedAsync(WorkspaceHost host)

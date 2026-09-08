@@ -272,7 +272,7 @@ public sealed class EngineeringCalculationWorkspaceTests
             await host.StartAsync();
 
             var principals = (ICurrentPrincipalAccessor)host.Services!.GetService(typeof(ICurrentPrincipalAccessor));
-            ((CurrentPrincipalAccessor)principals).SetCurrent(new PlatformPrincipal(new PlatformIdentity(EngineerId, EngineerId), []));
+            ((CurrentPrincipalAccessor)principals).SetCurrent(new PlatformPrincipal(new PlatformIdentity(EngineerId, EngineerId), ApplicationPermissions.LocalSession));
 
             var window = new MainWindow(host) { Width = 1600, Height = 1000 };
             window.Show();

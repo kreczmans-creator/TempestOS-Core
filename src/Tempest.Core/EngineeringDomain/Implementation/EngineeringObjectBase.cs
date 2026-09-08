@@ -675,6 +675,11 @@ public abstract partial class EngineeringObjectBase :
                 // a `groupedUnder` the store does not, or lag it.
                 if (newParentId is { } committedParentId)
                     RecordRelationship(committedParentId, GroupedUnderRelationshipKind, principalId, createdAt);
+
+                // `WP 17.9.3`: the by-parent index moves with the state, in
+                // the same lock hold, so a tree never lists a child under a
+                // parent the store no longer records.
+                _context.Repository.ParentChanged(Id, newParentId);
             }).ConfigureAwait(false);
     }
 
@@ -747,11 +752,11 @@ public abstract partial class EngineeringObjectBase :
         await MutateAndPersistAsync(
             current =>
             {
-                var all = _context.Repository.ListAllAsync(CancellationToken.None).GetAwaiter().GetResult();
+                // `WP 17.9.3`: an indexed lookup, not a scan of every object
+                // while holding the domain write lock (hazard H5).
+                var children = _context.Repository.ListChildrenAsync(Id, CancellationToken.None).GetAwaiter().GetResult();
 
-                var liveChildren = all.Count(o =>
-                    o is IHasParent { ParentId: { } parentId } && parentId == Id &&
-                    o is not IDeletable { IsDeleted: true });
+                var liveChildren = children.Count(o => o is not IDeletable { IsDeleted: true });
 
                 if (liveChildren > 0)
                     throw new EngineeringObjectHasChildrenException(Id, liveChildren);

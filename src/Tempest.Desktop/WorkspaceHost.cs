@@ -257,7 +257,8 @@ public sealed class WorkspaceHost : IAsyncDisposable
         ReferenceReview = new ReferenceReviewService(
             (ICurrentPrincipalAccessor)host.Services!.GetService(typeof(ICurrentPrincipalAccessor)),
             logger: hostLogger,
-            auditRecorder: (Tempest.Core.Audit.IAuditRecorder)host.Services!.GetService(typeof(Tempest.Core.Audit.IAuditRecorder)));
+            auditRecorder: (Tempest.Core.Audit.IAuditRecorder)host.Services!.GetService(typeof(Tempest.Core.Audit.IAuditRecorder)),
+            permissions: (Tempest.Core.Identity.IPermissionEvaluator)host.Services!.GetService(typeof(Tempest.Core.Identity.IPermissionEvaluator)));
 
         // The Engineering Calculation surface's own read model. It composes
         // the four governed acts a calculation journey needs - populate,

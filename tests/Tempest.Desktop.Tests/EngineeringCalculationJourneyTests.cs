@@ -592,7 +592,7 @@ public sealed class EngineeringCalculationJourneyTests
         // reviewer attribution can be asserted by name.
         var principals = (ICurrentPrincipalAccessor)host.Services!.GetService(typeof(ICurrentPrincipalAccessor));
         ((CurrentPrincipalAccessor)principals).SetCurrent(
-            new PlatformPrincipal(new PlatformIdentity(EngineerId, EngineerId), []));
+            new PlatformPrincipal(new PlatformIdentity(EngineerId, EngineerId), ApplicationPermissions.LocalSession));
     }
 
     private static void EnterInputs(EngineeringCalculationView view, string load, string area, string length, string massLimit)

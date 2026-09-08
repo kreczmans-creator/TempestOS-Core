@@ -154,9 +154,10 @@ public sealed class MechanicalProductStructureNodeProvider : IProjectExplorerNod
 
     private async Task<IReadOnlyList<IEngineeringObject>> GetLiveChildrenAsync(Guid parentId, CancellationToken cancellationToken)
     {
-        var all = await _context.Repository.ListAllAsync(cancellationToken).ConfigureAwait(false);
+        // `WP 17.9.3`: an indexed lookup (hazard H4), not a copy of every object per rendered node.
+        var children = await _context.Repository.ListChildrenAsync(parentId, cancellationToken).ConfigureAwait(false);
 
-        return all.Where(o => o is IHasParent { ParentId: { } pid } && pid == parentId && IsLive(o)).ToList();
+        return children.Where(IsLive).ToList();
     }
 
     private async Task<ProjectExplorerNode> ToNodeAsync(IEngineeringObject o, CancellationToken cancellationToken)

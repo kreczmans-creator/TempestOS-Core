@@ -104,8 +104,7 @@ public sealed class DocumentsNodeProvider : IProjectExplorerNodeProvider
 
         if (target is IDocument)
         {
-            var all = await _context.Repository.ListAllAsync(cancellationToken).ConfigureAwait(false);
-            var children = all.Where(o => IsLive(o) && o is IHasParent { ParentId: { } parentId } && parentId == nodeId);
+            var children = (await _context.Repository.ListChildrenAsync(nodeId, cancellationToken).ConfigureAwait(false)).Where(IsLive);
 
             var nodes = new List<ProjectExplorerNode>();
             foreach (var child in children)
@@ -154,8 +153,7 @@ public sealed class DocumentsNodeProvider : IProjectExplorerNodeProvider
 
     private async Task<ProjectExplorerNode> ToDocumentNodeAsync(IEngineeringObject document, CancellationToken cancellationToken)
     {
-        var all = await _context.Repository.ListAllAsync(cancellationToken).ConfigureAwait(false);
-        var hasChildren = all.Any(o => IsLive(o) && o is IHasParent { ParentId: { } parentId } && parentId == document.Id);
+        var hasChildren = (await _context.Repository.ListChildrenAsync(document.Id, cancellationToken).ConfigureAwait(false)).Any(IsLive);
 
         return new ProjectExplorerNode(document.Id, DisplayNameOf(document), document.Kind, hasChildren, ProjectExplorerNodeType.Object, document is IHasLifecycle lifecycle ? lifecycle.Status : null);
     }

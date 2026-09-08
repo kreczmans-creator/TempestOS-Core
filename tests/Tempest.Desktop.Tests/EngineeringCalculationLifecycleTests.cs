@@ -528,7 +528,7 @@ public sealed class EngineeringCalculationLifecycleTests
     private static void SignIn(WorkspaceHost host)
     {
         var principals = (ICurrentPrincipalAccessor)host.Services!.GetService(typeof(ICurrentPrincipalAccessor));
-        ((CurrentPrincipalAccessor)principals).SetCurrent(new PlatformPrincipal(new PlatformIdentity(EngineerId, EngineerId), []));
+        ((CurrentPrincipalAccessor)principals).SetCurrent(new PlatformPrincipal(new PlatformIdentity(EngineerId, EngineerId), ApplicationPermissions.LocalSession));
     }
 
     private static EngineeringDomainContext DomainOf(WorkspaceHost host) =>

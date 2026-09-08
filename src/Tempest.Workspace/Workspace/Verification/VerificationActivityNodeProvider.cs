@@ -78,8 +78,7 @@ public sealed class VerificationActivityNodeProvider : IProjectExplorerNodeProvi
 
         if (target is IVerificationActivity)
         {
-            var all = await _context.Repository.ListAllAsync(cancellationToken).ConfigureAwait(false);
-            var children = all.Where(o => IsLive(o) && o is IHasParent { ParentId: { } parentId } && parentId == nodeId);
+            var children = (await _context.Repository.ListChildrenAsync(nodeId, cancellationToken).ConfigureAwait(false)).Where(IsLive);
 
             var nodes = new List<ProjectExplorerNode>();
             foreach (var child in children)
@@ -117,8 +116,7 @@ public sealed class VerificationActivityNodeProvider : IProjectExplorerNodeProvi
 
     private async Task<ProjectExplorerNode> ToActivityNodeAsync(IEngineeringObject activity, CancellationToken cancellationToken)
     {
-        var all = await _context.Repository.ListAllAsync(cancellationToken).ConfigureAwait(false);
-        var hasChildren = all.Any(o => IsLive(o) && o is IHasParent { ParentId: { } parentId } && parentId == activity.Id);
+        var hasChildren = (await _context.Repository.ListChildrenAsync(activity.Id, cancellationToken).ConfigureAwait(false)).Any(IsLive);
 
         return new ProjectExplorerNode(activity.Id, DisplayNameOf(activity), activity.Kind, hasChildren, ProjectExplorerNodeType.Object, activity is IHasLifecycle lifecycle ? lifecycle.Status : null);
     }

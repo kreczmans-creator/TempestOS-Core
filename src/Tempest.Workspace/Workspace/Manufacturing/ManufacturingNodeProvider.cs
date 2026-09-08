@@ -81,8 +81,7 @@ public sealed class ManufacturingNodeProvider : IProjectExplorerNodeProvider
 
         if (target is IManufacturingOperation or IWorkInstruction || (target is IEngineeringObject e && string.Equals(e.Kind, "Inspection", StringComparison.Ordinal)))
         {
-            var all = await _context.Repository.ListAllAsync(cancellationToken).ConfigureAwait(false);
-            var children = all.Where(o => IsLive(o) && o is IHasParent { ParentId: { } parentId } && parentId == nodeId);
+            var children = (await _context.Repository.ListChildrenAsync(nodeId, cancellationToken).ConfigureAwait(false)).Where(IsLive);
 
             var nodes = new List<ProjectExplorerNode>();
             foreach (var child in children)
@@ -124,8 +123,7 @@ public sealed class ManufacturingNodeProvider : IProjectExplorerNodeProvider
 
     private async Task<ProjectExplorerNode> ToManufacturingNodeAsync(IEngineeringObject manufacturingObject, CancellationToken cancellationToken)
     {
-        var all = await _context.Repository.ListAllAsync(cancellationToken).ConfigureAwait(false);
-        var hasChildren = all.Any(o => IsLive(o) && o is IHasParent { ParentId: { } parentId } && parentId == manufacturingObject.Id);
+        var hasChildren = (await _context.Repository.ListChildrenAsync(manufacturingObject.Id, cancellationToken).ConfigureAwait(false)).Any(IsLive);
 
         return new ProjectExplorerNode(manufacturingObject.Id, DisplayNameOf(manufacturingObject), manufacturingObject.Kind, hasChildren, ProjectExplorerNodeType.Object, manufacturingObject is IHasLifecycle lifecycle ? lifecycle.Status : null);
     }

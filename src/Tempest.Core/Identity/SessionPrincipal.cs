@@ -51,6 +51,13 @@ public static class ApplicationPermissions
     [
         Verification.VerificationService.ReadPermission,
         Audit.AuditQuery.QueryPermission,
+
+        // `WP 17.9.3`: verifying and releasing reference data are permissions
+        // (ADR-0143, amended), held by both session roles in a single-user
+        // consultancy desktop. The gate exists so that a configuration, or a
+        // later role model, can withdraw them without touching the service.
+        ReferenceData.Review.ReferenceReviewService.VerifyPermission,
+        ReferenceData.Review.ReferenceReviewService.ReleasePermission,
     ];
 }
 

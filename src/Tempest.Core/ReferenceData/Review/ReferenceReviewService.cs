@@ -72,22 +72,33 @@ public sealed class ReferenceReviewService
     private readonly ILogger? _logger;
     private readonly IAuditRecorder? _auditRecorder;
 
+    /// <summary>The permission a principal must hold to verify a reference record against its source (`WP 17.9.3`).</summary>
+    public static readonly Permission VerifyPermission = new("reference.verify");
+
+    /// <summary>The permission a principal must hold to release a verified reference record for engineering use (`WP 17.9.3`).</summary>
+    public static readonly Permission ReleasePermission = new("reference.release");
+
+    private readonly IPermissionEvaluator? _permissions;
+
     /// <summary>Initialises a new instance of the <see cref="ReferenceReviewService"/> class.</summary>
-    /// <param name="principals">Where the reviewer's identity comes from. Never a parameter of the review itself.</param>
-    /// <param name="timeProvider">Where the verification date comes from. Injectable so a test can state the date rather than depend on the day it runs.</param>
-    /// <param name="logger">An optional logger.</param>
-    /// <param name="auditRecorder">
-    /// Records a <c>reference.verified</c>/<c>reference.released</c> audit
-    /// row for every review act (`WP 17.2A`, ADR-0146). Optional and
-    /// nullable, defaulting to <see langword="null"/>, so a hand-assembled
-    /// test context keeps working unchanged; without it, review behaves
-    /// exactly as before and writes no audit row.
+    /// <param name="principals">Where the acting principal comes from; never a parameter of the act.</param>
+    /// <param name="timeProvider">The clock the review date is taken from.</param>
+    /// <param name="logger">Optional logger.</param>
+    /// <param name="auditRecorder">Optional audit recorder; when present, every verify and release writes a row.</param>
+    /// <param name="permissions">
+    /// The platform's one authorisation point (ADR-0044). When present,
+    /// verifying requires <see cref="VerifyPermission"/> and releasing
+    /// requires <see cref="ReleasePermission"/> (`WP 17.9.3`, closing hazard
+    /// H8 of the design-freeze review: before this, any signed-in principal
+    /// could release any reference record). When absent, the act is gated on
+    /// a principal being signed in, as before.
     /// </param>
     public ReferenceReviewService(
         ICurrentPrincipalAccessor principals,
         TimeProvider? timeProvider = null,
         ILogger? logger = null,
-        IAuditRecorder? auditRecorder = null)
+        IAuditRecorder? auditRecorder = null,
+        IPermissionEvaluator? permissions = null)
     {
         ArgumentNullException.ThrowIfNull(principals);
 
@@ -95,6 +106,7 @@ public sealed class ReferenceReviewService
         _time = timeProvider ?? TimeProvider.System;
         _logger = logger;
         _auditRecorder = auditRecorder;
+        _permissions = permissions;
     }
 
     /// <summary>
@@ -122,7 +134,7 @@ public sealed class ReferenceReviewService
         ArgumentNullException.ThrowIfNull(statement);
         ArgumentException.ThrowIfNullOrWhiteSpace(statement.SourceConsulted);
 
-        var reviewer = RequireReviewer(catalog.LibraryName, recordId);
+        var reviewer = RequireReviewer(catalog.LibraryName, recordId, VerifyPermission);
 
         var record = await catalog.FindAsync(recordId, cancellationToken).ConfigureAwait(false)
             ?? throw new ReferenceRecordNotFoundException(catalog.LibraryName, recordId);
@@ -209,7 +221,7 @@ public sealed class ReferenceReviewService
         ArgumentException.ThrowIfNullOrWhiteSpace(recordId);
         ArgumentException.ThrowIfNullOrWhiteSpace(rationale);
 
-        var releaser = RequireReviewer(catalog.LibraryName, recordId);
+        var releaser = RequireReviewer(catalog.LibraryName, recordId, ReleasePermission);
 
         var record = await catalog.FindAsync(recordId, cancellationToken).ConfigureAwait(false)
             ?? throw new ReferenceRecordNotFoundException(catalog.LibraryName, recordId);
@@ -257,17 +269,30 @@ public sealed class ReferenceReviewService
         return released;
     }
 
-    private string RequireReviewer(string library, string recordId)
+    private string RequireReviewer(string library, string recordId, Permission required)
     {
-        var reviewer = _principals.Current?.Identity.Id;
+        var principal = _principals.Current;
+        var reviewer = principal?.Identity.Id;
 
-        if (string.IsNullOrWhiteSpace(reviewer))
+        if (principal is null || string.IsNullOrWhiteSpace(reviewer))
         {
             throw new ReferenceReviewException(
                 library,
                 recordId,
                 "no principal is signed in. A verification nobody can be held to is not a verification, so "
                 + "the act is refused rather than attributed to an unknown principal.");
+        }
+
+        // `WP 17.9.3`: who may verify and release is a permission, held by the
+        // session's roles by default and withdrawable by configuration, not a
+        // property of being signed in. The refusal is a review refusal, in
+        // the same words the surface already shows for every other one.
+        if (_permissions is not null && !_permissions.HasPermission(principal, required))
+        {
+            throw new ReferenceReviewException(
+                library,
+                recordId,
+                $"principal '{reviewer}' does not hold the '{required.Key}' permission. The act is refused, and nothing was recorded.");
         }
 
         return reviewer;

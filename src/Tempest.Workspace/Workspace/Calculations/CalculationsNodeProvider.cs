@@ -93,8 +93,7 @@ public sealed class CalculationsNodeProvider : IProjectExplorerNodeProvider
 
         if (target is ICalculation)
         {
-            var all = await _context.Repository.ListAllAsync(cancellationToken).ConfigureAwait(false);
-            var children = all.Where(o => IsLive(o) && o is IHasParent { ParentId: { } parentId } && parentId == nodeId);
+            var children = (await _context.Repository.ListChildrenAsync(nodeId, cancellationToken).ConfigureAwait(false)).Where(IsLive);
 
             var nodes = new List<ProjectExplorerNode>();
             foreach (var child in children)
@@ -140,8 +139,7 @@ public sealed class CalculationsNodeProvider : IProjectExplorerNodeProvider
 
     private async Task<ProjectExplorerNode> ToCalculationNodeAsync(IEngineeringObject calculation, CancellationToken cancellationToken)
     {
-        var all = await _context.Repository.ListAllAsync(cancellationToken).ConfigureAwait(false);
-        var hasChildren = all.Any(o => IsLive(o) && o is IHasParent { ParentId: { } parentId } && parentId == calculation.Id);
+        var hasChildren = (await _context.Repository.ListChildrenAsync(calculation.Id, cancellationToken).ConfigureAwait(false)).Any(IsLive);
 
         return new ProjectExplorerNode(calculation.Id, DisplayNameOf(calculation), calculation.Kind, hasChildren, ProjectExplorerNodeType.Object, calculation is IHasLifecycle lifecycle ? lifecycle.Status : null);
     }

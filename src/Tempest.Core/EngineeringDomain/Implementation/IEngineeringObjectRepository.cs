@@ -7,4 +7,20 @@ public interface IEngineeringObjectRepository
     Task<IEngineeringObject?> FindAsync(Guid id, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<IEngineeringObject>> ListByKindAsync(string kind, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<IEngineeringObject>> ListAllAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Every registered object whose live <see cref="IHasParent.ParentId"/> is
+    /// <paramref name="parentId"/>, deleted or not (`WP 17.9.3`): an indexed
+    /// lookup, never a scan of every object. Callers filter liveness as they
+    /// always did.
+    /// </summary>
+    Task<IReadOnlyList<IEngineeringObject>> ListChildrenAsync(Guid parentId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Tells the cache that <paramref name="objectId"/>'s parent is now
+    /// <paramref name="newParentId"/> (`WP 17.9.3`). Raised by the one mutator
+    /// of a parent, <c>MoveAsync</c>, after its transaction commits and inside
+    /// the same lock hold as the state it applies.
+    /// </summary>
+    void ParentChanged(Guid objectId, Guid? newParentId);
 }

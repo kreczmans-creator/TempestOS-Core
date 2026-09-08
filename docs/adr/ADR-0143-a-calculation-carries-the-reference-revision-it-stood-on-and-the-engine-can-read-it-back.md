@@ -4,6 +4,8 @@
 
 Accepted — First Calculation phase, 2026-09-07.
 
+Amended by `WP 17.9.3` (2026-09-08): verifying a reference record requires the `reference.verify` permission and releasing it requires `reference.release`, checked through `IPermissionEvaluator` (ADR-0044) inside `ReferenceReviewService`; both are held by the session principal's roles by default (`ApplicationPermissions.LocalSession`). The design-freeze review of 2026-09-08 found that any signed-in principal could release any record (hazard H8). The reviewer and the date still come from the session and the clock, never from a caller.
+
 ## Context
 
 The platform arrived at its first real numerical calculation with a
