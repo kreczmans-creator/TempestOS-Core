@@ -97,7 +97,7 @@ public sealed class EngineeringVerificationWorkspaceSampleModule : ModuleLifecyc
     /// <summary>The identity id this module establishes as current during its own initialisation.</summary>
     public const string SampleIdentityId = "sample.verificationworkspace-user";
 
-    private readonly IIdentityService _identityService;
+    private readonly CurrentPrincipalAccessor _currentPrincipalAccessor;
     private readonly EngineeringDomainContext _context;
     private readonly IVerificationService _verificationService;
     private readonly IRequirementsService _requirementsService;
@@ -108,7 +108,7 @@ public sealed class EngineeringVerificationWorkspaceSampleModule : ModuleLifecyc
 
     /// <summary>Initialises a new instance of the <see cref="EngineeringVerificationWorkspaceSampleModule"/> class.</summary>
     public EngineeringVerificationWorkspaceSampleModule(
-        IIdentityService identityService,
+        CurrentPrincipalAccessor currentPrincipalAccessor,
         EngineeringDomainContext context,
         IVerificationService verificationService,
         IRequirementsService requirementsService,
@@ -118,7 +118,7 @@ public sealed class EngineeringVerificationWorkspaceSampleModule : ModuleLifecyc
         EngineeringDocumentsWorkspaceSampleModule documentsSampleModule)
         : base("tempest.samples.workspaceverification", "Verification Workspace Sample", "1.0.0")
     {
-        ArgumentNullException.ThrowIfNull(identityService);
+        ArgumentNullException.ThrowIfNull(currentPrincipalAccessor);
         ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(verificationService);
         ArgumentNullException.ThrowIfNull(requirementsService);
@@ -127,7 +127,7 @@ public sealed class EngineeringVerificationWorkspaceSampleModule : ModuleLifecyc
         ArgumentNullException.ThrowIfNull(calculationsSampleModule);
         ArgumentNullException.ThrowIfNull(documentsSampleModule);
 
-        _identityService = identityService;
+        _currentPrincipalAccessor = currentPrincipalAccessor;
         _context = context;
         _verificationService = verificationService;
         _requirementsService = requirementsService;
@@ -146,7 +146,7 @@ public sealed class EngineeringVerificationWorkspaceSampleModule : ModuleLifecyc
 
     public override async Task InitialiseAsync(CancellationToken cancellationToken)
     {
-        _identityService.EstablishCurrentPrincipal(SampleIdentityId);
+        SamplePrincipalFactory.Establish(_currentPrincipalAccessor, SampleIdentityId);
 
         var activityIds = new List<Guid>();
 

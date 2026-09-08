@@ -25,7 +25,7 @@ namespace Tempest.Samples;
 /// role for Reporting and <see cref="SettingsSampleModule"/>'s own role
 /// for Settings. Carries <see cref="ModuleMetadataAttribute"/> so Discovery
 /// can read its identity without instantiating it (ADR-0027), freeing its
-/// constructor to request <see cref="IIdentityService"/>,
+/// constructor to request <see cref="Tempest.Core.Identity.CurrentPrincipalAccessor"/>,
 /// <see cref="ISettingsProvider"/>, <see cref="ICurrentPrincipalAccessor"/>,
 /// <see cref="IPermissionEvaluator"/>, <see cref="IAuditRecorder"/>,
 /// <see cref="INotificationDispatcher"/>, <see cref="IExportService"/>,
@@ -38,12 +38,12 @@ namespace Tempest.Samples;
 /// Deliberately establishes its own principal (<see cref="SampleIdentityId"/>),
 /// rather than depending on <see cref="IdentitySampleModule"/> having
 /// already run — every sample module remains independently usable, exactly
-/// as <see cref="AuditSampleModule"/>'s own precedent. With no
-/// <c>Identity:Roles:*:Permissions</c> configuration supplied,
-/// <see cref="ExportPermissionKey"/>/<see cref="ImportPermissionKey"/> are
-/// not granted — the fail-closed default handlers report honestly, exactly
-/// as <see cref="AuditSampleModule"/>'s own query command does for its own
-/// permission.
+/// as <see cref="AuditSampleModule"/>'s own precedent. `WP 17.2A`
+/// (ADR-0146): <see cref="ExportPermissionKey"/>/<see cref="ImportPermissionKey"/>
+/// are part of every session principal's fixed
+/// <see cref="ApplicationPermissions.LocalSession"/> set, so both handlers
+/// are granted unconditionally — there is no longer a configuration-driven
+/// grant mechanism to demonstrate a denied path against.
 /// </para>
 /// <para>
 /// This module deliberately does not depend on
@@ -63,11 +63,24 @@ public sealed class ExportImportSampleModule : ModuleLifecycleBase
     /// </summary>
     public const string SampleIdentityId = "sample.exportimport-user";
 
-    /// <summary>The permission key <see cref="ExportSampleDataCommandHandler"/> checks for before exporting.</summary>
-    public const string ExportPermissionKey = "exportimport.export";
+    /// <summary>
+    /// The permission key <see cref="ExportSampleDataCommandHandler"/>
+    /// checks for before exporting. `WP 17.2A` (ADR-0146): reuses
+    /// <see cref="Tempest.Core.Verification.VerificationService.ReadPermission"/>'s own
+    /// key, part of every session principal's fixed
+    /// <see cref="ApplicationPermissions.LocalSession"/> set — there is no
+    /// longer a configuration-driven grant mechanism for a custom key.
+    /// </summary>
+    public const string ExportPermissionKey = "verification.read";
 
-    /// <summary>The permission key <see cref="ImportSampleDataCommandHandler"/> checks for before importing.</summary>
-    public const string ImportPermissionKey = "exportimport.import";
+    /// <summary>
+    /// The permission key <see cref="ImportSampleDataCommandHandler"/>
+    /// checks for before importing. `WP 17.2A` (ADR-0146): reuses
+    /// <see cref="AuditQuery.QueryPermission"/>'s own key, part of
+    /// every session principal's fixed
+    /// <see cref="ApplicationPermissions.LocalSession"/> set.
+    /// </summary>
+    public const string ImportPermissionKey = "audit.query";
 
     /// <summary>The <see cref="CommandDescriptor.Id"/> this module registers for <see cref="ExportSampleDataCommand"/>.</summary>
     public const string ExportCommandId = "sample.exportimport-export";
@@ -102,7 +115,7 @@ public sealed class ExportImportSampleModule : ModuleLifecycleBase
     /// <summary>The artifact section kind the subtitle adapter is registered under.</summary>
     public const string SubtitleAdapterKind = "tempest.samples.exportimport.subtitle";
 
-    private readonly IIdentityService _identityService;
+    private readonly CurrentPrincipalAccessor _principalEstablisher;
     private readonly ISettingsProvider _settingsProvider;
     private readonly ICurrentPrincipalAccessor _currentPrincipalAccessor;
     private readonly IPermissionEvaluator _permissionEvaluator;
@@ -116,7 +129,7 @@ public sealed class ExportImportSampleModule : ModuleLifecycleBase
     /// <summary>
     /// Initialises a new instance of the <see cref="ExportImportSampleModule"/> class.
     /// </summary>
-    /// <param name="identityService">The Identity &amp; Permissions service this module establishes a principal through.</param>
+    /// <param name="principalEstablisher">The concrete accessor this module establishes its own principal on directly (`WP 17.2A`).</param>
     /// <param name="settingsProvider">The Settings service this module registers its sample settings through, and its adapters read from/write to.</param>
     /// <param name="currentPrincipalAccessor">The service this module's registered commands read the current principal from.</param>
     /// <param name="permissionEvaluator">The service this module's registered commands check permissions against.</param>
@@ -127,7 +140,7 @@ public sealed class ExportImportSampleModule : ModuleLifecycleBase
     /// <param name="commandDispatcher">The Command Framework's dispatch-side surface this module registers its handlers through.</param>
     /// <param name="commandRegistry">The Command Framework's discovery-side surface this module registers its descriptors through.</param>
     public ExportImportSampleModule(
-        IIdentityService identityService,
+        CurrentPrincipalAccessor principalEstablisher,
         ISettingsProvider settingsProvider,
         ICurrentPrincipalAccessor currentPrincipalAccessor,
         IPermissionEvaluator permissionEvaluator,
@@ -139,7 +152,7 @@ public sealed class ExportImportSampleModule : ModuleLifecycleBase
         ICommandRegistry commandRegistry)
         : base("tempest.samples.exportimport", "Export/Import Sample", "1.0.0")
     {
-        ArgumentNullException.ThrowIfNull(identityService);
+        ArgumentNullException.ThrowIfNull(principalEstablisher);
         ArgumentNullException.ThrowIfNull(settingsProvider);
         ArgumentNullException.ThrowIfNull(currentPrincipalAccessor);
         ArgumentNullException.ThrowIfNull(permissionEvaluator);
@@ -150,7 +163,7 @@ public sealed class ExportImportSampleModule : ModuleLifecycleBase
         ArgumentNullException.ThrowIfNull(commandDispatcher);
         ArgumentNullException.ThrowIfNull(commandRegistry);
 
-        _identityService = identityService;
+        _principalEstablisher = principalEstablisher;
         _settingsProvider = settingsProvider;
         _currentPrincipalAccessor = currentPrincipalAccessor;
         _permissionEvaluator = permissionEvaluator;
@@ -193,7 +206,7 @@ public sealed class ExportImportSampleModule : ModuleLifecycleBase
     /// </remarks>
     public override Task InitialiseAsync(CancellationToken cancellationToken)
     {
-        EstablishedPrincipal = _identityService.EstablishCurrentPrincipal(SampleIdentityId);
+        EstablishedPrincipal = SamplePrincipalFactory.Establish(_principalEstablisher, SampleIdentityId);
 
         _settingsProvider.RegisterDefinition(new SettingDefinition(GreetingSettingKey, "Sample Export/Import Greeting", GreetingSettingDefaultValue));
         _settingsProvider.RegisterDefinition(new SettingDefinition(SubtitleSettingKey, "Sample Export/Import Subtitle", SubtitleSettingDefaultValue));

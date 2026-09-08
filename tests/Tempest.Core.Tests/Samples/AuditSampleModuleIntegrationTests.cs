@@ -15,13 +15,19 @@ using Tempest.Samples;
 using Tempest.Core.Tests.Runtime;
 namespace Tempest.Core.Tests.Samples;
 
-// Proves WP 6.5 end-to-end: AuditSampleModule constructor-injects the
-// real, unmodified IIdentityService/IAuditRecorder/IAuditQuery/
-// ICommandDispatcher/ICommandRegistry, establishes its own principal,
-// records an action during its own initialisation, and demonstrates both
-// the permission-denied-by-default and granted query paths - driven
-// entirely by the real, unmodified module pipeline, mirroring
+// Proves WP 6.5 end-to-end (updated for WP 17.2A/ADR-0146):
+// AuditSampleModule constructor-injects the real, unmodified
+// CurrentPrincipalAccessor/IAuditRecorder/IAuditQuery/ICommandDispatcher/
+// ICommandRegistry, establishes its own principal directly, and records an
+// action during its own initialisation - driven entirely by the real,
+// unmodified module pipeline, mirroring
 // SettingsSampleModuleIntegrationTests/IdentitySampleModuleIntegrationTests.
+//
+// AuditQuery.QueryPermission is part of the fixed
+// ApplicationPermissions.LocalSession set every session principal now
+// carries (`WP 17.2A`), so the query command it drives is granted
+// unconditionally - there is no longer a configuration-driven grant to
+// demonstrate for this particular permission.
 public class AuditSampleModuleIntegrationTests
 {
     private static (RuntimeModuleManager RuntimeManager, TempestServiceProvider ServiceProvider) BuildPipeline(
@@ -46,9 +52,7 @@ public class AuditSampleModuleIntegrationTests
         var currentPrincipalAccessor = new CurrentPrincipalAccessor();
         services.AddInstance<ICurrentPrincipalAccessor>(currentPrincipalAccessor);
         services.AddInstance(currentPrincipalAccessor);
-        services.Singleton<IRoleProvider, RoleProvider>();
         services.Singleton<IPermissionEvaluator, PermissionEvaluator>();
-        services.Singleton<IIdentityService, IdentityService>();
 
         services.Singleton<IPersistenceStore, PersistenceStore>();
         services.Singleton<IAuditRecorder, AuditRecorder>();
@@ -65,14 +69,6 @@ public class AuditSampleModuleIntegrationTests
         new ConfigurationBuilder().AddSource(new MemoryConfigurationSource(
         [
             new KeyValuePair<string, string>(PersistenceStore.RootPathConfigurationKey, persistenceRootPath),
-        ])).Build();
-
-    private static IConfigurationProvider ConfigurationGrantingQueryPermission(string persistenceRootPath) =>
-        new ConfigurationBuilder().AddSource(new MemoryConfigurationSource(
-        [
-            new KeyValuePair<string, string>(PersistenceStore.RootPathConfigurationKey, persistenceRootPath),
-            new KeyValuePair<string, string>("Identity:Roles:Auditor:Permissions", AuditQuery.QueryPermission.Key),
-            new KeyValuePair<string, string>($"Identity:Principals:{AuditSampleModule.SampleIdentityId}:Roles", "Auditor"),
         ])).Build();
 
     // ----------------------------------------------------------------
@@ -95,7 +91,7 @@ public class AuditSampleModuleIntegrationTests
     {
         using var temp = new TempDirectory();
         var (runtimeManager, serviceProvider) = BuildPipeline(
-            ConfigurationGrantingQueryPermission(temp.Path), typeof(AuditSampleModule));
+            EmptyConfiguration(temp.Path), typeof(AuditSampleModule));
         var lifecycleManager = new ModuleLifecycleManager(runtimeManager, serviceProvider);
 
         await lifecycleManager.InitialiseAllAsync(CancellationToken.None);
@@ -133,7 +129,7 @@ public class AuditSampleModuleIntegrationTests
     {
         using var temp = new TempDirectory();
         var (runtimeManager, serviceProvider) = BuildPipeline(
-            ConfigurationGrantingQueryPermission(temp.Path), typeof(AuditSampleModule));
+            EmptyConfiguration(temp.Path), typeof(AuditSampleModule));
         var commandDispatcher = (ICommandDispatcher)serviceProvider.GetService(typeof(ICommandDispatcher));
         var lifecycleManager = new ModuleLifecycleManager(runtimeManager, serviceProvider);
         await lifecycleManager.InitialiseAllAsync(CancellationToken.None);
@@ -149,26 +145,13 @@ public class AuditSampleModuleIntegrationTests
     }
 
     [Fact]
-    public async Task QuerySampleAuditRecordsCommand_NoPermissionGranted_ReportsDeniedByDefault()
+    public async Task QuerySampleAuditRecordsCommand_QueryPermissionIsPartOfTheFixedSessionSet_ReportsSuccess()
     {
+        // `WP 17.2A`: AuditQuery.QueryPermission is part of every session
+        // principal's fixed ApplicationPermissions.LocalSession set - no
+        // configuration is needed to grant it any more.
         using var temp = new TempDirectory();
         var (runtimeManager, serviceProvider) = BuildPipeline(EmptyConfiguration(temp.Path), typeof(AuditSampleModule));
-        var commandRegistry = (ICommandRegistry)serviceProvider.GetService(typeof(ICommandRegistry));
-        var lifecycleManager = new ModuleLifecycleManager(runtimeManager, serviceProvider);
-        await lifecycleManager.InitialiseAllAsync(CancellationToken.None);
-
-        var result = await commandRegistry.InvokeAsync(AuditSampleModule.QuerySampleAuditRecordsCommandId, CancellationToken.None);
-
-        Assert.False(result.Succeeded);
-        Assert.Contains("Denied", result.Message);
-    }
-
-    [Fact]
-    public async Task QuerySampleAuditRecordsCommand_PermissionGranted_ReportsSuccess()
-    {
-        using var temp = new TempDirectory();
-        var (runtimeManager, serviceProvider) = BuildPipeline(
-            ConfigurationGrantingQueryPermission(temp.Path), typeof(AuditSampleModule));
         var commandRegistry = (ICommandRegistry)serviceProvider.GetService(typeof(ICommandRegistry));
         var lifecycleManager = new ModuleLifecycleManager(runtimeManager, serviceProvider);
         await lifecycleManager.InitialiseAllAsync(CancellationToken.None);
@@ -188,7 +171,7 @@ public class AuditSampleModuleIntegrationTests
     public async Task RecordedAction_IsQueryableByAFreshPipeline_OverTheSameUnderlyingStorage()
     {
         using var temp = new TempDirectory();
-        var configuration = ConfigurationGrantingQueryPermission(temp.Path);
+        var configuration = EmptyConfiguration(temp.Path);
 
         var (runtimeManagerOne, serviceProviderOne) = BuildPipeline(configuration, typeof(AuditSampleModule));
         var lifecycleManagerOne = new ModuleLifecycleManager(runtimeManagerOne, serviceProviderOne);
@@ -220,7 +203,7 @@ public class AuditSampleModuleIntegrationTests
     {
         using var temp = new TempDirectory();
         var (runtimeManager, serviceProvider) = BuildPipeline(
-            ConfigurationGrantingQueryPermission(temp.Path), typeof(AuditSampleModule));
+            EmptyConfiguration(temp.Path), typeof(AuditSampleModule));
         var lifecycleManager = new ModuleLifecycleManager(runtimeManager, serviceProvider);
         await lifecycleManager.InitialiseAllAsync(CancellationToken.None);
         var dispatcher = (ICommandDispatcher)serviceProvider.GetService(typeof(ICommandDispatcher));
@@ -248,8 +231,6 @@ public class AuditSampleModuleIntegrationTests
             .AddConfigurationSource(new MemoryConfigurationSource(
             [
                 new KeyValuePair<string, string>(PersistenceStore.RootPathConfigurationKey, temp.Path),
-                new KeyValuePair<string, string>("Identity:Roles:Auditor:Permissions", AuditQuery.QueryPermission.Key),
-                new KeyValuePair<string, string>($"Identity:Principals:{AuditSampleModule.SampleIdentityId}:Roles", "Auditor"),
             ]))
             .Build();
 

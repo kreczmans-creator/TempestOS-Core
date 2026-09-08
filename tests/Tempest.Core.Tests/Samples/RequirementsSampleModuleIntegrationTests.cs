@@ -19,17 +19,20 @@ using Tempest.Samples;
 using Tempest.Core.Tests.Runtime;
 namespace Tempest.Core.Tests.Samples;
 
-// Proves WP 7.3A end-to-end: RequirementsSampleModule constructor-injects
-// the real, unmodified IIdentityService/IRequirementsService/
-// IEngineeringDocumentStore/IVerificationService/ICurrentPrincipalAccessor/
-// IPermissionEvaluator/IAuditRecorder/IReportingService/ImportService/
-// ICommandDispatcher/ICommandRegistry, creates a sample requirement and
-// walks it through revision, lifecycle, grouping, collection, allocation,
-// and verification during its own initialisation, and demonstrates two
-// command paths (permission-gated evidence read, denied by default;
-// report generation) - driven entirely by the real, unmodified module
-// pipeline, mirroring ExportImportSampleModuleIntegrationTests' own
-// structure.
+// Proves WP 7.3A end-to-end (updated for WP 17.2A/ADR-0146):
+// RequirementsSampleModule constructor-injects the real, unmodified
+// CurrentPrincipalAccessor/IRequirementsService/IEngineeringDocumentStore/
+// IVerificationService/ICurrentPrincipalAccessor/IPermissionEvaluator/
+// IAuditRecorder/IReportingService/ImportService/ICommandDispatcher/
+// ICommandRegistry, creates a sample requirement and walks it through
+// revision, lifecycle, grouping, collection, allocation, and verification
+// during its own initialisation, and demonstrates two command paths
+// (permission-gated evidence read, denied by default; report generation)
+// - driven entirely by the real, unmodified module pipeline, mirroring
+// ExportImportSampleModuleIntegrationTests' own structure. Grants a
+// permission for a test by setting a hand-built PlatformPrincipal
+// directly on CurrentPrincipalAccessor - there is no configuration-driven
+// grant mechanism any more.
 public class RequirementsSampleModuleIntegrationTests
 {
     private static (RuntimeModuleManager RuntimeManager, TempestServiceProvider ServiceProvider) BuildPipeline(
@@ -58,9 +61,7 @@ public class RequirementsSampleModuleIntegrationTests
         var currentPrincipalAccessor = new CurrentPrincipalAccessor();
         services.AddInstance<ICurrentPrincipalAccessor>(currentPrincipalAccessor);
         services.AddInstance(currentPrincipalAccessor);
-        services.Singleton<IRoleProvider, RoleProvider>();
         services.Singleton<IPermissionEvaluator, PermissionEvaluator>();
-        services.Singleton<IIdentityService, IdentityService>();
 
         services.Singleton<IPersistenceStore, PersistenceStore>();
         services.Singleton<IAuditRecorder, AuditRecorder>();

@@ -16,8 +16,9 @@ using Tempest.Samples;
 using Tempest.Core.Tests.Runtime;
 namespace Tempest.Core.Tests.Samples;
 
-// Proves WP 8.2C end-to-end: EngineeringDomainSampleModule constructor-injects
-// the real, unmodified IIdentityService/EngineeringDomainContext/IMaterialCatalog/
+// Proves WP 8.2C end-to-end (updated for WP 17.2A/ADR-0146):
+// EngineeringDomainSampleModule constructor-injects the real, unmodified
+// CurrentPrincipalAccessor/EngineeringDomainContext/IMaterialCatalog/
 // IDependencyTraversal/ICommandDispatcher/ICommandRegistry, and builds its own
 // twelve-object, nine-family representative graph during initialisation -
 // driven entirely by the real, unmodified module pipeline, mirroring
@@ -50,9 +51,7 @@ public class EngineeringDomainSampleModuleIntegrationTests
         var currentPrincipalAccessor = new CurrentPrincipalAccessor();
         services.AddInstance<ICurrentPrincipalAccessor>(currentPrincipalAccessor);
         services.AddInstance(currentPrincipalAccessor);
-        services.Singleton<IRoleProvider, RoleProvider>();
         services.Singleton<IPermissionEvaluator, PermissionEvaluator>();
-        services.Singleton<IIdentityService, IdentityService>();
 
         services.Singleton<IPersistenceStore, PersistenceStore>();
         services.Singleton<IEngineeringDocumentStore, EngineeringDocumentStore>();

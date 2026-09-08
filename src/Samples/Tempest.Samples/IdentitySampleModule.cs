@@ -18,19 +18,21 @@ namespace Tempest.Samples;
 /// own role for Diagnostics. Carries <see cref="ModuleMetadataAttribute"/>
 /// so Discovery can read its identity without instantiating it
 /// (ADR-0027), freeing its constructor to request
-/// <see cref="IIdentityService"/>, <see cref="ICurrentPrincipalAccessor"/>,
+/// <see cref="Tempest.Core.Identity.CurrentPrincipalAccessor"/>, <see cref="ICurrentPrincipalAccessor"/>,
 /// <see cref="IPermissionEvaluator"/>, <see cref="ICommandDispatcher"/>,
 /// and <see cref="ICommandRegistry"/> — all DI-public platform services —
 /// via ordinary constructor injection.
 /// </para>
 /// <para>
-/// With no <c>Identity:Principals:sample.local-user:Roles</c>
-/// configuration supplied, <see cref="SamplePermissionKey"/> is not
-/// granted — the fail-closed default this module's own command reports
-/// honestly, rather than hiding. A caller supplying that configuration
-/// (see this module's own test coverage) observes the command succeed
-/// instead, demonstrating both the granted and denied paths against the
-/// same, unmodified module.
+/// <b>`WP 17.2A` (ADR-0146):</b> Identity collapses to one session
+/// principal carrying a fixed permission set
+/// (<see cref="ApplicationPermissions.LocalSession"/>) — there is no
+/// longer a configuration-driven role/permission grant mechanism to
+/// demonstrate. <see cref="SamplePermissionKey"/> deliberately names a
+/// permission outside that fixed set, so the command it drives always
+/// reports the fail-closed default honestly, rather than hiding it; this
+/// module's own test coverage separately proves the two permissions
+/// every session principal genuinely does hold.
 /// </para>
 /// </remarks>
 [ModuleMetadata("tempest.samples.identity", "Identity Sample", "1.0.0")]
@@ -54,7 +56,7 @@ public sealed class IdentitySampleModule : ModuleLifecycleBase
     /// </summary>
     public const string CheckSamplePermissionCommandId = "sample.identity-check";
 
-    private readonly IIdentityService _identityService;
+    private readonly CurrentPrincipalAccessor _principalEstablisher;
     private readonly ICurrentPrincipalAccessor _currentPrincipalAccessor;
     private readonly IPermissionEvaluator _permissionEvaluator;
     private readonly ICommandDispatcher _commandDispatcher;
@@ -63,9 +65,9 @@ public sealed class IdentitySampleModule : ModuleLifecycleBase
     /// <summary>
     /// Initialises a new instance of the <see cref="IdentitySampleModule"/> class.
     /// </summary>
-    /// <param name="identityService">
-    /// The Identity &amp; Permissions service this module establishes a
-    /// principal through, resolved via ordinary constructor injection.
+    /// <param name="principalEstablisher">
+    /// The concrete accessor this module establishes its own principal on
+    /// directly (`WP 17.2A`), resolved via ordinary constructor injection.
     /// </param>
     /// <param name="currentPrincipalAccessor">
     /// The service this module's registered command reads the current
@@ -85,20 +87,20 @@ public sealed class IdentitySampleModule : ModuleLifecycleBase
     /// injection.
     /// </param>
     public IdentitySampleModule(
-        IIdentityService identityService,
+        CurrentPrincipalAccessor principalEstablisher,
         ICurrentPrincipalAccessor currentPrincipalAccessor,
         IPermissionEvaluator permissionEvaluator,
         ICommandDispatcher commandDispatcher,
         ICommandRegistry commandRegistry)
         : base("tempest.samples.identity", "Identity Sample", "1.0.0")
     {
-        ArgumentNullException.ThrowIfNull(identityService);
+        ArgumentNullException.ThrowIfNull(principalEstablisher);
         ArgumentNullException.ThrowIfNull(currentPrincipalAccessor);
         ArgumentNullException.ThrowIfNull(permissionEvaluator);
         ArgumentNullException.ThrowIfNull(commandDispatcher);
         ArgumentNullException.ThrowIfNull(commandRegistry);
 
-        _identityService = identityService;
+        _principalEstablisher = principalEstablisher;
         _currentPrincipalAccessor = currentPrincipalAccessor;
         _permissionEvaluator = permissionEvaluator;
         _commandDispatcher = commandDispatcher;
@@ -126,7 +128,7 @@ public sealed class IdentitySampleModule : ModuleLifecycleBase
     /// </remarks>
     public override Task InitialiseAsync(CancellationToken cancellationToken)
     {
-        EstablishedPrincipal = _identityService.EstablishCurrentPrincipal(SampleIdentityId);
+        EstablishedPrincipal = SamplePrincipalFactory.Establish(_principalEstablisher, SampleIdentityId);
 
         _commandDispatcher.RegisterHandler<CheckSamplePermissionCommand>(
             new CheckSamplePermissionCommandHandler(_currentPrincipalAccessor, _permissionEvaluator));

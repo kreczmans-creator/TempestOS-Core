@@ -1,3 +1,4 @@
+using Tempest.Core.Audit;
 using Tempest.Core.Identity;
 using Tempest.Core.Logging;
 
@@ -60,24 +61,40 @@ public sealed record ReferenceReviewStatement(string SourceConsulted, string? No
 /// </remarks>
 public sealed class ReferenceReviewService
 {
+    /// <summary>The <see cref="Audit.IAuditRecord.Action"/> recorded by <see cref="VerifyAsync{TDefinition}"/> (`WP 17.2A`).</summary>
+    public const string ReferenceVerifiedActionName = "reference.verified";
+
+    /// <summary>The <see cref="Audit.IAuditRecord.Action"/> recorded by <see cref="ReleaseAsync{TDefinition}"/> (`WP 17.2A`).</summary>
+    public const string ReferenceReleasedActionName = "reference.released";
+
     private readonly ICurrentPrincipalAccessor _principals;
     private readonly TimeProvider _time;
     private readonly ILogger? _logger;
+    private readonly IAuditRecorder? _auditRecorder;
 
     /// <summary>Initialises a new instance of the <see cref="ReferenceReviewService"/> class.</summary>
     /// <param name="principals">Where the reviewer's identity comes from. Never a parameter of the review itself.</param>
     /// <param name="timeProvider">Where the verification date comes from. Injectable so a test can state the date rather than depend on the day it runs.</param>
     /// <param name="logger">An optional logger.</param>
+    /// <param name="auditRecorder">
+    /// Records a <c>reference.verified</c>/<c>reference.released</c> audit
+    /// row for every review act (`WP 17.2A`, ADR-0146). Optional and
+    /// nullable, defaulting to <see langword="null"/>, so a hand-assembled
+    /// test context keeps working unchanged; without it, review behaves
+    /// exactly as before and writes no audit row.
+    /// </param>
     public ReferenceReviewService(
         ICurrentPrincipalAccessor principals,
         TimeProvider? timeProvider = null,
-        ILogger? logger = null)
+        ILogger? logger = null,
+        IAuditRecorder? auditRecorder = null)
     {
         ArgumentNullException.ThrowIfNull(principals);
 
         _principals = principals;
         _time = timeProvider ?? TimeProvider.System;
         _logger = logger;
+        _auditRecorder = auditRecorder;
     }
 
     /// <summary>
@@ -147,11 +164,25 @@ public sealed class ReferenceReviewService
         _logger?.Information(
             $"{catalog.LibraryName} record '{recordId}' verified by '{reviewer}' against '{statement.SourceConsulted}'.");
 
-        return await catalog.SetValidationStateAsync(
+        var checkedRecord = await catalog.SetValidationStateAsync(
             recordId,
             ReferenceValidationState.Checked,
             $"Checked following verification by '{reviewer}'.",
             cancellationToken).ConfigureAwait(false);
+
+        if (_auditRecorder is not null)
+        {
+            await _auditRecorder.RecordAsync(
+                ReferenceVerifiedActionName,
+                new Dictionary<string, string>
+                {
+                    ["Subject"] = recordId,
+                    ["Revision"] = checkedRecord.RevisionNumber.ToString(),
+                },
+                cancellationToken).ConfigureAwait(false);
+        }
+
+        return checkedRecord;
     }
 
     /// <summary>
@@ -210,6 +241,18 @@ public sealed class ReferenceReviewService
             cancellationToken).ConfigureAwait(false);
 
         _logger?.Information($"{catalog.LibraryName} record '{recordId}' released by '{releaser}'.");
+
+        if (_auditRecorder is not null)
+        {
+            await _auditRecorder.RecordAsync(
+                ReferenceReleasedActionName,
+                new Dictionary<string, string>
+                {
+                    ["Subject"] = recordId,
+                    ["Revision"] = released.RevisionNumber.ToString(),
+                },
+                cancellationToken).ConfigureAwait(false);
+        }
 
         return released;
     }

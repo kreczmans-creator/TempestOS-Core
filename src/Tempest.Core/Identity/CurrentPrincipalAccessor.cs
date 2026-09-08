@@ -40,9 +40,11 @@ namespace Tempest.Core.Identity;
 /// <para>
 /// <see cref="SetCurrent"/> is deliberately not part of
 /// <see cref="ICurrentPrincipalAccessor"/> itself — every ordinary
-/// consumer resolves the read-only interface exactly as designed; only
-/// <see cref="IIdentityService"/> is constructed with a direct reference
-/// to this concrete type, so it alone can establish a current principal.
+/// consumer resolves the read-only interface exactly as designed; only the
+/// presentation layer that owns the principal boundary (`WP 17.2A`'s own
+/// <c>WorkspaceHost</c>) resolves a direct reference to this concrete
+/// type, so it alone can establish a current principal, from whatever
+/// <see cref="ISessionPrincipalSource"/> it is composed with.
 /// </para>
 /// </remarks>
 public sealed class CurrentPrincipalAccessor : ICurrentPrincipalAccessor

@@ -43,7 +43,8 @@ namespace Tempest.Desktop;
 public sealed class WorkspaceHost : IAsyncDisposable
 {
     private readonly string? _persistenceRootPathOverride;
-    private readonly ISessionPrincipalSource _sessionPrincipals;
+    private readonly ISessionPrincipalSource? _sessionPrincipalsOverride;
+    private readonly IReadOnlyList<string>? _commandLineArgs;
 
     private ITempestHost? _host;
     private WorkspaceManager? _manager;
@@ -87,16 +88,28 @@ public sealed class WorkspaceHost : IAsyncDisposable
     /// </param>
     /// <param name="sessionPrincipals">
     /// Where this session's own principal comes from (`TD-103`). Defaults
-    /// to <see cref="LocalSessionPrincipalSource"/> — one local desktop
-    /// user, no authentication — and is injectable so a test can state the
-    /// account rather than inherit the build agent's, and so
-    /// Administration can supply a different source later without this
-    /// class changing.
+    /// to <see cref="SessionPrincipalSource"/> — one local desktop session,
+    /// no authentication, constructed once the Host's own configuration is
+    /// available so <c>Identity:DisplayName</c>/<c>Identity:Role</c> are
+    /// honoured — and is injectable so a test can supply a stub rather than
+    /// inherit the build agent's own OS account, and so Administration can
+    /// supply a different source later without this class changing.
     /// </param>
-    public WorkspaceHost(string? persistenceRootPathOverride = null, ISessionPrincipalSource? sessionPrincipals = null)
+    /// <param name="commandLineArgs">
+    /// The process's own command-line arguments (Avalonia's own
+    /// <c>IClassicDesktopStyleApplicationLifetime.Args</c>, itself
+    /// <c>Program.Main(string[] args)</c>, unchanged), or
+    /// <see langword="null"/> (the default) to contribute none — reaches
+    /// the Host's default configuration source (`WP 17.2A`, ADR-0146).
+    /// </param>
+    public WorkspaceHost(
+        string? persistenceRootPathOverride = null,
+        ISessionPrincipalSource? sessionPrincipals = null,
+        IReadOnlyList<string>? commandLineArgs = null)
     {
         _persistenceRootPathOverride = persistenceRootPathOverride;
-        _sessionPrincipals = sessionPrincipals ?? new LocalSessionPrincipalSource();
+        _sessionPrincipalsOverride = sessionPrincipals;
+        _commandLineArgs = commandLineArgs;
     }
 
     /// <summary>
@@ -122,7 +135,7 @@ public sealed class WorkspaceHost : IAsyncDisposable
                 ]),
             ];
 
-        var (host, manager) = EngineeringWorkspaceComposer.Build(configurationSources);
+        var (host, manager) = EngineeringWorkspaceComposer.Build(configurationSources, _commandLineArgs);
         _host = host;
         _manager = manager;
 
@@ -157,7 +170,15 @@ public sealed class WorkspaceHost : IAsyncDisposable
         // own answer is the one that stands rather than a sample's; the
         // source is the boundary, and Administration can replace it later
         // without the engineering domain knowing.
-        SessionPrincipal = _sessionPrincipals.Resolve();
+        //
+        // `WP 17.2A` (ADR-0146): the default source is constructed here,
+        // not in this class's own constructor, specifically so it can read
+        // `Identity:DisplayName`/`Identity:Role` from the Host's own
+        // now-built configuration — the identity id itself is still always
+        // read from the OS, never from configuration.
+        var configuration = (IConfigurationProvider)host.Services!.GetService(typeof(IConfigurationProvider));
+        var sessionPrincipals = _sessionPrincipalsOverride ?? new SessionPrincipalSource(configuration);
+        SessionPrincipal = sessionPrincipals.Resolve();
         if (principalAccessor is CurrentPrincipalAccessor accessor)
         {
             // Published unconditionally, null included. Publishing only a
@@ -235,7 +256,8 @@ public sealed class WorkspaceHost : IAsyncDisposable
 
         ReferenceReview = new ReferenceReviewService(
             (ICurrentPrincipalAccessor)host.Services!.GetService(typeof(ICurrentPrincipalAccessor)),
-            logger: hostLogger);
+            logger: hostLogger,
+            auditRecorder: (Tempest.Core.Audit.IAuditRecorder)host.Services!.GetService(typeof(Tempest.Core.Audit.IAuditRecorder)));
 
         // The Engineering Calculation surface's own read model. It composes
         // the four governed acts a calculation journey needs - populate,
@@ -287,7 +309,7 @@ public sealed class WorkspaceHost : IAsyncDisposable
     /// what every consumer actually reads. Exposed here so a test can
     /// assert the boundary did its job, not as a second source of truth.
     /// </remarks>
-    public IPrincipal? SessionPrincipal { get; private set; }
+    public ISessionPrincipal? SessionPrincipal { get; private set; }
 
     /// <summary>Gets what startup rehydration recovered (`TD-85`) — <see langword="null"/> before <see cref="StartAsync"/> completes.</summary>
     public EngineeringRehydrationResult? RehydrationResult { get; private set; }
