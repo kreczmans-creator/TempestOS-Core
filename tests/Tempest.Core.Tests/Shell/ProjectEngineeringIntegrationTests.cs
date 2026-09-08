@@ -9,6 +9,7 @@ using Tempest.Core.ReferenceData;
 using Tempest.Core.Persistence;
 using Tempest.Core.Requirements;
 using Tempest.Core.Settings;
+using Tempest.Core.Tests.Persistence;
 using Tempest.Core.UnitsAndQuantities;
 using Tempest.Core.Verification;
 
@@ -32,14 +33,14 @@ public class ProjectEngineeringIntegrationTests
         IProjectDirectory Directory,
         IProjectContext Context,
         IShellNavigator Navigator,
-        IPersistenceStore Persistence,
+        InMemoryQueryablePersistenceStore Persistence,
         EngineeringDocumentStore DocumentStore,
         CurrentPrincipalAccessor Principal);
 
     private static Rig BuildRig()
     {
         var principal = new CurrentPrincipalAccessor();
-        var persistence = new Materials.InMemoryPersistenceStore();
+        var persistence = new InMemoryQueryablePersistenceStore();
         var documentStore = new EngineeringDocumentStore(persistence, principal);
         var repository = new InMemoryEngineeringObjectRepository();
         var relationshipRepository = new InMemoryEngineeringRelationshipRepository();
@@ -48,7 +49,7 @@ public class ProjectEngineeringIntegrationTests
         // One persistence store backs everything — the object graph
         // (`TD-85`), materials, requirements and verification alike.
         var domain = new EngineeringDomainContext(
-            documentStore, repository, relationshipRepository,
+            persistence, documentStore, repository, relationshipRepository,
             new LifecycleTransitionTable(), new ValidationRuleSet(),
             new EvidenceComposer(relationshipDiscovery, repository), principal,
             new EngineeringObjectStateStore(persistence));

@@ -1509,7 +1509,6 @@ public sealed class MutatorRefusalAdversarialTests
         public ProbeDocumentStore Documents { get; }
         public ProbeStateStore States { get; }
         public ProbeContentStore Content { get; }
-        public FakeWriteIntentStore WriteIntents { get; } = new();
 
         public async Task<Part> CreatePartAsync(string identifier, string displayName) =>
             (Part)await new EngineeringObjectFactory<Part>(
@@ -1751,27 +1750,4 @@ public sealed class MutatorRefusalAdversarialTests
         }
     }
 
-    /// <summary>A write-intent store, so the marker outcomes in §3 are observable.</summary>
-    private sealed class FakeWriteIntentStore : IAttachmentWriteIntentStore
-    {
-        private readonly HashSet<Guid> _marked = new();
-
-        public Task MarkAsync(Guid attachmentId, CancellationToken cancellationToken = default)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            lock (_marked) { _marked.Add(attachmentId); }
-            return Task.CompletedTask;
-        }
-
-        public Task ClearAsync(Guid attachmentId, CancellationToken cancellationToken = default)
-        {
-            lock (_marked) { _marked.Remove(attachmentId); }
-            return Task.CompletedTask;
-        }
-
-        public Task<IReadOnlySet<Guid>> ListMarkedAsync(CancellationToken cancellationToken = default)
-        {
-            lock (_marked) { return Task.FromResult<IReadOnlySet<Guid>>(new HashSet<Guid>(_marked)); }
-        }
-    }
 }

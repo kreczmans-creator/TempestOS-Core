@@ -1,6 +1,7 @@
 using Tempest.Core.Audit;
 using Tempest.Core.Identity;
 using Tempest.Core.Persistence;
+using Tempest.Core.Tests.Persistence;
 
 namespace Tempest.Core.Tests.Audit;
 
@@ -9,9 +10,9 @@ public class AuditQueryTests
     private static IPrincipal BuildPrincipal(string id) =>
         new PlatformPrincipal(new PlatformIdentity(id, id), []);
 
-    private static async Task<InMemoryPersistenceStore> SeedAsync(params (string ActorId, string Action, DateTimeOffset OccurredAt)[] entries)
+    private static async Task<InMemoryQueryablePersistenceStore> SeedAsync(params (string ActorId, string Action, DateTimeOffset OccurredAt)[] entries)
     {
-        var store = new InMemoryPersistenceStore();
+        var store = new InMemoryQueryablePersistenceStore();
         var accessor = new CurrentPrincipalAccessor();
         var recorder = new AuditRecorder(store, accessor);
 
@@ -66,7 +67,7 @@ public class AuditQueryTests
     [Fact]
     public async Task QueryAsync_FilterByDateRange_ExcludesRecordsOutsideRange()
     {
-        var store = new InMemoryPersistenceStore();
+        var store = new InMemoryQueryablePersistenceStore();
         var accessor = new CurrentPrincipalAccessor();
         accessor.SetCurrent(BuildPrincipal("actor-1"));
         var recorder = new AuditRecorder(store, accessor);
@@ -96,7 +97,7 @@ public class AuditQueryTests
     [Fact]
     public async Task QueryAsync_Results_AreOrderedByOccurredAtAscending()
     {
-        var store = new InMemoryPersistenceStore();
+        var store = new InMemoryQueryablePersistenceStore();
         var accessor = new CurrentPrincipalAccessor();
         accessor.SetCurrent(BuildPrincipal("actor-1"));
         var recorder = new AuditRecorder(store, accessor);
@@ -119,7 +120,7 @@ public class AuditQueryTests
     [Fact]
     public async Task QueryAsync_PrincipalHoldsQueryPermission_Succeeds()
     {
-        var store = new InMemoryPersistenceStore();
+        var store = new InMemoryQueryablePersistenceStore();
         var accessor = new CurrentPrincipalAccessor();
         var principal = new PlatformPrincipal(new PlatformIdentity("auditor", "Auditor"), [AuditQuery.QueryPermission]);
         accessor.SetCurrent(principal);
@@ -133,7 +134,7 @@ public class AuditQueryTests
     [Fact]
     public async Task QueryAsync_PrincipalLacksQueryPermission_ThrowsPermissionDeniedException()
     {
-        var store = new InMemoryPersistenceStore();
+        var store = new InMemoryQueryablePersistenceStore();
         var accessor = new CurrentPrincipalAccessor();
         accessor.SetCurrent(new PlatformPrincipal(new PlatformIdentity("someone", "Someone"), []));
         var query = new AuditQuery(store, accessor, new PermissionEvaluator());
@@ -144,7 +145,7 @@ public class AuditQueryTests
     [Fact]
     public async Task QueryAsync_NoPrincipalEstablished_ThrowsPermissionDeniedException()
     {
-        var store = new InMemoryPersistenceStore();
+        var store = new InMemoryQueryablePersistenceStore();
         var accessor = new CurrentPrincipalAccessor();
         var query = new AuditQuery(store, accessor, new PermissionEvaluator());
 
@@ -172,7 +173,7 @@ public class AuditQueryTests
     [Fact]
     public async Task QueryAsync_NullCriteria_ThrowsArgumentNullException()
     {
-        var query = BuildGrantedQuery(new InMemoryPersistenceStore());
+        var query = BuildGrantedQuery(new InMemoryQueryablePersistenceStore());
 
         await Assert.ThrowsAsync<ArgumentNullException>(() => query.QueryAsync(null!));
     }
@@ -188,21 +189,21 @@ public class AuditQueryTests
     public void Constructor_NullCurrentPrincipalAccessor_ThrowsArgumentNullException()
     {
         Assert.Throws<ArgumentNullException>(
-            () => new AuditQuery(new InMemoryPersistenceStore(), null!, new PermissionEvaluator()));
+            () => new AuditQuery(new InMemoryQueryablePersistenceStore(), null!, new PermissionEvaluator()));
     }
 
     [Fact]
     public void Constructor_NullPermissionEvaluator_ThrowsArgumentNullException()
     {
         Assert.Throws<ArgumentNullException>(
-            () => new AuditQuery(new InMemoryPersistenceStore(), new CurrentPrincipalAccessor(), null!));
+            () => new AuditQuery(new InMemoryQueryablePersistenceStore(), new CurrentPrincipalAccessor(), null!));
     }
 
     // ----------------------------------------------------------------
     // Test helper
     // ----------------------------------------------------------------
 
-    private static AuditQuery BuildGrantedQuery(IPersistenceStore store)
+    private static AuditQuery BuildGrantedQuery(IQueryablePersistenceStore store)
     {
         var accessor = new CurrentPrincipalAccessor();
         accessor.SetCurrent(new PlatformPrincipal(new PlatformIdentity("auditor", "Auditor"), [AuditQuery.QueryPermission]));

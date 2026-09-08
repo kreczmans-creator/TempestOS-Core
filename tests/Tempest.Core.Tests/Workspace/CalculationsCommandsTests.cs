@@ -2,7 +2,7 @@ using System.Text.Json;
 using Tempest.App.Workspace.Calculations;
 using Tempest.Core.Calculations;
 using Tempest.Core.EngineeringDomain;
-using Tempest.Core.Identity;
+using Tempest.Core.Tests.EngineeringDomain;
 using Tempest.Core.UnitsAndQuantities;
 
 namespace Tempest.Core.Tests.Workspace;
@@ -20,17 +20,7 @@ public class CalculationsCommandsTests
 
     private static EngineeringDomainContext BuildContext()
     {
-        var principalAccessor = new CurrentPrincipalAccessor();
-        var store = new InMemoryEngineeringDocumentStore(principalAccessor);
-        var repository = new InMemoryEngineeringObjectRepository();
-        var relationshipRepository = new InMemoryEngineeringRelationshipRepository();
-        var lifecycleTable = new LifecycleTransitionTable();
-        var validationRuleSet = new ValidationRuleSet();
-        var relationshipDiscovery = new RelationshipDiscoveryService(relationshipRepository, repository);
-        var evidenceComposer = new EvidenceComposer(relationshipDiscovery, repository);
-
-        return new EngineeringDomainContext(
-            store, repository, relationshipRepository, lifecycleTable, validationRuleSet, evidenceComposer, principalAccessor);
+        return TestEngineeringDomain.NewContext();
     }
 
     private static async Task<Calculation> CreateCalculationAsync(EngineeringDomainContext context, string identifier = "CALC-1", string name = "Calculation")

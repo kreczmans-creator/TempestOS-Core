@@ -238,7 +238,7 @@ public sealed class GovernanceRestartTests : IDisposable
         var discovery = new RelationshipDiscoveryService(relationships, repository);
 
         var context = new EngineeringDomainContext(
-            documents, repository, relationships, new LifecycleTransitionTable(), new ValidationRuleSet(),
+            store, documents, repository, relationships, new LifecycleTransitionTable(), new ValidationRuleSet(),
             new EvidenceComposer(discovery, repository), principal,
             new EngineeringObjectStateStore(store), new AttachmentContentStore(store));
 

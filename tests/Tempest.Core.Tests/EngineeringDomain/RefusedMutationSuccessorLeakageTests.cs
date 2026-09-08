@@ -1,3 +1,5 @@
+using Tempest.Core.Persistence;
+using Tempest.Core.Tests.Persistence;
 using Tempest.Core.EngineeringData;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Identity;
@@ -35,13 +37,26 @@ namespace Tempest.Core.Tests.EngineeringDomain;
 /// <c>RenameAsync</c>, <c>MoveAsync</c>, <c>DeleteAsync</c> and
 /// <c>SetBomLineAsync</c> mutated their in-memory field <em>first</em> and
 /// only then called <c>PersistStateAsync</c>, which is where the write
-/// lock and the supersession check live. A concurrent <c>ReviseAsync</c>
+/// lock and the supersession check lived. A concurrent <c>ReviseAsync</c>
 /// that took the lock in between captured the mutation into the successor
 /// and then made the mutator's own write throw. The caller was told the
 /// write did not happen. It had, in the only instance that still answered
-/// for the Id. All five now take the lock themselves and refuse before
-/// they touch anything — the shape `WP 16.4B-R6` had already applied to
-/// the two attachment entry points.
+/// for the Id. `WP 16.4B-R6b` fixed that by making all five take the lock
+/// and refuse before touching anything.
+/// </para>
+/// <para>
+/// <b>Since `ADR-0145` the refusal is structural rather than careful.</b>
+/// There is no per-object lock and no <c>PersistStateAsync</c>. Every
+/// mutator runs its projection — including
+/// <c>ThrowIfSuperseded()</c> — <em>inside</em> the one transaction, under
+/// the one domain-wide write lock, and touches its own fields only after
+/// that transaction commits. A mutator therefore cannot mutate before it
+/// is refused, because it does not mutate until after it has committed;
+/// "refuse before you touch anything" is no longer an ordering a mutator
+/// has to observe, it is the only order available. These facts are kept
+/// unchanged because the invariant is unchanged and the interleaving they
+/// force is still the one a real caller reaches: a reference held across
+/// someone else's completed revision.
 /// </para>
 /// <para>
 /// <b>What each one was, and therefore what each one now has to prove:</b>
@@ -140,11 +155,11 @@ public sealed class RefusedMutationSuccessorLeakageTests
     /// <remarks>
     /// The content assertions read the same way as they did before the fix
     /// and mean the opposite thing: the bytes are still present and
-    /// <c>DeleteCallCount</c> is still zero — but now because <b>nothing
+    /// no release ran — but now because <b>nothing
     /// was deleted</b>, which is the correct outcome for an object that,
     /// after the refusal, is not deleted. That the release does still run
     /// on a delete that succeeds is asserted separately by
-    /// <see cref="ASuccessfulDelete_StillReleasesItsContent_AfterTheStateWrite"/>,
+    /// <see cref="ASuccessfulDelete_ReleasesItsContent_InTheSameCommitAsTheDeletion"/>,
     /// so this pair cannot be satisfied by a fix that simply stops
     /// releasing bytes.
     /// </remarks>
@@ -170,8 +185,7 @@ public sealed class RefusedMutationSuccessorLeakageTests
 
         // Nothing was deleted, so nothing was released — and the successor
         // still legitimately holds the attachment it inherited.
-        Assert.Contains(attachment.Id, rig.ContentStore.StoredKeys);
-        Assert.Equal(0, rig.ContentStore.DeleteCallCount);
+        Assert.True(rig.HoldsContentFor(attachment.Id));
         Assert.Contains(await successor.GetAttachmentsAsync(), a => a.Id == attachment.Id);
     }
 
@@ -317,34 +331,47 @@ public sealed class RefusedMutationSuccessorLeakageTests
         Assert.Equal(inherited.Id, Assert.Single(state.Attachments).Id);
 
         Assert.Empty(await part.GetRelationshipsAsync());
-        Assert.Equal([inherited.Id], rig.ContentStore.StoredKeys);
-        Assert.Equal(0, rig.ContentStore.DeleteCallCount);
-        Assert.Empty(await rig.WriteIntentStore.ListMarkedAsync());
+        Assert.True(rig.HoldsContentFor(inherited.Id));
+        Assert.Single(rig.StoredContentKeys());
     }
 
     /// <summary>
     /// The other half of
     /// <see cref="ARefusedDelete_DeletesNothingAndReleasesNoContent"/>:
-    /// a delete that <em>succeeds</em> still releases its attachment
-    /// content, and still does so <b>after</b> the state write that records
-    /// the deletion, never before (`TD-97`, <c>ADR-0114</c>).
+    /// a delete that <em>succeeds</em> releases its attachment content,
+    /// and the release and the state write that justifies it are the same
+    /// commit (`TD-97`, `ADR-0145`).
     /// </summary>
     /// <remarks>
-    /// The ordering is asserted from an observation log the two fakes
-    /// share, not inferred from the call counts, because "released" and
-    /// "released in the right order" are different claims and only the
-    /// second one is the `TD-97` contract: bytes must not be dropped ahead
-    /// of the durable deletion that justifies dropping them.
+    /// <para>
+    /// <b>The claim moved from ordering to atomicity, because the ordering
+    /// stopped being observable and stopped mattering.</b> This fact used
+    /// to read an observation log the two fakes shared and assert
+    /// <c>["state-save", "content-delete"]</c> in that order, because
+    /// `TD-97`'s contract was that bytes must not be dropped ahead of the
+    /// durable deletion that justifies dropping them — the two were
+    /// separate writes, and the order between them was the only thing
+    /// standing between a crash and bytes deleted for an object that is
+    /// still live.
+    /// </para>
+    /// <para>
+    /// They are now one transaction, so there is no interleaving in which
+    /// one lands without the other and no order to get wrong. The
+    /// assertion that replaces it is the stronger one: after the commit
+    /// the record is deleted <em>and</em> the bytes are gone, and — the
+    /// clause the old fact could not state — a delete whose commit fails
+    /// leaves both.
+    /// </para>
     /// </remarks>
     [Fact]
-    public async Task ASuccessfulDelete_StillReleasesItsContent_AfterTheStateWrite()
+    public async Task ASuccessfulDelete_ReleasesItsContent_InTheSameCommitAsTheDeletion()
     {
         var rig = new Rig();
         var part = await rig.CreateAsync();
 
         var attachment = await part.AttachContentAsync("drawing.pdf", "application/pdf", Bytes);
+        Assert.True(rig.HoldsContentFor(attachment.Id));
 
-        rig.Log.Clear();
         await part.DeleteAsync();
 
         Assert.True(part.IsDeleted);
@@ -353,11 +380,51 @@ public sealed class RefusedMutationSuccessorLeakageTests
         Assert.NotNull(state);
         Assert.True(state.IsDeleted);
 
-        Assert.Equal(1, rig.ContentStore.DeleteCallCount);
-        Assert.DoesNotContain(attachment.Id, rig.ContentStore.StoredKeys);
+        // The record is deleted and the bytes are gone, together.
+        Assert.False(rig.HoldsContentFor(attachment.Id));
+        Assert.Empty(rig.StoredContentKeys());
+    }
 
-        // Exactly one state write, then the release — in that order.
-        Assert.Equal(["state-save", "content-delete"], rig.Log.Snapshot());
+    /// <summary>
+    /// A delete whose commit fails releases nothing: the object is still
+    /// live and its attachment content is still there (`ADR-0145`).
+    /// </summary>
+    /// <remarks>
+    /// The clause the two-write shape could not offer. Deleting the bytes
+    /// was a separate durable act, so a delete that failed after releasing
+    /// them destroyed content belonging to an object that was still live,
+    /// with no undelete anywhere in the platform. One commit removes the
+    /// window.
+    /// </remarks>
+    [Fact]
+    public async Task ADeleteWhoseCommitFails_ReleasesNothing_AndLeavesTheObjectLive()
+    {
+        var backing = new InMemoryQueryablePersistenceStore();
+        var failing = new CommitFailingPersistenceStore(backing);
+        var context = TestEngineeringDomain.NewContextOver(failing, backing);
+
+        var part = (GatedFixture)await new EngineeringObjectFactory<GatedFixture>(
+                GatedFixture.KindName, context,
+                (d, r) => new GatedFixture(d, r, context, "PRT-1", "Bracket", EngineeringObjectMetadata.Empty))
+            .CreateAsync("Bracket — for test purposes.");
+
+        var attachment = await part.AttachContentAsync("drawing.pdf", "application/pdf", Bytes);
+
+        failing.FailNextCommit = true;
+        await Assert.ThrowsAsync<PersistenceStoreUnavailableException>(() => part.DeleteAsync());
+
+        Assert.False(part.IsDeleted);
+
+        var state = await context.ObjectStateStore.FindAsync(part.Id);
+        Assert.NotNull(state);
+        Assert.False(state.IsDeleted);
+
+        // The bytes the failed delete had already released inside its
+        // transaction are still there, because the transaction did not
+        // commit.
+        Assert.Contains(
+            attachment.Id.ToString("N"),
+            backing.CommittedKeys(AttachmentContentStore.ContentCollectionName));
     }
 
     // ================================================================
@@ -414,9 +481,7 @@ public sealed class RefusedMutationSuccessorLeakageTests
         Assert.IsType<SupersededEngineeringObjectException>(refused);
 
         Assert.Empty(await successor.GetAttachmentsAsync());
-        Assert.Empty(rig.ContentStore.StoredKeys);
-        Assert.Equal(0, rig.ContentStore.DeleteCallCount);
-        Assert.Empty(await rig.WriteIntentStore.ListMarkedAsync());
+        Assert.Empty(rig.StoredContentKeys());
 
         // And the durable record for this Id — which the successor also
         // owns — names nothing either, once the successor has written it.
@@ -476,55 +541,43 @@ public sealed class RefusedMutationSuccessorLeakageTests
 
         Assert.NotNull(refused);
         return (successor, refused);
-    }
 
+
+    }
     /// <summary>
-    /// An ordered record of the durable calls the fakes below receive, so
-    /// a fact can assert <em>sequence</em> and not only occurrence.
+    /// The real production stores over one in-memory
+    /// <see cref="InMemoryQueryablePersistenceStore"/> (`ADR-0145`).
     /// </summary>
-    private sealed class ObservationLog
-    {
-        private readonly List<string> _entries = new();
-
-        public void Record(string entry)
-        {
-            lock (_entries) { _entries.Add(entry); }
-        }
-
-        public void Clear()
-        {
-            lock (_entries) { _entries.Clear(); }
-        }
-
-        public IReadOnlyList<string> Snapshot()
-        {
-            lock (_entries) { return _entries.ToList(); }
-        }
-    }
-
+    /// <remarks>
+    /// This rig used to hold a fake object-state store and a fake
+    /// attachment content store sharing an observation log, so a fact
+    /// could assert the <em>order</em> of the durable calls a mutation
+    /// made. There is no order to assert any more: a mutation is one
+    /// transaction, and the question a fact can ask is what committed, not
+    /// what was called when. The facts that asked about ordering now ask
+    /// the store what it holds.
+    /// </remarks>
     private sealed class Rig
     {
         public Rig()
         {
-            var principal = new CurrentPrincipalAccessor();
-            var repository = new InMemoryEngineeringObjectRepository();
-            var relationships = new InMemoryEngineeringRelationshipRepository();
-            var discovery = new RelationshipDiscoveryService(relationships, repository);
-
-            StateStore = new FakeObjectStateStore(Log);
-            ContentStore = new FakeAttachmentContentStore(Log);
-
-            Context = new EngineeringDomainContext(
-                new InMemoryEngineeringDocumentStore(principal), repository, relationships,
-                new LifecycleTransitionTable(), new ValidationRuleSet(),
-                new EvidenceComposer(discovery, repository), principal, StateStore, ContentStore, WriteIntentStore);
+            Context = TestEngineeringDomain.NewContext(out var store);
+            Store = store;
         }
 
-        public ObservationLog Log { get; } = new();
-        public FakeObjectStateStore StateStore { get; }
-        public FakeAttachmentContentStore ContentStore { get; }
-        public FakeWriteIntentStore WriteIntentStore { get; } = new();
+        public InMemoryQueryablePersistenceStore Store { get; }
+
         public EngineeringDomainContext Context { get; }
+
+        public IEngineeringObjectStateStore StateStore => Context.ObjectStateStore;
+
+        /// <summary>Every attachment payload currently committed.</summary>
+        public IReadOnlyList<string> StoredContentKeys() =>
+            Store.CommittedKeys(AttachmentContentStore.ContentCollectionName);
+
+        /// <summary>Whether <paramref name="attachmentId"/>'s bytes are committed.</summary>
+        public bool HoldsContentFor(Guid attachmentId) =>
+            StoredContentKeys().Contains(attachmentId.ToString("N"), StringComparer.Ordinal);
 
         public async Task<GatedFixture> CreateAsync(string identifier = "PRT-1", string displayName = "Bracket") =>
             (GatedFixture)await new EngineeringObjectFactory<GatedFixture>(
@@ -575,93 +628,5 @@ public sealed class RefusedMutationSuccessorLeakageTests
         static GatedFixture IRehydratable<GatedFixture>.Rehydrate(
             IEngineeringDocument document, IDocumentRevision currentRevision, EngineeringDomainContext context, EngineeringObjectState state) =>
             new(document, currentRevision, context, state.Identifier, state.DisplayName, state.Metadata);
-    }
-
-    private sealed class FakeObjectStateStore(ObservationLog log) : IEngineeringObjectStateStore
-    {
-        private readonly Dictionary<Guid, EngineeringObjectState> _states = new();
-
-        public Task SaveAsync(EngineeringObjectState state, CancellationToken cancellationToken = default)
-        {
-            log.Record("state-save");
-            lock (_states) { _states[state.Id] = state; }
-            return Task.CompletedTask;
-        }
-
-        public Task<EngineeringObjectState?> FindAsync(Guid id, CancellationToken cancellationToken = default)
-        {
-            lock (_states) { return Task.FromResult(_states.TryGetValue(id, out var state) ? state : null); }
-        }
-
-        public Task DeleteAsync(Guid id, CancellationToken cancellationToken = default)
-        {
-            lock (_states) { _states.Remove(id); }
-            return Task.CompletedTask;
-        }
-
-        public Task<IReadOnlyList<EngineeringObjectState>> ListAsync(CancellationToken cancellationToken = default)
-        {
-            lock (_states) { return Task.FromResult<IReadOnlyList<EngineeringObjectState>>(_states.Values.ToList()); }
-        }
-    }
-
-    private sealed class FakeAttachmentContentStore(ObservationLog log) : IAttachmentContentStore
-    {
-        private readonly Dictionary<Guid, byte[]> _content = new();
-        private int _deleteCallCount;
-
-        public int DeleteCallCount => Volatile.Read(ref _deleteCallCount);
-
-        public IReadOnlyCollection<Guid> StoredKeys
-        {
-            get { lock (_content) { return _content.Keys.ToList(); } }
-        }
-
-        public Task<string> SaveAsync(Guid attachmentId, ReadOnlyMemory<byte> content, CancellationToken cancellationToken = default)
-        {
-            lock (_content) { _content[attachmentId] = content.ToArray(); }
-            return Task.FromResult(Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(content.Span)));
-        }
-
-        public Task<AttachmentContentResult> ReadAsync(Guid attachmentId, string? expectedHash, long expectedSizeInBytes, CancellationToken cancellationToken = default)
-        {
-            lock (_content)
-            {
-                return Task.FromResult(_content.TryGetValue(attachmentId, out var bytes)
-                    ? AttachmentContentResult.Available(bytes)
-                    : AttachmentContentResult.Missing());
-            }
-        }
-
-        public Task DeleteAsync(Guid attachmentId, CancellationToken cancellationToken = default)
-        {
-            log.Record("content-delete");
-            Interlocked.Increment(ref _deleteCallCount);
-            lock (_content) { _content.Remove(attachmentId); }
-            return Task.CompletedTask;
-        }
-    }
-
-    private sealed class FakeWriteIntentStore : IAttachmentWriteIntentStore
-    {
-        private readonly HashSet<Guid> _marked = new();
-
-        public Task MarkAsync(Guid attachmentId, CancellationToken cancellationToken = default)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            lock (_marked) { _marked.Add(attachmentId); }
-            return Task.CompletedTask;
-        }
-
-        public Task ClearAsync(Guid attachmentId, CancellationToken cancellationToken = default)
-        {
-            lock (_marked) { _marked.Remove(attachmentId); }
-            return Task.CompletedTask;
-        }
-
-        public Task<IReadOnlySet<Guid>> ListMarkedAsync(CancellationToken cancellationToken = default)
-        {
-            lock (_marked) { return Task.FromResult<IReadOnlySet<Guid>>(new HashSet<Guid>(_marked)); }
-        }
     }
 }

@@ -311,7 +311,6 @@ public sealed class AttachmentRevisionAtomicityTests
 
         public RecordingObjectStateStore StateStore { get; } = new();
         public RecordingAttachmentContentStore ContentStore { get; } = new();
-        public RecordingWriteIntentStore WriteIntentStore { get; } = new();
         public EngineeringDomainContext Context { get; }
 
         public async Task<GatedPart> CreateGatedPartAsync()
@@ -462,37 +461,4 @@ public sealed class AttachmentRevisionAtomicityTests
         }
     }
 
-    /// <summary>
-    /// Honours the cancellation token it is handed, which the production
-    /// <c>AttachmentWriteIntentStore</c> does too (it forwards to
-    /// <c>IPersistenceStore</c>) — that is what makes `P2-3` observable
-    /// here rather than only by reading the code.
-    /// </summary>
-    private sealed class RecordingWriteIntentStore : IAttachmentWriteIntentStore
-    {
-        private readonly HashSet<Guid> _marked = new();
-        private int _markCallCount;
-
-        public int MarkCallCount => Volatile.Read(ref _markCallCount);
-
-        public Task MarkAsync(Guid attachmentId, CancellationToken cancellationToken = default)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            Interlocked.Increment(ref _markCallCount);
-            lock (_marked) { _marked.Add(attachmentId); }
-            return Task.CompletedTask;
-        }
-
-        public Task ClearAsync(Guid attachmentId, CancellationToken cancellationToken = default)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            lock (_marked) { _marked.Remove(attachmentId); }
-            return Task.CompletedTask;
-        }
-
-        public Task<IReadOnlySet<Guid>> ListMarkedAsync(CancellationToken cancellationToken = default)
-        {
-            lock (_marked) { return Task.FromResult<IReadOnlySet<Guid>>(new HashSet<Guid>(_marked)); }
-        }
-    }
 }

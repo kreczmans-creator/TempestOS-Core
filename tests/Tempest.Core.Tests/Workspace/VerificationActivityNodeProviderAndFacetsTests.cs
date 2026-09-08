@@ -2,6 +2,7 @@ using Tempest.App.Workspace;
 using Tempest.App.Workspace.Verification;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Identity;
+using Tempest.Core.Tests.EngineeringDomain;
 using Tempest.Core.Verification;
 
 namespace Tempest.Core.Tests.Workspace;
@@ -24,19 +25,10 @@ public class VerificationActivityNodeProviderAndFacetsTests
 
     private static (EngineeringDomainContext Context, IVerificationService VerificationService) BuildContext()
     {
-        var principalAccessor = new CurrentPrincipalAccessor();
-        var store = new InMemoryEngineeringDocumentStore(principalAccessor);
-        var repository = new InMemoryEngineeringObjectRepository();
-        var relationshipRepository = new InMemoryEngineeringRelationshipRepository();
-        var lifecycleTable = new LifecycleTransitionTable();
-        var validationRuleSet = new ValidationRuleSet();
-        var relationshipDiscovery = new RelationshipDiscoveryService(relationshipRepository, repository);
-        var evidenceComposer = new EvidenceComposer(relationshipDiscovery, repository);
+        var context = TestEngineeringDomain.NewContext();
 
-        var context = new EngineeringDomainContext(
-            store, repository, relationshipRepository, lifecycleTable, validationRuleSet, evidenceComposer, principalAccessor);
-
-        var verificationService = new VerificationService(store, principalAccessor, new PermissionEvaluator());
+        var verificationService = new VerificationService(
+            context.Store, context.CurrentPrincipalAccessor, new PermissionEvaluator());
 
         return (context, verificationService);
     }

@@ -261,7 +261,7 @@ public sealed class R7RegressionProofTests : IDisposable
         Assert.IsType<PersistenceStoreUnavailableException>(
             await Record.ExceptionAsync(() => part.SetBomLineAsync(9m, "kg", "FN-9", "IT-9", "RD-9").WaitAsync(Timeout)));
 
-        Assert.Equal(1m, part.BomLine.Quantity);
+        Assert.Equal(1m, part.Quantity);
         AssertRecordIsExactly(baseline, await ReadRecordAsync(rig, part), "immediately after the failed BOM write");
 
         await part.RenameAsync("Renamed after the failed BOM write").WaitAsync(Timeout);
@@ -330,7 +330,7 @@ public sealed class R7RegressionProofTests : IDisposable
 
         var attachment = await part.AttachContentAsync("real.pdf", "application/pdf", Bytes).WaitAsync(Timeout);
         Assert.Single((await ReadRecordAsync(rig, part)).Attachments);
-        Assert.Equal(Bytes, await rig.Content.ReadAsync(attachment.Id));
+        Assert.Equal(Bytes, (await rig.Content.ReadAsync(attachment.Id, attachment.ContentHash, attachment.SizeInBytes)).Bytes);
     }
 
     /// <summary>8 of 8 — <c>ReviseAsync</c>.</summary>
@@ -358,7 +358,7 @@ public sealed class R7RegressionProofTests : IDisposable
         Assert.Equal("Renamed after the failed revision", (await ReadRecordAsync(rig, part)).DisplayName);
 
         var successor = await part.ReviseAsync("A revision.", "R7").WaitAsync(Timeout);
-        Assert.Equal(2, successor.CurrentRevisionNumber);
+        Assert.Equal(2, ((IEngineeringObject)successor).CurrentRevisionNumber);
     }
 
     // ================================================================
@@ -464,7 +464,7 @@ public sealed class R7RegressionProofTests : IDisposable
 
         // And nothing durable represents it — not the state record, and not
         // the document the old shape had already written by this point.
-        Assert.Empty(await rig.States.ReadAllAsync());
+        Assert.Empty(await rig.States.ListAsync());
         Assert.Empty(await rig.Raw.ListKeysAsync(EngineeringDocumentStore.DocumentsCollectionName, string.Empty));
         Assert.Empty(await rig.Raw.ListKeysAsync(EngineeringDocumentStore.RevisionsCollectionName, string.Empty));
         Assert.Empty(await rig.Raw.ListKeysAsync(AuditRecorder.AuditCollectionName, string.Empty));

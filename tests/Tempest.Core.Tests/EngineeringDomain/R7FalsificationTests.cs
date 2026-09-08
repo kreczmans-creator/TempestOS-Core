@@ -1,3 +1,4 @@
+using Tempest.App.Workspace;
 using Tempest.App.Workspace.Mechanical;
 using Tempest.Core.Configuration;
 using Tempest.Core.EngineeringData;
@@ -312,7 +313,7 @@ public sealed class R7FalsificationTests : IDisposable
 
         public async Task<EngineeringTask> CreateTaskAsync(string identifier, string displayName) =>
             (EngineeringTask)await new EngineeringObjectFactory<EngineeringTask>(
-                    ProcessObjectFactoryRegistry.Task, Context,
+                    CanonicalObjectKinds.Task, Context,
                     (d, r) => new EngineeringTask(d, r, Context, identifier, displayName, EngineeringObjectMetadata.Empty))
                 .CreateAsync($"{displayName} — for test purposes.");
     }

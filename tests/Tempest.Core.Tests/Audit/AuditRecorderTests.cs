@@ -1,6 +1,7 @@
 using Tempest.Core.Audit;
 using Tempest.Core.Identity;
 using Tempest.Core.Persistence;
+using Tempest.Core.Tests.Persistence;
 
 namespace Tempest.Core.Tests.Audit;
 
@@ -16,7 +17,7 @@ public class AuditRecorderTests
     [Fact]
     public async Task RecordAsync_PrincipalEstablished_RecordsThatActorId()
     {
-        var store = new InMemoryPersistenceStore();
+        var store = new InMemoryQueryablePersistenceStore();
         var accessor = new CurrentPrincipalAccessor();
         accessor.SetCurrent(BuildPrincipal("actor-1"));
         var recorder = new AuditRecorder(store, accessor);
@@ -33,7 +34,7 @@ public class AuditRecorderTests
     [Fact]
     public async Task RecordAsync_NoPrincipalEstablished_RecordsUnknownActorId()
     {
-        var store = new InMemoryPersistenceStore();
+        var store = new InMemoryQueryablePersistenceStore();
         var accessor = new CurrentPrincipalAccessor();
         var recorder = new AuditRecorder(store, accessor);
         var query = new AuditQuery(store, accessor, GrantingEvaluator());
@@ -52,7 +53,7 @@ public class AuditRecorderTests
     [Fact]
     public async Task RecordAsync_SetsOccurredAtToApproximatelyNow()
     {
-        var store = new InMemoryPersistenceStore();
+        var store = new InMemoryQueryablePersistenceStore();
         var accessor = new CurrentPrincipalAccessor();
         var recorder = new AuditRecorder(store, accessor);
         var query = new AuditQuery(store, accessor, GrantingEvaluator());
@@ -72,7 +73,7 @@ public class AuditRecorderTests
     [Fact]
     public async Task RecordAsync_NoDetailSupplied_RecordsEmptyDetail()
     {
-        var store = new InMemoryPersistenceStore();
+        var store = new InMemoryQueryablePersistenceStore();
         var accessor = new CurrentPrincipalAccessor();
         var recorder = new AuditRecorder(store, accessor);
         var query = new AuditQuery(store, accessor, GrantingEvaluator());
@@ -86,7 +87,7 @@ public class AuditRecorderTests
     [Fact]
     public async Task RecordAsync_DetailWithCorrelationId_RoundTrips()
     {
-        var store = new InMemoryPersistenceStore();
+        var store = new InMemoryQueryablePersistenceStore();
         var accessor = new CurrentPrincipalAccessor();
         var recorder = new AuditRecorder(store, accessor);
         var query = new AuditQuery(store, accessor, GrantingEvaluator());
@@ -117,7 +118,7 @@ public class AuditRecorderTests
     [Fact]
     public async Task ConcurrentRecordAsyncCalls_NeverLoseARecord()
     {
-        var store = new InMemoryPersistenceStore();
+        var store = new InMemoryQueryablePersistenceStore();
         var accessor = new CurrentPrincipalAccessor();
         var recorder = new AuditRecorder(store, accessor);
         var query = new AuditQuery(store, accessor, GrantingEvaluator());
@@ -139,7 +140,7 @@ public class AuditRecorderTests
     [InlineData("   ")]
     public async Task RecordAsync_NullEmptyOrWhitespaceAction_ThrowsArgumentException(string? action)
     {
-        var recorder = new AuditRecorder(new InMemoryPersistenceStore(), new CurrentPrincipalAccessor());
+        var recorder = new AuditRecorder(new InMemoryQueryablePersistenceStore(), new CurrentPrincipalAccessor());
 
         await Assert.ThrowsAsync<ArgumentException>(() => recorder.RecordAsync(action!));
     }
@@ -153,7 +154,7 @@ public class AuditRecorderTests
     [Fact]
     public void Constructor_NullCurrentPrincipalAccessor_ThrowsArgumentNullException()
     {
-        Assert.Throws<ArgumentNullException>(() => new AuditRecorder(new InMemoryPersistenceStore(), null!));
+        Assert.Throws<ArgumentNullException>(() => new AuditRecorder(new InMemoryQueryablePersistenceStore(), null!));
     }
 
     // ----------------------------------------------------------------

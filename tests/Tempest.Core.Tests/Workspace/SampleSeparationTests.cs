@@ -8,6 +8,7 @@ using Tempest.App.Workspace.Mechanical;
 using Tempest.App.Workspace.Requirements;
 using Tempest.App.Workspace.Verification;
 using Tempest.Core.Calculations;
+using Tempest.Core.EngineeringData;
 using Tempest.Core.Runtime;
 using Tempest.Core.Identity;
 using Tempest.Core.EngineeringDomain;
@@ -16,6 +17,8 @@ using Tempest.Core.Events;
 using Tempest.Core.Modules;
 using Tempest.Core.Navigation;
 using Tempest.Core.Persistence;
+using Tempest.Core.Tests.EngineeringDomain;
+using Tempest.Core.Tests.Persistence;
 using Tempest.Core.Tests.Plugins;
 using Tempest.Core.Tests.Workspace.Samples;
 using System.Xml.Linq;
@@ -147,8 +150,9 @@ public sealed class SampleSeparationTests
         // module anywhere near it: this is the composition a shipped
         // Desktop run has. Executing one proves the registration is real
         // rather than a dictionary write nothing reads.
+        var principals = new CurrentPrincipalAccessor();
         var engine = new CalculationEngine(
-            new InMemoryEngineeringDocumentStore(new CurrentPrincipalAccessor()), new CurrentPrincipalAccessor());
+            new EngineeringDocumentStore(new InMemoryQueryablePersistenceStore(), principals), principals);
 
         ProductCalculationCatalogue.RegisterAll(engine);
 
@@ -248,15 +252,9 @@ public sealed class SampleSeparationTests
     /// <summary>The Calculation Ids `CalculationsWorkspaceRegistration` offers as Templates, read from a real registration.</summary>
     private static IReadOnlyList<string> CalculationsWorkspaceRegistrationTemplateIds()
     {
-        var principals = new CurrentPrincipalAccessor();
-        var store = new InMemoryEngineeringDocumentStore(principals);
-        var repository = new InMemoryEngineeringObjectRepository();
-        var relationships = new InMemoryEngineeringRelationshipRepository();
-        var discovery = new RelationshipDiscoveryService(relationships, repository);
-        var context = new EngineeringDomainContext(
-            store, repository, relationships, new LifecycleTransitionTable(), new ValidationRuleSet(),
-            new EvidenceComposer(discovery, repository), principals);
-        var registry = new CalculationTemplateRegistry(new CalculationEngine(store, principals), context);
+        var context = TestEngineeringDomain.NewContext();
+        var registry = new CalculationTemplateRegistry(
+            new CalculationEngine(context.Store, context.CurrentPrincipalAccessor), context);
 
         // The same private helper `Register` calls, reached the only way a
         // test can without changing production visibility: run the real

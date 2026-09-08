@@ -12,17 +12,7 @@ public class StructuralMutationTests
 {
     private static EngineeringDomainContext BuildContext()
     {
-        var principalAccessor = new CurrentPrincipalAccessor();
-        var store = new InMemoryEngineeringDocumentStore(principalAccessor);
-        var repository = new InMemoryEngineeringObjectRepository();
-        var relationshipRepository = new InMemoryEngineeringRelationshipRepository();
-        var lifecycleTable = new LifecycleTransitionTable();
-        var validationRuleSet = new ValidationRuleSet();
-        var relationshipDiscovery = new RelationshipDiscoveryService(relationshipRepository, repository);
-        var evidenceComposer = new EvidenceComposer(relationshipDiscovery, repository);
-
-        return new EngineeringDomainContext(
-            store, repository, relationshipRepository, lifecycleTable, validationRuleSet, evidenceComposer, principalAccessor);
+        return TestEngineeringDomain.NewContext();
     }
 
     private static async Task<Assembly> CreateAssemblyAsync(EngineeringDomainContext context, string identifier, string name)

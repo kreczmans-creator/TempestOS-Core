@@ -4,10 +4,7 @@ using Tempest.App.Workspace.Documents;
 using Tempest.App.Workspace.Manufacturing;
 using Tempest.App.Workspace.Mechanical;
 using Tempest.App.Workspace.Verification;
-using Tempest.Core.EngineeringData;
 using Tempest.Core.EngineeringDomain;
-using Tempest.Core.Identity;
-using Tempest.Core.Persistence;
 
 namespace Tempest.Core.Tests.EngineeringDomain;
 
@@ -215,19 +212,7 @@ public sealed class ProductionRehydrationTests
     // Fixtures
     // ================================================================
 
-    private static EngineeringDomainContext BuildContext()
-    {
-        var store = new Materials.InMemoryPersistenceStore();
-        var principal = new CurrentPrincipalAccessor();
-        var documents = new EngineeringDocumentStore(store, principal);
-        var repository = new InMemoryEngineeringObjectRepository();
-        var relationships = new InMemoryEngineeringRelationshipRepository();
-        var discovery = new RelationshipDiscoveryService(relationships, repository);
-
-        return new EngineeringDomainContext(
-            documents, repository, relationships, new LifecycleTransitionTable(), new ValidationRuleSet(),
-            new EvidenceComposer(discovery, repository), principal, new EngineeringObjectStateStore(store));
-    }
+    private static EngineeringDomainContext BuildContext() => TestEngineeringDomain.NewContext();
 
     /// <summary>Exactly the registration the production composition root performs — and nothing else.</summary>
     private static void RegisterProduction(IEngineeringObjectRehydratorRegistry registry, EngineeringDomainContext context)

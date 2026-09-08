@@ -49,8 +49,8 @@ public sealed class RevisionStatePreservationTests
     [Fact]
     public async Task ReviseAsync_KeepsATasksAssigneeWorkStatePriorityAndDueDate()
     {
-        var stateStore = new InMemoryObjectStateStore();
-        var context = BuildContext(stateStore);
+        var context = TestEngineeringDomain.NewContext();
+        var stateStore = context.ObjectStateStore;
 
         var task = await CreateAsync<EngineeringTask>(
             context, "Task", (d, r) => new EngineeringTask(d, r, context, "TASK-1", "Fit the bracket", EngineeringObjectMetadata.Empty));
@@ -76,8 +76,8 @@ public sealed class RevisionStatePreservationTests
     [Fact]
     public async Task AfterARevision_TheSuccessorsNextWriteDoesNotPersistARevertedTypeState()
     {
-        var stateStore = new InMemoryObjectStateStore();
-        var context = BuildContext(stateStore);
+        var context = TestEngineeringDomain.NewContext();
+        var stateStore = context.ObjectStateStore;
 
         var task = await CreateAsync<EngineeringTask>(
             context, "Task", (d, r) => new EngineeringTask(d, r, context, "TASK-1", "Fit the bracket", EngineeringObjectMetadata.Empty));
@@ -107,8 +107,8 @@ public sealed class RevisionStatePreservationTests
     [Fact]
     public async Task ReviseAsync_KeepsTheGovernanceFamiliesOwnMutableState()
     {
-        var stateStore = new InMemoryObjectStateStore();
-        var context = BuildContext(stateStore);
+        var context = TestEngineeringDomain.NewContext();
+        var stateStore = context.ObjectStateStore;
 
         var issue = await CreateAsync<Issue>(
             context, "Issue", (d, r) => new Issue(d, r, context, "ISS-1", "Leak", EngineeringObjectMetadata.Empty));
@@ -179,8 +179,8 @@ public sealed class RevisionStatePreservationTests
 
         foreach (var (kind, create) in EveryConcreteKind())
         {
-            var stateStore = new InMemoryObjectStateStore();
-            var context = BuildContext(stateStore);
+            var context = TestEngineeringDomain.NewContext();
+            var stateStore = context.ObjectStateStore;
 
             var original = await create(context);
             await MutateAnyMutableTypeStateAsync(original);
@@ -326,43 +326,4 @@ public sealed class RevisionStatePreservationTests
         where T : EngineeringObjectBase, IRehydratable<T> =>
         (T)await new EngineeringObjectFactory<T>(kind, context, ctor).CreateAsync($"{kind} — for test purposes.").ConfigureAwait(false);
 
-    private static EngineeringDomainContext BuildContext(IEngineeringObjectStateStore stateStore)
-    {
-        var principalAccessor = new CurrentPrincipalAccessor();
-        var store = new InMemoryEngineeringDocumentStore(principalAccessor);
-        var repository = new InMemoryEngineeringObjectRepository();
-        var relationshipRepository = new InMemoryEngineeringRelationshipRepository();
-        var relationshipDiscovery = new RelationshipDiscoveryService(relationshipRepository, repository);
-
-        return new EngineeringDomainContext(
-            store, repository, relationshipRepository, new LifecycleTransitionTable(), new ValidationRuleSet(),
-            new EvidenceComposer(relationshipDiscovery, repository), principalAccessor, stateStore);
-    }
-
-    private sealed class InMemoryObjectStateStore : IEngineeringObjectStateStore
-    {
-        private readonly Dictionary<Guid, EngineeringObjectState> _states = new();
-
-        public Task SaveAsync(EngineeringObjectState state, CancellationToken cancellationToken = default)
-        {
-            lock (_states) { _states[state.Id] = state; }
-            return Task.CompletedTask;
-        }
-
-        public Task<EngineeringObjectState?> FindAsync(Guid id, CancellationToken cancellationToken = default)
-        {
-            lock (_states) { return Task.FromResult(_states.TryGetValue(id, out var state) ? state : null); }
-        }
-
-        public Task DeleteAsync(Guid id, CancellationToken cancellationToken = default)
-        {
-            lock (_states) { _states.Remove(id); }
-            return Task.CompletedTask;
-        }
-
-        public Task<IReadOnlyList<EngineeringObjectState>> ListAsync(CancellationToken cancellationToken = default)
-        {
-            lock (_states) { return Task.FromResult<IReadOnlyList<EngineeringObjectState>>(_states.Values.ToList()); }
-        }
-    }
 }

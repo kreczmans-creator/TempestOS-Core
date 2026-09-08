@@ -1,4 +1,5 @@
 using Tempest.Core.EngineeringDomain;
+using Tempest.Core.Tests.Persistence;
 
 namespace Tempest.Core.Tests.EngineeringDomain.SchemaVersioning;
 
@@ -20,7 +21,7 @@ public class EnumSerialisesAsStringTests
     [Fact]
     public async Task SaveAsync_WritesTheEnumAsItsMemberName_NotADigit()
     {
-        var persistence = new InMemoryPersistenceStore();
+        var persistence = new InMemoryQueryablePersistenceStore();
         var store = new EngineeringObjectStateStore(persistence);
         var id = Guid.NewGuid();
 
@@ -47,7 +48,7 @@ public class EnumSerialisesAsStringTests
             "History":[],"Attachments":[],"TypeState":{} }
             """;
 
-        var persistence = new InMemoryPersistenceStore();
+        var persistence = new InMemoryQueryablePersistenceStore();
         await persistence.WriteAsync(EngineeringObjectStateStore.StateCollectionName, id.ToString("N"), json);
 
         var state = await new EngineeringObjectStateStore(persistence).FindAsync(id);
@@ -59,7 +60,7 @@ public class EnumSerialisesAsStringTests
     [Fact]
     public async Task HistoryTransitions_AlsoSerialiseTheirEnumsAsNames()
     {
-        var persistence = new InMemoryPersistenceStore();
+        var persistence = new InMemoryQueryablePersistenceStore();
         var store = new EngineeringObjectStateStore(persistence);
         var id = Guid.NewGuid();
         var withHistory = Part(id) with

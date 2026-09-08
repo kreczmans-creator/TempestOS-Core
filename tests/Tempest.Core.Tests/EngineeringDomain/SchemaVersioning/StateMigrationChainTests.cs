@@ -1,4 +1,5 @@
 using Tempest.Core.EngineeringDomain;
+using Tempest.Core.Tests.Persistence;
 
 namespace Tempest.Core.Tests.EngineeringDomain.SchemaVersioning;
 
@@ -26,7 +27,7 @@ public class StateMigrationChainTests
         }
     }
 
-    private static async Task<Guid> SeedAsync(InMemoryPersistenceStore persistence, string kind, int schemaVersion)
+    private static async Task<Guid> SeedAsync(InMemoryQueryablePersistenceStore persistence, string kind, int schemaVersion)
     {
         var id = Guid.NewGuid();
         var state = new EngineeringObjectState(
@@ -44,7 +45,7 @@ public class StateMigrationChainTests
     [Fact]
     public async Task AMigrationRegisteredForARecordsCurrentVersion_IsAppliedExactlyOnce()
     {
-        var persistence = new InMemoryPersistenceStore();
+        var persistence = new InMemoryQueryablePersistenceStore();
         var id = await SeedAsync(persistence, TestKind, 1);
 
         var log = new List<string>();
@@ -68,7 +69,7 @@ public class StateMigrationChainTests
     [Fact]
     public async Task ASecondMigrationChainedOneVersionLater_RunsAfterTheFirst_NotInsteadOfIt()
     {
-        var persistence = new InMemoryPersistenceStore();
+        var persistence = new InMemoryQueryablePersistenceStore();
         var id = await SeedAsync(persistence, TestKind, 1);
 
         var log = new List<string>();
@@ -87,7 +88,7 @@ public class StateMigrationChainTests
     [Fact]
     public async Task ACommonMigration_RunsForEveryKind_NotOnlyTheOneItWasWrittenAgainst()
     {
-        var persistence = new InMemoryPersistenceStore();
+        var persistence = new InMemoryQueryablePersistenceStore();
         var partId = await SeedAsync(persistence, "Part", 1);
         var assemblyId = await SeedAsync(persistence, "Assembly", 1);
 
@@ -210,7 +211,7 @@ public class StateMigrationChainTests
         // this is ADR-0120 Decision 2's real, intended ordering (common
         // chain first, then that Kind's own), still working correctly
         // after the collision guard above was added.
-        var persistence = new InMemoryPersistenceStore();
+        var persistence = new InMemoryQueryablePersistenceStore();
         var id = await SeedAsync(persistence, TestKind, 1);
 
         var log = new List<string>();

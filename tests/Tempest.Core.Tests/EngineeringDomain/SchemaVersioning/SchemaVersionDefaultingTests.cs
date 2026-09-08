@@ -1,4 +1,5 @@
 using Tempest.Core.EngineeringDomain;
+using Tempest.Core.Tests.Persistence;
 
 namespace Tempest.Core.Tests.EngineeringDomain.SchemaVersioning;
 
@@ -26,7 +27,7 @@ public class SchemaVersionDefaultingTests
     [Fact]
     public async Task ARecordWithNoSchemaVersionPropertyAtAll_LoadsAsVersion1()
     {
-        var persistence = new InMemoryPersistenceStore();
+        var persistence = new InMemoryQueryablePersistenceStore();
         var objectId = Guid.Parse(Id);
         await persistence.WriteAsync(EngineeringObjectStateStore.StateCollectionName, objectId.ToString("N"), RecordJson(null));
 
@@ -39,7 +40,7 @@ public class SchemaVersionDefaultingTests
     [Fact]
     public async Task ARecordWithSchemaVersionWrittenAsZero_LoadsAsVersion1_Identically()
     {
-        var persistence = new InMemoryPersistenceStore();
+        var persistence = new InMemoryQueryablePersistenceStore();
         var objectId = Guid.Parse(Id);
         await persistence.WriteAsync(EngineeringObjectStateStore.StateCollectionName, objectId.ToString("N"), RecordJson("\"SchemaVersion\":0,"));
 
@@ -52,7 +53,7 @@ public class SchemaVersionDefaultingTests
     [Fact]
     public async Task ARecordWithSchemaVersionWrittenAsOneExplicitly_LoadsAsVersion1_Identically()
     {
-        var persistence = new InMemoryPersistenceStore();
+        var persistence = new InMemoryQueryablePersistenceStore();
         var objectId = Guid.Parse(Id);
         await persistence.WriteAsync(EngineeringObjectStateStore.StateCollectionName, objectId.ToString("N"), RecordJson("\"SchemaVersion\":1,"));
 
