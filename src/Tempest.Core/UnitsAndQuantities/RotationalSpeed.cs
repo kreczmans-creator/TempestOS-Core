@@ -12,6 +12,9 @@ namespace Tempest.Core.UnitsAndQuantities;
 /// </remarks>
 public sealed class RotationalSpeed : IDimension
 {
+    /// <summary>The runtime dimension vector for RotationalSpeed â see <see cref="Dimensions.RotationalSpeed"/>.</summary>
+    public static Dimension Vector => Dimensions.RotationalSpeed;
+
     private RotationalSpeed()
     {
     }

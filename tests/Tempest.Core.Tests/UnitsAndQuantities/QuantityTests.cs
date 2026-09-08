@@ -119,22 +119,32 @@ public class QuantityTests
         Assert.Equal(2.0, difference.Value);
     }
 
-    [Fact]
-    public void Addition_DifferentUnits_ThrowsIncompatibleUnitsException()
-    {
-        var metres = new Quantity<Length>(1.0, LengthUnits.Metre);
-        var feet = new Quantity<Length>(1.0, LengthUnits.Foot);
+    // ADR-0147 reverses ADR-0054's original "exact same unit only" rule:
+    // quantities of the same dimension now convert automatically, through
+    // the base unit and back to the left operand's own unit.
 
-        Assert.Throws<IncompatibleUnitsException>(() => metres + feet);
+    [Fact]
+    public void Addition_DifferentUnits_ConvertsAutomatically_AndReturnsResultInLeftOperandsUnit()
+    {
+        var oneMetre = new Quantity<Length>(1.0, LengthUnits.Metre);
+        var oneFoot = new Quantity<Length>(1.0, LengthUnits.Foot);
+
+        var sum = oneMetre + oneFoot;
+
+        Assert.Equal(1.3048, sum.Value, precision: 9);
+        Assert.Equal(LengthUnits.Metre, sum.Unit);
     }
 
     [Fact]
-    public void Subtraction_DifferentUnits_ThrowsIncompatibleUnitsException()
+    public void Subtraction_DifferentUnits_ConvertsAutomatically_AndReturnsResultInLeftOperandsUnit()
     {
-        var metres = new Quantity<Length>(1.0, LengthUnits.Metre);
-        var feet = new Quantity<Length>(1.0, LengthUnits.Foot);
+        var threeFeet = new Quantity<Length>(3.0, LengthUnits.Foot);
+        var oneMetre = new Quantity<Length>(1.0, LengthUnits.Metre);
 
-        Assert.Throws<IncompatibleUnitsException>(() => metres - feet);
+        var difference = threeFeet - oneMetre;
+
+        Assert.Equal(3.0 - (1.0 / 0.3048), difference.Value, precision: 9);
+        Assert.Equal(LengthUnits.Foot, difference.Unit);
     }
 
     [Fact]
@@ -184,13 +194,16 @@ public class QuantityTests
     }
 
     [Fact]
-    public void CompareTo_DifferentUnits_ThrowsIncompatibleUnitsException()
+    public void CompareTo_DifferentUnits_ComparesByBaseValue()
     {
-        var metres = new Quantity<Length>(1.0, LengthUnits.Metre);
-        var feet = new Quantity<Length>(1.0, LengthUnits.Foot);
+        // 1 m is greater than 1 ft: ADR-0147's own same-dimension
+        // automatic conversion applies to comparison too.
+        var oneMetre = new Quantity<Length>(1.0, LengthUnits.Metre);
+        var oneFoot = new Quantity<Length>(1.0, LengthUnits.Foot);
 
-        Assert.Throws<IncompatibleUnitsException>(() => metres.CompareTo(feet));
-        Assert.Throws<IncompatibleUnitsException>(() => metres < feet);
+        Assert.True(oneMetre.CompareTo(oneFoot) > 0);
+        Assert.True(oneFoot < oneMetre);
+        Assert.True(oneMetre > oneFoot);
     }
 
     // ----------------------------------------------------------------
@@ -208,12 +221,16 @@ public class QuantityTests
     }
 
     [Fact]
-    public void Equality_PhysicallyEquivalentButDifferentUnit_AreNotEqual()
+    public void Equality_PhysicallyEquivalentButDifferentUnit_AreEqual()
     {
+        // ADR-0147: equality compares BaseValue, so 5 m and 500 cm — the
+        // same physical length written two ways — are now equal.
         var fiveHundredCentimetres = new Quantity<Length>(500.0, LengthUnits.Centimetre);
         var fiveMetres = new Quantity<Length>(5.0, LengthUnits.Metre);
 
-        Assert.NotEqual(fiveMetres, fiveHundredCentimetres);
+        Assert.Equal(fiveMetres, fiveHundredCentimetres);
+        Assert.True(fiveMetres == fiveHundredCentimetres);
+        Assert.Equal(fiveMetres.GetHashCode(), fiveHundredCentimetres.GetHashCode());
     }
 
     // ----------------------------------------------------------------

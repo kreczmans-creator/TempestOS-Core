@@ -89,4 +89,17 @@ public readonly record struct Unit<TDimension>
 
     /// <summary>Converts <paramref name="baseValue"/>, expressed in this dimension's base unit, into this unit.</summary>
     public double FromBase(double baseValue) => (baseValue - ToBaseUnitOffset) / ToBaseUnitFactor;
+
+    /// <summary>
+    /// This unit, re-expressed as a non-generic <see cref="UnitsAndQuantities.UnitDefinition"/> —
+    /// the same symbol and conversion factors, plus <typeparamref name="TDimension"/>'s
+    /// own runtime <see cref="IDimension.Vector"/>.
+    /// </summary>
+    /// <remarks>
+    /// `ADR-0147`. The bridge every existing typed catalogue crosses to
+    /// reach the runtime-dimensioned <see cref="Quantity"/> without
+    /// duplicating a single conversion factor — see
+    /// <see cref="Quantity{TDimension}.ToQuantity"/>.
+    /// </remarks>
+    public UnitDefinition UnitDefinition => new(Symbol, TDimension.Vector, ToBaseUnitFactor, ToBaseUnitOffset);
 }

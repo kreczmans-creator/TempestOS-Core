@@ -21,6 +21,9 @@ namespace Tempest.Core.UnitsAndQuantities;
 /// </remarks>
 public sealed class TorsionalStiffness : IDimension
 {
+    /// <summary>The runtime dimension vector for TorsionalStiffness â see <see cref="Dimensions.TorsionalStiffness"/>.</summary>
+    public static Dimension Vector => Dimensions.TorsionalStiffness;
+
     private TorsionalStiffness()
     {
     }

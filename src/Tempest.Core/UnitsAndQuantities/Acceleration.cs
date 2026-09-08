@@ -4,6 +4,9 @@ namespace Tempest.Core.UnitsAndQuantities;
 /// <remarks>Added by `Group A` (P01 Engineering Reference Data) — purely additive, exactly as <see cref="LengthUnits"/>'s own "starting set, extensible" remarks anticipate. Needed by <c>Tempest.Core.Constants</c> for standard gravity.</remarks>
 public sealed class Acceleration : IDimension
 {
+    /// <summary>The runtime dimension vector for Acceleration â see <see cref="Dimensions.Acceleration"/>.</summary>
+    public static Dimension Vector => Dimensions.Acceleration;
+
     private Acceleration()
     {
     }

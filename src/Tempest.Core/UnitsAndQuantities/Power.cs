@@ -9,6 +9,9 @@ namespace Tempest.Core.UnitsAndQuantities;
 /// </remarks>
 public sealed class Power : IDimension
 {
+    /// <summary>The runtime dimension vector for Power â see <see cref="Dimensions.Power"/>.</summary>
+    public static Dimension Vector => Dimensions.Power;
+
     private Power()
     {
     }

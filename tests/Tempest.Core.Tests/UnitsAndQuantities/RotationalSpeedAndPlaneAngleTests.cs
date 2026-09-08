@@ -68,12 +68,17 @@ public class RotationalSpeedAndPlaneAngleTests
     }
 
     [Fact]
-    public void BothNewDimensions_RefuseImplicitConversionInArithmeticLikeEveryOther()
+    public void BothNewDimensions_ConvertAutomaticallyInArithmeticLikeEveryOther()
     {
+        // ADR-0147: same-dimension automatic conversion applies uniformly,
+        // including to the two dimensions WP A4 added.
         var rpm = new Quantity<RotationalSpeed>(60, RotationalSpeedUnits.RevolutionPerMinute);
         var rps = new Quantity<RotationalSpeed>(1, RotationalSpeedUnits.RevolutionPerSecond);
 
-        Assert.Throws<IncompatibleUnitsException>(() => rpm + rps);
+        var sum = rpm + rps;
+
+        Assert.Equal(120, sum.Value, precision: 9);
+        Assert.Equal(RotationalSpeedUnits.RevolutionPerMinute, sum.Unit);
     }
 
     [Fact]

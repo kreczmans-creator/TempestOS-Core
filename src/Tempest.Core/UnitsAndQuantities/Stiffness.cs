@@ -4,6 +4,9 @@ namespace Tempest.Core.UnitsAndQuantities;
 /// <remarks>Added by `Group A` (P01 Engineering Reference Data) — purely additive, exactly as <see cref="LengthUnits"/>'s own "starting set, extensible" remarks anticipate. Needed by <c>Tempest.Core.Components</c> for a spring rate.</remarks>
 public sealed class Stiffness : IDimension
 {
+    /// <summary>The runtime dimension vector for Stiffness â see <see cref="Dimensions.Stiffness"/>.</summary>
+    public static Dimension Vector => Dimensions.Stiffness;
+
     private Stiffness()
     {
     }

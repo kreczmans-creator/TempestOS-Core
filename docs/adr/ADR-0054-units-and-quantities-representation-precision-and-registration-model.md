@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted — `WP 7.1B` (Units & Quantities Framework), 2026-07-30.
+Accepted — `WP 7.1B` (Units & Quantities Framework), 2026-07-30. Superseded in part by `ADR-0147`: Decision 4's exact-same-unit rule for arithmetic, comparison and equality is reversed (same-dimension automatic conversion applies instead), for both the generic `Quantity<TDimension>` facade this ADR established and the non-generic `Quantity` `ADR-0147` adds. Decisions 1 through 3 (`double`-backed representation, no DI registration, `IUnitConverter`'s existence) are untouched.
 
 ## Context
 
