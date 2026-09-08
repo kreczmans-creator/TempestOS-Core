@@ -14,7 +14,6 @@ namespace Tempest.Core.Tests.Workspace;
 // here is the real production type; only the persistence root is
 // test-isolated (a TempDirectory), mirroring RequirementsHostRegistrationTests'
 // own precedent exactly.
-[Collection("Console output capture")]
 public class WorkspaceManagerTests
 {
     private static ITempestHost BuildHost(string rootPath, params Type[] moduleTypes) =>
@@ -27,16 +26,7 @@ public class WorkspaceManagerTests
 
     private static async Task<T> WithSuppressedConsoleAsync<T>(Func<Task<T>> body)
     {
-        var originalOut = Console.Out;
-        try
-        {
-            Console.SetOut(new StringWriter());
-            return await body().ConfigureAwait(false);
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-        }
+        return await body().ConfigureAwait(false);
     }
 
     // ----------------------------------------------------------------

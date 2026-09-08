@@ -20,7 +20,6 @@ namespace Tempest.Core.Tests.Runtime;
 // available. Materials and Bearings keep their own registration tests
 // (ADR-0055, ADR-0124); this covers the five libraries added alongside
 // them and the seams between all seven.
-[Collection("Console output capture")]
 public class ReferenceDataHostRegistrationTests
 {
     private static async Task RunAgainstRunningHostAsync(string rootPath, Func<ITempestHost, Task> body)
@@ -31,25 +30,15 @@ public class ReferenceDataHostRegistrationTests
                 new KeyValuePair<string, string>(PersistenceStore.RootPathConfigurationKey, rootPath),
             ]))
             .Build();
-        var originalOut = Console.Out;
 
-        try
-        {
-            Console.SetOut(new StringWriter());
+        var runTask = host.RunAsync();
 
-            var runTask = host.RunAsync();
+        await RunningHostFixture.WaitUntilRunningAsync(host);
 
-            await RunningHostFixture.WaitUntilRunningAsync(host);
+        await body(host);
 
-            await body(host);
-
-            await host.StopAsync();
-            await runTask;
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-        }
+        await host.StopAsync();
+        await runTask;
     }
 
     [Theory]

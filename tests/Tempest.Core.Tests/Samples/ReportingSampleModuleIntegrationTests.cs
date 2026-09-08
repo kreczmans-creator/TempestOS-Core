@@ -27,7 +27,6 @@ namespace Tempest.Core.Tests.Samples;
 // entirely by the real, unmodified module pipeline - mirroring
 // AuditSampleModuleIntegrationTests/NotificationSampleModuleIntegrationTests'
 // own structure.
-[Collection("Console output capture")]
 public class ReportingSampleModuleIntegrationTests
 {
     private static (RuntimeModuleManager RuntimeManager, TempestServiceProvider ServiceProvider) BuildPipeline(
@@ -257,32 +256,22 @@ public class ReportingSampleModuleIntegrationTests
                 new KeyValuePair<string, string>($"Identity:Principals:{ReportingSampleModule.SampleIdentityId}:Roles", "ReportGenerator"),
             ]))
             .Build();
-        var originalOut = Console.Out;
 
-        try
-        {
-            Console.SetOut(new StringWriter());
+        var runTask = host.RunAsync();
 
-            var runTask = host.RunAsync();
+        await RunningHostFixture.WaitUntilRunningAsync(host);
 
-            await RunningHostFixture.WaitUntilRunningAsync(host);
+        Assert.Equal(HostState.Running, host.State);
 
-            Assert.Equal(HostState.Running, host.State);
+        var registry = (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
 
-            var registry = (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
+        var result = await registry.InvokeAsync(ReportingSampleModule.GenerateSampleReportCommandId, CancellationToken.None);
 
-            var result = await registry.InvokeAsync(ReportingSampleModule.GenerateSampleReportCommandId, CancellationToken.None);
+        Assert.True(result.Succeeded);
+        Assert.Contains("Generated report", result.Message);
 
-            Assert.True(result.Succeeded);
-            Assert.Contains("Generated report", result.Message);
-
-            await host.StopAsync();
-            await runTask;
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-        }
+        await host.StopAsync();
+        await runTask;
 
         Assert.Equal(HostState.Stopped, host.State);
     }

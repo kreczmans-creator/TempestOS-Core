@@ -34,7 +34,6 @@ namespace Tempest.Core.Tests.Workspace;
 /// the handlers the product actually registers.
 /// </para>
 /// </remarks>
-[Collection("Console output capture")]
 public class EngineeringCalculationRegisterTests
 {
     [Fact]
@@ -247,16 +246,7 @@ public class EngineeringCalculationRegisterTests
             .Build();
         var manager = new WorkspaceManager(host);
 
-        var originalOut = Console.Out;
-        try
-        {
-            Console.SetOut(new StringWriter());
-            await manager.StartAsync();
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-        }
+        await manager.StartAsync();
 
         var services = host.Services!;
         var domain = (EngineeringDomainContext)services.GetService(typeof(EngineeringDomainContext));

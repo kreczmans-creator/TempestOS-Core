@@ -11,7 +11,6 @@ namespace Tempest.Core.Tests.Runtime;
 // ICalculationEngine resolvable, ordinary singleton semantics, and the
 // engine genuinely reuses the same IEngineeringDocumentStore Materials
 // resolves, not a second, independent one.
-[Collection("Console output capture")]
 public class CalculationHostRegistrationTests
 {
     private sealed class AddOneCalculation : ICalculationDefinition<double, double>
@@ -30,25 +29,15 @@ public class CalculationHostRegistrationTests
                 new KeyValuePair<string, string>(PersistenceStore.RootPathConfigurationKey, rootPath),
             ]))
             .Build();
-        var originalOut = Console.Out;
 
-        try
-        {
-            Console.SetOut(new StringWriter());
+        var runTask = host.RunAsync();
 
-            var runTask = host.RunAsync();
+        await RunningHostFixture.WaitUntilRunningAsync(host);
 
-            await RunningHostFixture.WaitUntilRunningAsync(host);
+        await body(host);
 
-            await body(host);
-
-            await host.StopAsync();
-            await runTask;
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-        }
+        await host.StopAsync();
+        await runTask;
     }
 
     [Fact]

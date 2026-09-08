@@ -20,7 +20,6 @@ namespace Tempest.Core.Tests.BackgroundServices;
 // test classes lets both classes' StartAsync/StopAsync calls interleave and
 // corrupt each other's recorded entries, the same hazard already found and
 // fixed once for SdkLifecycleLog and once for Console.Out redirection.
-[Collection("Console output capture")]
 public class HostedServiceManagerTests
 {
     private static ITempestServiceProvider BuildProvider(ILogger? logger = null, params Type[] hostedServiceTypes)

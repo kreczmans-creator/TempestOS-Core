@@ -18,7 +18,6 @@ namespace Tempest.Core.Tests.Workspace;
 // (ADR-0070), and NavigationService (WP 8.1A/8.1B) for every real,
 // non-placeholder status indicator. EngineeringCockpit is internal, reached
 // here via Tempest.App's own InternalsVisibleTo grant (WP 8.1A).
-[Collection("Console output capture")]
 public class EngineeringCockpitTests
 {
     private static async Task<(IWorkspace Workspace, WorkspaceManager Manager, ITempestHost Host)> StartAsync(string rootPath, params Type[] moduleTypes)
@@ -31,17 +30,8 @@ public class EngineeringCockpitTests
             .Build();
         var manager = new WorkspaceManager(host);
 
-        var originalOut = Console.Out;
         IWorkspace workspace;
-        try
-        {
-            Console.SetOut(new StringWriter());
-            workspace = await manager.StartAsync();
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-        }
+        workspace = await manager.StartAsync();
 
         return (workspace, manager, host);
     }

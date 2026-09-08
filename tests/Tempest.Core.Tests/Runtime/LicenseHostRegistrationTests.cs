@@ -14,32 +14,21 @@ namespace Tempest.Core.Tests.Runtime;
 // (Unlicensed default); a malformed or expired one is Host-fatal,
 // mirroring RunAsync_ConfigurationFailure_IsHostFatal_TransitionsToFaulted's
 // own established pattern for a different pre-container failure.
-[Collection("Console output capture")]
 public class LicenseHostRegistrationTests
 {
     private static async Task RunAgainstRunningHostAsync(string? licenseFilePath, Func<ITempestHost, Task> body)
     {
         var host = new TempestHostBuilder(Type.EmptyTypes, pluginsRootPathOverride: null, hostedServiceCandidateTypesOverride: Type.EmptyTypes, licenseFilePathOverride: licenseFilePath)
             .Build();
-        var originalOut = Console.Out;
 
-        try
-        {
-            Console.SetOut(new StringWriter());
+        var runTask = host.RunAsync();
 
-            var runTask = host.RunAsync();
+        await RunningHostFixture.WaitUntilRunningAsync(host);
 
-            await RunningHostFixture.WaitUntilRunningAsync(host);
+        await body(host);
 
-            await body(host);
-
-            await host.StopAsync();
-            await runTask;
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-        }
+        await host.StopAsync();
+        await runTask;
     }
 
     // ------------------------------------------------------------------
@@ -129,23 +118,10 @@ public class LicenseHostRegistrationTests
 
         var host = new TempestHostBuilder(Type.EmptyTypes, pluginsRootPathOverride: null, hostedServiceCandidateTypesOverride: Type.EmptyTypes, licenseFilePathOverride: path)
             .Build();
-        var originalOut = Console.Out;
-        var originalError = Console.Error;
 
-        try
-        {
-            Console.SetOut(new StringWriter());
-            Console.SetError(new StringWriter());
+        await Assert.ThrowsAsync<LicenseValidationException>(() => host.RunAsync());
 
-            await Assert.ThrowsAsync<LicenseValidationException>(() => host.RunAsync());
-
-            Assert.Equal(HostState.Faulted, host.State);
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-            Console.SetError(originalError);
-        }
+        Assert.Equal(HostState.Faulted, host.State);
     }
 
     [Fact]
@@ -158,24 +134,11 @@ public class LicenseHostRegistrationTests
 
         var host = new TempestHostBuilder(Type.EmptyTypes, pluginsRootPathOverride: null, hostedServiceCandidateTypesOverride: Type.EmptyTypes, licenseFilePathOverride: path)
             .Build();
-        var originalOut = Console.Out;
-        var originalError = Console.Error;
 
-        try
-        {
-            Console.SetOut(new StringWriter());
-            Console.SetError(new StringWriter());
+        var exception = await Assert.ThrowsAsync<LicenseValidationException>(() => host.RunAsync());
 
-            var exception = await Assert.ThrowsAsync<LicenseValidationException>(() => host.RunAsync());
-
-            Assert.Contains("expired", exception.FailureReason, StringComparison.OrdinalIgnoreCase);
-            Assert.Equal(HostState.Faulted, host.State);
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-            Console.SetError(originalError);
-        }
+        Assert.Contains("expired", exception.FailureReason, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(HostState.Faulted, host.State);
     }
 
     [Fact]
@@ -187,22 +150,9 @@ public class LicenseHostRegistrationTests
 
         var host = new TempestHostBuilder(Type.EmptyTypes, pluginsRootPathOverride: null, hostedServiceCandidateTypesOverride: Type.EmptyTypes, licenseFilePathOverride: path)
             .Build();
-        var originalOut = Console.Out;
-        var originalError = Console.Error;
 
-        try
-        {
-            Console.SetOut(new StringWriter());
-            Console.SetError(new StringWriter());
+        await Assert.ThrowsAsync<LicenseValidationException>(() => host.RunAsync());
 
-            await Assert.ThrowsAsync<LicenseValidationException>(() => host.RunAsync());
-
-            Assert.Equal(HostState.Faulted, host.State);
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-            Console.SetError(originalError);
-        }
+        Assert.Equal(HostState.Faulted, host.State);
     }
 }

@@ -23,7 +23,6 @@ namespace Tempest.Core.Tests.Samples;
 // and demonstrates the permission-gated history-read command path -
 // driven entirely by the real, unmodified module pipeline, mirroring
 // CalculationSampleModuleIntegrationTests.
-[Collection("Console output capture")]
 public class VerificationSampleModuleIntegrationTests
 {
     private static (RuntimeModuleManager RuntimeManager, TempestServiceProvider ServiceProvider) BuildPipeline(
@@ -199,33 +198,22 @@ public class VerificationSampleModuleIntegrationTests
                 new KeyValuePair<string, string>(PersistenceStore.RootPathConfigurationKey, temp.Path),
             ]))
             .Build();
-        var originalOut = Console.Out;
-        var writer = new StringWriter();
 
-        try
-        {
-            Console.SetOut(writer);
+        var runTask = host.RunAsync();
 
-            var runTask = host.RunAsync();
+        await RunningHostFixture.WaitUntilRunningAsync(host);
 
-            await RunningHostFixture.WaitUntilRunningAsync(host);
+        Assert.Equal(HostState.Running, host.State);
 
-            Assert.Equal(HostState.Running, host.State);
+        var registry = (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
 
-            var registry = (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
+        var result = await registry.InvokeAsync(VerificationSampleModule.GetSampleVerificationHistoryCommandId, CancellationToken.None);
 
-            var result = await registry.InvokeAsync(VerificationSampleModule.GetSampleVerificationHistoryCommandId, CancellationToken.None);
+        Assert.False(result.Succeeded);
+        Assert.Contains("Denied", result.Message);
 
-            Assert.False(result.Succeeded);
-            Assert.Contains("Denied", result.Message);
-
-            await host.StopAsync();
-            await runTask;
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-        }
+        await host.StopAsync();
+        await runTask;
 
         Assert.Equal(HostState.Stopped, host.State);
     }

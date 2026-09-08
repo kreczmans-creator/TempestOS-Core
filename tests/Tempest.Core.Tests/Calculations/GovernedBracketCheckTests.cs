@@ -24,7 +24,6 @@ namespace Tempest.Core.Tests.Calculations;
 // honestly records the test principal. What it can no longer do is let a
 // caller name somebody else. Releasing the shipped seed corpus remains a
 // human action nobody has performed.
-[Collection("Console output capture")]
 public class GovernedBracketCheckTests
 {
     private const string ReviewerId = "test-reviewer-01";
@@ -48,24 +47,14 @@ public class GovernedBracketCheckTests
             ]))
             .Build();
 
-        var originalOut = Console.Out;
+        var runTask = host.RunAsync();
 
-        try
-        {
-            Console.SetOut(new StringWriter());
-            var runTask = host.RunAsync();
+        await RunningHostFixture.WaitUntilRunningAsync(host);
 
-            await RunningHostFixture.WaitUntilRunningAsync(host);
+        await body(host);
 
-            await body(host);
-
-            await host.StopAsync();
-            await runTask;
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-        }
+        await host.StopAsync();
+        await runTask;
     }
 
     private static IMaterialCatalog Materials(ITempestHost host) =>

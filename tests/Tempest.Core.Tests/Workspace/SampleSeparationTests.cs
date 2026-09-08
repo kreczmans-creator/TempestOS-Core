@@ -190,16 +190,7 @@ public sealed class SampleSeparationTests
             .Build();
 
         var manager = new WorkspaceManager(host);
-        var originalOut = Console.Out;
-        try
-        {
-            Console.SetOut(new StringWriter());
-            await manager.StartAsync();
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-        }
+        await manager.StartAsync();
 
         try
         {

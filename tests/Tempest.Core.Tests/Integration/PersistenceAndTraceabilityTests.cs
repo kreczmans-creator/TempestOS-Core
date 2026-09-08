@@ -20,7 +20,6 @@ namespace Tempest.Core.Tests.Integration;
 // in-memory catalogue a test built for itself. An engineering platform that
 // only proves its objects were right in memory has proved nothing about
 // whether an engineer can come back to them next year.
-[Collection("Console output capture")]
 public class PersistenceAndTraceabilityTests
 {
     private static async Task RunAgainstRunningHostAsync(string rootPath, Func<ITempestHost, Task> body)
@@ -32,25 +31,15 @@ public class PersistenceAndTraceabilityTests
             ]))
             .Build();
 
-        var originalOut = Console.Out;
 
-        try
-        {
-            Console.SetOut(new StringWriter());
+        var runTask = host.RunAsync();
 
-            var runTask = host.RunAsync();
+        await RunningHostFixture.WaitUntilRunningAsync(host);
 
-            await RunningHostFixture.WaitUntilRunningAsync(host);
+        await body(host);
 
-            await body(host);
-
-            await host.StopAsync();
-            await runTask;
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-        }
+        await host.StopAsync();
+        await runTask;
     }
 
     private static async Task SeedScenarioAsync(ITempestHost host)

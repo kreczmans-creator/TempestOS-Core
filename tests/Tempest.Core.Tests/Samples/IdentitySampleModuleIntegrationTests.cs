@@ -21,7 +21,6 @@ namespace Tempest.Core.Tests.Samples;
 // Nothing here is a mock or a test double standing in for a real platform
 // service, except a level-recording ILogger used only to observe log
 // output.
-[Collection("Console output capture")]
 public class IdentitySampleModuleIntegrationTests
 {
     private static (RuntimeModuleManager RuntimeManager, TempestServiceProvider ServiceProvider) BuildPipeline(
@@ -182,34 +181,23 @@ public class IdentitySampleModuleIntegrationTests
                 new KeyValuePair<string, string>($"Identity:Principals:{IdentitySampleModule.SampleIdentityId}:Roles", "SampleReader"),
             ]))
             .Build();
-        var originalOut = Console.Out;
-        var writer = new StringWriter();
 
-        try
-        {
-            Console.SetOut(writer);
+        var runTask = host.RunAsync();
 
-            var runTask = host.RunAsync();
+        await RunningHostFixture.WaitUntilRunningAsync(host);
 
-            await RunningHostFixture.WaitUntilRunningAsync(host);
+        Assert.Equal(HostState.Running, host.State);
 
-            Assert.Equal(HostState.Running, host.State);
+        var accessor = (ICurrentPrincipalAccessor)host.Services!.GetService(typeof(ICurrentPrincipalAccessor));
+        Assert.Equal(IdentitySampleModule.SampleIdentityId, accessor.Current!.Identity.Id);
 
-            var accessor = (ICurrentPrincipalAccessor)host.Services!.GetService(typeof(ICurrentPrincipalAccessor));
-            Assert.Equal(IdentitySampleModule.SampleIdentityId, accessor.Current!.Identity.Id);
+        var registry = (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
+        var result = await registry.InvokeAsync(
+            IdentitySampleModule.CheckSamplePermissionCommandId, CancellationToken.None);
+        Assert.True(result.Succeeded);
 
-            var registry = (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
-            var result = await registry.InvokeAsync(
-                IdentitySampleModule.CheckSamplePermissionCommandId, CancellationToken.None);
-            Assert.True(result.Succeeded);
-
-            await host.StopAsync();
-            await runTask;
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-        }
+        await host.StopAsync();
+        await runTask;
 
         Assert.Equal(HostState.Stopped, host.State);
     }

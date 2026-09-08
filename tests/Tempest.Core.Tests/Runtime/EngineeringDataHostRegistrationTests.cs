@@ -12,7 +12,6 @@ namespace Tempest.Core.Tests.Runtime;
 // resolvable, ordinary singleton semantics, and the store genuinely
 // reuses the same IPersistenceStore instance Settings/Audit resolve,
 // not a second, independent one (ADR-0053).
-[Collection("Console output capture")]
 public class EngineeringDataHostRegistrationTests
 {
     private static async Task RunAgainstRunningHostAsync(string rootPath, Func<ITempestHost, Task> body)
@@ -23,25 +22,15 @@ public class EngineeringDataHostRegistrationTests
                 new KeyValuePair<string, string>(PersistenceStore.RootPathConfigurationKey, rootPath),
             ]))
             .Build();
-        var originalOut = Console.Out;
 
-        try
-        {
-            Console.SetOut(new StringWriter());
+        var runTask = host.RunAsync();
 
-            var runTask = host.RunAsync();
+        await RunningHostFixture.WaitUntilRunningAsync(host);
 
-            await RunningHostFixture.WaitUntilRunningAsync(host);
+        await body(host);
 
-            await body(host);
-
-            await host.StopAsync();
-            await runTask;
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-        }
+        await host.StopAsync();
+        await runTask;
     }
 
     [Fact]

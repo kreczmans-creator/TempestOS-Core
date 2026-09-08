@@ -27,7 +27,6 @@ namespace Tempest.Core.Tests.Samples;
 // a Notifications completion notice for each direction) driven entirely
 // by the real, unmodified module pipeline - mirroring
 // ReportingSampleModuleIntegrationTests' own structure.
-[Collection("Console output capture")]
 public class ExportImportSampleModuleIntegrationTests
 {
     private static (RuntimeModuleManager RuntimeManager, TempestServiceProvider ServiceProvider) BuildPipeline(
@@ -305,33 +304,23 @@ public class ExportImportSampleModuleIntegrationTests
                 new KeyValuePair<string, string>($"Identity:Principals:{ExportImportSampleModule.SampleIdentityId}:Roles", "ExportImporter"),
             ]))
             .Build();
-        var originalOut = Console.Out;
 
-        try
-        {
-            Console.SetOut(new StringWriter());
+        var runTask = host.RunAsync();
 
-            var runTask = host.RunAsync();
+        await RunningHostFixture.WaitUntilRunningAsync(host);
 
-            await RunningHostFixture.WaitUntilRunningAsync(host);
+        Assert.Equal(HostState.Running, host.State);
 
-            Assert.Equal(HostState.Running, host.State);
+        var registry = (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
 
-            var registry = (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
+        var exportResult = await registry.InvokeAsync(ExportImportSampleModule.ExportCommandId, CancellationToken.None);
+        Assert.True(exportResult.Succeeded);
 
-            var exportResult = await registry.InvokeAsync(ExportImportSampleModule.ExportCommandId, CancellationToken.None);
-            Assert.True(exportResult.Succeeded);
+        var importResult = await registry.InvokeAsync(ExportImportSampleModule.ImportCommandId, CancellationToken.None);
+        Assert.True(importResult.Succeeded);
 
-            var importResult = await registry.InvokeAsync(ExportImportSampleModule.ImportCommandId, CancellationToken.None);
-            Assert.True(importResult.Succeeded);
-
-            await host.StopAsync();
-            await runTask;
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-        }
+        await host.StopAsync();
+        await runTask;
 
         Assert.Equal(HostState.Stopped, host.State);
     }

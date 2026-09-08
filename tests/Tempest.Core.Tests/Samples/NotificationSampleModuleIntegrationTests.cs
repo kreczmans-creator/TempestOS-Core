@@ -20,7 +20,6 @@ namespace Tempest.Core.Tests.Samples;
 // own structure. Unlike Audit/Settings, Notifications has no Persistence
 // or Identity dependency, so this pipeline needs neither a TempDirectory
 // nor any principal/permission configuration.
-[Collection("Console output capture")]
 public class NotificationSampleModuleIntegrationTests
 {
     private static (RuntimeModuleManager RuntimeManager, TempestServiceProvider ServiceProvider) BuildPipeline(params Type[] moduleTypes)
@@ -153,29 +152,19 @@ public class NotificationSampleModuleIntegrationTests
                 pluginsRootPathOverride: null,
                 hostedServiceCandidateTypesOverride: [typeof(NotificationSampleHostedService)])
             .Build();
-        var originalOut = Console.Out;
 
-        try
-        {
-            Console.SetOut(new StringWriter());
+        var runTask = host.RunAsync();
 
-            var runTask = host.RunAsync();
+        await RunningHostFixture.WaitUntilRunningAsync(host);
 
-            await RunningHostFixture.WaitUntilRunningAsync(host);
+        Assert.Equal(HostState.Running, host.State);
 
-            Assert.Equal(HostState.Running, host.State);
+        var module = Assert.IsType<NotificationSampleModule>(host.Services!.GetService(typeof(NotificationSampleModule)));
+        Assert.Contains(module.ObservedNotifications, n =>
+            n.Category == NotificationSampleHostedService.Category && n.Message == NotificationSampleHostedService.StartedMessage);
 
-            var module = Assert.IsType<NotificationSampleModule>(host.Services!.GetService(typeof(NotificationSampleModule)));
-            Assert.Contains(module.ObservedNotifications, n =>
-                n.Category == NotificationSampleHostedService.Category && n.Message == NotificationSampleHostedService.StartedMessage);
-
-            await host.StopAsync();
-            await runTask;
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-        }
+        await host.StopAsync();
+        await runTask;
 
         Assert.Equal(HostState.Stopped, host.State);
     }
@@ -184,29 +173,19 @@ public class NotificationSampleModuleIntegrationTests
     public async Task RunAsync_WithNotificationSampleModule_PublishSampleNotificationCommandInvokableThroughTheRealHost()
     {
         var host = new TempestHostBuilder([typeof(NotificationSampleModule)]).Build();
-        var originalOut = Console.Out;
 
-        try
-        {
-            Console.SetOut(new StringWriter());
+        var runTask = host.RunAsync();
 
-            var runTask = host.RunAsync();
+        await RunningHostFixture.WaitUntilRunningAsync(host);
 
-            await RunningHostFixture.WaitUntilRunningAsync(host);
+        var registry = (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
 
-            var registry = (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
+        var result = await registry.InvokeAsync(NotificationSampleModule.PublishSampleNotificationCommandId, CancellationToken.None);
 
-            var result = await registry.InvokeAsync(NotificationSampleModule.PublishSampleNotificationCommandId, CancellationToken.None);
+        Assert.True(result.Succeeded);
 
-            Assert.True(result.Succeeded);
-
-            await host.StopAsync();
-            await runTask;
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-        }
+        await host.StopAsync();
+        await runTask;
 
         Assert.Equal(HostState.Stopped, host.State);
     }

@@ -12,7 +12,6 @@ namespace Tempest.Core.Tests.Workspace;
 // IProjectExplorerNodeProvider is registered for the current area
 // (ADR-0067). This Work Package registers none in production; these tests
 // use real, minimal test-double providers to prove the delegation itself.
-[Collection("Console output capture")]
 public class ProjectExplorerTests
 {
     private static async Task<(IWorkspace Workspace, WorkspaceManager Manager)> StartAsync(string rootPath, params Type[] moduleTypes)
@@ -25,17 +24,8 @@ public class ProjectExplorerTests
             .Build();
         var manager = new WorkspaceManager(host);
 
-        var originalOut = Console.Out;
         IWorkspace workspace;
-        try
-        {
-            Console.SetOut(new StringWriter());
-            workspace = await manager.StartAsync();
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-        }
+        workspace = await manager.StartAsync();
 
         return (workspace, manager);
     }

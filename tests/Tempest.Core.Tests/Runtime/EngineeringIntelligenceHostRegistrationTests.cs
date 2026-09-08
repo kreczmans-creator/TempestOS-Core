@@ -16,7 +16,6 @@ namespace Tempest.Core.Tests.Runtime;
 // is wired into the real, unmodified TempestHost, that each catalogue is a
 // single instance over one store, and that a reasoning service reads the
 // same catalogue the container hands out rather than a second one.
-[Collection("Console output capture")]
 public class EngineeringIntelligenceHostRegistrationTests
 {
     private static async Task RunAgainstRunningHostAsync(string rootPath, Func<ITempestHost, Task> body)
@@ -27,25 +26,15 @@ public class EngineeringIntelligenceHostRegistrationTests
                 new KeyValuePair<string, string>(PersistenceStore.RootPathConfigurationKey, rootPath),
             ]))
             .Build();
-        var originalOut = Console.Out;
 
-        try
-        {
-            Console.SetOut(new StringWriter());
+        var runTask = host.RunAsync();
 
-            var runTask = host.RunAsync();
+        await RunningHostFixture.WaitUntilRunningAsync(host);
 
-            await RunningHostFixture.WaitUntilRunningAsync(host);
+        await body(host);
 
-            await body(host);
-
-            await host.StopAsync();
-            await runTask;
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-        }
+        await host.StopAsync();
+        await runTask;
     }
 
     [Theory]

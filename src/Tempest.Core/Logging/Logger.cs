@@ -20,9 +20,10 @@ namespace Tempest.Core.Logging;
 /// <b>Sink failures are isolated.</b> A logging failure must never terminate
 /// the runtime or propagate out of a logging call to affect whatever operation
 /// happened to be logging something. If <see cref="ILogSink.Write"/> throws,
-/// the exception is caught here, reported directly to <see cref="Console.Error"/>
-/// — bypassing the failed sink entirely — and never allowed to escape this
-/// class. This closes a gap identified during the WP 2.7 architectural review
+/// the exception is caught here, reported directly to this instance's own
+/// error writer (<see cref="Console.Error"/> unless a constructor override
+/// was supplied) — bypassing the failed sink entirely — and never allowed to
+/// escape this class. This closes a gap identified during the WP 2.7 architectural review
 /// (see ADR-0010 and the Runtime Host architecture's Failure Behaviour
 /// document): the sink was previously invoked with no exception handling at
 /// all, contradicting this exact guarantee.
@@ -43,12 +44,23 @@ public sealed class Logger : ILogger
     private readonly string _category;
     private readonly LogLevel _minimumLevel;
     private readonly ILogSink _sink;
+    private readonly TextWriter _errorWriter;
 
-    internal Logger(string category, LogLevel minimumLevel, ILogSink sink)
+    /// <param name="errorWriter">
+    /// The writer a sink's own failure is reported to. Defaults to
+    /// <see cref="Console.Error"/> when <see langword="null"/> or omitted —
+    /// mirrors <see cref="CompositeLogSink"/>'s own identical, TD-34
+    /// constructor parameter (WP 17.0C test seam), so a caller supplying its
+    /// own writer (a test's private <see cref="StringWriter"/>) is never
+    /// raced by a concurrent <c>Console.SetError</c> redirection elsewhere
+    /// in the process.
+    /// </param>
+    internal Logger(string category, LogLevel minimumLevel, ILogSink sink, TextWriter? errorWriter = null)
     {
         _category = category;
         _minimumLevel = minimumLevel;
         _sink = sink;
+        _errorWriter = errorWriter ?? Console.Error;
     }
 
     /// <inheritdoc />
@@ -97,8 +109,8 @@ public sealed class Logger : ILogger
         {
             // A sink failure must never terminate the runtime or propagate to the
             // caller that happened to be logging something. Report it directly to
-            // the console, bypassing the failed sink, and swallow it here.
-            Console.Error.WriteLine(
+            // the error writer, bypassing the failed sink, and swallow it here.
+            _errorWriter.WriteLine(
                 $"[Logger] Sink '{_sink.GetType().Name}' failed while writing a log entry: {ex}");
         }
     }

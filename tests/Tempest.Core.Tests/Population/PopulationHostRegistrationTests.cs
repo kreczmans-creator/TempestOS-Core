@@ -15,7 +15,6 @@ namespace Tempest.Core.Tests.Population;
 // a user interface, just proof that a populated record can be retrieved
 // through the real application container rather than only through a
 // catalogue a test constructed for itself.
-[Collection("Console output capture")]
 public class PopulationHostRegistrationTests
 {
     private static async Task RunAgainstRunningHostAsync(string rootPath, Func<ITempestHost, Task> body)
@@ -27,25 +26,15 @@ public class PopulationHostRegistrationTests
             ]))
             .Build();
 
-        var originalOut = Console.Out;
 
-        try
-        {
-            Console.SetOut(new StringWriter());
+        var runTask = host.RunAsync();
 
-            var runTask = host.RunAsync();
+        await RunningHostFixture.WaitUntilRunningAsync(host);
 
-            await RunningHostFixture.WaitUntilRunningAsync(host);
+        await body(host);
 
-            await body(host);
-
-            await host.StopAsync();
-            await runTask;
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-        }
+        await host.StopAsync();
+        await runTask;
     }
 
     [Fact]

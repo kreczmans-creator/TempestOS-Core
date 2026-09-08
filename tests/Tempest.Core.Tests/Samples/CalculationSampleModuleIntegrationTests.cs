@@ -24,7 +24,6 @@ namespace Tempest.Core.Tests.Samples;
 // during its own initialisation, and demonstrates the execute command
 // path - driven entirely by the real, unmodified module pipeline,
 // mirroring MaterialsSampleModuleIntegrationTests.
-[Collection("Console output capture")]
 public class CalculationSampleModuleIntegrationTests
 {
     private static (RuntimeModuleManager RuntimeManager, TempestServiceProvider ServiceProvider) BuildPipeline(
@@ -151,32 +150,21 @@ public class CalculationSampleModuleIntegrationTests
                 new KeyValuePair<string, string>(PersistenceStore.RootPathConfigurationKey, temp.Path),
             ]))
             .Build();
-        var originalOut = Console.Out;
-        var writer = new StringWriter();
 
-        try
-        {
-            Console.SetOut(writer);
+        var runTask = host.RunAsync();
 
-            var runTask = host.RunAsync();
+        await RunningHostFixture.WaitUntilRunningAsync(host);
 
-            await RunningHostFixture.WaitUntilRunningAsync(host);
+        Assert.Equal(HostState.Running, host.State);
 
-            Assert.Equal(HostState.Running, host.State);
+        var registry = (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
 
-            var registry = (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
+        var result = await registry.InvokeAsync(CalculationSampleModule.ExecuteSampleCalculationCommandId, CancellationToken.None);
 
-            var result = await registry.InvokeAsync(CalculationSampleModule.ExecuteSampleCalculationCommandId, CancellationToken.None);
+        Assert.True(result.Succeeded);
 
-            Assert.True(result.Succeeded);
-
-            await host.StopAsync();
-            await runTask;
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-        }
+        await host.StopAsync();
+        await runTask;
 
         Assert.Equal(HostState.Stopped, host.State);
     }

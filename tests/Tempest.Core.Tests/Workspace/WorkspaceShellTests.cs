@@ -14,7 +14,6 @@ namespace Tempest.Core.Tests.Workspace;
 // TempestHost - the same real-collaborator, StringWriter/StringReader
 // testing discipline this project established for its console shell at
 // WP 5.0D, applied to the Workspace for the first time.
-[Collection("Console output capture")]
 public class WorkspaceShellTests
 {
     private static WorkspaceManager BuildManager(string rootPath, params Type[] moduleTypes)

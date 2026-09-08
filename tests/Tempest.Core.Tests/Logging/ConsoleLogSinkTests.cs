@@ -2,12 +2,14 @@ using Tempest.Core.Logging;
 
 namespace Tempest.Core.Tests.Logging;
 
-// Redirects Console.Out to capture what the sink writes, so it must be
-// serialised against every other test that does the same — the
-// established convention in this suite (`WP-A1`: it was the one
-// redirecting class outside the collection, and failed intermittently
-// when a parallel test restored Console.Out underneath it).
-[Collection("Console output capture")]
+// WP 17.0C: writes to a private StringWriter via ConsoleLogSink's own
+// internal test seam (see that class's remarks) rather than redirecting the
+// process-global Console.Out - the previous approach required serialising
+// this class against every other test in the assembly that might log
+// through a real host at the same moment (a race found once already,
+// `WP-A1`), which stopped being feasible once the suite stopped serialising
+// on that shared collection. No collection is needed now: every test here
+// owns its own writer.
 public class ConsoleLogSinkTests
 {
     private static LogEntry Entry(
@@ -24,31 +26,20 @@ public class ConsoleLogSinkTests
             properties ?? new Dictionary<string, object?>(),
             Environment.CurrentManagedThreadId);
 
-    private static string CaptureConsoleOutput(Action action)
+    private static string CaptureOutput(Action<ConsoleLogSink> action)
     {
-        var originalOut = Console.Out;
+        using var writer = new StringWriter();
+        var sink = new ConsoleLogSink(writer);
 
-        try
-        {
-            using var writer = new StringWriter();
-            Console.SetOut(writer);
+        action(sink);
 
-            action();
-
-            return writer.ToString();
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-        }
+        return writer.ToString();
     }
 
     [Fact]
     public void Write_IncludesLevelCategoryAndMessage()
     {
-        var sink = new ConsoleLogSink();
-
-        var output = CaptureConsoleOutput(() => sink.Write(Entry(LogLevel.Warning, "something happened")));
+        var output = CaptureOutput(sink => sink.Write(Entry(LogLevel.Warning, "something happened")));
 
         Assert.Contains("Warning", output);
         Assert.Contains("Category", output);
@@ -58,10 +49,9 @@ public class ConsoleLogSinkTests
     [Fact]
     public void Write_WithException_IncludesTheExceptionDetails()
     {
-        var sink = new ConsoleLogSink();
         var exception = new InvalidOperationException("boom");
 
-        var output = CaptureConsoleOutput(() => sink.Write(Entry(LogLevel.Error, "failed", exception)));
+        var output = CaptureOutput(sink => sink.Write(Entry(LogLevel.Error, "failed", exception)));
 
         Assert.Contains("boom", output);
         Assert.Contains(nameof(InvalidOperationException), output);
@@ -70,10 +60,9 @@ public class ConsoleLogSinkTests
     [Fact]
     public void Write_WithStructuredProperties_IncludesThem()
     {
-        var sink = new ConsoleLogSink();
         var properties = new Dictionary<string, object?> { ["ModuleId"] = "tempest.sample" };
 
-        var output = CaptureConsoleOutput(() => sink.Write(Entry(properties: properties)));
+        var output = CaptureOutput(sink => sink.Write(Entry(properties: properties)));
 
         Assert.Contains("ModuleId", output);
         Assert.Contains("tempest.sample", output);
@@ -82,10 +71,9 @@ public class ConsoleLogSinkTests
     [Fact]
     public void Write_ProducesNoAnsiColourEscapeCodes()
     {
-        var sink = new ConsoleLogSink();
         var escapeCharacter = Convert.ToChar(0x1B);
 
-        var output = CaptureConsoleOutput(() => sink.Write(Entry()));
+        var output = CaptureOutput(sink => sink.Write(Entry()));
 
         Assert.DoesNotContain(escapeCharacter, output);
     }
@@ -101,9 +89,7 @@ public class ConsoleLogSinkTests
     [Fact]
     public void Write_FromMultipleThreadsConcurrently_DoesNotThrow()
     {
-        var sink = new ConsoleLogSink();
-
-        CaptureConsoleOutput(() =>
+        CaptureOutput(sink =>
             Parallel.For(0, 50, i => sink.Write(Entry(message: $"message {i}"))));
     }
 }

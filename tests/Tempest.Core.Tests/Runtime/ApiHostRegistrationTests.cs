@@ -13,31 +13,20 @@ namespace Tempest.Core.Tests.Runtime;
 // constructor's own remarks) - so RestApiHostedService itself never
 // starts here; ApiSampleModuleIntegrationTests is where the real,
 // listening hosted service is exercised end-to-end.
-[Collection("Console output capture")]
 public class ApiHostRegistrationTests
 {
     private static async Task RunAgainstRunningHostAsync(Func<ITempestHost, Task> body)
     {
         var host = new TempestHostBuilder(Type.EmptyTypes).Build();
-        var originalOut = Console.Out;
 
-        try
-        {
-            Console.SetOut(new StringWriter());
+        var runTask = host.RunAsync();
 
-            var runTask = host.RunAsync();
+        await RunningHostFixture.WaitUntilRunningAsync(host);
 
-            await RunningHostFixture.WaitUntilRunningAsync(host);
+        await body(host);
 
-            await body(host);
-
-            await host.StopAsync();
-            await runTask;
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-        }
+        await host.StopAsync();
+        await runTask;
     }
 
     [Fact]

@@ -21,7 +21,6 @@ namespace Tempest.Core.Tests.Modules;
 // filter mechanism at the unit level, against a minimal fixture
 // (SampleFaultInjectionModule). This file proves the same guarantee holds
 // for the real fault-injection module, through the real Host.
-[Collection("Console output capture")]
 public class FaultInjectionModuleDiscoveryTests
 {
     [Fact]
@@ -76,28 +75,17 @@ public class FaultInjectionModuleDiscoveryTests
 
     private static async Task RunUntilRunningAsync(ITempestHost host, Func<Task> whileRunning)
     {
-        var originalOut = Console.Out;
-        var writer = new StringWriter();
 
-        try
-        {
-            Console.SetOut(writer);
+        var runTask = host.RunAsync();
 
-            var runTask = host.RunAsync();
+        await RunningHostFixture.WaitUntilRunningAsync(host);
 
-            await RunningHostFixture.WaitUntilRunningAsync(host);
+        Assert.Equal(HostState.Running, host.State);
 
-            Assert.Equal(HostState.Running, host.State);
+        await whileRunning();
 
-            await whileRunning();
-
-            await host.StopAsync();
-            await runTask;
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-        }
+        await host.StopAsync();
+        await runTask;
 
         Assert.Equal(HostState.Stopped, host.State);
     }
