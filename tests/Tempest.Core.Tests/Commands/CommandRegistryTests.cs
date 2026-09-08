@@ -283,7 +283,8 @@ public class CommandRegistryTests
 
         await registry.InvokeAsync("sample.a", CancellationToken.None);
 
-        Assert.True(logger.HasEntryAt(LogLevel.Information, "Invoking command 'sample.a'"));
+        // `WP 17.2A` (ADR-0146): per-invocation chatter demoted to Debug.
+        Assert.True(logger.HasEntryAt(LogLevel.Debug, "Invoking command 'sample.a'"));
     }
 
     // ------------------------------------------------------------------

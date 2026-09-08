@@ -100,7 +100,7 @@ public sealed class CommandRegistry : ICommandRegistry
                 $"Command '{id}' has no default-instance factory and cannot be invoked by Id.");
         }
 
-        _logger?.Information($"Invoking command '{id}'.");
+        _logger?.Debug($"Invoking command '{id}'.");
 
         return await DispatchAsync(id, descriptor.CreateDefault(), cancellationToken).ConfigureAwait(false);
     }
@@ -142,7 +142,7 @@ public sealed class CommandRegistry : ICommandRegistry
 
         if (!availability.IsAvailable)
         {
-            _logger?.Information($"Command '{id}' not invoked: {availability.Reason}");
+            _logger?.Debug($"Command '{id}' not invoked: {availability.Reason}");
             return CommandInvocation.Unavailable(availability.Reason!);
         }
 
@@ -154,7 +154,7 @@ public sealed class CommandRegistry : ICommandRegistry
         // - this is what keeps a macro's own steps working unchanged.
         if (binding is null)
         {
-            _logger?.Information($"Invoking command '{id}'.");
+            _logger?.Debug($"Invoking command '{id}'.");
             return CommandInvocation.Executed(
                 await DispatchAsync(id, descriptor.CreateDefault!(), cancellationToken).ConfigureAwait(false));
         }
@@ -169,7 +169,7 @@ public sealed class CommandRegistry : ICommandRegistry
                 // with nothing able to ask for it, says exactly that.
                 var reason =
                     $"'{descriptor.DisplayName}' needs additional input, and no input surface was supplied.";
-                _logger?.Information($"Command '{id}' not invoked: {reason}");
+                _logger?.Debug($"Command '{id}' not invoked: {reason}");
                 return CommandInvocation.Unavailable(reason);
             }
 
@@ -179,13 +179,13 @@ public sealed class CommandRegistry : ICommandRegistry
             // Declining is not failing. Nothing ran; nothing is reported.
             if (collected is null)
             {
-                _logger?.Information($"Command '{id}' cancelled before dispatch.");
+                _logger?.Debug($"Command '{id}' cancelled before dispatch.");
                 return CommandInvocation.Cancelled;
             }
 
             if (CheckValues(descriptor, binding, collected) is { } invalid)
             {
-                _logger?.Information($"Command '{id}' not invoked: {invalid}");
+                _logger?.Debug($"Command '{id}' not invoked: {invalid}");
                 return CommandInvocation.Unavailable(invalid);
             }
 
@@ -211,7 +211,7 @@ public sealed class CommandRegistry : ICommandRegistry
             throw;
         }
 
-        _logger?.Information($"Invoking command '{id}'.");
+        _logger?.Debug($"Invoking command '{id}'.");
 
         return CommandInvocation.Executed(await DispatchAsync(id, command, cancellationToken).ConfigureAwait(false));
     }
@@ -323,7 +323,7 @@ public sealed class CommandRegistry : ICommandRegistry
         }
 
         if (result.Succeeded)
-            _logger?.Information($"Command '{id}' invoked: Succeeded.");
+            _logger?.Debug($"Command '{id}' invoked: Succeeded.");
         else
             _logger?.Warning($"Command '{id}' invoked: Failed ({result.Message}).");
 

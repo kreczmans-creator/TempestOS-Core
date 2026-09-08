@@ -194,15 +194,18 @@ public class CommandDispatcherTests
     }
 
     [Fact]
-    public async Task DispatchAsync_Succeeds_LogsAtInformationLevel()
+    public async Task DispatchAsync_Succeeds_LogsAtDebugLevel()
     {
+        // `WP 17.2A` (ADR-0146): every dispatch, including its own
+        // success/failure outcome, is Debug-level chatter now — handler
+        // registration above stays Information.
         var logger = new RecordingLevelLogger();
         var dispatcher = CreateDispatcher(logger);
         dispatcher.RegisterHandler(new RecordingCommandHandler<RecordedCommandA>());
 
         await dispatcher.DispatchAsync(new RecordedCommandA(), CancellationToken.None);
 
-        Assert.True(logger.HasEntryAt(LogLevel.Information, "Succeeded"));
+        Assert.True(logger.HasEntryAt(LogLevel.Debug, "Succeeded"));
     }
 
     [Fact]

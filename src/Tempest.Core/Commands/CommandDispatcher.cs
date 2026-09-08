@@ -50,7 +50,10 @@ public sealed class CommandDispatcher : ICommandDispatcher
     {
         ArgumentNullException.ThrowIfNull(command);
 
-        _logger?.Information($"Dispatching command '{typeof(TCommand).Name}'.");
+        // `WP 17.2A` (ADR-0146): every dispatch is Debug-level chatter —
+        // handler registration above stays Information as the rarer,
+        // user-visible-at-startup event.
+        _logger?.Debug($"Dispatching command '{typeof(TCommand).Name}'.");
 
         CommandResult result;
 
@@ -69,7 +72,7 @@ public sealed class CommandDispatcher : ICommandDispatcher
         }
 
         if (result.Succeeded)
-            _logger?.Information($"Command '{typeof(TCommand).Name}' dispatched: Succeeded.");
+            _logger?.Debug($"Command '{typeof(TCommand).Name}' dispatched: Succeeded.");
         else
             _logger?.Warning($"Command '{typeof(TCommand).Name}' dispatched: Failed ({result.Message}).");
 

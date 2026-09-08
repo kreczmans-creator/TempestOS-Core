@@ -43,7 +43,11 @@ public sealed class ServiceCollection : IServiceCollection
 
         _descriptorsByType[serviceType] = new ServiceDescriptor(serviceType, implementationType, lifetime);
 
-        _logger?.Information(
+        // `WP 17.2A` (ADR-0146): every registration is Debug-level chatter
+        // — dozens fire during Platform Services Registered alone, which
+        // already gets its own single Information-level "phase completed"
+        // line at the Host.
+        _logger?.Debug(
             $"Service registered: '{serviceType.Name}' -> '{implementationType.Name}' ({lifetime}).");
 
         return this;
@@ -68,7 +72,7 @@ public sealed class ServiceCollection : IServiceCollection
         _descriptorsByType[serviceType] =
             new ServiceDescriptor(serviceType, instance.GetType(), ServiceLifetime.Singleton, instance);
 
-        _logger?.Information(
+        _logger?.Debug(
             $"Service instance registered: '{serviceType.Name}' -> existing instance of '{instance.GetType().Name}'.");
 
         return this;

@@ -110,7 +110,10 @@ public sealed class EventBus : IEventBus
                 : [];
         }
 
-        _logger?.Information(
+        // `WP 17.2A` (ADR-0146): every publish is Debug-level chatter, not
+        // Information — Subscribe/Unsubscribe above stay Information as
+        // the user-visible, comparatively rare registration events.
+        _logger?.Debug(
             $"Publishing '{typeof(TEvent).Name}' to {snapshot.Count} subscriber(s).");
 
         foreach (var subscriber in snapshot)
@@ -135,7 +138,7 @@ public sealed class EventBus : IEventBus
             }
         }
 
-        _logger?.Information($"Publish completed for '{typeof(TEvent).Name}'.");
+        _logger?.Debug($"Publish completed for '{typeof(TEvent).Name}'.");
     }
 
     private List<object> GetOrCreateSubscriberList(Type eventType)
