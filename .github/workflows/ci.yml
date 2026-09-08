@@ -19,15 +19,16 @@ name: CI
 #
 # WP 11.2A adds a third, independent job — governance-health-check — a
 # separate validation stage that runs after build-and-test completes,
-# auditing governance-document consistency (ADR Register, Academy Index,
-# Release Register, Documentation Register, PROJECT_STATUS.md, VERSION,
-# release folders) rather than code. See
-# docs/releases/v0.11.0/WP11.2A Governance Health-Check Tool.md for what
-# it checks and why it is deliberately NOT yet part of the required `CI
-# Gate` job (real, pre-existing governance drift the tool found on its
-# first run — not introduced by this change — would otherwise block
-# every future merge until a separate, larger clean-up Work Package
-# closes it).
+# auditing governance-document consistency rather than code. WP 17.0B
+# ("Governance reset") archived the register suite this job used to
+# cross-check and reduced it to five checks against what remains:
+# the ADR Register against docs/adr/ (by file and by count), VERSION
+# against its planned release folder, every *tagged* release folder
+# having a Release Notes file, and a new check that a PR's Markdown
+# lines added never exceed its code lines added (CONTRIBUTING.md's PR
+# budget). See scripts/governance-healthcheck.ps1's own header for the
+# current check list, and docs/releases/v0.11.0/WP11.2A Governance
+# Health-Check Tool.md for why this job exists in the first place.
 
 on:
   push:
@@ -292,12 +293,16 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          # Release Register vs. git tags (Check 3) needs real tags to
-          # compare against - actions/checkout's own default
-          # (fetch-depth: 1) fetches none. fetch-tags: true is the
-          # supported way to get them without a full, slower
-          # fetch-depth: 0 history clone.
+          # fetch-tags: true gets real tags (the Release Notes check needs
+          # them to know which release folders are actually shipped).
+          # fetch-depth: 0 (WP 17.0B, the new Markdown-vs-code check) gets
+          # full history, without which `main`'s own commits - and so a
+          # merge-base against this branch - are not present in a checkout
+          # by SHA at all; that check already Warns rather than fails when
+          # no merge base can be found, but a shallow clone would make it
+          # Warn on every run instead of actually enforcing the budget.
           fetch-tags: true
+          fetch-depth: 0
           # Pinned explicitly: without this, a tag-triggered push leaves
           # checkout's own default ref (github.ref, e.g. refs/tags/v0.11.0)
           # colliding with fetch-tags's own fetch of that identical tag -
