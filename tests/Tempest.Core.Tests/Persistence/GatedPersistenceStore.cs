@@ -28,6 +28,7 @@ public sealed class GatedPersistenceStore(IQueryablePersistenceStore inner) : IQ
 {
     private TaskCompletionSource? _release;
     private TaskCompletionSource? _parked;
+    private int _armed;
 
     /// <summary>The store being wrapped.</summary>
     public IQueryablePersistenceStore Inner { get; } = inner;
@@ -39,13 +40,22 @@ public sealed class GatedPersistenceStore(IQueryablePersistenceStore inner) : IQ
     /// <returns>A task that completes when that transaction has parked.</returns>
     public Task ArmNextTransaction()
     {
-        _release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        _parked = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        return _parked.Task;
+        var parked = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        Volatile.Write(ref _release, new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously));
+        Volatile.Write(ref _parked, parked);
+        Volatile.Write(ref _armed, 1);
+        return parked.Task;
     }
 
     /// <summary>Releases a parked transaction so it can commit.</summary>
-    public void Release() => _release?.TrySetResult();
+    /// <remarks>
+    /// Reads the completion source rather than taking it, because the
+    /// parked transaction is still awaiting it. Only the <c>_armed</c>
+    /// flag is claimed, and only by the transaction that parks — so a
+    /// second transaction is not gated, and <see cref="Release"/> can be
+    /// called before or after the park without racing.
+    /// </remarks>
+    public void Release() => Volatile.Read(ref _release)?.TrySetResult();
 
     /// <inheritdoc />
     public Task<IReadOnlyList<string>> ListKeysAsync(string collection, string keyPrefix, CancellationToken cancellationToken = default) =>
@@ -71,10 +81,12 @@ public sealed class GatedPersistenceStore(IQueryablePersistenceStore inner) : IQ
             {
                 await work(transaction, token).ConfigureAwait(false);
 
-                if (Interlocked.Exchange(ref _release, null) is not { } release)
+                // Claim the arming, so only the next transaction parks.
+                if (Interlocked.Exchange(ref _armed, 0) == 0)
                     return;
 
-                Interlocked.Exchange(ref _parked, null)?.TrySetResult();
+                var release = Volatile.Read(ref _release)!;
+                Volatile.Read(ref _parked)?.TrySetResult();
                 await release.Task.ConfigureAwait(false);
             },
             cancellationToken);
