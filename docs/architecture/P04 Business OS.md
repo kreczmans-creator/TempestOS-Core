@@ -1,7 +1,7 @@
 # P04 — Business OS
 
 **Programme:** P04 — Business OS
-**Namespace:** `Tempest.Core.BusinessOperations` (and `Tempest.App/Projects` for `WP04.2`)
+**Namespace:** `Tempest.Core.BusinessOperations` (and `Tempest.Workspace/Projects` for `WP04.2`)
 **Governing ADR:** `ADR-0142`
 **Status:** Foundation skeleton complete. Every library ships **empty** —
 see §9.
@@ -19,7 +19,7 @@ spend, what it has ordered, what went wrong, and what it has to keep.
 | WP | Question | Where it lives |
 |---|---|---|
 | WP04.1 | Who are we dealing with, and what has passed between us? | `.Crm` |
-| WP04.2 | What work is planned, and what is waiting on what? | `Tempest.App/Projects` |
+| WP04.2 | What work is planned, and what is waiting on what? | `Tempest.Workspace/Projects` |
 | WP04.3 | What did we allow, and how much of it is gone? | `.Finance` |
 | WP04.4 | What did we ask for, and what did we order? | `.Purchasing` |
 | WP04.5 | What did not conform, and is it actually fixed? | `.Quality` |
@@ -36,7 +36,7 @@ in pieces, under other programmes. `ADR-0142` records the resulting rule:
 | It needs | It uses |
 |---|---|
 | Money, authority, effectivity | `P07` |
-| Projects, tasks, milestones | `Tempest.App/Projects` |
+| Projects, tasks, milestones | `Tempest.Workspace/Projects` |
 | Suppliers, quotes, comparisons | `P03`, by Id and `ReferencePin` |
 | Documents, relationships, evidence | `EngineeringData` and `P05` |
 | Failure causes | `P06`'s `FailureCause` |
@@ -86,7 +86,7 @@ holds a name, a role, a work address, a work number. 14 diagnostics,
 
 ## 5. WP04.2 — Project management
 
-**Satisfied by `Tempest.App/Projects`**, which already holds the
+**Satisfied by `Tempest.Workspace/Projects`**, which already holds the
 directory, membership, tasks with work state and assignment, milestones,
 deliverables, contributions, and the requirement, document and governance
 registers.
@@ -176,7 +176,7 @@ describing any real transaction. They live only in the test project.
 ## 10. Dependencies
 
 `P04` depends on `P03`, `P05`, `P06`, `P07`, the shared reference-data
-layer, and `Tempest.App/Projects`. Nothing depends on `P04`.
+layer, and `Tempest.Workspace/Projects`. Nothing depends on `P04`.
 
 Every cross-library collaborator in validation is **optional**, so an
 operational record is recordable and checkable before the thing it cites

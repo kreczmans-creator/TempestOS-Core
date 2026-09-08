@@ -194,7 +194,7 @@ EngineeringWorkspaceComposer.RehydrateEngineeringObjectsAsync   ◄── the re
 ```
 
 Both entry points run it — `Tempest.Desktop.WorkspaceHost.StartAsync` and
-the console `Tempest.App/Program.cs` — so the two shells recover the
+the console `Tempest.Harness/Program.cs` — so the two shells recover the
 identical work from the identical store.
 
 **An object already in the repository is never replaced by a disk

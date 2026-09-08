@@ -305,14 +305,15 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
-      # Two separate artefacts, deliberately not one — ADR-0101 (`WP 11.3B`):
-      # Tempest.Desktop is TempestOS's shipped application; Tempest.App
-      # (WorkspaceShell) is the Internal Engineering Harness, not a second
-      # product. Bundling both into one "tempestos-release-build" artefact
-      # (as this step did through WP 11.1A/WP 11.1B) implied they were
-      # co-equal deliverables — corrected here. Debug output is not
-      # published for either: it is not a release candidate and would only
-      # double artefact storage for no verification benefit.
+      # Two separate artefacts, deliberately not one — ADR-0101 (`WP 11.3B`,
+      # amended `WP 17.2B`): Tempest.Desktop is TempestOS's shipped
+      # application; Tempest.Harness (WorkspaceShell) is the Internal
+      # Engineering Harness, not a second product. Bundling both into one
+      # "tempestos-release-build" artefact (as this step did through
+      # WP 11.1A/WP 11.1B) implied they were co-equal deliverables —
+      # corrected here. Debug output is not published for either: it is not
+      # a release candidate and would only double artefact storage for no
+      # verification benefit.
       - name: Upload Tempest.Desktop build output (shipped application)
         if: matrix.configuration == 'Release'
         uses: actions/upload-artifact@v4
@@ -323,13 +324,13 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
-      - name: Upload Tempest.App build output (Internal Engineering Harness)
+      - name: Upload Tempest.Harness build output (Internal Engineering Harness)
         if: matrix.configuration == 'Release'
         uses: actions/upload-artifact@v4
         continue-on-error: true
         with:
           name: tempestos-engineering-harness
-          path: src/Tempest.App/bin/Release/net10.0/**
+          path: src/Tempest.Harness/bin/Release/net10.0/**
           if-no-files-found: warn
           retention-days: 14
 
