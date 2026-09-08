@@ -80,7 +80,7 @@ public sealed class CommandRegistry : ICommandRegistry
     }
 
     /// <inheritdoc />
-    public async Task<CommandResult> InvokeAsync(string id, CancellationToken cancellationToken = default)
+    private async Task<CommandResult> InvokeCoreAsync(string id, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(id);
 
@@ -120,7 +120,7 @@ public sealed class CommandRegistry : ICommandRegistry
     }
 
     /// <inheritdoc />
-    public async Task<CommandInvocation> InvokeAsync(
+    private async Task<CommandInvocation> InvokeCoreAsync(
         string id,
         CommandContext context,
         CommandParameterPrompt? prompt = null,
@@ -308,7 +308,6 @@ public sealed class CommandRegistry : ICommandRegistry
     {
         CommandResult result;
 
-        BeginInvocation();
         try
         {
             result = await _table.DispatchAsync(command, cancellationToken).ConfigureAwait(false);
@@ -322,10 +321,6 @@ public sealed class CommandRegistry : ICommandRegistry
             _logger?.Error($"Command '{id}' handler threw.", ex);
             throw;
         }
-        finally
-        {
-            EndInvocation();
-        }
 
         if (result.Succeeded)
             _logger?.Information($"Command '{id}' invoked: Succeeded.");
@@ -333,6 +328,32 @@ public sealed class CommandRegistry : ICommandRegistry
             _logger?.Warning($"Command '{id}' invoked: Failed ({result.Message}).");
 
         return result;
+    }
+
+    /// <inheritdoc />
+    public Task<CommandResult> InvokeAsync(string id, CancellationToken cancellationToken = default) =>
+        TrackAsync(() => InvokeCoreAsync(id, cancellationToken));
+
+    /// <inheritdoc />
+    public Task<CommandInvocation> InvokeAsync(
+        string id,
+        CommandContext context,
+        CommandParameterPrompt? prompt = null,
+        CancellationToken cancellationToken = default) =>
+        TrackAsync(() => InvokeCoreAsync(id, context, prompt, cancellationToken));
+
+    /// <summary>Counts an invocation from the moment it is requested — prompt phase included — until it returns or throws.</summary>
+    private async Task<T> TrackAsync<T>(Func<Task<T>> body)
+    {
+        BeginInvocation();
+        try
+        {
+            return await body().ConfigureAwait(false);
+        }
+        finally
+        {
+            EndInvocation();
+        }
     }
 
     // ---- In-flight tracking (`WP 17.2A`) ----------------------------------
