@@ -81,19 +81,25 @@ public sealed class TempestServiceProvider : ITempestServiceProvider
     {
         ArgumentNullException.ThrowIfNull(serviceType);
 
-        _logger?.Information($"Resolving service '{serviceType.Name}'.");
+        // `WP 17.2A` (ADR-0146): every resolve, successful or not, is
+        // Debug-level chatter, not Information — an Information log reads
+        // as lifecycle phases and user-visible actions, and a resolution
+        // happens far too often, for far too routine a reason, to qualify.
+        // The one-time "Service provider built" message above stays
+        // Information.
+        _logger?.Debug($"Resolving service '{serviceType.Name}'.");
 
         try
         {
             var instance = Resolve(serviceType, []);
 
-            _logger?.Information($"Resolved service '{serviceType.Name}' -> '{instance.GetType().Name}'.");
+            _logger?.Debug($"Resolved service '{serviceType.Name}' -> '{instance.GetType().Name}'.");
 
             return instance;
         }
         catch (Exception ex)
         {
-            _logger?.Information($"Failed to resolve service '{serviceType.Name}': {ex.Message}");
+            _logger?.Debug($"Failed to resolve service '{serviceType.Name}': {ex.Message}");
             throw;
         }
     }

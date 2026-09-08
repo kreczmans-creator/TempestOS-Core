@@ -247,12 +247,50 @@ public sealed class TempestHost : ITempestHost
 
         var configuration = configurationBuilder.Build();
 
-        ILogSink sink = _additionalLogSinks.Count > 0
-            ? new CompositeLogSink([new ConsoleLogSink(), .. _additionalLogSinks])
-            : new ConsoleLogSink();
+        // `WP 17.2A` (ADR-0146): a durable, rotated file sink under the
+        // persistence root's own `logs/` folder is registered by default,
+        // alongside the console sink - resolved here, ahead of Persistence
+        // itself (below), from the identical `Persistence:RootPath`
+        // configuration key/default `PersistenceStore`/`SqlitePersistenceStore`
+        // each independently resolve, so the log directory and the
+        // database directory always share one root without this class
+        // taking a dependency on either concrete store type.
+        var persistenceRootPath = configuration.TryGetValue(Persistence.PersistenceStore.RootPathConfigurationKey, out var configuredRootPath)
+            && !string.IsNullOrWhiteSpace(configuredRootPath)
+            ? configuredRootPath
+            : Persistence.PersistenceStore.DefaultRootPath;
+
+        var rollingFileSink = new RollingFileLogSink(Path.Combine(persistenceRootPath, "logs"));
+
+        // The console sink is included only when a console is genuinely
+        // attached and useful to write to. `Console.IsOutputRedirected`
+        // reports `true` both for a stream genuinely redirected to a file
+        // or pipe, and - because the underlying handle is invalid - for a
+        // `WinExe` with no console allocated at all (`Tempest.Desktop`),
+        // so `!IsOutputRedirected` alone already excludes the Desktop;
+        // `Environment.UserInteractive` (false for a Windows Service or a
+        // `CreateNoWindow`-launched batch process) is the second half of
+        // "genuinely attached", so this Host never spends a write on a
+        // console nobody can see either way.
+        var consoleAttached = !Console.IsOutputRedirected && Environment.UserInteractive;
+
+        List<ILogSink> sinks = [rollingFileSink, .. _additionalLogSinks];
+
+        if (consoleAttached)
+            sinks.Insert(0, new ConsoleLogSink());
+
+        ILogSink sink = sinks.Count > 1 ? new CompositeLogSink(sinks) : sinks[0];
         ILoggerFactory loggerFactory = new LoggerFactory(configuration, sink);
         var logger = loggerFactory.CreateLogger(LoggingServiceCollectionExtensions.DefaultLoggerCategory);
         _logger = logger;
+
+        // `WP 17.2A`: forwards any future library code's own
+        // `Microsoft.Extensions.Logging.ILoggerFactory` dependency (an
+        // accounting connector's `HttpClient` diagnostics in `v0.19.0`,
+        // SQLite's own logging hooks) into this exact same sink pipeline,
+        // category for category - registered below, alongside the rest of
+        // Platform Services.
+        Microsoft.Extensions.Logging.ILoggerFactory microsoftLoggerFactory = new TempestLoggerProvider(loggerFactory);
 
         logger.Information("Host lifecycle phase completed: Configuration Built.");
         logger.Information("Host lifecycle phase completed: Logging Built.");
@@ -349,6 +387,15 @@ public sealed class TempestHost : ITempestHost
         services.AddInstance(sink);
         services.AddInstance(loggerFactory);
         services.AddInstance(logger);
+        services.AddInstance(microsoftLoggerFactory);
+
+        // Registered under its own concrete type, distinct from `sink`
+        // above (which may be the `CompositeLogSink` wrapping it, not
+        // itself `IDisposable`) - the Service Disposal phase (`TD-03`,
+        // `WP 17.1A`) walks every `AddInstance`-registered instance, so
+        // this is what makes the rolling file sink's own writer close, and
+        // its swallowed-error count reported, on Host shutdown.
+        services.AddInstance(rollingFileSink);
         services.AddInstance(platformVersionProvider);
         services.Singleton<IEventBus, EventBus>();
         services.Singleton<IReportingService, ReportingService>();
@@ -361,17 +408,23 @@ public sealed class TempestHost : ITempestHost
         // ADR-0044: CurrentPrincipalAccessor is constructed directly, once,
         // and registered under both its own concrete type and
         // ICurrentPrincipalAccessor - the same already-built instance under
-        // two service-type keys - so IdentityService (which needs write
-        // access via the concrete type) and every ordinary consumer
-        // (which resolves only the read-only interface) share the exact
-        // same object, never two independently-constructed ones. See
-        // CurrentPrincipalAccessor's own remarks.
+        // two service-type keys - so a caller needing write access (the
+        // presentation layer's own SessionPrincipalSource boundary,
+        // `WP 17.2A`) and every ordinary consumer (which resolves only the
+        // read-only interface) share the exact same object, never two
+        // independently-constructed ones. See CurrentPrincipalAccessor's
+        // own remarks.
+        //
+        // `WP 17.2A` (ADR-0146): IRoleProvider/RoleProvider and
+        // IIdentityService/IdentityService are deleted, not merely
+        // unregistered - Identity collapses to one session principal
+        // (SessionPrincipalSource, established directly on the concrete
+        // CurrentPrincipalAccessor by the presentation layer, never
+        // resolved through a Host-registered identity service).
         var currentPrincipalAccessor = new CurrentPrincipalAccessor();
         services.AddInstance<ICurrentPrincipalAccessor>(currentPrincipalAccessor);
         services.AddInstance(currentPrincipalAccessor);
-        services.Singleton<IRoleProvider, RoleProvider>();
         services.Singleton<IPermissionEvaluator, PermissionEvaluator>();
-        services.Singleton<IIdentityService, IdentityService>();
 
         // ADR-0041/ADR-0144: Persistence is established here, as part of
         // Settings' own scope, ahead of Settings' own registration so the

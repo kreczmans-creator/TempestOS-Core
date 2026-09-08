@@ -158,9 +158,11 @@ All persisted state is written under a single folder:
 ├── tempest.db-wal  # SQLite write-ahead log — present while running,
 ├── tempest.db-shm  # and its shared-memory index. Both are part of the
 │                   # database, not caches you may delete separately.
-└── tempest.lock    # Held open exclusively while the application runs,
-                    # so a second instance on this folder is refused
-                    # rather than allowed to interleave writes.
+├── tempest.lock    # Held open exclusively while the application runs,
+│                   # so a second instance on this folder is refused
+│                   # rather than allowed to interleave writes.
+└── logs/           # tempest-yyyyMMdd.log, one file per day, oldest
+                    # deleted beyond 14 files (`WP 17.2A`, ADR-0146).
 ```
 
 - The root is the value of `Persistence:RootPath`, and when that is not
@@ -176,9 +178,24 @@ All persisted state is written under a single folder:
   `v0.17.0` only, and is deleted in `v0.18.0`.
 - There is no registry use, no `%APPDATA%`/`~/.config` use, and no file
   written outside this folder and the build output.
-- Logs go to the console. The application writes no log file. (A `logs/`
-  folder may exist from other tooling; it is gitignored and unused by the
-  application.)
+- **Logs go to `logs/` under this same root, and to the console when one
+  is genuinely attached** (`Tempest.App`'s own console harness; never
+  `Tempest.Desktop`, which has none) — `WP 17.2A` (ADR-0146). Before this,
+  logs went to the console only, and the application wrote no log file.
+
+### Configuring TempestOS
+
+`WP 17.2A` (ADR-0146) made every `Runtime:*`/`Identity:*`/
+`Persistence:*` key an operator can reach without editing source.
+`src/Tempest.Desktop/appsettings.sample.json`, shipped next to the
+executable, documents every key the platform reads — copy it to
+`appsettings.json` (next to the executable, or in the current directory)
+and edit it. The same keys may instead be set as environment variables
+prefixed `TEMPEST_`, with `__` (double underscore) as the section
+separator — for example `TEMPEST_Runtime__Logging__MinimumLevel=Debug` —
+or on the command line as `--Section:Key=value`. Precedence, lowest to
+highest: `appsettings.json` next to the executable, `appsettings.json` in
+the current directory, environment variables, the command line.
 
 ---
 

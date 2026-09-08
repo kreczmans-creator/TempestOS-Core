@@ -1,3 +1,6 @@
+using System.Runtime.Versioning;
+using Tempest.Core.Configuration;
+
 namespace Tempest.Core.Identity;
 
 /// <summary>
@@ -52,6 +55,111 @@ public static class ApplicationPermissions
 }
 
 /// <summary>
+/// The role a session principal holds, kept separate from its identity
+/// (`WP 17.2A`, ADR-0146).
+/// </summary>
+/// <remarks>
+/// A role governs which commands a session is offered; it carries no
+/// bearing on the identity id an audit row, authorship field or check
+/// record stores. Configuration may set it (<c>Identity:Role</c>); the
+/// identity id is never derived from it.
+/// </remarks>
+public enum SessionRole
+{
+    /// <summary>Authors and runs engineering work. The default role.</summary>
+    Engineer,
+
+    /// <summary>Independently checks work authored by an Engineer.</summary>
+    Checker,
+}
+
+/// <summary>
+/// A session's own principal: a stable, OS-derived identity id, a
+/// configurable display name, and a role kept separate from both
+/// (`WP 17.2A`, ADR-0146).
+/// </summary>
+/// <remarks>
+/// <para>
+/// Extends <see cref="IPrincipal"/> rather than replacing it: every
+/// existing consumer of <see cref="ICurrentPrincipalAccessor"/>,
+/// <see cref="IPrincipal.Identity"/> and <see cref="IPrincipal.Permissions"/>
+/// keeps working unchanged. <see cref="IdentityId"/> is always exactly
+/// <see cref="IPrincipal.Identity"/>'s own <see cref="IIdentity.Id"/> —
+/// restated here as a same-named, directly-typed property because that is
+/// what an audit row, an authorship field and a check record are specified
+/// to store, and spelling that out at every call site as
+/// <c>principal.Identity.Id</c> is exactly the kind of indirection this
+/// collapse (ADR-0146, Decision B) exists to remove.
+/// </para>
+/// </remarks>
+public interface ISessionPrincipal : IPrincipal
+{
+    /// <summary>
+    /// Gets the stable identity id this session's every audit row,
+    /// authorship field and check record stores. Read from the OS at each
+    /// launch (<see cref="SessionPrincipalSource"/>) and never from
+    /// configuration.
+    /// </summary>
+    string IdentityId { get; }
+
+    /// <summary>
+    /// Gets the human-readable display name — <c>Identity:DisplayName</c>
+    /// if configured, otherwise the OS account name.
+    /// </summary>
+    string DisplayName { get; }
+
+    /// <summary>
+    /// Gets the role this session holds — <c>Identity:Role</c> if
+    /// configured, otherwise <see cref="SessionRole.Engineer"/>.
+    /// </summary>
+    SessionRole Role { get; }
+}
+
+/// <summary>
+/// The concrete, immutable <see cref="ISessionPrincipal"/> implementation.
+/// </summary>
+public sealed class SessionPrincipal : ISessionPrincipal
+{
+    /// <summary>Initialises a new instance of the <see cref="SessionPrincipal"/> class.</summary>
+    /// <param name="identityId">The stable, OS-derived identity id.</param>
+    /// <param name="displayName">The human-readable display name.</param>
+    /// <param name="role">The role this session holds.</param>
+    /// <exception cref="ArgumentException">
+    /// <paramref name="identityId"/> or <paramref name="displayName"/> is
+    /// <see langword="null"/>, empty, or whitespace.
+    /// </exception>
+    public SessionPrincipal(string identityId, string displayName, SessionRole role)
+    {
+        if (string.IsNullOrWhiteSpace(identityId))
+            throw new ArgumentException("Identity id must not be null, empty, or whitespace.", nameof(identityId));
+
+        if (string.IsNullOrWhiteSpace(displayName))
+            throw new ArgumentException("Display name must not be null, empty, or whitespace.", nameof(displayName));
+
+        IdentityId = identityId;
+        DisplayName = displayName;
+        Role = role;
+        Identity = new PlatformIdentity(identityId, displayName);
+        Permissions = ApplicationPermissions.LocalSession;
+    }
+
+    /// <inheritdoc />
+    public string IdentityId { get; }
+
+    /// <inheritdoc />
+    public string DisplayName { get; }
+
+    /// <inheritdoc />
+    public SessionRole Role { get; }
+
+    /// <inheritdoc />
+    public IIdentity Identity { get; }
+
+    /// <inheritdoc />
+    public IReadOnlyList<Permission> Permissions { get; }
+}
+
+/// <summary>
 /// The one place the running application decides who is using it.
 /// </summary>
 /// <remarks>
@@ -62,9 +170,8 @@ public static class ApplicationPermissions
 /// <see cref="ICurrentPrincipalAccessor"/> and needs no knowledge of where
 /// that principal came from. What was missing was anything at all on the
 /// *other* side of that accessor in a real product launch: only sample
-/// modules ever called <see cref="IIdentityService.EstablishCurrentPrincipal"/>,
-/// so what a running session could do depended on which sample happened to
-/// initialise last (`TD-103`).
+/// modules ever established one, so what a running session could do
+/// depended on which sample happened to initialise last (`TD-103`).
 /// </para>
 /// <para>
 /// The shape is:
@@ -76,16 +183,6 @@ public static class ApplicationPermissions
 /// and specifically <b>not</b> a user field invented on engineering
 /// objects, or a username threaded through call sites. An engineering
 /// object is never responsible for knowing who is signed in.
-/// </para>
-/// <para>
-/// <b>This is not authentication.</b> There are no credentials, no login,
-/// no external identity provider and no roles model here, and none is
-/// implied. TempestOS today is a local single-user desktop application and
-/// this boundary says so honestly. It exists so that when Administration
-/// becomes the authority for identity, roles and permissions, it can
-/// implement this one interface and everything downstream keeps working
-/// unchanged — the engineering domain does not get redesigned to acquire a
-/// user.
 /// </para>
 /// </remarks>
 public interface ISessionPrincipalSource
@@ -105,21 +202,27 @@ public interface ISessionPrincipalSource
     /// an invented principal to avoid the null would destroy both of those
     /// truths.
     /// </remarks>
-    IPrincipal? Resolve();
+    ISessionPrincipal? Resolve();
 }
 
 /// <summary>
-/// The production source for the current product: one local desktop user,
-/// no authentication.
+/// The production source for the current product: one local desktop
+/// session, no authentication (`WP 17.2A`, ADR-0146).
 /// </summary>
 /// <remarks>
 /// <para>
-/// The identity is the operating system's own account name, because that
-/// is the only true statement available about who is using a local
-/// single-user application. It is read once, at construction, and is not a
-/// claim of having authenticated anyone — it is a label for attribution,
-/// so that audit records, authorship and ownership say something more
-/// useful than <c>"unknown"</c>.
+/// <b>Replaces <c>LocalSessionPrincipalSource</c>.</b> The identity id is a
+/// stable id read from the operating system at each launch — on Windows,
+/// the current Windows account's own security identifier
+/// (<see cref="System.Security.Principal.WindowsIdentity.User"/>); on every
+/// other platform, <see cref="Environment.UserName"/> — and is <b>never</b>
+/// read from configuration. The display name and role are the two fields
+/// configuration may change: <c>Identity:DisplayName</c> overrides the
+/// display name (falling back to the OS account name), and
+/// <c>Identity:Role</c> overrides the role (falling back to
+/// <see cref="SessionRole.Engineer"/>). This is the same non-negotiable-
+/// identity principle <c>ADR-0043</c> already established, narrowed from
+/// "local, extensible" to "one session, OS-derived" (ADR-0146).
 /// </para>
 /// <para>
 /// Where the OS gives no usable name the identity falls back to a stable,
@@ -129,35 +232,104 @@ public interface ISessionPrincipalSource
 /// constructed.
 /// </para>
 /// </remarks>
-public sealed class LocalSessionPrincipalSource : ISessionPrincipalSource
+public sealed class SessionPrincipalSource : ISessionPrincipalSource
 {
-    /// <summary>The identity id used when the operating system reports no usable account name.</summary>
+    /// <summary>The configuration key an operator overrides the display name with.</summary>
+    public const string DisplayNameConfigurationKey = "Identity:DisplayName";
+
+    /// <summary>The configuration key an operator overrides the role with.</summary>
+    public const string RoleConfigurationKey = "Identity:Role";
+
+    /// <summary>The identity id used when the operating system reports no usable account name or SID.</summary>
     public const string FallbackIdentityId = "local-user";
 
-    /// <summary>The display name used when the operating system reports no usable account name.</summary>
-    public const string FallbackDisplayName = "Local User";
+    private readonly ISessionPrincipal _principal;
 
-    private readonly IPrincipal _principal;
-
-    /// <summary>Initialises a new instance of the <see cref="LocalSessionPrincipalSource"/> class from the operating system's own account name.</summary>
-    public LocalSessionPrincipalSource()
-        : this(SafeUserName())
+    /// <summary>
+    /// Initialises a new instance of the <see cref="SessionPrincipalSource"/>
+    /// class, reading the identity id from the operating system and the
+    /// display name and role from <paramref name="configuration"/>, if
+    /// supplied.
+    /// </summary>
+    /// <param name="configuration">
+    /// The configuration <c>Identity:DisplayName</c> and <c>Identity:Role</c>
+    /// are read from, or <see langword="null"/> to take every default (the
+    /// OS account name as display name, <see cref="SessionRole.Engineer"/>
+    /// as role).
+    /// </param>
+    /// <exception cref="ConfigurationException">
+    /// <c>Identity:Role</c> is configured but is not a valid
+    /// <see cref="SessionRole"/> name.
+    /// </exception>
+    public SessionPrincipalSource(IConfigurationProvider? configuration = null)
+        : this(ResolveOsIdentityId(), configuration)
     {
     }
 
-    /// <summary>Initialises a new instance of the <see cref="LocalSessionPrincipalSource"/> class for <paramref name="userName"/>.</summary>
-    /// <remarks>The explicit form exists so a test can state the account name rather than inherit whatever the build agent happens to run as.</remarks>
-    public LocalSessionPrincipalSource(string? userName)
+    /// <summary>
+    /// Initialises a new instance of the <see cref="SessionPrincipalSource"/>
+    /// class for an explicit identity id.
+    /// </summary>
+    /// <remarks>
+    /// Internal test seam — lets a test state the OS identity id
+    /// deterministically rather than depend on whatever account the build
+    /// agent happens to run as, mirroring <c>LocalSessionPrincipalSource</c>'s
+    /// own former public seam. The identity id is still never taken from
+    /// <paramref name="configuration"/>: only <see cref="DisplayNameConfigurationKey"/>
+    /// and <see cref="RoleConfigurationKey"/> are read from it.
+    /// </remarks>
+    /// <exception cref="ArgumentException"><paramref name="identityId"/> is <see langword="null"/>, empty, or whitespace.</exception>
+    /// <exception cref="ConfigurationException">
+    /// <c>Identity:Role</c> is configured but is not a valid <see cref="SessionRole"/> name.
+    /// </exception>
+    internal SessionPrincipalSource(string identityId, IConfigurationProvider? configuration)
     {
-        var name = string.IsNullOrWhiteSpace(userName) ? null : userName.Trim();
+        if (string.IsNullOrWhiteSpace(identityId))
+            throw new ArgumentException("Identity id must not be null, empty, or whitespace.", nameof(identityId));
 
-        _principal = new PlatformPrincipal(
-            new PlatformIdentity(name ?? FallbackIdentityId, name ?? FallbackDisplayName),
-            ApplicationPermissions.LocalSession);
+        var displayName = ResolveDisplayName(identityId, configuration);
+        var role = ResolveRole(configuration);
+
+        _principal = new SessionPrincipal(identityId, displayName, role);
     }
 
     /// <inheritdoc />
-    public IPrincipal? Resolve() => _principal;
+    public ISessionPrincipal? Resolve() => _principal;
+
+    [SupportedOSPlatformGuard("windows")]
+    private static bool IsWindows() => OperatingSystem.IsWindows();
+
+    private static string ResolveOsIdentityId()
+    {
+        if (IsWindows())
+        {
+            var sid = SafeWindowsSid();
+
+            if (!string.IsNullOrWhiteSpace(sid))
+                return sid;
+        }
+
+        var userName = SafeUserName();
+
+        return string.IsNullOrWhiteSpace(userName) ? FallbackIdentityId : userName!.Trim();
+    }
+
+    [SupportedOSPlatform("windows")]
+    private static string? SafeWindowsSid()
+    {
+        try
+        {
+            return System.Security.Principal.WindowsIdentity.GetCurrent().User?.Value;
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or System.Security.SecurityException or UnauthorizedAccessException)
+        {
+            // Some hosts (a locked-down service account, a container with no
+            // usable token) genuinely cannot answer. Falling through to the
+            // OS user name, and ultimately FallbackIdentityId, is a better
+            // answer than a crash on startup.
+            return null;
+        }
+    }
 
     private static string? SafeUserName()
     {
@@ -167,10 +339,35 @@ public sealed class LocalSessionPrincipalSource : ISessionPrincipalSource
         }
         catch (InvalidOperationException)
         {
-            // Some hosts genuinely cannot answer. The fallback identity is
-            // a better answer than a crash on startup, and a far better
-            // one than inventing a person.
             return null;
         }
+    }
+
+    private static string ResolveDisplayName(string identityId, IConfigurationProvider? configuration)
+    {
+        if (configuration is not null
+            && configuration.TryGetValue(DisplayNameConfigurationKey, out var configured)
+            && !string.IsNullOrWhiteSpace(configured))
+        {
+            return configured!.Trim();
+        }
+
+        var userName = SafeUserName();
+
+        return string.IsNullOrWhiteSpace(userName) ? identityId : userName!.Trim();
+    }
+
+    private static SessionRole ResolveRole(IConfigurationProvider? configuration)
+    {
+        if (configuration is null || !configuration.TryGetValue(RoleConfigurationKey, out var configured) || string.IsNullOrWhiteSpace(configured))
+            return SessionRole.Engineer;
+
+        if (!Enum.TryParse<SessionRole>(configured, ignoreCase: true, out var role))
+        {
+            throw new ConfigurationException(
+                $"Configuration value '{configured}' for key '{RoleConfigurationKey}' is not a valid SessionRole.");
+        }
+
+        return role;
     }
 }

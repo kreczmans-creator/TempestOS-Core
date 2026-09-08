@@ -38,22 +38,4 @@ public class ExceptionTests
         Assert.IsAssignableFrom<IdentityException>(exception);
     }
 
-    [Fact]
-    public void RoleNotFoundException_IsIdentityException()
-    {
-        var exception = new RoleNotFoundException("Admin");
-
-        Assert.IsAssignableFrom<IdentityException>(exception);
-        Assert.Equal("Admin", exception.RoleName);
-        Assert.Contains("Admin", exception.Message);
-    }
-
-    [Theory]
-    [InlineData(null)]
-    [InlineData("")]
-    [InlineData("   ")]
-    public void RoleNotFoundException_Constructor_NullEmptyOrWhitespaceRoleName_ThrowsArgumentException(string? roleName)
-    {
-        Assert.Throws<ArgumentException>(() => new RoleNotFoundException(roleName!));
-    }
 }

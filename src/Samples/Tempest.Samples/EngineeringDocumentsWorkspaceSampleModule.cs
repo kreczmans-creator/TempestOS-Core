@@ -129,7 +129,7 @@ public sealed class EngineeringDocumentsWorkspaceSampleModule : ModuleLifecycleB
     private const string Datasheet = "Datasheet";
     private const string ExternalReferenceClassification = "External Reference";
 
-    private readonly IIdentityService _identityService;
+    private readonly CurrentPrincipalAccessor _currentPrincipalAccessor;
     private readonly EngineeringDomainContext _context;
     private readonly MechanicalProductStructureSampleModule _mechanicalSampleModule;
     private readonly RequirementsWorkspaceSampleModule _requirementsSampleModule;
@@ -137,20 +137,20 @@ public sealed class EngineeringDocumentsWorkspaceSampleModule : ModuleLifecycleB
 
     /// <summary>Initialises a new instance of the <see cref="EngineeringDocumentsWorkspaceSampleModule"/> class.</summary>
     public EngineeringDocumentsWorkspaceSampleModule(
-        IIdentityService identityService,
+        CurrentPrincipalAccessor currentPrincipalAccessor,
         EngineeringDomainContext context,
         MechanicalProductStructureSampleModule mechanicalSampleModule,
         RequirementsWorkspaceSampleModule requirementsSampleModule,
         EngineeringCalculationsWorkspaceSampleModule calculationsSampleModule)
         : base("tempest.samples.workspacedocuments", "Documents Workspace Sample", "1.0.0")
     {
-        ArgumentNullException.ThrowIfNull(identityService);
+        ArgumentNullException.ThrowIfNull(currentPrincipalAccessor);
         ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(mechanicalSampleModule);
         ArgumentNullException.ThrowIfNull(requirementsSampleModule);
         ArgumentNullException.ThrowIfNull(calculationsSampleModule);
 
-        _identityService = identityService;
+        _currentPrincipalAccessor = currentPrincipalAccessor;
         _context = context;
         _mechanicalSampleModule = mechanicalSampleModule;
         _requirementsSampleModule = requirementsSampleModule;
@@ -172,7 +172,7 @@ public sealed class EngineeringDocumentsWorkspaceSampleModule : ModuleLifecycleB
 
     public override async Task InitialiseAsync(CancellationToken cancellationToken)
     {
-        _identityService.EstablishCurrentPrincipal(SampleIdentityId);
+        SamplePrincipalFactory.Establish(_currentPrincipalAccessor, SampleIdentityId);
 
         var documentIds = new List<Guid>();
 

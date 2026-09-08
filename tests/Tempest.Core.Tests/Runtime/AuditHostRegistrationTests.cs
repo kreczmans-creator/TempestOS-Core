@@ -21,8 +21,6 @@ public class AuditHostRegistrationTests
             .AddConfigurationSource(new MemoryConfigurationSource(
             [
                 new KeyValuePair<string, string>(PersistenceStore.RootPathConfigurationKey, rootPath),
-                new KeyValuePair<string, string>("Identity:Roles:Auditor:Permissions", AuditQuery.QueryPermission.Key),
-                new KeyValuePair<string, string>("Identity:Principals:registration-test-auditor:Roles", "Auditor"),
             ]))
             .Build();
 
@@ -126,11 +124,13 @@ public class AuditHostRegistrationTests
 
         await RunAgainstRunningHostAsync(temp.Path, async host =>
         {
-            var identityService = (IIdentityService)host.Services!.GetService(typeof(IIdentityService));
+            var principalAccessor = (CurrentPrincipalAccessor)host.Services!.GetService(typeof(CurrentPrincipalAccessor));
             var recorder = (IAuditRecorder)host.Services!.GetService(typeof(IAuditRecorder));
             var query = (IAuditQuery)host.Services!.GetService(typeof(IAuditQuery));
 
-            identityService.EstablishCurrentPrincipal("registration-test-auditor");
+            principalAccessor.SetCurrent(new PlatformPrincipal(
+                new PlatformIdentity("registration-test-auditor", "registration-test-auditor"),
+                [AuditQuery.QueryPermission]));
             await recorder.RecordAsync("registration-test-action");
 
             var records = await query.QueryAsync(new AuditQueryCriteria(actorId: "registration-test-auditor"));

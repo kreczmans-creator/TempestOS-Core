@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Text.Json;
+using Tempest.Core.Audit;
 using Tempest.Core.EngineeringData;
 using Tempest.Core.Identity;
 using Tempest.Core.Persistence;
@@ -48,6 +49,9 @@ public sealed class CalculationEngine : ICalculationEngine
     /// <summary>The <see cref="CalculationRecord{TResult}.ExecutedByPrincipalId"/> recorded when no principal is currently established.</summary>
     public const string UnknownExecutorPrincipalId = "unknown";
 
+    /// <summary>The <see cref="Audit.IAuditRecord.Action"/> recorded for every calculation execution (`WP 17.2A`).</summary>
+    public const string CalculationExecutedActionName = "calculation.executed";
+
     /// <summary>
     /// The index collection every executed record's identity is written to,
     /// so <see cref="ListRecordsAsync"/> can answer "what has been
@@ -72,6 +76,7 @@ public sealed class CalculationEngine : ICalculationEngine
     private readonly ICurrentPrincipalAccessor _currentPrincipalAccessor;
     private readonly ILogger? _logger;
     private readonly IPersistenceStore? _recordIndex;
+    private readonly IAuditRecorder? _auditRecorder;
 
     /// <summary>
     /// Initialises a new instance of the <see cref="CalculationEngine"/> class.
@@ -85,12 +90,20 @@ public sealed class CalculationEngine : ICalculationEngine
     /// engine behaves exactly as before, writing no index and listing
     /// nothing.
     /// </param>
+    /// <param name="auditRecorder">
+    /// Records a <c>calculation.executed</c> audit row for every execution
+    /// (`WP 17.2A`, ADR-0146). Optional and nullable, defaulting to
+    /// <see langword="null"/>, so a hand-assembled test context keeps
+    /// working unchanged; without it, execution behaves exactly as before
+    /// and writes no audit row.
+    /// </param>
     /// <exception cref="ArgumentNullException"><paramref name="documentStore"/> or <paramref name="currentPrincipalAccessor"/> is <see langword="null"/>.</exception>
     public CalculationEngine(
         IEngineeringDocumentStore documentStore,
         ICurrentPrincipalAccessor currentPrincipalAccessor,
         ILogger? logger = null,
-        IPersistenceStore? recordIndex = null)
+        IPersistenceStore? recordIndex = null,
+        IAuditRecorder? auditRecorder = null)
     {
         ArgumentNullException.ThrowIfNull(documentStore);
         ArgumentNullException.ThrowIfNull(currentPrincipalAccessor);
@@ -99,6 +112,7 @@ public sealed class CalculationEngine : ICalculationEngine
         _currentPrincipalAccessor = currentPrincipalAccessor;
         _logger = logger;
         _recordIndex = recordIndex;
+        _auditRecorder = auditRecorder;
     }
 
     /// <inheritdoc />
@@ -149,6 +163,18 @@ public sealed class CalculationEngine : ICalculationEngine
         }
 
         _logger?.Information($"Calculation executed: '{calculationId}' (document '{document.Id}').");
+
+        if (_auditRecorder is not null)
+        {
+            await _auditRecorder.RecordAsync(
+                CalculationExecutedActionName,
+                new Dictionary<string, string>
+                {
+                    ["Subject"] = document.Id.ToString(),
+                    ["CalculationId"] = calculationId,
+                },
+                cancellationToken).ConfigureAwait(false);
+        }
 
         return new CalculationRecord<TResult>(
             document.Id, calculationId, result, definition.Metadata.Assumptions, context.IntermediateResults,

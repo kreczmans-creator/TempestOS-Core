@@ -1,8 +1,9 @@
 namespace Tempest.Core.Identity;
 
 /// <summary>
-/// The concrete, immutable <see cref="IPrincipal"/> implementation used by
-/// <see cref="IIdentityService"/>.
+/// The concrete, immutable <see cref="IPrincipal"/> implementation used
+/// wherever a plain, non-session principal is needed (tests, and any
+/// caller supplying its own <see cref="ISessionPrincipalSource"/>).
 /// </summary>
 public sealed class PlatformPrincipal : IPrincipal
 {

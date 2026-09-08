@@ -18,7 +18,7 @@ Console.Title = "TempestOS";
 // for verifying the Runtime Host and Workspace domain layer compose and
 // run correctly, not a shipped end-user product. TempestOS's shipped
 // desktop application is Tempest.Desktop.
-var (host, manager) = EngineeringWorkspaceComposer.Build();
+var (host, manager) = EngineeringWorkspaceComposer.Build(commandLineArgs: args);
 
 await using var shell = new WorkspaceShell(manager, Console.Out, Console.In);
 

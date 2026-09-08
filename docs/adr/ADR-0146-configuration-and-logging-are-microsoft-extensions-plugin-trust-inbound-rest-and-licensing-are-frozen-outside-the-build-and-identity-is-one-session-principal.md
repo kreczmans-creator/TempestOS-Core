@@ -265,6 +265,59 @@ multi-source configuration tree; a levelled, sink-based logging pipeline)
 without pulling the container itself along, which nothing here has
 found a reason to replace.
 
+**Implemented, `WP 17.2A` part 2.** Every paragraph of this Decision is
+built against the tree the freeze (Decision A) left behind, except the
+calc-sheet/check/issue/invoice-request/project-status-change surfaces this
+paragraph names — those objects do not exist yet (`v0.18.0`/`v0.19.0`) and
+this Work Package writes no audit row for them.
+
+- *Configuration:* `Tempest.Core.Configuration.MicrosoftExtensionsConfigurationSource`
+  builds a `Microsoft.Extensions.Configuration` tree — `appsettings.json`
+  next to the executable, `appsettings.json` in the current directory,
+  `TEMPEST_`-prefixed environment variables, the command line, in that
+  precedence — and flattens it to the platform's own `Section:Key`
+  strings. `Runtime.TempestHostBuilder` adds it before any source added
+  via `AddConfigurationSource`, so an explicit in-memory override (the
+  Desktop's own persistence-root override, every isolated test root)
+  still wins. `src/Tempest.Desktop/appsettings.sample.json` documents
+  every key: `Persistence:RootPath`, `Persistence:Backend`,
+  `Runtime:Logging:MinimumLevel`, `Runtime:Plugins:RootDirectory`/
+  `ManifestFileName`/`Disabled`, `Identity:DisplayName`, `Identity:Role`.
+- *Logging:* `Tempest.Core.Logging.RollingFileLogSink` writes
+  `<persistence root>/logs/tempest-yyyyMMdd.log`, one file per day, the
+  oldest deleted beyond 14, registered by `TempestHost` alongside the
+  console sink (only when one is genuinely attached — never
+  `Tempest.Desktop`). `TempestServiceProvider`, `EventBus`,
+  `CommandDispatcher`/`CommandRegistry` and `ServiceCollection` had their
+  per-resolve/per-publish/per-dispatch/per-registration Information
+  logging demoted to Debug. `Tempest.Core.Logging.TempestLoggerProvider`
+  implements both `Microsoft.Extensions.Logging.ILoggerProvider` and
+  `ILoggerFactory` over the platform's own `ILoggerFactory` and is
+  registered into the DI container under `Microsoft.Extensions.Logging.ILoggerFactory`.
+- *Identity:* `Tempest.Core.Identity.ISessionPrincipal`/`SessionPrincipal`/
+  `SessionPrincipalSource` replace `LocalSessionPrincipalSource`; `IdentityId`
+  is read from the OS each launch (the Windows account SID, or
+  `Environment.UserName` elsewhere) and never from configuration;
+  `DisplayName`/`Role` (`SessionRole.Engineer`/`Checker`) may be set by
+  `Identity:DisplayName`/`Identity:Role`. `IIdentityService`/`IdentityService`,
+  `IRoleProvider`/`RoleProvider`, `IRole`/`Role` and `RoleNotFoundException`
+  are deleted, not merely unregistered — nothing outside `Tempest.Samples`
+  (not `App`/`Desktop`) called `IIdentityService`, and `IdentityService`'s
+  only real dependency was the deleted `IRoleProvider`.
+  `ICurrentPrincipalAccessor`/`CurrentPrincipalAccessor` and
+  `IPermissionEvaluator`/`PermissionEvaluator` are unchanged, as this
+  Decision said they would be.
+- *Audit:* `IAuditRecorder` was already a real, working implementation
+  (`AuditRecorder`, unchanged by this Work Package) with two call sites
+  the domain did not yet cover — `Calculations.CalculationEngine.ExecuteAsync`
+  (`calculation.executed`) and `ReferenceData.Review.ReferenceReviewService.VerifyAsync`/
+  `ReleaseAsync` (`reference.verified`/`reference.released`) — both now
+  record a row, keyed by `Subject` (the record id) plus `CalculationId` or
+  `Revision`, attributed to the session principal's own `IdentityId`
+  through the existing `ICurrentPrincipalAccessor` resolution `AuditRecorder`
+  already performed. `AuditQuery` and its index table are untouched by
+  this Work Package.
+
 ## Consequences
 
 **Frozen, where, and what "frozen" means.** `src/Frozen/Tempest.Core.Api`,

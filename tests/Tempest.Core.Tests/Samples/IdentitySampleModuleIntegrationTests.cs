@@ -12,15 +12,23 @@ using Tempest.Samples;
 using Tempest.Core.Tests.Runtime;
 namespace Tempest.Core.Tests.Samples;
 
-// Proves WP 6.1 end-to-end: IdentitySampleModule constructor-injects the
-// real, unmodified IIdentityService/ICurrentPrincipalAccessor/
-// IPermissionEvaluator/ICommandDispatcher/ICommandRegistry and establishes
-// a principal through them, driven entirely by the real, unmodified module
-// pipeline - exactly the same composition
-// DiagnosticsSampleModuleIntegrationTests already proves for Diagnostics.
-// Nothing here is a mock or a test double standing in for a real platform
-// service, except a level-recording ILogger used only to observe log
-// output.
+// Proves WP 6.1 end-to-end (updated for WP 17.2A/ADR-0146):
+// IdentitySampleModule constructor-injects the real, unmodified
+// CurrentPrincipalAccessor/ICurrentPrincipalAccessor/IPermissionEvaluator/
+// ICommandDispatcher/ICommandRegistry and establishes a principal through
+// them directly, driven entirely by the real, unmodified module pipeline -
+// exactly the same composition DiagnosticsSampleModuleIntegrationTests
+// already proves for Diagnostics. Nothing here is a mock or a test double
+// standing in for a real platform service, except a level-recording
+// ILogger used only to observe log output.
+//
+// Identity collapsed to one session principal carrying a fixed permission
+// set (WP 17.2A): there is no longer a configuration-driven role/
+// permission grant mechanism, so this file no longer proves a
+// "configuration grants the sample permission" path - it proves the
+// fail-closed default for a permission outside that fixed set, and
+// separately proves the two permissions every session principal actually
+// holds.
 public class IdentitySampleModuleIntegrationTests
 {
     private static (RuntimeModuleManager RuntimeManager, TempestServiceProvider ServiceProvider) BuildPipeline(
@@ -45,9 +53,7 @@ public class IdentitySampleModuleIntegrationTests
         var currentPrincipalAccessor = new CurrentPrincipalAccessor();
         services.AddInstance<ICurrentPrincipalAccessor>(currentPrincipalAccessor);
         services.AddInstance(currentPrincipalAccessor);
-        services.Singleton<IRoleProvider, RoleProvider>();
         services.Singleton<IPermissionEvaluator, PermissionEvaluator>();
-        services.Singleton<IIdentityService, IdentityService>();
 
         services.AddDiscoveredModules(runtimeManager.GetAll().Select(module => module.Descriptor));
 
@@ -58,13 +64,6 @@ public class IdentitySampleModuleIntegrationTests
 
     private static IConfigurationProvider EmptyConfiguration() =>
         new ConfigurationBuilder().AddSource(new MemoryConfigurationSource([])).Build();
-
-    private static IConfigurationProvider ConfigurationGrantingSamplePermission() =>
-        new ConfigurationBuilder().AddSource(new MemoryConfigurationSource(
-        [
-            new KeyValuePair<string, string>("Identity:Roles:SampleReader:Permissions", IdentitySampleModule.SamplePermissionKey),
-            new KeyValuePair<string, string>($"Identity:Principals:{IdentitySampleModule.SampleIdentityId}:Roles", "SampleReader"),
-        ])).Build();
 
     // ----------------------------------------------------------------
     // Constructor injection
@@ -135,33 +134,21 @@ public class IdentitySampleModuleIntegrationTests
     }
 
     [Fact]
-    public async Task CheckSamplePermissionCommand_RoleGrantingPermissionConfigured_ReportsSuccess()
+    public async Task EstablishedPrincipal_HoldsTheFixedLocalSessionPermissionSet()
     {
-        var (runtimeManager, serviceProvider) = BuildPipeline(
-            ConfigurationGrantingSamplePermission(), typeof(IdentitySampleModule));
-        var commandRegistry = (ICommandRegistry)serviceProvider.GetService(typeof(ICommandRegistry));
+        // `WP 17.2A` (ADR-0146): no configuration can grant a permission
+        // beyond ApplicationPermissions.LocalSession any more - this is
+        // the "granted" path's replacement, proved directly against the
+        // permission evaluator rather than through a command.
+        var (runtimeManager, serviceProvider) = BuildPipeline(EmptyConfiguration(), typeof(IdentitySampleModule));
         var lifecycleManager = new ModuleLifecycleManager(runtimeManager, serviceProvider);
         await lifecycleManager.InitialiseAllAsync(CancellationToken.None);
 
-        var result = await commandRegistry.InvokeAsync(
-            IdentitySampleModule.CheckSamplePermissionCommandId, CancellationToken.None);
+        var module = Assert.IsType<IdentitySampleModule>(serviceProvider.GetService(typeof(IdentitySampleModule)));
+        var evaluator = (IPermissionEvaluator)serviceProvider.GetService(typeof(IPermissionEvaluator));
 
-        Assert.True(result.Succeeded);
-        Assert.Contains(IdentitySampleModule.SampleIdentityId, result.Message);
-    }
-
-    [Fact]
-    public async Task CheckSamplePermissionCommand_DispatchedDirectly_Succeeds()
-    {
-        var (runtimeManager, serviceProvider) = BuildPipeline(
-            ConfigurationGrantingSamplePermission(), typeof(IdentitySampleModule));
-        var commandDispatcher = (ICommandDispatcher)serviceProvider.GetService(typeof(ICommandDispatcher));
-        var lifecycleManager = new ModuleLifecycleManager(runtimeManager, serviceProvider);
-        await lifecycleManager.InitialiseAllAsync(CancellationToken.None);
-
-        var result = await commandDispatcher.DispatchAsync(new CheckSamplePermissionCommand(), CancellationToken.None);
-
-        Assert.True(result.Succeeded);
+        foreach (var permission in ApplicationPermissions.LocalSession)
+            Assert.True(evaluator.HasPermission(module.EstablishedPrincipal!, permission));
     }
 
     // ----------------------------------------------------------------
@@ -169,14 +156,10 @@ public class IdentitySampleModuleIntegrationTests
     // ----------------------------------------------------------------
 
     [Fact]
-    public async Task RunAsync_WithIdentitySampleModuleAndGrantingConfiguration_EstablishesAndAuthorizesThroughTheRealHost()
+    public async Task RunAsync_WithIdentitySampleModule_EstablishesThroughTheRealHost()
     {
         var host = new TempestHostBuilder([typeof(IdentitySampleModule)])
-            .AddConfigurationSource(new MemoryConfigurationSource(
-            [
-                new KeyValuePair<string, string>("Identity:Roles:SampleReader:Permissions", IdentitySampleModule.SamplePermissionKey),
-                new KeyValuePair<string, string>($"Identity:Principals:{IdentitySampleModule.SampleIdentityId}:Roles", "SampleReader"),
-            ])).WithIsolatedPersistenceRoot()
+            .WithIsolatedPersistenceRoot()
             .Build();
 
         var runTask = host.RunAsync();
@@ -188,10 +171,13 @@ public class IdentitySampleModuleIntegrationTests
         var accessor = (ICurrentPrincipalAccessor)host.Services!.GetService(typeof(ICurrentPrincipalAccessor));
         Assert.Equal(IdentitySampleModule.SampleIdentityId, accessor.Current!.Identity.Id);
 
+        // No configuration can grant IdentitySampleModule.SamplePermissionKey
+        // any more (`WP 17.2A`) - the command reports the fail-closed
+        // default honestly.
         var registry = (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
         var result = await registry.InvokeAsync(
             IdentitySampleModule.CheckSamplePermissionCommandId, CancellationToken.None);
-        Assert.True(result.Succeeded);
+        Assert.False(result.Succeeded);
 
         await host.StopAsync();
         await runTask;

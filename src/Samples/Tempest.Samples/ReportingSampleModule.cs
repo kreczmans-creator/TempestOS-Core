@@ -24,7 +24,7 @@ namespace Tempest.Samples;
 /// role for Audit and <see cref="SettingsSampleModule"/>'s own role for
 /// Settings. Carries <see cref="ModuleMetadataAttribute"/> so Discovery
 /// can read its identity without instantiating it (ADR-0027), freeing
-/// its constructor to request <see cref="IIdentityService"/>,
+/// its constructor to request <see cref="Tempest.Core.Identity.CurrentPrincipalAccessor"/>,
 /// <see cref="IReportingService"/>, <see cref="ISettingsProvider"/>,
 /// <see cref="ICurrentPrincipalAccessor"/>,
 /// <see cref="IPermissionEvaluator"/>, <see cref="IAuditRecorder"/>,
@@ -37,12 +37,12 @@ namespace Tempest.Samples;
 /// (<see cref="SampleIdentityId"/>), rather than depending on
 /// <see cref="IdentitySampleModule"/> having already run — every sample
 /// module remains independently usable, exactly as
-/// <see cref="AuditSampleModule"/>'s own precedent. With no
-/// <c>Identity:Roles:*:Permissions</c> configuration supplied,
-/// <see cref="GenerateReportPermissionKey"/> is not granted — the
-/// fail-closed default <see cref="GenerateSampleReportCommandHandler"/>
-/// reports honestly, exactly as <see cref="AuditSampleModule"/>'s own
-/// query command does for its own permission.
+/// <see cref="AuditSampleModule"/>'s own precedent. `WP 17.2A`
+/// (ADR-0146): <see cref="GenerateReportPermissionKey"/> is part of every
+/// session principal's fixed <see cref="ApplicationPermissions.LocalSession"/>
+/// set, so <see cref="GenerateSampleReportCommandHandler"/> is granted
+/// unconditionally — there is no longer a configuration-driven grant
+/// mechanism to demonstrate a denied path against.
 /// </para>
 /// <para>
 /// This module deliberately does not depend on
@@ -64,9 +64,13 @@ public sealed class ReportingSampleModule : ModuleLifecycleBase
 
     /// <summary>
     /// The permission key <see cref="GenerateSampleReportCommandHandler"/>
-    /// checks for before generating a report.
+    /// checks for before generating a report. `WP 17.2A` (ADR-0146): reuses
+    /// <c>Tempest.Core.Verification.VerificationService.ReadPermission</c>'s
+    /// own key, part of every session principal's fixed
+    /// <see cref="ApplicationPermissions.LocalSession"/> set — there is no
+    /// longer a configuration-driven grant mechanism for a custom key.
     /// </summary>
-    public const string GenerateReportPermissionKey = "reporting.generate";
+    public const string GenerateReportPermissionKey = "verification.read";
 
     /// <summary>
     /// The <see cref="Commands.CommandDescriptor.Id"/> this module registers
@@ -88,7 +92,7 @@ public sealed class ReportingSampleModule : ModuleLifecycleBase
     /// </summary>
     public const string ReportGeneratedNotificationCategory = "Reporting";
 
-    private readonly IIdentityService _identityService;
+    private readonly CurrentPrincipalAccessor _principalEstablisher;
     private readonly IReportingService _reportingService;
     private readonly ISettingsProvider _settingsProvider;
     private readonly ICurrentPrincipalAccessor _currentPrincipalAccessor;
@@ -101,7 +105,7 @@ public sealed class ReportingSampleModule : ModuleLifecycleBase
     /// <summary>
     /// Initialises a new instance of the <see cref="ReportingSampleModule"/> class.
     /// </summary>
-    /// <param name="identityService">The Identity &amp; Permissions service this module establishes a principal through.</param>
+    /// <param name="principalEstablisher">The concrete accessor this module establishes its own principal on directly (`WP 17.2A`).</param>
     /// <param name="reportingService">The Reporting service this module registers its report definition and renderer through.</param>
     /// <param name="settingsProvider">The Settings service this module registers its renderer's own greeting setting through.</param>
     /// <param name="currentPrincipalAccessor">The service this module's registered command reads the current principal from.</param>
@@ -111,7 +115,7 @@ public sealed class ReportingSampleModule : ModuleLifecycleBase
     /// <param name="commandDispatcher">The Command Framework's dispatch-side surface this module registers its handler through.</param>
     /// <param name="commandRegistry">The Command Framework's discovery-side surface this module registers its descriptor through.</param>
     public ReportingSampleModule(
-        IIdentityService identityService,
+        CurrentPrincipalAccessor principalEstablisher,
         IReportingService reportingService,
         ISettingsProvider settingsProvider,
         ICurrentPrincipalAccessor currentPrincipalAccessor,
@@ -122,7 +126,7 @@ public sealed class ReportingSampleModule : ModuleLifecycleBase
         ICommandRegistry commandRegistry)
         : base("tempest.samples.reporting", "Reporting Sample", "1.0.0")
     {
-        ArgumentNullException.ThrowIfNull(identityService);
+        ArgumentNullException.ThrowIfNull(principalEstablisher);
         ArgumentNullException.ThrowIfNull(reportingService);
         ArgumentNullException.ThrowIfNull(settingsProvider);
         ArgumentNullException.ThrowIfNull(currentPrincipalAccessor);
@@ -132,7 +136,7 @@ public sealed class ReportingSampleModule : ModuleLifecycleBase
         ArgumentNullException.ThrowIfNull(commandDispatcher);
         ArgumentNullException.ThrowIfNull(commandRegistry);
 
-        _identityService = identityService;
+        _principalEstablisher = principalEstablisher;
         _reportingService = reportingService;
         _settingsProvider = settingsProvider;
         _currentPrincipalAccessor = currentPrincipalAccessor;
@@ -166,7 +170,7 @@ public sealed class ReportingSampleModule : ModuleLifecycleBase
     /// </remarks>
     public override Task InitialiseAsync(CancellationToken cancellationToken)
     {
-        EstablishedPrincipal = _identityService.EstablishCurrentPrincipal(SampleIdentityId);
+        EstablishedPrincipal = SamplePrincipalFactory.Establish(_principalEstablisher, SampleIdentityId);
 
         _settingsProvider.RegisterDefinition(new SettingDefinition(
             SampleSummaryReportRenderer.GreetingSettingKey,

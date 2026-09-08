@@ -5,10 +5,12 @@ namespace Tempest.Core.Identity;
 /// plus the flattened set of permissions currently granted to it.
 /// </summary>
 /// <remarks>
-/// <see cref="Permissions"/> is already flattened from whatever roles the
-/// identity holds at the point the principal was resolved (see
-/// <see cref="IIdentityService"/>) — a consumer never needs to expand a
-/// role itself to know what a principal may do.
+/// <see cref="Permissions"/> is already the flat, resolved set a consumer
+/// checks directly — never a role to expand itself. For the platform's own
+/// single session principal (<see cref="SessionPrincipalSource"/>) this is
+/// the fixed <see cref="ApplicationPermissions.LocalSession"/> set; a
+/// future, more elaborate <see cref="ISessionPrincipalSource"/> may resolve
+/// it differently without this contract changing.
 /// </remarks>
 public interface IPrincipal
 {

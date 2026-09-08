@@ -86,7 +86,6 @@ lands and its tests pass, not by triage.
 
 | ID | Title | Owner |
 |---|---|---|
-| `TD-01` | Two logging mechanisms coexist (`ILogger` vs. legacy `LoggingService`) | `WP 17.2A` |
 | `TD-03` | No disposal tracking for reflection-constructed singletons | `WP 17.2A` |
 | `TD-04` | `IHostedService` name clashes with `Microsoft.Extensions.Hosting.IHostedService` | `WP 17.2A` |
 | `TD-12` | `IPersistenceStore` has no native query or filter capability | `WP 17.1A` |
@@ -134,6 +133,33 @@ lands and its tests pass, not by triage.
 | `TD-133` | Docking-panel repositioning and tab reordering are mouse-only | `WP 19.2B` |
 | `TD-160` | The whole merged engineering capability has no Desktop UI surface | `WP 18.2A` |
 | `TD-165` | The bracket verification artefact cannot be filled in from the Desktop | `WP 18.2A` |
+
+### Closed
+
+Rows above whose owning Work Package has actually landed and whose fix
+this table can now point at, rather than merely name.
+
+| ID | Title | Closed by |
+|---|---|---|
+| `TD-01` | Two logging mechanisms coexist (`ILogger` vs. legacy `LoggingService`) | `WP 17.2A` — the legacy `LoggingService` no longer exists in the live tree, and `Tempest.Core.Logging.TempestLoggerProvider` now forwards any `Microsoft.Extensions.Logging` caller into the same, single `ILogger`/`ILogSink` pipeline rather than leaving it as an unconnected second mechanism. |
+
+**`TD-02`, `WP 17.0C`, before this table existed:** "single-sink
+limitation" — closed by `CompositeLogSink` (see that class's own
+remarks) prior to the 2026-09-08 triage this file's Live Backlog is
+built from, so it was never a row here to move.
+
+**Considered for `WP 17.2A` and left in the table above, not closed:**
+`TD-03`'s own text is "no disposal tracking for **reflection-constructed
+singletons**" — `WP 17.2A` added one more `AddInstance`-registered,
+already-tracked instance (`RollingFileLogSink`), not tracking for
+`Singleton<TService, TImplementation>()` registrations, so the row's own
+literal subject is untouched. `TD-04` (the `IHostedService` name clash)
+and `TD-130` (reconciliation services' authorization seam) are outside
+this Work Package's actual configuration/logging/identity/audit scope;
+neither was touched. `TD-103` (the principal boundary) was already
+closed by earlier Desktop work — `WorkspaceHost` was already
+establishing a session principal before this Work Package began — so,
+like `TD-02`, it was never a row here to move.
 
 ## Archived with the Layer
 

@@ -17,14 +17,17 @@ using Tempest.Samples;
 using Tempest.Core.Tests.Runtime;
 namespace Tempest.Core.Tests.Samples;
 
-// Proves WP 6.0 end-to-end: ReportingSampleModule constructor-injects the
-// real, unmodified IIdentityService/IReportingService/ISettingsProvider/
+// Proves WP 6.0 end-to-end (updated for WP 17.2A/ADR-0146):
+// ReportingSampleModule constructor-injects the real, unmodified
+// CurrentPrincipalAccessor/IReportingService/ISettingsProvider/
 // ICurrentPrincipalAccessor/IPermissionEvaluator/IAuditRecorder/
 // INotificationDispatcher/ICommandDispatcher/ICommandRegistry, registers
 // its report definition and renderer, and demonstrates the full
-// integration chain (permission-gated generation, Settings-customised
-// content, Audit recording, a Notifications completion notice) driven
-// entirely by the real, unmodified module pipeline - mirroring
+// integration chain (generation gated by a permission that is now part of
+// every session principal's fixed ApplicationPermissions.LocalSession set
+// and so granted unconditionally, Settings-customised content, Audit
+// recording, a Notifications completion notice) driven entirely by the
+// real, unmodified module pipeline - mirroring
 // AuditSampleModuleIntegrationTests/NotificationSampleModuleIntegrationTests'
 // own structure.
 public class ReportingSampleModuleIntegrationTests
@@ -52,9 +55,7 @@ public class ReportingSampleModuleIntegrationTests
         var currentPrincipalAccessor = new CurrentPrincipalAccessor();
         services.AddInstance<ICurrentPrincipalAccessor>(currentPrincipalAccessor);
         services.AddInstance(currentPrincipalAccessor);
-        services.Singleton<IRoleProvider, RoleProvider>();
         services.Singleton<IPermissionEvaluator, PermissionEvaluator>();
-        services.Singleton<IIdentityService, IdentityService>();
 
         services.Singleton<IPersistenceStore, PersistenceStore>();
         services.Singleton<ISettingsProvider, SettingsProvider>();
@@ -72,24 +73,6 @@ public class ReportingSampleModuleIntegrationTests
         new ConfigurationBuilder().AddSource(new MemoryConfigurationSource(
         [
             new KeyValuePair<string, string>(PersistenceStore.RootPathConfigurationKey, persistenceRootPath),
-        ])).Build();
-
-    private static IConfigurationProvider ConfigurationGrantingGeneratePermission(string persistenceRootPath) =>
-        new ConfigurationBuilder().AddSource(new MemoryConfigurationSource(
-        [
-            new KeyValuePair<string, string>(PersistenceStore.RootPathConfigurationKey, persistenceRootPath),
-            new KeyValuePair<string, string>("Identity:Roles:ReportGenerator:Permissions", ReportingSampleModule.GenerateReportPermissionKey),
-            new KeyValuePair<string, string>($"Identity:Principals:{ReportingSampleModule.SampleIdentityId}:Roles", "ReportGenerator"),
-        ])).Build();
-
-    private static IConfigurationProvider ConfigurationGrantingGenerateAndQueryPermission(string persistenceRootPath) =>
-        new ConfigurationBuilder().AddSource(new MemoryConfigurationSource(
-        [
-            new KeyValuePair<string, string>(PersistenceStore.RootPathConfigurationKey, persistenceRootPath),
-            new KeyValuePair<string, string>(
-                "Identity:Roles:ReportGenerator:Permissions",
-                $"{ReportingSampleModule.GenerateReportPermissionKey},{AuditQuery.QueryPermission.Key}"),
-            new KeyValuePair<string, string>($"Identity:Principals:{ReportingSampleModule.SampleIdentityId}:Roles", "ReportGenerator"),
         ])).Build();
 
     // ----------------------------------------------------------------
@@ -152,29 +135,20 @@ public class ReportingSampleModuleIntegrationTests
 
     // ----------------------------------------------------------------
     // Command: permission gating, Audit recording, Notifications
+    //
+    // `WP 17.2A` (ADR-0146): GenerateReportPermissionKey is part of every
+    // session principal's fixed ApplicationPermissions.LocalSession set,
+    // so the command is granted unconditionally - there is no longer a
+    // configuration-driven grant mechanism, and so no denied-by-default
+    // path to prove here.
     // ----------------------------------------------------------------
-
-    [Fact]
-    public async Task GenerateSampleReportCommand_NoPermissionGranted_ReportsDeniedByDefault()
-    {
-        using var temp = new TempDirectory();
-        var (runtimeManager, serviceProvider) = BuildPipeline(EmptyConfiguration(temp.Path), typeof(ReportingSampleModule));
-        var commandRegistry = (ICommandRegistry)serviceProvider.GetService(typeof(ICommandRegistry));
-        var lifecycleManager = new ModuleLifecycleManager(runtimeManager, serviceProvider);
-        await lifecycleManager.InitialiseAllAsync(CancellationToken.None);
-
-        var result = await commandRegistry.InvokeAsync(ReportingSampleModule.GenerateSampleReportCommandId, CancellationToken.None);
-
-        Assert.False(result.Succeeded);
-        Assert.Contains("does not hold", result.Message);
-    }
 
     [Fact]
     public async Task GenerateSampleReportCommand_PermissionGranted_ReportsSuccess()
     {
         using var temp = new TempDirectory();
         var (runtimeManager, serviceProvider) = BuildPipeline(
-            ConfigurationGrantingGeneratePermission(temp.Path), typeof(ReportingSampleModule));
+            EmptyConfiguration(temp.Path), typeof(ReportingSampleModule));
         var commandRegistry = (ICommandRegistry)serviceProvider.GetService(typeof(ICommandRegistry));
         var lifecycleManager = new ModuleLifecycleManager(runtimeManager, serviceProvider);
         await lifecycleManager.InitialiseAllAsync(CancellationToken.None);
@@ -190,7 +164,7 @@ public class ReportingSampleModuleIntegrationTests
     {
         using var temp = new TempDirectory();
         var (runtimeManager, serviceProvider) = BuildPipeline(
-            ConfigurationGrantingGenerateAndQueryPermission(temp.Path), typeof(ReportingSampleModule));
+            EmptyConfiguration(temp.Path), typeof(ReportingSampleModule));
         var commandRegistry = (ICommandRegistry)serviceProvider.GetService(typeof(ICommandRegistry));
         var lifecycleManager = new ModuleLifecycleManager(runtimeManager, serviceProvider);
         await lifecycleManager.InitialiseAllAsync(CancellationToken.None);
@@ -209,7 +183,7 @@ public class ReportingSampleModuleIntegrationTests
     {
         using var temp = new TempDirectory();
         var (runtimeManager, serviceProvider) = BuildPipeline(
-            ConfigurationGrantingGeneratePermission(temp.Path), typeof(ReportingSampleModule));
+            EmptyConfiguration(temp.Path), typeof(ReportingSampleModule));
         var commandRegistry = (ICommandRegistry)serviceProvider.GetService(typeof(ICommandRegistry));
         var notificationDispatcher = (INotificationDispatcher)serviceProvider.GetService(typeof(INotificationDispatcher));
         var observed = new List<IPlatformNotification>();
@@ -249,8 +223,6 @@ public class ReportingSampleModuleIntegrationTests
             .AddConfigurationSource(new MemoryConfigurationSource(
             [
                 new KeyValuePair<string, string>(PersistenceStore.RootPathConfigurationKey, temp.Path),
-                new KeyValuePair<string, string>("Identity:Roles:ReportGenerator:Permissions", ReportingSampleModule.GenerateReportPermissionKey),
-                new KeyValuePair<string, string>($"Identity:Principals:{ReportingSampleModule.SampleIdentityId}:Roles", "ReportGenerator"),
             ]))
             .Build();
 

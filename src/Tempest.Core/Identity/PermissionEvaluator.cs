@@ -7,10 +7,10 @@ namespace Tempest.Core.Identity;
 /// </summary>
 /// <remarks>
 /// Checks directly against <see cref="IPrincipal.Permissions"/> —
-/// permission resolution (flattening a principal's roles into that list)
-/// has already happened once, by <see cref="IIdentityService"/>, at the
-/// point the principal was resolved, so this evaluator never itself
-/// consults <see cref="IRoleProvider"/>. A denied check is logged at
+/// permission resolution has already happened once, by whatever
+/// <see cref="ISessionPrincipalSource"/> resolved the principal, at the
+/// point it was resolved, so this evaluator never itself resolves a role
+/// or a permission set of its own. A denied check is logged at
 /// <see cref="LogLevel.Warning"/> with the principal Id and permission
 /// key only — never a credential or any other sensitive detail
 /// (<c>Platform Service Contracts.md</c>'s own Logging Requirements).
