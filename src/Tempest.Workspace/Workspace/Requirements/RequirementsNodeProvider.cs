@@ -45,6 +45,12 @@ public sealed class RequirementsNodeProvider : IProjectExplorerNodeProvider
     /// <inheritdoc />
     public string Kind { get; }
 
+    /// <summary>The category node that lists every live requirement in no group (`WP 17.9.3`). A fixed id, so a reload finds the same node.</summary>
+    public static readonly Guid UngroupedNodeId = new("00000000-0000-4003-8000-000000000001");
+
+    /// <summary>What the category is called in the tree.</summary>
+    public const string UngroupedTitle = "Ungrouped";
+
     /// <inheritdoc />
     public async Task<IReadOnlyList<ProjectExplorerNode>> GetRootNodesAsync(CancellationToken cancellationToken = default)
     {
@@ -60,6 +66,12 @@ public sealed class RequirementsNodeProvider : IProjectExplorerNodeProvider
         foreach (var group in groups.Where(g => !g.IsDeleted && g.ParentGroupId is null).OrderBy(g => g.Name, StringComparer.Ordinal))
             nodes.Add(ToGroupNode(group, groups, requirements));
 
+        // `WP 17.9.3` (`TD-172`): a requirement in no group had no node anywhere
+        // in this tree; the design-freeze surface audit found it by reading. Every
+        // live object must be reachable from a root.
+        if (requirements.Any(r => !r.IsDeleted && r.GroupId is null))
+            nodes.Add(new ProjectExplorerNode(UngroupedNodeId, UngroupedTitle, null, HasChildren: true, ProjectExplorerNodeType.Category));
+
         return nodes;
     }
 
@@ -67,6 +79,12 @@ public sealed class RequirementsNodeProvider : IProjectExplorerNodeProvider
     /// <exception cref="ArgumentException"><paramref name="nodeId"/> does not identify a known Requirements node.</exception>
     public async Task<IReadOnlyList<ProjectExplorerNode>> GetChildrenAsync(Guid nodeId, CancellationToken cancellationToken = default)
     {
+        if (nodeId == UngroupedNodeId)
+        {
+            var ungrouped = await _requirementsService.ListAsync(cancellationToken).ConfigureAwait(false);
+            return [.. ungrouped.Where(r => !r.IsDeleted && r.GroupId is null).Select(ToRequirementNode).OrderBy(n => n.Title, StringComparer.Ordinal)];
+        }
+
         if (await _requirementsService.FindCollectionAsync(nodeId, cancellationToken).ConfigureAwait(false) is { } collection)
         {
             var nodes = new List<ProjectExplorerNode>();
@@ -117,6 +135,11 @@ public sealed class RequirementsNodeProvider : IProjectExplorerNodeProvider
             ?? groups.FirstOrDefault(g => g.Id == objectId)?.ParentGroupId;
 
         var ancestry = new List<ProjectExplorerNode>();
+
+        // A requirement in no group lives under "Ungrouped", so a reveal expands it.
+        if (requirements.FirstOrDefault(r => r.Id == objectId) is { GroupId: null })
+            return [new ProjectExplorerNode(UngroupedNodeId, UngroupedTitle, null, HasChildren: true, ProjectExplorerNodeType.Category)];
+
         while (currentGroupId is { } groupId)
         {
             var group = groups.FirstOrDefault(g => g.Id == groupId);

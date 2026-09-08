@@ -326,6 +326,43 @@ public class VerificationActivityCommandsTests
         Assert.Single(record.Evidence);
     }
 
+    // `WP 17.9.3` (`TD-173`). A Requirement reads its own coverage from
+    // edges made from its own id; before this the record was linked from
+    // the Activity only, so the subject's coverage never showed it.
+    [Fact]
+    public async Task RecordResult_AgainstAnActivityWithASubject_LinksTheRecordFromTheSubjectToo()
+    {
+        var (context, verificationService) = BuildContext();
+        var subject = await CreateActivityAsync(context, "Subject Stand-in");
+        var activity = await CreateActivityAsync(context, "Activity", "Test", subjectId: subject.Id);
+        var handler = new RecordVerificationResultCommandHandler(verificationService, context);
+
+        var result = await handler.HandleAsync(
+            new RecordVerificationResultCommand(activity.Id, "VerificationActivity", VerificationOutcome.Pass, "Test"), default);
+
+        Assert.True(result.Succeeded, result.Message);
+        Assert.Contains("coverage", result.Message, StringComparison.Ordinal);
+
+        var fromActivity = Assert.Single(await context.Store.GetReferencesAsync(activity.Id));
+        var fromSubject = Assert.Single(await context.Store.GetReferencesAsync(subject.Id), r => r.RelationshipKind == VerificationService.VerifiedByRelationshipKind);
+        Assert.Equal(fromActivity.TargetDocumentId, fromSubject.TargetDocumentId);
+    }
+
+    [Fact]
+    public async Task RecordResult_WithoutADomainContext_LinksFromTheActivityOnly_AsBefore()
+    {
+        var (context, verificationService) = BuildContext();
+        var subject = await CreateActivityAsync(context, "Subject Stand-in");
+        var activity = await CreateActivityAsync(context, "Activity", "Test", subjectId: subject.Id);
+        var handler = new RecordVerificationResultCommandHandler(verificationService);
+
+        var result = await handler.HandleAsync(
+            new RecordVerificationResultCommand(activity.Id, "VerificationActivity", VerificationOutcome.Pass, "Test"), default);
+
+        Assert.True(result.Succeeded, result.Message);
+        Assert.Empty(await context.Store.GetReferencesAsync(subject.Id));
+    }
+
     [Fact]
     public async Task RecordResult_UnknownTarget_FailsWithoutThrowing()
     {

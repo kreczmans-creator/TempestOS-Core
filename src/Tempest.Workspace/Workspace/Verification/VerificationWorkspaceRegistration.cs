@@ -68,7 +68,7 @@ public static class VerificationWorkspaceRegistration
         commandDispatcher.RegisterHandler<CopyVerificationActivityCommand>(copyHandler);
         commandDispatcher.RegisterHandler<DuplicateVerificationActivityCommand>(new DuplicateVerificationActivityCommandHandler(domainContext, copyHandler));
         commandDispatcher.RegisterHandler<SetVerificationActivityStatusCommand>(new SetVerificationActivityStatusCommandHandler(domainContext));
-        commandDispatcher.RegisterHandler<RecordVerificationResultCommand>(new RecordVerificationResultCommandHandler(verificationService));
+        commandDispatcher.RegisterHandler<RecordVerificationResultCommand>(new RecordVerificationResultCommandHandler(verificationService, domainContext));
 
         // TD-77 Stage 3 — descriptor binding. Every binding below is a
         // hand-written lambda closing over the same constructor the handler

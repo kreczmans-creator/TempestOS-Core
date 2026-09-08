@@ -47,10 +47,6 @@ public static class MechanicalCreateParentPolicy
         if (string.Equals(kind, MechanicalObjectFactoryRegistry.Project, StringComparison.Ordinal))
             return null;
 
-        var primary = context.Primary;
-        if (primary is not null && ContainerKinds.Contains(primary.Kind, StringComparer.Ordinal))
-            return primary.ObjectId;
-
-        return context.ProjectId;
+        return CreationPlacement.ParentFor(context, ContainerKinds);
     }
 }

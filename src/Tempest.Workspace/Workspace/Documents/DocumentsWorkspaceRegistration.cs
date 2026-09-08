@@ -22,6 +22,13 @@ namespace Tempest.Workspace.Documents;
 /// </remarks>
 public static class DocumentsWorkspaceRegistration
 {
+    /// <summary>The Kinds a new document may be placed under by default (`WP 17.9.3`).</summary>
+    public static readonly IReadOnlyList<string> DocumentContainerKinds =
+    [
+        "Project", "Assembly", "SubAssembly", "Part", "Component",
+        DocumentObjectFactoryRegistry.Document, DocumentObjectFactoryRegistry.Drawing, DocumentObjectFactoryRegistry.CadModel,
+    ];
+
     /// <summary>The three Document Kinds this Work Package registers a View and a Property Facet Provider for.</summary>
     public static readonly IReadOnlyList<string> SupportedKinds = DocumentObjectFactoryRegistry.SupportedKinds;
 
@@ -81,10 +88,13 @@ public static class DocumentsWorkspaceRegistration
             // Classification/DrawingNumber/ModelFormat stay at
             // CreateDocumentObjectCommand's own optional defaults, exactly
             // as the Ribbon's own Create flow already leaves them.
+            // `WP 17.9.3` (`TD-172`): the new document goes under the selected
+            // part, assembly, project or document, else under the open project.
             Binding = new CommandBinding(
                 CommandContextRequirement.None,
-                (_, values) => new CreateDocumentObjectCommand(
-                    WorkspaceCommandBindings.Canonical(boundKinds, values["kind"]), values["displayName"]),
+                (context, values) => new CreateDocumentObjectCommand(
+                    WorkspaceCommandBindings.Canonical(boundKinds, values["kind"]), values["displayName"],
+                    parentId: CreationPlacement.ParentFor(context, DocumentContainerKinds)),
                 [
                     WorkspaceCommandBindings.Choice("kind", "Kind", boundKinds, DocumentObjectFactoryRegistry.Document),
                     WorkspaceCommandBindings.ObjectName("displayName", "Name"),

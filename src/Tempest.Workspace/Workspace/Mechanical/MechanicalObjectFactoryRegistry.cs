@@ -77,6 +77,12 @@ public sealed class MechanicalObjectFactoryRegistry
         ArgumentException.ThrowIfNullOrWhiteSpace(displayName);
         ArgumentNullException.ThrowIfNull(initialContent);
 
+        // `WP 17.9.3`: a parent that does not exist is refused before anything
+        // is written, so a stale selection never creates an object and then
+        // fails to place it.
+        if (parentId is { } requestedParentId && await _context.Repository.FindAsync(requestedParentId, cancellationToken).ConfigureAwait(false) is null)
+            throw new ArgumentException($"The selected parent '{requestedParentId}' no longer exists; select where the new object should go and try again.", nameof(parentId));
+
         if (kind == SubAssembly && parentId is null)
             throw new ArgumentException("A Sub-Assembly requires a parent Assembly Id — it is, by definition, nested within one.", nameof(parentId));
 

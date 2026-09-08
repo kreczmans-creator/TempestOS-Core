@@ -72,11 +72,12 @@ public sealed class DocumentsNodeProvider : IProjectExplorerNodeProvider
     {
         var documents = await LiveDocumentsAsync(cancellationToken).ConfigureAwait(false);
         var byCategory = documents.ToLookup(DocumentCategory.Of);
+        var documentIds = documents.Select(d => d.Id).ToHashSet();
 
         var nodes = new List<ProjectExplorerNode>();
         foreach (var label in CategoryLabels)
         {
-            var count = byCategory[label].Count(o => o is IHasParent { ParentId: null });
+            var count = byCategory[label].Count(o => IsCategoryMember(o, documentIds));
             nodes.Add(new(CategoryNodeIds[label], label, null, count > 0, ProjectExplorerNodeType.Category));
         }
 
@@ -91,7 +92,8 @@ public sealed class DocumentsNodeProvider : IProjectExplorerNodeProvider
         if (categoryLabel is not null)
         {
             var documents = await LiveDocumentsAsync(cancellationToken).ConfigureAwait(false);
-            var members = documents.Where(o => DocumentCategory.Of(o) == categoryLabel && o is IHasParent { ParentId: null });
+            var documentIds = documents.Select(d => d.Id).ToHashSet();
+            var members = documents.Where(o => DocumentCategory.Of(o) == categoryLabel && IsCategoryMember(o, documentIds));
 
             var nodes = new List<ProjectExplorerNode>();
             foreach (var member in members)
@@ -150,6 +152,16 @@ public sealed class DocumentsNodeProvider : IProjectExplorerNodeProvider
 
         return all.Where(IsLive).ToList();
     }
+
+    /// <summary>
+    /// A document is listed under its category unless it is nested under
+    /// another document, in which case it is listed under that document.
+    /// Before `WP 17.9.3` only a parentless document was listed, so a
+    /// document placed under a project or a part (`TD-172`) vanished from
+    /// this tree.
+    /// </summary>
+    private static bool IsCategoryMember(IEngineeringObject document, HashSet<Guid> liveDocumentIds) =>
+        document is not IHasParent { ParentId: { } parentId } || !liveDocumentIds.Contains(parentId);
 
     private async Task<ProjectExplorerNode> ToDocumentNodeAsync(IEngineeringObject document, CancellationToken cancellationToken)
     {

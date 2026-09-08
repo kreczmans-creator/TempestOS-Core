@@ -86,17 +86,17 @@ public sealed class CreateManufacturingObjectCommandHandler : ICommandHandler<Cr
             {
                 "ManufacturingOperation" => await _registry.CreateOperationAsync(
                     command.Identifier, command.DisplayName, command.InitialContent,
-                    command.PartId ?? throw new ArgumentException("PartId is required to create a ManufacturingOperation.", nameof(command)),
+                    command.PartId ?? throw new ArgumentException("Select the Part (or Component, Assembly or Sub-Assembly) the operation is performed on in the Project Explorer first; a Manufacturing Operation is created against it.", nameof(command)),
                     command.Classification, command.ParentId, cancellationToken).ConfigureAwait(false),
 
                 "WorkInstruction" => await _registry.CreateWorkInstructionAsync(
                     command.Identifier, command.DisplayName, command.InitialContent,
-                    command.ManufacturingOperationId ?? throw new ArgumentException("ManufacturingOperationId is required to create a WorkInstruction.", nameof(command)),
+                    command.ManufacturingOperationId ?? throw new ArgumentException("Select the Manufacturing Operation the instruction belongs to first; a Work Instruction is created against it.", nameof(command)),
                     command.ParentId, cancellationToken).ConfigureAwait(false),
 
                 "Inspection" => await _registry.CreateInspectionAsync(
                     command.DisplayName, command.InitialContent,
-                    command.SubjectId ?? throw new ArgumentException("SubjectId is required to create an Inspection.", nameof(command)),
+                    command.SubjectId ?? throw new ArgumentException("Select the object being inspected first; an Inspection is created against it.", nameof(command)),
                     command.Method ?? throw new ArgumentException("Method is required to create an Inspection.", nameof(command)),
                     command.ParentId, cancellationToken).ConfigureAwait(false),
 

@@ -85,12 +85,23 @@ public sealed class RecordVerificationResultCommand : IWorkspaceCommand
 public sealed class RecordVerificationResultCommandHandler : ICommandHandler<RecordVerificationResultCommand>
 {
     private readonly IVerificationService _verificationService;
+    private readonly EngineeringDomainContext? _domainContext;
 
-    public RecordVerificationResultCommandHandler(IVerificationService verificationService)
+    /// <param name="verificationService">Records the result and links it to the target.</param>
+    /// <param name="domainContext">
+    /// When present (`WP 17.9.3`, `TD-173`), a result recorded against a
+    /// Verification Activity is also linked from the Activity's subject, so
+    /// the Requirement (or whatever the Activity verifies) shows the evidence
+    /// in its own coverage. Before this the edge was made from the Activity
+    /// only, and a Requirement's coverage read "Not Verified" whatever had
+    /// been recorded against the Activities that named it.
+    /// </param>
+    public RecordVerificationResultCommandHandler(IVerificationService verificationService, EngineeringDomainContext? domainContext = null)
     {
         ArgumentNullException.ThrowIfNull(verificationService);
 
         _verificationService = verificationService;
+        _domainContext = domainContext;
     }
 
     public async Task<CommandResult> HandleAsync(RecordVerificationResultCommand command, CancellationToken cancellationToken)
@@ -124,6 +135,20 @@ public sealed class RecordVerificationResultCommandHandler : ICommandHandler<Rec
             return CommandResult.Failure(ex.Message);
         }
 
-        return CommandResult.Success($"Recorded verification '{record.Id}' ({command.Outcome}) for '{command.TargetObjectId}'.");
+        var subjectNote = string.Empty;
+        if (_domainContext is not null
+            && await _domainContext.Repository.FindAsync(command.TargetObjectId, cancellationToken).ConfigureAwait(false) is IVerificationActivity { SubjectId: var subjectId }
+            && subjectId != Guid.Empty
+            && subjectId != command.TargetObjectId
+            && await _domainContext.Store.FindAsync(subjectId, cancellationToken).ConfigureAwait(false) is not null)
+        {
+            // The subject reads its own coverage from edges made from its own
+            // id (`RequirementsPropertyFacetProvider`), so the record is linked
+            // from the subject as well as from the Activity that produced it.
+            await _domainContext.Store.LinkAsync(subjectId, record.Id, VerificationService.VerifiedByRelationshipKind, cancellationToken).ConfigureAwait(false);
+            subjectNote = " The subject it verifies now shows this record in its coverage.";
+        }
+
+        return CommandResult.Success($"Recorded verification '{record.Id}' ({command.Outcome}) for '{command.TargetObjectId}'.{subjectNote}");
     }
 }

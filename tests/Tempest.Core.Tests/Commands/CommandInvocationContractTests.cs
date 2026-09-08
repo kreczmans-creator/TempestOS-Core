@@ -415,14 +415,15 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
             }
         }
 
-        // Pinned exactly, not as a threshold: thirty of the forty-one
-        // declared parameters carry a rule of their own (a Kind or enum
+        // Pinned exactly, not as a threshold: thirty-one of the forty-two
+        // declared parameters (`WP 17.9.3` added manufacturing.create's
+        // "method" choice) carry a rule of their own (a Kind or enum
         // set, a non-blank requirement, a length limit, a decimal), and
         // every one of them refuses a bad value as an outcome. The other
         // eleven are genuinely free text - the five content fields, two
         // owner fields, and set-bom-line's four optional strings - and
         // have nothing to refuse.
-        Assert.Equal(30, refused);
+        Assert.Equal(31, refused);
     }
 
     [Fact]
@@ -451,7 +452,7 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
             ],
             freeText);
 
-        Assert.Equal(41, Invocable.Sum(d => d.Binding!.Parameters.Count));
+        Assert.Equal(42, Invocable.Sum(d => d.Binding!.Parameters.Count));
     }
 
     [Fact]

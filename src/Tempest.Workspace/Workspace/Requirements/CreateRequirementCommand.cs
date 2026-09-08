@@ -11,7 +11,7 @@ namespace Tempest.Workspace.Requirements;
 /// </summary>
 public sealed class CreateRequirementCommand : ICommand
 {
-    public CreateRequirementCommand(string identifier, string statement, string? category = null)
+    public CreateRequirementCommand(string identifier, string statement, string? category = null, Guid? groupId = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(identifier);
         ArgumentException.ThrowIfNullOrWhiteSpace(statement);
@@ -19,7 +19,11 @@ public sealed class CreateRequirementCommand : ICommand
         Identifier = identifier;
         Statement = statement;
         Category = category;
+        GroupId = groupId;
     }
+
+    /// <summary>The group the new requirement is placed in, or <see langword="null"/> for none (`WP 17.9.3`: the selected group, when one is selected).</summary>
+    public Guid? GroupId { get; }
 
     /// <summary>Gets the new requirement's own business identifier.</summary>
     public string Identifier { get; }
@@ -50,7 +54,14 @@ public sealed class CreateRequirementCommandHandler : ICommandHandler<CreateRequ
             var created = await _requirementsService.CreateAsync(command.Identifier, command.Statement, command.Category, cancellationToken)
                 .ConfigureAwait(false);
 
-            return CommandResult.Success($"Created Requirement '{created.Identifier}' ('{created.Id}').");
+            if (command.GroupId is { } groupId)
+            {
+                var group = await _requirementsService.FindGroupAsync(groupId, cancellationToken).ConfigureAwait(false);
+                await _requirementsService.MoveToGroupAsync(created.Id, groupId, cancellationToken).ConfigureAwait(false);
+                return CommandResult.Success($"Created Requirement '{created.Identifier}' in group '{group?.Name ?? groupId.ToString()}'.");
+            }
+
+            return CommandResult.Success($"Created Requirement '{created.Identifier}'. It is not in any group; the Project Explorer lists it under \"Ungrouped\".");
         }
         catch (DuplicateRequirementIdentifierException ex)
         {

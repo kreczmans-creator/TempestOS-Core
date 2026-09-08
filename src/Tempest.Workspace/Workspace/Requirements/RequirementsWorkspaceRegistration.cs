@@ -104,9 +104,12 @@ public static class RequirementsWorkspaceRegistration
             // Both prompts the Ribbon's own Create flow already collects, with the
             // identical "an identifier is required"/"a statement is required"
             // rules. Category stays at the command's own optional default.
+            // `WP 17.9.3` (`TD-172`): created in the selected group, when a group is selected.
             Binding = new CommandBinding(
                 CommandContextRequirement.None,
-                (_, values) => new CreateRequirementCommand(values["identifier"], values["statement"]),
+                (context, values) => new CreateRequirementCommand(
+                    values["identifier"], values["statement"],
+                    groupId: context.Primary is { Kind: RequirementsService.RequirementGroupDocumentKind } selectedGroup ? selectedGroup.ObjectId : null),
                 [
                     WorkspaceCommandBindings.Required("identifier", "Identifier (e.g. REQ-001)"),
                     WorkspaceCommandBindings.Required("statement", "Statement"),

@@ -54,8 +54,13 @@ public sealed class CalculationsNodeProvider : IProjectExplorerNodeProvider
         foreach (var set in sets.Where(IsLive).OfType<ICalculationSet>().OrderBy(DisplayNameOf, StringComparer.Ordinal))
             nodes.Add(ToSetNode(set));
 
+        // `WP 17.9.3`: a calculation is a root here unless it is nested under a
+        // set or another calculation. Before this only a parentless one was a
+        // root, so a calculation placed under a project (as the Engineering
+        // Calculations workspace does when naming one) vanished from this tree.
         var calculations = await _context.Repository.ListByKindAsync("Calculation", cancellationToken).ConfigureAwait(false);
-        foreach (var calculation in calculations.Where(o => IsLive(o) && o is IHasParent { ParentId: null }).OrderBy(DisplayNameOf, StringComparer.Ordinal))
+        var calculationLikeIds = sets.Select(s => s.Id).Concat(calculations.Select(c => c.Id)).ToHashSet();
+        foreach (var calculation in calculations.Where(o => IsLive(o) && (o is not IHasParent { ParentId: { } pid } || !calculationLikeIds.Contains(pid))).OrderBy(DisplayNameOf, StringComparer.Ordinal))
             nodes.Add(await ToCalculationNodeAsync(calculation, cancellationToken).ConfigureAwait(false));
 
         return nodes;

@@ -134,13 +134,33 @@ public static class ManufacturingWorkspaceRegistration
             // needs an owning operation / a subject object, which no collected
             // value can carry; asked for one, the factory reports its own precise
             // reason through the normal handler path rather than failing silently.
+            // `WP 17.9.3` (`TD-172`): the ids each Kind needs come from the
+            // selection. An Operation is made against the selected Part, a
+            // Work Instruction against the selected Operation, an Inspection
+            // against whatever is selected. With nothing suitable selected the
+            // handler says which to select, rather than reporting a missing id.
             Binding = new CommandBinding(
                 CommandContextRequirement.None,
-                (_, values) => new CreateManufacturingObjectCommand(
-                    WorkspaceCommandBindings.Canonical(boundKinds, values["kind"]), values["displayName"]),
+                (context, values) =>
+                {
+                    var kind = WorkspaceCommandBindings.Canonical(boundKinds, values["kind"]);
+                    var selected = context.Primary;
+                    return kind switch
+                    {
+                        ManufacturingObjectFactoryRegistry.WorkInstructionKind => new CreateManufacturingObjectCommand(
+                            kind, values["displayName"],
+                            manufacturingOperationId: selected is { Kind: ManufacturingObjectFactoryRegistry.ManufacturingOperationKind } ? selected.ObjectId : null),
+                        ManufacturingObjectFactoryRegistry.InspectionKind => new CreateManufacturingObjectCommand(
+                            kind, values["displayName"], subjectId: selected?.ObjectId, method: values["method"]),
+                        _ => new CreateManufacturingObjectCommand(
+                            kind, values["displayName"],
+                            partId: selected is { Kind: "Part" or "Component" or "Assembly" or "SubAssembly" } ? selected.ObjectId : null),
+                    };
+                },
                 [
                     WorkspaceCommandBindings.Choice("kind", "Kind", boundKinds, ManufacturingObjectFactoryRegistry.ManufacturingOperationKind),
                     WorkspaceCommandBindings.ObjectName("displayName", "Name"),
+                    WorkspaceCommandBindings.Choice("method", "Method (Inspection only)", ["Inspection", "Test", "Analysis", "Demonstration"], "Inspection"),
                 ]),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(

@@ -54,6 +54,12 @@ public sealed class CalculationObjectFactoryRegistry
         ArgumentException.ThrowIfNullOrWhiteSpace(displayName);
         ArgumentNullException.ThrowIfNull(initialContent);
 
+        // `WP 17.9.3`: a parent that does not exist is refused before anything
+        // is written, so a stale selection never creates an object and then
+        // fails to place it.
+        if (parentId is { } requestedParentId && await _context.Repository.FindAsync(requestedParentId, cancellationToken).ConfigureAwait(false) is null)
+            throw new ArgumentException($"The selected parent '{requestedParentId}' no longer exists; select where the new object should go and try again.", nameof(parentId));
+
         IEngineeringObject created = kind switch
         {
             CalculationKind => await new EngineeringObjectFactory<Calculation>(

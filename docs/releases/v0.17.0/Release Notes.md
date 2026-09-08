@@ -89,6 +89,33 @@ second person could pick up on day one.
   source is refused. The **Material** picker now sits on the Inputs panel
   beside the figures it drives, offers only released records, and says
   where to go when nothing is released yet.
+- **Every discipline's "Create" puts the object where you are standing**
+  (`WP 17.9.3`). A Document or a Calculation created from the Ribbon or
+  Palette goes under the selected part, assembly or project, else under
+  the open project, and is still listed in its own tab (the Documents
+  tree lists a document under its category unless it is nested under
+  another document; the Calculations tree lists a calculation as a root
+  unless it is inside a set). A Requirement created with nothing selected
+  is listed under a new **Ungrouped** node; created with a group selected,
+  it goes into that group. "Create Manufacturing Object" takes the Part
+  from your selection, and with nothing suitable selected tells you what
+  to select instead of failing on a missing id. A parent that no longer
+  exists is refused before anything is written.
+- **Properties shows a parent by name**, "Bracket Assembly (Assembly)",
+  not as a GUID (`WP 17.9.3`). An id that resolves to nothing is shown as
+  stored.
+- **A verification result reaches the Requirement it verifies**
+  (`WP 17.9.3`, `TD-173`). Recording a result against a Verification
+  Activity also links the record from the Activity's subject, so the
+  Requirement's *Verification Coverage* now shows it.
+- **Releasing reference data is a permission** (`WP 17.9.3`, hazard H8 of
+  the design-freeze review). Verifying needs `reference.verify` and
+  releasing needs `reference.release`; the session's roles hold both by
+  default, so nothing changes in the flow, but the gate exists and a
+  refusal reads like every other review refusal.
+- **The object editor no longer shows an empty, disabled Content box** on
+  a Kind that cannot be revised, such as a requirement group or
+  collection (`WP 17.9.3`).
 
 ## What shipped, by Work Package
 
@@ -105,6 +132,7 @@ second person could pick up on day one.
 | Unplanned | Command invocations are tracked from request to completion; `WorkspaceManager` drains them before disposal; the ribbon's report-then-refresh tail tolerates a disposed platform. Found by an intermittent Desktop failure that became deterministic once the store became disposable. The native SQLite provider is bound eagerly after a first-use race was reproduced once under parallel tests. The store's dispose clears only its own connection pool: the process-wide `ClearAllPools` it first used disposed the native handle under every other live store in the process, which the release gate exposed as one Core failure in roughly every four runs and which any two hosts in one process could have hit. |
 | 17.9.1 | Hotfixes from the first Windows review (2026-09-08). Entering Engineering guarantees the Project Explorer and Properties panels are present (`WorkspaceDockingComposer.EnsureCorePanelsPresent`); a journey test walks Home → Projects → create → open → Engineering and asserts both panels placed. `IPrincipalDirectory` resolves stored identity ids to names (session principal first, then the Windows account via SID translation, else the id verbatim); a `Principal` facet kind marks the eight "…By" facets and the Properties panel, calculation traceability and verification readouts show names. The object editor shows the Bill of Materials section only on the five mechanical Kinds and retires the "Execute" / "Input (JSON)" section, showing a Calculation a pointer to the Engineering Calculations workspace instead. `SampleSeparationTests` no longer counts project files inside a nested clone. Not fixed here, recorded as `TD-172` for `WP 18.1A`: an object created from the palette while another discipline tab is active is not shown where the user is looking. |
 | 17.9.2 | Second round from the first Windows review (2026-09-08). `CommandContext.ProjectId` carries the shell's open project; the Ribbon, Palette and input bindings supply it. `MechanicalCreateParentPolicy` places a created object under the selected container, else the open project; the create handler's message names the object and its parent. `MechanicalProductStructureNodeProvider` lists parentless structural objects under a "Not in any project" category and roots their ancestry there. `BracketCalculationWorkbench.AddMaterialAsync` registers an engineer's own material as Draft with the source it names (refusing a blank source, a non-positive number, or a duplicate designation); the calculation view gains an Add-a-Material section, a Material picker on the Inputs panel offering released records only, and guidance when none is released. Tests: parent policy (6), orphan listing (4), create-from-the-shell journey (2), add-own-material journey (1). Not fixed here: `TD-172`. Also observed while fixing: the sample module seeds three structural objects with no parent that had never been visible in the tree. |
+| 17.9.3 | The design-freeze review's two high substrate hazards and the surface small wins it found (2026-09-08, overnight). `ReferenceReviewService` takes `IPermissionEvaluator` and requires `reference.verify` / `reference.release` (ADR-0143 amended; both held by the session roles). `IEngineeringObjectRepository.ListChildrenAsync` and `ParentChanged` with a by-parent index in the in-memory repository, maintained by `Register` and by `MoveAsync` after commit, self-healing on read; five tree providers, both BOM rules and the delete guard use it. `CreationPlacement.ParentFor` generalises the Mechanical rule to Documents and Calculations; their trees list project-placed objects; the three factories refuse a missing parent before writing. Requirements gain an **Ungrouped** category and create-into-selected-group. `manufacturing.create` resolves `PartId` / `ManufacturingOperationId` / `SubjectId` from the selection and asks for the right selection when it is missing. `PropertyFacetKind.ObjectReference` resolves the Parent facet to a name. The record-result handler links evidence from the Activity's subject (`TD-173`). The editor hides an unrevisable empty Content box. Six stale ADR statuses amended and the ADR Register brought to 147. Tests: permission gate (5), children index (5), subject link (2), creation-placement journeys (5). |
 
 ## Figures
 
@@ -166,18 +194,16 @@ second person could pick up on day one.
 - **Documentation comments still say `Tempest.App`** in a handful of
   Core, Samples, Validation, governance and security files that never
   referenced the project; left as prose.
-- **Known surface defects, found by the design-freeze audit of
-  2026-09-08 and not fixed in this release.** A Requirement created from
-  the Ribbon or Palette has no node in its own Explorer tree; "Create
-  Manufacturing Object" with its default Kind fails with a message about
-  `PartId`; Documents, Calculations and Manufacturing objects created
-  from the Ribbon never join a project (`TD-172`, `WP 18.1A`). A
-  Requirement's Verification Coverage always reads "Not Verified"
-  because recorded evidence links to the Activity, not the Requirement
-  (`TD-173`, `WP 18.2B`). Twelve Move and Copy commands and six others
-  are listed but unavailable, by design, until an object picker exists.
-  Five of the ten rail entries are "not yet implemented" cards. See
-  `docs/reviews/design-freeze-2026-09/`.
+- **Known surface gaps, found by the design-freeze audit of 2026-09-08
+  and left for the programme.** An object created while another
+  discipline tab is active is not shown where the user is looking
+  (`TD-172` residual, `WP 18.1A`). Twelve Move and Copy commands and six
+  others are listed but unavailable, by design, until an object picker
+  exists. Five of the ten rail entries are "not yet implemented" cards.
+  There is no search for an object by name. See
+  `docs/reviews/design-freeze-2026-09/`; the creation-placement and
+  verification-coverage defects that audit found were fixed by
+  `WP 17.9.3`.
 
 ## What `v0.16.0` delivered (rolled into this release)
 

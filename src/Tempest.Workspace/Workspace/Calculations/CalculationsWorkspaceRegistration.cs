@@ -21,6 +21,13 @@ namespace Tempest.Workspace.Calculations;
 /// </remarks>
 public static class CalculationsWorkspaceRegistration
 {
+    /// <summary>The Kinds a new calculation may be placed under by default (`WP 17.9.3`).</summary>
+    public static readonly IReadOnlyList<string> CalculationContainerKinds =
+    [
+        "Project", "Assembly", "SubAssembly", "Part", "Component",
+        CalculationObjectFactoryRegistry.CalculationSetKind, CalculationObjectFactoryRegistry.CalculationKind,
+    ];
+
     /// <summary>The two Calculation Kinds this Work Package registers a View and a Property Facet Provider for, plus the synthetic <c>"CalculationTemplate"</c> Kind.</summary>
     public static readonly IReadOnlyList<string> SupportedKinds = ["Calculation", "CalculationSet", "CalculationTemplate"];
 
@@ -100,10 +107,13 @@ public static class CalculationsWorkspaceRegistration
             id: "calculations.create", displayName: "Create Calculation", category: "Calculations",
             description: "Creates a new Calculation or Calculation Set.")
         {
+            // `WP 17.9.3` (`TD-172`): the new calculation goes under the selected
+            // set, calculation, part, assembly or project, else under the open project.
             Binding = new CommandBinding(
                 CommandContextRequirement.None,
-                (_, values) => new CreateCalculationObjectCommand(
-                    WorkspaceCommandBindings.Canonical(boundKinds, values["kind"]), values["displayName"]),
+                (context, values) => new CreateCalculationObjectCommand(
+                    WorkspaceCommandBindings.Canonical(boundKinds, values["kind"]), values["displayName"],
+                    parentId: CreationPlacement.ParentFor(context, CalculationContainerKinds)),
                 [
                     WorkspaceCommandBindings.Choice("kind", "Kind", boundKinds, CalculationObjectFactoryRegistry.CalculationKind),
                     WorkspaceCommandBindings.ObjectName("displayName", "Name"),

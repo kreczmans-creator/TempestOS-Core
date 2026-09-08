@@ -197,7 +197,12 @@ public sealed class PrincipalBoundaryTests
             typeof(ApplicationPermissions).GetMethods(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.DeclaredOnly),
             m => !m.IsSpecialName);
 
-        Assert.Equal(2, ApplicationPermissions.LocalSession.Count);
+        // Four first-party permissions: the two read surfaces, and the two
+        // governed reference acts `WP 17.9.3` gated (hazard H8 of the
+        // design-freeze review). Still a flat, fixed list, pinned by name.
+        Assert.Equal(
+            ["verification.read", "audit.query", "reference.verify", "reference.release"],
+            ApplicationPermissions.LocalSession.Select(p => p.Key).ToList());
         Assert.All(
             ApplicationPermissions.LocalSession,
             p => Assert.DoesNotContain("plugin.", p.Key, StringComparison.OrdinalIgnoreCase));

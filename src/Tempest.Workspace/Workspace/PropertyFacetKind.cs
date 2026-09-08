@@ -24,4 +24,10 @@ public enum PropertyFacetKind
     /// <c>Tempest.Core.Identity.IPrincipalDirectory</c> as a name.
     /// </summary>
     Principal,
+
+    /// <summary>
+    /// A facet whose value is another object's id (`WP 17.9.3`) — a parent, a
+    /// subject. Stored as the id; shown as that object's name and Kind.
+    /// </summary>
+    ObjectReference,
 }

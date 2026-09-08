@@ -94,7 +94,7 @@ public sealed class VerificationActivityPropertyFacetProvider : IPropertyFacetPr
         }
 
         if (target is IHasParent hasParent)
-            facets.Add(new("Parent", hasParent.ParentId?.ToString() ?? "(top level)", PropertyFacetKind.Relationship));
+            facets.Add(new("Parent", hasParent.ParentId?.ToString() ?? "(top level)", PropertyFacetKind.ObjectReference));
 
         if (target is IDeletable { IsDeleted: true })
             facets.Add(new("Deleted", "Yes", PropertyFacetKind.DisciplineSpecific));
