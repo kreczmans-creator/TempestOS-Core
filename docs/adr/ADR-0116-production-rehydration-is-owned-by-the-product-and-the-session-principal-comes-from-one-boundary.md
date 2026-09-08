@@ -6,6 +6,8 @@ Accepted — `WP — Production Rehydration & Principal Boundary`, 2026-08-29. B
 
 **Superseded in part by `ADR-0145`** (`WP 17.1B`, 2026-09-08): this ADR's write ordering — the instance mutated first and the durable write second, with a compensating undo when the write failed — is replaced by project, commit, apply, in which memory is touched only after the transaction commits. Everything this ADR decides about production ownership of rehydration and about the session principal coming from one boundary stands unchanged.
 
+**Also amended by `ADR-0146`** (`WP 17.2A`): `LocalSessionPrincipalSource` was replaced by `SessionPrincipalSource`/`ISessionPrincipal` in `src/Tempest.Core/Identity/SessionPrincipal.cs`; the one-boundary rule stands. Recorded 2026-09-08 (`WP 17.9.3`).
+
 ## Context
 
 Two defects, unrelated in subject and identical in shape: **the product worked because the sample harness happened to ship.**

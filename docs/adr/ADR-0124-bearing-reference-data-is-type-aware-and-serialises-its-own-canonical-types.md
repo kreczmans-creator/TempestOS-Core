@@ -4,6 +4,12 @@
 
 Accepted — `A4` (Bearing Library, P01 Engineering Reference Data), 2026-09-05.
 
+**Decision 2** (the `BearingDocumentDto` storage envelope) **superseded by
+`ADR-0126`** the following day: `BearingCatalog` is a
+`ReferenceDataCatalog<BearingDefinition>` and the envelope no longer exists.
+Decisions 1 and 3 (traits table; `RotationalSpeed`/`PlaneAngle`) stand.
+Recorded 2026-09-08 (`WP 17.9.3`).
+
 ## Context
 
 `A4` establishes the authoritative bearing reference library: the
