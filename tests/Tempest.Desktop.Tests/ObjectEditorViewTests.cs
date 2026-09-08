@@ -628,7 +628,7 @@ public sealed class ObjectEditorViewTests
 
             Assert.False(Section(editor, "Bill of Materials").IsVisible);
             Assert.False(Section(editor, "Execute").IsVisible);
-            Assert.Empty(editor.GetLogicalDescendants().OfType<TextBlock>().Where(t => t.Text == "Input (JSON):" && t.IsVisible && t.GetLogicalAncestors().OfType<Expander>().All(e => e.IsVisible)));
+            Assert.DoesNotContain(editor.GetLogicalDescendants().OfType<TextBlock>(), t => t.Text == "Input (JSON):" && t.IsVisible && t.GetLogicalAncestors().OfType<Expander>().All(e => e.IsVisible));
 
             var pointer = Section(editor, "Calculation");
             Assert.True(pointer.IsVisible);
