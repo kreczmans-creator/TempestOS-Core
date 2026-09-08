@@ -517,6 +517,7 @@ public sealed class MainWindow : Window
             host.BracketCalculations!, _engineeringCalculation);
 
         _engineeringCalculation.PopulateRequested += () => _ = _engineeringCalculationCoordinator.PopulateAsync();
+        _engineeringCalculation.AddMaterialRequested += () => _ = _engineeringCalculationCoordinator.AddMaterialAsync();
         _engineeringCalculation.ReleaseRequested += () => _ = _engineeringCalculationCoordinator.VerifyAndReleaseAsync();
         _engineeringCalculation.CalculateRequested += () => _ = _engineeringCalculationCoordinator.CalculateAsync();
         _engineeringCalculation.NewCalculationRequested += () => _engineeringCalculationCoordinator.BeginNewCalculation();
@@ -694,8 +695,11 @@ public sealed class MainWindow : Window
         // TD-77 Stage 5: the palette evaluates and invokes against the real
         // selection, through the same adapter the Ribbon uses, and collects
         // declared values through the same one prompt.
-        _commandPalette.ContextSource = () => WorkspaceCommandContext.From(workspace.Selection);
+        // `WP 17.9.2`: the context carries the open project, so a command
+        // that creates something knows where the user is standing.
+        _commandPalette.ContextSource = () => WorkspaceCommandContext.From(workspace.Selection, _projectContext.Current?.Id);
         _commandPalette.ParameterPrompt = commandPrompt.Prompt;
+        _ribbon.ProjectIdSource = () => _projectContext.Current?.Id;
 
         // `WP-A2`: a bound gesture now asks the same question the Ribbon and
         // the Palette ask, and gets the same answers — the same selection
@@ -704,7 +708,7 @@ public sealed class MainWindow : Window
         // command, so a bound key would have looked like a dead key. Nothing
         // is bound today (`AT-23`, a product choice, not a defect shield);
         // this is what makes the first binding anyone adds actually work.
-        composition.InputBindingRegistry.ContextSource = () => WorkspaceCommandContext.From(workspace.Selection);
+        composition.InputBindingRegistry.ContextSource = () => WorkspaceCommandContext.From(workspace.Selection, _projectContext.Current?.Id);
         composition.InputBindingRegistry.ParameterPrompt = commandPrompt.Prompt;
 
         _commandPalette.InvokeOverride = async (descriptor, context) =>

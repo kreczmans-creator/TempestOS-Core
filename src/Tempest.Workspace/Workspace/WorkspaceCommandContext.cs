@@ -34,11 +34,14 @@ public static class WorkspaceCommandContext
     /// <param name="selection">The Workspace's own selection service.</param>
     /// <returns>The context, empty when nothing is selected.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="selection"/> is <see langword="null"/>.</exception>
-    public static CommandContext From(ISelectionService selection)
+    public static CommandContext From(ISelectionService selection) => From(selection, projectId: null);
+
+    /// <summary>The selection plus the shell's open project (`WP 17.9.2`), so a binding that creates something knows where the user is standing.</summary>
+    public static CommandContext From(ISelectionService selection, Guid? projectId)
     {
         ArgumentNullException.ThrowIfNull(selection);
 
-        return From(selection.Current, selection.SelectedItems);
+        return From(selection.Current, selection.SelectedItems, projectId);
     }
 
     /// <summary>
@@ -65,7 +68,11 @@ public static class WorkspaceCommandContext
     /// would act on whichever object the user happened to click first,
     /// which is not the one the surface is showing them.
     /// </remarks>
-    public static CommandContext From(WorkspaceSelection? current, IReadOnlyList<WorkspaceSelection> selectedItems)
+    public static CommandContext From(WorkspaceSelection? current, IReadOnlyList<WorkspaceSelection> selectedItems) =>
+        From(current, selectedItems, projectId: null);
+
+    /// <summary>The selection plus the shell's open project (`WP 17.9.2`).</summary>
+    public static CommandContext From(WorkspaceSelection? current, IReadOnlyList<WorkspaceSelection> selectedItems, Guid? projectId)
     {
         ArgumentNullException.ThrowIfNull(selectedItems);
 
@@ -76,15 +83,15 @@ public static class WorkspaceCommandContext
             // once the list is empty. Handled explicitly rather than
             // assumed, so a future selection source cannot silently
             // produce a context with no Primary but several entries.
-            return selectedItems.Count == 0 ? CommandContext.Empty : Ordered(selectedItems);
+            return selectedItems.Count == 0 ? new CommandContext([], projectId) : Ordered(selectedItems, projectId);
         }
 
         var ordered = new List<WorkspaceSelection>(selectedItems.Count + 1) { current };
         ordered.AddRange(selectedItems.Where(item => item.ObjectId != current.ObjectId));
 
-        return Ordered(ordered);
+        return Ordered(ordered, projectId);
     }
 
-    private static CommandContext Ordered(IReadOnlyList<WorkspaceSelection> items) =>
-        new([.. items.Select(item => new CommandContextObject(item.ObjectId, item.Kind))]);
+    private static CommandContext Ordered(IReadOnlyList<WorkspaceSelection> items, Guid? projectId) =>
+        new([.. items.Select(item => new CommandContextObject(item.ObjectId, item.Kind))], projectId);
 }

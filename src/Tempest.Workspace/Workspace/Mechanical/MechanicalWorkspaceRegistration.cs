@@ -72,7 +72,7 @@ public static class MechanicalWorkspaceRegistration
         var factoryRegistry = new MechanicalObjectFactoryRegistry(domainContext);
         var copyHandler = new CopyMechanicalObjectCommandHandler(domainContext, factoryRegistry);
 
-        commandDispatcher.RegisterHandler<CreateMechanicalObjectCommand>(new CreateMechanicalObjectCommandHandler(factoryRegistry));
+        commandDispatcher.RegisterHandler<CreateMechanicalObjectCommand>(new CreateMechanicalObjectCommandHandler(factoryRegistry, domainContext));
         commandDispatcher.RegisterHandler<RenameMechanicalObjectCommand>(new RenameMechanicalObjectCommandHandler(domainContext));
         commandDispatcher.RegisterHandler<ReviseMechanicalObjectCommand>(new ReviseMechanicalObjectCommandHandler(domainContext));
         commandDispatcher.RegisterHandler<DeleteMechanicalObjectCommand>(new DeleteMechanicalObjectCommandHandler(domainContext));
@@ -98,14 +98,18 @@ public static class MechanicalWorkspaceRegistration
         {
             // Kind is offered as this discipline's own already-declared
             // SupportedKinds constant, defaulted to the Ribbon's own existing
-            // "Part" default. A SubAssembly additionally requires a parent
-            // Assembly Id, which no collected value can carry; asked for one, the
-            // factory reports its own precise reason through the normal handler
-            // path rather than failing silently.
+            // "Part" default. The parent is where the user is standing
+            // (`WP 17.9.2`, MechanicalCreateParentPolicy): the selected
+            // container, else the open project, else none. A SubAssembly with
+            // no resolvable parent is refused by the factory with its own
+            // precise reason through the normal handler path.
             Binding = new CommandBinding(
                 CommandContextRequirement.None,
-                (_, values) => new CreateMechanicalObjectCommand(
-                    WorkspaceCommandBindings.Canonical(boundKinds, values["kind"]), values["displayName"]),
+                (context, values) =>
+                {
+                    var kind = WorkspaceCommandBindings.Canonical(boundKinds, values["kind"]);
+                    return new CreateMechanicalObjectCommand(kind, values["displayName"], parentId: MechanicalCreateParentPolicy.Resolve(kind, context));
+                },
                 [
                     WorkspaceCommandBindings.Choice("kind", "Kind", boundKinds, MechanicalObjectFactoryRegistry.Part),
                     WorkspaceCommandBindings.ObjectName("displayName", "Name"),

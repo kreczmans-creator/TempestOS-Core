@@ -269,7 +269,14 @@ public sealed class RibbonView : UserControl
     /// The Workspace's own live selection, as the Command Framework sees
     /// it — built through the one shared adapter, never assembled here.
     /// </summary>
-    private CommandContext CurrentContext() => WorkspaceCommandContext.From(_workspace.Selection);
+    private CommandContext CurrentContext() => WorkspaceCommandContext.From(_workspace.Selection, ProjectIdSource?.Invoke());
+
+    /// <summary>
+    /// Where the shell's open project comes from (`WP 17.9.2`), so a
+    /// create command can place its object there. Null means none is
+    /// open, which is what standalone Engineering is.
+    /// </summary>
+    public Func<Guid?>? ProjectIdSource { get; set; }
 
     private Control BuildTabContent(string category, IReadOnlyList<CommandDescriptor> descriptors)
     {

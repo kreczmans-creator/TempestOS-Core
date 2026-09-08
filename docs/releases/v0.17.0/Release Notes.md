@@ -72,6 +72,23 @@ second person could pick up on day one.
   "Input (JSON)" box is retired: a Calculation now carries a note
   directing you to the Engineering Calculations workspace on the rail,
   where calculations are actually run, named and traced.
+- **A created object lands where you are standing** (`WP 17.9.2`). "Create
+  Mechanical Object" from the Ribbon or the Palette puts the new object
+  under the selected Assembly, Sub-Assembly or Project, else under the
+  open project. The status message names the object and where it went.
+  The first Windows review created a Part that hung from nothing and
+  could not be found: the command never supplied a parent and the
+  Project Explorer, which roots on Projects, had no path to it. Any
+  structural object that still hangs from nothing is now listed under a
+  **Not in any project** node so it can be found.
+- **You can add your own material** (`WP 17.9.2`). The Engineering
+  Calculations workspace has an **Add a Material** section: name,
+  designation, family, yield strength, density and the source it came
+  from. The record is added as Draft and released through the same
+  verify-and-release review as a shipped one; a record that names no
+  source is refused. The **Material** picker now sits on the Inputs panel
+  beside the figures it drives, offers only released records, and says
+  where to go when nothing is released yet.
 
 ## What shipped, by Work Package
 
@@ -87,6 +104,7 @@ second person could pick up on day one.
 | 17.3A | Units are a runtime seven-exponent dimension vector; same-dimension quantities add, subtract and compare with automatic conversion (reversing ADR-0054's exact-unit rule); cross-dimension multiply and divide; temperature deltas; eight new dimensions including second moment of area and section modulus; the generic `Quantity<TDimension>` kept as a typed facade; 37 property-based tests (CsCheck) including result invariance under input-unit change for all six calculations. ADR-0147. |
 | Unplanned | Command invocations are tracked from request to completion; `WorkspaceManager` drains them before disposal; the ribbon's report-then-refresh tail tolerates a disposed platform. Found by an intermittent Desktop failure that became deterministic once the store became disposable. The native SQLite provider is bound eagerly after a first-use race was reproduced once under parallel tests. The store's dispose clears only its own connection pool: the process-wide `ClearAllPools` it first used disposed the native handle under every other live store in the process, which the release gate exposed as one Core failure in roughly every four runs and which any two hosts in one process could have hit. |
 | 17.9.1 | Hotfixes from the first Windows review (2026-09-08). Entering Engineering guarantees the Project Explorer and Properties panels are present (`WorkspaceDockingComposer.EnsureCorePanelsPresent`); a journey test walks Home → Projects → create → open → Engineering and asserts both panels placed. `IPrincipalDirectory` resolves stored identity ids to names (session principal first, then the Windows account via SID translation, else the id verbatim); a `Principal` facet kind marks the eight "…By" facets and the Properties panel, calculation traceability and verification readouts show names. The object editor shows the Bill of Materials section only on the five mechanical Kinds and retires the "Execute" / "Input (JSON)" section, showing a Calculation a pointer to the Engineering Calculations workspace instead. `SampleSeparationTests` no longer counts project files inside a nested clone. Not fixed here, recorded as `TD-171` for `WP 18.1A`: an object created from the palette while another discipline tab is active is not shown where the user is looking. |
+| 17.9.2 | Second round from the first Windows review (2026-09-08). `CommandContext.ProjectId` carries the shell's open project; the Ribbon, Palette and input bindings supply it. `MechanicalCreateParentPolicy` places a created object under the selected container, else the open project; the create handler's message names the object and its parent. `MechanicalProductStructureNodeProvider` lists parentless structural objects under a "Not in any project" category and roots their ancestry there. `BracketCalculationWorkbench.AddMaterialAsync` registers an engineer's own material as Draft with the source it names (refusing a blank source, a non-positive number, or a duplicate designation); the calculation view gains an Add-a-Material section, a Material picker on the Inputs panel offering released records only, and guidance when none is released. Tests: parent policy (6), orphan listing (4), create-from-the-shell journey (2), add-own-material journey (1). Not fixed here: `TD-171`. Also observed while fixing: the sample module seeds three structural objects with no parent that had never been visible in the tree. |
 
 ## Figures
 
@@ -95,8 +113,8 @@ second person could pick up on day one.
 | Live source lines (`src/`, excluding `Frozen/`) | 138,244 | 136,532 |
 | Live test lines (`tests/`, excluding `Frozen/`) | 118,042 | 103,585 |
 | Frozen out of the build | — | 42 source, 37 test files |
-| Core tests | 5,153 | 4,931 |
-| Desktop tests | 500 | 498 |
+| Core tests | 5,153 | 4,949 |
+| Desktop tests | 500 | 501 |
 | Core suite duration (local, Debug) | ~5 min | ~20 s to 1 m 20 s |
 | Desktop suite duration (local, Debug) | ~15 min | ~3 min |
 | Live documentation files | 1,062 | 257 |

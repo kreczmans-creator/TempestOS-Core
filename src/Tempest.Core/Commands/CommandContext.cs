@@ -24,14 +24,17 @@ public sealed record CommandContextObject(Guid ObjectId, string Kind);
 /// location for this framework explicitly.
 /// </para>
 /// <para>
-/// <b>A project is deliberately absent.</b> The Work Package that
-/// introduced this type audited all 74 production discipline commands and
-/// their handlers for any read of project scope
-/// (<c>ProjectId</c>/<c>IShellNavigator</c>/<c>IEngineeringScope</c>/
-/// <c>ProjectMembership</c>) and found none — so no project field was
-/// carried speculatively. Note that <c>"Project"</c> is also a Mechanical
-/// Product Structure <c>Kind</c>; that is an assembly-tree root and is
-/// entirely unrelated to the shell's own project scope.
+/// <b>The open project is carried as <see cref="ProjectId"/> (`WP 17.9.2`).</b>
+/// The Work Package that introduced this type audited all 74 production
+/// discipline commands for any read of project scope and found none, so
+/// no project field was carried speculatively. The first Windows review
+/// of `v0.17.0` found the reader: "Create Mechanical Object" from the
+/// Ribbon or the Palette, with a project open and nothing selected, made
+/// a parentless object the Project Explorer could never show. A binding
+/// that creates something needs to know where the user is standing. The
+/// id is the shell's open project — which is also the Mechanical Product
+/// Structure <c>"Project"</c> object that roots the assembly tree — or
+/// <see langword="null"/> in standalone Engineering.
 /// </para>
 /// <para>
 /// <b>Core-only, by construction.</b> This mirrors the shape of
@@ -52,8 +55,16 @@ public sealed class CommandContext
     /// </param>
     /// <exception cref="ArgumentNullException"><paramref name="selection"/>, or any entry in it, is <see langword="null"/>.</exception>
     public CommandContext(IReadOnlyList<CommandContextObject> selection)
+        : this(selection, projectId: null)
+    {
+    }
+
+    /// <param name="selection">What is selected, primary first.</param>
+    /// <param name="projectId">The shell's open project, or <see langword="null"/> when none is open.</param>
+    public CommandContext(IReadOnlyList<CommandContextObject> selection, Guid? projectId)
     {
         ArgumentNullException.ThrowIfNull(selection);
+        ProjectId = projectId;
 
         // Copied rather than aliased: a context handed to a binding must
         // describe the moment it was built, not a live view a caller can
@@ -88,6 +99,13 @@ public sealed class CommandContext
     /// <see langword="null"/>; empty if nothing is selected.
     /// </summary>
     public IReadOnlyList<CommandContextObject> Selection { get; }
+
+    /// <summary>
+    /// The shell's open project at the moment the context was built, or
+    /// <see langword="null"/> when the user is in standalone Engineering
+    /// or no project is open (`WP 17.9.2`).
+    /// </summary>
+    public Guid? ProjectId { get; }
 
     /// <summary>
     /// Gets the first selected object, or <see langword="null"/> if nothing

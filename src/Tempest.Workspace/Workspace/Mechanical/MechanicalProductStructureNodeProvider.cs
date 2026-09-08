@@ -44,13 +44,40 @@ public sealed class MechanicalProductStructureNodeProvider : IProjectExplorerNod
         foreach (var project in OrderForBom(projects.Where(IsLive)))
             nodes.Add(await ToNodeAsync(project, cancellationToken).ConfigureAwait(false));
 
+        // Every live object must be reachable from a root (`WP 17.9.2`).
+        // The first Windows review of `v0.17.0` created a Part that hung
+        // from nothing and could not be found anywhere; the tree now says
+        // so rather than hiding it.
+        var orphans = await GetOrphansAsync(cancellationToken).ConfigureAwait(false);
+        if (orphans.Count > 0)
+            nodes.Add(new ProjectExplorerNode(NotInAnyProjectNodeId, NotInAnyProjectTitle, null, HasChildren: true, ProjectExplorerNodeType.Category));
+
         return nodes;
     }
+
+    /// <summary>
+    /// The category node that lists every live object hanging from no
+    /// project (`WP 17.9.2`). A fixed id, like the other disciplines'
+    /// category nodes, so a reload finds the same node.
+    /// </summary>
+    public static readonly Guid NotInAnyProjectNodeId = new("00000000-0000-4002-8000-000000000001");
+
+    /// <summary>What the category is called in the tree.</summary>
+    public const string NotInAnyProjectTitle = "Not in any project";
 
     /// <inheritdoc />
     /// <exception cref="ArgumentException"><paramref name="nodeId"/> does not identify a known Mechanical Product Structure node.</exception>
     public async Task<IReadOnlyList<ProjectExplorerNode>> GetChildrenAsync(Guid nodeId, CancellationToken cancellationToken = default)
     {
+        if (nodeId == NotInAnyProjectNodeId)
+        {
+            var orphanNodes = new List<ProjectExplorerNode>();
+            foreach (var orphan in OrderForBom(await GetOrphansAsync(cancellationToken).ConfigureAwait(false)))
+                orphanNodes.Add(await ToNodeAsync(orphan, cancellationToken).ConfigureAwait(false));
+
+            return orphanNodes;
+        }
+
         var parent = await _context.Repository.FindAsync(nodeId, cancellationToken).ConfigureAwait(false);
 
         if (parent is null)
@@ -88,7 +115,41 @@ public sealed class MechanicalProductStructureNodeProvider : IProjectExplorerNod
             current = parent;
         }
 
+        // `current` is now the top of the chain: the object itself when it
+        // has no parent, or its highest live ancestor. A chain that does
+        // not end on a Project is rooted under "Not in any project", so a
+        // reveal expands that category.
+        if (current is not null && current.Kind != "Project")
+            ancestry.Insert(0, new ProjectExplorerNode(NotInAnyProjectNodeId, NotInAnyProjectTitle, null, HasChildren: true, ProjectExplorerNodeType.Category));
+
         return ancestry;
+    }
+
+    /// <summary>The Kinds that are product structure: what the tree exists to show.</summary>
+    private static readonly HashSet<string> StructuralKinds = new(StringComparer.Ordinal)
+    {
+        MechanicalObjectFactoryRegistry.Assembly,
+        MechanicalObjectFactoryRegistry.SubAssembly,
+        MechanicalObjectFactoryRegistry.Part,
+        MechanicalObjectFactoryRegistry.Component,
+    };
+
+    /// <summary>
+    /// Live structural objects that hang from no live parent: a
+    /// <see langword="null"/> parent, or a parent that is deleted or gone.
+    /// Configurations, Baselines and Releases are configuration-management
+    /// objects with their own surfaces; they appear in this tree only when
+    /// they have been placed under something, as before.
+    /// </summary>
+    private async Task<IReadOnlyList<IEngineeringObject>> GetOrphansAsync(CancellationToken cancellationToken)
+    {
+        var all = await _context.Repository.ListAllAsync(cancellationToken).ConfigureAwait(false);
+        var byId = all.ToDictionary(o => o.Id);
+
+        return all
+            .Where(o => o.Kind is { } kind && StructuralKinds.Contains(kind) && IsLive(o))
+            .Where(o => o is not IHasParent { ParentId: { } pid } || !byId.TryGetValue(pid, out var parent) || !IsLive(parent))
+            .ToList();
     }
 
     private async Task<IReadOnlyList<IEngineeringObject>> GetLiveChildrenAsync(Guid parentId, CancellationToken cancellationToken)

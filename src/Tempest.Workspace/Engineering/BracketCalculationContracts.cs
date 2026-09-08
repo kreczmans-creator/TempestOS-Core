@@ -332,3 +332,25 @@ public sealed record VerificationEvidence(
     string? PerformedByPrincipalId,
     DateOnly? PerformedOn,
     string? WhyAbsent);
+
+/// <summary>
+/// A material record the engineer adds by hand (`WP 17.9.2`). Numbers are
+/// the text as typed; the workbench parses and refuses, so the view never
+/// interprets a quantity. The source organisation and document are
+/// required because a record that names no source can never be released.
+/// </summary>
+/// <param name="Name">What the material is called, e.g. "6082-T6 aluminium alloy".</param>
+/// <param name="Designation">The short designation, e.g. "6082-T6"; becomes the record id.</param>
+/// <param name="Family">The material family.</param>
+/// <param name="YieldStrengthMegapascals">Yield strength in MPa, as typed.</param>
+/// <param name="DensityGramsPerCubicCentimetre">Density in g/cm3, as typed.</param>
+/// <param name="SourceOrganisation">Who published the figures.</param>
+/// <param name="SourceDocument">The datasheet, standard or handbook they came from.</param>
+public sealed record NewMaterialRecord(
+    string Name,
+    string Designation,
+    Tempest.Core.Materials.MaterialFamily Family,
+    string YieldStrengthMegapascals,
+    string DensityGramsPerCubicCentimetre,
+    string SourceOrganisation,
+    string SourceDocument);

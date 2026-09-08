@@ -458,6 +458,88 @@ public sealed class EngineeringCalculationJourneyTests
 
     // ---- the journey, reused by the tests that need a result to exist ----
 
+    // `WP 17.9.2`. The first Windows review's screenshot: the Inputs panel
+    // said "Select a governed material" with nothing on it to select, and
+    // there was no way to add a material at all. Now: a material of the
+    // engineer's own is added as Draft, released through the same review
+    // as a shipped one, offered on the Inputs panel, and drives a check.
+    [AvaloniaFact]
+    public async Task Journey_AddOwnMaterial_Release_PickItBesideTheInputs_Calculate()
+    {
+        var root = WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath();
+        var host = new WorkspaceHost(root);
+        try
+        {
+            await host.StartAsync();
+            SignIn(host);
+            var window = OpenWindow(host);
+
+            await OpenCalculationsFromTheRailAsync(host, window);
+            var view = SurfaceOf(window);
+
+            // Nothing released: the Inputs panel says so and says where to go.
+            Assert.Empty(view.ReleasedMaterials);
+            Assert.Equal(EngineeringCalculationView.NoReleasedMaterialGuidance, view.MaterialGuidance);
+            AssertRenderedContains(window, view, "No released material yet");
+
+            // A record that names no source is refused before it is written.
+            view.SetNewMaterial(new NewMaterialRecord("Structural steel S275JR", "S275JR-TEST", Tempest.Core.Materials.MaterialFamily.Steel, "275", "7.85", string.Empty, string.Empty));
+            await ClickAsync(window, view, EngineeringCalculationView.AddMaterialCaption);
+            await RenderUntilAsync(window, () => SurfaceOf(window).GetLogicalDescendants().OfType<TextBlock>().Any(t => (t.Text ?? string.Empty).Contains("Source organisation", StringComparison.Ordinal) && t.Bounds.Width > 0));
+            Assert.DoesNotContain(SurfaceOf(window).Materials, m => m.RecordId == "mat-s275jr-test");
+
+            view.SetNewMaterial(new NewMaterialRecord(
+                "Structural steel S275JR", "S275JR-TEST", Tempest.Core.Materials.MaterialFamily.Steel, "275", "7.85",
+                "CEN", "EN 10025-2:2019, Table 7"));
+            await ClickAsync(window, view, EngineeringCalculationView.AddMaterialCaption);
+            await RenderUntilAsync(window, () => SurfaceOf(window).Materials.Any(m => m.RecordId == "mat-s275jr-test"));
+
+            view = SurfaceOf(window);
+            var added = view.Materials.Single(m => m.RecordId == "mat-s275jr-test");
+            Assert.Equal(ReferenceValidationState.Draft, added.ValidationState);
+            Assert.Equal("S275JR-TEST", added.Designation);
+            Assert.Equal("mat-s275jr-test", view.SelectedMaterial!.RecordId);
+            Assert.Empty(view.ReleasedMaterials);
+
+            // Released through the same governed review as a shipped record.
+            EnterText(view, "Source consulted", "EN 10025-2:2019, Table 7");
+            EnterText(view, "Release rationale", ReleaseRationale);
+            await ClickAsync(window, view, EngineeringCalculationView.ReleaseCaption);
+            await RenderUntilAsync(window, () => SurfaceOf(window).Materials.Any(m => m.RecordId == "mat-s275jr-test" && m.IsUsableForEngineering));
+
+            view = SurfaceOf(window);
+            var released = view.Materials.Single(m => m.RecordId == "mat-s275jr-test");
+            Assert.Equal(ReferenceValidationState.Released, released.ValidationState);
+            Assert.Equal(EngineerId, released.ReviewerPrincipalId);
+
+            // Offered beside the inputs, already chosen, guidance gone.
+            Assert.Contains(view.ReleasedMaterials, m => m.RecordId == "mat-s275jr-test");
+            Assert.Equal(string.Empty, view.MaterialGuidance);
+            var inputsPicker = view.GetLogicalDescendants().OfType<ComboBox>().Distinct()
+                .Single(c => string.Equals(AutomationProperties.GetName(c), "Material for this calculation", StringComparison.Ordinal));
+            Assert.Equal("mat-s275jr-test", (inputsPicker.SelectedItem as BracketMaterialOption)?.RecordId);
+            Assert.Equal("mat-s275jr-test", view.CurrentInputs.MaterialRecordId);
+
+            // And it drives a check: 12 kN over 60 mm2 is 200 MPa against 275 MPa.
+            EnterInputs(view, load: "12", area: "60", length: "150", massLimit: "50");
+            await ClickAsync(window, view, EngineeringCalculationView.CalculateCaption);
+            await RenderUntilAsync(window, () => SurfaceOf(window).DisplayedOutcome is { Performed: true });
+
+            var outcome = SurfaceOf(window).DisplayedOutcome!;
+            Assert.True(outcome.Performed, outcome.RefusalReason);
+            Assert.Equal("200 MPa", outcome.AppliedStress);
+            Assert.Equal("275 MPa", outcome.AllowableStress);
+            Assert.Equal("mat-s275jr-test", outcome.MaterialRecordId);
+            Assert.True(outcome.StressCriterionMet, "200 MPa applied against 275 MPa allowable should pass.");
+
+            await host.ShutdownAsync();
+        }
+        finally
+        {
+            await host.DisposeAsync();
+        }
+    }
+
     private static async Task<BracketCalculationOutcome> RunTheKnownCheckAsync(WorkspaceHost host, MainWindow window)
     {
         await OpenCalculationsFromTheRailAsync(host, window);

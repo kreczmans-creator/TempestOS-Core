@@ -102,6 +102,69 @@ public sealed class BracketCalculationWorkbench
     }
 
     /// <summary>
+    /// Adds one material record of the user's own as Draft (`WP 17.9.2`).
+    /// Nothing is released by adding: the record goes through the same
+    /// verify-and-release review as a seeded one, which is why the source
+    /// organisation and document are required here — a record that names
+    /// no source can never be released.
+    /// </summary>
+    /// <exception cref="ArgumentException">A required field is blank, or a number does not parse or is not positive.</exception>
+    /// <exception cref="DuplicateReferenceRecordException">A record with the same designation already exists.</exception>
+    public async Task<BracketMaterialOption> AddMaterialAsync(NewMaterialRecord material, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(material);
+        ArgumentException.ThrowIfNullOrWhiteSpace(material.Name, "Name");
+        ArgumentException.ThrowIfNullOrWhiteSpace(material.Designation, "Designation");
+        ArgumentException.ThrowIfNullOrWhiteSpace(material.SourceOrganisation, "Source organisation");
+        ArgumentException.ThrowIfNullOrWhiteSpace(material.SourceDocument, "Source document");
+
+        var yield = ParsePositive(material.YieldStrengthMegapascals, "Yield strength (MPa)");
+        var density = ParsePositive(material.DensityGramsPerCubicCentimetre, "Density (g/cm3)");
+
+        var recordId = "mat-" + new string(material.Designation.Trim().ToLowerInvariant().Select(c => char.IsLetterOrDigit(c) ? c : '-').ToArray()).Trim('-');
+
+        var definition = new MaterialDefinition
+        {
+            Name = material.Name.Trim(),
+            Family = material.Family,
+            Designation = material.Designation.Trim(),
+            Properties = new Dictionary<string, ReferenceQuantityValue>
+            {
+                [MaterialPropertyNames.YieldStrength] = new(
+                    new Quantity<Pressure>(yield, PressureUnits.Megapascal),
+                    ReferenceValueOrigin.EngineeringReference,
+                    "Entered by the engineer from the source named in the record's provenance.",
+                    "Yield strength as entered"),
+                [MaterialPropertyNames.Density] = new(
+                    new Quantity<MassDensity>(density, MassDensityUnits.GramPerCubicCentimetre),
+                    ReferenceValueOrigin.EngineeringReference,
+                    "Entered by the engineer from the source named in the record's provenance."),
+            },
+        };
+
+        var provenance = new ReferenceProvenance(
+            SourceOrganisation: material.SourceOrganisation.Trim(),
+            SourceDocument: material.SourceDocument.Trim(),
+            ExtractionMethod: ReferenceExtractionMethod.ManualTranscription,
+            Notes: "Added by hand in the Engineering Calculations workspace; not verified until reviewed.");
+
+        var record = await _materials.RegisterAsync(recordId, definition, provenance, cancellationToken).ConfigureAwait(false);
+
+        return Describe(record);
+    }
+
+    private static double ParsePositive(string? text, string field)
+    {
+        if (!double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out var value) || double.IsNaN(value) || double.IsInfinity(value))
+            throw new ArgumentException($"{field} must be a number.", field);
+
+        if (value <= 0)
+            throw new ArgumentException($"{field} must be greater than zero.", field);
+
+        return value;
+    }
+
+    /// <summary>
     /// Populates the material library from the shipped seed corpus, and
     /// reports how many records that added.
     /// </summary>

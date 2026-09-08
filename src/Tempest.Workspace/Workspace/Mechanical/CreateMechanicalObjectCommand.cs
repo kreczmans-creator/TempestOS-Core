@@ -49,12 +49,19 @@ public sealed class CreateMechanicalObjectCommand : ICommand
 public sealed class CreateMechanicalObjectCommandHandler : ICommandHandler<CreateMechanicalObjectCommand>
 {
     private readonly MechanicalObjectFactoryRegistry _registry;
+    private readonly EngineeringDomainContext? _domainContext;
 
-    public CreateMechanicalObjectCommandHandler(MechanicalObjectFactoryRegistry registry)
+    /// <param name="registry">The factory that makes the object.</param>
+    /// <param name="domainContext">
+    /// Used only to name the parent in the success message (`WP 17.9.2`),
+    /// so the user is told where the new object went; optional.
+    /// </param>
+    public CreateMechanicalObjectCommandHandler(MechanicalObjectFactoryRegistry registry, EngineeringDomainContext? domainContext = null)
     {
         ArgumentNullException.ThrowIfNull(registry);
 
         _registry = registry;
+        _domainContext = domainContext;
     }
 
     public async Task<CommandResult> HandleAsync(CreateMechanicalObjectCommand command, CancellationToken cancellationToken)
@@ -73,6 +80,24 @@ public sealed class CreateMechanicalObjectCommandHandler : ICommandHandler<Creat
             return CommandResult.Failure(ex.Message);
         }
 
-        return CommandResult.Success($"Created {command.Kind} '{created.Id}'.");
+        // Said in the user's terms (`WP 17.9.2`): the name they typed and
+        // where it now sits, not a Guid. An object that hangs from nothing
+        // is said to, because the Project Explorer lists those apart.
+        var name = (created as IHasBusinessIdentifier)?.DisplayName ?? command.DisplayName;
+        var parentId = (created as IHasParent)?.ParentId;
+        var where = parentId is null
+            ? " It is not in any project; the Project Explorer lists it under \"Not in any project\"."
+            : $" It is under '{await ParentNameAsync(parentId.Value, cancellationToken).ConfigureAwait(false)}' in the Project Explorer.";
+
+        return CommandResult.Success($"Created {command.Kind} '{name}'.{where}");
+    }
+
+    private async Task<string> ParentNameAsync(Guid parentId, CancellationToken cancellationToken)
+    {
+        if (_domainContext is null)
+            return parentId.ToString();
+
+        var parent = await _domainContext.Repository.FindAsync(parentId, cancellationToken).ConfigureAwait(false);
+        return (parent as IHasBusinessIdentifier)?.DisplayName ?? parentId.ToString();
     }
 }

@@ -165,6 +165,35 @@ internal sealed class EngineeringCalculationCoordinator
     }
 
     /// <summary>Verifies and releases the selected material, in the engineer's own words.</summary>
+    /// <summary>Adds the material record the form describes, as Draft (`WP 17.9.2`).</summary>
+    public Task AddMaterialAsync() => GuardedAsync(AddMaterialCoreAsync, "add that material record");
+
+    private async Task AddMaterialCoreAsync()
+    {
+        ForgetPendingRetirement();
+
+        try
+        {
+            var added = await _workbench.AddMaterialAsync(_view.NewMaterial).ConfigureAwait(true);
+
+            await RefreshAsync().ConfigureAwait(true);
+            _view.ShowMaterials(_view.Materials, added.RecordId);
+            _view.ClearNewMaterial();
+            _view.ShowStatus(
+                $"Added {added.Designation} to the library as Draft. It is selected in the Reference Library: say what source you checked it against "
+                + $"and why it is being released, then press \"{EngineeringCalculationView.ReleaseCaption}\" before a calculation can use it.");
+        }
+        catch (ArgumentException incomplete)
+        {
+            // The workbench's own refusal, in its words: which field, and why.
+            _view.ShowStatus(incomplete.Message);
+        }
+        catch (Tempest.Core.ReferenceData.DuplicateReferenceRecordException duplicate)
+        {
+            _view.ShowStatus($"A record with that designation already exists: {duplicate.Message}");
+        }
+    }
+
     public Task VerifyAndReleaseAsync() => GuardedAsync(VerifyAndReleaseCoreAsync, "verify and release that material");
 
     private async Task VerifyAndReleaseCoreAsync()

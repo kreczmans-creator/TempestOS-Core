@@ -61,6 +61,14 @@ public sealed class EngineeringCalculationView : UserControl
     /// <summary>The caption on the button that starts a new calculation.</summary>
     public const string NewCalculationCaption = "New Calculation";
 
+    /// <summary>The caption on the button that adds a material record of the engineer's own, as Draft (`WP 17.9.2`).</summary>
+    public const string AddMaterialCaption = "Add Material Record";
+
+    /// <summary>What the Inputs panel says beside the material picker when nothing is released yet (`WP 17.9.2`).</summary>
+    public const string NoReleasedMaterialGuidance =
+        "No released material yet. In the Reference Library on the left, press \"" + PopulateCaption + "\" or add your own record, "
+        + "select it, then press \"" + ReleaseCaption + "\". Only a released material can drive a calculation.";
+
     /// <summary>The caption on the button that opens the selected calculation.</summary>
     public const string OpenCaption = "Open Calculation";
 
@@ -107,6 +115,38 @@ public sealed class EngineeringCalculationView : UserControl
 
     private readonly TextBox _sourceConsultedBox = Input(string.Empty, "What you checked this record against");
     private readonly TextBox _releaseRationaleBox = Input(string.Empty, "Why it is being released");
+
+    // `WP 17.9.2`: the material is chosen beside the inputs it drives, and a
+    // record of the engineer's own can be added. The first Windows review
+    // saw "Select a governed material" with nothing on the Inputs panel to
+    // select, and no way to add one.
+    private readonly ComboBox _materialPicker = new()
+    {
+        FontSize = DesignTokens.FontSizeBody,
+        MinHeight = DesignTokens.MinControlSize,
+        HorizontalAlignment = HorizontalAlignment.Stretch,
+        PlaceholderText = "Choose a released material",
+    };
+
+    private readonly TextBlock _materialGuidance = Caption(string.Empty);
+    private bool _syncingMaterial;
+
+    private readonly TextBox _newMaterialNameBox = Input(string.Empty, "e.g. 6082-T6 aluminium alloy");
+    private readonly TextBox _newMaterialDesignationBox = Input(string.Empty, "e.g. 6082-T6");
+    private readonly ComboBox _newMaterialFamilyPicker = new()
+    {
+        FontSize = DesignTokens.FontSizeBody,
+        MinHeight = DesignTokens.MinControlSize,
+        HorizontalAlignment = HorizontalAlignment.Stretch,
+        ItemsSource = Enum.GetValues<Tempest.Core.Materials.MaterialFamily>(),
+        SelectedItem = Tempest.Core.Materials.MaterialFamily.Steel,
+    };
+
+    private readonly TextBox _newMaterialYieldBox = Input(string.Empty, "MPa");
+    private readonly TextBox _newMaterialDensityBox = Input(string.Empty, "g/cm3");
+    private readonly TextBox _newMaterialSourceOrganisationBox = Input(string.Empty, "Who published the figures");
+    private readonly TextBox _newMaterialSourceDocumentBox = Input(string.Empty, "Datasheet, standard or handbook");
+    private readonly Button _addMaterialButton = new() { Content = AddMaterialCaption, MinHeight = DesignTokens.MinControlSize };
 
     private readonly Button _calculateButton = new() { Content = CalculateCaption, MinHeight = DesignTokens.MinControlSize };
     private readonly Button _populateButton = new() { Content = PopulateCaption, MinHeight = DesignTokens.MinControlSize };
@@ -179,6 +219,32 @@ public sealed class EngineeringCalculationView : UserControl
         Describe(_renameButton, RenameCaption, "Change what the selected calculation is called. Its record, revisions and references are unchanged.");
         Describe(_retireButton, RetireCaption, "Take the selected calculation out of the active list. Nothing is deleted and it can still be opened, but the lifecycle state it reaches is terminal and cannot be undone — you are asked to confirm.");
         Describe(_showRetiredBox, ShowRetiredCaption, "List retired calculations alongside the active ones. This only changes what is shown; nothing is written.");
+        Describe(_addMaterialButton, AddMaterialCaption, "Add a material record of your own to the library as Draft. It must then be verified and released before a calculation can use it.");
+        Describe(_materialPicker, "Material for this calculation", "The released material this calculation stands on.");
+        AutomationProperties.SetName(_newMaterialNameBox, "New material name");
+        AutomationProperties.SetName(_newMaterialDesignationBox, "New material designation");
+        AutomationProperties.SetName(_newMaterialFamilyPicker, "New material family");
+        AutomationProperties.SetName(_newMaterialYieldBox, "New material yield strength in megapascals");
+        AutomationProperties.SetName(_newMaterialDensityBox, "New material density in grams per cubic centimetre");
+        AutomationProperties.SetName(_newMaterialSourceOrganisationBox, "New material source organisation");
+        AutomationProperties.SetName(_newMaterialSourceDocumentBox, "New material source document");
+        _addMaterialButton.Classes.Add(ChromeStyles.Flat);
+        _addMaterialButton.Click += (_, _) => AddMaterialRequested?.Invoke();
+        _materialPicker.SelectionChanged += (_, _) =>
+        {
+            if (_syncingMaterial || _materialPicker.SelectedItem is not BracketMaterialOption chosen)
+                return;
+
+            _syncingMaterial = true;
+            try
+            {
+                _referenceList.SelectedItem = Materials.FirstOrDefault(m => m.RecordId == chosen.RecordId) ?? chosen;
+            }
+            finally
+            {
+                _syncingMaterial = false;
+            }
+        };
 
         AutomationProperties.SetName(_calculationList, "Existing calculations");
         AutomationProperties.SetName(_referenceList, "Reference library");
@@ -205,7 +271,11 @@ public sealed class EngineeringCalculationView : UserControl
         _retireButton.Click += (_, _) => RaiseRetire();
         _showRetiredBox.IsCheckedChanged += (_, _) => ShowRetiredChanged?.Invoke(ShowRetired);
 
-        _referenceList.SelectionChanged += (_, _) => ShowSelectedMaterialState();
+        _referenceList.SelectionChanged += (_, _) =>
+        {
+            ShowSelectedMaterialState();
+            SyncMaterialPickerToList();
+        };
         _calculationList.SelectionChanged += (_, _) =>
         {
             if (!_replacingCalculations)
@@ -222,6 +292,42 @@ public sealed class EngineeringCalculationView : UserControl
 
     /// <summary>Raised when the engineer asks for the material library to be populated from the shipped seed corpus.</summary>
     public event Action? PopulateRequested;
+
+    /// <summary>Raised when the engineer asks to add the material record described by <see cref="NewMaterial"/> (`WP 17.9.2`).</summary>
+    public event Action? AddMaterialRequested;
+
+    /// <summary>The material record the add-material form currently describes, as typed (`WP 17.9.2`).</summary>
+    public NewMaterialRecord NewMaterial => new(
+        _newMaterialNameBox.Text ?? string.Empty,
+        _newMaterialDesignationBox.Text ?? string.Empty,
+        _newMaterialFamilyPicker.SelectedItem is Tempest.Core.Materials.MaterialFamily family ? family : Tempest.Core.Materials.MaterialFamily.Unspecified,
+        _newMaterialYieldBox.Text ?? string.Empty,
+        _newMaterialDensityBox.Text ?? string.Empty,
+        _newMaterialSourceOrganisationBox.Text ?? string.Empty,
+        _newMaterialSourceDocumentBox.Text ?? string.Empty);
+
+    /// <summary>Fills the add-material form; the test and the coordinator's own retry path use it.</summary>
+    public void SetNewMaterial(NewMaterialRecord material)
+    {
+        ArgumentNullException.ThrowIfNull(material);
+        _newMaterialNameBox.Text = material.Name;
+        _newMaterialDesignationBox.Text = material.Designation;
+        _newMaterialFamilyPicker.SelectedItem = material.Family;
+        _newMaterialYieldBox.Text = material.YieldStrengthMegapascals;
+        _newMaterialDensityBox.Text = material.DensityGramsPerCubicCentimetre;
+        _newMaterialSourceOrganisationBox.Text = material.SourceOrganisation;
+        _newMaterialSourceDocumentBox.Text = material.SourceDocument;
+    }
+
+    /// <summary>Clears the add-material form after a record has been added.</summary>
+    public void ClearNewMaterial() =>
+        SetNewMaterial(new NewMaterialRecord(string.Empty, string.Empty, Tempest.Core.Materials.MaterialFamily.Steel, string.Empty, string.Empty, string.Empty, string.Empty));
+
+    /// <summary>The released materials the Inputs panel offers (`WP 17.9.2`).</summary>
+    public IReadOnlyList<BracketMaterialOption> ReleasedMaterials => Materials.Where(m => m.IsUsableForEngineering).ToList();
+
+    /// <summary>What the Inputs panel says beside the material picker.</summary>
+    public string MaterialGuidance => _materialGuidance.Text ?? string.Empty;
 
     /// <summary>Raised when the engineer asks for the selected material to be verified and released.</summary>
     public event Action? ReleaseRequested;
@@ -358,11 +464,47 @@ public sealed class EngineeringCalculationView : UserControl
         var keep = selectRecordId ?? SelectedMaterial?.RecordId;
 
         _referenceList.ItemsSource = materials;
+
+        // The Inputs panel offers only what a calculation may stand on.
+        _syncingMaterial = true;
+        try
+        {
+            _materialPicker.ItemsSource = materials.Where(m => m.IsUsableForEngineering).ToList();
+        }
+        finally
+        {
+            _syncingMaterial = false;
+        }
+
+        _materialGuidance.Text = materials.Any(m => m.IsUsableForEngineering) ? string.Empty : NoReleasedMaterialGuidance;
+        _materialGuidance.IsVisible = _materialGuidance.Text.Length > 0;
+
         _referenceList.SelectedItem = materials.FirstOrDefault(m => m.RecordId == keep)
             ?? materials.FirstOrDefault(m => m.IsUsableForEngineering)
             ?? materials.FirstOrDefault();
 
         ShowSelectedMaterialState();
+        SyncMaterialPickerToList();
+    }
+
+    /// <summary>Keeps the Inputs picker on the same record as the Reference Library list, or on nothing when that record is not released.</summary>
+    private void SyncMaterialPickerToList()
+    {
+        if (_syncingMaterial)
+            return;
+
+        _syncingMaterial = true;
+        try
+        {
+            var selected = SelectedMaterial;
+            _materialPicker.SelectedItem = selected is { IsUsableForEngineering: true }
+                ? (_materialPicker.ItemsSource as IEnumerable<BracketMaterialOption>)?.FirstOrDefault(m => m.RecordId == selected.RecordId)
+                : null;
+        }
+        finally
+        {
+            _syncingMaterial = false;
+        }
     }
 
     /// <summary>Shows an outcome — a result, a refusal, or a rejected input.</summary>
@@ -578,6 +720,7 @@ public sealed class EngineeringCalculationView : UserControl
         foreach (var box in new[] { _nameBox, _loadBox, _areaBox, _lengthBox, _massLimitBox })
             box.IsEnabled = !readOnly;
 
+        _materialPicker.IsEnabled = !readOnly;
         _calculateButton.IsEnabled = !readOnly;
         _activeMode.Text = readOnly
             ? "Viewing a recorded calculation. It is read-only: opening a record never recalculates it and never writes to it. "
@@ -655,6 +798,20 @@ public sealed class EngineeringCalculationView : UserControl
         reference.Children.Add(_releaseButton);
         left.Children.Add(Section("Reference Library", reference));
 
+        var newMaterial = new StackPanel { Spacing = DesignTokens.SpaceSm };
+        newMaterial.Children.Add(Caption(
+            "A record of your own, added as Draft. It is verified and released through the Reference Library above, "
+            + "exactly like a shipped record, so the source you name here is what the release is checked against."));
+        newMaterial.Children.Add(LabelledRow("Name", _newMaterialNameBox));
+        newMaterial.Children.Add(LabelledRow("Designation", _newMaterialDesignationBox));
+        newMaterial.Children.Add(LabelledRow("Family", _newMaterialFamilyPicker));
+        newMaterial.Children.Add(LabelledRow("Yield strength (MPa)", _newMaterialYieldBox));
+        newMaterial.Children.Add(LabelledRow("Density (g/cm3)", _newMaterialDensityBox));
+        newMaterial.Children.Add(LabelledRow("Source organisation", _newMaterialSourceOrganisationBox));
+        newMaterial.Children.Add(LabelledRow("Source document", _newMaterialSourceDocumentBox));
+        newMaterial.Children.Add(_addMaterialButton);
+        left.Children.Add(Section("Add a Material", newMaterial));
+
         // ---- Right: the active calculation --------------------------
         var right = new StackPanel { Spacing = DesignTokens.SpaceMd };
         right.Children.Add(PageHeading.Label("Engineering"));
@@ -666,6 +823,8 @@ public sealed class EngineeringCalculationView : UserControl
 
         var inputs = new StackPanel { Spacing = DesignTokens.SpaceSm };
         inputs.Children.Add(LabelledRow("Calculation name", _nameBox));
+        inputs.Children.Add(LabelledRow("Material", _materialPicker));
+        inputs.Children.Add(_materialGuidance);
         inputs.Children.Add(LabelledRow("Load (kN)", _loadBox));
         inputs.Children.Add(LabelledRow("Section area (mm2)", _areaBox));
         inputs.Children.Add(LabelledRow("Member length (mm)", _lengthBox));
