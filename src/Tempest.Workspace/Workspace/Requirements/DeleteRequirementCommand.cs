@@ -1,7 +1,7 @@
 using Tempest.Core.Commands;
 using Tempest.Core.Requirements;
 
-namespace Tempest.App.Workspace.Requirements;
+namespace Tempest.Workspace.Requirements;
 
 /// <summary>Soft-deletes one Requirement (<see cref="IRequirementsService.DeleteAsync"/>).</summary>
 public sealed class DeleteRequirementCommand : IWorkspaceCommand

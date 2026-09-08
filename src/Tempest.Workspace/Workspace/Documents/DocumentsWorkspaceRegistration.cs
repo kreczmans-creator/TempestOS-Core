@@ -1,7 +1,7 @@
 using Tempest.Core.Commands;
 using Tempest.Core.EngineeringDomain;
 
-namespace Tempest.App.Workspace.Documents;
+namespace Tempest.Workspace.Documents;
 
 /// <summary>
 /// The single composition-root entry point wiring the whole Engineering

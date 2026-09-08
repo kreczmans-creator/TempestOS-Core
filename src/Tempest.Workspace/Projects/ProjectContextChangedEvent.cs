@@ -1,6 +1,6 @@
 using Tempest.Core.Events;
 
-namespace Tempest.App.Projects;
+namespace Tempest.Workspace.Projects;
 
 /// <summary>
 /// Published on the existing <see cref="IEventBus"/> whenever the current

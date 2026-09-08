@@ -1,7 +1,7 @@
-using Tempest.App.Workspace;
+using Tempest.Workspace;
 using Tempest.Core.EngineeringDomain;
 
-namespace Tempest.App.Workspace.Mechanical;
+namespace Tempest.Workspace.Mechanical;
 
 /// <summary>
 /// The Mechanical Product Structure discipline's own Engineering Cockpit

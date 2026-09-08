@@ -1,5 +1,5 @@
-using Tempest.App.Workspace;
-using Tempest.App.Workspace.Requirements;
+using Tempest.Workspace;
+using Tempest.Workspace.Requirements;
 using Tempest.Core.Commands;
 using Tempest.Core.Configuration;
 using Tempest.Core.Persistence;
@@ -400,7 +400,7 @@ public class RequirementsWorkspaceIntegrationTests
     {
         using var temp = new TempDirectory();
         var (workspace, manager, _) = await StartAsync(temp.Path);
-        var cockpit = ((Tempest.App.Workspace.Workspace)workspace).Cockpit;
+        var cockpit = ((Tempest.Workspace.Workspace)workspace).Cockpit;
 
         var cards = cockpit.RequirementsKpiCards.ToDictionary(c => c.Label, c => c.Value);
 
@@ -416,7 +416,7 @@ public class RequirementsWorkspaceIntegrationTests
     {
         using var temp = new TempDirectory();
         var (workspace, manager, _) = await StartAsync(temp.Path);
-        var cockpit = ((Tempest.App.Workspace.Workspace)workspace).Cockpit;
+        var cockpit = ((Tempest.Workspace.Workspace)workspace).Cockpit;
 
         Assert.Contains(cockpit.AttentionItems, item => item.Title == "Requirements Management is live");
 

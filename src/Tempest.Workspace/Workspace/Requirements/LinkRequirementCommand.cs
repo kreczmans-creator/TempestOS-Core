@@ -2,7 +2,7 @@ using Tempest.Core.Commands;
 using Tempest.Core.EngineeringData;
 using Tempest.Core.Requirements;
 
-namespace Tempest.App.Workspace.Requirements;
+namespace Tempest.Workspace.Requirements;
 
 /// <summary>
 /// Records a typed, directed relationship from one Requirement to any

@@ -1,6 +1,6 @@
 using Tempest.Core.EngineeringDomain;
 
-namespace Tempest.App.Workspace.Manufacturing;
+namespace Tempest.Workspace.Manufacturing;
 
 /// <summary>
 /// Presents one real <c>"ManufacturingOperation"</c> — mirrors

@@ -1,9 +1,9 @@
 using Tempest.Core.Calculations;
 using Tempest.Core.EngineeringDomain;
-using Tempest.App.Workspace.Mechanical;
-using Tempest.App.Workspace.Requirements;
+using Tempest.Workspace.Mechanical;
+using Tempest.Workspace.Requirements;
 
-namespace Tempest.App.Workspace.Calculations;
+namespace Tempest.Workspace.Calculations;
 
 /// <summary>
 /// Supplies the Property Inspector's own real facets for one Calculations

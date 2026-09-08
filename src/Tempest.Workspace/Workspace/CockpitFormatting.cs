@@ -1,4 +1,4 @@
-namespace Tempest.App.Workspace;
+namespace Tempest.Workspace;
 
 /// <summary>
 /// Shared, stateless coverage-formatting helpers used by more than one

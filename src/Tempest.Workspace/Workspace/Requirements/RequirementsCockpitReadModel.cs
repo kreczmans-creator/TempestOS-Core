@@ -1,11 +1,11 @@
-using Tempest.App.Workspace;
+using Tempest.Workspace;
 using Tempest.Core.EngineeringData;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Identity;
 using Tempest.Core.Requirements;
 using IRequirement = Tempest.Core.Requirements.IRequirement;
 
-namespace Tempest.App.Workspace.Requirements;
+namespace Tempest.Workspace.Requirements;
 
 /// <summary>
 /// The Requirements discipline's own Engineering Cockpit read-model —

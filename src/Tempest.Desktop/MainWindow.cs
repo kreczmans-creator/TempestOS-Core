@@ -2,9 +2,9 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Platform;
-using Tempest.App.Projects;
-using Tempest.App.Shell;
-using Tempest.App.Workspace;
+using Tempest.Workspace.Projects;
+using Tempest.Workspace.Shell;
+using Tempest.Workspace;
 using Tempest.Core.Commands;
 using Tempest.Core.Diagnostics;
 using Tempest.Core.EngineeringDomain;
@@ -313,7 +313,7 @@ public sealed class MainWindow : Window
         // (granted `WP 10.0B`) — the identical, precedented pattern
         // WorkspaceShell itself already uses internally to reach its own
         // concrete Workspace instance.
-        var cockpit = ((Workspace)workspace).Cockpit;
+        var cockpit = ((Tempest.Workspace.Workspace)workspace).Cockpit;
         _cockpitView = new CockpitView(
             cockpit,
             workspace.Navigation.Areas,

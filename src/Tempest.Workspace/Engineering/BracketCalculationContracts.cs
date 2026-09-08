@@ -4,7 +4,7 @@ using Tempest.Core.EngineeringDomain;
 using Tempest.Core.ReferenceData;
 using Tempest.Core.UnitsAndQuantities;
 
-namespace Tempest.App.Engineering;
+namespace Tempest.Workspace.Engineering;
 
 /// <summary>One governed material, as the Engineering Calculation surface should present it.</summary>
 /// <param name="RecordId">The record's own identity in the Materials library.</param>

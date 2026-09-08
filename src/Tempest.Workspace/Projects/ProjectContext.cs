@@ -3,7 +3,7 @@ using Tempest.Core.Events;
 using Tempest.Core.Logging;
 using Tempest.Core.Settings;
 
-namespace Tempest.App.Projects;
+namespace Tempest.Workspace.Projects;
 
 /// <summary>
 /// The concrete <see cref="IProjectContext"/> — holds the current project,

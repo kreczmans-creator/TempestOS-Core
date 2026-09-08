@@ -1,4 +1,4 @@
-namespace Tempest.App.Workspace.Layout;
+namespace Tempest.Workspace.Layout;
 
 /// <summary>A candidate drop target: a node, and the rectangle it occupies on screen.</summary>
 /// <param name="NodeId">The layout node under the pointer.</param>

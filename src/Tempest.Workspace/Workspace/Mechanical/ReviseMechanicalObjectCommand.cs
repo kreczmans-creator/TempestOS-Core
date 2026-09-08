@@ -1,7 +1,7 @@
 using Tempest.Core.Commands;
 using Tempest.Core.EngineeringDomain;
 
-namespace Tempest.App.Workspace.Mechanical;
+namespace Tempest.Workspace.Mechanical;
 
 /// <summary>
 /// Records a new content revision of one Mechanical Product Structure

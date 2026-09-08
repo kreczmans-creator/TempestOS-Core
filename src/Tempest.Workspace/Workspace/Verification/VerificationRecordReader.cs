@@ -2,7 +2,7 @@ using System.Text.Json;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Verification;
 
-namespace Tempest.App.Workspace.Verification;
+namespace Tempest.Workspace.Verification;
 
 /// <summary>
 /// Reads a Verification Activity Domain object's own recorded results back

@@ -1,7 +1,7 @@
 using Tempest.Core.Commands;
 using Tempest.Core.EngineeringDomain;
 
-namespace Tempest.App.Workspace.Verification;
+namespace Tempest.Workspace.Verification;
 
 /// <summary>Soft-deletes one Verification Activity Domain object (<see cref="IDeletable.DeleteAsync"/>).</summary>
 public sealed class DeleteVerificationActivityCommand : IWorkspaceCommand

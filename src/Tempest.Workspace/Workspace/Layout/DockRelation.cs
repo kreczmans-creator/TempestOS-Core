@@ -1,4 +1,4 @@
-namespace Tempest.App.Workspace.Layout;
+namespace Tempest.Workspace.Layout;
 
 /// <summary>
 /// Where a dragged panel lands relative to the target it is dropped on

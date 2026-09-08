@@ -1,4 +1,4 @@
-namespace Tempest.App.Projects;
+namespace Tempest.Workspace.Projects;
 
 /// <summary>
 /// The catalogue of projects — the read/create surface the product shell

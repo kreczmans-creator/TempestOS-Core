@@ -1,7 +1,7 @@
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
-using Tempest.App.Workspace.Layout;
+using Tempest.Workspace.Layout;
 using Tempest.Desktop.Diagnostics;
 using Tempest.Desktop.Docking;
 

@@ -1,4 +1,4 @@
-namespace Tempest.App.Workspace.Viewing;
+namespace Tempest.Workspace.Viewing;
 
 /// <summary>
 /// What kind of document the viewer is being asked to show (`TD-80`).

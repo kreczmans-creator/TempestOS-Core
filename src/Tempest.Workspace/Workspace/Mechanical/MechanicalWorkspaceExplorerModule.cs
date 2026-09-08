@@ -1,7 +1,7 @@
 using Tempest.Core.Modules;
 using Tempest.Core.Navigation;
 
-namespace Tempest.App.Workspace.Mechanical;
+namespace Tempest.Workspace.Mechanical;
 
 /// <summary>
 /// Contributes the Project Explorer's own Mechanical area to the

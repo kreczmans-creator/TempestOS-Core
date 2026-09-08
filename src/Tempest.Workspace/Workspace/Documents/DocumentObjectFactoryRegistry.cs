@@ -1,6 +1,6 @@
 using Tempest.Core.EngineeringDomain;
 
-namespace Tempest.App.Workspace.Documents;
+namespace Tempest.Workspace.Documents;
 
 /// <summary>
 /// Builds a new Document Domain object — <c>"Document"</c>, <c>"Drawing"</c>,
@@ -9,7 +9,7 @@ namespace Tempest.App.Workspace.Documents;
 /// <see cref="Calculations.CalculationObjectFactoryRegistry"/>/
 /// <see cref="Mechanical.MechanicalObjectFactoryRegistry"/>'s own identical
 /// shape (`WP 9.4A`) exactly. Never a Domain-layer registry contract — this
-/// type lives entirely in <c>Tempest.App</c>.
+/// type lives entirely in <c>Tempest.Workspace</c>.
 /// </summary>
 /// <remarks>
 /// <see cref="Specification"/>/<see cref="Report"/>/<see cref="Procedure"/>/

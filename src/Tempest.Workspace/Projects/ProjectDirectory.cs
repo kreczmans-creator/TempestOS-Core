@@ -1,7 +1,7 @@
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Logging;
 
-namespace Tempest.App.Projects;
+namespace Tempest.Workspace.Projects;
 
 /// <summary>
 /// The concrete <see cref="IProjectDirectory"/> — a thin read/create
@@ -44,7 +44,7 @@ public sealed class ProjectDirectory : IProjectDirectory
     /// Mechanical discipline's own registered constant rather than
     /// redeclared, per `ADR-0105` (a vocabulary value is declared once).
     /// </summary>
-    public static string ProjectKind => Workspace.Mechanical.MechanicalObjectFactoryRegistry.Project;
+    public static string ProjectKind => Tempest.Workspace.Mechanical.MechanicalObjectFactoryRegistry.Project;
 
     private readonly EngineeringDomainContext _context;
     private readonly ILogger? _logger;

@@ -1,6 +1,6 @@
 using Tempest.Core.EngineeringDomain;
 
-namespace Tempest.App.Workspace.Mechanical;
+namespace Tempest.Workspace.Mechanical;
 
 /// <summary>
 /// Supplies the Property Inspector's own real facets for one Mechanical

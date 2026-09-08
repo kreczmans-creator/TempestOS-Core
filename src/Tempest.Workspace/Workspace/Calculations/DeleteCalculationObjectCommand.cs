@@ -1,7 +1,7 @@
 using Tempest.Core.Commands;
 using Tempest.Core.EngineeringDomain;
 
-namespace Tempest.App.Workspace.Calculations;
+namespace Tempest.Workspace.Calculations;
 
 /// <summary>Soft-deletes one Calculation Domain object (<see cref="IDeletable.DeleteAsync"/>).</summary>
 public sealed class DeleteCalculationObjectCommand : IWorkspaceCommand

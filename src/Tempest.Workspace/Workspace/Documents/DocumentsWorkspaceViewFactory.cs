@@ -1,6 +1,6 @@
 using Tempest.Core.EngineeringDomain;
 
-namespace Tempest.App.Workspace.Documents;
+namespace Tempest.Workspace.Documents;
 
 /// <summary>
 /// Constructs a <see cref="DocumentsWorkspaceView"/> for one Documents Kind

@@ -1,8 +1,8 @@
-using Tempest.App.Workspace;
+using Tempest.Workspace;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Verification;
 
-namespace Tempest.App.Workspace.Verification;
+namespace Tempest.Workspace.Verification;
 
 /// <summary>
 /// The Verification discipline's own Engineering Cockpit read-model —

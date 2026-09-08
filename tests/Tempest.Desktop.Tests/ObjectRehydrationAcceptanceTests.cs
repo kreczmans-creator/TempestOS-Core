@@ -1,9 +1,9 @@
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.LogicalTree;
-using Tempest.App.Projects;
-using Tempest.App.Shell;
-using Tempest.App.Workspace.Mechanical;
+using Tempest.Workspace.Projects;
+using Tempest.Workspace.Shell;
+using Tempest.Workspace.Mechanical;
 using Tempest.Core.Commands;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Desktop.Views;
@@ -333,7 +333,7 @@ public sealed class ObjectRehydrationAcceptanceTests
             Tempest.Core.EngineeringDomain.IEngineeringObject? verified = null;
             foreach (var activity in activities)
             {
-                var records = await Tempest.App.Workspace.Verification.VerificationRecordReader
+                var records = await Tempest.Workspace.Verification.VerificationRecordReader
                     .GetResultHistoryAsync(domain, activity.Id);
                 if (records.Count > 0)
                 {

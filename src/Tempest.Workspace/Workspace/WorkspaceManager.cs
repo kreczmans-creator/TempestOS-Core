@@ -7,7 +7,7 @@ using Tempest.Core.Requirements;
 using Tempest.Core.Runtime;
 using Tempest.Core.Settings;
 
-namespace Tempest.App.Workspace;
+namespace Tempest.Workspace;
 
 /// <summary>
 /// The concrete <see cref="IWorkspaceManager"/> implementation — creates and
@@ -18,7 +18,7 @@ namespace Tempest.App.Workspace;
 /// <remarks>
 /// <para>
 /// A composition-root component (`ADR-0062`), not a Platform Service —
-/// constructed directly by <c>Tempest.App</c>'s own entry point, never
+/// constructed directly by <c>Tempest.Harness</c>'s own entry point, never
 /// resolved through <see cref="ITempestHost.Services"/>.
 /// </para>
 /// <para>

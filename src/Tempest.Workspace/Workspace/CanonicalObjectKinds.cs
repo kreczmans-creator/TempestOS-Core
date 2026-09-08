@@ -1,6 +1,6 @@
 using Tempest.Core.EngineeringDomain;
 
-namespace Tempest.App.Workspace;
+namespace Tempest.Workspace;
 
 /// <summary>
 /// The canonical engineering Kinds that are durable and rehydratable but

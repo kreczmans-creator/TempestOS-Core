@@ -1,4 +1,4 @@
-namespace Tempest.App.Workspace.Layout;
+namespace Tempest.Workspace.Layout;
 
 /// <summary>One of the named, ready-made arrangements the View menu offers.</summary>
 public enum WorkspaceLayoutPreset

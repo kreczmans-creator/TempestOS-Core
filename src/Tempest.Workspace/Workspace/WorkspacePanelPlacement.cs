@@ -1,4 +1,4 @@
-namespace Tempest.App.Workspace;
+namespace Tempest.Workspace;
 
 /// <summary>
 /// One panel's own docking arrangement — position, size, and visibility.

@@ -1,5 +1,5 @@
 using Avalonia.Headless.XUnit;
-using Tempest.App.Workspace.Documents;
+using Tempest.Workspace.Documents;
 using Tempest.Core.Commands;
 using Tempest.Core.EngineeringDomain;
 

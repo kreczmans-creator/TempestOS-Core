@@ -1,6 +1,6 @@
 using Tempest.Core.Calculations;
 
-namespace Tempest.App.Engineering;
+namespace Tempest.Workspace.Engineering;
 
 /// <summary>
 /// What the product can calculate, and honestly which of it this surface can

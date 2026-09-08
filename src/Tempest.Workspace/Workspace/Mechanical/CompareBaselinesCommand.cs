@@ -1,7 +1,7 @@
 using Tempest.Core.Commands;
 using Tempest.Core.EngineeringDomain;
 
-namespace Tempest.App.Workspace.Mechanical;
+namespace Tempest.Workspace.Mechanical;
 
 /// <summary>
 /// Compares two <c>Configuration</c>/<c>Baseline</c>/<c>Release</c> objects'

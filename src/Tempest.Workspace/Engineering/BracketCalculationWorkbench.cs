@@ -9,7 +9,7 @@ using Tempest.Core.ReferenceData.Seeding.Datasets;
 using Tempest.Core.Settings;
 using Tempest.Core.UnitsAndQuantities;
 
-namespace Tempest.App.Engineering;
+namespace Tempest.Workspace.Engineering;
 
 /// <summary>
 /// The application-side answer behind the Engineering Calculation surface:
@@ -20,8 +20,8 @@ namespace Tempest.App.Engineering;
 /// <para>
 /// <b>This decides; the view renders.</b> Every string a user reads is
 /// composed here, in the same discipline
-/// <see cref="Tempest.App.Projects.ProjectRequirementRegister"/> and
-/// <see cref="Tempest.App.Workspace.Calculations.CalculationRecordReader"/>
+/// <see cref="Tempest.Workspace.Projects.ProjectRequirementRegister"/> and
+/// <see cref="Tempest.Workspace.Calculations.CalculationRecordReader"/>
 /// already follow — a unit-bearing value reaches the Desktop already
 /// formatted, because reconstructing a unit in a view is how two surfaces
 /// come to disagree.

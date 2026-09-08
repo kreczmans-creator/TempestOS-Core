@@ -1,4 +1,4 @@
-namespace Tempest.App.Workspace;
+namespace Tempest.Workspace;
 
 /// <summary>The abstract base of every exception this namespace throws.</summary>
 public abstract class WorkspaceException : Exception

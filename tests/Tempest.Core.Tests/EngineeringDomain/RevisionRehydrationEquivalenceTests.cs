@@ -1,7 +1,7 @@
 using System.Collections;
 using System.Reflection;
-using Tempest.App.Workspace;
-using Tempest.App.Workspace.Mechanical;
+using Tempest.Workspace;
+using Tempest.Workspace.Mechanical;
 using Tempest.Core.Configuration;
 using Tempest.Core.EngineeringData;
 using Tempest.Core.EngineeringDomain;

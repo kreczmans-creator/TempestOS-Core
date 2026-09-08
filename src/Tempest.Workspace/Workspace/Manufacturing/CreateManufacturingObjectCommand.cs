@@ -1,7 +1,7 @@
 using Tempest.Core.Commands;
 using Tempest.Core.EngineeringDomain;
 
-namespace Tempest.App.Workspace.Manufacturing;
+namespace Tempest.Workspace.Manufacturing;
 
 /// <summary>
 /// Creates a new Manufacturing Domain object — <c>"ManufacturingOperation"</c>,

@@ -1,5 +1,5 @@
-using Tempest.App.Workspace;
-using Tempest.App.Workspace.Documents;
+using Tempest.Workspace;
+using Tempest.Workspace.Documents;
 using Tempest.Core.Commands;
 using Tempest.Core.Configuration;
 using Tempest.Core.EngineeringDomain;
@@ -7,8 +7,8 @@ using Tempest.Core.Persistence;
 using Tempest.Core.Runtime;
 using Tempest.Core.Tests.Plugins;
 using Tempest.Samples;
-using Tempest.App.Workspace.Calculations;
-using Tempest.App.Workspace.Requirements;
+using Tempest.Workspace.Calculations;
+using Tempest.Workspace.Requirements;
 
 namespace Tempest.Core.Tests.Workspace;
 
@@ -273,7 +273,7 @@ public class DocumentsWorkspaceIntegrationTests
     {
         using var temp = new TempDirectory();
         var (workspace, manager, _) = await StartAsync(temp.Path);
-        var cockpit = ((Tempest.App.Workspace.Workspace)workspace).Cockpit;
+        var cockpit = ((Tempest.Workspace.Workspace)workspace).Cockpit;
 
         var cards = cockpit.DocumentsKpiCards.ToDictionary(c => c.Label, c => c.Value);
 
@@ -302,7 +302,7 @@ public class DocumentsWorkspaceIntegrationTests
     {
         using var temp = new TempDirectory();
         var (workspace, manager, _) = await StartAsync(temp.Path);
-        var cockpit = ((Tempest.App.Workspace.Workspace)workspace).Cockpit;
+        var cockpit = ((Tempest.Workspace.Workspace)workspace).Cockpit;
 
         Assert.Contains(cockpit.AttentionItems, item => item.Title == "Documents are live");
 
@@ -314,7 +314,7 @@ public class DocumentsWorkspaceIntegrationTests
     {
         using var temp = new TempDirectory();
         var (workspace, manager, _) = await StartAsync(temp.Path);
-        var cockpit = ((Tempest.App.Workspace.Workspace)workspace).Cockpit;
+        var cockpit = ((Tempest.Workspace.Workspace)workspace).Cockpit;
 
         Assert.Equal(EngineeringHealthStatus.Attention, cockpit.DocumentationStatus);
 

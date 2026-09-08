@@ -1,6 +1,6 @@
 using Tempest.Core.EngineeringDomain;
 
-namespace Tempest.App.Projects;
+namespace Tempest.Workspace.Projects;
 
 /// <summary>The milestone or deliverable a task contributes to, as the register reports it.</summary>
 /// <param name="ObjectId">The milestone or deliverable itself.</param>

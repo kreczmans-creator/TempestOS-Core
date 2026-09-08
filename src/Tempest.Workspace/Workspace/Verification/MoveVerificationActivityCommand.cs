@@ -1,7 +1,7 @@
 using Tempest.Core.Commands;
 using Tempest.Core.EngineeringDomain;
 
-namespace Tempest.App.Workspace.Verification;
+namespace Tempest.Workspace.Verification;
 
 /// <summary>Reparents one Verification Activity Domain object (<see cref="IHasParent.MoveAsync"/>).</summary>
 public sealed class MoveVerificationActivityCommand : IWorkspaceCommand

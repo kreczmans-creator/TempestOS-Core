@@ -1,7 +1,7 @@
-using Tempest.App.Workspace;
+using Tempest.Workspace;
 using Tempest.Core.EngineeringDomain;
 
-namespace Tempest.App.Projects;
+namespace Tempest.Workspace.Projects;
 
 /// <summary>Creating and editing milestones and deliverables inside a project.</summary>
 public interface IProjectMilestoneService

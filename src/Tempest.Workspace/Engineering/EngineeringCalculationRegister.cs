@@ -1,9 +1,9 @@
-using Tempest.App.Projects;
-using Tempest.App.Workspace.Calculations;
+using Tempest.Workspace.Projects;
+using Tempest.Workspace.Calculations;
 using Tempest.Core.Commands;
 using Tempest.Core.EngineeringDomain;
 
-namespace Tempest.App.Engineering;
+namespace Tempest.Workspace.Engineering;
 
 /// <summary>
 /// The workspace's governed index of named calculations — what a
@@ -166,7 +166,7 @@ public sealed class EngineeringCalculationRegister
     /// </summary>
     /// <remarks>
     /// A soft-deleted object is filtered out, matching every other
-    /// <c>Tempest.App</c> read model. A retired one is not: retiring is a
+    /// <c>Tempest.Workspace</c> read model. A retired one is not: retiring is a
     /// lifecycle state and the whole point of using it rather than a delete
     /// is that the calculation is still there to be found.
     /// </remarks>

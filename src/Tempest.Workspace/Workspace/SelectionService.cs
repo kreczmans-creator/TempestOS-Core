@@ -1,6 +1,6 @@
 using Tempest.Core.Events;
 
-namespace Tempest.App.Workspace;
+namespace Tempest.Workspace;
 
 /// <summary>The concrete <see cref="ISelectionService"/> implementation — publishes every change through the existing <see cref="IEventBus"/>, introducing no new pub/sub mechanism.</summary>
 internal sealed class SelectionService : ISelectionService

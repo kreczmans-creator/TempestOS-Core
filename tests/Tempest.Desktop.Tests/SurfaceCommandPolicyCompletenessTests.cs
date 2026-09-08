@@ -1,4 +1,4 @@
-using Tempest.App.Workspace;
+using Tempest.Workspace;
 using Tempest.Core.Commands;
 using Tempest.Desktop.Composition;
 

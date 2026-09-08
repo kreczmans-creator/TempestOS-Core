@@ -6,7 +6,7 @@ using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Media.Immutable;
-using Tempest.App.Workspace;
+using Tempest.Workspace;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Desktop.Icons;
 using Tempest.Desktop.Theming;

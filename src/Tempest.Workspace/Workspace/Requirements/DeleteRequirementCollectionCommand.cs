@@ -2,7 +2,7 @@ using Tempest.Core.Commands;
 using Tempest.Core.EngineeringData;
 using Tempest.Core.Requirements;
 
-namespace Tempest.App.Workspace.Requirements;
+namespace Tempest.Workspace.Requirements;
 
 /// <summary>Soft-deletes one Requirement Collection — never affects any member requirement (<see cref="IRequirementsService.DeleteCollectionAsync"/>).</summary>
 public sealed class DeleteRequirementCollectionCommand : IWorkspaceCommand

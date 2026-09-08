@@ -1,4 +1,4 @@
-using Tempest.App.Workspace;
+using Tempest.Workspace;
 using Tempest.Core.Configuration;
 using Tempest.Core.Persistence;
 using Tempest.Core.Runtime;
@@ -8,11 +8,11 @@ using Tempest.Core.Tests.Plugins;
 using Tempest.Core.Tests.Runtime;
 namespace Tempest.Core.Tests.Workspace;
 
-// Proves IWorkspaceState (Tempest.App.Workspace) persists via the real,
+// Proves IWorkspaceState (Tempest.Workspace) persists via the real,
 // unmodified ISettingsProvider (ADR-0064) - "Session restore" as this Work
 // Package's own controlling instruction names it - with no new persistence
 // mechanism. Tests both WorkspaceState directly (a same-assembly internal
-// type, reachable here via Tempest.App's own InternalsVisibleTo grant,
+// type, reachable here via Tempest.Workspace's own InternalsVisibleTo grant,
 // added by this Work Package) and the full cross-restart round trip through
 // WorkspaceManager.
 public class WorkspaceStateTests

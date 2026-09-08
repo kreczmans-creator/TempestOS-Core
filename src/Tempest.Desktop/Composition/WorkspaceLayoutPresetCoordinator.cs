@@ -1,4 +1,4 @@
-using Tempest.App.Workspace.Layout;
+using Tempest.Workspace.Layout;
 using Tempest.Desktop.Views;
 
 namespace Tempest.Desktop.Composition;

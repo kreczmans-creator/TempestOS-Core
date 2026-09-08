@@ -1,4 +1,4 @@
-namespace Tempest.App.Workspace;
+namespace Tempest.Workspace;
 
 /// <summary>
 /// The concrete <see cref="IWorkspace"/> implementation — a plain aggregate

@@ -2,7 +2,7 @@ using System.Text.Json;
 using Tempest.Core.Calculations;
 using Tempest.Core.EngineeringDomain;
 
-namespace Tempest.App.Workspace.Calculations;
+namespace Tempest.Workspace.Calculations;
 
 /// <summary>
 /// Reads a Calculation Domain object's own execution history back —

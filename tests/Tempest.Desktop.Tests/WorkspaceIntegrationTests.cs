@@ -1,15 +1,15 @@
 using Avalonia.Headless.XUnit;
-using Tempest.App.Workspace;
+using Tempest.Workspace;
 using Tempest.Core.Settings;
 using Tempest.Desktop.Docking;
 using Tempest.Desktop.Views;
 using Tempest.Samples;
-using Tempest.App.Workspace.Calculations;
-using Tempest.App.Workspace.Documents;
-using Tempest.App.Workspace.Manufacturing;
-using Tempest.App.Workspace.Mechanical;
-using Tempest.App.Workspace.Requirements;
-using Tempest.App.Workspace.Verification;
+using Tempest.Workspace.Calculations;
+using Tempest.Workspace.Documents;
+using Tempest.Workspace.Manufacturing;
+using Tempest.Workspace.Mechanical;
+using Tempest.Workspace.Requirements;
+using Tempest.Workspace.Verification;
 using Avalonia.LogicalTree;
 
 namespace Tempest.Desktop.Tests;

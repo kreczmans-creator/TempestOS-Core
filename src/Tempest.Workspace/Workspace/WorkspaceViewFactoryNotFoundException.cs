@@ -1,4 +1,4 @@
-namespace Tempest.App.Workspace;
+namespace Tempest.Workspace;
 
 /// <summary>
 /// Thrown by <see cref="INavigationService.OpenAsync"/>/<see cref="INavigationService.JumpToAsync"/>

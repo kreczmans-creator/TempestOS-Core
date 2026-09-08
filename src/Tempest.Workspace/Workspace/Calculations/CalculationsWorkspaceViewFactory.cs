@@ -1,6 +1,6 @@
 using Tempest.Core.EngineeringDomain;
 
-namespace Tempest.App.Workspace.Calculations;
+namespace Tempest.Workspace.Calculations;
 
 /// <summary>
 /// Constructs a <see cref="CalculationsWorkspaceView"/> for one Calculations

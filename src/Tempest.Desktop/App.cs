@@ -14,7 +14,7 @@ namespace Tempest.Desktop;
 /// framework initialisation completes, builds the Engineering Workspace
 /// (<see cref="WorkspaceHost"/>) and shows the <see cref="MainWindow"/> —
 /// the graphical presentation layer's own equivalent of
-/// <see cref="Tempest.App.Workspace.WorkspaceShell"/>'s construction plus
+/// <see cref="Tempest.Workspace.WorkspaceShell"/>'s construction plus
 /// <c>RunAsync</c>.
 /// </summary>
 public sealed class App : Application

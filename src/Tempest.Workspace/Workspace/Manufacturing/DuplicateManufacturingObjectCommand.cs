@@ -1,7 +1,7 @@
 using Tempest.Core.Commands;
 using Tempest.Core.EngineeringDomain;
 
-namespace Tempest.App.Workspace.Manufacturing;
+namespace Tempest.Workspace.Manufacturing;
 
 /// <summary>
 /// Creates a new object of the same Kind, same content, and same parent as

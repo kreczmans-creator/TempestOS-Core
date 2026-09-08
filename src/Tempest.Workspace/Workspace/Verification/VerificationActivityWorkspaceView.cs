@@ -1,6 +1,6 @@
 using Tempest.Core.EngineeringDomain;
 
-namespace Tempest.App.Workspace.Verification;
+namespace Tempest.Workspace.Verification;
 
 /// <summary>
 /// Presents one real <c>"VerificationActivity"</c> — mirrors

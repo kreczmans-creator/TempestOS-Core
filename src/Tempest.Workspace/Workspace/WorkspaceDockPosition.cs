@@ -1,4 +1,4 @@
-namespace Tempest.App.Workspace;
+namespace Tempest.Workspace;
 
 /// <summary>
 /// Where a <see cref="IWorkspacePanel"/> is docked. Deliberately has no

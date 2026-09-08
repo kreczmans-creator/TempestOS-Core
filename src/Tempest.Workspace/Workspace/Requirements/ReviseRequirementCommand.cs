@@ -1,7 +1,7 @@
 using Tempest.Core.Commands;
 using Tempest.Core.Requirements;
 
-namespace Tempest.App.Workspace.Requirements;
+namespace Tempest.Workspace.Requirements;
 
 /// <summary>Records a new revision of one Requirement's own statement (<see cref="IRequirementsService.ReviseAsync"/>).</summary>
 public sealed class ReviseRequirementCommand : IWorkspaceCommand

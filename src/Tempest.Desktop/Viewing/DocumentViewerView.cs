@@ -5,7 +5,7 @@ using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
-using Tempest.App.Workspace.Viewing;
+using Tempest.Workspace.Viewing;
 
 namespace Tempest.Desktop.Viewing;
 

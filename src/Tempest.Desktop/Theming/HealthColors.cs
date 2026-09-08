@@ -1,5 +1,5 @@
 using Avalonia.Media;
-using Tempest.App.Workspace;
+using Tempest.Workspace;
 
 namespace Tempest.Desktop.Theming;
 

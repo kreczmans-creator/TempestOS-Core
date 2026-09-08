@@ -1,5 +1,5 @@
-using Tempest.App.Workspace;
-using Tempest.App.Workspace.Mechanical;
+using Tempest.Workspace;
+using Tempest.Workspace.Mechanical;
 using Tempest.Core.Audit;
 using Tempest.Core.EngineeringData;
 using Tempest.Core.EngineeringDomain;
@@ -904,7 +904,7 @@ public sealed class MutatorRefusalAdversarialTests
     /// </summary>
     /// <remarks>
     /// <b>Guard-rail.</b> An impermissible lifecycle transition is a
-    /// routine, user-facing outcome — five <c>Tempest.App</c> command
+    /// routine, user-facing outcome — five <c>Tempest.Workspace</c> command
     /// handlers turn it into an ordinary failure result — so the caller
     /// must receive <see cref="InvalidLifecycleTransitionException"/> and
     /// nothing else. Its predecessor ran the same check against a

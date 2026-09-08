@@ -1,6 +1,6 @@
 using Tempest.Core.Commands;
 
-namespace Tempest.App.Workspace;
+namespace Tempest.Workspace;
 
 /// <summary>
 /// One reversible user action, recorded on an <see cref="IUndoRedoStack"/>

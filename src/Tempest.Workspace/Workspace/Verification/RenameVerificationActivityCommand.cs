@@ -1,7 +1,7 @@
 using Tempest.Core.Commands;
 using Tempest.Core.EngineeringDomain;
 
-namespace Tempest.App.Workspace.Verification;
+namespace Tempest.Workspace.Verification;
 
 /// <summary>Renames one Verification Activity Domain object (<see cref="IRenamable.RenameAsync"/>).</summary>
 public sealed class RenameVerificationActivityCommand : IWorkspaceCommand

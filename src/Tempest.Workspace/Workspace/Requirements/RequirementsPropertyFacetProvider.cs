@@ -1,7 +1,7 @@
 using Tempest.Core.Requirements;
 using Tempest.Core.Verification;
 
-namespace Tempest.App.Workspace.Requirements;
+namespace Tempest.Workspace.Requirements;
 
 /// <summary>
 /// Supplies the Property Inspector's own real facets for one Requirements

@@ -1,6 +1,6 @@
 using Tempest.Core.Commands;
 
-namespace Tempest.App.Workspace;
+namespace Tempest.Workspace;
 
 /// <summary>
 /// Translates the Workspace's own live selection into the Core
@@ -11,7 +11,7 @@ namespace Tempest.App.Workspace;
 /// <para>
 /// <b>On this side of the boundary, necessarily.</b>
 /// <see cref="CommandContext"/> lives in <c>Tempest.Core</c>, which cannot
-/// reference <c>Tempest.App</c>, so the translation cannot live with the
+/// reference <c>Tempest.Workspace</c>, so the translation cannot live with the
 /// type it produces. It lives here rather than in <c>Tempest.Desktop</c>
 /// because <see cref="ISelectionService"/> is the App-side source and
 /// every surface — Ribbon, Palette, and any future one — needs the same

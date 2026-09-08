@@ -1,7 +1,7 @@
 using Tempest.Core.Modules;
 using Tempest.Core.Navigation;
 
-namespace Tempest.App.Workspace.Requirements;
+namespace Tempest.Workspace.Requirements;
 
 /// <summary>
 /// Contributes the Project Explorer's own Requirements area to the

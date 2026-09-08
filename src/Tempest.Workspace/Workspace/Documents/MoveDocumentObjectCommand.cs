@@ -1,7 +1,7 @@
 using Tempest.Core.Commands;
 using Tempest.Core.EngineeringDomain;
 
-namespace Tempest.App.Workspace.Documents;
+namespace Tempest.Workspace.Documents;
 
 /// <summary>Reparents one Document Domain object (<see cref="IHasParent.MoveAsync"/>).</summary>
 public sealed class MoveDocumentObjectCommand : IWorkspaceCommand

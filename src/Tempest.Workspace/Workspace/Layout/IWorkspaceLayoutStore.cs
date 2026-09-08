@@ -1,4 +1,4 @@
-namespace Tempest.App.Workspace.Layout;
+namespace Tempest.Workspace.Layout;
 
 /// <summary>
 /// Durable storage for the workspace arrangement (`TD-72`).

@@ -1,12 +1,12 @@
 using System.Reflection;
-using Tempest.App.Composition;
-using Tempest.App.Workspace;
-using Tempest.App.Workspace.Calculations;
-using Tempest.App.Workspace.Documents;
-using Tempest.App.Workspace.Manufacturing;
-using Tempest.App.Workspace.Mechanical;
-using Tempest.App.Workspace.Requirements;
-using Tempest.App.Workspace.Verification;
+using Tempest.Workspace.Composition;
+using Tempest.Workspace;
+using Tempest.Workspace.Calculations;
+using Tempest.Workspace.Documents;
+using Tempest.Workspace.Manufacturing;
+using Tempest.Workspace.Mechanical;
+using Tempest.Workspace.Requirements;
+using Tempest.Workspace.Verification;
 using Tempest.Core.Calculations;
 using Tempest.Core.EngineeringData;
 using Tempest.Core.Runtime;
@@ -35,7 +35,7 @@ namespace Tempest.Core.Tests.Workspace;
 /// <remarks>
 /// <para>
 /// The 2026-08-30 Product Gap Reconciliation audit measured the coupling
-/// by removing the <c>Tempest.App</c> → <c>Tempest.Samples</c> project
+/// by removing the <c>Tempest.Workspace</c> → <c>Tempest.Samples</c> project
 /// reference and building: 70 errors across three files, because the six
 /// discipline explorer areas and all five engineering calculations were
 /// declared in the sample assembly. Deleting the samples would have
@@ -88,11 +88,11 @@ public sealed class SampleSeparationTests
     public void EachDisciplineNavigationArea_IsDeclaredByItsOwnDiscipline_NotBySamples(Type moduleType, string navigationItemId)
     {
         Assert.NotEqual(SampleAssembly, moduleType.Assembly.GetName().Name);
-        Assert.Equal("Tempest.App", moduleType.Assembly.GetName().Name);
+        Assert.Equal("Tempest.Workspace", moduleType.Assembly.GetName().Name);
 
         // It lives in the discipline's own namespace, beside the
         // registration that attaches the real node provider to it.
-        Assert.StartsWith("Tempest.App.Workspace.", moduleType.Namespace, StringComparison.Ordinal);
+        Assert.StartsWith("Tempest.Workspace.", moduleType.Namespace, StringComparison.Ordinal);
 
         // And it is a real, discoverable module — moving the file without
         // keeping it discoverable would lose the navigation just as surely.
@@ -316,7 +316,7 @@ public sealed class SampleSeparationTests
     // ================================================================
 
     [Theory]
-    [InlineData("src/Tempest.App/Tempest.App.csproj")]
+    [InlineData("src/Tempest.Workspace/Tempest.Workspace.csproj")]
     [InlineData("src/Tempest.Core/Tempest.Core.csproj")]
     [InlineData("src/Tempest.Desktop/Tempest.Desktop.csproj")]
     [InlineData("src/Validation/Tempest.Validation/Tempest.Validation.csproj")]
@@ -481,7 +481,7 @@ public sealed class SampleSeparationTests
             .Select(t => t.FullName ?? t.Name)
             .ToList();
 
-        Assert.True(offenders.Count == 0, "Types in Tempest.App deriving from Tempest.Samples:\n" + string.Join("\n", offenders));
+        Assert.True(offenders.Count == 0, "Types in Tempest.Workspace deriving from Tempest.Samples:\n" + string.Join("\n", offenders));
     }
 
     // ================================================================
@@ -503,7 +503,7 @@ public sealed class SampleSeparationTests
     public async Task TheProductionCompositionRoot_RegistersNoSampleExplorerArea()
     {
         // Phase 1 left one disclosed duplication here: the sample explorer
-        // area's id, spelled once in `Tempest.App` (where its node provider
+        // area's id, spelled once in `Tempest.Workspace` (where its node provider
         // then lived) and once in `Tempest.Samples` (where its navigation
         // item is registered). Phase 2 deletes the duplication rather than
         // guarding it, by removing the production side entirely — that
@@ -593,7 +593,7 @@ public sealed class SampleSeparationTests
     public void TempestApp_DeclaresNoSampleContentOfItsOwn()
     {
         // Phase 1 removed the reference; sample-supporting code stayed behind
-        // in Tempest.App.Workspace.Samples — a fictional Longeron/Frame/
+        // in Tempest.Workspace.Samples — a fictional Longeron/Frame/
         // Bracket tree, a never-editable view and its factory, all shipped in
         // the production assembly. Phase 2 moved them to Tempest.Core.Tests,
         // which is the only thing that ever drove them.
@@ -612,7 +612,7 @@ public sealed class SampleSeparationTests
 
         Assert.True(
             offenders.Count == 0,
-            "Tempest.App still declares sample content:\n" + string.Join("\n", offenders));
+            "Tempest.Workspace still declares sample content:\n" + string.Join("\n", offenders));
     }
 
     [Fact]

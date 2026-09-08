@@ -1,6 +1,6 @@
 using System.Text.Json;
-using Tempest.App.Workspace;
-using Tempest.App.Workspace.Calculations;
+using Tempest.Workspace;
+using Tempest.Workspace.Calculations;
 using Tempest.Core.Calculations;
 using Tempest.Core.Commands;
 using Tempest.Core.Configuration;
@@ -10,7 +10,7 @@ using Tempest.Core.Runtime;
 using Tempest.Core.Tests.Plugins;
 using Tempest.Core.UnitsAndQuantities;
 using Tempest.Samples;
-using Tempest.App.Workspace.Requirements;
+using Tempest.Workspace.Requirements;
 
 namespace Tempest.Core.Tests.Workspace;
 
@@ -314,7 +314,7 @@ public class CalculationsWorkspaceIntegrationTests
     {
         using var temp = new TempDirectory();
         var (workspace, manager, _) = await StartAsync(temp.Path);
-        var cockpit = ((Tempest.App.Workspace.Workspace)workspace).Cockpit;
+        var cockpit = ((Tempest.Workspace.Workspace)workspace).Cockpit;
 
         var cards = cockpit.CalculationsKpiCards.ToDictionary(c => c.Label, c => c.Value);
 
@@ -335,7 +335,7 @@ public class CalculationsWorkspaceIntegrationTests
     {
         using var temp = new TempDirectory();
         var (workspace, manager, _) = await StartAsync(temp.Path);
-        var cockpit = ((Tempest.App.Workspace.Workspace)workspace).Cockpit;
+        var cockpit = ((Tempest.Workspace.Workspace)workspace).Cockpit;
 
         Assert.Contains(cockpit.AttentionItems, item => item.Title == "Calculations are live");
 
@@ -347,7 +347,7 @@ public class CalculationsWorkspaceIntegrationTests
     {
         using var temp = new TempDirectory();
         var (workspace, manager, _) = await StartAsync(temp.Path);
-        var cockpit = ((Tempest.App.Workspace.Workspace)workspace).Cockpit;
+        var cockpit = ((Tempest.Workspace.Workspace)workspace).Cockpit;
 
         Assert.Equal(EngineeringHealthStatus.Blocked, cockpit.CalculationStatus);
 

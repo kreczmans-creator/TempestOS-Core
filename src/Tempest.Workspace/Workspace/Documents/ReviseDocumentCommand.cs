@@ -1,7 +1,7 @@
 using Tempest.Core.Commands;
 using Tempest.Core.EngineeringDomain;
 
-namespace Tempest.App.Workspace.Documents;
+namespace Tempest.Workspace.Documents;
 
 /// <summary>
 /// Records a new content revision of one Document Domain object

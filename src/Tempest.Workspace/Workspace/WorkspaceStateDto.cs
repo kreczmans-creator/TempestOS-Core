@@ -1,4 +1,4 @@
-namespace Tempest.App.Workspace;
+namespace Tempest.Workspace;
 
 /// <summary>The plain, JSON-serializable shape <see cref="WorkspaceState"/> persists via <see cref="Tempest.Core.Settings.ISettingsProvider"/>.</summary>
 internal sealed record WorkspaceStateDto(

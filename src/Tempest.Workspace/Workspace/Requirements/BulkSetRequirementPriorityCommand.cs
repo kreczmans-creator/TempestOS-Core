@@ -1,7 +1,7 @@
 using Tempest.Core.Commands;
 using Tempest.Core.Requirements;
 
-namespace Tempest.App.Workspace.Requirements;
+namespace Tempest.Workspace.Requirements;
 
 /// <summary>Sets the same priority on every requirement in a set — mirrors <see cref="BulkSetRequirementStatusCommand"/>'s own identical shape, applied to <see cref="IRequirementsService.SetPriorityAsync"/> instead.</summary>
 public sealed class BulkSetRequirementPriorityCommand : ICommand

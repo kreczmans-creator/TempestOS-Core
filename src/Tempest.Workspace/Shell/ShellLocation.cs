@@ -1,6 +1,6 @@
-using Tempest.App.Projects;
+using Tempest.Workspace.Projects;
 
-namespace Tempest.App.Shell;
+namespace Tempest.Workspace.Shell;
 
 /// <summary>
 /// Where the user is, as one immutable value: the global module, the

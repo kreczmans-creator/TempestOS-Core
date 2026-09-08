@@ -1,7 +1,7 @@
 using Tempest.Core.Commands;
 using Tempest.Core.Requirements;
 
-namespace Tempest.App.Workspace.Requirements;
+namespace Tempest.Workspace.Requirements;
 
 /// <summary>Sets one Requirement's own current owner (<see cref="IRequirementsService.SetOwnerAsync"/>).</summary>
 public sealed class SetRequirementOwnerCommand : IWorkspaceCommand

@@ -150,7 +150,7 @@ public sealed class RevisionSuccessorUniquenessTests
     /// A non-discriminating regression pin — it passed before this change
     /// too. It is here because the obvious wrong fix (a latch on the Id
     /// rather than on the instance) would break it, and every
-    /// <c>Revise*Command</c> in <c>Tempest.App</c> depends on it.
+    /// <c>Revise*Command</c> in <c>Tempest.Workspace</c> depends on it.
     /// </remarks>
     [Fact]
     public async Task ARevisionChain_IsUnaffected()

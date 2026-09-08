@@ -1,4 +1,4 @@
-namespace Tempest.App.Workspace;
+namespace Tempest.Workspace;
 
 /// <summary>What category of fact a <see cref="PropertyFacet"/> represents.</summary>
 public enum PropertyFacetKind

@@ -1,6 +1,6 @@
 using Tempest.Core.EngineeringDomain;
 
-namespace Tempest.App.Workspace.Viewing;
+namespace Tempest.Workspace.Viewing;
 
 /// <summary>
 /// Why the viewer is not showing a document, or that it is (`TD-80`).

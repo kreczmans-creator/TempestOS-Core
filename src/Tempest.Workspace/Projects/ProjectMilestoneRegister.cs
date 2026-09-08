@@ -1,6 +1,6 @@
 using Tempest.Core.EngineeringDomain;
 
-namespace Tempest.App.Projects;
+namespace Tempest.Workspace.Projects;
 
 /// <summary>One deliverable due against a milestone, as the Timeline shows it.</summary>
 /// <param name="ObjectId">The deliverable's own identity.</param>

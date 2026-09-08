@@ -1,4 +1,4 @@
-namespace Tempest.App.Workspace;
+namespace Tempest.Workspace;
 
 /// <summary>
 /// The Engineering Cockpit's own per-refresh read scope (`WP-E`) — while

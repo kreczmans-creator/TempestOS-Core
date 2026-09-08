@@ -1,6 +1,6 @@
-using Tempest.App.Projects;
+using Tempest.Workspace.Projects;
 
-namespace Tempest.App.Shell;
+namespace Tempest.Workspace.Shell;
 
 /// <summary>
 /// The TempestOS navigation model: <c>Module → Project → Workspace</c>,

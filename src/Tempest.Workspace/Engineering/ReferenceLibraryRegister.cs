@@ -6,7 +6,7 @@ using Tempest.Core.Materials;
 using Tempest.Core.ReferenceData;
 using Tempest.Core.Standards;
 
-namespace Tempest.App.Engineering;
+namespace Tempest.Workspace.Engineering;
 
 /// <summary>One reference-data record, as the application sees it.</summary>
 /// <param name="Library">The library the record belongs to.</param>

@@ -2,7 +2,7 @@ using Tempest.Core.Calculations;
 using Tempest.Core.Commands;
 using Tempest.Core.EngineeringDomain;
 
-namespace Tempest.App.Workspace.Calculations;
+namespace Tempest.Workspace.Calculations;
 
 /// <summary>
 /// The single composition-root entry point wiring the whole Engineering

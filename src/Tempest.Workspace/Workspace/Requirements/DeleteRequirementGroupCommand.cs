@@ -2,7 +2,7 @@ using Tempest.Core.Commands;
 using Tempest.Core.EngineeringData;
 using Tempest.Core.Requirements;
 
-namespace Tempest.App.Workspace.Requirements;
+namespace Tempest.Workspace.Requirements;
 
 /// <summary>Soft-deletes one Requirement Group (<see cref="IRequirementsService.DeleteGroupAsync"/>).</summary>
 public sealed class DeleteRequirementGroupCommand : IWorkspaceCommand

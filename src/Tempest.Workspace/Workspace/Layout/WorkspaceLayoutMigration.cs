@@ -1,4 +1,4 @@
-namespace Tempest.App.Workspace.Layout;
+namespace Tempest.Workspace.Layout;
 
 /// <summary>
 /// One panel's own arrangement as the pre-`TD-72` edge-based workspace

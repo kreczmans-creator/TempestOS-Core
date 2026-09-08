@@ -1,4 +1,4 @@
-namespace Tempest.App.Workspace;
+namespace Tempest.Workspace;
 
 /// <summary>The Workspace's own current selection — an engineering object's identity and Kind.</summary>
 /// <param name="ObjectId">The selected object's own Id.</param>

@@ -1,7 +1,7 @@
 using Tempest.Core.Commands;
 using Tempest.Core.EngineeringDomain;
 
-namespace Tempest.App.Workspace.Documents;
+namespace Tempest.Workspace.Documents;
 
 /// <summary>Soft-deletes one Document Domain object (<see cref="IDeletable.DeleteAsync"/>).</summary>
 public sealed class DeleteDocumentObjectCommand : IWorkspaceCommand

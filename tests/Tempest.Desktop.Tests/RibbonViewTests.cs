@@ -2,12 +2,12 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.VisualTree;
-using Tempest.App.Workspace;
+using Tempest.Workspace;
 using Tempest.Core.Commands;
 using Tempest.Desktop.Theming;
 using Tempest.Desktop.Views;
 using Tempest.Samples;
-using Tempest.App.Workspace.Mechanical;
+using Tempest.Workspace.Mechanical;
 
 namespace Tempest.Desktop.Tests;
 

@@ -1,6 +1,6 @@
 using Tempest.Core.Navigation;
 
-namespace Tempest.App.Workspace;
+namespace Tempest.Workspace;
 
 /// <summary>
 /// The concrete <see cref="INavigationService"/> implementation — the

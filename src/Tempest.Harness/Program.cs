@@ -1,5 +1,6 @@
-using Tempest.App.Composition;
-using Tempest.App.Workspace;
+using Tempest.Harness;
+using Tempest.Workspace.Composition;
+using Tempest.Workspace;
 
 Console.Title = "TempestOS";
 

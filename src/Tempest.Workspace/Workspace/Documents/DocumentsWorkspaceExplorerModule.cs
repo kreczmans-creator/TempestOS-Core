@@ -1,7 +1,7 @@
 using Tempest.Core.Modules;
 using Tempest.Core.Navigation;
 
-namespace Tempest.App.Workspace.Documents;
+namespace Tempest.Workspace.Documents;
 
 /// <summary>
 /// Contributes the Project Explorer's own Documents area to the

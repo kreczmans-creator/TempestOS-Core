@@ -1,6 +1,6 @@
 using Tempest.Core.EngineeringDomain;
 
-namespace Tempest.App.Workspace.Manufacturing;
+namespace Tempest.Workspace.Manufacturing;
 
 /// <summary>
 /// Populates the Project Explorer's own Manufacturing area from the real

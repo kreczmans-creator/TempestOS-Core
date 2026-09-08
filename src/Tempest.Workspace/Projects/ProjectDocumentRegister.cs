@@ -1,6 +1,6 @@
 using Tempest.Core.EngineeringDomain;
 
-namespace Tempest.App.Projects;
+namespace Tempest.Workspace.Projects;
 
 /// <summary>One attachment held against a project document, as the register reports it.</summary>
 /// <param name="Id">The attachment's own identity — the handle the `TD-80` viewer opens.</param>

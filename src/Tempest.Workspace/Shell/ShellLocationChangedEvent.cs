@@ -1,6 +1,6 @@
 using Tempest.Core.Events;
 
-namespace Tempest.App.Shell;
+namespace Tempest.Workspace.Shell;
 
 /// <summary>Published on the existing <see cref="IEventBus"/> after every shell navigation, carrying both ends of the move.</summary>
 /// <param name="Previous">Where the user was.</param>

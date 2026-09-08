@@ -1,7 +1,7 @@
 using Tempest.Core.Modules;
 using Tempest.Core.Navigation;
 
-namespace Tempest.App.Workspace.Manufacturing;
+namespace Tempest.Workspace.Manufacturing;
 
 /// <summary>
 /// Contributes the Project Explorer's own Manufacturing area to the

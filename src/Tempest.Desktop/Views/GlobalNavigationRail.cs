@@ -3,7 +3,7 @@ using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
-using Tempest.App.Shell;
+using Tempest.Workspace.Shell;
 using Tempest.Desktop.Icons;
 using Tempest.Desktop.Theming;
 

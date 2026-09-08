@@ -1,4 +1,4 @@
-using Tempest.App.Workspace;
+using Tempest.Workspace;
 using Tempest.Core.Configuration;
 using Tempest.Core.Events;
 using Tempest.Core.Persistence;
@@ -7,7 +7,7 @@ using Tempest.Core.Tests.Plugins;
 
 namespace Tempest.Core.Tests.Workspace;
 
-// Proves ISelectionService (Tempest.App.Workspace) publishes every change
+// Proves ISelectionService (Tempest.Workspace) publishes every change
 // through the real, unmodified IEventBus - no new pub/sub mechanism.
 public class SelectionServiceTests
 {

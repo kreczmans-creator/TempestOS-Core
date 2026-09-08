@@ -1,6 +1,6 @@
 using Tempest.Core.EngineeringDomain;
 
-namespace Tempest.App.Projects;
+namespace Tempest.Workspace.Projects;
 
 /// <summary>One task waiting on another.</summary>
 /// <param name="DependentId">The task that is waiting.</param>

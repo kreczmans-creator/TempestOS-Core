@@ -16,7 +16,7 @@ namespace Tempest.Desktop.History;
 /// bypasses these existing UI surfaces would not appear here.
 /// </para>
 /// <para>
-/// Session-only, like <see cref="Tempest.App.Workspace.IUndoRedoStack"/> —
+/// Session-only, like <see cref="Tempest.Workspace.IUndoRedoStack"/> —
 /// never persisted across a restart.
 /// </para>
 /// </remarks>

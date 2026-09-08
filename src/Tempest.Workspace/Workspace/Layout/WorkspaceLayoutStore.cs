@@ -1,6 +1,6 @@
 using Tempest.Core.Settings;
 
-namespace Tempest.App.Workspace.Layout;
+namespace Tempest.Workspace.Layout;
 
 /// <summary>The concrete <see cref="IWorkspaceLayoutStore"/>, over <see cref="ISettingsProvider"/> (`ADR-0064`).</summary>
 public sealed class WorkspaceLayoutStore : IWorkspaceLayoutStore

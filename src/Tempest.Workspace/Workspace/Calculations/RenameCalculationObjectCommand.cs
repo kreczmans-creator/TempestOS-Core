@@ -1,7 +1,7 @@
 using Tempest.Core.Commands;
 using Tempest.Core.EngineeringDomain;
 
-namespace Tempest.App.Workspace.Calculations;
+namespace Tempest.Workspace.Calculations;
 
 /// <summary>Renames one Calculation Domain object (<see cref="IRenamable.RenameAsync"/>).</summary>
 public sealed class RenameCalculationObjectCommand : IWorkspaceCommand

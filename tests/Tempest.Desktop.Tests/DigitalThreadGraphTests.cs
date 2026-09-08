@@ -6,13 +6,13 @@ using Avalonia.Headless.XUnit;
 using Avalonia.Input;
 using Avalonia.LogicalTree;
 using Avalonia.Media;
-using Tempest.App.Workspace;
-using Tempest.App.Workspace.Verification;
+using Tempest.Workspace;
+using Tempest.Workspace.Verification;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Desktop.DigitalThread;
 using Tempest.Desktop.Theming;
 using Tempest.Samples;
-using Tempest.App.Workspace.Mechanical;
+using Tempest.Workspace.Mechanical;
 
 namespace Tempest.Desktop.Tests;
 

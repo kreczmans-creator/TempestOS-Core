@@ -1,4 +1,4 @@
-namespace Tempest.App.Workspace;
+namespace Tempest.Workspace;
 
 /// <summary>What kind of thing a <see cref="ProjectExplorerNode"/> represents.</summary>
 public enum ProjectExplorerNodeType

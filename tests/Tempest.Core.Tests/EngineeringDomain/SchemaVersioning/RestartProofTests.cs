@@ -1,6 +1,6 @@
-using Tempest.App.Composition;
-using Tempest.App.Workspace;
-using Tempest.App.Workspace.Mechanical;
+using Tempest.Workspace.Composition;
+using Tempest.Workspace;
+using Tempest.Workspace.Mechanical;
 using Tempest.Core.Configuration;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Persistence;
@@ -24,7 +24,7 @@ namespace Tempest.Core.Tests.EngineeringDomain.SchemaVersioning;
 /// this assembly (an explicit module list via <see cref="TempestHostBuilder"/>,
 /// never <see cref="EngineeringWorkspaceComposer.Build"/>'s own reflective
 /// discovery, plus an isolated <see cref="TempDirectory"/> persistence
-/// root) — <see cref="WorkspaceManager"/> is `Tempest.App`-layer, already
+/// root) — <see cref="WorkspaceManager"/> is `Tempest.Workspace`-layer, already
 /// referenced and already used this way throughout
 /// `Tempest.Core.Tests/Workspace/`, so this stays in `Tempest.Core.Tests`
 /// rather than moving to `Tempest.Desktop.Tests`.

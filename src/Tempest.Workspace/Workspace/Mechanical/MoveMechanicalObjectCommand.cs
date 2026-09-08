@@ -1,7 +1,7 @@
 using Tempest.Core.Commands;
 using Tempest.Core.EngineeringDomain;
 
-namespace Tempest.App.Workspace.Mechanical;
+namespace Tempest.Workspace.Mechanical;
 
 /// <summary>Reparents one Mechanical Product Structure object (<see cref="IHasParent.MoveAsync"/>).</summary>
 public sealed class MoveMechanicalObjectCommand : IWorkspaceCommand

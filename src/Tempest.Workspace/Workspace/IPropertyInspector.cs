@@ -1,4 +1,4 @@
-namespace Tempest.App.Workspace;
+namespace Tempest.Workspace;
 
 /// <summary>Displays the shared and discipline-specific facets of the currently selected engineering object.</summary>
 public interface IPropertyInspector : IWorkspacePanel

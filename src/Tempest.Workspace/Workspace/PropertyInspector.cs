@@ -1,6 +1,6 @@
 using Tempest.Core.Events;
 
-namespace Tempest.App.Workspace;
+namespace Tempest.Workspace;
 
 /// <summary>
 /// The concrete <see cref="IPropertyInspector"/> implementation. Reacts

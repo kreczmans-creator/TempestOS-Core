@@ -1,7 +1,7 @@
 using Tempest.Core.Commands;
 using Tempest.Core.EngineeringDomain;
 
-namespace Tempest.App.Workspace.Calculations;
+namespace Tempest.Workspace.Calculations;
 
 /// <summary>Reparents one Calculation Domain object (<see cref="IHasParent.MoveAsync"/>).</summary>
 public sealed class MoveCalculationObjectCommand : IWorkspaceCommand

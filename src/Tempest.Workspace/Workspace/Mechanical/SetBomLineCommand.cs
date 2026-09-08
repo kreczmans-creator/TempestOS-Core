@@ -1,7 +1,7 @@
 using Tempest.Core.Commands;
 using Tempest.Core.EngineeringDomain;
 
-namespace Tempest.App.Workspace.Mechanical;
+namespace Tempest.Workspace.Mechanical;
 
 /// <summary>Sets one Mechanical Product Structure object's own Bill of Materials line (<see cref="IHasBomLine.SetBomLineAsync"/>).</summary>
 public sealed class SetBomLineCommand : IWorkspaceCommand

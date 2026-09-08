@@ -2,7 +2,7 @@ using Tempest.Core.Commands;
 using Tempest.Core.EngineeringData;
 using Tempest.Core.Requirements;
 
-namespace Tempest.App.Workspace.Requirements;
+namespace Tempest.Workspace.Requirements;
 
 /// <summary>Moves one Requirement into a group, or ungroups it (<see cref="IRequirementsService.MoveToGroupAsync"/>).</summary>
 public sealed class MoveRequirementCommand : IWorkspaceCommand

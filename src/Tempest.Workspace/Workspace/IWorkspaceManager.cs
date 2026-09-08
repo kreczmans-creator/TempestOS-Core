@@ -1,6 +1,6 @@
 using Tempest.Core.Commands;
 
-namespace Tempest.App.Workspace;
+namespace Tempest.Workspace;
 
 /// <summary>
 /// Creates and owns the lifecycle of the one running <see cref="IWorkspace"/>

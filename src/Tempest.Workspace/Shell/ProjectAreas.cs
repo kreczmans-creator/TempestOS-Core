@@ -1,4 +1,4 @@
-namespace Tempest.App.Shell;
+namespace Tempest.Workspace.Shell;
 
 /// <summary>One area of a project workspace, and what is actually behind it.</summary>
 /// <param name="Area">The area.</param>

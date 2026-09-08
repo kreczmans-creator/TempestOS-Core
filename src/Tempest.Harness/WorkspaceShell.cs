@@ -1,5 +1,7 @@
 using Tempest.Core.Commands;
-namespace Tempest.App.Workspace;
+using Tempest.Workspace;
+
+namespace Tempest.Harness;
 
 /// <summary>
 /// The Workspace's own terminal presentation — a hand-rolled console
@@ -53,7 +55,7 @@ public sealed class WorkspaceShell : IAsyncDisposable
     private readonly TextReader _input;
 
     private IWorkspace? _workspace;
-    private Workspace? _workspaceConcrete;
+    private Tempest.Workspace.Workspace? _workspaceConcrete;
     private IReadOnlyList<ProjectExplorerNode> _explorerNodes = [];
     private string? _activeFilter;
     private bool _onCockpit = true;
@@ -91,7 +93,7 @@ public sealed class WorkspaceShell : IAsyncDisposable
 
         var workspace = await _manager.StartAsync(cancellationToken).ConfigureAwait(false);
         _workspace = workspace;
-        _workspaceConcrete = (Workspace)workspace;
+        _workspaceConcrete = (Tempest.Workspace.Workspace)workspace;
 
         await RefreshExplorerNodesAsync(cancellationToken).ConfigureAwait(false);
 

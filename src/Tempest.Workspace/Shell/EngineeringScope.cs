@@ -1,7 +1,7 @@
-using Tempest.App.Projects;
+using Tempest.Workspace.Projects;
 using Tempest.Core.EngineeringDomain;
 
-namespace Tempest.App.Shell;
+namespace Tempest.Workspace.Shell;
 
 /// <summary>
 /// The concrete <see cref="IEngineeringScope"/> — a read-only projection

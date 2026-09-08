@@ -1,4 +1,4 @@
-namespace Tempest.App.Workspace;
+namespace Tempest.Workspace;
 
 /// <summary>
 /// Thrown when <see cref="IWorkspaceManager.RegisterView"/> or

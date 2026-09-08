@@ -1,4 +1,4 @@
-namespace Tempest.App.Workspace;
+namespace Tempest.Workspace;
 
 /// <summary>One displayed fact in the <see cref="IPropertyInspector"/>.</summary>
 /// <param name="Name">The facet's own display label.</param>

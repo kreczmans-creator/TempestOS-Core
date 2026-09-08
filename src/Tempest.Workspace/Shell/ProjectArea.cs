@@ -1,4 +1,4 @@
-namespace Tempest.App.Shell;
+namespace Tempest.Workspace.Shell;
 
 /// <summary>
 /// The second level of the navigation model — which area of an open

@@ -1,7 +1,7 @@
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.LogicalTree;
-using Tempest.App.Shell;
+using Tempest.Workspace.Shell;
 using Tempest.Desktop.Docking;
 using Tempest.Desktop.Views;
 

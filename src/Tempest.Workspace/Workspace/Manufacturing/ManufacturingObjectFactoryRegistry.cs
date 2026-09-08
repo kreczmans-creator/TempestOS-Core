@@ -1,6 +1,6 @@
 using Tempest.Core.EngineeringDomain;
 
-namespace Tempest.App.Workspace.Manufacturing;
+namespace Tempest.Workspace.Manufacturing;
 
 /// <summary>
 /// Builds a new Manufacturing Domain object — <c>"ManufacturingOperation"</c>,
@@ -10,7 +10,7 @@ namespace Tempest.App.Workspace.Manufacturing;
 /// <see cref="Documents.DocumentObjectFactoryRegistry"/>/
 /// <see cref="Verification.VerificationActivityFactoryRegistry"/>'s own
 /// identical shape (`WP 9.5A`) exactly. Never a Domain-layer registry
-/// contract — this type lives entirely in <c>Tempest.App</c>.
+/// contract — this type lives entirely in <c>Tempest.Workspace</c>.
 /// </summary>
 /// <remarks>
 /// All three Kinds are `WP 8.2C`-compiled, confirmed by direct

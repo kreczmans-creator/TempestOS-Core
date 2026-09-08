@@ -1,10 +1,10 @@
-using Tempest.App.Workspace.Documents;
-using Tempest.App.Workspace.Verification;
+using Tempest.Workspace.Documents;
+using Tempest.Workspace.Verification;
 using Tempest.Core.Commands;
 using Tempest.Core.EngineeringDomain;
 
 using Tempest.Core.Verification;
-namespace Tempest.App.Workspace.Manufacturing;
+namespace Tempest.Workspace.Manufacturing;
 
 /// <summary>
 /// The single composition-root entry point wiring the whole Manufacturing

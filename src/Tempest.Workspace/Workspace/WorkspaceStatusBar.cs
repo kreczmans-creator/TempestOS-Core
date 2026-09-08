@@ -1,6 +1,6 @@
 using Tempest.Core.Events;
 
-namespace Tempest.App.Workspace;
+namespace Tempest.Workspace;
 
 /// <summary>
 /// The Status Bar's own current text — the one region of `WP8.0A UI

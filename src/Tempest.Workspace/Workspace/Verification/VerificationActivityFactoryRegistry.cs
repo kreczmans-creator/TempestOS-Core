@@ -1,6 +1,6 @@
 using Tempest.Core.EngineeringDomain;
 
-namespace Tempest.App.Workspace.Verification;
+namespace Tempest.Workspace.Verification;
 
 /// <summary>
 /// Builds a new Verification Activity Domain object — a small,
@@ -9,7 +9,7 @@ namespace Tempest.App.Workspace.Verification;
 /// <see cref="Calculations.CalculationObjectFactoryRegistry"/>/
 /// <see cref="Documents.DocumentObjectFactoryRegistry"/>'s own identical
 /// shape (`WP 9.3A`) exactly. Never a Domain-layer registry contract —
-/// this type lives entirely in <c>Tempest.App</c>.
+/// this type lives entirely in <c>Tempest.Workspace</c>.
 /// </summary>
 /// <remarks>
 /// <c>"VerificationActivity"</c> is the only Kind this registry

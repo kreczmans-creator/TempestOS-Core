@@ -3,7 +3,7 @@ using Avalonia;
 using Avalonia.Headless.XUnit;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
-using Tempest.App.Workspace.Viewing;
+using Tempest.Workspace.Viewing;
 using Tempest.Desktop.Viewing;
 
 namespace Tempest.Desktop.Tests;

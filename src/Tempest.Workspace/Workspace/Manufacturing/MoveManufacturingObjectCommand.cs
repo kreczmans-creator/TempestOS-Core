@@ -1,7 +1,7 @@
 using Tempest.Core.Commands;
 using Tempest.Core.EngineeringDomain;
 
-namespace Tempest.App.Workspace.Manufacturing;
+namespace Tempest.Workspace.Manufacturing;
 
 /// <summary>Reparents one Manufacturing Domain object (<see cref="IHasParent.MoveAsync"/>) — for a Routing/Operation pair, this is also how an Operation step is added to, or removed from, a Routing's own sequence (`ADR-0091`).</summary>
 public sealed class MoveManufacturingObjectCommand : IWorkspaceCommand

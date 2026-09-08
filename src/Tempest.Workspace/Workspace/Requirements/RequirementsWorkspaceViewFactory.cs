@@ -1,6 +1,6 @@
 using Tempest.Core.Requirements;
 
-namespace Tempest.App.Workspace.Requirements;
+namespace Tempest.Workspace.Requirements;
 
 /// <summary>
 /// Constructs a <see cref="RequirementsWorkspaceView"/> for one Requirements

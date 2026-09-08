@@ -3,7 +3,7 @@ using Tempest.Core.Identity;
 using Tempest.Core.Requirements;
 using Tempest.Core.Verification;
 
-namespace Tempest.App.Projects;
+namespace Tempest.Workspace.Projects;
 
 /// <summary>Where a requirement stands against verification, as a single value.</summary>
 /// <remarks>

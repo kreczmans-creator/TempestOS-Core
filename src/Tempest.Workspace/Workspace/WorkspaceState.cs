@@ -2,7 +2,7 @@ using Tempest.Core.Logging;
 using System.Text.Json;
 using Tempest.Core.Settings;
 
-namespace Tempest.App.Workspace;
+namespace Tempest.Workspace;
 
 /// <summary>
 /// The concrete <see cref="IWorkspaceState"/> implementation — persists via

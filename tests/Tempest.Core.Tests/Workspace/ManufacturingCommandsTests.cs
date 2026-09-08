@@ -1,4 +1,4 @@
-using Tempest.App.Workspace.Manufacturing;
+using Tempest.Workspace.Manufacturing;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Tests.EngineeringDomain;
 

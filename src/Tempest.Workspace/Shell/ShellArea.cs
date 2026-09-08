@@ -1,4 +1,4 @@
-namespace Tempest.App.Shell;
+namespace Tempest.Workspace.Shell;
 
 /// <summary>
 /// The top level of the TempestOS navigation model — a global module.

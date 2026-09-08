@@ -1,4 +1,4 @@
-namespace Tempest.App.Workspace;
+namespace Tempest.Workspace;
 
 /// <summary>
 /// One KPI card on the Engineering Cockpit (`WP8.0C Engineering Cockpit

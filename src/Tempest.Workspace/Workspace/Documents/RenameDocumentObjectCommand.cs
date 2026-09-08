@@ -1,7 +1,7 @@
 using Tempest.Core.Commands;
 using Tempest.Core.EngineeringDomain;
 
-namespace Tempest.App.Workspace.Documents;
+namespace Tempest.Workspace.Documents;
 
 /// <summary>Renames one Document Domain object (<see cref="IRenamable.RenameAsync"/>).</summary>
 public sealed class RenameDocumentObjectCommand : IWorkspaceCommand

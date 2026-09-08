@@ -1,4 +1,4 @@
-namespace Tempest.App.Shell;
+namespace Tempest.Workspace.Shell;
 
 /// <summary>
 /// Whether a navigation destination is backed by a real capability yet.

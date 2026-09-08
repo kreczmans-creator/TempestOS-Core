@@ -1,7 +1,7 @@
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Verification;
 
-namespace Tempest.App.Workspace.Verification;
+namespace Tempest.Workspace.Verification;
 
 /// <summary>
 /// Supplies the Property Inspector's own real facets for

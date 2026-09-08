@@ -1,4 +1,4 @@
-namespace Tempest.App.Workspace.Layout;
+namespace Tempest.Workspace.Layout;
 
 /// <summary>The axis a <see cref="LayoutSplitNode"/> divides its children along.</summary>
 public enum LayoutOrientation

@@ -1,6 +1,6 @@
-using Tempest.App.Projects;
-using Tempest.App.Workspace;
-using Tempest.App.Workspace.Mechanical;
+using Tempest.Workspace.Projects;
+using Tempest.Workspace;
+using Tempest.Workspace.Mechanical;
 using Tempest.Core.Configuration;
 using Tempest.Core.EngineeringData;
 using Tempest.Core.EngineeringDomain;

@@ -1,7 +1,7 @@
 using Tempest.Core.Modules;
 using Tempest.Core.Navigation;
 
-namespace Tempest.App.Workspace.Calculations;
+namespace Tempest.Workspace.Calculations;
 
 /// <summary>
 /// Contributes the Project Explorer's own Calculations area to the

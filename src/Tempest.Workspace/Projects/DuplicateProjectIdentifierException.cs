@@ -1,4 +1,4 @@
-namespace Tempest.App.Projects;
+namespace Tempest.Workspace.Projects;
 
 /// <summary>Thrown when a project is created with an identifier another project already carries.</summary>
 public sealed class DuplicateProjectIdentifierException : InvalidOperationException

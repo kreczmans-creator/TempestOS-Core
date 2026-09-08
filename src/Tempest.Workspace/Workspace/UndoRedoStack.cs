@@ -1,6 +1,6 @@
 using Tempest.Core.Commands;
 
-namespace Tempest.App.Workspace;
+namespace Tempest.Workspace;
 
 /// <summary>The concrete <see cref="IUndoRedoStack"/> implementation — two bounded, in-memory stacks.</summary>
 public sealed class UndoRedoStack : IUndoRedoStack

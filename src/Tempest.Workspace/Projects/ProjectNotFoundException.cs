@@ -1,4 +1,4 @@
-namespace Tempest.App.Projects;
+namespace Tempest.Workspace.Projects;
 
 /// <summary>Thrown when a project is opened by an Id no project carries.</summary>
 public sealed class ProjectNotFoundException : InvalidOperationException

@@ -1,6 +1,6 @@
 using Tempest.Core.Requirements;
 
-namespace Tempest.App.Workspace.Requirements;
+namespace Tempest.Workspace.Requirements;
 
 /// <summary>
 /// Populates the Project Explorer's own Requirements area from the real

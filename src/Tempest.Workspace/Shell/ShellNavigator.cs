@@ -1,10 +1,10 @@
 using System.Text.Json;
-using Tempest.App.Projects;
+using Tempest.Workspace.Projects;
 using Tempest.Core.Events;
 using Tempest.Core.Logging;
 using Tempest.Core.Settings;
 
-namespace Tempest.App.Shell;
+namespace Tempest.Workspace.Shell;
 
 /// <summary>
 /// The concrete <see cref="IShellNavigator"/> — owns the current

@@ -6,7 +6,7 @@ using Avalonia.Media.Imaging;
 using Avalonia.Platform;
 using PDFtoImage;
 using SkiaSharp;
-using Tempest.App.Workspace.Viewing;
+using Tempest.Workspace.Viewing;
 
 namespace Tempest.Desktop.Viewing;
 

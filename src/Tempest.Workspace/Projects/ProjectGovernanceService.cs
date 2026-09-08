@@ -1,7 +1,7 @@
-using Tempest.App.Workspace;
+using Tempest.Workspace;
 using Tempest.Core.EngineeringDomain;
 
-namespace Tempest.App.Projects;
+namespace Tempest.Workspace.Projects;
 
 /// <summary>Creating and changing risks, issues and decisions inside a project.</summary>
 public interface IProjectGovernanceService

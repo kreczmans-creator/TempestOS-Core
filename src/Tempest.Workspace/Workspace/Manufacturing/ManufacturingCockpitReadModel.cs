@@ -1,9 +1,9 @@
-using Tempest.App.Workspace;
-using Tempest.App.Workspace.Verification;
+using Tempest.Workspace;
+using Tempest.Workspace.Verification;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Verification;
 
-namespace Tempest.App.Workspace.Manufacturing;
+namespace Tempest.Workspace.Manufacturing;
 
 /// <summary>
 /// The Manufacturing discipline's own Engineering Cockpit read-model —

@@ -1,7 +1,7 @@
 using Tempest.Core.Commands;
 using Tempest.Core.Macros;
 
-namespace Tempest.App.Workspace.Macros;
+namespace Tempest.Workspace.Macros;
 
 /// <summary>
 /// The composition-root entry point wiring the User Command Macro

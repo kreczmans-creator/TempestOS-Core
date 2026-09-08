@@ -1,6 +1,6 @@
 using Tempest.Core.EngineeringDomain;
 
-namespace Tempest.App.Workspace.Mechanical;
+namespace Tempest.Workspace.Mechanical;
 
 /// <summary>
 /// Builds a new Mechanical Product Structure object of one of the eight
@@ -12,7 +12,7 @@ namespace Tempest.App.Workspace.Mechanical;
 /// mirroring <c>EngineeringDomainSampleModule</c>'s own identical inline
 /// construction. Never a Domain-layer registry contract — `WP8.2B
 /// Dependency Rules.md` §8 proposes none, and none is added here; this type
-/// lives entirely in <c>Tempest.App</c>.
+/// lives entirely in <c>Tempest.Workspace</c>.
 /// </summary>
 /// <remarks>
 /// **`WP 12.1B` (`ADR-0105`).** Every one of this class's own eight Kind

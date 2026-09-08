@@ -1,15 +1,15 @@
-using Tempest.App.Workspace.Calculations;
-using Tempest.App.Workspace.Documents;
-using Tempest.App.Workspace.Manufacturing;
-using Tempest.App.Workspace.Mechanical;
-using Tempest.App.Workspace.Requirements;
-using Tempest.App.Workspace.Verification;
+using Tempest.Workspace.Calculations;
+using Tempest.Workspace.Documents;
+using Tempest.Workspace.Manufacturing;
+using Tempest.Workspace.Mechanical;
+using Tempest.Workspace.Requirements;
+using Tempest.Workspace.Verification;
 using Tempest.Core.Commands;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Identity;
 using Tempest.Core.Requirements;
 
-namespace Tempest.App.Workspace;
+namespace Tempest.Workspace;
 
 /// <summary>
 /// The Engineering Cockpit — the Workspace's own default landing screen

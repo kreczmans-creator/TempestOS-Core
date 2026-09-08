@@ -1,6 +1,6 @@
 using Tempest.Core.EngineeringDomain;
 
-namespace Tempest.App.Workspace.Documents;
+namespace Tempest.Workspace.Documents;
 
 /// <summary>
 /// Presents one real <c>"Document"</c>, <c>"Drawing"</c>, or <c>"CadModel"</c>

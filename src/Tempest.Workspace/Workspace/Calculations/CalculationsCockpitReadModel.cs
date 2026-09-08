@@ -1,8 +1,8 @@
-using Tempest.App.Workspace;
+using Tempest.Workspace;
 using Tempest.Core.Calculations;
 using Tempest.Core.EngineeringDomain;
 
-namespace Tempest.App.Workspace.Calculations;
+namespace Tempest.Workspace.Calculations;
 
 /// <summary>
 /// The Calculations discipline's own Engineering Cockpit read-model —

@@ -1,4 +1,4 @@
-namespace Tempest.App.Workspace;
+namespace Tempest.Workspace;
 
 /// <summary>
 /// Constructs an <see cref="IWorkspaceView"/> for one specific engineering

@@ -1,4 +1,4 @@
-namespace Tempest.App.Workspace.Viewing;
+namespace Tempest.Workspace.Viewing;
 
 /// <summary>
 /// Where a document is being looked at, and how closely (`TD-80`).

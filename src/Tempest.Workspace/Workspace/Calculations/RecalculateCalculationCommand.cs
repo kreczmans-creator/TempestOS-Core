@@ -1,6 +1,6 @@
 using Tempest.Core.Commands;
 
-namespace Tempest.App.Workspace.Calculations;
+namespace Tempest.Workspace.Calculations;
 
 /// <summary>
 /// Re-executes a Calculation Template that has already been executed at

@@ -1,4 +1,4 @@
-namespace Tempest.App.Projects;
+namespace Tempest.Workspace.Projects;
 
 /// <summary>
 /// The current project — the organisational context every other surface

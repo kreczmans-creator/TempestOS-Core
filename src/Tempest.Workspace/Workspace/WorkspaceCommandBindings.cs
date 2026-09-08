@@ -1,7 +1,7 @@
 using System.Globalization;
 using Tempest.Core.Commands;
 
-namespace Tempest.App.Workspace;
+namespace Tempest.Workspace;
 
 /// <summary>
 /// The parameter shapes, validation callbacks and confirmation wording the

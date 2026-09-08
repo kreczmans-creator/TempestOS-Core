@@ -697,7 +697,7 @@ public sealed class BusinessOperationsStructuralTests
     [Fact]
     public void P04_builds_no_second_project_model()
     {
-        // WP04.2 is satisfied by Tempest.App/Projects. A project type in
+        // WP04.2 is satisfied by Tempest.Workspace/Projects. A project type in
         // BusinessOperations would be the competing system the audit
         // ruled out.
         var offenders = typeof(Organisation).Assembly

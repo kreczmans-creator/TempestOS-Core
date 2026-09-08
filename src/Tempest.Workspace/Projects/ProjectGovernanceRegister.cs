@@ -1,6 +1,6 @@
 using Tempest.Core.EngineeringDomain;
 
-namespace Tempest.App.Projects;
+namespace Tempest.Workspace.Projects;
 
 /// <summary>One risk belonging to a project, as the Risks surface shows it.</summary>
 /// <param name="ObjectId">The risk's own identity.</param>

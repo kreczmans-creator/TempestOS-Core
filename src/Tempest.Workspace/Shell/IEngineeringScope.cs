@@ -1,6 +1,6 @@
 using Tempest.Core.EngineeringDomain;
 
-namespace Tempest.App.Shell;
+namespace Tempest.Workspace.Shell;
 
 /// <summary>Which of the two valid engineering scopes the user is working in.</summary>
 public enum EngineeringScopeKind

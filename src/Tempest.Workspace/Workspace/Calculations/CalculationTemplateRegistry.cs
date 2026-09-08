@@ -4,7 +4,7 @@ using Tempest.Core.Commands;
 using Tempest.Core.EngineeringData;
 using Tempest.Core.EngineeringDomain;
 
-namespace Tempest.App.Workspace.Calculations;
+namespace Tempest.Workspace.Calculations;
 
 /// <summary>
 /// Makes every registered <see cref="ICalculationDefinition{TInput, TResult}"/>
@@ -16,7 +16,7 @@ namespace Tempest.App.Workspace.Calculations;
 /// </summary>
 /// <remarks>
 /// <para>
-/// A thin, additive, `Tempest.App`-only type-erasure adapter, one layer
+/// A thin, additive, `Tempest.Workspace`-only type-erasure adapter, one layer
 /// above <see cref="ICalculationEngine"/>'s own already-type-erased
 /// <c>RegisterDefinition</c>/<c>ExecuteAsync</c> dispatch (`ADR-0056`) — it
 /// introduces no new Domain contract and no change to the Calculation

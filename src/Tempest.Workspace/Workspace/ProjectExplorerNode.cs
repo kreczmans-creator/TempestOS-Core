@@ -1,6 +1,6 @@
 using Tempest.Core.EngineeringDomain;
 
-namespace Tempest.App.Workspace;
+namespace Tempest.Workspace;
 
 /// <summary>One node in the <see cref="IProjectExplorer"/>'s own tree.</summary>
 /// <param name="Id">The node's own unique identifier — an engineering object's own Id for a <see cref="ProjectExplorerNodeType.Object"/> node, or a stable, provider-assigned Id otherwise.</param>

@@ -1,4 +1,4 @@
-namespace Tempest.App.Workspace;
+namespace Tempest.Workspace;
 
 /// <summary>
 /// Populates the <see cref="IProjectExplorer"/>'s own tree for one specific

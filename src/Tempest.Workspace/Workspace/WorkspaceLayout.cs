@@ -1,4 +1,4 @@
-namespace Tempest.App.Workspace;
+namespace Tempest.Workspace;
 
 /// <summary>The concrete <see cref="IWorkspaceLayout"/> implementation — an in-memory placement table, no persistence of its own (persistence is <see cref="IWorkspaceState"/>'s own responsibility, `ADR-0064`).</summary>
 internal sealed class WorkspaceLayout : IWorkspaceLayout

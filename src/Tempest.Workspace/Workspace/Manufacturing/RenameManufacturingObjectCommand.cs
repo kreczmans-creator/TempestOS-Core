@@ -1,7 +1,7 @@
 using Tempest.Core.Commands;
 using Tempest.Core.EngineeringDomain;
 
-namespace Tempest.App.Workspace.Manufacturing;
+namespace Tempest.Workspace.Manufacturing;
 
 /// <summary>Renames one Manufacturing Domain object (<see cref="IRenamable.RenameAsync"/>).</summary>
 public sealed class RenameManufacturingObjectCommand : IWorkspaceCommand

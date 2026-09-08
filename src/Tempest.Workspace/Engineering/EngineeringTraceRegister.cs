@@ -3,7 +3,7 @@ using Tempest.Core.EngineeringAssets.Templates;
 using Tempest.Core.Materials;
 using Tempest.Core.ReferenceData;
 
-namespace Tempest.App.Engineering;
+namespace Tempest.Workspace.Engineering;
 
 /// <summary>
 /// One reference record an engineering artefact stood on, resolved as it

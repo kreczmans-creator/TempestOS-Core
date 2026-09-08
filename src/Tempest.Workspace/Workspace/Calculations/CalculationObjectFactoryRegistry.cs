@@ -1,6 +1,6 @@
 using Tempest.Core.EngineeringDomain;
 
-namespace Tempest.App.Workspace.Calculations;
+namespace Tempest.Workspace.Calculations;
 
 /// <summary>
 /// Builds a new Calculation Domain object — <c>"Calculation"</c> or
@@ -8,7 +8,7 @@ namespace Tempest.App.Workspace.Calculations;
 /// wrapping <see cref="EngineeringObjectFactory{T}"/> instances, mirroring
 /// <see cref="Mechanical.MechanicalObjectFactoryRegistry"/>'s own identical
 /// shape (`WP 9.0A`) exactly. Never a Domain-layer registry contract — this
-/// type lives entirely in <c>Tempest.App</c>.
+/// type lives entirely in <c>Tempest.Workspace</c>.
 /// </summary>
 /// <remarks>
 /// **`WP 12.1B` (`ADR-0105`).** <see cref="CalculationKind"/>/

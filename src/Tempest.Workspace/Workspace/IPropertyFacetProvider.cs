@@ -1,4 +1,4 @@
-namespace Tempest.App.Workspace;
+namespace Tempest.Workspace;
 
 /// <summary>
 /// Supplies the <see cref="IPropertyInspector"/>'s own real facets for one

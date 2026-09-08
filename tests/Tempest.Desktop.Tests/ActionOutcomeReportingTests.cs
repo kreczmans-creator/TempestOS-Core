@@ -2,7 +2,7 @@ using System.Reflection;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.LogicalTree;
-using Tempest.App.Workspace;
+using Tempest.Workspace;
 using Tempest.Core.Commands;
 using Tempest.Desktop.Composition;
 using Tempest.Desktop.History;
@@ -198,7 +198,7 @@ public sealed class ActionOutcomeReportingTests
         {
             await host.StartAsync();
             var workspace = host.Workspace!;
-            await SelectFirstAsync(workspace, Tempest.App.Workspace.Calculations.CalculationsWorkspaceExplorerModule.NavigationItemId, "Calculation");
+            await SelectFirstAsync(workspace, Tempest.Workspace.Calculations.CalculationsWorkspaceExplorerModule.NavigationItemId, "Calculation");
 
             var window = new MainWindow(host);
             var ribbon = GetPrivateField<RibbonView>(window, "_ribbon");
@@ -250,7 +250,7 @@ public sealed class ActionOutcomeReportingTests
         {
             await host.StartAsync();
             var workspace = host.Workspace!;
-            var node = await SelectFirstAsync(workspace, Tempest.App.Workspace.Documents.DocumentsWorkspaceExplorerModule.NavigationItemId, "Document");
+            var node = await SelectFirstAsync(workspace, Tempest.Workspace.Documents.DocumentsWorkspaceExplorerModule.NavigationItemId, "Document");
 
             var window = new MainWindow(host);
             var inspector = GetPrivateField<PropertyInspectorView>(window, "_inspectorView");
@@ -301,7 +301,7 @@ public sealed class ActionOutcomeReportingTests
         {
             await host.StartAsync();
             var workspace = host.Workspace!;
-            var node = await SelectFirstAsync(workspace, Tempest.App.Workspace.Documents.DocumentsWorkspaceExplorerModule.NavigationItemId, "Document");
+            var node = await SelectFirstAsync(workspace, Tempest.Workspace.Documents.DocumentsWorkspaceExplorerModule.NavigationItemId, "Document");
 
             var window = new MainWindow(host);
             var explorer = GetPrivateField<ProjectExplorerView>(window, "_explorerView");
@@ -344,7 +344,7 @@ public sealed class ActionOutcomeReportingTests
         {
             await host.StartAsync();
             var workspace = host.Workspace!;
-            var node = await SelectFirstAsync(workspace, Tempest.App.Workspace.Documents.DocumentsWorkspaceExplorerModule.NavigationItemId, "Document");
+            var node = await SelectFirstAsync(workspace, Tempest.Workspace.Documents.DocumentsWorkspaceExplorerModule.NavigationItemId, "Document");
 
             var window = new MainWindow(host);
             var statusBar = GetPrivateField<StatusBarView>(window, "_statusBar");

@@ -1,7 +1,7 @@
 using Tempest.Core.Commands;
 using Tempest.Core.EngineeringDomain;
 
-namespace Tempest.App.Workspace.Manufacturing;
+namespace Tempest.Workspace.Manufacturing;
 
 /// <summary>Soft-deletes one Manufacturing Domain object (<see cref="IDeletable.DeleteAsync"/>).</summary>
 public sealed class DeleteManufacturingObjectCommand : IWorkspaceCommand
