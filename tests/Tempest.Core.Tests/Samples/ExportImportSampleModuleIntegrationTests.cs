@@ -58,7 +58,15 @@ public class ExportImportSampleModuleIntegrationTests
         services.Singleton<IPermissionEvaluator, PermissionEvaluator>();
         services.Singleton<IIdentityService, IdentityService>();
 
-        services.Singleton<IPersistenceStore, PersistenceStore>();
+        // One store instance under all three shapes, as `TempestHost`
+        // registers it (`ADR-0144`). `AuditQuery` needs the query shape
+        // since `ADR-0145`, where a by-object audit lookup became a key
+        // prefix listing rather than a scan.
+        var persistenceStore = new PersistenceStore(configuration);
+        services.AddInstance<IPersistenceStore>(persistenceStore);
+        services.AddInstance<IBinaryPersistenceStore>(persistenceStore);
+        services.AddInstance<IQueryablePersistenceStore>(persistenceStore);
+
         services.Singleton<ISettingsProvider, SettingsProvider>();
         services.Singleton<IAuditRecorder, AuditRecorder>();
         services.Singleton<IAuditQuery, AuditQuery>();
