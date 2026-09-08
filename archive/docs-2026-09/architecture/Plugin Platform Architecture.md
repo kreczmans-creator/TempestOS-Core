@@ -1,5 +1,13 @@
 # Plugin Platform Architecture
 
+**Frozen by ADR-0146 (v0.17.0).** Everything this document describes —
+signing, the trust store, trust tiers, capability enforcement and
+component-scoped identity, and plugin assembly loading — is frozen
+outside the build at `src/Frozen/Tempest.Core.Plugins`, per `ADR-0146`
+and `WP 17.2A`. Plugin *manifest discovery*, the one part of this
+document's own design that is not part of that freeze, stays live — see
+`Plugin Manifest Architecture.md`.
+
 **Status: Implemented — `v0.13.0`.** Designed `WP 13.0A`; every design
 below extends `Plugin Manifest Architecture.md`'s implemented (`WP 4.2`)
 baseline. Implemented in full by `WP 13.1A` (`ADR-0107`–`ADR-0109`: the

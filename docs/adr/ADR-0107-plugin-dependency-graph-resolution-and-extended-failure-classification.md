@@ -2,6 +2,8 @@
 
 ## Status
 
+**Status:** Frozen by ADR-0146 (v0.17.0)
+
 Accepted — `v0.13.0`, `WP 13.0A` (Plugin Platform Architecture), 2026-08-13.
 Architecture only; no code changes accompany this decision — implementation
 is `WP 13.0B`'s own, separately-scoped task. Extends, and does not reopen,
