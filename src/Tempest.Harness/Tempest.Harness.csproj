@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
-    <ProjectReference Include="..\Tempest.Core\Tempest.Core.csproj" />
+    <ProjectReference Include="..\Tempest.Workspace\Tempest.Workspace.csproj" />
   </ItemGroup>
 
   <PropertyGroup>
