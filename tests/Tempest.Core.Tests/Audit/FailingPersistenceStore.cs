@@ -56,4 +56,10 @@ internal sealed class FailingPersistenceStore : IPersistenceStore, IQueryablePer
     public Task<T> ExecuteInReadTransactionAsync<T>(
         Func<IPersistenceReadTransaction, CancellationToken, Task<T>> read, CancellationToken cancellationToken = default) =>
         throw MakeException();
+
+    public Task<IReadOnlyList<SearchHit>> SearchAsync(string query, int limit, CancellationToken cancellationToken = default) =>
+        throw MakeException();
+
+    public Task<bool> IsSearchIndexEmptyAsync(CancellationToken cancellationToken = default) =>
+        throw MakeException();
 }

@@ -220,16 +220,28 @@ public static class EngineeringWorkspaceComposer
     /// theoretical: without it the documents survive a restart but the
     /// engineering work does not (`ADR-0077`'s own disclosed gap).
     /// </para>
+    /// <para>
+    /// Also self-heals the search index (`WP 18.1B`): once rehydration has
+    /// finished, <c>IEngineeringObjectStateStore.RebuildIndexAsync</c> runs
+    /// — a no-op unless the index is empty while durable state is not, so
+    /// a fresh database is indexed once and a healthy one is never
+    /// redundantly rewalked.
+    /// </para>
     /// </remarks>
     /// <returns>A full account of what was recovered, and of anything that could not be.</returns>
     /// <exception cref="InvalidOperationException"><paramref name="host"/>'s own <see cref="ITempestHost.Services"/> is not yet resolvable.</exception>
-    public static Task<EngineeringRehydrationResult> RehydrateEngineeringObjectsAsync(ITempestHost host, CancellationToken cancellationToken = default)
+    public static async Task<EngineeringRehydrationResult> RehydrateEngineeringObjectsAsync(ITempestHost host, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(host);
 
         var services = host.Services ?? throw new InvalidOperationException("The Host must be running (ITempestHost.Services resolvable) before engineering objects can be rehydrated.");
         var rehydrationService = (EngineeringObjectRehydrationService)services.GetService(typeof(EngineeringObjectRehydrationService));
 
-        return rehydrationService.RehydrateAsync(cancellationToken);
+        var result = await rehydrationService.RehydrateAsync(cancellationToken).ConfigureAwait(false);
+
+        var stateStore = (IEngineeringObjectStateStore)services.GetService(typeof(IEngineeringObjectStateStore));
+        await stateStore.RebuildIndexAsync(cancellationToken).ConfigureAwait(false);
+
+        return result;
     }
 }

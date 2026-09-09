@@ -564,6 +564,105 @@ public sealed class SqlitePersistenceStore
         }
     }
 
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<SearchHit>> SearchAsync(string query, int limit, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+        if (limit < 1)
+            throw new ArgumentOutOfRangeException(nameof(limit), limit, "The search limit must be at least 1.");
+        ThrowIfDisposed();
+
+        var matchExpression = BuildMatchExpression(query);
+        if (matchExpression is null)
+            return [];
+
+        return await ExecuteAsync(
+            $"search for '{query}'",
+            async (connection, token) =>
+            {
+                await using var command = connection.CreateCommand();
+                command.CommandText =
+                    "SELECT object_id, kind, project_id, bm25(search_index) AS match_rank, " +
+                    "snippet(search_index, -1, '[', ']', '…', 8) AS match_snippet " +
+                    "FROM search_index WHERE search_index MATCH $match ORDER BY match_rank LIMIT $limit;";
+                command.Parameters.AddWithValue("$match", matchExpression);
+                command.Parameters.AddWithValue("$limit", limit);
+
+                var hits = new List<SearchHit>();
+                await using var reader = await command.ExecuteReaderAsync(token).ConfigureAwait(false);
+                while (await reader.ReadAsync(token).ConfigureAwait(false))
+                {
+                    var objectId = Guid.ParseExact(reader.GetString(0), "N");
+                    var kind = reader.GetString(1);
+                    Guid? projectId = await reader.IsDBNullAsync(2, token).ConfigureAwait(false)
+                        ? null
+                        : Guid.ParseExact(reader.GetString(2), "N");
+                    var rank = reader.GetDouble(3);
+                    var snippet = reader.GetString(4);
+
+                    hits.Add(new SearchHit(objectId, kind, projectId, rank, snippet));
+                }
+
+                return (IReadOnlyList<SearchHit>)hits;
+            },
+            cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <inheritdoc />
+    public async Task<bool> IsSearchIndexEmptyAsync(CancellationToken cancellationToken = default)
+    {
+        ThrowIfDisposed();
+
+        return await ExecuteAsync(
+            "check whether the search index is empty",
+            async (connection, token) =>
+            {
+                await using var command = connection.CreateCommand();
+                command.CommandText = "SELECT NOT EXISTS (SELECT 1 FROM search_index);";
+                var value = await command.ExecuteScalarAsync(token).ConfigureAwait(false);
+                return Convert.ToInt64(value, CultureInfo.InvariantCulture) != 0;
+            },
+            cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Turns a caller's free-text <paramref name="query"/> into an FTS5
+    /// <c>MATCH</c> expression: every alphanumeric run becomes its own
+    /// double-quoted prefix token (<c>"bra"*</c>), space-joined, so tokens
+    /// implicitly AND — narrowing, not widening, as more is typed — and
+    /// each one matches as a prefix, so a partial word finds a whole one.
+    /// </summary>
+    /// <returns><see langword="null"/> if <paramref name="query"/> has no searchable token (blank, or punctuation only).</returns>
+    private static string? BuildMatchExpression(string query)
+    {
+        var tokens = new List<string>();
+        var current = new System.Text.StringBuilder();
+
+        void Flush()
+        {
+            if (current.Length > 0)
+            {
+                tokens.Add(current.ToString());
+                current.Clear();
+            }
+        }
+
+        foreach (var ch in query)
+        {
+            if (char.IsLetterOrDigit(ch))
+                current.Append(ch);
+            else
+                Flush();
+        }
+
+        Flush();
+
+        if (tokens.Count == 0)
+            return null;
+
+        return string.Join(" ", tokens.Select(t => $"\"{t.Replace("\"", "\"\"", StringComparison.Ordinal)}\"*"));
+    }
+
     // ----------------------------------------------------------------
     // Lifetime
     // ----------------------------------------------------------------
@@ -682,6 +781,22 @@ public sealed class SqlitePersistenceStore
 
                 INSERT INTO store_sequence (id, value)
                 SELECT 1, 0 WHERE NOT EXISTS (SELECT 1 FROM store_sequence WHERE id = 1);
+
+                -- `WP 18.1B`: the platform's one full-text search index.
+                -- `object_id`/`kind`/`project_id` are UNINDEXED — carried
+                -- alongside a match, never tokenised or matched against —
+                -- while `title`/`identifier`/`refs` are the searchable
+                -- columns. A separate virtual table rather than columns on
+                -- `records`, because FTS5's own tokeniser and ranking apply
+                -- to a table, not to a subset of another table's columns.
+                CREATE VIRTUAL TABLE IF NOT EXISTS search_index USING fts5(
+                    object_id UNINDEXED,
+                    kind UNINDEXED,
+                    project_id UNINDEXED,
+                    title,
+                    identifier,
+                    refs
+                );
                 """;
             command.Parameters.AddWithValue("$version", SchemaVersion);
             command.ExecuteNonQuery();
@@ -975,6 +1090,49 @@ public sealed class SqlitePersistenceStore
             await using var command = _connection.CreateCommand();
             PrepareListKeys(command, collection, keyPrefix);
             return await ReadKeysAsync(command, cancellationToken).ConfigureAwait(false);
+        }
+
+        public async Task IndexTextAsync(
+            Guid objectId, string kind, Guid? projectId, string title, string? identifier, string? refs,
+            CancellationToken cancellationToken = default)
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(kind);
+            ArgumentNullException.ThrowIfNull(title);
+            ThrowIfFinished();
+
+            // Delete-then-insert, not an upsert: a plain FTS5 table carries
+            // no unique constraint over its own UNINDEXED columns to
+            // conflict on, so this is the only way to replace a row rather
+            // than accumulate a second one for the same object every time
+            // its state is written.
+            await using (var delete = _connection.CreateCommand())
+            {
+                delete.CommandText = "DELETE FROM search_index WHERE object_id = $objectId;";
+                delete.Parameters.AddWithValue("$objectId", objectId.ToString("N"));
+                await delete.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+            }
+
+            await using var insert = _connection.CreateCommand();
+            insert.CommandText =
+                "INSERT INTO search_index (object_id, kind, project_id, title, identifier, refs) " +
+                "VALUES ($objectId, $kind, $projectId, $title, $identifier, $refs);";
+            insert.Parameters.AddWithValue("$objectId", objectId.ToString("N"));
+            insert.Parameters.AddWithValue("$kind", kind);
+            insert.Parameters.AddWithValue("$projectId", (object?)projectId?.ToString("N") ?? DBNull.Value);
+            insert.Parameters.AddWithValue("$title", title);
+            insert.Parameters.AddWithValue("$identifier", (object?)identifier ?? DBNull.Value);
+            insert.Parameters.AddWithValue("$refs", (object?)refs ?? DBNull.Value);
+            await insert.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+        }
+
+        public async Task RemoveFromIndexAsync(Guid objectId, CancellationToken cancellationToken = default)
+        {
+            ThrowIfFinished();
+
+            await using var command = _connection.CreateCommand();
+            command.CommandText = "DELETE FROM search_index WHERE object_id = $objectId;";
+            command.Parameters.AddWithValue("$objectId", objectId.ToString("N"));
+            await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
         }
 
         private void ThrowIfFinished()

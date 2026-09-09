@@ -99,4 +99,12 @@ public sealed class GatedPersistenceStore(IQueryablePersistenceStore inner) : IQ
     public Task<T> ExecuteInReadTransactionAsync<T>(
         Func<IPersistenceReadTransaction, CancellationToken, Task<T>> read, CancellationToken cancellationToken = default) =>
         Inner.ExecuteInReadTransactionAsync(read, cancellationToken);
+
+    /// <inheritdoc />
+    public Task<IReadOnlyList<SearchHit>> SearchAsync(string query, int limit, CancellationToken cancellationToken = default) =>
+        Inner.SearchAsync(query, limit, cancellationToken);
+
+    /// <inheritdoc />
+    public Task<bool> IsSearchIndexEmptyAsync(CancellationToken cancellationToken = default) =>
+        Inner.IsSearchIndexEmptyAsync(cancellationToken);
 }

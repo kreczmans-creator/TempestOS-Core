@@ -1,6 +1,23 @@
 namespace Tempest.Core.Persistence;
 
 /// <summary>
+/// One hit from <see cref="IQueryablePersistenceStore.SearchAsync"/>
+/// (`WP 18.1B`): an object the FTS5 search index matched, ordered by
+/// <see cref="Rank"/>.
+/// </summary>
+/// <param name="ObjectId">The matched object's own id.</param>
+/// <param name="Kind">The matched object's own canonical Kind.</param>
+/// <param name="ProjectId">The project the matched object sits under, or <see langword="null"/> if it sits under none (or is itself a project).</param>
+/// <param name="Rank">
+/// SQLite FTS5's own <c>bm25()</c> score for this match — more negative is
+/// a better match; <see cref="IQueryablePersistenceStore.SearchAsync"/>
+/// already orders results by this ascending, so a caller need only render
+/// the list in the order it comes back.
+/// </param>
+/// <param name="Snippet">A short, FTS5-highlighted fragment of the matched text, for display.</param>
+public readonly record struct SearchHit(Guid ObjectId, string Kind, Guid? ProjectId, double Rank, string Snippet);
+
+/// <summary>
 /// The query and transaction shape of the platform's single durable store
 /// (`ADR-0144`) — the four things every consumer of
 /// <see cref="IPersistenceStore"/> has been simulating in application code
@@ -163,6 +180,48 @@ public interface IQueryablePersistenceStore
     /// <exception cref="ArgumentNullException"><paramref name="read"/> is <see langword="null"/>.</exception>
     /// <exception cref="PersistenceStoreUnavailableException">The transaction could not be begun or completed.</exception>
     Task<T> ExecuteInReadTransactionAsync<T>(Func<IPersistenceReadTransaction, CancellationToken, Task<T>> read, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Full-text searches the platform's one search index (`WP 18.1B`, SQLite
+    /// FTS5) for <paramref name="query"/>, returning at most
+    /// <paramref name="limit"/> hits ordered by <see cref="SearchHit.Rank"/>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Every whitespace-delimited token in <paramref name="query"/> is
+    /// matched as a <b>prefix</b>, so a partial word finds a whole one —
+    /// searching <c>"bra"</c> finds <c>"Bracket"</c> — and every token must
+    /// match (an implicit AND across tokens), narrowing rather than
+    /// widening as the caller types more.
+    /// </para>
+    /// <para>
+    /// What is indexed is a decision made once, where the index is written
+    /// (<see cref="IPersistenceTransaction.IndexTextAsync"/>, called from
+    /// inside the same transaction as the object state it describes) —
+    /// this method only ever reads what is already there.
+    /// </para>
+    /// </remarks>
+    /// <param name="query">The search text. Blank returns no hits.</param>
+    /// <param name="limit">The maximum number of hits to return. Must be at least 1.</param>
+    /// <param name="cancellationToken">Cancels the search.</param>
+    /// <returns>Every matching hit, best match first; empty if nothing matches or <paramref name="query"/> is blank.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="query"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="limit"/> is less than 1.</exception>
+    /// <exception cref="PersistenceStoreUnavailableException">The store could not be queried.</exception>
+    Task<IReadOnlyList<SearchHit>> SearchAsync(string query, int limit, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Whether the search index (`WP 18.1B`) currently holds no rows at all —
+    /// what a caller checks at host start to decide whether
+    /// <c>EngineeringObjectStateStore.RebuildIndexAsync</c> must walk the
+    /// object state collection and repopulate it (self-healing: an index
+    /// that was never built, or was lost, looks identical to one that is
+    /// legitimately empty because nothing has been indexed yet — both are
+    /// fixed the same way).
+    /// </summary>
+    /// <param name="cancellationToken">Cancels the query.</param>
+    /// <exception cref="PersistenceStoreUnavailableException">The store could not be queried.</exception>
+    Task<bool> IsSearchIndexEmptyAsync(CancellationToken cancellationToken = default);
 }
 
 /// <summary>
@@ -201,6 +260,32 @@ public interface IPersistenceTransaction
     /// uncommitted writes.
     /// </summary>
     Task<IReadOnlyList<string>> ListKeysAsync(string collection, string keyPrefix, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Writes (replacing any existing row for <paramref name="objectId"/>)
+    /// this object's own searchable text into the platform's one search
+    /// index (`WP 18.1B`, SQLite FTS5), inside this same transaction —
+    /// never a separate write, so a rolled-back transaction leaves no index
+    /// row and a committed one is searchable the instant the commit lands.
+    /// </summary>
+    /// <param name="objectId">The object being indexed.</param>
+    /// <param name="kind">The object's own canonical Kind.</param>
+    /// <param name="projectId">The project the object sits under, or <see langword="null"/> if it sits under none (or is itself a project).</param>
+    /// <param name="title">The object's own display name/title.</param>
+    /// <param name="identifier">The object's own business identifier, or <see langword="null"/> if it has none.</param>
+    /// <param name="refs">
+    /// Extra searchable text specific to the object's own Kind — for
+    /// Evidence, its issue reference, each citation's library and record
+    /// id, and each declared figure's name, space-joined; <see langword="null"/>
+    /// for a Kind with nothing extra to index.
+    /// </param>
+    /// <param name="cancellationToken">Cancels the write.</param>
+    Task IndexTextAsync(
+        Guid objectId, string kind, Guid? projectId, string title, string? identifier, string? refs,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>Removes <paramref name="objectId"/>'s own row from the search index (`WP 18.1B`), inside this same transaction. Idempotent.</summary>
+    Task RemoveFromIndexAsync(Guid objectId, CancellationToken cancellationToken = default);
 }
 
 /// <summary>

@@ -211,16 +211,161 @@ public sealed class EngineeringObjectStateStore : IEngineeringObjectStateStore, 
             cancellationToken);
 
     /// <inheritdoc />
-    Task ITransactionalStateWriter.SaveAsync(IPersistenceTransaction transaction, EngineeringObjectState state, CancellationToken cancellationToken)
+    async Task ITransactionalStateWriter.SaveAsync(IPersistenceTransaction transaction, EngineeringObjectState state, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(transaction);
         ArgumentNullException.ThrowIfNull(state);
 
-        return transaction.WriteAsync(
+        await transaction.WriteAsync(
             StateCollectionName,
             state.Id.ToString("N"),
             JsonSerializer.Serialize(state, StateJsonOptions),
-            cancellationToken);
+            cancellationToken).ConfigureAwait(false);
+
+        // `WP 18.1B`: the search index is written inside the same
+        // transaction as the object state it describes — never a separate
+        // write — so a rolled-back mutation leaves no index row and a
+        // committed one is searchable the instant the commit lands. A
+        // soft-deleted object (`state.IsDeleted`) is removed from the
+        // index rather than re-indexed: it still exists durably (this is
+        // not a hard delete), but nothing "recently changed" or findable
+        // should surface it as a live object.
+        if (state.IsDeleted)
+            await transaction.RemoveFromIndexAsync(state.Id, cancellationToken).ConfigureAwait(false);
+        else
+            await IndexStateAsync(transaction, state, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Walks every object state and repopulates the search index from
+    /// scratch, inside one transaction — self-healing (`WP 18.1B`): runs
+    /// at host start, and does nothing unless the index is currently empty
+    /// while the object state collection is not, so an index that was
+    /// built normally by every write above is never redundantly rebuilt.
+    /// </summary>
+    /// <param name="cancellationToken">Cancels the rebuild.</param>
+    public async Task RebuildIndexAsync(CancellationToken cancellationToken = default)
+    {
+        if (!await _persistenceStore.IsSearchIndexEmptyAsync(cancellationToken).ConfigureAwait(false))
+            return;
+
+        var states = await ListAsync(cancellationToken).ConfigureAwait(false);
+        if (states.Count == 0)
+            return;
+
+        await _persistenceStore.ExecuteInTransactionAsync(
+            async (transaction, token) =>
+            {
+                foreach (var state in states)
+                {
+                    if (state.IsDeleted)
+                        continue;
+
+                    await IndexStateAsync(transaction, state, token).ConfigureAwait(false);
+                }
+            },
+            cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>Writes one object state's own search-index row (`WP 18.1B`): its title, business identifier, Kind, resolved project, and Kind-specific <see cref="BuildRefs"/> text.</summary>
+    private static async Task IndexStateAsync(IPersistenceTransaction transaction, EngineeringObjectState state, CancellationToken cancellationToken)
+    {
+        var projectId = await ResolveProjectIdAsync(transaction, state, cancellationToken).ConfigureAwait(false);
+
+        await transaction.IndexTextAsync(
+            state.Id, state.Kind, projectId, state.DisplayName, state.Identifier, BuildRefs(state), cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>The canonical Kind naming a Mechanical Product Structure project — mirrors <c>MechanicalObjectFactoryRegistry.Project</c> (`Tempest.Workspace`, not referenceable here) as a plain literal.</summary>
+    private const string ProjectKind = "Project";
+
+    /// <summary>The most hops <see cref="ResolveProjectIdAsync"/> walks up a parent chain before giving up — generous for any structure this platform actually builds, and a hard stop against a corrupt cyclic parent chain looping forever.</summary>
+    private const int MaxProjectAncestryHops = 32;
+
+    /// <summary>
+    /// Walks <paramref name="state"/>'s own parent chain to find the
+    /// project it sits under (`WP 18.1B`) — the object itself, if it is a
+    /// <see cref="ProjectKind"/>; otherwise the nearest ancestor that is;
+    /// <see langword="null"/> if none is found (a standalone object, or an
+    /// ancestor whose own state is missing or unreadable).
+    /// </summary>
+    private static async Task<Guid?> ResolveProjectIdAsync(IPersistenceTransaction transaction, EngineeringObjectState state, CancellationToken cancellationToken)
+    {
+        if (string.Equals(state.Kind, ProjectKind, StringComparison.Ordinal))
+            return state.Id;
+
+        var parentId = state.ParentId;
+        var hops = 0;
+
+        while (parentId is { } id && hops++ < MaxProjectAncestryHops)
+        {
+            var json = await transaction.ReadAsync(StateCollectionName, id.ToString("N"), cancellationToken).ConfigureAwait(false);
+            if (json is null)
+                return null;
+
+            EngineeringObjectState? parentState;
+            try
+            {
+                parentState = JsonSerializer.Deserialize<EngineeringObjectState>(json, StateJsonOptions);
+            }
+            catch (JsonException)
+            {
+                return null;
+            }
+
+            if (parentState is null)
+                return null;
+
+            if (string.Equals(parentState.Kind, ProjectKind, StringComparison.Ordinal))
+                return parentState.Id;
+
+            parentId = parentState.ParentId;
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Kind-specific extra searchable text (`WP 18.1B` §1) — today, just
+    /// Evidence's own issue reference, each citation's library and record
+    /// id, and each declared figure's name, space-joined; <see langword="null"/>
+    /// for every other Kind, or an Evidence record with none of these set
+    /// yet.
+    /// </summary>
+    private static string? BuildRefs(EngineeringObjectState state)
+    {
+        // Fully qualified throughout, deliberately: `Tempest.Core.Evidence`
+        // is both this platform's Evidence namespace and, within it, the
+        // `Evidence` class itself — an unqualified `using` here would have
+        // the namespace shadow the type (`EvidenceWorkspaceTests.cs` names
+        // the identical ambiguity the same way).
+        if (!string.Equals(state.Kind, Tempest.Core.Evidence.Evidence.CanonicalKind, StringComparison.Ordinal))
+            return null;
+
+        var parts = new List<string>();
+
+        if (state.TypeJson<List<Tempest.Core.Evidence.EvidenceCitation>>(nameof(Tempest.Core.Evidence.Evidence.Citations)) is { } citations)
+        {
+            foreach (var citation in citations)
+            {
+                if (citation?.Pin is { } pin)
+                    parts.Add($"{pin.Library} {pin.RecordId}");
+            }
+        }
+
+        if (state.TypeJson<List<Tempest.Core.Evidence.DeclaredFigure>>(nameof(Tempest.Core.Evidence.Evidence.DeclaredFigures)) is { } figures)
+        {
+            foreach (var figure in figures)
+            {
+                if (!string.IsNullOrWhiteSpace(figure?.Name))
+                    parts.Add(figure.Name);
+            }
+        }
+
+        if (state.TypeJson<Tempest.Core.Evidence.IssueRecord>(nameof(Tempest.Core.Evidence.Evidence.Issue)) is { IssueReference.Length: > 0 } issue)
+            parts.Add(issue.IssueReference);
+
+        return parts.Count == 0 ? null : string.Join(" ", parts);
     }
 
     private EngineeringObjectState? Deserialise(Guid objectId, string json)
