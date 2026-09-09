@@ -32,6 +32,9 @@ public enum EvidenceRefusal
 
     /// <summary>The independent-check rule is on, and nobody is signed in to be held to the check.</summary>
     NoPrincipalSignedIn,
+
+    /// <summary>The evidence is <see cref="EvidenceStatus.Issued"/> and its subject tag may no longer be changed — revise it first (`WP 18.2B`).</summary>
+    SubjectLockedAfterIssue,
 }
 
 /// <summary>The outcome of <see cref="IEvidenceService.CiteAsync"/>: either a recorded citation, or a refusal that says exactly what was missing.</summary>

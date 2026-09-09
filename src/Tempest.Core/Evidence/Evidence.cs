@@ -41,7 +41,7 @@ public sealed class Evidence : EngineeringObjectBase, IEvidenceRecord, IRehydrat
     public const string CanonicalKind = "Evidence";
 
     private readonly EvidenceClassification _classification;
-    private readonly Guid? _subjectId;
+    private Guid? _subjectId;
     private readonly string _authorIdentityId;
     private List<EvidenceCitation> _citations;
     private List<DeclaredFigure> _declaredFigures;
@@ -95,6 +95,53 @@ public sealed class Evidence : EngineeringObjectBase, IEvidenceRecord, IRehydrat
 
     /// <inheritdoc />
     public IssueRecord? Issue => _issue;
+
+    /// <summary>
+    /// Retags this evidence's own <see cref="SubjectId"/> — a Part,
+    /// Assembly, Requirement or Deliverable, or <see langword="null"/> to
+    /// clear it (`WP 18.2B`, closing a gap `WP 18.2A` disclosed). Never
+    /// validated as a structure, exactly as the constructor's own
+    /// <paramref name="subjectId"/> parameter never was — permission to
+    /// retag (refused once <see cref="Status"/> is <see cref="EvidenceStatus.Issued"/>)
+    /// is <see cref="IEvidenceService.SetSubjectAsync"/>'s own concern, not
+    /// this mutator's.
+    /// </summary>
+    internal Task SetSubjectAsync(Guid? subjectId, CancellationToken cancellationToken = default)
+    {
+        return MutateTypeStateAndPersistAsync(
+            () => new Dictionary<string, string?>(StringComparer.Ordinal) { [nameof(SubjectId)] = subjectId?.ToString() },
+            () => _subjectId = subjectId,
+            subjectId is { } id ? $"Subject set to '{id:N}'." : "Subject cleared.",
+            cancellationToken);
+    }
+
+    /// <summary>
+    /// Points this evidence's own <see cref="Issue"/> record at the issue
+    /// sheet's own attachment, once rendered and attached (`WP 18.2B`).
+    /// The bytes and their attachment metadata are written by a prior,
+    /// separate <see cref="IHasAttachments.AttachContentAsync"/> call — see
+    /// <see cref="IEvidenceService.RecordIssueSheetAsync"/>'s own remarks
+    /// for why this cannot be the identical transaction as either that
+    /// write or <see cref="RecordIssueAsync"/> itself.
+    /// </summary>
+    internal Task SetIssueSheetAttachmentAsync(Guid issueSheetAttachmentId, CancellationToken cancellationToken = default)
+    {
+        if (_issue is not { } issue)
+            throw new InvalidOperationException($"Evidence '{Id}' has not been issued; there is no issue record to attach a sheet to.");
+
+        var updated = issue with { IssueSheetAttachmentId = issueSheetAttachmentId };
+
+        return MutateTypeStateAndPersistAsync(
+            () =>
+            {
+                var state = new Dictionary<string, string?>(StringComparer.Ordinal);
+                WriteJson(state, nameof(Issue), updated);
+                return state;
+            },
+            () => _issue = updated,
+            $"Issue sheet attached ('{issueSheetAttachmentId:N}').",
+            cancellationToken);
+    }
 
     /// <summary>Adds <paramref name="citation"/> to this evidence's own list, in one transaction with an audit row.</summary>
     internal Task AddCitationAsync(EvidenceCitation citation, CancellationToken cancellationToken = default)
@@ -226,6 +273,7 @@ public sealed class Evidence : EngineeringObjectBase, IEvidenceRecord, IRehydrat
     /// <inheritdoc />
     protected override void ApplyTypeState(EngineeringObjectState state)
     {
+        _subjectId = state.TypeGuid(nameof(SubjectId));
         _citations = ReadCitations(state);
         _declaredFigures = ReadDeclaredFigures(state);
         _status = ReadStatus(state);
