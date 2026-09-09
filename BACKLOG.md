@@ -27,7 +27,7 @@ check's generic exception handler already names the failing check in
 its `Fail` result; carried forward unchanged into the reduced script).
 None of these nine appear below.
 
-## Live Backlog (26 of 30 cap)
+## Live Backlog (25 of 30 cap)
 
 `TD-147` — an object creation whose initial durable write failed still
 registered the object in memory, so its next successful write made a
@@ -65,7 +65,6 @@ and nothing on disk.
 | `TD-150` | `PersistenceStore`'s post-commit failure window: 0 of 3,330 tests would notice a revert | `WP 17.0C` |
 | `TD-154` | CI's `linux-launch-smoke` marker now fires before the composition root runs | unowned |
 | `TD-157` | "Pinned source superseded" warning can never fire; the resolver is never wired up | `WP 18.0B` (unresolved — see note) |
-| `TD-163` | 79 seeded reference records never reach the shipped product | `WP 18.0B` (partial — see note) |
 | `TD-174` | A Part carries none of what a calculation and a drawing need from it: no material assignment pinned to a released reference revision (`IPart.MaterialId` is a bare string nothing on the Desktop sets), no standard-versus-custom designation (a Component is the de-facto standard part but nothing says so), no part number distinct from the display name, no mass. **Not ERP**: no procurement, supplier, cost or stock fields; the attributes are the ones a calc sheet cites and a title block shows (Product Owner, second Windows review, 2026-09-09) | `D-028` (re-scoped: material is cited on evidence, `WP 18.0A`; part number, mass and standard-versus-custom deferred until a drawing or a calc sheet needs them) |
 
 **Judgement calls, not named in any Work Package's "Closes" column:**
@@ -90,17 +89,46 @@ citation-time refusal of an unreleased record is real (`EvidenceService`,
 "Pinned source superseded" warning, is unchanged: `TempestHost` registers
 no `IReferencePinResolver`/`CatalogPinResolver`, so `CalculationPackValidationService`
 and `VerificationArtefactValidationService` still resolve an empty
-dictionary. `TD-163` — only `MaterialSeed` reaches a shipped action
-(`BracketCalculationWorkbench.PopulateMaterialLibraryAsync`, the sole
-`ApplyAsync` call site outside `tests/`); `FastenerSeed`, `BearingSeed`,
-`StandardSeed` and `ConstantSeed` (35 of the 41 records) still have none.
-`TD-174` — re-scoped by `D-028` (Product Owner, 2026-09-09): material is
+dictionary. `TD-174` — re-scoped by `D-028` (Product Owner, 2026-09-09): material is
 cited on the evidence that used it (`WP 18.0A`), never assigned to the
 Part, so the material half of this row is closed by decision;
 `IPart.MaterialId` stays a bare string nothing sets. Part number, mass
 and standard-versus-custom stay open until a drawing title block or a
 calc sheet needs them, and are then one field each on
 `KindEditorDeclarations.Part()` (`WP 18.2A`).
+
+**Closed by `WP 18.0B-R1` (2026-09-09), with evidence — moved out of the
+Live Backlog:** `TD-163`. The gap this row named was real: `WP 18.0A` gave
+all 41 seeded records (materials 6, fasteners 7, bearings 2, standards 14,
+constants 12) a structured source citation, but only `MaterialSeed`
+reached a shipped call site
+(`BracketCalculationWorkbench.PopulateMaterialLibraryAsync`); `FastenerSeed`,
+`BearingSeed`, `StandardSeed` and `ConstantSeed` — 35 of the 41 records —
+had none, so the Libraries tab (`WP 18.2A`) opened with four of its six
+libraries permanently empty. `EngineeringWorkspaceComposer.RehydrateEngineeringObjectsAsync`
+— the one composition-root sequence both `Tempest.Desktop` and
+`Tempest.Harness` run at start, already the seam `WP 18.1B`'s search-index
+self-heal uses — now also applies all five seed datasets through the new
+`ReferenceSeedService.ApplyIfEmptyAsync`: a library still holding no
+record at all is populated, Draft, each record carrying its dataset's own
+citation; a library already touched — by a person, or, in a debug/test
+launch, by the sample module's own fictional Materials demonstration
+record — is left exactly alone, so a re-launch adds nothing and the
+shipped corpus can never override a value someone has since corrected.
+The existing "Populate Material Library" button is unchanged and stays
+correct: pressing it after the automatic pass reports the library already
+held every shipped record rather than duplicating anything.
+`tests/Tempest.Core.Tests/Population/StartupReferenceLibrarySeedingTests.cs`
+proves, through the real composition root: a fresh host over an empty
+root holds all 41 records after start, every one `Draft` with its
+citation; a second start over the same root adds none; a root where a
+material was registered by hand before first seeding leaves that library
+alone while the other four still seed in full.
+`tests/Tempest.Desktop.Tests/EngineeringDataJourneyTests.cs`'s own
+composition-root assertion is updated to the new real counts a launch now
+reaches. `TD-157` (the pin-supersession resolver) and the deferred
+interpolation/value-band half of `ADR-0149` are unaffected and remain as
+this section already describes them.
 
 ## Owned by Programme
 

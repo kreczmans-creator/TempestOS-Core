@@ -36,17 +36,31 @@ public class EngineeringDataJourneyTests
             var libraries = await host.ReferenceLibraries!.ListAsync();
             Assert.Equal(6, libraries.Count);
 
-            // Five libraries are empty, because the host does not seed
-            // itself. Materials is not: the sample modules register two
-            // fictional demonstration alloys into the real library at
-            // start-up. That is by design and long-standing, and it is
-            // exactly the situation the population phase's honesty rules
-            // exist for, so it is asserted rather than tolerated.
+            // WP 18.0B-R1 (TD-163): five of these six are no longer empty
+            // at start. EngineeringWorkspaceComposer.RehydrateEngineeringObjectsAsync
+            // now seeds Standards, Constants, Fasteners and Bearings from
+            // their shipped datasets on this very first launch, because
+            // each of those four holds no record at all at the point it
+            // runs. Materials is populated for the older reason this test
+            // already asserted: the sample modules register two fictional
+            // demonstration alloys into the real library during module
+            // initialisation, before that seeding phase ever runs, so the
+            // library is no longer empty by the time it is checked and the
+            // shipped Materials seed is left for the "Populate Material
+            // Library" button. Manufacturing (`ProcessSeed`) is out of
+            // this Work Package's five libraries and stays empty.
             var populated = libraries.Where(l => !l.IsEmpty).ToList();
-            var sampleLibrary = Assert.Single(populated);
+            Assert.Equal(5, populated.Count);
 
-            Assert.Equal("Materials", sampleLibrary.Library);
-            Assert.Equal(2, sampleLibrary.RecordCount);
+            var byLibrary = populated.ToDictionary(l => l.Library);
+            Assert.Equal(2, byLibrary["Materials"].RecordCount);
+            Assert.Equal(14, byLibrary["Standards"].RecordCount);
+            Assert.Equal(12, byLibrary["Constants"].RecordCount);
+            Assert.Equal(7, byLibrary["Fasteners"].RecordCount);
+            Assert.Equal(2, byLibrary["Bearings"].RecordCount);
+
+            var stillEmpty = Assert.Single(libraries, l => l.IsEmpty);
+            Assert.Equal("Manufacturing", stillEmpty.Library);
         }
         finally
         {

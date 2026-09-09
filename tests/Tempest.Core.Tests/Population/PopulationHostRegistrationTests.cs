@@ -60,6 +60,13 @@ public class PopulationHostRegistrationTests
         // gets populated is a governance decision, and a host that quietly
         // wrote reference data into every new installation would take that
         // decision away from whoever owns the data.
+        //
+        // WP 18.0B-R1 (TD-163): still true of this bare Core-layer host
+        // (built via TempestHostBuilder + RunAsync, never through
+        // EngineeringWorkspaceComposer) - the automatic seeding that gap
+        // closed lives one layer up, in
+        // EngineeringWorkspaceComposer.RehydrateEngineeringObjectsAsync,
+        // which this test deliberately does not call.
         using var temp = new TempDirectory();
 
         await RunAgainstRunningHostAsync(temp.Path, async host =>
