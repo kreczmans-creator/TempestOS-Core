@@ -69,6 +69,7 @@ internal static class SurfaceCommandPolicy
     {
         "calculations.delete",
         "documents.delete",
+        "evidence.delete",
         "manufacturing.delete",
         "mechanical.delete",
         "verification.delete",
