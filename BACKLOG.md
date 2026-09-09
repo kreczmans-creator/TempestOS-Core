@@ -58,7 +58,7 @@ and nothing on disk.
 | `TD-91` | `IWorkspaceLayout` cannot express a tabbed or floating panel | unowned |
 | `TD-92` | Drag-to-dock has no live preview adorner | unowned |
 | `TD-93` | `Tempest.Samples` redeclares 13 canonical vocabulary strings; can't reference the owner | unowned |
-| `TD-98` | Document viewer has no markup, annotation or rotation | `WP 18.3A` (partial) |
+| `TD-98` | Document viewer has no markup, annotation or rotation | `WP 18.2B` (partial) |
 | `TD-99` | DWG and SVG attachments report `Unsupported` in the viewer | unowned |
 | `TD-101` | A page rasterises at full size even when only part of it is visible | unowned |
 | `TD-131` | Focus-ring contrast test can't see any `Flat`-treatment state | unowned |
@@ -76,7 +76,7 @@ and nothing on disk.
 mechanism `WP 17.1A`/`WP 17.1B` replace, but neither row is literally
 listed; `TD-28` sits in the refresh/notification mechanism `WP 18.1A`
 replaces, same caveat. Owners other than "unowned" that are not one of
-the nine programme Work Packages (`WP 18.0B`, `18.2B`, `18.3A`,
+the programme Work Packages (`WP 18.0B`, `18.2B`,
 `19.0A`, `19.1B`, `17.0C`) are real, named in that WP's own "Closes"
 column in `WorkPackages.md`, but fall outside the specific
 "substrate"/"surface" set that rule defines — they are kept here,

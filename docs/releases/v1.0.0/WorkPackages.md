@@ -5,13 +5,14 @@
 **Amended 2026-09-09 (`D-028`, Product Owner):** `v0.18.0` is *Evidence
 and Check*, not *Calculation as Document*. Calculations are done wherever
 the engineer does them and recorded in Tempest as cited, checked, issued
-evidence; nothing computes in Tempest in `v1.0`. The in-app calculation
-surfaces are retired (`WP 18.3A`), the expression grammar and the cell
-editor are not built, and the product is a client project system of
+evidence. The existing in-app calculation surfaces stay in the software
+for now (Product Owner, later the same day: better in place and stripped
+later than rebuilt; `WP 18.3A` withdrawn), the expression grammar and
+the cell editor are not built, and the product is a client project system of
 record that evidence is tagged to, deliberately not an ERP and not a PLM.
 `WP 18.1B` Findability and `WP 18.0C` (the archive, moved from `19.0B`)
 are in; the `v0.17.0` hotfix rounds `17.9.1` to `17.9.4` are recorded in
-that release's notes. Remaining after `v0.17.0`: 87 developer-days. See
+that release's notes. Remaining after `v0.17.0`: 85 developer-days. See
 `D-028 Evidence is the product, calculation is where the engineer does it.md`.
 
 **Proposed, 2026-09-08; amended the same day after Product Owner review**
@@ -117,8 +118,9 @@ a power cut. Expected duration: six weeks.
 calculation wherever they do it today (a workbook, a hand sheet, a
 package) and records it in Tempest as evidence: the files, what it is
 about, the governed references it cites at the revision held, its key
-figures, and its check and issue. **Nothing computes in Tempest in
-`v1.0`; everything is recorded, cited, checked and issued in it.**
+figures, and its check and issue. **Everything is recorded, cited, checked and issued in Tempest; the
+calculation surfaces that ship in `v0.17.0` stay in place for now,
+unextended (Product Owner, 2026-09-09).**
 Decided by the Product Owner on 2026-09-09 (`D-028`), replacing
 "Calculation as Document". Deliberately not an ERP and not a PLM: the
 subject of a piece of evidence is a tag, never a managed structure.
@@ -129,16 +131,16 @@ Expected duration: six weeks.
 | `WP 18.0A` | **Evidence record (ADR-0148).** `Evidence` is a canonical Kind on the project: one or more attachments (workbook, PDF, drawing) through the existing verified-bytes attachment store; a `Classification` (Calculation, Drawing, Report, Test, Other); a subject tag (the Part, Assembly, Requirement or Deliverable it is about, by id, optional); **citations**, the reference records it stood on, picked from the governed libraries and pinned to the released revision at record time (`ReferencePin`), an unreleased record refused exactly as `GovernedBracketCheckService` refuses one; **declared figures**, named typed quantities (`Quantity`) with a role of input or result, optional, so figures are searchable and comparable across evidence; lifecycle `Draft → Checked → Issued → Superseded` (the canonical vocabulary specialised per ADR-0074); a `CheckRecord` (checker identity id, date, statement, outcome) and an `IssueRecord` (issue reference, revision, client, date). Record, revise, cite, check and issue are each one transaction (ADR-0145) with an audit row. **Not PLM, not ERP** (`D-028`): no occurrence model, no change control on tags, no procurement, supplier, cost or stock field. A Part's material is cited on the evidence that used it, not assigned to the part. | Substrate | `TD-17`, `TD-155`, `TD-157` (pins), `TD-174`, `TD-175` | 6 |
 | `WP 18.0B` | **Reference libraries reach the product, with citation (ADR-0149).** The 79 seeded records (materials, fasteners, bearings, standards, constants) are populated and releasable from the Desktop through the one review flow; a record carries a structured `SourceCitation` (publisher, work, edition, page, table or figure, row or entry); supersession keeps every existing pin valid, as an invariant with a test. Interpolation and structured value bands (the old `ADR-0149`) are deferred: without in-app calculation nothing consumes them in `v1.0`. | Substrate | `TD-163`, `TD-157` residual | 3 |
 | `WP 18.0C` | **Archive P02 to P07** (the `WP 19.0B` text as written, moved forward so the two largest Work Packages are not written on top of 31,000 unreachable lines). `Tempest.Core/EngineeringIntelligence`, `Knowledge`, `CommercialIntelligence`, `BusinessOperations` (except `Crm/Organisation`, `Crm/Contact`, `Finance/Budget`), `BusinessGovernance` (except `Money`, `CurrencyCode`, `EffectivePeriod`, `Pricing/RateCard*`) and `EngineeringAssets` (except `Verification`) move to `src/Frozen/` with their tests and seeds; `ADR-0127` to `ADR-0142` are marked Frozen. | Refactor | `TD-161`, `TD-162` | 2 |
-| `WP 18.1A` | **Async workspace read surface and change notification.** The invariant is not "everything returns Task"; it is **no blocking UI-thread access to persistence or workspace operations, and every view renders one coherent committed snapshot.** Every transaction commit increments a store sequence number; `IWorkspaceChanges.Changed(WorkspaceChange)` is raised once per commit carrying that sequence, the object id, kind and change type; a view responds by taking one `WorkspaceSnapshot` read at that sequence (a single `Task<Snapshot>` per view per change, composed inside one read transaction), never by composing several independent reads that could straddle a commit. The 16 cockpit-refresh and 17 explorer-reload call sites are deleted. The by-parent index of `WP 17.9.3` becomes a query. | Refactor | `TD-58`, `TD-66`, `TD-90`, `TD-108`, `TD-111`, `TD-117`, `TD-118`, `TD-121` | 6 |
+| `WP 18.1A` | **Async workspace read surface and change notification.** The invariant is not "everything returns Task"; it is **no blocking UI-thread access to persistence or workspace operations, and every view renders one coherent committed snapshot.** Every transaction commit increments a store sequence number; `IWorkspaceChanges.Changed(WorkspaceChange)` is raised once per commit carrying that sequence, the object id, kind and change type; a view responds by taking one `WorkspaceSnapshot` read at that sequence (a single `Task<Snapshot>` per view per change, composed inside one read transaction), never by composing several independent reads that could straddle a commit. The 16 cockpit-refresh and 17 explorer-reload call sites are deleted. The by-parent index of `WP 17.9.3` becomes a query. `PersistenceStore` (file-per-key) is deleted, and `Persistence:Backend=files` with it. | Refactor | `TD-58`, `TD-66`, `TD-90`, `TD-108`, `TD-111`, `TD-117`, `TD-118`, `TD-121` | 6 |
 | `WP 18.1B` | **Findability.** One global search over titles, identifiers and evidence references (SQLite full-text) in the Command Palette and the Explorer filter; "recently changed" on the cockpit from the change feed; the creation-placement rule of `WP 17.9.3` and the open-right-up rule of `WP 17.9.4` become properties of the store and the declaration, not of each screen. | Surface | `TD-41` residual, `WP 17.9.x` residual class | 5 |
 | `WP 18.2A` | **Evidence workspace.** An *Evidence* rail entry and the project's Evidence tab: a list with classification, subject, status, checker and issue reference; create by picking files (a real file picker) or dragging them in; a citation picker over released library records only; a subject-tag picker over the project's own structure; declared-figure entry with a unit picker; the object opens right up after create. The Object Editor renders Evidence from one declaration of its facets, the declaration-per-Kind rule, which is then applied to Part, Assembly and Component so each shows only what it means (`TD-174`, `TD-175`: a Part shows a read-only *Where used* from the assembly it sits in, and no BOM input). **Acceptance is behavioural:** record, cite, restart, find, open, in under two minutes by a person who did not build it. | Surface | `TD-160`, `TD-165`, `TD-41`, `TD-174`, `TD-175` | 8 |
-| `WP 18.2B` | **Independent check and issue.** A check is recorded by a second principal against a specific evidence revision and is **refused when the checker's identity id equals the author's** (`WP 17.2A` identity; role does not enter it: switching a configuration to "Checker" on the same OS account does not make a check independent; two OS accounts on one machine do). The statement and outcome are stored verbatim. Issue produces an **issue sheet** (QuestPDF): project, client, evidence reference and revision, classification, author, checker and dates, every citation with library, record, revision and source, the declared figures, and a signature block; saved as an attachment of the evidence and exportable to a file; regenerated from the record, never edited. Supersession of issued evidence keeps the issued revision immutable. | Surface | `TD-25`, `TD-31`, `TD-38` (for evidence), `TD-98` partial | 5 |
-| `WP 18.3A` | **Retire the in-app calculation surfaces.** The *Engineering Calculations* rail entry and the *Calculations* discipline tab are removed from the shell; the engine, the six definitions, the bracket workbench and their tests stay in the build, dormant and exercised only by tests, so a later "built-in check" evidence type can be built on them if a client asks. `CalculationTemplateRegistry` and the JSON execute path are deleted. `ADR-0056` and `ADR-0086` are superseded by `ADR-0148`. | Refactor | `TD-159`, `TD-167`–`TD-169` disposition | 2 |
-| `WP 18.9.0` | **`v0.18.0` release.** Physical review on Windows: open a project, record a workbook as evidence with two material citations, restart, find it by name, have a second OS account check it, issue it, open the issue sheet. Three consecutive CI runs. Delete `PersistenceStore` (file-per-key). Release Notes; tag; publish. | Release | — | 2 |
+| `WP 18.2B` | **Independent check and issue.** A check is recorded against a specific evidence revision. The independence rule, **the checker's identity id must differ from the author's** (`WP 17.2A` identity; role does not enter it), is built in but **switched off by default** (`Evidence:IndependentCheck`; Product Owner, 2026-09-09: a one-person consultancy has one login and enters the client's review by hand until there is a second member of staff). When off, the check carries the checker's name and organisation as typed and the recording principal as *recorded by*; when on, the same principal is refused. Both are proved by tests; the manual test runs with the rule off. The statement and outcome are stored verbatim. Issue produces an **issue sheet** (a PDF drawn with SkiaSharp's `SKDocument`, which already ships in the Desktop build; no new dependency): project, client, evidence reference and revision, classification, author, checker and dates, every citation with library, record, revision and source, the declared figures, and a signature block; saved as an attachment of the evidence and exportable to a file; regenerated from the record, never edited. Supersession of issued evidence keeps the issued revision immutable. | Surface | `TD-25`, `TD-31`, `TD-38` (for evidence), `TD-98` partial | 5 |
+| `WP 18.9.0` | **`v0.18.0` release.** Physical review on Windows: open a project, record a workbook as evidence with two material citations, restart, find it by name, record the client's check by hand, issue it, open the issue sheet. Three consecutive CI runs. Release Notes; tag; publish. | Release | — | 2 |
 
-**Release total: 39 developer-days** (42 was planned for Calculation as
+**Release total: 37 developer-days** (42 was planned for Calculation as
 Document; the expression grammar, the cell editor and the run diff are
-not built, and Findability and the archive are in).
+not built, Findability and the archive are in, and `WP 18.3A` was
+withdrawn the day it was written: the calculation surfaces stay).
 
 ---
 
@@ -187,14 +189,14 @@ duration: three weeks.
 | Release | Developer-days | Calendar |
 |---|---|---|
 | `v0.17.0` Reset and Substrates | 41 | weeks 1–6 |
-| `v0.18.0` Evidence and Check (`D-028`) | 39 | weeks 7–12 |
+| `v0.18.0` Evidence and Check (`D-028`) | 37 | weeks 7–12 |
 | `v0.19.0` Consultancy Seam and Desktop | 34 | weeks 13–18 |
 | `v1.0.0` Release Candidate | 14 | weeks 19–21 |
-| **Total** | **128** | **21 weeks** |
+| **Total** | **126** | **21 weeks** |
 
-**The 22 weeks is a programme target, not a delivery date, and the
+**The 21 weeks is a programme target, not a delivery date, and the
 arithmetic behind it is stated so nobody mistakes sequencing for
-contingency.** 128 developer-days in 21 calendar weeks (105 working days)
+contingency.** 126 developer-days in 21 calendar weeks (105 working days)
 assumes roughly 1.2 parallel streams from agents working independent Work
 Packages within a release; executed strictly serially it is 26 weeks.
 Contingency is not added as a line; if a release slips, its surfaces slip
@@ -213,7 +215,7 @@ lands in.
 | `ADR-0145` | One store is authoritative; object state, revisions and relationships commit in one transaction; in-memory repositories are caches | `WP 17.1B` |
 | `ADR-0146` | Configuration and logging are Microsoft.Extensions; plugin trust, inbound REST and licensing are frozen outside the build; identity is one session principal | `WP 17.2A` |
 | `ADR-0147` | Units are a runtime dimension vector; the generic `Quantity<TDimension>` is a typed facade over it | `WP 17.3A` |
-| `ADR-0148` | Evidence is a canonical Kind: files as verified bytes, a subject tag, citations pinned to released reference revisions (an unreleased one refused), declared figures as typed quantities, a check by a second principal who is not the author, and an issue record, each act one transaction; nothing computes (`D-028`) | `WP 18.0A` |
+| `ADR-0148` | Evidence is a canonical Kind: files as verified bytes, a subject tag, citations pinned to released reference revisions (an unreleased one refused), declared figures as typed quantities, a check by a second principal who is not the author, and an issue record, each act one transaction; the evidence record itself computes nothing (`D-028`) | `WP 18.0A` |
 | `ADR-0149` | A reference record carries a structured source citation; supersession keeps every pin valid; interpolation and structured value bands are deferred until something in the product consumes them | `WP 18.0B` |
 | `ADR-0150` | Time, deliverable completion and rate resolution are engineering objects on the project; billing and cost rates freeze at entry; the five KPI equations and their provenance are defined here; TempestOS holds no ledger | `WP 19.0A`, `WP 19.1B` |
 | `ADR-0151` | Invoicing is an outbound connector to the accounting system; the request id is the idempotency key and the invoice reference; TempestOS creates draft invoices and reads status; it never marks anything paid | `WP 19.1A` |
@@ -260,10 +262,11 @@ the outcome is predictable.
 - No new discipline beyond the six that ship, and no new reference
   library beyond materials, fasteners, bearings, standards and constants
   populated by `WP 18.0B`.
-- **No in-app calculation authoring** (`D-028`): no expression grammar, no
-  cell editor, no run diff. Calculations are done in the engineer's own
-  tools and recorded as evidence. The six built-in definitions stay
-  dormant in the build for a later "built-in check" evidence type.
+- **No further in-app calculation authoring** (`D-028`): no expression
+  grammar, no cell editor, no run diff. The calculation surfaces that
+  ship in `v0.17.0` stay in place, unextended, on the Product Owner's
+  instruction of 2026-09-09; calculations for evidence are done in the
+  engineer's own tools and recorded as evidence.
 - **Not an ERP and not a PLM** (`D-028`): no part-occurrence model, no
   multi-assembly usage, no change control on lines, no procurement,
   supplier, cost or stock field, no workflow engine. An attribute earns
