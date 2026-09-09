@@ -20,7 +20,14 @@ namespace Tempest.Core.ReferenceData.Seeding;
 /// <param name="RecordId">The stable identity the record is registered under. Stable across runs, so re-seeding recognises what it already wrote.</param>
 /// <param name="Definition">The engineering description itself.</param>
 /// <param name="Provenance">Where <paramref name="Definition"/>'s own values came from.</param>
+/// <param name="Source">
+/// A structured citation of the exact line <paramref name="Definition"/>'s
+/// own values were read from (`ADR-0149`), where the dataset names one
+/// precisely enough to state it. <see langword="null"/> otherwise — never
+/// invented to fill the gap.
+/// </param>
 public sealed record ReferenceSeedRecord<TDefinition>(
     string RecordId,
     TDefinition Definition,
-    ReferenceProvenance Provenance);
+    ReferenceProvenance Provenance,
+    SourceCitation? Source = null);
