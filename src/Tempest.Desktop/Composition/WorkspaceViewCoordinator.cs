@@ -6,10 +6,12 @@ using Tempest.Workspace.Manufacturing;
 using Tempest.Workspace.Mechanical;
 using Tempest.Workspace.Requirements;
 using Tempest.Workspace.Verification;
+using Tempest.Core.Audit;
 using Tempest.Core.Commands;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Events;
 using Tempest.Core.Requirements;
+using Tempest.Workspace.Editors;
 using Tempest.Desktop.Editors;
 using Tempest.Desktop.Theming;
 using Tempest.Desktop.Views;
@@ -88,6 +90,15 @@ internal sealed class WorkspaceViewCoordinator
     private readonly Action _refreshCockpit;
     private readonly IWorkspaceChanges? _workspaceChanges;
 
+    // `WP 18.2A`: the declaration-per-Kind Object Editor's own optional
+    // collaborators — see `ObjectEditorView.TryCreate`'s own identical
+    // parameters. Both null for any caller (a test, an earlier build of
+    // this class) that does not supply them, in which case every Kind
+    // renders exactly as it always has.
+    private readonly IKindEditorDeclarationRegistry? _declarations;
+    private readonly EvidenceEditorSupport? _evidenceSupport;
+    private readonly IAuditQuery? _auditQuery;
+
     private DocumentAreaView? _documentArea;
 
     /// <summary>Initialises a new instance of the <see cref="WorkspaceViewCoordinator"/> class, wiring every Explorer/Inspector cross-view interaction that does not need <see cref="DocumentAreaView"/> to already exist (see <see cref="Attach"/>).</summary>
@@ -110,7 +121,8 @@ internal sealed class WorkspaceViewCoordinator
         StatusBarView statusBar, ToastHost toastHost, ConfirmationDialog confirmationDialog, IUndoRedoStack undoRedoStack,
         RecentObjectsState recentObjects, FavouriteObjectsState favouriteObjects, Dictionary<Guid, IWorkspaceView> openGraphViewsByRootId,
         Action refreshStatusBar, Action<string> recordHistory, Action refreshCockpit, ActionOutcomeReporter reporter,
-        IWorkspaceChanges? workspaceChanges = null)
+        IWorkspaceChanges? workspaceChanges = null, IKindEditorDeclarationRegistry? declarations = null,
+        EvidenceEditorSupport? evidenceSupport = null, IAuditQuery? auditQuery = null)
     {
         ArgumentNullException.ThrowIfNull(workspace);
         ArgumentNullException.ThrowIfNull(manager);
@@ -153,6 +165,9 @@ internal sealed class WorkspaceViewCoordinator
         _refreshCockpit = refreshCockpit;
         _workspaceChanges = workspaceChanges;
         _reporter = reporter;
+        _declarations = declarations;
+        _evidenceSupport = evidenceSupport;
+        _auditQuery = auditQuery;
 
         // Select-to-inspect / Open-to-edit (WP8.0A UI Architecture.md §4, unchanged).
         _explorerView.ObjectSelected += async (id, kind) =>
@@ -280,7 +295,7 @@ internal sealed class WorkspaceViewCoordinator
 
         var editor = ObjectEditorView.TryCreate(
             view.ObjectId, view.ObjectKind, _domainContext, _manager, NavigateToObject, _commandDispatcher, _requirementsService, _calculationTemplates,
-            _workspaceChanges);
+            _workspaceChanges, _declarations, _evidenceSupport, _auditQuery);
         if (editor is null)
             return DocumentAreaView.BuildDefaultBody(view);
 

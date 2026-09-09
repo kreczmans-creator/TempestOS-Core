@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Platform;
+using Tempest.Workspace.Editors;
 using Tempest.Workspace.Projects;
 using Tempest.Workspace.Shell;
 using Tempest.Workspace;
@@ -10,6 +11,8 @@ using Tempest.Core.Diagnostics;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Macros;
 using Tempest.Desktop.Composition;
+using Tempest.Desktop.Editors;
+using Tempest.Desktop.Files;
 using Tempest.Desktop.History;
 using Tempest.Desktop.Input;
 using Tempest.Desktop.Tasks;
@@ -93,6 +96,15 @@ public sealed class MainWindow : Window
     private readonly EngineeringCalculationView _engineeringCalculation;
     private readonly EngineeringCalculationCoordinator _engineeringCalculationCoordinator;
     private bool _engineeringCalculationLoaded;
+
+    // The Evidence workspace (`WP 18.2A`, `ADR-0148`) — an Evidence tab and
+    // a Libraries tab, plus the three picker dialogs its own Create flow
+    // and the Object Editor's own declared Evidence sections share.
+    private readonly EvidenceWorkspaceView _evidenceWorkspace;
+    private readonly CitationPicker _citationPicker;
+    private readonly SubjectPicker _subjectPicker;
+    private readonly DeclaredFigureEntry _declaredFigureEntry;
+    private readonly AvaloniaFilePicker _evidenceFilePicker;
     private readonly ProjectDeliveryCoordinator _projectDelivery;
     private readonly ProjectGovernanceCoordinator _projectGovernanceCoordinator;
 
@@ -229,7 +241,7 @@ public sealed class MainWindow : Window
         composition.NotificationDispatcher.Subscribe<Tempest.Core.Notifications.IPlatformNotification>(toastBridge);
 
         _theme = new ThemeService(composition.SettingsProvider);
-        _settingsDialog = new SettingsDialog(_theme, _session.UserSettings);
+        _settingsDialog = new SettingsDialog(_theme, _session.UserSettings, composition.SettingsProvider);
 
         // The Delete Confirmation gate (`WP 10.5B`, Dialog Framework) —
         // one real implementation, wired identically into every Delete
@@ -296,12 +308,32 @@ public sealed class MainWindow : Window
         // CockpitView-refresh need (view-state, not data — an opened or
         // closed document tab) is still the identical `Action` delegate,
         // `WP 12.4B` (`ADR-0104`).
+        // The declaration-per-Kind Object Editor's own collaborators
+        // (`WP 18.2A`) — built here, ahead of `WorkspaceViewCoordinator`,
+        // which threads them into every `ObjectEditorView` it opens.
+        // `_citationPicker`/`_subjectPicker`/`_declaredFigureEntry` are
+        // added to this window's own overlay root and tracked as modal
+        // dialogs below, alongside every other Dialog Framework overlay.
+        var kindEditorDeclarations = new KindEditorDeclarationRegistry();
+        KindEditorDeclarations.RegisterAll(kindEditorDeclarations);
+
+        _evidenceFilePicker = new AvaloniaFilePicker(this);
+        _citationPicker = new CitationPicker(ct => LibrariesView.ReadAllAsync(
+            host.Materials!, host.Fasteners!, host.Bearings!, host.Standards!, host.Constants!, ct));
+        _subjectPicker = new SubjectPicker(composition.DomainContext);
+        _declaredFigureEntry = new DeclaredFigureEntry();
+
+        var evidenceSupport = new EvidenceEditorSupport(
+            _evidenceFilePicker,
+            ct => _citationPicker.PickAsync(ct),
+            ct => _declaredFigureEntry.PromptAsync(ct));
+
         _viewCoordinator = new WorkspaceViewCoordinator(
             workspace, manager, composition.DomainContext, composition.CommandDispatcher, composition.RequirementsService, host.CalculationTemplates,
             _explorerView, _inspectorView, _ribbon, _statusBar, _toastHost, _confirmationDialog, _undoRedo.Stack,
             _session.RecentObjects, _session.FavouriteObjects, _openGraphViewsByRootId,
             refreshStatusBar: () => RefreshStatusBar(manager), recordHistory: RecordHistory, refreshCockpit: () => _cockpitView!.Refresh(), _actionReporter,
-            workspaceChanges: composition.WorkspaceChanges);
+            workspaceChanges: composition.WorkspaceChanges, declarations: kindEditorDeclarations, evidenceSupport: evidenceSupport, auditQuery: host.AuditQuery);
 
         _documentArea = new DocumentAreaView(_viewCoordinator.BuildDocumentContent);
 
@@ -531,6 +563,24 @@ public sealed class MainWindow : Window
         _engineeringCalculation.ShowRetiredChanged += include => _ = _engineeringCalculationCoordinator.SetShowRetiredAsync(include);
         _engineeringCalculation.SelectionMoved += () => _engineeringCalculationCoordinator.ForgetPendingRetirement();
 
+        // The Evidence workspace's own Create flow and the Object Editor's
+        // own declared Evidence sections both need a real prompt now that
+        // it exists (`WP 18.2A`).
+        var librariesView = new LibrariesView(
+            host.Materials!, host.Fasteners!, host.Bearings!, host.Standards!, host.Constants!,
+            host.ReferenceReview!, host.BracketCalculations!);
+        librariesView.ActionCompleted += (message, outcome) => _ = _actionReporter.ReportAsync(message, outcome);
+
+        _evidenceWorkspace = new EvidenceWorkspaceView(
+            composition.DomainContext, composition.CommandDispatcher, _evidenceFilePicker,
+            () => _projectContext.Current?.Id, _viewCoordinator.NavigateToObject, librariesView)
+        {
+            ParameterPrompt = commandPrompt.Prompt,
+            SubjectPrompt = ct => _subjectPicker.PickAsync(ct),
+            WorkspaceChanges = composition.WorkspaceChanges,
+        };
+        _evidenceWorkspace.ActionCompleted += (message, outcome) => _ = _actionReporter.ReportAsync(message, outcome);
+
         _navigationRail = new GlobalNavigationRail(_navigator);
 
         _navigationRail.NavigationRequested += () => _ = RenderCurrentModuleAsync();
@@ -589,6 +639,7 @@ public sealed class MainWindow : Window
             ShellArea.Projects => _projectBrowser,
             ShellArea.ProjectWorkspace => _projectWorkspace,
             ShellArea.EngineeringCalculation => _engineeringCalculation,
+            ShellArea.Evidence => _evidenceWorkspace,
             _ => _engineeringSurface,
         };
 
@@ -649,6 +700,9 @@ public sealed class MainWindow : Window
         root.Children.Add(_messageDialog);
         root.Children.Add(_settingsDialog);
         root.Children.Add(_macroManagerDialog);
+        root.Children.Add(_citationPicker);
+        root.Children.Add(_subjectPicker);
+        root.Children.Add(_declaredFigureEntry);
         root.Children.Add(_toastHost);
         Content = root;
 
@@ -659,7 +713,11 @@ public sealed class MainWindow : Window
         // here, once, covers every dialog's own many call sites (spread
         // across this class and `DesktopCommandPrompt`) without needing to
         // wrap each one individually.
-        foreach (var modal in new Border[] { _confirmationDialog, _inputDialog, _messageDialog, _settingsDialog, _macroManagerDialog, _commandPalette })
+        foreach (var modal in new Border[]
+                 {
+                     _confirmationDialog, _inputDialog, _messageDialog, _settingsDialog, _macroManagerDialog, _commandPalette,
+                     _citationPicker, _subjectPicker, _declaredFigureEntry,
+                 })
             TrackModal(modal);
 
         var shortcutActions = new KeyboardShortcutActions(
@@ -1028,6 +1086,16 @@ public sealed class MainWindow : Window
                 if (location.Area == ShellArea.Engineering)
                     _dockingComposer.EnsureCorePanelsPresent();
                 _moduleHost.Content = _engineeringSurface;
+                break;
+
+            case ShellArea.Evidence:
+                // `WP 18.2A`: the open project's own evidence and the
+                // Libraries tab. Re-read on every entry (`RefreshAsync`),
+                // the same "load when you land here" discipline every
+                // other area already follows — never a manual refresh
+                // call site scattered elsewhere (`WP 18.1A`'s own guard).
+                await _evidenceWorkspace.RefreshAsync().ConfigureAwait(true);
+                _moduleHost.Content = _evidenceWorkspace;
                 break;
 
             case ShellArea.EngineeringCalculation:

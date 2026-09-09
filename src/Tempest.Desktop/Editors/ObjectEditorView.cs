@@ -8,19 +8,43 @@ using Avalonia.Threading;
 using Tempest.Workspace;
 using Tempest.Workspace.Calculations;
 using Tempest.Workspace.Documents;
+using Tempest.Workspace.Editors;
+using Tempest.Workspace.Evidence;
+using Tempest.Workspace.Files;
 using Tempest.Workspace.Mechanical;
 using Tempest.Workspace.Requirements;
 using Tempest.Workspace.Verification;
+using Tempest.Core.Audit;
 using Tempest.Core.Commands;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Events;
+using Tempest.Core.Evidence;
+using Tempest.Core.ReferenceData;
 using Tempest.Core.Requirements;
 using Tempest.Core.Verification;
 using Tempest.Desktop.DigitalThread;
 using Tempest.Desktop.Icons;
 using Tempest.Desktop.Theming;
+using Tempest.Desktop.Views;
 
 namespace Tempest.Desktop.Editors;
+
+/// <summary>
+/// The Evidence-specific collaborators the declaration-per-Kind Evidence
+/// sections need (`WP 18.2A`, §4): a file picker for the Files section's
+/// own "add via picker" affordance, and the two picker delegates the
+/// Citations/Declared-figures sections use. Each delegate mirrors
+/// <see cref="Views.RibbonView.ParameterPrompt"/>'s own stubbable shape,
+/// so a journey test can drive Cite/Declare with no dialog ever on
+/// screen. <see langword="null"/> (any test that constructs an editor
+/// directly without it) leaves every Evidence-writing action honestly
+/// unavailable rather than run without asking — the identical discipline
+/// <see cref="ObjectEditorView.WorkspaceChanges"/> already established.
+/// </summary>
+public sealed record EvidenceEditorSupport(
+    IFilePicker FilePicker,
+    Func<CancellationToken, Task<EvidenceLibraryRow?>> PickCitationAsync,
+    Func<CancellationToken, Task<DeclaredFigureInput?>> PickDeclaredFigureAsync);
 
 /// <summary>
 /// The Object Editor Framework's own real, tabbed editor control (`WP
@@ -95,6 +119,9 @@ public sealed class ObjectEditorView : UserControl
     private readonly ICommandDispatcher _commandDispatcher;
     private readonly IRequirementsService? _requirementsService;
     private readonly CalculationTemplateRegistry? _calculationTemplates;
+    private readonly IKindEditorDeclarationRegistry? _declarations;
+    private readonly EvidenceEditorSupport? _evidenceSupport;
+    private readonly IAuditQuery? _auditQuery;
 
     private readonly TextBlock _identityReadout = new() { Opacity = 0.7, FontSize = DesignTokens.FontSizeCaption };
     private readonly TextBox _nameBox = new() { FontSize = DesignTokens.FontSizeBody, MinHeight = DesignTokens.MinControlSize };
@@ -154,8 +181,44 @@ public sealed class ObjectEditorView : UserControl
     private readonly TextBox _attachmentContentTypeBox = new() { FontSize = DesignTokens.FontSizeBody, MinHeight = DesignTokens.MinControlSize };
     private readonly TextBox _attachmentSizeBox = new() { FontSize = DesignTokens.FontSizeBody, MinHeight = DesignTokens.MinControlSize };
     private readonly Button _attachmentAddButton = new() { Content = "Attach", MinHeight = DesignTokens.MinControlSize };
+    private readonly Button _addFileViaPickerButton = new() { Content = "Add File…", MinHeight = DesignTokens.MinControlSize, IsVisible = false };
     private readonly TextBlock _attachmentStatusMessage = new() { FontSize = DesignTokens.FontSizeCaption, Opacity = 0.8 };
     private Expander _attachmentsSection = null!;
+
+    // `WP 18.2A` — declaration-per-Kind: the Description (read-only
+    // mechanical metadata) and Where-used sections Part/Assembly/Component
+    // declare (`TD-174`, `TD-175`).
+    private readonly StackPanel _descriptionPanel = new() { Spacing = DesignTokens.SpaceXs };
+    private Expander _descriptionSection = null!;
+    private readonly StackPanel _whereUsedPanel = new() { Spacing = DesignTokens.SpaceXs };
+    private Expander _whereUsedSection = null!;
+    private Expander _lifecycleSection = null!;
+
+    // `WP 18.2A` — Evidence's own declared sections (`ADR-0148`, §4).
+    private readonly StackPanel _evidenceSubjectPanel = new() { Spacing = DesignTokens.SpaceXs };
+    private Expander _evidenceSubjectSection = null!;
+
+    private readonly StackPanel _evidenceCitationsPanel = new() { Spacing = DesignTokens.SpaceXs };
+    private readonly Button _citeButton = new() { Content = "Cite", MinHeight = DesignTokens.MinControlSize, IsVisible = false };
+    private readonly TextBlock _evidenceCitationsStatus = new() { FontSize = DesignTokens.FontSizeCaption, Opacity = 0.8 };
+    private Expander _evidenceCitationsSection = null!;
+
+    private readonly StackPanel _evidenceFiguresPanel = new() { Spacing = DesignTokens.SpaceXs };
+    private readonly Button _declareFigureButton = new() { Content = "Declare Figure", MinHeight = DesignTokens.MinControlSize, IsVisible = false };
+    private readonly TextBlock _evidenceFiguresStatus = new() { FontSize = DesignTokens.FontSizeCaption, Opacity = 0.8 };
+    private Expander _evidenceFiguresSection = null!;
+
+    // Status + Check + Issue, read-only (`WP 18.2B` builds the Check and
+    // Issue actions themselves) — Evidence's own specialised replacement
+    // for the generic Lifecycle section, suppressed for this Kind so a
+    // reader is never shown the eight-value canonical vocabulary this
+    // Kind's own four-value one specialises (`Evidence.Status`'s own
+    // remarks).
+    private readonly StackPanel _evidenceLifecyclePanel = new() { Spacing = DesignTokens.SpaceXs };
+    private Expander _evidenceLifecycleSection = null!;
+
+    private readonly StackPanel _evidenceAuditPanel = new() { Spacing = DesignTokens.SpaceXs };
+    private Expander _evidenceAuditSection = null!;
 
     private string _originalName = string.Empty;
     private string _originalContent = string.Empty;
@@ -285,7 +348,8 @@ public sealed class ObjectEditorView : UserControl
 
     private ObjectEditorView(
         Guid objectId, string objectKind, EngineeringDomainContext domainContext, IWorkspaceManager manager, Action<Guid, string> navigateToObject,
-        ICommandDispatcher commandDispatcher, IRequirementsService? requirementsService, CalculationTemplateRegistry? calculationTemplates)
+        ICommandDispatcher commandDispatcher, IRequirementsService? requirementsService, CalculationTemplateRegistry? calculationTemplates,
+        IKindEditorDeclarationRegistry? declarations, EvidenceEditorSupport? evidenceSupport, IAuditQuery? auditQuery)
     {
         _objectId = objectId;
         _objectKind = objectKind;
@@ -295,6 +359,9 @@ public sealed class ObjectEditorView : UserControl
         _commandDispatcher = commandDispatcher;
         _requirementsService = requirementsService;
         _calculationTemplates = calculationTemplates;
+        _declarations = declarations;
+        _evidenceSupport = evidenceSupport;
+        _auditQuery = auditQuery;
 
         // `WP 18.1A`: once this tab closes and the control leaves the
         // visual tree, drop the change-feed subscription — see
@@ -318,6 +385,9 @@ public sealed class ObjectEditorView : UserControl
         _verificationFailButton.Classes.Add(ChromeStyles.Danger);
         _verificationConditionalButton.Classes.Add(ChromeStyles.Subtle);
         _attachmentAddButton.Classes.Add(ChromeStyles.Primary);
+        _addFileViaPickerButton.Classes.Add(ChromeStyles.Primary);
+        _citeButton.Classes.Add(ChromeStyles.Primary);
+        _declareFigureButton.Classes.Add(ChromeStyles.Primary);
 
         // PropertyChanged, not the TextChanged routed event — fires
         // reliably for every Text value change regardless of source (real
@@ -342,6 +412,9 @@ public sealed class ObjectEditorView : UserControl
         _verificationFailButton.Click += async (_, _) => await OnRecordVerificationResultAsync(VerificationOutcome.Fail).ConfigureAwait(true);
         _verificationConditionalButton.Click += async (_, _) => await OnRecordVerificationResultAsync(VerificationOutcome.Conditional).ConfigureAwait(true);
         _attachmentAddButton.Click += async (_, _) => await OnAttachAsync().ConfigureAwait(true);
+        _addFileViaPickerButton.Click += async (_, _) => await OnAddFileViaPickerAsync().ConfigureAwait(true);
+        _citeButton.Click += async (_, _) => await OnCiteAsync().ConfigureAwait(true);
+        _declareFigureButton.Click += async (_, _) => await OnDeclareFigureAsync().ConfigureAwait(true);
     }
 
     /// <summary>Gets whether this editor holds local, buffered edits (Name and/or Content) not yet committed via Save — this Work Package's own genuine, buffered dirty-state (distinct from and unrelated to <see cref="IWorkspaceView.IsDirty"/>, which remains permanently <see langword="false"/>, by design, unchanged — see class remarks).</summary>
@@ -382,7 +455,8 @@ public sealed class ObjectEditorView : UserControl
     public static ObjectEditorView? TryCreate(
         Guid objectId, string objectKind, EngineeringDomainContext domainContext, IWorkspaceManager manager, Action<Guid, string> navigateToObject,
         ICommandDispatcher commandDispatcher, IRequirementsService? requirementsService = null, CalculationTemplateRegistry? calculationTemplates = null,
-        IWorkspaceChanges? workspaceChanges = null)
+        IWorkspaceChanges? workspaceChanges = null, IKindEditorDeclarationRegistry? declarations = null,
+        EvidenceEditorSupport? evidenceSupport = null, IAuditQuery? auditQuery = null)
     {
         ArgumentNullException.ThrowIfNull(domainContext);
         ArgumentNullException.ThrowIfNull(manager);
@@ -394,7 +468,9 @@ public sealed class ObjectEditorView : UserControl
         if (target is null)
             return null;
 
-        var editor = new ObjectEditorView(objectId, objectKind, domainContext, manager, navigateToObject, commandDispatcher, requirementsService, calculationTemplates)
+        var editor = new ObjectEditorView(
+            objectId, objectKind, domainContext, manager, navigateToObject, commandDispatcher, requirementsService, calculationTemplates,
+            declarations, evidenceSupport, auditQuery)
         {
             WorkspaceChanges = workspaceChanges,
         };
@@ -458,7 +534,7 @@ public sealed class ObjectEditorView : UserControl
 
         var identitySection = BuildSection("Identity", new StackPanel { Spacing = DesignTokens.SpaceXs, Children = { LabeledRow("Name", _nameBox) } });
         _contentSection = BuildSection("Content", _contentBox);
-        var lifecycleSection = BuildSection("Lifecycle", _lifecyclePanel);
+        _lifecycleSection = BuildSection("Lifecycle", _lifecyclePanel);
         var relationshipsSection = BuildSection("Relationships", _relationshipsPanel);
         var validationSection = BuildSection("Validation", _validationPanel);
 
@@ -519,25 +595,65 @@ public sealed class ObjectEditorView : UserControl
         attachmentsPanel.Children.Add(LabeledRow("Content Type", _attachmentContentTypeBox));
         attachmentsPanel.Children.Add(LabeledRow("Size (bytes)", _attachmentSizeBox));
         attachmentsPanel.Children.Add(_attachmentAddButton);
+        attachmentsPanel.Children.Add(_addFileViaPickerButton);
         attachmentsPanel.Children.Add(_attachmentStatusMessage);
         _attachmentsSection = BuildSection("Attachments", attachmentsPanel);
         _attachmentsSection.IsVisible = false;
+
+        // `WP 18.2A` — declaration-per-Kind (Part/Assembly/Component): a
+        // read-only mechanical-metadata block and the "Where used" facet,
+        // named and linked (`TD-174`, `TD-175`).
+        _descriptionSection = BuildSection("Description", _descriptionPanel);
+        _descriptionSection.IsVisible = false;
+        _whereUsedSection = BuildSection("Where used", _whereUsedPanel);
+        _whereUsedSection.IsVisible = false;
+
+        // `WP 18.2A` — Evidence's own declared sections (`ADR-0148`, §4).
+        _evidenceSubjectSection = BuildSection("Subject", _evidenceSubjectPanel);
+        _evidenceSubjectSection.IsVisible = false;
+
+        var citationsBody = new StackPanel { Spacing = DesignTokens.SpaceXs };
+        citationsBody.Children.Add(_citeButton);
+        citationsBody.Children.Add(_evidenceCitationsPanel);
+        citationsBody.Children.Add(_evidenceCitationsStatus);
+        _evidenceCitationsSection = BuildSection("Citations", citationsBody);
+        _evidenceCitationsSection.IsVisible = false;
+
+        var figuresBody = new StackPanel { Spacing = DesignTokens.SpaceXs };
+        figuresBody.Children.Add(_declareFigureButton);
+        figuresBody.Children.Add(_evidenceFiguresPanel);
+        figuresBody.Children.Add(_evidenceFiguresStatus);
+        _evidenceFiguresSection = BuildSection("Declared figures", figuresBody);
+        _evidenceFiguresSection.IsVisible = false;
+
+        _evidenceLifecycleSection = BuildSection("Lifecycle", _evidenceLifecyclePanel);
+        _evidenceLifecycleSection.IsVisible = false;
+
+        _evidenceAuditSection = BuildSection("Audit", _evidenceAuditPanel);
+        _evidenceAuditSection.IsVisible = false;
 
         var body = new StackPanel { Margin = DesignTokens.PanelPadding, Spacing = DesignTokens.SpaceMd };
         body.Children.Add(header);
         body.Children.Add(_statusMessage);
         body.Children.Add(new Separator());
         body.Children.Add(identitySection);
+        body.Children.Add(_descriptionSection);
         body.Children.Add(_contentSection);
+        body.Children.Add(_evidenceSubjectSection);
         body.Children.Add(_bomSection);
         body.Children.Add(_requirementSection);
         body.Children.Add(_calculationSection);
         body.Children.Add(_calculationPointerSection);
         body.Children.Add(_verificationResultSection);
+        body.Children.Add(_evidenceCitationsSection);
+        body.Children.Add(_evidenceFiguresSection);
         body.Children.Add(_attachmentsSection);
-        body.Children.Add(lifecycleSection);
+        body.Children.Add(_whereUsedSection);
+        body.Children.Add(_lifecycleSection);
+        body.Children.Add(_evidenceLifecycleSection);
         body.Children.Add(relationshipsSection);
         body.Children.Add(validationSection);
+        body.Children.Add(_evidenceAuditSection);
 
         return new ScrollViewer { Content = body };
     }
@@ -589,10 +705,30 @@ public sealed class ObjectEditorView : UserControl
         await PopulateCalculationExecutionAsync(target).ConfigureAwait(true);
         PopulateVerificationResult(target);
         await PopulateAttachmentsAsync(target).ConfigureAwait(true);
+        PopulateDescription(target);
+        await PopulateWhereUsedAsync(target).ConfigureAwait(true);
 
         PopulateLifecycle(target);
         await PopulateRelationshipsAsync(target).ConfigureAwait(true);
         await PopulateValidationAsync(target).ConfigureAwait(true);
+
+        // `WP 18.2A`: Evidence renders from its own declaration — Subject,
+        // Citations, Declared figures, its own Status/Check/Issue
+        // (replacing the generic Lifecycle section, which speaks the
+        // wrong vocabulary for this Kind), and Audit.
+        if (target is Core.Evidence.Evidence evidence)
+        {
+            _lifecycleSection.IsVisible = false;
+            await PopulateEvidenceSectionsAsync(evidence).ConfigureAwait(true);
+        }
+        else
+        {
+            _evidenceSubjectSection.IsVisible = false;
+            _evidenceCitationsSection.IsVisible = false;
+            _evidenceFiguresSection.IsVisible = false;
+            _evidenceLifecycleSection.IsVisible = false;
+            _evidenceAuditSection.IsVisible = false;
+        }
 
         _isDirty = false;
         _statusMessage.Text = string.Empty;
@@ -781,7 +917,17 @@ public sealed class ObjectEditorView : UserControl
 
     private void PopulateBom(IEngineeringObject target)
     {
-        if (target is not IHasBomLine bomLine || _objectKind is null || !BomKinds.Contains(_objectKind))
+        // `WP 18.2A`: where a Kind has a real declaration, the declaration
+        // decides — a Part shows no BOM input at all (`TD-175`), even
+        // though it still structurally implements `IHasBomLine`. A Kind
+        // with no declaration keeps today's own <see cref="BomKinds"/> gate,
+        // unchanged.
+        var declaration = _declarations?.For(_objectKind);
+        var showBom = declaration is not null
+            ? declaration.HasSection(EditorSectionKeys.BillOfMaterials)
+            : _objectKind is not null && BomKinds.Contains(_objectKind);
+
+        if (target is not IHasBomLine bomLine || !showBom)
         {
             _bomSection.IsVisible = false;
             return;
@@ -822,6 +968,308 @@ public sealed class ObjectEditorView : UserControl
             await RefreshAsync().ConfigureAwait(true);
         _bomStatusMessage.Text = message;
         ActionCompleted?.Invoke(message, ActionOutcome.From(result.Succeeded));
+    }
+
+    /// <summary>
+    /// The Description section (`WP 18.2A`, declaration-per-Kind) — the
+    /// mechanical fields the model has today (<see cref="IHasMetadata"/>),
+    /// read-only: this section shows what the Property Inspector already
+    /// reads, consolidated into the editor, never a new writable field or
+    /// a new command (`D-028`: no attribute is added that no calc sheet,
+    /// drawing or the invoice seam needs).
+    /// </summary>
+    private void PopulateDescription(IEngineeringObject target)
+    {
+        var declaration = _declarations?.For(_objectKind);
+
+        if (declaration is null || !declaration.HasSection(EditorSectionKeys.Description) || target is not IHasMetadata metadata)
+        {
+            _descriptionSection.IsVisible = false;
+            return;
+        }
+
+        _descriptionSection.IsVisible = true;
+        _descriptionPanel.Children.Clear();
+        _descriptionPanel.Children.Add(DescriptionRow("Owner", metadata.Owner));
+        _descriptionPanel.Children.Add(DescriptionRow("Discipline", metadata.Discipline));
+        _descriptionPanel.Children.Add(DescriptionRow("Classification", metadata.Classification));
+        _descriptionPanel.Children.Add(DescriptionRow("Tags", metadata.Tags.Count > 0 ? string.Join(", ", metadata.Tags) : null));
+        _descriptionPanel.Children.Add(DescriptionRow("Notes", metadata.Notes));
+    }
+
+    private static Control DescriptionRow(string label, string? value) =>
+        LabeledRow(label, new TextBlock { Text = value ?? "(none)", Opacity = value is null ? 0.5 : 1.0, TextWrapping = TextWrapping.Wrap, FontSize = DesignTokens.FontSizeBody });
+
+    /// <summary>
+    /// The <em>Where used</em> section (`WP 18.2A`, `TD-174`, `TD-175`) —
+    /// read-only, named, linked: the assembly this object sits in, via
+    /// <see cref="IHasParent.ParentId"/>, exactly as
+    /// <see cref="MechanicalPropertyFacetProvider"/>'s own identical
+    /// "Where Used" facet already resolves it for the Property Inspector.
+    /// </summary>
+    private async Task PopulateWhereUsedAsync(IEngineeringObject target)
+    {
+        var declaration = _declarations?.For(_objectKind);
+
+        if (declaration is null || !declaration.HasSection(EditorSectionKeys.WhereUsed) || target is not IHasParent hasParent)
+        {
+            _whereUsedSection.IsVisible = false;
+            return;
+        }
+
+        _whereUsedSection.IsVisible = true;
+        _whereUsedPanel.Children.Clear();
+
+        if (hasParent.ParentId is not { } parentId)
+        {
+            _whereUsedPanel.Children.Add(new TextBlock { Text = "(top level — not used within any assembly)", Opacity = 0.7 });
+            return;
+        }
+
+        _whereUsedPanel.Children.Add(await BuildObjectReferenceRowAsync(parentId).ConfigureAwait(true));
+    }
+
+    /// <summary>Builds one read-only, named, linked row for an object referenced by id — shared by <em>Where used</em> and Evidence's own <em>Subject</em>.</summary>
+    private async Task<Control> BuildObjectReferenceRowAsync(Guid referencedId)
+    {
+        var referenced = await _domainContext.Repository.FindAsync(referencedId).ConfigureAwait(true);
+        var name = (referenced as IHasBusinessIdentifier)?.DisplayName ?? referencedId.ToString();
+        var kind = referenced?.Kind ?? _objectKind;
+
+        var row = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,*,Auto"), Margin = new Thickness(0, DesignTokens.SpaceXs) };
+        var icon = new TextBlock { Text = IconRegistry.Resolve(kind), Margin = new Thickness(0, 0, DesignTokens.SpaceSm, 0) };
+        var text = new TextBlock { Text = $"{name} ({kind})", TextWrapping = TextWrapping.Wrap, FontSize = DesignTokens.FontSizeBody, VerticalAlignment = VerticalAlignment.Center };
+        Grid.SetColumn(icon, 0);
+        Grid.SetColumn(text, 1);
+        row.Children.Add(icon);
+        row.Children.Add(text);
+
+        if (referenced is not null)
+        {
+            var openButton = new Button { Content = "Open", Padding = new Thickness(10, 1), FontSize = DesignTokens.FontSizeBody };
+            openButton.Classes.Add(ChromeStyles.Flat);
+            Avalonia.Automation.AutomationProperties.SetName(openButton, $"Open {name}");
+            openButton.Click += (_, _) => _navigateToObject(referencedId, kind);
+            Grid.SetColumn(openButton, 2);
+            row.Children.Add(openButton);
+        }
+
+        return row;
+    }
+
+    /// <summary>
+    /// Evidence's own declared sections (`WP 18.2A`, `ADR-0148`, §4):
+    /// Subject; Citations (Cite/Remove); Declared figures (Declare);
+    /// Lifecycle (status, and the check and issue records read-only — the
+    /// Check and Issue actions themselves are `WP 18.2B`); Audit.
+    /// </summary>
+    private async Task PopulateEvidenceSectionsAsync(Core.Evidence.Evidence evidence)
+    {
+        // Subject.
+        _evidenceSubjectSection.IsVisible = true;
+        _evidenceSubjectPanel.Children.Clear();
+        _evidenceSubjectPanel.Children.Add(evidence.SubjectId is { } subjectId
+            ? await BuildObjectReferenceRowAsync(subjectId).ConfigureAwait(true)
+            : new TextBlock { Text = "(no subject tagged)", Opacity = 0.7 });
+
+        // Citations.
+        _evidenceCitationsSection.IsVisible = true;
+        _evidenceCitationsPanel.Children.Clear();
+        _citeButton.IsVisible = _evidenceSupport is not null;
+        if (evidence.Citations.Count == 0)
+        {
+            _evidenceCitationsPanel.Children.Add(new TextBlock { Text = "No citations recorded.", Opacity = 0.7 });
+        }
+        else
+        {
+            foreach (var citation in evidence.Citations)
+                _evidenceCitationsPanel.Children.Add(BuildCitationRow(citation));
+        }
+        _evidenceCitationsStatus.Text = string.Empty;
+
+        // Declared figures.
+        _evidenceFiguresSection.IsVisible = true;
+        _evidenceFiguresPanel.Children.Clear();
+        _declareFigureButton.IsVisible = _evidenceSupport is not null;
+        if (evidence.DeclaredFigures.Count == 0)
+        {
+            _evidenceFiguresPanel.Children.Add(new TextBlock { Text = "No figures declared.", Opacity = 0.7 });
+        }
+        else
+        {
+            foreach (var figure in evidence.DeclaredFigures)
+            {
+                _evidenceFiguresPanel.Children.Add(new TextBlock
+                {
+                    Text = $"{figure.Name} ({figure.Role}) = {figure.Quantity}",
+                    FontSize = DesignTokens.FontSizeBody,
+                    TextWrapping = TextWrapping.Wrap,
+                });
+            }
+        }
+        _evidenceFiguresStatus.Text = string.Empty;
+
+        // Lifecycle: status, and the check and issue records, read-only.
+        _evidenceLifecycleSection.IsVisible = true;
+        _evidenceLifecyclePanel.Children.Clear();
+        _evidenceLifecyclePanel.Children.Add(new TextBlock { Text = $"Status: {evidence.Status}", FontWeight = FontWeight.SemiBold, FontSize = DesignTokens.FontSizeBody });
+        _evidenceLifecyclePanel.Children.Add(new TextBlock
+        {
+            Text = evidence.Check is { } check
+                ? $"Check: {check.Outcome} by {check.CheckerName} ({check.CheckerOrganisation}) on {check.DateUtc:u} — \"{check.Statement}\""
+                : "Check: (not yet checked)",
+            TextWrapping = TextWrapping.Wrap,
+            FontSize = DesignTokens.FontSizeBody,
+        });
+        _evidenceLifecyclePanel.Children.Add(new TextBlock
+        {
+            Text = evidence.Issue is { } issue
+                ? $"Issue: '{issue.IssueReference}' rev '{issue.Revision}' to '{issue.Client}' on {issue.DateUtc:u}"
+                : "Issue: (not yet issued)",
+            TextWrapping = TextWrapping.Wrap,
+            FontSize = DesignTokens.FontSizeBody,
+        });
+
+        // Audit.
+        _evidenceAuditSection.IsVisible = true;
+        _evidenceAuditPanel.Children.Clear();
+        if (_auditQuery is null)
+        {
+            _evidenceAuditPanel.Children.Add(new TextBlock { Text = "Audit is unavailable.", Opacity = 0.7 });
+        }
+        else
+        {
+            var records = await _auditQuery.QueryAsync(new AuditQueryCriteria(objectId: evidence.Id)).ConfigureAwait(true);
+            if (records.Count == 0)
+            {
+                _evidenceAuditPanel.Children.Add(new TextBlock { Text = "No audit rows recorded yet.", Opacity = 0.7 });
+            }
+            else
+            {
+                foreach (var record in records.OrderByDescending(r => r.OccurredAt).Take(25))
+                {
+                    var detail = record.Detail.Count == 0 ? string.Empty : " — " + string.Join("; ", record.Detail.Select(kv => $"{kv.Key}: {kv.Value}"));
+                    _evidenceAuditPanel.Children.Add(new TextBlock
+                    {
+                        Text = $"{record.OccurredAt:u}  {record.Action}  by {record.ActorId}{detail}",
+                        FontSize = DesignTokens.FontSizeCaption,
+                        Opacity = 0.85,
+                        TextWrapping = TextWrapping.Wrap,
+                    });
+                }
+            }
+        }
+    }
+
+    private Control BuildCitationRow(EvidenceCitation citation)
+    {
+        var row = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto"), Margin = new Thickness(0, DesignTokens.SpaceXs) };
+
+        var text = new TextBlock
+        {
+            Text = $"{citation.Pin} — {citation.RecordDisplayName}" + (citation.SourceCitationSnapshot is null ? string.Empty : $" — {citation.SourceCitationSnapshot}"),
+            TextWrapping = TextWrapping.Wrap,
+            FontSize = DesignTokens.FontSizeBody,
+            VerticalAlignment = VerticalAlignment.Center,
+        };
+        Grid.SetColumn(text, 0);
+        row.Children.Add(text);
+
+        var remove = new Button { Content = "Remove", Padding = new Thickness(10, 1), FontSize = DesignTokens.FontSizeBody };
+        remove.Classes.Add(ChromeStyles.Subtle);
+        remove.Click += async (_, _) => await OnRemoveCitationAsync(citation.Pin).ConfigureAwait(true);
+        Grid.SetColumn(remove, 1);
+        row.Children.Add(remove);
+
+        return row;
+    }
+
+    private async Task OnRemoveCitationAsync(ReferencePin pin)
+    {
+        var result = await _commandDispatcher.DispatchAsync(new RemoveEvidenceCitationCommand(_objectId, _objectKind, pin), CancellationToken.None).ConfigureAwait(true);
+
+        var message = result.Succeeded ? result.Message ?? "Citation removed." : result.Message ?? "Remove failed.";
+        if (result.Succeeded)
+            await RefreshAsync().ConfigureAwait(true);
+        _evidenceCitationsStatus.Text = message;
+        ActionCompleted?.Invoke(message, ActionOutcome.From(result.Succeeded));
+    }
+
+    /// <summary>
+    /// Cite: collects a released record via <see cref="EvidenceEditorSupport.PickCitationAsync"/>
+    /// and dispatches <see cref="CiteEvidenceCommand"/>. A refusal (an
+    /// unreleased record — never offered by the real picker, but reachable
+    /// through the command directly, `WP 18.2A` acceptance 2) shows here
+    /// and, via <see cref="ActionCompleted"/>, in the shell's own status
+    /// bar, naming the record and its state — exactly as
+    /// <see cref="EvidenceCitationResult.Reason"/> already says it.
+    /// </summary>
+    private async Task OnCiteAsync()
+    {
+        if (_evidenceSupport is null)
+            return;
+
+        var picked = await _evidenceSupport.PickCitationAsync(CancellationToken.None).ConfigureAwait(true);
+        if (picked is null)
+        {
+            _evidenceCitationsStatus.Text = "Cite was cancelled.";
+            return;
+        }
+
+        var result = await _commandDispatcher.DispatchAsync(
+            new CiteEvidenceCommand(_objectId, _objectKind, picked.Library, picked.RecordId), CancellationToken.None).ConfigureAwait(true);
+
+        var message = result.Succeeded ? result.Message ?? "Cited." : result.Message ?? "The citation was refused.";
+        if (result.Succeeded)
+            await RefreshAsync().ConfigureAwait(true);
+        _evidenceCitationsStatus.Text = message;
+        ActionCompleted?.Invoke(message, ActionOutcome.From(result.Succeeded));
+    }
+
+    private async Task OnDeclareFigureAsync()
+    {
+        if (_evidenceSupport is null)
+            return;
+
+        var input = await _evidenceSupport.PickDeclaredFigureAsync(CancellationToken.None).ConfigureAwait(true);
+        if (input is null)
+        {
+            _evidenceFiguresStatus.Text = "Declare was cancelled.";
+            return;
+        }
+
+        var result = await _commandDispatcher.DispatchAsync(
+            new DeclareEvidenceFigureCommand(_objectId, _objectKind, input.Name, input.Role, input.Quantity), CancellationToken.None).ConfigureAwait(true);
+
+        var message = result.Succeeded ? result.Message ?? "Declared." : result.Message ?? "Declare failed.";
+        if (result.Succeeded)
+            await RefreshAsync().ConfigureAwait(true);
+        _evidenceFiguresStatus.Text = message;
+        ActionCompleted?.Invoke(message, ActionOutcome.From(result.Succeeded));
+    }
+
+    /// <summary>Files' own "add via picker" affordance (`WP 18.2A`, §4) — reads real bytes through <see cref="IFilePicker"/> and attaches them directly (<see cref="IHasAttachments.AttachContentAsync"/>), never the metadata-only mini-form below it.</summary>
+    private async Task OnAddFileViaPickerAsync()
+    {
+        if (_evidenceSupport is null || _populatedTarget is not IHasAttachments attachable)
+            return;
+
+        var picked = await _evidenceSupport.FilePicker.PickFilesAsync(
+            new FilePickerRequest("Pick files to attach", AllowMultiple: true)).ConfigureAwait(true);
+
+        if (picked.Count == 0)
+            return;
+
+        foreach (var file in picked)
+        {
+            var content = await file.ReadAsync().ConfigureAwait(true);
+            await attachable.AttachContentAsync(file.Name, file.ContentType, content).ConfigureAwait(true);
+        }
+
+        await RefreshAsync().ConfigureAwait(true);
+        var message = $"Attached {picked.Count} file(s).";
+        _attachmentStatusMessage.Text = message;
+        ActionCompleted?.Invoke(message, ActionOutcome.From(true));
     }
 
     /// <summary>
@@ -1040,6 +1488,11 @@ public sealed class ObjectEditorView : UserControl
         _attachmentsSection.IsVisible = true;
         _attachmentsListPanel.Children.Clear();
 
+        // `WP 18.2A`, §4: Evidence's own Files section shows size and hash,
+        // and — when a picker is wired — real bytes can be added directly,
+        // never only the metadata-only mini-form below.
+        _addFileViaPickerButton.IsVisible = _evidenceSupport is not null && string.Equals(_objectKind, Core.Evidence.Evidence.CanonicalKind, StringComparison.Ordinal);
+
         var attachments = await attachable.GetAttachmentsAsync().ConfigureAwait(true);
         if (attachments.Count == 0)
         {
@@ -1058,8 +1511,10 @@ public sealed class ObjectEditorView : UserControl
                         IconGeometry.Build(IconGeometry.Paperclip, 13),
                         new TextBlock
                         {
-                            Text = $"{attachment.FileName}  ({attachment.ContentType}, {attachment.SizeInBytes:N0} bytes)",
+                            Text = $"{attachment.FileName}  ({attachment.ContentType}, {attachment.SizeInBytes:N0} bytes"
+                                + (attachment.ContentHash is { } hash ? $", sha256 {hash}" : string.Empty) + ")",
                             FontSize = DesignTokens.FontSizeBody,
+                            TextWrapping = TextWrapping.Wrap,
                             VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
                         },
                     },

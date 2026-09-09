@@ -10,12 +10,14 @@ using Tempest.Core.Calculations;
 using Tempest.Core.ReferenceData.Seeding;
 using Tempest.Core.Configuration;
 using Tempest.Core.Constants;
+using Tempest.Core.Audit;
 using Tempest.Core.DependencyInjection;
 using Tempest.Core.EngineeringAssets.CalculationPacks;
 using Tempest.Core.EngineeringAssets.Templates;
 using Tempest.Core.EngineeringAssets.Verification;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Events;
+using Tempest.Core.Evidence;
 using Tempest.Core.Fasteners;
 using Tempest.Core.Identity;
 using Tempest.Core.Manufacturing;
@@ -260,6 +262,18 @@ public sealed class WorkspaceHost : IAsyncDisposable
             auditRecorder: (Tempest.Core.Audit.IAuditRecorder)host.Services!.GetService(typeof(Tempest.Core.Audit.IAuditRecorder)),
             permissions: (Tempest.Core.Identity.IPermissionEvaluator)host.Services!.GetService(typeof(Tempest.Core.Identity.IPermissionEvaluator)));
 
+        // `WP 18.2A` (`ADR-0148`). The Evidence workspace's own governed
+        // service, audit query and the five governed libraries it cites —
+        // already-registered Platform Services, resolved here the same
+        // `ADR-0103` way as every other collaborator on this class.
+        EvidenceService = (IEvidenceService)host.Services!.GetService(typeof(IEvidenceService));
+        AuditQuery = (IAuditQuery)host.Services!.GetService(typeof(IAuditQuery));
+        Materials = (IMaterialCatalog)host.Services!.GetService(typeof(IMaterialCatalog));
+        Fasteners = (IFastenerCatalog)host.Services!.GetService(typeof(IFastenerCatalog));
+        Bearings = (IBearingCatalog)host.Services!.GetService(typeof(IBearingCatalog));
+        Standards = (IStandardCatalog)host.Services!.GetService(typeof(IStandardCatalog));
+        Constants = (IConstantCatalog)host.Services!.GetService(typeof(IConstantCatalog));
+
         // The Engineering Calculation surface's own read model. It composes
         // the four governed acts a calculation journey needs - populate,
         // review and release, check, recover - and owns none of them: the
@@ -385,6 +399,32 @@ public sealed class WorkspaceHost : IAsyncDisposable
     /// signed in and to nobody else.
     /// </remarks>
     public ReferenceReviewService? ReferenceReview { get; private set; }
+
+    /// <summary>
+    /// Gets the Evidence discipline's own governed service (`ADR-0148`,
+    /// `WP 18.0A`) — record, revise, cite, declare a figure, check and
+    /// issue. <see langword="null"/> before <see cref="StartAsync"/>
+    /// completes.
+    /// </summary>
+    public IEvidenceService? EvidenceService { get; private set; }
+
+    /// <summary>Gets the platform's own audit query (`WP 18.2A`) — Evidence's own Audit section reads through this. <see langword="null"/> before <see cref="StartAsync"/> completes.</summary>
+    public IAuditQuery? AuditQuery { get; private set; }
+
+    /// <summary>Gets the Materials Library (`WP 18.2A`) — the Evidence workspace's own Libraries tab reads the five governed libraries directly, rather than through <see cref="ReferenceLibraries"/>'s own six-library, no-source-citation summary. <see langword="null"/> before <see cref="StartAsync"/> completes.</summary>
+    public IMaterialCatalog? Materials { get; private set; }
+
+    /// <summary>Gets the Fastener Library (`WP 18.2A`). <see langword="null"/> before <see cref="StartAsync"/> completes.</summary>
+    public IFastenerCatalog? Fasteners { get; private set; }
+
+    /// <summary>Gets the Bearing Library (`WP 18.2A`). <see langword="null"/> before <see cref="StartAsync"/> completes.</summary>
+    public IBearingCatalog? Bearings { get; private set; }
+
+    /// <summary>Gets the Standards Library (`WP 18.2A`). <see langword="null"/> before <see cref="StartAsync"/> completes.</summary>
+    public IStandardCatalog? Standards { get; private set; }
+
+    /// <summary>Gets the Constants Library (`WP 18.2A`). <see langword="null"/> before <see cref="StartAsync"/> completes.</summary>
+    public IConstantCatalog? Constants { get; private set; }
 
     /// <summary>
     /// Gets the Engineering Calculation surface's own read model -

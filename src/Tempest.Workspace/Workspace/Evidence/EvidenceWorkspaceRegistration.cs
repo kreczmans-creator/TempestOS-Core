@@ -68,7 +68,9 @@ public static class EvidenceWorkspaceRegistration
         manager.RegisterDeleteFactory(Core.Evidence.Evidence.CanonicalKind, static (id, targetKind) => new DeleteMechanicalObjectCommand(id, targetKind));
 
         commandDispatcher.RegisterHandler<CreateEvidenceCommand>(new CreateEvidenceCommandHandler(evidenceService));
+        commandDispatcher.RegisterHandler<CreateEvidenceFromFilesCommand>(new CreateEvidenceFromFilesCommandHandler(evidenceService));
         commandDispatcher.RegisterHandler<CiteEvidenceCommand>(new CiteEvidenceCommandHandler(evidenceService));
+        commandDispatcher.RegisterHandler<RemoveEvidenceCitationCommand>(new RemoveEvidenceCitationCommandHandler(evidenceService));
         commandDispatcher.RegisterHandler<DeclareEvidenceFigureCommand>(new DeclareEvidenceFigureCommandHandler(evidenceService));
         commandDispatcher.RegisterHandler<RecordEvidenceCheckCommand>(new RecordEvidenceCheckCommandHandler(evidenceService));
         commandDispatcher.RegisterHandler<IssueEvidenceCommand>(new IssueEvidenceCommandHandler(evidenceService));
