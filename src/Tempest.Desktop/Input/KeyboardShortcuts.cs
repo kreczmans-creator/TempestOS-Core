@@ -31,7 +31,7 @@ public static class KeyboardShortcuts
         ArgumentNullException.ThrowIfNull(target);
         ArgumentNullException.ThrowIfNull(actions);
 
-        target.KeyDown += (_, e) =>
+        target.KeyDown += async (_, e) =>
         {
             // Ctrl+K — open the Command Palette (WP 10.0B, unchanged).
             if (e.Key == Key.K && e.KeyModifiers == KeyModifiers.Control)
@@ -76,7 +76,7 @@ public static class KeyboardShortcuts
             // Ctrl+D — toggle Favourite on the current selection (WP 10.6A).
             else if (e.Key == Key.D && e.KeyModifiers == KeyModifiers.Control)
             {
-                actions.ToggleFavourite();
+                await actions.ToggleFavourite().ConfigureAwait(true);
                 e.Handled = true;
             }
         };
@@ -95,7 +95,7 @@ public sealed class KeyboardShortcutActions
         Action focusExplorerFilter,
         Action undo,
         Action redo,
-        Action toggleFavourite)
+        Func<Task> toggleFavourite)
     {
         OpenCommandPalette = openCommandPalette ?? throw new ArgumentNullException(nameof(openCommandPalette));
         SelectNextDocument = selectNextDocument ?? throw new ArgumentNullException(nameof(selectNextDocument));
@@ -129,5 +129,5 @@ public sealed class KeyboardShortcutActions
     public Action Redo { get; }
 
     /// <summary>Invoked on <c>Ctrl+D</c> (`WP 10.6A`).</summary>
-    public Action ToggleFavourite { get; }
+    public Func<Task> ToggleFavourite { get; }
 }

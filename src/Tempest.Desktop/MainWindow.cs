@@ -300,7 +300,8 @@ public sealed class MainWindow : Window
             workspace, manager, composition.DomainContext, composition.CommandDispatcher, composition.RequirementsService, host.CalculationTemplates,
             _explorerView, _inspectorView, _ribbon, _statusBar, _toastHost, _confirmationDialog, _undoRedo.Stack,
             _session.RecentObjects, _session.FavouriteObjects, _openGraphViewsByRootId,
-            refreshStatusBar: () => RefreshStatusBar(manager), recordHistory: RecordHistory, refreshCockpit: () => _cockpitView!.Refresh(), _actionReporter);
+            refreshStatusBar: () => RefreshStatusBar(manager), recordHistory: RecordHistory, refreshCockpit: () => _cockpitView!.Refresh(), _actionReporter,
+            workspaceChanges: composition.WorkspaceChanges);
 
         _documentArea = new DocumentAreaView(_viewCoordinator.BuildDocumentContent);
 
@@ -673,11 +674,11 @@ public sealed class MainWindow : Window
             focusExplorerFilter: () => _explorerView.FocusFilter(),
             undo: () => _ = _undoRedo.UndoAsync(),
             redo: () => _ = _undoRedo.RedoAsync(),
-            toggleFavourite: () =>
+            toggleFavourite: async () =>
             {
                 if (workspace.Selection.Current is { } selection)
                 {
-                    var target = composition.DomainContext.Repository.FindAsync(selection.ObjectId).GetAwaiter().GetResult();
+                    var target = await composition.DomainContext.Repository.FindAsync(selection.ObjectId).ConfigureAwait(true);
                     var title = (target as IHasBusinessIdentifier)?.DisplayName ?? selection.Kind;
                     _viewCoordinator.ToggleFavourite(selection.ObjectId, selection.Kind, title);
                 }

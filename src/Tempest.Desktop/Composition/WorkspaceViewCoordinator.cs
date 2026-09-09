@@ -8,6 +8,7 @@ using Tempest.Workspace.Requirements;
 using Tempest.Workspace.Verification;
 using Tempest.Core.Commands;
 using Tempest.Core.EngineeringDomain;
+using Tempest.Core.Events;
 using Tempest.Core.Requirements;
 using Tempest.Desktop.Editors;
 using Tempest.Desktop.Theming;
@@ -85,6 +86,7 @@ internal sealed class WorkspaceViewCoordinator
     private readonly Action<string> _recordHistory;
     private readonly ActionOutcomeReporter _reporter;
     private readonly Action _refreshCockpit;
+    private readonly IWorkspaceChanges? _workspaceChanges;
 
     private DocumentAreaView? _documentArea;
 
@@ -107,7 +109,8 @@ internal sealed class WorkspaceViewCoordinator
         ProjectExplorerView explorerView, PropertyInspectorView inspectorView, RibbonView ribbon,
         StatusBarView statusBar, ToastHost toastHost, ConfirmationDialog confirmationDialog, IUndoRedoStack undoRedoStack,
         RecentObjectsState recentObjects, FavouriteObjectsState favouriteObjects, Dictionary<Guid, IWorkspaceView> openGraphViewsByRootId,
-        Action refreshStatusBar, Action<string> recordHistory, Action refreshCockpit, ActionOutcomeReporter reporter)
+        Action refreshStatusBar, Action<string> recordHistory, Action refreshCockpit, ActionOutcomeReporter reporter,
+        IWorkspaceChanges? workspaceChanges = null)
     {
         ArgumentNullException.ThrowIfNull(workspace);
         ArgumentNullException.ThrowIfNull(manager);
@@ -148,6 +151,7 @@ internal sealed class WorkspaceViewCoordinator
         _refreshStatusBar = refreshStatusBar;
         _recordHistory = recordHistory;
         _refreshCockpit = refreshCockpit;
+        _workspaceChanges = workspaceChanges;
         _reporter = reporter;
 
         // Select-to-inspect / Open-to-edit (WP8.0A UI Architecture.md §4, unchanged).
@@ -274,7 +278,9 @@ internal sealed class WorkspaceViewCoordinator
         if (view is Control alreadyBuilt)
             return alreadyBuilt;
 
-        var editor = ObjectEditorView.TryCreate(view.ObjectId, view.ObjectKind, _domainContext, _manager, NavigateToObject, _commandDispatcher, _requirementsService, _calculationTemplates);
+        var editor = ObjectEditorView.TryCreate(
+            view.ObjectId, view.ObjectKind, _domainContext, _manager, NavigateToObject, _commandDispatcher, _requirementsService, _calculationTemplates,
+            _workspaceChanges);
         if (editor is null)
             return DocumentAreaView.BuildDefaultBody(view);
 

@@ -38,7 +38,7 @@ public sealed class DigitalThreadGraphModelTests
             var domainContext = (EngineeringDomainContext)host.Services!.GetService(typeof(EngineeringDomainContext));
             var model = new DigitalThreadGraphModel(domainContext);
 
-            var moved = model.Recentre(Guid.NewGuid(), "Component");
+            var moved = await model.RecentreAsync(Guid.NewGuid(), "Component");
 
             Assert.False(moved);
             Assert.Empty(model.Nodes);
@@ -60,7 +60,7 @@ public sealed class DigitalThreadGraphModelTests
             var (domainContext, target) = await GetRealMechanicalObjectAsync(host);
             var model = new DigitalThreadGraphModel(domainContext);
 
-            var moved = model.Recentre(target.Id, target.Kind!);
+            var moved = await model.RecentreAsync(target.Id, target.Kind!);
 
             Assert.True(moved);
             var centres = model.Nodes.Where(n => n.IsCentre).ToList();
@@ -84,17 +84,17 @@ public sealed class DigitalThreadGraphModelTests
             await host.StartAsync();
             var (domainContext, target) = await GetRealMechanicalObjectAsync(host);
             var model = new DigitalThreadGraphModel(domainContext);
-            model.Recentre(target.Id, target.Kind!);
+            await model.RecentreAsync(target.Id, target.Kind!);
 
             var neighbour = model.Nodes.FirstOrDefault(n => !n.IsCentre);
             if (neighbour.ObjectId == default)
                 return; // no relationships on this particular sample object — honestly nothing to prove here.
 
-            var firstExpand = model.ExpandNode(neighbour.ObjectId);
+            var firstExpand = await model.ExpandNodeAsync(neighbour.ObjectId);
             Assert.True(firstExpand);
             Assert.True(model.Nodes.Single(n => n.ObjectId == neighbour.ObjectId).IsExpanded);
 
-            var secondExpand = model.ExpandNode(neighbour.ObjectId);
+            var secondExpand = await model.ExpandNodeAsync(neighbour.ObjectId);
             Assert.False(secondExpand); // already expanded — a no-op, not a duplicate read.
         }
         finally
@@ -113,7 +113,7 @@ public sealed class DigitalThreadGraphModelTests
             await host.StartAsync();
             var (domainContext, target) = await GetRealMechanicalObjectAsync(host);
             var model = new DigitalThreadGraphModel(domainContext);
-            model.Recentre(target.Id, target.Kind!);
+            await model.RecentreAsync(target.Id, target.Kind!);
 
             var beforeNodeIds = model.Nodes.Select(n => n.ObjectId).OrderBy(id => id).ToList();
             var beforeEdgeCount = model.Edges.Count;
@@ -122,7 +122,7 @@ public sealed class DigitalThreadGraphModelTests
             if (neighbour.ObjectId == default)
                 return; // no relationships on this particular sample object — honestly nothing to prove here.
 
-            var expanded = model.ExpandNode(neighbour.ObjectId);
+            var expanded = await model.ExpandNodeAsync(neighbour.ObjectId);
             if (!expanded)
                 return;
 
@@ -150,7 +150,7 @@ public sealed class DigitalThreadGraphModelTests
             await host.StartAsync();
             var (domainContext, target) = await GetRealMechanicalObjectAsync(host);
             var model = new DigitalThreadGraphModel(domainContext);
-            model.Recentre(target.Id, target.Kind!);
+            await model.RecentreAsync(target.Id, target.Kind!);
 
             Assert.False(model.CollapseNode(target.Id));
         }
@@ -170,14 +170,14 @@ public sealed class DigitalThreadGraphModelTests
             await host.StartAsync();
             var (domainContext, target) = await GetRealMechanicalObjectAsync(host);
             var model = new DigitalThreadGraphModel(domainContext);
-            model.Recentre(target.Id, target.Kind!);
+            await model.RecentreAsync(target.Id, target.Kind!);
 
             var neighbour = model.Nodes.FirstOrDefault(n => !n.IsCentre);
             if (neighbour.ObjectId == default)
                 return; // no relationships to navigate to — honestly nothing to prove here.
 
             Assert.Empty(model.Breadcrumb);
-            var moved = model.Recentre(neighbour.ObjectId, neighbour.Kind);
+            var moved = await model.RecentreAsync(neighbour.ObjectId, neighbour.Kind);
 
             Assert.True(moved);
             Assert.Single(model.Breadcrumb);
@@ -200,15 +200,15 @@ public sealed class DigitalThreadGraphModelTests
             await host.StartAsync();
             var (domainContext, target) = await GetRealMechanicalObjectAsync(host);
             var model = new DigitalThreadGraphModel(domainContext);
-            model.Recentre(target.Id, target.Kind!);
+            await model.RecentreAsync(target.Id, target.Kind!);
 
             var neighbour = model.Nodes.FirstOrDefault(n => !n.IsCentre);
             if (neighbour.ObjectId == default)
                 return;
 
-            model.Recentre(neighbour.ObjectId, neighbour.Kind);
+            await model.RecentreAsync(neighbour.ObjectId, neighbour.Kind);
 
-            var jumped = model.JumpToBreadcrumb(0);
+            var jumped = await model.JumpToBreadcrumbAsync(0);
 
             Assert.True(jumped);
             Assert.Equal(target.Id, model.CentreId);
@@ -230,7 +230,7 @@ public sealed class DigitalThreadGraphModelTests
             await host.StartAsync();
             var (domainContext, target) = await GetRealMechanicalObjectAsync(host);
             var model = new DigitalThreadGraphModel(domainContext);
-            model.Recentre(target.Id, target.Kind!);
+            await model.RecentreAsync(target.Id, target.Kind!);
 
             model.SetLayout(DigitalThreadLayoutKind.Hierarchical);
 
@@ -253,7 +253,7 @@ public sealed class DigitalThreadGraphModelTests
             await host.StartAsync();
             var (domainContext, target) = await GetRealMechanicalObjectAsync(host);
             var model = new DigitalThreadGraphModel(domainContext);
-            model.Recentre(target.Id, target.Kind!);
+            await model.RecentreAsync(target.Id, target.Kind!);
 
             var neighbours = model.Nodes.Where(n => !n.IsCentre).ToList();
             if (neighbours.Count == 0)
@@ -280,7 +280,7 @@ public sealed class DigitalThreadGraphModelTests
             await host.StartAsync();
             var (domainContext, target) = await GetRealMechanicalObjectAsync(host);
             var model = new DigitalThreadGraphModel(domainContext);
-            model.Recentre(target.Id, target.Kind!);
+            await model.RecentreAsync(target.Id, target.Kind!);
 
             model.SetLayout(DigitalThreadLayoutKind.ForceDirected);
             var first = model.Nodes.ToDictionary(n => n.ObjectId, n => (n.X, n.Y));
@@ -306,7 +306,7 @@ public sealed class DigitalThreadGraphModelTests
             await host.StartAsync();
             var (domainContext, target) = await GetRealMechanicalObjectAsync(host);
             var model = new DigitalThreadGraphModel(domainContext);
-            model.Recentre(target.Id, target.Kind!);
+            await model.RecentreAsync(target.Id, target.Kind!);
 
             var centre = model.Nodes.Single(n => n.IsCentre);
             var needle = centre.DisplayName[..Math.Min(3, centre.DisplayName.Length)].ToUpperInvariant();
@@ -382,7 +382,7 @@ public sealed class DigitalThreadGraphModelTests
                 return; // no sample Verification Activity has a recorded result in this build — honestly nothing to prove here.
 
             var model = new DigitalThreadGraphModel(domainContext);
-            model.Recentre(verifiedActivity.Id, verifiedActivity.Kind!);
+            await model.RecentreAsync(verifiedActivity.Id, verifiedActivity.Kind!);
 
             // Never visible via the plain RelationshipRepository read alone
             // (`TD-32`) — confirmed absent from a direct RelationshipRepository
@@ -442,10 +442,10 @@ public sealed class DigitalThreadGraphModelTests
                 return;
 
             var model = new DigitalThreadGraphModel(domainContext);
-            model.Recentre(verifiedActivity.Id, verifiedActivity.Kind!);
+            await model.RecentreAsync(verifiedActivity.Id, verifiedActivity.Kind!);
             var recordNode = model.Nodes.Single(n => n.IsRecord);
 
-            Assert.False(model.ExpandNode(recordNode.ObjectId));
+            Assert.False(await model.ExpandNodeAsync(recordNode.ObjectId));
         }
         finally
         {
@@ -507,7 +507,7 @@ public sealed class DigitalThreadGraphViewTests
             await host.StartAsync();
             var domainContext = (EngineeringDomainContext)host.Services!.GetService(typeof(EngineeringDomainContext));
 
-            var view = DigitalThreadGraphView.TryCreate(Guid.NewGuid(), "Component", domainContext, (_, _) => { });
+            var view = await DigitalThreadGraphView.TryCreateAsync(Guid.NewGuid(), "Component", domainContext, (_, _) => { });
 
             Assert.Null(view);
         }
@@ -527,7 +527,7 @@ public sealed class DigitalThreadGraphViewTests
             await host.StartAsync();
             var (domainContext, target) = await GetRealMechanicalObjectAsync(host);
 
-            var view = DigitalThreadGraphView.TryCreate(target.Id, target.Kind!, domainContext, (_, _) => { });
+            var view = await DigitalThreadGraphView.TryCreateAsync(target.Id, target.Kind!, domainContext, (_, _) => { });
 
             Assert.NotNull(view);
             Assert.Equal(target.Id, view!.ObjectId);
@@ -549,7 +549,7 @@ public sealed class DigitalThreadGraphViewTests
         {
             await host.StartAsync();
             var (domainContext, target) = await GetRealMechanicalObjectAsync(host);
-            var view = DigitalThreadGraphView.TryCreate(target.Id, target.Kind!, domainContext, (_, _) => { })!;
+            var view = (await DigitalThreadGraphView.TryCreateAsync(target.Id, target.Kind!, domainContext, (_, _) => { }))!;
 
             var nodeBorders = view.GetLogicalDescendants().OfType<Border>().Count(b => b.Width is 158 or 188);
 
@@ -572,7 +572,7 @@ public sealed class DigitalThreadGraphViewTests
             var (domainContext, target) = await GetRealMechanicalObjectAsync(host);
 
             var navigated = new List<(Guid Id, string Kind)>();
-            var view = DigitalThreadGraphView.TryCreate(target.Id, target.Kind!, domainContext, (id, kind) => navigated.Add((id, kind)))!;
+            var view = (await DigitalThreadGraphView.TryCreateAsync(target.Id, target.Kind!, domainContext, (id, kind) => navigated.Add((id, kind))))!;
 
             var neighbour = view.Model.Nodes.FirstOrDefault(n => !n.IsCentre);
             if (neighbour.ObjectId == default)
@@ -598,13 +598,13 @@ public sealed class DigitalThreadGraphViewTests
         {
             await host.StartAsync();
             var (domainContext, target) = await GetRealMechanicalObjectAsync(host);
-            var view = DigitalThreadGraphView.TryCreate(target.Id, target.Kind!, domainContext, (_, _) => { })!;
+            var view = (await DigitalThreadGraphView.TryCreateAsync(target.Id, target.Kind!, domainContext, (_, _) => { }))!;
 
             var neighbour = view.Model.Nodes.FirstOrDefault(n => !n.IsCentre);
             if (neighbour.ObjectId == default)
                 return;
 
-            var recentred = view.Recentre(neighbour.ObjectId, neighbour.Kind);
+            var recentred = await view.RecentreAsync(neighbour.ObjectId, neighbour.Kind);
 
             Assert.True(recentred);
             Assert.Equal(neighbour.ObjectId, view.ObjectId);
@@ -625,14 +625,14 @@ public sealed class DigitalThreadGraphViewTests
         {
             await host.StartAsync();
             var (domainContext, target) = await GetRealMechanicalObjectAsync(host);
-            var view = DigitalThreadGraphView.TryCreate(target.Id, target.Kind!, domainContext, (_, _) => { })!;
+            var view = (await DigitalThreadGraphView.TryCreateAsync(target.Id, target.Kind!, domainContext, (_, _) => { }))!;
 
             var neighbour = view.Model.Nodes.FirstOrDefault(n => !n.IsCentre);
             if (neighbour.ObjectId == default)
                 return;
 
             var beforeCount = view.Model.Nodes.Count;
-            var expanded = view.ExpandNode(neighbour.ObjectId);
+            var expanded = await view.ExpandNodeAsync(neighbour.ObjectId);
             if (!expanded)
                 return;
 
@@ -658,7 +658,7 @@ public sealed class DigitalThreadGraphViewTests
         {
             await host.StartAsync();
             var (domainContext, target) = await GetRealMechanicalObjectAsync(host);
-            var view = DigitalThreadGraphView.TryCreate(target.Id, target.Kind!, domainContext, (_, _) => { })!;
+            var view = (await DigitalThreadGraphView.TryCreateAsync(target.Id, target.Kind!, domainContext, (_, _) => { }))!;
 
             view.ZoomBy(1.5);
 
@@ -679,7 +679,7 @@ public sealed class DigitalThreadGraphViewTests
         {
             await host.StartAsync();
             var (domainContext, target) = await GetRealMechanicalObjectAsync(host);
-            var view = DigitalThreadGraphView.TryCreate(target.Id, target.Kind!, domainContext, (_, _) => { })!;
+            var view = (await DigitalThreadGraphView.TryCreateAsync(target.Id, target.Kind!, domainContext, (_, _) => { }))!;
 
             view.PanBy(new Avalonia.Vector(40, -25));
 
@@ -701,7 +701,7 @@ public sealed class DigitalThreadGraphViewTests
         {
             await host.StartAsync();
             var (domainContext, target) = await GetRealMechanicalObjectAsync(host);
-            var view = DigitalThreadGraphView.TryCreate(target.Id, target.Kind!, domainContext, (_, _) => { })!;
+            var view = (await DigitalThreadGraphView.TryCreateAsync(target.Id, target.Kind!, domainContext, (_, _) => { }))!;
 
             await view.RefreshAsync();
 
@@ -722,7 +722,7 @@ public sealed class DigitalThreadGraphViewTests
         {
             await host.StartAsync();
             var (domainContext, target) = await GetRealMechanicalObjectAsync(host);
-            var view = DigitalThreadGraphView.TryCreate(target.Id, target.Kind!, domainContext, (_, _) => { })!;
+            var view = (await DigitalThreadGraphView.TryCreateAsync(target.Id, target.Kind!, domainContext, (_, _) => { }))!;
 
             Assert.True(await view.CloseAsync());
         }
@@ -747,7 +747,7 @@ public sealed class DigitalThreadGraphViewTests
         {
             await host.StartAsync();
             var (domainContext, target) = await GetRealMechanicalObjectAsync(host);
-            var view = DigitalThreadGraphView.TryCreate(target.Id, target.Kind!, domainContext, (_, _) => { })!;
+            var view = (await DigitalThreadGraphView.TryCreateAsync(target.Id, target.Kind!, domainContext, (_, _) => { }))!;
             var before = view.Model.ZoomLevel;
 
             view.RaiseEvent(new KeyEventArgs { RoutedEvent = InputElement.KeyDownEvent, Key = Key.OemPlus });
@@ -769,7 +769,7 @@ public sealed class DigitalThreadGraphViewTests
         {
             await host.StartAsync();
             var (domainContext, target) = await GetRealMechanicalObjectAsync(host);
-            var view = DigitalThreadGraphView.TryCreate(target.Id, target.Kind!, domainContext, (_, _) => { })!;
+            var view = (await DigitalThreadGraphView.TryCreateAsync(target.Id, target.Kind!, domainContext, (_, _) => { }))!;
             var before = view.Model.ZoomLevel;
 
             view.RaiseEvent(new KeyEventArgs { RoutedEvent = InputElement.KeyDownEvent, Key = Key.Add });
@@ -791,7 +791,7 @@ public sealed class DigitalThreadGraphViewTests
         {
             await host.StartAsync();
             var (domainContext, target) = await GetRealMechanicalObjectAsync(host);
-            var view = DigitalThreadGraphView.TryCreate(target.Id, target.Kind!, domainContext, (_, _) => { })!;
+            var view = (await DigitalThreadGraphView.TryCreateAsync(target.Id, target.Kind!, domainContext, (_, _) => { }))!;
             var before = view.Model.ZoomLevel;
 
             view.RaiseEvent(new KeyEventArgs { RoutedEvent = InputElement.KeyDownEvent, Key = Key.OemMinus });
@@ -813,7 +813,7 @@ public sealed class DigitalThreadGraphViewTests
         {
             await host.StartAsync();
             var (domainContext, target) = await GetRealMechanicalObjectAsync(host);
-            var view = DigitalThreadGraphView.TryCreate(target.Id, target.Kind!, domainContext, (_, _) => { })!;
+            var view = (await DigitalThreadGraphView.TryCreateAsync(target.Id, target.Kind!, domainContext, (_, _) => { }))!;
 
             // Right reveals content further right, so the content itself
             // shifts left (`PanOffset.X` decreases) — the documented
@@ -846,7 +846,7 @@ public sealed class DigitalThreadGraphViewTests
         {
             await host.StartAsync();
             var (domainContext, target) = await GetRealMechanicalObjectAsync(host);
-            var view = DigitalThreadGraphView.TryCreate(target.Id, target.Kind!, domainContext, (_, _) => { })!;
+            var view = (await DigitalThreadGraphView.TryCreateAsync(target.Id, target.Kind!, domainContext, (_, _) => { }))!;
 
             var nodes = view.Model.Nodes;
             var expectedTabIndex = nodes.ToDictionary(n => n.ObjectId, n => nodes.ToList().IndexOf(n));
@@ -875,7 +875,7 @@ public sealed class DigitalThreadGraphViewTests
         {
             await host.StartAsync();
             var (domainContext, target) = await GetRealMechanicalObjectAsync(host);
-            var view = DigitalThreadGraphView.TryCreate(target.Id, target.Kind!, domainContext, (_, _) => { })!;
+            var view = (await DigitalThreadGraphView.TryCreateAsync(target.Id, target.Kind!, domainContext, (_, _) => { }))!;
             // A real, shown TopLevel — real bubble routing from the node
             // `Border` up to the graph root's own `KeyDown` handler needs
             // one (unlike a directly-attached `PointerPressed` handler,
@@ -909,7 +909,7 @@ public sealed class DigitalThreadGraphViewTests
         {
             await host.StartAsync();
             var (domainContext, target) = await GetRealMechanicalObjectAsync(host);
-            var view = DigitalThreadGraphView.TryCreate(target.Id, target.Kind!, domainContext, (_, _) => { })!;
+            var view = (await DigitalThreadGraphView.TryCreateAsync(target.Id, target.Kind!, domainContext, (_, _) => { }))!;
             var window = new Window { Content = view };
             window.Show();
 
@@ -944,7 +944,7 @@ public sealed class DigitalThreadGraphViewTests
         {
             await host.StartAsync();
             var (domainContext, target) = await GetRealMechanicalObjectAsync(host);
-            var view = DigitalThreadGraphView.TryCreate(target.Id, target.Kind!, domainContext, (_, _) => { })!;
+            var view = (await DigitalThreadGraphView.TryCreateAsync(target.Id, target.Kind!, domainContext, (_, _) => { }))!;
             var window = new Window { Content = view };
             window.Show();
 
@@ -972,7 +972,7 @@ public sealed class DigitalThreadGraphViewTests
         {
             await host.StartAsync();
             var (domainContext, target) = await GetRealMechanicalObjectAsync(host);
-            var view = DigitalThreadGraphView.TryCreate(target.Id, target.Kind!, domainContext, (_, _) => { })!;
+            var view = (await DigitalThreadGraphView.TryCreateAsync(target.Id, target.Kind!, domainContext, (_, _) => { }))!;
 
             var neighbour = view.Model.Nodes.FirstOrDefault(n => !n.IsCentre && !n.IsRecord);
             if (neighbour.ObjectId == default)
@@ -1005,7 +1005,7 @@ public sealed class DigitalThreadGraphViewTests
         {
             await host.StartAsync();
             var (domainContext, target) = await GetRealMechanicalObjectAsync(host);
-            var view = DigitalThreadGraphView.TryCreate(target.Id, target.Kind!, domainContext, (_, _) => { })!;
+            var view = (await DigitalThreadGraphView.TryCreateAsync(target.Id, target.Kind!, domainContext, (_, _) => { }))!;
 
             if (view.Model.Edges.Count == 0)
                 return; // no relationships on this particular sample object — honestly nothing to prove here.
@@ -1049,7 +1049,7 @@ public sealed class DigitalThreadGraphViewTests
         {
             await host.StartAsync();
             var (domainContext, target) = await GetRealMechanicalObjectAsync(host);
-            var view = DigitalThreadGraphView.TryCreate(target.Id, target.Kind!, domainContext, (_, _) => { })!;
+            var view = (await DigitalThreadGraphView.TryCreateAsync(target.Id, target.Kind!, domainContext, (_, _) => { }))!;
 
             var searchBox = view.GetLogicalDescendants().OfType<TextBox>().Single(t => t.Watermark == "Search this graph…");
 
