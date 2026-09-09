@@ -179,7 +179,7 @@ public sealed class RevisionRehydrationEquivalenceTests : IDisposable
 
         // ---- FIRST LIFETIME ------------------------------------------
         {
-            var lifetime = BuildDiskLifetime();
+            using var lifetime = BuildDiskLifetime();
 
             var task = (EngineeringTask)await CreateAsync<EngineeringTask>(
                 lifetime.Context, CanonicalObjectKinds.Task,
@@ -209,7 +209,7 @@ public sealed class RevisionRehydrationEquivalenceTests : IDisposable
 
         // ---- SECOND LIFETIME -----------------------------------------
         {
-            var lifetime = BuildDiskLifetime();
+            using var lifetime = BuildDiskLifetime();
             var result = await new EngineeringObjectRehydrationService(lifetime.Context, lifetime.Rehydrators).RehydrateAsync();
 
             Assert.True(result.IsComplete, "Rehydration did not come back complete.");
@@ -248,7 +248,7 @@ public sealed class RevisionRehydrationEquivalenceTests : IDisposable
         Guid id;
 
         {
-            var lifetime = BuildDiskLifetime();
+            using var lifetime = BuildDiskLifetime();
             var task = (EngineeringTask)await CreateAsync<EngineeringTask>(
                 lifetime.Context, CanonicalObjectKinds.Task,
                 (d, r) => new EngineeringTask(d, r, lifetime.Context, "TASK-1", "Fit the bracket", EngineeringObjectMetadata.Empty, "engineer"));
@@ -258,7 +258,7 @@ public sealed class RevisionRehydrationEquivalenceTests : IDisposable
         }
 
         {
-            var lifetime = BuildDiskLifetime();
+            using var lifetime = BuildDiskLifetime();
             await new EngineeringObjectRehydrationService(lifetime.Context, lifetime.Rehydrators).RehydrateAsync();
 
             var reloaded = Assert.IsType<EngineeringTask>(await lifetime.Context.Repository.FindAsync(id));
@@ -277,7 +277,7 @@ public sealed class RevisionRehydrationEquivalenceTests : IDisposable
         }
 
         {
-            var lifetime = BuildDiskLifetime();
+            using var lifetime = BuildDiskLifetime();
             await new EngineeringObjectRehydrationService(lifetime.Context, lifetime.Rehydrators).RehydrateAsync();
 
             var reloaded = Assert.IsType<EngineeringTask>(await lifetime.Context.Repository.FindAsync(id));
@@ -354,7 +354,7 @@ public sealed class RevisionRehydrationEquivalenceTests : IDisposable
         Guid id;
 
         {
-            var lifetime = BuildDiskLifetime();
+            using var lifetime = BuildDiskLifetime();
             var part = await CreateAsync<Part>(
                 lifetime.Context, MechanicalObjectFactoryRegistry.Part,
                 (d, r) => new Part(d, r, lifetime.Context, "PRT-1", "Bracket", EngineeringObjectMetadata.Empty, "AL-7075"));
@@ -362,7 +362,7 @@ public sealed class RevisionRehydrationEquivalenceTests : IDisposable
         }
 
         {
-            var lifetime = BuildDiskLifetime();
+            using var lifetime = BuildDiskLifetime();
             await new EngineeringObjectRehydrationService(lifetime.Context, lifetime.Rehydrators).RehydrateAsync();
 
             var reloaded = Assert.IsType<Part>(await lifetime.Context.Repository.FindAsync(id));
@@ -409,7 +409,16 @@ public sealed class RevisionRehydrationEquivalenceTests : IDisposable
 
     private static EngineeringDomainContext BuildInMemoryContext() => TestEngineeringDomain.NewContext();
 
-    private sealed record Lifetime(EngineeringDomainContext Context, IEngineeringObjectRehydratorRegistry Rehydrators);
+    /// <summary>
+    /// Disposable because its own <see cref="SqlitePersistenceStore"/>
+    /// holds the root's instance lock exclusively (`ADR-0144`): a caller
+    /// must dispose one lifetime before a later one opens the same root.
+    /// </summary>
+    private sealed record Lifetime(
+        EngineeringDomainContext Context, IEngineeringObjectRehydratorRegistry Rehydrators, SqlitePersistenceStore Store) : IDisposable
+    {
+        public void Dispose() => Store.Dispose();
+    }
 
     private Lifetime BuildDiskLifetime()
     {
@@ -435,7 +444,7 @@ public sealed class RevisionRehydrationEquivalenceTests : IDisposable
         CanonicalObjectKinds.RegisterRehydrators(rehydrators, context);
         MechanicalObjectFactoryRegistry.RegisterRehydrators(rehydrators, context);
 
-        return new Lifetime(context, rehydrators);
+        return new Lifetime(context, rehydrators, persistence);
     }
 
     private static async Task<T> CreateAsync<T>(

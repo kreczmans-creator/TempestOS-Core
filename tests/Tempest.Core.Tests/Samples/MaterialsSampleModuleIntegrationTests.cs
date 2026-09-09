@@ -131,6 +131,14 @@ public class MaterialsSampleModuleIntegrationTests
         await firstLifecycleManager.InitialiseAllAsync(CancellationToken.None);
         Assert.Equal(ModuleState.Initialised, firstLifecycleManager.GetState("tempest.samples.materials"));
 
+        // The first pipeline's store must let go of the root before the
+        // second opens it: SqlitePersistenceStore (`ADR-0144`) holds an
+        // exclusive instance lock, unlike the deleted file-per-key store
+        // this test was written against, and "a second, independent
+        // pipeline ... mirroring a genuine second application launch" means
+        // the first has ended.
+        ((IDisposable)firstServiceProvider.GetService(typeof(IPersistenceStore))).Dispose();
+
         var (secondRuntimeManager, secondServiceProvider) = BuildPipeline(temp.Path, typeof(MaterialsSampleModule));
         var secondLifecycleManager = new ModuleLifecycleManager(secondRuntimeManager, secondServiceProvider);
         await secondLifecycleManager.InitialiseAllAsync(CancellationToken.None);
@@ -207,6 +215,11 @@ public class MaterialsSampleModuleIntegrationTests
         var (runtimeManagerOne, serviceProviderOne) = BuildPipeline(temp.Path, typeof(MaterialsSampleModule));
         var lifecycleManagerOne = new ModuleLifecycleManager(runtimeManagerOne, serviceProviderOne);
         await lifecycleManagerOne.InitialiseAllAsync(CancellationToken.None);
+
+        // The first pipeline's store must let go of the root before the
+        // second opens it: SqlitePersistenceStore (`ADR-0144`) holds an
+        // exclusive instance lock for its lifetime.
+        ((IDisposable)serviceProviderOne.GetService(typeof(IPersistenceStore))).Dispose();
 
         var persistenceStoreTwo = new SqlitePersistenceStore(new ConfigurationBuilder().AddSource(new MemoryConfigurationSource(
         [

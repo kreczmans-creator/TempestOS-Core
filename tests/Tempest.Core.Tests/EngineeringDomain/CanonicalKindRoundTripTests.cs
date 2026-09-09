@@ -59,7 +59,7 @@ public sealed class CanonicalKindRoundTripTests : IDisposable
 
         // ---- FIRST LIFETIME ------------------------------------------
         {
-            var first = BuildLifetime();
+            using var first = BuildLifetime();
             var created = await CreateAsync(first, kind, $"{kind}-001", $"A {kind}");
 
             id = created.Id;
@@ -71,7 +71,7 @@ public sealed class CanonicalKindRoundTripTests : IDisposable
 
         // ---- SECOND LIFETIME: production registration only -----------
         {
-            var second = BuildLifetime();
+            using var second = BuildLifetime();
             var result = await RehydrateAsync(second);
 
             Assert.Empty(result.UnknownKinds);
@@ -126,7 +126,7 @@ public sealed class CanonicalKindRoundTripTests : IDisposable
         // Project → Part → Risk. The Risk is a canonical Kind that used to
         // be sample-only, hanging three levels down a real structure.
         {
-            var first = BuildLifetime();
+            using var first = BuildLifetime();
 
             var project = await CreateAsync(first, MechanicalObjectFactoryRegistry.Project, "P-1", "Apollo");
             var part = await CreateAsync(first, MechanicalObjectFactoryRegistry.Part, "PRT-1", "Impeller");
@@ -141,7 +141,7 @@ public sealed class CanonicalKindRoundTripTests : IDisposable
         }
 
         {
-            var second = BuildLifetime();
+            using var second = BuildLifetime();
             var result = await RehydrateAsync(second);
 
             Assert.True(result.IsComplete);
@@ -165,7 +165,7 @@ public sealed class CanonicalKindRoundTripTests : IDisposable
         var ids = new Dictionary<string, Guid>(StringComparer.Ordinal);
 
         {
-            var first = BuildLifetime();
+            using var first = BuildLifetime();
             foreach (var kind in CanonicalObjectKinds.All)
             {
                 var created = await CreateAsync(first, kind, $"{kind}-ALL", $"All-kinds {kind}");
@@ -174,7 +174,7 @@ public sealed class CanonicalKindRoundTripTests : IDisposable
         }
 
         {
-            var second = BuildLifetime();
+            using var second = BuildLifetime();
             var result = await RehydrateAsync(second);
 
             Assert.Empty(result.UnknownKinds);
@@ -200,13 +200,13 @@ public sealed class CanonicalKindRoundTripTests : IDisposable
         Guid orphanId;
 
         {
-            var first = BuildLifetime();
+            using var first = BuildLifetime();
             var orphan = await CreateAsync(first, "AKindNoDisciplineOwns", "ORPH-1", "Orphan");
             orphanId = orphan.Id;
         }
 
         {
-            var second = BuildLifetime();
+            using var second = BuildLifetime();
             var result = await RehydrateAsync(second);
 
             Assert.Contains("AKindNoDisciplineOwns", result.UnknownKinds);
@@ -219,7 +219,18 @@ public sealed class CanonicalKindRoundTripTests : IDisposable
     // Fixtures
     // ================================================================
 
-    private sealed record Lifetime(EngineeringDomainContext Context, IEngineeringObjectRehydratorRegistry Rehydrators);
+    /// <summary>
+    /// A fresh set of repositories over the same files — a new process, as
+    /// far as the object graph is concerned. Disposable because its own
+    /// <see cref="SqlitePersistenceStore"/> holds the root's instance lock
+    /// exclusively (`ADR-0144`): a caller must dispose one lifetime before
+    /// a later one opens the same root.
+    /// </summary>
+    private sealed record Lifetime(
+        EngineeringDomainContext Context, IEngineeringObjectRehydratorRegistry Rehydrators, SqlitePersistenceStore Store) : IDisposable
+    {
+        public void Dispose() => Store.Dispose();
+    }
 
     /// <summary>A fresh set of repositories over the same files — a new process, as far as the object graph is concerned.</summary>
     private Lifetime BuildLifetime()
@@ -246,7 +257,7 @@ public sealed class CanonicalKindRoundTripTests : IDisposable
         CanonicalObjectKinds.RegisterRehydrators(rehydrators, context);
         MechanicalObjectFactoryRegistry.RegisterRehydrators(rehydrators, context);
 
-        return new Lifetime(context, rehydrators);
+        return new Lifetime(context, rehydrators, store);
     }
 
     private static Task<EngineeringRehydrationResult> RehydrateAsync(Lifetime lifetime) =>

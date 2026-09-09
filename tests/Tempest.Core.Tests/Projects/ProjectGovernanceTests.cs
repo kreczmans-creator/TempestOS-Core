@@ -34,32 +34,40 @@ public sealed class ProjectGovernanceTests : IDisposable
 {
     private static readonly DateTimeOffset Today = new(2026, 8, 30, 12, 0, 0, TimeSpan.Zero);
 
-    private readonly List<string> _fixtureRoots = [];
+    private readonly List<GovernanceFixture> _fixtures = [];
 
     /// <summary>
-    /// Creates a <see cref="GovernanceFixture"/> and remembers its isolated
-    /// persistence root for <see cref="Dispose"/> — the one path every test
-    /// below reaches the fixture through, so no individual test needs its
-    /// own cleanup. Closes the Core-side leak <c>TD-120</c>
-    /// (Technical Debt Register.md) left open — see
-    /// <see cref="ProjectFixtureRoot"/>.
+    /// Creates a <see cref="GovernanceFixture"/> and remembers it for
+    /// <see cref="Dispose"/> — the one path every test below reaches the
+    /// fixture through, so no individual test needs its own cleanup.
+    /// Closes the Core-side leak <c>TD-120</c> (Technical Debt Register.md)
+    /// left open — see <see cref="ProjectFixtureRoot"/>.
     /// </summary>
     private async Task<GovernanceFixture> CreateFixtureAsync(Func<DateTimeOffset>? now = null)
     {
         var fixture = await GovernanceFixture.CreateAsync(now);
-        _fixtureRoots.Add(fixture.Root);
+        _fixtures.Add(fixture);
         return fixture;
     }
 
-    /// <summary>Deletes every persistence root this instance's own test created — xUnit constructs a fresh instance per test, so this runs once per test, not once per class.</summary>
+    /// <summary>
+    /// Disposes every fixture's own store, then deletes its persistence
+    /// root — xUnit constructs a fresh instance per test, so this runs once
+    /// per test, not once per class. The store must be disposed first:
+    /// <see cref="SqlitePersistenceStore"/> holds its root's instance lock
+    /// for its own lifetime (`ADR-0144`), so a delete attempted first would
+    /// find the lock file still open and silently do nothing.
+    /// </summary>
     public void Dispose()
     {
-        foreach (var root in _fixtureRoots)
+        foreach (var fixture in _fixtures)
         {
+            fixture.Store.Dispose();
+
             try
             {
-                if (Directory.Exists(root))
-                    Directory.Delete(root, recursive: true);
+                if (Directory.Exists(fixture.Root))
+                    Directory.Delete(fixture.Root, recursive: true);
             }
             catch (IOException)
             {
@@ -591,7 +599,7 @@ public sealed class ProjectGovernanceTests : IDisposable
     {
         private GovernanceFixture(
             EngineeringDomainContext domain, CurrentPrincipalAccessor principal,
-            EngineeringObjectStateStore states, Func<DateTimeOffset> now, string root)
+            EngineeringObjectStateStore states, Func<DateTimeOffset> now, string root, SqlitePersistenceStore store)
         {
             Domain = domain;
             Principal = principal;
@@ -599,12 +607,21 @@ public sealed class ProjectGovernanceTests : IDisposable
             Register = new ProjectGovernanceRegister(domain);
             Workflow = new ProjectGovernanceService(domain, now);
             Root = root;
+            Store = store;
         }
 
         private EngineeringObjectStateStore States { get; }
 
         /// <summary>This fixture's own isolated persistence root — the caller's own <c>Dispose</c> deletes it (`TD-120` Core-side closure).</summary>
         public string Root { get; }
+
+        /// <summary>
+        /// This fixture's own store — the caller's own <c>Dispose</c> must
+        /// dispose it before deleting <see cref="Root"/>, since
+        /// <see cref="SqlitePersistenceStore"/> holds the root's instance
+        /// lock exclusively for its own lifetime (`ADR-0144`).
+        /// </summary>
+        public SqlitePersistenceStore Store { get; }
 
         public EngineeringDomainContext Domain { get; }
 
@@ -641,7 +658,7 @@ public sealed class ProjectGovernanceTests : IDisposable
                 new EvidenceComposer(discovery, repository), principal,
                 states, new AttachmentContentStore(store));
 
-            return Task.FromResult(new GovernanceFixture(domain, principal, states, now ?? (() => DateTimeOffset.UtcNow), root));
+            return Task.FromResult(new GovernanceFixture(domain, principal, states, now ?? (() => DateTimeOffset.UtcNow), root, store));
         }
 
         public void SignInAs(string identityId) =>

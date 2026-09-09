@@ -153,6 +153,11 @@ public class RequirementsSampleModuleIntegrationTests
         var firstModule = Assert.IsType<RequirementsSampleModule>(firstServiceProvider.GetService(typeof(RequirementsSampleModule)));
         var firstRequirementId = firstModule.SampleRequirementId;
 
+        // The first pipeline's store must let go of the root before the
+        // second opens it: SqlitePersistenceStore (`ADR-0144`) holds an
+        // exclusive instance lock for its lifetime.
+        ((IDisposable)firstServiceProvider.GetService(typeof(IPersistenceStore))).Dispose();
+
         var (secondRuntimeManager, secondServiceProvider) = BuildPipeline(temp.Path, typeof(RequirementsSampleModule));
         var secondLifecycleManager = new ModuleLifecycleManager(secondRuntimeManager, secondServiceProvider);
         await secondLifecycleManager.InitialiseAllAsync(CancellationToken.None);

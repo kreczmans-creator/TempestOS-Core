@@ -192,6 +192,11 @@ public class SettingsSampleModuleIntegrationTests
         var commandDispatcherOne = (ICommandDispatcher)serviceProviderOne.GetService(typeof(ICommandDispatcher));
         await commandDispatcherOne.DispatchAsync(new SetSampleSettingCommand("persisted-across-restart"), CancellationToken.None);
 
+        // The first pipeline's store must let go of the root before the
+        // second opens it: SqlitePersistenceStore (`ADR-0144`) holds an
+        // exclusive instance lock for its lifetime.
+        ((IDisposable)serviceProviderOne.GetService(typeof(IPersistenceStore))).Dispose();
+
         // A second, independent pipeline - simulating a fresh process -
         // over the same root path.
         var (runtimeManagerTwo, serviceProviderTwo) = BuildPipeline(temp.Path, typeof(SettingsSampleModule));

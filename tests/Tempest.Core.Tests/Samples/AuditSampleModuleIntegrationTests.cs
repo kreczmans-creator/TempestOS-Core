@@ -186,6 +186,11 @@ public class AuditSampleModuleIntegrationTests
         var dispatcherOne = (ICommandDispatcher)serviceProviderOne.GetService(typeof(ICommandDispatcher));
         await dispatcherOne.DispatchAsync(new RecordSampleAuditActionCommand(), CancellationToken.None);
 
+        // The first pipeline's store must let go of the root before the
+        // second opens it: SqlitePersistenceStore (`ADR-0144`) holds an
+        // exclusive instance lock for its lifetime.
+        ((IDisposable)serviceProviderOne.GetService(typeof(IPersistenceStore))).Dispose();
+
         // A second, independent pipeline - simulating a fresh process -
         // over the same root path.
         var (runtimeManagerTwo, serviceProviderTwo) = BuildPipeline(configuration, typeof(AuditSampleModule));

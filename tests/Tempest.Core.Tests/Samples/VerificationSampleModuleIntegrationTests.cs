@@ -173,6 +173,11 @@ public class VerificationSampleModuleIntegrationTests
         await lifecycleManagerOne.InitialiseAllAsync(CancellationToken.None);
         var moduleOne = Assert.IsType<VerificationSampleModule>(serviceProviderOne.GetService(typeof(VerificationSampleModule)));
 
+        // The first pipeline's store must let go of the root before the
+        // second opens it: SqlitePersistenceStore (`ADR-0144`) holds an
+        // exclusive instance lock for its lifetime.
+        ((IDisposable)serviceProviderOne.GetService(typeof(IPersistenceStore))).Dispose();
+
         var persistenceStoreTwo = new SqlitePersistenceStore(new ConfigurationBuilder().AddSource(new MemoryConfigurationSource(
         [
             new KeyValuePair<string, string>(SqlitePersistenceStore.RootPathConfigurationKey, temp.Path),

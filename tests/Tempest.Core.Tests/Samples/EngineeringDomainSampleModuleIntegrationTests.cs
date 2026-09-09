@@ -153,6 +153,11 @@ public class EngineeringDomainSampleModuleIntegrationTests
         await firstLifecycleManager.InitialiseAllAsync(CancellationToken.None);
         Assert.Equal(ModuleState.Initialised, firstLifecycleManager.GetState("tempest.samples.engineeringdomain"));
 
+        // The first pipeline's store must let go of the root before the
+        // second opens it: SqlitePersistenceStore (`ADR-0144`) holds an
+        // exclusive instance lock for its lifetime.
+        ((IDisposable)firstServiceProvider.GetService(typeof(IPersistenceStore))).Dispose();
+
         var (secondRuntimeManager, secondServiceProvider) = BuildPipeline(temp.Path, typeof(EngineeringDomainSampleModule));
         var secondLifecycleManager = new ModuleLifecycleManager(secondRuntimeManager, secondServiceProvider);
         await secondLifecycleManager.InitialiseAllAsync(CancellationToken.None);
