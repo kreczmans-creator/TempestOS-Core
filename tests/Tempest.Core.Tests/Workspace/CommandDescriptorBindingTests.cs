@@ -195,9 +195,12 @@ public sealed class CommandDescriptorBindingTests : IAsyncLifetime
         // protection — it is what stops a nineteenth unavailable command
         // hiding inside the bindable set — so all three terms are stated,
         // not two of them with the third left in a comment.
-        Assert.Equal(82, ProductionDescriptors.Count);
+        // `WP 18.2B` adds a ninth, invocable Evidence descriptor
+        // ("evidence.set-subject"), so 82 becomes 83 and 64 becomes 65; 18
+        // is unchanged.
+        Assert.Equal(83, ProductionDescriptors.Count);
         Assert.Equal(18, unavailable.Count);
-        Assert.Equal(64, bindable.Count);
+        Assert.Equal(65, bindable.Count);
         Assert.Equal(ProductionDescriptors.Count, unavailable.Count + bindable.Count);
 
         var notBound = bindable.Where(d => d.Binding is not { IsInvocable: true }).Select(d => d.Id).ToList();

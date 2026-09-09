@@ -225,7 +225,15 @@ public static class EvidenceWorkspaceRegistration
                 (context, values) => new SetEvidenceSubjectCommand(
                     WorkspaceCommandBindings.Target(context).ObjectId, WorkspaceCommandBindings.Target(context).Kind,
                     string.IsNullOrWhiteSpace(values["subjectId"]) ? null : Guid.Parse(values["subjectId"])),
-                [WorkspaceCommandBindings.Text("subjectId", "Subject id (blank clears it)")],
+                // A declared default of "" (never null) — every generic,
+                // no-Validate palette parameter's own contract test
+                // (`CommandInvocationContractTests`) satisfies a Text
+                // parameter with whatever `DefaultValue` declares first;
+                // without one it tries "1", which `Guid.Parse` (below)
+                // rejects. Blank is also this parameter's own genuinely
+                // sensible default: it clears the subject, never a
+                // fabricated placeholder id.
+                [WorkspaceCommandBindings.Text("subjectId", "Subject id (blank clears it)", defaultValue: string.Empty)],
                 BoundKinds),
         });
 
