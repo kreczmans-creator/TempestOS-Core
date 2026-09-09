@@ -2,6 +2,8 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Platform;
+using Tempest.Workspace.Editors;
+using Tempest.Workspace.Files;
 using Tempest.Workspace.Projects;
 using Tempest.Workspace.Shell;
 using Tempest.Workspace;
@@ -10,6 +12,8 @@ using Tempest.Core.Diagnostics;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Macros;
 using Tempest.Desktop.Composition;
+using Tempest.Desktop.Editors;
+using Tempest.Desktop.Files;
 using Tempest.Desktop.History;
 using Tempest.Desktop.Input;
 using Tempest.Desktop.Tasks;
@@ -93,6 +97,15 @@ public sealed class MainWindow : Window
     private readonly EngineeringCalculationView _engineeringCalculation;
     private readonly EngineeringCalculationCoordinator _engineeringCalculationCoordinator;
     private bool _engineeringCalculationLoaded;
+
+    // The Evidence workspace (`WP 18.2A`, `ADR-0148`) — an Evidence tab and
+    // a Libraries tab, plus the three picker dialogs its own Create flow
+    // and the Object Editor's own declared Evidence sections share.
+    private readonly EvidenceWorkspaceView _evidenceWorkspace;
+    private readonly CitationPicker _citationPicker;
+    private readonly SubjectPicker _subjectPicker;
+    private readonly DeclaredFigureEntry _declaredFigureEntry;
+    private readonly IFilePicker _evidenceFilePicker;
     private readonly ProjectDeliveryCoordinator _projectDelivery;
     private readonly ProjectGovernanceCoordinator _projectGovernanceCoordinator;
 
@@ -121,7 +134,19 @@ public sealed class MainWindow : Window
     private KeyboardNavigationMode _dockTabNavigationBeforeModal;
 
     /// <summary>Initialises a new instance of the <see cref="MainWindow"/> class over an already-started <see cref="WorkspaceHost"/>.</summary>
-    public MainWindow(WorkspaceHost host)
+    /// <param name="host">The already-started Workspace Host this window presents.</param>
+    /// <param name="evidenceFilePickerOverride">
+    /// The Evidence workspace's own <see cref="IFilePicker"/> — <see langword="null"/>
+    /// (the default, used by the real running application) constructs the
+    /// real <see cref="AvaloniaFilePicker"/> over this window's own
+    /// <see cref="TopLevel"/>. Injectable so a headless journey test can
+    /// supply a stub that returns bytes from a temp file with no OS dialog
+    /// ever on screen (`WP 18.2A`, Execution Plan §3 decision 6) — the
+    /// identical seam <see cref="WorkspaceHost"/>'s own
+    /// <c>sessionPrincipals</c> parameter already establishes for the
+    /// session principal.
+    /// </param>
+    public MainWindow(WorkspaceHost host, IFilePicker? evidenceFilePickerOverride = null)
     {
         ArgumentNullException.ThrowIfNull(host);
 
@@ -229,7 +254,7 @@ public sealed class MainWindow : Window
         composition.NotificationDispatcher.Subscribe<Tempest.Core.Notifications.IPlatformNotification>(toastBridge);
 
         _theme = new ThemeService(composition.SettingsProvider);
-        _settingsDialog = new SettingsDialog(_theme, _session.UserSettings);
+        _settingsDialog = new SettingsDialog(_theme, _session.UserSettings, composition.SettingsProvider);
 
         // The Delete Confirmation gate (`WP 10.5B`, Dialog Framework) —
         // one real implementation, wired identically into every Delete
@@ -296,12 +321,32 @@ public sealed class MainWindow : Window
         // CockpitView-refresh need (view-state, not data — an opened or
         // closed document tab) is still the identical `Action` delegate,
         // `WP 12.4B` (`ADR-0104`).
+        // The declaration-per-Kind Object Editor's own collaborators
+        // (`WP 18.2A`) — built here, ahead of `WorkspaceViewCoordinator`,
+        // which threads them into every `ObjectEditorView` it opens.
+        // `_citationPicker`/`_subjectPicker`/`_declaredFigureEntry` are
+        // added to this window's own overlay root and tracked as modal
+        // dialogs below, alongside every other Dialog Framework overlay.
+        var kindEditorDeclarations = new KindEditorDeclarationRegistry();
+        KindEditorDeclarations.RegisterAll(kindEditorDeclarations);
+
+        _evidenceFilePicker = evidenceFilePickerOverride ?? new AvaloniaFilePicker(this);
+        _citationPicker = new CitationPicker(ct => LibrariesView.ReadAllAsync(
+            host.Materials!, host.Fasteners!, host.Bearings!, host.Standards!, host.Constants!, ct));
+        _subjectPicker = new SubjectPicker(composition.DomainContext);
+        _declaredFigureEntry = new DeclaredFigureEntry();
+
+        var evidenceSupport = new EvidenceEditorSupport(
+            _evidenceFilePicker,
+            ct => _citationPicker.PickAsync(ct),
+            ct => _declaredFigureEntry.PromptAsync(ct));
+
         _viewCoordinator = new WorkspaceViewCoordinator(
             workspace, manager, composition.DomainContext, composition.CommandDispatcher, composition.RequirementsService, host.CalculationTemplates,
             _explorerView, _inspectorView, _ribbon, _statusBar, _toastHost, _confirmationDialog, _undoRedo.Stack,
             _session.RecentObjects, _session.FavouriteObjects, _openGraphViewsByRootId,
             refreshStatusBar: () => RefreshStatusBar(manager), recordHistory: RecordHistory, refreshCockpit: () => _cockpitView!.Refresh(), _actionReporter,
-            workspaceChanges: composition.WorkspaceChanges);
+            workspaceChanges: composition.WorkspaceChanges, declarations: kindEditorDeclarations, evidenceSupport: evidenceSupport, auditQuery: host.AuditQuery);
 
         _documentArea = new DocumentAreaView(_viewCoordinator.BuildDocumentContent);
 
@@ -544,6 +589,24 @@ public sealed class MainWindow : Window
         _engineeringCalculation.ShowRetiredChanged += include => _ = _engineeringCalculationCoordinator.SetShowRetiredAsync(include);
         _engineeringCalculation.SelectionMoved += () => _engineeringCalculationCoordinator.ForgetPendingRetirement();
 
+        // The Evidence workspace's own Create flow and the Object Editor's
+        // own declared Evidence sections both need a real prompt now that
+        // it exists (`WP 18.2A`).
+        var librariesView = new LibrariesView(
+            host.Materials!, host.Fasteners!, host.Bearings!, host.Standards!, host.Constants!,
+            host.ReferenceReview!, host.BracketCalculations!);
+        librariesView.ActionCompleted += (message, outcome) => _ = _actionReporter.ReportAsync(message, outcome);
+
+        _evidenceWorkspace = new EvidenceWorkspaceView(
+            composition.DomainContext, composition.CommandDispatcher, _evidenceFilePicker,
+            () => _projectContext.Current?.Id, (id, kind) => _ = OpenEvidenceRecordAsync(id, kind), librariesView)
+        {
+            ParameterPrompt = commandPrompt.Prompt,
+            SubjectPrompt = ct => _subjectPicker.PickAsync(ct),
+            WorkspaceChanges = composition.WorkspaceChanges,
+        };
+        _evidenceWorkspace.ActionCompleted += (message, outcome) => _ = _actionReporter.ReportAsync(message, outcome);
+
         _navigationRail = new GlobalNavigationRail(_navigator);
 
         _navigationRail.NavigationRequested += () => _ = RenderCurrentModuleAsync();
@@ -602,6 +665,7 @@ public sealed class MainWindow : Window
             ShellArea.Projects => _projectBrowser,
             ShellArea.ProjectWorkspace => _projectWorkspace,
             ShellArea.EngineeringCalculation => _engineeringCalculation,
+            ShellArea.Evidence => _evidenceWorkspace,
             _ => _engineeringSurface,
         };
 
@@ -662,6 +726,9 @@ public sealed class MainWindow : Window
         root.Children.Add(_messageDialog);
         root.Children.Add(_settingsDialog);
         root.Children.Add(_macroManagerDialog);
+        root.Children.Add(_citationPicker);
+        root.Children.Add(_subjectPicker);
+        root.Children.Add(_declaredFigureEntry);
         root.Children.Add(_toastHost);
         Content = root;
 
@@ -672,7 +739,11 @@ public sealed class MainWindow : Window
         // here, once, covers every dialog's own many call sites (spread
         // across this class and `DesktopCommandPrompt`) without needing to
         // wrap each one individually.
-        foreach (var modal in new Border[] { _confirmationDialog, _inputDialog, _messageDialog, _settingsDialog, _macroManagerDialog, _commandPalette })
+        foreach (var modal in new Border[]
+                 {
+                     _confirmationDialog, _inputDialog, _messageDialog, _settingsDialog, _macroManagerDialog, _commandPalette,
+                     _citationPicker, _subjectPicker, _declaredFigureEntry,
+                 })
             TrackModal(modal);
 
         var shortcutActions = new KeyboardShortcutActions(
@@ -1077,6 +1148,16 @@ public sealed class MainWindow : Window
                 _moduleHost.Content = _engineeringSurface;
                 break;
 
+            case ShellArea.Evidence:
+                // `WP 18.2A`: the open project's own evidence and the
+                // Libraries tab. Re-read on every entry (`RefreshAsync`),
+                // the same "load when you land here" discipline every
+                // other area already follows — never a manual refresh
+                // call site scattered elsewhere (`WP 18.1A`'s own guard).
+                await _evidenceWorkspace.RefreshAsync().ConfigureAwait(true);
+                _moduleHost.Content = _evidenceWorkspace;
+                break;
+
             case ShellArea.EngineeringCalculation:
                 // The governed calculation surface. The library is re-read
                 // on every entry, because a material released elsewhere in
@@ -1342,6 +1423,26 @@ public sealed class MainWindow : Window
 
     /// <summary>The `WP 17.9.4` name, kept working: an alias for <see cref="OpenObjectAsync"/>, generalised by `WP 18.1B` §2/§5 to open any found object, not only a created one.</summary>
     internal Task OpenCreatedObjectAsync(Guid id, string kind) => OpenObjectAsync(id, kind);
+
+    /// <summary>
+    /// Opens an Evidence record's own editor from the Evidence rail area
+    /// (`WP 18.2A`) — Create and opening a row both call this. The Object
+    /// Editor's own document tabs live in the Engineering module's own
+    /// docking layout (<see cref="_engineeringSurface"/>), which
+    /// <see cref="_moduleHost"/> does not show while the Evidence area
+    /// itself is on screen; without switching first, "opens right up"
+    /// (Product Owner guard, `WP 17.9.4`) would open the tab behind a
+    /// module the user is not looking at. Mirrors
+    /// <c>OpenCreatedObjectAsync</c>'s own "switch, then navigate" shape
+    /// for the one respect Evidence genuinely needs it: which module is on
+    /// screen, not which Explorer area or Ribbon tab.
+    /// </summary>
+    private async Task OpenEvidenceRecordAsync(Guid id, string kind)
+    {
+        await _navigator.GoToEngineeringAsync().ConfigureAwait(true);
+        await RenderCurrentModuleAsync().ConfigureAwait(true);
+        await _viewCoordinator.NavigateToObjectAsync(id, kind).ConfigureAwait(true);
+    }
 
     private void SetCurrentArea(string? title)
     {

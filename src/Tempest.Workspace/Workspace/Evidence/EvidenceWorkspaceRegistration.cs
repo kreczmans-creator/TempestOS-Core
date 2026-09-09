@@ -57,6 +57,17 @@ public static class EvidenceWorkspaceRegistration
         manager.RegisterExplorerArea(ExplorerAreaId, new EvidenceNodeProvider(ExplorerAreaId, domainContext));
         manager.RegisterFacetProvider(Core.Evidence.Evidence.CanonicalKind, new EvidencePropertyFacetProvider(Core.Evidence.Evidence.CanonicalKind, domainContext));
 
+        // `WP 18.2A`: a plain data view, never itself rendered — see
+        // `EvidenceObjectView`'s own remarks. Without this,
+        // `IWorkspaceNavigation.OpenAsync("Evidence")` throws
+        // `WorkspaceViewFactoryNotFoundException` and a created record
+        // could never actually open right up (Product Owner guard,
+        // `WP 17.9.4`); with it, `WorkspaceViewCoordinator.BuildDocumentContent`
+        // falls through to the Object Editor's own declaration-per-Kind
+        // rendering for this Kind, exactly as it already does for every
+        // Mechanical Kind.
+        manager.RegisterView(Core.Evidence.Evidence.CanonicalKind, new EvidenceObjectViewFactory(domainContext));
+
         // WP 10.2A (ADR-0096): reuse, not reinvent — see this class's own
         // remarks. Revise has its own real meaning for Evidence (reopen an
         // Issued record as Draft, `ReviseEvidenceCommand`) so, unlike
@@ -68,7 +79,9 @@ public static class EvidenceWorkspaceRegistration
         manager.RegisterDeleteFactory(Core.Evidence.Evidence.CanonicalKind, static (id, targetKind) => new DeleteMechanicalObjectCommand(id, targetKind));
 
         commandDispatcher.RegisterHandler<CreateEvidenceCommand>(new CreateEvidenceCommandHandler(evidenceService));
+        commandDispatcher.RegisterHandler<CreateEvidenceFromFilesCommand>(new CreateEvidenceFromFilesCommandHandler(evidenceService));
         commandDispatcher.RegisterHandler<CiteEvidenceCommand>(new CiteEvidenceCommandHandler(evidenceService));
+        commandDispatcher.RegisterHandler<RemoveEvidenceCitationCommand>(new RemoveEvidenceCitationCommandHandler(evidenceService));
         commandDispatcher.RegisterHandler<DeclareEvidenceFigureCommand>(new DeclareEvidenceFigureCommandHandler(evidenceService));
         commandDispatcher.RegisterHandler<RecordEvidenceCheckCommand>(new RecordEvidenceCheckCommandHandler(evidenceService));
         commandDispatcher.RegisterHandler<IssueEvidenceCommand>(new IssueEvidenceCommandHandler(evidenceService));

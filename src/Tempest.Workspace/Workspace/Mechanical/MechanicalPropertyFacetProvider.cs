@@ -86,7 +86,16 @@ public sealed class MechanicalPropertyFacetProvider : IPropertyFacetProvider
         }
 
         if (target is IHasParent hasParent)
+        {
             facets.Add(new("Parent", hasParent.ParentId?.ToString() ?? "(top level)", PropertyFacetKind.ObjectReference));
+
+            // `WP 18.2A` (`TD-174`, `TD-175`): named, not a bare Guid — the
+            // one fact a reader actually wants is what the assembly is
+            // called, not the id that happens to encode it. Mirrors
+            // `EvidencePropertyFacetProvider`'s own identical "Subject"
+            // facet.
+            facets.Add(new("Where Used", await DescribeWhereUsedAsync(hasParent.ParentId, cancellationToken).ConfigureAwait(false), PropertyFacetKind.ObjectReference));
+        }
 
         if (target is IDeletable { IsDeleted: true })
             facets.Add(new("Deleted", "Yes", PropertyFacetKind.DisciplineSpecific));
@@ -117,6 +126,16 @@ public sealed class MechanicalPropertyFacetProvider : IPropertyFacetProvider
             facets.Add(new("Baseline", baselineDisplay, PropertyFacetKind.DisciplineSpecific));
 
         return facets;
+    }
+
+    /// <summary>Names <paramref name="parentId"/>'s own object, for the "Where Used" facet (`WP 18.2A`) — "(top level)" when there is none, "(not found)" for a stale/deleted parent.</summary>
+    private async Task<string> DescribeWhereUsedAsync(Guid? parentId, CancellationToken cancellationToken)
+    {
+        if (parentId is not { } id)
+            return "(top level)";
+
+        var parent = await _context.Repository.FindAsync(id, cancellationToken).ConfigureAwait(false);
+        return parent is IHasBusinessIdentifier identity ? $"{identity.DisplayName} ({parent!.Kind})" : "(not found)";
     }
 
     /// <summary>Every <c>Configuration</c>/<c>Baseline</c>/<c>Release</c> object (three distinct <c>Kind</c> strings, `WP 9.0B`) whose own <see cref="IConfiguration.MemberRevisions"/> references <paramref name="objectId"/>.</summary>

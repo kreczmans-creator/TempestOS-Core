@@ -4,7 +4,7 @@ using SkiaSharp;
 using Tempest.Core.Evidence;
 using Tempest.Workspace.Evidence;
 
-namespace Tempest.Desktop.Evidence;
+namespace Tempest.Desktop.IssueSheets;
 
 /// <summary>
 /// Renders an <see cref="IssueSheetModel"/> as an A4 PDF with SkiaSharp's

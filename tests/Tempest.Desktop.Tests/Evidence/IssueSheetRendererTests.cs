@@ -4,7 +4,7 @@ using Avalonia.Headless.XUnit;
 using PDFtoImage;
 using SkiaSharp;
 using Tempest.Core.Evidence;
-using Tempest.Desktop.Evidence;
+using Tempest.Desktop.IssueSheets;
 using Tempest.Workspace.Evidence;
 
 namespace Tempest.Desktop.Tests.Evidence;
