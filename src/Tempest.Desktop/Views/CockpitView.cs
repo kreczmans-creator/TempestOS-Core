@@ -3,7 +3,9 @@ using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
+using Avalonia.Threading;
 using Tempest.Workspace;
+using Tempest.Core.Events;
 using Tempest.Core.Navigation;
 using Tempest.Desktop.Icons;
 using Tempest.Desktop.Theming;
@@ -43,8 +45,8 @@ internal sealed class CockpitView : UserControl
 {
     private readonly EngineeringCockpit _cockpit;
     private readonly IReadOnlyList<NavigationItem> _areas;
-    private readonly Action _onContinue;
-    private readonly Action<int> _onOpenRecent;
+    private readonly Func<Task> _onContinue;
+    private readonly Func<int, Task> _onOpenRecent;
     private readonly Action _onOpenCommandPalette;
     private readonly Action<string> _onSwitchArea;
     private readonly FavouriteObjectsState? _favourites;
@@ -66,8 +68,57 @@ internal sealed class CockpitView : UserControl
     /// 10.7A` empty-capability message — never a crash.
     /// </param>
     /// <param name="onOpenFavourite">Opens a favourited Project as a document tab — required whenever <paramref name="favourites"/> is non-null.</param>
+    private IWorkspaceChanges? _workspaceChanges;
+
+    /// <summary>
+    /// The change feed this view refreshes from (`WP 18.1A`) — set once by
+    /// the composition root (<c>MainWindow</c>). <see langword="null"/>
+    /// (the default) leaves this view exactly as every prior Work Package
+    /// shipped it: refreshed only by an explicit <see cref="Refresh"/>
+    /// call, which is what an existing test that constructs this view
+    /// directly, without wiring this, still makes.
+    /// </summary>
+    public IWorkspaceChanges? WorkspaceChanges
+    {
+        get => _workspaceChanges;
+        set
+        {
+            if (ReferenceEquals(_workspaceChanges, value))
+                return;
+
+            if (_workspaceChanges is not null)
+                _workspaceChanges.Changed -= OnWorkspaceChanged;
+
+            _workspaceChanges = value;
+
+            if (_workspaceChanges is not null)
+                _workspaceChanges.Changed += OnWorkspaceChanged;
+        }
+    }
+
+    /// <summary>
+    /// Refreshes from a committed change. Raised on whatever thread
+    /// completed the commit — never the UI thread — so this marshals
+    /// before touching anything UI-owned (`WP 18.1A`).
+    /// </summary>
+    private void OnWorkspaceChanged(WorkspaceChange change) =>
+        Dispatcher.UIThread.Post(() =>
+        {
+            // No status surface to report a failure through here (unlike
+            // ProjectExplorerView's ActionCompleted); swallowed rather than
+            // left to crash the dispatcher, which every other Cockpit
+            // action already reaches through its own try/catch-free path.
+            try
+            {
+                Refresh();
+            }
+            catch (Exception)
+            {
+            }
+        });
+
     public CockpitView(
-        EngineeringCockpit cockpit, IReadOnlyList<NavigationItem> areas, Action onContinue, Action<int> onOpenRecent, Action onOpenCommandPalette, Action<string> onSwitchArea,
+        EngineeringCockpit cockpit, IReadOnlyList<NavigationItem> areas, Func<Task> onContinue, Func<int, Task> onOpenRecent, Action onOpenCommandPalette, Action<string> onSwitchArea,
         FavouriteObjectsState? favourites = null, Action<Guid, string>? onOpenFavourite = null)
     {
         ArgumentNullException.ThrowIfNull(cockpit);
@@ -195,7 +246,7 @@ internal sealed class CockpitView : UserControl
             resume.Classes.Add(ChromeStyles.Primary);
             AutomationProperties.SetName(resume, "Continue working");
             ToolTip.SetTip(resume, $"Reopen {item.Title}, the last object you worked on");
-            resume.Click += (_, _) => { _onContinue(); Refresh(); };
+            resume.Click += async (_, _) => { await _onContinue().ConfigureAwait(true); Refresh(); };
             resume.Margin = new Thickness(0, 0, DesignTokens.SpaceMd, DesignTokens.SpaceMd);
             actions.Children.Add(resume);
         }
@@ -488,7 +539,7 @@ internal sealed class CockpitView : UserControl
             {
                 var item = _cockpit.RecentActivity[i];
                 var index = i + 1;
-                card.AddAction($"{IconRegistry.Resolve(item.Kind)} {item.Title} — {item.OpenedAt:HH:mm:ss}", () => { _onOpenRecent(index); Refresh(); });
+                card.AddAction($"{IconRegistry.Resolve(item.Kind)} {item.Title} — {item.OpenedAt:HH:mm:ss}", async () => { await _onOpenRecent(index).ConfigureAwait(true); Refresh(); });
             }
         }
 

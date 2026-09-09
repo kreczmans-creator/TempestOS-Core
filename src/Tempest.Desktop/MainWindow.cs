@@ -206,24 +206,12 @@ public sealed class MainWindow : Window
                 _commandHistory.Record($"Macro '{title}'", result.Succeeded);
                 RefreshOutputPanelExtras();
 
-                // A macro is an arbitrary multi-command mutation — the
-                // Explorer/Cockpit previously stayed stale after one (`TD-58`).
-                //
-                // `!` on both fields is the same field-closure lazy-capture
-                // pattern `_cockpitView!`/`_documentArea!` already use below
-                // (`WP 12.4B`, `ADR-0104`): this lambda is *constructed* here,
-                // before `_explorerView` (assigned ~line 189) and
-                // `_cockpitView` (~line 247) exist, but it is only ever
-                // *invoked* by MacroManagerDialog after construction has
-                // fully completed, by which point both are always assigned.
-                // Suppressed at exactly these two provably-safe dereferences
-                // rather than by relaxing nullable analysis anywhere.
-                if (result.Succeeded)
-                {
-                    await _explorerView!.LoadAsync().ConfigureAwait(true);
-                    _cockpitView!.Refresh();
-                }
-
+                // `WP 18.1A`: no explicit Explorer/Cockpit refresh here any
+                // more — a macro is an arbitrary multi-command mutation,
+                // and every one of its commands commits through the same
+                // mutators as any other write, each raising its own
+                // WorkspaceChanged. Explorer and Cockpit are both
+                // subscribed and reload from that.
                 return result;
             });
 
@@ -255,9 +243,12 @@ public sealed class MainWindow : Window
                 ? _confirmationDialog.ConfirmAsync("Delete?", prompt, "Delete")
                 : Task.FromResult(true);
 
-        _explorerView = new ProjectExplorerView(workspace.ProjectExplorer, manager) { ConfirmDeleteAsync = ConfirmDeleteAsync, RecentSearchCapacity = _session.UserSettings.RecentSearchCapacity };
+        // `WP 18.1A`: every view that renders workspace data subscribes to
+        // the one change feed here, at construction, rather than being
+        // reloaded through an explicit call site at every mutation below.
+        _explorerView = new ProjectExplorerView(workspace.ProjectExplorer, manager) { ConfirmDeleteAsync = ConfirmDeleteAsync, RecentSearchCapacity = _session.UserSettings.RecentSearchCapacity, WorkspaceChanges = composition.WorkspaceChanges };
         var principals = (Tempest.Core.Identity.IPrincipalDirectory)host.Services!.GetService(typeof(Tempest.Core.Identity.IPrincipalDirectory));
-        _inspectorView = new PropertyInspectorView(workspace.PropertyInspector, manager, composition.DomainContext, principals);
+        _inspectorView = new PropertyInspectorView(workspace.PropertyInspector, manager, composition.DomainContext, principals) { WorkspaceChanges = composition.WorkspaceChanges };
         _statusBar = new StatusBarView();
         _commandPalette = new CommandPaletteOverlay(composition.CommandRegistry);
 
@@ -291,19 +282,20 @@ public sealed class MainWindow : Window
         // each caller still supplies its own refresh set.
         _actionReporter = new ActionOutcomeReporter(_statusBar, _toastHost, RecordHistory);
 
-        // `() => _cockpitView!.Refresh()` is the same field-closure
-        // lazy-capture pattern `_documentArea!` already uses just below;
-        // `_cockpitView` is a `readonly` field assigned later, at line
-        // ~209, but this lambda is only ever invoked after construction
-        // fully completes, by which point it is always assigned.
-        _undoRedo = new UndoRedoCoordinator(_explorerView, refreshCockpit: () => _cockpitView!.Refresh(), _actionReporter);
+        // `WP 18.1A`: no `explorerView`/`refreshCockpit` arguments any
+        // more — Undo/Redo reverses a change through the same mutators as
+        // any other write, so it raises its own WorkspaceChanged and the
+        // subscriptions wired above (and below, on CockpitView) reload
+        // Explorer and Cockpit from that.
+        _undoRedo = new UndoRedoCoordinator(_actionReporter);
 
         // Explorer/Inspector/Document-Area cross-view coordination
         // (`ADR-0103` collaborator #4) — DocumentAreaView is attached
         // once it exists, below (see WorkspaceViewCoordinator's own
-        // remarks for why that one cycle needs two phases); its own
-        // CockpitView-refresh need is the identical `Action` delegate
-        // passed to UndoRedoCoordinator above, `WP 12.4B` (`ADR-0104`).
+        // remarks for why that one cycle needs two phases). Its own
+        // CockpitView-refresh need (view-state, not data — an opened or
+        // closed document tab) is still the identical `Action` delegate,
+        // `WP 12.4B` (`ADR-0104`).
         _viewCoordinator = new WorkspaceViewCoordinator(
             workspace, manager, composition.DomainContext, composition.CommandDispatcher, composition.RequirementsService, host.CalculationTemplates,
             _explorerView, _inspectorView, _ribbon, _statusBar, _toastHost, _confirmationDialog, _undoRedo.Stack,
@@ -324,15 +316,18 @@ public sealed class MainWindow : Window
         _cockpitView = new CockpitView(
             cockpit,
             workspace.Navigation.Areas,
-            onContinue: () => cockpit.ContinueAsync().GetAwaiter().GetResult(),
-            onOpenRecent: index =>
+            onContinue: () => cockpit.ContinueAsync(),
+            onOpenRecent: async index =>
             {
-                var view = cockpit.OpenRecentAsync(index).GetAwaiter().GetResult();
+                var view = await cockpit.OpenRecentAsync(index).ConfigureAwait(true);
                 _documentArea.ShowTab(view);
             },
             onOpenCommandPalette: () => _commandPalette.Open(),
             onSwitchArea: async areaId =>
             {
+                // Navigation, not a data mutation: switching the Explorer's
+                // own area scope needs its own reload regardless of
+                // WorkspaceChanged, which this does not raise.
                 await workspace.Navigation.SwitchAreaAsync(areaId).ConfigureAwait(true);
                 await _explorerView.LoadAsync().ConfigureAwait(true);
                 SetCurrentArea(workspace.Navigation.Areas.FirstOrDefault(a => a.Id == areaId)?.Title);
@@ -342,7 +337,7 @@ public sealed class MainWindow : Window
             // identical NavigateToObject every other Cockpit/Object
             // Editor navigation action already calls.
             favourites: _session.FavouriteObjects,
-            onOpenFavourite: _viewCoordinator.NavigateToObject);
+            onOpenFavourite: _viewCoordinator.NavigateToObject) { WorkspaceChanges = composition.WorkspaceChanges };
         _documentArea.SetHomeTab(_cockpitView);
 
         _viewCoordinator.Attach(_documentArea);
@@ -404,15 +399,14 @@ public sealed class MainWindow : Window
 
         _ribbon.ParameterPrompt = commandPrompt.Prompt;
 
-        // Reported through the one shared tail (`WP-D1`). Refused/failed
-        // actions changed nothing — a full Explorer reload and Cockpit
-        // rebuild for them was `TD-58`'s core redundant-rebuild path.
-        _ribbon.ActionCompleted += async (message, outcome) =>
-            await _actionReporter.ReportAsync(message, outcome, refresh: async () =>
-            {
-                await _explorerView.LoadAsync().ConfigureAwait(true);
-                _cockpitView.Refresh();
-            }).ConfigureAwait(true);
+        // Reported through the one shared tail (`WP-D1`). No `refresh`
+        // delegate (`WP 18.1A`): a successful ribbon action commits
+        // through the same mutators as any other write, raising its own
+        // WorkspaceChanged — Explorer and Cockpit are both subscribed and
+        // reload from that; a refused/failed action changed nothing and
+        // raises no event, so neither reloads for one, exactly as before.
+        _ribbon.ActionCompleted += (message, outcome) =>
+            _ = _actionReporter.ReportAsync(message, outcome);
 
         // `WP 17.9.4`: what you make opens right up. Nothing a user creates
         // may drop out of sight; the shell takes them to it.
@@ -759,14 +753,13 @@ public sealed class MainWindow : Window
                 : $"'{descriptor.DisplayName}' failed via Command Palette: {result.Message ?? "Command failed."}");
             RefreshStatusBar(manager);
 
-            // Success-gated (`TD-58`): a failed command changed nothing;
-            // a successful one may have mutated the domain, so the
-            // Explorer (previously left stale here) reloads too.
+            // `WP 18.1A`: no explicit Explorer/Cockpit refresh here — a
+            // successful command commits through the same mutators as any
+            // other write, raising its own WorkspaceChanged; a failed one
+            // changed nothing and raises no event. Both views are
+            // subscribed and reload only when one actually lands.
             if (result.Succeeded)
             {
-                await _explorerView.LoadAsync().ConfigureAwait(true);
-                _cockpitView.Refresh();
-
                 // `WP 17.9.4`: a created object opens right up, from the
                 // palette exactly as from the ribbon.
                 if (result is { SubjectId: { } createdId, SubjectKind: { } createdKind } && RibbonView.IsCreate(descriptor.Id))

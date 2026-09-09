@@ -28,8 +28,8 @@ public sealed class CockpitEngineeringOverviewCardTests
             var view = new CockpitView(
                 cockpit,
                 workspace.Navigation.Areas,
-                onContinue: () => { },
-                onOpenRecent: _ => { },
+                onContinue: () => Task.CompletedTask,
+                onOpenRecent: _ => Task.CompletedTask,
                 onOpenCommandPalette: () => { },
                 onSwitchArea: _ => { });
 
