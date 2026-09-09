@@ -27,7 +27,7 @@ check's generic exception handler already names the failing check in
 its `Fail` result; carried forward unchanged into the reduced script).
 None of these nine appear below.
 
-## Live Backlog (27 of 30 cap)
+## Live Backlog (29 of 30 cap)
 
 `TD-147` — an object creation whose initial durable write failed still
 registered the object in memory, so its next successful write made a
@@ -68,6 +68,8 @@ and nothing on disk.
 | `TD-155` | Materials library reuses an incompatible payload shape under the old document Kind | `WP 18.0B` |
 | `TD-157` | "Pinned source superseded" warning can never fire; the resolver is never wired up | `WP 18.0B` |
 | `TD-163` | 79 seeded reference records never reach the shipped product | `WP 18.0B` |
+| `TD-174` | A Part carries no engineering attributes an engineer expects: no material assignment pinned to a released reference revision (`IPart.MaterialId` is a bare string nothing on the Desktop sets), no make/buy or standard-versus-custom designation, no part number distinct from the display name, no mass; a Component is the de-facto "standard part" but nothing says so (Product Owner, second Windows review, 2026-09-09) | `WP 18.2A` (object page by Kind); model attributes proposed as `WP 18.1C` in the design-freeze review §5.2 |
+| `TD-175` | The editor's "Bill of Materials" section on a Part edits that part's own line in its parent (quantity, find number, item number); a bill of materials is owned by the assembly and should be shown there as a table of its children, while a Part shows only "in parent assembly: qty, find number" (Product Owner, 2026-09-09) | `WP 18.2A` |
 
 **Judgement calls, not named in any Work Package's "Closes" column:**
 `TD-27` and `TD-150` sit squarely in the persistence/object-store
