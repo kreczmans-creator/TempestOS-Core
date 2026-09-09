@@ -72,7 +72,7 @@ public sealed class AutomationNameResolutionTests
         {
             await host.StartAsync();
             var (domainContext, target) = await GetRealMechanicalObjectAsync(host);
-            var view = DigitalThreadGraphView.TryCreate(target.Id, target.Kind!, domainContext, (_, _) => { })!;
+            var view = (await DigitalThreadGraphView.TryCreateAsync(target.Id, target.Kind!, domainContext, (_, _) => { }))!;
 
             var window = new Window { Content = view };
             window.Show();

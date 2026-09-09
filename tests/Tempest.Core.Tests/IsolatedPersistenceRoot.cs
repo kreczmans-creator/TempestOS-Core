@@ -7,7 +7,7 @@ namespace Tempest.Core.Tests;
 /// <summary>
 /// Gives every <see cref="ITempestHostBuilder"/> in this assembly its own
 /// persistence root, so that no test in this suite ever writes into
-/// <see cref="PersistenceStore.DefaultRootPath"/> — the real,
+/// <see cref="SqlitePersistenceStore.DefaultRootPath"/> — the real,
 /// working-directory-relative folder the shipped application keeps a
 /// user's data in.
 /// </summary>
@@ -82,7 +82,7 @@ internal static class IsolatedPersistenceRoot
 
         return builder.AddConfigurationSource(new MemoryConfigurationSource(
         [
-            new KeyValuePair<string, string>(PersistenceStore.RootPathConfigurationKey, NewPath()),
+            new KeyValuePair<string, string>(SqlitePersistenceStore.RootPathConfigurationKey, NewPath()),
         ]));
     }
 }

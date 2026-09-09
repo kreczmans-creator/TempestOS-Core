@@ -49,7 +49,7 @@ public class CockpitReadScopeTests
     // ----------------------------------------------------------------
 
     /// <summary>
-    /// A real <see cref="PersistenceStore"/> that counts the reads passing
+    /// A real <see cref="SqlitePersistenceStore"/> that counts the reads passing
     /// through it. Decorates rather than fakes: the requirements really are
     /// written to and read back from disk, so what is counted is the actual
     /// production read volume, not a mock's idea of it.
@@ -117,11 +117,11 @@ public class CockpitReadScopeTests
         var configuration = new ConfigurationBuilder()
             .AddSource(new MemoryConfigurationSource(
             [
-                new KeyValuePair<string, string>(PersistenceStore.RootPathConfigurationKey, rootPath),
+                new KeyValuePair<string, string>(SqlitePersistenceStore.RootPathConfigurationKey, rootPath),
             ]))
             .Build();
 
-        var counter = new CountingPersistenceStore(new PersistenceStore(configuration));
+        var counter = new CountingPersistenceStore(new SqlitePersistenceStore(configuration));
         var principalAccessor = new CurrentPrincipalAccessor();
         var documentStore = new EngineeringDocumentStore(counter, principalAccessor);
         var verificationService = new VerificationService(documentStore, principalAccessor, new PermissionEvaluator());

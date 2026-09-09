@@ -74,7 +74,7 @@ public sealed class WorkspaceHost : IAsyncDisposable
     /// <param name="persistenceRootPathOverride">
     /// A specific <see cref="Tempest.Core.Persistence.IPersistenceStore"/> root
     /// path to use instead of the conventional, working-directory-relative
-    /// default (`ADR-0041`'s own <c>PersistenceStore.DefaultRootPath</c>) —
+    /// default (`ADR-0144`'s own <c>SqlitePersistenceStore.DefaultRootPath</c>) —
     /// <see langword="null"/> (the default, used by the real running
     /// application) leaves production behaviour completely unchanged.
     /// Exists solely so test code can isolate its own persisted state per
@@ -130,7 +130,7 @@ public sealed class WorkspaceHost : IAsyncDisposable
                 new MemoryConfigurationSource(
                 [
                     new KeyValuePair<string, string>(
-                        Tempest.Core.Persistence.PersistenceStore.RootPathConfigurationKey,
+                        Tempest.Core.Persistence.SqlitePersistenceStore.RootPathConfigurationKey,
                         _persistenceRootPathOverride),
                 ]),
             ];

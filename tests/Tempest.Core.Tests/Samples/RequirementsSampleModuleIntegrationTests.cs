@@ -47,7 +47,7 @@ public class RequirementsSampleModuleIntegrationTests
 
         var configuration = new ConfigurationBuilder().AddSource(new MemoryConfigurationSource(
         [
-            new KeyValuePair<string, string>(PersistenceStore.RootPathConfigurationKey, persistenceRootPath),
+            new KeyValuePair<string, string>(SqlitePersistenceStore.RootPathConfigurationKey, persistenceRootPath),
         ])).Build();
 
         var services = new ServiceCollection();
@@ -67,7 +67,7 @@ public class RequirementsSampleModuleIntegrationTests
         // registers it (`ADR-0144`). The query shape is required since
         // `ADR-0145`: EngineeringDomainContext commits through it, and
         // AuditQuery answers a by-object lookup with a key prefix listing.
-        var persistenceStore = new PersistenceStore(configuration);
+        var persistenceStore = new SqlitePersistenceStore(configuration);
         services.AddInstance<IPersistenceStore>(persistenceStore);
         services.AddInstance<IBinaryPersistenceStore>(persistenceStore);
         services.AddInstance<IQueryablePersistenceStore>(persistenceStore);
@@ -152,6 +152,11 @@ public class RequirementsSampleModuleIntegrationTests
 
         var firstModule = Assert.IsType<RequirementsSampleModule>(firstServiceProvider.GetService(typeof(RequirementsSampleModule)));
         var firstRequirementId = firstModule.SampleRequirementId;
+
+        // The first pipeline's store must let go of the root before the
+        // second opens it: SqlitePersistenceStore (`ADR-0144`) holds an
+        // exclusive instance lock for its lifetime.
+        ((IDisposable)firstServiceProvider.GetService(typeof(IPersistenceStore))).Dispose();
 
         var (secondRuntimeManager, secondServiceProvider) = BuildPipeline(temp.Path, typeof(RequirementsSampleModule));
         var secondLifecycleManager = new ModuleLifecycleManager(secondRuntimeManager, secondServiceProvider);
@@ -294,7 +299,7 @@ public class RequirementsSampleModuleIntegrationTests
         var host = new TempestHostBuilder([typeof(RequirementsSampleModule)])
             .AddConfigurationSource(new MemoryConfigurationSource(
             [
-                new KeyValuePair<string, string>(PersistenceStore.RootPathConfigurationKey, temp.Path),
+                new KeyValuePair<string, string>(SqlitePersistenceStore.RootPathConfigurationKey, temp.Path),
             ]))
             .Build();
 

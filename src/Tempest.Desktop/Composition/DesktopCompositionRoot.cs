@@ -51,6 +51,14 @@ internal sealed class DesktopCompositionRoot
     /// <summary>Gets the resolved <see cref="IEventBus"/>.</summary>
     public IEventBus EventBus { get; }
 
+    /// <summary>
+    /// Gets the resolved <see cref="IWorkspaceChanges"/> (`WP 18.1A`) — the
+    /// change feed every view that renders workspace data subscribes to,
+    /// so it reloads once per committed transaction rather than through an
+    /// explicit call site at every mutation.
+    /// </summary>
+    public IWorkspaceChanges WorkspaceChanges { get; }
+
     /// <summary>Gets the resolved <see cref="IMacroManager"/>.</summary>
     public IMacroManager MacroManager { get; }
 
@@ -80,6 +88,7 @@ internal sealed class DesktopCompositionRoot
         RequirementsService = (IRequirementsService)services.GetService(typeof(IRequirementsService));
         Diagnostics = (IDiagnosticsProvider)services.GetService(typeof(IDiagnosticsProvider));
         EventBus = (IEventBus)services.GetService(typeof(IEventBus));
+        WorkspaceChanges = (IWorkspaceChanges)services.GetService(typeof(IWorkspaceChanges));
         MacroManager = (IMacroManager)services.GetService(typeof(IMacroManager));
         InputBindingRegistry = (IInputBindingRegistry)services.GetService(typeof(IInputBindingRegistry));
         NotificationDispatcher = (Tempest.Core.Notifications.INotificationDispatcher)services.GetService(typeof(Tempest.Core.Notifications.INotificationDispatcher));

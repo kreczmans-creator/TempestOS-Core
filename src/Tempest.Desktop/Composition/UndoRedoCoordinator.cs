@@ -2,7 +2,6 @@ using Avalonia.Controls;
 using Avalonia.Threading;
 using Tempest.Workspace;
 using Tempest.Desktop.Theming;
-using Tempest.Desktop.Views;
 
 namespace Tempest.Desktop.Composition;
 
@@ -49,10 +48,17 @@ namespace Tempest.Desktop.Composition;
 /// genuine (if minor) construction-order coupling: this collaborator no
 /// longer needs to know <see cref="CockpitView"/> exists at all.
 /// </remarks>
+/// <remarks>
+/// **`WP 18.1A`.** The <c>ProjectExplorerView explorerView</c> and
+/// <c>Action refreshCockpit</c> constructor parameters `ADR-0104` added
+/// are gone in turn, for the same reason as each other: Undo and Redo
+/// reverse a change through the identical mutators every other write
+/// uses, so the reversal raises its own <c>WorkspaceChanged</c> and every
+/// subscribed view — Explorer and Cockpit included — reloads from that.
+/// This collaborator no longer refreshes anything itself.
+/// </remarks>
 internal sealed class UndoRedoCoordinator
 {
-    private readonly ProjectExplorerView _explorerView;
-    private readonly Action _refreshCockpit;
     private readonly ActionOutcomeReporter _reporter;
 
     /// <summary>Gets the session-only Undo/Redo stack (`ADR-0099`) — never persisted across a restart.</summary>
@@ -65,14 +71,10 @@ internal sealed class UndoRedoCoordinator
     public Button RedoButton { get; } = QuickAccessToolbarFactory.ToolbarButton(Icons.IconGeometry.Redo, "Redo", "Redo the last undone action (Ctrl+Y)");
 
     /// <summary>Initialises a new instance of the <see cref="UndoRedoCoordinator"/> class.</summary>
-    public UndoRedoCoordinator(ProjectExplorerView explorerView, Action refreshCockpit, ActionOutcomeReporter reporter)
+    public UndoRedoCoordinator(ActionOutcomeReporter reporter)
     {
-        ArgumentNullException.ThrowIfNull(explorerView);
-        ArgumentNullException.ThrowIfNull(refreshCockpit);
         ArgumentNullException.ThrowIfNull(reporter);
 
-        _explorerView = explorerView;
-        _refreshCockpit = refreshCockpit;
         _reporter = reporter;
 
         ToolTip.SetTip(UndoButton, "Nothing to undo");
@@ -143,12 +145,12 @@ internal sealed class UndoRedoCoordinator
             return;
 
         // Reported through the one shared tail (`WP-D1`); success-gated
-        // (`TD-58`), because a failed undo changed nothing.
-        await _reporter.ReportAsync(result, "Undo completed.", "Undo failed.", refresh: async () =>
-        {
-            await _explorerView.LoadAsync().ConfigureAwait(true);
-            _refreshCockpit();
-        }).ConfigureAwait(true);
+        // (`TD-58`), because a failed undo changed nothing. No `refresh`
+        // delegate (`WP 18.1A`): the reversing write goes through the same
+        // mutators as any other, so it raises its own WorkspaceChanged and
+        // every subscribed view reloads from that — Explorer and Cockpit
+        // included, with no call here to reach either.
+        await _reporter.ReportAsync(result, "Undo completed.", "Undo failed.").ConfigureAwait(true);
     }
 
     /// <summary>Re-applies the most recently undone action, if any (`WP 10.6A`, `ADR-0099`) — mirrors <see cref="UndoAsync"/>'s own identical shape.</summary>
@@ -159,11 +161,9 @@ internal sealed class UndoRedoCoordinator
             return;
 
         // Reported through the one shared tail (`WP-D1`); success-gated
-        // (`TD-58`), because a failed redo changed nothing.
-        await _reporter.ReportAsync(result, "Redo completed.", "Redo failed.", refresh: async () =>
-        {
-            await _explorerView.LoadAsync().ConfigureAwait(true);
-            _refreshCockpit();
-        }).ConfigureAwait(true);
+        // (`TD-58`), because a failed redo changed nothing. No `refresh`
+        // delegate (`WP 18.1A`) — see the identical remark in
+        // <see cref="UndoAsync"/>.
+        await _reporter.ReportAsync(result, "Redo completed.", "Redo failed.").ConfigureAwait(true);
     }
 }

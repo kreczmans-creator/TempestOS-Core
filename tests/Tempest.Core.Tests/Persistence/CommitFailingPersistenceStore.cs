@@ -40,6 +40,9 @@ public sealed class CommitFailingPersistenceStore(IQueryablePersistenceStore inn
     public int BodiesCompleted { get; private set; }
 
     /// <inheritdoc />
+    public long CurrentSequence => Inner.CurrentSequence;
+
+    /// <inheritdoc />
     public Task<IReadOnlyList<string>> ListKeysAsync(string collection, string keyPrefix, CancellationToken cancellationToken = default) =>
         Inner.ListKeysAsync(collection, keyPrefix, cancellationToken);
 
@@ -74,4 +77,9 @@ public sealed class CommitFailingPersistenceStore(IQueryablePersistenceStore inn
             },
             cancellationToken);
     }
+
+    /// <inheritdoc />
+    public Task<T> ExecuteInReadTransactionAsync<T>(
+        Func<IPersistenceReadTransaction, CancellationToken, Task<T>> read, CancellationToken cancellationToken = default) =>
+        Inner.ExecuteInReadTransactionAsync(read, cancellationToken);
 }

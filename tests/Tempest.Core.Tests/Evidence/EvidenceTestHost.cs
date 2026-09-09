@@ -27,7 +27,7 @@ internal static class EvidenceTestHost
         var host = new TempestHostBuilder([typeof(MechanicalWorkspaceExplorerModule)])
             .AddConfigurationSource(new MemoryConfigurationSource(
             [
-                new KeyValuePair<string, string>(PersistenceStore.RootPathConfigurationKey, persistenceRoot),
+                new KeyValuePair<string, string>(SqlitePersistenceStore.RootPathConfigurationKey, persistenceRoot),
             ]))
             .Build();
         var manager = new WorkspaceManager(host);
@@ -45,7 +45,7 @@ internal static class EvidenceTestHost
         var host = new TempestHostBuilder([typeof(MechanicalWorkspaceExplorerModule)])
             .AddConfigurationSource(new MemoryConfigurationSource(
             [
-                new KeyValuePair<string, string>(PersistenceStore.RootPathConfigurationKey, persistenceRoot),
+                new KeyValuePair<string, string>(SqlitePersistenceStore.RootPathConfigurationKey, persistenceRoot),
                 new KeyValuePair<string, string>(EvidenceService.IndependentCheckConfigurationKey, independentCheck ? "true" : "false"),
             ]))
             .Build();

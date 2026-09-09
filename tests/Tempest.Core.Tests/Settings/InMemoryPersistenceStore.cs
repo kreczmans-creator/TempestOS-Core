@@ -9,7 +9,7 @@ namespace Tempest.Core.Tests.Settings;
 /// minimal fake rather than a mocking framework. Used to isolate
 /// <see cref="Tempest.Core.Settings.SettingsProvider"/>'s own logic
 /// (caching, default-value handling, event publication) from
-/// <see cref="PersistenceStore"/>'s own, separately-tested file I/O.
+/// <see cref="Tempest.Core.Persistence.SqlitePersistenceStore"/>'s own, separately-tested file I/O.
 /// </summary>
 internal sealed class InMemoryPersistenceStore : IPersistenceStore
 {

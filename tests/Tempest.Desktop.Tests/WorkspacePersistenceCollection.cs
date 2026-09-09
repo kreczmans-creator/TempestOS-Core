@@ -16,7 +16,7 @@ namespace Tempest.Desktop.Tests;
 /// <b><c>TD-37</c> fix (`WP 10.1B`):</b> every <see cref="WorkspaceHost"/>
 /// constructed by this test assembly must pass a path from
 /// <see cref="NewIsolatedPersistenceRootPath"/> to its own constructor,
-/// rather than defaulting to <c>PersistenceStore.DefaultRootPath</c> (the
+/// rather than defaulting to <c>SqlitePersistenceStore.DefaultRootPath</c> (the
 /// real application's own working-directory-relative, cross-launch-durable
 /// store). Root-caused via direct file-system evidence, `WP 10.1B`: this
 /// test assembly's own build output directory's <c>persistence-data/</c>

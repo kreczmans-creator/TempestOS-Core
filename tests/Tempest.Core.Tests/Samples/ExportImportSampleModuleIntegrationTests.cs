@@ -60,7 +60,7 @@ public class ExportImportSampleModuleIntegrationTests
         // registers it (`ADR-0144`). `AuditQuery` needs the query shape
         // since `ADR-0145`, where a by-object audit lookup became a key
         // prefix listing rather than a scan.
-        var persistenceStore = new PersistenceStore(configuration);
+        var persistenceStore = new SqlitePersistenceStore(configuration);
         services.AddInstance<IPersistenceStore>(persistenceStore);
         services.AddInstance<IBinaryPersistenceStore>(persistenceStore);
         services.AddInstance<IQueryablePersistenceStore>(persistenceStore);
@@ -87,7 +87,7 @@ public class ExportImportSampleModuleIntegrationTests
     private static IConfigurationProvider EmptyConfiguration(string persistenceRootPath) =>
         new ConfigurationBuilder().AddSource(new MemoryConfigurationSource(
         [
-            new KeyValuePair<string, string>(PersistenceStore.RootPathConfigurationKey, persistenceRootPath),
+            new KeyValuePair<string, string>(SqlitePersistenceStore.RootPathConfigurationKey, persistenceRootPath),
         ])).Build();
 
     // ----------------------------------------------------------------
@@ -269,7 +269,7 @@ public class ExportImportSampleModuleIntegrationTests
         var host = new TempestHostBuilder([typeof(ExportImportSampleModule)])
             .AddConfigurationSource(new MemoryConfigurationSource(
             [
-                new KeyValuePair<string, string>(PersistenceStore.RootPathConfigurationKey, temp.Path),
+                new KeyValuePair<string, string>(SqlitePersistenceStore.RootPathConfigurationKey, temp.Path),
             ]))
             .Build();
 

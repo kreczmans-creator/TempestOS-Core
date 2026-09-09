@@ -33,7 +33,7 @@ public sealed class EvidenceWorkspaceTests : IAsyncLifetime
         _host = new TempestHostBuilder([typeof(MechanicalWorkspaceExplorerModule)])
             .AddConfigurationSource(new MemoryConfigurationSource(
             [
-                new KeyValuePair<string, string>(PersistenceStore.RootPathConfigurationKey, _temp.Path),
+                new KeyValuePair<string, string>(SqlitePersistenceStore.RootPathConfigurationKey, _temp.Path),
             ]))
             .Build();
         _manager = new WorkspaceManager(_host);

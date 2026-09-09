@@ -7,8 +7,7 @@ namespace Tempest.Core.Concurrency;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Used internally by <see cref="Persistence.PersistenceStore"/>,
-/// <see cref="Settings.SettingsProvider"/>,
+/// Used internally by <see cref="Settings.SettingsProvider"/>,
 /// <see cref="EngineeringData.EngineeringDocumentStore"/>,
 /// <see cref="Materials.MaterialCatalog"/>,
 /// <see cref="Requirements.RequirementsService"/>, and

@@ -8,6 +8,7 @@ using Tempest.Workspace.Requirements;
 using Tempest.Workspace.Verification;
 using Tempest.Core.Commands;
 using Tempest.Core.EngineeringDomain;
+using Tempest.Core.Events;
 using Tempest.Core.Requirements;
 using Tempest.Desktop.Editors;
 using Tempest.Desktop.Theming;
@@ -85,6 +86,7 @@ internal sealed class WorkspaceViewCoordinator
     private readonly Action<string> _recordHistory;
     private readonly ActionOutcomeReporter _reporter;
     private readonly Action _refreshCockpit;
+    private readonly IWorkspaceChanges? _workspaceChanges;
 
     private DocumentAreaView? _documentArea;
 
@@ -107,7 +109,8 @@ internal sealed class WorkspaceViewCoordinator
         ProjectExplorerView explorerView, PropertyInspectorView inspectorView, RibbonView ribbon,
         StatusBarView statusBar, ToastHost toastHost, ConfirmationDialog confirmationDialog, IUndoRedoStack undoRedoStack,
         RecentObjectsState recentObjects, FavouriteObjectsState favouriteObjects, Dictionary<Guid, IWorkspaceView> openGraphViewsByRootId,
-        Action refreshStatusBar, Action<string> recordHistory, Action refreshCockpit, ActionOutcomeReporter reporter)
+        Action refreshStatusBar, Action<string> recordHistory, Action refreshCockpit, ActionOutcomeReporter reporter,
+        IWorkspaceChanges? workspaceChanges = null)
     {
         ArgumentNullException.ThrowIfNull(workspace);
         ArgumentNullException.ThrowIfNull(manager);
@@ -148,6 +151,7 @@ internal sealed class WorkspaceViewCoordinator
         _refreshStatusBar = refreshStatusBar;
         _recordHistory = recordHistory;
         _refreshCockpit = refreshCockpit;
+        _workspaceChanges = workspaceChanges;
         _reporter = reporter;
 
         // Select-to-inspect / Open-to-edit (WP8.0A UI Architecture.md §4, unchanged).
@@ -155,7 +159,7 @@ internal sealed class WorkspaceViewCoordinator
         {
             await _workspace.Selection.SelectAsync(id, kind).ConfigureAwait(true);
             _inspectorView.SetCurrentSelection(id, kind);
-            _inspectorView.Refresh();
+            await _inspectorView.RefreshAsync().ConfigureAwait(true);
             _refreshStatusBar();
             _ribbon.RefreshEnablement();
         };
@@ -172,18 +176,14 @@ internal sealed class WorkspaceViewCoordinator
             // event rather than duplicating this logic).
             _recentObjects.Record(id, kind, view.Title);
         };
-        // Reported through the one shared tail (`WP-D1`). The refresh set
-        // stays this caller's own: the Explorer does not reload itself
-        // here — it has already done so — while the Inspector re-renders,
-        // because a successful delete cleared the selection and a
-        // successful rename changed the displayed facets.
+        // Reported through the one shared tail (`WP-D1`). No `refresh`
+        // delegate (`WP 18.1A`): a successful rename or delete commits
+        // through the same mutators as any other write, raising
+        // WorkspaceChanged; the Inspector's own subscription reloads it
+        // when the touched object is the one currently displayed, and the
+        // Cockpit's reloads unconditionally.
         _explorerView.ActionCompleted += (message, outcome) =>
-            _ = _reporter.ReportAsync(message, outcome, refresh: () =>
-            {
-                _ = _inspectorView.RefreshFromSourceAsync();
-                _refreshCockpit();
-                return Task.CompletedTask;
-            });
+            _ = _reporter.ReportAsync(message, outcome);
         _explorerView.RecentObjects = _recentObjects;
         _explorerView.Favourites = _favouriteObjects;
         _explorerView.ToggleFavouriteRequested = ToggleFavourite;
@@ -221,19 +221,15 @@ internal sealed class WorkspaceViewCoordinator
             // Deliberately the no-history entry point (`WP-D1`): a
             // drag-and-drop reparent has never been written to Command
             // History, and consolidating the tail is not a licence to
-            // change that.
-            await _reporter.ReportWithoutHistoryAsync(result, "Moved.", "Move failed.", refresh: async () =>
-            {
-                await _explorerView.LoadAsync().ConfigureAwait(true);
-                _refreshCockpit();
-            }).ConfigureAwait(true);
+            // change that. No `refresh` delegate (`WP 18.1A`): the move
+            // commits through MoveAsync like any other, raising
+            // WorkspaceChanged.
+            await _reporter.ReportWithoutHistoryAsync(result, "Moved.", "Move failed.").ConfigureAwait(true);
         };
-        _inspectorView.ActionCompleted += async (message, outcome) =>
-            await _reporter.ReportAsync(message, outcome, refresh: async () =>
-            {
-                await _explorerView.LoadAsync().ConfigureAwait(true);
-                _refreshCockpit();
-            }).ConfigureAwait(true);
+        // No `refresh` delegate (`WP 18.1A`) — see the identical remark on
+        // `_explorerView.ActionCompleted` above.
+        _inspectorView.ActionCompleted += (message, outcome) =>
+            _ = _reporter.ReportAsync(message, outcome);
     }
 
     /// <summary>
@@ -282,7 +278,9 @@ internal sealed class WorkspaceViewCoordinator
         if (view is Control alreadyBuilt)
             return alreadyBuilt;
 
-        var editor = ObjectEditorView.TryCreate(view.ObjectId, view.ObjectKind, _domainContext, _manager, NavigateToObject, _commandDispatcher, _requirementsService, _calculationTemplates);
+        var editor = ObjectEditorView.TryCreate(
+            view.ObjectId, view.ObjectKind, _domainContext, _manager, NavigateToObject, _commandDispatcher, _requirementsService, _calculationTemplates,
+            _workspaceChanges);
         if (editor is null)
             return DocumentAreaView.BuildDefaultBody(view);
 
@@ -294,19 +292,15 @@ internal sealed class WorkspaceViewCoordinator
         // surfaces its own Missing/Corrupt/Unsupported state, so there is
         // no result here worth awaiting.
         editor.OpenAttachmentRequested += (owner, attachment) => _ = OpenAttachmentAsync?.Invoke(owner, attachment);
-        // Gated on WorkspaceChanged rather than on success (`WP-D1`), which
-        // matters here more than anywhere else: this editor's own
-        // Owner/Priority save reports a failure that *did* change the
-        // workspace when the first half committed and the second was
-        // refused. The Inspector re-reads its facets from source — a plain
-        // Refresh() would re-render the cached, pre-mutation values.
-        editor.ActionCompleted += async (message, outcome) =>
-            await _reporter.ReportAsync(message, outcome, refresh: async () =>
-            {
-                await _explorerView.LoadAsync().ConfigureAwait(true);
-                await _inspectorView.RefreshFromSourceAsync().ConfigureAwait(true);
-                _refreshCockpit();
-            }).ConfigureAwait(true);
+        // No `refresh` delegate (`WP 18.1A`): a save commits through the
+        // same mutators as any other write (including the gated-on-
+        // WorkspaceChanged-not-success case `WP-D1` names below, since a
+        // partial Owner/Priority save still commits the half that landed),
+        // so it raises its own WorkspaceChanged. Explorer and Cockpit
+        // reload from that unconditionally; the Inspector reloads from
+        // source when it is showing the object this editor just saved.
+        editor.ActionCompleted += (message, outcome) =>
+            _ = _reporter.ReportAsync(message, outcome);
         // Undo/Redo (`WP 10.6A`, `ADR-0099`) — every discipline's own
         // Object Editor shares this one commit path, so this single
         // subscription covers Rename across all six disciplines.

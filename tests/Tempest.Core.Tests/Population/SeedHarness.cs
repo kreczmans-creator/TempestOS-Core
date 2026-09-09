@@ -39,23 +39,23 @@ internal class SeedHarness
 {
     public SeedHarness()
     {
-        PersistenceStore = new InMemoryPersistenceStore();
-        DocumentStore = new EngineeringDocumentStore(PersistenceStore, new CurrentPrincipalAccessor());
+        SqlitePersistenceStore = new InMemoryPersistenceStore();
+        DocumentStore = new EngineeringDocumentStore(SqlitePersistenceStore, new CurrentPrincipalAccessor());
 
-        Materials = new MaterialCatalog(DocumentStore, PersistenceStore);
-        Standards = new StandardCatalog(DocumentStore, PersistenceStore);
-        Constants = new ConstantCatalog(DocumentStore, PersistenceStore);
-        Fasteners = new FastenerCatalog(DocumentStore, PersistenceStore);
-        Bearings = new BearingCatalog(DocumentStore, PersistenceStore);
-        Processes = new ProcessCatalog(DocumentStore, PersistenceStore);
-        Templates = new TemplateCatalog(DocumentStore, PersistenceStore);
-        CalculationPacks = new CalculationPackCatalog(DocumentStore, PersistenceStore);
-        VerificationArtefacts = new VerificationArtefactCatalog(DocumentStore, PersistenceStore);
+        Materials = new MaterialCatalog(DocumentStore, SqlitePersistenceStore);
+        Standards = new StandardCatalog(DocumentStore, SqlitePersistenceStore);
+        Constants = new ConstantCatalog(DocumentStore, SqlitePersistenceStore);
+        Fasteners = new FastenerCatalog(DocumentStore, SqlitePersistenceStore);
+        Bearings = new BearingCatalog(DocumentStore, SqlitePersistenceStore);
+        Processes = new ProcessCatalog(DocumentStore, SqlitePersistenceStore);
+        Templates = new TemplateCatalog(DocumentStore, SqlitePersistenceStore);
+        CalculationPacks = new CalculationPackCatalog(DocumentStore, SqlitePersistenceStore);
+        VerificationArtefacts = new VerificationArtefactCatalog(DocumentStore, SqlitePersistenceStore);
 
         var principals = new CurrentPrincipalAccessor();
         Requirements = new RequirementsService(
             (EngineeringDocumentStore)DocumentStore,
-            PersistenceStore,
+            SqlitePersistenceStore,
             principals,
             new VerificationService((EngineeringDocumentStore)DocumentStore, principals, new PermissionEvaluator()));
 
@@ -65,7 +65,7 @@ internal class SeedHarness
     /// <summary>The identifier of the requirement the seeded assets hang from.</summary>
     public const string BracketRequirementIdentifier = "REQ-BRACKET-001";
 
-    public InMemoryPersistenceStore PersistenceStore { get; }
+    public InMemoryPersistenceStore SqlitePersistenceStore { get; }
 
     public IEngineeringDocumentStore DocumentStore { get; }
 

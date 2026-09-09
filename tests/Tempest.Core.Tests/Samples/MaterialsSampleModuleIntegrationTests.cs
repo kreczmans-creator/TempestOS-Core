@@ -37,7 +37,7 @@ public class MaterialsSampleModuleIntegrationTests
 
         var configuration = new ConfigurationBuilder().AddSource(new MemoryConfigurationSource(
         [
-            new KeyValuePair<string, string>(PersistenceStore.RootPathConfigurationKey, persistenceRootPath),
+            new KeyValuePair<string, string>(SqlitePersistenceStore.RootPathConfigurationKey, persistenceRootPath),
         ])).Build();
 
         var services = new ServiceCollection();
@@ -58,7 +58,7 @@ public class MaterialsSampleModuleIntegrationTests
         // registers it (`ADR-0144`). The query shape is required since
         // `ADR-0145`: EngineeringDomainContext commits through it, and
         // AuditQuery answers a by-object lookup with a key prefix listing.
-        var persistenceStore = new PersistenceStore(configuration);
+        var persistenceStore = new SqlitePersistenceStore(configuration);
         services.AddInstance<IPersistenceStore>(persistenceStore);
         services.AddInstance<IBinaryPersistenceStore>(persistenceStore);
         services.AddInstance<IQueryablePersistenceStore>(persistenceStore);
@@ -130,6 +130,14 @@ public class MaterialsSampleModuleIntegrationTests
         var firstLifecycleManager = new ModuleLifecycleManager(firstRuntimeManager, firstServiceProvider);
         await firstLifecycleManager.InitialiseAllAsync(CancellationToken.None);
         Assert.Equal(ModuleState.Initialised, firstLifecycleManager.GetState("tempest.samples.materials"));
+
+        // The first pipeline's store must let go of the root before the
+        // second opens it: SqlitePersistenceStore (`ADR-0144`) holds an
+        // exclusive instance lock, unlike the deleted file-per-key store
+        // this test was written against, and "a second, independent
+        // pipeline ... mirroring a genuine second application launch" means
+        // the first has ended.
+        ((IDisposable)firstServiceProvider.GetService(typeof(IPersistenceStore))).Dispose();
 
         var (secondRuntimeManager, secondServiceProvider) = BuildPipeline(temp.Path, typeof(MaterialsSampleModule));
         var secondLifecycleManager = new ModuleLifecycleManager(secondRuntimeManager, secondServiceProvider);
@@ -208,9 +216,14 @@ public class MaterialsSampleModuleIntegrationTests
         var lifecycleManagerOne = new ModuleLifecycleManager(runtimeManagerOne, serviceProviderOne);
         await lifecycleManagerOne.InitialiseAllAsync(CancellationToken.None);
 
-        var persistenceStoreTwo = new PersistenceStore(new ConfigurationBuilder().AddSource(new MemoryConfigurationSource(
+        // The first pipeline's store must let go of the root before the
+        // second opens it: SqlitePersistenceStore (`ADR-0144`) holds an
+        // exclusive instance lock for its lifetime.
+        ((IDisposable)serviceProviderOne.GetService(typeof(IPersistenceStore))).Dispose();
+
+        var persistenceStoreTwo = new SqlitePersistenceStore(new ConfigurationBuilder().AddSource(new MemoryConfigurationSource(
         [
-            new KeyValuePair<string, string>(PersistenceStore.RootPathConfigurationKey, temp.Path),
+            new KeyValuePair<string, string>(SqlitePersistenceStore.RootPathConfigurationKey, temp.Path),
         ])).Build());
         var catalogTwo = new MaterialCatalog(
             new EngineeringDocumentStore(persistenceStoreTwo, new CurrentPrincipalAccessor()),
@@ -233,7 +246,7 @@ public class MaterialsSampleModuleIntegrationTests
         var host = new TempestHostBuilder([typeof(MaterialsSampleModule)])
             .AddConfigurationSource(new MemoryConfigurationSource(
             [
-                new KeyValuePair<string, string>(PersistenceStore.RootPathConfigurationKey, temp.Path),
+                new KeyValuePair<string, string>(SqlitePersistenceStore.RootPathConfigurationKey, temp.Path),
             ]))
             .Build();
 

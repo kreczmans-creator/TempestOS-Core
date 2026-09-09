@@ -279,8 +279,8 @@ public sealed class CockpitViewHonestyTests
             var view = new CockpitView(
                 cockpit,
                 workspace.Navigation.Areas,
-                onContinue: () => { },
-                onOpenRecent: _ => { },
+                onContinue: () => Task.CompletedTask,
+                onOpenRecent: _ => Task.CompletedTask,
                 onOpenCommandPalette: () => { },
                 onSwitchArea: _ => { });
 
@@ -335,8 +335,8 @@ public sealed class CockpitViewHonestyTests
             var view = new CockpitView(
                 cockpit,
                 workspace.Navigation.Areas,
-                onContinue: () => { },
-                onOpenRecent: _ => { },
+                onContinue: () => Task.CompletedTask,
+                onOpenRecent: _ => Task.CompletedTask,
                 onOpenCommandPalette: () => { },
                 onSwitchArea: _ => { },
                 favourites: favourites,

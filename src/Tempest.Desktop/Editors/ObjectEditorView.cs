@@ -4,6 +4,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Layout;
 using Avalonia.Media;
+using Avalonia.Threading;
 using Tempest.Workspace;
 using Tempest.Workspace.Calculations;
 using Tempest.Workspace.Documents;
@@ -12,6 +13,7 @@ using Tempest.Workspace.Requirements;
 using Tempest.Workspace.Verification;
 using Tempest.Core.Commands;
 using Tempest.Core.EngineeringDomain;
+using Tempest.Core.Events;
 using Tempest.Core.Requirements;
 using Tempest.Core.Verification;
 using Tempest.Desktop.DigitalThread;
@@ -185,6 +187,58 @@ public sealed class ObjectEditorView : UserControl
     /// </summary>
     public event Action<UndoableAction>? UndoableActionRecorded;
 
+    private IWorkspaceChanges? _workspaceChanges;
+
+    /// <summary>
+    /// The change feed this editor reloads from (`WP 18.1A`) — set once by
+    /// <see cref="TryCreate"/>. <see langword="null"/> (the default) is a
+    /// legitimate, silent no-op — an editor built directly by a test that
+    /// never threads this through behaves exactly as every prior Work
+    /// Package's editor did: it refreshes only after its own Save.
+    /// Reloads from source only when the commit's own touched set includes
+    /// the object this editor is showing, mirroring
+    /// <see cref="Tempest.Desktop.Views.PropertyInspectorView.WorkspaceChanges"/>'s
+    /// own identical filter. Unsubscribes itself once this control leaves
+    /// the visual tree (its own tab closed), so a session that opens and
+    /// closes many editors over its lifetime does not keep every one of
+    /// them alive through this subscription alone.
+    /// </summary>
+    public IWorkspaceChanges? WorkspaceChanges
+    {
+        get => _workspaceChanges;
+        set
+        {
+            if (ReferenceEquals(_workspaceChanges, value))
+                return;
+
+            if (_workspaceChanges is not null)
+                _workspaceChanges.Changed -= OnWorkspaceChanged;
+
+            _workspaceChanges = value;
+
+            if (_workspaceChanges is not null)
+                _workspaceChanges.Changed += OnWorkspaceChanged;
+        }
+    }
+
+    private void OnWorkspaceChanged(WorkspaceChange change)
+    {
+        if (!change.Entries.Any(e => e.ObjectId == _objectId))
+            return;
+
+        Dispatcher.UIThread.Post(async () =>
+        {
+            try
+            {
+                await RefreshAsync().ConfigureAwait(true);
+            }
+            catch (Exception ex)
+            {
+                ActionCompleted?.Invoke($"Refresh failed: {ex.Message}", ActionOutcome.Failed);
+            }
+        });
+    }
+
     /// <summary>
     /// Raised when the user asks to view one of this object's attachments
     /// (`TD-80`).
@@ -199,10 +253,15 @@ public sealed class ObjectEditorView : UserControl
     /// </para>
     /// <para>
     /// A custom accessor, for one reason found by the `TD-80` visual
-    /// audit: <see cref="TryCreate"/> populates the editor before it
-    /// returns, so the shell cannot possibly have subscribed by the time
-    /// the attachment rows are built — and the rows only carry an Open
-    /// button when something can handle it. The button therefore never
+    /// audit: population used to complete before <see cref="TryCreate"/>
+    /// returned, so the shell could not possibly have subscribed by the
+    /// time the attachment rows were first built (`WP 18.1A` moved
+    /// population to run in the background instead, for an unrelated
+    /// reason — see <see cref="TryCreate"/>'s own remarks — which makes
+    /// this accessor's own re-population fallback reachable slightly less
+    /// often but no less necessary: nothing here guarantees which finishes
+    /// first) — and the rows only carry an Open button when something can
+    /// handle it. The button therefore never
     /// existed in the running application, and the whole viewer was
     /// unreachable from the UI until some later refresh happened to rebuild
     /// the section. Re-populating on the first subscriber closes that
@@ -218,7 +277,7 @@ public sealed class ObjectEditorView : UserControl
             _openAttachmentRequested += value;
 
             if (hadNone && _openAttachmentRequested is not null && _populatedTarget is not null)
-                PopulateAttachments(_populatedTarget);
+                _ = PopulateAttachmentsSafelyAsync(_populatedTarget);
         }
 
         remove => _openAttachmentRequested -= value;
@@ -236,6 +295,11 @@ public sealed class ObjectEditorView : UserControl
         _commandDispatcher = commandDispatcher;
         _requirementsService = requirementsService;
         _calculationTemplates = calculationTemplates;
+
+        // `WP 18.1A`: once this tab closes and the control leaves the
+        // visual tree, drop the change-feed subscription — see
+        // WorkspaceChanges's own remarks.
+        this.DetachedFromVisualTree += (_, _) => WorkspaceChanges = null;
 
         Content = BuildLayout();
 
@@ -292,30 +356,81 @@ public sealed class ObjectEditorView : UserControl
     /// caller's own signal to fall back to the existing generic
     /// three-line document body instead.
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>`WP 18.1A`'s one disclosed exception to removing blocking calls.</b>
+    /// This method's own signature is fixed by <see cref="DocumentAreaView"/>'s
+    /// synchronous <c>Func&lt;IWorkspaceView, Control&gt;</c> content-builder
+    /// contract: <see cref="Composition.WorkspaceViewCoordinator.BuildDocumentContent"/>
+    /// calls this and must return a <see cref="Control"/> immediately,
+    /// with no <see langword="await"/> available anywhere on that path.
+    /// Making this method itself asynchronous would mean making
+    /// <c>DocumentAreaView.ShowTab</c> asynchronous, which cascades to
+    /// every one of its own callers —
+    /// <c>Composition/QuickAccessToolbarFactory.cs</c> and
+    /// <c>MainWindow.cs</c> among them — none of it owned by this Work
+    /// Package, and none of it a one-file, forced-by-a-signature-change
+    /// ripple the way <c>DigitalThreadGraphView.cs</c>'s was. The existence
+    /// check below is the one <c>GetAwaiter().GetResult()</c> this file
+    /// still carries; the structural guard names it explicitly. Population
+    /// itself no longer blocks this call: the constructed editor is
+    /// returned empty and fills in from <see cref="PopulateFromAsync"/>,
+    /// fire-and-forget, typically before the tab is even visible since
+    /// every read it awaits resolves against the in-memory object cache.
+    /// </para>
+    /// </remarks>
     public static ObjectEditorView? TryCreate(
         Guid objectId, string objectKind, EngineeringDomainContext domainContext, IWorkspaceManager manager, Action<Guid, string> navigateToObject,
-        ICommandDispatcher commandDispatcher, IRequirementsService? requirementsService = null, CalculationTemplateRegistry? calculationTemplates = null)
+        ICommandDispatcher commandDispatcher, IRequirementsService? requirementsService = null, CalculationTemplateRegistry? calculationTemplates = null,
+        IWorkspaceChanges? workspaceChanges = null)
     {
         ArgumentNullException.ThrowIfNull(domainContext);
         ArgumentNullException.ThrowIfNull(manager);
         ArgumentNullException.ThrowIfNull(navigateToObject);
         ArgumentNullException.ThrowIfNull(commandDispatcher);
 
+        // The one disclosed exception — see this method's own remarks.
         var target = domainContext.Repository.FindAsync(objectId).GetAwaiter().GetResult();
         if (target is null)
             return null;
 
-        var editor = new ObjectEditorView(objectId, objectKind, domainContext, manager, navigateToObject, commandDispatcher, requirementsService, calculationTemplates);
-        editor.PopulateFrom(target);
+        var editor = new ObjectEditorView(objectId, objectKind, domainContext, manager, navigateToObject, commandDispatcher, requirementsService, calculationTemplates)
+        {
+            WorkspaceChanges = workspaceChanges,
+        };
+        editor.PopulateInBackground(target);
         return editor;
     }
 
-    /// <summary>Re-reads the real object and refreshes every section — never a cached copy, mirroring <see cref="IWorkspaceView.RefreshAsync"/>'s own identical discipline.</summary>
-    public void Refresh()
+    /// <summary>
+    /// Runs <see cref="PopulateFromAsync"/> fire-and-forget, from a
+    /// synchronous caller that cannot await it (`WP 18.1A`) — a failure is
+    /// reported through <see cref="ActionCompleted"/> rather than thrown
+    /// into the void.
+    /// </summary>
+    private void PopulateInBackground(IEngineeringObject target)
     {
-        var target = _domainContext.Repository.FindAsync(_objectId).GetAwaiter().GetResult();
+        _ = RunAsync();
+
+        async Task RunAsync()
+        {
+            try
+            {
+                await PopulateFromAsync(target).ConfigureAwait(true);
+            }
+            catch (Exception ex)
+            {
+                ActionCompleted?.Invoke($"Failed to load: {ex.Message}", ActionOutcome.Failed);
+            }
+        }
+    }
+
+    /// <summary>Re-reads the real object and refreshes every section — never a cached copy, mirroring <see cref="IWorkspaceView.RefreshAsync"/>'s own identical discipline.</summary>
+    public async Task RefreshAsync()
+    {
+        var target = await _domainContext.Repository.FindAsync(_objectId).ConfigureAwait(true);
         if (target is not null)
-            PopulateFrom(target);
+            await PopulateFromAsync(target).ConfigureAwait(true);
     }
 
     private Control BuildLayout()
@@ -446,7 +561,7 @@ public sealed class ObjectEditorView : UserControl
         return row;
     }
 
-    private void PopulateFrom(IEngineeringObject target)
+    private async Task PopulateFromAsync(IEngineeringObject target)
     {
         _suppressDirtyTracking = true;
         _populatedTarget = target;
@@ -470,14 +585,14 @@ public sealed class ObjectEditorView : UserControl
         _contentSection.IsVisible = _manager.CanRevise(_objectKind) || !string.IsNullOrEmpty(_originalContent);
 
         PopulateBom(target);
-        PopulateRequirement(target);
-        PopulateCalculationExecution(target);
+        await PopulateRequirementAsync(target).ConfigureAwait(true);
+        await PopulateCalculationExecutionAsync(target).ConfigureAwait(true);
         PopulateVerificationResult(target);
-        PopulateAttachments(target);
+        await PopulateAttachmentsAsync(target).ConfigureAwait(true);
 
         PopulateLifecycle(target);
-        PopulateRelationships(target);
-        PopulateValidation(target);
+        await PopulateRelationshipsAsync(target).ConfigureAwait(true);
+        await PopulateValidationAsync(target).ConfigureAwait(true);
 
         _isDirty = false;
         _statusMessage.Text = string.Empty;
@@ -533,29 +648,29 @@ public sealed class ObjectEditorView : UserControl
     /// is independently, honestly presented, never composed into a
     /// traversable structure.
     /// </summary>
-    private void PopulateRelationships(IEngineeringObject target)
+    private async Task PopulateRelationshipsAsync(IEngineeringObject target)
     {
         _relationshipsPanel.Children.Clear();
 
         if (target is IHasRelationships hasRelationships)
         {
-            var outgoing = hasRelationships.GetRelationshipsAsync().GetAwaiter().GetResult();
+            var outgoing = await hasRelationships.GetRelationshipsAsync().ConfigureAwait(true);
             foreach (var relationship in outgoing)
-                _relationshipsPanel.Children.Add(BuildRelationshipRow(relationship.TargetId, relationship.RelationshipKind, "→"));
+                _relationshipsPanel.Children.Add(await BuildRelationshipRowAsync(relationship.TargetId, relationship.RelationshipKind, "→").ConfigureAwait(true));
         }
 
-        var incoming = _domainContext.RelationshipRepository.GetIncomingAsync(_objectId).GetAwaiter().GetResult();
+        var incoming = await _domainContext.RelationshipRepository.GetIncomingAsync(_objectId).ConfigureAwait(true);
         foreach (var relationship in incoming)
-            _relationshipsPanel.Children.Add(BuildRelationshipRow(relationship.SourceId, relationship.RelationshipKind, "←"));
+            _relationshipsPanel.Children.Add(await BuildRelationshipRowAsync(relationship.SourceId, relationship.RelationshipKind, "←").ConfigureAwait(true));
 
         if (_relationshipsPanel.Children.Count == 0)
             _relationshipsPanel.Children.Add(new TextBlock { Text = "No relationships recorded.", Opacity = 0.7 });
     }
 
     /// <summary>Builds one relationship row — "Navigation between related objects" (`WP 10.3A`), reusing <see cref="INavigationService.OpenAsync"/> via the injected navigate callback, never a new navigation mechanism.</summary>
-    private Control BuildRelationshipRow(Guid otherId, string relationshipKind, string direction)
+    private async Task<Control> BuildRelationshipRowAsync(Guid otherId, string relationshipKind, string direction)
     {
-        var other = _domainContext.Repository.FindAsync(otherId).GetAwaiter().GetResult();
+        var other = await _domainContext.Repository.FindAsync(otherId).ConfigureAwait(true);
         var displayName = (other as IHasBusinessIdentifier)?.DisplayName ?? otherId.ToString();
         var otherKind = other?.Kind ?? _objectKind;
 
@@ -594,7 +709,7 @@ public sealed class ObjectEditorView : UserControl
     /// Workspace/Property-Facet layer specifically; the underlying Domain
     /// capability (`ADR-0075`) always existed. Informational only.
     /// </summary>
-    private void PopulateValidation(IEngineeringObject target)
+    private async Task PopulateValidationAsync(IEngineeringObject target)
     {
         _validationPanel.Children.Clear();
 
@@ -604,7 +719,7 @@ public sealed class ObjectEditorView : UserControl
             return;
         }
 
-        var result = validatable.ValidateAsync().GetAwaiter().GetResult();
+        var result = await validatable.ValidateAsync().ConfigureAwait(true);
 
         if (result.IsValid && result.Warnings.Count == 0)
         {
@@ -704,7 +819,7 @@ public sealed class ObjectEditorView : UserControl
         // that produced it.
         var message = result.Succeeded ? "BOM line saved." : result.Message ?? "Save failed.";
         if (result.Succeeded)
-            Refresh();
+            await RefreshAsync().ConfigureAwait(true);
         _bomStatusMessage.Text = message;
         ActionCompleted?.Invoke(message, ActionOutcome.From(result.Succeeded));
     }
@@ -721,7 +836,7 @@ public sealed class ObjectEditorView : UserControl
     /// (any existing test/caller that never threads it through) leaves
     /// this section honestly hidden, never a crash.
     /// </summary>
-    private void PopulateRequirement(IEngineeringObject target)
+    private async Task PopulateRequirementAsync(IEngineeringObject target)
     {
         _ = target;
 
@@ -731,7 +846,7 @@ public sealed class ObjectEditorView : UserControl
             return;
         }
 
-        var requirement = _requirementsService.FindAsync(_objectId).GetAwaiter().GetResult();
+        var requirement = await _requirementsService.FindAsync(_objectId).ConfigureAwait(true);
         if (requirement is null)
         {
             _requirementSection.IsVisible = false;
@@ -769,7 +884,7 @@ public sealed class ObjectEditorView : UserControl
         }
 
         // Refresh() before the final message — see OnSaveBomAsync's own identical remarks.
-        Refresh();
+        await RefreshAsync().ConfigureAwait(true);
         _requirementStatusMessage.Text = "Owner/Priority saved.";
         ActionCompleted?.Invoke(_requirementStatusMessage.Text, ActionOutcome.Changed);
     }
@@ -787,7 +902,7 @@ public sealed class ObjectEditorView : UserControl
     /// starts empty every time, never a fabricated "same as last time"
     /// default.
     /// </summary>
-    private void PopulateCalculationExecution(IEngineeringObject target)
+    private async Task PopulateCalculationExecutionAsync(IEngineeringObject target)
     {
         // `WP 17.9.1`: the raw-JSON Execute box is retired from this editor.
         // It was a developer seam — a template picker over a JSON textbox —
@@ -808,7 +923,7 @@ public sealed class ObjectEditorView : UserControl
             _calculationTemplatePicker.SelectedIndex = 0;
 
         _calculationHasBeenExecuted = target is IHasRelationships hasRelationships
-            && hasRelationships.GetRelationshipsAsync().GetAwaiter().GetResult()
+            && (await hasRelationships.GetRelationshipsAsync().ConfigureAwait(true))
                 .Any(r => r.RelationshipKind == CalculationTemplateRegistry.CalculatedByRelationshipKind);
 
         _calculationExecuteButton.Content = _calculationHasBeenExecuted ? "Recalculate" : "Execute";
@@ -839,7 +954,7 @@ public sealed class ObjectEditorView : UserControl
         // Refresh() before the final message — see OnSaveBomAsync's own identical remarks.
         var message = result.Succeeded ? "Executed." : result.Message ?? "Execution failed.";
         if (result.Succeeded)
-            Refresh();
+            await RefreshAsync().ConfigureAwait(true);
         _calculationStatusMessage.Text = message;
         ActionCompleted?.Invoke(message, ActionOutcome.From(result.Succeeded));
     }
@@ -876,7 +991,7 @@ public sealed class ObjectEditorView : UserControl
         // Refresh() before the final message — see OnSaveBomAsync's own identical remarks.
         var message = result.Succeeded ? $"Result recorded: {outcome}." : result.Message ?? "Record result failed.";
         if (result.Succeeded)
-            Refresh();
+            await RefreshAsync().ConfigureAwait(true);
         _verificationStatusMessage.Text = message;
         ActionCompleted?.Invoke(message, ActionOutcome.From(result.Succeeded));
     }
@@ -895,7 +1010,26 @@ public sealed class ObjectEditorView : UserControl
     /// guessing whether the file is missing, the format is unsupported, or
     /// the application is broken.
     /// </summary>
-    private void PopulateAttachments(IEngineeringObject target)
+    /// <summary>
+    /// Runs <see cref="PopulateAttachmentsAsync"/> fire-and-forget, for the
+    /// <see cref="OpenAttachmentRequested"/> accessor's own synchronous
+    /// re-population on first subscriber (`WP 18.1A`) — a failure is
+    /// reported through <see cref="ActionCompleted"/> rather than thrown
+    /// into the void, mirroring <see cref="PopulateInBackground"/>.
+    /// </summary>
+    private async Task PopulateAttachmentsSafelyAsync(IEngineeringObject target)
+    {
+        try
+        {
+            await PopulateAttachmentsAsync(target).ConfigureAwait(true);
+        }
+        catch (Exception ex)
+        {
+            ActionCompleted?.Invoke($"Failed to load attachments: {ex.Message}", ActionOutcome.Failed);
+        }
+    }
+
+    private async Task PopulateAttachmentsAsync(IEngineeringObject target)
     {
         if (target is not IHasAttachments attachable)
         {
@@ -906,7 +1040,7 @@ public sealed class ObjectEditorView : UserControl
         _attachmentsSection.IsVisible = true;
         _attachmentsListPanel.Children.Clear();
 
-        var attachments = attachable.GetAttachmentsAsync().GetAwaiter().GetResult();
+        var attachments = await attachable.GetAttachmentsAsync().ConfigureAwait(true);
         if (attachments.Count == 0)
         {
             _attachmentsListPanel.Children.Add(new TextBlock { Text = "No attachments recorded.", Opacity = 0.7 });
@@ -993,7 +1127,7 @@ public sealed class ObjectEditorView : UserControl
         // Refresh() before the final message — see OnSaveBomAsync's own identical remarks.
         var message = result.Succeeded ? "Attached." : result.Message ?? "Attach failed.";
         if (result.Succeeded)
-            Refresh();
+            await RefreshAsync().ConfigureAwait(true);
         _attachmentStatusMessage.Text = message;
         ActionCompleted?.Invoke(message, ActionOutcome.From(result.Succeeded));
     }
@@ -1084,7 +1218,7 @@ public sealed class ObjectEditorView : UserControl
             }
         }
 
-        Refresh();
+        await RefreshAsync().ConfigureAwait(true);
         DirtyChanged?.Invoke(false);
         _statusMessage.Text = "Saved.";
         ActionCompleted?.Invoke(_statusMessage.Text, ActionOutcome.Changed);

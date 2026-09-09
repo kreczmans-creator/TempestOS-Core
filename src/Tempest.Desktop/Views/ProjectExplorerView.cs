@@ -8,6 +8,7 @@ using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
+using Tempest.Core.Events;
 using Tempest.Workspace;
 using Tempest.Desktop.DigitalThread;
 using Tempest.Desktop.Icons;
@@ -177,6 +178,57 @@ public sealed class ProjectExplorerView : UserControl
     /// own identical opt-in shape.
     /// </summary>
     public Action<System.Guid, string, string>? ToggleFavouriteRequested { get; set; }
+
+    private IWorkspaceChanges? _workspaceChanges;
+
+    /// <summary>
+    /// The change feed this view reloads from (`WP 18.1A`) — set once by
+    /// the composition root (<c>MainWindow</c>). <see langword="null"/>
+    /// (the default) leaves this view exactly as every prior Work Package
+    /// shipped it: reloaded only by an explicit <see cref="LoadAsync"/>
+    /// call, which is what an existing test that constructs this view
+    /// directly, without wiring this, still makes. Once set, every
+    /// committed transaction reloads this view from a
+    /// <see cref="WorkspaceChange"/> — the rename and delete paths above no
+    /// longer call <see cref="LoadAsync"/> themselves.
+    /// </summary>
+    public IWorkspaceChanges? WorkspaceChanges
+    {
+        get => _workspaceChanges;
+        set
+        {
+            if (ReferenceEquals(_workspaceChanges, value))
+                return;
+
+            if (_workspaceChanges is not null)
+                _workspaceChanges.Changed -= OnWorkspaceChanged;
+
+            _workspaceChanges = value;
+
+            if (_workspaceChanges is not null)
+                _workspaceChanges.Changed += OnWorkspaceChanged;
+        }
+    }
+
+    /// <summary>
+    /// Reloads from a committed change. Raised on whatever thread completed
+    /// the commit — never the UI thread — so this marshals before touching
+    /// anything UI-owned (`WP 18.1A`); a failed reload is reported through
+    /// <see cref="ActionCompleted"/> rather than left to crash the
+    /// dispatcher.
+    /// </summary>
+    private void OnWorkspaceChanged(WorkspaceChange change) =>
+        Dispatcher.UIThread.Post(async () =>
+        {
+            try
+            {
+                await LoadAsync().ConfigureAwait(true);
+            }
+            catch (Exception ex)
+            {
+                ActionCompleted?.Invoke($"Explorer refresh failed: {ex.Message}", ActionOutcome.Failed);
+            }
+        });
 
     /// <summary>Initialises a new instance of the <see cref="ProjectExplorerView"/> class.</summary>
     /// <param name="explorer">The Workspace's own Project Explorer panel this View renders.</param>
@@ -784,8 +836,12 @@ public sealed class ProjectExplorerView : UserControl
             {
                 var result = await _manager.RenameObjectAsync(item.Node.Id, item.Node.Kind!, newName).ConfigureAwait(true);
                 ActionCompleted?.Invoke(result.Succeeded ? $"Renamed to '{newName}'." : result.Message ?? "Rename failed.", ActionOutcome.From(result.Succeeded));
-                if (result.Succeeded)
-                    await LoadAsync().ConfigureAwait(true);
+
+                // `WP 18.1A`: no explicit reload here — a successful rename
+                // committed through EngineeringObjectBase.RenameAsync, which
+                // raises WorkspaceChanged; this view's own subscription
+                // (see WorkspaceChanges) reloads from that, once, the same
+                // way every other committed change does.
             }
             else
             {
@@ -882,8 +938,9 @@ public sealed class ProjectExplorerView : UserControl
 
         var result = await _manager.DeleteObjectAsync(item.Node.Id, item.Node.Kind!).ConfigureAwait(true);
         ActionCompleted?.Invoke(result.Succeeded ? $"Deleted '{item.Node.Title}'." : result.Message ?? "Delete failed.", ActionOutcome.From(result.Succeeded));
-        if (result.Succeeded)
-            await LoadAsync().ConfigureAwait(true);
+
+        // `WP 18.1A`: no explicit reload here — see the identical remark on
+        // the rename commit above.
     }
 
     // ------------------------------------------------------------

@@ -37,7 +37,7 @@ public class EngineeringDomainSampleModuleIntegrationTests
 
         var configuration = new ConfigurationBuilder().AddSource(new MemoryConfigurationSource(
         [
-            new KeyValuePair<string, string>(PersistenceStore.RootPathConfigurationKey, persistenceRootPath),
+            new KeyValuePair<string, string>(SqlitePersistenceStore.RootPathConfigurationKey, persistenceRootPath),
         ])).Build();
 
         var services = new ServiceCollection();
@@ -59,7 +59,7 @@ public class EngineeringDomainSampleModuleIntegrationTests
         // `EngineeringDomainContext` needs the query shape since
         // `ADR-0145`, and it must be the same instance the document store
         // and the state store write through.
-        var persistenceStore = new PersistenceStore(configuration);
+        var persistenceStore = new SqlitePersistenceStore(configuration);
         services.AddInstance<IPersistenceStore>(persistenceStore);
         services.AddInstance<IBinaryPersistenceStore>(persistenceStore);
         services.AddInstance<IQueryablePersistenceStore>(persistenceStore);
@@ -153,6 +153,11 @@ public class EngineeringDomainSampleModuleIntegrationTests
         await firstLifecycleManager.InitialiseAllAsync(CancellationToken.None);
         Assert.Equal(ModuleState.Initialised, firstLifecycleManager.GetState("tempest.samples.engineeringdomain"));
 
+        // The first pipeline's store must let go of the root before the
+        // second opens it: SqlitePersistenceStore (`ADR-0144`) holds an
+        // exclusive instance lock for its lifetime.
+        ((IDisposable)firstServiceProvider.GetService(typeof(IPersistenceStore))).Dispose();
+
         var (secondRuntimeManager, secondServiceProvider) = BuildPipeline(temp.Path, typeof(EngineeringDomainSampleModule));
         var secondLifecycleManager = new ModuleLifecycleManager(secondRuntimeManager, secondServiceProvider);
         await secondLifecycleManager.InitialiseAllAsync(CancellationToken.None);
@@ -241,7 +246,7 @@ public class EngineeringDomainSampleModuleIntegrationTests
         var host = new TempestHostBuilder([typeof(EngineeringDomainSampleModule)])
             .AddConfigurationSource(new MemoryConfigurationSource(
             [
-                new KeyValuePair<string, string>(PersistenceStore.RootPathConfigurationKey, temp.Path),
+                new KeyValuePair<string, string>(SqlitePersistenceStore.RootPathConfigurationKey, temp.Path),
             ]))
             .Build();
 

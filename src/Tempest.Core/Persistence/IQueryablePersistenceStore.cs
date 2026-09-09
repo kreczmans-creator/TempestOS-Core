@@ -37,6 +37,23 @@ namespace Tempest.Core.Persistence;
 public interface IQueryablePersistenceStore
 {
     /// <summary>
+    /// The store's own monotonic commit counter (`WP 18.1A`): incremented
+    /// by exactly one on every transaction <see cref="ExecuteInTransactionAsync"/>
+    /// commits, and never on one that rolls back.
+    /// </summary>
+    /// <remarks>
+    /// Persisted in the store, so it survives a restart, and read from the
+    /// same connection a commit's own writes land through, so this value
+    /// is never observed to advance for a commit that has not durably
+    /// landed. A caller that captures this value alongside a read (a
+    /// <c>Tempest.Workspace.WorkspaceSnapshot</c>) has an exact, checkable
+    /// claim about how current that read is — see
+    /// <see cref="Tempest.Core.Events.WorkspaceChange.Sequence"/>, which
+    /// names the same counter.
+    /// </remarks>
+    long CurrentSequence { get; }
+
+    /// <summary>
     /// Lists every key in <paramref name="collection"/> that begins with
     /// <paramref name="keyPrefix"/>, in ascending ordinal key order.
     /// </summary>
@@ -113,6 +130,39 @@ public interface IQueryablePersistenceStore
     /// <exception cref="ArgumentNullException"><paramref name="work"/> is <see langword="null"/>.</exception>
     /// <exception cref="PersistenceStoreUnavailableException">The transaction could not be begun or committed.</exception>
     Task ExecuteInTransactionAsync(Func<IPersistenceTransaction, CancellationToken, Task> work, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Runs <paramref name="read"/> against one consistent, read-only view
+    /// of the store — every read <paramref name="read"/> performs, and the
+    /// <see cref="IPersistenceReadTransaction.Sequence"/> it reports, see
+    /// exactly the same committed state, however many statements
+    /// <paramref name="read"/> issues (`WP 18.1A`).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// This is the read half of <see cref="ExecuteInTransactionAsync"/>:
+    /// it takes no write lock and never contends with one, so it never
+    /// blocks — and is never blocked by — a concurrent writer, which is
+    /// what makes it safe to call from a UI thread's own async handler.
+    /// What it buys instead is the property a view composing several
+    /// independent reads cannot have: a commit that lands after this call
+    /// begins is invisible to every read inside it, never visible to some
+    /// and not others. A caller that read a parent in one call and a child
+    /// in a second, unrelated call could observe a move that landed
+    /// between them as the parent's old state and the child's new one;
+    /// one call to this method cannot.
+    /// </para>
+    /// <para>
+    /// A snapshot read (<c>Tempest.Workspace.WorkspaceSnapshot</c>) is
+    /// built from exactly one call to this method.
+    /// </para>
+    /// </remarks>
+    /// <typeparam name="T">The read's own result type.</typeparam>
+    /// <param name="read">The read to run inside the transaction.</param>
+    /// <param name="cancellationToken">Cancels the read.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="read"/> is <see langword="null"/>.</exception>
+    /// <exception cref="PersistenceStoreUnavailableException">The transaction could not be begun or completed.</exception>
+    Task<T> ExecuteInReadTransactionAsync<T>(Func<IPersistenceReadTransaction, CancellationToken, Task<T>> read, CancellationToken cancellationToken = default);
 }
 
 /// <summary>
@@ -149,6 +199,40 @@ public interface IPersistenceTransaction
     /// <paramref name="keyPrefix"/> (the empty string matches every key),
     /// in ascending ordinal key order, including this transaction's own
     /// uncommitted writes.
+    /// </summary>
+    Task<IReadOnlyList<string>> ListKeysAsync(string collection, string keyPrefix, CancellationToken cancellationToken = default);
+}
+
+/// <summary>
+/// The read-only surface of one in-flight read opened by
+/// <see cref="IQueryablePersistenceStore.ExecuteInReadTransactionAsync{T}"/>
+/// (`WP 18.1A`).
+/// </summary>
+/// <remarks>
+/// Read-only by omission, not by convention: unlike <see cref="IPersistenceTransaction"/>
+/// this carries no <c>Write</c>/<c>Delete</c> member at all, so a caller
+/// cannot write through a handle that was never given a write lock to
+/// write with.
+/// </remarks>
+public interface IPersistenceReadTransaction
+{
+    /// <summary>
+    /// The store sequence every read through this handle is consistent
+    /// with — the same value <see cref="Tempest.Core.Events.WorkspaceChange.Sequence"/>
+    /// reports for the commit that produced this state.
+    /// </summary>
+    long Sequence { get; }
+
+    /// <summary>Reads the text value under <paramref name="key"/>.</summary>
+    Task<string?> ReadAsync(string collection, string key, CancellationToken cancellationToken = default);
+
+    /// <summary>Reads every text record in <paramref name="collection"/>, in ascending ordinal key order.</summary>
+    Task<IReadOnlyList<KeyValuePair<string, string>>> ReadAllAsync(string collection, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Lists every key in <paramref name="collection"/> beginning with
+    /// <paramref name="keyPrefix"/> (the empty string matches every key),
+    /// in ascending ordinal key order.
     /// </summary>
     Task<IReadOnlyList<string>> ListKeysAsync(string collection, string keyPrefix, CancellationToken cancellationToken = default);
 }

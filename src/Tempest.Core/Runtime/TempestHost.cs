@@ -225,14 +225,14 @@ public sealed class TempestHost : ITempestHost
         // persistence root's own `logs/` folder is registered by default,
         // alongside the console sink - resolved here, ahead of Persistence
         // itself (below), from the identical `Persistence:RootPath`
-        // configuration key/default `PersistenceStore`/`SqlitePersistenceStore`
-        // each independently resolve, so the log directory and the
-        // database directory always share one root without this class
-        // taking a dependency on either concrete store type.
-        var persistenceRootPath = configuration.TryGetValue(Persistence.PersistenceStore.RootPathConfigurationKey, out var configuredRootPath)
+        // configuration key/default `SqlitePersistenceStore` itself
+        // independently resolves, so the log directory and the database
+        // directory always share one root without this class taking a
+        // dependency on the concrete store type.
+        var persistenceRootPath = configuration.TryGetValue(Persistence.SqlitePersistenceStore.RootPathConfigurationKey, out var configuredRootPath)
             && !string.IsNullOrWhiteSpace(configuredRootPath)
             ? configuredRootPath
-            : Persistence.PersistenceStore.DefaultRootPath;
+            : Persistence.SqlitePersistenceStore.DefaultRootPath;
 
         var rollingFileSink = new RollingFileLogSink(Path.Combine(persistenceRootPath, "logs"));
 
@@ -541,6 +541,17 @@ public sealed class TempestHost : ITempestHost
         // Empty until each Kind's own declaring class registers it -
         // nothing here declares a Kind of its own (ADR-0105).
         services.Singleton<IEngineeringObjectRehydratorRegistry, EngineeringObjectRehydratorRegistry>();
+
+        // `WP 18.1A`: the one change feed a committed engineering write
+        // announces itself on. One instance under both halves of ADR-0044's
+        // dual-registration pattern - IWorkspaceChanges (subscribe-only,
+        // every view resolves this) and IWorkspaceChangePublisher
+        // (publish-only, EngineeringDomainContext alone resolves this,
+        // immediately below) - registered ahead of EngineeringDomainContext
+        // so its constructor can take the publisher half.
+        var workspaceChanges = new WorkspaceChangeFeed();
+        services.AddInstance<IWorkspaceChanges>(workspaceChanges);
+        services.AddInstance<IWorkspaceChangePublisher>(workspaceChanges);
 
         // The shared collaborator bundle every canonical object's own
         // EngineeringObjectFactory<T> needs - constructed here so a
@@ -951,23 +962,23 @@ public sealed class TempestHost : ITempestHost
     /// <summary>
     /// Builds the one persistence store this Host registers under all
     /// three store shapes, honouring <c>Persistence:Backend</c>
-    /// (`ADR-0144`).
+    /// (`ADR-0144`, `WP 18.1A`).
     /// </summary>
     /// <remarks>
     /// <para>
-    /// <c>sqlite</c> — the default, and the only value a shipped
-    /// installation should ever use — gives
-    /// <see cref="SqlitePersistenceStore"/>. <c>files</c> gives the
-    /// file-per-key <see cref="PersistenceStore"/>, retained for exactly
-    /// one release so that a site which hits an unforeseen SQLite problem
-    /// in <c>v0.17.0</c> has somewhere to stand while it is fixed; it is
-    /// deleted in <c>v0.18.0</c> and nothing new may be built on it.
+    /// <c>sqlite</c> — the default, and now the only recognised value —
+    /// gives <see cref="SqlitePersistenceStore"/>. The file-per-key store
+    /// this once named alongside (<c>files</c>) is deleted in
+    /// <c>v0.18.0</c> (`WP 18.1A`, `ADR-0144`): it existed for exactly one
+    /// release, as a place to stand if a site hit an unforeseen SQLite
+    /// problem in <c>v0.17.0</c>, and nothing was ever built on it.
     /// </para>
     /// <para>
-    /// An unrecognised value is a Host-fatal configuration error rather
-    /// than a silent fall back to the default: a deployment that asked for
-    /// a backend and got a different one would be writing its data
-    /// somewhere its operator did not choose (`ADR-0013`).
+    /// An unrecognised value — <c>files</c> included — is a Host-fatal
+    /// configuration error rather than a silent fall back to the default:
+    /// a deployment that asked for a backend and got a different one would
+    /// be writing its data somewhere its operator did not choose
+    /// (`ADR-0013`).
     /// </para>
     /// </remarks>
     private static object CreatePersistenceStore(IConfigurationProvider configuration, ILogger logger)
@@ -986,21 +997,10 @@ public sealed class TempestHost : ITempestHost
             return store;
         }
 
-        if (string.Equals(backend, SqlitePersistenceStore.FileBackendValue, StringComparison.OrdinalIgnoreCase))
-        {
-            var store = new PersistenceStore(configuration, logger);
-            logger.Warning(
-                $"Persistence backend: the file-per-key store, root '{store.RootPath}', selected by " +
-                $"'{SqlitePersistenceStore.BackendConfigurationKey}'. This backend does not fsync a write, " +
-                "cannot answer a query without scanning a directory, and cannot make two writes land together. " +
-                "It is retained for one release only and is deleted in v0.18.0 (ADR-0144).");
-            return store;
-        }
-
         throw new PersistenceStoreUnavailableException(
             $"'{SqlitePersistenceStore.BackendConfigurationKey}' is configured as '{backend}', which is not a " +
-            $"persistence backend this build has. Valid values are '{SqlitePersistenceStore.SqliteBackendValue}' " +
-            $"(the default) and '{SqlitePersistenceStore.FileBackendValue}'.");
+            $"persistence backend this build has. The only valid value is '{SqlitePersistenceStore.SqliteBackendValue}' " +
+            "(the default); the file-per-key backend this key once also selected is deleted (v0.18.0, ADR-0144).");
     }
 
     /// <summary>

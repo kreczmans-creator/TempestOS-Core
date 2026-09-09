@@ -25,6 +25,8 @@ internal sealed class FailingPersistenceStore : IPersistenceStore, IQueryablePer
     private static PersistenceStoreUnavailableException MakeException() =>
         new("Simulated persistence failure.", new IOException("Simulated."));
 
+    public long CurrentSequence => throw MakeException();
+
     public Task<string?> ReadAsync(string collection, string key, CancellationToken cancellationToken = default) =>
         throw MakeException();
 
@@ -49,5 +51,9 @@ internal sealed class FailingPersistenceStore : IPersistenceStore, IQueryablePer
 
     public Task ExecuteInTransactionAsync(
         Func<IPersistenceTransaction, CancellationToken, Task> work, CancellationToken cancellationToken = default) =>
+        throw MakeException();
+
+    public Task<T> ExecuteInReadTransactionAsync<T>(
+        Func<IPersistenceReadTransaction, CancellationToken, Task<T>> read, CancellationToken cancellationToken = default) =>
         throw MakeException();
 }
