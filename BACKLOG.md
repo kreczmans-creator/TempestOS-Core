@@ -27,7 +27,7 @@ check's generic exception handler already names the failing check in
 its `Fail` result; carried forward unchanged into the reduced script).
 None of these nine appear below.
 
-## Live Backlog (29 of 30 cap)
+## Live Backlog (26 of 30 cap)
 
 `TD-147` — an object creation whose initial durable write failed still
 registered the object in memory, so its next successful write made a
@@ -42,14 +42,13 @@ and nothing on disk.
 | ID | Title | Owner |
 |---|---|---|
 | `TD-05` | Module discovery still requires a parameterless constructor outside the `[ModuleMetadata]` lift | unowned |
-| `TD-17` | Document revision content is an opaque string with no structured payload support | `WP 18.0B` |
 | `TD-24` | `VerificationContext` has no bound on criteria, evidence or links recorded | unowned |
 | `TD-25` | `RequirementsService` has no compare-and-swap; concurrent edits can silently clobber | `WP 18.2B` |
 | `TD-27` | `InMemoryEngineeringObjectRepository` iteration order is unguaranteed | `WP 17.1B` (judgement — see note) |
 | `TD-28` | Bulk requirement commands don't auto-refresh an already-open view | `WP 18.1A` (judgement — see note) |
 | `TD-33` | `EngineeringCockpit.FormatCoverage` returns a hardcoded, wrong-discipline empty-state string | `WP 19.1B` |
 | `TD-38` | `EngineeringObjectFactory` enforces no business-identifier uniqueness | `WP 18.2B` |
-| `TD-41` | `ObjectEditorView` never resolves a real Requirement; always falls back to the generic body | unowned |
+| `TD-41` | `ObjectEditorView` never resolves a real Requirement; always falls back to the generic body | unowned (claimed by `WP 18.1B`/`WP 18.2A`, not actually closed — see note) |
 | `TD-42` | `new-release.ps1`'s `git tag`/`git push` calls never check `$LASTEXITCODE` | unowned |
 | `TD-63` | `TD-40`'s dirty-tab-close fix is not pinned on its production path | unowned |
 | `TD-76` | No project context anywhere in the running application | `WP 19.0A` |
@@ -65,11 +64,9 @@ and nothing on disk.
 | `TD-134` | `SettingsDocument<TDocument>` has no per-consumer notion of "current version" | unowned |
 | `TD-150` | `PersistenceStore`'s post-commit failure window: 0 of 3,330 tests would notice a revert | `WP 17.0C` |
 | `TD-154` | CI's `linux-launch-smoke` marker now fires before the composition root runs | unowned |
-| `TD-155` | Materials library reuses an incompatible payload shape under the old document Kind | `WP 18.0B` |
-| `TD-157` | "Pinned source superseded" warning can never fire; the resolver is never wired up | `WP 18.0B` |
-| `TD-163` | 79 seeded reference records never reach the shipped product | `WP 18.0B` |
-| `TD-174` | A Part carries none of what a calculation and a drawing need from it: no material assignment pinned to a released reference revision (`IPart.MaterialId` is a bare string nothing on the Desktop sets), no standard-versus-custom designation (a Component is the de-facto standard part but nothing says so), no part number distinct from the display name, no mass. **Not ERP**: no procurement, supplier, cost or stock fields; the attributes are the ones a calc sheet cites and a title block shows (Product Owner, second Windows review, 2026-09-09) | `WP 18.0A` (material is cited on the evidence that used it, `D-028`) and `WP 18.2A` (Part shows only what it means) |
-| `TD-175` | A Part has no BOM input at all: the bill of materials is authored on the Assembly (its lines: child, quantity, find number, item number, reference designator), and a Part shows only a read-only **Where used** readout derived from the assembly it sits in and that assembly's chain. **Not PLM**: the single-parent tree stays, there is no part-occurrence model, no multi-assembly usage tracking and no change control on BOM lines (Product Owner, 2026-09-09: "we need to be very careful here not to reinvent the system as an ERP system or a PLM system") | `WP 18.1C` (model) and `WP 18.2A` (page) |
+| `TD-157` | "Pinned source superseded" warning can never fire; the resolver is never wired up | `WP 18.0B` (unresolved — see note) |
+| `TD-163` | 79 seeded reference records never reach the shipped product | `WP 18.0B` (partial — see note) |
+| `TD-174` | A Part carries none of what a calculation and a drawing need from it: no material assignment pinned to a released reference revision (`IPart.MaterialId` is a bare string nothing on the Desktop sets), no standard-versus-custom designation (a Component is the de-facto standard part but nothing says so), no part number distinct from the display name, no mass. **Not ERP**: no procurement, supplier, cost or stock fields; the attributes are the ones a calc sheet cites and a title block shows (Product Owner, second Windows review, 2026-09-09) | `WP 18.0A` and `WP 18.2A` (claimed, not actually closed — see note) |
 
 **Judgement calls, not named in any Work Package's "Closes" column:**
 `TD-27` and `TD-150` sit squarely in the persistence/object-store
@@ -81,6 +78,26 @@ the programme Work Packages (`WP 18.0B`, `18.2B`,
 column in `WorkPackages.md`, but fall outside the specific
 "substrate"/"surface" set that rule defines — they are kept here,
 with their real owner shown, rather than mislabelled "unowned."
+
+**Verified against `v0.18.0`'s own "Closes" columns (`WP 18.9.0`,
+2026-09-09) and left open, not moved:** `TD-41` — `ObjectEditorView.TryCreate`
+still gates on `EngineeringDomainContext.Repository.FindAsync`, which still
+returns `null` for a Requirement; the current tree's own
+`CreatedObjectOpensRightUpTests` says so directly ("the generic editor
+cannot resolve a Requirement yet, `TD-41`"). `TD-157` — `WP 18.0A`'s
+citation-time refusal of an unreleased record is real (`EvidenceService`,
+`RecordNotReleased`), but the row's own subject, the never-fires
+"Pinned source superseded" warning, is unchanged: `TempestHost` registers
+no `IReferencePinResolver`/`CatalogPinResolver`, so `CalculationPackValidationService`
+and `VerificationArtefactValidationService` still resolve an empty
+dictionary. `TD-163` — only `MaterialSeed` reaches a shipped action
+(`BracketCalculationWorkbench.PopulateMaterialLibraryAsync`, the sole
+`ApplyAsync` call site outside `tests/`); `FastenerSeed`, `BearingSeed`,
+`StandardSeed` and `ConstantSeed` (35 of the 41 records) still have none.
+`TD-174` — `IPart.MaterialId` is still the same bare, Desktop-unset
+string; no part number, mass or standard/custom field was added.
+`WP 18.0A`'s evidence-citation mechanism and `WP 18.2A`'s decluttered
+Part declaration address adjacent concerns, not this row's own.
 
 ## Owned by Programme
 
@@ -147,22 +164,21 @@ touched).
 | `TD-170` | Naming an executed calculation is create-then-link with no compensation | `WP 17.1B` |
 | `TD-171` | Three verification models remain (`Core/Verification`, `EngineeringDomain/RequirementsVerification`, `EngineeringAssets/Verification`); collapse deferred to `WP 18.2B` | `WP 18.2B` |
 | `TD-65` | Systemic Desktop accessibility gaps: dialogs, focus, `AutomationProperties` | `WP 19.2B` |
-| `TD-66` | Refresh-architecture debt beyond `TD-58`: Cockpit, Explorer, open tabs | `WP 18.1A` |
 | `TD-73` | Rail and ribbon never compact; `MinWidth` bars small displays | `WP 19.2B` |
 | `TD-74` | No global navigation architecture; three-level mock-up model collapsed to one | `WP 19.2B` |
 | `TD-77` | Command Palette is not contextual; most real commands are unavailable there | `WP 19.2B` |
 | `TD-79` | Engineering Workspace has deep domain support and almost no dedicated UI | `WP 18.2A` |
 | `TD-81` | Whole mock-up modules unimplemented: Tasks, Commercial, Resources, Knowledge, Admin | `WP 19.2B` |
-| `TD-90` | A docking re-render does not restore keyboard focus | `WP 18.1A` |
-| `TD-108` | Blocking `.GetAwaiter().GetResult()` calls, several on the UI thread | `WP 18.1A` |
+| `TD-90` | A docking re-render does not restore keyboard focus | `WP 18.1A` (claimed, not closed — see note) |
+| `TD-108` | Blocking `.GetAwaiter().GetResult()` calls, several on the UI thread | `WP 18.1A` (claimed, not closed — see note) |
 | `TD-109` | `MainWindow` is a 1,577-line god object | `WP 19.2A` |
 | `TD-115` | Three registered commands have no production construction path | `WP 19.2A` |
-| `TD-118` | The Engineering Cockpit's read surface is synchronous by shape | `WP 18.1A` |
+| `TD-118` | The Engineering Cockpit's read surface is synchronous by shape | `WP 18.1A` (claimed, not closed — see note) |
 | `TD-128` | Digital Thread graph edges are keyboard-unreachable | `WP 19.2B` |
 | `TD-132` | Every relationship row's "Open" button shares one accessible name | `WP 19.2B` |
 | `TD-133` | Docking-panel repositioning and tab reordering are mouse-only | `WP 19.2B` |
-| `TD-160` | The whole merged engineering capability has no Desktop UI surface | `WP 18.2A` |
-| `TD-165` | The bracket verification artefact cannot be filled in from the Desktop | `WP 18.2A` |
+| `TD-160` | The whole merged engineering capability has no Desktop UI surface | `WP 18.2A` (partial — see note) |
+| `TD-165` | The bracket verification artefact cannot be filled in from the Desktop | `WP 18.2A` (claimed, not closed — see note) |
 
 ### Closed
 
@@ -174,6 +190,28 @@ this table can now point at, rather than merely name.
 | `TD-01` | Two logging mechanisms coexist (`ILogger` vs. legacy `LoggingService`) | `WP 17.2A` — the legacy `LoggingService` no longer exists in the live tree, and `Tempest.Core.Logging.TempestLoggerProvider` now forwards any `Microsoft.Extensions.Logging` caller into the same, single `ILogger`/`ILogSink` pipeline rather than leaving it as an unconnected second mechanism. |
 | `TD-173` | A verification result links its evidence to the Activity, never to the Requirement it names as Subject, so a Requirement's Verification Coverage always reads "Not Verified" | `WP 17.9.3` — `RecordVerificationResultCommandHandler` also links the record from the Activity's subject, so the subject's own coverage read finds it. |
 | `TD-172` | Creation placement and visibility: objects created from the Ribbon or Palette were parentless, unreachable in their own tree, or shown on a tab the user was not looking at | `WP 17.9.3` (placement, Ungrouped, Manufacturing ids) and `WP 17.9.4` (the shell switches to the object's area, reveals it and opens it after every Create). |
+| `TD-17` | Document revision content is an opaque string with no structured payload support | `WP 18.0A` — `Evidence`'s own `DeclaredFigure` (`src/Tempest.Core/Evidence/DeclaredFigure.cs`) is a named, typed quantity payload, checked against `EvidenceUnitCatalog.KnownUnits`, not the opaque `IDocumentRevision.Content` string the row named. |
+| `TD-155` | Materials library reuses an incompatible payload shape under the old document Kind | `WP 18.0B` — `MaterialSpecificationDto` no longer exists anywhere in the tree; `MaterialCatalog` (`src/Tempest.Core/Materials/MaterialCatalog.cs`) is now solely `ReferenceDataCatalog<MaterialDefinition>`'s shape, so the incompatible payload the row named cannot recur. |
+| `TD-175` | A Part has no BOM input at all: the bill of materials is authored on the Assembly (its lines: child, quantity, find number, item number, reference designator), and a Part shows only a read-only **Where used** readout derived from the assembly it sits in and that assembly's chain. **Not PLM**: the single-parent tree stays, there is no part-occurrence model, no multi-assembly usage tracking and no change control on BOM lines | `WP 18.1C` (model — `IHasBomLine`/`SetBomLineAsync` predate this programme) and `WP 18.2A` (page) — `KindEditorDeclarations.Part()` carries no Bill-of-Materials section, only a read-only *Where used* row built from `IHasParent.ParentId`; `KindEditorDeclarations.Assembly()` carries the editable BOM section, wired to `SetBomLineCommand` in `ObjectEditorView.cs`. |
+| `TD-66` | Refresh-architecture debt beyond `TD-58`: Cockpit, Explorer, open tabs | `WP 18.1A` — `CockpitView`, `ProjectExplorerView` and `ObjectEditorView` now refresh from one `IWorkspaceChanges.Changed` event each; the old ad hoc `RefreshAsync`/reload call sites in those three views are gone. |
+
+**Claimed by `v0.18.0` Work Packages and verified NOT closed, `WP 18.9.0`
+(2026-09-09):** `TD-90` — no focus-capture/restore mechanism exists
+anywhere in the docking subsystem (`WorkspaceLayoutController`,
+`WorkspaceLayoutHost`, `WorkspaceDockingComposer`: no `Focus` reference
+in any of them); a docking re-render still does not restore keyboard
+focus. `TD-108` — `EngineeringCockpit`'s dozens of `.GetAwaiter().GetResult()`
+calls are unchanged, and `CockpitView.Refresh()` still runs them via
+`Dispatcher.UIThread.Post`, i.e. on the UI thread. `TD-118` —
+`EngineeringCockpit`'s read surface is exactly as synchronous as before;
+`CockpitView` still calls `_cockpit.BeginReadScope()` directly and
+synchronously. `TD-160` — **partial only:** the new `LibrariesView`
+(`src/Tempest.Desktop/Views/LibrariesView.cs`) now browses all five
+reference libraries, closing one of the row's three named gaps, but
+`EngineeringTraceRegister`'s `CalculationTrace` is still rendered nowhere
+and `BracketEngineeringRecordService` is still reachable from no screen
+(`TD-165`). `TD-165` — unchanged: `BracketEngineeringRecordService` has
+no consumer anywhere under `src/Tempest.Desktop`.
 
 **`TD-02`, `WP 17.0C`, before this table existed:** "single-sink
 limitation" — closed by `CompositeLogSink` (see that class's own
@@ -199,8 +237,8 @@ Not debt in a product that does not ship the layer:
 
 | ID | Title | Reason |
 |---|---|---|
-| `TD-161` | New application surfaces write engineering assets with no project scope | `WP 19.0B` archives the P04/asset surfaces this concerns |
-| `TD-162` | `ProjectDependencyRegister` (`P04`) is unreferenced | `WP 19.0B` |
+| `TD-161` | New application surfaces write engineering assets with no project scope | `WP 18.0C` claims this (moved forward from `WP 19.0B`), but does not close it: `EngineeringTraceRegister` and `BracketEngineeringRecordService` are still live in `src/Tempest.Workspace`/`src/Tempest.Core`, not moved to `src/Frozen/`, and `AssetApplicability.ProjectIdentifiers` is still never populated anywhere in `src/`. Left here, not moved — its subject still ships. |
+| `TD-162` | `ProjectDependencyRegister` (`P04`) is unreferenced | `WP 18.0C` claims this (moved forward from `WP 19.0B`), but does not close it: `src/Tempest.Workspace/Projects/ProjectDependencyRegister.cs` is outside `WP 18.0C`'s own stated scope (`Tempest.Core` namespaces only), was not moved to `src/Frozen/`, and remains unreferenced. Left here, not moved — its subject still ships, unconstructed and unconsumed. |
 | `TD-82` | Companion (mobile/field) application has zero implementation on this branch | Companion is explicitly out of `v1.0.0` scope (`docs/releases/v1.0.0/WorkPackages.md`, "What v1.0.0 is") |
 | `TD-13` | REST API identity resolution carries no real authentication | frozen by `WP 17.2A` — the inbound REST API moved to `src/Frozen/Tempest.Core.Api` (`ADR-0146`) |
 | `TD-14` | No TLS on the REST API's own Kestrel listener | frozen by `WP 17.2A` |
