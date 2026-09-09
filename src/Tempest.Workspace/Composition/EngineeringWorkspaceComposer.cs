@@ -1,6 +1,7 @@
 using Tempest.Workspace;
 using Tempest.Workspace.Calculations;
 using Tempest.Workspace.Documents;
+using Tempest.Workspace.Evidence;
 using Tempest.Workspace.Macros;
 using Tempest.Workspace.Manufacturing;
 using Tempest.Workspace.Mechanical;
@@ -10,6 +11,7 @@ using Tempest.Core.Calculations;
 using Tempest.Core.Commands;
 using Tempest.Core.Configuration;
 using Tempest.Core.EngineeringDomain;
+using Tempest.Core.Evidence;
 using Tempest.Core.Macros;
 using Tempest.Core.Requirements;
 using Tempest.Core.Runtime;
@@ -150,12 +152,18 @@ public static class EngineeringWorkspaceComposer
         var calculationEngine = (ICalculationEngine)services.GetService(typeof(ICalculationEngine));
         var verificationService = (IVerificationService)services.GetService(typeof(IVerificationService));
         var macroManager = (IMacroManager)services.GetService(typeof(IMacroManager));
+        var evidenceService = (IEvidenceService)services.GetService(typeof(IEvidenceService));
 
         MechanicalWorkspaceRegistration.Register(manager, domainContext, commandDispatcher, commandRegistry, referenceIntegrityChecker);
         RequirementsWorkspaceRegistration.Register(manager, requirementsService, commandDispatcher, commandRegistry);
         var calculationTemplateRegistry = CalculationsWorkspaceRegistration.Register(manager, domainContext, calculationEngine, commandDispatcher, commandRegistry);
         DocumentsWorkspaceRegistration.Register(manager, domainContext, commandDispatcher, commandRegistry);
         VerificationWorkspaceRegistration.Register(manager, domainContext, verificationService, commandDispatcher, commandRegistry);
+
+        // `ADR-0148` (`WP 18.0A`). Must run after Mechanical — it reuses
+        // Mechanical's own already-registered rename/delete command
+        // handlers (this class's own remarks).
+        EvidenceWorkspaceRegistration.Register(manager, domainContext, evidenceService, commandDispatcher, commandRegistry);
 
         // Must run after VerificationWorkspaceRegistration — Manufacturing
         // deliberately does not re-register RecordVerificationResultCommand,
@@ -181,6 +189,7 @@ public static class EngineeringWorkspaceComposer
         CalculationObjectFactoryRegistry.RegisterRehydrators(rehydrators, domainContext);
         VerificationActivityFactoryRegistry.RegisterRehydrators(rehydrators, domainContext);
         ManufacturingObjectFactoryRegistry.RegisterRehydrators(rehydrators, domainContext);
+        rehydrators.Register<Tempest.Core.Evidence.Evidence>(Tempest.Core.Evidence.Evidence.CanonicalKind, domainContext);
 
         // The canonical Kinds that are durable and rehydratable but have no
         // discipline workspace yet. Twelve of them were registered only by
