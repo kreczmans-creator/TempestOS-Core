@@ -36,10 +36,10 @@ supersession, subject retag, Libraries Revise), then `WP 18.9.0` (this
 file's figures, the release notes, the physical review, the tag).
 `v0.17.0` is released: merged to `main`, tagged, published 2026-09-09.
 
-## Gate (interim figures at the `WP 18.2A` merge; re-derived by `WP 18.9.0`)
+## Gate (the release-candidate head `2f4486c`, re-derived by `WP 18.9.0` on 2026-09-09)
 
-- Core tests: 3,989 passed, 0 failed, 0 skipped (981 archived with P02–P07 by `WP 18.0C`, file-backend-only tests deleted by `WP 18.1A`, new Evidence, citation, search and snapshot tests added)
-- Desktop tests: 519 passed, 0 failed, 0 skipped at the `WP 18.1B` merge (about 2.5 min per configuration, longer when an agent's suite runs alongside)
+- Core tests: 3,991 passed, 0 failed, 0 skipped, Debug and Release (981 archived with P02–P07 by `WP 18.0C`, file-backend-only tests deleted by `WP 18.1A`; Evidence, citation, seeding, search, sequence and snapshot tests added)
+- Desktop tests: 532 passed, 0 failed, 0 skipped, Debug (6 m 22 s) and Release (5 m 32 s)
 - Build: 0 warnings, 0 errors, both configurations, `TreatWarningsAsErrors`
 - Architecture invariants (`DependencyDirectionTests`): 5/5 green
 - Governance health check: 5/5 passed (Windows PowerShell 5.1 and PowerShell 7)

@@ -59,7 +59,7 @@ as they were in `v0.17.0`, on the Product Owner's instruction of
 | Live test lines (`tests/`, excluding `Frozen/`) | 103,585 | 99,709 |
 | `Tempest.Core` source lines | 85,151 | 54,366 (52,843 after `WP 18.0C`, then Evidence, citations, search and the change feed) |
 | Core tests | 4,961 | 3,991 (981 archived with P02–P07, file-backend-only tests deleted; Evidence, citation, seeding, search, sequence and snapshot tests added) |
-| Desktop tests | 508 | 528 at the `WP 18.2B` merge (final figure in `PROJECT_STATUS.md`) |
+| Desktop tests | 508 | 532 |
 | ADRs | 147 | 149 (0148, 0149 new; sixteen marked Frozen) |
 | Commits on the release branch | 53 | 68 since the `v0.17.0` tag |
 
