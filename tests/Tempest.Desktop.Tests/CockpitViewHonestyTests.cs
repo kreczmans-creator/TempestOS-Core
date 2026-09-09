@@ -1,4 +1,4 @@
-﻿using Avalonia.Controls;
+using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.LogicalTree;
 using Tempest.Workspace;
@@ -9,14 +9,14 @@ namespace Tempest.Desktop.Tests;
 /// <summary>
 /// Demonstrates `WP 10.1A`'s own central claim: every Engineering Cockpit
 /// region is either real, live data (upgraded from a disclosed placeholder
-/// by this Work Package) or an honest, disclosed placeholder â€” never
-/// fabricated content â€” proven against a real, running
+/// by this Work Package) or an honest, disclosed placeholder — never
+/// fabricated content — proven against a real, running
 /// <see cref="WorkspaceHost"/> and its own real sample data, never a mock.
 /// </summary>
 /// <remarks>
 /// Named <c>EngineeringCockpitTests</c> until `WP-F`, which is what
 /// <c>Tempest.Core.Tests.Workspace.EngineeringCockpitTests</c> is also
-/// called. Different assemblies, so nothing ever failed to compile â€” but
+/// called. Different assemblies, so nothing ever failed to compile — but
 /// the two cover different subjects, and only a reader could tell them
 /// apart. That one covers the <c>EngineeringCockpit</c> read-model; this
 /// one covers what <see cref="CockpitView"/> renders from it, and whether
@@ -59,13 +59,13 @@ public sealed class CockpitViewHonestyTests
             // idempotent-restart guard (root cause: a durable, cross-launch
             // persistence store colliding with its own prior run, never a
             // double-invocation) now lets its full sample graph seed
-            // successfully on every genuinely fresh store â€” this test's own
+            // successfully on every genuinely fresh store — this test's own
             // isolated per-test persistence root (WorkspacePersistenceCollection)
             // guarantees exactly that. One real Risk ("SAMPLE-RISK-001",
             // Severity "Medium") is now live, stable Cockpit data, not an
             // honest-empty placeholder path.
             Assert.DoesNotContain("placeholder", cockpit.RiskSummary, StringComparison.OrdinalIgnoreCase);
-            Assert.Equal("1 open â€” 1 Medium.", cockpit.RiskSummary);
+            Assert.Equal("1 open — 1 Medium.", cockpit.RiskSummary);
         }
         finally
         {
@@ -75,12 +75,12 @@ public sealed class CockpitViewHonestyTests
     }
 
     /// <summary>
-    /// `WP 10.7A` (Feature Completion) â€” the Engineering Health Summary's
+    /// `WP 10.7A` (Feature Completion) — the Engineering Health Summary's
     /// own "Risks" card, previously hardcoded <c>IsPlaceholder: true</c>
     /// regardless of any real data, now reads the identical real
     /// <see cref="EngineeringCockpit"/>-internal risk read
     /// <see cref="RealData_RiskSummary_ReportsAnHonestRealCountNeverTheOldFixedPlaceholder"/>
-    /// already proves ("1 open â€” 1 Medium.") â€” the same one real, live
+    /// already proves ("1 open — 1 Medium.") — the same one real, live
     /// Risk, now surfaced as a genuine KPI count too.
     /// </summary>
     [AvaloniaFact]
@@ -104,11 +104,11 @@ public sealed class CockpitViewHonestyTests
     }
 
     /// <summary>
-    /// `WP 10.7A` (Feature Completion) â€” the Engineering Health Summary's
+    /// `WP 10.7A` (Feature Completion) — the Engineering Health Summary's
     /// own "Review" card, previously hardcoded <c>IsPlaceholder: true</c>
     /// regardless of any real data, now sums each discipline's own
     /// already-computed in-review count. Self-consistency, not a
-    /// hardcoded expected number â€” the same live sample data.
+    /// hardcoded expected number — the same live sample data.
     /// </summary>
     [AvaloniaFact]
     public async Task RealData_KpiCards_ReviewCard_SumsEachDisciplinesOwnRealInReviewCount()
@@ -176,7 +176,7 @@ public sealed class CockpitViewHonestyTests
             await cockpit.PrimeAsync();
             // WP 9.3A's own sample data deliberately records one real,
             // honest Fail outcome (its own disclosed "honest failure
-            // demonstration") â€” BlockedItems must surface it by name,
+            // demonstration") — BlockedItems must surface it by name,
             // synthesised from that already-real signal, not fabricated.
             Assert.NotEmpty(cockpit.BlockedItems);
             Assert.Contains(cockpit.BlockedItems, item => item.Contains("Fail outcome", StringComparison.OrdinalIgnoreCase));
@@ -199,8 +199,8 @@ public sealed class CockpitViewHonestyTests
             await cockpit.PrimeAsync();
             // Real sample data exists across every discipline, so the
             // rollup must report real reporting disciplines, never the
-            // old fixed "â€” (not yet available)" placeholder.
-            Assert.NotEqual("â€” (not yet available)", cockpit.HealthScoreDisplay);
+            // old fixed "— (not yet available)" placeholder.
+            Assert.NotEqual("— (not yet available)", cockpit.HealthScoreDisplay);
             Assert.Contains("disciplines reporting", cockpit.HealthScoreDisplay);
             Assert.NotEqual(EngineeringHealthStatus.Unknown, cockpit.Health);
         }
@@ -246,13 +246,13 @@ public sealed class CockpitViewHonestyTests
             // Overdue Actions is no longer a placeholder (`TD-81`):
             // EngineeringTask now carries a due date and a work state, so
             // this is a real computation. It is empty here because the
-            // seeded sample task has no due date â€” "nothing is overdue",
+            // seeded sample task has no due date — "nothing is overdue",
             // which is a different statement from "we cannot tell", and
             // the one the card now makes.
             Assert.Empty(cockpit.OverdueActions);
             Assert.Empty(cockpit.OverdueActionLines);
 
-            // The closest honest, real substitute for "overdue" â€” a real
+            // The closest honest, real substitute for "overdue" — a real
             // open-Task count. `TD-37` fixed, `WP 10.1B` (see RiskSummary's
             // own remarks, above): the base sample's own real Task
             // ("SAMPLE-TASK-001", Draft) now seeds successfully every run,
@@ -292,7 +292,7 @@ public sealed class CockpitViewHonestyTests
 
             // `WP-F` (`F-18`): the comment here always claimed the second
             // Refresh "must not duplicate state incorrectly", and nothing
-            // asserted it â€” `Assert.NotNull(view)` cannot fail. RefreshAsync
+            // asserted it — `Assert.NotNull(view)` cannot fail. RefreshAsync
             // clears its card host and rebuilds, so the count is the claim:
             // real cards the first time, the same number the second, never
             // twice as many.
@@ -307,13 +307,13 @@ public sealed class CockpitViewHonestyTests
     }
 
     /// <summary>
-    /// `WP 10.7A` (Feature Completion) â€” the "Favourite Projects" card,
+    /// `WP 10.7A` (Feature Completion) — the "Favourite Projects" card,
     /// previously always the fixed "no platform capability" message
     /// (still true, unmodified, at the <see cref="EngineeringCockpit"/>
-    /// App-layer â€” <see cref="FavouriteProjectsRemainAnHonestPlaceholder_WhileOverdueActionsIsNowRealAndSimplyEmpty"/>
+    /// App-layer — <see cref="FavouriteProjectsRemainAnHonestPlaceholder_WhileOverdueActionsIsNowRealAndSimplyEmpty"/>
     /// still proves that), now reads a real, Desktop-layer
     /// <see cref="FavouriteObjectsState"/> instead, when threaded through
-    /// â€” clicking a real favourited Project invokes the real open
+    /// — clicking a real favourited Project invokes the real open
     /// callback with its own real Id/Kind.
     /// </summary>
     [AvaloniaFact]
@@ -330,7 +330,7 @@ public sealed class CockpitViewHonestyTests
             var favourites = new FavouriteObjectsState(settingsProvider);
             var favouriteProjectId = Guid.NewGuid();
             favourites.Add(favouriteProjectId, "Project", "WP10.7A Test Favourite Project");
-            favourites.Add(Guid.NewGuid(), "Calculation", "Not a Project â€” must not appear on this card");
+            favourites.Add(Guid.NewGuid(), "Calculation", "Not a Project — must not appear on this card");
 
             var opened = new List<(Guid Id, string Kind)>();
             var view = new CockpitView(
@@ -374,7 +374,7 @@ public sealed class CockpitViewHonestyTests
     }
 
     // ----------------------------------------------------------------
-    // WP 12.0B (ADR-0103) â€” characterization tests added before the
+    // WP 12.0B (ADR-0103) — characterization tests added before the
     // per-discipline read-model decomposition, closing gaps this Work
     // Package's own investigation found in this file's pre-existing
     // coverage: AttentionItems/OpenActions (cross-discipline aggregation
@@ -402,7 +402,7 @@ public sealed class CockpitViewHonestyTests
             // attention], Calculations, [Calculations attention],
             // Documents, [Documents attention], Verification,
             // [Verification attention], Manufacturing, [Manufacturing
-            // attention], trailing placeholder â€” each discipline's own
+            // attention], trailing placeholder — each discipline's own
             // base ("X are/is live" or "No X registered yet") entry is
             // always added before its own conditional attention entry, so
             // the first index matching the discipline name is always the

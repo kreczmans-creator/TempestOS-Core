@@ -1,4 +1,4 @@
-﻿using Tempest.Workspace;
+using Tempest.Workspace;
 using Tempest.Workspace.Composition;
 using Tempest.Workspace.Mechanical;
 using Tempest.Core.Commands;
@@ -48,7 +48,7 @@ public class EngineeringCockpitTests
     public async Task ProjectName_NoMechanicalProjectExists_ReportsHonestEmptyState()
     {
         // WP 9.0A: ProjectName is now a real read of the Engineering Domain's
-        // own live "Project" objects, not fixed placeholder text â€” with no
+        // own live "Project" objects, not fixed placeholder text — with no
         // modules loaded (Type.EmptyTypes), none exists, so the honest empty
         // state is reported, mirroring FavouriteProjects_IsHonestlyEmpty's
         // own identical precedent.
@@ -221,7 +221,7 @@ public class EngineeringCockpitTests
         await cockpit.PrimeAsync();
         var listed = cockpit.AvailableCommands(CommandContext.Empty);
 
-        // CanExecute is still honoured â€” Evaluate keeps it as the final gate.
+        // CanExecute is still honoured — Evaluate keeps it as the final gate.
         Assert.DoesNotContain(listed, d => d.Id == "test.never-available");
         Assert.DoesNotContain(listed, d => d.Id == "test.not-invocable-by-id");
         Assert.Contains(listed, d => d.Id == "test.always-available");
@@ -282,7 +282,7 @@ public class EngineeringCockpitTests
 
     /// <summary>
     /// A command whose binding needs a selected object must not be listed
-    /// when nothing is selected â€” the F-13 defect. Before WP-A1 the Cockpit
+    /// when nothing is selected — the F-13 defect. Before WP-A1 the Cockpit
     /// listed every registered descriptor and then invoked it through the
     /// Id-only overload, so a command it had just reported as available threw
     /// <see cref="CommandException"/> the moment it was chosen.
@@ -310,7 +310,7 @@ public class EngineeringCockpitTests
     }
 
     /// <summary>
-    /// A command that declares itself unavailable is reported honestly â€” it
+    /// A command that declares itself unavailable is reported honestly — it
     /// is left out of the listing, and <c>Evaluate</c> still carries its own
     /// declared reason for a surface that wants to show it disabled
     /// (<c>ADR-0070</c>). The Cockpit is a listing surface, so it lists what
@@ -509,7 +509,7 @@ public class EngineeringCockpitTests
     {
         // WP 9.0A: RecentProjects is now a real read of the Engineering
         // Domain's own live "Project" objects, not fixed placeholder
-        // content â€” with no modules loaded, none exists.
+        // content — with no modules loaded, none exists.
         using var temp = new TempDirectory();
         var (workspace, manager, _) = await StartAsync(temp.Path, Type.EmptyTypes);
         var cockpit = ((Tempest.Workspace.Workspace)workspace).Cockpit;
@@ -696,7 +696,7 @@ public class EngineeringCockpitTests
         Assert.Equal("33% (1/3)", cards["Verification Coverage"]);
         Assert.Equal("33% (1/3)", cards["Allocation Coverage"]);
 
-        // `WP 10.5C` â€” `CockpitKpiCard.PercentValue` is the identical
+        // `WP 10.5C` — `CockpitKpiCard.PercentValue` is the identical
         // numerator/denominator `FormatCoverage`'s own display text
         // already computed, never a second, independent calculation that
         // could drift from the text a real progress bar renders beside.
@@ -708,7 +708,7 @@ public class EngineeringCockpitTests
     }
 
     /// <summary>
-    /// `WP 10.5C` â€” the zero-denominator case (`FormatCoverage`'s own
+    /// `WP 10.5C` — the zero-denominator case (`FormatCoverage`'s own
     /// honest dash) has a matching honest <see langword="null"/>
     /// <see cref="CockpitKpiCard.PercentValue"/>, never a fabricated
     /// `0%` progress bar for "no requirements yet."
@@ -786,15 +786,15 @@ public class EngineeringCockpitTests
     }
 
     // ----------------------------------------------------------------
-    // `WP 18.1B` Â§4 â€” Recently changed
+    // `WP 18.1B` §4 — Recently changed
     // ----------------------------------------------------------------
 
     private static async Task<Part> CreatePartAsync(EngineeringDomainContext context, string identifier, string name) =>
         (Part)await new EngineeringObjectFactory<Part>(
             "Part", context, (doc, rev) => new Part(doc, rev, context, identifier, name, EngineeringObjectMetadata.Empty))
-            .CreateAsync($"{name} â€” for test purposes.");
+            .CreateAsync($"{name} — for test purposes.");
 
-    /// <summary>Signs in a local session's own broad permission set (`Audit.AuditQuery.QueryPermission` among them) â€” mirrors <c>EvidenceTestHost.SignIn</c>'s own identical precedent.</summary>
+    /// <summary>Signs in a local session's own broad permission set (`Audit.AuditQuery.QueryPermission` among them) — mirrors <c>EvidenceTestHost.SignIn</c>'s own identical precedent.</summary>
     private static void SignIn(ITempestHost host)
     {
         var accessor = (CurrentPrincipalAccessor)host.Services!.GetService(typeof(ICurrentPrincipalAccessor));
@@ -839,12 +839,12 @@ public class EngineeringCockpitTests
         await manager.ShutdownAsync();
 
         // A brand-new WorkspaceManager/Host over the same root: nothing in
-        // this new process has ever "seen" the earlier change happen â€” the
+        // this new process has ever "seen" the earlier change happen — the
         // durable audit trail is the only place it could come from. The
         // discipline is registered again (what rebuilds each Kind's own
         // rehydrator) and rehydration is run explicitly (what
         // Repository.FindAsync needs to resolve the Part's own live title
-        // rather than falling back to its bare id) â€” the identical two
+        // rather than falling back to its bare id) — the identical two
         // steps `Tempest.Harness`/`WorkspaceHost` always run in that order.
         var (restartedWorkspace, restartedManager, restartedHost) = await StartAsync(temp.Path, typeof(MechanicalWorkspaceExplorerModule));
         SignIn(restartedHost);

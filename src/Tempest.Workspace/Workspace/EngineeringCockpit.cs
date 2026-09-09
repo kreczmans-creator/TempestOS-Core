@@ -709,12 +709,32 @@ public sealed class EngineeringCockpit
     public IReadOnlyList<CockpitRecentChange> RecentlyChanged => _recentlyChanged;
 
     /// <summary>Loads <see cref="RecentlyChanged"/> — every audit row projected to a <see cref="CockpitRecentChange"/>, newest first, capped at <see cref="RecentlyChangedLimit"/>. Called once per <see cref="PrimeAsync"/> pass.</summary>
+    /// <remarks>
+    /// <b>`WP 18.1A-R1`.</b> A <see cref="PermissionDeniedException"/> from
+    /// the audit query is caught, never let through: this used to be one
+    /// independent property among many, so a principal without
+    /// <c>audit.query</c> only ever broke a caller that actually read
+    /// <see cref="RecentlyChanged"/>. Now every property loads together in
+    /// one <see cref="PrimeAsync"/> pass, so letting this one fault through
+    /// would take the whole Cockpit down with it — the same reasoning
+    /// <see cref="RequirementsCockpitReadModel"/> already applies to its
+    /// own per-requirement validation pass. Honestly empty either way,
+    /// exactly as the <c>_auditQuery is null</c> case already was.
+    /// </remarks>
     private async Task<IReadOnlyList<CockpitRecentChange>> LoadRecentlyChangedAsync(CancellationToken cancellationToken)
     {
         if (_auditQuery is null)
             return [];
 
-        var records = await _auditQuery.QueryAsync(new AuditQueryCriteria(), cancellationToken).ConfigureAwait(false);
+        IReadOnlyList<IAuditRecord> records;
+        try
+        {
+            records = await _auditQuery.QueryAsync(new AuditQueryCriteria(), cancellationToken).ConfigureAwait(false);
+        }
+        catch (PermissionDeniedException)
+        {
+            return [];
+        }
 
         var changes = new List<CockpitRecentChange>(records.Count);
         foreach (var record in records)

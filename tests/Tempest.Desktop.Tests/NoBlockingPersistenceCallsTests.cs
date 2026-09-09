@@ -177,30 +177,32 @@ public sealed class NoBlockingPersistenceCallsTests
         // own disclosed remarks, which the other five mirror exactly) to a
         // single keyed lookup on the platform's one store. Requirements
         // carries three call sites (one per Requirements Kind its own
-        // `Create` switches over); every other factory carries one.
-        [Path.Combine("Requirements", "RequirementsWorkspaceViewFactory.cs")] =
+        // `Create` switches over); every other factory carries one. Every
+        // path below is relative to src/Tempest.Workspace, one level above
+        // the Workspace/ subdirectory every one of these files lives in.
+        [Path.Combine("Workspace", "Requirements", "RequirementsWorkspaceViewFactory.cs")] =
             (3, "IWorkspaceViewFactory.Create is a synchronous WP8.0B contract this Work Package does not own; disclosed on the method's own remarks."),
-        [Path.Combine("Calculations", "CalculationsWorkspaceViewFactory.cs")] =
+        [Path.Combine("Workspace", "Calculations", "CalculationsWorkspaceViewFactory.cs")] =
             (1, "Same IWorkspaceViewFactory.Create sync/async boundary as RequirementsWorkspaceViewFactory.cs."),
-        [Path.Combine("Documents", "DocumentsWorkspaceViewFactory.cs")] =
+        [Path.Combine("Workspace", "Documents", "DocumentsWorkspaceViewFactory.cs")] =
             (1, "Same IWorkspaceViewFactory.Create sync/async boundary as RequirementsWorkspaceViewFactory.cs."),
-        [Path.Combine("Manufacturing", "ManufacturingWorkspaceViewFactory.cs")] =
+        [Path.Combine("Workspace", "Manufacturing", "ManufacturingWorkspaceViewFactory.cs")] =
             (1, "Same IWorkspaceViewFactory.Create sync/async boundary as RequirementsWorkspaceViewFactory.cs."),
-        [Path.Combine("Mechanical", "MechanicalWorkspaceViewFactory.cs")] =
+        [Path.Combine("Workspace", "Mechanical", "MechanicalWorkspaceViewFactory.cs")] =
             (1, "Same IWorkspaceViewFactory.Create sync/async boundary as RequirementsWorkspaceViewFactory.cs."),
-        [Path.Combine("Verification", "VerificationActivityWorkspaceViewFactory.cs")] =
+        [Path.Combine("Workspace", "Verification", "VerificationActivityWorkspaceViewFactory.cs")] =
             (1, "Same IWorkspaceViewFactory.Create sync/async boundary as RequirementsWorkspaceViewFactory.cs."),
 
         // Owned by a parallel Work Package (`WP 18.2B`) — out of this
         // Work Package's scope ("do not touch ... any Evidence view").
-        [Path.Combine("Evidence", "EvidenceObjectView.cs")] =
+        [Path.Combine("Workspace", "Evidence", "EvidenceObjectView.cs")] =
             (1, "Owned by WP 18.2B (Evidence workspace), running in parallel; out of this Work Package's scope."),
 
         // Pre-existing, self-disclosed, unrelated to the Cockpit read
         // surface `TD-108`/`TD-118` named.
-        [Path.Combine("Macros", "MacroWorkspaceRegistration.cs")] =
+        [Path.Combine("Workspace", "Macros", "MacroWorkspaceRegistration.cs")] =
             (1, "Runs once during Workspace startup composition, before any UI-thread caller exists to contend with — the same startup shape App.cs/DesktopSessionState.cs are excepted for above."),
-        ["WorkspaceManager.cs"] =
+        [Path.Combine("Workspace", "WorkspaceManager.cs")] =
             (1, "ThrowIfHostRunFaulted's own disclosed non-blocking rethrow: only called once _hostRunTask.IsCompleted is already true, so GetResult() returns immediately rather than blocking."),
     };
 
@@ -314,13 +316,13 @@ public sealed class NoBlockingPersistenceCallsTests
     {
         string[] fixedFiles =
         [
-            "EngineeringCockpit.cs",
-            Path.Combine("Mechanical", "MechanicalCockpitReadModel.cs"),
-            Path.Combine("Requirements", "RequirementsCockpitReadModel.cs"),
-            Path.Combine("Calculations", "CalculationsCockpitReadModel.cs"),
-            Path.Combine("Documents", "DocumentsCockpitReadModel.cs"),
-            Path.Combine("Verification", "VerificationCockpitReadModel.cs"),
-            Path.Combine("Manufacturing", "ManufacturingCockpitReadModel.cs"),
+            Path.Combine("Workspace", "EngineeringCockpit.cs"),
+            Path.Combine("Workspace", "Mechanical", "MechanicalCockpitReadModel.cs"),
+            Path.Combine("Workspace", "Requirements", "RequirementsCockpitReadModel.cs"),
+            Path.Combine("Workspace", "Calculations", "CalculationsCockpitReadModel.cs"),
+            Path.Combine("Workspace", "Documents", "DocumentsCockpitReadModel.cs"),
+            Path.Combine("Workspace", "Verification", "VerificationCockpitReadModel.cs"),
+            Path.Combine("Workspace", "Manufacturing", "ManufacturingCockpitReadModel.cs"),
         ];
 
         foreach (var relative in fixedFiles)
