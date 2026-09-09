@@ -1,5 +1,6 @@
 using Tempest.Core.EngineeringData;
 using Tempest.Core.EngineeringDomain;
+using Tempest.Core.Events;
 using Tempest.Core.Identity;
 using Tempest.Core.Tests.Persistence;
 
@@ -59,9 +60,15 @@ internal static class TestEngineeringDomain
     /// </remarks>
     /// <param name="transactional">The store the context opens transactions on.</param>
     /// <param name="backing">The store every read surface is built over.</param>
+    /// <param name="workspaceChanges">
+    /// Where a committed write's touched set is announced (`WP 18.1A`).
+    /// <see langword="null"/> — the default — is a legitimate no-op, for
+    /// the great majority of tests that have no feed to assert against.
+    /// </param>
     public static EngineeringDomainContext NewContextOver(
         Core.Persistence.IQueryablePersistenceStore transactional,
-        InMemoryQueryablePersistenceStore backing)
+        InMemoryQueryablePersistenceStore backing,
+        IWorkspaceChangePublisher? workspaceChanges = null)
     {
         ArgumentNullException.ThrowIfNull(transactional);
         ArgumentNullException.ThrowIfNull(backing);
@@ -81,6 +88,8 @@ internal static class TestEngineeringDomain
             new EvidenceComposer(relationshipDiscovery, repository),
             principalAccessor,
             new EngineeringObjectStateStore(backing),
-            new AttachmentContentStore(backing));
+            new AttachmentContentStore(backing),
+            logger: null,
+            workspaceChanges: workspaceChanges);
     }
 }

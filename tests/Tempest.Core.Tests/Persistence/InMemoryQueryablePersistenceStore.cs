@@ -270,6 +270,28 @@ public sealed class InMemoryQueryablePersistenceStore
         }
     }
 
+    /// <inheritdoc />
+    public Task<T> ExecuteInReadTransactionAsync<T>(
+        Func<IPersistenceReadTransaction, CancellationToken, Task<T>> read, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(read);
+
+        // No lock needed beyond the one that captures the pair: `_committed`
+        // is replaced wholesale on every commit (copy-on-write), never
+        // mutated in place, so a captured reference is an immutable
+        // snapshot for as long as this method holds it — true isolation
+        // from every later writer, without contending with one.
+        Dictionary<(string, string), Entry> committed;
+        long sequence;
+        lock (_publishLock)
+        {
+            committed = _committed;
+            sequence = _sequence;
+        }
+
+        return read(new ReadTransaction(committed, sequence), cancellationToken);
+    }
+
     private static void Validate(string collection, string key)
     {
         ValidateCollection(collection);
@@ -365,6 +387,50 @@ public sealed class InMemoryQueryablePersistenceStore
                 throw new InvalidOperationException(
                     "This transaction handle was used after its body returned. A handle is valid only for the duration " +
                     "of the ExecuteInTransactionAsync call that produced it.");
+        }
+    }
+
+    /// <summary>
+    /// The handle handed to a read. Reads the captured, immutable snapshot
+    /// only — never <c>_committed</c> itself, which may already have moved
+    /// on by the time this runs.
+    /// </summary>
+    private sealed class ReadTransaction(Dictionary<(string Collection, string Key), Entry> snapshot, long sequence) : IPersistenceReadTransaction
+    {
+        public long Sequence => sequence;
+
+        public Task<string?> ReadAsync(string collection, string key, CancellationToken cancellationToken = default)
+        {
+            Validate(collection, key);
+            return Task.FromResult(snapshot.TryGetValue((collection, key), out var entry) ? entry.Text : null);
+        }
+
+        public Task<IReadOnlyList<KeyValuePair<string, string>>> ReadAllAsync(string collection, CancellationToken cancellationToken = default)
+        {
+            ValidateCollection(collection);
+
+            var all = snapshot
+                .Where(e => string.Equals(e.Key.Collection, collection, StringComparison.Ordinal) && e.Value.Text is not null)
+                .OrderBy(e => e.Key.Key, StringComparer.Ordinal)
+                .Select(e => new KeyValuePair<string, string>(e.Key.Key, e.Value.Text!))
+                .ToList();
+
+            return Task.FromResult<IReadOnlyList<KeyValuePair<string, string>>>(all);
+        }
+
+        public Task<IReadOnlyList<string>> ListKeysAsync(string collection, string keyPrefix, CancellationToken cancellationToken = default)
+        {
+            ValidateCollection(collection);
+            ArgumentNullException.ThrowIfNull(keyPrefix);
+
+            var matching = snapshot.Keys
+                .Where(k => string.Equals(k.Collection, collection, StringComparison.Ordinal)
+                            && k.Key.StartsWith(keyPrefix, StringComparison.Ordinal))
+                .Select(k => k.Key)
+                .OrderBy(k => k, StringComparer.Ordinal)
+                .ToList();
+
+            return Task.FromResult<IReadOnlyList<string>>(matching);
         }
     }
 }

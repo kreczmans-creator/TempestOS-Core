@@ -77,4 +77,9 @@ public sealed class CommitFailingPersistenceStore(IQueryablePersistenceStore inn
             },
             cancellationToken);
     }
+
+    /// <inheritdoc />
+    public Task<T> ExecuteInReadTransactionAsync<T>(
+        Func<IPersistenceReadTransaction, CancellationToken, Task<T>> read, CancellationToken cancellationToken = default) =>
+        Inner.ExecuteInReadTransactionAsync(read, cancellationToken);
 }

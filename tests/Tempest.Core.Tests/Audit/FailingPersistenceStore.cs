@@ -52,4 +52,8 @@ internal sealed class FailingPersistenceStore : IPersistenceStore, IQueryablePer
     public Task ExecuteInTransactionAsync(
         Func<IPersistenceTransaction, CancellationToken, Task> work, CancellationToken cancellationToken = default) =>
         throw MakeException();
+
+    public Task<T> ExecuteInReadTransactionAsync<T>(
+        Func<IPersistenceReadTransaction, CancellationToken, Task<T>> read, CancellationToken cancellationToken = default) =>
+        throw MakeException();
 }

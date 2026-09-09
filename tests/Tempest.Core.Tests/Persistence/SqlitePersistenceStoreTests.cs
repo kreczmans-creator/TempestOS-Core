@@ -609,4 +609,132 @@ public sealed class SqlitePersistenceStoreTests : IDisposable
         await reopened.ExecuteInTransactionAsync((transaction, token) => transaction.WriteAsync("collection", "c", "3", token));
         Assert.Equal(beforeRestart + 1, reopened.CurrentSequence);
     }
+
+    // ----------------------------------------------------------------
+    // Read transactions (`WP 18.1A`)
+    // ----------------------------------------------------------------
+
+    [Fact]
+    public async Task AReadTransaction_ReportsTheSequenceAndDataItSaw()
+    {
+        var store = NewStore();
+        await store.ExecuteInTransactionAsync((transaction, token) => transaction.WriteAsync("collection", "key", "value", token));
+
+        var (sequence, value) = await store.ExecuteInReadTransactionAsync(async (transaction, token) =>
+            (transaction.Sequence, await transaction.ReadAsync("collection", "key", token)));
+
+        Assert.Equal(store.CurrentSequence, sequence);
+        Assert.Equal("value", value);
+    }
+
+    [Fact]
+    public async Task AReadTransaction_NeverBlocksOnAConcurrentWriter_AndTheReverse()
+    {
+        // The property that makes this safe to call from a UI thread's own
+        // async handler: a read transaction takes no write lock (`BEGIN`,
+        // not `BEGIN IMMEDIATE`), so it never contends with one.
+        var store = NewStore();
+        await store.ExecuteInTransactionAsync((transaction, token) => transaction.WriteAsync("collection", "key", "before", token));
+
+        var writerEntered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseWriter = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        var writer = store.ExecuteInTransactionAsync(async (transaction, token) =>
+        {
+            await transaction.WriteAsync("collection", "key", "after", token);
+            writerEntered.TrySetResult();
+            await releaseWriter.Task;
+        });
+
+        await writerEntered.Task;
+
+        // A read started while the writer holds the write lock and has not
+        // yet committed: it must complete, promptly, seeing the value from
+        // before the still-open write.
+        var value = await store.ExecuteInReadTransactionAsync(
+            (transaction, token) => transaction.ReadAsync("collection", "key", token));
+
+        Assert.Equal("before", value);
+
+        releaseWriter.TrySetResult();
+        await writer;
+    }
+
+    [Fact]
+    public async Task AReadTransactionInFlight_NeverObservesACommitThatLandsDuringIt()
+    {
+        // The coherence claim `WP 18.1A` exists for, proved deterministically
+        // through SQLite's own WAL snapshot isolation rather than raced: a
+        // read transaction's snapshot is fixed at its own first statement,
+        // so two objects it reads either both show the change a later
+        // commit made, or neither does — never one of each.
+        var store = NewStore();
+        await store.ExecuteInTransactionAsync(async (transaction, token) =>
+        {
+            await transaction.WriteAsync("collection", "parent", "parent-before", token);
+            await transaction.WriteAsync("collection", "child", "child-before", token);
+        });
+
+        var beforeSequence = store.CurrentSequence;
+        string? parentSeenInFlight = null;
+        string? childSeenInFlight = null;
+        long sequenceSeenInFlight = -1;
+
+        await store.ExecuteInReadTransactionAsync(async (readTransaction, token) =>
+        {
+            // The read's snapshot is established here, by its own first
+            // statement — before the write below has even begun.
+            sequenceSeenInFlight = readTransaction.Sequence;
+            parentSeenInFlight = await readTransaction.ReadAsync("collection", "parent", token);
+
+            // A transaction touching both objects, committed while the read
+            // above is still open.
+            await store.ExecuteInTransactionAsync(async (writeTransaction, writeToken) =>
+            {
+                await writeTransaction.WriteAsync("collection", "parent", "parent-after", writeToken);
+                await writeTransaction.WriteAsync("collection", "child", "child-after", writeToken);
+            }, token);
+
+            // Read inside the SAME still-open read transaction, after that
+            // commit landed elsewhere.
+            childSeenInFlight = await readTransaction.ReadAsync("collection", "child", token);
+            return 0;
+        });
+
+        Assert.Equal(beforeSequence, sequenceSeenInFlight);
+        Assert.Equal("parent-before", parentSeenInFlight);
+        Assert.Equal("child-before", childSeenInFlight);
+
+        // A fresh read transaction, begun after the commit, sees both sides
+        // of the same transaction together — the "or entirely after" half.
+        var (afterSequence, parentAfter, childAfter) = await store.ExecuteInReadTransactionAsync(async (transaction, token) =>
+            (transaction.Sequence, await transaction.ReadAsync("collection", "parent", token), await transaction.ReadAsync("collection", "child", token)));
+
+        Assert.Equal(beforeSequence + 1, afterSequence);
+        Assert.Equal("parent-after", parentAfter);
+        Assert.Equal("child-after", childAfter);
+    }
+
+    [Fact]
+    public async Task AReadTransactionHandle_IsUnusableAfterItsReadReturns()
+    {
+        var store = NewStore();
+        IPersistenceReadTransaction? escaped = null;
+
+        await store.ExecuteInReadTransactionAsync((transaction, _) =>
+        {
+            escaped = transaction;
+            return Task.FromResult(0);
+        });
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => escaped!.ReadAsync("collection", "key"));
+    }
+
+    [Fact]
+    public async Task AReadTransaction_NullDelegate_IsRejected()
+    {
+        var store = NewStore();
+        await Assert.ThrowsAsync<ArgumentNullException>(
+            () => store.ExecuteInReadTransactionAsync<int>(null!));
+    }
 }

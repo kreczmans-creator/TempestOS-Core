@@ -509,6 +509,61 @@ public sealed class SqlitePersistenceStore
         }
     }
 
+    /// <inheritdoc />
+    public async Task<T> ExecuteInReadTransactionAsync<T>(
+        Func<IPersistenceReadTransaction, CancellationToken, Task<T>> read,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(read);
+        ThrowIfDisposed();
+
+        SqliteConnection connection;
+        try
+        {
+            connection = await OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException and not PersistenceStoreUnavailableException)
+        {
+            throw new PersistenceStoreUnavailableException(
+                $"Failed to open '{_databasePath}' to begin a read transaction.", ex);
+        }
+
+        await using (connection.ConfigureAwait(false))
+        {
+            // The default deferred BEGIN, not BEGIN IMMEDIATE: a read
+            // transaction takes no write lock and never contends with one,
+            // which is the whole point of a store that never blocks the UI
+            // thread on persistence. WAL mode (`ADR-0144`) gives it its own
+            // consistent snapshot as of its first statement, regardless of
+            // any commit that lands after that statement runs.
+            await ExecuteNonQueryAsync(connection, "BEGIN;", cancellationToken).ConfigureAwait(false);
+
+            var transaction = new SqliteReadTransactionScope(
+                connection, await ReadSequenceAsync(connection, cancellationToken).ConfigureAwait(false));
+            try
+            {
+                var result = await read(transaction, cancellationToken).ConfigureAwait(false);
+                transaction.Invalidate();
+
+                // COMMIT rather than ROLLBACK on a read-only transaction:
+                // either ends it correctly on SQLite, and COMMIT is the one
+                // that never logs a warning about an active statement.
+                await ExecuteNonQueryAsync(connection, "COMMIT;", cancellationToken).ConfigureAwait(false);
+                return result;
+            }
+            catch
+            {
+                transaction.Invalidate();
+                await RollBackQuietlyAsync(connection).ConfigureAwait(false);
+                throw;
+            }
+            finally
+            {
+                transaction.Invalidate();
+            }
+        }
+    }
+
     // ----------------------------------------------------------------
     // Lifetime
     // ----------------------------------------------------------------
@@ -651,6 +706,12 @@ public sealed class SqlitePersistenceStore
         await ExecuteNonQueryAsync(connection, "UPDATE store_sequence SET value = value + 1 WHERE id = 1;", cancellationToken)
             .ConfigureAwait(false);
 
+        return await ReadSequenceAsync(connection, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>Reads <c>store_sequence</c>'s current value inside the caller's already-open transaction.</summary>
+    private static async Task<long> ReadSequenceAsync(SqliteConnection connection, CancellationToken cancellationToken)
+    {
         await using var command = connection.CreateCommand();
         command.CommandText = "SELECT value FROM store_sequence WHERE id = 1;";
         var value = await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false);
@@ -922,6 +983,81 @@ public sealed class SqlitePersistenceStore
                 throw new InvalidOperationException(
                     "This IPersistenceTransaction has already committed or rolled back. A transaction handle is " +
                     "valid only for the duration of the ExecuteInTransactionAsync call that produced it.");
+        }
+    }
+
+    /// <summary>
+    /// The <see cref="IPersistenceReadTransaction"/> handed to a caller's
+    /// read (`WP 18.1A`): every statement on the one connection that holds
+    /// the open, write-lock-free <c>BEGIN</c>, so every read this hands out
+    /// sees the same WAL snapshot as <see cref="Sequence"/> was read from.
+    /// </summary>
+    private sealed class SqliteReadTransactionScope : IPersistenceReadTransaction
+    {
+        private readonly SqliteConnection _connection;
+        private bool _finished;
+
+        internal SqliteReadTransactionScope(SqliteConnection connection, long sequence)
+        {
+            _connection = connection;
+            Sequence = sequence;
+        }
+
+        public long Sequence { get; }
+
+        internal void Invalidate() => _finished = true;
+
+        public async Task<string?> ReadAsync(string collection, string key, CancellationToken cancellationToken = default)
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(collection);
+            ArgumentException.ThrowIfNullOrWhiteSpace(key);
+            ThrowIfFinished();
+
+            await using var command = _connection.CreateCommand();
+            command.CommandText = "SELECT text_value FROM records WHERE collection = $collection AND key = $key;";
+            command.Parameters.AddWithValue("$collection", collection);
+            command.Parameters.AddWithValue("$key", key);
+
+            var value = await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false);
+            return value is null or DBNull ? null : (string)value;
+        }
+
+        public async Task<IReadOnlyList<KeyValuePair<string, string>>> ReadAllAsync(string collection, CancellationToken cancellationToken = default)
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(collection);
+            ThrowIfFinished();
+
+            await using var command = _connection.CreateCommand();
+            command.CommandText =
+                "SELECT key, text_value FROM records " +
+                "WHERE collection = $collection AND text_value IS NOT NULL ORDER BY key;";
+            command.Parameters.AddWithValue("$collection", collection);
+
+            var results = new List<KeyValuePair<string, string>>();
+            await using var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+            while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+                results.Add(new KeyValuePair<string, string>(reader.GetString(0), reader.GetString(1)));
+
+            return results;
+        }
+
+        public async Task<IReadOnlyList<string>> ListKeysAsync(string collection, string keyPrefix, CancellationToken cancellationToken = default)
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(collection);
+            ArgumentNullException.ThrowIfNull(keyPrefix);
+            ThrowIfFinished();
+
+            await using var command = _connection.CreateCommand();
+            PrepareListKeys(command, collection, keyPrefix);
+            return await ReadKeysAsync(command, cancellationToken).ConfigureAwait(false);
+        }
+
+        private void ThrowIfFinished()
+        {
+            if (_finished)
+                throw new InvalidOperationException(
+                    "This IPersistenceReadTransaction has already ended. A read transaction handle is valid only " +
+                    "for the duration of the ExecuteInReadTransactionAsync call that produced it.");
         }
     }
 }
