@@ -2,6 +2,7 @@ using Tempest.Workspace;
 using Tempest.Workspace.Composition;
 using Tempest.Workspace.Manufacturing;
 using Tempest.Workspace.Mechanical;
+using Tempest.Workspace.Verification;
 using Tempest.Core.Commands;
 using Tempest.Core.Configuration;
 using Tempest.Core.EngineeringDomain;
@@ -17,12 +18,18 @@ namespace Tempest.Core.Tests.Workspace;
 /// `WP 18.1B` §5: placement and open-right-up as rules of the store and the
 /// declaration, not of each screen. One table-driven test over every
 /// discipline's own create command — Mechanical, Documents, Calculations,
-/// Requirements, Manufacturing, Verification, Evidence — proving each
-/// resolves its parent through <see cref="CreationPlacement.ParentFor"/>
-/// (or, for Requirements, that discipline's own documented equivalent —
-/// see <see cref="Requirements_NothingSelected_IsReachableFromRoot"/>'s own
-/// remarks) and returns <c>CommandResult.Success(message, id, kind)</c> so
-/// the shell can reveal and open what was just made.
+/// Requirements, Manufacturing, Verification, Evidence. Four
+/// (Mechanical/Documents/Calculations/Evidence) resolve their parent
+/// through <see cref="CreationPlacement.ParentFor"/>; three
+/// (Requirements/Manufacturing/Verification) have their own, different,
+/// already-correct placement rule with no Project/<c>ParentId</c> concept
+/// at all — each documented at its own test method rather than routed,
+/// after an initial attempt at routing Manufacturing and Verification
+/// through <c>CreationPlacement</c> broke a real, existing acceptance test
+/// (caught by the gate) by nesting a created object where its own explorer
+/// tree can never find it again. Every row also confirms
+/// <c>CommandResult.Success(message, id, kind)</c> so the shell can reveal
+/// and open what was just made.
 /// </summary>
 public sealed class CreationPlacementAndOpenRightUpTests : IAsyncLifetime
 {
@@ -139,8 +146,25 @@ public sealed class CreationPlacementAndOpenRightUpTests : IAsyncLifetime
         await AssertCreatedAndPlacedUnderAsync(invocation, "Calculation", projectId);
     }
 
+    /// <summary>
+    /// Manufacturing does not use <see cref="CreationPlacement.ParentFor"/>
+    /// either — verified in code (<c>ManufacturingNodeProvider</c>'s own
+    /// remarks and its <c>GetRootNodesAsync</c>/<c>GetChildrenAsync</c>
+    /// bodies), not assumed, after an initial attempt at routing this
+    /// discipline through it broke a real, existing acceptance test
+    /// (<c>FeatureCompletionTests.VerificationCreate_*</c>'s own sibling
+    /// concern, caught by the gate) by nesting a created object under a
+    /// Part/Project it can never be "drilled into" from. Every
+    /// Manufacturing object is a category-pooled root
+    /// (Routings/Operations/Supplier Operations/Work Instructions/
+    /// Inspections, by <c>Classification</c> or Kind) when un-parented —
+    /// <c>ParentId == null</c> is that discipline's own correct, complete
+    /// placement rule, exactly like Requirements' <c>GroupId</c>. A
+    /// created Operation is reachable here by drilling into its own
+    /// "Operations" category, never by <c>CreationPlacement</c>.
+    /// </summary>
     [Fact]
-    public async Task Manufacturing_APartSelected_OperationLandsUnderThatPart()
+    public async Task Manufacturing_APartSelected_OperationIsUnparented_AndReachableUnderItsCategory()
     {
         var projectId = await CreateProjectAsync();
         var partId = await CreatePartAsync(projectId);
@@ -155,24 +179,58 @@ public sealed class CreationPlacementAndOpenRightUpTests : IAsyncLifetime
                 ["method"] = "Inspection",
             }));
 
-        await AssertCreatedAndPlacedUnderAsync(invocation, ManufacturingObjectFactoryRegistry.ManufacturingOperationKind, partId);
+        Assert.Equal(CommandOutcome.Executed, invocation.Outcome);
+        Assert.True(invocation.Result!.Succeeded);
+        var createdId = invocation.Result.SubjectId!.Value;
+        Assert.Equal(ManufacturingObjectFactoryRegistry.ManufacturingOperationKind, invocation.Result.SubjectKind);
+
+        var created = await _domain.Repository.FindAsync(createdId);
+        Assert.Null((created as IHasParent)?.ParentId);
+
+        var provider = new ManufacturingNodeProvider("manufacturing", _domain);
+        var operationsCategory = (await provider.GetRootNodesAsync()).Single(n => n.Title == "Operations");
+        var members = await provider.GetChildrenAsync(operationsCategory.Id);
+        Assert.Contains(members, n => n.Id == createdId);
     }
 
+    /// <summary>
+    /// Verification does not use <see cref="CreationPlacement.ParentFor"/>
+    /// either — the identical shape as Manufacturing's own finding, verified
+    /// in code: <c>VerificationActivityNodeProvider</c> pools every
+    /// un-parented activity under its own method-category root
+    /// (Inspection/Analysis/Test/Demonstration/Other); <c>ParentId</c> stays
+    /// <see langword="null"/> by design, and this Work Package's own
+    /// original attempt at routing it broke
+    /// <c>FeatureCompletionTests.VerificationCreate_UsesTheCurrentSelectionAsSubject_ActuallyCreatesARealActivity</c>
+    /// by nesting the created activity under the Project selected as its
+    /// own container fallback — invisible ever after, since that tree never
+    /// drills into a Project. Reverted; documented here instead of routed.
+    /// </summary>
     [Fact]
-    public async Task Verification_ANonContainerSubjectSelected_LandsUnderTheOpenProject()
+    public async Task Verification_ANonContainerSubjectSelected_IsUnparented_AndReachableUnderItsCategory()
     {
         var projectId = await CreateProjectAsync();
         var partId = await CreatePartAsync(projectId);
-        // The Part is the required subject (what is being verified) — never a
-        // container, so the activity's own structural parent falls back to
-        // the open project, exactly as Evidence's identical fallback does.
+        // The Part is the required subject (what is being verified) — never
+        // a placement concern for this discipline.
         var context = new CommandContext([new CommandContextObject(partId, "Part")], projectId);
 
         var invocation = await _registry.InvokeAsync(
             "verification.create", context,
             Answering(new Dictionary<string, string> { ["displayName"] = "Verify the pocket depth", ["method"] = "Inspection" }));
 
-        await AssertCreatedAndPlacedUnderAsync(invocation, "VerificationActivity", projectId);
+        Assert.Equal(CommandOutcome.Executed, invocation.Outcome);
+        Assert.True(invocation.Result!.Succeeded);
+        var createdId = invocation.Result.SubjectId!.Value;
+        Assert.Equal("VerificationActivity", invocation.Result.SubjectKind);
+
+        var created = await _domain.Repository.FindAsync(createdId);
+        Assert.Null((created as IHasParent)?.ParentId);
+
+        var provider = new VerificationActivityNodeProvider("verification", _domain);
+        var inspectionCategory = (await provider.GetRootNodesAsync()).Single(n => n.Title == "Inspection");
+        var members = await provider.GetChildrenAsync(inspectionCategory.Id);
+        Assert.Contains(members, n => n.Id == createdId);
     }
 
     [Fact]

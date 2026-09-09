@@ -1,5 +1,4 @@
 using Tempest.Core.Commands;
-using Tempest.Core.EngineeringData;
 using Tempest.Core.EngineeringDomain;
 
 namespace Tempest.Workspace.Manufacturing;
@@ -107,17 +106,6 @@ public sealed class CreateManufacturingObjectCommandHandler : ICommandHandler<Cr
         catch (ArgumentException ex)
         {
             return CommandResult.Failure(ex.Message);
-        }
-        catch (EngineeringDocumentNotFoundException)
-        {
-            // `WP 18.1B` §5: ParentId is now resolved from the selection
-            // (CreationPlacement.ParentFor), not only PartId/ManufacturingOperationId/
-            // SubjectId — a selection that named a real Kind but no longer
-            // names a live object (deleted between selection and this
-            // command reaching the domain) refuses cleanly here rather
-            // than throwing out of Build, exactly as an ArgumentException
-            // from a missing selection already does above.
-            return CommandResult.Failure("The selected placement no longer exists; select it again and retry.");
         }
 
         return CommandResult.Success($"Created {command.Kind} '{(created as IHasBusinessIdentifier)?.DisplayName ?? created.Id.ToString()}'.", created.Id, command.Kind);

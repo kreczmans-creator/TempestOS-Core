@@ -1,4 +1,3 @@
-using Tempest.Workspace.Mechanical;
 using Tempest.Core.Commands;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Verification;
@@ -27,16 +26,6 @@ public static class VerificationWorkspaceRegistration
 {
     /// <summary>The one Verification Kind this Work Package registers a View and a Property Facet Provider for.</summary>
     public static readonly IReadOnlyList<string> SupportedKinds = [VerificationActivityFactoryRegistry.SupportedKind];
-
-    /// <summary>
-    /// The Kinds a new Verification Activity lands under when nothing
-    /// container-shaped is selected — just the project (`WP 18.1B` §5): a
-    /// Verification Activity's own required selection is its
-    /// <em>subject</em> (what it verifies), which is almost never a
-    /// container, so this is what <see cref="CreationPlacement.ParentFor"/>
-    /// falls back to for the overwhelming majority of creates.
-    /// </summary>
-    public static readonly IReadOnlyList<string> ContainerKinds = [MechanicalObjectFactoryRegistry.Project];
 
     /// <summary>Registers every Verification Management Workspace extension point.</summary>
     public static void Register(
@@ -97,18 +86,12 @@ public static class VerificationWorkspaceRegistration
             // have selected": SubjectId is the current selection's own Id, never a
             // fabricated one, which is why this Create — alone among the six —
             // requires a selected object. Method keeps the Ribbon's and the Object
-            // Editor's own identical existing default; InitialContent stays at the
-            // command's own optional default. `WP 18.1B` §5: the new activity's own
-            // structural ParentId is a second, independent question from its
-            // SubjectId — CreationPlacement.ParentFor answers it exactly as every
-            // other discipline's create command does, so the activity lands under
-            // the open project (the selected subject is essentially never a
-            // container itself) rather than hanging from nothing.
+            // Editor's own identical existing default; ParentId and InitialContent
+            // stay at the command's own optional defaults.
             Binding = new CommandBinding(
                 CommandContextRequirement.SelectedObject,
                 (context, values) => new CreateVerificationActivityCommand(
-                    values["displayName"], WorkspaceCommandBindings.Target(context).ObjectId, values["method"],
-                    parentId: CreationPlacement.ParentFor(context, ContainerKinds)),
+                    values["displayName"], WorkspaceCommandBindings.Target(context).ObjectId, values["method"]),
                 [
                     WorkspaceCommandBindings.ObjectName("displayName", "Name"),
                     // The default method value is written inline rather than
