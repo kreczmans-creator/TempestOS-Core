@@ -660,9 +660,17 @@ public sealed class ProjectExplorerView : UserControl
     }
 
     /// <summary>Returns a filtered copy of <paramref name="item"/> (same node, only matching descendants) if it or any descendant matches <paramref name="query"/>; <see langword="null"/> otherwise.</summary>
+    /// <remarks>
+    /// A node matches on its own title <b>or</b> its own business identifier
+    /// (`WP 18.1B` §3) — so typing a Part's identifier (<c>"BRK-001"</c>)
+    /// finds it exactly as typing a fragment of its title already did.
+    /// In-memory, over the already-loaded tree, same as the title match; no
+    /// FTS5 here — that is the Command Palette's own job.
+    /// </remarks>
     private static ExplorerNodeItem? FilterNode(ExplorerNodeItem item, string query)
     {
-        var selfMatches = item.Node.Title.Contains(query, StringComparison.OrdinalIgnoreCase);
+        var selfMatches = item.Node.Title.Contains(query, StringComparison.OrdinalIgnoreCase)
+            || (item.Node.Identifier is { Length: > 0 } identifier && identifier.Contains(query, StringComparison.OrdinalIgnoreCase));
         var matchingChildren = new List<ExplorerNodeItem>();
 
         foreach (var child in item.Children)

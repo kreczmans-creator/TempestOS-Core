@@ -118,7 +118,10 @@ public sealed class VerificationActivityNodeProvider : IProjectExplorerNodeProvi
     {
         var hasChildren = (await _context.Repository.ListChildrenAsync(activity.Id, cancellationToken).ConfigureAwait(false)).Any(IsLive);
 
-        return new ProjectExplorerNode(activity.Id, DisplayNameOf(activity), activity.Kind, hasChildren, ProjectExplorerNodeType.Object, activity is IHasLifecycle lifecycle ? lifecycle.Status : null);
+        return new ProjectExplorerNode(
+            activity.Id, DisplayNameOf(activity), activity.Kind, hasChildren, ProjectExplorerNodeType.Object,
+            activity is IHasLifecycle lifecycle ? lifecycle.Status : null,
+            (activity as IHasBusinessIdentifier)?.Identifier);
     }
 
     private static string DisplayNameOf(IEngineeringObject o) => (o as IHasBusinessIdentifier)?.DisplayName ?? o.Id.ToString();

@@ -47,6 +47,7 @@ internal sealed class CockpitView : UserControl
     private readonly IReadOnlyList<NavigationItem> _areas;
     private readonly Func<Task> _onContinue;
     private readonly Func<int, Task> _onOpenRecent;
+    private readonly Func<int, Task>? _onOpenRecentlyChanged;
     private readonly Action _onOpenCommandPalette;
     private readonly Action<string> _onSwitchArea;
     private readonly FavouriteObjectsState? _favourites;
@@ -119,7 +120,7 @@ internal sealed class CockpitView : UserControl
 
     public CockpitView(
         EngineeringCockpit cockpit, IReadOnlyList<NavigationItem> areas, Func<Task> onContinue, Func<int, Task> onOpenRecent, Action onOpenCommandPalette, Action<string> onSwitchArea,
-        FavouriteObjectsState? favourites = null, Action<Guid, string>? onOpenFavourite = null)
+        FavouriteObjectsState? favourites = null, Action<Guid, string>? onOpenFavourite = null, Func<int, Task>? onOpenRecentlyChanged = null)
     {
         ArgumentNullException.ThrowIfNull(cockpit);
         ArgumentNullException.ThrowIfNull(areas);
@@ -131,6 +132,12 @@ internal sealed class CockpitView : UserControl
         _onSwitchArea = onSwitchArea ?? throw new ArgumentNullException(nameof(onSwitchArea));
         _favourites = favourites;
         _onOpenFavourite = onOpenFavourite;
+        // `WP 18.1B` §4: left null, the "Recently changed" card still
+        // renders its real rows but a click is a no-op — the same
+        // defensive shape `_onOpenFavourite` already established for a
+        // test that constructs this view directly without wiring every
+        // optional callback.
+        _onOpenRecentlyChanged = onOpenRecentlyChanged;
 
         _page.Margin = DesignTokens.PagePadding;
         _page.MaxWidth = 1480;
@@ -180,6 +187,7 @@ internal sealed class CockpitView : UserControl
 
         // The detail cards.
         AddRecentActivityCard();
+        AddRecentlyChangedCard();
 
         // `WP-Z4` Productisation Phase 1 (P1) — `EngineeringCockpit.KpiCards`,
         // the one real cross-discipline aggregate (Requirements/
@@ -540,6 +548,38 @@ internal sealed class CockpitView : UserControl
                 var item = _cockpit.RecentActivity[i];
                 var index = i + 1;
                 card.AddAction($"{IconRegistry.Resolve(item.Kind)} {item.Title} — {item.OpenedAt:HH:mm:ss}", async () => { await _onOpenRecent(index).ConfigureAwait(true); Refresh(); });
+            }
+        }
+
+        _cards.Children.Add(card);
+    }
+
+    /// <summary>
+    /// The "Recently changed" card (`WP 18.1B` §4): the last ten committed
+    /// changes, durable — from the audit trail while the app is running,
+    /// and on the very first render after a restart too, since
+    /// <see cref="EngineeringCockpit.RecentlyChanged"/> reads the same
+    /// durable audit rows either way rather than a session-only list.
+    /// Clicking a row opens the object right up.
+    /// </summary>
+    private void AddRecentlyChangedCard()
+    {
+        var card = new CockpitCardControl(IconGeometry.Clock, "Recently changed");
+        var changes = _cockpit.RecentlyChanged;
+
+        if (changes.Count == 0)
+        {
+            card.AddLine("Nothing has changed yet.", 0.7);
+        }
+        else
+        {
+            for (var i = 0; i < changes.Count; i++)
+            {
+                var change = changes[i];
+                var index = i + 1;
+                card.AddAction(
+                    $"{IconRegistry.Resolve(change.Kind)} {change.Title} — {change.ChangeType} · {change.When:yyyy-MM-dd HH:mm}",
+                    () => _onOpenRecentlyChanged?.Invoke(index));
             }
         }
 

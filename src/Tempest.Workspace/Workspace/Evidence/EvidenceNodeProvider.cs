@@ -122,11 +122,15 @@ public sealed class EvidenceNodeProvider : IProjectExplorerNodeProvider
     private async Task<ProjectExplorerNode> ToProjectNodeAsync(IEngineeringObject project, CancellationToken cancellationToken)
     {
         var hasEvidence = (await LiveEvidenceUnderProjectAsync(project.Id, cancellationToken).ConfigureAwait(false)).Count > 0;
-        return new ProjectExplorerNode(project.Id, DisplayNameOf(project), project.Kind, hasEvidence, ProjectExplorerNodeType.Object);
+        return new ProjectExplorerNode(
+            project.Id, DisplayNameOf(project), project.Kind, hasEvidence, ProjectExplorerNodeType.Object,
+            Identifier: (project as IHasBusinessIdentifier)?.Identifier);
     }
 
     private static ProjectExplorerNode ToEvidenceNode(Core.Evidence.Evidence evidence) =>
-        new(evidence.Id, $"{evidence.DisplayName} ({evidence.Status})", evidence.Kind, false, ProjectExplorerNodeType.Object);
+        new(
+            evidence.Id, $"{evidence.DisplayName} ({evidence.Status})", evidence.Kind, false, ProjectExplorerNodeType.Object,
+            Identifier: evidence.Identifier);
 
     /// <summary>
     /// A deterministic, non-persisted node id for <paramref name="classification"/>'s own group under <paramref name="projectId"/> —
