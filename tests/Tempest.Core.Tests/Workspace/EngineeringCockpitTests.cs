@@ -1,6 +1,10 @@
 using Tempest.Workspace;
+using Tempest.Workspace.Composition;
+using Tempest.Workspace.Mechanical;
 using Tempest.Core.Commands;
 using Tempest.Core.Configuration;
+using Tempest.Core.EngineeringDomain;
+using Tempest.Core.Identity;
 using Tempest.Core.Persistence;
 using Tempest.Core.Requirements;
 using Tempest.Core.Runtime;
@@ -774,4 +778,76 @@ public class EngineeringCockpitTests
 
         await manager.ShutdownAsync();
     }
+
+    // ----------------------------------------------------------------
+    // `WP 18.1B` §4 — Recently changed
+    // ----------------------------------------------------------------
+
+    private static async Task<Part> CreatePartAsync(EngineeringDomainContext context, string identifier, string name) =>
+        (Part)await new EngineeringObjectFactory<Part>(
+            "Part", context, (doc, rev) => new Part(doc, rev, context, identifier, name, EngineeringObjectMetadata.Empty))
+            .CreateAsync($"{name} — for test purposes.");
+
+    /// <summary>Signs in a local session's own broad permission set (`Audit.AuditQuery.QueryPermission` among them) — mirrors <c>EvidenceTestHost.SignIn</c>'s own identical precedent.</summary>
+    private static void SignIn(ITempestHost host)
+    {
+        var accessor = (CurrentPrincipalAccessor)host.Services!.GetService(typeof(ICurrentPrincipalAccessor));
+        accessor.SetCurrent(new PlatformPrincipal(new PlatformIdentity("recently-changed-test", "recently-changed-test"), ApplicationPermissions.LocalSession));
+    }
+
+    [Fact]
+    public async Task RecentlyChanged_AfterCreatingAnObject_ListsItNewestFirstWithItsRealTitle()
+    {
+        using var temp = new TempDirectory();
+        var (workspace, manager, host) = await StartAsync(temp.Path, Type.EmptyTypes);
+        SignIn(host);
+        var domainContext = (EngineeringDomainContext)host.Services!.GetService(typeof(EngineeringDomainContext));
+
+        var older = await CreatePartAsync(domainContext, "BRK-000", "Older Part");
+        var newer = await CreatePartAsync(domainContext, "BRK-001", "Bracket Mounting Plate");
+
+        var cockpit = ((Tempest.Workspace.Workspace)workspace).Cockpit;
+        var recent = cockpit.RecentlyChanged;
+
+        Assert.True(recent.Count >= 2);
+        Assert.Equal(newer.Id, recent[0].ObjectId);
+        Assert.Equal("Bracket Mounting Plate", recent[0].Title);
+        Assert.Equal("Part", recent[0].Kind);
+        Assert.Equal("Created", recent[0].ChangeType);
+        Assert.Contains(recent, c => c.ObjectId == older.Id);
+
+        await manager.ShutdownAsync();
+    }
+
+    [Fact]
+    public async Task RecentlyChanged_SurvivesRestart_ReadFromDurableAuditRowsNotASessionList()
+    {
+        using var temp = new TempDirectory();
+        var (workspace, manager, host) = await StartAsync(temp.Path, typeof(MechanicalWorkspaceExplorerModule));
+        SignIn(host);
+        EngineeringWorkspaceComposer.RegisterEngineeringDisciplines(manager, host);
+        var domainContext = (EngineeringDomainContext)host.Services!.GetService(typeof(EngineeringDomainContext));
+        var created = await CreatePartAsync(domainContext, "BRK-002", "Surviving Part");
+
+        await manager.ShutdownAsync();
+
+        // A brand-new WorkspaceManager/Host over the same root: nothing in
+        // this new process has ever "seen" the earlier change happen — the
+        // durable audit trail is the only place it could come from. The
+        // discipline is registered again (what rebuilds each Kind's own
+        // rehydrator) and rehydration is run explicitly (what
+        // Repository.FindAsync needs to resolve the Part's own live title
+        // rather than falling back to its bare id) — the identical two
+        // steps `Tempest.Harness`/`WorkspaceHost` always run in that order.
+        var (restartedWorkspace, restartedManager, restartedHost) = await StartAsync(temp.Path, typeof(MechanicalWorkspaceExplorerModule));
+        SignIn(restartedHost);
+        EngineeringWorkspaceComposer.RegisterEngineeringDisciplines(restartedManager, restartedHost);
+        await EngineeringWorkspaceComposer.RehydrateEngineeringObjectsAsync(restartedHost);
+        var cockpit = ((Tempest.Workspace.Workspace)restartedWorkspace).Cockpit;
+
+        Assert.Contains(cockpit.RecentlyChanged, c => c.ObjectId == created.Id && c.Title == "Surviving Part");
+
+        await restartedManager.ShutdownAsync();
+    }
+
 }

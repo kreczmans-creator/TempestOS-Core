@@ -338,7 +338,20 @@ public sealed class MainWindow : Window
             // identical NavigateToObject every other Cockpit/Object
             // Editor navigation action already calls.
             favourites: _session.FavouriteObjects,
-            onOpenFavourite: _viewCoordinator.NavigateToObject) { WorkspaceChanges = composition.WorkspaceChanges };
+            onOpenFavourite: _viewCoordinator.NavigateToObject,
+            // `WP 18.1B` §4/§5: "Recently changed" opens right up through
+            // the same OpenObjectAsync every other found-or-created object
+            // does — reveal in the Explorer, select, editor tab — not
+            // merely a document tab.
+            onOpenRecentlyChanged: async index =>
+            {
+                var items = cockpit.RecentlyChanged;
+                if (index < 1 || index > items.Count)
+                    return;
+
+                var item = items[index - 1];
+                await OpenObjectAsync(item.ObjectId, item.Kind).ConfigureAwait(true);
+            }) { WorkspaceChanges = composition.WorkspaceChanges };
         _documentArea.SetHomeTab(_cockpitView);
 
         _viewCoordinator.Attach(_documentArea);

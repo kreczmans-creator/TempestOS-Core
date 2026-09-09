@@ -4,12 +4,25 @@ using Tempest.Workspace.Manufacturing;
 using Tempest.Workspace.Mechanical;
 using Tempest.Workspace.Requirements;
 using Tempest.Workspace.Verification;
+using Tempest.Core.Audit;
 using Tempest.Core.Commands;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Identity;
 using Tempest.Core.Requirements;
 
 namespace Tempest.Workspace;
+
+/// <summary>
+/// One entry in <see cref="EngineeringCockpit.RecentlyChanged"/> (`WP 18.1B`
+/// §4): a live object's own title, Kind, what kind of change it was, and
+/// when — the Home cockpit's own "Recently changed" card.
+/// </summary>
+/// <param name="ObjectId">The changed object's own id.</param>
+/// <param name="Title">The changed object's own current title.</param>
+/// <param name="Kind">The changed object's own canonical Kind.</param>
+/// <param name="ChangeType">A short, human-readable description of what changed — "Created", "Renamed", "Status changed", and so on.</param>
+/// <param name="When">When the change was recorded.</param>
+public sealed record CockpitRecentChange(Guid ObjectId, string Title, string Kind, string ChangeType, DateTimeOffset When);
 
 /// <summary>
 /// The Engineering Cockpit — the Workspace's own default landing screen
@@ -84,6 +97,7 @@ public sealed class EngineeringCockpit
     private readonly DocumentsCockpitReadModel _documents;
     private readonly VerificationCockpitReadModel _verification;
     private readonly ManufacturingCockpitReadModel _manufacturing;
+    private readonly IAuditQuery? _auditQuery;
 
     /// <summary>The per-refresh read scope every persistence-backed discipline read-model above shares (`WP-E`).</summary>
     private readonly CockpitReadScope _readScope = new();
@@ -97,10 +111,16 @@ public sealed class EngineeringCockpit
     /// 17.2B` — reached through <see cref="IWorkspace.Cockpit"/>) while
     /// this constructor stays same-assembly-only.
     /// </summary>
+    /// <param name="auditQuery">
+    /// The durable source <see cref="RecentlyChanged"/> reads (`WP 18.1B`
+    /// §4) — <see langword="null"/> (the default, so every existing caller
+    /// and test compiles unchanged) leaves that card honestly empty rather
+    /// than failing.
+    /// </param>
     internal EngineeringCockpit(
         NavigationService navigationService, ICommandRegistry commandRegistry, EngineeringDomainContext domainContext,
         IRequirementsService requirementsService, IRequirementValidationService requirementValidationService,
-        Func<DateTimeOffset>? now = null)
+        Func<DateTimeOffset>? now = null, IAuditQuery? auditQuery = null)
     {
         ArgumentNullException.ThrowIfNull(navigationService);
         ArgumentNullException.ThrowIfNull(commandRegistry);
@@ -112,6 +132,7 @@ public sealed class EngineeringCockpit
         _commandRegistry = commandRegistry;
         _domainContext = domainContext;
         _requirementValidationService = requirementValidationService;
+        _auditQuery = auditQuery;
 
         // The clock "overdue" is measured against. Optional, so every
         // existing caller is unchanged; injectable so a test can state the
@@ -622,6 +643,108 @@ public sealed class EngineeringCockpit
     /// <see cref="NavigationService.RecentItems"/>, most recent first.
     /// </summary>
     public IReadOnlyList<RecentNavigationItem> RecentActivity => _navigationService.RecentItems;
+
+    /// <summary>The most audit rows a single <see cref="RecentlyChanged"/> read shows.</summary>
+    public const int RecentlyChangedLimit = 10;
+
+    /// <summary>
+    /// Gets the "Recently changed" card's own entries (`WP 18.1B` §4): the
+    /// last ten committed changes, newest first, each object's own current
+    /// title, Kind, what changed and when — read from the durable audit
+    /// trail every mutator already writes (`ADR-0145`), never a
+    /// session-only list, so this survives a restart exactly as durably as
+    /// the changes themselves did. Honestly empty if no
+    /// <see cref="Audit.IAuditQuery"/> was supplied at construction, or if
+    /// nothing has changed yet.
+    /// </summary>
+    /// <remarks>
+    /// Each row's own title is a live read of the object as it stands
+    /// right now (<see cref="EngineeringDomainContext.Repository"/>), not
+    /// the name it had at the moment of that particular change — a later
+    /// rename still shows its current name against every one of its own
+    /// earlier audit rows, which is what a person expects "Recently
+    /// changed" to show them, not a historical snapshot.
+    /// </remarks>
+    public IReadOnlyList<CockpitRecentChange> RecentlyChanged
+    {
+        get
+        {
+            if (_auditQuery is null)
+                return [];
+
+            var records = _auditQuery.QueryAsync(new AuditQueryCriteria()).GetAwaiter().GetResult();
+
+            var changes = new List<CockpitRecentChange>(records.Count);
+            foreach (var record in records)
+            {
+                if (ToRecentChange(record) is { } change)
+                    changes.Add(change);
+            }
+
+            return changes
+                .OrderByDescending(c => c.When)
+                .Take(RecentlyChangedLimit)
+                .ToList();
+        }
+    }
+
+    /// <summary>
+    /// Projects one audit row into a <see cref="CockpitRecentChange"/>, or
+    /// <see langword="null"/> if it does not name an engineering object
+    /// (a row an unrelated service wrote directly through
+    /// <see cref="Audit.IAuditRecorder"/>, never through
+    /// <c>AuditTransactionWriter</c>) or that object can no longer be
+    /// read.
+    /// </summary>
+    private CockpitRecentChange? ToRecentChange(IAuditRecord record)
+    {
+        // Mirrors AuditTransactionWriter's own well-known Detail keys —
+        // that class is internal to Tempest.Core and not referenceable
+        // here, so the two literal keys it writes are named directly.
+        if (!record.Detail.TryGetValue("ObjectId", out var objectIdText) || !Guid.TryParse(objectIdText, out var objectId))
+            return null;
+
+        var kind = record.Detail.TryGetValue("Kind", out var k) ? k : "Unknown";
+
+        var found = _domainContext.Repository.FindAsync(objectId).GetAwaiter().GetResult();
+        var title = (found as IHasBusinessIdentifier)?.DisplayName ?? objectId.ToString();
+
+        return new CockpitRecentChange(objectId, title, kind, FriendlyChangeType(record.Action), record.OccurredAt);
+    }
+
+    /// <summary>A short, human-readable label for one of <see cref="EngineeringAuditActions"/>'s own action constants.</summary>
+    private static string FriendlyChangeType(string action) => action switch
+    {
+        EngineeringAuditActions.Created => "Created",
+        EngineeringAuditActions.Renamed => "Renamed",
+        EngineeringAuditActions.Revised => "Revised",
+        EngineeringAuditActions.Transitioned => "Status changed",
+        EngineeringAuditActions.Linked => "Linked",
+        EngineeringAuditActions.Attached or EngineeringAuditActions.ContentAttached => "Attachment added",
+        EngineeringAuditActions.Moved => "Moved",
+        EngineeringAuditActions.Deleted => "Deleted",
+        EngineeringAuditActions.BomLineSet => "BOM updated",
+        EngineeringAuditActions.StateChanged => "Updated",
+        _ => "Changed",
+    };
+
+    /// <summary>
+    /// Re-opens or focuses the <paramref name="index"/>-th entry in
+    /// <see cref="RecentlyChanged"/> (1-based) - the Cockpit's own
+    /// "Recently changed" navigation gesture (`WP 18.1B` §4), a real
+    /// dispatch through <see cref="NavigationService.OpenAsync"/>.
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="index"/> is out of range.</exception>
+    public Task<IWorkspaceView> OpenRecentlyChangedAsync(int index, CancellationToken cancellationToken = default)
+    {
+        var items = RecentlyChanged;
+
+        if (index < 1 || index > items.Count)
+            throw new ArgumentOutOfRangeException(nameof(index), index, $"Must be between 1 and {items.Count}.");
+
+        var item = items[index - 1];
+        return _navigationService.OpenAsync(item.ObjectId, item.Kind, cancellationToken);
+    }
 
     /// <summary>Gets the number of areas currently registered - a real Workspace status indicator.</summary>
     public int AreaCount => _navigationService.Areas.Count;
