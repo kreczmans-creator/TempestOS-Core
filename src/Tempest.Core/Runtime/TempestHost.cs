@@ -13,9 +13,6 @@ using Tempest.Core.EngineeringDomain;
 using Tempest.Core.BusinessGovernance.Assets;
 using Tempest.Core.BusinessOperations.Crm;
 using Tempest.Core.BusinessOperations.Finance;
-using Tempest.Core.BusinessOperations.Purchasing;
-using Tempest.Core.BusinessOperations.Quality;
-using Tempest.Core.BusinessOperations.Records;
 using Tempest.Core.CommercialIntelligence.Costs;
 using Tempest.Core.EngineeringAssets.CalculationPacks;
 using Tempest.Core.Knowledge.Academy;
@@ -787,36 +784,18 @@ public sealed class TempestHost : ITempestHost
 
         // `P04`: Business OS. The operational layer over the reference and
         // governance programmes — organisations and contacts behind `P07`'s
-        // opportunities, budgets the spend is measured against, the
-        // purchasing seam over `P03`, non-conformances, and business
-        // records (`ADR-0142`).
+        // opportunities, and budgets the spend is measured against
+        // (`ADR-0142`).
         //
-        // Registered last because it reads the most: `P03` for suppliers
-        // and quotes, `P05` for evidence and document relationships, `P06`
-        // for failure causes, `P07` for money and authority. It duplicates
-        // none of them, and it builds no project model — `Tempest.App`'s
-        // existing project architecture already owns that.
+        // WP 18.0C (D-028): Interaction, FinancialEntry, Purchasing,
+        // Quality and Records were frozen to
+        // `src/Frozen/Tempest.Core.BusinessOperations` — unreachable from
+        // any shipped surface. See `src/Frozen/README.md`.
         services.Singleton<IOrganisationCatalog, OrganisationCatalog>();
         services.Singleton<IContactCatalog, ContactCatalog>();
-        services.Singleton<IInteractionCatalog, InteractionCatalog>();
         services.Singleton<IOrganisationValidationService, OrganisationValidationService>();
-        services.Singleton<ICrmValidationService, CrmValidationService>();
 
         services.Singleton<IBudgetCatalog, BudgetCatalog>();
-        services.Singleton<IFinancialEntryCatalog, FinancialEntryCatalog>();
-        services.Singleton<IBudgetValidationService, BudgetValidationService>();
-        services.Singleton<IBudgetPositionService, BudgetPositionService>();
-
-        services.Singleton<IPurchaseRequisitionCatalog, PurchaseRequisitionCatalog>();
-        services.Singleton<IPurchaseRequisitionValidationService, PurchaseRequisitionValidationService>();
-        services.Singleton<IPurchaseOrderCatalog, PurchaseOrderCatalog>();
-        services.Singleton<IPurchaseOrderValidationService, PurchaseOrderValidationService>();
-
-        services.Singleton<INonConformanceCatalog, NonConformanceCatalog>();
-        services.Singleton<INonConformanceValidationService, NonConformanceValidationService>();
-
-        services.Singleton<IBusinessRecordCatalog, BusinessRecordCatalog>();
-        services.Singleton<IBusinessRecordValidationService, BusinessRecordValidationService>();
 
         // ADR-0056: every calculation execution is durably recorded as an
         // Engineering Data Model document (Kind = "CalculationRecord"),
