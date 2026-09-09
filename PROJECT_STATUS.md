@@ -11,12 +11,13 @@ yet — the programme that builds them starts with this release:
 
 1. ○ Open a project for a client, with a PO reference, a budget and a
    pinned rate card. — target `v0.19.0` (`WP 19.0A`)
-2. ○ Author a calculation sheet from named inputs, expressions and
-   cited reference tables; run it; have it persisted as one immutable
-   record. — target `v0.18.0` (`WP 18.0A`, `WP 18.2A`)
-3. ○ Have a second principal independently check the sheet and issue
-   it as a PDF calc sheet attached to the project. — target `v0.18.0`
-   (`WP 18.2B`, `WP 18.3A`)
+2. ○ Record a calculation done in the engineer's own tool as evidence
+   on the project: its files, subject, cited reference records at the
+   revision held, and key figures, as one immutable record. — target
+   `v0.18.0` (`WP 18.0A`, `WP 18.2A`; `D-028`)
+3. ○ Have a second principal independently check that evidence and
+   issue it with an issue sheet attached to the project. — target
+   `v0.18.0` (`WP 18.2B`)
 4. ○ Record time and, on marking a deliverable complete, emit an
    invoice request to Xero or QuickBooks. — target `v0.19.0`
    (`WP 19.0A`, `WP 19.1A`)
@@ -30,7 +31,7 @@ None. Every `v0.17.0` Work Package (`17.0A`, `17.0B`, `17.0C`, `17.1A`,
 `17.1B`, `17.2A` parts 1 and 2, `17.2B`, `17.3A`) is merged to
 `release/v0.17.0`. Next: Windows verification per `PHYSICAL_REVIEW.md`
 §7, then merge to `main`, tag `v0.17.0`, publish. The next release is
-`v0.18.0` Calculation as Document (`WP 18.0A` first).
+`v0.18.0` Evidence and Check (`D-028`; `WP 18.0A` first).
 
 ## Gate (this release's own figures, filled in by `WP 17.9.0`)
 
