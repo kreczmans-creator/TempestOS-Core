@@ -423,6 +423,11 @@ jobs:
     name: Linux Launch Smoke (advisory)
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    # Advisory means advisory: this job is not in the gate's needs list
+    # (see below), and it must not turn the workflow run red either, because
+    # scripts/new-release.ps1 reads the run's own conclusion before it
+    # will tag. Its failure still shows on the job and as an annotation.
+    continue-on-error: true
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -446,12 +451,28 @@ jobs:
       - name: Launch under Xvfb (smoke)
         run: |
           set +e
-          xvfb-run -a timeout --kill-after=10 25 \
+          # Since `WP 17.2A` part 2 the platform attaches its console log
+          # sink only when stdout is a real, unredirected console; with
+          # stdout redirected to launch.log (as here) the log goes to the
+          # rolling file sink at <persistence root>/logs/tempest-yyyyMMdd.log
+          # and launch.log holds only what .NET itself writes. The root is
+          # pinned through the `TEMPEST_` environment prefix so the file is
+          # in a known place, and the marker below is read from it. The
+          # first `v0.17.0` run of this job failed on exactly this: the app
+          # launched, the marker was in the file log, launch.log was empty.
+          ROOT="$RUNNER_TEMP/tempest-smoke"
+          mkdir -p "$ROOT"
+          TEMPEST_Persistence__RootPath="$ROOT" \
+          xvfb-run -a timeout --kill-after=10 40 \
             dotnet src/Tempest.Desktop/bin/Release/net10.0/Tempest.Desktop.dll \
             > launch.log 2>&1
           code=$?
           echo "Exit code: $code"
+          echo "--- launch.log (stdout/stderr) ---"
           cat launch.log
+          LOGS=$(find "$ROOT" src/Tempest.Desktop/bin/Release/net10.0 -name 'tempest-*.log' 2>/dev/null)
+          echo "--- platform log(s): ${LOGS:-none found} ---"
+          for f in $LOGS; do cat "$f"; done
           if [ -f src/Tempest.Desktop/bin/Release/net10.0/logs/tempestos-crash.log ]; then
             echo "::error::A crash log was written - see logs/tempestos-crash.log"
             cat src/Tempest.Desktop/bin/Release/net10.0/logs/tempestos-crash.log
@@ -461,22 +482,20 @@ jobs:
           # timeout fired" is not by itself evidence of a successful
           # launch — a process that deadlocks *after* Avalonia platform
           # init (a stuck DI resolution, a frozen dispatcher loop) is also
-          # still running at 25 seconds and used to pass this job
+          # still running at the timeout and used to pass this job
           # identically to a healthy one. Require a positive late-startup
           # marker in the captured log as well, so a hang before that
           # point fails even on the timeout branch. The marker is
-          # `TempestHost.EnterRunning`'s own log line, verified empirically
-          # against a real `xvfb-run` launch on this branch rather than
-          # assumed from a grep of the source.
+          # `TempestHost.EnterRunning`'s own log line.
           if [ "$code" -eq 124 ] || [ "$code" -eq 137 ]; then
-            if grep -q "Host -> Running." launch.log; then
+            if grep -qs "Host -> Running." launch.log $LOGS; then
               echo "Still running when the timeout fired, and startup reached 'Host -> Running.' - launched successfully."
               exit 0
             fi
-            echo "::error::Still running when the timeout fired, but the launch log never reached 'Host -> Running.' - the process hung during startup rather than launching."
+            echo "::error::Still running when the timeout fired, but no log reached 'Host -> Running.' - the process hung during startup rather than launching."
             exit 1
           fi
-          echo "::error::Tempest.Desktop exited on its own (code $code) - see launch.log above."
+          echo "::error::Tempest.Desktop exited on its own (code $code) - see the logs above."
           exit 1
 
   # WP 17.0C — Mutation testing (Stryker.NET), scoped to
