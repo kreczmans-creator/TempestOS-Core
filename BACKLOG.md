@@ -66,7 +66,7 @@ and nothing on disk.
 | `TD-154` | CI's `linux-launch-smoke` marker now fires before the composition root runs | unowned |
 | `TD-157` | "Pinned source superseded" warning can never fire; the resolver is never wired up | `WP 18.0B` (unresolved — see note) |
 | `TD-163` | 79 seeded reference records never reach the shipped product | `WP 18.0B` (partial — see note) |
-| `TD-174` | A Part carries none of what a calculation and a drawing need from it: no material assignment pinned to a released reference revision (`IPart.MaterialId` is a bare string nothing on the Desktop sets), no standard-versus-custom designation (a Component is the de-facto standard part but nothing says so), no part number distinct from the display name, no mass. **Not ERP**: no procurement, supplier, cost or stock fields; the attributes are the ones a calc sheet cites and a title block shows (Product Owner, second Windows review, 2026-09-09) | `WP 18.0A` and `WP 18.2A` (claimed, not actually closed — see note) |
+| `TD-174` | A Part carries none of what a calculation and a drawing need from it: no material assignment pinned to a released reference revision (`IPart.MaterialId` is a bare string nothing on the Desktop sets), no standard-versus-custom designation (a Component is the de-facto standard part but nothing says so), no part number distinct from the display name, no mass. **Not ERP**: no procurement, supplier, cost or stock fields; the attributes are the ones a calc sheet cites and a title block shows (Product Owner, second Windows review, 2026-09-09) | `D-028` (re-scoped: material is cited on evidence, `WP 18.0A`; part number, mass and standard-versus-custom deferred until a drawing or a calc sheet needs them) |
 
 **Judgement calls, not named in any Work Package's "Closes" column:**
 `TD-27` and `TD-150` sit squarely in the persistence/object-store
@@ -94,10 +94,13 @@ dictionary. `TD-163` — only `MaterialSeed` reaches a shipped action
 (`BracketCalculationWorkbench.PopulateMaterialLibraryAsync`, the sole
 `ApplyAsync` call site outside `tests/`); `FastenerSeed`, `BearingSeed`,
 `StandardSeed` and `ConstantSeed` (35 of the 41 records) still have none.
-`TD-174` — `IPart.MaterialId` is still the same bare, Desktop-unset
-string; no part number, mass or standard/custom field was added.
-`WP 18.0A`'s evidence-citation mechanism and `WP 18.2A`'s decluttered
-Part declaration address adjacent concerns, not this row's own.
+`TD-174` — re-scoped by `D-028` (Product Owner, 2026-09-09): material is
+cited on the evidence that used it (`WP 18.0A`), never assigned to the
+Part, so the material half of this row is closed by decision;
+`IPart.MaterialId` stays a bare string nothing sets. Part number, mass
+and standard-versus-custom stay open until a drawing title block or a
+calc sheet needs them, and are then one field each on
+`KindEditorDeclarations.Part()` (`WP 18.2A`).
 
 ## Owned by Programme
 
