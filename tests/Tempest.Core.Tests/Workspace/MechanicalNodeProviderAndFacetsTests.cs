@@ -86,6 +86,22 @@ public class MechanicalNodeProviderAndFacetsTests
         Assert.Equal(((IHasLifecycle)project).Status, root.Lifecycle);
     }
 
+    /// <summary>`WP 18.1B` §3 — <see cref="ProjectExplorerNode.Identifier"/> carries the backing object's own business identifier, so the Explorer filter can match on it.</summary>
+    [Fact]
+    public async Task GetChildrenAsync_PopulatesTheRealBusinessIdentifier()
+    {
+        var context = BuildContext();
+        var project = await CreateProjectAsync(context);
+        var part = await CreatePartAsync(context, identifier: "BRK-001", name: "Bracket");
+        await part.MoveAsync(project.Id);
+
+        var provider = new MechanicalProductStructureNodeProvider(AreaKind, context);
+        var children = await provider.GetChildrenAsync(project.Id);
+
+        var partNode = Assert.Single(children, n => n.Id == part.Id);
+        Assert.Equal("BRK-001", partNode.Identifier);
+    }
+
     [Fact]
     public async Task GetChildrenAsync_ReturnsLiveObjectsWhoseParentIdMatches()
     {

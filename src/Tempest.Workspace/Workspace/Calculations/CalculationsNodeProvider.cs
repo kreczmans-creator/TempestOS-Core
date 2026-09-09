@@ -146,7 +146,10 @@ public sealed class CalculationsNodeProvider : IProjectExplorerNodeProvider
     {
         var hasChildren = (await _context.Repository.ListChildrenAsync(calculation.Id, cancellationToken).ConfigureAwait(false)).Any(IsLive);
 
-        return new ProjectExplorerNode(calculation.Id, DisplayNameOf(calculation), calculation.Kind, hasChildren, ProjectExplorerNodeType.Object, calculation is IHasLifecycle lifecycle ? lifecycle.Status : null);
+        return new ProjectExplorerNode(
+            calculation.Id, DisplayNameOf(calculation), calculation.Kind, hasChildren, ProjectExplorerNodeType.Object,
+            calculation is IHasLifecycle lifecycle ? lifecycle.Status : null,
+            (calculation as IHasBusinessIdentifier)?.Identifier);
     }
 
     private static string DisplayNameOf(IEngineeringObject o) => (o as IHasBusinessIdentifier)?.DisplayName ?? o.Id.ToString();

@@ -125,7 +125,10 @@ public sealed class ManufacturingNodeProvider : IProjectExplorerNodeProvider
     {
         var hasChildren = (await _context.Repository.ListChildrenAsync(manufacturingObject.Id, cancellationToken).ConfigureAwait(false)).Any(IsLive);
 
-        return new ProjectExplorerNode(manufacturingObject.Id, DisplayNameOf(manufacturingObject), manufacturingObject.Kind, hasChildren, ProjectExplorerNodeType.Object, manufacturingObject is IHasLifecycle lifecycle ? lifecycle.Status : null);
+        return new ProjectExplorerNode(
+            manufacturingObject.Id, DisplayNameOf(manufacturingObject), manufacturingObject.Kind, hasChildren, ProjectExplorerNodeType.Object,
+            manufacturingObject is IHasLifecycle lifecycle ? lifecycle.Status : null,
+            (manufacturingObject as IHasBusinessIdentifier)?.Identifier);
     }
 
     private static string DisplayNameOf(IEngineeringObject o) => (o as IHasBusinessIdentifier)?.DisplayName ?? o.Id.ToString();

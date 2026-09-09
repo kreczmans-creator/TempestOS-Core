@@ -166,7 +166,9 @@ public sealed class RequirementsNodeProvider : IProjectExplorerNodeProvider
     }
 
     private static ProjectExplorerNode ToRequirementNode(IRequirement requirement) =>
-        new(requirement.Id, BuildRequirementTitle(requirement), RequirementsService.RequirementDocumentKind, false, ProjectExplorerNodeType.Object);
+        new(
+            requirement.Id, BuildRequirementTitle(requirement), RequirementsService.RequirementDocumentKind, false, ProjectExplorerNodeType.Object,
+            Identifier: requirement.Identifier);
 
     /// <summary>Builds a requirement node's own display title — <c>"&lt;Identifier&gt; — &lt;Statement, truncated&gt;"</c>. The Property Inspector remains the authoritative, complete source for the full statement.</summary>
     private static string BuildRequirementTitle(IRequirement requirement)
