@@ -69,6 +69,6 @@ public sealed class CreateVerificationActivityCommandHandler : ICommandHandler<C
             return CommandResult.Failure(ex.Message);
         }
 
-        return CommandResult.Success($"Created VerificationActivity '{created.Id}'.");
+        return CommandResult.Success($"Created VerificationActivity '{(created as IHasBusinessIdentifier)?.DisplayName ?? created.Id.ToString()}'.", created.Id, "VerificationActivity");
     }
 }

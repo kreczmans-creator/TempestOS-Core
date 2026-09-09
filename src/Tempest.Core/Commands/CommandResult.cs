@@ -15,17 +15,22 @@ namespace Tempest.Core.Commands;
 /// </remarks>
 public sealed class CommandResult
 {
-    private CommandResult(bool succeeded, string? message)
+    private CommandResult(bool succeeded, string? message, Guid? subjectId = null, string? subjectKind = null)
     {
         Succeeded = succeeded;
         Message = message;
+        SubjectId = subjectId;
+        SubjectKind = subjectKind;
     }
 
     /// <summary>
     /// Creates a <see cref="CommandResult"/> reporting success.
     /// </summary>
     /// <param name="message">An optional message describing the outcome.</param>
-    public static CommandResult Success(string? message = null) => new(succeeded: true, message);
+    /// <param name="subjectId">The object the command made or acted on, when there is one (`WP 17.9.4`).</param>
+    /// <param name="subjectKind">That object's Kind.</param>
+    public static CommandResult Success(string? message = null, Guid? subjectId = null, string? subjectKind = null) =>
+        new(succeeded: true, message, subjectId, subjectKind);
 
     /// <summary>
     /// Creates a <see cref="CommandResult"/> reporting a foreseeable,
@@ -54,4 +59,14 @@ public sealed class CommandResult
     /// optional for a <see cref="Success"/> result.
     /// </summary>
     public string? Message { get; }
+
+    /// <summary>
+    /// The object the command made or acted on, when the handler says so
+    /// (`WP 17.9.4`). A create handler always says so, which is what lets
+    /// the shell open the new object right up rather than announce it.
+    /// </summary>
+    public Guid? SubjectId { get; }
+
+    /// <summary>The Kind of <see cref="SubjectId"/>, when set.</summary>
+    public string? SubjectKind { get; }
 }

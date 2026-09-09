@@ -116,6 +116,15 @@ second person could pick up on day one.
 - **The object editor no longer shows an empty, disabled Content box** on
   a Kind that cannot be revised, such as a requirement group or
   collection (`WP 17.9.3`).
+- **Anything you create opens right up** (`WP 17.9.4`). After any Create
+  from the Ribbon or the Palette, the Project Explorer switches to the
+  discipline that lists the new object, expands the path to it and
+  selects it, and the object opens in an editor tab with its fields in
+  front of you, whichever tab you were on. The second Windows smoke test
+  created a Part with the Explorer on another discipline and the project
+  node collapsed, and nothing opened. A reload of the Explorer now also
+  keeps whatever you had expanded. A Requirement opens in its own
+  discipline view rather than the generic editor (`TD-41`).
 
 ## What shipped, by Work Package
 
@@ -133,6 +142,7 @@ second person could pick up on day one.
 | 17.9.1 | Hotfixes from the first Windows review (2026-09-08). Entering Engineering guarantees the Project Explorer and Properties panels are present (`WorkspaceDockingComposer.EnsureCorePanelsPresent`); a journey test walks Home → Projects → create → open → Engineering and asserts both panels placed. `IPrincipalDirectory` resolves stored identity ids to names (session principal first, then the Windows account via SID translation, else the id verbatim); a `Principal` facet kind marks the eight "…By" facets and the Properties panel, calculation traceability and verification readouts show names. The object editor shows the Bill of Materials section only on the five mechanical Kinds and retires the "Execute" / "Input (JSON)" section, showing a Calculation a pointer to the Engineering Calculations workspace instead. `SampleSeparationTests` no longer counts project files inside a nested clone. Not fixed here, recorded as `TD-172` for `WP 18.1A`: an object created from the palette while another discipline tab is active is not shown where the user is looking. |
 | 17.9.2 | Second round from the first Windows review (2026-09-08). `CommandContext.ProjectId` carries the shell's open project; the Ribbon, Palette and input bindings supply it. `MechanicalCreateParentPolicy` places a created object under the selected container, else the open project; the create handler's message names the object and its parent. `MechanicalProductStructureNodeProvider` lists parentless structural objects under a "Not in any project" category and roots their ancestry there. `BracketCalculationWorkbench.AddMaterialAsync` registers an engineer's own material as Draft with the source it names (refusing a blank source, a non-positive number, or a duplicate designation); the calculation view gains an Add-a-Material section, a Material picker on the Inputs panel offering released records only, and guidance when none is released. Tests: parent policy (6), orphan listing (4), create-from-the-shell journey (2), add-own-material journey (1). Not fixed here: `TD-172`. Also observed while fixing: the sample module seeds three structural objects with no parent that had never been visible in the tree. |
 | 17.9.3 | The design-freeze review's two high substrate hazards and the surface small wins it found (2026-09-08, overnight). `ReferenceReviewService` takes `IPermissionEvaluator` and requires `reference.verify` / `reference.release` (ADR-0143 amended; both held by the session roles). `IEngineeringObjectRepository.ListChildrenAsync` and `ParentChanged` with a by-parent index in the in-memory repository, maintained by `Register` and by `MoveAsync` after commit, self-healing on read; five tree providers, both BOM rules and the delete guard use it. `CreationPlacement.ParentFor` generalises the Mechanical rule to Documents and Calculations; their trees list project-placed objects; the three factories refuse a missing parent before writing. Requirements gain an **Ungrouped** category and create-into-selected-group. `manufacturing.create` resolves `PartId` / `ManufacturingOperationId` / `SubjectId` from the selection and asks for the right selection when it is missing. `PropertyFacetKind.ObjectReference` resolves the Parent facet to a name. The record-result handler links evidence from the Activity's subject (`TD-173`). The editor hides an unrevisable empty Content box. Six stale ADR statuses amended and the ADR Register brought to 147. Tests: permission gate (5), children index (5), subject link (2), creation-placement journeys (5). |
+| 17.9.4 | Second Windows smoke test (2026-09-09): a created object must open right up. `CommandResult` carries `SubjectId`/`SubjectKind`; every create handler reports what it made. `RibbonView.ObjectCreated` and the Palette handler call `MainWindow.OpenCreatedObjectAsync`, which switches the Explorer to the area `DisciplineAreas.AreaFor(kind)` names, reloads, reveals (selects with every ancestor expanded, via a two-way `IsExpanded` binding on the tree item), selects in the workspace, opens the object's tab and refreshes the inspector. The Explorer keeps expansion across reloads. Tests: the ribbon path with the Explorer on another discipline, and the palette path for a Requirement. |
 
 ## Figures
 
@@ -142,7 +152,7 @@ second person could pick up on day one.
 | Live test lines (`tests/`, excluding `Frozen/`) | 118,042 | 103,585 |
 | Frozen out of the build | — | 42 source, 37 test files |
 | Core tests | 5,153 | 4,961 |
-| Desktop tests | 500 | 506 |
+| Desktop tests | 500 | 508 |
 | Core suite duration (local, Debug) | ~5 min | ~20 s to 1 m 20 s |
 | Desktop suite duration (local, Debug) | ~15 min | ~3 min |
 | Live documentation files | 1,062 | 257 |

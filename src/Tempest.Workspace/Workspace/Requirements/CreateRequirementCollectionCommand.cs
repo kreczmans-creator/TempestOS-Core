@@ -38,6 +38,6 @@ public sealed class CreateRequirementCollectionCommandHandler : ICommandHandler<
     {
         var created = await _requirementsService.CreateCollectionAsync(command.Name, cancellationToken).ConfigureAwait(false);
 
-        return CommandResult.Success($"Created Requirement Collection '{created.Name}' ('{created.Id}').");
+        return CommandResult.Success($"Created Requirement Collection '{created.Name}'.", created.Id, RequirementsService.RequirementCollectionDocumentKind);
     }
 }

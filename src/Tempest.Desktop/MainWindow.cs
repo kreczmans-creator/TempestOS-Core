@@ -72,6 +72,7 @@ public sealed class MainWindow : Window
     private readonly DesktopSessionState _session;
     private readonly SettingsDialog _settingsDialog;
     private readonly WorkspaceViewCoordinator _viewCoordinator;
+    private readonly IWorkspaceManager _workspaceManager;
     private readonly UndoRedoCoordinator _undoRedo;
     private readonly WorkspaceLayoutPresetCoordinator _layoutPresets;
 
@@ -126,6 +127,7 @@ public sealed class MainWindow : Window
 
         var workspace = host.Workspace ?? throw new InvalidOperationException("WorkspaceHost must be started before constructing MainWindow.");
         var manager = host.Manager!;
+        _workspaceManager = manager;
         var services = host.Services!;
 
         // Platform Service resolution (`ADR-0103` collaborator #1) —
@@ -408,6 +410,10 @@ public sealed class MainWindow : Window
                 await _explorerView.LoadAsync().ConfigureAwait(true);
                 _cockpitView.Refresh();
             }).ConfigureAwait(true);
+
+        // `WP 17.9.4`: what you make opens right up. Nothing a user creates
+        // may drop out of sight; the shell takes them to it.
+        _ribbon.ObjectCreated += (id, kind) => _ = OpenCreatedObjectAsync(id, kind);
 
         // Background-task state changes drive the Output panel's own
         // Background Tasks list directly (`TD-58` stale-UI closure) —
@@ -757,6 +763,11 @@ public sealed class MainWindow : Window
             {
                 await _explorerView.LoadAsync().ConfigureAwait(true);
                 _cockpitView.Refresh();
+
+                // `WP 17.9.4`: a created object opens right up, from the
+                // palette exactly as from the ribbon.
+                if (result is { SubjectId: { } createdId, SubjectKind: { } createdKind } && RibbonView.IsCreate(descriptor.Id))
+                    await OpenCreatedObjectAsync(createdId, createdKind).ConfigureAwait(true);
             }
         };
         _commandPalette.CommandUnavailable += (descriptor, reason) =>
@@ -1237,6 +1248,36 @@ public sealed class MainWindow : Window
     /// cards, the default first-area selection on startup) keeps both in
     /// sync without each needing its own separate call.
     /// </summary>
+    /// <summary>
+    /// Takes the user to an object they just made (`WP 17.9.4`): the
+    /// Explorer switches to the area that lists its Kind, reloads, expands
+    /// the path to it and selects it; then the object opens in the editor
+    /// tab with every field in front of them. The first two Windows
+    /// reviews of `v0.17.0` both lost a newly created object; the rule
+    /// now is that nothing a user creates may drop out of sight.
+    /// </summary>
+    internal async Task OpenCreatedObjectAsync(Guid id, string kind)
+    {
+        var workspace = _workspaceManager.Current;
+        if (workspace is null)
+            return;
+
+        var areaId = DisciplineAreas.AreaFor(kind);
+        if (areaId is not null && workspace.Navigation.Areas.FirstOrDefault(a => a.Id == areaId) is { } area)
+        {
+            await workspace.Navigation.SwitchAreaAsync(area.Id).ConfigureAwait(true);
+            _ribbon.SelectTabForArea(area.Title);
+            SetCurrentArea(area.Title);
+        }
+
+        await _explorerView.LoadAsync().ConfigureAwait(true);
+        _explorerView.Reveal(id);
+        await workspace.Selection.SelectAsync(id, kind).ConfigureAwait(true);
+        await _viewCoordinator.NavigateToObjectAsync(id, kind).ConfigureAwait(true);
+        _inspectorView.SetCurrentSelection(id, kind);
+        await _inspectorView.RefreshFromSourceAsync().ConfigureAwait(true);
+    }
+
     private void SetCurrentArea(string? title)
     {
         _currentAreaTitle = title;

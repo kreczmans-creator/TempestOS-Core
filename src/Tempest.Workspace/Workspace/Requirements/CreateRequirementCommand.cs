@@ -58,10 +58,10 @@ public sealed class CreateRequirementCommandHandler : ICommandHandler<CreateRequ
             {
                 var group = await _requirementsService.FindGroupAsync(groupId, cancellationToken).ConfigureAwait(false);
                 await _requirementsService.MoveToGroupAsync(created.Id, groupId, cancellationToken).ConfigureAwait(false);
-                return CommandResult.Success($"Created Requirement '{created.Identifier}' in group '{group?.Name ?? groupId.ToString()}'.");
+                return CommandResult.Success($"Created Requirement '{created.Identifier}' in group '{group?.Name ?? groupId.ToString()}'.", created.Id, RequirementsService.RequirementDocumentKind);
             }
 
-            return CommandResult.Success($"Created Requirement '{created.Identifier}'. It is not in any group; the Project Explorer lists it under \"Ungrouped\".");
+            return CommandResult.Success($"Created Requirement '{created.Identifier}'. It is not in any group; the Project Explorer lists it under \"Ungrouped\".", created.Id, RequirementsService.RequirementDocumentKind);
         }
         catch (DuplicateRequirementIdentifierException ex)
         {

@@ -35,7 +35,7 @@ None. Every `v0.17.0` Work Package (`17.0A`, `17.0B`, `17.0C`, `17.1A`,
 ## Gate (this release's own figures, filled in by `WP 17.9.0`)
 
 - Core tests: 4,961 passed, 0 failed, 0 skipped (`WP 17.9.3` re-run: one Debug and one Release run after the overnight round, on top of the runs at `WP 17.9.0`, `17.9.1` and `17.9.2`; 20–50 s each)
-- Desktop tests: 506 passed, 0 failed, 0 skipped (same runs; about 2.5 min each)
+- Desktop tests: 508 passed, 0 failed, 0 skipped (same runs, plus one Debug and one Release run at `WP 17.9.4`; about 2.5 min each)
 - Build: 0 warnings, 0 errors, both configurations, `TreatWarningsAsErrors`
 - Architecture invariants (`DependencyDirectionTests`): 5/5 green
 - Governance health check: 5/5 passed (Windows PowerShell 5.1 and PowerShell 7)

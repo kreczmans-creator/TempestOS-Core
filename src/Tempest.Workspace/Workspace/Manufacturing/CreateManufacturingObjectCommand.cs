@@ -108,6 +108,6 @@ public sealed class CreateManufacturingObjectCommandHandler : ICommandHandler<Cr
             return CommandResult.Failure(ex.Message);
         }
 
-        return CommandResult.Success($"Created {command.Kind} '{created.Id}'.");
+        return CommandResult.Success($"Created {command.Kind} '{(created as IHasBusinessIdentifier)?.DisplayName ?? created.Id.ToString()}'.", created.Id, command.Kind);
     }
 }

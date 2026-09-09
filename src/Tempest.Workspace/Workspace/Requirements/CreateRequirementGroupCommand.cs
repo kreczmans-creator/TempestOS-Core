@@ -45,7 +45,7 @@ public sealed class CreateRequirementGroupCommandHandler : ICommandHandler<Creat
         {
             var created = await _requirementsService.CreateGroupAsync(command.Name, command.ParentGroupId, cancellationToken).ConfigureAwait(false);
 
-            return CommandResult.Success($"Created Requirement Group '{created.Name}' ('{created.Id}').");
+            return CommandResult.Success($"Created Requirement Group '{created.Name}'.", created.Id, RequirementsService.RequirementGroupDocumentKind);
         }
         catch (EngineeringDocumentNotFoundException ex)
         {

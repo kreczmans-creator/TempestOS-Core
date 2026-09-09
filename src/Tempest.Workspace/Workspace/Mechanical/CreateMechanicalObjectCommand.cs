@@ -89,7 +89,7 @@ public sealed class CreateMechanicalObjectCommandHandler : ICommandHandler<Creat
             ? " It is not in any project; the Project Explorer lists it under \"Not in any project\"."
             : $" It is under '{await ParentNameAsync(parentId.Value, cancellationToken).ConfigureAwait(false)}' in the Project Explorer.";
 
-        return CommandResult.Success($"Created {command.Kind} '{name}'.{where}");
+        return CommandResult.Success($"Created {command.Kind} '{name}'.{where}", created.Id, command.Kind);
     }
 
     private async Task<string> ParentNameAsync(Guid parentId, CancellationToken cancellationToken)

@@ -27,7 +27,7 @@ check's generic exception handler already names the failing check in
 its `Fail` result; carried forward unchanged into the reduced script).
 None of these nine appear below.
 
-## Live Backlog (28 of 30 cap)
+## Live Backlog (27 of 30 cap)
 
 `TD-147` — an object creation whose initial durable write failed still
 registered the object in memory, so its next successful write made a
@@ -68,7 +68,6 @@ and nothing on disk.
 | `TD-155` | Materials library reuses an incompatible payload shape under the old document Kind | `WP 18.0B` |
 | `TD-157` | "Pinned source superseded" warning can never fire; the resolver is never wired up | `WP 18.0B` |
 | `TD-163` | 79 seeded reference records never reach the shipped product | `WP 18.0B` |
-| `TD-172` | An object created while another discipline tab is active is not shown where the user is looking; the tab does not switch and nothing says where it went (design-freeze surface audit, 2026-09-08; the placement half of this row, parentless Documents, Calculations and Manufacturing objects, an unreachable Requirement and a failing default Manufacturing create, was closed by `WP 17.9.3`) | `WP 18.1A` |
 
 **Judgement calls, not named in any Work Package's "Closes" column:**
 `TD-27` and `TD-150` sit squarely in the persistence/object-store
@@ -172,6 +171,7 @@ this table can now point at, rather than merely name.
 |---|---|---|
 | `TD-01` | Two logging mechanisms coexist (`ILogger` vs. legacy `LoggingService`) | `WP 17.2A` — the legacy `LoggingService` no longer exists in the live tree, and `Tempest.Core.Logging.TempestLoggerProvider` now forwards any `Microsoft.Extensions.Logging` caller into the same, single `ILogger`/`ILogSink` pipeline rather than leaving it as an unconnected second mechanism. |
 | `TD-173` | A verification result links its evidence to the Activity, never to the Requirement it names as Subject, so a Requirement's Verification Coverage always reads "Not Verified" | `WP 17.9.3` — `RecordVerificationResultCommandHandler` also links the record from the Activity's subject, so the subject's own coverage read finds it. |
+| `TD-172` | Creation placement and visibility: objects created from the Ribbon or Palette were parentless, unreachable in their own tree, or shown on a tab the user was not looking at | `WP 17.9.3` (placement, Ungrouped, Manufacturing ids) and `WP 17.9.4` (the shell switches to the object's area, reveals it and opens it after every Create). |
 
 **`TD-02`, `WP 17.0C`, before this table existed:** "single-sink
 limitation" — closed by `CompositeLogSink` (see that class's own

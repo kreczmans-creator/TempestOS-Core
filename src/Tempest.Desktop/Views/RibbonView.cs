@@ -77,6 +77,17 @@ public sealed class RibbonView : UserControl
     /// <summary>Raised when the user clicks a discipline tab directly (not via <see cref="SelectTabForArea"/>) — the caller's own cue to switch the Navigation area to match.</summary>
     public event Action<string>? CategorySelected;
 
+    /// <summary>
+    /// Raised after a create command succeeds, with the id and Kind of what
+    /// it made (`WP 17.9.4`). The shell switches the Explorer to the
+    /// object's area, reveals it and opens it for editing.
+    /// </summary>
+    public event Action<Guid, string>? ObjectCreated;
+
+    /// <summary>A command whose job is to make something: every discipline's <c>*.create</c> and <c>*.create-…</c>.</summary>
+    public static bool IsCreate(string commandId) =>
+        commandId.EndsWith(".create", StringComparison.Ordinal) || commandId.Contains(".create-", StringComparison.Ordinal);
+
     /// <summary>Raised after <see cref="SetCollapsed"/> changes the ribbon's own collapsed state, carrying the new state — the caller's own cue to persist it (`TD-70`).</summary>
     public event Action<bool>? CollapsedChanged;
 
@@ -527,6 +538,12 @@ public sealed class RibbonView : UserControl
                         ? $"'{descriptor.DisplayName}' completed."
                         : result.Message ?? $"'{descriptor.DisplayName}' failed.",
                     ActionOutcome.From(result.Succeeded));
+
+                // `WP 17.9.4`: a created object is opened right up, not
+                // announced. The shell decides where; the ribbon only says
+                // what was made.
+                if (result is { Succeeded: true, SubjectId: { } createdId, SubjectKind: { } createdKind } && IsCreate(descriptor.Id))
+                    ObjectCreated?.Invoke(createdId, createdKind);
                 break;
 
             case CommandOutcome.Cancelled:
