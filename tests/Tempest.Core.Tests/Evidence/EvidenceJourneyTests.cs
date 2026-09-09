@@ -2,6 +2,7 @@ using Tempest.Workspace.Composition;
 using Tempest.Core.Audit;
 using Tempest.Core.Evidence;
 using Tempest.Core.Materials;
+using Tempest.Core.ReferenceData;
 using Tempest.Core.Tests.Materials;
 using Tempest.Core.Tests.Plugins;
 
@@ -64,6 +65,19 @@ public sealed class EvidenceJourneyTests
             Assert.Equal(released.RevisionNumber, cite.Citation!.Pin.RevisionNumber);
             Assert.Equal(materials.LibraryName, cite.Citation.Pin.Library);
             Assert.Equal(materialId, cite.Citation.Pin.RecordId);
+            Assert.Null(cite.Citation.SourceCitationSnapshot); // the record was registered without a source
+
+            // ---- A record with a source: the citation snapshots it (WP 18.0B meets WP 18.0A) ----
+            const string citedId = "FX-STEEL-CITED";
+            await materials.RegisterAsync(
+                citedId, MaterialFixtures.Steel(citedId), MaterialFixtures.Verified(),
+                new SourceCitation("BSI", "BS EN 10025-2", "2019", "Table 7", null, "S355"));
+            await MaterialFixtures.ReleaseAsync((MaterialCatalog)materials, citedId);
+            var citedWithSource = await service.CiteAsync(evidenceId, materials.LibraryName, citedId);
+            Assert.True(citedWithSource.Succeeded);
+            Assert.NotNull(citedWithSource.Citation!.SourceCitationSnapshot);
+            Assert.Contains("BS EN 10025-2", citedWithSource.Citation.SourceCitationSnapshot, StringComparison.Ordinal);
+            await service.RemoveCitationAsync(evidenceId, citedWithSource.Citation.Pin);
 
             // ---- Declare figures ----
             await service.DeclareFigureAsync(evidenceId, "Utilisation", DeclaredFigureRole.Result, "0.82 1");

@@ -155,7 +155,7 @@ public sealed class EvidenceService : IEvidenceService
                 null);
         }
 
-        var citation = new EvidenceCitation(lookup.Value.Pin, lookup.Value.RecordId, SourceCitationSnapshot: null);
+        var citation = new EvidenceCitation(lookup.Value.Pin, lookup.Value.RecordId, SourceCitationSnapshot: lookup.Value.Source);
         await evidence.AddCitationAsync(citation, cancellationToken).ConfigureAwait(false);
 
         return new EvidenceCitationResult(EvidenceRefusal.None, null, evidence, citation);
@@ -318,38 +318,38 @@ public sealed class EvidenceService : IEvidenceService
             && configuredValue;
     }
 
-    private readonly record struct ReferenceRecordLookup(ReferenceValidationState ValidationState, ReferencePin Pin, string RecordId);
+    private readonly record struct ReferenceRecordLookup(ReferenceValidationState ValidationState, ReferencePin Pin, string RecordId, string? Source);
 
     private async Task<ReferenceRecordLookup?> FindRecordAsync(string library, string recordId, CancellationToken cancellationToken)
     {
         if (string.Equals(library, _materials.LibraryName, StringComparison.OrdinalIgnoreCase))
         {
             var record = await _materials.FindAsync(recordId, cancellationToken).ConfigureAwait(false);
-            return record is null ? null : new ReferenceRecordLookup(record.ValidationState, ReferencePin.For(_materials.LibraryName, record), record.Id);
+            return record is null ? null : new ReferenceRecordLookup(record.ValidationState, ReferencePin.For(_materials.LibraryName, record), record.Id, record.Source?.ToString());
         }
 
         if (string.Equals(library, _fasteners.LibraryName, StringComparison.OrdinalIgnoreCase))
         {
             var record = await _fasteners.FindAsync(recordId, cancellationToken).ConfigureAwait(false);
-            return record is null ? null : new ReferenceRecordLookup(record.ValidationState, ReferencePin.For(_fasteners.LibraryName, record), record.Id);
+            return record is null ? null : new ReferenceRecordLookup(record.ValidationState, ReferencePin.For(_fasteners.LibraryName, record), record.Id, record.Source?.ToString());
         }
 
         if (string.Equals(library, _bearings.LibraryName, StringComparison.OrdinalIgnoreCase))
         {
             var record = await _bearings.FindAsync(recordId, cancellationToken).ConfigureAwait(false);
-            return record is null ? null : new ReferenceRecordLookup(record.ValidationState, ReferencePin.For(_bearings.LibraryName, record), record.Id);
+            return record is null ? null : new ReferenceRecordLookup(record.ValidationState, ReferencePin.For(_bearings.LibraryName, record), record.Id, record.Source?.ToString());
         }
 
         if (string.Equals(library, _standards.LibraryName, StringComparison.OrdinalIgnoreCase))
         {
             var record = await _standards.FindAsync(recordId, cancellationToken).ConfigureAwait(false);
-            return record is null ? null : new ReferenceRecordLookup(record.ValidationState, ReferencePin.For(_standards.LibraryName, record), record.Id);
+            return record is null ? null : new ReferenceRecordLookup(record.ValidationState, ReferencePin.For(_standards.LibraryName, record), record.Id, record.Source?.ToString());
         }
 
         if (string.Equals(library, _constants.LibraryName, StringComparison.OrdinalIgnoreCase))
         {
             var record = await _constants.FindAsync(recordId, cancellationToken).ConfigureAwait(false);
-            return record is null ? null : new ReferenceRecordLookup(record.ValidationState, ReferencePin.For(_constants.LibraryName, record), record.Id);
+            return record is null ? null : new ReferenceRecordLookup(record.ValidationState, ReferencePin.For(_constants.LibraryName, record), record.Id, record.Source?.ToString());
         }
 
         return null;
