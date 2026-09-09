@@ -203,6 +203,7 @@ public sealed class ProjectTaskAcceptanceTests
             // And the Cockpit's Overdue Actions card, which was an empty
             // placeholder for want of a due-date field, now reports it.
             var cockpit = second.Workspace!.Cockpit;
+            await cockpit.PrimeAsync();
             Assert.Contains(cockpit.OverdueActionLines, line => line.Contains("Overdue work", StringComparison.Ordinal));
         }
         finally

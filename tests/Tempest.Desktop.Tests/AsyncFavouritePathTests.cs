@@ -130,24 +130,25 @@ public class AsyncFavouritePathTests
     }
 
     /// <summary>
-    /// `WP-E` — the Cockpit's per-refresh read scope is only worth anything
-    /// if the render actually opens one. Nothing about an open scope is
-    /// visible from outside <c>CockpitView</c>: the cards render identically
-    /// either way, only more cheaply, so there is no runtime observation to
-    /// make. The wiring is therefore asserted where it lives.
+    /// `WP-E`, superseded by `WP 18.1A-R1` — the Cockpit's render is only
+    /// worth anything if it actually awaits one coherent load. Nothing
+    /// about that is visible from outside <c>CockpitView</c>: the cards
+    /// render identically either way, only more cheaply and without
+    /// blocking the UI thread, so there is no runtime observation to make.
+    /// The wiring is therefore asserted where it lives.
     /// </summary>
     [Fact]
-    public void TheCockpitRender_RunsInsideOneReadScope()
+    public void TheCockpitRender_AwaitsOnePrimeAsyncPass()
     {
         var view = File.ReadAllText(Path.Combine(
             RepositoryRoot, "src", "Tempest.Desktop", "Views", "CockpitView.cs"));
 
         var refreshBody = Regex.Match(
             view,
-            @"public void Refresh\(\)\s*\{(?<body>.*?)\n    \}",
+            @"public async Task RefreshAsync\(\)\s*\{(?<body>.*?)\n    \}",
             RegexOptions.Singleline);
 
-        Assert.True(refreshBody.Success, "CockpitView.Refresh() could not be located — this test needs updating, not deleting.");
-        Assert.Contains("_cockpit.BeginReadScope()", refreshBody.Groups["body"].Value, StringComparison.Ordinal);
+        Assert.True(refreshBody.Success, "CockpitView.RefreshAsync() could not be located — this test needs updating, not deleting.");
+        Assert.Contains("await _cockpit.PrimeAsync()", refreshBody.Groups["body"].Value, StringComparison.Ordinal);
     }
 }

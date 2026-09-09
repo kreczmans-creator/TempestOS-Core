@@ -14,62 +14,64 @@ namespace Tempest.Workspace.Calculations;
 /// referencing <see cref="EngineeringCockpit"/> or any sibling
 /// discipline collaborator back.
 /// </summary>
+/// <remarks>
+/// <b>`WP 18.1A-R1`.</b> Supersedes `WP-E`'s own <see cref="CockpitReadScope"/>-backed
+/// memoisation (a lazy cell, computed once per open <c>Begin()</c> pass
+/// but still blocked on synchronously outside one — the exact shape
+/// `TD-108`/`TD-118` found) with an eager <see cref="LoadAsync"/>: every
+/// persistence-backed read this discipline needs — the live Calculation
+/// listing, one <see cref="CalculationRecordReader"/> read per
+/// Calculation, and one revision history read per Calculation — happens
+/// there, awaited once per Cockpit render
+/// (<see cref="EngineeringCockpit.PrimeAsync"/>). Every property below is
+/// now a pure, in-memory read of what <see cref="LoadAsync"/> last
+/// loaded — still computed once per render, never per property, but
+/// without a single blocking call left in this file's own source.
+/// </remarks>
 internal sealed class CalculationsCockpitReadModel
 {
     private readonly EngineeringDomainContext _domainContext;
-    private readonly CockpitReadCell<IReadOnlyList<ICalculation>> _liveCalculations;
-    private readonly CockpitReadCell<IReadOnlyList<(ICalculation Calculation, CalculationRecordSnapshot? LatestRecord)>> _snapshots;
-    private readonly CockpitReadCell<IReadOnlyDictionary<Guid, DateTimeOffset>> _latestRevisedAt;
+    private IReadOnlyList<ICalculation> _liveCalculations = [];
+    private IReadOnlyList<(ICalculation Calculation, CalculationRecordSnapshot? LatestRecord)> _snapshots = [];
+    private IReadOnlyDictionary<Guid, DateTimeOffset> _latestRevisedAt = new Dictionary<Guid, DateTimeOffset>();
 
     /// <summary>Initialises a new instance of the <see cref="CalculationsCockpitReadModel"/> class.</summary>
     /// <param name="domainContext">The Engineering Domain's own shared repository this read-model queries directly.</param>
-    /// <param name="scope">The Cockpit's own per-refresh read scope (`WP-E`) — see <see cref="CockpitReadScope"/>.</param>
-    public CalculationsCockpitReadModel(EngineeringDomainContext domainContext, CockpitReadScope scope)
+    public CalculationsCockpitReadModel(EngineeringDomainContext domainContext)
     {
         ArgumentNullException.ThrowIfNull(domainContext);
-        ArgumentNullException.ThrowIfNull(scope);
 
         _domainContext = domainContext;
-
-        _liveCalculations = scope.Cell<IReadOnlyList<ICalculation>>(() =>
-            _domainContext.Repository.ListByKindAsync("Calculation").GetAwaiter().GetResult()
-                .Where(o => o is not IDeletable { IsDeleted: true })
-                .OfType<ICalculation>()
-                .ToList());
-
-        // The two persistence-backed leaves (`WP-E`): one
-        // CalculationRecordReader read per Calculation, and one revision
-        // history per Calculation behind IsOutOfDate — each previously
-        // repeated by every count and card set derived from it.
-        _snapshots = scope.Cell<IReadOnlyList<(ICalculation Calculation, CalculationRecordSnapshot? LatestRecord)>>(() =>
-            LiveCalculations
-                .Select(c => (c, CalculationRecordReader.GetLatestAsync(_domainContext, c.Id).GetAwaiter().GetResult()))
-                .ToList());
-
-        _latestRevisedAt = scope.Cell<IReadOnlyDictionary<Guid, DateTimeOffset>>(ReadLatestRevisedAt);
     }
 
-    /// <summary>Gets every live (non-deleted) Calculation — a real read via <see cref="EngineeringDomainContext.Repository"/>.</summary>
-    public IReadOnlyList<ICalculation> LiveCalculations => _liveCalculations.Value;
-
-    /// <summary>
-    /// Every live Calculation's own most recent revision timestamp, read
-    /// once (`WP-E`) — falling back to the object's own
-    /// <see cref="IEngineeringObject.CreatedAt"/> where it has never been
-    /// revised, exactly as <see cref="IsOutOfDate"/> did inline before.
-    /// </summary>
-    private IReadOnlyDictionary<Guid, DateTimeOffset> ReadLatestRevisedAt()
+    /// <summary>Loads every live Calculation, its own most recent executed record, and its own most recent revision timestamp — the three reads every property below is derived from.</summary>
+    public async Task LoadAsync(CancellationToken cancellationToken = default)
     {
+        var calculations = await _domainContext.Repository.ListByKindAsync("Calculation", cancellationToken).ConfigureAwait(false);
+        var live = calculations
+            .Where(o => o is not IDeletable { IsDeleted: true })
+            .OfType<ICalculation>()
+            .ToList();
+        _liveCalculations = live;
+
+        var snapshots = new List<(ICalculation Calculation, CalculationRecordSnapshot? LatestRecord)>(live.Count);
         var revisedAt = new Dictionary<Guid, DateTimeOffset>();
 
-        foreach (var calculation in LiveCalculations)
+        foreach (var calculation in live)
         {
-            var revisions = _domainContext.Store.GetRevisionHistoryAsync(calculation.Id).GetAwaiter().GetResult();
+            var latest = await CalculationRecordReader.GetLatestAsync(_domainContext, calculation.Id, cancellationToken).ConfigureAwait(false);
+            snapshots.Add((calculation, latest));
+
+            var revisions = await _domainContext.Store.GetRevisionHistoryAsync(calculation.Id, cancellationToken).ConfigureAwait(false);
             revisedAt[calculation.Id] = revisions.Count > 0 ? revisions[^1].CreatedAt : calculation.CreatedAt;
         }
 
-        return revisedAt;
+        _snapshots = snapshots;
+        _latestRevisedAt = revisedAt;
     }
+
+    /// <summary>Gets every live (non-deleted) Calculation — loaded by <see cref="LoadAsync"/>.</summary>
+    public IReadOnlyList<ICalculation> LiveCalculations => _liveCalculations;
 
     /// <summary>Gets the number of live Calculations — the Cockpit's own cross-discipline KPI summary reads this directly.</summary>
     public int Count => LiveCalculations.Count;
@@ -83,7 +85,7 @@ internal sealed class CalculationsCockpitReadModel
     /// executed.
     /// </summary>
     private IReadOnlyList<(ICalculation Calculation, CalculationRecordSnapshot? LatestRecord)> LiveCalculationSnapshots =>
-        _snapshots.Value;
+        _snapshots;
 
     /// <summary>
     /// Gets whether <paramref name="calculation"/> has been revised more
@@ -98,7 +100,7 @@ internal sealed class CalculationsCockpitReadModel
         if (latestRecord is null)
             return false;
 
-        var latestRevisedAt = _latestRevisedAt.Value.TryGetValue(calculation.Id, out var revisedAt)
+        var latestRevisedAt = _latestRevisedAt.TryGetValue(calculation.Id, out var revisedAt)
             ? revisedAt
             : calculation.CreatedAt;
 

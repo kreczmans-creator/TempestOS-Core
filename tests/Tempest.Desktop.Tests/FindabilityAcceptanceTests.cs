@@ -196,6 +196,7 @@ public sealed class FindabilityAcceptanceTests
                 // contract; this confirms it is wired into the real
                 // Cockpit view rather than only the read model).
                 var cockpit = workspace.Cockpit;
+                await cockpit.PrimeAsync();
                 Assert.NotEmpty(cockpit.RecentlyChanged);
             }
             finally

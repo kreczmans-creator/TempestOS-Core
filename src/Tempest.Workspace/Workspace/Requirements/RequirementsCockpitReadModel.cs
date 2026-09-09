@@ -17,40 +17,54 @@ namespace Tempest.Workspace.Requirements;
 /// never referencing <see cref="EngineeringCockpit"/> or any sibling
 /// discipline collaborator back.
 /// </summary>
+/// <remarks>
+/// <b>`WP 18.1A-R1`.</b> Supersedes `WP-E`'s own <see cref="CockpitReadScope"/>-backed
+/// memoisation (a lazy cell, computed once per open <c>Begin()</c> pass
+/// but still blocked on synchronously outside one — the exact shape
+/// `TD-108`/`TD-118` found) with an eager <see cref="LoadAsync"/>: every
+/// persistence-backed read this discipline needs — the live requirement
+/// listing, one validation pass per requirement, and one relationships
+/// read per requirement — happens there, awaited once per Cockpit render
+/// (<see cref="EngineeringCockpit.PrimeAsync"/>). Every property below is
+/// now a pure, in-memory read of what <see cref="LoadAsync"/> last
+/// loaded — still computed once per render, never per property, but
+/// without a single blocking call left in this file's own source.
+/// </remarks>
 internal sealed class RequirementsCockpitReadModel
 {
     private readonly IRequirementsService _requirementsService;
     private readonly IRequirementValidationService _requirementValidationService;
-    private readonly CockpitReadCell<IReadOnlyList<IRequirement>> _liveRequirements;
-    private readonly CockpitReadCell<IReadOnlyList<(Guid RequirementId, IValidationResult Result)>> _validationByRequirement;
-    private readonly CockpitReadCell<IReadOnlyDictionary<Guid, IReadOnlyList<DocumentReference>>> _relationshipsByRequirement;
+    private IReadOnlyList<IRequirement> _liveRequirements = [];
+    private IReadOnlyList<(Guid RequirementId, IValidationResult Result)> _validationByRequirement = [];
+    private IReadOnlyDictionary<Guid, IReadOnlyList<DocumentReference>> _relationshipsByRequirement = new Dictionary<Guid, IReadOnlyList<DocumentReference>>();
 
     /// <summary>Initialises a new instance of the <see cref="RequirementsCockpitReadModel"/> class.</summary>
     /// <param name="requirementsService">The Requirements Framework's own service this read-model queries directly.</param>
     /// <param name="requirementValidationService">The Requirements Framework's own validation service this read-model queries directly.</param>
-    /// <param name="scope">The Cockpit's own per-refresh read scope (`WP-E`) — see <see cref="CockpitReadScope"/>.</param>
     public RequirementsCockpitReadModel(
         IRequirementsService requirementsService,
-        IRequirementValidationService requirementValidationService,
-        CockpitReadScope scope)
+        IRequirementValidationService requirementValidationService)
     {
         ArgumentNullException.ThrowIfNull(requirementsService);
         ArgumentNullException.ThrowIfNull(requirementValidationService);
-        ArgumentNullException.ThrowIfNull(scope);
 
         _requirementsService = requirementsService;
         _requirementValidationService = requirementValidationService;
-
-        _liveRequirements = scope.Cell<IReadOnlyList<IRequirement>>(() =>
-            _requirementsService.ListAsync().GetAwaiter().GetResult().Where(r => !r.IsDeleted).ToList());
-
-        _validationByRequirement = scope.Cell<IReadOnlyList<(Guid RequirementId, IValidationResult Result)>>(ReadValidationResults);
-
-        _relationshipsByRequirement = scope.Cell<IReadOnlyDictionary<Guid, IReadOnlyList<DocumentReference>>>(ReadRelationships);
     }
 
-    /// <summary>Gets every live (non-deleted) Requirement — a real read.</summary>
-    public IReadOnlyList<IRequirement> LiveRequirements => _liveRequirements.Value;
+    /// <summary>Loads every live requirement, its own validation result, and its own outgoing relationships — the three reads every property below is derived from.</summary>
+    public async Task LoadAsync(CancellationToken cancellationToken = default)
+    {
+        var requirements = await _requirementsService.ListAsync(cancellationToken).ConfigureAwait(false);
+        var live = requirements.Where(r => !r.IsDeleted).ToList();
+        _liveRequirements = live;
+
+        _validationByRequirement = await ReadValidationResultsAsync(live, cancellationToken).ConfigureAwait(false);
+        _relationshipsByRequirement = await ReadRelationshipsAsync(live, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>Gets every live (non-deleted) Requirement — loaded by <see cref="LoadAsync"/>.</summary>
+    public IReadOnlyList<IRequirement> LiveRequirements => _liveRequirements;
 
     /// <summary>Gets the number of live Requirements — the Cockpit's own cross-discipline KPI summary reads this directly.</summary>
     public int Count => LiveRequirements.Count;
@@ -61,8 +75,8 @@ internal sealed class RequirementsCockpitReadModel
     /// <summary>
     /// Gets every live requirement's own <see cref="IRequirementValidationService"/>
     /// result — the shared basis for <see cref="Status"/> and
-    /// <see cref="OutstandingActions"/>, computed once per read so both
-    /// stay consistent with each other.
+    /// <see cref="OutstandingActions"/>, loaded once so both stay
+    /// consistent with each other.
     /// </summary>
     /// <remarks>
     /// <b>Defensive, not currently load-bearing:</b> the concrete
@@ -80,7 +94,7 @@ internal sealed class RequirementsCockpitReadModel
     /// crashing every other card this property feeds.
     /// </remarks>
     private IReadOnlyList<(Guid RequirementId, IValidationResult Result)> LiveRequirementValidationResults =>
-        _validationByRequirement.Value;
+        _validationByRequirement;
 
     /// <summary>
     /// The one validation pass behind <see cref="LiveRequirementValidationResults"/>
@@ -89,15 +103,16 @@ internal sealed class RequirementsCockpitReadModel
     /// without the positional correlation that property's own remarks
     /// correctly refused (`WP-E`).
     /// </summary>
-    private IReadOnlyList<(Guid RequirementId, IValidationResult Result)> ReadValidationResults()
+    private async Task<IReadOnlyList<(Guid RequirementId, IValidationResult Result)>> ReadValidationResultsAsync(
+        IReadOnlyList<IRequirement> requirements, CancellationToken cancellationToken)
     {
         var results = new List<(Guid, IValidationResult)>();
 
-        foreach (var requirement in LiveRequirements)
+        foreach (var requirement in requirements)
         {
             try
             {
-                results.Add((requirement.Id, _requirementValidationService.ValidateAsync(requirement.Id).GetAwaiter().GetResult()));
+                results.Add((requirement.Id, await _requirementValidationService.ValidateAsync(requirement.Id, cancellationToken).ConfigureAwait(false)));
             }
             catch (PermissionDeniedException)
             {
@@ -109,17 +124,18 @@ internal sealed class RequirementsCockpitReadModel
     }
 
     /// <summary>
-    /// Every live requirement's own outgoing relationships, read once
+    /// Every live requirement's own outgoing relationships, loaded once
     /// (`WP-E`) — <see cref="VerifiedRequirementCount"/> and
     /// <see cref="AllocatedRequirementCount"/> ask two different questions
     /// of the same read, and <c>KpiCards</c> asks each of them twice.
     /// </summary>
-    private IReadOnlyDictionary<Guid, IReadOnlyList<DocumentReference>> ReadRelationships()
+    private async Task<IReadOnlyDictionary<Guid, IReadOnlyList<DocumentReference>>> ReadRelationshipsAsync(
+        IReadOnlyList<IRequirement> requirements, CancellationToken cancellationToken)
     {
         var relationships = new Dictionary<Guid, IReadOnlyList<DocumentReference>>();
 
-        foreach (var requirement in LiveRequirements)
-            relationships[requirement.Id] = _requirementsService.GetRelationshipsAsync(requirement.Id).GetAwaiter().GetResult();
+        foreach (var requirement in requirements)
+            relationships[requirement.Id] = await _requirementsService.GetRelationshipsAsync(requirement.Id, cancellationToken).ConfigureAwait(false);
 
         return relationships;
     }
@@ -132,12 +148,12 @@ internal sealed class RequirementsCockpitReadModel
     /// traversal.
     /// </summary>
     private int VerifiedRequirementCount =>
-        _relationshipsByRequirement.Value.Values.Count(references => references
+        _relationshipsByRequirement.Values.Count(references => references
             .Any(reference => string.Equals(reference.RelationshipKind, Tempest.Core.Verification.VerificationService.VerifiedByRelationshipKind, StringComparison.Ordinal)));
 
     /// <summary>Gets the number of live requirements with at least one <see cref="RequirementRelationshipKinds.AllocatedTo"/> relationship.</summary>
     private int AllocatedRequirementCount =>
-        _relationshipsByRequirement.Value.Values.Count(references => references
+        _relationshipsByRequirement.Values.Count(references => references
             .Any(reference => string.Equals(reference.RelationshipKind, RequirementRelationshipKinds.AllocatedTo, StringComparison.Ordinal)));
 
     /// <summary>Gets the total count of Requirements validation findings (errors plus warnings) across every live requirement — the Cockpit's own "Outstanding Actions" KPI.</summary>

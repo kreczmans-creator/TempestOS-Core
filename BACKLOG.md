@@ -201,10 +201,8 @@ touched).
 | `TD-79` | Engineering Workspace has deep domain support and almost no dedicated UI | `WP 18.2A` |
 | `TD-81` | Whole mock-up modules unimplemented: Tasks, Commercial, Resources, Knowledge, Admin | `WP 19.2B` |
 | `TD-90` | A docking re-render does not restore keyboard focus | `WP 18.1A` (claimed, not closed — see note) |
-| `TD-108` | Blocking `.GetAwaiter().GetResult()` calls, several on the UI thread | `WP 18.1A` (claimed, not closed — see note) |
 | `TD-109` | `MainWindow` is a 1,577-line god object | `WP 19.2A` |
 | `TD-115` | Three registered commands have no production construction path | `WP 19.2A` |
-| `TD-118` | The Engineering Cockpit's read surface is synchronous by shape | `WP 18.1A` (claimed, not closed — see note) |
 | `TD-128` | Digital Thread graph edges are keyboard-unreachable | `WP 19.2B` |
 | `TD-132` | Every relationship row's "Open" button shares one accessible name | `WP 19.2B` |
 | `TD-133` | Docking-panel repositioning and tab reordering are mouse-only | `WP 19.2B` |
@@ -225,18 +223,19 @@ this table can now point at, rather than merely name.
 | `TD-155` | Materials library reuses an incompatible payload shape under the old document Kind | `WP 18.0B` — `MaterialSpecificationDto` no longer exists anywhere in the tree; `MaterialCatalog` (`src/Tempest.Core/Materials/MaterialCatalog.cs`) is now solely `ReferenceDataCatalog<MaterialDefinition>`'s shape, so the incompatible payload the row named cannot recur. |
 | `TD-175` | A Part has no BOM input at all: the bill of materials is authored on the Assembly (its lines: child, quantity, find number, item number, reference designator), and a Part shows only a read-only **Where used** readout derived from the assembly it sits in and that assembly's chain. **Not PLM**: the single-parent tree stays, there is no part-occurrence model, no multi-assembly usage tracking and no change control on BOM lines | `WP 18.1C` (model — `IHasBomLine`/`SetBomLineAsync` predate this programme) and `WP 18.2A` (page) — `KindEditorDeclarations.Part()` carries no Bill-of-Materials section, only a read-only *Where used* row built from `IHasParent.ParentId`; `KindEditorDeclarations.Assembly()` carries the editable BOM section, wired to `SetBomLineCommand` in `ObjectEditorView.cs`. |
 | `TD-66` | Refresh-architecture debt beyond `TD-58`: Cockpit, Explorer, open tabs | `WP 18.1A` — `CockpitView`, `ProjectExplorerView` and `ObjectEditorView` now refresh from one `IWorkspaceChanges.Changed` event each; the old ad hoc `RefreshAsync`/reload call sites in those three views are gone. |
+| `TD-108` | Blocking `.GetAwaiter().GetResult()` calls, several on the UI thread | `WP 18.1A-R1` — the specific instance this row and `WP 18.9.0`'s verification named is gone: `EngineeringCockpit.cs`'s own eight direct blocking reads and all six per-discipline `*CockpitReadModel.cs` collaborators (`Mechanical`/`Requirements`/`Calculations`/`Documents`/`Verification`/`Manufacturing`, seventeen more) are converted — each collaborator exposes an async `LoadAsync`, composed by `EngineeringCockpit.PrimeAsync`, which `CockpitView.RefreshAsync` awaits once per render; twenty-five blocking sites closed, verified by `NoBlockingPersistenceCallsTests`'s extended scan of `src/Tempest.Workspace`. Eleven remain, named and disclosed in that same test's allow-list: six are `IWorkspaceViewFactory.Create`'s own frozen, synchronous `WP8.0B` factory contract (an interface this remediation does not own — `RequirementsWorkspaceViewFactory.cs` and its five siblings), the other five predate this row (`WorkspaceManager.cs`'s own non-blocking rethrow, `MacroWorkspaceRegistration`'s startup composition) or are owned by a parallel Work Package (`WP 18.2B`'s `EvidenceObjectView.cs`). |
+| `TD-118` | The Engineering Cockpit's read surface is synchronous by shape | `WP 18.1A-R1` — the shape itself is now async: `EngineeringCockpit.PrimeAsync(CancellationToken)` composes every discipline collaborator's own `Task LoadAsync`, plus this class's own cross-cutting reads (Decisions/Risks/Milestones/Tasks/Digital Thread/Recently Changed), and `CockpitView.RefreshAsync` awaits it before rendering a single card; no property on `EngineeringCockpit` or any of its six collaborators performs I/O of its own any more — each is a pure, in-memory read of what the last `PrimeAsync` loaded. |
 
 **Claimed by `v0.18.0` Work Packages and verified NOT closed, `WP 18.9.0`
 (2026-09-09):** `TD-90` — no focus-capture/restore mechanism exists
 anywhere in the docking subsystem (`WorkspaceLayoutController`,
 `WorkspaceLayoutHost`, `WorkspaceDockingComposer`: no `Focus` reference
 in any of them); a docking re-render still does not restore keyboard
-focus. `TD-108` — `EngineeringCockpit`'s dozens of `.GetAwaiter().GetResult()`
-calls are unchanged, and `CockpitView.Refresh()` still runs them via
-`Dispatcher.UIThread.Post`, i.e. on the UI thread. `TD-118` —
-`EngineeringCockpit`'s read surface is exactly as synchronous as before;
-`CockpitView` still calls `_cockpit.BeginReadScope()` directly and
-synchronously. `TD-160` — **partial only:** the new `LibrariesView`
+focus. `TD-108` and `TD-118` were re-verified true at that date —
+`EngineeringCockpit`'s dozens of `.GetAwaiter().GetResult()` calls were
+unchanged, and `CockpitView.Refresh()` still ran them via
+`Dispatcher.UIThread.Post`, i.e. on the UI thread — and are **now closed
+by `WP 18.1A-R1`**, below. `TD-160` — **partial only:** the new `LibrariesView`
 (`src/Tempest.Desktop/Views/LibrariesView.cs`) now browses all five
 reference libraries, closing one of the row's three named gaps, but
 `EngineeringTraceRegister`'s `CalculationTrace` is still rendered nowhere
