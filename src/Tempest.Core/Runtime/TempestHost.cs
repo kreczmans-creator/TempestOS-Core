@@ -581,10 +581,17 @@ public sealed class TempestHost : ITempestHost
         // libraries it writes into, because seeding is an ordinary write
         // through the ordinary catalogues and needs nothing else: no
         // pipeline, no staging store, no second persistence mechanism. It
-        // is registered but never invoked from here — the host does not
-        // seed itself at start-up, because deciding when a library gets
-        // populated is a governance choice and not a side effect of
-        // booting.
+        // is registered but never invoked from here — this Core-layer
+        // host itself decides nothing about when a library is populated;
+        // a bare TempestHost.RunAsync() (`Tempest.Core.Tests/Population/
+        // PopulationHostRegistrationTests`) still starts with every
+        // library exactly as empty as it finds them. `WP 18.0B-R1`
+        // (`TD-163`) put the actual decision one layer up, in the shared
+        // composition root every real launch goes through
+        // (`EngineeringWorkspaceComposer.RehydrateEngineeringObjectsAsync`):
+        // a library still holding no record at all is populated from its
+        // shipped seed, Draft only; a library a person has already
+        // touched — populated, edited, or seeded before — is left alone.
         services.Singleton<ReferenceSeedService>();
 
         services.Singleton<IStandardCatalog, StandardCatalog>();

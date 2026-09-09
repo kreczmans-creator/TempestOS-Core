@@ -100,4 +100,60 @@ public sealed class ReferenceSeedService
 
         return outcome;
     }
+
+    /// <summary>
+    /// Applies <paramref name="seed"/> to <paramref name="catalog"/> only if
+    /// the library currently holds no record at all — the gate a start-up
+    /// phase needs and <see cref="ApplyAsync{TDefinition}"/> does not
+    /// provide on its own (`WP 18.0B-R1`, `TD-163`).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Why "library is empty" rather than "record is absent."</b>
+    /// <see cref="ApplyAsync{TDefinition}"/> is already per-record additive
+    /// — it never overwrites a record whose identity already exists. That
+    /// is the right rule for a deliberate, governed top-up (the "Populate
+    /// Material Library" action a person presses). It is the wrong rule for
+    /// an unattended start-up phase: if a library already holds even one
+    /// record of a user's own under an identity the shipped dataset does
+    /// not use, per-record seeding would still pour every shipped record in
+    /// beside it — a library nobody asked to be populated growing anyway.
+    /// Gating on the library as a whole, once, is what makes a re-launch
+    /// over data the user has already touched a strict no-op for that
+    /// library, while a library nobody has touched still gets populated.
+    /// </para>
+    /// <para>
+    /// Reading the whole library before writing is safe here specifically
+    /// because a start-up phase runs once, before anything else can write
+    /// to the same catalogue — unlike <see cref="ApplyAsync{TDefinition}"/>,
+    /// this is not meant to be safe against a concurrent writer racing the
+    /// same call.
+    /// </para>
+    /// </remarks>
+    /// <typeparam name="TDefinition">The library's own definition type.</typeparam>
+    /// <param name="catalog">The library to populate.</param>
+    /// <param name="seed">The dataset to populate it from.</param>
+    /// <param name="cancellationToken">A token observed while seeding.</param>
+    /// <returns>What the run did, or <see langword="null"/> if the library already held at least one record and was left untouched.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="catalog"/> or <paramref name="seed"/> is <see langword="null"/>.</exception>
+    public async Task<ReferenceSeedOutcome?> ApplyIfEmptyAsync<TDefinition>(
+        IReferenceDataCatalog<TDefinition> catalog,
+        IReferenceSeed<TDefinition> seed,
+        CancellationToken cancellationToken = default)
+        where TDefinition : class
+    {
+        ArgumentNullException.ThrowIfNull(catalog);
+        ArgumentNullException.ThrowIfNull(seed);
+
+        var existing = await catalog.ListAsync(cancellationToken).ConfigureAwait(false);
+        if (existing.Count > 0)
+        {
+            _logger?.Information(
+                $"{catalog.LibraryName} already holds {existing.Count} record(s); left untouched by '{seed.DatasetName}'.");
+
+            return null;
+        }
+
+        return await ApplyAsync(catalog, seed, cancellationToken).ConfigureAwait(false);
+    }
 }
