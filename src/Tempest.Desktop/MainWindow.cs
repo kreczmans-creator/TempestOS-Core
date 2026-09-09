@@ -110,6 +110,10 @@ public sealed class MainWindow : Window
     // Editor's own Lifecycle actions share, alongside the three above.
     private readonly CheckEntry _checkEntry;
     private readonly IssueEntry _issueEntry;
+
+    // `WP 18.2B`: the Libraries tab's own Revise entry dialog, closing a
+    // gap `WP 18.2A` disclosed.
+    private readonly ReviseReferenceRecordEntry _reviseReferenceRecordEntry;
     private readonly IFilePicker _evidenceFilePicker;
     private readonly ProjectDeliveryCoordinator _projectDelivery;
     private readonly ProjectGovernanceCoordinator _projectGovernanceCoordinator;
@@ -342,6 +346,7 @@ public sealed class MainWindow : Window
         _declaredFigureEntry = new DeclaredFigureEntry();
         _checkEntry = new CheckEntry();
         _issueEntry = new IssueEntry();
+        _reviseReferenceRecordEntry = new ReviseReferenceRecordEntry();
 
         var evidenceSupport = new EvidenceEditorSupport(
             _evidenceFilePicker,
@@ -604,7 +609,10 @@ public sealed class MainWindow : Window
         // it exists (`WP 18.2A`).
         var librariesView = new LibrariesView(
             host.Materials!, host.Fasteners!, host.Bearings!, host.Standards!, host.Constants!,
-            host.ReferenceReview!, host.BracketCalculations!);
+            host.ReferenceReview!, host.BracketCalculations!)
+        {
+            ReviseRecordPrompt = (label, definitionJson, source, ct) => _reviseReferenceRecordEntry.PromptAsync(label, definitionJson, source, ct),
+        };
         librariesView.ActionCompleted += (message, outcome) => _ = _actionReporter.ReportAsync(message, outcome);
 
         _evidenceWorkspace = new EvidenceWorkspaceView(
@@ -741,6 +749,7 @@ public sealed class MainWindow : Window
         root.Children.Add(_declaredFigureEntry);
         root.Children.Add(_checkEntry);
         root.Children.Add(_issueEntry);
+        root.Children.Add(_reviseReferenceRecordEntry);
         root.Children.Add(_toastHost);
         Content = root;
 
@@ -754,7 +763,7 @@ public sealed class MainWindow : Window
         foreach (var modal in new Border[]
                  {
                      _confirmationDialog, _inputDialog, _messageDialog, _settingsDialog, _macroManagerDialog, _commandPalette,
-                     _citationPicker, _subjectPicker, _declaredFigureEntry, _checkEntry, _issueEntry,
+                     _citationPicker, _subjectPicker, _declaredFigureEntry, _checkEntry, _issueEntry, _reviseReferenceRecordEntry,
                  })
             TrackModal(modal);
 
