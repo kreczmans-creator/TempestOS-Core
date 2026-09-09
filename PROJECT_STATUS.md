@@ -1,7 +1,7 @@
 # TempestOS — Project Status
 
-**Branch:** `release/v0.17.0` (all v0.17.0 Work Packages land here; nothing is merged to `main` until the release is accepted)
-**VERSION:** `0.17.0` (bumped by `WP 17.9.0`; accepted by the Product Owner 2026-09-09; tagged `v0.17.0` from `main`)
+**Branch:** `release/v0.18.0` (the one branch for every v0.18.0 Work Package, per the Product Owner's instruction of 2026-09-09; nothing is merged to `main` until the release is accepted)
+**VERSION:** `0.18.0` (bumped at `WP 18.9.0` on the release candidate; `v0.17.0` was tagged from `main` on 2026-09-09)
 
 ## What a user can do today
 
@@ -27,21 +27,23 @@ yet — the programme that builds them starts with this release:
 
 ## Work in flight
 
-None. Every `v0.17.0` Work Package (`17.0A`, `17.0B`, `17.0C`, `17.1A`,
-`17.1B`, `17.2A` parts 1 and 2, `17.2B`, `17.3A`) is merged to
-`release/v0.17.0`, accepted by the Product Owner's Windows smoke tests
-on 2026-09-09, merged to `main`, tagged `v0.17.0` and published. The
-next release is
-`v0.18.0` Evidence and Check (`D-028`; `WP 18.0A` first).
+`v0.18.0` Evidence and Check on `release/v0.18.0`, executed per
+`docs/releases/v0.18.0/Execution Plan.md`. Merged and gated on
+2026-09-09: `WP 18.0A`, `18.0B`, `18.0C`, `18.1A`, `18.1B`, `18.2A`,
+`18.2B` part 1 (the issue-sheet renderer). In flight: `WP 18.2B` part 2
+(Check and Issue in the editor, the sheet attached to the record,
+supersession, subject retag, Libraries Revise), then `WP 18.9.0` (this
+file's figures, the release notes, the physical review, the tag).
+`v0.17.0` is released: merged to `main`, tagged, published 2026-09-09.
 
-## Gate (this release's own figures, filled in by `WP 17.9.0`)
+## Gate (interim figures at the `WP 18.2A` merge; re-derived by `WP 18.9.0`)
 
-- Core tests: 4,961 passed, 0 failed, 0 skipped (`WP 17.9.3` re-run: one Debug and one Release run after the overnight round, on top of the runs at `WP 17.9.0`, `17.9.1` and `17.9.2`; 20–50 s each)
-- Desktop tests: 508 passed, 0 failed, 0 skipped (same runs, plus one Debug and one Release run at `WP 17.9.4`; about 2.5 min each)
+- Core tests: 3,989 passed, 0 failed, 0 skipped (981 archived with P02–P07 by `WP 18.0C`, file-backend-only tests deleted by `WP 18.1A`, new Evidence, citation, search and snapshot tests added)
+- Desktop tests: 519 passed, 0 failed, 0 skipped at the `WP 18.1B` merge (about 2.5 min per configuration, longer when an agent's suite runs alongside)
 - Build: 0 warnings, 0 errors, both configurations, `TreatWarningsAsErrors`
 - Architecture invariants (`DependencyDirectionTests`): 5/5 green
 - Governance health check: 5/5 passed (Windows PowerShell 5.1 and PowerShell 7)
-- CI: ran on the push of `release/v0.17.0` and its PR; `main` required `CI Gate` green to merge (see Release Notes, Warnings)
+- CI: green on every pushed head of `release/v0.18.0` from the wave-1 merge onward (the opening commit failed only the Markdown-budget check, before any code landed)
 
 ## Where things are recorded now
 
