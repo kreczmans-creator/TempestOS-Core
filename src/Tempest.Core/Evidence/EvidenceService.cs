@@ -301,6 +301,37 @@ public sealed class EvidenceService : IEvidenceService
         return new EvidenceActionResult(EvidenceRefusal.None, null, revised);
     }
 
+    /// <inheritdoc />
+    public async Task<EvidenceActionResult> SetSubjectAsync(Guid evidenceId, Guid? subjectId, CancellationToken cancellationToken = default)
+    {
+        var evidence = await FindEvidenceAsync(evidenceId, cancellationToken).ConfigureAwait(false);
+        if (evidence is null)
+            return new EvidenceActionResult(EvidenceRefusal.EvidenceNotFound, $"No evidence '{evidenceId}' is registered.", null);
+
+        if (evidence.Status == EvidenceStatus.Issued)
+        {
+            return new EvidenceActionResult(
+                EvidenceRefusal.SubjectLockedAfterIssue,
+                $"Evidence '{evidenceId}' is Issued; its subject cannot be changed. Revise it first.",
+                evidence);
+        }
+
+        await evidence.SetSubjectAsync(subjectId, cancellationToken).ConfigureAwait(false);
+
+        return new EvidenceActionResult(EvidenceRefusal.None, null, evidence);
+    }
+
+    /// <inheritdoc />
+    public async Task<Evidence> RecordIssueSheetAsync(Guid evidenceId, Guid issueSheetAttachmentId, CancellationToken cancellationToken = default)
+    {
+        var evidence = await FindEvidenceAsync(evidenceId, cancellationToken).ConfigureAwait(false)
+            ?? throw new ArgumentException($"No evidence '{evidenceId}' is registered.", nameof(evidenceId));
+
+        await evidence.SetIssueSheetAttachmentAsync(issueSheetAttachmentId, cancellationToken).ConfigureAwait(false);
+
+        return evidence;
+    }
+
     private async Task<Evidence?> FindEvidenceAsync(Guid evidenceId, CancellationToken cancellationToken) =>
         await _context.Repository.FindAsync(evidenceId, cancellationToken).ConfigureAwait(false) as Evidence;
 

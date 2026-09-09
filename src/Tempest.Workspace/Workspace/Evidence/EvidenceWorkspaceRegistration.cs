@@ -1,6 +1,8 @@
 using Tempest.Core.Commands;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Evidence;
+using Tempest.Core.Identity;
+using Tempest.Core.Versioning;
 using Tempest.Workspace.Mechanical;
 
 namespace Tempest.Workspace.Evidence;
@@ -44,15 +46,27 @@ public static class EvidenceWorkspaceRegistration
     private static readonly IReadOnlyList<string> BoundKinds = [Core.Evidence.Evidence.CanonicalKind];
 
     /// <summary>Registers every Evidence Workspace extension point this Work Package owns.</summary>
+    /// <param name="issueSheetRenderer">
+    /// Renders the issue sheet on Issue (`WP 18.2B`, §2) — <see langword="null"/>
+    /// for a composition root with none (the console harness, which does
+    /// not reference <c>Tempest.Desktop</c>'s own SkiaSharp renderer);
+    /// Issue still succeeds, only the sheet is skipped
+    /// (<see cref="IssueEvidenceCommandHandler"/>'s own remarks).
+    /// </param>
+    /// <param name="principalDirectory">Resolves an identity id to a display name for the issue sheet's own author/checker lines. Registered platform-wide (`TempestHost`), so every composition root has one.</param>
+    /// <param name="platformVersionProvider">Names the running build on the issue sheet's own footer. Registered platform-wide, so every composition root has one.</param>
     public static void Register(
         IWorkspaceManager manager, EngineeringDomainContext domainContext, IEvidenceService evidenceService,
-        ICommandDispatcher commandDispatcher, ICommandRegistry commandRegistry)
+        ICommandDispatcher commandDispatcher, ICommandRegistry commandRegistry,
+        IIssueSheetRenderer? issueSheetRenderer, IPrincipalDirectory principalDirectory, IPlatformVersionProvider platformVersionProvider)
     {
         ArgumentNullException.ThrowIfNull(manager);
         ArgumentNullException.ThrowIfNull(domainContext);
         ArgumentNullException.ThrowIfNull(evidenceService);
         ArgumentNullException.ThrowIfNull(commandDispatcher);
         ArgumentNullException.ThrowIfNull(commandRegistry);
+        ArgumentNullException.ThrowIfNull(principalDirectory);
+        ArgumentNullException.ThrowIfNull(platformVersionProvider);
 
         manager.RegisterExplorerArea(ExplorerAreaId, new EvidenceNodeProvider(ExplorerAreaId, domainContext));
         manager.RegisterFacetProvider(Core.Evidence.Evidence.CanonicalKind, new EvidencePropertyFacetProvider(Core.Evidence.Evidence.CanonicalKind, domainContext));
@@ -84,8 +98,10 @@ public static class EvidenceWorkspaceRegistration
         commandDispatcher.RegisterHandler<RemoveEvidenceCitationCommand>(new RemoveEvidenceCitationCommandHandler(evidenceService));
         commandDispatcher.RegisterHandler<DeclareEvidenceFigureCommand>(new DeclareEvidenceFigureCommandHandler(evidenceService));
         commandDispatcher.RegisterHandler<RecordEvidenceCheckCommand>(new RecordEvidenceCheckCommandHandler(evidenceService));
-        commandDispatcher.RegisterHandler<IssueEvidenceCommand>(new IssueEvidenceCommandHandler(evidenceService));
+        commandDispatcher.RegisterHandler<IssueEvidenceCommand>(new IssueEvidenceCommandHandler(
+            evidenceService, domainContext, issueSheetRenderer, principalDirectory, platformVersionProvider));
         commandDispatcher.RegisterHandler<ReviseEvidenceCommand>(new ReviseEvidenceCommandHandler(evidenceService));
+        commandDispatcher.RegisterHandler<SetEvidenceSubjectCommand>(new SetEvidenceSubjectCommandHandler(evidenceService));
 
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
             id: "evidence.create", displayName: "Create Evidence", category: "Evidence",
@@ -191,6 +207,34 @@ public static class EvidenceWorkspaceRegistration
                 (context, _) => new ReviseEvidenceCommand(WorkspaceCommandBindings.Target(context).ObjectId, WorkspaceCommandBindings.Target(context).Kind),
                 appliesToKinds: BoundKinds,
                 confirmationMessage: "Revise the selected, issued evidence? A new Draft revision begins; the issued revision stays readable."),
+        });
+
+        commandRegistry.RegisterDescriptor(new CommandDescriptor(
+            id: "evidence.set-subject", displayName: "Change Subject", category: "Evidence",
+            description: "Tags the selected evidence to a Part, Assembly, Requirement or Deliverable, or clears the tag. Refused once the evidence is Issued.")
+        {
+            // No `Binding.Fields` — the Subject picker collects a `Guid?`
+            // no string-valued palette field can carry, so this descriptor
+            // exists for discoverability and the confirmation/refusal
+            // plumbing; the Object Editor's own "Change subject" action
+            // (`WP 18.2B`) constructs and dispatches the command directly,
+            // exactly as Cite/Declare-figure already do for their own
+            // picker-collected values.
+            Binding = new CommandBinding(
+                CommandContextRequirement.SelectedObject,
+                (context, values) => new SetEvidenceSubjectCommand(
+                    WorkspaceCommandBindings.Target(context).ObjectId, WorkspaceCommandBindings.Target(context).Kind,
+                    string.IsNullOrWhiteSpace(values["subjectId"]) ? null : Guid.Parse(values["subjectId"])),
+                // A declared default of "" (never null) — every generic,
+                // no-Validate palette parameter's own contract test
+                // (`CommandInvocationContractTests`) satisfies a Text
+                // parameter with whatever `DefaultValue` declares first;
+                // without one it tries "1", which `Guid.Parse` (below)
+                // rejects. Blank is also this parameter's own genuinely
+                // sensible default: it clears the subject, never a
+                // fabricated placeholder id.
+                [WorkspaceCommandBindings.Text("subjectId", "Subject id (blank clears it)", defaultValue: string.Empty)],
+                BoundKinds),
         });
 
         commandRegistry.RegisterDescriptor(new CommandDescriptor(

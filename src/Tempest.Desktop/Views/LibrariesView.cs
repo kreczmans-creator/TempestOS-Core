@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Avalonia.Controls;
 using Avalonia.Layout;
 using Tempest.Core.Bearings;
@@ -58,6 +59,19 @@ public sealed class LibrariesView : UserControl
 
     /// <summary>Raised after an action completes — mirrors every other Desktop View's own <c>ActionCompleted</c> convention (`TD-58`).</summary>
     public event Action<string, ActionOutcome>? ActionCompleted;
+
+    /// <summary>
+    /// Prompts for a revision — the record's own label, its current
+    /// definition as JSON and its current source citation in; a
+    /// <see cref="ReviseReferenceRecordInput"/> (or <see langword="null"/>
+    /// for cancelled) out (`WP 18.2B`, closing a gap `WP 18.2A` disclosed).
+    /// <see langword="null"/> (the default — any test that constructs this
+    /// view directly without it) leaves Revise honestly unavailable rather
+    /// than run with no dialog on screen, mirroring
+    /// <see cref="Editors.EvidenceEditorSupport"/>'s own identical
+    /// discipline for the Object Editor's own pickers.
+    /// </summary>
+    public Func<string, string, SourceCitation?, CancellationToken, Task<ReviseReferenceRecordInput?>>? ReviseRecordPrompt { get; set; }
 
     /// <summary>Initialises a new instance of the <see cref="LibrariesView"/> class.</summary>
     public LibrariesView(
@@ -187,6 +201,22 @@ public sealed class LibrariesView : UserControl
         Grid.SetColumn(release, 2);
         grid.Children.Add(release);
 
+        // `WP 18.2B`: Revise carries the definition and provenance forward
+        // (only the definition, source citation and change summary are
+        // collected here) — offered wherever `ReviseAsync` itself would
+        // not refuse, i.e. everywhere but Released/Superseded
+        // (`ReferenceValidationStates.IsRevisable`).
+        var revise = new Button
+        {
+            Content = "Revise",
+            Padding = new Avalonia.Thickness(10, 2),
+            IsVisible = ReviseRecordPrompt is not null && ReferenceValidationStates.IsRevisable(row.ValidationState),
+        };
+        revise.Classes.Add(ChromeStyles.Subtle);
+        revise.Click += async (_, _) => await OnReviseAsync(row).ConfigureAwait(true);
+        Grid.SetColumn(revise, 3);
+        grid.Children.Add(revise);
+
         return grid;
     }
 
@@ -226,6 +256,96 @@ public sealed class LibrariesView : UserControl
             Report(ex.Message, succeeded: false);
         }
     }
+
+    private async Task OnReviseAsync(EvidenceLibraryRow row)
+    {
+        if (ReviseRecordPrompt is null)
+            return;
+
+        try
+        {
+            var current = await ReadCurrentDefinitionJsonAsync(row).ConfigureAwait(true);
+
+            var input = await ReviseRecordPrompt($"{row.Library} — {row.RecordId}", current.DefinitionJson, current.Source, CancellationToken.None).ConfigureAwait(true);
+            if (input is null)
+            {
+                Report("Revise was cancelled.", succeeded: true);
+                return;
+            }
+
+            await ReviseAsync(row, input, current.Provenance).ConfigureAwait(true);
+            await RefreshAsync().ConfigureAwait(true);
+            Report($"Revised '{row.RecordId}'.", succeeded: true);
+        }
+        catch (JsonException ex)
+        {
+            Report($"The definition is not valid JSON for {row.Library}: {ex.Message}", succeeded: false);
+        }
+        catch (ReferenceDataException ex)
+        {
+            await RefreshAsync().ConfigureAwait(true);
+            Report(ex.Message, succeeded: false);
+        }
+    }
+
+    private static readonly JsonSerializerOptions ReviseJsonOptions = new() { WriteIndented = true, PropertyNameCaseInsensitive = true };
+
+    /// <summary>The current record's own definition (as JSON), source citation and provenance — read once, so <see cref="ReviseAsync(EvidenceLibraryRow, ReviseReferenceRecordInput, ReferenceProvenance)"/> never re-reads (a blocking re-read on the Desktop thread is exactly what `NoBlockingPersistenceCallsTests` forbids) just to carry the provenance forward unchanged.</summary>
+    private async Task<(string DefinitionJson, SourceCitation? Source, ReferenceProvenance Provenance)> ReadCurrentDefinitionJsonAsync(EvidenceLibraryRow row)
+    {
+        switch (row.Library)
+        {
+            case "Materials":
+            {
+                var record = await _materials.FindAsync(row.RecordId).ConfigureAwait(false) ?? throw new ReferenceRecordNotFoundException(row.Library, row.RecordId);
+                return (JsonSerializer.Serialize(record.Definition, ReviseJsonOptions), record.Source, record.Provenance);
+            }
+            case "Fasteners":
+            {
+                var record = await _fasteners.FindAsync(row.RecordId).ConfigureAwait(false) ?? throw new ReferenceRecordNotFoundException(row.Library, row.RecordId);
+                return (JsonSerializer.Serialize(record.Definition, ReviseJsonOptions), record.Source, record.Provenance);
+            }
+            case "Bearings":
+            {
+                var record = await _bearings.FindAsync(row.RecordId).ConfigureAwait(false) ?? throw new ReferenceRecordNotFoundException(row.Library, row.RecordId);
+                return (JsonSerializer.Serialize(record.Definition, ReviseJsonOptions), record.Source, record.Provenance);
+            }
+            case "Standards":
+            {
+                var record = await _standards.FindAsync(row.RecordId).ConfigureAwait(false) ?? throw new ReferenceRecordNotFoundException(row.Library, row.RecordId);
+                return (JsonSerializer.Serialize(record.Definition, ReviseJsonOptions), record.Source, record.Provenance);
+            }
+            case "Constants":
+            {
+                var record = await _constants.FindAsync(row.RecordId).ConfigureAwait(false) ?? throw new ReferenceRecordNotFoundException(row.Library, row.RecordId);
+                return (JsonSerializer.Serialize(record.Definition, ReviseJsonOptions), record.Source, record.Provenance);
+            }
+            default:
+                throw new ReferenceRecordNotFoundException(row.Library, row.RecordId);
+        }
+    }
+
+    private Task ReviseAsync(EvidenceLibraryRow row, ReviseReferenceRecordInput input, ReferenceProvenance provenance)
+    {
+        return row.Library switch
+        {
+            "Materials" => _materials.ReviseAsync(
+                row.RecordId, Deserialise<MaterialDefinition>(row.Library, input.DefinitionJson), provenance, input.ChangeSummary, input.Source),
+            "Fasteners" => _fasteners.ReviseAsync(
+                row.RecordId, Deserialise<FastenerDefinition>(row.Library, input.DefinitionJson), provenance, input.ChangeSummary, input.Source),
+            "Bearings" => _bearings.ReviseAsync(
+                row.RecordId, Deserialise<BearingDefinition>(row.Library, input.DefinitionJson), provenance, input.ChangeSummary, input.Source),
+            "Standards" => _standards.ReviseAsync(
+                row.RecordId, Deserialise<StandardDefinition>(row.Library, input.DefinitionJson), provenance, input.ChangeSummary, input.Source),
+            "Constants" => _constants.ReviseAsync(
+                row.RecordId, Deserialise<ConstantDefinition>(row.Library, input.DefinitionJson), provenance, input.ChangeSummary, input.Source),
+            _ => throw new ReferenceRecordNotFoundException(row.Library, row.RecordId),
+        };
+    }
+
+    private static TDefinition Deserialise<TDefinition>(string library, string definitionJson) where TDefinition : class =>
+        JsonSerializer.Deserialize<TDefinition>(definitionJson, ReviseJsonOptions)
+            ?? throw new JsonException($"The definition for '{library}' deserialised to nothing.");
 
     private Task VerifyAsync(EvidenceLibraryRow row)
     {

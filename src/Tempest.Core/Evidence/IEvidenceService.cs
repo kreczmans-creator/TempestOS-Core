@@ -48,4 +48,29 @@ public interface IEvidenceService
 
     /// <summary>Revises <paramref name="evidenceId"/>'s own Issued evidence: a new revision is created, and moved to <see cref="EvidenceStatus.Draft"/>, while the issued revision stays readable via its own revision history. Refused, as a result, unless the evidence is <see cref="EvidenceStatus.Issued"/>.</summary>
     Task<EvidenceActionResult> ReviseAsync(Guid evidenceId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Retags <paramref name="evidenceId"/>'s own evidence to
+    /// <paramref name="subjectId"/> — the physical review's own "tag a
+    /// record to a Part after creating it" step (`WP 18.2B`, closing a gap
+    /// `WP 18.2A` disclosed). <see langword="null"/> clears the tag.
+    /// Refused, as a result, once the evidence is <see cref="EvidenceStatus.Issued"/> —
+    /// an issued record's own subject is part of what was issued;
+    /// <see cref="ReviseAsync"/> it first.
+    /// </summary>
+    Task<EvidenceActionResult> SetSubjectAsync(Guid evidenceId, Guid? subjectId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Points <paramref name="evidenceId"/>'s own <see cref="IssueRecord.IssueSheetAttachmentId"/>
+    /// at <paramref name="issueSheetAttachmentId"/> — an already-stored
+    /// attachment (via <see cref="Tempest.Core.EngineeringDomain.IHasAttachments.AttachContentAsync"/>)
+    /// carrying the rendered issue sheet's own bytes (`WP 18.2B`). Plumbing,
+    /// not a governed act of its own: the act that matters, <em>issuing</em>,
+    /// already happened through <see cref="IssueAsync"/>; this only records
+    /// where the sheet <see cref="IssueAsync"/> could not yet have rendered
+    /// ended up.
+    /// </summary>
+    /// <exception cref="ArgumentException"><paramref name="evidenceId"/> does not identify a known piece of evidence.</exception>
+    /// <exception cref="InvalidOperationException">The evidence has not been issued — there is no <see cref="Evidence.Issue"/> record to attach a sheet to.</exception>
+    Task<Evidence> RecordIssueSheetAsync(Guid evidenceId, Guid issueSheetAttachmentId, CancellationToken cancellationToken = default);
 }

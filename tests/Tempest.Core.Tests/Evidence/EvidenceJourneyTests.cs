@@ -218,4 +218,118 @@ public sealed class EvidenceJourneyTests
             await host.DisposeAsync();
         }
     }
+
+    /// <summary>`WP 18.2B`, §1: the statement (and outcome) are stored exactly as given — leading/trailing whitespace and an embedded quotation mark survive untouched.</summary>
+    [Fact]
+    public async Task RecordCheckAsync_StoresTheStatementVerbatim_LeadingTrailingWhitespaceAndAQuotationMark()
+    {
+        using var temp = new TempDirectory();
+        var (host, manager) = await EvidenceTestHost.StartAsync(temp.Path);
+
+        try
+        {
+            EvidenceTestHost.SignIn(host);
+
+            var projectId = await EvidenceTestHost.CreateProjectAsync(host);
+            var service = EvidenceTestHost.Service(host);
+            var evidence = await service.CreateAsync(projectId, "Verbatim statement evidence", EvidenceClassification.Report);
+
+            const string statement = "  Reviewed against \"BS EN 10025-2\" and accepted.  ";
+
+            var result = await service.RecordCheckAsync(evidence.Id, "J. Reviewer", "Client Co", statement, CheckOutcome.AcceptedWithComments);
+
+            Assert.True(result.Succeeded);
+            Assert.Equal(statement, result.Evidence!.Check!.Statement);
+            Assert.Equal(CheckOutcome.AcceptedWithComments, result.Evidence.Check.Outcome);
+        }
+        finally
+        {
+            await manager.ShutdownAsync();
+            await host.DisposeAsync();
+        }
+    }
+
+    /// <summary>`WP 18.2B`, closing a `WP 18.2A` gap: a subject can be set and cleared while Draft, and is refused once Issued.</summary>
+    [Fact]
+    public async Task SetSubjectAsync_SetsAndClearsWhileDraft_RefusedOnceIssued()
+    {
+        using var temp = new TempDirectory();
+        var (host, manager) = await EvidenceTestHost.StartAsync(temp.Path);
+
+        try
+        {
+            EvidenceTestHost.SignIn(host);
+
+            var projectId = await EvidenceTestHost.CreateProjectAsync(host);
+            var partId = Guid.NewGuid(); // SubjectId is never dereferenced or validated as a real object (`D-028`) — an arbitrary id proves the point.
+            var service = EvidenceTestHost.Service(host);
+            var evidence = await service.CreateAsync(projectId, "Subject retag evidence", EvidenceClassification.Calculation);
+            Assert.Null(evidence.SubjectId);
+
+            var tagged = await service.SetSubjectAsync(evidence.Id, partId);
+            Assert.True(tagged.Succeeded);
+            Assert.Equal(partId, tagged.Evidence!.SubjectId);
+
+            var cleared = await service.SetSubjectAsync(evidence.Id, null);
+            Assert.True(cleared.Succeeded);
+            Assert.Null(cleared.Evidence!.SubjectId);
+
+            await service.SetSubjectAsync(evidence.Id, partId);
+            await service.RecordCheckAsync(evidence.Id, "J. Reviewer", "Client Co", "Accepted.", CheckOutcome.Accepted);
+            var issued = await service.IssueAsync(evidence.Id, "ISS-SUBJ-01", "A", "Client Co");
+            Assert.True(issued.Succeeded);
+
+            var refused = await service.SetSubjectAsync(evidence.Id, null);
+            Assert.False(refused.Succeeded);
+            Assert.Equal(EvidenceRefusal.SubjectLockedAfterIssue, refused.Refusal);
+            Assert.Equal(partId, refused.Evidence!.SubjectId); // unchanged by the refusal
+        }
+        finally
+        {
+            await manager.ShutdownAsync();
+            await host.DisposeAsync();
+        }
+    }
+
+    /// <summary>`WP 18.2B`, §2: the issue-sheet-attachment plumbing — <c>RecordIssueSheetAsync</c> points <c>Issue.IssueSheetAttachmentId</c> at an already-stored attachment, and refuses (by throwing, being plumbing rather than a governed act) when there is no issue record yet.</summary>
+    [Fact]
+    public async Task RecordIssueSheetAsync_PointsTheIssueRecordAtTheAttachment_AndRequiresAnIssueRecordFirst()
+    {
+        using var temp = new TempDirectory();
+        var (host, manager) = await EvidenceTestHost.StartAsync(temp.Path);
+
+        try
+        {
+            EvidenceTestHost.SignIn(host);
+
+            var projectId = await EvidenceTestHost.CreateProjectAsync(host);
+            var service = EvidenceTestHost.Service(host);
+            var evidence = await service.CreateAsync(projectId, "Issue sheet plumbing evidence", EvidenceClassification.Calculation);
+
+            // No issue record yet: refused by throwing (plumbing, not a governed act with its own refusal result).
+            await Assert.ThrowsAsync<InvalidOperationException>(
+                () => service.RecordIssueSheetAsync(evidence.Id, Guid.NewGuid()));
+
+            await service.RecordCheckAsync(evidence.Id, "J. Reviewer", "Client Co", "Accepted.", CheckOutcome.Accepted);
+            var issued = await service.IssueAsync(evidence.Id, "ISS-PLUMB-01", "A", "Client Co");
+            Assert.True(issued.Succeeded);
+            Assert.Null(issued.Evidence!.Issue!.IssueSheetAttachmentId);
+
+            var bytes = new byte[] { 0x25, 0x50, 0x44, 0x46 }; // "%PDF"
+            var attachment = await issued.Evidence.AttachContentAsync("issue-sheet.pdf", "application/pdf", bytes);
+
+            var afterAttach = await service.RecordIssueSheetAsync(evidence.Id, attachment.Id);
+            Assert.Equal(attachment.Id, afterAttach.Issue!.IssueSheetAttachmentId);
+
+            // Every other field of the issue record is untouched.
+            Assert.Equal("ISS-PLUMB-01", afterAttach.Issue.IssueReference);
+            Assert.Equal("A", afterAttach.Issue.Revision);
+            Assert.Equal("Client Co", afterAttach.Issue.Client);
+        }
+        finally
+        {
+            await manager.ShutdownAsync();
+            await host.DisposeAsync();
+        }
+    }
 }

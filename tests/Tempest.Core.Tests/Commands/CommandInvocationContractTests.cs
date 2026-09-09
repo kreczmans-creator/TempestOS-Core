@@ -184,7 +184,8 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
         }
 
         Assert.Empty(failures);
-        Assert.Equal(64, built);
+        // `WP 18.2B`: `evidence.set-subject` adds one more invocable descriptor, 64 becomes 65.
+        Assert.Equal(65, built);
     }
 
     [Fact]
@@ -240,7 +241,8 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
         }
 
         Assert.Empty(failures);
-        Assert.Equal(64, executed);
+        // `WP 18.2B`: `evidence.set-subject` adds one more invocable descriptor, 64 becomes 65.
+        Assert.Equal(65, executed);
     }
 
     [Fact]
@@ -367,7 +369,8 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
         }
 
         Assert.Empty(disagreements);
-        Assert.Equal(82 * 4, compared);
+        // `WP 18.2B`: `evidence.set-subject` adds one more production descriptor, 82 becomes 83.
+        Assert.Equal(83 * 4, compared);
     }
 
     // ==================================================================
@@ -440,6 +443,7 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
             [
                 "calculations.edit.newContent",
                 "documents.edit.newContent",
+                "evidence.set-subject.subjectId",
                 "manufacturing.edit.newContent",
                 "mechanical.edit.newContent",
                 "mechanical.set-bom-line.findNumber",
@@ -456,7 +460,10 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
         // fifteen of whose own declared parameters carry a rule of their
         // own (ObjectName/Required non-blank, or an EnumChoice set) — none
         // free text — so 42 becomes 57.
-        Assert.Equal(57, Invocable.Sum(d => d.Binding!.Parameters.Count));
+        // `WP 18.2B` adds "evidence.set-subject" (one free-text parameter,
+        // "subjectId" — a blank clears the tag, so no non-blank rule
+        // applies), so 57 becomes 58.
+        Assert.Equal(58, Invocable.Sum(d => d.Binding!.Parameters.Count));
     }
 
     [Fact]
@@ -502,7 +509,9 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
         // `WP 18.0A`: every one of Evidence's own eight descriptors
         // requires a prompt — "evidence.revise" and "evidence.delete" take
         // no parameter but each carries a confirmation — so 42 becomes 50.
-        Assert.Equal(50, refused);
+        // `WP 18.2B` adds a ninth, "evidence.set-subject" (one field), so
+        // 50 becomes 51.
+        Assert.Equal(51, refused);
     }
 
     [Fact]
@@ -613,7 +622,8 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
     public void NoProductionDescriptor_HasACreateDefault_SoNoSurfaceBehaviourMoved()
     {
         Assert.All(Production, d => Assert.Null(d.CreateDefault));
-        Assert.Equal(82, Production.Count);
+        // `WP 18.2B`: `evidence.set-subject` adds one more production descriptor, 82 becomes 83.
+        Assert.Equal(83, Production.Count);
     }
 
     [Fact]
@@ -624,9 +634,11 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
         // `WP 18.0A`: Evidence's own eight production descriptors are all
         // invocable (none needs an object picker or structured input), so
         // 56 becomes 64 and 74 becomes 82; 18 is unchanged.
-        Assert.Equal(64, Invocable.Count());
+        // `WP 18.2B` adds a ninth, invocable Evidence descriptor
+        // ("evidence.set-subject"), so 64 becomes 65 and 82 becomes 83.
+        Assert.Equal(65, Invocable.Count());
         Assert.Equal(18, Unavailable.Count());
-        Assert.Equal(82, Production.Count);
+        Assert.Equal(83, Production.Count);
     }
 
     [Fact]
