@@ -1,4 +1,3 @@
-using Tempest.Core.CommercialIntelligence.Suppliers;
 using Tempest.Core.EngineeringData;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Logging;
@@ -215,8 +214,10 @@ public static class CrmValidationRules
     /// <summary>An organisation declined for a reason nobody stated.</summary>
     public const string DeclinedWithoutReason = "TEMPEST-BOC-003";
 
-    /// <summary>The organisation names a `P03` supplier record the supplier database does not hold.</summary>
-    public const string SupplierRecordMustResolve = "TEMPEST-BOC-004";
+    // TEMPEST-BOC-004 (SupplierRecordMustResolve) retired by WP 18.0C
+    // (D-028): CommercialIntelligence.Suppliers, the P03 supplier
+    // database it cross-checked against, is frozen to src/Frozen/. Codes
+    // are never reassigned, so BOC-004 stays retired rather than reused.
 
     /// <summary>The organisation names a parent the library does not hold.</summary>
     public const string ParentMustResolve = "TEMPEST-BOC-005";
@@ -241,24 +242,28 @@ public sealed class OrganisationValidationService : ReferenceValidationService<O
 {
     private readonly IOrganisationCatalog _organisations;
     private readonly IContactCatalog? _contacts;
-    private readonly ISupplierCatalog? _suppliers;
     private readonly TimeProvider _time;
 
     /// <summary>Initialises a new instance of the <see cref="OrganisationValidationService"/> class.</summary>
     /// <param name="catalog">The organisation library whose records this service validates.</param>
     /// <param name="contacts">The contact library, for confirming somebody is reachable. Optional.</param>
-    /// <param name="suppliers">The `P03` supplier database, for confirming a linked supplier exists. Optional.</param>
     /// <param name="timeProvider">The clock overdue checks are made against. <see langword="null"/> for <see cref="TimeProvider.System"/>.</param>
+    /// <remarks>
+    /// WP 18.0C (D-028): this used to also take an optional `P03`
+    /// <c>ISupplierCatalog</c>, to confirm a linked supplier record
+    /// existed. `CommercialIntelligence.Suppliers` is frozen to
+    /// `src/Frozen/`, so that cross-check is retired with it (BOC-004);
+    /// <see cref="Organisation.SupplierRecordId"/> itself is unaffected —
+    /// it is a plain string, not a typed reference.
+    /// </remarks>
     public OrganisationValidationService(
         IOrganisationCatalog catalog,
         IContactCatalog? contacts = null,
-        ISupplierCatalog? suppliers = null,
         TimeProvider? timeProvider = null)
         : base(catalog, materialCatalog: null, standardResolver: null)
     {
         _organisations = catalog;
         _contacts = contacts;
-        _suppliers = suppliers;
         _time = timeProvider ?? TimeProvider.System;
     }
 
@@ -305,16 +310,6 @@ public sealed class OrganisationValidationService : ReferenceValidationService<O
         List<IValidationDiagnostic> warnings,
         CancellationToken cancellationToken)
     {
-        if (_suppliers is not null && definition.SupplierRecordId is { } supplierId)
-        {
-            var supplier = await _suppliers.FindAsync(supplierId, cancellationToken).ConfigureAwait(false);
-
-            if (supplier is null)
-                warnings.Add(OperationalValidation.Diagnostic(
-                    CrmValidationRules.SupplierRecordMustResolve,
-                    $"{subject} links supplier record '{supplierId}', which the supplier database does not hold."));
-        }
-
         if (definition.ParentOrganisationReference is { } parent
             && !string.Equals(parent, definition.Reference, StringComparison.OrdinalIgnoreCase))
         {

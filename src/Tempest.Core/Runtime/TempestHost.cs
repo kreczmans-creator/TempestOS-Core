@@ -13,7 +13,6 @@ using Tempest.Core.EngineeringDomain;
 using Tempest.Core.BusinessGovernance.Assets;
 using Tempest.Core.BusinessOperations.Crm;
 using Tempest.Core.BusinessOperations.Finance;
-using Tempest.Core.CommercialIntelligence.Costs;
 using Tempest.Core.EngineeringAssets.CalculationPacks;
 using Tempest.Core.Knowledge.Academy;
 using Tempest.Core.Knowledge.Challenges;
@@ -24,10 +23,6 @@ using Tempest.Core.EngineeringAssets.DesignReviews;
 using Tempest.Core.EngineeringAssets.TechnicalDocumentation;
 using Tempest.Core.EngineeringAssets.Templates;
 using Tempest.Core.EngineeringAssets.Verification;
-using Tempest.Core.CommercialIntelligence.Estimating;
-using Tempest.Core.CommercialIntelligence.LeadTimes;
-using Tempest.Core.CommercialIntelligence.Procurement;
-using Tempest.Core.CommercialIntelligence.Suppliers;
 using Tempest.Core.BusinessGovernance.Contracts;
 using Tempest.Core.BusinessGovernance.Development;
 using Tempest.Core.BusinessGovernance.Finance;
@@ -691,42 +686,10 @@ public sealed class TempestHost : ITempestHost
         services.Singleton<IOperatingScenarioCatalog, OperatingScenarioCatalog>();
         services.Singleton<IOperatingScenarioValidationService, OperatingScenarioValidationService>();
 
-        // `Group D` (P03): commercial intelligence. Suppliers, process
-        // costs, lead times, estimates, quotes and sourcing comparisons are
-        // authored, evidenced, revisioned and superseded records like every
-        // other library, and sit on the same shared ReferenceDataCatalog<T>
-        // base (`ADR-0132`).
-        //
-        // Registered after `P07`, whose Money and EffectivePeriod `P03`
-        // reuses rather than restating (`ADR-0132`), and after `P01`, whose
-        // process and material records its cost and lead-time records cite.
-        // The estimating and comparison services read those libraries and
-        // write nothing back: `P03` compares, ranks and recommends, and
-        // never places an order, awards business, approves a supplier or
-        // commits expenditure (`ADR-0135`).
-        services.Singleton<ISupplierCatalog, SupplierCatalog>();
-        services.Singleton<ISupplierValidationService, SupplierValidationService>();
-        services.Singleton<ISupplierIdentityService, SupplierIdentityService>();
-
-        services.Singleton<IProcessCostCatalog, ProcessCostCatalog>();
-        services.Singleton<IProcessCostValidationService, ProcessCostValidationService>();
-
-        services.Singleton<ILeadTimeCatalog, LeadTimeCatalog>();
-        services.Singleton<ILeadTimeValidationService, LeadTimeValidationService>();
-
-        services.Singleton<ICostEstimateCatalog, CostEstimateCatalog>();
-        services.Singleton<ICostEstimateValidationService, CostEstimateValidationService>();
-        services.Singleton<ISupplierQuoteCatalog, SupplierQuoteCatalog>();
-        services.Singleton<ISupplierQuoteValidationService, SupplierQuoteValidationService>();
-        services.Singleton<ICustomerQuotationCatalog, CustomerQuotationCatalog>();
-        services.Singleton<ICustomerQuotationValidationService, CustomerQuotationValidationService>();
-        services.Singleton<IEstimatingService, EstimatingService>();
-
-        services.Singleton<ISourcingRequirementCatalog, SourcingRequirementCatalog>();
-        services.Singleton<ISourcingRequirementValidationService, SourcingRequirementValidationService>();
-        services.Singleton<ISourcingComparisonCatalog, SourcingComparisonCatalog>();
-        services.Singleton<ISourcingComparisonValidationService, SourcingComparisonValidationService>();
-        services.Singleton<ISourcingComparisonService, SourcingComparisonService>();
+        // `Group D` (P03, CommercialIntelligence) was frozen to
+        // `src/Frozen/Tempest.Core.CommercialIntelligence` by `WP 18.0C`
+        // (`D-028`): unreachable from any shipped surface. See
+        // `src/Frozen/README.md`.
 
         // `Group E` (P05): engineering assets. Templates, calculation
         // packs, verification artefacts, design review packs and technical
