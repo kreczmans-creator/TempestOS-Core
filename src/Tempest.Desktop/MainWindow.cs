@@ -411,7 +411,7 @@ public sealed class MainWindow : Window
 
         // `WP 17.9.4`: what you make opens right up. Nothing a user creates
         // may drop out of sight; the shell takes them to it.
-        _ribbon.ObjectCreated += (id, kind) => _ = OpenCreatedObjectAsync(id, kind);
+        _ribbon.ObjectCreated += (id, kind) => _ = OpenObjectAsync(id, kind);
 
         // Background-task state changes drive the Output panel's own
         // Background Tasks list directly (`TD-58` stale-UI closure) —
@@ -764,7 +764,7 @@ public sealed class MainWindow : Window
                 // `WP 17.9.4`: a created object opens right up, from the
                 // palette exactly as from the ribbon.
                 if (result is { SubjectId: { } createdId, SubjectKind: { } createdKind } && RibbonView.IsCreate(descriptor.Id))
-                    await OpenCreatedObjectAsync(createdId, createdKind).ConfigureAwait(true);
+                    await OpenObjectAsync(createdId, createdKind).ConfigureAwait(true);
             }
         };
         _commandPalette.CommandUnavailable += (descriptor, reason) =>
@@ -773,6 +773,40 @@ public sealed class MainWindow : Window
             // actually missing, not a guess at where else to try.
             _statusBar.SetText(reason);
             _toastHost.Show(reason, FeedbackSeverity.Warning);
+        };
+
+        // `WP 18.1B` §2: the palette's own Objects section — a background
+        // full-text search (`ObjectSearchSource` is awaited, never blocked
+        // on) over the platform's one search index, each hit resolved to
+        // its own live title and its project's own live name so the row
+        // never renders a stale snapshot of either.
+        var searchStore = (Tempest.Core.Persistence.IQueryablePersistenceStore)services.GetService(typeof(Tempest.Core.Persistence.IQueryablePersistenceStore));
+        _commandPalette.ObjectSearchSource = async (query, cancellationToken) =>
+        {
+            var hits = await searchStore.SearchAsync(query, 10, cancellationToken).ConfigureAwait(true);
+            var results = new List<PaletteObjectHit>(hits.Count);
+
+            foreach (var hit in hits)
+            {
+                var found = await composition.DomainContext.Repository.FindAsync(hit.ObjectId, cancellationToken).ConfigureAwait(true);
+                var title = (found as IHasBusinessIdentifier)?.DisplayName ?? hit.ObjectId.ToString();
+
+                string? projectName = null;
+                if (hit.ProjectId is { } projectId)
+                {
+                    var project = await composition.DomainContext.Repository.FindAsync(projectId, cancellationToken).ConfigureAwait(true);
+                    projectName = (project as IHasBusinessIdentifier)?.DisplayName;
+                }
+
+                results.Add(new PaletteObjectHit(hit.ObjectId, hit.Kind, title, projectName));
+            }
+
+            return results;
+        };
+        _commandPalette.ObjectSelected += async hit =>
+        {
+            RecordHistory($"Opened '{hit.Title}' from Command Palette search.");
+            await OpenObjectAsync(hit.ObjectId, hit.Kind).ConfigureAwait(true);
         };
 
         Opened += async (_, _) =>
@@ -1261,14 +1295,17 @@ public sealed class MainWindow : Window
     }
 
     /// <summary>
-    /// Takes the user to an object they just made (`WP 17.9.4`): the
+    /// Takes the user to an object — one they just made (`WP 17.9.4`), or
+    /// one they just found (`WP 18.1B`, the Command Palette's own Objects
+    /// section, the Home cockpit's own Recently changed card): the
     /// Explorer switches to the area that lists its Kind, reloads, expands
     /// the path to it and selects it; then the object opens in the editor
-    /// tab with every field in front of them. The first two Windows
-    /// reviews of `v0.17.0` both lost a newly created object; the rule
-    /// now is that nothing a user creates may drop out of sight.
+    /// tab with every field in front of them. Placement and open-right-up
+    /// are rules of the store and the declaration (`WP 18.1B` §5), not of
+    /// each screen — this is the one method every screen that opens an
+    /// object by id and Kind now calls.
     /// </summary>
-    internal async Task OpenCreatedObjectAsync(Guid id, string kind)
+    internal async Task OpenObjectAsync(Guid id, string kind)
     {
         var workspace = _workspaceManager.Current;
         if (workspace is null)
@@ -1289,6 +1326,9 @@ public sealed class MainWindow : Window
         _inspectorView.SetCurrentSelection(id, kind);
         await _inspectorView.RefreshFromSourceAsync().ConfigureAwait(true);
     }
+
+    /// <summary>The `WP 17.9.4` name, kept working: an alias for <see cref="OpenObjectAsync"/>, generalised by `WP 18.1B` §2/§5 to open any found object, not only a created one.</summary>
+    internal Task OpenCreatedObjectAsync(Guid id, string kind) => OpenObjectAsync(id, kind);
 
     private void SetCurrentArea(string? title)
     {
