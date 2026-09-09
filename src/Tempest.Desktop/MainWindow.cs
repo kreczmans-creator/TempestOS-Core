@@ -345,7 +345,7 @@ public sealed class MainWindow : Window
             workspace, manager, composition.DomainContext, composition.CommandDispatcher, composition.RequirementsService, host.CalculationTemplates,
             _explorerView, _inspectorView, _ribbon, _statusBar, _toastHost, _confirmationDialog, _undoRedo.Stack,
             _session.RecentObjects, _session.FavouriteObjects, _openGraphViewsByRootId,
-            refreshStatusBar: () => RefreshStatusBar(manager), recordHistory: RecordHistory, refreshCockpit: () => _cockpitView!.Refresh(), _actionReporter,
+            refreshStatusBar: () => RefreshStatusBar(manager), recordHistory: RecordHistory, refreshCockpit: () => _cockpitView!.SafeRefreshAsync(), _actionReporter,
             workspaceChanges: composition.WorkspaceChanges, declarations: kindEditorDeclarations, evidenceSupport: evidenceSupport, auditQuery: host.AuditQuery);
 
         _documentArea = new DocumentAreaView(_viewCoordinator.BuildDocumentContent);
@@ -917,7 +917,7 @@ public sealed class MainWindow : Window
             await _explorerView.LoadAsync().ConfigureAwait(true);
             SetCurrentArea(firstArea?.Title);
             RefreshStatusBar(manager);
-            _cockpitView.Refresh();
+            await _cockpitView.RefreshAsync().ConfigureAwait(true);
 
             // Render whichever module the recovered location names
             // (`TD-84`) — the shell opens where the user left it, with the

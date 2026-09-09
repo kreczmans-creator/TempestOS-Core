@@ -251,7 +251,7 @@ public class VerificationWorkspaceIntegrationTests
         using var temp = new TempDirectory();
         var (workspace, manager, _) = await StartAsync(temp.Path);
         var cockpit = ((Tempest.Workspace.Workspace)workspace).Cockpit;
-
+        await cockpit.PrimeAsync();
         var cards = cockpit.VerificationKpiCards.ToDictionary(c => c.Label, c => c.Value);
 
         // Four live Activities: Inspection (InReview, no record - In
@@ -274,7 +274,7 @@ public class VerificationWorkspaceIntegrationTests
         using var temp = new TempDirectory();
         var (workspace, manager, _) = await StartAsync(temp.Path);
         var cockpit = ((Tempest.Workspace.Workspace)workspace).Cockpit;
-
+        await cockpit.PrimeAsync();
         Assert.Contains(cockpit.AttentionItems, item => item.Title == "Verification is live");
 
         await manager.ShutdownAsync();
@@ -286,7 +286,7 @@ public class VerificationWorkspaceIntegrationTests
         using var temp = new TempDirectory();
         var (workspace, manager, _) = await StartAsync(temp.Path);
         var cockpit = ((Tempest.Workspace.Workspace)workspace).Cockpit;
-
+        await cockpit.PrimeAsync();
         Assert.Equal(EngineeringHealthStatus.Blocked, cockpit.VerificationStatus);
 
         await manager.ShutdownAsync();

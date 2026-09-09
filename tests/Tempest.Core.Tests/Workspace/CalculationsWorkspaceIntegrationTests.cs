@@ -315,7 +315,7 @@ public class CalculationsWorkspaceIntegrationTests
         using var temp = new TempDirectory();
         var (workspace, manager, _) = await StartAsync(temp.Path);
         var cockpit = ((Tempest.Workspace.Workspace)workspace).Cockpit;
-
+        await cockpit.PrimeAsync();
         var cards = cockpit.CalculationsKpiCards.ToDictionary(c => c.Label, c => c.Value);
 
         // Five live Calculations: Bolt Shear (Approved), Bearing (Draft),
@@ -336,7 +336,7 @@ public class CalculationsWorkspaceIntegrationTests
         using var temp = new TempDirectory();
         var (workspace, manager, _) = await StartAsync(temp.Path);
         var cockpit = ((Tempest.Workspace.Workspace)workspace).Cockpit;
-
+        await cockpit.PrimeAsync();
         Assert.Contains(cockpit.AttentionItems, item => item.Title == "Calculations are live");
 
         await manager.ShutdownAsync();
@@ -348,7 +348,7 @@ public class CalculationsWorkspaceIntegrationTests
         using var temp = new TempDirectory();
         var (workspace, manager, _) = await StartAsync(temp.Path);
         var cockpit = ((Tempest.Workspace.Workspace)workspace).Cockpit;
-
+        await cockpit.PrimeAsync();
         Assert.Equal(EngineeringHealthStatus.Blocked, cockpit.CalculationStatus);
 
         await manager.ShutdownAsync();

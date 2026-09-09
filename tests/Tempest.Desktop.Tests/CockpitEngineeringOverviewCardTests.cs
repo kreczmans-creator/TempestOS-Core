@@ -24,7 +24,7 @@ public sealed class CockpitEngineeringOverviewCardTests
             await host.StartAsync();
             var workspace = host.Workspace!;
             var cockpit = workspace.Cockpit;
-
+            await cockpit.PrimeAsync();
             var view = new CockpitView(
                 cockpit,
                 workspace.Navigation.Areas,

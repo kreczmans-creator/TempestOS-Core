@@ -23,9 +23,19 @@ namespace Tempest.Workspace.Mechanical;
 /// a pre-existing asymmetry this move preserves exactly, not a gap this
 /// Work Package introduces or silently closes.
 /// </remarks>
+/// <remarks>
+/// <b>`WP 18.1A-R1`.</b> The one persistence-backed read
+/// (<c>Repository.ListByKindAsync</c>) now runs inside <see cref="LoadAsync"/>,
+/// awaited once per Cockpit render (<see cref="EngineeringCockpit.PrimeAsync"/>)
+/// rather than blocked on synchronously from every property access — see
+/// that method's own remarks for why. Every property below is now a pure,
+/// in-memory read of what <see cref="LoadAsync"/> last loaded, honestly
+/// empty until the first call completes.
+/// </remarks>
 internal sealed class MechanicalCockpitReadModel
 {
     private readonly EngineeringDomainContext _domainContext;
+    private IReadOnlyList<IHasBusinessIdentifier> _liveProjects = [];
 
     /// <summary>Initialises a new instance of the <see cref="MechanicalCockpitReadModel"/> class.</summary>
     /// <param name="domainContext">The Engineering Domain's own shared repository this read-model queries directly.</param>
@@ -36,12 +46,19 @@ internal sealed class MechanicalCockpitReadModel
         _domainContext = domainContext;
     }
 
-    /// <summary>Gets every live (non-deleted) <c>Project</c>, newest-created first is not guaranteed — insertion order from the repository.</summary>
-    public IReadOnlyList<IHasBusinessIdentifier> LiveProjects =>
-        _domainContext.Repository.ListByKindAsync("Project").GetAwaiter().GetResult()
+    /// <summary>Loads every live (non-deleted) <c>Project</c> — the one read every property below is derived from.</summary>
+    public async Task LoadAsync(CancellationToken cancellationToken = default)
+    {
+        var projects = await _domainContext.Repository.ListByKindAsync("Project", cancellationToken).ConfigureAwait(false);
+
+        _liveProjects = projects
             .Where(o => o is not IDeletable { IsDeleted: true })
             .OfType<IHasBusinessIdentifier>()
             .ToList();
+    }
+
+    /// <summary>Gets every live (non-deleted) <c>Project</c>, newest-created first is not guaranteed — insertion order from the repository.</summary>
+    public IReadOnlyList<IHasBusinessIdentifier> LiveProjects => _liveProjects;
 
     /// <summary>
     /// Gets the most-recently-created live Mechanical Product Structure

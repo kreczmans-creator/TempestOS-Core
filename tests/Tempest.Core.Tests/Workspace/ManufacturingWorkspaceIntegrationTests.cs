@@ -308,7 +308,7 @@ public class ManufacturingWorkspaceIntegrationTests
         using var temp = new TempDirectory();
         var (workspace, manager, _) = await StartAsync(temp.Path);
         var cockpit = ((Tempest.Workspace.Workspace)workspace).Cockpit;
-
+        await cockpit.PrimeAsync();
         var cards = cockpit.ManufacturingKpiCards.ToDictionary(c => c.Label, c => c.Value);
 
         // Seven live objects: Routing (Draft), three Operation steps (one
@@ -332,7 +332,7 @@ public class ManufacturingWorkspaceIntegrationTests
         using var temp = new TempDirectory();
         var (workspace, manager, _) = await StartAsync(temp.Path);
         var cockpit = ((Tempest.Workspace.Workspace)workspace).Cockpit;
-
+        await cockpit.PrimeAsync();
         Assert.Contains(cockpit.AttentionItems, item => item.Title == "Manufacturing is live");
 
         await manager.ShutdownAsync();
@@ -344,7 +344,7 @@ public class ManufacturingWorkspaceIntegrationTests
         using var temp = new TempDirectory();
         var (workspace, manager, _) = await StartAsync(temp.Path);
         var cockpit = ((Tempest.Workspace.Workspace)workspace).Cockpit;
-
+        await cockpit.PrimeAsync();
         Assert.Equal(EngineeringHealthStatus.Attention, cockpit.ManufacturingStatus);
 
         await manager.ShutdownAsync();

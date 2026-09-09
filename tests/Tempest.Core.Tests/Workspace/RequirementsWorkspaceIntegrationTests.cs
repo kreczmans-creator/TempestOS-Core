@@ -401,7 +401,7 @@ public class RequirementsWorkspaceIntegrationTests
         using var temp = new TempDirectory();
         var (workspace, manager, _) = await StartAsync(temp.Path);
         var cockpit = ((Tempest.Workspace.Workspace)workspace).Cockpit;
-
+        await cockpit.PrimeAsync();
         var cards = cockpit.RequirementsKpiCards.ToDictionary(c => c.Label, c => c.Value);
 
         // 9 live (10 created, 1 soft-deleted).
@@ -417,7 +417,7 @@ public class RequirementsWorkspaceIntegrationTests
         using var temp = new TempDirectory();
         var (workspace, manager, _) = await StartAsync(temp.Path);
         var cockpit = ((Tempest.Workspace.Workspace)workspace).Cockpit;
-
+        await cockpit.PrimeAsync();
         Assert.Contains(cockpit.AttentionItems, item => item.Title == "Requirements Management is live");
 
         await manager.ShutdownAsync();

@@ -14,42 +14,59 @@ namespace Tempest.Workspace.Verification;
 /// referencing <see cref="EngineeringCockpit"/> or any sibling
 /// discipline collaborator back.
 /// </summary>
+/// <remarks>
+/// <b>`WP 18.1A-R1`.</b> Supersedes `WP-E`'s own <see cref="CockpitReadScope"/>-backed
+/// memoisation (a lazy cell, computed once per open <c>Begin()</c> pass
+/// but still blocked on synchronously outside one — the exact shape
+/// `TD-108`/`TD-118` found) with an eager <see cref="LoadAsync"/>: every
+/// persistence-backed read this discipline needs — the live Activity
+/// listing, and one <see cref="VerificationRecordReader"/> read per
+/// Activity — happens there, awaited once per Cockpit render
+/// (<see cref="EngineeringCockpit.PrimeAsync"/>). Every property below is
+/// now a pure, in-memory read of what <see cref="LoadAsync"/> last
+/// loaded — still computed once per render, never per property, but
+/// without a single blocking call left in this file's own source.
+/// </remarks>
 internal sealed class VerificationCockpitReadModel
 {
     private readonly EngineeringDomainContext _domainContext;
-    private readonly CockpitReadCell<IReadOnlyList<IEngineeringObject>> _liveActivities;
-    private readonly CockpitReadCell<IReadOnlyList<(IEngineeringObject Activity, VerificationRecordSnapshot? LatestRecord)>> _snapshots;
-    private readonly CockpitReadCell<int> _totalRecords;
+    private IReadOnlyList<IEngineeringObject> _liveActivities = [];
+    private IReadOnlyList<(IEngineeringObject Activity, VerificationRecordSnapshot? LatestRecord)> _snapshots = [];
+    private int _totalRecords;
 
     /// <summary>Initialises a new instance of the <see cref="VerificationCockpitReadModel"/> class.</summary>
     /// <param name="domainContext">The Engineering Domain's own shared repository this read-model queries directly.</param>
-    /// <param name="scope">The Cockpit's own per-refresh read scope (`WP-E`) — see <see cref="CockpitReadScope"/>.</param>
-    public VerificationCockpitReadModel(EngineeringDomainContext domainContext, CockpitReadScope scope)
+    public VerificationCockpitReadModel(EngineeringDomainContext domainContext)
     {
         ArgumentNullException.ThrowIfNull(domainContext);
-        ArgumentNullException.ThrowIfNull(scope);
 
         _domainContext = domainContext;
-
-        _liveActivities = scope.Cell<IReadOnlyList<IEngineeringObject>>(() =>
-            _domainContext.Repository.ListByKindAsync(VerificationActivityFactoryRegistry.SupportedKind).GetAwaiter().GetResult()
-                .Where(o => o is not IDeletable { IsDeleted: true })
-                .ToList());
-
-        // The persistence-backed leaf (`WP-E`): one VerificationRecordReader
-        // read per Activity, previously repeated by each of the eight
-        // counts and card sets derived from it.
-        _snapshots = scope.Cell<IReadOnlyList<(IEngineeringObject Activity, VerificationRecordSnapshot? LatestRecord)>>(() =>
-            LiveVerificationActivities
-                .Select(a => (a, VerificationRecordReader.GetLatestAsync(_domainContext, a.Id).GetAwaiter().GetResult()))
-                .ToList());
-
-        _totalRecords = scope.Cell(() =>
-            LiveVerificationActivities.Sum(a => VerificationRecordReader.GetResultHistoryAsync(_domainContext, a.Id).GetAwaiter().GetResult().Count));
     }
 
-    /// <summary>Gets every live (non-deleted) Verification Activity — a real read via <see cref="EngineeringDomainContext.Repository"/>.</summary>
-    public IReadOnlyList<IEngineeringObject> LiveVerificationActivities => _liveActivities.Value;
+    /// <summary>Loads every live Verification Activity, its own most recent recorded result, and the total record count across all of them — the three reads every property below is derived from.</summary>
+    public async Task LoadAsync(CancellationToken cancellationToken = default)
+    {
+        var activities = await _domainContext.Repository.ListByKindAsync(VerificationActivityFactoryRegistry.SupportedKind, cancellationToken).ConfigureAwait(false);
+        var liveActivities = activities.Where(o => o is not IDeletable { IsDeleted: true }).ToList();
+        _liveActivities = liveActivities;
+
+        var snapshots = new List<(IEngineeringObject Activity, VerificationRecordSnapshot? LatestRecord)>(liveActivities.Count);
+        var totalRecords = 0;
+
+        foreach (var activity in liveActivities)
+        {
+            var latest = await VerificationRecordReader.GetLatestAsync(_domainContext, activity.Id, cancellationToken).ConfigureAwait(false);
+            snapshots.Add((activity, latest));
+
+            totalRecords += (await VerificationRecordReader.GetResultHistoryAsync(_domainContext, activity.Id, cancellationToken).ConfigureAwait(false)).Count;
+        }
+
+        _snapshots = snapshots;
+        _totalRecords = totalRecords;
+    }
+
+    /// <summary>Gets every live (non-deleted) Verification Activity — loaded by <see cref="LoadAsync"/>.</summary>
+    public IReadOnlyList<IEngineeringObject> LiveVerificationActivities => _liveActivities;
 
     /// <summary>Gets the number of live Verification Activities — the Cockpit's own cross-discipline KPI summary reads this directly.</summary>
     public int Count => LiveVerificationActivities.Count;
@@ -63,7 +80,7 @@ internal sealed class VerificationCockpitReadModel
     /// against.
     /// </summary>
     private IReadOnlyList<(IEngineeringObject Activity, VerificationRecordSnapshot? LatestRecord)> LiveVerificationSnapshots =>
-        _snapshots.Value;
+        _snapshots;
 
     /// <summary>Gets the number of live Verification Activities whose own most recent recorded result has <see cref="VerificationOutcome.Fail"/> — the Cockpit's own "Failed" signal.</summary>
     private int FailedVerificationCount =>
@@ -98,7 +115,7 @@ internal sealed class VerificationCockpitReadModel
     }
 
     /// <summary>Gets the total number of real <see cref="IVerificationRecord"/>s recorded across every live Verification Activity — the Cockpit's own "Total Verification Records" KPI, distinct from the Activity count itself.</summary>
-    private int TotalVerificationRecordsCount => _totalRecords.Value;
+    private int TotalVerificationRecordsCount => _totalRecords;
 
     /// <summary>
     /// Gets the Verification discipline's own status:

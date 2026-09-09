@@ -15,45 +15,76 @@ namespace Tempest.Workspace.Manufacturing;
 /// referencing <see cref="EngineeringCockpit"/> or any sibling
 /// discipline collaborator back.
 /// </summary>
+/// <remarks>
+/// <b>`WP 18.1A-R1`.</b> Supersedes `WP-E`'s own <see cref="CockpitReadScope"/>-backed
+/// memoisation (a lazy cell, computed once per open <c>Begin()</c> pass
+/// but still blocked on synchronously outside one — the exact shape
+/// `TD-108`/`TD-118` found) with an eager <see cref="LoadAsync"/>: every
+/// persistence-backed read this discipline needs — the live object
+/// listing, one <see cref="VerificationRecordReader"/> read per
+/// Inspection, and one relationships read per Supplier Operation —
+/// happens there, awaited once per Cockpit render
+/// (<see cref="EngineeringCockpit.PrimeAsync"/>). Every property below is
+/// now a pure, in-memory read of what <see cref="LoadAsync"/> last
+/// loaded — still computed once per render, never per property, but
+/// without a single blocking call left in this file's own source.
+/// </remarks>
 internal sealed class ManufacturingCockpitReadModel
 {
     private readonly EngineeringDomainContext _domainContext;
-    private readonly CockpitReadCell<IReadOnlyList<IEngineeringObject>> _liveObjects;
-    private readonly CockpitReadCell<IReadOnlyList<(IEngineeringObject Inspection, VerificationRecordSnapshot? LatestRecord)>> _inspectionSnapshots;
-    private readonly CockpitReadCell<int> _unfulfilledSupplierOperations;
+    private IReadOnlyList<IEngineeringObject> _liveObjects = [];
+    private IReadOnlyList<(IEngineeringObject Inspection, VerificationRecordSnapshot? LatestRecord)> _inspectionSnapshots = [];
+    private int _unfulfilledSupplierOperations;
 
     /// <summary>Initialises a new instance of the <see cref="ManufacturingCockpitReadModel"/> class.</summary>
     /// <param name="domainContext">The Engineering Domain's own shared repository this read-model queries directly.</param>
-    /// <param name="scope">The Cockpit's own per-refresh read scope (`WP-E`) — see <see cref="CockpitReadScope"/>.</param>
-    public ManufacturingCockpitReadModel(EngineeringDomainContext domainContext, CockpitReadScope scope)
+    public ManufacturingCockpitReadModel(EngineeringDomainContext domainContext)
     {
         ArgumentNullException.ThrowIfNull(domainContext);
-        ArgumentNullException.ThrowIfNull(scope);
 
         _domainContext = domainContext;
-
-        _liveObjects = scope.Cell<IReadOnlyList<IEngineeringObject>>(() =>
-            ManufacturingObjectFactoryRegistry.SupportedKinds
-                .SelectMany(kind => _domainContext.Repository.ListByKindAsync(kind).GetAwaiter().GetResult())
-                .Where(o => o is not IDeletable { IsDeleted: true })
-                .ToList());
-
-        // The persistence-backed leaf (`WP-E`): one VerificationRecordReader
-        // read per Inspection, previously repeated by each of the four
-        // outcome counts and the KPI card set derived from it.
-        _inspectionSnapshots = scope.Cell<IReadOnlyList<(IEngineeringObject Inspection, VerificationRecordSnapshot? LatestRecord)>>(() =>
-            LiveManufacturingObjects
-                .Where(o => string.Equals(o.Kind, "Inspection", StringComparison.Ordinal))
-                .Select(o => (o, VerificationRecordReader.GetLatestAsync(_domainContext, o.Id).GetAwaiter().GetResult()))
-                .ToList());
-
-        _unfulfilledSupplierOperations = scope.Cell(() =>
-            LiveSupplierOperations.Count(o => !_domainContext.RelationshipRepository.GetOutgoingAsync(o.Id).GetAwaiter().GetResult()
-                .Any(r => string.Equals(r.RelationshipKind, "manufacturedBy", StringComparison.Ordinal))));
     }
 
-    /// <summary>Gets every live (non-deleted) Manufacturing object across all three Manufacturing Kinds (<c>ManufacturingOperation</c>/<c>WorkInstruction</c>/<c>Inspection</c>) — a real read via <see cref="EngineeringDomainContext.Repository"/>.</summary>
-    public IReadOnlyList<IEngineeringObject> LiveManufacturingObjects => _liveObjects.Value;
+    /// <summary>Loads every live Manufacturing object, its own Inspection results, and the unfulfilled Supplier Operation count — the reads every property below is derived from.</summary>
+    public async Task LoadAsync(CancellationToken cancellationToken = default)
+    {
+        var objects = new List<IEngineeringObject>();
+        foreach (var kind in ManufacturingObjectFactoryRegistry.SupportedKinds)
+        {
+            var byKind = await _domainContext.Repository.ListByKindAsync(kind, cancellationToken).ConfigureAwait(false);
+            objects.AddRange(byKind.Where(o => o is not IDeletable { IsDeleted: true }));
+        }
+
+        _liveObjects = objects;
+
+        var inspections = objects.Where(o => string.Equals(o.Kind, "Inspection", StringComparison.Ordinal)).ToList();
+        var inspectionSnapshots = new List<(IEngineeringObject Inspection, VerificationRecordSnapshot? LatestRecord)>(inspections.Count);
+        foreach (var inspection in inspections)
+        {
+            var latest = await VerificationRecordReader.GetLatestAsync(_domainContext, inspection.Id, cancellationToken).ConfigureAwait(false);
+            inspectionSnapshots.Add((inspection, latest));
+        }
+
+        _inspectionSnapshots = inspectionSnapshots;
+
+        var supplierOperations = objects
+            .Where(o => string.Equals(o.Kind, "ManufacturingOperation", StringComparison.Ordinal)
+                && o is IHasMetadata { Classification: ManufacturingObjectFactoryRegistry.SupplierOperation })
+            .ToList();
+
+        var unfulfilled = 0;
+        foreach (var operation in supplierOperations)
+        {
+            var outgoing = await _domainContext.RelationshipRepository.GetOutgoingAsync(operation.Id, cancellationToken).ConfigureAwait(false);
+            if (!outgoing.Any(r => string.Equals(r.RelationshipKind, "manufacturedBy", StringComparison.Ordinal)))
+                unfulfilled++;
+        }
+
+        _unfulfilledSupplierOperations = unfulfilled;
+    }
+
+    /// <summary>Gets every live (non-deleted) Manufacturing object across all three Manufacturing Kinds (<c>ManufacturingOperation</c>/<c>WorkInstruction</c>/<c>Inspection</c>) — loaded by <see cref="LoadAsync"/>.</summary>
+    public IReadOnlyList<IEngineeringObject> LiveManufacturingObjects => _liveObjects;
 
     /// <summary>Gets the number of live Manufacturing objects — the Cockpit's own cross-discipline KPI summary reads this directly.</summary>
     public int Count => LiveManufacturingObjects.Count;
@@ -74,7 +105,7 @@ internal sealed class ManufacturingCockpitReadModel
 
     /// <summary>Gets every live <c>"Inspection"</c>-Kind object paired with its own most recent recorded <see cref="VerificationRecordSnapshot"/> — read via <see cref="VerificationRecordReader"/>, the identical generic, type-erased record read the Verification discipline's own read-model already uses, never a new traversal. <see langword="null"/> for an Inspection never recorded against.</summary>
     private IReadOnlyList<(IEngineeringObject Inspection, VerificationRecordSnapshot? LatestRecord)> LiveInspectionSnapshots =>
-        _inspectionSnapshots.Value;
+        _inspectionSnapshots;
 
     /// <summary>Gets the number of live Manufacturing objects with <see cref="LifecycleState.Released"/> status — the Cockpit's own "Released Items" signal.</summary>
     private int ReleasedManufacturingCount =>
@@ -85,7 +116,7 @@ internal sealed class ManufacturingCockpitReadModel
         LiveManufacturingOperationSteps.Count(o => o is IHasLifecycle { Status: not (LifecycleState.Released or LifecycleState.Archived or LifecycleState.Cancelled) });
 
     /// <summary>Gets the number of live Supplier Operations (<see cref="LiveSupplierOperations"/>) with no outgoing <c>"manufacturedBy"</c> relationship to a real Supplier recorded yet — the Cockpit's own "unfulfilled Supplier Operation" signal.</summary>
-    private int UnfulfilledSupplierOperationCount => _unfulfilledSupplierOperations.Value;
+    private int UnfulfilledSupplierOperationCount => _unfulfilledSupplierOperations;
 
     /// <summary>Gets the number of live Inspections whose own most recent recorded result has <see cref="VerificationOutcome.Fail"/> — the Cockpit's own "Failed Inspection" signal.</summary>
     private int FailedInspectionCount =>

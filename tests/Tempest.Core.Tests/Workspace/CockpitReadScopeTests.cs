@@ -14,30 +14,37 @@ using Tempest.Core.Verification;
 namespace Tempest.Core.Tests.Workspace;
 
 /// <summary>
-/// `WP-E` — the Engineering Cockpit's own per-refresh read scope
-/// (<see cref="CockpitReadScope"/>): one render pass performs each
-/// persistence-backed read once, and every property derived from that read
-/// sees the same snapshot of it.
+/// `WP-E`'s own invariant — one render pass performs each
+/// persistence-backed read once, and every property derived from that
+/// read sees the same snapshot of it — carried forward by `WP 18.1A-R1`
+/// (`TD-108`, `TD-118`) onto its own async replacement: <c>CockpitReadScope</c>'s
+/// lazy, per-pass memoised cell (still blocked synchronously on every read
+/// taken outside an open pass) is gone, superseded by an eager
+/// <c>LoadAsync</c> that awaits every underlying read once, into plain
+/// fields, before <see cref="RequirementsCockpitReadModel"/> or
+/// <see cref="VerificationCockpitReadModel"/> ever answers a property.
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>The defect this pins.</b> Every discipline read-model exposed its
-/// data as expression-bodied properties over a live read, uncached. So
-/// <c>LiveRequirements</c> re-read from persistence on every single access,
-/// and the composite properties above it — <c>Status</c>, <c>KpiCards</c>,
-/// <c>GetAttentionItems</c>, <c>GetBlockedMessages</c>,
+/// <b>The defect this still pins.</b> Every discipline read-model exposed
+/// its data as expression-bodied properties over a live read, uncached —
+/// so <c>LiveRequirements</c> re-read from persistence on every single
+/// access, and the composite properties above it — <c>Status</c>,
+/// <c>KpiCards</c>, <c>GetAttentionItems</c>, <c>GetBlockedMessages</c>,
 /// <c>GetOpenActionItem</c> — each re-read every leaf they touched. One
-/// <c>CockpitView.Refresh()</c> therefore ran the whole per-requirement
-/// validation pass roughly eight times over, and
+/// Cockpit render therefore ran the whole per-requirement validation pass
+/// roughly eight times over, and
 /// <see cref="RequirementValidationService.ValidateAsync"/> is itself
-/// <c>O(N)</c> in stored requirements. That is the <c>O(N²)</c>, performed
-/// synchronously on the UI thread.
+/// <c>O(N)</c> in stored requirements. That is the <c>O(N²)</c>, and it
+/// used to run synchronously on the UI thread — the second half of which
+/// `WP 18.1A-R1` also removed, by moving the one remaining read into
+/// <c>LoadAsync</c>, awaited by <see cref="Tempest.Workspace.EngineeringCockpit.PrimeAsync"/>.
 /// </para>
 /// <para>
 /// <b>Why these tests count rather than time.</b> A timing assertion on a
 /// fast local store would be a flake generator and would prove nothing on
-/// a slower or remote one. The defect is a count — how many times the same
-/// read is performed — so the count is what is asserted, through a
+/// a slower or remote one. The defect is a count — how many times the
+/// same read is performed — so the count is what is asserted, through a
 /// counting decorator over the real <see cref="IPersistenceStore"/> the
 /// production types actually use.
 /// </para>
@@ -109,8 +116,7 @@ public class CockpitReadScopeTests
         RequirementsCockpitReadModel ReadModel,
         IRequirementsService Requirements,
         CountingPersistenceStore Counter,
-        CountingRequirementValidationService Validation,
-        CockpitReadScope Scope);
+        CountingRequirementValidationService Validation);
 
     private static Harness BuildRequirements(string rootPath)
     {
@@ -128,16 +134,15 @@ public class CockpitReadScopeTests
         var requirements = new RequirementsService(documentStore, counter, principalAccessor, verificationService);
         var validation = new CountingRequirementValidationService(new RequirementValidationService(requirements));
 
-        var scope = new CockpitReadScope();
-        return new Harness(new RequirementsCockpitReadModel(requirements, validation, scope), requirements, counter, validation, scope);
+        return new Harness(new RequirementsCockpitReadModel(requirements, validation), requirements, counter, validation);
     }
 
     /// <summary>
-    /// The read set one <c>CockpitView.Refresh()</c> actually performs
-    /// against the Requirements read-model — every member the Cockpit
-    /// surfaces, in the order the render reaches them.
+    /// The read set one Cockpit render actually performs against the
+    /// Requirements read-model — every member the Cockpit surfaces, in
+    /// the order the render reaches them.
     /// </summary>
-    private static void ReadEverythingARefreshReads(RequirementsCockpitReadModel model)
+    private static void ReadEverythingARenderReads(RequirementsCockpitReadModel model)
     {
         _ = model.Status;
         _ = model.KpiCards;
@@ -154,7 +159,7 @@ public class CockpitReadScopeTests
     // ----------------------------------------------------------------
 
     [Fact]
-    public async Task AFullRefreshInsideAScope_ReadsPersistenceDramaticallyFewerTimes_ThanTheSameRefreshWithout()
+    public async Task OneLoadAsyncCall_ReadsPersistenceOnce_NoMatterHowManyPropertiesAreReadAfterward()
     {
         using var temp = new TempDirectory();
         var harness = BuildRequirements(temp.Path);
@@ -162,85 +167,19 @@ public class CockpitReadScopeTests
         for (var i = 1; i <= 4; i++)
             await harness.Requirements.CreateAsync($"REQ-{i:D3}", $"Requirement {i} shall hold.");
 
+        await harness.ReadModel.LoadAsync();
         harness.Counter.ResetCounts();
-        ReadEverythingARefreshReads(harness.ReadModel);
-        var withoutScope = harness.Counter.Reads;
 
-        harness.Counter.ResetCounts();
-        using (harness.Scope.Begin())
-        {
-            ReadEverythingARefreshReads(harness.ReadModel);
-        }
+        // Every one of these is derived from what LoadAsync already read.
+        ReadEverythingARenderReads(harness.ReadModel);
+        _ = harness.ReadModel.LiveRequirements;
 
-        var withScope = harness.Counter.Reads;
-
-        // Both numbers are real reads of a real store. The scope does not
-        // make the refresh cheap — it makes it linear: the underlying reads
-        // happen once for the pass instead of once per property that needs
-        // them.
-        Assert.True(
-            withScope * 4 < withoutScope,
-            $"A scoped refresh performed {withScope} persistence reads against {withoutScope} unscoped — "
-            + "expected at least a fourfold reduction. The per-refresh memoisation is not taking effect.");
+        Assert.Equal(0, harness.Counter.Reads);
+        Assert.Equal(0, harness.Counter.KeyListings);
     }
 
     [Fact]
-    public async Task InsideAScope_TheSameReadIsNeverPerformedTwice()
-    {
-        using var temp = new TempDirectory();
-        var harness = BuildRequirements(temp.Path);
-
-        await harness.Requirements.CreateAsync("REQ-001", "The system shall hold.");
-        await harness.Requirements.CreateAsync("REQ-002", "The system shall also hold.");
-
-        using (harness.Scope.Begin())
-        {
-            _ = harness.ReadModel.LiveRequirements;
-            harness.Counter.ResetCounts();
-
-            // Every one of these is derived from LiveRequirements, which the
-            // line above has already read for this pass.
-            _ = harness.ReadModel.LiveRequirements;
-            _ = harness.ReadModel.Count;
-            _ = harness.ReadModel.InReviewCount;
-
-            Assert.Equal(0, harness.Counter.Reads);
-            Assert.Equal(0, harness.Counter.KeyListings);
-        }
-    }
-
-    [Fact]
-    public async Task InsideAScope_TheValidationPassRunsOnce_NoMatterHowManyPropertiesDependOnIt()
-    {
-        using var temp = new TempDirectory();
-        var harness = BuildRequirements(temp.Path);
-
-        for (var i = 1; i <= 3; i++)
-            await harness.Requirements.CreateAsync($"REQ-{i:D3}", $"Requirement {i} shall hold.");
-
-        using (harness.Scope.Begin())
-        {
-            // KpiCards is the widest member: it touches all three leaves —
-            // the requirement list, the validation pass, and the per-
-            // requirement relationships behind the two coverage figures.
-            _ = harness.ReadModel.KpiCards;
-            harness.Counter.ResetCounts();
-
-            // Every other member the Cockpit surfaces is derived from those
-            // same three leaves. Before `WP-E` each of these re-read them.
-            _ = harness.ReadModel.Status;
-            _ = harness.ReadModel.OutstandingActions;
-            _ = harness.ReadModel.KpiCards;
-            _ = harness.ReadModel.GetAttentionItems();
-            _ = harness.ReadModel.GetBlockedMessages();
-            _ = harness.ReadModel.GetOpenActionItem();
-
-            Assert.Equal(0, harness.Counter.Reads);
-        }
-    }
-
-    [Fact]
-    public async Task AFullRefresh_ValidatesEachRequirementExactlyOnce_NotOncePerPropertyThatAsks()
+    public async Task LoadAsync_ValidatesEachRequirementExactlyOnce_NotOncePerPropertyThatAsks()
     {
         using var temp = new TempDirectory();
         var harness = BuildRequirements(temp.Path);
@@ -250,25 +189,19 @@ public class CockpitReadScopeTests
             await harness.Requirements.CreateAsync($"REQ-{i:D3}", $"Requirement {i} shall hold.");
 
         harness.Validation.ResetCount();
-        ReadEverythingARefreshReads(harness.ReadModel);
-        var withoutScope = harness.Validation.Validations;
-
-        harness.Validation.ResetCount();
-        using (harness.Scope.Begin())
-        {
-            ReadEverythingARefreshReads(harness.ReadModel);
-        }
-
-        var withScope = harness.Validation.Validations;
+        await harness.ReadModel.LoadAsync();
 
         // This is `WP-E`'s actual deliverable, stated as the number it is:
-        // one validation pass per refresh, not one per property that wants
-        // a validation result. The unscoped figure is what shipped before.
-        Assert.Equal(RequirementCount, withScope);
-        Assert.True(
-            withoutScope >= RequirementCount * 6,
-            $"Expected the unscoped refresh to re-validate repeatedly, but it validated {withoutScope} times "
-            + $"for {RequirementCount} requirements — this test no longer describes the defect it was written for.");
+        // one validation pass per LoadAsync, not one per property that
+        // wants a validation result.
+        Assert.Equal(RequirementCount, harness.Validation.Validations);
+
+        harness.Validation.ResetCount();
+        ReadEverythingARenderReads(harness.ReadModel);
+
+        // Reading every property afterward validates nothing further —
+        // the pass already ran, once, inside LoadAsync.
+        Assert.Equal(0, harness.Validation.Validations);
     }
 
     /// <summary>
@@ -280,12 +213,12 @@ public class CockpitReadScopeTests
     /// <see cref="IRequirementsService.ListAsync"/> for its duplicate-
     /// identifier check, so validating one requirement costs a read of
     /// every requirement. Validating all of them is therefore
-    /// <c>O(N²)</c>, and memoising the Cockpit cannot change that — it
-    /// reduces the number of times that pass runs per refresh from about
-    /// eight to one, which is the whole of what this Work Package
-    /// authorised. Removing the remaining factor means changing a
-    /// <c>Tempest.Core</c> validation service, which is a separate
-    /// decision.
+    /// <c>O(N²)</c>, and neither `WP-E`'s own memoisation nor
+    /// `WP 18.1A-R1`'s async replacement changes that — both reduce the
+    /// number of times the pass runs per render (to one), which is the
+    /// whole of what either Work Package authorised. Removing the
+    /// remaining factor means changing a <c>Tempest.Core</c> validation
+    /// service, which is a separate decision.
     /// </remarks>
     [Fact]
     public async Task OneValidationPass_IsItselfQuadratic_WhichThisWorkPackageDeliberatelyDidNotChange()
@@ -300,10 +233,7 @@ public class CockpitReadScopeTests
                 await harness.Requirements.CreateAsync($"REQ-{i:D3}", $"Requirement {i} shall hold.");
 
             harness.Counter.ResetCounts();
-            using (harness.Scope.Begin())
-            {
-                _ = harness.ReadModel.OutstandingActions;
-            }
+            await harness.ReadModel.LoadAsync();
 
             return harness.Counter.Reads;
         }
@@ -317,7 +247,7 @@ public class CockpitReadScopeTests
         // `TD-108` should be re-read, not this test patched.
         Assert.True(
             atEight > atTwo * 4,
-            $"One validation pass cost {atTwo} reads at N=2 and {atEight} at N=8 — that is no longer quadratic. "
+            $"One LoadAsync call cost {atTwo} reads at N=2 and {atEight} at N=8 — that is no longer quadratic. "
             + "RequirementValidationService may have been fixed; update TD-108 rather than this assertion.");
     }
 
@@ -326,147 +256,92 @@ public class CockpitReadScopeTests
     // ----------------------------------------------------------------
 
     [Fact]
-    public async Task WithinOnePass_EveryPropertySeesTheSameSnapshot_EvenIfTheWorkspaceChangesMidPass()
+    public async Task WithinOneLoadAsyncCall_EveryPropertySeesTheSameSnapshot_EvenIfTheWorkspaceChangesMidLoad()
     {
         using var temp = new TempDirectory();
         var harness = BuildRequirements(temp.Path);
 
         await harness.Requirements.CreateAsync("REQ-001", "The system shall hold.");
 
-        using (harness.Scope.Begin())
-        {
-            var countBefore = harness.ReadModel.Count;
-            Assert.Equal(1, countBefore);
+        await harness.ReadModel.LoadAsync();
+        var countBefore = harness.ReadModel.Count;
+        Assert.Equal(1, countBefore);
 
-            // A create landing mid-render is exactly the race the cards
-            // could previously disagree over: a total taken from one read
-            // and a coverage figure taken from a later one.
-            await harness.Requirements.CreateAsync("REQ-002", "The system shall also hold.");
+        // A create landing after LoadAsync returns is exactly the race the
+        // cards could previously disagree over: a total taken from one
+        // read and a coverage figure taken from a later one. Every
+        // property below still answers from the one pass LoadAsync
+        // already completed, not a fresh read.
+        await harness.Requirements.CreateAsync("REQ-002", "The system shall also hold.");
 
-            Assert.Equal(countBefore, harness.ReadModel.Count);
-            Assert.Equal(countBefore, harness.ReadModel.LiveRequirements.Count);
-            Assert.Equal(
-                countBefore.ToString(),
-                harness.ReadModel.KpiCards.Single(c => c.Label == "Total Requirements").Value);
-        }
+        Assert.Equal(countBefore, harness.ReadModel.Count);
+        Assert.Equal(countBefore, harness.ReadModel.LiveRequirements.Count);
+        Assert.Equal(
+            countBefore.ToString(),
+            harness.ReadModel.KpiCards.Single(c => c.Label == "Total Requirements").Value);
     }
 
     // ----------------------------------------------------------------
-    // The read-model stays live — the memoisation is bounded by the pass
+    // The read-model is honestly empty until loaded, and re-loads fresh
     // ----------------------------------------------------------------
 
     [Fact]
-    public async Task OutsideAScope_EveryReadIsLive_SoTheReadModelIsNotSilentlyStale()
+    public void BeforeLoadAsyncIsEverCalled_EveryPropertyReportsAnHonestEmptyState()
+    {
+        using var temp = new TempDirectory();
+        var harness = BuildRequirements(temp.Path);
+
+        // `WP 18.1A-R1`: no live fallback any more — a property read before
+        // the first LoadAsync reports the same honest "nothing yet" state
+        // every other Cockpit region already uses, never a blocking read
+        // and never stale garbage.
+        Assert.Equal(0, harness.ReadModel.Count);
+        Assert.Empty(harness.ReadModel.LiveRequirements);
+        Assert.Equal(EngineeringHealthStatus.Unknown, harness.ReadModel.Status);
+        Assert.Equal(0, harness.ReadModel.OutstandingActions);
+    }
+
+    [Fact]
+    public async Task ASecondLoadAsyncCall_IsAFreshRead_NotAReplayOfTheFirst()
     {
         using var temp = new TempDirectory();
         var harness = BuildRequirements(temp.Path);
 
         await harness.Requirements.CreateAsync("REQ-001", "The system shall hold.");
+
+        await harness.ReadModel.LoadAsync();
         Assert.Equal(1, harness.ReadModel.Count);
 
         await harness.Requirements.CreateAsync("REQ-002", "The system shall also hold.");
 
-        // This is the behaviour every existing caller and acceptance test
-        // relies on, and the reason the memoisation is scoped rather than
-        // cached: read a property after mutating the workspace and you see
-        // the mutation.
-        Assert.Equal(2, harness.ReadModel.Count);
-    }
-
-    [Fact]
-    public async Task OnceAPassCloses_TheNextReadSeesWhatChangedDuringIt()
-    {
-        using var temp = new TempDirectory();
-        var harness = BuildRequirements(temp.Path);
-
-        await harness.Requirements.CreateAsync("REQ-001", "The system shall hold.");
-
-        using (harness.Scope.Begin())
-        {
-            _ = harness.ReadModel.Count;
-            await harness.Requirements.CreateAsync("REQ-002", "The system shall also hold.");
-        }
-
-        // Nothing is retained past the pass that read it.
-        Assert.Equal(2, harness.ReadModel.Count);
-    }
-
-    [Fact]
-    public async Task ASecondPass_IsAFreshRead_NotAReplayOfTheFirst()
-    {
-        using var temp = new TempDirectory();
-        var harness = BuildRequirements(temp.Path);
-
-        await harness.Requirements.CreateAsync("REQ-001", "The system shall hold.");
-
-        using (harness.Scope.Begin())
-        {
-            Assert.Equal(1, harness.ReadModel.Count);
-        }
-
-        await harness.Requirements.CreateAsync("REQ-002", "The system shall also hold.");
-
-        // Each CockpitView.Refresh() opens its own pass, and every refresh
-        // must show what has happened since the last one. A scope that
-        // memoised without ever clearing would freeze the Cockpit at
+        // Each Cockpit render calls LoadAsync again, and every render must
+        // show what has happened since the last one. A read-model that
+        // memoised without ever reloading would freeze the Cockpit at
         // whatever it first rendered.
-        using (harness.Scope.Begin())
-        {
-            Assert.Equal(2, harness.ReadModel.Count);
-        }
-    }
-
-    [Fact]
-    public async Task ANestedPass_JoinsTheOpenOne_RatherThanDiscardingWhatTheCallerAboveAlreadyRead()
-    {
-        using var temp = new TempDirectory();
-        var harness = BuildRequirements(temp.Path);
-
-        await harness.Requirements.CreateAsync("REQ-001", "The system shall hold.");
-
-        using (harness.Scope.Begin())
-        {
-            _ = harness.ReadModel.Count;
-
-            using (harness.Scope.Begin())
-            {
-                harness.Counter.ResetCounts();
-                _ = harness.ReadModel.Count;
-
-                // A nested Begin that invalidated would make the inner read
-                // pay again, and would break the outer pass's consistency.
-                Assert.Equal(0, harness.Counter.Reads);
-            }
-
-            // Leaving the inner pass must not end the outer one.
-            harness.Counter.ResetCounts();
-            _ = harness.ReadModel.Count;
-            Assert.Equal(0, harness.Counter.Reads);
-        }
+        await harness.ReadModel.LoadAsync();
+        Assert.Equal(2, harness.ReadModel.Count);
     }
 
     // ----------------------------------------------------------------
-    // The other read-models the audit named
+    // The other read-model the audit named
     // ----------------------------------------------------------------
 
     [Fact]
-    public void TheVerificationReadModel_AlsoMemoisesItsRecordReadsPerPass()
+    public async Task TheVerificationReadModel_AlsoLoadsItsRecordReadsOncePerLoadAsyncCall()
     {
         var context = TestEngineeringDomain.NewContext();
+        var model = new VerificationCockpitReadModel(context);
 
-        var scope = new CockpitReadScope();
-        var model = new VerificationCockpitReadModel(context, scope);
-
-        // With no Activity registered the read-model reports its honest
-        // empty state, and does so identically inside and outside a pass —
-        // the scope changes how often the read happens, never what it says.
+        // Before the first LoadAsync, the read-model reports its honest
+        // empty state — the scope changed how often the read happened;
+        // this Work Package changed what happens before the first load,
+        // never what a loaded state says.
         Assert.Equal(EngineeringHealthStatus.Unknown, model.Status);
 
-        using (scope.Begin())
-        {
-            Assert.Equal(EngineeringHealthStatus.Unknown, model.Status);
-            Assert.Equal(0, model.Count);
-            Assert.Equal(0, model.OutstandingActions);
-        }
+        await model.LoadAsync();
+
+        Assert.Equal(EngineeringHealthStatus.Unknown, model.Status);
+        Assert.Equal(0, model.Count);
+        Assert.Equal(0, model.OutstandingActions);
     }
 }
