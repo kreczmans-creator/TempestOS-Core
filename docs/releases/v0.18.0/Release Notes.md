@@ -55,13 +55,13 @@ as they were in `v0.17.0`, on the Product Owner's instruction of
 
 | Measure | `v0.17.0` | `v0.18.0` |
 |---|---|---|
-| Live source lines (`src/`, excluding `Frozen/`) | 136,532 | *(18.9.0)* |
-| Live test lines (`tests/`, excluding `Frozen/`) | 103,585 | *(18.9.0)* |
-| `Tempest.Core` source lines | 85,151 | 52,843 after `WP 18.0C` |
-| Core tests | 4,961 | 4,053 after wave 1 (981 archived with P02–P07) |
-| Desktop tests | 508 | *(18.9.0)* |
+| Live source lines (`src/`, excluding `Frozen/`) | 136,532 | 113,343 |
+| Live test lines (`tests/`, excluding `Frozen/`) | 103,585 | 99,709 |
+| `Tempest.Core` source lines | 85,151 | 54,366 (52,843 after `WP 18.0C`, then Evidence, citations, search and the change feed) |
+| Core tests | 4,961 | 3,991 (981 archived with P02–P07, file-backend-only tests deleted; Evidence, citation, seeding, search, sequence and snapshot tests added) |
+| Desktop tests | 508 | 528 at the `WP 18.2B` merge (final figure in `PROJECT_STATUS.md`) |
 | ADRs | 147 | 149 (0148, 0149 new; sixteen marked Frozen) |
-| Commits on the release branch | 53 | *(18.9.0)* |
+| Commits on the release branch | 53 | 68 since the `v0.17.0` tag |
 
 ## What changed for a developer
 
@@ -86,7 +86,11 @@ as they were in `v0.17.0`, on the Product Owner's instruction of
   on when a second member of staff has their own Windows account.
 - **Evidence's subject is a tag.** No occurrence model, no where-used
   across assemblies, no change control: not an ERP, not a PLM (`D-028`).
-- *(further warnings filled at `WP 18.9.0`)*
+- **The issue sheet is about 630 KB for one page.** SkiaSharp embeds the whole default typeface rather than a subset; a smaller embedded face or subsetting is a later refinement, not a defect of the record.
+- **Issue is three transactions, not one:** the status change, the sheet's bytes, and the attachment id. A crash between them leaves an Issued record with no sheet; re-issuing regenerates it from the record. Folding the three into one needs a wider `EngineeringObjectBase` hook and is recorded in `IssueEvidenceCommand`'s remarks.
+- **Seeded reference records start as Draft** (all 41, with their citations); release the ones you use through the Libraries tab before citing them, exactly as before.
+- **Opening an evidence record from the Evidence rail switches to the Engineering module**, because document tabs live in its docking layout; the record is on screen either way.
+- **A cited record that is later superseded is not yet flagged on the evidence** (`TD-157`): the pin stays valid and readable; the "superseded" warning is a `v0.19.0` item.
 
 ## Related
 

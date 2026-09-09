@@ -11,11 +11,11 @@ yet — the programme that builds them starts with this release:
 
 1. ○ Open a project for a client, with a PO reference, a budget and a
    pinned rate card. — target `v0.19.0` (`WP 19.0A`)
-2. ○ Record a calculation done in the engineer's own tool as evidence
+2. ● Record a calculation done in the engineer's own tool as evidence
    on the project: its files, subject, cited reference records at the
    revision held, and key figures, as one immutable record. — target
    `v0.18.0` (`WP 18.0A`, `WP 18.2A`; `D-028`)
-3. ○ Have a second principal independently check that evidence and
+3. ● Have a second principal independently check that evidence and
    issue it with an issue sheet attached to the project. — target
    `v0.18.0` (`WP 18.2B`)
 4. ○ Record time and, on marking a deliverable complete, emit an
