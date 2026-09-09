@@ -1,7 +1,7 @@
 # TempestOS — Project Status
 
 **Branch:** `release/v0.17.0` (all v0.17.0 Work Packages land here; nothing is merged to `main` until the release is accepted)
-**VERSION:** `0.17.0` (bumped by `WP 17.9.0`; not yet tagged or published — awaiting Windows verification and Product Approval)
+**VERSION:** `0.17.0` (bumped by `WP 17.9.0`; accepted by the Product Owner 2026-09-09; tagged `v0.17.0` from `main`)
 
 ## What a user can do today
 
@@ -29,8 +29,9 @@ yet — the programme that builds them starts with this release:
 
 None. Every `v0.17.0` Work Package (`17.0A`, `17.0B`, `17.0C`, `17.1A`,
 `17.1B`, `17.2A` parts 1 and 2, `17.2B`, `17.3A`) is merged to
-`release/v0.17.0`. Next: Windows verification per `PHYSICAL_REVIEW.md`
-§7, then merge to `main`, tag `v0.17.0`, publish. The next release is
+`release/v0.17.0`, accepted by the Product Owner's Windows smoke tests
+on 2026-09-09, merged to `main`, tagged `v0.17.0` and published. The
+next release is
 `v0.18.0` Evidence and Check (`D-028`; `WP 18.0A` first).
 
 ## Gate (this release's own figures, filled in by `WP 17.9.0`)
@@ -40,7 +41,7 @@ None. Every `v0.17.0` Work Package (`17.0A`, `17.0B`, `17.0C`, `17.1A`,
 - Build: 0 warnings, 0 errors, both configurations, `TreatWarningsAsErrors`
 - Architecture invariants (`DependencyDirectionTests`): 5/5 green
 - Governance health check: 5/5 passed (Windows PowerShell 5.1 and PowerShell 7)
-- CI: not yet run — nothing pushed until Windows verification (see Release Notes, Warnings)
+- CI: ran on the push of `release/v0.17.0` and its PR; `main` required `CI Gate` green to merge (see Release Notes, Warnings)
 
 ## Where things are recorded now
 

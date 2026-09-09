@@ -1,8 +1,8 @@
 # TempestOS v0.17.0 — Release Notes
 
-**Status: engineering complete on `release/v0.17.0`; awaiting Windows
-verification by the Product Owner, then merge to `main`, tag and
-publish.** Nothing in this document is certification.
+**Status: accepted by the Product Owner's Windows smoke tests on
+2026-09-09 (four hotfix rounds, `17.9.1` to `17.9.4`, listed below);
+merged to `main`, tagged `v0.17.0` and published by `release.yml`.** Nothing in this document is certification.
 
 **This release also carries `v0.16.0`.** `v0.16.0` was engineered,
 merged to `main` in part, and never tagged or published; its integration
@@ -181,9 +181,12 @@ second person could pick up on day one.
 
 ## Warnings
 
-- **CI has not run on this branch.** By decision, nothing was pushed
-  until Windows verification. Every gate figure here is local. The first
-  push will run the full pipeline; the `mutation` job runs only on
+- **CI first ran on this branch at release time.** By decision, nothing
+  was pushed until the Product Owner's Windows verification, so every
+  gate figure above is local. The push of `release/v0.17.0` and its PR
+  ran the full pipeline, and `main`'s branch protection required the
+  `CI Gate` check green on the merged head; `release.yml` rebuilt and
+  re-tested the tag before publishing. The `mutation` job runs only on
   schedule or dispatch.
 - **The `files` persistence backend is not transactional.** It is
   retained for one release behind `Persistence:Backend=files` and gives
