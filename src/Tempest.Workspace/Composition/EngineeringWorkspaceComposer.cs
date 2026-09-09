@@ -12,10 +12,12 @@ using Tempest.Core.Commands;
 using Tempest.Core.Configuration;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Evidence;
+using Tempest.Core.Identity;
 using Tempest.Core.Macros;
 using Tempest.Core.Requirements;
 using Tempest.Core.Runtime;
 using Tempest.Core.Verification;
+using Tempest.Core.Versioning;
 
 namespace Tempest.Workspace.Composition;
 
@@ -138,7 +140,16 @@ public static class EngineeringWorkspaceComposer
     /// scope). Exposing an already-constructed object a caller was
     /// silently throwing away, not building a new one.
     /// </returns>
-    public static CalculationTemplateRegistry RegisterEngineeringDisciplines(WorkspaceManager manager, ITempestHost host)
+    /// <param name="issueSheetRenderer">
+    /// Renders Evidence's own issue sheet on Issue (`WP 18.2B`, §2) —
+    /// <see langword="null"/> (the default; every caller but
+    /// <c>Tempest.Desktop.WorkspaceHost</c>) for a composition root with no
+    /// renderer available. Issuing still succeeds; only the sheet is
+    /// skipped (<see cref="Evidence.IssueEvidenceCommandHandler"/>'s own
+    /// remarks).
+    /// </param>
+    public static CalculationTemplateRegistry RegisterEngineeringDisciplines(
+        WorkspaceManager manager, ITempestHost host, Tempest.Workspace.Evidence.IIssueSheetRenderer? issueSheetRenderer = null)
     {
         ArgumentNullException.ThrowIfNull(manager);
         ArgumentNullException.ThrowIfNull(host);
@@ -153,6 +164,8 @@ public static class EngineeringWorkspaceComposer
         var verificationService = (IVerificationService)services.GetService(typeof(IVerificationService));
         var macroManager = (IMacroManager)services.GetService(typeof(IMacroManager));
         var evidenceService = (IEvidenceService)services.GetService(typeof(IEvidenceService));
+        var principalDirectory = (IPrincipalDirectory)services.GetService(typeof(IPrincipalDirectory));
+        var platformVersionProvider = (IPlatformVersionProvider)services.GetService(typeof(IPlatformVersionProvider));
 
         MechanicalWorkspaceRegistration.Register(manager, domainContext, commandDispatcher, commandRegistry, referenceIntegrityChecker);
         RequirementsWorkspaceRegistration.Register(manager, requirementsService, commandDispatcher, commandRegistry);
@@ -163,7 +176,9 @@ public static class EngineeringWorkspaceComposer
         // `ADR-0148` (`WP 18.0A`). Must run after Mechanical — it reuses
         // Mechanical's own already-registered rename/delete command
         // handlers (this class's own remarks).
-        EvidenceWorkspaceRegistration.Register(manager, domainContext, evidenceService, commandDispatcher, commandRegistry);
+        EvidenceWorkspaceRegistration.Register(
+            manager, domainContext, evidenceService, commandDispatcher, commandRegistry,
+            issueSheetRenderer, principalDirectory, platformVersionProvider);
 
         // Must run after VerificationWorkspaceRegistration — Manufacturing
         // deliberately does not re-register RecordVerificationResultCommand,
