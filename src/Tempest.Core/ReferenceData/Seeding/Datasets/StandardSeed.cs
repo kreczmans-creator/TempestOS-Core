@@ -222,7 +222,9 @@ public sealed class StandardSeed : IReferenceSeed<StandardDefinition>
             SeedSources.TertiaryReference(
                 "List of ISO standards 1–1999",
                 $"row for {body.Code} {designation}",
-                $"{body.Code} {designation}"));
+                $"{body.Code} {designation}"),
+            new SourceCitation("Wikimedia Foundation", "Wikipedia — List of ISO standards 1–1999",
+                RowOrEntry: $"{body.Code} {designation}"));
 
     private static ReferenceSeedRecord<StandardDefinition> Untitled(
         string recordId,
@@ -255,5 +257,7 @@ public sealed class StandardSeed : IReferenceSeed<StandardDefinition>
             },
             SeedSources.StandardsCatalogue(
                 body.Name ?? body.Code,
-                $"citation of {body.Code} {designation} in the datasheet the citing record was transcribed from"));
+                $"citation of {body.Code} {designation} in the datasheet the citing record was transcribed from"),
+            new SourceCitation(body.Name ?? body.Code, $"{body.Name ?? body.Code} public standards catalogue entry",
+                RowOrEntry: $"{body.Code} {designation}"));
 }

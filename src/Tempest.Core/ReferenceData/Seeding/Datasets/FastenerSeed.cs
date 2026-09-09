@@ -98,7 +98,9 @@ public sealed class FastenerSeed : IReferenceSeed<FastenerDefinition>
             SeedSources.TertiaryReference(
                 "ISO metric screw thread",
                 $"selected sizes table, {designation} row",
-                "ISO 262:1998"));
+                "ISO 262:1998"),
+            new SourceCitation("Wikimedia Foundation", "Wikipedia — ISO metric screw thread",
+                TableOrFigure: "Selected sizes table", RowOrEntry: designation));
     }
 
     private static string Format(double millimetres) =>

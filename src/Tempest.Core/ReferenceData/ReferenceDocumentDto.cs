@@ -22,10 +22,12 @@ namespace Tempest.Core.ReferenceData;
 /// <param name="Provenance">Where the data came from.</param>
 /// <param name="ValidationState">The record's own lifecycle position.</param>
 /// <param name="SupersededByRecordId">The record that replaced this one, if any.</param>
+/// <param name="Source">A structured citation of the exact line the record's own values were read from, if held (`ADR-0149`). Absent from content written before this field existed, which deserialises it as <see langword="null"/>.</param>
 internal sealed record ReferenceDocumentDto<TDefinition>(
     string RecordId,
     TDefinition Definition,
     ReferenceProvenance Provenance,
     ReferenceValidationState ValidationState,
-    string? SupersededByRecordId)
+    string? SupersededByRecordId,
+    SourceCitation? Source = null)
     where TDefinition : class;

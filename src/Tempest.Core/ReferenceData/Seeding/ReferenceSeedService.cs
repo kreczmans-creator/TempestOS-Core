@@ -78,7 +78,7 @@ public sealed class ReferenceSeedService
             try
             {
                 await catalog
-                    .RegisterAsync(record.RecordId, record.Definition, record.Provenance, cancellationToken)
+                    .RegisterAsync(record.RecordId, record.Definition, record.Provenance, record.Source, cancellationToken)
                     .ConfigureAwait(false);
 
                 entries.Add(new ReferenceSeedEntry(record.RecordId, ReferenceSeedAction.Registered));
