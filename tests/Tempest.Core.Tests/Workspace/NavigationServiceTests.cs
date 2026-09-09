@@ -1,4 +1,4 @@
-using Tempest.App.Workspace;
+using Tempest.Workspace;
 using Tempest.Core.Configuration;
 using Tempest.Core.Persistence;
 using Tempest.Core.Runtime;
@@ -7,12 +7,11 @@ using Tempest.Samples;
 
 namespace Tempest.Core.Tests.Workspace;
 
-// Proves INavigationService (Tempest.App.Workspace) against real,
+// Proves INavigationService (Tempest.Workspace) against real,
 // production collaborators: the real INavigationProvider (resolved through
 // a real, running TempestHost) for Areas/SwitchAreaAsync, and real,
 // minimal test-double IWorkspaceViewFactory instances (this project does
 // not use a mocking framework) for Open/JumpTo/Close.
-[Collection("Console output capture")]
 public class NavigationServiceTests
 {
     private static async Task<(IWorkspace Workspace, WorkspaceManager Manager)> StartAsync(string rootPath, params Type[] moduleTypes)
@@ -25,17 +24,8 @@ public class NavigationServiceTests
             .Build();
         var manager = new WorkspaceManager(host);
 
-        var originalOut = Console.Out;
         IWorkspace workspace;
-        try
-        {
-            Console.SetOut(new StringWriter());
-            workspace = await manager.StartAsync();
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-        }
+        workspace = await manager.StartAsync();
 
         return (workspace, manager);
     }
@@ -247,7 +237,7 @@ public class NavigationServiceTests
     // History / GoBackAsync / GoForwardAsync (WP 8.1B — a genuine,
     // disclosed implementation-phase addition, not part of the twelve
     // WP8.0B contracts; NavigationService is internal, reached here via
-    // Tempest.App's own InternalsVisibleTo grant, WP 8.1A)
+    // Tempest.Workspace's own InternalsVisibleTo grant, WP 8.1A)
     // ----------------------------------------------------------------
 
     [Fact]

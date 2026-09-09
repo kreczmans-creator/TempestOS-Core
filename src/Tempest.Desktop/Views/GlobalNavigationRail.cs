@@ -3,7 +3,7 @@ using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
-using Tempest.App.Shell;
+using Tempest.Workspace.Shell;
 using Tempest.Desktop.Icons;
 using Tempest.Desktop.Theming;
 
@@ -255,6 +255,7 @@ public sealed class GlobalNavigationRail : UserControl
         ShellArea.Commercial => IconGeometry.Currency,
         ShellArea.Resources => IconGeometry.People,
         ShellArea.Knowledge => IconGeometry.Book,
+        ShellArea.EngineeringCalculation => IconGeometry.Scales,
         ShellArea.Administration => IconGeometry.Shield,
         _ => IconGeometry.Dot,
     };

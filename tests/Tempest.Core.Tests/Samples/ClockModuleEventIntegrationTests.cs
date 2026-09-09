@@ -4,6 +4,8 @@ using Tempest.Core.Logging;
 using Tempest.Core.Modules;
 using Tempest.Core.Runtime;
 using Tempest.Core.Tests.Events;
+using Tempest.Core.Tests.Logging;
+using Tempest.Core.Tests.Runtime;
 using Tempest.Samples;
 
 namespace Tempest.Core.Tests.Samples;
@@ -18,13 +20,9 @@ namespace Tempest.Core.Tests.Samples;
 // for a real platform service, except a level-recording ILogger used only to
 // observe log output, mirroring WP 4.4D's own test conventions.
 //
-// Shares the "Console output capture" collection with every other test class
-// that redirects Console.Out (TempestHostTests and its siblings) - this
-// class's end-to-end test below holds that redirection open for the
-// duration of a real Host run, and without the shared collection xUnit's
-// default cross-class parallelism lets two redirections race, each
-// restoring Console.Out out from under the other.
-[Collection("Console output capture")]
+// WP 17.0C: the end-to-end test below observes its own host's log entries
+// through a private RecordingLogSink rather than redirecting the
+// process-global Console.Out, so it needs no cross-class collection.
 public class ClockModuleEventIntegrationTests
 {
     private static (RuntimeModuleManager RuntimeManager, TempestServiceProvider ServiceProvider) BuildPipeline(
@@ -38,9 +36,6 @@ public class ClockModuleEventIntegrationTests
             runtimeManager.Register(descriptor);
 
         var services = new ServiceCollection();
-        var currentComponentAccessor = new Tempest.Core.Identity.CurrentComponentAccessor();
-        services.AddInstance<Tempest.Core.Identity.ICurrentComponentAccessor>(currentComponentAccessor);
-        services.AddInstance(currentComponentAccessor);
         services.AddInstance<Tempest.Core.Identity.IPermissionEvaluator>(new Tempest.Core.Identity.PermissionEvaluator());
         services.AddInstance<ILogger>(new RecordingLevelLogger());
         services.Singleton<IEventBus, EventBus>();
@@ -194,39 +189,30 @@ public class ClockModuleEventIntegrationTests
     [Fact]
     public async Task RunAsync_WithClockModuleAndObserver_ObserverLogsStartedAndStopped_ThroughTheRealHost()
     {
-        var host = new TempestHostBuilder([typeof(ClockModule), typeof(ClockLifecycleObserverModule)]).Build();
-        var originalOut = Console.Out;
-        var writer = new StringWriter();
+        var sink = new RecordingLogSink();
+        var host = new TempestHostBuilder([typeof(ClockModule), typeof(ClockLifecycleObserverModule)])
+            .AddLogSink(sink).WithIsolatedPersistenceRoot()
+            .Build();
 
-        try
-        {
-            Console.SetOut(writer);
+        var runTask = host.RunAsync();
 
-            var runTask = host.RunAsync();
+        await RunningHostFixture.WaitUntilRunningAsync(host);
 
-            while (host.State is HostState.Created or HostState.Starting)
-                await Task.Delay(5);
+        Assert.Equal(HostState.Running, host.State);
 
-            Assert.Equal(HostState.Running, host.State);
-
-            await host.StopAsync();
-            await runTask;
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-        }
+        await host.StopAsync();
+        await runTask;
 
         Assert.Equal(HostState.Stopped, host.State);
 
-        var output = writer.ToString();
-        Assert.Contains("Observed 'Started' from module 'tempest.samples.clock'", output);
-        Assert.Contains("Observed 'Stopped' from module 'tempest.samples.clock'", output);
+        var messages = sink.Entries.Select(entry => entry.Message).ToList();
+        Assert.Contains(messages, message => message.Contains("Observed 'Started' from module 'tempest.samples.clock'"));
+        Assert.Contains(messages, message => message.Contains("Observed 'Stopped' from module 'tempest.samples.clock'"));
 
         // The real, load-bearing ordering consequence documented on
         // ClockLifecycleObserverModule, now proven through the real Host
         // rather than only the manually-composed pipeline above.
-        Assert.DoesNotContain("Observed 'Initialised' from module 'tempest.samples.clock'", output);
+        Assert.DoesNotContain(messages, message => message.Contains("Observed 'Initialised' from module 'tempest.samples.clock'"));
     }
 
     // ----------------------------------------------------------------
@@ -262,12 +248,11 @@ public class ClockModuleEventIntegrationTests
         // not by re-running the same host instance.
         for (var i = 0; i < 2; i++)
         {
-            var host = new TempestHostBuilder([typeof(ClockModule), typeof(ClockLifecycleObserverModule)]).Build();
+            var host = new TempestHostBuilder([typeof(ClockModule), typeof(ClockLifecycleObserverModule)]).WithIsolatedPersistenceRoot().Build();
 
             var runTask = host.RunAsync();
 
-            while (host.State is HostState.Created or HostState.Starting)
-                await Task.Delay(5);
+            await RunningHostFixture.WaitUntilRunningAsync(host);
 
             Assert.Equal(HostState.Running, host.State);
 

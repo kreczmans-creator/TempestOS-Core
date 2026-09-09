@@ -2,13 +2,12 @@ using Tempest.Core.Logging;
 
 namespace Tempest.Core.Tests.Logging;
 
-// CaptureConsoleError (below) redirects the process-global Console.Error
-// via Console.SetError, so this class must be serialised against every
-// other test doing the same — TD-34 (Technical Debt Register.md): this
-// was the more direct collider (Console.Error is the exact stream
-// CompositeLogSink.Write's own default error path writes to) found
-// outside this collection alongside ConsoleLogSinkTests.
-[Collection("Console output capture")]
+// WP 17.0C: a sink-failure test passes its own private StringWriter
+// straight to Logger's own internal errorWriter constructor parameter
+// (TD-34's pattern, mirroring CompositeLogSink's identical seam) rather
+// than redirecting the process-global Console.Error via Console.SetError -
+// so no collection is needed to serialise this class against anything else
+// in the assembly.
 public class LoggerTests
 {
     [Theory]
@@ -170,10 +169,12 @@ public class LoggerTests
     public void Log_SinkThrows_ReportsTheFailureToConsoleError()
     {
         var sink = new ThrowingLogSink(new InvalidOperationException("simulated sink failure"));
-        var logger = new Logger("Category", LogLevel.Trace, sink);
+        using var errorWriter = new StringWriter();
+        var logger = new Logger("Category", LogLevel.Trace, sink, errorWriter);
 
-        var output = CaptureConsoleError(() => logger.Information("message"));
+        logger.Information("message");
 
+        var output = errorWriter.ToString();
         Assert.Contains(nameof(ThrowingLogSink), output);
         Assert.Contains("simulated sink failure", output);
     }
@@ -182,13 +183,11 @@ public class LoggerTests
     public void Log_SinkThrows_SubsequentLogCallsStillAttemptTheSink()
     {
         var sink = new ThrowingLogSink();
-        var logger = new Logger("Category", LogLevel.Trace, sink);
+        using var errorWriter = new StringWriter();
+        var logger = new Logger("Category", LogLevel.Trace, sink, errorWriter);
 
-        CaptureConsoleError(() =>
-        {
-            logger.Information("first");
-            logger.Information("second");
-        });
+        logger.Information("first");
+        logger.Information("second");
 
         Assert.Equal(2, sink.WriteAttempts);
     }
@@ -198,10 +197,11 @@ public class LoggerTests
     {
         var throwingSink = new ThrowingLogSink();
         var recordingSink = new RecordingLogSink();
-        var failingLogger = new Logger("Category", LogLevel.Trace, throwingSink);
+        using var errorWriter = new StringWriter();
+        var failingLogger = new Logger("Category", LogLevel.Trace, throwingSink, errorWriter);
         var healthyLogger = new Logger("Category", LogLevel.Trace, recordingSink);
 
-        CaptureConsoleError(() => failingLogger.Information("this sink is broken"));
+        failingLogger.Information("this sink is broken");
         healthyLogger.Information("this sink is fine");
 
         Assert.Single(recordingSink.Entries);
@@ -223,25 +223,6 @@ public class LoggerTests
         });
 
         Assert.Equal(threadCount * messagesPerThread, sink.Entries.Count);
-    }
-
-    private static string CaptureConsoleError(Action action)
-    {
-        var originalError = Console.Error;
-
-        try
-        {
-            using var writer = new StringWriter();
-            Console.SetError(writer);
-
-            action();
-
-            return writer.ToString();
-        }
-        finally
-        {
-            Console.SetError(originalError);
-        }
     }
 
     private static void Invoke(ILogger logger, LogLevel level, string message)

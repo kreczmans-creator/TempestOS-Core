@@ -6,6 +6,7 @@ using Tempest.Core.Runtime;
 using Tempest.Core.Tests.Modules;
 using Tempest.Samples;
 
+using Tempest.Core.Tests.Runtime;
 namespace Tempest.Core.Tests.Samples;
 
 // Proves ClockModule travels through the complete, real, unmodified
@@ -50,9 +51,6 @@ public class ClockModulePipelineTests
         runtimeManager.Register(descriptor);
 
         var services = new ServiceCollection();
-        var currentComponentAccessor = new Tempest.Core.Identity.CurrentComponentAccessor();
-        services.AddInstance<Tempest.Core.Identity.ICurrentComponentAccessor>(currentComponentAccessor);
-        services.AddInstance(currentComponentAccessor);
         services.AddInstance<Tempest.Core.Identity.IPermissionEvaluator>(new Tempest.Core.Identity.PermissionEvaluator());
         services.AddInstance<ILogger>(new Tempest.Core.Tests.Events.RecordingLevelLogger());
         services.Singleton<IEventBus, EventBus>();
@@ -95,12 +93,11 @@ public class ClockModulePipelineTests
     [Fact]
     public async Task RunAsync_WithClockModule_ReachesRunningThenStopsGracefully_LikeAnyOtherModule()
     {
-        var host = new TempestHostBuilder([typeof(ClockModule)]).Build();
+        var host = new TempestHostBuilder([typeof(ClockModule)]).WithIsolatedPersistenceRoot().Build();
 
         var runTask = host.RunAsync();
 
-        while (host.State is HostState.Created or HostState.Starting)
-            await Task.Delay(5);
+        await RunningHostFixture.WaitUntilRunningAsync(host);
 
         Assert.Equal(HostState.Running, host.State);
 
@@ -116,12 +113,11 @@ public class ClockModulePipelineTests
         // ClockModule alongside another, unrelated module type - proving
         // its presence neither requires nor causes any special handling
         // relative to any other module in the same batch.
-        var host = new TempestHostBuilder([typeof(ClockModule), typeof(SampleModuleA)]).Build();
+        var host = new TempestHostBuilder([typeof(ClockModule), typeof(SampleModuleA)]).WithIsolatedPersistenceRoot().Build();
 
         var runTask = host.RunAsync();
 
-        while (host.State is HostState.Created or HostState.Starting)
-            await Task.Delay(5);
+        await RunningHostFixture.WaitUntilRunningAsync(host);
 
         Assert.Equal(HostState.Running, host.State);
 

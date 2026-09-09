@@ -36,7 +36,7 @@ namespace Tempest.Core.Tests.EngineeringDomain;
 /// successor. The second matters as much as the first — a fix that
 /// simply stopped predecessors writing at all would pass the first test
 /// and quietly break ordinary edit-then-revise sequences, which is what
-/// every <c>Revise*Command</c> in <c>Tempest.App</c> actually does.
+/// every <c>Revise*Command</c> in <c>Tempest.Workspace</c> actually does.
 /// </para>
 /// </remarks>
 public sealed class RevisedObjectWriteSerializationTests
@@ -51,8 +51,8 @@ public sealed class RevisedObjectWriteSerializationTests
     [Fact]
     public async Task AWriteThroughAPredecessorAfterItsRevision_IsRefusedRatherThanSilentlyDiscarded()
     {
-        var stateStore = new InMemoryObjectStateStore();
-        var context = BuildContext(stateStore);
+        var context = TestEngineeringDomain.NewContext();
+        var stateStore = context.ObjectStateStore;
         var part = await CreatePartAsync(context, "PART-1", "Bracket");
 
         var revised = (Part)await part.ReviseAsync("Revised content.", "Rev B.");
@@ -81,8 +81,8 @@ public sealed class RevisedObjectWriteSerializationTests
     [Fact]
     public async Task AnOrdinaryMutationOnTheSuccessor_CannotSilentlyDestroyAnAcceptedDurableWrite()
     {
-        var stateStore = new InMemoryObjectStateStore();
-        var context = BuildContext(stateStore);
+        var context = TestEngineeringDomain.NewContext();
+        var stateStore = context.ObjectStateStore;
         var part = await CreatePartAsync(context, "PART-1", "Bracket");
 
         var revised = (Part)await part.ReviseAsync("Revised content.", "Rev B.");
@@ -125,8 +125,8 @@ public sealed class RevisedObjectWriteSerializationTests
     [Fact]
     public async Task AWriteThroughAPredecessorBeforeItsRevision_IsCarriedIntoTheSuccessor()
     {
-        var stateStore = new InMemoryObjectStateStore();
-        var context = BuildContext(stateStore);
+        var context = TestEngineeringDomain.NewContext();
+        var stateStore = context.ObjectStateStore;
         var part = await CreatePartAsync(context, "PART-1", "Bracket");
 
         var attachment = new Attachment("drawing.pdf", "application/pdf", 3);
@@ -155,8 +155,8 @@ public sealed class RevisedObjectWriteSerializationTests
     [Fact]
     public async Task RevisingASuccessor_RetiresItInTurn()
     {
-        var stateStore = new InMemoryObjectStateStore();
-        var context = BuildContext(stateStore);
+        var context = TestEngineeringDomain.NewContext();
+        var stateStore = context.ObjectStateStore;
         var part = await CreatePartAsync(context, "PART-1", "Bracket");
 
         var second = (Part)await part.ReviseAsync("Second.", null);
@@ -182,8 +182,8 @@ public sealed class RevisedObjectWriteSerializationTests
     [Fact]
     public async Task ARetiredInstanceRemainsReadable()
     {
-        var stateStore = new InMemoryObjectStateStore();
-        var context = BuildContext(stateStore);
+        var context = TestEngineeringDomain.NewContext();
+        var stateStore = context.ObjectStateStore;
         var part = await CreatePartAsync(context, "PART-1", "Bracket");
 
         var revised = (Part)await part.ReviseAsync("Revised content.", null);
@@ -194,21 +194,6 @@ public sealed class RevisedObjectWriteSerializationTests
         Assert.Equal("PART-1", part.Identifier);
     }
 
-    private static EngineeringDomainContext BuildContext(IEngineeringObjectStateStore stateStore)
-    {
-        var principalAccessor = new CurrentPrincipalAccessor();
-        var store = new InMemoryEngineeringDocumentStore(principalAccessor);
-        var repository = new InMemoryEngineeringObjectRepository();
-        var relationshipRepository = new InMemoryEngineeringRelationshipRepository();
-        var lifecycleTable = new LifecycleTransitionTable();
-        var validationRuleSet = new ValidationRuleSet();
-        var relationshipDiscovery = new RelationshipDiscoveryService(relationshipRepository, repository);
-        var evidenceComposer = new EvidenceComposer(relationshipDiscovery, repository);
-
-        return new EngineeringDomainContext(
-            store, repository, relationshipRepository, lifecycleTable, validationRuleSet, evidenceComposer,
-            principalAccessor, stateStore);
-    }
 
     private static async Task<Part> CreatePartAsync(EngineeringDomainContext context, string identifier, string name)
     {
@@ -216,53 +201,5 @@ public sealed class RevisedObjectWriteSerializationTests
             "Part", context, (doc, rev) => new Part(doc, rev, context, identifier, name, EngineeringObjectMetadata.Empty));
 
         return (Part)await factory.CreateAsync($"{name} — for test purposes.").ConfigureAwait(false);
-    }
-
-    /// <summary>
-    /// A minimal in-memory state store — no gating needed here, because
-    /// the defect this file pins is a sequential one: the revision, the
-    /// predecessor's write and the successor's write happen in program
-    /// order, and the loss came from a stale snapshot rather than from a
-    /// race.
-    /// </summary>
-    private sealed class InMemoryObjectStateStore : IEngineeringObjectStateStore
-    {
-        private readonly Dictionary<Guid, EngineeringObjectState> _states = new();
-
-        public Task SaveAsync(EngineeringObjectState state, CancellationToken cancellationToken = default)
-        {
-            lock (_states)
-            {
-                _states[state.Id] = state;
-            }
-
-            return Task.CompletedTask;
-        }
-
-        public Task<EngineeringObjectState?> FindAsync(Guid id, CancellationToken cancellationToken = default)
-        {
-            lock (_states)
-            {
-                return Task.FromResult(_states.TryGetValue(id, out var state) ? state : null);
-            }
-        }
-
-        public Task DeleteAsync(Guid id, CancellationToken cancellationToken = default)
-        {
-            lock (_states)
-            {
-                _states.Remove(id);
-            }
-
-            return Task.CompletedTask;
-        }
-
-        public Task<IReadOnlyList<EngineeringObjectState>> ListAsync(CancellationToken cancellationToken = default)
-        {
-            lock (_states)
-            {
-                return Task.FromResult<IReadOnlyList<EngineeringObjectState>>(_states.Values.ToList());
-            }
-        }
     }
 }

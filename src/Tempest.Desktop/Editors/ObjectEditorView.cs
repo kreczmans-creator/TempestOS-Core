@@ -4,12 +4,12 @@ using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Layout;
 using Avalonia.Media;
-using Tempest.App.Workspace;
-using Tempest.App.Workspace.Calculations;
-using Tempest.App.Workspace.Documents;
-using Tempest.App.Workspace.Mechanical;
-using Tempest.App.Workspace.Requirements;
-using Tempest.App.Workspace.Verification;
+using Tempest.Workspace;
+using Tempest.Workspace.Calculations;
+using Tempest.Workspace.Documents;
+using Tempest.Workspace.Mechanical;
+using Tempest.Workspace.Requirements;
+using Tempest.Workspace.Verification;
 using Tempest.Core.Commands;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Requirements;
@@ -77,10 +77,9 @@ namespace Tempest.Desktop.Editors;
 /// already existed at the Domain layer (`ADR-0075`) but was never
 /// reachable from any Workspace/Desktop surface;
 /// <see cref="Tempest.Desktop.Views.PropertyInspectorView"/>'s own "Validation" section
-/// remains the disclosed placeholder it always was (unmodified), since
-/// it only ever sees <see cref="PropertyFacet"/>s, never the real object.
-/// This class holds the real object directly, so it can call the real
-/// method — informational only, never blocking Save (see class remarks
+/// resolves the real object too (`WP 10.8A`) for every Kind except a
+/// Requirement (`TD-41`). This class holds the real object directly, so it
+/// can call the real method — informational only, never blocking Save (see class remarks
 /// on <see cref="OnSaveAsync"/>).
 /// </para>
 /// </remarks>
@@ -118,6 +117,7 @@ public sealed class ObjectEditorView : UserControl
     private readonly TextBox _bomReferenceDesignatorBox = new() { FontSize = DesignTokens.FontSizeBody, MinHeight = DesignTokens.MinControlSize };
     private readonly Button _bomSaveButton = new() { Content = "Save BOM Line", MinHeight = DesignTokens.MinControlSize };
     private readonly TextBlock _bomStatusMessage = new() { FontSize = DesignTokens.FontSizeCaption, Opacity = 0.8 };
+    private Expander _contentSection = null!;
     private Expander _bomSection = null!;
 
     private readonly TextBox _requirementOwnerBox = new() { FontSize = DesignTokens.FontSizeBody, MinHeight = DesignTokens.MinControlSize };
@@ -131,6 +131,12 @@ public sealed class ObjectEditorView : UserControl
     private readonly Button _calculationExecuteButton = new() { Content = "Execute", MinHeight = DesignTokens.MinControlSize };
     private readonly TextBlock _calculationStatusMessage = new() { FontSize = DesignTokens.FontSizeCaption, Opacity = 0.8 };
     private Expander _calculationSection = null!;
+    private Expander _calculationPointerSection = null!;
+
+    /// <summary>What the editor says on a Calculation instead of offering a JSON box (`WP 17.9.1`).</summary>
+    public const string CalculationPointerGuidance =
+        "Calculations are run, named and traced in the Engineering Calculations workspace — open it from the rail on the left. "
+        + "This editor holds the calculation's identity, lifecycle and attachments.";
     private IReadOnlyList<CalculationTemplateDescriptor> _availableTemplates = [];
     private bool _calculationHasBeenExecuted;
 
@@ -336,7 +342,7 @@ public sealed class ObjectEditorView : UserControl
         header.Children.Add(_saveButton);
 
         var identitySection = BuildSection("Identity", new StackPanel { Spacing = DesignTokens.SpaceXs, Children = { LabeledRow("Name", _nameBox) } });
-        var contentSection = BuildSection("Content", _contentBox);
+        _contentSection = BuildSection("Content", _contentBox);
         var lifecycleSection = BuildSection("Lifecycle", _lifecyclePanel);
         var relationshipsSection = BuildSection("Relationships", _relationshipsPanel);
         var validationSection = BuildSection("Validation", _validationPanel);
@@ -373,6 +379,13 @@ public sealed class ObjectEditorView : UserControl
         _calculationSection = BuildSection("Execute", calculationPanel);
         _calculationSection.IsVisible = false;
 
+        _calculationPointerSection = BuildSection("Calculation", new StackPanel
+        {
+            Spacing = DesignTokens.SpaceXs,
+            Children = { new TextBlock { Text = CalculationPointerGuidance, TextWrapping = TextWrapping.Wrap, Opacity = 0.85, FontSize = DesignTokens.FontSizeBody } },
+        });
+        _calculationPointerSection.IsVisible = false;
+
         var verificationResultPanel = new StackPanel { Spacing = DesignTokens.SpaceXs };
         verificationResultPanel.Children.Add(LabeledRow("Method", _verificationMethodBox));
         var verificationButtonRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceXs };
@@ -400,10 +413,11 @@ public sealed class ObjectEditorView : UserControl
         body.Children.Add(_statusMessage);
         body.Children.Add(new Separator());
         body.Children.Add(identitySection);
-        body.Children.Add(contentSection);
+        body.Children.Add(_contentSection);
         body.Children.Add(_bomSection);
         body.Children.Add(_requirementSection);
         body.Children.Add(_calculationSection);
+        body.Children.Add(_calculationPointerSection);
         body.Children.Add(_verificationResultSection);
         body.Children.Add(_attachmentsSection);
         body.Children.Add(lifecycleSection);
@@ -449,6 +463,11 @@ public sealed class ObjectEditorView : UserControl
         _originalContent = (target as IHasRevisions)?.Content ?? string.Empty;
         _contentBox.Text = _originalContent;
         _contentBox.IsEnabled = _manager.CanRevise(_objectKind);
+
+        // `WP 17.9.3`: a Kind that cannot be revised and has no content shows
+        // no Content box at all, rather than a disabled empty one (the design-freeze
+        // surface audit found this on RequirementGroup and RequirementCollection).
+        _contentSection.IsVisible = _manager.CanRevise(_objectKind) || !string.IsNullOrEmpty(_originalContent);
 
         PopulateBom(target);
         PopulateRequirement(target);
@@ -632,9 +651,22 @@ public sealed class ObjectEditorView : UserControl
     /// reads the identical fields from, now given a real write path here
     /// for the first time.
     /// </summary>
+    /// <summary>
+    /// The Kinds a Bill-of-Materials line means something for. Every canonical
+    /// object implements <see cref="IHasBomLine"/> (ADR-0075's facet plumbing),
+    /// which is why the first Windows review of `v0.17.0` saw Quantity, Find
+    /// Number and Reference Designator on a Project and on a Calculation.
+    /// The editor shows the section only where a person would expect it
+    /// (`WP 17.9.1`); the facet itself is untouched.
+    /// </summary>
+    internal static readonly HashSet<string> BomKinds = new(StringComparer.Ordinal)
+    {
+        MechanicalObjectFactoryRegistry.Assembly, MechanicalObjectFactoryRegistry.SubAssembly, MechanicalObjectFactoryRegistry.Part, MechanicalObjectFactoryRegistry.Component, MechanicalObjectFactoryRegistry.Configuration,
+    };
+
     private void PopulateBom(IEngineeringObject target)
     {
-        if (target is not IHasBomLine bomLine)
+        if (target is not IHasBomLine bomLine || _objectKind is null || !BomKinds.Contains(_objectKind))
         {
             _bomSection.IsVisible = false;
             return;
@@ -757,13 +789,19 @@ public sealed class ObjectEditorView : UserControl
     /// </summary>
     private void PopulateCalculationExecution(IEngineeringObject target)
     {
-        if (_calculationTemplates is null || _objectKind is not ("Calculation" or "CalculationSet"))
-        {
-            _calculationSection.IsVisible = false;
-            return;
-        }
+        // `WP 17.9.1`: the raw-JSON Execute box is retired from this editor.
+        // It was a developer seam — a template picker over a JSON textbox —
+        // and the first Windows review of `v0.17.0` met it as the first thing
+        // offered on a Calculation. Calculations are run, named and traced
+        // in the Engineering Calculations workspace (rail); `WP 18.2A`
+        // replaces both surfaces with the calc-sheet editor. The section stays
+        // in the tree, hidden, so the command wiring behind it is untouched.
+        _calculationSection.IsVisible = false;
+        _calculationPointerSection.IsVisible = _objectKind is "Calculation" or "CalculationSet";
 
-        _calculationSection.IsVisible = true;
+        if (_calculationTemplates is null || _objectKind is not ("Calculation" or "CalculationSet"))
+            return;
+
         _availableTemplates = _calculationTemplates.Templates;
         _calculationTemplatePicker.ItemsSource = _availableTemplates.Select(t => $"{t.Metadata.Name} ({t.CalculationId})").ToList();
         if (_availableTemplates.Count > 0)

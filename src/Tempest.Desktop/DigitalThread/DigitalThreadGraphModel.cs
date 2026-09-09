@@ -1,5 +1,5 @@
 using Avalonia;
-using Tempest.App.Workspace.Verification;
+using Tempest.Workspace.Verification;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Verification;
 
@@ -81,7 +81,7 @@ public readonly record struct DigitalThreadBreadcrumbEntry(Guid ObjectId, string
 /// <see cref="VerificationService.VerifiedByRelationshipKind"/>
 /// (`Tempest.Core.Verification`) and
 /// <see cref="VerificationActivityFactoryRegistry.SupportedKind"/>
-/// (`Tempest.App.Workspace.Verification`). This was the confirmed,
+/// (`Tempest.Workspace.Verification`). This was the confirmed,
 /// motivating cross-layer duplicate `WP 12.1A`'s own investigation
 /// found — closed by referencing each owning constant directly instead.
 /// No value, no behaviour changed.

@@ -2,8 +2,8 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Input;
-using Tempest.App.Workspace;
-using Tempest.App.Workspace.Mechanical;
+using Tempest.Workspace;
+using Tempest.Workspace.Mechanical;
 using Tempest.Core.Commands;
 using Tempest.Core.Events;
 using Tempest.Core.Notifications;
@@ -385,7 +385,7 @@ public sealed class WorkflowInteractionTests
             // `IWorkspaceManager.DeleteObjectAsync`. Bounded poll re-reading the
             // real object each iteration; the assertions below are unchanged.
             var stillFindable = await domainContext.Repository.FindAsync(target.Id);
-            var deleteDeadline = DateTime.UtcNow.AddSeconds(2);
+            var deleteDeadline = DesktopTestHelpers.Deadline(2);
             while ((stillFindable is null || !((Tempest.Core.EngineeringDomain.IDeletable)stillFindable).IsDeleted) && DateTime.UtcNow < deleteDeadline)
             {
                 await Task.Delay(10);
@@ -426,7 +426,7 @@ public sealed class WorkflowInteractionTests
 
             // `TD-119`: the click dispatches asynchronously; bounded poll on the real reported
             // state, assertions unchanged.
-            var unwiredDeadline = DateTime.UtcNow.AddSeconds(2);
+            var unwiredDeadline = DesktopTestHelpers.Deadline(2);
             while (!(messages.Count > 0) && DateTime.UtcNow < unwiredDeadline)
                 await Task.Delay(10);
 

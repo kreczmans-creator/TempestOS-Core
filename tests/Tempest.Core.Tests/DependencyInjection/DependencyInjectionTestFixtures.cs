@@ -95,6 +95,42 @@ internal sealed class OptionalDependencyConsumer
     public IUnregisteredService? Optional { get; }
 }
 
+// `WP 17.0A`: a NON-nullable reference parameter that merely carries a
+// default is not an optional dependency, and the container must not pass
+// its default silently - that is how a registration slip disarmed a
+// permission gate (`TD-64`). It is refused with the ordinary
+// not-registered error instead.
+internal sealed class NonNullableDefaultedDependencyConsumer
+{
+    public NonNullableDefaultedDependencyConsumer(IGreeter greeter, IUnregisteredService optional = null!)
+    {
+        Greeter = greeter;
+        Optional = optional;
+    }
+
+    public IGreeter Greeter { get; }
+
+    public IUnregisteredService? Optional { get; }
+}
+
+// A value-type parameter with a default is a real value, not a missing
+// service, and keeps working exactly as before.
+internal sealed class ValueTypeDefaultedConsumer
+{
+    public ValueTypeDefaultedConsumer(IGreeter greeter, int retries = 3, TimeSpan timeout = default)
+    {
+        Greeter = greeter;
+        Retries = retries;
+        Timeout = timeout;
+    }
+
+    public IGreeter Greeter { get; }
+
+    public int Retries { get; }
+
+    public TimeSpan Timeout { get; }
+}
+
 // A required parameter of an unregistered type must still fail exactly as
 // before, even alongside an unrelated optional one - the optional-parameter
 // fallback must never mask a genuinely missing, required dependency.

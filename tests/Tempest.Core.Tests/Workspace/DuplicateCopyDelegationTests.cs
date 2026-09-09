@@ -55,9 +55,9 @@ public sealed class DuplicateCopyDelegationTests
     };
 
     private static readonly string WorkspaceRoot =
-        Path.Combine(RepositoryPaths.RepositoryRoot, "src", "Tempest.App", "Workspace");
+        Path.Combine(RepositoryPaths.RepositoryRoot, "src", "Tempest.Workspace", "Workspace");
 
-    /// <summary>Every file under <c>Tempest.App/Workspace</c> whose code calls a Copy handler's <c>HandleAsync</c> directly.</summary>
+    /// <summary>Every file under <c>Tempest.Workspace/Workspace</c> whose code calls a Copy handler's <c>HandleAsync</c> directly.</summary>
     private static IReadOnlyList<string> DelegatingFiles()
     {
         var found = new List<string>();

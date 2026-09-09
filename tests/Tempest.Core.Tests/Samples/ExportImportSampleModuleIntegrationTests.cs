@@ -14,19 +14,22 @@ using Tempest.Core.Settings;
 using Tempest.Core.Tests.Plugins;
 using Tempest.Samples;
 
+using Tempest.Core.Tests.Runtime;
 namespace Tempest.Core.Tests.Samples;
 
-// Proves WP 6.7 end-to-end: ExportImportSampleModule constructor-injects
-// the real, unmodified IIdentityService/ISettingsProvider/
-// ICurrentPrincipalAccessor/IPermissionEvaluator/IAuditRecorder/
-// INotificationDispatcher/IExportService/ImportService/ICommandDispatcher/
-// ICommandRegistry, registers its two sample settings and adapters, and
-// demonstrates the full integration chain (permission-gated export and
-// import, multi-source round-trip through real Settings, Audit recording,
-// a Notifications completion notice for each direction) driven entirely
-// by the real, unmodified module pipeline - mirroring
+// Proves WP 6.7 end-to-end (updated for WP 17.2A/ADR-0146):
+// ExportImportSampleModule constructor-injects the real, unmodified
+// CurrentPrincipalAccessor/ISettingsProvider/ICurrentPrincipalAccessor/
+// IPermissionEvaluator/IAuditRecorder/INotificationDispatcher/
+// IExportService/ImportService/ICommandDispatcher/ICommandRegistry,
+// registers its two sample settings and adapters, and demonstrates the
+// full integration chain (export and import, both gated by a permission
+// that is now part of every session principal's fixed
+// ApplicationPermissions.LocalSession set and so granted unconditionally,
+// multi-source round-trip through real Settings, Audit recording, a
+// Notifications completion notice for each direction) driven entirely by
+// the real, unmodified module pipeline - mirroring
 // ReportingSampleModuleIntegrationTests' own structure.
-[Collection("Console output capture")]
 public class ExportImportSampleModuleIntegrationTests
 {
     private static (RuntimeModuleManager RuntimeManager, TempestServiceProvider ServiceProvider) BuildPipeline(
@@ -40,9 +43,6 @@ public class ExportImportSampleModuleIntegrationTests
             runtimeManager.Register(descriptor);
 
         var services = new ServiceCollection();
-        var currentComponentAccessor = new Tempest.Core.Identity.CurrentComponentAccessor();
-        services.AddInstance<Tempest.Core.Identity.ICurrentComponentAccessor>(currentComponentAccessor);
-        services.AddInstance(currentComponentAccessor);
         services.AddInstance(configuration);
         services.AddInstance<ILogger>(new Tempest.Core.Tests.Events.RecordingLevelLogger());
         services.Singleton<IEventBus, EventBus>();
@@ -54,11 +54,17 @@ public class ExportImportSampleModuleIntegrationTests
         var currentPrincipalAccessor = new CurrentPrincipalAccessor();
         services.AddInstance<ICurrentPrincipalAccessor>(currentPrincipalAccessor);
         services.AddInstance(currentPrincipalAccessor);
-        services.Singleton<IRoleProvider, RoleProvider>();
         services.Singleton<IPermissionEvaluator, PermissionEvaluator>();
-        services.Singleton<IIdentityService, IdentityService>();
 
-        services.Singleton<IPersistenceStore, PersistenceStore>();
+        // One store instance under all three shapes, as `TempestHost`
+        // registers it (`ADR-0144`). `AuditQuery` needs the query shape
+        // since `ADR-0145`, where a by-object audit lookup became a key
+        // prefix listing rather than a scan.
+        var persistenceStore = new PersistenceStore(configuration);
+        services.AddInstance<IPersistenceStore>(persistenceStore);
+        services.AddInstance<IBinaryPersistenceStore>(persistenceStore);
+        services.AddInstance<IQueryablePersistenceStore>(persistenceStore);
+
         services.Singleton<ISettingsProvider, SettingsProvider>();
         services.Singleton<IAuditRecorder, AuditRecorder>();
         services.Singleton<IAuditQuery, AuditQuery>();
@@ -82,16 +88,6 @@ public class ExportImportSampleModuleIntegrationTests
         new ConfigurationBuilder().AddSource(new MemoryConfigurationSource(
         [
             new KeyValuePair<string, string>(PersistenceStore.RootPathConfigurationKey, persistenceRootPath),
-        ])).Build();
-
-    private static IConfigurationProvider ConfigurationGrantingExportAndImportPermission(string persistenceRootPath) =>
-        new ConfigurationBuilder().AddSource(new MemoryConfigurationSource(
-        [
-            new KeyValuePair<string, string>(PersistenceStore.RootPathConfigurationKey, persistenceRootPath),
-            new KeyValuePair<string, string>(
-                "Identity:Roles:ExportImporter:Permissions",
-                $"{ExportImportSampleModule.ExportPermissionKey},{ExportImportSampleModule.ImportPermissionKey},{AuditQuery.QueryPermission.Key}"),
-            new KeyValuePair<string, string>($"Identity:Principals:{ExportImportSampleModule.SampleIdentityId}:Roles", "ExportImporter"),
         ])).Build();
 
     // ----------------------------------------------------------------
@@ -134,44 +130,20 @@ public class ExportImportSampleModuleIntegrationTests
 
     // ----------------------------------------------------------------
     // Command: permission gating
+    //
+    // `WP 17.2A` (ADR-0146): ExportPermissionKey/ImportPermissionKey are
+    // part of every session principal's fixed
+    // ApplicationPermissions.LocalSession set, so both commands are
+    // granted unconditionally - there is no longer a configuration-driven
+    // grant mechanism, and so no denied-by-default path to prove here.
     // ----------------------------------------------------------------
-
-    [Fact]
-    public async Task ExportSampleDataCommand_NoPermissionGranted_ReportsDeniedByDefault()
-    {
-        using var temp = new TempDirectory();
-        var (runtimeManager, serviceProvider) = BuildPipeline(EmptyConfiguration(temp.Path), typeof(ExportImportSampleModule));
-        var commandRegistry = (ICommandRegistry)serviceProvider.GetService(typeof(ICommandRegistry));
-        var lifecycleManager = new ModuleLifecycleManager(runtimeManager, serviceProvider);
-        await lifecycleManager.InitialiseAllAsync(CancellationToken.None);
-
-        var result = await commandRegistry.InvokeAsync(ExportImportSampleModule.ExportCommandId, CancellationToken.None);
-
-        Assert.False(result.Succeeded);
-        Assert.Contains("does not hold", result.Message);
-    }
-
-    [Fact]
-    public async Task ImportSampleDataCommand_NoPermissionGranted_ReportsDeniedByDefault()
-    {
-        using var temp = new TempDirectory();
-        var (runtimeManager, serviceProvider) = BuildPipeline(EmptyConfiguration(temp.Path), typeof(ExportImportSampleModule));
-        var commandRegistry = (ICommandRegistry)serviceProvider.GetService(typeof(ICommandRegistry));
-        var lifecycleManager = new ModuleLifecycleManager(runtimeManager, serviceProvider);
-        await lifecycleManager.InitialiseAllAsync(CancellationToken.None);
-
-        var result = await commandRegistry.InvokeAsync(ExportImportSampleModule.ImportCommandId, CancellationToken.None);
-
-        Assert.False(result.Succeeded);
-        Assert.Contains("does not hold", result.Message);
-    }
 
     [Fact]
     public async Task ImportSampleDataCommand_NothingExportedYet_ReportsFailure()
     {
         using var temp = new TempDirectory();
         var (runtimeManager, serviceProvider) = BuildPipeline(
-            ConfigurationGrantingExportAndImportPermission(temp.Path), typeof(ExportImportSampleModule));
+            EmptyConfiguration(temp.Path), typeof(ExportImportSampleModule));
         var commandRegistry = (ICommandRegistry)serviceProvider.GetService(typeof(ICommandRegistry));
         var lifecycleManager = new ModuleLifecycleManager(runtimeManager, serviceProvider);
         await lifecycleManager.InitialiseAllAsync(CancellationToken.None);
@@ -191,7 +163,7 @@ public class ExportImportSampleModuleIntegrationTests
     {
         using var temp = new TempDirectory();
         var (runtimeManager, serviceProvider) = BuildPipeline(
-            ConfigurationGrantingExportAndImportPermission(temp.Path), typeof(ExportImportSampleModule));
+            EmptyConfiguration(temp.Path), typeof(ExportImportSampleModule));
         var commandRegistry = (ICommandRegistry)serviceProvider.GetService(typeof(ICommandRegistry));
         var lifecycleManager = new ModuleLifecycleManager(runtimeManager, serviceProvider);
         await lifecycleManager.InitialiseAllAsync(CancellationToken.None);
@@ -219,7 +191,7 @@ public class ExportImportSampleModuleIntegrationTests
     {
         using var temp = new TempDirectory();
         var (runtimeManager, serviceProvider) = BuildPipeline(
-            ConfigurationGrantingExportAndImportPermission(temp.Path), typeof(ExportImportSampleModule));
+            EmptyConfiguration(temp.Path), typeof(ExportImportSampleModule));
         var commandRegistry = (ICommandRegistry)serviceProvider.GetService(typeof(ICommandRegistry));
         var lifecycleManager = new ModuleLifecycleManager(runtimeManager, serviceProvider);
         await lifecycleManager.InitialiseAllAsync(CancellationToken.None);
@@ -238,7 +210,7 @@ public class ExportImportSampleModuleIntegrationTests
     {
         using var temp = new TempDirectory();
         var (runtimeManager, serviceProvider) = BuildPipeline(
-            ConfigurationGrantingExportAndImportPermission(temp.Path), typeof(ExportImportSampleModule));
+            EmptyConfiguration(temp.Path), typeof(ExportImportSampleModule));
         var commandRegistry = (ICommandRegistry)serviceProvider.GetService(typeof(ICommandRegistry));
         var lifecycleManager = new ModuleLifecycleManager(runtimeManager, serviceProvider);
         await lifecycleManager.InitialiseAllAsync(CancellationToken.None);
@@ -258,7 +230,7 @@ public class ExportImportSampleModuleIntegrationTests
     {
         using var temp = new TempDirectory();
         var (runtimeManager, serviceProvider) = BuildPipeline(
-            ConfigurationGrantingExportAndImportPermission(temp.Path), typeof(ExportImportSampleModule));
+            EmptyConfiguration(temp.Path), typeof(ExportImportSampleModule));
         var commandRegistry = (ICommandRegistry)serviceProvider.GetService(typeof(ICommandRegistry));
         var notificationDispatcher = (INotificationDispatcher)serviceProvider.GetService(typeof(INotificationDispatcher));
         var observed = new List<IPlatformNotification>();
@@ -298,40 +270,25 @@ public class ExportImportSampleModuleIntegrationTests
             .AddConfigurationSource(new MemoryConfigurationSource(
             [
                 new KeyValuePair<string, string>(PersistenceStore.RootPathConfigurationKey, temp.Path),
-                new KeyValuePair<string, string>(
-                    "Identity:Roles:ExportImporter:Permissions",
-                    $"{ExportImportSampleModule.ExportPermissionKey},{ExportImportSampleModule.ImportPermissionKey}"),
-                new KeyValuePair<string, string>($"Identity:Principals:{ExportImportSampleModule.SampleIdentityId}:Roles", "ExportImporter"),
             ]))
             .Build();
-        var originalOut = Console.Out;
 
-        try
-        {
-            Console.SetOut(new StringWriter());
+        var runTask = host.RunAsync();
 
-            var runTask = host.RunAsync();
+        await RunningHostFixture.WaitUntilRunningAsync(host);
 
-            while (host.State is HostState.Created or HostState.Starting)
-                await Task.Delay(5);
+        Assert.Equal(HostState.Running, host.State);
 
-            Assert.Equal(HostState.Running, host.State);
+        var registry = (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
 
-            var registry = (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
+        var exportResult = await registry.InvokeAsync(ExportImportSampleModule.ExportCommandId, CancellationToken.None);
+        Assert.True(exportResult.Succeeded);
 
-            var exportResult = await registry.InvokeAsync(ExportImportSampleModule.ExportCommandId, CancellationToken.None);
-            Assert.True(exportResult.Succeeded);
+        var importResult = await registry.InvokeAsync(ExportImportSampleModule.ImportCommandId, CancellationToken.None);
+        Assert.True(importResult.Succeeded);
 
-            var importResult = await registry.InvokeAsync(ExportImportSampleModule.ImportCommandId, CancellationToken.None);
-            Assert.True(importResult.Succeeded);
-
-            await host.StopAsync();
-            await runTask;
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-        }
+        await host.StopAsync();
+        await runTask;
 
         Assert.Equal(HostState.Stopped, host.State);
     }

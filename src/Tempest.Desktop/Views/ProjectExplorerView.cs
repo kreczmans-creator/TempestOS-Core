@@ -1,4 +1,5 @@
 using Avalonia;
+using Avalonia.Styling;
 using Avalonia.Collections;
 using Avalonia.Controls;
 using Avalonia.Controls.Templates;
@@ -7,7 +8,7 @@ using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
-using Tempest.App.Workspace;
+using Tempest.Workspace;
 using Tempest.Desktop.DigitalThread;
 using Tempest.Desktop.Icons;
 using Tempest.Desktop.Theming;
@@ -20,17 +21,39 @@ namespace Tempest.Desktop.Views;
 /// (`WP 10.2A`) a back-reference to its own parent (breadcrumbs) — so
 /// <see cref="TreeView"/> can bind to a real, live tree.
 /// </summary>
-internal sealed class ExplorerNodeItem
+internal sealed class ExplorerNodeItem : System.ComponentModel.INotifyPropertyChanged
 {
+    private bool _isExpanded;
+
     public ExplorerNodeItem(ProjectExplorerNode node, ExplorerNodeItem? parent)
     {
         Node = node;
         Parent = parent;
     }
 
+    public event System.ComponentModel.PropertyChangedEventHandler? PropertyChanged;
+
     public ProjectExplorerNode Node { get; }
 
     public ExplorerNodeItem? Parent { get; }
+
+    /// <summary>
+    /// Whether this node's children are shown (`WP 17.9.4`). Bound two-way
+    /// to the tree item, so a reveal can expand the path to a new object
+    /// and a reload can keep what the user had open.
+    /// </summary>
+    public bool IsExpanded
+    {
+        get => _isExpanded;
+        set
+        {
+            if (_isExpanded == value)
+                return;
+
+            _isExpanded = value;
+            PropertyChanged?.Invoke(this, new System.ComponentModel.PropertyChangedEventArgs(nameof(IsExpanded)));
+        }
+    }
 
     /// <summary>
     /// The row's own display text — the Kind glyph, the title, and (`WP-Z4`
@@ -172,6 +195,17 @@ public sealed class ProjectExplorerView : UserControl
 
         _tree.ItemTemplate = new FuncTreeDataTemplate<ExplorerNodeItem>(BuildNodePresenter, item => item.Children);
         _tree.MinHeight = DesignTokens.MinControlSize;
+
+        // `WP 17.9.4`: expansion lives on the item, not only on the container,
+        // so revealing a new object can open the path to it and a reload
+        // can restore what the user had open.
+        _tree.Styles.Add(new Style(x => x.OfType<TreeViewItem>())
+        {
+            Setters =
+            {
+                new Setter(TreeViewItem.IsExpandedProperty, new Avalonia.Data.Binding(nameof(ExplorerNodeItem.IsExpanded)) { Mode = Avalonia.Data.BindingMode.TwoWay }),
+            },
+        });
 
         _tree.SelectionChanged += (_, e) =>
         {
@@ -421,12 +455,19 @@ public sealed class ProjectExplorerView : UserControl
         var selectedId = (_tree.SelectedItem as ExplorerNodeItem)?.Node.Id;
         var oldIds = new HashSet<Guid>();
         CollectIds(_allItems, oldIds);
+        var expandedIds = new HashSet<Guid>();
+        CollectExpandedIds(_allItems, expandedIds);
 
         var roots = await _explorer.GetRootNodesAsync(cancellationToken).ConfigureAwait(true);
         var items = new AvaloniaList<ExplorerNodeItem>();
 
         foreach (var root in roots)
             items.Add(await BuildAsync(root, parent: null, cancellationToken).ConfigureAwait(true));
+
+        // `WP 17.9.4`: a reload keeps what the user had open. Before this
+        // every refresh collapsed the tree, so a new child of an expanded
+        // parent was selected on a row nobody could see.
+        RestoreExpansion(items, expandedIds);
 
         _allItems = items;
         ApplyFilter();
@@ -481,6 +522,28 @@ public sealed class ProjectExplorerView : UserControl
     }
 
     /// <summary>Collects every node's own real Id, depth-first, into <paramref name="into"/> — the before/after snapshot <see cref="LoadAsync"/>'s own scroll-to-new-item diff compares.</summary>
+    private static void CollectExpandedIds(IEnumerable<ExplorerNodeItem> items, HashSet<Guid> into)
+    {
+        foreach (var item in items)
+        {
+            if (item.IsExpanded)
+                into.Add(item.Node.Id);
+
+            CollectExpandedIds(item.Children, into);
+        }
+    }
+
+    private static void RestoreExpansion(IEnumerable<ExplorerNodeItem> items, HashSet<Guid> expandedIds)
+    {
+        foreach (var item in items)
+        {
+            if (expandedIds.Contains(item.Node.Id))
+                item.IsExpanded = true;
+
+            RestoreExpansion(item.Children, expandedIds);
+        }
+    }
+
     private static void CollectIds(IEnumerable<ExplorerNodeItem> items, HashSet<Guid> into)
     {
         foreach (var item in items)
@@ -608,7 +671,41 @@ public sealed class ProjectExplorerView : UserControl
 
     private void SelectAndReveal(ExplorerNodeItem item)
     {
+        // Open the path first, so the selection is on a visible row.
+        for (var ancestor = item.Parent; ancestor is not null; ancestor = ancestor.Parent)
+            ancestor.IsExpanded = true;
+
         _tree.SelectedItem = item;
+    }
+
+    /// <summary>
+    /// Selects <paramref name="objectId"/> in the loaded tree, expanding
+    /// every ancestor so it is on a visible row (`WP 17.9.4`). Returns
+    /// <see langword="false"/> when the loaded tree does not contain it, which
+    /// the caller treats as "not in this area" rather than as an error.
+    /// </summary>
+    public bool Reveal(System.Guid objectId)
+    {
+        if (FindById(_allItems, objectId) is not { } item)
+            return false;
+
+        SelectAndReveal(item);
+        return true;
+    }
+
+    /// <summary>Whether <paramref name="objectId"/> is selected and every ancestor of it is expanded — the test hook for <see cref="Reveal"/>.</summary>
+    internal bool IsRevealed(System.Guid objectId)
+    {
+        if (_tree.SelectedItem is not ExplorerNodeItem { } selected || selected.Node.Id != objectId)
+            return false;
+
+        for (var ancestor = selected.Parent; ancestor is not null; ancestor = ancestor.Parent)
+        {
+            if (!ancestor.IsExpanded)
+                return false;
+        }
+
+        return true;
     }
 
     // ------------------------------------------------------------

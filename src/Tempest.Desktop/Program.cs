@@ -5,7 +5,7 @@ namespace Tempest.Desktop;
 /// <summary>
 /// The desktop application's own process entry point — Application
 /// Bootstrap (`WP 10.0B`). `Tempest.Desktop` is TempestOS's shipped
-/// desktop application. `Tempest.App` (`WorkspaceShell`) is TempestOS's
+/// desktop application. `Tempest.Harness` (`WorkspaceShell`) is TempestOS's
 /// Internal Engineering Harness, formally classified as such by
 /// `ADR-0101` (`WP 11.3B`) — not a second shipped product; see that ADR
 /// for the full reasoning. `WP11.3A Presentation Strategy Review.md`

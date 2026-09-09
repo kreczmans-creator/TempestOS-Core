@@ -2,12 +2,12 @@ using System.Reflection;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.LogicalTree;
-using Tempest.App.Workspace;
+using Tempest.Workspace;
 using Tempest.Core.Notifications;
 using Tempest.Desktop.Docking;
 using Tempest.Desktop.Views;
 using Tempest.Samples;
-using Tempest.App.Workspace.Mechanical;
+using Tempest.Workspace.Mechanical;
 using static Tempest.Desktop.Tests.DesktopTestHelpers;
 
 namespace Tempest.Desktop.Tests;
@@ -102,8 +102,8 @@ public sealed class MainWindowCompositionTests
             // A preset is now a whole layout tree, replaced in one
             // operation (`TD-72`), so the assertion is against the
             // arrangement itself rather than a per-panel placement record.
-            var expected = Tempest.App.Workspace.Layout.WorkspaceLayoutPresets.Build(
-                Tempest.App.Workspace.Layout.WorkspaceLayoutPreset.Engineering,
+            var expected = Tempest.Workspace.Layout.WorkspaceLayoutPresets.Build(
+                Tempest.Workspace.Layout.WorkspaceLayoutPreset.Engineering,
                 window.WorkspaceLayout.Tree.DockedPanels.First(),
                 Tempest.Desktop.Composition.WorkspaceDockingComposer.DocumentAreaPanelId,
                 workspace.PropertyInspector.Id,
@@ -315,7 +315,7 @@ public sealed class MainWindowCompositionTests
 
             // `TD-119`: the Macros click opens the dialog on an asynchronous
             // continuation; bounded poll on the real visibility, assertion unchanged.
-            var macrosDeadline = DateTime.UtcNow.AddSeconds(2);
+            var macrosDeadline = DesktopTestHelpers.Deadline(2);
             while (!(macroManagerDialog.IsVisible) && DateTime.UtcNow < macrosDeadline)
                 await Task.Delay(10);
 

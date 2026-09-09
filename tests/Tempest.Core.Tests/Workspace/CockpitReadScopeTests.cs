@@ -1,12 +1,13 @@
-using Tempest.App.Workspace;
-using Tempest.App.Workspace.Requirements;
-using Tempest.App.Workspace.Verification;
+using Tempest.Workspace;
+using Tempest.Workspace.Requirements;
+using Tempest.Workspace.Verification;
 using Tempest.Core.Configuration;
 using Tempest.Core.EngineeringData;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Identity;
 using Tempest.Core.Persistence;
 using Tempest.Core.Requirements;
+using Tempest.Core.Tests.EngineeringDomain;
 using Tempest.Core.Tests.Plugins;
 using Tempest.Core.Verification;
 
@@ -451,19 +452,7 @@ public class CockpitReadScopeTests
     [Fact]
     public void TheVerificationReadModel_AlsoMemoisesItsRecordReadsPerPass()
     {
-        var principalAccessor = new CurrentPrincipalAccessor();
-        var repository = new InMemoryEngineeringObjectRepository();
-        var relationshipRepository = new InMemoryEngineeringRelationshipRepository();
-        var relationshipDiscovery = new RelationshipDiscoveryService(relationshipRepository, repository);
-
-        var context = new EngineeringDomainContext(
-            new InMemoryEngineeringDocumentStore(principalAccessor),
-            repository,
-            relationshipRepository,
-            new LifecycleTransitionTable(),
-            new ValidationRuleSet(),
-            new EvidenceComposer(relationshipDiscovery, repository),
-            principalAccessor);
+        var context = TestEngineeringDomain.NewContext();
 
         var scope = new CockpitReadScope();
         var model = new VerificationCockpitReadModel(context, scope);

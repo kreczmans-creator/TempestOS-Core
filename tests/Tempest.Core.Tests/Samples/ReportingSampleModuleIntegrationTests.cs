@@ -14,19 +14,22 @@ using Tempest.Core.Settings;
 using Tempest.Core.Tests.Plugins;
 using Tempest.Samples;
 
+using Tempest.Core.Tests.Runtime;
 namespace Tempest.Core.Tests.Samples;
 
-// Proves WP 6.0 end-to-end: ReportingSampleModule constructor-injects the
-// real, unmodified IIdentityService/IReportingService/ISettingsProvider/
+// Proves WP 6.0 end-to-end (updated for WP 17.2A/ADR-0146):
+// ReportingSampleModule constructor-injects the real, unmodified
+// CurrentPrincipalAccessor/IReportingService/ISettingsProvider/
 // ICurrentPrincipalAccessor/IPermissionEvaluator/IAuditRecorder/
 // INotificationDispatcher/ICommandDispatcher/ICommandRegistry, registers
 // its report definition and renderer, and demonstrates the full
-// integration chain (permission-gated generation, Settings-customised
-// content, Audit recording, a Notifications completion notice) driven
-// entirely by the real, unmodified module pipeline - mirroring
+// integration chain (generation gated by a permission that is now part of
+// every session principal's fixed ApplicationPermissions.LocalSession set
+// and so granted unconditionally, Settings-customised content, Audit
+// recording, a Notifications completion notice) driven entirely by the
+// real, unmodified module pipeline - mirroring
 // AuditSampleModuleIntegrationTests/NotificationSampleModuleIntegrationTests'
 // own structure.
-[Collection("Console output capture")]
 public class ReportingSampleModuleIntegrationTests
 {
     private static (RuntimeModuleManager RuntimeManager, TempestServiceProvider ServiceProvider) BuildPipeline(
@@ -40,9 +43,6 @@ public class ReportingSampleModuleIntegrationTests
             runtimeManager.Register(descriptor);
 
         var services = new ServiceCollection();
-        var currentComponentAccessor = new Tempest.Core.Identity.CurrentComponentAccessor();
-        services.AddInstance<Tempest.Core.Identity.ICurrentComponentAccessor>(currentComponentAccessor);
-        services.AddInstance(currentComponentAccessor);
         services.AddInstance(configuration);
         services.AddInstance<ILogger>(new Tempest.Core.Tests.Events.RecordingLevelLogger());
         services.Singleton<IEventBus, EventBus>();
@@ -55,11 +55,16 @@ public class ReportingSampleModuleIntegrationTests
         var currentPrincipalAccessor = new CurrentPrincipalAccessor();
         services.AddInstance<ICurrentPrincipalAccessor>(currentPrincipalAccessor);
         services.AddInstance(currentPrincipalAccessor);
-        services.Singleton<IRoleProvider, RoleProvider>();
         services.Singleton<IPermissionEvaluator, PermissionEvaluator>();
-        services.Singleton<IIdentityService, IdentityService>();
 
-        services.Singleton<IPersistenceStore, PersistenceStore>();
+        // One store instance under all three shapes, as `TempestHost`
+        // registers it (`ADR-0144`). The query shape is required since
+        // `ADR-0145`: EngineeringDomainContext commits through it, and
+        // AuditQuery answers a by-object lookup with a key prefix listing.
+        var persistenceStore = new PersistenceStore(configuration);
+        services.AddInstance<IPersistenceStore>(persistenceStore);
+        services.AddInstance<IBinaryPersistenceStore>(persistenceStore);
+        services.AddInstance<IQueryablePersistenceStore>(persistenceStore);
         services.Singleton<ISettingsProvider, SettingsProvider>();
         services.Singleton<IAuditRecorder, AuditRecorder>();
         services.Singleton<IAuditQuery, AuditQuery>();
@@ -75,24 +80,6 @@ public class ReportingSampleModuleIntegrationTests
         new ConfigurationBuilder().AddSource(new MemoryConfigurationSource(
         [
             new KeyValuePair<string, string>(PersistenceStore.RootPathConfigurationKey, persistenceRootPath),
-        ])).Build();
-
-    private static IConfigurationProvider ConfigurationGrantingGeneratePermission(string persistenceRootPath) =>
-        new ConfigurationBuilder().AddSource(new MemoryConfigurationSource(
-        [
-            new KeyValuePair<string, string>(PersistenceStore.RootPathConfigurationKey, persistenceRootPath),
-            new KeyValuePair<string, string>("Identity:Roles:ReportGenerator:Permissions", ReportingSampleModule.GenerateReportPermissionKey),
-            new KeyValuePair<string, string>($"Identity:Principals:{ReportingSampleModule.SampleIdentityId}:Roles", "ReportGenerator"),
-        ])).Build();
-
-    private static IConfigurationProvider ConfigurationGrantingGenerateAndQueryPermission(string persistenceRootPath) =>
-        new ConfigurationBuilder().AddSource(new MemoryConfigurationSource(
-        [
-            new KeyValuePair<string, string>(PersistenceStore.RootPathConfigurationKey, persistenceRootPath),
-            new KeyValuePair<string, string>(
-                "Identity:Roles:ReportGenerator:Permissions",
-                $"{ReportingSampleModule.GenerateReportPermissionKey},{AuditQuery.QueryPermission.Key}"),
-            new KeyValuePair<string, string>($"Identity:Principals:{ReportingSampleModule.SampleIdentityId}:Roles", "ReportGenerator"),
         ])).Build();
 
     // ----------------------------------------------------------------
@@ -155,29 +142,20 @@ public class ReportingSampleModuleIntegrationTests
 
     // ----------------------------------------------------------------
     // Command: permission gating, Audit recording, Notifications
+    //
+    // `WP 17.2A` (ADR-0146): GenerateReportPermissionKey is part of every
+    // session principal's fixed ApplicationPermissions.LocalSession set,
+    // so the command is granted unconditionally - there is no longer a
+    // configuration-driven grant mechanism, and so no denied-by-default
+    // path to prove here.
     // ----------------------------------------------------------------
-
-    [Fact]
-    public async Task GenerateSampleReportCommand_NoPermissionGranted_ReportsDeniedByDefault()
-    {
-        using var temp = new TempDirectory();
-        var (runtimeManager, serviceProvider) = BuildPipeline(EmptyConfiguration(temp.Path), typeof(ReportingSampleModule));
-        var commandRegistry = (ICommandRegistry)serviceProvider.GetService(typeof(ICommandRegistry));
-        var lifecycleManager = new ModuleLifecycleManager(runtimeManager, serviceProvider);
-        await lifecycleManager.InitialiseAllAsync(CancellationToken.None);
-
-        var result = await commandRegistry.InvokeAsync(ReportingSampleModule.GenerateSampleReportCommandId, CancellationToken.None);
-
-        Assert.False(result.Succeeded);
-        Assert.Contains("does not hold", result.Message);
-    }
 
     [Fact]
     public async Task GenerateSampleReportCommand_PermissionGranted_ReportsSuccess()
     {
         using var temp = new TempDirectory();
         var (runtimeManager, serviceProvider) = BuildPipeline(
-            ConfigurationGrantingGeneratePermission(temp.Path), typeof(ReportingSampleModule));
+            EmptyConfiguration(temp.Path), typeof(ReportingSampleModule));
         var commandRegistry = (ICommandRegistry)serviceProvider.GetService(typeof(ICommandRegistry));
         var lifecycleManager = new ModuleLifecycleManager(runtimeManager, serviceProvider);
         await lifecycleManager.InitialiseAllAsync(CancellationToken.None);
@@ -193,7 +171,7 @@ public class ReportingSampleModuleIntegrationTests
     {
         using var temp = new TempDirectory();
         var (runtimeManager, serviceProvider) = BuildPipeline(
-            ConfigurationGrantingGenerateAndQueryPermission(temp.Path), typeof(ReportingSampleModule));
+            EmptyConfiguration(temp.Path), typeof(ReportingSampleModule));
         var commandRegistry = (ICommandRegistry)serviceProvider.GetService(typeof(ICommandRegistry));
         var lifecycleManager = new ModuleLifecycleManager(runtimeManager, serviceProvider);
         await lifecycleManager.InitialiseAllAsync(CancellationToken.None);
@@ -212,7 +190,7 @@ public class ReportingSampleModuleIntegrationTests
     {
         using var temp = new TempDirectory();
         var (runtimeManager, serviceProvider) = BuildPipeline(
-            ConfigurationGrantingGeneratePermission(temp.Path), typeof(ReportingSampleModule));
+            EmptyConfiguration(temp.Path), typeof(ReportingSampleModule));
         var commandRegistry = (ICommandRegistry)serviceProvider.GetService(typeof(ICommandRegistry));
         var notificationDispatcher = (INotificationDispatcher)serviceProvider.GetService(typeof(INotificationDispatcher));
         var observed = new List<IPlatformNotification>();
@@ -252,37 +230,24 @@ public class ReportingSampleModuleIntegrationTests
             .AddConfigurationSource(new MemoryConfigurationSource(
             [
                 new KeyValuePair<string, string>(PersistenceStore.RootPathConfigurationKey, temp.Path),
-                new KeyValuePair<string, string>("Identity:Roles:ReportGenerator:Permissions", ReportingSampleModule.GenerateReportPermissionKey),
-                new KeyValuePair<string, string>($"Identity:Principals:{ReportingSampleModule.SampleIdentityId}:Roles", "ReportGenerator"),
             ]))
             .Build();
-        var originalOut = Console.Out;
 
-        try
-        {
-            Console.SetOut(new StringWriter());
+        var runTask = host.RunAsync();
 
-            var runTask = host.RunAsync();
+        await RunningHostFixture.WaitUntilRunningAsync(host);
 
-            while (host.State is HostState.Created or HostState.Starting)
-                await Task.Delay(5);
+        Assert.Equal(HostState.Running, host.State);
 
-            Assert.Equal(HostState.Running, host.State);
+        var registry = (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
 
-            var registry = (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
+        var result = await registry.InvokeAsync(ReportingSampleModule.GenerateSampleReportCommandId, CancellationToken.None);
 
-            var result = await registry.InvokeAsync(ReportingSampleModule.GenerateSampleReportCommandId, CancellationToken.None);
+        Assert.True(result.Succeeded);
+        Assert.Contains("Generated report", result.Message);
 
-            Assert.True(result.Succeeded);
-            Assert.Contains("Generated report", result.Message);
-
-            await host.StopAsync();
-            await runTask;
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-        }
+        await host.StopAsync();
+        await runTask;
 
         Assert.Equal(HostState.Stopped, host.State);
     }

@@ -1,4 +1,5 @@
-using Tempest.App.Workspace;
+using Tempest.Workspace;
+using Tempest.Harness;
 using Tempest.Core.Tests.Workspace.Samples;
 using Tempest.Core.Configuration;
 using Tempest.Core.Persistence;
@@ -8,13 +9,12 @@ using Tempest.Samples;
 
 namespace Tempest.Core.Tests.Workspace;
 
-// Proves WorkspaceShell (Tempest.App.Workspace) end to end: TempestOS's
+// Proves WorkspaceShell (Tempest.Workspace) end to end: TempestOS's
 // Internal Engineering Harness (ADR-0101) launches directly into a
 // functioning, five-region Workspace shell, over a real, unmodified
 // TempestHost - the same real-collaborator, StringWriter/StringReader
 // testing discipline this project established for its console shell at
 // WP 5.0D, applied to the Workspace for the first time.
-[Collection("Console output capture")]
 public class WorkspaceShellTests
 {
     private static WorkspaceManager BuildManager(string rootPath, params Type[] moduleTypes)
@@ -269,7 +269,7 @@ public class WorkspaceShellTests
     // ----------------------------------------------------------------
     // Project Explorer navigation (WP 8.1B): open / up / filter / back /
     // forward / menu / close, against the real living reference content
-    // (Tempest.App.Workspace.Samples), the same content Program.cs itself
+    // (Tempest.Workspace.Samples), the same content Program.cs itself
     // registers.
     // ----------------------------------------------------------------
 

@@ -2,7 +2,7 @@ using System.Reflection;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.LogicalTree;
-using Tempest.App.Workspace;
+using Tempest.Workspace;
 using Tempest.Core.Commands;
 using Tempest.Desktop.Composition;
 using Tempest.Desktop.History;
@@ -198,7 +198,7 @@ public sealed class ActionOutcomeReportingTests
         {
             await host.StartAsync();
             var workspace = host.Workspace!;
-            await SelectFirstAsync(workspace, Tempest.App.Workspace.Calculations.CalculationsWorkspaceExplorerModule.NavigationItemId, "Calculation");
+            await SelectFirstAsync(workspace, Tempest.Workspace.Calculations.CalculationsWorkspaceExplorerModule.NavigationItemId, "Calculation");
 
             var window = new MainWindow(host);
             var ribbon = GetPrivateField<RibbonView>(window, "_ribbon");
@@ -211,7 +211,7 @@ public sealed class ActionOutcomeReportingTests
 
             // `TD-119`: the ribbon dispatch is fire-and-forget and is reported on the subscriber's own continuation; bounded poll on the real
             // history count, assertions unchanged.
-            var ribbonDeadline = DateTime.UtcNow.AddSeconds(2);
+            var ribbonDeadline = DesktopTestHelpers.Deadline(2);
             while (!(history.Entries.Count > before) && DateTime.UtcNow < ribbonDeadline)
                 await Task.Delay(10);
 
@@ -250,7 +250,7 @@ public sealed class ActionOutcomeReportingTests
         {
             await host.StartAsync();
             var workspace = host.Workspace!;
-            var node = await SelectFirstAsync(workspace, Tempest.App.Workspace.Documents.DocumentsWorkspaceExplorerModule.NavigationItemId, "Document");
+            var node = await SelectFirstAsync(workspace, Tempest.Workspace.Documents.DocumentsWorkspaceExplorerModule.NavigationItemId, "Document");
 
             var window = new MainWindow(host);
             var inspector = GetPrivateField<PropertyInspectorView>(window, "_inspectorView");
@@ -268,7 +268,7 @@ public sealed class ActionOutcomeReportingTests
 
             // `TD-119`: the report fans out to reported on the subscriber's own continuation; bounded poll on the real
             // history count, assertions unchanged.
-            var inspectorDeadline = DateTime.UtcNow.AddSeconds(2);
+            var inspectorDeadline = DesktopTestHelpers.Deadline(2);
             while (!(history.Entries.Count > before) && DateTime.UtcNow < inspectorDeadline)
                 await Task.Delay(10);
 
@@ -301,7 +301,7 @@ public sealed class ActionOutcomeReportingTests
         {
             await host.StartAsync();
             var workspace = host.Workspace!;
-            var node = await SelectFirstAsync(workspace, Tempest.App.Workspace.Documents.DocumentsWorkspaceExplorerModule.NavigationItemId, "Document");
+            var node = await SelectFirstAsync(workspace, Tempest.Workspace.Documents.DocumentsWorkspaceExplorerModule.NavigationItemId, "Document");
 
             var window = new MainWindow(host);
             var explorer = GetPrivateField<ProjectExplorerView>(window, "_explorerView");
@@ -315,7 +315,7 @@ public sealed class ActionOutcomeReportingTests
 
             // `TD-119`: the report fans out to reported on the subscriber's own continuation; bounded poll on the real
             // history count, assertions unchanged.
-            var explorerDeadline = DateTime.UtcNow.AddSeconds(2);
+            var explorerDeadline = DesktopTestHelpers.Deadline(2);
             while (!(history.Entries.Count > before) && DateTime.UtcNow < explorerDeadline)
                 await Task.Delay(10);
 
@@ -344,7 +344,7 @@ public sealed class ActionOutcomeReportingTests
         {
             await host.StartAsync();
             var workspace = host.Workspace!;
-            var node = await SelectFirstAsync(workspace, Tempest.App.Workspace.Documents.DocumentsWorkspaceExplorerModule.NavigationItemId, "Document");
+            var node = await SelectFirstAsync(workspace, Tempest.Workspace.Documents.DocumentsWorkspaceExplorerModule.NavigationItemId, "Document");
 
             var window = new MainWindow(host);
             var statusBar = GetPrivateField<StatusBarView>(window, "_statusBar");
@@ -361,7 +361,7 @@ public sealed class ActionOutcomeReportingTests
 
             // `TD-119`: the report fans out to reported on the subscriber's own continuation; bounded poll on the real
             // history count, assertions unchanged.
-            var editorDeadline = DateTime.UtcNow.AddSeconds(2);
+            var editorDeadline = DesktopTestHelpers.Deadline(2);
             while (!(history.Entries.Count > before) && DateTime.UtcNow < editorDeadline)
                 await Task.Delay(10);
 

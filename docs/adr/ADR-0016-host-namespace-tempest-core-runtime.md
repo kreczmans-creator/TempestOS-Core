@@ -6,6 +6,10 @@ Accepted — resolves WP 2.7's Open Question 3, 2026-07-22. Architecture only;
 no code changes accompany this decision. No implementation exists yet; this
 ADR fixes the namespace and type names a future implementation must use.
 
+**Amended** — `Tempest.Core.Hosting` was removed (no such namespace exists in
+`src/`); the decision that the Host lives in `Tempest.Core.Runtime` stands.
+Recorded by the design-freeze review of 2026-09-08 (`WP 17.9.3`).
+
 ## Context
 
 *Runtime Host Architecture.md* (WP 2.7) flagged a real risk without resolving

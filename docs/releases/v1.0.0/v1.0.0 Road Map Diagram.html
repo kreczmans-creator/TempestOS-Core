@@ -1,0 +1,352 @@
+<title>TempestOS Road to v1.0.0</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600&family=Space+Mono:wght@400;700&family=IBM+Plex+Sans:wght@400;500&display=swap">
+<style>
+  :root {
+    --bg: #F4F5FA; --panel: #FFFFFF; --ink: #14182B; --muted: #5C6280; --line: #C9CDE0;
+    --accent: #1E2F97; --accent-soft: #E6E9F9; --lane: #EBEDF6;
+    --warn: #B0721A; --warn-soft: #FBF1DF; --bad: #B4353A; --bad-soft: #FBE6E6;
+    --ok: #2A7A5A; --ghost: #8E94AE; --ghost-soft: #F1F2F7;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0F1220; --panel: #171B2E; --ink: #E9EBF5; --muted: #A3A9C4; --line: #353C5C;
+      --accent: #8A9AF5; --accent-soft: #1E2650; --lane: #151A2C;
+      --warn: #E0A54A; --warn-soft: #3A2C10; --bad: #F07B7F; --bad-soft: #431A1E;
+      --ok: #5CC498; --ghost: #6E7594; --ghost-soft: #1B1F33;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0F1220; --panel: #171B2E; --ink: #E9EBF5; --muted: #A3A9C4; --line: #353C5C;
+    --accent: #8A9AF5; --accent-soft: #1E2650; --lane: #151A2C;
+    --warn: #E0A54A; --warn-soft: #3A2C10; --bad: #F07B7F; --bad-soft: #431A1E;
+    --ok: #5CC498; --ghost: #6E7594; --ghost-soft: #1B1F33;
+  }
+  body { background: var(--bg); color: var(--ink); font-family: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif; font-size: 15px; line-height: 1.5; }
+  .wrap { max-width: 1780px; margin: 0 auto; padding: 32px 24px 48px; }
+  header { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px 32px; border-bottom: 2px solid var(--accent); padding-bottom: 16px; }
+  h1 { font-family: "Chakra Petch", "Segoe UI", sans-serif; font-weight: 600; font-size: 30px; line-height: 1.1; margin: 0; letter-spacing: 0.01em; text-wrap: balance; }
+  .eyebrow { font-family: "Space Mono", ui-monospace, monospace; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin: 0 0 6px; }
+  .facts { display: grid; grid-template-columns: repeat(4, auto); gap: 0 28px; }
+  .fact { display: flex; flex-direction: column; }
+  .fact b { font-family: "Space Mono", ui-monospace, monospace; font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--accent); line-height: 1.2; }
+  .fact span { font-size: 12px; color: var(--muted); }
+  .scroll { overflow-x: auto; margin-top: 20px; }
+  svg { display: block; min-width: 1360px; max-width: 100%; height: auto; font-family: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif; color: var(--ink); }
+  figure { margin: 0; }
+  figcaption { max-width: 72ch; color: var(--muted); font-size: 14px; margin: 14px 0 0; }
+  .legend { display: flex; flex-wrap: wrap; gap: 8px 22px; margin-top: 14px; font-size: 13px; color: var(--muted); align-items: center; }
+  .legend span { display: inline-flex; align-items: center; gap: 8px; }
+  .legend i { display: inline-block; width: 30px; height: 0; border-top: 2.5px solid var(--accent); }
+  .legend i.dash { border-top-style: dashed; }
+  .legend i.warn { border-color: var(--warn); border-top-style: dashed; }
+  .legend i.ghost { border-color: var(--ghost); border-top-style: dotted; }
+  .legend em { font-style: normal; font-family: "Space Mono", ui-monospace, monospace; font-size: 10px; padding: 1px 6px; border-radius: 3px; background: var(--bad-soft); color: var(--bad); }
+  .legend em.ok { background: var(--accent-soft); color: var(--accent); }
+  /* SVG classes */
+  .lane { fill: var(--lane); }
+  .lane-title { font-family: "Chakra Petch", sans-serif; font-weight: 600; font-size: 15px; letter-spacing: 0.06em; text-transform: uppercase; fill: var(--accent); }
+  .lane-sub { font-size: 12px; fill: var(--muted); }
+  .box { fill: var(--panel); stroke: var(--accent); stroke-width: 1.6; }
+  .box.plan { stroke-dasharray: 6 4; }
+  .box.cond { stroke: var(--warn); stroke-dasharray: 6 4; fill: var(--warn-soft); }
+  .box.ghost { stroke: var(--ghost); stroke-dasharray: 2 4; fill: var(--ghost-soft); }
+  .box.def { fill: var(--panel); stroke: var(--line); }
+  .box.def.approved { stroke: var(--accent); stroke-width: 2.2; }
+  .box.def.cond { fill: var(--panel); }
+  .gate { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 2; }
+  .title { font-family: "Chakra Petch", sans-serif; font-weight: 600; font-size: 14px; fill: var(--ink); }
+  .title.warn { fill: var(--warn); }
+  .title.ghost { fill: var(--ghost); }
+  .sub { font-size: 11.5px; fill: var(--muted); }
+  .row { font-size: 12px; fill: var(--ink); }
+  .row.muted { fill: var(--muted); }
+  .id { font-family: "Space Mono", ui-monospace, monospace; font-size: 11px; fill: var(--accent); }
+  .id.warn { fill: var(--warn); }
+  .id.ghost { fill: var(--ghost); }
+  .flow { stroke: var(--accent); stroke-width: 2; fill: none; }
+  .flow.plan { stroke-dasharray: 6 4; }
+  .flow.cond { stroke: var(--warn); stroke-dasharray: 6 4; }
+  .flow.ghost { stroke: var(--ghost); stroke-dasharray: 2 4; }
+  .link { stroke: var(--ghost); stroke-width: 1.2; stroke-dasharray: 3 4; fill: none; }
+  .lbl { font-size: 11px; fill: var(--muted); }
+  .lbl.strong { fill: var(--accent); font-weight: 500; }
+  .lbl.warn { fill: var(--warn); font-weight: 500; }
+  .pill { fill: var(--bad-soft); }
+  .pill-text { font-family: "Space Mono", ui-monospace, monospace; font-size: 9.5px; fill: var(--bad); }
+  .cert { fill: var(--accent-soft); }
+  .cert-text { font-family: "Space Mono", ui-monospace, monospace; font-size: 9.5px; fill: var(--accent); }
+  .head-accent { fill: var(--accent); }
+  .head-warn { fill: var(--warn); }
+  .head-ghost { fill: var(--ghost); }
+  .head-text { font-family: "Chakra Petch", sans-serif; font-weight: 600; font-size: 13px; fill: var(--panel); }
+  .box.cond ~ .head-text, .head-text.onwarn { fill: #FFFFFF; }
+  @media (prefers-reduced-motion: no-preference) { }
+</style>
+<div class="wrap">
+  <header>
+    <div>
+      <p class="eyebrow">Release candidate audit · main 5165e3f · 4 Sep 2026</p>
+      <h1>TempestOS Road to v1.0.0</h1>
+    </div>
+    <div class="facts">
+      <div class="fact"><b>84 + ~34</b><span>numbered WPs + unnumbered commits since the roadmap</span></div>
+      <div class="fact"><b>17 → 5</b><span>WPs planned → releases actually shipped</span></div>
+      <div class="fact"><b>74 open</b><span>technical debt rows of 122 tracked</span></div>
+      <div class="fact"><b>v0.12.0</b><span>last release with a Product Approval verdict</span></div>
+    </div>
+  </header>
+
+  <div class="scroll">
+  <figure>
+  <svg viewBox="0 0 1760 1110" role="img" aria-label="Three lanes: what the WP11.0B roadmap planned, what was actually delivered across v0.11.0 to v0.15.0, and the remaining path through a scope decision, v0.16.0 hygiene, an optional v0.17.0, to v1.0.0.">
+    <defs>
+      <marker id="arr-warn" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="var(--warn)"/></marker>
+      <marker id="arr-acc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="var(--accent)"/></marker>
+      <marker id="arr-ghost" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="var(--ghost)"/></marker>
+    </defs>
+
+    <!-- ===== LANE A: PLANNED ===== -->
+    <rect class="lane" x="20" y="20" width="1720" height="240" rx="4"/>
+    <text class="lane-title" x="36" y="46">Planned</text>
+    <text class="lane-sub" x="36" y="64">WP11.0B Architecture Roadmap, Aug 2026 — three releases, 17 Work Packages</text>
+
+    <rect class="box plan" x="180" y="90" width="230" height="130" rx="3"/>
+    <rect class="head-accent" x="180" y="90" width="230" height="24" rx="3"/>
+    <text class="head-text" x="190" y="107">v0.11.0</text>
+    <text class="sub" x="190" y="132">Release Engineering &amp; Governance</text>
+    <text class="row" x="190" y="152">6 WPs planned</text>
+    <text class="id" x="190" y="170">11.0A · 11.0B · 11.1A · 11.1B</text>
+    <text class="id" x="190" y="186">11.2A · 11.9.0</text>
+    <text class="row muted" x="190" y="206">CI · governance tool · UI decision</text>
+
+    <rect class="box plan" x="440" y="90" width="230" height="130" rx="3"/>
+    <rect class="head-accent" x="440" y="90" width="230" height="24" rx="3"/>
+    <text class="head-text" x="450" y="107">v0.12.0</text>
+    <text class="sub" x="450" y="132">Desktop Composition &amp; Vocabulary</text>
+    <text class="row" x="450" y="152">6 WPs planned</text>
+    <text class="id" x="450" y="170">12.0A · 12.0B · 12.1A · 12.1B</text>
+    <text class="id" x="450" y="186">12.2A · 12.9.0</text>
+    <text class="row muted" x="450" y="206">MainWindow split · Kind safety net</text>
+
+    <rect class="box cond" x="700" y="90" width="250" height="130" rx="3"/>
+    <rect class="head-warn" x="700" y="90" width="250" height="24" rx="3"/>
+    <text class="head-text onwarn" x="710" y="107">v0.13.0 · conditional</text>
+    <text class="sub" x="710" y="132">Trust &amp; Deployment Hardening</text>
+    <text class="row" x="710" y="152">5 WPs, only if v1.0 needs plugins</text>
+    <text class="row" x="710" y="167">or REST beyond loopback</text>
+    <text class="id warn" x="710" y="186">13.0A/B plugin · 13.1A/B REST/TLS</text>
+    <text class="id warn" x="710" y="202">13.9.0</text>
+
+    <rect class="box ghost" x="980" y="90" width="470" height="130" rx="3"/>
+    <text class="title ghost" x="995" y="118">Nothing planned here</text>
+    <text class="row muted" x="995" y="176">Recommended path was v0.11.0 → v0.12.0 → v1.0.0, skipping</text>
+    <text class="row muted" x="995" y="192">v0.13.0 unless its trigger fired. No v0.14.0 or v0.15.0 existed.</text>
+    <text class="id ghost" x="995" y="210">Product Roadmap.md never gained the promised Phase 5.5</text>
+
+    <rect class="box plan" x="1480" y="90" width="250" height="130" rx="3"/>
+    <rect class="head-accent" x="1480" y="90" width="250" height="24" rx="3"/>
+    <text class="head-text" x="1490" y="107">v1.0.0 · General Availability</text>
+    <text class="sub" x="1490" y="132">Single-user, local desktop, 6 disciplines</text>
+    <text class="row" x="1490" y="152">1 WP planned</text>
+    <text class="id" x="1490" y="170">WP RC.0A readiness review</text>
+    <text class="row" x="1490" y="188">then Product Approval → tag</text>
+    <text class="row muted" x="1490" y="206">Out of scope: plugins, non-local REST</text>
+
+    <line class="flow plan" x1="410" y1="150" x2="438" y2="150" marker-end="url(#arr-acc)"/>
+    <line class="flow plan" x1="670" y1="150" x2="698" y2="150" marker-end="url(#arr-acc)"/>
+    <line class="flow plan" x1="950" y1="150" x2="1478" y2="150" marker-end="url(#arr-acc)"/>
+    <text class="lbl strong" x="1215" y="144" text-anchor="middle">planned: straight to GA</text>
+
+    <!-- ===== LANE B: DELIVERED ===== -->
+    <rect class="lane" x="20" y="285" width="1720" height="360" rx="4"/>
+    <text class="lane-title" x="36" y="311">Delivered</text>
+    <text class="lane-sub" x="36" y="329">Five releases, 11 Aug – 4 Sep 2026 · every mandatory roadmap item done except the v1.0 gate and branch-protection enforcement</text>
+
+    <line class="link" x1="295" y1="220" x2="295" y2="350"/>
+    <text class="lbl" x="303" y="278">+4 WPs · 2 renamed</text>
+    <line class="link" x1="555" y1="220" x2="555" y2="350"/>
+    <text class="lbl" x="563" y="278">+6 WPs · 1 collapsed</text>
+    <line class="link" x1="825" y1="220" x2="825" y2="350"/>
+    <text class="lbl warn" x="833" y="278">trigger fired: plugins only</text>
+    <line class="link" x1="1215" y1="220" x2="1215" y2="350"/>
+    <text class="lbl" x="1223" y="278">unplanned by the roadmap</text>
+
+    <rect class="box" x="180" y="350" width="230" height="150" rx="3"/>
+    <rect class="head-accent" x="180" y="350" width="230" height="24" rx="3"/>
+    <text class="head-text" x="190" y="367">v0.11.0 · 11 Aug</text>
+    <text class="row" x="190" y="392">10 WPs delivered (6 planned)</text>
+    <text class="row muted" x="190" y="410">11.1B / 11.2A renamed in flight</text>
+    <text class="row muted" x="190" y="426">+11.3A/B UI decision (ADR-0101)</text>
+    <text class="row muted" x="190" y="442">+11.4A/B CI fixes, tag recreated</text>
+    <text class="id" x="190" y="462">CI · health check · ADR-0101</text>
+    <rect class="cert" x="190" y="474" width="138" height="16" rx="3"/>
+    <text class="cert-text" x="196" y="485.5">released · not certified</text>
+
+    <rect class="box" x="440" y="350" width="230" height="150" rx="3"/>
+    <rect class="head-accent" x="440" y="350" width="230" height="24" rx="3"/>
+    <text class="head-text" x="450" y="367">v0.12.0 · 13 Aug</text>
+    <text class="row" x="450" y="392">12 WPs delivered (6 planned)</text>
+    <text class="row muted" x="450" y="410">+12.3A/B fault injection</text>
+    <text class="row muted" x="450" y="426">+12.4A/B command &amp; event wiring</text>
+    <text class="row muted" x="450" y="442">12.2A collapsed (done by 11.3B)</text>
+    <text class="id" x="450" y="462">ADR-0103 · 0105 · 0106 (ERR)</text>
+    <rect class="cert" x="450" y="474" width="176" height="16" rx="3"/>
+    <text class="cert-text" x="456" y="485.5">CERTIFIED w/ accepted debt</text>
+
+    <rect class="box" x="700" y="350" width="250" height="150" rx="3"/>
+    <rect class="head-accent" x="700" y="350" width="250" height="24" rx="3"/>
+    <text class="head-text" x="710" y="367">v0.13.0 → v0.13.1 · 18 Aug</text>
+    <text class="row" x="710" y="392">~38 WPs delivered (5 planned)</text>
+    <text class="row muted" x="710" y="410">plugin trust shipped: FCR-0001 done,</text>
+    <text class="row muted" x="710" y="426">TD-09/10/11/51/52 closed</text>
+    <text class="row muted" x="710" y="442">REST auth/TLS (13.1A/B) never run</text>
+    <text class="id" x="710" y="462">publish failed (flaky test) → v0.13.1</text>
+    <rect class="cert" x="710" y="474" width="138" height="16" rx="3"/>
+    <text class="cert-text" x="716" y="485.5">released · not certified</text>
+
+    <rect class="box" x="980" y="350" width="220" height="150" rx="3"/>
+    <rect class="head-accent" x="980" y="350" width="220" height="24" rx="3"/>
+    <text class="head-text" x="990" y="367">v0.14.0 · 3 Sep</text>
+    <text class="row" x="990" y="392">16 WPs + ~34 unnumbered</text>
+    <text class="row muted" x="990" y="410">durable state, layout tree, viewer,</text>
+    <text class="row muted" x="990" y="426">projects/tasks/risks, product spine,</text>
+    <text class="row muted" x="990" y="442">one canonical command path</text>
+    <text class="id" x="990" y="462">ADR-0095 · 0113–0119</text>
+    <rect class="cert" x="990" y="474" width="200" height="16" rx="3"/>
+    <text class="cert-text" x="996" y="485.5">ACCEPT w/ observations · not cert.</text>
+
+    <rect class="box" x="1230" y="350" width="220" height="150" rx="3"/>
+    <rect class="head-accent" x="1230" y="350" width="220" height="24" rx="3"/>
+    <text class="head-text" x="1240" y="367">v0.15.0 · 4 Sep · current</text>
+    <text class="row" x="1240" y="392">7 WPs · no new capability</text>
+    <text class="row muted" x="1240" y="410">backfills 20 undocumented commits</text>
+    <text class="row muted" x="1240" y="426">TD-121/122 recorded as Resolved</text>
+    <text class="row muted" x="1240" y="442">3,496 tests · 0 warnings · CI green</text>
+    <text class="id" x="1240" y="462">main 5165e3f · VERSION 0.15.0</text>
+    <rect class="cert" x="1240" y="474" width="138" height="16" rx="3"/>
+    <text class="cert-text" x="1246" y="485.5">released · not certified</text>
+
+    <line class="flow" x1="410" y1="425" x2="438" y2="425" marker-end="url(#arr-acc)"/>
+    <line class="flow" x1="670" y1="425" x2="698" y2="425" marker-end="url(#arr-acc)"/>
+    <line class="flow" x1="950" y1="425" x2="978" y2="425" marker-end="url(#arr-acc)"/>
+    <line class="flow" x1="1200" y1="425" x2="1228" y2="425" marker-end="url(#arr-acc)"/>
+
+    <text class="lbl" x="1720" y="540" text-anchor="end">finished work not on main</text>
+    <line class="flow ghost" x1="825" y1="500" x2="825" y2="548" marker-end="url(#arr-ghost)"/>
+    <rect class="box ghost" x="700" y="550" width="250" height="80" rx="3"/>
+    <text class="title ghost" x="710" y="571">Companion · WP 14.0A–14.2.1</text>
+    <text class="row muted" x="710" y="590">branch cut 18 Aug · 4 ahead, 64 behind</text>
+    <text class="row muted" x="710" y="606">mobile app, Companion REST, brand pack</text>
+    <text class="id ghost" x="710" y="622">TD-82 (P0) · TD-57/58 number collision</text>
+
+    <line class="flow ghost" x1="1340" y1="500" x2="1340" y2="548" marker-end="url(#arr-ghost)"/>
+    <rect class="box ghost" x="1230" y="550" width="220" height="80" rx="3"/>
+    <text class="title ghost" x="1240" y="571">WP 15.2A · closes TD-120</text>
+    <text class="row muted" x="1240" y="590">branch · 1 commit · CI green</text>
+    <text class="row muted" x="1240" y="606">test cleanup only · 412 Desktop tests</text>
+    <text class="id ghost" x="1240" y="622">creates docs/releases/v0.15.1/</text>
+
+    <polyline class="flow" points="1230,490 1215,490 1215,520 530,520 530,772" marker-end="url(#arr-acc)"/>
+    <text class="lbl strong" x="870" y="514" text-anchor="middle">now: the next Work Package starts from a scope decision</text>
+
+    <!-- ===== LANE C: REMAINING ===== -->
+    <rect class="lane" x="20" y="670" width="1720" height="420" rx="4"/>
+    <text class="lane-title" x="36" y="696">Remaining</text>
+    <text class="lane-sub" x="36" y="714">Proposed by this audit, not approved</text>
+
+    <text class="lbl" x="180" y="742">Three v1.0 definitions on record, unreconciled</text>
+    <rect class="box def" x="180" y="750" width="240" height="46" rx="3"/>
+    <text class="title" x="190" y="768">Def. 1 · WP7.2A milestone</text>
+    <text class="sub" x="190" y="786">one engineer runs SE work end-to-end</text>
+    <rect class="box def approved" x="180" y="806" width="240" height="46" rx="3"/>
+    <text class="title" x="190" y="824">Def. 2 · WP11.0B §1 · approved</text>
+    <text class="sub" x="190" y="842">single-user local desktop, 6 disciplines</text>
+    <rect class="box def cond" x="180" y="862" width="240" height="46" rx="3"/>
+    <text class="title warn" x="190" y="880">Def. 3 · TD-84 product decision</text>
+    <text class="sub" x="190" y="898">project-centric, 10 modules, Companion</text>
+    <line class="flow" x1="420" y1="773" x2="486" y2="807" marker-end="url(#arr-acc)"/>
+    <line class="flow" x1="420" y1="829" x2="466" y2="829" marker-end="url(#arr-acc)"/>
+    <line class="flow cond" x1="420" y1="885" x2="486" y2="851" marker-end="url(#arr-warn)"/>
+
+    <polygon class="gate" points="530,774 592,829 530,884 468,829"/>
+    <text class="title" x="530" y="826" text-anchor="middle">WP 16.0A</text>
+    <text class="sub" x="530" y="842" text-anchor="middle">scope decision</text>
+    <line class="flow" x1="592" y1="829" x2="608" y2="829" marker-end="url(#arr-acc)"/>
+
+    <rect class="box plan" x="610" y="740" width="430" height="330" rx="3"/>
+    <rect class="head-accent" x="610" y="740" width="430" height="24" rx="3"/>
+    <text class="head-text" x="620" y="757">v0.16.0 · v1.0 Readiness Hygiene · always</text>
+    <g class="row">
+      <text x="622" y="784"><tspan class="id">16.0B</tspan>  merge WP 15.2A · Companion: merge or reject</text>
+      <text x="622" y="806"><tspan class="id">16.1A</tspan>  branch protection + required health check</text>
+      <text x="622" y="828"><tspan class="id">16.1B</tspan>  health check covers the six stale registers</text>
+      <text x="622" y="850"><tspan class="id">16.2A</tspan>  register &amp; PROJECT_STATUS currency (TD-57)</text>
+      <text x="622" y="872"><tspan class="id">16.2B</tspan>  Academy retrospective backfill (v0.11.0 +)</text>
+      <text x="622" y="894"><tspan class="id">16.3A/B</tspan>  state schema versioning + migration seam</text>
+      <text x="622" y="916"><tspan class="id">16.4A</tspan>  test determinism (TD-34 · 119 · 100 · 83)</text>
+      <text x="622" y="938"><tspan class="id">16.4B</tspan>  durability + loopback hygiene (TD-67/68/69/97/62)</text>
+      <text x="622" y="960"><tspan class="id">16.5A</tspan>  accessibility baseline (TD-65)</text>
+      <text x="622" y="982"><tspan class="id">16.5B</tspan>  Linux/X11 fix or support-matrix statement (TD-116)</text>
+      <text x="622" y="1004"><tspan class="id">16.9.0</tspan>  ERR + first Product Approval verdict since v0.12.0</text>
+    </g>
+    <rect class="pill" x="984" y="795" width="46" height="15" rx="3"/><text class="pill-text" x="1007" y="806" text-anchor="middle">TD-45</text>
+    <rect class="pill" x="984" y="883" width="46" height="15" rx="3"/><text class="pill-text" x="1007" y="894" text-anchor="middle">TD-87</text>
+    <text class="row muted" x="622" y="1032">Red rows are hard blockers this audit rates above the registers'</text>
+    <text class="row muted" x="622" y="1048">own grading: an unenforced release gate, and user data with no schema version.</text>
+
+    <polyline class="flow ghost" points="825,630 825,700 740,700 740,738" marker-end="url(#arr-ghost)"/>
+    <polyline class="flow ghost" points="1340,630 1340,700 800,700"/>
+    <text class="lbl" x="1352" y="690">both land via 16.0B</text>
+
+    <polyline class="flow" points="1040,770 1060,770 1060,724 1462,724 1462,770 1478,770" marker-end="url(#arr-acc)"/>
+    <text class="lbl strong" x="1261" y="716" text-anchor="middle">shortest path: Def. 2 confirmed · Companion deferred to v1.1 · 2 releases, ~15 WPs</text>
+
+    <line class="flow cond" x1="1040" y1="900" x2="1068" y2="900" marker-end="url(#arr-warn)"/>
+    <line class="flow cond" x1="1450" y1="900" x2="1478" y2="900" marker-end="url(#arr-warn)"/>
+
+    <rect class="box cond" x="1070" y="740" width="380" height="300" rx="3"/>
+    <rect class="head-warn" x="1070" y="740" width="380" height="24" rx="3"/>
+    <text class="head-text onwarn" x="1080" y="757">v0.17.0 · Product Completion · only if 16.0A widens scope</text>
+    <g class="row">
+      <text x="1082" y="784"><tspan class="id warn">C1</tspan>  REST auth + TLS (the 13.1A/B that never ran)</text>
+      <text x="1082" y="806"><tspan class="id warn">C2</tspan>  plugin enablement preconditions (TD-56/61/64)</text>
+      <text x="1082" y="828"><tspan class="id warn">C3</tspan>  product-spine modules: Commercial, Resources,</text>
+      <text x="1082" y="844">      Knowledge, Admin, Kanban, Gantt (TD-74/81/84)</text>
+      <text x="1082" y="866"><tspan class="id warn">C4</tspan>  per-discipline engineering surfaces (TD-79)</text>
+      <text x="1082" y="888"><tspan class="id warn">C5</tspan>  viewer: DWG/SVG, markup, streaming (TD-96–101)</text>
+      <text x="1082" y="910"><tspan class="id warn">C6</tspan>  command framework: picker, export/import,</text>
+      <text x="1082" y="926">      keyboard defaults (FCR-0073/74, TD-115/77)</text>
+      <text x="1082" y="948"><tspan class="id warn">C7</tspan>  desktop polish: compact nav, dock preview, icons</text>
+      <text x="1082" y="970"><tspan class="id warn">C8</tspan>  shell/async residuals (TD-108/109/118)</text>
+    </g>
+    <text class="row muted" x="1082" y="1000">C1 becomes mandatory the moment Companion or any</text>
+    <text class="row muted" x="1082" y="1016">non-loopback deployment is inside v1.0. C2 only with plugins.</text>
+
+    <rect class="box plan" x="1480" y="740" width="250" height="200" rx="3"/>
+    <rect class="head-accent" x="1480" y="740" width="250" height="24" rx="3"/>
+    <text class="head-text" x="1490" y="757">v1.0.0 · General Availability</text>
+    <g class="row">
+      <text x="1492" y="784"><tspan class="id">RC.0A</tspan>  physical review on Windows,</text>
+      <text x="1492" y="800">      executed and recorded</text>
+      <text x="1492" y="822"><tspan class="id">RC.0B</tspan>  full readiness review (ERR),</text>
+      <text x="1492" y="838">      multi-run suite, every register</text>
+      <text x="1492" y="860">      VERSION 1.0.0 · Release Notes</text>
+      <text x="1492" y="876">      root CHANGELOG (none since v0.5.0)</text>
+      <text x="1492" y="900">      Product Approval → tag → publish</text>
+    </g>
+    <rect class="cert" x="1492" y="912" width="126" height="16" rx="3"/>
+    <text class="cert-text" x="1498" y="923.5">gate: certified, green</text>
+  </svg>
+  <figcaption>What the WP11.0B roadmap planned (top), what actually shipped and where it now sits (middle), and the proposed route to v1.0.0 (bottom). Columns align by release, so the gap between plan and delivery reads vertically; the v1.0 path reads left to right through the one decision that sets its length.</figcaption>
+  </figure>
+  </div>
+
+  <div class="legend">
+    <span><i></i> shipped</span>
+    <span><i class="dash"></i> planned or proposed</span>
+    <span><i class="warn"></i> conditional on the scope decision</span>
+    <span><i class="ghost"></i> finished work off main, or unplanned</span>
+    <span><em>TD-nn</em> hard v1.0 blocker</span>
+    <span><em class="ok">certified</em> Product Approval verdict status</span>
+  </div>
+</div>

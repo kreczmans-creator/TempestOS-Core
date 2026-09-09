@@ -9,6 +9,11 @@ responsibility) already being decided; this ADR answers the question that
 decision explicitly left to the Shell: how, concretely, does a
 `NavigationItem.Id` become something rendered on screen?
 
+**Superseded in substance by `ADR-0067` and `ADR-0101`**: the closed page
+mapping was replaced by Kind-keyed view registration
+(`IWorkspaceManager.RegisterView`) and `IPage`/`PlaceholderPage` were
+deleted in `WP 11.3B`. Recorded 2026-09-08 (`WP 17.9.3`).
+
 ## Context
 
 `ADR-0031` already forbids any rendering type from ever appearing in

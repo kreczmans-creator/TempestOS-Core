@@ -1,0 +1,2344 @@
+# TempestOS Platform Service Map
+
+## Purpose
+
+This is a living index of every platform service TempestOS is built from — what
+each one is responsible for, what it depends on, what depends on it, how it
+comes to exist during startup, and where to go for the full reasoning behind
+it. It exists so a reader can answer "what is X, what does it need, and what
+needs it" in one place, without reconstructing the picture from six work
+package retrospectives and ten ADRs each time.
+
+**This document must be updated whenever a service is added, removed, or has
+its responsibility, dependencies, or consumers change** — it is Academy
+material, subject to the same maintenance obligation as everything else under
+`docs/academy/` (see Engineering Governance, §6). A service map that drifts out
+of date is worse than no map at all, because it will be trusted.
+
+## At a Glance
+
+| Service | Status | Depends on | Depended on by |
+|---|---|---|---|
+| Platform Version | Implemented (WP 4.2A) | — | Any current or future platform service (ADR-0023) |
+| Configuration | Implemented (WP 2.5) | — | Logging, any future config consumer |
+| Logging | Implemented (WP 2.6) | Configuration | Discovery, Registration, Lifecycle, DI, Configuration |
+| Dependency Injection | Implemented (WP 2.4) | — | Lifecycle, any registered service |
+| Discovery | Implemented (WP 2.1) | Logging | Registration |
+| Registration | Implemented (WP 2.2) | Discovery, Logging | Lifecycle |
+| Lifecycle | Implemented (WP 2.3) | Registration, Dependency Injection, Logging | Host |
+| Module SDK | Implemented (WP 4.1) — not Host-orchestrated; a developer-facing convenience layer, not a platform service in its own right | `IModule`, `IModuleLifecycle` | Any module author |
+| Host | Implemented (WP 2.7B) | Configuration, Logging, Discovery, Registration, Lifecycle, Dependency Injection | Tempest.App |
+| Event Bus | **Implemented — WP 4.4D** (`IEventBus`/`EventBus`, `Tempest.Core.Events`) — dispatch/subscription/failure model per ADR-0028; **consumed — WP 4.4E** | Dependency Injection | Any module — first real consumer: `ClockModule`/`ClockLifecycleObserverModule` (`WP 4.4E`) |
+| Background Services | **Implemented — WP 4.5** (`IHostedServiceDiscoveryService`/`HostedServiceDiscoveryService`, `IHostedServiceManager`/`HostedServiceManager`, `Tempest.Core.BackgroundServices`) — discovery, ownership, orchestration, and Host Lifecycle placement per ADR-0029/ADR-0030; failure model per ADR-0021 | Host, Dependency Injection | Any module declaring a hosted service |
+| Command Framework | **Implemented — WP 5.1A (design), WP 5.1B (implementation)** (`ICommandDispatcher`/`ICommandRegistry`, `Tempest.Core.Commands`) — orthogonal to Navigation, ADR-0022 | Dependency Injection | `CommandSampleModule` (real contributor); `Tempest.App` (invocation, not yet wired into the Shell's own input handling) |
+| Navigation | **Implemented — WP 5.0A (design), WP 5.0B (implementation)** (`INavigationProvider`/`NavigationService`, `Tempest.Core.Navigation`) — model, ownership, and rendering boundary per ADR-0031/ADR-0032 | Dependency Injection, Event Bus | Any module contributing a navigation item; `Tempest.App` (rendering, not yet built) |
+| Diagnostics | **Implemented — WP 5.2** (`IDiagnosticsProvider`/`DiagnosticsProvider`, `Tempest.Core.Diagnostics`) — read-only projection over Host/module/hosted-service lifecycle state per ADR-0039 | Dependency Injection (constructed directly by `TempestHost`, ADR-0009); reads live data from `IModuleLifecycleManager`/`IHostedServiceManager` via `Func<T>` accessors, never resolves either through the container (ADR-0017) | `DiagnosticsSampleModule` (real contributor); any future Shell status page or health-check command |
+| Identity & Permissions | **Implemented — WP 6.1** (`IIdentity`/`PlatformIdentity`, `IPrincipal`/`PlatformPrincipal`, `Permission`, `IRole`/`Role`, `IRoleProvider`/`RoleProvider`, `ICurrentPrincipalAccessor`/`CurrentPrincipalAccessor`, `IPermissionEvaluator`/`PermissionEvaluator`, `IIdentityService`/`IdentityService`, `Tempest.Core.Identity`) — local-only identity model per ADR-0043; single authorization enforcement point per ADR-0044 | Dependency Injection | `IdentitySampleModule` (real contributor); `TD-09`/`TD-10`/`TD-11` are now resolvable through this enforcement point, though none is retired by this Work Package itself; the Engineering Data Model (`ICurrentPrincipalAccessor`, revision attribution, `WP 7.1A`), Engineering Calculations (`ICurrentPrincipalAccessor`, `WP 7.1D`), and Verification (`ICurrentPrincipalAccessor`/`IPermissionEvaluator`, `WP 7.1E`) — a disclosed backfill correction, `WP 9.8B`: this row previously named only its own then-future `WP 6.3`/`WP 6.5` consumers and was never updated when the Engineering Foundation programme (`v0.7.0`) began consuming it |
+| Persistence | **Implemented — WP 6.4** (`IPersistenceStore`/`PersistenceStore`, `Tempest.Core.Persistence`) — established as part of Settings' own scope per ADR-0041; file-backed, one file per `collection`/`key`, percent-encoded paths, per-key async locking | Dependency Injection, Configuration (root path) | Settings (real contributor via `SettingsProvider`); Audit (real contributor via `AuditRecorder`/`AuditQuery`, `WP 6.5`) — the reuse `ADR-0041` recommended, now confirmed in practice; the Engineering Data Model (`WP 7.1A`) and Materials (its own `materialId` index, `WP 7.1C`) — a disclosed backfill correction, `WP 9.8B`, the identical stale-row pattern found in the Identity & Permissions row above |
+| Settings | **Implemented — WP 6.4** (`ISettingDefinition`/`SettingDefinition`, `ISettingsProvider`/`SettingsProvider`, `ISettingsChangedEvent`/`SettingsChangedEvent`, `Tempest.Core.Settings`) — DI-public, distinct from Configuration per ADR-0042; in-memory cache over Persistence, invalidated on write | Dependency Injection, Persistence, Event Bus | `SettingsSampleModule` (real contributor); a plausible future `WP 6.3` (REST API) settings-management surface |
+| Audit | **Implemented — WP 6.5** (`IAuditRecord`/`AuditRecord`, `IAuditRecorder`/`AuditRecorder`, `IAuditQuery`/`AuditQuery`, `AuditQueryCriteria`, `Tempest.Core.Audit`) — durable, queryable, append-only history distinct from Logging/Diagnostics per ADR-0045; reuses Persistence, never a second storage mechanism; `IAuditQuery` permission-gated via `ADR-0044` | Dependency Injection, Persistence, Identity & Permissions | `AuditSampleModule` (real contributor); also a real dependency of `ApiRequestHandler` (`Tempest.Core.Api`), `ReportingSampleModule`, `ExportImportSampleModule`, and `LicensingSampleModule` |
+| Notifications | **Implemented — WP 6.2** (`INotification`, `INotificationHandler<T>`, `INotificationDispatcher`/`NotificationDispatcher`, `Tempest.Core.Notifications`) — derived from, not a replacement for, the Event Bus per ADR-0046; transient only, no persistence this release; additive `IPlatformNotification`/`PlatformNotification`/`NotificationSeverity` general-purpose shape | Dependency Injection | `NotificationSampleModule` (real contributor); `NotificationSampleHostedService` (the platform's first real, non-infrastructure hosted service); also a real dependency of `ReportingSampleModule`, `ExportImportSampleModule`, and `LicensingSampleModule`; a future UI Shell remains a plausible future consumer |
+| Reporting | **Implemented — WP 6.0** (`IReportDefinition`, `IReportRenderer<T>`, `IReportingService`/`ReportingService`, `Tempest.Core.Reporting`) — orthogonal to Export/Import per ADR-0040; no permission-gating of its own (caller enforces, mirroring Navigation/Command Framework); additive `IReportTemplate<T>`/`PlainTextReportTemplate<T>` general-purpose template shape | Dependency Injection | `ReportingSampleModule` (real contributor, also demonstrating Identity/Settings/Audit/Notifications integration at the calling layer); a plausible future consumer for the REST API and any engineering module |
+| REST API | **Implemented — WP 6.3** (`IApiEndpointRegistry`/`ApiEndpointRegistry`, `ApiRequestHandler`, `RestApiHostedService`, `Tempest.Core.Api`) — hosted on ASP.NET Core/Kestrel per ADR-0049, orchestrated as an ordinary hosted service per ADR-0047, dispatches every route through the existing, unmodified Command Framework per ADR-0048; identity resolved per-request without touching the shared ambient current principal per ADR-0052 | Dependency Injection, Identity & Permissions, Audit | `ApiSampleModule` (real contributor, exposing `ReportingSampleModule`'s own command with zero business logic of its own); any future engineering module wanting an HTTP-reachable route |
+| Export/Import | **Implemented — WP 6.7** (`IExportable`/`IExportService`/`ExportService`, `IImportService`/`ImportService`, `Tempest.Core.ExportImport`) — orthogonal to Persistence per ADR-0051; additive `IExportableKind`/`IImportable` Kind-routing, `IExportFormat`/`JsonExportFormat` artifact framing, and optional `IExportPayloadSerializer`/`JsonExportPayloadSerializer` general-purpose shapes | Dependency Injection | `ExportImportSampleModule` (real contributor, round-tripping two Settings values as a single multi-source artifact, also demonstrating Identity/Audit/Notifications integration at the calling layer); a plausible future consumer for Licensing and any engineering module |
+| Licensing | **Implemented — WP 6.6** (`ILicense`/`ILicenseValidator`/`LicenseValidator`, `ILicenseProvider`/`LicenseProvider`, `Tempest.Core.Licensing`) — pre-container, Host-fatal validation gate per ADR-0050, except a missing license file, which is a valid, unrestricted-but-uncapable default (resolving Risk Register R5) | `System.Text.Json` (BCL) only | `LicensingSampleModule` (real contributor, also demonstrating Identity/Settings/Audit/Notifications/REST API integration at the calling layer); a plausible future consumer for any commercially licensed engineering module |
+| Plugin Manifest | **Implemented — WP 4.2** (`Tempest.Core.Plugins`) | Host (Phases 3.1/3.2, ADR-0026 — a pre-Discovery step) | Module Discovery (unchanged), any real plugin |
+| Plugin Trust & Capability Enforcement | **Implemented — `v0.13.0`** (`IPluginTrustStore`/`PluginTrustStore`, `IPluginRegistry`/`PluginRegistry`, `IPluginDeniedTypeRegistry`/`PluginDeniedTypeRegistry`, `IPluginComponentPrincipalRegistry`/`PluginComponentPrincipalRegistry`, `Tempest.Core.Plugins`) — signature verification, trust-tier assignment, dependency-graph validation, and the deny-list both Module and Hosted Service Registration filter against; Host-owned collaborators, never DI-registered (ADR-0017), constructed ahead of Plugin Discovery. Section backfilled `WP 16.4B-R1` (`TD-126`) | Host construction only — no container dependency | Plugin Manifest (Discovery/Loading write into these registries as they go); Module Registration and Hosted Service Registration (read `IPluginDeniedTypeRegistry` to exclude a denied plugin's already-loaded types); `IDiagnosticsProvider.Plugins` (the only DI-reachable projection) |
+| Engineering Object Durability & Rehydration | **Implemented — `v0.14.0`** (`IEngineeringObjectStateStore`/`EngineeringObjectStateStore`, `IEngineeringObjectRehydrator`/`EngineeringObjectRehydrator<T>`, `IEngineeringObjectRehydratorRegistry`/`EngineeringObjectRehydratorRegistry`, `EngineeringObjectRehydrationService`, `IRehydratable<TSelf>`, `Tempest.Core.EngineeringDomain`) — what makes an engineering object survive a process restart (`TD-85`). Section backfilled `WP 16.4B-R1` (`TD-126`) | Dependency Injection, Persistence (`IPersistenceStore`, reused, not a second storage mechanism), `EngineeringDomainContext` | Every canonical engineering object type (`IRehydratable<TSelf>`); `EngineeringObjectFactory<T>` (writes state on every mutation); production startup rehydration (`ADR-0116`) |
+| Attachment Content Store | **Implemented — `v0.14.0`** (`IAttachmentContentStore`/`AttachmentContentStore`, `IBinaryPersistenceStore`, `Tempest.Core.EngineeringDomain`/`Tempest.Core.Persistence`) — the durable store of attachment *bytes*, distinct from `IPersistenceStore`'s text-valued store and from `IAttachment`'s own metadata (`TD-31`). Section backfilled `WP 16.4B-R1` (`TD-126`) | Dependency Injection, Persistence (its own `IBinaryPersistenceStore`-shaped collection) | Any engineering object's own attachment read/write path; `IAttachmentContentReconciliationService` (`v0.16.0`, below) |
+| Engineering Data Model | **Implemented — WP 7.1A, ADR-0053** (`IEngineeringDocumentStore`/`EngineeringDocumentStore`, `Tempest.Core.EngineeringData`) — the shared, discipline-neutral document/revision/reference substrate every later Engineering Core framework and the Engineering Domain (`WP 8.2C`) are built on | Dependency Injection, Persistence, Identity & Permissions | Materials, Engineering Calculations, Verification, Requirements Engine, the Engineering Domain (`EngineeringDomainContext`, `WP 8.2C`); `EngineeringDataSampleModule` (real contributor) |
+| Materials | **Implemented — WP 7.1C, ADR-0055** (`IMaterialCatalog`/`MaterialCatalog`, `Tempest.Core.Materials`) — a thin, typed index over the Engineering Data Model (`Kind = "MaterialSpecification"`), plus a direct `IPersistenceStore` dependency of its own for its `materialId` index | Dependency Injection, Engineering Data Model, Persistence | `MaterialsSampleModule` (real contributor); the base `EngineeringDomainSampleModule` (`WP 8.2C`) |
+| Bearing Library | **Implemented — `A4`, ADR-0124** (`IBearingCatalog`/`BearingCatalog`, `Tempest.Core.Bearings`) — the authoritative bearing reference-data catalogue: the same typed index over the Engineering Data Model (`Kind = "BearingReference"`) Materials is, plus two direct `IPersistenceStore` indexes (`bearingId`, manufacturer-part-number), a provenance-gated validation lifecycle, released-record immutability with supersession, deterministic query and structured comparison | Dependency Injection, Engineering Data Model, Persistence | None yet — the library ships with the population requirement disclosed, not with fabricated catalogue data (`docs/architecture/A4 Bearing Library.md` §14) |
+| Bearing Validation | **Implemented — `A4`, ADR-0124** (`IBearingValidationService`/`BearingValidationService`, `Tempest.Core.Bearings`) — bearing data-quality rules (`TEMPEST-BRG-001`…`022`) and the catalogue-wide data-quality report; reports, never repairs | Dependency Injection, Bearing Library, Materials (optional) | None yet — see the row above |
+| Reference Data (shared layer) | **Implemented — `Group A`, ADR-0126** (`Tempest.Core.ReferenceData`) — the provenance, lifecycle, catalogue, sourced-value, comparison, validation and exception infrastructure all seven reference libraries share. Not itself DI-registered: `IReferenceDataCatalog<T>` and `IReferenceValidationService<T>` are implemented per library | Engineering Data Model, Persistence, Units & Quantities | Consumed by all seven libraries below; see `docs/architecture/Group A Engineering Reference Data.md` |
+| Standards Library | **Implemented — `A2`, ADR-0126** (`IStandardCatalog`/`StandardCatalog`, `Tempest.Core.Standards`) — the register of engineering standards (`Kind = "StandardReference"`): bibliographic identity, publisher status kept distinct from record validation state, and cross-body equivalence. Holds no standard content. Implements `IStandardResolver`, the seam every other library confirms its own citations through | Dependency Injection, Reference Data, Engineering Data Model, Persistence | None yet — the register ships empty (`FCR-0093`) |
+| Standards Validation | **Implemented — `A2`, ADR-0126** (`IStandardValidationService`/`StandardValidationService`) — standards register rules (`TEMPEST-STD-001`…`014`), including the copyright guard on a scope summary | Dependency Injection, Standards Library | None yet — see the row above |
+| Materials Validation | **Implemented — `A1`, ADR-0126** (`IMaterialValidationService`/`MaterialValidationService`, `Tempest.Core.Materials`) — materials rules (`TEMPEST-MAT-001`…`013`): property-name dimension checking, values physics forbids, family-aware applicability | Dependency Injection, Materials, Standards (optional) | The Materials catalogue itself predates `Group A`; this validation service is new |
+| Fastener Library | **Implemented — `A3`, ADR-0126** (`IFastenerCatalog`/`FastenerCatalog`, `Tempest.Core.Fasteners`) — bolts, screws, set screws, studs, nuts, washers, inserts, retaining rings, rivets and pins (`Kind = "FastenerReference"`); records published torque figures and computes none | Dependency Injection, Reference Data, Engineering Data Model, Persistence | None yet — the library ships empty (`FCR-0093`) |
+| Fastener Validation | **Implemented — `A3`, ADR-0126** (`IFastenerValidationService`/`FastenerValidationService`) — fastener rules (`TEMPEST-FST-001`…`020`) | Dependency Injection, Fastener Library, Materials (optional), Standards (optional) | None yet — see the row above |
+| Mechanical Components Library | **Implemented — `A5`, ADR-0125/ADR-0126** (`IComponentCatalog`/`ComponentCatalog`, `Tempest.Core.Components`) — springs, gears, drive elements and standard machine components under one taxonomy (`Kind = "ComponentReference"`), with three typed detail records gated by family traits | Dependency Injection, Reference Data, Engineering Data Model, Persistence, Units & Quantities | None yet — the library ships empty (`FCR-0093`) |
+| Mechanical Components Validation | **Implemented — `A5`, ADR-0126** (`IComponentValidationService`/`ComponentValidationService`) — component rules (`TEMPEST-CMP-001`…`024`), including which typed detail a family may carry | Dependency Injection, Mechanical Components Library, Materials (optional), Standards (optional) | None yet — see the row above |
+| Engineering Constants Library | **Implemented — `A6`, ADR-0126** (`IConstantCatalog`/`ConstantCatalog`, `Tempest.Core.Constants`) — dimensioned constant values with uncertainty and applicability (`Kind = "EngineeringConstant"`). Implements `IReleasedConstantSource`, the released-only seam a future calculation consumes a constant through | Dependency Injection, Reference Data, Engineering Data Model, Persistence, Units & Quantities | None yet — the library ships empty (`FCR-0093`), and the seam correctly returns nothing until a record is Released |
+| Engineering Constants Validation | **Implemented — `A6`, ADR-0126** (`IConstantValidationService`/`ConstantValidationService`) — constants rules (`TEMPEST-CON-001`…`014`) | Dependency Injection, Engineering Constants Library, Standards (optional) | None yet — see the row above |
+| Manufacturing Process Library | **Implemented — `A7`, ADR-0126** (`IProcessCatalog`/`ProcessCatalog`, `Tempest.Core.Manufacturing`) — process families with capability bands, material compatibility, production scale and constraints (`Kind = "ManufacturingProcessReference"`, deliberately distinct from the workspace's `ManufacturingOperation`) | Dependency Injection, Reference Data, Engineering Data Model, Persistence, Units & Quantities, Materials (taxonomy) | None yet — the library ships empty (`FCR-0093`) |
+| Manufacturing Process Validation | **Implemented — `A7`, ADR-0126** (`IProcessValidationService`/`ProcessValidationService`) — process rules (`TEMPEST-MFG-001`…`017`) | Dependency Injection, Manufacturing Process Library, Materials (optional), Standards (optional) | None yet — see the row above |
+| Engineering Calculations | **Implemented — WP 7.1D, ADR-0056** (`ICalculationEngine`/`CalculationEngine`, `Tempest.Core.Calculations`) — durable, evidentiary calculation execution against a registered `ICalculationDefinition<TInput, TResult>`, every execution recorded as an Engineering Data Model document | Dependency Injection, Engineering Data Model, Identity & Permissions | `CalculationSampleModule` (real contributor); `Tempest.App.Workspace.Calculations` (`WP 9.2A`, the third real Engineering Discipline wired into the Workspace) |
+| Verification | **Implemented — WP 7.1E, ADR-0057** (`IVerificationService`/`VerificationService`, `Tempest.Core.Verification`) — records a verification outcome (criteria, evidence) against a subject document; permission-gated history query, reusing the Engineering Data Model's own `LinkAsync`/`GetReferencesAsync` mechanism, never a new index | Dependency Injection, Engineering Data Model, Identity & Permissions | `VerificationSampleModule` (real contributor); Requirements Engine (`GetEvidenceAsync` composition); `Tempest.App.Workspace.Verification` (`WP 9.3A`) and `.Manufacturing` (`WP 9.5A`, reuses `RecordVerificationResultCommand` directly) |
+| Project Engine | Planned | Undetermined | Undetermined |
+| Requirements Engine | **Implemented — WP 7.3A** (`IRequirementsService`/`RequirementsService`, `Tempest.Core.Requirements`) — the canonical, discipline-neutral requirement representation per `ADR-0058`; requirements/collections/groups are `IEngineeringDocument`s, relationships are `DocumentReference`s, zero new storage mechanism | Dependency Injection, Engineering Data Model, Verification | `RequirementsSampleModule` (real contributor, also demonstrating Identity/Audit/Reporting/Export-Import integration at the calling layer); a plausible future consumer for any discipline-specific engineering module |
+| Requirements Reconciliation | **Implemented — `WP 16.4B`** (`IRequirementsReconciliationService`/`RequirementsReconciliationService`, `Tempest.Core.Requirements`) — detects and repairs an orphaned Requirement/Requirement Collection/Requirement Group document whose index or registry entry was lost to a crash between the two writes (`TD-67`). Explicit `DetectAsync`/`SweepAsync` only — **nothing invokes either method**: no startup hook, no command, no user-facing surface | Dependency Injection, Engineering Data Model (`IEngineeringDocumentStore`), Persistence (`IPersistenceStore`, the identifier index) | Nothing yet — an operator-invoked repair path with no caller this release; a plausible future admin command or diagnostics surface |
+| Material Catalog Reconciliation | **Implemented — `WP 16.4B`** (`IMaterialCatalogReconciliationService`/`MaterialCatalogReconciliationService`, `Tempest.Core.Materials`) — the sibling sweep for `MaterialCatalog`'s own `materialId` index, identical shape and discipline to Requirements Reconciliation (`TD-67`, `ADR-0055` Decision 3). Explicit `DetectAsync`/`SweepAsync` only — **nothing invokes either method** | Dependency Injection, Engineering Data Model (`IEngineeringDocumentStore`), Persistence (`IPersistenceStore`, the `materialId` index) | Nothing yet — an operator-invoked repair path with no caller this release |
+| Attachment Content Reconciliation | **Implemented — `WP 16.4B`** (`IAttachmentContentReconciliationService`/`AttachmentContentReconciliationService`, `Tempest.Core.EngineeringDomain`) — finds and, on request, collects attachment content bytes nothing references any more, the sweep `ADR-0114` Decision 4's own Consequences section names as the closure for its crash window (`TD-97`). Explicit `DetectAsync`/`SweepAsync` only — **nothing invokes either method** | Dependency Injection, Persistence (`IPersistenceStore`), Engineering Object Durability & Rehydration (`IEngineeringObjectStateStore`, every live or soft-deleted object's attachment Ids), Attachment Content Store (`IAttachmentContentStore`) | Nothing yet — an operator-invoked repair path with no caller this release |
+
+Arrows in this table point from a service to what it *needs*; read the third
+column as "the following depend on this row." "Depends on" and "Depended on
+by" are deliberately kept as separate columns rather than merged into one
+diagram, because — as *The Module Pipeline* explains — each of these
+dependencies is on an *interface*, never a concrete implementation.
+
+---
+
+## Platform Version
+
+**Responsibility.** Provides the single, authoritative version of the
+running platform, queryable from anywhere via ordinary constructor
+injection. Resolves its value exactly once, from the executing assembly's
+own build metadata — never a hand-typed, duplicated constant.
+
+**Key types.** `IPlatformVersionProvider`, `PlatformVersionProvider`,
+`PlatformVersion` (`Tempest.Core.Versioning`).
+
+**Dependencies.** None — deliberately a leaf. No current or future platform
+service may sit "below" it in ADR-0023's layering; its only optional input
+is `ILogger?` (diagnostics only, defaulting to `null`), matching every
+other platform service's own convention.
+
+**Consumers.** Any current or future platform service or module, resolved
+via `IPlatformVersionProvider`. First real consumer beyond its own tests:
+**implemented, WP 4.2** — Plugin Discovery's `MinimumPlatformVersion`
+compatibility check (ADR-0025, category 4).
+
+**Lifecycle.** **Update, ADR-0026 (WP 4.2C/4.2).** Constructed by
+`TempestHost` immediately after Logging Built — moved earlier than its
+original WP 4.2A placement (Platform Services Registered) specifically so
+Plugin Discovery (Phase 3.1), which now runs before Module Discovery, can
+depend on it. Its DI *registration* (`AddInstance`, ADR-0009) stays at the
+original Platform Services Registered phase — construction and
+registration are separable concerns, and nothing needs to resolve it via
+DI before Module Initialisation regardless. No new `Host Lifecycle.md`
+*phase* was needed for this move — only the existing "Platform Services
+Registered" phase's own construction step relocated earlier in the method
+body.
+
+**ADR references.** ADR-0009 (Composition Root pattern, reused a third
+time); ADR-0023 (this service is a direct instance of "dependencies flow
+downward only" — everything may depend on it, it depends on nothing).
+
+**Academy references.** WP 4.2A retrospective (*Runtime Platform Version
+Infrastructure*); *Platform Version.md*.
+
+---
+
+## Configuration
+
+**Responsibility.** Provides read-only, immutable, case-insensitive key/value
+configuration data to the rest of the runtime. Configuration is data, never
+business logic, and is loaded exactly once per running instance.
+
+**Key types.** `IConfigurationProvider`, `ConfigurationProvider`,
+`IConfigurationSource`, `MemoryConfigurationSource`, `ConfigurationBuilder`,
+`ConfigurationException` and subtypes.
+
+**Dependencies.** None, functionally. `ConfigurationBuilder` accepts an
+optional `ILogger?` constructor parameter, matching the same optional-
+diagnostics convention every other platform service follows — but unlike
+Discovery, Registration, Lifecycle, and Platform Version (each of which
+*is* constructed by `TempestHost` with an already-built, real logger),
+Configuration is the first service to exist during startup, before Logging
+Built, so the Host's own real call site never actually has a logger to
+pass — the parameter exists on the type for any other caller (tests, a
+future standalone use) that does.
+
+**Consumers.** `LoggerFactory` (reads `Runtime:Logging:MinimumLevel`); any
+future runtime service depending on `IConfigurationProvider` via constructor
+injection, once the service provider is built.
+
+**Lifecycle.** Built once, directly, via `ConfigurationBuilder.AddSource(...)`
++ `Build()`, *before* the DI container exists. Registered into the container
+via `AddInstance<IConfigurationProvider>` (see ADR-0009). Never rebuilt or
+mutated for the life of the running instance — see the first two steps of
+*The Startup Sequence*.
+
+**ADR references.** ADR-0009 (*Composition Root Owns Externally-Created
+Services* — governs how configuration reaches the container).
+
+**Academy references.** WP 2.5 retrospective (*Configuration Framework*);
+Case Study 05 (*Why Isn't Configuration Mutable?*); *The Startup Sequence*
+(Runtime Architecture); Engineering Principles — Immutability, Fail Fast.
+
+---
+
+## Logging
+
+**Responsibility.** Provides the `ILogger` abstraction every runtime component
+depends on for structured, filtered, append-only diagnostic output. No
+consumer of `ILogger` knows or can know where a message ultimately goes. A
+sink failure is isolated inside `Logger` itself (fixed WP 2.7B) and never
+propagates to the caller that was logging something.
+
+**Key types.** `ILogger`, `ILoggerFactory`, `ILogSink`, `ConsoleLogSink`,
+`CompositeLogSink` (`WP 5.2` — fans a log entry out to any number of
+child `ILogSink`s, isolating one child's own write failure from every
+other; closes `TD-02`), `Logger`, `LoggerFactory`, `LogEntry`, `LogLevel`,
+`LoggingServiceCollectionExtensions`.
+
+**Dependencies.** `IConfigurationProvider` (read once, at `LoggerFactory`
+construction, for the minimum log level).
+
+**Consumers.** Discovery, Registration, Lifecycle, Dependency Injection, and
+Configuration itself all depend on `ILogger` (optionally) for their own
+diagnostic output — see ADR-0010. Any future runtime service should do the
+same.
+
+**Lifecycle.** `ConsoleLogSink`, `LoggerFactory`, and a default `ILogger` are
+built directly at the composition root (`AddLogging`) — not resolved via the
+container's reflection-based construction, since producing the default logger
+requires *calling* `CreateLogger` — and registered via `AddInstance`. This
+happens immediately after configuration is registered, and before the service
+provider is built — see *The Startup Sequence*.
+
+**ADR references.** ADR-0009 (its principle applied a second time); ADR-0010
+(*The Module Pipeline Depends on the Logging Abstraction, Not a Concrete
+Logger*).
+
+**Academy references.** WP 2.6 retrospective (*Logging & Diagnostics
+Framework*); WP 2.7B retrospective (the sink-isolation fix); *The Startup
+Sequence* (Runtime Architecture, updated for WP 2.6).
+
+---
+
+## Dependency Injection
+
+**Responsibility.** Constructs and resolves service instances via constructor
+injection, with singleton and transient lifetimes. Owns *how* things are
+built; never owns *what* they do.
+
+**Key types.** `IServiceCollection`, `ServiceCollection`,
+`ITempestServiceProvider`, `TempestServiceProvider`, `ServiceDescriptor`,
+`ServiceLifetime`, `ServiceResolutionException` and subtypes.
+
+**Dependencies.** None intrinsically — the container itself has no
+dependencies. Specific registrations (Configuration, Logging, discovered
+modules) depend on their own upstream services being ready before they can be
+registered.
+
+**Consumers.** `ModuleLifecycleManager` (resolves module instances through
+it); any service registered into it with constructor dependencies of its own.
+
+**Lifecycle.** `ServiceCollection` accumulates registrations throughout the
+early part of startup (configuration, logging, discovered modules, and so on);
+`TempestServiceProvider` is built once, after every registration the running
+instance needs has been added — the last step before "runtime starts" in *The
+Startup Sequence*.
+
+**ADR references.** ADR-0005 (*Custom Dependency Injection Container*);
+ADR-0006 (*Constructor Injection Only*); ADR-0007 (*Service Provider Owns
+Construction*); ADR-0008 (*Discovery Does Not Depend on DI*); ADR-0009
+(*Composition Root Owns Externally-Created Services*).
+
+**Academy references.** WP 2.4 retrospective (*Dependency Injection*); Design
+Pattern 03 (*Minimal Interface, Extension-Method Sugar*); Engineering
+Principles — Dependency Injection, Composition Over Inheritance, SOLID
+(Dependency Inversion).
+
+---
+
+## Discovery
+
+**Responsibility.** Finds `IModule` implementations across loaded assemblies
+via reflection, validates their metadata, and returns them in deterministic,
+alphabetical order. Answers exactly one question: what modules exist.
+
+**Key types.** `IModule`, `ModuleDescriptor`, `IFrameworkDiscoveryService`,
+`ReflectionFrameworkDiscoveryService`, `ModuleDiscoveryException`,
+`DuplicateModuleIdException`. `ModuleBase` (Module SDK, WP 4.1) is a
+convenience base implementation of `IModule` — see the Module SDK entry,
+below. `ModuleMetadataAttribute` *(implemented — WP 4.4B, ADR-0027)* — an
+optional, class-level alternative to instance-property metadata, letting
+Discovery read a module's `Id`/`Name`/`Version` without instantiating it;
+see `Module Dependency Injection Architecture.md`. `IFaultInjectionModule`
+*(implemented — WP 12.3B, ADR-0102)* — a marker interface; a candidate
+implementing it is excluded from discovery by default (both the
+`AppDomain`-scanning and explicit-candidate-type overloads), unless
+`ReflectionFrameworkDiscoveryService` was constructed with
+`includeFaultInjectionModules: true` — the flag `ITempestHostBuilder
+.EnableFaultInjectionModules()` sets. See `Fault Injection & Validation
+Architecture.md`.
+
+**Dependencies.** `ILogger` (optional, for diagnostics). Deliberately **not**
+dependent on the DI container (see ADR-0008) or on Configuration.
+
+**Consumers.** `RuntimeModuleManager` (registers whatever Discovery finds);
+`TempestHost`, which invokes it during Module Discovery (Phase 4).
+
+**Lifecycle.** Runs once (or whenever explicitly invoked); does not persist
+any module instance for a module discovered the existing way — every such
+candidate is instantiated transiently, purely to read metadata, then
+discarded. This is why module constructors must be side-effect-free
+(ADR-0003). **Update, WP 4.4B (ADR-0027, implemented):** a module carrying
+`ModuleMetadataAttribute` is not instantiated by Discovery at all — its
+metadata is read from the attribute directly, leaving constructor
+injection reachable for such a module's own, later, real construction
+(`TempestServiceProvider`, unchanged). Every module without the attribute
+keeps today's exact behaviour — verified directly: every pre-existing
+Discovery test passes completely unmodified.
+
+**ADR references.** ADR-0003 (*Constructors Are Side-Effect-Free*); ADR-0008
+(*Discovery Does Not Depend on DI*); ADR-0027 (*A Declarative
+`ModuleMetadataAttribute` Decouples Discovery From Construction* —
+implemented); ADR-0102 (*Fault-Injection Modules Are Isolated By Project
+Reference and a Default-Excluded Discovery Marker* — implemented).
+
+**Academy references.** WP 2.1 retrospective (*Module Discovery*); Case Study
+04 (*Why Discovery Is Isolated*); Engineering Principles — Deterministic
+Systems, Fail Fast, SOLID (Interface Segregation, Open/Closed); WP 4.4A
+retrospective (*Dependency Injection for Discovered Modules — architecture*);
+WP 4.4B retrospective (*ADR-0027 Implementation*); WP 12.3A/WP 12.3B
+retrospectives (*Fault Injection & Validation Framework*).
+
+---
+
+## Registration
+
+**Responsibility.** The single authoritative runtime catalogue of registered
+modules. Rejects duplicates, preserves registration order, provides lookup.
+Owns runtime metadata only — never instantiates, orchestrates, or injects.
+
+**Key types.** `RuntimeModule`, `ModuleState` (shared with Lifecycle),
+`IRuntimeModuleManager`, `RuntimeModuleManager`, `ModuleRegistrationException`
+and subtypes.
+
+**Dependencies.** `ModuleDescriptor` values (from Discovery, or constructed
+directly); `ILogger` (optional, for diagnostics).
+
+**Consumers.** `ModuleLifecycleManager` sources its entire ordered snapshot of
+modules from here at construction.
+
+**Lifecycle.** Populated once per running instance, typically immediately
+after Discovery runs. Every `RuntimeModule` it produces is immutable from the
+moment it's created (ADR-0001) — registration order is preserved, but nothing
+about an already-registered module can change afterward except via the
+separate Lifecycle service's own state tracking (ADR-0002).
+
+**ADR references.** ADR-0001 (*RuntimeModule Is Immutable*); ADR-0002
+(*Lifecycle State Is Managed Externally, Not on the Module*).
+
+**Academy references.** WP 2.2 retrospective (*Runtime Registration*); Case
+Study 01 (*Why RuntimeModule Is Immutable*); Design Pattern 01 (*The Registry
+Pattern*); Design Pattern 02 (*Descriptor and Snapshot Types*); Engineering
+Principles — Immutability, Single Responsibility.
+
+---
+
+## Lifecycle
+
+**Responsibility.** Orchestrates initialisation, startup, shutdown, and
+disposal for every registered module, in deterministic order, with per-module
+failure isolation — "the single orchestration point for module execution."
+
+**Key types.** `IModuleLifecycle`, `ModuleLifecycleStatus`,
+`IModuleLifecycleManager`, `ModuleLifecycleManager`, `ModuleLifecycleException`,
+`InvalidModuleLifecycleTransitionException`. `ModuleLifecycleBase` (Module
+SDK, WP 4.1) is a convenience base implementation of `IModuleLifecycle` —
+see the Module SDK entry, below.
+
+**Dependencies.** `IRuntimeModuleManager` (the modules to orchestrate);
+`ITempestServiceProvider` (constructs module instances — see ADR-0007);
+`ILogger` (optional, for diagnostics).
+
+**Consumers.** The future Host, which will drive `InitialiseAllAsync` /
+`StartAllAsync` / `StopAllAsync` / `DisposeAllAsync` as part of the startup and
+shutdown sequence.
+
+**Lifecycle.** Constructed once, after the service provider is built (it
+depends on both `IRuntimeModuleManager` and `ITempestServiceProvider`, so it is
+necessarily the last of the six implemented services to come into existence
+during startup). Drives every module through `Registered → Initialising →
+Initialised → Starting → Running → Stopping → Stopped → Disposed`, with
+`Failed` reachable from any non-terminal state.
+
+**ADR references.** ADR-0002 (*Lifecycle State Is Managed Externally*);
+ADR-0003 (*Constructors Are Side-Effect-Free* — underpins ADR-0004); ADR-0004
+(*Dispose Permitted From Every Non-Terminal State*); ADR-0007 (*Service
+Provider Owns Construction*).
+
+**Academy references.** WP 2.3 retrospective (*Runtime Lifecycle*); Case
+Study 02 (*Why Lifecycle State Lives Externally*); Case Study 03 (*Why Dispose
+Is Always Legal*); Engineering Principle — State Machines.
+
+---
+
+## Module SDK *(implemented — v0.4.0, WP 4.1)*
+
+**Responsibility.** Reduces the repetitive boilerplate of writing a module —
+not a new platform service the Host orchestrates, but a developer-facing
+convenience layer over Discovery's and Lifecycle's existing contracts
+(`IModule`, `IModuleLifecycle`). Introduces no new runtime behaviour: a
+module built on the SDK is discovered, registered, and driven exactly like
+a hand-written `IModule`/`IModuleLifecycle` implementation, with no
+special-casing anywhere in the pipeline.
+
+**Key types.** `ModuleBase` (identity only — `Id`/`Name`/`Version` via
+constructor, for modules with no lifecycle), `ModuleLifecycleBase` (extends
+`ModuleBase` with four `virtual` lifecycle methods, each defaulting to a
+no-op, so a module overrides only the phase(s) it needs). Both in
+`Tempest.Core.Modules` — no new namespace or project; see the WP 4.1
+retrospective's Alternatives Considered for why.
+
+**Dependencies.** None beyond what `IModule`/`IModuleLifecycle` already
+require.
+
+**Consumers.** Any module author, from `WP 4.1` onward. The Sample Module
+(`WP 4.3`) is the SDK's first real, non-test consumer.
+
+**A known, pre-existing constraint the SDK does not change.** Because
+Discovery's metadata probe and `TempestServiceProvider`'s real construction
+both operate on the same concrete module type, and Discovery requires a
+public *parameterless* constructor while `TempestServiceProvider` requires
+*exactly one* public constructor, a normally-discovered module cannot
+currently receive constructor-injected dependencies — the two requirements
+only both hold when that one constructor takes zero arguments. This was
+identified during `WP 4.1`'s design review, not introduced by it; the SDK
+works within this constraint (a concrete module still needs its own public
+parameterless constructor) rather than attempting to lift it, which would
+require changing Discovery — explicitly out of this work package's scope.
+
+**ADR references.** None new — the SDK is a direct application of ADR-0003
+(constructor side-effect-freedom) and the existing `IModule`/
+`IModuleLifecycle` split; no new architectural decision was required.
+
+**Academy references.** WP 4.1 retrospective (*Module SDK*); *Building a
+Module* (Academy, new); WP 4.0 retrospective (*Platform Contracts*).
+
+---
+
+## Host *(implemented — WP 2.7B)*
+
+**Responsibility.** Assembles Configuration, Logging, Discovery,
+Registration, Dependency Injection, and Lifecycle into one running
+instance, and owns orchestration, startup, shutdown, cancellation, and
+disposal ordering. Does **not** own business logic, configuration parsing,
+module implementation, or logging implementation. Implemented exactly as
+designed — responsibilities, a 13-phase lifecycle, complete startup/shutdown
+sequence diagrams, its own 7-state machine, and a full failure model; see
+*Runtime Host Architecture.md* and its companion documents, all now marked
+implemented.
+
+**A naming clarification, disclosed rather than left to collide
+silently** (`WP 5.0C`): earlier text here called the Host itself "the
+composition root," informally. `ADR-0009`'s own, authoritative definition
+is narrower and different in kind — "whatever code assembles a *running*
+TempestOS instance... eventually `Program.cs`" — which describes whatever
+*constructs* `ITempestHost` (test setup, and, since `WP 5.0D`,
+`Tempest.App`'s own Shell), not the Host's own internal wiring of its six
+constituent services. Both uses were accurate to what they described;
+only the shared label was ambiguous. See `Shell & Composition Framework
+Architecture.md` and `ADR-0033` for the Shell's own composition-root role
+in `ADR-0009`'s sense, and `ADR-0034` for the read-only `Services`
+property, implemented `WP 5.0D`, that lets it reach
+`INavigationProvider`/`IEventBus`.
+
+**Status.** Implemented (WP 2.7B), as `TempestHost`/`TempestHostBuilder` in
+`Tempest.Core.Runtime`. Previously flagged as a gap across the WP 2.4, WP
+2.5, and WP 2.6 retrospectives, then designed by WP 2.7A — this entry updates
+that gap from "designed, awaiting implementation" to implemented and tested.
+
+**Dependencies.** Every implemented service above — Configuration and Logging
+first (constructed directly, outside the container), then Discovery and
+Registration (deliberately *before* the DI container is built — see
+ADR-0011), then Dependency Injection, then Lifecycle.
+
+**Key types.** `ITempestHost` (including `Services`, ADR-0034), `TempestHost`,
+`ITempestHostBuilder`, `TempestHostBuilder`, `HostState`, `HostException`,
+`InvalidHostStateTransitionException`.
+
+**Consumers.** `Tempest.Desktop` (TempestOS's shipped application) and
+`Tempest.App.Workspace`'s `WorkspaceShell` (TempestOS's Internal
+Engineering Harness, `ADR-0101`) — each a process entry point's own
+composition root, per `ADR-0033`, constructing and running the Host,
+then resolving platform services through `Services`. (`TempestShell`,
+the original `WP 5.0D` implementation of this role, was retired `WP
+11.3B` — unreachable from any running entry point since `ADR-0068`,
+`WP 8.1A`, `v0.8.0`.) Also: future hosted services, background workers,
+and — pending their own classification under ADR-0013 — a Requirements
+Engine and/or Project Engine.
+
+**ADR references.** ADR-0004 (disposal reused at Host level, and its WP 2.7B
+update), ADR-0008 (why Discovery/Registration precede DI — see ADR-0011),
+ADR-0009 (composition root pattern), ADR-0011 (*Discovery and Registration
+Precede DI Container Construction*), ADR-0012 (*The Runtime Host Owns an
+Independent State Machine*), ADR-0013 (*Platform-Service Failures Abort
+Startup; Module Failures Remain Isolated*), ADR-0014 (*Cancellation and
+Shutdown-Request Are Distinct Signals*), ADR-0015 (*Runtime Hosts Are Not
+Restartable*), ADR-0016 (*The Host Lives in Tempest.Core.Runtime, Distinct
+From Tempest.Core.Hosting*), ADR-0017 (*Discovery, Registration, and
+Lifecycle Remain Host-Owned Collaborators, Not Public DI Services*),
+ADR-0018 (*Startup Cancellation Transitions to Controlled Shutdown*),
+ADR-0019 (*Host Disposal Is Always an Explicit, Idempotent Call*),
+ADR-0033 (*The Shell Is a Composition Root Layered Above the Runtime
+Host*, `WP 5.0C` design, `WP 5.0D` implementation), ADR-0034
+(*`ITempestHost` Exposes a Read-Only Service Resolution Surface*,
+`WP 5.0C` design, `WP 5.0D` implementation).
+
+**Academy references.** WP 2.7 retrospective (*Runtime Host Architecture
+Review*); WP 2.7B retrospective (*Runtime Host Implementation*, including its
+Alternatives Considered and Architectural Debt Assessment); Engineering
+Principle 11 (*Atomic Phase Principle*); *The Startup Sequence* (Runtime
+Architecture); WP 5.0C retrospective (*Shell & Composition Framework
+Architecture*); WP 5.0D retrospective (*Shell & Composition Framework
+Implementation*); *Shell & Application Composition* (Academy concept
+guide); *Runtime Host Architecture.md*, *Host Lifecycle.md*, *Startup
+Sequence.md*, *Shutdown Sequence.md*, *Runtime State Machine.md*, *Failure
+Behaviour.md*, *Ownership Matrix.md* (all `docs/architecture/`).
+
+---
+
+## Event Bus *(contract implemented — WP 4.0; implemented — WP 4.4D, ADR-0028; consumed — WP 4.4E)*
+
+**Responsibility.** Lets modules publish and subscribe to events without
+depending on each other directly. `IEvent` marks a published fact; a
+concrete event type carries whatever data its subscribers need.
+`IEventHandler<T>` is the consumer-facing subscription contract. Publish
+is imperative (`Subscribe`/`Unsubscribe`/`PublishAsync`), dispatched
+sequentially in subscription order over a per-call snapshot, with every
+subscriber failure isolated unconditionally — see ADR-0028 and `Event Bus
+Architecture.md` for the complete design. Built and tested; no module
+consumes it yet — `ClockModule`'s own extension is a separate, later work
+package.
+
+**Key types.** `IEvent`, `IEventHandler<T>` (`Tempest.Core.Events`,
+implemented WP 4.0). `IEventBus`/`EventBus` (`Tempest.Core.Events`) —
+implemented WP 4.4D, per ADR-0028's design in full.
+
+**Dependencies.** None for the contracts themselves. `IEventBus` is
+DI-public (ADR-0020), resolved like `IConfigurationProvider`/`ILogger` —
+registered as an ordinary container-constructed singleton
+(`services.Singleton<IEventBus, EventBus>()` in `TempestHost.cs`'s
+existing Platform Services Registered block), requiring no Composition
+Root treatment and no new Dependency Injection capability (ADR-0028).
+
+**Consumers.** Any module — including a plugin-loaded module
+(`Tempest.Core.Plugins`, `WP 4.2`) and a future `IHostedService`
+(`WP 4.5`), neither of which requires any special-casing (ADR-0028). First
+real consumer, `WP 4.4E`: `ClockModule` publishes a
+`ClockModuleLifecycleEvent` from each lifecycle method;
+`ClockLifecycleObserverModule` (a new companion module) subscribes —
+proven end-to-end, including through the real, unmodified `TempestHost`.
+
+**ADR references.** ADR-0020 (*The Event Bus Is a DI-Public Platform
+Service*), ADR-0023 (*Platform Layering*), ADR-0024 (*Platform Contracts
+Are Packaged by Capability*), ADR-0028 (*Event Bus Dispatch, Subscription,
+and Failure Model* — fully realised, WP 4.4D).
+
+**Academy references.** WP 4.0 retrospective (*Platform Contracts*); WP 4.4
+architecture retrospective (*Event Bus Architecture*); WP 4.4D
+implementation retrospective; WP 4.4E retrospective (*Sample Module Event
+Integration*); *Building an Event-Driven Module* (Academy); `Event Bus
+Architecture.md`; Rejected Designs RD-0019 through RD-0022;
+`docs/releases/v0.4.0/WorkPackages.md` (`WP 4.4`).
+
+---
+
+## Background Services *(implemented — WP 4.5, ADR-0029/ADR-0030; contracts WP 4.0)*
+
+**Responsibility.** Background work that starts after Module Initialisation
+and stops before Module Disposal. `IHostedService` defines Start/Stop;
+`ICriticalBackgroundService` is the opt-in marker for a service whose
+failure should be Host-fatal rather than isolated (ADR-0021). A hosted
+service is discovered via reflection (mirroring Module/Plugin Discovery),
+never instantiated during discovery (it carries no metadata to read),
+registered as an ordinary self-referential singleton during the existing
+Platform Services Registered phase, and started/stopped by a new,
+Host-owned `IHostedServiceManager` in deterministic, sequential order
+(reverse order for stop) — see ADR-0029 and `Background Services
+Architecture.md` for the complete design. Wired into the Runtime Host's
+startup/shutdown sequence as decimal-numbered phases `8.1`/`10.1` — see
+*Host Lifecycle.md*.
+
+**Key types.** `IHostedService`, `ICriticalBackgroundService`
+(`Tempest.Core.BackgroundServices`, implemented WP 4.0).
+`IHostedServiceDiscoveryService`/`HostedServiceDiscoveryService`,
+`IHostedServiceManager`/`HostedServiceManager`, `HostedServiceState`,
+`HostedServiceStatus` — implemented, WP 4.5, exactly per ADR-0029's
+design (the discovery service's implemented name,
+`HostedServiceDiscoveryService`, is a cosmetic rename from the design
+phase's working name, `ReflectionHostedServiceDiscoveryService` — no
+behavioural change).
+
+**Dependencies.** None for the contracts themselves. `IHostedServiceManager`
+and `IHostedServiceDiscoveryService` are Host-owned (ADR-0017, applied
+to a new component), constructed directly by `TempestHost`, never
+DI-public — a deliberate contrast with the Event Bus, immediately above:
+individual hosted service *instances* may consume `IEventBus` and any
+other DI-public service, but the *manager that starts and stops them* is
+kept as Host-owned as Discovery/Registration/Lifecycle are.
+
+**Consumers.** Any module declaring a hosted service. A hosted service
+instance may itself consume any DI-public Platform Service, including
+`IEventBus`, via ordinary constructor injection.
+
+**ADR references.** ADR-0021 (*Background Service Failures Are Isolated by
+Default; Criticality Is Opt-In*), ADR-0023, ADR-0024, ADR-0029 (*Background
+Service Discovery, Ownership, and Orchestration Model*), ADR-0030
+(*Background Service Host Lifecycle Placement*).
+
+**Academy references.** WP 4.0 retrospective (*Platform Contracts*); WP 4.5
+architecture retrospective (*Background Services Design*); WP 4.5
+implementation retrospective (*Background Services Implementation*);
+`Background Services Architecture.md`; Rejected Designs RD-0023 through
+RD-0029; `docs/releases/v0.4.0/WorkPackages.md` (`WP 4.5`).
+
+---
+
+## Command Framework *(implemented — WP 5.1A design, WP 5.1B implementation, ADR-0036–ADR-0038)*
+
+**Responsibility.** A uniform, UI-agnostic way to request a discrete unit
+of application logic, invokable by a typed caller (`ICommandDispatcher.
+DispatchAsync<TCommand>`) or by a caller with only a string Id
+(`ICommandRegistry.InvokeAsync`) — a menu, a toolbar, a keyboard
+shortcut, a future touch gesture, or a future automation/AI service.
+`ICommand` marks a concrete command type, which carries its own
+parameters as ordinary data; exactly one `ICommandHandler<TCommand>`
+handles it, and the caller receives a `CommandResult` (or a propagated
+exception) so it genuinely knows whether the command succeeded.
+
+**Key types.** `ICommand` (`Tempest.Core.Commands`, implemented WP 4.0,
+unchanged). `ICommandHandler<TCommand>`, `ICommandDispatcher`/
+`CommandDispatcher`, `CommandDescriptor`, `ICommandRegistry`/
+`CommandRegistry`, `CommandResult`, `CommandHandlerTable` (an internal-in-
+spirit, DI-registered collaborator shared by the dispatcher and the
+registry), and five exception types (`CommandException`,
+`DuplicateCommandHandlerException`, `DuplicateCommandIdException`,
+`CommandHandlerNotRegisteredException`, `CommandNotFoundException`) —
+designed WP 5.1A, implemented WP 5.1B with zero deviation from the
+approved public shape.
+
+**Dependencies.** None module-specific — depends on nothing but the
+handler/descriptor instances registered into it. **Explicitly orthogonal
+to Navigation** (ADR-0022) — neither this nor `NavigationService`
+depends on the other. **Never dispatched through the Event Bus**
+(ADR-0037, RD-0039) — a command handler may use `IEventBus` as an
+ordinary peer dependency, exactly as it may use `INavigationProvider`.
+
+**Consumers.** `CommandSampleModule` (`Tempest.Samples`, WP 5.1B) — the
+real, first consumer, registering `IncrementCounterCommand` (success/
+failure) and `NavigateToSampleHomeCommand` (the first concrete
+realisation of ADR-0022's own `OpenModuleCommand → NavigationService.
+Navigate(...)` illustration). `Tempest.App`'s Shell can resolve both
+`ICommandDispatcher`/`ICommandRegistry` via `ITempestHost.Services`
+today; wiring the Shell's own input handling (menus, keyboard shortcuts)
+to them is a later Work Package's own scope.
+
+**ADR references.** ADR-0022 (*Navigation and Commands Are Orthogonal
+Platform Services*), ADR-0023, ADR-0024, ADR-0036 (*Command Framework Is
+a DI-Public Platform Service*), ADR-0037 (*Command Registration Model*),
+ADR-0038 (*Command Dispatch Failure Model*).
+
+**Academy references.** WP 4.0 retrospective (*Platform Contracts*); WP
+5.1A retrospective (*Command Framework Architecture*); WP 5.1B
+retrospective (*Command Framework Implementation*);
+`docs/releases/v0.5.0/WorkPackages.md` (`WP 5.1B`).
+
+---
+
+## Navigation *(implemented — WP 5.0A design, WP 5.0B implementation, ADR-0031/ADR-0032)*
+
+**Responsibility.** The primary mechanism by which a user navigates the
+application — built-in platform pages, future engineering modules, and
+future plugins each contribute a `NavigationItem` (identity, title, an
+optional symbolic icon key, ordering, grouping, hierarchy via a parent
+reference, an optional visibility predicate) to one coherent catalogue.
+`INavigationProvider`/`NavigationService` holds that catalogue and
+exposes `Navigate(id)`, which publishes a `NavigationRequestedEvent`
+through the existing Event Bus. **The model is UI-agnostic by design** —
+`Tempest.Core.Navigation` contains no rendering type, delegate, or UI
+framework reference of any kind; resolving a navigated-to item into an
+actual screen is entirely `Tempest.App`'s (or any future UI shell's) own
+responsibility. See `Navigation Framework Architecture.md` for the
+complete design.
+
+**Key types.** `NavigationItem`, `INavigationProvider`/`NavigationService`,
+`NavigationRequestedEvent`, `NavigationException` and two subtypes
+(`DuplicateNavigationItemException`, `NavigationItemNotFoundException`) —
+designed in full (`ADR-0031`, `ADR-0032`) and implemented with zero
+deviation in `WP 5.0B`, in a new `Tempest.Core.Navigation` namespace
+(`ADR-0024`'s established capability-packaging pattern). Registered as an
+ordinary DI-public singleton in `TempestHost`'s existing Platform Services
+Registered phase, alongside `IEventBus`.
+
+**Dependencies.** `IEventBus` (to publish `NavigationRequestedEvent`) —
+a platform-service-to-platform-service dependency with direct precedent
+(`LoggerFactory` → `IConfigurationProvider`), introducing no cycle.
+**Explicitly orthogonal to Command Framework** (ADR-0022) — neither
+depends on the other; application logic wires the two together, exactly
+as ADR-0022's own illustrative shapes show.
+
+**Consumers.** Any module or plugin-loaded module contributing a
+navigation item, via ordinary constructor injection — no special-casing
+for either (`ADR-0032`). `Tempest.App` (or a future UI shell) is a
+consumer of a different kind: it enumerates `Items` to render a menu and
+subscribes to `NavigationRequestedEvent` to perform the actual view swap,
+using its own, entirely private mapping from `Id` to rendering — a
+mapping `Tempest.Core.Navigation` never sees.
+
+**ADR references.** ADR-0022 (orthogonality with Command Framework,
+decided during original v0.4.0 planning), ADR-0023, ADR-0024, ADR-0031
+(*Navigation Contracts Belong in Tempest.Core; Rendering Remains an
+Application Responsibility*), ADR-0032 (*Navigation Is a DI-Public
+Platform Service, Registered Imperatively, Reusing the Event Bus*).
+
+**Academy references.** WP 4.0 retrospective (*Platform Contracts* —
+`ICommand`/`IEvent` as the precedent this design's own UI-agnosticism
+reasoning draws on); WP 5.0A retrospective (*Navigation Framework
+Architecture*); WP 5.0B retrospective (*Navigation Framework
+Implementation*); `Navigation Framework Architecture.md`; *Navigation
+Architecture* (Academy concept guide); Rejected Designs RD-0030 through
+RD-0033; `docs/releases/v0.5.0/WorkPackages.md` (`WP 5.0A`/`WP 5.0B`).
+
+---
+
+## Diagnostics *(implemented — WP 5.2, ADR-0039)*
+
+**Responsibility.** A read-only projection over the Host's own current
+lifecycle state — `HostState`, every registered module's
+`ModuleLifecycleStatus`, and every hosted service's `HostedServiceStatus`
+— exposed to any DI-resolving consumer, without granting that consumer
+write access to `IModuleLifecycleManager`/`IHostedServiceManager`
+themselves (both remain Host-owned, never DI-public, per `ADR-0017`). See
+`Diagnostics Architecture.md` for the complete design.
+
+**Key types.** `IDiagnosticsProvider`/`DiagnosticsProvider`
+(`Tempest.Core.Diagnostics`). Reuses `ModuleLifecycleStatus`
+(`Tempest.Core.Modules`) and `HostedServiceStatus`
+(`Tempest.Core.BackgroundServices`) exactly as they already exist —
+neither is duplicated or wrapped in a new type.
+
+**Dependencies.** None as ordinary constructor parameters — instead, three
+`Func<T>` accessors supplied by `TempestHost` at construction, closing
+over its own `State` property and `_lifecycleManager`/
+`_hostedServiceManager` private fields. This is deliberate: neither
+manager exists yet at Phase 6 (Platform Services Registered), where
+`DiagnosticsProvider` itself is registered, so a direct constructor
+reference would not compile. Before a referenced manager is actually
+constructed, its own accessor reports an empty collection — never an
+exception — mirroring `ITempestHost.Services`'s own "not yet available"
+convention (`ADR-0034`).
+
+**A genuine, disclosed architectural note (`WP 6.8`), not a defect.**
+`Tempest.Core.Diagnostics` imports `Tempest.Core.Runtime` for exactly
+one type — the `HostState` enum, exposed via `IDiagnosticsProvider.HostState`
+— a mutual namespace reference with `Runtime` (which imports
+`Diagnostics` to construct `DiagnosticsProvider`). A strictly literal
+reading of `ADR-0023`'s "dependencies flow downward only" would flag
+this as an upward reference from a Platform Service to the Runtime Host
+layer. In practice this is confined to one read-only, side-effect-free
+enum type, has shipped without incident since this Work Package
+introduced it, and involves no behavioural coupling. `WP 6.8`'s own
+`Platform Architecture Conformance Report.md` recommends a future
+release either formally accept this as a named `ADR-0023` exception or
+relocate `HostState` to a neutral namespace.
+
+**Consumers.** `DiagnosticsSampleModule` (real contributor and consumer);
+`GetDiagnosticsSummaryCommandHandler` (`Tempest.Samples`, demonstrating
+the Command Framework and Diagnostics interacting); any future Shell
+status page or health-check command.
+
+**Lifecycle.** Constructed directly by `TempestHost` and registered via
+`AddInstance` — the Composition Root pattern (`ADR-0009`) — immediately
+after the Command Framework's own three registrations, still within
+Phase 6 (Platform Services Registered). No new Host Lifecycle phase.
+
+**ADR references.** ADR-0009 (Composition Root, reused a fourth time);
+ADR-0017 (Host-owned collaborators never DI-public — the boundary this
+design's entire shape exists to respect); ADR-0034 (the
+`null`/empty-before-ready convention this design reuses); ADR-0039
+(*Diagnostics Is a DI-Public, Lazily-Projected Read-Only Service Over
+Host-Owned Lifecycle State*).
+
+**Academy references.** WP 5.2 retrospective (*Diagnostics
+Improvements*); *Diagnostics & Composite Logging* (Academy concept
+guide); Rejected Designs RD-0042 through RD-0044;
+`docs/releases/v0.5.0/WorkPackages.md` (`WP 5.2`).
+
+---
+
+## Identity & Permissions *(implemented — WP 6.1, ADR-0043/ADR-0044)*
+
+**Responsibility.** Answers who is performing an action, and whether
+they are allowed to. `IIdentity`/`IPrincipal` model a local-only actor
+(no authentication step, ADR-0043 — a caller-supplied identity id is
+trusted outright); `IRole`/`IRoleProvider` resolve config-sourced role
+definitions (`Identity:Roles:{RoleName}:Permissions`);
+`IIdentityService` resolves a principal by identity id (flattening its
+configured roles into permissions, fail-closed to zero permissions for
+an unrecognised id) and establishes it as current;
+`ICurrentPrincipalAccessor` exposes that current principal read-only;
+`IPermissionEvaluator` is the single, uniform authorization enforcement
+point (`RequirePermission` throws `PermissionDeniedException`;
+`HasPermission` is the non-throwing form) every future consumer is
+expected to call (ADR-0044). See `docs/releases/v0.6.0/Release
+Architecture.md` and companions for the full design, and `ADR-0043`/
+`ADR-0044` for what implementation confirmed, elaborated, or departed
+from in that design.
+
+**Key types.** `IIdentity`/`PlatformIdentity`, `IPrincipal`/
+`PlatformPrincipal`, `Permission`, `IRole`/`Role`, `IRoleProvider`/
+`RoleProvider`, `ICurrentPrincipalAccessor`/`CurrentPrincipalAccessor`,
+`IPermissionEvaluator`/`PermissionEvaluator`, `IIdentityService`/
+`IdentityService`, `IdentityException` and two subtypes
+(`PermissionDeniedException`, `RoleNotFoundException`) — all
+`Tempest.Core.Identity`. `IRole`/`IRoleProvider` and `IIdentityService`
+are additive elaborations the original architecture package deferred to
+this Work Package's own implementation phase, not part of its original
+`Public Interface Catalogue.md` draft; `IIdentity`, `IPrincipal`,
+`ICurrentPrincipalAccessor`, `IPermissionEvaluator`, and `Permission`
+are implemented with zero signature deviation from that draft.
+
+**Dependencies.** None beyond Dependency Injection and (for `RoleProvider`/
+`IdentityService`) `IConfigurationProvider`, read the same way every
+other config-sourced platform service reads it.
+
+**Consumers.** `IdentitySampleModule` (real contributor and consumer,
+the eighth production sample module) — establishes a default local
+principal during its own `InitialiseAsync` and registers a command
+(`CheckSamplePermissionCommand`) demonstrating both the granted and
+fail-closed-denied paths against the same, unmodified module, depending
+on configuration. `TD-09` (plugin isolation), `TD-10` (Navigation
+ownership), and `TD-11` (Command/Navigation registration-order
+squatting) are now *resolvable* through `IPermissionEvaluator` — **none
+is retired by this Work Package**: retrofitting an enforcement call into
+`NavigationService`, Command/Navigation registration, or plugin loading
+was explicitly out of this Work Package's own scope (see `ADR-0044`).
+Future, explicitly-scoped consumers: `WP 6.3` (REST API, a hard
+dependency per `docs/releases/v0.6.0/WorkPackages.md`) and `WP 6.5`
+(Audit, for attribution).
+
+**Lifecycle.** `CurrentPrincipalAccessor` is constructed directly by
+`TempestHost` (a plain `new` — it has no constructor dependencies) and
+registered via `AddInstance` under *both* `ICurrentPrincipalAccessor`
+and its own concrete type — the same already-built instance under two
+service-type keys, so `IdentityService` (which needs write access via
+the concrete type) and every ordinary consumer (which resolves only the
+read-only interface) share one object rather than two independently-
+constructed ones. `IRoleProvider`, `IPermissionEvaluator`, and
+`IIdentityService` are ordinary, container-constructed singletons,
+registered in `TempestHost`'s existing Platform Services Registered
+block (Phase 6) — no new Host Lifecycle phase.
+
+**A genuine implementation-phase departure from the architecture
+package, disclosed rather than absorbed silently:**
+`CurrentPrincipalAccessor` is backed by a single, `lock`-protected
+mutable field, not `AsyncLocal<T>` as `Platform Service Contracts.md`
+tentatively suggested — `AsyncLocal<T>` would make a principal
+established during Module Initialisation invisible to any later,
+unrelated caller (a dispatched command, a test), which does not fit
+this release's own local-only, single-ambient-principal need. See
+`ADR-0044` for the full reasoning and the regression test that proves
+it.
+
+**ADR references.** ADR-0043 (*Identity Model Scope Is Local-Only,
+Extensible*); ADR-0044 (*`IPermissionEvaluator` Is the Single
+Authorization Enforcement Point; `CurrentPrincipalAccessor` Is Ambient,
+Not Request-Scoped*).
+
+**Academy references.** `WP 6.1` retrospective (*Permissions & Identity
+Implementation*); `docs/releases/v0.6.0/Release Architecture.md`,
+`Platform Services Overview.md`, `Public Interface Catalogue.md`,
+`Service Lifecycle.md`, `Required ADRs.md` (the architecture package
+this Work Package implemented); `Platform Service Contracts.md`,
+`Platform Service Implementation Order.md`, `Service Registration
+Matrix.md`, `Testing Strategy.md` (the Contract Review package);
+`docs/governance/Quality/Technical Debt Register.md` (`TD-09`, `TD-10`,
+`TD-11`); `docs/security/Platform Security Review v0.5.0.md` (Findings
+SEC-01, NAV-1); `docs/architecture/Command Framework Architecture.md`
+(Finding CMD-1).
+
+---
+
+## Persistence *(implemented — WP 6.4, ADR-0041)*
+
+**Responsibility.** A minimal, internal, platform-owned durable store —
+store, retrieve, delete, and enumerate string values, scoped by a
+caller-supplied `collection` name and `key`. No schema, no querying
+beyond key lookup and full-collection key enumeration, no transactions
+across multiple keys. Established as part of `WP 6.4`'s own scope
+specifically so no other platform service invents an incompatible
+storage mechanism of its own (`ADR-0041`).
+
+**Key types.** `IPersistenceStore`/`PersistenceStore`,
+`PersistenceException` and one subtype
+(`PersistenceStoreUnavailableException`) — all `Tempest.Core.Persistence`.
+Reuses `Tempest.Core.Concurrency.AsyncKeyedLock` (internal, shared with
+Settings) for per-`collection`/`key` concurrency control.
+
+**Dependencies.** Dependency Injection; `IConfigurationProvider`, read
+once at construction for the storage root path
+(`Persistence:RootPath`, defaulting to `persistence-data`).
+
+**Consumers.** Settings (`WP 6.4`, its own originating Work Package),
+via `SettingsProvider`. Audit (`WP 6.5`), via `AuditRecorder`/
+`AuditQuery` — the reuse `ADR-0041`'s own title anticipated, now
+implemented and verified: each service owns its own, distinct
+collection name (`"Settings"`, `"Audit"`), proving collection-scoping
+isolation in practice, not merely in design.
+
+**Lifecycle.** Ordinary DI-public, container-constructed singleton,
+registered in `TempestHost`'s existing Platform Services Registered
+block (Phase 6) — no new Host Lifecycle phase.
+
+**Storage.** One file per `collection`/`key` pair, under the configured
+root directory; both `collection` and `key` are percent-encoded
+(`Uri.EscapeDataString`) before becoming a path segment, so an arbitrary
+caller-supplied name can never produce an invalid or unintended
+file-system path. Every operation acquires a per-`collection`/`key`
+`AsyncKeyedLock` before touching the file system.
+
+**ADR references.** ADR-0041 (*A Shared Persistence Abstraction Serves
+Settings and Audit*).
+
+**Academy references.** `WP 6.4` retrospective (*Settings Framework
+Implementation*); `docs/releases/v0.6.0/Release Architecture.md` and
+companions (the architecture package this Work Package implemented);
+`Platform Service Contracts.md` and companions (the Contract Review
+package).
+
+---
+
+## Settings *(implemented — WP 6.4, ADR-0042)*
+
+**Responsibility.** User-changeable, runtime-mutable configuration,
+explicitly distinct from Configuration (`WP 2.5`), which is read-only,
+immutable, and loaded once at startup (`ADR-0009`, Case Study 05).
+Registers setting definitions with defaults; reads and writes current
+values; publishes `ISettingsChangedEvent` through the existing Event Bus
+on every successful write, including a write of the already-current
+value (`ADR-0042`'s own explicit default).
+
+**Key types.** `ISettingDefinition`/`SettingDefinition`,
+`ISettingsProvider`/`SettingsProvider`, `ISettingsChangedEvent`/
+`SettingsChangedEvent`, `SettingsException` and two subtypes
+(`DuplicateSettingDefinitionException`, `SettingNotFoundException`) —
+all `Tempest.Core.Settings`.
+
+**Dependencies.** Dependency Injection, Persistence (durable storage),
+Event Bus (change notification).
+
+**Consumers.** `SettingsSampleModule` (real contributor and consumer,
+the ninth production sample module) — registers a setting definition,
+subscribes to `ISettingsChangedEvent`, and registers two commands
+(get/set) demonstrating the Command Framework and Settings interacting.
+Also a real dependency of `ReportingSampleModule` (`WP 6.0`),
+`ExportImportSampleModule` (`WP 6.7`), and `LicensingSampleModule`
+(`WP 6.6`), each reading a customisable message at the calling layer.
+
+**Lifecycle.** Ordinary DI-public, container-constructed singleton,
+registered in `TempestHost`'s existing Platform Services Registered
+block (Phase 6), after Persistence and the Event Bus — no new Host
+Lifecycle phase.
+
+**Performance.** An in-memory cache sits over `IPersistenceStore`,
+invalidated only by this instance's own writes — `GetValueAsync` is a
+likely hot-path call; a cache hit never touches the file system. A
+per-key `AsyncKeyedLock` (shared implementation with Persistence)
+serialises the cache-populate-on-miss sequence against the
+write-then-cache-update sequence, for the same key, so a slow concurrent
+read can never overwrite a newer write's own cache entry with a stale
+value.
+
+**A disclosed, deliberate limitation.** No sensitive-value flag exists
+on `ISettingDefinition` in this release — every setting change is
+logged at Information level with both old and new values, unredacted.
+Named as a Future Extension Point, not a defect (`ADR-0042`).
+
+**ADR references.** ADR-0041 (Persistence, shared with Audit's future
+need), ADR-0042 (*Settings Is DI-Public and Distinct From
+Configuration*).
+
+**Academy references.** `WP 6.4` retrospective (*Settings Framework
+Implementation*); `docs/releases/v0.6.0/Release Architecture.md` and
+companions; `Platform Service Contracts.md` and companions;
+`docs/academy/05 Case Studies/` Case Study 05 (Configuration
+immutability, the distinction Settings exists to complement).
+
+---
+
+## Audit *(implemented — WP 6.5, ADR-0045)*
+
+**Responsibility.** A durable, queryable, append-only record of who did
+what, when — explicitly distinct from Logging (developer-facing, not
+guaranteed durable) and Diagnostics (a live snapshot of *current*
+state). Records an attributable action with the current principal
+resolved automatically; answers filtered queries over previously
+recorded actions. Never modifies or deletes an existing record.
+
+**Key types.** `IAuditRecord`/`AuditRecord`, `IAuditRecorder`/
+`AuditRecorder`, `IAuditQuery`/`AuditQuery`, `AuditQueryCriteria`,
+`AuditException` — all `Tempest.Core.Audit`.
+
+**Dependencies.** Dependency Injection, Persistence (durable storage,
+reused from `WP 6.4`, never a second mechanism), Identity & Permissions
+(`ICurrentPrincipalAccessor` for attribution; `IPermissionEvaluator` for
+query-gating).
+
+**Consumers.** `AuditSampleModule` (real contributor and consumer, the
+tenth production sample module) — establishes its own principal, records
+an action during its own initialisation, and registers two commands
+(record/query) demonstrating both the recording path and the
+permission-gated query path. Also a real, since-confirmed dependency of
+`ApiRequestHandler` itself (`Tempest.Core.Api`, `WP 6.3`), and of four
+further sample-module command handlers built on top of already-shipped
+platform services: `ReportingSampleModule` (`WP 6.0`),
+`ExportImportSampleModule` (`WP 6.7`), and `LicensingSampleModule`
+(`WP 6.6`). *(This entry previously read "none yet implemented" —
+corrected `WP 6.7`, as a genuine, pre-existing drift found during that
+Work Package's own repository review, unrelated to Export/Import's own
+scope: it had gone stale since `WP 6.0` first shipped a real consumer.)*
+
+**Lifecycle.** Ordinary DI-public, container-constructed singletons
+(`IAuditRecorder`, `IAuditQuery`), registered in `TempestHost`'s
+existing Platform Services Registered block (Phase 6), after
+Persistence and Identity & Permissions — no new Host Lifecycle phase.
+
+**Storage.** Every record is serialised to JSON (`System.Text.Json`,
+already used elsewhere in this codebase — `PluginManifestDiscoveryService`
+— introducing no new dependency) and stored in its own
+`IPersistenceStore` collection (`AuditRecorder.AuditCollectionName`,
+`"Audit"`), distinct from Settings' own `"Settings"` collection —
+proving Persistence's own collection-scoping isolation in practice.
+`IAuditQuery.QueryAsync` filters client-side, over
+`ListKeysAsync` plus a per-key `ReadAsync` — `IPersistenceStore` has no
+native query capability (`ADR-0041`, confirmed again here, `ADR-0045`);
+see `Technical Debt Register.md`'s `TD-12`.
+
+**A genuine implementation-phase finding, disclosed rather than
+absorbed silently:** `RecordAsync` is awaited, not literally
+fire-and-forget, so a storage failure always propagates — the
+Contract Review's own performance goal is met by keeping the write
+itself minimal (a single, append-only file write), not by discarding
+the returned `Task`. See `ADR-0045`'s own reasoning.
+
+**ADR references.** ADR-0041 (Persistence, reused not reinvented);
+ADR-0044 (the enforcement point Audit's own query-gating reuses);
+ADR-0045 (*Audit Is a Durable, Queryable, Append-Only Record, Distinct
+From Logging and Diagnostics — Recording Model, Permission Gating, and
+Persistence Sufficiency*).
+
+**Academy references.** `WP 6.5` retrospective (*Audit Framework
+Implementation*); `docs/releases/v0.6.0/Release Architecture.md` and
+companions; `Platform Service Contracts.md` and companions;
+`docs/governance/Quality/Technical Debt Register.md` (`TD-12`);
+`docs/releases/v0.6.0/Risk Register.md` (`R8`).
+
+---
+
+## Notifications *(implemented — WP 6.2, ADR-0046)*
+
+**Responsibility.** The standard platform mechanism for publishing
+user-facing and platform-generated notifications — `INotification`
+marks a published fact (mirroring `IEvent`'s own marker shape);
+`INotificationHandler<TNotification>` is the consumer-facing
+subscription contract; `INotificationDispatcher` subscribes and
+publishes, sequentially, in subscription order, isolating and logging
+(at `Warning`) every subscriber's own exception, never rethrowing it.
+Deliberately **not** a second, independent publish/subscribe
+implementation — built to mirror the Event Bus's own proven dispatch
+model exactly (`ADR-0028`/`ADR-0046`), since the two types' own,
+independently-approved generic constraints (`where TNotification :
+INotification` vs. `where TEvent : IEvent`) rule out literal
+delegation. Transient only this release — a notification is not
+retained after dispatch; no history or inbox capability exists yet.
+
+**Key types.** `INotification`, `INotificationHandler<TNotification>`,
+`INotificationDispatcher`/`NotificationDispatcher`,
+`NotificationException` — all `Tempest.Core.Notifications`, implemented
+with zero signature deviation from `Public Interface Catalogue.md`.
+`IPlatformNotification`/`PlatformNotification`/`NotificationSeverity`
+(`Information`, `Success`, `Warning`, `Error`) are additive elaborations
+this Work Package's own implementation phase introduced — "Notification
+severity" and "Notification categories" were named in this Work
+Package's own brief but never drafted as interface members;
+`IPlatformNotification` extends both `INotification` and `Events.IEvent`,
+concretely realising `INotification`'s own doc comment ("typically
+derived from... an `IEvent`") for this one general-purpose shape.
+
+**Dependencies.** Dependency Injection; `Tempest.Core.Events` (for
+`IPlatformNotification`'s own `IEvent` extension — a type-level
+relationship only, no runtime call into `IEventBus`); `Tempest.Core.Logging`
+(optional `ILogger`, the same convention every other platform service
+follows).
+
+**Consumers.** `NotificationSampleModule` (real contributor and
+consumer, the eleventh production sample module) — subscribes to
+`IPlatformNotification` during its own initialisation, registers a
+command (`PublishSampleNotificationCommand`) that publishes one on
+demand, and observes `NotificationSampleHostedService`'s own
+`StartAsync`/`StopAsync` notifications end-to-end, proving "Background
+notifications" concretely. Also a real, since-confirmed dependency of
+three further sample-module command handlers built on top of
+already-shipped platform services: `ReportingSampleModule` (`WP 6.0`),
+`ExportImportSampleModule` (`WP 6.7`), and `LicensingSampleModule`
+(`WP 6.6`) — the REST API itself (`Tempest.Core.Api`) does not consume
+Notifications directly; only the commands it happens to expose do. A
+future UI Shell remains a plausible future consumer not yet implemented.
+*(This entry previously read "none yet implemented" — corrected `WP
+6.7`, as a genuine, pre-existing drift found during that Work Package's
+own repository review, unrelated to Export/Import's own scope: it had
+gone stale since `WP 6.0` first shipped a real consumer.)*
+
+**Lifecycle.** Ordinary DI-public, container-constructed singleton
+(`INotificationDispatcher`), registered in `TempestHost`'s existing
+Platform Services Registered block (Phase 6), immediately after
+`IEventBus` — no new Host Lifecycle phase.
+
+**A genuine, first-of-its-kind hosted service, disclosed rather than
+overclaimed.** `NotificationSampleHostedService` is the codebase's
+first real, non-infrastructure `IHostedService` — every prior Work
+Package's own Background Services coverage (`WP 4.5`) proved the
+infrastructure itself but shipped with zero real consumers (`AT-07`).
+`AT-07`'s own revisit trigger names `WP 6.3` (REST API) as its intended
+retiree; this Work Package does not claim that milestone — see its own
+Platform Impact Assessment.
+
+**A genuine implementation-phase finding, disclosed rather than
+absorbed silently:** `INotificationDispatcher` dispatches by exact
+static generic type, the same design `IEventBus` already uses — a
+caller that publishes a notification typed as the concrete
+`PlatformNotification` will never be observed by a subscriber that
+subscribed against `IPlatformNotification`, since the two are different
+dictionary keys. Found and fixed against this Work Package's own sample
+consumers while writing their integration tests; documented directly on
+`IPlatformNotification`'s own remarks as calling guidance. See
+`ADR-0046`.
+
+**ADR references.** ADR-0028 (Event Bus dispatch/failure model, the
+design reused here); ADR-0046 (*Notifications Are Derived From Events,
+Not a Replacement Pub/Sub — Dispatch Model, Severity/Category
+Elaboration, and Logging Level*).
+
+**Academy references.** `WP 6.2` retrospective (*Notification
+Framework Implementation*); `docs/releases/v0.6.0/Release
+Architecture.md` and companions; `Platform Service Contracts.md` and
+companions; `docs/governance/Quality/Technical Debt Register.md`
+(`AT-07`).
+
+---
+
+## Reporting *(implemented — WP 6.0, ADR-0040)*
+
+**Responsibility.** Produces structured, formatted output from
+platform or module data via a registered definition/renderer pair.
+Registers report definitions and their renderers; dispatches a render
+request by definition Id; enumerates registered definitions. Does not
+persist generated output, does not schedule recurring generation, and
+does not itself provide a delivery mechanism — a generated report
+reaching a user is Notifications' or the REST API's own concern, not
+Reporting's (`ADR-0040`).
+
+**Key types.** `IReportDefinition`, `IReportRenderer<TDefinition>`,
+`IReportingService`/`ReportingService`, `ReportRequest`, `ReportResult`,
+`ReportingException` and two subtypes
+(`DuplicateReportDefinitionException`, `ReportDefinitionNotFoundException`)
+— all `Tempest.Core.Reporting`, implemented with zero signature
+deviation from `Public Interface Catalogue.md`.
+`IReportTemplate<TDefinition>`/`PlainTextReportTemplate<TDefinition>`
+are additive elaborations this Work Package's own implementation phase
+introduced — "Template abstraction" was named in this Work Package's
+own brief but never drafted as an interface member; entirely optional,
+`IReportingService` has no awareness of templates at all.
+
+**Dependencies.** Dependency Injection only — confirmed directly, and
+consistent with `Platform Service Implementation Order.md`'s own
+observation that "Reporting has no hard proposed-service dependency."
+
+**Consumers.** `ReportingSampleModule` (real contributor and consumer,
+the twelfth production sample module) — registers
+`SampleSummaryReportDefinition` and its own renderer, then registers a
+command (`GenerateSampleReportCommand`) whose handler checks a
+permission (Identity), generates the report (Reporting), records the
+action (Audit), and publishes a completion notice (Notifications) — see
+this Work Package's own Platform Integration Demonstration for the
+complete, per-service account. Named as a plausible future consumer for
+the REST API and any engineering module — none yet implemented.
+
+**Lifecycle.** Ordinary DI-public, container-constructed singleton,
+registered in `TempestHost`'s existing Platform Services Registered
+block (Phase 6), immediately after the Event Bus and before
+Notifications — matching `Service Registration Matrix.md`'s own
+recommended order. No new Host Lifecycle phase.
+
+**Security.** `GenerateAsync` does not itself check permissions — the
+enforcement point is the caller, mirroring how Navigation and the
+Command Framework themselves impose no authorization internally
+(`ADR-0032`, `ADR-0037`). `ReportingSampleModule`'s own command handler
+is that enforcement point, and its own published notification carries
+only a fixed, non-identifying success message — never report content —
+per Notifications' own Security Considerations for exactly this
+scenario.
+
+**A genuine implementation-phase decision, disclosed rather than
+absorbed silently:** "Export abstraction" was named in this Work
+Package's own brief but is explicitly **not** built — a dedicated
+export interface inside `Tempest.Core.Reporting` would duplicate `WP
+6.7` (Export/Import)'s own future scope and contradict this very ADR's
+own orthogonality decision. `ReportResult`'s own `ContentType`/`Content`
+shape is Reporting's own output mechanism, explicitly not guaranteed
+round-trip-safe or re-importable. See `ADR-0040`.
+
+**ADR references.** ADR-0038 (Command dispatch failure model, mirrored
+by `GenerateAsync`'s own renderer-failure propagation); ADR-0040
+(*Reporting Is DI-Public and Orthogonal to Export/Import — Template
+Abstraction, Cross-Service Integration, and Scope Boundaries*).
+
+**Academy references.** `WP 6.0` retrospective (*Reporting Framework
+Implementation*); `docs/releases/v0.6.0/Release Architecture.md` and
+companions; `Platform Service Contracts.md` and companions;
+`docs/governance/Quality/Technical Debt Register.md` (`AT-09`).
+
+---
+
+## REST API *(implemented — WP 6.3, ADR-0047/ADR-0048/ADR-0049/ADR-0052)*
+
+**Responsibility.** Lets an external HTTP client invoke platform
+capability from outside the running process. Hosts an HTTP listener;
+maps registered routes to Command Framework invocations; authorizes
+each request via Identity & Permissions before dispatch; returns a
+response reflecting the command's own `CommandResult`. Contains no
+business logic of its own — every route is a thin translation layer to
+an existing `ICommand`, per this Work Package's own Design Principles.
+
+**Key types.** `IApiEndpointRegistry`/`ApiEndpointRegistry`,
+`ApiRouteDescriptor`, `ApiException` and one subtype
+(`DuplicateApiRouteException`) — all `Tempest.Core.Api`, implemented
+with zero signature deviation from `Public Interface Catalogue.md`.
+`ApiRequestHandler` (the thin, Kestrel-independent request pipeline),
+`RestApiHostedService` (the Kestrel-backed hosted-service scaffold),
+`ApiResponse`, and `OpenApiDocumentGenerator` are additive
+implementation-phase types — the hosted-service scaffold itself was
+deliberately left undrafted in the architecture package, "pending
+`ADR-0049`'s ratification."
+
+**Dependencies.** Dependency Injection; Identity & Permissions
+(`IIdentityService`/`IPermissionEvaluator`, for per-request
+authorization); Audit (`IAuditRecorder`, for the Logging Requirement's
+own "the REST API should call `IAuditRecorder` explicitly"). Does
+**not** depend on Settings, Notifications, or Reporting directly — those
+three are consumed only at the sample-module calling layer
+(`ApiSampleModule` exposing `ReportingSampleModule`'s own command),
+exactly mirroring Reporting's own precedent of keeping cross-service
+integration outside the core service itself.
+
+**Consumers.** `ApiSampleModule` (real contributor and consumer, the
+thirteenth production sample module) — maps one route
+(`POST /api/v1/sample-report`) directly to
+`ReportingSampleModule.GenerateSampleReportCommandId`, containing zero
+business logic of its own whatsoever, the purest possible proof of this
+Work Package's own "no business logic inside controllers/endpoints"
+design principle. Also a real, since-confirmed second consumer:
+`LicensingSampleModule` (`WP 6.6`) independently maps its own route
+(`POST /api/v1/sample-capability`) to
+`CheckSampleCapabilityCommandId` — confirmed by `WP 6.8`'s own
+Consumption Matrix as the strongest available evidence that
+`IApiEndpointRegistry`'s own "any module can map a route" design
+genuinely generalises, not merely works once.
+
+**Lifecycle.** `IApiEndpointRegistry` is an ordinary DI-public,
+container-constructed Phase 6 singleton, registered immediately after
+Audit; `RestApiHostedService` is discovered and orchestrated identically
+to any other hosted service — started Phase 8.1, stopped Phase 10.1
+(`ADR-0030`), isolated by default, not critical (`ADR-0021`) — no new
+Host Lifecycle phase. Retires `AT-07` ("Zero real hosted services exist
+beyond the infrastructure") — the Work Package that trade-off's own
+revisit trigger explicitly named in advance.
+
+**Hosting.** ASP.NET Core/Kestrel, adopted via a `FrameworkReference` to
+the already-installed shared framework, confined entirely to
+`RestApiHostedService` — this platform's own DI container, Command
+Framework, and every other platform service remain entirely unchanged
+and unreplaced (`ADR-0049`). Binds to the loopback address only by
+default (`Api:Port` configuration key, default port `5080`); no TLS is
+configured this release (`TD-14`).
+
+**Security — a genuine, disclosed limitation, not a hidden one.** The
+platform's first network-facing attack surface. Identity is carried in
+an `X-Identity-Id` request header, trusted outright with no
+cryptographic verification — a mechanical extension of this release's
+own local-only identity model (`ADR-0043`) over HTTP, not a real
+authentication mechanism (`TD-13`). `ApiRequestHandler` never
+establishes the shared, ambient `ICurrentPrincipalAccessor` — a
+per-request `IPrincipal` is resolved via the pure, non-mutating
+`IIdentityService.GetPrincipal` and passed explicitly to
+`IPermissionEvaluator.HasPermission`, safe for concurrent requests by
+construction. This was empirically verified, not merely reasoned about:
+an `AsyncLocal<T>`-backed `CurrentPrincipalAccessor` was built and
+tested directly, and regressed 17 pre-existing tests — see `ADR-0052`.
+
+**A genuine implementation-phase finding, disclosed rather than
+absorbed silently:** because the REST pipeline never establishes the
+ambient current principal, a command handler relying on
+`IAuditRecorder`'s own ambient-attribution convention will record
+`"unknown"` when invoked via REST — the real caller identity is instead
+carried explicitly in the REST API's own `api.request` audit entry's
+own `Detail[CallerIdentityId]` (`TD-15`), mirroring `WP 6.5`'s own
+`Detail`-carried-attribute convention.
+
+**ADR references.** ADR-0038 (Command dispatch failure model, reused
+for renderer/handler-failure mapping); ADR-0044 (the enforcement point
+this Work Package's own permission checks reuse); ADR-0045 (the
+`Detail`-carried-attribute convention `TD-15`'s own resolution mirrors);
+ADR-0047 (*The REST API Is a Background Hosted Service*); ADR-0048
+(*REST Endpoints Dispatch Through the Existing Command Framework*);
+ADR-0049 (*Adopting ASP.NET Core/Kestrel for the REST API*); ADR-0052
+(*The REST API Resolves Identity Per-Request Without Touching the
+Ambient Current Principal*).
+
+**Academy references.** `WP 6.3` retrospective (*REST API
+Implementation*); `docs/releases/v0.6.0/Release Architecture.md` and
+companions; `Platform Service Contracts.md` and companions;
+`docs/releases/v0.6.0/Risk Register.md` (`R1`, `R2`, `R3`);
+`docs/governance/Quality/Technical Debt Register.md` (`AT-07`, retired;
+`AT-10`; `TD-04`; `TD-13`; `TD-14`; `TD-15`).
+
+---
+
+## Export/Import *(implemented — WP 6.7, ADR-0051)*
+
+**Responsibility.** The platform's own user-facing, `Stream`-based,
+portable-artifact I/O layer — exports one or more `IExportable` sources
+into a single artifact, and reads a previously exported artifact back
+into its owning service(s), rejecting an incompatible schema version
+outright rather than attempting a best-effort partial import.
+Explicitly distinct from `IPersistenceStore`, which is internal,
+platform-owned state never directly exposed to a user (`ADR-0051`).
+Does not duplicate Reporting — a `ReportResult`'s own bytes are not
+guaranteed round-trip-safe (`ADR-0040`), so Reporting output is never
+wrapped as export data.
+
+**Key types.** `IExportable`, `IExportService`/`ExportService`,
+`IImportService`/`ImportService`, `ExportImportException` and one
+approved subtype (`IncompatibleExportSchemaException`) — all
+`Tempest.Core.ExportImport`, implemented with zero signature deviation
+from `Public Interface Catalogue.md`. `IExportableKind`, `IImportable`,
+`ExportSection`, `IExportFormat`/`JsonExportFormat`,
+`IExportPayloadSerializer`/`JsonExportPayloadSerializer`, and two further
+concrete exception subtypes (`CorruptedExportArtifactException`,
+`DuplicateImportableKindException`) are additive elaborations this Work
+Package's own implementation phase introduced — "Serialization
+abstraction" and "Format abstraction" were named in this Work Package's
+own brief but never drafted as interface members; entirely optional or
+internal-only, `IExportable`/`IExportService`/`IImportService` remain
+unaware of all of them.
+
+**Dependencies.** Dependency Injection only — confirmed directly by
+`using` inspection, and consistent with `Platform Service Implementation
+Order.md`'s own observation that Export/Import has no hard
+proposed-service dependency, only a practical one (a real `IExportable`
+source worth integrating against).
+
+**Consumers.** `ExportImportSampleModule` (real contributor and
+consumer, the fourteenth production sample module) — registers two
+Settings-backed `SettingExportImportAdapter` instances (each a single
+class implementing `IExportable`, `IExportableKind`, and `IImportable`
+together) and two commands (`ExportSampleDataCommand`,
+`ImportSampleDataCommand`) whose handlers check a permission (Identity),
+export or import (Export/Import), record the action (Audit), and
+publish a completion notice (Notifications) — see this Work Package's
+own Platform Integration Demonstration for the complete, per-service
+account. Named as a plausible future consumer for Licensing and any
+engineering module.
+
+**Lifecycle.** `IExportService`/`ExportService` is an ordinary DI-public,
+container-constructed singleton, registered in `TempestHost`'s existing
+Platform Services Registered block (Phase 6), immediately after the
+REST API's own `IApiEndpointRegistry`. `ImportService` is constructed
+directly, once, and registered under both its own concrete type and
+`IImportService` — the same already-built instance under two
+service-type keys — mirroring `ADR-0044`'s own dual-registration
+precedent for `CurrentPrincipalAccessor`: a module needing
+`RegisterImportable` resolves the concrete type, while every ordinary
+consumer resolves only the read-only `IImportService` interface. No new
+Host Lifecycle phase.
+
+**Security.** `ExportAsync`/`ImportAsync` do not themselves check
+permissions — the enforcement point is the caller, mirroring how
+Reporting and the REST API themselves impose no authorization
+internally. `ExportImportSampleModule`'s own command handlers are that
+enforcement point. An exported artifact may contain sensitive data (a
+Settings export including a sensitive value) — `IExportable`
+implementations are individually responsible for redacting or refusing
+to export sensitive content; `IExportService`/`IImportService` impose no
+content-level policy of their own, mirroring how Persistence imposes
+none on what Settings/Audit choose to store.
+
+**A genuine implementation-phase decision, disclosed rather than
+absorbed silently:** `IImportService.ImportAsync`'s own approved,
+single-method shape carries no destination parameter, yet must "read...
+back into the owning service(s)" — plural — with no registration
+mechanism drafted for it. Resolved by a concrete-type-only
+`RegisterImportable` method (not part of `IImportService` itself),
+routing each artifact section to its own registered `IImportable` by
+`Kind`, validating every section's compatibility before importing any
+of them. See `ADR-0051`.
+
+**ADR references.** ADR-0044 (`CurrentPrincipalAccessor`'s own
+dual-registration precedent, reused for `ImportService`); ADR-0051
+(*Export/Import Is Orthogonal to the Internal Persistence Abstraction —
+Kind Routing, Format/Serialization Abstractions, and Scope Boundaries*).
+
+**Academy references.** `WP 6.7` retrospective (*Export/Import
+Framework Implementation*); `docs/releases/v0.6.0/Release
+Architecture.md` and companions; `Platform Service Contracts.md` and
+companions.
+
+---
+
+## Licensing *(implemented — WP 6.6, ADR-0050)*
+
+**Responsibility.** What capability is enabled, for whom, until when.
+Validates a license at Host startup, before the DI container exists;
+exposes the current license's own entitlements read-only thereafter.
+Does not itself implement any licensed feature's own gating logic
+beyond answering "is this capability enabled" — a consuming module
+decides what to do with that answer. Does not implement commercial
+policy, billing, or subscriptions — those remain outside the platform
+entirely.
+
+**Key types.** `ILicense`/`License`, `ILicenseValidator`/`LicenseValidator`,
+`LicenseValidationResult`, `ILicenseProvider`/`LicenseProvider`,
+`LicensingException` and one approved subtype
+(`LicenseValidationException`) — all `Tempest.Core.Licensing`,
+implemented with zero signature deviation from `Public Interface
+Catalogue.md`. `LicenseDto` is an additive, internal-only JSON
+deserialization shape, mirroring `PluginManifestDto`'s own precedent.
+
+**Dependencies.** `System.Text.Json` (BCL) only — confirmed directly by
+`using` inspection. `ILicenseValidator` has no constructor dependencies
+at all, deliberately a leaf, mirroring `IPlatformVersionProvider`'s own
+position — it cannot depend on anything container-constructed, since it
+runs before the container exists.
+
+**Consumers.** `LicensingSampleModule` (real contributor and consumer,
+the fifteenth production sample module) — registers a sample setting
+and a command (`CheckSampleCapabilityCommand`) whose handler checks a
+permission (Identity), checks a sample capability
+(`ILicenseProvider.HasCapability`), reads a Settings-provided message on
+success, records the outcome (Audit), and publishes a completion notice
+(Notifications) — then maps that same command to an HTTP route (REST
+API), proven by a real HTTP round trip. See this Work Package's own
+Platform Integration Demonstration for the complete, per-service
+account. Named as a plausible future consumer for any commercially
+licensed engineering module.
+
+**Lifecycle.** `ILicenseValidator` is Composition-Root-constructed,
+pre-container — `TempestHost` constructs it directly, immediately after
+`ConfigurationBuilder.Build()` returns and before the logger/sink are
+built, mirroring `PlatformVersionProvider`'s own construction-time
+placement. `ILicenseProvider` is Composition-Root-constructed from the
+already-validated `ILicense` and registered via `AddInstance` at Phase
+6, immediately after Identity & Permissions — the only proposed
+`v0.6.0` service with a non-container-registered contract. No new Host
+Lifecycle phase — both placements resolve to phases that already exist.
+
+**Failure behaviour — the one genuine architectural decision this Work
+Package resolved, not merely implemented.** `Risk Register.md`'s own
+`R5` named an open question: does every "invalid" category (missing,
+expired, malformed) warrant Host-fatal treatment? Resolved: a missing
+license file is a valid, unrestricted-but-uncapable default
+(`LicenseValidator.UnlicensedLicenseeName`, zero enabled capabilities) —
+this platform's own normal, open-source-friendly state, never
+Host-fatal. A license file that exists but is unreadable, not valid
+JSON, missing its own required `LicenseeName` field, or already
+expired, aborts Host startup entirely — Host-fatal, per `ADR-0013`'s
+existing classification, applied without modification. Proven directly:
+every one of the 24 pre-existing test files that build a real
+`TempestHost` continues to pass completely unmodified, since none of
+them has ever supplied a license file. See `ADR-0050`.
+
+**Security — a genuine, disclosed limitation, not a hidden one.** The
+license file's own contents are trusted at face value — no
+cryptographic signature or tamper-resistance verification of any kind
+(`TD-16`), extending this release's own local-trust posture (`ADR-0043`)
+to a second surface.
+
+**ADR references.** ADR-0009 (Composition Root pattern, confirmed to
+extend to a leaf validator and a wrapped provider); ADR-0013
+(platform-service-failure classification, applied here without
+modification); ADR-0023 (`PlatformVersionProvider`'s own "deliberately a
+leaf" precedent, mirrored here); ADR-0044 (the fail-closed-by-default
+precedent `HasCapability`'s own default state mirrors); ADR-0050
+(*License Validation Is a Host-Startup, Host-Fatal Gate — Except a
+Missing License File, Which Is a Valid, Unrestricted Default*).
+
+**Academy references.** `WP 6.6` retrospective (*Licensing Framework
+Implementation*); `docs/releases/v0.6.0/Release Architecture.md` and
+companions; `Platform Service Contracts.md` and companions;
+`docs/releases/v0.6.0/Risk Register.md` (`R5`);
+`docs/governance/Quality/Technical Debt Register.md` (`TD-16`, `AT-13`).
+
+---
+
+## Plugin Manifest *(implemented — WP 4.2, `Tempest.Core.Plugins`)*
+
+**Responsibility.** Describes a module before it is loaded — a
+pre-Discovery artifact, distinct from `ModuleDescriptor`, which describes a
+module already loaded and reflectable. The Manifest describes; the Runtime
+decides. `PluginManifestDiscoveryService` (Phase 3.1) scans a plugins
+directory for `plugin.manifest.json` files, parses, validates, and checks
+platform-version compatibility, producing a deterministic, ordered list of
+`PluginManifest` values; `PluginAssemblyLoader` (Phase 3.2) loads each
+eligible plugin's declared assembly. See *Plugin Manifest Architecture.md*
+for full detail, including its "Public API — As Implemented" section.
+
+**Key types.** `PluginManifest`, `PluginException` and five subtypes
+(`InvalidPluginManifestException`, `IncompatiblePluginVersionException`,
+`DuplicatePluginIdException`, `PluginAssemblyNotFoundException`,
+`PluginAssemblyLoadException`), `IPluginManifestDiscoveryService` /
+`PluginManifestDiscoveryService`, `IPluginAssemblyLoader` /
+`PluginAssemblyLoader` (`Tempest.Core.Plugins`).
+
+**Status.** Implemented — WP 4.2. Plugin failure classification
+(ADR-0025, WP 4.2B) — isolated for every failure category except a
+genuine Host-level defect in plugin-loading orchestration itself.
+Lifecycle placement (ADR-0026, WP 4.2C) — two new phases, `3.1` Plugin
+Discovery and `3.2` Plugin Loading, between Logging Built and Module
+Discovery, no renumbering of the existing thirteen phases, no change to
+`Runtime State Machine.md`. The cross-cutting platform-version gap this
+design originally surfaced is also resolved (WP 4.2A, see the Platform
+Version entry, above). 27 tests (unit-level `PluginManifestDiscoveryService`/
+`PluginAssemblyLoader` coverage, plus Host-level integration tests)
+verify every ADR-0025 failure category and ADR-0026 ordering guarantee.
+
+**Dependencies.** Logging Built and `PlatformVersionProvider`
+(construction moved earlier per ADR-0026) both exist before Plugin
+Discovery (Phase 3.1) begins. Plugin Loading (Phase 3.2) precedes Module
+Discovery (Phase 4), analogous to how Configuration and Logging already
+precede it today.
+
+**Consumers.** Module Discovery — unchanged (zero code touched), since any
+assembly Plugin Loading loads becomes visible to
+`AppDomain.CurrentDomain.GetAssemblies()` exactly like any other loaded
+assembly — proven directly by
+`PluginAssemblyLoaderTests.LoadPlugins_LoadedAssembly_IsVisibleToUnchangedModuleDiscovery`,
+which loads a real, dynamically-built assembly and confirms
+`ReflectionFrameworkDiscoveryService` finds its module unaided.
+`IFrameworkDiscoveryService`, `RuntimeModuleManager`, and
+`ModuleLifecycleManager` remain untouched.
+
+**ADR references.** ADR-0025 (*Plugin Failure Classification*) — decided,
+implemented. ADR-0026 (*Plugin Discovery Lifecycle Placement*) — decided,
+implemented.
+
+**Academy references.** WP 4.2 retrospective (*Plugin Manifest
+Architecture*); WP 4.2A retrospective (*Runtime Platform Version
+Infrastructure*); WP 4.2B retrospective (*ADR: Plugin Failure
+Classification*); WP 4.2C retrospective (*ADR: Plugin Discovery Lifecycle
+Placement*); WP 4.2 implementation retrospective; *Plugin Manifest
+Architecture.md*; Rejected Designs RD-0008 through RD-0014.
+
+---
+
+## Plugin Trust & Capability Enforcement *(implemented — `v0.13.0`, ADR-0107–ADR-0112)*
+
+**Backfilled `WP 16.4B-R1`, closing `TD-126`.** This service shipped at
+`v0.13.0`; `WP 16.2A` added its row to the Platform Services Register
+but this Map section, and the "At a Glance" row above, did not exist
+until now — the review board found both gaps and re-raised the residual
+as `TD-126`; see that row's own Status cell.
+
+**Responsibility.** Everything beyond Plugin Manifest's own parse/
+discover/load concern: verifying a plugin's detached signature against a
+local trust store, assigning it a trust tier (Unsigned-Local /
+VerifiedSigned / FirstParty), validating its declared dependency graph
+(cycles, version constraints, missing dependencies), and recording —
+never enforcing directly itself — which already-loaded types a denied
+plugin owns, so Module and Hosted Service Registration can exclude them.
+Plugin Manifest answers "is this plugin describable and loadable";
+this service answers "is this plugin's code trusted to run, and under
+which capability tier."
+
+**Key types.** `IPluginTrustStore`/`PluginTrustStore` (ADR-0112, local
+publisher-certificate trust store), `IPluginRegistry`/`PluginRegistry`
+(the queryable catalogue of every candidate's outcome this run),
+`IPluginDeniedTypeRegistry`/`PluginDeniedTypeRegistry` (`WP 13.9.4`,
+excludes a denied plugin's already-loaded types from both pipelines),
+`IPluginComponentPrincipalRegistry`/`PluginComponentPrincipalRegistry`
+(ADR-0111, maps a discovered `IModule` `Type` back to the plugin's own
+component principal), `PluginException` and five Plugin Trust &
+Dependencies subtypes (`CircularPluginDependencyException`,
+`IncompatiblePluginDependencyVersionException`,
+`MissingPluginDependencyException`,
+`PluginSignatureVerificationFailedException`, `PluginTrustDeniedException`,
+`PluginUnsignedLoadNotAllowedException`) — all `Tempest.Core.Plugins`.
+
+**Dependencies.** None from the container — every key type above is a
+**Host-owned collaborator**, constructed directly in `TempestHost`
+ahead of Plugin Discovery (mirroring `IRuntimeModuleManager`'s own
+ADR-0017 boundary), never added to the DI `ServiceCollection`. A module
+able to reach these directly could, in principle, be given write access
+later by a careless change, or be mistaken for a legitimate place to
+drive plugin loading rather than observe its outcome — the same reason
+`IPluginRegistry`'s own remarks give.
+
+**Consumers.** `PluginManifestDiscoveryService`/`PluginAssemblyLoader`
+(Plugin Manifest, Phases 3.1/3.2) write into these registries as
+discovery and loading proceed; Module Registration's and Hosted Service
+Registration's own filters read `IPluginDeniedTypeRegistry` to exclude a
+denied plugin's types from whichever pipeline(s) would otherwise still
+find them (closing the gap where an already-loaded assembly — ADR-0015:
+that step cannot be undone — could still be separately rediscovered);
+`ModuleLifecycleManager`'s `componentScopeProvider` closure reads
+`IPluginComponentPrincipalRegistry`. The only DI-reachable surface is
+`IDiagnosticsProvider.Plugins` (ADR-0039), a read-only projection over
+`IPluginRegistry`, never the interface itself.
+
+**Lifecycle.** Host-owned, constructed once per run, before Plugin
+Discovery (Phase 3.1) begins — not a container-constructed singleton,
+not resolved through DI by any module. No new Host Lifecycle phase; it
+lives inside the existing Plugin Discovery/Loading phases (ADR-0026).
+
+**ADR references.** ADR-0107 (dependency graph resolution and extended
+failure classification), ADR-0108 (load/upgrade/uninstall without live
+unload), ADR-0109 (plugin service-registration boundary), ADR-0110
+(capability-scoped isolation boundary, not ALC or process separation),
+ADR-0111 (trust/capability model extends `IPermissionEvaluator` via
+component principal), ADR-0112 (signing is a detached manifest and
+assembly hash, verified at discovery).
+
+**Academy references.** `03 Work Packages/WP13.0A-plugin-and-
+registration-trust-isolation-architecture.md` through
+`WP13.11D-v0.13.0-plugin-platform-exit-review.md` (the full `v0.13.0`
+Plugin Trust programme); `02 Runtime Architecture/07-plugin-
+architecture.md`.
+
+---
+
+## Engineering Object Durability & Rehydration *(implemented — `v0.14.0`, `TD-85`, ADR-0113, ADR-0116)*
+
+**Backfilled `WP 16.4B-R1`, closing `TD-126`.** Shipped at `v0.14.0`;
+this section and the "At a Glance" row above did not exist until now —
+see the Plugin Trust & Capability Enforcement entry, immediately above,
+for the shared disclosure both sections carry.
+
+**Responsibility.** What makes an engineering object survive a process
+restart. `EngineeringObjectState` is the durable, Kind-tagged snapshot
+of an object's mutable state (`EngineeringObjectStateStore`, written on
+every mutation, one record per object); each canonical type declares how
+to reconstruct itself from that snapshot via `IRehydratable<TSelf>`,
+registered under its own Kind in `IEngineeringObjectRehydratorRegistry`;
+`EngineeringObjectRehydrationService` walks every stored record at
+startup and rebuilds the live in-memory object graph
+(`IEngineeringObjectRepository`/`IEngineeringRelationshipRepository`)
+from it. `TD-87`/`ADR-0120`'s schema-versioning and migration mechanism
+(`v0.16.0`) lives in this same store — see `StateMigrationRegistry`'s
+own remarks for the collision guard `WP 16.4B-R1` added there.
+
+**Key types.** `EngineeringObjectState`, `IEngineeringObjectStateStore`/
+`EngineeringObjectStateStore`, `IStateMigration`/
+`IStateMigrationRegistry`/`StateMigrationRegistry` (`TD-87`,
+`ADR-0120`), `IRehydratable<TSelf>`, `IEngineeringObjectRehydrator`/
+`EngineeringObjectRehydrator<T>`, `IEngineeringObjectRehydratorRegistry`/
+`EngineeringObjectRehydratorRegistry`, `EngineeringObjectRehydrationService`,
+`EngineeringDomainException` and its Engineering Domain subtypes
+including `DuplicateRehydratorRegistrationException`,
+`DuplicateStateMigrationException` and `ConflictingStateMigrationException`
+(`WP 16.4B-R1`) — all `Tempest.Core.EngineeringDomain`.
+
+**Dependencies.** Dependency Injection; `IPersistenceStore` (Persistence,
+reused, the same single storage mechanism `IEngineeringDocumentStore`
+already uses, split by concern — the document owns identity/Kind/
+revisions, this owns the object state a document was never designed to
+carry); `EngineeringDomainContext` (the shared collaborator bundle every
+`EngineeringObjectFactory<T>` needs).
+
+**Consumers.** Every canonical engineering object type implements
+`IRehydratable<TSelf>` and registers its own rehydrator under its own
+Kind (`ADR-0105`); `EngineeringObjectFactory<T>` writes state through
+`IEngineeringObjectStateStore` on every mutation; production startup
+rehydration is owned by the product and the session principal comes
+from one boundary (`ADR-0116`) — the real, non-sample consumer of
+`EngineeringObjectRehydrationService`. `IAttachmentContentReconciliationService`
+(`v0.16.0`, below) reads `IEngineeringObjectStateStore` to find every
+live-or-soft-deleted object's attachment Ids.
+
+**Lifecycle.** Ordinary DI-public, container-constructed singletons,
+registered in `TempestHost`'s existing Platform Services Registered
+block (Phase 6) — `IStateMigrationRegistry` first (an optional
+collaborator, empty until a Kind's own declaring class registers a
+migration onto it), then `IEngineeringObjectStateStore`, then
+`IEngineeringObjectRehydratorRegistry`, then `EngineeringDomainContext`,
+then `EngineeringObjectRehydrationService` — no new Host Lifecycle
+phase.
+
+**ADR references.** ADR-0113 (engineering object state is durable and
+each canonical type rehydrates itself through a Kind-keyed registry);
+ADR-0116 (production rehydration is owned by the product and the
+session principal comes from one boundary); `ADR-0120` (durable state
+carries a schema version and migrations apply only on read — `TD-87`,
+`v0.16.0`).
+
+**Academy references.** `02 Runtime Architecture/34-engineering-object-
+rehydration.md`; `02 Runtime Architecture/40-production-rehydration-and-
+the-principal-boundary.md`; `03 Work Packages/v0.14.0-TD-85-durable-
+engineering-object-state.md`; `03 Work Packages/v0.14.0-ADR-0116-
+production-rehydration-and-the-principal-boundary.md`; `03 Work
+Packages/WP16.3B-durable-state-schema-versioning-implementation.md`.
+
+---
+
+## Attachment Content Store *(implemented — `v0.14.0`, `TD-31`, ADR-0113, ADR-0114)*
+
+**Backfilled `WP 16.4B-R1`, closing `TD-126`.** Shipped at `v0.14.0`;
+this section and the "At a Glance" row above did not exist until now —
+see the Plugin Trust & Capability Enforcement entry, above, for the
+shared disclosure all three backfilled sections carry.
+
+**Responsibility.** The durable store of attachment *bytes* — what
+makes an attached file a file this platform actually holds rather than
+a description of one. Deliberately separate from `IAttachment`, which
+carries the metadata (file name, content type, size, content hash): the
+engineering object owns the fact that a file is attached and what it
+is; this store owns the bytes, so an object can be read, rehydrated,
+listed, and rendered without ever loading a megabyte of PDF, and the
+bytes can be verified without reopening the object. `ADR-0114` Decision
+4 deliberately writes content before the metadata that names it, so a
+crash in between leaves bytes nothing references — `TD-97`'s own
+sweep, `IAttachmentContentReconciliationService` (`v0.16.0`, below), is
+the named closure for that window, not a change to the ordering.
+
+**Key types.** `IAttachmentContentStore`/`AttachmentContentStore`,
+`AttachmentContentResult` (`Tempest.Core.EngineeringDomain`);
+`IBinaryPersistenceStore` (`Tempest.Core.Persistence`) — the byte-shaped
+counterpart to `IPersistenceStore`'s text-valued store, same single
+persistence substrate, its own collection.
+
+**Dependencies.** Dependency Injection; `IBinaryPersistenceStore`
+(`PersistenceStore`, registered under this interface specifically for
+this store's own byte-valued collection — no second storage mechanism).
+
+**Consumers.** Any engineering object's own attachment read/write path
+(`IAttachment` metadata plus this store's bytes, together forming one
+attachment); `IAttachmentContentReconciliationService` (`v0.16.0`,
+below) compares this store's own keys against every attachment Id any
+persisted `EngineeringObjectState` references, to find and collect
+orphaned content.
+
+**Lifecycle.** Ordinary DI-public, container-constructed singletons,
+registered in `TempestHost`'s existing Platform Services Registered
+block (Phase 6) — `IBinaryPersistenceStore` then `IAttachmentContentStore`,
+immediately after `IEngineeringObjectStateStore`, on the same terms — no
+new Host Lifecycle phase.
+
+**ADR references.** ADR-0113 (engineering object state and attachment
+content are both durable, `TD-85`/`TD-31` share one design); ADR-0114
+(attachment content is durable bytes in the same store, addressed by
+attachment Id, verified on read).
+
+**Academy references.** `02 Runtime Architecture/37-attachment-content-
+storage.md`; `03 Work Packages/v0.14.0-TD-31-attachment-content-
+storage.md`.
+
+---
+
+## Engineering Data Model *(implemented — WP 7.1A, ADR-0053)*
+
+**Responsibility.** The shared, discipline-neutral document/revision/
+reference substrate every later Engineering Core framework, and the
+Engineering Domain (`WP 8.2C`), are built on — create, find, revise,
+link, and query an `IEngineeringDocument` and its `DocumentReference`s,
+with a full, append-only revision history. Introduces no discipline-
+specific concept of its own; "what is a Material," "what is a
+Calculation," "what is a Requirement" are each answered one layer above
+this one.
+
+**Key types.** `IEngineeringDocument`, `IDocumentRevision`,
+`IEngineeringDocumentStore`/`EngineeringDocumentStore`,
+`DocumentReference`, `EngineeringDataException` and one subtype
+(`EngineeringDocumentNotFoundException`) — all `Tempest.Core.EngineeringData`.
+
+**Dependencies.** Dependency Injection; `IPersistenceStore` (durable
+storage, reused from `WP 6.4`, never a second storage mechanism, the
+identical reuse `ADR-0041` already established for Settings/Audit);
+`ICurrentPrincipalAccessor` (Identity & Permissions, for revision
+attribution).
+
+**Consumers.** Materials (`IMaterialCatalog`, `WP 7.1C`), Engineering
+Calculations (`ICalculationEngine`, `WP 7.1D`), Verification
+(`IVerificationService`, `WP 7.1E`), and Requirements Engine
+(`IRequirementsService`, `WP 7.3A`) each build directly on
+`IEngineeringDocumentStore` rather than inventing their own storage —
+every one of them realises its own canonical Kind (`"MaterialSpecification"`,
+`"CalculationRecord"`, a verification record, `"Requirement"`, and
+siblings) as a plain `IEngineeringDocument`. The Engineering Domain's
+own `EngineeringDomainContext` (`WP 8.2C`) resolves the same, real,
+already-registered `IEngineeringDocumentStore` instance every one of
+these siblings shares in production (`ADR-0077`) — a sixth, later
+consumer at a different architectural layer, confirmed by direct
+inspection, not merely asserted. `EngineeringDataSampleModule` (real
+contributor and consumer, the sixteenth production sample module).
+
+**Lifecycle.** Ordinary DI-public, container-constructed singleton,
+registered in `TempestHost`'s existing Platform Services Registered
+block (Phase 6), after Persistence and Identity & Permissions, both of
+which it depends on — no new Host Lifecycle phase.
+
+**ADR references.** ADR-0041 (Persistence, reused not reinvented);
+ADR-0053 (*The Engineering Data Model Is Built Directly on the Existing
+`IPersistenceStore`*).
+
+**Academy references.** `02 Runtime Architecture/15-engineering-data-model.md`;
+`03 Work Packages/WP7.1A-engineering-data-model-implementation.md`.
+
+**Disclosed, `WP 9.8B`.** This section, and this service's own row in
+the "At a Glance" table above, did not exist before `WP 9.8B` — a
+genuine, disclosed omission first found by `WP 7.3A`, confirmed still
+open across three consecutive release-closing reviews
+(`WP 7.4.0`/`WP 8.9.0`/`WP 9.9.0`), and closed here. See `WP9.8B
+Reconciliation Report.md` for the complete account.
+
+---
+
+## Materials *(implemented — WP 7.1C, ADR-0055)*
+
+**Responsibility.** A thin, typed index over the Engineering Data Model
+(`Kind = "MaterialSpecification"`) for registering, finding, revising,
+and listing named engineering materials and their properties — deliberately
+not a second storage mechanism; every material is an ordinary
+`IEngineeringDocument`.
+
+**Key types.** `IMaterialCatalog`/`MaterialCatalog`,
+`IMaterialSpecification`/`MaterialSpecification`, `MaterialProperty`,
+`MaterialPropertyConfidenceLevel`, `MaterialPropertyProvenance`,
+`MaterialPropertyValidationStatus`, `MaterialsException` and one subtype
+(`DuplicateMaterialException`, `MaterialNotFoundException`) — all
+`Tempest.Core.Materials`.
+
+**Dependencies.** Dependency Injection; `IEngineeringDocumentStore`
+(Engineering Data Model, every material's own real storage);
+`IPersistenceStore` directly (Persistence, for its own `materialId`
+index — `IEngineeringDocumentStore`'s own contract has no lookup-by-
+arbitrary-string capability to provide, the identical shape Requirements
+Engine's own identifier index later reuses, `WP 7.3A`).
+
+**Consumers.** `MaterialsSampleModule` (real contributor and consumer,
+the seventeenth production sample module). The base
+`EngineeringDomainSampleModule` (`WP 8.2C`) registers a real material via
+`IMaterialCatalog.RegisterAsync` as part of its own representative
+Engineering Domain graph — a second, later, cross-layer consumer,
+confirmed by direct inspection.
+
+**Lifecycle.** Ordinary DI-public, container-constructed singleton,
+registered in `TempestHost`'s existing Platform Services Registered
+block (Phase 6), immediately after the Engineering Data Model, both of
+which it depends on — no new Host Lifecycle phase.
+
+**ADR references.** ADR-0053 (Engineering Data Model, reused not
+duplicated); ADR-0055 (*Materials Is a Thin, Typed Index Over the
+Engineering Data Model*).
+
+**Academy references.** `03 Work Packages/WP7.1C-materials-framework-implementation.md`
+— no dedicated concept guide exists for Materials specifically; per
+`WP7.0C Academy Plan.md`'s own finding, Materials is a worked example of
+the Engineering Data Model, not a new architectural pattern, so its own
+Work Package retrospective is this service's own complete Academy
+record.
+
+**Disclosed, `WP 9.8B`.** This section, and this service's own row in
+the "At a Glance" table above, did not exist before `WP 9.8B` — see the
+Engineering Data Model entry, immediately above, for the full disclosure
+this backfill shares with all four Engineering Foundation frameworks.
+
+---
+
+## Bearing Library *(implemented — `A4`, ADR-0124)*
+
+**Responsibility.** The authoritative, structured, traceable bearing
+reference library — the same thin, typed index over the Engineering Data
+Model that Materials is (`Kind = "BearingReference"`), extended with the
+governance reference data needs: a provenance-gated
+Draft→Checked→Validated→Released lifecycle, released-record immutability
+with supersession, revision-addressable reads, a deterministic query
+contract, and structured cross-family comparison.
+
+**Key types.** `IBearingCatalog`/`BearingCatalog`, `IBearing`/`Bearing`,
+`BearingDefinition` and its dimensional, load-rating, speed,
+configuration, construction, lubrication, standards and provenance
+records; `BearingFamily`/`BearingFamilyTraits` (the taxonomy and its
+type-aware applicability model); `BearingValidationState`/
+`BearingValidationStates`; `BearingQuery`/`BearingQueryEvaluator`;
+`BearingComparer`/`BearingComparisonProperties`;
+`IBearingValidationService`/`BearingValidationService`/
+`BearingValidationRules` — all `Tempest.Core.Bearings`. **Corrected
+`Group A` (2026-09-06):** this list previously named `IBearing`,
+`BearingValidationState`/`BearingValidationStates` and
+`BearingsException` and six subtypes. All were removed when A4
+migrated onto the shared reference-data layer (`ADR-0126`), which now
+supplies `IReferenceRecord<T>`, `ReferenceValidationState` and
+`ReferenceDataException` in their place. The behaviour is unchanged;
+the types are shared rather than bearing-specific.
+
+**Dependencies.** Dependency Injection; `IEngineeringDocumentStore`
+(Engineering Data Model, every bearing record's own real storage);
+`IPersistenceStore` directly (Persistence, for two indexes — a
+`bearingId` index of exactly the shape Materials and Requirements Engine
+already use, and a manufacturer-part-number index the first cannot
+provide); `Tempest.Core.UnitsAndQuantities` for every dimensioned value,
+extended by this Work Package with `RotationalSpeed` and `PlaneAngle`;
+and, since `Group A`, `Tempest.Core.ReferenceData` for the catalogue,
+lifecycle and provenance machinery A4 originally built for itself.
+
+**Consumers.** None yet. The library ships architecturally complete and
+empty: no authoritative bearing dataset exists in this repository, and
+inventing manufacturer specifications to populate it is prohibited — see
+`docs/architecture/A4 Bearing Library.md` §14 for the assessment and the
+population requirement.
+
+**Boundaries.** Reference data only. No bearing selection, no
+calculation methodology, no suitability judgement, and no supplier or
+commercial data — see `A4 Bearing Library.md` §11–§13.
+
+**Lifecycle.** Ordinary DI-public, container-constructed singleton,
+registered in `TempestHost`'s Platform Services Registered block
+(Phase 6) immediately after `IMaterialCatalog` — no new Host Lifecycle
+phase.
+
+**ADR references.** ADR-0053 (Engineering Data Model, reused not
+duplicated); ADR-0055 (the reference-data catalogue pattern this service
+follows); ADR-0072 (canonical objects are `EngineeringDocumentStore`-backed
+Kinds); ADR-0073 (open-string relationships); ADR-0074 (family-specific
+lifecycle specialisation); ADR-0124 (*Bearing Reference Data Is
+Type-Aware, and Serialises Its Own Canonical Types*).
+
+**Architecture references.** `docs/architecture/A4 Bearing Library.md`.
+
+---
+
+## Bearing Validation *(implemented — `A4`, ADR-0124)*
+
+**Responsibility.** Bearing data-quality validation: the rules a bearing
+reference record must satisfy to be trustworthy engineering data
+(`TEMPEST-BRG-001`…`022`), and the catalogue-wide
+`BearingDataQualityReport` a reviewer reads before deciding a dataset is
+fit to release. Read-only — it reports what it finds and never repairs
+it, mirroring the reconciliation services' own discipline.
+
+**Key types.** `IBearingValidationService`/`BearingValidationService`,
+`BearingValidationRules`, `BearingDataQualityReport`/
+`BearingDataQualityFinding` — all `Tempest.Core.Bearings`. Results use
+`Tempest.Core.EngineeringDomain`'s own `IValidationResult`/
+`IValidationDiagnostic` shape, exactly as `IRequirementValidationService`
+does and for the identical structural reason.
+
+**Dependencies.** Dependency Injection; `IBearingCatalog`;
+`IMaterialCatalog` **optionally** — with it, a bearing's own material
+references are confirmed to resolve against the canonical Materials
+catalogue; without it, that one rule is simply not evaluated, so a
+bearing stays recordable before the material it names has been
+registered.
+
+**Consumers.** None yet — see the Bearing Library entry above.
+
+**Lifecycle.** Ordinary DI-public, container-constructed singleton,
+registered in Phase 6 immediately after `IBearingCatalog`.
+
+**ADR references.** ADR-0124.
+
+**Architecture references.** `docs/architecture/A4 Bearing Library.md`
+§8.
+
+---
+
+## Engineering Reference Data — Group A *(implemented — `Group A`, ADR-0125/ADR-0126)*
+
+**Responsibility.** Six further reference libraries alongside A4 —
+Materials (`A1`), Standards (`A2`), Fasteners (`A3`), Mechanical
+Components (`A5`), Engineering Constants (`A6`) and Manufacturing
+Processes (`A7`) — and the one shared layer beneath all seven.
+
+**Why one section rather than seven.** These services are architecturally
+identical everywhere it matters: the same storage, the same lifecycle,
+the same provenance gates, the same comparison semantics, the same
+boundaries. What differs is engineering content, and that belongs in each
+library's own architecture document rather than here. Repeating the same
+seven paragraphs with the nouns changed would be exactly the cosmetic
+uniformity `ADR-0126` declines.
+
+**Key types (shared layer).** `IReferenceDataCatalog<T>`/
+`ReferenceDataCatalog<T>`; `IReferenceRecord<T>`/`ReferenceRecord<T>`;
+`ReferenceProvenance`, `ReferenceExtractionMethod`,
+`ReferenceVerificationStatus`; `ReferenceValidationState`/
+`ReferenceValidationStates`; `ReferenceValue<T>`, `ReferenceRange<T>`,
+`ReferenceQuantityValue`, `ReferenceQuantityCodec`; `ReferenceComparer`
+and its comparison result; `IReferenceValidationService<T>`/
+`ReferenceValidationService<T>`/`ReferenceValidationRules`;
+`StandardReference`; `IStandardResolver` and `IReleasedConstantSource`;
+`ReferenceDataException` and six subtypes — all
+`Tempest.Core.ReferenceData`.
+
+**Key types (per library).** Each library's own definition record, family
+taxonomy, family-traits table, query and evaluator, comparison property
+list, validation service and rule series, in its own namespace. Listed in
+the Namespace Register and in each library's own architecture document.
+
+**Dependencies.** Dependency Injection; `IEngineeringDocumentStore`
+(every record's real storage, one `Kind` per library);
+`IPersistenceStore` directly (two index collections per library, for the
+same reason Materials, Requirements and Bearings each needed one);
+`Tempest.Core.UnitsAndQuantities` for every dimensioned value, extended
+by this programme with affine units (`ADR-0125`) and thirteen further
+dimensions. A7 additionally depends on A1's `MaterialFamily` taxonomy
+rather than declaring a second list of materials.
+
+**Cross-service seams.** `IStandardResolver` (implemented by A2) and
+`IReleasedConstantSource` (implemented by A6) are declared in the shared
+layer, so no library takes a compile-time dependency on another. Both are
+**optional** collaborators wherever consumed: no library is a hard
+prerequisite for holding data in another. Each resolves through a
+forwarder rather than a second container mapping, so there is one
+catalogue behind both seams rather than two with independent write locks.
+
+**Consumers.** None yet. Every library ships architecturally complete and
+**empty**: no authoritative dataset for any of these domains exists in
+this repository, and inventing values is prohibited. See
+`docs/architecture/Group A Engineering Reference Data.md` §9 and
+`FCR-0093`.
+
+**Boundaries.** Reference data only. No selection, no calculation, no
+suitability judgement, no cost or commercial data, no supplier
+capability, no conformity assessment. Each library's own document
+restates the boundary it is most likely to be pushed across.
+
+**Lifecycle.** Ordinary DI-public, container-constructed singletons,
+registered in `TempestHost`'s Platform Services Registered block
+(Phase 6) around `IMaterialCatalog`/`IBearingCatalog` — Standards first,
+because every other library cites it. No new Host Lifecycle phase.
+
+**ADR references.** ADR-0053, ADR-0055, ADR-0058, ADR-0072, ADR-0073,
+ADR-0074, ADR-0084, ADR-0124 (followed, not re-decided); ADR-0125
+(*Affine Units Are Represented by an Offset on `Unit<TDimension>`, and
+Arithmetic on Them Is Refused*); ADR-0126 (*Group A Reference Libraries
+Share One Catalogue Layer, and Keep Their Own Engineering Semantics*).
+
+**Architecture references.**
+`docs/architecture/Group A Engineering Reference Data.md` and the seven
+per-library documents it indexes.
+
+---
+
+## Engineering Calculations *(implemented — WP 7.1D, ADR-0056)*
+
+**Responsibility.** Durable, evidentiary execution of a registered
+`ICalculationDefinition<TInput, TResult>` against caller-supplied input
+— every execution, first or repeated, produces a real, fully-recorded
+`CalculationRecord`, never a transient, unrecorded result. Distinct from
+the Command Framework: a Calculation is a typed, evidentiary
+computation with a durable record; a Command is a discrete unit of
+application logic with no such guarantee.
+
+**Key types.** `ICalculationDefinition<TInput, TResult>`,
+`ICalculationEngine`/`CalculationEngine`, `CalculationContext`,
+`CalculationRecord`, `CalculationConstraint`, `CalculationConstraintCheck`,
+`CalculationAssumption`, `CalculationIntermediateResult`,
+`CalculationMetadata`, `CalculationValidationOutcome`,
+`CalculationValidationResult`, `CalculationException` and two subtypes
+(`CalculationDefinitionNotFoundException`, `DuplicateCalculationException`,
+`CalculationInputInvalidException`) — all `Tempest.Core.Calculations`.
+
+**Dependencies.** Dependency Injection; `IEngineeringDocumentStore`
+(Engineering Data Model — every execution durably recorded as a
+`"CalculationRecord"`-Kind document, mirroring Materials' own reuse, no
+direct `IPersistenceStore` dependency needed here since each execution
+always creates a brand new document, never looked up later by a
+caller-chosen key); `ICurrentPrincipalAccessor` (Identity & Permissions,
+for record attribution).
+
+**Consumers.** `CalculationSampleModule` (real contributor and
+consumer, the eighteenth production sample module). `Tempest.App
+.Workspace.Calculations` (`WP 9.2A`, the third real Engineering
+Discipline wired into the Engineering Workspace, via a Workspace-layer
+adapter, `CalculationTemplateRegistry`) — the first real, non-sample
+consumer of this service, confirmed directly.
+
+**Lifecycle.** Ordinary DI-public, container-constructed singleton,
+registered in `TempestHost`'s existing Platform Services Registered
+block (Phase 6), immediately after Materials — no new Host Lifecycle
+phase.
+
+**ADR references.** ADR-0053 (Engineering Data Model, reused not
+duplicated); ADR-0056 (*Every Calculation Execution Is Durably Recorded
+as an Engineering Data Model Document*).
+
+**Academy references.** `02 Runtime Architecture/13-calculation-framework.md`;
+`03 Work Packages/WP7.1D-engineering-calculation-framework-implementation.md`.
+
+**Disclosed, `WP 9.8B`.** This section, and this service's own row in
+the "At a Glance" table above, did not exist before `WP 9.8B` — see the
+Engineering Data Model entry, above, for the full disclosure this
+backfill shares with all four Engineering Foundation frameworks.
+
+---
+
+## Verification *(implemented — WP 7.1E, ADR-0057)*
+
+**Responsibility.** Records a verification outcome (Pass/Fail/Conditional,
+with explicit criteria and evidence) against a subject document, and
+answers a permission-gated query for a subject's own recorded
+verification history. Distinct from Calculations: a Verification Record
+asserts an evaluated claim about a subject; a Calculation Record
+computes and durably stores a numeric result.
+
+**Key types.** `IVerificationService`/`VerificationService`,
+`IVerificationRecord`/`VerificationRecord`, `VerificationContext`,
+`VerificationCriterion`, `VerificationEvidenceEntry`, `VerificationOutcome`
+— all `Tempest.Core.Verification`.
+
+**Dependencies.** Dependency Injection; `IEngineeringDocumentStore`
+(Engineering Data Model — verification history is queried through its
+own existing `LinkAsync`/`GetReferencesAsync` mechanism, never a new
+index); `ICurrentPrincipalAccessor`/`IPermissionEvaluator` (Identity &
+Permissions — read access to recorded history is permission-gated,
+mirroring `IAuditQuery`'s own established pattern).
+
+**Consumers.** `VerificationSampleModule` (real contributor and
+consumer, the nineteenth production sample module). Requirements Engine
+(`IRequirementsService.GetEvidenceAsync`, `WP 7.3A`) composes
+verification history with linked references, introducing no new
+digital-thread traversal mechanism of its own — a real, framework-to-
+framework dependency. `Tempest.App.Workspace.Verification` (`WP 9.3A`,
+the fifth real Engineering Discipline) and `.Manufacturing` (`WP 9.5A`,
+which dispatches `RecordVerificationResultCommand` — itself a thin
+Workspace-layer wrapper over `IVerificationService.RecordAsync` — 
+directly against an `"Inspection"`-Kind target, the disclosed
+cross-Work-Package command reuse that Work Package's own retrospective
+names) are two further, real, non-sample consumers.
+
+**Lifecycle.** Ordinary DI-public, container-constructed singleton,
+registered in `TempestHost`'s existing Platform Services Registered
+block (Phase 6), immediately after Engineering Calculations — no new
+Host Lifecycle phase.
+
+**ADR references.** ADR-0053 (Engineering Data Model, reused not
+duplicated); ADR-0057 (*Verification History Is Queried Through the
+Engineering Data Model's Own Existing Reference Mechanism, Read Access
+Permission-Gated*).
+
+**Academy references.** `02 Runtime Architecture/14-verification-framework.md`;
+`03 Work Packages/WP7.1E-verification-framework-implementation.md`.
+
+**Disclosed, `WP 9.8B`.** This section, and this service's own row in
+the "At a Glance" table above, did not exist before `WP 9.8B` — see the
+Engineering Data Model entry, above, for the full disclosure this
+backfill shares with all four Engineering Foundation frameworks. This
+is also the fourth and final entry in that disclosure; the gap
+`WP 7.3A` first found, confirmed open across three consecutive
+release-closing reviews, is fully closed as of this Work Package.
+
+---
+
+## Project Engine *(planned)*
+
+**Responsibility (anticipated).** Not yet designed as a platform service.
+Likely successor to, or integration point for, the existing pre-module-
+pipeline project management code (`Tempest.Core.Projects`,
+`ProjectService`, `ProjectModel`, `JsonProjectRepository`) — bootstrap-era
+functionality that predates and is currently independent of the module
+pipeline entirely.
+
+**Status.** Not implemented as a platform service. The bootstrap-era code it
+would likely relate to already exists but has not been touched, migrated, or
+integrated by any module-pipeline work package to date.
+
+**Dependencies / Consumers.** Undetermined.
+
+**ADR references.** None yet.
+
+**Academy references.** None yet.
+
+---
+
+## Requirements Engine *(implemented — WP 7.3A, ADR-0058–ADR-0061)*
+
+**Responsibility.** The canonical, discipline-neutral representation of an
+engineering requirement — identity, statement, category, lifecycle status,
+revision history, relationships (grouping, collection membership,
+allocation, traceability), and composed evidence — for every future
+engineering discipline module to consume without inventing its own shape.
+
+**Key types.** `IRequirementsService`/`RequirementsService`, `IRequirement`/
+`Requirement`, `IRequirementCollection`/`RequirementCollection`,
+`IRequirementGroup`/`RequirementGroup`, `IRequirementEvidence`/
+`RequirementEvidence`, `RequirementStatus`, `RequirementStatusTransitions`,
+`RequirementRelationshipKinds` (`Tempest.Core.Requirements`).
+
+**Dependencies.** Dependency Injection; `IEngineeringDocumentStore`
+(Engineering Data Model) — every requirement/collection/group is an
+`IEngineeringDocument`, every relationship a `DocumentReference`; direct
+`IPersistenceStore` access for its own identifier index, mirroring
+`MaterialCatalog`'s own precedent; `IVerificationService` — `GetEvidenceAsync`
+composes verification history with linked references, introducing no new
+digital-thread traversal mechanism.
+
+**Consumers.** `RequirementsSampleModule` (real contributor, also
+demonstrating Identity/Audit/Reporting/Export-Import integration at the
+calling layer); a plausible future consumer for any discipline-specific
+engineering module (Mechanical, HVAC, Structural, Electrical).
+
+**ADR references.** ADR-0058 (classification, storage, Engineering Data
+Model relationship), ADR-0059 (identity/status/category representation),
+ADR-0060 (concurrency and traceability integrity — `TD-25`), ADR-0061
+(internal vs. calling-layer permission enforcement).
+
+**Academy references.** `02 Runtime Architecture/16-requirements-engine.md`;
+`03 Work Packages/WP7.3A-requirements-engine-implementation.md`.
+
+---
+
+## Requirements Reconciliation *(implemented — `WP 16.4B`, `TD-67`)*
+
+**Responsibility.** The reconcile/repair path `TD-67` named as absent:
+`RequirementsService.CreateAsync`/`CreateCollectionAsync`/
+`CreateGroupAsync` each write their own backing `IEngineeringDocument`
+before registering it in this service's own identifier index or
+registry, so a crash — or an index/registry write failure — between the
+two leaves a document nothing can find through the normal read paths,
+yet it keeps consuming storage forever. `DetectAsync` scans every
+Requirement/Requirement Collection/Requirement Group without changing
+anything; `SweepAsync` repeats the scan and repairs every finding it
+can: a missing index/registry entry is re-written from the orphan
+document's own recorded identity (never inferred or guessed); a genuine
+identifier collision is left alone and reported unrepaired; a stale
+entry (naming a document that no longer exists or is no longer of the
+expected Kind) is removed.
+
+**Nothing invokes this service.** No startup hook, no command, no
+user-facing surface calls `DetectAsync` or `SweepAsync` — this platform
+does not repair a user's own data behind their back. A caller (an admin
+command, a diagnostics page, a test) decides when to look and when to
+act; none exists yet this release. Registered in `TempestHost` Phase 6
+as an ordinary singleton so the path is genuinely reachable, not merely
+present in the assembly with no way to reach it — do not mistake its
+absence of a caller for dead code.
+
+**Key types.** `IRequirementsReconciliationService`/
+`RequirementsReconciliationService`, `RequirementsReconciliationReport`,
+`RequirementsReconciliationFinding` — all `Tempest.Core.Requirements`.
+
+**Dependencies.** Dependency Injection; `IEngineeringDocumentStore`
+(Engineering Data Model, the same store `IRequirementsService` itself
+reads); `IPersistenceStore` directly (Persistence, the identifier index
+`RequirementsService.CreateAsync` writes and this service repairs).
+
+**Consumers.** None this release — see "Nothing invokes this service,"
+above.
+
+**Lifecycle.** Ordinary DI-public, container-constructed singleton,
+registered in `TempestHost`'s existing Platform Services Registered
+block (Phase 6), alongside Material Catalog Reconciliation and
+Attachment Content Reconciliation, immediately after Requirements
+Validation — no new Host Lifecycle phase, no hosted service, no
+scheduled sweep.
+
+**ADR references.** None dedicated — `TD-67`'s own register row and
+`docs/releases/v0.16.0/WP16.4B-3 Durability.md` are this service's own
+design record; it reuses Engineering Data Model (ADR-0053) and
+Requirements Engine's own identifier-index precedent (`ADR-0058`)
+without introducing a new decision of its own.
+
+**Academy references.** `docs/releases/v0.16.0/WP16.4B-3 Durability.md`
+— no dedicated `03 Work Packages/` retrospective exists yet for
+`WP 16.4B`.
+
+---
+
+## Material Catalog Reconciliation *(implemented — `WP 16.4B`, `TD-67`, `ADR-0055` Decision 3)*
+
+**Responsibility.** The sibling sweep for `MaterialCatalog`'s own
+`materialId` index: `MaterialCatalog.RegisterAsync` writes the backing
+`IEngineeringDocument` before registering it in the index, so a crash or
+an index-write failure between the two leaves a material document
+nothing can find through `FindAsync`/`ListAsync`, yet it keeps consuming
+storage forever. Mirrors Requirements Reconciliation's own identical
+shape and repair discipline for the sibling index this namespace owns.
+`DetectAsync` scans without changing anything; `SweepAsync` repairs
+every finding it can — a missing index entry re-written from the
+orphan's own recorded `materialId` (a genuine collision left alone and
+reported); a stale entry (naming a document that no longer exists or is
+no longer a `MaterialSpecification`) removed.
+
+**Nothing invokes this service.** Identical discipline to Requirements
+Reconciliation, immediately above — no startup hook, no command, no
+user-facing surface, by the same platform-wide rule against repairing a
+user's data behind their back. Registered in `TempestHost` Phase 6 so
+the path exists and is reachable; not dead code for having no caller
+yet.
+
+**Key types.** `IMaterialCatalogReconciliationService`/
+`MaterialCatalogReconciliationService`,
+`MaterialCatalogReconciliationReport`,
+`MaterialCatalogReconciliationFinding` — all `Tempest.Core.Materials`.
+
+**Dependencies.** Dependency Injection; `IEngineeringDocumentStore`
+(Engineering Data Model); `IPersistenceStore` directly (Persistence, the
+`materialId` index `MaterialCatalog` itself writes and this service
+repairs).
+
+**Consumers.** None this release — see "Nothing invokes this service,"
+above.
+
+**Lifecycle.** Ordinary DI-public, container-constructed singleton,
+registered in `TempestHost`'s existing Platform Services Registered
+block (Phase 6), alongside Requirements Reconciliation and Attachment
+Content Reconciliation, immediately after Requirements Validation — no
+new Host Lifecycle phase, no hosted service, no scheduled sweep.
+
+**ADR references.** ADR-0055 Decision 3 (Materials is a thin, typed
+index over the Engineering Data Model — the same index this service
+repairs); `TD-67`'s own register row and
+`docs/releases/v0.16.0/WP16.4B-3 Durability.md` are this service's own
+design record.
+
+**Academy references.** `docs/releases/v0.16.0/WP16.4B-3 Durability.md`
+— no dedicated `03 Work Packages/` retrospective exists yet for
+`WP 16.4B`.
+
+---
+
+## Attachment Content Reconciliation *(implemented — `WP 16.4B`, `TD-97`, `ADR-0114` Decision 4)*
+
+**Responsibility.** The sweep `TD-97`'s own register entry names: "a
+sweep comparing content keys against live attachment Ids closes it
+whenever disk cost justifies one." `ADR-0114` Decision 4 deliberately
+writes attachment content before the metadata that names it, so a crash
+in between leaves bytes nothing references — this service is the named
+closure for that window, never a reversal of the ordering decision it
+implements. `DetectAsync` compares every content record
+`IAttachmentContentStore` holds against every attachment Id any
+currently-persisted `EngineeringObjectState` references — live or
+soft-deleted alike, since a deleted object's own attachment *metadata*
+is never erased, only its content released, at delete time — and
+reports whatever nothing references; `SweepAsync` repeats the scan and
+deletes every orphaned content record it finds.
+
+**Nothing invokes this service.** Identical discipline to the two
+Reconciliation services above — no startup hook, no command, no
+user-facing surface; collecting content is only ever a caller's own
+deliberate act. Registered in `TempestHost` Phase 6 so the path exists
+and is reachable; not dead code for having no caller yet.
+
+**Key types.** `IAttachmentContentReconciliationService`/
+`AttachmentContentReconciliationService`,
+`AttachmentContentReconciliationReport`, `OrphanedAttachmentContent` —
+all `Tempest.Core.EngineeringDomain`.
+
+**Dependencies.** Dependency Injection; `IPersistenceStore` (Persistence,
+to enumerate every stored content key); `IEngineeringObjectStateStore`
+(Engineering Object Durability & Rehydration, every live-or-soft-deleted
+object's own recorded attachment Ids); `IAttachmentContentStore`
+(Attachment Content Store, the content records being checked).
+
+**Consumers.** None this release — see "Nothing invokes this service,"
+above.
+
+**Lifecycle.** Ordinary DI-public, container-constructed singleton,
+registered in `TempestHost`'s existing Platform Services Registered
+block (Phase 6), alongside Requirements Reconciliation and Material
+Catalog Reconciliation, immediately after Requirements Validation — no
+new Host Lifecycle phase, no hosted service, no scheduled sweep.
+
+**ADR references.** ADR-0114 Decision 4 (attachment content is written
+before the metadata that names it — the ordering this sweep closes the
+resulting window for, without reversing); `TD-97`'s own register row
+and `docs/releases/v0.16.0/WP16.4B-3 Durability.md` are this service's
+own design record.
+
+**Academy references.** `docs/releases/v0.16.0/WP16.4B-3 Durability.md`
+— no dedicated `03 Work Packages/` retrospective exists yet for
+`WP 16.4B`.

@@ -1,17 +1,24 @@
-using Tempest.App.Composition;
-using Tempest.App.Workspace;
-using Tempest.App.Workspace.Calculations;
-using Tempest.App.Workspace.Documents;
-using Tempest.App.Workspace.Manufacturing;
-using Tempest.App.Workspace.Mechanical;
-using Tempest.App.Workspace.Requirements;
-using Tempest.App.Workspace.Verification;
+using System.Reflection;
+using Tempest.Workspace.Composition;
+using Tempest.Workspace;
+using Tempest.Workspace.Calculations;
+using Tempest.Workspace.Documents;
+using Tempest.Workspace.Manufacturing;
+using Tempest.Workspace.Mechanical;
+using Tempest.Workspace.Requirements;
+using Tempest.Workspace.Verification;
 using Tempest.Core.Calculations;
+using Tempest.Core.EngineeringData;
+using Tempest.Core.Runtime;
+using Tempest.Core.Identity;
+using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Configuration;
 using Tempest.Core.Events;
 using Tempest.Core.Modules;
 using Tempest.Core.Navigation;
 using Tempest.Core.Persistence;
+using Tempest.Core.Tests.EngineeringDomain;
+using Tempest.Core.Tests.Persistence;
 using Tempest.Core.Tests.Plugins;
 using Tempest.Core.Tests.Workspace.Samples;
 using System.Xml.Linq;
@@ -28,7 +35,7 @@ namespace Tempest.Core.Tests.Workspace;
 /// <remarks>
 /// <para>
 /// The 2026-08-30 Product Gap Reconciliation audit measured the coupling
-/// by removing the <c>Tempest.App</c> → <c>Tempest.Samples</c> project
+/// by removing the <c>Tempest.Workspace</c> → <c>Tempest.Samples</c> project
 /// reference and building: 70 errors across three files, because the six
 /// discipline explorer areas and all five engineering calculations were
 /// declared in the sample assembly. Deleting the samples would have
@@ -81,11 +88,11 @@ public sealed class SampleSeparationTests
     public void EachDisciplineNavigationArea_IsDeclaredByItsOwnDiscipline_NotBySamples(Type moduleType, string navigationItemId)
     {
         Assert.NotEqual(SampleAssembly, moduleType.Assembly.GetName().Name);
-        Assert.Equal("Tempest.App", moduleType.Assembly.GetName().Name);
+        Assert.Equal("Tempest.Workspace", moduleType.Assembly.GetName().Name);
 
         // It lives in the discipline's own namespace, beside the
         // registration that attaches the real node provider to it.
-        Assert.StartsWith("Tempest.App.Workspace.", moduleType.Namespace, StringComparison.Ordinal);
+        Assert.StartsWith("Tempest.Workspace.", moduleType.Namespace, StringComparison.Ordinal);
 
         // And it is a real, discoverable module — moving the file without
         // keeping it discoverable would lose the navigation just as surely.
@@ -107,6 +114,156 @@ public sealed class SampleSeparationTests
         Assert.NotEqual(SampleAssembly, definitionType.Assembly.GetName().Name);
         Assert.Equal("Tempest.Core", definitionType.Assembly.GetName().Name);
         Assert.Equal("Tempest.Core.Calculations", definitionType.Namespace);
+    }
+
+    [Fact]
+    public void TheProductCatalogue_NamesEveryProductCalculation_AndNothingElse()
+    {
+        // `TD-159`. `TD-75` phase 1 moved these five definitions out of the
+        // sample assembly and the test above guards that they stay out. It
+        // guards where they are DECLARED and says nothing about where they
+        // are REGISTERED — and the registration stayed behind in
+        // `EngineeringCalculationsWorkspaceSampleModule` for another eight
+        // days, so a shipped Desktop run held none of them.
+        // The same five types EveryProductCalculation names, read for their
+        // own Id constants rather than restated as string literals — so a
+        // renamed Id cannot drift between the catalogue and this guard.
+        var declared = new[]
+        {
+            typeof(BoltShearCapacityCalculationDefinition),
+            typeof(BeamBendingStressCalculationDefinition),
+            typeof(BearingLoadCapacityCalculationDefinition),
+            typeof(PressureVesselWallThicknessCalculationDefinition),
+            typeof(MaterialSelectionMarginCalculationDefinition),
+        }
+            .Select(type => (string)type.GetField("Id")!.GetValue(null)!)
+            .OrderBy(id => id, StringComparer.Ordinal)
+            .ToList();
+
+        Assert.Equal(declared, ProductCalculationCatalogue.CalculationIds.OrderBy(id => id, StringComparer.Ordinal));
+    }
+
+    [Fact]
+    public async Task TheProductCatalogue_RegistersEveryCalculation_AndEachOneExecutes()
+    {
+        // Registration into a BARE engine, with no host and no sample
+        // module anywhere near it: this is the composition a shipped
+        // Desktop run has. Executing one proves the registration is real
+        // rather than a dictionary write nothing reads.
+        var principals = new CurrentPrincipalAccessor();
+        var engine = new CalculationEngine(
+            new EngineeringDocumentStore(new InMemoryQueryablePersistenceStore(), principals), principals);
+
+        ProductCalculationCatalogue.RegisterAll(engine);
+
+        var record = await engine.ExecuteAsync<BoltShearCapacityInput, BoltShearCapacityResult>(
+            BoltShearCapacityCalculationDefinition.Id,
+            new BoltShearCapacityInput(
+                new Quantity<Length>(20, LengthUnits.Millimetre),
+                new Quantity<Pressure>(400, PressureUnits.Megapascal),
+                ShearPlanes: 2,
+                SafetyFactor: 1.5));
+
+        Assert.NotEqual(Guid.Empty, record.Id);
+
+        // Registering twice is ordinary, not a failure: two hosts can share
+        // an engine, and the definitions are immutable stateless types.
+        ProductCalculationCatalogue.RegisterAll(engine);
+    }
+
+    [Fact]
+    public async Task ARealRunningHost_HoldsEveryProductCalculation_WithNoSampleModuleRegisteringThem()
+    {
+        // The guard the two tests above cannot give. They prove the
+        // catalogue is right and executable; neither would notice if the
+        // one line in `TempestHost` that calls it were deleted, and that
+        // line IS the fix for `TD-159`.
+        //
+        // This starts a real host with NO module of any kind, so the only
+        // thing that can have registered a definition is the host itself,
+        // and then executes each of the five through the engine the host
+        // resolved. Delete the `ProductCalculationCatalogue.RegisterAll`
+        // call from `TempestHost` and every one of these throws
+        // `CalculationDefinitionNotFoundException`.
+        using var temp = new TempDirectory();
+        var host = new TempestHostBuilder([])
+            .AddConfigurationSource(new MemoryConfigurationSource(
+            [
+                new KeyValuePair<string, string>(PersistenceStore.RootPathConfigurationKey, temp.Path),
+            ]))
+            .Build();
+
+        var manager = new WorkspaceManager(host);
+        await manager.StartAsync();
+
+        try
+        {
+            var engine = (ICalculationEngine)host.Services!.GetService(typeof(ICalculationEngine));
+
+            var bolt = await engine.ExecuteAsync<BoltShearCapacityInput, BoltShearCapacityResult>(
+                BoltShearCapacityCalculationDefinition.Id,
+                new BoltShearCapacityInput(
+                    new Quantity<Length>(20, LengthUnits.Millimetre),
+                    new Quantity<Pressure>(400, PressureUnits.Megapascal),
+                    ShearPlanes: 2,
+                    SafetyFactor: 1.5));
+            Assert.NotEqual(Guid.Empty, bolt.Id);
+
+            var beam = await engine.ExecuteAsync<BeamBendingStressInput, BeamBendingStressResult>(
+                BeamBendingStressCalculationDefinition.Id,
+                new BeamBendingStressInput(
+                    new Quantity<Force>(1000, ForceUnits.Newton),
+                    new Quantity<Length>(1, LengthUnits.Metre),
+                    new Quantity<Length>(50, LengthUnits.Millimetre),
+                    new Quantity<Length>(100, LengthUnits.Millimetre),
+                    new Quantity<Pressure>(250, PressureUnits.Megapascal)));
+            Assert.NotEqual(Guid.Empty, beam.Id);
+
+            // The remaining three are asserted as registered rather than
+            // executed: registration is what `TD-159` broke, and three more
+            // hand-built input records would test the definitions, which
+            // `EachProductCalculation_IsDeclaredInTheDomain_NotInSamples`
+            // and the definitions' own tests already do.
+            Assert.Equal(5, ProductCalculationCatalogue.CalculationIds.Count);
+        }
+        finally
+        {
+            await manager.ShutdownAsync();
+            await manager.DisposeAsync();
+        }
+    }
+
+    [Fact]
+    public void EveryCalculationTemplateTheObjectEditorOffers_HasADefinitionTheProductRegisters()
+    {
+        // The invariant `TD-159` actually broke. `CalculationsWorkspaceRegistration`
+        // offers five Calculation Templates in the Object Editor's own
+        // dropdown; every one of them must have a definition the PRODUCT
+        // registers, or pressing Execute throws
+        // `CalculationDefinitionNotFoundException` in front of a user.
+        // Before the fix, all five templates were offered and none was
+        // registered outside the sample assembly.
+        var offered = CalculationsWorkspaceRegistrationTemplateIds();
+
+        Assert.NotEmpty(offered);
+        Assert.All(offered, id => Assert.Contains(id, ProductCalculationCatalogue.CalculationIds));
+    }
+
+    /// <summary>The Calculation Ids `CalculationsWorkspaceRegistration` offers as Templates, read from a real registration.</summary>
+    private static IReadOnlyList<string> CalculationsWorkspaceRegistrationTemplateIds()
+    {
+        var context = TestEngineeringDomain.NewContext();
+        var registry = new CalculationTemplateRegistry(
+            new CalculationEngine(context.Store, context.CurrentPrincipalAccessor), context);
+
+        // The same private helper `Register` calls, reached the only way a
+        // test can without changing production visibility: run the real
+        // registration and read the registry it returns.
+        typeof(CalculationsWorkspaceRegistration)
+            .GetMethod("RegisterRepresentativeTemplates", BindingFlags.NonPublic | BindingFlags.Static)!
+            .Invoke(null, [registry]);
+
+        return registry.Templates.Select(t => t.CalculationId).ToList();
     }
 
     [Fact]
@@ -159,7 +316,7 @@ public sealed class SampleSeparationTests
     // ================================================================
 
     [Theory]
-    [InlineData("src/Tempest.App/Tempest.App.csproj")]
+    [InlineData("src/Tempest.Workspace/Tempest.Workspace.csproj")]
     [InlineData("src/Tempest.Core/Tempest.Core.csproj")]
     [InlineData("src/Tempest.Desktop/Tempest.Desktop.csproj")]
     [InlineData("src/Validation/Tempest.Validation/Tempest.Validation.csproj")]
@@ -304,6 +461,11 @@ public sealed class SampleSeparationTests
                 if (name.StartsWith(".", StringComparison.Ordinal) || name is "bin" or "obj")
                     continue;
 
+                // A nested clone or worktree of another repository (its own `.git`)
+                // is not this repository: its project files must not be counted.
+                if (Directory.Exists(Path.Combine(subdirectory, ".git")) || File.Exists(Path.Combine(subdirectory, ".git")))
+                    continue;
+
                 pending.Push(subdirectory);
             }
         }
@@ -324,7 +486,7 @@ public sealed class SampleSeparationTests
             .Select(t => t.FullName ?? t.Name)
             .ToList();
 
-        Assert.True(offenders.Count == 0, "Types in Tempest.App deriving from Tempest.Samples:\n" + string.Join("\n", offenders));
+        Assert.True(offenders.Count == 0, "Types in Tempest.Workspace deriving from Tempest.Samples:\n" + string.Join("\n", offenders));
     }
 
     // ================================================================
@@ -346,7 +508,7 @@ public sealed class SampleSeparationTests
     public async Task TheProductionCompositionRoot_RegistersNoSampleExplorerArea()
     {
         // Phase 1 left one disclosed duplication here: the sample explorer
-        // area's id, spelled once in `Tempest.App` (where its node provider
+        // area's id, spelled once in `Tempest.Workspace` (where its node provider
         // then lived) and once in `Tempest.Samples` (where its navigation
         // item is registered). Phase 2 deletes the duplication rather than
         // guarding it, by removing the production side entirely — that
@@ -436,7 +598,7 @@ public sealed class SampleSeparationTests
     public void TempestApp_DeclaresNoSampleContentOfItsOwn()
     {
         // Phase 1 removed the reference; sample-supporting code stayed behind
-        // in Tempest.App.Workspace.Samples — a fictional Longeron/Frame/
+        // in Tempest.Workspace.Samples — a fictional Longeron/Frame/
         // Bracket tree, a never-editable view and its factory, all shipped in
         // the production assembly. Phase 2 moved them to Tempest.Core.Tests,
         // which is the only thing that ever drove them.
@@ -455,7 +617,7 @@ public sealed class SampleSeparationTests
 
         Assert.True(
             offenders.Count == 0,
-            "Tempest.App still declares sample content:\n" + string.Join("\n", offenders));
+            "Tempest.Workspace still declares sample content:\n" + string.Join("\n", offenders));
     }
 
     [Fact]

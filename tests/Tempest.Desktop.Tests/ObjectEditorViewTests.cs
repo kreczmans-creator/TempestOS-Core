@@ -2,17 +2,17 @@ using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Headless.XUnit;
 using Avalonia.LogicalTree;
-using Tempest.App.Workspace;
-using Tempest.App.Workspace.Calculations;
+using Tempest.Workspace;
+using Tempest.Workspace.Calculations;
 using Tempest.Core.Commands;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Requirements;
 using Tempest.Desktop.Editors;
 using Tempest.Samples;
-using Tempest.App.Workspace.Documents;
-using Tempest.App.Workspace.Mechanical;
-using Tempest.App.Workspace.Requirements;
-using Tempest.App.Workspace.Verification;
+using Tempest.Workspace.Documents;
+using Tempest.Workspace.Mechanical;
+using Tempest.Workspace.Requirements;
+using Tempest.Workspace.Verification;
 
 namespace Tempest.Desktop.Tests;
 
@@ -145,7 +145,7 @@ public sealed class ObjectEditorViewTests
             // this file. The assertions below are unchanged and still fail if
             // the write genuinely never lands.
             var reread = await domainContext.Repository.FindAsync(target.Id);
-            var renameDeadline = DateTime.UtcNow.AddSeconds(2);
+            var renameDeadline = DesktopTestHelpers.Deadline(2);
             while ((reread is null || ((IHasBusinessIdentifier)reread).DisplayName != "Renamed By WP10.3A Test" || editor.IsDirty) && DateTime.UtcNow < renameDeadline)
             {
                 await Task.Delay(10);
@@ -198,7 +198,7 @@ public sealed class ObjectEditorViewTests
             // fails because the write merely took longer than an arbitrary
             // guess.
             IEngineeringObject? reread = null;
-            var deadline = DateTime.UtcNow.AddSeconds(2);
+            var deadline = DesktopTestHelpers.Deadline(2);
             while (DateTime.UtcNow < deadline)
             {
                 reread = await domainContext.Repository.FindAsync(target.Id);
@@ -333,7 +333,7 @@ public sealed class ObjectEditorViewTests
             var commandDispatcher = (ICommandDispatcher)host.Services!.GetService(typeof(ICommandDispatcher));
 
             var roots = await workspace.ProjectExplorer.GetRootNodesAsync();
-            var target = await FindFirstObjectSatisfyingAsync(workspace.ProjectExplorer, domainContext, roots, o => o is IHasBomLine);
+            var target = await FindFirstObjectSatisfyingAsync(workspace.ProjectExplorer, domainContext, roots, o => o is IHasBomLine && o.Kind is not null && ObjectEditorView.BomKinds.Contains(o.Kind));
             if (target is null)
                 return; // no real BOM-eligible object in this sample set — honestly nothing to prove here.
 
@@ -355,7 +355,7 @@ public sealed class ObjectEditorViewTests
             // this file. The assertions below are unchanged and still fail if
             // the write genuinely never lands.
             var reread = await domainContext.Repository.FindAsync(target.Id);
-            var bomDeadline = DateTime.UtcNow.AddSeconds(2);
+            var bomDeadline = DesktopTestHelpers.Deadline(2);
             while ((reread is null || ((IHasBomLine)reread).Quantity != 42m) && DateTime.UtcNow < bomDeadline)
             {
                 await Task.Delay(10);
@@ -434,7 +434,7 @@ public sealed class ObjectEditorViewTests
             // this file. The assertions below are unchanged and still fail if
             // the write genuinely never lands.
             var reread = await requirementsService.FindAsync(target.Id);
-            var ownerDeadline = DateTime.UtcNow.AddSeconds(2);
+            var ownerDeadline = DesktopTestHelpers.Deadline(2);
             while ((reread is null || reread.Owner != "WP10.7A Test Owner") && DateTime.UtcNow < ownerDeadline)
             {
                 await Task.Delay(10);
@@ -443,76 +443,6 @@ public sealed class ObjectEditorViewTests
 
             Assert.Equal("WP10.7A Test Owner", reread!.Owner);
             Assert.Equal(RequirementPriority.High, reread.Priority);
-        }
-        finally
-        {
-            await host.ShutdownAsync();
-            await host.DisposeAsync();
-        }
-    }
-
-    /// <summary>
-    /// Proves the Calculations Execute section's own real wiring — a real
-    /// template list from <see cref="CalculationTemplateRegistry"/>, a
-    /// real dispatch through <see cref="ExecuteCalculationCommand"/>
-    /// reaching its own already-registered handler. Deliberately submits
-    /// input JSON that will not deserialize to any real Template's own
-    /// <c>TInput</c> shape (every representative Template's own input
-    /// uses <see cref="Tempest.Core.UnitsAndQuantities.Quantity{TDimension}"/>
-    /// fields, not plain numbers — genuinely reconstructing valid input
-    /// JSON by hand here would risk a fragile test coupled to that
-    /// serialization shape rather than to this Work Package's own actual
-    /// new code) — proving the dispatch genuinely reaches the real
-    /// handler and reports a real, honest failure back through this
-    /// section, not a silent no-op. The equally-real success path (a
-    /// genuine <c>calculatedBy</c> relationship recorded) is exercised
-    /// directly through the Command Framework in
-    /// <c>Tempest.Core.Tests</c>' own existing Calculations coverage.
-    /// </summary>
-    [AvaloniaFact]
-    public async Task CalculationSection_ExecuteWiring_ReachesTheRealHandler_ReportsAnHonestFailureForInvalidInput()
-    {
-        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
-        try
-        {
-            await host.StartAsync();
-            var workspace = host.Workspace!;
-            await workspace.Navigation.SwitchAreaAsync(CalculationsWorkspaceExplorerModule.NavigationItemId);
-            var domainContext = (EngineeringDomainContext)host.Services!.GetService(typeof(EngineeringDomainContext));
-            var commandDispatcher = (ICommandDispatcher)host.Services!.GetService(typeof(ICommandDispatcher));
-            Assert.NotNull(host.CalculationTemplates);
-
-            var roots = await workspace.ProjectExplorer.GetRootNodesAsync();
-            var target = await FindFirstObjectNodeOfKindAsync(workspace.ProjectExplorer, roots, "Calculation");
-            if (target is null)
-                return; // no real Calculation in this sample set — honestly nothing to prove here.
-
-            var editor = ObjectEditorView.TryCreate(target.Id, target.Kind!, domainContext, host.Manager!, (_, _) => { }, commandDispatcher, calculationTemplates: host.CalculationTemplates)!;
-            Assert.NotNull(editor);
-
-            var executeExpander = editor.GetLogicalDescendants().OfType<Expander>().Single(e => Equals(e.Header, "Execute"));
-            Assert.True(executeExpander.IsVisible);
-
-            var templatePicker = executeExpander.GetLogicalDescendants().OfType<ComboBox>().Single();
-            var templateCount = ((System.Collections.ICollection)templatePicker.ItemsSource!).Count;
-            Assert.True(templateCount > 0, "Expected at least one real registered Calculation Template.");
-
-            var inputBox = executeExpander.GetLogicalDescendants().OfType<TextBox>().Single();
-            inputBox.Text = "{ not valid input for any real Template }";
-
-            var executeButton = executeExpander.GetLogicalDescendants().OfType<Button>().Single();
-            var statusMessage = executeExpander.GetLogicalDescendants().OfType<TextBlock>().Last();
-            executeButton.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
-
-            // `TD-119`: Execute dispatches asynchronously and reports into the
-            // live status TextBlock. Bounded poll on that real text; both
-            // assertions below are unchanged.
-            var executeDeadline = DateTime.UtcNow.AddSeconds(2);
-            while (string.IsNullOrEmpty(statusMessage.Text) && DateTime.UtcNow < executeDeadline)
-                await Task.Delay(10);
-
-            Assert.False(string.IsNullOrEmpty(statusMessage.Text));
-            Assert.NotEqual("Executed.", statusMessage.Text); // a real, reported failure — never silently swallowed
         }
         finally
         {
@@ -561,7 +491,7 @@ public sealed class ObjectEditorViewTests
             // completes — it no longer fails because it merely ran slower
             // than an arbitrary guess.
             string? statusText = null;
-            var deadline = DateTime.UtcNow.AddSeconds(2);
+            var deadline = DesktopTestHelpers.Deadline(2);
             while (DateTime.UtcNow < deadline)
             {
                 statusText = resultExpander.GetLogicalDescendants().OfType<TextBlock>().Last().Text;
@@ -617,7 +547,7 @@ public sealed class ObjectEditorViewTests
             // the write genuinely never lands.
             var reread = await domainContext.Repository.FindAsync(target.Id);
             var attachments = await ((IHasAttachments)reread!).GetAttachmentsAsync();
-            var attachDeadline = DateTime.UtcNow.AddSeconds(2);
+            var attachDeadline = DesktopTestHelpers.Deadline(2);
             while (!attachments.Any(a => a.FileName == "wp107a-test.pdf" && a.SizeInBytes == 1024) && DateTime.UtcNow < attachDeadline)
             {
                 await Task.Delay(10);
@@ -633,6 +563,86 @@ public sealed class ObjectEditorViewTests
             await host.DisposeAsync();
         }
     }
+
+    // ------------------------------------------------------------
+    // WP 17.9.1 — sections by Kind. The first Windows review of v0.17.0
+    // opened a Project and a Calculation and was offered Quantity / Find
+    // Number (every canonical object implements IHasBomLine) and, on the
+    // Calculation, an "Execute" section with a raw JSON box. The BOM
+    // section belongs to the mechanical Kinds; the JSON box is retired and
+    // a Calculation points at the Engineering Calculations workspace.
+    // ------------------------------------------------------------
+
+    [AvaloniaFact]
+    public async Task ProjectEditor_ShowsNeitherBomNorExecute()
+    {
+        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
+        try
+        {
+            await host.StartAsync();
+            var workspace = host.Workspace!;
+            await workspace.Navigation.SwitchAreaAsync(MechanicalWorkspaceExplorerModule.NavigationItemId);
+            var domainContext = (EngineeringDomainContext)host.Services!.GetService(typeof(EngineeringDomainContext));
+            var commandDispatcher = (ICommandDispatcher)host.Services!.GetService(typeof(ICommandDispatcher));
+
+            var roots = await workspace.ProjectExplorer.GetRootNodesAsync();
+            var project = await FindFirstObjectNodeOfKindAsync(workspace.ProjectExplorer, roots, MechanicalObjectFactoryRegistry.Project);
+            Assert.NotNull(project);
+
+            var editor = ObjectEditorView.TryCreate(project!.Id, project.Kind!, domainContext, host.Manager!, (_, _) => { }, commandDispatcher)!;
+            Assert.NotNull(editor);
+
+            Assert.False(Section(editor, "Bill of Materials").IsVisible);
+            Assert.False(Section(editor, "Execute").IsVisible);
+            Assert.False(Section(editor, "Calculation").IsVisible);
+        }
+        finally
+        {
+            await host.ShutdownAsync();
+            await host.DisposeAsync();
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task CalculationEditor_RetiresTheJsonExecuteBox_AndPointsAtTheCalculationWorkspace()
+    {
+        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
+        try
+        {
+            await host.StartAsync();
+            var workspace = host.Workspace!;
+            await workspace.Navigation.SwitchAreaAsync(CalculationsWorkspaceExplorerModule.NavigationItemId);
+            var domainContext = (EngineeringDomainContext)host.Services!.GetService(typeof(EngineeringDomainContext));
+            var commandDispatcher = (ICommandDispatcher)host.Services!.GetService(typeof(ICommandDispatcher));
+
+            // A Calculation made through the real production command, so the
+            // editor is proven on the object a user would actually create.
+            var created = await commandDispatcher.DispatchAsync(new CreateCalculationObjectCommand(
+                CalculationObjectFactoryRegistry.CalculationKind, "Quick Bolt Check", "QC-1"), CancellationToken.None);
+            Assert.True(created.Succeeded, created.Message);
+            var calculation = (await domainContext.Repository.ListByKindAsync(CalculationObjectFactoryRegistry.CalculationKind))
+                .Single(o => ((IHasBusinessIdentifier)o).Identifier == "QC-1");
+
+            var editor = ObjectEditorView.TryCreate(calculation.Id, calculation.Kind!, domainContext, host.Manager!, (_, _) => { }, commandDispatcher)!;
+            Assert.NotNull(editor);
+
+            Assert.False(Section(editor, "Bill of Materials").IsVisible);
+            Assert.False(Section(editor, "Execute").IsVisible);
+            Assert.DoesNotContain(editor.GetLogicalDescendants().OfType<TextBlock>(), t => t.Text == "Input (JSON):" && t.IsVisible && t.GetLogicalAncestors().OfType<Expander>().All(e => e.IsVisible));
+
+            var pointer = Section(editor, "Calculation");
+            Assert.True(pointer.IsVisible);
+            Assert.Contains(pointer.GetLogicalDescendants().OfType<TextBlock>(), t => t.Text == ObjectEditorView.CalculationPointerGuidance);
+        }
+        finally
+        {
+            await host.ShutdownAsync();
+            await host.DisposeAsync();
+        }
+    }
+
+    private static Expander Section(ObjectEditorView editor, string header) =>
+        editor.GetLogicalDescendants().OfType<Expander>().Single(e => Equals(e.Header, header));
 
     private static async Task<IEngineeringObject?> FindFirstObjectSatisfyingAsync(
         IProjectExplorer explorer, EngineeringDomainContext domainContext, IReadOnlyList<ProjectExplorerNode> nodes, Func<IEngineeringObject, bool> predicate)

@@ -126,11 +126,10 @@ public sealed class DuplicateItemNumberValidationRule : IValidationRule
 
     private async Task<IReadOnlyList<IEngineeringObject>> GetLiveSiblingsAsync(Guid parentId, Guid excludingId, CancellationToken cancellationToken)
     {
-        var all = await _repository.ListAllAsync(cancellationToken).ConfigureAwait(false);
+        var children = await _repository.ListChildrenAsync(parentId, cancellationToken).ConfigureAwait(false);
 
-        return all.Where(o =>
+        return children.Where(o =>
             o.Id != excludingId &&
-            o is IHasParent { ParentId: { } pid } && pid == parentId &&
             o is not IDeletable { IsDeleted: true }).ToList();
     }
 }
@@ -154,11 +153,10 @@ public sealed class DuplicateFindNumberValidationRule : IValidationRule
         if (subject is not IHasBomLine { FindNumber: { } findNumber } || subject is not IHasParent { ParentId: { } parentId })
             return ValidationResult.Valid;
 
-        var all = await _repository.ListAllAsync(cancellationToken).ConfigureAwait(false);
+        var siblings = await _repository.ListChildrenAsync(parentId, cancellationToken).ConfigureAwait(false);
 
-        var collision = all.Any(o =>
+        var collision = siblings.Any(o =>
             o.Id != subject.Id &&
-            o is IHasParent { ParentId: { } pid } && pid == parentId &&
             o is not IDeletable { IsDeleted: true } &&
             o is IHasBomLine sibling && sibling.FindNumber == findNumber);
 

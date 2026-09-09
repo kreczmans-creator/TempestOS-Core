@@ -208,4 +208,24 @@ public static class TaskRelationshipKinds
     /// domain can already answer.
     /// </remarks>
     public const string ContributesTo = "contributesTo";
+
+    /// <summary>A task to the task that must finish before it can start.</summary>
+    /// <remarks>
+    /// <para>
+    /// Directed from the dependent task to the one it waits on, so
+    /// "what am I waiting for?" is answered by reading the task's own
+    /// outgoing links. The inverse question — "what is waiting on me?" —
+    /// is a reverse lookup over the same relationship rather than a
+    /// second kind, on the reasoning <see cref="ContributesTo"/> already
+    /// sets out: a second kind would be a second answer to a question the
+    /// domain can already answer, and the two could disagree.
+    /// </para>
+    /// <para>
+    /// A dependency is a statement about sequence, not about permission.
+    /// Nothing in the platform prevents a task starting while what it
+    /// waits on is open; `WP04.2`'s dependency register reports it
+    /// (`ADR-0142`).
+    /// </para>
+    /// </remarks>
+    public const string DependsOn = "dependsOn";
 }

@@ -35,17 +35,12 @@ public class IdOnlyInvocationGuardTests
     /// should — which is the entire point.
     /// </summary>
     private static readonly IReadOnlyDictionary<string, string> SanctionedCallers =
-        new Dictionary<string, string>(StringComparer.Ordinal)
-        {
-            ["src/Tempest.Core/Api/ApiRequestHandler.cs"] =
-                "SANCTIONED EXCEPTION. The REST transport has no request-parameter binding at all "
-                + "(`AT-10`): an inbound request's body and query string are never threaded into the "
-                + "invocation, so a mapped route dispatches its command's own parameterless "
-                + "CreateDefault instance by design. There is no selection behind an HTTP call and "
-                + "therefore no CommandContext to build — the Id-only overload is the correct one "
-                + "here, not a leftover. Revisit only if `AT-10` is ever closed.",
+        new Dictionary<string, string>(StringComparer.Ordinal);
 
-        };
+    // The one entry formerly here, src/Tempest.Core/Api/ApiRequestHandler.cs,
+    // was frozen by ADR-0146 (WP 17.2A): the inbound REST API now lives at
+    // src/Frozen/Tempest.Core.Api, which ProductionSources() excludes
+    // entirely, so no entry is needed for it any more.
 
     /// <summary>
     /// Matches a call to the Id-only overload: an Id argument optionally
@@ -64,7 +59,8 @@ public class IdOnlyInvocationGuardTests
         foreach (var file in Directory.EnumerateFiles(root, "*.cs", SearchOption.AllDirectories))
         {
             if (file.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.Ordinal)
-                || file.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
+                || file.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.Ordinal)
+                || file.Contains($"{Path.DirectorySeparatorChar}Frozen{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
             {
                 continue;
             }
@@ -148,10 +144,10 @@ public class IdOnlyInvocationGuardTests
         // WP-A1's actual deliverable, asserted as a fact about the repository
         // rather than as a count: the one LIVE caller is gone, and it is gone
         // by migration rather than by being excused.
-        Assert.DoesNotContain("src/Tempest.App/Workspace/EngineeringCockpit.cs", SanctionedCallers.Keys);
+        Assert.DoesNotContain("src/Tempest.Workspace/Workspace/EngineeringCockpit.cs", SanctionedCallers.Keys);
 
         var cockpit = File.ReadAllText(Path.Combine(
-            RepositoryPaths.RepositoryRoot, "src", "Tempest.App", "Workspace", "EngineeringCockpit.cs"));
+            RepositoryPaths.RepositoryRoot, "src", "Tempest.Workspace", "Workspace", "EngineeringCockpit.cs"));
 
         Assert.DoesNotContain(CodeLines(cockpit), IdOnlyCall.IsMatch);
         Assert.Contains("InvokeAsync(commands[index - 1].Id, context, prompt, cancellationToken)", cockpit, StringComparison.Ordinal);
@@ -234,15 +230,14 @@ public class IdOnlyInvocationGuardTests
 
         foreach (var (relativePath, source) in ProductionSources())
         {
-            // The registry declares and implements MapCommand; the sample
-            // harness is the sanctioned demonstration of it and ships with
-            // nothing (SampleSeparationTests proves the Desktop excludes it).
-            if (relativePath.StartsWith("src/Samples/", StringComparison.Ordinal)
-                || relativePath is "src/Tempest.Core/Api/IApiEndpointRegistry.cs"
-                or "src/Tempest.Core/Api/ApiEndpointRegistry.cs")
-            {
+            // The registry that declares and implements MapCommand is frozen
+            // (ADR-0146, WP 17.2A: src/Frozen/Tempest.Core.Api), and
+            // ProductionSources() already excludes src/Frozen entirely. The
+            // sample harness is the sanctioned demonstration of it and ships
+            // with nothing (SampleSeparationTests proves the Desktop
+            // excludes it).
+            if (relativePath.StartsWith("src/Samples/", StringComparison.Ordinal))
                 continue;
-            }
 
             foreach (var line in CodeLines(source))
             {

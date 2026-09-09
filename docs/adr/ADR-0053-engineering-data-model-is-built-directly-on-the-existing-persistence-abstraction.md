@@ -4,6 +4,19 @@
 
 Accepted — `WP 7.1A` (Engineering Data Model), 2026-07-30.
 
+**Superseded in part by `ADR-0144`** — `WP 17.1A` (SQLite persistence),
+2026-09-08. This ADR's **decision** is not superseded and is if anything
+strengthened: the Engineering Data Model is still built directly on the
+one persistence abstraction, and still introduces no second storage
+mechanism. What is superseded is its **premise** — the reasoning below
+about what that abstraction cannot do, and the structure built above it
+in consequence. `IPersistenceStore` now has a query shape
+(`IQueryablePersistenceStore`) and a real multi-key transaction, so the
+revision-sequence and typed-reference structure this ADR chose to
+serialise around the store's key/value shape no longer has to be. The
+migration of `EngineeringDocumentStore` onto that shape is `WP 17.1B`,
+not this ADR's own text.
+
 ## Context
 
 `WP7.0C Required ADR Catalogue.md` reserved this decision explicitly:

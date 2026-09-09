@@ -14,6 +14,7 @@ using Tempest.Core.Tests.Plugins;
 using Tempest.Core.UnitsAndQuantities;
 using Tempest.Samples;
 
+using Tempest.Core.Tests.Runtime;
 namespace Tempest.Core.Tests.Samples;
 
 // Proves WP 7.1C end-to-end: MaterialsSampleModule constructor-injects the
@@ -22,7 +23,6 @@ namespace Tempest.Core.Tests.Samples;
 // initialisation, and demonstrates both the register and revise command
 // paths - driven entirely by the real, unmodified module pipeline,
 // mirroring EngineeringDataSampleModuleIntegrationTests.
-[Collection("Console output capture")]
 public class MaterialsSampleModuleIntegrationTests
 {
     private static (RuntimeModuleManager RuntimeManager, TempestServiceProvider ServiceProvider) BuildPipeline(
@@ -41,9 +41,6 @@ public class MaterialsSampleModuleIntegrationTests
         ])).Build();
 
         var services = new ServiceCollection();
-        var currentComponentAccessor = new Tempest.Core.Identity.CurrentComponentAccessor();
-        services.AddInstance<Tempest.Core.Identity.ICurrentComponentAccessor>(currentComponentAccessor);
-        services.AddInstance(currentComponentAccessor);
         services.AddInstance<Tempest.Core.Identity.IPermissionEvaluator>(new Tempest.Core.Identity.PermissionEvaluator());
         services.AddInstance<IConfigurationProvider>(configuration);
         services.AddInstance<ILogger>(new Tempest.Core.Tests.Events.RecordingLevelLogger());
@@ -57,7 +54,14 @@ public class MaterialsSampleModuleIntegrationTests
         services.AddInstance<ICurrentPrincipalAccessor>(currentPrincipalAccessor);
         services.AddInstance(currentPrincipalAccessor);
 
-        services.Singleton<IPersistenceStore, PersistenceStore>();
+        // One store instance under all three shapes, as `TempestHost`
+        // registers it (`ADR-0144`). The query shape is required since
+        // `ADR-0145`: EngineeringDomainContext commits through it, and
+        // AuditQuery answers a by-object lookup with a key prefix listing.
+        var persistenceStore = new PersistenceStore(configuration);
+        services.AddInstance<IPersistenceStore>(persistenceStore);
+        services.AddInstance<IBinaryPersistenceStore>(persistenceStore);
+        services.AddInstance<IQueryablePersistenceStore>(persistenceStore);
         services.Singleton<IEngineeringDocumentStore, EngineeringDocumentStore>();
         services.Singleton<IMaterialCatalog, MaterialCatalog>();
 
@@ -101,7 +105,7 @@ public class MaterialsSampleModuleIntegrationTests
 
         Assert.NotNull(material);
         Assert.Equal(2, material!.RevisionNumber);
-        var yieldStrength = (Quantity<Pressure>)material.Properties["YieldStrength"].Value;
+        var yieldStrength = (Quantity<Pressure>)material.Definition.Properties["YieldStrength"].Value;
         Assert.Equal(105.0, yieldStrength.Value);
     }
 
@@ -232,33 +236,21 @@ public class MaterialsSampleModuleIntegrationTests
                 new KeyValuePair<string, string>(PersistenceStore.RootPathConfigurationKey, temp.Path),
             ]))
             .Build();
-        var originalOut = Console.Out;
-        var writer = new StringWriter();
 
-        try
-        {
-            Console.SetOut(writer);
+        var runTask = host.RunAsync();
 
-            var runTask = host.RunAsync();
+        await RunningHostFixture.WaitUntilRunningAsync(host);
 
-            while (host.State is HostState.Created or HostState.Starting)
-                await Task.Delay(5);
+        Assert.Equal(HostState.Running, host.State);
 
-            Assert.Equal(HostState.Running, host.State);
+        var registry = (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
 
-            var registry = (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
+        var result = await registry.InvokeAsync(MaterialsSampleModule.RegisterSampleMaterialCommandId, CancellationToken.None);
 
-            var result = await registry.InvokeAsync(MaterialsSampleModule.RegisterSampleMaterialCommandId, CancellationToken.None);
+        Assert.True(result.Succeeded);
 
-            Assert.True(result.Succeeded);
-
-            await host.StopAsync();
-            await runTask;
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-        }
+        await host.StopAsync();
+        await runTask;
 
         Assert.Equal(HostState.Stopped, host.State);
     }

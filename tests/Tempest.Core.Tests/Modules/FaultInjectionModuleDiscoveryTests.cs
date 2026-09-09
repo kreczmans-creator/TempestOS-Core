@@ -5,6 +5,7 @@ using Tempest.Core.Runtime;
 using Tempest.Samples;
 using Tempest.Validation.FaultInjection;
 
+using Tempest.Core.Tests.Runtime;
 namespace Tempest.Core.Tests.Modules;
 
 // Proves WP 12.3B end-to-end (ADR-0102): the real DuplicateNavigationModule
@@ -20,15 +21,14 @@ namespace Tempest.Core.Tests.Modules;
 // filter mechanism at the unit level, against a minimal fixture
 // (SampleFaultInjectionModule). This file proves the same guarantee holds
 // for the real fault-injection module, through the real Host.
-[Collection("Console output capture")]
 public class FaultInjectionModuleDiscoveryTests
 {
     [Fact]
     public async Task DefaultHost_WithNavigationAndDuplicateCandidates_NeverDiscoversTheFaultInjectionModule()
     {
         // No EnableFaultInjectionModules() call - the exact shape
-        // Tempest.App's own EngineeringWorkspaceComposer/WorkspaceHost uses.
-        var host = new TempestHostBuilder([typeof(NavigationSampleModule), typeof(DuplicateNavigationModule)]).Build();
+        // Tempest.Workspace's own EngineeringWorkspaceComposer/WorkspaceHost uses.
+        var host = new TempestHostBuilder([typeof(NavigationSampleModule), typeof(DuplicateNavigationModule)]).WithIsolatedPersistenceRoot().Build();
 
         await RunUntilRunningAsync(host, async () =>
         {
@@ -50,7 +50,7 @@ public class FaultInjectionModuleDiscoveryTests
     {
         var host = new TempestHostBuilder([typeof(NavigationSampleModule), typeof(DuplicateNavigationModule)])
             .EnableFaultInjectionModules()
-            .Build();
+            .WithIsolatedPersistenceRoot().Build();
 
         await RunUntilRunningAsync(host, async () =>
         {
@@ -75,29 +75,17 @@ public class FaultInjectionModuleDiscoveryTests
 
     private static async Task RunUntilRunningAsync(ITempestHost host, Func<Task> whileRunning)
     {
-        var originalOut = Console.Out;
-        var writer = new StringWriter();
 
-        try
-        {
-            Console.SetOut(writer);
+        var runTask = host.RunAsync();
 
-            var runTask = host.RunAsync();
+        await RunningHostFixture.WaitUntilRunningAsync(host);
 
-            while (host.State is HostState.Created or HostState.Starting)
-                await Task.Delay(5);
+        Assert.Equal(HostState.Running, host.State);
 
-            Assert.Equal(HostState.Running, host.State);
+        await whileRunning();
 
-            await whileRunning();
-
-            await host.StopAsync();
-            await runTask;
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-        }
+        await host.StopAsync();
+        await runTask;
 
         Assert.Equal(HostState.Stopped, host.State);
     }

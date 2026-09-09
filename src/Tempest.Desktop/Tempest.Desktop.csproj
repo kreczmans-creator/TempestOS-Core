@@ -75,7 +75,15 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Tempest.App\Tempest.App.csproj" />
+    <ProjectReference Include="..\Tempest.Workspace\Tempest.Workspace.csproj" />
+  </ItemGroup>
+
+  <!-- WP 17.2A / ADR-0146: documents every configuration key the platform
+       reads. Shipped next to the executable, not as `appsettings.json`
+       itself - an operator copies and edits it; the platform reads no
+       sample file on its own. -->
+  <ItemGroup>
+    <None Include="appsettings.sample.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

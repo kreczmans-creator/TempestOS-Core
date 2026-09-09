@@ -8,7 +8,7 @@ namespace Tempest.Core.Materials;
 /// <summary>The concrete <see cref="IMaterialCatalogReconciliationService"/> implementation (`TD-67`).</summary>
 public sealed class MaterialCatalogReconciliationService : IMaterialCatalogReconciliationService
 {
-    /// <summary>A material specification document exists with no matching entry in <see cref="MaterialCatalog.IndexCollectionName"/>.</summary>
+    /// <summary>A material specification document exists with no matching entry in <see cref="MaterialCatalog.IndexCollection"/>.</summary>
     public const string MissingIndexEntryCategory = "MaterialMissingIndexEntry";
 
     /// <summary>A <c>materialId</c> index entry names a document that is no longer a live material specification.</summary>
@@ -76,12 +76,12 @@ public sealed class MaterialCatalogReconciliationService : IMaterialCatalogRecon
         var findings = new List<MaterialCatalogReconciliationFinding>();
 
         // Derived side first: every materialId index entry.
-        var indexedMaterialIds = await _persistenceStore.ListKeysAsync(MaterialCatalog.IndexCollectionName, cancellationToken).ConfigureAwait(false);
+        var indexedMaterialIds = await _persistenceStore.ListKeysAsync(MaterialCatalog.IndexCollection, cancellationToken).ConfigureAwait(false);
 
         var indexEntries = new List<(string MaterialId, Guid DocumentId)>(indexedMaterialIds.Count);
         foreach (var materialId in indexedMaterialIds)
         {
-            var value = await _persistenceStore.ReadAsync(MaterialCatalog.IndexCollectionName, materialId, cancellationToken).ConfigureAwait(false);
+            var value = await _persistenceStore.ReadAsync(MaterialCatalog.IndexCollection, materialId, cancellationToken).ConfigureAwait(false);
             if (value is not null && Guid.TryParseExact(value, "N", out var indexedDocumentId))
                 indexEntries.Add((materialId, indexedDocumentId));
         }
@@ -119,7 +119,7 @@ public sealed class MaterialCatalogReconciliationService : IMaterialCatalogRecon
                 var repaired = false;
                 if (repair)
                 {
-                    await _persistenceStore.DeleteAsync(MaterialCatalog.IndexCollectionName, materialId, cancellationToken).ConfigureAwait(false);
+                    await _persistenceStore.DeleteAsync(MaterialCatalog.IndexCollection, materialId, cancellationToken).ConfigureAwait(false);
                     repaired = true;
                 }
 
@@ -139,8 +139,8 @@ public sealed class MaterialCatalogReconciliationService : IMaterialCatalogRecon
             try
             {
                 var history = await _documentStore.GetRevisionHistoryAsync(documentId, cancellationToken).ConfigureAwait(false);
-                var dto = JsonSerializer.Deserialize<MaterialSpecificationDto>(history[^1].Content);
-                materialId = dto?.MaterialId;
+                var dto = JsonSerializer.Deserialize<MaterialRecordIdentityProbe>(history[^1].Content, Tempest.Core.ReferenceData.ReferenceSerialisation.Options);
+                materialId = dto?.RecordId;
             }
             catch (Exception ex) when (ex is EngineeringDataException or JsonException)
             {
@@ -155,10 +155,10 @@ public sealed class MaterialCatalogReconciliationService : IMaterialCatalogRecon
             if (repair && materialId is not null)
             {
                 // Never overwrite a genuine collision.
-                var existing = await _persistenceStore.ReadAsync(MaterialCatalog.IndexCollectionName, materialId, cancellationToken).ConfigureAwait(false);
+                var existing = await _persistenceStore.ReadAsync(MaterialCatalog.IndexCollection, materialId, cancellationToken).ConfigureAwait(false);
                 if (existing is null)
                 {
-                    await _persistenceStore.WriteAsync(MaterialCatalog.IndexCollectionName, materialId, documentId.ToString("N"), cancellationToken).ConfigureAwait(false);
+                    await _persistenceStore.WriteAsync(MaterialCatalog.IndexCollection, materialId, documentId.ToString("N"), cancellationToken).ConfigureAwait(false);
                     repaired = true;
                 }
             }

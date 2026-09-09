@@ -1,4 +1,4 @@
-using Tempest.App.Workspace;
+using Tempest.Workspace;
 
 namespace Tempest.Core.Tests.Workspace.Samples;
 
@@ -11,7 +11,7 @@ namespace Tempest.Core.Tests.Workspace.Samples;
 /// </summary>
 /// <remarks>
 /// <para>
-/// A test fixture, and now filed as one. It lived in <c>Tempest.App</c> until
+/// A test fixture, and now filed as one. It lived in <c>Tempest.Workspace</c> until
 /// `TD-75` phase 2, where the composition root stopped registering it: the
 /// navigation area it attaches to is registered only by
 /// <c>Tempest.Samples.WorkspaceExplorerSampleModule</c>, which phase 1 stopped

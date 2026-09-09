@@ -1,4 +1,5 @@
 using Tempest.Core.Configuration;
+using Tempest.Core.Logging;
 
 namespace Tempest.Core.Runtime;
 
@@ -15,10 +16,11 @@ namespace Tempest.Core.Runtime;
 public sealed class TempestHostBuilder : ITempestHostBuilder
 {
     private readonly List<IConfigurationSource> _configurationSources = [];
+    private readonly List<ILogSink> _additionalLogSinks = [];
     private readonly IEnumerable<Type>? _discoveryCandidateTypesOverride;
     private readonly string? _pluginsRootPathOverride;
     private readonly IEnumerable<Type>? _hostedServiceCandidateTypesOverride;
-    private readonly string? _licenseFilePathOverride;
+    private IReadOnlyList<string> _commandLineArgs = [];
     private bool _includeFaultInjectionModules;
     private bool _built;
 
@@ -26,16 +28,14 @@ public sealed class TempestHostBuilder : ITempestHostBuilder
     /// Initialises a new instance of the <see cref="TempestHostBuilder"/> class.
     /// The resulting host discovers modules from every assembly currently
     /// loaded into the application domain, discovers plugins from the
-    /// conventional plugins directory, discovers hosted services from
-    /// every assembly currently loaded into the application domain, and
-    /// validates its license from the conventional license file.
+    /// conventional plugins directory, and discovers hosted services from
+    /// every assembly currently loaded into the application domain.
     /// </summary>
     public TempestHostBuilder()
         : this(
               discoveryCandidateTypesOverride: null,
               pluginsRootPathOverride: null,
-              hostedServiceCandidateTypesOverride: null,
-              licenseFilePathOverride: null)
+              hostedServiceCandidateTypesOverride: null)
     {
     }
 
@@ -129,61 +129,20 @@ public sealed class TempestHostBuilder : ITempestHostBuilder
     /// isolated from every other <c>IHostedService</c> fixture defined
     /// elsewhere in the test assembly, without changing the public API
     /// surface.
+    /// <b>Frozen by ADR-0146 (<c>WP 17.2A</c>).</b> This constructor used to
+    /// be the innermost of a chain that ended in a fifth, licence-file-path-
+    /// accepting constructor — licence validation is frozen at
+    /// <c>src/Frozen/Tempest.Core.Licensing</c>, and the Host no longer reads
+    /// a licence file at all, so this is now the innermost constructor.
     /// </remarks>
     internal TempestHostBuilder(
         IEnumerable<Type>? discoveryCandidateTypesOverride,
         string? pluginsRootPathOverride,
         IEnumerable<Type>? hostedServiceCandidateTypesOverride)
-        : this(discoveryCandidateTypesOverride, pluginsRootPathOverride, hostedServiceCandidateTypesOverride, licenseFilePathOverride: null)
-    {
-    }
-
-    /// <summary>
-    /// Initialises a new instance of the <see cref="TempestHostBuilder"/> class
-    /// whose host's discovery phase evaluates a specific, fixed set of
-    /// candidate types, whose plugin discovery phase scans a specific
-    /// plugins root directory, whose hosted service discovery phase
-    /// evaluates a specific, fixed set of candidate types, and whose
-    /// license validation phase reads a specific license file.
-    /// </summary>
-    /// <param name="discoveryCandidateTypesOverride">
-    /// The candidate types the resulting host's module discovery phase
-    /// evaluates, or <see langword="null"/> to scan every assembly currently
-    /// loaded into the application domain.
-    /// </param>
-    /// <param name="pluginsRootPathOverride">
-    /// The plugins root directory the resulting host's Plugin Discovery phase
-    /// scans, or <see langword="null"/> to use the conventional
-    /// <c>Plugins</c> directory relative to the application's base directory.
-    /// </param>
-    /// <param name="hostedServiceCandidateTypesOverride">
-    /// The candidate types the resulting host's hosted service discovery
-    /// phase evaluates, or <see langword="null"/> to scan every assembly
-    /// currently loaded into the application domain.
-    /// </param>
-    /// <param name="licenseFilePathOverride">
-    /// The license file the resulting host's license validation phase
-    /// reads, or <see langword="null"/> to use the conventional
-    /// <c>license.json</c> file relative to the application's base
-    /// directory.
-    /// </param>
-    /// <remarks>
-    /// Internal test seam — mirrors <see cref="Licensing.LicenseValidator"/>'s
-    /// own internal, path-accepting constructor, so a host's license
-    /// validation phase can be exercised deterministically against a
-    /// controlled temporary file in tests, without changing the public
-    /// API surface.
-    /// </remarks>
-    internal TempestHostBuilder(
-        IEnumerable<Type>? discoveryCandidateTypesOverride,
-        string? pluginsRootPathOverride,
-        IEnumerable<Type>? hostedServiceCandidateTypesOverride,
-        string? licenseFilePathOverride)
     {
         _discoveryCandidateTypesOverride = discoveryCandidateTypesOverride;
         _pluginsRootPathOverride = pluginsRootPathOverride;
         _hostedServiceCandidateTypesOverride = hostedServiceCandidateTypesOverride;
-        _licenseFilePathOverride = licenseFilePathOverride;
     }
 
     /// <inheritdoc />
@@ -193,6 +152,17 @@ public sealed class TempestHostBuilder : ITempestHostBuilder
         ThrowIfAlreadyBuilt();
 
         _configurationSources.Add(source);
+
+        return this;
+    }
+
+    /// <inheritdoc />
+    public ITempestHostBuilder AddCommandLineArgs(IReadOnlyList<string> args)
+    {
+        ArgumentNullException.ThrowIfNull(args);
+        ThrowIfAlreadyBuilt();
+
+        _commandLineArgs = args;
 
         return this;
     }
@@ -208,18 +178,41 @@ public sealed class TempestHostBuilder : ITempestHostBuilder
     }
 
     /// <inheritdoc />
+    public ITempestHostBuilder AddLogSink(ILogSink sink)
+    {
+        ArgumentNullException.ThrowIfNull(sink);
+        ThrowIfAlreadyBuilt();
+
+        _additionalLogSinks.Add(sink);
+
+        return this;
+    }
+
+    /// <inheritdoc />
     public ITempestHost Build()
     {
         ThrowIfAlreadyBuilt();
         _built = true;
 
+        // `WP 17.2A` (ADR-0146): the default, operator-reachable source
+        // (appsettings.json, TEMPEST_ environment variables, the command
+        // line) is always first in the merged list, so any source added
+        // via AddConfigurationSource — an explicit in-memory override —
+        // is applied later and wins, per ConfigurationBuilder's own
+        // later-source-overrides-earlier convention.
+        IReadOnlyList<IConfigurationSource> sources =
+        [
+            new MicrosoftExtensionsConfigurationSource(_commandLineArgs),
+            .. _configurationSources,
+        ];
+
         return new TempestHost(
-            _configurationSources,
+            sources,
             _discoveryCandidateTypesOverride,
             _pluginsRootPathOverride,
             _hostedServiceCandidateTypesOverride,
-            _licenseFilePathOverride,
-            _includeFaultInjectionModules);
+            _includeFaultInjectionModules,
+            _additionalLogSinks);
     }
 
     private void ThrowIfAlreadyBuilt()

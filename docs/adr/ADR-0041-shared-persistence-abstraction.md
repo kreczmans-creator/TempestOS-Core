@@ -4,6 +4,19 @@
 
 Accepted — `WP 6.4` (Settings Framework), 2026-07-29.
 
+**Superseded in part by `ADR-0144`** — `WP 17.1A` (SQLite persistence),
+2026-09-08. What is superseded is the **storage backend** this ADR chose:
+one file per `collection`/`key` pair under a configured root, and the
+percent-encoding that made a caller's key survive a file system. The
+platform's store is now SQLite, and the file-per-key store is retained
+behind `Persistence:Backend=files` for `v0.17.0` only, then deleted.
+What **stands unchanged** is everything else this ADR decided: that there
+is one shared persistence abstraction rather than one per service, its
+four-member `IPersistenceStore` shape, and `Persistence:RootPath` with
+its `persistence-data` default. Read the Decision below with that
+substitution; nothing in it about *which* services share the store, or
+about the contract they share, has changed.
+
 ## Context
 
 `v0.6.0`'s own architecture package (`docs/releases/v0.6.0/Release

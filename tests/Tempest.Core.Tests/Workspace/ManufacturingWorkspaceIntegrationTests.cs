@@ -1,6 +1,6 @@
-using Tempest.App.Workspace;
-using Tempest.App.Workspace.Manufacturing;
-using Tempest.App.Workspace.Mechanical;
+using Tempest.Workspace;
+using Tempest.Workspace.Manufacturing;
+using Tempest.Workspace.Mechanical;
 using Tempest.Core.Commands;
 using Tempest.Core.Configuration;
 using Tempest.Core.EngineeringDomain;
@@ -8,9 +8,9 @@ using Tempest.Core.Persistence;
 using Tempest.Core.Runtime;
 using Tempest.Core.Tests.Plugins;
 using Tempest.Samples;
-using Tempest.App.Workspace.Calculations;
-using Tempest.App.Workspace.Documents;
-using Tempest.App.Workspace.Requirements;
+using Tempest.Workspace.Calculations;
+using Tempest.Workspace.Documents;
+using Tempest.Workspace.Requirements;
 
 namespace Tempest.Core.Tests.Workspace;
 
@@ -34,7 +34,6 @@ namespace Tempest.Core.Tests.Workspace;
 /// proving the "already works, zero new code" BOM finding empirically, not
 /// just asserted in prose.
 /// </summary>
-[Collection("Console output capture")]
 public class ManufacturingWorkspaceIntegrationTests
 {
     private static async Task<(IWorkspace Workspace, WorkspaceManager Manager, ITempestHost Host)> StartAsync(string rootPath)
@@ -59,17 +58,8 @@ public class ManufacturingWorkspaceIntegrationTests
             .Build();
         var manager = new WorkspaceManager(host);
 
-        var originalOut = Console.Out;
         IWorkspace workspace;
-        try
-        {
-            Console.SetOut(new StringWriter());
-            workspace = await manager.StartAsync();
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-        }
+        workspace = await manager.StartAsync();
 
         // Same disclosed, pre-existing platform timing characteristic
         // DocumentsWorkspaceIntegrationTests/VerificationWorkspaceIntegrationTests's
@@ -317,7 +307,7 @@ public class ManufacturingWorkspaceIntegrationTests
     {
         using var temp = new TempDirectory();
         var (workspace, manager, _) = await StartAsync(temp.Path);
-        var cockpit = ((Tempest.App.Workspace.Workspace)workspace).Cockpit;
+        var cockpit = ((Tempest.Workspace.Workspace)workspace).Cockpit;
 
         var cards = cockpit.ManufacturingKpiCards.ToDictionary(c => c.Label, c => c.Value);
 
@@ -341,7 +331,7 @@ public class ManufacturingWorkspaceIntegrationTests
     {
         using var temp = new TempDirectory();
         var (workspace, manager, _) = await StartAsync(temp.Path);
-        var cockpit = ((Tempest.App.Workspace.Workspace)workspace).Cockpit;
+        var cockpit = ((Tempest.Workspace.Workspace)workspace).Cockpit;
 
         Assert.Contains(cockpit.AttentionItems, item => item.Title == "Manufacturing is live");
 
@@ -353,7 +343,7 @@ public class ManufacturingWorkspaceIntegrationTests
     {
         using var temp = new TempDirectory();
         var (workspace, manager, _) = await StartAsync(temp.Path);
-        var cockpit = ((Tempest.App.Workspace.Workspace)workspace).Cockpit;
+        var cockpit = ((Tempest.Workspace.Workspace)workspace).Cockpit;
 
         Assert.Equal(EngineeringHealthStatus.Attention, cockpit.ManufacturingStatus);
 

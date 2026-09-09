@@ -1,5 +1,5 @@
-using Tempest.App.Workspace.Layout;
-using Tempest.App.Workspace.Viewing;
+using Tempest.Workspace.Layout;
+using Tempest.Workspace.Viewing;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Desktop.Docking;
 

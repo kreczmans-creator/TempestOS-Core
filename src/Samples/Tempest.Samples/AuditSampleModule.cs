@@ -20,7 +20,7 @@ namespace Tempest.Samples;
 /// <see cref="SettingsSampleModule"/>'s own role for Settings. Carries
 /// <see cref="ModuleMetadataAttribute"/> so Discovery can read its
 /// identity without instantiating it (ADR-0027), freeing its constructor
-/// to request <see cref="IIdentityService"/>, <see cref="IAuditRecorder"/>,
+/// to request <see cref="Tempest.Core.Identity.CurrentPrincipalAccessor"/>, <see cref="IAuditRecorder"/>,
 /// <see cref="IAuditQuery"/>, <see cref="ICommandDispatcher"/>, and
 /// <see cref="ICommandRegistry"/> — all DI-public platform services — via
 /// ordinary constructor injection.
@@ -67,7 +67,7 @@ public sealed class AuditSampleModule : ModuleLifecycleBase
     /// </summary>
     public const string QuerySampleAuditRecordsCommandId = "sample.audit-query";
 
-    private readonly IIdentityService _identityService;
+    private readonly CurrentPrincipalAccessor _currentPrincipalAccessor;
     private readonly IAuditRecorder _auditRecorder;
     private readonly IAuditQuery _auditQuery;
     private readonly ICommandDispatcher _commandDispatcher;
@@ -76,9 +76,9 @@ public sealed class AuditSampleModule : ModuleLifecycleBase
     /// <summary>
     /// Initialises a new instance of the <see cref="AuditSampleModule"/> class.
     /// </summary>
-    /// <param name="identityService">
-    /// The Identity &amp; Permissions service this module establishes a
-    /// principal through, resolved via ordinary constructor injection.
+    /// <param name="currentPrincipalAccessor">
+    /// The concrete accessor this module establishes its own principal on
+    /// directly (`WP 17.2A`), resolved via ordinary constructor injection.
     /// </param>
     /// <param name="auditRecorder">
     /// The Audit service this module records actions through, resolved
@@ -98,20 +98,20 @@ public sealed class AuditSampleModule : ModuleLifecycleBase
     /// injection.
     /// </param>
     public AuditSampleModule(
-        IIdentityService identityService,
+        CurrentPrincipalAccessor currentPrincipalAccessor,
         IAuditRecorder auditRecorder,
         IAuditQuery auditQuery,
         ICommandDispatcher commandDispatcher,
         ICommandRegistry commandRegistry)
         : base("tempest.samples.audit", "Audit Sample", "1.0.0")
     {
-        ArgumentNullException.ThrowIfNull(identityService);
+        ArgumentNullException.ThrowIfNull(currentPrincipalAccessor);
         ArgumentNullException.ThrowIfNull(auditRecorder);
         ArgumentNullException.ThrowIfNull(auditQuery);
         ArgumentNullException.ThrowIfNull(commandDispatcher);
         ArgumentNullException.ThrowIfNull(commandRegistry);
 
-        _identityService = identityService;
+        _currentPrincipalAccessor = currentPrincipalAccessor;
         _auditRecorder = auditRecorder;
         _auditQuery = auditQuery;
         _commandDispatcher = commandDispatcher;
@@ -134,7 +134,7 @@ public sealed class AuditSampleModule : ModuleLifecycleBase
     /// </remarks>
     public override async Task InitialiseAsync(CancellationToken cancellationToken)
     {
-        _identityService.EstablishCurrentPrincipal(SampleIdentityId);
+        SamplePrincipalFactory.Establish(_currentPrincipalAccessor, SampleIdentityId);
 
         await _auditRecorder.RecordAsync(InitialisedActionName, cancellationToken: cancellationToken).ConfigureAwait(false);
 

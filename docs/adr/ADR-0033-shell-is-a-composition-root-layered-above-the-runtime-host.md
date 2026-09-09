@@ -7,6 +7,12 @@ Composition Framework Architecture), 2026-07-27. Resolves the question
 `WP 5.0C`'s own brief names first: how does `Tempest.App` consume the
 platform?
 
+**Superseded in substance by `ADR-0092` and `ADR-0101`** (`WP 11.3B` deleted
+`TempestShell`; `Tempest.App` became `Tempest.Workspace` and
+`Tempest.Harness` in `WP 17.2B`). The composition-root pattern survives in
+`src/Tempest.Desktop/Composition/DesktopCompositionRoot.cs` and
+`src/Tempest.Harness/Program.cs`. Recorded 2026-09-08 (`WP 17.9.3`).
+
 ## Context
 
 `Tempest.App`'s current entry point (`Program.cs`) does not construct or

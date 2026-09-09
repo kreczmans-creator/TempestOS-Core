@@ -2,6 +2,8 @@
 
 ## Status
 
+**Status:** Frozen by ADR-0146 (v0.17.0)
+
 Accepted — `WP 13.0A` (Plugin & Registration Trust Isolation
 Architecture), 2026-08-13. Resolves the signing half of `Security
 Roadmap.md` item 1, and extends `ADR-0025`'s failure classification with

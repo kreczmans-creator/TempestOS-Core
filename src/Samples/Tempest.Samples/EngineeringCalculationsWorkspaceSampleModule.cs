@@ -78,7 +78,7 @@ public sealed class EngineeringCalculationsWorkspaceSampleModule : ModuleLifecyc
     /// <summary>The relationship kind linking one Calculation to another it depends on.</summary>
     public const string BasedOnCalculationRelationshipKind = "basedOnCalculation";
 
-    private readonly IIdentityService _identityService;
+    private readonly CurrentPrincipalAccessor _currentPrincipalAccessor;
     private readonly EngineeringDomainContext _context;
     private readonly ICalculationEngine _calculationEngine;
     private readonly IRequirementsService _requirementsService;
@@ -87,7 +87,7 @@ public sealed class EngineeringCalculationsWorkspaceSampleModule : ModuleLifecyc
 
     /// <summary>Initialises a new instance of the <see cref="EngineeringCalculationsWorkspaceSampleModule"/> class.</summary>
     public EngineeringCalculationsWorkspaceSampleModule(
-        IIdentityService identityService,
+        CurrentPrincipalAccessor currentPrincipalAccessor,
         EngineeringDomainContext context,
         ICalculationEngine calculationEngine,
         IRequirementsService requirementsService,
@@ -95,14 +95,14 @@ public sealed class EngineeringCalculationsWorkspaceSampleModule : ModuleLifecyc
         RequirementsWorkspaceSampleModule requirementsSampleModule)
         : base("tempest.samples.workspacecalculations", "Calculations Workspace Sample", "1.0.0")
     {
-        ArgumentNullException.ThrowIfNull(identityService);
+        ArgumentNullException.ThrowIfNull(currentPrincipalAccessor);
         ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(calculationEngine);
         ArgumentNullException.ThrowIfNull(requirementsService);
         ArgumentNullException.ThrowIfNull(mechanicalSampleModule);
         ArgumentNullException.ThrowIfNull(requirementsSampleModule);
 
-        _identityService = identityService;
+        _currentPrincipalAccessor = currentPrincipalAccessor;
         _context = context;
         _calculationEngine = calculationEngine;
         _requirementsService = requirementsService;
@@ -121,13 +121,16 @@ public sealed class EngineeringCalculationsWorkspaceSampleModule : ModuleLifecyc
     /// <inheritdoc />
     public override async Task InitialiseAsync(CancellationToken cancellationToken)
     {
-        _identityService.EstablishCurrentPrincipal(SampleIdentityId);
+        SamplePrincipalFactory.Establish(_currentPrincipalAccessor, SampleIdentityId);
 
-        _calculationEngine.RegisterDefinition(new BoltShearCapacityCalculationDefinition());
-        _calculationEngine.RegisterDefinition(new BeamBendingStressCalculationDefinition());
-        _calculationEngine.RegisterDefinition(new BearingLoadCapacityCalculationDefinition());
-        _calculationEngine.RegisterDefinition(new PressureVesselWallThicknessCalculationDefinition());
-        _calculationEngine.RegisterDefinition(new MaterialSelectionMarginCalculationDefinition());
+        // `TD-159`: the five product calculations are no longer registered
+        // here. `TempestHost` registers them from
+        // `ProductCalculationCatalogue` before any module initialises, so
+        // they are already in the engine by the time this runs — in a
+        // shipped Desktop run as well as in a test host, which was the
+        // whole defect. This module demonstrates the calculations; it does
+        // not own them, and `TD-75` phase 1 moved them out of this
+        // assembly for exactly that reason.
 
         // ---- Wing Attach Bolt Shear Check -> InReview -> Approved ----
         var boltShear = await CreateCalculationAsync(

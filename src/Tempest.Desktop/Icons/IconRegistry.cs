@@ -5,7 +5,7 @@ namespace Tempest.Desktop.Icons;
 /// an engineering object's own <c>Kind</c> string to a display glyph,
 /// mirroring <c>ADR-0067</c>'s own Kind-keyed registration pattern applied
 /// to iconography, exactly as `WP10.0A Visual Design System.md` §2
-/// specified. Introduces no <c>Tempest.Core</c>/<c>Tempest.App.Workspace</c>
+/// specified. Introduces no <c>Tempest.Core</c>/<c>Tempest.Workspace</c>
 /// contract of any kind — <see cref="NavigationItem.Icon"/> and every
 /// Kind string this registry keys against already exist and are already
 /// symbolic-only, never a rendered image reference (`ADR-0031`).

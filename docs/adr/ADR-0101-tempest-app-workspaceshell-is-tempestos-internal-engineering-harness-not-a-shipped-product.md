@@ -6,6 +6,8 @@ Accepted — `v0.11.0` "Release Engineering & Architecture Governance",
 `WP 11.3B` (Presentation Strategy Implementation), 2026-08-11.
 References `ADR-0068` and `ADR-0092` (neither modified by this ADR).
 
+Amended by WP 17.2B (v0.17.0): the code change this ADR declined is now made — `Tempest.App` is `Tempest.Workspace` (library) and `Tempest.Harness` (console exe).
+
 ## Context
 
 `WP11.0A Platform Architecture Review.md` (finding `A-2`) found two

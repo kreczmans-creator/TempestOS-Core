@@ -16,20 +16,23 @@ using Tempest.Core.Tests.Plugins;
 using Tempest.Core.Verification;
 using Tempest.Samples;
 
+using Tempest.Core.Tests.Runtime;
 namespace Tempest.Core.Tests.Samples;
 
-// Proves WP 7.3A end-to-end: RequirementsSampleModule constructor-injects
-// the real, unmodified IIdentityService/IRequirementsService/
-// IEngineeringDocumentStore/IVerificationService/ICurrentPrincipalAccessor/
-// IPermissionEvaluator/IAuditRecorder/IReportingService/ImportService/
-// ICommandDispatcher/ICommandRegistry, creates a sample requirement and
-// walks it through revision, lifecycle, grouping, collection, allocation,
-// and verification during its own initialisation, and demonstrates two
-// command paths (permission-gated evidence read, denied by default;
-// report generation) - driven entirely by the real, unmodified module
-// pipeline, mirroring ExportImportSampleModuleIntegrationTests' own
-// structure.
-[Collection("Console output capture")]
+// Proves WP 7.3A end-to-end (updated for WP 17.2A/ADR-0146):
+// RequirementsSampleModule constructor-injects the real, unmodified
+// CurrentPrincipalAccessor/IRequirementsService/IEngineeringDocumentStore/
+// IVerificationService/ICurrentPrincipalAccessor/IPermissionEvaluator/
+// IAuditRecorder/IReportingService/ImportService/ICommandDispatcher/
+// ICommandRegistry, creates a sample requirement and walks it through
+// revision, lifecycle, grouping, collection, allocation, and verification
+// during its own initialisation, and demonstrates two command paths
+// (permission-gated evidence read, denied by default; report generation)
+// - driven entirely by the real, unmodified module pipeline, mirroring
+// ExportImportSampleModuleIntegrationTests' own structure. Grants a
+// permission for a test by setting a hand-built PlatformPrincipal
+// directly on CurrentPrincipalAccessor - there is no configuration-driven
+// grant mechanism any more.
 public class RequirementsSampleModuleIntegrationTests
 {
     private static (RuntimeModuleManager RuntimeManager, TempestServiceProvider ServiceProvider) BuildPipeline(
@@ -48,9 +51,6 @@ public class RequirementsSampleModuleIntegrationTests
         ])).Build();
 
         var services = new ServiceCollection();
-        var currentComponentAccessor = new Tempest.Core.Identity.CurrentComponentAccessor();
-        services.AddInstance<Tempest.Core.Identity.ICurrentComponentAccessor>(currentComponentAccessor);
-        services.AddInstance(currentComponentAccessor);
         services.AddInstance<IConfigurationProvider>(configuration);
         services.AddInstance<ILogger>(new Tempest.Core.Tests.Events.RecordingLevelLogger());
         services.Singleton<IEventBus, EventBus>();
@@ -61,11 +61,16 @@ public class RequirementsSampleModuleIntegrationTests
         var currentPrincipalAccessor = new CurrentPrincipalAccessor();
         services.AddInstance<ICurrentPrincipalAccessor>(currentPrincipalAccessor);
         services.AddInstance(currentPrincipalAccessor);
-        services.Singleton<IRoleProvider, RoleProvider>();
         services.Singleton<IPermissionEvaluator, PermissionEvaluator>();
-        services.Singleton<IIdentityService, IdentityService>();
 
-        services.Singleton<IPersistenceStore, PersistenceStore>();
+        // One store instance under all three shapes, as `TempestHost`
+        // registers it (`ADR-0144`). The query shape is required since
+        // `ADR-0145`: EngineeringDomainContext commits through it, and
+        // AuditQuery answers a by-object lookup with a key prefix listing.
+        var persistenceStore = new PersistenceStore(configuration);
+        services.AddInstance<IPersistenceStore>(persistenceStore);
+        services.AddInstance<IBinaryPersistenceStore>(persistenceStore);
+        services.AddInstance<IQueryablePersistenceStore>(persistenceStore);
         services.Singleton<IAuditRecorder, AuditRecorder>();
         services.Singleton<IEngineeringDocumentStore, EngineeringDocumentStore>();
         services.Singleton<IVerificationService, VerificationService>();
@@ -292,34 +297,22 @@ public class RequirementsSampleModuleIntegrationTests
                 new KeyValuePair<string, string>(PersistenceStore.RootPathConfigurationKey, temp.Path),
             ]))
             .Build();
-        var originalOut = Console.Out;
-        var writer = new StringWriter();
 
-        try
-        {
-            Console.SetOut(writer);
+        var runTask = host.RunAsync();
 
-            var runTask = host.RunAsync();
+        await RunningHostFixture.WaitUntilRunningAsync(host);
 
-            while (host.State is HostState.Created or HostState.Starting)
-                await Task.Delay(5);
+        Assert.Equal(HostState.Running, host.State);
 
-            Assert.Equal(HostState.Running, host.State);
+        var registry = (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
 
-            var registry = (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
+        var result = await registry.InvokeAsync(RequirementsSampleModule.GetSampleRequirementEvidenceCommandId, CancellationToken.None);
 
-            var result = await registry.InvokeAsync(RequirementsSampleModule.GetSampleRequirementEvidenceCommandId, CancellationToken.None);
+        Assert.False(result.Succeeded);
+        Assert.Contains("Denied", result.Message);
 
-            Assert.False(result.Succeeded);
-            Assert.Contains("Denied", result.Message);
-
-            await host.StopAsync();
-            await runTask;
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-        }
+        await host.StopAsync();
+        await runTask;
 
         Assert.Equal(HostState.Stopped, host.State);
     }

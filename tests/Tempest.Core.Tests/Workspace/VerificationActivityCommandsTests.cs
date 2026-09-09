@@ -1,7 +1,7 @@
-using Tempest.App.Workspace.Verification;
-using Tempest.Core.EngineeringData;
+using Tempest.Workspace.Verification;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Identity;
+using Tempest.Core.Tests.EngineeringDomain;
 using Tempest.Core.Verification;
 
 namespace Tempest.Core.Tests.Workspace;
@@ -17,20 +17,11 @@ public class VerificationActivityCommandsTests
 {
     private static (EngineeringDomainContext Context, IVerificationService VerificationService) BuildContext()
     {
-        var principalAccessor = new CurrentPrincipalAccessor();
-        var store = new InMemoryEngineeringDocumentStore(principalAccessor);
-        var repository = new InMemoryEngineeringObjectRepository();
-        var relationshipRepository = new InMemoryEngineeringRelationshipRepository();
-        var lifecycleTable = new LifecycleTransitionTable();
-        var validationRuleSet = new ValidationRuleSet();
-        var relationshipDiscovery = new RelationshipDiscoveryService(relationshipRepository, repository);
-        var evidenceComposer = new EvidenceComposer(relationshipDiscovery, repository);
-
-        var context = new EngineeringDomainContext(
-            store, repository, relationshipRepository, lifecycleTable, validationRuleSet, evidenceComposer, principalAccessor);
+        var context = TestEngineeringDomain.NewContext();
 
         var permissionEvaluator = new PermissionEvaluator();
-        var verificationService = new VerificationService(store, principalAccessor, permissionEvaluator);
+        var verificationService = new VerificationService(
+            context.Store, context.CurrentPrincipalAccessor, permissionEvaluator);
 
         return (context, verificationService);
     }
@@ -333,6 +324,43 @@ public class VerificationActivityCommandsTests
         Assert.Equal("Test", record.Method);
         Assert.Single(record.Criteria);
         Assert.Single(record.Evidence);
+    }
+
+    // `WP 17.9.3` (`TD-173`). A Requirement reads its own coverage from
+    // edges made from its own id; before this the record was linked from
+    // the Activity only, so the subject's coverage never showed it.
+    [Fact]
+    public async Task RecordResult_AgainstAnActivityWithASubject_LinksTheRecordFromTheSubjectToo()
+    {
+        var (context, verificationService) = BuildContext();
+        var subject = await CreateActivityAsync(context, "Subject Stand-in");
+        var activity = await CreateActivityAsync(context, "Activity", "Test", subjectId: subject.Id);
+        var handler = new RecordVerificationResultCommandHandler(verificationService, context);
+
+        var result = await handler.HandleAsync(
+            new RecordVerificationResultCommand(activity.Id, "VerificationActivity", VerificationOutcome.Pass, "Test"), default);
+
+        Assert.True(result.Succeeded, result.Message);
+        Assert.Contains("coverage", result.Message, StringComparison.Ordinal);
+
+        var fromActivity = Assert.Single(await context.Store.GetReferencesAsync(activity.Id));
+        var fromSubject = Assert.Single(await context.Store.GetReferencesAsync(subject.Id), r => r.RelationshipKind == VerificationService.VerifiedByRelationshipKind);
+        Assert.Equal(fromActivity.TargetDocumentId, fromSubject.TargetDocumentId);
+    }
+
+    [Fact]
+    public async Task RecordResult_WithoutADomainContext_LinksFromTheActivityOnly_AsBefore()
+    {
+        var (context, verificationService) = BuildContext();
+        var subject = await CreateActivityAsync(context, "Subject Stand-in");
+        var activity = await CreateActivityAsync(context, "Activity", "Test", subjectId: subject.Id);
+        var handler = new RecordVerificationResultCommandHandler(verificationService);
+
+        var result = await handler.HandleAsync(
+            new RecordVerificationResultCommand(activity.Id, "VerificationActivity", VerificationOutcome.Pass, "Test"), default);
+
+        Assert.True(result.Succeeded, result.Message);
+        Assert.Empty(await context.Store.GetReferencesAsync(subject.Id));
     }
 
     [Fact]

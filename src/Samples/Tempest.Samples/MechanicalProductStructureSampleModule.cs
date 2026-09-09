@@ -77,16 +77,16 @@ public sealed class MechanicalProductStructureSampleModule : ModuleLifecycleBase
     /// <summary>The identity id this module establishes as current during its own initialisation.</summary>
     public const string SampleIdentityId = "sample.mechanicalproductstructure-user";
 
-    private readonly IIdentityService _identityService;
+    private readonly CurrentPrincipalAccessor _currentPrincipalAccessor;
     private readonly EngineeringDomainContext _context;
 
-    public MechanicalProductStructureSampleModule(IIdentityService identityService, EngineeringDomainContext context)
+    public MechanicalProductStructureSampleModule(CurrentPrincipalAccessor currentPrincipalAccessor, EngineeringDomainContext context)
         : base("tempest.samples.mechanicalproductstructure", "Mechanical Product Structure Sample", "1.0.0")
     {
-        ArgumentNullException.ThrowIfNull(identityService);
+        ArgumentNullException.ThrowIfNull(currentPrincipalAccessor);
         ArgumentNullException.ThrowIfNull(context);
 
-        _identityService = identityService;
+        _currentPrincipalAccessor = currentPrincipalAccessor;
         _context = context;
     }
 
@@ -105,7 +105,7 @@ public sealed class MechanicalProductStructureSampleModule : ModuleLifecycleBase
 
     public override async Task InitialiseAsync(CancellationToken cancellationToken)
     {
-        _identityService.EstablishCurrentPrincipal(SampleIdentityId);
+        SamplePrincipalFactory.Establish(_currentPrincipalAccessor, SampleIdentityId);
 
         var objectIds = new List<Guid>();
 

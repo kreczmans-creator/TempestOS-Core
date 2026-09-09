@@ -60,20 +60,12 @@ namespace Tempest.Core.Modules;
 /// simply not yet eligible for a phase is skipped rather than treated as an error.
 /// </para>
 /// <para>
-/// <b>Component scope hook (ADR-0111, WP 13.2A).</b> The optional
-/// <c>componentScopeProvider</c> constructor parameter is a fully generic,
-/// plugin-<i>unaware</i> hook — this class carries no reference to
-/// <c>Tempest.Core.Plugins</c> or <c>Tempest.Core.Identity</c> at all. Given
-/// a module Id, it may return a disposable scope token to hold for the
-/// duration of one lifecycle call, established immediately before that
-/// call's own <c>invoke</c>/<c>DisposeAsync</c> and disposed immediately
-/// after — inside the same <see langword="try"/> block already responsible
-/// for that call, so a module's own thrown exception still correctly pops
-/// the scope (via the <see langword="using"/> block's own implicit
-/// <see langword="finally"/>) before this class's existing <see langword="catch"/>
-/// logic runs. <c>TempestHost</c> is the only caller that supplies a
-/// non-null provider, closing over its own <c>ICurrentComponentAccessor</c>
-/// and plugin component-principal registry — see that type's own remarks.
+/// <b>Frozen by ADR-0146 (<c>WP 17.2A</c>).</b> This class used to take an
+/// optional, plugin-unaware <c>componentScopeProvider</c> hook so that
+/// <c>TempestHost</c> could push a plugin's own component principal around
+/// each lifecycle call. Nothing third-party ever loaded; the hook and the
+/// trust platform behind it are frozen at
+/// <c>src/Frozen/Tempest.Core.Plugins</c>.
 /// </para>
 /// </remarks>
 public sealed class ModuleLifecycleManager : IModuleLifecycleManager
@@ -83,7 +75,6 @@ public sealed class ModuleLifecycleManager : IModuleLifecycleManager
     private readonly Dictionary<string, TrackedModule> _modulesById;
     private readonly ITempestServiceProvider _serviceProvider;
     private readonly ILogger? _logger;
-    private readonly Func<string, IDisposable?>? _componentScopeProvider;
 
     /// <summary>
     /// Initialises a new instance of the <see cref="ModuleLifecycleManager"/> class,
@@ -101,25 +92,16 @@ public sealed class ModuleLifecycleManager : IModuleLifecycleManager
     /// An optional logger used to record lifecycle transitions via the logging
     /// abstraction. May be <see langword="null"/> if logging is not required.
     /// </param>
-    /// <param name="componentScopeProvider">
-    /// An optional, fully generic hook: given a module Id, may return a
-    /// disposable scope token held for the duration of one lifecycle call
-    /// (ADR-0111). <see langword="null"/> — the default, reproducing every
-    /// existing caller's behaviour unchanged — means no scope is ever
-    /// established. See this type's own remarks.
-    /// </param>
     public ModuleLifecycleManager(
         IRuntimeModuleManager runtimeModuleManager,
         ITempestServiceProvider serviceProvider,
-        ILogger? logger = null,
-        Func<string, IDisposable?>? componentScopeProvider = null)
+        ILogger? logger = null)
     {
         ArgumentNullException.ThrowIfNull(runtimeModuleManager);
         ArgumentNullException.ThrowIfNull(serviceProvider);
 
         _serviceProvider = serviceProvider;
         _logger = logger;
-        _componentScopeProvider = componentScopeProvider;
 
         _orderedModules = runtimeModuleManager.GetAll()
             .Select(runtimeModule => new TrackedModule(runtimeModule.Descriptor))
@@ -269,10 +251,7 @@ public sealed class ModuleLifecycleManager : IModuleLifecycleManager
         try
         {
             if (tracked.Instance is not null)
-            {
-                using var scope = _componentScopeProvider?.Invoke(moduleId);
                 await tracked.Instance.DisposeAsync(cancellationToken).ConfigureAwait(false);
-            }
 
             lock (_gate)
             {
@@ -335,10 +314,7 @@ public sealed class ModuleLifecycleManager : IModuleLifecycleManager
                 tracked.Instance = ResolveInstance(tracked.Descriptor);
 
             if (tracked.Instance is not null)
-            {
-                using var scope = _componentScopeProvider?.Invoke(moduleId);
                 await invoke(tracked.Instance, cancellationToken).ConfigureAwait(false);
-            }
 
             lock (_gate)
             {

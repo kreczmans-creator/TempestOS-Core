@@ -11,7 +11,7 @@ namespace Tempest.Desktop.Docking;
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>Deliberately not part of <see cref="Tempest.App.Workspace.IWorkspaceState"/>.</b>
+/// <b>Deliberately not part of <see cref="Tempest.Workspace.IWorkspaceState"/>.</b>
 /// Neither Collapse nor Auto-Hide nor the Output panel exists anywhere in
 /// the frozen `WP8.0B` Workspace contracts (`IWorkspaceLayout`/
 /// `WorkspacePanelPlacement` carry only Dock Position, Size, and
@@ -25,7 +25,7 @@ namespace Tempest.Desktop.Docking;
 /// a second persistence mechanism.
 /// </para>
 /// <para>
-/// <b>Independent of <see cref="Tempest.App.Workspace.IWorkspaceState.SaveAsync"/>'s own
+/// <b>Independent of <see cref="Tempest.Workspace.IWorkspaceState.SaveAsync"/>'s own
 /// save point.</b> <c>WorkspaceManager.ShutdownAsync</c> only ever knew to
 /// save the Workspace's own state; this class is saved directly by
 /// <c>MainWindow</c>'s own Closing handler instead, alongside it — two
@@ -76,7 +76,7 @@ internal sealed class DesktopPanelUiState
 
     /// <summary>
     /// Gets or sets the name of the last predefined layout applied
-    /// (<see cref="Tempest.App.Workspace.Layout.WorkspaceLayoutPreset"/>), or
+    /// (<see cref="Tempest.Workspace.Layout.WorkspaceLayoutPreset"/>), or
     /// <see langword="null"/> if none has been applied this session or the
     /// layout has since been manually changed — an honest label only,
     /// never re-derived from the current placements themselves.

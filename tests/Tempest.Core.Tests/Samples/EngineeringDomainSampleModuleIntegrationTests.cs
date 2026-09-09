@@ -13,15 +13,16 @@ using Tempest.Core.Runtime;
 using Tempest.Core.Tests.Plugins;
 using Tempest.Samples;
 
+using Tempest.Core.Tests.Runtime;
 namespace Tempest.Core.Tests.Samples;
 
-// Proves WP 8.2C end-to-end: EngineeringDomainSampleModule constructor-injects
-// the real, unmodified IIdentityService/EngineeringDomainContext/IMaterialCatalog/
+// Proves WP 8.2C end-to-end (updated for WP 17.2A/ADR-0146):
+// EngineeringDomainSampleModule constructor-injects the real, unmodified
+// CurrentPrincipalAccessor/EngineeringDomainContext/IMaterialCatalog/
 // IDependencyTraversal/ICommandDispatcher/ICommandRegistry, and builds its own
 // twelve-object, nine-family representative graph during initialisation -
 // driven entirely by the real, unmodified module pipeline, mirroring
 // RequirementsSampleModuleIntegrationTests' own structure.
-[Collection("Console output capture")]
 public class EngineeringDomainSampleModuleIntegrationTests
 {
     private static (RuntimeModuleManager RuntimeManager, TempestServiceProvider ServiceProvider) BuildPipeline(
@@ -40,9 +41,6 @@ public class EngineeringDomainSampleModuleIntegrationTests
         ])).Build();
 
         var services = new ServiceCollection();
-        var currentComponentAccessor = new Tempest.Core.Identity.CurrentComponentAccessor();
-        services.AddInstance<Tempest.Core.Identity.ICurrentComponentAccessor>(currentComponentAccessor);
-        services.AddInstance(currentComponentAccessor);
         services.AddInstance<IConfigurationProvider>(configuration);
         services.AddInstance<ILogger>(new Tempest.Core.Tests.Events.RecordingLevelLogger());
         services.Singleton<IEventBus, EventBus>();
@@ -53,11 +51,19 @@ public class EngineeringDomainSampleModuleIntegrationTests
         var currentPrincipalAccessor = new CurrentPrincipalAccessor();
         services.AddInstance<ICurrentPrincipalAccessor>(currentPrincipalAccessor);
         services.AddInstance(currentPrincipalAccessor);
-        services.Singleton<IRoleProvider, RoleProvider>();
         services.Singleton<IPermissionEvaluator, PermissionEvaluator>();
-        services.Singleton<IIdentityService, IdentityService>();
 
-        services.Singleton<IPersistenceStore, PersistenceStore>();
+        // One store instance under all three shapes, exactly as
+        // `TempestHost` registers it (`ADR-0144`). Registering the three
+        // interfaces separately would build three stores over one root;
+        // `EngineeringDomainContext` needs the query shape since
+        // `ADR-0145`, and it must be the same instance the document store
+        // and the state store write through.
+        var persistenceStore = new PersistenceStore(configuration);
+        services.AddInstance<IPersistenceStore>(persistenceStore);
+        services.AddInstance<IBinaryPersistenceStore>(persistenceStore);
+        services.AddInstance<IQueryablePersistenceStore>(persistenceStore);
+
         services.Singleton<IEngineeringDocumentStore, EngineeringDocumentStore>();
         services.Singleton<IMaterialCatalog, MaterialCatalog>();
 
@@ -86,7 +92,8 @@ public class EngineeringDomainSampleModuleIntegrationTests
         // reason: the container resolves every constructor parameter
         // whether or not it has a default, so a collaborator missing here
         // is a rig that no longer stands in for the real graph.
-        services.Singleton<IBinaryPersistenceStore, PersistenceStore>();
+        // `IBinaryPersistenceStore` is registered above, on the one store
+        // instance, alongside the text and query shapes.
         services.Singleton<IAttachmentContentStore, AttachmentContentStore>();
         services.Singleton<EngineeringDomainContext>();
 
@@ -196,7 +203,7 @@ public class EngineeringDomainSampleModuleIntegrationTests
         var material = await materialCatalog.FindAsync(part.MaterialId!);
 
         Assert.NotNull(material);
-        Assert.Equal("Fictional Sample Alloy", material!.Name);
+        Assert.Equal("Fictional Sample Alloy", material!.Definition.Name);
     }
 
     [Fact]
@@ -237,32 +244,20 @@ public class EngineeringDomainSampleModuleIntegrationTests
                 new KeyValuePair<string, string>(PersistenceStore.RootPathConfigurationKey, temp.Path),
             ]))
             .Build();
-        var originalOut = Console.Out;
-        var writer = new StringWriter();
 
-        try
-        {
-            Console.SetOut(writer);
+        var runTask = host.RunAsync();
 
-            var runTask = host.RunAsync();
+        await RunningHostFixture.WaitUntilRunningAsync(host);
 
-            while (host.State is HostState.Created or HostState.Starting)
-                await Task.Delay(5);
+        Assert.Equal(HostState.Running, host.State);
 
-            Assert.Equal(HostState.Running, host.State);
+        var registry = (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
+        var result = await registry.InvokeAsync(EngineeringDomainSampleModule.GetGraphSummaryCommandId, CancellationToken.None);
 
-            var registry = (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
-            var result = await registry.InvokeAsync(EngineeringDomainSampleModule.GetGraphSummaryCommandId, CancellationToken.None);
+        Assert.True(result.Succeeded);
 
-            Assert.True(result.Succeeded);
-
-            await host.StopAsync();
-            await runTask;
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-        }
+        await host.StopAsync();
+        await runTask;
 
         Assert.Equal(HostState.Stopped, host.State);
     }

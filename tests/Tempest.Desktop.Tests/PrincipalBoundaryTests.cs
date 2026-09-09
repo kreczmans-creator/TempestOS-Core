@@ -1,4 +1,4 @@
-using Tempest.App.Projects;
+using Tempest.Workspace.Projects;
 using Tempest.Core.EngineeringData;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Identity;
@@ -13,9 +13,8 @@ namespace Tempest.Desktop.Tests;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Before this, only sample modules ever called
-/// <see cref="IIdentityService.EstablishCurrentPrincipal"/>, so a real
-/// launch's principal — and therefore its authorship, its audit
+/// Before this, only sample modules ever established a current principal,
+/// so a real launch's principal — and therefore its authorship, its audit
 /// attribution and every permission check — depended on which sample
 /// happened to initialise last, and on the samples shipping at all. A
 /// product built without them ran as nobody.
@@ -100,9 +99,7 @@ public sealed class PrincipalBoundaryTests
         // What Administration will do one day: supply principals through
         // this one interface. Nothing in the engineering domain changes,
         // and no engineering object grows a user field.
-        var supplied = new PlatformPrincipal(
-            new PlatformIdentity("admin-supplied", "Supplied By Administration"),
-            ApplicationPermissions.LocalSession);
+        var supplied = new SessionPrincipal("admin-supplied", "Supplied By Administration", SessionRole.Engineer);
 
         var host = new WorkspaceHost(
             WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath(),
@@ -140,21 +137,14 @@ public sealed class PrincipalBoundaryTests
     }
 
     [Fact]
-    public void TheLocalSource_UsesTheOperatingSystemAccount_AndFallsBackWithoutInventingAPerson()
+    public void TheLocalSource_AnswersWhateverTheHostIs()
     {
-        Assert.Equal("ada", new LocalSessionPrincipalSource("ada").Resolve()!.Identity.Id);
-        Assert.Equal("ada", new LocalSessionPrincipalSource("  ada  ").Resolve()!.Identity.Id);
-
-        foreach (var empty in new[] { null, string.Empty, "   " })
-        {
-            var principal = new LocalSessionPrincipalSource(empty).Resolve();
-
-            Assert.Equal(LocalSessionPrincipalSource.FallbackIdentityId, principal!.Identity.Id);
-            Assert.Equal(LocalSessionPrincipalSource.FallbackDisplayName, principal.Identity.DisplayName);
-        }
-
-        // The parameterless production form answers, whatever the host is.
-        Assert.NotNull(new LocalSessionPrincipalSource().Resolve());
+        // SessionPrincipalSourceTests (Tempest.Core.Tests) proves the
+        // OS-derived identity id, the configuration-overridable display
+        // name and role, and that configuration can never move the
+        // identity id. This is the Desktop-side proof that the production,
+        // parameterless form is wired up and answers on this host.
+        Assert.NotNull(new SessionPrincipalSource().Resolve());
     }
 
     // ================================================================
@@ -183,11 +173,11 @@ public sealed class PrincipalBoundaryTests
             .ToList();
 
         // Credentials, sessions-you-sign-into and bearer tokens are what
-        // "authentication" means here, and none of them exist. Roles are
-        // deliberately *not* on this list: IRoleProvider is pre-existing
-        // configuration-driven permission grouping (`ADR-0043`), older than
-        // this boundary and untouched by it — banning it would be a claim
-        // about the platform's history rather than about this work.
+        // "authentication" means here, and none of them exist. `SessionRole`
+        // is deliberately *not* forbidden: `WP 17.2A` (ADR-0146) kept role as
+        // an axis distinct from identity — Engineer or Checker, configurable
+        // and never itself a credential — which is a role *grouping*, not an
+        // authentication concept.
         foreach (var forbidden in new[] { "Password", "Credential", "SignIn", "LogIn", "Login", "Logout", "Authenticate", "Token" })
         {
             var offenders = identityTypes.Where(n => n.Contains(forbidden, StringComparison.OrdinalIgnoreCase)).ToList();
@@ -207,7 +197,12 @@ public sealed class PrincipalBoundaryTests
             typeof(ApplicationPermissions).GetMethods(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.DeclaredOnly),
             m => !m.IsSpecialName);
 
-        Assert.Equal(2, ApplicationPermissions.LocalSession.Count);
+        // Four first-party permissions: the two read surfaces, and the two
+        // governed reference acts `WP 17.9.3` gated (hazard H8 of the
+        // design-freeze review). Still a flat, fixed list, pinned by name.
+        Assert.Equal(
+            ["verification.read", "audit.query", "reference.verify", "reference.release"],
+            ApplicationPermissions.LocalSession.Select(p => p.Key).ToList());
         Assert.All(
             ApplicationPermissions.LocalSession,
             p => Assert.DoesNotContain("plugin.", p.Key, StringComparison.OrdinalIgnoreCase));
@@ -237,9 +232,9 @@ public sealed class PrincipalBoundaryTests
     // Fixtures
     // ================================================================
 
-    private sealed class StubSessionPrincipalSource(IPrincipal? principal) : ISessionPrincipalSource
+    private sealed class StubSessionPrincipalSource(ISessionPrincipal? principal) : ISessionPrincipalSource
     {
-        public IPrincipal? Resolve() => principal;
+        public ISessionPrincipal? Resolve() => principal;
     }
 
     private static EngineeringDomainContext DomainOf(WorkspaceHost host) =>

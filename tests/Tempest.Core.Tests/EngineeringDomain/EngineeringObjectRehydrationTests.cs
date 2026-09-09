@@ -1,10 +1,11 @@
-using Tempest.App.Workspace.Mechanical;
+using Tempest.Workspace.Mechanical;
 using Tempest.Core.EngineeringData;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Identity;
 using Tempest.Core.Logging;
 using Tempest.Core.Persistence;
 using Tempest.Core.Tests.Logging;
+using Tempest.Core.Tests.Persistence;
 
 namespace Tempest.Core.Tests.EngineeringDomain;
 
@@ -30,7 +31,7 @@ public class EngineeringObjectRehydrationTests
         CurrentPrincipalAccessor Principal);
 
     private static Lifetime NewLifetime(
-        IPersistenceStore persistence, bool registerMechanical = true,
+        InMemoryQueryablePersistenceStore persistence, bool registerMechanical = true,
         IStateMigrationRegistry? migrations = null, ILogger? logger = null)
     {
         var principal = new CurrentPrincipalAccessor();
@@ -41,7 +42,7 @@ public class EngineeringObjectRehydrationTests
         var stateStore = new EngineeringObjectStateStore(persistence, migrations, logger);
 
         var domain = new EngineeringDomainContext(
-            documentStore, repository, relationships, new LifecycleTransitionTable(), new ValidationRuleSet(),
+            persistence, documentStore, repository, relationships, new LifecycleTransitionTable(), new ValidationRuleSet(),
             new EvidenceComposer(discovery, repository), principal, stateStore);
 
         var rehydrators = new EngineeringObjectRehydratorRegistry();
@@ -51,9 +52,12 @@ public class EngineeringObjectRehydrationTests
         return new Lifetime(domain, rehydrators, new EngineeringObjectRehydrationService(domain, rehydrators), stateStore, principal);
     }
 
+    // `WP 16.4B-R6`: `EngineeringObjectFactory<T>` now requires the Kind's
+    // own `IRehydratable<T>` reader (see that type). Every canonical Kind
+    // already implements it — this constraint only restates that.
     private static async Task<T> CreateAsync<T>(
         EngineeringDomainContext domain, string kind, Func<IEngineeringDocument, IDocumentRevision, T> ctor)
-        where T : EngineeringObjectBase
+        where T : EngineeringObjectBase, IRehydratable<T>
     {
         var factory = new EngineeringObjectFactory<T>(kind, domain, ctor);
         return (T)await factory.CreateAsync($"{kind} — for test purposes.");
@@ -70,7 +74,7 @@ public class EngineeringObjectRehydrationTests
     [Fact]
     public async Task CreateAsync_PersistsTheObjectsOwnState_NotOnlyItsDocument()
     {
-        var persistence = new Materials.InMemoryPersistenceStore();
+        var persistence = new InMemoryQueryablePersistenceStore();
         var life = NewLifetime(persistence);
 
         var part = await CreatePartAsync(life.Domain);
@@ -85,22 +89,28 @@ public class EngineeringObjectRehydrationTests
     }
 
     [Fact]
-    public async Task WithNoStateStoreComposed_CreationStillWorks_AndPersistsNothing()
+    public async Task WithNoStateStoreArgument_CreationStillWorks_AndTheContextBuildsOneOverItsOwnStore()
     {
-        // Every pre-`TD-85` hand-assembled context must keep working
-        // exactly as it did — the store is deliberately optional.
+        // Every pre-`TD-85` hand-assembled context must keep working, and
+        // the argument is still deliberately optional. What omitting it
+        // means changed with `ADR-0145`: there is now one durable
+        // authority, so a context given no state store builds the real one
+        // over the persistence store it already commits through, rather
+        // than having none at all.
+        var persistence = new InMemoryQueryablePersistenceStore();
         var principal = new CurrentPrincipalAccessor();
         var repository = new InMemoryEngineeringObjectRepository();
         var relationships = new InMemoryEngineeringRelationshipRepository();
         var domain = new EngineeringDomainContext(
-            new InMemoryEngineeringDocumentStore(principal), repository, relationships,
+            persistence, new EngineeringDocumentStore(persistence, principal), repository, relationships,
             new LifecycleTransitionTable(), new ValidationRuleSet(),
             new EvidenceComposer(new RelationshipDiscoveryService(relationships, repository), repository), principal);
 
         var part = await CreatePartAsync(domain);
 
-        Assert.Null(domain.ObjectStateStore);
+        Assert.NotNull(domain.ObjectStateStore);
         Assert.NotNull(await domain.Repository.FindAsync(part.Id));
+        Assert.NotNull(await domain.ObjectStateStore.FindAsync(part.Id));
     }
 
     // ----------------------------------------------------------------
@@ -110,7 +120,7 @@ public class EngineeringObjectRehydrationTests
     [Fact]
     public async Task AfterRestart_TheObjectComesBack_AsItsOwnConcreteType_WithTheSameIdentity()
     {
-        var persistence = new Materials.InMemoryPersistenceStore();
+        var persistence = new InMemoryQueryablePersistenceStore();
         var first = NewLifetime(persistence);
         var created = await CreatePartAsync(first.Domain, materialId: "AL-7075");
 
@@ -131,7 +141,7 @@ public class EngineeringObjectRehydrationTests
     [Fact]
     public async Task AfterRestart_EveryMutableFacet_IsRestored()
     {
-        var persistence = new Materials.InMemoryPersistenceStore();
+        var persistence = new InMemoryQueryablePersistenceStore();
         var first = NewLifetime(persistence);
 
         var parent = await CreateAsync(first.Domain, MechanicalObjectFactoryRegistry.Assembly,
@@ -168,7 +178,7 @@ public class EngineeringObjectRehydrationTests
     [Fact]
     public async Task AfterRestart_AnAttachmentKeepsItsOwnIdentity_NotANewOne()
     {
-        var persistence = new Materials.InMemoryPersistenceStore();
+        var persistence = new InMemoryQueryablePersistenceStore();
         var first = NewLifetime(persistence);
         var part = await CreatePartAsync(first.Domain);
 
@@ -187,7 +197,7 @@ public class EngineeringObjectRehydrationTests
     [Fact]
     public async Task AfterRestart_TheFullLifecycleHistory_ComesBackInOrder_WithItsActorAndTime()
     {
-        var persistence = new Materials.InMemoryPersistenceStore();
+        var persistence = new InMemoryQueryablePersistenceStore();
         var first = NewLifetime(persistence);
         var part = await CreatePartAsync(first.Domain);
 
@@ -207,7 +217,7 @@ public class EngineeringObjectRehydrationTests
     [Fact]
     public async Task AfterRestart_ADeletedObject_IsStillDeleted()
     {
-        var persistence = new Materials.InMemoryPersistenceStore();
+        var persistence = new InMemoryQueryablePersistenceStore();
         var first = NewLifetime(persistence);
         var part = await CreatePartAsync(first.Domain);
         await part.DeleteAsync();
@@ -222,7 +232,7 @@ public class EngineeringObjectRehydrationTests
     [Fact]
     public async Task AfterRestart_TheLatestRevisionIsTheCurrentOne_AndTheFullHistoryIsReadable()
     {
-        var persistence = new Materials.InMemoryPersistenceStore();
+        var persistence = new InMemoryQueryablePersistenceStore();
         var first = NewLifetime(persistence);
         var part = await CreatePartAsync(first.Domain);
         await part.ReviseAsync("Impeller — revised blade profile.", "Rev B");
@@ -243,7 +253,7 @@ public class EngineeringObjectRehydrationTests
     [Fact]
     public async Task ARehydratedObject_CanStillReviseItself_IntoItsOwnCorrectType()
     {
-        var persistence = new Materials.InMemoryPersistenceStore();
+        var persistence = new InMemoryQueryablePersistenceStore();
         var first = NewLifetime(persistence);
         var part = await CreatePartAsync(first.Domain);
 
@@ -266,7 +276,7 @@ public class EngineeringObjectRehydrationTests
     [Fact]
     public async Task ReviseAsync_CarriesLifecycleStateAndHistoryOntoTheRevisedInstance()
     {
-        var persistence = new Materials.InMemoryPersistenceStore();
+        var persistence = new InMemoryQueryablePersistenceStore();
         var life = NewLifetime(persistence);
         var part = await CreatePartAsync(life.Domain);
 
@@ -288,7 +298,7 @@ public class EngineeringObjectRehydrationTests
     [Fact]
     public async Task ReviseAsync_CarriesAttachmentsOntoTheRevisedInstance()
     {
-        var persistence = new Materials.InMemoryPersistenceStore();
+        var persistence = new InMemoryQueryablePersistenceStore();
         var life = NewLifetime(persistence);
         var part = await CreatePartAsync(life.Domain);
         var attachment = new Attachment("profile.step", "model/step", 2048);
@@ -303,7 +313,7 @@ public class EngineeringObjectRehydrationTests
     [Fact]
     public async Task ReviseAsync_StillCarriesEveryStructuralField_TheWP90BBehaviourIsUnchanged()
     {
-        var persistence = new Materials.InMemoryPersistenceStore();
+        var persistence = new InMemoryQueryablePersistenceStore();
         var life = NewLifetime(persistence);
         var parent = await CreateAsync(life.Domain, MechanicalObjectFactoryRegistry.Assembly,
             (doc, rev) => new Assembly(doc, rev, life.Domain, "ASM-100", "Pump Head", EngineeringObjectMetadata.Empty));
@@ -331,7 +341,7 @@ public class EngineeringObjectRehydrationTests
         // instance that had silently reverted to Draft would write that
         // reset to disk on its very next mutation, destroying a recorded
         // lifecycle state and its whole transition history.
-        var persistence = new Materials.InMemoryPersistenceStore();
+        var persistence = new InMemoryQueryablePersistenceStore();
         var first = NewLifetime(persistence);
         var part = await CreatePartAsync(first.Domain);
         await part.TransitionAsync(LifecycleState.InReview);
@@ -356,7 +366,7 @@ public class EngineeringObjectRehydrationTests
     [Fact]
     public async Task AfterRestart_RelationshipsAreReIndexed_WithTheirOwnDurableProvenance()
     {
-        var persistence = new Materials.InMemoryPersistenceStore();
+        var persistence = new InMemoryQueryablePersistenceStore();
         var first = NewLifetime(persistence);
         first.Principal.SetCurrent(TestPrincipal("engineer-1"));
 
@@ -386,7 +396,7 @@ public class EngineeringObjectRehydrationTests
     [Fact]
     public async Task AfterRestart_TheStructuralParentEdge_IsBothRestoredAndStillDiscoverable()
     {
-        var persistence = new Materials.InMemoryPersistenceStore();
+        var persistence = new InMemoryQueryablePersistenceStore();
         var first = NewLifetime(persistence);
         var assembly = await CreateAsync(first.Domain, MechanicalObjectFactoryRegistry.Assembly,
             (doc, rev) => new Assembly(doc, rev, first.Domain, "ASM-100", "Pump Head", EngineeringObjectMetadata.Empty));
@@ -409,7 +419,7 @@ public class EngineeringObjectRehydrationTests
     [Fact]
     public async Task EveryMechanicalKind_ComesBackAsItsOwnRegisteredType()
     {
-        var persistence = new Materials.InMemoryPersistenceStore();
+        var persistence = new InMemoryQueryablePersistenceStore();
         var first = NewLifetime(persistence);
         var domain = first.Domain;
         var metadata = EngineeringObjectMetadata.Empty;
@@ -439,7 +449,7 @@ public class EngineeringObjectRehydrationTests
     [Fact]
     public async Task AfterRestart_ASubAssemblysOwnParentAssemblyId_IsPreserved()
     {
-        var persistence = new Materials.InMemoryPersistenceStore();
+        var persistence = new InMemoryQueryablePersistenceStore();
         var first = NewLifetime(persistence);
         var parentAssemblyId = Guid.NewGuid();
 
@@ -458,7 +468,7 @@ public class EngineeringObjectRehydrationTests
     [Fact]
     public async Task AfterRestart_AConfigurationsOwnMemberRevisions_ArePreserved()
     {
-        var persistence = new Materials.InMemoryPersistenceStore();
+        var persistence = new InMemoryQueryablePersistenceStore();
         var first = NewLifetime(persistence);
         var members = new List<ConfigurationMember> { new(Guid.NewGuid(), 3), new(Guid.NewGuid(), 7) };
 
@@ -475,7 +485,7 @@ public class EngineeringObjectRehydrationTests
     [Fact]
     public async Task AfterRestart_Metadata_IsPreserved()
     {
-        var persistence = new Materials.InMemoryPersistenceStore();
+        var persistence = new InMemoryQueryablePersistenceStore();
         var first = NewLifetime(persistence);
         var metadata = new EngineeringObjectMetadata("Rotating", "Mechanical", "a.engineer", ["pump", "critical"], "Specification", "A note.");
 
@@ -501,7 +511,7 @@ public class EngineeringObjectRehydrationTests
     [Fact]
     public async Task AnUnregisteredKind_IsReportedAndSkipped_NeverThrown_AndNeverCostsTheOtherObjects()
     {
-        var persistence = new Materials.InMemoryPersistenceStore();
+        var persistence = new InMemoryQueryablePersistenceStore();
         var first = NewLifetime(persistence);
         var part = await CreatePartAsync(first.Domain);
         var exotic = await CreateAsync(first.Domain, "SomeFutureKind",
@@ -520,7 +530,7 @@ public class EngineeringObjectRehydrationTests
     [Fact]
     public async Task StateWithNoBackingDocument_IsReportedAsOrphaned_NeverThrown()
     {
-        var persistence = new Materials.InMemoryPersistenceStore();
+        var persistence = new InMemoryQueryablePersistenceStore();
         var first = NewLifetime(persistence);
         var part = await CreatePartAsync(first.Domain);
 
@@ -542,7 +552,7 @@ public class EngineeringObjectRehydrationTests
     [Fact]
     public async Task ACorruptedStateRecord_IsSkipped_AndEveryOtherObjectStillComesBack()
     {
-        var persistence = new Materials.InMemoryPersistenceStore();
+        var persistence = new InMemoryQueryablePersistenceStore();
         var first = NewLifetime(persistence);
         var good = await CreatePartAsync(first.Domain);
         var bad = await CreatePartAsync(first.Domain, "PN-1002", "Wear Ring");
@@ -567,7 +577,7 @@ public class EngineeringObjectRehydrationTests
     [Fact]
     public async Task ARehydrationBatchContainingAStuckRecord_StillReturnsEveryOtherObject()
     {
-        var persistence = new Materials.InMemoryPersistenceStore();
+        var persistence = new InMemoryQueryablePersistenceStore();
         var first = NewLifetime(persistence);
         var good = await CreatePartAsync(first.Domain);
 
@@ -597,7 +607,7 @@ public class EngineeringObjectRehydrationTests
         // Consequences describe, reached here through the full rehydration
         // path (EngineeringObjectRehydrationService -> ListAsync -> Deserialise),
         // not only through the state store directly.
-        var persistence = new Materials.InMemoryPersistenceStore();
+        var persistence = new InMemoryQueryablePersistenceStore();
         var first = NewLifetime(persistence);
 
         var stuckId = Guid.NewGuid();
@@ -619,7 +629,7 @@ public class EngineeringObjectRehydrationTests
     [Fact]
     public async Task AnObjectAlreadyLive_IsNeverReplacedByADiskSnapshot()
     {
-        var persistence = new Materials.InMemoryPersistenceStore();
+        var persistence = new InMemoryQueryablePersistenceStore();
         var life = NewLifetime(persistence);
         var part = await CreatePartAsync(life.Domain);
 
@@ -636,13 +646,14 @@ public class EngineeringObjectRehydrationTests
     }
 
     [Fact]
-    public async Task WithNoStateStoreComposed_RehydrationIsANoOp_NeverAFailure()
+    public async Task WithNothingEverPersisted_RehydrationIsANoOp_NeverAFailure()
     {
+        var persistence = new InMemoryQueryablePersistenceStore();
         var principal = new CurrentPrincipalAccessor();
         var repository = new InMemoryEngineeringObjectRepository();
         var relationships = new InMemoryEngineeringRelationshipRepository();
         var domain = new EngineeringDomainContext(
-            new InMemoryEngineeringDocumentStore(principal), repository, relationships,
+            persistence, new EngineeringDocumentStore(persistence, principal), repository, relationships,
             new LifecycleTransitionTable(), new ValidationRuleSet(),
             new EvidenceComposer(new RelationshipDiscoveryService(relationships, repository), repository), principal);
 
@@ -659,7 +670,7 @@ public class EngineeringObjectRehydrationTests
     [Fact]
     public void Registry_ReportsExactlyTheKindsRegistered()
     {
-        var persistence = new Materials.InMemoryPersistenceStore();
+        var persistence = new InMemoryQueryablePersistenceStore();
         var life = NewLifetime(persistence);
 
         Assert.Equal(
@@ -670,7 +681,7 @@ public class EngineeringObjectRehydrationTests
     [Fact]
     public void Registry_RegisteringTheIdenticalKindAndTypeTwice_IsIdempotent()
     {
-        var persistence = new Materials.InMemoryPersistenceStore();
+        var persistence = new InMemoryQueryablePersistenceStore();
         var life = NewLifetime(persistence);
 
         var exception = Record.Exception(() => MechanicalObjectFactoryRegistry.RegisterRehydrators(life.Rehydrators, life.Domain));
@@ -682,7 +693,7 @@ public class EngineeringObjectRehydrationTests
     [Fact]
     public void Registry_TwoDifferentTypesClaimingTheSameKind_Throws()
     {
-        var persistence = new Materials.InMemoryPersistenceStore();
+        var persistence = new InMemoryQueryablePersistenceStore();
         var life = NewLifetime(persistence);
 
         var exception = Assert.Throws<DuplicateRehydratorRegistrationException>(
@@ -696,7 +707,7 @@ public class EngineeringObjectRehydrationTests
     [Fact]
     public void Registry_AnUnregisteredKind_ResolvesToNothing()
     {
-        var persistence = new Materials.InMemoryPersistenceStore();
+        var persistence = new InMemoryQueryablePersistenceStore();
         var life = NewLifetime(persistence);
 
         Assert.Null(life.Rehydrators.Find("NotAKind"));

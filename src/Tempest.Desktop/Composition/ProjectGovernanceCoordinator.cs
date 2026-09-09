@@ -1,4 +1,4 @@
-using Tempest.App.Projects;
+using Tempest.Workspace.Projects;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Desktop.Theming;
 using Tempest.Desktop.Views;

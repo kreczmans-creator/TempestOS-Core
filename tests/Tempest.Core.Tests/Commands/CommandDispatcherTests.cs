@@ -194,15 +194,18 @@ public class CommandDispatcherTests
     }
 
     [Fact]
-    public async Task DispatchAsync_Succeeds_LogsAtInformationLevel()
+    public async Task DispatchAsync_Succeeds_LogsAtDebugLevel()
     {
+        // `WP 17.2A` (ADR-0146): every dispatch, including its own
+        // success/failure outcome, is Debug-level chatter now — handler
+        // registration above stays Information.
         var logger = new RecordingLevelLogger();
         var dispatcher = CreateDispatcher(logger);
         dispatcher.RegisterHandler(new RecordingCommandHandler<RecordedCommandA>());
 
         await dispatcher.DispatchAsync(new RecordedCommandA(), CancellationToken.None);
 
-        Assert.True(logger.HasEntryAt(LogLevel.Information, "Succeeded"));
+        Assert.True(logger.HasEntryAt(LogLevel.Debug, "Succeeded"));
     }
 
     [Fact]
@@ -297,9 +300,6 @@ public class CommandDispatcherTests
     public void ServiceCollection_SingletonRegistration_ResolvesICommandDispatcherToCommandDispatcher()
     {
         var services = new ServiceCollection();
-        var currentComponentAccessor = new Tempest.Core.Identity.CurrentComponentAccessor();
-        services.AddInstance<Tempest.Core.Identity.ICurrentComponentAccessor>(currentComponentAccessor);
-        services.AddInstance(currentComponentAccessor);
         services.AddInstance<Tempest.Core.Identity.IPermissionEvaluator>(new Tempest.Core.Identity.PermissionEvaluator());
         services.AddInstance<ILogger>(new RecordingLevelLogger());
         services.Singleton<CommandHandlerTable>();
@@ -315,9 +315,6 @@ public class CommandDispatcherTests
     public void ServiceCollection_SingletonRegistration_ResolvesTheSameInstanceEveryTime()
     {
         var services = new ServiceCollection();
-        var currentComponentAccessor = new Tempest.Core.Identity.CurrentComponentAccessor();
-        services.AddInstance<Tempest.Core.Identity.ICurrentComponentAccessor>(currentComponentAccessor);
-        services.AddInstance(currentComponentAccessor);
         services.AddInstance<Tempest.Core.Identity.IPermissionEvaluator>(new Tempest.Core.Identity.PermissionEvaluator());
         services.AddInstance<ILogger>(new RecordingLevelLogger());
         services.Singleton<CommandHandlerTable>();

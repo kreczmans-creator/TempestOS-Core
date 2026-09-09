@@ -8,32 +8,20 @@ namespace Tempest.Core.Tests.Runtime;
 // Matrix.md specifies - IReportingService resolvable, ordinary
 // singleton semantics, and a real register/generate round trip through
 // the container-resolved instance.
-[Collection("Console output capture")]
 public class ReportingHostRegistrationTests
 {
     private static async Task RunAgainstRunningHostAsync(Func<ITempestHost, Task> body)
     {
-        var host = new TempestHostBuilder(Type.EmptyTypes).Build();
-        var originalOut = Console.Out;
+        var host = new TempestHostBuilder(Type.EmptyTypes).WithIsolatedPersistenceRoot().Build();
 
-        try
-        {
-            Console.SetOut(new StringWriter());
+        var runTask = host.RunAsync();
 
-            var runTask = host.RunAsync();
+        await RunningHostFixture.WaitUntilRunningAsync(host);
 
-            while (host.State is HostState.Created or HostState.Starting)
-                await Task.Delay(5);
+        await body(host);
 
-            await body(host);
-
-            await host.StopAsync();
-            await runTask;
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-        }
+        await host.StopAsync();
+        await runTask;
     }
 
     [Fact]

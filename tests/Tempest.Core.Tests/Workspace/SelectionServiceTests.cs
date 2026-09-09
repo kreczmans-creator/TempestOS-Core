@@ -1,4 +1,4 @@
-using Tempest.App.Workspace;
+using Tempest.Workspace;
 using Tempest.Core.Configuration;
 using Tempest.Core.Events;
 using Tempest.Core.Persistence;
@@ -7,9 +7,8 @@ using Tempest.Core.Tests.Plugins;
 
 namespace Tempest.Core.Tests.Workspace;
 
-// Proves ISelectionService (Tempest.App.Workspace) publishes every change
+// Proves ISelectionService (Tempest.Workspace) publishes every change
 // through the real, unmodified IEventBus - no new pub/sub mechanism.
-[Collection("Console output capture")]
 public class SelectionServiceTests
 {
     private sealed class RecordingHandler : IEventHandler<WorkspaceSelectionChangedEvent>
@@ -44,17 +43,8 @@ public class SelectionServiceTests
             .Build();
         var manager = new WorkspaceManager(host);
 
-        var originalOut = Console.Out;
         IWorkspace workspace;
-        try
-        {
-            Console.SetOut(new StringWriter());
-            workspace = await manager.StartAsync();
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-        }
+        workspace = await manager.StartAsync();
 
         var eventBus = (IEventBus)host.Services!.GetService(typeof(IEventBus));
         return (workspace, eventBus, manager);

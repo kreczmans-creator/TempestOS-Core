@@ -1,8 +1,9 @@
 namespace Tempest.Core.Identity;
 
 /// <summary>
-/// The concrete, immutable <see cref="IIdentity"/> implementation used by
-/// <see cref="IIdentityService"/>.
+/// The concrete, immutable <see cref="IIdentity"/> implementation every
+/// concrete <see cref="IPrincipal"/> in this platform is built on,
+/// including <see cref="SessionPrincipal"/>.
 /// </summary>
 /// <remarks>
 /// Named <c>PlatformIdentity</c>, not <c>Identity</c>, to avoid a

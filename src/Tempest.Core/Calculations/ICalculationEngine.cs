@@ -11,4 +11,45 @@ public interface ICalculationEngine
     /// <exception cref="CalculationDefinitionNotFoundException"><paramref name="calculationId"/> is not registered for the requested <typeparamref name="TInput"/>/<typeparamref name="TResult"/> signature.</exception>
     /// <exception cref="CalculationInputInvalidException">The registered definition rejected <paramref name="input"/>.</exception>
     Task<CalculationRecord<TResult>> ExecuteAsync<TInput, TResult>(string calculationId, TInput input, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Reads back a previously executed calculation by the record id
+    /// <see cref="ExecuteAsync{TInput, TResult}"/> returned, or
+    /// <see langword="null"/> where no such record exists.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The engine was write-only: it recorded every execution durably and
+    /// offered no way to read one back as the typed result it was. A display
+    /// reader existed at the application layer, but it flattens the result
+    /// to a string, which is enough to show somebody and not enough to
+    /// reproduce anything.
+    /// </para>
+    /// <para>
+    /// That matters because a calculation's own record is where its pinned
+    /// reference revisions live. Without a typed read-back, an engineer
+    /// could not retrieve the calculation and see which revision of which
+    /// material it stood on — which is the whole reproducibility claim.
+    /// </para>
+    /// </remarks>
+    /// <typeparam name="TResult">The result type the calculation produced. Must match what was executed.</typeparam>
+    /// <param name="recordId">The record id returned by the original execution.</param>
+    /// <param name="cancellationToken">A token observed while reading.</param>
+    /// <exception cref="CalculationException">The stored record cannot be read as <typeparamref name="TResult"/>.</exception>
+    Task<CalculationRecord<TResult>?> FindRecordAsync<TResult>(Guid recordId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Every calculation record this engine has executed and indexed, newest
+    /// first — enough of each to identify it without opening it.
+    /// </summary>
+    /// <remarks>
+    /// Summaries rather than records, deliberately:
+    /// <see cref="FindRecordAsync{TResult}"/> needs the result type, and a
+    /// listing cannot know one type for a heterogeneous set. Open a summary
+    /// by Id, with the type its <see cref="CalculationRecordSummary.ResultTypeName"/> names.
+    /// Returns empty where the engine was constructed without a record index.
+    /// </remarks>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>The summaries, newest execution first.</returns>
+    Task<IReadOnlyList<CalculationRecordSummary>> ListRecordsAsync(CancellationToken cancellationToken = default);
 }

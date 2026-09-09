@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Tempest.Core.EngineeringDomain;
+using Tempest.Core.Tests.Persistence;
 
 namespace Tempest.Core.Tests.EngineeringDomain.SchemaVersioning;
 
@@ -45,7 +46,7 @@ public class GoldenCorpusTests
         var json = await File.ReadAllTextAsync(fixturePath);
         var objectId = ReadId(json);
 
-        var persistence = new InMemoryPersistenceStore();
+        var persistence = new InMemoryQueryablePersistenceStore();
         await persistence.WriteAsync(EngineeringObjectStateStore.StateCollectionName, objectId.ToString("N"), json);
 
         var store = new EngineeringObjectStateStore(persistence);
@@ -188,7 +189,7 @@ public class GoldenCorpusTests
     public async Task TheWholeCorpus_AlsoComesBackTogether_ThroughListAsync()
     {
         var files = Directory.GetFiles(CorpusDirectory, "*.json");
-        var persistence = new InMemoryPersistenceStore();
+        var persistence = new InMemoryQueryablePersistenceStore();
 
         foreach (var file in files)
         {

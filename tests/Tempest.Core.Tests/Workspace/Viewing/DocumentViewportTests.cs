@@ -1,4 +1,4 @@
-using Tempest.App.Workspace.Viewing;
+using Tempest.Workspace.Viewing;
 
 namespace Tempest.Core.Tests.Workspace.Viewing;
 

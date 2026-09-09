@@ -140,6 +140,39 @@ internal sealed class CriticalStartFailureHostedService : ICriticalBackgroundSer
     public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 }
 
+/// <summary>
+/// A critical service whose CONSTRUCTOR throws — `WP 17.0A`. Before that
+/// fix the manager decided criticality from the constructed instance, which
+/// was still null when a constructor failed, so this exact service was
+/// logged and isolated instead of being Host-fatal.
+/// </summary>
+internal sealed class CriticalConstructorFailureHostedService : ICriticalBackgroundService
+{
+    public CriticalConstructorFailureHostedService()
+    {
+        HostedServiceCallLog.Record($"{nameof(CriticalConstructorFailureHostedService)}:Construct");
+        throw new InvalidOperationException("Critical constructor failure.");
+    }
+
+    public Task StartAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+
+    public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+}
+
+/// <summary>An ordinary (non-critical) service whose constructor throws — must still be isolated, not fatal.</summary>
+internal sealed class IsolatedConstructorFailureHostedService : IHostedService
+{
+    public IsolatedConstructorFailureHostedService()
+    {
+        HostedServiceCallLog.Record($"{nameof(IsolatedConstructorFailureHostedService)}:Construct");
+        throw new InvalidOperationException("Isolated constructor failure.");
+    }
+
+    public Task StartAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+
+    public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+}
+
 /// <summary>A critical service that starts successfully but whose <c>StopAsync</c> throws — proves Host-fatal escalation on stop.</summary>
 internal sealed class CriticalStopFailureHostedService : ICriticalBackgroundService
 {

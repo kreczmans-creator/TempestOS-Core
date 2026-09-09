@@ -1,12 +1,13 @@
-using Tempest.App.Projects;
-using Tempest.App.Shell;
-using Tempest.App.Workspace.Mechanical;
+using Tempest.Workspace.Projects;
+using Tempest.Workspace.Shell;
+using Tempest.Workspace.Mechanical;
 using Tempest.Core.EngineeringData;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Events;
 using Tempest.Core.Identity;
 using Tempest.Core.Persistence;
 using Tempest.Core.Settings;
+using Tempest.Core.Tests.Persistence;
 
 namespace Tempest.Core.Tests.Shell;
 
@@ -42,16 +43,16 @@ public class ProductSpineTests
         ISettingsProvider Settings,
         IEventBus EventBus);
 
-    private static async Task<Spine> BuildSpineAsync(ISettingsProvider? settings = null, IPersistenceStore? persistence = null)
+    private static async Task<Spine> BuildSpineAsync(ISettingsProvider? settings = null, InMemoryQueryablePersistenceStore? persistence = null)
     {
-        var persistenceStore = persistence ?? new Materials.InMemoryPersistenceStore();
+        var persistenceStore = persistence ?? new InMemoryQueryablePersistenceStore();
         var principalAccessor = new CurrentPrincipalAccessor();
         var store = new EngineeringDocumentStore(persistenceStore, principalAccessor);
         var repository = new InMemoryEngineeringObjectRepository();
         var relationshipRepository = new InMemoryEngineeringRelationshipRepository();
         var relationshipDiscovery = new RelationshipDiscoveryService(relationshipRepository, repository);
         var domain = new EngineeringDomainContext(
-            store, repository, relationshipRepository, new LifecycleTransitionTable(), new ValidationRuleSet(),
+            persistenceStore, store, repository, relationshipRepository, new LifecycleTransitionTable(), new ValidationRuleSet(),
             new EvidenceComposer(relationshipDiscovery, repository), principalAccessor,
             new EngineeringObjectStateStore(persistenceStore));
 
@@ -374,7 +375,7 @@ public class ProductSpineTests
         // lifetime starts with an empty repository and rebuilds it from
         // the durable store, exactly as a relaunch does (`TD-85`).
         var settings = new SettingsProvider(new Materials.InMemoryPersistenceStore(), new EventBus());
-        var persistence = new Materials.InMemoryPersistenceStore();
+        var persistence = new InMemoryQueryablePersistenceStore();
 
         var first = await BuildSpineAsync(settings, persistence);
         var project = await first.Directory.CreateAsync("P-0027", "Apollo Pump Redesign");
@@ -397,7 +398,7 @@ public class ProductSpineTests
     [Fact]
     public async Task AfterRestart_EveryProjectIsStillListed()
     {
-        var persistence = new Materials.InMemoryPersistenceStore();
+        var persistence = new InMemoryQueryablePersistenceStore();
         var first = await BuildSpineAsync(persistence: persistence);
         await first.Directory.CreateAsync("P-0011", "Hydraulic Manifold");
         await first.Directory.CreateAsync("P-0027", "Apollo Pump Redesign");

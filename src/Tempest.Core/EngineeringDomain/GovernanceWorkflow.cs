@@ -385,6 +385,14 @@ public static class GovernanceRelationshipKinds
     /// <summary>A decision to the risk, issue or requirement it was taken about.</summary>
     public const string Addresses = "addresses";
 
-    /// <summary>A decision to the decision it replaced.</summary>
+    /// <summary>
+    /// A decision to the decision it replaced — and, since `A4`, the
+    /// platform-wide supersession relationship generally: a released
+    /// bearing reference record's own replacement links to the record it
+    /// supersedes with this same kind, in this same direction. Declared
+    /// here rather than redeclared per discipline, so the value has one
+    /// owner (`ADR-0073`'s own vocabulary-drift risk, and the Engineering
+    /// Vocabulary Register's own one-value-one-owner rule).
+    /// </summary>
     public const string Supersedes = "supersedes";
 }

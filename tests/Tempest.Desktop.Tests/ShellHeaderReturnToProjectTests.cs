@@ -2,7 +2,7 @@ using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.LogicalTree;
-using Tempest.App.Shell;
+using Tempest.Workspace.Shell;
 using Tempest.Desktop.Views;
 using Tempest.Samples;
 
@@ -61,7 +61,7 @@ public sealed class ShellHeaderReturnToProjectTests
             Assert.True(chip.IsEnabled);
             chip.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
 
-            var deadline = DateTime.UtcNow.AddSeconds(2);
+            var deadline = DesktopTestHelpers.Deadline(2);
             while (navigator.Current.Area != ShellArea.ProjectWorkspace && DateTime.UtcNow < deadline)
                 await Task.Delay(10);
 

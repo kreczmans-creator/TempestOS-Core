@@ -1,9 +1,9 @@
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.LogicalTree;
-using Tempest.App.Projects;
-using Tempest.App.Shell;
-using Tempest.App.Workspace;
+using Tempest.Workspace.Projects;
+using Tempest.Workspace.Shell;
+using Tempest.Workspace;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Desktop.Views;
 
@@ -481,7 +481,7 @@ public sealed class ProjectGovernanceAcceptanceTests
         MainWindow window,
         Func<IReadOnlyList<ProjectDecisionEntry>, bool> condition)
     {
-        var deadline = DateTime.UtcNow.AddSeconds(2);
+        var deadline = DesktopTestHelpers.Deadline(2);
         while (true)
         {
             await window.RenderCurrentModuleAsync();
@@ -538,7 +538,7 @@ public sealed class ProjectGovernanceAcceptanceTests
     private static async Task ClickWhenPresentAsync(Func<Control> surface, string caption)
     {
         Button? button;
-        var deadline = DateTime.UtcNow.AddSeconds(2);
+        var deadline = DesktopTestHelpers.Deadline(2);
         while (true)
         {
             button = surface().GetLogicalDescendants().OfType<Button>()
@@ -564,7 +564,7 @@ public sealed class ProjectGovernanceAcceptanceTests
     /// </remarks>
     private static async Task RenderUntilAsync(MainWindow window, Func<bool> condition)
     {
-        var deadline = DateTime.UtcNow.AddSeconds(2);
+        var deadline = DesktopTestHelpers.Deadline(2);
         while (true)
         {
             await window.RenderCurrentModuleAsync();
@@ -590,7 +590,7 @@ public sealed class ProjectGovernanceAcceptanceTests
         // dialog need not be showing yet when this helper is called — a second,
         // distinct race from the fixed wait below, which remains disclosed debt.
         // Bounded wait on its real visibility before typing into it.
-        var dialogDeadline = DateTime.UtcNow.AddSeconds(2);
+        var dialogDeadline = DesktopTestHelpers.Deadline(2);
         while (!dialog.IsVisible && DateTime.UtcNow < dialogDeadline)
             await Task.Delay(10);
 

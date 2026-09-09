@@ -1,4 +1,4 @@
-using Tempest.App.Workspace;
+using Tempest.Workspace;
 using Tempest.Core.Configuration;
 using Tempest.Core.Persistence;
 using Tempest.Core.Runtime;
@@ -7,12 +7,11 @@ using Tempest.Samples;
 
 namespace Tempest.Core.Tests.Workspace;
 
-// Proves IProjectExplorer (Tempest.App.Workspace) never calls any
+// Proves IProjectExplorer (Tempest.Workspace) never calls any
 // Engineering Core service directly - every read delegates to whichever
 // IProjectExplorerNodeProvider is registered for the current area
 // (ADR-0067). This Work Package registers none in production; these tests
 // use real, minimal test-double providers to prove the delegation itself.
-[Collection("Console output capture")]
 public class ProjectExplorerTests
 {
     private static async Task<(IWorkspace Workspace, WorkspaceManager Manager)> StartAsync(string rootPath, params Type[] moduleTypes)
@@ -25,17 +24,8 @@ public class ProjectExplorerTests
             .Build();
         var manager = new WorkspaceManager(host);
 
-        var originalOut = Console.Out;
         IWorkspace workspace;
-        try
-        {
-            Console.SetOut(new StringWriter());
-            workspace = await manager.StartAsync();
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-        }
+        workspace = await manager.StartAsync();
 
         return (workspace, manager);
     }
@@ -137,7 +127,7 @@ public class ProjectExplorerTests
     // CurrentPath / EnterAsync / ExitAsync (WP 8.1B — a genuine, disclosed
     // implementation-phase addition, not part of the twelve WP8.0B
     // contracts; ProjectExplorer is internal, reached here via
-    // Tempest.App's own InternalsVisibleTo grant, WP 8.1A)
+    // Tempest.Workspace's own InternalsVisibleTo grant, WP 8.1A)
     // ----------------------------------------------------------------
 
     private static async Task<(IWorkspace Workspace, WorkspaceManager Manager, ProjectExplorer Explorer)> StartWithCategoryAsync(string rootPath)

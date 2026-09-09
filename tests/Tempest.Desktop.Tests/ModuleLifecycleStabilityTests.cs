@@ -143,7 +143,7 @@ public sealed class ModuleLifecycleStabilityTests
         // fault-injection module formerly discovered on this exact real
         // WorkspaceHost path (DuplicateNavigationSampleModule, previously
         // ID'd "tempest.samples.navigation.zzz-duplicate") moved to
-        // Tempest.Validation.FaultInjection, a project Tempest.App/
+        // Tempest.Validation.FaultInjection, a project Tempest.Workspace/
         // Tempest.Desktop never reference and this Host never opts into via
         // EnableFaultInjectionModules() - a genuinely, permanently healthy
         // "no module failed" assertion, not merely a hidden one.

@@ -45,7 +45,7 @@ public class PluginManifestV2FieldsTests
         // envelope shape/verification has its own dedicated coverage; this
         // test's remaining concern is Dependencies/RequestedCapabilities/
         // Publisher parsing, so it takes the unsigned/allowUnsignedLoad path.
-        var service = new PluginManifestDiscoveryService(temp.Path, DefaultVersionProvider, allowUnsignedLoad: true);
+        var service = new PluginManifestDiscoveryService(temp.Path, DefaultVersionProvider);
 
         var result = service.DiscoverManifests();
 
@@ -72,7 +72,7 @@ public class PluginManifestV2FieldsTests
         // Publisher/Signature keys at all in the JSON.
         WriteManifest(folder, PluginManifestJsonBuilder.Build(id: "test.v1", name: "V1 Shaped", assemblyFileName: "V1.dll"));
 
-        var service = new PluginManifestDiscoveryService(temp.Path, DefaultVersionProvider, allowUnsignedLoad: true);
+        var service = new PluginManifestDiscoveryService(temp.Path, DefaultVersionProvider);
 
         var result = service.DiscoverManifests();
 
@@ -88,12 +88,11 @@ public class PluginManifestV2FieldsTests
     // ----------------------------------------------------------------
     // WP 13.9.1: direct constructor-level defaults - not routed through
     // PluginManifestDiscoveryService at all. Proves PluginManifest's own
-    // constructor (restored to optional/trailing dependencies/
-    // requestedCapabilities/publisher/signature, remediating WP13.9.0's
-    // Implementation readiness Finding F3) supplies the correct safe
-    // default for each omitted parameter when called with only the seven
-    // required ones (id, name, version, minimumPlatformVersion,
-    // assemblyFileName, assemblyPath, trustTier).
+    // constructor supplies the correct safe default for each omitted
+    // parameter when called with only the six required ones (id, name,
+    // version, minimumPlatformVersion, assemblyFileName, assemblyPath).
+    // trustTier was a seventh required parameter here; frozen by ADR-0146
+    // (WP 17.2A) along with trust tiers - see src/Frozen/README.md.
     // ----------------------------------------------------------------
 
     [Fact]
@@ -105,8 +104,7 @@ public class PluginManifestV2FieldsTests
             "1.0.0",
             new Version(0, 1, 0),
             "Plugin.dll",
-            "C:/plugins/test.defaults/Plugin.dll",
-            PluginTrustTier.FirstParty);
+            "C:/plugins/test.defaults/Plugin.dll");
 
         Assert.NotNull(manifest.Dependencies);
         Assert.Empty(manifest.Dependencies);
@@ -114,7 +112,6 @@ public class PluginManifestV2FieldsTests
         Assert.Empty(manifest.RequestedCapabilities);
         Assert.Null(manifest.Publisher);
         Assert.Null(manifest.Signature);
-        Assert.Equal(PluginTrustTier.FirstParty, manifest.TrustTier);
     }
 
     // ----------------------------------------------------------------

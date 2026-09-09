@@ -1,11 +1,11 @@
-using Tempest.App.Composition;
-using Tempest.App.Workspace;
-using Tempest.App.Workspace.Calculations;
-using Tempest.App.Workspace.Documents;
-using Tempest.App.Workspace.Manufacturing;
-using Tempest.App.Workspace.Mechanical;
-using Tempest.App.Workspace.Requirements;
-using Tempest.App.Workspace.Verification;
+using Tempest.Workspace.Composition;
+using Tempest.Workspace;
+using Tempest.Workspace.Calculations;
+using Tempest.Workspace.Documents;
+using Tempest.Workspace.Manufacturing;
+using Tempest.Workspace.Mechanical;
+using Tempest.Workspace.Requirements;
+using Tempest.Workspace.Verification;
 using Tempest.Core.Commands;
 using Tempest.Core.Configuration;
 using Tempest.Core.Persistence;
@@ -36,7 +36,6 @@ namespace Tempest.Core.Tests.Commands;
 /// hoped for.
 /// </para>
 /// </remarks>
-[Collection("Console output capture")]
 public sealed class CommandInvocationContractTests : IAsyncLifetime
 {
     private static readonly IReadOnlyList<string> Disciplines =
@@ -66,16 +65,7 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
             .Build();
         _manager = new WorkspaceManager(_host);
 
-        var originalOut = Console.Out;
-        try
-        {
-            Console.SetOut(new StringWriter());
-            await _manager.StartAsync();
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-        }
+        await _manager.StartAsync();
 
         EngineeringWorkspaceComposer.RegisterEngineeringDisciplines(_manager, _host);
         _registry = (ICommandRegistry)_host.Services!.GetService(typeof(ICommandRegistry));
@@ -425,14 +415,15 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
             }
         }
 
-        // Pinned exactly, not as a threshold: thirty of the forty-one
-        // declared parameters carry a rule of their own (a Kind or enum
+        // Pinned exactly, not as a threshold: thirty-one of the forty-two
+        // declared parameters (`WP 17.9.3` added manufacturing.create's
+        // "method" choice) carry a rule of their own (a Kind or enum
         // set, a non-blank requirement, a length limit, a decimal), and
         // every one of them refuses a bad value as an outcome. The other
         // eleven are genuinely free text - the five content fields, two
         // owner fields, and set-bom-line's four optional strings - and
         // have nothing to refuse.
-        Assert.Equal(30, refused);
+        Assert.Equal(31, refused);
     }
 
     [Fact]
@@ -461,7 +452,7 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
             ],
             freeText);
 
-        Assert.Equal(41, Invocable.Sum(d => d.Binding!.Parameters.Count));
+        Assert.Equal(42, Invocable.Sum(d => d.Binding!.Parameters.Count));
     }
 
     [Fact]

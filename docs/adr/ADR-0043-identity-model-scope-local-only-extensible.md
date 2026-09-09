@@ -4,6 +4,12 @@
 
 Accepted — `WP 6.1` (Permissions & Identity), 2026-07-29.
 
+**Amended by `ADR-0146`** (`WP 17.2A`): `IIdentityService`, `IRoleProvider`
+and configuration-sourced roles were deleted; identity is one OS-derived
+`ISessionPrincipal` with a display name and a `SessionRole`. The fail-closed
+rule for an unrecognised principal stands. Recorded 2026-09-08
+(`WP 17.9.3`).
+
 ## Context
 
 `v0.6.0`'s own architecture package (`docs/releases/v0.6.0/Release

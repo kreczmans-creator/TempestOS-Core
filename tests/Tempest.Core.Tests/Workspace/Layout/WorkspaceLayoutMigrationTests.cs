@@ -1,4 +1,4 @@
-using Tempest.App.Workspace.Layout;
+using Tempest.Workspace.Layout;
 
 namespace Tempest.Core.Tests.Workspace.Layout;
 

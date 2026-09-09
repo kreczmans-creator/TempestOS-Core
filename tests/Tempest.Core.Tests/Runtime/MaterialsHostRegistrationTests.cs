@@ -1,5 +1,6 @@
 using Tempest.Core.Configuration;
 using Tempest.Core.Materials;
+using Tempest.Core.ReferenceData;
 using Tempest.Core.Persistence;
 using Tempest.Core.Runtime;
 using Tempest.Core.Tests.Plugins;
@@ -11,7 +12,6 @@ namespace Tempest.Core.Tests.Runtime;
 // IMaterialCatalog resolvable, ordinary singleton semantics, and the
 // catalogue genuinely reuses the same IPersistenceStore instance
 // Settings/Audit/EngineeringData resolve, not a second, independent one.
-[Collection("Console output capture")]
 public class MaterialsHostRegistrationTests
 {
     private static async Task RunAgainstRunningHostAsync(string rootPath, Func<ITempestHost, Task> body)
@@ -22,26 +22,15 @@ public class MaterialsHostRegistrationTests
                 new KeyValuePair<string, string>(PersistenceStore.RootPathConfigurationKey, rootPath),
             ]))
             .Build();
-        var originalOut = Console.Out;
 
-        try
-        {
-            Console.SetOut(new StringWriter());
+        var runTask = host.RunAsync();
 
-            var runTask = host.RunAsync();
+        await RunningHostFixture.WaitUntilRunningAsync(host);
 
-            while (host.State is HostState.Created or HostState.Starting)
-                await Task.Delay(5);
+        await body(host);
 
-            await body(host);
-
-            await host.StopAsync();
-            await runTask;
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-        }
+        await host.StopAsync();
+        await runTask;
     }
 
     [Fact]
@@ -84,19 +73,25 @@ public class MaterialsHostRegistrationTests
         {
             var catalog = (IMaterialCatalog)host.Services!.GetService(typeof(IMaterialCatalog));
 
-            var properties = new Dictionary<string, MaterialProperty>
+            var definition = new MaterialDefinition
             {
-                ["ReferenceLength"] = new MaterialProperty(
-                    new Tempest.Core.UnitsAndQuantities.Quantity<Tempest.Core.UnitsAndQuantities.Length>(
-                        1.0, Tempest.Core.UnitsAndQuantities.LengthUnits.Metre),
-                    MaterialPropertyProvenance.Unknown),
+                Name = "Registration Test Material",
+                Family = MaterialFamily.Other,
+                SourceClassification = "TestFixture",
+                Properties = new Dictionary<string, ReferenceQuantityValue>
+                {
+                    ["ReferenceLength"] = new ReferenceQuantityValue(
+                        new Tempest.Core.UnitsAndQuantities.Quantity<Tempest.Core.UnitsAndQuantities.Length>(
+                            1.0, Tempest.Core.UnitsAndQuantities.LengthUnits.Metre),
+                        ReferenceValueOrigin.Unknown),
+                },
             };
 
-            var material = await catalog.RegisterAsync("registration-test", "Registration Test Material", properties);
-            var found = await catalog.FindAsync(material.MaterialId);
+            var material = await catalog.RegisterAsync("registration-test", definition, ReferenceProvenance.Unknown);
+            var found = await catalog.FindAsync(material.Id);
 
             Assert.NotNull(found);
-            Assert.Equal("Registration Test Material", found!.Name);
+            Assert.Equal("Registration Test Material", found!.Definition.Name);
         });
     }
 }

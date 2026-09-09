@@ -20,15 +20,11 @@ namespace Tempest.Core.Tests.BackgroundServices;
 // test classes lets both classes' StartAsync/StopAsync calls interleave and
 // corrupt each other's recorded entries, the same hazard already found and
 // fixed once for SdkLifecycleLog and once for Console.Out redirection.
-[Collection("Console output capture")]
 public class HostedServiceManagerTests
 {
     private static ITempestServiceProvider BuildProvider(ILogger? logger = null, params Type[] hostedServiceTypes)
     {
         var services = new ServiceCollection();
-        var currentComponentAccessor = new Tempest.Core.Identity.CurrentComponentAccessor();
-        services.AddInstance<Tempest.Core.Identity.ICurrentComponentAccessor>(currentComponentAccessor);
-        services.AddInstance(currentComponentAccessor);
         services.AddInstance<Tempest.Core.Identity.IPermissionEvaluator>(new Tempest.Core.Identity.PermissionEvaluator());
         services.AddInstance<ILogger>(logger ?? new RecordingLevelLogger());
         services.Singleton<IEventBus, EventBus>();
@@ -308,6 +304,38 @@ public class HostedServiceManagerTests
 
         Assert.Contains($"{nameof(AlphaHostedService)}:Start", HostedServiceCallLog.Entries);
         Assert.DoesNotContain(HostedServiceCallLog.Entries, e => e.Contains(nameof(GammaHostedService)));
+    }
+
+    // `WP 17.0A`: a critical service whose constructor throws is Host-fatal,
+    // exactly as one whose StartAsync throws. Criticality is decided from
+    // the type, never from an instance that a failed constructor never made.
+    [Fact]
+    public async Task StartAllAsync_CriticalConstructorFailure_PropagatesUncaught_AndLogsAtCriticalLevel()
+    {
+        var logger = new RecordingLevelLogger();
+        var provider = BuildProvider(logger, typeof(CriticalConstructorFailureHostedService));
+        var manager = new HostedServiceManager([typeof(CriticalConstructorFailureHostedService)], provider, logger);
+
+        var exception = await Assert.ThrowsAnyAsync<Exception>(() => manager.StartAllAsync(CancellationToken.None));
+
+        Assert.Contains("Critical constructor failure", exception.ToString());
+        Assert.True(logger.HasEntryAt(LogLevel.Critical, "Critical hosted service"));
+        Assert.Contains($"{nameof(CriticalConstructorFailureHostedService)}:Construct", HostedServiceCallLog.Entries);
+    }
+
+    [Fact]
+    public async Task StartAllAsync_OrdinaryConstructorFailure_IsIsolated_AndSiblingsStillStart()
+    {
+        var logger = new RecordingLevelLogger();
+        var provider = BuildProvider(logger, typeof(AlphaHostedService), typeof(IsolatedConstructorFailureHostedService));
+        var manager = new HostedServiceManager([typeof(AlphaHostedService), typeof(IsolatedConstructorFailureHostedService)], provider, logger);
+
+        var exception = await Record.ExceptionAsync(() => manager.StartAllAsync(CancellationToken.None));
+
+        Assert.Null(exception);
+        Assert.Contains($"{nameof(AlphaHostedService)}:Start", HostedServiceCallLog.Entries);
+        Assert.True(logger.HasEntryAt(LogLevel.Error, "failed to start; isolated"));
+        Assert.False(logger.HasEntryAt(LogLevel.Critical, "Critical hosted service"));
     }
 
     [Fact]

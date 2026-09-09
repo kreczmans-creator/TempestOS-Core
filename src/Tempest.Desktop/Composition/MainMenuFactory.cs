@@ -1,13 +1,13 @@
 using Avalonia.Controls;
 using Avalonia.Input;
-using Tempest.App.Workspace;
+using Tempest.Workspace;
 using Tempest.Core.Diagnostics;
 using Tempest.Desktop.Docking;
 using Tempest.Desktop.Icons;
 using Tempest.Desktop.Theming;
 using Tempest.Desktop.Views;
 
-using Tempest.App.Workspace.Layout;
+using Tempest.Workspace.Layout;
 
 namespace Tempest.Desktop.Composition;
 

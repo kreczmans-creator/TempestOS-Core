@@ -1,5 +1,5 @@
-using Tempest.App.Workspace;
-using Tempest.App.Workspace.Documents;
+using Tempest.Workspace;
+using Tempest.Workspace.Documents;
 using Tempest.Core.Commands;
 using Tempest.Core.Configuration;
 using Tempest.Core.EngineeringDomain;
@@ -7,8 +7,8 @@ using Tempest.Core.Persistence;
 using Tempest.Core.Runtime;
 using Tempest.Core.Tests.Plugins;
 using Tempest.Samples;
-using Tempest.App.Workspace.Calculations;
-using Tempest.App.Workspace.Requirements;
+using Tempest.Workspace.Calculations;
+using Tempest.Workspace.Requirements;
 
 namespace Tempest.Core.Tests.Workspace;
 
@@ -27,7 +27,6 @@ namespace Tempest.Core.Tests.Workspace;
 /// Framework — mirroring <c>CalculationsWorkspaceIntegrationTests</c>'s own
 /// identical shape.
 /// </summary>
-[Collection("Console output capture")]
 public class DocumentsWorkspaceIntegrationTests
 {
     private static async Task<(IWorkspace Workspace, WorkspaceManager Manager, ITempestHost Host)> StartAsync(string rootPath)
@@ -50,17 +49,8 @@ public class DocumentsWorkspaceIntegrationTests
             .Build();
         var manager = new WorkspaceManager(host);
 
-        var originalOut = Console.Out;
         IWorkspace workspace;
-        try
-        {
-            Console.SetOut(new StringWriter());
-            workspace = await manager.StartAsync();
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-        }
+        workspace = await manager.StartAsync();
 
         // Same disclosed, pre-existing platform timing characteristic
         // CalculationsWorkspaceIntegrationTests's own StartAsync already
@@ -283,7 +273,7 @@ public class DocumentsWorkspaceIntegrationTests
     {
         using var temp = new TempDirectory();
         var (workspace, manager, _) = await StartAsync(temp.Path);
-        var cockpit = ((Tempest.App.Workspace.Workspace)workspace).Cockpit;
+        var cockpit = ((Tempest.Workspace.Workspace)workspace).Cockpit;
 
         var cards = cockpit.DocumentsKpiCards.ToDictionary(c => c.Label, c => c.Value);
 
@@ -312,7 +302,7 @@ public class DocumentsWorkspaceIntegrationTests
     {
         using var temp = new TempDirectory();
         var (workspace, manager, _) = await StartAsync(temp.Path);
-        var cockpit = ((Tempest.App.Workspace.Workspace)workspace).Cockpit;
+        var cockpit = ((Tempest.Workspace.Workspace)workspace).Cockpit;
 
         Assert.Contains(cockpit.AttentionItems, item => item.Title == "Documents are live");
 
@@ -324,7 +314,7 @@ public class DocumentsWorkspaceIntegrationTests
     {
         using var temp = new TempDirectory();
         var (workspace, manager, _) = await StartAsync(temp.Path);
-        var cockpit = ((Tempest.App.Workspace.Workspace)workspace).Cockpit;
+        var cockpit = ((Tempest.Workspace.Workspace)workspace).Cockpit;
 
         Assert.Equal(EngineeringHealthStatus.Attention, cockpit.DocumentationStatus);
 

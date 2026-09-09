@@ -1,15 +1,15 @@
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.LogicalTree;
-using Tempest.App.Workspace;
+using Tempest.Workspace;
 using Tempest.Core.Diagnostics;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Requirements;
 using Tempest.Core.Runtime;
 using Tempest.Desktop.Views;
 using Tempest.Samples;
-using Tempest.App.Workspace.Mechanical;
-using Tempest.App.Workspace.Requirements;
+using Tempest.Workspace.Mechanical;
+using Tempest.Workspace.Requirements;
 
 namespace Tempest.Desktop.Tests;
 

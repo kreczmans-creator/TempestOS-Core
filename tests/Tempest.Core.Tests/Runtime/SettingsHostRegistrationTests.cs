@@ -10,7 +10,6 @@ namespace Tempest.Core.Tests.Runtime;
 // the real, unmodified TempestHost exactly as Service Registration
 // Matrix.md specifies - both resolvable, ordinary singleton semantics,
 // registered ahead of any module's own construction (Phase 6).
-[Collection("Console output capture")]
 public class SettingsHostRegistrationTests
 {
     private static async Task RunAgainstRunningHostAsync(string rootPath, Func<ITempestHost, Task> body)
@@ -21,26 +20,15 @@ public class SettingsHostRegistrationTests
                 new KeyValuePair<string, string>(PersistenceStore.RootPathConfigurationKey, rootPath),
             ]))
             .Build();
-        var originalOut = Console.Out;
 
-        try
-        {
-            Console.SetOut(new StringWriter());
+        var runTask = host.RunAsync();
 
-            var runTask = host.RunAsync();
+        await RunningHostFixture.WaitUntilRunningAsync(host);
 
-            while (host.State is HostState.Created or HostState.Starting)
-                await Task.Delay(5);
+        await body(host);
 
-            await body(host);
-
-            await host.StopAsync();
-            await runTask;
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-        }
+        await host.StopAsync();
+        await runTask;
     }
 
     // Every test below is deliberately `async Task`, awaiting
@@ -63,7 +51,13 @@ public class SettingsHostRegistrationTests
         {
             var store = host.Services!.GetService(typeof(IPersistenceStore));
 
-            Assert.IsType<PersistenceStore>(store);
+            // `ADR-0144`: the default backend is SQLite. The three store
+            // shapes are one instance, not three - which is what actually
+            // matters here, and what two `Singleton<..., PersistenceStore>()`
+            // registrations used not to give.
+            Assert.IsType<SqlitePersistenceStore>(store);
+            Assert.Same(store, host.Services!.GetService(typeof(IBinaryPersistenceStore)));
+            Assert.Same(store, host.Services!.GetService(typeof(IQueryablePersistenceStore)));
 
             return Task.CompletedTask;
         });

@@ -1,11 +1,11 @@
-using Tempest.App.Composition;
-using Tempest.App.Workspace;
-using Tempest.App.Workspace.Calculations;
-using Tempest.App.Workspace.Documents;
-using Tempest.App.Workspace.Manufacturing;
-using Tempest.App.Workspace.Mechanical;
-using Tempest.App.Workspace.Requirements;
-using Tempest.App.Workspace.Verification;
+using Tempest.Workspace.Composition;
+using Tempest.Workspace;
+using Tempest.Workspace.Calculations;
+using Tempest.Workspace.Documents;
+using Tempest.Workspace.Manufacturing;
+using Tempest.Workspace.Mechanical;
+using Tempest.Workspace.Requirements;
+using Tempest.Workspace.Verification;
 using Tempest.Core.Commands;
 using Tempest.Core.Configuration;
 using Tempest.Core.Macros;
@@ -29,7 +29,6 @@ namespace Tempest.Core.Tests.Commands;
 /// values or a confirmation needs a person, and a person is exactly what an
 /// unattended run does not have.
 /// </remarks>
-[Collection("Console output capture")]
 public sealed class MacroBindingEligibilityTests : IAsyncLifetime
 {
     private static readonly IReadOnlyList<string> Disciplines =
@@ -70,16 +69,7 @@ public sealed class MacroBindingEligibilityTests : IAsyncLifetime
             .Build();
         _manager = new WorkspaceManager(_host);
 
-        var originalOut = Console.Out;
-        try
-        {
-            Console.SetOut(new StringWriter());
-            await _manager.StartAsync();
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-        }
+        await _manager.StartAsync();
 
         EngineeringWorkspaceComposer.RegisterEngineeringDisciplines(_manager, _host);
         _registry = (ICommandRegistry)_host.Services!.GetService(typeof(ICommandRegistry));

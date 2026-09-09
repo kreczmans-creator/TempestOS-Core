@@ -36,27 +36,18 @@ namespace Tempest.Core.Plugins;
 /// Lifecycle phase.
 /// </para>
 /// <para>
-/// <b>Signature verification and trust tier assignment (ADR-0112, WP 13.2A).</b>
-/// Once a candidate's fields parse and validate, its declared <c>Signature</c>
-/// (if any) is verified — parsed via <see cref="PluginSignatureEnvelope.TryParse"/>,
-/// resolved against the optional, constructor-supplied <see cref="IPluginTrustStore"/>,
-/// and cryptographically checked via <see cref="PluginSignatureVerifier"/> —
-/// entirely from bytes already on disk (<see cref="File.ReadAllBytes(string)"/>),
-/// never via <see cref="System.Reflection.Assembly.LoadFrom(string)"/>: this
-/// remains Discovery, side-effect-free, per ADR-0026's own phase boundary and
-/// ADR-0112's "Why Discovery, not Loading" reasoning. A missing/blank
-/// <c>Signature</c> assigns <see cref="PluginTrustTier.UnsignedLocal"/> only
-/// if the constructor-supplied <c>allowUnsignedLoad</c> flag is
-/// <see langword="true"/>; otherwise it isolates the candidate
-/// (<see cref="PluginUnsignedLoadNotAllowedException"/>, ADR-0025 category
-/// 16). A present <c>Signature</c> that fails to parse or fails cryptographic
-/// verification isolates the candidate identically
-/// (<see cref="PluginSignatureVerificationFailedException"/>, category 15) —
-/// never downgraded to Unsigned-Local. Both new exception types derive from
-/// <see cref="PluginException"/> and flow through the exact same
-/// <see cref="ProcessCandidate"/> catch block, <see cref="PluginFailureLogging"/>
-/// call sites, and registry-recording path every other category already uses
-/// — no parallel isolation mechanism is introduced.
+/// <b>Frozen by ADR-0146 (<c>WP 17.2A</c>).</b> This service used to verify a
+/// candidate's declared <c>Signature</c> against a local trust store and
+/// assign it a trust tier before returning it, and its caller then loaded the
+/// declared assembly. Signing, the trust store, trust tiers, capability
+/// enforcement and assembly loading are all frozen at
+/// <c>src/Frozen/Tempest.Core.Plugins</c>. <b>Manifest discovery itself is
+/// not.</b> It stays live and in place, because reading, validating,
+/// version-checking, dependency-resolving and recording what is in the plugin
+/// drop folder is cheap, has no attack surface of its own (nothing is loaded,
+/// signed, verified, scoped or enforced), and is what a future plugin
+/// capability would be rebuilt on. A discovered candidate is now recorded as
+/// <see cref="PluginRegistryState.Discovered"/> and goes no further.
 /// </para>
 /// </remarks>
 public sealed class PluginManifestDiscoveryService : IPluginManifestDiscoveryService
@@ -79,8 +70,6 @@ public sealed class PluginManifestDiscoveryService : IPluginManifestDiscoverySer
     private readonly string _manifestFileName;
     private readonly IReadOnlyCollection<string>? _disabledPluginIds;
     private readonly IPluginRegistryRecorder? _registryRecorder;
-    private readonly IPluginTrustStore? _trustStore;
-    private readonly bool _allowUnsignedLoad;
 
     /// <summary>
     /// Initialises a new instance of the <see cref="PluginManifestDiscoveryService"/>
@@ -110,38 +99,19 @@ public sealed class PluginManifestDiscoveryService : IPluginManifestDiscoverySer
     /// candidate's outcome. May be <see langword="null"/> if no registry is
     /// available.
     /// </param>
-    /// <param name="trustStore">
-    /// An optional plugin trust store, used to resolve a signed candidate's
-    /// publisher certificate (ADR-0112). May be <see langword="null"/> if no
-    /// trust store is available — in which case any candidate declaring a
-    /// <c>Signature</c> is treated as failing verification (there is nothing
-    /// to verify it against), and only <paramref name="allowUnsignedLoad"/>
-    /// governs whether an unsigned candidate is accepted at all.
-    /// </param>
-    /// <param name="allowUnsignedLoad">
-    /// Whether a candidate manifest with no <c>Signature</c> field is
-    /// accepted, at <see cref="PluginTrustTier.UnsignedLocal"/>. Defaults to
-    /// <see langword="false"/> — ADR-0112's own safe default
-    /// (<c>Plugins:AllowUnsignedLoad</c>) — meaning an unsigned candidate is
-    /// isolated (category 16) unless a caller explicitly opts in.
-    /// </param>
     public PluginManifestDiscoveryService(
         IPlatformVersionProvider platformVersionProvider,
         ILogger? logger = null,
         string manifestFileName = ManifestFileName,
         IReadOnlyCollection<string>? disabledPluginIds = null,
-        IPluginRegistryRecorder? registryRecorder = null,
-        IPluginTrustStore? trustStore = null,
-        bool allowUnsignedLoad = false)
+        IPluginRegistryRecorder? registryRecorder = null)
         : this(
             Path.Combine(AppContext.BaseDirectory, "Plugins"),
             platformVersionProvider,
             logger,
             manifestFileName,
             disabledPluginIds,
-            registryRecorder,
-            trustStore,
-            allowUnsignedLoad)
+            registryRecorder)
     {
     }
 
@@ -173,29 +143,12 @@ public sealed class PluginManifestDiscoveryService : IPluginManifestDiscoverySer
     /// candidate's outcome. May be <see langword="null"/> if no registry is
     /// available.
     /// </param>
-    /// <param name="trustStore">
-    /// An optional plugin trust store, used to resolve a signed candidate's
-    /// publisher certificate (ADR-0112). May be <see langword="null"/>.
-    /// </param>
-    /// <param name="allowUnsignedLoad">
-    /// Whether a candidate manifest with no <c>Signature</c> field is
-    /// accepted, at <see cref="PluginTrustTier.UnsignedLocal"/>. Defaults to
-    /// <see langword="false"/>.
-    /// </param>
     /// <remarks>
     /// Internal test seam — mirrors
     /// <see cref="Modules.ReflectionFrameworkDiscoveryService"/>'s own
     /// internal, assembly-set-accepting constructor, so discovery can be
     /// exercised deterministically against a controlled temporary directory
-    /// in tests. Every existing caller of this constructor that does not
-    /// pass <paramref name="trustStore"/>/<paramref name="allowUnsignedLoad"/>
-    /// reproduces today's default — no trust store, unsigned load
-    /// disallowed — which means (ADR-0112's own table, category 16) a
-    /// pre-WP-13.2A test manifest carrying no <c>Signature</c> field is now
-    /// isolated unless it is updated to pass <c>allowUnsignedLoad: true</c>
-    /// explicitly. This is a deliberate, disclosed consequence of
-    /// implementing ADR-0112 faithfully, not a defect of this constructor's
-    /// own default values — see this Work Package's own final report.
+    /// in tests.
     /// </remarks>
     internal PluginManifestDiscoveryService(
         string pluginsRootPath,
@@ -203,9 +156,7 @@ public sealed class PluginManifestDiscoveryService : IPluginManifestDiscoverySer
         ILogger? logger = null,
         string manifestFileName = ManifestFileName,
         IReadOnlyCollection<string>? disabledPluginIds = null,
-        IPluginRegistryRecorder? registryRecorder = null,
-        IPluginTrustStore? trustStore = null,
-        bool allowUnsignedLoad = false)
+        IPluginRegistryRecorder? registryRecorder = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(pluginsRootPath);
         ArgumentNullException.ThrowIfNull(platformVersionProvider);
@@ -217,8 +168,6 @@ public sealed class PluginManifestDiscoveryService : IPluginManifestDiscoverySer
         _manifestFileName = manifestFileName;
         _disabledPluginIds = disabledPluginIds;
         _registryRecorder = registryRecorder;
-        _trustStore = trustStore;
-        _allowUnsignedLoad = allowUnsignedLoad;
     }
 
     /// <inheritdoc />
@@ -277,6 +226,19 @@ public sealed class PluginManifestDiscoveryService : IPluginManifestDiscoverySer
             ProcessCandidate(folder, acceptedById, orderedIds);
 
         var result = ResolveDependencyGraph(acceptedById, orderedIds);
+
+        // Frozen by ADR-0146 (WP 17.2A): every candidate that survives
+        // dependency resolution used to be handed to Plugin Loading, which
+        // recorded PluginRegistryState.Loaded once its assembly actually
+        // loaded. Loading is frozen; this is now the terminal state a
+        // surviving candidate ever reaches - discovered, validated, and
+        // going no further.
+        foreach (var manifest in result)
+        {
+            _registryRecorder?.Record(new PluginRegistryEntry(
+                manifest.Id, manifest.Name, manifest.Version, PluginRegistryState.Discovered,
+                "Manifest discovered and validated. Not loaded - plugin loading is frozen (ADR-0146)."));
+        }
 
         _logger?.Information($"Plugin discovery completed. {result.Count} plugin(s) eligible.");
 
@@ -410,8 +372,6 @@ public sealed class PluginManifestDiscoveryService : IPluginManifestDiscoverySer
         var dependencies = ParseDependencies(dto.Dependencies, manifestPath, dto.Id);
         var requestedCapabilities = dto.RequestedCapabilities ?? [];
 
-        var trustTier = AssignTrustTier(dto, assemblyPath);
-
         return new PluginManifest(
             dto.Id!,
             dto.Name!,
@@ -419,123 +379,10 @@ public sealed class PluginManifestDiscoveryService : IPluginManifestDiscoverySer
             minimumPlatformVersion,
             dto.AssemblyFileName!,
             assemblyPath,
-            trustTier,
             dependencies,
             requestedCapabilities,
             dto.Publisher,
             dto.Signature);
-    }
-
-    /// <summary>
-    /// Verifies <paramref name="dto"/>'s own declared <c>Signature</c> (if
-    /// any) and assigns the resulting <see cref="PluginTrustTier"/>, exactly
-    /// per ADR-0112's own tier-assignment table.
-    /// </summary>
-    /// <param name="dto">The candidate's already field-validated raw manifest.</param>
-    /// <param name="assemblyPath">The candidate's resolved, absolute assembly path.</param>
-    /// <exception cref="PluginUnsignedLoadNotAllowedException">
-    /// <paramref name="dto"/> declares no <c>Signature</c> and this service was
-    /// not constructed with <c>allowUnsignedLoad: true</c> (category 16).
-    /// </exception>
-    /// <exception cref="PluginSignatureVerificationFailedException">
-    /// <paramref name="dto"/> declares a <c>Signature</c> that fails to parse
-    /// or fails cryptographic verification (category 15) — never downgraded
-    /// to <see cref="PluginTrustTier.UnsignedLocal"/>.
-    /// </exception>
-    private PluginTrustTier AssignTrustTier(PluginManifestDto dto, string assemblyPath)
-    {
-        if (string.IsNullOrWhiteSpace(dto.Signature))
-        {
-            if (_allowUnsignedLoad)
-                return PluginTrustTier.UnsignedLocal;
-
-            throw new PluginUnsignedLoadNotAllowedException(dto.Id!);
-        }
-
-        // A Signature value that fails to parse as the expected JSON
-        // envelope is treated identically to one that fails cryptographic
-        // verification (ADR-0112) - both funnel into the same
-        // failureReason-then-throw path below, never a separate, softer
-        // category.
-        var envelope = PluginSignatureEnvelope.TryParse(dto.Signature);
-        string? failureReason;
-
-        if (envelope is null)
-        {
-            failureReason = "Signature value could not be parsed as the expected JSON envelope.";
-        }
-        else
-        {
-            var matchedCertificate = _trustStore?.FindByThumbprint(envelope.PublisherCertificateThumbprint);
-
-            if (matchedCertificate is null)
-            {
-                failureReason = _trustStore is null
-                    ? "No plugin trust store is configured; the signature cannot be verified."
-                    : $"No trusted publisher certificate matches thumbprint '{envelope.PublisherCertificateThumbprint}'.";
-            }
-            else
-            {
-                failureReason = VerifySignature(dto, assemblyPath, envelope, matchedCertificate);
-            }
-        }
-
-        if (failureReason is not null)
-            throw new PluginSignatureVerificationFailedException(dto.Id!, failureReason);
-
-        return _trustStore!.IsFirstPartyThumbprint(envelope!.PublisherCertificateThumbprint)
-            ? PluginTrustTier.FirstParty
-            : PluginTrustTier.VerifiedSigned;
-    }
-
-    /// <summary>
-    /// Recomputes the manifest+assembly payload (ADR-0112) from bytes
-    /// already on disk — <see cref="File.ReadAllBytes(string)"/> only, never
-    /// <see cref="System.Reflection.Assembly.LoadFrom(string)"/> — and
-    /// cryptographically verifies <paramref name="envelope"/>'s own signature
-    /// value against it.
-    /// </summary>
-    /// <returns>
-    /// <see langword="null"/> if verification succeeds; otherwise a
-    /// human-readable failure reason.
-    /// </returns>
-    private static string? VerifySignature(
-        PluginManifestDto dto,
-        string assemblyPath,
-        PluginSignatureEnvelope envelope,
-        System.Security.Cryptography.X509Certificates.X509Certificate2 matchedCertificate)
-    {
-        byte[] assemblyBytes;
-
-        try
-        {
-            assemblyBytes = File.ReadAllBytes(assemblyPath);
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-        {
-            return $"The declared assembly '{assemblyPath}' could not be read to verify its signature: {ex.Message}";
-        }
-
-        var dtoWithSignatureNulled = new PluginManifestDto
-        {
-            Id = dto.Id,
-            Name = dto.Name,
-            Version = dto.Version,
-            MinimumPlatformVersion = dto.MinimumPlatformVersion,
-            AssemblyFileName = dto.AssemblyFileName,
-            Dependencies = dto.Dependencies,
-            RequestedCapabilities = dto.RequestedCapabilities,
-            Publisher = dto.Publisher,
-            Signature = null,
-        };
-
-        var manifestHash = PluginSignatureVerifier.ComputeManifestHash(dtoWithSignatureNulled);
-        var assemblyHash = PluginSignatureVerifier.ComputeAssemblyHash(assemblyBytes);
-        var payload = PluginSignatureVerifier.BuildPayload(manifestHash, assemblyHash);
-
-        return PluginSignatureVerifier.Verify(payload, envelope.Value, matchedCertificate)
-            ? null
-            : "The signature does not verify against the recomputed manifest and assembly hash.";
     }
 
     private static IReadOnlyList<PluginDependency> ParseDependencies(IReadOnlyList<PluginDependencyDto>? dtos, string manifestPath, string? pluginId)

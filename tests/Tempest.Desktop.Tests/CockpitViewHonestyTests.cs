@@ -1,7 +1,7 @@
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.LogicalTree;
-using Tempest.App.Workspace;
+using Tempest.Workspace;
 using Tempest.Desktop.Views;
 
 namespace Tempest.Desktop.Tests;
@@ -32,7 +32,7 @@ public sealed class CockpitViewHonestyTests
         try
         {
             await host.StartAsync();
-            var cockpit = ((Workspace)host.Workspace!).Cockpit;
+            var cockpit = host.Workspace!.Cockpit;
 
             // WP 9.4A seeded exactly one real, live Decision
             // ("SAMPLE-DEC-001", baselining the GA Drawing configuration).
@@ -53,7 +53,7 @@ public sealed class CockpitViewHonestyTests
         try
         {
             await host.StartAsync();
-            var cockpit = ((Workspace)host.Workspace!).Cockpit;
+            var cockpit = host.Workspace!.Cockpit;
 
             // `TD-37` fixed, `WP 10.1B`: EngineeringDomainSampleModule's own
             // idempotent-restart guard (root cause: a durable, cross-launch
@@ -90,7 +90,7 @@ public sealed class CockpitViewHonestyTests
         try
         {
             await host.StartAsync();
-            var cockpit = ((Workspace)host.Workspace!).Cockpit;
+            var cockpit = host.Workspace!.Cockpit;
 
             var risksCard = cockpit.KpiCards.Single(c => c.Label == "Risks");
             Assert.False(risksCard.IsPlaceholder);
@@ -117,7 +117,7 @@ public sealed class CockpitViewHonestyTests
         try
         {
             await host.StartAsync();
-            var cockpit = ((Workspace)host.Workspace!).Cockpit;
+            var cockpit = host.Workspace!.Cockpit;
 
             var requirementsReview = int.Parse(cockpit.RequirementsKpiCards.Single(c => c.Label == "Review").Value);
             var calculationsReview = int.Parse(cockpit.CalculationsKpiCards.Single(c => c.Label == "Review").Value);
@@ -149,7 +149,7 @@ public sealed class CockpitViewHonestyTests
         try
         {
             await host.StartAsync();
-            var cockpit = ((Workspace)host.Workspace!).Cockpit;
+            var cockpit = host.Workspace!.Cockpit;
 
             // `TD-37` fixed, `WP 10.1B` (see RiskSummary's own remarks,
             // above): the base sample's own real Milestone
@@ -172,7 +172,7 @@ public sealed class CockpitViewHonestyTests
         try
         {
             await host.StartAsync();
-            var cockpit = ((Workspace)host.Workspace!).Cockpit;
+            var cockpit = host.Workspace!.Cockpit;
 
             // WP 9.3A's own sample data deliberately records one real,
             // honest Fail outcome (its own disclosed "honest failure
@@ -195,7 +195,7 @@ public sealed class CockpitViewHonestyTests
         try
         {
             await host.StartAsync();
-            var cockpit = ((Workspace)host.Workspace!).Cockpit;
+            var cockpit = host.Workspace!.Cockpit;
 
             // Real sample data exists across every discipline, so the
             // rollup must report real reporting disciplines, never the
@@ -218,7 +218,7 @@ public sealed class CockpitViewHonestyTests
         try
         {
             await host.StartAsync();
-            var cockpit = ((Workspace)host.Workspace!).Cockpit;
+            var cockpit = host.Workspace!.Cockpit;
 
             Assert.DoesNotContain("placeholder", cockpit.DigitalThreadSummary, StringComparison.OrdinalIgnoreCase);
             Assert.Contains("link(s) tracked", cockpit.DigitalThreadSummary);
@@ -237,7 +237,7 @@ public sealed class CockpitViewHonestyTests
         try
         {
             await host.StartAsync();
-            var cockpit = ((Workspace)host.Workspace!).Cockpit;
+            var cockpit = host.Workspace!.Cockpit;
 
             // Favouriting a project still has no platform capability
             // behind it, so it stays honestly empty rather than fabricated.
@@ -274,7 +274,7 @@ public sealed class CockpitViewHonestyTests
         {
             await host.StartAsync();
             var workspace = host.Workspace!;
-            var cockpit = ((Workspace)workspace).Cockpit;
+            var cockpit = workspace.Cockpit;
 
             var view = new CockpitView(
                 cockpit,
@@ -324,7 +324,7 @@ public sealed class CockpitViewHonestyTests
         {
             await host.StartAsync();
             var workspace = host.Workspace!;
-            var cockpit = ((Workspace)workspace).Cockpit;
+            var cockpit = workspace.Cockpit;
             var settingsProvider = (Tempest.Core.Settings.ISettingsProvider)host.Services!.GetService(typeof(Tempest.Core.Settings.ISettingsProvider));
             var favourites = new FavouriteObjectsState(settingsProvider);
             var favouriteProjectId = Guid.NewGuid();
@@ -391,7 +391,7 @@ public sealed class CockpitViewHonestyTests
         try
         {
             await host.StartAsync();
-            var cockpit = ((Workspace)host.Workspace!).Cockpit;
+            var cockpit = host.Workspace!.Cockpit;
 
             var items = cockpit.AttentionItems;
             var titles = items.Select(i => i.Title).ToList();
@@ -441,7 +441,7 @@ public sealed class CockpitViewHonestyTests
         try
         {
             await host.StartAsync();
-            var cockpit = ((Workspace)host.Workspace!).Cockpit;
+            var cockpit = host.Workspace!.Cockpit;
 
             var titles = cockpit.OpenActions.Select(a => a.Title).ToList();
 
@@ -470,7 +470,7 @@ public sealed class CockpitViewHonestyTests
         try
         {
             await host.StartAsync();
-            var cockpit = ((Workspace)host.Workspace!).Cockpit;
+            var cockpit = host.Workspace!.Cockpit;
 
             var manufacturing = cockpit.ManufacturingKpiCards;
             Assert.Equal(7, manufacturing.Count);
@@ -503,7 +503,7 @@ public sealed class CockpitViewHonestyTests
         try
         {
             await host.StartAsync();
-            var cockpit = ((Workspace)host.Workspace!).Cockpit;
+            var cockpit = host.Workspace!.Cockpit;
 
             Assert.NotEqual("No Mechanical Project yet", cockpit.ProjectName);
             Assert.NotEmpty(cockpit.RecentProjects);
@@ -523,7 +523,7 @@ public sealed class CockpitViewHonestyTests
         try
         {
             await host.StartAsync();
-            var cockpit = ((Workspace)host.Workspace!).Cockpit;
+            var cockpit = host.Workspace!.Cockpit;
 
             Assert.True(cockpit.AreaCount > 0);
             Assert.NotEmpty(cockpit.AvailableCommands(Tempest.Core.Commands.CommandContext.Empty));

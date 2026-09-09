@@ -6,13 +6,40 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <!-- ADR-0146: the ASP.NET Core/Kestrel FrameworkReference ADR-0049 took
+       for the inbound REST API is gone with it. `Tempest.Core.Api` is
+       frozen outside the build at `src/Frozen/Tempest.Core.Api`, and it
+       was the only thing in this assembly that ever needed a web host. -->
+
   <ItemGroup>
-    <!-- ADR-0049: ASP.NET Core/Kestrel adopted for HTTP hosting only, via
-         the shared framework already bundled with the .NET SDK - not a
-         third-party NuGet package. Confined to Tempest.Core.Api's own
-         hosting boundary; this platform's own DI container and every
-         other platform service remain entirely unchanged. -->
-    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <!-- ADR-0144: the first NuGet package this assembly has ever taken.
+         Persistence is SQLite in WAL mode with full synchronous writes;
+         `Microsoft.Data.Sqlite` is the ADO.NET provider for it, published
+         by the same team as the .NET SDK itself, and it carries exactly
+         one transitive dependency (`SQLitePCLRaw`, the native SQLite
+         binary and its P/Invoke shim). The alternative was to write our
+         own P/Invoke layer over `sqlite3`, which is a worse version of
+         this package with our name on it. Confined to
+         `SqlitePersistenceStore`; no other type in this assembly
+         references it, and no public signature exposes it. -->
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.11" />
+  </ItemGroup>
+
+  <!-- WP 17.2A / ADR-0146, Decision B: Configuration and Logging adopt
+       Microsoft.Extensions' own abstractions where they are genuinely
+       better-shaped for the job than the platform's hand-rolled ones - a
+       hierarchical, multi-source configuration tree, and a levelled,
+       sink-based logging pipeline any future library code (an accounting
+       connector, SQLite diagnostics) can also log into - without pulling
+       the custom DI container along, which nothing here has found a
+       reason to replace. Every version below is pinned to the same
+       10.0.11 already used by Microsoft.Data.Sqlite above. -->
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="10.0.11" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="10.0.11" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="10.0.11" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.CommandLine" Version="10.0.11" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.11" />
   </ItemGroup>
 
 </Project>

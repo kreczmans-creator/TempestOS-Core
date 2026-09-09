@@ -13,7 +13,6 @@ namespace Tempest.Core.Tests.Runtime;
 // singleton semantics, and Audit genuinely reuses the same
 // IPersistenceStore instance Settings resolves, not a second,
 // independent one.
-[Collection("Console output capture")]
 public class AuditHostRegistrationTests
 {
     private static async Task RunAgainstRunningHostAsync(string rootPath, Func<ITempestHost, Task> body)
@@ -22,30 +21,17 @@ public class AuditHostRegistrationTests
             .AddConfigurationSource(new MemoryConfigurationSource(
             [
                 new KeyValuePair<string, string>(PersistenceStore.RootPathConfigurationKey, rootPath),
-                new KeyValuePair<string, string>("Identity:Roles:Auditor:Permissions", AuditQuery.QueryPermission.Key),
-                new KeyValuePair<string, string>("Identity:Principals:registration-test-auditor:Roles", "Auditor"),
             ]))
             .Build();
-        var originalOut = Console.Out;
 
-        try
-        {
-            Console.SetOut(new StringWriter());
+        var runTask = host.RunAsync();
 
-            var runTask = host.RunAsync();
+        await RunningHostFixture.WaitUntilRunningAsync(host);
 
-            while (host.State is HostState.Created or HostState.Starting)
-                await Task.Delay(5);
+        await body(host);
 
-            await body(host);
-
-            await host.StopAsync();
-            await runTask;
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-        }
+        await host.StopAsync();
+        await runTask;
     }
 
     // Every test below is deliberately `async Task`, awaiting
@@ -138,11 +124,13 @@ public class AuditHostRegistrationTests
 
         await RunAgainstRunningHostAsync(temp.Path, async host =>
         {
-            var identityService = (IIdentityService)host.Services!.GetService(typeof(IIdentityService));
+            var principalAccessor = (CurrentPrincipalAccessor)host.Services!.GetService(typeof(CurrentPrincipalAccessor));
             var recorder = (IAuditRecorder)host.Services!.GetService(typeof(IAuditRecorder));
             var query = (IAuditQuery)host.Services!.GetService(typeof(IAuditQuery));
 
-            identityService.EstablishCurrentPrincipal("registration-test-auditor");
+            principalAccessor.SetCurrent(new PlatformPrincipal(
+                new PlatformIdentity("registration-test-auditor", "registration-test-auditor"),
+                [AuditQuery.QueryPermission]));
             await recorder.RecordAsync("registration-test-action");
 
             var records = await query.QueryAsync(new AuditQueryCriteria(actorId: "registration-test-auditor"));

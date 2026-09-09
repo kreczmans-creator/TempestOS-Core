@@ -64,27 +64,35 @@ public sealed class Issue : EngineeringObjectBase, IIssue, IRehydratable<Issue>
 
     /// <summary>Moves this issue to <paramref name="target"/>.</summary>
     /// <exception cref="InvalidIssueStatusTransitionException">The move is not permitted from the current status.</exception>
-    public Task ChangeStatusAsync(IssueStatus target, CancellationToken cancellationToken = default)
-    {
-        lock (_issueLock)
-        {
-            if (!IssueStatusTransitions.IsPermitted(_status, target))
-                throw new InvalidIssueStatusTransitionException(Id, _status, target);
+    public Task ChangeStatusAsync(IssueStatus target, CancellationToken cancellationToken = default) =>
+        MutateTypeStateAndPersistAsync(
+            projectTypeState: () =>
+            {
+                lock (_issueLock)
+                {
+                    if (!IssueStatusTransitions.IsPermitted(_status, target))
+                        throw new InvalidIssueStatusTransitionException(Id, _status, target);
+                }
 
-            _status = target;
-        }
-
-        return PersistStateAsync(cancellationToken);
-    }
+                return new Dictionary<string, string?>(StringComparer.Ordinal)
+                {
+                    [nameof(IssueStatus)] = target.ToString(),
+                };
+            },
+            apply: () => { lock (_issueLock) { _status = target; } },
+            auditDetail: $"Issue status set to '{target}'.",
+            cancellationToken: cancellationToken);
 
     /// <summary>Sets this issue's priority.</summary>
-    public Task SetPriorityAsync(WorkPriority priority, CancellationToken cancellationToken = default)
-    {
-        lock (_issueLock)
-            _priority = priority;
-
-        return PersistStateAsync(cancellationToken);
-    }
+    public Task SetPriorityAsync(WorkPriority priority, CancellationToken cancellationToken = default) =>
+        MutateTypeStateAndPersistAsync(
+            projectTypeState: () => new Dictionary<string, string?>(StringComparer.Ordinal)
+            {
+                [nameof(Priority)] = priority.ToString(),
+            },
+            apply: () => { lock (_issueLock) { _priority = priority; } },
+            auditDetail: $"Issue priority set to '{priority}'.",
+            cancellationToken: cancellationToken);
 
     /// <summary>Assigns this issue to <paramref name="principalId"/>, or unassigns it when <see langword="null"/>.</summary>
     /// <remarks>
@@ -94,10 +102,16 @@ public sealed class Issue : EngineeringObjectBase, IIssue, IRehydratable<Issue>
     /// </remarks>
     public Task AssignAsync(string? principalId, CancellationToken cancellationToken = default)
     {
-        lock (_issueLock)
-            _assignedToPrincipalId = GovernanceState.Normalise(principalId);
+        var normalised = GovernanceState.Normalise(principalId);
 
-        return PersistStateAsync(cancellationToken);
+        return MutateTypeStateAndPersistAsync(
+            projectTypeState: () => new Dictionary<string, string?>(StringComparer.Ordinal)
+            {
+                [nameof(AssignedToPrincipalId)] = normalised,
+            },
+            apply: () => { lock (_issueLock) { _assignedToPrincipalId = normalised; } },
+            auditDetail: normalised is null ? "Issue unassigned." : $"Issue assigned to '{normalised}'.",
+            cancellationToken: cancellationToken);
     }
 
     /// <inheritdoc />
@@ -191,18 +205,24 @@ public class Risk : EngineeringObjectBase, IRisk, IRehydratable<Risk>
 
     /// <summary>Moves this risk to <paramref name="target"/>.</summary>
     /// <exception cref="InvalidRiskStatusTransitionException">The move is not permitted from the current status.</exception>
-    public Task ChangeStatusAsync(RiskStatus target, CancellationToken cancellationToken = default)
-    {
-        lock (_riskLock)
-        {
-            if (!RiskStatusTransitions.IsPermitted(_status, target))
-                throw new InvalidRiskStatusTransitionException(Id, _status, target);
+    public Task ChangeStatusAsync(RiskStatus target, CancellationToken cancellationToken = default) =>
+        MutateTypeStateAndPersistAsync(
+            projectTypeState: () =>
+            {
+                lock (_riskLock)
+                {
+                    if (!RiskStatusTransitions.IsPermitted(_status, target))
+                        throw new InvalidRiskStatusTransitionException(Id, _status, target);
+                }
 
-            _status = target;
-        }
-
-        return PersistStateAsync(cancellationToken);
-    }
+                return new Dictionary<string, string?>(StringComparer.Ordinal)
+                {
+                    [nameof(RiskStatus)] = target.ToString(),
+                };
+            },
+            apply: () => { lock (_riskLock) { _status = target; } },
+            auditDetail: $"Risk status set to '{target}'.",
+            cancellationToken: cancellationToken);
 
     /// <summary>Sets or clears this risk's likelihood and severity scores.</summary>
     /// <remarks>
@@ -212,22 +232,40 @@ public class Risk : EngineeringObjectBase, IRisk, IRehydratable<Risk>
     /// </remarks>
     public Task ScoreAsync(string? likelihood, string? severity, CancellationToken cancellationToken = default)
     {
-        lock (_riskLock)
-        {
-            _likelihood = GovernanceState.Normalise(likelihood);
-            _severity = GovernanceState.Normalise(severity);
-        }
+        var nextLikelihood = GovernanceState.Normalise(likelihood);
+        var nextSeverity = GovernanceState.Normalise(severity);
 
-        return PersistStateAsync(cancellationToken);
+        return MutateTypeStateAndPersistAsync(
+            projectTypeState: () => new Dictionary<string, string?>(StringComparer.Ordinal)
+            {
+                [nameof(Likelihood)] = nextLikelihood,
+                [nameof(Severity)] = nextSeverity,
+            },
+            apply: () =>
+            {
+                lock (_riskLock)
+                {
+                    _likelihood = nextLikelihood;
+                    _severity = nextSeverity;
+                }
+            },
+            auditDetail: $"Risk scored likelihood '{nextLikelihood ?? "none"}', severity '{nextSeverity ?? "none"}'.",
+            cancellationToken: cancellationToken);
     }
 
     /// <summary>Gives this risk an owner, or removes its owner when <see langword="null"/>.</summary>
     public Task AssignOwnerAsync(string? principalId, CancellationToken cancellationToken = default)
     {
-        lock (_riskLock)
-            _ownedByPrincipalId = GovernanceState.Normalise(principalId);
+        var normalised = GovernanceState.Normalise(principalId);
 
-        return PersistStateAsync(cancellationToken);
+        return MutateTypeStateAndPersistAsync(
+            projectTypeState: () => new Dictionary<string, string?>(StringComparer.Ordinal)
+            {
+                [nameof(OwnedByPrincipalId)] = normalised,
+            },
+            apply: () => { lock (_riskLock) { _ownedByPrincipalId = normalised; } },
+            auditDetail: normalised is null ? "Risk owner cleared." : $"Risk owner set to '{normalised}'.",
+            cancellationToken: cancellationToken);
     }
 
     /// <summary>Records that this risk materialised as <paramref name="issueId"/>.</summary>
@@ -370,25 +408,50 @@ public sealed class Decision : EngineeringObjectBase, IDecision, IRehydratable<D
         DateTimeOffset? decidedAt = null,
         CancellationToken cancellationToken = default)
     {
-        lock (_decisionLock)
-        {
-            if (!DecisionStatusTransitions.IsPermitted(_status, target))
-                throw new InvalidDecisionStatusTransitionException(Id, _status, target);
+        // Who decided is recorded at the moment of deciding, and only
+        // then. Superseding a decision later does not change who took
+        // the original one, and overwriting it would erase the record
+        // this family exists to keep. The values are projected here and
+        // committed before any field moves (`ADR-0145`).
+        string? nextDecidedBy = null;
+        DateTimeOffset? nextDecidedAt = null;
 
-            // Who decided is recorded at the moment of deciding, and only
-            // then. Superseding a decision later does not change who took
-            // the original one, and overwriting it would erase the record
-            // this family exists to keep.
-            if (_status is DecisionStatus.Proposed && target is DecisionStatus.Accepted or DecisionStatus.Rejected)
+        return MutateTypeStateAndPersistAsync(
+            projectTypeState: () =>
             {
-                _decidedByPrincipalId = GovernanceState.Normalise(decidedByPrincipalId) ?? _decidedByPrincipalId;
-                _decidedAt = decidedAt ?? _decidedAt;
-            }
+                lock (_decisionLock)
+                {
+                    if (!DecisionStatusTransitions.IsPermitted(_status, target))
+                        throw new InvalidDecisionStatusTransitionException(Id, _status, target);
 
-            _status = target;
-        }
+                    nextDecidedBy = _decidedByPrincipalId;
+                    nextDecidedAt = _decidedAt;
 
-        return PersistStateAsync(cancellationToken);
+                    if (_status is DecisionStatus.Proposed && target is DecisionStatus.Accepted or DecisionStatus.Rejected)
+                    {
+                        nextDecidedBy = GovernanceState.Normalise(decidedByPrincipalId) ?? nextDecidedBy;
+                        nextDecidedAt = decidedAt ?? nextDecidedAt;
+                    }
+                }
+
+                return new Dictionary<string, string?>(StringComparer.Ordinal)
+                {
+                    [nameof(DecisionStatus)] = target.ToString(),
+                    [nameof(DecidedByPrincipalId)] = nextDecidedBy,
+                    [nameof(DecidedAt)] = nextDecidedAt?.ToString("O"),
+                };
+            },
+            apply: () =>
+            {
+                lock (_decisionLock)
+                {
+                    _decidedByPrincipalId = nextDecidedBy;
+                    _decidedAt = nextDecidedAt;
+                    _status = target;
+                }
+            },
+            auditDetail: $"Decision status set to '{target}'.",
+            cancellationToken: cancellationToken);
     }
 
     /// <summary>Rewrites this decision's rationale.</summary>
@@ -396,10 +459,14 @@ public sealed class Decision : EngineeringObjectBase, IDecision, IRehydratable<D
     {
         ArgumentNullException.ThrowIfNull(rationale);
 
-        lock (_decisionLock)
-            _rationale = rationale;
-
-        return PersistStateAsync(cancellationToken);
+        return MutateTypeStateAndPersistAsync(
+            projectTypeState: () => new Dictionary<string, string?>(StringComparer.Ordinal)
+            {
+                [nameof(Rationale)] = rationale,
+            },
+            apply: () => { lock (_decisionLock) { _rationale = rationale; } },
+            auditDetail: "Decision rationale rewritten.",
+            cancellationToken: cancellationToken);
     }
 
     /// <summary>Records that this decision was taken about <paramref name="subjectId"/>.</summary>

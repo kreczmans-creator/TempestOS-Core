@@ -19,20 +19,30 @@ name: CI
 #
 # WP 11.2A adds a third, independent job — governance-health-check — a
 # separate validation stage that runs after build-and-test completes,
-# auditing governance-document consistency (ADR Register, Academy Index,
-# Release Register, Documentation Register, PROJECT_STATUS.md, VERSION,
-# release folders) rather than code. See
-# docs/releases/v0.11.0/WP11.2A Governance Health-Check Tool.md for what
-# it checks and why it is deliberately NOT yet part of the required `CI
-# Gate` job (real, pre-existing governance drift the tool found on its
-# first run — not introduced by this change — would otherwise block
-# every future merge until a separate, larger clean-up Work Package
-# closes it).
+# auditing governance-document consistency rather than code. WP 17.0B
+# ("Governance reset") archived the register suite this job used to
+# cross-check and reduced it to five checks against what remains:
+# the ADR Register against docs/adr/ (by file and by count), VERSION
+# against its planned release folder, every *tagged* release folder
+# having a Release Notes file, and a new check that a PR's Markdown
+# lines added never exceed its code lines added (CONTRIBUTING.md's PR
+# budget). See scripts/governance-healthcheck.ps1's own header for the
+# current check list, and docs/releases/v0.11.0/WP11.2A Governance
+# Health-Check Tool.md for why this job exists in the first place.
 
 on:
   push:
   pull_request:
   workflow_dispatch: {}
+  # WP 17.0C: the mutation job below (Stryker.NET) is deliberately scoped
+  # to this schedule and to workflow_dispatch only, not to push/pull_request
+  # - a mutation-testing run over even the narrow
+  # src/Tempest.Core/Calculations + UnitsAndQuantities scope takes
+  # substantially longer than the rest of this pipeline and is diagnostic,
+  # not a merge gate. Monday 06:00 UTC — ahead of the working week, clear
+  # of any push traffic.
+  schedule:
+    - cron: "0 6 * * 1"
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
@@ -46,6 +56,10 @@ env:
   DOTNET_CLI_TELEMETRY_OPTOUT: "true"
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: "true"
   SOLUTION_PATH: src/TempestOS.slnx
+  # WP 17.0A: every render deadline in Tempest.Desktop.Tests is scaled by
+  # this factor (DesktopTestHelpers.Deadline). A fixed ten-second deadline
+  # passed on a quiet runner and failed on a loaded workstation.
+  TEMPEST_TEST_TIMEOUT_FACTOR: "3"
 
 jobs:
   build-and-test:
@@ -108,10 +122,17 @@ jobs:
       # instance — has no backstop but this job's own 30-minute
       # `timeout-minutes`, which kills the whole matrix leg with no
       # indication of which test caused it. 5 minutes is comfortably above
-      # this suite's real run time (well under a minute) and comfortably
+      # any single test's real run time (the whole Desktop assembly takes
+      # roughly fifteen minutes and the Core assembly five, measured `WP 17.0A`;
+      # no individual test approaches a minute) and comfortably
       # below the 30-minute job timeout, so a genuine hang is caught and
       # named — with a hang dump collected — long before the job itself
       # would otherwise be killed with no diagnostic at all.
+      # --collect:"XPlat Code Coverage" (WP 17.0C): coverlet.collector is
+      # already referenced by both test projects: this only switches the
+      # collector on. Writes one coverage.cobertura.xml per test project
+      # under TestResults/<configuration>/<guid>/ - read back, purely
+      # diagnostically, by the summary step below.
       - name: Test (${{ matrix.configuration }})
         shell: pwsh
         run: |
@@ -121,6 +142,7 @@ jobs:
             --logger trx `
             --logger "console;verbosity=normal" `
             --results-directory "TestResults/${{ matrix.configuration }}" `
+            --collect:"XPlat Code Coverage" `
             --blame-hang `
             --blame-hang-timeout 5m
           if ($LASTEXITCODE -ne 0) {
@@ -175,8 +197,14 @@ jobs:
 
           $trxFiles = Get-ChildItem -Path "TestResults/$config" -Filter "*.trx" -ErrorAction SilentlyContinue
           if ($trxFiles) {
-            $lines.Add("| Test result file | Total | Passed | Failed |")
-            $lines.Add("|---|---|---|---|")
+            # Duration is read from each .trx's own <Times start= finish=>
+            # (WP 17.0C) - the real wall-clock time that assembly's own
+            # `dotnet test` invocation took, not a per-test sum. Purely
+            # diagnostic, alongside the pass/fail counts already here:
+            # never a gate, and parse failures are swallowed per-file so
+            # one malformed .trx cannot blank the whole table.
+            $lines.Add("| Test result file | Total | Passed | Failed | Duration |")
+            $lines.Add("|---|---|---|---|---|")
             foreach ($file in $trxFiles) {
               # `-LiteralPath`: when two assemblies' .trx names collide the
               # runner de-duplicates by appending `[1]`, and `-Path` would
@@ -184,12 +212,51 @@ jobs:
               # file that exists (run 33659184434).
               [xml]$trx = Get-Content -LiteralPath $file.FullName
               $counters = $trx.TestRun.ResultSummary.Counters
-              $lines.Add("| $($file.Name) | $($counters.total) | $($counters.passed) | $($counters.failed) |")
+
+              $duration = "n/a"
+              try {
+                $times = $trx.TestRun.Times
+                if ($times -and $times.start -and $times.finish) {
+                  $span = [DateTimeOffset]::Parse($times.finish) - [DateTimeOffset]::Parse($times.start)
+                  $duration = $span.ToString("hh\:mm\:ss")
+                }
+              } catch {
+                # Diagnostic only - an unparsable Times element leaves
+                # duration as "n/a" rather than failing this step.
+              }
+
+              $lines.Add("| $($file.Name) | $($counters.total) | $($counters.passed) | $($counters.failed) | $duration |")
               $failedResults += $trx.TestRun.Results.UnitTestResult |
                 Where-Object { $_.outcome -eq "Failed" }
             }
           } else {
             $lines.Add("_No test results found - the test step did not complete._")
+          }
+
+          # Line coverage (WP 17.0C): one coverage.cobertura.xml per test
+          # project, written by --collect:"XPlat Code Coverage" under
+          # TestResults/$config/<guid>/. Diagnostic only, exactly like the
+          # pass/fail counts above - never a gate, and a missing or
+          # unparsable file is reported as such rather than failing this
+          # step.
+          $lines.Add("")
+          $coverageFiles = Get-ChildItem -Path "TestResults/$config" -Filter "coverage.cobertura.xml" -Recurse -ErrorAction SilentlyContinue
+          if ($coverageFiles) {
+            $lines.Add("| Coverage report | Line coverage |")
+            $lines.Add("|---|---|")
+            foreach ($file in $coverageFiles) {
+              $label = $file.Directory.Name
+              try {
+                [xml]$cobertura = Get-Content -LiteralPath $file.FullName
+                $lineRate = [double]$cobertura.coverage."line-rate"
+                $percent = [math]::Round($lineRate * 100, 1)
+                $lines.Add("| $label | $percent% |")
+              } catch {
+                $lines.Add("| $label | _unparsable coverage.cobertura.xml_ |")
+              }
+            }
+          } else {
+            $lines.Add("_No coverage.cobertura.xml found - the coverage collector did not produce output._")
           }
 
           if ($failedResults.Count -gt 0) {
@@ -238,14 +305,15 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
-      # Two separate artefacts, deliberately not one — ADR-0101 (`WP 11.3B`):
-      # Tempest.Desktop is TempestOS's shipped application; Tempest.App
-      # (WorkspaceShell) is the Internal Engineering Harness, not a second
-      # product. Bundling both into one "tempestos-release-build" artefact
-      # (as this step did through WP 11.1A/WP 11.1B) implied they were
-      # co-equal deliverables — corrected here. Debug output is not
-      # published for either: it is not a release candidate and would only
-      # double artefact storage for no verification benefit.
+      # Two separate artefacts, deliberately not one — ADR-0101 (`WP 11.3B`,
+      # amended `WP 17.2B`): Tempest.Desktop is TempestOS's shipped
+      # application; Tempest.Harness (WorkspaceShell) is the Internal
+      # Engineering Harness, not a second product. Bundling both into one
+      # "tempestos-release-build" artefact (as this step did through
+      # WP 11.1A/WP 11.1B) implied they were co-equal deliverables —
+      # corrected here. Debug output is not published for either: it is not
+      # a release candidate and would only double artefact storage for no
+      # verification benefit.
       - name: Upload Tempest.Desktop build output (shipped application)
         if: matrix.configuration == 'Release'
         uses: actions/upload-artifact@v4
@@ -256,13 +324,13 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
-      - name: Upload Tempest.App build output (Internal Engineering Harness)
+      - name: Upload Tempest.Harness build output (Internal Engineering Harness)
         if: matrix.configuration == 'Release'
         uses: actions/upload-artifact@v4
         continue-on-error: true
         with:
           name: tempestos-engineering-harness
-          path: src/Tempest.App/bin/Release/net10.0/**
+          path: src/Tempest.Harness/bin/Release/net10.0/**
           if-no-files-found: warn
           retention-days: 14
 
@@ -286,12 +354,16 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          # Release Register vs. git tags (Check 3) needs real tags to
-          # compare against - actions/checkout's own default
-          # (fetch-depth: 1) fetches none. fetch-tags: true is the
-          # supported way to get them without a full, slower
-          # fetch-depth: 0 history clone.
+          # fetch-tags: true gets real tags (the Release Notes check needs
+          # them to know which release folders are actually shipped).
+          # fetch-depth: 0 (WP 17.0B, the new Markdown-vs-code check) gets
+          # full history, without which `main`'s own commits - and so a
+          # merge-base against this branch - are not present in a checkout
+          # by SHA at all; that check already Warns rather than fails when
+          # no merge base can be found, but a shallow clone would make it
+          # Warn on every run instead of actually enforcing the budget.
           fetch-tags: true
+          fetch-depth: 0
           # Pinned explicitly: without this, a tag-triggered push leaves
           # checkout's own default ref (github.ref, e.g. refs/tags/v0.11.0)
           # colliding with fetch-tags's own fetch of that identical tag -
@@ -351,6 +423,11 @@ jobs:
     name: Linux Launch Smoke (advisory)
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    # Advisory means advisory: this job is not in the gate's needs list
+    # (see below), and it must not turn the workflow run red either, because
+    # scripts/new-release.ps1 reads the run's own conclusion before it
+    # will tag. Its failure still shows on the job and as an annotation.
+    continue-on-error: true
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -374,12 +451,28 @@ jobs:
       - name: Launch under Xvfb (smoke)
         run: |
           set +e
-          xvfb-run -a timeout --kill-after=10 25 \
+          # Since `WP 17.2A` part 2 the platform attaches its console log
+          # sink only when stdout is a real, unredirected console; with
+          # stdout redirected to launch.log (as here) the log goes to the
+          # rolling file sink at <persistence root>/logs/tempest-yyyyMMdd.log
+          # and launch.log holds only what .NET itself writes. The root is
+          # pinned through the `TEMPEST_` environment prefix so the file is
+          # in a known place, and the marker below is read from it. The
+          # first `v0.17.0` run of this job failed on exactly this: the app
+          # launched, the marker was in the file log, launch.log was empty.
+          ROOT="$RUNNER_TEMP/tempest-smoke"
+          mkdir -p "$ROOT"
+          TEMPEST_Persistence__RootPath="$ROOT" \
+          xvfb-run -a timeout --kill-after=10 40 \
             dotnet src/Tempest.Desktop/bin/Release/net10.0/Tempest.Desktop.dll \
             > launch.log 2>&1
           code=$?
           echo "Exit code: $code"
+          echo "--- launch.log (stdout/stderr) ---"
           cat launch.log
+          LOGS=$(find "$ROOT" src/Tempest.Desktop/bin/Release/net10.0 -name 'tempest-*.log' 2>/dev/null)
+          echo "--- platform log(s): ${LOGS:-none found} ---"
+          for f in $LOGS; do cat "$f"; done
           if [ -f src/Tempest.Desktop/bin/Release/net10.0/logs/tempestos-crash.log ]; then
             echo "::error::A crash log was written - see logs/tempestos-crash.log"
             cat src/Tempest.Desktop/bin/Release/net10.0/logs/tempestos-crash.log
@@ -389,23 +482,77 @@ jobs:
           # timeout fired" is not by itself evidence of a successful
           # launch — a process that deadlocks *after* Avalonia platform
           # init (a stuck DI resolution, a frozen dispatcher loop) is also
-          # still running at 25 seconds and used to pass this job
+          # still running at the timeout and used to pass this job
           # identically to a healthy one. Require a positive late-startup
           # marker in the captured log as well, so a hang before that
           # point fails even on the timeout branch. The marker is
-          # `TempestHost.EnterRunning`'s own log line, verified empirically
-          # against a real `xvfb-run` launch on this branch rather than
-          # assumed from a grep of the source.
+          # `TempestHost.EnterRunning`'s own log line.
           if [ "$code" -eq 124 ] || [ "$code" -eq 137 ]; then
-            if grep -q "Host -> Running." launch.log; then
+            if grep -qs "Host -> Running." launch.log $LOGS; then
               echo "Still running when the timeout fired, and startup reached 'Host -> Running.' - launched successfully."
               exit 0
             fi
-            echo "::error::Still running when the timeout fired, but the launch log never reached 'Host -> Running.' - the process hung during startup rather than launching."
+            echo "::error::Still running when the timeout fired, but no log reached 'Host -> Running.' - the process hung during startup rather than launching."
             exit 1
           fi
-          echo "::error::Tempest.Desktop exited on its own (code $code) - see launch.log above."
+          echo "::error::Tempest.Desktop exited on its own (code $code) - see the logs above."
           exit 1
+
+  # WP 17.0C — Mutation testing (Stryker.NET), scoped to
+  # src/Tempest.Core/Calculations/** and src/Tempest.Core/UnitsAndQuantities/**
+  # (stryker-config.json at the repository root). Deliberately NOT run on
+  # every push or pull request: a mutation-testing pass rebuilds the
+  # solution and re-runs the affected test project once per surviving
+  # mutant, which costs far more wall-clock time than this pipeline's own
+  # build-and-test job for a diagnostic signal, not a merge gate — see the
+  # `if:` below and the `schedule` trigger at the top of this file.
+  # Deliberately NOT in `gate`'s `needs:` list, and this job's own pass/fail
+  # (driven by stryker-config.json's break threshold) is informational
+  # here, same as everywhere else in this pipeline that is advisory rather
+  # than required.
+  mutation:
+    name: Mutation Testing (Stryker.NET)
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
+    runs-on: windows-2022
+    timeout-minutes: 180
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up .NET SDK (from global.json)
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Restore
+        run: dotnet restore "${{ env.SOLUTION_PATH }}"
+
+      - name: Restore dotnet tools (dotnet-stryker)
+        run: dotnet tool restore
+
+      # Reads stryker-config.json at the repository root by Stryker's own
+      # default convention (looks for that exact filename in the current
+      # working directory) - no -f flag needed. Its break threshold (70)
+      # is what makes this step's own exit code meaningful; it is not
+      # wired into `gate` regardless.
+      - name: Run Stryker.NET
+        run: dotnet stryker
+
+      # Diagnostic output, same reasoning and same continue-on-error as
+      # every other artefact upload in this workflow - the mutation run
+      # itself (the step above) is what actually reports pass/fail;
+      # losing the HTML/JSON report to an artefact-storage hiccup must
+      # never turn a real mutation-score result into a workflow failure
+      # nobody can diagnose.
+      - name: Upload mutation report
+        if: always()
+        uses: actions/upload-artifact@v4
+        continue-on-error: true
+        with:
+          name: stryker-mutation-report
+          path: StrykerOutput/**
+          if-no-files-found: warn
+          retention-days: 30
 
   # A single, named job every branch-protection rule can require, so
   # "the pipeline is green" has one unambiguous status check rather than

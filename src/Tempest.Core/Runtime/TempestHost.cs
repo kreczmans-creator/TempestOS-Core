@@ -1,29 +1,68 @@
-using Tempest.Core.Api;
 using Tempest.Core.Audit;
 using Tempest.Core.BackgroundServices;
+using Tempest.Core.Bearings;
 using Tempest.Core.Calculations;
 using Tempest.Core.Commands;
+using Tempest.Core.Components;
+using Tempest.Core.Constants;
 using Tempest.Core.Configuration;
 using Tempest.Core.DependencyInjection;
 using Tempest.Core.Diagnostics;
 using Tempest.Core.EngineeringData;
 using Tempest.Core.EngineeringDomain;
+using Tempest.Core.BusinessGovernance.Assets;
+using Tempest.Core.BusinessOperations.Crm;
+using Tempest.Core.BusinessOperations.Finance;
+using Tempest.Core.BusinessOperations.Purchasing;
+using Tempest.Core.BusinessOperations.Quality;
+using Tempest.Core.BusinessOperations.Records;
+using Tempest.Core.CommercialIntelligence.Costs;
+using Tempest.Core.EngineeringAssets.CalculationPacks;
+using Tempest.Core.Knowledge.Academy;
+using Tempest.Core.Knowledge.Challenges;
+using Tempest.Core.Knowledge.Lessons;
+using Tempest.Core.Knowledge.Prompts;
+using Tempest.Core.Knowledge.WorkedExamples;
+using Tempest.Core.EngineeringAssets.DesignReviews;
+using Tempest.Core.EngineeringAssets.TechnicalDocumentation;
+using Tempest.Core.EngineeringAssets.Templates;
+using Tempest.Core.EngineeringAssets.Verification;
+using Tempest.Core.CommercialIntelligence.Estimating;
+using Tempest.Core.CommercialIntelligence.LeadTimes;
+using Tempest.Core.CommercialIntelligence.Procurement;
+using Tempest.Core.CommercialIntelligence.Suppliers;
+using Tempest.Core.BusinessGovernance.Contracts;
+using Tempest.Core.BusinessGovernance.Development;
+using Tempest.Core.BusinessGovernance.Finance;
+using Tempest.Core.BusinessGovernance.Operating;
+using Tempest.Core.BusinessGovernance.Pricing;
+using Tempest.Core.BusinessGovernance.Risk;
+using Tempest.Core.EngineeringIntelligence;
+using Tempest.Core.EngineeringIntelligence.Decisions;
+using Tempest.Core.EngineeringIntelligence.DesignRules;
+using Tempest.Core.EngineeringIntelligence.MaterialSelection;
+using Tempest.Core.EngineeringIntelligence.Reviews;
+using Tempest.Core.EngineeringIntelligence.TradeStudies;
 using Tempest.Core.Events;
+using Tempest.Core.Fasteners;
 using Tempest.Core.ExportImport;
 using Tempest.Core.Identity;
 using Tempest.Core.Input;
-using Tempest.Core.Licensing;
 using Tempest.Core.Logging;
 using Tempest.Core.Macros;
+using Tempest.Core.Manufacturing;
 using Tempest.Core.Materials;
 using Tempest.Core.Modules;
 using Tempest.Core.Navigation;
 using Tempest.Core.Notifications;
 using Tempest.Core.Persistence;
 using Tempest.Core.Plugins;
+using Tempest.Core.ReferenceData;
+using Tempest.Core.ReferenceData.Seeding;
 using Tempest.Core.Reporting;
 using Tempest.Core.Requirements;
 using Tempest.Core.Settings;
+using Tempest.Core.Standards;
 using Tempest.Core.Verification;
 using Tempest.Core.Versioning;
 
@@ -69,18 +108,19 @@ namespace Tempest.Core.Runtime;
 /// matching the standard <see cref="IAsyncDisposable"/> convention.
 /// </para>
 /// <para>
-/// <b>Plugin trust and capability enforcement</b> (ADR-0110, ADR-0111,
-/// ADR-0112, WP 13.2A): this class constructs and holds every new
-/// Host-owned trust collaborator — <see cref="Plugins.PluginTrustStore"/>,
-/// <see cref="Plugins.PluginComponentPrincipalRegistry"/>, and
-/// <see cref="Identity.CurrentComponentAccessor"/> — and wires them into
-/// <see cref="Plugins.PluginManifestDiscoveryService"/>,
-/// <see cref="Plugins.PluginAssemblyLoader"/>, and
-/// <see cref="Modules.ModuleLifecycleManager"/>'s own construction, alongside
-/// the already-existing <see cref="Identity.IPermissionEvaluator"/>. None of
-/// the three new collaborators is ever added to the DI
-/// <see cref="DependencyInjection.ServiceCollection"/> (ADR-0017), mirroring
-/// <see cref="Plugins.PluginRegistry"/>'s own established boundary.
+/// <b>Frozen by ADR-0146 (<c>WP 17.2A</c>).</b> This class used to construct
+/// and hold three Host-owned trust collaborators — a plugin trust store, a
+/// component-principal registry, and a current-component accessor — wiring
+/// them into Plugin Discovery, Plugin Loading, and
+/// <see cref="Modules.ModuleLifecycleManager"/>/<see cref="BackgroundServices.HostedServiceManager"/>'s
+/// own construction; it ran a licence-validation phase (ADR-0050) ahead of
+/// even the logger, aborting startup Host-fatally on an invalid licence file;
+/// and it registered the REST API's own <c>IApiEndpointRegistry</c> singleton
+/// (ADR-0047). Signing, trust tiers, capability enforcement, plugin assembly
+/// loading, licensing and the inbound REST API are all frozen at
+/// <c>src/Frozen/</c> — see that folder's own <c>README.md</c>. Plugin
+/// Discovery (Phase 3.1) stays live: the Host still discovers and records
+/// what is in the plugin drop folder, and goes no further.
 /// </para>
 /// </remarks>
 public sealed class TempestHost : ITempestHost
@@ -90,8 +130,8 @@ public sealed class TempestHost : ITempestHost
     private readonly IEnumerable<Type>? _discoveryCandidateTypesOverride;
     private readonly string? _pluginsRootPathOverride;
     private readonly IEnumerable<Type>? _hostedServiceCandidateTypesOverride;
-    private readonly string? _licenseFilePathOverride;
     private readonly bool _includeFaultInjectionModules;
+    private readonly IReadOnlyList<ILogSink> _additionalLogSinks;
     private readonly CancellationTokenSource _shutdownRequested = new();
     private readonly CancellationTokenSource _stopEscalation = new();
     private readonly TaskCompletionSource _runCompletion = new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -103,20 +143,28 @@ public sealed class TempestHost : ITempestHost
     private IHostedServiceManager? _hostedServiceManager;
     private ITempestServiceProvider? _services;
 
+    /// <summary>
+    /// Every already-constructed service instance this Host registered, in
+    /// registration order — what the Service Disposal phase disposes, in
+    /// reverse (`TD-03`, `WP 17.1A`). See <see cref="DisposeRegisteredServiceInstancesAsync"/>.
+    /// </summary>
+    private IReadOnlyList<object>? _registeredServiceInstances;
+    private bool _serviceInstancesDisposed;
+
     internal TempestHost(
         IReadOnlyList<IConfigurationSource> configurationSources,
         IEnumerable<Type>? discoveryCandidateTypesOverride,
         string? pluginsRootPathOverride,
         IEnumerable<Type>? hostedServiceCandidateTypesOverride,
-        string? licenseFilePathOverride,
-        bool includeFaultInjectionModules = false)
+        bool includeFaultInjectionModules = false,
+        IReadOnlyList<ILogSink>? additionalLogSinks = null)
     {
         _configurationSources = configurationSources;
         _discoveryCandidateTypesOverride = discoveryCandidateTypesOverride;
         _pluginsRootPathOverride = pluginsRootPathOverride;
         _hostedServiceCandidateTypesOverride = hostedServiceCandidateTypesOverride;
-        _licenseFilePathOverride = licenseFilePathOverride;
         _includeFaultInjectionModules = includeFaultInjectionModules;
+        _additionalLogSinks = additionalLogSinks ?? [];
     }
 
     /// <inheritdoc />
@@ -199,41 +247,53 @@ public sealed class TempestHost : ITempestHost
 
         var configuration = configurationBuilder.Build();
 
-        // ADR-0050: License validation runs here, before the DI container
-        // (and even the logger) exists - Configuration's own value is
-        // irrelevant to this check, since Licensing never reads
-        // IConfigurationProvider itself (a fixed, documented file-path
-        // convention, mirroring Plugin Manifest's own fixed convention).
-        // An invalid license aborts startup immediately, Host-fatal, per
-        // ADR-0013's existing platform-service-failure classification,
-        // applied here without modification. A missing license file is
-        // not itself invalid - it resolves to a valid, unrestricted-but-
-        // uncapable default (see LicenseValidator's own remarks, and
-        // ADR-0050's own resolution of Risk Register.md's R5).
-        ILicenseValidator licenseValidator = _licenseFilePathOverride is not null
-            ? new LicenseValidator(_licenseFilePathOverride)
-            : new LicenseValidator();
+        // `WP 17.2A` (ADR-0146): a durable, rotated file sink under the
+        // persistence root's own `logs/` folder is registered by default,
+        // alongside the console sink - resolved here, ahead of Persistence
+        // itself (below), from the identical `Persistence:RootPath`
+        // configuration key/default `PersistenceStore`/`SqlitePersistenceStore`
+        // each independently resolve, so the log directory and the
+        // database directory always share one root without this class
+        // taking a dependency on either concrete store type.
+        var persistenceRootPath = configuration.TryGetValue(Persistence.PersistenceStore.RootPathConfigurationKey, out var configuredRootPath)
+            && !string.IsNullOrWhiteSpace(configuredRootPath)
+            ? configuredRootPath
+            : Persistence.PersistenceStore.DefaultRootPath;
 
-        var licenseValidationResult = licenseValidator.Validate();
+        var rollingFileSink = new RollingFileLogSink(Path.Combine(persistenceRootPath, "logs"));
 
-        if (!licenseValidationResult.IsValid)
-        {
-            Console.Error.WriteLine($"License validation failed: {licenseValidationResult.FailureReason}");
-            throw new LicenseValidationException(licenseValidationResult.FailureReason!);
-        }
+        // The console sink is included only when a console is genuinely
+        // attached and useful to write to. `Console.IsOutputRedirected`
+        // reports `true` both for a stream genuinely redirected to a file
+        // or pipe, and - because the underlying handle is invalid - for a
+        // `WinExe` with no console allocated at all (`Tempest.Desktop`),
+        // so `!IsOutputRedirected` alone already excludes the Desktop;
+        // `Environment.UserInteractive` (false for a Windows Service or a
+        // `CreateNoWindow`-launched batch process) is the second half of
+        // "genuinely attached", so this Host never spends a write on a
+        // console nobody can see either way.
+        var consoleAttached = !Console.IsOutputRedirected && Environment.UserInteractive;
 
-        var currentLicense = licenseValidationResult.License!;
+        List<ILogSink> sinks = [rollingFileSink, .. _additionalLogSinks];
 
-        ILogSink sink = new ConsoleLogSink();
+        if (consoleAttached)
+            sinks.Insert(0, new ConsoleLogSink());
+
+        ILogSink sink = sinks.Count > 1 ? new CompositeLogSink(sinks) : sinks[0];
         ILoggerFactory loggerFactory = new LoggerFactory(configuration, sink);
         var logger = loggerFactory.CreateLogger(LoggingServiceCollectionExtensions.DefaultLoggerCategory);
         _logger = logger;
 
+        // `WP 17.2A`: forwards any future library code's own
+        // `Microsoft.Extensions.Logging.ILoggerFactory` dependency (an
+        // accounting connector's `HttpClient` diagnostics in `v0.19.0`,
+        // SQLite's own logging hooks) into this exact same sink pipeline,
+        // category for category - registered below, alongside the rest of
+        // Platform Services.
+        Microsoft.Extensions.Logging.ILoggerFactory microsoftLoggerFactory = new TempestLoggerProvider(loggerFactory);
+
         logger.Information("Host lifecycle phase completed: Configuration Built.");
         logger.Information("Host lifecycle phase completed: Logging Built.");
-        logger.Information(
-            $"Host lifecycle phase completed: License Validated. Licensee: '{currentLicense.LicenseeName}', " +
-            $"{currentLicense.EnabledCapabilities.Count} capability(ies) enabled.");
 
         runToken.ThrowIfCancellationRequested();
 
@@ -274,106 +334,29 @@ public sealed class TempestHost : ITempestHost
             ? configuredDisabled.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
             : null;
 
-        // ADR-0112: the operator's own explicit opt-in for Unsigned-Local
-        // plugins to load at all. Absent or unparseable resolves to false -
-        // ADR-0112's own table names this the safe default (fail closed,
-        // mirroring ADR-0043's identical fail-closed precedent for an
-        // unrecognised identity).
-        var allowUnsignedLoad = configuration.TryGetValue("Plugins:AllowUnsignedLoad", out var rawAllowUnsigned)
-            && bool.TryParse(rawAllowUnsigned, out var parsedAllowUnsigned)
-            && parsedAllowUnsigned;
-
         // Plugin Platform Architecture.md, "Plugin Registry": Host-owned,
         // constructed immediately before Plugin Discovery ever runs, so
-        // both Discovery and Loading can record every candidate's outcome
-        // into it as they go. Never added to the DI ServiceCollection
-        // (ADR-0017's own Host-owned-collaborator boundary, applied to a
-        // fourth collaborator) — only IDiagnosticsProvider.Plugins, the
-        // DI-public read-only projection, ever reaches a module.
+        // Discovery can record every candidate's outcome into it as it
+        // goes. Never added to the DI ServiceCollection (ADR-0017's own
+        // Host-owned-collaborator boundary) — only IDiagnosticsProvider.Plugins,
+        // the DI-public read-only projection, ever reaches a module.
         var pluginRegistry = new PluginRegistry();
 
-        // ADR-0112: the local, flat-file trust store (TrustedPublishers/,
-        // fixed convention relative to AppContext.BaseDirectory) a signed
-        // candidate's PublisherCertificateThumbprint is resolved against.
-        // Host-owned, alongside pluginRegistry, for the identical reason.
-        var pluginTrustStore = new PluginTrustStore(logger);
-
-        // ADR-0111: the small, Host-owned registry mapping a discovered
-        // IModule Type back to the plugin's own component principal that
-        // owns it - written once, by PluginAssemblyLoader, for every plugin
-        // whose two static trust checks both pass; read later by the
-        // componentScopeProvider closure passed to ModuleLifecycleManager,
-        // below. Never added to the DI ServiceCollection, for the same
-        // ADR-0017 reason as pluginRegistry/pluginTrustStore.
-        var componentPrincipalRegistry = new PluginComponentPrincipalRegistry();
-
-        // WP 13.9.4: the small, Host-owned registry recording every
-        // discovered IModule or IHostedService Type belonging to a plugin
-        // PluginAssemblyLoader denies trust to - written once, by
-        // PluginAssemblyLoader, for every plugin either static trust check
-        // rejects; read twice, below, by Module Registration's own filter
-        // AND Hosted Service Registration's own filter - closing the gap
-        // where a denied plugin's already-loaded assembly (ADR-0015: that
-        // step cannot be undone) could still be separately rediscovered and
-        // fully lifecycle-run/started by Module Discovery or Hosted Service
-        // Discovery (both deliberately plugin-unaware, ADR-0110). One
-        // registry covers both pipelines - a single Type can implement both
-        // IModule and IHostedService, and denial must exclude it from
-        // whichever pipeline(s) would otherwise have found it. Never added
-        // to the DI ServiceCollection, for the identical ADR-0017 reason as
-        // componentPrincipalRegistry.
-        var deniedTypeRegistry = new PluginDeniedTypeRegistry();
-
-        // ADR-0111: the second, component-scoped identity axis, distinct
-        // from CurrentPrincipalAccessor's own user-scoped one (constructed
-        // below, at Platform Services Registered). Constructed here, ahead
-        // of Plugin Discovery, mirroring CurrentPrincipalAccessor's own
-        // early-construction convention - EventBus's own construction
-        // (Platform Services Registered, Phase 6, later) is what actually
-        // needs it; Plugin Discovery/Loading do not read it directly.
-        var currentComponentAccessor = new CurrentComponentAccessor();
-
+        // Frozen by ADR-0146 (WP 17.2A): this is now the whole of the
+        // plugin platform the Host still runs. Discovery reads, validates,
+        // version-checks, dependency-resolves and records what is in the
+        // plugin drop folder; nothing is signed, verified, trust-tiered,
+        // loaded or scoped. See src/Frozen/README.md.
         var pluginDiscoveryService = new PluginManifestDiscoveryService(
-            pluginsRootPath, platformVersionProvider, logger, manifestFileName, disabledPluginIds, pluginRegistry,
-            pluginTrustStore, allowUnsignedLoad);
+            pluginsRootPath, platformVersionProvider, logger, manifestFileName, disabledPluginIds, pluginRegistry);
 
         var pluginManifests = pluginDiscoveryService.DiscoverManifests();
-        logger.Information($"Host lifecycle phase completed: Plugin Discovery. {pluginManifests.Count} plugin(s) eligible.");
+        logger.Information($"Host lifecycle phase completed: Plugin Discovery. {pluginManifests.Count} plugin(s) discovered.");
 
         runToken.ThrowIfCancellationRequested();
 
-        // ADR-0110/ADR-0111: componentPrincipalRegistry is passed as the
-        // IPluginComponentPrincipalRecorder write side only - the loader
-        // records a trust-checked plugin's own component principal against
-        // each of its discovered IModule types here. WP 13.9.4:
-        // deniedTypeRegistry is passed as the IPluginDeniedTypeRecorder write
-        // side - the loader records every discovered IModule and
-        // IHostedService type belonging to a denied plugin here; Module
-        // Discovery's and Hosted Service Discovery's own scans below remain
-        // entirely unchanged and still plugin-unaware (ADR-0110) - only
-        // Module Registration and Hosted Service Registration, further
-        // below, are filtered against what this registry records.
-        IPluginAssemblyLoader pluginAssemblyLoader = new PluginAssemblyLoader(
-            logger, pluginRegistry, componentPrincipalRegistry, deniedTypeRegistry);
-        var loadedPluginAssemblies = pluginAssemblyLoader.LoadPlugins(pluginManifests);
-        logger.Information($"Host lifecycle phase completed: Plugin Loading. {loadedPluginAssemblies.Count} plugin assembly(ies) loaded.");
-
-        runToken.ThrowIfCancellationRequested();
-
-        // WP 13.9.6: isTypeExcluded is wired to deniedTypeRegistry.IsDenied,
-        // already fully populated by Plugin Loading, above - closing the
-        // trust boundary gap the WP 13.9.4 filters below could not: an
-        // unattributed IModule type belonging to a denied plugin was
-        // previously still constructed via Activator.CreateInstance inside
-        // CreateDescriptor, during Module Discovery itself, strictly before
-        // either filter below is ever consulted (a genuine, live constructor
-        // execution for a denied plugin's code), and - if that same type also
-        // lacked a public parameterless constructor - threw an uncaught
-        // ModuleDiscoveryException that faulted the whole Host. Both are
-        // closed by this one predicate; ReflectionFrameworkDiscoveryService
-        // itself gains no plugin awareness (ADR-0110) - see its own remarks.
         var discovery = new ReflectionFrameworkDiscoveryService(
-            logger, includeFaultInjectionModules: _includeFaultInjectionModules, isTypeExcluded: deniedTypeRegistry.IsDenied);
+            logger, includeFaultInjectionModules: _includeFaultInjectionModules);
 
         var descriptors = _discoveryCandidateTypesOverride is not null
             ? discovery.DiscoverModules(_discoveryCandidateTypesOverride)
@@ -385,41 +368,8 @@ public sealed class TempestHost : ITempestHost
 
         var moduleManager = new RuntimeModuleManager(logger);
 
-        // WP 13.9.4: the trust-denial execution boundary. A descriptor whose
-        // ModuleType was recorded by deniedTypeRegistry belongs to a plugin
-        // PluginAssemblyLoader already denied trust - its assembly remains
-        // resident in the process (ADR-0015: load cannot be undone) and
-        // Module Discovery, immediately above, is deliberately plugin-unaware
-        // (ADR-0110) and so still found it - but it must never reach Module
-        // Registration, and therefore never InitialiseAsync/StartAsync, and
-        // therefore never Command/Navigation/Event registration (all only
-        // reachable from inside a running module body). Hosted Service
-        // Registration, further below, is filtered identically -
-        // ReflectionFrameworkDiscoveryService, RuntimeModuleManager,
-        // ModuleLifecycleManager, HostedServiceDiscoveryService, and
-        // IHostedServiceManager themselves gain no trust awareness at all -
-        // these two filters are the only new logic, living entirely in this
-        // orchestration method, exactly where componentScopeProvider (below)
-        // already threads plugin-relevant data through otherwise fully
-        // generic machinery.
-        var deniedCount = 0;
-
         foreach (var descriptor in descriptors)
-        {
-            if (deniedTypeRegistry.IsDenied(descriptor.ModuleType))
-            {
-                deniedCount++;
-                logger.Warning(
-                    $"Module '{descriptor.ModuleType.FullName}' excluded from Module Registration: " +
-                    "its own plugin was denied trust (ADR-0110/ADR-0111/WP 13.9.4).");
-                continue;
-            }
-
             moduleManager.Register(descriptor);
-        }
-
-        if (deniedCount > 0)
-            logger.Warning($"{deniedCount} module(s) excluded from Module Registration due to plugin trust denial.");
 
         _moduleManager = moduleManager;
         logger.Information("Host lifecycle phase completed: Module Registration.");
@@ -428,56 +378,25 @@ public sealed class TempestHost : ITempestHost
 
         var hostedServiceDiscovery = new HostedServiceDiscoveryService(logger);
 
-        var discoveredHostedServiceTypes = _hostedServiceCandidateTypesOverride is not null
+        var hostedServiceTypes = _hostedServiceCandidateTypesOverride is not null
             ? hostedServiceDiscovery.DiscoverHostedServiceTypes(_hostedServiceCandidateTypesOverride)
             : hostedServiceDiscovery.DiscoverHostedServiceTypes();
-
-        // WP 13.9.4: the identical trust-denial execution boundary applied
-        // to Module Registration, above, applied here to Hosted Service
-        // Registration - a second, wholly independent discovery/registration
-        // pipeline (HostedServiceDiscoveryService/IHostedServiceManager) a
-        // denied plugin's already-loaded assembly could otherwise still
-        // reach, even for a type that ALSO implements IModule and was
-        // already correctly excluded above - deniedTypeRegistry is keyed on
-        // Type alone, covering both pipelines from the one recording pass.
-        var hostedServiceTypes = new List<Type>();
-        var deniedHostedServiceCount = 0;
-
-        foreach (var hostedServiceType in discoveredHostedServiceTypes)
-        {
-            if (deniedTypeRegistry.IsDenied(hostedServiceType))
-            {
-                deniedHostedServiceCount++;
-                logger.Warning(
-                    $"Hosted service '{hostedServiceType.FullName}' excluded from Hosted Service Registration: " +
-                    "its own plugin was denied trust (ADR-0110/ADR-0111/WP 13.9.4).");
-                continue;
-            }
-
-            hostedServiceTypes.Add(hostedServiceType);
-        }
-
-        if (deniedHostedServiceCount > 0)
-        {
-            logger.Warning(
-                $"{deniedHostedServiceCount} hosted service(s) excluded from Hosted Service Registration due to " +
-                "plugin trust denial.");
-        }
 
         var services = new ServiceCollection(logger);
         services.AddInstance(configuration);
         services.AddInstance(sink);
         services.AddInstance(loggerFactory);
         services.AddInstance(logger);
+        services.AddInstance(microsoftLoggerFactory);
+
+        // Registered under its own concrete type, distinct from `sink`
+        // above (which may be the `CompositeLogSink` wrapping it, not
+        // itself `IDisposable`) - the Service Disposal phase (`TD-03`,
+        // `WP 17.1A`) walks every `AddInstance`-registered instance, so
+        // this is what makes the rolling file sink's own writer close, and
+        // its swallowed-error count reported, on Host shutdown.
+        services.AddInstance(rollingFileSink);
         services.AddInstance(platformVersionProvider);
-        // ADR-0110/ADR-0111: EventBus, NavigationService, CommandHandlerTable,
-        // and CommandRegistry each gained new, optional, trailing constructor
-        // parameters (a component-scope accessor and/or IPermissionEvaluator)
-        // for the trust-ordered registration rule and capability-gated
-        // publish/register checks. No change is needed at these registration
-        // lines themselves - see currentComponentAccessor's own dual
-        // registration, below, and its remarks on lazy constructor-parameter
-        // resolution.
         services.Singleton<IEventBus, EventBus>();
         services.Singleton<IReportingService, ReportingService>();
         services.Singleton<INotificationDispatcher, NotificationDispatcher>();
@@ -489,48 +408,50 @@ public sealed class TempestHost : ITempestHost
         // ADR-0044: CurrentPrincipalAccessor is constructed directly, once,
         // and registered under both its own concrete type and
         // ICurrentPrincipalAccessor - the same already-built instance under
-        // two service-type keys - so IdentityService (which needs write
-        // access via the concrete type) and every ordinary consumer
-        // (which resolves only the read-only interface) share the exact
-        // same object, never two independently-constructed ones. See
-        // CurrentPrincipalAccessor's own remarks.
+        // two service-type keys - so a caller needing write access (the
+        // presentation layer's own SessionPrincipalSource boundary,
+        // `WP 17.2A`) and every ordinary consumer (which resolves only the
+        // read-only interface) share the exact same object, never two
+        // independently-constructed ones. See CurrentPrincipalAccessor's
+        // own remarks.
+        //
+        // `WP 17.2A` (ADR-0146): IRoleProvider/RoleProvider and
+        // IIdentityService/IdentityService are deleted, not merely
+        // unregistered - Identity collapses to one session principal
+        // (SessionPrincipalSource, established directly on the concrete
+        // CurrentPrincipalAccessor by the presentation layer, never
+        // resolved through a Host-registered identity service).
         var currentPrincipalAccessor = new CurrentPrincipalAccessor();
         services.AddInstance<ICurrentPrincipalAccessor>(currentPrincipalAccessor);
         services.AddInstance(currentPrincipalAccessor);
-        services.Singleton<IRoleProvider, RoleProvider>();
+
+        // `WP 17.9.1`: identity ids are stored; names are shown. One directory
+        // over the same accessor, so every surface describes a principal the
+        // same way.
+        services.AddInstance<IPrincipalDirectory>(new PrincipalDirectory(currentPrincipalAccessor));
         services.Singleton<IPermissionEvaluator, PermissionEvaluator>();
-        services.Singleton<IIdentityService, IdentityService>();
 
-        // ADR-0111: currentComponentAccessor was already constructed above,
-        // ahead of Plugin Discovery - registered here, under both its own
-        // concrete type (EventBus's own constructor needs the concrete type
-        // specifically, to call BeginScope) and ICurrentComponentAccessor
-        // (NavigationService/CommandRegistry/CommandHandlerTable only ever
-        // need the read-only interface), mirroring currentPrincipalAccessor's
-        // own dual-registration pattern immediately above. IPermissionEvaluator
-        // is already registered above (WP 6.1) - NavigationService,
-        // CommandRegistry, CommandHandlerTable, and EventBus (registered
-        // below) each resolve it, and currentComponentAccessor, through
-        // their own new, optional constructor parameters automatically:
-        // TempestServiceProvider resolves every constructor parameter type
-        // lazily, at first resolution, not at Singleton<> registration time
-        // (see ServiceCollection.cs/TempestServiceProvider.cs) - so no
-        // change is needed at any of those types' own Singleton<> lines
-        // below beyond what construction-time resolution already provides.
-        services.AddInstance<ICurrentComponentAccessor>(currentComponentAccessor);
-        services.AddInstance(currentComponentAccessor);
-
-        // ADR-0050: Licensing's ILicenseProvider wraps the already-
-        // validated license from before Phase 1 - registered via
-        // AddInstance, never container-constructed, exactly like
-        // IPlatformVersionProvider and IDiagnosticsProvider below.
-        ILicenseProvider licenseProvider = new LicenseProvider(currentLicense);
-        services.AddInstance(licenseProvider);
-
-        // ADR-0041: Persistence is established here, as part of Settings'
-        // own scope, ahead of Settings' own registration so the container
-        // can resolve IPersistenceStore for SettingsProvider's constructor.
-        services.Singleton<IPersistenceStore, PersistenceStore>();
+        // ADR-0041/ADR-0144: Persistence is established here, as part of
+        // Settings' own scope, ahead of Settings' own registration so the
+        // container can resolve IPersistenceStore for SettingsProvider's
+        // constructor.
+        //
+        // ADR-0144 changed two things about these lines. The backend is now
+        // SQLite by default, selected by `Persistence:Backend`
+        // (`files` still selects the file-per-key store for exactly one
+        // release). And ONE instance is constructed here and registered
+        // under all three store shapes, rather than three Singleton<>
+        // registrations that would each have constructed their own - which
+        // is what the two `Singleton<..., PersistenceStore>()` lines this
+        // replaces actually did: the text store and the byte store were two
+        // objects over one directory tree, harmless for a file store and
+        // impossible for one holding an exclusive lock on one database
+        // file. The dual-registration shape is ADR-0044's own, already used
+        // here for CurrentPrincipalAccessor and ImportService.
+        var persistenceStore = CreatePersistenceStore(configuration, logger);
+        services.AddInstance(typeof(IPersistenceStore), persistenceStore);
+        services.AddInstance(typeof(IBinaryPersistenceStore), persistenceStore);
+        services.AddInstance(typeof(IQueryablePersistenceStore), persistenceStore);
         services.Singleton<ISettingsProvider, SettingsProvider>();
 
         // WP 10.6A / ADR-0098 / ADR-0100: the Macro foundation and the
@@ -550,14 +471,6 @@ public sealed class TempestHost : ITempestHost
         // & Permissions, both of which it depends on.
         services.Singleton<IAuditRecorder, AuditRecorder>();
         services.Singleton<IAuditQuery, AuditQuery>();
-
-        // ADR-0047: the REST API's own hosted-service scaffold is
-        // registered separately, via hosted service discovery, below -
-        // IApiEndpointRegistry itself is an ordinary Phase 6 singleton,
-        // resolvable by any module wanting to map a route during its own
-        // initialisation, before the hosted service itself ever starts
-        // listening.
-        services.Singleton<IApiEndpointRegistry, ApiEndpointRegistry>();
 
         // ADR-0051: Export/Import reads from whatever service owns the
         // exported data (Settings, Reporting) via that service's own
@@ -630,25 +543,25 @@ public sealed class TempestHost : ITempestHost
         // document was never designed to carry), never a second one.
         services.Singleton<IEngineeringObjectStateStore, EngineeringObjectStateStore>();
 
-        // TD-31: the durable bytes of an attached file. Registered here for
-        // the same reason and on the same terms as the state store above -
-        // the same single persistence store, in its byte shape
+        // TD-31: the durable bytes of an attached file. Built on the same
+        // single persistence store, in its byte shape
         // (IBinaryPersistenceStore), with its own collection. The metadata
         // stays on the object; only the content lives here, so rehydrating
         // a whole object graph never loads a file.
-        services.Singleton<IBinaryPersistenceStore, PersistenceStore>();
+        //
+        // IBinaryPersistenceStore itself is registered up with the rest of
+        // Persistence (ADR-0144) - it used to be registered here, a second
+        // time and as a second instance, which is now both unnecessary and
+        // impossible.
         services.Singleton<IAttachmentContentStore, AttachmentContentStore>();
 
-        // WP 16.4B-R2: the durable write-intent marker for an attachment
-        // whose content write has landed but whose state write has not.
-        // Registered here, alongside AttachmentContentStore, and taken as
-        // an optional collaborator by both EngineeringDomainContext (which
-        // marks/clears it around AttachContentAsync's two writes) and
-        // AttachmentContentReconciliationService (whose sweep skips
-        // whatever it still marks) - the production Host always composes
-        // the two together, closing the race a content-key-vs-object-state
-        // comparison alone cannot.
-        services.Singleton<IAttachmentWriteIntentStore, AttachmentWriteIntentStore>();
+        // ADR-0145: there is no write-intent marker here any more. The
+        // marker, its interface and the reconciliation sweep that read it
+        // existed because an attachment's bytes and the object state
+        // naming them were two writes with a window between them. They are
+        // now one write in one transaction, so the state the sweep
+        // repaired is unreachable and the sweep is deleted rather than
+        // left registered against a failure that cannot occur.
 
         // TD-85: the Kind-to-type map startup rehydration resolves through.
         // Empty until each Kind's own declaring class registers it -
@@ -673,7 +586,272 @@ public sealed class TempestHost : ITempestHost
         // index IEngineeringDocumentStore's own contract has no lookup-by-
         // arbitrary-string capability to provide - registered after both,
         // which it depends on.
+        // `Group A` (P01): the Standards Library is registered before every
+        // other reference library because they all cite it. Its narrow
+        // IStandardResolver seam is registered through a forwarder rather
+        // than by mapping StandardCatalog to two service types, which would
+        // construct two catalogues over one store, each with its own write
+        // locks - see StandardCatalogResolver's own remarks.
+        // The population seam. One service, registered alongside the
+        // libraries it writes into, because seeding is an ordinary write
+        // through the ordinary catalogues and needs nothing else: no
+        // pipeline, no staging store, no second persistence mechanism. It
+        // is registered but never invoked from here — the host does not
+        // seed itself at start-up, because deciding when a library gets
+        // populated is a governance choice and not a side effect of
+        // booting.
+        services.Singleton<ReferenceSeedService>();
+
+        services.Singleton<IStandardCatalog, StandardCatalog>();
+        services.Singleton<IStandardResolver, StandardCatalogResolver>();
+        services.Singleton<IStandardValidationService, StandardValidationService>();
+
         services.Singleton<IMaterialCatalog, MaterialCatalog>();
+        services.Singleton<IMaterialValidationService, MaterialValidationService>();
+
+        // ADR-0124: the Bearing Library is the same thin, typed index over
+        // the Engineering Data Model (Kind = "BearingReference") that
+        // Materials is, plus a direct IPersistenceStore dependency of its
+        // own for two indexes - bearingId and manufacturer-part-number -
+        // for the identical reason (IEngineeringDocumentStore has no
+        // lookup-by-arbitrary-string and no enumerate-by-Kind). Registered
+        // after Materials, whose catalogue its validation service takes as
+        // an optional collaborator when confirming that a bearing's own
+        // material references resolve.
+        services.Singleton<IBearingCatalog, BearingCatalog>();
+        services.Singleton<IBearingValidationService, BearingValidationService>();
+
+        // `Group A` (P01): the four remaining reference libraries, each the
+        // same thin, typed index over the Engineering Data Model that
+        // Materials and Bearings are, over the shared
+        // ReferenceDataCatalog<T> base (`ADR-0126`). Registered after
+        // Materials and Standards, whose catalogue and resolver their
+        // validation services take as optional collaborators when
+        // confirming that material and standard references resolve; the
+        // container supplies each optional parameter from the container
+        // where it is registered, and leaves it null where it is not.
+        services.Singleton<IFastenerCatalog, FastenerCatalog>();
+        services.Singleton<IFastenerValidationService, FastenerValidationService>();
+
+        services.Singleton<IComponentCatalog, ComponentCatalog>();
+        services.Singleton<IComponentValidationService, ComponentValidationService>();
+
+        // The released-constant seam is forwarded to the single registered
+        // catalogue for the same reason IStandardResolver is - see
+        // ConstantCatalogReleasedSource's own remarks. It is the only way a
+        // future calculation capability should reach a constant: it hands
+        // back nothing at all until a record is Released.
+        services.Singleton<IConstantCatalog, ConstantCatalog>();
+        services.Singleton<IReleasedConstantSource, ConstantCatalogReleasedSource>();
+        services.Singleton<IConstantValidationService, ConstantValidationService>();
+
+        services.Singleton<IProcessCatalog, ProcessCatalog>();
+        services.Singleton<IProcessValidationService, ProcessValidationService>();
+
+        // `Group B` (P02): the engineering-reasoning layer. Rules, decision
+        // trees, review definitions and trade studies are all governed,
+        // authored, reviewed and revisioned records, so each library sits on
+        // the same shared ReferenceDataCatalog<T> base as `P01` rather than
+        // growing a second lifecycle (`ADR-0128`). Registered after every
+        // `Group A` library, because the reasoning services read them: the
+        // rule catalogue for rules a review criterion names, the
+        // released-constant source for a symbolic threshold, and each
+        // subject library for the record a rule is being applied to.
+        //
+        // `P02` reads `P01` and never the other way round, so nothing above
+        // this point takes a dependency on anything below it.
+        services.Singleton<IRuleCatalog, RuleCatalog>();
+        services.Singleton<IRuleValidationService, RuleValidationService>();
+
+        services.Singleton<IDecisionTreeCatalog, DecisionTreeCatalog>();
+        services.Singleton<IDecisionTreeValidationService, DecisionTreeValidationService>();
+
+        services.Singleton<IReviewDefinitionCatalog, ReviewDefinitionCatalog>();
+        services.Singleton<IReviewDefinitionValidationService, ReviewDefinitionValidationService>();
+
+        services.Singleton<ITradeStudyCatalog, TradeStudyCatalog>();
+        services.Singleton<ITradeStudyValidationService, TradeStudyValidationService>();
+
+        // The five reasoning services. Each is stateless over its
+        // catalogues, and each takes the clock and the current principal so
+        // that what a result records about when and by whom is testable
+        // rather than read from the ambient environment.
+        services.Singleton<IMaterialSelectionService, MaterialSelectionService>();
+        services.Singleton<IManufacturingDecisionService, ManufacturingDecisionService>();
+        services.Singleton<IDesignRuleService, DesignRuleService>();
+        services.Singleton<IEngineeringReviewService, EngineeringReviewService>();
+        services.Singleton<ITradeStudyService, TradeStudyService>();
+
+        // `Group C` (P07): business governance. Contract templates and
+        // contracts, the risk register and insurance, IP and data assets,
+        // rate cards, financial assumptions and scenarios, the opportunity
+        // pipeline and the operating model are all authored, evidenced,
+        // approved, revisioned and superseded records, so each library sits
+        // on the same shared ReferenceDataCatalog<T> base as `P01` and
+        // `P02` rather than growing a third lifecycle (`ADR-0129`).
+        //
+        // Registered last, and depending on nothing above it: `P07` reads
+        // the platform's own document store, persistence and identity, and
+        // does not read `P01` or `P02`. Business governance and engineering
+        // reasoning are independent programmes and the container reflects
+        // that.
+        services.Singleton<IContractTemplateCatalog, ContractTemplateCatalog>();
+        services.Singleton<IContractTemplateValidationService, ContractTemplateValidationService>();
+        services.Singleton<IIssuedContractCatalog, IssuedContractCatalog>();
+        services.Singleton<IIssuedContractValidationService, IssuedContractValidationService>();
+        services.Singleton<IContractService, ContractService>();
+
+        services.Singleton<IBusinessRiskCatalog, BusinessRiskCatalog>();
+        services.Singleton<IBusinessRiskValidationService, BusinessRiskValidationService>();
+        services.Singleton<IInsurancePolicyCatalog, InsurancePolicyCatalog>();
+        services.Singleton<IInsurancePolicyValidationService, InsurancePolicyValidationService>();
+        services.Singleton<IRiskAndInsuranceService, RiskAndInsuranceService>();
+
+        services.Singleton<IIPAssetCatalog, IPAssetCatalog>();
+        services.Singleton<IIPAssetValidationService, IPAssetValidationService>();
+        services.Singleton<IDataAssetCatalog, DataAssetCatalog>();
+        services.Singleton<IDataAssetValidationService, DataAssetValidationService>();
+
+        services.Singleton<IRateCardCatalog, RateCardCatalog>();
+        services.Singleton<IRateCardValidationService, RateCardValidationService>();
+        services.Singleton<IPricingService, PricingService>();
+
+        services.Singleton<IFinancialAssumptionCatalog, FinancialAssumptionCatalog>();
+        services.Singleton<IFinancialAssumptionValidationService, FinancialAssumptionValidationService>();
+        services.Singleton<IFinancialScenarioCatalog, FinancialScenarioCatalog>();
+        services.Singleton<IFinancialScenarioValidationService, FinancialScenarioValidationService>();
+        services.Singleton<IFinancialControlService, FinancialControlService>();
+
+        services.Singleton<IOpportunityCatalog, OpportunityCatalog>();
+        services.Singleton<IOpportunityValidationService, OpportunityValidationService>();
+        services.Singleton<IPipelineService, PipelineService>();
+
+        services.Singleton<IOperatingScenarioCatalog, OperatingScenarioCatalog>();
+        services.Singleton<IOperatingScenarioValidationService, OperatingScenarioValidationService>();
+
+        // `Group D` (P03): commercial intelligence. Suppliers, process
+        // costs, lead times, estimates, quotes and sourcing comparisons are
+        // authored, evidenced, revisioned and superseded records like every
+        // other library, and sit on the same shared ReferenceDataCatalog<T>
+        // base (`ADR-0132`).
+        //
+        // Registered after `P07`, whose Money and EffectivePeriod `P03`
+        // reuses rather than restating (`ADR-0132`), and after `P01`, whose
+        // process and material records its cost and lead-time records cite.
+        // The estimating and comparison services read those libraries and
+        // write nothing back: `P03` compares, ranks and recommends, and
+        // never places an order, awards business, approves a supplier or
+        // commits expenditure (`ADR-0135`).
+        services.Singleton<ISupplierCatalog, SupplierCatalog>();
+        services.Singleton<ISupplierValidationService, SupplierValidationService>();
+        services.Singleton<ISupplierIdentityService, SupplierIdentityService>();
+
+        services.Singleton<IProcessCostCatalog, ProcessCostCatalog>();
+        services.Singleton<IProcessCostValidationService, ProcessCostValidationService>();
+
+        services.Singleton<ILeadTimeCatalog, LeadTimeCatalog>();
+        services.Singleton<ILeadTimeValidationService, LeadTimeValidationService>();
+
+        services.Singleton<ICostEstimateCatalog, CostEstimateCatalog>();
+        services.Singleton<ICostEstimateValidationService, CostEstimateValidationService>();
+        services.Singleton<ISupplierQuoteCatalog, SupplierQuoteCatalog>();
+        services.Singleton<ISupplierQuoteValidationService, SupplierQuoteValidationService>();
+        services.Singleton<ICustomerQuotationCatalog, CustomerQuotationCatalog>();
+        services.Singleton<ICustomerQuotationValidationService, CustomerQuotationValidationService>();
+        services.Singleton<IEstimatingService, EstimatingService>();
+
+        services.Singleton<ISourcingRequirementCatalog, SourcingRequirementCatalog>();
+        services.Singleton<ISourcingRequirementValidationService, SourcingRequirementValidationService>();
+        services.Singleton<ISourcingComparisonCatalog, SourcingComparisonCatalog>();
+        services.Singleton<ISourcingComparisonValidationService, SourcingComparisonValidationService>();
+        services.Singleton<ISourcingComparisonService, SourcingComparisonService>();
+
+        // `Group E` (P05): engineering assets. Templates, calculation
+        // packs, verification artefacts, design review packs and technical
+        // documentation are authored, evidenced, reviewed, revisioned and
+        // superseded records like every other library, and sit on the same
+        // shared ReferenceDataCatalog<T> base (`ADR-0136`).
+        //
+        // Registered after `P01`, `P03` and `P07`, all of which `P05`
+        // references and none of which it duplicates: `E2` links the
+        // platform's own calculation records rather than recomputing them,
+        // `E3` references `Tempest.Core.Requirements` rather than copying a
+        // requirement, and `E5` points at `EngineeringData` documents
+        // rather than storing content a second time.
+        services.Singleton<ITemplateCatalog, TemplateCatalog>();
+        services.Singleton<ITemplateValidationService, TemplateValidationService>();
+
+        services.Singleton<ICalculationPackCatalog, CalculationPackCatalog>();
+        services.Singleton<ICalculationPackValidationService, CalculationPackValidationService>();
+
+        services.Singleton<IVerificationArtefactCatalog, VerificationArtefactCatalog>();
+        services.Singleton<IVerificationArtefactValidationService, VerificationArtefactValidationService>();
+        services.Singleton<IVerificationTraceService, VerificationTraceService>();
+
+        services.Singleton<IDesignReviewCatalog, DesignReviewCatalog>();
+        services.Singleton<IDesignReviewValidationService, DesignReviewValidationService>();
+
+        services.Singleton<ITechnicalDocumentCatalog, TechnicalDocumentCatalog>();
+        services.Singleton<ITechnicalDocumentValidationService, TechnicalDocumentValidationService>();
+
+        // `Group F` (P06): AI knowledge and Academy. Prompts, Academy
+        // nodes, challenges, lessons and worked examples are authored,
+        // sourced, reviewed, revisioned and superseded records like every
+        // other library, and sit on the same shared
+        // ReferenceDataCatalog<T> base (`ADR-0141`).
+        //
+        // Registered last. `P06` is the knowledge layer and is
+        // deliberately separate from AI execution: no executor, no agent,
+        // no model binding and no provider dependency is registered here
+        // or exists anywhere in the programme. It reads `P05` to confirm a
+        // cited calculation pack exists and reads nothing else.
+        services.Singleton<IPromptCatalog, PromptCatalog>();
+        services.Singleton<IPromptValidationService, PromptValidationService>();
+
+        services.Singleton<IAcademyCatalog, AcademyCatalog>();
+        services.Singleton<IAcademyValidationService, AcademyValidationService>();
+
+        services.Singleton<IChallengeCatalog, ChallengeCatalog>();
+        services.Singleton<IChallengeValidationService, ChallengeValidationService>();
+
+        services.Singleton<ILessonCatalog, LessonCatalog>();
+        services.Singleton<ILessonValidationService, LessonValidationService>();
+
+        services.Singleton<IWorkedExampleCatalog, WorkedExampleCatalog>();
+        services.Singleton<IWorkedExampleValidationService, WorkedExampleValidationService>();
+
+        // `P04`: Business OS. The operational layer over the reference and
+        // governance programmes — organisations and contacts behind `P07`'s
+        // opportunities, budgets the spend is measured against, the
+        // purchasing seam over `P03`, non-conformances, and business
+        // records (`ADR-0142`).
+        //
+        // Registered last because it reads the most: `P03` for suppliers
+        // and quotes, `P05` for evidence and document relationships, `P06`
+        // for failure causes, `P07` for money and authority. It duplicates
+        // none of them, and it builds no project model — `Tempest.App`'s
+        // existing project architecture already owns that.
+        services.Singleton<IOrganisationCatalog, OrganisationCatalog>();
+        services.Singleton<IContactCatalog, ContactCatalog>();
+        services.Singleton<IInteractionCatalog, InteractionCatalog>();
+        services.Singleton<IOrganisationValidationService, OrganisationValidationService>();
+        services.Singleton<ICrmValidationService, CrmValidationService>();
+
+        services.Singleton<IBudgetCatalog, BudgetCatalog>();
+        services.Singleton<IFinancialEntryCatalog, FinancialEntryCatalog>();
+        services.Singleton<IBudgetValidationService, BudgetValidationService>();
+        services.Singleton<IBudgetPositionService, BudgetPositionService>();
+
+        services.Singleton<IPurchaseRequisitionCatalog, PurchaseRequisitionCatalog>();
+        services.Singleton<IPurchaseRequisitionValidationService, PurchaseRequisitionValidationService>();
+        services.Singleton<IPurchaseOrderCatalog, PurchaseOrderCatalog>();
+        services.Singleton<IPurchaseOrderValidationService, PurchaseOrderValidationService>();
+
+        services.Singleton<INonConformanceCatalog, NonConformanceCatalog>();
+        services.Singleton<INonConformanceValidationService, NonConformanceValidationService>();
+
+        services.Singleton<IBusinessRecordCatalog, BusinessRecordCatalog>();
+        services.Singleton<IBusinessRecordValidationService, BusinessRecordValidationService>();
 
         // ADR-0056: every calculation execution is durably recorded as an
         // Engineering Data Model document (Kind = "CalculationRecord"),
@@ -721,7 +899,6 @@ public sealed class TempestHost : ITempestHost
         // scoped out of.
         services.Singleton<IRequirementsReconciliationService, RequirementsReconciliationService>();
         services.Singleton<IMaterialCatalogReconciliationService, MaterialCatalogReconciliationService>();
-        services.Singleton<IAttachmentContentReconciliationService, AttachmentContentReconciliationService>();
 
         // Composition Root pattern (ADR-0009), like Configuration/Logging/
         // PlatformVersionProvider above: DiagnosticsProvider needs references
@@ -748,35 +925,51 @@ public sealed class TempestHost : ITempestHost
 
         ITempestServiceProvider serviceProvider = new TempestServiceProvider(services, logger);
 
+        // `TD-03`/`WP 17.1A`: the Service Disposal phase's own subject.
+        // Captured from the descriptors rather than accumulated by hand so
+        // that a future AddInstance registration is covered by having been
+        // registered, not by somebody having remembered. Reference-distinct
+        // because one instance registered under three service types (the
+        // persistence store, ADR-0144) must be disposed once, not three
+        // times.
         lock (_gate)
+        {
             _services = serviceProvider;
+            _registeredServiceInstances = services.Descriptors
+                .Select(descriptor => descriptor.ExistingInstance)
+                .Where(instance => instance is not null)
+                .Select(instance => instance!)
+                .Distinct(ReferenceEqualityComparer.Instance)
+                .ToList();
+        }
 
         logger.Information("Host lifecycle phase completed: Dependency Injection Built.");
 
         runToken.ThrowIfCancellationRequested();
 
-        // ADR-0111: given a module Id, resolves the owning plugin's own
-        // component principal (if any - null for a genuine first-party
-        // module, or for a plugin whose types never made it past trust
-        // enforcement in PluginAssemblyLoader) and pushes it onto
-        // currentComponentAccessor for the duration of one lifecycle call.
-        // A linear scan per call is acceptable here - module counts are
-        // small, this is not a hot path comparable to per-request REST
-        // handling.
-        Func<string, IDisposable?> componentScopeProvider = moduleId =>
-        {
-            var descriptor = descriptors.FirstOrDefault(d => d.Id == moduleId);
-
-            if (descriptor is null)
-                return null;
-
-            var principal = componentPrincipalRegistry.GetPrincipalFor(descriptor.ModuleType);
-
-            return principal is not null ? currentComponentAccessor.BeginScope(principal) : null;
-        };
-
-        var lifecycleManager = new ModuleLifecycleManager(moduleManager, serviceProvider, logger, componentScopeProvider);
+        var lifecycleManager = new ModuleLifecycleManager(moduleManager, serviceProvider, logger);
         _lifecycleManager = lifecycleManager;
+
+        // `TD-159`: the product's own five engineering calculations, put
+        // into the engine before the first module initialises.
+        //
+        // `TD-75` phase 1 moved these definitions out of `Tempest.Samples`
+        // and into `Tempest.Core.Calculations` because they are product
+        // content, but it moved only the declarations. The registrations
+        // stayed in the sample module, which neither `Tempest.App` nor
+        // `Tempest.Desktop` references — so a shipped Desktop run offered
+        // five Calculation Templates in the Object Editor and threw
+        // `CalculationDefinitionNotFoundException` on executing any of
+        // them. Both test projects DO reference the sample assembly, so
+        // every test passed against a composition no user ever ran.
+        //
+        // Registered here rather than in `CalculationsWorkspaceRegistration`
+        // (the discipline's own composition root, and the natural home)
+        // because that runs after `manager.StartAsync()` returns, and a
+        // module may legitimately execute a calculation while initialising.
+        // Here, the catalogue is present before anyone can ask for it.
+        ProductCalculationCatalogue.RegisterAll((ICalculationEngine)serviceProvider.GetService(typeof(ICalculationEngine)));
+        logger.Information($"Product calculation catalogue registered: {ProductCalculationCatalogue.CalculationIds.Count} calculations.");
 
         await lifecycleManager.InitialiseAllAsync(runToken).ConfigureAwait(false);
         await lifecycleManager.StartAllAsync(runToken).ConfigureAwait(false);
@@ -784,29 +977,7 @@ public sealed class TempestHost : ITempestHost
 
         runToken.ThrowIfCancellationRequested();
 
-        // WP 13.10B / TD-51: the identical component-scope mechanism
-        // componentScopeProvider (above) already gives ModuleLifecycleManager,
-        // extended to HostedServiceManager - a plugin's own hosted service
-        // previously ran with no ambient component principal at all (null,
-        // treated as First-Party), even when the plugin genuinely passed
-        // trust enforcement. Hosted services are natively Type-keyed (no
-        // string Id concept exists for one), so this closure takes the
-        // service's own Type directly - no moduleId-to-descriptor lookup
-        // step is needed, unlike componentScopeProvider above.
-        // componentPrincipalRegistry is now populated for hosted-service
-        // types too (PluginAssemblyLoader.EnforceTrust, WP 13.10B) - null
-        // here for a genuine first-party hosted service, or for a plugin's
-        // hosted service whose own types never made it past trust
-        // enforcement, identically to the module case.
-        Func<Type, IDisposable?> hostedServiceComponentScopeProvider = serviceType =>
-        {
-            var principal = componentPrincipalRegistry.GetPrincipalFor(serviceType);
-
-            return principal is not null ? currentComponentAccessor.BeginScope(principal) : null;
-        };
-
-        var hostedServiceManager = new HostedServiceManager(
-            hostedServiceTypes, serviceProvider, logger, hostedServiceComponentScopeProvider);
+        var hostedServiceManager = new HostedServiceManager(hostedServiceTypes, serviceProvider, logger);
         _hostedServiceManager = hostedServiceManager;
 
         await hostedServiceManager.StartAllAsync(runToken).ConfigureAwait(false);
@@ -914,9 +1085,15 @@ public sealed class TempestHost : ITempestHost
         if (stateAtEntry != HostState.Stopped && _lifecycleManager is not null)
             await _lifecycleManager.DisposeAllAsync(CancellationToken.None).ConfigureAwait(false);
 
-        // Service Disposal: no-op today - Configuration, Logging, and the DI
-        // container implement no IDisposable/IAsyncDisposable (see
-        // Failure Behaviour.md and the WP 2.7 Architectural Debt Assessment).
+        // Service Disposal (`TD-03`, `WP 17.1A`): every service registered
+        // as an already-constructed instance that implements
+        // IAsyncDisposable/IDisposable, in reverse registration order. It
+        // was a no-op until ADR-0144 gave the platform its first genuinely
+        // disposable service - a persistence store holding a database file
+        // and a cross-process lock, which the next Host on the same root
+        // cannot open until this one has let go. Idempotent, so the path
+        // that already stopped cleanly does not dispose twice.
+        await DisposeRegisteredServiceInstancesAsync().ConfigureAwait(false);
 
         lock (_gate)
             _state = HostState.Disposed;
@@ -925,6 +1102,133 @@ public sealed class TempestHost : ITempestHost
 
         _shutdownRequested.Dispose();
         _stopEscalation.Dispose();
+    }
+
+    /// <summary>
+    /// Builds the one persistence store this Host registers under all
+    /// three store shapes, honouring <c>Persistence:Backend</c>
+    /// (`ADR-0144`).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <c>sqlite</c> — the default, and the only value a shipped
+    /// installation should ever use — gives
+    /// <see cref="SqlitePersistenceStore"/>. <c>files</c> gives the
+    /// file-per-key <see cref="PersistenceStore"/>, retained for exactly
+    /// one release so that a site which hits an unforeseen SQLite problem
+    /// in <c>v0.17.0</c> has somewhere to stand while it is fixed; it is
+    /// deleted in <c>v0.18.0</c> and nothing new may be built on it.
+    /// </para>
+    /// <para>
+    /// An unrecognised value is a Host-fatal configuration error rather
+    /// than a silent fall back to the default: a deployment that asked for
+    /// a backend and got a different one would be writing its data
+    /// somewhere its operator did not choose (`ADR-0013`).
+    /// </para>
+    /// </remarks>
+    private static object CreatePersistenceStore(IConfigurationProvider configuration, ILogger logger)
+    {
+        var backend = configuration.TryGetValue(SqlitePersistenceStore.BackendConfigurationKey, out var configured)
+            && !string.IsNullOrWhiteSpace(configured)
+            ? configured.Trim()
+            : SqlitePersistenceStore.SqliteBackendValue;
+
+        if (string.Equals(backend, SqlitePersistenceStore.SqliteBackendValue, StringComparison.OrdinalIgnoreCase))
+        {
+            var store = new SqlitePersistenceStore(configuration, logger);
+            logger.Information(
+                $"Persistence backend: SQLite (ADR-0144), database '{store.DatabasePath}', " +
+                $"schema version {SqlitePersistenceStore.SchemaVersion}.");
+            return store;
+        }
+
+        if (string.Equals(backend, SqlitePersistenceStore.FileBackendValue, StringComparison.OrdinalIgnoreCase))
+        {
+            var store = new PersistenceStore(configuration, logger);
+            logger.Warning(
+                $"Persistence backend: the file-per-key store, root '{store.RootPath}', selected by " +
+                $"'{SqlitePersistenceStore.BackendConfigurationKey}'. This backend does not fsync a write, " +
+                "cannot answer a query without scanning a directory, and cannot make two writes land together. " +
+                "It is retained for one release only and is deleted in v0.18.0 (ADR-0144).");
+            return store;
+        }
+
+        throw new PersistenceStoreUnavailableException(
+            $"'{SqlitePersistenceStore.BackendConfigurationKey}' is configured as '{backend}', which is not a " +
+            $"persistence backend this build has. Valid values are '{SqlitePersistenceStore.SqliteBackendValue}' " +
+            $"(the default) and '{SqlitePersistenceStore.FileBackendValue}'.");
+    }
+
+    /// <summary>
+    /// The Service Disposal lifecycle phase, for the services the Host
+    /// registered as already-constructed instances (`TD-03`, `WP 17.1A`).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Disposes every registered instance implementing
+    /// <see cref="IAsyncDisposable"/> or <see cref="IDisposable"/>, in
+    /// <b>reverse registration order</b> — the order a composition root
+    /// must use, because a service registered later may have been handed a
+    /// service registered earlier and must stop using it first. Async
+    /// disposal is preferred where a type offers both.
+    /// </para>
+    /// <para>
+    /// This closes `TD-03` for instance registrations, which is where the
+    /// platform's disposable services actually are: the persistence store
+    /// (`ADR-0144`) is registered this way, and it holds a database file
+    /// and a cross-process lock that a second Host on the same root cannot
+    /// take until this one lets go. It does <b>not</b> close `TD-03` for
+    /// container-constructed singletons; <c>TempestServiceProvider</c>
+    /// keeps no disposal list of what it built, and giving it one is a
+    /// change to the container rather than to the Host. That remains open
+    /// and is deliberately not claimed here.
+    /// </para>
+    /// <para>
+    /// Idempotent, and never allowed to fail shutdown: a failing dispose is
+    /// logged and the remaining instances are still disposed
+    /// (`FOUNDATION.md` principle 5).
+    /// </para>
+    /// </remarks>
+    private async Task DisposeRegisteredServiceInstancesAsync()
+    {
+        IReadOnlyList<object>? instances;
+
+        lock (_gate)
+        {
+            if (_serviceInstancesDisposed)
+                return;
+
+            _serviceInstancesDisposed = true;
+            instances = _registeredServiceInstances;
+        }
+
+        if (instances is null)
+            return;
+
+        for (var i = instances.Count - 1; i >= 0; i--)
+        {
+            var instance = instances[i];
+
+            try
+            {
+                switch (instance)
+                {
+                    case IAsyncDisposable asyncDisposable:
+                        await asyncDisposable.DisposeAsync().ConfigureAwait(false);
+                        break;
+                    case IDisposable disposable:
+                        disposable.Dispose();
+                        break;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.Warning(
+                    $"Service Disposal: '{instance.GetType().FullName}' threw while being disposed. Shutdown " +
+                    "continues; the remaining services are still disposed.",
+                    ex);
+            }
+        }
     }
 
     private void EnterStarting()
@@ -1009,7 +1313,8 @@ public sealed class TempestHost : ITempestHost
             _logger?.Information("Host lifecycle phase completed: Module Disposal (Dispose).");
         }
 
-        // Service Disposal: no-op today - see the remarks on DisposeAsync above.
+        // Service Disposal - see the remarks on DisposeRegisteredServiceInstancesAsync.
+        await DisposeRegisteredServiceInstancesAsync().ConfigureAwait(false);
         _logger?.Information("Host lifecycle phase completed: Service Disposal.");
 
         _logger?.Information("Shutdown complete.");

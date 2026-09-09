@@ -1,5 +1,5 @@
-using Tempest.App.Workspace;
-using Tempest.App.Workspace.Mechanical;
+using Tempest.Workspace;
+using Tempest.Workspace.Mechanical;
 using Tempest.Core.Configuration;
 using Tempest.Core.EngineeringData;
 using Tempest.Core.EngineeringDomain;
@@ -239,7 +239,7 @@ public sealed class CanonicalKindRoundTripTests : IDisposable
         var discovery = new RelationshipDiscoveryService(relationships, repository);
 
         var context = new EngineeringDomainContext(
-            documents, repository, relationships, new LifecycleTransitionTable(), new ValidationRuleSet(),
+            store, documents, repository, relationships, new LifecycleTransitionTable(), new ValidationRuleSet(),
             new EvidenceComposer(discovery, repository), principal, new EngineeringObjectStateStore(store));
 
         var rehydrators = new EngineeringObjectRehydratorRegistry();
@@ -306,8 +306,12 @@ public sealed class CanonicalKindRoundTripTests : IDisposable
             _ => await Make<Part>((d, r) => new Part(d, r, context, identifier, name, metadata), kind),
         };
 
+        // `WP 16.4B-R6`: `EngineeringObjectFactory<T>` now requires the
+        // Kind's own `IRehydratable<T>` reader, because that is what
+        // `ReviseAsync` builds a successor with. Every canonical Kind
+        // already implements it — this constraint only restates that.
         async Task<IEngineeringObject> Make<T>(Func<IEngineeringDocument, IDocumentRevision, T> ctor, string? kindOverride = null)
-            where T : EngineeringObjectBase =>
+            where T : EngineeringObjectBase, IRehydratable<T> =>
             await new EngineeringObjectFactory<T>(kindOverride ?? kind, context, ctor).CreateAsync(reason);
     }
 }

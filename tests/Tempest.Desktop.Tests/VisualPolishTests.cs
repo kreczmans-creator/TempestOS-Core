@@ -10,7 +10,7 @@ using Tempest.Desktop.Icons;
 using Tempest.Desktop.Theming;
 using Tempest.Desktop.Views;
 
-using Tempest.App.Workspace.Layout;
+using Tempest.Workspace.Layout;
 namespace Tempest.Desktop.Tests;
 
 /// <summary>
@@ -324,11 +324,11 @@ public sealed class VisualPolishTests
         Assert.True(IconGeometry.ChevronDown.Bounds.Width > 0 && IconGeometry.ChevronDown.Bounds.Height > 0);
     }
 
-    private sealed class StubWorkspacePanel : Tempest.App.Workspace.IWorkspacePanel
+    private sealed class StubWorkspacePanel : Tempest.Workspace.IWorkspacePanel
     {
         public Guid Id { get; } = Guid.NewGuid();
         public string Title => "Stub";
-        public Tempest.App.Workspace.WorkspaceDockPosition DockPosition => Tempest.App.Workspace.WorkspaceDockPosition.Left;
+        public Tempest.Workspace.WorkspaceDockPosition DockPosition => Tempest.Workspace.WorkspaceDockPosition.Left;
         public bool IsVisible { get; private set; } = true;
         public Task ShowAsync(CancellationToken cancellationToken = default) { IsVisible = true; return Task.CompletedTask; }
         public Task HideAsync(CancellationToken cancellationToken = default) { IsVisible = false; return Task.CompletedTask; }

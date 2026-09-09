@@ -42,7 +42,7 @@ namespace Tempest.Core.EngineeringDomain;
 /// never runs on write (`ADR-0120` Decision 2/5).
 /// </para>
 /// </remarks>
-public sealed class EngineeringObjectStateStore : IEngineeringObjectStateStore
+public sealed class EngineeringObjectStateStore : IEngineeringObjectStateStore, ITransactionalStateWriter
 {
     /// <summary>The <see cref="IPersistenceStore"/> collection engineering object state lives in.</summary>
     public const string StateCollectionName = "EngineeringDomain.ObjectState";
@@ -69,7 +69,7 @@ public sealed class EngineeringObjectStateStore : IEngineeringObjectStateStore
         Converters = { new JsonStringEnumConverter() },
     };
 
-    private readonly IPersistenceStore _persistenceStore;
+    private readonly IQueryablePersistenceStore _persistenceStore;
     private readonly IStateMigrationRegistry? _migrations;
     private readonly ILogger? _logger;
 
@@ -95,7 +95,7 @@ public sealed class EngineeringObjectStateStore : IEngineeringObjectStateStore
     /// <param name="logger">An optional logger used to record a skipped record.</param>
     /// <exception cref="ArgumentNullException"><paramref name="persistenceStore"/> is <see langword="null"/>.</exception>
     public EngineeringObjectStateStore(
-        IPersistenceStore persistenceStore,
+        IQueryablePersistenceStore persistenceStore,
         IStateMigrationRegistry? migrations = null,
         ILogger? logger = null)
         : this(persistenceStore, migrations, logger, CurrentSchemaVersion)
@@ -122,7 +122,7 @@ public sealed class EngineeringObjectStateStore : IEngineeringObjectStateStore
     /// <param name="targetSchemaVersion">The <see cref="EngineeringObjectState.SchemaVersion"/> this store's own read path requires a record to reach before handing it back.</param>
     /// <exception cref="ArgumentNullException"><paramref name="persistenceStore"/> is <see langword="null"/>.</exception>
     internal EngineeringObjectStateStore(
-        IPersistenceStore persistenceStore,
+        IQueryablePersistenceStore persistenceStore,
         IStateMigrationRegistry? migrations,
         ILogger? logger,
         int targetSchemaVersion)
@@ -144,42 +144,58 @@ public sealed class EngineeringObjectStateStore : IEngineeringObjectStateStore
     public int TargetSchemaVersion { get; }
 
     /// <inheritdoc />
+    /// <remarks>
+    /// One record, one transaction. Since `ADR-0145` the domain never
+    /// calls this — every durable change to an engineering object is
+    /// written through <see cref="ITransactionalStateWriter"/>, inside the
+    /// transaction that also carries the object's documents, revisions,
+    /// references, attachment bytes and audit row. This remains for a
+    /// caller outside the domain (a migration tool, a test fixture
+    /// seeding a record) that wants to write one state record on its own.
+    /// </remarks>
     public Task SaveAsync(EngineeringObjectState state, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(state);
 
-        return _persistenceStore.WriteAsync(
-            StateCollectionName,
-            state.Id.ToString("N"),
-            JsonSerializer.Serialize(state, StateJsonOptions),
+        var json = JsonSerializer.Serialize(state, StateJsonOptions);
+
+        return _persistenceStore.ExecuteInTransactionAsync(
+            (transaction, token) => transaction.WriteAsync(StateCollectionName, state.Id.ToString("N"), json, token),
             cancellationToken);
     }
 
     /// <inheritdoc />
     public async Task<EngineeringObjectState?> FindAsync(Guid objectId, CancellationToken cancellationToken = default)
     {
-        var json = await _persistenceStore.ReadAsync(StateCollectionName, objectId.ToString("N"), cancellationToken).ConfigureAwait(false);
-        return json is null ? null : Deserialise(objectId, json);
+        var key = objectId.ToString("N");
+        var values = await _persistenceStore.ReadManyAsync(StateCollectionName, [key], cancellationToken).ConfigureAwait(false);
+
+        return values.TryGetValue(key, out var json) && json is not null ? Deserialise(objectId, json) : null;
     }
 
     /// <inheritdoc />
+    /// <remarks>
+    /// <b>One query, not <c>1 + n</c> (`ADR-0145`).</b> This used to list
+    /// every key and then read each one, so a restart cost one round trip
+    /// per object before a single object had been reconstructed.
+    /// <see cref="IQueryablePersistenceStore.ReadAllAsync"/> returns the
+    /// whole collection in one indexed read; a key that is not an object
+    /// Id is still skipped with the same warning, because a foreign
+    /// record beside this store's own is still not a record of its.
+    /// </remarks>
     public async Task<IReadOnlyList<EngineeringObjectState>> ListAsync(CancellationToken cancellationToken = default)
     {
-        var keys = await _persistenceStore.ListKeysAsync(StateCollectionName, cancellationToken).ConfigureAwait(false);
-        var states = new List<EngineeringObjectState>(keys.Count);
+        var records = await _persistenceStore.ReadAllAsync(StateCollectionName, cancellationToken).ConfigureAwait(false);
+        var states = new List<EngineeringObjectState>(records.Count);
 
-        foreach (var key in keys)
+        foreach (var (key, json) in records)
         {
             if (!Guid.TryParseExact(key, "N", out var objectId))
             {
-                // A foreign file beside the store's own is not a record.
+                // A foreign record beside the store's own is not a record.
                 _logger?.Warning($"Ignoring non-state key '{key}' in '{StateCollectionName}'.");
                 continue;
             }
-
-            var json = await _persistenceStore.ReadAsync(StateCollectionName, key, cancellationToken).ConfigureAwait(false);
-            if (json is null)
-                continue;
 
             if (Deserialise(objectId, json) is { } state)
                 states.Add(state);
@@ -190,7 +206,22 @@ public sealed class EngineeringObjectStateStore : IEngineeringObjectStateStore
 
     /// <inheritdoc />
     public Task DeleteAsync(Guid objectId, CancellationToken cancellationToken = default) =>
-        _persistenceStore.DeleteAsync(StateCollectionName, objectId.ToString("N"), cancellationToken);
+        _persistenceStore.ExecuteInTransactionAsync(
+            (transaction, token) => transaction.DeleteAsync(StateCollectionName, objectId.ToString("N"), token),
+            cancellationToken);
+
+    /// <inheritdoc />
+    Task ITransactionalStateWriter.SaveAsync(IPersistenceTransaction transaction, EngineeringObjectState state, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(transaction);
+        ArgumentNullException.ThrowIfNull(state);
+
+        return transaction.WriteAsync(
+            StateCollectionName,
+            state.Id.ToString("N"),
+            JsonSerializer.Serialize(state, StateJsonOptions),
+            cancellationToken);
+    }
 
     private EngineeringObjectState? Deserialise(Guid objectId, string json)
     {

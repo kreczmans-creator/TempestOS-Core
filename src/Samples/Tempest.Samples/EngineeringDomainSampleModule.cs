@@ -38,7 +38,7 @@ public sealed class EngineeringDomainSampleModule : ModuleLifecycleBase
     /// <summary>The <see cref="CommandDescriptor.Id"/> this module registers for <see cref="GetSampleEngineeringDomainGraphSummaryCommand"/>.</summary>
     public const string GetGraphSummaryCommandId = "sample.engineeringdomain-graph-summary";
 
-    private readonly IIdentityService _identityService;
+    private readonly CurrentPrincipalAccessor _currentPrincipalAccessor;
     private readonly EngineeringDomainContext _context;
     private readonly IMaterialCatalog _materialCatalog;
     private readonly IDependencyTraversal _dependencyTraversal;
@@ -46,7 +46,7 @@ public sealed class EngineeringDomainSampleModule : ModuleLifecycleBase
     private readonly ICommandRegistry _commandRegistry;
 
     public EngineeringDomainSampleModule(
-        IIdentityService identityService,
+        CurrentPrincipalAccessor currentPrincipalAccessor,
         EngineeringDomainContext context,
         IMaterialCatalog materialCatalog,
         IDependencyTraversal dependencyTraversal,
@@ -54,14 +54,14 @@ public sealed class EngineeringDomainSampleModule : ModuleLifecycleBase
         ICommandRegistry commandRegistry)
         : base("tempest.samples.engineeringdomain", "Engineering Domain Sample", "1.0.0")
     {
-        ArgumentNullException.ThrowIfNull(identityService);
+        ArgumentNullException.ThrowIfNull(currentPrincipalAccessor);
         ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(materialCatalog);
         ArgumentNullException.ThrowIfNull(dependencyTraversal);
         ArgumentNullException.ThrowIfNull(commandDispatcher);
         ArgumentNullException.ThrowIfNull(commandRegistry);
 
-        _identityService = identityService;
+        _currentPrincipalAccessor = currentPrincipalAccessor;
         _context = context;
         _materialCatalog = materialCatalog;
         _dependencyTraversal = dependencyTraversal;
@@ -104,7 +104,7 @@ public sealed class EngineeringDomainSampleModule : ModuleLifecycleBase
     /// </remarks>
     public override async Task InitialiseAsync(CancellationToken cancellationToken)
     {
-        _identityService.EstablishCurrentPrincipal(SampleIdentityId);
+        SamplePrincipalFactory.Establish(_currentPrincipalAccessor, SampleIdentityId);
 
         if (await _materialCatalog.FindAsync("SAMPLE-MAT-001", cancellationToken).ConfigureAwait(false) is not null)
         {
@@ -155,11 +155,19 @@ public sealed class EngineeringDomainSampleModule : ModuleLifecycleBase
         await assembly.LinkAsync(subAssembly.Id, "groupedUnder", cancellationToken).ConfigureAwait(false);
 
         var materialSpecification = await _materialCatalog.RegisterAsync(
-            "SAMPLE-MAT-001", "Fictional Sample Alloy", new Dictionary<string, MaterialProperty>(), category: "metal", cancellationToken)
+            "SAMPLE-MAT-001",
+            new MaterialDefinition
+            {
+                Name = "Fictional Sample Alloy",
+                Family = MaterialFamily.Other,
+                SourceClassification = "metal",
+            },
+            MaterialsSampleModule.SampleProvenance,
+            cancellationToken)
             .ConfigureAwait(false);
 
         var partFactory = new EngineeringObjectFactory<Part>(
-            "Part", _context, (doc, rev) => new Part(doc, rev, _context, "SAMPLE-PART-001", "Sample Part", EngineeringObjectMetadata.Empty, materialSpecification.MaterialId));
+            "Part", _context, (doc, rev) => new Part(doc, rev, _context, "SAMPLE-PART-001", "Sample Part", EngineeringObjectMetadata.Empty, materialSpecification.Id));
         var part = (Part)await partFactory.CreateAsync("Fictional sample part — for demonstration only.", cancellationToken).ConfigureAwait(false);
         SamplePartId = part.Id;
         objectIds.Add(part.Id);

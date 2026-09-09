@@ -1,17 +1,31 @@
-using Tempest.App.Composition;
-using Tempest.App.Projects;
-using Tempest.App.Shell;
-using Tempest.App.Workspace;
-using Tempest.App.Workspace.Calculations;
+using Tempest.Workspace.Composition;
+using Tempest.Workspace.Engineering;
+using Tempest.Workspace.Projects;
+using Tempest.Workspace.Shell;
+using Tempest.Workspace.Calculations;
+using Tempest.Workspace;
+using Tempest.Core.Bearings;
+using Tempest.Core.Commands;
+using Tempest.Core.Calculations;
+using Tempest.Core.ReferenceData.Seeding;
+using Tempest.Core.Configuration;
+using Tempest.Core.Constants;
+using Tempest.Core.DependencyInjection;
+using Tempest.Core.EngineeringAssets.CalculationPacks;
+using Tempest.Core.EngineeringAssets.Templates;
+using Tempest.Core.EngineeringAssets.Verification;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Events;
+using Tempest.Core.Fasteners;
 using Tempest.Core.Identity;
+using Tempest.Core.Manufacturing;
+using Tempest.Core.Materials;
 using Tempest.Core.Persistence;
+using Tempest.Core.ReferenceData.Review;
 using Tempest.Core.Requirements;
-using Tempest.Core.Settings;
-using Tempest.Core.Configuration;
-using Tempest.Core.DependencyInjection;
 using Tempest.Core.Runtime;
+using Tempest.Core.Settings;
+using Tempest.Core.Standards;
 
 namespace Tempest.Desktop;
 
@@ -20,7 +34,7 @@ namespace Tempest.Desktop;
 /// pair for the lifetime of the desktop application — the graphical
 /// presentation layer's own equivalent of what <c>Program.cs</c>'s own
 /// top-level statements do for the console
-/// (<see cref="Tempest.App.Workspace.WorkspaceShell"/>).
+/// (<see cref="Tempest.Workspace.WorkspaceShell"/>).
 /// Composes through <see cref="EngineeringWorkspaceComposer"/>, shared with
 /// the console entry point, so the same six real Engineering Disciplines
 /// load identically in both presentation layers (`WP 10.0B`'s own explicit
@@ -29,7 +43,8 @@ namespace Tempest.Desktop;
 public sealed class WorkspaceHost : IAsyncDisposable
 {
     private readonly string? _persistenceRootPathOverride;
-    private readonly ISessionPrincipalSource _sessionPrincipals;
+    private readonly ISessionPrincipalSource? _sessionPrincipalsOverride;
+    private readonly IReadOnlyList<string>? _commandLineArgs;
 
     private ITempestHost? _host;
     private WorkspaceManager? _manager;
@@ -37,7 +52,7 @@ public sealed class WorkspaceHost : IAsyncDisposable
     /// <summary>Gets the running <see cref="IWorkspace"/>, or <see langword="null"/> before <see cref="StartAsync"/> completes.</summary>
     public IWorkspace? Workspace { get; private set; }
 
-    /// <summary>Gets the owning <see cref="WorkspaceManager"/> — exposed so a graphical presentation layer can reach <see cref="WorkspaceManager.StatusBar"/> (internal, `InternalsVisibleTo`), the one Workspace facet with no dedicated public contract (`WP8.0A UI Architecture.md` §1).</summary>
+    /// <summary>Gets the owning <see cref="WorkspaceManager"/> — exposed so a graphical presentation layer can reach the public <see cref="WorkspaceManager.StatusBar"/> (`WP 17.2B`), the one Workspace facet with no dedicated `WP8.0A UI Architecture.md` §1 contract.</summary>
     public WorkspaceManager? Manager => _manager;
 
     /// <summary>Gets the running Host's own DI container — <see langword="null"/> before <see cref="StartAsync"/> completes.</summary>
@@ -68,21 +83,33 @@ public sealed class WorkspaceHost : IAsyncDisposable
     /// user relies on — the same isolation <c>Tempest.Core.Tests</c> has
     /// applied to every <see cref="Tempest.Core.Runtime.ITempestHostBuilder"/>
     /// construction since `WP 7.3A`, only now extended to
-    /// <see cref="Tempest.App.Composition.EngineeringWorkspaceComposer"/>'s
+    /// <see cref="Tempest.Workspace.Composition.EngineeringWorkspaceComposer"/>'s
     /// own callers (`WP 10.1B`, `TD-37`).
     /// </param>
     /// <param name="sessionPrincipals">
     /// Where this session's own principal comes from (`TD-103`). Defaults
-    /// to <see cref="LocalSessionPrincipalSource"/> — one local desktop
-    /// user, no authentication — and is injectable so a test can state the
-    /// account rather than inherit the build agent's, and so
-    /// Administration can supply a different source later without this
-    /// class changing.
+    /// to <see cref="SessionPrincipalSource"/> — one local desktop session,
+    /// no authentication, constructed once the Host's own configuration is
+    /// available so <c>Identity:DisplayName</c>/<c>Identity:Role</c> are
+    /// honoured — and is injectable so a test can supply a stub rather than
+    /// inherit the build agent's own OS account, and so Administration can
+    /// supply a different source later without this class changing.
     /// </param>
-    public WorkspaceHost(string? persistenceRootPathOverride = null, ISessionPrincipalSource? sessionPrincipals = null)
+    /// <param name="commandLineArgs">
+    /// The process's own command-line arguments (Avalonia's own
+    /// <c>IClassicDesktopStyleApplicationLifetime.Args</c>, itself
+    /// <c>Program.Main(string[] args)</c>, unchanged), or
+    /// <see langword="null"/> (the default) to contribute none — reaches
+    /// the Host's default configuration source (`WP 17.2A`, ADR-0146).
+    /// </param>
+    public WorkspaceHost(
+        string? persistenceRootPathOverride = null,
+        ISessionPrincipalSource? sessionPrincipals = null,
+        IReadOnlyList<string>? commandLineArgs = null)
     {
         _persistenceRootPathOverride = persistenceRootPathOverride;
-        _sessionPrincipals = sessionPrincipals ?? new LocalSessionPrincipalSource();
+        _sessionPrincipalsOverride = sessionPrincipals;
+        _commandLineArgs = commandLineArgs;
     }
 
     /// <summary>
@@ -108,7 +135,7 @@ public sealed class WorkspaceHost : IAsyncDisposable
                 ]),
             ];
 
-        var (host, manager) = EngineeringWorkspaceComposer.Build(configurationSources);
+        var (host, manager) = EngineeringWorkspaceComposer.Build(configurationSources, _commandLineArgs);
         _host = host;
         _manager = manager;
 
@@ -143,7 +170,15 @@ public sealed class WorkspaceHost : IAsyncDisposable
         // own answer is the one that stands rather than a sample's; the
         // source is the boundary, and Administration can replace it later
         // without the engineering domain knowing.
-        SessionPrincipal = _sessionPrincipals.Resolve();
+        //
+        // `WP 17.2A` (ADR-0146): the default source is constructed here,
+        // not in this class's own constructor, specifically so it can read
+        // `Identity:DisplayName`/`Identity:Role` from the Host's own
+        // now-built configuration — the identity id itself is still always
+        // read from the OS, never from configuration.
+        var configuration = (IConfigurationProvider)host.Services!.GetService(typeof(IConfigurationProvider));
+        var sessionPrincipals = _sessionPrincipalsOverride ?? new SessionPrincipalSource(configuration);
+        SessionPrincipal = sessionPrincipals.Resolve();
         if (principalAccessor is CurrentPrincipalAccessor accessor)
         {
             // Published unconditionally, null included. Publishing only a
@@ -191,6 +226,73 @@ public sealed class WorkspaceHost : IAsyncDisposable
         ProjectRequirements = new ProjectRequirementRegister(
             (IRequirementsService)host.Services!.GetService(typeof(IRequirementsService)), domainContext);
 
+        // The two reference-data read models, constructed the same way and
+        // for the same reason: both compose governed catalogues that
+        // already exist and hold no state of their own. They are what lets
+        // the application see the populated reference libraries and trace
+        // an engineering result back to the revisions it stood on, without
+        // any surface reaching past the catalogues to do it.
+        ReferenceLibraries = new ReferenceLibraryRegister(
+            (IStandardCatalog)host.Services!.GetService(typeof(IStandardCatalog)),
+            (IMaterialCatalog)host.Services!.GetService(typeof(IMaterialCatalog)),
+            (IConstantCatalog)host.Services!.GetService(typeof(IConstantCatalog)),
+            (IFastenerCatalog)host.Services!.GetService(typeof(IFastenerCatalog)),
+            (IBearingCatalog)host.Services!.GetService(typeof(IBearingCatalog)),
+            (IProcessCatalog)host.Services!.GetService(typeof(IProcessCatalog)));
+
+        // The bracket section check's governed entry point. Constructed the
+        // same way as the read models: it composes the Materials Library and
+        // the calculation engine, both already registered, and holds no
+        // state of its own. This is the whole of the application surface the
+        // first calculation needs — the engineer selects a material, supplies
+        // the geometry and load, and gets a result or a refusal.
+        BracketCheck = new GovernedBracketCheckService(
+            (IMaterialCatalog)host.Services!.GetService(typeof(IMaterialCatalog)),
+            (ICalculationEngine)host.Services!.GetService(typeof(ICalculationEngine)));
+
+        BracketEngineeringRecords = new BracketEngineeringRecordService(
+            (ICalculationPackCatalog)host.Services!.GetService(typeof(ICalculationPackCatalog)),
+            (IVerificationArtefactCatalog)host.Services!.GetService(typeof(IVerificationArtefactCatalog)));
+
+        ReferenceReview = new ReferenceReviewService(
+            (ICurrentPrincipalAccessor)host.Services!.GetService(typeof(ICurrentPrincipalAccessor)),
+            logger: hostLogger,
+            auditRecorder: (Tempest.Core.Audit.IAuditRecorder)host.Services!.GetService(typeof(Tempest.Core.Audit.IAuditRecorder)),
+            permissions: (Tempest.Core.Identity.IPermissionEvaluator)host.Services!.GetService(typeof(Tempest.Core.Identity.IPermissionEvaluator)));
+
+        // The Engineering Calculation surface's own read model. It composes
+        // the four governed acts a calculation journey needs - populate,
+        // review and release, check, recover - and owns none of them: the
+        // arithmetic stays in the definition, the lifecycle in the review
+        // service, the population in the seeder. It exists so the Desktop
+        // view renders finished answers and decides nothing, the same
+        // discipline ProjectRequirementRegister already follows.
+        BracketCalculations = new BracketCalculationWorkbench(
+            (IMaterialCatalog)host.Services!.GetService(typeof(IMaterialCatalog)),
+            (ReferenceSeedService)host.Services!.GetService(typeof(ReferenceSeedService)),
+            ReferenceReview,
+            BracketCheck,
+            (ICalculationEngine)host.Services!.GetService(typeof(ICalculationEngine)),
+            (ISettingsProvider)host.Services!.GetService(typeof(ISettingsProvider)),
+            (IVerificationArtefactCatalog)host.Services!.GetService(typeof(IVerificationArtefactCatalog)),
+            // The workspace's governed index of named calculations. It adds
+            // no concept: a named calculation is the platform's own
+            // `Calculation` Domain object, renamed through the rename
+            // command CalculationsWorkspaceRegistration already registered,
+            // retired through the status command it already registered, and
+            // organised by the IHasParent membership every discipline
+            // already uses. Constructed here over already-resolved
+            // services, the same ADR-0103 shape as every collaborator above.
+            new EngineeringCalculationRegister(
+                domainContext,
+                (ICommandDispatcher)host.Services!.GetService(typeof(ICommandDispatcher)),
+                projectContext));
+
+        EngineeringTrace = new EngineeringTraceRegister(
+            (ICalculationPackCatalog)host.Services!.GetService(typeof(ICalculationPackCatalog)),
+            (IMaterialCatalog)host.Services!.GetService(typeof(IMaterialCatalog)),
+            (ITemplateCatalog)host.Services!.GetService(typeof(ITemplateCatalog)));
+
         // Recover where the user was, and which project they were in.
         // Order matters: the navigator's own restore opens the project,
         // so loading the context first would be redundant work, not a
@@ -208,7 +310,7 @@ public sealed class WorkspaceHost : IAsyncDisposable
     /// what every consumer actually reads. Exposed here so a test can
     /// assert the boundary did its job, not as a second source of truth.
     /// </remarks>
-    public IPrincipal? SessionPrincipal { get; private set; }
+    public ISessionPrincipal? SessionPrincipal { get; private set; }
 
     /// <summary>Gets what startup rehydration recovered (`TD-85`) — <see langword="null"/> before <see cref="StartAsync"/> completes.</summary>
     public EngineeringRehydrationResult? RehydrationResult { get; private set; }
@@ -245,6 +347,55 @@ public sealed class WorkspaceHost : IAsyncDisposable
 
     /// <summary>The project's own milestone register.</summary>
     public IProjectMilestoneRegister? ProjectMilestones { get; private set; }
+
+    /// <summary>
+    /// Gets what reference data the platform holds and whether it may be
+    /// relied on — <see langword="null"/> before <see cref="StartAsync"/>
+    /// completes.
+    /// </summary>
+    public IReferenceLibraryRegister? ReferenceLibraries { get; private set; }
+
+    /// <summary>
+    /// Gets the read model answering "where did this engineering result
+    /// come from?" — <see langword="null"/> before <see cref="StartAsync"/>
+    /// completes.
+    /// </summary>
+    public IEngineeringTraceRegister? EngineeringTrace { get; private set; }
+
+    /// <summary>
+    /// Gets the governed bracket section check — <see langword="null"/>
+    /// before <see cref="StartAsync"/> completes.
+    /// </summary>
+    public GovernedBracketCheckService? BracketCheck { get; private set; }
+
+    /// <summary>
+    /// Gets the service that writes an executed bracket check into its
+    /// calculation pack and verification artefact — <see langword="null"/>
+    /// before <see cref="StartAsync"/> completes.
+    /// </summary>
+    public BracketEngineeringRecordService? BracketEngineeringRecords { get; private set; }
+
+    /// <summary>
+    /// Gets the governed reference review and release act —
+    /// <see langword="null"/> before <see cref="StartAsync"/> completes.
+    /// </summary>
+    /// <remarks>
+    /// It takes the reviewer from the session's own principal, so a review
+    /// performed through the application is attributable to whoever is
+    /// signed in and to nobody else.
+    /// </remarks>
+    public ReferenceReviewService? ReferenceReview { get; private set; }
+
+    /// <summary>
+    /// Gets the Engineering Calculation surface's own read model -
+    /// <see langword="null"/> before <see cref="StartAsync"/> completes.
+    /// </summary>
+    /// <remarks>
+    /// This is what the <c>EngineeringCalculation</c> shell area renders.
+    /// It reaches the governed services this host already composes and adds
+    /// no rule of its own.
+    /// </remarks>
+    public BracketCalculationWorkbench? BracketCalculations { get; private set; }
 
     /// <summary>Setting milestones and deliverables, as the Project Workspace performs it.</summary>
     public IProjectMilestoneService? ProjectMilestoneWorkflow { get; private set; }

@@ -3,7 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
-using Tempest.App.Workspace;
+using Tempest.Workspace;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Desktop.DigitalThread;
 using Tempest.Desktop.Editors;
@@ -36,6 +36,7 @@ public sealed class PropertyInspectorView : UserControl
     private readonly IPropertyInspector _inspector;
     private readonly IWorkspaceManager _manager;
     private readonly EngineeringDomainContext? _domainContext;
+    private readonly Tempest.Core.Identity.IPrincipalDirectory? _principals;
     private readonly StackPanel _panel = new() { Spacing = DesignTokens.SpaceXs, Margin = DesignTokens.PanelPadding };
     private readonly EmptyStateView _empty = new("◎", "No selection", "Select an object in the Project Explorer to inspect its identity, lifecycle, discipline facets, relationships and validation here.");
 
@@ -57,13 +58,14 @@ public sealed class PropertyInspectorView : UserControl
     /// threads it through) leaves the Validation section at its own
     /// honest, pre-`WP 10.8A` disclosed-placeholder text — never a crash.
     /// </param>
-    public PropertyInspectorView(IPropertyInspector inspector, IWorkspaceManager manager, EngineeringDomainContext? domainContext = null)
+    public PropertyInspectorView(IPropertyInspector inspector, IWorkspaceManager manager, EngineeringDomainContext? domainContext = null, Tempest.Core.Identity.IPrincipalDirectory? principals = null)
     {
         ArgumentNullException.ThrowIfNull(inspector);
         ArgumentNullException.ThrowIfNull(manager);
         _inspector = inspector;
         _manager = manager;
         _domainContext = domainContext;
+        _principals = principals;
         Content = new ScrollViewer { Content = _panel };
         Refresh();
     }
@@ -227,6 +229,26 @@ public sealed class PropertyInspectorView : UserControl
     /// claiming validation is unavailable outright, since it genuinely is
     /// available for every other real discipline object.
     /// </remarks>
+    /// <summary>
+    /// An object-reference facet holds another object's id (`WP 17.9.3`);
+    /// the person reads its name and Kind. The first Windows review of
+    /// `v0.17.0` saw a bare GUID under "Parent" one row away from a
+    /// resolved name under "Last Revised By". An id that resolves to nothing
+    /// is shown as it is stored, never invented.
+    /// </summary>
+    private string DescribeObjectReference(string value)
+    {
+        if (_domainContext is null || !Guid.TryParse(value, out var id))
+            return value;
+
+        var target = _domainContext.Repository.FindAsync(id).GetAwaiter().GetResult();
+        if (target is null)
+            return value;
+
+        var name = (target as IHasBusinessIdentifier)?.DisplayName;
+        return string.IsNullOrWhiteSpace(name) ? $"{target.Kind} {value}" : $"{name} ({target.Kind})";
+    }
+
     private void AddValidationSection()
     {
         Control content;
@@ -300,9 +322,17 @@ public sealed class PropertyInspectorView : UserControl
 
             var isDisplayNameField = editable && facet.Name.Equals("Name", StringComparison.OrdinalIgnoreCase);
             var canRenameCurrentKind = _currentKind is not null && _manager.CanRename(_currentKind);
+            // `WP 17.9.1`: a principal facet holds the stored identity id (a
+            // Windows SID); the person reads a name.
+            var displayValue = facet.FacetKind switch
+            {
+                PropertyFacetKind.Principal when _principals is not null => _principals.Describe(facet.Value),
+                PropertyFacetKind.ObjectReference => DescribeObjectReference(facet.Value),
+                _ => facet.Value,
+            };
             Control valueControl = isDisplayNameField && canRenameCurrentKind
                 ? BuildEditableNameField(facet.Value)
-                : new TextBlock { Text = facet.Value, TextWrapping = TextWrapping.Wrap, FontSize = DesignTokens.FontSizeBody };
+                : new TextBlock { Text = displayValue, TextWrapping = TextWrapping.Wrap, FontSize = DesignTokens.FontSizeBody };
 
             if (isDisplayNameField && !canRenameCurrentKind && _currentKind is not null)
             {

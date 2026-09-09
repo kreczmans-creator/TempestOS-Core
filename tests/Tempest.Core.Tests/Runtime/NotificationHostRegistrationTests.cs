@@ -8,32 +8,20 @@ namespace Tempest.Core.Tests.Runtime;
 // Matrix.md specifies - INotificationDispatcher resolvable, ordinary
 // singleton semantics, and a real publish/subscribe round trip through the
 // container-resolved instance.
-[Collection("Console output capture")]
 public class NotificationHostRegistrationTests
 {
     private static async Task RunAgainstRunningHostAsync(Func<ITempestHost, Task> body)
     {
-        var host = new TempestHostBuilder(Type.EmptyTypes).Build();
-        var originalOut = Console.Out;
+        var host = new TempestHostBuilder(Type.EmptyTypes).WithIsolatedPersistenceRoot().Build();
 
-        try
-        {
-            Console.SetOut(new StringWriter());
+        var runTask = host.RunAsync();
 
-            var runTask = host.RunAsync();
+        await RunningHostFixture.WaitUntilRunningAsync(host);
 
-            while (host.State is HostState.Created or HostState.Starting)
-                await Task.Delay(5);
+        await body(host);
 
-            await body(host);
-
-            await host.StopAsync();
-            await runTask;
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-        }
+        await host.StopAsync();
+        await runTask;
     }
 
     [Fact]

@@ -1,6 +1,6 @@
-using Tempest.App.Projects;
-using Tempest.App.Workspace.Documents;
-using Tempest.App.Workspace.Mechanical;
+using Tempest.Workspace.Projects;
+using Tempest.Workspace.Documents;
+using Tempest.Workspace.Mechanical;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.EngineeringData;
 using Tempest.Core.Configuration;
@@ -352,7 +352,7 @@ public sealed class ProjectAreaRegisterTests : IDisposable
             var discovery = new RelationshipDiscoveryService(relationships, repository);
 
             var domain = new EngineeringDomainContext(
-                documents, repository, relationships, new LifecycleTransitionTable(), new ValidationRuleSet(),
+                store, documents, repository, relationships, new LifecycleTransitionTable(), new ValidationRuleSet(),
                 new EvidenceComposer(discovery, repository), principal,
                 new EngineeringObjectStateStore(store), new AttachmentContentStore(store));
 

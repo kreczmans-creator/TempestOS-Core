@@ -2,9 +2,9 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Platform;
-using Tempest.App.Projects;
-using Tempest.App.Shell;
-using Tempest.App.Workspace;
+using Tempest.Workspace.Projects;
+using Tempest.Workspace.Shell;
+using Tempest.Workspace;
 using Tempest.Core.Commands;
 using Tempest.Core.Diagnostics;
 using Tempest.Core.EngineeringDomain;
@@ -72,6 +72,7 @@ public sealed class MainWindow : Window
     private readonly DesktopSessionState _session;
     private readonly SettingsDialog _settingsDialog;
     private readonly WorkspaceViewCoordinator _viewCoordinator;
+    private readonly IWorkspaceManager _workspaceManager;
     private readonly UndoRedoCoordinator _undoRedo;
     private readonly WorkspaceLayoutPresetCoordinator _layoutPresets;
 
@@ -89,6 +90,9 @@ public sealed class MainWindow : Window
     // The open project's own tasks/milestones/deliverables and its
     // risks/issues/decisions (`ADR-0103` collaborators, `WP-G`) — the CRUD
     // interaction logic `TD-109` named, moved out of this class verbatim.
+    private readonly EngineeringCalculationView _engineeringCalculation;
+    private readonly EngineeringCalculationCoordinator _engineeringCalculationCoordinator;
+    private bool _engineeringCalculationLoaded;
     private readonly ProjectDeliveryCoordinator _projectDelivery;
     private readonly ProjectGovernanceCoordinator _projectGovernanceCoordinator;
 
@@ -123,6 +127,7 @@ public sealed class MainWindow : Window
 
         var workspace = host.Workspace ?? throw new InvalidOperationException("WorkspaceHost must be started before constructing MainWindow.");
         var manager = host.Manager!;
+        _workspaceManager = manager;
         var services = host.Services!;
 
         // Platform Service resolution (`ADR-0103` collaborator #1) —
@@ -131,7 +136,10 @@ public sealed class MainWindow : Window
         var composition = new DesktopCompositionRoot(services);
         _diagnostics = composition.Diagnostics;
 
-        Title = "TempestOS";
+        // The build is in the title bar (`WP 17.9.4`): version and short
+        // commit. The second Windows smoke test was run against a stale
+        // clone's executable, and nothing on screen said so.
+        Title = $"TempestOS {DescribeBuild(services)}";
         MinWidth = 960;
         MinHeight = 600;
 
@@ -248,7 +256,8 @@ public sealed class MainWindow : Window
                 : Task.FromResult(true);
 
         _explorerView = new ProjectExplorerView(workspace.ProjectExplorer, manager) { ConfirmDeleteAsync = ConfirmDeleteAsync, RecentSearchCapacity = _session.UserSettings.RecentSearchCapacity };
-        _inspectorView = new PropertyInspectorView(workspace.PropertyInspector, manager, composition.DomainContext);
+        var principals = (Tempest.Core.Identity.IPrincipalDirectory)host.Services!.GetService(typeof(Tempest.Core.Identity.IPrincipalDirectory));
+        _inspectorView = new PropertyInspectorView(workspace.PropertyInspector, manager, composition.DomainContext, principals);
         _statusBar = new StatusBarView();
         _commandPalette = new CommandPaletteOverlay(composition.CommandRegistry);
 
@@ -305,12 +314,13 @@ public sealed class MainWindow : Window
 
         // The Engineering Cockpit (WP 10.1A, ADR-0069) — the Workspace's
         // own default landing screen, realised here as the Document Area's
-        // own permanent Home tab. Workspace (the concrete class) is
-        // internal, reached via InternalsVisibleTo("Tempest.Desktop")
-        // (granted `WP 10.0B`) — the identical, precedented pattern
-        // WorkspaceShell itself already uses internally to reach its own
-        // concrete Workspace instance.
-        var cockpit = ((Workspace)workspace).Cockpit;
+        // own permanent Home tab. Reached through IWorkspace.Cockpit
+        // directly (`WP 17.2B`) — no cast to the concrete internal
+        // Workspace class and no InternalsVisibleTo grant needed; Desktop
+        // and Tempest.Harness are now two separate assemblies with no
+        // reference to one another, each reaching the Workspace only
+        // through its public contracts.
+        var cockpit = workspace.Cockpit;
         _cockpitView = new CockpitView(
             cockpit,
             workspace.Navigation.Areas,
@@ -403,6 +413,10 @@ public sealed class MainWindow : Window
                 await _explorerView.LoadAsync().ConfigureAwait(true);
                 _cockpitView.Refresh();
             }).ConfigureAwait(true);
+
+        // `WP 17.9.4`: what you make opens right up. Nothing a user creates
+        // may drop out of sight; the shell takes them to it.
+        _ribbon.ObjectCreated += (id, kind) => _ = OpenCreatedObjectAsync(id, kind);
 
         // Background-task state changes drive the Output panel's own
         // Background Tasks list directly (`TD-58` stale-UI closure) —
@@ -502,6 +516,26 @@ public sealed class MainWindow : Window
             _projectContext, host.ProjectGovernanceWorkflow!, host.ProjectGovernance!,
             _projectWorkspace, _inputDialog, _toastHost, RecordHistory);
 
+        // The Engineering Calculation surface and its own collaborator
+        // (`ADR-0103`, the same shape as the two above). The view raises
+        // intent; the coordinator performs it through the App-layer
+        // workbench and renders the answer. No engineering rule, no
+        // lifecycle rule and no formula lives on this side of the seam.
+        _engineeringCalculation = new EngineeringCalculationView(principals.Describe);
+        _engineeringCalculationCoordinator = new EngineeringCalculationCoordinator(
+            host.BracketCalculations!, _engineeringCalculation);
+
+        _engineeringCalculation.PopulateRequested += () => _ = _engineeringCalculationCoordinator.PopulateAsync();
+        _engineeringCalculation.AddMaterialRequested += () => _ = _engineeringCalculationCoordinator.AddMaterialAsync();
+        _engineeringCalculation.ReleaseRequested += () => _ = _engineeringCalculationCoordinator.VerifyAndReleaseAsync();
+        _engineeringCalculation.CalculateRequested += () => _ = _engineeringCalculationCoordinator.CalculateAsync();
+        _engineeringCalculation.NewCalculationRequested += () => _engineeringCalculationCoordinator.BeginNewCalculation();
+        _engineeringCalculation.OpenCalculationRequested += recordId => _ = _engineeringCalculationCoordinator.OpenAsync(recordId);
+        _engineeringCalculation.RenameRequested += (objectId, name) => _ = _engineeringCalculationCoordinator.RenameAsync(objectId, name);
+        _engineeringCalculation.RetireRequested += objectId => _ = _engineeringCalculationCoordinator.RetireAsync(objectId);
+        _engineeringCalculation.ShowRetiredChanged += include => _ = _engineeringCalculationCoordinator.SetShowRetiredAsync(include);
+        _engineeringCalculation.SelectionMoved += () => _engineeringCalculationCoordinator.ForgetPendingRetirement();
+
         _navigationRail = new GlobalNavigationRail(_navigator);
 
         _navigationRail.NavigationRequested += () => _ = RenderCurrentModuleAsync();
@@ -559,6 +593,7 @@ public sealed class MainWindow : Window
         {
             ShellArea.Projects => _projectBrowser,
             ShellArea.ProjectWorkspace => _projectWorkspace,
+            ShellArea.EngineeringCalculation => _engineeringCalculation,
             _ => _engineeringSurface,
         };
 
@@ -669,8 +704,11 @@ public sealed class MainWindow : Window
         // TD-77 Stage 5: the palette evaluates and invokes against the real
         // selection, through the same adapter the Ribbon uses, and collects
         // declared values through the same one prompt.
-        _commandPalette.ContextSource = () => WorkspaceCommandContext.From(workspace.Selection);
+        // `WP 17.9.2`: the context carries the open project, so a command
+        // that creates something knows where the user is standing.
+        _commandPalette.ContextSource = () => WorkspaceCommandContext.From(workspace.Selection, _projectContext.Current?.Id);
         _commandPalette.ParameterPrompt = commandPrompt.Prompt;
+        _ribbon.ProjectIdSource = () => _projectContext.Current?.Id;
 
         // `WP-A2`: a bound gesture now asks the same question the Ribbon and
         // the Palette ask, and gets the same answers — the same selection
@@ -679,7 +717,7 @@ public sealed class MainWindow : Window
         // command, so a bound key would have looked like a dead key. Nothing
         // is bound today (`AT-23`, a product choice, not a defect shield);
         // this is what makes the first binding anyone adds actually work.
-        composition.InputBindingRegistry.ContextSource = () => WorkspaceCommandContext.From(workspace.Selection);
+        composition.InputBindingRegistry.ContextSource = () => WorkspaceCommandContext.From(workspace.Selection, _projectContext.Current?.Id);
         composition.InputBindingRegistry.ParameterPrompt = commandPrompt.Prompt;
 
         _commandPalette.InvokeOverride = async (descriptor, context) =>
@@ -728,6 +766,11 @@ public sealed class MainWindow : Window
             {
                 await _explorerView.LoadAsync().ConfigureAwait(true);
                 _cockpitView.Refresh();
+
+                // `WP 17.9.4`: a created object opens right up, from the
+                // palette exactly as from the ribbon.
+                if (result is { SubjectId: { } createdId, SubjectKind: { } createdKind } && RibbonView.IsCreate(descriptor.Id))
+                    await OpenCreatedObjectAsync(createdId, createdKind).ConfigureAwait(true);
             }
         };
         _commandPalette.CommandUnavailable += (descriptor, reason) =>
@@ -985,7 +1028,26 @@ public sealed class MainWindow : Window
                 // a panel within it. Engineering carries its own scope —
                 // the open project, or standalone (`TD-89`) — which the
                 // surface reads from the navigator rather than from here.
+                // `WP 17.9.1`: Engineering is not usable without the Project
+                // Explorer and Properties panels, so entering it guarantees
+                // they are present whatever a saved layout says.
+                if (location.Area == ShellArea.Engineering)
+                    _dockingComposer.EnsureCorePanelsPresent();
                 _moduleHost.Content = _engineeringSurface;
+                break;
+
+            case ShellArea.EngineeringCalculation:
+                // The governed calculation surface. The library is re-read
+                // on every entry, because a material released elsewhere in
+                // the session must not still read as Draft here; the stored
+                // calculation is recovered once, on the first entry of the
+                // session, which is what makes a relaunch show the result
+                // the engineer left behind.
+                await _engineeringCalculationCoordinator
+                    .RefreshAsync(restoreInputs: !_engineeringCalculationLoaded)
+                    .ConfigureAwait(true);
+                _engineeringCalculationLoaded = true;
+                _moduleHost.Content = _engineeringCalculation;
                 break;
 
             default:
@@ -1189,6 +1251,51 @@ public sealed class MainWindow : Window
     /// cards, the default first-area selection on startup) keeps both in
     /// sync without each needing its own separate call.
     /// </summary>
+    /// <summary>"0.17.0 (9e52a53)": the platform's semantic version with the build metadata shortened to a commit prefix, or just the version when there is none.</summary>
+    internal static string DescribeBuild(Tempest.Core.DependencyInjection.ITempestServiceProvider services)
+    {
+        var version = (services.GetService(typeof(Tempest.Core.Versioning.IPlatformVersionProvider)) as Tempest.Core.Versioning.IPlatformVersionProvider)?.Version.SemanticVersion;
+        if (string.IsNullOrWhiteSpace(version))
+            return string.Empty;
+
+        var plus = version.IndexOf('+', StringComparison.Ordinal);
+        if (plus < 0)
+            return version;
+
+        var metadata = version[(plus + 1)..];
+        return $"{version[..plus]} ({(metadata.Length > 7 ? metadata[..7] : metadata)})";
+    }
+
+    /// <summary>
+    /// Takes the user to an object they just made (`WP 17.9.4`): the
+    /// Explorer switches to the area that lists its Kind, reloads, expands
+    /// the path to it and selects it; then the object opens in the editor
+    /// tab with every field in front of them. The first two Windows
+    /// reviews of `v0.17.0` both lost a newly created object; the rule
+    /// now is that nothing a user creates may drop out of sight.
+    /// </summary>
+    internal async Task OpenCreatedObjectAsync(Guid id, string kind)
+    {
+        var workspace = _workspaceManager.Current;
+        if (workspace is null)
+            return;
+
+        var areaId = DisciplineAreas.AreaFor(kind);
+        if (areaId is not null && workspace.Navigation.Areas.FirstOrDefault(a => a.Id == areaId) is { } area)
+        {
+            await workspace.Navigation.SwitchAreaAsync(area.Id).ConfigureAwait(true);
+            _ribbon.SelectTabForArea(area.Title);
+            SetCurrentArea(area.Title);
+        }
+
+        await _explorerView.LoadAsync().ConfigureAwait(true);
+        _explorerView.Reveal(id);
+        await workspace.Selection.SelectAsync(id, kind).ConfigureAwait(true);
+        await _viewCoordinator.NavigateToObjectAsync(id, kind).ConfigureAwait(true);
+        _inspectorView.SetCurrentSelection(id, kind);
+        await _inspectorView.RefreshFromSourceAsync().ConfigureAwait(true);
+    }
+
     private void SetCurrentArea(string? title)
     {
         _currentAreaTitle = title;

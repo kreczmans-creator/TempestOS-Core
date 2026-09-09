@@ -5,50 +5,34 @@ namespace Tempest.Core.Tests.Runtime;
 
 // Registration validation: proves Identity & Permissions is wired into the
 // real, unmodified TempestHost exactly as Service Registration Matrix.md
-// specifies - every service resolvable, ordinary singleton semantics for
-// IRoleProvider/IPermissionEvaluator/IIdentityService, and the deliberate
-// dual-AddInstance registration for CurrentPrincipalAccessor actually
-// sharing one instance between ICurrentPrincipalAccessor and its own
-// concrete type (see CurrentPrincipalAccessor's own remarks for why this
+// specifies - ordinary singleton semantics for IPermissionEvaluator, and the
+// deliberate dual-AddInstance registration for CurrentPrincipalAccessor
+// actually sharing one instance between ICurrentPrincipalAccessor and its
+// own concrete type (see CurrentPrincipalAccessor's own remarks for why this
 // matters).
-[Collection("Console output capture")]
+//
+// `WP 17.2A` (ADR-0146): IRoleProvider/RoleProvider and
+// IIdentityService/IdentityService are deleted along with this file's own
+// former tests for them - the Host no longer registers either. Identity
+// collapses to one session principal, established directly on
+// CurrentPrincipalAccessor by the presentation layer (WorkspaceHost) rather
+// than resolved through a Host-registered identity service; see
+// SessionPrincipalSourceTests for that boundary's own coverage.
 public class IdentityHostRegistrationTests
 {
     private static async Task RunAgainstRunningHostAsync(Func<ITempestHost, Task> body)
     {
-        var host = new TempestHostBuilder(Type.EmptyTypes).Build();
-        var originalOut = Console.Out;
+        var host = new TempestHostBuilder(Type.EmptyTypes).WithIsolatedPersistenceRoot().Build();
 
-        try
-        {
-            Console.SetOut(new StringWriter());
+        var runTask = host.RunAsync();
 
-            var runTask = host.RunAsync();
+        await RunningHostFixture.WaitUntilRunningAsync(host);
 
-            while (host.State is HostState.Created or HostState.Starting)
-                await Task.Delay(5);
+        await body(host);
 
-            await body(host);
-
-            await host.StopAsync();
-            await runTask;
-        }
-        finally
-        {
-            Console.SetOut(originalOut);
-        }
+        await host.StopAsync();
+        await runTask;
     }
-
-    [Fact]
-    public Task Host_RegistersIRoleProvider_Resolvable() =>
-        RunAgainstRunningHostAsync(host =>
-        {
-            var roleProvider = host.Services!.GetService(typeof(IRoleProvider));
-
-            Assert.IsType<RoleProvider>(roleProvider);
-
-            return Task.CompletedTask;
-        });
 
     [Fact]
     public Task Host_RegistersIPermissionEvaluator_Resolvable() =>
@@ -57,17 +41,6 @@ public class IdentityHostRegistrationTests
             var evaluator = host.Services!.GetService(typeof(IPermissionEvaluator));
 
             Assert.IsType<PermissionEvaluator>(evaluator);
-
-            return Task.CompletedTask;
-        });
-
-    [Fact]
-    public Task Host_RegistersIIdentityService_Resolvable() =>
-        RunAgainstRunningHostAsync(host =>
-        {
-            var identityService = host.Services!.GetService(typeof(IIdentityService));
-
-            Assert.IsType<IdentityService>(identityService);
 
             return Task.CompletedTask;
         });
@@ -84,41 +57,13 @@ public class IdentityHostRegistrationTests
         });
 
     // ----------------------------------------------------------------
-    // Singleton semantics
-    // ----------------------------------------------------------------
-
-    [Fact]
-    public Task Host_ResolvingIRoleProviderTwice_ReturnsTheSameInstance() =>
-        RunAgainstRunningHostAsync(host =>
-        {
-            var first = host.Services!.GetService(typeof(IRoleProvider));
-            var second = host.Services!.GetService(typeof(IRoleProvider));
-
-            Assert.Same(first, second);
-
-            return Task.CompletedTask;
-        });
-
-    [Fact]
-    public Task Host_ResolvingIIdentityServiceTwice_ReturnsTheSameInstance() =>
-        RunAgainstRunningHostAsync(host =>
-        {
-            var first = host.Services!.GetService(typeof(IIdentityService));
-            var second = host.Services!.GetService(typeof(IIdentityService));
-
-            Assert.Same(first, second);
-
-            return Task.CompletedTask;
-        });
-
-    // ----------------------------------------------------------------
     // The dual-registration proof: ICurrentPrincipalAccessor and the
     // concrete CurrentPrincipalAccessor type must resolve to the exact
-    // same object, or IdentityService's own writes (via the concrete
-    // type) would be invisible to every ordinary consumer (via the
-    // interface) - the entire reason this design uses two AddInstance
-    // calls over the same object rather than two independent Singleton<>
-    // registrations.
+    // same object, or a principal established via the concrete type (as
+    // WorkspaceHost's own SessionPrincipalSource boundary does) would be
+    // invisible to every ordinary consumer resolving only the interface -
+    // the entire reason this design uses two AddInstance calls over the
+    // same object rather than two independent Singleton<> registrations.
     // ----------------------------------------------------------------
 
     [Fact]
@@ -134,13 +79,14 @@ public class IdentityHostRegistrationTests
         });
 
     [Fact]
-    public Task Host_EstablishingCurrentPrincipalThroughIdentityService_IsVisibleThroughTheInterface() =>
+    public Task Host_EstablishingCurrentPrincipalDirectlyOnTheConcreteType_IsVisibleThroughTheInterface() =>
         RunAgainstRunningHostAsync(host =>
         {
-            var identityService = (IIdentityService)host.Services!.GetService(typeof(IIdentityService));
+            var concrete = (CurrentPrincipalAccessor)host.Services!.GetService(typeof(CurrentPrincipalAccessor));
             var accessor = (ICurrentPrincipalAccessor)host.Services!.GetService(typeof(ICurrentPrincipalAccessor));
 
-            identityService.EstablishCurrentPrincipal("registration-test-user");
+            var principal = new PlatformPrincipal(new PlatformIdentity("registration-test-user", "registration-test-user"), []);
+            concrete.SetCurrent(principal);
 
             Assert.NotNull(accessor.Current);
             Assert.Equal("registration-test-user", accessor.Current!.Identity.Id);

@@ -877,10 +877,14 @@ public class CommandBindingTests
             }
         }
 
-        // And the context carries a selection and nothing else - no service
-        // provider, no view, no project, no property bag.
+        // And the context carries a selection and the open project's id
+        // (`WP 17.9.2`: a Guid, not a project object, a service provider,
+        // a view or a property bag). The id was added when the first
+        // Windows review of v0.17.0 found the reader the original audit
+        // did not: a create binding with a project open and nothing
+        // selected had nowhere to put its object.
         Assert.Equal(
-            ["Empty", "Primary", "Selection"],
+            ["Empty", "Primary", "ProjectId", "Selection"],
             typeof(CommandContext).GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static)
                 .Select(p => p.Name).OrderBy(n => n, StringComparer.Ordinal));
     }

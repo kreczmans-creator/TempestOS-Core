@@ -14,7 +14,7 @@ namespace Tempest.Desktop;
 /// framework initialisation completes, builds the Engineering Workspace
 /// (<see cref="WorkspaceHost"/>) and shows the <see cref="MainWindow"/> —
 /// the graphical presentation layer's own equivalent of
-/// <see cref="Tempest.App.Workspace.WorkspaceShell"/>'s construction plus
+/// <see cref="Tempest.Workspace.WorkspaceShell"/>'s construction plus
 /// <c>RunAsync</c>.
 /// </summary>
 public sealed class App : Application
@@ -49,7 +49,12 @@ public sealed class App : Application
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            var host = new WorkspaceHost();
+            // `WP 17.2A` (ADR-0146): Avalonia's own classic desktop
+            // lifetime carries Program.Main(string[] args) through
+            // unchanged as Args — the one wire this composition root needs
+            // to connect for the command line to reach the Host's default
+            // configuration source.
+            var host = new WorkspaceHost(commandLineArgs: desktop.Args);
 
             // Avalonia's own startup path is synchronous; the Engineering
             // Workspace's own StartAsync (Runtime Host discovery/DI

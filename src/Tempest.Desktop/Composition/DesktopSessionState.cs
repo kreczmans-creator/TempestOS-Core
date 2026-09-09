@@ -2,7 +2,7 @@ using Tempest.Core.Settings;
 using Tempest.Desktop;
 using Tempest.Desktop.Docking;
 
-using Tempest.App.Workspace.Layout;
+using Tempest.Workspace.Layout;
 
 namespace Tempest.Desktop.Composition;
 

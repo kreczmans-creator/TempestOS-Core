@@ -2,6 +2,8 @@
 
 ## Status
 
+**Status:** Frozen by ADR-0146 (v0.17.0)
+
 Accepted — `WP 13.0A` (Plugin & Registration Trust Isolation
 Architecture), 2026-08-13. Makes `TD-09`, `TD-10`, `TD-11`, and `CMD-1`
 genuinely resolvable by a targeted retrofit, exactly as `ADR-0044`
