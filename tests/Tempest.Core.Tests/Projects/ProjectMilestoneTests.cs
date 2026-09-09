@@ -407,11 +407,11 @@ public sealed class ProjectMilestoneTests : IDisposable
             var configuration = new ConfigurationBuilder()
                 .AddSource(new MemoryConfigurationSource(
                 [
-                    new KeyValuePair<string, string>(PersistenceStore.RootPathConfigurationKey, root),
+                    new KeyValuePair<string, string>(SqlitePersistenceStore.RootPathConfigurationKey, root),
                 ]))
                 .Build();
 
-            var store = new PersistenceStore(configuration);
+            var store = new SqlitePersistenceStore(configuration);
             var principal = new CurrentPrincipalAccessor();
             var documents = new EngineeringDocumentStore(store, principal);
             var repository = new InMemoryEngineeringObjectRepository();

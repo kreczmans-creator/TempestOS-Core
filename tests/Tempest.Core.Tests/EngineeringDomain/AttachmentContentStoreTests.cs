@@ -7,7 +7,9 @@ namespace Tempest.Core.Tests.EngineeringDomain;
 
 /// <summary>
 /// The durable attachment-content boundary (`TD-31`), against the real
-/// <see cref="PersistenceStore"/> on a real file system.
+/// <see cref="SqlitePersistenceStore"/> on a real file system (`WP 18.1A`
+/// re-points this suite from the deleted file-per-key store; the claims
+/// below are unchanged).
 /// </summary>
 /// <remarks>
 /// The round-trip cases prove content survives; the rest prove the store
@@ -20,14 +22,31 @@ public class AttachmentContentStoreTests
     private static IConfigurationProvider BuildConfiguration(string rootPath) =>
         new ConfigurationBuilder().AddSource(new MemoryConfigurationSource(
         [
-            new KeyValuePair<string, string>(PersistenceStore.RootPathConfigurationKey, rootPath),
+            new KeyValuePair<string, string>(SqlitePersistenceStore.RootPathConfigurationKey, rootPath),
         ])).Build();
 
-    private static (AttachmentContentStore Store, PersistenceStore Backing) Build(string rootPath)
+    /// <summary>
+    /// Owns one <see cref="SqlitePersistenceStore"/> instance over a test's
+    /// root, so the store's own exclusive instance lock (`ADR-0144`) is
+    /// released deterministically at the end of every test rather than left
+    /// to finalization.
+    /// </summary>
+    private sealed class Scope : IDisposable
     {
-        var backing = new PersistenceStore(BuildConfiguration(rootPath));
-        return (new AttachmentContentStore(backing), backing);
+        public Scope(string rootPath)
+        {
+            Backing = new SqlitePersistenceStore(BuildConfiguration(rootPath));
+            Store = new AttachmentContentStore(Backing);
+        }
+
+        public AttachmentContentStore Store { get; }
+
+        public SqlitePersistenceStore Backing { get; }
+
+        public void Dispose() => Backing.Dispose();
     }
+
+    private static Scope Build(string rootPath) => new(rootPath);
 
     public static TheoryData<string> RealFileNames()
     {
@@ -46,12 +65,12 @@ public class AttachmentContentStoreTests
     public async Task EveryDocumentWorkflowFileType_RoundTripsAndVerifies(string fileName)
     {
         using var temp = new TempDirectory();
-        var (store, _) = Build(temp.Path);
+        using var scope = Build(temp.Path);
         var attachmentId = Guid.NewGuid();
         var expected = BytesFor(fileName);
 
-        var hash = await store.SaveAsync(attachmentId, expected);
-        var result = await store.ReadAsync(attachmentId, hash, expected.LongLength);
+        var hash = await scope.Store.SaveAsync(attachmentId, expected);
+        var result = await scope.Store.ReadAsync(attachmentId, hash, expected.LongLength);
 
         Assert.Equal(AttachmentContentStatus.Available, result.Status);
         Assert.Equal(expected, result.Bytes);
@@ -61,10 +80,10 @@ public class AttachmentContentStoreTests
     public async Task TheHashRecordedOnSave_IsTheHashOfTheBytesStored()
     {
         using var temp = new TempDirectory();
-        var (store, _) = Build(temp.Path);
+        using var scope = Build(temp.Path);
         var content = AttachmentContentSamples.Pdf();
 
-        var hash = await store.SaveAsync(Guid.NewGuid(), content);
+        var hash = await scope.Store.SaveAsync(Guid.NewGuid(), content);
 
         Assert.Equal(AttachmentContentStore.ComputeHash(content), hash);
         Assert.Equal(64, hash.Length);
@@ -74,9 +93,9 @@ public class AttachmentContentStoreTests
     public async Task ContentThatWasNeverStored_ReadsAsMissing_NotAsAnError()
     {
         using var temp = new TempDirectory();
-        var (store, _) = Build(temp.Path);
+        using var scope = Build(temp.Path);
 
-        var result = await store.ReadAsync(Guid.NewGuid(), expectedHash: null, expectedSizeInBytes: 0);
+        var result = await scope.Store.ReadAsync(Guid.NewGuid(), expectedHash: null, expectedSizeInBytes: 0);
 
         Assert.Equal(AttachmentContentStatus.Missing, result.Status);
         Assert.Empty(result.Bytes);
@@ -86,19 +105,19 @@ public class AttachmentContentStoreTests
     public async Task ContentTamperedWithOnDisk_ReadsAsCorrupt_AndTheBytesAreWithheld()
     {
         using var temp = new TempDirectory();
-        var (store, backing) = Build(temp.Path);
+        using var scope = Build(temp.Path);
         var attachmentId = Guid.NewGuid();
         var original = AttachmentContentSamples.Png();
-        var hash = await store.SaveAsync(attachmentId, original);
+        var hash = await scope.Store.SaveAsync(attachmentId, original);
 
         // Same length, different bytes: only the hash can catch this, which
         // is the point of recording one.
         var tampered = (byte[])original.Clone();
         tampered[^5] ^= 0xFF;
-        await backing.WriteBytesAsync(
+        await scope.Backing.WriteBytesAsync(
             AttachmentContentStore.ContentCollectionName, attachmentId.ToString("N"), tampered);
 
-        var result = await store.ReadAsync(attachmentId, hash, original.LongLength);
+        var result = await scope.Store.ReadAsync(attachmentId, hash, original.LongLength);
 
         Assert.Equal(AttachmentContentStatus.Corrupt, result.Status);
         Assert.Empty(result.Bytes);
@@ -108,15 +127,15 @@ public class AttachmentContentStoreTests
     public async Task ContentTruncatedOnDisk_ReadsAsCorrupt()
     {
         using var temp = new TempDirectory();
-        var (store, backing) = Build(temp.Path);
+        using var scope = Build(temp.Path);
         var attachmentId = Guid.NewGuid();
         var original = AttachmentContentSamples.Pdf();
-        var hash = await store.SaveAsync(attachmentId, original);
+        var hash = await scope.Store.SaveAsync(attachmentId, original);
 
-        await backing.WriteBytesAsync(
+        await scope.Backing.WriteBytesAsync(
             AttachmentContentStore.ContentCollectionName, attachmentId.ToString("N"), original.AsMemory(0, original.Length / 2));
 
-        var result = await store.ReadAsync(attachmentId, hash, original.LongLength);
+        var result = await scope.Store.ReadAsync(attachmentId, hash, original.LongLength);
 
         Assert.Equal(AttachmentContentStatus.Corrupt, result.Status);
         Assert.Empty(result.Bytes);
@@ -130,12 +149,12 @@ public class AttachmentContentStoreTests
         // is not what it claims, and the store cannot tell which — so it
         // returns neither.
         using var temp = new TempDirectory();
-        var (store, _) = Build(temp.Path);
+        using var scope = Build(temp.Path);
         var attachmentId = Guid.NewGuid();
         var content = AttachmentContentSamples.Jpeg();
-        var hash = await store.SaveAsync(attachmentId, content);
+        var hash = await scope.Store.SaveAsync(attachmentId, content);
 
-        var result = await store.ReadAsync(attachmentId, hash, content.LongLength + 1);
+        var result = await scope.Store.ReadAsync(attachmentId, hash, content.LongLength + 1);
 
         Assert.Equal(AttachmentContentStatus.Corrupt, result.Status);
     }
@@ -149,12 +168,12 @@ public class AttachmentContentStoreTests
         // attachment written before this work package permanently
         // unreadable - but with no pretence that it was verified.
         using var temp = new TempDirectory();
-        var (store, _) = Build(temp.Path);
+        using var scope = Build(temp.Path);
         var attachmentId = Guid.NewGuid();
         var content = AttachmentContentSamples.Csv();
-        await store.SaveAsync(attachmentId, content);
+        await scope.Store.SaveAsync(attachmentId, content);
 
-        var result = await store.ReadAsync(attachmentId, expectedHash: null, content.LongLength);
+        var result = await scope.Store.ReadAsync(attachmentId, expectedHash: null, content.LongLength);
 
         Assert.Equal(AttachmentContentStatus.Available, result.Status);
         Assert.Equal(content, result.Bytes);
@@ -164,11 +183,11 @@ public class AttachmentContentStoreTests
     public async Task ContentWithNoRecordedHash_IsStillCaughtByTheSizeCheck()
     {
         using var temp = new TempDirectory();
-        var (store, _) = Build(temp.Path);
+        using var scope = Build(temp.Path);
         var attachmentId = Guid.NewGuid();
-        await store.SaveAsync(attachmentId, AttachmentContentSamples.Csv());
+        await scope.Store.SaveAsync(attachmentId, AttachmentContentSamples.Csv());
 
-        var result = await store.ReadAsync(attachmentId, expectedHash: null, expectedSizeInBytes: 999_999);
+        var result = await scope.Store.ReadAsync(attachmentId, expectedHash: null, expectedSizeInBytes: 999_999);
 
         Assert.Equal(AttachmentContentStatus.Corrupt, result.Status);
     }
@@ -177,12 +196,12 @@ public class AttachmentContentStoreTests
     public async Task AHashComparison_IsCaseInsensitive_SoAHexCasingChangeIsNotCorruption()
     {
         using var temp = new TempDirectory();
-        var (store, _) = Build(temp.Path);
+        using var scope = Build(temp.Path);
         var attachmentId = Guid.NewGuid();
         var content = AttachmentContentSamples.Png();
-        var hash = await store.SaveAsync(attachmentId, content);
+        var hash = await scope.Store.SaveAsync(attachmentId, content);
 
-        var result = await store.ReadAsync(attachmentId, hash.ToUpperInvariant(), content.LongLength);
+        var result = await scope.Store.ReadAsync(attachmentId, hash.ToUpperInvariant(), content.LongLength);
 
         Assert.Equal(AttachmentContentStatus.Available, result.Status);
     }
@@ -191,14 +210,14 @@ public class AttachmentContentStoreTests
     public async Task SavingTwiceForTheSameAttachment_ReplacesTheContent()
     {
         using var temp = new TempDirectory();
-        var (store, _) = Build(temp.Path);
+        using var scope = Build(temp.Path);
         var attachmentId = Guid.NewGuid();
-        await store.SaveAsync(attachmentId, AttachmentContentSamples.LargeDeterministicBlob(50_000));
+        await scope.Store.SaveAsync(attachmentId, AttachmentContentSamples.LargeDeterministicBlob(50_000));
 
         var replacement = AttachmentContentSamples.Png();
-        var hash = await store.SaveAsync(attachmentId, replacement);
+        var hash = await scope.Store.SaveAsync(attachmentId, replacement);
 
-        var result = await store.ReadAsync(attachmentId, hash, replacement.LongLength);
+        var result = await scope.Store.ReadAsync(attachmentId, hash, replacement.LongLength);
         Assert.Equal(AttachmentContentStatus.Available, result.Status);
         Assert.Equal(replacement, result.Bytes);
     }
@@ -207,56 +226,61 @@ public class AttachmentContentStoreTests
     public async Task DeletedContent_ReadsAsMissing()
     {
         using var temp = new TempDirectory();
-        var (store, _) = Build(temp.Path);
+        using var scope = Build(temp.Path);
         var attachmentId = Guid.NewGuid();
         var content = AttachmentContentSamples.Pdf();
-        var hash = await store.SaveAsync(attachmentId, content);
+        var hash = await scope.Store.SaveAsync(attachmentId, content);
 
-        await store.DeleteAsync(attachmentId);
+        await scope.Store.DeleteAsync(attachmentId);
 
-        Assert.Equal(AttachmentContentStatus.Missing, (await store.ReadAsync(attachmentId, hash, content.LongLength)).Status);
+        Assert.Equal(AttachmentContentStatus.Missing, (await scope.Store.ReadAsync(attachmentId, hash, content.LongLength)).Status);
     }
 
     [Fact]
     public async Task DeletingContentThatWasNeverStored_IsNotAnError()
     {
         using var temp = new TempDirectory();
-        var (store, _) = Build(temp.Path);
+        using var scope = Build(temp.Path);
 
-        await store.DeleteAsync(Guid.NewGuid());
+        await scope.Store.DeleteAsync(Guid.NewGuid());
     }
 
     [Fact]
     public async Task TwoAttachments_DoNotShareOrOverwriteEachOthersContent()
     {
         using var temp = new TempDirectory();
-        var (store, _) = Build(temp.Path);
+        using var scope = Build(temp.Path);
         var first = Guid.NewGuid();
         var second = Guid.NewGuid();
         var pdf = AttachmentContentSamples.Pdf();
         var png = AttachmentContentSamples.Png();
 
-        var firstHash = await store.SaveAsync(first, pdf);
-        var secondHash = await store.SaveAsync(second, png);
+        var firstHash = await scope.Store.SaveAsync(first, pdf);
+        var secondHash = await scope.Store.SaveAsync(second, png);
 
-        Assert.Equal(pdf, (await store.ReadAsync(first, firstHash, pdf.LongLength)).Bytes);
-        Assert.Equal(png, (await store.ReadAsync(second, secondHash, png.LongLength)).Bytes);
+        Assert.Equal(pdf, (await scope.Store.ReadAsync(first, firstHash, pdf.LongLength)).Bytes);
+        Assert.Equal(png, (await scope.Store.ReadAsync(second, secondHash, png.LongLength)).Bytes);
     }
 
     [Fact]
     public async Task ContentSurvivesANewStoreInstanceOverTheSameRoot()
     {
         // The durability claim at its smallest: nothing about the content
-        // lives in the object that wrote it.
+        // lives in the object that wrote it. The writer's store is disposed
+        // before the reader's is opened — SqlitePersistenceStore (`ADR-0144`)
+        // holds its root's instance lock exclusively, unlike the deleted
+        // file-per-key store this suite once ran on, so two live instances
+        // over one root is the very thing being refused, not tested.
         using var temp = new TempDirectory();
         var attachmentId = Guid.NewGuid();
         var content = AttachmentContentSamples.OfficeDocumentContainer();
 
-        var (writer, _) = Build(temp.Path);
-        var hash = await writer.SaveAsync(attachmentId, content);
+        string hash;
+        using (var writer = Build(temp.Path))
+            hash = await writer.Store.SaveAsync(attachmentId, content);
 
-        var (reader, _) = Build(temp.Path);
-        var result = await reader.ReadAsync(attachmentId, hash, content.LongLength);
+        using var reader = Build(temp.Path);
+        var result = await reader.Store.ReadAsync(attachmentId, hash, content.LongLength);
 
         Assert.Equal(AttachmentContentStatus.Available, result.Status);
         Assert.Equal(content, result.Bytes);

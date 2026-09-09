@@ -34,7 +34,7 @@ namespace Tempest.Core.Tests.EngineeringDomain;
 /// <para>
 /// The rest cover the round trip the brief asks for end to end —
 /// <b>original → revise → successor → persisted → reloaded</b> over a real
-/// <see cref="PersistenceStore"/> on disk — the rehydrate-then-revise
+/// <see cref="SqlitePersistenceStore"/> on disk — the rehydrate-then-revise
 /// order that the R6 report calls "a second, quieter instance of the same
 /// bug", and whether one reader now runs exactly once per revision rather
 /// than twice.
@@ -162,7 +162,7 @@ public sealed class RevisionRehydrationEquivalenceTests : IDisposable
     /// <summary>
     /// <b>original → revise → successor → persisted → reloaded.</b> The
     /// whole chain the brief asks for, over a real
-    /// <see cref="PersistenceStore"/> on disk and a second lifetime that
+    /// <see cref="SqlitePersistenceStore"/> on disk and a second lifetime that
     /// shares nothing with the first but the files.
     /// </summary>
     /// <remarks>
@@ -416,11 +416,11 @@ public sealed class RevisionRehydrationEquivalenceTests : IDisposable
         var configuration = new ConfigurationBuilder()
             .AddSource(new MemoryConfigurationSource(
             [
-                new KeyValuePair<string, string>(PersistenceStore.RootPathConfigurationKey, _root),
+                new KeyValuePair<string, string>(SqlitePersistenceStore.RootPathConfigurationKey, _root),
             ]))
             .Build();
 
-        var persistence = new PersistenceStore(configuration);
+        var persistence = new SqlitePersistenceStore(configuration);
         var principal = new CurrentPrincipalAccessor();
         var repository = new InMemoryEngineeringObjectRepository();
         var relationships = new InMemoryEngineeringRelationshipRepository();

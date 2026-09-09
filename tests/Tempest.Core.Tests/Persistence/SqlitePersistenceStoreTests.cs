@@ -11,17 +11,17 @@ namespace Tempest.Core.Tests.Persistence;
 /// The claims that are <see cref="SqlitePersistenceStore"/>'s own
 /// (`ADR-0144`, `WP 17.1A`): the schema it creates, the durability its
 /// transactions give, the cross-process lock it holds, the file handles it
-/// releases on disposal, and the query costs the file-per-key store could
-/// not pay.
+/// releases on disposal, and the query costs the deleted file-per-key
+/// store could not pay.
 /// </summary>
 /// <remarks>
-/// Everything this store shares with the file store is asserted once, in
-/// the backend-agnostic contract classes
-/// (<see cref="PersistenceStoreTests{TBackend}"/>,
-/// <see cref="BinaryPersistenceStoreTests{TBackend}"/>,
-/// <see cref="PersistenceStoreHostileNameTests{TBackend}"/>,
-/// <see cref="QueryablePersistenceStoreTests{TBackend}"/>), each of which
-/// runs against both backends. Nothing here repeats them.
+/// The store-contract claims this backend shares with every backend a
+/// store could have are asserted once, in the store-contract classes
+/// (<see cref="PersistenceStoreTests"/>, <see cref="BinaryPersistenceStoreTests"/>,
+/// <see cref="PersistenceStoreHostileNameTests"/>,
+/// <see cref="QueryablePersistenceStoreTests"/>) — all four re-pointed
+/// onto this backend alone by `WP 18.1A`, since the file-per-key store
+/// they once also ran against is deleted. Nothing here repeats them.
 /// </remarks>
 public sealed class SqlitePersistenceStoreTests : IDisposable
 {
@@ -36,7 +36,7 @@ public sealed class SqlitePersistenceStoreTests : IDisposable
     private static IConfigurationProvider ConfigurationFor(string rootPath) =>
         new ConfigurationBuilder().AddSource(new MemoryConfigurationSource(
         [
-            new KeyValuePair<string, string>(PersistenceStore.RootPathConfigurationKey, rootPath),
+            new KeyValuePair<string, string>(SqlitePersistenceStore.RootPathConfigurationKey, rootPath),
         ])).Build();
 
     private SqlitePersistenceStore NewStore(string? rootPath = null)
@@ -76,7 +76,7 @@ public sealed class SqlitePersistenceStoreTests : IDisposable
         // folder the shipped application keeps a user's data in, which is
         // the rule `WP 17.0A` set for this suite and `ADR-0144` did not
         // relax.
-        Assert.Equal("persistence-data", PersistenceStore.DefaultRootPath);
+        Assert.Equal("persistence-data", SqlitePersistenceStore.DefaultRootPath);
     }
 
     [Fact]
@@ -536,31 +536,77 @@ public sealed class SqlitePersistenceStoreTests : IDisposable
             $"Listing and reading 10,000 keys took {listing.ElapsedMilliseconds + reading.ElapsedMilliseconds} ms.");
     }
 
+    // The file backend's own answer — that its ExecuteInTransactionAsync
+    // ran the unit of work but could not roll it back — is deleted with
+    // that backend (`WP 18.1A`). The claim this class states instead is
+    // AThrowInsideATransaction_RollsBackEveryWriteItHadMade above: SQLite's
+    // ExecuteInTransactionAsync IS atomic, unconditionally.
+
     // ----------------------------------------------------------------
-    // The file backend's own answer, stated rather than implied
+    // The store sequence (`WP 18.1A`)
     // ----------------------------------------------------------------
 
     [Fact]
-    public async Task TheFileBackend_DoesNotRollBackAUnitOfWork_AndThisIsDocumentedNotAccidental()
+    public async Task CommittingATransaction_AdvancesCurrentSequenceByExactlyOne()
     {
-        // `ADR-0144` retains `Persistence:Backend=files` for one release
-        // and gives it `IQueryablePersistenceStore` so that a consumer
-        // written against the interface still runs there. What it cannot
-        // give it is atomicity. That is stated in capitals on
-        // `PersistenceStore.ExecuteInTransactionAsync`, and asserted here,
-        // so that no reader can acquire the opposite belief from a green
-        // suite: the difference between the two backends is a fact about
-        // the release, not a bug to be found later.
-        using var temporary = new TempDirectory();
-        var store = new PersistenceStore(ConfigurationFor(temporary.Path));
+        var store = NewStore();
+        var before = store.CurrentSequence;
+
+        await store.ExecuteInTransactionAsync((transaction, token) => transaction.WriteAsync("collection", "a", "1", token));
+
+        Assert.Equal(before + 1, store.CurrentSequence);
+    }
+
+    [Fact]
+    public async Task ARolledBackTransaction_DoesNotAdvanceCurrentSequence()
+    {
+        var store = NewStore();
+        var before = store.CurrentSequence;
 
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            ((IQueryablePersistenceStore)store).ExecuteInTransactionAsync(async (transaction, token) =>
+            store.ExecuteInTransactionAsync(async (transaction, token) =>
             {
-                await transaction.WriteAsync("collection", "first", "a", token);
+                await transaction.WriteAsync("collection", "a", "1", token);
                 throw new InvalidOperationException("no");
             }));
 
-        Assert.Equal("a", await store.ReadAsync("collection", "first"));
+        Assert.Equal(before, store.CurrentSequence);
+    }
+
+    [Fact]
+    public async Task SeveralCommits_EachAdvanceTheSequenceByOne_InCommitOrder()
+    {
+        var store = NewStore();
+        var start = store.CurrentSequence;
+        var observed = new List<long>();
+
+        for (var i = 0; i < 5; i++)
+        {
+            await store.ExecuteInTransactionAsync((transaction, token) => transaction.WriteAsync("collection", $"k{i}", "v", token));
+            observed.Add(store.CurrentSequence);
+        }
+
+        Assert.Equal(
+            Enumerable.Range(1, 5).Select(i => start + i),
+            observed);
+    }
+
+    [Fact]
+    public async Task TheSequence_SurvivesARestart()
+    {
+        var root = Path.Combine(RootPath, "sequence-restart");
+        var store = NewStore(root);
+
+        await store.ExecuteInTransactionAsync((transaction, token) => transaction.WriteAsync("collection", "a", "1", token));
+        await store.ExecuteInTransactionAsync((transaction, token) => transaction.WriteAsync("collection", "b", "2", token));
+        var beforeRestart = store.CurrentSequence;
+
+        ReleaseStores();
+        var reopened = NewStore(root);
+
+        Assert.Equal(beforeRestart, reopened.CurrentSequence);
+
+        await reopened.ExecuteInTransactionAsync((transaction, token) => transaction.WriteAsync("collection", "c", "3", token));
+        Assert.Equal(beforeRestart + 1, reopened.CurrentSequence);
     }
 }

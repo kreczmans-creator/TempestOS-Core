@@ -1,26 +1,23 @@
-using Tempest.Core.Configuration;
 using Tempest.Core.Persistence;
-using Tempest.Core.Tests.Plugins;
 
 namespace Tempest.Core.Tests.Persistence;
 
 /// <summary>
 /// The store contract: everything <see cref="IPersistenceStore"/> promises
-/// that is true of the store rather than of any one backend's storage
-/// medium. Run once per backend (`ADR-0144`, `WP 17.1A`) by the two sealed
-/// classes at the bottom of this file.
+/// that is true of the store itself, against <see cref="SqlitePersistenceStore"/>
+/// (`ADR-0144`, `WP 17.1A`).
 /// </summary>
 /// <remarks>
-/// What is deliberately NOT here, and lives in
-/// <see cref="PersistenceStoreFileSystemTests"/> instead: the injected
-/// I/O failures, whose mechanism is a blocked directory or an exclusively
-/// held file handle, and the constructor's own root-path resolution, which
-/// each backend answers for itself. Everything else in this class was
-/// passing against the file store before this Work Package and passes
-/// unchanged against SQLite, which is the point of splitting it out.
+/// Re-pointed from the deleted file-per-key store (`WP 18.1A`): this ran
+/// once per backend while that store still shipped. The forced-I/O-failure
+/// and constructor root-path-resolution cases that were genuinely about a
+/// file system (blocked directories, exclusively held handles) were split
+/// into <c>PersistenceStoreFileSystemTests</c> and are deleted with that
+/// store; <see cref="SqlitePersistenceStoreTests"/> already pins this
+/// backend's own root-path resolution and its own failure modes.
+/// Everything below is unchanged from what passed against the file store.
 /// </remarks>
-public abstract class PersistenceStoreTests<TBackend> : PersistenceStoreBackendFixture<TBackend>
-    where TBackend : IPersistenceStoreBackend, new()
+public sealed class PersistenceStoreTests : SqlitePersistenceStoreFixture
 {
     // ----------------------------------------------------------------
     // Round-trip correctness
@@ -277,197 +274,5 @@ public abstract class PersistenceStoreTests<TBackend> : PersistenceStoreBackendF
     public async Task WriteAsync_NullValue_ThrowsArgumentNullException()
     {
         await Assert.ThrowsAsync<ArgumentNullException>(() => Store.WriteAsync("collection", "key", null!));
-    }
-}
-
-/// <summary>The store contract against the file-per-key backend.</summary>
-public sealed class FileBackedPersistenceStoreTests : PersistenceStoreTests<FileStoreBackend>;
-
-/// <summary>The store contract against the SQLite backend (`ADR-0144`).</summary>
-public sealed class SqliteBackedPersistenceStoreTests : PersistenceStoreTests<SqliteStoreBackend>;
-
-/// <summary>
-/// The claims about <see cref="PersistenceStore"/> that are genuinely
-/// about a file system, and so are asserted against that backend only.
-/// </summary>
-/// <remarks>
-/// Each of these injects a real, forced I/O failure through the medium
-/// itself — a file where a directory must go, a handle held exclusively
-/// over a record — and there is no SQLite equivalent that would be the
-/// same test rather than a different one wearing its name.
-/// <see cref="SqlitePersistenceStoreTests"/> injects the failures that
-/// backend can actually have. The constructor tests below are here for a
-/// duller reason: the root-path resolution they pin is
-/// <see cref="PersistenceStore"/>'s own, and
-/// <see cref="SqlitePersistenceStore"/> pins the identical rule in its own
-/// file.
-/// </remarks>
-public class PersistenceStoreFileSystemTests
-{
-    private static IConfigurationProvider BuildConfiguration(string rootPath) =>
-        new ConfigurationBuilder().AddSource(new MemoryConfigurationSource(
-        [
-            new KeyValuePair<string, string>(PersistenceStore.RootPathConfigurationKey, rootPath),
-        ])).Build();
-
-    /// <summary>
-    /// Whether this platform prevents deleting a file that another handle
-    /// holds open with <see cref="FileShare.None"/> — determined
-    /// empirically, by holding one open and trying.
-    /// </summary>
-    /// <remarks>
-    /// Win32 share modes are mandatory: the open handle blocks the unlink,
-    /// and <see cref="PersistenceStore.DeleteAsync"/> surfaces that as
-    /// <see cref="PersistenceStoreUnavailableException"/>. POSIX unlink
-    /// removes the directory entry regardless of open handles, so the same
-    /// delete simply succeeds and the record is gone. Both are correct;
-    /// which one happens is the platform's decision, not the store's, so
-    /// the test below asserts whichever applies here instead of asserting
-    /// the Win32 one everywhere and reporting a false defect on Linux.
-    /// Determined by probing rather than by OS name so the answer comes
-    /// from the file system actually under the test's temp directory,
-    /// which is the thing that decides.
-    /// </remarks>
-    private static bool DeleteIsBlockedByAnOpenExclusiveHandle(string directory)
-    {
-        var probe = Path.Combine(directory, "TempestDeleteProbe.tmp");
-        File.WriteAllText(probe, "probe");
-        try
-        {
-            using var handle = new FileStream(probe, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
-            try
-            {
-                File.Delete(probe);
-                return false;
-            }
-            catch (IOException)
-            {
-                return true;
-            }
-            catch (UnauthorizedAccessException)
-            {
-                return true;
-            }
-        }
-        finally
-        {
-            if (File.Exists(probe))
-                File.Delete(probe);
-        }
-    }
-
-    // ----------------------------------------------------------------
-    // Configuration
-    // ----------------------------------------------------------------
-
-    // `WP 17.0A`: this test used to write into, and then recursively delete,
-    // PersistenceStore.DefaultRootPath — the real, cwd-relative folder the
-    // shipped application keeps a user's data in. Run from the wrong
-    // working directory it would have deleted that data. No test in this
-    // suite touches the default root any more; the default is asserted as
-    // the value the store resolves, against a root it is told to use.
-    [Fact]
-    public void Constructor_NoRootPathConfigured_ResolvesTheDefaultRootPath()
-    {
-        var configuration = new ConfigurationBuilder().AddSource(new MemoryConfigurationSource([])).Build();
-
-        var store = new PersistenceStore(configuration);
-
-        Assert.Equal("persistence-data", PersistenceStore.DefaultRootPath);
-        Assert.Equal(PersistenceStore.DefaultRootPath, store.RootPath);
-    }
-
-    [Fact]
-    public void Constructor_RootPathConfigured_ResolvesThatPath()
-    {
-        var configured = Path.Combine(Path.GetTempPath(), $"tempest-root-{Guid.NewGuid():N}");
-        var configuration = new ConfigurationBuilder()
-            .AddSource(new MemoryConfigurationSource([new KeyValuePair<string, string>(PersistenceStore.RootPathConfigurationKey, configured)]))
-            .Build();
-
-        var store = new PersistenceStore(configuration);
-
-        Assert.Equal(configured, store.RootPath);
-    }
-
-    [Fact]
-    public void Constructor_NullConfiguration_ThrowsArgumentNullException()
-    {
-        Assert.Throws<ArgumentNullException>(() => new PersistenceStore(null!));
-    }
-
-    // ----------------------------------------------------------------
-    // Failure injection: a real, forced I/O failure, not a fake
-    // ----------------------------------------------------------------
-
-    [Fact]
-    public async Task WriteAsync_CollectionDirectoryPathIsBlockedByAFile_ThrowsPersistenceStoreUnavailableException()
-    {
-        using var temp = new TempDirectory();
-        var blockedPath = Path.Combine(temp.Path, Uri.EscapeDataString("blocked"));
-        File.WriteAllText(blockedPath, "a file where a directory should be");
-        var store = new PersistenceStore(BuildConfiguration(temp.Path));
-
-        await Assert.ThrowsAsync<PersistenceStoreUnavailableException>(
-            () => store.WriteAsync("blocked", "key", "value"));
-    }
-
-    [Fact]
-    public async Task ReadAsync_FileLockedByAnotherHandle_ThrowsPersistenceStoreUnavailableException()
-    {
-        using var temp = new TempDirectory();
-        var store = new PersistenceStore(BuildConfiguration(temp.Path));
-        await store.WriteAsync("collection", "key", "value");
-        var filePath = Path.Combine(temp.Path, Uri.EscapeDataString("collection"), Uri.EscapeDataString("key"));
-
-        using var lockingHandle = new FileStream(filePath, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
-
-        await Assert.ThrowsAsync<PersistenceStoreUnavailableException>(
-            () => store.ReadAsync("collection", "key"));
-    }
-
-    [Fact]
-    public async Task DeleteAsync_FileLockedByAnotherHandle_ThrowsOrUnlinksAccordingToThePlatform()
-    {
-        using var temp = new TempDirectory();
-        var store = new PersistenceStore(BuildConfiguration(temp.Path));
-        await store.WriteAsync("collection", "key", "value");
-        var filePath = Path.Combine(temp.Path, Uri.EscapeDataString("collection"), Uri.EscapeDataString("key"));
-
-        if (DeleteIsBlockedByAnOpenExclusiveHandle(temp.Path))
-        {
-            // Win32: the open handle blocks the unlink. The store must
-            // report that as its own failure type rather than leaking the
-            // IOException.
-            using (new FileStream(filePath, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
-            {
-                await Assert.ThrowsAsync<PersistenceStoreUnavailableException>(
-                    () => store.DeleteAsync("collection", "key"));
-            }
-
-            // Checked only after the handle is released, because
-            // FileShare.None blocks the read as well — that is what
-            // ReadAsync_FileLockedByAnotherHandle asserts two tests above,
-            // and the first version of this branch asserted the surviving
-            // record while still holding the lock, so it failed on Windows
-            // for its own reasons rather than the store's. The claim that
-            // matters is this one: a delete that did not happen must never
-            // look like one that did.
-            Assert.Equal("value", await store.ReadAsync("collection", "key"));
-            return;
-        }
-
-        // POSIX: unlink removes the directory entry whatever handles are
-        // open, so the delete genuinely succeeds. The assertion that
-        // matters is that the store agrees the record is gone afterwards,
-        // rather than reporting a stale one from a file that no longer has
-        // a name.
-        using (new FileStream(filePath, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
-        {
-            await store.DeleteAsync("collection", "key");
-        }
-
-        Assert.Null(await store.ReadAsync("collection", "key"));
-        Assert.DoesNotContain("key", await store.ListKeysAsync("collection"));
     }
 }

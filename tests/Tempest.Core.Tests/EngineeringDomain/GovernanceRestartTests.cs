@@ -226,11 +226,11 @@ public sealed class GovernanceRestartTests : IDisposable
         var configuration = new ConfigurationBuilder()
             .AddSource(new MemoryConfigurationSource(
             [
-                new KeyValuePair<string, string>(PersistenceStore.RootPathConfigurationKey, _root),
+                new KeyValuePair<string, string>(SqlitePersistenceStore.RootPathConfigurationKey, _root),
             ]))
             .Build();
 
-        var store = new PersistenceStore(configuration);
+        var store = new SqlitePersistenceStore(configuration);
         var principal = new CurrentPrincipalAccessor();
         var documents = new EngineeringDocumentStore(store, principal);
         var repository = new InMemoryEngineeringObjectRepository();

@@ -537,7 +537,7 @@ public sealed class R7RegressionProofTests : IDisposable
         {
             _sqlite = new SqlitePersistenceStore(new ConfigurationBuilder()
                 .AddSource(new MemoryConfigurationSource(
-                    [new KeyValuePair<string, string>(PersistenceStore.RootPathConfigurationKey, root)]))
+                    [new KeyValuePair<string, string>(SqlitePersistenceStore.RootPathConfigurationKey, root)]))
                 .Build());
 
             Store = new CommitFailingPersistenceStore(_sqlite);

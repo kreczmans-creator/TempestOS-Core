@@ -37,7 +37,7 @@ public class EngineeringDomainSampleModuleIntegrationTests
 
         var configuration = new ConfigurationBuilder().AddSource(new MemoryConfigurationSource(
         [
-            new KeyValuePair<string, string>(PersistenceStore.RootPathConfigurationKey, persistenceRootPath),
+            new KeyValuePair<string, string>(SqlitePersistenceStore.RootPathConfigurationKey, persistenceRootPath),
         ])).Build();
 
         var services = new ServiceCollection();
@@ -59,7 +59,7 @@ public class EngineeringDomainSampleModuleIntegrationTests
         // `EngineeringDomainContext` needs the query shape since
         // `ADR-0145`, and it must be the same instance the document store
         // and the state store write through.
-        var persistenceStore = new PersistenceStore(configuration);
+        var persistenceStore = new SqlitePersistenceStore(configuration);
         services.AddInstance<IPersistenceStore>(persistenceStore);
         services.AddInstance<IBinaryPersistenceStore>(persistenceStore);
         services.AddInstance<IQueryablePersistenceStore>(persistenceStore);
@@ -241,7 +241,7 @@ public class EngineeringDomainSampleModuleIntegrationTests
         var host = new TempestHostBuilder([typeof(EngineeringDomainSampleModule)])
             .AddConfigurationSource(new MemoryConfigurationSource(
             [
-                new KeyValuePair<string, string>(PersistenceStore.RootPathConfigurationKey, temp.Path),
+                new KeyValuePair<string, string>(SqlitePersistenceStore.RootPathConfigurationKey, temp.Path),
             ]))
             .Build();
 

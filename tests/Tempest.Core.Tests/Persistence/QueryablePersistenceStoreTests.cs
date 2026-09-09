@@ -4,20 +4,18 @@ namespace Tempest.Core.Tests.Persistence;
 
 /// <summary>
 /// The query shape of the store (`ADR-0144`, `WP 17.1A`) — prefix listing,
-/// whole-collection read and multi-key read — run once per backend.
+/// whole-collection read and multi-key read.
 /// </summary>
 /// <remarks>
-/// Both backends answer these; only one answers them without scanning.
-/// The <em>answers</em> are the contract and are asserted here; the cost
-/// is not a testable property and is not asserted, except as the timing
-/// figure <see cref="SqlitePersistenceStoreTests"/> reports.
-/// <see cref="IQueryablePersistenceStore.ExecuteInTransactionAsync"/> is
-/// deliberately absent from this class: the two backends genuinely differ
-/// on it, and each states its own behaviour in its own file rather than
-/// pretending to share one.
+/// Re-pointed onto <see cref="SqlitePersistenceStoreFixture"/> alone
+/// (`WP 18.1A`): this ran once per backend while the file-per-key store
+/// still shipped, because both answered these queries and only one
+/// answered them without scanning. The <em>answers</em> are the contract
+/// and are asserted here; the cost is not a testable property and is not
+/// asserted, except as the timing figure <see cref="SqlitePersistenceStoreTests"/>
+/// reports.
 /// </remarks>
-public abstract class QueryablePersistenceStoreTests<TBackend> : PersistenceStoreBackendFixture<TBackend>
-    where TBackend : IPersistenceStoreBackend, new()
+public sealed class QueryablePersistenceStoreTests : SqlitePersistenceStoreFixture
 {
     private async Task SeedAsync()
     {
@@ -227,9 +225,3 @@ public abstract class QueryablePersistenceStoreTests<TBackend> : PersistenceStor
         Assert.Equal("value-0", all[0].Value);
     }
 }
-
-/// <summary>The query shape against the file-per-key backend.</summary>
-public sealed class FileBackedQueryablePersistenceStoreTests : QueryablePersistenceStoreTests<FileStoreBackend>;
-
-/// <summary>The query shape against the SQLite backend (`ADR-0144`).</summary>
-public sealed class SqliteBackedQueryablePersistenceStoreTests : QueryablePersistenceStoreTests<SqliteStoreBackend>;

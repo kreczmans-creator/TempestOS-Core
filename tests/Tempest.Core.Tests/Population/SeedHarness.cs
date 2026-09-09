@@ -38,34 +38,34 @@ internal class SeedHarness
 {
     public SeedHarness()
     {
-        PersistenceStore = new InMemoryPersistenceStore();
-        DocumentStore = new EngineeringDocumentStore(PersistenceStore, new CurrentPrincipalAccessor());
+        SqlitePersistenceStore = new InMemoryPersistenceStore();
+        DocumentStore = new EngineeringDocumentStore(SqlitePersistenceStore, new CurrentPrincipalAccessor());
 
-        Materials = new MaterialCatalog(DocumentStore, PersistenceStore);
-        Standards = new StandardCatalog(DocumentStore, PersistenceStore);
-        Constants = new ConstantCatalog(DocumentStore, PersistenceStore);
-        Fasteners = new FastenerCatalog(DocumentStore, PersistenceStore);
-        Bearings = new BearingCatalog(DocumentStore, PersistenceStore);
-        Processes = new ProcessCatalog(DocumentStore, PersistenceStore);
-        Rules = new RuleCatalog(DocumentStore, PersistenceStore);
-        DecisionTrees = new DecisionTreeCatalog(DocumentStore, PersistenceStore);
-        Suppliers = new SupplierCatalog(DocumentStore, PersistenceStore);
-        Costs = new ProcessCostCatalog(DocumentStore, PersistenceStore);
-        LeadTimes = new LeadTimeCatalog(DocumentStore, PersistenceStore);
-        Templates = new TemplateCatalog(DocumentStore, PersistenceStore);
-        CalculationPacks = new CalculationPackCatalog(DocumentStore, PersistenceStore);
-        VerificationArtefacts = new VerificationArtefactCatalog(DocumentStore, PersistenceStore);
-        DesignReviews = new DesignReviewCatalog(DocumentStore, PersistenceStore);
-        TechnicalDocuments = new TechnicalDocumentCatalog(DocumentStore, PersistenceStore);
-        Prompts = new PromptCatalog(DocumentStore, PersistenceStore);
-        AcademyNodes = new AcademyCatalog(DocumentStore, PersistenceStore);
-        Challenges = new ChallengeCatalog(DocumentStore, PersistenceStore);
-        WorkedExamples = new WorkedExampleCatalog(DocumentStore, PersistenceStore);
+        Materials = new MaterialCatalog(DocumentStore, SqlitePersistenceStore);
+        Standards = new StandardCatalog(DocumentStore, SqlitePersistenceStore);
+        Constants = new ConstantCatalog(DocumentStore, SqlitePersistenceStore);
+        Fasteners = new FastenerCatalog(DocumentStore, SqlitePersistenceStore);
+        Bearings = new BearingCatalog(DocumentStore, SqlitePersistenceStore);
+        Processes = new ProcessCatalog(DocumentStore, SqlitePersistenceStore);
+        Rules = new RuleCatalog(DocumentStore, SqlitePersistenceStore);
+        DecisionTrees = new DecisionTreeCatalog(DocumentStore, SqlitePersistenceStore);
+        Suppliers = new SupplierCatalog(DocumentStore, SqlitePersistenceStore);
+        Costs = new ProcessCostCatalog(DocumentStore, SqlitePersistenceStore);
+        LeadTimes = new LeadTimeCatalog(DocumentStore, SqlitePersistenceStore);
+        Templates = new TemplateCatalog(DocumentStore, SqlitePersistenceStore);
+        CalculationPacks = new CalculationPackCatalog(DocumentStore, SqlitePersistenceStore);
+        VerificationArtefacts = new VerificationArtefactCatalog(DocumentStore, SqlitePersistenceStore);
+        DesignReviews = new DesignReviewCatalog(DocumentStore, SqlitePersistenceStore);
+        TechnicalDocuments = new TechnicalDocumentCatalog(DocumentStore, SqlitePersistenceStore);
+        Prompts = new PromptCatalog(DocumentStore, SqlitePersistenceStore);
+        AcademyNodes = new AcademyCatalog(DocumentStore, SqlitePersistenceStore);
+        Challenges = new ChallengeCatalog(DocumentStore, SqlitePersistenceStore);
+        WorkedExamples = new WorkedExampleCatalog(DocumentStore, SqlitePersistenceStore);
 
         var principals = new CurrentPrincipalAccessor();
         Requirements = new RequirementsService(
             (EngineeringDocumentStore)DocumentStore,
-            PersistenceStore,
+            SqlitePersistenceStore,
             principals,
             new VerificationService((EngineeringDocumentStore)DocumentStore, principals, new PermissionEvaluator()));
 
@@ -75,7 +75,7 @@ internal class SeedHarness
     /// <summary>The identifier of the requirement the seeded assets hang from.</summary>
     public const string BracketRequirementIdentifier = "REQ-BRACKET-001";
 
-    public InMemoryPersistenceStore PersistenceStore { get; }
+    public InMemoryPersistenceStore SqlitePersistenceStore { get; }
 
     public IEngineeringDocumentStore DocumentStore { get; }
 

@@ -1,26 +1,25 @@
-using Tempest.Core.Configuration;
 using Tempest.Core.Persistence;
 using Tempest.Core.Tests.EngineeringDomain;
-using Tempest.Core.Tests.Plugins;
 
 namespace Tempest.Core.Tests.Persistence;
 
 /// <summary>
 /// The byte shape of the platform's single store (`TD-31`), against a real
-/// store on real storage — run once per backend (`ADR-0144`,
+/// <see cref="SqlitePersistenceStore"/> on real storage (`ADR-0144`,
 /// `WP 17.1A`).
 /// </summary>
 /// <remarks>
-/// These prove the two claims the shape exists to make: that bytes survive
-/// unchanged, and that they inherit — rather than re-implement — every
-/// property the text shape already had. On the file backend that meant
-/// reserved-name-safe naming, exact-name resolution and atomic
-/// replacement; on the SQLite backend it means the same row, the same
-/// exact key, and the same single-statement write. The tests do not name
-/// either mechanism, which is why they run against both.
+/// Re-pointed from the deleted file-per-key store (`WP 18.1A`): this ran
+/// once per backend while that store still shipped, to prove the two
+/// claims the shape exists to make — that bytes survive unchanged, and
+/// that they inherit every property the text shape already had, rather
+/// than re-implementing them. The one claim that was genuinely about the
+/// file backend's own medium (that its atomic write leaves no temporary
+/// file behind) is deleted with it; the SQLite equivalent — that a rolled
+/// back transaction leaves nothing behind — is asserted directly in
+/// <see cref="SqlitePersistenceStoreTests"/>.
 /// </remarks>
-public abstract class BinaryPersistenceStoreTests<TBackend> : PersistenceStoreBackendFixture<TBackend>
-    where TBackend : IPersistenceStoreBackend, new()
+public sealed class BinaryPersistenceStoreTests : SqlitePersistenceStoreFixture
 {
     public static TheoryData<string, string> RealFiles()
     {
@@ -197,40 +196,5 @@ public abstract class BinaryPersistenceStoreTests<TBackend> : PersistenceStoreBa
         await Assert.ThrowsAnyAsync<ArgumentException>(() => BinaryStore.WriteBytesAsync("content", blank!, new byte[] { 1 }));
         await Assert.ThrowsAnyAsync<ArgumentException>(() => BinaryStore.ReadBytesAsync(blank!, "key"));
         await Assert.ThrowsAnyAsync<ArgumentException>(() => BinaryStore.ReadBytesAsync("content", blank!));
-    }
-}
-
-/// <summary>The byte shape against the file-per-key backend.</summary>
-public sealed class FileBackedBinaryPersistenceStoreTests : BinaryPersistenceStoreTests<FileStoreBackend>;
-
-/// <summary>The byte shape against the SQLite backend (`ADR-0144`).</summary>
-public sealed class SqliteBackedBinaryPersistenceStoreTests : BinaryPersistenceStoreTests<SqliteStoreBackend>;
-
-/// <summary>
-/// The one byte-shape claim that is about the file backend's own medium:
-/// the temporary file its atomic write stages a value in must not survive
-/// the write.
-/// </summary>
-/// <remarks>
-/// There is no SQLite counterpart, and inventing one would be a different
-/// test wearing this one's name — the equivalent property there is that a
-/// rolled-back transaction leaves nothing behind, which
-/// <see cref="SqlitePersistenceStoreTests"/> asserts directly.
-/// </remarks>
-public class BinaryPersistenceStoreFileSystemTests
-{
-    [Fact]
-    public async Task NoTemporaryFile_IsLeftBehindByAByteWrite()
-    {
-        using var temp = new TempDirectory();
-        var configuration = new ConfigurationBuilder().AddSource(new MemoryConfigurationSource(
-        [
-            new KeyValuePair<string, string>(PersistenceStore.RootPathConfigurationKey, temp.Path),
-        ])).Build();
-        var store = new PersistenceStore(configuration);
-
-        await store.WriteBytesAsync("content", "key", AttachmentContentSamples.Pdf());
-
-        Assert.Empty(Directory.GetFiles(temp.Path, "*.tmp"));
     }
 }

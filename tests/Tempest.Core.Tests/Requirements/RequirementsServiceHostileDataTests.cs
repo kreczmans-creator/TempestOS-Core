@@ -10,21 +10,32 @@ namespace Tempest.Core.Tests.Requirements;
 
 /// <summary>
 /// `TD-59`/`TD-60` closure tests for the Requirements identifier-index
-/// paths, over the REAL file-backed <see cref="PersistenceStore"/> —
-/// the same defect family <see cref="MaterialCatalog"/> carries, in the
-/// sibling that copied its index pattern.
+/// paths, over the real durable store — the same defect family
+/// <see cref="MaterialCatalog"/> carries, in the sibling that copied its
+/// index pattern.
 /// </summary>
+/// <remarks>
+/// Re-pointed from the deleted file-per-key store to
+/// <see cref="SqlitePersistenceStore"/> (`WP 18.1A`, `ADR-0144`): every
+/// case here writes a hostile-looking <em>key</em> (a reserved Win32
+/// device stem as an identifier, a foreign-looking index key such as
+/// <c>.DS_Store</c>) through the ordinary <see cref="IPersistenceStore.WriteAsync"/>
+/// surface, never by touching a file directly, so the claim — that
+/// <see cref="RequirementsService"/> itself tolerates an index entry it
+/// did not expect — is exactly as meaningful against a database row as it
+/// was against a directory entry.
+/// </remarks>
 public class RequirementsServiceHostileDataTests
 {
     private static IConfigurationProvider BuildConfiguration(string rootPath) =>
         new ConfigurationBuilder().AddSource(new MemoryConfigurationSource(
         [
-            new KeyValuePair<string, string>(PersistenceStore.RootPathConfigurationKey, rootPath),
+            new KeyValuePair<string, string>(SqlitePersistenceStore.RootPathConfigurationKey, rootPath),
         ])).Build();
 
-    private static (RequirementsService Requirements, PersistenceStore Store) BuildRealStack(string rootPath)
+    private static (RequirementsService Requirements, SqlitePersistenceStore Store) BuildRealStack(string rootPath)
     {
-        var store = new PersistenceStore(BuildConfiguration(rootPath));
+        var store = new SqlitePersistenceStore(BuildConfiguration(rootPath));
         var principalAccessor = new CurrentPrincipalAccessor();
         var documentStore = new EngineeringDocumentStore(store, principalAccessor);
         var verificationService = new VerificationService(documentStore, principalAccessor, new PermissionEvaluator());

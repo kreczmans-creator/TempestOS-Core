@@ -37,6 +37,23 @@ namespace Tempest.Core.Persistence;
 public interface IQueryablePersistenceStore
 {
     /// <summary>
+    /// The store's own monotonic commit counter (`WP 18.1A`): incremented
+    /// by exactly one on every transaction <see cref="ExecuteInTransactionAsync"/>
+    /// commits, and never on one that rolls back.
+    /// </summary>
+    /// <remarks>
+    /// Persisted in the store, so it survives a restart, and read from the
+    /// same connection a commit's own writes land through, so this value
+    /// is never observed to advance for a commit that has not durably
+    /// landed. A caller that captures this value alongside a read (a
+    /// <c>Tempest.Workspace.WorkspaceSnapshot</c>) has an exact, checkable
+    /// claim about how current that read is — see
+    /// <see cref="Tempest.Core.Events.WorkspaceChange.Sequence"/>, which
+    /// names the same counter.
+    /// </remarks>
+    long CurrentSequence { get; }
+
+    /// <summary>
     /// Lists every key in <paramref name="collection"/> that begins with
     /// <paramref name="keyPrefix"/>, in ascending ordinal key order.
     /// </summary>

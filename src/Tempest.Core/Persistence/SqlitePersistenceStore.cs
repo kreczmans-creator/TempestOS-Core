@@ -16,8 +16,9 @@ namespace Tempest.Core.Persistence;
 /// Satisfies all three store shapes — <see cref="IPersistenceStore"/>,
 /// <see cref="IBinaryPersistenceStore"/> and
 /// <see cref="IQueryablePersistenceStore"/> — from one instance over one
-/// file, exactly as <see cref="PersistenceStore"/> satisfied the first two
-/// from one directory tree.
+/// file. The platform's only store since <c>v0.18.0</c>: the file-per-key
+/// store this once stood beside, which satisfied the first two shapes
+/// from one directory tree, is deleted (`WP 18.1A`, `ADR-0144`).
 /// </para>
 /// <para>
 /// <b>Schema (version 1).</b>
@@ -50,7 +51,7 @@ namespace Tempest.Core.Persistence;
 /// Unicode string is a legal name and two names differing only in case are
 /// two records. The reserved-device-name encoding, the trailing-dot
 /// encoding, the legacy-path fallback and the case-insensitive-collision
-/// refusal that <see cref="PersistenceStore"/> needed all existed to make
+/// refusal that the deleted file-per-key store needed all existed to make
 /// a caller's key survive a file system; nothing here is a file name, so
 /// none of them exists. <c>CON</c>, <c>..</c>, <c>Rev1.</c> and
 /// <c>Steel</c>/<c>steel</c> are now simply four ordinary, distinct keys.
@@ -92,20 +93,30 @@ public sealed class SqlitePersistenceStore
     : IPersistenceStore, IBinaryPersistenceStore, IQueryablePersistenceStore, IAsyncDisposable, IDisposable
 {
     /// <summary>
+    /// The configuration key the storage root path is read from.
+    /// Relocated here from the now-deleted file-per-key <c>PersistenceStore</c>
+    /// (`WP 18.1A`, `ADR-0144`); the key string and its default are
+    /// unchanged.
+    /// </summary>
+    public const string RootPathConfigurationKey = "Persistence:RootPath";
+
+    /// <summary>The root path used when <see cref="RootPathConfigurationKey"/> is not configured.</summary>
+    public const string DefaultRootPath = "persistence-data";
+
+    /// <summary>
     /// The configuration key selecting which persistence backend the Host
     /// registers.
     /// </summary>
     public const string BackendConfigurationKey = "Persistence:Backend";
 
-    /// <summary>The <see cref="BackendConfigurationKey"/> value selecting this store. The default.</summary>
-    public const string SqliteBackendValue = "sqlite";
-
     /// <summary>
-    /// The <see cref="BackendConfigurationKey"/> value selecting the
-    /// file-per-key <see cref="PersistenceStore"/>. Retained for exactly
-    /// one release; removed in <c>v0.18.0</c> (`ADR-0144`).
+    /// The <see cref="BackendConfigurationKey"/> value selecting this
+    /// store — the only recognised value since <c>v0.18.0</c>: the
+    /// file-per-key store this once named alongside (<c>files</c>) is
+    /// deleted (`WP 18.1A`, `ADR-0144`), and that value is now unknown
+    /// configuration rather than a second backend.
     /// </summary>
-    public const string FileBackendValue = "files";
+    public const string SqliteBackendValue = "sqlite";
 
     /// <summary>The database file's name within the persistence root.</summary>
     public const string DatabaseFileName = "tempest.db";
@@ -132,6 +143,7 @@ public sealed class SqlitePersistenceStore
     private readonly FileStream _lockFile;
 
     private bool _disposed;
+    private long _currentSequence;
 
     /// <summary>
     /// Initialises a new instance of the <see cref="SqlitePersistenceStore"/>
@@ -162,10 +174,10 @@ public sealed class SqlitePersistenceStore
     {
         ArgumentNullException.ThrowIfNull(configuration);
 
-        _rootPath = configuration.TryGetValue(PersistenceStore.RootPathConfigurationKey, out var configuredPath)
+        _rootPath = configuration.TryGetValue(RootPathConfigurationKey, out var configuredPath)
             && !string.IsNullOrWhiteSpace(configuredPath)
             ? configuredPath
-            : PersistenceStore.DefaultRootPath;
+            : DefaultRootPath;
 
         _databasePath = Path.Combine(_rootPath, DatabaseFileName);
         _lockFilePath = Path.Combine(_rootPath, LockFileName);
@@ -336,6 +348,9 @@ public sealed class SqlitePersistenceStore
     // ----------------------------------------------------------------
 
     /// <inheritdoc />
+    public long CurrentSequence => Volatile.Read(ref _currentSequence);
+
+    /// <inheritdoc />
     public async Task<IReadOnlyList<string>> ListKeysAsync(string collection, string keyPrefix, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(collection);
@@ -463,7 +478,23 @@ public sealed class SqlitePersistenceStore
             try
             {
                 await work(transaction, cancellationToken).ConfigureAwait(false);
+
+                // The sequence advances inside the same BEGIN IMMEDIATE …
+                // COMMIT as everything `work` wrote (`WP 18.1A`): a
+                // transaction that throws after this point still rolls the
+                // increment back with everything else, and one that
+                // commits reports a sequence a concurrent reader can never
+                // observe ahead of the data that earned it.
+                var sequence = await IncrementSequenceAsync(connection, cancellationToken).ConfigureAwait(false);
                 await ExecuteNonQueryAsync(connection, "COMMIT;", cancellationToken).ConfigureAwait(false);
+
+                // SQLite's own write lock (taken by BEGIN IMMEDIATE, above)
+                // serialises every transaction on this store end to end, so
+                // no later commit's sequence can reach `_currentSequence`
+                // before this one's — a plain write is enough, and Volatile
+                // rather than Interlocked.Exchange because nothing here
+                // races the same slot for supremacy, only for visibility.
+                Volatile.Write(ref _currentSequence, sequence);
             }
             catch
             {
@@ -534,7 +565,7 @@ public sealed class SqlitePersistenceStore
                 $"The persistence root '{_rootPath}' is already in use: another TempestOS instance holds its " +
                 $"instance lock '{_lockFilePath}'. Two instances must not share one database file, because " +
                 "each keeps in-memory indexes over it that the other cannot invalidate. Close the other " +
-                $"instance, or point this one at a different root with '{PersistenceStore.RootPathConfigurationKey}'.",
+                $"instance, or point this one at a different root with '{RootPathConfigurationKey}'.",
                 ex);
         }
     }
@@ -582,15 +613,48 @@ public sealed class SqlitePersistenceStore
 
                 INSERT INTO schema_info (version)
                 SELECT $version WHERE NOT EXISTS (SELECT 1 FROM schema_info);
+
+                -- `WP 18.1A`: the store's own monotonic commit counter
+                -- (IQueryablePersistenceStore.CurrentSequence). A single
+                -- row rather than a bare PRAGMA user_version, because it
+                -- must be advanced inside the very transaction it counts
+                -- (a PRAGMA cannot be) and read back through the same
+                -- table a coherent snapshot read reads its data from.
+                CREATE TABLE IF NOT EXISTS store_sequence (
+                    id    INTEGER PRIMARY KEY CHECK (id = 1),
+                    value INTEGER NOT NULL
+                );
+
+                INSERT INTO store_sequence (id, value)
+                SELECT 1, 0 WHERE NOT EXISTS (SELECT 1 FROM store_sequence WHERE id = 1);
                 """;
             command.Parameters.AddWithValue("$version", SchemaVersion);
             command.ExecuteNonQuery();
+
+            using var readSequence = connection.CreateCommand();
+            readSequence.CommandText = "SELECT value FROM store_sequence WHERE id = 1;";
+            _currentSequence = Convert.ToInt64(readSequence.ExecuteScalar(), CultureInfo.InvariantCulture);
         }
         catch (Exception ex)
         {
             throw new PersistenceStoreUnavailableException(
                 $"Failed to open or initialise the persistence database '{_databasePath}'.", ex);
         }
+    }
+
+    /// <summary>
+    /// Advances <c>store_sequence</c> by one and returns its new value,
+    /// inside the caller's already-open transaction.
+    /// </summary>
+    private static async Task<long> IncrementSequenceAsync(SqliteConnection connection, CancellationToken cancellationToken)
+    {
+        await ExecuteNonQueryAsync(connection, "UPDATE store_sequence SET value = value + 1 WHERE id = 1;", cancellationToken)
+            .ConfigureAwait(false);
+
+        await using var command = connection.CreateCommand();
+        command.CommandText = "SELECT value FROM store_sequence WHERE id = 1;";
+        var value = await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false);
+        return Convert.ToInt64(value, CultureInfo.InvariantCulture);
     }
 
     private async Task<SqliteConnection> OpenConnectionAsync(CancellationToken cancellationToken)

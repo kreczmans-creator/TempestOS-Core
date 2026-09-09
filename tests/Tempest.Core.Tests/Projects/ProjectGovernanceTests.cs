@@ -559,9 +559,9 @@ public sealed class ProjectGovernanceTests : IDisposable
     [Fact]
     public async Task DisposingThisTestInstance_DeletesTheFixturesOwnPersistenceRoot()
     {
-        // A real write, not just construction — `PersistenceStore` creates
+        // A real write, not just construction — `SqlitePersistenceStore` creates
         // its collection directories lazily on first write (see
-        // `PersistenceStore.cs`), so the root only exists on disk once
+        // `SqlitePersistenceStore.cs`), so the root only exists on disk once
         // something has actually been saved to it, exactly like every
         // other test in this file.
         var fixture = await CreateFixtureAsync();
@@ -624,11 +624,11 @@ public sealed class ProjectGovernanceTests : IDisposable
             var configuration = new ConfigurationBuilder()
                 .AddSource(new MemoryConfigurationSource(
                 [
-                    new KeyValuePair<string, string>(PersistenceStore.RootPathConfigurationKey, root),
+                    new KeyValuePair<string, string>(SqlitePersistenceStore.RootPathConfigurationKey, root),
                 ]))
                 .Build();
 
-            var store = new PersistenceStore(configuration);
+            var store = new SqlitePersistenceStore(configuration);
             var principal = new CurrentPrincipalAccessor();
             var documents = new EngineeringDocumentStore(store, principal);
             var repository = new InMemoryEngineeringObjectRepository();

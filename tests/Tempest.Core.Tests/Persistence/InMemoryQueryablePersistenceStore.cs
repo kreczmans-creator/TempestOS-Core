@@ -57,6 +57,7 @@ public sealed class InMemoryQueryablePersistenceStore
     private readonly object _publishLock = new();
 
     private Dictionary<(string Collection, string Key), Entry> _committed = new();
+    private long _sequence;
 
     /// <summary>The number of transactions that committed.</summary>
     public int CommitCount { get; private set; }
@@ -177,6 +178,12 @@ public sealed class InMemoryQueryablePersistenceStore
     // ================================================================
 
     /// <inheritdoc />
+    public long CurrentSequence
+    {
+        get { lock (_publishLock) return _sequence; }
+    }
+
+    /// <inheritdoc />
     public Task<IReadOnlyList<string>> ListKeysAsync(string collection, string keyPrefix, CancellationToken cancellationToken = default)
     {
         ValidateCollection(collection);
@@ -250,7 +257,10 @@ public sealed class InMemoryQueryablePersistenceStore
             transaction.Close();
 
             lock (_publishLock)
+            {
                 _committed = working;
+                _sequence++;
+            }
 
             CommitCount++;
         }

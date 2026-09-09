@@ -58,6 +58,9 @@ public sealed class GatedPersistenceStore(IQueryablePersistenceStore inner) : IQ
     public void Release() => Volatile.Read(ref _release)?.TrySetResult();
 
     /// <inheritdoc />
+    public long CurrentSequence => Inner.CurrentSequence;
+
+    /// <inheritdoc />
     public Task<IReadOnlyList<string>> ListKeysAsync(string collection, string keyPrefix, CancellationToken cancellationToken = default) =>
         Inner.ListKeysAsync(collection, keyPrefix, cancellationToken);
 

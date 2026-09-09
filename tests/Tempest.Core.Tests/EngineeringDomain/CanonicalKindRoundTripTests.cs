@@ -17,7 +17,7 @@ namespace Tempest.Core.Tests.EngineeringDomain;
 /// <para>
 /// A registration test proves the map has an entry. This proves the object
 /// comes back — with its identity, its kind, its business identifier and
-/// its parent intact — over a <em>real</em> <see cref="PersistenceStore"/>
+/// its parent intact — over a <em>real</em> <see cref="SqlitePersistenceStore"/>
 /// on disk, in a second set of repositories that share nothing with the
 /// first but the files.
 /// </para>
@@ -227,11 +227,11 @@ public sealed class CanonicalKindRoundTripTests : IDisposable
         var configuration = new ConfigurationBuilder()
             .AddSource(new MemoryConfigurationSource(
             [
-                new KeyValuePair<string, string>(PersistenceStore.RootPathConfigurationKey, _root),
+                new KeyValuePair<string, string>(SqlitePersistenceStore.RootPathConfigurationKey, _root),
             ]))
             .Build();
 
-        var store = new PersistenceStore(configuration);
+        var store = new SqlitePersistenceStore(configuration);
         var principal = new CurrentPrincipalAccessor();
         var documents = new EngineeringDocumentStore(store, principal);
         var repository = new InMemoryEngineeringObjectRepository();

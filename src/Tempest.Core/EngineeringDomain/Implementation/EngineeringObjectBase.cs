@@ -1,5 +1,6 @@
 using Tempest.Core.Audit;
 using Tempest.Core.EngineeringData;
+using Tempest.Core.Events;
 using Tempest.Core.Persistence;
 
 namespace Tempest.Core.EngineeringDomain;
@@ -164,6 +165,7 @@ public abstract partial class EngineeringObjectBase :
         Func<EngineeringObjectState, EngineeringObjectState> project,
         string auditAction,
         string? auditDetail,
+        WorkspaceChangeType changeType,
         CancellationToken cancellationToken,
         Func<IPersistenceTransaction, EngineeringObjectState, CancellationToken, Task>? alsoWrite = null,
         Action<EngineeringObjectState>? alsoApply = null,
@@ -192,7 +194,8 @@ public abstract partial class EngineeringObjectBase :
                 ApplyCommittedState(committed!, applyAttachments?.Invoke());
                 alsoApply?.Invoke(committed!);
             },
-            cancellationToken).ConfigureAwait(false);
+            cancellationToken,
+            touched: () => [new WorkspaceChangeEntry(Id, Kind, changeType)]).ConfigureAwait(false);
 
         return committed!;
     }
@@ -235,11 +238,19 @@ public abstract partial class EngineeringObjectBase :
     /// <param name="apply">Writes the change into the Kind's own fields. Runs after the commit.</param>
     /// <param name="auditDetail">A short description for the audit row.</param>
     /// <param name="cancellationToken">Cancels the operation.</param>
+    /// <param name="changeType">
+    /// What kind of change this is, for the workspace change feed
+    /// (`WP 18.1A`). Defaults to <see cref="WorkspaceChangeType.Updated"/>,
+    /// the right default for an ordinary Kind-specific field; a caller
+    /// whose type state carries a status move passes
+    /// <see cref="WorkspaceChangeType.StatusChanged"/> instead.
+    /// </param>
     protected async Task MutateTypeStateAndPersistAsync(
         Func<IReadOnlyDictionary<string, string?>> projectTypeState,
         Action apply,
         string? auditDetail,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        WorkspaceChangeType changeType = WorkspaceChangeType.Updated)
     {
         ArgumentNullException.ThrowIfNull(projectTypeState);
         ArgumentNullException.ThrowIfNull(apply);
@@ -259,6 +270,7 @@ public abstract partial class EngineeringObjectBase :
             },
             EngineeringAuditActions.StateChanged,
             auditDetail,
+            changeType,
             cancellationToken,
             alsoApply: _ => apply()).ConfigureAwait(false);
     }
@@ -371,6 +383,7 @@ public abstract partial class EngineeringObjectBase :
             },
             EngineeringAuditActions.Transitioned,
             $"{from} to {target}.",
+            WorkspaceChangeType.StatusChanged,
             cancellationToken).ConfigureAwait(false);
 
     }
@@ -443,7 +456,8 @@ public abstract partial class EngineeringObjectBase :
                 _supersededBy = revised;
                 _context.Repository.Register(revised!);
             },
-            cancellationToken).ConfigureAwait(false);
+            cancellationToken,
+            touched: () => [new WorkspaceChangeEntry(Id, Kind, WorkspaceChangeType.Updated)]).ConfigureAwait(false);
 
         return revised!;
     }
@@ -484,7 +498,8 @@ public abstract partial class EngineeringObjectBase :
                 await WriteAuditAsync(transaction, EngineeringAuditActions.Linked, $"{relationshipKind} to '{targetId:N}'.", token).ConfigureAwait(false);
             },
             afterCommit: () => RecordRelationship(targetId, relationshipKind, principalId, createdAt),
-            cancellationToken).ConfigureAwait(false);
+            cancellationToken,
+            touched: () => [new WorkspaceChangeEntry(Id, Kind, WorkspaceChangeType.Updated)]).ConfigureAwait(false);
     }
 
     private void RecordRelationship(Guid targetId, string relationshipKind, string principalId, DateTimeOffset createdAt) =>
@@ -521,6 +536,7 @@ public abstract partial class EngineeringObjectBase :
             },
             EngineeringAuditActions.Attached,
             $"'{attachment.FileName}' ({attachment.SizeInBytes:N0} bytes).",
+            WorkspaceChangeType.AttachmentAdded,
             cancellationToken,
             applyAttachments: () =>
             {
@@ -586,6 +602,7 @@ public abstract partial class EngineeringObjectBase :
             },
             EngineeringAuditActions.ContentAttached,
             $"'{fileName}' ({content.Length:N0} bytes).",
+            WorkspaceChangeType.AttachmentAdded,
             cancellationToken,
             alsoWrite: async (transaction, _, token) =>
                 await _context.AttachmentWriter.SaveAsync(transaction, attachmentId, content, token).ConfigureAwait(false),
@@ -624,6 +641,7 @@ public abstract partial class EngineeringObjectBase :
             current => current with { DisplayName = newDisplayName },
             EngineeringAuditActions.Renamed,
             $"Renamed to '{newDisplayName}'.",
+            WorkspaceChangeType.Updated,
             cancellationToken).ConfigureAwait(false);
 
     }
@@ -658,6 +676,7 @@ public abstract partial class EngineeringObjectBase :
             },
             EngineeringAuditActions.Moved,
             newParentId is { } parent ? $"Parent set to '{parent:N}'." : "Parent cleared.",
+            WorkspaceChangeType.Moved,
             cancellationToken,
             alsoWrite: async (transaction, _, token) =>
             {
@@ -767,6 +786,7 @@ public abstract partial class EngineeringObjectBase :
             },
             EngineeringAuditActions.Deleted,
             "Deleted, with any attachment payloads it held.",
+            WorkspaceChangeType.Deleted,
             cancellationToken,
             alsoWrite: async (transaction, _, token) =>
             {
@@ -820,6 +840,7 @@ public abstract partial class EngineeringObjectBase :
             },
             EngineeringAuditActions.BomLineSet,
             $"Quantity {quantity}{(unitOfMeasure is null ? string.Empty : " " + unitOfMeasure)}.",
+            WorkspaceChangeType.Updated,
             cancellationToken).ConfigureAwait(false);
 
     }

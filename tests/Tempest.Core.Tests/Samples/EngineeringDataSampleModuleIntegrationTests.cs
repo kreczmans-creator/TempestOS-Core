@@ -35,7 +35,7 @@ public class EngineeringDataSampleModuleIntegrationTests
 
         var configuration = new ConfigurationBuilder().AddSource(new MemoryConfigurationSource(
         [
-            new KeyValuePair<string, string>(PersistenceStore.RootPathConfigurationKey, persistenceRootPath),
+            new KeyValuePair<string, string>(SqlitePersistenceStore.RootPathConfigurationKey, persistenceRootPath),
         ])).Build();
 
         var services = new ServiceCollection();
@@ -56,7 +56,7 @@ public class EngineeringDataSampleModuleIntegrationTests
         // registers it (`ADR-0144`). The query shape is required since
         // `ADR-0145`: EngineeringDomainContext commits through it, and
         // AuditQuery answers a by-object lookup with a key prefix listing.
-        var persistenceStore = new PersistenceStore(configuration);
+        var persistenceStore = new SqlitePersistenceStore(configuration);
         services.AddInstance<IPersistenceStore>(persistenceStore);
         services.AddInstance<IBinaryPersistenceStore>(persistenceStore);
         services.AddInstance<IQueryablePersistenceStore>(persistenceStore);
@@ -179,9 +179,9 @@ public class EngineeringDataSampleModuleIntegrationTests
         // A second, independent pipeline - simulating a fresh process -
         // over the same root path.
         var storeTwo = new EngineeringDocumentStore(
-            new PersistenceStore(new ConfigurationBuilder().AddSource(new MemoryConfigurationSource(
+            new SqlitePersistenceStore(new ConfigurationBuilder().AddSource(new MemoryConfigurationSource(
             [
-                new KeyValuePair<string, string>(PersistenceStore.RootPathConfigurationKey, temp.Path),
+                new KeyValuePair<string, string>(SqlitePersistenceStore.RootPathConfigurationKey, temp.Path),
             ])).Build()),
             new CurrentPrincipalAccessor());
 
@@ -202,7 +202,7 @@ public class EngineeringDataSampleModuleIntegrationTests
         var host = new TempestHostBuilder([typeof(EngineeringDataSampleModule)])
             .AddConfigurationSource(new MemoryConfigurationSource(
             [
-                new KeyValuePair<string, string>(PersistenceStore.RootPathConfigurationKey, temp.Path),
+                new KeyValuePair<string, string>(SqlitePersistenceStore.RootPathConfigurationKey, temp.Path),
             ]))
             .Build();
 
