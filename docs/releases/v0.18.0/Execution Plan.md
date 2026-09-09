@@ -29,7 +29,7 @@ A build titled `TempestOS 0.18.0 (<commit>)` in which:
    figures** (typed quantities with a unit picker), its lifecycle and
    its audit trail. A Part shows a read-only *Where used* and no Bill of
    Materials input.
-4. The **Libraries** tab of Evidence lists the 79 seeded reference
+4. The **Libraries** tab of Evidence lists the 41 seeded reference
    records (materials, fasteners, bearings, standards, constants) with
    their source citation, and lets a principal with the permission verify
    and release them through the one review flow.
@@ -210,7 +210,7 @@ recorded so the Product Owner can overrule any of them before work starts.
    record is Issued.
 10. **Revise** the issued record (new file). The issued revision stays
     readable and unchanged; the new revision is Draft.
-11. Evidence → Libraries: the 79 records are listed with source citations;
+11. Evidence → Libraries: the 41 records are listed with source citations;
     verify and release one Draft material; it now appears in the citation
     picker.
 12. Home cockpit shows *Recently changed* with the evidence at the top.
