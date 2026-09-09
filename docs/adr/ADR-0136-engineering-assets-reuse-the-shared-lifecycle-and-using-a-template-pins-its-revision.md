@@ -4,6 +4,16 @@
 
 Accepted — `Group E` (P05 Engineering Assets), 2026-09-06.
 
+**Design reviews (E4) and technical documentation (E5) frozen by
+`WP 18.0C`** (`D-028`, 2026-09-09): unreachable from any shipped
+surface. Templates, calculation packs and verification artefacts (E1-E3)
+— the kinds `BracketEngineeringRecordService`, `EngineeringTraceRegister`
+and the dormant calculation workbench depend on directly — stay live and
+accepted, along with the shared `AssetStanding`/governance/applicability
+root (`AssetGovernance.cs`, `AssetValidation.cs`, `AssetApplicability.cs`,
+`EngineeringEvidence.cs`) all five kinds, kept and frozen alike, built
+on. See `src/Frozen/README.md`.
+
 ## Context
 
 `P05` holds five kinds of reusable engineering artefact: templates,

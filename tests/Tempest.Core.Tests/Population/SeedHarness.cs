@@ -1,22 +1,11 @@
 using Tempest.Core.Bearings;
-using Tempest.Core.CommercialIntelligence.Costs;
-using Tempest.Core.CommercialIntelligence.LeadTimes;
-using Tempest.Core.CommercialIntelligence.Suppliers;
 using Tempest.Core.Constants;
 using Tempest.Core.EngineeringAssets.CalculationPacks;
-using Tempest.Core.EngineeringAssets.DesignReviews;
-using Tempest.Core.EngineeringAssets.TechnicalDocumentation;
 using Tempest.Core.EngineeringAssets.Templates;
 using Tempest.Core.EngineeringAssets.Verification;
 using Tempest.Core.EngineeringData;
-using Tempest.Core.EngineeringIntelligence;
-using Tempest.Core.EngineeringIntelligence.Decisions;
 using Tempest.Core.Fasteners;
 using Tempest.Core.Identity;
-using Tempest.Core.Knowledge.Academy;
-using Tempest.Core.Knowledge.Challenges;
-using Tempest.Core.Knowledge.Prompts;
-using Tempest.Core.Knowledge.WorkedExamples;
 using Tempest.Core.Manufacturing;
 using Tempest.Core.Materials;
 using Tempest.Core.Persistence;
@@ -31,9 +20,21 @@ using Tempest.Core.Tests.Materials;
 namespace Tempest.Core.Tests.Population;
 
 // One document store and one persistence store behind every P01 library,
-// exactly as the running host wires them — so a cross-library reference in
+// exactly as the running host wires them - so a cross-library reference in
 // these tests resolves the same way it resolves in the product, rather
 // than only inside a per-test fake.
+//
+// WP 18.0C (D-028): this harness used to seed every P01-P06 library,
+// including the P02 (Rules), P03 (Suppliers/Costs/LeadTimes), P05-archived
+// (DesignReviews/TechnicalDocuments) and P06 (Prompts/Academy/Challenges/
+// WorkedExamples) libraries this Work Package froze to src/Frozen/. It is
+// trimmed here to the libraries that remain live, because
+// tests/Tempest.Core.Tests/Calculations/BracketEngineeringDemonstrationTests.cs
+// subclasses it and is out of this Work Package's "files you own" list to
+// edit. The full, untrimmed scenario population this class used to drive
+// (BracketScenarioTests, RefusalTests, CrossDomainReferenceTests,
+// ScenarioReadinessTests, SeedDatasetTests, ScenarioHarness) moved to
+// tests/Frozen/Tempest.Core.Tests/ alongside the namespaces they proved.
 internal class SeedHarness
 {
     public SeedHarness()
@@ -47,20 +48,9 @@ internal class SeedHarness
         Fasteners = new FastenerCatalog(DocumentStore, PersistenceStore);
         Bearings = new BearingCatalog(DocumentStore, PersistenceStore);
         Processes = new ProcessCatalog(DocumentStore, PersistenceStore);
-        Rules = new RuleCatalog(DocumentStore, PersistenceStore);
-        DecisionTrees = new DecisionTreeCatalog(DocumentStore, PersistenceStore);
-        Suppliers = new SupplierCatalog(DocumentStore, PersistenceStore);
-        Costs = new ProcessCostCatalog(DocumentStore, PersistenceStore);
-        LeadTimes = new LeadTimeCatalog(DocumentStore, PersistenceStore);
         Templates = new TemplateCatalog(DocumentStore, PersistenceStore);
         CalculationPacks = new CalculationPackCatalog(DocumentStore, PersistenceStore);
         VerificationArtefacts = new VerificationArtefactCatalog(DocumentStore, PersistenceStore);
-        DesignReviews = new DesignReviewCatalog(DocumentStore, PersistenceStore);
-        TechnicalDocuments = new TechnicalDocumentCatalog(DocumentStore, PersistenceStore);
-        Prompts = new PromptCatalog(DocumentStore, PersistenceStore);
-        AcademyNodes = new AcademyCatalog(DocumentStore, PersistenceStore);
-        Challenges = new ChallengeCatalog(DocumentStore, PersistenceStore);
-        WorkedExamples = new WorkedExampleCatalog(DocumentStore, PersistenceStore);
 
         var principals = new CurrentPrincipalAccessor();
         Requirements = new RequirementsService(
@@ -91,40 +81,17 @@ internal class SeedHarness
 
     public ProcessCatalog Processes { get; }
 
-    public RuleCatalog Rules { get; }
-
-    /// <summary>Empty: no decision tree is seeded, so screening runs on capability data alone.</summary>
-    public DecisionTreeCatalog DecisionTrees { get; }
-
-    public SupplierCatalog Suppliers { get; }
-
-    public ProcessCostCatalog Costs { get; }
-
-    public LeadTimeCatalog LeadTimes { get; }
-
     public TemplateCatalog Templates { get; }
 
     public CalculationPackCatalog CalculationPacks { get; }
 
     public VerificationArtefactCatalog VerificationArtefacts { get; }
 
-    public DesignReviewCatalog DesignReviews { get; }
-
-    public TechnicalDocumentCatalog TechnicalDocuments { get; }
-
-    public PromptCatalog Prompts { get; }
-
-    public AcademyCatalog AcademyNodes { get; }
-
-    public ChallengeCatalog Challenges { get; }
-
-    public WorkedExampleCatalog WorkedExamples { get; }
-
     public RequirementsService Requirements { get; }
 
     public ReferenceSeedService Seeder { get; }
 
-    /// <summary>Applies every P01 seed dataset, in citation order.</summary>
+    /// <summary>Applies every remaining P01 seed dataset, in citation order.</summary>
     public async Task<IReadOnlyList<ReferenceSeedOutcome>> SeedEverythingAsync()
     {
         // Citation order, and it matters. Standards come first because
@@ -141,17 +108,13 @@ internal class SeedHarness
             await Seeder.ApplyAsync(Fasteners, FastenerSeed.Instance),
             await Seeder.ApplyAsync(Bearings, BearingSeed.Instance),
             await Seeder.ApplyAsync(Processes, ProcessSeed.Instance),
-            await Seeder.ApplyAsync(Rules, RuleSeed.Instance),
-            await Seeder.ApplyAsync(Suppliers, CommercialSeed.Suppliers),
-            await Seeder.ApplyAsync(Costs, CommercialSeed.Costs),
-            await Seeder.ApplyAsync(LeadTimes, CommercialSeed.LeadTimes),
             await Seeder.ApplyAsync(Templates, EngineeringAssetSeed.Templates),
         };
 
         // A real requirement, created before the assets that cite it. The
         // verification model refuses an artefact naming an empty identity,
         // so the alternative to creating one was to seed no verification
-        // artefact at all — and a requirement is the head of the scenario
+        // artefact at all - and a requirement is the head of the scenario
         // the next phase has to exercise anyway.
         var requirement = await Requirements.FindByIdentifierAsync(BracketRequirementIdentifier)
             ?? await Requirements.CreateAsync(
@@ -173,17 +136,6 @@ internal class SeedHarness
 
         outcomes.Add(await Seeder.ApplyAsync(CalculationPacks, assets.CalculationPacks));
         outcomes.Add(await Seeder.ApplyAsync(VerificationArtefacts, assets.VerificationArtefacts));
-        outcomes.Add(await Seeder.ApplyAsync(DesignReviews, assets.DesignReviews));
-        outcomes.Add(await Seeder.ApplyAsync(TechnicalDocuments, assets.TechnicalDocuments));
-
-        outcomes.Add(await Seeder.ApplyAsync(Prompts, KnowledgeSeed.Prompts));
-        outcomes.Add(await Seeder.ApplyAsync(AcademyNodes, KnowledgeSeed.AcademyNodes));
-        outcomes.Add(await Seeder.ApplyAsync(Challenges, KnowledgeSeed.Challenges));
-
-        var aluminium = await Materials.FindAsync(MaterialSeed.Aluminium6082T6);
-        outcomes.Add(await Seeder.ApplyAsync(
-            WorkedExamples,
-            KnowledgeSeed.WorkedExamples(ReferencePin.For(Materials.LibraryName, aluminium!))));
 
         return outcomes;
     }

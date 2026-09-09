@@ -11,39 +11,12 @@ using Tempest.Core.Diagnostics;
 using Tempest.Core.EngineeringData;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Evidence;
-using Tempest.Core.BusinessGovernance.Assets;
 using Tempest.Core.BusinessOperations.Crm;
 using Tempest.Core.BusinessOperations.Finance;
-using Tempest.Core.BusinessOperations.Purchasing;
-using Tempest.Core.BusinessOperations.Quality;
-using Tempest.Core.BusinessOperations.Records;
-using Tempest.Core.CommercialIntelligence.Costs;
 using Tempest.Core.EngineeringAssets.CalculationPacks;
-using Tempest.Core.Knowledge.Academy;
-using Tempest.Core.Knowledge.Challenges;
-using Tempest.Core.Knowledge.Lessons;
-using Tempest.Core.Knowledge.Prompts;
-using Tempest.Core.Knowledge.WorkedExamples;
-using Tempest.Core.EngineeringAssets.DesignReviews;
-using Tempest.Core.EngineeringAssets.TechnicalDocumentation;
 using Tempest.Core.EngineeringAssets.Templates;
 using Tempest.Core.EngineeringAssets.Verification;
-using Tempest.Core.CommercialIntelligence.Estimating;
-using Tempest.Core.CommercialIntelligence.LeadTimes;
-using Tempest.Core.CommercialIntelligence.Procurement;
-using Tempest.Core.CommercialIntelligence.Suppliers;
-using Tempest.Core.BusinessGovernance.Contracts;
-using Tempest.Core.BusinessGovernance.Development;
-using Tempest.Core.BusinessGovernance.Finance;
-using Tempest.Core.BusinessGovernance.Operating;
 using Tempest.Core.BusinessGovernance.Pricing;
-using Tempest.Core.BusinessGovernance.Risk;
-using Tempest.Core.EngineeringIntelligence;
-using Tempest.Core.EngineeringIntelligence.Decisions;
-using Tempest.Core.EngineeringIntelligence.DesignRules;
-using Tempest.Core.EngineeringIntelligence.MaterialSelection;
-using Tempest.Core.EngineeringIntelligence.Reviews;
-using Tempest.Core.EngineeringIntelligence.TradeStudies;
 using Tempest.Core.Events;
 using Tempest.Core.Fasteners;
 using Tempest.Core.ExportImport;
@@ -649,136 +622,45 @@ public sealed class TempestHost : ITempestHost
         services.Singleton<IProcessCatalog, ProcessCatalog>();
         services.Singleton<IProcessValidationService, ProcessValidationService>();
 
-        // `Group B` (P02): the engineering-reasoning layer. Rules, decision
-        // trees, review definitions and trade studies are all governed,
-        // authored, reviewed and revisioned records, so each library sits on
-        // the same shared ReferenceDataCatalog<T> base as `P01` rather than
-        // growing a second lifecycle (`ADR-0128`). Registered after every
-        // `Group A` library, because the reasoning services read them: the
-        // rule catalogue for rules a review criterion names, the
-        // released-constant source for a symbolic threshold, and each
-        // subject library for the record a rule is being applied to.
+        // `Group B` (P02, the engineering-reasoning layer) was frozen to
+        // `src/Frozen/Tempest.Core.EngineeringIntelligence` by `WP 18.0C`
+        // (`D-028`): unreachable from any shipped surface. See
+        // `src/Frozen/README.md`.
+
+        // `Group C` (P07): business governance. Rate cards are authored,
+        // evidenced, approved, revisioned and superseded records, so they
+        // sit on the same shared ReferenceDataCatalog<T> base as `P01`
+        // rather than growing a third lifecycle (`ADR-0129`).
         //
-        // `P02` reads `P01` and never the other way round, so nothing above
-        // this point takes a dependency on anything below it.
-        services.Singleton<IRuleCatalog, RuleCatalog>();
-        services.Singleton<IRuleValidationService, RuleValidationService>();
-
-        services.Singleton<IDecisionTreeCatalog, DecisionTreeCatalog>();
-        services.Singleton<IDecisionTreeValidationService, DecisionTreeValidationService>();
-
-        services.Singleton<IReviewDefinitionCatalog, ReviewDefinitionCatalog>();
-        services.Singleton<IReviewDefinitionValidationService, ReviewDefinitionValidationService>();
-
-        services.Singleton<ITradeStudyCatalog, TradeStudyCatalog>();
-        services.Singleton<ITradeStudyValidationService, TradeStudyValidationService>();
-
-        // The five reasoning services. Each is stateless over its
-        // catalogues, and each takes the clock and the current principal so
-        // that what a result records about when and by whom is testable
-        // rather than read from the ambient environment.
-        services.Singleton<IMaterialSelectionService, MaterialSelectionService>();
-        services.Singleton<IManufacturingDecisionService, ManufacturingDecisionService>();
-        services.Singleton<IDesignRuleService, DesignRuleService>();
-        services.Singleton<IEngineeringReviewService, EngineeringReviewService>();
-        services.Singleton<ITradeStudyService, TradeStudyService>();
-
-        // `Group C` (P07): business governance. Contract templates and
-        // contracts, the risk register and insurance, IP and data assets,
-        // rate cards, financial assumptions and scenarios, the opportunity
-        // pipeline and the operating model are all authored, evidenced,
-        // approved, revisioned and superseded records, so each library sits
-        // on the same shared ReferenceDataCatalog<T> base as `P01` and
-        // `P02` rather than growing a third lifecycle (`ADR-0129`).
-        //
-        // Registered last, and depending on nothing above it: `P07` reads
-        // the platform's own document store, persistence and identity, and
-        // does not read `P01` or `P02`. Business governance and engineering
-        // reasoning are independent programmes and the container reflects
-        // that.
-        services.Singleton<IContractTemplateCatalog, ContractTemplateCatalog>();
-        services.Singleton<IContractTemplateValidationService, ContractTemplateValidationService>();
-        services.Singleton<IIssuedContractCatalog, IssuedContractCatalog>();
-        services.Singleton<IIssuedContractValidationService, IssuedContractValidationService>();
-        services.Singleton<IContractService, ContractService>();
-
-        services.Singleton<IBusinessRiskCatalog, BusinessRiskCatalog>();
-        services.Singleton<IBusinessRiskValidationService, BusinessRiskValidationService>();
-        services.Singleton<IInsurancePolicyCatalog, InsurancePolicyCatalog>();
-        services.Singleton<IInsurancePolicyValidationService, InsurancePolicyValidationService>();
-        services.Singleton<IRiskAndInsuranceService, RiskAndInsuranceService>();
-
-        services.Singleton<IIPAssetCatalog, IPAssetCatalog>();
-        services.Singleton<IIPAssetValidationService, IPAssetValidationService>();
-        services.Singleton<IDataAssetCatalog, DataAssetCatalog>();
-        services.Singleton<IDataAssetValidationService, DataAssetValidationService>();
-
+        // WP 18.0C (D-028): Contracts, Risk, Assets (IP/data), Finance
+        // (Assumption/Scenario/Control), Development (Opportunity/
+        // Pipeline), Operating and Pricing.PricingService were frozen to
+        // `src/Frozen/Tempest.Core.BusinessGovernance` — unreachable from
+        // any shipped surface. See `src/Frozen/README.md`.
         services.Singleton<IRateCardCatalog, RateCardCatalog>();
         services.Singleton<IRateCardValidationService, RateCardValidationService>();
-        services.Singleton<IPricingService, PricingService>();
 
-        services.Singleton<IFinancialAssumptionCatalog, FinancialAssumptionCatalog>();
-        services.Singleton<IFinancialAssumptionValidationService, FinancialAssumptionValidationService>();
-        services.Singleton<IFinancialScenarioCatalog, FinancialScenarioCatalog>();
-        services.Singleton<IFinancialScenarioValidationService, FinancialScenarioValidationService>();
-        services.Singleton<IFinancialControlService, FinancialControlService>();
-
-        services.Singleton<IOpportunityCatalog, OpportunityCatalog>();
-        services.Singleton<IOpportunityValidationService, OpportunityValidationService>();
-        services.Singleton<IPipelineService, PipelineService>();
-
-        services.Singleton<IOperatingScenarioCatalog, OperatingScenarioCatalog>();
-        services.Singleton<IOperatingScenarioValidationService, OperatingScenarioValidationService>();
-
-        // `Group D` (P03): commercial intelligence. Suppliers, process
-        // costs, lead times, estimates, quotes and sourcing comparisons are
-        // authored, evidenced, revisioned and superseded records like every
-        // other library, and sit on the same shared ReferenceDataCatalog<T>
-        // base (`ADR-0132`).
-        //
-        // Registered after `P07`, whose Money and EffectivePeriod `P03`
-        // reuses rather than restating (`ADR-0132`), and after `P01`, whose
-        // process and material records its cost and lead-time records cite.
-        // The estimating and comparison services read those libraries and
-        // write nothing back: `P03` compares, ranks and recommends, and
-        // never places an order, awards business, approves a supplier or
-        // commits expenditure (`ADR-0135`).
-        services.Singleton<ISupplierCatalog, SupplierCatalog>();
-        services.Singleton<ISupplierValidationService, SupplierValidationService>();
-        services.Singleton<ISupplierIdentityService, SupplierIdentityService>();
-
-        services.Singleton<IProcessCostCatalog, ProcessCostCatalog>();
-        services.Singleton<IProcessCostValidationService, ProcessCostValidationService>();
-
-        services.Singleton<ILeadTimeCatalog, LeadTimeCatalog>();
-        services.Singleton<ILeadTimeValidationService, LeadTimeValidationService>();
-
-        services.Singleton<ICostEstimateCatalog, CostEstimateCatalog>();
-        services.Singleton<ICostEstimateValidationService, CostEstimateValidationService>();
-        services.Singleton<ISupplierQuoteCatalog, SupplierQuoteCatalog>();
-        services.Singleton<ISupplierQuoteValidationService, SupplierQuoteValidationService>();
-        services.Singleton<ICustomerQuotationCatalog, CustomerQuotationCatalog>();
-        services.Singleton<ICustomerQuotationValidationService, CustomerQuotationValidationService>();
-        services.Singleton<IEstimatingService, EstimatingService>();
-
-        services.Singleton<ISourcingRequirementCatalog, SourcingRequirementCatalog>();
-        services.Singleton<ISourcingRequirementValidationService, SourcingRequirementValidationService>();
-        services.Singleton<ISourcingComparisonCatalog, SourcingComparisonCatalog>();
-        services.Singleton<ISourcingComparisonValidationService, SourcingComparisonValidationService>();
-        services.Singleton<ISourcingComparisonService, SourcingComparisonService>();
+        // `Group D` (P03, CommercialIntelligence) was frozen to
+        // `src/Frozen/Tempest.Core.CommercialIntelligence` by `WP 18.0C`
+        // (`D-028`): unreachable from any shipped surface. See
+        // `src/Frozen/README.md`.
 
         // `Group E` (P05): engineering assets. Templates, calculation
-        // packs, verification artefacts, design review packs and technical
-        // documentation are authored, evidenced, reviewed, revisioned and
-        // superseded records like every other library, and sit on the same
-        // shared ReferenceDataCatalog<T> base (`ADR-0136`).
+        // packs and verification artefacts are authored, evidenced,
+        // reviewed, revisioned and superseded records like every other
+        // library, and sit on the same shared ReferenceDataCatalog<T>
+        // base (`ADR-0136`).
         //
-        // Registered after `P01`, `P03` and `P07`, all of which `P05`
-        // references and none of which it duplicates: `E2` links the
+        // Registered after `P01` and `P07`, both of which `P05`
+        // references and neither of which it duplicates: `E2` links the
         // platform's own calculation records rather than recomputing them,
-        // `E3` references `Tempest.Core.Requirements` rather than copying a
-        // requirement, and `E5` points at `EngineeringData` documents
-        // rather than storing content a second time.
+        // and `E3` references `Tempest.Core.Requirements` rather than
+        // copying a requirement.
+        //
+        // WP 18.0C (D-028): design review packs (E4) and technical
+        // documentation (E5) were frozen to
+        // `src/Frozen/Tempest.Core.EngineeringAssets` — unreachable from
+        // any shipped surface. See `src/Frozen/README.md`.
         services.Singleton<ITemplateCatalog, TemplateCatalog>();
         services.Singleton<ITemplateValidationService, TemplateValidationService>();
 
@@ -789,70 +671,24 @@ public sealed class TempestHost : ITempestHost
         services.Singleton<IVerificationArtefactValidationService, VerificationArtefactValidationService>();
         services.Singleton<IVerificationTraceService, VerificationTraceService>();
 
-        services.Singleton<IDesignReviewCatalog, DesignReviewCatalog>();
-        services.Singleton<IDesignReviewValidationService, DesignReviewValidationService>();
-
-        services.Singleton<ITechnicalDocumentCatalog, TechnicalDocumentCatalog>();
-        services.Singleton<ITechnicalDocumentValidationService, TechnicalDocumentValidationService>();
-
-        // `Group F` (P06): AI knowledge and Academy. Prompts, Academy
-        // nodes, challenges, lessons and worked examples are authored,
-        // sourced, reviewed, revisioned and superseded records like every
-        // other library, and sit on the same shared
-        // ReferenceDataCatalog<T> base (`ADR-0141`).
-        //
-        // Registered last. `P06` is the knowledge layer and is
-        // deliberately separate from AI execution: no executor, no agent,
-        // no model binding and no provider dependency is registered here
-        // or exists anywhere in the programme. It reads `P05` to confirm a
-        // cited calculation pack exists and reads nothing else.
-        services.Singleton<IPromptCatalog, PromptCatalog>();
-        services.Singleton<IPromptValidationService, PromptValidationService>();
-
-        services.Singleton<IAcademyCatalog, AcademyCatalog>();
-        services.Singleton<IAcademyValidationService, AcademyValidationService>();
-
-        services.Singleton<IChallengeCatalog, ChallengeCatalog>();
-        services.Singleton<IChallengeValidationService, ChallengeValidationService>();
-
-        services.Singleton<ILessonCatalog, LessonCatalog>();
-        services.Singleton<ILessonValidationService, LessonValidationService>();
-
-        services.Singleton<IWorkedExampleCatalog, WorkedExampleCatalog>();
-        services.Singleton<IWorkedExampleValidationService, WorkedExampleValidationService>();
+        // `Group F` (P06, Knowledge) was frozen to
+        // `src/Frozen/Tempest.Core.Knowledge` by `WP 18.0C` (`D-028`):
+        // unreachable from any shipped surface. See `src/Frozen/README.md`.
 
         // `P04`: Business OS. The operational layer over the reference and
         // governance programmes — organisations and contacts behind `P07`'s
-        // opportunities, budgets the spend is measured against, the
-        // purchasing seam over `P03`, non-conformances, and business
-        // records (`ADR-0142`).
+        // opportunities, and budgets the spend is measured against
+        // (`ADR-0142`).
         //
-        // Registered last because it reads the most: `P03` for suppliers
-        // and quotes, `P05` for evidence and document relationships, `P06`
-        // for failure causes, `P07` for money and authority. It duplicates
-        // none of them, and it builds no project model — `Tempest.App`'s
-        // existing project architecture already owns that.
+        // WP 18.0C (D-028): Interaction, FinancialEntry, Purchasing,
+        // Quality and Records were frozen to
+        // `src/Frozen/Tempest.Core.BusinessOperations` — unreachable from
+        // any shipped surface. See `src/Frozen/README.md`.
         services.Singleton<IOrganisationCatalog, OrganisationCatalog>();
         services.Singleton<IContactCatalog, ContactCatalog>();
-        services.Singleton<IInteractionCatalog, InteractionCatalog>();
         services.Singleton<IOrganisationValidationService, OrganisationValidationService>();
-        services.Singleton<ICrmValidationService, CrmValidationService>();
 
         services.Singleton<IBudgetCatalog, BudgetCatalog>();
-        services.Singleton<IFinancialEntryCatalog, FinancialEntryCatalog>();
-        services.Singleton<IBudgetValidationService, BudgetValidationService>();
-        services.Singleton<IBudgetPositionService, BudgetPositionService>();
-
-        services.Singleton<IPurchaseRequisitionCatalog, PurchaseRequisitionCatalog>();
-        services.Singleton<IPurchaseRequisitionValidationService, PurchaseRequisitionValidationService>();
-        services.Singleton<IPurchaseOrderCatalog, PurchaseOrderCatalog>();
-        services.Singleton<IPurchaseOrderValidationService, PurchaseOrderValidationService>();
-
-        services.Singleton<INonConformanceCatalog, NonConformanceCatalog>();
-        services.Singleton<INonConformanceValidationService, NonConformanceValidationService>();
-
-        services.Singleton<IBusinessRecordCatalog, BusinessRecordCatalog>();
-        services.Singleton<IBusinessRecordValidationService, BusinessRecordValidationService>();
 
         // ADR-0056: every calculation execution is durably recorded as an
         // Engineering Data Model document (Kind = "CalculationRecord"),

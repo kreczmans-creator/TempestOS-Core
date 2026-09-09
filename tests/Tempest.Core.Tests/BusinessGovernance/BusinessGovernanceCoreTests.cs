@@ -129,30 +129,10 @@ public class BusinessGovernanceCoreTests
         Assert.False(openEnded.Overlaps(new EffectivePeriod(new DateOnly(2020, 1, 1), new DateOnly(2020, 12, 31))));
     }
 
-    [Fact]
-    public void OnlyRecorded_CountsAsEstablished()
-    {
-        // An assumption is not a fact, and an open question is not an
-        // answer. Exactly one state means "you may rely on this".
-        Assert.True(DeterminationStates.IsEstablished(DeterminationState.Recorded));
-
-        foreach (var state in DeterminationStates.All.Where(s => s != DeterminationState.Recorded))
-            Assert.False(DeterminationStates.IsEstablished(state));
-    }
-
-    [Fact]
-    public void ASetOfDeterminations_IsOnlyAsStrongAsItsWeakest()
-    {
-        Assert.Equal(
-            DeterminationState.ReviewRequired,
-            DeterminationStates.Weakest([DeterminationState.Recorded, DeterminationState.ReviewRequired, DeterminationState.Recorded]));
-    }
-
-    [Fact]
-    public void AnEmptySetOfDeterminations_IsNotDetermined_NotEstablished()
-    {
-        Assert.Equal(DeterminationState.NotDetermined, DeterminationStates.Weakest([]));
-    }
+    // WP 18.0C (D-028): the DeterminationState tests moved to
+    // tests/Frozen/Tempest.Core.Tests/BusinessGovernance/
+    // BusinessGovernanceCoreArchivedTests.cs; DeterminationState.cs was
+    // the one BusinessGovernance-root file nothing kept needed.
 
     [Fact]
     public void UnclassifiedIsTreatedAsRestrictive_NotAsPublic()

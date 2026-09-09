@@ -9,7 +9,7 @@ using Tempest.Core.Knowledge.Lessons;
 using Tempest.Core.Knowledge.Prompts;
 using Tempest.Core.Knowledge.WorkedExamples;
 using Tempest.Core.ReferenceData;
-using Tempest.Core.Tests.EngineeringIntelligence;
+using Tempest.Core.Tests;
 using Tempest.Core.Tests.ReferenceData;
 
 namespace Tempest.Core.Tests.Knowledge;

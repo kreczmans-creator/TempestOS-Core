@@ -9,7 +9,7 @@ using Tempest.Core.EngineeringData;
 using Tempest.Core.Identity;
 using Tempest.Core.Tests.ReferenceData;
 using Tempest.Core.ReferenceData;
-using Tempest.Core.Tests.EngineeringIntelligence;
+using Tempest.Core.Tests;
 
 namespace Tempest.Core.Tests.CommercialIntelligence;
 
