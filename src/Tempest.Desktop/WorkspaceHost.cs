@@ -150,6 +150,11 @@ public sealed class WorkspaceHost : IAsyncDisposable
 
         CalculationTemplates = EngineeringWorkspaceComposer.RegisterEngineeringDisciplines(manager, host);
 
+        // `WP 18.2B` (part 1): stateless and dependency-free, so it is
+        // simply constructed here over nothing, the same `ADR-0103` shape
+        // as every other Desktop-side collaborator.
+        IssueSheetRenderer = new Tempest.Desktop.Evidence.IssueSheetRenderer();
+
         // ---- The Product Spine (`TD-84`) ----------------------------
         // Module -> Project -> Workspace. Composed here, after the
         // disciplines have registered, because the project directory
@@ -399,6 +404,9 @@ public sealed class WorkspaceHost : IAsyncDisposable
 
     /// <summary>Setting milestones and deliverables, as the Project Workspace performs it.</summary>
     public IProjectMilestoneService? ProjectMilestoneWorkflow { get; private set; }
+
+    /// <summary>Gets the issue sheet PDF renderer (`WP 18.2B`) — <see langword="null"/> before <see cref="StartAsync"/> completes.</summary>
+    public Tempest.Workspace.Evidence.IIssueSheetRenderer? IssueSheetRenderer { get; private set; }
 
     /// <summary>Persists current session state (`ADR-0064`, unchanged) and shuts the Workspace down — called from the main window's own Closing handler (Window Lifecycle).</summary>
     public async Task ShutdownAsync(CancellationToken cancellationToken = default)
