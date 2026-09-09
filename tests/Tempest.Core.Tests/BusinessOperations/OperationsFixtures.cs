@@ -10,7 +10,7 @@ using Tempest.Core.EngineeringData;
 using Tempest.Core.Identity;
 using Tempest.Core.Knowledge.Lessons;
 using Tempest.Core.ReferenceData;
-using Tempest.Core.Tests.EngineeringIntelligence;
+using Tempest.Core.Tests;
 using Tempest.Core.Tests.ReferenceData;
 
 namespace Tempest.Core.Tests.BusinessOperations;

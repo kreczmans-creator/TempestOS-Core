@@ -138,19 +138,23 @@ public class BusinessGovernanceHostRegistrationTests
     }
 
     [Fact]
-    public async Task AddingP07ChangedNothingAboutP01OrP02()
+    public async Task AddingP07ChangedNothingAboutP01()
     {
         // P07 reads the platform's own document store, persistence and
-        // identity. It does not read the reference libraries or the
-        // reasoning layer, and neither of those changed to accommodate it.
+        // identity. It does not read the reference libraries, and they did
+        // not change to accommodate it.
+        //
+        // WP 18.0C (D-028): this used to assert P02's own RuleCatalog
+        // registration too, alongside P01's; P02 (`Tempest.Core.
+        // EngineeringIntelligence`) is now frozen to `src/Frozen/` and no
+        // longer registered at all, so only the P01 half of the original
+        // claim remains checkable here.
         using var temp = new TempDirectory();
 
         await RunAgainstRunningHostAsync(temp.Path, host =>
         {
             Assert.IsType<Tempest.Core.Materials.MaterialCatalog>(
                 host.Services!.GetService(typeof(Tempest.Core.Materials.IMaterialCatalog)));
-            Assert.IsType<Tempest.Core.EngineeringIntelligence.RuleCatalog>(
-                host.Services!.GetService(typeof(Tempest.Core.EngineeringIntelligence.IRuleCatalog)));
             Assert.IsType<ContractTemplateCatalog>(host.Services!.GetService(typeof(IContractTemplateCatalog)));
 
             return Task.CompletedTask;
