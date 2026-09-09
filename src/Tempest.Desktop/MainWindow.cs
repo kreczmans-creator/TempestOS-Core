@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Platform;
 using Tempest.Workspace.Editors;
+using Tempest.Workspace.Files;
 using Tempest.Workspace.Projects;
 using Tempest.Workspace.Shell;
 using Tempest.Workspace;
@@ -104,7 +105,7 @@ public sealed class MainWindow : Window
     private readonly CitationPicker _citationPicker;
     private readonly SubjectPicker _subjectPicker;
     private readonly DeclaredFigureEntry _declaredFigureEntry;
-    private readonly AvaloniaFilePicker _evidenceFilePicker;
+    private readonly IFilePicker _evidenceFilePicker;
     private readonly ProjectDeliveryCoordinator _projectDelivery;
     private readonly ProjectGovernanceCoordinator _projectGovernanceCoordinator;
 
@@ -133,7 +134,19 @@ public sealed class MainWindow : Window
     private KeyboardNavigationMode _dockTabNavigationBeforeModal;
 
     /// <summary>Initialises a new instance of the <see cref="MainWindow"/> class over an already-started <see cref="WorkspaceHost"/>.</summary>
-    public MainWindow(WorkspaceHost host)
+    /// <param name="host">The already-started Workspace Host this window presents.</param>
+    /// <param name="evidenceFilePickerOverride">
+    /// The Evidence workspace's own <see cref="IFilePicker"/> — <see langword="null"/>
+    /// (the default, used by the real running application) constructs the
+    /// real <see cref="AvaloniaFilePicker"/> over this window's own
+    /// <see cref="TopLevel"/>. Injectable so a headless journey test can
+    /// supply a stub that returns bytes from a temp file with no OS dialog
+    /// ever on screen (`WP 18.2A`, Execution Plan §3 decision 6) — the
+    /// identical seam <see cref="WorkspaceHost"/>'s own
+    /// <c>sessionPrincipals</c> parameter already establishes for the
+    /// session principal.
+    /// </param>
+    public MainWindow(WorkspaceHost host, IFilePicker? evidenceFilePickerOverride = null)
     {
         ArgumentNullException.ThrowIfNull(host);
 
@@ -317,7 +330,7 @@ public sealed class MainWindow : Window
         var kindEditorDeclarations = new KindEditorDeclarationRegistry();
         KindEditorDeclarations.RegisterAll(kindEditorDeclarations);
 
-        _evidenceFilePicker = new AvaloniaFilePicker(this);
+        _evidenceFilePicker = evidenceFilePickerOverride ?? new AvaloniaFilePicker(this);
         _citationPicker = new CitationPicker(ct => LibrariesView.ReadAllAsync(
             host.Materials!, host.Fasteners!, host.Bearings!, host.Standards!, host.Constants!, ct));
         _subjectPicker = new SubjectPicker(composition.DomainContext);
@@ -573,7 +586,7 @@ public sealed class MainWindow : Window
 
         _evidenceWorkspace = new EvidenceWorkspaceView(
             composition.DomainContext, composition.CommandDispatcher, _evidenceFilePicker,
-            () => _projectContext.Current?.Id, _viewCoordinator.NavigateToObject, librariesView)
+            () => _projectContext.Current?.Id, (id, kind) => _ = OpenEvidenceRecordAsync(id, kind), librariesView)
         {
             ParameterPrompt = commandPrompt.Prompt,
             SubjectPrompt = ct => _subjectPicker.PickAsync(ct),
@@ -1356,6 +1369,26 @@ public sealed class MainWindow : Window
         await _viewCoordinator.NavigateToObjectAsync(id, kind).ConfigureAwait(true);
         _inspectorView.SetCurrentSelection(id, kind);
         await _inspectorView.RefreshFromSourceAsync().ConfigureAwait(true);
+    }
+
+    /// <summary>
+    /// Opens an Evidence record's own editor from the Evidence rail area
+    /// (`WP 18.2A`) — Create and opening a row both call this. The Object
+    /// Editor's own document tabs live in the Engineering module's own
+    /// docking layout (<see cref="_engineeringSurface"/>), which
+    /// <see cref="_moduleHost"/> does not show while the Evidence area
+    /// itself is on screen; without switching first, "opens right up"
+    /// (Product Owner guard, `WP 17.9.4`) would open the tab behind a
+    /// module the user is not looking at. Mirrors
+    /// <c>OpenCreatedObjectAsync</c>'s own "switch, then navigate" shape
+    /// for the one respect Evidence genuinely needs it: which module is on
+    /// screen, not which Explorer area or Ribbon tab.
+    /// </summary>
+    private async Task OpenEvidenceRecordAsync(Guid id, string kind)
+    {
+        await _navigator.GoToEngineeringAsync().ConfigureAwait(true);
+        await RenderCurrentModuleAsync().ConfigureAwait(true);
+        await _viewCoordinator.NavigateToObjectAsync(id, kind).ConfigureAwait(true);
     }
 
     private void SetCurrentArea(string? title)
