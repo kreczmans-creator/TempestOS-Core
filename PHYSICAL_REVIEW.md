@@ -112,6 +112,28 @@ Windows).
 > look like it lost your work when it has simply looked in a different
 > place.
 
+> **Check the title bar before you review anything.** The window title is
+> `TempestOS <version> (<commit>)`, for example `TempestOS 0.17.0 (9e52a53)`.
+> The commit must match `git log -1 --format=%h` in the repository you
+> built. If it does not, or the title is just `TempestOS`, you are running
+> a different build: a stale clone, an old `bin/` folder, or the harness.
+> The second smoke test of `v0.17.0` was run against
+> `TempestOS-Core/…/Tempest.Desktop.exe`, a clone of an older commit that
+> had been placed inside the working tree, and its rail had no
+> *Engineering Calculations* entry. Keep no second clone inside the
+> working tree.
+
+> **One instance per data folder.** A second launch over the same
+> `persistence-data/` is refused with a message naming the folder (§4).
+> `Tempest.Harness` counts as an instance: if it is running from the
+> repository root, the Desktop launched from the same root will fault at
+> start-up. Close every `Tempest.Desktop` and `Tempest.Harness` before
+> launching. On Windows:
+>
+> ```
+> Get-Process Tempest.Desktop, Tempest.Harness -ErrorAction SilentlyContinue | Stop-Process
+> ```
+
 `Tempest.Harness` is **not** a second application — it is the Internal
 Engineering Harness, a console verification tool
 ([`ADR-0101`](docs/adr/ADR-0101-tempest-app-workspaceshell-is-tempestos-internal-engineering-harness-not-a-shipped-product.md),

@@ -125,6 +125,9 @@ second person could pick up on day one.
   node collapsed, and nothing opened. A reload of the Explorer now also
   keeps whatever you had expanded. A Requirement opens in its own
   discipline view rather than the generic editor (`TD-41`).
+- **The build is in the title bar**: "TempestOS 0.17.0 (9e52a53)", the
+  version and the short commit (`WP 17.9.4`). The second smoke test was
+  run against a stale clone's executable and nothing on screen said so.
 
 ## What shipped, by Work Package
 

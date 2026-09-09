@@ -136,7 +136,10 @@ public sealed class MainWindow : Window
         var composition = new DesktopCompositionRoot(services);
         _diagnostics = composition.Diagnostics;
 
-        Title = "TempestOS";
+        // The build is in the title bar (`WP 17.9.4`): version and short
+        // commit. The second Windows smoke test was run against a stale
+        // clone's executable, and nothing on screen said so.
+        Title = $"TempestOS {DescribeBuild(services)}";
         MinWidth = 960;
         MinHeight = 600;
 
@@ -1248,6 +1251,21 @@ public sealed class MainWindow : Window
     /// cards, the default first-area selection on startup) keeps both in
     /// sync without each needing its own separate call.
     /// </summary>
+    /// <summary>"0.17.0 (9e52a53)": the platform's semantic version with the build metadata shortened to a commit prefix, or just the version when there is none.</summary>
+    internal static string DescribeBuild(Tempest.Core.DependencyInjection.ITempestServiceProvider services)
+    {
+        var version = (services.GetService(typeof(Tempest.Core.Versioning.IPlatformVersionProvider)) as Tempest.Core.Versioning.IPlatformVersionProvider)?.Version.SemanticVersion;
+        if (string.IsNullOrWhiteSpace(version))
+            return string.Empty;
+
+        var plus = version.IndexOf('+', StringComparison.Ordinal);
+        if (plus < 0)
+            return version;
+
+        var metadata = version[(plus + 1)..];
+        return $"{version[..plus]} ({(metadata.Length > 7 ? metadata[..7] : metadata)})";
+    }
+
     /// <summary>
     /// Takes the user to an object they just made (`WP 17.9.4`): the
     /// Explorer switches to the area that lists its Kind, reloads, expands
