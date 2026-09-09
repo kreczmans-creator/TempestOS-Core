@@ -1,37 +1,41 @@
 using Tempest.Core.EngineeringAssets;
 using Tempest.Core.EngineeringAssets.CalculationPacks;
-using Tempest.Core.EngineeringAssets.DesignReviews;
 using Tempest.Core.EngineeringAssets.Templates;
-using Tempest.Core.EngineeringAssets.TechnicalDocumentation;
 using Tempest.Core.EngineeringAssets.Verification;
 using Tempest.Core.Materials;
 
 namespace Tempest.Core.ReferenceData.Seeding.Datasets;
 
 /// <summary>
-/// One of each kind of engineering asset, built around the material data
-/// this corpus actually holds.
+/// One of each kept kind of engineering asset, built around the material
+/// data this corpus actually holds.
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>Five assets, not a corpus.</b> The point is to prove the asset
+/// <b>Three assets, not a corpus.</b> The point is to prove the asset
 /// structures can carry real engineering work that reaches back into the
 /// reference libraries — not to stock a document management system. One
-/// template, one calculation pack, one verification artefact, one design
-/// review and one technical document, all about the same bracket, so that
-/// the links between them are real links and not five unrelated examples.
+/// template, one calculation pack and one verification artefact, all
+/// about the same bracket, so that the links between them are real links
+/// and not three unrelated examples.
+/// </para>
+/// <para>
+/// WP 18.0C (D-028): this used to also build one design review and one
+/// technical document; those two kinds are frozen to
+/// <c>src/Frozen/Tempest.Core.EngineeringAssets</c>, and the matching
+/// half of this dataset moved with them, into
+/// <c>src/Frozen/Tempest.Core.EngineeringAssets/ReferenceData/Seeding/
+/// Datasets/EngineeringAssetSeed.cs</c>.
 /// </para>
 /// <para>
 /// <b>Every one of these is AUTHORED, and every one is unfinished on
 /// purpose.</b> Tempest Design Engineering wrote them; no external source
 /// says any of it. The calculation pack has inputs pinned to real material
-/// revisions but records no execution, the verification artefact is
-/// <see cref="VerificationStanding.NotPerformed"/>, and the design review
-/// is <see cref="ReviewOutcome.NotConcluded"/> with no participants — all
-/// because none of those things has happened. Filling them in with
-/// plausible results would turn a demonstration of structure into a
-/// fabricated engineering record, which is the one thing an engineering
-/// platform must never contain.
+/// revisions but records no execution, and the verification artefact is
+/// <see cref="VerificationStanding.NotPerformed"/> — both because neither
+/// has happened. Filling them in with plausible results would turn a
+/// demonstration of structure into a fabricated engineering record, which
+/// is the one thing an engineering platform must never contain.
 /// </para>
 /// <para>
 /// <b>The pins are resolved, not hardcoded.</b> A calculation that says it
@@ -53,11 +57,12 @@ public sealed class EngineeringAssetSeed
     /// <summary>The identity of the bracket verification artefact.</summary>
     public const string VerificationRecordId = "ver-bracket-yield-margin";
 
-    /// <summary>The identity of the bracket design review pack.</summary>
-    public const string DesignReviewRecordId = "drp-bracket-preliminary";
-
-    /// <summary>The identity of the bracket material selection note.</summary>
-    public const string TechnicalDocumentRecordId = "doc-bracket-material-selection";
+    // WP 18.0C (D-028): DesignReviewRecordId/TechnicalDocumentRecordId and
+    // the DesignReviews/TechnicalDocuments datasets they identified moved
+    // to src/Frozen/Tempest.Core.EngineeringAssets/ReferenceData/Seeding/
+    // Datasets/EngineeringAssetSeed.cs alongside DesignReviews/ and
+    // TechnicalDocumentation/ themselves; Templates/CalculationPacks/
+    // Verification are the three kept kinds this dataset still seeds.
 
     private const string TemplateReference = "TDE-TPL-CALC-001";
 
@@ -78,14 +83,10 @@ public sealed class EngineeringAssetSeed
 
     private EngineeringAssetSeed(
         IReferenceSeed<CalculationPack> calculationPacks,
-        IReferenceSeed<VerificationArtefact> verificationArtefacts,
-        IReferenceSeed<DesignReviewPack> designReviews,
-        IReferenceSeed<TechnicalDocument> technicalDocuments)
+        IReferenceSeed<VerificationArtefact> verificationArtefacts)
     {
         CalculationPacks = calculationPacks;
         VerificationArtefacts = verificationArtefacts;
-        DesignReviews = designReviews;
-        TechnicalDocuments = technicalDocuments;
     }
 
     /// <summary>The calculation pack dataset.</summary>
@@ -93,12 +94,6 @@ public sealed class EngineeringAssetSeed
 
     /// <summary>The verification artefact dataset.</summary>
     public IReferenceSeed<VerificationArtefact> VerificationArtefacts { get; }
-
-    /// <summary>The design review dataset.</summary>
-    public IReferenceSeed<DesignReviewPack> DesignReviews { get; }
-
-    /// <summary>The technical document dataset.</summary>
-    public IReferenceSeed<TechnicalDocument> TechnicalDocuments { get; }
 
     /// <summary>
     /// Builds the asset datasets against the material records currently in
@@ -110,15 +105,14 @@ public sealed class EngineeringAssetSeed
     /// <param name="requirement">
     /// The requirement the verification artefact verifies. Pass
     /// <see langword="null"/> where no requirement has been written: the
-    /// verification dataset is then empty and the design review carries no
-    /// verification reference, because a verification artefact that names
-    /// no real requirement is a dangling claim. The model enforces this —
-    /// <see cref="VerifiedRequirement"/> refuses an empty identity — and
-    /// the seed respects the refusal rather than minting a plausible
-    /// <see cref="Guid"/> to get past it.
+    /// verification dataset is then empty, because a verification
+    /// artefact that names no real requirement is a dangling claim. The
+    /// model enforces this — <see cref="VerifiedRequirement"/> refuses an
+    /// empty identity — and the seed respects the refusal rather than
+    /// minting a plausible <see cref="Guid"/> to get past it.
     /// </param>
     /// <param name="cancellationToken">A token observed while reading.</param>
-    /// <returns>The four remaining asset datasets.</returns>
+    /// <returns>The two remaining asset datasets.</returns>
     /// <exception cref="ReferenceRecordNotFoundException">A record the assets cite is not registered.</exception>
     public static async Task<EngineeringAssetSeed> CreateAsync(
         IReferenceDataCatalog<MaterialDefinition> materials,
@@ -130,22 +124,18 @@ public sealed class EngineeringAssetSeed
         ArgumentNullException.ThrowIfNull(templates);
 
         var aluminium = await RequireAsync(materials, MaterialSeed.Aluminium6082T6, cancellationToken).ConfigureAwait(false);
-        var steel = await RequireAsync(materials, MaterialSeed.S355J2, cancellationToken).ConfigureAwait(false);
 
         var template = await templates.FindAsync(TemplateRecordId, cancellationToken).ConfigureAwait(false)
             ?? throw new ReferenceRecordNotFoundException(templates.LibraryName, TemplateRecordId);
 
         var aluminiumPin = ReferencePin.For(materials.LibraryName, aluminium);
-        var steelPin = ReferencePin.For(materials.LibraryName, steel);
         var templatePin = ReferencePin.For(templates.LibraryName, template);
 
         return new EngineeringAssetSeed(
             new Seed<CalculationPack>("Bracket stress check", [BuildCalculationPack(aluminiumPin, templatePin)]),
             new Seed<VerificationArtefact>(
                 "Bracket yield margin verification",
-                requirement is null ? [] : [BuildVerification(aluminiumPin, requirement)]),
-            new Seed<DesignReviewPack>("Bracket preliminary design review", [BuildDesignReview(requirement)]),
-            new Seed<TechnicalDocument>("Bracket material selection note", [BuildTechnicalDocument(aluminiumPin, steelPin)]));
+                requirement is null ? [] : [BuildVerification(aluminiumPin, requirement)]));
     }
 
     private static async Task<IReferenceRecord<MaterialDefinition>> RequireAsync(
@@ -311,63 +301,6 @@ public sealed class EngineeringAssetSeed
             },
             SeedSources.TempestAuthored("Verification artefact library",
                 "Written to demonstrate a verification artefact honestly reporting that nothing has been verified."));
-
-    private static ReferenceSeedRecord<DesignReviewPack> BuildDesignReview(VerifiedRequirement? requirement) =>
-        new(DesignReviewRecordId,
-            new DesignReviewPack
-            {
-                Reference = "TDE-DRP-001",
-                Subject = Subject,
-                Kind = DesignReviewKind.Preliminary,
-                CalculationPackReferences = [CalculationPackReference],
-                VerificationArtefactReferences = requirement is null ? [] : [VerificationReference],
-                RequirementIds = requirement is null ? [] : [requirement.RequirementId],
-                Outcome = ReviewOutcome.NotConcluded,
-                OutcomeRationale = "The review has not been held. The pack exists to collect what would be "
-                    + "reviewed, not to record a meeting that did not happen.",
-                Observations =
-                [
-                    new ReviewObservation(
-                        "OBS-1",
-                        "The requirement states a margin must be positive but sets no design load, so the "
-                        + "calculation cannot be completed and the verification has nothing to verify. This is "
-                        + "the first thing the review would raise.",
-                        ObservationSeverity.Major),
-                    new ReviewObservation(
-                        "OBS-2",
-                        "The material record the calculation pins is unverified reference data in Draft state. "
-                        + "Releasing a design on it would need that record checked against EN 755-2 first.",
-                        ObservationSeverity.Minor),
-                ],
-                Notes = "AUTHORED by Tempest Design Engineering. No participants are listed because nobody "
-                    + "attended; an empty participant list is the true record of a review that has not been "
-                    + "held, and populating it with plausible names would be a fabricated meeting minute.",
-            },
-            SeedSources.TempestAuthored("Design review library",
-                "Written to demonstrate a review pack assembling real linked assets before a review takes place."));
-
-    private static ReferenceSeedRecord<TechnicalDocument> BuildTechnicalDocument(
-        ReferencePin aluminiumPin,
-        ReferencePin steelPin) =>
-        new(TechnicalDocumentRecordId,
-            new TechnicalDocument
-            {
-                Reference = "TDE-DOC-001",
-                Title = "Mounting bracket — material selection note",
-                Type = TechnicalDocumentType.DesignReport,
-                Status = DocumentStatus.Draft,
-                IssueRevision = "A",
-                Notes = "AUTHORED by Tempest Design Engineering. Compares two candidate materials held in the "
-                    + "reference library — 6082-T6 at 260 MPa minimum proof stress and 2.70 g/cm3, and S355J2 "
-                    + "at 355 MPa and 7.85 g/cm3 — and records that the choice cannot be made until a "
-                    + "requirement states whether mass or strength governs. Pinned to both material records at "
-                    + "the revisions read, so the comparison can be reconstructed even after either record is "
-                    + "revised. Pins: "
-                    + $"{aluminiumPin.Library}/{aluminiumPin.RecordId}@r{aluminiumPin.RevisionNumber}, "
-                    + $"{steelPin.Library}/{steelPin.RecordId}@r{steelPin.RevisionNumber}.",
-            },
-            SeedSources.TempestAuthored("Technical documentation library",
-                "Written to demonstrate a technical document standing on pinned reference data."));
 
     private sealed class Seed<TDefinition>(string datasetName, IReadOnlyList<ReferenceSeedRecord<TDefinition>> records)
         : IReferenceSeed<TDefinition>

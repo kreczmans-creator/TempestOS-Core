@@ -1,7 +1,5 @@
 using Tempest.Core.Configuration;
 using Tempest.Core.EngineeringAssets.CalculationPacks;
-using Tempest.Core.EngineeringAssets.DesignReviews;
-using Tempest.Core.EngineeringAssets.TechnicalDocumentation;
 using Tempest.Core.EngineeringAssets.Templates;
 using Tempest.Core.EngineeringAssets.Verification;
 using Tempest.Core.Persistence;
@@ -11,10 +9,12 @@ using Tempest.Core.Tests.Plugins;
 
 namespace Tempest.Core.Tests.Runtime;
 
-// Registration validation for `Group E` (P05): proves the engineering-
-// asset layer is wired into the real, unmodified TempestHost, that each
-// library is one instance over one store, and that a reasoning service
-// reads the same library the container hands out.
+// Registration validation for the kept half of `Group E` (P05):
+// Templates, CalculationPacks, Verification. WP 18.0C (D-028): the
+// DesignReviews/TechnicalDocumentation rows moved to
+// tests/Frozen/Tempest.Core.Tests/Runtime/
+// EngineeringAssetsHostRegistrationTests.cs the same day those libraries
+// were frozen.
 public class EngineeringAssetsHostRegistrationTests
 {
     private static async Task RunAgainstRunningHostAsync(string rootPath, Func<ITempestHost, Task> body)
@@ -44,11 +44,7 @@ public class EngineeringAssetsHostRegistrationTests
     [InlineData(typeof(IVerificationArtefactCatalog), typeof(VerificationArtefactCatalog))]
     [InlineData(typeof(IVerificationArtefactValidationService), typeof(VerificationArtefactValidationService))]
     [InlineData(typeof(IVerificationTraceService), typeof(VerificationTraceService))]
-    [InlineData(typeof(IDesignReviewCatalog), typeof(DesignReviewCatalog))]
-    [InlineData(typeof(IDesignReviewValidationService), typeof(DesignReviewValidationService))]
-    [InlineData(typeof(ITechnicalDocumentCatalog), typeof(TechnicalDocumentCatalog))]
-    [InlineData(typeof(ITechnicalDocumentValidationService), typeof(TechnicalDocumentValidationService))]
-    public async Task Host_RegistersEveryEngineeringAssetLibraryAndService(Type serviceType, Type expected)
+    public async Task Host_RegistersEveryKeptEngineeringAssetLibraryAndService(Type serviceType, Type expected)
     {
         using var temp = new TempDirectory();
 
@@ -61,7 +57,7 @@ public class EngineeringAssetsHostRegistrationTests
     }
 
     [Fact]
-    public async Task EveryAssetLibrary_IsAnOrdinarySingleton()
+    public async Task EveryKeptAssetLibrary_IsAnOrdinarySingleton()
     {
         // Two catalogues over one store would each hold their own write
         // locks, and the shared base's check-then-write atomicity would be
@@ -72,9 +68,7 @@ public class EngineeringAssetsHostRegistrationTests
         {
             foreach (var serviceType in new[]
                      {
-                         typeof(ITemplateCatalog), typeof(ICalculationPackCatalog),
-                         typeof(IVerificationArtefactCatalog), typeof(IDesignReviewCatalog),
-                         typeof(ITechnicalDocumentCatalog),
+                         typeof(ITemplateCatalog), typeof(ICalculationPackCatalog), typeof(IVerificationArtefactCatalog),
                      })
             {
                 Assert.Same(host.Services!.GetService(serviceType), host.Services!.GetService(serviceType));

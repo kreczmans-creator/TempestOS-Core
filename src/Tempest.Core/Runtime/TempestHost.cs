@@ -13,8 +13,6 @@ using Tempest.Core.EngineeringDomain;
 using Tempest.Core.BusinessOperations.Crm;
 using Tempest.Core.BusinessOperations.Finance;
 using Tempest.Core.EngineeringAssets.CalculationPacks;
-using Tempest.Core.EngineeringAssets.DesignReviews;
-using Tempest.Core.EngineeringAssets.TechnicalDocumentation;
 using Tempest.Core.EngineeringAssets.Templates;
 using Tempest.Core.EngineeringAssets.Verification;
 using Tempest.Core.BusinessGovernance.Pricing;
@@ -647,17 +645,21 @@ public sealed class TempestHost : ITempestHost
         // `src/Frozen/README.md`.
 
         // `Group E` (P05): engineering assets. Templates, calculation
-        // packs, verification artefacts, design review packs and technical
-        // documentation are authored, evidenced, reviewed, revisioned and
-        // superseded records like every other library, and sit on the same
-        // shared ReferenceDataCatalog<T> base (`ADR-0136`).
+        // packs and verification artefacts are authored, evidenced,
+        // reviewed, revisioned and superseded records like every other
+        // library, and sit on the same shared ReferenceDataCatalog<T>
+        // base (`ADR-0136`).
         //
-        // Registered after `P01`, `P03` and `P07`, all of which `P05`
-        // references and none of which it duplicates: `E2` links the
+        // Registered after `P01` and `P07`, both of which `P05`
+        // references and neither of which it duplicates: `E2` links the
         // platform's own calculation records rather than recomputing them,
-        // `E3` references `Tempest.Core.Requirements` rather than copying a
-        // requirement, and `E5` points at `EngineeringData` documents
-        // rather than storing content a second time.
+        // and `E3` references `Tempest.Core.Requirements` rather than
+        // copying a requirement.
+        //
+        // WP 18.0C (D-028): design review packs (E4) and technical
+        // documentation (E5) were frozen to
+        // `src/Frozen/Tempest.Core.EngineeringAssets` — unreachable from
+        // any shipped surface. See `src/Frozen/README.md`.
         services.Singleton<ITemplateCatalog, TemplateCatalog>();
         services.Singleton<ITemplateValidationService, TemplateValidationService>();
 
@@ -667,12 +669,6 @@ public sealed class TempestHost : ITempestHost
         services.Singleton<IVerificationArtefactCatalog, VerificationArtefactCatalog>();
         services.Singleton<IVerificationArtefactValidationService, VerificationArtefactValidationService>();
         services.Singleton<IVerificationTraceService, VerificationTraceService>();
-
-        services.Singleton<IDesignReviewCatalog, DesignReviewCatalog>();
-        services.Singleton<IDesignReviewValidationService, DesignReviewValidationService>();
-
-        services.Singleton<ITechnicalDocumentCatalog, TechnicalDocumentCatalog>();
-        services.Singleton<ITechnicalDocumentValidationService, TechnicalDocumentValidationService>();
 
         // `Group F` (P06, Knowledge) was frozen to
         // `src/Frozen/Tempest.Core.Knowledge` by `WP 18.0C` (`D-028`):
