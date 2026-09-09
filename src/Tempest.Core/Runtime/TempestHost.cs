@@ -10,6 +10,7 @@ using Tempest.Core.DependencyInjection;
 using Tempest.Core.Diagnostics;
 using Tempest.Core.EngineeringData;
 using Tempest.Core.EngineeringDomain;
+using Tempest.Core.Evidence;
 using Tempest.Core.BusinessGovernance.Assets;
 using Tempest.Core.BusinessOperations.Crm;
 using Tempest.Core.BusinessOperations.Finance;
@@ -899,6 +900,13 @@ public sealed class TempestHost : ITempestHost
         // scoped out of.
         services.Singleton<IRequirementsReconciliationService, RequirementsReconciliationService>();
         services.Singleton<IMaterialCatalogReconciliationService, MaterialCatalogReconciliationService>();
+
+        // `ADR-0148` (`v0.18.0` "Evidence and Check", `WP 18.0A`). Evidence
+        // records the engineer's own work — files, citations, declared
+        // figures, check and issue — over the substrate the five reference
+        // libraries above and Identity/Configuration/Settings already
+        // provide, registered here because it depends on all of them.
+        services.Singleton<IEvidenceService, EvidenceService>();
 
         // Composition Root pattern (ADR-0009), like Configuration/Logging/
         // PlatformVersionProvider above: DiagnosticsProvider needs references
