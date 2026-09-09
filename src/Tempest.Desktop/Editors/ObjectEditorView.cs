@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.IO;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
@@ -44,7 +45,10 @@ namespace Tempest.Desktop.Editors;
 public sealed record EvidenceEditorSupport(
     IFilePicker FilePicker,
     Func<CancellationToken, Task<EvidenceLibraryRow?>> PickCitationAsync,
-    Func<CancellationToken, Task<DeclaredFigureInput?>> PickDeclaredFigureAsync);
+    Func<CancellationToken, Task<DeclaredFigureInput?>> PickDeclaredFigureAsync,
+    Func<CancellationToken, Task<Guid?>> PickSubjectAsync,
+    Func<CancellationToken, Task<CheckEntryInput?>> PickCheckAsync,
+    Func<CancellationToken, Task<IssueEntryInput?>> PickIssueAsync);
 
 /// <summary>
 /// The Object Editor Framework's own real, tabbed editor control (`WP
@@ -196,6 +200,8 @@ public sealed class ObjectEditorView : UserControl
 
     // `WP 18.2A` — Evidence's own declared sections (`ADR-0148`, §4).
     private readonly StackPanel _evidenceSubjectPanel = new() { Spacing = DesignTokens.SpaceXs };
+    private readonly Button _changeSubjectButton = new() { Content = "Change Subject", MinHeight = DesignTokens.MinControlSize, IsVisible = false };
+    private readonly TextBlock _evidenceSubjectStatus = new() { FontSize = DesignTokens.FontSizeCaption, Opacity = 0.8 };
     private Expander _evidenceSubjectSection = null!;
 
     private readonly StackPanel _evidenceCitationsPanel = new() { Spacing = DesignTokens.SpaceXs };
@@ -208,13 +214,21 @@ public sealed class ObjectEditorView : UserControl
     private readonly TextBlock _evidenceFiguresStatus = new() { FontSize = DesignTokens.FontSizeCaption, Opacity = 0.8 };
     private Expander _evidenceFiguresSection = null!;
 
-    // Status + Check + Issue, read-only (`WP 18.2B` builds the Check and
-    // Issue actions themselves) — Evidence's own specialised replacement
+    // Status + Check + Issue (`WP 18.2B` builds the Check, Issue and
+    // Revise actions themselves) — Evidence's own specialised replacement
     // for the generic Lifecycle section, suppressed for this Kind so a
     // reader is never shown the eight-value canonical vocabulary this
     // Kind's own four-value one specialises (`Evidence.Status`'s own
-    // remarks).
+    // remarks). Each action button is visible only when
+    // `EvidenceStatusTransitions` actually permits it from the record's
+    // own current status (`Check` from Draft, `Issue` from Checked,
+    // `Revise` from Issued) — never a disabled button offering a move the
+    // service would refuse anyway.
     private readonly StackPanel _evidenceLifecyclePanel = new() { Spacing = DesignTokens.SpaceXs };
+    private readonly Button _checkButton = new() { Content = "Check", MinHeight = DesignTokens.MinControlSize, IsVisible = false };
+    private readonly Button _issueButton = new() { Content = "Issue", MinHeight = DesignTokens.MinControlSize, IsVisible = false };
+    private readonly Button _reviseButton = new() { Content = "Revise", MinHeight = DesignTokens.MinControlSize, IsVisible = false };
+    private readonly TextBlock _evidenceLifecycleStatus = new() { FontSize = DesignTokens.FontSizeCaption, Opacity = 0.8 };
     private Expander _evidenceLifecycleSection = null!;
 
     private readonly StackPanel _evidenceAuditPanel = new() { Spacing = DesignTokens.SpaceXs };
@@ -388,6 +402,10 @@ public sealed class ObjectEditorView : UserControl
         _addFileViaPickerButton.Classes.Add(ChromeStyles.Primary);
         _citeButton.Classes.Add(ChromeStyles.Primary);
         _declareFigureButton.Classes.Add(ChromeStyles.Primary);
+        _changeSubjectButton.Classes.Add(ChromeStyles.Subtle);
+        _checkButton.Classes.Add(ChromeStyles.Primary);
+        _issueButton.Classes.Add(ChromeStyles.Primary);
+        _reviseButton.Classes.Add(ChromeStyles.Subtle);
 
         // PropertyChanged, not the TextChanged routed event — fires
         // reliably for every Text value change regardless of source (real
@@ -415,6 +433,10 @@ public sealed class ObjectEditorView : UserControl
         _addFileViaPickerButton.Click += async (_, _) => await OnAddFileViaPickerAsync().ConfigureAwait(true);
         _citeButton.Click += async (_, _) => await OnCiteAsync().ConfigureAwait(true);
         _declareFigureButton.Click += async (_, _) => await OnDeclareFigureAsync().ConfigureAwait(true);
+        _changeSubjectButton.Click += async (_, _) => await OnChangeSubjectAsync().ConfigureAwait(true);
+        _checkButton.Click += async (_, _) => await OnCheckAsync().ConfigureAwait(true);
+        _issueButton.Click += async (_, _) => await OnIssueAsync().ConfigureAwait(true);
+        _reviseButton.Click += async (_, _) => await OnReviseAsync().ConfigureAwait(true);
     }
 
     /// <summary>Gets whether this editor holds local, buffered edits (Name and/or Content) not yet committed via Save — this Work Package's own genuine, buffered dirty-state (distinct from and unrelated to <see cref="IWorkspaceView.IsDirty"/>, which remains permanently <see langword="false"/>, by design, unchanged — see class remarks).</summary>
@@ -609,7 +631,11 @@ public sealed class ObjectEditorView : UserControl
         _whereUsedSection.IsVisible = false;
 
         // `WP 18.2A` — Evidence's own declared sections (`ADR-0148`, §4).
-        _evidenceSubjectSection = BuildSection("Subject", _evidenceSubjectPanel);
+        var subjectBody = new StackPanel { Spacing = DesignTokens.SpaceXs };
+        subjectBody.Children.Add(_evidenceSubjectPanel);
+        subjectBody.Children.Add(_changeSubjectButton);
+        subjectBody.Children.Add(_evidenceSubjectStatus);
+        _evidenceSubjectSection = BuildSection("Subject", subjectBody);
         _evidenceSubjectSection.IsVisible = false;
 
         var citationsBody = new StackPanel { Spacing = DesignTokens.SpaceXs };
@@ -626,7 +652,18 @@ public sealed class ObjectEditorView : UserControl
         _evidenceFiguresSection = BuildSection("Declared figures", figuresBody);
         _evidenceFiguresSection.IsVisible = false;
 
-        _evidenceLifecycleSection = BuildSection("Lifecycle", _evidenceLifecyclePanel);
+        // `WP 18.2B`, §1/§2/§3: the Check/Issue/Revise actions themselves,
+        // each visible only when the record's own current status permits
+        // it (`PopulateEvidenceSectionsAsync`'s own gate).
+        var lifecycleActions = new StackPanel { Orientation = Avalonia.Layout.Orientation.Horizontal, Spacing = DesignTokens.SpaceSm };
+        lifecycleActions.Children.Add(_checkButton);
+        lifecycleActions.Children.Add(_issueButton);
+        lifecycleActions.Children.Add(_reviseButton);
+        var lifecycleBody = new StackPanel { Spacing = DesignTokens.SpaceXs };
+        lifecycleBody.Children.Add(_evidenceLifecyclePanel);
+        lifecycleBody.Children.Add(lifecycleActions);
+        lifecycleBody.Children.Add(_evidenceLifecycleStatus);
+        _evidenceLifecycleSection = BuildSection("Lifecycle", lifecycleBody);
         _evidenceLifecycleSection.IsVisible = false;
 
         _evidenceAuditSection = BuildSection("Audit", _evidenceAuditPanel);
@@ -1071,6 +1108,8 @@ public sealed class ObjectEditorView : UserControl
         _evidenceSubjectPanel.Children.Add(evidence.SubjectId is { } subjectId
             ? await BuildObjectReferenceRowAsync(subjectId).ConfigureAwait(true)
             : new TextBlock { Text = "(no subject tagged)", Opacity = 0.7 });
+        _changeSubjectButton.IsVisible = _evidenceSupport is not null;
+        _evidenceSubjectStatus.Text = string.Empty;
 
         // Citations.
         _evidenceCitationsSection.IsVisible = true;
@@ -1129,6 +1168,14 @@ public sealed class ObjectEditorView : UserControl
             TextWrapping = TextWrapping.Wrap,
             FontSize = DesignTokens.FontSizeBody,
         });
+
+        // `WP 18.2B`: each action visible only when
+        // `EvidenceStatusTransitions` actually permits it from here —
+        // Check from Draft, Issue from Checked, Revise from Issued.
+        _checkButton.IsVisible = _evidenceSupport is not null && evidence.Status == Core.Evidence.EvidenceStatus.Draft;
+        _issueButton.IsVisible = _evidenceSupport is not null && evidence.Status == Core.Evidence.EvidenceStatus.Checked;
+        _reviseButton.IsVisible = _evidenceSupport is not null && evidence.Status == Core.Evidence.EvidenceStatus.Issued;
+        _evidenceLifecycleStatus.Text = string.Empty;
 
         // Audit.
         _evidenceAuditSection.IsVisible = true;
@@ -1245,6 +1292,116 @@ public sealed class ObjectEditorView : UserControl
         if (result.Succeeded)
             await RefreshAsync().ConfigureAwait(true);
         _evidenceFiguresStatus.Text = message;
+        ActionCompleted?.Invoke(message, ActionOutcome.From(result.Succeeded));
+    }
+
+    /// <summary>
+    /// Change Subject: collects a Part, Assembly, Requirement or
+    /// Deliverable via the real Subject picker
+    /// (<see cref="EvidenceEditorSupport.PickSubjectAsync"/>, the identical
+    /// <see cref="Views.SubjectPicker"/> `18.2A`'s own Create form uses)
+    /// and dispatches <see cref="SetEvidenceSubjectCommand"/>. A refusal —
+    /// the record is Issued — shows here and, via
+    /// <see cref="ActionCompleted"/>, in the shell's own status bar
+    /// (`WP 18.2B`, closing a gap `WP 18.2A` disclosed).
+    /// </summary>
+    private async Task OnChangeSubjectAsync()
+    {
+        if (_evidenceSupport is null)
+            return;
+
+        var picked = await _evidenceSupport.PickSubjectAsync(CancellationToken.None).ConfigureAwait(true);
+
+        var result = await _commandDispatcher.DispatchAsync(
+            new SetEvidenceSubjectCommand(_objectId, _objectKind, picked), CancellationToken.None).ConfigureAwait(true);
+
+        var message = result.Succeeded ? result.Message ?? "Subject changed." : result.Message ?? "The subject change was refused.";
+        if (result.Succeeded)
+            await RefreshAsync().ConfigureAwait(true);
+        _evidenceSubjectStatus.Text = message;
+        ActionCompleted?.Invoke(message, ActionOutcome.From(result.Succeeded));
+    }
+
+    /// <summary>
+    /// Check: collects the checker's name, organisation, statement and
+    /// outcome via <see cref="EvidenceEditorSupport.PickCheckAsync"/> and
+    /// dispatches <see cref="RecordEvidenceCheckCommand"/> — the client's
+    /// own review, entered by hand, unless <c>Evidence:IndependentCheck</c>
+    /// is on, in which case the acting principal (resolved server-side, never
+    /// asked here) stands as the checker and the same principal as the
+    /// author is refused (`WP 18.2B`, §1).
+    /// </summary>
+    private async Task OnCheckAsync()
+    {
+        if (_evidenceSupport is null)
+            return;
+
+        var input = await _evidenceSupport.PickCheckAsync(CancellationToken.None).ConfigureAwait(true);
+        if (input is null)
+        {
+            _evidenceLifecycleStatus.Text = "Check was cancelled.";
+            return;
+        }
+
+        var result = await _commandDispatcher.DispatchAsync(
+            new RecordEvidenceCheckCommand(_objectId, _objectKind, input.CheckerName, input.CheckerOrganisation, input.Statement, input.Outcome),
+            CancellationToken.None).ConfigureAwait(true);
+
+        var message = result.Succeeded ? result.Message ?? "Checked." : result.Message ?? "The check was refused.";
+        if (result.Succeeded)
+            await RefreshAsync().ConfigureAwait(true);
+        _evidenceLifecycleStatus.Text = message;
+        ActionCompleted?.Invoke(message, ActionOutcome.From(result.Succeeded));
+    }
+
+    /// <summary>
+    /// Issue: collects the issue reference, revision and client via
+    /// <see cref="EvidenceEditorSupport.PickIssueAsync"/> and dispatches
+    /// <see cref="IssueEvidenceCommand"/>, which — where a renderer is
+    /// available — also renders and attaches the issue sheet
+    /// (`WP 18.2B`, §2). The attached sheet appears in the Files section's
+    /// own generic Attachments list (unchanged from `WP 18.2A`), openable
+    /// there through the existing document viewer and exportable through
+    /// the existing file picker; nothing new is built here for either.
+    /// </summary>
+    private async Task OnIssueAsync()
+    {
+        if (_evidenceSupport is null)
+            return;
+
+        var input = await _evidenceSupport.PickIssueAsync(CancellationToken.None).ConfigureAwait(true);
+        if (input is null)
+        {
+            _evidenceLifecycleStatus.Text = "Issue was cancelled.";
+            return;
+        }
+
+        var result = await _commandDispatcher.DispatchAsync(
+            new IssueEvidenceCommand(_objectId, _objectKind, input.IssueReference, input.Revision, input.Client),
+            CancellationToken.None).ConfigureAwait(true);
+
+        var message = result.Succeeded ? result.Message ?? "Issued." : result.Message ?? "The issue was refused.";
+        if (result.Succeeded)
+            await RefreshAsync().ConfigureAwait(true);
+        _evidenceLifecycleStatus.Text = message;
+        ActionCompleted?.Invoke(message, ActionOutcome.From(result.Succeeded));
+    }
+
+    /// <summary>
+    /// Revise: reopens the selected, issued evidence as a new Draft
+    /// revision (<see cref="ReviseEvidenceCommand"/>); the issued revision
+    /// stays readable, unchanged, via its own revision history
+    /// (`WP 18.2B`, §3). No form of its own — nothing needs collecting.
+    /// </summary>
+    private async Task OnReviseAsync()
+    {
+        var result = await _commandDispatcher.DispatchAsync(
+            new ReviseEvidenceCommand(_objectId, _objectKind), CancellationToken.None).ConfigureAwait(true);
+
+        var message = result.Succeeded ? result.Message ?? "Revised." : result.Message ?? "The revision was refused.";
+        if (result.Succeeded)
+            await RefreshAsync().ConfigureAwait(true);
+        _evidenceLifecycleStatus.Text = message;
         ActionCompleted?.Invoke(message, ActionOutcome.From(result.Succeeded));
     }
 
@@ -1549,6 +1706,23 @@ public sealed class ObjectEditorView : UserControl
                     row.Children.Add(open);
                 }
 
+                // `WP 18.2B`, §2: "Export saves [the issue sheet] through
+                // IFilePicker.PickSavePathAsync" — offered for every
+                // attachment on an Evidence record, not the issue sheet
+                // alone, since nothing distinguishes it from any other
+                // attached file once it is one, and a second, narrower
+                // mechanism naming just that one attachment would only
+                // duplicate this one.
+                if (_evidenceSupport is not null && string.Equals(_objectKind, Core.Evidence.Evidence.CanonicalKind, StringComparison.Ordinal))
+                {
+                    var export = new Button { Content = "Export", Padding = new Thickness(10, 1), FontSize = DesignTokens.FontSizeBody };
+                    export.Classes.Add(ChromeStyles.Flat);
+                    var captured = attachment;
+                    Avalonia.Automation.AutomationProperties.SetName(export, $"Export {captured.FileName}");
+                    export.Click += async (_, _) => await OnExportAttachmentAsync(attachable, captured).ConfigureAwait(true);
+                    row.Children.Add(export);
+                }
+
                 _attachmentsListPanel.Children.Add(row);
             }
         }
@@ -1557,6 +1731,46 @@ public sealed class ObjectEditorView : UserControl
         _attachmentContentTypeBox.Text = string.Empty;
         _attachmentSizeBox.Text = string.Empty;
         _attachmentStatusMessage.Text = string.Empty;
+    }
+
+    /// <summary>
+    /// Export: reads one attachment's own verified bytes and saves them
+    /// through <see cref="IFilePicker.PickSavePathAsync"/> (`WP 18.2B`,
+    /// §2) — the mechanism the issue sheet exports through, offered for
+    /// every Evidence attachment rather than that one alone (this row's
+    /// own remarks).
+    /// </summary>
+    private async Task OnExportAttachmentAsync(IHasAttachments attachable, IAttachment attachment)
+    {
+        if (_evidenceSupport is null)
+            return;
+
+        var destination = await _evidenceSupport.FilePicker
+            .PickSavePathAsync(new SavePickerRequest($"Export {attachment.FileName}", attachment.FileName), CancellationToken.None)
+            .ConfigureAwait(true);
+
+        if (destination is null)
+        {
+            _attachmentStatusMessage.Text = "Export was cancelled.";
+            return;
+        }
+
+        var content = await attachable.ReadAttachmentContentAsync(attachment.Id).ConfigureAwait(true);
+        if (!content.IsAvailable)
+        {
+            _attachmentStatusMessage.Text = $"'{attachment.FileName}' could not be read — its stored content is {content.Status}.";
+            ActionCompleted?.Invoke(_attachmentStatusMessage.Text, ActionOutcome.Failed);
+            return;
+        }
+
+        await File.WriteAllBytesAsync(destination, content.Bytes, CancellationToken.None).ConfigureAwait(true);
+
+        // Reading and saving a copy changes nothing in the domain — never
+        // `ActionOutcome.Changed`, which would (wrongly) tell a WorkspaceChanged
+        // subscriber to reload as though a write had happened.
+        var message = $"Exported '{attachment.FileName}' to '{destination}'.";
+        _attachmentStatusMessage.Text = message;
+        ActionCompleted?.Invoke(message, ActionOutcome.NoChange);
     }
 
     private async Task OnAttachAsync()

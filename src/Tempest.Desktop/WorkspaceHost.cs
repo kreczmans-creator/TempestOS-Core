@@ -150,12 +150,18 @@ public sealed class WorkspaceHost : IAsyncDisposable
         // single-source-of-truth gap this Work Package exists to close.
         Workspace = await manager.StartAsync(cancellationToken).ConfigureAwait(false);
 
-        CalculationTemplates = EngineeringWorkspaceComposer.RegisterEngineeringDisciplines(manager, host);
-
         // `WP 18.2B` (part 1): stateless and dependency-free, so it is
         // simply constructed here over nothing, the same `ADR-0103` shape
-        // as every other Desktop-side collaborator.
+        // as every other Desktop-side collaborator. Built *before*
+        // `RegisterEngineeringDisciplines` (part 2) so the Evidence
+        // discipline's own Issue command handler can be wired to a real
+        // renderer at registration time, rather than an
+        // `IIssueSheetRenderer` this class would otherwise have no way to
+        // hand it after the fact — `Tempest.Workspace`'s own composer has
+        // no DI container to add a late instance to.
         IssueSheetRenderer = new Tempest.Desktop.IssueSheets.IssueSheetRenderer();
+
+        CalculationTemplates = EngineeringWorkspaceComposer.RegisterEngineeringDisciplines(manager, host, IssueSheetRenderer);
 
         // ---- The Product Spine (`TD-84`) ----------------------------
         // Module -> Project -> Workspace. Composed here, after the

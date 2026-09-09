@@ -105,6 +105,11 @@ public sealed class MainWindow : Window
     private readonly CitationPicker _citationPicker;
     private readonly SubjectPicker _subjectPicker;
     private readonly DeclaredFigureEntry _declaredFigureEntry;
+
+    // `WP 18.2B`, §1/§2: the Check and Issue entry dialogs the Object
+    // Editor's own Lifecycle actions share, alongside the three above.
+    private readonly CheckEntry _checkEntry;
+    private readonly IssueEntry _issueEntry;
     private readonly IFilePicker _evidenceFilePicker;
     private readonly ProjectDeliveryCoordinator _projectDelivery;
     private readonly ProjectGovernanceCoordinator _projectGovernanceCoordinator;
@@ -335,11 +340,16 @@ public sealed class MainWindow : Window
             host.Materials!, host.Fasteners!, host.Bearings!, host.Standards!, host.Constants!, ct));
         _subjectPicker = new SubjectPicker(composition.DomainContext);
         _declaredFigureEntry = new DeclaredFigureEntry();
+        _checkEntry = new CheckEntry();
+        _issueEntry = new IssueEntry();
 
         var evidenceSupport = new EvidenceEditorSupport(
             _evidenceFilePicker,
             ct => _citationPicker.PickAsync(ct),
-            ct => _declaredFigureEntry.PromptAsync(ct));
+            ct => _declaredFigureEntry.PromptAsync(ct),
+            ct => _subjectPicker.PickAsync(ct),
+            ct => _checkEntry.PromptAsync(ct),
+            ct => _issueEntry.PromptAsync(ct));
 
         _viewCoordinator = new WorkspaceViewCoordinator(
             workspace, manager, composition.DomainContext, composition.CommandDispatcher, composition.RequirementsService, host.CalculationTemplates,
@@ -729,6 +739,8 @@ public sealed class MainWindow : Window
         root.Children.Add(_citationPicker);
         root.Children.Add(_subjectPicker);
         root.Children.Add(_declaredFigureEntry);
+        root.Children.Add(_checkEntry);
+        root.Children.Add(_issueEntry);
         root.Children.Add(_toastHost);
         Content = root;
 
@@ -742,7 +754,7 @@ public sealed class MainWindow : Window
         foreach (var modal in new Border[]
                  {
                      _confirmationDialog, _inputDialog, _messageDialog, _settingsDialog, _macroManagerDialog, _commandPalette,
-                     _citationPicker, _subjectPicker, _declaredFigureEntry,
+                     _citationPicker, _subjectPicker, _declaredFigureEntry, _checkEntry, _issueEntry,
                  })
             TrackModal(modal);
 
