@@ -10,7 +10,6 @@ using Tempest.Core.DependencyInjection;
 using Tempest.Core.Diagnostics;
 using Tempest.Core.EngineeringData;
 using Tempest.Core.EngineeringDomain;
-using Tempest.Core.BusinessGovernance.Assets;
 using Tempest.Core.BusinessOperations.Crm;
 using Tempest.Core.BusinessOperations.Finance;
 using Tempest.Core.EngineeringAssets.CalculationPacks;
@@ -18,12 +17,7 @@ using Tempest.Core.EngineeringAssets.DesignReviews;
 using Tempest.Core.EngineeringAssets.TechnicalDocumentation;
 using Tempest.Core.EngineeringAssets.Templates;
 using Tempest.Core.EngineeringAssets.Verification;
-using Tempest.Core.BusinessGovernance.Contracts;
-using Tempest.Core.BusinessGovernance.Development;
-using Tempest.Core.BusinessGovernance.Finance;
-using Tempest.Core.BusinessGovernance.Operating;
 using Tempest.Core.BusinessGovernance.Pricing;
-using Tempest.Core.BusinessGovernance.Risk;
 using Tempest.Core.Events;
 using Tempest.Core.Fasteners;
 using Tempest.Core.ExportImport;
@@ -634,52 +628,18 @@ public sealed class TempestHost : ITempestHost
         // (`D-028`): unreachable from any shipped surface. See
         // `src/Frozen/README.md`.
 
-        // `Group C` (P07): business governance. Contract templates and
-        // contracts, the risk register and insurance, IP and data assets,
-        // rate cards, financial assumptions and scenarios, the opportunity
-        // pipeline and the operating model are all authored, evidenced,
-        // approved, revisioned and superseded records, so each library sits
-        // on the same shared ReferenceDataCatalog<T> base as `P01` and
-        // `P02` rather than growing a third lifecycle (`ADR-0129`).
+        // `Group C` (P07): business governance. Rate cards are authored,
+        // evidenced, approved, revisioned and superseded records, so they
+        // sit on the same shared ReferenceDataCatalog<T> base as `P01`
+        // rather than growing a third lifecycle (`ADR-0129`).
         //
-        // Registered last, and depending on nothing above it: `P07` reads
-        // the platform's own document store, persistence and identity, and
-        // does not read `P01` or `P02`. Business governance and engineering
-        // reasoning are independent programmes and the container reflects
-        // that.
-        services.Singleton<IContractTemplateCatalog, ContractTemplateCatalog>();
-        services.Singleton<IContractTemplateValidationService, ContractTemplateValidationService>();
-        services.Singleton<IIssuedContractCatalog, IssuedContractCatalog>();
-        services.Singleton<IIssuedContractValidationService, IssuedContractValidationService>();
-        services.Singleton<IContractService, ContractService>();
-
-        services.Singleton<IBusinessRiskCatalog, BusinessRiskCatalog>();
-        services.Singleton<IBusinessRiskValidationService, BusinessRiskValidationService>();
-        services.Singleton<IInsurancePolicyCatalog, InsurancePolicyCatalog>();
-        services.Singleton<IInsurancePolicyValidationService, InsurancePolicyValidationService>();
-        services.Singleton<IRiskAndInsuranceService, RiskAndInsuranceService>();
-
-        services.Singleton<IIPAssetCatalog, IPAssetCatalog>();
-        services.Singleton<IIPAssetValidationService, IPAssetValidationService>();
-        services.Singleton<IDataAssetCatalog, DataAssetCatalog>();
-        services.Singleton<IDataAssetValidationService, DataAssetValidationService>();
-
+        // WP 18.0C (D-028): Contracts, Risk, Assets (IP/data), Finance
+        // (Assumption/Scenario/Control), Development (Opportunity/
+        // Pipeline), Operating and Pricing.PricingService were frozen to
+        // `src/Frozen/Tempest.Core.BusinessGovernance` — unreachable from
+        // any shipped surface. See `src/Frozen/README.md`.
         services.Singleton<IRateCardCatalog, RateCardCatalog>();
         services.Singleton<IRateCardValidationService, RateCardValidationService>();
-        services.Singleton<IPricingService, PricingService>();
-
-        services.Singleton<IFinancialAssumptionCatalog, FinancialAssumptionCatalog>();
-        services.Singleton<IFinancialAssumptionValidationService, FinancialAssumptionValidationService>();
-        services.Singleton<IFinancialScenarioCatalog, FinancialScenarioCatalog>();
-        services.Singleton<IFinancialScenarioValidationService, FinancialScenarioValidationService>();
-        services.Singleton<IFinancialControlService, FinancialControlService>();
-
-        services.Singleton<IOpportunityCatalog, OpportunityCatalog>();
-        services.Singleton<IOpportunityValidationService, OpportunityValidationService>();
-        services.Singleton<IPipelineService, PipelineService>();
-
-        services.Singleton<IOperatingScenarioCatalog, OperatingScenarioCatalog>();
-        services.Singleton<IOperatingScenarioValidationService, OperatingScenarioValidationService>();
 
         // `Group D` (P03, CommercialIntelligence) was frozen to
         // `src/Frozen/Tempest.Core.CommercialIntelligence` by `WP 18.0C`
