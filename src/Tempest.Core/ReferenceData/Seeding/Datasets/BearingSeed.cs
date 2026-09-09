@@ -100,7 +100,9 @@ public sealed class BearingSeed : IReferenceSeed<BearingDefinition>
                     + "an approximate figure as an exact one would overstate it. The source's stated 'load "
                     + "capacity 1427 kg' is not recorded either, being a restatement of Cr as a mass.",
             },
-            SeedSources.RhdBearings("6205 Deep Groove Ball Bearing", "Dimensions, load ratings, speed limits and weight")),
+            SeedSources.RhdBearings("6205 Deep Groove Ball Bearing", "Dimensions, load ratings, speed limits and weight"),
+            new SourceCitation("RHD Bearings", "6205 Deep Groove Ball Bearing",
+                TableOrFigure: "Dimensions, load ratings, speed limits and weight")),
 
         new(Rhd6305,
             new BearingDefinition
@@ -147,7 +149,9 @@ public sealed class BearingSeed : IReferenceSeed<BearingDefinition>
                     + "so a selection routine has to weigh capacity against envelope rather than picking the "
                     + "only candidate.",
             },
-            SeedSources.RhdBearings("6305 Deep Groove Ball Bearing", "Dimensions, load ratings, speed limits and weight")),
+            SeedSources.RhdBearings("6305 Deep Groove Ball Bearing", "Dimensions, load ratings, speed limits and weight"),
+            new SourceCitation("RHD Bearings", "6305 Deep Groove Ball Bearing",
+                TableOrFigure: "Dimensions, load ratings, speed limits and weight")),
     ];
 
     private static ReferenceValue<Force> Rating(double kilonewtons, string conditions, string designation) =>
