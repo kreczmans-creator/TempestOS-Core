@@ -1,4 +1,5 @@
 using Tempest.Workspace.Documents;
+using Tempest.Workspace.Mechanical;
 using Tempest.Workspace.Verification;
 using Tempest.Core.Commands;
 using Tempest.Core.EngineeringDomain;
@@ -63,6 +64,34 @@ public static class ManufacturingWorkspaceRegistration
 {
     /// <summary>The three Manufacturing Kinds this Work Package registers a View and a Property Facet Provider for.</summary>
     public static readonly IReadOnlyList<string> SupportedKinds = ManufacturingObjectFactoryRegistry.SupportedKinds;
+
+    /// <summary>
+    /// The Kinds a new Manufacturing Operation lands under when nothing
+    /// container-shaped is selected (`WP 18.1B` §5) — the same Part-like
+    /// selection this create binding already reads to fill
+    /// <c>CreateManufacturingObjectCommand.PartId</c>, so an Operation's
+    /// own structural parent and its "performed on" Part agree whenever a
+    /// Part is what is actually selected, and fall back to the open
+    /// project otherwise.
+    /// </summary>
+    public static readonly IReadOnlyList<string> OperationContainerKinds =
+        [MechanicalObjectFactoryRegistry.Part, MechanicalObjectFactoryRegistry.Component, MechanicalObjectFactoryRegistry.Assembly, MechanicalObjectFactoryRegistry.SubAssembly];
+
+    /// <summary>
+    /// The Kinds a new Work Instruction lands under (`WP 18.1B` §5): always
+    /// its own owning Manufacturing Operation — <see cref="CreateManufacturingObjectCommand.ManufacturingOperationId"/>
+    /// is required, so a Work Instruction is never created without one
+    /// selected, and its structural parent is that same Operation.
+    /// </summary>
+    public static readonly IReadOnlyList<string> WorkInstructionContainerKinds = [ManufacturingObjectFactoryRegistry.ManufacturingOperationKind];
+
+    /// <summary>
+    /// The Kinds a new Inspection lands under when nothing container-shaped
+    /// is selected — just the project (`WP 18.1B` §5): an Inspection's own
+    /// required selection is its subject (what it inspects), which is
+    /// almost never a container.
+    /// </summary>
+    public static readonly IReadOnlyList<string> InspectionContainerKinds = [MechanicalObjectFactoryRegistry.Project];
 
     /// <summary>Registers every Manufacturing Workspace extension point.</summary>
     public static void Register(
@@ -145,16 +174,25 @@ public static class ManufacturingWorkspaceRegistration
                 {
                     var kind = WorkspaceCommandBindings.Canonical(boundKinds, values["kind"]);
                     var selected = context.Primary;
+                    // `WP 18.1B` §5: every branch's own structural ParentId
+                    // is resolved through CreationPlacement.ParentFor,
+                    // exactly as every other discipline's create command
+                    // does — a Manufacturing object created here used to
+                    // hang from nothing regardless of what "performed on"/
+                    // "belongs to"/"inspects" id was also captured.
                     return kind switch
                     {
                         ManufacturingObjectFactoryRegistry.WorkInstructionKind => new CreateManufacturingObjectCommand(
                             kind, values["displayName"],
-                            manufacturingOperationId: selected is { Kind: ManufacturingObjectFactoryRegistry.ManufacturingOperationKind } ? selected.ObjectId : null),
+                            manufacturingOperationId: selected is { Kind: ManufacturingObjectFactoryRegistry.ManufacturingOperationKind } ? selected.ObjectId : null,
+                            parentId: CreationPlacement.ParentFor(context, WorkInstructionContainerKinds)),
                         ManufacturingObjectFactoryRegistry.InspectionKind => new CreateManufacturingObjectCommand(
-                            kind, values["displayName"], subjectId: selected?.ObjectId, method: values["method"]),
+                            kind, values["displayName"], subjectId: selected?.ObjectId, method: values["method"],
+                            parentId: CreationPlacement.ParentFor(context, InspectionContainerKinds)),
                         _ => new CreateManufacturingObjectCommand(
                             kind, values["displayName"],
-                            partId: selected is { Kind: "Part" or "Component" or "Assembly" or "SubAssembly" } ? selected.ObjectId : null),
+                            partId: selected is { Kind: "Part" or "Component" or "Assembly" or "SubAssembly" } ? selected.ObjectId : null,
+                            parentId: CreationPlacement.ParentFor(context, OperationContainerKinds)),
                     };
                 },
                 [
