@@ -143,6 +143,7 @@ public sealed class CommandPaletteOverlay : Border
         // Explorer filter, and the Digital Thread search box all had.
         AutomationProperties.SetName(_query, "Command palette query");
         ToolTip.SetTip(_query, "Type a command...");
+        AutomationProperties.SetName(_results, "Command palette results");
 
         var panel = new StackPanel();
         panel.Children.Add(_query);

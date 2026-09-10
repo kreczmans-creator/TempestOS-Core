@@ -131,6 +131,8 @@ public sealed class SettingsView : UserControl
         AutomationProperties.SetName(_invoicingClientSecret, "Invoicing client secret");
         AutomationProperties.SetName(_invoicingPollMinutes, "Invoicing poll interval (minutes)");
         AutomationProperties.SetName(_saveButton, "Save settings");
+        AutomationProperties.SetName(_confirmBeforeDelete, "Confirm before deleting an object");
+        AutomationProperties.SetName(_independentCheckRequired, "Independent check required");
         AutomationProperties.SetName(_invoicingAuthoriseButton, "Authorise invoicing connector");
 
         var persistenceRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceSm };

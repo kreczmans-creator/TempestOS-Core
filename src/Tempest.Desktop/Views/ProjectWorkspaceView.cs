@@ -290,6 +290,8 @@ public sealed class ProjectWorkspaceView : UserControl
 
         _enterEngineering.Classes.Add(ChromeStyles.Primary);
         _closeProject.Classes.Add(ChromeStyles.Subtle);
+        AutomationProperties.SetName(_enterEngineering, "Enter Engineering");
+        AutomationProperties.SetName(_closeProject, "Close Project");
 
         var header = new StackPanel { Spacing = DesignTokens.SpaceXs };
         header.Children.Add(PageHeading.Label("PROJECT WORKSPACE"));

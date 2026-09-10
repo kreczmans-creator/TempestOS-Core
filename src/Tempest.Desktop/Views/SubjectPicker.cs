@@ -1,4 +1,5 @@
 using Avalonia;
+using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Layout;
@@ -66,6 +67,12 @@ public sealed class SubjectPicker : Border
 
         _chooseButton.Classes.Add(ChromeStyles.Primary);
         _skipButton.Classes.Add(ChromeStyles.Subtle);
+        AutomationProperties.SetName(_filter, "Filter…");
+        AutomationProperties.SetName(_list, "Subject candidates");
+        AutomationProperties.SetName(_chooseButton, "Choose");
+        AutomationProperties.SetName(_skipButton, "No subject");
+        ToolTip.SetTip(_chooseButton, "Choose");
+        ToolTip.SetTip(_skipButton, "No subject");
 
         _filter.PropertyChanged += (_, e) => { if (e.Property == TextBox.TextProperty) ApplyFilter(); };
         _list.DoubleTapped += (_, _) => TryComplete();

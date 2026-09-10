@@ -1,4 +1,5 @@
 using Avalonia;
+using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Layout;
@@ -77,6 +78,14 @@ public sealed class DeclaredFigureEntry : Border
 
         _declareButton.Classes.Add(ChromeStyles.Primary);
         _cancelButton.Classes.Add(ChromeStyles.Subtle);
+        AutomationProperties.SetName(_name, "Figure name");
+        AutomationProperties.SetName(_role, "Role");
+        AutomationProperties.SetName(_value, "Value");
+        AutomationProperties.SetName(_unit, "Unit");
+        AutomationProperties.SetName(_declareButton, "Declare");
+        AutomationProperties.SetName(_cancelButton, "Cancel");
+        ToolTip.SetTip(_declareButton, "Declare");
+        ToolTip.SetTip(_cancelButton, "Cancel");
 
         _declareButton.Click += (_, _) => TryComplete();
         _cancelButton.Click += (_, _) => Complete(null);

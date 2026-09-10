@@ -1,4 +1,5 @@
 using Avalonia;
+using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Layout;
@@ -443,6 +444,12 @@ public sealed class PropertyInspectorView : UserControl
     private Control BuildEditableNameField(string currentValue)
     {
         var box = new TextBox { Text = currentValue, FontSize = DesignTokens.FontSizeBody, MinHeight = DesignTokens.MinControlSize };
+        // No tooltip here (`WorkspaceModernisationTests` own
+        // `..._CarriesNoExplanatoryTooltip`): this field's own row already
+        // has a visible "Name" label right beside it, so an explanatory
+        // tooltip would be pure redundancy — only the accessible name is
+        // added.
+        AutomationProperties.SetName(box, "Display name");
 
         async void Commit()
         {

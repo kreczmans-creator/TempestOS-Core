@@ -54,6 +54,8 @@ public sealed class ProjectBrowserView : UserControl
         _promptForNewProject = promptForNewProject;
 
         AutomationProperties.SetName(_projects, "Projects");
+        AutomationProperties.SetName(_openButton, "Open Project");
+        AutomationProperties.SetName(_newButton, "New Project…");
 
         var root = new StackPanel { Spacing = DesignTokens.SpaceLg, Margin = DesignTokens.PagePadding, MaxWidth = 960, HorizontalAlignment = HorizontalAlignment.Left };
         root.Children.Add(PageHeading.Label("PROJECTS"));

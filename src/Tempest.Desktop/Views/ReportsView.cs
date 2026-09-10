@@ -52,9 +52,23 @@ public sealed class ReportsView : UserControl
     private readonly TextBlock _documentsStatus = new() { FontSize = DesignTokens.FontSizeCaption, Opacity = 0.8 };
     private readonly StackPanel _documentsList = new() { Spacing = DesignTokens.SpaceXs };
 
+    /// <summary>
+    /// Which project the filter names, or <see langword="null"/> for every
+    /// live project — the source of truth for "what is selected", read
+    /// directly rather than re-derived from <see cref="_projectFilter"/>'s
+    /// own <c>SelectedItem</c> after a rebuild. <see cref="RefreshCoreAsync"/>
+    /// replaces every <see cref="ComboBoxItem"/> in the filter on every
+    /// refresh (a project can be renamed, or a new one can appear), so the
+    /// control's own selection is a presentation detail restored to match
+    /// this field, never the other way around.
+    /// </summary>
+    private Guid? _selectedProjectId;
+
     private IReadOnlyList<ProjectSummary> _projects = [];
     private IWorkspaceChanges? _workspaceChanges;
     private bool _suppressFilterSelection;
+    private TaskCompletionSource? _refreshCompletion;
+    private bool _refreshPending;
 
     /// <summary>The change feed this view reloads its own issued-sheet and document lists from (`WP 19.2B`).</summary>
     public IWorkspaceChanges? WorkspaceChanges
@@ -105,8 +119,11 @@ public sealed class ReportsView : UserControl
         ToolTip.SetTip(_projectFilter, "Filter the sheets and documents below to one project, or show every live project.");
         _projectFilter.SelectionChanged += (_, _) =>
         {
-            if (!_suppressFilterSelection)
-                ApplyFilter();
+            if (_suppressFilterSelection)
+                return;
+
+            _selectedProjectId = (_projectFilter.SelectedItem as ComboBoxItem)?.Tag as Guid?;
+            ApplyFilter();
         };
 
         var filterRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceSm, VerticalAlignment = VerticalAlignment.Center };
@@ -128,11 +145,80 @@ public sealed class ReportsView : UserControl
         Content = new ScrollViewer { Content = body };
     }
 
-    /// <summary>Reloads the project filter, every issued evidence sheet, and every project document — filtered to the currently selected project, or every live project.</summary>
-    public async Task RefreshAsync()
+    /// <summary>
+    /// Reloads the project filter, every issued evidence sheet, and every
+    /// project document — filtered to the currently selected project, or
+    /// every live project.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Coalesced, never concurrent: entering this area, changing the
+    /// filter and the change feed can all ask for a refresh within the
+    /// same moment (creating a project fires <see cref="IWorkspaceChanges.Changed"/>,
+    /// which this view does not filter by Kind — see <see cref="OnWorkspaceChanged"/>'s
+    /// own remarks). Two overlapping runs of the body below would each
+    /// clear <see cref="_projectFilter"/>'s items and race to repopulate
+    /// them, so this method instead runs the real body at most once at a
+    /// time, queuing at most one further pass (never more; a queued pass
+    /// always reads the latest state when it finally runs) rather than
+    /// starting a second one over top of it.
+    /// </para>
+    /// <para>
+    /// <b>Every caller's own <see cref="Task"/> completes only once the
+    /// state it asked for is genuinely settled.</b> A caller that arrives
+    /// while a run is already in flight does not get a `Task` that
+    /// resolves the instant it joins (which would let it observe the
+    /// *other* caller's own, possibly different, filter selection as if
+    /// it were its own) — it shares the one <see cref="TaskCompletionSource{TResult}"/>
+    /// every joined caller awaits, which only completes after the queued
+    /// pass that covers every joiner's own request has actually run.
+    /// </para>
+    /// </remarks>
+    public Task RefreshAsync()
     {
-        var selectedProjectId = SelectedProjectId();
+        if (_refreshCompletion is { Task.IsCompleted: false } inFlight)
+        {
+            _refreshPending = true;
+            return inFlight.Task;
+        }
 
+        var completion = new TaskCompletionSource();
+        _refreshCompletion = completion;
+        _ = RunRefreshLoopAsync(completion);
+        return completion.Task;
+    }
+
+    private async Task RunRefreshLoopAsync(TaskCompletionSource completion)
+    {
+        try
+        {
+            do
+            {
+                _refreshPending = false;
+                await RefreshCoreAsync().ConfigureAwait(true);
+            }
+            while (_refreshPending);
+
+            completion.SetResult();
+        }
+        catch (Exception ex)
+        {
+            completion.SetException(ex);
+        }
+        finally
+        {
+            if (ReferenceEquals(_refreshCompletion, completion))
+                _refreshCompletion = null;
+        }
+    }
+
+    private async Task RefreshCoreAsync()
+    {
+        // `_selectedProjectId` is never read back off `_projectFilter`
+        // here — it is the one field every step below (and every future
+        // rebuild) treats as the truth; the control's own `SelectedItem`
+        // is set at the end purely to keep the visible control in step
+        // with it, and is never itself the thing this method reads.
         _projects = (await _projectDirectory.ListAsync().ConfigureAwait(true))
             .OrderBy(p => p.Label, StringComparer.Ordinal)
             .ToList();
@@ -144,21 +230,19 @@ public sealed class ReportsView : UserControl
             _projectFilter.Items.Add(new ComboBoxItem { Content = project.Label, Tag = project.Id });
 
         _projectFilter.SelectedItem = _projectFilter.Items.OfType<ComboBoxItem>()
-            .FirstOrDefault(i => Equals(i.Tag, selectedProjectId)) ?? _projectFilter.Items.OfType<ComboBoxItem>().First();
+            .FirstOrDefault(i => Equals(i.Tag, _selectedProjectId)) ?? _projectFilter.Items.OfType<ComboBoxItem>().First();
         _suppressFilterSelection = false;
 
         await RefreshSheetsAsync().ConfigureAwait(true);
         await RefreshDocumentsAsync().ConfigureAwait(true);
     }
 
-    private Guid? SelectedProjectId() => (_projectFilter.SelectedItem as ComboBoxItem)?.Tag as Guid?;
-
     /// <summary>Re-filters the already-loaded lists to the newly selected project — the filter's own selection has meaning without a further domain read.</summary>
     private void ApplyFilter() => _ = RefreshAsync();
 
     private async Task RefreshSheetsAsync()
     {
-        var selectedProjectId = SelectedProjectId();
+        var selectedProjectId = _selectedProjectId;
 
         var everyEvidence = await _domainContext.Repository.ListByKindAsync(Evidence.CanonicalKind).ConfigureAwait(true);
         var sheets = everyEvidence
@@ -181,7 +265,7 @@ public sealed class ReportsView : UserControl
 
     private async Task RefreshDocumentsAsync()
     {
-        var selectedProjectId = SelectedProjectId();
+        var selectedProjectId = _selectedProjectId;
         var projects = selectedProjectId is { } id
             ? _projects.Where(p => p.Id == id).ToList()
             : _projects;

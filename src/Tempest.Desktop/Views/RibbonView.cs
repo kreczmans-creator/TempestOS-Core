@@ -219,6 +219,11 @@ public sealed class RibbonView : UserControl
             var content = BuildTabContent(group.Key, group.ToList());
             _tabContents.Add(content);
             var tab = new TabItem { Header = BuildTabHeader(group.Key), Tag = group.Key, Content = content };
+            // The header is a StackPanel (an accent dot + a TextBlock), not
+            // a string, so it carries no name of its own to a screen
+            // reader (`WP 19.2B`, `TD-65`) — named explicitly from the
+            // same category text the visible header already shows.
+            AutomationProperties.SetName(tab, group.Key);
             _tabs.Items.Add(tab);
         }
 

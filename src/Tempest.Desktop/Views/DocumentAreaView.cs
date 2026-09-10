@@ -118,6 +118,7 @@ public sealed class DocumentAreaView : UserControl, IDocumentOpener
         header.Children.Add(new Branding.TempestLogoControl { Width = 14, Height = 14, VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center });
         header.Children.Add(new TextBlock { Text = "Cockpit", VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center });
         _homeTab = new TabItem { Header = header, Content = content };
+        Avalonia.Automation.AutomationProperties.SetName(_homeTab, "Cockpit");
         _tabs.Items.Insert(0, _homeTab);
         _tabs.SelectedItem = _homeTab;
     }
@@ -135,6 +136,11 @@ public sealed class DocumentAreaView : UserControl, IDocumentOpener
 
         var tab = new TabItem { Content = _contentBuilder(view) };
         tab.Header = BuildHeader(view, tab);
+        // The header is a StackPanel (pin/close buttons + a TextBlock),
+        // not a string, so it carries no name of its own to a screen
+        // reader (`WP 19.2B`, `TD-65`) — named from the same title the
+        // visible header text already shows.
+        Avalonia.Automation.AutomationProperties.SetName(tab, view.Title);
         _tabsByViewId[view.Id] = tab;
 
         InsertInPinOrder(tab);

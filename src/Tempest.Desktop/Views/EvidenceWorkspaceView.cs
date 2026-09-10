@@ -126,6 +126,9 @@ public sealed class EvidenceWorkspaceView : UserControl
 
         _createButton.Classes.Add(ChromeStyles.Primary);
         _createButton.Click += async (_, _) => await OnCreateAsync().ConfigureAwait(true);
+        AutomationProperties.SetName(_createButton, "Create");
+        AutomationProperties.SetName(_list, "Evidence");
+        ToolTip.SetTip(_createButton, "Create evidence from picked files");
 
         _list.DoubleTapped += (_, _) =>
         {

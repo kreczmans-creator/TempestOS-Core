@@ -1,5 +1,6 @@
 using System.Globalization;
 using Avalonia;
+using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Layout;
@@ -86,6 +87,13 @@ public sealed class DeliverableCompletionPrompt : Border
 
         _completeButton.Classes.Add(ChromeStyles.Primary);
         _cancelButton.Classes.Add(ChromeStyles.Subtle);
+        AutomationProperties.SetName(_fixedPrice, "Fixed price");
+        AutomationProperties.SetName(_evidence, "Issued evidence");
+        AutomationProperties.SetName(_documentList, "Documents");
+        AutomationProperties.SetName(_completeButton, "Complete");
+        AutomationProperties.SetName(_cancelButton, "Cancel");
+        ToolTip.SetTip(_completeButton, "Complete");
+        ToolTip.SetTip(_cancelButton, "Cancel");
 
         _completeButton.Click += (_, _) => TryComplete();
         _cancelButton.Click += (_, _) => Complete(null);

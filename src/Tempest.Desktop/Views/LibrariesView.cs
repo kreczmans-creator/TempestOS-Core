@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Layout;
 using Tempest.Core.Bearings;
@@ -98,6 +99,16 @@ public sealed class LibrariesView : UserControl
         _addMaterialButton.Classes.Add(ChromeStyles.Primary);
         _addMaterialButton.Click += async (_, _) => await OnAddMaterialAsync().ConfigureAwait(true);
 
+        AutomationProperties.SetName(_newMaterialName, "Name");
+        AutomationProperties.SetName(_newMaterialDesignation, "Designation");
+        AutomationProperties.SetName(_newMaterialFamily, "Material family");
+        AutomationProperties.SetName(_newMaterialYield, "Yield strength (MPa)");
+        AutomationProperties.SetName(_newMaterialDensity, "Density (g/cm3)");
+        AutomationProperties.SetName(_newMaterialSourceOrganisation, "Source organisation");
+        AutomationProperties.SetName(_newMaterialSourceDocument, "Source document");
+        AutomationProperties.SetName(_addMaterialButton, "Add Material");
+        ToolTip.SetTip(_addMaterialButton, "Add Material");
+
         var addMaterialForm = new WrapPanel { Orientation = Orientation.Horizontal };
         foreach (var field in new Control[]
                  {
@@ -192,12 +203,14 @@ public sealed class LibrariesView : UserControl
         var verify = new Button { Content = "Verify", Padding = new Avalonia.Thickness(10, 2), IsVisible = row.ValidationState == ReferenceValidationState.Draft };
         verify.Classes.Add(ChromeStyles.Subtle);
         verify.Click += async (_, _) => await OnVerifyAsync(row).ConfigureAwait(true);
+        AutomationProperties.SetName(verify, $"Verify {row.RecordId}");
         Grid.SetColumn(verify, 1);
         grid.Children.Add(verify);
 
         var release = new Button { Content = "Release", Padding = new Avalonia.Thickness(10, 2), IsVisible = row.ValidationState is ReferenceValidationState.Draft or ReferenceValidationState.Checked or ReferenceValidationState.Validated };
         release.Classes.Add(ChromeStyles.Primary);
         release.Click += async (_, _) => await OnReleaseAsync(row).ConfigureAwait(true);
+        AutomationProperties.SetName(release, $"Release {row.RecordId}");
         Grid.SetColumn(release, 2);
         grid.Children.Add(release);
 
@@ -214,6 +227,7 @@ public sealed class LibrariesView : UserControl
         };
         revise.Classes.Add(ChromeStyles.Subtle);
         revise.Click += async (_, _) => await OnReviseAsync(row).ConfigureAwait(true);
+        AutomationProperties.SetName(revise, $"Revise {row.RecordId}");
         Grid.SetColumn(revise, 3);
         grid.Children.Add(revise);
 
