@@ -105,6 +105,23 @@ public sealed class FakeInvoicingConnector : IInvoicingConnector
             _contacts.Add(contact);
     }
 
+    /// <summary>
+    /// Forgets whatever invoice was recorded under <paramref name="reference"/>
+    /// — simulates a response genuinely lost with no trace at the provider
+    /// either, distinct from the ordinary <see cref="ConnectorOutcome.Unknown"/>
+    /// case (this class's own remarks), so a test can drive
+    /// <see cref="InvoicingService.ReconcileAsync"/>'s own "not found"
+    /// branch deliberately. A no-op if nothing is recorded under it.
+    /// </summary>
+    /// <exception cref="ArgumentException"><paramref name="reference"/> is null, empty, or whitespace.</exception>
+    public void ForgetReference(string reference)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(reference);
+
+        lock (_gate)
+            _invoicesByReference.Remove(reference);
+    }
+
     /// <inheritdoc />
     public Task<ConnectorResult<CreatedInvoice>> CreateDraftInvoiceAsync(
         InvoiceRequestSnapshot request, string idempotencyKey, CancellationToken cancellationToken = default)
