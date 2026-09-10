@@ -37,6 +37,18 @@ public sealed record InvoiceRequestLine(
 /// </summary>
 /// <param name="RequestId">The request's own id — <see cref="InvoicingService.SendAsync"/>'s own idempotency key, and what a real connector's implementation writes into the created invoice's own reference field.</param>
 /// <param name="ClientOrganisationId">The client this invoice is raised against — <c>Tempest.Core.EngineeringDomain.Project.ClientOrganisationId</c>, an organisation-catalogue id.</param>
+/// <param name="ClientName">
+/// The client organisation's own name, read from the Organisation catalogue
+/// (<c>Tempest.Core.BusinessOperations.Crm.IOrganisationCatalog</c>) by
+/// <see cref="ClientOrganisationId"/> and filled in by <see cref="InvoicingService"/>
+/// before a connector is ever called (`WP 19.1A-R1` disclosure #3) —
+/// never resolved by a connector itself, keeping this projection's own
+/// "plain data, no catalogue dependency" shape intact. <see langword="null"/>
+/// when <see cref="ClientOrganisationId"/> does not resolve to any
+/// registered organisation; every connector implementation rejects outright
+/// rather than matching or creating a contact named after a raw, meaningless
+/// id.
+/// </param>
 /// <param name="PurchaseOrderReference">The project's own purchase-order reference, where one is recorded. <see langword="null"/> otherwise.</param>
 /// <param name="Currency">The currency every <see cref="InvoiceRequestLine.UnitRate"/>/<see cref="InvoiceRequestLine.Amount"/> and <see cref="Total"/> are stated in.</param>
 /// <param name="Lines">The request's own lines, in the order the request carries them.</param>
@@ -44,6 +56,7 @@ public sealed record InvoiceRequestLine(
 public sealed record InvoiceRequestSnapshot(
     Guid RequestId,
     string ClientOrganisationId,
+    string? ClientName,
     string? PurchaseOrderReference,
     CurrencyCode Currency,
     IReadOnlyList<InvoiceRequestLine> Lines,

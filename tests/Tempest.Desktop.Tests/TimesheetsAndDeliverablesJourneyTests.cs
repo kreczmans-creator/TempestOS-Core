@@ -7,6 +7,7 @@ using Avalonia.Threading;
 using Tempest.Core.BusinessGovernance;
 using Tempest.Core.BusinessGovernance.Pricing;
 using Tempest.Core.BusinessOperations.Crm;
+using Tempest.Core.Commands;
 using Tempest.Core.Deliverables;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Evidence;
@@ -15,6 +16,7 @@ using Tempest.Core.ReferenceData.Review;
 using Tempest.Core.Timesheets;
 using Tempest.Desktop.Editors;
 using Tempest.Desktop.Views;
+using Tempest.Workspace.Editors;
 using Tempest.Workspace.Shell;
 using static Tempest.Desktop.Tests.DesktopTestHelpers;
 
@@ -101,6 +103,21 @@ public sealed class TimesheetsAndDeliverablesJourneyTests
             Assert.Equal(rateCardId, afterCommercial.RateCardPin!.RecordId);
             Assert.Equal(new DateOnly(2026, 3, 1), afterCommercial.StartDate);
             Assert.Equal(new DateOnly(2026, 9, 1), afterCommercial.TargetDate);
+
+            // ---- `WP 19.1A-R1` disclosure #4: the Commercial section shows
+            // names, not ids ----
+            // `MainWindowComposer` (out of this Work Package's own files —
+            // `WP 19.2B` owns it) has not yet wired real resolver delegates
+            // into the window's own `commercialSupport`, so the editor
+            // already on screen above still falls back to the bare ids it
+            // always showed. This drives a second, directly-constructed
+            // editor over the identical real project, with the resolvers
+            // this Work Package actually built wired to the real
+            // Organisation/RateCard catalogues the journey itself already
+            // populated — proving the name (not the id) renders once a
+            // caller supplies them, asynchronously and without blocking.
+            await AssertCommercialSectionResolvesNamesAsync(
+                host, project.Id, organisationId, rateCardId, "Journey Client Ltd", "Journey Rate Card", afterCommercial.RateCardPin.RevisionNumber);
 
             // ---- rail → Timesheets ----
             await navigator.GoToModuleAsync(ShellArea.Timesheets);
@@ -382,6 +399,72 @@ public sealed class TimesheetsAndDeliverablesJourneyTests
     // ---------------------------------------------------------------
     // Shared helpers
     // ---------------------------------------------------------------
+
+    /// <summary>
+    /// `WP 19.1A-R1` disclosure #4's own assertion: a directly-constructed
+    /// <see cref="ObjectEditorView"/> over the same real project, given
+    /// resolver delegates wired to the real <see cref="IOrganisationCatalog"/>/
+    /// <see cref="IRateCardCatalog"/>, shows the client's own name and the
+    /// rate card's own code/name/pinned revision on screen — never the bare
+    /// ids <paramref name="organisationId"/>/<paramref name="rateCardId"/>.
+    /// </summary>
+    private static async Task AssertCommercialSectionResolvesNamesAsync(
+        WorkspaceHost host, Guid projectId, string organisationId, string rateCardId,
+        string expectedClientName, string expectedRateCardName, int expectedRateCardRevision)
+    {
+        var domainContext = (EngineeringDomainContext)host.Services!.GetService(typeof(EngineeringDomainContext));
+        var commandDispatcher = (ICommandDispatcher)host.Services!.GetService(typeof(ICommandDispatcher));
+        var organisations = (IOrganisationCatalog)host.Services!.GetService(typeof(IOrganisationCatalog));
+        var rateCards = (IRateCardCatalog)host.Services!.GetService(typeof(IRateCardCatalog));
+
+        var declarations = new KindEditorDeclarationRegistry();
+        KindEditorDeclarations.RegisterAll(declarations);
+
+        var commercialSupport = new ProjectCommercialEditorSupport(
+            PickClientOrganisationIdAsync: _ => Task.FromResult<string?>(null),
+            PickRateCardIdAsync: _ => Task.FromResult<string?>(null),
+            CurrentPrincipalIdentityId: () => null,
+            ResolveClientNameAsync: async (id, ct) => (await organisations.FindAsync(id, ct).ConfigureAwait(true))?.Definition.Name,
+            ResolveRateCardAsync: async (pin, ct) =>
+            {
+                var record = await rateCards.GetRevisionAsync(pin.RecordId, pin.RevisionNumber, ct).ConfigureAwait(true);
+                return (record.Definition.Code, record.Definition.Name);
+            });
+
+        var editor = ObjectEditorView.TryCreate(
+            projectId, "Project", domainContext, host.Manager!, (_, _) => { }, commandDispatcher,
+            declarations: declarations, commercialSupport: commercialSupport);
+        Assert.NotNull(editor);
+
+        var probeWindow = new Window { Content = editor };
+        probeWindow.Show();
+
+        var deadline = Deadline(10);
+        var texts = new List<string>();
+        while (DateTime.UtcNow < deadline)
+        {
+            Dispatcher.UIThread.RunJobs();
+            probeWindow.Measure(new Size(900, 700));
+            probeWindow.Arrange(new Rect(0, 0, 900, 700));
+            texts = [.. editor!.GetLogicalDescendants().OfType<TextBlock>().Select(t => t.Text ?? string.Empty)];
+
+            if (texts.Any(t => t.Contains(expectedClientName, StringComparison.Ordinal)))
+                break;
+
+            await Task.Delay(10);
+        }
+
+        Assert.Contains(texts, t => t.Contains(expectedClientName, StringComparison.Ordinal));
+        Assert.DoesNotContain(texts, t => t.Contains(organisationId, StringComparison.Ordinal));
+
+        Assert.Contains(
+            texts,
+            t => t.Contains(rateCardId, StringComparison.Ordinal)
+                && t.Contains(expectedRateCardName, StringComparison.Ordinal)
+                && t.Contains($"rev {expectedRateCardRevision}", StringComparison.Ordinal));
+
+        probeWindow.Close();
+    }
 
     private static async Task RegisterReleasedRateCardAndClientAsync(WorkspaceHost host, string organisationId, string rateCardId, string grade)
     {

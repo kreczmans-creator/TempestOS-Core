@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -50,6 +51,20 @@ namespace Tempest.Core.Invoicing.OAuth;
 /// </remarks>
 public sealed class OAuthAuthoriser
 {
+    /// <summary>
+    /// The <see cref="IConfigurationProvider"/> key naming the exact
+    /// loopback port <see cref="OAuthLoopbackListener"/> binds
+    /// (`WP 19.1A-R1` disclosure #1) — <see cref="DefaultLoopbackPort"/>
+    /// when unset, <c>0</c> to keep the original ephemeral-port behaviour
+    /// (a test's own choice; never the right value for a real sandbox
+    /// registration, which needs one exact redirect URI to register ahead
+    /// of time).
+    /// </summary>
+    public const string LoopbackPortConfigurationKey = "Invoicing:OAuth:LoopbackPort";
+
+    /// <summary>The loopback port used when <see cref="LoopbackPortConfigurationKey"/> is not configured — also the port <c>docs/adr/ADR-0151-addendum.md</c> and the release notes name as the one to register.</summary>
+    public const int DefaultLoopbackPort = 49301;
+
     private static readonly TimeSpan RefreshSkew = TimeSpan.FromMinutes(2);
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
@@ -95,7 +110,24 @@ public sealed class OAuthAuthoriser
         if (credentials is null)
             return OAuthResult.NotConfigured();
 
-        using var loopback = new OAuthLoopbackListener();
+        var loopbackPort = ResolveLoopbackPort();
+
+        OAuthLoopbackListener loopbackListener;
+        try
+        {
+            loopbackListener = new OAuthLoopbackListener(loopbackPort);
+        }
+        catch (HttpListenerException)
+        {
+            // Never a crash (`WP 19.1A-R1` disclosure #1): named so an
+            // operator can act on it directly — the exact port attempted
+            // and the configuration key that picked it, whether that was
+            // this key's own configured value or its default.
+            return OAuthResult.Failed(
+                $"Port {loopbackPort} is already in use; free it or configure a different port under '{LoopbackPortConfigurationKey}'.");
+        }
+
+        using var loopback = loopbackListener;
 
         var state = Guid.NewGuid().ToString("N");
         var (verifier, challenge) = PkceGenerator.Generate();
@@ -323,6 +355,20 @@ public sealed class OAuthAuthoriser
         if (!string.IsNullOrEmpty(tenantId))
             await _secretStore.SetAsync(Key("TenantId"), tenantId, cancellationToken).ConfigureAwait(false);
     }
+
+    /// <summary>
+    /// Resolves <see cref="LoopbackPortConfigurationKey"/> — the configured
+    /// value if one parses as a non-negative integer, <see cref="DefaultLoopbackPort"/>
+    /// otherwise. <c>0</c> is a valid, deliberate configured value: it
+    /// keeps the original ephemeral-port behaviour rather than binding a
+    /// fixed port at all.
+    /// </summary>
+    private int ResolveLoopbackPort() =>
+        _configuration.TryGetValue(LoopbackPortConfigurationKey, out var raw)
+        && int.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out var configured)
+        && configured >= 0
+            ? configured
+            : DefaultLoopbackPort;
 
     private string Key(string suffix) => $"Invoicing:{_profile.Provider}:{suffix}";
 }

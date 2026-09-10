@@ -11,7 +11,7 @@ namespace Tempest.Core.Tests.Invoicing;
 public sealed class FakeInvoicingConnectorTests
 {
     private static readonly InvoiceRequestSnapshot Snapshot = new(
-        Guid.NewGuid(), "ORG-1", "PO-1", CurrencyCode.Gbp, [], new(0m, CurrencyCode.Gbp));
+        Guid.NewGuid(), "ORG-1", "Org One Ltd", "PO-1", CurrencyCode.Gbp, [], new(0m, CurrencyCode.Gbp));
 
     [Fact]
     public async Task ScriptNextCreate_IsConsumedOnce_ThenTheNextCallIsOrdinary()

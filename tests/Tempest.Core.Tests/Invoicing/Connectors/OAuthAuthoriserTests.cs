@@ -141,6 +141,84 @@ public sealed class OAuthAuthoriserTests
     }
 
     [Fact]
+    public async Task AuthoriseAsync_NoPortConfigured_UsesTheDefaultLoopbackPort()
+    {
+        var (authoriser, handler, _, launcher) = Build(withTenantResolution: false);
+
+        handler.When(HttpMethod.Post, "provider.example.test/token", (_, _) =>
+            JsonResponse(HttpStatusCode.OK, """{"access_token":"access-1","refresh_token":"refresh-1","expires_in":3600}"""));
+
+        var result = await authoriser.AuthoriseAsync(TestTimeout());
+
+        Assert.Equal(OAuthOutcome.Ok, result.Outcome);
+        await AwaitLauncherAsync(launcher);
+        AssertRedirectUriPort(launcher, OAuthAuthoriser.DefaultLoopbackPort);
+    }
+
+    [Fact]
+    public async Task AuthoriseAsync_AConfiguredPort_IsHonoured()
+    {
+        var configuredPort = FindAFreeTcpPort();
+        var configuration = BuildConfiguration("client-abc", loopbackPort: configuredPort);
+        var secretStore = new InMemorySecretStore();
+        var launcher = new FakeBrowserLauncher();
+        var handler = new StubHttpMessageHandler();
+        var authoriser = new OAuthAuthoriser(
+            new OAuthProviderProfile(Provider, AuthorizationEndpoint, TokenEndpoint, ["scope-a"]),
+            configuration, secretStore, launcher, new HttpClient(handler));
+
+        handler.When(HttpMethod.Post, "provider.example.test/token", (_, _) =>
+            JsonResponse(HttpStatusCode.OK, """{"access_token":"access-1","refresh_token":"refresh-1","expires_in":3600}"""));
+
+        var result = await authoriser.AuthoriseAsync(TestTimeout());
+
+        Assert.Equal(OAuthOutcome.Ok, result.Outcome);
+        await AwaitLauncherAsync(launcher);
+        AssertRedirectUriPort(launcher, configuredPort);
+    }
+
+    [Fact]
+    public async Task AuthoriseAsync_PortConfiguredAsZero_PicksAFreeEphemeralPort_NeverTheLiteralZero()
+    {
+        var configuration = BuildConfiguration("client-abc", loopbackPort: 0);
+        var secretStore = new InMemorySecretStore();
+        var launcher = new FakeBrowserLauncher();
+        var handler = new StubHttpMessageHandler();
+        var authoriser = new OAuthAuthoriser(
+            new OAuthProviderProfile(Provider, AuthorizationEndpoint, TokenEndpoint, ["scope-a"]),
+            configuration, secretStore, launcher, new HttpClient(handler));
+
+        handler.When(HttpMethod.Post, "provider.example.test/token", (_, _) =>
+            JsonResponse(HttpStatusCode.OK, """{"access_token":"access-1","refresh_token":"refresh-1","expires_in":3600}"""));
+
+        var result = await authoriser.AuthoriseAsync(TestTimeout());
+
+        Assert.Equal(OAuthOutcome.Ok, result.Outcome);
+        await AwaitLauncherAsync(launcher);
+        Assert.NotEqual(0, RedirectUriPort(launcher));
+    }
+
+    [Fact]
+    public async Task AuthoriseAsync_ThePortIsAlreadyInUse_ReturnsFailed_NamingThePortAndTheConfigurationKey_NeverThrows()
+    {
+        var busyPort = FindAFreeTcpPort();
+        using var occupier = new System.Net.HttpListener();
+        occupier.Prefixes.Add($"http://127.0.0.1:{busyPort}/callback/");
+        occupier.Start();
+
+        var configuration = BuildConfiguration("client-abc", loopbackPort: busyPort);
+        var authoriser = new OAuthAuthoriser(
+            new OAuthProviderProfile(Provider, AuthorizationEndpoint, TokenEndpoint, ["scope-a"]),
+            configuration, new InMemorySecretStore(), new FakeBrowserLauncher(), new HttpClient(new StubHttpMessageHandler()));
+
+        var result = await authoriser.AuthoriseAsync(TestTimeout());
+
+        Assert.Equal(OAuthOutcome.Failed, result.Outcome);
+        Assert.Contains(busyPort.ToString(CultureInfo.InvariantCulture), result.Reason, StringComparison.Ordinal);
+        Assert.Contains(OAuthAuthoriser.LoopbackPortConfigurationKey, result.Reason, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task EnsureAccessTokenAsync_NotAuthorised_WhenNothingIsStored()
     {
         var (authoriser, _, _, _) = Build(withTenantResolution: false);
@@ -298,13 +376,49 @@ public sealed class OAuthAuthoriserTests
         return (authoriser, handler, secretStore, launcher);
     }
 
-    private static IConfigurationProvider BuildConfiguration(string? clientId)
+    private static IConfigurationProvider BuildConfiguration(string? clientId, int? loopbackPort = null)
     {
         var entries = new List<KeyValuePair<string, string>>();
         if (clientId is not null)
             entries.Add(new($"Invoicing:{Provider}:ClientId", clientId));
 
+        if (loopbackPort is { } port)
+            entries.Add(new(OAuthAuthoriser.LoopbackPortConfigurationKey, port.ToString(CultureInfo.InvariantCulture)));
+
         return new ConfigurationBuilder().AddSource(new MemoryConfigurationSource(entries)).Build();
+    }
+
+    /// <summary>The loopback port the last authorisation URL's own <c>redirect_uri</c> query parameter named.</summary>
+    private static int RedirectUriPort(FakeBrowserLauncher launcher)
+    {
+        Assert.NotNull(launcher.LastAuthorizationUrl);
+        var redirectUriValue = launcher.LastAuthorizationUrl!.Query
+            .TrimStart('?')
+            .Split('&')
+            .Select(pair => pair.Split(['='], 2))
+            .Where(parts => parts.Length == 2 && parts[0] == "redirect_uri")
+            .Select(parts => Uri.UnescapeDataString(parts[1]))
+            .Single();
+
+        return new Uri(redirectUriValue).Port;
+    }
+
+    private static void AssertRedirectUriPort(FakeBrowserLauncher launcher, int expectedPort) =>
+        Assert.Equal(expectedPort, RedirectUriPort(launcher));
+
+    /// <summary>Asks the OS for a free loopback port and releases it immediately — <see cref="OAuthLoopbackListener"/>'s own accepted probe-then-rebind race, used here only to name a port a real listener can then occupy.</summary>
+    private static int FindAFreeTcpPort()
+    {
+        var probe = new System.Net.Sockets.TcpListener(System.Net.IPAddress.Loopback, 0);
+        probe.Start();
+        try
+        {
+            return ((System.Net.IPEndPoint)probe.LocalEndpoint).Port;
+        }
+        finally
+        {
+            probe.Stop();
+        }
     }
 
     private static async Task SeedAsync(ISecretStore secretStore, string accessToken, string refreshToken, DateTimeOffset expiresAtUtc, string? tenantId)

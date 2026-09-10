@@ -25,11 +25,12 @@ public sealed class QuickBooksOnlineConnectorTests
     private const string Realm = "realm-1";
 
     [Fact]
-    public async Task CreateDraftInvoiceAsync_Ok_QueriesThenCreatesTheCustomer_AndCarriesTheRequestIdAsDocNumberAndRequestId()
+    public async Task CreateDraftInvoiceAsync_Ok_QueriesThenCreatesTheCustomerByName_CarriesTheDerivedDocNumber_KeepsTheFullIdInThePrivateNote()
     {
         var (connector, handler, _) = await BuildAsync();
         var requestId = Guid.NewGuid();
         var idempotencyKey = requestId.ToString();
+        var expectedDocNumber = QuickBooksOnlineConnector.DeriveDocNumber(idempotencyKey);
 
         handler.When(HttpMethod.Get, $"v3/company/{Realm}/query", (request, _) =>
         {
@@ -39,27 +40,42 @@ public sealed class QuickBooksOnlineConnectorTests
 
         handler.When(HttpMethod.Post, $"v3/company/{Realm}/customer", (_, body) =>
         {
-            Assert.Contains("\"DisplayName\":\"ORG-1\"", body, StringComparison.Ordinal);
-            return JsonResponse(HttpStatusCode.OK, """{"Customer":{"Id":"cust-1","DisplayName":"ORG-1"}}""");
+            Assert.Contains("\"DisplayName\":\"Fictional Client Ltd\"", body, StringComparison.Ordinal);
+            Assert.DoesNotContain("\"DisplayName\":\"ORG-1\"", body, StringComparison.Ordinal);
+            return JsonResponse(HttpStatusCode.OK, """{"Customer":{"Id":"cust-1","DisplayName":"Fictional Client Ltd"}}""");
         });
 
         handler.When(HttpMethod.Post, $"v3/company/{Realm}/invoice", (request, body) =>
         {
             Assert.Contains($"requestid={idempotencyKey}", request.RequestUri!.ToString(), StringComparison.Ordinal);
-            Assert.Contains($"\"DocNumber\":\"{idempotencyKey}\"", body, StringComparison.Ordinal);
+            Assert.Contains($"\"DocNumber\":\"{expectedDocNumber}\"", body, StringComparison.Ordinal);
             Assert.Contains($"TempestOS request {idempotencyKey}", body, StringComparison.Ordinal);
             Assert.Contains("\"value\":\"cust-1\"", body, StringComparison.Ordinal);
             Assert.Equal("Bearer seeded-access-token", request.Headers.Authorization!.ToString());
 
-            return JsonResponse(HttpStatusCode.OK, "{\"Invoice\":{\"Id\":\"inv-100\",\"DocNumber\":\"" + idempotencyKey + "\"}}");
+            return JsonResponse(HttpStatusCode.OK, "{\"Invoice\":{\"Id\":\"inv-100\",\"DocNumber\":\"" + expectedDocNumber + "\"}}");
         });
 
         var result = await connector.CreateDraftInvoiceAsync(Snapshot(requestId), idempotencyKey);
 
         Assert.Equal(ConnectorOutcome.Ok, result.Outcome);
+        Assert.Equal(21, expectedDocNumber.Length);
         Assert.Equal("inv-100", result.Value!.ExternalId);
-        Assert.Equal(idempotencyKey, result.Value.ExternalInvoiceNumber);
-        Assert.Equal(idempotencyKey, result.Value.Reference);
+        Assert.Equal(expectedDocNumber, result.Value.ExternalInvoiceNumber);
+        Assert.Equal(expectedDocNumber, result.Value.Reference);
+    }
+
+    [Fact]
+    public async Task CreateDraftInvoiceAsync_NoClientName_ReturnsRejected_NamingTheOrganisationId_NeverCallsQuickBooksOnline()
+    {
+        var (connector, handler, _) = await BuildAsync();
+
+        var result = await connector.CreateDraftInvoiceAsync(Snapshot(clientName: null), Guid.NewGuid().ToString());
+
+        Assert.Equal(ConnectorOutcome.Rejected, result.Outcome);
+        Assert.Contains("ORG-1", result.Reason, StringComparison.Ordinal);
+        Assert.Contains("not in the catalogue", result.Reason, StringComparison.Ordinal);
+        Assert.Empty(handler.Calls);
     }
 
     [Fact]
@@ -69,7 +85,7 @@ public sealed class QuickBooksOnlineConnectorTests
 
         handler.When(HttpMethod.Get, $"v3/company/{Realm}/query", (request, _) =>
             request.RequestUri!.ToString().Contains("Customer", StringComparison.Ordinal)
-                ? JsonResponse(HttpStatusCode.OK, """{"QueryResponse":{"Customer":[{"Id":"cust-existing","DisplayName":"ORG-1"}]}}""")
+                ? JsonResponse(HttpStatusCode.OK, """{"QueryResponse":{"Customer":[{"Id":"cust-existing","DisplayName":"Fictional Client Ltd"}]}}""")
                 : JsonResponse(HttpStatusCode.OK, """{"QueryResponse":{}}"""));
 
         handler.When(HttpMethod.Post, $"v3/company/{Realm}/invoice", (_, body) =>
@@ -152,6 +168,27 @@ public sealed class QuickBooksOnlineConnectorTests
         Assert.NotNull(result.Value);
         Assert.Equal("inv-200", result.Value!.ExternalId);
         Assert.Equal(reference, result.Value.Reference);
+    }
+
+    [Fact]
+    public async Task FindByReferenceAsync_QueriesByTheDerivedDocNumber_NotTheRawRequestId()
+    {
+        var (connector, handler, _) = await BuildAsync();
+        var requestId = Guid.NewGuid().ToString();
+        var expectedDocNumber = QuickBooksOnlineConnector.DeriveDocNumber(requestId);
+
+        handler.When(HttpMethod.Get, $"v3/company/{Realm}/query", (request, _) =>
+        {
+            var uri = request.RequestUri!.ToString();
+            Assert.Contains(Uri.EscapeDataString(expectedDocNumber), uri, StringComparison.Ordinal);
+            Assert.DoesNotContain(Uri.EscapeDataString(requestId), uri, StringComparison.Ordinal);
+            return JsonResponse(HttpStatusCode.OK, "{\"QueryResponse\":{\"Invoice\":[{\"Id\":\"inv-777\",\"DocNumber\":\"" + expectedDocNumber + "\"}]}}");
+        });
+
+        var result = await connector.FindByReferenceAsync(requestId);
+
+        Assert.Equal(ConnectorOutcome.Ok, result.Outcome);
+        Assert.Equal(expectedDocNumber, result.Value!.Reference);
     }
 
     [Fact]
@@ -251,15 +288,61 @@ public sealed class QuickBooksOnlineConnectorTests
     }
 
     // ====================================================================
+    // DeriveDocNumber (`WP 19.1A-R1` disclosure #2)
+    // ====================================================================
+
+    [Fact]
+    public void DeriveDocNumber_Is21Characters_StartsWithTOS_AndIsUppercase()
+    {
+        var docNumber = QuickBooksOnlineConnector.DeriveDocNumber(Guid.NewGuid().ToString());
+
+        Assert.Equal(21, docNumber.Length);
+        Assert.StartsWith("TOS-", docNumber, StringComparison.Ordinal);
+        Assert.Equal(docNumber, docNumber.ToUpperInvariant(), StringComparer.Ordinal);
+    }
+
+    [Fact]
+    public void DeriveDocNumber_IsStable_TheSameIdAlwaysProducesTheSameNumber()
+    {
+        var id = Guid.NewGuid().ToString();
+
+        Assert.Equal(QuickBooksOnlineConnector.DeriveDocNumber(id), QuickBooksOnlineConnector.DeriveDocNumber(id));
+    }
+
+    [Fact]
+    public void DeriveDocNumber_DifferentIds_TypicallyProduceDifferentNumbers()
+    {
+        // A sample, not an exhaustive proof — the method's own remarks are
+        // explicit that uniqueness across the whole id space is never
+        // claimed, only stability for one given id.
+        var ids = Enumerable.Range(0, 500).Select(_ => Guid.NewGuid().ToString()).ToList();
+        var derived = ids.Select(QuickBooksOnlineConnector.DeriveDocNumber).ToHashSet(StringComparer.Ordinal);
+
+        Assert.Equal(ids.Count, derived.Count);
+    }
+
+    [Fact]
+    public void DeriveDocNumber_AShortIdWithFewHexDigits_IsStillPaddedToExactly21Characters()
+    {
+        // "z-z-z-a1" carries exactly two hex digits ('a' and '1'); the rest
+        // of the 17-character prefix is zero-padded rather than left short.
+        var docNumber = QuickBooksOnlineConnector.DeriveDocNumber("z-z-z-a1");
+
+        Assert.Equal(21, docNumber.Length);
+        Assert.StartsWith("TOS-A1", docNumber, StringComparison.Ordinal);
+        Assert.Equal(new string('0', 15), docNumber["TOS-A1".Length..]);
+    }
+
+    // ====================================================================
     // Fixtures
     // ====================================================================
 
     private static void StubExistingCustomer(StubHttpMessageHandler handler) =>
         handler.When(HttpMethod.Get, $"v3/company/{Realm}/query", (_, _) => JsonResponse(
-            HttpStatusCode.OK, """{"QueryResponse":{"Customer":[{"Id":"cust-existing","DisplayName":"ORG-1"}]}}"""));
+            HttpStatusCode.OK, """{"QueryResponse":{"Customer":[{"Id":"cust-existing","DisplayName":"Fictional Client Ltd"}]}}"""));
 
-    private static InvoiceRequestSnapshot Snapshot(Guid? requestId = null) => new(
-        requestId ?? Guid.NewGuid(), "ORG-1", "PO-1", CurrencyCode.Gbp,
+    private static InvoiceRequestSnapshot Snapshot(Guid? requestId = null, string? clientName = "Fictional Client Ltd") => new(
+        requestId ?? Guid.NewGuid(), "ORG-1", clientName, "PO-1", CurrencyCode.Gbp,
         [new InvoiceRequestLine("TimesheetEntry", Guid.NewGuid(), "Engineering time", 5m, new Money(100m, CurrencyCode.Gbp), new Money(500m, CurrencyCode.Gbp))],
         new Money(500m, CurrencyCode.Gbp));
 

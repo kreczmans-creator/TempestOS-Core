@@ -26,6 +26,8 @@ public sealed class XeroConnectorTests
         handler.When(HttpMethod.Post, "Invoices", (request, body) =>
         {
             Assert.Contains($"\"Reference\":\"{idempotencyKey}\"", body, StringComparison.Ordinal);
+            Assert.Contains("\"Name\":\"Fictional Client Ltd\"", body, StringComparison.Ordinal);
+            Assert.DoesNotContain("\"Name\":\"ORG-1\"", body, StringComparison.Ordinal);
             Assert.Equal(idempotencyKey, request.Headers.GetValues("Idempotency-Key").Single());
             Assert.Equal("Bearer seeded-access-token", request.Headers.Authorization!.ToString());
             Assert.Equal("tenant-1", request.Headers.GetValues("xero-tenant-id").Single());
@@ -184,6 +186,30 @@ public sealed class XeroConnectorTests
     }
 
     [Fact]
+    public async Task CreateDraftInvoiceAsync_NoClientName_ReturnsRejected_NamingTheOrganisationId_NeverCallsXero()
+    {
+        var (connector, handler, _) = await BuildAsync();
+
+        var result = await connector.CreateDraftInvoiceAsync(Snapshot(clientName: null), Guid.NewGuid().ToString());
+
+        Assert.Equal(ConnectorOutcome.Rejected, result.Outcome);
+        Assert.Contains("ORG-1", result.Reason, StringComparison.Ordinal);
+        Assert.Contains("not in the catalogue", result.Reason, StringComparison.Ordinal);
+        Assert.Empty(handler.Calls);
+    }
+
+    [Fact]
+    public async Task CreateDraftInvoiceAsync_BlankClientName_ReturnsRejected_SameAsNull()
+    {
+        var (connector, handler, _) = await BuildAsync();
+
+        var result = await connector.CreateDraftInvoiceAsync(Snapshot(clientName: "   "), Guid.NewGuid().ToString());
+
+        Assert.Equal(ConnectorOutcome.Rejected, result.Outcome);
+        Assert.Empty(handler.Calls);
+    }
+
+    [Fact]
     public async Task CreateDraftInvoiceAsync_NoRouteRegistered_TheStubRefuses_NoRealNetworkCallIsEverMade()
     {
         var (connector, _, _) = await BuildAsync();
@@ -198,8 +224,8 @@ public sealed class XeroConnectorTests
     // Fixtures
     // ====================================================================
 
-    private static InvoiceRequestSnapshot Snapshot(Guid? requestId = null) => new(
-        requestId ?? Guid.NewGuid(), "ORG-1", "PO-1", CurrencyCode.Gbp,
+    private static InvoiceRequestSnapshot Snapshot(Guid? requestId = null, string? clientName = "Fictional Client Ltd") => new(
+        requestId ?? Guid.NewGuid(), "ORG-1", clientName, "PO-1", CurrencyCode.Gbp,
         [new InvoiceRequestLine("TimesheetEntry", Guid.NewGuid(), "Engineering time", 5m, new Money(100m, CurrencyCode.Gbp), new Money(500m, CurrencyCode.Gbp))],
         new Money(500m, CurrencyCode.Gbp));
 

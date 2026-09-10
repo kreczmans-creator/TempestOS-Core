@@ -337,6 +337,69 @@ public sealed class InvoicingServiceJourneyTests
         await host.DisposeAsync();
     }
 
+    /// <summary>
+    /// `WP 19.1A-R1` disclosure #3: <c>SendAsync</c> resolves
+    /// <see cref="InvoiceRequestSnapshot.ClientName"/> from the real
+    /// Organisation catalogue (registered by <see cref="SetUpBillableProjectAsync"/>,
+    /// exactly as a real deployment would) before a connector is ever
+    /// called — proved here against a <see cref="SpyConnector"/> that
+    /// captures the snapshot it actually received, since
+    /// <c>FakeInvoicingConnector</c> itself only records the idempotency
+    /// key, never the whole snapshot.
+    /// </summary>
+    [Fact]
+    public async Task SendAsync_ResolvesTheClientNameFromTheOrganisationCatalogue_BeforeCallingTheConnector()
+    {
+        using var temp = new TempDirectory();
+        var (host, manager) = await InvoicingTestHost.StartAsync(temp.Path);
+        InvoicingTestHost.SignIn(host);
+
+        var projectId = await SetUpBillableProjectAsync(host, "CLIENTNAME");
+        var domain = InvoicingTestHost.Domain(host);
+        var request = await RaiseSingleLineDraftRequestAsync(host, projectId, domain, "CLIENTNAME");
+
+        var spy = new SpyConnector();
+        var directInvoicing = new InvoicingService(
+            domain, InvoicingTestHost.RateCards(host), InvoicingTestHost.Timesheets(host), InvoicingTestHost.Deliverables(host),
+            spy, InvoicingTestHost.Organisations(host));
+
+        var sent = await directInvoicing.SendAsync(request.Id);
+
+        Assert.True(sent.Succeeded, sent.Reason);
+        Assert.NotNull(spy.LastRequest);
+        Assert.Equal("INV-CLIENT-CLIENTNAME", spy.LastRequest!.ClientOrganisationId);
+        Assert.Equal("Fictional Client Ltd", spy.LastRequest.ClientName);
+
+        await manager.ShutdownAsync();
+        await host.DisposeAsync();
+    }
+
+    /// <summary>Captures the snapshot the last <see cref="CreateDraftInvoiceAsync"/> call received, so a test can inspect what <see cref="InvoicingService"/> actually filled onto it — <c>InvoiceReconciliationServiceTests.ThrowingConnector</c>'s own direct-construction pattern, applied here to observe rather than to fail.</summary>
+    private sealed class SpyConnector : IInvoicingConnector
+    {
+        public string Name => "Spy";
+
+        public InvoiceRequestSnapshot? LastRequest { get; private set; }
+
+        public Task<ConnectorResult<CreatedInvoice>> CreateDraftInvoiceAsync(InvoiceRequestSnapshot request, string idempotencyKey, CancellationToken cancellationToken = default)
+        {
+            LastRequest = request;
+            return Task.FromResult(ConnectorResult<CreatedInvoice>.Ok(new CreatedInvoice($"spy-{idempotencyKey}", null, idempotencyKey)));
+        }
+
+        public Task<ConnectorResult<InvoiceStatusReading>> ReadStatusAsync(string externalId, CancellationToken cancellationToken = default) =>
+            Task.FromResult(ConnectorResult<InvoiceStatusReading>.Ok(new InvoiceStatusReading("SUBMITTED", null, null, null)));
+
+        public Task<ConnectorResult<CreatedInvoice?>> FindByReferenceAsync(string reference, CancellationToken cancellationToken = default) =>
+            Task.FromResult(ConnectorResult<CreatedInvoice?>.Ok(null));
+
+        public Task<ConnectorResult<IReadOnlyList<ConnectorContact>>> ListContactsAsync(CancellationToken cancellationToken = default) =>
+            Task.FromResult(ConnectorResult<IReadOnlyList<ConnectorContact>>.Ok([]));
+
+        public Task<ConnectorAuthorisationState> AuthorisationStateAsync(CancellationToken cancellationToken = default) =>
+            Task.FromResult(new ConnectorAuthorisationState(ConnectorAuthorisation.Authorised));
+    }
+
     // ====================================================================
     // Fixtures
     // ====================================================================

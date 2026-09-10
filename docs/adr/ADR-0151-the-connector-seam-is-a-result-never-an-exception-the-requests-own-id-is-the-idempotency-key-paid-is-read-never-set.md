@@ -229,3 +229,55 @@ is dead vocabulary, kept only because the row names it.
 `D-028`; `ADR-0148` (Evidence, the shape repeated again); `ADR-0150`
 (frozen rates and `InvoicedBy`, read here, never re-resolved); `ADR-0145`
 (one object, one transaction); `WorkPackages.md` (`WP 19.1A` row).
+
+## Addendum (`WP 19.1A-R1`) — three of §11's own disclosed gaps closed before the physical review
+
+**Fixed OAuth loopback port.** §9's own loopback listener used to bind a
+fresh ephemeral port every run, which Xero's and Intuit's own app
+consoles cannot accept — both require one exact redirect URI, registered
+ahead of time. `OAuthLoopbackListener` now binds the port
+`OAuthAuthoriser.ResolveLoopbackPort()` resolves from
+`Invoicing:OAuth:LoopbackPort` — `49301` by default, `0` kept as the
+original ephemeral behaviour (a test's own choice only). **The exact
+redirect URI to register in a Xero or QuickBooks Online sandbox app is
+`http://127.0.0.1:49301/callback/`** — unchanged unless an operator
+configures a different port. When the configured port is already bound by
+something else, `AuthoriseAsync` returns `OAuthResult.Failed`, naming both
+the port attempted and the `Invoicing:OAuth:LoopbackPort` key — never a
+crash, exactly as this ADR's own "a result, never an exception" runs
+throughout.
+
+**The QuickBooks Online `DocNumber` length limit, actually closed.** §11
+disclosed that `InvoiceRequest.Id.ToString()` (36 characters) exceeds the
+field's own 21-character limit and left it unbuilt. `QuickBooksOnlineConnector.DeriveDocNumber`
+now derives a stable, exactly-21-character value —
+`"TOS-"` plus the first 17 hex digits found in the request id (its own
+dashes skipped), upper-cased, zero-padded if fewer than 17 are present —
+and writes it as `DocNumber`; `PrivateNote` still carries the full
+36-character id verbatim, unchanged. `FindByReferenceAsync` derives the
+identical value from the reference it is given before querying, since
+what it is handed is always the full id, never the already-shortened
+form. The derivation is deterministic (the same id always derives the
+same number, which is what reference lookup depends on) but explicitly
+**not** a claim of uniqueness across the whole id space — 17 of a GUID's
+own 32 hex digits is 68 bits, not the full 128 — disclosed in the
+method's own remarks rather than assumed away, matching this ADR's own
+established practice of naming a gap rather than hiding it.
+
+**Contact matching by organisation name, not a bare catalogue id.** §11
+also disclosed that both connectors matched/created a contact using
+`InvoiceRequestSnapshot.ClientOrganisationId` directly — an organisation-
+catalogue id, never a name any accounting system's own contact list could
+plausibly already hold. `InvoiceRequestSnapshot` gains `ClientName`,
+filled by `InvoicingService.ToSnapshotAsync` immediately before a
+connector is ever called: the client organisation's own name, read from
+`Tempest.Core.BusinessOperations.Crm.IOrganisationCatalog` by
+`ClientOrganisationId` — the one and only place in this seam that reads
+the catalogue at all, keeping every connector's own "plain data, no
+catalogue dependency" shape (§2's own remarks) intact. Both `XeroConnector`
+and `QuickBooksOnlineConnector` now match/create by `ClientName`; when it
+is `null` or blank — the id did not resolve to any registered
+organisation — `CreateDraftInvoiceAsync` returns
+`ConnectorResult.Rejected("client organisation '<id>' is not in the
+catalogue")` outright, never querying or creating a contact named after a
+raw, meaningless id.
