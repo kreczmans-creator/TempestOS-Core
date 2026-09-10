@@ -198,6 +198,15 @@ public sealed class NoBlockingPersistenceCallsTests
         [Path.Combine("Workspace", "Evidence", "EvidenceObjectView.cs")] =
             (1, "Owned by WP 18.2B (Evidence workspace), running in parallel; out of this Work Package's scope."),
 
+        // `WP 19.0A` (v0.19.0) added two Kinds whose object views bridge the
+        // same frozen synchronous `IWorkspaceViewFactory.Create` contract the
+        // six factories above do; widened deliberately, with the contract
+        // itself as the debt to close, not these two files.
+        [Path.Combine("Workspace", "Timesheets", "TimesheetEntryObjectView.cs")] =
+            (1, "Same IWorkspaceViewFactory.Create sync/async boundary as RequirementsWorkspaceViewFactory.cs (WP 19.0A)."),
+        [Path.Combine("Workspace", "Deliverables", "DeliverableCompletionObjectView.cs")] =
+            (1, "Same IWorkspaceViewFactory.Create sync/async boundary as RequirementsWorkspaceViewFactory.cs (WP 19.0A)."),
+
         // Pre-existing, self-disclosed, unrelated to the Cockpit read
         // surface `TD-108`/`TD-118` named.
         [Path.Combine("Workspace", "Macros", "MacroWorkspaceRegistration.cs")] =
@@ -281,8 +290,9 @@ public sealed class NoBlockingPersistenceCallsTests
     }
 
     /// <summary>
-    /// Pins the Workspace allow-list itself: exactly eleven disclosed
-    /// sites across exactly nine files — down from the thirty-six this
+    /// Pins the Workspace allow-list itself: exactly thirteen disclosed
+    /// sites across exactly eleven files (eleven across nine at v0.18.0; two
+    /// object views from WP 19.0A joined, same frozen contract) — down from the thirty-six this
     /// Work Package found across the whole of <c>src/Tempest.Workspace</c>
     /// once the twenty-five sites across the seven Cockpit-owned files
     /// (<c>EngineeringCockpit.cs</c> and all six <c>*CockpitReadModel.cs</c>
@@ -291,10 +301,10 @@ public sealed class NoBlockingPersistenceCallsTests
     /// silently widen.
     /// </summary>
     [Fact]
-    public void TheWorkspaceAllowList_PinsExactlyElevenSites_AcrossNineFiles()
+    public void TheWorkspaceAllowList_PinsExactlyThirteenSites_AcrossElevenFiles()
     {
-        Assert.Equal(9, AllowedWorkspaceBlockingCallSites.Count);
-        Assert.Equal(11, AllowedWorkspaceBlockingCallSites.Values.Sum(v => v.Count));
+        Assert.Equal(11, AllowedWorkspaceBlockingCallSites.Count);
+        Assert.Equal(13, AllowedWorkspaceBlockingCallSites.Values.Sum(v => v.Count));
 
         foreach (var (relative, allowed) in AllowedWorkspaceBlockingCallSites)
         {

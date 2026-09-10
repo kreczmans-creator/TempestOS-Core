@@ -20,6 +20,14 @@ namespace Tempest.Workspace.Timesheets;
 /// <see cref="Timesheets.DeleteTimesheetCommand"/> (`timesheet.delete`) is
 /// the one way to delete an entry, and it is the one that enforces it.
 /// </remarks>
+/// <summary>The Timesheets discipline's own command ids, the one place their strings live (`WP 19.2A`'s rule, applied to `WP 19.0A`'s commands).</summary>
+public static class TimesheetCommandIds
+{
+    public const string Record = "timesheet.record";
+    public const string Amend = "timesheet.amend";
+    public const string Delete = "timesheet.delete";
+}
+
 public static class TimesheetsWorkspaceRegistration
 {
     /// <summary>The Project Explorer area this registration populates.</summary>
@@ -51,7 +59,7 @@ public static class TimesheetsWorkspaceRegistration
         commandDispatcher.RegisterHandler<DeleteTimesheetCommand>(new DeleteTimesheetCommandHandler(timesheetService));
 
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "timesheet.record", displayName: "Record Time", category: "Timesheets",
+            id: TimesheetCommandIds.Record, displayName: "Record Time", category: "Timesheets",
             description: "Records time against the open project, priced from its pinned rate card and the grade given, frozen from this moment on.")
         {
             Binding = new CommandBinding(
@@ -70,7 +78,7 @@ public static class TimesheetsWorkspaceRegistration
         });
 
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "timesheet.amend", displayName: "Amend Time", category: "Timesheets",
+            id: TimesheetCommandIds.Amend, displayName: "Amend Time", category: "Timesheets",
             description: "Amends the selected entry's own hours, task and billable flag. Refused once the entry is invoiced.")
         {
             Binding = new CommandBinding(
@@ -87,7 +95,7 @@ public static class TimesheetsWorkspaceRegistration
         });
 
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "timesheet.delete", displayName: "Delete Time Entry", category: "Timesheets",
+            id: TimesheetCommandIds.Delete, displayName: "Delete Time Entry", category: "Timesheets",
             description: "Soft-deletes the selected timesheet entry. Refused once the entry is invoiced.")
         {
             Binding = new CommandBinding(

@@ -5,6 +5,7 @@ using Tempest.Workspace.Evidence;
 using Tempest.Workspace.Manufacturing;
 using Tempest.Workspace.Mechanical;
 using Tempest.Workspace.Requirements;
+using Tempest.Workspace.Timesheets;
 using Tempest.Workspace.Verification;
 
 namespace Tempest.Desktop.Composition;
@@ -83,5 +84,6 @@ internal static class SurfaceCommandPolicy
         RequirementsCommandIds.Delete,
         RequirementsCommandIds.DeleteGroup,
         RequirementsCommandIds.DeleteCollection,
+        TimesheetCommandIds.Delete,
     };
 }
