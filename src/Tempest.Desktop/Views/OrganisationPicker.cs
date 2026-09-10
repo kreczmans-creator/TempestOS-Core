@@ -1,4 +1,5 @@
 using Avalonia;
+using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Layout;
@@ -87,6 +88,18 @@ public sealed class OrganisationPicker : Border
         _clearButton.Classes.Add(ChromeStyles.Subtle);
         _cancelButton.Classes.Add(ChromeStyles.Subtle);
         _addButton.Classes.Add(ChromeStyles.Subtle);
+        AutomationProperties.SetName(_filter, "Filter…");
+        AutomationProperties.SetName(_list, "Organisations");
+        AutomationProperties.SetName(_chooseButton, "Choose");
+        AutomationProperties.SetName(_clearButton, "Clear");
+        AutomationProperties.SetName(_cancelButton, "Cancel");
+        AutomationProperties.SetName(_newReference, "Reference");
+        AutomationProperties.SetName(_newName, "New organisation name");
+        AutomationProperties.SetName(_addButton, "Add organisation");
+        ToolTip.SetTip(_chooseButton, "Choose");
+        ToolTip.SetTip(_clearButton, "Clear");
+        ToolTip.SetTip(_cancelButton, "Cancel");
+        ToolTip.SetTip(_addButton, "Add organisation");
 
         _filter.PropertyChanged += (_, e) => { if (e.Property == TextBox.TextProperty) ApplyFilter(); };
         _list.DoubleTapped += (_, _) => TryComplete();

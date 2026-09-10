@@ -25,26 +25,29 @@ public enum ShellArea
     /// <summary>The Engineering Workspace — scoped by the current project, or standalone when none is open.</summary>
     Engineering,
 
-    // The modules below are declared but not yet implemented. They are
-    // present so the shell shows the product's real module set and can
-    // state plainly what is missing, rather than hiding it — see
-    // `ShellAreas`, which is the single place that says which of these the
-    // platform can genuinely serve. New members are appended, never
-    // inserted: `ShellLocation` is persisted by ordinal.
+    // The five modules below were declared-but-unimplemented mock-up
+    // modules, present only so the rail could state plainly what was
+    // missing. `WP 19.2B` (`TD-81`): removed from the rail rather than
+    // dimmed — their descriptors leave `ShellAreas` entirely, so nothing
+    // in application state claims they exist any more. The members stay,
+    // unused, because `ShellLocation` is persisted by ordinal and a
+    // member once shipped is never removed or renumbered; a session
+    // restored pointing at one of them now falls back to Home
+    // (`MainWindow.RenderCurrentModuleAsync`).
 
-    /// <summary>Engineering and project task management (`TD-81`).</summary>
+    /// <summary>Removed from the rail (`WP 19.2B`, `TD-81`) — was "Engineering and project task management".</summary>
     Tasks,
 
-    /// <summary>Quotes, invoices, budget and cashflow (`TD-81`).</summary>
+    /// <summary>Removed from the rail (`WP 19.2B`, `TD-81`) — was "Quotes, invoices, budget and cashflow".</summary>
     Commercial,
 
-    /// <summary>People, workload and equipment planning (`TD-81`).</summary>
+    /// <summary>Removed from the rail (`WP 19.2B`, `TD-81`) — was "People, workload and equipment planning".</summary>
     Resources,
 
-    /// <summary>Standards, reference data and engineering knowledge (`TD-79`).</summary>
+    /// <summary>Removed from the rail (`WP 19.2B`, `TD-81`) — was "Standards, reference data and engineering knowledge".</summary>
     Knowledge,
 
-    /// <summary>Users, roles, permissions and platform settings (`TD-81`).</summary>
+    /// <summary>Removed from the rail (`WP 19.2B`, `TD-81`) — was "Users, roles, permissions and platform settings".</summary>
     Administration,
 
     /// <summary>
@@ -92,4 +95,28 @@ public enum ShellArea
     /// own identical remark; <c>ShellLocation</c> is persisted by ordinal.
     /// </remarks>
     Invoicing,
+
+    /// <summary>
+    /// The Reports area (`WP 19.2B`): every issued evidence sheet and
+    /// every project document, across open projects, filterable by
+    /// project.
+    /// </summary>
+    /// <remarks>
+    /// Appended, not inserted — see <see cref="EngineeringCalculation"/>'s
+    /// own identical remark; <c>ShellLocation</c> is persisted by ordinal.
+    /// </remarks>
+    Reports,
+
+    /// <summary>
+    /// The Settings area (`WP 19.2B`): persistence root, principal
+    /// override, connector authorisation, working pattern, the
+    /// independent-check toggle, theme, toast duration and
+    /// confirm-before-delete — the rail area that replaced the Preferences
+    /// dialog.
+    /// </summary>
+    /// <remarks>
+    /// Appended, not inserted — see <see cref="EngineeringCalculation"/>'s
+    /// own identical remark; <c>ShellLocation</c> is persisted by ordinal.
+    /// </remarks>
+    Settings,
 }

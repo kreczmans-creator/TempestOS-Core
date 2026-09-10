@@ -84,6 +84,22 @@ public sealed class MacroManagerDialog : Border
         AutomationProperties.SetName(_nameBox, "Macro name");
         ToolTip.SetTip(_nameBox, "Macro name");
 
+        AutomationProperties.SetName(_macroList, "Macros");
+        AutomationProperties.SetName(_newButton, "New Macro...");
+        AutomationProperties.SetName(_runButton, "Run");
+        AutomationProperties.SetName(_deleteButton, "Delete");
+        AutomationProperties.SetName(_closeButton, "Close");
+        AutomationProperties.SetName(_availableCommands, "Available Commands");
+        AutomationProperties.SetName(_steps, "Steps (run in order)");
+        AutomationProperties.SetName(_addStepButton, "Add Step →");
+        AutomationProperties.SetName(_removeStepButton, "← Remove Step");
+        AutomationProperties.SetName(_saveMacroButton, "Save Macro");
+        AutomationProperties.SetName(_cancelEditorButton, "Cancel");
+        ToolTip.SetTip(_runButton, "Run");
+        ToolTip.SetTip(_deleteButton, "Delete");
+        ToolTip.SetTip(_addStepButton, "Add Step");
+        ToolTip.SetTip(_removeStepButton, "Remove Step");
+
         BuildBrowsePanel();
         BuildEditorPanel();
 

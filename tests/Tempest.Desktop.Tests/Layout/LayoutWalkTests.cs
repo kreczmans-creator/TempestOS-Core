@@ -66,7 +66,7 @@ public sealed class LayoutWalkTests
     private static readonly (string Name, double Width, double Height)[] Sizes =
     [
         ("1600x900", 1600, 900),
-        ("1180x760", 1180, 760), // below DesignTokens.CompactShellWidth (1240) — the rail folds.
+        ("1180x760", 1180, 760), // below DesignTokens.CompactShellWidth (1200) — the rail folds and the ribbon compacts.
     ];
 
     private readonly ITestOutputHelper _output;

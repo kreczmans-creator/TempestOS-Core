@@ -33,8 +33,16 @@ public static class ProjectAreas
         new(ProjectArea.Overview, "Overview", "◉", NavigationAvailability.Implemented,
             "The project's own identity, lifecycle and real engineering contents."),
 
-        new(ProjectArea.Engineering, "Engineering", "⚙", NavigationAvailability.Implemented,
-            "The project's own engineering objects, opened in the Engineering Workspace with this project as its scope."),
+        // `WP 19.2B`: this tab's own title changed from "Engineering" to
+        // "Structure" — the surface itself is unchanged (still the real
+        // Engineering Workspace, ribbon and docking, scoped to this
+        // project), but it no longer swaps the whole shell module out
+        // from under the project workspace to show it: `ProjectWorkspaceView`
+        // embeds it directly, so the project's own header and tab strip
+        // stay on screen. `ShellArea.Engineering` remains the navigator's
+        // own scope for it.
+        new(ProjectArea.Engineering, "Structure", "⚙", NavigationAvailability.Implemented,
+            "The project's own engineering objects — the ribbon and docking surface of the Engineering Workspace, embedded here with this project as its scope."),
 
         new(ProjectArea.Documents, "Documents", "📄", NavigationAvailability.Implemented,
             "This project's own documents and drawings, resolved transitively through project membership, with every file held against them openable in the document viewer."),
@@ -57,13 +65,17 @@ public static class ProjectAreas
         new(ProjectArea.Deliverables, "Deliverables", "◈", NavigationAvailability.Implemented,
             "This project's own deliverables, each against the milestone it is due on, with its completion — when, by whom, on what evidence and documents, and a fixed-price value where it is billed that way rather than by time."),
 
-        new(ProjectArea.Reports, "Reports", "▤", NavigationAvailability.Declared,
-            "Reports over this project's own engineering evidence. Evidence composition and traceability are real and queryable; report definition, generation and export are not built.",
-            "TD-81"),
-
-        new(ProjectArea.Settings, "Settings", "⚙", NavigationAvailability.Declared,
-            "This project's own settings. Identity and lifecycle are real and editable through the domain; customer, manager, dates and budget fields do not exist on the Project object yet.",
-            "TD-76"),
+        // `WP 19.2B` (`TD-81`): the Reports and Settings tabs are removed
+        // from this tab strip, not dimmed — `DeclaredCapabilityView`,
+        // which was the only thing either ever rendered, is deleted.
+        // Reports over a project's own evidence is delivered by the
+        // rail's own Reports area instead (`ShellArea.Reports`), which
+        // filters by project — the identical capability, reached from the
+        // rail rather than duplicated per project. A project's own
+        // settings (customer, manager, dates, budget) remain undesigned;
+        // no substitute surface exists yet, and none is claimed here. The
+        // `ProjectArea` members stay, unused, because `ShellLocation` is
+        // persisted by ordinal (see that enum's own remarks).
     ];
 
     /// <summary>Every declared project area, in tab-strip order.</summary>

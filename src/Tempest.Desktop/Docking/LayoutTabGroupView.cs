@@ -33,6 +33,9 @@ public sealed class LayoutTabGroupView : UserControl
     /// <summary>The width, or height, a collapsed or auto-hidden group's own strip occupies.</summary>
     public const double StripSize = 32;
 
+    /// <summary>How much one <c>Ctrl+Shift+[</c>/<c>]</c> keypress shrinks or grows a panel's own proportional share (`WP 19.2B`, `TD-133`).</summary>
+    public const double ResizeStep = 0.05;
+
     private readonly LayoutTabGroupNode _node;
     private readonly WorkspacePanelRegistry _registry;
     private readonly WorkspaceLayoutTree _tree;
@@ -54,6 +57,21 @@ public sealed class LayoutTabGroupView : UserControl
 
     /// <summary>Raised when the user clicks an auto-hidden group's own strip, asking for its flyout.</summary>
     public event Action<Guid>? FlyoutRequested;
+
+    /// <summary>
+    /// Raised when the user presses <c>Ctrl+Shift+Arrow</c> with a panel
+    /// header focused (`WP 19.2B`, `TD-133`) — moves the panel to the
+    /// edge of the workspace in that direction.
+    /// </summary>
+    public event Action<Guid, DockRelation>? MoveRequested;
+
+    /// <summary>
+    /// Raised when the user presses <c>Ctrl+Shift+[</c> or
+    /// <c>Ctrl+Shift+]</c> with a panel header focused (`WP 19.2B`,
+    /// `TD-133`) — shrinks or grows the panel's own proportional share by
+    /// <see cref="ResizeStep"/>.
+    /// </summary>
+    public event Action<Guid, double>? ResizeRequested;
 
     /// <summary>Initialises a new instance of the <see cref="LayoutTabGroupView"/> class.</summary>
     public LayoutTabGroupView(LayoutTabGroupNode node, WorkspacePanelRegistry registry, WorkspaceLayoutTree tree)
@@ -204,9 +222,50 @@ public sealed class LayoutTabGroupView : UserControl
 
             AutomationProperties.SetName(tab, descriptor?.Title ?? "Panel");
 
+            // `WP 19.2B` (`TD-133`): docking-panel repositioning and
+            // resizing were mouse-only (drag a tab to move, drag a
+            // splitter to resize). Documented on the header itself, the
+            // one place a keyboard/screen-reader user would look for it.
+            AutomationProperties.SetHelpText(
+                tab,
+                "Ctrl+Shift+Arrow moves this panel to the workspace edge in that direction. Ctrl+Shift+[ shrinks it, Ctrl+Shift+] grows it.");
+
             var captured = panelId;
             tab.Click += (_, _) => PanelSelected?.Invoke(captured);
             tab.AddHandler(PointerPressedEvent, (_, e) => TabDragStarted?.Invoke(captured, e), Avalonia.Interactivity.RoutingStrategies.Tunnel);
+            tab.KeyDown += (_, e) =>
+            {
+                if ((e.KeyModifiers & (KeyModifiers.Control | KeyModifiers.Shift)) != (KeyModifiers.Control | KeyModifiers.Shift))
+                    return;
+
+                switch (e.Key)
+                {
+                    case Key.Left:
+                        MoveRequested?.Invoke(captured, DockRelation.Left);
+                        e.Handled = true;
+                        break;
+                    case Key.Right:
+                        MoveRequested?.Invoke(captured, DockRelation.Right);
+                        e.Handled = true;
+                        break;
+                    case Key.Up:
+                        MoveRequested?.Invoke(captured, DockRelation.Above);
+                        e.Handled = true;
+                        break;
+                    case Key.Down:
+                        MoveRequested?.Invoke(captured, DockRelation.Below);
+                        e.Handled = true;
+                        break;
+                    case Key.OemOpenBrackets:
+                        ResizeRequested?.Invoke(captured, -ResizeStep);
+                        e.Handled = true;
+                        break;
+                    case Key.OemCloseBrackets:
+                        ResizeRequested?.Invoke(captured, ResizeStep);
+                        e.Handled = true;
+                        break;
+                }
+            };
 
             var rule = new Border { Height = DesignTokens.RuleThickness, VerticalAlignment = VerticalAlignment.Bottom, IsVisible = isSelected, IsHitTestVisible = false };
             ThemeReactiveBrush.Bind(rule, Border.BackgroundProperty, BrandPalette.AccentBrushKey);

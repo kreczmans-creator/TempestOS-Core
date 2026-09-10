@@ -1,4 +1,5 @@
 using Avalonia;
+using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Layout;
 using Tempest.Desktop.Theming;
@@ -39,6 +40,13 @@ public sealed class EmptyStateView : UserControl
         ThemeReactiveBrush.Bind(_heading, TextBlock.ForegroundProperty, BrandPalette.HeadingTextBrushKey);
         ThemeReactiveBrush.Bind(_guidance, TextBlock.ForegroundProperty, BrandPalette.MutedTextBrushKey);
         _action.Classes.Add(ChromeStyles.Primary);
+        // A real default, not just a fallback for a structural walk: this
+        // button is a permanent part of the tree from construction (only
+        // hidden, never absent) whether or not a caller ever calls
+        // SetAction — named from the heading it sits beneath so it is
+        // never nameless between construction and any real action being
+        // configured.
+        AutomationProperties.SetName(_action, $"{heading} action");
 
         var stack = new StackPanel
         {
@@ -83,6 +91,8 @@ public sealed class EmptyStateView : UserControl
 
         _action.Content = label;
         _action.IsVisible = true;
+        AutomationProperties.SetName(_action, label);
+        ToolTip.SetTip(_action, label);
         _action.Click += (_, _) => onClick();
     }
 }

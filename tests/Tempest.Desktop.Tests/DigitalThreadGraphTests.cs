@@ -849,7 +849,17 @@ public sealed class DigitalThreadGraphViewTests
             var view = (await DigitalThreadGraphView.TryCreateAsync(target.Id, target.Kind!, domainContext, (_, _) => { }))!;
 
             var nodes = view.Model.Nodes;
-            var expectedTabIndex = nodes.ToDictionary(n => n.ObjectId, n => nodes.ToList().IndexOf(n));
+
+            // `WP 19.2B` (`TD-133`): a node's own `TabIndex` is no longer
+            // its bare render-order position — each node now reserves a
+            // 100-index block (`nodeIndexById[id] * 100`) so its own edges
+            // can sit immediately after it in tab order
+            // (`DigitalThreadGraphView.RebuildGraphCanvas`). Render order is
+            // still exactly what determines the ordering — the block size
+            // just leaves room for the edges — so the deterministic
+            // property this test names is unchanged; only the multiplier is
+            // new.
+            var expectedTabIndex = nodes.ToDictionary(n => n.ObjectId, n => nodes.ToList().IndexOf(n) * 100);
 
             foreach (var node in nodes)
             {

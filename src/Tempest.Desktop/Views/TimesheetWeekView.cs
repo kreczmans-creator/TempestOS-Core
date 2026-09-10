@@ -144,6 +144,12 @@ public sealed class TimesheetWeekView : UserControl
         body.Children.Add(_days);
 
         AutomationProperties.SetName(this, "Timesheets");
+        AutomationProperties.SetName(_previousWeek, "◀ Previous");
+        AutomationProperties.SetName(_nextWeek, "Next ▶");
+        AutomationProperties.SetName(_recordButton, "Record");
+        ToolTip.SetTip(_previousWeek, "Previous week");
+        ToolTip.SetTip(_nextWeek, "Next week");
+        ToolTip.SetTip(_recordButton, "Record time");
         Content = new ScrollViewer { Content = body };
     }
 

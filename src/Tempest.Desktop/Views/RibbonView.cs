@@ -68,8 +68,10 @@ public sealed class RibbonView : UserControl
     private readonly List<(Button Button, CommandDescriptor Descriptor)> _selectionAwareButtons = [];
     private readonly Dictionary<string, ContentControl> _recentSectionHosts = new(StringComparer.Ordinal);
     private readonly List<Control> _tabContents = [];
+    private readonly List<TextBlock> _commandLabels = [];
     private bool _suppressTabSelection;
     private bool _isCollapsed;
+    private bool _isCompact;
 
     /// <summary>Raised after a ribbon action completes (successfully or not), carrying a human-readable status message and its <see cref="ActionOutcome"/> — mirrors every other Desktop View's own identical <c>ActionCompleted</c> convention (`TD-58`: the outcome is what lets the subscriber refresh dependent surfaces only when the workspace actually changed).</summary>
     public event Action<string, ActionOutcome>? ActionCompleted;
@@ -118,6 +120,38 @@ public sealed class RibbonView : UserControl
     {
         foreach (var content in _tabContents)
             content.IsVisible = !_isCollapsed;
+    }
+
+    /// <summary>
+    /// Gets whether every command button is compacted to its icon alone,
+    /// its label hidden (`WP 19.2B`, `TD-73`).
+    /// </summary>
+    public bool IsCompact => _isCompact;
+
+    /// <summary>
+    /// Compacts every command button to its icon alone — the tooltip and
+    /// the button's own <see cref="AutomationProperties.NameProperty"/>
+    /// still carry the full name — or restores the label beside it. The
+    /// shell calls this from its own width, the same
+    /// <see cref="DesignTokens.CompactShellWidth"/> threshold
+    /// <see cref="GlobalNavigationRail.SetCompact"/> folds the rail at, so
+    /// every command group keeps fitting with no horizontal scrolling
+    /// (`TD-73`) rather than <see cref="SetCollapsed"/>'s own full
+    /// minimise, which would hide commands rather than shrink them.
+    /// </summary>
+    public void SetCompact(bool compact)
+    {
+        if (_isCompact == compact)
+            return;
+
+        _isCompact = compact;
+        ApplyCompactState();
+    }
+
+    private void ApplyCompactState()
+    {
+        foreach (var label in _commandLabels)
+            label.IsVisible = !_isCompact;
     }
 
     /// <summary>An optional confirmation gate (`WP 10.5B`, Dialog Framework — "Delete Confirmation") — mirrors <see cref="ProjectExplorerView.ConfirmDeleteAsync"/> exactly, including its own identical "unwired means proceed immediately" default.</summary>
@@ -182,6 +216,7 @@ public sealed class RibbonView : UserControl
         _selectionAwareButtons.Clear();
         _recentSectionHosts.Clear();
         _tabContents.Clear();
+        _commandLabels.Clear();
 
         var byCategory = _commandRegistry.Items
             .GroupBy(d => d.Category ?? "General")
@@ -192,6 +227,11 @@ public sealed class RibbonView : UserControl
             var content = BuildTabContent(group.Key, group.ToList());
             _tabContents.Add(content);
             var tab = new TabItem { Header = BuildTabHeader(group.Key), Tag = group.Key, Content = content };
+            // The header is a StackPanel (an accent dot + a TextBlock), not
+            // a string, so it carries no name of its own to a screen
+            // reader (`WP 19.2B`, `TD-65`) — named explicitly from the
+            // same category text the visible header already shows.
+            AutomationProperties.SetName(tab, group.Key);
             _tabs.Items.Add(tab);
         }
 
@@ -212,8 +252,10 @@ public sealed class RibbonView : UserControl
         RefreshEnablement();
 
         // A rebuild recreates every content panel — re-apply the current
-        // minimised state so it survives (`TD-70`).
+        // minimised state so it survives (`TD-70`), and the current
+        // compact state (`WP 19.2B`, `TD-73`).
         ApplyCollapsedState();
+        ApplyCompactState();
     }
 
     /// <summary>
@@ -437,6 +479,12 @@ public sealed class RibbonView : UserControl
         // One monochrome vector icon per verb (`IconGeometry`), tinted by
         // the button's own foreground — never a colour emoji.
         var icon = IconFor(descriptor.Id);
+        var label = large
+            ? new TextBlock { Text = descriptor.DisplayName, FontSize = DesignTokens.FontSizeCaption, TextWrapping = Avalonia.Media.TextWrapping.Wrap, TextAlignment = Avalonia.Media.TextAlignment.Center, MaxWidth = 68, LineHeight = 13 }
+            : new TextBlock { Text = descriptor.DisplayName, FontSize = DesignTokens.FontSizeCaption, VerticalAlignment = VerticalAlignment.Center };
+        label.IsVisible = !_isCompact;
+        _commandLabels.Add(label);
+
         Control content = large
             ? new StackPanel
             {
@@ -445,7 +493,7 @@ public sealed class RibbonView : UserControl
                 Children =
                 {
                     Icons.IconGeometry.Build(icon, 22, strokeThickness: 1.5),
-                    new TextBlock { Text = descriptor.DisplayName, FontSize = DesignTokens.FontSizeCaption, TextWrapping = Avalonia.Media.TextWrapping.Wrap, TextAlignment = Avalonia.Media.TextAlignment.Center, MaxWidth = 68, LineHeight = 13 },
+                    label,
                 },
             }
             : new StackPanel
@@ -455,7 +503,7 @@ public sealed class RibbonView : UserControl
                 Children =
                 {
                     Icons.IconGeometry.Build(icon, 14),
-                    new TextBlock { Text = descriptor.DisplayName, FontSize = DesignTokens.FontSizeCaption, VerticalAlignment = VerticalAlignment.Center },
+                    label,
                 },
             };
 

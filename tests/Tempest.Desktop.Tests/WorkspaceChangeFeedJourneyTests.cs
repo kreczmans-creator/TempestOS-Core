@@ -46,8 +46,8 @@ public sealed class WorkspaceChangeFeedJourneyTests
             await window.RenderCurrentModuleAsync();
             LayOut(window);
 
-            var explorer = window.GetLogicalDescendants().OfType<ProjectExplorerView>().Single();
-            var inspector = window.GetLogicalDescendants().OfType<PropertyInspectorView>().Single();
+            var explorer = window.FindUnique<ProjectExplorerView>();
+            var inspector = window.FindUnique<PropertyInspectorView>();
 
             // ---- Create, from the Ribbon — no explicit reload below ------
             var ribbon = GetPrivateField<RibbonView>(window, "_ribbon");

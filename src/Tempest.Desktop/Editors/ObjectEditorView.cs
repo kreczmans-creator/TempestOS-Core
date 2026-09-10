@@ -68,14 +68,16 @@ public sealed record EvidenceEditorSupport(
 /// unavailable rather than run without asking — the identical discipline
 /// <see cref="ObjectEditorView.WorkspaceChanges"/> already established.
 /// <see cref="ResolveClientNameAsync"/>/<see cref="ResolveRateCardAsync"/>
-/// (`WP 19.1A-R1` disclosure #4) resolve, asynchronously and never
-/// blocking, what the Commercial section actually shows for the client and
-/// the rate card — the organisation's own name and the card's own code,
-/// name and pinned revision, rather than the bare id/<see cref="Tempest.Core.ReferenceData.ReferencePin"/>
-/// a reader cannot otherwise place. Both are optional trailing parameters,
-/// not required alongside the three above: <see langword="null"/> (any
-/// test, or a composition that has not yet wired a resolver) leaves the
-/// section showing the id/pin exactly as before, honestly unresolved,
+/// (`WP 19.1A-R1` disclosure #4, wired by `WP 19.2B`) resolve,
+/// asynchronously and never blocking, what the Commercial section actually
+/// shows for the client and the rate card — the organisation's own name
+/// and the card's own code, name and pinned revision, rather than the bare
+/// id/<see cref="Tempest.Core.ReferenceData.ReferencePin"/> a reader cannot
+/// otherwise place. Both are optional trailing parameters, not required
+/// alongside the three above: <see langword="null"/> (any test, or a
+/// composition that has not yet wired a resolver), or a resolver answering
+/// <see langword="null"/> for a record no longer in its catalogue, leaves
+/// the section showing the id/pin exactly as before, honestly unresolved,
 /// never blocking or throwing over it.
 /// </summary>
 public sealed record ProjectCommercialEditorSupport(
@@ -1012,7 +1014,20 @@ public sealed class ObjectEditorView : UserControl
             openContent.Children.Add(IconGeometry.Build(IconGeometry.ChevronRight, 11));
             var openButton = new Button { Content = openContent, Padding = new Avalonia.Thickness(DesignTokens.SpaceSm, DesignTokens.SpaceXs) };
             openButton.Classes.Add(ChromeStyles.Flat);
-            Avalonia.Automation.AutomationProperties.SetName(openButton, "Open");
+
+            // `WP 19.2B` (`TD-132`). Every relationship row's Open button
+            // carried the identical literal name "Open" — a screen-reader
+            // user sweeping the Relationships panel of an object with
+            // several relationships heard "Open, button" once per row with
+            // nothing to tell them apart, the same defect the sibling
+            // `BuildObjectReferenceRowAsync`'s own Open button (below) and
+            // the attachments row's own Open button (`WP 16.5A-R2`) were
+            // already fixed against. Direction and relationship kind are
+            // included, not just the related object's name, because one
+            // object can legitimately appear in more than one relationship
+            // to the same object (e.g. both an incoming and an outgoing
+            // edge to it).
+            Avalonia.Automation.AutomationProperties.SetName(openButton, $"Open {direction} {relationshipKind} — {displayName}");
             openButton.Click += (_, _) => _navigateToObject(otherId, otherKind);
             Grid.SetColumn(openButton, 2);
             row.Children.Add(openButton);
@@ -1320,15 +1335,15 @@ public sealed class ObjectEditorView : UserControl
 
         _commercialSection.IsVisible = true;
 
-        // `WP 19.1A-R1` disclosure #4: the client shows the organisation's
-        // own name (falling back to the bare id when unresolved — no
-        // resolver wired, or the id no longer matches any registered
-        // organisation) and the rate card shows the card's own code and
-        // name alongside the pinned revision, rather than the bare id or
-        // `ReferencePin.ToString()` a reader has no way to place. Resolved
-        // asynchronously, never blocking: this whole method is already
-        // awaited end-to-end from `PopulateFromAsync`, exactly like every
-        // other section's own async population.
+        // `WP 19.1A-R1` disclosure #4, wired by `WP 19.2B`: the client shows
+        // the organisation's own name (falling back to the bare id when
+        // unresolved — no resolver wired, or the id no longer matches any
+        // registered organisation) and the rate card shows the card's own
+        // code and name alongside the pinned revision, rather than the bare
+        // id or `ReferencePin.ToString()` a reader has no way to place.
+        // Resolved asynchronously, never blocking: this whole method is
+        // already awaited end-to-end from `PopulateFromAsync`, exactly like
+        // every other section's own async population.
         _commercialClientPanel.Children.Clear();
         var clientName = project.ClientOrganisationId is { } clientId ? await ResolveClientNameAsync(clientId).ConfigureAwait(true) : null;
         _commercialClientPanel.Children.Add(new TextBlock

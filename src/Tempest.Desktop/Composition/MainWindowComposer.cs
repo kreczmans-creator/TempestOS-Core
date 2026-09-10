@@ -27,7 +27,6 @@ internal sealed record ComposedViews(
     IDiagnosticsProvider Diagnostics,
     DesktopSessionState Session,
     ThemeService Theme,
-    SettingsDialog SettingsDialog,
     ToastHost ToastHost,
     BusyOverlay BusyOverlay,
     ConfirmationDialog ConfirmationDialog,
@@ -61,10 +60,14 @@ internal sealed record ComposedViews(
     LibrariesView LibrariesView,
     OrganisationPicker OrganisationPicker,
     RateCardPicker RateCardPicker,
+    Tempest.Core.BusinessOperations.Crm.IOrganisationCatalog OrganisationCatalog,
+    Tempest.Core.BusinessGovernance.Pricing.IRateCardCatalog RateCardCatalog,
     TimesheetEntryPrompt TimesheetEntryPrompt,
     DeliverableCompletionPrompt DeliverableCompletionPrompt,
     TimesheetWeekView TimesheetWeekView,
     InvoicingView InvoicingView,
+    ReportsView ReportsView,
+    SettingsView SettingsView,
     Dictionary<Guid, IWorkspaceView> OpenGraphViewsByRootId,
     CommandHistoryLog CommandHistory,
     IBackgroundTaskRunner BackgroundTaskRunner,
@@ -209,8 +212,21 @@ internal sealed partial class MainWindowComposer
         var invoicingConnector = (Tempest.Core.Invoicing.IInvoicingConnector)services.GetService(typeof(Tempest.Core.Invoicing.IInvoicingConnector));
         var secretStore = (Tempest.Core.Secrets.ISecretStore)services.GetService(typeof(Tempest.Core.Secrets.ISecretStore));
 
-        var settingsDialog = new SettingsDialog(
-            theme, session.UserSettings, composition.SettingsProvider, workingPatterns, currentPrincipalAccessor, invoicingConnector, secretStore);
+        // `WP 19.2B`: the Settings area's own two read-only sections —
+        // the persistence root, resolved from the real store when it is
+        // the real `SqlitePersistenceStore` (a test's in-memory store has
+        // no file path to show), and `Identity:DisplayName`/`Identity:Role`,
+        // read straight from configuration exactly as `SessionPrincipalSource`
+        // itself does — never a second identity mechanism.
+        var queryableStore = (Tempest.Core.Persistence.IQueryablePersistenceStore)services.GetService(typeof(Tempest.Core.Persistence.IQueryablePersistenceStore));
+        var persistenceRootPath = queryableStore is Tempest.Core.Persistence.SqlitePersistenceStore sqliteStore
+            ? sqliteStore.DatabasePath
+            : "(in-memory persistence — no file on disk)";
+        var configurationProvider = (Tempest.Core.Configuration.IConfigurationProvider)services.GetService(typeof(Tempest.Core.Configuration.IConfigurationProvider));
+
+        var settingsView = new SettingsView(
+            theme, session.UserSettings, composition.SettingsProvider, configurationProvider, persistenceRootPath,
+            workingPatterns, currentPrincipalAccessor, invoicingConnector, secretStore);
 
         var confirmationDialog = new ConfirmationDialog();
         var inputDialog = new InputDialog();
@@ -255,6 +271,7 @@ internal sealed partial class MainWindowComposer
         ribbon.ParameterPrompt = commandPrompt.Prompt;
 
         var actionReporter = new ActionOutcomeReporter(statusBar, toastHost, callbacks.RecordHistory);
+        settingsView.ActionCompleted += (message, outcome) => _ = actionReporter.ReportAsync(message, outcome);
 
         var kindEditorDeclarations = new KindEditorDeclarationRegistry();
         KindEditorDeclarations.RegisterAll(kindEditorDeclarations);
@@ -314,6 +331,12 @@ internal sealed partial class MainWindowComposer
             }
         }
 
+        // `WP 19.2B`: the Reports area's own "Export"/document-row "Open"
+        // — opening a file never navigates, exactly as
+        // `OpenProjectAttachmentAsync`'s own remarks already establish for
+        // `ProjectWorkspaceView`'s identical Documents-tab callback.
+        Action<Guid, Guid> openAttachmentRightUp = (ownerId, attachmentId) => _ = callbacks.OpenProjectAttachmentAsync(ownerId, attachmentId, default);
+
         var timesheetWeekView = new TimesheetWeekView(
             composition.DomainContext, timesheetService, workingPatterns, composition.CommandDispatcher, composition.CommandRegistry,
             () => host.SessionPrincipal?.IdentityId, timesheetEntryPrompt, openObjectRightUp)
@@ -351,6 +374,14 @@ internal sealed partial class MainWindowComposer
             host.ProjectContext!, host.ProjectDirectory!, host.ShellNavigator!, host.ProjectDocuments!, host.ProjectRequirements!,
             host.ProjectTasks!, host.ProjectGovernance!, host.ProjectMilestones!, deliverablesView);
 
+        // `WP 19.2B`: the Reports area — issued evidence sheets and
+        // project documents, across every live project, filterable to one.
+        var reportsView = new ReportsView(
+            composition.DomainContext, projectDirectory, host.ProjectDocuments!, openObjectRightUp, openAttachmentRightUp)
+        {
+            WorkspaceChanges = composition.WorkspaceChanges,
+        };
+
         var engineeringCalculation = new EngineeringCalculationView(principals.Describe);
 
         var librariesView = new LibrariesView(
@@ -362,11 +393,12 @@ internal sealed partial class MainWindowComposer
         librariesView.ActionCompleted += (message, outcome) => _ = actionReporter.ReportAsync(message, outcome);
 
         return new ComposedViews(
-            composition, diagnostics, session, theme, settingsDialog, toastHost, new BusyOverlay(), confirmationDialog, inputDialog, messageDialog,
+            composition, diagnostics, session, theme, toastHost, new BusyOverlay(), confirmationDialog, inputDialog, messageDialog,
             macroManagerDialog, explorerView, inspectorView, statusBar, commandPalette, documentArea, ribbon, commandPrompt, actionReporter,
             citationPicker, subjectPicker, declaredFigureEntry, checkEntry, issueEntry, reviseReferenceRecordEntry, evidenceFilePicker,
             evidenceSupport, kindEditorDeclarations, navigationRail, header, moduleHost, projectDirectory, projectBrowser, projectWorkspace,
-            engineeringCalculation, librariesView, organisationPicker, rateCardPicker, timesheetEntryPrompt, deliverableCompletionPrompt,
-            timesheetWeekView, invoicingView, [], commandHistory, backgroundTaskRunner, keyboardBindingProvider, workspace, manager, principals);
+            engineeringCalculation, librariesView, organisationPicker, rateCardPicker, organisationCatalog, rateCardCatalog, timesheetEntryPrompt, deliverableCompletionPrompt,
+            timesheetWeekView, invoicingView, reportsView, settingsView, [], commandHistory, backgroundTaskRunner, keyboardBindingProvider,
+            workspace, manager, principals);
     }
 }

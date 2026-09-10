@@ -308,63 +308,18 @@ public sealed class DialogFrameworkKeyboardTests
     // `WP 16.5A` — real modal behaviour (`TD-65`): SettingsDialog and
     // MacroManagerDialog gain Escape/initial-focus; every one of the six
     // dialogs gains focus capture-on-open/restore-on-close.
+    //
+    // `WP 19.2B`: SettingsDialog is retired — Settings is a rail area now
+    // (`SettingsView`), not a dialog, so there is nothing modal left to
+    // exercise "focuses the Cancel button" or "Escape discards" against.
+    // Its own two tests (`SettingsDialog_Show_FocusesTheCancelButton_TheSafeDefault`,
+    // `SettingsDialog_Escape_ResolvesFalse_AndHidesTheDialog_LeavingSettingsUnchanged`)
+    // are deleted rather than kept passing against a type that no longer
+    // exists — the identical Save/Cancel-pair modal behaviour they proved
+    // remains covered by `ConfirmationDialog_Show_FocusesTheCancelButton_TheSafeDefault`
+    // and `ConfirmationDialog_Escape_ResolvesFalse_AndHidesTheDialog` above,
+    // the dialog `SettingsDialog`'s own remarks always said it mirrored.
     // ------------------------------------------------------------
-
-    [AvaloniaFact]
-    public async Task SettingsDialog_Show_FocusesTheCancelButton_TheSafeDefault()
-    {
-        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
-        try
-        {
-            await host.StartAsync();
-            var settingsProvider = (Tempest.Core.Settings.ISettingsProvider)host.Services!.GetService(typeof(Tempest.Core.Settings.ISettingsProvider));
-            var dialog = new SettingsDialog(new ThemeService(settingsProvider), new UserSettings(settingsProvider), settingsProvider);
-            var window = new Window { Content = dialog };
-            window.Show();
-
-            _ = dialog.ShowAsync();
-
-            var cancelButton = dialog.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "Cancel"));
-            Assert.True(cancelButton.IsFocused);
-        }
-        finally
-        {
-            await host.ShutdownAsync();
-            await host.DisposeAsync();
-        }
-    }
-
-    [AvaloniaFact]
-    public async Task SettingsDialog_Escape_ResolvesFalse_AndHidesTheDialog_LeavingSettingsUnchanged()
-    {
-        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
-        try
-        {
-            await host.StartAsync();
-            var settingsProvider = (Tempest.Core.Settings.ISettingsProvider)host.Services!.GetService(typeof(Tempest.Core.Settings.ISettingsProvider));
-            var settings = new UserSettings(settingsProvider);
-            var dialog = new SettingsDialog(new ThemeService(settingsProvider), settings, settingsProvider);
-            var window = new Window { Content = dialog };
-            window.Show();
-
-            var showTask = dialog.ShowAsync();
-            Assert.True(dialog.IsVisible);
-
-            var checkbox = dialog.GetLogicalDescendants().OfType<CheckBox>().Single(c => Equals(c.Content, "Confirm before deleting an object"));
-            checkbox.IsChecked = false; // a pending, unsaved change
-
-            dialog.RaiseEvent(new KeyEventArgs { RoutedEvent = InputElement.KeyDownEvent, Key = Key.Escape });
-
-            Assert.False(await showTask);
-            Assert.False(dialog.IsVisible);
-            Assert.True(settings.ConfirmBeforeDelete); // unchanged — Escape discarded, never saved
-        }
-        finally
-        {
-            await host.ShutdownAsync();
-            await host.DisposeAsync();
-        }
-    }
 
     [AvaloniaFact]
     public async Task MacroManagerDialog_Show_FocusesTheMacroList_NeverAButton()
@@ -516,7 +471,7 @@ public sealed class DialogFrameworkKeyboardTests
         Assert.False(sibling.IsFocused);
 
         // InputDialog's own Escape handling lives on `_input` itself
-        // (unlike the other five, which handle it on the dialog root) —
+        // (unlike the other four, which handle it on the dialog root) —
         // raised there, exactly where a real user's keystroke would land
         // (`PromptAsync`'s own initial focus).
         var input = dialog.GetLogicalDescendants().OfType<TextBox>().Single();
@@ -526,38 +481,11 @@ public sealed class DialogFrameworkKeyboardTests
         Assert.True(sibling.IsFocused);
     }
 
-    [AvaloniaFact]
-    public async Task SettingsDialog_Close_RestoresFocusToThePreviouslyFocusedControl()
-    {
-        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
-        try
-        {
-            await host.StartAsync();
-            var settingsProvider = (Tempest.Core.Settings.ISettingsProvider)host.Services!.GetService(typeof(Tempest.Core.Settings.ISettingsProvider));
-            var dialog = new SettingsDialog(new ThemeService(settingsProvider), new UserSettings(settingsProvider), settingsProvider);
-            var sibling = new Button { Content = "Sibling" };
-            var panel = new Panel();
-            panel.Children.Add(sibling);
-            panel.Children.Add(dialog);
-            var window = new Window { Content = panel };
-            window.Show();
-            sibling.Focus();
-
-            var showTask = dialog.ShowAsync();
-            Assert.False(sibling.IsFocused);
-
-            var cancelButton = dialog.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "Cancel"));
-            cancelButton.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
-
-            Assert.False(await showTask);
-            Assert.True(sibling.IsFocused);
-        }
-        finally
-        {
-            await host.ShutdownAsync();
-            await host.DisposeAsync();
-        }
-    }
+    // `SettingsDialog_Close_RestoresFocusToThePreviouslyFocusedControl` is
+    // deleted (`WP 19.2B`) — `SettingsDialog` is retired, and the
+    // identical close-restores-focus behaviour for a Save/Cancel dialog
+    // pair remains covered by `ConfirmationDialog_Close_RestoresFocusToThePreviouslyFocusedControl`
+    // above.
 
     [AvaloniaFact]
     public async Task MacroManagerDialog_Close_RestoresFocusToThePreviouslyFocusedControl()

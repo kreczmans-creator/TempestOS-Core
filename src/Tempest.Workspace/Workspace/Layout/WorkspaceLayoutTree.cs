@@ -267,6 +267,57 @@ public sealed record WorkspaceLayoutTree(
             : n);
     }
 
+    /// <summary>
+    /// Shrinks or grows <paramref name="panelId"/>'s own proportional
+    /// share of the split it sits in by <paramref name="delta"/> (`WP
+    /// 19.2B`, `TD-133` — the keyboard counterpart of dragging that
+    /// split's own <c>GridSplitter</c>), taking the change evenly from
+    /// every sibling and renormalising so the split's own weights still
+    /// sum to one.
+    /// </summary>
+    /// <param name="panelId">The panel being resized.</param>
+    /// <param name="delta">
+    /// The proportional change — positive grows <paramref name="panelId"/>,
+    /// negative shrinks it.
+    /// </param>
+    /// <returns>
+    /// The new arrangement; this one unchanged when <paramref name="panelId"/>
+    /// is not docked, shares its split with nothing (nothing to take the
+    /// change from), or the change would shrink any sibling below a usable
+    /// minimum share.
+    /// </returns>
+    public WorkspaceLayoutTree ResizeSplit(Guid panelId, double delta)
+    {
+        const double minimumShare = 0.05;
+
+        if (Root is null)
+            return this;
+
+        foreach (var split in Root.DescendantsAndSelf.OfType<LayoutSplitNode>())
+        {
+            var index = split.Children.ToList().FindIndex(c => c.Panels.Contains(panelId));
+            if (index < 0 || split.Children.Count < 2)
+                continue;
+
+            var othersCount = split.Children.Count - 1;
+            var perOther = delta / othersCount;
+
+            var proposed = split.Weights
+                .Select((weight, i) => i == index ? weight + delta : weight - perOther)
+                .ToList();
+
+            if (proposed.Any(weight => weight < minimumShare))
+                return this;
+
+            var sum = proposed.Sum();
+            var normalised = proposed.Select(weight => weight / sum).ToList();
+
+            return SetWeights(split.Id, normalised);
+        }
+
+        return this;
+    }
+
     /// <summary>Sets whether <paramref name="panelId"/> is pinned, or Auto-Hidden to an edge strip.</summary>
     public WorkspaceLayoutTree SetPinned(Guid panelId, bool isPinned) =>
         WithPresentation(panelId, PresentationOf(panelId) with { IsPinned = isPinned });

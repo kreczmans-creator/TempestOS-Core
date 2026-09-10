@@ -1,4 +1,5 @@
 using Avalonia;
+using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Layout;
@@ -86,6 +87,14 @@ public sealed class TimesheetEntryPrompt : Border
 
         _recordButton.Classes.Add(ChromeStyles.Primary);
         _cancelButton.Classes.Add(ChromeStyles.Subtle);
+        AutomationProperties.SetName(_project, "Project");
+        AutomationProperties.SetName(_billable, "Billable");
+        AutomationProperties.SetName(_grade, "Grade");
+        AutomationProperties.SetName(_task, "Task");
+        AutomationProperties.SetName(_recordButton, "Record");
+        AutomationProperties.SetName(_cancelButton, "Cancel");
+        ToolTip.SetTip(_recordButton, "Record");
+        ToolTip.SetTip(_cancelButton, "Cancel");
 
         _project.SelectionChanged += async (_, _) => await ReloadGradesAsync().ConfigureAwait(true);
         _recordButton.Click += (_, _) => TryComplete();

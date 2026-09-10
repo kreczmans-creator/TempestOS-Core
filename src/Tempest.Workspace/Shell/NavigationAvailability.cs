@@ -94,11 +94,31 @@ public static class ShellAreas
         new(ShellArea.Invoicing, "Invoicing", "▥", NavigationAvailability.Implemented,
             "Every invoice request across open projects (or the open project when one is open), grouped by status — raised from a completed deliverable, sent to a connector, reconciled, and voided, with every outcome shown."),
 
+        // `WP 19.2B`: issued evidence sheets and project documents,
+        // filterable by project — placed right after Invoicing, the last
+        // of the day-to-day project areas, and before Engineering
+        // Calculations.
+        new(ShellArea.Reports, "Reports", "▤", NavigationAvailability.Implemented,
+            "Every issued evidence sheet and every project document, across open projects — filterable by one project."),
+
         new(ShellArea.ProjectWorkspace, "Project", "◧", NavigationAvailability.Implemented,
             "One project's own workspace. Reached by opening a project, not from the rail."),
 
+        // `WP 19.2B`: Engineering leaves the rail — it is reached inside a
+        // project, as its own Structure tab (`ProjectWorkspaceView`
+        // embeds the ribbon and docking surface directly in that tab), or
+        // from open-right-up. Standalone engineering (`TD-89`, no project
+        // open) has no dedicated rail button either, but is not stranded:
+        // Home renders the identical engineering surface (ribbon,
+        // explorer, docking), unchanged, so quick calculations and
+        // calculation sets with no project stay one click away from where
+        // the rail already lands. The descriptor stays, excluded from
+        // `RailModules` exactly as `ProjectWorkspace`'s always has been,
+        // because `ShellArea.Engineering` remains a real navigator scope
+        // other code still names it by (`MainWindow.DescribeModule`/
+        // `DescribeLocation`, the Structure tab, open-right-up).
         new(ShellArea.Engineering, "Engineering", "⚙", NavigationAvailability.Implemented,
-            "The Engineering Workspace — inside the open project, or standalone for quick calculations and calculation sets."),
+            "The Engineering Workspace — inside the open project, as its own Structure tab, or standalone for quick calculations and calculation sets."),
 
         // Rail order is this list's own order, and it is deliberate: an
         // Implemented engineering destination sits beside Engineering,
@@ -110,33 +130,37 @@ public static class ShellAreas
         new(ShellArea.EngineeringCalculation, "Engineering Calculations", "∑", NavigationAvailability.Implemented,
             "Governed engineering calculations — populate the reference material library, release a material through review, run a calculation, and read the result with the reference revision it stood on."),
 
-        new(ShellArea.Tasks, "Tasks", "☑", NavigationAvailability.Declared,
-            "Task management across every project at once — one person's work, or one team's, wherever it lives. Tasks inside a single project are built and reachable from that project's own Tasks tab: create, assign, prioritise, date, board and reopen. What is missing here is only the cross-project view over them.",
-            "TD-81"),
+        // `WP 19.2B`: the rail area that replaced the Preferences dialog —
+        // placed last, the design system's own convention for a
+        // settings/preferences destination.
+        new(ShellArea.Settings, "Settings", "⚙", NavigationAvailability.Implemented,
+            "Persistence root, principal override, connector authorisation, working pattern, the independent-check toggle, theme, toast duration and confirm-before-delete."),
 
-        new(ShellArea.Commercial, "Commercial", "£", NavigationAvailability.Declared,
-            "Quotes, invoices, budget and cashflow. No commercial domain exists yet — this module has no implementation in any layer.",
-            "TD-81"),
-
-        new(ShellArea.Resources, "Resources", "⚗", NavigationAvailability.Declared,
-            "People, workload and equipment planning. No resourcing domain exists yet.",
-            "TD-81"),
-
-        new(ShellArea.Knowledge, "Knowledge", "◫", NavigationAvailability.Declared,
-            "Standards, reference data and engineering knowledge. Materials, units and calculation templates exist as real platform services, but no knowledge surface aggregates them.",
-            "TD-79"),
-
-        new(ShellArea.Administration, "Administration", "⚙", NavigationAvailability.Declared,
-            "Users, roles, permissions and platform settings. Identity, roles and permissions are real, enforced platform services — the administrative surface over them is not built.",
-            "TD-81"),
+        // `WP 19.2B` (`TD-81`): Tasks, Commercial, Resources, Knowledge and
+        // Administration are removed from the rail, not dimmed — no
+        // descriptor for any of the five is declared here any more, so
+        // `ShellAreas.For` throws for each exactly as it would for any
+        // other undeclared area, and `RailModules` can never offer a
+        // button for one. Their `ShellArea` members stay, unused, above
+        // (see that enum's own remarks); the surface that used to render
+        // them, `DeclaredCapabilityView`, and the rail's own "planned, not
+        // yet built" legend and marker are deleted along with them —
+        // every module this table now declares is real.
     ];
 
     /// <summary>Every declared global module, in rail order.</summary>
     public static IReadOnlyList<ShellAreaDescriptor> All => Descriptors;
 
-    /// <summary>The modules the global navigation rail offers — every module except the project workspace, which is reached by opening a project.</summary>
+    /// <summary>
+    /// The modules the global navigation rail offers — every declared
+    /// module except <see cref="ShellArea.ProjectWorkspace"/> (reached by
+    /// opening a project) and <see cref="ShellArea.Engineering"/> (`WP
+    /// 19.2B`: reached inside a project, as its own Structure tab, or
+    /// standalone from Engineering Calculations — never directly from the
+    /// rail).
+    /// </summary>
     public static IReadOnlyList<ShellAreaDescriptor> RailModules =>
-        Descriptors.Where(d => d.Area != ShellArea.ProjectWorkspace).ToList();
+        Descriptors.Where(d => d.Area is not (ShellArea.ProjectWorkspace or ShellArea.Engineering)).ToList();
 
     /// <summary>The descriptor for <paramref name="area"/>.</summary>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="area"/> is not declared here.</exception>

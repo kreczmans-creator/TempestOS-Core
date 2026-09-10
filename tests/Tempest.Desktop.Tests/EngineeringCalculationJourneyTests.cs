@@ -74,9 +74,10 @@ public sealed class EngineeringCalculationJourneyTests
             var view = SurfaceOf(window);
             Assert.NotNull(view);
 
-            // A real surface, not the "not yet implemented" card every
-            // Declared module gets.
-            Assert.Empty(window.GetLogicalDescendants().OfType<DeclaredCapabilityView>());
+            // A real surface. (`WP 19.2B`: the "not yet implemented" card
+            // every Declared module got, `DeclaredCapabilityView`, is
+            // deleted — every rail module is now genuinely Implemented,
+            // so there is nothing left to assert its absence against.)
 
             // --- 2. Real reference data loads ---------------------------
             // NOT "the library is empty": this test process references

@@ -62,7 +62,6 @@ public sealed class MainWindow : Window
     private readonly ConfirmationDialog _confirmationDialog;
     private readonly InputDialog _inputDialog;
     private readonly MessageDialog _messageDialog;
-    private readonly SettingsDialog _settingsDialog;
     private readonly DesktopSessionState _session;
     private readonly WorkspaceViewCoordinator _viewCoordinator;
     private readonly UndoRedoCoordinator _undoRedo;
@@ -111,6 +110,10 @@ public sealed class MainWindow : Window
 
     // The Invoicing area (`WP 19.1A` part 3, `ADR-0151`).
     private readonly InvoicingView _invoicingView;
+
+    // The Reports and Settings areas (`WP 19.2B`).
+    private readonly ReportsView _reportsView;
+    private readonly SettingsView _settingsView;
 
     // WP 10.6A — Command Execution & Productivity Experience.
     private readonly CommandHistoryLog _commandHistory;
@@ -163,7 +166,7 @@ public sealed class MainWindow : Window
         var views = composer.BuildViews(host, this, evidenceFilePickerOverride, callbacks);
         var coordinators = composer.BuildCoordinators(host, this, views, callbacks);
         composer.Wire(host, this, views, coordinators, callbacks);
-        var layout = composer.Layout(host, this, views, coordinators);
+        var layout = composer.Layout(host, this, views, coordinators, callbacks);
         Content = layout.Content;
 
         // This window's own retained fields — every collaborator a method
@@ -179,7 +182,6 @@ public sealed class MainWindow : Window
         _confirmationDialog = views.ConfirmationDialog;
         _inputDialog = views.InputDialog;
         _messageDialog = views.MessageDialog;
-        _settingsDialog = views.SettingsDialog;
         _session = views.Session;
         _viewCoordinator = coordinators.ViewCoordinator;
         _undoRedo = coordinators.UndoRedo;
@@ -213,6 +215,8 @@ public sealed class MainWindow : Window
         _evidenceWorkspace = coordinators.EvidenceWorkspace;
         _timesheetWeekView = views.TimesheetWeekView;
         _invoicingView = views.InvoicingView;
+        _reportsView = views.ReportsView;
+        _settingsView = views.SettingsView;
         _commandHistory = views.CommandHistory;
         _backgroundTaskRunner = views.BackgroundTaskRunner;
         _engineeringScope = host.EngineeringScope!;
@@ -223,14 +227,24 @@ public sealed class MainWindow : Window
         _areaRegistry = new Dictionary<ShellArea, ShellAreaRender>
         {
             [ShellArea.Projects] = new(() => _projectBrowser, () => _projectBrowser.RefreshAsync()),
-            [ShellArea.ProjectWorkspace] = new(() => _projectWorkspace, () => _projectWorkspace.RefreshAsync()),
-            // Both render the engineering surface: the Cockpit is a panel
-            // within it. `WP 17.9.1`: Engineering alone is not usable
-            // without the Project Explorer and Properties panels, so
-            // entering it (never Home) guarantees they are present
-            // whatever a saved layout says.
-            [ShellArea.Home] = new(() => _engineeringSurface, null),
-            [ShellArea.Engineering] = new(() => _engineeringSurface, EnterEngineeringAsync),
+            [ShellArea.ProjectWorkspace] = new(() => _projectWorkspace, EnterProjectWorkspaceAsync),
+            // `WP 17.9.1`: Engineering alone is not usable without the
+            // Project Explorer and Properties panels, so entering it
+            // (never Home) guarantees they are present whatever a saved
+            // layout says. `WP 19.2B`: Home renders the engineering
+            // surface exactly as it did before Engineering left the rail
+            // — the Cockpit is its own permanent tab within it — so this
+            // stays `_engineeringSurface` directly, through the same
+            // reattachment `ResolveEngineeringSurfaceHost` gives standalone
+            // Engineering (see that method's own remarks).
+            [ShellArea.Home] = new(() => ResolveEngineeringSurfaceHost(projectScoped: false), null),
+            // `WP 19.2B`: project-scoped Engineering renders the project
+            // workspace with its own Structure tab embedding the surface,
+            // never a bare module swap any more — see
+            // `ResolveEngineeringSurfaceHost`/`EnterEngineeringAsync`.
+            [ShellArea.Engineering] = new(
+                () => ResolveEngineeringSurfaceHost(projectScoped: _navigator.Current.ProjectId is not null),
+                EnterEngineeringAsync),
             // `WP 18.2A`: re-read on every entry, the same "load when you
             // land here" discipline every other area follows.
             [ShellArea.Evidence] = new(() => _evidenceWorkspace, () => _evidenceWorkspace.RefreshAsync()),
@@ -243,6 +257,10 @@ public sealed class MainWindow : Window
             // same "load when you land here" discipline every other area
             // follows.
             [ShellArea.Invoicing] = new(() => _invoicingView, () => _invoicingView.RefreshAsync()),
+            // `WP 19.2B`: re-read on every entry, the same "load when you
+            // land here" discipline every other area follows.
+            [ShellArea.Reports] = new(() => _reportsView, () => _reportsView.RefreshAsync()),
+            [ShellArea.Settings] = new(() => _settingsView, () => _settingsView.RefreshAsync()),
         };
 
         // `TD-84`: no Explorer area is selected by default — the
@@ -390,25 +408,34 @@ public sealed class MainWindow : Window
     /// from the area registry (`WP 19.2A`, `TD-109`) built in the
     /// constructor — the shell's one place that decides what is on screen,
     /// derived from <see cref="IShellNavigator.Current"/> so it can never
-    /// disagree with the navigation state. An area absent from the
-    /// registry renders <see cref="DeclaredCapabilityView"/>, honestly
-    /// naming what is missing rather than a dead button or a fake screen.
+    /// disagree with the navigation state.
     /// </summary>
+    /// <remarks>
+    /// <b>Removed, not dimmed (`WP 19.2B`, `TD-81`).</b> An area absent
+    /// from the registry is one whose rail entry was removed outright —
+    /// <see cref="ShellAreas"/> declares no descriptor for it at all any
+    /// more, so there is nothing honest left to render. A session
+    /// restored pointing at one (a persisted last-area from before this
+    /// Work Package) is redirected Home before anything renders, rather
+    /// than shown a "not yet implemented" surface for a module that no
+    /// longer exists.
+    /// </remarks>
     public async Task RenderCurrentModuleAsync()
     {
         var location = _navigator.Current;
 
-        if (_areaRegistry.TryGetValue(location.Area, out var entry))
+        if (!_areaRegistry.ContainsKey(location.Area))
         {
-            if (entry.OnEnter is not null)
-                await entry.OnEnter().ConfigureAwait(true);
+            await _navigator.GoToModuleAsync(ShellArea.Home).ConfigureAwait(true);
+            location = _navigator.Current;
+        }
 
-            _moduleHost.Content = entry.Content();
-        }
-        else
-        {
-            _moduleHost.Content = new DeclaredCapabilityView(ShellAreas.For(location.Area), _projectContext.Current?.Label);
-        }
+        var entry = _areaRegistry[location.Area];
+
+        if (entry.OnEnter is not null)
+            await entry.OnEnter().ConfigureAwait(true);
+
+        _moduleHost.Content = entry.Content();
 
         _navigationRail.RefreshSelection();
         RefreshProjectStatus();
@@ -417,11 +444,91 @@ public sealed class MainWindow : Window
             await RefreshEngineeringScopeAsync().ConfigureAwait(true);
     }
 
+    /// <summary>
+    /// The project workspace's own entry action — see
+    /// <see cref="_areaRegistry"/>. Puts the engineering surface into the
+    /// Structure tab before refreshing (`WP 19.2B`): the workspace's own
+    /// <see cref="ProjectWorkspaceView.RefreshAsync"/> may itself select
+    /// that tab (<see cref="ProjectWorkspaceView.SyncSelectedArea"/>) when
+    /// this location's own <see cref="ShellLocation.ProjectArea"/> is
+    /// already <see cref="ProjectArea.Engineering"/> — reachable directly,
+    /// not only through <see cref="ShellArea.Engineering"/>'s own tab-click
+    /// redirect, via <see cref="IShellNavigator.OpenProjectAsync"/>.
+    /// </summary>
+    private async Task EnterProjectWorkspaceAsync()
+    {
+        // `WP 19.2B`: the engineering surface is attached to the
+        // Structure tab only while that tab is genuinely the one this
+        // location names, and detached the moment it is not — leaving it
+        // attached while some other project tab (Overview, Documents, …)
+        // is current would make it a *logical* descendant of the hidden
+        // Structure `TabItem` while never being laid out inside it
+        // (Avalonia does not zero a hidden `TabItem`'s own `Content`
+        // control's `IsVisible`), which is exactly what the layout walk's
+        // "lies outside its parent" finding caught: `engineeringSurface`
+        // retaining bounds from whichever tab or module last actually
+        // rendered it, checked against a `WrapPanel` it was never really
+        // arranged inside.
+        if (_navigator.Current.ProjectArea == ProjectArea.Engineering)
+            ResolveEngineeringSurfaceHost(projectScoped: true);
+        else
+            _projectWorkspace.ClearEngineeringSurface();
+
+        await _projectWorkspace.RefreshAsync().ConfigureAwait(true);
+    }
+
     /// <summary>The Engineering area's own entry action — see <see cref="_areaRegistry"/>.</summary>
-    private Task EnterEngineeringAsync()
+    private async Task EnterEngineeringAsync()
     {
         _dockingComposer.EnsureCorePanelsPresent();
-        return Task.CompletedTask;
+
+        // `WP 19.2B`: project-scoped Engineering renders inside the
+        // project's own Structure tab now, never as a bare module swap —
+        // refresh the workspace and let it select that tab exactly as its
+        // own tab-selection handler would (`ProjectWorkspaceView.SyncSelectedArea`
+        // reads the same `ProjectArea` this location already carries).
+        if (_navigator.Current.ProjectId is not null)
+        {
+            await _projectWorkspace.RefreshAsync().ConfigureAwait(true);
+            _projectWorkspace.SyncSelectedArea();
+        }
+    }
+
+    /// <summary>
+    /// Resolves which control shows the engineering surface (ribbon +
+    /// docking) for this render (`WP 19.2B`) — one single, shared
+    /// <see cref="_engineeringSurface"/> instance, moved between this
+    /// window's own module host (Home, and standalone Engineering) and
+    /// the open project's own Structure tab (project-scoped Engineering),
+    /// never parented in both at once.
+    /// </summary>
+    /// <param name="projectScoped">
+    /// Whether this render is for a project's own Engineering — the
+    /// Structure tab embeds the surface and this method returns
+    /// <see cref="_projectWorkspace"/>; otherwise the surface itself is
+    /// returned, exactly as Home and standalone Engineering always showed
+    /// it directly.
+    /// </param>
+    private Control ResolveEngineeringSurfaceHost(bool projectScoped)
+    {
+        if (projectScoped)
+        {
+            // Detach from this window's own module host first — Avalonia
+            // refuses to reparent a control that is still attached
+            // somewhere else, and the previous render may have left
+            // `_engineeringSurface` sitting there directly (Home, or
+            // standalone Engineering).
+            if (ReferenceEquals(_moduleHost.Content, _engineeringSurface))
+                _moduleHost.Content = null;
+
+            _projectWorkspace.SetEngineeringSurface(_engineeringSurface);
+            return _projectWorkspace;
+        }
+
+        // The reverse direction: free the surface from the Structure tab
+        // (a no-op if it was not there) before handing it back directly.
+        _projectWorkspace.ClearEngineeringSurface();
+        return _engineeringSurface;
     }
 
     /// <summary>

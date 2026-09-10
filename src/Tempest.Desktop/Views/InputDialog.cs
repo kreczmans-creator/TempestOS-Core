@@ -1,4 +1,5 @@
 using Avalonia;
+using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Layout;
@@ -68,6 +69,16 @@ public sealed class InputDialog : Border
 
         _okButton.Classes.Add(ChromeStyles.Primary);
         _cancelButton.Classes.Add(ChromeStyles.Subtle);
+        AutomationProperties.SetName(_okButton, "OK");
+        AutomationProperties.SetName(_cancelButton, "Cancel");
+        ToolTip.SetTip(_okButton, "OK");
+        ToolTip.SetTip(_cancelButton, "Cancel");
+        // A real default, not just a fallback for a structural walk: this
+        // dialog is permanently present (only hidden, never absent — see
+        // `MainWindowComposer.Layout`), so the field needs a name from
+        // construction, not only from the first real `PromptAsync` call
+        // that sets it to that call's own label below.
+        AutomationProperties.SetName(_input, "Value");
         _title.FontFamily = DesignTokens.TitleFont;
         _title.FontSize = DesignTokens.FontSizeTitle;
         _cancelButton.Click += (_, _) => Complete(null);
@@ -106,6 +117,7 @@ public sealed class InputDialog : Border
         _title.Text = title;
         _label.Text = label;
         _input.Text = initialValue;
+        AutomationProperties.SetName(_input, label);
         _validate = validate;
         _validationSlot.IsVisible = false;
         _validationSlot.Content = null;

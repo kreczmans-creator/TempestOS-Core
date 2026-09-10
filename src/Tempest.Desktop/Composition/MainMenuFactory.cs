@@ -33,7 +33,7 @@ internal static class MainMenuFactory
         IWorkspace workspace, WorkspaceLayoutController layout,
         Guid explorerPanelId, Guid inspectorPanelId, Guid outputPanelId,
         DesktopPanelUiState uiState, OutputPanel outputPanel, OutputPanelView outputView, IDiagnosticsProvider diagnostics,
-        ThemeService theme, SettingsDialog settingsDialog, MessageDialog messageDialog, CommandPaletteOverlay commandPalette, DocumentAreaView documentArea,
+        ThemeService theme, Action navigateToSettings, MessageDialog messageDialog, CommandPaletteOverlay commandPalette, DocumentAreaView documentArea,
         RibbonView ribbon, Action<WorkspaceLayoutPreset> applyPreset, Action resetLayout)
     {
         ArgumentNullException.ThrowIfNull(workspace);
@@ -43,7 +43,7 @@ internal static class MainMenuFactory
         ArgumentNullException.ThrowIfNull(outputView);
         ArgumentNullException.ThrowIfNull(diagnostics);
         ArgumentNullException.ThrowIfNull(theme);
-        ArgumentNullException.ThrowIfNull(settingsDialog);
+        ArgumentNullException.ThrowIfNull(navigateToSettings);
         ArgumentNullException.ThrowIfNull(messageDialog);
         ArgumentNullException.ThrowIfNull(commandPalette);
         ArgumentNullException.ThrowIfNull(documentArea);
@@ -119,8 +119,11 @@ internal static class MainMenuFactory
         toggleTheme.Click += async (_, _) => await theme.ToggleAsync().ConfigureAwait(true);
         themeMenu.Items.Add(toggleTheme);
         themeMenu.Items.Add(new Separator());
-        var preferences = new MenuItem { Header = "Preferences...", Icon = IconGeometry.Build(IconGeometry.Gear, 14) };
-        preferences.Click += async (_, _) => await settingsDialog.ShowAsync().ConfigureAwait(true);
+        // `WP 19.2B`: Settings is a rail area now, not a dialog — this
+        // item navigates there exactly as clicking the rail button would,
+        // rather than opening a second settings surface.
+        var preferences = new MenuItem { Header = "Settings...", Icon = IconGeometry.Build(IconGeometry.Gear, 14) };
+        preferences.Click += (_, _) => navigateToSettings();
         themeMenu.Items.Add(preferences);
 
         var help = new MenuItem { Header = "_Help" };

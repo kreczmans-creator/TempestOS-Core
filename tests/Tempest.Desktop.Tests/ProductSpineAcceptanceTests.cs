@@ -194,15 +194,22 @@ public sealed class ProductSpineAcceptanceTests
     }
 
     /// <summary>
-    /// Superseded and inverted, deliberately. This previously asserted that
-    /// the rail's Engineering button routed to Projects when no project was
-    /// open, which was correct under the product decision in force at the
-    /// time. The current decision makes standalone engineering — quick
-    /// calculations and calculation sets — a first-class workflow that
-    /// requires no project (`TD-89`), so the button now goes to
-    /// Engineering, in the standalone scope, and the assertion is
-    /// strengthened rather than removed: the destination must be real, and
-    /// it must know which scope it is in.
+    /// Superseded and inverted, twice over now. This originally asserted
+    /// that the rail's Engineering button routed to Projects when no
+    /// project was open; a later revision made standalone engineering —
+    /// quick calculations and calculation sets — a first-class workflow
+    /// reachable from that same button (`TD-89`). `WP 19.2B` removes
+    /// Engineering from the rail entirely (`TD-81`): the full Engineering
+    /// Workspace is now reached from a project's own Structure tab, or by
+    /// opening an existing object right up — never by a standalone rail
+    /// button, since the rail no longer carries one. `IShellNavigator`
+    /// itself keeps <see cref="IShellNavigator.GoToStandaloneEngineeringAsync"/>
+    /// as a real, first-class scope regardless of how a caller reaches
+    /// it — this test now drives that directly rather than simulating a
+    /// rail click on a button that no longer exists, and keeps every
+    /// downstream assertion this test always made: standalone Engineering
+    /// is a genuine destination, in the standalone scope, that invents no
+    /// project.
     /// </summary>
     [AvaloniaFact]
     public async Task TheRailEntersStandaloneEngineering_WhenNoProjectIsOpen()
@@ -216,17 +223,8 @@ public sealed class ProductSpineAcceptanceTests
 
             Assert.False(host.ProjectContext!.HasProject);
 
-            var rail = window.GetLogicalDescendants().OfType<GlobalNavigationRail>().Single();
-            var engineering = rail.GetLogicalDescendants().OfType<Button>()
-                .Single(b => Avalonia.Automation.AutomationProperties.GetName(b) == "Engineering");
-
-            engineering.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
-
-            // `TD-119`: the rail navigates on an asynchronous continuation; bounded poll on
-            // the real navigator state, assertions unchanged.
-            var railDeadline = DesktopTestHelpers.Deadline(2);
-            while (!(navigator.Current.Area == ShellArea.Engineering) && DateTime.UtcNow < railDeadline)
-                await Task.Delay(10);
+            await navigator.GoToStandaloneEngineeringAsync();
+            await window.RenderCurrentModuleAsync();
 
             Assert.Equal(ShellArea.Engineering, navigator.Current.Area);
             Assert.True(navigator.Current.IsStandaloneEngineering);

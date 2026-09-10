@@ -1,4 +1,5 @@
 using Avalonia;
+using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Layout;
@@ -67,6 +68,12 @@ public sealed class RateCardPicker : Border
 
         _chooseButton.Classes.Add(ChromeStyles.Primary);
         _cancelButton.Classes.Add(ChromeStyles.Subtle);
+        AutomationProperties.SetName(_filter, "Filter…");
+        AutomationProperties.SetName(_list, "Released rate cards");
+        AutomationProperties.SetName(_chooseButton, "Pin");
+        AutomationProperties.SetName(_cancelButton, "Cancel");
+        ToolTip.SetTip(_chooseButton, "Pin");
+        ToolTip.SetTip(_cancelButton, "Cancel");
 
         _filter.PropertyChanged += (_, e) => { if (e.Property == TextBox.TextProperty) ApplyFilter(); };
         _list.DoubleTapped += (_, _) => TryComplete();

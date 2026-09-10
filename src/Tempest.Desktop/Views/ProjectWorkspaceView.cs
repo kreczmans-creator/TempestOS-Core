@@ -49,8 +49,6 @@ public sealed class ProjectWorkspaceView : UserControl
     private readonly Button _enterEngineering = new() { Content = "Enter Engineering →", MinHeight = DesignTokens.ControlSizeMedium };
     private readonly Button _closeProject = new() { Content = "Close Project", MinHeight = DesignTokens.ControlSizeMedium };
 
-    private readonly List<ContentControl> _areaHosts = [];
-
     // The areas with real surfaces of their own. Built once and refreshed
     // in place, so the register a user is looking at survives a re-render
     // of the project workspace around it.
@@ -60,6 +58,36 @@ public sealed class ProjectWorkspaceView : UserControl
     private readonly ProjectRisksView _risksView = new();
     private readonly ProjectTimelineView _timelineView = new();
     private readonly ProjectDeliverablesView _deliverablesView;
+
+    // `WP 19.2B`: the Structure tab's own content host — a stable
+    // placeholder built at construction time, before the engineering
+    // surface (ribbon + docking) exists; `SetEngineeringSurface` fills it
+    // once the composer has built that surface, and `ClearEngineeringSurface`
+    // frees it again when the shell needs the same, single control
+    // instance for standalone engineering instead (see both methods' own
+    // remarks).
+    //
+    // Its `Margin` cancels `root`'s own `DesignTokens.PagePadding` exactly
+    // (the same "negative margin cancels a margin" technique
+    // `CockpitCardControl`/`CockpitView` already use) — the ribbon and
+    // docking surface is not page-shaped content and is meant to fill the
+    // tab edge-to-edge, exactly as it does standalone at Home. This is
+    // more than cosmetic: `root`'s padding otherwise narrows this one
+    // shared surface by 48px relative to Home, which is just enough, with
+    // this project's real engineering-object and evidence content on the
+    // Home cockpit, to push one of its card rows past the two-cards-per-row
+    // wrap threshold the wider Home width clears — one extra wrapped row
+    // and every row beneath it shifts down, and the last row's own bottom
+    // edge then lands past the card grid's own arranged height (a genuine
+    // `WrapPanel` measure/arrange sizing difference at the narrower width,
+    // not a bug this Work Package introduced in `CockpitView` itself, which
+    // WP 19.2B does not own or touch — matching Home's width removes the
+    // narrower trigger rather than papering over that surface's own
+    // layout).
+    private readonly ContentControl _structureHost = new()
+    {
+        Margin = new Thickness(-DesignTokens.PagePadding.Left, -DesignTokens.PagePadding.Top, -DesignTokens.PagePadding.Right, -DesignTokens.PagePadding.Bottom),
+    };
 
     private bool _suppressAreaSelection;
 
@@ -256,8 +284,27 @@ public sealed class ProjectWorkspaceView : UserControl
         }
 
         AutomationProperties.SetName(_areas, "Project areas");
-        _areas.SelectionChanged += async (_, _) =>
+        _areas.SelectionChanged += async (_, e) =>
         {
+            // `WP 19.2B`: `SelectionChanged` is a bubbling routed event
+            // shared by every `SelectingItemsControl` — and the Structure
+            // tab now embeds the whole engineering surface (the Project
+            // Explorer tree, the Ribbon's own tab strip, the calculation
+            // pickers), each a `SelectingItemsControl` of its own. Their
+            // selection changes bubble through `_structureHost` and reach
+            // this handler exactly as a real tab-strip click would,
+            // unless it is the tab strip itself that raised the event —
+            // checked here the same way `DigitalThreadGraphView`'s own
+            // hit-test guard already does for its own bubbled events.
+            // Without this, an unrelated reload deep inside the embedded
+            // surface (the Explorer's own change-feed refresh, say) reads
+            // as the user picking the Structure tab, silently steering the
+            // navigator back to project-scoped Engineering and tearing the
+            // shell's own module host away from whatever area was actually
+            // on screen.
+            if (!ReferenceEquals(e.Source, _areas))
+                return;
+
             if (_suppressAreaSelection || _areas.SelectedItem is not TabItem { Tag: ProjectArea area })
                 return;
 
@@ -283,6 +330,8 @@ public sealed class ProjectWorkspaceView : UserControl
 
         _enterEngineering.Classes.Add(ChromeStyles.Primary);
         _closeProject.Classes.Add(ChromeStyles.Subtle);
+        AutomationProperties.SetName(_enterEngineering, "Enter Engineering");
+        AutomationProperties.SetName(_closeProject, "Close Project");
 
         var header = new StackPanel { Spacing = DesignTokens.SpaceXs };
         header.Children.Add(PageHeading.Label("PROJECT WORKSPACE"));
@@ -304,6 +353,40 @@ public sealed class ProjectWorkspaceView : UserControl
 
     /// <summary>Notes that a file is now open in the viewer, so its row says where it went.</summary>
     public void MarkDocumentOpened(Guid attachmentId) => _documentsView.MarkOpened(attachmentId);
+
+    /// <summary>
+    /// Puts <paramref name="surface"/> — the engineering surface (ribbon +
+    /// docking) — into the Structure tab (`WP 19.2B`). Idempotent: calling
+    /// it again with the same instance already in place does nothing, so
+    /// <c>MainWindow</c> can call it on every entry into project-scoped
+    /// Engineering without first checking whether it already ran.
+    /// </summary>
+    /// <remarks>
+    /// <paramref name="surface"/> is the same single control instance
+    /// standalone Engineering (no project open) shows directly in the
+    /// shell's own module host — never two instances of one surface. The
+    /// caller is responsible for detaching it from wherever it currently
+    /// lives (<see cref="ClearEngineeringSurface"/>'s own remarks) before
+    /// handing it here; Avalonia refuses to reparent a control that is
+    /// still attached somewhere else.
+    /// </remarks>
+    public void SetEngineeringSurface(Control surface)
+    {
+        ArgumentNullException.ThrowIfNull(surface);
+        if (!ReferenceEquals(_structureHost.Content, surface))
+            _structureHost.Content = surface;
+    }
+
+    /// <summary>
+    /// Frees the engineering surface from the Structure tab, so the shell
+    /// can hand the same instance to standalone Engineering instead (`WP
+    /// 19.2B`). A no-op when the Structure tab is not currently holding it.
+    /// </summary>
+    public void ClearEngineeringSurface()
+    {
+        if (_structureHost.Content is not null)
+            _structureHost.Content = null;
+    }
 
     /// <summary>Re-reads the open project and its contents.</summary>
     public async Task RefreshAsync()
@@ -354,7 +437,6 @@ public sealed class ProjectWorkspaceView : UserControl
         _overview.Children.Add(overviewCard);
         _overview.Children.Add(new TextBlock { Text = $"Engineering objects in this project: {contents.Count}", FontSize = DesignTokens.FontSizeCaption, Opacity = 0.0, Height = 0 });
 
-        RefreshAreaSurfaces();
         SyncSelectedArea();
     }
 
@@ -371,47 +453,28 @@ public sealed class ProjectWorkspaceView : UserControl
         _suppressAreaSelection = false;
     }
 
-    private Control BuildAreaContent(ProjectAreaDescriptor descriptor)
+    /// <summary>
+    /// Every project area now has a real surface of its own (`WP 19.2B`,
+    /// `TD-81`: Reports and Settings, the last two that did not, are
+    /// removed from <see cref="ProjectAreas.All"/> rather than rendered
+    /// declared) — so this is a closed mapping, not a fallback chain.
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="descriptor"/>'s area has no case here — <see cref="ProjectAreas.All"/> declared an area this view does not yet know how to render.</exception>
+    private Control BuildAreaContent(ProjectAreaDescriptor descriptor) => descriptor.Area switch
     {
-        // The areas with live content of their own; every other area
-        // renders from its own declaration, so a view can never claim a
-        // capability the application state does not.
-        if (descriptor.Area == ProjectArea.Overview)
-            return _overview;
-
-        if (descriptor.Area == ProjectArea.Documents)
-            return _documentsView;
-
-        if (descriptor.Area == ProjectArea.Requirements)
-            return _requirementsView;
-
-        if (descriptor.Area == ProjectArea.Tasks)
-            return _tasksView;
-
-        if (descriptor.Area == ProjectArea.Risks)
-            return _risksView;
-
-        if (descriptor.Area == ProjectArea.Timeline)
-            return _timelineView;
-
-        if (descriptor.Area == ProjectArea.Deliverables)
-            return _deliverablesView;
-
-        var host = new ContentControl { Tag = descriptor.Area };
-        _areaHosts.Add(host);
-        host.Content = new DeclaredCapabilityView(descriptor, _projectContext.Current?.Label);
-        return host;
-    }
-
-    /// <summary>Re-renders every declared area's own surface so it names the currently open project.</summary>
-    private void RefreshAreaSurfaces()
-    {
-        var label = _projectContext.Current?.Label;
-
-        foreach (var host in _areaHosts)
-        {
-            if (host.Tag is ProjectArea area)
-                host.Content = new DeclaredCapabilityView(ProjectAreas.For(area), label);
-        }
-    }
+        ProjectArea.Overview => _overview,
+        // `WP 19.2B`: the Structure tab embeds the engineering surface
+        // (ribbon + docking) through `_structureHost`, filled once
+        // `MainWindow`/`MainWindowComposer` has built that surface (see
+        // `SetEngineeringSurface`) — never built here, which would be too
+        // early.
+        ProjectArea.Engineering => _structureHost,
+        ProjectArea.Documents => _documentsView,
+        ProjectArea.Requirements => _requirementsView,
+        ProjectArea.Tasks => _tasksView,
+        ProjectArea.Risks => _risksView,
+        ProjectArea.Timeline => _timelineView,
+        ProjectArea.Deliverables => _deliverablesView,
+        _ => throw new ArgumentOutOfRangeException(nameof(descriptor), descriptor.Area, "No content is built for this project area."),
+    };
 }

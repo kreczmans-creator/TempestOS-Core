@@ -407,20 +407,17 @@ public sealed class ProjectGovernanceAcceptanceTests
             Assert.NotNull(RisksSurfaceOf(window));
 
             // The Risks tab's own content is the real surface, and nothing
-            // else. Asserted against the tab rather than against the whole
-            // window, because the project workspace builds every area's
-            // content up front — so cards for the areas that genuinely are
-            // Declared (Timeline, Reports, Settings) legitimately exist in
-            // the logical tree and a window-wide assertion would be wrong.
+            // else. (`WP 19.2B`: every project area is now Implemented —
+            // the two that were Declared, Reports and Settings, are
+            // removed from the tab strip entirely rather than shipped
+            // dimmed, so this no longer needs scoping against a
+            // window-wide assertion that would once have caught their
+            // own legitimate "not yet implemented" cards too.)
             var risksTab = window.GetLogicalDescendants().OfType<TabItem>()
                 .Distinct()
                 .Single(tab => tab.Tag is ProjectArea.Risks);
 
             Assert.IsType<ProjectRisksView>(risksTab.Content);
-
-            Assert.DoesNotContain(
-                ((Control)risksTab.Content!).GetLogicalDescendants().OfType<Control>(),
-                child => child is DeclaredCapabilityView);
         }
         finally
         {

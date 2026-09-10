@@ -182,7 +182,6 @@ internal static class DesktopTestHelpers
         typeof(ConfirmationDialog),
         typeof(InputDialog),
         typeof(MessageDialog),
-        typeof(SettingsDialog),
         typeof(MacroManagerDialog),
         typeof(CitationPicker),
         typeof(SubjectPicker),
@@ -436,6 +435,34 @@ internal static class DesktopTestHelpers
 
         return (T)field.GetValue(instance)!;
     }
+
+    /// <summary>
+    /// The one genuine <typeparamref name="T"/> in <paramref name="root"/>'s
+    /// logical tree — safe against a real Avalonia `TabControl` quirk a
+    /// plain <c>.OfType&lt;T&gt;().Single()</c> is not (`WP 19.2B`).
+    /// </summary>
+    /// <remarks>
+    /// A selected `TabItem`'s own `Content` is a logical child of both the
+    /// `TabItem` itself (the property that holds it) and the `TabControl`
+    /// (whose own internal presenter renders it) — proven, not assumed: a
+    /// reference-equality walk of every claimed logical child in the whole
+    /// window finds the identical control object listed under both parents,
+    /// never two distinct instances. Nothing in this codebase's own control
+    /// hierarchy is duplicated; `GetLogicalDescendants()`'s downward walk
+    /// simply visits that one control twice on the way through. This was
+    /// never observable before `WP 19.2B`: the Engineering surface — and
+    /// the <see cref="Views.ProjectExplorerView"/>/<see cref="Views.PropertyInspectorView"/>
+    /// panels it carries — previously only ever sat directly in the
+    /// shell's own module host, never inside a `TabItem`'s `Content`. Now
+    /// that the Structure tab embeds that same surface in place
+    /// (<c>ProjectWorkspaceView.SetEngineeringSurface</c>), every test that
+    /// finds those panels while a project's Structure tab is the selected
+    /// one meets this for the first time. Collapsing reference-equal
+    /// duplicates before choosing is the fix — not a widened tolerance,
+    /// since there really is exactly one control either way.
+    /// </remarks>
+    public static T FindUnique<T>(this ILogical root) where T : class =>
+        root.GetLogicalDescendants().OfType<T>().Distinct((IEqualityComparer<T>)ReferenceEqualityComparer.Instance).Single();
 
     /// <summary>
     /// The Ribbon button for <paramref name="commandId"/>, found inside that
