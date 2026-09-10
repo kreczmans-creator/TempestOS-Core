@@ -26,6 +26,9 @@ using Tempest.Core.ExportImport;
 using Tempest.Core.Identity;
 using Tempest.Core.Input;
 using Tempest.Core.Invoicing;
+using Tempest.Core.Invoicing.OAuth;
+using Tempest.Core.Invoicing.QuickBooksOnline;
+using Tempest.Core.Invoicing.Xero;
 using Tempest.Core.Logging;
 using Tempest.Core.Macros;
 using Tempest.Core.Manufacturing;
@@ -801,24 +804,42 @@ public sealed class TempestHost : ITempestHost
         services.AddInstance(secretStore);
 
         // `Invoicing:Connector` (`InvoicingService.ConnectorConfigurationKey`):
-        // `"Fake"` (default), `"Xero"`, `"QuickBooksOnline"`. Only `Fake`
-        // is implemented by this Work Package; `WP 19.1A` parts 2 and 3
-        // add the real bindings here, replacing this seam's own selection
+        // `"Fake"` (default), `"Xero"`, `"QuickBooksOnline"` — `WP 19.1A`
+        // part 2's own real bindings, replacing this seam's own selection
         // logic, never `IInvoicingConnector` itself. A value this build
         // does not recognise still resolves to the Fake connector, loudly
-        // — never a silent fallback.
+        // — never a silent fallback. Neither real connector fails
+        // construction over a missing client id: `OAuthAuthoriser` itself
+        // resolves credentials lazily, per call, from configuration or
+        // `ISecretStore` (a Settings screen's own later write, `WP 19.2B`)
+        // — a real provider with nothing configured yet answers every call
+        // `Reauthorise("not configured")`, never a crash at startup.
         var configuredConnectorName = configuration.TryGetValue(InvoicingService.ConnectorConfigurationKey, out var connectorNameValue)
             ? connectorNameValue?.Trim()
             : null;
 
-        if (!string.IsNullOrWhiteSpace(configuredConnectorName) && !string.Equals(configuredConnectorName, "Fake", StringComparison.OrdinalIgnoreCase))
+        IInvoicingConnector invoicingConnector;
+
+        if (string.Equals(configuredConnectorName, "Xero", StringComparison.OrdinalIgnoreCase))
         {
-            logger.Warning(
-                $"'{InvoicingService.ConnectorConfigurationKey}' is configured as '{configuredConnectorName}', which this build does not implement yet; "
-                + "using the Fake connector instead.");
+            invoicingConnector = BuildXeroConnector(configuration, secretStore, microsoftLoggerFactory);
+        }
+        else if (string.Equals(configuredConnectorName, "QuickBooksOnline", StringComparison.OrdinalIgnoreCase))
+        {
+            invoicingConnector = BuildQuickBooksOnlineConnector(configuration, secretStore, microsoftLoggerFactory);
+        }
+        else
+        {
+            if (!string.IsNullOrWhiteSpace(configuredConnectorName) && !string.Equals(configuredConnectorName, "Fake", StringComparison.OrdinalIgnoreCase))
+            {
+                logger.Warning(
+                    $"'{InvoicingService.ConnectorConfigurationKey}' is configured as '{configuredConnectorName}', which this build does not implement yet; "
+                    + "using the Fake connector instead.");
+            }
+
+            invoicingConnector = new FakeInvoicingConnector();
         }
 
-        IInvoicingConnector invoicingConnector = new FakeInvoicingConnector();
         services.AddInstance(invoicingConnector);
 
         services.Singleton<IInvoicingService, InvoicingService>();
@@ -1077,6 +1098,65 @@ public sealed class TempestHost : ITempestHost
             $"'{SqlitePersistenceStore.BackendConfigurationKey}' is configured as '{backend}', which is not a " +
             $"persistence backend this build has. The only valid value is '{SqlitePersistenceStore.SqliteBackendValue}' " +
             "(the default); the file-per-key backend this key once also selected is deleted (v0.18.0, ADR-0144).");
+    }
+
+    /// <summary>
+    /// Builds the real Xero <see cref="IInvoicingConnector"/> (`WP 19.1A`
+    /// part 2): the redirect URI a sandbox app must register is a fresh
+    /// loopback port every run (<c>OAuthLoopbackListener</c>'s own remarks)
+    /// — never one of these fixed endpoints.
+    /// </summary>
+    private static XeroConnector BuildXeroConnector(
+        IConfigurationProvider configuration, ISecretStore secretStore, Microsoft.Extensions.Logging.ILoggerFactory loggerFactory)
+    {
+        var httpClient = new HttpClient(new InvoicingHttpLoggingHandler(loggerFactory.CreateLogger("Tempest.Core.Invoicing.Xero")))
+        {
+            BaseAddress = new Uri("https://api.xero.com/api.xro/2.0/"),
+        };
+
+        var profile = new OAuthProviderProfile(
+            Provider: "Xero",
+            AuthorizationEndpoint: new Uri("https://login.xero.com/identity/connect/authorize"),
+            TokenEndpoint: new Uri("https://identity.xero.com/connect/token"),
+            Scopes: ["openid", "profile", "email", "accounting.transactions", "accounting.contacts", "offline_access"],
+            TenantResolutionEndpoint: new Uri("https://api.xero.com/connections"));
+
+        var authoriser = new OAuthAuthoriser(profile, configuration, secretStore, new SystemBrowserLauncher(), httpClient);
+
+        return new XeroConnector(httpClient, authoriser);
+    }
+
+    /// <summary>
+    /// Builds the real QuickBooks Online <see cref="IInvoicingConnector"/>
+    /// (`WP 19.1A` part 2): <c>Invoicing:QuickBooksOnline:Environment</c>
+    /// (<c>"sandbox"</c>, the default, or <c>"production"</c>) selects
+    /// Intuit's own sandbox or live API host.
+    /// </summary>
+    private static QuickBooksOnlineConnector BuildQuickBooksOnlineConnector(
+        IConfigurationProvider configuration, ISecretStore secretStore, Microsoft.Extensions.Logging.ILoggerFactory loggerFactory)
+    {
+        var environment = configuration.TryGetValue("Invoicing:QuickBooksOnline:Environment", out var configuredEnvironment)
+            ? configuredEnvironment?.Trim()
+            : null;
+
+        var baseAddress = string.Equals(environment, "production", StringComparison.OrdinalIgnoreCase)
+            ? new Uri("https://quickbooks.api.intuit.com/")
+            : new Uri("https://sandbox-quickbooks.api.intuit.com/");
+
+        var httpClient = new HttpClient(new InvoicingHttpLoggingHandler(loggerFactory.CreateLogger("Tempest.Core.Invoicing.QuickBooksOnline")))
+        {
+            BaseAddress = baseAddress,
+        };
+
+        var profile = new OAuthProviderProfile(
+            Provider: "QuickBooksOnline",
+            AuthorizationEndpoint: new Uri("https://appcenter.intuit.com/connect/oauth2"),
+            TokenEndpoint: new Uri("https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer"),
+            Scopes: ["com.intuit.quickbooks.accounting"]);
+
+        var authoriser = new OAuthAuthoriser(profile, configuration, secretStore, new SystemBrowserLauncher(), httpClient);
+
+        return new QuickBooksOnlineConnector(httpClient, authoriser, configuration);
     }
 
     /// <summary>

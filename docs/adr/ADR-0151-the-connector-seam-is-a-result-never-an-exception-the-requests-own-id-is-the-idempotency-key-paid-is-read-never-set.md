@@ -120,6 +120,98 @@ plain `Func<Guid, CancellationToken, Task>`, wired once by
 services exist. Any exception, or refusal, is swallowed — completion
 succeeded the moment its write committed, regardless of the invoice.
 
+## Update — `WP 19.1A` part 2: the real connectors
+
+Accepted — `WP 19.1A` part 2 (OAuth 2.0, `XeroConnector`,
+`QuickBooksOnlineConnector`, contract tests, connector selection),
+2026-09-10.
+
+**8. `OAuthAuthoriser`** (`Tempest.Core.Invoicing.OAuth`) drives the
+authorisation-code flow with PKCE (`S256`) for both providers alike: an
+`HttpListener` loopback on a fresh `http://127.0.0.1:<free port>/callback/`
+every run — confirmed to bind without elevation or a URL ACL reservation
+before this class was written the way it is — opened in the system browser
+through an `IBrowserLauncher` seam (`SystemBrowserLauncher` in production;
+a fake that calls the loopback itself in tests, never a real browser).
+Client id and secret are resolved from `Invoicing:<Provider>:ClientId`/
+`ClientSecret` in configuration first, the identical key in `ISecretStore`
+second — where a Settings screen (`WP 19.2B`) writes what the operator
+types — and never the database; a provider with neither configured answers
+every call `Reauthorise("not configured")`, checked *before* "never
+authorised" so the diagnosis names the actual gap. `EnsureAccessTokenAsync`
+is what every connector call goes through first: a still-valid stored
+token is returned untouched (no network call at all); an expired one is
+refreshed silently; a refused refresh is `Reauthorise`, never a crash. The
+provider's own tenant/company id — Xero's `tenantId`, QuickBooks Online's
+`realmId` — is stored generically under one `Invoicing:<Provider>:TenantId`
+key: QuickBooks Online's own redirect already carries it as a `realmId`
+query parameter; Xero's does not, so `OAuthAuthoriser` reads it, once, from
+`GET https://api.xero.com/connections` right after a fresh token exchange.
+
+**9. `XeroConnector`** (`/api.xro/2.0/Invoices`, `/Contacts`) sends
+`Authorization: Bearer`, `xero-tenant-id`, and `Idempotency-Key: <request
+id>`; the request id also becomes the invoice's own `Reference`, read back
+by `FindByReferenceAsync` via `where=Reference=="…"`. A contact is sent as
+`{"Name": ClientOrganisationId}` only — Xero's own documented behaviour
+matches an existing contact by that name or creates one when absent, so no
+separate contact round trip is needed. Every HTTP outcome maps through one
+shared table (`ConnectorHttpOutcome`, `Tempest.Core.Invoicing.OAuth`): 2xx
+→ `Ok`; 400/422 → `Rejected` (Xero's own validation message, extracted from
+the body); 401/403 → `Reauthorise`; 429/5xx → `Unavailable`; a
+pre-response transport failure (DNS, refused connection, a client-side
+timeout before a response starts arriving) → `Unavailable`; a 2xx response
+whose own body cannot be parsed → `Unknown` (a response demonstrably
+arrived; only its shape is not understood). Xero's own legacy
+`/Date(<ms>+<tz>)/` wire format is parsed alongside plain ISO-8601.
+
+**10. `QuickBooksOnlineConnector`** (`/v3/company/<realmId>/invoice`,
+`/customer`, `/query`) differs from Xero in two ways its own API forces.
+First, **a `CustomerRef` must already be resolved** before an invoice can
+be created at all — a bare name in the invoice body is not enough, unlike
+Xero — so this connector queries `Customer` by `DisplayName` and creates
+one when absent, genuinely, not deferred. Second, **QuickBooks Online
+carries no single status word**: `DeriveExternalStatus` synthesises one
+from `Balance`/`TotalAmt`/`EmailStatus` (`PAID` when the balance reaches
+zero against a positive total, `VOIDED` when both are zero, `SENT` from
+`EmailStatus`, otherwise `SUBMITTED`) into the same vocabulary
+`InvoicingService.InterpretStatus` already matches by substring, and a
+paid invoice's own `PaidDate` is read, best-effort, from its linked
+`Payment`'s own `TxnDate` via one further query. The request id is carried
+three ways: the `requestid` query parameter on the create call (QuickBooks
+Online's own idempotency mechanism), and both `DocNumber` and
+`PrivateNote` on the invoice itself — `DocNumber` is also what
+`FindByReferenceAsync` queries on. The same outcome table as Xero's own
+applies throughout.
+
+**11. Disclosed gaps, not hidden.** QuickBooks Online's real API requires
+every invoice line to carry a valid `ItemRef` naming a product/service item
+already defined in the company — a catalogue this platform's own object
+model has no concept of. `Invoicing:QuickBooksOnline:DefaultItemId`, when
+configured, is attached to every line; left unconfigured, a real sandbox
+will likely answer 400/422 (mapped to `Rejected`, never a crash) — the
+physical review's own first finding once a real sandbox is registered.
+Separately, `InvoiceRequest.Id.ToString()` (36 characters) is longer than
+QuickBooks Online's own documented 21-character `DocNumber` limit; a real
+sandbox call may reject it, in which case a shorter, still-unique
+QuickBooks-Online-specific reference is a follow-up this part does not
+build. Both connectors treat `InvoiceRequestSnapshot.ClientOrganisationId`
+— an organisation-catalogue id, not necessarily a human display name — as
+the contact's own matched/created name; a later part threading the
+organisation's own display name onto the snapshot would improve what is
+actually matched.
+
+**12. Selection.** `Invoicing:Connector` = `Fake` (default) | `Xero` |
+`QuickBooksOnline` picks the connector at `TempestHost` composition; each
+real connector's own `HttpClient` is wrapped in `InvoicingHttpLoggingHandler`
+so its own request/response diagnostics flow into the exact platform log
+sinks every other component already writes into
+(`Tempest.Core.Logging.TempestLoggerProvider`'s own remarks name this
+precisely). Construction never fails over a missing client id — resolution
+is lazy, per call, inside `OAuthAuthoriser` — so an unconfigured real
+provider is fully usable as a composition target from the very first run,
+answering `Reauthorise("not configured")` until an operator registers a
+sandbox app and connects it.
+
 ## Consequences
 
 **Positive:** a caller of `SendAsync`/`ReconcileAsync` never writes a
